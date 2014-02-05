@@ -197,6 +197,23 @@ RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::Aux_servo_function_t function,
 }
 
 /*
+  read radio_in for a given function
+*/
+uint16_t
+RC_Channel_aux::read_radio_in(RC_Channel_aux::Aux_servo_function_t function, bool do_input_output)
+{
+    for (uint8_t i = 0; i < 8; i++) {
+        if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
+			if (do_input_output) {
+				_aux_channels[i]->input();
+				return _aux_channels[i]->pwm_to_range();
+			}
+        }
+    }
+    return 1;
+}
+
+/*
   set servo_out and call calc_pwm() for a given function
  */
 void

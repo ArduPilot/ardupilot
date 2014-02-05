@@ -78,6 +78,9 @@ public:
 	// set servo_out
 	static void set_servo_out(Aux_servo_function_t function, int16_t value);
 
+	//  read radio_in for a given function
+		static uint16_t read_radio_in(Aux_servo_function_t function, bool do_input_output);
+
 	// return true if a function is assigned to a channel
 	static bool function_assigned(Aux_servo_function_t function);
 

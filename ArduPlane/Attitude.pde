@@ -679,6 +679,11 @@ static void channel_output_mixer(uint8_t mixing_type, int16_t &chan1_out, int16_
     chan2_out = 1500 + v2;
 }
 
+bool servo_progress = false;
+float flaps_position = 0;
+float flaps_desired_position = 1;
+float flaps_new_position = 0;
+
 /*****************************************
 * Set the flight control servos based on the current calculated values
 *****************************************/
@@ -713,7 +718,7 @@ static void set_servos(void)
         // of the 2nd aileron
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_aileron_with_input);
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_elevator_with_input);
-        RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_flap_auto);
+//        RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_flap_auto);
 
         if (g.mix_mode == 0 && g.elevon_output == MIXING_DISABLED) {
             // set any differential spoilers to follow the elevons in
@@ -823,26 +828,62 @@ static void set_servos(void)
 
     // Auto flap deployment
     if(control_mode < FLY_BY_WIRE_B) {
-        RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_flap_auto);
-    } else if (control_mode >= FLY_BY_WIRE_B) {
-        int16_t flapSpeedSource = 0;
+		flaps_new_position = RC_Channel_aux::read_radio_in(RC_Channel_aux::k_flap_auto, true);
+			if (servo_progress == false || flaps_new_position != flaps_desired_position) {
+				flaps_desired_position = flaps_new_position;
+				servo_progress = true;
+			}
+		} else if (control_mode >= FLY_BY_WIRE_B) {
+			int16_t flapSpeedSource = 0;
 
-        // FIXME: use target_airspeed in both FBW_B and g.airspeed_enabled cases - Doug?
-        if (control_mode == FLY_BY_WIRE_B) {
-            flapSpeedSource = target_airspeed_cm * 0.01;
-        } else if (airspeed.use()) {
-            flapSpeedSource = g.airspeed_cruise_cm * 0.01;
-        } else {
-            flapSpeedSource = aparm.throttle_cruise;
-        }
-        if ( g.flap_1_speed != 0 && flapSpeedSource > g.flap_1_speed) {
-            RC_Channel_aux::set_servo_out(RC_Channel_aux::k_flap_auto, 0);
-        } else if (g.flap_2_speed != 0 && flapSpeedSource > g.flap_2_speed) {
-            RC_Channel_aux::set_servo_out(RC_Channel_aux::k_flap_auto, g.flap_1_percent);
-        } else {
-            RC_Channel_aux::set_servo_out(RC_Channel_aux::k_flap_auto, g.flap_2_percent);
-        }
-    }
+			// FIXME: use target_airspeed in both FBW_B and g.airspeed_enabled cases - Doug?
+			if (control_mode == FLY_BY_WIRE_B) {
+				flapSpeedSource = target_airspeed_cm * 0.01;
+			} else if (airspeed.use()) {
+				flapSpeedSource = g.airspeed_cruise_cm * 0.01;
+			} else {
+				flapSpeedSource = aparm.throttle_cruise;
+			}
+			if ( g.flap_1_speed != 0 && flapSpeedSource > g.flap_1_speed) {
+				flaps_new_position = 0;
+			if (servo_progress == false || flaps_new_position != flaps_desired_position) {
+			flaps_desired_position = 0;
+			servo_progress = true;
+			}
+			} else if (g.flap_2_speed != 0 && flapSpeedSource > g.flap_2_speed) {
+				flaps_new_position = g.flap_1_percent;
+			if (servo_progress == false || flaps_new_position != flaps_desired_position) {
+			flaps_desired_position = g.flap_1_percent;
+			servo_progress = true;
+			}
+			} else {
+				flaps_desired_position = g.flap_2_percent;
+			if (servo_progress == false || flaps_new_position != flaps_desired_position) {
+			flaps_desired_position = g.flap_2_percent;
+			servo_progress = true;
+			}
+			}
+		}
+		// Slow flaps servo movement
+		if (servo_progress == true && flaps_position != flaps_desired_position) {
+			if (flaps_position < flaps_desired_position) {
+			flaps_position += 1.5; // servo velocity
+			if (flaps_position >= flaps_desired_position) {
+				flaps_position = flaps_desired_position;
+				servo_progress = false;
+			}
+			} else {
+			flaps_position -= 1.5; // servo velocity
+			if (flaps_desired_position >= flaps_position) {
+				flaps_position = flaps_desired_position;
+				servo_progress = false;
+			}
+			}
+			RC_Channel_aux::set_servo_out(RC_Channel_aux::k_flap_auto, flaps_position);
+		}else{
+			servo_progress = false;
+	}
+
 
     if (control_mode >= FLY_BY_WIRE_B) {
         /* only do throttle slew limiting in modes where throttle
