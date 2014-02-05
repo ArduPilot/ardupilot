@@ -78,6 +78,7 @@ GPS::update(void)
 
         valid_read = true;
         new_data = true;
+		new_data_mnt = true;
 
         // reset the idle timer
         _idleTimer = tnow;
