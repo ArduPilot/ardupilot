@@ -25,19 +25,19 @@
 
 extern const AP_HAL::HAL& hal;
 
-bool AP_ServoRelayEvents::do_set_servo(uint8_t channel, uint16_t pwm)
+bool AP_ServoRelayEvents::do_set_servo(uint8_t _channel, uint16_t pwm)
 {
-    if (!(mask & 1U<<(channel-1))) {
+    if (!(mask & 1U<<(_channel-1))) {
         // not allowed
         return false;
     }
     if (type == EVENT_TYPE_SERVO && 
-        channel == channel) {
+        channel == _channel) {
         // cancel previous repeat
         repeat = 0;
     }
-    hal.rcout->enable_ch(channel-1);
-    hal.rcout->write(channel-1, pwm);
+    hal.rcout->enable_ch(_channel-1);
+    hal.rcout->write(_channel-1, pwm);
     return true;
 }
 
