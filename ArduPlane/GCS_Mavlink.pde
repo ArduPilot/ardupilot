@@ -1641,13 +1641,16 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         if (packet.count > MAX_WAYPOINTS) {
             packet.count = MAX_WAYPOINTS;
         }
-        g.command_total.set_and_save(packet.count - 1);
+
+        // clear all commands before receiving new mission
+        g.command_total.set_and_save(0);
+
 
         waypoint_timelast_receive = millis();
         waypoint_timelast_request = 0;
         waypoint_receiving   = true;
         waypoint_request_i   = 0;
-        waypoint_request_last= g.command_total;
+        waypoint_request_last= packet.count - 1;
         break;
     }
 
