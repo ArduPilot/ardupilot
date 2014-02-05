@@ -664,8 +664,8 @@
  # define RTL_ALT 				    1500    // default alt to return to home in cm, 0 = Maintain current altitude
 #endif
 
-#ifndef RTL_ALT_MAX
- # define RTL_ALT_MAX               8000    // Max height to return to home in cm (i.e 80m)
+#ifndef RTL_ALT_MARGIN
+ # define RTL_ALT_MARGIN               500    // Height below fence for max RTL, or above ground for min RTL (i.e 5m)
 #endif
 
 #ifndef RTL_LOITER_TIME

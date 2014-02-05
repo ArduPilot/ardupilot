@@ -40,6 +40,9 @@ public:
     /// enabled - returns true if fence is enabled
     bool enabled() const { return _enabled; }
 
+    /// alt_max - returns upper altitude limit in meters
+    float alt_max() const { return _alt_max.get(); }
+
     /// get_enabled_fences - returns bitmask of enabled fences
     uint8_t get_enabled_fences() const;
 
