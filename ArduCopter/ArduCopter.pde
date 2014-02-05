@@ -1193,8 +1193,7 @@ static void one_hz_loop()
     }
 
     // update assigned functions and enable auxiliar servos
-    aux_servos_update_fn();
-    enable_aux_servos();
+    RC_Channel_aux::enable_aux_servos();
 
 #if MOUNT == ENABLED
     camera_mount.update_mount_type();
