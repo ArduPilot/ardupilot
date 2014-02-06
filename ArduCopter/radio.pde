@@ -41,18 +41,6 @@ static void init_rc_in()
     g.single_servo_4.set_angle(DEFAULT_ANGLE_MAX);
 #endif
 
-#if FRAME_CONFIG == COAX_FRAME
-    // we set four servos to angle
-    g.single_servo_1.set_type(RC_CHANNEL_TYPE_ANGLE);
-    g.single_servo_2.set_type(RC_CHANNEL_TYPE_ANGLE);
-    g.single_servo_3.set_type(RC_CHANNEL_TYPE_ANGLE);
-    g.single_servo_4.set_type(RC_CHANNEL_TYPE_ANGLE);
-    g.single_servo_1.set_angle(DEFAULT_ANGLE_MAX);
-    g.single_servo_2.set_angle(DEFAULT_ANGLE_MAX);
-    g.single_servo_3.set_angle(DEFAULT_ANGLE_MAX);
-    g.single_servo_4.set_angle(DEFAULT_ANGLE_MAX);
-#endif
-
     //set auxiliary servo ranges
     g.rc_5.set_range(0,1000);
     g.rc_6.set_range(0,1000);
