@@ -102,6 +102,8 @@ public:
         k_param_log_bitmask,
         k_param_BoardConfig,
         k_param_rssi_range,
+        k_param_flapin_channel,
+        k_param_flaperon_output,
 
         // 100: Arming parameters
         k_param_arming = 100,
@@ -419,6 +421,8 @@ public:
     AP_Float takeoff_throttle_min_accel;
     AP_Int8 takeoff_throttle_delay;
     AP_Int8 level_roll_limit;
+    AP_Int8 flapin_channel;
+    AP_Int8 flaperon_output;
 
     // RC channels
     RC_Channel rc_1;
