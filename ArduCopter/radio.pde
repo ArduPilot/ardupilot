@@ -51,6 +51,31 @@ static void init_rc_in()
     default_dead_zones();
 }
 
+/*
+  disable any channels used for motors to ensure they are not used
+  for auxillary functions
+*/
+void setup_aux_channels()
+{
+#if (FRAME_CONFIG == TRI_FRAME || FRAME_CONFIG == SINGLE_FRAME)
+    // Tri's and Singles use CH7 as a motor
+    RC_Channel_aux::disable_aux_channel(CH_7);
+#elif (FRAME_CONFIG == HEXA_FRAME || FRAME_CONFIG == Y6_FRAME)
+    // Hexa and Y6 use channels 5 and 6 for motors
+    RC_Channel_aux::disable_aux_channel(CH_5);
+    RC_Channel_aux::disable_aux_channel(CH_6);
+#elif (FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME)
+    // Octa and X8 use channels 5-8 as motors
+    RC_Channel_aux::disable_aux_channel(CH_5);
+    RC_Channel_aux::disable_aux_channel(CH_6);
+    RC_Channel_aux::disable_aux_channel(CH_7);
+    RC_Channel_aux::disable_aux_channel(CH_8);
+#elif (FRAME_CONFIG == HELI_FRAME)
+    // Heli's use channel 8 for a motor
+    RC_Channel_aux::disable_aux_channel(CH_8);
+#endif
+}
+
  // init_rc_out -- initialise motors and check if pilot wants to perform ESC calibration
 static void init_rc_out()
 {
@@ -96,6 +121,8 @@ static void init_rc_out()
     if (ap.pre_arm_rc_check) {
         output_min();
     }
+
+    setup_aux_channels();
 }
 
 // output_min - enable and output lowest possible value to motors
