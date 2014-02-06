@@ -38,6 +38,20 @@ RC_Channel_aux::output_ch(unsigned char ch_nr)
     hal.rcout->write(ch_nr, radio_out);
 }
 
+/*
+  prevent a channel from being used for auxillary functions
+  This is used by the copter code to ensure channels used for motors
+  can't be used for auxillary functions
+*/
+void RC_Channel_aux::disable_aux_channel(uint8_t channel)
+{
+    for (uint8_t i = 0; i < RC_AUX_MAX_CHANNELS; i++) {
+        if (_aux_channels[i] && _aux_channels[i]->_ch_out == channel) {
+            _aux_channels[i] = NULL;
+        }
+    }    
+}
+
 /// Update the _aux_channels array of pointers to rc_x channels
 /// This is to be done before rc_init so that the channels get correctly initialized.
 /// It also should be called periodically because the user might change the configuration and

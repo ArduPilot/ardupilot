@@ -99,6 +99,9 @@ public:
 
     // assigned and enable auxillary channels
     static void enable_aux_servos(void);
+    
+    // prevent a channel from being used for auxillary functions
+    static void disable_aux_channel(uint8_t channel);
 
 private:
     static uint32_t _function_mask;

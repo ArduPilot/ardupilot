@@ -118,9 +118,11 @@ private:
     int16_t         _low;
     int16_t         _high_out;
     int16_t         _low_out;
-    uint8_t         _ch_out;
 
     static RC_Channel *rc_ch[RC_MAX_CHANNELS];
+
+protected:
+    uint8_t         _ch_out;
 };
 
 // This is ugly, but it fixes poorly architected library
