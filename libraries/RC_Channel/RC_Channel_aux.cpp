@@ -12,7 +12,7 @@ const AP_Param::GroupInfo RC_Channel_aux::var_info[] PROGMEM = {
     // @Param: FUNCTION
     // @DisplayName: Servo out function
     // @Description: Setting this to Disabled(0) will setup this output for control by auto missions or MAVLink servo set commands. any other value will enable the corresponding function
-    // @Values: 0:Disabled,1:RCPassThru,2:Flap,3:Flap_auto,4:Aileron,5:flaperon,6:mount_pan,7:mount_tilt,8:mount_roll,9:mount_open,10:camera_trigger,11:release,12:mount2_pan,13:mount2_tilt,14:mount2_roll,15:mount2_open,16:DifferentialSpoiler1,17:DifferentialSpoiler2,18:AileronWithInput,19:Elevator,20:ElevatorWithInput,21:Rudder
+    // @Values: 0:Disabled,1:RCPassThru,2:Flap,3:Flap_auto,4:Aileron,6:mount_pan,7:mount_tilt,8:mount_roll,9:mount_open,10:camera_trigger,11:release,12:mount2_pan,13:mount2_tilt,14:mount2_roll,15:mount2_open,16:DifferentialSpoiler1,17:DifferentialSpoiler2,18:AileronWithInput,19:Elevator,20:ElevatorWithInput,21:Rudder,24:Flaperon1,25:Flaperon2
     // @User: Standard
     AP_GROUPINFO("FUNCTION",       1, RC_Channel_aux, function, 0),
 
@@ -54,7 +54,8 @@ void RC_Channel_aux::update_aux_servo_function(void)
 		switch (function) {
 		case RC_Channel_aux::k_flap:
 		case RC_Channel_aux::k_flap_auto:
-		case RC_Channel_aux::k_flaperon:
+		case RC_Channel_aux::k_flaperon1:
+		case RC_Channel_aux::k_flaperon2:
 		case RC_Channel_aux::k_egg_drop:
 			_aux_channels[i]->set_range(0,100);
 			break;

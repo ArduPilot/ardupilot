@@ -39,7 +39,7 @@ public:
         k_flap                  = 2,            ///< flap
         k_flap_auto             = 3,            ///< flap automated
         k_aileron               = 4,            ///< aileron
-        k_flaperon              = 5,            ///< flaperon (flaps and aileron combined, needs two independent servos one for each wing)
+        k_unused1               = 5,            ///< unused function
         k_mount_pan             = 6,            ///< mount yaw (pan)
         k_mount_tilt            = 7,            ///< mount pitch (tilt)
         k_mount_roll            = 8,            ///< mount roll
@@ -58,6 +58,8 @@ public:
         k_rudder                = 21,            ///< secondary rudder channel
         k_sprayer_pump          = 22,            ///< crop sprayer pump channel
         k_sprayer_spinner       = 23,            ///< crop sprayer spinner channel
+        k_flaperon1             = 24,            ///< flaperon, left wing
+        k_flaperon2             = 25,            ///< flaperon, right wing
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 
