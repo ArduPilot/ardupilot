@@ -515,12 +515,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Group: SS2_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp
     GGROUP(single_servo_2,    "SS2_", RC_Channel),
-    // @Group: SS3_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(single_servo_3,    "SS3_", RC_Channel),
-    // @Group: SS4_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(single_servo_4,    "SS4_", RC_Channel),
 #endif
 
     // RC channel
@@ -1124,15 +1118,9 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Group: SS2_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp
     GGROUP(single_servo_2,    "SS2_", RC_Channel),
-    // @Group: SS3_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(single_servo_3,    "SS3_", RC_Channel),
-    // @Group: SS4_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(single_servo_4,    "SS4_", RC_Channel),
     // @Group: MOT_
-    // @Path: ../libraries/AP_Motors/AP_MotorsSingle.cpp
-    GOBJECT(motors, "MOT_",           AP_MotorsSingle),
+    // @Path: ../libraries/AP_Motors/AP_MotorsCoax.cpp
+    GOBJECT(motors, "MOT_",           AP_MotorsCoax),
 
 #else
     // @Group: MOT_
