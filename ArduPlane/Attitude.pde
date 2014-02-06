@@ -692,27 +692,16 @@ static void flaperon_update(int8_t flap_percent)
     /*
       flaperons are implemented as a mixer between aileron and a
       percentage of flaps. Flap input can come from a manual channel
-      or from auto flaps. When the manual flap percentage is larger
-      than the auto flap percentage then the manual flap percentage
-      takes priority. Note that negative manual flap percentates are
-      allowed, which give spoilerons
+      or from auto flaps. Note that negative manual flap percentates
+      are allowed, which give spoilerons
      */
     ch1 = channel_roll->radio_out;
 
-    int16_t flap_trim = 1500;
-    RC_Channel *flapin = RC_Channel::rc_channel(g.flapin_channel-1);
-    if (flapin != NULL) {
-        flap_trim = flapin->radio_trim;
-    }
-
-    if (flapin != NULL && !failsafe.ch3_failsafe && failsafe.ch3_counter == 0) {
-        flapin->input();
-        int8_t manual_flap_percent = constrain_int16(flapin->norm_input() * 100, -100, 100);
-        if (abs(manual_flap_percent) > flap_percent) {
-            flap_percent = manual_flap_percent;
-        }
-    }
-    ch2 = flap_trim - flap_percent * 5;
+    // 1500 is used here as the neutral value for the output
+    // mixer. User can still trim the flaps on the input side using
+    // the TRIM of the flap input channel. The *5 is to take a
+    // percentage to a value from -500 to 500 for the mixer
+    ch2 = 1500 - flap_percent * 5;
     channel_output_mixer(g.flaperon_output, ch1, ch2);
     RC_Channel_aux::set_radio(RC_Channel_aux::k_flaperon1, ch1);
     RC_Channel_aux::set_radio(RC_Channel_aux::k_flaperon2, ch2);
@@ -752,7 +741,6 @@ static void set_servos(void)
         // of the 2nd aileron
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_aileron_with_input);
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_elevator_with_input);
-        RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_flap_auto);
 
         if (g.mix_mode == 0 && g.elevon_output == MIXING_DISABLED) {
             // set any differential spoilers to follow the elevons in
@@ -862,10 +850,16 @@ static void set_servos(void)
 
     // Auto flap deployment
     uint8_t auto_flap_percent = 0;
+    int8_t manual_flap_percent = 0;
 
-    if(control_mode < FLY_BY_WIRE_B) {
-        RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_flap_auto);
-    } else if (control_mode >= FLY_BY_WIRE_B) {
+    // work out any manual flap input
+    RC_Channel *flapin = RC_Channel::rc_channel(g.flapin_channel-1);
+    if (flapin != NULL && !failsafe.ch3_failsafe && failsafe.ch3_counter == 0) {
+        flapin->input();
+        manual_flap_percent = constrain_int16(flapin->norm_input() * 100, -100, 100);
+    }
+
+    if (auto_throttle_mode) {
         int16_t flapSpeedSource = 0;
         if (airspeed.use()) {
             flapSpeedSource = target_airspeed_cm * 0.01f;
@@ -879,8 +873,15 @@ static void set_servos(void)
         } else {
             auto_flap_percent = g.flap_1_percent;
         }
-        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_flap_auto, auto_flap_percent);
     }
+
+    // manual flap input overrides auto flap input
+    if (abs(manual_flap_percent) > auto_flap_percent) {
+        auto_flap_percent = manual_flap_percent;
+    }
+
+    RC_Channel_aux::set_servo_out(RC_Channel_aux::k_flap_auto, auto_flap_percent);
+    RC_Channel_aux::set_servo_out(RC_Channel_aux::k_flap, manual_flap_percent);
 
     if (control_mode >= FLY_BY_WIRE_B) {
         /* only do throttle slew limiting in modes where throttle

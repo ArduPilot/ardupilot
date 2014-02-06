@@ -68,5 +68,10 @@ void failsafe_check(void)
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_manual, true);
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_aileron_with_input, true);
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_elevator_with_input, true);
+        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_flap, 0);
+        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_flap_auto, 0);
+
+        // setup flaperons
+        flaperon_update(0);
     }
 }
