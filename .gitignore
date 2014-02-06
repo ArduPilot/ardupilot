@@ -16,13 +16,10 @@
 .*.swp
 .built
 .context
-.cproject
 .depend
 .directory
 .DS_Store
 .metadata/
-.project
-.settings/
 .vagrant
 /tmp/*
 /Tools/ArdupilotMegaPlanner/3DRRadio/bin

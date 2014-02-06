@@ -2,6 +2,9 @@
 #ifndef __AP_PROGMEM_AVR_H__
 #define __AP_PROGMEM_AVR_H__
 
+// An extra check to prevent confusing ARM Eclipse syntax highlighting
+#if defined(__AVR__)
+
 #include <avr/pgmspace.h>
 
 // prog_char_t is used as a wrapper type for prog_char, which is
@@ -76,4 +79,5 @@ static inline uintptr_t pgm_read_pointer(const void *s)
     }
 }
 
+#endif
 #endif // __AP_PROGMEM_AVR_H__
