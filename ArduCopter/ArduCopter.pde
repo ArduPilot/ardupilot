@@ -186,7 +186,8 @@ static AP_Scheduler scheduler;
 // AP_Notify instance
 static AP_Notify notify;
 
-
+// used to detect MAVLink acks from GCS to stop compassmot
+static uint8_t command_ack_counter;
 
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes

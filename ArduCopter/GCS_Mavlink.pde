@@ -1143,6 +1143,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
     }
 
+    case MAVLINK_MSG_ID_COMMAND_ACK:
+    {
+        command_ack_counter++;
+        break;
+    }
+
     case MAVLINK_MSG_ID_COMMAND_LONG:
     {
         // decode
@@ -1178,6 +1184,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_PREFLIGHT_CALIBRATION:
+            result = MAV_RESULT_ACCEPTED;
             if (packet.param1 == 1 ||
                 packet.param2 == 1) {
                 ins.init_accel();
@@ -1198,7 +1205,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
                 }
             }
-            result = MAV_RESULT_ACCEPTED;
+            if (packet.param6 == 1) {
+                // compassmot calibration
+                result = mavlink_compassmot(chan);
+            }
             break;
 
         case MAV_CMD_COMPONENT_ARM_DISARM:
