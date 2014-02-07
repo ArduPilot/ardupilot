@@ -170,18 +170,12 @@ void AP_TECS::update_50hz(float hgt_afe)
     }
 
 	// Update and average speed rate of change
-    // Only required if airspeed is being measured and controlled
-    float temp = 0;
-	if (_ahrs.airspeed_sensor_enabled() && _ahrs.airspeed_estimate_true(&_EAS)) {
-        // Get DCM
-        const Matrix3f &rotMat = _ahrs.get_dcm_matrix();
-	    // Calculate speed rate of change
-	    temp = rotMat.c.x * GRAVITY_MSS + _ahrs.get_ins().get_accel().x;
-	    // take 5 point moving average
-        _vel_dot = _vdot_filter.apply(temp);
-    } else {
-       _vel_dot = 0.0f;
-    }
+    // Get DCM
+    const Matrix3f &rotMat = _ahrs.get_dcm_matrix();
+	// Calculate speed rate of change
+	float temp = rotMat.c.x * GRAVITY_MSS + _ahrs.get_ins().get_accel().x;
+	// take 5 point moving average
+    _vel_dot = _vdot_filter.apply(temp);
 
 }
 
