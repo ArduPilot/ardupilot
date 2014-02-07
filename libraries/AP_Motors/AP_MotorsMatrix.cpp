@@ -387,6 +387,9 @@ void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitc
 
         // set order that motor appears in test
         _test_order[motor_num] = testing_order;
+
+        // disable this channel from being used by RC_Channel_aux
+        RC_Channel_aux::disable_aux_channel(_motor_to_channel_map[motor_num]);
     }
 }
 
