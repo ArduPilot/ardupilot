@@ -95,11 +95,21 @@ void AP_MotorsSingle::Init()
     // set update rate for the 3 motors (but not the servo on channel 7)
     set_update_rate(_speed_hz);
 
-    // set the motor_enabled flag so that the ESCs can be calibrated like other frame types
-    motor_enabled[AP_MOTORS_MOT_1] = true;
-    motor_enabled[AP_MOTORS_MOT_2] = true;
-    motor_enabled[AP_MOTORS_MOT_3] = true;
-    motor_enabled[AP_MOTORS_MOT_4] = true;
+    // set the motor_enabled flag so that the main ESC can be calibrated like other frame types
+    motor_enabled[AP_MOTORS_MOT_7] = true;
+
+    // we set four servos to angle
+    _servo1->set_type(RC_CHANNEL_TYPE_ANGLE);
+    _servo2->set_type(RC_CHANNEL_TYPE_ANGLE);
+    _servo3->set_type(RC_CHANNEL_TYPE_ANGLE);
+    _servo4->set_type(RC_CHANNEL_TYPE_ANGLE);
+    _servo1->set_angle(AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
+    _servo2->set_angle(AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
+    _servo3->set_angle(AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
+    _servo4->set_angle(AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
+
+    // disable CH7 from being used as an aux output (i.e. for camera gimbal, etc)
+    RC_Channel_aux::disable_aux_channel(CH_7);
 }
 
 // set update rate to motors - a value in hertz
