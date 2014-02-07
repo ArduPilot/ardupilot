@@ -29,17 +29,6 @@ static void init_rc_in()
     g.rc_1.set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
     g.rc_2.set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
     g.rc_4.set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
-#if FRAME_CONFIG == SINGLE_FRAME
-    // we set four servos to angle
-    g.single_servo_1.set_type(RC_CHANNEL_TYPE_ANGLE);
-    g.single_servo_2.set_type(RC_CHANNEL_TYPE_ANGLE);
-    g.single_servo_3.set_type(RC_CHANNEL_TYPE_ANGLE);
-    g.single_servo_4.set_type(RC_CHANNEL_TYPE_ANGLE);
-    g.single_servo_1.set_angle(DEFAULT_ANGLE_MAX);
-    g.single_servo_2.set_angle(DEFAULT_ANGLE_MAX);
-    g.single_servo_3.set_angle(DEFAULT_ANGLE_MAX);
-    g.single_servo_4.set_angle(DEFAULT_ANGLE_MAX);
-#endif
 
     //set auxiliary servo ranges
     g.rc_5.set_range(0,1000);
@@ -49,31 +38,6 @@ static void init_rc_in()
 
     // set default dead zones
     default_dead_zones();
-}
-
-/*
-  disable any channels used for motors to ensure they are not used
-  for auxillary functions
-*/
-void setup_aux_channels()
-{
-#if (FRAME_CONFIG == TRI_FRAME || FRAME_CONFIG == SINGLE_FRAME)
-    // Tri's and Singles use CH7 as a motor
-    RC_Channel_aux::disable_aux_channel(CH_7);
-#elif (FRAME_CONFIG == HEXA_FRAME || FRAME_CONFIG == Y6_FRAME)
-    // Hexa and Y6 use channels 5 and 6 for motors
-    RC_Channel_aux::disable_aux_channel(CH_5);
-    RC_Channel_aux::disable_aux_channel(CH_6);
-#elif (FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME)
-    // Octa and X8 use channels 5-8 as motors
-    RC_Channel_aux::disable_aux_channel(CH_5);
-    RC_Channel_aux::disable_aux_channel(CH_6);
-    RC_Channel_aux::disable_aux_channel(CH_7);
-    RC_Channel_aux::disable_aux_channel(CH_8);
-#elif (FRAME_CONFIG == HELI_FRAME)
-    // Heli's use channel 8 for a motor
-    RC_Channel_aux::disable_aux_channel(CH_8);
-#endif
 }
 
  // init_rc_out -- initialise motors and check if pilot wants to perform ESC calibration
@@ -121,8 +85,6 @@ static void init_rc_out()
     if (ap.pre_arm_rc_check) {
         output_min();
     }
-
-    setup_aux_channels();
 }
 
 // output_min - enable and output lowest possible value to motors
