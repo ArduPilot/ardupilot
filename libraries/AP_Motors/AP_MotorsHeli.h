@@ -12,10 +12,6 @@
 #include <RC_Channel.h>     // RC Channel Library
 #include "AP_Motors.h"
 
-// output channels
-#define AP_MOTORS_HELI_EXT_GYRO                 CH_7    // tail servo uses channel 7
-#define AP_MOTORS_HELI_EXT_RSC                  CH_8    // main rotor controlled with channel 8
-
 // maximum number of swashplate servos
 #define AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS    3
 

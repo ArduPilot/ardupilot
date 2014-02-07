@@ -227,6 +227,10 @@ void AP_MotorsHeli::Init()
 
     // initialise swash plate
     init_swash();
+
+    // disable channels 7 and 8 from being used by RC_Channel_aux
+    RC_Channel_aux::disable_aux_channel(_motor_to_channel_map[AP_MOTORS_HELI_AUX]);
+    RC_Channel_aux::disable_aux_channel(_motor_to_channel_map[AP_MOTORS_HELI_RSC]);
 }
 
 // set update rate to motors - a value in hertz
