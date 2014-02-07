@@ -38,6 +38,9 @@ void AP_MotorsTri::Init()
     motor_enabled[AP_MOTORS_MOT_1] = true;
     motor_enabled[AP_MOTORS_MOT_2] = true;
     motor_enabled[AP_MOTORS_MOT_4] = true;
+
+    // disable CH7 from being used as an aux output (i.e. for camera gimbal, etc)
+    RC_Channel_aux::disable_aux_channel(AP_MOTORS_CH_TRI_YAW);
 }
 
 // set update rate to motors - a value in hertz
