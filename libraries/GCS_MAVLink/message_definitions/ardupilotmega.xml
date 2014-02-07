@@ -406,6 +406,16 @@
             <field name="idx" type="uint8_t">point index (first point is 0)</field>
           </message>
 
+          <message name="COMPASSMOT_STATUS" id="177">
+            <description>Status of compassmot calibration</description>
+            <field name="throttle" type="uint16_t">throttle (percent*10)</field>
+            <field name="current" type="float">current (amps)</field>
+            <field name="interference" type="uint16_t">interference (percent)</field>
+            <field name="CompensationX" type="float">Motor Compensation X</field>
+            <field name="CompensationY" type="float">Motor Compensation Y</field>
+            <field name="CompensationZ" type="float">Motor Compensation Z</field>
+          </message>
+
 <!-- Coming soon
       <message name="RALLY_LAND_POINT" id="177"> 
          <description>A rally landing point.  An aircraft loitering at a rally point may choose one of these points to land at.</description>
