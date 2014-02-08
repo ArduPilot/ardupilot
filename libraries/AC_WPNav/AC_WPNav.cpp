@@ -77,9 +77,6 @@ AC_WPNav::AC_WPNav(const AP_InertialNav* inav, const AP_AHRS* ahrs, APM_PI* pid_
     _pid_rate_lon(pid_rate_lon),
     _loiter_last_update(0),
     _wpnav_last_update(0),
-    _cos_yaw(1.0),
-    _sin_yaw(0.0),
-    _cos_pitch(1.0),
     _althold_kP(WPNAV_ALT_HOLD_P),
     _desired_roll(0),
     _desired_pitch(0),
@@ -201,8 +198,8 @@ void AC_WPNav::translate_loiter_target_movements(float nav_dt)
     }
 
     // rotate pilot input to lat/lon frame
-    target_vel_adj.x = (_pilot_vel_forward_cms*_cos_yaw - _pilot_vel_right_cms*_sin_yaw);
-    target_vel_adj.y = (_pilot_vel_forward_cms*_sin_yaw + _pilot_vel_right_cms*_cos_yaw);
+    target_vel_adj.x = (_pilot_vel_forward_cms*_ahrs->cos_yaw() - _pilot_vel_right_cms*_ahrs->sin_yaw());
+    target_vel_adj.y = (_pilot_vel_forward_cms*_ahrs->sin_yaw() + _pilot_vel_right_cms*_ahrs->cos_yaw());
 
     // add desired change in velocity to current target velocit
     _target_vel.x += target_vel_adj.x*nav_dt;
@@ -665,11 +662,11 @@ void AC_WPNav::get_loiter_acceleration_to_lean_angles(float accel_lat, float acc
     // To-Do: add 1hz filter to accel_lat, accel_lon
 
     // rotate accelerations into body forward-right frame
-    accel_forward = accel_lat*_cos_yaw + accel_lon*_sin_yaw;
-    accel_right = -accel_lat*_sin_yaw + accel_lon*_cos_yaw;
+    accel_forward = accel_lat*_ahrs->cos_yaw() + accel_lon*_ahrs->sin_yaw();
+    accel_right = -accel_lat*_ahrs->sin_yaw() + accel_lon*_ahrs->cos_yaw();
 
     // update angle targets that will be passed to stabilize controller
-    _desired_roll = constrain_float(fast_atan(accel_right*_cos_pitch/(-z_accel_meas))*(18000/M_PI_F), -_lean_angle_max_cd, _lean_angle_max_cd);
+    _desired_roll = constrain_float(fast_atan(accel_right*_ahrs->cos_pitch()/(-z_accel_meas))*(18000/M_PI_F), -_lean_angle_max_cd, _lean_angle_max_cd);
     _desired_pitch = constrain_float(fast_atan(-accel_forward/(-z_accel_meas))*(18000/M_PI_F), -_lean_angle_max_cd, _lean_angle_max_cd);
 }
 

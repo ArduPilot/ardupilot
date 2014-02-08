@@ -118,13 +118,6 @@ public:
     /// set_desired_alt - set desired altitude (in cm above home)
     void set_desired_alt(float desired_alt) { _target.z = desired_alt; }
 
-    /// set_cos_sin_yaw - short-cut to save on calculations to convert from roll-pitch frame to lat-lon frame
-    void set_cos_sin_yaw(float cos_yaw, float sin_yaw, float cos_pitch) {
-        _cos_yaw = cos_yaw;
-        _sin_yaw = sin_yaw;
-        _cos_pitch = cos_pitch;
-    }
-
     /// set_althold_kP - pass in alt hold controller's P gain
     void set_althold_kP(float kP) { if(kP>0.0f) _althold_kP = kP; }
 
@@ -209,9 +202,6 @@ protected:
     uint32_t	_wpnav_last_update;     // time of last update_wpnav call
     float       _loiter_dt;             // time difference since last loiter call
     float       _wpnav_dt;              // time difference since last loiter call
-    float       _cos_yaw;               // short-cut to save on calcs required to convert roll-pitch frame to lat-lon frame
-    float       _sin_yaw;
-    float       _cos_pitch;
     float       _althold_kP;            // alt hold's P gain
 
     // output from controller
