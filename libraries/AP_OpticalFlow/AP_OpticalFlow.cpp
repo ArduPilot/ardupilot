@@ -30,6 +30,14 @@ void AP_OpticalFlow::set_orientation(enum Rotation rotation)
     _orientation = rotation;
 }
 
+void AP_OpticalFlow::update()
+{
+}
+
+void AP_OpticalFlow::init()
+{
+}
+
 // updates internal lon and lat with estimation based on optical flow
 void AP_OpticalFlow::update_position(float roll, float pitch, float sin_yaw, float cos_yaw, float altitude)
 {
