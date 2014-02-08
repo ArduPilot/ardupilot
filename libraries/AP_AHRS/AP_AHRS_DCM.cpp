@@ -76,6 +76,9 @@ AP_AHRS_DCM::update(void)
 
     // Calculate pitch, roll, yaw for stabilization and navigation
     euler_angles();
+
+    // update trig values including _cos_roll, cos_pitch
+    update_trig();
 }
 
 // update the DCM matrix using only the gyros
