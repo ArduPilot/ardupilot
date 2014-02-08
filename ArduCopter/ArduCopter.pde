@@ -541,20 +541,6 @@ static uint8_t rtl_state;               // records state of rtl (initial climb, 
 static uint8_t land_state;              // records state of land (flying to location, descending)
 
 ////////////////////////////////////////////////////////////////////////////////
-// Orientation
-////////////////////////////////////////////////////////////////////////////////
-// Convienience accessors for commonly used trig functions. These values are generated
-// by the DCM through a few simple equations. They are used throughout the code where cos and sin
-// would normally be used.
-// The cos values are defaulted to 1 to get a decent initial value for a level state
-static float cos_roll_x         = 1.0;
-static float cos_pitch_x        = 1.0;
-static float cos_yaw            = 1.0;
-static float sin_yaw;
-static float sin_roll;
-static float sin_pitch;
-
-////////////////////////////////////////////////////////////////////////////////
 // SIMPLE Mode
 ////////////////////////////////////////////////////////////////////////////////
 // Used to track the orientation of the copter for Simple mode. This value is reset at each arming
@@ -984,10 +970,6 @@ static void fast_loop()
     // --------------------
     read_AHRS();
 
-    // reads all of the necessary trig functions for cameras, throttle, etc.
-    // --------------------------------------------------------------------
-    update_trig();
-
 	// Acrobatic control
     if (ap.do_flip) {
         if(abs(g.rc_1.control_in) < 4000) {
@@ -1220,7 +1202,7 @@ static void update_optical_flow(void)
     // if new data has arrived, process it
     if( optflow.last_update != last_of_update ) {
         last_of_update = optflow.last_update;
-        optflow.update_position(ahrs.roll, ahrs.pitch, sin_yaw, cos_yaw, current_loc.alt);      // updates internal lon and lat with estimation based on optical flow
+        optflow.update_position(ahrs.roll, ahrs.pitch, ahrs.sin_yaw(), ahrs.cos_yaw(), current_loc.alt);      // updates internal lon and lat with estimation based on optical flow
 
         // write to log at 5hz
         of_log_counter++;
@@ -1617,13 +1599,13 @@ void update_roll_pitch_mode(void)
             g.rc_1.servo_out = g.rc_1.control_in;
             g.rc_2.servo_out = g.rc_2.control_in;
         }else{
-            acro_level_mix = constrain_float(1-max(max(abs(g.rc_1.control_in), abs(g.rc_2.control_in)), abs(g.rc_4.control_in))/4500.0, 0, 1)*cos_pitch_x;
+            acro_level_mix = constrain_float(1-max(max(abs(g.rc_1.control_in), abs(g.rc_2.control_in)), abs(g.rc_4.control_in))/4500.0, 0, 1)*ahrs.cos_pitch();
             get_roll_rate_stabilized_bf(g.rc_1.control_in);
             get_pitch_rate_stabilized_bf(g.rc_2.control_in);
             get_acro_level_rates();
         }
 #else  // !HELI_FRAME
-        acro_level_mix = constrain_float(1-max(max(abs(g.rc_1.control_in), abs(g.rc_2.control_in)), abs(g.rc_4.control_in))/4500.0, 0, 1)*cos_pitch_x;
+        acro_level_mix = constrain_float(1-max(max(abs(g.rc_1.control_in), abs(g.rc_2.control_in)), abs(g.rc_4.control_in))/4500.0, 0, 1)*ahrs.cos_pitch();
         get_roll_rate_stabilized_bf(g.rc_1.control_in);
         get_pitch_rate_stabilized_bf(g.rc_2.control_in);
         get_acro_level_rates();
@@ -1733,8 +1715,8 @@ static void
 init_simple_bearing()
 {
     // capture current cos_yaw and sin_yaw values
-    simple_cos_yaw = cos_yaw;
-    simple_sin_yaw = sin_yaw;
+    simple_cos_yaw = ahrs.cos_yaw();
+    simple_sin_yaw = ahrs.sin_yaw();
 
     // initialise super simple heading (i.e. heading towards home) to be 180 deg from simple mode heading
     super_simple_last_bearing = wrap_360_cd(ahrs.yaw_sensor+18000);
@@ -1768,8 +1750,8 @@ void update_simple_mode(void)
     }
 
     // rotate roll, pitch input from north facing to vehicle's perspective
-    g.rc_1.control_in = rollx*cos_yaw + pitchx*sin_yaw;
-    g.rc_2.control_in = -rollx*sin_yaw + pitchx*cos_yaw;
+    g.rc_1.control_in = rollx*ahrs.cos_yaw() + pitchx*ahrs.sin_yaw();
+    g.rc_2.control_in = -rollx*ahrs.sin_yaw() + pitchx*ahrs.cos_yaw();
 }
 
 // update_super_simple_bearing - adjusts simple bearing based on location
@@ -2029,39 +2011,6 @@ static void read_AHRS(void)
 
     ahrs.update();
     omega = ins.get_gyro();
-}
-
-static void update_trig(void){
-    Vector2f yawvector;
-    const Matrix3f &temp   = ahrs.get_dcm_matrix();
-
-    yawvector.x     = temp.a.x;     // sin
-    yawvector.y     = temp.b.x;         // cos
-    yawvector.normalize();
-
-    cos_pitch_x     = safe_sqrt(1 - (temp.c.x * temp.c.x));     // level = 1
-    cos_roll_x      = temp.c.z / cos_pitch_x;                       // level = 1
-
-    cos_pitch_x     = constrain_float(cos_pitch_x, 0, 1.0);
-    // this relies on constrain_float() of infinity doing the right thing,
-    // which it does do in avr-libc
-    cos_roll_x      = constrain_float(cos_roll_x, -1.0, 1.0);
-
-    sin_yaw         = constrain_float(yawvector.y, -1.0, 1.0);
-    cos_yaw         = constrain_float(yawvector.x, -1.0, 1.0);
-
-    // added to convert earth frame to body frame for rate controllers
-    sin_pitch       = -temp.c.x;
-    sin_roll        = temp.c.y / cos_pitch_x;
-
-    // update wp_nav controller with trig values
-    wp_nav.set_cos_sin_yaw(cos_yaw, sin_yaw, cos_pitch_x);
-
-    //flat:
-    // 0 ° = cos_yaw:  1.00, sin_yaw:  0.00,
-    // 90° = cos_yaw:  0.00, sin_yaw:  1.00,
-    // 180 = cos_yaw: -1.00, sin_yaw:  0.00,
-    // 270 = cos_yaw:  0.00, sin_yaw: -1.00,
 }
 
 // read baro and sonar altitude at 20hz

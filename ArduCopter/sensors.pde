@@ -54,7 +54,7 @@ static int16_t read_sonar(void)
 
  #if SONAR_TILT_CORRECTION == 1
     // correct alt for angle of the sonar
-    float temp = cos_pitch_x * cos_roll_x;
+    float temp = ahrs.cos_pitch() * ahrs.cos_roll();
     temp = max(temp, 0.707f);
     temp_alt = (float)temp_alt * temp;
  #endif

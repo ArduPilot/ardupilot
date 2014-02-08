@@ -432,14 +432,14 @@ update_rate_contoller_targets()
 {
     if( rate_targets_frame == EARTH_FRAME ) {
         // convert earth frame rates to body frame rates
-        roll_rate_target_bf     = roll_rate_target_ef - sin_pitch * yaw_rate_target_ef;
-        pitch_rate_target_bf    = cos_roll_x  * pitch_rate_target_ef + sin_roll * cos_pitch_x * yaw_rate_target_ef;
-        yaw_rate_target_bf      = cos_pitch_x * cos_roll_x * yaw_rate_target_ef - sin_roll * pitch_rate_target_ef;
+        roll_rate_target_bf     = roll_rate_target_ef - ahrs.sin_pitch() * yaw_rate_target_ef;
+        pitch_rate_target_bf    = ahrs.cos_roll()  * pitch_rate_target_ef + ahrs.sin_roll() * ahrs.cos_pitch() * yaw_rate_target_ef;
+        yaw_rate_target_bf      = ahrs.cos_pitch() * ahrs.cos_roll() * yaw_rate_target_ef - ahrs.sin_roll() * pitch_rate_target_ef;
     }else if( rate_targets_frame == BODY_EARTH_FRAME ) {
         // add converted earth frame rates to body frame rates
-        acro_roll_rate = roll_rate_target_ef - sin_pitch * yaw_rate_target_ef;
-        acro_pitch_rate = cos_roll_x  * pitch_rate_target_ef + sin_roll * cos_pitch_x * yaw_rate_target_ef;
-        acro_yaw_rate = cos_pitch_x * cos_roll_x * yaw_rate_target_ef - sin_roll * pitch_rate_target_ef;
+        acro_roll_rate = roll_rate_target_ef - ahrs.sin_pitch() * yaw_rate_target_ef;
+        acro_pitch_rate = ahrs.cos_roll() * pitch_rate_target_ef + ahrs.sin_roll() * ahrs.cos_pitch() * yaw_rate_target_ef;
+        acro_yaw_rate = ahrs.cos_pitch() * ahrs.cos_roll() * yaw_rate_target_ef - ahrs.sin_roll() * pitch_rate_target_ef;
     }
 }
 
@@ -738,7 +738,7 @@ static void update_throttle_cruise(int16_t throttle)
 // for traditional helicopters
 static int16_t get_angle_boost(int16_t throttle)
 {
-    float angle_boost_factor = cos_pitch_x * cos_roll_x;
+    float angle_boost_factor = ahrs.cos_pitch() * ahrs.cos_roll();
     angle_boost_factor = 1.0f - constrain_float(angle_boost_factor, .5f, 1.0f);
     int16_t throttle_above_mid = max(throttle - motors.get_collective_mid(),0);
 
@@ -752,7 +752,7 @@ static int16_t get_angle_boost(int16_t throttle)
 // throttle value should be 0 ~ 1000
 static int16_t get_angle_boost(int16_t throttle)
 {
-    float temp = cos_pitch_x * cos_roll_x;
+    float temp = ahrs.cos_pitch() * ahrs.cos_roll();
     int16_t throttle_out;
 
     temp = constrain_float(temp, 0.5f, 1.0f);

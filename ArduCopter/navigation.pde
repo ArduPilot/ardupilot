@@ -197,8 +197,8 @@ circle_set_center(const Vector3f current_position, float heading_in_radians)
     float cir_radius = g.circle_radius * 100;
 
     // set circle center to circle_radius ahead of current position
-    circle_center.x = current_position.x + cir_radius * cos_yaw;
-    circle_center.y = current_position.y + cir_radius * sin_yaw;
+    circle_center.x = current_position.x + cir_radius * ahrs.cos_yaw();
+    circle_center.y = current_position.y + cir_radius * ahrs.sin_yaw();
 
     // if we are doing a panorama set the circle_angle to the current heading
     if( g.circle_radius <= 0 ) {
