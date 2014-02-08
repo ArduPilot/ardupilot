@@ -79,10 +79,7 @@ public:
     bool            use_compass(void);
 
     void set_home(int32_t lat, int32_t lng, int32_t alt_cm);
-
-    Vector3f get_velocity_NED(void);
-    Vector3f get_relative_position_NED(void);
-    void     estimate_wind(void);
+    void estimate_wind(void);
 
 private:
     float _ki;
