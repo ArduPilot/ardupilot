@@ -82,6 +82,7 @@ public:
 
     Vector3f get_velocity_NED(void);
     Vector3f get_relative_position_NED(void);
+    void     estimate_wind(void);
 
 private:
     float _ki;
@@ -96,7 +97,6 @@ private:
     void            drift_correction_yaw(void);
     float           yaw_error_compass();
     void            euler_angles(void);
-    void            estimate_wind(Vector3f &velocity);
     bool            have_gps(void) const;
 
     // primary representation of attitude of board used for all inertial calculations
