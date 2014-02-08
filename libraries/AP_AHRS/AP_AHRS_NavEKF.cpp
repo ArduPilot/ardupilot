@@ -205,24 +205,25 @@ bool AP_AHRS_NavEKF::have_inertial_nav(void) const
     return using_EKF();
 }
 
-// return a ground velocity in meters/second, North/East/Down order
-Vector3f AP_AHRS_NavEKF::get_velocity_NED(void)
+// return a ground velocity in meters/second, North/East/Down
+// order. Must only be called if have_inertial_nav() is true
+bool AP_AHRS_NavEKF::get_velocity_NED(Vector3f &vec) const
 {
     if (using_EKF()) {
-        Vector3f vec;
         EKF.getVelNED(vec);
-        return vec;
+        return true;
     }
-    return AP_AHRS_DCM::get_velocity_NED();
+    return false;
 }
 
-Vector3f AP_AHRS_NavEKF::get_relative_position_NED(void)
+// return a relative ground position in meters/second, North/East/Down
+// order. Must only be called if have_inertial_nav() is true
+bool AP_AHRS_NavEKF::get_relative_position_NED(Vector3f &vec) const
 {
-    Vector3f ret;
-    if (using_EKF() && EKF.getPosNED(ret)) {
-        return ret;
+    if (using_EKF()) {
+        return EKF.getPosNED(vec);
     }
-    return AP_AHRS_DCM::get_relative_position_NED();
+    return false;
 }
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE

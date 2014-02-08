@@ -204,12 +204,12 @@ public:
     // return a ground velocity in meters/second, North/East/Down
     // order. This will only be accurate if have_inertial_nav() is
     // true 
-    virtual Vector3f get_velocity_NED(void) = 0;
+    virtual bool get_velocity_NED(Vector3f &vec) const { return false; }
 
     // return a position relative to home in meters, North/East/Down
     // order. This will only be accurate if have_inertial_nav() is
     // true 
-    virtual Vector3f get_relative_position_NED(void) = 0;
+    virtual bool get_relative_position_NED(Vector3f &vec) const { return false; }
 
     // return ground speed estimate in meters/second. Used by ground vehicles.
     float groundspeed(void) const {

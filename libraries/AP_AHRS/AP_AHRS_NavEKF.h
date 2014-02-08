@@ -89,8 +89,8 @@ public:
 
     bool have_inertial_nav(void) const;
 
-    Vector3f get_velocity_NED(void);
-    Vector3f get_relative_position_NED(void);
+    bool get_velocity_NED(Vector3f &vec) const;
+    bool get_relative_position_NED(Vector3f &vec) const;
 
     void set_ekf_use(bool setting) { _ekf_use.set(setting); }
 
