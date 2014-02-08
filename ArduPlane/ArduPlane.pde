@@ -1092,6 +1092,9 @@ static void update_GPS_10Hz(void)
         } else {
             ahrs.set_correct_centrifugal(true);
         }
+
+        // update wind estimate
+        ahrs.estimate_wind();
     }
 
     calc_gndspeed_undershoot();
