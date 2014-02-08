@@ -35,6 +35,9 @@ AP_AHRS_HIL::setHil(float _roll, float _pitch, float _yaw,
     yaw_sensor   = ToDeg(yaw)*100;
 
     _dcm_matrix.from_euler(roll, pitch, yaw);
+
+    // update trig values including _cos_roll, cos_pitch
+    update_trig();
 }
 
 // reset the current attitude, used by HIL
