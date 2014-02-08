@@ -151,9 +151,10 @@ void AP_TECS::update_50hz(float hgt_afe)
 	_update_50hz_last_usec = now;	
 
 	// USe inertial nav verical velocity and height if available
-	if (_ahrs.have_inertial_nav()) {
-		_integ2_state   =  -_ahrs.get_velocity_NED().z;
-		_integ3_state   = -_ahrs.get_relative_position_NED().z;
+	Vector3f posned, velned;
+	if (_ahrs.get_velocity_NED(velned) && _ahrs.get_relative_position_NED(posned)) {
+		_integ2_state   = - velned.z;
+		_integ3_state   = - posned.z;
 	} else {
 		// Get height acceleration
 		float hgt_ddot_mea = -(_ahrs.get_accel_ef().z + GRAVITY_MSS);
