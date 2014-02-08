@@ -159,8 +159,9 @@ void AP_MotorsCoax::output_armed()
     // Throttle is 0 to 1000 only
     _rc_throttle->servo_out = constrain_int16(_rc_throttle->servo_out, 0, _max_throttle);
 
-    // capture desired throttle from receiver
+    // capture desired throttle and yaw from receiver
     _rc_throttle->calc_pwm();
+    _rc_yaw->calc_pwm();
 
     // if we are not sending a throttle output, we cut the motors
     if(_rc_throttle->servo_out == 0) {
@@ -176,8 +177,8 @@ void AP_MotorsCoax::output_armed()
     }else{
 
         // motors
-        motor_out[AP_MOTORS_MOT_3] = _rev_yaw*_rc_yaw->servo_out + _rc_throttle->radio_out;
-        motor_out[AP_MOTORS_MOT_4] = -_rev_yaw*_rc_yaw->servo_out +_rc_throttle->radio_out;
+        motor_out[AP_MOTORS_MOT_3] = _rev_yaw*_rc_yaw->pwm_out + _rc_throttle->radio_out;
+        motor_out[AP_MOTORS_MOT_4] = -_rev_yaw*_rc_yaw->pwm_out +_rc_throttle->radio_out;
         // front
         _servo1->servo_out = _rev_roll*_rc_roll->servo_out;
         // right
