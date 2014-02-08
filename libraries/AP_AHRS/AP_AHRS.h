@@ -40,7 +40,13 @@ public:
     AP_AHRS(AP_InertialSensor &ins, GPS *&gps) :
         _compass(NULL),
         _ins(ins),
-        _gps(gps)
+        _gps(gps),
+        _cos_roll(1.0f),
+        _cos_pitch(1.0f),
+        _cos_yaw(1.0f),
+        _sin_roll(0.0f),
+        _sin_pitch(0.0f),
+        _sin_yaw(0.0f)
     {
         // load default values from var_info table
         AP_Param::setup_object_defaults(this, var_info);
@@ -238,6 +244,14 @@ public:
     // add_trim - adjust the roll and pitch trim up to a total of 10 degrees
     virtual void            add_trim(float roll_in_radians, float pitch_in_radians, bool save_to_eeprom = true);
 
+    // helper trig value accessors
+    float cos_roll() const  { return _cos_roll; }
+    float cos_pitch() const { return _cos_pitch; }
+    float cos_yaw() const   { return _cos_yaw; }
+    float sin_roll() const  { return _sin_roll; }
+    float sin_pitch() const { return _sin_pitch; }
+    float sin_yaw() const   { return _sin_yaw; }
+
     // for holding parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -263,6 +277,10 @@ protected:
         uint8_t correct_centrifugal     : 1;    // 1 if we should correct for centrifugal forces (allows arducopter to turn this off when motors are disarmed)
         uint8_t wind_estimation         : 1;    // 1 if we should do wind estimation
     } _flags;
+
+    // update_trig - recalculates _cos_roll, _cos_pitch, etc based on latest attitude
+    //      should be called after _dcm_matrix is updated
+    void update_trig(void);
 
     // pointer to compass object, if available
     Compass         * _compass;
@@ -293,6 +311,10 @@ protected:
 	Vector2f _lp; // ground vector low-pass filter
 	Vector2f _hp; // ground vector high-pass filter
     Vector2f _lastGndVelADS; // previous HPF input		
+
+    // helper trig variables
+    float _cos_roll, _cos_pitch, _cos_yaw;
+    float _sin_roll, _sin_pitch, _sin_yaw;
 };
 
 #include <AP_AHRS_DCM.h>
