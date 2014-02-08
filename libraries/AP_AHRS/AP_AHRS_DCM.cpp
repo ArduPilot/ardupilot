@@ -742,20 +742,16 @@ AP_AHRS_DCM::drift_correction(float deltat)
 
     // remember the velocity for next time
     _last_velocity = velocity;
-
-    if (_have_gps_lock && _flags.fly_forward) {
-        // update wind estimate
-        estimate_wind(velocity);
-    }
 }
 
 
 // update our wind speed estimate
-void AP_AHRS_DCM::estimate_wind(Vector3f &velocity)
+void AP_AHRS_DCM::estimate_wind(void)
 {
     if (!_flags.wind_estimation) {
         return;
     }
+    const Vector3f &velocity = _last_velocity;
 
     // this is based on the wind speed estimation code from MatrixPilot by
     // Bill Premerlani. Adaption for ArduPilot by Jon Challinger
