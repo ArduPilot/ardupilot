@@ -47,12 +47,6 @@ public:
     int32_t get_pitch() const { return _pos_control.get_pitch(); };
     int32_t get_yaw() const { return _yaw; };
 
-    /// set_cos_sin_yaw - short-cut to save on calculations to convert from roll-pitch frame to lat-lon frame
-    void set_cos_sin_yaw(float cos_yaw, float sin_yaw) {
-        _cos_yaw = cos_yaw;
-        _sin_yaw = sin_yaw;
-    }
-
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -86,9 +80,5 @@ private:
     float       _angular_vel;   // angular velocity in radians/sec
     float       _angular_vel_max;   // maximum velocity in radians/sec
     float       _angular_accel; // angular acceleration in radians/sec/sec
-
-    // helper variables
-    float       _cos_yaw;       // short-cut to save on calcs required to convert roll-pitch frame to lat-lon frame
-    float       _sin_yaw;       // To-Do: move these to ahrs or attitude control class to save on memory
 };
 #endif	// AC_CIRCLE_H

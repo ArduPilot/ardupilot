@@ -35,9 +35,7 @@ AC_Circle::AC_Circle(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosCont
     _ahrs(ahrs),
     _pos_control(pos_control),
     _last_update(0),
-    _angle(0),
-    _cos_yaw(1.0),
-    _sin_yaw(0.0)
+    _angle(0)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -66,8 +64,8 @@ void AC_Circle::init_center()
     _pos_control.get_stopping_point_z(stopping_point);
 
     // set circle center to circle_radius ahead of stopping point
-    _center.x = stopping_point.x + _radius * _cos_yaw;
-    _center.y = stopping_point.y + _radius * _sin_yaw;
+    _center.x = stopping_point.x + _radius * _ahrs.cos_yaw();
+    _center.y = stopping_point.y + _radius * _ahrs.sin_yaw();
     _center.z = stopping_point.z;
 
     // update pos_control target to stopping point
