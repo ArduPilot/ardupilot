@@ -86,11 +86,6 @@ AP_Motors::AP_Motors( RC_Channel* rc_roll, RC_Channel* rc_pitch, RC_Channel* rc_
 
     // slow start motors from zero to min throttle
     _flags.slow_start_low_end = true;
-
-    // clear output arrays
-    for(i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
-        motor_out[i] = 0;
-    }
 };
 
 // init
