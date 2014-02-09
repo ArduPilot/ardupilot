@@ -139,7 +139,6 @@ public:
 
     /// set_desired_alt - set desired altitude (in cm above home)
     void set_desired_alt(float desired_alt) { _pos_control.set_alt_target(desired_alt); }
-
     /// advance_wp_target_along_track - move target location along track from origin to destination
     void advance_wp_target_along_track(float dt);
 
@@ -174,7 +173,6 @@ protected:
     AP_Float    _wp_speed_down_cms;     // descent speed target in cm/s
     AP_Float    _wp_radius_cm;          // distance from a waypoint in cm that, when crossed, indicates the wp has been reached
     AP_Float    _wp_accel_cms;          // acceleration in cm/s/s during missions
-
 
     // loiter controller internal variables
     uint32_t    _loiter_last_update;    // time of last update_loiter call
