@@ -203,13 +203,13 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
 NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     _ahrs(ahrs),
     _baro(baro),
+    staticModeDemanded(true),   // staticMode demanded from outside
     useAirspeed(true),          // activates fusion of compass data
     useCompass(true),           // activates fusion of airspeed data
     covTimeStepMax(0.07f),      // maximum time (sec) between covariance prediction updates
     covDelAngMax(0.05f),        // maximum delta angle between covariance prediction updates
     TASmsecMax(200),            // maximum allowed interval between airspeed measurement updates
     fuseMeNow(false),           // forces airspeed fusion to occur on the IMU frame that data arrives
-    staticModeDemanded(true),   // staticMode demanded from outside
     staticMode(true)            // staticMode forces position and velocity fusion with zero values
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
