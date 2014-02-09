@@ -192,7 +192,7 @@ void AC_AttitudeControl::angle_to_rate_ef_yaw()
 
     // constrain rate request
     if (_flags.limit_angle_to_rate_request) {
-        _rate_ef_target.y = constrain_float(_rate_ef_target.y,-_angle_rate_y_max,_angle_rate_y_max);
+        _rate_ef_target.z = constrain_float(_rate_ef_target.z,-_angle_rate_y_max,_angle_rate_y_max);
     }
 
     // To-Do: deal with trad helicopter which do not use yaw rate controllers if using external gyros
