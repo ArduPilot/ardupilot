@@ -186,13 +186,6 @@ public:
     const Vector3f get_vel_target() { return _vel_target; }
     const Vector3f get_accel_target() { return _accel_target; }
 
-    /// set_cos_sin_yaw - short-cut to save on calculations to convert from roll-pitch frame to lat-lon frame
-    void set_cos_sin_yaw(float cos_yaw, float sin_yaw, float cos_pitch) {
-        _cos_yaw = cos_yaw;
-        _sin_yaw = sin_yaw;
-        _cos_pitch = cos_pitch;
-    }
-
     static const struct AP_Param::GroupInfo var_info[];
 
 private:

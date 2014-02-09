@@ -46,9 +46,6 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     _accel_z_cms(POSCONTROL_ACCEL_XY_MAX),   // To-Do: check this default
     _accel_cms(POSCONTROL_ACCEL_XY_MAX),   // To-Do: check this default
     _leash(POSCONTROL_LEASH_LENGTH_MIN),
-    _cos_yaw(1.0),
-    _sin_yaw(0.0),
-    _cos_pitch(1.0),
     _roll_target(0.0),
     _pitch_target(0.0),
     _vel_target_filt_z(0),
@@ -639,11 +636,11 @@ void AC_PosControl::accel_to_lean_angles()
     // To-Do: add 1hz filter to accel_lat, accel_lon
 
     // rotate accelerations into body forward-right frame
-    accel_forward = _accel_target.x*_cos_yaw + _accel_target.y*_sin_yaw;
-    accel_right = -_accel_target.x*_sin_yaw + _accel_target.y*_cos_yaw;
+    accel_forward = _accel_target.x*_ahrs.cos_yaw() + _accel_target.y*_ahrs.sin_yaw();
+    accel_right = -_accel_target.x*_ahrs.sin_yaw() + _accel_target.y*_ahrs.cos_yaw();
 
     // update angle targets that will be passed to stabilize controller
-    _roll_target = constrain_float(fast_atan(accel_right*_cos_pitch/(GRAVITY_MSS * 100))*(18000/M_PI), -lean_angle_max, lean_angle_max);
+    _roll_target = constrain_float(fast_atan(accel_right*_ahrs.cos_pitch()/(GRAVITY_MSS * 100))*(18000/M_PI), -lean_angle_max, lean_angle_max);
     _pitch_target = constrain_float(fast_atan(-accel_forward/(GRAVITY_MSS * 100))*(18000/M_PI),-lean_angle_max, lean_angle_max);
 }
 
