@@ -100,8 +100,7 @@ void AP_MotorsMatrix::output_min()
     // fill the motor_out[] array for HIL use and send minimum value to each motor
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         if( motor_enabled[i] ) {
-            motor_out[i] = _rc_throttle->radio_min;
-            hal.rcout->write(_motor_to_channel_map[i], motor_out[i]);
+            hal.rcout->write(_motor_to_channel_map[i], _rc_throttle->radio_min);
         }
     }
 }
@@ -118,6 +117,7 @@ void AP_MotorsMatrix::output_armed()
     float rpy_scale = 1.0; // this is used to scale the roll, pitch and yaw to fit within the motor limits
 
     int16_t rpy_out[AP_MOTORS_MAX_NUM_MOTORS]; // buffer so we don't have to multiply coefficients multiple times.
+    int16_t motor_out[AP_MOTORS_MAX_NUM_MOTORS];    // final outputs sent to the motors
 
     int16_t rpy_low = 0;    // lowest motor value
     int16_t rpy_high = 0;   // highest motor value
