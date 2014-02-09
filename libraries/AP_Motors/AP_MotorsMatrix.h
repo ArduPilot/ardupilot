@@ -22,9 +22,8 @@ public:
 
     /// Constructor
     AP_MotorsMatrix( RC_Channel* rc_roll, RC_Channel* rc_pitch, RC_Channel* rc_throttle, RC_Channel* rc_yaw, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
-        AP_Motors(rc_roll, rc_pitch, rc_throttle, rc_yaw, speed_hz),
-        _num_motors(0) {
-    };
+        AP_Motors(rc_roll, rc_pitch, rc_throttle, rc_yaw, speed_hz)
+    {};
 
     // init
     virtual void        Init();
@@ -67,7 +66,6 @@ protected:
     // add_motor using raw roll, pitch, throttle and yaw factors
     void                add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, uint8_t testing_order);
 
-    int8_t              _num_motors; // not a very useful variable as you really need to check the motor_enabled array to see which motors are enabled
     float               _roll_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to roll
     float               _pitch_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to pitch
     float               _yaw_factor[AP_MOTORS_MAX_NUM_MOTORS];  // each motors contribution to yaw (normally 1 or -1)

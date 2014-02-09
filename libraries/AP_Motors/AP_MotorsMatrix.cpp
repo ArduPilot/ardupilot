@@ -377,7 +377,6 @@ void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitc
         // increment number of motors if this motor is being newly motor_enabled
         if( !motor_enabled[motor_num] ) {
             motor_enabled[motor_num] = true;
-            _num_motors++;
         }
 
         // set roll, pitch, thottle factors and opposite motor (for stability patch)
@@ -411,11 +410,6 @@ void AP_MotorsMatrix::remove_motor(int8_t motor_num)
 {
     // ensure valid motor number is provided
     if( motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS ) {
-
-        // if the motor was enabled decrement the number of motors
-        if( motor_enabled[motor_num] )
-            _num_motors--;
-
         // disable the motor, set all factors to zero
         motor_enabled[motor_num] = false;
         _roll_factor[motor_num] = 0;
@@ -430,5 +424,4 @@ void AP_MotorsMatrix::remove_all_motors()
     for( int8_t i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         remove_motor(i);
     }
-    _num_motors = 0;
 }
