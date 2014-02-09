@@ -27,9 +27,13 @@ void AP_InertialNav_NavEKF::init()
 void AP_InertialNav_NavEKF::update(float dt)
 {
     AP_InertialNav::update(dt);
-    _relpos_cm = _ahrs.get_relative_position_NED() * 100; 
+    _ahrs.get_relative_position_NED(_relpos_cm);
+    _relpos_cm *= 100; // convert to cm
+
     _haveabspos = _ahrs.get_position(_abspos);
-    _velocity_cm = _ahrs.get_velocity_NED() * 100;
+
+    _ahrs.get_velocity_NED(_velocity_cm);
+    _velocity_cm *= 100; // convert to cm/s
 
     // InertialNav is NEU
     _relpos_cm.z = - _relpos_cm.z;
