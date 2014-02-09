@@ -73,11 +73,6 @@ void AP_MotorsTri::output_min()
     // set lower limit flag
     limit.throttle_lower = true;
 
-    // set all motors to minimum
-    motor_out[AP_MOTORS_MOT_1] = _rc_throttle->radio_min;
-    motor_out[AP_MOTORS_MOT_2] = _rc_throttle->radio_min;
-    motor_out[AP_MOTORS_MOT_4] = _rc_throttle->radio_min;
-
     // send minimum value to each motor
     hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_1], _rc_throttle->radio_min);
     hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_2], _rc_throttle->radio_min);
@@ -90,6 +85,7 @@ void AP_MotorsTri::output_armed()
 {
     int16_t out_min = _rc_throttle->radio_min + _min_throttle;
     int16_t out_max = _rc_throttle->radio_max;
+    int16_t motor_out[AP_MOTORS_MOT_4+1];
 
     // initialize lower limit flag
     limit.throttle_lower = false;
@@ -185,11 +181,6 @@ void AP_MotorsTri::output_armed()
 // output_disarmed - sends commands to the motors
 void AP_MotorsTri::output_disarmed()
 {
-    // fill the motor_out[] array for HIL use
-    for (unsigned char i = AP_MOTORS_MOT_1; i < AP_MOTORS_MOT_4; i++) {
-        motor_out[i] = _rc_throttle->radio_min;
-    }
-
     // Send minimum values to all motors
     output_min();
 }
