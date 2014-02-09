@@ -59,11 +59,7 @@ public:
         _motor_yaw(motor_yaw),
         _motor_throttle(motor_throttle),
         _dt(AC_ATTITUDE_100HZ_DT),
-        _angle_boost(0),
-        _cos_roll(1.0),
-        _cos_pitch(1.0),
-        _sin_roll(0.0),
-        _sin_pitch(0.0)
+        _angle_boost(0)
 		{
 			AP_Param::setup_object_defaults(this, var_info);
 
@@ -191,15 +187,6 @@ public:
     // helper functions
     //
 
-    /// set_cos_sin_yaw - short-cut to save on calculations to convert from roll-pitch frame to lat-lon frame
-    /// To-Do: make these references or calculate in ahrs
-    void set_cos_sin_yaw(float cos_roll, float cos_pitch, float sin_roll, float sin_pitch) {
-        _cos_roll = cos_roll;
-        _cos_pitch = cos_pitch;
-        _sin_roll = sin_roll;
-        _sin_pitch = sin_pitch;
-    }
-
     // lean_angle_max - maximum lean angle of the copter in centi-degrees
     int16_t lean_angle_max() { return _aparm.angle_max; }
 
@@ -278,13 +265,6 @@ protected:
     Vector3f            _rate_stab_bf_error;    // stabilized rate controller body-frame angle errors
     Vector3f            _rate_bf_target;        // rate controller body-frame targets
     int16_t             _angle_boost;           // used only for logging
-
-    // precalculated values for efficiency saves
-    // To-Do: could these be changed to references and passed into the constructor?
-    float _cos_roll;
-    float _cos_pitch;
-    float _sin_roll;
-    float _sin_pitch;
 };
 
 #define AC_ATTITUDE_CONTROL_LOG_FORMAT(msg) { msg, sizeof(AC_AttitudeControl::log_Attitude),	\

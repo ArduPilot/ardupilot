@@ -352,9 +352,9 @@ void AC_AttitudeControl::rate_stab_bf_to_rate_bf_yaw()
 void AC_AttitudeControl::rate_ef_targets_to_bf(const Vector3f& rate_ef_target, Vector3f& rate_bf_target)
 {
     // convert earth frame rates to body frame rates
-    rate_bf_target.x = rate_ef_target.x - _sin_pitch * rate_ef_target.z;
-    rate_bf_target.y = _cos_roll  * rate_ef_target.y + _sin_roll * _cos_pitch * rate_ef_target.z;
-    rate_bf_target.z = _cos_pitch * _cos_roll * rate_ef_target.z - _sin_roll * rate_ef_target.y;
+    rate_bf_target.x = rate_ef_target.x - _ahrs.sin_pitch() * rate_ef_target.z;
+    rate_bf_target.y = _ahrs.cos_roll()  * rate_ef_target.y + _ahrs.sin_roll() * _ahrs.cos_pitch() * rate_ef_target.z;
+    rate_bf_target.z = _ahrs.cos_pitch() * _ahrs.cos_roll() * rate_ef_target.z - _ahrs.sin_roll() * rate_ef_target.y;
 }
 
 //
@@ -505,7 +505,7 @@ void AC_AttitudeControl::set_throttle_out(int16_t throttle_out, bool apply_angle
 // throttle value should be 0 ~ 1000
 int16_t AC_AttitudeControl::get_angle_boost(int16_t throttle_pwm)
 {
-    float temp = _cos_pitch * _cos_roll;
+    float temp = _ahrs.cos_pitch() * _ahrs.cos_roll();
     int16_t throttle_out;
 
     temp = constrain_float(temp, 0.5f, 1.0f);
