@@ -29,7 +29,7 @@ public:
     bool            take_reading();
 
     // read value from sensor and return distance in cm
-    int             read();
+    int16_t         read();
 
     // heath
     bool            healthy;

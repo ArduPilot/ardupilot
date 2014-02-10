@@ -66,7 +66,7 @@ bool AP_RangeFinder_MaxsonarI2CXL::take_reading()
 }
 
 // read - return last value measured by sensor
-int AP_RangeFinder_MaxsonarI2CXL::read()
+int16_t AP_RangeFinder_MaxsonarI2CXL::read()
 {
     uint8_t buff[2];
     int16_t ret_value = 0;
