@@ -73,10 +73,13 @@ public:
 
     // set_dt - sets time delta in seconds for all controllers (i.e. 100hz = 0.01, 400hz = 0.0025)
     void set_dt(float delta_sec) { _dt = delta_sec; }
-    float get_dt() { return _dt; }
 
     // init_targets - resets target angles to current angles
     void init_targets();
+
+    //
+    // methods to be called by upper controllers to request and implement a desired attitude
+    //
 
     // angleef_rp_rateef_y - attempts to maintain a roll and pitch angle and yaw rate (all earth frame)
     void angleef_rp_rateef_y(float roll_angle_ef, float pitch_angle_ef, float yaw_rate_ef);
@@ -91,86 +94,35 @@ public:
     // ratebf_rpy - attempts to maintain a roll, pitch and yaw rate (all body frame)
     void ratebf_rpy(float roll_rate_bf, float pitch_rate_bf, float yaw_rate_bf);
 
-    // limit_angle_to_rate_request
-    void limit_angle_to_rate_request(bool limit_request) { _flags.limit_angle_to_rate_request = limit_request; }
+    //
+    // rate_controller_run - run lowest level body-frame rate controller and send outputs to the motors
+    //      should be called at 100hz or more
+    //
+    virtual void rate_controller_run();
 
     //
-    // angle controller (earth-frame) methods
+    // earth-frame <-> body-frame conversion functions
     //
-
-    // angle_ef_targets - get and set angle controller earth-frame-targets
-    Vector3f angle_ef_targets() const { return _angle_ef_target; }
-    void angle_ef_targets(Vector3f& angle_cd) { _angle_ef_target = angle_cd; }
-
-    // angle_to_rate_ef_roll - converts earth-frame angle targets to earth-frame rate targets for roll, pitch and yaw axis
-    //   targets angles in centi-degrees should be placed in _angle_ef_targets
-    //   results in centi-degrees/sec put directly into _rate_ef_target
-    void angle_to_rate_ef_roll();
-    void angle_to_rate_ef_pitch();
-    void angle_to_rate_ef_yaw();
-
-    //
-    // stabilized rate controller (earth-frame) methods
-    //
-
-    // rate_stab_ef_targets - gets and sets the stabilized rate controller earth-frame targets
-    // stabilized rate controllers are better at maintaining a desired rate than the simpler earth-frame rate controllers
-    // because they also maintain angle-targets and increase/decrease the rate request passed to the earth-frame rate controller
-    // upon the errors between the actual angle and angle-target.
-    // 
-    Vector3f rate_stab_ef_targets() const { return _rate_stab_ef_target; }
-    void rate_stab_ef_targets(Vector3f& rates_cds) { _rate_stab_ef_target = rates_cds; }
-
-    // rate_stab_ef_to_rate_ef_roll - converts earth-frame stabilized rate targets to regular earth-frame rate targets for roll, pitch and yaw axis
-    //   targets rates in centi-degrees/second taken from _rate_stab_ef_target
-    //   results in centi-degrees/sec put into _rate_ef_target
-    void rate_stab_ef_to_rate_ef_roll();
-    void rate_stab_ef_to_rate_ef_pitch();
-    void rate_stab_ef_to_rate_ef_yaw();
-
-    //
-    // stabilized rate controller (body-frame) methods
-    //
-
-    // rate_stab_bf_targets - gets and sets the stabilized rate controller body-frame targets
-    Vector3f rate_stab_bf_targets() const { return _rate_stab_bf_target; }
-    void rate_stab_bf_targets(Vector3f& rates_cds) { _rate_stab_bf_target = rates_cds; }
-
-    // rate_stab_bf_to_rate_ef_roll - converts body-frame stabilized rate targets to regular body-frame rate targets for roll, pitch and yaw axis
-    //   targets rates in centi-degrees/second taken from _rate_stab_bf_target
-    //   results in centi-degrees/sec put into _rate_bf_target
-    void rate_stab_bf_update_error();
-    void rate_stab_bf_to_rate_bf_roll();
-    void rate_stab_bf_to_rate_bf_pitch();
-    void rate_stab_bf_to_rate_bf_yaw();
-
-    //
-    // rate controller (earth-frame) methods
-    //
-
-    // rate_ef_targets - gets and sets rate controller earth-frame-targets
-    Vector3f rate_ef_targets() const { return _rate_ef_target; }
-    void rate_ef_targets(Vector3f& rates_cds) { _rate_ef_target = rates_cds; }
-
     // rate_ef_targets_to_bf - converts earth frame rate targets to body frame rate targets
     void rate_ef_targets_to_bf(const Vector3f& rate_ef_target, Vector3f &rate_bf_target);
 
-    
+    // rate_bf_targets_to_ef - converts body frame rate targets to earth frame rate targets
+    void rate_bf_targets_to_ef(const Vector3f& rate_ef_target, Vector3f &rate_bf_target);
+
     //
-    // rate controller (body-frame) methods
+    // public accessor functions
     //
 
-    // rate_bf_targets - gets and sets rate controller body-frame targets
-    // To-Do: can we return these Vector3fs by reference?  i.e. using "&"?
-    Vector3f rate_bf_targets() const { return _rate_bf_target; }
-    void rate_bf_targets(Vector3f& rates_cds) { _rate_bf_target = rates_cds; }
+    // limit_angle_to_rate_request
+    void limit_angle_to_rate_request(bool limit_request) { _flags.limit_angle_to_rate_request = limit_request; }
+
+    // angle_ef_targets - returns angle controller earth-frame targets (for reporting)
+    Vector3f angle_ef_targets() const { return _angle_ef_target; }
+
+    // rate_bf_targets - gets rate controller body-frame targets
     void rate_bf_roll_target(float rate_cds) { _rate_bf_target.x = rate_cds; }
     void rate_bf_pitch_target(float rate_cds) { _rate_bf_target.y = rate_cds; }
     void rate_bf_yaw_target(float rate_cds) { _rate_bf_target.z = rate_cds; }
-
-	// rate_controller_run - run lowest level body-frame rate controller and send outputs to the motors
-	// should be called at 100hz or more
-	virtual void rate_controller_run();
 
     //
     // throttle functions
@@ -199,6 +151,16 @@ protected:
     struct AttControlFlags {
         uint8_t limit_angle_to_rate_request :   1;  // 1 if the earth frame angle controller is limiting it's maximum rate request
     } _flags;
+
+    // update_stab_rate_bf_errors - calculates body frame angle errors
+    //   body-frame feed forward rates (centi-degrees / second) taken from _angle_bf_error
+    //   angle errors in centi-degrees placed in _angle_bf_error
+    void update_stab_rate_bf_errors();
+
+    // update_stab_rate_bf_targets - converts body-frame angle error to body-frame rate targets for roll, pitch and yaw axis
+    //   targets rates in centi-degrees taken from _angle_bf_error
+    //   results in centi-degrees/sec put into _rate_bf_target
+    void update_stab_rate_bf_targets();
 
     //
     // body-frame rate controller
@@ -259,11 +221,9 @@ protected:
     // To-Do: make rate targets a typedef instead of Vector3f?
     float               _dt;                    // time delta in seconds
     Vector3f            _angle_ef_target;       // angle controller earth-frame targets
-    Vector3f            _rate_stab_ef_target;   // stabilized rate controller earth-frame rate targets
-    Vector3f            _rate_ef_target;        // rate controller earth-frame targets
-    Vector3f            _rate_stab_bf_target;   // stabilized rate controller body-frame rate targets
-    Vector3f            _rate_stab_bf_error;    // stabilized rate controller body-frame angle errors
+    Vector3f            _angle_bf_error;        // angle controller earth-frame targets
     Vector3f            _rate_bf_target;        // rate controller body-frame targets
+    Vector3f            _rate_bf_feedforward;   // rate controller body-frame targets
     int16_t             _angle_boost;           // used only for logging
 };
 
