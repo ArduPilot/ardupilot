@@ -20,16 +20,16 @@ public:
     AP_Curve();
 
     // clear - removes all points from the curve
-    virtual void clear();
+    void clear();
 
     // add_point - adds a point to the curve.  returns TRUE if successfully added
-    virtual bool add_point( T x, T y );
+    bool add_point( T x, T y );
 
     // get_y - returns the point on the curve at the given pwm_value (i.e. the new modified pwm_value)
-    virtual T get_y( T x );
+    T get_y( T x );
 
     // displays the contents of the curve (for debugging)
-    virtual void dump_curve(AP_HAL::BetterStream*);
+    void dump_curve(AP_HAL::BetterStream*);
 
 protected:
     uint8_t     _num_points;						// number of points in the cruve
