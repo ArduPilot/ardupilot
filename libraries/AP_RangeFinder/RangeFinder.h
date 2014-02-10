@@ -26,33 +26,28 @@ protected:
         _mode_filter(filter) {
     }
 public:
-    // raw_value: read the sensor
-    int  raw_value;
     // distance: in cm
-    int  distance;
+    int16_t  distance;
     // maximum measurable distance: in cm
-    int  max_distance;
+    int16_t  max_distance;
     // minimum measurable distance: in cm
-    int  min_distance;
-
-    int  orientation_x, orientation_y, orientation_z;
-    void set_orientation(int x, int y, int z);
+    int16_t  min_distance;
 
     /**
      * convert_raw_to_distance:
      * function that each child class should override to convert voltage
      * to distance (in cm)
      */
-    virtual int convert_raw_to_distance(int _raw_value) {
-        return _raw_value;
+    virtual int16_t convert_raw_to_distance(int16_t raw_value) {
+        return raw_value;
     }
     /**
      * read:
      * read value from sensor and return distance in cm
      */
-    virtual int read();
+    virtual int16_t read();
 
-    AP_HAL::AnalogSource*       _analog_source;
+    AP_HAL::AnalogSource*   _analog_source;
     FilterInt16 *           _mode_filter;
 };
 #endif // __RANGEFINDER_H__

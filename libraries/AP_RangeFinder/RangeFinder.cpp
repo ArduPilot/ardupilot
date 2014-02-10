@@ -25,21 +25,13 @@
 
 // Public Methods //////////////////////////////////////////////////////////////
 
-void RangeFinder::set_orientation(int x, int y, int z)
+// Read Sensor data - post of the ahrd work is done by the child class's convert_raw_to_distance
+int16_t RangeFinder::read()
 {
-    orientation_x = x;
-    orientation_y = y;
-    orientation_z = z;
-}
+    int16_t temp_dist;
 
-// Read Sensor data - only the raw_value is filled in by this parent class
-int RangeFinder::read()
-{
-    int temp_dist;
-
-    raw_value = _analog_source->read_average();
     // convert analog value to distance in cm (using child implementation most likely)
-    temp_dist = convert_raw_to_distance(raw_value);
+    temp_dist = convert_raw_to_distance(_analog_source->read_average());
 
     // ensure distance is within min and max
     temp_dist = constrain_float(temp_dist, min_distance, max_distance);
