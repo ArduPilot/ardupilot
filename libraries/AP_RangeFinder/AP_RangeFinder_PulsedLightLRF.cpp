@@ -80,7 +80,7 @@ bool AP_RangeFinder_PulsedLightLRF::take_reading()
 }
 
 // read - return last value measured by sensor
-int AP_RangeFinder_PulsedLightLRF::read()
+int16_t AP_RangeFinder_PulsedLightLRF::read()
 {
     uint8_t buff[2];
     int16_t ret_value = 0;
