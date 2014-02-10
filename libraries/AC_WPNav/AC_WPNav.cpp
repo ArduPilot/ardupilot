@@ -68,11 +68,10 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
 // Note that the Vector/Matrix constructors already implicitly zero
 // their values.
 //
-AC_WPNav::AC_WPNav(const AP_InertialNav* inav, const AP_AHRS* ahrs, AC_PosControl& pos_control, APM_PI* pid_pos_lat) :
+AC_WPNav::AC_WPNav(const AP_InertialNav* inav, const AP_AHRS* ahrs, AC_PosControl& pos_control) :
     _inav(inav),
     _ahrs(ahrs),
     _pos_control(pos_control),
-    _pid_pos_lat(pid_pos_lat),
     _loiter_last_update(0),
     _loiter_step(0),
     _pilot_accel_fwd_cms(0),
@@ -348,7 +347,7 @@ void AC_WPNav::advance_wp_target_along_track(float dt)
 
     // calculate point at which velocity switches from linear to sqrt
     float linear_velocity = _wp_speed_cms;
-    float kP = _pid_pos_lat->kP();
+    float kP = _pos_control.get_pos_xy_kP();
     if (kP >= 0.0f) {   // avoid divide by zero
         linear_velocity = _track_accel/kP;
     }

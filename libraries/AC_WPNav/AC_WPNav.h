@@ -40,7 +40,7 @@ class AC_WPNav
 public:
 
     /// Constructor
-    AC_WPNav(const AP_InertialNav* inav, const AP_AHRS* ahrs, AC_PosControl& pos_control, APM_PI* pid_pos_lat);
+    AC_WPNav(const AP_InertialNav* inav, const AP_AHRS* ahrs, AC_PosControl& pos_control);
 
     ///
     /// loiter controller
@@ -162,9 +162,6 @@ protected:
     const AP_InertialNav* const _inav;
     const AP_AHRS*        const _ahrs;
     AC_PosControl&              _pos_control;
-
-    // pointers to pid controllers
-    APM_PI*		const _pid_pos_lat;
 
     // parameters
     AP_Float    _loiter_speed_cms;      // maximum horizontal speed in cm/s while in loiter
