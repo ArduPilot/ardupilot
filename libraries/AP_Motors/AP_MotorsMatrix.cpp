@@ -49,7 +49,7 @@ void AP_MotorsMatrix::set_update_rate( uint16_t speed_hz )
     uint32_t mask = 0;
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         if( motor_enabled[i] ) {
-		mask |= 1U << _motor_to_channel_map[i];
+		mask |= 1U << pgm_read_byte(&_motor_to_channel_map[i]);
         }
     }
     hal.rcout->set_freq( mask, _speed_hz );
@@ -81,7 +81,7 @@ void AP_MotorsMatrix::enable()
     // enable output channels
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         if( motor_enabled[i] ) {
-            hal.rcout->enable_ch(_motor_to_channel_map[i]);
+            hal.rcout->enable_ch(pgm_read_byte(&_motor_to_channel_map[i]));
         }
     }
 }
@@ -100,7 +100,7 @@ void AP_MotorsMatrix::output_min()
     // fill the motor_out[] array for HIL use and send minimum value to each motor
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         if( motor_enabled[i] ) {
-            hal.rcout->write(_motor_to_channel_map[i], _rc_throttle.radio_min);
+            hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[i]), _rc_throttle.radio_min);
         }
     }
 }
@@ -317,7 +317,7 @@ void AP_MotorsMatrix::output_armed()
     // send output to each motor
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         if( motor_enabled[i] ) {
-            hal.rcout->write(_motor_to_channel_map[i], motor_out[i]);
+            hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[i]), motor_out[i]);
         }
     }
 }
@@ -356,9 +356,9 @@ void AP_MotorsMatrix::output_test()
         for( j=0; j<AP_MOTORS_MAX_NUM_MOTORS; j++ ) {
             if( motor_enabled[j] && _test_order[j] == i ) {
                 // turn on this motor and wait 1/3rd of a second
-                hal.rcout->write(_motor_to_channel_map[j], _rc_throttle.radio_min + _min_throttle);
+                hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[j]), _rc_throttle.radio_min + _min_throttle);
                 hal.scheduler->delay(300);
-                hal.rcout->write(_motor_to_channel_map[j], _rc_throttle.radio_min);
+                hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[j]), _rc_throttle.radio_min);
                 hal.scheduler->delay(2000);
             }
         }
