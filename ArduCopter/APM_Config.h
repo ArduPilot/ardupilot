@@ -5,6 +5,8 @@
 // If you used to define your CONFIG_APM_HARDWARE setting here, it is no longer
 // valid! You should switch to using a HAL_BOARD flag in your local config.mk.
 
+#include "defines.h"
+
 //#define FRAME_CONFIG QUAD_FRAME
 /*  options:
  *  QUAD_FRAME
@@ -32,6 +34,7 @@
 
 // features below are disabled by default
 //#define SPRAYER               ENABLED             // enable the crop sprayer feature (two ESC controlled pumps the speed of which depends upon the vehicle's horizontal velocity)
+//#define LAND_SWITCH           ENABLED             // enable land detection (default is two active-high switches connected to AN0 and AN1, see config.h)
 //#define EPM_ENABLED           ENABLED             // enable epm cargo gripper costs 500bytes of flash
 
 // other settings

@@ -32,6 +32,28 @@ static int32_t read_barometer(void)
     return barometer.get_altitude() * 100.0f;
 }
 
+static void init_land_switch(void)
+{
+#if LAND_SWITCH == ENABLED
+    pinMode(LAND_SWITCH_PIN0, INPUT);
+    pinMode(LAND_SWITCH_PIN1, INPUT);
+#endif
+}
+
+static bool land_switch_is_active(void)
+{
+#if LAND_SWITCH == ENABLED
+    if (digitalRead(LAND_SWITCH_PIN0) == LAND_SWITCH_ACTIVE_STATE ||
+        digitalRead(LAND_SWITCH_PIN1) == LAND_SWITCH_ACTIVE_STATE) {
+        return true;
+    } else {
+        return false;
+    }
+#else
+    return false;
+#endif
+}
+
 // return sonar altitude in centimeters
 static int16_t read_sonar(void)
 {

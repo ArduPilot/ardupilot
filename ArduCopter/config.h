@@ -193,6 +193,22 @@
  # define CONFIG_BARO AP_BARO_BMP085
 #endif
 
+////////////////////////////////////////////////////////////////////////////////
+// Land Switch
+#ifdef LAND_SWITCH
+ #ifndef LAND_SWITCH_PIN0
+  #define LAND_SWITCH_PIN0          AN0
+ #endif
+ #ifndef LAND_SWITCH_PIN1
+  #define LAND_SWITCH_PIN1          AN1
+ #endif
+ #ifndef LAND_SWITCH_ACTIVE_STATE
+  #define LAND_SWITCH_ACTIVE_STATE  HIGH
+ #endif
+#else
+ #define LAND_SWITCH                DISABLED
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // Sonar
 //
