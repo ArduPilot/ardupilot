@@ -34,17 +34,17 @@ public:
     FilterWithBuffer();
 
     // apply - Add a new raw value to the filter, retrieve the filtered result
-    T apply(T sample);
+    virtual T apply(T sample);
 
     // reset - clear the filter
-    void reset();
+    virtual void reset();
 
     // get filter size
     uint8_t get_filter_size() const {
         return FILTER_SIZE;
     };
 
-    virtual T get_sample(uint8_t i) const {
+    T get_sample(uint8_t i) const {
         return samples[i];
     }
 
