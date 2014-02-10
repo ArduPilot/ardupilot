@@ -16,7 +16,7 @@ static bool heli_acro_init(bool ignore_checks)
 // should be called at 100hz or more
 static void heli_acro_run()
 {
-    int16_t target_roll, target_pitch, target_yaw;
+    float target_roll, target_pitch, target_yaw;
     int16_t pilot_throttle_scaled;
 
     // if not armed or main rotor not up to full speed clear stabilized rate errors
