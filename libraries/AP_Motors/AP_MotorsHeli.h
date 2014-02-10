@@ -87,16 +87,16 @@ class AP_MotorsHeli : public AP_Motors {
 public:
 
     /// Constructor
-    AP_MotorsHeli( RC_Channel*      rc_roll,
-                   RC_Channel*      rc_pitch,
-                   RC_Channel*      rc_throttle,
-                   RC_Channel*      rc_yaw,
-                   RC_Channel*      servo_aux,
-                   RC_Channel*      servo_rotor,
-                   RC_Channel*      swash_servo_1,
-                   RC_Channel*      swash_servo_2,
-                   RC_Channel*      swash_servo_3,
-                   RC_Channel*      yaw_servo,
+    AP_MotorsHeli( RC_Channel&      rc_roll,
+                   RC_Channel&      rc_pitch,
+                   RC_Channel&      rc_throttle,
+                   RC_Channel&      rc_yaw,
+                   RC_Channel&      servo_aux,
+                   RC_Channel&      servo_rotor,
+                   RC_Channel&      swash_servo_1,
+                   RC_Channel&      swash_servo_2,
+                   RC_Channel&      swash_servo_3,
+                   RC_Channel&      yaw_servo,
                    uint16_t         speed_hz = AP_MOTORS_HELI_SPEED_DEFAULT) :
         AP_Motors(rc_roll, rc_pitch, rc_throttle, rc_yaw, speed_hz),
         _servo_aux(servo_aux),
@@ -228,12 +228,12 @@ private:
     void write_aux(int16_t servo_out);
 
     // external objects we depend upon
-    RC_Channel      *_servo_aux;                // output to ext gyro gain and tail direct drive esc (ch7)
-    RC_Channel      *_servo_rsc;                // output to main rotor esc (ch8)
-    RC_Channel      *_servo_1;                  // swash plate servo #1
-    RC_Channel      *_servo_2;                  // swash plate servo #2
-    RC_Channel      *_servo_3;                  // swash plate servo #3
-    RC_Channel      *_servo_4;                  // tail servo
+    RC_Channel&     _servo_aux;                 // output to ext gyro gain and tail direct drive esc (ch7)
+    RC_Channel&     _servo_rsc;                 // output to main rotor esc (ch8)
+    RC_Channel&     _servo_1;                   // swash plate servo #1
+    RC_Channel&     _servo_2;                   // swash plate servo #2
+    RC_Channel&     _servo_3;                   // swash plate servo #3
+    RC_Channel&     _servo_4;                   // tail servo
 
     // flags bitmask
     struct heliflags_type {
