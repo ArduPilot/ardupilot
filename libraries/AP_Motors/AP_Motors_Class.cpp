@@ -62,7 +62,7 @@ const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
 };
 
 // Constructor
-AP_Motors::AP_Motors( RC_Channel* rc_roll, RC_Channel* rc_pitch, RC_Channel* rc_throttle, RC_Channel* rc_yaw, uint16_t speed_hz ) :
+AP_Motors::AP_Motors( RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_throttle, RC_Channel& rc_yaw, uint16_t speed_hz ) :
     _rc_roll(rc_roll),
     _rc_pitch(rc_pitch),
     _rc_throttle(rc_throttle),
@@ -107,14 +107,14 @@ void AP_Motors::armed(bool arm)
 // set_min_throttle - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)
 void AP_Motors::set_min_throttle(uint16_t min_throttle)
 {
-    _min_throttle = (float)min_throttle * (_rc_throttle->radio_max - _rc_throttle->radio_min) / 1000.0f;
+    _min_throttle = (float)min_throttle * (_rc_throttle.radio_max - _rc_throttle.radio_min) / 1000.0f;
 }
 
 // set_mid_throttle - sets the mid throttle which is close to the hover throttle of the copter
 // this is used to limit the amount that the stability patch will increase the throttle to give more room for roll, pitch and yaw control
 void AP_Motors::set_mid_throttle(uint16_t mid_throttle)
 {
-    _hover_out = _rc_throttle->radio_min + (float)(_rc_throttle->radio_max - _rc_throttle->radio_min) * mid_throttle / 1000.0f;
+    _hover_out = _rc_throttle.radio_min + (float)(_rc_throttle.radio_max - _rc_throttle.radio_min) * mid_throttle / 1000.0f;
 }
 
 // throttle_pass_through - passes pilot's throttle input directly to all motors - dangerous but used for initialising ESCs
@@ -124,7 +124,7 @@ void AP_Motors::throttle_pass_through()
         // send the pilot's input directly to each enabled motor
         for (int16_t i=0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {
-                hal.rcout->write(_motor_to_channel_map[i], _rc_throttle->radio_in);
+                hal.rcout->write(_motor_to_channel_map[i], _rc_throttle.radio_in);
             }
         }
     }
@@ -148,8 +148,8 @@ void AP_Motors::output()
 // returns true if set up successfully
 bool AP_Motors::setup_throttle_curve()
 {
-    int16_t min_pwm = _rc_throttle->radio_min;
-    int16_t max_pwm = _rc_throttle->radio_max;
+    int16_t min_pwm = _rc_throttle.radio_min;
+    int16_t max_pwm = _rc_throttle.radio_max;
 	int16_t mid_throttle_pwm = (max_pwm + min_pwm) / 2;
     int16_t mid_thrust_pwm = min_pwm + (float)(max_pwm - min_pwm) * ((float)_throttle_curve_mid/100.0f);
     int16_t max_thrust_pwm = min_pwm + (float)(max_pwm - min_pwm) * ((float)_throttle_curve_max/100.0f);
@@ -189,7 +189,7 @@ void AP_Motors::slow_start(bool true_false)
     _flags.slow_start = true;
 
     // initialise maximum throttle to current throttle
-    _max_throttle = constrain_int16(_rc_throttle->servo_out, 0, AP_MOTORS_DEFAULT_MAX_THROTTLE);
+    _max_throttle = constrain_int16(_rc_throttle.servo_out, 0, AP_MOTORS_DEFAULT_MAX_THROTTLE);
 }
 
 // update_max_throttle - updates the limits on _max_throttle if necessary taking into account slow_start_throttle flag
@@ -213,7 +213,7 @@ void AP_Motors::update_max_throttle()
     _max_throttle += AP_MOTOR_SLOW_START_INCREMENT;
 
     // turn off slow start if we've reached max throttle
-    if (_max_throttle >= _rc_throttle->servo_out) {
+    if (_max_throttle >= _rc_throttle.servo_out) {
         _max_throttle = AP_MOTORS_DEFAULT_MAX_THROTTLE;
         _flags.slow_start = false;
     }
