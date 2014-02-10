@@ -413,7 +413,7 @@ static union {
         uint8_t usb_connected       : 1; // 13      // true if APM is powered from USB connection
         uint8_t rc_receiver_present : 1; // 14  // true if we have an rc receiver present (i.e. if we've ever received an update
     };
-    uint32_t value;
+    uint16_t value;
 } ap;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -495,10 +495,6 @@ float tuning_value;
 ////////////////////////////////////////////////////////////////////////////////
 // GPS variables
 ////////////////////////////////////////////////////////////////////////////////
-// This is used to scale GPS values for EEPROM storage
-// 10^7 times Decimal GPS means 1 == 1cm
-// This approximation makes calculations integer and it's easy to read
-static const float t7 = 10000000.0;
 // We use atan2 and other trig techniques to calaculate angles
 // We need to scale the longitude up to make these calcs work
 // to account for decreasing distance between lines of longitude away from the equator
