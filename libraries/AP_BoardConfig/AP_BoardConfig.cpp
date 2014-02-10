@@ -31,8 +31,12 @@
 
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
 #define BOARD_PWM_COUNT_DEFAULT 2
+#define BOARD_SER1_RTSCTS_DEFAULT 0
+#define BOARD_SER2_RTSCTS_DEFAULT 0
 #else
 #define BOARD_PWM_COUNT_DEFAULT 4
+#define BOARD_SER1_RTSCTS_DEFAULT 1
+#define BOARD_SER2_RTSCTS_DEFAULT 1
 #endif
 #endif
 
@@ -46,11 +50,22 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] PROGMEM = {
     // @Description: Number of auxillary PWMs to enable. On PX4v1 only 0 or 2 is valid. On Pixhawk 0, 2, 4 or 6 is valid.
     // @Values: 0:No PWMs,2:Two PWMs,4:Four PWMs,6:Six PWMs
     AP_GROUPINFO("PWM_COUNT",    0, AP_BoardConfig, _pwm_count, BOARD_PWM_COUNT_DEFAULT),
+
+    // @Param: SER1_RTSCTS
+    // @DisplayName: Serial 1 flow control
+    // @Description: Enable flow control on serial 1 (telemetry 1) on Pixhawk. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected.
+    // @Values: 0:Disabled,1:Enabled
+    AP_GROUPINFO("SER1_RTSCTS",    1, AP_BoardConfig, _ser1_rtscts, BOARD_SER1_RTSCTS_DEFAULT),
+
+    // @Param: SER2_RTSCTS
+    // @DisplayName: Serial 2 flow control
+    // @Description: Enable flow control on serial 2 (telemetry 2) on Pixhawk. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected.
+    // @Values: 0:Disabled,1:Enabled
+    AP_GROUPINFO("SER2_RTSCTS",    2, AP_BoardConfig, _ser2_rtscts, BOARD_SER1_RTSCTS_DEFAULT),
 #endif
 
     AP_GROUPEND
 };
-
 
 void AP_BoardConfig::init()
 {
@@ -72,5 +87,10 @@ void AP_BoardConfig::init()
         hal.console->printf("RCOutput: Unable to setup alt PWM to %u channels\n", _pwm_count.get());  
     }   
     close(fd);
+
+    hal.uartC->enable_flow_control(_ser1_rtscts?true:false);
+    if (hal.uartD != NULL) {
+        hal.uartD->enable_flow_control(_ser2_rtscts?true:false);
+    }
 #endif    
 }

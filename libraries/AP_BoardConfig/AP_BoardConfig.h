@@ -21,7 +21,11 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     AP_Int8 _pwm_count;
+    AP_Int8 _ser1_rtscts;
+    AP_Int8 _ser2_rtscts;
+#endif
 };
 
 #endif // __AP_BOARDCONFIG_H__
