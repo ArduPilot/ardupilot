@@ -29,7 +29,6 @@ extern const AP_HAL::HAL& hal;
 AP_OpticalFlow_ADNS3080::AP_OpticalFlow_ADNS3080()
 {
     field_of_view = AP_OPTICALFLOW_ADNS3080_08_FOV;
-    scaler = AP_OPTICALFLOW_ADNS3080_SCALER_1600;
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
@@ -176,6 +175,7 @@ void AP_OpticalFlow_ADNS3080::write_register(uint8_t address, uint8_t value)
 void AP_OpticalFlow_ADNS3080::update(void)
 {
     uint8_t motion_reg;
+    int16_t  raw_dx, raw_dy;    // raw sensor change in x and y position (i.e. unrotated)
     surface_quality = read_register(ADNS3080_SQUAL);
     hal.scheduler->delay_microseconds(50);
 
@@ -267,9 +267,9 @@ void AP_OpticalFlow_ADNS3080::update_conversion_factors()
 {
     // multiply this number by altitude and pixel change to get horizontal
     // move (in same units as altitude)
-    conv_factor = ((1.0f / (float)(ADNS3080_PIXELS_X * scaler))
+    conv_factor = ((1.0f / (float)(ADNS3080_PIXELS_X * AP_OPTICALFLOW_ADNS3080_SCALER_1600))
                    * 2.0f * tanf(field_of_view / 2.0f));
     // 0.00615
-    radians_to_pixels = (ADNS3080_PIXELS_X * scaler) / field_of_view;
+    radians_to_pixels = (ADNS3080_PIXELS_X * AP_OPTICALFLOW_ADNS3080_SCALER_1600) / field_of_view;
     // 162.99
 }

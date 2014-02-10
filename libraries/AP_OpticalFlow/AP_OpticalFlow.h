@@ -57,17 +57,12 @@ public:
     void    update_position(float roll, float pitch, float sin_yaw, float cos_yaw, float altitude);
 
     // public variables
-    int16_t  raw_dx;            // raw sensor change in x and y position (i.e. unrotated)
-    int16_t  raw_dy;            // raw sensor change in x and y position (i.e. unrotated)
     uint8_t  surface_quality;   // image quality (below 15 you can't trust the dx,dy values returned)
     int16_t  dx,dy;             // rotated change in x and y position
     uint32_t last_update;       // millis() time of last update
     float    field_of_view;     // field of view in Radians
-    float    scaler;            // number returned from sensor when moved one pixel
 
     // public variables for reporting purposes
-    float    exp_change_x, exp_change_y;    // expected change in x, y coordinates
-    float    change_x, change_y;            // actual change in x, y coordinates
     float    x_cm, y_cm;                    // x,y position in cm
 
 protected:
