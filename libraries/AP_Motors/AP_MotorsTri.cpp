@@ -51,9 +51,9 @@ void AP_MotorsTri::set_update_rate( uint16_t speed_hz )
 
     // set update rate for the 3 motors (but not the servo on channel 7)
     uint32_t mask = 
-	    1U << _motor_to_channel_map[AP_MOTORS_MOT_1] |
-	    1U << _motor_to_channel_map[AP_MOTORS_MOT_2] |
-	    1U << _motor_to_channel_map[AP_MOTORS_MOT_4];
+	    1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]) |
+	    1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]) |
+	    1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]);
     hal.rcout->set_freq(mask, _speed_hz);
 }
 
@@ -61,9 +61,9 @@ void AP_MotorsTri::set_update_rate( uint16_t speed_hz )
 void AP_MotorsTri::enable()
 {
     // enable output channels
-    hal.rcout->enable_ch(_motor_to_channel_map[AP_MOTORS_MOT_1]);
-    hal.rcout->enable_ch(_motor_to_channel_map[AP_MOTORS_MOT_2]);
-    hal.rcout->enable_ch(_motor_to_channel_map[AP_MOTORS_MOT_4]);
+    hal.rcout->enable_ch(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]));
+    hal.rcout->enable_ch(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]));
+    hal.rcout->enable_ch(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]));
     hal.rcout->enable_ch(AP_MOTORS_CH_TRI_YAW);
 }
 
@@ -74,10 +74,10 @@ void AP_MotorsTri::output_min()
     limit.throttle_lower = true;
 
     // send minimum value to each motor
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_1], _rc_throttle.radio_min);
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_2], _rc_throttle.radio_min);
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_4], _rc_throttle.radio_min);
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_CH_TRI_YAW], _rc_yaw.radio_trim);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _rc_throttle.radio_min);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _rc_throttle.radio_min);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _rc_throttle.radio_min);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_CH_TRI_YAW]), _rc_yaw.radio_trim);
 }
 
 // output_armed - sends commands to the motors
@@ -163,9 +163,9 @@ void AP_MotorsTri::output_armed()
     }
 
     // send output to each motor
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_1], motor_out[AP_MOTORS_MOT_1]);
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_2], motor_out[AP_MOTORS_MOT_2]);
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_4], motor_out[AP_MOTORS_MOT_4]);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), motor_out[AP_MOTORS_MOT_1]);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), motor_out[AP_MOTORS_MOT_2]);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), motor_out[AP_MOTORS_MOT_4]);
 
     // also send out to tail command (we rely on any auto pilot to have updated the rc_yaw->radio_out to the correct value)
     // note we do not save the radio_out to the motor_out array so it may not appear in the ch7out in the status screen of the mission planner
@@ -191,19 +191,19 @@ void AP_MotorsTri::output_test()
     // Send minimum values to all motors
     output_min();
 
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_2], _rc_throttle.radio_min);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _rc_throttle.radio_min);
     hal.scheduler->delay(4000);
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_1], _rc_throttle.radio_min + _min_throttle);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _rc_throttle.radio_min + _min_throttle);
     hal.scheduler->delay(300);
 
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_1], _rc_throttle.radio_min);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _rc_throttle.radio_min);
     hal.scheduler->delay(2000);
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_4], _rc_throttle.radio_min + _min_throttle);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _rc_throttle.radio_min + _min_throttle);
     hal.scheduler->delay(300);
 
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_4], _rc_throttle.radio_min);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _rc_throttle.radio_min);
     hal.scheduler->delay(2000);
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_2], _rc_throttle.radio_min + _min_throttle);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _rc_throttle.radio_min + _min_throttle);
     hal.scheduler->delay(300);
 
     // Send minimum values to all motors
