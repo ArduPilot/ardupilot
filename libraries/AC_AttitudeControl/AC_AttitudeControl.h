@@ -41,8 +41,7 @@ public:
                         const AP_Vehicle::MultiCopter &aparm,
                         AP_Motors& motors,
                         APM_PI& pi_angle_roll, APM_PI& pi_angle_pitch, APM_PI& pi_angle_yaw,
-                        AC_PID& pid_rate_roll, AC_PID& pid_rate_pitch, AC_PID& pid_rate_yaw,
-                        int16_t& motor_roll, int16_t& motor_pitch, int16_t& motor_yaw, int16_t& motor_throttle
+                        AC_PID& pid_rate_roll, AC_PID& pid_rate_pitch, AC_PID& pid_rate_yaw
                         ) :
 		_ahrs(ahrs),
         _ins(ins),
@@ -54,10 +53,6 @@ public:
         _pid_rate_roll(pid_rate_roll),
         _pid_rate_pitch(pid_rate_pitch),
         _pid_rate_yaw(pid_rate_yaw),
-        _motor_roll(motor_roll),
-        _motor_pitch(motor_pitch),
-        _motor_yaw(motor_yaw),
-        _motor_throttle(motor_throttle),
         _dt(AC_ATTITUDE_100HZ_DT),
         _angle_boost(0)
 		{
@@ -207,10 +202,6 @@ protected:
     AC_PID&             _pid_rate_roll;
     AC_PID&             _pid_rate_pitch;
     AC_PID&             _pid_rate_yaw;
-    int16_t&            _motor_roll;            // g.rc_1.servo_out
-    int16_t&            _motor_pitch;           // g.rc_2.servo_out
-    int16_t&            _motor_yaw;             // g.rc_4.servo_out
-    int16_t&            _motor_throttle;        // g.rc_3.servo_out
 
     // parameters
     AP_Float            _angle_rate_rp_max;     // maximum rate request output from the earth-frame angle controller for roll and pitch axis

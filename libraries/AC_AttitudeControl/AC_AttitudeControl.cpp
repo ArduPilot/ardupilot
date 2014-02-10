@@ -239,9 +239,9 @@ void AC_AttitudeControl::rate_controller_run()
     // call rate controllers and send output to motors object
     // To-Do: should the outputs from get_rate_roll, pitch, yaw be int16_t which is the input to the motors library?
     // To-Do: skip this step if the throttle out is zero?
-    _motor_roll = rate_bf_to_motor_roll(_rate_bf_target.x);
-    _motor_pitch = rate_bf_to_motor_pitch(_rate_bf_target.y);
-    _motor_yaw = rate_bf_to_motor_yaw(_rate_bf_target.z);
+    _motors.set_roll(rate_bf_to_motor_roll(_rate_bf_target.x));
+    _motors.set_pitch(rate_bf_to_motor_pitch(_rate_bf_target.y));
+    _motors.set_yaw(rate_bf_to_motor_yaw(_rate_bf_target.z));
 }
 
 //
@@ -438,9 +438,9 @@ float AC_AttitudeControl::rate_bf_to_motor_yaw(float rate_target_cds)
 void AC_AttitudeControl::set_throttle_out(int16_t throttle_out, bool apply_angle_boost)
 {
     if (apply_angle_boost) {
-        _motor_throttle = get_angle_boost(throttle_out);
+        _motors.set_throttle(get_angle_boost(throttle_out));
     }else{
-        _motor_throttle = throttle_out;
+        _motors.set_throttle(throttle_out);
         // clear angle_boost for logging purposes
         _angle_boost = 0;
     }
