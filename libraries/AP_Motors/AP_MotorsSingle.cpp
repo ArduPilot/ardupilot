@@ -120,12 +120,12 @@ void AP_MotorsSingle::set_update_rate( uint16_t speed_hz )
 
     // set update rate for the 3 motors (but not the servo on channel 7)
     uint32_t mask = 
-	    1U << _motor_to_channel_map[AP_MOTORS_MOT_1] |
-	    1U << _motor_to_channel_map[AP_MOTORS_MOT_2] |
-	    1U << _motor_to_channel_map[AP_MOTORS_MOT_3] |
-		1U << _motor_to_channel_map[AP_MOTORS_MOT_4] ;
+	    1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]) |
+	    1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]) |
+	    1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]) |
+		1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]) ;
     hal.rcout->set_freq(mask, _servo_speed);
-	uint32_t mask2 = 1U << _motor_to_channel_map[AP_MOTORS_MOT_7];
+	uint32_t mask2 = 1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_7]);
 	hal.rcout->set_freq(mask2, _speed_hz);
 }
 
@@ -133,22 +133,22 @@ void AP_MotorsSingle::set_update_rate( uint16_t speed_hz )
 void AP_MotorsSingle::enable()
 {
     // enable output channels
-    hal.rcout->enable_ch(_motor_to_channel_map[AP_MOTORS_MOT_1]);
-    hal.rcout->enable_ch(_motor_to_channel_map[AP_MOTORS_MOT_2]);
-    hal.rcout->enable_ch(_motor_to_channel_map[AP_MOTORS_MOT_3]);
-    hal.rcout->enable_ch(_motor_to_channel_map[AP_MOTORS_MOT_4]);
-	hal.rcout->enable_ch(_motor_to_channel_map[AP_MOTORS_MOT_7]);
+    hal.rcout->enable_ch(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]));
+    hal.rcout->enable_ch(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]));
+    hal.rcout->enable_ch(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]));
+    hal.rcout->enable_ch(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]));
+	hal.rcout->enable_ch(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_7]));
 }
 
 // output_min - sends minimum values out to the motor and trim values to the servos
 void AP_MotorsSingle::output_min()
 {
     // send minimum value to each motor
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_1], _servo1.radio_trim);
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_2], _servo2.radio_trim);
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_3], _servo3.radio_trim);
-	hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_4], _servo4.radio_trim);
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_7], _rc_throttle.radio_min);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _servo1.radio_trim);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _servo2.radio_trim);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]), _servo3.radio_trim);
+	hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _servo4.radio_trim);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_7]), _rc_throttle.radio_min);
 }
 
 // output_armed - sends commands to the motors
@@ -202,11 +202,11 @@ void AP_MotorsSingle::output_armed()
     _servo4.calc_pwm();
 
     // send output to each motor
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_1], _servo1.radio_out);
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_2], _servo2.radio_out);
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_3], _servo3.radio_out);
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_4], _servo4.radio_out);
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_7], motor_out);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _servo1.radio_out);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _servo2.radio_out);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]), _servo3.radio_out);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _servo4.radio_out);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_7]), motor_out);
 }
 
 // output_disarmed - sends commands to the motors
@@ -224,41 +224,41 @@ void AP_MotorsSingle::output_test()
 
     // spin main motor
     hal.scheduler->delay(1000);
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_7], _rc_throttle.radio_min + _min_throttle);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_7]), _rc_throttle.radio_min + _min_throttle);
     hal.scheduler->delay(1000);
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_7], _rc_throttle.radio_min);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_7]), _rc_throttle.radio_min);
     hal.scheduler->delay(2000);   
 
     // flap servo 1
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_1], _servo1.radio_min);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _servo1.radio_min);
     hal.scheduler->delay(1000);
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_1], _servo1.radio_max);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _servo1.radio_max);
     hal.scheduler->delay(1000);
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_1], _servo1.radio_trim);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _servo1.radio_trim);
     hal.scheduler->delay(2000);
 
     // flap servo 2
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_2], _servo2.radio_min);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _servo2.radio_min);
     hal.scheduler->delay(1000);
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_2], _servo2.radio_max);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _servo2.radio_max);
     hal.scheduler->delay(1000);
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_2], _servo2.radio_trim);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _servo2.radio_trim);
     hal.scheduler->delay(2000);
 
     // flap servo 3
-	hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_3], _servo3.radio_min);
+	hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]), _servo3.radio_min);
     hal.scheduler->delay(1000);
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_3], _servo3.radio_max);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]), _servo3.radio_max);
     hal.scheduler->delay(1000);
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_3], _servo3.radio_trim);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]), _servo3.radio_trim);
     hal.scheduler->delay(2000);
 
     // flap servo 4
-	hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_4], _servo4.radio_min);
+	hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _servo4.radio_min);
     hal.scheduler->delay(1000);
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_4], _servo4.radio_max);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _servo4.radio_max);
     hal.scheduler->delay(1000);
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_4], _servo4.radio_trim);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _servo4.radio_trim);
 
     // Send minimum values to all motors
     output_min();
