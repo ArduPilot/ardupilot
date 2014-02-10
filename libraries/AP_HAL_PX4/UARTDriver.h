@@ -36,6 +36,8 @@ public:
 	    return _fd;
     }
 
+    void enable_flow_control(bool enable);
+
 private:
     const char *_devpath;
     int _fd;

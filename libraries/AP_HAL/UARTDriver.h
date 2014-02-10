@@ -38,6 +38,7 @@ public:
     virtual bool is_initialized() = 0;
     virtual void set_blocking_writes(bool blocking) = 0;
     virtual bool tx_pending() = 0;
+    virtual void enable_flow_control(bool enable) {};
 
     /* Implementations of BetterStream virtual methods. These are
      * provided by AP_HAL to ensure consistency between ports to
