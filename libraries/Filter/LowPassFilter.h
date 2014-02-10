@@ -34,8 +34,8 @@ public:
     // constructor
     LowPassFilter();
 
-    virtual void    set_cutoff_frequency(float time_step, float cutoff_freq);
-    virtual void    set_time_constant(float time_step, float time_constant);
+    void set_cutoff_frequency(float time_step, float cutoff_freq);
+    void set_time_constant(float time_step, float time_constant);
 
     // apply - Add a new raw value to the filter, retrieve the filtered result
     virtual T        apply(T sample);
@@ -46,7 +46,7 @@ public:
     };
 
     // reset - clear the filter and provide the new base value
-    virtual void        reset( T new_base_value ) {
+    void        reset( T new_base_value ) {
         _base_value = new_base_value; _base_value_set = true;
     };
 
