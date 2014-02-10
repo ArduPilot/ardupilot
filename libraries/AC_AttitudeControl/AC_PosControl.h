@@ -182,6 +182,9 @@ public:
     // get_leash_xy - returns horizontal leash length in cm
     float get_leash_xy() { return _leash; }
 
+    /// get_pos_xy_kP - returns xy position controller's kP gain
+    float get_pos_xy_kP() const { return _pi_pos_lat.kP(); }
+
     /// accessors for reporting
     const Vector3f get_vel_target() { return _vel_target; }
     const Vector3f get_accel_target() { return _accel_target; }
