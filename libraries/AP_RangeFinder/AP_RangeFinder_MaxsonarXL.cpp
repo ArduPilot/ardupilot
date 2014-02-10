@@ -25,7 +25,6 @@
  *       Sensor should be connected to one of the analog ports
  *
  *       Variables:
- *               int raw_value : raw value from the sensor
  *               int distance : distance in cm
  *               int max_distance : maximum measurable distance (in cm)
  *               int min_distance : minimum measurable distance (in cm)
@@ -48,7 +47,7 @@ AP_RangeFinder_MaxsonarXL::AP_RangeFinder_MaxsonarXL(AP_HAL::AnalogSource *sourc
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
-float AP_RangeFinder_MaxsonarXL::calculate_scaler(int sonar_type, float adc_refence_voltage)
+float AP_RangeFinder_MaxsonarXL::calculate_scaler(int16_t sonar_type, float adc_refence_voltage)
 {
     float type_scaler = 1.0f;
     switch(sonar_type) {
