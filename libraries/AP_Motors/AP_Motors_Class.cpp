@@ -24,6 +24,15 @@
 #include <AP_HAL.h>
 extern const AP_HAL::HAL& hal;
 
+
+// initialise motor map
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+    const uint8_t AP_Motors::_motor_to_channel_map[AP_MOTORS_MAX_NUM_MOTORS] PROGMEM = {APM1_MOTOR_TO_CHANNEL_MAP};
+#else
+    const uint8_t AP_Motors::_motor_to_channel_map[AP_MOTORS_MAX_NUM_MOTORS] PROGMEM = {APM2_MOTOR_TO_CHANNEL_MAP};
+#endif
+
+
 // parameters for the motor class
 const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
     // 0 was used by TB_RATIO
@@ -77,13 +86,6 @@ AP_Motors::AP_Motors( RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_
 
     AP_Param::setup_object_defaults(this, var_info);
 
-    // initialise motor map
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-        set_motor_to_channel_map(APM1_MOTOR_TO_CHANNEL_MAP);
-#else
-        set_motor_to_channel_map(APM2_MOTOR_TO_CHANNEL_MAP);
-#endif
-
     // slow start motors from zero to min throttle
     _flags.slow_start_low_end = true;
 };
@@ -124,7 +126,7 @@ void AP_Motors::throttle_pass_through()
         // send the pilot's input directly to each enabled motor
         for (int16_t i=0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {
-                hal.rcout->write(_motor_to_channel_map[i], _rc_throttle.radio_in);
+                hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[i]), _rc_throttle.radio_in);
             }
         }
     }

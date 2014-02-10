@@ -73,18 +73,6 @@ public:
     // init
     virtual void        Init();
 
-    // set mapping from motor number to RC channel
-    void                set_motor_to_channel_map( uint8_t mot_1, uint8_t mot_2, uint8_t mot_3, uint8_t mot_4, uint8_t mot_5, uint8_t mot_6, uint8_t mot_7, uint8_t mot_8 ) {
-        _motor_to_channel_map[AP_MOTORS_MOT_1] = mot_1;
-        _motor_to_channel_map[AP_MOTORS_MOT_2] = mot_2;
-        _motor_to_channel_map[AP_MOTORS_MOT_3] = mot_3;
-        _motor_to_channel_map[AP_MOTORS_MOT_4] = mot_4;
-        _motor_to_channel_map[AP_MOTORS_MOT_5] = mot_5;
-        _motor_to_channel_map[AP_MOTORS_MOT_6] = mot_6;
-        _motor_to_channel_map[AP_MOTORS_MOT_7] = mot_7;
-        _motor_to_channel_map[AP_MOTORS_MOT_8] = mot_8;
-    }
-
     // set update rate to motors - a value in hertz
     virtual void        set_update_rate( uint16_t speed_hz ) { _speed_hz = speed_hz; };
 
@@ -164,6 +152,9 @@ protected:
         uint8_t slow_start_low_end  : 1;    // 1 just after arming so we can ramp up the spin_when_armed value
     } _flags;
 
+    // mapping of motor number (as received from upper APM code) to RC channel output - used to account for differences between APM1 and APM2
+    static const uint8_t _motor_to_channel_map[AP_MOTORS_MAX_NUM_MOTORS] PROGMEM;
+
     // parameters
     AP_CurveInt16_Size4 _throttle_curve;        // curve used to linearize the pwm->thrust
     AP_Int8             _throttle_curve_enabled;        // enable throttle curve
@@ -176,7 +167,6 @@ protected:
     RC_Channel&         _rc_pitch;              // pitch input in from users is held in servo_out
     RC_Channel&         _rc_throttle;           // throttle input in from users is held in servo_out
     RC_Channel&         _rc_yaw;                // yaw input in from users is held in servo_out
-    uint8_t             _motor_to_channel_map[AP_MOTORS_MAX_NUM_MOTORS];        // mapping of motor number (as received from upper APM code) to RC channel output - used to account for differences between APM1 and APM2
     uint16_t            _speed_hz;              // speed in hz to send updates to motors
     int16_t             _min_throttle;          // the minimum throttle to be sent to the motors when they're on (prevents motors stalling while flying)
     int16_t             _max_throttle;          // the maximum throttle to be sent to the motors (sometimes limited by slow start)
