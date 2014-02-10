@@ -71,8 +71,8 @@ void AC_AttitudeControl_Heli::rate_controller_run()
     // call rate controllers and send output to motors object
     // To-Do: should the outputs from get_rate_roll, pitch, yaw be int16_t which is the input to the motors library?
     // To-Do: skip this step if the throttle out is zero?
-    rate_bf_to_motor_roll_pitch(_rate_bf_target.x, _rate_bf_target.y, _motor_roll, _motor_pitch);
-    _motor_yaw = rate_bf_to_motor_yaw(_rate_bf_target.z);
+    rate_bf_to_motor_roll_pitch(_rate_bf_target.x, _rate_bf_target.y);
+    _motors.set_yaw(rate_bf_to_motor_yaw(_rate_bf_target.z));
 }
 
 //
@@ -84,7 +84,7 @@ void AC_AttitudeControl_Heli::rate_controller_run()
 //
 
 // rate_bf_to_motor_roll_pitch - ask the rate controller to calculate the motor outputs to achieve the target rate in centi-degrees / second
-void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target_cds, float rate_pitch_target_cds, int16_t& motor_roll, int16_t& motor_pitch)
+void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target_cds, float rate_pitch_target_cds)
 {
     float roll_pd, roll_i;                      // used to capture pid values
     float pitch_pd, pitch_i;                    // used to capture pid values
@@ -155,8 +155,8 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
     }
 
     // output to motors
-    motor_roll = roll_out;
-    motor_pitch = pitch_out;
+    _motors.set_roll(roll_out);
+    _motors.set_pitch(pitch_out);
 
 /*
 #if HELI_CC_COMP == ENABLED

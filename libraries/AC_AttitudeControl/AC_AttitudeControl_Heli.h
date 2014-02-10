@@ -20,13 +20,11 @@ public:
                         const AP_Vehicle::MultiCopter &aparm,
                         AP_MotorsHeli& motors,
                         APM_PI& pi_angle_roll, APM_PI& pi_angle_pitch, APM_PI& pi_angle_yaw,
-                        AC_PID& pid_rate_roll, AC_PID& pid_rate_pitch, AC_PID& pid_rate_yaw,
-                        int16_t& motor_roll, int16_t& motor_pitch, int16_t& motor_yaw, int16_t& motor_throttle
+                        AC_PID& pid_rate_roll, AC_PID& pid_rate_pitch, AC_PID& pid_rate_yaw
                         ) :
         AC_AttitudeControl(ahrs, ins, aparm, motors,
                            pi_angle_roll, pi_angle_pitch, pi_angle_yaw,
-                           pid_rate_roll, pid_rate_pitch, pid_rate_yaw,
-                           motor_roll, motor_pitch, motor_yaw, motor_throttle)
+                           pid_rate_roll, pid_rate_pitch, pid_rate_yaw)
 		{
             AP_Param::setup_object_defaults(this, var_info);
 		}
@@ -55,7 +53,8 @@ private:
     // body-frame rate controller
     //
 	// rate_bf_to_motor_roll_pitch - ask the rate controller to calculate the motor outputs to achieve the target body-frame rate (in centi-degrees/sec) for roll, pitch and yaw
-    void rate_bf_to_motor_roll_pitch(float rate_roll_target_cds, float rate_pitch_target_cds, int16_t& motor_roll, int16_t& motor_pitch);
+    // outputs are sent directly to motor class
+    void rate_bf_to_motor_roll_pitch(float rate_roll_target_cds, float rate_pitch_target_cds);
     virtual float rate_bf_to_motor_yaw(float rate_yaw_cds);
 
     //
