@@ -241,7 +241,7 @@ static float get_throttle_surface_tracking(int16_t target_rate, float current_al
     return (target_rate + velocity_correction);
 }
 
-// set_accel_throttle_I_from_pilot_throttle - smooths out transition from pilot controlled throttle to autopilot throttle
+// set_accel_throttle_I_from_pilot_throttle - smoothes transition from pilot controlled throttle to autopilot throttle
 static void set_accel_throttle_I_from_pilot_throttle(int16_t pilot_throttle)
 {
     // shift difference between pilot's throttle and hover throttle into accelerometer I
