@@ -48,6 +48,11 @@ public:
       in the safe state
      */
     virtual void     set_safety_pwm(uint32_t chmask, uint16_t period_us) {}
+
+    /*
+      force the safety switch off, enabling PWM output from the IO board
+     */
+    virtual void     force_safety_off(void) {}
 };
 
 #endif // __AP_HAL_RC_OUTPUT_H__

@@ -160,6 +160,14 @@ void PX4RCOutput::set_safety_pwm(uint32_t chmask, uint16_t period_us)
     }
 }
 
+void PX4RCOutput::force_safety_off(void)
+{
+    int ret = ioctl(_pwm_fd, PWM_SERVO_SET_FORCE_SAFETY_OFF, 0);
+    if (ret != OK) {
+        hal.console->printf("Failed to force safety off\n");
+    }
+}
+
 void PX4RCOutput::write(uint8_t ch, uint16_t period_us)
 {
     if (ch >= _servo_count + _alt_servo_count) {
