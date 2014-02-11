@@ -25,6 +25,7 @@ private:
     AP_Int8 _pwm_count;
     AP_Int8 _ser1_rtscts;
     AP_Int8 _ser2_rtscts;
+    AP_Int8 _safety_enable;
 #endif
 };
 

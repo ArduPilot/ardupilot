@@ -60,6 +60,12 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] PROGMEM = {
     // @Description: Enable flow control on serial 2 (telemetry 2) on Pixhawk and PX4. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
     // @Values: 0:Disabled,1:Enabled,2:Auto
     AP_GROUPINFO("SER2_RTSCTS",    2, AP_BoardConfig, _ser2_rtscts, 2),
+
+    // @Param: SAFETYENABLE
+    // @DisplayName:  Enable use of safety arming switch
+    // @Description: Disabling this option will disable the use of the safety switch on PX4 for arming. Use of the safety switch is highly recommended, so you should leave this option set to 1 except in unusual circumstances.
+    // @Values: 0:Disabled,1:Enabled
+    AP_GROUPINFO("SAFETYENABLE",   3, AP_BoardConfig, _safety_enable, 1),
 #endif
 
     AP_GROUPEND
@@ -89,6 +95,10 @@ void AP_BoardConfig::init()
     hal.uartC->set_flow_control((AP_HAL::UARTDriver::flow_control)_ser1_rtscts.get());
     if (hal.uartD != NULL) {
         hal.uartD->set_flow_control((AP_HAL::UARTDriver::flow_control)_ser2_rtscts.get());
+    }
+
+    if (_safety_enable.get() == 0) {
+        hal.rcout->force_safety_off();
     }
 #endif    
 }
