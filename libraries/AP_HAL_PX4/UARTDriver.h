@@ -36,7 +36,7 @@ public:
 	    return _fd;
     }
 
-    void enable_flow_control(bool enable);
+    void set_flow_control(enum flow_control flow_control);
 
 private:
     const char *_devpath;
@@ -69,6 +69,11 @@ private:
 
     void try_initialise(void);
     uint32_t _last_initialise_attempt_ms;
+
+    uint32_t _os_write_buffer_size;
+    uint32_t _total_read;
+    uint32_t _total_written;
+    enum flow_control _flow_control;
 };
 
 #endif // __AP_HAL_PX4_UARTDRIVER_H__

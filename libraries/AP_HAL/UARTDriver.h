@@ -38,7 +38,11 @@ public:
     virtual bool is_initialized() = 0;
     virtual void set_blocking_writes(bool blocking) = 0;
     virtual bool tx_pending() = 0;
-    virtual void enable_flow_control(bool enable) {};
+
+    enum flow_control {
+        FLOW_CONTROL_DISABLE=0, FLOW_CONTROL_ENABLE=1, FLOW_CONTROL_AUTO=2
+    };
+    virtual void set_flow_control(enum flow_control flow_control) {};
 
     /* Implementations of BetterStream virtual methods. These are
      * provided by AP_HAL to ensure consistency between ports to

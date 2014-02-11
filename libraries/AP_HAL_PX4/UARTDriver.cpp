@@ -27,7 +27,8 @@ PX4UARTDriver::PX4UARTDriver(const char *devpath, const char *perf_name) :
     _baudrate(57600),
     _perf_uart(perf_alloc(PC_ELAPSED, perf_name)),
     _initialised(false),
-    _in_timer(false)
+    _in_timer(false),
+    _flow_control(FLOW_CONTROL_DISABLE)
 {
 }
 
@@ -45,7 +46,7 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         return;
     }
 
-    uint16_t min_tx_buffer = 512;
+    uint16_t min_tx_buffer = 1024;
     uint16_t min_rx_buffer = 512;
     if (strcmp(_devpath, "/dev/ttyACM0") == 0) {
         min_tx_buffer = 16384;
@@ -108,6 +109,17 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 		if (_fd == -1) {
 			return;
 		}
+
+        // work out the OS write buffer size by looking at how many
+        // bytes could be written when we first open the port
+        int nwrite = 0;
+        if (ioctl(_fd, FIONWRITE, (unsigned long)&nwrite) == 0) {
+            _os_write_buffer_size = nwrite;
+            if (_os_write_buffer_size & 1) {
+                // it is reporting one short
+                _os_write_buffer_size += 1;
+            }
+        }
 	}
 
 	if (_baudrate != 0) {
@@ -132,7 +144,7 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     }
 }
 
-void PX4UARTDriver::enable_flow_control(bool enable)
+void PX4UARTDriver::set_flow_control(enum flow_control flow_control)
 {
 	if (_fd == -1) {
         return;
@@ -140,12 +152,13 @@ void PX4UARTDriver::enable_flow_control(bool enable)
     struct termios t;
     tcgetattr(_fd, &t);
     // we already enabled CRTS_IFLOW above, just enable output flow control
-    if (enable) {
+    if (flow_control != FLOW_CONTROL_DISABLE) {
         t.c_cflag |= CRTSCTS;
     } else {
         t.c_cflag &= ~CRTSCTS;
     }
     tcsetattr(_fd, TCSANOW, &t);
+    _flow_control = flow_control;
 }
 
 void PX4UARTDriver::begin(uint32_t b) 
@@ -363,7 +376,19 @@ int PX4UARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
     // the FIONWRITE check is to cope with broken O_NONBLOCK behaviour
     // in NuttX on ttyACM0
     int nwrite = 0;
+
     if (ioctl(_fd, FIONWRITE, (unsigned long)&nwrite) == 0) {
+        if (nwrite == 0 &&
+            _flow_control == FLOW_CONTROL_AUTO &&
+            _last_write_time != 0 &&
+            _total_written != 0 &&
+            _os_write_buffer_size == _total_written &&
+            hrt_elapsed_time(&_last_write_time) > 500*1000UL) {
+            // it doesn't look like hw flow control is working
+            ::printf("disabling flow control on %s _total_written=%u\n", 
+                     _devpath, (unsigned)_total_written);
+            set_flow_control(FLOW_CONTROL_DISABLE);
+        }
         if (nwrite > n) {
             nwrite = n;
         }
@@ -375,10 +400,12 @@ int PX4UARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
     if (ret > 0) {
         BUF_ADVANCEHEAD(_writebuf, ret);
         _last_write_time = hrt_absolute_time();
+        _total_written += ret;
         return ret;
     }
 
-    if (hrt_absolute_time() - _last_write_time > 2000) {
+    if (hrt_absolute_time() - _last_write_time > 2000 &&
+        _flow_control == FLOW_CONTROL_DISABLE) {
 #if 0
         // this trick is disabled for now, as it sometimes blocks on
         // re-opening the ttyACM0 port, which would cause a crash
@@ -432,6 +459,7 @@ int PX4UARTDriver::_read_fd(uint8_t *buf, uint16_t n)
     }
     if (ret > 0) {
         BUF_ADVANCETAIL(_readbuf, ret);
+        _total_read += ret;
     }
     return ret;
 }
