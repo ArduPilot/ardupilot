@@ -31,8 +31,10 @@
 
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
 #define BOARD_PWM_COUNT_DEFAULT 2
+#define BOARD_SER1_RTSCTS_DEFAULT 0 // no flow control on UART5 on FMUv1
 #else
 #define BOARD_PWM_COUNT_DEFAULT 4
+#define BOARD_SER1_RTSCTS_DEFAULT 2
 #endif
 #endif
 
@@ -49,13 +51,13 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] PROGMEM = {
 
     // @Param: SER1_RTSCTS
     // @DisplayName: Serial 1 flow control
-    // @Description: Enable flow control on serial 1 (telemetry 1) on Pixhawk. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
+    // @Description: Enable flow control on serial 1 (telemetry 1) on Pixhawk. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup. Note that the PX4v1 does not have hardware flow control pins on this port, so you should leave this disabled.
     // @Values: 0:Disabled,1:Enabled,2:Auto
-    AP_GROUPINFO("SER1_RTSCTS",    1, AP_BoardConfig, _ser1_rtscts, 2),
+    AP_GROUPINFO("SER1_RTSCTS",    1, AP_BoardConfig, _ser1_rtscts, BOARD_SER1_RTSCTS_DEFAULT),
 
     // @Param: SER2_RTSCTS
     // @DisplayName: Serial 2 flow control
-    // @Description: Enable flow control on serial 2 (telemetry 2) on Pixhawk. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
+    // @Description: Enable flow control on serial 2 (telemetry 2) on Pixhawk and PX4. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
     // @Values: 0:Disabled,1:Enabled,2:Auto
     AP_GROUPINFO("SER2_RTSCTS",    2, AP_BoardConfig, _ser2_rtscts, 2),
 #endif
