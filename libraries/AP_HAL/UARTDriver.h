@@ -42,7 +42,7 @@ public:
     enum flow_control {
         FLOW_CONTROL_DISABLE=0, FLOW_CONTROL_ENABLE=1, FLOW_CONTROL_AUTO=2
     };
-    virtual void set_flow_control(enum flow_control flow_control) {};
+    virtual void set_flow_control(enum flow_control flow_control_setting) {};
 
     /* Implementations of BetterStream virtual methods. These are
      * provided by AP_HAL to ensure consistency between ports to
