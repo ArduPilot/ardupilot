@@ -11,6 +11,7 @@ static void change_command(uint8_t cmd_index)
 
     // limit range
     cmd_index = min(g.command_total - 1, cmd_index);
+    cmd_index = max(1,cmd_index);
 
     // load command
     struct Location temp = get_cmd_with_index(cmd_index);

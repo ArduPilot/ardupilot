@@ -73,6 +73,7 @@
 #define AUX_SWITCH_AUTOTUNE         17      // auto tune
 #define AUX_SWITCH_LAND             18      // change to LAND flight mode
 #define AUX_SWITCH_EPM              19      // Operate the EPM cargo gripper low=off, middle=neutral, high=on
+#define AUX_SWITCH_WP_CHANGE        20      // change to next/previous waypoint low = previous, high = next
 
 // values used by the ap.ch7_opt and ap.ch8_opt flags
 #define AUX_SWITCH_LOW              0       // indicates auxiliar switch is in the low position (pwm <1200)
