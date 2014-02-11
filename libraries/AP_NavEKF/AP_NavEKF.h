@@ -133,6 +133,14 @@ public:
     // return the Euler roll, pitch and yaw angle in radians
     void getEulerAngles(Vector3f &eulers) const;
 
+    // helper trig value accessors
+    float cos_roll() const  { return _cos_roll; }
+    float cos_pitch() const { return _cos_pitch; }
+    float cos_yaw() const   { return _cos_yaw; }
+    float sin_roll() const  { return _sin_roll; }
+    float sin_pitch() const { return _sin_pitch; }
+    float sin_yaw() const   { return _sin_yaw; }
+
     // get the transformation matrix from NED to XYD (body) axes
     void getRotationNEDToBody(Matrix3f &mat) const;
 
@@ -193,9 +201,6 @@ private:
     // recall state vector stored at closest time to the one specified by msec
     void RecallStates(Vector22 &statesForFusion, uint32_t msec);
 
-    // calculate nav to body quaternions from body to nav rotation matrix
-    void quat2Tbn(Matrix3f &Tbn, const Quaternion &quat) const;
-
     // calculate the earth spin vector in NED axes
     void calcEarthRateNED(Vector3f &omega, int32_t latitude) const;
 
@@ -249,6 +254,11 @@ private:
 
     // reset the vertical position state using the last height measurement
     void ResetHeight(void);
+
+    // recalculates _cos_roll, _cos_pitch, etc based on latest attitude
+    // should be called after direction cosine matrix is updated
+    void updateTrig(void);
+
 
 
 private:
@@ -393,8 +403,14 @@ private:
     Vector8 SG;                     // intermediate variables used to calculate predicted covariance matrix
     Vector11 SQ;                    // intermediate variables used to calculate predicted covariance matrix
     Vector8 SPP;                    // intermediate variables used to calculate predicted covariance matrix
+    float _cos_roll;                // cosine of roll angle
+    float _cos_pitch;               // cosine of pitch angle
+    float _cos_yaw;                 // cosine of yaw angle
+    float _sin_roll;                // sin of roll angle
+    float _sin_pitch;               // sin of pitch angle
+    float _sin_yaw;                 // sin of yaw angle
 
-    // states held by magnetomter fusion across time steps
+    // states held by magnetometer fusion across time steps
     // magnetometer X,Y,Z measurements are fused across three time steps
     // to level computational load as this is an expensive operation
     struct {

@@ -515,6 +515,9 @@ void NavEKF::UpdateFilter()
     // Run the strapdown INS equations every IMU update
     UpdateStrapdownEquationsNED();
 
+    // Update helper trig functions
+    updateTrig();
+
     // store the predicted states for subsequent use by measurement fusion
     StoreStates();
 
@@ -2189,12 +2192,6 @@ void NavEKF::RecallStates(Vector22 &statesForFusion, uint32_t msec)
     }
 }
 
-void NavEKF::quat2Tbn(Matrix3f &Tbn, const Quaternion &quat) const
-{
-    // Calculate the body to nav cosine matrix
-    quat.rotation_matrix(Tbn);
-}
-
 void NavEKF::getEulerAngles(Vector3f &euler) const
 {
     Quaternion q(states[0], states[1], states[2], states[3]);
@@ -2507,8 +2504,7 @@ void NavEKF::ForceYawAlignment()
 void NavEKF::getRotationBodyToNED(Matrix3f &mat) const
 {
     Vector3f trim = _ahrs->get_trim();
-    Quaternion q(states[0], states[1], states[2], states[3]);
-    q.rotation_matrix(mat);
+    mat = prevTnb.transposed();
     mat.rotateXYinv(trim);
 }
 
@@ -2581,4 +2577,25 @@ void NavEKF::ZeroVariables()
     memset(&posNE[0], 0, sizeof(posNE));
 }
 
+void NavEKF::updateTrig(void)
+{
+    Vector2f yaw_vector;
+
+    // sin_yaw, cos_yaw
+    yaw_vector.x = prevTnb.a.x;
+    yaw_vector.y = prevTnb.a.y;
+    yaw_vector.normalize();
+    _sin_yaw = constrain_float(yaw_vector.y, -1.0, 1.0);
+    _cos_yaw = constrain_float(yaw_vector.x, -1.0, 1.0);
+
+    // cos_roll, cos_pitch
+    _cos_pitch = safe_sqrt(1 - (prevTnb.a.z * prevTnb.a.z));
+    _cos_roll = prevTnb.c.z / _cos_pitch;
+    _cos_pitch = constrain_float(_cos_pitch, 0, 1.0);
+    _cos_roll = constrain_float(_cos_roll, -1.0, 1.0); // this relies on constrain_float() of infinity doing the right thing,which it does do in avr-libc
+
+    // sin_roll, sin_pitch
+    _sin_pitch = -prevTnb.a.z;
+    _sin_roll = prevTnb.b.z / _cos_pitch;
+}
 #endif // HAL_CPU_CLASS
