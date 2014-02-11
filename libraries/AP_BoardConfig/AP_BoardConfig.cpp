@@ -31,12 +31,8 @@
 
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
 #define BOARD_PWM_COUNT_DEFAULT 2
-#define BOARD_SER1_RTSCTS_DEFAULT 0
-#define BOARD_SER2_RTSCTS_DEFAULT 0
 #else
 #define BOARD_PWM_COUNT_DEFAULT 4
-#define BOARD_SER1_RTSCTS_DEFAULT 1
-#define BOARD_SER2_RTSCTS_DEFAULT 1
 #endif
 #endif
 
@@ -53,15 +49,15 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] PROGMEM = {
 
     // @Param: SER1_RTSCTS
     // @DisplayName: Serial 1 flow control
-    // @Description: Enable flow control on serial 1 (telemetry 1) on Pixhawk. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected.
-    // @Values: 0:Disabled,1:Enabled
-    AP_GROUPINFO("SER1_RTSCTS",    1, AP_BoardConfig, _ser1_rtscts, BOARD_SER1_RTSCTS_DEFAULT),
+    // @Description: Enable flow control on serial 1 (telemetry 1) on Pixhawk. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
+    // @Values: 0:Disabled,1:Enabled,2:Auto
+    AP_GROUPINFO("SER1_RTSCTS",    1, AP_BoardConfig, _ser1_rtscts, 2),
 
     // @Param: SER2_RTSCTS
     // @DisplayName: Serial 2 flow control
-    // @Description: Enable flow control on serial 2 (telemetry 2) on Pixhawk. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected.
-    // @Values: 0:Disabled,1:Enabled
-    AP_GROUPINFO("SER2_RTSCTS",    2, AP_BoardConfig, _ser2_rtscts, BOARD_SER1_RTSCTS_DEFAULT),
+    // @Description: Enable flow control on serial 2 (telemetry 2) on Pixhawk. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
+    // @Values: 0:Disabled,1:Enabled,2:Auto
+    AP_GROUPINFO("SER2_RTSCTS",    2, AP_BoardConfig, _ser2_rtscts, 2),
 #endif
 
     AP_GROUPEND
@@ -88,9 +84,9 @@ void AP_BoardConfig::init()
     }   
     close(fd);
 
-    hal.uartC->enable_flow_control(_ser1_rtscts?true:false);
+    hal.uartC->set_flow_control((AP_HAL::UARTDriver::flow_control)_ser1_rtscts.get());
     if (hal.uartD != NULL) {
-        hal.uartD->enable_flow_control(_ser2_rtscts?true:false);
+        hal.uartD->set_flow_control((AP_HAL::UARTDriver::flow_control)_ser2_rtscts.get());
     }
 #endif    
 }
