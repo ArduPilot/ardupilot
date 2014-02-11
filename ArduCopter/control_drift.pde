@@ -25,6 +25,7 @@ static void drift_run()
     static float breaker = 0.0;
     int16_t target_roll, target_pitch;
     float target_yaw_rate;
+    int16_t pilot_throttle_scaled;
 
     // if not armed or landed, set throttle to zero and exit immediately
     if(!motors.armed() || ap.land_complete) {
@@ -35,6 +36,9 @@ static void drift_run()
 
     // convert pilot input to lean angles
     get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, target_roll, target_pitch);
+
+    // get pilot's desired throttle
+    pilot_throttle_scaled = get_pilot_desired_throttle(g.rc_3.control_in);
 
     // Grab inertial velocity
     Vector3f vel = inertial_nav.get_velocity();
@@ -66,4 +70,7 @@ static void drift_run()
 
     // call attitude controller
     attitude_control.angleef_rp_rateef_y(target_roll, target_pitch, target_yaw_rate);
+
+    // output pilot's throttle with angle boost
+    attitude_control.set_throttle_out(pilot_throttle_scaled, true);
 }
