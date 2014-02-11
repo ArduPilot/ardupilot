@@ -13,6 +13,11 @@ void change_command(uint8_t cmd_index)
     }
 
     temp = get_cmd_with_index(cmd_index);
+    // If we got a blank command back
+    if(temp.id==CMD_BLANK) {
+        exit_mission();
+        return;
+    }
 
     if (temp.id > MAV_CMD_NAV_LAST ) {
         gcs_send_text_fmt(PSTR("Cannot change to non-Nav cmd %u"), (unsigned)cmd_index);
@@ -75,7 +80,7 @@ static void process_next_command()
     // ---------------------------------
     if (nav_command_ID == NO_COMMAND) {    // no current navigation command loaded
         temp.id = MAV_CMD_NAV_LAST;
-        while(temp.id >= MAV_CMD_NAV_LAST && nav_command_index <= g.command_total) {
+        while(temp.id == CMD_BLANK && temp.id >= MAV_CMD_NAV_LAST && nav_command_index <= g.command_total) {
             nav_command_index++;
             temp = get_cmd_with_index(nav_command_index);
         }
@@ -113,6 +118,11 @@ static void process_next_command()
     //gcs_send_text_fmt(PSTR("Non-Nav command ID #%i"),non_nav_command_ID);
     if (nav_command_index <= (int)g.command_total && non_nav_command_ID == NO_COMMAND) {
         temp = get_cmd_with_index(non_nav_command_index);
+        // If we got a blank command back
+        if(temp.id == CMD_BLANK) {
+            exit_mission();
+            return;
+        }
         if (temp.id <= MAV_CMD_NAV_LAST) {                       
             // The next command is a nav command.  No non-nav commands to do
             g.command_index.set_and_save(nav_command_index);
