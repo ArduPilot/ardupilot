@@ -14,11 +14,17 @@ static void change_command(uint8_t cmd_index)
 
     // load command
     struct Location temp = get_cmd_with_index(cmd_index);
+    // If we got a blank command back
+    if(temp.id == CMD_BLANK) {
+        exit_mission();
+        return;
+    }
 
     // verify it's a nav command
     if(temp.id > MAV_CMD_NAV_LAST) {
 
     }else{
+
         // clear out command queue
         init_commands();
 
@@ -55,6 +61,9 @@ static void update_commands()
             }else{
                 command_nav_index = tmp_index;
                 command_nav_queue = get_cmd_with_index(command_nav_index);
+                // If we got a blank command back
+                if(command_nav_queue.id==CMD_BLANK)
+                    exit_mission();
                 execute_nav_command();
             }
         }else{
@@ -90,6 +99,11 @@ static void update_commands()
         if(command_cond_index < (g.command_total -2)) {
             // we're OK to load a new command (last command must be a nav command)
             command_cond_queue = get_cmd_with_index(command_cond_index);
+            // If we got a blank command back
+            if(command_nav_queue.id==CMD_BLANK) {
+                exit_mission();
+                return;
+            }
 
             if(command_cond_queue.id > MAV_CMD_CONDITION_LAST) {
                 // this is a do now command
@@ -164,7 +178,7 @@ static int16_t find_next_nav_index(int16_t search_index)
     Location tmp;
     while(search_index < g.command_total) {
         tmp = get_cmd_with_index(search_index);
-        if(tmp.id <= MAV_CMD_NAV_LAST) {
+        if((tmp.id > CMD_BLANK) && (tmp.id <= MAV_CMD_NAV_LAST)) {
             return search_index;
         }else{
             search_index++;

@@ -1434,7 +1434,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         float x = 0, y = 0, z = 0;
 
-        if (tell_command.id < MAV_CMD_NAV_LAST || tell_command.id == MAV_CMD_CONDITION_CHANGE_ALT) {
+        if ((tell_command.id>CMD_BLANK)&&(tell_command.id < MAV_CMD_NAV_LAST) || tell_command.id == MAV_CMD_CONDITION_CHANGE_ALT) {
             // command needs scaling
             x = tell_command.lat/1.0e7;     // local (x), global (latitude)
             y = tell_command.lng/1.0e7;     // local (y), global (longitude)
