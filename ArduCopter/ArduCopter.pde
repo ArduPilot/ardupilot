@@ -1221,6 +1221,7 @@ static void update_GPS(void)
 {
     static uint32_t last_gps_reading;           // time of last gps message
     static uint8_t ground_start_count = 10;     // counter used to grab at least 10 reads before commiting the Home location
+    bool report_gps_glitch;
 
     g_gps->update();
 
@@ -1236,13 +1237,14 @@ static void update_GPS(void)
         // run glitch protection and update AP_Notify if home has been initialised
         if (ap.home_is_set) {
             gps_glitch.check_position();
-            if (AP_Notify::flags.gps_glitching != gps_glitch.glitching()) {
+            report_gps_glitch = (gps_glitch.glitching() && !ap.usb_connected);
+            if (AP_Notify::flags.gps_glitching != report_gps_glitch) {
                 if (gps_glitch.glitching()) {
                     Log_Write_Error(ERROR_SUBSYSTEM_GPS, ERROR_CODE_GPS_GLITCH);
                 }else{
                     Log_Write_Error(ERROR_SUBSYSTEM_GPS, ERROR_CODE_ERROR_RESOLVED);
                 }
-                AP_Notify::flags.gps_glitching = gps_glitch.glitching();
+                AP_Notify::flags.gps_glitching = report_gps_glitch;
             }
         }
     }
