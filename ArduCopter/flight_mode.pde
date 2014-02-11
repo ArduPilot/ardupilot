@@ -95,7 +95,7 @@ static bool set_mode(uint8_t mode)
     // update flight mode
     if (success) {
         // perform any cleanup required by previous flight mode
-        exit_mode(control_mode);
+        exit_mode(control_mode, mode);
         control_mode = mode;
         Log_Write_Mode(control_mode);
     }else{
@@ -181,13 +181,19 @@ static void update_flight_mode()
 }
 
 // exit_mode - high level call to organise cleanup as a flight mode is exited
-static void exit_mode(uint8_t old_control_mode)
+static void exit_mode(uint8_t old_control_mode, uint8_t new_control_mode)
 {
 #if AUTOTUNE_ENABLED == ENABLED
     if (old_control_mode == AUTOTUNE) {
         autotune_stop();
     }
 #endif
+
+    // smooth throttle transition when switching from manual to automatic flight modes
+    if (manual_flight_mode(old_control_mode) && !manual_flight_mode(new_control_mode) && motors.armed() && !ap.land_complete) {
+        // this assumes all manual flight modes use get_pilot_desired_throttle to translate pilot input to output throttle
+        set_accel_throttle_I_from_pilot_throttle(get_pilot_desired_throttle(g.rc_3.control_in));
+    }
 }
 
 // returns true or false whether mode requires GPS
@@ -207,7 +213,7 @@ static bool mode_requires_GPS(uint8_t mode) {
     return false;
 }
 
-// manual_flight_mode - returns true if flight mode is completely manual (i.e. roll, pitch and yaw controlled by pilot)
+// manual_flight_mode - returns true if flight mode is completely manual (i.e. roll, pitch, yaw and throttle are controlled by pilot)
 static bool manual_flight_mode(uint8_t mode) {
     switch(mode) {
         case ACRO:
