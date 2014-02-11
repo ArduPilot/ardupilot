@@ -7,6 +7,7 @@
 #include <AP_Common.h>
 #include <AP_Math.h>
 #include <GCS_MAVLink.h>
+#include <DataFlash.h>
 
 struct PACKED sitl_fdm {
 	// this is the packet sent by the simulator
@@ -78,6 +79,8 @@ public:
     AP_Float wind_turbulance;
     
 	void simstate_send(mavlink_channel_t chan);
+
+    void Log_Write_SIMSTATE(DataFlash_Class &dataflash);
 
 	// convert a set of roll rates from earth frame to body frame
 	static void convert_body_frame(double rollDeg, double pitchDeg,

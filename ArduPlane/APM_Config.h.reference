@@ -112,10 +112,8 @@
 // HIL_PROTOCOL_MAVLINK   Configure for HIL over MAVLink.
 //
 // HIL_MODE_DISABLED      Configure for standard flight.
-// HIL_MODE_ATTITUDE      Simulator provides attitude and position information.
 // HIL_MODE_SENSORS       Simulator provides raw sensor values.
 //
-// Note that currently HIL_PROTOCOL_XPLANE requires HIL_MODE_ATTITUDE.
 // Note that currently HIL_PROTOCOL_MAVLINK requires HIL_MODE_SENSORS.
 //
 //#define HIL_MODE				HIL_MODE_DISABLED

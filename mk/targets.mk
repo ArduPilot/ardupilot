@@ -30,7 +30,7 @@ empty: TOOLCHAIN = AVR
 empty: all
 
 # cope with HIL targets
-%-hil: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_ATTITUDE "
+%-hil: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_SENSORS "
 %-hilsensors: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_SENSORS "
 
 # cope with copter and hil targets

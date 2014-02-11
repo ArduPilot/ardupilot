@@ -106,6 +106,7 @@
 #include <AP_Curve.h>           // Curve used to linearlise throttle pwm to thrust
 #include <AP_InertialSensor.h>  // ArduPilot Mega Inertial Sensor (accel & gyro) Library
 #include <AP_AHRS.h>
+#include <AP_NavEKF.h>
 #include <APM_PI.h>             // PI library
 #include <AC_PID.h>             // PID library
 #include <RC_Channel.h>         // RC Channel Library
@@ -304,32 +305,24 @@ AP_GPS_None     g_gps_driver;
   #error Unrecognised GPS_PROTOCOL setting.
  #endif // GPS PROTOCOL
 
-static AP_AHRS_DCM ahrs(ins, g_gps);
+// Inertial Navigation EKF
+#if AP_AHRS_NAVEKF_AVAILABLE
+AP_AHRS_NavEKF ahrs(ins, barometer, g_gps);
+#else
+AP_AHRS_DCM ahrs(ins, barometer, g_gps);
+#endif
 
-#elif HIL_MODE == HIL_MODE_SENSORS
+#elif HIL_MODE != HIL_MODE_DISABLED
 // sensor emulators
 static AP_ADC_HIL              adc;
 static AP_Baro_HIL      barometer;
 static AP_Compass_HIL          compass;
 static AP_GPS_HIL              g_gps_driver;
 static AP_InertialSensor_HIL   ins;
-static AP_AHRS_DCM             ahrs(ins, g_gps);
+static AP_AHRS_DCM             ahrs(ins, barometer, g_gps);
 
 
  #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
- // When building for SITL we use the HIL barometer and compass drivers
-static SITL sitl;
-#endif
-
-#elif HIL_MODE == HIL_MODE_ATTITUDE
-static AP_ADC_HIL              adc;
-static AP_InertialSensor_HIL   ins;
-static AP_AHRS_HIL             ahrs(ins, g_gps);
-static AP_GPS_HIL              g_gps_driver;
-static AP_Compass_HIL          compass;                  // never used
-static AP_Baro_HIL      barometer;
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
  // When building for SITL we use the HIL barometer and compass drivers
 static SITL sitl;
 #endif
@@ -670,9 +663,8 @@ static uint16_t land_detector;
 ////////////////////////////////////////////////////////////////////////////////
 // 3D Location vectors
 ////////////////////////////////////////////////////////////////////////////////
-// home location is stored when we have a good GPS lock and arm the copter
-// Can be reset each the copter is re-armed
-static struct   Location home;
+static const struct  Location &home = ahrs.get_home();
+
 // Current location of the copter
 static struct   Location current_loc;
 // Holds the current loaded command from the EEPROM for navigation
@@ -733,7 +725,11 @@ static float G_Dt = 0.02;
 ////////////////////////////////////////////////////////////////////////////////
 // Inertial Navigation
 ////////////////////////////////////////////////////////////////////////////////
-static AP_InertialNav inertial_nav(&ahrs, &barometer, g_gps, gps_glitch);
+#if AP_AHRS_NAVEKF_AVAILABLE
+static AP_InertialNav_NavEKF inertial_nav(ahrs, barometer, g_gps, gps_glitch);
+#else
+static AP_InertialNav inertial_nav(ahrs, barometer, g_gps, gps_glitch);
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Waypoint navigation object
@@ -1067,7 +1063,6 @@ static void update_batt_compass(void)
     // read battery before compass because it may be used for motor interference compensation
     read_battery();
 
-#if HIL_MODE != HIL_MODE_ATTITUDE  // don't execute in HIL mode
     if(g.compass_enabled) {
         if (compass.read()) {
             compass.null_offsets();
@@ -1077,7 +1072,6 @@ static void update_batt_compass(void)
             Log_Write_Compass();
         }
     }
-#endif
 
     // record throttle output
     throttle_integrator += g.rc_3.servo_out;
@@ -2018,20 +2012,11 @@ static void read_AHRS(void)
 // read baro and sonar altitude at 20hz
 static void update_altitude()
 {
-#if HIL_MODE == HIL_MODE_ATTITUDE
-    // we are in the SIM, fake out the baro and Sonar
-    baro_alt                = g_gps->altitude_cm;
-
-    if(g.sonar_enabled) {
-        sonar_alt           = baro_alt;
-    }
-#else
     // read in baro altitude
     baro_alt            = read_barometer();
 
     // read in sonar altitude
     sonar_alt           = read_sonar();
-#endif  // HIL_MODE == HIL_MODE_ATTITUDE
 
     // write altitude info to dataflash logs
     if (g.log_bitmask & MASK_LOG_CTUN) {
@@ -2172,7 +2157,6 @@ static void tuning(){
         g.pid_optflow_pitch.kD(tuning_value);
         break;
 
-#if HIL_MODE != HIL_MODE_ATTITUDE                                       // do not allow modifying _kp or _kp_yaw gains in HIL mode
     case CH6_AHRS_YAW_KP:
         ahrs._kp_yaw.set(tuning_value);
         break;
@@ -2180,7 +2164,6 @@ static void tuning(){
     case CH6_AHRS_KP:
         ahrs._kp.set(tuning_value);
         break;
-#endif
 
     case CH6_INAV_TC:
         // To-Do: allowing tuning TC for xy and z separately
@@ -2203,10 +2186,23 @@ static void tuning(){
         g.sonar_gain.set(tuning_value);
         break;
 
-    case CH6_LOIT_SPEED:
-        // set max loiter speed to 0 ~ 1000 cm/s
-        wp_nav.set_loiter_velocity(g.rc_6.control_in);
+#if 0
+        // disabled for now - we need accessor functions
+    case CH6_EKF_VERTICAL_POS:
+        // EKF's baro vs accel (higher rely on accels more, baro impact is reduced)
+        ahrs.get_NavEKF()._gpsVertPosNoise = tuning_value;
         break;
+
+    case CH6_EKF_HORIZONTAL_POS:
+        // EKF's gps vs accel (higher rely on accels more, gps impact is reduced)
+        ahrs.get_NavEKF()._gpsHorizPosNoise = tuning_value;
+        break;
+
+    case CH6_EKF_ACCEL_NOISE:
+        // EKF's accel noise (lower means trust accels more, gps & baro less)
+        ahrs.get_NavEKF()._accNoise = tuning_value;
+        break;
+#endif
     }
 }
 

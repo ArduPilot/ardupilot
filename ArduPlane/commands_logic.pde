@@ -256,8 +256,8 @@ static void do_takeoff()
     // pitch in deg, airspeed  m/s, throttle %, track WP 1 or 0
     takeoff_pitch_cd                = (int)next_nav_command.p1 * 100;
     takeoff_altitude_cm     = next_nav_command.alt;
-    next_WP.lat             = home.lat + 1000;          // so we don't have bad calcs
-    next_WP.lng             = home.lng + 1000;          // so we don't have bad calcs
+    next_WP.lat             = home.lat + 10;
+    next_WP.lng             = home.lng + 10;
     takeoff_complete        = false;                            // set flag to use gps ground course during TO.  IMU will be doing yaw drift correction
     // Flag also used to override "on the ground" throttle disable
 }
@@ -608,10 +608,7 @@ static void do_set_home()
     if (next_nonnav_command.p1 == 1 && g_gps->status() == GPS::GPS_OK_FIX_3D) {
         init_home();
     } else {
-        home.id         = MAV_CMD_NAV_WAYPOINT;
-        home.lng        = next_nonnav_command.lng;                                      // Lon * 10**7
-        home.lat        = next_nonnav_command.lat;                                      // Lat * 10**7
-        home.alt        = max(next_nonnav_command.alt, 0);
+        ahrs.set_home(next_nonnav_command.lat, next_nonnav_command.lng, next_nonnav_command.alt);
         home_is_set = true;
     }
 }

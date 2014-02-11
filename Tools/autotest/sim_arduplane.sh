@@ -25,8 +25,7 @@ shift $((OPTIND-1))
 
 # kill existing copy if this is the '0' instance only
 [ "$INSTANCE" -eq "0" ] && {
-    killall -q JSBSim
-    killall -q ArduPlane.elf
+    killall -q JSBSim lt-JSBSim ArduPlane.elf
     pkill -f runsim.py
 }
 

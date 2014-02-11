@@ -32,8 +32,8 @@ bool AP_InertialSensor_HIL::update( void ) {
     return true;
 }
 
-float AP_InertialSensor_HIL::get_delta_time() {
-    return _delta_time_usec * 1.0e-6;
+float AP_InertialSensor_HIL::get_delta_time() const {
+    return _sample_period_ms * 0.001f;
 }
 
 float AP_InertialSensor_HIL::get_gyro_drift_rate(void) {

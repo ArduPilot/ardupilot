@@ -116,6 +116,15 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("GPS_DELAY", 12, AP_AHRS, _gps_delay, 1),
 
+#if AP_AHRS_NAVEKF_AVAILABLE
+    // @Param: EKF_USE
+    // @DisplayName: Use NavEKF Kalman filter for attitude and position estimation
+    // @Description: This controls whether the NavEKF Kalman filter is used for attitude and position estimation
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("EKF_USE",  13, AP_AHRS, _ekf_use, 0),
+#endif
+
     AP_GROUPEND
 };
 
@@ -217,26 +226,6 @@ Vector2f AP_AHRS::groundspeed_vector(void)
 	    return gndVelGPS;
     }
     return Vector2f(0.0f, 0.0f);
-}
-
-/*
-  get position projected by groundspeed and heading
- */
-bool AP_AHRS::get_projected_position(struct Location &loc)
-{
-        if (!get_position(loc)) {
-		return false;
-        }
-        location_update(loc, degrees(yaw), _gps->ground_speed_cm * 0.01 * _gps->get_lag());
-        return true;
-}
-
-/*
-  get the GPS lag in seconds
- */
-float AP_AHRS::get_position_lag(void) const
-{
-    return _gps->get_lag();
 }
 
 // update_trig - recalculates _cos_roll, _cos_pitch, etc based on latest attitude

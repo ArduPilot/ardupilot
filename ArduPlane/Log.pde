@@ -174,7 +174,7 @@ struct PACKED log_Attitude {
     uint16_t error_yaw;
 };
 
-// Write an attitude packet. Total length : 10 bytes
+// Write an attitude packet
 static void Log_Write_Attitude(void)
 {
     struct log_Attitude pkt = {
@@ -187,15 +187,22 @@ static void Log_Write_Attitude(void)
         error_yaw : (uint16_t)(ahrs.get_error_yaw() * 100)
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
+
+#if AP_AHRS_NAVEKF_AVAILABLE
+    DataFlash.Log_Write_EKF(ahrs);
+    DataFlash.Log_Write_AHRS2(ahrs);
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+    sitl.Log_Write_SIMSTATE(DataFlash);
+#endif
 }
+
 
 struct PACKED log_Performance {
     LOG_PACKET_HEADER;
     uint32_t loop_time;
     uint16_t main_loop_count;
     uint32_t g_dt_max;
-    uint8_t  renorm_count;
-    uint8_t  renorm_blowup;
     int16_t  gyro_drift_x;
     int16_t  gyro_drift_y;
     int16_t  gyro_drift_z;
@@ -211,8 +218,6 @@ static void Log_Write_Performance()
         loop_time       : millis() - perf_mon_timer,
         main_loop_count : mainLoop_count,
         g_dt_max        : G_Dt_max,
-        renorm_count    : ahrs.renorm_range_count,
-        renorm_blowup   : ahrs.renorm_blowup_count,
         gyro_drift_x    : (int16_t)(ahrs.get_gyro_drift().x * 1000),
         gyro_drift_y    : (int16_t)(ahrs.get_gyro_drift().y * 1000),
         gyro_drift_z    : (int16_t)(ahrs.get_gyro_drift().z * 1000),
@@ -549,12 +554,24 @@ static void Log_Write_Airspeed(void)
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
+static void Log_Write_AHRS2() 
+{
+    DataFlash.Log_Write_AHRS2(ahrs);
+}
+
+static void Log_Write_SIMSTATE() 
+{
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+    sitl.Log_Write_SIMSTATE(DataFlash);
+#endif
+}
+
 static const struct LogStructure log_structure[] PROGMEM = {
     LOG_COMMON_STRUCTURES,
     { LOG_ATTITUDE_MSG, sizeof(log_Attitude),       
       "ATT", "IccCCC",        "TimeMS,Roll,Pitch,Yaw,ErrorRP,ErrorYaw" },
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
-      "PM",  "IHIBBhhhBH", "LTime,MLC,gDt,RNCnt,RNBl,GDx,GDy,GDz,I2CErr,INSErr" },
+      "PM",  "IHIhhhBH", "LTime,MLC,gDt,GDx,GDy,GDz,I2CErr,INSErr" },
     { LOG_CMD_MSG, sizeof(log_Cmd),                 
       "CMD", "BBBBBeLL",   "CTot,CNum,CId,COpt,Prm1,Alt,Lat,Lng" },
     { LOG_CAMERA_MSG, sizeof(log_Camera),                 
@@ -579,7 +596,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "ARM", "IHB", "TimeMS,ArmState,ArmChecks" },
     { LOG_AIRSPEED_MSG, sizeof(log_AIRSPEED),
       "ARSP",  "Iffc",     "TimeMS,Airspeed,DiffPress,Temp" },
-    TECS_LOG_FORMAT(LOG_TECS_MSG),
+    TECS_LOG_FORMAT(LOG_TECS_MSG)
 };
 
 // Read the DataFlash.log memory : Packet Parser
@@ -631,6 +648,8 @@ static void Log_Write_IMU() {}
 static void Log_Write_RC() {}
 static void Log_Write_Airspeed(void) {}
 static void Log_Write_Baro(void) {}
+static void Log_Write_AHRS2() {}
+static void Log_Write_SIMSTATE() {}
 
 static int8_t process_logs(uint8_t argc, const Menu::arg *argv) {
     return 0;

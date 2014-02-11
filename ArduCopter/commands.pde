@@ -117,18 +117,14 @@ static int32_t get_RTL_alt()
 static void init_home()
 {
     set_home_is_set(true);
-    home.id         = MAV_CMD_NAV_WAYPOINT;
-    home.lng        = g_gps->longitude;                                 // Lon * 10**7
-    home.lat        = g_gps->latitude;                                  // Lat * 10**7
-    home.alt        = 0;                                                        // Home is always 0
+    ahrs.set_home(g_gps->latitude, g_gps->longitude, 0);
 
     // Save Home to EEPROM
     // -------------------
     // no need to save this to EPROM
     set_cmd_with_index(home, 0);
 
-    // set inertial nav's home position
-    inertial_nav.set_home_position(g_gps->longitude, g_gps->latitude);
+    inertial_nav.setup_home_position();
 
     if (g.log_bitmask & MASK_LOG_CMD)
         Log_Write_Cmd(0, &home);

@@ -4,7 +4,7 @@
 
 // These are function definitions so the Menu can be constructed before the functions
 // are defined below. Order matters to the compiler.
-#if HIL_MODE != HIL_MODE_ATTITUDE && HIL_MODE != HIL_MODE_SENSORS
+#if HIL_MODE == HIL_MODE_DISABLED
 static int8_t   test_baro(uint8_t argc,                 const Menu::arg *argv);
 #endif
 static int8_t   test_compass(uint8_t argc,              const Menu::arg *argv);
@@ -20,7 +20,7 @@ static int8_t   test_relay(uint8_t argc,                const Menu::arg *argv);
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 static int8_t   test_shell(uint8_t argc,                const Menu::arg *argv);
 #endif
-#if HIL_MODE != HIL_MODE_ATTITUDE && HIL_MODE != HIL_MODE_SENSORS
+#if HIL_MODE == HIL_MODE_DISABLED
 static int8_t   test_sonar(uint8_t argc,                const Menu::arg *argv);
 #endif
 
@@ -29,7 +29,7 @@ static int8_t   test_sonar(uint8_t argc,                const Menu::arg *argv);
 // User enters the string in the console to call the functions on the right.
 // See class Menu in AP_Coommon for implementation details
 const struct Menu::command test_menu_commands[] PROGMEM = {
-#if HIL_MODE != HIL_MODE_ATTITUDE && HIL_MODE != HIL_MODE_SENSORS
+#if HIL_MODE == HIL_MODE_DISABLED
     {"baro",                test_baro},
 #endif
     {"compass",             test_compass},
@@ -45,7 +45,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     {"shell", 				test_shell},
 #endif
-#if HIL_MODE != HIL_MODE_ATTITUDE && HIL_MODE != HIL_MODE_SENSORS
+#if HIL_MODE == HIL_MODE_DISABLED
     {"sonar",               test_sonar},
 #endif
 };
@@ -60,7 +60,7 @@ test_mode(uint8_t argc, const Menu::arg *argv)
     return 0;
 }
 
-#if HIL_MODE != HIL_MODE_ATTITUDE && HIL_MODE != HIL_MODE_SENSORS
+#if HIL_MODE == HIL_MODE_DISABLED
 static int8_t
 test_baro(uint8_t argc, const Menu::arg *argv)
 {
@@ -522,7 +522,7 @@ test_shell(uint8_t argc, const Menu::arg *argv)
 }
 #endif
 
-#if HIL_MODE != HIL_MODE_ATTITUDE && HIL_MODE != HIL_MODE_SENSORS
+#if HIL_MODE == HIL_MODE_DISABLED
 /*
  *  test the sonar
  */

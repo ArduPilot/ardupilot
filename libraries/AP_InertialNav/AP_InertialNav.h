@@ -34,7 +34,7 @@ class AP_InertialNav
 public:
 
     // Constructor
-    AP_InertialNav( const AP_AHRS* ahrs, AP_Baro* baro, GPS*& gps, GPS_Glitch& gps_glitch ) :
+    AP_InertialNav(AP_AHRS &ahrs, AP_Baro &baro, GPS*& gps, GPS_Glitch& gps_glitch ) :
         _ahrs(ahrs),
         _baro(baro),
         _gps(gps),
@@ -51,11 +51,8 @@ public:
 
     /**
      * initializes the object.
-     *
-     * AP_InertialNav::set_home_position(int32_t, int32_t) should be called later,
-     * to enable all "horizontal related" getter-methods.
      */
-    void        init();
+    virtual void init();
 
     /**
      * update - updates velocity and position estimates using latest info from accelerometers
@@ -63,7 +60,7 @@ public:
      *
      * @param dt : time since last update in seconds
      */
-    void        update(float dt);
+    virtual void update(float dt);
 
     //
     // XY Axis specific methods
@@ -83,68 +80,40 @@ public:
      * position_ok - true if inertial based altitude and position can be trusted
      * @return
      */
-    bool        position_ok() const;
-
-    /**
-     * check_gps - checks if new gps readings have arrived and calls correct_with_gps to
-     * calculate the horizontal position error
-     * @see correct_with_gps(int32_t lon, int32_t lat, float dt);
-     */
-    void        check_gps();
-
-    /**
-     * correct_with_gps - calculates horizontal position error using gps
-     *
-     * @param now : current time since boot in milliseconds
-     * @param lon : longitude in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
-     * @param lat : latitude  in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
-     */
-    void        correct_with_gps(uint32_t now, int32_t lon, int32_t lat);
+    virtual bool position_ok() const;
 
     /**
      * get_position - returns the current position relative to the home location in cm.
      *
-     * the home location was set with AP_InertialNav::set_home_position(int32_t, int32_t)
-     *
      * @return
      */
-    const Vector3f&    get_position() const { return _position; }
+    virtual const Vector3f&    get_position() const { return _position; }
 
     /**
      * get_latitude - returns the latitude of the current position estimation in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
      * @return
      */
-    int32_t     get_latitude() const;
+    virtual int32_t     get_latitude() const;
 
     /**
      * get_longitude - returns the longitude of the current position estimation in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
      * @return
      */
-    int32_t     get_longitude() const;
-
-    /**
-     * set_home_position - sets home position
-     *
-     * all internal calculations are recorded as the distances from this point.
-     *
-     * @param lon : longitude in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
-     * @param lat : latitude  in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
-     */
-    void        set_home_position(int32_t lon, int32_t lat);
+    virtual int32_t     get_longitude() const;
 
     /**
      * get_latitude_diff - returns the current latitude difference from the home location.
      *
      * @return difference in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
      */
-    float       get_latitude_diff() const;
+    virtual float       get_latitude_diff() const;
 
     /**
      * get_longitude_diff - returns the current longitude difference from the home location.
      *
      * @return difference in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
      */
-    float       get_longitude_diff() const;
+    virtual float       get_longitude_diff() const;
 
     /**
      * get_velocity - returns the current velocity in cm/s
@@ -154,14 +123,14 @@ public:
      * 				.y : longitude velocity in cm/s
      * 				.z : vertical  velocity in cm/s
      */
-    const Vector3f&    get_velocity() const { return _velocity; }
+    virtual const Vector3f&    get_velocity() const { return _velocity; }
 
     /**
      * get_velocity_xy - returns the current horizontal velocity in cm/s
      *
      * @returns the current horizontal velocity in cm/s
      */
-    float        get_velocity_xy();
+    virtual float        get_velocity_xy();
 
     /**
      * set_velocity_xy - overwrites the current horizontal velocity in cm/s
@@ -170,6 +139,11 @@ public:
      * @param y : longitude velocity in cm/s
      */
     void        set_velocity_xy(float x, float y);
+
+    /**
+       setup_home_position - reset on home position change
+    */
+    void setup_home_position(void);
 
     //
     // Z Axis methods
@@ -189,7 +163,71 @@ public:
      * altitude_ok - returns true if inertial based altitude and position can be trusted
      * @return
      */
-    bool        altitude_ok() const { return true; }
+    virtual bool        altitude_ok() const { return true; }
+
+    /**
+     * get_altitude - get latest altitude estimate in cm above the
+     * reference position
+     * @return
+     */
+    virtual float       get_altitude() const { return _position.z; }
+
+    /**
+     * set_altitude - overwrites the current altitude value.
+     *
+     * @param new_altitude : altitude in cm
+     */
+    void        set_altitude( float new_altitude);
+
+    /**
+     * get_velocity_z - returns the current climbrate.
+     *
+     * @see get_velocity().z
+     *
+     * @return climbrate in cm/s (positive up)
+     */
+    virtual float       get_velocity_z() const { return _velocity.z; }
+
+    /**
+     * set_velocity_z - overwrites the current climbrate.
+     *
+     * @param new_velocity : climbrate in cm/s
+     */
+    void        set_velocity_z( float new_velocity );
+
+    /**
+     * error_count - returns number of missed updates from GPS
+     */
+    virtual uint8_t     error_count() const { return _error_count; }
+
+    /**
+     * ignore_next_error - the next error (if it occurs immediately) will not be added to the error count
+     */
+    void        ignore_next_error() { _flags.ignore_error = 7; }
+
+    // class level parameters
+    static const struct AP_Param::GroupInfo var_info[];
+
+    // public variables
+    Vector3f                accel_correction_ef;        // earth frame accelerometer corrections. here for logging purposes only
+
+protected:
+
+    /**
+     * correct_with_gps - calculates horizontal position error using gps
+     *
+     * @param now : current time since boot in milliseconds
+     * @param lon : longitude in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
+     * @param lat : latitude  in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
+     */
+    void        correct_with_gps(uint32_t now, int32_t lon, int32_t lat);
+
+    /**
+     * check_gps - checks if new gps readings have arrived and calls correct_with_gps to
+     * calculate the horizontal position error
+     * @see correct_with_gps(int32_t lon, int32_t lat, float dt);
+     */
+    void        check_gps();
 
     /**
      * check_baro - checks if new baro readings have arrived and calls correct_with_baro to
@@ -207,52 +245,6 @@ public:
      */
     void        correct_with_baro(float baro_alt, float dt);
 
-    /**
-     * get_altitude - get latest altitude estimate in cm
-     * @return
-     */
-    float       get_altitude() const { return _position.z; }
-
-    /**
-     * set_altitude - overwrites the current altitude value.
-     *
-     * @param new_altitude : altitude in cm
-     */
-    void        set_altitude( float new_altitude);
-
-    /**
-     * get_velocity_z - returns the current climbrate.
-     *
-     * @see get_velocity().z
-     *
-     * @return climbrate in cm/s
-     */
-    float       get_velocity_z() const { return _velocity.z; }
-
-    /**
-     * set_velocity_z - overwrites the current climbrate.
-     *
-     * @param new_velocity : climbrate in cm/s
-     */
-    void        set_velocity_z( float new_velocity );
-
-    /**
-     * error_count - returns number of missed updates from GPS
-     */
-    uint8_t     error_count() const { return _error_count; }
-
-    /**
-     * ignore_next_error - the next error (if it occurs immediately) will not be added to the error count
-     */
-    void        ignore_next_error() { _flags.ignore_error = 7; }
-
-    // class level parameters
-    static const struct AP_Param::GroupInfo var_info[];
-
-    // public variables
-    Vector3f                accel_correction_ef;        // earth frame accelerometer corrections. here for logging purposes only
-
-protected:
 
     /**
      * update gains from time constant.
@@ -280,8 +272,8 @@ protected:
         uint8_t ignore_error        : 3;                // the number of iterations for which we should ignore errors
     } _flags;
 
-    const AP_AHRS*    const _ahrs;                      // pointer to ahrs object
-    AP_Baro*                _baro;                      // pointer to barometer
+    AP_AHRS                &_ahrs;                      // reference to ahrs object
+    AP_Baro                &_baro;                      // reference to barometer
     GPS*&                   _gps;                       // pointer to gps
 
     // XY Axis specific variables
@@ -295,8 +287,6 @@ protected:
     uint8_t                 _historic_xy_counter;       // counter used to slow saving of position estimates for later comparison to gps
     AP_BufferFloat_Size5    _hist_position_estimate_x;  // buffer of historic accel based position to account for gpslag
     AP_BufferFloat_Size5    _hist_position_estimate_y;  // buffer of historic accel based position to account for gps lag
-    int32_t                 _base_lat;                  // base latitude  (home location) in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
-    int32_t                 _base_lon;                  // base longitude (home location) in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
     float                   _lon_to_cm_scaling;         // conversion of longitude to centimeters
 
     // Z Axis specific variables
@@ -319,5 +309,9 @@ protected:
     uint8_t                 _error_count;               // number of missed GPS updates
 
 };
+
+#if AP_AHRS_NAVEKF_AVAILABLE
+#include "AP_InertialNav_NavEKF.h"
+#endif
 
 #endif // __AP_INERTIALNAV_H__

@@ -25,8 +25,8 @@ class AP_AHRS_DCM : public AP_AHRS
 {
 public:
     // Constructors
-    AP_AHRS_DCM(AP_InertialSensor &ins, GPS *&gps) :
-        AP_AHRS(ins, gps),
+    AP_AHRS_DCM(AP_InertialSensor &ins, AP_Baro &baro, GPS *&gps) :
+        AP_AHRS(ins, baro, gps),
         _last_declination(0),
         _mag_earth(1,0)
     {
@@ -78,6 +78,9 @@ public:
 
     bool            use_compass(void);
 
+    void set_home(int32_t lat, int32_t lng, int32_t alt_cm);
+    void estimate_wind(void);
+
 private:
     float _ki;
     float _ki_yaw;
@@ -91,7 +94,6 @@ private:
     void            drift_correction_yaw(void);
     float           yaw_error_compass();
     void            euler_angles(void);
-    void            estimate_wind(Vector3f &velocity);
     bool            have_gps(void) const;
 
     // primary representation of attitude of board used for all inertial calculations
@@ -115,6 +117,9 @@ private:
 
     // P term gain based on spin rate
     float           _P_gain(float spin_rate);
+
+    // P term yaw gain based on rate of change of horiz velocity
+    float           _yaw_gain(Vector3f VdotEF);
 
     // state to support status reporting
     float _renorm_val_sum;

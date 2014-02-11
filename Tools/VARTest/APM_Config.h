@@ -21,15 +21,11 @@
 // HIL_MODE SELECTION
 //
 // Mavlink supports
-// 1. HIL_MODE_ATTITUDE : simulated position, airspeed, and attitude
-// 2. HIL_MODE_SENSORS: full sensor simulation
+// 1. HIL_MODE_SENSORS: full sensor simulation
 #define HIL_MODE            HIL_MODE_ATTITUDE
 
 // Sensors
 // All sensors are supported in all modes.
-// The magnetometer is not used in
-// HIL_MODE_ATTITUDE but you may leave it
-// enabled if you wish.
 #define AIRSPEED_SENSOR     ENABLED
 #define MAGNETOMETER        ENABLED
 #define AIRSPEED_CRUISE     25

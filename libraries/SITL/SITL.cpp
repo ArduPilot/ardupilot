@@ -20,8 +20,11 @@
 */
 
 #include <AP_Common.h>
+#include <AP_HAL.h>
 #include <GCS_MAVLink.h>
 #include <SITL.h>
+
+extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
 const AP_Param::GroupInfo SITL::var_info[] PROGMEM = {
@@ -85,6 +88,37 @@ void SITL::simstate_send(mavlink_channel_t chan)
                               state.longitude*1.0e7);
 }
 
+/* report SITL state to DataFlash */
+void SITL::Log_Write_SIMSTATE(DataFlash_Class &DataFlash)
+{
+	double p, q, r;
+	float yaw;
+
+	// we want the gyro values to be directly comparable to the
+	// raw_imu message, which is in body frame
+	convert_body_frame(state.rollDeg, state.pitchDeg,
+                       state.rollRate, state.pitchRate, state.yawRate,
+                       &p, &q, &r);
+
+	// convert to same conventions as DCM
+	yaw = state.yawDeg;
+	if (yaw > 180) {
+		yaw -= 360;
+	}
+
+    struct log_AHRS pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_SIMSTATE_MSG),
+        time_ms : hal.scheduler->millis(),
+        roll  : (int16_t)(state.rollDeg*100),
+        pitch : (int16_t)(state.pitchDeg*100),
+        yaw   : (uint16_t)(wrap_360_cd(yaw*100)),
+        alt   : (float)state.altitude,
+        lat   : (int32_t)(state.latitude*1.0e7),
+        lng   : (int32_t)(state.longitude*1.0e7)
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
+
 // convert a set of roll rates from earth frame to body frame
 void SITL::convert_body_frame(double rollDeg, double pitchDeg,
                               double rollRate, double pitchRate, double yawRate,
@@ -98,8 +132,8 @@ void SITL::convert_body_frame(double rollDeg, double pitchDeg,
 	thetaDot = ToRad(pitchRate);
 	psiDot = ToRad(yawRate);
 
-	*p = phiDot - psiDot*sin(theta);
-	*q = cos(phi)*thetaDot + sin(phi)*psiDot*cos(theta);
-	*r = cos(phi)*psiDot*cos(theta) - sin(phi)*thetaDot;    
+	*p = phiDot - psiDot*sinf(theta);
+	*q = cosf(phi)*thetaDot + sinf(phi)*psiDot*cosf(theta);
+	*r = cosf(phi)*psiDot*cosf(theta) - sinf(phi)*thetaDot;    
 }
 

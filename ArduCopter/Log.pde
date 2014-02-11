@@ -392,8 +392,6 @@ static void Log_Write_Compass()
 
 struct PACKED log_Performance {
     LOG_PACKET_HEADER;
-    uint8_t renorm_count;
-    uint8_t renorm_blowup;
     uint16_t num_long_running;
     uint16_t num_loops;
     uint32_t max_time;
@@ -408,8 +406,6 @@ static void Log_Write_Performance()
 {
     struct log_Performance pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PERFORMANCE_MSG),
-        renorm_count     : ahrs.renorm_range_count,
-        renorm_blowup    : ahrs.renorm_blowup_count,
         num_long_running : perf_info_get_num_long_running(),
         num_loops        : perf_info_get_num_loops(),
         max_time         : perf_info_get_max_time(),
@@ -475,6 +471,14 @@ static void Log_Write_Attitude()
         yaw             : (uint16_t)ahrs.yaw_sensor
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
+
+#if AP_AHRS_NAVEKF_AVAILABLE
+    DataFlash.Log_Write_EKF(ahrs);
+    DataFlash.Log_Write_AHRS2(ahrs);
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+    sitl.Log_Write_SIMSTATE(DataFlash);
+#endif
 }
 
 struct PACKED log_Mode {
@@ -688,7 +692,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_COMPASS2_MSG, sizeof(log_Compass),             
       "MAG2","Ihhhhhhhhh",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" },
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
-      "PM",  "BBHHIhBHB",    "RenCnt,RenBlw,NLon,NLoop,MaxT,PMT,I2CErr,INSErr,INAVErr" },
+      "PM",  "HHIhBHB",    "NLon,NLoop,MaxT,PMT,I2CErr,INSErr,INAVErr" },
     { LOG_CMD_MSG, sizeof(log_Cmd),                 
       "CMD", "BBBBBeLL",     "CTot,CNum,CId,COpt,Prm1,Alt,Lat,Lng" },
     { LOG_ATTITUDE_MSG, sizeof(log_Attitude),       

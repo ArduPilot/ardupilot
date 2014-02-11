@@ -136,6 +136,11 @@ float AP_Baro::get_altitude(void)
 {
     float scaling, temp;
 
+    if (_ground_pressure == 0) {
+        // called before initialisation
+        return 0;
+    }
+
     if (_last_altitude_t == _last_update) {
         // no new information
         return _altitude + _alt_offset;

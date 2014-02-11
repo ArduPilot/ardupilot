@@ -79,13 +79,13 @@ public:
     float           get_pressure(); // in mbar*100 units
     float           get_temperature(); // in celsius degrees
 
-    void            _calculate();
 
     /* Serial port drivers to pass to "init". */
     static AP_Baro_MS5611_SPI spi;
     static AP_Baro_MS5611_I2C i2c;
 
 private:
+    void            _calculate();
     /* Asynchronous handler functions: */
     void                            _update();
     /* Asynchronous state: */

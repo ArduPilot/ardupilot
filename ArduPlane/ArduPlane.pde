@@ -69,6 +69,7 @@
 #include <AP_Vehicle.h>
 #include <AP_SpdHgtControl.h>
 #include <AP_TECS.h>
+#include <AP_NavEKF.h>
 
 #include <AP_Notify.h>      // Notify library
 #include <AP_BattMonitor.h> // Battery monitor library
@@ -146,7 +147,6 @@ static AP_Notify notify;
 static void update_events(void);
 void gcs_send_text_fmt(const prog_char_t *fmt, ...);
 static void print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode);
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // DataFlash
@@ -272,7 +272,12 @@ AP_InertialSensor_L3G4200D ins;
   #error Unrecognised CONFIG_INS_TYPE setting.
 #endif // CONFIG_INS_TYPE
 
-AP_AHRS_DCM ahrs(ins, g_gps);
+// Inertial Navigation EKF
+#if AP_AHRS_NAVEKF_AVAILABLE
+AP_AHRS_NavEKF ahrs(ins, barometer, g_gps);
+#else
+AP_AHRS_DCM ahrs(ins, barometer, g_gps);
+#endif
 
 static AP_L1_Control L1_controller(ahrs);
 static AP_TECS TECS_controller(ahrs, aparm);
@@ -282,7 +287,6 @@ static AP_RollController  rollController(ahrs, aparm);
 static AP_PitchController pitchController(ahrs, aparm);
 static AP_YawController   yawController(ahrs, aparm);
 static AP_SteerController steerController(ahrs);
-
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 SITL sitl;
@@ -619,9 +623,10 @@ static int16_t condition_rate;
 // 3D Location vectors
 // Location structure defined in AP_Common
 ////////////////////////////////////////////////////////////////////////////////
-// The home location used for RTL.  The location is set when we first get stable GPS lock
-static struct   Location home;
-// Flag for if we have g_gps lock and have set the home location
+// reference to AHRS home
+static const struct Location &home = ahrs.get_home();
+
+// Flag for if we have g_gps lock and have set the home location in AHRS
 static bool home_is_set;
 // The location of the previous waypoint.  Used for track following and altitude ramp calculations
 static struct   Location prev_WP;
@@ -807,8 +812,9 @@ static void ahrs_update()
 
     ahrs.update();
 
-    if (should_log(MASK_LOG_ATTITUDE_FAST))
+    if (should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
+    }
 
     if (should_log(MASK_LOG_IMU))
         Log_Write_IMU();
@@ -889,8 +895,9 @@ static void barometer_accumulate(void)
  */
 static void update_logging1(void)
 {
-    if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST))
+    if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
+    }
 
     if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_IMU))
         Log_Write_IMU();
@@ -1035,7 +1042,7 @@ static void update_GPS_50Hz(void)
 static void update_GPS_10Hz(void)
 {
     // get position from AHRS
-    have_position = ahrs.get_projected_position(current_loc);
+    have_position = ahrs.get_position(current_loc);
 
     if (g_gps->new_data && g_gps->status() >= GPS::GPS_OK_FIX_3D) {
         g_gps->new_data = false;
@@ -1080,8 +1087,14 @@ static void update_GPS_10Hz(void)
 
         if (!arming.is_armed() ||
             hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
+            ahrs.set_correct_centrifugal(false);
             update_home();
+        } else {
+            ahrs.set_correct_centrifugal(true);
         }
+
+        // update wind estimate
+        ahrs.estimate_wind();
     }
 
     calc_gndspeed_undershoot();
@@ -1354,17 +1367,7 @@ static void update_navigation()
 
 static void update_alt()
 {
-    // this function is in place to potentially add a sonar sensor in the future
-    //altitude_sensor = BARO;
-
-    if (barometer.healthy) {
-        // alt_MSL centimeters (centimeters)
-        current_loc.alt = (1 - g.altitude_mix) * g_gps->altitude_cm;
-        current_loc.alt += g.altitude_mix * (read_barometer() + home.alt);
-    } else if (g_gps->status() >= GPS::GPS_OK_FIX_3D) {
-        // alt_MSL centimeters (centimeters)
-        current_loc.alt = g_gps->altitude_cm;
-    }
+    barometer.read();
 
     geofence_check(true);
 

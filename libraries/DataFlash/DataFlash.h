@@ -11,6 +11,7 @@
 #include <AP_GPS.h>
 #include <AP_InertialSensor.h>
 #include <AP_Baro.h>
+#include <AP_AHRS.h>
 #include <stdint.h>
 
 class DataFlash_Class
@@ -51,6 +52,10 @@ public:
     void Log_Write_RCIN(void);
     void Log_Write_RCOUT(void);
     void Log_Write_Baro(AP_Baro &baro);
+    void Log_Write_AHRS2(AP_AHRS &ahrs);
+#if AP_AHRS_NAVEKF_AVAILABLE
+    void Log_Write_EKF(AP_AHRS_NavEKF &ahrs);
+#endif
     void Log_Write_Message(const char *message);
     void Log_Write_Message_P(const prog_char_t *message);
 
@@ -211,9 +216,83 @@ struct PACKED log_BARO {
     int16_t temperature;
 };
 
+struct PACKED log_AHRS {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    int16_t roll;
+    int16_t pitch;
+    uint16_t yaw;
+    float alt;
+    int32_t lat;
+    int32_t lng;
+};
+
+struct PACKED log_EKF1 {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    int16_t roll;
+    int16_t pitch;
+    uint16_t yaw;
+    float velN;
+    float velE;
+    float velD;
+    float posN;
+    float posE;
+    float posD;
+    int16_t gyrX;
+    int16_t gyrY;
+    int16_t gyrZ;
+};
+
+struct PACKED log_EKF2 {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    int8_t accX;
+    int8_t accY;
+    int8_t accZ;
+    int16_t windN;
+    int16_t windE;
+    int16_t magN;
+    int16_t magE;
+    int16_t magD;
+    int16_t magX;
+    int16_t magY;
+    int16_t magZ;
+};
+
+struct PACKED log_EKF3 {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    int16_t innovVN;
+    int16_t innovVE;
+    int16_t innovVD;
+    int16_t innovPN;
+    int16_t innovPE;
+    int16_t innovPD;
+    int16_t innovMX;
+    int16_t innovMY;
+    int16_t innovMZ;
+    int16_t innovVT;
+};
+
+struct PACKED log_EKF4 {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    int16_t sqrtvarVN;
+    int16_t sqrtvarVE;
+	int16_t sqrtvarVD;
+    int16_t sqrtvarPN;
+    int16_t sqrtvarPE;
+    int16_t sqrtvarPD;
+    int16_t sqrtvarMX;
+    int16_t sqrtvarMY;
+    int16_t sqrtvarMZ;
+    int16_t sqrtvarVT;
+};
+
 #define LOG_COMMON_STRUCTURES \
     { LOG_FORMAT_MSG, sizeof(log_Format), \
-      "FMT", "BBnNZ",      "Type,Length,Name,Format" },    \
+      "FMT", "BBnNZ",      "Type,Length,Name,Format,Columns" },    \
     { LOG_PARAMETER_MSG, sizeof(log_Parameter), \
       "PARM", "Nf",        "Name,Value" },    \
     { LOG_GPS_MSG, sizeof(log_GPS), \
@@ -229,7 +308,19 @@ struct PACKED log_BARO {
     { LOG_RCOUT_MSG, sizeof(log_RCOUT), \
       "RCOU",  "Ihhhhhhhh",     "TimeMS,Chan1,Chan2,Chan3,Chan4,Chan5,Chan6,Chan7,Chan8" }, \
     { LOG_BARO_MSG, sizeof(log_BARO), \
-      "BARO",  "Iffc",     "TimeMS,Alt,Press,Temp" }
+      "BARO",  "Iffc",     "TimeMS,Alt,Press,Temp" }, \
+    { LOG_AHRS2_MSG, sizeof(log_AHRS), \
+      "AHR2","IccCfLL","TimeMS,Roll,Pitch,Yaw,Alt,Lat,Lng" }, \
+    { LOG_SIMSTATE_MSG, sizeof(log_AHRS), \
+      "SIM","IccCfLL","TimeMS,Roll,Pitch,Yaw,Alt,Lat,Lng" }, \
+    { LOG_EKF1_MSG, sizeof(log_EKF1), \
+      "EKF1","IccCffffffccc","TimeMS,Roll,Pitch,Yaw,VN,VE,VD,PN,PE,PD,GX,GY,GZ" }, \
+    { LOG_EKF2_MSG, sizeof(log_EKF2), \
+      "EKF2","Ibbbcchhhhhh","TimeMS,AX,AY,AZ,VWN,VWE,MN,ME,MD,MX,MY,MZ" }, \
+    { LOG_EKF3_MSG, sizeof(log_EKF3), \
+      "EKF3","Icccccchhhc","TimeMS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IVT" }, \
+    { LOG_EKF4_MSG, sizeof(log_EKF4), \
+      "EKF4","Icccccchhhc","TimeMS,SVN,SVE,SVD,SPN,SPE,SPD,SMX,SMY,SMZ,SVT" }
 
 // message types for common messages
 #define LOG_FORMAT_MSG	  128
@@ -241,6 +332,12 @@ struct PACKED log_BARO {
 #define LOG_RCOUT_MSG     134
 #define LOG_IMU2_MSG	  135
 #define LOG_BARO_MSG	  136
+#define LOG_AHRS2_MSG	  137
+#define LOG_SIMSTATE_MSG  138
+#define LOG_EKF1_MSG      139
+#define LOG_EKF2_MSG      140
+#define LOG_EKF3_MSG      141
+#define LOG_EKF4_MSG      142
 
 #include "DataFlash_Block.h"
 #include "DataFlash_File.h"

@@ -131,6 +131,9 @@ public:
     // return health status of sensor
     bool healthy(void) const { return _healthy; }
 
+    // return time in ms of last update
+    uint32_t last_update_ms(void) const { return _last_update_ms; }
+
     static const struct AP_Param::GroupInfo var_info[];
 
 
@@ -146,6 +149,7 @@ private:
     float			_last_pressure;
     float           _EAS2TAS;
     bool		    _healthy;
+    uint32_t        _last_update_ms;
 
     Airspeed_Calibration _calibration;
     float _last_saved_ratio;

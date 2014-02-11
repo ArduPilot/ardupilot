@@ -214,7 +214,7 @@ static void geofence_check(bool altitude_check_only)
     } else if (geofence_check_maxalt()) {
         outside = true;
         breach_type = FENCE_BREACH_MAXALT;
-    } else if (!altitude_check_only && ahrs.get_projected_position(loc)) {
+    } else if (!altitude_check_only && ahrs.get_position(loc)) {
         Vector2l location;
         location.x = loc.lat;
         location.y = loc.lng;

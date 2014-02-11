@@ -1,29 +1,11 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-// filter altitude from the barometer with a low pass filter
-static LowPassFilterInt32 altitude_filter;
-
-
 static void init_barometer(void)
 {
     gcs_send_text_P(SEVERITY_LOW, PSTR("Calibrating barometer"));    
     barometer.calibrate();
 
-    // filter at 100ms sampling, with 0.7Hz cutoff frequency
-    altitude_filter.set_cutoff_frequency(0.1, 0.7);
-
     gcs_send_text_P(SEVERITY_LOW, PSTR("barometer calibration complete"));
-}
-
-// read the barometer and return the updated altitude in centimeters
-// above the calibration altitude
-static int32_t read_barometer(void)
-{
-    barometer.read();
-    if (should_log(MASK_LOG_IMU)) {
-        Log_Write_Baro();
-    }
-    return altitude_filter.apply(barometer.get_altitude() * 100.0);
 }
 
 static void init_sonar(void)

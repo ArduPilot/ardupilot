@@ -680,6 +680,10 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         CHECK_PAYLOAD_SIZE(SIMSTATE);
         send_simstate(chan);
 #endif
+#if AP_AHRS_NAVEKF_AVAILABLE
+        CHECK_PAYLOAD_SIZE(AHRS2);
+        gcs[chan-MAVLINK_COMM_0].send_ahrs2(ahrs);
+#endif
         break;
 
     case MSG_HWSTATUS:
@@ -1178,9 +1182,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 ahrs.set_trim(Vector3f(0,0,0));             // clear out saved trim
             } 
             if (packet.param3 == 1) {
-#if HIL_MODE != HIL_MODE_ATTITUDE
                 init_barometer(false);                      // fast barometer calibratoin
-#endif
             }
             if (packet.param4 == 1) {
                 trim_radio();
@@ -1947,14 +1949,6 @@ mission_failed:
 
         barometer.setHIL(packet.alt*0.001f);
         compass.setHIL(packet.roll, packet.pitch, packet.yaw);
-
- #if HIL_MODE == HIL_MODE_ATTITUDE
-        // set AHRS hil sensor
-        ahrs.setHil(packet.roll,packet.pitch,packet.yaw,packet.rollspeed,
-                    packet.pitchspeed,packet.yawspeed);
- #endif
-
-
 
         break;
     }

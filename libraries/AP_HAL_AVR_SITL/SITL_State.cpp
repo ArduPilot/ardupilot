@@ -234,7 +234,7 @@ void SITL_State::_timer_handler(int signum)
 
 	static bool in_timer;
 
-	if (in_timer || _scheduler->interrupts_are_blocked()){
+	if (in_timer || _scheduler->interrupts_are_blocked() || _sitl == NULL){
 		return;
     }
 

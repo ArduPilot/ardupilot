@@ -270,7 +270,7 @@ bool AP_InertialSensor_L3G4200D::update(void)
     return true;
 }
 
-float AP_InertialSensor_L3G4200D::get_delta_time(void) 
+float AP_InertialSensor_L3G4200D::get_delta_time(void) const
 {
     return _sample_period_usec * 1.0e-6f;
 }

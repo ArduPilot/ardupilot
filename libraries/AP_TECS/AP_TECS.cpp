@@ -150,24 +150,31 @@ void AP_TECS::update_50hz(float hgt_afe)
 	}
 	_update_50hz_last_usec = now;	
 
-	// Get height acceleration
-	float hgt_ddot_mea = -(_ahrs.get_accel_ef().z + GRAVITY_MSS);
-	// Perform filter calculation using backwards Euler integration
-    // Coefficients selected to place all three filter poles at omega
-	float omega2 = _hgtCompFiltOmega*_hgtCompFiltOmega;
-	float hgt_err = hgt_afe - _integ3_state;
-	float integ1_input = hgt_err * omega2 * _hgtCompFiltOmega;
-	_integ1_state = _integ1_state + integ1_input * DT;
-	float integ2_input = _integ1_state + hgt_ddot_mea + hgt_err * omega2 * 3.0f;
-	_integ2_state = _integ2_state + integ2_input * DT;
-	float integ3_input = _integ2_state + hgt_err * _hgtCompFiltOmega * 3.0f;
-    // If more than 1 second has elapsed since last update then reset the integrator state
-    // to the measured height
-    if (DT > 1.0) {
-        _integ3_state = hgt_afe;
-    } else {
-	    _integ3_state = _integ3_state + integ3_input*DT;
-    }
+	// USe inertial nav verical velocity and height if available
+	Vector3f posned, velned;
+	if (_ahrs.get_velocity_NED(velned) && _ahrs.get_relative_position_NED(posned)) {
+		_integ2_state   = - velned.z;
+		_integ3_state   = - posned.z;
+	} else {
+		// Get height acceleration
+		float hgt_ddot_mea = -(_ahrs.get_accel_ef().z + GRAVITY_MSS);
+		// Perform filter calculation using backwards Euler integration
+		// Coefficients selected to place all three filter poles at omega
+		float omega2 = _hgtCompFiltOmega*_hgtCompFiltOmega;
+		float hgt_err = hgt_afe - _integ3_state;
+		float integ1_input = hgt_err * omega2 * _hgtCompFiltOmega;
+		_integ1_state = _integ1_state + integ1_input * DT;
+		float integ2_input = _integ1_state + hgt_ddot_mea + hgt_err * omega2 * 3.0f;
+		_integ2_state = _integ2_state + integ2_input * DT;
+		float integ3_input = _integ2_state + hgt_err * _hgtCompFiltOmega * 3.0f;
+		// If more than 1 second has elapsed since last update then reset the integrator state
+		// to the measured height
+		if (DT > 1.0) {
+		    _integ3_state = hgt_afe;
+		} else {
+			_integ3_state = _integ3_state + integ3_input*DT;
+		}
+	}
 
 	// Update and average speed rate of change
     // Get DCM
