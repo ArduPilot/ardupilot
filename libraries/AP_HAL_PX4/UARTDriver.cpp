@@ -129,9 +129,6 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 		cfsetspeed(&t, _baudrate);
 		// disable LF -> CR/LF
 		t.c_oflag &= ~ONLCR;
-        // always enable input flow control (notifying devices that we
-        // have space). This is harmless even if the pin is not connected
-        t.c_cflag |= CRTS_IFLOW;
 		tcsetattr(_fd, TCSANOW, &t);
 	}
 
@@ -153,9 +150,9 @@ void PX4UARTDriver::set_flow_control(enum flow_control flow_control)
     tcgetattr(_fd, &t);
     // we already enabled CRTS_IFLOW above, just enable output flow control
     if (flow_control != FLOW_CONTROL_DISABLE) {
-        t.c_cflag |= CRTSCTS;
+        t.c_cflag |= CRTSCTS | CRTS_IFLOW;
     } else {
-        t.c_cflag &= ~CRTSCTS;
+        t.c_cflag &= ~(CRTSCTS | CRTS_IFLOW);
     }
     tcsetattr(_fd, TCSANOW, &t);
     _flow_control = flow_control;
