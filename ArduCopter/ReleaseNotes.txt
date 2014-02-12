@@ -1,5 +1,10 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.1.2-rc2 12-Feb-2014
+Changes from 3.1.2-rc1
+1) GPS Glitch detection disabled when connected via USB
+2) RC_FEEL_RP param added for adjusting responsiveness to pilot roll/pitch input in Stabilize, Drift, AltHold modes
+------------------------------------------------------------------
 ArduCopter 3.1.2-rc1 30-Jan-2014
 Changes from 3.1.1
 1) Pixhawk baro bug fix to SPI communication which could cause large altitude estimate jumps at high temperatures
