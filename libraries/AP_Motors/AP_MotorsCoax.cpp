@@ -15,9 +15,9 @@
  */
 
 /*
- *       AP_MotorsSingle.cpp - ArduCopter motors library
+ *       AP_MotorsCoax.cpp - ArduCopter motors library
  *       Code by RandyMackay. DIYDrones.com
- *
+ *       Additions by Dan Neault 
  */
 
 #include <AP_HAL.h>
@@ -186,9 +186,10 @@ void AP_MotorsCoax::output_armed()
 		motor_out[AP_MOTORS_MOT_3] = _rev_yaw*_rc_yaw->pwm_out + _rc_throttle->radio_out;
 		motor_out[AP_MOTORS_MOT_4] = -_rev_yaw*_rc_yaw->pwm_out +_rc_throttle->radio_out;
 		//Front
-		_servo1->servo_out = _rev_roll*_rc_roll->servo_out; 
+		_servo1->servo_out = _rev_pitch*_rc_pitch->servo_out;
 		//right
-		_servo2->servo_out = _rev_pitch*_rc_pitch->servo_out;
+		_servo2->servo_out = _rev_roll*_rc_roll->servo_out; 
+
 
 		_servo1->calc_pwm();
 		_servo2->calc_pwm();
