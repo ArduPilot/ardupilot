@@ -28,8 +28,30 @@ static void sport_run()
     update_simple_mode();
 
     // get pilot's desired roll and pitch rates
-    target_roll_rate = g.rc_1.control_in;
-    target_pitch_rate = g.rc_2.control_in;
+
+    // calculate rate requests
+    target_roll_rate = g.rc_1.control_in * g.acro_rp_p;
+    target_pitch_rate = g.rc_2.control_in * g.acro_rp_p;
+    
+    int32_t roll_angle = wrap_180_cd(ahrs.roll_sensor);
+    target_roll_rate = -constrain_int32(roll_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_roll;
+
+    // Calculate trainer mode earth frame rate command for pitch
+    int32_t pitch_angle = wrap_180_cd(ahrs.pitch_sensor);
+    target_pitch_rate = -constrain_int32(pitch_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_pitch;
+
+    
+    if (roll_angle > aparm.angle_max){
+        target_roll_rate -=  g.acro_rp_p*(roll_angle-aparm.angle_max);
+    }else if (roll_angle < -aparm.angle_max) {
+        target_roll_rate -=  g.acro_rp_p*(roll_angle+aparm.angle_max);
+    }
+
+    if (pitch_angle > aparm.angle_max){
+        target_pitch_rate -=  g.acro_rp_p*(pitch_angle-aparm.angle_max);
+    }else if (pitch_angle < -aparm.angle_max) {
+        target_pitch_rate -=  g.acro_rp_p*(pitch_angle+aparm.angle_max);
+    }
 
     // get pilot's desired yaw rate
     target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
