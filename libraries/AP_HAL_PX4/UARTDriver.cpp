@@ -130,6 +130,14 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 		// disable LF -> CR/LF
 		t.c_oflag &= ~ONLCR;
 		tcsetattr(_fd, TCSANOW, &t);
+
+        // separately setup IFLOW if we can. We do this as a 2nd call
+        // as if the port has no RTS pin then the tcsetattr() call
+        // will fail, and if done as one call then it would fail to
+        // set the baudrate.
+		tcgetattr(_fd, &t);
+		t.c_cflag |= CRTS_IFLOW;
+		tcsetattr(_fd, TCSANOW, &t);
 	}
 
     if (_writebuf_size != 0 && _readbuf_size != 0 && _fd != -1) {
@@ -150,9 +158,9 @@ void PX4UARTDriver::set_flow_control(enum flow_control flow_control)
     tcgetattr(_fd, &t);
     // we already enabled CRTS_IFLOW above, just enable output flow control
     if (flow_control != FLOW_CONTROL_DISABLE) {
-        t.c_cflag |= CRTSCTS | CRTS_IFLOW;
+        t.c_cflag |= CRTSCTS;
     } else {
-        t.c_cflag &= ~(CRTSCTS | CRTS_IFLOW);
+        t.c_cflag &= ~CRTSCTS;
     }
     tcsetattr(_fd, TCSANOW, &t);
     _flow_control = flow_control;
