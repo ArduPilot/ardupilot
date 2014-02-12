@@ -435,7 +435,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range 90000 250000
     // @User: Advanced
     GSCALAR(angle_rate_max, "ANGLE_RATE_MAX",  ANGLE_RATE_MAX),
-    
+
+    // @Param: RC_FEEL_RP
+    // @DisplayName: RC Feel Roll/Pitch
+    // @Description: RC feel for roll/pitch which controls vehicle response to user input with 0 being extremely soft and 100 begin crisp
+    // @User: Advanced
+    // @Values: 0:Very Soft, 25:Soft, 50:Medium, 75:Crisp, 100:Very Crisp
+    GSCALAR(rc_feel_rp, "RC_FEEL_RP",  RC_FEEL_RP_VERY_CRISP),
+
 #if FRAME_CONFIG ==     HELI_FRAME
     // @Group: HS1_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp
