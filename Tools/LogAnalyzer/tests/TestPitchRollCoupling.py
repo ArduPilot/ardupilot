@@ -7,6 +7,7 @@ class TestPitchRollCoupling(Test):
 
 	def __init__(self):
 		self.name = "Pitch/Roll"
+		self.enable = False   # TEMP
 
 	def run(self, logdata):
 		self.result = TestResult()
