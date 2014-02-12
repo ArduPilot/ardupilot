@@ -1,5 +1,15 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+// local variables
+float roll_in_filtered;     // roll-in in filtered with RC_FEEL_RP parameter
+float pitch_in_filtered;    // pitch-in filtered with RC_FEEL_RP parameter
+
+static void reset_roll_pitch_in_filters(int16_t roll_in, int16_t pitch_in)
+{
+    roll_in_filtered = constrain_int16(roll_in, -ROLL_PITCH_INPUT_MAX, ROLL_PITCH_INPUT_MAX);
+    pitch_in_filtered = constrain_int16(pitch_in, -ROLL_PITCH_INPUT_MAX, ROLL_PITCH_INPUT_MAX);
+}
+
 // get_pilot_desired_angle - transform pilot's roll or pitch input into a desired lean angle
 // returns desired angle in centi-degrees
 static void get_pilot_desired_lean_angles(int16_t roll_in, int16_t pitch_in, int16_t &roll_out, int16_t &pitch_out)
@@ -11,10 +21,31 @@ static void get_pilot_desired_lean_angles(int16_t roll_in, int16_t pitch_in, int
     roll_in = constrain_int16(roll_in, -ROLL_PITCH_INPUT_MAX, ROLL_PITCH_INPUT_MAX);
     pitch_in = constrain_int16(pitch_in, -ROLL_PITCH_INPUT_MAX, ROLL_PITCH_INPUT_MAX);
 
-    // return immediately if no scaling required
+    // filter input for feel
+    if (g.rc_feel_rp >= RC_FEEL_RP_VERY_CRISP) {
+        // no filtering required
+        roll_in_filtered = roll_in;
+        pitch_in_filtered = pitch_in;
+    }else{
+        float filter_gain;
+        if (g.rc_feel_rp >= RC_FEEL_RP_CRISP) {
+            filter_gain = 0.5;
+        } else if(g.rc_feel_rp >= RC_FEEL_RP_MEDIUM) {
+            filter_gain = 0.3;
+        } else if(g.rc_feel_rp >= RC_FEEL_RP_SOFT) {
+            filter_gain = 0.05;
+        } else {
+            // must be RC_FEEL_RP_VERY_SOFT
+            filter_gain = 0.02;
+        }
+        roll_in_filtered = roll_in_filtered * (1.0 - filter_gain) + (float)roll_in * filter_gain;
+        pitch_in_filtered = pitch_in_filtered * (1.0 - filter_gain) + (float)pitch_in * filter_gain;
+    }
+
+    // return filtered roll if no scaling required
     if (g.angle_max == ROLL_PITCH_INPUT_MAX) {
-        roll_out = roll_in;
-        pitch_out = pitch_in;
+        roll_out = (int16_t)roll_in_filtered;
+        pitch_out = (int16_t)pitch_in_filtered;
         return;
     }
 
@@ -25,8 +56,8 @@ static void get_pilot_desired_lean_angles(int16_t roll_in, int16_t pitch_in, int
     }
 
     // convert pilot input to lean angle
-    roll_out = roll_in * _scaler;
-    pitch_out = pitch_in * _scaler;
+    roll_out = (int16_t)(roll_in_filtered * _scaler);
+    pitch_out = (int16_t)(pitch_in_filtered * _scaler);
 }
 
 static void
