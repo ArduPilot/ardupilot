@@ -1537,6 +1537,7 @@ bool set_roll_pitch_mode(uint8_t new_roll_pitch_mode)
 
     switch( new_roll_pitch_mode ) {
         case ROLL_PITCH_STABLE:
+            reset_roll_pitch_in_filters(g.rc_1.control_in, g.rc_2.control_in);
             roll_pitch_initialised = true;
             break;
         case ROLL_PITCH_ACRO:
@@ -1545,9 +1546,12 @@ bool set_roll_pitch_mode(uint8_t new_roll_pitch_mode)
             acro_pitch_rate = 0;
             roll_pitch_initialised = true;
             break;
-        case ROLL_PITCH_AUTO:
         case ROLL_PITCH_STABLE_OF:
         case ROLL_PITCH_DRIFT:
+            reset_roll_pitch_in_filters(g.rc_1.control_in, g.rc_2.control_in);
+            roll_pitch_initialised = true;
+            break;
+        case ROLL_PITCH_AUTO:
         case ROLL_PITCH_LOITER:
         case ROLL_PITCH_SPORT:
             roll_pitch_initialised = true;
@@ -1557,6 +1561,7 @@ bool set_roll_pitch_mode(uint8_t new_roll_pitch_mode)
         case ROLL_PITCH_AUTOTUNE:
             // only enter autotune mode from stabilized roll-pitch mode when armed and flying
             if (roll_pitch_mode == ROLL_PITCH_STABLE && motors.armed() && !ap.land_complete) {
+                reset_roll_pitch_in_filters(g.rc_1.control_in, g.rc_2.control_in);
                 // auto_tune_start returns true if it wants the roll-pitch mode changed to autotune
                 roll_pitch_initialised = auto_tune_start();
             }
