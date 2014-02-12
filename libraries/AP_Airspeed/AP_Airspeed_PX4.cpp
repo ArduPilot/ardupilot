@@ -76,7 +76,8 @@ bool AP_Airspeed_PX4::get_differential_pressure(float &pressure)
 // read the temperature
 bool AP_Airspeed_PX4::get_temperature(float &temperature)
 {
-    return _temperature;
+    temperature = _temperature;
+    return true;
 }
 
 #endif // CONFIG_HAL_BOARD
