@@ -454,6 +454,9 @@ static void Log_Write_Current()
         current_total           : battery.current_total_mah()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
+
+    // also write power status
+    DataFlash.Log_Write_Power();
 }
 
 struct PACKED log_Compass {
