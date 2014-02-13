@@ -149,3 +149,13 @@ void GCS_MAVLINK::send_meminfo(void)
     mavlink_msg_meminfo_send(chan, __brkval, hal.util->available_memory());
 }
 
+// report power supply status
+void GCS_MAVLINK::send_power_status(void)
+{
+#ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
+    mavlink_msg_power_status_send(chan,
+                                  hal.analogin->board_voltage() * 1000,
+                                  hal.analogin->servorail_voltage() * 1000,
+                                  hal.analogin->power_status_flags());
+#endif
+}
