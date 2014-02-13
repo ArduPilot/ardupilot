@@ -970,6 +970,27 @@
                   <description>Useful non-operational messages that can assist in debugging. These should not occur during normal operation.</description>
                </entry>
           </enum>
+          <enum name="MAV_POWER_STATUS">
+               <description>Power supply status flags (bitmask)</description>
+               <entry value="1" name="MAV_POWER_STATUS_BRICK_VALID">
+                    <description>main brick power supply valid</description>
+               </entry>
+               <entry value="2" name="MAV_POWER_STATUS_SERVO_VALID">
+                    <description>main servo power supply valid for FMU</description>
+               </entry>
+               <entry value="4" name="MAV_POWER_STATUS_USB_CONNECTED">
+                    <description>USB power is connected</description>
+               </entry>
+               <entry value="8" name="MAV_POWER_STATUS_PERIPH_OVERCURRENT">
+                    <description>peripheral supply is in over-current state</description>
+               </entry>
+               <entry value="16" name="MAV_POWER_STATUS_PERIPH_HIPOWER_OVERCURRENT">
+                    <description>hi-power peripheral supply is in over-current state</description>
+               </entry>
+               <entry value="32" name="MAV_POWER_STATUS_CHANGED">
+                    <description>Power status has changed since boot</description>
+               </entry>
+          </enum>
      </enums>
      <messages>
           <message id="0" name="HEARTBEAT">
@@ -1824,6 +1845,12 @@
            <field type="uint8_t" name="target_system">System ID</field>
            <field type="uint8_t" name="target_component">Component ID</field>
          </message>
+         <message id="125" name="POWER_STATUS">
+               <description>Power supply status</description>
+               <field type="uint16_t" name="Vcc">5V rail voltage in millivolts</field>
+               <field type="uint16_t" name="Vservo">servo rail voltage in millivolts</field>
+               <field type="uint16_t" name="flags">power supply status flags (see MAV_POWER_STATUS enum)</field>
+         </message>
          <message id="147" name="BATTERY_STATUS">
                <description>Transmitte battery informations for a accu pack.</description>
                <field type="uint8_t" name="accu_id">Accupack ID</field>
@@ -1860,6 +1887,7 @@
                <field type="float" name="rot_y">Rotational Component in y</field>
                <field type="float" name="rot_z">Rotational Component in z</field>
           </message>
+
           <!-- MESSAGE IDs 150 - 240: Space for custom messages in individual projectname_messages.xml files -->
           <message id="249" name="MEMORY_VECT">
                <description>Send raw controller memory. The use of this message is discouraged for normal packets, but a quite efficient way for testing new messages and getting experimental debug output.</description>
