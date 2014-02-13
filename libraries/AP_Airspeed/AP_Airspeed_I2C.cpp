@@ -82,8 +82,22 @@ void AP_Airspeed_I2C::_collect(void)
 	dT_raw = (data[2] << 8) + data[3];
 	dT_raw = (0xFFE0 & dT_raw) >> 5;
 
-	_temperature = ((200 * dT_raw) / 2047) - 50;
-	_pressure = fabs(dp_raw - (16384 / 2.0f));
+	const float P_min = -1.0f;
+	const float P_max = 1.0f;
+	const float PSI_to_Pa = 6894.757f;
+	/*
+	  this equation is an inversion of the equation in the
+	  pressure transfer function figure on page 4 of the datasheet
+
+	  We negate the result so that positive differential pressures
+	  are generated when the bottom port is used as the static
+	  port on the pitot and top port is used as the dynamic port
+	 */
+	float diff_press_PSI = -((dp_raw - 0.1f*16383) * (P_max-P_min)/(0.8f*16383) + P_min);
+
+	_pressure = diff_press_PSI * PSI_to_Pa;
+	_temperature = ((200.0f * dT_raw) / 2047) - 50;
+
     _last_sample_time_ms = hal.scheduler->millis();
 }
 

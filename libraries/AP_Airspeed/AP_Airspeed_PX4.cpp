@@ -60,7 +60,7 @@ bool AP_Airspeed_PX4::get_differential_pressure(float &pressure)
     
     while (::read(_fd, &report, sizeof(report)) == sizeof(report) &&
            report.timestamp != _last_timestamp) {
-        psum += report.differential_pressure_pa;
+        psum += report.differential_pressure_raw_pa;
         tsum += report.temperature;
         count++;
         _last_timestamp = report.timestamp;

@@ -180,8 +180,19 @@ void AP_Airspeed::read(void)
     if (!_enable) {
         return;
     }
-    airspeed_pressure       = get_pressure();
-    airspeed_pressure       = max(airspeed_pressure - _offset, 0);
+    /*
+      when we get negative pressures it means the tubes are probably
+      connected the wrong way around. We don't just use the absolute
+      value as otherwise we could get bad readings in some flight
+      attitudes (eg. a spin) due to pressure on the static port
+     */
+    airspeed_pressure = get_pressure() - _offset;
+    if (airspeed_pressure < -32) {
+        // we're reading more than about -8m/s. The user probably has
+        // the ports the wrong way around
+        _healthy = false;
+    }
+    airspeed_pressure       = max(airspeed_pressure, 0);
     _last_pressure          = airspeed_pressure;
     _raw_airspeed           = sqrtf(airspeed_pressure * _ratio);
     _airspeed               = 0.7f * _airspeed  +  0.3f * _raw_airspeed;
