@@ -44,6 +44,12 @@ public:
 
     // board 5V rail voltage in volts
     virtual float board_voltage(void) = 0;
+
+    // servo rail voltage in volts, or 0 if unknown
+    virtual float servorail_voltage(void) { return 0; }
+
+    // power supply status flags, see MAV_POWER_STATUS
+    virtual uint16_t power_status_flags(void) { return 0; }
 };
 
 #define ANALOG_INPUT_BOARD_VCC 254

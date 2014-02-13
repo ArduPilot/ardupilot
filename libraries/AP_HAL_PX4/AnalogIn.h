@@ -57,15 +57,20 @@ public:
     AP_HAL::AnalogSource* channel(int16_t pin);
     void _timer_tick(void);
     float board_voltage(void) { return _board_voltage; }
+    float servorail_voltage(void) { return _servorail_voltage; }
+    uint16_t power_status_flags(void) { return _power_flags; }
 
 private:
     int _adc_fd;
     int _battery_handle;
     int _servorail_handle;
+    int _system_power_handle;
     uint64_t _battery_timestamp;
     uint64_t _servorail_timestamp;
     PX4::PX4AnalogSource* _channels[PX4_ANALOG_MAX_CHANNELS];
     uint32_t _last_run;
     float _board_voltage;
+    float _servorail_voltage;
+    uint16_t _power_flags;
 };
 #endif // __AP_HAL_PX4_ANALOGIN_H__

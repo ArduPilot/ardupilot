@@ -15,6 +15,9 @@
 #include <arch/board/board.h>
 #include <uORB/topics/battery_status.h>
 #include <uORB/topics/servorail_status.h>
+#include <uORB/topics/system_power.h>
+#include <GCS_MAVLink.h>
+#include <errno.h>
 
 #define ANLOGIN_DEBUGGING 0
 
@@ -181,7 +184,9 @@ void PX4AnalogSource::_add_value(float v, float vcc5V)
 
 
 PX4AnalogIn::PX4AnalogIn() :
-    _board_voltage(0)
+	_board_voltage(0),
+    _servorail_voltage(0),
+    _power_flags(0)    
 {}
 
 void PX4AnalogIn::init(void* machtnichts)
@@ -192,6 +197,7 @@ void PX4AnalogIn::init(void* machtnichts)
 	}
     _battery_handle   = orb_subscribe(ORB_ID(battery_status));
     _servorail_handle = orb_subscribe(ORB_ID(servorail_status));
+    _system_power_handle = orb_subscribe(ORB_ID(system_power));
 }
 
 /*
@@ -239,19 +245,22 @@ void PX4AnalogIn::_timer_tick(void)
     // check for new battery data on FMUv1
     if (_battery_handle != -1) {
         struct battery_status_s battery;
-        if (orb_copy(ORB_ID(battery_status), _battery_handle, &battery) == OK &&
-            battery.timestamp != _battery_timestamp) {
-            _battery_timestamp = battery.timestamp;
-            for (uint8_t j=0; j<PX4_ANALOG_MAX_CHANNELS; j++) {
-                PX4::PX4AnalogSource *c = _channels[j];
-                if (c == NULL) continue;
-                if (c->_pin == PX4_ANALOG_ORB_BATTERY_VOLTAGE_PIN) {
-                    c->_add_value(battery.voltage_v / PX4_VOLTAGE_SCALING, 0);
-                }
-                if (c->_pin == PX4_ANALOG_ORB_BATTERY_CURRENT_PIN) {
-                    // scale it back to voltage, knowing that the
-                    // px4io code scales by 90.0/5.0
-                    c->_add_value(battery.current_a * (5.0f/90.0f) / PX4_VOLTAGE_SCALING, 0);
+        bool updated = false;
+        if (orb_check(_battery_handle, &updated) == 0 && updated) {
+            orb_copy(ORB_ID(battery_status), _battery_handle, &battery);
+            if (battery.timestamp != _battery_timestamp) {
+                _battery_timestamp = battery.timestamp;
+                for (uint8_t j=0; j<PX4_ANALOG_MAX_CHANNELS; j++) {
+                    PX4::PX4AnalogSource *c = _channels[j];
+                    if (c == NULL) continue;
+                    if (c->_pin == PX4_ANALOG_ORB_BATTERY_VOLTAGE_PIN) {
+                        c->_add_value(battery.voltage_v / PX4_VOLTAGE_SCALING, 0);
+                    }
+                    if (c->_pin == PX4_ANALOG_ORB_BATTERY_CURRENT_PIN) {
+                        // scale it back to voltage, knowing that the
+                        // px4io code scales by 90.0/5.0
+                        c->_add_value(battery.current_a * (5.0f/90.0f) / PX4_VOLTAGE_SCALING, 0);
+                    }
                 }
             }
         }
@@ -262,19 +271,41 @@ void PX4AnalogIn::_timer_tick(void)
     // check for new servorail data on FMUv2
     if (_servorail_handle != -1) {
         struct servorail_status_s servorail;
-        if (orb_copy(ORB_ID(servorail_status), _servorail_handle, &servorail) == OK &&
-            servorail.timestamp != _servorail_timestamp) {
-            _servorail_timestamp = servorail.timestamp;
-            for (uint8_t j=0; j<PX4_ANALOG_MAX_CHANNELS; j++) {
-                PX4::PX4AnalogSource *c = _channels[j];
-                if (c == NULL) continue;
-                if (c->_pin == PX4_ANALOG_ORB_SERVO_VOLTAGE_PIN) {
-                    c->_add_value(servorail.voltage_v / PX4_VOLTAGE_SCALING, 0);
-                }
-                if (c->_pin == PX4_ANALOG_ORB_SERVO_VRSSI_PIN) {
-                    c->_add_value(servorail.rssi_v / PX4_VOLTAGE_SCALING, 0);
+        bool updated = false;
+        if (orb_check(_servorail_handle, &updated) == 0 && updated) {
+            orb_copy(ORB_ID(servorail_status), _servorail_handle, &servorail);
+            if (servorail.timestamp != _servorail_timestamp) {
+                _servorail_timestamp = servorail.timestamp;
+                _servorail_voltage = servorail.voltage_v;
+                for (uint8_t j=0; j<PX4_ANALOG_MAX_CHANNELS; j++) {
+                    PX4::PX4AnalogSource *c = _channels[j];
+                    if (c == NULL) continue;
+                    if (c->_pin == PX4_ANALOG_ORB_SERVO_VOLTAGE_PIN) {
+                        c->_add_value(servorail.voltage_v / PX4_VOLTAGE_SCALING, 0);
+                    }
+                    if (c->_pin == PX4_ANALOG_ORB_SERVO_VRSSI_PIN) {
+                        c->_add_value(servorail.rssi_v / PX4_VOLTAGE_SCALING, 0);
+                    }
                 }
             }
+        }
+    }
+    if (_system_power_handle != -1) {
+        struct system_power_s system_power;
+        bool updated = false;
+        if (orb_check(_system_power_handle, &updated) == 0 && updated) {
+            orb_copy(ORB_ID(system_power), _system_power_handle, &system_power);
+            uint16_t flags = 0;
+            if (system_power.usb_connected) flags |= MAV_POWER_STATUS_USB_CONNECTED;
+            if (system_power.brick_valid)   flags |= MAV_POWER_STATUS_BRICK_VALID;
+            if (system_power.servo_valid)   flags |= MAV_POWER_STATUS_SERVO_VALID;
+            if (system_power.periph_5V_OC)  flags |= MAV_POWER_STATUS_PERIPH_OVERCURRENT;
+            if (system_power.hipower_5V_OC) flags |= MAV_POWER_STATUS_PERIPH_HIPOWER_OVERCURRENT;
+            if (_power_flags != 0 && _power_flags != flags) {
+                // the power status has changed since boot
+                flags |= MAV_POWER_STATUS_CHANGED;
+            }
+            _power_flags = flags;
         }
     }
 #endif
