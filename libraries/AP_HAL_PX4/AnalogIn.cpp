@@ -160,16 +160,16 @@ void PX4AnalogSource::set_pin(uint8_t pin)
 /*
   apply a reading in ADC counts
  */
-void PX4AnalogSource::_add_value(float v, uint16_t vcc5V_mV)
+void PX4AnalogSource::_add_value(float v, float vcc5V)
 {
     _latest_value = v;
     _sum_value += v;
-    if (vcc5V_mV == 0) {
+    if (vcc5V < 3.0f) {
         _sum_ratiometric += v;
     } else {
         // this compensates for changes in the 5V rail relative to the
         // 3.3V reference used by the ADC.
-        _sum_ratiometric += v * 5000 / vcc5V_mV;
+        _sum_ratiometric += v * 5.0f / vcc5V;
     }
     _sum_count++;
     if (_sum_count == 254) {
@@ -180,7 +180,8 @@ void PX4AnalogSource::_add_value(float v, uint16_t vcc5V_mV)
 }
 
 
-PX4AnalogIn::PX4AnalogIn()
+PX4AnalogIn::PX4AnalogIn() :
+    _board_voltage(0)
 {}
 
 void PX4AnalogIn::init(void* machtnichts)
@@ -211,14 +212,13 @@ void PX4AnalogIn::_timer_tick(void)
     /* read all channels available */
     int ret = read(_adc_fd, &buf_adc, sizeof(buf_adc));
     if (ret > 0) {
-        uint16_t vcc5V_mV = 0;
         // match the incoming channels to the currently active pins
         for (uint8_t i=0; i<ret/sizeof(buf_adc[0]); i++) {
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
             if (buf_adc[i].am_channel == 4) {
                 // record the Vcc value for later use in
                 // voltage_average_ratiometric()
-                vcc5V_mV = buf_adc[i].am_data * 6600 / 4096;
+                _board_voltage = buf_adc[i].am_data * 6.6f / 4096;
             }
 #endif
         }
@@ -229,7 +229,7 @@ void PX4AnalogIn::_timer_tick(void)
             for (uint8_t j=0; j<PX4_ANALOG_MAX_CHANNELS; j++) {
                 PX4::PX4AnalogSource *c = _channels[j];
                 if (c != NULL && buf_adc[i].am_channel == c->_pin) {
-                    c->_add_value(buf_adc[i].am_data, vcc5V_mV);
+                    c->_add_value(buf_adc[i].am_data, _board_voltage);
                 }
             }
         }

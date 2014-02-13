@@ -38,7 +38,7 @@ public:
     }
     void init(void* ap_hal_scheduler);
     AP_HAL::AnalogSource* channel(int16_t n);
-
+    float board_voltage(void) { return 5.0f; }
 private:
     static ADCSource* _channels[SITL_INPUT_MAX_CHANNELS];
     SITL_State *_sitlState;

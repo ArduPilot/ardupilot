@@ -126,4 +126,9 @@ AP_HAL::AnalogSource* FLYMAPLEAnalogIn::channel(int16_t ch)
     }
 }
 
+float FLYMAPLEAnalogIn::board_voltage(void)
+{
+    return _vcc.voltage_latest();
+}
+
 #endif

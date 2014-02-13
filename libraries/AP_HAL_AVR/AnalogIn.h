@@ -68,6 +68,7 @@ public:
     AVRAnalogIn();
     void init(void* ap_hal_scheduler);
     AP_HAL::AnalogSource* channel(int16_t n);
+    float board_voltage(void);
 
 protected: 
     ADCSource* _create_channel(int16_t num);
