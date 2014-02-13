@@ -777,3 +777,19 @@ void DataFlash_Class::Log_Write_Message_P(const prog_char_t *message)
     strncpy_P(pkt.msg, message, sizeof(pkt.msg));
     WriteBlock(&pkt, sizeof(pkt));
 }
+
+// Write a POWR packet
+void DataFlash_Class::Log_Write_Power(void)
+{
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    struct log_POWR pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_POWR_MSG),
+        time_ms : hal.scheduler->millis(),
+        Vcc     : (uint16_t)(hal.analogin->board_voltage() * 100),
+        Vservo  : (uint16_t)(hal.analogin->servorail_voltage() * 100),
+        flags   : hal.analogin->power_status_flags()
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+#endif
+}
+

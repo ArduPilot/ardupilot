@@ -51,6 +51,7 @@ public:
     void Log_Write_RCIN(void);
     void Log_Write_RCOUT(void);
     void Log_Write_Baro(AP_Baro &baro);
+    void Log_Write_Power(void);
     void Log_Write_Message(const char *message);
     void Log_Write_Message_P(const prog_char_t *message);
 
@@ -211,6 +212,14 @@ struct PACKED log_BARO {
     int16_t temperature;
 };
 
+struct PACKED log_POWR {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    uint16_t Vcc;
+    uint16_t Vservo;
+    uint16_t flags;
+};
+
 #define LOG_COMMON_STRUCTURES \
     { LOG_FORMAT_MSG, sizeof(log_Format), \
       "FMT", "BBnNZ",      "Type,Length,Name,Format" },    \
@@ -229,7 +238,9 @@ struct PACKED log_BARO {
     { LOG_RCOUT_MSG, sizeof(log_RCOUT), \
       "RCOU",  "Ihhhhhhhh",     "TimeMS,Chan1,Chan2,Chan3,Chan4,Chan5,Chan6,Chan7,Chan8" }, \
     { LOG_BARO_MSG, sizeof(log_BARO), \
-      "BARO",  "Iffc",     "TimeMS,Alt,Press,Temp" }
+      "BARO",  "Iffc",     "TimeMS,Alt,Press,Temp" }, \
+    { LOG_POWR_MSG, sizeof(log_POWR), \
+      "POWR","ICCH","TimeMS,Vcc,VServo,Flags" }
 
 // message types for common messages
 #define LOG_FORMAT_MSG	  128
@@ -241,6 +252,7 @@ struct PACKED log_BARO {
 #define LOG_RCOUT_MSG     134
 #define LOG_IMU2_MSG	  135
 #define LOG_BARO_MSG	  136
+#define LOG_POWR_MSG	  137
 
 #include "DataFlash_Block.h"
 #include "DataFlash_File.h"
