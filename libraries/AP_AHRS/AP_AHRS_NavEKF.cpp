@@ -77,6 +77,7 @@ void AP_AHRS_NavEKF::update(void)
             yaw_sensor   = degrees(yaw) * 100;
             if (yaw_sensor < 0)
                 yaw_sensor += 36000;
+            update_trig();
         }
     }
 }
