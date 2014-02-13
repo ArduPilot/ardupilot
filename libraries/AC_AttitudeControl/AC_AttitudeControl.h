@@ -146,6 +146,15 @@ protected:
     struct AttControlFlags {
         uint8_t limit_angle_to_rate_request :   1;  // 1 if the earth frame angle controller is limiting it's maximum rate request
     } _flags;
+    
+    // rateef_roll_update - update _angle_ef_target.x using an earth frame roll rate request
+    void rateef_roll_update_angle_and_error(float roll_rate_ef, Vector3f &angle_ef_error);
+
+    // rateef_pitch_update - update _angle_ef_target.y using an earth frame pitch rate request
+    void rateef_pitch_update_angle_and_error(float pitch_rate_ef, Vector3f &angle_ef_error);
+
+    // rateef_yaw_update - update _angle_ef_target.z using an earth frame yaw rate request
+    void rateef_yaw_update_angle_and_error(float yaw_rate_ef, Vector3f &angle_ef_error);
 
     // update_stab_rate_bf_errors - calculates body frame angle errors
     //   body-frame feed forward rates (centi-degrees / second) taken from _angle_bf_error
@@ -216,6 +225,7 @@ protected:
     Vector3f            _rate_bf_target;        // rate controller body-frame targets
     Vector3f            _rate_bf_feedforward;   // rate controller body-frame targets
     int16_t             _angle_boost;           // used only for logging
+    int16_t             _acro_angle_switch;           // used only for logging
 };
 
 #define AC_ATTITUDE_CONTROL_LOG_FORMAT(msg) { msg, sizeof(AC_AttitudeControl::log_Attitude),	\
