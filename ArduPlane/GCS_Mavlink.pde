@@ -239,7 +239,6 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
         0, // comm drops %,
         0, // comm drops in pkts,
         0, 0, 0, 0);
-
 }
 
 static void NOINLINE send_location(mavlink_channel_t chan)
@@ -619,6 +618,8 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id)
     case MSG_EXTENDED_STATUS1:
         CHECK_PAYLOAD_SIZE(SYS_STATUS);
         send_extended_status1(chan);
+        CHECK_PAYLOAD_SIZE(POWER_STATUS);
+        gcs[chan-MAVLINK_COMM_0].send_power_status();
         break;
 
     case MSG_EXTENDED_STATUS2:
