@@ -25,7 +25,7 @@ class AP_MotorsCoax : public AP_Motors {
 public:
 
     /// Constructor
-    AP_MotorsCoax( RC_Channel* rc_roll, RC_Channel* rc_pitch, RC_Channel* rc_throttle, RC_Channel* rc_yaw, RC_Channel* servo1, RC_Channel* servo2, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
+    AP_MotorsCoax( RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_throttle, RC_Channel& rc_yaw, RC_Channel& servo1, RC_Channel& servo2, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
         AP_Motors(rc_roll, rc_pitch, rc_throttle, rc_yaw, speed_hz),
         _servo1(servo1),
         _servo2(servo2)
@@ -60,8 +60,8 @@ protected:
     AP_Int8             _rev_pitch;     // REV pitch feedback
     AP_Int8             _rev_yaw;       // REV yaw feedback
     AP_Int16            _servo_speed;   // servo speed
-    RC_Channel*         _servo1;
-    RC_Channel*         _servo2;
+    RC_Channel&         _servo1;
+    RC_Channel&         _servo2;
 };
 
 #endif  // AP_MOTORSCOAX
