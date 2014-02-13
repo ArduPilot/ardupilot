@@ -286,11 +286,5 @@ print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
 // get_angle_targets_for_reporting() - returns 3d vector of roll, pitch and yaw target angles for logging and reporting to GCS
 static void get_angle_targets_for_reporting(Vector3f& targets)
 {
-    if (control_mode == ACRO) {
-        targets.x = 0;
-        targets.y = 0;
-        targets.y = 0;
-    }else{
-        targets = attitude_control.angle_ef_targets();
-    }
+    targets = attitude_control.angle_ef_targets();
 }
