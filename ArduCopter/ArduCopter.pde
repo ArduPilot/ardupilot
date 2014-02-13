@@ -772,11 +772,6 @@ static AP_ServoRelayEvents ServoRelayEvents(relay);
 // a pin for reading the receiver RSSI voltage.
 static AP_HAL::AnalogSource* rssi_analog_source;
 
-
-// Input sources for battery voltage, battery current, board vcc
-static AP_HAL::AnalogSource* board_vcc_analog_source;
-
-
 #if CLI_ENABLED == ENABLED
     static int8_t   setup_show (uint8_t argc, const Menu::arg *argv);
 #endif

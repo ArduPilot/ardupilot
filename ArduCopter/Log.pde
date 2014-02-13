@@ -224,7 +224,7 @@ static void Log_Write_Current()
         throttle_integrator : throttle_integrator,
         battery_voltage     : (int16_t) (battery.voltage() * 100.0f),
         current_amps        : (int16_t) (battery.current_amps() * 100.0f),
-        board_voltage       : board_voltage(),
+        board_voltage       : (uint16_t)(hal.analogin->board_voltage()*1000),
         current_total       : battery.current_total_mah()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));

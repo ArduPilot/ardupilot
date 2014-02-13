@@ -324,7 +324,7 @@ static void pre_arm_checks(bool display_failure)
 #ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
     // check board voltage
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_VOLTAGE)) {
-        if(board_voltage() < BOARD_VOLTAGE_MIN || board_voltage() > BOARD_VOLTAGE_MAX) {
+        if(hal.analogin->board_voltage() < BOARD_VOLTAGE_MIN || hal.analogin->board_voltage() > BOARD_VOLTAGE_MAX) {
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check Board Voltage"));
             }

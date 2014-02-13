@@ -309,11 +309,11 @@
 #endif
 
 #ifndef BOARD_VOLTAGE_MIN
- # define BOARD_VOLTAGE_MIN             4300        // min board voltage in milli volts for pre-arm checks
+ # define BOARD_VOLTAGE_MIN             4.3f        // min board voltage in volts for pre-arm checks
 #endif
 
 #ifndef BOARD_VOLTAGE_MAX
- # define BOARD_VOLTAGE_MAX             5800        // max board voltage in milli volts for pre-arm checks
+ # define BOARD_VOLTAGE_MAX             5.8f        // max board voltage in volts for pre-arm checks
 #endif
 
 // GPS failsafe

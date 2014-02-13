@@ -160,7 +160,6 @@ static void init_ardupilot()
 #endif
 
     rssi_analog_source      = hal.analogin->channel(g.rssi_pin);
-    board_vcc_analog_source = hal.analogin->channel(ANALOG_INPUT_BOARD_VCC);
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
     barometer.init();
@@ -589,14 +588,6 @@ static void check_usb_mux(void)
         hal.uartA->begin(map_baudrate(g.serial1_baud, SERIAL1_BAUD));
     }
 #endif
-}
-
-/*
- * Read Vcc vs 1.1v internal reference
- */
-uint16_t board_voltage(void)
-{
-    return board_vcc_analog_source->voltage_latest() * 1000;
 }
 
 //
