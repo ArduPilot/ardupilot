@@ -271,6 +271,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Increment: 1
     // @User: Standard
     GSCALAR(fence_retalt,           "FENCE_RETALT",   0),
+
+    // @Param: FENCE_AUTOENABLE
+    // @DisplayName: Fence automatically enabled after auto takeoff and automatically disabled when starting an auto landing.  Note that this does NOT remove the need to first create a geofence.
+    // @Description: When set to 1, gefence automatically enables after an auto takeoff and automatically disables at the beginning of an auto landing.  When on the ground before takeoff the fence is disabled.
+    // @Range: 0 1
+    // @User: Standard
+    GSCALAR(fence_autoenable,             "FENCE_AUTOENABLE",     0),
 #endif
 
     // @Param: RALLY_TOTAL

@@ -149,12 +149,19 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
     if (g_gps != NULL && g_gps->status() > GPS::NO_GPS) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_GPS;
     }
+    if (geofence_present()) {
+        control_sensors_present |= MAV_SYS_STATUS_GEOFENCE;
+    }
 
-    // all present sensors enabled by default except rate control, attitude stabilization, yaw, altitude, position control and motor output which we will set individually
-    control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL & ~MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION & ~MAV_SYS_STATUS_SENSOR_YAW_POSITION & ~MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL & ~MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL & ~MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS);
+    // all present sensors enabled by default except rate control, attitude stabilization, yaw, altitude, position control, geofence and motor output which we will set individually
+    control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL & ~MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION & ~MAV_SYS_STATUS_SENSOR_YAW_POSITION & ~MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL & ~MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL & ~MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS & ~MAV_SYS_STATUS_GEOFENCE);
 
     if (airspeed.enabled() && airspeed.use()) {
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
+    }
+
+    if (geofence_enabled()) {
+        control_sensors_enabled |= MAV_SYS_STATUS_GEOFENCE;
     }
 
     switch (control_mode) {
@@ -202,10 +209,12 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
         break;
     }
 
-    // default to all healthy
+    // default: all present sensors healthy except 3D_MAG, GPS, DIFFERNTIAL_PRESSURE.   GEOFENCE always defaults to healthy.
     control_sensors_health = control_sensors_present & ~(MAV_SYS_STATUS_SENSOR_3D_MAG | 
                                                          MAV_SYS_STATUS_SENSOR_GPS |
                                                          MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE);
+    control_sensors_health |= MAV_SYS_STATUS_GEOFENCE;
+
     if (g.compass_enabled && compass.healthy(0) && ahrs.use_compass()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_MAG;
     }
@@ -217,6 +226,9 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
     }
     if (airspeed.healthy()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
+    }
+    if (geofence_breached()) {
+        control_sensors_health &= ~MAV_SYS_STATUS_GEOFENCE;
     }
 
     int16_t battery_current = -1;
@@ -1268,6 +1280,24 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 // when packet.param1 == 3 we reboot to hold in bootloader
                 hal.scheduler->reboot(packet.param1 == 3);
                 result = MAV_RESULT_ACCEPTED;
+            }
+            break;
+
+        case MAV_CMD_DO_FENCE_ENABLE:
+            result = MAV_RESULT_ACCEPTED;
+            
+            if (!geofence_present()) {
+                result = MAV_RESULT_FAILED;
+            } else {
+                if (packet.param1 == 0) {
+                    if (! geofence_set_enabled(false, GCS_TOGGLED)) {
+                        result = MAV_RESULT_FAILED;
+                    }
+                } else {
+                    if (! geofence_set_enabled(true, GCS_TOGGLED)) {
+                        result = MAV_RESULT_FAILED; 
+                    }
+                }
             }
             break;
 

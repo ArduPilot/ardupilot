@@ -95,6 +95,15 @@ enum ChannelMixing {
     MIXING_DNDN     = 4
 };
 
+/*
+ * The cause for the most recent fence enable
+ */
+typedef enum GeofenceEnableReason {
+    NOT_ENABLED = 0,     //The fence is not enabled
+    PWM_TOGGLED,         //Fence enabled/disabled by PWM signal
+    AUTO_TOGGLED,        //Fence auto enabled/disabled at takeoff.
+    GCS_TOGGLED          //Fence enabled/disabled by the GCS via Mavlink
+} GeofenceEnableReason;
 
 //repeating events
 #define NO_REPEAT 0

@@ -333,6 +333,17 @@ static bool verify_takeoff()
         steer_state.hold_course_cd = -1;
         takeoff_complete = true;
         next_WP_loc = prev_WP_loc = current_loc;
+
+#if GEOFENCE_ENABLED == ENABLED
+        if (g.fence_autoenable == 1) {
+            if (! geofence_set_enabled(true, AUTO_TOGGLED)) {
+                gcs_send_text_P(SEVERITY_HIGH, PSTR("Enable fence failed (cannot autoenable"));
+            } else {
+                gcs_send_text_P(SEVERITY_HIGH, PSTR("Fence enabled. (autoenabled)"));
+            }
+        }
+#endif
+
         return true;
     } else {
         return false;
