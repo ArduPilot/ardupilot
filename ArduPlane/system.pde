@@ -535,15 +535,6 @@ static void check_usb_mux(void)
 }
 
 
-/*
- * Read Vcc vs 1.1v internal reference
- */
-uint16_t board_voltage(void)
-{
-    return vcc_pin->voltage_latest() * 1000;
-}
-
-
 static void
 print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
 {

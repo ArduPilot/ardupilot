@@ -314,8 +314,6 @@ static AP_SpdHgtControl *SpdHgt_Controller = &TECS_controller;
 // a pin for reading the receiver RSSI voltage. 
 static AP_HAL::AnalogSource *rssi_analog_source;
 
-static AP_HAL::AnalogSource *vcc_pin;
-
 ////////////////////////////////////////////////////////////////////////////////
 // Sonar
 ////////////////////////////////////////////////////////////////////////////////
@@ -756,8 +754,6 @@ void setup() {
     battery.init();
 
     rssi_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE);
-
-    vcc_pin = hal.analogin->channel(ANALOG_INPUT_BOARD_VCC);
 
     init_ardupilot();
 
