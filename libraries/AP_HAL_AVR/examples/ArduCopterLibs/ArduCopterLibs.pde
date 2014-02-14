@@ -18,8 +18,8 @@
 #include <AP_InertialSensor.h>  // ArduPilot Mega Inertial Sensor (accel & gyro) Library
                                 // (only included for makefile libpath to work)
 #include <AP_AHRS.h>
-#include <APM_PI.h>             // PI library
 #include <AC_PID.h>             // PID library
+#include <AC_P.h>               // P library
 #include <RC_Channel.h>         // RC Channel Library
 #include <AP_Motors.h>          // AP Motors library
 #include <AP_ADC_AnalogSource.h>
