@@ -22,7 +22,7 @@
 #include <AP_AHRS.h>
 #include <AP_Airspeed.h>
 #include <AC_PID.h>             // PID library
-#include <APM_PI.h>             // PID library
+#include <AC_P.h>               // P library
 #include <AP_Buffer.h>          // ArduPilot general purpose FIFO buffer
 #include <AP_InertialNav.h>     // Inertial Navigation library
 #include <AC_Fence.h>           // Fence library
@@ -52,10 +52,10 @@ AP_GPS_Auto auto_gps(&gps);
 GPS_Glitch gps_glitch(gps);
 
 AP_Compass_HMC5843 compass;
-AP_AHRS_DCM ahrs(ins, gps);
+AP_AHRS_DCM ahrs(ins, baro, gps);
 
 // Inertial Nav declaration
-AP_InertialNav inertial_nav(&ahrs, &baro, gps, gps_glitch);
+AP_InertialNav inertial_nav(ahrs, baro, gps, gps_glitch);
 
 // Fence
 AC_Fence fence(&inertial_nav);
@@ -67,9 +67,9 @@ void setup()
 
 void loop()
 {
-    // call update function
-    hal.console->printf_P(PSTR("hello"));
-    hal.scheduler->delay(1);
+    // print message to user
+    hal.console->printf_P(PSTR("this example tests compilation only"));
+    hal.scheduler->delay(5000);
 }
 
 AP_HAL_MAIN();
