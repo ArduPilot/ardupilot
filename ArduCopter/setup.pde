@@ -3,14 +3,7 @@
 #if CLI_ENABLED == ENABLED
 
 // Functions called from the setup menu
-static int8_t   setup_accel_scale       (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_compass           (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_compassmot        (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_erase             (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_flightmodes       (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_optflow           (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_radio             (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_range             (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_factory           (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_set               (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_show              (uint8_t argc, const Menu::arg *argv);
@@ -21,18 +14,10 @@ static int8_t   setup_sonar             (uint8_t argc, const Menu::arg *argv);
 const struct Menu::command setup_menu_commands[] PROGMEM = {
     // command			function called
     // =======          ===============
-    {"accel",                       setup_accel_scale},
-    {"compass",                     setup_compass},
     {"compassmot",                  setup_compassmot},
-    {"erase",                       setup_erase},
-    {"modes",                       setup_flightmodes},
-    {"optflow",                     setup_optflow},
-    {"radio",                       setup_radio},
-    {"range",                       setup_range},
     {"reset",                       setup_factory},
     {"set",                         setup_set},
     {"show",                        setup_show},
-    {"sonar",                       setup_sonar},
 };
 
 // Create the setup menu object.
@@ -54,48 +39,6 @@ setup_mode(uint8_t argc, const Menu::arg *argv)
 
     // Run the setup menu.  When the menu exits, we will return to the main menu.
     setup_menu.run();
-    return 0;
-}
-
-static int8_t
-setup_accel_scale(uint8_t argc, const Menu::arg *argv)
-{
-    float trim_roll, trim_pitch;
-
-    cliSerial->println_P(PSTR("Initialising gyros"));
-    ahrs.init();
-    ins.init(AP_InertialSensor::COLD_START, 
-             ins_sample_rate);
-    AP_InertialSensor_UserInteractStream interact(hal.console);
-    if(ins.calibrate_accel(&interact, trim_roll, trim_pitch)) {
-        // reset ahrs's trim to suggested values from calibration routine
-        ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
-    }
-    report_ins();
-    return(0);
-}
-
-static int8_t
-setup_compass(uint8_t argc, const Menu::arg *argv)
-{
-    if (!strcmp_P(argv[1].str, PSTR("on"))) {
-        g.compass_enabled.set_and_save(true);
-        init_compass();
-
-    } else if (!strcmp_P(argv[1].str, PSTR("off"))) {
-        Vector3f mag_offsets(0,0,0);
-        compass.set_offsets(mag_offsets);
-        compass.save_offsets();
-        g.compass_enabled.set_and_save(false);
-
-    }else{
-        cliSerial->printf_P(PSTR("\nOp:[on,off]\n"));
-        report_compass();
-        return 0;
-    }
-
-    g.compass_enabled.save();
-    report_compass();
     return 0;
 }
 
@@ -322,85 +265,6 @@ static void display_compassmot_info(Vector3f& motor_impact, Vector3f& motor_comp
 }
 
 static int8_t
-setup_erase(uint8_t argc, const Menu::arg *argv)
-{
-    zero_eeprom();
-    return 0;
-}
-
-static int8_t
-setup_flightmodes(uint8_t argc, const Menu::arg *argv)
-{
-    uint8_t _switchPosition = 0;
-    uint8_t _oldSwitchPosition = 0;
-    int8_t mode = 0;
-
-    cliSerial->printf_P(PSTR("\nMode switch to edit, aileron: select modes, rudder: Simple on/off\n"));
-    print_hit_enter();
-
-    while(1) {
-        delay(20);
-        read_radio();
-        _switchPosition = readSwitch();
-
-
-        // look for control switch change
-        if (_oldSwitchPosition != _switchPosition) {
-
-            mode = flight_modes[_switchPosition];
-            mode = constrain_int16(mode, 0, NUM_MODES-1);
-
-            // update the user
-            print_switch(_switchPosition, mode, BIT_IS_SET(g.simple_modes, _switchPosition));
-
-            // Remember switch position
-            _oldSwitchPosition = _switchPosition;
-        }
-
-        // look for stick input
-        if (abs(g.rc_1.control_in) > 3000) {
-            mode++;
-            if(mode >= NUM_MODES)
-                mode = 0;
-
-            // save new mode
-            flight_modes[_switchPosition] = mode;
-
-            // print new mode
-            print_switch(_switchPosition, mode, BIT_IS_SET(g.simple_modes, _switchPosition));
-            delay(500);
-        }
-
-        // look for stick input
-        if (g.rc_4.control_in > 3000) {
-            g.simple_modes |= (1<<_switchPosition);
-            // print new mode
-            print_switch(_switchPosition, mode, BIT_IS_SET(g.simple_modes, _switchPosition));
-            delay(500);
-        }
-
-        // look for stick input
-        if (g.rc_4.control_in < -3000) {
-            g.simple_modes &= ~(1<<_switchPosition);
-            // print new mode
-            print_switch(_switchPosition, mode, BIT_IS_SET(g.simple_modes, _switchPosition));
-            delay(500);
-        }
-
-        // escape hatch
-        if(cliSerial->available() > 0) {
-            for (mode = 0; mode < 6; mode++)
-                flight_modes[mode].save();
-
-            g.simple_modes.save();
-            print_done();
-            report_flight_modes();
-            return (0);
-        }
-    }
-}
-
-static int8_t
 setup_optflow(uint8_t argc, const Menu::arg *argv)
 {
  #if OPTFLOW == ENABLED
@@ -420,103 +284,6 @@ setup_optflow(uint8_t argc, const Menu::arg *argv)
     g.optflow_enabled.save();
     report_optflow();
  #endif     // OPTFLOW == ENABLED
-    return 0;
-}
-
-// Perform radio setup.
-// Called by the setup menu 'radio' command.
-static int8_t
-setup_radio(uint8_t argc, const Menu::arg *argv)
-{
-    cliSerial->println_P(PSTR("\n\nRadio Setup:"));
-    uint8_t i;
-
-    for(i = 0; i < 100; i++) {
-        delay(20);
-        read_radio();
-    }
-
-    if(g.rc_1.radio_in < 500) {
-        while(1) {
-            delay(1000);
-            // stop here
-        }
-    }
-
-    g.rc_1.radio_min = g.rc_1.radio_in;
-    g.rc_2.radio_min = g.rc_2.radio_in;
-    g.rc_3.radio_min = g.rc_3.radio_in;
-    g.rc_4.radio_min = g.rc_4.radio_in;
-    g.rc_5.radio_min = g.rc_5.radio_in;
-    g.rc_6.radio_min = g.rc_6.radio_in;
-    g.rc_7.radio_min = g.rc_7.radio_in;
-    g.rc_8.radio_min = g.rc_8.radio_in;
-
-    g.rc_1.radio_max = g.rc_1.radio_in;
-    g.rc_2.radio_max = g.rc_2.radio_in;
-    g.rc_3.radio_max = g.rc_3.radio_in;
-    g.rc_4.radio_max = g.rc_4.radio_in;
-    g.rc_5.radio_max = g.rc_5.radio_in;
-    g.rc_6.radio_max = g.rc_6.radio_in;
-    g.rc_7.radio_max = g.rc_7.radio_in;
-    g.rc_8.radio_max = g.rc_8.radio_in;
-
-    g.rc_1.radio_trim = g.rc_1.radio_in;
-    g.rc_2.radio_trim = g.rc_2.radio_in;
-    g.rc_4.radio_trim = g.rc_4.radio_in;
-    // 3 is not trimed
-    g.rc_5.radio_trim = 1500;
-    g.rc_6.radio_trim = 1500;
-    g.rc_7.radio_trim = 1500;
-    g.rc_8.radio_trim = 1500;
-
-
-    cliSerial->printf_P(PSTR("\nMove all controls to extremes. Enter to save: "));
-    while(1) {
-
-        delay(20);
-        // Filters radio input - adjust filters in the radio.pde file
-        // ----------------------------------------------------------
-        read_radio();
-
-        g.rc_1.update_min_max();
-        g.rc_2.update_min_max();
-        g.rc_3.update_min_max();
-        g.rc_4.update_min_max();
-        g.rc_5.update_min_max();
-        g.rc_6.update_min_max();
-        g.rc_7.update_min_max();
-        g.rc_8.update_min_max();
-
-        if(cliSerial->available() > 0) {
-            delay(20);
-            while (cliSerial->read() != -1); /* flush */
-
-            g.rc_1.save_eeprom();
-            g.rc_2.save_eeprom();
-            g.rc_3.save_eeprom();
-            g.rc_4.save_eeprom();
-            g.rc_5.save_eeprom();
-            g.rc_6.save_eeprom();
-            g.rc_7.save_eeprom();
-            g.rc_8.save_eeprom();
-
-            print_done();
-            break;
-        }
-    }
-    report_radio();
-    return(0);
-}
-
-static int8_t
-setup_range(uint8_t argc, const Menu::arg *argv)
-{
-    cliSerial->printf_P(PSTR("\nCH 6 Ranges are divided by 1000: [low, high]\n"));
-
-    g.radio_tuning_low.set_and_save(argv[1].i);
-    g.radio_tuning_high.set_and_save(argv[2].i);
-    report_tuning();
     return 0;
 }
 
@@ -645,29 +412,6 @@ setup_show(uint8_t argc, const Menu::arg *argv)
     AP_Param::show_all(cliSerial);
 
     return(0);
-}
-
-static int8_t
-setup_sonar(uint8_t argc, const Menu::arg *argv)
-{
-    if (!strcmp_P(argv[1].str, PSTR("on"))) {
-        g.sonar_enabled.set_and_save(true);
-
-    } else if (!strcmp_P(argv[1].str, PSTR("off"))) {
-        g.sonar_enabled.set_and_save(false);
-
-    } else if (argc > 1 && (argv[1].i >= 0 && argv[1].i <= 3)) {
-        g.sonar_enabled.set_and_save(true);      // if you set the sonar type, surely you want it on
-        g.sonar_type.set_and_save(argv[1].i);
-
-    }else{
-        cliSerial->printf_P(PSTR("\nOp:[on, off, 0-3]\n"));
-        report_sonar();
-        return 0;
-    }
-
-    report_sonar();
-    return 0;
 }
 
 /***************************************************************************/
