@@ -109,6 +109,7 @@ static void init_aux_switches()
         case AUX_SWITCH_ACRO_TRAINER:
         case AUX_SWITCH_EPM:
         case AUX_SWITCH_SPRAYER:
+        case AUX_SWITCH_WP_CHANGE:
             do_aux_switch_function(g.ch7_option, ap.CH7_flag);
             break;
     }
@@ -122,6 +123,7 @@ static void init_aux_switches()
         case AUX_SWITCH_ACRO_TRAINER:
         case AUX_SWITCH_EPM:
         case AUX_SWITCH_SPRAYER:
+        case AUX_SWITCH_WP_CHANGE:
             do_aux_switch_function(g.ch8_option, ap.CH8_flag);
             break;
     }
@@ -365,6 +367,21 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 if (control_mode == LAND) {
                     reset_control_switch();
                 }
+            }
+            break;
+
+        case AUX_SWITCH_WP_CHANGE:
+            switch(ch_flag) {
+            case AUX_SWITCH_LOW:
+                // change to previous Waypoint
+                change_command(command_nav_index-1);
+                break;
+            case AUX_SWITCH_HIGH:
+                // change to next Waypoint
+                change_command(command_nav_index+1);
+                break;
+            default:
+                break;
             }
             break;
     }
