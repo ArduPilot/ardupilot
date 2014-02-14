@@ -23,7 +23,7 @@
 #include <AP_AHRS.h>
 #include <AP_Airspeed.h>
 #include <AC_PID.h>             // PID library
-#include <APM_PI.h>             // PID library
+#include <AC_P.h>               // P library
 #include <AP_Buffer.h>          // ArduPilot general purpose FIFO buffer
 #include <AP_InertialNav.h>     // Inertial Navigation library
 #include <GCS_MAVLink.h>
@@ -59,15 +59,15 @@ AP_GPS_Auto auto_gps(&gps);
 GPS_Glitch gps_glitch(gps);
 
 AP_Compass_HMC5843 compass;
-AP_AHRS_DCM ahrs(ins, gps);
+AP_AHRS_DCM ahrs(ins, baro, gps);
 
 // Inertial Nav declaration
-AP_InertialNav inertial_nav(&ahrs, &baro, gps, gps_glitch);
+AP_InertialNav inertial_nav(ahrs, baro, gps, gps_glitch);
 
 // fake PIDs
-APM_PI pi_angle_roll, pi_angle_pitch, pi_angle_yaw;
+AC_P   p_angle_roll, p_angle_pitch, p_angle_yaw;
 AC_PID pid_rate_roll, pid_rate_pitch, pid_rate_yaw;
-APM_PI pi_alt_pos, pi_pos_lat, pi_pos_lon;
+AC_P   p_alt_pos, p_pos_xy;
 AC_PID pid_alt_rate, pid_alt_accel;
 AC_PID pid_rate_lat, pid_rate_lon;
 
@@ -75,14 +75,14 @@ AC_PID pid_rate_lat, pid_rate_lon;
 RC_Channel rc_roll(CH_1), rc_pitch(CH_2), rc_yaw(CH_4), rc_throttle(CH_3);
 
 // fake motor and outputs
-AP_MotorsQuad motors(&rc_roll, &rc_pitch, &rc_throttle, &rc_yaw);
+AP_MotorsQuad motors(rc_roll, rc_pitch, rc_throttle, rc_yaw);
 int16_t motor_roll, motor_pitch, motor_yaw, motor_throttle;
 
 // Attitude Control
-AC_AttitudeControl ac_control(ahrs, ins, aparm, motors, pi_angle_roll, pi_angle_pitch, pi_angle_yaw, pid_rate_roll, pid_rate_pitch, pid_rate_yaw, motor_roll, motor_pitch, motor_yaw, motor_throttle);
+AC_AttitudeControl ac_control(ahrs, ins, aparm, motors, p_angle_roll, p_angle_pitch, p_angle_yaw, pid_rate_roll, pid_rate_pitch, pid_rate_yaw);
 
 /// Position Control
-AC_PosControl pos_control(ahrs, inertial_nav, motors, ac_control, pi_alt_pos, pid_alt_rate, pid_alt_accel, pi_pos_lat, pi_pos_lon, pid_rate_lat, pid_rate_lon);
+AC_PosControl pos_control(ahrs, inertial_nav, motors, ac_control, p_alt_pos, pid_alt_rate, pid_alt_accel, p_pos_xy, pid_rate_lat, pid_rate_lon);
 
 void setup()
 {
@@ -91,9 +91,9 @@ void setup()
 
 void loop()
 {
-    // call update function
-    hal.console->printf_P(PSTR("hello"));
-    hal.scheduler->delay(1);
+    // print message to user
+    hal.console->printf_P(PSTR("this example tests compilation only"));
+    hal.scheduler->delay(5000);
 }
 
 AP_HAL_MAIN();
