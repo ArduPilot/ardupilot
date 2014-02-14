@@ -23,6 +23,10 @@
 #include <DataFlash.h>
 #include <GCS_MAVLink.h>
 #include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
+#include <AP_AHRS.h>
+#include <AP_Airspeed.h>
+#include <AP_Vehicle.h>
+#include <AP_ADC_AnalogSource.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
