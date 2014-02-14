@@ -37,6 +37,7 @@ public:
     }
 
     void set_flow_control(enum flow_control flow_control);
+    enum flow_control get_flow_control(void) { return _flow_control; }
 
 private:
     const char *_devpath;
