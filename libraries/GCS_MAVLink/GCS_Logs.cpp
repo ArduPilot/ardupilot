@@ -110,6 +110,7 @@ void GCS_MAVLINK::handle_log_request_data(mavlink_message_t *msg, DataFlash_Clas
         dataflash.get_log_boundaries(packet.id, _log_data_page, end);
     }
 
+    _log_data_offset = packet.ofs;
     if (_log_data_offset >= _log_data_size) {
         _log_data_remaining = 0;
     } else {
@@ -118,7 +119,6 @@ void GCS_MAVLINK::handle_log_request_data(mavlink_message_t *msg, DataFlash_Clas
     if (_log_data_remaining > packet.count) {
         _log_data_remaining = packet.count;
     }
-    _log_data_offset = packet.ofs;
     _log_sending = true;
 
     handle_log_send(dataflash);
