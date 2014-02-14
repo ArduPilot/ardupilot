@@ -133,6 +133,9 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    enum pitot_tube_order { PITOT_TUBE_ORDER_POSITIVE =0, 
+                            PITOT_TUBE_ORDER_NEGATIVE =1, 
+                            PITOT_TUBE_ORDER_AUTO     =2};
 
 private:
     AP_Float        _offset;
@@ -141,6 +144,7 @@ private:
     AP_Int8         _enable;
     AP_Int8         _pin;
     AP_Int8         _autocal;
+    AP_Int8         _tube_order;
     float           _raw_airspeed;
     float           _airspeed;
     float			_last_pressure;
