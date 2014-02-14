@@ -23,7 +23,7 @@
 #include <AP_Airspeed.h>
 #include <AP_Vehicle.h>
 #include <AC_PID.h>             // PID library
-#include <APM_PI.h>             // PID library
+#include <AC_P.h>               // P library
 #include <AP_Buffer.h>          // ArduPilot general purpose FIFO buffer
 #include <AP_InertialNav.h>     // Inertial Navigation library
 #include <DataFlash.h>
@@ -53,10 +53,10 @@ AP_GPS_Auto auto_gps(&gps);
 GPS_Glitch gps_glitch(gps);
 
 AP_Compass_HMC5843 compass;
-AP_AHRS_DCM ahrs(ins, gps);
+AP_AHRS_DCM ahrs(ins, baro, gps);
 
 // Inertial Nav declaration
-AP_InertialNav inertial_nav(&ahrs, &baro, gps, gps_glitch);
+AP_InertialNav inertial_nav(ahrs, baro, gps, gps_glitch);
 
 // Sprayer
 AC_Sprayer sprayer(&inertial_nav);
