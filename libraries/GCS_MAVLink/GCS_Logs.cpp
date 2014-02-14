@@ -132,6 +132,9 @@ void GCS_MAVLINK::handle_log_send(DataFlash_Class &dataflash)
     if (_log_listing) {
         handle_log_send_listing(dataflash);
     }
+    if (!_log_sending) {
+        return;
+    }
     uint8_t num_sends = 1;
     if (chan == MAVLINK_COMM_0 && hal.gpio->usb_connected()) {
         // when on USB we can send a lot more data
