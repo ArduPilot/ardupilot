@@ -1364,6 +1364,9 @@ static void update_navigation()
 static void update_alt()
 {
     barometer.read();
+    if (should_log(MASK_LOG_IMU)) {
+        Log_Write_Baro();
+    }
 
     geofence_check(true);
 
