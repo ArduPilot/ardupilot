@@ -21,7 +21,7 @@
 #include <AP_Vehicle.h>
 #include <DataFlash.h>
 #include <AC_PID.h>             // PID library
-#include <APM_PI.h>             // PID library
+#include <AC_P.h>               // P library
 #include <AP_Buffer.h>          // ArduPilot general purpose FIFO buffer
 #include <DataFlash.h>
 #include <GCS_MAVLink.h>
@@ -47,9 +47,9 @@ AP_GPS_Auto auto_gps(&gps);
 GPS_Glitch   gps_glitch(gps);
 
 AP_Compass_HMC5843 compass;
-AP_AHRS_DCM ahrs(ins, gps);
+AP_AHRS_DCM ahrs(ins, baro, gps);
 
-AP_InertialNav inertialnav(&ahrs, &baro, gps, gps_glitch);
+AP_InertialNav inertialnav(ahrs, baro, gps, gps_glitch);
 
 uint32_t last_update;
 
@@ -69,7 +69,7 @@ void setup(void)
 
     inertialnav.init();
     inertialnav.set_velocity_xy(0,0);
-    inertialnav.set_home_position(0,0);
+    inertialnav.setup_home_position();
 }
 
 void loop(void)
