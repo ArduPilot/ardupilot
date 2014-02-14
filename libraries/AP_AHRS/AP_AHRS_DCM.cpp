@@ -861,17 +861,14 @@ float AP_AHRS_DCM::get_error_yaw(void)
 // dead-reckoning or GPS
 bool AP_AHRS_DCM::get_position(struct Location &loc)
 {
-    if (!_have_position) {
-        return false;
-    }
     loc.lat = _last_lat;
     loc.lng = _last_lng;
     loc.alt = _baro.get_altitude() * 100 + _home.alt;
     location_offset(loc, _position_offset_north, _position_offset_east);
-    if (_flags.fly_forward) {
+    if (_flags.fly_forward && _have_position) {
         location_update(loc, degrees(yaw), _gps->ground_speed_cm * 0.01 * _gps->get_lag());
     }
-    return true;
+    return _have_position;
 }
 
 // return an airspeed estimate if available
