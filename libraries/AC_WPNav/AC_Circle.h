@@ -5,8 +5,6 @@
 #include <AP_Common.h>
 #include <AP_Param.h>
 #include <AP_Math.h>
-#include <AC_PID.h>             // PID library
-#include <APM_PI.h>             // PID library
 #include <AP_InertialNav.h>     // Inertial Navigation library
 #include <AC_PosControl.h>      // Position control library
 
