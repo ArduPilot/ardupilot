@@ -261,7 +261,7 @@ static void autotune_run()
 
         // if pilot override call attitude controller
         if (autotune_state.pilot_override || autotune_state.mode != AUTOTUNE_MODE_TUNING) {
-            attitude_control.angleef_rp_rateef_y(target_roll, target_pitch, target_yaw_rate);
+            attitude_control.angle_ef_roll_pitch_rate_ef_yaw(target_roll, target_pitch, target_yaw_rate);
         }else{
             // somehow get attitude requests from autotuning
             autotune_attitude_control();
@@ -288,7 +288,7 @@ static void autotune_attitude_control()
         attitude_control.limit_angle_to_rate_request(true);
 
         // hold level attitude
-        attitude_control.angleef_rp_rateef_y(0.0f, 0.0f, 0.0f);
+        attitude_control.angle_ef_roll_pitch_rate_ef_yaw(0.0f, 0.0f, 0.0f);
 
         // hold the copter level for 0.25 seconds before we begin a twitch
         // reset counter if we are no longer level
@@ -321,16 +321,16 @@ static void autotune_attitude_control()
             if (autotune_state.axis == AUTOTUNE_AXIS_ROLL) {
                 // request roll to 20deg
                 if (autotune_state.positive_direction) {
-                    attitude_control.angleef_rp_rateef_y(AUTOTUNE_TARGET_ANGLE_CD, 0.0f, 0.0f);
+                    attitude_control.angle_ef_roll_pitch_rate_ef_yaw(AUTOTUNE_TARGET_ANGLE_CD, 0.0f, 0.0f);
                 }else{
-                    attitude_control.angleef_rp_rateef_y(-AUTOTUNE_TARGET_ANGLE_CD, 0.0f, 0.0f);
+                    attitude_control.angle_ef_roll_pitch_rate_ef_yaw(-AUTOTUNE_TARGET_ANGLE_CD, 0.0f, 0.0f);
                 }
             }else{
                 // request pitch to 20deg
                 if (autotune_state.positive_direction) {
-                    attitude_control.angleef_rp_rateef_y(0.0f, AUTOTUNE_TARGET_ANGLE_CD, 0.0f);
+                    attitude_control.angle_ef_roll_pitch_rate_ef_yaw(0.0f, AUTOTUNE_TARGET_ANGLE_CD, 0.0f);
                 }else{
-                    attitude_control.angleef_rp_rateef_y(0.0f, -AUTOTUNE_TARGET_ANGLE_CD, 0.0f);
+                    attitude_control.angle_ef_roll_pitch_rate_ef_yaw(0.0f, -AUTOTUNE_TARGET_ANGLE_CD, 0.0f);
                 }
             }
         } else {

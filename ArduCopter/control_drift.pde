@@ -69,7 +69,7 @@ static void drift_run()
     }
 
     // call attitude controller
-    attitude_control.angleef_rp_rateef_y(target_roll, target_pitch, target_yaw_rate);
+    attitude_control.angle_ef_roll_pitch_rate_ef_yaw(target_roll, target_pitch, target_yaw_rate);
 
     // output pilot's throttle with angle boost
     attitude_control.set_throttle_out(pilot_throttle_scaled, true);

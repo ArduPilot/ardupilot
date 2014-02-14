@@ -56,7 +56,7 @@ static void althold_run()
         attitude_control.set_throttle_out(0, false);
     }else{
         // call attitude controller
-        attitude_control.angleef_rp_rateef_y(target_roll, target_pitch, target_yaw_rate);
+        attitude_control.angle_ef_roll_pitch_rate_ef_yaw(target_roll, target_pitch, target_yaw_rate);
         // body-frame rate controller is run directly from 100hz loop
 
         // call throttle controller

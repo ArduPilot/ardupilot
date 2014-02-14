@@ -153,10 +153,10 @@ static void rtl_climb_return_descent_run()
     // call attitude controller
     if (auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control.angleef_rp_rateef_y(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
+        attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
     }else{
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control.angleef_rpy(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(),true);
+        attitude_control.angle_ef_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(),true);
     }
 
     // check if we've completed this stage of RTL
@@ -210,10 +210,10 @@ static void rtl_loiterathome_run()
     // call attitude controller
     if (auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control.angleef_rp_rateef_y(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
+        attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
     }else{
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control.angleef_rpy(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(),true);
+        attitude_control.angle_ef_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(),true);
     }
 
     // check if we've completed this stage of RTL
@@ -266,7 +266,7 @@ static void rtl_land_run()
     pos_control.update_z_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control.angleef_rp_rateef_y(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
+    attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
 
     // check if we've completed this stage of RTL
     rtl_state_complete = ap.land_complete;

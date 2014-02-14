@@ -74,7 +74,7 @@ static void sport_run()
         attitude_control.set_throttle_out(0, false);
     }else{
         // call attitude controller
-        attitude_control.rateef_rpy(target_roll_rate, target_pitch_rate, target_yaw_rate);
+        attitude_control.rate_ef_roll_pitch_yaw(target_roll_rate, target_pitch_rate, target_yaw_rate);
 
         // call throttle controller
         if (sonar_alt_health >= SONAR_ALT_HEALTH_MAX) {

@@ -79,7 +79,7 @@ static void land_gps_run()
     wp_nav.update_loiter();
 
     // call attitude controller
-    attitude_control.angleef_rp_rateef_y(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
+    attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
 
     // update altitude target and call position controller
     pos_control.set_alt_target_from_climb_rate(get_throttle_land(), G_Dt);
@@ -125,7 +125,7 @@ static void land_nogps_run()
     }
 
     // call attitude controller
-    attitude_control.angleef_rp_rateef_y(target_roll, target_pitch, target_yaw_rate);
+    attitude_control.angle_ef_roll_pitch_rate_ef_yaw(target_roll, target_pitch, target_yaw_rate);
 
     // call position controller
     pos_control.set_alt_target_from_climb_rate(get_throttle_land(), G_Dt);

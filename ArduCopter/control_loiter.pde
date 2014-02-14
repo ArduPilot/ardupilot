@@ -67,7 +67,7 @@ static void loiter_run()
         wp_nav.update_loiter();
 
         // call attitude controller
-        attitude_control.angleef_rp_rateef_y(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
+        attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
 
         // body-frame rate controller is run directly from 100hz loop
 

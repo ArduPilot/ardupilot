@@ -105,7 +105,7 @@ static void auto_takeoff_run()
     pos_control.update_z_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control.angleef_rp_rateef_y(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
+    attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
 }
 
 // auto_wp_start - initialises waypoint controller to implement flying to a particular destination
@@ -154,10 +154,10 @@ static void auto_wp_run()
     // call attitude controller
     if (auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control.angleef_rp_rateef_y(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
+        attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
     }else{
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control.angleef_rpy(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(),true);
+        attitude_control.angle_ef_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(),true);
     }
 }
 
@@ -215,7 +215,7 @@ static void auto_land_run()
     pos_control.update_z_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control.angleef_rp_rateef_y(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
+    attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
 }
 
 // auto_rtl_start - initialises RTL in AUTO flight mode
@@ -255,7 +255,7 @@ void auto_circle_run()
     pos_control.update_z_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control.angleef_rpy(circle_nav.get_roll(), circle_nav.get_pitch(), circle_nav.get_yaw(),true);
+    attitude_control.angle_ef_roll_pitch_yaw(circle_nav.get_roll(), circle_nav.get_pitch(), circle_nav.get_yaw(),true);
 }
 
 // get_default_auto_yaw_mode - returns auto_yaw_mode based on WP_YAW_BEHAVIOR parameter

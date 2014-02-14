@@ -121,7 +121,7 @@ static void flip_run()
 
     case Flip_Start:
         // under 45 degrees request 400deg/sec roll
-        attitude_control.ratebf_rpy(FLIP_ROLL_RATE * flip_dir, 0.0, 0.0);
+        attitude_control.rate_bf_roll_pitch_yaw(FLIP_ROLL_RATE * flip_dir, 0.0, 0.0);
         // increase throttle
         throttle_out += FLIP_THR_INC;
         // beyond 45deg lean angle move to next stage
@@ -132,7 +132,7 @@ static void flip_run()
 
     case Flip_Roll:
         // between 45deg ~ -90deg request 400deg/sec roll
-        attitude_control.ratebf_rpy(FLIP_ROLL_RATE * flip_dir, 0.0, 0.0);
+        attitude_control.rate_bf_roll_pitch_yaw(FLIP_ROLL_RATE * flip_dir, 0.0, 0.0);
         // decrease throttle
         throttle_out -= FLIP_THR_DEC;
         // beyond -90deg move on to recovery
@@ -143,7 +143,7 @@ static void flip_run()
 
     case Flip_Recover:
         // use originally captured earth-frame angle targets to recover
-        attitude_control.angleef_rpy(curr_ef_targets.x, curr_ef_targets.y, curr_ef_targets.z,false);
+        attitude_control.angle_ef_roll_pitch_yaw(curr_ef_targets.x, curr_ef_targets.y, curr_ef_targets.z,false);
 
         // increase throttle to gain any lost alitude
         throttle_out += FLIP_THR_INC;

@@ -68,7 +68,7 @@ static void ofloiter_run()
         target_pitch = get_of_pitch(target_pitch);
 
         // call attitude controller
-        attitude_control.angleef_rp_rateef_y(target_roll, target_pitch, target_yaw_rate);
+        attitude_control.angle_ef_roll_pitch_rate_ef_yaw(target_roll, target_pitch, target_yaw_rate);
 
         // run altitude controller
         if (sonar_alt_health >= SONAR_ALT_HEALTH_MAX) {
