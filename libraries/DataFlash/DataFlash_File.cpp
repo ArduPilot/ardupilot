@@ -305,8 +305,26 @@ int16_t DataFlash_File::get_log_data(uint16_t log_num, uint16_t page, uint32_t o
         _read_fd_log_num = log_num;
     }
     uint32_t ofs = page * (uint32_t)DATAFLASH_PAGE_SIZE + offset;
+
+    /*
+      this rather strange bit of code is here to work around a bug
+      in file offsets in NuttX. Every few hundred blocks of reads
+      (starting at around 350k into a file) NuttX will get the
+      wrong offset for sequential reads. The offset it gets is
+      typically 128k earlier than it should be. It turns out that
+      calling lseek() with 0 offset and SEEK_CUR works around the
+      bug. We can remove this once we find the real bug.
+    */
+    if (ofs / 4096 != (ofs+len) / 4096) {
+        int seek_current = ::lseek(_read_fd, 0, SEEK_CUR);
+        if (seek_current != _read_offset) {
+            ::lseek(_read_fd, _read_offset, SEEK_SET);
+        }
+    }
+
     if (ofs != _read_offset) {
         ::lseek(_read_fd, ofs, SEEK_SET);
+        _read_offset = ofs;
     }
     int16_t ret = (int16_t)::read(_read_fd, data, len);
     if (ret > 0) {
@@ -426,6 +444,7 @@ void DataFlash_File::LogReadProcess(uint16_t log_num,
     _read_offset = 0;
     if (start_page != 0) {
         ::lseek(_read_fd, start_page * DATAFLASH_PAGE_SIZE, SEEK_SET);
+        _read_offset = start_page * DATAFLASH_PAGE_SIZE;
     }
 
     while (true) {
