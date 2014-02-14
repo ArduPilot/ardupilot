@@ -820,107 +820,35 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0 4500
     // @Units: Centi-Degrees/Sec
     // @User: Standard
-    GGROUP(pi_stabilize_roll,       "STB_RLL_", APM_PI),
+    GGROUP(p_stabilize_roll,       "STB_RLL_", AC_P),
 
     // @Param: STB_PIT_P
     // @DisplayName: Pitch axis stabilize controller P gain
     // @Description: Pitch axis stabilize (i.e. angle) controller P gain.  Converts the error between the desired pitch angle and actual angle to a desired pitch rate
     // @Range: 3.000 6.000
     // @User: Standard
-
-    // @Param: STB_PIT_I
-    // @DisplayName: Pitch axis stabilize controller I gain
-    // @Description: Pitch axis stabilize (i.e. angle) controller I gain.  Corrects for longer-term difference in desired pitch angle and actual angle
-    // @Range: 0.000 0.100
-    // @User: Standard
-
-    // @Param: STB_PIT_IMAX
-    // @DisplayName: Pitch axis stabilize controller I gain maximum
-    // @Description: Pitch axis stabilize (i.e. angle) controller I gain maximum.  Constrains the maximum pitch rate that the I term will generate
-    // @Range: 0 4500
-    // @Units: Centi-Degrees/Sec
-    // @User: Standard
-    GGROUP(pi_stabilize_pitch,      "STB_PIT_", APM_PI),
+    GGROUP(p_stabilize_pitch,      "STB_PIT_", AC_P),
 
     // @Param: STB_YAW_P
     // @DisplayName: Yaw axis stabilize controller P gain
     // @Description: Yaw axis stabilize (i.e. angle) controller P gain.  Converts the error between the desired yaw angle and actual angle to a desired yaw rate
     // @Range: 3.000 6.000
     // @User: Standard
-
-    // @Param: STB_YAW_I
-    // @DisplayName: Yaw axis stabilize controller I gain
-    // @Description: Yaw axis stabilize (i.e. angle) controller I gain.  Corrects for longer-term difference in desired yaw angle and actual angle
-    // @Range: 0.000 0.100
-    // @User: Standard
-
-    // @Param: STB_YAW_IMAX
-    // @DisplayName: Yaw axis stabilize controller I gain maximum
-    // @Description: Yaw axis stabilize (i.e. angle) controller I gain maximum.  Constrains the maximum yaw rate that the I term will generate
-    // @Range: 0 4500
-    // @Units: Centi-Degrees/Sec
-    // @User: Standard
-    GGROUP(pi_stabilize_yaw,        "STB_YAW_", APM_PI),
+    GGROUP(p_stabilize_yaw,        "STB_YAW_", AC_P),
 
     // @Param: THR_ALT_P
     // @DisplayName: Altitude controller P gain
     // @Description: Altitude controller P gain.  Converts the difference between the desired altitude and actual altitude into a climb or descent rate which is passed to the throttle rate controller
     // @Range: 1.000 3.000
     // @User: Standard
-
-    // @Param: THR_ALT_I
-    // @DisplayName: Altitude controller I gain
-    // @Description: Altitude controller I gain.  Corrects for longer-term difference in desired altitude and actual altitude
-    // @Range: 0.000 0.100
-    // @User: Standard
-
-    // @Param: THR_ALT_IMAX
-    // @DisplayName: Altitude controller I gain maximum
-    // @Description: Altitude controller I gain maximum.  Constrains the maximum climb rate rate that the I term will generate
-    // @Range: 0 500
-    // @Units: cm/s
-    // @User: Standard
-    GGROUP(pi_alt_hold,     "THR_ALT_", APM_PI),
+    GGROUP(p_alt_hold,     "THR_ALT_", AC_P),
 
     // @Param: HLD_LAT_P
-    // @DisplayName: Loiter latitude position controller P gain
-    // @Description: Loiter latitude position controller P gain.  Converts the distance (in the latitude direction) to the target location into a desired speed which is then passed to the loiter latitude rate controller
+    // @DisplayName: Loiter position controller P gain
+    // @Description: Loiter position controller P gain.  Converts the distance (in the latitude direction) to the target location into a desired speed which is then passed to the loiter latitude rate controller
     // @Range: 0.500 2.000
     // @User: Standard
-
-    // @Param: HLD_LAT_I
-    // @DisplayName: Loiter latitude position controller I gain
-    // @Description: Loiter latitude position controller I gain.  Corrects for longer-term distance (in latitude) to the target location
-    // @Range: 0.000 0.100
-    // @User: Standard
-
-    // @Param: HLD_LAT_IMAX
-    // @DisplayName: Loiter latitude position controller I gain maximum
-    // @Description: Loiter latitude position controller I gain maximum.  Constrains the maximum desired speed that the I term will generate
-    // @Range: 0 3000
-    // @Units: cm/s
-    // @User: Standard
-    GGROUP(pi_loiter_lat,   "HLD_LAT_", APM_PI),
-
-    // @Param: HLD_LON_P
-    // @DisplayName: Loiter longitude position controller P gain
-    // @Description: Loiter longitude position controller P gain.  Converts the distance (in the longitude direction) to the target location into a desired speed which is then passed to the loiter longitude rate controller
-    // @Range: 0.500 2.000
-    // @User: Standard
-
-    // @Param: HLD_LON_I
-    // @DisplayName: Loiter longitude position controller I gain
-    // @Description: Loiter longitude position controller I gain.  Corrects for longer-term distance (in longitude direction) to the target location
-    // @Range: 0.000 0.100
-    // @User: Standard
-
-    // @Param: HLD_LON_IMAX
-    // @DisplayName: Loiter longitudeposition controller I gain maximum
-    // @Description: Loiter  longitudeposition controller I gain maximum.  Constrains the maximum desired speed that the I term will generate
-    // @Range: 0 3000
-    // @Units: cm/s
-    // @User: Standard
-    GGROUP(pi_loiter_lon,   "HLD_LON_", APM_PI),
+    GGROUP(p_loiter_pos, "HLD_LAT_", AC_P),
 
     // variables not in the g class which contain EEPROM saved variables
 

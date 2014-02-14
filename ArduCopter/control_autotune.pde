@@ -667,19 +667,19 @@ static void autotune_backup_gains_and_initialise()
     orig_roll_rp = g.pid_rate_roll.kP();
     orig_roll_ri = g.pid_rate_roll.kI();
     orig_roll_rd = g.pid_rate_roll.kD();
-    orig_roll_sp = g.pi_stabilize_roll.kP();
+    orig_roll_sp = g.p_stabilize_roll.kP();
     orig_pitch_rp = g.pid_rate_pitch.kP();
     orig_pitch_ri = g.pid_rate_pitch.kI();
     orig_pitch_rd = g.pid_rate_pitch.kD();
-    orig_pitch_sp = g.pi_stabilize_pitch.kP();
+    orig_pitch_sp = g.p_stabilize_pitch.kP();
 
     // initialise tuned pid values
     tune_roll_rp = g.pid_rate_roll.kP();
     tune_roll_rd = g.pid_rate_roll.kD();
-    tune_roll_sp = g.pi_stabilize_roll.kP();
+    tune_roll_sp = g.p_stabilize_roll.kP();
     tune_pitch_rp = g.pid_rate_pitch.kP();
     tune_pitch_rd = g.pid_rate_pitch.kD();
-    tune_pitch_sp = g.pi_stabilize_pitch.kP();
+    tune_pitch_sp = g.p_stabilize_pitch.kP();
 
     Log_Write_Event(DATA_AUTOTUNE_INITIALISED);
 }
@@ -693,11 +693,11 @@ static void autotune_load_orig_gains()
         g.pid_rate_roll.kP(orig_roll_rp);
         g.pid_rate_roll.kI(orig_roll_ri);
         g.pid_rate_roll.kD(orig_roll_rd);
-        g.pi_stabilize_roll.kP(orig_roll_sp);
+        g.p_stabilize_roll.kP(orig_roll_sp);
         g.pid_rate_pitch.kP(orig_pitch_rp);
         g.pid_rate_pitch.kI(orig_pitch_ri);
         g.pid_rate_pitch.kD(orig_pitch_rd);
-        g.pi_stabilize_pitch.kP(orig_pitch_sp);
+        g.p_stabilize_pitch.kP(orig_pitch_sp);
     }
 }
 
@@ -709,11 +709,11 @@ static void autotune_load_tuned_gains()
         g.pid_rate_roll.kP(tune_roll_rp);
         g.pid_rate_roll.kI(tune_roll_rp*AUTOTUNE_RP_RATIO_FINAL);
         g.pid_rate_roll.kD(tune_roll_rd);
-        g.pi_stabilize_roll.kP(tune_roll_sp);
+        g.p_stabilize_roll.kP(tune_roll_sp);
         g.pid_rate_pitch.kP(tune_pitch_rp);
         g.pid_rate_pitch.kI(tune_pitch_rp*AUTOTUNE_RP_RATIO_FINAL);
         g.pid_rate_pitch.kD(tune_pitch_rd);
-        g.pi_stabilize_pitch.kP(tune_pitch_sp);
+        g.p_stabilize_pitch.kP(tune_pitch_sp);
     }else{
         // log an error message and fail the autotune
         Log_Write_Error(ERROR_SUBSYSTEM_AUTOTUNE,ERROR_CODE_AUTOTUNE_BAD_GAINS);
@@ -730,11 +730,11 @@ static void autotune_load_intra_test_gains()
         g.pid_rate_roll.kP(orig_roll_rp);
         g.pid_rate_roll.kI(orig_roll_rp*AUTOTUNE_PI_RATIO_FOR_TESTING);
         g.pid_rate_roll.kD(orig_roll_rd);
-        g.pi_stabilize_roll.kP(orig_roll_sp);
+        g.p_stabilize_roll.kP(orig_roll_sp);
         g.pid_rate_pitch.kP(orig_pitch_rp);
         g.pid_rate_pitch.kI(orig_pitch_rp*AUTOTUNE_PI_RATIO_FOR_TESTING);
         g.pid_rate_pitch.kD(orig_pitch_rd);
-        g.pi_stabilize_pitch.kP(orig_pitch_sp);
+        g.p_stabilize_pitch.kP(orig_pitch_sp);
     }else{
         // log an error message and fail the autotune
         Log_Write_Error(ERROR_SUBSYSTEM_AUTOTUNE,ERROR_CODE_AUTOTUNE_BAD_GAINS);
@@ -750,7 +750,7 @@ static void autotune_load_twitch_gains()
             g.pid_rate_roll.kP(tune_roll_rp);
             g.pid_rate_roll.kI(tune_roll_rp*0.01f);
             g.pid_rate_roll.kD(tune_roll_rd);
-            g.pi_stabilize_roll.kP(tune_roll_sp);
+            g.p_stabilize_roll.kP(tune_roll_sp);
         }else{
             // log an error message and fail the autotune
             Log_Write_Error(ERROR_SUBSYSTEM_AUTOTUNE,ERROR_CODE_AUTOTUNE_BAD_GAINS);
@@ -760,7 +760,7 @@ static void autotune_load_twitch_gains()
             g.pid_rate_pitch.kP(tune_pitch_rp);
             g.pid_rate_pitch.kI(tune_pitch_rp*0.01f);
             g.pid_rate_pitch.kD(tune_pitch_rd);
-            g.pi_stabilize_pitch.kP(tune_pitch_sp);
+            g.p_stabilize_pitch.kP(tune_pitch_sp);
         }else{
             // log an error message and fail the autotune
             Log_Write_Error(ERROR_SUBSYSTEM_AUTOTUNE,ERROR_CODE_AUTOTUNE_BAD_GAINS);
@@ -789,22 +789,22 @@ static void autotune_save_tuning_gains()
             g.pid_rate_pitch.save_gains();
 
             // stabilize roll
-            g.pi_stabilize_roll.kP(tune_roll_sp);
-            g.pi_stabilize_roll.save_gains();
+            g.p_stabilize_roll.kP(tune_roll_sp);
+            g.p_stabilize_roll.save_gains();
 
             // stabilize pitch
-            g.pi_stabilize_pitch.save_gains();
-            g.pi_stabilize_pitch.kP(tune_pitch_sp);
+            g.p_stabilize_pitch.save_gains();
+            g.p_stabilize_pitch.kP(tune_pitch_sp);
 
             // resave pids to originals in case the autotune is run again
             orig_roll_rp = g.pid_rate_roll.kP();
             orig_roll_ri = g.pid_rate_roll.kI();
             orig_roll_rd = g.pid_rate_roll.kD();
-            orig_roll_sp = g.pi_stabilize_roll.kP();
+            orig_roll_sp = g.p_stabilize_roll.kP();
             orig_pitch_rp = g.pid_rate_pitch.kP();
             orig_pitch_ri = g.pid_rate_pitch.kI();
             orig_pitch_rd = g.pid_rate_pitch.kD();
-            orig_pitch_sp = g.pi_stabilize_pitch.kP();
+            orig_pitch_sp = g.p_stabilize_pitch.kP();
 
             // log save gains event
             Log_Write_Event(DATA_AUTOTUNE_SAVEDGAINS);

@@ -264,16 +264,16 @@ public:
         k_param_pid_rate_roll,
         k_param_pid_rate_pitch,
         k_param_pid_rate_yaw,
-        k_param_pi_stabilize_roll,
-        k_param_pi_stabilize_pitch,
-        k_param_pi_stabilize_yaw,
-        k_param_pi_loiter_lat,
-        k_param_pi_loiter_lon,
+        k_param_p_stabilize_roll,
+        k_param_p_stabilize_pitch,
+        k_param_p_stabilize_yaw,
+        k_param_p_loiter_pos,
+        k_param_p_loiter_lon,       // remove
         k_param_pid_loiter_rate_lat,
         k_param_pid_loiter_rate_lon,
         k_param_pid_nav_lat,        // 233 - remove
         k_param_pid_nav_lon,        // 234 - remove
-        k_param_pi_alt_hold,
+        k_param_p_alt_hold,
         k_param_pid_throttle_rate,
         k_param_pid_optflow_roll,
         k_param_pid_optflow_pitch,
@@ -420,12 +420,11 @@ public:
     AC_PID                  pid_optflow_roll;
     AC_PID                  pid_optflow_pitch;
 
-    APM_PI                  pi_loiter_lat;
-    APM_PI                  pi_loiter_lon;
-    APM_PI                  pi_stabilize_roll;
-    APM_PI                  pi_stabilize_pitch;
-    APM_PI                  pi_stabilize_yaw;
-    APM_PI                  pi_alt_hold;
+    AC_P                    p_loiter_pos;
+    AC_P                    p_stabilize_roll;
+    AC_P                    p_stabilize_pitch;
+    AC_P                    p_stabilize_yaw;
+    AC_P                    p_alt_hold;
 
     // Note: keep initializers here in the same order as they are declared
     // above.
@@ -484,14 +483,13 @@ public:
         // PI controller	initial P			initial I			initial
         // imax
         //----------------------------------------------------------------------
-        pi_loiter_lat           (LOITER_P,              LOITER_I,               LOITER_IMAX),
-        pi_loiter_lon           (LOITER_P,              LOITER_I,               LOITER_IMAX),
+        p_loiter_pos           (LOITER_POS_P),
 
-        pi_stabilize_roll       (STABILIZE_ROLL_P,      STABILIZE_ROLL_I,       STABILIZE_ROLL_IMAX),
-        pi_stabilize_pitch      (STABILIZE_PITCH_P,     STABILIZE_PITCH_I,      STABILIZE_PITCH_IMAX),
-        pi_stabilize_yaw        (STABILIZE_YAW_P,       STABILIZE_YAW_I,        STABILIZE_YAW_IMAX),
+        p_stabilize_roll       (STABILIZE_ROLL_P),
+        p_stabilize_pitch      (STABILIZE_PITCH_P),
+        p_stabilize_yaw        (STABILIZE_YAW_P),
 
-        pi_alt_hold             (ALT_HOLD_P,            ALT_HOLD_I,             ALT_HOLD_IMAX)
+        p_alt_hold             (ALT_HOLD_P)
     {
     }
 };

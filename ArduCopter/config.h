@@ -511,31 +511,13 @@
 #ifndef STABILIZE_ROLL_P
  # define STABILIZE_ROLL_P          4.5f
 #endif
-#ifndef STABILIZE_ROLL_I
- # define STABILIZE_ROLL_I          0.0f
-#endif
-#ifndef STABILIZE_ROLL_IMAX
- # define STABILIZE_ROLL_IMAX       0
-#endif
 
 #ifndef STABILIZE_PITCH_P
  # define STABILIZE_PITCH_P         4.5f
 #endif
-#ifndef STABILIZE_PITCH_I
- # define STABILIZE_PITCH_I         0.0f
-#endif
-#ifndef STABILIZE_PITCH_IMAX
- # define STABILIZE_PITCH_IMAX      0
-#endif
 
 #ifndef  STABILIZE_YAW_P
  # define STABILIZE_YAW_P           4.5f
-#endif
-#ifndef  STABILIZE_YAW_I
- # define STABILIZE_YAW_I           0.0f
-#endif
-#ifndef  STABILIZE_YAW_IMAX
- # define STABILIZE_YAW_IMAX        0
 #endif
 
 // RTL Mode
@@ -631,14 +613,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // Loiter position control gains
 //
-#ifndef LOITER_P
- # define LOITER_P             		1.0f
-#endif
-#ifndef LOITER_I
- # define LOITER_I             		0.0f
-#endif
-#ifndef LOITER_IMAX
- # define LOITER_IMAX          		0
+#ifndef LOITER_POS_P
+ # define LOITER_POS_P             	1.0f
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -681,12 +657,6 @@
 
 #ifndef ALT_HOLD_P
  # define ALT_HOLD_P            1.0f
-#endif
-#ifndef ALT_HOLD_I
- # define ALT_HOLD_I            0.0f
-#endif
-#ifndef ALT_HOLD_IMAX
- # define ALT_HOLD_IMAX         300
 #endif
 
 // RATE control

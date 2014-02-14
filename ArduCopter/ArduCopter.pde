@@ -108,8 +108,8 @@
 #include <AP_InertialSensor.h>  // ArduPilot Mega Inertial Sensor (accel & gyro) Library
 #include <AP_AHRS.h>
 #include <AP_NavEKF.h>
-#include <APM_PI.h>             // PI library
 #include <AC_PID.h>             // PID library
+#include <AC_P.h>               // P library
 #include <AC_AttitudeControl.h> // Attitude control library
 #include <AC_AttitudeControl_Heli.h> // Attitude control library for traditional helicopter
 #include <AC_PosControl.h>      // Position control library
@@ -677,15 +677,15 @@ static AP_InertialNav inertial_nav(ahrs, barometer, g_gps, gps_glitch);
 // To-Do: move inertial nav up or other navigation variables down here
 ////////////////////////////////////////////////////////////////////////////////
 #if FRAME_CONFIG == HELI_FRAME
-AC_AttitudeControl_Heli attitude_control(ahrs, ins, aparm, motors, g.pi_stabilize_roll, g.pi_stabilize_pitch, g.pi_stabilize_yaw,
+AC_AttitudeControl_Heli attitude_control(ahrs, ins, aparm, motors, g.p_stabilize_roll, g.p_stabilize_pitch, g.p_stabilize_yaw,
                         g.pid_rate_roll, g.pid_rate_pitch, g.pid_rate_yaw);
 #else
-AC_AttitudeControl attitude_control(ahrs, ins, aparm, motors, g.pi_stabilize_roll, g.pi_stabilize_pitch, g.pi_stabilize_yaw,
+AC_AttitudeControl attitude_control(ahrs, ins, aparm, motors, g.p_stabilize_roll, g.p_stabilize_pitch, g.p_stabilize_yaw,
                         g.pid_rate_roll, g.pid_rate_pitch, g.pid_rate_yaw);
 #endif
 AC_PosControl pos_control(ahrs, inertial_nav, motors, attitude_control,
-                        g.pi_alt_hold, g.pid_throttle_rate, g.pid_throttle_accel,
-                        g.pi_loiter_lat, g.pi_loiter_lon, g.pid_loiter_rate_lat, g.pid_loiter_rate_lon);
+                        g.p_alt_hold, g.pid_throttle_rate, g.pid_throttle_accel,
+                        g.p_loiter_pos, g.pid_loiter_rate_lat, g.pid_loiter_rate_lon);
 static AC_WPNav wp_nav(&inertial_nav, &ahrs, pos_control);
 static AC_Circle circle_nav(inertial_nav, ahrs, pos_control);
 
@@ -1383,8 +1383,8 @@ static void tuning(){
 
     // Roll, Pitch tuning
     case CH6_STABILIZE_ROLL_PITCH_KP:
-        g.pi_stabilize_roll.kP(tuning_value);
-        g.pi_stabilize_pitch.kP(tuning_value);
+        g.p_stabilize_roll.kP(tuning_value);
+        g.p_stabilize_pitch.kP(tuning_value);
         break;
 
     case CH6_RATE_ROLL_PITCH_KP:
@@ -1404,7 +1404,7 @@ static void tuning(){
 
     // Yaw tuning
     case CH6_STABILIZE_YAW_KP:
-        g.pi_stabilize_yaw.kP(tuning_value);
+        g.p_stabilize_yaw.kP(tuning_value);
         break;
 
     case CH6_YAW_RATE_KP:
@@ -1417,7 +1417,7 @@ static void tuning(){
 
     // Altitude and throttle tuning
     case CH6_ALTITUDE_HOLD_KP:
-        g.pi_alt_hold.kP(tuning_value);
+        g.p_alt_hold.kP(tuning_value);
         break;
 
     case CH6_THROTTLE_RATE_KP:
@@ -1442,8 +1442,7 @@ static void tuning(){
 
     // Loiter and navigation tuning
     case CH6_LOITER_POSITION_KP:
-        g.pi_loiter_lat.kP(tuning_value);
-        g.pi_loiter_lon.kP(tuning_value);
+        g.p_loiter_pos.kP(tuning_value);
         break;
 
     case CH6_LOITER_RATE_KP:
