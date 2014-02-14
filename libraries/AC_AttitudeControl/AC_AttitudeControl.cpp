@@ -337,21 +337,21 @@ void AC_AttitudeControl::integrate_bf_rate_error_to_angle_errors()
 void AC_AttitudeControl::update_rate_bf_targets()
 {
     // stab roll calculation
-    _rate_bf_target.x = _pi_angle_roll.kP() * _angle_bf_error.x;
+    _rate_bf_target.x = _p_angle_roll.kP() * _angle_bf_error.x;
     // constrain roll rate request
     if (_flags.limit_angle_to_rate_request) {
         _rate_bf_target.x = constrain_float(_rate_bf_target.x,-_angle_rate_rp_max,_angle_rate_rp_max);
     }
 
     // stab pitch calculation
-    _rate_bf_target.y = _pi_angle_pitch.kP() * _angle_bf_error.y;
+    _rate_bf_target.y = _p_angle_pitch.kP() * _angle_bf_error.y;
     // constrain pitch rate request
     if (_flags.limit_angle_to_rate_request) {
         _rate_bf_target.y = constrain_float(_rate_bf_target.y,-_angle_rate_rp_max,_angle_rate_rp_max);
     }
 
     // stab yaw calculation
-    _rate_bf_target.z = _pi_angle_yaw.kP() * _angle_bf_error.z;
+    _rate_bf_target.z = _p_angle_yaw.kP() * _angle_bf_error.z;
     // constrain yaw rate request
     if (_flags.limit_angle_to_rate_request) {
         _rate_bf_target.z = constrain_float(_rate_bf_target.z,-_angle_rate_y_max,_angle_rate_y_max);

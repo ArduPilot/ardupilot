@@ -14,7 +14,7 @@
 #include <AP_Motors.h>
 #include <DataFlash.h>
 #include <AC_PID.h>
-#include <APM_PI.h>
+#include <AC_P.h>
 
 // To-Do: change the name or move to AP_Math?
 #define AC_ATTITUDE_CONTROL_DEGX100 5729.57795f                 // constant to convert from radians to centi-degrees
@@ -40,16 +40,16 @@ public:
                         AP_InertialSensor& ins,
                         const AP_Vehicle::MultiCopter &aparm,
                         AP_Motors& motors,
-                        APM_PI& pi_angle_roll, APM_PI& pi_angle_pitch, APM_PI& pi_angle_yaw,
+                        AC_P& pi_angle_roll, AC_P& pi_angle_pitch, AC_P& pi_angle_yaw,
                         AC_PID& pid_rate_roll, AC_PID& pid_rate_pitch, AC_PID& pid_rate_yaw
                         ) :
 		_ahrs(ahrs),
         _ins(ins),
         _aparm(aparm),
         _motors(motors),
-        _pi_angle_roll(pi_angle_roll),
-        _pi_angle_pitch(pi_angle_pitch),
-        _pi_angle_yaw(pi_angle_yaw),
+        _p_angle_roll(pi_angle_roll),
+        _p_angle_pitch(pi_angle_pitch),
+        _p_angle_yaw(pi_angle_yaw),
         _pid_rate_roll(pid_rate_roll),
         _pid_rate_pitch(pid_rate_pitch),
         _pid_rate_yaw(pid_rate_yaw),
@@ -205,9 +205,9 @@ protected:
     const AP_InertialSensor&  _ins;
     const AP_Vehicle::MultiCopter &_aparm;
     AP_Motors&          _motors;
-    APM_PI&	            _pi_angle_roll;
-    APM_PI&	            _pi_angle_pitch;
-    APM_PI&	            _pi_angle_yaw;
+    AC_P&	            _p_angle_roll;
+    AC_P&	            _p_angle_pitch;
+    AC_P&	            _p_angle_yaw;
     AC_PID&             _pid_rate_roll;
     AC_PID&             _pid_rate_pitch;
     AC_PID&             _pid_rate_yaw;
