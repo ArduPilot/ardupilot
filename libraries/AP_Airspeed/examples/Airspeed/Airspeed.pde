@@ -34,6 +34,9 @@
 #include <AP_Airspeed.h>
 #include <AP_Vehicle.h>
 #include <AP_Notify.h>
+#include <AP_Compass.h>
+#include <AP_Declination.h>
+#include <AP_AHRS.h>
 #include <DataFlash.h>
 #include <AP_Baro.h>
 #include <GCS_MAVLink.h>
