@@ -6,14 +6,6 @@
 #include <AP_Math.h>
 #include "AC_PID.h"
 
-// Examples for _filter:
-// f_cut = 10 Hz -> _filter = 15.9155e-3
-// f_cut = 15 Hz -> _filter = 10.6103e-3
-// f_cut = 20 Hz -> _filter =  7.9577e-3
-// f_cut = 25 Hz -> _filter =  6.3662e-3
-// f_cut = 30 Hz -> _filter =  5.3052e-3
-const float  AC_PID::_filter = 7.9577e-3; // Set to  "1 / ( 2 * PI * f_cut )";
-
 const AP_Param::GroupInfo AC_PID::var_info[] PROGMEM = {
     // @Param: P
     // @DisplayName: PID Proportional Gain
@@ -34,12 +26,12 @@ const AP_Param::GroupInfo AC_PID::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
-int32_t AC_PID::get_p(int32_t error)
+float AC_PID::get_p(float error) const
 {
     return (float)error * _kp;
 }
 
-int32_t AC_PID::get_i(int32_t error, float dt)
+float AC_PID::get_i(float error, float dt)
 {
     if((_ki != 0) && (dt != 0)) {
         _integrator += ((float)error * _ki) * dt;
@@ -56,7 +48,7 @@ int32_t AC_PID::get_i(int32_t error, float dt)
 // This is an integrator which tends to decay to zero naturally
 // if the error is zero.
 
-int32_t AC_PID::get_leaky_i(int32_t error, float dt, float leak_rate)
+float AC_PID::get_leaky_i(float error, float dt, float leak_rate)
 {
 	if((_ki != 0) && (dt != 0)){
 		_integrator -= (float)_integrator * leak_rate;
@@ -72,7 +64,7 @@ int32_t AC_PID::get_leaky_i(int32_t error, float dt, float leak_rate)
 	return 0;
 }
 
-int32_t AC_PID::get_d(int32_t input, float dt)
+float AC_PID::get_d(float input, float dt)
 {
     if ((_kd != 0) && (dt != 0)) {
         float derivative;
@@ -90,7 +82,7 @@ int32_t AC_PID::get_d(int32_t input, float dt)
         // discrete low pass filter, cuts out the
         // high frequency noise that can drive the controller crazy
         derivative = _last_derivative +
-                      (dt / ( _filter + dt)) * (derivative - _last_derivative);
+                      (dt / ( AC_PID_D_TERM_FILTER + dt)) * (derivative - _last_derivative);
 
         // update state
         _last_input             = input;
@@ -102,27 +94,25 @@ int32_t AC_PID::get_d(int32_t input, float dt)
     return 0;
 }
 
-int32_t AC_PID::get_pi(int32_t error, float dt)
+float AC_PID::get_pi(float error, float dt)
 {
     return get_p(error) + get_i(error, dt);
 }
 
 
-int32_t AC_PID::get_pid(int32_t error, float dt)
+float AC_PID::get_pid(float error, float dt)
 {
     return get_p(error) + get_i(error, dt) + get_d(error, dt);
 }
 
-void
-AC_PID::reset_I()
+void AC_PID::reset_I()
 {
     _integrator = 0;
 	// mark derivative as invalid
     _last_derivative = NAN;
 }
 
-void
-AC_PID::load_gains()
+void AC_PID::load_gains()
 {
     _kp.load();
     _ki.load();
@@ -131,8 +121,7 @@ AC_PID::load_gains()
     _imax = abs(_imax);
 }
 
-void
-AC_PID::save_gains()
+void AC_PID::save_gains()
 {
     _kp.save();
     _ki.save();
