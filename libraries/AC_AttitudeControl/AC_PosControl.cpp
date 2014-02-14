@@ -22,17 +22,16 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] PROGMEM = {
 //
 AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
                              const AP_Motors& motors, AC_AttitudeControl& attitude_control,
-                             APM_PI& pi_alt_pos, AC_PID& pid_alt_rate, AC_PID& pid_alt_accel,
-                             APM_PI& pi_pos_lat, APM_PI& pi_pos_lon, AC_PID& pid_rate_lat, AC_PID& pid_rate_lon) :
+                             AC_P& p_alt_pos, AC_PID& pid_alt_rate, AC_PID& pid_alt_accel,
+                             AC_P& p_pos_xy, AC_PID& pid_rate_lat, AC_PID& pid_rate_lon) :
     _ahrs(ahrs),
     _inav(inav),
     _motors(motors),
     _attitude_control(attitude_control),
-    _pi_alt_pos(pi_alt_pos),
+    _p_alt_pos(p_alt_pos),
     _pid_alt_rate(pid_alt_rate),
     _pid_alt_accel(pid_alt_accel),
-    _pi_pos_lat(pi_pos_lat),
-    _pi_pos_lon(pi_pos_lon),
+    _p_pos_xy(p_pos_xy),
     _pid_rate_lat(pid_rate_lat),
     _pid_rate_lon(pid_rate_lon),
     _dt(POSCONTROL_DT_10HZ),
@@ -146,13 +145,13 @@ void AC_PosControl::get_stopping_point_z(Vector3f& stopping_point) const
     float linear_velocity;  // the velocity we swap between linear and sqrt
 
     // calculate the velocity at which we switch from calculating the stopping point using a linear funcction to a sqrt function
-    linear_velocity = POSCONTROL_ALT_HOLD_ACCEL_MAX/_pi_alt_pos.kP();
+    linear_velocity = POSCONTROL_ALT_HOLD_ACCEL_MAX/_p_alt_pos.kP();
 
     if (fabs(curr_vel_z) < linear_velocity) {
         // if our current velocity is below the cross-over point we use a linear function
-        stopping_point.z = curr_pos_z + curr_vel_z/_pi_alt_pos.kP();
+        stopping_point.z = curr_pos_z + curr_vel_z/_p_alt_pos.kP();
     } else {
-        linear_distance = POSCONTROL_ALT_HOLD_ACCEL_MAX/(2.0f*_pi_alt_pos.kP()*_pi_alt_pos.kP());
+        linear_distance = POSCONTROL_ALT_HOLD_ACCEL_MAX/(2.0f*_p_alt_pos.kP()*_p_alt_pos.kP());
         if (curr_vel_z > 0){
             stopping_point.z = curr_pos_z + (linear_distance + curr_vel_z*curr_vel_z/(2.0f*POSCONTROL_ALT_HOLD_ACCEL_MAX));
         } else {
@@ -190,8 +189,8 @@ void AC_PosControl::update_z_controller()
 void AC_PosControl::calc_leash_length_z()
 {
     if (_flags.recalc_leash_z) {
-        _leash_up_z = calc_leash_length(_speed_up_cms, _accel_z_cms, _pi_alt_pos.kP());
-        _leash_down_z = calc_leash_length(_speed_down_cms, _accel_z_cms, _pi_alt_pos.kP());
+        _leash_up_z = calc_leash_length(_speed_up_cms, _accel_z_cms, _p_alt_pos.kP());
+        _leash_down_z = calc_leash_length(_speed_down_cms, _accel_z_cms, _p_alt_pos.kP());
         _flags.recalc_leash_z = false;
     }
 }
@@ -228,14 +227,14 @@ void AC_PosControl::pos_to_rate_z()
     }
 
     // check kP to avoid division by zero
-    if (_pi_alt_pos.kP() != 0) {
-        linear_distance = POSCONTROL_ALT_HOLD_ACCEL_MAX/(2.0f*_pi_alt_pos.kP()*_pi_alt_pos.kP());
+    if (_p_alt_pos.kP() != 0) {
+        linear_distance = POSCONTROL_ALT_HOLD_ACCEL_MAX/(2.0f*_p_alt_pos.kP()*_p_alt_pos.kP());
         if (_pos_error.z > 2*linear_distance ) {
             _vel_target.z = safe_sqrt(2.0f*POSCONTROL_ALT_HOLD_ACCEL_MAX*(_pos_error.z-linear_distance));
         }else if (_pos_error.z < -2.0f*linear_distance) {
             _vel_target.z = -safe_sqrt(2.0f*POSCONTROL_ALT_HOLD_ACCEL_MAX*(-_pos_error.z-linear_distance));
         }else{
-            _vel_target.z = _pi_alt_pos.get_p(_pos_error.z);
+            _vel_target.z = _p_alt_pos.get_p(_pos_error.z);
         }
     }else{
         _vel_target.z = 0;
@@ -391,7 +390,7 @@ void AC_PosControl::get_stopping_point_xy(Vector3f &stopping_point) const
     float linear_distance;      // the distance at which we swap from a linear to sqrt response
     float linear_velocity;      // the velocity above which we swap from a linear to sqrt response
     float stopping_dist;		// the distance within the vehicle can stop
-    float kP = _pi_pos_lat.kP();
+    float kP = _p_pos_xy.kP();
 
     // calculate current velocity
     float vel_total = safe_sqrt(curr_vel.x*curr_vel.x + curr_vel.y*curr_vel.y);
@@ -485,7 +484,7 @@ void AC_PosControl::update_pos_controller(bool use_desired_velocity)
 void AC_PosControl::calc_leash_length_xy()
 {
     if (_flags.recalc_leash_xy) {
-        _leash = calc_leash_length(_speed_cms, _accel_cms, _pi_pos_lon.kP());
+        _leash = calc_leash_length(_speed_cms, _accel_cms, _p_pos_xy.kP());
         _flags.recalc_leash_xy = false;
     }
 }
@@ -522,7 +521,7 @@ void AC_PosControl::pos_to_rate_xy(bool use_desired_rate, float dt)
 {
     Vector3f curr_pos = _inav.get_position();
     float linear_distance;      // the distance we swap between linear and sqrt velocity response
-    float kP = _pi_pos_lat.kP();
+    float kP = _p_pos_xy.kP();
 
     // avoid divide by zero
     if (kP <= 0.0f) {
@@ -554,8 +553,8 @@ void AC_PosControl::pos_to_rate_xy(bool use_desired_rate, float dt)
             _vel_target.y = vel_sqrt * _pos_error.y/_distance_to_target;
         }else{
             // velocity response grows linearly with the distance
-            _vel_target.x = _pi_pos_lat.kP() * _pos_error.x;
-            _vel_target.y = _pi_pos_lon.kP() * _pos_error.y;
+            _vel_target.x = _p_pos_xy.kP() * _pos_error.x;
+            _vel_target.y = _p_pos_xy.kP() * _pos_error.y;
         }
 
         // decide velocity limit due to position error
@@ -647,8 +646,6 @@ void AC_PosControl::accel_to_lean_angles()
 /// reset_I_xy - clears I terms from loiter PID controller
 void AC_PosControl::reset_I_xy()
 {
-    _pi_pos_lon.reset_I();
-    _pi_pos_lat.reset_I();
     _pid_rate_lon.reset_I();
     _pid_rate_lat.reset_I();
 

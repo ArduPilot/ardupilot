@@ -6,7 +6,7 @@
 #include <AP_Param.h>
 #include <AP_Math.h>
 #include <AC_PID.h>             // PID library
-#include <APM_PI.h>             // PID library
+#include <AC_P.h>               // P library
 #include <AP_InertialNav.h>     // Inertial Navigation library
 #include <AC_AttitudeControl.h> // Attitude control library
 #include <AP_Motors.h>          // motors library
@@ -42,8 +42,8 @@ public:
     /// Constructor
     AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
                   const AP_Motors& motors, AC_AttitudeControl& attitude_control,
-                  APM_PI& pi_alt_pos, AC_PID& pid_alt_rate, AC_PID& pid_alt_accel,
-                  APM_PI& pi_pos_lat, APM_PI& pi_pos_lon, AC_PID& pid_rate_lat, AC_PID& pid_rate_lon);
+                  AC_P& p_alt_pos, AC_PID& pid_alt_rate, AC_PID& pid_alt_accel,
+                  AC_P& p_pos_xy, AC_PID& pid_rate_lat, AC_PID& pid_rate_lon);
 
     ///
     /// initialisation functions
@@ -124,7 +124,7 @@ public:
     float get_leash_up_z() const { return _leash_up_z; }
 
     /// althold_kP - returns altitude hold position control PID's kP gain
-    float althold_kP() const { return _pi_alt_pos.kP(); }
+    float althold_kP() const { return _p_alt_pos.kP(); }
 
     ///
     /// xy position controller
@@ -183,7 +183,7 @@ public:
     float get_leash_xy() { return _leash; }
 
     /// get_pos_xy_kP - returns xy position controller's kP gain
-    float get_pos_xy_kP() const { return _pi_pos_lat.kP(); }
+    float get_pos_xy_kP() const { return _p_pos_xy.kP(); }
 
     /// accessors for reporting
     const Vector3f get_vel_target() { return _vel_target; }
@@ -262,11 +262,10 @@ private:
     AC_AttitudeControl&         _attitude_control;
 
     // references to pid controllers and motors
-    APM_PI&     _pi_alt_pos;
+    AC_P&       _p_alt_pos;
     AC_PID&     _pid_alt_rate;
     AC_PID&     _pid_alt_accel;
-    APM_PI&	    _pi_pos_lat;
-    APM_PI&	    _pi_pos_lon;
+    AC_P&	    _p_pos_xy;
     AC_PID&	    _pid_rate_lat;
     AC_PID&	    _pid_rate_lon;
 
