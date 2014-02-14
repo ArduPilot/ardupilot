@@ -34,7 +34,7 @@ static void heli_acro_run()
     pilot_throttle_scaled = get_pilot_desired_throttle(g.rc_3.control_in);
 
     // run attitude controller
-    attitude_control.ratebf_rpy(target_roll, target_pitch, target_yaw);
+    attitude_control.rate_bf_roll_pitch_yaw(target_roll, target_pitch, target_yaw);
 
     // output pilot's throttle without angle boost
     attitude_control.set_throttle_out(pilot_throttle_scaled, false);
