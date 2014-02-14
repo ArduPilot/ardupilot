@@ -19,11 +19,11 @@ public:
                         AP_InertialSensor& ins,
                         const AP_Vehicle::MultiCopter &aparm,
                         AP_MotorsHeli& motors,
-                        APM_PI& pi_angle_roll, APM_PI& pi_angle_pitch, APM_PI& pi_angle_yaw,
+                        AC_P& p_angle_roll, AC_P& p_angle_pitch, AC_P& p_angle_yaw,
                         AC_PID& pid_rate_roll, AC_PID& pid_rate_pitch, AC_PID& pid_rate_yaw
                         ) :
         AC_AttitudeControl(ahrs, ins, aparm, motors,
-                           pi_angle_roll, pi_angle_pitch, pi_angle_yaw,
+                           p_angle_roll, p_angle_pitch, p_angle_yaw,
                            pid_rate_roll, pid_rate_pitch, pid_rate_yaw)
 		{
             AP_Param::setup_object_defaults(this, var_info);
