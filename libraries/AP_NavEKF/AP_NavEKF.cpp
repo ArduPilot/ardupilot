@@ -315,6 +315,10 @@ void NavEKF::ResetHeight(void)
 
 void NavEKF::InitialiseFilterDynamic(void)
 {
+    // this forces healthy() to be false so that when we ask for ahrs
+    // attitude we get the DCM attitude regardless of the state of AHRS_EKF_USE
+    statesInitialised = false;
+
     // Set re-used variables to zero
     ZeroVariables();
 
