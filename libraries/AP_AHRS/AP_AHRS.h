@@ -40,14 +40,14 @@ public:
     AP_AHRS(AP_InertialSensor &ins, AP_Baro &baro, GPS *&gps) :
         _compass(NULL),
         _ins(ins),
+        _baro(baro),
+        _gps(gps),
         _cos_roll(1.0f),
         _cos_pitch(1.0f),
         _cos_yaw(1.0f),
         _sin_roll(0.0f),
         _sin_pitch(0.0f),
-        _sin_yaw(0.0f),
-        _baro(baro),
-        _gps(gps)
+        _sin_yaw(0.0f)
     {
         // load default values from var_info table
         AP_Param::setup_object_defaults(this, var_info);
