@@ -21,6 +21,9 @@
 #define AC_ATTITUDE_CONTROL_RATE_RP_MAX_DEFAULT         18000   // maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
 #define AC_ATTITUDE_CONTROL_RATE_Y_MAX_DEFAULT          18000   // maximum rotation rate on yaw axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
 #define AC_ATTITUDE_CONTROL_SLEW_YAW_DEFAULT            6000    // default yaw slew rate in centi-degrees/sec (i.e. maximum yaw target change in 1second)
+#define AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT        54000   // default maximum acceleration for roll/pitch axis in centi-degrees/sec/sec
+#define AC_ATTITUDE_CONTROL_ACCEL_Y_MAX_DEFAULT         18000   // default maximum acceleration for yaw axis in centi-degrees/sec/sec
+
 #define AC_ATTITUDE_RATE_CONTROLLER_TIMEOUT             1.0f    // body-frame rate controller timeout in seconds
 #define AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX          5000.0f // body-frame rate controller maximum output (for roll-pitch axis)
 #define AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX         4500.0f // body-frame rate controller maximum output (for yaw axis)
@@ -216,6 +219,8 @@ protected:
     AP_Float            _angle_rate_rp_max;     // maximum rate request output from the earth-frame angle controller for roll and pitch axis
     AP_Float            _angle_rate_y_max;      // maximum rate request output from the earth-frame angle controller for yaw axis
     AP_Float            _slew_yaw;              // maximum rate the yaw target can be updated in Loiter, RTL, Auto flight modes
+    AP_Float            _accel_rp_max;          // maximum rotation acceleration for earth-frame roll and pitch axis
+    AP_Float            _accel_y_max;           // maximum rotation acceleration for earth-frame yaw axis
 
     // internal variables
     // To-Do: make rate targets a typedef instead of Vector3f?
@@ -223,7 +228,8 @@ protected:
     Vector3f            _angle_ef_target;       // angle controller earth-frame targets
     Vector3f            _angle_bf_error;        // angle controller earth-frame targets
     Vector3f            _rate_bf_target;        // rate controller body-frame targets
-    Vector3f            _rate_bf_feedforward;   // rate controller body-frame targets
+    Vector3f            _rate_ef_desired;       // earth-frame feed forward rates
+    Vector3f            _rate_bf_desired;       // body-frame feed forward rates
     int16_t             _angle_boost;           // used only for logging
     int16_t             _acro_angle_switch;           // used only for logging
 };
