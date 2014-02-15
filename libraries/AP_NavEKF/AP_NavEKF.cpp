@@ -327,7 +327,7 @@ void NavEKF::InitialiseFilterDynamic(void)
 
     // Calculate initial filter quaternion states from AHRS solution
     Quaternion initQuat;
-    initQuat.from_euler(_ahrs->roll, _ahrs->pitch, _ahrs->yaw);
+    initQuat.from_rotation_matrix(_ahrs->get_dcm_matrix());
 
     // Calculate initial Tbn matrix and rotate Mag measurements into NED
     // to set initial NED magnetic field states
