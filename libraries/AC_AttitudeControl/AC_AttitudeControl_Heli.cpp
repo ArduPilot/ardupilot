@@ -33,13 +33,31 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("SLEW_YAW",    2, AC_AttitudeControl_Heli, _slew_yaw, AC_ATTITUDE_CONTROL_SLEW_YAW_DEFAULT),
 
+    // @Param: ACCEL_RP_MAX
+    // @DisplayName: Acceleration Max for Roll/Pitch
+    // @Description: Maximum acceleration in roll/pitch axis
+    // @Unit: Centi-Degrees/Sec/Sec
+    // @Range: 20000 100000
+    // @Increment: 100
+    // @User: Advanced
+    AP_GROUPINFO("ACCEL_RP_MAX", 3, AC_AttitudeControl_Heli, _accel_rp_max, AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT),
+
+    // @Param: ACCEL_Y_MAX
+    // @DisplayName: Acceleration Max for Yaw
+    // @Description: Maximum acceleration in yaw axis
+    // @Unit: Centi-Degrees/Sec/Sec
+    // @Range: 20000 100000
+    // @Increment: 100
+    // @User: Advanced
+    AP_GROUPINFO("ACCEL_Y_MAX",  4, AC_AttitudeControl_Heli, _accel_y_max, AC_ATTITUDE_CONTROL_ACCEL_Y_MAX_DEFAULT),
+
     // @Param: RATE_RLL_FF
     // @DisplayName: Rate Roll Feed Forward
     // @Description: Rate Roll Feed Forward (for TradHeli Only)
     // @Range: 0 10
     // @Increment: 0.01
     // @User: Standard
-    AP_GROUPINFO("RATE_RLL_FF", 3, AC_AttitudeControl_Heli,     _heli_roll_ff,  AC_ATTITUDE_HELI_ROLL_FF),
+    AP_GROUPINFO("RATE_RLL_FF", 5, AC_AttitudeControl_Heli,     _heli_roll_ff,  AC_ATTITUDE_HELI_ROLL_FF),
 
     // @Param: RATE_PIT_FF
     // @DisplayName: Rate Pitch Feed Forward
@@ -47,7 +65,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] PROGMEM = {
     // @Range: 0 10
     // @Increment: 0.01
     // @User: Standard
-    AP_GROUPINFO("RATE_PIT_FF", 4,  AC_AttitudeControl_Heli,    _heli_pitch_ff, AC_ATTITUDE_HELI_ROLL_FF),
+    AP_GROUPINFO("RATE_PIT_FF", 6,  AC_AttitudeControl_Heli,    _heli_pitch_ff, AC_ATTITUDE_HELI_ROLL_FF),
 
     // @Param: RATE_YAW_FF
     // @DisplayName: Rate Yaw Feed Forward
@@ -55,7 +73,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] PROGMEM = {
     // @Range: 0 10
     // @Increment: 0.01
     // @User: Standard
-    AP_GROUPINFO("RATE_YAW_FF", 5, AC_AttitudeControl_Heli,     _heli_yaw_ff,   AC_ATTITUDE_HELI_YAW_FF),
+    AP_GROUPINFO("RATE_YAW_FF", 7, AC_AttitudeControl_Heli,     _heli_yaw_ff,   AC_ATTITUDE_HELI_YAW_FF),
 
     AP_GROUPEND
 };
