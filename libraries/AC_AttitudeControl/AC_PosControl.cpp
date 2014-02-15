@@ -22,14 +22,14 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] PROGMEM = {
 //
 AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
                              const AP_Motors& motors, AC_AttitudeControl& attitude_control,
-                             AC_P& p_alt_pos, AC_PID& pid_alt_rate, AC_PID& pid_alt_accel,
+                             AC_P& p_alt_pos, AC_P& p_alt_rate, AC_PID& pid_alt_accel,
                              AC_P& p_pos_xy, AC_PID& pid_rate_lat, AC_PID& pid_rate_lon) :
     _ahrs(ahrs),
     _inav(inav),
     _motors(motors),
     _attitude_control(attitude_control),
     _p_alt_pos(p_alt_pos),
-    _pid_alt_rate(pid_alt_rate),
+    _p_alt_rate(p_alt_rate),
     _pid_alt_accel(pid_alt_accel),
     _p_pos_xy(p_pos_xy),
     _pid_rate_lat(pid_rate_lat),
@@ -285,7 +285,7 @@ void AC_PosControl::rate_to_accel_z(float vel_target_z)
     _last_update_rate_ms = now;
 
     // calculate p
-    p = _pid_alt_rate.kP() * _vel_error.z;
+    p = _p_alt_rate.kP() * _vel_error.z;
 
     // consolidate and constrain target acceleration
     desired_accel += p;
