@@ -7,6 +7,9 @@
 // stabilize_init - initialise stabilize controller
 static bool stabilize_init(bool ignore_checks)
 {
+    // initialise filters on roll/pitch input
+    reset_roll_pitch_in_filters(g.rc_1.control_in, g.rc_2.control_in);
+
     // set target altitude to zero for reporting
     // To-Do: make pos controller aware when it's active/inactive so it can always report the altitude error?
     pos_control.set_alt_target(0);

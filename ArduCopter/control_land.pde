@@ -15,6 +15,10 @@ static bool land_init(bool ignore_checks)
         wp_nav.get_loiter_stopping_point_xy(stopping_point);
         wp_nav.set_loiter_target(stopping_point);
     }
+
+    // initialise filters on roll/pitch input
+    reset_roll_pitch_in_filters(g.rc_1.control_in, g.rc_2.control_in);
+
     // initialise altitude target to stopping point
     pos_control.set_target_to_stopping_point_z();
     return true;

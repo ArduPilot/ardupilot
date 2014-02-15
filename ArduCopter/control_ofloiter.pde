@@ -9,6 +9,8 @@ static bool ofloiter_init(bool ignore_checks)
 {
 #if OPTFLOW == ENABLED
     if (g.optflow_enabled || ignore_checks) {
+        // initialise filters on roll/pitch input
+        reset_roll_pitch_in_filters(g.rc_1.control_in, g.rc_2.control_in);
         return true;
     }else{
         return false;

@@ -7,6 +7,9 @@
 // althold_init - initialise althold controller
 static bool althold_init(bool ignore_checks)
 {
+    // initialise filters on roll/pitch input
+    reset_roll_pitch_in_filters(g.rc_1.control_in, g.rc_2.control_in);
+
     // initialise altitude target to stopping point
     pos_control.set_target_to_stopping_point_z();
     return true;
