@@ -684,7 +684,7 @@ AC_AttitudeControl attitude_control(ahrs, ins, aparm, motors, g.p_stabilize_roll
                         g.pid_rate_roll, g.pid_rate_pitch, g.pid_rate_yaw);
 #endif
 AC_PosControl pos_control(ahrs, inertial_nav, motors, attitude_control,
-                        g.p_alt_hold, g.pid_throttle_rate, g.pid_throttle_accel,
+                        g.p_alt_hold, g.p_throttle_rate, g.pid_throttle_accel,
                         g.p_loiter_pos, g.pid_loiter_rate_lat, g.pid_loiter_rate_lon);
 static AC_WPNav wp_nav(&inertial_nav, &ahrs, pos_control);
 static AC_Circle circle_nav(inertial_nav, ahrs, pos_control);
@@ -1421,11 +1421,7 @@ static void tuning(){
         break;
 
     case CH6_THROTTLE_RATE_KP:
-        g.pid_throttle_rate.kP(tuning_value);
-        break;
-
-    case CH6_THROTTLE_RATE_KD:
-        g.pid_throttle_rate.kD(tuning_value);
+        g.p_throttle_rate.kP(tuning_value);
         break;
 
     case CH6_THROTTLE_ACCEL_KP:
