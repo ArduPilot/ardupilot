@@ -1083,7 +1083,11 @@ static void update_GPS_10Hz(void)
 
         if (!arming.is_armed() ||
             hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
-            ahrs.set_correct_centrifugal(false);
+            if (g_gps->status() >= GPS::GPS_OK_FIX_3D) {
+                ahrs.set_correct_centrifugal(true);
+            } else {
+                ahrs.set_correct_centrifugal(false);
+            }
             update_home();
         } else {
             ahrs.set_correct_centrifugal(true);
