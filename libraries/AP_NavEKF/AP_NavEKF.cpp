@@ -284,24 +284,39 @@ void NavEKF::SetStaticMode(bool setting) {
 
 void NavEKF::ResetPosition(void)
 {
-    // read the GPS
-    readGpsData();
-    // write to state vector
-    states[7] = posNE[0];
-    states[8] = posNE[1];
+    if (staticMode) {
+        states[7] = 0;
+        states[8] = 0;
+    } else if (_ahrs->get_gps()->status() >= GPS::GPS_OK_FIX_3D) {
+        // read the GPS
+        readGpsData();
+        // write to state vector
+        states[7] = posNE[0];
+        states[8] = posNE[1];
+    }
 }
 
 void NavEKF::ResetVelocity(void)
 {
-    // read the GPS
-    readGpsData();
-    // write to state vector
-    if (_fusionModeGPS <= 1) {
-        states[4] = velNED[0];
-        states[5] = velNED[1];
-    }
-    if (_fusionModeGPS <= 0) {
-        states[6] = velNED[2];
+    if (staticMode) {
+        if (_fusionModeGPS <= 1) {
+            states[4] = 0;
+            states[5] = 0;
+        }
+        if (_fusionModeGPS <= 0) {
+            states[6] = 0;
+        }
+    } else if (_ahrs->get_gps()->status() >= GPS::GPS_OK_FIX_3D) {
+        // read the GPS
+        readGpsData();
+        // write to state vector
+        if (_fusionModeGPS <= 1) {
+            states[4] = velNED[0];
+            states[5] = velNED[1];
+        }
+        if (_fusionModeGPS <= 0) {
+            states[6] = velNED[2];
+        }
     }
 }
 
