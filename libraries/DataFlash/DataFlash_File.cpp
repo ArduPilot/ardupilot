@@ -447,6 +447,8 @@ void DataFlash_File::LogReadProcess(uint16_t log_num,
         _read_offset = start_page * DATAFLASH_PAGE_SIZE;
     }
 
+    uint8_t log_counter = 0;
+
     while (true) {
         uint8_t data;
         if (::read(_read_fd, &data, 1) != 1) {
@@ -474,6 +476,11 @@ void DataFlash_File::LogReadProcess(uint16_t log_num,
             case 2:
                 log_step = 0;
                 _print_log_entry(data, print_mode, port);
+                log_counter++;
+                if (log_counter == 10) {
+                    log_counter = 0;
+                    ::lseek(_read_fd, 0, SEEK_CUR);
+                }
                 break;
         }
         if (_read_offset >= (end_page+1) * DATAFLASH_PAGE_SIZE) {
