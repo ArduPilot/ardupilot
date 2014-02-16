@@ -91,7 +91,7 @@ public:
     /// Saves the current compass offset x/y/z values.
     ///
     /// This should be invoked periodically to save the offset values maintained by
-    /// ::null_offsets.
+    /// ::learn_offsets.
     ///
     void save_offsets();
 
@@ -135,7 +135,7 @@ public:
 
     /// Perform automatic offset updates
     ///
-    void null_offsets(void);
+    void learn_offsets(void);
 
     /// return true if the compass should be used for yaw calculations
     bool use_for_yaw(void) const {
