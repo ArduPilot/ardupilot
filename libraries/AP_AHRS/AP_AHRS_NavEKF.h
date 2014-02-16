@@ -21,6 +21,7 @@
  *
  */
 
+#include <AP_HAL.h>
 #include <AP_AHRS.h>
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
