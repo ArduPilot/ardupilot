@@ -190,6 +190,9 @@ private:
     // store states along with system time stamp in msces
     void StoreStates(void);
 
+    // Reset the stored state history and store the current state
+    void StoreStatesReset(void);
+
     // recall state vector stored at closest time to the one specified by msec
     void RecallStates(Vector22 &statesForFusion, uint32_t msec);
 
@@ -361,6 +364,7 @@ private:
     uint32_t HGTmsecPrev;           // time stamp of last height measurement fusion step
     const bool fuseMeNow;           // boolean to force fusion whenever data arrives
     bool staticMode;                // boolean to force position and velocity measurements to zero for pre-arm or bench testing
+    bool prevStaticMode;            // value of static mode from last update
     uint32_t lastMagUpdate;         // last time compass was updated
     Vector3f velDotNED;             // rate of change of velocity in NED frame
     Vector3f velDotNEDfilt;         // low pass filtered velDotNED
