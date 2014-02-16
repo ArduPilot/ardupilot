@@ -1,6 +1,9 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include "Compass.h"
 
+// don't allow any axis of the offset to go above 2000
+#define COMPASS_OFS_LIMIT 2000
+
 /*
  *  this offset learning algorithm is inspired by this paper from Bill Premerlani
  *
@@ -55,6 +58,11 @@ Compass::learn_offsets(void)
         Vector3f b1, diff;
         float length;
 
+        if (ofs.is_nan()) {
+            // offsets are bad possibly due to a past bug - zero them
+            _offset[k].set(Vector3f());
+        }
+
         // get a past element
         b1 = Vector3f(_mag_history[k][_mag_history_index[k]].x,
                       _mag_history[k][_mag_history_index[k]].y,
@@ -98,7 +106,19 @@ Compass::learn_offsets(void)
             diff *= max_change / length;
         }
 
+        Vector3f new_offsets = _offset[k].get() - diff;
+
+        if (new_offsets.is_nan()) {
+            // don't apply bad offsets
+            continue;
+        }
+
+        // constrain offsets
+        new_offsets.x = constrain_float(new_offsets.x, -COMPASS_OFS_LIMIT, COMPASS_OFS_LIMIT);
+        new_offsets.y = constrain_float(new_offsets.y, -COMPASS_OFS_LIMIT, COMPASS_OFS_LIMIT);
+        new_offsets.z = constrain_float(new_offsets.z, -COMPASS_OFS_LIMIT, COMPASS_OFS_LIMIT);
+            
         // set the new offsets
-        _offset[k].set(_offset[k].get() - diff);
+        _offset[k].set(new_offsets);
     }
 }
