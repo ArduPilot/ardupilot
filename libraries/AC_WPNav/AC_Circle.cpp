@@ -111,9 +111,6 @@ void AC_Circle::update()
         _angle = wrap_PI(_angle);
         _angle_total += angle_change;
 
-        // heading is 180 deg from vehicles target position around circle
-        _yaw = wrap_PI(_angle-PI);
-
         // if the circle_radius is zero we are doing panorama so no need to update loiter target
         if (_radius != 0.0) {
             // calculate target position
@@ -126,10 +123,19 @@ void AC_Circle::update()
             _pos_control.set_pos_target(target);
 
             // heading is 180 deg from vehicles target position around circle
-            _yaw = wrap_PI(_angle-PI);
+            _yaw = wrap_PI(_angle-PI) * AC_CIRCLE_DEGX100;
         }else{
-            // heading is 180 deg from vehicles target position around circle
-            _yaw = wrap_PI(_angle-PI);
+            // set target position to center
+            Vector3f target;
+            target.x = _center.x;
+            target.y = _center.y;
+            target.z = _pos_control.get_alt_target();
+
+            // update position controller target
+            _pos_control.set_pos_target(target);
+
+            // heading is same as _angle but converted to centi-degrees
+            _yaw = _angle * AC_CIRCLE_DEGX100;
         }
 
         // trigger position controller on next update
