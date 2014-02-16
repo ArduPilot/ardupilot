@@ -859,7 +859,7 @@ static void update_compass(void)
 {
     if (g.compass_enabled && compass.read()) {
         ahrs.set_compass(&compass);
-        compass.null_offsets();
+        compass.learn_offsets();
         if (should_log(MASK_LOG_COMPASS)) {
             Log_Write_Compass();
         }
