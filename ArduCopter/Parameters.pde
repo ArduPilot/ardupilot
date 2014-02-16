@@ -270,7 +270,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: FS_THR_VALUE
     // @DisplayName: Throttle Failsafe Value
-    // @Description: The PWM level on channel 3 below which throttle sailsafe triggers
+    // @Description: The PWM level on channel 3 below which throttle sailsafe triggers. Set at least 10 PWM higher than the throttle PWM value when your transmitter is off
     // @Range: 925 1100
     // @Units: pwm
     // @Increment: 1
