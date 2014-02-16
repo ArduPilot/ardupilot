@@ -489,8 +489,12 @@ void NavEKF::UpdateFilter()
     readIMUData();
 
     if (dtIMU > 0.2f) {
-        // we have stalled for far too long - reset from DCM
-        InitialiseFilterDynamic();
+        // we have stalled for too long - reset states
+        ResetVelocity();
+        ResetPosition();
+        ResetHeight();
+        //Initialise IMU pre-processing states
+        readIMUData();
         perf_end(_perf_UpdateFilter);
         return;
     }
