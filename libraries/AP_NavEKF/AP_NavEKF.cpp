@@ -557,8 +557,10 @@ void NavEKF::SelectVelPosFusion()
         skipCounter = velPosFuseStepRatio;
         // If a long time sinc last GPS update, then reset position and velocity
         if ((hal.scheduler->millis() > secondLastFixTime_ms + _gpsRetryTimeUseTAS && useAirspeed) || (hal.scheduler->millis() > secondLastFixTime_ms + _gpsRetryTimeNoTAS && !useAirspeed)) {
-            ResetPosition();
-            ResetVelocity();
+            if (!staticMode) {
+                ResetPosition();
+                ResetVelocity();
+            }
         }
     }
 
@@ -1515,7 +1517,9 @@ void NavEKF::FuseVelPosNED()
                 velFailTime = hal.scheduler->millis();
                 if (velTimeout)
                 {
-                    ResetVelocity();
+                    if (!staticMode) {
+                        ResetVelocity();
+                    }
                     fuseVelData =  false;
                 }
 
@@ -1541,7 +1545,9 @@ void NavEKF::FuseVelPosNED()
                 posFailTime = hal.scheduler->millis();
                 if (posTimeout)
                 {
-                    ResetPosition();
+                    if (!staticMode) {
+                        ResetPosition();
+                    }
                     fusePosData = false;
                 }
             }
