@@ -313,6 +313,8 @@ void NavEKF::ResetHeight(void)
     states[9] = -hgtMea;
 }
 
+// This function is used to initialise the filter whilst moving, using the AHRS DCM solution
+// It should NOT be used to re-initialise after a timeout as DCM will also be corrupted
 void NavEKF::InitialiseFilterDynamic(void)
 {
     // this forces healthy() to be false so that when we ask for ahrs
@@ -342,15 +344,6 @@ void NavEKF::InitialiseFilterDynamic(void)
         initMagNED = initTbn * initMagXYZ;
     }
 
-    // read the GPS height
-    readGpsData();
-
-    // read the barometer height
-    readHgtData();
-
-    // set onground flag
-    OnGroundCheck();
-
     // write to state vector
     for (uint8_t j=0; j<=3; j++) states[j] = initQuat[j]; // quaternions
     for (uint8_t j=10; j<=15; j++) states[j] = 0.0; // dAngBias, dVelBias, windVel
@@ -369,15 +362,6 @@ void NavEKF::InitialiseFilterDynamic(void)
 
     //Define Earth rotation vector in the NED navigation frame
     calcEarthRateNED(earthRateNED, _ahrs->get_home().lat);
-
-    //Initialise summed variables used by covariance prediction
-    summedDelAng.x = 0.0;
-    summedDelAng.y = 0.0;
-    summedDelAng.z = 0.0;
-    summedDelVel.x = 0.0;
-    summedDelVel.y = 0.0;
-    summedDelVel.z = 0.0;
-    dt = 0.0;
 
     //Initialise IMU pre-processing states
     readIMUData();
