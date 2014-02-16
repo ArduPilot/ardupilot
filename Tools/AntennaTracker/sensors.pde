@@ -30,7 +30,7 @@ static void update_compass(void)
 {
     if (g.compass_enabled && compass.read()) {
         ahrs.set_compass(&compass);
-        compass.null_offsets();
+        compass.learn_offsets();
     } else {
         ahrs.set_compass(NULL);
     }
