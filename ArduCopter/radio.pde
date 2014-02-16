@@ -133,9 +133,9 @@ static void read_radio()
 #define FS_COUNTER 3        // radio failsafe kicks in after 3 consecutive throttle values below failsafe_throttle_value
 static void set_throttle_and_failsafe(uint16_t throttle_pwm)
 {
-    // if failsafe not enabled pass through throttle and exit
+    // If failsafe not enabled pass through throttle and exit
     if(g.failsafe_throttle == FS_THR_DISABLED) {
-        g.rc_3.set_pwm(throttle_pwm);
+        set_throttle(throttle_pwm);
         return;
     }
 
@@ -144,7 +144,7 @@ static void set_throttle_and_failsafe(uint16_t throttle_pwm)
 
         // if we are already in failsafe or motors not armed pass through throttle and exit
         if (failsafe.radio || !motors.armed()) {
-            g.rc_3.set_pwm(throttle_pwm);
+            set_throttle(throttle_pwm);
             return;
         }
 
@@ -154,7 +154,7 @@ static void set_throttle_and_failsafe(uint16_t throttle_pwm)
         if( failsafe.radio_counter >= FS_COUNTER ) {
             failsafe.radio_counter = FS_COUNTER;  // check to ensure we don't overflow the counter
             set_failsafe_radio(true);
-            g.rc_3.set_pwm(throttle_pwm);   // pass through failsafe throttle
+            set_throttle(throttle_pwm);   // pass through failsafe throttle
         }
     }else{
         // we have a good throttle so reduce failsafe counter
@@ -168,7 +168,15 @@ static void set_throttle_and_failsafe(uint16_t throttle_pwm)
             }
         }
         // pass through throttle
-        g.rc_3.set_pwm(throttle_pwm);
+        set_throttle(throttle_pwm);
+    }
+}
+
+static void set_throttle(uint16_t throttle_pwm)
+{
+    g.rc_3.set_pwm(throttle_pwm);
+    if(g.rc_3.control_in > 0) {
+        last_nonzero_throttle_ms = hal.scheduler->millis();
     }
 }
 

@@ -1,9 +1,11 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+
 /*
  *       This event will be called when the failsafe changes
  *       boolean failsafe reflects the current state
  */
+#define FS_DISARM_SAFETY_TIME 500
 static void failsafe_radio_on_event()
 {
     // if motors are not armed there is nothing to do
@@ -16,8 +18,8 @@ static void failsafe_radio_on_event()
         case STABILIZE:
         case ACRO:
         case SPORT:
-            // if throttle is zero disarm motors
-            if (g.rc_3.control_in == 0) {
+            // If throttle has been zero for a bit, disarm
+            if (hal.scheduler->millis() - last_nonzero_throttle_ms > FS_DISARM_SAFETY_TIME) {
                 init_disarm_motors();
             }else if(g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
                 // if failsafe_throttle is 3 (i.e. FS_THR_ENABLED_ALWAYS_LAND) land immediately
