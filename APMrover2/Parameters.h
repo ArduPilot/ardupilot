@@ -35,6 +35,7 @@ public:
         k_param_scheduler,
         k_param_relay,
         k_param_BoardConfig,
+        k_param_pivot_turn_angle,
 
         // IO pins
         k_param_rssi_pin = 20,
@@ -207,6 +208,7 @@ public:
     AP_Int8     auto_trigger_pin;
     AP_Float    auto_kickstart;
     AP_Float    turn_max_g;
+    AP_Int16    pivot_turn_angle;
 
     // RC channels
     RC_Channel      rc_1;
