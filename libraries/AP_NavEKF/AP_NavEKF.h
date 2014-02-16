@@ -362,8 +362,6 @@ private:
     const bool fuseMeNow;           // boolean to force fusion whenever data arrives
     bool staticMode;                // boolean to force position and velocity measurements to zero for pre-arm or bench testing
     uint32_t lastMagUpdate;         // last time compass was updated
-    uint8_t imuStepsVelFuse;        // Number of IMU time steps from the last velocity fusion
-    Vector3f accelSumVelFuse;       // sum of gravity corrected acceleration since last velocity fusion
     Vector3f velDotNED;             // rate of change of velocity in NED frame
     Vector3f velDotNEDfilt;         // low pass filtered velDotNED
     Vector3f lastVelDotNED;         // velDotNED filter state

@@ -487,21 +487,10 @@ void NavEKF::UpdateFilter()
     OnGroundCheck();
 
     // Define rules used to set staticMode
-    // staticModeDemanded is used unless we have no compass 
-    // If we are not using compass, then staticMode is set to true whenever on ground
-    // When exiting static mode with no compass, we do a forced yaw alignment
-    if (!useCompass) { // we have no compass
-        if (!onGround && !staticModeDemanded) { // we are in the air
-            if (staticMode) { // we have just launched
-                // align yaw angle with GPS velocity and reset quaternion covariances
-                ForceYawAlignment();
-            }
-            staticMode = false;
-        } else { // we are on the ground
-            staticMode = true;
-        }
+    if (onGround && staticModeDemanded) {
+        staticMode = true;
     } else {
-        staticMode = staticModeDemanded;
+        staticMode = false;
     }
 
     // Run the strapdown INS equations every IMU update
@@ -538,25 +527,33 @@ void NavEKF::UpdateFilter()
 
 void NavEKF::SelectVelPosFusion()
 {
+    // Calculate ratio of VelPos fusion to state prediction setps
+    uint8_t velPosFuseStepRatio = floor(dtVelPos/dtIMU + 0.5f);
+
     // Command fusion of GPS measurements if new ones available or in static mode
     readGpsData();
-    if (newDataGps) {
+    if (newDataGps||staticMode) {
         fuseVelData = true;
         fusePosData = true;
+        // Calculate the scale factor to be applied to the measurement variance to account for
+        // the fact we repeat fusion of the same measurement to provide a smoother output
+        gpsVarScaler = _msecGpsAvg/(1000.0f*dtVelPos);
         // reset the counter used to skip updates so that we always fuse data on the frame data arrives
-        skipCounter = 0;
+        skipCounter = velPosFuseStepRatio;
         // If a long time sinc last GPS update, then reset position and velocity
         if ((hal.scheduler->millis() > secondLastFixTime_ms + _gpsRetryTimeUseTAS && useAirspeed) || (hal.scheduler->millis() > secondLastFixTime_ms + _gpsRetryTimeNoTAS && !useAirspeed)) {
             ResetPosition();
             ResetVelocity();
         }
     }
+
     // Timeout fusion of GPS data if stale. Needed because we repeatedly fuse the same
     // measurement until the next one arrives
     if (hal.scheduler->millis() > lastFixTime_ms + _msecGpsAvg + 40) {
         fuseVelData = false;
         fusePosData = false;
     }
+
     // Command fusion of height measurements if new ones available or in static mode
     readHgtData();
     if (newDataHgt||staticMode)
@@ -564,43 +561,29 @@ void NavEKF::SelectVelPosFusion()
         fuseHgtData = true;
         // Calculate the scale factor to be applied to the measurement variance to account for
         // the fact we repeat fusion of the same measurement to provide a smoother output
-        hgtVarScaler = _msecHgtAvg/(1000.0f*dtIMU);
+        hgtVarScaler = _msecHgtAvg/(1000.0f*dtVelPos);
     }
+
     // Timeout fusion of height data if stale. Needed because we repeatedly fuse the same
     // measurement until the next one arrives
     if (hal.scheduler->millis() > lastHgtUpdate + _msecHgtAvg + 40) {
         fuseHgtData = false;
     }
-    // Increment data used to calculate average change of velocity
-    imuStepsVelFuse += 1;
-    accelSumVelFuse = accelSumVelFuse + velDotNED;
+
     // Perform fusion if conditions are met
-    if (fuseVelData || fusePosData || fuseHgtData || staticMode)
-    {
-        // calculate average acceleration used to turn of fusion in static mode
-        float avgAccMag = accelSumVelFuse.length() / imuStepsVelFuse;
-        // If static mode, skip fusion if average acceleration since last fusion > 10 m/s^2
-        // This prevents acceleraton transients from corrupting the attitude during ground handling
-        // and rapid launches without a magnetometer
-        if (!staticMode || (avgAccMag < 10.0f)) {
-            // Skip fusion as required to maintain ~dtVelPos time interval between corrections
-            if (skipCounter < uint8_t(floor(dtVelPos/dtIMU + 0.5f))) {
-                // Calculate the scale factor to be applied to the measurement variance to account for
-                // the fact we repeat fusion of the same measurement to provide a smoother output
-                gpsVarScaler = _msecGpsAvg/(1000.0f*dtVelPos);
-                // Fuse selected measurements
-                FuseVelPosNED();
-                // Reset variables used to average acceleration
-                imuStepsVelFuse = 0;
-                accelSumVelFuse.zero();
-                // increment counter used to skip update frames
-                skipCounter += 1;
-            } else {
-                // reset counter used to skip update frames
-                skipCounter = 0;
-            }
+    if (fuseVelData || fusePosData || fuseHgtData || staticMode) {
+        // Skip fusion as required to maintain ~dtVelPos time interval between corrections
+        if (skipCounter == velPosFuseStepRatio) {
+            FuseVelPosNED();
+            // reset counter used to skip update frames
+            skipCounter = 1;
+        } else {
+            // increment counter used to skip update frames
+            skipCounter += 1;
         }
     }
+
+    // reset data arrived flags
     newDataGps = false;
     newDataHgt = false;
 }
@@ -1361,20 +1344,27 @@ void NavEKF::CovariancePrediction()
         nextP[i][i] = nextP[i][i] + processNoise[i];
     }
 
-    // If on ground or no compasss fitted, inhibit magnetic field state updates by
-    // setting the corresponding covariance terms to zero
+    // If on ground or no compasss fitted, inhibit magnetic field state covariance growth
     if (onGround || !useCompass)
     {
-        zeroRows(nextP,16,21);
-        zeroCols(nextP,16,21);
+        for (uint8_t i=16; i<=21; i++) {
+            for (uint8_t j=0; j<=21; j++) {
+                nextP[i][j] = P[i][j];
+                nextP[j][i] = P[j][i];
+            }
+        }
     }
 
     // If on ground or not using airspeed sensing, inhibit wind velocity
     // covariance growth.
     if (onGround || !useAirspeed)
     {
-        zeroRows(nextP,14,15);
-        zeroCols(nextP,14,15);
+        for (uint8_t i=14; i<=15; i++) {
+            for (uint8_t j=0; j<=21; j++) {
+                nextP[i][j] = P[i][j];
+                nextP[j][i] = P[j][i];
+            }
+        }
     }
 
     // If the total position variance exceeds 1E6 (1000m), then stop covariance
@@ -1405,6 +1395,7 @@ void NavEKF::CovariancePrediction()
         }
     }
 
+    // Constrain variances to prevent ill-conditioning
     ConstrainVariances();
 
     perf_end(_perf_CovariancePrediction);
@@ -1451,7 +1442,7 @@ void NavEKF::FuseVelPosNED()
         // against the static measurements. We need to do this because there may
         // not be measurements present to store states against
         if (staticMode) {
-            for (uint8_t i=5; i<=9; i++) {
+            for (uint8_t i=4; i<=9; i++) {
                 statesAtVelTime[i] = states[i];
                 statesAtPosTime[i] = states[i];
                 statesAtHgtTime[i] = states[i];
@@ -1594,8 +1585,8 @@ void NavEKF::FuseVelPosNED()
         {
             fuseData[5] = true;
         }
-        // Limit access to first 13 states when on ground.
-        if (!onGround)
+        // Limit access to first 14 states when on ground or in static mode.
+        if (!onGround || staticMode)
         {
             indexLimit = 21;
         }
@@ -1703,14 +1694,14 @@ void NavEKF::FuseMagnetometer()
     // associated with sequential fusion
     if (fuseMagData || obsIndex == 1 || obsIndex == 2)
     {
-        // Prevent access last 11 states when on ground.
+        // Prevent access last 9 states when on ground (acc bias, wind and magnetometer states).
         if (!onGround)
         {
             indexLimit = 21;
         }
         else
         {
-            indexLimit = 13;
+            indexLimit = 12;
         }
         // Calculate observation jacobians and Kalman gains
         if (fuseMagData)
@@ -2055,7 +2046,7 @@ void NavEKF::FuseAirspeed()
 		Kfusion[20] = SK_TAS*(P[20][4]*SH_TAS[2] - P[20][14]*SH_TAS[2] + P[20][5]*SH_TAS[1] - P[20][15]*SH_TAS[1] + P[20][6]*vd*SH_TAS[0]);
 		Kfusion[21] = SK_TAS*(P[21][4]*SH_TAS[2] - P[21][14]*SH_TAS[2] + P[21][5]*SH_TAS[1] - P[21][15]*SH_TAS[1] + P[21][6]*vd*SH_TAS[0]);
 
-		// Calculate measurement innovation variance
+        // Calculate measurement innovation variance
         varInnovVtas = 1.0f/SK_TAS;
 
         // Calculate measurement innovation
@@ -2325,13 +2316,13 @@ void NavEKF::ForceSymmetry()
 void NavEKF::ConstrainVariances()
 {
     // Constrain variances to be within set limits
-    for (uint8_t i=0; i<=3; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0f);
-    for (uint8_t i=4; i<=6; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0e3f);
-    for (uint8_t i=7; i<=9; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0e5f);
-    for (uint8_t i=10; i<=12; i++) P[i][i] = constrain_float(P[i][i],0.0f,sq(0.175f * dtIMU));
-	P[13][13] = constrain_float(P[13][13],0.0f,sq(10.0f * dtIMU));
-    for (uint8_t i=14; i<=15; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0e3f);
-    for (uint8_t i=16; i<=21; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0f);
+    for (uint8_t i=0; i<=3; i++) P[i][i] = constrain_float(P[i][i],1.0e-9f,1.0f);
+    for (uint8_t i=4; i<=6; i++) P[i][i] = constrain_float(P[i][i],1.0e-9f,1.0e3f);
+    for (uint8_t i=7; i<=9; i++) P[i][i] = constrain_float(P[i][i],1.0e-9f,1.0e6f);
+    for (uint8_t i=10; i<=12; i++) P[i][i] = constrain_float(P[i][i],1.0e-9f,sq(0.175f * dtIMU));
+    P[13][13] = constrain_float(P[13][13],1.0e-9f,sq(10.0f * dtIMU));
+    for (uint8_t i=14; i<=15; i++) P[i][i] = constrain_float(P[i][i],1.0e-9f,1.0e3f);
+    for (uint8_t i=16; i<=21; i++) P[i][i] = constrain_float(P[i][i],1.0e-9f,1.0f);
 }
 
 void NavEKF::ConstrainStates()
@@ -2365,7 +2356,8 @@ void NavEKF::readIMUData()
     Vector3f accel;       // acceleration vector in XYZ body axes measured by the IMU (m/s^2)
 
     IMUmsec     = hal.scheduler->millis();
-    dtIMU       = _ahrs->get_ins().get_delta_time();
+    // Limit IMU delta time to prevent numerical problems elsewhere
+    dtIMU       = constrain_float(_ahrs->get_ins().get_delta_time(), 0.001f, 1.0f);
     angRate     = _ahrs->get_ins().get_gyro();
     accel       = _ahrs->get_ins().get_accel();
 
@@ -2562,7 +2554,6 @@ void NavEKF::ZeroVariables()
     lastAccel.zero();
     summedDelAng.zero();
     summedDelVel.zero();
-    accelSumVelFuse.zero();
     velNED.zero();
     prevTnb.zero();
     memset(&P[0][0], 0, sizeof(P));
