@@ -11,6 +11,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] PROGMEM = {
     // @Param: RATE_RP_MAX
     // @DisplayName: Angle Rate Roll-Pitch max
     // @Description: maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
+    // @Units: Centi-Degrees/Sec
     // @Range: 90000 250000
     // @Increment: 500
     // @User: Advanced
@@ -19,6 +20,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] PROGMEM = {
     // @Param: RATE_Y_MAX
     // @DisplayName: Angle Rate Yaw max
     // @Description: maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
+    // @Units: Centi-Degrees/Sec
     // @Range: 90000 250000
     // @Increment: 500
     // @User: Advanced
@@ -27,7 +29,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] PROGMEM = {
     // @Param: SLEW_YAW
     // @DisplayName: Yaw target slew rate
     // @Description: Maximum rate the yaw target can be updated in Loiter, RTL, Auto flight modes
-    // @Unit: Centi-Degrees/Sec
+    // @Units: Centi-Degrees/Sec
     // @Range: 500 18000
     // @Increment: 100
     // @User: Advanced
@@ -36,7 +38,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] PROGMEM = {
     // @Param: ACCEL_RP_MAX
     // @DisplayName: Acceleration Max for Roll/Pitch
     // @Description: Maximum acceleration in roll/pitch axis
-    // @Unit: Centi-Degrees/Sec/Sec
+    // @Units: Centi-Degrees/Sec/Sec
     // @Range: 20000 100000
     // @Increment: 100
     // @User: Advanced
@@ -45,7 +47,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] PROGMEM = {
     // @Param: ACCEL_Y_MAX
     // @DisplayName: Acceleration Max for Yaw
     // @Description: Maximum acceleration in yaw axis
-    // @Unit: Centi-Degrees/Sec/Sec
+    // @Units: Centi-Degrees/Sec/Sec
     // @Range: 20000 100000
     // @Increment: 100
     // @User: Advanced
