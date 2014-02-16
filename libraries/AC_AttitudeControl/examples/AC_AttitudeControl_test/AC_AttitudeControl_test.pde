@@ -68,7 +68,8 @@ AP_InertialNav inertial_nav(ahrs, baro, gps, gps_glitch);
 AC_P   p_angle_roll, p_angle_pitch, p_angle_yaw;
 AC_PID pid_rate_roll, pid_rate_pitch, pid_rate_yaw;
 AC_P   p_alt_pos, p_pos_xy;
-AC_PID pid_alt_rate, pid_alt_accel;
+AC_P   pid_alt_rate;
+AC_PID pid_alt_accel;
 AC_PID pid_rate_lat, pid_rate_lon;
 
 // fake RC inputs
