@@ -184,6 +184,16 @@ static void exit_mission()
         if (!set_mode(LOITER)) {
             set_mode(LAND);
         }
+    }else{
+#if LAND_REQUIRE_MIN_THROTTLE_TO_DISARM == ENABLED
+        // disarm when the landing detector says we've landed and throttle is at minimum
+        if (g.rc_3.control_in == 0 || failsafe.radio) {
+            init_disarm_motors();
+        }
+#else
+        // if we've landed it's safe to disarm
+        init_disarm_motors();
+#endif
     }
 }
 
