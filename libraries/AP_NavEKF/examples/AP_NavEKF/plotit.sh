@@ -20,7 +20,7 @@ cat <<EOF > _plot.gnu
 set style data lines
 set xlabel "time(s)"
 $cmd
-
+pause -1 "hit return to exit"
 EOF
 gnuplot _plot.gnu
 

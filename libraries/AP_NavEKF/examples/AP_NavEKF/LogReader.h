@@ -1,14 +1,13 @@
 
 enum log_messages {
     // plane specific messages
-    LOG_PLANE_NTUN_MSG     = 2,
     LOG_PLANE_ATTITUDE_MSG = 10,
     LOG_PLANE_COMPASS_MSG  = 12,
+    LOG_PLANE_AIRSPEED_MSG  = 18,
 
     // copter specific messages
     LOG_COPTER_ATTITUDE_MSG = 1,
     LOG_COPTER_COMPASS_MSG  = 15,
-    LOG_COPTER_CONTROL_TUNING_MSG = 4,
     LOG_COPTER_INAV_MSG = 17,
 };
 
@@ -16,7 +15,7 @@ enum log_messages {
 class LogReader 
 {
 public:
-    LogReader(AP_InertialSensor &_ins, AP_Baro_HIL &_baro, AP_Compass_HIL &_compass, GPS *&_gps);
+    LogReader(AP_InertialSensor &_ins, AP_Baro_HIL &_baro, AP_Compass_HIL &_compass, GPS *&_gps, AP_Airspeed &_airspeed);
     bool open_log(const char *logfile);
     bool update(uint8_t &type);
     bool wait_type(uint8_t type);
@@ -35,6 +34,7 @@ private:
     AP_Baro_HIL &baro;
     AP_Compass_HIL &compass;
     GPS *&gps;
+    AP_Airspeed &airspeed;
 
     uint32_t ground_alt_cm;
 

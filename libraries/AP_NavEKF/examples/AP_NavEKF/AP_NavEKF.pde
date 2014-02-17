@@ -56,6 +56,8 @@ static AP_Compass_HIL compass;
 static AP_AHRS_NavEKF ahrs(ins, barometer, g_gps);
 static GPS_Glitch gps_glitch(g_gps);
 static AP_InertialNav inertial_nav(ahrs, barometer, g_gps, gps_glitch);
+static AP_Vehicle::FixedWing aparm;
+static AP_Airspeed airspeed(aparm);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 SITL sitl;
@@ -63,7 +65,7 @@ SITL sitl;
 
 static const NavEKF &NavEKF = ahrs.get_NavEKF();
 
-static LogReader LogReader(ins, barometer, compass, g_gps);
+static LogReader LogReader(ins, barometer, compass, g_gps, airspeed);
 
 static FILE *plotf;
 static FILE *plotf2;
@@ -89,6 +91,7 @@ void setup()
     ahrs.set_compass(&compass);
     ahrs.set_fly_forward(true);
     ahrs.set_wind_estimation(true);
+    ahrs.set_correct_centrifugal(true);
     
     barometer.init();
     barometer.setHIL(0);
@@ -131,6 +134,8 @@ void setup()
         }
     }
 
+    ::printf("InertialNav started\n");
+
     if (!ahrs.have_inertial_nav()) {
         ::printf("Failed to start NavEKF\n");
         exit(1);
@@ -141,6 +146,9 @@ static void read_sensors(uint8_t type)
 {
     if (type == LOG_GPS_MSG) {
         g_gps->update();
+        if (g_gps->status() >= GPS::GPS_OK_FIX_3D) {
+            ahrs.estimate_wind();
+        }
     } else if (type == LOG_IMU_MSG) {
         ahrs.update();
         if (ahrs.get_home().lat != 0) {
@@ -149,13 +157,9 @@ static void read_sensors(uint8_t type)
     } else if ((type == LOG_PLANE_COMPASS_MSG && LogReader.vehicle == LogReader::VEHICLE_PLANE) ||
                (type == LOG_COPTER_COMPASS_MSG && LogReader.vehicle == LogReader::VEHICLE_COPTER)) {
         compass.read();
-    } else if (type == LOG_PLANE_NTUN_MSG && LogReader.vehicle == LogReader::VEHICLE_PLANE) {
-        barometer.read();
-        if (!done_baro_init) {
-            done_baro_init = true;
-            barometer.update_calibration();
-        }
-    } else if (type == LOG_COPTER_CONTROL_TUNING_MSG && LogReader.vehicle == LogReader::VEHICLE_COPTER) {
+    } else if (type == LOG_PLANE_AIRSPEED_MSG && LogReader.vehicle == LogReader::VEHICLE_PLANE) {
+        ahrs.set_airspeed(&airspeed);
+    } else if (type == LOG_BARO_MSG) {
         barometer.read();
         if (!done_baro_init) {
             done_baro_init = true;
@@ -208,7 +212,7 @@ void loop()
             NavEKF.getMagXYZ(magXYZ);
             NavEKF.getInnovations(velInnov, posInnov, magInnov, tasInnov);
             NavEKF.getVariances(velVar, posVar, magVar, tasVar);
-            ekf_relpos = ahrs.get_relative_position_NED();
+            ahrs.get_relative_position_NED(ekf_relpos);
             Vector3f inav_pos = inertial_nav.get_position() * 0.01f;
             float temp = degrees(ekf_euler.z);
 

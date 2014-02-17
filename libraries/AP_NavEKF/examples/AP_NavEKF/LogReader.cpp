@@ -18,13 +18,14 @@
 
 extern const AP_HAL::HAL& hal;
 
-LogReader::LogReader(AP_InertialSensor &_ins, AP_Baro_HIL &_baro, AP_Compass_HIL &_compass, GPS *&_gps) :
+LogReader::LogReader(AP_InertialSensor &_ins, AP_Baro_HIL &_baro, AP_Compass_HIL &_compass, GPS *&_gps, AP_Airspeed &_airspeed) :
     vehicle(VEHICLE_UNKNOWN),
     fd(-1),
     ins(_ins),
     baro(_baro),
     compass(_compass),
-    gps(_gps)
+    gps(_gps),
+    airspeed(_airspeed)
 {}
 
 bool LogReader::open_log(const char *logfile)
@@ -46,19 +47,6 @@ struct PACKED log_Plane_Compass {
     int16_t offset_x;
     int16_t offset_y;
     int16_t offset_z;
-};
-
-struct PACKED log_Plane_Nav_Tuning {
-    LOG_PACKET_HEADER;
-    uint32_t time_ms;
-    uint16_t yaw;
-    uint32_t wp_distance;
-    uint16_t target_bearing_cd;
-    uint16_t nav_bearing_cd;
-    int16_t altitude_error_cm;
-    int16_t airspeed_cm;
-    float   altitude;
-    uint32_t groundspeed_cm;
 };
 
 struct PACKED log_Copter_Compass {
@@ -84,6 +72,14 @@ struct PACKED log_Plane_Attitude {
     uint16_t error_yaw;
 };
 
+struct PACKED log_AIRSPEED {
+    LOG_PACKET_HEADER;
+    uint32_t timestamp;
+    float   airspeed;
+    float   diffpressure;
+    int16_t temperature;
+};
+
 struct PACKED log_Copter_Attitude {
     LOG_PACKET_HEADER;
     int16_t control_roll;
@@ -92,19 +88,6 @@ struct PACKED log_Copter_Attitude {
     int16_t pitch;
     uint16_t control_yaw;
     uint16_t yaw;
-};
-
-struct PACKED log_Copter_Control_Tuning {
-    LOG_PACKET_HEADER;
-    int16_t throttle_in;
-    int16_t sonar_alt;
-    int32_t baro_alt;
-    float   next_wp_alt;
-    int16_t desired_sonar_alt;
-    int16_t angle_boost;
-    int16_t climb_rate;
-    int16_t throttle_out;
-    int16_t desired_climb_rate;
 };
 
 struct PACKED log_Copter_INAV {
@@ -149,17 +132,15 @@ void LogReader::process_plane(uint8_t type, uint8_t *data, uint16_t length)
         break;
     }
 
-    case LOG_PLANE_NTUN_MSG: {
-        struct log_Plane_Nav_Tuning msg;
+    case LOG_PLANE_AIRSPEED_MSG: {
+        struct log_AIRSPEED msg;
         if(sizeof(msg) != length) {
-            printf("Bad NAV_TUNING length\n");
+            printf("Bad AIRSPEED length\n");
             exit(1);
         }
         memcpy(&msg, data, sizeof(msg));
-        wait_timestamp(msg.time_ms);
-        if (ground_alt_cm != 0) {
-            baro.setHIL(ground_alt_cm*0.01f + msg.altitude);
-        }
+        wait_timestamp(msg.timestamp);
+        airspeed.setHIL(msg.airspeed, msg.diffpressure, msg.temperature);
         break;
     }
     }
@@ -190,20 +171,6 @@ void LogReader::process_copter(uint8_t type, uint8_t *data, uint16_t length)
         memcpy(&msg, data, sizeof(msg));
         //wait_timestamp(msg.time_ms);
         attitude = Vector3f(msg.roll*0.01f, msg.pitch*0.01f, msg.yaw*0.01f);
-        break;
-    }
-
-    case LOG_COPTER_CONTROL_TUNING_MSG: {
-        struct log_Copter_Control_Tuning msg;
-        if(sizeof(msg) != length) {
-            printf("Bad CONTROL_TUNING length\n");
-            exit(1);
-        }
-        memcpy(&msg, data, sizeof(msg));
-        //wait_timestamp(msg.time_ms);
-        if (ground_alt_cm != 0) {
-            baro.setHIL(0.01f * (ground_alt_cm + msg.baro_alt));
-        }
         break;
     }
 
@@ -325,6 +292,18 @@ bool LogReader::update(uint8_t &type)
         memcpy(&msg, data, sizeof(msg));
         wait_timestamp(msg.time_ms);
         sim_attitude = Vector3f(msg.roll*0.01f, msg.pitch*0.01f, msg.yaw*0.01f);
+        break;
+    }
+
+    case LOG_BARO_MSG: {
+        struct log_BARO msg;
+        if(sizeof(msg) != f.length) {
+            printf("Bad LOG_BARO length\n");
+            exit(1);
+        }
+        memcpy(&msg, data, sizeof(msg));
+        wait_timestamp(msg.timestamp);
+        baro.setHIL(msg.pressure, msg.temperature*0.01f);
         break;
     }
 
