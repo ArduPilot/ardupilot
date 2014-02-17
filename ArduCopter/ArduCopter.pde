@@ -316,13 +316,6 @@ AP_GPS_None     g_gps_driver;
   #error Unrecognised GPS_PROTOCOL setting.
  #endif // GPS PROTOCOL
 
-// Inertial Navigation EKF
-#if AP_AHRS_NAVEKF_AVAILABLE
-AP_AHRS_NavEKF ahrs(ins, barometer, g_gps);
-#else
-AP_AHRS_DCM ahrs(ins, barometer, g_gps);
-#endif
-
 #elif HIL_MODE != HIL_MODE_DISABLED
 // sensor emulators
 static AP_ADC_HIL              adc;
@@ -330,8 +323,6 @@ static AP_Baro_HIL      barometer;
 static AP_Compass_HIL          compass;
 static AP_GPS_HIL              g_gps_driver;
 static AP_InertialSensor_HIL   ins;
-static AP_AHRS_DCM             ahrs(ins, barometer, g_gps);
-
 
  #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
  // When building for SITL we use the HIL barometer and compass drivers
@@ -341,6 +332,13 @@ static SITL sitl;
 #else
  #error Unrecognised HIL_MODE setting.
 #endif // HIL MODE
+
+// Inertial Navigation EKF
+#if AP_AHRS_NAVEKF_AVAILABLE
+AP_AHRS_NavEKF ahrs(ins, barometer, g_gps);
+#else
+AP_AHRS_DCM ahrs(ins, barometer, g_gps);
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Optical flow sensor
