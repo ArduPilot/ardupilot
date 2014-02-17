@@ -214,3 +214,11 @@ void AP_Airspeed::read(void)
     _airspeed               = 0.7f * _airspeed  +  0.3f * _raw_airspeed;
     _last_update_ms         = hal.scheduler->millis();
 }
+
+void AP_Airspeed::setHIL(float airspeed, float diff_pressure, float temperature)
+{
+    _raw_airspeed = airspeed;
+    _airspeed = airspeed;
+    _last_pressure = diff_pressure;
+    _last_update_ms         = hal.scheduler->millis();    
+}

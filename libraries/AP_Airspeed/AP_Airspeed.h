@@ -134,6 +134,8 @@ public:
     // return time in ms of last update
     uint32_t last_update_ms(void) const { return _last_update_ms; }
 
+    void setHIL(float airspeed, float diff_pressure, float temperature);
+
     static const struct AP_Param::GroupInfo var_info[];
 
     enum pitot_tube_order { PITOT_TUBE_ORDER_POSITIVE =0, 
