@@ -436,6 +436,8 @@ def fly_ArduPlane(viewerip=None, map=False):
     mavproxy.send("param load %s/ArduPlane.parm\n" % testdir)
     mavproxy.expect('Loaded [0-9]+ parameters')
 
+    mavproxy.send("param fetch\n")
+
     # restart with new parms
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
