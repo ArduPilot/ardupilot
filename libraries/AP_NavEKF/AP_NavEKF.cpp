@@ -204,7 +204,6 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     _ahrs(ahrs),
     _baro(baro),
     staticModeDemanded(true),   // staticMode demanded from outside
-    useAirspeed(true),          // activates fusion of compass data
     useCompass(true),           // activates fusion of airspeed data
     covTimeStepMax(0.07f),      // maximum time (sec) between covariance prediction updates
     covDelAngMax(0.05f),        // maximum delta angle between covariance prediction updates
@@ -242,6 +241,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     hgtRate = 0.0f;
     mag_state.q0 = 1;
     mag_state.DCM.identity();
+    useAirspeed = _ahrs->get_airspeed();
 }
 
 bool NavEKF::healthy(void) const
