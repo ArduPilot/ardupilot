@@ -213,10 +213,12 @@ void AC_PosControl::pos_to_rate_z()
     // do not let target altitude get too far from current altitude
     if (_pos_error.z > _leash_up_z) {
         _pos_target.z = curr_alt + _leash_up_z;
+        _pos_error.z = _pos_target.z - curr_alt;
         _limit.pos_up = true;
     }
     if (_pos_error.z < -_leash_down_z) {
         _pos_target.z = curr_alt - _leash_down_z;
+        _pos_error.z = _pos_target.z - curr_alt;
         _limit.pos_down = true;
     }
 
