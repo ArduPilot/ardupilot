@@ -268,3 +268,11 @@ static void rtl_land_run()
     rtl_state_complete = ap.land_complete;
 }
 
+// get_RTL_alt - return altitude which vehicle should return home at
+//      altitude is in cm above home
+static float get_RTL_alt()
+{
+    // return maximum of current altitude and rtl altitude
+    return max(current_loc.alt, g.rtl_altitude);
+}
+

@@ -1,16 +1,5 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-static int32_t get_RTL_alt()
-{
-    if(g.rtl_altitude <= 0) {
-		return min(current_loc.alt, RTL_ALT_MAX);
-    }else if (g.rtl_altitude < current_loc.alt) {
-		return min(current_loc.alt, RTL_ALT_MAX);
-    }else{
-        return g.rtl_altitude;
-    }
-}
-
 // run this at setup on the ground
 // -------------------------------
 static void init_home()
