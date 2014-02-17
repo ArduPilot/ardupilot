@@ -9,7 +9,6 @@ extern const AP_HAL::HAL& hal;
 // Public Methods //////////////////////////////////////////////////////////////
 bool AP_Baro_HIL::init()
 {
-    BMP085_State=1;
     return true;
 }
 
@@ -33,6 +32,16 @@ uint8_t AP_Baro_HIL::read()
 
     return result;
 }
+
+void AP_Baro_HIL::setHIL(float pressure, float temperature)
+{
+    _count = 1;
+    _pressure_sum = pressure;
+    _temperature_sum = temperature;
+    _last_update = hal.scheduler->millis();
+    healthy = true;
+}
+
 
 // ==========================================================================
 // based on tables.cpp from http://www.pdas.com/atmosdownload.html
@@ -75,21 +84,7 @@ void AP_Baro_HIL::setHIL(float altitude_msl)
     float p = p0 * delta;
     float T = 303.16 * theta - 273.16; // Assume 30 degrees at sea level - converted to degrees Kelvin
 
-    _count++;
-    _pressure_sum += p;
-    _temperature_sum += T;
-
-    if (_count == 128) {
-        // we have summed 128 values. This only happens
-        // when we stop reading the barometer for a long time
-        // (more than 1.2 seconds)
-        _count = 64;
-        _pressure_sum /= 2;
-        _temperature_sum /= 2;
-    }
-
-    healthy = true;
-    _last_update = hal.scheduler->millis();
+    setHIL(p, T);
 }
 
 float AP_Baro_HIL::get_pressure() {
