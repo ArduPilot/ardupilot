@@ -59,7 +59,7 @@ static void read_control_switch()
 
 static uint8_t readSwitch(void){
     uint16_t pulsewidth = hal.rcin->read(g.flight_mode_channel - 1);
-    if (pulsewidth <= 910 || pulsewidth >= 2090) return 255;            // This is an error condition
+    if (pulsewidth <= 800 || pulsewidth >= 2200) return 255;            // This is an error condition
     if (pulsewidth > 1230 && pulsewidth <= 1360) return 1;
     if (pulsewidth > 1360 && pulsewidth <= 1490) return 2;
     if (pulsewidth > 1490 && pulsewidth <= 1620) return 3;
