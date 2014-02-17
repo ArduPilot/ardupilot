@@ -104,7 +104,9 @@ void RC_Channel_aux::enable_aux_servos()
 {
     update_aux_servo_function();
 
-    // enable all channels that are not set to k_none or k_nr_aux_servo_functions
+    // enable all channels that are not set to a valid function. This
+    // includes k_none servos, which allows those to get their initial
+    // trim value on startup
     for (uint8_t i = 0; i < RC_AUX_MAX_CHANNELS; i++) {
         if (_aux_channels[i]) {
 			RC_Channel_aux::Aux_servo_function_t function = (RC_Channel_aux::Aux_servo_function_t)_aux_channels[i]->function.get();
