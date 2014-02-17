@@ -101,17 +101,6 @@ static void set_cmd_with_index(struct Location temp, int i)
         g.command_total.set_and_save(i+1);
 }
 
-static int32_t get_RTL_alt()
-{
-    if(g.rtl_altitude <= 0) {
-		return min(current_loc.alt, RTL_ALT_MAX);
-    }else if (g.rtl_altitude < current_loc.alt) {
-		return min(current_loc.alt, RTL_ALT_MAX);
-    }else{
-        return g.rtl_altitude;
-    }
-}
-
 // run this at setup on the ground
 // -------------------------------
 static void init_home()
