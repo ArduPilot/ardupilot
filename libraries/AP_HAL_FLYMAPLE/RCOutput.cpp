@@ -68,14 +68,13 @@ void FLYMAPLERCOutput::enable_ch(uint8_t ch)
     }
     pinMode(pin, PWM);
     _set_freq(ch, 50); // Default to 50 Hz
-    write(ch, 0);
 }
 
 void FLYMAPLERCOutput::disable_ch(uint8_t ch)
 {
     if (ch >= FLYMAPLE_RC_OUTPUT_NUM_CHANNELS)
 	return;
-    // TODO
+    // Nothing really to do
 }
 
 void FLYMAPLERCOutput::write(uint8_t ch, uint16_t period_us)
