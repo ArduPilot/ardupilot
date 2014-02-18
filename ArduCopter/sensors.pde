@@ -26,6 +26,9 @@ static void init_barometer(bool full_calibration)
 static int32_t read_barometer(void)
 {
     barometer.read();
+    if (g.log_bitmask & MASK_LOG_IMU) {
+        Log_Write_Baro();
+    }
     return barometer.get_altitude() * 100.0f;
 }
 
