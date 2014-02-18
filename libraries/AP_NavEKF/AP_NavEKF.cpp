@@ -499,7 +499,7 @@ void NavEKF::UpdateFilter()
     OnGroundCheck();
 
     // Define rules used to set staticMode
-    if (onGround && !_ahrs->get_correct_centrifugal()) {
+    if (onGround && static_mode_demanded()) {
         staticMode = true;
     } else {
         staticMode = false;
@@ -2231,7 +2231,7 @@ void NavEKF::getGyroBias(Vector3f &gyroBias) const
 void NavEKF::getAccelBias(Vector3f &accelBias) const
 {
     accelBias.x = staticMode? 1.0f : 0.0f;
-    accelBias.y = _ahrs->get_correct_centrifugal()? 0.0f : 1.0f;
+    accelBias.y = static_mode_demanded()? 1.0f : 0.0f;
     accelBias.z = states[13] / dtIMU;
 }
 
@@ -2657,6 +2657,14 @@ bool NavEKF::useAirspeed(void) const
         return false;
     }
     return _ahrs->get_airspeed()->use();
+}
+
+/*
+  see if the vehicle code has demanded static mode
+ */
+bool NavEKF::static_mode_demanded(void) const 
+{
+    return !_ahrs->get_armed() || !_ahrs->get_correct_centrifugal();
 }
 
 #endif // HAL_CPU_CLASS

@@ -255,6 +255,9 @@ private:
     // return true if we should use the airspeed sensor
     bool useAirspeed(void) const;
 
+    // check if static mode has been demanded by vehicle code
+    bool static_mode_demanded(void) const;
+
 private:
     // EKF Mavlink Tuneable Parameters
     AP_Float _gpsHorizVelNoise;     // GPS horizontal velocity measurement noise : m/s
