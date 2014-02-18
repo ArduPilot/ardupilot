@@ -634,8 +634,8 @@ static uint32_t throttle_integrator;
 ////////////////////////////////////////////////////////////////////////////////
 // auto flight mode's yaw mode
 static uint8_t auto_yaw_mode = AUTO_YAW_LOOK_AT_NEXT_WP;
-// Yaw will point at this location if yaw_mode is set to YAW_LOOK_AT_LOCATION
-static Vector3f yaw_look_at_WP;
+// Yaw will point at this location if auto_yaw_mode is set to AUTO_YAW_ROI
+static Vector3f roi_WP;
 // bearing from current location to the yaw_look_at_WP
 static float yaw_look_at_WP_bearing;
 // yaw used for YAW_LOOK_AT_HEADING yaw_mode

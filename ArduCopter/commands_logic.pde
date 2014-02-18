@@ -658,26 +658,33 @@ static void do_set_home()
 //	TO-DO: add support for other features of MAV_CMD_DO_SET_ROI including pointing at a given waypoint
 static void do_roi()
 {
+    // if location is zero lat, lon and altitude turn off ROI
+    if (auto_yaw_mode == AUTO_YAW_ROI && (command_cond_queue.alt == 0 && command_cond_queue.lat == 0 && command_cond_queue.lng == 0)) {
+        // set auto yaw mode back to default assuming the active command is a waypoint command.  A more sophisticated method is required to ensure we return to the proper yaw control for the active command
+        set_auto_yaw_mode(get_default_auto_yaw_mode(false));
+        // To-Do: switch off the camera tracking if enabled
+    }else{
 #if MOUNT == ENABLED
-    // check if mount type requires us to rotate the quad
-    if( camera_mount.get_mount_type() != AP_Mount::k_pan_tilt && camera_mount.get_mount_type() != AP_Mount::k_pan_tilt_roll ) {
-        yaw_look_at_WP = pv_location_to_vector(command_cond_queue);
-        set_auto_yaw_mode(AUTO_YAW_LOOK_AT_LOCATION);
-    }
-    // send the command to the camera mount
-    camera_mount.set_roi_cmd(&command_cond_queue);
-    
-    // TO-DO: expand handling of the do_nav_roi to support all modes of the MAVLink.  Currently we only handle mode 4 (see below)
-    //		0: do nothing
-    //		1: point at next waypoint
-    //		2: point at a waypoint taken from WP# parameter (2nd parameter?)
-    //		3: point at a location given by alt, lon, lat parameters
-    //		4: point at a target given a target id (can't be implemented)
+        // check if mount type requires us to rotate the quad
+        if(camera_mount.get_mount_type() != AP_Mount::k_pan_tilt && camera_mount.get_mount_type() != AP_Mount::k_pan_tilt_roll) {
+            roi_WP = pv_location_to_vector(command_cond_queue);
+            set_auto_yaw_mode(AUTO_YAW_ROI);
+        }
+        // send the command to the camera mount
+        camera_mount.set_roi_cmd(&command_cond_queue);
+
+        // TO-DO: expand handling of the do_nav_roi to support all modes of the MAVLink.  Currently we only handle mode 4 (see below)
+        //		0: do nothing
+        //		1: point at next waypoint
+        //		2: point at a waypoint taken from WP# parameter (2nd parameter?)
+        //		3: point at a location given by alt, lon, lat parameters
+        //		4: point at a target given a target id (can't be implemented)
 #else
-    // if we have no camera mount aim the quad at the location
-    yaw_look_at_WP = pv_location_to_vector(command_cond_queue);
-    set_auto_yaw_mode(AUTO_YAW_LOOK_AT_LOCATION);
+        // if we have no camera mount aim the quad at the location
+        roi_WP = pv_location_to_vector(command_cond_queue);
+        set_auto_yaw_mode(AUTO_YAW_ROI);
 #endif
+    }
 }
 
 // do_take_picture - take a picture with the camera library

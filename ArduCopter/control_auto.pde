@@ -21,6 +21,11 @@
 static bool auto_init(bool ignore_checks)
 {
     if ((GPS_ok() && inertial_nav.position_ok() && g.command_total > 1) || ignore_checks) {
+        // stop ROI from carrying over from previous runs of the mission
+        // To-Do: reset the yaw as part of auto_wp_start when the previous command was not a wp command to remove the need for this special ROI check
+        if (auto_yaw_mode == AUTO_YAW_ROI) {
+            set_auto_yaw_mode(AUTO_YAW_HOLD);
+        }
         // clear the command queues. will be reloaded when "run_autopilot" calls "update_commands" function
         init_commands();
         return true;
@@ -117,7 +122,10 @@ static void auto_wp_start(const Vector3f& destination)
     wp_nav.set_wp_destination(destination);
 
     // initialise yaw
-    set_auto_yaw_mode(get_default_auto_yaw_mode(false));
+    // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
+    if (auto_yaw_mode != AUTO_YAW_ROI) {
+        set_auto_yaw_mode(get_default_auto_yaw_mode(false));
+    }
 }
 
 // auto_wp_run - runs the auto waypoint controller
@@ -296,10 +304,10 @@ void set_auto_yaw_mode(uint8_t yaw_mode)
     switch (auto_yaw_mode) {
 
     case AUTO_YAW_LOOK_AT_NEXT_WP:
-        // original_wp_bearing will be set by do_nav_wp or other nav command initialisatoin functions so no init required
+        // original_wp_bearing will be set by do_nav_wp or other nav command initialisation functions so no init required
         break;
 
-    case AUTO_YAW_LOOK_AT_LOCATION:
+    case AUTO_YAW_ROI:
         // point towards a location held in yaw_look_at_WP
         yaw_look_at_WP_bearing = ahrs.yaw_sensor;
         break;
@@ -326,9 +334,9 @@ float get_auto_heading(void)
 {
     switch(auto_yaw_mode) {
 
-    case AUTO_YAW_LOOK_AT_LOCATION:
-        // point towards a location held in yaw_look_at_WP
-        return get_look_at_yaw();
+    case AUTO_YAW_ROI:
+        // point towards a location held in roi_WP
+        return get_roi_yaw();
         break;
 
     case AUTO_YAW_LOOK_AT_HEADING:

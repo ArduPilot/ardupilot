@@ -73,16 +73,16 @@ static float get_pilot_desired_yaw_rate(int16_t stick_angle)
  * yaw controllers
  *************************************************************/
 
-// get_look_at_yaw - updates bearing to location held in look_at_yaw_WP and calls stabilize yaw controller
+// get_roi_yaw - returns heading towards location held in roi_WP
 // should be called at 100hz
-static float get_look_at_yaw()
+static float get_roi_yaw()
 {
-    static uint8_t look_at_yaw_counter = 0;     // used to reduce update rate to 10hz
+    static uint8_t roi_yaw_counter = 0;     // used to reduce update rate to 10hz
 
-    look_at_yaw_counter++;
-    if (look_at_yaw_counter >= 10) {
-        look_at_yaw_counter = 0;
-        yaw_look_at_WP_bearing = pv_get_bearing_cd(inertial_nav.get_position(), yaw_look_at_WP);
+    roi_yaw_counter++;
+    if (roi_yaw_counter >= 10) {
+        roi_yaw_counter = 0;
+        yaw_look_at_WP_bearing = pv_get_bearing_cd(inertial_nav.get_position(), roi_WP);
     }
 
     return yaw_look_at_WP_bearing;
