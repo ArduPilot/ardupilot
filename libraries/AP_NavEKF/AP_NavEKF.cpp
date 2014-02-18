@@ -1383,29 +1383,6 @@ void NavEKF::CovariancePrediction()
         nextP[i][i] = nextP[i][i] + processNoise[i];
     }
 
-    // If on ground or no compasss fitted or in static mode, inhibit magnetic field state covariance growth
-    if (onGround || !useCompass || staticMode)
-    {
-        for (uint8_t i=16; i<=21; i++) {
-            for (uint8_t j=0; j<=21; j++) {
-                nextP[i][j] = P[i][j];
-                nextP[j][i] = P[j][i];
-            }
-        }
-    }
-
-    // If on ground or not using airspeed sensing or in static mode, inhibit wind velocity
-    // covariance growth.
-    if (onGround || !useAirspeed || staticMode)
-    {
-        for (uint8_t i=14; i<=15; i++) {
-            for (uint8_t j=0; j<=21; j++) {
-                nextP[i][j] = P[i][j];
-                nextP[j][i] = P[j][i];
-            }
-        }
-    }
-
     // If the total position variance exceeds 1E6 (1000m), then stop covariance
     // growth by setting the predicted to the previous values
     // This prevent an ill conditioned matrix from occurring for long periods
@@ -1422,28 +1399,10 @@ void NavEKF::CovariancePrediction()
         }
     }
 
-    // Copy to output whilst forcing symmetry to prevent ill-conditioning
-    // of the matrix. If in static or on-ground modes, zero the off-diagonal
-    // terms for state indices 14 and higher to prevent possible long term
-    // numerical errors during extended ground operation
-    bool zeroOffDiag = (onGround || staticMode);
-    for (uint8_t i=0; i<=21; i++) {
-        P[i][i] = nextP[i][i];
-    }
-    for (uint8_t i=1; i<=21; i++)
-    {
-        for (uint8_t j=0; j<=i-1; j++)
-        {
-            if (zeroOffDiag && ((i >= 14) || (j >= 14))) {
-                P[i][j] = 0.0f;
-            } else {
-                P[i][j] = 0.5f*(nextP[i][j] + nextP[j][i]);
-            }
-        P[j][i] = P[i][j];
-        }
-    }
+    // Copy covariances to output and fix numerical errors
+    CopyAndFixCovariances();
 
-    // Constrain variances to prevent ill-conditioning
+    // Constrain diagonals to prevent ill-conditioning
     ConstrainVariances();
 
     perf_end(_perf_CovariancePrediction);
@@ -2377,6 +2336,71 @@ void NavEKF::ForceSymmetry()
             float temp = 0.5f*(P[i][j] + P[j][i]);
             P[i][j] = temp;
             P[j][i] = temp;
+        }
+    }
+}
+
+void NavEKF::CopyAndFixCovariances()
+{
+    // if we are in ground or static mode, we want all the off-diagonals for the wind
+    // and magnetic field states to remain zero and want to keep the old variances
+    // for these states
+    if (onGround || staticMode) {
+        // copy calculated variances we want to propagate
+        for (uint8_t i=0; i<=13; i++) {
+            P[i][i] = nextP[i][i];
+        }
+        // force covariances to be either zero or symetrical
+        for (uint8_t i=1; i<=21; i++)
+        {
+            for (uint8_t j=0; j<=i-1; j++)
+            {
+                if ((i >= 14) || (j >= 14)) {
+                    P[i][j] = 0.0f;
+                } else {
+                    P[i][j] = 0.5f*(nextP[i][j] + nextP[j][i]);
+                }
+                P[j][i] = P[i][j];
+            }
+        }
+    }
+    // if we flying, but not using airspeed, we want all the off-diagonals for the wind
+    // states to remain zero and want to keep the old variances for these states
+    else if (!useAirspeed) {
+        // copy calculated variances we want to propagate
+        for (uint8_t i=0; i<=13; i++) {
+            P[i][i] = nextP[i][i];
+        }
+        for (uint8_t i=16; i<=21; i++) {
+            P[i][i] = nextP[i][i];
+        }
+        // force covariances to be either zero or symetrical
+        for (uint8_t i=1; i<=21; i++)
+        {
+            for (uint8_t j=0; j<=i-1; j++)
+            {
+                if (i == 14 || i == 15 || j == 14 || j == 15) {
+                    P[i][j] = 0.0f;
+                } else {
+                    P[i][j] = 0.5f*(nextP[i][j] + nextP[j][i]);
+                }
+                P[j][i] = P[i][j];
+            }
+        }
+    }
+    // if flying with all sensors all covariance terms are active
+    else {
+        // copy calculated variances we want to propagate
+        for (uint8_t i=0; i<=21; i++) {
+            P[i][i] = nextP[i][i];
+        }
+        for (uint8_t i=1; i<=21; i++)
+        {
+            for (uint8_t j=0; j<=i-1; j++)
+            {
+                P[i][j] = 0.5f*(nextP[i][j] + nextP[j][i]);
+                P[j][i] = P[i][j];
+            }
         }
     }
 }
