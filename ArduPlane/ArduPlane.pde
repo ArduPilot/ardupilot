@@ -801,6 +801,9 @@ void loop()
 // update AHRS system
 static void ahrs_update()
 {
+    ahrs.set_armed(arming.is_armed() && 
+                   hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
+
 #if HIL_MODE != HIL_MODE_DISABLED
     // update hil before AHRS update
     gcs_update();
@@ -1081,16 +1084,8 @@ static void update_GPS_10Hz(void)
         }
 #endif        
 
-        if (!arming.is_armed() ||
-            hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
-            if (g_gps->status() >= GPS::GPS_OK_FIX_3D) {
-                ahrs.set_correct_centrifugal(true);
-            } else {
-                ahrs.set_correct_centrifugal(false);
-            }
+        if (!ahrs.get_armed()) {
             update_home();
-        } else {
-            ahrs.set_correct_centrifugal(true);
         }
 
         // update wind estimate
