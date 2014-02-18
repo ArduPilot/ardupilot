@@ -88,7 +88,6 @@ def drive_APMrover2(viewerip=None, map=False):
     mavproxy.expect('Received [0-9]+ parameters')
 
     # setup test parameters
-    mavproxy.send('param set SYSID_THISMAV %u\n' % random.randint(100, 200))
     mavproxy.send("param load %s/Rover.parm\n" % testdir)
     mavproxy.expect('Loaded [0-9]+ parameters')
 

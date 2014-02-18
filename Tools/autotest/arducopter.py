@@ -822,7 +822,6 @@ def fly_ArduCopter(viewerip=None, map=False):
     mavproxy.expect('Received [0-9]+ parameters')
 
     # setup test parameters
-    mavproxy.send('param set SYSID_THISMAV %u\n' % random.randint(100, 200))
     mavproxy.send("param load %s/ArduCopter.parm\n" % testdir)
     mavproxy.expect('Loaded [0-9]+ parameters')
 
@@ -1165,7 +1164,6 @@ def fly_CopterAVC(viewerip=None, map=False):
     mavproxy.expect('Received [0-9]+ parameters')
 
     # setup test parameters
-    mavproxy.send('param set SYSID_THISMAV %u\n' % random.randint(100, 200))
     mavproxy.send("param load %s/CopterAVC.parm\n" % testdir)
     mavproxy.expect('Loaded [0-9]+ parameters')
 
