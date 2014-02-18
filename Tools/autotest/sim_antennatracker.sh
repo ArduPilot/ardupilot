@@ -54,8 +54,7 @@ set -x
 
 autotest=$(dirname $(readlink -e $0))
 pushd $autotest/../../Tools/AntennaTracker
-#make clean sitl
-make sitl
+make clean sitl
 
 tfile=$(mktemp)
 echo r > $tfile
