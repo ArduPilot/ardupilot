@@ -60,6 +60,83 @@ public:
         memset(_v, 0, sizeof(T)*N);
     }
 
+    // negation
+    VectorN<T,N> operator -(void) const {
+        VectorN<T,N> v2;
+        for (uint8_t i=0; i<N; i++) {
+            v2[i] = - _v[i];
+        }   
+        return v2;
+    }
+
+    // addition
+    VectorN<T,N> operator +(const VectorN<T,N> &v) const {
+        VectorN<T,N> v2;
+        for (uint8_t i=0; i<N; i++) {
+            v2[i] = _v[i] + v[i];
+        }   
+        return v2;
+    }
+
+    // subtraction
+    VectorN<T,N> operator -(const VectorN<T,N> &v) const {
+        VectorN<T,N> v2;
+        for (uint8_t i=0; i<N; i++) {
+            v2[i] = _v[i] - v[i];
+        }   
+        return v2;
+    }
+
+    // uniform scaling
+    VectorN<T,N> operator *(const T num) const {
+        VectorN<T,N> v2;
+        for (uint8_t i=0; i<N; i++) {
+            v2[i] = _v[i] * num;
+        }   
+        return v2;
+    }
+
+    // uniform scaling
+    VectorN<T,N> operator  /(const T num) const {
+        VectorN<T,N> v2;
+        for (uint8_t i=0; i<N; i++) {
+            v2[i] = _v[i] / num;
+        }   
+        return v2;
+    }
+
+    // addition
+    VectorN<T,N> &operator +=(const VectorN<T,N> &v) {
+        for (uint8_t i=0; i<N; i++) {
+            _v[i] += v[i];
+        }   
+        return *this;
+    }
+
+    // subtraction
+    VectorN<T,N> &operator -=(const VectorN<T,N> &v) {
+        for (uint8_t i=0; i<N; i++) {
+            _v[i] -= v[i];
+        }   
+        return *this;
+    }
+
+    // uniform scaling
+    VectorN<T,N> &operator *=(const T num) {
+        for (uint8_t i=0; i<N; i++) {
+            _v[i] *= num;
+        }   
+        return *this;
+    }
+
+    // uniform scaling
+    VectorN<T,N> &operator /=(const T num) {
+        for (uint8_t i=0; i<N; i++) {
+            _v[i] /= num;
+        }   
+        return *this;
+    }
+
 private:
     T _v[N];
 };
