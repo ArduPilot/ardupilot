@@ -19,6 +19,9 @@ uint16_t AP_InertialSensor_HIL::_init_sensor( Sample_rate sample_rate ) {
     case RATE_200HZ:
         _sample_period_ms = 5;
         break;
+    case RATE_400HZ:
+        _sample_period_ms = 2.5;
+        break;
     }
     return AP_PRODUCT_ID_NONE;
 }

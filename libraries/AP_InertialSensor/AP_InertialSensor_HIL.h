@@ -24,7 +24,7 @@ public:
 private:
     bool            _sample_available();
     uint16_t        _init_sensor( Sample_rate sample_rate );
-    uint32_t        _sample_period_ms;
+    float           _sample_period_ms;
     uint32_t        _last_update_ms;
     uint32_t        _delta_time_usec;
     uint32_t        _last_accel_usec;
