@@ -37,11 +37,13 @@ popd
 
 echo "Testing build of examples"
 
-examples="Tools/VARTest Tools/CPUInfo"
+examples="Tools/VARTest Tools/CPUInfo Tools/AntennaTracker"
 for d in $examples; do
     pushd $d
     make clean
-    make -j4
+    make apm2 -j4
+    make clean
+    make sitl -j4
     popd
 done
 
