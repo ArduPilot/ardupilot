@@ -22,6 +22,7 @@
 #include <AP_ADC_AnalogSource.h>
 #include <AP_InertialSensor.h> // Inertial Sensor Library
 #include <AP_AHRS.h>         // ArduPilot Mega DCM Library
+#include <AP_NavEKF.h>
 #include <PID.h>            // PID library
 #include <RC_Channel.h>     // RC Channel Library
 #include <AP_RangeFinder.h>     // Range finder library
