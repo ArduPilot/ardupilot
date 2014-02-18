@@ -1050,6 +1050,7 @@ static void load_parameters(void)
     }
     // disable centrifugal force correction, it will be enabled as part of the arming process
     ahrs.set_correct_centrifugal(false);
+    ahrs.set_armed(false);
 
     // setup different AHRS gains for ArduCopter than the default
     // but allow users to override in their config
