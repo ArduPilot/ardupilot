@@ -62,6 +62,9 @@ public:
         // enable centrifugal correction by default
         _flags.correct_centrifugal = true;
 
+        // start off with armed flag true
+        _flags.armed = true;
+
         // initialise _home
         _home.id         = MAV_CMD_NAV_WAYPOINT;
         _home.options    = 0;
@@ -243,6 +246,17 @@ public:
         return _flags.correct_centrifugal;
     }
 
+    // set the armed flag
+    // allows EKF enter static mode when disarmed
+    void set_armed(bool setting) {
+        _flags.armed = setting;
+    }
+
+    // get the armed flag
+    bool get_armed(void) const {
+        return _flags.armed;
+    }
+
     // get trim
     const Vector3f &get_trim() const { return _trim.get(); }
 
@@ -304,6 +318,7 @@ protected:
         uint8_t fly_forward             : 1;    // 1 if we can assume the aircraft will be flying forward on its X axis
         uint8_t correct_centrifugal     : 1;    // 1 if we should correct for centrifugal forces (allows arducopter to turn this off when motors are disarmed)
         uint8_t wind_estimation         : 1;    // 1 if we should do wind estimation
+        uint8_t armed                   : 1;    // 1 if we are armed for flight
     } _flags;
 
     // update_trig - recalculates _cos_roll, _cos_pitch, etc based on latest attitude
