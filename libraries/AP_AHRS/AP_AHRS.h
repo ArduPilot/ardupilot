@@ -234,8 +234,13 @@ public:
 
     // set the correct centrifugal flag
     // allows arducopter to disable corrections when disarmed
-    virtual void set_correct_centrifugal(bool setting) {
+    void set_correct_centrifugal(bool setting) {
         _flags.correct_centrifugal = setting;
+    }
+
+    // get the correct centrifugal flag
+    bool get_correct_centrifugal(void) const {
+        return _flags.correct_centrifugal;
     }
 
     // get trim
