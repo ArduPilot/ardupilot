@@ -241,7 +241,6 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     hgtRate = 0.0f;
     mag_state.q0 = 1;
     mag_state.DCM.identity();
-    useAirspeed = _ahrs->get_airspeed();
 }
 
 bool NavEKF::healthy(void) const
@@ -576,7 +575,7 @@ void NavEKF::SelectVelPosFusion()
             // reset the counter used to schedule updates so that we always fuse data on the frame GPS data arrives
             skipCounter = velPosFuseStepRatio;
             // If a long time since last GPS update, then reset position and velocity and reset stored state history
-            if ((hal.scheduler->millis() > secondLastFixTime_ms + _gpsRetryTimeUseTAS && useAirspeed) || (hal.scheduler->millis() > secondLastFixTime_ms + _gpsRetryTimeNoTAS && !useAirspeed)) {
+            if ((hal.scheduler->millis() > secondLastFixTime_ms + _gpsRetryTimeUseTAS && useAirspeed()) || (hal.scheduler->millis() > secondLastFixTime_ms + _gpsRetryTimeNoTAS && !useAirspeed())) {
             ResetPosition();
             ResetVelocity();
             StoreStatesReset();
@@ -650,7 +649,7 @@ void NavEKF::SelectTasFusion()
 {
     readAirSpdData();
     // Determine if data is waiting to be fused
-    tasDataWaiting = (statesInitialised && useAirspeed && !onGround && (tasDataWaiting || newDataTas));
+    tasDataWaiting = (statesInitialised && useAirspeed() && !onGround && (tasDataWaiting || newDataTas));
     bool timeout = ((IMUmsec - TASmsecPrev) >= TASmsecMax);
     // Fuse Airspeed Measurements - hold off if magnetometer fusion has been performed, unless maximum time interval exceeded
     if (tasDataWaiting && (!magFusePerformed || timeout || fuseMeNow))
@@ -1458,7 +1457,7 @@ void NavEKF::FuseVelPosNED()
         
         // set the GPS data timeout depending on whether airspeed data is present
         uint32_t gpsRetryTime;
-        if (useAirspeed) gpsRetryTime = _gpsRetryTimeUseTAS;
+        if (useAirspeed()) gpsRetryTime = _gpsRetryTimeUseTAS;
         else gpsRetryTime = _gpsRetryTimeNoTAS;
 
         // Form the observation vector
@@ -2366,7 +2365,7 @@ void NavEKF::CopyAndFixCovariances()
     }
     // if we flying, but not using airspeed, we want all the off-diagonals for the wind
     // states to remain zero and want to keep the old variances for these states
-    else if (!useAirspeed) {
+    else if (!useAirspeed()) {
         // copy calculated variances we want to propagate
         for (uint8_t i=0; i<=13; i++) {
             P[i][i] = nextP[i][i];
@@ -2655,6 +2654,14 @@ void NavEKF::ZeroVariables()
     memset(&storedStates[0][0], 0, sizeof(storedStates));
     memset(&statetimeStamp[0], 0, sizeof(statetimeStamp));
     memset(&posNE[0], 0, sizeof(posNE));
+}
+
+bool NavEKF::useAirspeed(void) const
+{
+    if (_ahrs->get_airspeed() == NULL) {
+        return false;
+    }
+    return _ahrs->get_airspeed()->use();
 }
 
 #endif // HAL_CPU_CLASS

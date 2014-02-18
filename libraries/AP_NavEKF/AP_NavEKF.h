@@ -256,6 +256,8 @@ private:
     // reset the vertical position state using the last height measurement
     void ResetHeight(void);
 
+    // return true if we should use the airspeed sensor
+    bool useAirspeed(void) const;
 
 private:
     // EKF Mavlink Tuneable Parameters
@@ -330,7 +332,6 @@ private:
     ftype dt;                       // time lapsed since the last covariance prediction (sec)
     ftype hgtRate;                  // state for rate of change of height filter
     bool onGround;                  // boolean true when the flight vehicle is on the ground (not flying)
-    bool useAirspeed;               // boolean true if airspeed data is being used
     const bool useCompass;          // boolean true if magnetometer data is being used
     Vector6 innovVelPos;            // innovation output for a group of measurements
     Vector6 varInnovVelPos;         // innovation variance output for a group of measurements
