@@ -649,6 +649,8 @@ void loop()
 // update AHRS system
 static void ahrs_update()
 {
+    ahrs.set_armed(hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
+
 #if HIL_MODE != HIL_MODE_DISABLED
     // update hil before AHRS update
     gcs_update();

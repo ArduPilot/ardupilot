@@ -78,7 +78,7 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
 #endif
 
     // we are armed if we are not initialising
-    if (control_mode != INITIALISING) {
+    if (control_mode != INITIALISING && ahrs.get_armed()) {
         base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
 
