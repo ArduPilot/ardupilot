@@ -82,10 +82,6 @@ public:
     // This method can only be used when the vehicle is static
     void InitialiseFilterBootstrap(void);
 
-    // inhibits position and velocity attitude corrections when set to true
-    // setting to true has same effect as ahrs.set_correct_centrifugal(false)
-    void SetStaticMode(bool setting);
-
     // Update Filter States - this should be called whenever new IMU data is available
     void UpdateFilter(void);
 
@@ -304,7 +300,6 @@ private:
     // Variables
     uint8_t skipCounter;            // counter used to skip position and height corrections to achieve _skipRatio
     bool statesInitialised;         // boolean true when filter states have been initialised
-    bool staticModeDemanded;        // boolean true when staticMode has been demanded externally.
     bool velHealth;                 // boolean true if velocity measurements have failed innovation consistency check
     bool posHealth;                 // boolean true if position measurements have failed innovation consistency check
     bool hgtHealth;                 // boolean true if height measurements have failed innovation consistency check

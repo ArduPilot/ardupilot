@@ -203,7 +203,6 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
 NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     _ahrs(ahrs),
     _baro(baro),
-    staticModeDemanded(true),   // staticMode demanded from outside
     useCompass(true),           // activates fusion of airspeed data
     covTimeStepMax(0.07f),      // maximum time (sec) between covariance prediction updates
     covDelAngMax(0.05f),        // maximum delta angle between covariance prediction updates
@@ -276,10 +275,6 @@ bool NavEKF::PositionDrifting(void) const
 {
     // Set to true if position measurements are failing the innovation consistency check
     return !posHealth;
-}
-
-void NavEKF::SetStaticMode(bool setting) {
-        staticModeDemanded = setting;
 }
 
 void NavEKF::ResetPosition(void)
@@ -504,7 +499,7 @@ void NavEKF::UpdateFilter()
     OnGroundCheck();
 
     // Define rules used to set staticMode
-    if (onGround && staticModeDemanded) {
+    if (onGround && !_ahrs->get_correct_centrifugal()) {
         staticMode = true;
     } else {
         staticMode = false;
@@ -2235,8 +2230,8 @@ void NavEKF::getGyroBias(Vector3f &gyroBias) const
 
 void NavEKF::getAccelBias(Vector3f &accelBias) const
 {
-    accelBias.x = float(staticMode);
-    accelBias.y = float(staticModeDemanded);
+    accelBias.x = staticMode? 1.0f : 0.0f;
+    accelBias.y = _ahrs->get_correct_centrifugal()? 0.0f : 1.0f;
     accelBias.z = states[13] / dtIMU;
 }
 
