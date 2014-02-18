@@ -50,6 +50,7 @@
 #include <SITL.h>
 #include <PID.h>
 #include <AP_Scheduler.h>       // main loop scheduler
+#include <AP_NavEKF.h>
 
 #include <AP_Vehicle.h>
 #include <AP_Notify.h>      // Notify library
@@ -162,7 +163,12 @@ AP_InertialSensor_L3G4200D ins;
   #error Unrecognised CONFIG_INS_TYPE setting.
 #endif // CONFIG_INS_TYPE
 
-AP_AHRS_DCM ahrs(&ins, g_gps);
+// Inertial Navigation EKF
+#if AP_AHRS_NAVEKF_AVAILABLE
+AP_AHRS_NavEKF ahrs(ins, barometer, g_gps);
+#else
+AP_AHRS_DCM ahrs(ins, barometer, g_gps);
+#endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 SITL sitl;
@@ -198,6 +204,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { compass_accumulate,     1,   1500 },
     { barometer_accumulate,   1,    900 },
     { update_notify,          1,    100 },
+    { gcs_retry_deferred,     1,   1000 },
     { one_second_loop,       50,   3900 }
 };
 
@@ -209,10 +216,6 @@ AP_Param param_loader(var_info, EEPROM_MAX_ADDR);
  */
 void setup() 
 {
-    // this needs to be the first call, as it fills memory with
-    // sentinel values
-    memcheck_init();
-
     cliSerial = hal.console;
 
     // load the default values of variables listed in var_info[]
@@ -223,7 +226,7 @@ void setup()
     AP_Notify::flags.pre_arm_check = true;
     AP_Notify::flags.failsafe_battery = false;
 
-    notify.init();
+    notify.init(false);
     init_tracker();
 
     // initialise the main loop scheduler

@@ -9,7 +9,7 @@ static void init_tracker()
 
     cliSerial->printf_P(PSTR("\n\nInit " THISFIRMWARE
                          "\n\nFree RAM: %u\n"),
-                    memcheck_available_memory());
+                    hal.util->available_memory());
 
     // Check the EEPROM format version before loading any parameters from EEPROM
     load_parameters();

@@ -6,29 +6,6 @@
 #define ToRad(x) radians(x)	// *pi/180
 #define ToDeg(x) degrees(x)	// *180/pi
 
-/// please keep each MSG_ to a single MAVLink message. If need be
-/// create new MSG_ IDs for additional messages on the same
-/// stream
-enum ap_message {
-    MSG_HEARTBEAT,
-    MSG_ATTITUDE,
-    MSG_LOCATION,
-    MSG_AHRS,
-    MSG_HWSTATUS,
-    MSG_GPS_RAW,
-    MSG_SERVO_OUT,
-    MSG_RADIO_OUT,
-    MSG_RAW_IMU1,
-    MSG_RAW_IMU2,
-    MSG_RAW_IMU3,
-    MSG_NEXT_PARAM,
-    MSG_STATUSTEXT,
-    MSG_EXTENDED_STATUS1,
-    MSG_EXTENDED_STATUS2,
-    MSG_NAV_CONTROLLER_OUTPUT,
-    MSG_RETRY_DEFERRED // this must be last
-};
-
 #define EEPROM_MAX_ADDR         4096
 
 // mark a function as not to be inlined
