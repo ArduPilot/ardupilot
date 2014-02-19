@@ -1398,6 +1398,59 @@ static void mavlink_test_rally_fetch_point(uint8_t system_id, uint8_t component_
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 }
 
+static void mavlink_test_compassmot_status(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
+{
+	mavlink_message_t msg;
+        uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
+        uint16_t i;
+	mavlink_compassmot_status_t packet_in = {
+		17.0,
+	}45.0,
+	}73.0,
+	}101.0,
+	}18067,
+	}18171,
+	};
+	mavlink_compassmot_status_t packet1, packet2;
+        memset(&packet1, 0, sizeof(packet1));
+        	packet1.current = packet_in.current;
+        	packet1.CompensationX = packet_in.CompensationX;
+        	packet1.CompensationY = packet_in.CompensationY;
+        	packet1.CompensationZ = packet_in.CompensationZ;
+        	packet1.throttle = packet_in.throttle;
+        	packet1.interference = packet_in.interference;
+        
+        
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_compassmot_status_encode(system_id, component_id, &msg, &packet1);
+	mavlink_msg_compassmot_status_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_compassmot_status_pack(system_id, component_id, &msg , packet1.throttle , packet1.current , packet1.interference , packet1.CompensationX , packet1.CompensationY , packet1.CompensationZ );
+	mavlink_msg_compassmot_status_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_compassmot_status_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.throttle , packet1.current , packet1.interference , packet1.CompensationX , packet1.CompensationY , packet1.CompensationZ );
+	mavlink_msg_compassmot_status_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+        mavlink_msg_to_send_buffer(buffer, &msg);
+        for (i=0; i<mavlink_msg_get_send_buffer_length(&msg); i++) {
+        	comm_send_ch(MAVLINK_COMM_0, buffer[i]);
+        }
+	mavlink_msg_compassmot_status_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+        
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_compassmot_status_send(MAVLINK_COMM_1 , packet1.throttle , packet1.current , packet1.interference , packet1.CompensationX , packet1.CompensationY , packet1.CompensationZ );
+	mavlink_msg_compassmot_status_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+}
+
 static void mavlink_test_ahrs2(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
 {
 	mavlink_message_t msg;
@@ -1479,6 +1532,7 @@ static void mavlink_test_ardupilotmega(uint8_t system_id, uint8_t component_id, 
 	mavlink_test_airspeed_autocal(system_id, component_id, last_msg);
 	mavlink_test_rally_point(system_id, component_id, last_msg);
 	mavlink_test_rally_fetch_point(system_id, component_id, last_msg);
+	mavlink_test_compassmot_status(system_id, component_id, last_msg);
 	mavlink_test_ahrs2(system_id, component_id, last_msg);
 }
 
