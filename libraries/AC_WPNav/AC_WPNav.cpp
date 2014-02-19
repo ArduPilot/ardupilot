@@ -168,21 +168,21 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt)
     Vector2f desired_vel = _pos_control.get_desired_velocity();
 
     // add pilot commanded acceleration
-    desired_vel += desired_accel * nav_dt;
+    desired_vel += desired_accel * nav_dt * _loiter_speed_cms / 500.0f;
 
     // reduce velocity with fake wind resistance
     if(desired_vel.x > 0 ) {
-    	desired_vel.x -= (_loiter_accel_cms-WPNAV_LOITER_ACCEL_MIN)*nav_dt*desired_vel.x/_loiter_speed_cms;
+    	desired_vel.x -= (_loiter_accel_cms-WPNAV_LOITER_ACCEL_MIN)*nav_dt*desired_vel.x/500.0f;
     	desired_vel.x = max(desired_vel.x - WPNAV_LOITER_ACCEL_MIN*nav_dt, 0);
     }else if(desired_vel.x < 0) {
-    	desired_vel.x -= (_loiter_accel_cms-WPNAV_LOITER_ACCEL_MIN)*nav_dt*desired_vel.x/_loiter_speed_cms;
+    	desired_vel.x -= (_loiter_accel_cms-WPNAV_LOITER_ACCEL_MIN)*nav_dt*desired_vel.x/500.0f;
         desired_vel.x = min(desired_vel.x + WPNAV_LOITER_ACCEL_MIN*nav_dt, 0);
     }
     if(desired_vel.y > 0 ) {
-    	desired_vel.y -= (_loiter_accel_cms-WPNAV_LOITER_ACCEL_MIN)*nav_dt*desired_vel.y/_loiter_speed_cms;
+    	desired_vel.y -= (_loiter_accel_cms-WPNAV_LOITER_ACCEL_MIN)*nav_dt*desired_vel.y/500.0f;
         desired_vel.y = max(desired_vel.y - WPNAV_LOITER_ACCEL_MIN*nav_dt, 0);
     }else if(desired_vel.y < 0) {
-    	desired_vel.y -= (_loiter_accel_cms-WPNAV_LOITER_ACCEL_MIN)*nav_dt*desired_vel.y/_loiter_speed_cms;
+    	desired_vel.y -= (_loiter_accel_cms-WPNAV_LOITER_ACCEL_MIN)*nav_dt*desired_vel.y/500.0f;
         desired_vel.y = min(desired_vel.y + WPNAV_LOITER_ACCEL_MIN*nav_dt, 0);
     }
 
