@@ -51,7 +51,7 @@ static void stabilize_run()
         attitude_control.init_targets();
     }else{
         // call attitude controller
-        attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate);
+        attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, g.rc_feel_rp);
 
         // body-frame rate controller is run directly from 100hz loop
     }
