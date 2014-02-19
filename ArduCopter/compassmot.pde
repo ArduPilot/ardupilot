@@ -15,11 +15,63 @@ static uint8_t mavlink_compassmot(mavlink_channel_t chan)
     float    throttle_pct;              // throttle as a percentage 0.0 ~ 1.0
     float    throttle_pct_max = 0.0f;   // maximum throttle reached (as a percentage 0~1.0)
     float    current_amps_max = 0.0f;   // maximum current reached
-    float    interference_pct;          // interference as a percentage of total mag field (for reporting purposes only)
+    float    interference_pct = 0.0f;   // interference as a percentage of total mag field (for reporting purposes only)
     uint32_t last_run_time;
     uint32_t last_send_time;
     bool     updated = false;           // have we updated the compensation vector at least once
     uint8_t  command_ack_start = command_ack_counter;
+
+    // exit immediately if we are already in compassmot
+    if (ap.compass_mot) {
+        // ignore restart messages
+        return 1;
+    }else{
+        ap.compass_mot = true;
+    }
+
+    // check compass is enabled
+    if (!g.compass_enabled) {
+        gcs[chan-MAVLINK_COMM_0].send_text_P(SEVERITY_HIGH, PSTR("compass disabled\n"));
+        ap.compass_mot = false;
+        return 1;
+    }
+
+    // check compass health
+    compass.read();
+    if (!compass.healthy()) {
+        gcs[chan-MAVLINK_COMM_0].send_text_P(SEVERITY_HIGH, PSTR("check compass"));
+        ap.compass_mot = false;
+        return 1;
+    }
+
+    // check if radio is calibrated
+    pre_arm_rc_checks();
+    if (!ap.pre_arm_rc_check) {
+        gcs[chan-MAVLINK_COMM_0].send_text_P(SEVERITY_HIGH, PSTR("RC not calibrated"));
+        ap.compass_mot = false;
+        return 1;
+    }
+
+    // check throttle is at zero
+    read_radio();
+    if (g.rc_3.control_in != 0) {
+        gcs[chan-MAVLINK_COMM_0].send_text_P(SEVERITY_HIGH, PSTR("thr not zero"));
+        ap.compass_mot = false;
+        return 1;
+    }
+
+    // check we are landed
+    if (!ap.land_complete) {
+        gcs[chan-MAVLINK_COMM_0].send_text_P(SEVERITY_HIGH, PSTR("Not landed"));
+        ap.compass_mot = false;
+        return 1;
+    }
+
+    // disable cpu failsafe
+    failsafe_disable();
+
+    // initialise compass
+    init_compass();
 
     // default compensation type to use current if possible
     if (battery.monitoring() == AP_BATT_MONITOR_VOLTAGE_AND_CURRENT) {
@@ -28,33 +80,17 @@ static uint8_t mavlink_compassmot(mavlink_channel_t chan)
         comp_type = AP_COMPASS_MOT_COMP_THROTTLE;
     }
 
-    // check if radio is calibrated
-    pre_arm_rc_checks();
-    if (!ap.pre_arm_rc_check) {
-        gcs[chan-MAVLINK_COMM_0].send_text_P(SEVERITY_HIGH, PSTR("radio not calibrated"));
-        return 1;
-    }
+    // send back initial ACK
+    mavlink_msg_command_ack_send(chan, MAV_CMD_PREFLIGHT_CALIBRATION,0);
 
-    // check compass is enabled
-    if ( !g.compass_enabled ) {
-        gcs[chan-MAVLINK_COMM_0].send_text_P(SEVERITY_HIGH, PSTR("compass disabled\n"));
-        return 1;
-    }
+    // flash leds
+    AP_Notify::flags.esc_calibration = true;
 
-    // initialise compass
-    init_compass();
-
-    // disable motor compensation
-    compass.motor_compensation_type(AP_COMPASS_MOT_COMP_DISABLED);
-    compass.set_motor_compensation(Vector3f(0,0,0));
-
-    // print warning that motors will spin
-    // ask user to raise throttle
-    // inform how to stop test
+    // warn user we are starting calibration
     gcs[chan-MAVLINK_COMM_0].send_text_P(SEVERITY_HIGH, PSTR("STARTING CALIBRATION"));
 
     // inform what type of compensation we are attempting
-    if ( comp_type == AP_COMPASS_MOT_COMP_CURRENT ) {
+    if (comp_type == AP_COMPASS_MOT_COMP_CURRENT) {
         gcs[chan-MAVLINK_COMM_0].send_text_P(SEVERITY_HIGH, PSTR("CURRENT"));
     } else{
         gcs[chan-MAVLINK_COMM_0].send_text_P(SEVERITY_HIGH, PSTR("THROTTLE"));
@@ -63,28 +99,18 @@ static uint8_t mavlink_compassmot(mavlink_channel_t chan)
     // disable throttle and battery failsafe
     g.failsafe_throttle = FS_THR_DISABLED;
     g.failsafe_battery_enabled = FS_BATT_DISABLED;
+    g.failsafe_gps_enabled = FS_GPS_DISABLED;
 
-    // read radio
-    read_radio();
+    // disable motor compensation
+    compass.motor_compensation_type(AP_COMPASS_MOT_COMP_DISABLED);
+    compass.set_motor_compensation(Vector3f(0,0,0));
 
-    // exit immediately if throttle is not zero
-    if ( g.rc_3.control_in != 0 ) {
-        gcs[chan-MAVLINK_COMM_0].send_text_P(SEVERITY_HIGH, PSTR("throttle not zero"));
-        return 1;
-    }
-
-    // get some initial compass readings
+    // get initial compass readings
     last_run_time = millis();
-    while ( millis() - last_run_time < 2000 ) {
+    while ( millis() - last_run_time < 500 ) {
         compass.accumulate();
     }
     compass.read();
-
-    // exit immediately if the compass is not healthy
-    if ( !compass.healthy() ) {
-        gcs[chan-MAVLINK_COMM_0].send_text_P(SEVERITY_HIGH, PSTR("check compass"));
-        return 0;
-    }
 
     // store initial x,y,z compass values
     compass_base = compass.get_field();
@@ -102,9 +128,9 @@ static uint8_t mavlink_compassmot(mavlink_channel_t chan)
     last_send_time = millis();
 
     // main run while there is no user input and the compass is healthy
-    while (command_ack_start == command_ack_counter && compass.healthy()) {
+    while (command_ack_start == command_ack_counter && compass.healthy() && motors.armed()) {
         // 50hz loop
-        if( millis() - last_run_time < 20 ) {
+        if (millis() - last_run_time < 20) {
             // grab some compass values
             compass.accumulate();
             hal.scheduler->delay(5);
@@ -128,8 +154,8 @@ static uint8_t mavlink_compassmot(mavlink_channel_t chan)
         throttle_pct = (float)g.rc_3.control_in / 1000.0f;
         throttle_pct = constrain_float(throttle_pct,0.0f,1.0f);
         
-        // if throttle is zero, update base x,y,z values
-        if( throttle_pct == 0.0f ) {
+        // if throttle is near zero, update base x,y,z values
+        if (throttle_pct <= 0.0f) {
             compass_base = compass_base * 0.99f + compass.get_field() * 0.01f;
             
             // causing printing to happen as soon as throttle is lifted
@@ -139,7 +165,7 @@ static uint8_t mavlink_compassmot(mavlink_channel_t chan)
             motor_impact = compass.get_field() - compass_base;
             
             // throttle based compensation
-            if( comp_type == AP_COMPASS_MOT_COMP_THROTTLE ) {
+            if (comp_type == AP_COMPASS_MOT_COMP_THROTTLE) {
                 // scale by throttle
                 motor_impact_scaled = motor_impact / throttle_pct;
                 
@@ -155,6 +181,15 @@ static uint8_t mavlink_compassmot(mavlink_channel_t chan)
                     motor_compensation = motor_compensation * 0.99f - motor_impact_scaled * 0.01f;
                     updated = true;
                 }
+            }
+
+            // calculate interference percentage at full throttle as % of total mag field
+            if (comp_type == AP_COMPASS_MOT_COMP_THROTTLE) {
+                // interference is impact@fullthrottle / mag field * 100
+                interference_pct = motor_compensation.length() / (float)COMPASS_MAGFIELD_EXPECTED * 100.0f;
+            }else{
+                // interference is impact/amp * (max current seen / max throttle seen) / mag field * 100
+                interference_pct = motor_compensation.length() * (current_amps_max/throttle_pct_max) / (float)COMPASS_MAGFIELD_EXPECTED * 100.0f;
             }
 
             // record maximum throttle and current
@@ -179,27 +214,34 @@ static uint8_t mavlink_compassmot(mavlink_channel_t chan)
     motors.armed(false);
 
     // set and save motor compensation
-    if( updated ) {
+    if (updated) {
         compass.motor_compensation_type(comp_type);
         compass.set_motor_compensation(motor_compensation);
         compass.save_motor_compensation();
-
-        // calculate and display interference compensation at full throttle as % of total mag field
-        if (comp_type == AP_COMPASS_MOT_COMP_THROTTLE) {
-            // interference is impact@fullthrottle / mag field * 100
-            interference_pct = motor_compensation.length() / (float)COMPASS_MAGFIELD_EXPECTED * 100.0f;
-        }else{
-            // interference is impact/amp * (max current seen / max throttle seen) / mag field * 100
-            interference_pct = motor_compensation.length() * (current_amps_max/throttle_pct_max) / (float)COMPASS_MAGFIELD_EXPECTED * 100.0f;
-        }
+        // display success message
+        gcs[chan-MAVLINK_COMM_0].send_text_P(SEVERITY_HIGH, PSTR("Calibration Successful!"));
     } else {
         // compensation vector never updated, report failure
-        gcs[chan-MAVLINK_COMM_0].send_text_P(SEVERITY_HIGH, PSTR("Failed! Compensation disabled"));
+        gcs[chan-MAVLINK_COMM_0].send_text_P(SEVERITY_HIGH, PSTR("Failed!"));
         compass.motor_compensation_type(AP_COMPASS_MOT_COMP_DISABLED);
     }
 
     // display new motor offsets and save
     report_compass();
+
+    // turn off notify leds
+    AP_Notify::flags.esc_calibration = false;
+
+    // re-enable cpu failsafe
+    failsafe_enable();
+
+    // re-enable failsafes
+    g.failsafe_throttle.load();
+    g.failsafe_battery_enabled.load();
+    g.failsafe_gps_enabled.load();
+
+    // flag we have completed
+    ap.compass_mot = false;
 
     return 0;
 }
