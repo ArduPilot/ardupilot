@@ -146,13 +146,6 @@ static float get_throttle_land()
     }
 }
 
-// reset_land_detector - initialises land detector
-static void reset_land_detector()
-{
-    set_land_complete(false);
-    land_detector = 0;
-}
-
 // update_land_detector - checks if we have landed and updates the ap.land_complete flag
 // returns true if we have landed
 static bool update_land_detector()
