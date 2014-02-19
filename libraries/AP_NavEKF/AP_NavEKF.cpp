@@ -389,15 +389,9 @@ void NavEKF::InitialiseFilterBootstrap(void)
     // body magnetic field vector with offsets removed
     Vector3f initMagXYZ;
 
-    // Take 50 readings at 20msec intervals and average
-    initAccVec.zero();
-    initMagXYZ.zero();
-    for (uint8_t i=1; i<=50; i++) {
-        initAccVec = initAccVec + _ahrs->get_ins().get_accel();
-        initMagXYZ = initMagXYZ + _ahrs->get_compass()->get_field() * 0.001f; // convert from Gauss to mGauss
-        hal.scheduler->delay(20);
-    }
-    initMagXYZ = initMagXYZ * 0.02f;
+    // we should average readings over several calls to this function 
+    initAccVec = _ahrs->get_ins().get_accel();
+    initMagXYZ = _ahrs->get_compass()->get_field() * 0.001f; // convert from Gauss to mGauss
 
     // Normalise the acceleration vector
     initAccVec.normalize();
