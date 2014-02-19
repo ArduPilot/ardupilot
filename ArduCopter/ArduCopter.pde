@@ -1562,6 +1562,11 @@ static void tuning(){
         ahrs.get_NavEKF()._accNoise = tuning_value;
         break;
 #endif
+
+    case CH6_RC_FEEL_RP:
+        // roll-pitch input smoothing
+        g.rc_feel_rp = g.rc_6.control_in / 10;
+        break;
     }
 }
 
