@@ -12,8 +12,6 @@
 static bool drift_init(bool ignore_checks)
 {
     if (GPS_ok() || ignore_checks) {
-        // initialise filters on roll/pitch input
-        reset_roll_pitch_in_filters(g.rc_1.control_in, g.rc_2.control_in);
         return true;
     }else{
         return false;
@@ -71,7 +69,7 @@ static void drift_run()
     }
 
     // call attitude controller
-    attitude_control.angle_ef_roll_pitch_rate_ef_yaw(target_roll, target_pitch, target_yaw_rate);
+    attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 
     // output pilot's throttle with angle boost
     attitude_control.set_throttle_out(pilot_throttle_scaled, true);

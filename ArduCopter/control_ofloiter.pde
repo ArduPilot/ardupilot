@@ -9,8 +9,6 @@ static bool ofloiter_init(bool ignore_checks)
 {
 #if OPTFLOW == ENABLED
     if (g.optflow_enabled || ignore_checks) {
-        // initialise filters on roll/pitch input
-        reset_roll_pitch_in_filters(g.rc_1.control_in, g.rc_2.control_in);
         return true;
     }else{
         return false;
@@ -70,7 +68,7 @@ static void ofloiter_run()
         target_pitch = get_of_pitch(target_pitch);
 
         // call attitude controller
-        attitude_control.angle_ef_roll_pitch_rate_ef_yaw(target_roll, target_pitch, target_yaw_rate);
+        attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 
         // run altitude controller
         if (sonar_alt_health >= SONAR_ALT_HEALTH_MAX) {

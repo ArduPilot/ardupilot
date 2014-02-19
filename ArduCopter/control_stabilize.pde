@@ -7,9 +7,6 @@
 // stabilize_init - initialise stabilize controller
 static bool stabilize_init(bool ignore_checks)
 {
-    // initialise filters on roll/pitch input
-    reset_roll_pitch_in_filters(g.rc_1.control_in, g.rc_2.control_in);
-
     // set target altitude to zero for reporting
     // To-Do: make pos controller aware when it's active/inactive so it can always report the altitude error?
     pos_control.set_alt_target(0);
@@ -51,7 +48,7 @@ static void stabilize_run()
         attitude_control.init_targets();
     }else{
         // call attitude controller
-        attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, g.rc_feel_rp);
+        attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 
         // body-frame rate controller is run directly from 100hz loop
     }

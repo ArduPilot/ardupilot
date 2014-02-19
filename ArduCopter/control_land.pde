@@ -16,9 +16,6 @@ static bool land_init(bool ignore_checks)
         wp_nav.set_loiter_target(stopping_point);
     }
 
-    // initialise filters on roll/pitch input
-    reset_roll_pitch_in_filters(g.rc_1.control_in, g.rc_2.control_in);
-
     // initialise altitude target to stopping point
     pos_control.set_target_to_stopping_point_z();
     return true;
@@ -129,7 +126,7 @@ static void land_nogps_run()
     }
 
     // call attitude controller
-    attitude_control.angle_ef_roll_pitch_rate_ef_yaw(target_roll, target_pitch, target_yaw_rate);
+    attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 
     // call position controller
     pos_control.set_alt_target_from_climb_rate(get_throttle_land(), G_Dt);
