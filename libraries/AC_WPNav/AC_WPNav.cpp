@@ -95,14 +95,17 @@ AC_WPNav::AC_WPNav(const AP_InertialNav* inav, const AP_AHRS* ahrs, AC_PosContro
 /// set_loiter_target in cm from home
 void AC_WPNav::set_loiter_target(const Vector3f& position)
 {
-	// set target position
-	_pos_control.set_pos_target(_inav->get_position());
+    // set target position
+    _pos_control.set_pos_target(_inav->get_position());
 
-	// initialise feed forward velocity to zero
-	_pos_control.set_desired_velocity(0,0);
+    // initialise feed forward velocity to zero
+    _pos_control.set_desired_velocity(0,0);
 
-	// initialise pos controller speed and acceleration
-	_pos_control.set_speed_xy(_loiter_speed_cms);
+    // initialise pos controller speed
+    _pos_control.set_speed_xy(_loiter_speed_cms);
+
+    // initialise pos controller acceleration
+    _loiter_accel_cms = _loiter_speed_cms/2.0f;
     _pos_control.set_accel_xy(_loiter_accel_cms);
 
     // initialise pilot input
@@ -121,9 +124,11 @@ void AC_WPNav::init_loiter_target()
     // initialise feed forward velocities to zero
     _pos_control.set_desired_velocity(curr_vel.x, curr_vel.y);
 
-    // initialise pos controller speed, acceleration and leash length
-    // To-Do: will this cause problems for circle which calls this continuously?
+    // initialise pos controller speed
     _pos_control.set_speed_xy(_loiter_speed_cms);
+
+    // initialise pos controller acceleration
+    _loiter_accel_cms = _loiter_speed_cms/2.0f;
     _pos_control.set_accel_xy(_loiter_accel_cms);
 
     // initialise pilot input
@@ -157,6 +162,7 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt)
     // check loiter speed and avoid divide by zero
     if( _loiter_speed_cms < 100.0f) {
         _loiter_speed_cms = 100.0f;
+        _loiter_accel_cms = _loiter_speed_cms/2.0f;
     }
 
     // rotate pilot input to lat/lon frame
