@@ -111,6 +111,7 @@ public:
         // 105: Extra parameters
         k_param_fence_retalt = 105,
         k_param_fence_autoenable,
+        k_param_fence_ret_rally,
 
         // 110: Telemetry control
         //
@@ -341,6 +342,7 @@ public:
     AP_Int16 fence_maxalt;    // meters
     AP_Int16 fence_retalt;    // meters
     AP_Int8 fence_autoenable;
+    AP_Int8 fence_ret_rally;
 #endif
 
     AP_Int8 rally_total;
