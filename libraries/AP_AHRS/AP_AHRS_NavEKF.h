@@ -38,7 +38,7 @@ public:
         EKF(this, baro),
         _baro(baro),
         ekf_started(false),
-        startup_delay_ms(5000)
+        startup_delay_ms(10000)
         {
         }
 
