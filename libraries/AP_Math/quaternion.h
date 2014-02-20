@@ -47,7 +47,7 @@ public:
     }
 
     // check if any elements are NAN
-    bool        is_nan(void)
+    bool        is_nan(void) const
     {
         return isnan(q1) || isnan(q2) || isnan(q3) || isnan(q4);
     }

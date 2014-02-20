@@ -105,6 +105,12 @@ struct Vector2
     // check if any elements are infinity
     bool is_inf(void) const;
 
+    // zero the vector
+    void zero()
+    {
+        x = y = 0;
+    }
+
     // gets the length of this vector squared
     T   length_squared() const
     {
