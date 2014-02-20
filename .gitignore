@@ -56,6 +56,7 @@ CMakeFiles
 config.mk
 dataflash.bin
 eeprom.bin
+LASTLOG.TXT
 Make.dep
 mav.log
 mav.log.raw
