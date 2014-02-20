@@ -259,6 +259,22 @@ private:
     bool static_mode_demanded(void) const;
 
 private:
+
+    // the states are available in two forms, either as a Vector22, or
+    // broken down as individual elements. Both are equivalent (same
+    // memory)
+    Vector22 states;
+    struct state_elements {
+        Quaternion quat;          // 0..3
+        Vector3f velocity;        // 4..6
+        Vector3f position;        // 7..9
+        Vector3f gyro_bias;       // 10..12
+        float    accel_zbias;     // 13
+        Vector2f wind_vel;        // 14..15
+        Vector3f earth_magfield;  // 16..18
+        Vector3f body_magfield;   // 19..21
+    } &state;
+
     // EKF Mavlink Tuneable Parameters
     AP_Float _gpsHorizVelNoise;     // GPS horizontal velocity measurement noise : m/s
     AP_Float _gpsVertVelNoise;      // GPS vertical velocity measurement noise : m/s
@@ -309,7 +325,7 @@ private:
     bool velTimeout;                // boolean true if velocity measurements have failed innovation consistency check and timed out
     bool posTimeout;                // boolean true if position measurements have failed innovation consistency check and timed out
     bool hgtTimeout;                // boolean true if height measurements have failed innovation consistency check and timed out
-    Vector22 states;                // state matrix - 4 x quaternions, 3 x Vel, 3 x Pos, 3 x gyro bias, 3 x accel bias, 2 x wind vel, 3 x earth mag field, 3 x body mag field
+
     Vector22 Kfusion;               // Kalman gain vector
     Matrix22 KH;                    // intermediate result used for covariance updates
     Matrix22 KHP;                   // intermediate result used for covariance updates

@@ -199,10 +199,13 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
 
     AP_GROUPEND
 };
+
+
 // constructor
 NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     _ahrs(ahrs),
     _baro(baro),
+    state(*reinterpret_cast<struct state_elements *>(&states)),
     useCompass(true),           // activates fusion of airspeed data
     covTimeStepMax(0.07f),      // maximum time (sec) between covariance prediction updates
     covDelAngMax(0.05f),        // maximum delta angle between covariance prediction updates
@@ -247,11 +250,10 @@ bool NavEKF::healthy(void) const
     if (!statesInitialised) {
         return false;
     }
-    Quaternion q(states[0],states[1],states[2],states[3]);
-    if (q.is_nan()) {
+    if (state.quat.is_nan()) {
         return false;
     }
-    if (isnan(states[4]) || isnan(states[5]) || isnan(states[6])) {
+    if (state.velocity.is_nan()) {
         return false;
     }
     // If measurements have failed innovation consistency checks for long enough to time-out
@@ -356,15 +358,15 @@ void NavEKF::InitialiseFilterDynamic(void)
     }
 
     // write to state vector
-    for (uint8_t j=0; j<=3; j++) states[j] = initQuat[j]; // quaternions
-    for (uint8_t j=10; j<=15; j++) states[j] = 0.0; // dAngBias, dVelBias, windVel
+    state.quat = initQuat;
+    state.gyro_bias.zero();
+    state.accel_zbias = 0;
+    state.wind_vel.zero();
     ResetVelocity();
     ResetPosition();
     ResetHeight();
-    states[16] = initMagNED.x; // Magnetic Field North
-    states[17] = initMagNED.y; // Magnetic Field East
-    states[18] = initMagNED.z; // Magnetic Field Down
-    for (uint8_t j=19; j<=21; j++) states[j] = magBias[j-19]; // Magnetic Field Bias XYZ
+    state.earth_magfield = initMagNED;
+    state.body_magfield  = magBias;
 
     statesInitialised = true;
 
@@ -447,10 +449,12 @@ void NavEKF::InitialiseFilterBootstrap(void)
     OnGroundCheck();
 
     // write to state vector
-    for (uint8_t j=0; j<=3; j++) states[j] = initQuat[j]; // quaternions
-    for (uint8_t j=10; j<=15; j++) states[j] = 0.0f; // dAngBias, dVelBias, windVel
-    for (uint8_t j=16; j<=18; j++) states[j] = initMagVecNED[j-16]; // Magnetic Field NED
-    for (uint8_t j=19; j<=21; j++) states[j] = initMagBias[j-19]; // Magnetic Field Bias XYZ
+    state.quat = initQuat;
+    state.gyro_bias.zero();
+    state.accel_zbias = 0;
+    state.wind_vel.zero();
+    state.earth_magfield = initMagVecNED;
+    state.body_magfield = initMagBias;
 
     statesInitialised = true;
 
@@ -661,12 +665,9 @@ void NavEKF::UpdateStrapdownEquationsNED()
     const Vector3f gravityNED(0, 0, GRAVITY_MSS);
 
     // Remove sensor bias errors
-    correctedDelAng.x = dAngIMU.x - states[10];
-    correctedDelAng.y = dAngIMU.y - states[11];
-    correctedDelAng.z = dAngIMU.z - states[12];
-    correctedDelVel.x = dVelIMU.x;
-    correctedDelVel.y = dVelIMU.y;
-    correctedDelVel.z = dVelIMU.z - states[13];
+    correctedDelAng = dAngIMU - state.gyro_bias;
+    correctedDelVel = dVelIMU;
+    correctedDelVel.z -= state.accel_zbias;
 
     // Save current measurements
     prevDelAng = correctedDelAng;
@@ -732,20 +733,13 @@ void NavEKF::UpdateStrapdownEquationsNED()
     accNavMag = velDotNED.length();
 
     // If calculating position save previous velocity
-    Vector3f lastVelocity;
-    lastVelocity.x = states[4];
-    lastVelocity.y = states[5];
-    lastVelocity.z = states[6];
+    Vector3f lastVelocity = state.velocity;
 
     // Sum delta velocities to get velocity
-    states[4] = states[4] + delVelNav.x;
-    states[5] = states[5] + delVelNav.y;
-    states[6] = states[6] + delVelNav.z;
+    state.velocity += delVelNav;
 
     // If calculating postions, do a trapezoidal integration for position
-    states[7] = states[7] + 0.5f*(states[4] + lastVelocity[0])*dtIMU;
-    states[8] = states[8] + 0.5f*(states[5] + lastVelocity[1])*dtIMU;
-    states[9] = states[9] + 0.5f*(states[6] + lastVelocity[2])*dtIMU;
+    state.position += (state.velocity + lastVelocity) * (dtIMU*0.5f);
 
     // Limit states to protect against divergence
     ConstrainStates();
@@ -1629,11 +1623,7 @@ void NavEKF::FuseVelPosNED()
                 {
                     states[i] = states[i] - Kfusion[i] * innovVelPos[obsIndex];
                 }
-                Quaternion q(states[0], states[1], states[2], states[3]);
-                q.normalize();
-                for (uint8_t i = 0; i<=3; i++) {
-                    states[i] = q[i];
-                }
+                state.quat.normalize();
 
                 // Update the covariance - take advantage of direct observation of a
                 // single state at index = stateIndex to reduce computations
