@@ -50,6 +50,7 @@ ArduCopter/test/*
 build
 Build.ArduCopter/*
 Build.ArduPlane/*
+Build.APMrover2/*
 cmake_install.cmake
 CMakeCache.txt
 CMakeFiles
