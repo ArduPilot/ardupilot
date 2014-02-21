@@ -97,7 +97,8 @@ public:
         k_param_fs_batt_mah,
         k_param_angle_rate_max,         // remove
         k_param_rssi_range,
-        k_param_rc_feel_rp,             // 40
+        k_param_rc_feel_rp,
+        k_param_NavEKF,                 // 41 - Extended Kalman Filter Inertial Navigation Group
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
