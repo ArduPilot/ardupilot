@@ -153,9 +153,7 @@ public:
         k_param_barometer,   // barometer ground calibration
         k_param_airspeed,  // AP_Airspeed parameters
         k_param_curr_amp_offset,
-#if AP_AHRS_NAVEKF_AVAILABLE
         k_param_NavEKF,  // Extended Kalman Filter Inertial Navigation Group
-#endif
 
         //
         // 150: Navigation parameters
