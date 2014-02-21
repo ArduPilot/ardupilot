@@ -19,8 +19,8 @@ public:
 
     AP_InertialSensor_PX4() : 
         AP_InertialSensor(),
-        _sample_time_usec(0),
-        _last_get_sample_timestamp(0)
+        _last_get_sample_timestamp(0),
+        _sample_time_usec(0)
         {
         }
 
