@@ -256,8 +256,21 @@ bool LogReader::update(uint8_t &type)
         }
         memcpy(&msg, data, sizeof(msg));
         wait_timestamp(msg.timestamp);
-        ins.set_gyro(Vector3f(msg.gyro_x, msg.gyro_y, msg.gyro_z));
-        ins.set_accel(Vector3f(msg.accel_x, msg.accel_y, msg.accel_z));
+        ins.set_gyro(0, Vector3f(msg.gyro_x, msg.gyro_y, msg.gyro_z));
+        ins.set_accel(0, Vector3f(msg.accel_x, msg.accel_y, msg.accel_z));
+        break;
+    }
+
+    case LOG_IMU2_MSG: {
+        struct log_IMU msg;
+        if(sizeof(msg) != f.length) {
+            printf("Bad IMU2 length\n");
+            exit(1);
+        }
+        memcpy(&msg, data, sizeof(msg));
+        wait_timestamp(msg.timestamp);
+        ins.set_gyro(1, Vector3f(msg.gyro_x, msg.gyro_y, msg.gyro_z));
+        ins.set_accel(1, Vector3f(msg.accel_x, msg.accel_y, msg.accel_z));
         break;
     }
 
@@ -280,6 +293,7 @@ bool LogReader::update(uint8_t &type)
         if (msg.status == 3 && ground_alt_cm == 0) {
             ground_alt_cm = msg.altitude;
         }
+        rel_altitude = msg.rel_altitude*0.01f;
         break;
     }
 

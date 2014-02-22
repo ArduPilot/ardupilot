@@ -23,6 +23,7 @@ public:
     const Vector3f &get_attitude(void) const { return attitude; }
     const Vector3f &get_inavpos(void) const { return inavpos; }
     const Vector3f &get_sim_attitude(void) const { return sim_attitude; }
+    const float &get_relalt(void) const { return rel_altitude; }
 
     enum vehicle_type { VEHICLE_UNKNOWN, VEHICLE_COPTER, VEHICLE_PLANE, VEHICLE_ROVER };
 
@@ -44,6 +45,7 @@ private:
     Vector3f attitude;
     Vector3f sim_attitude;
     Vector3f inavpos;
+    float rel_altitude;
 
     void wait_timestamp(uint32_t timestamp);
 

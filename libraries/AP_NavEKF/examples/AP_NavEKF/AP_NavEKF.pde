@@ -237,7 +237,7 @@ void loop()
                     LogReader.get_attitude().z,
                     LogReader.get_inavpos().x,
                     LogReader.get_inavpos().y,
-                    LogReader.get_inavpos().z,
+                    LogReader.get_relalt(),
                     degrees(DCM_attitude.x),
                     degrees(DCM_attitude.y),
                     degrees(DCM_attitude.z),
