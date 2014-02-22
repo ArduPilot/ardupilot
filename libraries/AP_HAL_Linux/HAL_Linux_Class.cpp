@@ -75,6 +75,7 @@ void HAL_Linux::init(int argc,char* const argv[]) const
     uartA->begin(115200);
     i2c->begin();
     spi->init(NULL);
+    utilInstance.init(argc, argv);
 }
 
 const HAL_Linux AP_HAL_Linux;
