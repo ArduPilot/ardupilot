@@ -513,7 +513,7 @@ static void Log_Write_Compass()
 
 static void Log_Write_GPS(void)
 {
-    DataFlash.Log_Write_GPS(g_gps, current_loc.alt);
+    DataFlash.Log_Write_GPS(g_gps, current_loc.alt - ahrs.get_home().alt);
 }
 
 static void Log_Write_IMU() 
