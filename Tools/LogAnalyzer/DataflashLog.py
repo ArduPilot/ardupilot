@@ -275,8 +275,8 @@ class DataflashLog:
 						#print "Channel definition for group %s, data at address %s" % (groupName, hex(id(self.channels[groupName][label].dictData)))
 						#pprint.pprint(self.channels[groupName]) # TEMP!!!
 					# check the number of tokens matches between the line and what we're expecting from the FMT definition
-					if len(tokens2) != (len(self.formats[groupName].labels) + 1):
-						errorMsg = "Error on line %d of log file: %s, %s line's value count (%d) not matching FMT specification (%d)" % (lineNumber, self.filename, groupName, len(tokens2), len(self.formats[groupName].labels))
+					if (len(tokens2)-1) != len(self.formats[groupName].labels):
+						errorMsg = "Error on line %d of log file: %s, %s line's value count (%d) not matching FMT specification (%d)" % (lineNumber, self.filename, groupName, len(tokens2)-1, len(self.formats[groupName].labels))
 						if ignoreBadlines:
 							print errorMsg + " (skipping line)"
 							continue
