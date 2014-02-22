@@ -10,6 +10,8 @@
 import pprint  # temp
 import collections
 import os
+import numpy
+
 
 class Format:
 	'''Channel format as specified by the FMT lines in the log file'''
@@ -30,6 +32,7 @@ class Format:
 
 class Channel:
 	'''storage for a single stream of data, i.e. all GPS.RelAlt values'''
+	# TODO: store data as a curve so we can more easily interpolate and sample the slope
 	dictData = None #  dict of linenum->value      # store dupe data in dict and list for now, until we decide which is the better way to go
 	listData = None #  list of (linenum,value)
 	def __init__(self):
@@ -45,11 +48,11 @@ class Channel:
 	def max(self):
 		return max(self.dictData.values())
 	def avg(self):
-		return avg(self.dictData.values())
+		return numpy.mean(self.dictData.values())
 	def getNearestValue(self, lineNumber, lookForwards=True):
-		'''return the nearest data value to the given lineNumber'''
+		'''find the nearest data value to the given lineNumber, defaults to looking forwards. Returns (value,lineNumber)'''
 		if lineNumber in self.dictData:
-			return self.dictData[lineNumber]
+			return (self.dictData[lineNumber], lineNumber)
 		offset = 1
 		if not lookForwards:
 			offset = -1
@@ -59,9 +62,16 @@ class Channel:
 		line = min(maxLine,line)
 		while line >= minLine and line <= maxLine:
 			if line in self.dictData:
-				return self.dictData[line]
+				return (self.dictData[line], line)
 			line = line + offset
 		raise Exception("Error finding nearest value for line %d" % lineNumber)
+	def getInterpolatedValue(self, lineNumber):
+		(prevValue,prevValueLine) = self.getNearestValue(lineNumber, lookForwards=False)
+		(nextValue,nextValueLine) = self.getNearestValue(lineNumber, lookForwards=False)
+		if prevValueLine == nextValueLine:
+			return prevValue
+		weight = (lineNumber-prevValueLine) / float(nextValueLine-prevValueLine)
+		return ((weight*prevValue) + ((1-weight)*nextValue))
 
 
 class DataflashLogHelper:
@@ -116,7 +126,9 @@ class DataflashLogHelper:
 	def isLogEmpty(logdata):
 		'''returns an human readable error string if the log is essentially empty, otherwise returns None'''
 		# naive check for now, see if the throttle output was ever above 20%
-		throttleThreshold = 200
+		throttleThreshold = 20
+		if logdata.vehicleType == "ArduCopter":
+			throttleThreshold = 200 # copter uses 0-1000, plane+rover use 0-100
 		if "CTUN" in logdata.channels:
 			maxThrottle = logdata.channels["CTUN"]["ThrOut"].max()
 			if maxThrottle < throttleThreshold:
@@ -126,6 +138,8 @@ class DataflashLogHelper:
 
 class DataflashLog:
 	'''APM Dataflash log file reader and container class. Keep this simple, add more advanced or specific functions to DataflashLogHelper class'''
+	# TODO: implement some kind of iterator or different data storage approeach where we can step through the log by time/line and easily access, interpolate and cross-reference values from all channels at that point
+
 	filename = None
 
 	vehicleType     = "" # ArduCopter, ArduPlane, ArduRover, etc, verbatim as given by header
@@ -196,6 +210,8 @@ class DataflashLog:
 				if copterLogPre3Header and line[0:15] == "SYSID_SW_MREV: ":
 					copterLogPre3Header = False
 					copterLogPre3Params = True
+				if line == " Ready to drive." or line == " Ready to FLY.":
+					continue
 				if len(tokens) == 1:
 					tokens2 = line.split(' ')
 					if line == "":
@@ -210,7 +226,7 @@ class DataflashLog:
 						copterLogPre3Header = True
 					elif copterLogPre3Header:
 						pass   # just skip over all that until we hit the PARM lines
-					elif (len(tokens2) == 2 or len(tokens2) == 3) and tokens2[1][0] == "V":  # e.g. ArduCopter V3.1 (5c6503e2)
+					elif (len(tokens2) == 2 or len(tokens2) == 3) and tokens2[1][0].lower() == "v":  # e.g. ArduCopter V3.1 (5c6503e2)
 						self.vehicleType     = tokens2[0]
 						self.firmwareVersion = tokens2[1]
 						if len(tokens2) == 3:
@@ -241,7 +257,12 @@ class DataflashLog:
 				elif tokens[0] == "MSG":
 					self.messages[lineNumber] = tokens[1]
 				elif tokens[0] == "MODE":
-					self.modeChanges[lineNumber] = (tokens[1],int(tokens[2]))
+					if self.vehicleType == "ArduCopter":
+						self.modeChanges[lineNumber] = (tokens[1],int(tokens[2]))
+					elif self.vehicleType == "ArduPlane" or self.vehicleType == "ArduRover":
+						self.modeChanges[lineNumber] = (tokens[2],int(tokens[3]))
+					else:
+						raise Exception("Unknown log type for MODE line")
 				# anything else must be the log data
 				elif not copterLogPre3Header:
 					groupName = tokens[0]

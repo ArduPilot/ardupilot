@@ -21,7 +21,6 @@ class TestVibration(Test):
 		aimRangeWarnZ  = 2.0  # gravity +/- aim range
 		aimRangeFailZ  = 5.0  # gravity +/- aim range
 
-		# TODO: in Pixhawk should we use IMU or IMU2?
 		if not "IMU" in logdata.channels:
 			self.result.status = TestResult.StatusType.UNKNOWN
 			self.result.statusMessage = "No IMU log data"

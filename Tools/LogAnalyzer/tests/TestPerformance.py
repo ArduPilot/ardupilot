@@ -6,11 +6,15 @@ class TestPerformance(Test):
 	'''check performance monitoring messages (PM) for issues with slow loops, etc'''
 
 	def __init__(self):
-		self.name = "Performance"
+		self.name = "PM"
 
 	def run(self, logdata):
 		self.result = TestResult()
 		self.result.status = TestResult.StatusType.PASS
+
+		if logdata.vehicleType != "ArduCopter":
+			self.result.status = TestResult.StatusType.NA
+			return
 
 		# NOTE: we'll ignore MaxT altogether for now, it seems there are quite regularly one or two high values in there, even ignoring the ones expected after arm/disarm events
 
