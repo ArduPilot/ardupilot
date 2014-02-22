@@ -1,3 +1,5 @@
+ArduCopter V3.1
+
 FMT, 128, 89, FMT, BBnNZ, Type,Length,Name,Format
 FMT, 129, 23, PARM, Nf, Name,Value
 FMT, 130, 45, GPS, BIHBcLLeeEefI, Status,TimeMS,Week,NSats,HDop,Lat,Lng,RelAlt,Alt,Spd,GCrs,VZ,T

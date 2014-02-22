@@ -13,7 +13,7 @@ class TestGPSGlitch(Test):
 		self.result.status = TestResult.StatusType.PASS
 
 		if "GPS" not in logdata.channels:
-			self.result.status = TestResult.StatusType.FAIL
+			self.result.status = TestResult.StatusType.UNKNOWN
 			self.result.statusMessage = "No GPS log data"
 			return
 
