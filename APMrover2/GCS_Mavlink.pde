@@ -1832,9 +1832,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             accels.y = packet.yacc * (GRAVITY_MSS/1000.0f);
             accels.z = packet.zacc * (GRAVITY_MSS/1000.0f);
             
-            ins.set_gyro(gyros);
+            ins.set_gyro(0, gyros);
 
-            ins.set_accel(accels);
+            ins.set_accel(0, accels);
             compass.setHIL(packet.roll, packet.pitch, packet.yaw);
             break;
 		}
