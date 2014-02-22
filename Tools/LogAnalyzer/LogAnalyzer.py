@@ -119,8 +119,11 @@ class TestSuite:
 			if test.result.extraFeedback:
 				for line in test.result.extraFeedback.strip().split('\n'):
 					print "  %20s     %s" % ("",line)
-		print '\n'
 
+		print '\n'
+		print 'The Log Analyzer is currently BETA code. For any support or feedback on the log analyzer please email Andrew Chapman (amchapman@gmail.com)'
+		print '\n'
+		
 	def outputXML(self, xmlFile):
 		# open the file for writing
 		xml = None
