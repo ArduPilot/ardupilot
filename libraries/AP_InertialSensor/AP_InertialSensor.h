@@ -11,7 +11,7 @@
    maximum number of INS instances available on this platform. If more
    than 1 then redundent sensors may be available
  */
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #define INS_MAX_INSTANCES 2
 #else
 #define INS_MAX_INSTANCES 1
@@ -96,7 +96,7 @@ public:
     ///
     const Vector3f     &get_gyro(uint8_t i) const { return _gyro[i]; }
     const Vector3f     &get_gyro(void) const { return get_gyro(_get_primary_gyro()); }
-    virtual void       set_gyro(const Vector3f &gyro) {}
+    virtual void       set_gyro(uint8_t instance, const Vector3f &gyro) {}
 
     // set gyro offsets in radians/sec
     const Vector3f &get_gyro_offsets(uint8_t i) const { return _gyro_offset[i]; }
@@ -108,7 +108,7 @@ public:
     ///
     const Vector3f     &get_accel(uint8_t i) const { return _accel[i]; }
     const Vector3f     &get_accel(void) const { return get_accel(_get_primary_accel()); }
-    virtual void       set_accel(const Vector3f &accel) {}
+    virtual void       set_accel(uint8_t instance, const Vector3f &accel) {}
 
     // multi-device interface
     virtual bool get_gyro_health(uint8_t instance) const { return true; }
