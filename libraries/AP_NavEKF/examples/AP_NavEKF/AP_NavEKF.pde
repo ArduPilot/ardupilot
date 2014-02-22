@@ -81,7 +81,16 @@ void setup()
 {
     ::printf("Starting\n");
 
-    LogReader.open_log("log.bin");
+    const char *filename = "log.bin";
+    uint8_t argc;
+    char * const *argv;
+    hal.util->commandline_arguments(argc, argv);
+    if (argc > 1) {
+        filename = argv[1];
+    }
+
+    hal.console->printf("Processing log %s\n", filename);
+    LogReader.open_log(filename);
 
     LogReader.wait_type(LOG_GPS_MSG);
     LogReader.wait_type(LOG_IMU_MSG);
