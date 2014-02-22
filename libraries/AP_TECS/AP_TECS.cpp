@@ -109,6 +109,22 @@ const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
 	// @User: User
     AP_GROUPINFO("SINK_MAX",  11, AP_TECS, _maxSinkRate, 5.0f),
 
+    // @Param: LAND_ARSPD
+    // @DisplayName: Airspeed during landing approach (m/s)
+    // @Description: When performing an autonomus landing, this value is used as the goal airspeed during approach.  Note that this parameter is not useful if your platform does not have an airspeed sensor (use TECS_LAND_THR instead).  If set to -1 or less then this value is not used during landing.
+    // @Range: -1 to 127
+    // @Increment: 1
+    // @User: User
+    AP_GROUPINFO("LAND_ARSPD", 12, AP_TECS, _landAirspeed, -1),
+
+    // @Param; LAND_THR
+    // @DisplayName: Cruise throttle during landing approach (percentage)
+    // @Description: Use this parameter instead of LAND_ASPD if your platform does not have an airspeed sensor.  It is the cruise throttle during landing approach.  If set to -1 or less or if TECS_LAND_ASPD is in use then this value is not used during landing.
+    // @Range: -1 to 100
+    // @Increment: 0.1
+    // @User: User
+    AP_GROUPINFO("LAND_THR", 13, AP_TECS, _landThrottle, -1),
+
     AP_GROUPEND
 };
 
@@ -197,8 +213,14 @@ void AP_TECS::_update_speed(void)
 
     float EAS2TAS = _ahrs.get_EAS2TAS();
     _TAS_dem  = _EAS_dem * EAS2TAS;
-    _TASmax   = aparm.airspeed_max * EAS2TAS;
-    _TASmin   = aparm.airspeed_min * EAS2TAS;
+    if (_landAirspeed > -1 && _ahrs.airspeed_sensor_enabled() &&
+           (_flight_stage == FLIGHT_LAND_APPROACH || _flight_stage== FLIGHT_LAND_FINAL)) {
+        _TASmax = _landAirspeed;
+        _TASmin = _landAirspeed;
+    } else { //not landing, or not using TECS_LAND_ASPD parameter
+        _TASmax   = aparm.airspeed_max * EAS2TAS;
+        _TASmin   = aparm.airspeed_min * EAS2TAS;
+    }
 
     // Reset states of time since last update is too large
     if (DT > 1.0) {
@@ -372,7 +394,7 @@ void AP_TECS::_update_throttle(void)
 
         // Calculate feed-forward throttle
         float ff_throttle = 0;
-		float nomThr = aparm.throttle_cruise * 0.01f;
+        float nomThr = aparm.throttle_cruise * 0.01f;
 		const Matrix3f &rotMat = _ahrs.get_dcm_matrix();
 		// Use the demanded rate of change of total energy as the feed-forward demand, but add
 		// additional component which scales with (1/cos(bank angle) - 1) to compensate for induced
@@ -429,7 +451,16 @@ void AP_TECS::_update_throttle(void)
 void AP_TECS::_update_throttle_option(int16_t throttle_nudge)
 {
 	// Calculate throttle demand by interpolating between pitch and throttle limits
-    float nomThr = (aparm.throttle_cruise + throttle_nudge)* 0.01f;	
+    float nomThr;
+    //If landing and we don't have an airspeed sensor and we have a non-zero
+    //TECS_LAND_THR param then use it
+    if ((_flight_stage == FLIGHT_LAND_APPROACH || _flight_stage== FLIGHT_LAND_FINAL) &&
+           _landThrottle > -1) {            
+        nomThr = _landThrottle * 0.01f;
+    } else { //not landing or not using TECS_LAND_THR parameter
+		nomThr = (aparm.throttle_cruise + throttle_nudge)* 0.01f;
+    }
+    
 	if (_flight_stage == AP_TECS::FLIGHT_TAKEOFF)
 	{
 		_throttle_dem = _THRmaxf;
@@ -491,8 +522,9 @@ void AP_TECS::_update_pitch(void)
 	// A SKE_weighting of 2 provides 100% priority to speed control. This is used when an underspeed condition is detected
 	// or during takeoff/climbout where a minimum pitch angle is set to ensure height is gained. In this instance, if airspeed
 	// rises above the demanded value, the pitch angle will be increased by the TECS controller.
+    // OR during landing approach to keep the nose up (pitch to maintain landing speed, DON'T pitch down to try to reach a desired height
 	float SKE_weighting = constrain_float(_spdWeight, 0.0f, 2.0f);
-	if ( ( _underspeed || (_flight_stage == AP_TECS::FLIGHT_TAKEOFF) ) && 
+	if ( ( _underspeed || (_flight_stage == AP_TECS::FLIGHT_TAKEOFF) || _flight_stage == AP_TECS::FLIGHT_LAND_APPROACH || _flight_stage == AP_TECS::FLIGHT_LAND_FINAL ) && 
 		 _ahrs.airspeed_sensor_enabled() ) {
 		SKE_weighting = 2.0f;
 	} else if (!_ahrs.airspeed_sensor_enabled()) {
