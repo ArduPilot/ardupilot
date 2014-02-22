@@ -1955,9 +1955,9 @@ mission_failed:
         accels.y = packet.yacc * (GRAVITY_MSS/1000.0);
         accels.z = packet.zacc * (GRAVITY_MSS/1000.0);
 
-        ins.set_gyro(gyros);
+        ins.set_gyro(0, gyros);
 
-        ins.set_accel(accels);
+        ins.set_accel(0, accels);
 
         barometer.setHIL(packet.alt*0.001f);
         compass.setHIL(packet.roll, packet.pitch, packet.yaw);
