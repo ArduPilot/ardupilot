@@ -11,6 +11,8 @@
 #   - Pixhawk doesn't output one of the FMT labels... forget which one
 #   - MAG offsets seem to be constant (only seen data on Pixhawk)
 #   - MAG offsets seem to be cast to int before being output? (param is -84.67, logged as -84)
+#   - copter+plane use 'V' in their vehicle type/version/build line, rover uses lower case 'v'. Copter+Rover give a build number, plane does not
+#   - CTUN.ThrOut on copter is 0-1000, on plane+rover it is 0-100
 
 # TODO - unify result statusMessage and extraOutput. simple tests set statusMessage, complex ones append to it with newlines
 
