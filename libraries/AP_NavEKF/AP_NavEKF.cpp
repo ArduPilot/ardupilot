@@ -2413,7 +2413,7 @@ void NavEKF::ConstrainStates()
     //TODO apply circular limit
     for (uint8_t i=7; i<=8; i++) states[i] = constrain_float(states[i],-1.0e6f,1.0e6f);
     // height limit covers home alt on everest through to home alt at SL and ballon drop
-    states[9] = constrain_float(states[9],-1.0e4f,4.0e4f);
+    states[9] = constrain_float(states[9],-4.0e4f,1.0e4f);
     // gyro bias limit ~6 deg/sec (this needs to be set based on manufacturers specs)
     for (uint8_t i=10; i<=12; i++) states[i] = constrain_float(states[i],-0.1f*dtIMU,0.1f*dtIMU);
     // Z accel bias limit 0.5 m/s^2	(this neeeds to be set based on manufacturers specs)
