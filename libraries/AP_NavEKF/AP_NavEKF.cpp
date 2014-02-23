@@ -224,9 +224,9 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
 {
     AP_Param::setup_object_defaults(this, var_info);
     // Tuning parameters
-    _gpsNEVelVarAccScale    = 0.1f;     // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
-    _gpsDVelVarAccScale     = 0.15f;    // Scale factor applied to vertical velocity measurement variance due to manoeuvre acceleration
-    _gpsPosVarAccScale      = 0.1f;     // Scale factor applied to horizontal position measurement variance due to manoeuvre acceleration
+    _gpsNEVelVarAccScale    = 0.05f;     // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
+    _gpsDVelVarAccScale     = 0.07f;    // Scale factor applied to vertical velocity measurement variance due to manoeuvre acceleration
+    _gpsPosVarAccScale      = 0.05f;     // Scale factor applied to horizontal position measurement variance due to manoeuvre acceleration
     _msecHgtDelay           = 60;       // Height measurement delay (msec)
     _msecMagDelay           = 40;       // Magnetometer measurement delay (msec)
     _msecTasDelay           = 240;      // Airspeed measurement delay (msec)
@@ -724,12 +724,12 @@ void NavEKF::UpdateStrapdownEquationsNED()
     // Calculate the rate of change of velocity (used for launch detect and other functions)
     velDotNED = delVelNav / dtIMU ;
 
-    // Calculate a filtered
-    velDotNEDfilt = velDotNED * 0.05f + lastVelDotNED * 0.95f;
+    // Apply a first order lowpass filter
+    velDotNEDfilt = velDotNED * 0.05f + velDotNEDfilt * 0.95f;
 
     // calculate a magnitude of the filtered nav acceleration (required for GPS
     // variance estimation)
-    accNavMag = velDotNED.length();
+    accNavMag = velDotNEDfilt.length();
 
     // If calculating position save previous velocity
     Vector3f lastVelocity = state.velocity;
@@ -2629,7 +2629,7 @@ void NavEKF::ZeroVariables()
 	prevDelAng.zero();
     lastAngRate.zero();
     lastAccel.zero();
-    lastVelDotNED.zero();
+    velDotNEDfilt.zero();
     lastAngRate.zero();
     lastAccel.zero();
     summedDelAng.zero();

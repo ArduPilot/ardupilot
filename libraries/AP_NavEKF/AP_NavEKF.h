@@ -386,7 +386,6 @@ private:
     uint32_t lastMagUpdate;         // last time compass was updated
     Vector3f velDotNED;             // rate of change of velocity in NED frame
     Vector3f velDotNEDfilt;         // low pass filtered velDotNED
-    Vector3f lastVelDotNED;         // velDotNED filter state
     uint32_t lastAirspeedUpdate;    // last time airspeed was updated
     uint32_t IMUmsec;               // time that the last IMU value was taken
     ftype gpsCourse;                // GPS ground course angle(rad) 
