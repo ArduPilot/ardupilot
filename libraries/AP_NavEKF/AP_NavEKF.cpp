@@ -573,14 +573,15 @@ void NavEKF::SelectVelPosFusion()
             ResetVelocity();
             StoreStatesReset();
             }
-        }
-
-        // Timeout fusion of GPS data if stale. Needed because we repeatedly fuse the same
-        // measurement until the next one arrives
-        if (hal.scheduler->millis() > lastFixTime_ms + _msecGpsAvg + 40) {
+        } else if (hal.scheduler->millis() > lastFixTime_ms + _msecGpsAvg + 40) {
+            // Timeout fusion of GPS data if stale. Needed because we repeatedly fuse the same
+            // measurement until the next one arrives to provide a smoother output
             fuseVelData = false;
             fusePosData = false;
         }
+
+        // Read height data
+        readHgtData();
 
         // Command fusion of height measurements if new ones available
         if (newDataHgt)
@@ -589,14 +590,12 @@ void NavEKF::SelectVelPosFusion()
             newDataHgt = false;
             // enable fusion
             fuseHgtData = true;
-        }
-
-        // Timeout fusion of height data if stale. Needed because we repeatedly fuse the same
-        // measurement until the next one arrives
-        readHgtData();
-        if (hal.scheduler->millis() > lastHgtUpdate + _msecHgtAvg + 40) {
+        } else if (hal.scheduler->millis() > lastHgtTime_ms + _msecHgtAvg + 40) {
+            // Timeout fusion of height data if stale. Needed because we repeatedly fuse the same
+            // measurement until the next one arrives to provide a smoother output
             fuseHgtData = false;
         }
+
     } else {
         // we only fuse position and height in static mode
         fuseVelData = false;
@@ -2473,11 +2472,14 @@ void NavEKF::readGpsData()
 
 void NavEKF::readHgtData()
 {
-    if (_baro.get_last_update() != lastHgtUpdate) {
-        lastHgtUpdate = _baro.get_last_update();
+    if (_baro.get_last_update() != lastHgtMeasTime) {
+        // time stamp used to check for new measurement
+        lastHgtMeasTime = _baro.get_last_update();
+        // time stamp used to check for timeout
+        lastHgtTime_ms = hal.scheduler->millis();
         hgtMea = _baro.get_altitude();
         newDataHgt = true;
-        // recall states from compass measurement time
+        // recall states at effective measurement time
         RecallStates(statesAtHgtTime, (IMUmsec - _msecHgtDelay));
     } else {
         newDataHgt = false;
@@ -2489,10 +2491,9 @@ void NavEKF::readMagData()
     // scale compass data to improve numerical conditioning
     if (_ahrs->get_compass()->last_update != lastMagUpdate) {
         lastMagUpdate = _ahrs->get_compass()->last_update;
-
+        // Body fixed magnetic bias is opposite sign to APM compass offsets
         magBias = -_ahrs->get_compass()->get_offsets() * 0.001f;
         magData = _ahrs->get_compass()->get_field() * 0.001f + magBias;
-
         // Recall states from compass measurement time
         RecallStates(statesAtMagMeasTime, (IMUmsec - _msecMagDelay));
         newDataMag = true;
@@ -2620,7 +2621,7 @@ void NavEKF::ZeroVariables()
     HGTmsecPrev = 0;
     lastMagUpdate = 0;
     lastAirspeedUpdate = 0;
-    lastHgtUpdate = 0;
+    lastHgtMeasTime = 0;
     dtIMU = 0;
     dt = 0;
     hgtMea = 0;
