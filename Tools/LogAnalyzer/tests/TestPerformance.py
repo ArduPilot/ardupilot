@@ -17,12 +17,9 @@ class TestPerformance(Test):
 			return
 
 		# NOTE: we'll ignore MaxT altogether for now, it seems there are quite regularly one or two high values in there, even ignoring the ones expected after arm/disarm events
-
 		# gather info on arm/disarm lines, we will ignore the MaxT data from the first line found after each of these
 		# armingLines = []
-		# evData = logdata.channels["EV"]["Id"]
-		# orderedEVData = collections.OrderedDict(sorted(evData.dictData.items(), key=lambda t: t[0]))
-		# for line,ev in orderedEVData.iteritems():
+		# for line,ev in logdata.channels["EV"]["Id"].listData:
 		# 	if (ev == 10) or (ev == 11):
 		# 		armingLines.append(line)
 		# ignoreMaxTLines = []

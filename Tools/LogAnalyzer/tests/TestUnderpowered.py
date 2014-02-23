@@ -14,6 +14,7 @@ class TestUnderpowered(Test):
 
 		if logdata.vehicleType != "ArduCopter":
 			self.result.status = TestResult.StatusType.NA
+			return
 
 		if not "CTUN" in logdata.channels:
 			self.result.status = TestResult.StatusType.UNKNOWN

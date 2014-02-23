@@ -16,10 +16,8 @@ class TestBrownout(Test):
 		if "EV" in logdata.channels:
 			# step through the arm/disarm events in order, to see if they're symmetrical
 			# note: it seems landing detection isn't robust enough to rely upon here, so we'll only consider arm+disarm, not takeoff+land
-			evData = logdata.channels["EV"]["Id"]
-			orderedEVData = collections.OrderedDict(sorted(evData.dictData.items(), key=lambda t: t[0]))
 			isArmed = False
-			for line,ev in orderedEVData.iteritems():
+			for line,ev in logdata.channels["EV"]["Id"].listData:
 				if ev == 10:
 					isArmed = True
 				elif ev == 11:
