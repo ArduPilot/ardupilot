@@ -152,8 +152,8 @@ void SITL_State::_update_ins(float roll, 	float pitch, 	float yaw,		// Relative 
 	q += _gyro_drift();
 	r += _gyro_drift();
 
-	_ins->set_gyro(Vector3f(p, q, r) + _ins->get_gyro_offsets());
-	_ins->set_accel(Vector3f(xAccel, yAccel, zAccel) + _ins->get_accel_offsets());
+	_ins->set_gyro(0, Vector3f(p, q, r) + _ins->get_gyro_offsets());
+	_ins->set_accel(0, Vector3f(xAccel, yAccel, zAccel) + _ins->get_accel_offsets());
 
         sonar_pin_value    = _ground_sonar(altitude);
         airspeed_pin_value = _airspeed_sensor(airspeed + (_sitl->aspd_noise * _rand_float()));
