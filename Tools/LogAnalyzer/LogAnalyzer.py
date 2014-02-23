@@ -121,9 +121,9 @@ class TestSuite:
 					print "  %20s     %s" % ("",line)
 
 		print '\n'
-		print 'The Log Analyzer is currently BETA code. For any support or feedback on the log analyzer please email Andrew Chapman (amchapman@gmail.com)'
+		print 'The Log Analyzer is currently BETA code.\nFor any support or feedback on the log analyzer please email Andrew Chapman (amchapman@gmail.com)'
 		print '\n'
-		
+
 	def outputXML(self, xmlFile):
 		# open the file for writing
 		xml = None
@@ -214,7 +214,8 @@ def main():
 
 	# load the log
 	startTime = time.time()	
-	logdata = DataflashLog.DataflashLog(args.logfile.name, ignoreBadlines=args.skip_bad)  # read log
+	logdata = DataflashLog.DataflashLog()
+	logdata.read(args.logfile.name, ignoreBadlines=args.skip_bad)  # read log
 	endTime = time.time()
 	if args.profile:
 		print "Log file read time: %.2f seconds" % (endTime-startTime)

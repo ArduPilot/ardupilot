@@ -15,10 +15,10 @@ class TestEvents(Test):
 		errors = set()
 
 		if "ERR" in logdata.channels:
-			errLines = sorted(logdata.channels["ERR"]["Subsys"].dictData.keys())
-			for line in errLines:
-			 	subSys = logdata.channels["ERR"]["Subsys"].dictData[line]
-			 	eCode  = logdata.channels["ERR"]["ECode"].dictData[line]
+			assert(len(logdata.channels["ERR"]["Subsys"].listData) == len(logdata.channels["ERR"]["ECode"].listData))
+			for i in range(len(logdata.channels["ERR"]["Subsys"].listData)):
+				subSys = logdata.channels["ERR"]["Subsys"].listData[i][1]
+				eCode  = logdata.channels["ERR"]["ECode"].listData[i][1]
 			 	if subSys == 2 and (eCode == 1):
 			 		errors.add("PPM")
 			 	elif subSys == 3 and (eCode == 1 or eCode == 2):
@@ -40,7 +40,7 @@ class TestEvents(Test):
 			 	elif subSys == 12 and (eCode == 1):
 			 		errors.add("CRASH")
 
-		if len(errors) > 0:
+		if errors:
 	 		if len(errors) == 1 and "FENCE" in errors:
 	 			self.result.status = TestResult.StatusType.WARN
 			else:
