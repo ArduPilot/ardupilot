@@ -110,14 +110,14 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Description: This noise controls the growth of gyro bias state error estimates. Increasing it makes rate gyro bias estimation faster and noisier.
     // @Range: 0.0000001 - 0.00001
     // @User: advanced
-    AP_GROUPINFO("GBIAS_PNOISE",    10, NavEKF, _gyroBiasProcessNoise, 2.0e-6f),
+    AP_GROUPINFO("GBIAS_PNOISE",    10, NavEKF, _gyroBiasProcessNoise, 1.0e-7f),
 
     // @Param: ABIAS_PNOISE
     // @DisplayName: Accelerometer bias state process noise (m/s^2)
     // @Description: This noise controls the growth of the vertical acelerometer bias state error estimate. Increasing it makes accelerometer bias estimation faster and noisier.
     // @Range: 0.0001 - 0.01
     // @User: advanced
-    AP_GROUPINFO("ABIAS_PNOISE",    11, NavEKF, _accelBiasProcessNoise, 1.0e-3f),
+    AP_GROUPINFO("ABIAS_PNOISE",    11, NavEKF, _accelBiasProcessNoise, 1.0e-4f),
 
     // @Param: MAGE_PNOISE
     // @DisplayName: Earth magnetic field states process noise (gauss/s)
