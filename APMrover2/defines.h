@@ -173,6 +173,12 @@ enum mode {
 #define CONFIG_INS_FLYMAPLE 5
 #define CONFIG_INS_L3G4200D 6
 
+// barometer driver types
+#define AP_BARO_BMP085   1
+#define AP_BARO_MS5611   2
+#define AP_BARO_PX4      3
+#define AP_BARO_HIL      4
+
 // compass driver types
 #define AP_COMPASS_HMC5843   1
 #define AP_COMPASS_PX4       2

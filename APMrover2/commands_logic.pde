@@ -360,10 +360,7 @@ static void do_set_home()
 	if(next_nonnav_command.p1 == 1 && have_position) {
 		init_home();
 	} else {
-		home.id 	= MAV_CMD_NAV_WAYPOINT;
-		home.lng 	= next_nonnav_command.lng;				// Lon * 10**7
-		home.lat 	= next_nonnav_command.lat;				// Lat * 10**7
-		home.alt 	= max(next_nonnav_command.alt, 0);
+        ahrs.set_home(next_nonnav_command.lat, next_nonnav_command.lng, next_nonnav_command.alt);
 		home_is_set = true;
 	}
 }

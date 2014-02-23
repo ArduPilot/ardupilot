@@ -117,6 +117,9 @@ static void init_ardupilot()
     // used to detect in-flight resets
     g.num_resets.set_and_save(g.num_resets+1);
 
+    // init baro before we start the GCS, so that the CLI baro test works
+    barometer.init();
+
 	// init the GCS
 	gcs[0].init(hal.uartA);
 
@@ -173,6 +176,9 @@ static void init_ardupilot()
 
 	// initialise sonar
     init_sonar();
+
+    // and baro for EKF
+    init_barometer();
 
 	// Do GPS init
 	g_gps = &g_gps_driver;

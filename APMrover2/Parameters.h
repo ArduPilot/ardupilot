@@ -168,6 +168,7 @@ public:
         k_param_rcmap,
         k_param_L1_controller,
         k_param_steerController,
+        k_param_barometer,
 
         // 254,255: reserved
         };

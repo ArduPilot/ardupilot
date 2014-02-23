@@ -406,7 +406,6 @@ static uint8_t 	ground_start_count	= 5;
 // on the ground or in the air.  Used to decide if a ground start is appropriate if we
 // booted with an air start.
 static int16_t     ground_start_avg;
-static int32_t          gps_base_alt;		
 
 ////////////////////////////////////////////////////////////////////////////////
 // Location & Navigation
@@ -510,7 +509,7 @@ static int16_t 		condition_rate;
 // Location structure defined in AP_Common
 ////////////////////////////////////////////////////////////////////////////////
 // The home location used for RTL.  The location is set when we first get stable GPS lock
-static struct 	Location home;
+static const struct	Location &home = ahrs.get_home();
 // Flag for if we have g_gps lock and have set the home location
 static bool	home_is_set;
 // The location of the previous waypoint.  Used for track following and altitude ramp calculations
@@ -572,6 +571,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { set_servos,             1,   1500 },
     { update_GPS_50Hz,        1,   2500 },
     { update_GPS_10Hz,        5,   2500 },
+    { update_alt,             5,   3400 },
     { navigate,               5,   1600 },
     { update_compass,         5,   2000 },
     { update_commands,        5,   1000 },
@@ -682,6 +682,14 @@ static void mount_update(void)
 #if CAMERA == ENABLED
     camera.trigger_pic_cleanup();
 #endif
+}
+
+static void update_alt()
+{
+    barometer.read();
+    if (should_log(MASK_LOG_IMU)) {
+        Log_Write_Baro();
+    }
 }
 
 /*

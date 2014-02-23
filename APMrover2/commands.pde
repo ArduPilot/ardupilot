@@ -151,12 +151,7 @@ void init_home()
 
 	gcs_send_text_P(SEVERITY_LOW, PSTR("init home"));
 
-	home.id 	= MAV_CMD_NAV_WAYPOINT;
-
-	home.lng 	= g_gps->longitude;				// Lon * 10**7
-	home.lat 	= g_gps->latitude;				// Lat * 10**7
-    gps_base_alt    = max(g_gps->altitude_cm, 0);
-    home.alt        = g_gps->altitude_cm;
+    ahrs.set_home(g_gps->latitude, g_gps->longitude, g_gps->altitude_cm);
 	home_is_set = true;
 
 	// Save Home to EEPROM - Command 0
