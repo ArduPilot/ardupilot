@@ -43,11 +43,18 @@ bool start_cmd(const AP_Mission::Mission_Command& cmd)
 //      should return true once command is completed
 bool verify_cmd(const AP_Mission::Mission_Command& cmd)
 {
+    hal.console->printf_P(PSTR("Verified cmd #%d id:%d\n"),(int)cmd.index,(int)cmd.id);
     return true;
 }
 
+// mission_complete - function that is called once the mission completes
+void mission_complete(void)
+{
+    hal.console->printf_P(PSTR("mission complete function called!\n"));
+}
+
 // declaration
-AP_Mission mission(&start_cmd, &verify_cmd);
+AP_Mission mission(&start_cmd, &verify_cmd, &mission_complete);
 
 // setup
 void setup(void)
@@ -126,13 +133,13 @@ void init_mission()
     // Command #3 : do-jump to first waypoint 3 times
     cmd.id = MAV_CMD_DO_JUMP;
     cmd.content.jump.target = 1;
-    cmd.content.jump.num_times = 3;
+    cmd.content.jump.num_times = 1;
     if (!mission.add_cmd(cmd)) {
         hal.console->printf_P(PSTR("failed to add command\n"));
     }
     cmd.index = 3;
 
-    // add RTL
+    // Command #4 : RTL
     cmd.id = MAV_CMD_NAV_RETURN_TO_LAUNCH;
     cmd.content.location.p1 = 0;
     cmd.content.location.lat = 0;

@@ -32,6 +32,29 @@ void AP_Mission::update()
         return;
     }
 
+    // check if we have an active nav command
+    if (!_flags.nav_cmd_loaded || _nav_cmd.index == AP_MISSION_CMD_INDEX_NONE) {
+        // advance in mission if no active nav command
+        // this may also set the active do command or end the mission
+        advance_current_nav_cmd();
+    }else{
+        // run the active nav command
+        if (_cmd_verify_fn(_nav_cmd)) {
+            // market _nav_cmd as complete (it will be started on the next iteration)
+            _flags.nav_cmd_loaded = false;
+        }
+    }
+
+    // check if we have an active do command
+    if (!_flags.do_cmd_loaded || _do_cmd.index == AP_MISSION_CMD_INDEX_NONE) {
+        advance_current_do_cmd();
+    }else{
+        // run the active do command
+        if (_cmd_verify_fn(_do_cmd)) {
+            // market _nav_cmd as complete (it will be started on the next iteration)
+            _flags.do_cmd_loaded = false;
+        }
+    }
     // check if nav, do, cond commands are loaded
         // if not load next nav-cmd
             // this should also prompt loading of new do or conditional commands
@@ -49,14 +72,21 @@ void AP_Mission::update()
 ///     To-Do: should we validate the mission first and return true/false?
 void AP_Mission::start()
 {
+    hal.console->printf_P(PSTR("\nMission START\n"));
     _flags.state = MISSION_RUNNING;
     _flags.nav_cmd_loaded = false;
     _flags.do_cmd_loaded = false;
+    _nav_cmd.index = AP_MISSION_CMD_INDEX_NONE;
+    _do_cmd.index = AP_MISSION_CMD_INDEX_NONE;
+    init_jump_tracking();
+    // advance to the first command
+    advance_current_nav_cmd();
 }
 
 /// stop - stops mission execution.  subsequent calls to update() will have no effect until the mission is started or resumed
 void AP_Mission::stop()
 {
+    hal.console->printf_P(PSTR("\nMission STOP\n"));
     _flags.state = MISSION_STOPPED;
 }
 
@@ -64,21 +94,107 @@ void AP_Mission::stop()
 ///     previous running commands will be re-initialised
 void AP_Mission::resume()
 {
+    hal.console->printf_P(PSTR("\nMission RESUME\n"));
     _flags.state = MISSION_RUNNING;
 }
-
-/// get_next_nav_cmd - returns the next navigation command
-///     offset parameter controls how many commands forward we should look.  Defaults to 1 meaning the very next nav command
-//const AP_Mission::Mission_Command& AP_Mission::get_next_nav_cmd(uint8_t offset) const
-//{
-//    get_next_cmd_index
-//}
 
 /// advance_current_nav_cmd - moves current nav command forward
 ///     do command will also be loaded
 ///     accounts for do-jump commands
-bool AP_Mission::advance_current_nav_cmd(uint8_t start_index)
+//      will call complete method if it reaches end of mission command list
+void AP_Mission::advance_current_nav_cmd()
 {
+    Mission_Command cmd;
+    uint8_t cmd_index;
+
+    // exit immediately if we're not running
+    if (_flags.state != MISSION_RUNNING) {
+        // debug
+        hal.console->printf_P(PSTR("\nACNC: not running\n"));
+        return;
+    }
+
+    // exit immediately if current nav command has not completed
+    if (_flags.nav_cmd_loaded) {
+        // debug
+        hal.console->printf_P(PSTR("\nACNC: curr nav not complete\n"));
+        return;
+    }
+
+    // stop the current running do command
+    _do_cmd.index = AP_MISSION_CMD_INDEX_NONE;
+    _flags.do_cmd_loaded = false;
+
+    // get starting point for search
+    cmd_index = _nav_cmd.index;
+    if (cmd_index == AP_MISSION_CMD_INDEX_NONE) {
+        cmd_index = 0;
+    }else{
+        // start from one position past the current nav command
+        cmd_index++;
+    }
+
+    // search until we find next nav command or reach end of command list
+    while (!_flags.nav_cmd_loaded) {
+        // get next command
+        if (!get_next_cmd(cmd_index, cmd, true)) {
+            complete();
+            return;
+        }
+
+        // check if navigation or "do" command
+        if (is_nav_cmd(cmd)) {
+            // set current navigation command and start it
+            _nav_cmd = cmd;
+            _flags.nav_cmd_loaded = true;
+            _cmd_start_fn(_nav_cmd);
+        }else{
+            // set current do command and start it (if not already set)
+            if (!_flags.do_cmd_loaded) {
+                _do_cmd = cmd;
+                _flags.do_cmd_loaded = true;
+                _cmd_start_fn(_do_cmd);
+            }
+        }
+    }
+}
+
+/// advance_current_do_cmd - moves current do command forward
+///     accounts for do-jump commands
+void AP_Mission::advance_current_do_cmd()
+{
+    Mission_Command cmd;
+    uint8_t cmd_index;
+
+    // exit immediately if we're not running
+    if (_flags.state != MISSION_RUNNING) {
+        return;
+    }
+
+    // get starting point for search
+    cmd_index = _do_cmd.index;
+    if (cmd_index == AP_MISSION_CMD_INDEX_NONE) {
+        cmd_index = 0;
+    }else{
+        // start from one position past the current do command
+        cmd_index++;
+    }
+
+    // check if we've reached end of mission
+    if (cmd_index >= _cmd_total) {
+        // To-Do: set a flag to stop us from attempting to look for do-commands over and over?
+        return;
+    }
+
+    // find next do command
+    if (get_next_do_cmd(cmd_index, cmd)) {
+        // set current do command and start it
+        _do_cmd = cmd;
+        _cmd_start_fn(_do_cmd);
+    }else{
+        // To-Do: set a flag to stop us from attempting to look for do-commands over and over?
+        //  if added this flag should be reset once we advance the nav command
+    }
 }
 
 /// clear - clears out mission
@@ -96,6 +212,11 @@ bool AP_Mission::clear()
     // clear index to commands
     _nav_cmd.index = AP_MISSION_CMD_INDEX_NONE;
     _do_cmd.index = AP_MISSION_CMD_INDEX_NONE;
+    _flags.nav_cmd_loaded = false;
+    _flags.do_cmd_loaded = false;
+
+    // return success
+    return true;
 }
 
 /// valid - validate the mission has no errors
@@ -186,225 +307,201 @@ bool AP_Mission::write_cmd_to_storage(uint8_t index, Mission_Command& cmd)
     return true;
 }
 
-/// get_next_cmd_index - gets next command after curr_cmd_index which is of type cmd_type
-///     returns MISSION_CMD_NONE if no command is found
+///
+/// private methods
+///
+
+/// complete - mission is marked complete and clean-up performed including calling the mission_complete_fn
+void AP_Mission::complete()
+{
+    // flag mission as complete
+    _flags.state = MISSION_COMPLETE;
+
+    // callback to main program's mission complete function
+    _mission_complete_fn();
+    // debug
+    hal.console->printf_P(PSTR("\nMission COMPLETE\n"));
+}
+
+/// is_nav_cmd - returns true if the command's id is a "navigation" command, false if "do" or "conditional" command
+bool AP_Mission::is_nav_cmd(const Mission_Command& cmd) const
+{
+    return (cmd.id <= MAV_CMD_NAV_LAST);
+}
+
+/// get_next_cmd - gets next command found at or after start_index
+///     returns true if found, false if not found (i.e. mission complete)
 ///     accounts for do_jump commands
-///     if requesting MISSION_CMD_DO or MISSION_CMD_COND it will stop and return MISSION_CMD_NONE if it hits a MISSION_CMD_NAV first
-uint8_t AP_Mission::get_next_cmd_index(uint8_t curr_cmd_index, mission_cmd_type cmd_type)
+///     increment_jump_num_times_if_found should be set to true if advancing the active navigation command
+bool AP_Mission::get_next_cmd(uint8_t start_index, Mission_Command& cmd, bool increment_jump_num_times_if_found)
 {
-    // To-Do: actually implement this function!
-    return curr_cmd_index+1;
-}
+    uint8_t cmd_index = start_index;
+    Mission_Command temp_cmd;
+    uint8_t jump_index = AP_MISSION_CMD_INDEX_NONE;
 
+    // search until the end of the mission command list
+    while(cmd_index < _cmd_total) {
 
-/////////////// OLD STUFF ///////////////////////
-/*
-void AP_Mission::init_commands()
-{
-    uint8_t tmp_index=_find_nav_index(1);
-    change_waypoint_index(tmp_index);
-    _prev_index_overriden= false;
-    _mission_status = true;
-}
+        // load the next command
+        read_cmd_from_storage(cmd_index, temp_cmd);
 
-bool AP_Mission::increment_waypoint_index()
-{
-    //Check if the current and after waypoint is home, if so the mission is complete.
-    if (_index[1] == 0 && _index[2] == 0) {
-        _mission_status = false;
-        return false;
-    }
-
-    _index[0]=_index[1];
-    _prev_index_overriden= false;
-
-    if (_sync_waypoint_index(_index[2])) {
-        _mission_status = true;
-        return true;
-    } else {
-        _mission_status = false;
-        return false;
-    }
-}
-
-bool AP_Mission::change_waypoint_index(uint8_t new_index)
-{
-    //Current index is requested, no change.
-    if(new_index == _index[1]) {
-        return false;
-    }
-
-    //Home is requested.
-    if(new_index == 0) {
-        goto_home();
-        return true;
-    }
-
-    Location tmp=get_cmd_with_index(new_index);
-    if(_check_nav_valid(tmp)) {
-        if(_sync_waypoint_index(new_index)) {
-            _nav_waypoints[0]=_current_loc;
-            _prev_index_overriden = true;
-            _mission_status = true;
-            return true;
-        }
-    }
-    return false;
-}
-
-bool AP_Mission::get_new_cmd(struct Location &new_CMD)
-{
-    struct Location temp;
-    temp = get_cmd_with_index(_cmd_index);
-
-    if(temp.id <= MAV_CMD_NAV_LAST || _prev_index_overriden) {
-        return false;                       //no more commands for this leg
-    } else {
-
-        //  This code is required to properly handle when there is a
-        //   conditional command prior to a DO_JUMP
-        if(temp.id == MAV_CMD_DO_JUMP && (temp.lat > 0 || temp.lat == -1)) {
-            uint8_t old_cmd_index = _cmd_index;
-
-            if(change_waypoint_index(temp.p1)) {
-                if( temp.lat > 0) {
-                    temp.lat--;
-                    temp.lat=constrain_int16(temp.lat, 0, 100);
-                    set_cmd_with_index(temp, old_cmd_index);
-                }
-            } else { //Waypoint is already current, or do_jump was invalid.
-                _cmd_index++;
+        // check for do-jump command
+        if (temp_cmd.id == MAV_CMD_DO_JUMP) {
+            // check for endless loops
+            if (!increment_jump_num_times_if_found && jump_index == cmd_index) {
+                // we have somehow reached this jump command twice and there is no chance it will complete
+                // To-Do: log an error?
+                hal.console->printf_P(PSTR("\nEndless Loop!\n"));   // debug
                 return false;
+            }else{
+                if (jump_index == AP_MISSION_CMD_INDEX_NONE) {
+                    // record this command so we can check for endless loops
+                    jump_index = cmd_index;
+                }
+            }
+            // get number of times jump command has already been run
+            uint8_t jump_times_run = get_jump_times_run(temp_cmd);
+            if (jump_times_run < temp_cmd.content.jump.num_times) {
+                // update the record of the number of times run
+                if (increment_jump_num_times_if_found) {
+                    increment_jump_times_run(temp_cmd);
+                }
+                // continue searching from jump target
+                cmd_index = temp_cmd.content.jump.target;
+            }else{
+                // jump has been run specified number of times so move search to next command in mission
+                cmd_index++;
+            }
+        }else{
+            // this is a non-jump command so return it
+            cmd = temp_cmd;
+            return true;
+        }
+    }
+
+    // if we got this far we did not find a navigation command
+    return false;
+}
+
+/// get_next_nav_cmd - gets next "navigation" command found at or after start_index
+///     returns true if found, false if not found (i.e. reached end of mission command list)
+///     accounts for do_jump commands but never increments the jump's num_times_run (advance_current_nav_cmd is responsible for this)
+bool AP_Mission::get_next_nav_cmd(uint8_t start_index, Mission_Command& cmd)
+{
+    uint8_t cmd_index = start_index;
+    Mission_Command temp_cmd;
+
+    // search until the end of the mission command list
+    while(cmd_index < _cmd_total) {
+        // get next command
+        if (!get_next_cmd(cmd_index, temp_cmd, false)) {
+            // no more commands so return failure
+            return false;
+        }else{
+            // if found a "navigation" command then return it
+            if (is_nav_cmd(temp_cmd)) {
+                cmd = temp_cmd;
+                return true;
+            }else{
+                // move on in list
+                cmd_index++;
             }
         }
+    }
 
-        new_CMD=temp;
-        _cmd_index++;
+    // if we got this far we did not find a navigation command
+    return false;
+}
+
+/// get_next_do_cmd - gets next "do" or "conditional" command after start_index
+///     returns true if found, false if not found
+///     stops and returns false if it hits another navigation command before it finds the first do or conditional command
+///     accounts for do_jump commands but never increments the jump's num_times_run (advance_current_nav_cmd is responsible for this)
+bool AP_Mission::get_next_do_cmd(uint8_t start_index, Mission_Command& cmd)
+{
+    Mission_Command temp_cmd;
+
+    // check we have not passed the end of the mission list
+    if (start_index >= _cmd_total) {
+        return false;
+    }
+
+    // get next command
+    if (!get_next_cmd(start_index, temp_cmd, false)) {
+        // no more commands so return failure
+        return false;
+    }else if (is_nav_cmd(temp_cmd)) {
+        // if it's a "navigation" command then return false because we do not progress past nav commands
+        return false;
+    }else{
+        // this must be a "do" or "conditional" and is not a do-jump command so return it
+        cmd = temp_cmd;
         return true;
     }
 }
 
-//---------------------Utility Methods------------------------------
+///
+/// jump handling methods
+///
 
-void AP_Mission::set_command_total(uint8_t max_index)
+// init_jump_tracking - initialise jump_tracking variables
+void AP_Mission::init_jump_tracking()
 {
-    _cmd_max=max_index;
-    _cmd_max.set_and_save(max_index);
-}
-
-void AP_Mission::set_home(const struct Location &home)
-{
-    _home=home;
-    set_cmd_with_index(_home,0);
-}
-
-bool AP_Mission::_sync_waypoint_index(const uint8_t &new_index)
-{
-    Location tmp=get_cmd_with_index(new_index);
-    if (new_index <= _cmd_max) {
-
-        if (_check_nav_valid(tmp)) {
-
-            _index[0]=_index[1];
-
-            if (new_index == _cmd_max) { //The last waypoint in msn was requested.
-                _index[1]=_cmd_max;
-                _index[2]=0;
-            } else if (new_index == 0) { //Home was requested.
-                _index[1]=0;
-                _index[2]=0;
-            } else {
-                _index[1]= new_index;
-                _index[2]=_find_nav_index(_index[1]+1);
-            }
-
-            _cmd_index=_index[0]+1; //Reset command index to read commands associated with current mission leg.
-
-            _sync_nav_waypoints();
-            return true;
-        }
-    }
-    return false;
-}
-
-void AP_Mission::_sync_nav_waypoints(){
-    //TODO: this could be optimimzed by making use of the fact some waypoints are already loaded.
-    for(int i=0; i<3; i++) {
-        _nav_waypoints[i]=get_cmd_with_index(_index[i]);
-
-        //Special handling for home, to ensure waypoint handed to vehicle is not 0 ft AGL.
-        if(_index[i] == 0 && _nav_waypoints[i].id != MAV_CMD_NAV_LAND) {
-            _safe_home(_nav_waypoints[i]);
-        }
+    for(uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
+        _jump_tracking[i].index = AP_MISSION_CMD_INDEX_NONE;
+        _jump_tracking[i].num_times_run = 0;
     }
 }
 
-void AP_Mission::_safe_home(struct Location &safe_home){ 
-    
-    safe_home     = _home;
-    safe_home.id  = MAV_CMD_NAV_LOITER_UNLIM;
-    safe_home.alt = get_home_hold_alt();
-}
-
-//
-//  Search for the next navigation index in the stack.  Designed to only return a valid index.
-//
-uint8_t AP_Mission::_find_nav_index(uint8_t search_index)
+/// get_jump_times_run - returns number of times the jump command has been run
+uint8_t AP_Mission::get_jump_times_run(const Mission_Command& cmd)
 {
-    Location tmp;
-    bool condition_cmd=false;
-
-    while(search_index <= _cmd_max && search_index >= 0) {
-
-        tmp = get_cmd_with_index(search_index);
-
-        //check to see if there is a condition command.
-        //don't want to do_jump before the condition command is executed.
-        if (tmp.id > MAV_CMD_NAV_LAST && tmp.id < MAV_CMD_CONDITION_LAST) {
-            condition_cmd=true;
-        }
-
-        //if there is a do_jump without a condition command preceding it, jump now.
-        if (tmp.id == MAV_CMD_DO_JUMP && !condition_cmd) {
-            if(tmp.p1 <= command_total() && (tmp.lat > 0 || tmp.lat == -1) ) {
-                Location tmp_jump_to;
-                tmp_jump_to=get_cmd_with_index(tmp.p1);
-
-                if (_check_nav_valid(tmp_jump_to)) {
-                    if (tmp.lat > 0) {
-                        tmp.lat--;
-                        set_cmd_with_index(tmp, search_index);
-                    }
-                    return tmp.p1;
-                }
-            }
-        }
-
-        //otherwise, if we come across a nav command, just pass that index along.
-        if (_check_nav_valid(tmp)) {
-            return search_index;
-        }
-        search_index++;
+    // exit immediatley if cmd is not a do-jump command
+    if (cmd.id != MAV_CMD_DO_JUMP) {
+        // To-Do: log an error?
+        return AP_MISSION_JUMP_TIMES_MAX;
     }
-    return 0;
+
+    // search through jump_tracking array for this cmd
+    for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
+        if (_jump_tracking[i].index == cmd.index) {
+            return _jump_tracking[i].num_times_run;
+        }else if(_jump_tracking[i].index == AP_MISSION_CMD_INDEX_NONE) {
+            // we've searched through all known jump commands and haven't found it so allocate new space in _jump_tracking array
+            _jump_tracking[i].index = cmd.index;
+            _jump_tracking[i].num_times_run = 0;
+            return 0;
+        }
+    }
+
+    // if we've gotten this far then the _jump_tracking array must be full
+    // To-Do: log an error?
+    return AP_MISSION_JUMP_TIMES_MAX;
 }
 
-
-bool AP_Mission::_check_nav_valid(const struct Location &temp)
+/// increment_jump_times_run - increments the recorded number of times the jump command has been run
+void AP_Mission::increment_jump_times_run(Mission_Command& cmd)
 {
-    // Other checks could be added such as:
-    //   -Distance and altitude diff, if the new waypoint is hundreds of miles away from others, reject.
-    //   -others?
-    //
-    if (temp.id > MAV_CMD_NAV_LAST) {
-        return false;
+    // exit immediatley if cmd is not a do-jump command
+    if (cmd.id != MAV_CMD_DO_JUMP) {
+        // To-Do: log an error?
+        return;
     }
 
-    if ((temp.lat < -900000000 || temp.lat > 900000000) ||
-        (temp.lng < -1800000000 || temp.lng > 1800000000)) {
-        return false;
+    // search through jump_tracking array for this cmd
+    for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
+        if (_jump_tracking[i].index == cmd.index) {
+            _jump_tracking[i].num_times_run++;
+            return;
+        }else if(_jump_tracking[i].index == AP_MISSION_CMD_INDEX_NONE) {
+            // we've searched through all known jump commands and haven't found it so allocate new space in _jump_tracking array
+            _jump_tracking[i].index = cmd.index;
+            _jump_tracking[i].num_times_run = 1;
+            return;
+        }
     }
 
-    return true;
+    // if we've gotten this far then the _jump_tracking array must be full
+    // To-Do: log an error
+    return;
 }
-*/
