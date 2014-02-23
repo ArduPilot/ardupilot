@@ -90,3 +90,19 @@ bool AP_InertialSensor_HIL::get_accel_health(uint8_t instance) const
     return (hal.scheduler->micros() - _last_accel_usec[instance]) < 40000;
 }
 
+uint8_t AP_InertialSensor_HIL::get_gyro_count(void) const
+{
+    if (get_gyro_health(1)) {
+        return 2;
+    }
+    return 1;
+}
+
+uint8_t AP_InertialSensor_HIL::get_accel_count(void) const
+{
+    if (get_accel_health(1)) {
+        return 2;
+    }
+    return 1;
+}
+

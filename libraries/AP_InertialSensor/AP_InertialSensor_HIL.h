@@ -21,6 +21,8 @@ public:
     void            set_gyro(uint8_t instance, const Vector3f &gyro);
     bool            get_gyro_health(uint8_t instance) const;
     bool            get_accel_health(uint8_t instance) const;
+    uint8_t         get_gyro_count(void) const;
+    uint8_t         get_accel_count(void) const;
 
 private:
     bool            _sample_available();
