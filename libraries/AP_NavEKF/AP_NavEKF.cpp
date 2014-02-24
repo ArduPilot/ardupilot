@@ -1467,6 +1467,23 @@ void NavEKF::FuseVelPosNED()
         R_OBS[4] = R_OBS[3];
         R_OBS[5] = hgtVarScaler*sq(constrain_float(_baroAltNoise, 0.1f, 10.0f));
 
+        // If vertical GPS velocity data is being used, check to see if the GPS vertical velocity and barometer
+        // innovations have the same sign and are outside limits. If so, then it is likely aliasing is affecting
+        // the accelerometers and we should disable the GPS and barometer innovation consistency checks.
+        bool badIMUdata = false;
+            if (_fusionModeGPS == 0 && fuseVelData && fuseHgtData) {
+            // calculate innovations for height and vertical GPS vel measurements
+            float hgtErr  = statesAtVelTime[9] - observation[5];
+            float velDErr = statesAtVelTime[6] - observation[2];
+            //check if they are the same sign and both more than 2-sigma out of bounds
+            if ((hgtErr*velDErr > 0.0f) && (sq(hgtErr) > 4.0f * (P[9][9] + R_OBS[5])) && (sq(velDErr) > 4.0f * (P[6][6] + R_OBS[2]))) {
+                badIMUdata = true;
+            } else {
+                badIMUdata = false;
+            }
+        }
+
+
         // calculate innovations and check GPS data validity using an innovation consistency check
         if (fuseVelData)
         {
@@ -1479,8 +1496,8 @@ void NavEKF::FuseVelPosNED()
                 velInnov[i] = statesAtVelTime[stateIndex] - observation[i];
                 varInnovVelPos[i] = P[stateIndex][stateIndex] + R_OBS[i];
             }
-            // apply an innovation consistency threshold test
-            velHealth = ((sq(velInnov[0]) + sq(velInnov[1]) + sq(velInnov[2])) < (sq(_gpsVelInnovGate) * (varInnovVelPos[0] + varInnovVelPos[1] + varInnovVelPos[2])));
+            // apply an innovation consistency threshold test, but don't fail if bad IMU data
+            velHealth = !((sq(velInnov[0]) + sq(velInnov[1]) + sq(velInnov[2])) > (sq(_gpsVelInnovGate) * (varInnovVelPos[0] + varInnovVelPos[1] + varInnovVelPos[2]))  && !badIMUdata);
             velTimeout = (hal.scheduler->millis() - velFailTime) > gpsRetryTime;
             if (velHealth || velTimeout || staticMode)
             {
@@ -1506,8 +1523,8 @@ void NavEKF::FuseVelPosNED()
             posInnov[1] = statesAtPosTime[8] - observation[4];
             varInnovVelPos[3] = P[7][7] + R_OBS[3];
             varInnovVelPos[4] = P[8][8] + R_OBS[4];
-            // apply an innovation consistency threshold test
-            posHealth = ((sq(posInnov[0]) + sq(posInnov[1])) < (sq(_gpsPosInnovGate) * (varInnovVelPos[3] + varInnovVelPos[4])));
+            // apply an innovation consistency threshold test, but don't fail if bad IMU data
+            posHealth = !((sq(posInnov[0]) + sq(posInnov[1])) > (sq(_gpsPosInnovGate) * (varInnovVelPos[3] + varInnovVelPos[4])) && !badIMUdata);
             posTimeout = (hal.scheduler->millis() - posFailTime) > gpsRetryTime;
             // Fuse position data if healthy or timed out or in static mode
             if (posHealth || posTimeout || staticMode)
@@ -1537,8 +1554,8 @@ void NavEKF::FuseVelPosNED()
             // calculate height innovations
             hgtInnov = statesAtHgtTime[9] - observation[5];
             varInnovVelPos[5] = P[9][9] + R_OBS[5];
-            // apply an innovation consistency threshold test
-            hgtHealth = (sq(hgtInnov) < (sq(_hgtInnovGate) * varInnovVelPos[5]));
+            // apply an innovation consistency threshold test, but don't fail if bad IMU data
+            hgtHealth = !(sq(hgtInnov) > (sq(_hgtInnovGate) * varInnovVelPos[5]) && !badIMUdata);
             hgtTimeout = (hal.scheduler->millis() - hgtFailTime) > hgtRetryTime;
             // Fuse height data if healthy or timed out or in static mode
             if (hgtHealth || hgtTimeout || staticMode)
