@@ -31,11 +31,25 @@
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
+// global constants that control how many verify calls must be made for a command before it completes
+static uint8_t verify_nav_cmd_iterations_to_complete = 3;
+static uint8_t verify_do_cmd_iterations_to_complete = 1;
+static uint8_t num_nav_cmd_runs = 0;
+static uint8_t num_do_cmd_runs = 0;
+
 // start_cmd - function that is called when new command is started
 //      should return true if command is successfully started
 bool start_cmd(const AP_Mission::Mission_Command& cmd)
 {
-    hal.console->printf_P(PSTR("started cmd #%d id:%d\n"),(int)cmd.index, (int)cmd.id);
+    // reset tracking of number of iterations of this command (we simulate all nav commands taking 3 iterations to complete, all do command 1 iteration)
+    if (AP_Mission::is_nav_cmd(cmd)) {
+        num_nav_cmd_runs = 0;
+        hal.console->printf_P(PSTR("started cmd #%d id:%d Nav\n"),(int)cmd.index,(int)cmd.id);
+    }else{
+        num_do_cmd_runs = 0;
+        hal.console->printf_P(PSTR("started cmd #%d id:%d Do\n"),(int)cmd.index,(int)cmd.id);
+    }
+
     return true;
 }
 
@@ -43,14 +57,31 @@ bool start_cmd(const AP_Mission::Mission_Command& cmd)
 //      should return true once command is completed
 bool verify_cmd(const AP_Mission::Mission_Command& cmd)
 {
-    hal.console->printf_P(PSTR("Verified cmd #%d id:%d\n"),(int)cmd.index,(int)cmd.id);
-    return true;
+    if (AP_Mission::is_nav_cmd(cmd)) {
+        num_nav_cmd_runs++;
+        if (num_nav_cmd_runs < verify_nav_cmd_iterations_to_complete) {
+            hal.console->printf_P(PSTR("verified cmd #%d id:%d Nav iteration:%d\n"),(int)cmd.index,(int)cmd.id,(int)num_nav_cmd_runs);
+            return false;
+        }else{
+            hal.console->printf_P(PSTR("verified cmd #%d id:%d Nav complete!\n"),(int)cmd.index,(int)cmd.id);
+            return true;
+        }
+    }else{
+        num_do_cmd_runs++;
+        if (num_do_cmd_runs < verify_do_cmd_iterations_to_complete) {
+            hal.console->printf_P(PSTR("verified cmd #%d id:%d Do iteration:%d\n"),(int)cmd.index,(int)cmd.id,(int)num_do_cmd_runs);
+            return false;
+        }else{
+            hal.console->printf_P(PSTR("verified cmd #%d id:%d Do complete!\n"),(int)cmd.index,(int)cmd.id);
+            return true;
+        }
+    }
 }
 
 // mission_complete - function that is called once the mission completes
 void mission_complete(void)
 {
-    hal.console->printf_P(PSTR("mission complete function called!\n"));
+    hal.console->printf_P(PSTR("\nMission Complete!\n"));
 }
 
 // declaration
@@ -70,8 +101,46 @@ void setup(void)
 // loop
 void loop(void)
 {
-    // initialise mission
-    init_mission();
+    // uncomment line below to run one of the mission tests
+    run_mission_test();
+
+    // uncomment line below to run the mission pause/resume test
+    //run_resume_test();
+
+    // wait forever
+    while(true) {
+        hal.scheduler->delay(1000);
+    }
+}
+
+// run_mission_test - tests the stop and resume feature
+void run_mission_test()
+{
+    // uncomment one of the init_xxx() commands below to run the test
+
+    init_mission();                   // run simple mission with many nav commands and one do-jump
+    //init_mission_no_nav_commands();   // mission should start the first do command but then complete
+    //init_mission_endless_loop();      // mission should ignore the jump that causes the endless loop and complete
+
+    // mission with a do-jump to the previous command which is a "do" command
+    //      ideally we would execute this previous "do" command the number of times specified in the do-jump command but this is tricky so we ignore the do-jump
+    //      mission should run the "do" command once and then complete
+    //init_mission_jump_to_nonnav();
+
+    // mission which starts with do comamnds
+    //      first command to execute should be the first do command followed by the first nav command
+    //      second do command should execute after 1st do command completes
+    //      third do command (which is after 1st nav command) should start after 1st nav command completes
+    //init_mission_starts_with_do_commands();
+
+    // init_mission_ends_with_do_commands - initialise a mission which ends with do comamnds
+    //      a single do command just after nav command will be started but not verified because mission will complete
+    //      final do command will not be started
+    //init_mission_ends_with_do_commands();
+
+    // init_mission_ends_with_jump_command - initialise a mission which ends with a jump comamnd
+    //      mission should complete after the do-jump is executed the appropriate number of times
+    //init_mission_ends_with_jump_command();
 
     // print current mission
     print_mission();
@@ -80,14 +149,105 @@ void loop(void)
     hal.console->printf_P(PSTR("\nRunning missions\n"));
     mission.start();
 
-    // update mission until it completes
-    while(!mission.state() != AP_Mission::MISSION_COMPLETE) {
+    // update mission forever
+    while(true) {
         mission.update();
     }
-    hal.console->printf_P(PSTR("Mission Complete!\n"));
+}
 
-    // wait forever
-    while(true);
+// run_resume_test - tests the stop and resume feature
+//      when mission is resumed, active commands should be started again
+void run_resume_test()
+{
+    AP_Mission::Mission_Command cmd;
+
+    // create a mission
+    // Command #0 : take-off to 10m
+    cmd.id = MAV_CMD_NAV_TAKEOFF;
+    cmd.content.location.options = 0;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.alt = 10;
+    cmd.content.location.lat = 0;
+    cmd.content.location.lng = 0;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #1 : first waypoint
+    cmd.id = MAV_CMD_NAV_WAYPOINT;
+    cmd.content.location.options = 0;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.alt = 11;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #2 : second waypoint
+    cmd.id = MAV_CMD_NAV_WAYPOINT;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.lat = 1234567890;
+    cmd.content.location.lng = -1234567890;
+    cmd.content.location.alt = 22;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #3 : do command
+    cmd.id = MAV_CMD_DO_SET_ROI;
+    cmd.content.location.options = 0;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.alt = 11;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #4 : RTL
+    cmd.id = MAV_CMD_NAV_RETURN_TO_LAUNCH;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.lat = 0;
+    cmd.content.location.lng = 0;
+    cmd.content.location.alt = 0;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // print current mission
+    print_mission();
+
+    // start mission
+    hal.console->printf_P(PSTR("\nRunning missions\n"));
+    mission.start();
+
+    // update the mission for X iterations
+    // set condition to "i<5" to catch mission as cmd #1 (Nav) is running - you should see it restart cmd #1
+    // set condition to "i<7" to catch mission just after cmd #1 (Nav) has completed - you should see it start cmd #2
+    // set condition to "i<11" to catch mission just after cmd #2 (Nav) has completed - you should see it start cmd #3 (Do) and cmd #4 (Nav)
+    for(uint8_t i=0; i<11; i++) {
+        mission.update();
+    }
+
+    // simulate user pausing the mission
+    hal.console->printf_P(PSTR("Stopping mission\n"));
+    mission.stop();
+
+    // update the mission for 5 seconds (nothing should happen)
+    uint32_t start_time = hal.scheduler->millis();
+    while(hal.scheduler->millis() - start_time < 5000) {
+        mission.update();
+    }
+
+    // simulate user resuming mission
+    hal.console->printf_P(PSTR("Resume mission\n"));
+    mission.resume();
+
+    // update the mission forever
+    while(true) {
+        mission.update();
+    }
 }
 
 // init_mission - initialise the mission to hold something
@@ -137,7 +297,6 @@ void init_mission()
     if (!mission.add_cmd(cmd)) {
         hal.console->printf_P(PSTR("failed to add command\n"));
     }
-    cmd.index = 3;
 
     // Command #4 : RTL
     cmd.id = MAV_CMD_NAV_RETURN_TO_LAUNCH;
@@ -145,6 +304,350 @@ void init_mission()
     cmd.content.location.lat = 0;
     cmd.content.location.lng = 0;
     cmd.content.location.alt = 0;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+}
+
+// init_mission_no_nav_commands - initialise a mission with no navigation commands
+//      mission should ignore the jump that causes the endless loop and complete
+void init_mission_no_nav_commands()
+{
+    AP_Mission::Mission_Command cmd;
+
+    // clear mission
+    mission.clear();
+
+    // Command #0 : "do" command
+    cmd.id = MAV_CMD_DO_SET_ROI;
+    cmd.content.location.options = 0;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.alt = 11;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #1 : "do" command
+    cmd.id = MAV_CMD_DO_CHANGE_SPEED;
+    cmd.content.location.options = 0;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.alt = 0;
+    cmd.content.location.lat = 0;
+    cmd.content.location.lng = 0;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #2 : "do" command
+    cmd.id = MAV_CMD_DO_SET_SERVO;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #3 : do-jump to first waypoint 3 times
+    cmd.id = MAV_CMD_DO_JUMP;
+    cmd.content.jump.target = 1;
+    cmd.content.jump.num_times = 1;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+}
+
+// init_mission_endless_loop - initialise a mission with a do-jump that causes an endless loop
+//      mission should start the first do command but then complete
+void init_mission_endless_loop()
+{
+    AP_Mission::Mission_Command cmd;
+
+    // clear mission
+    mission.clear();
+
+    // Command #0 : do-jump command to itself
+    cmd.id = MAV_CMD_DO_JUMP;
+    cmd.content.jump.target = 0;
+    cmd.content.jump.num_times = 2;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #1 : take-off to 10m
+    cmd.id = MAV_CMD_NAV_TAKEOFF;
+    cmd.content.location.options = 0;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.alt = 10;
+    cmd.content.location.lat = 0;
+    cmd.content.location.lng = 0;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #2 : waypoint
+    cmd.id = MAV_CMD_NAV_WAYPOINT;
+    cmd.content.location.options = 0;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.alt = 11;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+}
+
+// init_mission_jump_to_nonnav - initialise a mission with a do-jump to the previous command which is a "do" command
+//      ideally we would execute this previous "do" command the number of times specified in the do-jump command but this is tricky so we ignore the do-jump
+//      mission should run the "do" command once and then complete
+void init_mission_jump_to_nonnav()
+{
+    AP_Mission::Mission_Command cmd;
+
+    // clear mission
+    mission.clear();
+
+    // Command #0 : take-off to 10m
+    cmd.id = MAV_CMD_NAV_TAKEOFF;
+    cmd.content.location.options = 0;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.alt = 10;
+    cmd.content.location.lat = 0;
+    cmd.content.location.lng = 0;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #1 : do-roi command
+    cmd.id = MAV_CMD_DO_SET_ROI;
+    cmd.content.location.options = 0;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.alt = 11;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #2 : do-jump command to #1
+    cmd.id = MAV_CMD_DO_JUMP;
+    cmd.content.jump.target = 1;
+    cmd.content.jump.num_times = 2;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #3 : waypoint
+    cmd.id = MAV_CMD_NAV_WAYPOINT;
+    cmd.content.location.options = 0;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.alt = 22;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+}
+
+// init_mission_starts_with_do_commands - initialise a mission which starts with do comamnds
+//      first command to execute should be the first do command followed by the first nav command
+//      second do command should execute after 1st do command completes
+//      third do command (which is after 1st nav command) should start after 1st nav command completes
+void init_mission_starts_with_do_commands()
+{
+    AP_Mission::Mission_Command cmd;
+
+    // clear mission
+    mission.clear();
+
+    // Command #0 : First "do" command
+    cmd.id = MAV_CMD_DO_SET_ROI;
+    cmd.content.location.options = 0;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.alt = 11;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #1 : Second "do" command
+    cmd.id = MAV_CMD_DO_CHANGE_SPEED;
+    cmd.content.location.options = 0;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.alt = 0;
+    cmd.content.location.lat = 0;
+    cmd.content.location.lng = 0;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #2 : take-off to 10m
+    cmd.id = MAV_CMD_NAV_TAKEOFF;
+    cmd.content.location.options = 0;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.alt = 10;
+    cmd.content.location.lat = 0;
+    cmd.content.location.lng = 0;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #3 : Third "do" command
+    cmd.id = MAV_CMD_DO_SET_ROI;
+    cmd.content.location.options = 0;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.alt = 22;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #4 : waypoint
+    cmd.id = MAV_CMD_NAV_WAYPOINT;
+    cmd.content.location.options = 0;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.alt = 33;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+}
+
+// init_mission_ends_with_do_commands - initialise a mission which ends with do comamnds
+//      a single do command just after nav command will be started but not verified because mission will complete
+//      final do command will not be started
+void init_mission_ends_with_do_commands()
+{
+    AP_Mission::Mission_Command cmd;
+
+    // clear mission
+    mission.clear();
+
+    // Command #0 : take-off to 10m
+    cmd.id = MAV_CMD_NAV_TAKEOFF;
+    cmd.content.location.options = 0;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.alt = 10;
+    cmd.content.location.lat = 0;
+    cmd.content.location.lng = 0;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #1 : "do" command
+    cmd.id = MAV_CMD_DO_SET_ROI;
+    cmd.content.location.options = 0;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.alt = 22;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #2 : waypoint
+    cmd.id = MAV_CMD_NAV_WAYPOINT;
+    cmd.content.location.options = 0;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.alt = 33;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #3 : "do" command after last nav command (but not at end of mission)
+    cmd.id = MAV_CMD_DO_CHANGE_SPEED;
+    cmd.content.location.options = 0;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.alt = 0;
+    cmd.content.location.lat = 0;
+    cmd.content.location.lng = 0;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #4 : "do" command at end of mission
+    cmd.id = MAV_CMD_DO_SET_ROI;
+    cmd.content.location.options = 0;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.alt = 22;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+}
+
+// init_mission_ends_with_jump_command - initialise a mission which ends with a jump comamnd
+//      mission should complete after the do-jump is executed the appropriate number of times
+void init_mission_ends_with_jump_command()
+{
+    AP_Mission::Mission_Command cmd;
+
+    // clear mission
+    mission.clear();
+
+    // Command #0 : take-off to 10m
+    cmd.id = MAV_CMD_NAV_TAKEOFF;
+    cmd.content.location.options = 0;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.alt = 10;
+    cmd.content.location.lat = 0;
+    cmd.content.location.lng = 0;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #1 : "do" command
+    cmd.id = MAV_CMD_DO_SET_ROI;
+    cmd.content.location.options = 0;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.alt = 22;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #2 : waypoint
+    cmd.id = MAV_CMD_NAV_WAYPOINT;
+    cmd.content.location.options = 0;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.alt = 33;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #3 : "do" command after last nav command (but not at end of mission)
+    cmd.id = MAV_CMD_DO_CHANGE_SPEED;
+    cmd.content.location.options = 0;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.alt = 0;
+    cmd.content.location.lat = 0;
+    cmd.content.location.lng = 0;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #4 : "do" command at end of mission
+    cmd.id = MAV_CMD_DO_SET_ROI;
+    cmd.content.location.options = 0;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.alt = 22;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #5 : do-jump command to #2 two times
+    cmd.id = MAV_CMD_DO_JUMP;
+    cmd.content.jump.target = 2;
+    cmd.content.jump.num_times = 2;
     if (!mission.add_cmd(cmd)) {
         hal.console->printf_P(PSTR("failed to add command\n"));
     }
@@ -170,6 +673,13 @@ void print_mission()
 
         // print command position in list and mavlink id
         hal.console->printf_P(PSTR("Cmd#%d mav-id:%d "), (int)cmd.index, (int)cmd.id);
+
+        // print whether nav or do command
+        if (AP_Mission::is_nav_cmd(cmd)) {
+            hal.console->printf_P(PSTR("Nav "));
+        }else{
+            hal.console->printf_P(PSTR("Do "));
+        }
 
         // print command contents
         if (cmd.id == MAV_CMD_DO_JUMP) {
