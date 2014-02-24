@@ -439,10 +439,6 @@ static const float t7                        = 10000000.0;
 // A counter used to count down valid gps fixes to allow the gps estimate to settle
 // before recording our home position (and executing a ground start if we booted with an air start)
 static uint8_t ground_start_count      = 5;
-// Used to compute a speed estimate from the first valid gps fixes to decide if we are
-// on the ground or in the air.  Used to decide if a ground start is appropriate if we
-// booted with an air start.
-static int16_t ground_start_avg;
 
 // true if we have a position estimate from AHRS
 static bool have_position;
@@ -661,8 +657,6 @@ static float G_Dt                                               = 0.02f;
 static uint32_t perf_mon_timer;
 // The maximum main loop execution time recorded in the current performance monitoring interval
 static uint32_t G_Dt_max = 0;
-// The number of gps fixes recorded in the current performance monitoring interval
-static uint8_t gps_fix_count = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 // System Timers
@@ -1046,14 +1040,8 @@ static void update_GPS_10Hz(void)
     if (g_gps->new_data && g_gps->status() >= GPS::GPS_OK_FIX_3D) {
         g_gps->new_data = false;
 
-        // for performance
-        // ---------------
-        gps_fix_count++;
-
         if(ground_start_count > 1) {
             ground_start_count--;
-            ground_start_avg += g_gps->ground_speed_cm;
-
         } else if (ground_start_count == 1) {
             // We countdown N number of good GPS fixes
             // so that the altitude is more accurate

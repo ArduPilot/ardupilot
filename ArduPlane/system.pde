@@ -483,7 +483,6 @@ static void update_notify()
 static void resetPerfData(void) {
     mainLoop_count                  = 0;
     G_Dt_max                        = 0;
-    gps_fix_count                   = 0;
     perf_mon_timer                  = millis();
 }
 
