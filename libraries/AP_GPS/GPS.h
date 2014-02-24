@@ -142,8 +142,8 @@ public:
     // return last fix time since the 1/1/1970 in microseconds
     uint64_t time_epoch_usec(void);
 
-	// return true if the GPS supports raw velocity values
-
+	// return true if the GPS supports vertical velocity values
+    bool have_vertical_velocity(void) const { return _have_raw_velocity; }
 
 protected:
     AP_HAL::UARTDriver *_port;   ///< port the GPS is attached to
