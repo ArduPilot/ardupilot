@@ -362,7 +362,7 @@ def test_FBWB(mavproxy, mav, count=1, mode='FBWB'):
     for i in range(0,4):
         # hard left
         print("Starting turn %u" % i)
-        mavproxy.send('rc 4 1700\n')
+        mavproxy.send('rc 4 1900\n')
         if not wait_heading(mav, 360 - (90*i), accuracy=20, timeout=60):
             mavproxy.send('rc 4 1500\n')
             return False
