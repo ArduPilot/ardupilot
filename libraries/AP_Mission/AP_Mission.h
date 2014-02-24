@@ -82,7 +82,8 @@ public:
     AP_Mission(mission_cmd_fn_t cmd_start_fn, mission_cmd_fn_t cmd_verify_fn, mission_complete_fn_t mission_complete_fn) :
         _cmd_start_fn(cmd_start_fn),
         _cmd_verify_fn(cmd_verify_fn),
-        _mission_complete_fn(mission_complete_fn)
+        _mission_complete_fn(mission_complete_fn),
+        _prev_nav_cmd_index(AP_MISSION_CMD_INDEX_NONE)
     {
         // load parameter defaults
         AP_Param::setup_object_defaults(this, var_info);
@@ -98,7 +99,7 @@ public:
     }
 
     ///
-    /// mission methods
+    /// public mission methods
     ///
 
     /// status - returns the status of the mission (i.e. Mission_Started, Mission_Complete, Mission_Stopped
@@ -106,10 +107,6 @@ public:
 
     /// num_commands - returns total number of commands in the mission
     uint8_t num_commands() const { return _cmd_total; }
-
-    /// update - ensures the command queues are loaded with the next command and calls main programs command_init and command_verify functions to progress the mission
-    ///     should be called at 10hz or higher
-    void update();
 
     /// start - resets current commands to point to the beginning of the mission
     ///     To-Do: should we validate the mission first and return true/false?
@@ -126,34 +123,36 @@ public:
     ///     returns true if mission was running so it could not be cleared
     bool clear();
 
-    /// valid - validate the mission has no errors
-    ///     currently only checks that the number of do-commands does not exceed the AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS
-    bool valid();
+    /// update - ensures the command queues are loaded with the next command and calls main programs command_init and command_verify functions to progress the mission
+    ///     should be called at 10hz or higher
+    void update();
 
     ///
-    /// command methods
+    /// public command methods
     ///
+
+    /// add_cmd - adds a command to the end of the command list and writes to storage
+    ///     returns true if successfully added, false on failure
+    ///     cmd.index is updated with it's new position in the mission
+    bool add_cmd(Mission_Command& cmd);
+
+    /// is_nav_cmd - returns true if the command's id is a "navigation" command, false if "do" or "conditional" command
+    static bool is_nav_cmd(const Mission_Command& cmd);
 
     /// get_active_nav_cmd - returns the current "navigation" command
     const Mission_Command& get_current_nav_cmd() const { return _nav_cmd; }
+
+    /// get_prev_nav_cmd_index - returns the previous "navigation" commands index (i.e. position in the mission command list)
+    ///     we do not return the entire command to save on RAM
+    uint8_t get_prev_nav_cmd_index() { return _prev_nav_cmd_index; }
 
     /// get_next_nav_cmd - gets next "navigation" command found at or after start_index
     ///     returns true if found, false if not found (i.e. reached end of mission command list)
     ///     accounts for do_jump commands
     bool get_next_nav_cmd(uint8_t start_index, Mission_Command& cmd);
 
-    /// set_current_nav_cmd - sets the current "navigation" command to the command number
-    ///     returns true if successful, false on failure (i.e. if the index does not refer to a navigation command)
-    ///     current do and conditional commands will also be modified
-    bool set_current_nav_cmd(uint8_t index);
-
     /// get_active_do_cmd - returns active "do" command
     const Mission_Command& get_current_do_cmd() const { return _do_cmd; }
-
-    /// add_cmd - adds a command to the end of the command list and writes to storage
-    ///     returns true if successfully added, false on failure
-    ///     cmd.index is updated with it's new position in the mission
-    bool add_cmd(Mission_Command& cmd);
 
     /// load_cmd_from_storage - load command from storage
     ///     true is return if successful
@@ -185,16 +184,13 @@ private:
     /// advance_current_nav_cmd - moves current nav command forward
     ///     do command will also be loaded
     ///     accounts for do-jump commands
-    //      will call complete method if it reaches end of mission command list
-    void advance_current_nav_cmd();
+    //      returns true if command is advanced, false if failed (i.e. mission completed)
+    bool advance_current_nav_cmd();
 
     /// advance_current_do_cmd - moves current do command forward
     ///     accounts for do-jump commands
     ///     returns true if successfully advanced (can it ever be unsuccessful?)
     void advance_current_do_cmd();
-
-    /// is_nav_cmd - returns true if the command's id is a "navigation" command, false if "do" or "conditional" command
-    bool is_nav_cmd(const Mission_Command& cmd) const;
 
     /// get_next_cmd - gets next command found at or after start_index
     ///     returns true if found, false if not found (i.e. mission complete)
@@ -231,6 +227,7 @@ private:
     // internal variables
     struct Mission_Command  _nav_cmd;   // current "navigation" command.  It's position in the command list is held in _nav_cmd.index
     struct Mission_Command  _do_cmd;    // current "do" command.  It's position in the command list is held in _do_cmd.index
+    uint8_t                 _prev_nav_cmd_index;    // index of the previous "navigation" command.  Rarely used which is why we don't store the whole command
 
     // jump related variables
     struct jump_tracking_struct {
