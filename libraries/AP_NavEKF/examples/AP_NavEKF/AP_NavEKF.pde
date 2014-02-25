@@ -172,6 +172,7 @@ static void read_sensors(uint8_t type)
         barometer.read();
         if (!done_baro_init) {
             done_baro_init = true;
+            ::printf("Barometer initialised\n");
             barometer.update_calibration();
         }
     }

@@ -285,14 +285,15 @@ bool LogReader::update(uint8_t &type)
         }
         memcpy(&msg, data, sizeof(msg));
         wait_timestamp(msg.apm_time);
-        gps->setHIL(msg.apm_time,
+        gps->setHIL(msg.status==3?GPS::FIX_3D:GPS::FIX_NONE,
+                    msg.apm_time,
                     msg.latitude*1.0e-7f, 
                     msg.longitude*1.0e-7f, 
                     msg.altitude*1.0e-2f,
                     msg.ground_speed*1.0e-2f, 
                     msg.ground_course*1.0e-2f, 
                     0, 
-                    msg.status==3?msg.num_sats:0);
+                    msg.num_sats);
         if (msg.status == 3 && ground_alt_cm == 0) {
             ground_alt_cm = msg.altitude;
         }
