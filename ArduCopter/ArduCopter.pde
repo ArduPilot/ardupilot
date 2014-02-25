@@ -238,6 +238,9 @@ static const AP_InertialSensor::Sample_rate ins_sample_rate = AP_InertialSensor:
 
 // All GPS access should be through this pointer.
 static GPS         *g_gps;
+#if GPS2_ENABLE
+static GPS         *g_gps2;
+#endif
 static GPS_Glitch   gps_glitch(g_gps);
 
 // flight modes convenience array
@@ -294,6 +297,9 @@ static AP_Compass_HMC5843 compass;
 // real GPS selection
  #if   GPS_PROTOCOL == GPS_PROTOCOL_AUTO
 AP_GPS_Auto     g_gps_driver(&g_gps);
+#if GPS2_ENABLE
+AP_GPS_UBLOX    g_gps2_driver;
+#endif
 
  #elif GPS_PROTOCOL == GPS_PROTOCOL_NMEA
 AP_GPS_NMEA     g_gps_driver;
@@ -1281,6 +1287,19 @@ static void update_GPS(void)
 
     // check for loss of gps
     failsafe_gps_check();
+
+#if GPS2_ENABLE
+    static uint32_t last_gps2_reading;
+    if (g_gps2 != NULL) {
+        g_gps2->update();
+        if (g_gps2->last_message_time_ms() != last_gps2_reading) {
+            last_gps2_reading = g_gps2->last_message_time_ms();
+            if (g.log_bitmask & MASK_LOG_GPS) {
+                DataFlash.Log_Write_GPS2(g_gps2);
+            }
+        }
+    }
+#endif
 }
 
 static void
