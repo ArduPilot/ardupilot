@@ -8,7 +8,7 @@ enum log_messages {
     // copter specific messages
     LOG_COPTER_ATTITUDE_MSG = 1,
     LOG_COPTER_COMPASS_MSG  = 15,
-    LOG_COPTER_INAV_MSG = 17,
+    LOG_COPTER_NAV_TUNING_MSG = 5,
 };
 
 

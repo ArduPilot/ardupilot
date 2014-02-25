@@ -51,6 +51,7 @@ struct PACKED log_Plane_Compass {
 
 struct PACKED log_Copter_Compass {
     LOG_PACKET_HEADER;
+    uint32_t time_ms;
     int16_t mag_x;
     int16_t mag_y;
     int16_t mag_z;
@@ -82,6 +83,7 @@ struct PACKED log_AIRSPEED {
 
 struct PACKED log_Copter_Attitude {
     LOG_PACKET_HEADER;
+    uint32_t time_ms;
     int16_t control_roll;
     int16_t roll;
     int16_t control_pitch;
@@ -90,18 +92,19 @@ struct PACKED log_Copter_Attitude {
     uint16_t yaw;
 };
 
-struct PACKED log_Copter_INAV {
+struct PACKED log_Copter_Nav_Tuning {
     LOG_PACKET_HEADER;
-    int16_t baro_alt;
-    int16_t inav_alt;
-    int16_t inav_climb_rate;
-    float   accel_corr_x;
-    float   accel_corr_y;
-    float   accel_corr_z;
-    int32_t gps_lat_from_home;
-    int32_t gps_lon_from_home;
-    float   inav_lat_from_home;
-    float   inav_lon_from_home;
+    uint32_t time_ms;
+    float    desired_pos_x;
+    float    desired_pos_y;
+    float    pos_x;
+    float    pos_y;
+    float    desired_vel_x;
+    float    desired_vel_y;
+    float    vel_x;
+    float    vel_y;
+    float    desired_accel_x;
+    float    desired_accel_y;
 };
 
 void LogReader::process_plane(uint8_t type, uint8_t *data, uint16_t length)
@@ -110,7 +113,7 @@ void LogReader::process_plane(uint8_t type, uint8_t *data, uint16_t length)
     case LOG_PLANE_COMPASS_MSG: {
         struct log_Plane_Compass msg;
         if(sizeof(msg) != length) {
-            printf("Bad COMPASS length\n");
+            printf("Bad plane COMPASS length\n");
             exit(1);
         }
         memcpy(&msg, data, sizeof(msg));
@@ -152,11 +155,11 @@ void LogReader::process_copter(uint8_t type, uint8_t *data, uint16_t length)
     case LOG_COPTER_COMPASS_MSG: {
         struct log_Copter_Compass msg;
         if(sizeof(msg) != length) {
-            printf("Bad COMPASS length\n");
+            printf("Bad copter COMPASS length %u expected %u\n", (unsigned)length, (unsigned)sizeof(msg));
             exit(1);
         }
         memcpy(&msg, data, sizeof(msg));
-        //wait_timestamp(msg.time_ms);
+        wait_timestamp(msg.time_ms);
         compass.setHIL(Vector3i(msg.mag_x - msg.offset_x, msg.mag_y - msg.offset_y, msg.mag_z - msg.offset_z));
         compass.set_offsets(msg.offset_x, msg.offset_y, msg.offset_z);
         break;
@@ -169,22 +172,22 @@ void LogReader::process_copter(uint8_t type, uint8_t *data, uint16_t length)
             exit(1);
         }
         memcpy(&msg, data, sizeof(msg));
-        //wait_timestamp(msg.time_ms);
+        wait_timestamp(msg.time_ms);
         attitude = Vector3f(msg.roll*0.01f, msg.pitch*0.01f, msg.yaw*0.01f);
         break;
     }
 
-    case LOG_COPTER_INAV_MSG: {
-        struct log_Copter_INAV msg;
+    case LOG_COPTER_NAV_TUNING_MSG: {
+        struct log_Copter_Nav_Tuning msg;
         if(sizeof(msg) != length) {
-            printf("Bad INAV length\n");
+            printf("Bad copter NAV_TUNING length\n");
             exit(1);
         }
         memcpy(&msg, data, sizeof(msg));
-        inavpos = Vector3f(msg.inav_lat_from_home * LATLON_TO_CM * 0.01f, 
-                           msg.inav_lon_from_home * LATLON_TO_CM * 0.01f * 
-                           cosf(gps->latitude * 1.0e-7f * DEG_TO_RAD),
-                           msg.inav_alt*0.01f);
+        wait_timestamp(msg.time_ms);
+        inavpos = Vector3f(msg.pos_x * 0.01f, 
+                           msg.pos_y * 0.01f,
+                           0);
         break;
     }
     }
