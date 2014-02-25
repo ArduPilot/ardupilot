@@ -74,7 +74,7 @@ public:
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
-    bool airspeed_estimate(float *airspeed_ret);
+    bool airspeed_estimate(float *airspeed_ret) const;
 
     bool            use_compass(void);
 
