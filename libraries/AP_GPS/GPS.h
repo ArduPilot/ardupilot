@@ -105,7 +105,8 @@ public:
     bool print_errors;          ///< deprecated
 
     // HIL support
-    virtual void setHIL(uint64_t time_epoch_ms, float latitude, float longitude, float altitude,
+    virtual void setHIL(Fix_Status fix_status,
+                        uint64_t time_epoch_ms, float latitude, float longitude, float altitude,
                         float ground_speed, float ground_course, float speed_3d, uint8_t num_sats);
 
     // components of velocity in 2D, in m/s

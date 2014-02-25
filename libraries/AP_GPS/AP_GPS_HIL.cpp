@@ -46,7 +46,8 @@ bool AP_GPS_HIL::read(void)
     return result;
 }
 
-void AP_GPS_HIL::setHIL(uint64_t _time_epoch_ms, float _latitude, float _longitude, float _altitude,
+void AP_GPS_HIL::setHIL(Fix_Status fix_status,
+                        uint64_t _time_epoch_ms, float _latitude, float _longitude, float _altitude,
                         float _ground_speed, float _ground_course, float _speed_3d, uint8_t _num_sats)
 {
     time_week           = _time_epoch_ms / (86400*7*(uint64_t)1000);
@@ -58,7 +59,7 @@ void AP_GPS_HIL::setHIL(uint64_t _time_epoch_ms, float _latitude, float _longitu
     ground_course_cd    = _ground_course*1.0e2f;
     speed_3d_cm         = _speed_3d*1.0e2f;
     num_sats            = _num_sats;
-    fix                 = num_sats>5?FIX_3D:FIX_NONE;
+    fix                 = fix_status,
     hdop                = 200;
     _updated            = true;
 }
