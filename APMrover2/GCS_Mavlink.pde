@@ -1816,7 +1816,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             float cog = wrap_360_cd(ToDeg(atan2f(packet.vy, packet.vx)) * 100);
 			
             // set gps hil sensor
-            g_gps->setHIL(packet.time_usec/1000,
+            g_gps->setHIL(GPS::FIX_3D,
+                          packet.time_usec/1000,
                           packet.lat*1.0e-7f, packet.lon*1.0e-7f, packet.alt*1.0e-3f,
                           vel*1.0e-2f, cog*1.0e-2f, 0, 10);
 			
