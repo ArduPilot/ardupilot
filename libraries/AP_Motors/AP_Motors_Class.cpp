@@ -82,8 +82,6 @@ AP_Motors::AP_Motors( RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_
     _hover_out(AP_MOTORS_DEFAULT_MID_THROTTLE),
     _spin_when_armed_ramped(0)
 {
-    uint8_t i;
-
     AP_Param::setup_object_defaults(this, var_info);
 
     // slow start motors from zero to min throttle
