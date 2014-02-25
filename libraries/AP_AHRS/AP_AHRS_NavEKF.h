@@ -36,7 +36,6 @@ public:
     AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, GPS *&gps) :
         AP_AHRS_DCM(ins, baro, gps),
         EKF(this, baro),
-        _baro(baro),
         ekf_started(false),
         startup_delay_ms(10000)
         {
@@ -97,7 +96,6 @@ private:
     bool using_EKF(void) const;
 
     NavEKF EKF;
-    AP_Baro &_baro;
     bool ekf_started;
     Matrix3f _dcm_matrix;
     Vector3f _dcm_attitude;
