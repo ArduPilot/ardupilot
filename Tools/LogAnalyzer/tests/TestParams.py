@@ -50,6 +50,9 @@ class TestParams(Test):
 		elif logdata.vehicleType == "ArduPlane":
 			# TODO: add parameter checks for plane...
 			pass
+		elif logdata.vehicleType == "ArduRover":
+			# TODO: add parameter checks for rover...
+			pass
 
 		if self.result.status == TestResult.StatusType.FAIL:
 			self.result.statusMessage = "Bad parameters found:"
