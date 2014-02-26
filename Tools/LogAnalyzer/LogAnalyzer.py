@@ -96,6 +96,8 @@ class TestSuite:
 		print 'Firmware Version: %s (%s)' % (self.logdata.firmwareVersion, self.logdata.firmwareHash)
 		print 'Hardware: %s' % self.logdata.hardwareType
 		print 'Free RAM: %s' % self.logdata.freeRAM
+		if self.logdata.skippedLines:
+			print "\nWARNING: %d malformed log lines skipped during read" % self.logdata.skippedLines
 		print '\n'
 		
 		print "Test Results:"
@@ -149,6 +151,7 @@ class TestSuite:
 		print >>xml, "  <firmwarehash>" + self.logdata.firmwareHash + "</firmwarehash>"
 		print >>xml, "  <hardwaretype>" + self.logdata.hardwareType + "</hardwaretype>"
 		print >>xml, "  <freemem>" + `self.logdata.freeRAM` + "</freemem>"
+		print >>xml, "  <skippedlines>" + `self.logdata.skippedLines` + "</skippedlines>"
 		print >>xml, "</header>"
 
 		# output parameters

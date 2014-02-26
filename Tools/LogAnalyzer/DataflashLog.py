@@ -186,6 +186,7 @@ class DataflashLog:
 	filesizeKB   = 0
 	durationSecs = 0
 	lineCount    = 0
+	skippedLines = 0
 
 	def getCopterType(self):
 		if self.vehicleType != "ArduCopter":
@@ -222,10 +223,8 @@ class DataflashLog:
 		#self.read(logfile, ignoreBadlines)
 
 	def read(self, logfile, ignoreBadlines=False):
-		'''returns True on successful log read (including bad lines if ignoreBadlines==True), False otherwise'''
+		'''returns on successful log read (including bad lines if ignoreBadlines==True), will throw an Exception otherwise'''
 		# TODO: dataflash log parsing code is *SUPER* hacky, should re-write more methodically
-		# TODO: fix error handling of logfile reading, return code vs exception, error message reporting
-		# TODO: report number of lines skipped during read
 		self.filename = logfile
 		f = open(self.filename, 'r')
 		lineNumber = 0
@@ -239,8 +238,7 @@ class DataflashLog:
 				# first handle the log header lines
 				if line == " Ready to drive." or line == " Ready to FLY.":
 					continue
-				if line == "----------------------------------------":
-					#return False
+				if line == "----------------------------------------":  # present in pre-3.0 logs
 					raise Exception("Log file seems to be in the older format (prior to self-describing logs), which isn't supported")
 				if len(tokens) == 1:
 					tokens2 = line.split(' ')
@@ -261,6 +259,7 @@ class DataflashLog:
 						errorMsg = "Error parsing line %d of log file: %s" % (lineNumber, self.filename)
 						if ignoreBadlines:
 							print errorMsg + " (skipping line)"
+							self.skippedLines += 1
 						else:
 							raise Exception(errorMsg)
 				# now handle the non-log data stuff, format descriptions, params, etc
@@ -300,6 +299,7 @@ class DataflashLog:
 						errorMsg = "Error on line %d of log file: %s, %s line's value count (%d) not matching FMT specification (%d)" % (lineNumber, self.filename, groupName, len(tokens2)-1, len(self.formats[groupName].labels))
 						if ignoreBadlines:
 							print errorMsg + " (skipping line)"
+							self.skippedLines += 1
 							continue
 						else:
 							raise Exception(errorMsg)
@@ -311,9 +311,9 @@ class DataflashLog:
 						#print "Set data {%s,%s} for line %d to value %s, of type %c, stored at address %s" % (groupName, label, lineNumber, `value`, self.formats[groupName].types[index], hex(id(channel.dictData)))
 						channel.dictData[lineNumber] = value
 						channel.listData.append((lineNumber,value))
-			except:
-				print "Error parsing line %d of log file %s" % (lineNumber,self.filename)
-				return False
+			except Exception as e:
+				raise Exception("Error parsing line %d of log file %s - %s" % (lineNumber,self.filename,e.args[0]))
+				
 
 		# gather some general stats about the log
 		self.lineCount  = lineNumber
@@ -330,5 +330,4 @@ class DataflashLog:
 
 		# TODO: calculate logging rate based on timestamps
 
-		return True
 

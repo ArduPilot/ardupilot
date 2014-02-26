@@ -2,15 +2,16 @@
 <loganalysis>
 <header>
   <logfile>logs/robert_lefebvre_octo_PM.log</logfile>
-  <sizekb>302.744140625</sizekb>
+  <sizekb>302.7548828125</sizekb>
   <sizelines>4750</sizelines>
   <duration>0:02:35</duration>
   <vehicletype>ArduCopter</vehicletype>
   <coptertype>octo</coptertype>
   <firmwareversion>V3.0.1</firmwareversion>
-  <firmwarehash></firmwarehash>
+  <firmwarehash>5c6503e2</firmwarehash>
   <hardwaretype>APM 2</hardwaretype>
   <freemem>1331</freemem>
+  <skippedlines>0</skippedlines>
 </header>
 <params>
   <param name="RC7_REV" value="1.0" />
@@ -288,12 +289,6 @@
 </params>
 <results>
   <result>
-    <name>Balance/Twist</name>
-    <status>PASS</status>
-    <message></message>
-    <extrafeedback></extrafeedback>
-  </result>
-  <result>
     <name>Brownout</name>
     <status>PASS</status>
     <message></message>
@@ -301,6 +296,12 @@
   </result>
   <result>
     <name>Compass</name>
+    <status>PASS</status>
+    <message></message>
+    <extrafeedback></extrafeedback>
+  </result>
+  <result>
+    <name>Dupe Log Data</name>
     <status>PASS</status>
     <message></message>
     <extrafeedback></extrafeedback>
@@ -327,24 +328,16 @@
   </result>
   <result>
     <name>Parameters</name>
-    <status>FAIL</status>
-    <message>Bad parameters found:</message>
-    <extrafeedback>THR_MID set to 300.0, expecting less than 300
-</extrafeedback>
-    <data>(test data will be embeded here at some point)</data>
-  </result>
-  <result>
-    <name>Performance</name>
-    <status>FAIL</status>
-    <message>14 slow loop lines found, up to 18% (line 2983)</message>
-    <extrafeedback></extrafeedback>
-    <data>(test data will be embeded here at some point)</data>
-  </result>
-  <result>
-    <name>Pitch/Roll</name>
     <status>PASS</status>
     <message></message>
     <extrafeedback></extrafeedback>
+  </result>
+  <result>
+    <name>PM</name>
+    <status>FAIL</status>
+    <message>14 slow loop lines found, max 18.56% on line 2983</message>
+    <extrafeedback></extrafeedback>
+    <data>(test data will be embeded here at some point)</data>
   </result>
   <result>
     <name>Underpowered</name>
