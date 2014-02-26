@@ -195,11 +195,13 @@ static void read_sensors(uint8_t type)
         uint32_t update_delta_usec = 1e6 / update_rate;
         uint8_t update_count = update_rate>0?update_rate/50:1;
         for (uint8_t i=0; i<update_count; i++) {
-            hal.scheduler->stop_clock(hal.scheduler->micros() + i*update_delta_usec);
             ahrs.update();
             if (ahrs.get_home().lat != 0) {
                 inertial_nav.update(ins.get_delta_time());
             }
+            hal.scheduler->stop_clock(hal.scheduler->micros() + (i+1)*update_delta_usec);
+            ins.set_gyro(0, ins.get_gyro());
+            ins.set_accel(0, ins.get_accel());
         }
     } else if ((type == LOG_PLANE_COMPASS_MSG && LogReader.vehicle == LogReader::VEHICLE_PLANE) ||
                (type == LOG_COPTER_COMPASS_MSG && LogReader.vehicle == LogReader::VEHICLE_COPTER)) {
