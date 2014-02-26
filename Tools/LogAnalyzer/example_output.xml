@@ -292,70 +292,59 @@
     <name>Brownout</name>
     <status>PASS</status>
     <message></message>
-    <extrafeedback></extrafeedback>
   </result>
   <result>
     <name>Compass</name>
     <status>PASS</status>
     <message></message>
-    <extrafeedback></extrafeedback>
   </result>
   <result>
     <name>Dupe Log Data</name>
     <status>PASS</status>
     <message></message>
-    <extrafeedback></extrafeedback>
   </result>
   <result>
     <name>Empty</name>
     <status>PASS</status>
     <message></message>
-    <extrafeedback></extrafeedback>
   </result>
   <result>
     <name>Event/Failsafe</name>
     <status>FAIL</status>
     <message>ERR found: GPS </message>
-    <extrafeedback></extrafeedback>
     <data>(test data will be embeded here at some point)</data>
   </result>
   <result>
     <name>GPS</name>
     <status>WARN</status>
     <message>Min satellites: 6, Max HDop: 4.68</message>
-    <extrafeedback></extrafeedback>
     <data>(test data will be embeded here at some point)</data>
   </result>
   <result>
     <name>Parameters</name>
     <status>PASS</status>
     <message></message>
-    <extrafeedback></extrafeedback>
   </result>
   <result>
     <name>PM</name>
     <status>FAIL</status>
     <message>14 slow loop lines found, max 18.56% on line 2983</message>
-    <extrafeedback></extrafeedback>
     <data>(test data will be embeded here at some point)</data>
   </result>
   <result>
     <name>Underpowered</name>
     <status>PASS</status>
     <message></message>
-    <extrafeedback></extrafeedback>
   </result>
   <result>
     <name>VCC</name>
     <status>PASS</status>
     <message></message>
-    <extrafeedback></extrafeedback>
   </result>
   <result>
     <name>Vibration</name>
     <status>UNKNOWN</status>
     <message>No IMU log data</message>
-    <extrafeedback></extrafeedback>
   </result>
 </results>
 </loganalysis>

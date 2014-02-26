@@ -59,5 +59,5 @@ class TestPerformance(Test):
 		elif (maxPercentSlow > 6):
 			self.result.status = TestResult.StatusType.WARN
 			self.result.statusMessage = "%d slow loop lines found, max %.2f%% on line %d" % (slowLoopLineCount,maxPercentSlow,maxPercentSlowLine)
-		else:
-			self.result.extraFeedback = ""
+
+
