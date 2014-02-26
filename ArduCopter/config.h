@@ -274,6 +274,9 @@
 
  #undef CONFIG_SONAR
  #define CONFIG_SONAR DISABLED
+
+ #undef GPS2_ENABLE
+ #define GPS2_ENABLE 0
 #endif
 
 
