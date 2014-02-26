@@ -14,6 +14,10 @@ class TestVibration(Test):
 	def run(self, logdata):
 		self.result = TestResult()
 
+		if logdata.vehicleType != "ArduCopter":
+			self.result.status = TestResult.StatusType.NA
+			return
+
 		# constants
 		gravity        = -9.81
 		aimRangeWarnXY = 1.5

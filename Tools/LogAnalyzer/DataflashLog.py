@@ -8,6 +8,7 @@ import pprint  # temp
 import collections
 import os
 import numpy
+import bisect
 
 
 class Format:
@@ -50,6 +51,7 @@ class Channel:
 	def avg(self):
 		return numpy.mean(self.dictData.values())
 	def getNearestValue(self, lineNumber, lookForwards=True):
+		# TODO: redo Channel.getNearestValue() using listData and bisect, profile speed of TestUnderpowered before/after
 		'''find the nearest data value to the given lineNumber, defaults to looking forwards. Returns (value,lineNumber)'''
 		if lineNumber in self.dictData:
 			return (self.dictData[lineNumber], lineNumber)
@@ -72,6 +74,11 @@ class Channel:
 			return prevValue
 		weight = (lineNumber-prevValueLine) / float(nextValueLine-prevValueLine)
 		return ((weight*prevValue) + ((1-weight)*nextValue))
+	def getIndexOf(self, lineNumber):
+		index = bisect.bisect_left(self.listData, (lineNumber,0)) - 1
+		print "INDEX: %d" % index 
+		assert(self.listData[index][0] == lineNumber)
+		return index
 
 # class LogIterator:
 # 	'''Smart iterator that can move through a log by line number and maintain an index into the nearest values of all data channels'''
@@ -217,8 +224,8 @@ class DataflashLog:
 	def read(self, logfile, ignoreBadlines=False):
 		'''returns True on successful log read (including bad lines if ignoreBadlines==True), False otherwise'''
 		# TODO: dataflash log parsing code is *SUPER* hacky, should re-write more methodically
-		# TODO: identify and bail on pre-3.0 logs, I think they're not worth supporting at this point
-
+		# TODO: fix error handling of logfile reading, return code vs exception, error message reporting
+		# TODO: report number of lines skipped during read
 		self.filename = logfile
 		f = open(self.filename, 'r')
 		lineNumber = 0
@@ -311,6 +318,7 @@ class DataflashLog:
 		# gather some general stats about the log
 		self.lineCount  = lineNumber
 		self.filesizeKB = os.path.getsize(self.filename) / 1024.0
+		# TODO: switch duration calculation to use TimeMS values rather than GPS timestemp
 		if "GPS" in self.channels:
 			# the GPS time label changed at some point, need to handle both
 			timeLabel = "TimeMS"
