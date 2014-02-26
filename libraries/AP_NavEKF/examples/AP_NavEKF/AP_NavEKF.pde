@@ -43,6 +43,7 @@
 #include <AP_InertialNav.h>
 #include <AP_NavEKF.h>
 #include <stdio.h>
+#include <getopt.h>
 
 #include "LogReader.h"
 
@@ -76,6 +77,7 @@ static FILE *ekf4f;
 
 static bool done_baro_init;
 static bool done_home_init;
+static uint16_t update_rate;
 
 void setup()
 {
@@ -84,12 +86,29 @@ void setup()
     const char *filename = "log.bin";
     uint8_t argc;
     char * const *argv;
+    int opt;
+
     hal.util->commandline_arguments(argc, argv);
-    if (argc > 1) {
-        filename = argv[1];
+
+	while ((opt = getopt(argc, argv, "r:")) != -1) {
+		switch (opt) {
+        case 'r':
+			update_rate = strtol(optarg, NULL, 0);
+            break;
+        }
+    }
+
+	argv += optind;
+	argc -= optind;
+
+    if (argc > 0) {
+        filename = argv[0];
     }
 
     hal.console->printf("Processing log %s\n", filename);
+    if (update_rate != 0) {
+        hal.console->printf("Using an update rate of %u Hz\n", update_rate);
+    }
     LogReader.open_log(filename);
 
     LogReader.wait_type(LOG_GPS_MSG);
@@ -107,7 +126,21 @@ void setup()
     barometer.read();
     compass.init();
     inertial_nav.init();
-    ins.init(AP_InertialSensor::WARM_START, AP_InertialSensor::RATE_50HZ);
+    switch (update_rate) {
+    case 0:
+    case 50:
+        ins.init(AP_InertialSensor::WARM_START, AP_InertialSensor::RATE_50HZ);
+        break;
+    case 100:
+        ins.init(AP_InertialSensor::WARM_START, AP_InertialSensor::RATE_100HZ);
+        break;
+    case 200:
+        ins.init(AP_InertialSensor::WARM_START, AP_InertialSensor::RATE_200HZ);
+        break;
+    case 400:
+        ins.init(AP_InertialSensor::WARM_START, AP_InertialSensor::RATE_400HZ);
+        break;
+    }
 
     plotf = fopen("plot.dat", "w");
     plotf2 = fopen("plot2.dat", "w");
@@ -159,9 +192,14 @@ static void read_sensors(uint8_t type)
             ahrs.estimate_wind();
         }
     } else if (type == LOG_IMU_MSG) {
-        ahrs.update();
-        if (ahrs.get_home().lat != 0) {
-            inertial_nav.update(ins.get_delta_time());
+        uint32_t update_delta_usec = 1e6 / update_rate;
+        uint8_t update_count = update_rate>0?update_rate/50:1;
+        for (uint8_t i=0; i<update_count; i++) {
+            hal.scheduler->stop_clock(hal.scheduler->micros() + i*update_delta_usec);
+            ahrs.update();
+            if (ahrs.get_home().lat != 0) {
+                inertial_nav.update(ins.get_delta_time());
+            }
         }
     } else if ((type == LOG_PLANE_COMPASS_MSG && LogReader.vehicle == LogReader::VEHICLE_PLANE) ||
                (type == LOG_COPTER_COMPASS_MSG && LogReader.vehicle == LogReader::VEHICLE_COPTER)) {

@@ -341,7 +341,7 @@ bool LogReader::update(uint8_t &type)
 
 void LogReader::wait_timestamp(uint32_t timestamp)
 {
-    hal.scheduler->stop_clock(timestamp);
+    hal.scheduler->stop_clock(timestamp*1000UL);
 }
 
 bool LogReader::wait_type(uint8_t wtype)
