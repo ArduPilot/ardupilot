@@ -110,14 +110,14 @@ private:
     Vector3f _omega;                            // Corrected Gyro_Vector data
 
     // variables to cope with delaying the GA sum to match GPS lag
-    Vector3f ra_delayed(const Vector3f &ra);
-    Vector3f _ra_delay_buffer;
+    Vector3f ra_delayed(uint8_t instance, const Vector3f &ra);
+    Vector3f _ra_delay_buffer[INS_MAX_INSTANCES];
 
     // P term gain based on spin rate
     float           _P_gain(float spin_rate);
 
     // P term yaw gain based on rate of change of horiz velocity
-    float           _yaw_gain(Vector3f VdotEF);
+    float           _yaw_gain(void) const;
 
     // state to support status reporting
     float _renorm_val_sum;
@@ -133,7 +133,7 @@ private:
     uint32_t _gps_last_update;
 
     // state of accel drift correction
-    Vector3f _ra_sum;
+    Vector3f _ra_sum[INS_MAX_INSTANCES];
     Vector3f _last_velocity;
     float _ra_deltat;
     uint32_t _ra_sum_start;
