@@ -118,7 +118,7 @@ class TestSuite:
 				print "  %20s:  UNKNOWN    %-50s%s" % (test.name, test.result.statusMessage,execTime)
 			if test.result.extraFeedback:
 				for line in test.result.extraFeedback.strip().split('\n'):
-					print "  %20s     %s" % ("",line)
+					print "  %29s     %s" % ("",line)
 
 		print '\n'
 		print 'The Log Analyzer is currently BETA code.\nFor any support or feedback on the log analyzer please email Andrew Chapman (amchapman@gmail.com)'

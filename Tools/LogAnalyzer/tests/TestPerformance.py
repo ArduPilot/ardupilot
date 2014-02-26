@@ -12,6 +12,7 @@ class TestPerformance(Test):
 		self.result = TestResult()
 		self.result.status = TestResult.StatusType.PASS
 
+		# this test should be valid for all vehicle types, just need to figure out why PM logging data is different in each
 		if logdata.vehicleType != "ArduCopter":
 			self.result.status = TestResult.StatusType.NA
 			return

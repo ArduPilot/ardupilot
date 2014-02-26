@@ -7,12 +7,13 @@ class TestBalanceTwist(Test):
 
 	def __init__(self):
 		self.name = "Balance/Twist"
+		self.enable = False   # TEMP
 		
 	def run(self, logdata):
 		self.result = TestResult()
 		self.result.status = TestResult.StatusType.PASS
 
-		if logdata.vehicleType == "ArduPlane":
+		if logdata.vehicleType != "ArduCopter":
 			self.result.status = TestResult.StatusType.NA
 
 		# TODO: implement copter test for unbalanced or twisted copter frame
