@@ -127,6 +127,8 @@
  #define CONFIG_INS_TYPE CONFIG_INS_HIL
  #undef  CONFIG_COMPASS
  #define CONFIG_COMPASS  AP_COMPASS_HIL
+ #undef GPS2_ENABLE
+ #define GPS2_ENABLE 0
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
