@@ -408,7 +408,7 @@ void NavEKF::InitialiseFilterBootstrap(void)
     Vector3f initMagXYZ;
 
     // we should average readings over several calls to this function 
-    initAccVec = _ahrs->get_ins().get_accel();
+    initAccVec = _ahrs->get_ins().get_accel(_ahrs->get_active_accel_instance());
     initMagXYZ = _ahrs->get_compass()->get_field() * 0.001f; // convert from Gauss to mGauss
 
     // Normalise the acceleration vector
@@ -2469,7 +2469,7 @@ void NavEKF::readIMUData()
     // Limit IMU delta time to prevent numerical problems elsewhere
     dtIMU       = constrain_float(_ahrs->get_ins().get_delta_time(), 0.001f, 1.0f);
     angRate     = _ahrs->get_ins().get_gyro();
-    accel       = _ahrs->get_ins().get_accel();
+    accel       = _ahrs->get_ins().get_accel(_ahrs->get_active_accel_instance());
 
     // trapezoidal integration
     dAngIMU     = (angRate + lastAngRate) * dtIMU * 0.5f;
