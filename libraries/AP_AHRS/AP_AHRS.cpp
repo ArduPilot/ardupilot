@@ -108,13 +108,8 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("GPS_MINSATS", 11, AP_AHRS, _gps_minsats, 6),
 
-    // @Param: GPS_DELAY
-    // @DisplayName: AHRS GPS delay steps
-    // @Description: number of GPS samples to delay accels for synchronisation with the GPS velocity data
-    // @Range: 0 5
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("GPS_DELAY", 12, AP_AHRS, _gps_delay, 1),
+    // NOTE: index 12 was for GPS_DELAY, but now removed, fixed delay
+    // of 1 was found to be the best choice
 
 #if AP_AHRS_NAVEKF_AVAILABLE
     // @Param: EKF_USE

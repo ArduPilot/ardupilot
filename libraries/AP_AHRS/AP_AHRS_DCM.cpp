@@ -461,48 +461,9 @@ AP_AHRS_DCM::drift_correction_yaw(void)
  */
 Vector3f AP_AHRS_DCM::ra_delayed(const Vector3f &ra)
 {
-    if (_ra_delay_length != _gps_delay.get()) {
-        // the AHRS_GPS_DELAY setting has changed
-
-        // constrain it between 0 and 5
-        if (_gps_delay.get() > 5) {
-            _gps_delay.set(5);
-        }
-        if (_gps_delay.get() < 0) {
-            _gps_delay.set(0);
-        }
-        if (_ra_delay_buffer != NULL) {
-            delete[] _ra_delay_buffer;
-            _ra_delay_buffer = NULL;
-        }
-
-        // allocate the new buffer
-        _ra_delay_length = _gps_delay.get();
-        if (_ra_delay_length != 0) {
-            _ra_delay_buffer = new Vector3f[_ra_delay_length];
-        }
-        _ra_delay_next = 0;
-        if (_ra_delay_buffer != NULL) {
-            // on size change prefill the buffer with the current value
-            for (uint8_t i=0; i<_ra_delay_length; i++) {
-                _ra_delay_buffer[i] = ra;
-            }
-        }
-    }
-    if (_ra_delay_buffer == NULL) {
-        // we're not doing any delay
-        return ra;
-    }
-
     // get the old element, and then fill it with the new element
-    Vector3f ret = _ra_delay_buffer[_ra_delay_next];
-    _ra_delay_buffer[_ra_delay_next] = ra;
-
-    // move to the next element
-    _ra_delay_next++;
-    if (_ra_delay_next == _ra_delay_length) {
-        _ra_delay_next = 0;
-    }
+    Vector3f ret = _ra_delay_buffer;
+    _ra_delay_buffer = ra;
     return ret;
 }
 
