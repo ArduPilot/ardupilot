@@ -11,16 +11,16 @@ AP_InertialSensor_HIL::AP_InertialSensor_HIL() : AP_InertialSensor() {
 uint16_t AP_InertialSensor_HIL::_init_sensor( Sample_rate sample_rate ) {
     switch (sample_rate) {
     case RATE_50HZ:
-        _sample_period_ms = 20;
+        _sample_period_usec = 20000;
         break;
     case RATE_100HZ:
-        _sample_period_ms = 10;
+        _sample_period_usec = 10000;
         break;
     case RATE_200HZ:
-        _sample_period_ms = 5;
+        _sample_period_usec = 5000;
         break;
     case RATE_400HZ:
-        _sample_period_ms = 2.5;
+        _sample_period_usec = 2500;
         break;
     }
     return AP_PRODUCT_ID_NONE;
@@ -29,14 +29,13 @@ uint16_t AP_InertialSensor_HIL::_init_sensor( Sample_rate sample_rate ) {
 /*================ AP_INERTIALSENSOR PUBLIC INTERFACE ==================== */
 
 bool AP_InertialSensor_HIL::update( void ) {
-    uint32_t now = hal.scheduler->millis();
-    _delta_time_usec = (now - _last_update_ms) * 1000;
-    _last_update_ms = now;
+    uint32_t now = hal.scheduler->micros();
+    _last_update_usec = now;
     return true;
 }
 
 float AP_InertialSensor_HIL::get_delta_time() const {
-    return _sample_period_ms * 0.001f;
+    return _sample_period_usec * 1.0e-6f;
 }
 
 float AP_InertialSensor_HIL::get_gyro_drift_rate(void) {
@@ -46,8 +45,8 @@ float AP_InertialSensor_HIL::get_gyro_drift_rate(void) {
 
 bool AP_InertialSensor_HIL::_sample_available()
 {
-    uint16_t ret = (hal.scheduler->millis() - _last_update_ms) 
-        / _sample_period_ms;
+    uint16_t ret = (hal.scheduler->micros() - _last_update_usec) 
+        / _sample_period_usec;
     
     return ret > 0;
 }
