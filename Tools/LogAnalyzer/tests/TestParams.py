@@ -16,17 +16,17 @@ class TestParams(Test):
 		value = logdata.parameters[paramName]
 		if value != expectedValue:
 			self.result.status = TestResult.StatusType.FAIL
-			self.result.extraFeedback = self.result.extraFeedback + "%s set to %s, expecting %s\n" % (paramName, `value`, `expectedValue`)
+			self.result.statusMessage = self.result.statusMessage + "%s set to %s, expecting %s\n" % (paramName, `value`, `expectedValue`)
 	def __checkParamIsLessThan(self, paramName, maxValue, logdata):
 		value = logdata.parameters[paramName]
 		if value >= maxValue:
 			self.result.status = TestResult.StatusType.FAIL
-			self.result.extraFeedback = self.result.extraFeedback + "%s set to %s, expecting less than %s\n" % (paramName, `value`, `maxValue`)
+			self.result.statusMessage = self.result.statusMessage + "%s set to %s, expecting less than %s\n" % (paramName, `value`, `maxValue`)
 	def __checkParamIsMoreThan(self, paramName, minValue, logdata):
 		value = logdata.parameters[paramName]
 		if value <= minValue:
 			self.result.status = TestResult.StatusType.FAIL
-			self.result.extraFeedback = self.result.extraFeedback + "%s set to %s, expecting less than %s\n" % (paramName, `value`, `minValue`)
+			self.result.statusMessage = self.result.statusMessage + "%s set to %s, expecting less than %s\n" % (paramName, `value`, `minValue`)
 
 
 	def run(self, logdata):
@@ -37,9 +37,9 @@ class TestParams(Test):
 		for name,value in logdata.parameters.iteritems():
 			if math.isnan(value):
 				self.result.status = TestResult.StatusType.FAIL
-				self.result.extraFeedback = self.result.extraFeedback + name + " is NaN\n"
+				self.result.statusMessage = self.result.statusMessage + name + " is NaN\n"
 
-		# add parameter checks below using the helper functions, any failures will trigger a FAIL status and accumulate info in extraFeedback
+		# add parameter checks below using the helper functions, any failures will trigger a FAIL status and accumulate info in statusMessage
 		# if more complex checking or correlations are required you can access parameter values directly using the logdata.parameters[paramName] dict
 		if logdata.vehicleType == "ArduCopter":
 			self.__checkParamIsEqual   ("MAG_ENABLE",   1, logdata)
@@ -55,4 +55,4 @@ class TestParams(Test):
 			pass
 
 		if self.result.status == TestResult.StatusType.FAIL:
-			self.result.statusMessage = "Bad parameters found:"
+			self.result.statusMessage = "Bad parameters found:\n" + self.result.statusMessage

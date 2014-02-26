@@ -261,7 +261,7 @@ class DataflashLog:
 							print errorMsg + " (skipping line)"
 							self.skippedLines += 1
 						else:
-							raise Exception(errorMsg)
+							raise Exception("")
 				# now handle the non-log data stuff, format descriptions, params, etc
 				elif tokens[0] == "FMT":
 					format = None
@@ -270,7 +270,7 @@ class DataflashLog:
 					elif len(tokens) == 5:  # some logs have FMT STRT with no labels
 						format = Format(tokens[1],tokens[2],tokens[3],tokens[4],"")
 					else:
-						raise Exception("FMT error on line %d, nTokens: %d" % (lineNumber, len(tokens)))
+						raise Exception("FMT error, nTokens: %d" % len(tokens))
 					#print format  # TEMP
 					self.formats[tokens[3]] = format
 				elif tokens[0] == "PARM":
@@ -296,7 +296,7 @@ class DataflashLog:
 							self.channels[groupName][label] = Channel()
 					# check the number of tokens matches between the line and what we're expecting from the FMT definition
 					if (len(tokens2)-1) != len(self.formats[groupName].labels):
-						errorMsg = "Error on line %d of log file: %s, %s line's value count (%d) not matching FMT specification (%d)" % (lineNumber, self.filename, groupName, len(tokens2)-1, len(self.formats[groupName].labels))
+						errorMsg = "%s line's value count (%d) not matching FMT specification (%d) on line %d" % (groupName, len(tokens2)-1, len(self.formats[groupName].labels), lineNumber)
 						if ignoreBadlines:
 							print errorMsg + " (skipping line)"
 							self.skippedLines += 1

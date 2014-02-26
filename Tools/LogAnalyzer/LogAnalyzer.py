@@ -14,8 +14,6 @@
 #   - copter+plane use 'V' in their vehicle type/version/build line, rover uses lower case 'v'. Copter+Rover give a build number, plane does not
 #   - CTUN.ThrOut on copter is 0-1000, on plane+rover it is 0-100
 
-# TODO - unify result statusMessage and extraOutput. simple tests set statusMessage, complex ones append to it with newlines
-
 
 import DataflashLog
 
@@ -36,7 +34,6 @@ class TestResult:
 		PASS, FAIL, WARN, UNKNOWN, NA = range(5)
 	status = None
 	statusMessage = ""
-	extraFeedback = ""
 
 
 class Test:
@@ -104,23 +101,25 @@ class TestSuite:
 		for test in self.tests:
 			if not test.enable:
 				continue
+			statusMessageFirstLine = test.result.statusMessage.strip('\n\r').split('\n')[0]
+			statusMessageExtra     = test.result.statusMessage.strip('\n\r').split('\n')[1:]
 			execTime = ""
 			if outputStats:
 				execTime = "  (%.2fms)" % (test.execTime)
 			if test.result.status == TestResult.StatusType.PASS:
-				print "  %20s:  PASS       %-50s%s" % (test.name, test.result.statusMessage,execTime)
+				print "  %20s:  PASS       %-55s%s" % (test.name, statusMessageFirstLine, execTime)
 			elif test.result.status == TestResult.StatusType.FAIL:
-				print "  %20s:  FAIL       %-50s%s    [GRAPH]" % (test.name, test.result.statusMessage,execTime)
+				print "  %20s:  FAIL       %-55s%s    [GRAPH]" % (test.name, statusMessageFirstLine, execTime)
 			elif test.result.status == TestResult.StatusType.WARN:
-				print "  %20s:  WARN       %-50s%s    [GRAPH]" % (test.name, test.result.statusMessage,execTime)
+				print "  %20s:  WARN       %-55s%s    [GRAPH]" % (test.name, statusMessageFirstLine, execTime)
 			elif test.result.status == TestResult.StatusType.NA:
 				# skip any that aren't relevant for this vehicle/hardware/etc
 				continue
 			else:
-				print "  %20s:  UNKNOWN    %-50s%s" % (test.name, test.result.statusMessage,execTime)
-			if test.result.extraFeedback:
-				for line in test.result.extraFeedback.strip().split('\n'):
-					print "  %29s     %s" % ("",line)
+				print "  %20s:  UNKNOWN    %-55s%s" % (test.name, statusMessageFirstLine, execTime)
+			#if statusMessageExtra:
+			for line in statusMessageExtra:
+				print "  %29s     %s" % ("",line)
 
 		print '\n'
 		print 'The Log Analyzer is currently BETA code.\nFor any support or feedback on the log analyzer please email Andrew Chapman (amchapman@gmail.com)'
@@ -173,18 +172,15 @@ class TestSuite:
 				print >>xml, "    <name>" + test.name + "</name>"
 				print >>xml, "    <status>PASS</status>"
 				print >>xml, "    <message>" + test.result.statusMessage + "</message>"
-				print >>xml, "    <extrafeedback>" + test.result.extraFeedback + "</extrafeedback>"
 			elif test.result.status == TestResult.StatusType.FAIL:
 				print >>xml, "    <name>" + test.name + "</name>"
 				print >>xml, "    <status>FAIL</status>"
 				print >>xml, "    <message>" + test.result.statusMessage + "</message>"
-				print >>xml, "    <extrafeedback>" + test.result.extraFeedback + "</extrafeedback>"
 				print >>xml, "    <data>(test data will be embeded here at some point)</data>"
 			elif test.result.status == TestResult.StatusType.WARN:
 				print >>xml, "    <name>" + test.name + "</name>"
 				print >>xml, "    <status>WARN</status>"
 				print >>xml, "    <message>" + test.result.statusMessage + "</message>"
-				print >>xml, "    <extrafeedback>" + test.result.extraFeedback + "</extrafeedback>"
 				print >>xml, "    <data>(test data will be embeded here at some point)</data>"
 			elif test.result.status == TestResult.StatusType.NA:
 				# skip any that aren't relevant for this vehicle/hardware/etc
@@ -193,7 +189,6 @@ class TestSuite:
 				print >>xml, "    <name>" + test.name + "</name>"
 				print >>xml, "    <status>UNKNOWN</status>"
 				print >>xml, "    <message>" + test.result.statusMessage + "</message>"
-				print >>xml, "    <extrafeedback>" + test.result.extraFeedback + "</extrafeedback>"
 			print >>xml, "  </result>"
 		print >>xml, "</results>"
 
