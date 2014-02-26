@@ -340,22 +340,38 @@ void NavEKF::InitialiseFilterDynamic(void)
     // get initial time deltat between IMU measurements (sec)
     dtIMU = _ahrs->get_ins().get_delta_time();
 
-    // Calculate initial filter quaternion states from AHRS solution
+    // calculate initial yaw angle
+    float yaw;
+    Matrix3f Tbn;
+    Vector3f initMagNED;
+
+    // calculate rotation matrix from body to NED frame
+    Tbn.from_euler(_ahrs->roll, _ahrs->pitch, 0.0f);
+
+    // body magnetic field vector with offsets removed
+    Vector3f initMagXYZ;
+    initMagXYZ = _ahrs->get_compass()->get_field() * 0.001f; // convert from Gauss to mGauss
+
+    // rotate the magnetic field into NED axes
+    initMagNED = Tbn*initMagXYZ;
+
+    // calculate heading of mag field rel to body heading
+    float magHeading = atan2f(initMagNED.y, initMagNED.x);
+
+    // get the magnetic declination
+    float magDecAng = _ahrs->get_compass()->get_declination();
+
+    // calculate yaw angle rel to true north
+    yaw = magDecAng - magHeading;
+
+    // Calculate initial filter quaternion states
     Quaternion initQuat;
-    initQuat.from_rotation_matrix(_ahrs->get_dcm_matrix());
+    initQuat.from_euler(_ahrs->roll, _ahrs->pitch, yaw);
 
     // Calculate initial Tbn matrix and rotate Mag measurements into NED
     // to set initial NED magnetic field states
-    Matrix3f initTbn;
-    initQuat.rotation_matrix(initTbn);
-    Vector3f initMagNED;
-    Vector3f initMagXYZ;
-    if (useCompass)
-    {
-        readMagData();
-        initMagXYZ = magData - magBias;
-        initMagNED = initTbn * initMagXYZ;
-    }
+    initQuat.rotation_matrix(Tbn);
+    initMagNED = Tbn * initMagXYZ;
 
     // write to state vector
     state.quat = initQuat;
