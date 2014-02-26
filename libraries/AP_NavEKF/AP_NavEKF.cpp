@@ -2410,13 +2410,13 @@ void NavEKF::CopyAndFixCovariances()
 void NavEKF::ConstrainVariances()
 {
     // Constrain variances to be within set limits
-    for (uint8_t i=0; i<=3; i++) P[i][i] = constrain_float(P[i][i],1.0e-9f,1.0f);
-    for (uint8_t i=4; i<=6; i++) P[i][i] = constrain_float(P[i][i],1.0e-9f,1.0e3f);
-    for (uint8_t i=7; i<=9; i++) P[i][i] = constrain_float(P[i][i],1.0e-9f,1.0e6f);
-    for (uint8_t i=10; i<=12; i++) P[i][i] = constrain_float(P[i][i],1.0e-9f,sq(0.175f * dtIMU));
-    P[13][13] = constrain_float(P[13][13],1.0e-9f,sq(10.0f * dtIMU));
-    for (uint8_t i=14; i<=15; i++) P[i][i] = constrain_float(P[i][i],1.0e-9f,1.0e3f);
-    for (uint8_t i=16; i<=21; i++) P[i][i] = constrain_float(P[i][i],1.0e-9f,1.0f);
+    for (uint8_t i=0; i<=3; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0f);
+    for (uint8_t i=4; i<=6; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0e3f);
+    for (uint8_t i=7; i<=9; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0e6f);
+    for (uint8_t i=10; i<=12; i++) P[i][i] = constrain_float(P[i][i],0.0f,sq(0.175f * dtIMU));
+    P[13][13] = constrain_float(P[13][13],0.0f,sq(10.0f * dtIMU));
+    for (uint8_t i=14; i<=15; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0e3f);
+    for (uint8_t i=16; i<=21; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0f);
 }
 
 void NavEKF::ConstrainStates()
