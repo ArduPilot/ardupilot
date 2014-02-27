@@ -408,7 +408,7 @@ void NavEKF::InitialiseFilterBootstrap(void)
     Vector3f initMagXYZ;
 
     // we should average readings over several calls to this function 
-    initAccVec = _ahrs->get_ins().get_accel(_ahrs->get_active_accel_instance());
+    initAccVec = _ahrs->get_ins().get_accel();
     initMagXYZ = _ahrs->get_compass()->get_field() * 0.001f; // convert from Gauss to mGauss
 
     // Normalise the acceleration vector
@@ -2469,7 +2469,17 @@ void NavEKF::readIMUData()
     // Limit IMU delta time to prevent numerical problems elsewhere
     dtIMU       = constrain_float(_ahrs->get_ins().get_delta_time(), 0.001f, 1.0f);
     angRate     = _ahrs->get_ins().get_gyro();
-    accel       = _ahrs->get_ins().get_accel(_ahrs->get_active_accel_instance());
+
+    // we use get_fly_forward() to detect if this is a copter. If it
+    // is a copter then we need to use the same accel all the time to
+    // prevent small altitude jumps. If it is a plane or rover then we
+    // are better off using the accel that DCM has set as active to
+    // cope with larger aliasing effects
+    if (_ahrs->get_fly_forward()) {
+        accel       = _ahrs->get_ins().get_accel(_ahrs->get_active_accel_instance());
+    } else {
+        accel       = _ahrs->get_ins().get_accel();
+    }
 
     // trapezoidal integration
     dAngIMU     = (angRate + lastAngRate) * dtIMU * 0.5f;
