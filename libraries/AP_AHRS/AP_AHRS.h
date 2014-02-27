@@ -85,6 +85,10 @@ public:
         _flags.fly_forward = b;
     }
 
+    bool get_fly_forward(void) const {
+        return _flags.fly_forward;
+    }
+
     void set_wind_estimation(bool b) {
         _flags.wind_estimation = b;
     }
