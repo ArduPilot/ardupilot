@@ -217,11 +217,25 @@ bool AP_Mission::read_cmd_from_storage(uint8_t index, Mission_Command& cmd) cons
     // read WP position
     pos_in_storage = (AP_MISSION_EEPROM_START_BYTE) + (index * AP_MISSION_EEPROM_COMMAND_SIZE);
 
+    cmd.content.location.id = hal.storage->read_byte(pos_in_storage);
+    pos_in_storage++;
+
+    cmd.content.location.options = hal.storage->read_byte(pos_in_storage);
+    pos_in_storage++;
+
+    cmd.content.location.p1 = hal.storage->read_byte(pos_in_storage);
+    pos_in_storage++;
+
+    cmd.content.location.alt = hal.storage->read_dword(pos_in_storage);
+    pos_in_storage += 4;
+
+    cmd.content.location.lat = hal.storage->read_dword(pos_in_storage);
+    pos_in_storage += 4;
+
+    cmd.content.location.lng = hal.storage->read_dword(pos_in_storage);
+
     // set command's index to it's position in eeprom
     cmd.index = index;
-
-    // read command from eeprom
-    hal.storage->read_block(cmd.content.bytes, pos_in_storage, AP_MISSION_EEPROM_COMMAND_SIZE);
 
     // set command from location's command
     // To-Do: remove id (and p1?) from Location structure
@@ -244,12 +258,23 @@ bool AP_Mission::write_cmd_to_storage(uint8_t index, Mission_Command& cmd)
     // calculate where in storage the command should be placed
     uint16_t pos_in_storage = AP_MISSION_EEPROM_START_BYTE + (index * AP_MISSION_EEPROM_COMMAND_SIZE);
 
-    // set location id to cmd.id
-    // To-Do: remove id (and p1?) from Location structure
     cmd.content.location.id = cmd.id;
+    hal.storage->write_byte(pos_in_storage, cmd.content.location.id);
 
-    // write block to eeprom
-    hal.storage->write_block(pos_in_storage, cmd.content.bytes, AP_MISSION_EEPROM_COMMAND_SIZE);
+    pos_in_storage++;
+    hal.storage->write_byte(pos_in_storage, cmd.content.location.options);
+
+    pos_in_storage++;
+    hal.storage->write_byte(pos_in_storage, cmd.content.location.p1);
+
+    pos_in_storage++;
+    hal.storage->write_dword(pos_in_storage, cmd.content.location.alt);
+
+    pos_in_storage += 4;
+    hal.storage->write_dword(pos_in_storage, cmd.content.location.lat);
+
+    pos_in_storage += 4;
+    hal.storage->write_dword(pos_in_storage, cmd.content.location.lng);
 
     // return success
     return true;
@@ -295,7 +320,7 @@ bool AP_Mission::advance_current_nav_cmd()
     // get starting point for search
     cmd_index = _nav_cmd.index;
     if (cmd_index == AP_MISSION_CMD_INDEX_NONE) {
-        cmd_index = 0;
+        cmd_index = AP_MISSION_FIRST_REAL_COMMAND;
     }else{
         // start from one position past the current nav command
         cmd_index++;
@@ -303,7 +328,6 @@ bool AP_Mission::advance_current_nav_cmd()
 
     // search until we find next nav command or reach end of command list
     while (!_flags.nav_cmd_loaded) {
-
         // get next command
         if (!get_next_cmd(cmd_index, cmd, true)) {
             return false;
@@ -348,7 +372,7 @@ void AP_Mission::advance_current_do_cmd()
     // get starting point for search
     cmd_index = _do_cmd.index;
     if (cmd_index == AP_MISSION_CMD_INDEX_NONE) {
-        cmd_index = 0;
+        cmd_index = AP_MISSION_FIRST_REAL_COMMAND;
     }else{
         // start from one position past the current do command
         cmd_index++;
@@ -383,7 +407,6 @@ bool AP_Mission::get_next_cmd(uint8_t start_index, Mission_Command& cmd, bool in
 
     // search until the end of the mission command list
     while(cmd_index < _cmd_total) {
-
         // load the next command
         read_cmd_from_storage(cmd_index, temp_cmd);
 

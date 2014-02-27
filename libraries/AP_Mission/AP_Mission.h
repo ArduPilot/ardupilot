@@ -37,6 +37,8 @@
 #define AP_MISSION_CMD_INDEX_NONE           255     // command index of 255 means invalid or missing command
 #define AP_MISSION_JUMP_TIMES_MAX           255     // maximum number of times a jump can be executed.  Used when jump tracking fails (i.e. when too many jumps in mission)
 
+#define AP_MISSION_FIRST_REAL_COMMAND       1       // command #0 reserved to hold home position
+
 /// @class    AP_Mission
 /// @brief    Object managing Mission
 class AP_Mission {
@@ -56,8 +58,6 @@ public:
 
         // location
         Location location;      // Waypoint location
-
-        uint8_t bytes[AP_MISSION_EEPROM_COMMAND_SIZE];
     };
 
     // command structure
@@ -153,6 +153,10 @@ public:
 
     /// get_active_do_cmd - returns active "do" command
     const Mission_Command& get_current_do_cmd() const { return _do_cmd; }
+
+    // jump_to_cmd - jumps to command specified by index
+    //      To-Do: implement this function!
+    bool jump_to_cmd(uint8_t index) { return false; }
 
     /// load_cmd_from_storage - load command from storage
     ///     true is return if successful
