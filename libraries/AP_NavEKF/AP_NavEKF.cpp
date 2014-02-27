@@ -60,8 +60,8 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Param: MAG_NOISE
     // @DisplayName: Magntometer measurement noise (Gauss)
     // @Description: This is the RMS value of noise in magnetometer measurements. Increasing it reduces the weighting on these measurements.
-    // @Range: 0.05 - 0.5
-    // @Increment: 0.05
+    // @Range: 0.01 - 0.5
+    // @Increment: 0.01
     // @User: advanced
     AP_GROUPINFO("MAG_NOISE",    4, NavEKF, _magNoise, 0.05f),
 
@@ -1762,7 +1762,7 @@ void NavEKF::FuseMagnetometer()
             MagPred[2] = DCM[2][0]*magN + DCM[2][1]*magE  + DCM[2][2]*magD + magZbias;
 
             // scale magnetometer observation error with total angular rate
-            R_MAG = sq(constrain_float(_magNoise, 0.05f, 0.5f)) + sq(_magVarRateScale*dAngIMU.length() / dtIMU);
+            R_MAG = sq(constrain_float(_magNoise, 0.01f, 0.5f)) + sq(_magVarRateScale*dAngIMU.length() / dtIMU);
 
             // Calculate observation jacobians
 			SH_MAG[0] = 2*magD*q3 + 2*magE*q2 + 2*magN*q1;
