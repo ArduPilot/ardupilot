@@ -38,9 +38,10 @@ public:
     bool get_accel_health(uint8_t instance) const;
     uint8_t get_accel_count(void) const;
 
+    uint8_t get_primary_accel(void) const;
+
 private:
     uint8_t _get_primary_gyro(void) const;
-    uint8_t _get_primary_accel(void) const;
 
     uint16_t _init_sensor( Sample_rate sample_rate );
     void     _get_sample(void);

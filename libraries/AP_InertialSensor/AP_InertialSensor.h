@@ -107,7 +107,7 @@ public:
     /// @returns	vector of current accelerations in m/s/s
     ///
     const Vector3f     &get_accel(uint8_t i) const { return _accel[i]; }
-    const Vector3f     &get_accel(void) const { return get_accel(_get_primary_accel()); }
+    const Vector3f     &get_accel(void) const { return get_accel(get_primary_accel()); }
     virtual void       set_accel(uint8_t instance, const Vector3f &accel) {}
 
     // multi-device interface
@@ -116,16 +116,16 @@ public:
     virtual uint8_t get_gyro_count(void) const { return 1; };
 
     virtual bool get_accel_health(uint8_t instance) const { return true; }
-    bool get_accel_health(void) const { return get_accel_health(_get_primary_accel()); }
+    bool get_accel_health(void) const { return get_accel_health(get_primary_accel()); }
     virtual uint8_t get_accel_count(void) const { return 1; };
 
     // get accel offsets in m/s/s
     const Vector3f &get_accel_offsets(uint8_t i) const { return _accel_offset[i]; }
-    const Vector3f &get_accel_offsets(void) const { return get_accel_offsets(_get_primary_accel()); }
+    const Vector3f &get_accel_offsets(void) const { return get_accel_offsets(get_primary_accel()); }
 
     // get accel scale
     const Vector3f &get_accel_scale(uint8_t i) const { return _accel_scale[i]; }
-    const Vector3f &get_accel_scale(void) const { return get_accel_scale(_get_primary_accel()); }
+    const Vector3f &get_accel_scale(void) const { return get_accel_scale(get_primary_accel()); }
 
     /* Update the sensor data, so that getters are nonblocking.
      * Returns a bool of whether data was updated or not.
@@ -162,10 +162,11 @@ public:
     virtual uint16_t error_count(void) const { return 0; }
     virtual bool healthy(void) const { return get_gyro_health() && get_accel_health(); }
 
+    virtual uint8_t get_primary_accel(void) const { return 0; }
+
 protected:
 
     virtual uint8_t _get_primary_gyro(void) const { return 0; }
-    virtual uint8_t _get_primary_accel(void) const { return 0; }
 
     // sensor specific init to be overwritten by descendant classes
     virtual uint16_t        _init_sensor( Sample_rate sample_rate ) = 0;

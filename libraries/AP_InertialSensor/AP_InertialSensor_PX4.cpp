@@ -252,7 +252,7 @@ uint8_t AP_InertialSensor_PX4::_get_primary_gyro(void) const
     return 0;
 }
 
-uint8_t AP_InertialSensor_PX4::_get_primary_accel(void) const 
+uint8_t AP_InertialSensor_PX4::get_primary_accel(void) const 
 {
     for (uint8_t i=0; i<_num_accel_instances; i++) {
         if (get_accel_health(i)) return i;
