@@ -128,7 +128,7 @@ public:
     }
 
     // accelerometer values in the earth frame in m/s/s
-    const Vector3f &get_accel_ef(void) const { return _accel_ef[_active_accel_instance]; }
+    const Vector3f &get_accel_ef(void) const { return _accel_ef[_ins.get_primary_accel()]; }
 
     // Methods
     virtual void update(void) = 0;
