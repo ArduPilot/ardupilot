@@ -204,18 +204,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(wp_yaw_behavior,  "WP_YAW_BEHAVIOR",    WP_YAW_BEHAVIOR_DEFAULT),
 
-    // @Param: WP_TOTAL
-    // @DisplayName: Waypoint Total
-    // @Description: Total number of commands in the mission stored in the eeprom.  Do not update this parameter directly!
-    // @User: Advanced
-    GSCALAR(command_total,  "WP_TOTAL",         0),
-
-    // @Param: WP_INDEX
-    // @DisplayName: Waypoint Index
-    // @Description: The index number of the command that is currently being executed.  Do not update this parameter directly!
-    // @User: Advanced
-    GSCALAR(command_index,  "WP_INDEX",         0),
-
     // @Param: RTL_LOIT_TIME
     // @DisplayName: RTL loiter time
     // @Description: Time (in milliseconds) to loiter above home before begining final descent
@@ -1016,6 +1004,10 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/AP_NavEKF/AP_NavEKF.cpp
     GOBJECTN(ahrs.get_NavEKF(), NavEKF, "EKF_", NavEKF),
 #endif
+
+    // @Group: MIS_
+    // @Path: ../libraries/AP_Mission/AP_Mission.cpp
+    GOBJECT(mission, "MIS_",       AP_Mission),
 
     AP_VAREND
 };

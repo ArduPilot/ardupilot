@@ -99,6 +99,7 @@ public:
         k_param_rssi_range,
         k_param_rc_feel_rp,
         k_param_NavEKF,                 // 41 - Extended Kalman Filter Inertial Navigation Group
+        k_param_mission,                // mission library
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -247,8 +248,8 @@ public:
         // 210: Waypoint data
         //
         k_param_waypoint_mode = 210, // remove
-        k_param_command_total,
-        k_param_command_index,
+        k_param_command_total,       // remove
+        k_param_command_index,       // remove
         k_param_command_nav_index,   // remove
         k_param_waypoint_radius,     // remove
         k_param_circle_radius,       // remove
@@ -328,8 +329,6 @@ public:
     
     // Waypoints
     //
-    AP_Int8         command_total;
-    AP_Int8         command_index;
     AP_Int32        rtl_loiter_time;
     AP_Int16        land_speed;
     AP_Int16        pilot_velocity_z_max;        // maximum vertical velocity the pilot may request
