@@ -80,7 +80,7 @@ static struct Location get_cmd_with_index(int16_t i)
 
     // Add on home altitude if we are a nav command (or other command with altitude) and stored alt is relative
     if ((temp.id < MAV_CMD_NAV_LAST || temp.id == MAV_CMD_CONDITION_CHANGE_ALT) &&
-        (temp.options & MASK_OPTIONS_RELATIVE_ALT) &&
+        (temp.options & LOCATION_MASK_OPTIONS_RELATIVE_ALT) &&
         (temp.lat != 0 || temp.lng != 0 || temp.alt != 0)) {
         temp.alt += home.alt;
     }
@@ -97,10 +97,10 @@ static void set_cmd_with_index(struct Location temp, int16_t i)
 
     // force home wp to absolute height
     if (i == 0) {
-        temp.options &= ~(MASK_OPTIONS_RELATIVE_ALT);
+        temp.options &= ~(LOCATION_MASK_OPTIONS_RELATIVE_ALT);
     }
     // zero unused bits
-    temp.options &= (MASK_OPTIONS_RELATIVE_ALT | MASK_OPTIONS_LOITER_DIRECTION);
+    temp.options &= (LOCATION_MASK_OPTIONS_RELATIVE_ALT | LOCATION_MASK_OPTIONS_LOITER_DIRECTION);
 
     hal.storage->write_byte(mem, temp.id);
 

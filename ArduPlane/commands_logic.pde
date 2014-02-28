@@ -274,7 +274,7 @@ static void do_land()
 
 static void loiter_set_direction_wp(const struct Location *nav_command)
 {
-    if (nav_command->options & MASK_OPTIONS_LOITER_DIRECTION) {
+    if (nav_command->options & LOCATION_MASK_OPTIONS_LOITER_DIRECTION) {
         loiter.direction = -1;
     } else {
         loiter.direction = 1;

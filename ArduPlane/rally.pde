@@ -68,7 +68,7 @@ static Location rally_location_to_location(const RallyLocation &r_loc, const Loc
     Location ret = {};
 
     ret.id = MAV_CMD_NAV_LOITER_UNLIM;
-    ret.options = MASK_OPTIONS_RELATIVE_ALT;
+    ret.options = LOCATION_MASK_OPTIONS_RELATIVE_ALT;
 
     //Currently can't do true AGL on the APM.  Relative altitudes are
     //relative to HOME point's altitude.  Terrain on the board is inbound
