@@ -205,8 +205,8 @@ bool AP_Mission::read_cmd_from_storage(uint8_t index, Mission_Command& cmd) cons
 {
     uint16_t pos_in_storage;    // position in storage from where we will read the next byte
 
-    // exit immediately if index is beyond last command
-    if (index > _cmd_total) {
+    // exit immediately if index is beyond last command but we always let cmd #0 (i.e. home) be read
+    if (index > _cmd_total && index != 0) {
         // return a command with a blank id
         cmd.id = AP_MISSION_CMD_ID_NONE;
         return false;
@@ -723,29 +723,43 @@ bool AP_Mission::get_next_cmd(uint8_t start_index, Mission_Command& cmd, bool in
 
         // check for do-jump command
         if (temp_cmd.id == MAV_CMD_DO_JUMP) {
+
+            // check for invalid target
+            if (temp_cmd.content.jump.target >= _cmd_total) {
+                // To-Do: log an error?
+                return false;
+            }
+
             // check for endless loops
             if (!increment_jump_num_times_if_found && jump_index == cmd_index) {
                 // we have somehow reached this jump command twice and there is no chance it will complete
                 // To-Do: log an error?
                 return false;
-            }else{
-                if (jump_index == AP_MISSION_CMD_INDEX_NONE) {
-                    // record this command so we can check for endless loops
-                    jump_index = cmd_index;
-                }
             }
-            // get number of times jump command has already been run
-            uint8_t jump_times_run = get_jump_times_run(temp_cmd);
-            if (jump_times_run < temp_cmd.content.jump.num_times) {
-                // update the record of the number of times run
-                if (increment_jump_num_times_if_found) {
-                    increment_jump_times_run(temp_cmd);
-                }
+
+            // record this command so we can check for endless loops
+            if (jump_index == AP_MISSION_CMD_INDEX_NONE) {
+                jump_index = cmd_index;
+            }
+
+            // check if jump command is 'repeat forever'
+            if (temp_cmd.content.jump.num_times == AP_MISSION_JUMP_REPEAT_FOREVER) {
                 // continue searching from jump target
                 cmd_index = temp_cmd.content.jump.target;
             }else{
-                // jump has been run specified number of times so move search to next command in mission
-                cmd_index++;
+                // get number of times jump command has already been run
+                int16_t jump_times_run = get_jump_times_run(temp_cmd);
+                if (jump_times_run < temp_cmd.content.jump.num_times) {
+                    // update the record of the number of times run
+                    if (increment_jump_num_times_if_found) {
+                        increment_jump_times_run(temp_cmd);
+                    }
+                    // continue searching from jump target
+                    cmd_index = temp_cmd.content.jump.target;
+                }else{
+                    // jump has been run specified number of times so move search to next command in mission
+                    cmd_index++;
+                }
             }
         }else{
             // this is a non-jump command so return it
@@ -799,10 +813,10 @@ void AP_Mission::init_jump_tracking()
 }
 
 /// get_jump_times_run - returns number of times the jump command has been run
-uint8_t AP_Mission::get_jump_times_run(const Mission_Command& cmd)
+int16_t AP_Mission::get_jump_times_run(const Mission_Command& cmd)
 {
-    // exit immediatley if cmd is not a do-jump command
-    if (cmd.id != MAV_CMD_DO_JUMP) {
+    // exit immediatley if cmd is not a do-jump command or target is invalid
+    if (cmd.id != MAV_CMD_DO_JUMP || cmd.content.jump.target >= _cmd_total) {
         // To-Do: log an error?
         return AP_MISSION_JUMP_TIMES_MAX;
     }

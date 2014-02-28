@@ -32,6 +32,7 @@
 #define AP_MISSION_MAX_COMMANDS             ((AP_MISSION_FENCE_START_BYTE - AP_MISSION_EEPROM_START_BYTE) / AP_MISSION_EEPROM_COMMAND_SIZE) - 1 // -1 to be safe
 
 #define AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS 3       // only allow up to 3 do-jump commands (due to RAM limitations on the APM2)
+#define AP_MISSION_JUMP_REPEAT_FOREVER      -1      // when do-jump command's repeat count is -1 this means endless repeat
 
 #define AP_MISSION_CMD_ID_NONE              0       // mavlink cmd id of zero means invalid or missing command
 #define AP_MISSION_CMD_INDEX_NONE           255     // command index of 255 means invalid or missing command
@@ -49,7 +50,7 @@ public:
     struct Jump_Command {
         uint8_t id;         // mavlink command id.  To-Do: this can be removed once it is also removed from Location structure
         uint8_t target;     // DO_JUMP target command id
-        uint8_t num_times;  // DO_JUMP num times to repeat
+        int16_t num_times;  // DO_JUMP num times to repeat.  -1 = repeat forever
     };
 
     union Content {
@@ -224,7 +225,8 @@ private:
     void init_jump_tracking();
 
     /// get_jump_times_run - returns number of times the jump command has been run
-    uint8_t get_jump_times_run(const Mission_Command& cmd);
+    ///     return is signed to be consistent with do-jump cmd's repeat count which can be -1 (to signify to repeat forever)
+    int16_t get_jump_times_run(const Mission_Command& cmd);
 
     /// increment_jump_times_run - increments the recorded number of times the jump command has been run
     void increment_jump_times_run(Mission_Command& cmd);
@@ -248,7 +250,7 @@ private:
     // jump related variables
     struct jump_tracking_struct {
         uint8_t index;                  // index of do-jump commands in mission
-        uint8_t num_times_run;          // number of times
+        int16_t num_times_run;          // number of times this jump command has been run
     } _jump_tracking[AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS];
 };
 
