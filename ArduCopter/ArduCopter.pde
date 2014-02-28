@@ -353,7 +353,7 @@ AP_AHRS_DCM ahrs(ins, barometer, g_gps);
 static bool start_command(const AP_Mission::Mission_Command& cmd);
 static bool verify_command(const AP_Mission::Mission_Command& cmd);
 static void exit_mission();
-AP_Mission mission(&start_command, &verify_command, &exit_mission);
+AP_Mission mission(ahrs, &start_command, &verify_command, &exit_mission);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Optical flow sensor
