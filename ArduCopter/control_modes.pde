@@ -187,67 +187,53 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             // save waypoint when switch is brought high
             if (ch_flag == AUX_SWITCH_HIGH) {
 
-                // if in auto mode, reset the mission
-                if(control_mode == AUTO) {
-                    aux_switch_wp_index = 0;
-                    g.command_total.set_and_save(1);
-                    set_mode(RTL);  // if by chance we are unable to switch to RTL we just stay in AUTO and hope the GPS failsafe will take-over
-                    Log_Write_Event(DATA_SAVEWP_CLEAR_MISSION_RTL);
+                // do not allow saving new waypoints while we're in auto or disarmed
+                if(control_mode == AUTO || !motors.armed()) {
                     return;
                 }
 
-				// we're on the ground
-				if((g.rc_3.control_in == 0) && (aux_switch_wp_index == 0)){
-					// nothing to do
+				// do not allow saving the first waypoint with zero throttle
+				if((mission.num_commands() == 0) && (g.rc_3.control_in == 0)){
 					return;
 				}
 
-                // initialise new waypoint to current location
-                Location new_wp;
+                // create new mission command
+                AP_Mission::Mission_Command cmd;
 
-                if(aux_switch_wp_index == 0) {
-                    // this is our first WP, let's save WP 1 as a takeoff
-                    // increment index to WP index of 1 (home is stored at 0)
-                    aux_switch_wp_index = 1;
-
+                // if the mission is empty save a takeoff command
+                if(mission.num_commands() == 0) {
                     // set our location ID to 16, MAV_CMD_NAV_WAYPOINT
-                    new_wp.id = MAV_CMD_NAV_TAKEOFF;
-                    new_wp.options = 0;
-                    new_wp.p1 = 0;
-                    new_wp.lat = 0;
-                    new_wp.lng = 0;
-                    new_wp.alt = max(current_loc.alt,100);
+                    cmd.id = MAV_CMD_NAV_TAKEOFF;
+                    cmd.content.location.options = 0;
+                    cmd.content.location.p1 = 0;
+                    cmd.content.location.lat = 0;
+                    cmd.content.location.lng = 0;
+                    cmd.content.location.alt = max(current_loc.alt,100);
 
-                    // save command:
-                    // we use the current altitude to be the target for takeoff.
+                    // use the current altitude for the target alt for takeoff.
                     // only altitude will matter to the AP mission script for takeoff.
-                    // If we are above the altitude, we will skip the command.
-                    set_cmd_with_index(new_wp, aux_switch_wp_index);
+                    if(mission.add_cmd(cmd)) {
+                        // log event
+                        Log_Write_Event(DATA_SAVEWP_ADD_WP);
+                    }
                 }
 
-                // initialise new waypoint to current location
-                new_wp = current_loc;
+                // set new waypoint to current location
+                cmd.content.location = current_loc;
 
-                // increment index
-                aux_switch_wp_index++;
-
-                // set the next_WP (home is stored at 0)
-                // max out at 100 since I think we need to stay under the EEPROM limit
-                aux_switch_wp_index = constrain_int16(aux_switch_wp_index, 1, 100);
-
+                // if throttle is above zero, create waypoint command
                 if(g.rc_3.control_in > 0) {
-                    // set our location ID to 16, MAV_CMD_NAV_WAYPOINT
-                    new_wp.id = MAV_CMD_NAV_WAYPOINT;
+                    cmd.id = MAV_CMD_NAV_WAYPOINT;
                 }else{
-					// set our location ID to 21, MAV_CMD_NAV_LAND
-					new_wp.id = MAV_CMD_NAV_LAND;
+					// with zero throttle, create LAND command
+                    cmd.id = MAV_CMD_NAV_LAND;
                 }
 
                 // save command
-                set_cmd_with_index(new_wp, aux_switch_wp_index);
-
-                // log event
-                Log_Write_Event(DATA_SAVEWP_ADD_WP);
+                if(mission.add_cmd(cmd)) {
+                    // log event
+                    Log_Write_Event(DATA_SAVEWP_ADD_WP);
+                }
             }
             break;
 
