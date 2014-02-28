@@ -287,6 +287,310 @@ bool AP_Mission::write_cmd_to_storage(uint8_t index, Mission_Command& cmd)
     return true;
 }
 
+// mavlink_to_mission_cmd - converts mavlink message to an AP_Mission::Mission_Command object which can be stored to eeprom
+//  return true on success, false on failure
+bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP_Mission::Mission_Command& cmd)
+{
+    bool copy_location = false;
+
+    // command's position in mission list and mavlink id
+    cmd.index = packet.seq;
+    cmd.id = packet.command;
+
+    // command specific conversions from mavlink packet to mission command
+    switch (cmd.id) {
+
+    case MAV_CMD_NAV_WAYPOINT:                          // MAV ID: 16
+        copy_location = true;
+        cmd.content.location.p1 = packet.param1;        // delay at waypoint in seconds
+        break;
+
+    case MAV_CMD_NAV_LOITER_UNLIM:                      // MAV ID: 17
+        copy_location = true;
+        break;
+
+    case MAV_CMD_NAV_LOITER_TURNS:                      // MAV ID: 18
+        copy_location = true;
+        cmd.content.location.p1 = packet.param1;        // number of times to circle is held in location.p1
+        break;
+
+    case MAV_CMD_NAV_LOITER_TIME:                       // MAV ID: 19
+        copy_location = true;
+        cmd.content.location.p1 = packet.param1;        // loiter time in seconds
+        break;
+
+    case MAV_CMD_NAV_RETURN_TO_LAUNCH:                  // MAV ID: 20
+        copy_location = true;
+        break;
+
+    case MAV_CMD_NAV_LAND:                              // MAV ID: 21
+        copy_location = true;
+        break;
+
+    case MAV_CMD_NAV_TAKEOFF:                           // MAV ID: 22
+        copy_location = true;                           // only altitude is used
+        break;
+
+    case MAV_CMD_CONDITION_DELAY:                       // MAV ID: 112
+        cmd.content.location.lat = packet.param1;       // delay in seconds
+        break;
+
+    case MAV_CMD_CONDITION_CHANGE_ALT:                  // MAV ID: 113
+        copy_location = true;                           // only altitude is used
+        cmd.content.location.p1 = packet.param1 * 100;  // climb/descent rate converted from m/s to cm/s
+        break;
+
+    case MAV_CMD_CONDITION_DISTANCE:                    // MAV ID: 114
+        cmd.content.location.lat = packet.param1;       // distance in meters from next waypoint
+        break;
+
+    case MAV_CMD_CONDITION_YAW:                         // MAV ID: 115
+        cmd.content.location.alt = packet.param1;       // target angle in degrees
+        cmd.content.location.lat = packet.param2;       // lat=0: use default turn rate otherwise specific turn rate in deg/sec
+        cmd.content.location.p1 = packet.param3;        // -1 = ccw, +1 = cw
+        cmd.content.location.lng = packet.param4;       // lng=0: absolute angle provided, lng=1: relative angle provided
+        break;
+
+    case MAV_CMD_DO_SET_MODE:                           // MAV ID: 176
+        cmd.content.location.p1 = packet.param1;        // set flight mode.  To-Do: make mapping function from MAVLINK defined flight modes to AC/AP/AR flight modes
+        break;
+
+    case MAV_CMD_DO_JUMP:                               // MAV ID: 177
+        cmd.content.jump.target = packet.param1;        // jump-to command number
+        cmd.content.jump.num_times = packet.param2;     // repeat count
+        break;
+
+    case MAV_CMD_DO_CHANGE_SPEED:                       // MAV ID: 178
+        cmd.content.location.p1 = packet.param1;        // 0 = airspeed, 1 = ground speed
+        cmd.content.location.alt = packet.param2;       // speed in m/s
+        cmd.content.location.lat = packet.param3;       // throttle as a percentage from 0 ~ 100%
+        break;
+
+    case MAV_CMD_DO_SET_HOME:
+        copy_location = true;
+        cmd.content.location.p1 = packet.param1;        // p1=0 means use current location, p=1 means use provided location
+        break;
+
+    case MAV_CMD_DO_SET_PARAMETER:                      // MAV ID: 180
+        cmd.content.location.p1 = packet.param1;        // parameter number
+        cmd.content.location.alt = packet.param2;       // parameter value
+        break;
+
+    case MAV_CMD_DO_SET_RELAY:                          // MAV ID: 181
+        cmd.content.location.p1 = packet.param1;        // relay number
+        cmd.content.location.alt = packet.param2;       // 0:off, 1:on
+        break;
+
+    case MAV_CMD_DO_REPEAT_RELAY:                       // MAV ID: 182
+        cmd.content.location.p1  = packet.param1;       // relay number
+        cmd.content.location.alt = packet.param2;       // count
+        cmd.content.location.lat = packet.param3*1000;  // time
+        break;
+
+    case MAV_CMD_DO_SET_SERVO:                          // MAV ID: 183
+        cmd.content.location.p1 = packet.param1;        // channel
+        cmd.content.location.alt = packet.param2;       // PWM
+        break;
+
+    case MAV_CMD_DO_REPEAT_SERVO:                       // MAV ID: 184
+        cmd.content.location.p1  = packet.param1;       // channel
+        cmd.content.location.alt = packet.param2;       // PWM
+        cmd.content.location.lat = packet.param3;       // count
+        cmd.content.location.lng = packet.param4*1000;  // time in seconds converted to milliseconds
+        break;
+
+    case MAV_CMD_DO_SET_ROI:                            // MAV ID: 201
+        copy_location = true;
+        cmd.content.location.p1 = packet.param1;        // 0 = no roi, 1 = next waypoint, 2 = waypoint number, 3 = fixed location, 4 = given target (not supported)
+        break;
+
+    case MAV_CMD_DO_DIGICAM_CONTROL:                    // MAV ID: 203
+    case MAV_CMD_DO_MOUNT_CONTROL:                      // MAV ID: 205
+        // these commands takes no parameters
+        break;
+
+    case MAV_CMD_DO_SET_CAM_TRIGG_DIST:                 // MAV ID: 206
+        cmd.content.location.alt = packet.param1;       // use alt so we can support 32 bit values
+        break;
+
+    default:
+        // unrecognised command
+        return false;
+        break;
+    }
+
+    // copy location from mavlink to command
+    if (copy_location) {
+        cmd.content.location.lat = 1.0e7f * packet.x;   // floating point latitude to int32_t
+        cmd.content.location.lng = 1.0e7f * packet.y;   // floating point longitude to int32_t
+        cmd.content.location.alt = packet.z * 100.0f;   // convert packet's alt (m) to cmd alt (cm)
+        if (packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT) {    // convert rel/abs alt to packet's frame
+            cmd.content.location.options = 1;                   // To-Do: check this never overwrites any other uses of 'options'
+        }else{
+            cmd.content.location.options = 0;
+        }
+    }
+
+    // if we got this far then it must have been succesful
+    return true;
+}
+
+// mission_cmd_to_mavlink - converts an AP_Mission::Mission_Command object to a mavlink message which can be sent to the GCS
+//  return true on success, false on failure
+bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, mavlink_mission_item_t& packet)
+{
+    bool copy_location = false;
+
+    // command's position in mission list and mavlink id
+    packet.seq = cmd.index;
+    packet.command = cmd.id;
+
+    // set defaults
+    packet.current = 0;     // 1 if we are passing back the mission command that is currently being executed
+    packet.param1 = 0;
+    packet.param2 = 0;
+    packet.param3 = 0;
+    packet.param4 = 0;
+    packet.autocontinue = 1;
+
+    // command specific conversions from mission command to mavlink packet
+    switch (cmd.id) {
+
+    case MAV_CMD_NAV_WAYPOINT:          // MAV ID: 16
+        copy_location = true;
+        packet.param1 = cmd.content.location.p1;        // delay at waypoint in seconds
+        break;
+
+    case MAV_CMD_NAV_LOITER_UNLIM:      // MAV ID: 17
+        copy_location = true;
+        break;
+
+    case MAV_CMD_NAV_LOITER_TURNS:      // MAV ID: 18
+        copy_location = true;
+        packet.param1 = cmd.content.location.p1;        // number of times to circle is held in location.p1
+        break;
+
+    case MAV_CMD_NAV_LOITER_TIME:       // MAV ID: 19
+        copy_location = true;
+        packet.param1 = cmd.content.location.p1;        // loiter time in seconds
+        break;
+
+    case MAV_CMD_NAV_RETURN_TO_LAUNCH:  // MAV ID: 20
+        copy_location = true;
+        break;
+
+    case MAV_CMD_NAV_LAND:              // MAV ID: 21
+        copy_location = true;
+        break;
+
+    case MAV_CMD_NAV_TAKEOFF:           // MAV ID: 22
+        copy_location = true;                           // only altitude is used
+        break;
+
+    case MAV_CMD_CONDITION_DELAY:       // MAV ID: 112
+        packet.param1 = cmd.content.location.lat;       // delay in seconds
+        break;
+
+    case MAV_CMD_CONDITION_CHANGE_ALT:  // MAV ID: 113
+        copy_location = true;                           // only altitude is used
+        packet.param1 = cmd.content.location.p1/100;    // climb/descent rate converted from m/s to cm/s
+        break;
+
+    case MAV_CMD_CONDITION_DISTANCE:    // MAV ID: 114
+        packet.param1 = cmd.content.location.lat;       // distance in meters from next waypoint
+        break;
+
+    case MAV_CMD_CONDITION_YAW:         // MAV ID: 115
+        packet.param1 = cmd.content.location.alt;       // target angle in degrees
+        packet.param2 = cmd.content.location.lat;       // lat=0: use default turn rate otherwise specific turn rate in deg/sec
+        packet.param3 = cmd.content.location.p1;        // -1 = ccw, +1 = cw
+        packet.param4 = cmd.content.location.lng;       // lng=0: absolute angle provided, lng=1: relative angle provided
+        break;
+
+    case MAV_CMD_DO_SET_MODE:           // MAV ID: 176
+        packet.param1 = cmd.content.location.p1;        // set flight mode.  To-Do: make mapping function from MAVLINK defined flight modes to AC/AP/AR flight modes
+        break;
+
+    case MAV_CMD_DO_JUMP:               // MAV ID: 177
+        packet.param1 = cmd.content.jump.target;        // jump-to command number
+        packet.param2 = cmd.content.jump.num_times;     // repeat count
+        break;
+
+    case MAV_CMD_DO_CHANGE_SPEED:       // MAV ID: 178
+        packet.param1 = cmd.content.location.p1;        // 0 = airspeed, 1 = ground speed
+        packet.param2 = cmd.content.location.alt;       // speed in m/s
+        packet.param3 = cmd.content.location.lat;       // throttle as a percentage from 0 ~ 100%
+        break;
+
+    case MAV_CMD_DO_SET_HOME:           // MAV ID: 179
+        copy_location = true;
+        packet.param1 = cmd.content.location.p1;        // p1=0 means use current location, p=1 means use provided location
+        break;
+
+    case MAV_CMD_DO_SET_PARAMETER:      // MAV ID: 180
+        packet.param1 = cmd.content.location.p1;        // parameter number
+        packet.param2 = cmd.content.location.alt;       // parameter value
+        break;
+
+    case MAV_CMD_DO_SET_RELAY:          // MAV ID: 181
+        packet.param1 = cmd.content.location.p1;        // relay number
+        packet.param2 = cmd.content.location.alt;       // 0:off, 1:on
+        break;
+
+    case MAV_CMD_DO_REPEAT_RELAY:       // MAV ID: 182
+        packet.param1 = cmd.content.location.p1;        // relay number
+        packet.param2 = cmd.content.location.alt;       // count
+        packet.param3 = cmd.content.location.lat/1000;  // time
+        break;
+
+    case MAV_CMD_DO_SET_SERVO:          // MAV ID: 183
+        packet.param1 = cmd.content.location.p1;        // channel
+        packet.param2 = cmd.content.location.alt;       // PWM
+        break;
+
+    case MAV_CMD_DO_REPEAT_SERVO:       // MAV ID: 184
+        packet.param1 = cmd.content.location.p1;        // channel
+        packet.param2 = cmd.content.location.alt;       // PWM
+        packet.param3 = cmd.content.location.lat;       // count
+        packet.param4 = cmd.content.location.lng/1000;  // time in seconds converted to milliseconds
+        break;
+
+    case MAV_CMD_DO_SET_ROI:            // MAV ID: 201
+        copy_location = true;
+        packet.param1 = cmd.content.location.p1;        // 0 = no roi, 1 = next waypoint, 2 = waypoint number, 3 = fixed location, 4 = given target (not supported)
+        break;
+
+    case MAV_CMD_DO_DIGICAM_CONTROL:    // MAV ID: 203
+    case MAV_CMD_DO_MOUNT_CONTROL:      // MAV ID: 205
+        // these commands takes no parameters
+        break;
+
+    case MAV_CMD_DO_SET_CAM_TRIGG_DIST: // MAV ID: 206
+        packet.param1 = cmd.content.location.alt;       // use alt so we can support 32 bit values
+        break;
+
+    default:
+        // unrecognised command
+        return false;
+        break;
+    }
+
+    // copy location from mavlink to command
+    if (copy_location) {
+        packet.x = cmd.content.location.lat / 1.0e7f;   // int32_t latitude to float
+        packet.y = cmd.content.location.lng / 1.0e7f;   // int32_t longitude to float
+        packet.z = cmd.content.location.alt / 100.0f;   // cmd alt in cm to m
+        if (cmd.content.location.options & LOCATION_MASK_OPTIONS_RELATIVE_ALT) {
+            packet.frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
+        }else{
+            packet.frame = MAV_FRAME_GLOBAL;
+        }
+    }
+
+    // if we got this far then it must have been succesful
+    return true;
+}
+
 ///
 /// private methods
 ///
