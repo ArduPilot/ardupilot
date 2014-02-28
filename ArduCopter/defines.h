@@ -161,12 +161,6 @@
 #define RC_FEEL_RP_CRISP            75
 #define RC_FEEL_RP_VERY_CRISP       100
 
-// Commands - Note that APM now uses a subset of the MAVLink protocol
-// commands.  See enum MAV_CMD in the GCS_Mavlink library
-#define CMD_BLANK 0 // there is no command stored in the mem location
-                    // requested
-#define NO_COMMAND 0
-
 // Yaw behaviours during missions - possible values for WP_YAW_BEHAVIOR parameter
 #define WP_YAW_BEHAVIOR_NONE                          0   // auto pilot will never control yaw during missions or rtl (except for DO_CONDITIONAL_YAW command received)
 #define WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP               1   // auto pilot will face next waypoint or home during rtl
