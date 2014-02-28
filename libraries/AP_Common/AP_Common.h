@@ -87,6 +87,8 @@
 /// bit 7: Move to next Command             0: YES,         1: Loiter until commanded
 
 //@{
+#define LOCATION_MASK_OPTIONS_RELATIVE_ALT      (1<<0)     // 1 = Relative altitude
+#define LOCATION_MASK_OPTIONS_LOITER_DIRECTION  (1<<2)     // 0 = CW, 1 = CCW
 
 struct Location {
     uint8_t id;                                                 ///< command id
