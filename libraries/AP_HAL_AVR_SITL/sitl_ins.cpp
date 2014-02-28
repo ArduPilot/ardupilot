@@ -134,26 +134,38 @@ void SITL_State::_update_ins(float roll, 	float pitch, 	float yaw,		// Relative 
 		accel_noise += _sitl->accel_noise;
 		gyro_noise += ToRad(_sitl->gyro_noise);
 	}
-	xAccel += accel_noise * _rand_float();
-	yAccel += accel_noise * _rand_float();
-	zAccel += accel_noise * _rand_float();
+	float xAccel1 = xAccel + accel_noise * _rand_float();
+	float yAccel1 = yAccel + accel_noise * _rand_float();
+	float zAccel1 = zAccel + accel_noise * _rand_float();
+
+	float xAccel2 = xAccel + accel_noise * _rand_float();
+	float yAccel2 = yAccel + accel_noise * _rand_float();
+	float zAccel2 = zAccel + accel_noise * _rand_float();
 
         if (fabs(_sitl->accel_fail) > 1.0e-6) {
-            xAccel = _sitl->accel_fail;
-            yAccel = _sitl->accel_fail;
-            zAccel = _sitl->accel_fail;
+            xAccel1 = _sitl->accel_fail;
+            yAccel1 = _sitl->accel_fail;
+            zAccel1 = _sitl->accel_fail;
         }
 
-	p += gyro_noise * _rand_float();
-	q += gyro_noise * _rand_float();
-	r += gyro_noise * _rand_float();
+	_ins->set_accel(0, Vector3f(xAccel1, yAccel1, zAccel1) + _ins->get_accel_offsets(0));
+	_ins->set_accel(1, Vector3f(xAccel2, yAccel2, zAccel2) + _ins->get_accel_offsets(1));
 
 	p += _gyro_drift();
 	q += _gyro_drift();
 	r += _gyro_drift();
 
-	_ins->set_gyro(0, Vector3f(p, q, r) + _ins->get_gyro_offsets());
-	_ins->set_accel(0, Vector3f(xAccel, yAccel, zAccel) + _ins->get_accel_offsets());
+	float p1 = p + gyro_noise * _rand_float();
+	float q1 = q + gyro_noise * _rand_float();
+	float r1 = r + gyro_noise * _rand_float();
+
+	float p2 = p + gyro_noise * _rand_float();
+	float q2 = q + gyro_noise * _rand_float();
+	float r2 = r + gyro_noise * _rand_float();
+
+	_ins->set_gyro(0, Vector3f(p1, q1, r1) + _ins->get_gyro_offsets(0));
+	_ins->set_gyro(1, Vector3f(p2, q2, r2) + _ins->get_gyro_offsets(1));
+
 
         sonar_pin_value    = _ground_sonar(altitude);
         airspeed_pin_value = _airspeed_sensor(airspeed + (_sitl->aspd_noise * _rand_float()));
