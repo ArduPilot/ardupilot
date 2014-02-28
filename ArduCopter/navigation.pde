@@ -55,11 +55,9 @@ static void calc_distance_and_bearing()
 static void run_autopilot()
 {
     if (control_mode == AUTO) {
-        // load the next command if the command queues are empty
-        update_commands();
-
-        // process the active navigation and conditional commands
-        verify_commands();
+        // update state of mission
+        // may call commands_process.pde's start_command and verify_command functions
+        mission.update();
     }
 }
 
