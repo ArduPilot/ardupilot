@@ -31,6 +31,27 @@
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
+// INS and Baro declaration
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+
+AP_InertialSensor_MPU6000 ins;
+AP_Baro_MS5611 baro(&AP_Baro_MS5611::spi);
+
+#else
+
+AP_ADC_ADS7844 adc;
+AP_InertialSensor_Oilpan ins(&adc);
+AP_Baro_BMP085 baro;
+#endif
+
+// GPS declaration
+GPS *gps;
+AP_GPS_Auto auto_gps(&gps);
+GPS_Glitch gps_glitch(gps);
+
+AP_Compass_HMC5843 compass;
+AP_AHRS_DCM ahrs(ins, baro, gps);
+
 // global constants that control how many verify calls must be made for a command before it completes
 static uint8_t verify_nav_cmd_iterations_to_complete = 3;
 static uint8_t verify_do_cmd_iterations_to_complete = 1;
@@ -85,7 +106,7 @@ void mission_complete(void)
 }
 
 // declaration
-AP_Mission mission(&start_cmd, &verify_cmd, &mission_complete);
+AP_Mission mission(ahrs, &start_cmd, &verify_cmd, &mission_complete);
 
 // setup
 void setup(void)
