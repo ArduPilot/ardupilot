@@ -66,10 +66,6 @@ enum mode {
 #define NO_COMMAND 0
 #define WAIT_COMMAND 255
 
-// Command/Waypoint/Location Options Bitmask
-//--------------------
-#define MASK_OPTIONS_RELATIVE_ALT	(1<<0)		// 1 = Relative altitude
-
 //repeating events
 #define NO_REPEAT 0
 #define CH_5_TOGGLE 1

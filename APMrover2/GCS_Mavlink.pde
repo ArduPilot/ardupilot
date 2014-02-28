@@ -1273,7 +1273,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // set frame of waypoint
             uint8_t frame;
 
-			if (tell_command.options & MASK_OPTIONS_RELATIVE_ALT) {
+			if (tell_command.options & LOCATION_MASK_OPTIONS_RELATIVE_ALT) {
                 frame = MAV_FRAME_GLOBAL_RELATIVE_ALT; // reference frame
             } else {
                 frame = MAV_FRAME_GLOBAL; // reference frame
@@ -1560,7 +1560,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 						(radius_of_earth*cosf(ToRad(home.lat/1.0e7f)))) + home.lat;
 						tell_command.lng = 1.0e7f*ToDeg(packet.y/radius_of_earth) + home.lng;
 						tell_command.alt = -packet.z*1.0e2f;
-						tell_command.options = MASK_OPTIONS_RELATIVE_ALT;
+						tell_command.options = LOCATION_MASK_OPTIONS_RELATIVE_ALT;
 						break;
 					}
 #endif
@@ -1572,7 +1572,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 						(radius_of_earth*cosf(ToRad(home.lat/1.0e7f)))) + home.lat;
 						tell_command.lng = 1.0e7f*ToDeg(packet.y/radius_of_earth) + home.lng;
 						tell_command.alt = packet.z*1.0e2f;
-						tell_command.options = MASK_OPTIONS_RELATIVE_ALT;
+						tell_command.options = LOCATION_MASK_OPTIONS_RELATIVE_ALT;
 						break;
 					}
 #endif
@@ -1582,7 +1582,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 						tell_command.lat = 1.0e7f * packet.x; // in as DD converted to * t7
 						tell_command.lng = 1.0e7f * packet.y; // in as DD converted to * t7
 						tell_command.alt = packet.z * 1.0e2f;
-						tell_command.options = MASK_OPTIONS_RELATIVE_ALT; // store altitude relative!! Always!!
+						tell_command.options = LOCATION_MASK_OPTIONS_RELATIVE_ALT; // store altitude relative!! Always!!
 						break;
 					}
 
@@ -1659,7 +1659,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 				guided_WP = tell_command;
 
 				// add home alt if needed
-				if (guided_WP.options & MASK_OPTIONS_RELATIVE_ALT){
+				if (guided_WP.options & LOCATION_MASK_OPTIONS_RELATIVE_ALT){
 					guided_WP.alt += home.alt;
 				}
 
