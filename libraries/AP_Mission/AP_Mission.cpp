@@ -212,34 +212,41 @@ bool AP_Mission::read_cmd_from_storage(uint8_t index, Mission_Command& cmd) cons
         return false;
     }
 
-    // Find out proper location in memory by using the start_byte position + the index
-    // we can load a command, we don't process it yet
-    // read WP position
-    pos_in_storage = (AP_MISSION_EEPROM_START_BYTE) + (index * AP_MISSION_EEPROM_COMMAND_SIZE);
+    // special handling for command #0 which is home
+    if (index == 0) {
+        cmd.index = 0;
+        cmd.id = MAV_CMD_NAV_WAYPOINT;
+        cmd.content.location = _ahrs.get_home();
+    }else{
+        // Find out proper location in memory by using the start_byte position + the index
+        // we can load a command, we don't process it yet
+        // read WP position
+        pos_in_storage = (AP_MISSION_EEPROM_START_BYTE) + (index * AP_MISSION_EEPROM_COMMAND_SIZE);
 
-    cmd.content.location.id = hal.storage->read_byte(pos_in_storage);
-    pos_in_storage++;
+        cmd.content.location.id = hal.storage->read_byte(pos_in_storage);
+        pos_in_storage++;
 
-    cmd.content.location.options = hal.storage->read_byte(pos_in_storage);
-    pos_in_storage++;
+        cmd.content.location.options = hal.storage->read_byte(pos_in_storage);
+        pos_in_storage++;
 
-    cmd.content.location.p1 = hal.storage->read_byte(pos_in_storage);
-    pos_in_storage++;
+        cmd.content.location.p1 = hal.storage->read_byte(pos_in_storage);
+        pos_in_storage++;
 
-    cmd.content.location.alt = hal.storage->read_dword(pos_in_storage);
-    pos_in_storage += 4;
+        cmd.content.location.alt = hal.storage->read_dword(pos_in_storage);
+        pos_in_storage += 4;
 
-    cmd.content.location.lat = hal.storage->read_dword(pos_in_storage);
-    pos_in_storage += 4;
+        cmd.content.location.lat = hal.storage->read_dword(pos_in_storage);
+        pos_in_storage += 4;
 
-    cmd.content.location.lng = hal.storage->read_dword(pos_in_storage);
+        cmd.content.location.lng = hal.storage->read_dword(pos_in_storage);
 
-    // set command's index to it's position in eeprom
-    cmd.index = index;
+        // set command's index to it's position in eeprom
+        cmd.index = index;
 
-    // set command from location's command
-    // To-Do: remove id (and p1?) from Location structure
-    cmd.id = cmd.content.location.id;
+        // set command from location's command
+        // To-Do: remove id (and p1?) from Location structure
+        cmd.id = cmd.content.location.id;
+    }
 
     // return success
     return true;

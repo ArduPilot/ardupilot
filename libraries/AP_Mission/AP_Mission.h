@@ -79,7 +79,8 @@ public:
     };
 
     /// constructor
-    AP_Mission(mission_cmd_fn_t cmd_start_fn, mission_cmd_fn_t cmd_verify_fn, mission_complete_fn_t mission_complete_fn) :
+    AP_Mission(AP_AHRS &ahrs, mission_cmd_fn_t cmd_start_fn, mission_cmd_fn_t cmd_verify_fn, mission_complete_fn_t mission_complete_fn) :
+        _ahrs(ahrs),
         _cmd_start_fn(cmd_start_fn),
         _cmd_verify_fn(cmd_verify_fn),
         _mission_complete_fn(mission_complete_fn),
@@ -219,6 +220,9 @@ private:
 
     /// increment_jump_times_run - increments the recorded number of times the jump command has been run
     void increment_jump_times_run(Mission_Command& cmd);
+
+    // references to external libraries
+    const AP_AHRS&          _ahrs;      // used only for home position
 
     // parameters
     AP_Int16                _cmd_total; // total number of commands in the mission
