@@ -169,7 +169,6 @@
 
 
 // Waypoint options
-#define MASK_OPTIONS_RELATIVE_ALT               1
 #define WP_OPTION_ALT_CHANGE                    2
 #define WP_OPTION_YAW                           4
 #define WP_OPTION_ALT_REQUIRED                  8
