@@ -35,8 +35,8 @@
 #define AP_MISSION_JUMP_REPEAT_FOREVER      -1      // when do-jump command's repeat count is -1 this means endless repeat
 
 #define AP_MISSION_CMD_ID_NONE              0       // mavlink cmd id of zero means invalid or missing command
-#define AP_MISSION_CMD_INDEX_NONE           255     // command index of 255 means invalid or missing command
-#define AP_MISSION_JUMP_TIMES_MAX           255     // maximum number of times a jump can be executed.  Used when jump tracking fails (i.e. when too many jumps in mission)
+#define AP_MISSION_CMD_INDEX_NONE           65535   // command index of 65535 means invalid or missing command
+#define AP_MISSION_JUMP_TIMES_MAX           32767   // maximum number of times a jump can be executed.  Used when jump tracking fails (i.e. when too many jumps in mission)
 
 #define AP_MISSION_FIRST_REAL_COMMAND       1       // command #0 reserved to hold home position
 
@@ -49,7 +49,7 @@ public:
     // jump command structure
     struct Jump_Command {
         uint8_t id;         // mavlink command id.  To-Do: this can be removed once it is also removed from Location structure
-        uint8_t target;     // DO_JUMP target command id
+        uint16_t target;    // DO_JUMP target command id
         int16_t num_times;  // DO_JUMP num times to repeat.  -1 = repeat forever
     };
 
@@ -63,7 +63,7 @@ public:
 
     // command structure
     struct Mission_Command {
-        uint8_t index;              // this commands position in the command list
+        uint16_t index;             // this commands position in the command list
         uint8_t id;                 // mavlink command id
         Content content;
     };
@@ -151,7 +151,7 @@ public:
     /// get_next_nav_cmd - gets next "navigation" command found at or after start_index
     ///     returns true if found, false if not found (i.e. reached end of mission command list)
     ///     accounts for do_jump commands
-    bool get_next_nav_cmd(uint8_t start_index, Mission_Command& cmd);
+    bool get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd);
 
     /// get_active_do_cmd - returns active "do" command
     const Mission_Command& get_current_do_cmd() const { return _do_cmd; }
@@ -162,12 +162,12 @@ public:
 
     /// load_cmd_from_storage - load command from storage
     ///     true is return if successful
-    bool read_cmd_from_storage(uint8_t index, Mission_Command& cmd) const;
+    bool read_cmd_from_storage(uint16_t index, Mission_Command& cmd) const;
 
     /// write_cmd_to_storage - write a command to storage
     ///     cmd.index is used to calculate the storage location
     ///     true is returned if successful
-    bool write_cmd_to_storage(uint8_t index, Mission_Command& cmd);
+    bool write_cmd_to_storage(uint16_t index, Mission_Command& cmd);
 
     // mavlink_to_mission_cmd - converts mavlink message to an AP_Mission::Mission_Command object which can be stored to eeprom
     //  return true on success, false on failure
@@ -210,13 +210,13 @@ private:
     ///     returns true if found, false if not found (i.e. mission complete)
     ///     accounts for do_jump commands
     ///     increment_jump_num_times_if_found should be set to true if advancing the active navigation command
-    bool get_next_cmd(uint8_t start_index, Mission_Command& cmd, bool increment_jump_num_times_if_found);
+    bool get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool increment_jump_num_times_if_found);
 
     /// get_next_do_cmd - gets next "do" or "conditional" command after start_index
     ///     returns true if found, false if not found
     ///     stops and returns false if it hits another navigation command before it finds the first do or conditional command
     ///     accounts for do_jump commands but never increments the jump's num_times_run (get_next_nav_cmd is responsible for this)
-    bool get_next_do_cmd(uint8_t start_index, Mission_Command& cmd);
+    bool get_next_do_cmd(uint16_t start_index, Mission_Command& cmd);
 
     ///
     /// jump handling methods
@@ -245,11 +245,11 @@ private:
     // internal variables
     struct Mission_Command  _nav_cmd;   // current "navigation" command.  It's position in the command list is held in _nav_cmd.index
     struct Mission_Command  _do_cmd;    // current "do" command.  It's position in the command list is held in _do_cmd.index
-    uint8_t                 _prev_nav_cmd_index;    // index of the previous "navigation" command.  Rarely used which is why we don't store the whole command
+    uint16_t                _prev_nav_cmd_index;    // index of the previous "navigation" command.  Rarely used which is why we don't store the whole command
 
     // jump related variables
     struct jump_tracking_struct {
-        uint8_t index;                  // index of do-jump commands in mission
+        uint16_t index;                 // index of do-jump commands in mission
         int16_t num_times_run;          // number of times this jump command has been run
     } _jump_tracking[AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS];
 };

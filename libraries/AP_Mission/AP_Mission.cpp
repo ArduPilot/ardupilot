@@ -172,9 +172,9 @@ bool AP_Mission::is_nav_cmd(const Mission_Command& cmd)
 /// get_next_nav_cmd - gets next "navigation" command found at or after start_index
 ///     returns true if found, false if not found (i.e. reached end of mission command list)
 ///     accounts for do_jump commands but never increments the jump's num_times_run (advance_current_nav_cmd is responsible for this)
-bool AP_Mission::get_next_nav_cmd(uint8_t start_index, Mission_Command& cmd)
+bool AP_Mission::get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd)
 {
-    uint8_t cmd_index = start_index;
+    uint16_t cmd_index = start_index;
     Mission_Command temp_cmd;
 
     // search until the end of the mission command list
@@ -201,7 +201,7 @@ bool AP_Mission::get_next_nav_cmd(uint8_t start_index, Mission_Command& cmd)
 
 /// load_cmd_from_storage - load command from storage
 ///     true is return if successful
-bool AP_Mission::read_cmd_from_storage(uint8_t index, Mission_Command& cmd) const
+bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) const
 {
     uint16_t pos_in_storage;    // position in storage from where we will read the next byte
 
@@ -255,7 +255,7 @@ bool AP_Mission::read_cmd_from_storage(uint8_t index, Mission_Command& cmd) cons
 /// write_cmd_to_storage - write a command to storage
 ///     index is used to calculate the storage location
 ///     true is returned if successful
-bool AP_Mission::write_cmd_to_storage(uint8_t index, Mission_Command& cmd)
+bool AP_Mission::write_cmd_to_storage(uint16_t index, Mission_Command& cmd)
 {
     // range check cmd's index
     if (index >= AP_MISSION_MAX_COMMANDS) {
@@ -612,7 +612,7 @@ void AP_Mission::complete()
 bool AP_Mission::advance_current_nav_cmd()
 {
     Mission_Command cmd;
-    uint8_t cmd_index;
+    uint16_t cmd_index;
 
     // exit immediately if we're not running
     if (_flags.state != MISSION_RUNNING) {
@@ -673,7 +673,7 @@ bool AP_Mission::advance_current_nav_cmd()
 void AP_Mission::advance_current_do_cmd()
 {
     Mission_Command cmd;
-    uint8_t cmd_index;
+    uint16_t cmd_index;
 
     // exit immediately if we're not running
     if (_flags.state != MISSION_RUNNING) {
@@ -710,11 +710,11 @@ void AP_Mission::advance_current_do_cmd()
 ///     returns true if found, false if not found (i.e. mission complete)
 ///     accounts for do_jump commands
 ///     increment_jump_num_times_if_found should be set to true if advancing the active navigation command
-bool AP_Mission::get_next_cmd(uint8_t start_index, Mission_Command& cmd, bool increment_jump_num_times_if_found)
+bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool increment_jump_num_times_if_found)
 {
-    uint8_t cmd_index = start_index;
+    uint16_t cmd_index = start_index;
     Mission_Command temp_cmd;
-    uint8_t jump_index = AP_MISSION_CMD_INDEX_NONE;
+    uint16_t jump_index = AP_MISSION_CMD_INDEX_NONE;
 
     // search until the end of the mission command list
     while(cmd_index < _cmd_total) {
@@ -776,7 +776,7 @@ bool AP_Mission::get_next_cmd(uint8_t start_index, Mission_Command& cmd, bool in
 ///     returns true if found, false if not found
 ///     stops and returns false if it hits another navigation command before it finds the first do or conditional command
 ///     accounts for do_jump commands but never increments the jump's num_times_run (advance_current_nav_cmd is responsible for this)
-bool AP_Mission::get_next_do_cmd(uint8_t start_index, Mission_Command& cmd)
+bool AP_Mission::get_next_do_cmd(uint16_t start_index, Mission_Command& cmd)
 {
     Mission_Command temp_cmd;
 
