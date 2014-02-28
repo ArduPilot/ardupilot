@@ -348,12 +348,11 @@ void NavEKF::InitialiseFilterDynamic(void)
     // calculate rotation matrix from body to NED frame
     Tbn.from_euler(_ahrs->roll, _ahrs->pitch, 0.0f);
 
-    // body magnetic field vector with offsets removed
-    Vector3f initMagXYZ;
-    initMagXYZ = _ahrs->get_compass()->get_field() * 0.001f; // convert from Gauss to mGauss
+    // read the magnetometer data
+    readMagData();
 
     // rotate the magnetic field into NED axes
-    initMagNED = Tbn*initMagXYZ;
+    initMagNED = Tbn*magData;
 
     // calculate heading of mag field rel to body heading
     float magHeading = atan2f(initMagNED.y, initMagNED.x);
@@ -371,7 +370,7 @@ void NavEKF::InitialiseFilterDynamic(void)
     // Calculate initial Tbn matrix and rotate Mag measurements into NED
     // to set initial NED magnetic field states
     initQuat.rotation_matrix(Tbn);
-    initMagNED = Tbn * initMagXYZ;
+    initMagNED = Tbn * magData;
 
     // write to state vector
     state.quat = initQuat;
@@ -404,12 +403,11 @@ void NavEKF::InitialiseFilterBootstrap(void)
     // acceleration vector in XYZ body axes measured by the IMU (m/s^2)
     Vector3f initAccVec;
 
-    // body magnetic field vector with offsets removed
-    Vector3f initMagXYZ;
-
-    // we should average readings over several calls to this function 
+    // TODO we should average accel readings over several cycles
     initAccVec = _ahrs->get_ins().get_accel();
-    initMagXYZ = _ahrs->get_compass()->get_field() * 0.001f; // convert from Gauss to mGauss
+
+    // read the magnetometer data
+    readMagData();
 
     // Normalise the acceleration vector
     initAccVec.normalize();
@@ -423,16 +421,16 @@ void NavEKF::InitialiseFilterBootstrap(void)
     // calculate initial yaw angle
     float yaw;
     Matrix3f Tbn;
-    Vector3f initMagVecNED;
+    Vector3f initMagNED;
     if (useCompass) {
         // calculate rotation matrix from body to NED frame
         Tbn.from_euler(roll, pitch, 0.0f);
 
         // rotate the magnetic field into NED axesn
-        initMagVecNED = Tbn*initMagXYZ;
+        initMagNED = Tbn*magData;
 
         // calculate heading of mag field rel to body heading
-        float magHeading = atan2f(initMagVecNED.y, initMagVecNED.x);
+        float magHeading = atan2f(initMagNED.y, initMagNED.x);
 
         // get the magnetic declination
         float magDecAng = _ahrs->get_compass()->get_declination();
@@ -450,10 +448,7 @@ void NavEKF::InitialiseFilterBootstrap(void)
     // Calculate initial Tbn matrix and rotate Mag measurements into NED
     // to set initial NED magnetic field states
     initQuat.rotation_matrix(Tbn);
-    initMagVecNED = Tbn * initMagXYZ;
-
-    //Get the initial compass bias estimates
-    Vector3f initMagBias = -_ahrs->get_compass()->get_offsets() * 0.001f;
+    initMagNED = Tbn * magData;
 
     // read the GPS
     readGpsData();
@@ -469,8 +464,8 @@ void NavEKF::InitialiseFilterBootstrap(void)
     state.gyro_bias.zero();
     state.accel_zbias = 0;
     state.wind_vel.zero();
-    state.earth_magfield = initMagVecNED;
-    state.body_magfield = initMagBias;
+    state.earth_magfield = initMagNED;
+    state.body_magfield = magBias;
 
     statesInitialised = true;
 
@@ -2255,7 +2250,7 @@ void NavEKF::getGyroBias(Vector3f &gyroBias) const
 void NavEKF::getAccelBias(Vector3f &accelBias) const
 {
     accelBias.x = staticMode? 1.0f : 0.0f;
-    accelBias.y = static_mode_demanded()? 1.0f : 0.0f;
+    accelBias.y = onGround? 1.0f : 0.0f;
     accelBias.z = states[13] / dtIMU;
 }
 
