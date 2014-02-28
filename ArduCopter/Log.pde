@@ -435,18 +435,18 @@ struct PACKED log_Cmd {
 };
 
 // Write a command processing packet
-static void Log_Write_Cmd(uint8_t num, const struct Location *wp)
+static void Log_Write_Cmd(const AP_Mission::Mission_Command& cmd)
 {
     struct log_Cmd pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CMD_MSG),
-        command_total       : g.command_total,
-        command_number      : num,
-        waypoint_id         : wp->id,
-        waypoint_options    : wp->options,
-        waypoint_param1     : wp->p1,
-        waypoint_altitude   : wp->alt,
-        waypoint_latitude   : wp->lat,
-        waypoint_longitude  : wp->lng
+        command_total       : (uint8_t)mission.num_commands(),
+        command_number      : cmd.index,
+        waypoint_id         : cmd.id,
+        waypoint_options    : cmd.content.location.options,
+        waypoint_param1     : cmd.content.location.p1,
+        waypoint_altitude   : cmd.content.location.alt,
+        waypoint_latitude   : cmd.content.location.lat,
+        waypoint_longitude  : cmd.content.location.lng
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -781,7 +781,7 @@ static void start_logging()
 #else // LOGGING_ENABLED
 
 static void Log_Write_Startup() {}
-static void Log_Write_Cmd(uint8_t num, const struct Location *wp) {}
+static void Log_Write_Cmd(const AP_Mission::Mission_Command& cmd) {}
 static void Log_Write_Mode(uint8_t mode) {}
 static void Log_Write_IMU() {}
 static void Log_Write_GPS() {}
