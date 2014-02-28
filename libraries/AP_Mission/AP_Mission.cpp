@@ -31,6 +31,7 @@ void AP_Mission::start()
     _flags.state = MISSION_RUNNING;
     _flags.nav_cmd_loaded = false;
     _flags.do_cmd_loaded = false;
+    _flags.do_cmd_all_done = false;
     _nav_cmd.index = AP_MISSION_CMD_INDEX_NONE;
     _do_cmd.index = AP_MISSION_CMD_INDEX_NONE;
     _prev_nav_cmd_index = AP_MISSION_CMD_INDEX_NONE;
@@ -627,6 +628,7 @@ bool AP_Mission::advance_current_nav_cmd()
     // stop the current running do command
     _do_cmd.index = AP_MISSION_CMD_INDEX_NONE;
     _flags.do_cmd_loaded = false;
+    _flags.do_cmd_all_done = false;
 
     // get starting point for search
     cmd_index = _nav_cmd.index;
@@ -675,8 +677,8 @@ void AP_Mission::advance_current_do_cmd()
     Mission_Command cmd;
     uint16_t cmd_index;
 
-    // exit immediately if we're not running
-    if (_flags.state != MISSION_RUNNING) {
+    // exit immediately if we're not running or we've completed all possible "do" commands
+    if (_flags.state != MISSION_RUNNING || _flags.do_cmd_all_done) {
         return;
     }
 
@@ -691,7 +693,8 @@ void AP_Mission::advance_current_do_cmd()
 
     // check if we've reached end of mission
     if (cmd_index >= _cmd_total) {
-        // To-Do: set a flag to stop us from attempting to look for do-commands over and over?
+        // set flag to stop unnecessarily searching for do commands
+        _flags.do_cmd_all_done = true;
         return;
     }
 
@@ -701,8 +704,8 @@ void AP_Mission::advance_current_do_cmd()
         _do_cmd = cmd;
         _cmd_start_fn(_do_cmd);
     }else{
-        // To-Do: set a flag to stop us from attempting to look for do-commands over and over?
-        //  if added this flag should be reset once we advance the nav command
+        // set flag to stop unnecessarily searching for do commands
+        _flags.do_cmd_all_done = true;
     }
 }
 
