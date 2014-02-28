@@ -287,10 +287,6 @@ static void init_ardupilot()
     init_sonar();
 #endif
 
-    // initialize commands
-    // -------------------
-    init_commands();
-
     // initialise the flight mode and aux switch
     // ---------------------------
     reset_control_switch();
