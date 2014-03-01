@@ -113,7 +113,7 @@ void setup()
 
     hal.util->commandline_arguments(argc, argv);
 
-	while ((opt = getopt(argc, argv, "r:p:ha:")) != -1) {
+	while ((opt = getopt(argc, argv, "r:p:ha:g:")) != -1) {
 		switch (opt) {
         case 'h':
             usage();
