@@ -1479,7 +1479,7 @@ mission_item_send_failed:
         }
 
         // set current command
-        mission.jump_to_cmd(packet.seq);
+        mission.set_current_cmd(packet.seq);
 
         mavlink_msg_mission_current_send(chan, mission.get_current_do_cmd().index);
         break;
