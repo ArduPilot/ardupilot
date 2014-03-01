@@ -44,6 +44,7 @@
 #include <AP_NavEKF.h>
 #include <stdio.h>
 #include <getopt.h>
+#include <errno.h>
 
 #include "LogReader.h"
 
@@ -109,7 +110,11 @@ void setup()
     if (update_rate != 0) {
         hal.console->printf("Using an update rate of %u Hz\n", update_rate);
     }
-    LogReader.open_log(filename);
+
+    if (!LogReader.open_log(filename)) {
+        perror(filename);
+        exit(1);
+    }
 
     LogReader.wait_type(LOG_GPS_MSG);
     LogReader.wait_type(LOG_IMU_MSG);
