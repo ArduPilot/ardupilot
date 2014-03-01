@@ -200,6 +200,65 @@ bool AP_Mission::get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd)
     return false;
 }
 
+// set_current_cmd - jumps to command specified by index
+bool AP_Mission::set_current_cmd(uint8_t index)
+{
+    Mission_Command cmd;
+
+    // exit immediately if we're not running
+    // To-Do: allow setting command while mission is stopped and use the index provided when mission is started
+    if (_flags.state != MISSION_RUNNING) {
+        return false;
+    }
+
+    // sanity check index
+    if (index >= _cmd_total || index == 0) {
+        return false;
+    }
+
+    // stop the current running do command
+    _do_cmd.index = AP_MISSION_CMD_INDEX_NONE;
+    _flags.do_cmd_loaded = false;
+    _flags.do_cmd_all_done = false;
+
+    // stop current nav cmd
+    _flags.nav_cmd_loaded = false;
+
+    // search until we find next nav command or reach end of command list
+    while (!_flags.nav_cmd_loaded) {
+        // get next command
+        if (!get_next_cmd(index, cmd, true)) {
+            // if we run out of nav commands mark mission as complete
+            complete();
+            // return true because we did what was requested
+            // which was apparently to jump to a command at the end of the mission
+            return true;
+        }
+
+        // check if navigation or "do" command
+        if (is_nav_cmd(cmd)) {
+            // save previous nav command index
+            _prev_nav_cmd_index = _nav_cmd.index;
+            // set current navigation command and start it
+            _nav_cmd = cmd;
+            _flags.nav_cmd_loaded = true;
+            _cmd_start_fn(_nav_cmd);
+        }else{
+            // set current do command and start it (if not already set)
+            if (!_flags.do_cmd_loaded) {
+                _do_cmd = cmd;
+                _flags.do_cmd_loaded = true;
+                _cmd_start_fn(_do_cmd);
+            }
+        }
+        // move onto next command
+        index = cmd.index+1;
+    }
+
+    // if we got this far we must have successfully advanced the nav command
+    return true;
+}
+
 /// load_cmd_from_storage - load command from storage
 ///     true is return if successful
 bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) const

@@ -156,9 +156,8 @@ public:
     /// get_active_do_cmd - returns active "do" command
     const Mission_Command& get_current_do_cmd() const { return _do_cmd; }
 
-    // jump_to_cmd - jumps to command specified by index
-    //      To-Do: implement this function!
-    bool jump_to_cmd(uint8_t index) { return false; }
+    // set_current_cmd - jumps to command specified by index
+    bool set_current_cmd(uint8_t index);
 
     /// load_cmd_from_storage - load command from storage
     ///     true is return if successful
