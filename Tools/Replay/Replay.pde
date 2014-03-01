@@ -42,6 +42,7 @@
 #include <AP_InertialSensor.h>
 #include <AP_InertialNav.h>
 #include <AP_NavEKF.h>
+#include <Parameters.h>
 #include <stdio.h>
 #include <getopt.h>
 #include <errno.h>
@@ -49,6 +50,10 @@
 #include "LogReader.h"
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+
+AP_Param param_loader(var_info, 4096);
+
+static Parameters g;
 
 static AP_InertialSensor_HIL ins;
 static AP_Baro_HIL barometer;
@@ -76,9 +81,24 @@ static FILE *ekf2f;
 static FILE *ekf3f;
 static FILE *ekf4f;
 
+static bool done_parameters;
 static bool done_baro_init;
 static bool done_home_init;
 static uint16_t update_rate;
+
+static uint8_t num_user_parameters;
+static struct {
+    char name[17];
+    float value;
+} user_parameters[100];
+
+
+static void usage(void)
+{
+    ::printf("Options:\n");
+    ::printf(" -rRATE     set IMU rate in Hz\n");
+    ::printf(" -pNAME=VALUE set parameter NAME to VALUE\n");
+}
 
 void setup()
 {
@@ -91,10 +111,29 @@ void setup()
 
     hal.util->commandline_arguments(argc, argv);
 
-	while ((opt = getopt(argc, argv, "r:")) != -1) {
+	while ((opt = getopt(argc, argv, "r:p:h")) != -1) {
 		switch (opt) {
+        case 'h':
+            usage();
+            exit(0);
         case 'r':
 			update_rate = strtol(optarg, NULL, 0);
+            break;
+
+        case 'p':
+            char *eq = strchr(optarg, '=');
+            if (eq == NULL) {
+                ::printf("Usage: -p NAME=VALUE\n");
+                exit(1);
+            }
+            *eq++ = 0;
+            strncpy(user_parameters[num_user_parameters].name, optarg, 16);
+            user_parameters[num_user_parameters].value = atof(eq);
+            num_user_parameters++;
+            if (num_user_parameters >= sizeof(user_parameters)/sizeof(user_parameters[0])) {
+                ::printf("Too many user parameters\n");
+                exit(1);
+            }
             break;
         }
     }
@@ -110,6 +149,8 @@ void setup()
     if (update_rate != 0) {
         hal.console->printf("Using an update rate of %u Hz\n", update_rate);
     }
+
+    load_parameters();
 
     if (!LogReader.open_log(filename)) {
         perror(filename);
@@ -189,8 +230,26 @@ void setup()
     }
 }
 
+
+/*
+  setup user -p parameters
+ */
+static void set_user_parameters(void)
+{
+    for (uint8_t i=0; i<num_user_parameters; i++) {
+        if (!LogReader.set_parameter(user_parameters[i].name, user_parameters[i].value)) {
+            ::printf("Failed to set parameter %s to %f\n", user_parameters[i].name, user_parameters[i].value);
+            exit(1);
+        }
+    }
+}
+
 static void read_sensors(uint8_t type)
 {
+    if (!done_parameters && type != LOG_FORMAT_MSG && type != LOG_PARAMETER_MSG) {
+        done_parameters = true;
+        set_user_parameters();
+    }
     if (type == LOG_GPS_MSG) {
         g_gps->update();
         if (g_gps->status() >= GPS::GPS_OK_FIX_3D) {

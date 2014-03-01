@@ -29,6 +29,8 @@ public:
 
     vehicle_type vehicle;
 
+    bool set_parameter(const char *name, float value);
+
 private:
     int fd;
     AP_InertialSensor &ins;
