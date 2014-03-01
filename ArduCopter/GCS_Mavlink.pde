@@ -1375,14 +1375,28 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
 
             // check if this is the requested waypoint
-            if ((packet.seq != waypoint_request_i) || (packet.seq != mission.num_commands())) {
+            if (packet.seq != waypoint_request_i) {
                 result = MAV_MISSION_INVALID_SEQUENCE;
                 goto mission_item_receive_failed;
             }
 
-            // add new command at end of command list
-            if (mission.add_cmd(cmd)) {
-                result = MAV_MISSION_ACCEPTED;
+            // if command index is within the existing list, replace the command
+            if (packet.seq < mission.num_commands()) {
+                if (mission.replace_cmd(packet.seq,cmd)) {
+                    result = MAV_MISSION_ACCEPTED;
+                }else{
+                    result = MAV_MISSION_ERROR;
+                    goto mission_item_receive_failed;
+                }
+            // if command is at the end of command list, add the command
+            }else if (packet.seq == mission.num_commands()) {
+                if (mission.add_cmd(cmd)) {
+                    result = MAV_MISSION_ACCEPTED;
+                }else{
+                    result = MAV_MISSION_ERROR;
+                    goto mission_item_receive_failed;
+                }
+            // if beyond the end of the command list, return an error
             }else{
                 result = MAV_MISSION_ERROR;
                 goto mission_item_receive_failed;
