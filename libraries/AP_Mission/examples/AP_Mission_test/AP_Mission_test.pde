@@ -166,6 +166,9 @@ void run_mission_test()
     // run_set_current_cmd_test - tests setting the current command while the mission is running
     //run_set_current_cmd_test();
 
+    // run_replace_cmd_test - tests replacing a command during a mission
+    //run_replace_cmd_test();
+
     // print current mission
     print_mission();
 
@@ -358,7 +361,7 @@ void run_set_current_cmd_test()
         hal.console->printf_P(PSTR("failed to add command\n"));
     }
 
-    // Command #5 : RTL
+    // Command #6 : RTL
     cmd.id = MAV_CMD_NAV_RETURN_TO_LAUNCH;
     cmd.content.location.p1 = 0;
     cmd.content.location.lat = 0;
@@ -383,6 +386,111 @@ void run_set_current_cmd_test()
     // simulate user setting current command to 2
     hal.console->printf_P(PSTR("Setting current command to 2\n"));
     mission.set_current_cmd(2);
+
+    // update the mission forever
+    while(true) {
+        mission.update();
+    }
+}
+
+// run_replace_cmd_test - tests replacing a command during a mission
+void run_replace_cmd_test()
+{
+    AP_Mission::Mission_Command cmd;
+
+    // create a mission
+
+    // Command #0 : home
+    cmd.id = MAV_CMD_NAV_WAYPOINT;
+    cmd.content.location.options = 0;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.alt = 0;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #1 : take-off to 10m
+    cmd.id = MAV_CMD_NAV_TAKEOFF;
+    cmd.content.location.options = 0;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.alt = 10;
+    cmd.content.location.lat = 0;
+    cmd.content.location.lng = 0;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #2 : do command
+    cmd.id = MAV_CMD_DO_SET_ROI;
+    cmd.content.location.options = 0;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.alt = 11;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #3 : first waypoint
+    cmd.id = MAV_CMD_NAV_WAYPOINT;
+    cmd.content.location.options = 0;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.alt = 11;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #4 : second waypoint
+    cmd.id = MAV_CMD_NAV_WAYPOINT;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.lat = 1234567890;
+    cmd.content.location.lng = -1234567890;
+    cmd.content.location.alt = 22;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #6 : RTL
+    cmd.id = MAV_CMD_NAV_RETURN_TO_LAUNCH;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.lat = 0;
+    cmd.content.location.lng = 0;
+    cmd.content.location.alt = 0;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // print current mission
+    print_mission();
+
+    // start mission
+    hal.console->printf_P(PSTR("\nRunning missions\n"));
+    mission.start();
+
+    // update the mission for X iterations to let it go to about command 3 or 4
+    for(uint8_t i=0; i<9; i++) {
+        mission.update();
+    }
+
+    // replace command #4 with a do-command
+    // Command #4 : do command
+    cmd.id = MAV_CMD_DO_SET_ROI;
+    cmd.content.location.options = 0;
+    cmd.content.location.p1 = 0;
+    cmd.content.location.alt = 11;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.replace_cmd(4, cmd)) {
+        hal.console->printf_P(PSTR("failed to replace command 4\n"));
+    }else{
+        hal.console->printf_P(PSTR("replaced command #4 -------------\n"));
+        // print current mission
+        print_mission();
+    }
 
     // update the mission forever
     while(true) {
