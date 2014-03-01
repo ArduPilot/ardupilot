@@ -31,6 +31,9 @@ public:
 
     bool set_parameter(const char *name, float value);
 
+    void set_accel_mask(uint8_t mask) { accel_mask = mask; }
+    void set_gyro_mask(uint8_t mask) { gyro_mask = mask; }
+
 private:
     int fd;
     AP_InertialSensor &ins;
@@ -38,6 +41,9 @@ private:
     AP_Compass_HIL &compass;
     GPS *&gps;
     AP_Airspeed &airspeed;
+
+    uint8_t accel_mask;
+    uint8_t gyro_mask;
 
     uint32_t ground_alt_cm;
 

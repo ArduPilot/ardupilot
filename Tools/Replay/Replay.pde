@@ -98,6 +98,8 @@ static void usage(void)
     ::printf("Options:\n");
     ::printf(" -rRATE     set IMU rate in Hz\n");
     ::printf(" -pNAME=VALUE set parameter NAME to VALUE\n");
+    ::printf(" -aMASK     set accel mask (1=accel1 only, 2=accel2 only, 3=both)\n");
+    ::printf(" -gMASK     set gyro mask (1=gyro1 only, 2=gyro2 only, 3=both)\n");
 }
 
 void setup()
@@ -111,13 +113,22 @@ void setup()
 
     hal.util->commandline_arguments(argc, argv);
 
-	while ((opt = getopt(argc, argv, "r:p:h")) != -1) {
+	while ((opt = getopt(argc, argv, "r:p:ha:")) != -1) {
 		switch (opt) {
         case 'h':
             usage();
             exit(0);
+
         case 'r':
 			update_rate = strtol(optarg, NULL, 0);
+            break;
+
+        case 'g':
+            LogReader.set_gyro_mask(strtol(optarg, NULL, 0));
+            break;
+
+        case 'a':
+            LogReader.set_accel_mask(strtol(optarg, NULL, 0));
             break;
 
         case 'p':
@@ -315,7 +326,8 @@ void loop()
             Vector3f magVar;
             float    tasVar;
 
-            ahrs.get_secondary_attitude(DCM_attitude);
+            const Matrix3f &dcm_matrix = ((AP_AHRS_DCM)ahrs).get_dcm_matrix();
+            dcm_matrix.to_euler(&DCM_attitude.x, &DCM_attitude.y, &DCM_attitude.z);
             NavEKF.getEulerAngles(ekf_euler);
             NavEKF.getVelNED(velNED);
             NavEKF.getPosNED(posNED);
@@ -326,7 +338,7 @@ void loop()
             NavEKF.getMagXYZ(magXYZ);
             NavEKF.getInnovations(velInnov, posInnov, magInnov, tasInnov);
             NavEKF.getVariances(velVar, posVar, magVar, tasVar);
-            ahrs.get_relative_position_NED(ekf_relpos);
+            NavEKF.getPosNED(ekf_relpos);
             Vector3f inav_pos = inertial_nav.get_position() * 0.01f;
             float temp = degrees(ekf_euler.z);
 

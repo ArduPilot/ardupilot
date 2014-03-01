@@ -25,7 +25,9 @@ LogReader::LogReader(AP_InertialSensor &_ins, AP_Baro_HIL &_baro, AP_Compass_HIL
     baro(_baro),
     compass(_compass),
     gps(_gps),
-    airspeed(_airspeed)
+    airspeed(_airspeed),
+    accel_mask(3),
+    gyro_mask(3)
 {}
 
 bool LogReader::open_log(const char *logfile)
@@ -285,8 +287,12 @@ bool LogReader::update(uint8_t &type)
         }
         memcpy(&msg, data, sizeof(msg));
         wait_timestamp(msg.timestamp);
-        ins.set_gyro(0, Vector3f(msg.gyro_x, msg.gyro_y, msg.gyro_z));
-        ins.set_accel(0, Vector3f(msg.accel_x, msg.accel_y, msg.accel_z));
+        if (gyro_mask & 1) {
+            ins.set_gyro(0, Vector3f(msg.gyro_x, msg.gyro_y, msg.gyro_z));
+        }
+        if (accel_mask & 1) {
+            ins.set_accel(0, Vector3f(msg.accel_x, msg.accel_y, msg.accel_z));
+        }
         break;
     }
 
@@ -298,8 +304,12 @@ bool LogReader::update(uint8_t &type)
         }
         memcpy(&msg, data, sizeof(msg));
         wait_timestamp(msg.timestamp);
-        ins.set_gyro(1, Vector3f(msg.gyro_x, msg.gyro_y, msg.gyro_z));
-        ins.set_accel(1, Vector3f(msg.accel_x, msg.accel_y, msg.accel_z));
+        if (gyro_mask & 2) {
+            ins.set_gyro(1, Vector3f(msg.gyro_x, msg.gyro_y, msg.gyro_z));
+        }
+        if (accel_mask & 2) {
+            ins.set_accel(1, Vector3f(msg.accel_x, msg.accel_y, msg.accel_z));
+        }
         break;
     }
 
