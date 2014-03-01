@@ -1545,9 +1545,9 @@ void NavEKF::FuseVelPosNED()
                 // observation error to normalise
                 float R_hgt;
                 if (i == 2) {
-                    R_hgt = sq(_gpsVertVelNoise);
+                    R_hgt = sq(constrain_float(_gpsVertVelNoise, 0.05f, 5.0f));
                 } else {
-                    R_hgt = sq(_gpsHorizVelNoise);
+                    R_hgt = sq(constrain_float(_gpsHorizVelNoise, 0.05f, 5.0f));
                 }
                 K1 += R_hgt / (R_hgt + sq(velInnov1[i]));
                 K2 += R_hgt / (R_hgt + sq(velInnov2[i]));
