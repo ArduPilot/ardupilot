@@ -138,6 +138,11 @@ public:
     ///     cmd.index is updated with it's new position in the mission
     bool add_cmd(Mission_Command& cmd);
 
+    /// replace_cmd - replaces the command at position 'index' in the command list with the provided cmd
+    ///     replacing the current active command will have no effect until the command is restarted
+    ///     returns true if successfully replaced, false on failure
+    bool replace_cmd(uint16_t index, Mission_Command& cmd);
+
     /// is_nav_cmd - returns true if the command's id is a "navigation" command, false if "do" or "conditional" command
     static bool is_nav_cmd(const Mission_Command& cmd);
 
@@ -153,7 +158,7 @@ public:
     ///     accounts for do_jump commands
     bool get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd);
 
-    /// get_active_do_cmd - returns active "do" command
+    /// get_current_do_cmd - returns active "do" command
     const Mission_Command& get_current_do_cmd() const { return _do_cmd; }
 
     // set_current_cmd - jumps to command specified by index

@@ -164,6 +164,20 @@ bool AP_Mission::add_cmd(Mission_Command& cmd)
     return ret;
 }
 
+/// replace_cmd - replaces the command at position 'index' in the command list with the provided cmd
+///     replacing the current active command will have no effect until the command is restarted
+///     returns true if successfully replaced, false on failure
+bool AP_Mission::replace_cmd(uint16_t index, Mission_Command& cmd)
+{
+    // sanity check index
+    if (index >= _cmd_total) {
+        return false;
+    }
+
+    // attempt to write the command to storage
+    return write_cmd_to_storage(index, cmd);
+}
+
 /// is_nav_cmd - returns true if the command's id is a "navigation" command, false if "do" or "conditional" command
 bool AP_Mission::is_nav_cmd(const Mission_Command& cmd)
 {
