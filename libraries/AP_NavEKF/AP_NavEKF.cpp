@@ -2559,12 +2559,24 @@ void NavEKF::readIMUData()
     if (_ahrs->get_ins().get_accel_health(0) && _ahrs->get_ins().get_accel_health(1)) {
         accel1 = _ahrs->get_ins().get_accel(0);
         accel2 = _ahrs->get_ins().get_accel(1);
-        angRate = (_ahrs->get_ins().get_gyro(0) + _ahrs->get_ins().get_gyro(1)) * 0.5f;
     } else {
         accel1 = _ahrs->get_ins().get_accel();
         accel2 = accel1;
-        angRate     = _ahrs->get_ins().get_gyro();
     }
+
+    // average the available gyro sensors
+    angRate.zero();
+    uint8_t gyro_count = 0;
+    for (uint8_t i = 0; i<_ahrs->get_ins().get_gyro_count(); i++) {
+        if (_ahrs->get_ins().get_gyro_health(i)) {
+            angRate += _ahrs->get_ins().get_gyro(i);
+            gyro_count++;
+        }
+    }
+    if (gyro_count != 0) {
+        angRate /= gyro_count;
+    }
+
     // trapezoidal integration
     dAngIMU     = (angRate + lastAngRate) * dtIMU * 0.5f;
     lastAngRate = angRate;
