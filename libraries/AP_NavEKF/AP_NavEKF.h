@@ -455,6 +455,9 @@ private:
     perf_counter_t  _perf_FuseMagnetometer;
     perf_counter_t  _perf_FuseAirspeed;
 #endif
+    
+    // should we use the compass?
+    bool use_compass(void) const;
 };
 
 #if CONFIG_HAL_BOARD != HAL_BOARD_PX4

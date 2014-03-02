@@ -363,7 +363,7 @@ void NavEKF::InitialiseFilterDynamic(void)
     float magHeading = atan2f(initMagNED.y, initMagNED.x);
 
     // get the magnetic declination
-    float magDecAng = _ahrs->get_compass()->get_declination();
+    float magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
 
     // calculate yaw angle rel to true north
     yaw = magDecAng - magHeading;
@@ -439,7 +439,7 @@ void NavEKF::InitialiseFilterBootstrap(void)
         float magHeading = atan2f(initMagNED.y, initMagNED.x);
 
         // get the magnetic declination
-        float magDecAng = _ahrs->get_compass()->get_declination();
+        float magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
 
         // calculate yaw angle rel to true north
         yaw = magDecAng - magHeading;
@@ -2630,7 +2630,7 @@ void NavEKF::readHgtData()
 void NavEKF::readMagData()
 {
     // scale compass data to improve numerical conditioning
-    if (_ahrs->get_compass()->last_update != lastMagUpdate) {
+    if (use_compass() && _ahrs->get_compass()->last_update != lastMagUpdate) {
         lastMagUpdate = _ahrs->get_compass()->last_update;
         // Body fixed magnetic bias is opposite sign to APM compass offsets
         magBias = -_ahrs->get_compass()->get_offsets() * 0.001f;
@@ -2798,6 +2798,14 @@ bool NavEKF::useAirspeed(void) const
 bool NavEKF::static_mode_demanded(void) const
 {
     return !_ahrs->get_armed() || !_ahrs->get_correct_centrifugal();
+}
+
+/*
+  see if we should use the compass
+ */
+bool NavEKF::use_compass(void) const
+{
+    return _ahrs->get_compass() && _ahrs->get_compass()->use_for_yaw();
 }
 
 #endif // HAL_CPU_CLASS
