@@ -306,7 +306,7 @@ static void NOINLINE send_gps_raw(mavlink_channel_t chan)
         g_gps->num_sats);
 
 #if GPS2_ENABLE
-    if (g_gps2 != NULL) {
+    if (g_gps2 != NULL && g_gps2->status() != GPS::NO_GPS) {
         int16_t payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
         if (payload_space >= MAVLINK_MSG_ID_GPS2_RAW_LEN) {
             mavlink_msg_gps2_raw_send(
