@@ -1719,11 +1719,8 @@ void NavEKF::FuseVelPosNED()
                     {
                         states[i] = states[i] - Kfusion[i] * hgtInnov2; // IMU2 velNED,posD
                     }
-                    // don't allow subsequent fusion operations to modify the Z accel bias state
-                    Kfusion[13] = 0.0f;
-                    Kfusion[22] = 0.0f;
                 } else if (obsIndex == 0 || obsIndex == 1 || obsIndex == 2){
-                    // don't allow subsequent fusion operations to modify the Z accel bias state
+                    // don't modify the Z accel bias states when fusing GPS velocity measurements
                     Kfusion[13] = 0.0f;
                     Kfusion[22] = 0.0f;
                     // Correct single IMU prediction states using velocity measurements
@@ -1736,14 +1733,17 @@ void NavEKF::FuseVelPosNED()
                         states[i] = states[i] - Kfusion[i] * velInnov2[obsIndex]; // IMU2 velNED,posD
                     }
                 } else {
-                    // don't allow subsequent fusion operations to modify the Z accel bias state
+                    // don't modify the Z accel bias states for IMU1 and IMU2 when fusing GPS horizontal position measurements
                     Kfusion[13] = 0.0f;
                     Kfusion[22] = 0.0f;
                 }
                 // Calculate state corrections and re-normalise the quaternions for blended IMU data predicted states
+                // Don't update the Zacc bias state becasue it has already been updated
                 for (uint8_t i = 0; i<=indexLimit; i++)
                 {
-                    states[i] = states[i] - Kfusion[i] * innovVelPos[obsIndex];
+                    if (i != 13) {
+                        states[i] = states[i] - Kfusion[i] * innovVelPos[obsIndex];
+                    }
                 }
                 state.quat.normalize();
                 // Update the covariance - take advantage of direct observation of a
