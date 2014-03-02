@@ -186,6 +186,13 @@ static RC_Channel channel_pitch(CH_2);
 static GCS_MAVLINK gcs0;
 static GCS_MAVLINK gcs3;
 
+////////////////////////////////////////////////////////////////////////////////
+// 3D Location vectors
+// Location structure defined in AP_Common
+////////////////////////////////////////////////////////////////////////////////
+static struct   Location current_loc;
+static struct   Location home_loc;
+
 /*
   scheduler table - all regular tasks apart from the fast_loop()
   should be listed here, along with how often they should be called
@@ -198,7 +205,6 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { update_GPS,             5,   4000 },
     { update_compass,         5,   1500 },
     { update_barometer,       5,   1500 },
-    { update_tracking,        1,   1000 },
     { gcs_update,             1,   1700 },
     { gcs_data_stream_send,   1,   3000 },
     { compass_accumulate,     1,   1500 },
