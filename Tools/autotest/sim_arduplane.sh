@@ -5,29 +5,24 @@ SIMHOME="-35.363261,149.165230,584,353"
 
 # check the instance number to allow for multiple copies of the sim running at once
 INSTANCE=0
-
-# Try to run a command in an appropriate type of terminal window
-# depending on whats available
-# Sigh: theres no common way of handling command line args :-(
-function run_in_terminal_window()
-{
-    if [ -x /usr/bin/konsole ]; then
-	 /usr/bin/konsole --hold -e $*
-    elif [ -x /usr/bin/gnome-terminal ]; then
-	 /usr/bin/gnome-terminal -e "$*"
-    elif [ -x /usr/bin/xterm ]; then
-	 /usr/bin/xterm -hold -e $* &
-    else
-	# out of options: run in the background
-	$* &
-    fi
-}
+USE_VALGRIND=0
+USE_GDB=0
+CLEAN_BUILD=0
 
 # parse options. Thanks to http://wiki.bash-hackers.org/howto/getopts_tutorial
 while getopts ":I:" opt; do
   case $opt in
     I)
       INSTANCE=$OPTARG
+      ;;
+    V)
+      USE_VALGRIND=1
+      ;;
+    G)
+      USE_GDB=1
+      ;;
+    c)
+      CLEAN_BUILD=1
       ;;
     \?)
       # allow other args to pass on to mavproxy
@@ -58,16 +53,29 @@ set -x
 
 autotest=$(dirname $(readlink -e $0))
 pushd $autotest/../../ArduPlane
-make clean sitl
+if [ $CLEAN_BUILD == 1 ]; then
+    make clean
+fi
+make sitl -j4 || {
+    make clean
+    make sitl -j4
+}
 
-tfile=$(mktemp)
-echo r > $tfile
-#run_in_terminal_window gdb -x $tfile --args /tmp/ArduPlane.build/ArduPlane.elf
-run_in_terminal_window /tmp/ArduPlane.build/ArduPlane.elf -I$INSTANCE
-#run_in_terminal_window valgrind -q /tmp/ArduPlane.build/ArduPlane.elf
+cmd="/tmp/ArduPlane.build/ArduPlane.elf -I$INSTANCE"
+
+if [ $USE_VALGRIND == 1 ]; then
+    $autotest/run_in_terminal_window.sh "ardupilot (valgrind)" valgrind -q $cmd || exit 1
+elif [ $USE_GDB == 1 ]; then
+    tfile=$(mktemp)
+    echo r > $tfile
+    $autotest/run_in_terminal_window.sh "ardupilot (gdb)" gdb -x $tfile --args $cmd || exit 1
+else
+    $autotest/run_in_terminal_window.sh "ardupilot" $cmd || exit 1
+fi
+
 sleep 2
 rm -f $tfile
-run_in_terminal_window ../Tools/autotest/jsbsim/runsim.py --home=$SIMHOME --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT
+$autotest/run_in_terminal_window.sh "JSBSim" ../Tools/autotest/jsbsim/runsim.py --home=$SIMHOME --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT || exit 1
 sleep 2
 popd
 
