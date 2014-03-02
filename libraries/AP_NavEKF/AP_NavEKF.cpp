@@ -2555,14 +2555,15 @@ void NavEKF::readIMUData()
     IMUmsec     = hal.scheduler->millis();
     // Limit IMU delta time to prevent numerical problems elsewhere
     dtIMU       = constrain_float(_ahrs->get_ins().get_delta_time(), 0.001f, 1.0f);
-    angRate     = _ahrs->get_ins().get_gyro();
-    // get accels from dual sensors if healthy
+    // get accels and gyro data from dual sensors if healthy
     if (_ahrs->get_ins().get_accel_health(0) && _ahrs->get_ins().get_accel_health(1)) {
         accel1 = _ahrs->get_ins().get_accel(0);
         accel2 = _ahrs->get_ins().get_accel(1);
+        angRate = (_ahrs->get_ins().get_gyro(0) + _ahrs->get_ins().get_gyro(1)) * 0.5f;
     } else {
         accel1 = _ahrs->get_ins().get_accel();
         accel2 = accel1;
+        angRate     = _ahrs->get_ins().get_gyro();
     }
     // trapezoidal integration
     dAngIMU     = (angRate + lastAngRate) * dtIMU * 0.5f;
