@@ -54,6 +54,7 @@ const AP_Param::GroupInfo SITL::var_info[] PROGMEM = {
     AP_GROUPINFO("SONAR_GLITCH",  23, SITL,  sonar_glitch, 0),
     AP_GROUPINFO("SONAR_RND",     24, SITL,  sonar_noise, 0),
     AP_GROUPINFO("RC_FAIL",       25, SITL,  rc_fail, 0),
+    AP_GROUPINFO("GPS2_ENABLE",   26, SITL,  gps2_enable, 0),
     AP_GROUPEND
 };
 
