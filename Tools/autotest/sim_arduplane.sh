@@ -6,6 +6,23 @@ SIMHOME="-35.363261,149.165230,584,353"
 # check the instance number to allow for multiple copies of the sim running at once
 INSTANCE=0
 
+# Try to run a command in an appropriate type of terminal window
+# depending on whats available
+# Sigh: theres no common way of handling command line args :-(
+function run_in_terminal_window()
+{
+    if [ -x /usr/bin/konsole ]; then
+	 /usr/bin/konsole --hold -e $*
+    elif [ -x /usr/bin/gnome-terminal ]; then
+	 /usr/bin/gnome-terminal -e "$*"
+    elif [ -x /usr/bin/xterm ]; then
+	 /usr/bin/xterm -hold -e $* &
+    else
+	# out of options: run in the background
+	$* &
+    fi
+}
+
 # parse options. Thanks to http://wiki.bash-hackers.org/howto/getopts_tutorial
 while getopts ":I:" opt; do
   case $opt in
@@ -45,12 +62,12 @@ make clean sitl
 
 tfile=$(mktemp)
 echo r > $tfile
-#gnome-terminal -e "gdb -x $tfile --args /tmp/ArduPlane.build/ArduPlane.elf"
-gnome-terminal -e "/tmp/ArduPlane.build/ArduPlane.elf -I$INSTANCE"
-#gnome-terminal -e "valgrind -q /tmp/ArduPlane.build/ArduPlane.elf"
+#run_in_terminal_window gdb -x $tfile --args /tmp/ArduPlane.build/ArduPlane.elf
+run_in_terminal_window /tmp/ArduPlane.build/ArduPlane.elf -I$INSTANCE
+#run_in_terminal_window valgrind -q /tmp/ArduPlane.build/ArduPlane.elf
 sleep 2
 rm -f $tfile
-gnome-terminal -e "../Tools/autotest/jsbsim/runsim.py --home=$SIMHOME --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT"
+run_in_terminal_window ../Tools/autotest/jsbsim/runsim.py --home=$SIMHOME --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT
 sleep 2
 popd
 
