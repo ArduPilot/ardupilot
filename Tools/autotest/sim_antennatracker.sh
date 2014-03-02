@@ -59,7 +59,6 @@ make clean sitl
 tfile=$(mktemp)
 echo r > $tfile
 #run_in_terminal_window gdb -x $tfile --args /tmp/AntennaTracker.build/AntennaTracker.elf
-#run_in_terminal_window /tmp/AntennaTracker.build/AntennaTracker.elf -I$INSTANCE
 run_in_terminal_window /tmp/AntennaTracker.build/AntennaTracker.elf -I$INSTANCE
 
 #run_in_terminal_window valgrind -q /tmp/AntennaTracker.build/AntennaTracker.elf
