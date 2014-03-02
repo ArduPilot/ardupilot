@@ -69,7 +69,12 @@ public:
         k_param_pidYaw2Srv,
 
         k_param_channel_yaw = 200,
-        k_param_channel_pitch
+        k_param_channel_pitch,
+
+        //
+        // 220: Waypoint data
+        //
+        k_param_command_total = 220,
 
         // 254,255: reserved
     };
@@ -85,6 +90,10 @@ public:
     AP_Int8 serial3_baud;
 
     AP_Int8 compass_enabled;
+
+    // Waypoints
+    //
+    AP_Int8 command_total; // 1 if HOME is set
 
     // PID controllers
     PID         pidPitch2Srv;

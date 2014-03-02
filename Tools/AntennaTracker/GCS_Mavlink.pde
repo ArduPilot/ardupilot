@@ -28,9 +28,9 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
         chan,
         MAV_TYPE_ANTENNA_TRACKER,
         MAV_AUTOPILOT_ARDUPILOTMEGA,
+        MAV_MODE_FLAG_AUTO_ENABLED,
         0,
-        0,
-        0);
+        MAV_STATE_ACTIVE);
 }
 
 static NOINLINE void send_attitude(mavlink_channel_t chan)
@@ -56,16 +56,12 @@ static void NOINLINE send_location(mavlink_channel_t chan)
     } else {
         fix_time = hal.scheduler->millis();
     }
-
-    Location loc;
-    ahrs.get_position(loc);
-
     mavlink_msg_global_position_int_send(
         chan,
         fix_time,
-        loc.lat,                // in 1E7 degrees
-        loc.lng,                // in 1E7 degrees
-        g_gps->altitude_cm * 10,        // millimeters above sea level
+        current_loc.lat,                // in 1E7 degrees
+        current_loc.lng,                // in 1E7 degrees
+        current_loc.alt * 10,        // millimeters above sea level
         0,
         g_gps->velocity_north() * 100,  // X speed cm/s (+ve North)
         g_gps->velocity_east()  * 100,  // Y speed cm/s (+ve East)
@@ -75,6 +71,11 @@ static void NOINLINE send_location(mavlink_channel_t chan)
 
 static void NOINLINE send_gps_raw(mavlink_channel_t chan)
 {
+    static uint32_t last_send_time;
+    if (last_send_time != 0 && last_send_time == g_gps->last_fix_time && g_gps->status() >= GPS::GPS_OK_FIX_3D) {
+        return;
+    }
+    last_send_time = g_gps->last_fix_time;
     mavlink_msg_gps_raw_int_send(
         chan,
         g_gps->last_fix_time*(uint64_t)1000,
@@ -209,6 +210,14 @@ static void NOINLINE send_hwstatus(mavlink_channel_t chan)
         hal.i2c->lockup_count());
 }
 
+static void NOINLINE send_waypoint_request(mavlink_channel_t chan)
+{
+    if (chan == MAVLINK_COMM_0)
+        gcs0.queued_waypoint_send();
+    else
+        gcs3.queued_waypoint_send();
+}
+
 static void NOINLINE send_statustext(mavlink_channel_t chan)
 {
     mavlink_statustext_t *s = (chan == MAVLINK_COMM_0?&gcs0.pending_status:&gcs3.pending_status);
@@ -292,6 +301,11 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         }
         break;
 
+    case MSG_NEXT_WAYPOINT:
+        CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
+        send_waypoint_request(chan);
+        break;
+
     case MSG_STATUSTEXT:
         CHECK_PAYLOAD_SIZE(STATUSTEXT);
         send_statustext(chan);
@@ -315,7 +329,6 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
     case MSG_VFR_HUD:
     case MSG_RADIO_IN:
     case MSG_SYSTEM_TIME:
-    case MSG_NEXT_WAYPOINT:
     case MSG_LIMITS_STATUS:
     case MSG_FENCE_STATUS:
     case MSG_SIMSTATE:
@@ -514,6 +527,7 @@ GCS_MAVLINK::update(void)
 
     // Update packet drops counter
     packet_drops += status.packet_rx_drop_count;
+
 }
 
 // see if we should send a stream now. Called at 50Hz
@@ -624,6 +638,8 @@ GCS_MAVLINK::send_text_P(gcs_severity severity, const prog_char_t *str)
 
 void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 {
+//    hal.uartA->printf("handleMessage %d\n", msg->msgid);
+
     switch (msg->msgid) {
 
     case MAVLINK_MSG_ID_REQUEST_DATA_STREAM:
@@ -811,7 +827,182 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-    case MAVLINK_MSG_ID_GLOBAL_POSITION_INT: {
+    case MAVLINK_MSG_ID_COMMAND_LONG:
+    {
+        // decode
+        mavlink_command_long_t packet;
+        mavlink_msg_command_long_decode(msg, &packet);
+        if (mavlink_check_target(packet.target_system, packet.target_component)) break;
+        
+        uint8_t result = MAV_RESULT_UNSUPPORTED;
+        
+        // do command
+        send_text_P(SEVERITY_LOW,PSTR("command received: "));
+        
+        switch(packet.command) {
+            
+            case MAV_CMD_PREFLIGHT_CALIBRATION:
+            {
+                if (packet.param1 == 1 ||
+                    packet.param2 == 1) {
+                    calibrate_ins();
+                } else if (packet.param3 == 1) {
+                    init_barometer();
+                }
+                if (packet.param4 == 1) {
+                    // Cant trim radio
+                }
+#if !defined( __AVR_ATmega1280__ )
+                if (packet.param5 == 1) {
+                    float trim_roll, trim_pitch;
+                    AP_InertialSensor_UserInteract_MAVLink interact(chan);
+                    if(ins.calibrate_accel(&interact, trim_roll, trim_pitch)) {
+                        // reset ahrs's trim to suggested values from calibration routine
+                        ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
+                    }
+                }
+#endif
+                result = MAV_RESULT_ACCEPTED;
+                break;
+            }
+
+            case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
+            {
+                if (packet.param1 == 1 || packet.param1 == 3) {
+                    // when packet.param1 == 3 we reboot to hold in bootloader
+                    hal.scheduler->reboot(packet.param1 == 3);
+                    result = MAV_RESULT_ACCEPTED;
+                }
+                break;
+            }
+
+            default:
+                break;
+        }
+        mavlink_msg_command_ack_send(
+            chan,
+            packet.command,
+            result);
+        
+        break;
+    }
+         
+    // When mavproxy 'wp sethome' 
+    case MAVLINK_MSG_ID_MISSION_WRITE_PARTIAL_LIST:
+    {
+        // decode
+        mavlink_mission_write_partial_list_t packet;
+        mavlink_msg_mission_write_partial_list_decode(msg, &packet);
+        if (mavlink_check_target(packet.target_system,packet.target_component)) break;
+
+        if (packet.start_index == 0)
+        {
+            // New home at wp index 0. Ask for it
+            waypoint_receiving = true;
+            waypoint_request_i = 0;
+            waypoint_request_last = 0;
+            send_message(MSG_NEXT_WAYPOINT);
+            waypoint_receiving = true;
+        }
+        break;
+    }
+
+    // XXX receive a WP from GCS and store in EEPROM if it is HOME
+    case MAVLINK_MSG_ID_MISSION_ITEM:
+    {
+        // decode
+        mavlink_mission_item_t packet;
+        uint8_t result = MAV_MISSION_ACCEPTED;
+
+        mavlink_msg_mission_item_decode(msg, &packet);
+        if (mavlink_check_target(packet.target_system,packet.target_component)) break;
+
+        struct Location tell_command = {};
+
+        // defaults
+        tell_command.id = packet.command;
+
+        switch (packet.frame)
+        {
+        case MAV_FRAME_MISSION:
+        case MAV_FRAME_GLOBAL:
+        {
+            tell_command.lat = 1.0e7f*packet.x;                                     // in as DD converted to * t7
+            tell_command.lng = 1.0e7f*packet.y;                                     // in as DD converted to * t7
+            tell_command.alt = packet.z*1.0e2f;                                     // in as m converted to cm
+            tell_command.options = 0;                                     // absolute altitude
+            break;
+        }
+
+#ifdef MAV_FRAME_LOCAL_NED
+        case MAV_FRAME_LOCAL_NED:                         // local (relative to home position)
+        {
+            tell_command.lat = 1.0e7f*ToDeg(packet.x/
+                                           (RADIUS_OF_EARTH*cosf(ToRad(home.lat/1.0e7f)))) + home.lat;
+            tell_command.lng = 1.0e7f*ToDeg(packet.y/RADIUS_OF_EARTH) + home.lng;
+            tell_command.alt = -packet.z*1.0e2f;
+            tell_command.options = MASK_OPTIONS_RELATIVE_ALT;
+            break;
+        }
+#endif
+
+#ifdef MAV_FRAME_LOCAL
+        case MAV_FRAME_LOCAL:                         // local (relative to home position)
+        {
+            tell_command.lat = 1.0e7f*ToDeg(packet.x/
+                                           (RADIUS_OF_EARTH*cosf(ToRad(home.lat/1.0e7f)))) + home.lat;
+            tell_command.lng = 1.0e7f*ToDeg(packet.y/RADIUS_OF_EARTH) + home.lng;
+            tell_command.alt = packet.z*1.0e2f;
+            tell_command.options = MASK_OPTIONS_RELATIVE_ALT;
+            break;
+        }
+#endif
+
+        case MAV_FRAME_GLOBAL_RELATIVE_ALT:                         // absolute lat/lng, relative altitude
+        {
+            tell_command.lat = 1.0e7f * packet.x;                                     // in as DD converted to * t7
+            tell_command.lng = 1.0e7f * packet.y;                                     // in as DD converted to * t7
+            tell_command.alt = packet.z * 1.0e2f;
+            tell_command.options = MASK_OPTIONS_RELATIVE_ALT;                                     // store altitude relative!! Always!!
+            break;
+        }
+
+        default:
+            result = MAV_MISSION_UNSUPPORTED_FRAME;
+            break;
+        }
+
+        if (result != MAV_MISSION_ACCEPTED) goto mission_failed;
+
+        // Check if receiving waypoints (mission upload expected)
+        if (!waypoint_receiving) {
+            result = MAV_MISSION_ERROR;
+            goto mission_failed;
+        }
+
+        // check if this is the HOME wp
+        if (packet.seq == 0) {
+            set_home(tell_command); // New home in EEPROM
+            send_text_P(SEVERITY_LOW,PSTR("new HOME received"));
+            waypoint_receiving = false;
+
+        }
+
+
+
+mission_failed:
+        // we are rejecting the mission/waypoint
+        mavlink_msg_mission_ack_send(
+            chan,
+            msg->sysid,
+            msg->compid,
+            result);
+        break;
+    }
+
+
+    case MAVLINK_MSG_ID_GLOBAL_POSITION_INT: 
+    {
         // decode
         mavlink_global_position_int_t packet;
         mavlink_msg_global_position_int_decode(msg, &packet);

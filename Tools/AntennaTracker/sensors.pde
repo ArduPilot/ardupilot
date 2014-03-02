@@ -61,5 +61,7 @@ static void barometer_accumulate(void)
 static void update_GPS(void)
 {
     g_gps->update();
+    // REVISIT: add compass variation with compass.set_initial_location(g_gps->latitude, g_gps->longitude);
+    // when have a solid GPS fix. Also init_home();
 }
 

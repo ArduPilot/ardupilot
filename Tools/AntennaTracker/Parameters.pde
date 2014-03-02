@@ -100,6 +100,14 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GGROUP(pidPitch2Srv,       "PITCH2SRV_", PID),
 	GGROUP(pidYaw2Srv,         "YAW2SRV_", PID),
 
+    // @Param: CMD_TOTAL
+    // @DisplayName: Number of loaded mission items
+    // @Description: Set to 1 if HOME location has been loaded by the ground station. Do not change this manually.
+    // @Range: 1 255
+    // @User: Advanced
+    GSCALAR(command_total,          "CMD_TOTAL",      0),
+
+
     AP_VAREND
 };
 
