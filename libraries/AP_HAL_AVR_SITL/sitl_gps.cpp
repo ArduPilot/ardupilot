@@ -111,7 +111,9 @@ void SITL_State::_gps_write(const uint8_t *p, uint16_t size)
 			}
 		}
 		write(gps_state.gps_fd, p, 1);
-		write(gps2_state.gps_fd, p, 1);
+        if (_sitl->gps2_enable) {
+            write(gps2_state.gps_fd, p, 1);
+        }
         p++;
 	}
 }
