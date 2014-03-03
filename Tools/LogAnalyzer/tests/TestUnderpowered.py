@@ -61,7 +61,6 @@ class TestUnderpowered(Test):
 			(startLine,endLine) = (data[seg[0]][0], data[seg[1]][0])
 			avgClimbRate = logdata.channels["CTUN"]["CRate"].getSegment(startLine,endLine).avg()
 			avgThrOut    = logdata.channels["CTUN"]["ThrOut"].getSegment(startLine,endLine).avg()
-			#print "    Average CRate for this chunk is %.2f" % avgClimbRate
 			if avgClimbRate < climbThresholdFAIL:
 				self.result.status = TestResult.StatusType.FAIL
 				self.result.statusMessage = "Avg climb rate %.2f cm/s for throttle avg %d" % (avgClimbRate,avgThrOut)
