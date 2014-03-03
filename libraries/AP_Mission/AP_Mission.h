@@ -48,7 +48,6 @@ public:
 
     // jump command structure
     struct Jump_Command {
-        uint8_t id;         // mavlink command id.  To-Do: this can be removed once it is also removed from Location structure
         uint16_t target;    // DO_JUMP target command id
         int16_t num_times;  // DO_JUMP num times to repeat.  -1 = repeat forever
     };
@@ -65,6 +64,7 @@ public:
     struct Mission_Command {
         uint16_t index;             // this commands position in the command list
         uint8_t id;                 // mavlink command id
+        uint8_t p1;                 // general purpose parameter 1
         Content content;
     };
 
@@ -173,13 +173,17 @@ public:
     ///     true is returned if successful
     bool write_cmd_to_storage(uint16_t index, Mission_Command& cmd);
 
+    /// write_home_to_storage - writes the special purpose cmd 0 (home) to storage
+    ///     home is taken directly from ahrs
+    void write_home_to_storage();
+
     // mavlink_to_mission_cmd - converts mavlink message to an AP_Mission::Mission_Command object which can be stored to eeprom
     //  return true on success, false on failure
-    static bool mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP_Mission::Mission_Command& cmd);
+    static bool mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP_Mission::Mission_Command& cmd, bool cmd_alt_in_cm);
 
     // mission_cmd_to_mavlink - converts an AP_Mission::Mission_Command object to a mavlink message which can be sent to the GCS
     //  return true on success, false on failure
-    static bool mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, mavlink_mission_item_t& packet);
+    static bool mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, mavlink_mission_item_t& packet, bool cmd_alt_in_cm);
 
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -237,7 +241,7 @@ private:
     void increment_jump_times_run(Mission_Command& cmd);
 
     // references to external libraries
-    const AP_AHRS&          _ahrs;      // used only for home position
+    const AP_AHRS&   _ahrs;      // used only for home position
 
     // parameters
     AP_Int16                _cmd_total; // total number of commands in the mission
