@@ -54,13 +54,13 @@ static void navigate()
         return;
     }
 
-    if (next_WP.lat == 0) {
+    if (next_WP.content.location.lat == 0) {
         return;
     }
 
     // waypoint distance from plane
     // ----------------------------
-    wp_distance = get_distance(current_loc, next_WP);
+    wp_distance = get_distance(current_loc, next_WP.content.location);
 
     if (wp_distance < 0) {
         gcs_send_text_P(SEVERITY_HIGH,PSTR("WP error - distance < 0"));
@@ -74,7 +74,6 @@ static void navigate()
     // ---------------------------------------------------
     update_navigation();
 }
-
 
 static void calc_airspeed_errors()
 {
@@ -136,19 +135,19 @@ static void calc_altitude_error()
     if (nav_controller->reached_loiter_target()) {
         // once we reach a loiter target then lock to the final
         // altitude target
-        target_altitude_cm = next_WP.alt;
+        target_altitude_cm = next_WP.content.location.alt;
     } else if (offset_altitude_cm != 0) {
         // control climb/descent rate
-        target_altitude_cm = next_WP.alt - (offset_altitude_cm*((float)(wp_distance-30) / (float)(wp_totalDistance-30)));
+        target_altitude_cm = next_WP.content.location.alt - (offset_altitude_cm*((float)(wp_distance-30) / (float)(wp_totalDistance-30)));
 
         // stay within a certain range
-        if (prev_WP.alt > next_WP.alt) {
-            target_altitude_cm = constrain_int32(target_altitude_cm, next_WP.alt, prev_WP.alt);
+        if (prev_WP.content.location.alt > next_WP.content.location.alt) {
+            target_altitude_cm = constrain_int32(target_altitude_cm, next_WP.content.location.alt, prev_WP.content.location.alt);
         }else{
-            target_altitude_cm = constrain_int32(target_altitude_cm, prev_WP.alt, next_WP.alt);
+            target_altitude_cm = constrain_int32(target_altitude_cm, prev_WP.content.location.alt, next_WP.content.location.alt);
         }
-    } else if (non_nav_command_ID != MAV_CMD_CONDITION_CHANGE_ALT) {
-        target_altitude_cm = next_WP.alt;
+    } else if (mission.get_current_do_cmd().id != MAV_CMD_CONDITION_CHANGE_ALT) {
+        target_altitude_cm = next_WP.content.location.alt;
     }
 
     altitude_error_cm       = target_altitude_cm - adjusted_altitude_cm();
@@ -156,7 +155,7 @@ static void calc_altitude_error()
 
 static void update_loiter()
 {
-    nav_controller->update_loiter(next_WP, abs(g.loiter_radius), loiter.direction);
+    nav_controller->update_loiter(next_WP.content.location, abs(g.loiter_radius), loiter.direction);
 }
 
 /*
@@ -181,15 +180,15 @@ static void update_cruise()
         cruise_state.locked_heading = true;
         cruise_state.lock_timer_ms = 0;
         cruise_state.locked_heading_cd = g_gps->ground_course_cd;
-        prev_WP = current_loc;
+        prev_WP.content.location = current_loc;
     }
     if (cruise_state.locked_heading) {
         next_WP = prev_WP;
         // always look 1km ahead
-        location_update(next_WP, 
+        location_update(next_WP.content.location,
                         cruise_state.locked_heading_cd*0.01f, 
-                        get_distance(prev_WP, current_loc) + 1000);
-        nav_controller->update_waypoint(prev_WP, next_WP);
+                        get_distance(prev_WP.content.location, current_loc) + 1000);
+        nav_controller->update_waypoint(prev_WP.content.location, next_WP.content.location);
     }
 }
 
@@ -233,7 +232,7 @@ static void setup_glide_slope(void)
 {
     // establish the distance we are travelling to the next waypoint,
     // for calculating out rate of change of altitude
-    wp_totalDistance        = get_distance(current_loc, next_WP);
+    wp_totalDistance        = get_distance(current_loc, next_WP.content.location);
     wp_distance             = wp_totalDistance;
 
     /*
@@ -247,8 +246,8 @@ static void setup_glide_slope(void)
            rapidly if below it. See
            https://github.com/diydrones/ardupilot/issues/39
         */
-        if (current_loc.alt > next_WP.alt) {
-            offset_altitude_cm = next_WP.alt - current_loc.alt;            
+        if (current_loc.alt > next_WP.content.location.alt) {
+            offset_altitude_cm = next_WP.content.location.alt - current_loc.alt;
         } else {
             offset_altitude_cm = 0;
         }
@@ -256,9 +255,9 @@ static void setup_glide_slope(void)
 
     case AUTO:
         if (prev_WP.id != MAV_CMD_NAV_TAKEOFF && 
-            prev_WP.alt != home.alt && 
+            prev_WP.content.location.alt != home.alt &&
             (next_WP.id == MAV_CMD_NAV_WAYPOINT || next_WP.id == MAV_CMD_NAV_LAND)) {
-            offset_altitude_cm = next_WP.alt - prev_WP.alt;
+            offset_altitude_cm = next_WP.content.location.alt - prev_WP.content.location.alt;
         } else {
             offset_altitude_cm = 0;        
         }

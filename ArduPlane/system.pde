@@ -268,10 +268,6 @@ static void startup_ground(void)
     // ------------------------------------
     //save_EEPROM_groundstart();
 
-    // initialize commands
-    // -------------------
-    init_commands();
-
     // Makes the servos wiggle - 3 times signals ready to fly
     // -----------------------
     if (!g.skip_gyro_cal) {
@@ -337,16 +333,17 @@ static void set_mode(enum FlightMode mode)
 
     case CIRCLE:
         // the altitude to circle at is taken from the current altitude
-        next_WP.alt = current_loc.alt;
+        next_WP.content.location.alt = current_loc.alt;
         break;
 
     case AUTO:
-        prev_WP = current_loc;
-        update_auto();
+        prev_WP.content.location = current_loc;
+        // start the mission
+        mission.start();
         break;
 
     case RTL:
-        prev_WP = current_loc;
+        prev_WP.content.location = current_loc;
         do_RTL();
         break;
 
@@ -360,7 +357,7 @@ static void set_mode(enum FlightMode mode)
         break;
 
     default:
-        prev_WP = current_loc;
+        prev_WP.content.location = current_loc;
         do_RTL();
         break;
     }

@@ -277,8 +277,6 @@ static void geofence_check(bool altitude_check_only)
             // min and max
             guided_WP.alt = home.alt + 100.0*(g.fence_minalt + g.fence_maxalt)/2;
         }
-        guided_WP.id = 0;
-        guided_WP.p1  = 0;
         guided_WP.options = 0;
         guided_WP.lat = geofence_state->boundary[0].x;
         guided_WP.lng = geofence_state->boundary[0].y;

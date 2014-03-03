@@ -43,14 +43,15 @@ static void read_control_switch()
         set_mode((enum FlightMode)(flight_modes[switchPosition].get()));
 
         oldSwitchPosition = switchPosition;
-        prev_WP = current_loc;
+        prev_WP.content.location = current_loc;
     }
 
     if (g.reset_mission_chan != 0 &&
         hal.rcin->read(g.reset_mission_chan-1) > RESET_SWITCH_CHAN_PWM) {
-        // reset to first waypoint in mission
-        prev_WP = current_loc;
-        change_command(0);
+        if (mission.set_current_cmd(0)) {
+            // reset to first waypoint in mission
+            prev_WP.content.location = current_loc;
+        }
     }
 
     switch_debouncer = false;

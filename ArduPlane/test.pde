@@ -27,6 +27,9 @@ static int8_t   test_logging(uint8_t argc,              const Menu::arg *argv);
 static int8_t   test_shell(uint8_t argc,              const Menu::arg *argv);
 #endif
 
+// forward declaration to keep the compiler happy
+static void test_wp_print(const AP_Mission::Mission_Command& cmd);
+
 // Creates a constant array of structs representing menu options
 // and stores them in Flash memory, not RAM.
 // User enters the string in the console to call the functions on the right.
@@ -282,29 +285,30 @@ test_wp(uint8_t argc, const Menu::arg *argv)
         cliSerial->printf_P(PSTR("Hold altitude of %dm\n"), (int)g.RTL_altitude_cm/100);
     }
 
-    cliSerial->printf_P(PSTR("%d waypoints\n"), (int)g.command_total);
+    cliSerial->printf_P(PSTR("%d waypoints\n"), (int)mission.num_commands());
     cliSerial->printf_P(PSTR("Hit radius: %d\n"), (int)g.waypoint_radius);
     cliSerial->printf_P(PSTR("Loiter radius: %d\n\n"), (int)g.loiter_radius);
 
-    for(uint8_t i = 0; i <= g.command_total; i++) {
-        struct Location temp = get_cmd_with_index(i);
-        test_wp_print(&temp, i);
+    for(uint8_t i = 0; i <= mission.num_commands(); i++) {
+        AP_Mission::Mission_Command temp_cmd;
+        mission.read_cmd_from_storage(i,temp_cmd);
+        test_wp_print(temp_cmd);
     }
 
     return (0);
 }
 
 static void
-test_wp_print(const struct Location *cmd, uint8_t wp_index)
+test_wp_print(const AP_Mission::Mission_Command& cmd)
 {
     cliSerial->printf_P(PSTR("command #: %d id:%d options:%d p1:%d p2:%ld p3:%ld p4:%ld \n"),
-                    (int)wp_index,
-                    (int)cmd->id,
-                    (int)cmd->options,
-                    (int)cmd->p1,
-                    (long)cmd->alt,
-                    (long)cmd->lat,
-                    (long)cmd->lng);
+                    (int)cmd.index,
+                    (int)cmd.id,
+                    (int)cmd.content.location.options,
+                    (int)cmd.p1,
+                    (long)cmd.content.location.alt,
+                    (long)cmd.content.location.lat,
+                    (long)cmd.content.location.lng);
 }
 
 static int8_t

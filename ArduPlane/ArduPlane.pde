@@ -70,6 +70,7 @@
 #include <AP_SpdHgtControl.h>
 #include <AP_TECS.h>
 #include <AP_NavEKF.h>
+#include <AP_Mission.h>     // Mission command library
 
 #include <AP_Notify.h>      // Notify library
 #include <AP_BattMonitor.h> // Battery monitor library
@@ -464,10 +465,6 @@ static bool have_position;
 ////////////////////////////////////////////////////////////////////////////////
 
 // There may be two active commands in Auto mode.
-// This indicates the active navigation command by index number
-static uint8_t nav_command_index;
-// This indicates the active non-navigation command by index number
-static uint8_t non_nav_command_index;
 // This is the command type (eg navigate to waypoint) of the active navigation command
 static uint8_t nav_command_ID          = NO_COMMAND;
 static uint8_t non_nav_command_ID      = NO_COMMAND;
@@ -585,6 +582,15 @@ static int32_t nav_roll_cd;
 static int32_t nav_pitch_cd;
 
 ////////////////////////////////////////////////////////////////////////////////
+// Mission library
+// forward declaration to keep compiler happy
+////////////////////////////////////////////////////////////////////////////////
+static bool start_command(const AP_Mission::Mission_Command& cmd);
+static bool verify_command(const AP_Mission::Mission_Command& cmd);
+static void exit_mission();
+AP_Mission mission(ahrs, &start_command, &verify_command, &exit_mission);
+
+////////////////////////////////////////////////////////////////////////////////
 // Waypoint distances
 ////////////////////////////////////////////////////////////////////////////////
 // Distance between plane and next waypoint.  Meters
@@ -639,17 +645,17 @@ static const struct Location &home = ahrs.get_home();
 // Flag for if we have g_gps lock and have set the home location in AHRS
 static bool home_is_set;
 // The location of the previous waypoint.  Used for track following and altitude ramp calculations
-static struct   Location prev_WP;
+static struct   AP_Mission::Mission_Command prev_WP;
 // The plane's current location
 static struct   Location current_loc;
 // The location of the current/active waypoint.  Used for altitude ramp, track following and loiter calculations.
-static struct   Location next_WP;
+static struct   AP_Mission::Mission_Command next_WP;
 // The location of the active waypoint in Guided mode.
 static struct   Location guided_WP;
 // The location structure information from the Nav command being processed
-static struct   Location next_nav_command;
+static struct   AP_Mission::Mission_Command next_nav_command;
 // The location structure information from the Non-Nav command being processed
-static struct   Location next_nonnav_command;
+static struct   AP_Mission::Mission_Command next_nonnav_command;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Altitude / Climb rate control
@@ -731,7 +737,6 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { read_airspeed,          5,   1200 },
     { update_alt,             5,   3400 },
     { calc_altitude_error,    5,   1000 },
-    { update_commands,        5,   5000 },
     { obc_fs_check,           5,   1000 },
     { gcs_update,             1,   1700 },
     { gcs_data_stream_send,   1,   3000 },
@@ -1118,7 +1123,7 @@ static void update_GPS_10Hz(void)
  */
 static void handle_auto_mode(void)
 {
-    switch(nav_command_ID) {
+    switch(mission.get_current_do_cmd().id) {
     case MAV_CMD_NAV_TAKEOFF:
         if (steer_state.hold_course_cd == -1) {
             // we don't yet have a heading to hold - just level
@@ -1345,7 +1350,7 @@ static void update_navigation()
     // distance and bearing calcs only
     switch(control_mode) {
     case AUTO:
-        verify_commands();
+        update_commands();
         break;
             
     case LOITER:
