@@ -4,10 +4,11 @@ import DataflashLog
 
 class TestPitchRollCoupling(Test):
 	'''test for divergence between input and output pitch/roll, i.e. mechanical failure or bad PID tuning'''
+	# TODO: currently we're only checking for roll/pitch outside of max lean angle, will come back later to analyze roll/pitch in versus out values
 
 	def __init__(self):
 		self.name = "Pitch/Roll"
-		self.enable = False   # TEMP
+		self.enable = True   # TEMP
 
 	def run(self, logdata):
 		self.result = TestResult()
@@ -15,72 +16,108 @@ class TestPitchRollCoupling(Test):
 
 		if logdata.vehicleType != "ArduCopter":
 			self.result.status = TestResult.StatusType.NA
+			return
 
 		if not "ATT" in logdata.channels:
 			self.result.status = TestResult.StatusType.UNKNOWN
 			self.result.statusMessage = "No ATT log data"
 			return
 
-		# TODO: implement pitch/roll input/output divergence testing - 
-
-		# note: names changed from PitchIn to DesPitch at some point, check for both
-
-		# what to test for?
-		# - only analyse while we're airborne 
-		# - absolute diff between in+out?
-		# - accumulated diff between in+out?
-		# - slope diff between in+out curves?
-		# - roll/pitch over max in non-acro modes?
-		# - if direct control use CTUN roll+pitch, if auto mode use NTUN data
-
-
-		# figure out where each mode begins and ends, so we can treat auto and manual modes differently
+		# figure out where each mode begins and ends, so we can treat auto and manual modes differently and ignore acro/tune modes
 		autoModes   = ["RTL","AUTO","LAND","LOITER","GUIDED","CIRCLE","OF_LOITER"]     # use NTUN DRol+DPit
 		manualModes = ["STABILIZE","DRIFT","ALT_HOLD"]                                 # use CTUN RollIn/DesRoll + PitchIn/DesPitch
 		ignoreModes = ["ACRO","SPORT","FLIP","AUTOTUNE"]                               # ignore data from these modes
 		autoSegments   = []  # list of (startLine,endLine) pairs
 		manualSegments = []  # list of (startLine,endLine) pairs
 		orderedModes = collections.OrderedDict(sorted(logdata.modeChanges.items(), key=lambda t: t[0]))
-		isAuto = False # always start in a manual control mode
-		prevLine = 1
+		isAuto = False # we always start in a manual control mode
+		prevLine = 0
 		for line,modepair in orderedModes.iteritems():
 			mode = modepair[0].upper()
+			if prevLine == 0:
+				prevLine = line
 			if mode in autoModes:
-				print "On line %d mode changed to %s (AUTO)" % (line,mode)   # TEMP
 				if not isAuto:
 					manualSegments.append((prevLine,line-1))
-					print "  Previous manual segment: " + `(prevLine,line-1)`   # TEMP
+					#print "Adding manual segment: %d,%d" % (prevLine,line-1)
 					prevLine = line
 				isAuto = True
 			elif mode in manualModes:
-				print "On line %d mode changed to %s (MANUAL)" % (line,mode)   # TEMP
 				if isAuto:
 					autoSegments.append((prevLine,line-1))
-					print "  Previous auto segment: " + `(prevLine,line-1)`   # TEMP
+					#print "Adding auto segment: %d,%d" % (prevLine,line-1)
 					prevLine = line
 				isAuto = False
 			elif mode in ignoreModes:
-				pass
+				if isAuto:
+					autoSegments.append((prevLine,line-1))
+					#print "Adding auto segment: %d,%d" % (prevLine,line-1)
+				else:
+					manualSegments.append((prevLine,line-1))
+					#print "Adding manual segment: %d,%d" % (prevLine,line-1)
+				prevLine = 0
 			else:
 				raise Exception("Unknown mode in TestPitchRollCoupling: %s" % mode)
+		# and handle the last segment, which doesn't have an ending
+		if mode in autoModes:
+			autoSegments.append((prevLine,logdata.lineCount))
+			#print "Adding final auto segment: %d,%d" % (prevLine,logdata.lineCount)
+		elif mode in manualModes:
+			manualSegments.append((prevLine,logdata.lineCount))
+			#print "Adding final manual segment: %d,%d" % (prevLine,logdata.lineCount)
 
-		# look through manual segments
-		for startLine,endLine in manualSegments:
-			(value,attLine) = logdata.channels["ATT"]["Roll"].getNearestValue(startLine, lookForwards=True)
-			print "Nearest ATT line after %d is %d" % (startLine,attLine)
-			index = logdata.channels["ATT"]["Roll"].getIndexOf(attLine)
-			print "First ATT line in manual segment (%d,%d) is line %d" % (startLine,endLine,logdata.channels["ATT"]["Roll"].listData[index][0])
+		# figure out max lean angle, the ANGLE_MAX param was added in AC3.1
+		maxLeanAngle = 45.0
+		if "ANGLE_MAX" in logdata.parameters:
+			maxLeanAngle = logdata.parameters["ANGLE_MAX"] / 100.0
+		maxLeanAngleBuffer = 10 # allow a buffer margin
+
+		# ignore anything below this altitude, to discard any data while not flying
+		minAltThreshold = 2.0
+
+		# look through manual+auto flight segments
+		# TODO: filter to ignore single points outside range?
+		(maxRoll, maxRollLine)   = (0.0, 0)
+		(maxPitch, maxPitchLine) = (0.0, 0)
+		for (startLine,endLine) in manualSegments+autoSegments:
+			#print "Checking segment %d,%d" % (startLine,endLine)
+			# quick up-front test, only fallover into more complex line-by-line check if max()>threshold
+			rollSeg  = logdata.channels["ATT"]["Roll"].getSegment(startLine,endLine)
+			pitchSeg = logdata.channels["ATT"]["Pitch"].getSegment(startLine,endLine)
+			if not rollSeg.dictData and not pitchSeg.dictData:
+				continue
+			# check max roll+pitch for any time where relative altitude is above minAltThreshold
+			roll  = max(abs(rollSeg.min()),  abs(rollSeg.max()))
+			pitch = max(abs(pitchSeg.min()), abs(pitchSeg.max()))
+			if (roll>(maxLeanAngle+maxLeanAngleBuffer) and abs(roll)>abs(maxRoll)) or (pitch>(maxLeanAngle+maxLeanAngleBuffer) and abs(pitch)>abs(maxPitch)):
+				lit = DataflashLog.LogIterator(logdata, startLine)
+				assert(lit.currentLine == startLine)
+				while lit.currentLine <= endLine:
+					relativeAlt = lit["CTUN"]["BarAlt"]
+					if relativeAlt > minAltThreshold:
+						roll  = lit["ATT"]["Roll"]
+						pitch = lit["ATT"]["Pitch"]
+						if abs(roll)>(maxLeanAngle+maxLeanAngleBuffer) and abs(roll)>abs(maxRoll):
+							maxRoll = roll
+							maxRollLine = lit.currentLine
+						if abs(pitch)>(maxLeanAngle+maxLeanAngleBuffer) and abs(pitch)>abs(maxPitch):
+							maxPitch = pitch
+							maxPitchLine = lit.currentLine
+					lit.next()
+		# check for breaking max lean angles
+		if maxRoll and abs(maxRoll)>abs(maxPitch):
+			self.result.status = TestResult.StatusType.FAIL
+			self.result.statusMessage = "Roll (%.2f, line %d) > maximum lean angle (%.2f)" % (maxRoll, maxRollLine, maxLeanAngle)
+			return
+		if maxPitch:
+			self.result.status = TestResult.StatusType.FAIL
+			self.result.statusMessage = "Pitch (%.2f, line %d) > maximum lean angle (%.2f)" % (maxPitch, maxPitchLine, maxLeanAngle)
+			return
 
 
 
-
-
-
-
-		# look through auto segments
+		# TODO: use numpy/scipy to check Roll+RollIn curves for fitness (ignore where we're not airborne)
 		# ...
-
-
 
 
 
