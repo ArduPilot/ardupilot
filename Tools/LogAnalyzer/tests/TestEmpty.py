@@ -8,7 +8,7 @@ class TestEmpty(Test):
 	def __init__(self):
 		self.name = "Empty"
 		
-	def run(self, logdata):
+	def run(self, logdata, verbose):
 		self.result = TestResult()
 		self.result.status = TestResult.StatusType.PASS
 

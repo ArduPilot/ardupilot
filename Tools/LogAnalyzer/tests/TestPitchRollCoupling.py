@@ -10,7 +10,7 @@ class TestPitchRollCoupling(Test):
 		self.name = "Pitch/Roll"
 		self.enable = True   # TEMP
 
-	def run(self, logdata):
+	def run(self, logdata, verbose):
 		self.result = TestResult()
 		self.result.status = TestResult.StatusType.PASS
 

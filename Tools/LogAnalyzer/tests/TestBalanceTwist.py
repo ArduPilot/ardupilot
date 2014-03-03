@@ -9,7 +9,7 @@ class TestBalanceTwist(Test):
 		self.name = "Balance/Twist"
 		self.enable = False   # TEMP
 		
-	def run(self, logdata):
+	def run(self, logdata, verbose):
 		self.result = TestResult()
 		self.result.status = TestResult.StatusType.PASS
 

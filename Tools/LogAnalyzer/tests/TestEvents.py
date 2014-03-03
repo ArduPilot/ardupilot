@@ -8,7 +8,7 @@ class TestEvents(Test):
 	def __init__(self):
 		self.name = "Event/Failsafe"
 
-	def run(self, logdata):
+	def run(self, logdata, verbose):
 		self.result = TestResult()
 		self.result.status = TestResult.StatusType.PASS
 

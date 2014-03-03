@@ -42,7 +42,7 @@ class Test:
 	result = None   # will be an instance of TestResult after being run
 	execTime = None
 	enable = True
-	def run(self, logdata):
+	def run(self, logdata, verbose=False):
 		pass
 
 
@@ -68,8 +68,7 @@ class TestSuite:
 		# m = imp.load_source("m", dirName + '/tests/TestBadParams.py')
 		# self.tests.append(m.TestBadParams())
 
-
-	def run(self, logdata):
+	def run(self, logdata, verbose):
 		'''run all registered tests in a single call'''
 		self.logdata = logdata
 		self.logfile = logdata.filename
@@ -77,7 +76,7 @@ class TestSuite:
 			# run each test in turn, gathering timing info
 			if test.enable:
 				startTime = time.time()
-				test.run(self.logdata)  # RUN THE TEST
+				test.run(self.logdata, verbose)  # RUN THE TEST
 				endTime = time.time()
 				test.execTime = 1000 * (endTime-startTime)
 
@@ -208,6 +207,7 @@ def main():
 	parser.add_argument('-s', '--skip_bad', metavar='', action='store_const', const=True, help='skip over corrupt dataflash lines')
 	parser.add_argument('-e', '--empty',  metavar='', action='store_const', const=True, help='run an initial check for an empty log')
 	parser.add_argument('-x', '--xml', type=str, metavar='XML file', nargs='?', const='', default='', help='write output to specified XML file')
+	parser.add_argument('-v', '--verbose', metavar='', action='store_const', const=True, help='verbose output')
 	args = parser.parse_args()
 
 	# load the log
@@ -228,7 +228,7 @@ def main():
 	#run the tests, and gather timings
 	testSuite = TestSuite()
 	startTime = time.time()	
-	testSuite.run(logdata)  # run tests
+	testSuite.run(logdata, args.verbose)  # run tests
 	endTime = time.time()
 	if args.profile:
 		print "Test suite run time: %.2f seconds" % (endTime-startTime)

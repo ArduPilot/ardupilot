@@ -34,7 +34,7 @@ class TestDupeLogData(Test):
 
 		return False
 
-	def run(self, logdata):
+	def run(self, logdata, verbose):
 		self.result = TestResult()
 		self.result.status = TestResult.StatusType.PASS
 
