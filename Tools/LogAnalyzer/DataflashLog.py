@@ -30,9 +30,10 @@ class Format:
 
 class Channel:
 	'''storage for a single stream of data, i.e. all GPS.RelAlt values'''
-
+	
 	# TODO: rethink data storage, but do regression test suite first before refactoring it
-	# TODO: store data as a curve so we can more easily interpolate and sample the slope?
+	# TODO: store data as a scipy spline curve so we can more easily interpolate and sample the slope?
+	
 	dictData = None #  dict of linenum->value      # store dupe data in dict and list for now, until we decide which is the better way to go
 	listData = None #  list of (linenum,value)
 
@@ -50,58 +51,111 @@ class Channel:
 		return max(self.dictData.values())
 	def avg(self):
 		return numpy.mean(self.dictData.values())
+	def getNearestValueFwd(self, lineNumber):
+		'''Returns (value,lineNumber)'''
+		index = bisect.bisect_left(self.listData, (lineNumber,-99999))
+		while index<len(self.listData):
+			line  = self.listData[index][0]
+			#print "Looking forwards for nearest value to line number %d, starting at line %d" % (lineNumber,line) # TEMP
+			if line >= lineNumber:
+				return (self.listData[index][1],line)
+			index += 1
+		raise Exception("Error finding nearest value for line %d" % lineNumber)
+	def getNearestValueBack(self, lineNumber):
+		'''Returns (value,lineNumber)'''
+		index = bisect.bisect_left(self.listData, (lineNumber,-99999)) - 1
+		while index>=0:
+			line  = self.listData[index][0]
+			#print "Looking backwards for nearest value to line number %d, starting at line %d" % (lineNumber,line) # TEMP
+			if line <= lineNumber:
+				return (self.listData[index][1],line)
+			index -= 1
+		raise Exception("Error finding nearest value for line %d" % lineNumber)
 	def getNearestValue(self, lineNumber, lookForwards=True):
-		# TODO: redo Channel.getNearestValue() using listData and bisect, profile speed of TestUnderpowered before/after
-		'''find the nearest data value to the given lineNumber, defaults to looking forwards. Returns (value,lineNumber)'''
-		if lineNumber in self.dictData:
-			return (self.dictData[lineNumber], lineNumber)
-		offset = 1
-		if not lookForwards:
-			offset = -1
-		minLine = min(self.dictData.keys())
-		maxLine = max(self.dictData.keys())
-		line = max(minLine,lineNumber)
-		line = min(maxLine,line)
-		while line >= minLine and line <= maxLine:
-			if line in self.dictData:
-				return (self.dictData[line], line)
-			line = line + offset
+		'''find the nearest data value to the given lineNumber, defaults to first looking forwards. Returns (value,lineNumber)'''
+		if lookForwards:
+			try:
+				return self.getNearestValueFwd(lineNumber)
+			except:
+				return self.getNearestValueBack(lineNumber)	
+		else:
+			try:
+				return self.getNearestValueBack(lineNumber)
+			except:
+				return self.getNearestValueFwd(lineNumber)
 		raise Exception("Error finding nearest value for line %d" % lineNumber)
 	def getInterpolatedValue(self, lineNumber):
 		(prevValue,prevValueLine) = self.getNearestValue(lineNumber, lookForwards=False)
-		(nextValue,nextValueLine) = self.getNearestValue(lineNumber, lookForwards=False)
+		(nextValue,nextValueLine) = self.getNearestValue(lineNumber, lookForwards=True)
 		if prevValueLine == nextValueLine:
 			return prevValue
 		weight = (lineNumber-prevValueLine) / float(nextValueLine-prevValueLine)
 		return ((weight*prevValue) + ((1-weight)*nextValue))
 	def getIndexOf(self, lineNumber):
-		index = bisect.bisect_left(self.listData, (lineNumber,0)) - 1
-		print "INDEX: %d" % index 
-		assert(self.listData[index][0] == lineNumber)
-		return index
+		'''returns the index within this channel's listData of the given lineNumber, or raises an Exception if not found'''
+		index = bisect.bisect_left(self.listData, (lineNumber,-99999))
+		#print "INDEX of line %d: %d" % (lineNumber,index)
+		#print "self.listData[index][0]: %d" % self.listData[index][0]
+		if (self.listData[index][0] == lineNumber):
+			return index
+		else:
+			raise Exception("Error finding index for line %d" % lineNumber)
 
-# class LogIterator:
-# 	'''Smart iterator that can move through a log by line number and maintain an index into the nearest values of all data channels'''
+class LogIterator:
+	'''Smart iterator that can move through a log by line number and maintain an index into the nearest values of all data channels'''
+	# TODO: LogIterator currently indexes the next available value rather than the nearest value, we should make it configurable between next/nearest
 
-# 	iterators   = []     # (lineLabel, dataLabel) -> listIndex
-# 	logdata     = None
-# 	currentLine = None
+	class LogIteratorSubValue:
+		'''syntactic sugar to allow access by LogIterator[lineLabel][dataLabel]'''
+		logdata   = None
+		iterators = None
+		lineLabel = None
+		def __init__(self, logdata, iterators, lineLabel):
+			self.logdata = logdata
+			self.lineLabel = lineLabel
+			self.iterators = iterators
+		def __getitem__(self, dataLabel):
+			index = self.iterators[self.lineLabel][0]	
+			return self.logdata.channels[self.lineLabel][dataLabel].listData[index][1]
 
-# 	def __init__(self, logdata):
-# 		self.logdata = logdata
-# 		self.currentLine = 0
-# 		for format in self.logdata.formats:
-# 			for label in format.labels:
-# 				iterators[(format,label)] = 0
+	iterators   = {}      # lineLabel -> (listIndex,lineNumber)
+	logdata     = None
+	currentLine = None
 
-# 	def __iter__(self):
-# 		return self
+	def __init__(self, logdata, lineNumber=0):
+		self.logdata = logdata
+		self.currentLine = lineNumber
+		for lineLabel in self.logdata.formats:
+			if lineLabel in self.logdata.channels:
+				self.iterators[lineLabel] = ()
+		self.jump(lineNumber)
+	def __iter__(self):
+		return self
+	def __getitem__(self, lineLabel):
+		return LogIterator.LogIteratorSubValue(self.logdata, self.iterators, lineLabel)
+	def next(self):
+		self.currentLine += 1
+		if self.currentLine > self.logdata.lineCount:
+			return self
+		for lineLabel in self.iterators.keys():
+			# check if the currentLine has gone past our the line we're pointing to for this type of data
+			dataLabel = self.logdata.formats[lineLabel].labels[0]
+			(index, lineNumber) = self.iterators[lineLabel]
+			# if so, and it is not the last entry in the log, then increment the indices for all dataLabels under that lineLabel
+			if (self.currentLine > lineNumber) and (index < len(self.logdata.channels[lineLabel][dataLabel].listData)-1):
+				index += 1
+				lineNumber = self.logdata.channels[lineLabel][dataLabel].listData[index][0]
+				self.iterators[lineLabel] = (index,lineNumber)
+		return self
+	def jump(self, lineNumber):
+		self.currentLine = lineNumber
+		for lineLabel in self.iterators.keys():
+			dataLabel = self.logdata.formats[lineLabel].labels[0]
+			(value,lineNumber) = self.logdata.channels[lineLabel][dataLabel].getNearestValue(self.currentLine)
+			#print "  Found value: %.2f, lineNumber: %d" % (value,lineNumber)
+			#print "  Found index: %d" % self.logdata.channels[lineLabel][dataLabel].getIndexOf(lineNumber)
+			self.iterators[lineLabel] = (self.logdata.channels[lineLabel][dataLabel].getIndexOf(lineNumber), lineNumber)
 
-# 	def next(self):
-# 		pass
-
-# 	def jump(self, lineNumber):
-# 		pass
 
 class DataflashLogHelper:
 	@staticmethod
@@ -167,7 +221,6 @@ class DataflashLogHelper:
 
 class DataflashLog:
 	'''APM Dataflash log file reader and container class. Keep this simple, add more advanced or specific functions to DataflashLogHelper class'''
-	# TODO: implement some kind of iterator or different data storage approeach where we can step through the log by time/line and easily access, interpolate and cross-reference values from all channels at that point
 
 	filename = None
 

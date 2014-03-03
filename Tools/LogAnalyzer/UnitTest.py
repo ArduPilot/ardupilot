@@ -5,7 +5,7 @@
 #
 #
 
-# TODO: implement unit+regression tests
+# TODO: implement more unit+regression tests
 
 import DataflashLog
 import traceback
@@ -41,6 +41,24 @@ try:
 	assert(int(logdata.filesizeKB) == 302)
 	assert(logdata.durationSecs    == 155)
 	assert(logdata.lineCount       == 4750)
+
+	# test LogIterator class
+	lit = DataflashLog.LogIterator(logdata)
+	assert(lit.currentLine == 0)
+	assert(lit.iterators == {'CURR': (0, 310), 'ERR': (0, 307), 'NTUN': (0, 2206), 'CTUN': (0, 308), 'GPS': (0, 552), 'CMD': (0, 607), 'D32': (0, 305), 'ATT': (0, 311), 'EV': (0, 306), 'DU32': (0, 309), 'PM': (0, 479)})
+	lit.jump(500)
+	assert(lit.iterators == {'CURR': (9, 514), 'ERR': (1, 553), 'NTUN': (0, 2206), 'CTUN': (87, 500), 'GPS': (0, 552), 'CMD': (0, 607), 'D32': (0, 305), 'ATT': (83, 501), 'EV': (4, 606), 'DU32': (9, 513), 'PM': (1, 719)})
+	assert(lit['CTUN']['ThrIn']   == 450)
+	assert(lit['ATT']['RollIn']   == 11.19)
+	assert(lit['CURR']['CurrTot'] == 25.827288)
+	assert(lit['D32']['Value']    == 11122)
+	lit.next()
+	assert(lit.iterators == {'CURR': (9, 514), 'ERR': (1, 553), 'NTUN': (0, 2206), 'CTUN': (88, 502), 'GPS': (0, 552), 'CMD': (0, 607), 'D32': (0, 305), 'ATT': (83, 501), 'EV': (4, 606), 'DU32': (9, 513), 'PM': (1, 719)})
+	lit.jump(4750)
+	lit.next()
+	assert(lit.currentLine == 4751)
+	assert(lit['ATT']['Roll'] == 2.99)
+
 
 	# TODO: unit test DataflashLog reading 2
 	# ...

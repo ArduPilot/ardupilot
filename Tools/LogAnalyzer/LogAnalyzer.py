@@ -105,7 +105,7 @@ class TestSuite:
 			statusMessageExtra     = test.result.statusMessage.strip('\n\r').split('\n')[1:]
 			execTime = ""
 			if outputStats:
-				execTime = "  (%.2fms)" % (test.execTime)
+				execTime = "  (%6.2fms)" % (test.execTime)
 			if test.result.status == TestResult.StatusType.PASS:
 				print "  %20s:  PASS       %-55s%s" % (test.name, statusMessageFirstLine, execTime)
 			elif test.result.status == TestResult.StatusType.FAIL:
