@@ -581,9 +581,13 @@ static void NOINLINE send_rangefinder(mavlink_channel_t chan)
 
 static void NOINLINE send_current_waypoint(mavlink_channel_t chan)
 {
-    mavlink_msg_mission_current_send(
-        chan,
-        g.command_index);
+    uint16_t current_cmd_index;
+    if (mission.state() == AP_Mission::MISSION_RUNNING) {
+        current_cmd_index = mission.get_current_nav_cmd().index;
+    }else{
+        current_cmd_index = AP_MISSION_CMD_INDEX_NONE;
+    }
+    mavlink_msg_mission_current_send(chan, current_cmd_index);
 }
 
 static void NOINLINE send_statustext(mavlink_channel_t chan)
@@ -1157,7 +1161,7 @@ GCS_MAVLINK::send_text_P(gcs_severity severity, const prog_char_t *str)
 
 void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 {
-    struct Location tell_command = {};                // command for telemetry
+    struct AP_Mission::Mission_Command cmd = {};    // general purpose mission command
 
     switch (msg->msgid) {
 
@@ -1287,7 +1291,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                             channel_throttle->disable_out();  
                         }
                         // reset the mission on disarm
-                        change_command(0);
+                        mission.stop();
                         //only log if disarming was successful
                         Log_Arm_Disarm();
                         result = MAV_RESULT_ACCEPTED;
@@ -1403,6 +1407,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
     }
 
+    // GCS request the full list of commands, we return just the number and leave the GCS to then request each command individually
     case MAVLINK_MSG_ID_MISSION_REQUEST_LIST:
     {
         // decode
@@ -1415,7 +1420,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         mavlink_msg_mission_count_send(
             chan,msg->sysid,
             msg->compid,
-            g.command_total + 1);     // + home
+            mission.num_commands());
 
         waypoint_receiving       = false;
         waypoint_dest_sysid      = msg->sysid;
@@ -1434,116 +1439,66 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         if (mavlink_check_target(packet.target_system, packet.target_component))
             break;
 
-        // send waypoint
-        tell_command = get_cmd_with_index_raw(packet.seq);
-
-        // set frame of waypoint
-        uint8_t frame;
-
-        if (tell_command.options & LOCATION_MASK_OPTIONS_RELATIVE_ALT) {
-            frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;     // reference frame
-        } else {
-            frame = MAV_FRAME_GLOBAL;     // reference frame
+        // retrieve mission from eeprom
+        if (!mission.read_cmd_from_storage(packet.seq, cmd)) {
+            goto mission_item_send_failed;
         }
 
-        float param1 = 0, param2 = 0, param3 = 0, param4 = 0;
-
-        // time that the mav should loiter in milliseconds
-        uint8_t current = 0;     // 1 (true), 0 (false)
-
-        if (packet.seq == (uint16_t)g.command_index)
-            current = 1;
-
-        uint8_t autocontinue = 1;     // 1 (true), 0 (false)
-
-        float x = 0, y = 0, z = 0;
-
-        if (tell_command.id < MAV_CMD_NAV_LAST || tell_command.id == MAV_CMD_CONDITION_CHANGE_ALT) {
-            // command needs scaling
-            x = tell_command.lat/1.0e7;     // local (x), global (latitude)
-            y = tell_command.lng/1.0e7;     // local (y), global (longitude)
-            z = tell_command.alt/1.0e2;
+        // convert mission command to mavlink mission item packet
+        mavlink_mission_item_t ret_packet;
+        memset(&ret_packet, 0, sizeof(ret_packet));
+        if (!AP_Mission::mission_cmd_to_mavlink(cmd, ret_packet, false)) {
+            goto mission_item_send_failed;
         }
 
-        switch (tell_command.id) {                                              // Switch to map APM command fields inot MAVLink command fields
+        // set packet's current field to 1 if this is the command being executed
+        if (cmd.id == (uint16_t)mission.get_current_nav_cmd().index) {
+            ret_packet.current = 1;
+        }else{
+            ret_packet.current = 0;
+        }
 
+        // set auto continue to 1
+        ret_packet.autocontinue = 1;     // 1 (true), 0 (false)
+
+        // plane specific overrides to packet values
+        switch (cmd.id) {
         case MAV_CMD_NAV_LOITER_TIME:
         case MAV_CMD_NAV_LOITER_TURNS:
-            if (tell_command.options & LOCATION_MASK_OPTIONS_RELATIVE_ALT) {
-                param3 = -abs(g.loiter_radius);
+            if (cmd.content.location.flags.loiter_ccw) {
+                ret_packet.param3 = -abs(g.loiter_radius);
             } else {
-                param3 = abs(g.loiter_radius);
+                ret_packet.param3 = abs(g.loiter_radius);
             }
-        case MAV_CMD_NAV_TAKEOFF:
-        case MAV_CMD_DO_SET_HOME:
-            param1 = tell_command.p1;
             break;
-
         case MAV_CMD_NAV_LOITER_UNLIM:
-            if (tell_command.options & LOCATION_MASK_OPTIONS_RELATIVE_ALT) {
-                param3 = -abs(g.loiter_radius);
+            if (cmd.content.location.flags.loiter_ccw) {
+                ret_packet.param3 = -abs(g.loiter_radius);
             } else {
-                param3 = abs(g.loiter_radius);
+                ret_packet.param3 = abs(g.loiter_radius);
             }
-            break;
-        case MAV_CMD_CONDITION_CHANGE_ALT:
-            x=0;                                // Clear fields loaded above that we don't want sent for this command
-            y=0;
-        case MAV_CMD_CONDITION_DELAY:
-        case MAV_CMD_CONDITION_DISTANCE:
-            param1 = tell_command.lat;
-            break;
-
-        case MAV_CMD_DO_JUMP:
-            param2 = tell_command.lat;
-            param1 = tell_command.p1;
-            break;
-
-        case MAV_CMD_DO_REPEAT_SERVO:
-            param4 = tell_command.lng*0.001f; // time
-            param3 = tell_command.lat;        // repeat
-            param2 = tell_command.alt;        // pwm
-            param1 = tell_command.p1;         // channel
-            break;
-
-        case MAV_CMD_DO_REPEAT_RELAY:
-            param3 = tell_command.lat*0.001f; // time
-            param2 = tell_command.alt;        // count
-            param1 = tell_command.p1;         // relay number
-            break;
-
-        case MAV_CMD_DO_CHANGE_SPEED:
-            param3 = tell_command.lat;
-            param2 = tell_command.alt;
-            param1 = tell_command.p1;
-            break;
-
-        case MAV_CMD_DO_SET_PARAMETER:
-        case MAV_CMD_DO_SET_RELAY:
-        case MAV_CMD_DO_SET_SERVO:
-            param2 = tell_command.alt;
-            param1 = tell_command.p1;
-            break;
-
-        case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
-            param1 = tell_command.alt;
             break;
         }
 
         mavlink_msg_mission_item_send(chan,msg->sysid,
                                       msg->compid,
                                       packet.seq,
-                                      frame,
-                                      tell_command.id,
-                                      current,
-                                      autocontinue,
-                                      param1,
-                                      param2,
-                                      param3,
-                                      param4,
-                                      x,
-                                      y,
-                                      z);
+                                      ret_packet.frame,
+                                      cmd.id,
+                                      ret_packet.current,
+                                      ret_packet.autocontinue,
+                                      ret_packet.param1,
+                                      ret_packet.param2,
+                                      ret_packet.param3,
+                                      ret_packet.param4,
+                                      ret_packet.x,
+                                      ret_packet.y,
+                                      ret_packet.z);
+        break;
+
+mission_item_send_failed:
+        // send failure message
+        mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_ERROR);
         break;
     }
 
@@ -1631,12 +1586,15 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         if (mavlink_check_target(packet.target_system, packet.target_component)) break;
 
         // clear all commands
-        g.command_total.set_and_save(0);
-
-        // note that we don't send multiple acks, as otherwise a
-        // GCS that is doing a clear followed by a set may see
-        // the additional ACKs as ACKs of the set operations
-        mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_ACCEPTED);
+        if (mission.clear()) {
+            // note that we don't send multiple acks, as otherwise a
+            // GCS that is doing a clear followed by a set may see
+            // the additional ACKs as ACKs of the set operations
+            mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_ACCEPTED);
+        }else{
+            // we failed to clear the mission (perhaps because we're currently running it) so send NAK
+            mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_ERROR);
+        }
         break;
     }
 
@@ -1648,12 +1606,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         if (mavlink_check_target(packet.target_system,packet.target_component)) break;
 
         // set current command
-        change_command(packet.seq);
-
-        mavlink_msg_mission_current_send(chan, g.command_index);
+        if (mission.set_current_cmd(packet.seq)) {
+            mavlink_msg_mission_current_send(chan, mission.get_current_nav_cmd().index);
+        }
         break;
     }
 
+    // GCS provides the full number of commands it wishes to upload
+    //  individual commands will then be sent from the GCS using the MAVLINK_MSG_ID_MISSION_ITEM message
     case MAVLINK_MSG_ID_MISSION_COUNT:
     {
         // decode
@@ -1662,16 +1622,24 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         if (mavlink_check_target(packet.target_system,packet.target_component)) break;
 
         // start waypoint receiving
-        if (packet.count > MAX_WAYPOINTS) {
-            packet.count = MAX_WAYPOINTS;
+        if (packet.count > AP_MISSION_MAX_COMMANDS) {
+            // send NAK
+            mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_NO_SPACE);
+            break;
         }
-        g.command_total.set_and_save(packet.count - 1);
+
+        // new mission arriving, clear current mission
+        if (!mission.clear()) {
+            // return error if we were unable to clear the mission (possibly because we're currently flying the mission)
+            mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_ERROR);
+            break;
+        }
 
         waypoint_timelast_receive = millis();
         waypoint_timelast_request = 0;
         waypoint_receiving   = true;
         waypoint_request_i   = 0;
-        waypoint_request_last= g.command_total;
+        waypoint_request_last= packet.count;   // record how many commands we expect to receive
         break;
     }
 
@@ -1683,8 +1651,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         if (mavlink_check_target(packet.target_system,packet.target_component)) break;
 
         // start waypoint receiving
-        if (packet.start_index > g.command_total ||
-            packet.end_index > g.command_total ||
+        if (packet.start_index > mission.num_commands() ||
+            packet.end_index > mission.num_commands() ||
             packet.end_index < packet.start_index) {
             send_text_P(SEVERITY_LOW,PSTR("flight plan update rejected"));
             break;
@@ -1709,7 +1677,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     }
 #endif
 
-    // XXX receive a WP from GCS and store in EEPROM
+    // GCS has sent us a command from GCS, store to EEPROM
     case MAVLINK_MSG_ID_MISSION_ITEM:
     {
         // decode
@@ -1719,143 +1687,17 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         mavlink_msg_mission_item_decode(msg, &packet);
         if (mavlink_check_target(packet.target_system,packet.target_component)) break;
 
-        // defaults
-        tell_command.id = packet.command;
-
-        switch (packet.frame)
-        {
-        case MAV_FRAME_MISSION:
-        case MAV_FRAME_GLOBAL:
-        {
-            tell_command.lat = 1.0e7f*packet.x;                                     // in as DD converted to * t7
-            tell_command.lng = 1.0e7f*packet.y;                                     // in as DD converted to * t7
-            tell_command.alt = packet.z*1.0e2f;                                     // in as m converted to cm
-            tell_command.options = 0;                                     // absolute altitude
-            break;
+        // convert mavlink packet to mission command
+        if (!AP_Mission::mavlink_to_mission_cmd(packet, cmd, false)) {
+            result = MAV_MISSION_ERROR;
+            goto mission_failed;
         }
-
-#ifdef MAV_FRAME_LOCAL_NED
-        case MAV_FRAME_LOCAL_NED:                         // local (relative to home position)
-        {
-            tell_command.lat = 1.0e7f*ToDeg(packet.x/
-                                           (RADIUS_OF_EARTH*cosf(ToRad(home.lat/1.0e7f)))) + home.lat;
-            tell_command.lng = 1.0e7f*ToDeg(packet.y/RADIUS_OF_EARTH) + home.lng;
-            tell_command.alt = -packet.z*1.0e2f;
-            tell_command.options = LOCATION_MASK_OPTIONS_RELATIVE_ALT;
-            break;
-        }
-#endif
-
-#ifdef MAV_FRAME_LOCAL
-        case MAV_FRAME_LOCAL:                         // local (relative to home position)
-        {
-            tell_command.lat = 1.0e7f*ToDeg(packet.x/
-                                           (RADIUS_OF_EARTH*cosf(ToRad(home.lat/1.0e7f)))) + home.lat;
-            tell_command.lng = 1.0e7f*ToDeg(packet.y/RADIUS_OF_EARTH) + home.lng;
-            tell_command.alt = packet.z*1.0e2f;
-            tell_command.options = LOCATION_MASK_OPTIONS_RELATIVE_ALT;
-            break;
-        }
-#endif
-
-        case MAV_FRAME_GLOBAL_RELATIVE_ALT:                         // absolute lat/lng, relative altitude
-        {
-            tell_command.lat = 1.0e7f * packet.x;                                     // in as DD converted to * t7
-            tell_command.lng = 1.0e7f * packet.y;                                     // in as DD converted to * t7
-            tell_command.alt = packet.z * 1.0e2f;
-            tell_command.options = LOCATION_MASK_OPTIONS_RELATIVE_ALT;                                     // store altitude relative!! Always!!
-            break;
-        }
-
-        default:
-            result = MAV_MISSION_UNSUPPORTED_FRAME;
-            break;
-        }
-
-
-        if (result != MAV_MISSION_ACCEPTED) goto mission_failed;
-
-        // Switch to map APM command fields into MAVLink command fields
-        switch (tell_command.id) {
-        case MAV_CMD_NAV_LOITER_UNLIM:
-		    if (packet.param3 < 0) {
-		        tell_command.options |= LOCATION_MASK_OPTIONS_RELATIVE_ALT;
-		    }
-        case MAV_CMD_NAV_WAYPOINT:
-        case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-        case MAV_CMD_NAV_LAND:
-            break;
-
-        case MAV_CMD_NAV_LOITER_TURNS:
-        case MAV_CMD_NAV_LOITER_TIME:
-            if (packet.param3 < 0) {
-                tell_command.options |= LOCATION_MASK_OPTIONS_RELATIVE_ALT;
-            } 
-        case MAV_CMD_NAV_TAKEOFF:
-        case MAV_CMD_DO_SET_HOME:
-            tell_command.p1 = packet.param1;
-            break;
-
-        case MAV_CMD_CONDITION_CHANGE_ALT:
-            tell_command.lat = packet.param1;
-            break;
-
-        case MAV_CMD_CONDITION_DELAY:
-        case MAV_CMD_CONDITION_DISTANCE:
-            tell_command.lat = packet.param1;
-            break;
-
-        case MAV_CMD_DO_JUMP:
-            tell_command.lat = packet.param2;
-            tell_command.p1 = packet.param1;
-            break;
-
-        case MAV_CMD_DO_REPEAT_SERVO:
-            tell_command.lng = packet.param4*1000; // time
-            tell_command.lat = packet.param3;      // count
-            tell_command.alt = packet.param2;      // PWM
-            tell_command.p1  = packet.param1;      // channel
-            break;
-
-        case MAV_CMD_DO_REPEAT_RELAY:
-            tell_command.lat = packet.param3*1000; // time
-            tell_command.alt = packet.param2;      // count
-            tell_command.p1  = packet.param1;      // relay number
-            break;
-
-        case MAV_CMD_DO_CHANGE_SPEED:
-            tell_command.lat = packet.param3*1000; // convert to milliseconds
-            tell_command.alt = packet.param2;
-            tell_command.p1 = packet.param1;
-            break;
-
-        case MAV_CMD_DO_SET_PARAMETER:
-        case MAV_CMD_DO_SET_RELAY:
-        case MAV_CMD_DO_SET_SERVO:
-            tell_command.alt = packet.param2;
-            tell_command.p1 = packet.param1;
-            break;
-
-        case MAV_CMD_DO_DIGICAM_CONTROL:
-            break;
-
-        case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
-            // use alt so we can support 32 bit values
-            tell_command.alt = packet.param1;
-            break;
-
-        default:
-            result = MAV_MISSION_UNSUPPORTED;
-            break;
-        }
-
-        if (result != MAV_MISSION_ACCEPTED) goto mission_failed;
 
         if(packet.current == 2) {                                               //current = 2 is a flag to tell us this is a "guided mode" waypoint and not for the mission
-            guided_WP = tell_command;
+            guided_WP = cmd.content.location;
 
             // add home alt if needed
-            if (guided_WP.options & LOCATION_MASK_OPTIONS_RELATIVE_ALT) {
+            if (guided_WP.flags.relative_alt) {
                 guided_WP.alt += home.alt;
             }
 
@@ -1874,11 +1716,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         } else if(packet.current == 3) {                                               //current = 3 is a flag to tell us this is a alt change only
 
             // add home alt if needed
-            if (tell_command.options & LOCATION_MASK_OPTIONS_RELATIVE_ALT) {
-                tell_command.alt += home.alt;
+            if (cmd.content.location.flags.relative_alt) {
+                cmd.content.location.alt += home.alt;
             }
 
-            next_WP.alt = tell_command.alt;
+            next_WP.content.location.alt = cmd.content.location.alt;
 
             // verify we recevied the command
             mavlink_msg_mission_ack_send(
@@ -1900,19 +1742,39 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 goto mission_failed;
             }
 
-            set_cmd_with_index(tell_command, packet.seq);
+            // if command index is within the existing list, replace the command
+            if (packet.seq < mission.num_commands()) {
+                if (mission.replace_cmd(packet.seq,cmd)) {
+                    result = MAV_MISSION_ACCEPTED;
+                }else{
+                    result = MAV_MISSION_ERROR;
+                    goto mission_failed;
+                }
+            // if command is at the end of command list, add the command
+            }else if (packet.seq == mission.num_commands()) {
+                if (mission.add_cmd(cmd)) {
+                    result = MAV_MISSION_ACCEPTED;
+                }else{
+                    result = MAV_MISSION_ERROR;
+                    goto mission_failed;
+                }
+            // if beyond the end of the command list, return an error
+            }else{
+                result = MAV_MISSION_ERROR;
+                goto mission_failed;
+            }
 
             // update waypoint receiving state machine
             waypoint_timelast_receive = millis();
             waypoint_timelast_request = 0;
             waypoint_request_i++;
 
-            if (waypoint_request_i > waypoint_request_last) {
+            if (waypoint_request_i >= waypoint_request_last) {
                 mavlink_msg_mission_ack_send(
                     chan,
                     msg->sysid,
                     msg->compid,
-                    result);
+                    MAV_MISSION_ACCEPTED);
 
                 send_text_P(SEVERITY_LOW,PSTR("flight plan received"));
                 waypoint_receiving = false;
