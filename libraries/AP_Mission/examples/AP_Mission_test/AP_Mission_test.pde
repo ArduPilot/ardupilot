@@ -193,7 +193,7 @@ void run_resume_test()
     // Command #0 : home
     cmd.id = MAV_CMD_NAV_WAYPOINT;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 0;
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
@@ -204,7 +204,7 @@ void run_resume_test()
     // Command #1 : take-off to 10m
     cmd.id = MAV_CMD_NAV_TAKEOFF;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 10;
     cmd.content.location.lat = 0;
     cmd.content.location.lng = 0;
@@ -215,7 +215,7 @@ void run_resume_test()
     // Command #2 : first waypoint
     cmd.id = MAV_CMD_NAV_WAYPOINT;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 11;
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
@@ -225,7 +225,7 @@ void run_resume_test()
 
     // Command #3 : second waypoint
     cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.lat = 1234567890;
     cmd.content.location.lng = -1234567890;
     cmd.content.location.alt = 22;
@@ -236,7 +236,7 @@ void run_resume_test()
     // Command #4 : do command
     cmd.id = MAV_CMD_DO_SET_ROI;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 11;
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
@@ -246,7 +246,7 @@ void run_resume_test()
 
     // Command #5 : RTL
     cmd.id = MAV_CMD_NAV_RETURN_TO_LAUNCH;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.lat = 0;
     cmd.content.location.lng = 0;
     cmd.content.location.alt = 0;
@@ -299,7 +299,7 @@ void run_set_current_cmd_test()
     // Command #0 : home
     cmd.id = MAV_CMD_NAV_WAYPOINT;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 0;
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
@@ -310,7 +310,7 @@ void run_set_current_cmd_test()
     // Command #1 : take-off to 10m
     cmd.id = MAV_CMD_NAV_TAKEOFF;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 10;
     cmd.content.location.lat = 0;
     cmd.content.location.lng = 0;
@@ -321,7 +321,7 @@ void run_set_current_cmd_test()
     // Command #2 : do command
     cmd.id = MAV_CMD_DO_SET_ROI;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 11;
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
@@ -332,7 +332,7 @@ void run_set_current_cmd_test()
     // Command #3 : first waypoint
     cmd.id = MAV_CMD_NAV_WAYPOINT;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 11;
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
@@ -342,7 +342,7 @@ void run_set_current_cmd_test()
 
     // Command #4 : second waypoint
     cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.lat = 1234567890;
     cmd.content.location.lng = -1234567890;
     cmd.content.location.alt = 22;
@@ -353,7 +353,7 @@ void run_set_current_cmd_test()
     // Command #5 : do command
     cmd.id = MAV_CMD_DO_SET_ROI;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 11;
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
@@ -363,7 +363,7 @@ void run_set_current_cmd_test()
 
     // Command #6 : RTL
     cmd.id = MAV_CMD_NAV_RETURN_TO_LAUNCH;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.lat = 0;
     cmd.content.location.lng = 0;
     cmd.content.location.alt = 0;
@@ -403,7 +403,7 @@ void run_replace_cmd_test()
     // Command #0 : home
     cmd.id = MAV_CMD_NAV_WAYPOINT;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 0;
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
@@ -414,7 +414,7 @@ void run_replace_cmd_test()
     // Command #1 : take-off to 10m
     cmd.id = MAV_CMD_NAV_TAKEOFF;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 10;
     cmd.content.location.lat = 0;
     cmd.content.location.lng = 0;
@@ -425,7 +425,7 @@ void run_replace_cmd_test()
     // Command #2 : do command
     cmd.id = MAV_CMD_DO_SET_ROI;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 11;
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
@@ -436,7 +436,7 @@ void run_replace_cmd_test()
     // Command #3 : first waypoint
     cmd.id = MAV_CMD_NAV_WAYPOINT;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 11;
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
@@ -446,7 +446,7 @@ void run_replace_cmd_test()
 
     // Command #4 : second waypoint
     cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.lat = 1234567890;
     cmd.content.location.lng = -1234567890;
     cmd.content.location.alt = 22;
@@ -456,7 +456,7 @@ void run_replace_cmd_test()
 
     // Command #6 : RTL
     cmd.id = MAV_CMD_NAV_RETURN_TO_LAUNCH;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.lat = 0;
     cmd.content.location.lng = 0;
     cmd.content.location.alt = 0;
@@ -480,7 +480,7 @@ void run_replace_cmd_test()
     // Command #4 : do command
     cmd.id = MAV_CMD_DO_SET_ROI;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 11;
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
@@ -509,7 +509,7 @@ void init_mission()
     // Command #0 : home
     cmd.id = MAV_CMD_NAV_WAYPOINT;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 0;
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
@@ -520,7 +520,7 @@ void init_mission()
     // Command #1 : take-off to 10m
     cmd.id = MAV_CMD_NAV_TAKEOFF;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 10;
     cmd.content.location.lat = 0;
     cmd.content.location.lng = 0;
@@ -531,7 +531,7 @@ void init_mission()
     // Command #2 : first waypoint
     cmd.id = MAV_CMD_NAV_WAYPOINT;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 11;
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
@@ -541,7 +541,7 @@ void init_mission()
 
     // Command #3 : second waypoint
     cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.lat = 1234567890;
     cmd.content.location.lng = -1234567890;
     cmd.content.location.alt = 22;
@@ -559,7 +559,7 @@ void init_mission()
 
     // Command #5 : RTL
     cmd.id = MAV_CMD_NAV_RETURN_TO_LAUNCH;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.lat = 0;
     cmd.content.location.lng = 0;
     cmd.content.location.alt = 0;
@@ -580,7 +580,7 @@ void init_mission_no_nav_commands()
     // Command #0 : home
     cmd.id = MAV_CMD_NAV_WAYPOINT;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 0;
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
@@ -591,7 +591,7 @@ void init_mission_no_nav_commands()
     // Command #1 : "do" command
     cmd.id = MAV_CMD_DO_SET_ROI;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 11;
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
@@ -602,7 +602,7 @@ void init_mission_no_nav_commands()
     // Command #2 : "do" command
     cmd.id = MAV_CMD_DO_CHANGE_SPEED;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 0;
     cmd.content.location.lat = 0;
     cmd.content.location.lng = 0;
@@ -637,7 +637,7 @@ void init_mission_endless_loop()
     // Command #0 : home
     cmd.id = MAV_CMD_NAV_WAYPOINT;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 0;
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
@@ -656,7 +656,7 @@ void init_mission_endless_loop()
     // Command #2 : take-off to 10m
     cmd.id = MAV_CMD_NAV_TAKEOFF;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 10;
     cmd.content.location.lat = 0;
     cmd.content.location.lng = 0;
@@ -667,7 +667,7 @@ void init_mission_endless_loop()
     // Command #3 : waypoint
     cmd.id = MAV_CMD_NAV_WAYPOINT;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 11;
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
@@ -689,7 +689,7 @@ void init_mission_jump_to_nonnav()
     // Command #0 : home
     cmd.id = MAV_CMD_NAV_WAYPOINT;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 0;
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
@@ -700,7 +700,7 @@ void init_mission_jump_to_nonnav()
     // Command #1 : take-off to 10m
     cmd.id = MAV_CMD_NAV_TAKEOFF;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 10;
     cmd.content.location.lat = 0;
     cmd.content.location.lng = 0;
@@ -711,7 +711,7 @@ void init_mission_jump_to_nonnav()
     // Command #2 : do-roi command
     cmd.id = MAV_CMD_DO_SET_ROI;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 11;
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
@@ -730,7 +730,7 @@ void init_mission_jump_to_nonnav()
     // Command #4 : waypoint
     cmd.id = MAV_CMD_NAV_WAYPOINT;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 22;
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
@@ -753,7 +753,7 @@ void init_mission_starts_with_do_commands()
     // Command #0 : home
     cmd.id = MAV_CMD_NAV_WAYPOINT;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 0;
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
@@ -764,7 +764,7 @@ void init_mission_starts_with_do_commands()
     // Command #1 : First "do" command
     cmd.id = MAV_CMD_DO_SET_ROI;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 11;
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
@@ -775,7 +775,7 @@ void init_mission_starts_with_do_commands()
     // Command #2 : Second "do" command
     cmd.id = MAV_CMD_DO_CHANGE_SPEED;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 0;
     cmd.content.location.lat = 0;
     cmd.content.location.lng = 0;
@@ -786,7 +786,7 @@ void init_mission_starts_with_do_commands()
     // Command #3 : take-off to 10m
     cmd.id = MAV_CMD_NAV_TAKEOFF;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 10;
     cmd.content.location.lat = 0;
     cmd.content.location.lng = 0;
@@ -797,7 +797,7 @@ void init_mission_starts_with_do_commands()
     // Command #4 : Third "do" command
     cmd.id = MAV_CMD_DO_SET_ROI;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 22;
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
@@ -808,7 +808,7 @@ void init_mission_starts_with_do_commands()
     // Command #5 : waypoint
     cmd.id = MAV_CMD_NAV_WAYPOINT;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 33;
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
@@ -830,7 +830,7 @@ void init_mission_ends_with_do_commands()
     // Command #0 : home
     cmd.id = MAV_CMD_NAV_WAYPOINT;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 0;
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
@@ -841,7 +841,7 @@ void init_mission_ends_with_do_commands()
     // Command #1 : take-off to 10m
     cmd.id = MAV_CMD_NAV_TAKEOFF;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 10;
     cmd.content.location.lat = 0;
     cmd.content.location.lng = 0;
@@ -852,7 +852,7 @@ void init_mission_ends_with_do_commands()
     // Command #2 : "do" command
     cmd.id = MAV_CMD_DO_SET_ROI;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 22;
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
@@ -863,7 +863,7 @@ void init_mission_ends_with_do_commands()
     // Command #3 : waypoint
     cmd.id = MAV_CMD_NAV_WAYPOINT;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 33;
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
@@ -874,7 +874,7 @@ void init_mission_ends_with_do_commands()
     // Command #4 : "do" command after last nav command (but not at end of mission)
     cmd.id = MAV_CMD_DO_CHANGE_SPEED;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 0;
     cmd.content.location.lat = 0;
     cmd.content.location.lng = 0;
@@ -885,7 +885,7 @@ void init_mission_ends_with_do_commands()
     // Command #5 : "do" command at end of mission
     cmd.id = MAV_CMD_DO_SET_ROI;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 22;
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
@@ -906,7 +906,7 @@ void init_mission_ends_with_jump_command()
     // Command #0 : home
     cmd.id = MAV_CMD_NAV_WAYPOINT;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 0;
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
@@ -917,7 +917,7 @@ void init_mission_ends_with_jump_command()
     // Command #1 : take-off to 10m
     cmd.id = MAV_CMD_NAV_TAKEOFF;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 10;
     cmd.content.location.lat = 0;
     cmd.content.location.lng = 0;
@@ -928,7 +928,7 @@ void init_mission_ends_with_jump_command()
     // Command #2 : "do" command
     cmd.id = MAV_CMD_DO_SET_ROI;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 22;
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
@@ -939,7 +939,7 @@ void init_mission_ends_with_jump_command()
     // Command #3 : waypoint
     cmd.id = MAV_CMD_NAV_WAYPOINT;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 33;
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
@@ -950,7 +950,7 @@ void init_mission_ends_with_jump_command()
     // Command #4 : "do" command after last nav command (but not at end of mission)
     cmd.id = MAV_CMD_DO_CHANGE_SPEED;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 0;
     cmd.content.location.lat = 0;
     cmd.content.location.lng = 0;
@@ -961,7 +961,7 @@ void init_mission_ends_with_jump_command()
     // Command #5 : "do" command at end of mission
     cmd.id = MAV_CMD_DO_SET_ROI;
     cmd.content.location.options = 0;
-    cmd.content.location.p1 = 0;
+    cmd.p1 = 0;
     cmd.content.location.alt = 22;
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
@@ -1010,7 +1010,7 @@ void print_mission()
         if (cmd.id == MAV_CMD_DO_JUMP) {
             hal.console->printf_P(PSTR("jump-to:%d num_times:%d\n"), (int)cmd.content.jump.target, (int)cmd.content.jump.num_times);
         }else{
-            hal.console->printf_P(PSTR("p1:%d lat:%ld lng:%ld alt:%ld\n"),(int)cmd.content.location.p1, (long)cmd.content.location.lat, (long)cmd.content.location.lng, (long)cmd.content.location.alt);
+            hal.console->printf_P(PSTR("p1:%d lat:%ld lng:%ld alt:%ld\n"),(int)cmd.p1, (long)cmd.content.location.lat, (long)cmd.content.location.lng, (long)cmd.content.location.alt);
         }
     }
     hal.console->printf_P(PSTR("--------\n"));
