@@ -1107,8 +1107,7 @@ GCS_MAVLINK::send_text_P(gcs_severity severity, const prog_char_t *str)
 void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 {
     uint8_t result = MAV_RESULT_FAILED;         // assume failure.  Each messages id is responsible for return ACK or NAK if required
-    struct AP_Mission::Mission_Command cmd;     // general purpose mission command
-    memset(&cmd, 0, sizeof(cmd));
+    struct AP_Mission::Mission_Command cmd = {};    // general purpose mission command
 
     switch (msg->msgid) {
 
