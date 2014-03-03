@@ -10,7 +10,7 @@ class TestVCC(Test):
 	def __init__(self):
 		self.name = "VCC"
 
-	def run(self, logdata):
+	def run(self, logdata, verbose):
 		self.result = TestResult()
 		self.result.status = TestResult.StatusType.PASS
 
