@@ -90,10 +90,17 @@
 #define LOCATION_MASK_OPTIONS_RELATIVE_ALT      (1<<0)     // 1 = Relative altitude
 #define LOCATION_MASK_OPTIONS_LOITER_DIRECTION  (1<<2)     // 0 = CW, 1 = CCW
 
+struct Location_Option_Flags {
+    uint8_t relative_alt : 1;           // 1 if altitude is relateive to home
+    uint8_t unused1      : 1;           // unused flag (defined so that loiter_ccw uses the correct bit)
+    uint8_t loiter_ccw   : 1;           // 0 if clockwise, 1 if counter clockwise
+};
+
 struct Location {
-    uint8_t id;                                                 ///< command id
-    uint8_t options;                                    ///< options bitmask (1<<0 = relative altitude)
-    uint8_t p1;                                                 ///< param 1
+    union {
+        Location_Option_Flags flags;                    ///< options bitmask (1<<0 = relative altitude)
+        uint8_t options;                                /// allows writing all flags to eeprom as one byte
+    };
     int32_t alt;                                        ///< param 2 - Altitude in centimeters (meters * 100)
     int32_t lat;                                        ///< param 3 - Lattitude * 10**7
     int32_t lng;                                        ///< param 4 - Longitude * 10**7
