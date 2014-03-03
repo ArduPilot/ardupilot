@@ -417,7 +417,7 @@
  # define HEAD_MAX                               45
 #endif
 #ifndef PITCH_MAX
- # define PITCH_MAX                              15
+ # define PITCH_MAX                              20
 #endif
 #ifndef PITCH_MIN
  # define PITCH_MIN                              -25
