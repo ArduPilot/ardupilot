@@ -1,10 +1,9 @@
 #
 # Code to abstract the parsing of APM Dataflash log files, currently only used by the LogAnalyzer
 #
-# Initial code by Andrew Chapman (chapman@skymount.com), 16th Jan 2014
+# Initial code by Andrew Chapman (amchapman@gmail.com), 16th Jan 2014
 #
 
-import pprint  # temp
 import collections
 import os
 import numpy
@@ -12,7 +11,7 @@ import bisect
 
 
 class Format:
-	'''Channel format as specified by the FMT lines in the log file'''
+	'''Data channel format as specified by the FMT lines in the log file'''
 	msgType = 0
 	msgLen  = 0
 	name    = ""
@@ -31,11 +30,10 @@ class Format:
 class Channel:
 	'''storage for a single stream of data, i.e. all GPS.RelAlt values'''
 	
-	# TODO: rethink data storage, but do regression test suite first before refactoring it
+	# TODO: rethink data storage, but do more thorough regression testing before refactoring it
 	# TODO: store data as a scipy spline curve so we can more easily interpolate and sample the slope?
-	
 	dictData = None #  dict of linenum->value      # store dupe data in dict and list for now, until we decide which is the better way to go
-	listData = None #  list of (linenum,value)
+	listData = None #  list of (linenum,value)     # store dupe data in dict and list for now, until we decide which is the better way to go
 
 	def __init__(self):
 		self.dictData = {}
@@ -134,6 +132,7 @@ class LogIterator:
 	def __getitem__(self, lineLabel):
 		return LogIterator.LogIteratorSubValue(self.logdata, self.iterators, lineLabel)
 	def next(self):
+		'''increment iterator to next log line'''
 		self.currentLine += 1
 		if self.currentLine > self.logdata.lineCount:
 			return self
@@ -148,16 +147,17 @@ class LogIterator:
 				self.iterators[lineLabel] = (index,lineNumber)
 		return self
 	def jump(self, lineNumber):
+		'''jump iterator to specified log line'''
 		self.currentLine = lineNumber
 		for lineLabel in self.iterators.keys():
 			dataLabel = self.logdata.formats[lineLabel].labels[0]
 			(value,lineNumber) = self.logdata.channels[lineLabel][dataLabel].getNearestValue(self.currentLine)
-			#print "  Found value: %.2f, lineNumber: %d" % (value,lineNumber)
-			#print "  Found index: %d" % self.logdata.channels[lineLabel][dataLabel].getIndexOf(lineNumber)
 			self.iterators[lineLabel] = (self.logdata.channels[lineLabel][dataLabel].getIndexOf(lineNumber), lineNumber)
 
 
 class DataflashLogHelper:
+	'''helper functions for dealing with log data, put here to keep DataflashLog class as a simple parser and data store'''
+
 	@staticmethod
 	def getTimeAtLine(logdata, lineNumber):
 		'''returns the nearest GPS timestamp in milliseconds after the given line number'''
@@ -242,6 +242,7 @@ class DataflashLog:
 	skippedLines = 0
 
 	def getCopterType(self):
+		'''returns quad/hex/octo/tradheli if this is a copter log'''
 		if self.vehicleType != "ArduCopter":
 			return None
 		motLabels = []
@@ -259,7 +260,7 @@ class DataflashLog:
 			return ""
 
 	def __castToFormatType(self,value,valueType):
-		'''using format characters from libraries/DataFlash/DataFlash.h to cast to basic python int/float/string types'''
+		'''using format characters from libraries/DataFlash/DataFlash.h to cast strings to basic python int/float/string types'''
 	  	intTypes   = "bBhHiIM"
 	  	floatTypes = "fcCeEL"
 	  	charTypes  = "nNZ"
@@ -277,9 +278,12 @@ class DataflashLog:
 
 	def read(self, logfile, ignoreBadlines=False):
 		'''returns on successful log read (including bad lines if ignoreBadlines==True), will throw an Exception otherwise'''
-		# TODO: dataflash log parsing code is *SUPER* hacky, should re-write more methodically
+		# TODO: dataflash log parsing code is pretty hacky, should re-write more methodically
 		self.filename = logfile
 		f = open(self.filename, 'r')
+		if f.read(4) == '\xa3\x95\x80\x80':
+			raise Exception("Unable to parse binary log files at this time, will be added soon")
+		f.seek(0)
 		lineNumber = 0
 		knownHardwareTypes = ["APM", "PX4", "MPNG"]
 		for line in f:
@@ -382,5 +386,6 @@ class DataflashLog:
 			self.durationSecs = (lastTimeGPS-firstTimeGPS) / 1000
 
 		# TODO: calculate logging rate based on timestamps
+		# ...
 
 
