@@ -29,7 +29,7 @@ class TestParams(Test):
 			self.result.statusMessage = self.result.statusMessage + "%s set to %s, expecting less than %s\n" % (paramName, `value`, `minValue`)
 
 
-	def run(self, logdata):
+	def run(self, logdata, verbose):
 		self.result = TestResult()
 		self.result.status = TestResult.StatusType.PASS  # PASS by default, tests below will override it if they fail
 

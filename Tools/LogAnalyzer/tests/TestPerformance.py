@@ -8,7 +8,7 @@ class TestPerformance(Test):
 	def __init__(self):
 		self.name = "PM"
 
-	def run(self, logdata):
+	def run(self, logdata, verbose):
 		self.result = TestResult()
 		self.result.status = TestResult.StatusType.PASS
 

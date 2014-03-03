@@ -11,7 +11,7 @@ class TestVibration(Test):
 		self.name = "Vibration"
 
 
-	def run(self, logdata):
+	def run(self, logdata, verbose):
 		self.result = TestResult()
 
 		if logdata.vehicleType != "ArduCopter":
