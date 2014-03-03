@@ -443,7 +443,7 @@ static void Log_Write_Cmd(const AP_Mission::Mission_Command& cmd)
         command_number      : cmd.index,
         waypoint_id         : cmd.id,
         waypoint_options    : cmd.content.location.options,
-        waypoint_param1     : cmd.content.location.p1,
+        waypoint_param1     : cmd.p1,
         waypoint_altitude   : cmd.content.location.alt,
         waypoint_latitude   : cmd.content.location.lat,
         waypoint_longitude  : cmd.content.location.lng

@@ -1339,7 +1339,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         }
 
         // convert mavlink packet to mission command
-        if (!AP_Mission::mavlink_to_mission_cmd(packet, cmd)) {
+        if (!AP_Mission::mavlink_to_mission_cmd(packet, cmd, true)) {
             result = MAV_MISSION_ERROR;
             goto mission_item_receive_failed;
         }
@@ -1444,7 +1444,7 @@ mission_item_receive_failed:
         // convert mission command to mavlink mission item packet
         mavlink_mission_item_t ret_packet;
         memset(&ret_packet, 0, sizeof(ret_packet));
-        if (!AP_Mission::mission_cmd_to_mavlink(cmd, ret_packet)) {
+        if (!AP_Mission::mission_cmd_to_mavlink(cmd, ret_packet, true)) {
             result = MAV_MISSION_ERROR;
             goto mission_item_send_failed;
         }
@@ -1493,9 +1493,9 @@ mission_item_send_failed:
         }
 
         // set current command
-        mission.set_current_cmd(packet.seq);
-
-        mavlink_msg_mission_current_send(chan, mission.get_current_do_cmd().index);
+        if (mission.set_current_cmd(packet.seq)) {
+            mavlink_msg_mission_current_send(chan, mission.get_current_nav_cmd().index);
+        }
         break;
     }
 
@@ -1545,6 +1545,7 @@ mission_item_send_failed:
         if (!mission.clear()) {
             // return error if we were unable to clear the mission (possibly because we're currently flying the mission)
             mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_ERROR);
+            break;
         }
 
         // set variables to help handle the expected receiving of commands from the GCS

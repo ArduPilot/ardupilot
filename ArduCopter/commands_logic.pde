@@ -88,20 +88,20 @@ static bool start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_DO_SET_SERVO:
-        ServoRelayEvents.do_set_servo(cmd.content.location.p1, cmd.content.location.alt);
+        ServoRelayEvents.do_set_servo(cmd.p1, cmd.content.location.alt);
         break;
         
     case MAV_CMD_DO_SET_RELAY:
-        ServoRelayEvents.do_set_relay(cmd.content.location.p1, cmd.content.location.alt);
+        ServoRelayEvents.do_set_relay(cmd.p1, cmd.content.location.alt);
         break;
         
     case MAV_CMD_DO_REPEAT_SERVO:
-        ServoRelayEvents.do_repeat_servo(cmd.content.location.p1, cmd.content.location.alt,
+        ServoRelayEvents.do_repeat_servo(cmd.p1, cmd.content.location.alt,
                                          cmd.content.location.lat, cmd.content.location.lng);
         break;
         
     case MAV_CMD_DO_REPEAT_RELAY:
-        ServoRelayEvents.do_repeat_relay(cmd.content.location.p1, cmd.content.location.alt,
+        ServoRelayEvents.do_repeat_relay(cmd.p1, cmd.content.location.alt,
                                          cmd.content.location.lat);
         break;
 
@@ -274,8 +274,7 @@ static void do_nav_wp(const AP_Mission::Mission_Command& cmd)
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time     = 0;
     // this is the delay, stored in seconds and expanded to millis
-    // To-Do: move waypoint delay out of location structure and into cmd
-    loiter_time_max = cmd.content.location.p1;
+    loiter_time_max = cmd.p1;
     // if no delay set the waypoint as "fast"
     if (loiter_time_max == 0 ) {
         wp_nav.set_fast_waypoint(true);
@@ -358,8 +357,7 @@ static void do_circle(const AP_Mission::Mission_Command& cmd)
     auto_circle_start(circle_center);
 
     // record number of desired rotations from mission command
-    // To-Do: move p1 from location structure to cmd structure
-    circle_desired_rotations = cmd.content.location.p1;
+    circle_desired_rotations = cmd.p1;
 }
 
 // do_loiter_time - initiate loitering at a point for a given time period
@@ -389,7 +387,7 @@ static void do_loiter_time(const AP_Mission::Mission_Command& cmd)
 
     // setup loiter timer
     loiter_time     = 0;
-    loiter_time_max = cmd.content.location.p1;     // units are (seconds)
+    loiter_time_max = cmd.p1;     // units are (seconds)
 }
 
 /********************************************************************************/
@@ -637,12 +635,12 @@ static bool do_guided(const AP_Mission::Mission_Command& cmd)
 
 static void do_change_speed(const AP_Mission::Mission_Command& cmd)
 {
-    wp_nav.set_horizontal_velocity(cmd.content.location.p1 * 100);
+    wp_nav.set_horizontal_velocity(cmd.p1 * 100);
 }
 
 static void do_set_home(const AP_Mission::Mission_Command& cmd)
 {
-    if(cmd.content.location.p1 == 1) {
+    if(cmd.p1 == 1) {
         init_home();
     } else {
         ahrs.set_home(cmd.content.location.lat, cmd.content.location.lng, 0);

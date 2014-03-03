@@ -205,7 +205,7 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                     // set our location ID to 16, MAV_CMD_NAV_WAYPOINT
                     cmd.id = MAV_CMD_NAV_TAKEOFF;
                     cmd.content.location.options = 0;
-                    cmd.content.location.p1 = 0;
+                    cmd.p1 = 0;
                     cmd.content.location.lat = 0;
                     cmd.content.location.lng = 0;
                     cmd.content.location.alt = max(current_loc.alt,100);
