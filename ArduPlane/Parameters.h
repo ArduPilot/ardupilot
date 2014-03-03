@@ -154,6 +154,7 @@ public:
         k_param_airspeed,  // AP_Airspeed parameters
         k_param_curr_amp_offset,
         k_param_NavEKF,  // Extended Kalman Filter Inertial Navigation Group
+        k_param_mission, // mission library
 
         //
         // 150: Navigation parameters
@@ -242,8 +243,8 @@ public:
         // 220: Waypoint data
         //
         k_param_waypoint_mode = 220,
-        k_param_command_total,
-        k_param_command_index,
+        k_param_command_total,  // unused
+        k_param_command_index,  // unused
         k_param_waypoint_radius,
         k_param_loiter_radius,
         k_param_fence_action,
@@ -325,8 +326,6 @@ public:
     // Waypoints
     //
     AP_Int8 waypoint_mode;
-    AP_Int8 command_total;
-    AP_Int8 command_index;
     AP_Int16 waypoint_radius;
     AP_Int16 waypoint_max_radius;
     AP_Int16 loiter_radius;
