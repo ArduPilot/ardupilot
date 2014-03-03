@@ -67,9 +67,7 @@ public:
         _flags.armed = true;
 
         // initialise _home
-        _home.id         = MAV_CMD_NAV_WAYPOINT;
         _home.options    = 0;
-        _home.p1         = 0;
         _home.alt        = 0;
         _home.lng        = 0;
         _home.lat        = 0;
