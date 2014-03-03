@@ -51,3 +51,5 @@ class TestGPSGlitch(Test):
 			if not gpsGlitchCount:
 				self.result.status = TestResult.StatusType.WARN
 				self.result.statusMessage = satsMsg
+
+

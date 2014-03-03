@@ -4,6 +4,7 @@ import DataflashLog
 
 class TestEvents(Test):
 	'''test for erroneous events and failsafes'''
+	# TODO: need to check for vehicle-specific codes
 
 	def __init__(self):
 		self.name = "Event/Failsafe"

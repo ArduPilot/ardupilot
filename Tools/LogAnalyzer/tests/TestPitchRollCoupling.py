@@ -39,32 +39,26 @@ class TestPitchRollCoupling(Test):
 			if mode in autoModes:
 				if not isAuto:
 					manualSegments.append((prevLine,line-1))
-					#print "Adding manual segment: %d,%d" % (prevLine,line-1)
 					prevLine = line
 				isAuto = True
 			elif mode in manualModes:
 				if isAuto:
 					autoSegments.append((prevLine,line-1))
-					#print "Adding auto segment: %d,%d" % (prevLine,line-1)
 					prevLine = line
 				isAuto = False
 			elif mode in ignoreModes:
 				if isAuto:
 					autoSegments.append((prevLine,line-1))
-					#print "Adding auto segment: %d,%d" % (prevLine,line-1)
 				else:
 					manualSegments.append((prevLine,line-1))
-					#print "Adding manual segment: %d,%d" % (prevLine,line-1)
 				prevLine = 0
 			else:
 				raise Exception("Unknown mode in TestPitchRollCoupling: %s" % mode)
 		# and handle the last segment, which doesn't have an ending
 		if mode in autoModes:
 			autoSegments.append((prevLine,logdata.lineCount))
-			#print "Adding final auto segment: %d,%d" % (prevLine,logdata.lineCount)
 		elif mode in manualModes:
 			manualSegments.append((prevLine,logdata.lineCount))
-			#print "Adding final manual segment: %d,%d" % (prevLine,logdata.lineCount)
 
 		# figure out max lean angle, the ANGLE_MAX param was added in AC3.1
 		maxLeanAngle = 45.0
@@ -80,7 +74,6 @@ class TestPitchRollCoupling(Test):
 		(maxRoll, maxRollLine)   = (0.0, 0)
 		(maxPitch, maxPitchLine) = (0.0, 0)
 		for (startLine,endLine) in manualSegments+autoSegments:
-			#print "Checking segment %d,%d" % (startLine,endLine)
 			# quick up-front test, only fallover into more complex line-by-line check if max()>threshold
 			rollSeg  = logdata.channels["ATT"]["Roll"].getSegment(startLine,endLine)
 			pitchSeg = logdata.channels["ATT"]["Pitch"].getSegment(startLine,endLine)

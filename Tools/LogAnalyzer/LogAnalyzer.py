@@ -2,7 +2,7 @@
 #
 # A module to analyze and identify any common problems which can be determined from log files
 #
-# Initial code by Andrew Chapman (chapman@skymount.com), 16th Jan 2014
+# Initial code by Andrew Chapman (amchapman@gmail.com), 16th Jan 2014
 #
 
 
@@ -13,6 +13,8 @@
 #   - MAG offsets seem to be cast to int before being output? (param is -84.67, logged as -84)
 #   - copter+plane use 'V' in their vehicle type/version/build line, rover uses lower case 'v'. Copter+Rover give a build number, plane does not
 #   - CTUN.ThrOut on copter is 0-1000, on plane+rover it is 0-100
+
+# TODO: add test for noisy baro values
 
 
 import DataflashLog
@@ -33,27 +35,28 @@ class TestResult:
 		# NA means not applicable for this log (e.g. copter tests against a plane log), UNKNOWN means it is missing data required for the test
 		PASS, FAIL, WARN, UNKNOWN, NA = range(5)
 	status = None
-	statusMessage = ""
+	statusMessage = "" # can be multi-line
 
 
 class Test:
-	'''base class to be inherited by each specific log test. Each test should be quite granular so we have lots of small tests with clear results'''
-	name = ""
-	result = None   # will be an instance of TestResult after being run
+	'''base class to be inherited by log tests. Each test should be quite granular so we have lots of small tests with clear results'''
+	name     = ""
+	result   = None   # will be an instance of TestResult after being run
 	execTime = None
-	enable = True
+	enable   = True
 	def run(self, logdata, verbose=False):
 		pass
 
 
 class TestSuite:
-	'''registers test classes'''
+	'''registers test classes, loading using a basic plugin architecture, and can run them all in one run() operation'''
 	tests   = []
 	logfile = None
 	logdata = None
 
 	def __init__(self):
 		# dynamically load in Test subclasses from the 'tests' folder
+		# to prevent one being loaded, move it out of that folder, or set that test's .enable attribute to False
 		dirName = os.path.dirname(os.path.abspath(__file__))
 		testScripts = glob.glob(dirName + '/tests/*.py')
 		testClasses = []
@@ -69,7 +72,7 @@ class TestSuite:
 		# self.tests.append(m.TestBadParams())
 
 	def run(self, logdata, verbose):
-		'''run all registered tests in a single call'''
+		'''run all registered tests in a single call, gathering execution timing info'''
 		self.logdata = logdata
 		self.logfile = logdata.filename
 		for test in self.tests:
@@ -81,6 +84,7 @@ class TestSuite:
 				test.execTime = 1000 * (endTime-startTime)
 
 	def outputPlainText(self, outputStats):
+		'''output test results in plain text'''
 		print 'Dataflash log analysis report for file: ' + self.logfile
 		print 'Log size: %.2fmb (%d lines)' % (self.logdata.filesizeKB / 1024.0, self.logdata.lineCount)
 		print 'Log duration: %s' % str(datetime.timedelta(seconds=self.logdata.durationSecs)) + '\n'
@@ -125,6 +129,8 @@ class TestSuite:
 		print '\n'
 
 	def outputXML(self, xmlFile):
+		'''output test results to an XML file'''
+
 		# open the file for writing
 		xml = None
 		try:
@@ -156,9 +162,6 @@ class TestSuite:
 		print >>xml, "<params>"
 		for param, value in self.logdata.parameters.items():
 			print >>xml, "  <param name=\"%s\" value=\"%s\" />" % (param,`value`)
-			#print >>xml, "    <paramname>"  + param + "</paramname>"
-			#print >>xml, "    <paramvalue>" + `value` + "</paramvalue>"
-			#print >>xml, "  </param>"
 		print >>xml, "</params>"
 
 		# output test results
@@ -241,13 +244,6 @@ def main():
 		if not args.quiet:
 			print "XML output written to file: %s\n" % args.xml
 
-	# temp - test some spot values - include a bunch of this in a unit test at some point
-	#print "GPS abs alt on line 24126 is " + `self.logdata.channels["GPS"]["Alt"].dictData[24126]`   # 52.03
-	#print "ATT pitch on line 22153 is " + `self.logdata.channels["ATT"]["Pitch"].dictData[22153]`   # -7.03
-	#gpsAlt = self.logdata.channels["GPS"]["Alt"]
-	#print "All GPS Alt data: %s\n\n" % gpsAlt.dictData
-	#gpsAltSeg = gpsAlt.getSegment(426,711)
-	#print "Segment of GPS Alt data from %d to %d: %s\n\n" % (426,711,gpsAltSeg.dictData)
 
 if __name__ == "__main__":
 	main()
