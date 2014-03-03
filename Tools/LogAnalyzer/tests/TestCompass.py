@@ -61,20 +61,24 @@ class TestCompass(Test):
 			magField = []
 			(minMagField, maxMagField) = (None,None)
 			(minMagFieldLine, maxMagFieldLine) = (None,None)
+			zerosFound = False
 			while index<length:
 				mx = logdata.channels["MAG"]["MagX"].listData[index][1]
 				my = logdata.channels["MAG"]["MagY"].listData[index][1]
 				mz = logdata.channels["MAG"]["MagZ"].listData[index][1]
-				mf = math.sqrt(mx*mx + my*my + mz*mz)
-				magField.append(mf)
-				if mf<minMagField:
-					minMagField = mf
-					minMagFieldLine = logdata.channels["MAG"]["MagX"].listData[index][0]
-				if mf>maxMagField:
-					maxMagField = mf
-					maxMagFieldLine = logdata.channels["MAG"]["MagX"].listData[index][0]
-				if index == 0:
-					(minMagField, maxMagField) = (mf,mf)
+				if ((mx==0) and (my==0) and (mz==0)): # sometimes they're zero, not sure why, same reason as why we get NaNs as offsets?
+					zerosFound = True
+				else:
+					mf = math.sqrt(mx*mx + my*my + mz*mz)
+					magField.append(mf)
+					if mf<minMagField:
+						minMagField = mf
+						minMagFieldLine = logdata.channels["MAG"]["MagX"].listData[index][0]
+					if mf>maxMagField:
+						maxMagField = mf
+						maxMagFieldLine = logdata.channels["MAG"]["MagX"].listData[index][0]
+					if index == 0:
+						(minMagField, maxMagField) = (mf,mf)
 				index += 1
 			percentDiff = (maxMagField-minMagField) / minMagField
 			if percentDiff > percentDiffThresholdFAIL:
@@ -90,9 +94,14 @@ class TestCompass(Test):
 				self.result.statusMessage = self.result.statusMessage + "Min mag field length (%.2f) < recommended (%.2f)\n" % (minMagField,minMagFieldThreshold)
 			if maxMagField > maxMagFieldThreshold:
 				self.result.statusMessage = self.result.statusMessage + "Max mag field length (%.2f) > recommended (%.2f)\n" % (maxMagField,maxMagFieldThreshold)
+			if zerosFound:
+				if self.result.status != TestResult.StatusType.FAIL:
+					self.result.status = TestResult.StatusType.WARN
+				self.result.statusMessage = self.result.statusMessage + "All zeros found in MAG X/Y/Z log data\n"
 			if verbose:
 				self.result.statusMessage = self.result.statusMessage + "Min mag_field of %.2f on line %d\n" % (minMagField,minMagFieldLine)
 				self.result.statusMessage = self.result.statusMessage + "Max mag_field of %.2f on line %d\n" % (maxMagField,maxMagFieldLine)
+
 		else:
 			self.result.statusMessage = self.result.statusMessage + "No MAG data, unable to test mag_field interference\n"
 
