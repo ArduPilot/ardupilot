@@ -64,3 +64,5 @@ test.ArduCopter/*
 .gitattributes
 *.sdf
 *.suo
+/ArduPlane/Visual Micro
+*.opensdf
