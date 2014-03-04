@@ -368,7 +368,7 @@ void AP_Mission::write_home_to_storage()
 
 // mavlink_to_mission_cmd - converts mavlink message to an AP_Mission::Mission_Command object which can be stored to eeprom
 //  return true on success, false on failure
-bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP_Mission::Mission_Command& cmd, bool cmd_alt_in_cm)
+bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP_Mission::Mission_Command& cmd)
 {
     bool copy_location = false;
     bool copy_alt = false;
@@ -513,10 +513,7 @@ bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP
                 cmd.content.location.lat = 1.0e7f * packet.x;   // floating point latitude to int32_t
                 cmd.content.location.lng = 1.0e7f * packet.y;   // floating point longitude to int32_t
             }
-            cmd.content.location.alt = packet.z;
-            if (cmd_alt_in_cm) {
-                cmd.content.location.alt *= 100.0f;         // convert packet's alt (m) to cmd alt (cm)
-            }
+            cmd.content.location.alt = packet.z * 100.0f;       // convert packet's alt (m) to cmd alt (cm)
             cmd.content.location.flags.relative_alt = 0;
             break;
 
@@ -525,10 +522,7 @@ bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP
                 cmd.content.location.lat = 1.0e7f * packet.x;   // floating point latitude to int32_t
                 cmd.content.location.lng = 1.0e7f * packet.y;   // floating point longitude to int32_t
             }
-            cmd.content.location.alt = packet.z;
-            if (cmd_alt_in_cm) {
-                cmd.content.location.alt *= 100.0f;         // convert packet's alt (m) to cmd alt (cm)
-            }
+            cmd.content.location.alt = packet.z * 100.0f;       // convert packet's alt (m) to cmd alt (cm)
             cmd.content.location.flags.relative_alt = 1;
             break;
 
@@ -568,7 +562,7 @@ bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP
 
 // mission_cmd_to_mavlink - converts an AP_Mission::Mission_Command object to a mavlink message which can be sent to the GCS
 //  return true on success, false on failure
-bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, mavlink_mission_item_t& packet, bool cmd_alt_in_cm)
+bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, mavlink_mission_item_t& packet)
 {
     bool copy_location = false;
     bool copy_alt = false;
@@ -714,10 +708,7 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
         packet.y = cmd.content.location.lng / 1.0e7f;   // int32_t longitude to float
     }
     if (copy_location || copy_alt) {
-        packet.z = cmd.content.location.alt;
-        if (cmd_alt_in_cm) {
-            packet.z = cmd.content.location.alt / 100.0f;   // cmd alt in cm to m
-        }
+        packet.z = cmd.content.location.alt / 100.0f;   // cmd alt in cm to m
         if (cmd.content.location.flags.relative_alt) {
             packet.frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
         }else{
