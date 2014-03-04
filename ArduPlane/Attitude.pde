@@ -856,7 +856,7 @@ static void set_servos(void)
     RC_Channel *flapin = RC_Channel::rc_channel(g.flapin_channel-1);
     if (flapin != NULL && !failsafe.ch3_failsafe && failsafe.ch3_counter == 0) {
         flapin->input();
-        manual_flap_percent = constrain_int16(flapin->norm_input() * 100, -100, 100);
+        manual_flap_percent = flapin->percent_input();
     }
 
     if (auto_throttle_mode) {
