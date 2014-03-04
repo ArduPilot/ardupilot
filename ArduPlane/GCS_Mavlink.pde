@@ -1447,7 +1447,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         // convert mission command to mavlink mission item packet
         mavlink_mission_item_t ret_packet;
         memset(&ret_packet, 0, sizeof(ret_packet));
-        if (!AP_Mission::mission_cmd_to_mavlink(cmd, ret_packet, true)) {
+        if (!AP_Mission::mission_cmd_to_mavlink(cmd, ret_packet)) {
             goto mission_item_send_failed;
         }
 
@@ -1688,7 +1688,7 @@ mission_item_send_failed:
         if (mavlink_check_target(packet.target_system,packet.target_component)) break;
 
         // convert mavlink packet to mission command
-        if (!AP_Mission::mavlink_to_mission_cmd(packet, cmd, true)) {
+        if (!AP_Mission::mavlink_to_mission_cmd(packet, cmd)) {
             result = MAV_MISSION_ERROR;
             goto mission_failed;
         }
