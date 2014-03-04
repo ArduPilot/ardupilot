@@ -35,9 +35,15 @@ static void set_next_WP(const AP_Mission::Mission_Command& cmd)
         // additionally treat zero altitude as current altitude
         if (next_WP.content.location.alt == 0) {
             next_WP.content.location.alt = current_loc.alt;
+            next_WP.content.location.flags.relative_alt = false;
         }
     }
 
+    // convert relative alt to absolute alt
+    if (next_WP.content.location.flags.relative_alt) {
+        next_WP.content.location.flags.relative_alt = false;
+        next_WP.content.location.alt += home.alt;
+    }
 
     // are we already past the waypoint? This happens when we jump
     // waypoints, and it can cause us to skip a waypoint. If we are
