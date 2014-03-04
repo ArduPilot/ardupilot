@@ -162,7 +162,7 @@ public:
     const Mission_Command& get_current_do_cmd() const { return _do_cmd; }
 
     // set_current_cmd - jumps to command specified by index
-    bool set_current_cmd(uint8_t index);
+    bool set_current_cmd(uint16_t index);
 
     /// load_cmd_from_storage - load command from storage
     ///     true is return if successful

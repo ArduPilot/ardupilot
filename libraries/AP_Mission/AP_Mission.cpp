@@ -215,7 +215,7 @@ bool AP_Mission::get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd)
 }
 
 // set_current_cmd - jumps to command specified by index
-bool AP_Mission::set_current_cmd(uint8_t index)
+bool AP_Mission::set_current_cmd(uint16_t index)
 {
     Mission_Command cmd;
 
