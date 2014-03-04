@@ -866,6 +866,22 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 break;
             }
 
+        case MAV_CMD_COMPONENT_ARM_DISARM:
+            if (packet.target_component == MAV_COMP_ID_SYSTEM_CONTROL) {
+                if (packet.param1 == 1.0f) {
+                    arm_servos();
+                    result = MAV_RESULT_ACCEPTED;
+                } else if (packet.param1 == 0.0f)  {
+                    disarm_servos();
+                    result = MAV_RESULT_ACCEPTED;
+                } else {
+                    result = MAV_RESULT_UNSUPPORTED;
+                }
+            } else {
+                result = MAV_RESULT_UNSUPPORTED;
+            }
+            break;
+
             case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
             {
                 if (packet.param1 == 1 || packet.param1 == 3) {

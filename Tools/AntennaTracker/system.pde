@@ -72,10 +72,8 @@ static void init_tracker()
     channel_yaw.calc_pwm();
     channel_pitch.calc_pwm();
 
-    channel_yaw.enable_out();
-    channel_pitch.enable_out();
-
     home_loc = get_home_eeprom(); // GPS may update this later
+    arm_servos();
 
     gcs_send_text_P(SEVERITY_LOW,PSTR("\nReady to track."));
     hal.scheduler->delay(1000); // Why????
@@ -190,4 +188,16 @@ static void set_home(struct Location temp)
         compass.set_initial_location(temp.lat, temp.lng);
     set_home_eeprom(temp);
     home_loc = temp;
+}
+
+static void arm_servos()
+{
+    channel_yaw.enable_out();
+    channel_pitch.enable_out();
+}
+
+static void disarm_servos()
+{
+    channel_yaw.disable_out();
+    channel_pitch.disable_out();
 }
