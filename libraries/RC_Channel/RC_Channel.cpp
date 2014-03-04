@@ -339,6 +339,25 @@ RC_Channel::norm_input()
         return _reverse * (float)(radio_in - radio_trim) / (float)(radio_max  - radio_trim);
 }
 
+/*
+  get percentage input from 0 to 100. This ignores the trim value.
+ */
+uint8_t
+RC_Channel::percent_input()
+{
+    if (radio_in <= radio_min) {
+        return _reverse==-1?100:0;
+    }
+    if (radio_in >= radio_max) {
+        return _reverse==-1?0:100;
+    }
+    uint8_t ret = 100.0f * (radio_in - radio_min) / (float)(radio_max - radio_min);
+    if (_reverse == -1) {
+        ret = 100 - ret;
+    }
+    return ret;
+}
+
 float
 RC_Channel::norm_output()
 {
