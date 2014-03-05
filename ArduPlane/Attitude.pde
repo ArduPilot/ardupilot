@@ -110,7 +110,7 @@ static void stabilize_pitch(float speed_scaler)
   controller as it increases the influence of the users stick input,
   allowing the user full deflection if needed
  */
-static void stick_mix_channel(RC_Channel *channel)
+static void stick_mix_channel(RC_Channel *channel, int16_t &servo_out)
 {
     float ch_inf;
         
@@ -118,8 +118,8 @@ static void stick_mix_channel(RC_Channel *channel)
     ch_inf = fabsf(ch_inf);
     ch_inf = min(ch_inf, 400.0);
     ch_inf = ((400.0 - ch_inf) / 400.0);
-    channel->servo_out *= ch_inf;
-    channel->servo_out += channel->pwm_to_angle();
+    servo_out *= ch_inf;
+    servo_out += channel->pwm_to_angle();
 }
 
 /*
@@ -135,8 +135,8 @@ static void stabilize_stick_mixing_direct()
         control_mode == TRAINING) {
         return;
     }
-    stick_mix_channel(channel_roll);
-    stick_mix_channel(channel_pitch);
+    stick_mix_channel(channel_roll, channel_roll->servo_out);
+    stick_mix_channel(channel_pitch, channel_pitch->servo_out);
 }
 
 /*
@@ -194,15 +194,21 @@ static void stabilize_stick_mixing_fbw()
  */
 static void stabilize_yaw(float speed_scaler)
 {
-    bool ground_steering = (channel_roll->control_in == 0 && fabsf(relative_altitude()) < g.ground_steer_alt);
+    steering_control.ground_steering = (channel_roll->control_in == 0 && fabsf(relative_altitude()) < g.ground_steer_alt);
 
-    if (steer_state.hold_course_cd != -1 && ground_steering) {
+    /*
+      first calculate steering_control.steering for a nose or tail wheel
+     */
+    if (steer_state.hold_course_cd != -1 && steering_control.ground_steering) {
         calc_nav_yaw_course();
-    } else if (ground_steering) {
+    } else if (steering_control.ground_steering) {
         calc_nav_yaw_ground();
-    } else {
-        calc_nav_yaw_coordinated(speed_scaler);
     }
+
+    /*
+      now calculate steering_control.rudder for the rudder
+     */
+    calc_nav_yaw_coordinated(speed_scaler);
 }
 
 
@@ -303,7 +309,7 @@ static void stabilize_acro(float speed_scaler)
     /*
       manual rudder for now
      */
-    channel_rudder->servo_out = channel_rudder->control_in;
+    steering_control.steering = steering_control.rudder = channel_rudder->control_in;
 }
 
 /*
@@ -376,12 +382,12 @@ static void calc_nav_yaw_coordinated(float speed_scaler)
     if (control_mode == STABILIZE && channel_rudder->control_in != 0) {
         disable_integrator = true;
     }
-    channel_rudder->servo_out = yawController.get_servo_out(speed_scaler, disable_integrator);
+    steering_control.rudder = yawController.get_servo_out(speed_scaler, disable_integrator);
 
     // add in rudder mixing from roll
-    channel_rudder->servo_out += channel_roll->servo_out * g.kff_rudder_mix;
-    channel_rudder->servo_out += channel_rudder->control_in;
-    channel_rudder->servo_out = constrain_int16(channel_rudder->servo_out, -4500, 4500);
+    steering_control.rudder += channel_roll->servo_out * g.kff_rudder_mix;
+    steering_control.rudder += channel_rudder->control_in;
+    steering_control.rudder = constrain_int16(steering_control.rudder, -4500, 4500);
 }
 
 /*
@@ -392,11 +398,11 @@ static void calc_nav_yaw_course(void)
     // holding a specific navigation course on the ground. Used in
     // auto-takeoff and landing
     int32_t bearing_error_cd = nav_controller->bearing_error_cd();
-    channel_rudder->servo_out = steerController.get_steering_out_angle_error(bearing_error_cd);
+    steering_control.steering = steerController.get_steering_out_angle_error(bearing_error_cd);
     if (stick_mixing_enabled()) {
-        stick_mix_channel(channel_rudder);
+        stick_mix_channel(channel_rudder, steering_control.steering);
     }
-    channel_rudder->servo_out = constrain_int16(channel_rudder->servo_out, -4500, 4500);
+    steering_control.steering = constrain_int16(steering_control.steering, -4500, 4500);
 }
 
 /*
@@ -409,7 +415,7 @@ static void calc_nav_yaw_ground(void)
         // manual rudder control while still
         steer_state.locked_course = false;
         steer_state.locked_course_err = 0;
-        channel_rudder->servo_out = channel_rudder->control_in;
+        steering_control.steering = channel_rudder->control_in;
         return;
     }
 
@@ -424,14 +430,14 @@ static void calc_nav_yaw_ground(void)
     }
     if (!steer_state.locked_course) {
         // use a rate controller at the pilot specified rate
-        channel_rudder->servo_out = steerController.get_steering_out_rate(steer_rate);
+        steering_control.steering = steerController.get_steering_out_rate(steer_rate);
     } else {
         // use a error controller on the summed error
         steer_state.locked_course_err += ahrs.get_gyro().z * G_Dt;
         int32_t yaw_error_cd = -ToDeg(steer_state.locked_course_err)*100;
-        channel_rudder->servo_out = steerController.get_steering_out_angle_error(yaw_error_cd);
+        steering_control.steering = steerController.get_steering_out_angle_error(yaw_error_cd);
     }
-    channel_rudder->servo_out = constrain_int16(channel_rudder->servo_out, -4500, 4500);
+    steering_control.steering = constrain_int16(steering_control.steering, -4500, 4500);
 }
 
 
@@ -714,6 +720,28 @@ static void set_servos(void)
 {
     int16_t last_throttle = channel_throttle->radio_out;
 
+    /*
+      see if we are doing ground steering.
+     */
+    if (!steering_control.ground_steering) {
+        // we are not at an altitude for ground steering. Set the nose
+        // wheel to the rudder just in case the barometer has drifted
+        // a lot
+        steering_control.steering = steering_control.rudder;
+    } else if (!RC_Channel_aux::function_assigned(RC_Channel_aux::k_steering)) {
+        // we are within the ground steering altitude but don't have a
+        // dedicated steering channel. Set the rudder to the ground
+        // steering output
+        steering_control.rudder = steering_control.steering;
+    }
+    channel_rudder->servo_out = steering_control.rudder;
+
+    // clear ground_steering to ensure manual control if the yaw stabilizer doesn't run
+    steering_control.ground_steering = false;
+
+    RC_Channel_aux::set_servo_out(RC_Channel_aux::k_rudder, steering_control.rudder);
+    RC_Channel_aux::set_servo_out(RC_Channel_aux::k_steering, steering_control.steering);
+
     if (control_mode == MANUAL) {
         // do a direct pass through of radio values
         if (g.mix_mode == 0 || g.elevon_output != MIXING_DISABLED) {
@@ -734,7 +762,6 @@ static void set_servos(void)
         // aileron won't quite follow the first one
         RC_Channel_aux::set_servo_out(RC_Channel_aux::k_aileron, channel_roll->pwm_to_angle_dz(0));
         RC_Channel_aux::set_servo_out(RC_Channel_aux::k_elevator, channel_pitch->pwm_to_angle_dz(0));
-        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_rudder, channel_rudder->pwm_to_angle_dz(0));
 
         // this variant assumes you have the corresponding
         // input channel setup in your transmitter for manual control
@@ -757,9 +784,6 @@ static void set_servos(void)
             // both types of secondary elevator are slaved to the pitch servo out
             RC_Channel_aux::set_servo_out(RC_Channel_aux::k_elevator, channel_pitch->servo_out);
             RC_Channel_aux::set_servo_out(RC_Channel_aux::k_elevator_with_input, channel_pitch->servo_out);
-
-            // setup secondary rudder
-            RC_Channel_aux::set_servo_out(RC_Channel_aux::k_rudder, channel_rudder->servo_out);
         }else{
             /*Elevon mode*/
             float ch1;

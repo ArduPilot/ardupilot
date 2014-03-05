@@ -302,6 +302,16 @@ SITL sitl;
 static bool training_manual_roll;  // user has manual roll control
 static bool training_manual_pitch; // user has manual pitch control
 
+/*
+  keep steering and rudder control separated until we update servos,
+  to allow for a separate wheel servo from rudder servo
+ */
+static struct {
+    bool ground_steering; // are we doing ground steering?
+    int16_t steering; // value for nose/tail wheel
+    int16_t rudder;   // value for rudder
+} steering_control;
+
 // should throttle be pass-thru in guided?
 static bool guided_throttle_passthru;
 
@@ -1317,7 +1327,7 @@ static void update_flight_mode(void)
         // ---------------------------------
         channel_roll->servo_out = channel_roll->pwm_to_angle();
         channel_pitch->servo_out = channel_pitch->pwm_to_angle();
-        channel_rudder->servo_out = channel_rudder->pwm_to_angle();
+        steering_control.steering = steering_control.rudder = channel_rudder->pwm_to_angle();
         break;
         //roll: -13788.000,  pitch: -13698.000,   thr: 0.000, rud: -13742.000
         
