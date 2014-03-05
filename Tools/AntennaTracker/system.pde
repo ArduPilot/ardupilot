@@ -21,15 +21,16 @@ static void init_tracker()
     barometer.init();
 
     // init the GCS
-    gcs0.init(hal.uartA);
+    gcs[0].init(hal.uartA);
+
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
     hal.scheduler->register_delay_callback(mavlink_delay_cb, 5);
 
     // we have a 2nd serial port for telemetry
-    hal.uartC->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD),
-                     128, SERIAL2_BUFSIZE);
-    gcs3.init(hal.uartC);
+    hal.uartC->begin(map_baudrate(g.serial1_baud, SERIAL1_BAUD),
+                     128, SERIAL1_BUFSIZE);
+    gcs[1].init(hal.uartC);
 
     mavlink_system.sysid = g.sysid_this_mav;
 
@@ -117,7 +118,7 @@ static uint32_t map_baudrate(int8_t rate, uint32_t default_baud)
     case 111:  return 111100;
     case 115:  return 115200;
     }
-    cliSerial->println_P(PSTR("Invalid SERIAL3_BAUD"));
+    cliSerial->println_P(PSTR("Invalid baudrate"));
     return default_baud;
 }
 

@@ -51,12 +51,12 @@ public:
         k_param_format_version = 0,
         k_param_software_type,
 
-        k_param_gcs0 = 100,         // stream rates for port0
-        k_param_gcs3,               // stream rates for port3
+        k_param_gcs0 = 100,         // stream rates for uartA
+        k_param_gcs1,               // stream rates for uartC
         k_param_sysid_this_mav,
         k_param_sysid_my_gcs,
         k_param_serial0_baud,
-        k_param_serial3_baud,
+        k_param_serial1_baud,
         k_param_imu,
         k_param_compass_enabled,
         k_param_compass,
@@ -67,6 +67,8 @@ public:
         k_param_sitl,
         k_param_pidPitch2Srv,
         k_param_pidYaw2Srv,
+        k_param_gcs2,               // stream rates for uartD
+        k_param_serial2_baud,
 
         k_param_channel_yaw = 200,
         k_param_channel_pitch,
@@ -87,7 +89,10 @@ public:
     AP_Int16 sysid_this_mav;
     AP_Int16 sysid_my_gcs;
     AP_Int8 serial0_baud;
-    AP_Int8 serial3_baud;
+    AP_Int8 serial1_baud;
+#if MAVLINK_COMM_NUM_BUFFERS > 2
+    AP_Int8 serial2_baud;
+#endif
 
     AP_Int8 compass_enabled;
 
