@@ -60,6 +60,7 @@ public:
         k_sprayer_spinner       = 23,            ///< crop sprayer spinner channel
         k_flaperon1             = 24,            ///< flaperon, left wing
         k_flaperon2             = 25,            ///< flaperon, right wing
+        k_steering              = 26,            ///< ground steering, used to separate from rudder
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 
