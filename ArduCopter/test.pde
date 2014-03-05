@@ -8,14 +8,10 @@
 static int8_t   test_baro(uint8_t argc,                 const Menu::arg *argv);
 #endif
 static int8_t   test_compass(uint8_t argc,              const Menu::arg *argv);
-static int8_t   test_gps(uint8_t argc,                  const Menu::arg *argv);
 static int8_t   test_ins(uint8_t argc,                  const Menu::arg *argv);
-static int8_t   test_logging(uint8_t argc,              const Menu::arg *argv);
 static int8_t   test_motors(uint8_t argc,               const Menu::arg *argv);
 static int8_t   test_motorsync(uint8_t argc,            const Menu::arg *argv);
 static int8_t   test_optflow(uint8_t argc,              const Menu::arg *argv);
-static int8_t   test_radio_pwm(uint8_t argc,            const Menu::arg *argv);
-static int8_t   test_radio(uint8_t argc,                const Menu::arg *argv);
 static int8_t   test_relay(uint8_t argc,                const Menu::arg *argv);
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 static int8_t   test_shell(uint8_t argc,                const Menu::arg *argv);
@@ -33,14 +29,10 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
     {"baro",                test_baro},
 #endif
     {"compass",             test_compass},
-    {"gps",                 test_gps},
     {"ins",                 test_ins},
-    {"logging",             test_logging},
     {"motors",              test_motors},
     {"motorsync",           test_motorsync},
     {"optflow",             test_optflow},
-    {"pwm",                 test_radio_pwm},
-    {"radio",               test_radio},
     {"relay",               test_relay},
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     {"shell", 				test_shell},
@@ -173,36 +165,6 @@ test_compass(uint8_t argc, const Menu::arg *argv)
 }
 
 static int8_t
-test_gps(uint8_t argc, const Menu::arg *argv)
-{
-    print_hit_enter();
-    delay(1000);
-
-    while(1) {
-        delay(100);
-
-        g_gps->update();
-
-        if (g_gps->new_data) {
-            cliSerial->printf_P(PSTR("Lat: "));
-            print_latlon(cliSerial, g_gps->latitude);
-            cliSerial->printf_P(PSTR(", Lon "));
-            print_latlon(cliSerial, g_gps->longitude);
-            cliSerial->printf_P(PSTR(", Alt: %ldm, #sats: %d\n"),
-                            g_gps->altitude_cm/100,
-                            g_gps->num_sats);
-            g_gps->new_data = false;
-        }else{
-            cliSerial->print_P(PSTR("."));
-        }
-        if(cliSerial->available() > 0) {
-            return (0);
-        }
-    }
-    return 0;
-}
-
-static int8_t
 test_ins(uint8_t argc, const Menu::arg *argv)
 {
     Vector3f gyro, accel;
@@ -234,17 +196,6 @@ test_ins(uint8_t argc, const Menu::arg *argv)
             return (0);
         }
     }
-}
-
-/*
- *  test the dataflash is working
- */
-static int8_t
-test_logging(uint8_t argc, const Menu::arg *argv)
-{
-    cliSerial->println_P(PSTR("Testing dataflash logging"));
-    DataFlash.ShowDeviceInfo(cliSerial);
-    return 0;
 }
 
 static int8_t
@@ -428,64 +379,6 @@ test_optflow(uint8_t argc, const Menu::arg *argv)
 #else
     return (0);
 #endif      // OPTFLOW == ENABLED
-}
-
-static int8_t
-test_radio_pwm(uint8_t argc, const Menu::arg *argv)
-{
-    print_hit_enter();
-    delay(1000);
-
-    while(1) {
-        delay(20);
-
-        // Filters radio input - adjust filters in the radio.pde file
-        // ----------------------------------------------------------
-        read_radio();
-
-        // servo Yaw
-        //APM_RC.OutputCh(CH_7, g.rc_4.radio_out);
-
-        cliSerial->printf_P(PSTR("IN: 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n"),
-                        g.rc_1.radio_in,
-                        g.rc_2.radio_in,
-                        g.rc_3.radio_in,
-                        g.rc_4.radio_in,
-                        g.rc_5.radio_in,
-                        g.rc_6.radio_in,
-                        g.rc_7.radio_in,
-                        g.rc_8.radio_in);
-
-        if(cliSerial->available() > 0) {
-            return (0);
-        }
-    }
-}
-
-static int8_t
-test_radio(uint8_t argc, const Menu::arg *argv)
-{
-    print_hit_enter();
-    delay(1000);
-
-    while(1) {
-        delay(20);
-        read_radio();
-
-
-        cliSerial->printf_P(PSTR("IN  1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\n"),
-                        g.rc_1.control_in,
-                        g.rc_2.control_in,
-                        g.rc_3.control_in,
-                        g.rc_4.control_in,
-                        g.rc_5.control_in,
-                        g.rc_6.control_in,
-                        g.rc_7.control_in);
-
-        if(cliSerial->available() > 0) {
-            return (0);
-        }
-    }
 }
 
 static int8_t test_relay(uint8_t argc, const Menu::arg *argv)

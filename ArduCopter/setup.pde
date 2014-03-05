@@ -5,7 +5,6 @@
 // Functions called from the setup menu
 static int8_t   setup_factory           (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_show              (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_sonar             (uint8_t argc, const Menu::arg *argv);
 
 
 // Command/function table for the setup menu
@@ -255,24 +254,6 @@ print_switch(uint8_t p, uint8_t m, bool b)
 }
 
 static void
-print_done()
-{
-    cliSerial->printf_P(PSTR("\nSaved\n"));
-}
-
-
-static void zero_eeprom(void)
-{
-    cliSerial->printf_P(PSTR("\nErasing EEPROM\n"));
-
-    for (uint16_t i = 0; i < EEPROM_MAX_ADDR; i++) {
-        hal.storage->write_byte(i, 0);
-    }
-
-    cliSerial->printf_P(PSTR("done\n"));
-}
-
-static void
 print_accel_offsets_and_scaling(void)
 {
     const Vector3f &accel_offsets = ins.get_accel_offsets();
@@ -347,20 +328,5 @@ static void report_version()
 {
     cliSerial->printf_P(PSTR("FW Ver: %d\n"),(int)g.k_format_version);
     print_divider();
-    print_blanks(2);
-}
-
-
-static void report_tuning()
-{
-    cliSerial->printf_P(PSTR("\nTUNE:\n"));
-    print_divider();
-    if (g.radio_tuning == 0) {
-        print_enabled(g.radio_tuning.get());
-    }else{
-        float low  = (float)g.radio_tuning_low.get() / 1000;
-        float high = (float)g.radio_tuning_high.get() / 1000;
-        cliSerial->printf_P(PSTR(" %d, Low:%1.4f, High:%1.4f\n"),(int)g.radio_tuning.get(), low, high);
-    }
     print_blanks(2);
 }
