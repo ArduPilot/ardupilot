@@ -541,10 +541,6 @@
  # define RTL_ALT 				    1500    // default alt to return to home in cm, 0 = Maintain current altitude
 #endif
 
-#ifndef RTL_ALT_MAX
- # define RTL_ALT_MAX               8000    // Max height to return to home in cm (i.e 80m)
-#endif
-
 #ifndef RTL_LOITER_TIME
  # define RTL_LOITER_TIME           5000    // Time (in milliseconds) to loiter above home before begining final descent
 #endif

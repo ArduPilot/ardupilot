@@ -81,7 +81,7 @@ static void rtl_climb_start()
     // get horizontal stopping point
     Vector3f destination;
     wp_nav.get_wp_stopping_point_xy(destination);
-    destination.z = get_RTL_alt();
+    destination.z = max(current_loc.alt, g.rtl_altitude);
 
     wp_nav.set_wp_destination(destination);
 
@@ -100,7 +100,7 @@ static void rtl_return_start()
     original_wp_bearing = wp_bearing;
 
     // set target to above home
-    Vector3f destination = Vector3f(0,0,get_RTL_alt());
+    Vector3f destination = Vector3f(0,0,max(current_loc.alt, g.rtl_altitude));
     wp_nav.set_wp_destination(destination);
 
     // initialise yaw to point home (maybe)
