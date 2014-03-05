@@ -2420,7 +2420,7 @@ void NavEKF::CovarianceInit(float roll, float pitch, float yaw)
     P[15][15]  = P[14][14];
 	// NED magnetic field
     P[16][16] = sq(0.02f);
-    P[17][17] = P[16][15];
+    P[17][17] = P[16][16];
     P[18][18] = P[16][16];
 	// XYZ magnetic field
     P[19][19] = sq(0.02f);
