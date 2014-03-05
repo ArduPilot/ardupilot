@@ -42,6 +42,13 @@ public:
         k_pan_tilt_roll = 3,            ///< yaw-pitch-roll
     };
 
+    // get_mode - return current mount mode
+    enum MAV_MOUNT_MODE     get_mode() const { return (enum MAV_MOUNT_MODE)_mount_mode.get(); }
+
+    // set_mode_to_default - restores the mode to it's default held in the MNT_MODE parameter
+    //      this operation requires 2ms on an APM2, 0.7ms on a Pixhawk/PX4
+    void                    set_mode_to_default() { _mount_mode.load(); }
+
     // MAVLink methods
     void                    configure_msg(mavlink_message_t* msg);
     void                    control_msg(mavlink_message_t* msg);
