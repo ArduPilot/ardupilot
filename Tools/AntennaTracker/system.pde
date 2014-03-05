@@ -72,7 +72,8 @@ static void init_tracker()
     channel_yaw.calc_pwm();
     channel_pitch.calc_pwm();
 
-    home_loc = get_home_eeprom(); // GPS may update this later
+    current_loc = get_home_eeprom(); // GPS may update this later
+
     arm_servos();
 
     gcs_send_text_P(SEVERITY_LOW,PSTR("\nReady to track."));
@@ -187,7 +188,7 @@ static void set_home(struct Location temp)
     if (g.compass_enabled)
         compass.set_initial_location(temp.lat, temp.lng);
     set_home_eeprom(temp);
-    home_loc = temp;
+    current_loc = temp;
 }
 
 static void arm_servos()

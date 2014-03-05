@@ -4,10 +4,11 @@
    state of the vehicle we are tracking
  */
 static struct {
-    Location location; // lat, long in degrees * 10^7; alt in meters * 100
+    Location location;      // lat, long in degrees * 10^7; alt in meters * 100
+    int32_t  relative_alt;  // meters * 100
     uint32_t last_update_us;
-    float heading; // degrees
-    float ground_speed; // m/s
+    float heading;          // degrees
+    float ground_speed;     // m/s
 } vehicle;
 
 /**
@@ -163,18 +164,21 @@ static void update_tracking(void)
     location_update(vpos, vehicle.heading, vehicle.ground_speed * dt);
 
     // update our position if we have at least a 2D fix
+    // REVISIT: what if we lose lock during a mission and the antenna is moving?
     if (g_gps->status() >= GPS::GPS_OK_FIX_2D) {
         current_loc.lat = g_gps->latitude;
         current_loc.lng = g_gps->longitude;
-        current_loc.alt = 0; // assume ground level for now REVISIT: WHY?
+        current_loc.alt = g_gps->altitude_cm;
+        current_loc.options = 0; // Absolute altitude
     }
-    else {
-        current_loc = home_loc; // dont know any better
-    }
+
     // calculate the bearing to the vehicle
     float bearing  = get_bearing_cd(current_loc, vehicle.location) * 0.01f;
     float distance = get_distance(current_loc, vehicle.location);
-    float pitch    = degrees(atan2((vehicle.location.alt - current_loc.alt)/100, distance));
+    int32_t alt_diff_cm = current_loc.options & MASK_OPTIONS_RELATIVE_ALT  // Do we know our absolute altitude?
+        ? (vehicle.relative_alt - current_loc.alt) 
+        : (vehicle.location.alt - current_loc.alt); // cm
+    float pitch    = degrees(atan2(alt_diff_cm/100, distance));
     // update the servos
     update_pitch_servo(pitch);
     update_yaw_servo(bearing);
@@ -193,7 +197,8 @@ static void tracking_update_position(const mavlink_global_position_int_t &msg)
 {
     vehicle.location.lat = msg.lat;
     vehicle.location.lng = msg.lon;
-    vehicle.location.alt = msg.relative_alt/10;
+    vehicle.location.alt = msg.alt/10;
+    vehicle.relative_alt = msg.relative_alt/10;
     vehicle.heading      = msg.hdg * 0.01f;
     vehicle.ground_speed = pythagorous2(msg.vx, msg.vy) * 0.01f;
     vehicle.last_update_us = hal.scheduler->micros();    

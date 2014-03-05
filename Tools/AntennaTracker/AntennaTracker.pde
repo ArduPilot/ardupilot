@@ -191,7 +191,6 @@ static GCS_MAVLINK gcs3;
 // Location structure defined in AP_Common
 ////////////////////////////////////////////////////////////////////////////////
 static struct   Location current_loc;
-static struct   Location home_loc;
 
 /*
   scheduler table - all regular tasks apart from the fast_loop()
