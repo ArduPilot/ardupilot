@@ -186,6 +186,9 @@ static void set_servos(void)
 {
     int16_t last_throttle = channel_throttle->radio_out;
 
+    // support a separate steering channel
+    RC_Channel_aux::set_servo_out(RC_Channel_aux::k_steering, channel_steer->pwm_to_angle_dz(0));
+
 	if ((control_mode == MANUAL || control_mode == LEARNING) &&
         (g.skid_steer_out == g.skid_steer_in)) {
         // do a direct pass through of radio values
