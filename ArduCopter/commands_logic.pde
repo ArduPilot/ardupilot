@@ -662,7 +662,12 @@ static void do_roi()
     if (auto_yaw_mode == AUTO_YAW_ROI && (command_cond_queue.alt == 0 && command_cond_queue.lat == 0 && command_cond_queue.lng == 0)) {
         // set auto yaw mode back to default assuming the active command is a waypoint command.  A more sophisticated method is required to ensure we return to the proper yaw control for the active command
         set_auto_yaw_mode(get_default_auto_yaw_mode(false));
-        // To-Do: switch off the camera tracking if enabled
+#if MOUNT == ENABLED
+        // switch off the camera tracking if enabled
+        if (camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
+            camera_mount.set_mode_to_default();
+        }
+#endif  // MOUNT == ENABLED
     }else{
 #if MOUNT == ENABLED
         // check if mount type requires us to rotate the quad
@@ -683,7 +688,7 @@ static void do_roi()
         // if we have no camera mount aim the quad at the location
         roi_WP = pv_location_to_vector(command_cond_queue);
         set_auto_yaw_mode(AUTO_YAW_ROI);
-#endif
+#endif  // MOUNT == ENABLED
     }
 }
 
