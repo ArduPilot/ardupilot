@@ -51,6 +51,7 @@ void ToshibaLED::set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 // _scheduled_update - updates _red, _green, _blue according to notify flags
 void ToshibaLED::update_colours(void)
 {
+    uint8_t brightness = TOSHIBA_LED_BRIGHT;
     // slow rate from 50Hz to 10hz
     counter++;
     if (counter < 5) {
@@ -66,17 +67,22 @@ void ToshibaLED::update_colours(void)
         step = 0;
     }
 
+    // use dim light when connected through USB
+    if (hal.gpio->usb_connected()) {
+        brightness = TOSHIBA_LED_DIM;
+    }
+
     // initialising pattern
     if (AP_Notify::flags.initialising) {
         if (step & 1) {
             // odd steps display red light
-            _red_des = TOSHIBA_LED_DIM;
+            _red_des = brightness;
             _blue_des = TOSHIBA_LED_OFF;
             _green_des = TOSHIBA_LED_OFF;
         } else {
             // even display blue light
             _red_des = TOSHIBA_LED_OFF;
-            _blue_des = TOSHIBA_LED_DIM;
+            _blue_des = brightness;
             _green_des = TOSHIBA_LED_OFF;
         }
 
@@ -91,7 +97,7 @@ void ToshibaLED::update_colours(void)
             case 3:
             case 6:
                 // red on
-                _red_des = TOSHIBA_LED_DIM;
+                _red_des = brightness;
                 _blue_des = TOSHIBA_LED_OFF;
                 _green_des = TOSHIBA_LED_OFF;
                 break;
@@ -101,7 +107,7 @@ void ToshibaLED::update_colours(void)
             case 7:
                 // blue on
                 _red_des = TOSHIBA_LED_OFF;
-                _blue_des = TOSHIBA_LED_DIM;
+                _blue_des = brightness;
                 _green_des = TOSHIBA_LED_OFF;
                 break;
 
@@ -111,7 +117,7 @@ void ToshibaLED::update_colours(void)
                 // green on
                 _red_des = TOSHIBA_LED_OFF;
                 _blue_des = TOSHIBA_LED_OFF;
-                _green_des = TOSHIBA_LED_DIM;
+                _green_des = brightness;
                 break;
 
             case 9:
@@ -135,9 +141,9 @@ void ToshibaLED::update_colours(void)
             case 3:
             case 4:
                 // yellow on
-                _red_des = TOSHIBA_LED_DIM;
+                _red_des = brightness;
                 _blue_des = TOSHIBA_LED_OFF;
-                _green_des = TOSHIBA_LED_DIM;
+                _green_des = brightness;
                 break;
             case 5:
             case 6:
@@ -147,7 +153,7 @@ void ToshibaLED::update_colours(void)
                 // all off of radio or battery, blue on for gps
                 _red_des = TOSHIBA_LED_OFF;
                 if (AP_Notify::flags.failsafe_gps || AP_Notify::flags.gps_glitching) {
-                    _blue_des = TOSHIBA_LED_DIM;
+                    _blue_des = brightness;
                 }else{
                     _blue_des = TOSHIBA_LED_OFF;
                 }
@@ -164,11 +170,11 @@ void ToshibaLED::update_colours(void)
         if (AP_Notify::flags.gps_status == 3) {
             _red_des = TOSHIBA_LED_OFF;
             _blue_des = TOSHIBA_LED_OFF;
-            _green_des = TOSHIBA_LED_DIM;
+            _green_des = brightness;
         }else{
             // solid blue if armed with no GPS lock
             _red_des = TOSHIBA_LED_OFF;
-            _blue_des = TOSHIBA_LED_DIM;
+            _blue_des = brightness;
             _green_des = TOSHIBA_LED_OFF;
         }
         return;
@@ -181,9 +187,9 @@ void ToshibaLED::update_colours(void)
                 case 4:
                 case 5:
                     // yellow on
-                    _red_des = TOSHIBA_LED_DIM;
+                    _red_des = brightness;
                     _blue_des = TOSHIBA_LED_OFF;
-                    _green_des = TOSHIBA_LED_DIM;
+                    _green_des = brightness;
                     break;
                 case 2:
                 case 3:
@@ -210,10 +216,10 @@ void ToshibaLED::update_colours(void)
                     if (AP_Notify::flags.gps_status == 3) {
                         // flashing green if disarmed with GPS 3d lock
                         _blue_des = TOSHIBA_LED_OFF;
-                        _green_des = TOSHIBA_LED_DIM;
+                        _green_des = brightness;
                     }else{
                         // flashing blue if disarmed with no gps lock
-                        _blue_des = TOSHIBA_LED_DIM;
+                        _blue_des = brightness;
                         _green_des = TOSHIBA_LED_OFF;
                     }
                     break;
