@@ -25,11 +25,11 @@ static int32_t read_barometer(void)
 
 
 // return range finder altitude in centimeters
-static int16_t read_range_finder_long(void)
+static int16_t read_range_finder(void)
 {
 #if CONFIG_RANGE_FINDER == ENABLED
     // exit immediately if disabled
-	if( !g.range_finder_long_enabled ) /// reference parameters.h 
+	if( !g.range_finder_enabled ) /// reference parameters.h 
 	{
         range_finder_alt_health = 0;
         return 0;

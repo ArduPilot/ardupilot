@@ -1377,7 +1377,7 @@ static void update_alt()
 
 	//ArduPlane:1375: error: request for member 'raw_value' in 'rangeFinderLong', which is of non-class type 'AP_RangeFinder_SharpGP2Y*'
 	//int rfl_altitude = 0;
-	//rfl_altitude = read_range_finder_long();
+	//rfl_altitude = read_range_finder();
 	
 	//current_loc.alt = rfl_altitude;
 

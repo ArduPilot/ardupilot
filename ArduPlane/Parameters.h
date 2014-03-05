@@ -139,10 +139,9 @@ public:
         k_param_airspeed,  // AP_Airspeed parameters
         k_param_curr_amp_offset,
 
-		k_param_range_finder_long_enabled,   // added by Will Baldwin
-		k_param_range_finder_short_enabled,   // added by Will Baldwin
-		k_param_range_finder_long_type,   // added by Will Baldwin
-		k_param_range_finder_short_type,   // added by Will Baldwin
+		k_param_range_finder_enabled,   // added by Will Baldwin
+		k_param_range_finder_type,   // added by Will Baldwin
+
 
         //
         // 150: Navigation parameters
@@ -304,11 +303,8 @@ public:
     AP_Float altitude_mix;
     AP_Int8  alt_control_algorithm;
 
-	AP_Int8 range_finder_long_enabled;
-	AP_Int8 range_finder_short_enabled;
-
-	AP_Int8 range_finder_long_type;
-	AP_Int8 range_finder_short_type;
+	AP_Int8 range_finder_enabled;
+	AP_Int8 range_finder_type;
 
     // Waypoints
     //
