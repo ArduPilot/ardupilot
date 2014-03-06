@@ -192,6 +192,10 @@ static GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
 ////////////////////////////////////////////////////////////////////////////////
 static struct   Location current_loc;
 
+// This is the state of the antenna control system
+// There are multiple states defined such as MANUAL, FBW-A, AUTO
+static enum ControlMode control_mode  = INITIALISING;
+
 /*
   scheduler table - all regular tasks apart from the fast_loop()
   should be listed here, along with how often they should be called

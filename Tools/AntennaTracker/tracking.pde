@@ -172,24 +172,26 @@ static void update_tracking(void)
         current_loc.options = 0; // Absolute altitude
     }
 
-    // calculate the bearing to the vehicle
-    float bearing  = get_bearing_cd(current_loc, vehicle.location) * 0.01f;
-    float distance = get_distance(current_loc, vehicle.location);
-    int32_t alt_diff_cm = current_loc.options & MASK_OPTIONS_RELATIVE_ALT  // Do we know our absolute altitude?
-        ? (vehicle.relative_alt - current_loc.alt) 
-        : (vehicle.location.alt - current_loc.alt); // cm
-    float pitch    = degrees(atan2(alt_diff_cm/100, distance));
-    // update the servos
-    update_pitch_servo(pitch);
-    update_yaw_servo(bearing);
+    if (control_mode == AUTO)
+    {
+        // calculate the bearing to the vehicle
+        float bearing  = get_bearing_cd(current_loc, vehicle.location) * 0.01f;
+        float distance = get_distance(current_loc, vehicle.location);
+        int32_t alt_diff_cm = current_loc.options & MASK_OPTIONS_RELATIVE_ALT  // Do we know our absolute altitude?
+            ? (vehicle.relative_alt - current_loc.alt) 
+            : (vehicle.location.alt - current_loc.alt); // cm
+        float pitch    = degrees(atan2(alt_diff_cm/100, distance));
+        // update the servos
+        update_pitch_servo(pitch);
+        update_yaw_servo(bearing);
+        
+        // update nav_status for NAV_CONTROLLER_OUTPUT
+        nav_status.bearing  = bearing;
+        nav_status.pitch    = pitch;
+        nav_status.distance = distance;
+    }
 
-    // update nav_status for NAV_CONTROLLER_OUTPUT
-    nav_status.bearing  = bearing;
-    nav_status.pitch    = pitch;
-    nav_status.distance = distance;
 }
-
-
 /**
    handle an updated position from the aircraft
  */

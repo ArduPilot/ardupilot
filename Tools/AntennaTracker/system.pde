@@ -79,6 +79,8 @@ static void init_tracker()
 
     gcs_send_text_P(SEVERITY_LOW,PSTR("\nReady to track."));
     hal.scheduler->delay(1000); // Why????
+
+    set_mode(AUTO); // tracking
 }
 
 // Level the tracker by calibrating the INS
@@ -203,3 +205,13 @@ static void disarm_servos()
     channel_yaw.disable_out();
     channel_pitch.disable_out();
 }
+
+static void set_mode(enum ControlMode mode)
+{
+    if(control_mode == mode) {
+        // don't switch modes if we are already in the correct mode.
+        return;
+    }
+    control_mode = mode;
+}
+

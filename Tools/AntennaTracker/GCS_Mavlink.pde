@@ -24,13 +24,43 @@ static bool mavlink_active;
 
 static NOINLINE void send_heartbeat(mavlink_channel_t chan)
 {
+    uint8_t base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
+    uint8_t system_status = MAV_STATE_ACTIVE;
+    uint32_t custom_mode = control_mode;
+
+    // work out the base_mode. This value is not very useful
+    // for APM, but we calculate it as best we can so a generic
+    // MAVLink enabled ground station can work out something about
+    // what the MAV is up to. The actual bit values are highly
+    // ambiguous for most of the APM flight modes. In practice, you
+    // only get useful information from the custom_mode, which maps to
+    // the APM flight mode and has a well defined meaning in the
+    // ArduPlane documentation
+    switch (control_mode) {
+    case MANUAL:
+        base_mode = MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
+        break;
+
+    case AUTO:
+        base_mode = MAV_MODE_FLAG_GUIDED_ENABLED |
+                    MAV_MODE_FLAG_STABILIZE_ENABLED;
+        // note that MAV_MODE_FLAG_AUTO_ENABLED does not match what
+        // APM does in any mode, as that is defined as "system finds its own goal
+        // positions", which APM does not currently do
+        break;
+
+    case INITIALISING:
+        system_status = MAV_STATE_CALIBRATING;
+        break;
+    }
+
     mavlink_msg_heartbeat_send(
         chan,
         MAV_TYPE_ANTENNA_TRACKER,
         MAV_AUTOPILOT_ARDUPILOTMEGA,
-        MAV_MODE_FLAG_AUTO_ENABLED,
-        0,
-        MAV_STATE_ACTIVE);
+        base_mode,
+        custom_mode,
+        system_status);
 }
 
 static NOINLINE void send_attitude(mavlink_channel_t chan)
@@ -631,8 +661,6 @@ GCS_MAVLINK::send_text_P(gcs_severity severity, const prog_char_t *str)
 
 void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 {
-//    hal.uartA->printf("handleMessage %d\n", msg->msgid);
-
     switch (msg->msgid) {
 
     case MAVLINK_MSG_ID_REQUEST_DATA_STREAM:
@@ -859,21 +887,46 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 break;
             }
 
-        case MAV_CMD_COMPONENT_ARM_DISARM:
-            if (packet.target_component == MAV_COMP_ID_SYSTEM_CONTROL) {
-                if (packet.param1 == 1.0f) {
-                    arm_servos();
-                    result = MAV_RESULT_ACCEPTED;
-                } else if (packet.param1 == 0.0f)  {
-                    disarm_servos();
-                    result = MAV_RESULT_ACCEPTED;
+            case MAV_CMD_COMPONENT_ARM_DISARM:
+                if (packet.target_component == MAV_COMP_ID_SYSTEM_CONTROL) {
+                    if (packet.param1 == 1.0f) {
+                        arm_servos();
+                        result = MAV_RESULT_ACCEPTED;
+                    } else if (packet.param1 == 0.0f)  {
+                        disarm_servos();
+                        result = MAV_RESULT_ACCEPTED;
+                    } else {
+                        result = MAV_RESULT_UNSUPPORTED;
+                    }
                 } else {
                     result = MAV_RESULT_UNSUPPORTED;
                 }
-            } else {
-                result = MAV_RESULT_UNSUPPORTED;
-            }
             break;
+            
+            case MAV_CMD_DO_SET_MODE:
+                switch ((uint16_t)packet.param1) {
+                    case MAV_MODE_MANUAL_ARMED:
+                    case MAV_MODE_MANUAL_DISARMED:
+                        set_mode(MANUAL);
+                        result = MAV_RESULT_ACCEPTED;
+                        break;
+
+                    case MAV_MODE_AUTO_ARMED:
+                    case MAV_MODE_AUTO_DISARMED:
+                        set_mode(AUTO);
+                        result = MAV_RESULT_ACCEPTED;
+                        break;
+
+                    default:
+                        result = MAV_RESULT_UNSUPPORTED;
+                }
+                break;
+
+                // mavproxy/mavutil sends this when auto command is entered 
+            case MAV_CMD_MISSION_START:
+                set_mode(AUTO);
+                result = MAV_RESULT_ACCEPTED;
+                break;
 
             case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
             {
