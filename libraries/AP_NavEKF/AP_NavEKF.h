@@ -178,6 +178,9 @@ private:
     // fuse true airspeed measurements
     void FuseAirspeed();
 
+    // fuse sideslip measurements
+    void FuseSideslip();
+
     // zero specified range of rows in the state covariance matrix
     void zeroRows(Matrix22 &covMat, uint8_t first, uint8_t last);
 
@@ -456,6 +459,7 @@ private:
     perf_counter_t  _perf_FuseVelPosNED;
     perf_counter_t  _perf_FuseMagnetometer;
     perf_counter_t  _perf_FuseAirspeed;
+    perf_counter_t  _perf_FuseSideslip;
 #endif
     
     // should we use the compass?
