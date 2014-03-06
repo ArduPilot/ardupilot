@@ -304,6 +304,7 @@ private:
     AP_Int8  _hgtInnovGate;         // Number of standard deviations applied to height innovation consistency check
     AP_Int8  _magInnovGate;         // Number of standard deviations applied to magnetometer innovation consistency check
     AP_Int8  _tasInnovGate;         // Number of standard deviations applied to true airspeed innovation consistency check
+    AP_Int8  _magCal;               // Forces magentic field states to be always active to aid magnetometer calibration
 
     // Tuning parameters
     AP_Float _gpsNEVelVarAccScale;  // scale factor applied to NE velocity measurement variance due to Vdot
@@ -347,6 +348,7 @@ private:
 	Vector3f prevDelAng;            // previous delta angle use for INS coning error compensation
     Matrix3f prevTnb;               // previous nav to body transformation used for INS earth rotation compensation
     ftype accNavMag;                // magnitude of navigation accel - used to adjust GPS obs variance (m/s^2)
+    ftype accNavMagHoriz;           // magnitude of navigation accel in horizontal plane (m/s^2)
     Vector3f earthRateNED;          // earths angular rate vector in NED (rad/s)
     Vector3f dVelIMU1;              // delta velocity vector in XYZ body axes measured by IMU1 (m/s)
     Vector3f dVelIMU2;              // delta velocity vector in XYZ body axes measured by IMU2 (m/s)

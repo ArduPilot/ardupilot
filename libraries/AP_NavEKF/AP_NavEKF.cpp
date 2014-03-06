@@ -197,6 +197,14 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @User: advanced
     AP_GROUPINFO("EAS_GATE",    21, NavEKF, _tasInnovGate, 10),
 
+    // @Param: MAG_CAL
+    // @DisplayName: Turns on magnetometer calibration mode
+    // @Description: Setting this parameter to 1 forces magnetic field state calibration to be active all the time the vehicle is manoeuvring regardless of its speed and altitude. This parameter should be set to 0 for aircraft use. This parameter can be set to 1 to enable in-flight compass calibration on Copter and Rover vehicles.
+    // @Range: 0 - 1
+    // @Increment: 1
+    // @User: advanced
+    AP_GROUPINFO("MAG_CAL",    22, NavEKF, _magCal, 0),
+
     AP_GROUPEND
 };
 
@@ -759,6 +767,7 @@ void NavEKF::UpdateStrapdownEquationsNED()
     // calculate a magnitude of the filtered nav acceleration (required for GPS
     // variance estimation)
     accNavMag = velDotNEDfilt.length();
+    accNavMagHoriz = sqrtf(sq(velDotNEDfilt.x) + sq(velDotNEDfilt.y));
 
     // If calculating position save previous velocity
     Vector3f lastVelocity = state.velocity;
@@ -2380,8 +2389,14 @@ void NavEKF::OnGroundCheck()
     uint8_t lowAirSpd = (!airspeed || !airspeed->use() || airspeed->get_airspeed() * airspeed->get_EAS2TAS() < 8.0f);
     uint8_t lowGndSpd = (uint8_t)((sq(velNED[0]) + sq(velNED[1]) + sq(velNED[2])) < 4.0f);
     uint8_t lowHgt = (uint8_t)(fabsf(hgtMea < 15.0f));
-    // Go with a majority vote from three criteria
-    onGround = ((lowAirSpd + lowGndSpd + lowHgt) >= 2);
+    // inhibit onGround mode if magnetomter calibration at low speed and height is enabled.
+    // A static check is still applied to prevent excessive compass drift when sitting stationary
+    if ((_magCal == 1) && (accNavMagHoriz > 0.5f)) {
+        onGround = false;
+    } else {
+        // Go with a majority vote from three criteria
+        onGround = ((lowAirSpd + lowGndSpd + lowHgt) >= 2);
+    }
 }
 
 void NavEKF::CovarianceInit(float roll, float pitch, float yaw)
