@@ -9,6 +9,10 @@ enum log_messages {
     LOG_COPTER_ATTITUDE_MSG = 1,
     LOG_COPTER_COMPASS_MSG  = 15,
     LOG_COPTER_NAV_TUNING_MSG = 5,
+
+    // rover specific messages
+    LOG_ROVER_ATTITUDE_MSG = 8,
+    LOG_ROVER_COMPASS_MSG  = 10,
 };
 
 
@@ -59,4 +63,5 @@ private:
 
     void process_plane(uint8_t type, uint8_t *data, uint16_t length);
     void process_copter(uint8_t type, uint8_t *data, uint16_t length);
+    void process_rover(uint8_t type, uint8_t *data, uint16_t length);
 };

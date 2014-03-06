@@ -305,7 +305,8 @@ void loop()
         read_sensors(type);
 
         if ((type == LOG_PLANE_ATTITUDE_MSG && LogReader.vehicle == LogReader::VEHICLE_PLANE) ||
-            (type == LOG_COPTER_ATTITUDE_MSG && LogReader.vehicle == LogReader::VEHICLE_COPTER)) {
+            (type == LOG_COPTER_ATTITUDE_MSG && LogReader.vehicle == LogReader::VEHICLE_COPTER) ||
+            (type == LOG_ROVER_ATTITUDE_MSG && LogReader.vehicle == LogReader::VEHICLE_ROVER)) {
 
             Vector3f ekf_euler;
             Vector3f velNED;

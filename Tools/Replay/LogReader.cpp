@@ -109,6 +109,28 @@ struct PACKED log_Copter_Nav_Tuning {
     float    desired_accel_y;
 };
 
+struct PACKED log_Rover_Attitude {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    int16_t roll;
+    int16_t pitch;
+    uint16_t yaw;
+};
+
+struct PACKED log_Rover_Compass {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    int16_t mag_x;
+    int16_t mag_y;
+    int16_t mag_z;
+    int16_t offset_x;
+    int16_t offset_y;
+    int16_t offset_z;
+    int16_t motor_offset_x;
+    int16_t motor_offset_y;
+    int16_t motor_offset_z;
+};
+
 void LogReader::process_plane(uint8_t type, uint8_t *data, uint16_t length)
 {
     switch (type) {
@@ -146,6 +168,36 @@ void LogReader::process_plane(uint8_t type, uint8_t *data, uint16_t length)
         memcpy(&msg, data, sizeof(msg));
         wait_timestamp(msg.timestamp);
         airspeed.setHIL(msg.airspeed, msg.diffpressure, msg.temperature);
+        break;
+    }
+    }
+}
+
+void LogReader::process_rover(uint8_t type, uint8_t *data, uint16_t length)
+{
+    switch (type) {
+    case LOG_ROVER_COMPASS_MSG: {
+        struct log_Rover_Compass msg;
+        if(sizeof(msg) != length) {
+            printf("Bad rover COMPASS length\n");
+            exit(1);
+        }
+        memcpy(&msg, data, sizeof(msg));
+        wait_timestamp(msg.time_ms);
+        compass.setHIL(Vector3i(msg.mag_x - msg.offset_x, msg.mag_y - msg.offset_y, msg.mag_z - msg.offset_z));
+        compass.set_offsets(msg.offset_x, msg.offset_y, msg.offset_z);
+        break;
+    }
+
+    case LOG_ROVER_ATTITUDE_MSG: {
+        struct log_Rover_Attitude msg;
+        if(sizeof(msg) != length) {
+            printf("Bad ATTITUDE length\n");
+            exit(1);
+        }
+        memcpy(&msg, data, sizeof(msg));
+        wait_timestamp(msg.time_ms);
+        attitude = Vector3f(msg.roll*0.01f, msg.pitch*0.01f, msg.yaw*0.01f);
         break;
     }
     }
@@ -272,7 +324,7 @@ bool LogReader::update(uint8_t &type)
         } else if (strncmp(msg.msg, "ArduCopter", strlen("ArduCopter")) == 0) {
             vehicle = VEHICLE_COPTER;
             ::printf("Detected Copter\n");
-        } else if (strncmp(msg.msg, "APMRover2", strlen("APMRover2")) == 0) {
+        } else if (strncmp(msg.msg, "ArduRover", strlen("ArduRover")) == 0) {
             vehicle = VEHICLE_ROVER;
             ::printf("Detected Rover\n");
         }
@@ -378,6 +430,8 @@ bool LogReader::update(uint8_t &type)
             process_plane(f.type, data, f.length);
         } else if (vehicle == VEHICLE_COPTER) {
             process_copter(f.type, data, f.length);
+        } else if (vehicle == VEHICLE_ROVER) {
+            process_rover(f.type, data, f.length);
         }
         break;
     }
