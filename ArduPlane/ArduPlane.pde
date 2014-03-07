@@ -1123,7 +1123,7 @@ static void update_GPS_10Hz(void)
  */
 static void handle_auto_mode(void)
 {
-    switch(mission.get_current_do_cmd().id) {
+    switch(mission.get_current_nav_cmd().id) {
     case MAV_CMD_NAV_TAKEOFF:
         if (steer_state.hold_course_cd == -1) {
             // we don't yet have a heading to hold - just level

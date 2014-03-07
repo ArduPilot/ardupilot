@@ -273,7 +273,7 @@ static void do_takeoff(const AP_Mission::Mission_Command& cmd)
     set_next_WP(cmd);
     // pitch in deg, airspeed  m/s, throttle %, track WP 1 or 0
     takeoff_pitch_cd        = (int)cmd.p1 * 100;
-    takeoff_altitude_cm     = cmd.content.location.alt;
+    takeoff_altitude_cm     = next_WP.content.location.alt;
     next_WP.content.location.lat = home.lat + 10;
     next_WP.content.location.lng = home.lng + 10;
     takeoff_complete        = false;                            // set flag to use gps ground course during TO.  IMU will be doing yaw drift correction
