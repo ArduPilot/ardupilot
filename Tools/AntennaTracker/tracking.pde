@@ -17,6 +17,7 @@ static struct {
  */
 static void update_pitch_servo(float pitch)
 {
+//    pitch = 0.0; // TEST
     // degrees(ahrs.pitch) is -90 to 90, where 0 is horizontal
     // pitch argument is -90 to 90, where 0 is horizontal
     // servo_out is in 100ths of a degree
@@ -50,6 +51,8 @@ static void update_pitch_servo(float pitch)
  */
 static void update_yaw_servo(float yaw)
 {
+//    yaw = 0.0; // TEST
+
     // degrees(ahrs.yaw) is -180 to 180, where 0 is north
     float ahrs_yaw = degrees(ahrs.yaw);
     // yaw argument is 0 to 360 where 0 and 360 are north
@@ -84,7 +87,7 @@ static void update_yaw_servo(float yaw)
     // According to the specs at https://www.servocity.com/html/hs-645mg_ultra_torque.html,
     // that should be 600 through 2400, but the azimuth gearing in my antenna pointer is not exactly 2:1
     int32_t err = (ahrs_yaw - yaw) * 100.0;
-    static int32_t last_err = 0.0;
+    static int32_t last_err = 0;
 
     // Correct for wrapping yaw at +-180
     // so we get the error to the _closest_ version of the target azimuth
@@ -94,47 +97,39 @@ static void update_yaw_servo(float yaw)
     else if (err < -18000)
         err += 36000;
 
-    static int32_t slew_to = 0;
 
-    int32_t servo_err = channel_yaw.servo_out - err; // Servo position we need to get to
-    if (   !slew_to
-        && servo_err > 19000 // 10 degreee deadband
-        && err < 0
-        && last_err > err)
+    static int8_t slew_dir = 0;
+    if (slew_dir == 0 &&
+        channel_yaw.servo_out == 18000 &&
+        err < -1000 &&  // 10 degree deadband
+        err < last_err)
     {
-        // We need to be beyond the servo limits and the error magnitude is increasing
-        // Slew most of the way to the other side at high speed...
-        slew_to = servo_err - 27000;
+        slew_dir = -1; // Too far +ve, slew in the -ve direction
     }
-    else if (   !slew_to
-             && servo_err < -19000 // 10 degreee deadband
-             && err > 0
-             && last_err < err)
+    else if (slew_dir == 0 &&
+             channel_yaw.servo_out == -18000 &&
+             err > 1000 && // 10 degree deadband
+             err > last_err)
     {
-        // We need to be beyond the servo limits and the error magnitude is increasing
-        // Slew most of the way to the other side at high speed...
-        slew_to = servo_err + 27000;
+        slew_dir = 1; // Too far -ve, slew in the +ve direction
     }
-    else if (   slew_to < 0
-             && err > 0
-             && last_err < err)
+    else if (slew_dir < 0 &&
+             err > 0)
     {
-        // ...then let normal tracking take over
-        slew_to = 0;
+        slew_dir = 0;
     }
-    else if (   slew_to > 0
-             && err < 0
-             && last_err > err)
+    else if (slew_dir > 0 &&
+        err < 0)
     {
-        // ...then let normal tracking take over
-        slew_to = 0;
+        slew_dir = 0;
     }
 
-    if (slew_to)
-    {
-        channel_yaw.servo_out = slew_to;
-    }
-    else
+    last_err = err;
+    if (slew_dir > 0)
+        err -= 27000;
+    else if (slew_dir < 0)
+        err += 27000;
+
     {
         // Normal tracking
         // You will need to tune the yaw PID to suit your antenna and servos
@@ -147,7 +142,6 @@ static void update_yaw_servo(float yaw)
         int32_t new_servo_out = channel_yaw.servo_out - g.pidYaw2Srv.get_pid(err);
         channel_yaw.servo_out = constrain_float(new_servo_out, -18000, 18000);
     }
-    last_err = err;
     channel_yaw.calc_pwm();
     channel_yaw.output();
 }
