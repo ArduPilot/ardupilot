@@ -90,6 +90,7 @@
 #define LOCATION_MASK_OPTIONS_RELATIVE_ALT      (1<<0)     // 1 = Relative altitude
 #define LOCATION_MASK_OPTIONS_LOITER_DIRECTION  (1<<2)     // 0 = CW, 1 = CCW
 
+#pragma pack(push,1)
 struct Location_Option_Flags {
     uint8_t relative_alt : 1;           // 1 if altitude is relateive to home
     uint8_t unused1      : 1;           // unused flag (defined so that loiter_ccw uses the correct bit)
@@ -105,6 +106,7 @@ struct Location {
     int32_t lat;                                        ///< param 3 - Lattitude * 10**7
     int32_t lng;                                        ///< param 4 - Longitude * 10**7
 };
+#pragma pack(pop)
 
 struct PACKED RallyLocation {
     int32_t lat;        //Latitude * 10^7
