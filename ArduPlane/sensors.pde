@@ -35,9 +35,9 @@ static int16_t read_range_finder(void)
         return 0;
     }
 
-    int16_t temp_alt = rangeFinderLong->read();
+    int16_t temp_alt = rangeFinder->read();
 
-    if (temp_alt >= rangeFinderLong->min_distance && temp_alt <= rangeFinderLong->max_distance * RANGE_FINDER_RELIABLE_DISTANCE_PCT) 
+    if (temp_alt >= rangeFinder->min_distance && temp_alt <= rangeFinder->max_distance * RANGE_FINDER_RELIABLE_DISTANCE_PCT) 
 	{
         if ( range_finder_alt_health < RANGE_FINDER_ALT_HEALTH_MAX ) 
 		{

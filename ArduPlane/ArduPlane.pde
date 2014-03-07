@@ -299,19 +299,16 @@ static AP_SpdHgtControl *SpdHgt_Controller = &TECS_controller;
 // Modified for KSU-AIAA Team - Will Baldwin
 ////////////////////////////////////////////////////////////////////////////////
 //
-ModeFilterInt16_Size3 rangefinder_mode_filter_long(1);
-ModeFilterInt16_Size3 rangefinder_mode_filter_short(1);
 #if CONFIG_RANGE_FINDER == ENABLED
+ModeFilterInt16_Size3 rangefinder_mode_filter(1);
 
-static AP_HAL::AnalogSource *rangefinder_analog_source_long;
-static AP_HAL::AnalogSource *rangefinder_analog_source_short;
+static AP_HAL::AnalogSource *rangefinder_analog_source;
 
-static AP_RangeFinder_SharpGP2Y *rangeFinderLong;
-static AP_RangeFinder_SharpGP2Y *rangeFinderShort;
+static AP_RangeFinder_SharpGP2Y *rangeFinder;
 
 // The altitude as reported by range finder in cm – Values are 20 to 700 generally.
 static int16_t range_finder_alt;
-static uint8_t range_finder_alt_health;   // true if we can trust the altitude from the sonar
+static uint8_t range_finder_alt_health;   // =3 if we can trust the altitude
 #endif
 
 
@@ -769,10 +766,9 @@ void setup() {
 
 	//Modified for KSU-AIAA Team - Will Baldwin
 	#if CONFIG_RANGE_FINDER == ENABLED
-			rangefinder_analog_source_long = hal.analogin->channel(CONFIG_RANGE_FINDER_SOURCE_LONG_ANALOG_PIN);
-			rangefinder_analog_source_short = hal.analogin->channel(CONFIG_RANGE_FINDER_SOURCE_SHORT_ANALOG_PIN);
-			rangeFinderLong = new AP_RangeFinder_SharpGP2Y(rangefinder_analog_source_long, &rangefinder_mode_filter_long);
-			rangeFinderShort = new AP_RangeFinder_SharpGP2Y(rangefinder_analog_source_short, &rangefinder_mode_filter_short);
+			rangefinder_analog_source = hal.analogin->channel(CONFIG_RANGE_FINDER_SOURCE_ANALOG_PIN);
+			rangeFinder = new AP_RangeFinder_SharpGP2Y(rangefinder_analog_source, &rangefinder_mode_filter);
+
 	#endif
 
     notify.init();
@@ -1361,32 +1357,31 @@ static void update_alt()
 	//	Change Altitude Source automatically as altitude approches ground level
 	//		GPS Altitude
 	//		Baro Sensor Altitude
-	//		Long Range Sensor Altitude
-	//		Short Range Sensor Altitude
+	//		RangeFinder Sensor Altitude
 	//
 	//		Pseudocode
-	//			if (shortrange.healthy) current_loc.alt = shortrange.altitude_cm						//Preferred
-	//			else if (long_rangeIR.healthy) current_loc.alt = longrange.altitude_cm
+	//			if (rangefinder.healthy) current_loc.alt = longrange.altitude_cm
 	//			else if (barometer.healthy) current_loc.alt = barometer.altitude_cm
 	//			else if (g_gps->status() >= GPS::GPS_OK_FIX_3D) current_loc.alt = g_gps->altitude_cm	//Last Resort
 	//
-	// YET TO BE IMPLEMENTED!!
-
-    //altitude_sensor = BARO;
-
-
-	//ArduPlane:1375: error: request for member 'raw_value' in 'rangeFinderLong', which is of non-class type 'AP_RangeFinder_SharpGP2Y*'
-	//int rfl_altitude = 0;
-	//rfl_altitude = read_range_finder();
 	
-	//current_loc.alt = rfl_altitude;
+	//Always call read_range_finder because it updates the sensor health variable...
+	int range_finder_distance = read_range_finder();
 
-    if (barometer.healthy) {
+	//Prefer range_finder then barometer then gps
+	if (range_finder_alt_health == RANGE_FINDER_ALT_HEALTH_MAX)
+	{
+		// alt MSL centimeters (centimeters) = sensed AGL + field altitude
+		current_loc.alt = range_finder_distance + home.alt; 
+	}
+    else if (barometer.healthy)
+	{
         // alt_MSL centimeters (centimeters)
         current_loc.alt = (1 - g.altitude_mix) * g_gps->altitude_cm;
         current_loc.alt += g.altitude_mix * (read_barometer() + home.alt);
-
-    } else if (g_gps->status() >= GPS::GPS_OK_FIX_3D) {
+    }
+	else if (g_gps->status() >= GPS::GPS_OK_FIX_3D) 
+	{
         // alt_MSL centimeters (centimeters)
         current_loc.alt = g_gps->altitude_cm;
     }

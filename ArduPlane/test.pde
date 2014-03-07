@@ -17,6 +17,7 @@ static int8_t   test_relay(uint8_t argc,                const Menu::arg *argv);
 static int8_t   test_wp(uint8_t argc,                   const Menu::arg *argv);
 static int8_t   test_airspeed(uint8_t argc,     const Menu::arg *argv);
 static int8_t   test_pressure(uint8_t argc,     const Menu::arg *argv);
+static int8_t   test_range_finder(uint8_t argc, const Menu::arg *argv);
 static int8_t   test_mag(uint8_t argc,                  const Menu::arg *argv);
 static int8_t   test_xbee(uint8_t argc,                 const Menu::arg *argv);
 static int8_t   test_eedump(uint8_t argc,               const Menu::arg *argv);
@@ -53,6 +54,7 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
     {"ins",                 test_ins},
     {"airspeed",    test_airspeed},
     {"airpressure", test_pressure},
+	{"range",		test_range_finder},
     {"compass",             test_mag},
 #else
     {"gps",                 test_gps},
@@ -613,6 +615,40 @@ test_pressure(uint8_t argc, const Menu::arg *argv)
         }
     }
 }
+
+static int8_t test_range_finder(uint8_t argc, const Menu::arg *argv)
+{
+	cliSerial->printf_P(PSTR("\n\nRange Finder Test\n"));
+	print_hit_enter();
+
+	home.alt = 0;
+	wp_distance = 0;
+	init_barometer();
+
+	int max_trusted_distance = rangeFinder->max_distance * RANGE_FINDER_RELIABLE_DISTANCE_PCT;
+
+	while (1) {
+		delay(100);
+		current_loc.alt = read_range_finder() + home.alt;
+		
+			
+		cliSerial->printf_P(PSTR("cur_dist: %dcm | min_dist: %dcm | max_trust: %dcm | max_dist: %dcm | voltage: %0.3fv | health: %d | alt: %dcm | home.alt: %dcm\n"),
+			read_range_finder(),
+			rangeFinder->min_distance,
+			max_trusted_distance,
+			rangeFinder->max_distance,
+			rangeFinder->_analog_source->voltage_average(),
+			range_finder_alt_health,
+			current_loc.alt,
+			home.alt
+			);
+
+		if (cliSerial->available() > 0) {
+			return (0);
+		}
+	}
+}
+
 
 static int8_t
 test_rawgps(uint8_t argc, const Menu::arg *argv)
