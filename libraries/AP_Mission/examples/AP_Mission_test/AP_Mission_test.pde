@@ -163,8 +163,16 @@ void run_mission_test()
     //      mission should complete after the do-jump is executed the appropriate number of times
     //init_mission_ends_with_jump_command();
 
+    // run_resume_test - tests the stop and resume feature
+    //      when mission is resumed, active commands should be started again
+    //run_resume_test();
+
     // run_set_current_cmd_test - tests setting the current command while the mission is running
     //run_set_current_cmd_test();
+
+    // run_set_current_cmd_while_stopped_test - tests setting the current command while the mission is stopped
+    //      when mission is resumed, the mission should start from the modified current cmd
+    //run_set_current_cmd_while_stopped_test();
 
     // run_replace_cmd_test - tests replacing a command during a mission
     //run_replace_cmd_test();
@@ -177,322 +185,6 @@ void run_mission_test()
     mission.start();
 
     // update mission forever
-    while(true) {
-        mission.update();
-    }
-}
-
-// run_resume_test - tests the stop and resume feature
-//      when mission is resumed, active commands should be started again
-void run_resume_test()
-{
-    AP_Mission::Mission_Command cmd;
-
-    // create a mission
-
-    // Command #0 : home
-    cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.content.location.options = 0;
-    cmd.p1 = 0;
-    cmd.content.location.alt = 0;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
-    if (!mission.add_cmd(cmd)) {
-        hal.console->printf_P(PSTR("failed to add command\n"));
-    }
-
-    // Command #1 : take-off to 10m
-    cmd.id = MAV_CMD_NAV_TAKEOFF;
-    cmd.content.location.options = 0;
-    cmd.p1 = 0;
-    cmd.content.location.alt = 10;
-    cmd.content.location.lat = 0;
-    cmd.content.location.lng = 0;
-    if (!mission.add_cmd(cmd)) {
-        hal.console->printf_P(PSTR("failed to add command\n"));
-    }
-
-    // Command #2 : first waypoint
-    cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.content.location.options = 0;
-    cmd.p1 = 0;
-    cmd.content.location.alt = 11;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
-    if (!mission.add_cmd(cmd)) {
-        hal.console->printf_P(PSTR("failed to add command\n"));
-    }
-
-    // Command #3 : second waypoint
-    cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.p1 = 0;
-    cmd.content.location.lat = 1234567890;
-    cmd.content.location.lng = -1234567890;
-    cmd.content.location.alt = 22;
-    if (!mission.add_cmd(cmd)) {
-        hal.console->printf_P(PSTR("failed to add command\n"));
-    }
-
-    // Command #4 : do command
-    cmd.id = MAV_CMD_DO_SET_ROI;
-    cmd.content.location.options = 0;
-    cmd.p1 = 0;
-    cmd.content.location.alt = 11;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
-    if (!mission.add_cmd(cmd)) {
-        hal.console->printf_P(PSTR("failed to add command\n"));
-    }
-
-    // Command #5 : RTL
-    cmd.id = MAV_CMD_NAV_RETURN_TO_LAUNCH;
-    cmd.p1 = 0;
-    cmd.content.location.lat = 0;
-    cmd.content.location.lng = 0;
-    cmd.content.location.alt = 0;
-    if (!mission.add_cmd(cmd)) {
-        hal.console->printf_P(PSTR("failed to add command\n"));
-    }
-
-    // print current mission
-    print_mission();
-
-    // start mission
-    hal.console->printf_P(PSTR("\nRunning missions\n"));
-    mission.start();
-
-    // update the mission for X iterations
-    // set condition to "i<5" to catch mission as cmd #1 (Nav) is running - you should see it restart cmd #1
-    // set condition to "i<7" to catch mission just after cmd #1 (Nav) has completed - you should see it start cmd #2
-    // set condition to "i<11" to catch mission just after cmd #2 (Nav) has completed - you should see it start cmd #3 (Do) and cmd #4 (Nav)
-    for(uint8_t i=0; i<11; i++) {
-        mission.update();
-    }
-
-    // simulate user pausing the mission
-    hal.console->printf_P(PSTR("Stopping mission\n"));
-    mission.stop();
-
-    // update the mission for 5 seconds (nothing should happen)
-    uint32_t start_time = hal.scheduler->millis();
-    while(hal.scheduler->millis() - start_time < 5000) {
-        mission.update();
-    }
-
-    // simulate user resuming mission
-    hal.console->printf_P(PSTR("Resume mission\n"));
-    mission.resume();
-
-    // update the mission forever
-    while(true) {
-        mission.update();
-    }
-}
-
-// run_set_current_cmd_test - tests setting the current command during a mission
-void run_set_current_cmd_test()
-{
-    AP_Mission::Mission_Command cmd;
-
-    // create a mission
-
-    // Command #0 : home
-    cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.content.location.options = 0;
-    cmd.p1 = 0;
-    cmd.content.location.alt = 0;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
-    if (!mission.add_cmd(cmd)) {
-        hal.console->printf_P(PSTR("failed to add command\n"));
-    }
-
-    // Command #1 : take-off to 10m
-    cmd.id = MAV_CMD_NAV_TAKEOFF;
-    cmd.content.location.options = 0;
-    cmd.p1 = 0;
-    cmd.content.location.alt = 10;
-    cmd.content.location.lat = 0;
-    cmd.content.location.lng = 0;
-    if (!mission.add_cmd(cmd)) {
-        hal.console->printf_P(PSTR("failed to add command\n"));
-    }
-
-    // Command #2 : do command
-    cmd.id = MAV_CMD_DO_SET_ROI;
-    cmd.content.location.options = 0;
-    cmd.p1 = 0;
-    cmd.content.location.alt = 11;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
-    if (!mission.add_cmd(cmd)) {
-        hal.console->printf_P(PSTR("failed to add command\n"));
-    }
-
-    // Command #3 : first waypoint
-    cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.content.location.options = 0;
-    cmd.p1 = 0;
-    cmd.content.location.alt = 11;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
-    if (!mission.add_cmd(cmd)) {
-        hal.console->printf_P(PSTR("failed to add command\n"));
-    }
-
-    // Command #4 : second waypoint
-    cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.p1 = 0;
-    cmd.content.location.lat = 1234567890;
-    cmd.content.location.lng = -1234567890;
-    cmd.content.location.alt = 22;
-    if (!mission.add_cmd(cmd)) {
-        hal.console->printf_P(PSTR("failed to add command\n"));
-    }
-
-    // Command #5 : do command
-    cmd.id = MAV_CMD_DO_SET_ROI;
-    cmd.content.location.options = 0;
-    cmd.p1 = 0;
-    cmd.content.location.alt = 11;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
-    if (!mission.add_cmd(cmd)) {
-        hal.console->printf_P(PSTR("failed to add command\n"));
-    }
-
-    // Command #6 : RTL
-    cmd.id = MAV_CMD_NAV_RETURN_TO_LAUNCH;
-    cmd.p1 = 0;
-    cmd.content.location.lat = 0;
-    cmd.content.location.lng = 0;
-    cmd.content.location.alt = 0;
-    if (!mission.add_cmd(cmd)) {
-        hal.console->printf_P(PSTR("failed to add command\n"));
-    }
-
-    // print current mission
-    print_mission();
-
-    // start mission
-    hal.console->printf_P(PSTR("\nRunning missions\n"));
-    mission.start();
-
-    // update the mission for X iterations to let it go to about command 3 or 4
-    for(uint8_t i=0; i<11; i++) {
-        mission.update();
-    }
-
-    // simulate user setting current command to 2
-    hal.console->printf_P(PSTR("Setting current command to 2\n"));
-    mission.set_current_cmd(2);
-
-    // update the mission forever
-    while(true) {
-        mission.update();
-    }
-}
-
-// run_replace_cmd_test - tests replacing a command during a mission
-void run_replace_cmd_test()
-{
-    AP_Mission::Mission_Command cmd;
-
-    // create a mission
-
-    // Command #0 : home
-    cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.content.location.options = 0;
-    cmd.p1 = 0;
-    cmd.content.location.alt = 0;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
-    if (!mission.add_cmd(cmd)) {
-        hal.console->printf_P(PSTR("failed to add command\n"));
-    }
-
-    // Command #1 : take-off to 10m
-    cmd.id = MAV_CMD_NAV_TAKEOFF;
-    cmd.content.location.options = 0;
-    cmd.p1 = 0;
-    cmd.content.location.alt = 10;
-    cmd.content.location.lat = 0;
-    cmd.content.location.lng = 0;
-    if (!mission.add_cmd(cmd)) {
-        hal.console->printf_P(PSTR("failed to add command\n"));
-    }
-
-    // Command #2 : do command
-    cmd.id = MAV_CMD_DO_SET_ROI;
-    cmd.content.location.options = 0;
-    cmd.p1 = 0;
-    cmd.content.location.alt = 11;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
-    if (!mission.add_cmd(cmd)) {
-        hal.console->printf_P(PSTR("failed to add command\n"));
-    }
-
-    // Command #3 : first waypoint
-    cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.content.location.options = 0;
-    cmd.p1 = 0;
-    cmd.content.location.alt = 11;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
-    if (!mission.add_cmd(cmd)) {
-        hal.console->printf_P(PSTR("failed to add command\n"));
-    }
-
-    // Command #4 : second waypoint
-    cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.p1 = 0;
-    cmd.content.location.lat = 1234567890;
-    cmd.content.location.lng = -1234567890;
-    cmd.content.location.alt = 22;
-    if (!mission.add_cmd(cmd)) {
-        hal.console->printf_P(PSTR("failed to add command\n"));
-    }
-
-    // Command #6 : RTL
-    cmd.id = MAV_CMD_NAV_RETURN_TO_LAUNCH;
-    cmd.p1 = 0;
-    cmd.content.location.lat = 0;
-    cmd.content.location.lng = 0;
-    cmd.content.location.alt = 0;
-    if (!mission.add_cmd(cmd)) {
-        hal.console->printf_P(PSTR("failed to add command\n"));
-    }
-
-    // print current mission
-    print_mission();
-
-    // start mission
-    hal.console->printf_P(PSTR("\nRunning missions\n"));
-    mission.start();
-
-    // update the mission for X iterations to let it go to about command 3 or 4
-    for(uint8_t i=0; i<9; i++) {
-        mission.update();
-    }
-
-    // replace command #4 with a do-command
-    // Command #4 : do command
-    cmd.id = MAV_CMD_DO_SET_ROI;
-    cmd.content.location.options = 0;
-    cmd.p1 = 0;
-    cmd.content.location.alt = 11;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
-    if (!mission.replace_cmd(4, cmd)) {
-        hal.console->printf_P(PSTR("failed to replace command 4\n"));
-    }else{
-        hal.console->printf_P(PSTR("replaced command #4 -------------\n"));
-        // print current mission
-        print_mission();
-    }
-
-    // update the mission forever
     while(true) {
         mission.update();
     }
@@ -1014,6 +706,460 @@ void print_mission()
         }
     }
     hal.console->printf_P(PSTR("--------\n"));
+}
+
+// run_resume_test - tests the stop and resume feature
+//      when mission is resumed, active commands should be started again
+void run_resume_test()
+{
+    AP_Mission::Mission_Command cmd;
+
+    // create a mission
+
+    // Command #0 : home
+    cmd.id = MAV_CMD_NAV_WAYPOINT;
+    cmd.content.location.options = 0;
+    cmd.p1 = 0;
+    cmd.content.location.alt = 0;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #1 : take-off to 10m
+    cmd.id = MAV_CMD_NAV_TAKEOFF;
+    cmd.content.location.options = 0;
+    cmd.p1 = 0;
+    cmd.content.location.alt = 10;
+    cmd.content.location.lat = 0;
+    cmd.content.location.lng = 0;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #2 : first waypoint
+    cmd.id = MAV_CMD_NAV_WAYPOINT;
+    cmd.content.location.options = 0;
+    cmd.p1 = 0;
+    cmd.content.location.alt = 11;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #3 : second waypoint
+    cmd.id = MAV_CMD_NAV_WAYPOINT;
+    cmd.p1 = 0;
+    cmd.content.location.lat = 1234567890;
+    cmd.content.location.lng = -1234567890;
+    cmd.content.location.alt = 22;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #4 : do command
+    cmd.id = MAV_CMD_DO_SET_ROI;
+    cmd.content.location.options = 0;
+    cmd.p1 = 0;
+    cmd.content.location.alt = 11;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #5 : RTL
+    cmd.id = MAV_CMD_NAV_RETURN_TO_LAUNCH;
+    cmd.p1 = 0;
+    cmd.content.location.lat = 0;
+    cmd.content.location.lng = 0;
+    cmd.content.location.alt = 0;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // print current mission
+    print_mission();
+
+    // start mission
+    hal.console->printf_P(PSTR("\nRunning missions\n"));
+    mission.start();
+
+    // update the mission for X iterations
+    // set condition to "i<5" to catch mission as cmd #1 (Nav) is running - you should see it restart cmd #1
+    // set condition to "i<7" to catch mission just after cmd #1 (Nav) has completed - you should see it start cmd #2
+    // set condition to "i<11" to catch mission just after cmd #2 (Nav) has completed - you should see it start cmd #3 (Do) and cmd #4 (Nav)
+    for(uint8_t i=0; i<11; i++) {
+        mission.update();
+    }
+
+    // simulate user pausing the mission
+    hal.console->printf_P(PSTR("Stopping mission\n"));
+    mission.stop();
+
+    // update the mission for 5 seconds (nothing should happen)
+    uint32_t start_time = hal.scheduler->millis();
+    while(hal.scheduler->millis() - start_time < 5000) {
+        mission.update();
+    }
+
+    // simulate user resuming mission
+    hal.console->printf_P(PSTR("Resume mission\n"));
+    mission.resume();
+
+    // update the mission forever
+    while(true) {
+        mission.update();
+    }
+}
+
+// run_set_current_cmd_test - tests setting the current command during a mission
+void run_set_current_cmd_test()
+{
+    AP_Mission::Mission_Command cmd;
+
+    // create a mission
+
+    // Command #0 : home
+    cmd.id = MAV_CMD_NAV_WAYPOINT;
+    cmd.content.location.options = 0;
+    cmd.p1 = 0;
+    cmd.content.location.alt = 0;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #1 : take-off to 10m
+    cmd.id = MAV_CMD_NAV_TAKEOFF;
+    cmd.content.location.options = 0;
+    cmd.p1 = 0;
+    cmd.content.location.alt = 10;
+    cmd.content.location.lat = 0;
+    cmd.content.location.lng = 0;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #2 : do command
+    cmd.id = MAV_CMD_DO_SET_ROI;
+    cmd.content.location.options = 0;
+    cmd.p1 = 0;
+    cmd.content.location.alt = 11;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #3 : first waypoint
+    cmd.id = MAV_CMD_NAV_WAYPOINT;
+    cmd.content.location.options = 0;
+    cmd.p1 = 0;
+    cmd.content.location.alt = 11;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #4 : second waypoint
+    cmd.id = MAV_CMD_NAV_WAYPOINT;
+    cmd.p1 = 0;
+    cmd.content.location.lat = 1234567890;
+    cmd.content.location.lng = -1234567890;
+    cmd.content.location.alt = 22;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #5 : do command
+    cmd.id = MAV_CMD_DO_SET_ROI;
+    cmd.content.location.options = 0;
+    cmd.p1 = 0;
+    cmd.content.location.alt = 11;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #6 : RTL
+    cmd.id = MAV_CMD_NAV_RETURN_TO_LAUNCH;
+    cmd.p1 = 0;
+    cmd.content.location.lat = 0;
+    cmd.content.location.lng = 0;
+    cmd.content.location.alt = 0;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // print current mission
+    print_mission();
+
+    // start mission
+    hal.console->printf_P(PSTR("\nRunning missions\n"));
+    mission.start();
+
+    // update the mission for X iterations to let it go to about command 3 or 4
+    for(uint8_t i=0; i<11; i++) {
+        mission.update();
+    }
+
+    // simulate user setting current command to 2
+    hal.console->printf_P(PSTR("Setting current command to 2\n"));
+    mission.set_current_cmd(2);
+
+    // update the mission forever
+    while(true) {
+        mission.update();
+    }
+}
+
+// run_set_current_cmd_while_stopped_test - tests setting the current command while the mission is stopped
+//      when mission is resumed, the mission should start from the modified current cmd
+void run_set_current_cmd_while_stopped_test()
+{
+    AP_Mission::Mission_Command cmd;
+
+    // create a mission
+
+    // Command #0 : home
+    cmd.id = MAV_CMD_NAV_WAYPOINT;
+    cmd.content.location.options = 0;
+    cmd.p1 = 0;
+    cmd.content.location.alt = 0;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #1 : take-off to 10m
+    cmd.id = MAV_CMD_NAV_TAKEOFF;
+    cmd.content.location.options = 0;
+    cmd.p1 = 0;
+    cmd.content.location.alt = 10;
+    cmd.content.location.lat = 0;
+    cmd.content.location.lng = 0;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #2 : do command
+    cmd.id = MAV_CMD_DO_SET_ROI;
+    cmd.content.location.options = 0;
+    cmd.p1 = 0;
+    cmd.content.location.alt = 22;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #3 : first waypoint
+    cmd.id = MAV_CMD_NAV_WAYPOINT;
+    cmd.content.location.options = 0;
+    cmd.p1 = 0;
+    cmd.content.location.alt = 11;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #4 : second waypoint
+    cmd.id = MAV_CMD_NAV_WAYPOINT;
+    cmd.p1 = 0;
+    cmd.content.location.lat = 1234567890;
+    cmd.content.location.lng = -1234567890;
+    cmd.content.location.alt = 22;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #5 : do command
+    cmd.id = MAV_CMD_DO_SET_ROI;
+    cmd.content.location.options = 0;
+    cmd.p1 = 0;
+    cmd.content.location.alt = 11;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #6 : RTL
+    cmd.id = MAV_CMD_NAV_RETURN_TO_LAUNCH;
+    cmd.p1 = 0;
+    cmd.content.location.lat = 0;
+    cmd.content.location.lng = 0;
+    cmd.content.location.alt = 0;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // print current mission
+    print_mission();
+
+    // start mission
+    hal.console->printf_P(PSTR("\nRunning missions\n"));
+    mission.start();
+
+    // update the mission for X iterations
+    for(uint8_t i=0; i<11; i++) {
+        mission.update();
+    }
+
+    // simulate user pausing the mission
+    hal.console->printf_P(PSTR("Stopping mission\n"));
+    mission.stop();
+
+    // simulate user setting current command to 2
+    hal.console->printf_P(PSTR("Setting current command to 2\n"));
+    mission.set_current_cmd(2);
+
+    // update the mission for 2 seconds (nothing should happen)
+    uint32_t start_time = hal.scheduler->millis();
+    while(hal.scheduler->millis() - start_time < 2000) {
+        mission.update();
+    }
+
+    // simulate user resuming mission
+    hal.console->printf_P(PSTR("Resume mission\n"));
+    mission.resume();
+
+    // wait for the mission to complete
+    while(mission.state() != AP_Mission::MISSION_COMPLETE) {
+        mission.update();
+    }
+
+    // pause for two seconds
+    start_time = hal.scheduler->millis();
+    while(hal.scheduler->millis() - start_time < 2000) {
+        mission.update();
+    }
+
+    // simulate user setting current command to 2 now that the mission has completed
+    hal.console->printf_P(PSTR("Setting current command to 5\n"));
+    mission.set_current_cmd(5);
+
+    // simulate user resuming mission
+    hal.console->printf_P(PSTR("Resume mission\n"));
+    mission.resume();
+
+    // keep running the mission forever
+    while(true) {
+        mission.update();
+    }
+}
+
+// run_replace_cmd_test - tests replacing a command during a mission
+void run_replace_cmd_test()
+{
+    AP_Mission::Mission_Command cmd;
+
+    // create a mission
+
+    // Command #0 : home
+    cmd.id = MAV_CMD_NAV_WAYPOINT;
+    cmd.content.location.options = 0;
+    cmd.p1 = 0;
+    cmd.content.location.alt = 0;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #1 : take-off to 10m
+    cmd.id = MAV_CMD_NAV_TAKEOFF;
+    cmd.content.location.options = 0;
+    cmd.p1 = 0;
+    cmd.content.location.alt = 10;
+    cmd.content.location.lat = 0;
+    cmd.content.location.lng = 0;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #2 : do command
+    cmd.id = MAV_CMD_DO_SET_ROI;
+    cmd.content.location.options = 0;
+    cmd.p1 = 0;
+    cmd.content.location.alt = 11;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #3 : first waypoint
+    cmd.id = MAV_CMD_NAV_WAYPOINT;
+    cmd.content.location.options = 0;
+    cmd.p1 = 0;
+    cmd.content.location.alt = 11;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #4 : second waypoint
+    cmd.id = MAV_CMD_NAV_WAYPOINT;
+    cmd.p1 = 0;
+    cmd.content.location.lat = 1234567890;
+    cmd.content.location.lng = -1234567890;
+    cmd.content.location.alt = 22;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // Command #6 : RTL
+    cmd.id = MAV_CMD_NAV_RETURN_TO_LAUNCH;
+    cmd.p1 = 0;
+    cmd.content.location.lat = 0;
+    cmd.content.location.lng = 0;
+    cmd.content.location.alt = 0;
+    if (!mission.add_cmd(cmd)) {
+        hal.console->printf_P(PSTR("failed to add command\n"));
+    }
+
+    // print current mission
+    print_mission();
+
+    // start mission
+    hal.console->printf_P(PSTR("\nRunning missions\n"));
+    mission.start();
+
+    // update the mission for X iterations to let it go to about command 3 or 4
+    for(uint8_t i=0; i<9; i++) {
+        mission.update();
+    }
+
+    // replace command #4 with a do-command
+    // Command #4 : do command
+    cmd.id = MAV_CMD_DO_SET_ROI;
+    cmd.content.location.options = 0;
+    cmd.p1 = 0;
+    cmd.content.location.alt = 11;
+    cmd.content.location.lat = 12345678;
+    cmd.content.location.lng = 23456789;
+    if (!mission.replace_cmd(4, cmd)) {
+        hal.console->printf_P(PSTR("failed to replace command 4\n"));
+    }else{
+        hal.console->printf_P(PSTR("replaced command #4 -------------\n"));
+        // print current mission
+        print_mission();
+    }
+
+    // update the mission forever
+    while(true) {
+        mission.update();
+    }
 }
 
 AP_HAL_MAIN();
