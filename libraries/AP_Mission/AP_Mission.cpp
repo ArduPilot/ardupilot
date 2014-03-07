@@ -219,20 +219,8 @@ bool AP_Mission::set_current_cmd(uint16_t index)
 {
     Mission_Command cmd;
 
-    // exit immediately if we're not running
-    // To-Do: allow setting command while mission is stopped and use the index provided when mission is started
-    if (_flags.state != MISSION_RUNNING) {
-        return false;
-    }
-
-    if (index == 0) {
-        // changing mission item to zero is a mission reset
-        start();
-        return true;
-    }
-
-    // sanity check index
-    if (index >= _cmd_total || index == 0) {
+    // sanity check index and that we have a mission
+    if (index >= _cmd_total || _cmd_total == 1) {
         return false;
     }
 
@@ -244,6 +232,47 @@ bool AP_Mission::set_current_cmd(uint16_t index)
     // stop current nav cmd
     _flags.nav_cmd_loaded = false;
 
+    // if index is zero then the user wants to completely restart the mission
+    if (index == 0 || _flags.state == MISSION_COMPLETE) {
+        _prev_nav_cmd_index = AP_MISSION_CMD_INDEX_NONE;
+        // reset the jump tracking to zero
+        init_jump_tracking();
+        index == 1;
+    }
+
+    // if the mission is stopped or completed move the nav_cmd index to the specified point and set the state to stopped
+    // so that if the user resumes the mission it will begin at the specified index
+    if (_flags.state != MISSION_RUNNING) {
+        // search until we find next nav command or reach end of command list
+        while (!_flags.nav_cmd_loaded) {
+            // get next command
+            if (!get_next_cmd(index, cmd, true)) {
+                _nav_cmd.index = AP_MISSION_CMD_INDEX_NONE;
+                return false;
+            }
+
+            // check if navigation or "do" command
+            if (is_nav_cmd(cmd)) {
+                // set current navigation command
+                _nav_cmd = cmd;
+                _flags.nav_cmd_loaded = true;
+            }else{
+                // set current do command
+                if (!_flags.do_cmd_loaded) {
+                    _do_cmd = cmd;
+                    _flags.do_cmd_loaded = true;
+                }
+            }
+            // move onto next command
+            index = cmd.index+1;
+        }
+
+        // if we got this far then the mission can safely be "resumed" from the specified index so we set the state to "stopped"
+        _flags.state = MISSION_STOPPED;
+        return true;
+    }
+
+    // the state must be MISSION_RUNNING
     // search until we find next nav command or reach end of command list
     while (!_flags.nav_cmd_loaded) {
         // get next command
@@ -767,6 +796,7 @@ bool AP_Mission::advance_current_nav_cmd()
     // get starting point for search
     cmd_index = _nav_cmd.index;
     if (cmd_index == AP_MISSION_CMD_INDEX_NONE) {
+        // start from beginning of the mission command list
         cmd_index = AP_MISSION_FIRST_REAL_COMMAND;
     }else{
         // start from one position past the current nav command
