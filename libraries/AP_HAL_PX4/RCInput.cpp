@@ -23,7 +23,7 @@ void PX4RCInput::init(void* unused)
 uint8_t PX4RCInput::valid_channels() 
 {
     pthread_mutex_lock(&rcin_mutex);
-    bool valid = _rcin.timestamp != _last_read || _override_valid;
+    bool valid = _rcin.timestamp_last_signal != _last_read || _override_valid;
     pthread_mutex_unlock(&rcin_mutex);
     return valid;
 }
@@ -34,7 +34,7 @@ uint16_t PX4RCInput::read(uint8_t ch)
 		return 0;
 	}
         pthread_mutex_lock(&rcin_mutex);
-	_last_read = _rcin.timestamp;
+	_last_read = _rcin.timestamp_last_signal;
 	_override_valid = false;
 	if (_override[ch]) {
             uint16_t v = _override[ch];
