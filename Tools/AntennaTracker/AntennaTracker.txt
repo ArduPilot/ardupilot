@@ -18,10 +18,10 @@ Antenna Tracker Hardware
 
 The software works with:
 
-- Alt-Azimuth mounted antenna, equipped with 2 servos: one for Azimuth (also
-called bearing or yaw) -180 to 180 degreees and one for Altitude (also
+- Alt-Azimuth mounted antenna tracker, equipped with 2 servos: one for Azimuth
+(also called bearing or yaw) -180 to 180 degreees and one for Altitude (also
 called elevation, or pitch) -90 degrees (straight down) to 90 degrees
-(straight up).
+(straight up). I used an Eagle Tree Antenna Pan-Tilt.
 
 - Ardupilot compatible processor such as 
 -- Flymaple
@@ -121,7 +121,8 @@ YAW2SRV_P
 YAW2SRV_I
 YAW2SRV_D
 
-(more info here about how to find the right values)
+(more info here about how to find the right values when the setup commands are
+available)
 
 You can find the complete set of configuration items I used for my Flymaple
 tracker mounted on an Eagle Tree tracker WHERE?????
@@ -148,6 +149,10 @@ arm throttle
 Operation
 
 <more here>
+
+After powering up AntennaTracker, it may take up to 1 minute while it
+automatially calibrates the compass before it points in the expected
+direction.
 
 How to set the HOME location
 
