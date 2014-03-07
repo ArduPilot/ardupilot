@@ -137,6 +137,7 @@
     <ClInclude Include="..\libraries\AP_RangeFinder\AP_RangeFinder.h" />
     <ClInclude Include="..\libraries\AP_RangeFinder\AP_RangeFinder_analog.h" />
     <ClInclude Include="..\libraries\AP_RangeFinder\AP_RangeFinder_SharpGP2Y.h" />
+    <ClInclude Include="..\libraries\AP_RangeFinder\RangeFinder.h" />
     <ClInclude Include="APM_Config.h">
       <FileType>CppCode</FileType>
     </ClInclude>
@@ -156,6 +157,11 @@
       <FileType>CppCode</FileType>
     </ClInclude>
     <ClInclude Include="Visual Micro\.ArduPlane.vsarduino.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\libraries\AP_RangeFinder\AP_RangeFinder_analog.cpp" />
+    <ClCompile Include="..\libraries\AP_RangeFinder\AP_RangeFinder_SharpGP2Y.cpp" />
+    <ClCompile Include="..\libraries\AP_RangeFinder\RangeFinder.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

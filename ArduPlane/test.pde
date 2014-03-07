@@ -18,6 +18,8 @@ static int8_t   test_wp(uint8_t argc,                   const Menu::arg *argv);
 static int8_t   test_airspeed(uint8_t argc,     const Menu::arg *argv);
 static int8_t   test_pressure(uint8_t argc,     const Menu::arg *argv);
 static int8_t   test_range_finder(uint8_t argc, const Menu::arg *argv);
+static int8_t   test_raw_range_finder(uint8_t argc, const Menu::arg *argv);//
+static int8_t   test_alt_source(uint8_t argc, const Menu::arg *argv);
 static int8_t   test_mag(uint8_t argc,                  const Menu::arg *argv);
 static int8_t   test_xbee(uint8_t argc,                 const Menu::arg *argv);
 static int8_t   test_eedump(uint8_t argc,               const Menu::arg *argv);
@@ -55,6 +57,8 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
     {"airspeed",    test_airspeed},
     {"airpressure", test_pressure},
 	{"range",		test_range_finder},
+	{"raw range",  test_raw_range_finder},
+	{"alt source", test_alt_source },
     {"compass",             test_mag},
 #else
     {"gps",                 test_gps},
@@ -649,6 +653,76 @@ static int8_t test_range_finder(uint8_t argc, const Menu::arg *argv)
 	}
 }
 
+static int8_t test_raw_range_finder(uint8_t argc, const Menu::arg *argv)
+{
+	cliSerial->printf_P(PSTR("\n\nRange Finder Test\n"));
+	print_hit_enter();
+
+	home.alt = 0;
+	wp_distance = 0;
+	init_barometer();
+
+	int max_trusted_distance = rangeFinder->max_distance * RANGE_FINDER_RELIABLE_DISTANCE_PCT;
+
+	while (1) {
+		delay(100);
+		current_loc.alt = read_range_finder() + home.alt;
+
+
+		cliSerial->printf_P(PSTR("voltage: %0.3fv\n"),
+			rangeFinder->_analog_source->voltage_average()
+			);
+
+		if (cliSerial->available() > 0) {
+			return (0);
+		}
+	}
+}
+
+static int8_t   test_alt_source(uint8_t argc, const Menu::arg *argv)
+{
+	int max_trusted_distance = rangeFinder->max_distance * RANGE_FINDER_RELIABLE_DISTANCE_PCT;
+
+	while (1)
+	{
+		delay(100);
+		int range_finder_distance = read_range_finder();
+
+
+		//Prefer range_finder then barometer then gps
+		if (range_finder_alt_health == RANGE_FINDER_ALT_HEALTH_MAX)
+		{
+			// alt MSL centimeters (centimeters) = sensed AGL + field altitude
+			current_loc.alt = range_finder_distance + home.alt;
+
+			cliSerial->printf_P(PSTR("Source: Range Finder | Altitude: %00dcm\n"),
+				current_loc.alt
+				);
+
+		}
+		else if (barometer.healthy)
+		{
+			// alt_MSL centimeters (centimeters)
+			current_loc.alt = (1 - g.altitude_mix) * g_gps->altitude_cm;
+			current_loc.alt += g.altitude_mix * (read_barometer() + home.alt);
+
+			cliSerial->printf_P(PSTR("Source: Barometer/GPS Mix | Altitude: %00dcm\n"),
+				current_loc.alt
+				);
+		}
+		else if (g_gps->status() >= GPS::GPS_OK_FIX_3D)
+		{
+			// alt_MSL centimeters (centimeters)
+			current_loc.alt = g_gps->altitude_cm;
+
+			cliSerial->printf_P(PSTR("Source: GPS | Altitude: %00dcm\n"),
+				current_loc.alt
+				);
+		}
+
+	}
+
+}
 
 static int8_t
 test_rawgps(uint8_t argc, const Menu::arg *argv)

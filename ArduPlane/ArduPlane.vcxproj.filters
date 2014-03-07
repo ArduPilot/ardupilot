@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="AP_RangeFinder">
+      <UniqueIdentifier>{d346c486-2178-4985-9753-1e046fda443b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="ArduPlane.pde" />
@@ -60,13 +63,27 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\libraries\AP_RangeFinder\AP_RangeFinder.h">
-      <Filter>Header Files</Filter>
+      <Filter>AP_RangeFinder</Filter>
     </ClInclude>
     <ClInclude Include="..\libraries\AP_RangeFinder\AP_RangeFinder_analog.h">
-      <Filter>Header Files</Filter>
+      <Filter>AP_RangeFinder</Filter>
     </ClInclude>
     <ClInclude Include="..\libraries\AP_RangeFinder\AP_RangeFinder_SharpGP2Y.h">
-      <Filter>Header Files</Filter>
+      <Filter>AP_RangeFinder</Filter>
     </ClInclude>
+    <ClInclude Include="..\libraries\AP_RangeFinder\RangeFinder.h">
+      <Filter>AP_RangeFinder</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\libraries\AP_RangeFinder\AP_RangeFinder_analog.cpp">
+      <Filter>AP_RangeFinder</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libraries\AP_RangeFinder\AP_RangeFinder_SharpGP2Y.cpp">
+      <Filter>AP_RangeFinder</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libraries\AP_RangeFinder\RangeFinder.cpp">
+      <Filter>AP_RangeFinder</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
