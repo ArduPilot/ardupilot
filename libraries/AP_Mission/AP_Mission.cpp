@@ -225,6 +225,12 @@ bool AP_Mission::set_current_cmd(uint16_t index)
         return false;
     }
 
+    if (index == 0) {
+        // changing mission item to zero is a mission reset
+        start();
+        return true;
+    }
+
     // sanity check index
     if (index >= _cmd_total || index == 0) {
         return false;
