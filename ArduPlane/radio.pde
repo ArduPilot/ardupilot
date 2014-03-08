@@ -191,11 +191,11 @@ static void control_failsafe(uint16_t pwm)
 {
     if (hal.scheduler->millis() - failsafe.last_valid_rc_ms > 1000 || rc_failsafe_active()) {
         // we do not have valid RC input. Set all primary channel
-        // control inputs to the trim value
+        // control inputs to the trim value and throttle to min
         channel_roll->radio_in     = channel_roll->radio_trim;
         channel_pitch->radio_in    = channel_pitch->radio_trim;
         channel_rudder->radio_in   = channel_rudder->radio_trim;
-        channel_throttle->radio_in = channel_throttle->radio_trim;
+        channel_throttle->radio_in = channel_throttle->radio_min;
         channel_roll->control_in     = 0;
         channel_pitch->control_in    = 0;
         channel_rudder->control_in   = 0;
