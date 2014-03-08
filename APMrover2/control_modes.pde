@@ -9,6 +9,11 @@ static void read_control_switch()
 	// If we get this value we do not want to change modes.
 	if(switchPosition == 255) return;
 
+    if (hal.scheduler->millis() - failsafe.last_valid_rc_ms > 100) {
+        // only use signals that are less than 0.1s old.
+        return;
+    }
+
     // we look for changes in the switch position. If the
     // RST_SWITCH_CH parameter is set, then it is a switch that can be
     // used to force re-reading of the control switch. This is useful
@@ -32,7 +37,7 @@ static void read_control_switch()
 
 static uint8_t readSwitch(void){
     uint16_t pulsewidth = hal.rcin->read(g.mode_channel - 1);
-	if (pulsewidth <= 800 || pulsewidth >= 2200) 	return 255;	// This is an error condition
+	if (pulsewidth <= 900 || pulsewidth >= 2200) 	return 255;	// This is an error condition
 	if (pulsewidth > 1230 && pulsewidth <= 1360) 	return 1;
 	if (pulsewidth > 1360 && pulsewidth <= 1490) 	return 2;
 	if (pulsewidth > 1490 && pulsewidth <= 1620) 	return 3;
