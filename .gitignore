@@ -49,6 +49,7 @@
 ArduCopter/dataflash.bin
 ArduCopter/Debug/
 ArduCopter/eeprom.bin
+ArduCopter/test.ArduCopter/
 ArduCopter/test/*
 build
 Build.ArduCopter/*
