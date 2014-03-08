@@ -255,6 +255,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     IMU1_weighting = 0.5f;
 }
 
+// Check basic filter health metrics and return a consolidated health status
 bool NavEKF::healthy(void) const
 {
     if (!statesInitialised) {
@@ -277,18 +278,21 @@ bool NavEKF::healthy(void) const
     return true;
 }
 
+// Returns true if height drift is not being constrained
 bool NavEKF::HeightDrifting(void) const
 {
     // Set to true if height measurements are failing the innovation consistency check
     return !hgtHealth;
 }
 
+// Returns true if position drift is not being constrained
 bool NavEKF::PositionDrifting(void) const
 {
     // Set to true if position measurements are failing the innovation consistency check
     return !posHealth;
 }
 
+// Resets position states to last GPS measurement or to zero if in static mode
 void NavEKF::ResetPosition(void)
 {
     if (staticMode) {
@@ -304,6 +308,7 @@ void NavEKF::ResetPosition(void)
     }
 }
 
+// Resets velocity states to last GPS measurement or to zero if in static mode
 void NavEKF::ResetVelocity(void)
 {
     if (staticMode) {
@@ -313,19 +318,20 @@ void NavEKF::ResetVelocity(void)
     } else if (_ahrs->get_gps()->status() >= GPS::GPS_OK_FIX_3D) {
         // read the GPS
         readGpsData();
-        // write to state vector
+        // reset horizontal velocity states
         if (_fusionModeGPS <= 1) {
-            states[4]  = velNED[0];
-            states[5]  = velNED[1];
-            states[23] = velNED[0];
-            states[24] = velNED[1];
-            states[27] = velNED[0];
-            states[28] = velNED[1];
+            states[4]  = velNED[0]; // north velocity from blended accel data
+            states[5]  = velNED[1]; // east velocity from blended accel data
+            states[23] = velNED[0]; // north velocity from IMU1 accel data
+            states[24] = velNED[1]; // east velocity from IMU1 accel data
+            states[27] = velNED[0]; // north velocity from IMU2 accel data
+            states[28] = velNED[1]; // east velocity from IMU2 accel data
         }
+        // reset vertical velocity states
         if (_fusionModeGPS <= 0) {
-            states[6]  = velNED[2];
-            states[25] = velNED[2];
-            states[29] = velNED[2];
+            states[6]  = velNED[2]; // down velocity from blended accel data
+            states[25] = velNED[2]; // down velocity from IMU1 accel data
+            states[29] = velNED[2]; // down velocity from IMU2 accel data
         }
     }
 }
@@ -335,9 +341,9 @@ void NavEKF::ResetHeight(void)
     // read the altimeter
     readHgtData();
     // write to state vector
-    states[9]   = -hgtMea;
-    state.posD1 = -hgtMea;
-    state.posD2 = -hgtMea;
+    states[9]   = -hgtMea; // down position from blended accel data
+    state.posD1 = -hgtMea; // down position from IMU1 accel data
+    state.posD2 = -hgtMea; // down position from IMU2 accel data
 }
 
 // This function is used to initialise the filter whilst moving, using the AHRS DCM solution
@@ -377,11 +383,11 @@ void NavEKF::InitialiseFilterDynamic(void)
     // calculate yaw angle rel to true north
     yaw = magDecAng - magHeading;
 
-    // Calculate initial filter quaternion states
+    // calculate initial filter quaternion states
     Quaternion initQuat;
     initQuat.from_euler(_ahrs->roll, _ahrs->pitch, yaw);
 
-    // Calculate initial Tbn matrix and rotate Mag measurements into NED
+    // calculate initial Tbn matrix and rotate Mag measurements into NED
     // to set initial NED magnetic field states
     initQuat.rotation_matrix(Tbn);
     initMagNED = Tbn * magData;
@@ -398,21 +404,22 @@ void NavEKF::InitialiseFilterDynamic(void)
     state.earth_magfield = initMagNED;
     state.body_magfield  = magBias;
 
+    // set to true now that states have be initialised
     statesInitialised = true;
 
     // initialise the covariance matrix
     CovarianceInit(_ahrs->roll, _ahrs->pitch, _ahrs->yaw);
 
-    //Define Earth rotation vector in the NED navigation frame
+    // define Earth rotation vector in the NED navigation frame
     calcEarthRateNED(earthRateNED, _ahrs->get_home().lat);
 
-    //Initialise IMU pre-processing states
+    // initialise IMU pre-processing states
     readIMUData();
 }
 
 void NavEKF::InitialiseFilterBootstrap(void)
 {
-    // Set re-used variables to zero
+    // set re-used variables to zero
     ZeroVariables();
 
     // acceleration vector in XYZ body axes measured by the IMU (m/s^2)
@@ -424,10 +431,10 @@ void NavEKF::InitialiseFilterBootstrap(void)
     // read the magnetometer data
     readMagData();
 
-    // Normalise the acceleration vector
+    // normalise the acceleration vector
     initAccVec.normalize();
 
-    // Calculate initial pitch angle
+    // calculate initial pitch angle
     float pitch = asinf(initAccVec.x);
 
     // calculate initial roll angle
@@ -456,11 +463,11 @@ void NavEKF::InitialiseFilterBootstrap(void)
         yaw = 0.0f;
     }
 
-    // Calculate initial filter quaternion states
+    // calculate initial filter quaternion states
     Quaternion initQuat;
     initQuat.from_euler(roll, pitch, yaw);
 
-    // Calculate initial Tbn matrix and rotate Mag measurements into NED
+    // calculate initial Tbn matrix and rotate Mag measurements into NED
     // to set initial NED magnetic field states
     initQuat.rotation_matrix(Tbn);
     initMagNED = Tbn * magData;
@@ -471,7 +478,7 @@ void NavEKF::InitialiseFilterBootstrap(void)
     // read the barometer
     readHgtData();
 
-    // set onground flag
+    // check on ground status
     OnGroundCheck();
 
     // write to state vector
@@ -483,31 +490,33 @@ void NavEKF::InitialiseFilterBootstrap(void)
     state.earth_magfield = initMagNED;
     state.body_magfield = magBias;
 
+    // set to true now we have intialised the states
     statesInitialised = true;
 
     // initialise the covariance matrix
     CovarianceInit(roll, pitch, yaw);
 
-    //Define Earth rotation vector in the NED navigation frame
+    // define Earth rotation vector in the NED navigation frame
     calcEarthRateNED(earthRateNED, _ahrs->get_home().lat);
 
-    //Initialise IMU pre-processing states
+    // initialise IMU pre-processing states
     readIMUData();
 }
 
 void NavEKF::UpdateFilter()
 {
+    // don't run filter updates if states have not been initialised
     if (!statesInitialised) {
         return;
     }
 
+    // start the timer used for load measurement
     perf_begin(_perf_UpdateFilter);
 
-    // This function will be called at 100Hz
-    //
-    // Read IMU data and convert to delta angles and velocities
+    // read IMU data and convert to delta angles and velocities
     readIMUData();
 
+    // detect if the filter update has been delayed for too long
     if (dtIMU > 0.2f) {
         // we have stalled for too long - reset states
         ResetVelocity();
@@ -516,14 +525,16 @@ void NavEKF::UpdateFilter()
         StoreStatesReset();
         //Initialise IMU pre-processing states
         readIMUData();
+        // stop the timer used for load measurement
         perf_end(_perf_UpdateFilter);
         return;
     }
 
-    // Check if on ground
+    // check if on ground
     OnGroundCheck();
 
-    // Define rules used to set staticMode
+    // define rules used to set staticMode
+    // staticMode enables ground operation without GPS by fusing zeros for position and height measurements
     if (onGround && static_mode_demanded()) {
         staticMode = true;
     } else {
@@ -539,7 +550,7 @@ void NavEKF::UpdateFilter()
         prevStaticMode = staticMode;
     }
 
-    // Run the strapdown INS equations every IMU update
+    // run the strapdown INS equations every IMU update
     UpdateStrapdownEquationsNED();
 
     // store the predicted states for subsequent use by measurement fusion
@@ -552,7 +563,6 @@ void NavEKF::UpdateFilter()
 
     // perform a covariance prediction if the total delta angle has exceeded the limit
     // or the time limit will be exceeded at the next IMU update
-    // Do not predict covariance if magnetometer fusion still needs to be performed
     if (((dt >= (covTimeStepMax - dtIMU)) || (summedDelAng.length() > covDelAngMax))) {
         CovariancePrediction();
         covPredStep = true;
@@ -568,24 +578,31 @@ void NavEKF::UpdateFilter()
     SelectMagFusion();
     SelectTasFusion();
 
+    // stop the timer used for load measurement
     perf_end(_perf_UpdateFilter);
 }
 
+// select fusion of velocity, position and height measurements
 void NavEKF::SelectVelPosFusion()
 {
-    // Calculate ratio of VelPos fusion to state prediction setps
+    // calculate ratio of VelPos fusion to state prediction steps
     uint8_t velPosFuseStepRatio = floor(dtVelPos/dtIMU + 0.5f);
 
-    // Calculate the scale factor to be applied to the measurement variance to account for
+    // calculate the scale factor to be applied to GPS measurement variance to account for
     // the fact we repeat fusion of the same measurement to provide a smoother output
     gpsVarScaler = _msecGpsAvg/(1000.0f*dtVelPos);
-    // Calculate the scale factor to be applied to the measurement variance to account for
+
+    // calculate the scale factor to be applied to height measurement variance to account for
     // the fact we repeat fusion of the same measurement to provide a smoother output
     hgtVarScaler = _msecHgtAvg/(1000.0f*dtVelPos);
 
+    // check for new data, specify which measurements should be used and check data for freshness
     if (!staticMode) {
-        // Command fusion of GPS measurements if new ones available
+
+        // check for and read new GPS data
         readGpsData();
+
+        // command fusion of GPS data and reset states as required
         if (newDataGps) {
             // reset data arrived flag
             newDataGps = false;
@@ -607,10 +624,10 @@ void NavEKF::SelectVelPosFusion()
             fusePosData = false;
         }
 
-        // Read height data
+        // check for and read new height data
         readHgtData();
 
-        // Command fusion of height measurements if new ones available
+        // command fusion of height data
         if (newDataHgt)
         {
             // reset data arrived flag
@@ -618,21 +635,21 @@ void NavEKF::SelectVelPosFusion()
             // enable fusion
             fuseHgtData = true;
         } else if (hal.scheduler->millis() > lastHgtTime_ms + _msecHgtAvg + 40) {
-            // Timeout fusion of height data if stale. Needed because we repeatedly fuse the same
+            // timeout fusion of height data if stale. Needed because we repeatedly fuse the same
             // measurement until the next one arrives to provide a smoother output
             fuseHgtData = false;
         }
 
     } else {
-        // we only fuse position and height in static mode
+        // in static mode we only fuse position and height to improve long term numerical stability
         fuseVelData = false;
         fusePosData = true;
         fuseHgtData = true;
     }
 
-    // Perform fusion if conditions are met
+    // perform fusion as commanded, and in accordance with specified time intervals
     if (fuseVelData || fusePosData || fuseHgtData) {
-        // Skip fusion as required to maintain ~dtVelPos time interval between corrections
+        // skip fusion as required to maintain ~dtVelPos time interval between corrections
         if (skipCounter >= velPosFuseStepRatio) {
             FuseVelPosNED();
             // reset counter used to skip update frames
@@ -645,10 +662,13 @@ void NavEKF::SelectVelPosFusion()
 
 }
 
+// select fusion of magnetometer data
 void NavEKF::SelectMagFusion()
 {
+    // check for and read new magnetometer measurements
     readMagData();
-    // Fuse Magnetometer Measurements
+
+    // determine if conditions are right to start a new fusion cycle
     bool dataReady = statesInitialised && useCompass && newDataMag;
     if (dataReady)
     {
@@ -659,11 +679,13 @@ void NavEKF::SelectMagFusion()
     {
         fuseMagData = false;
     }
-    // Magnetometer fusion is always called if enabled because its fusion is spread across 3 time steps to reduce peak load
+
+    // call the function that performs fusion of magnetometer data
     FuseMagnetometer();
 
 }
 
+// select fusion of airspeed measurements
 void NavEKF::SelectTasFusion()
 {
     readAirSpdData();
