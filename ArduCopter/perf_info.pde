@@ -5,7 +5,11 @@
 //  we measure the main loop time
 //
 
-#define PERF_INFO_OVERTIME_THRESHOLD_MICROS 10500
+#if MAIN_LOOP_RATE == 400
+ # define PERF_INFO_OVERTIME_THRESHOLD_MICROS 3000
+#else
+ # define PERF_INFO_OVERTIME_THRESHOLD_MICROS 10500
+#endif
 
 uint16_t perf_info_loop_count;
 uint32_t perf_info_max_time;
