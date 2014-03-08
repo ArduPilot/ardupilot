@@ -189,6 +189,19 @@ static void read_radio()
 
 static void control_failsafe(uint16_t pwm)
 {
+    if (hal.scheduler->millis() - failsafe.last_valid_rc_ms > 1000 || rc_failsafe_active()) {
+        // we do not have valid RC input. Set all primary channel
+        // control inputs to the trim value
+        channel_roll->radio_in     = channel_roll->radio_trim;
+        channel_pitch->radio_in    = channel_pitch->radio_trim;
+        channel_rudder->radio_in   = channel_rudder->radio_trim;
+        channel_throttle->radio_in = channel_throttle->radio_trim;
+        channel_roll->control_in     = 0;
+        channel_pitch->control_in    = 0;
+        channel_rudder->control_in   = 0;
+        channel_throttle->control_in = 0;
+    }
+
     if(g.throttle_fs_enabled == 0)
         return;
 
@@ -204,7 +217,7 @@ static void control_failsafe(uint16_t pwm)
 
         //Check for failsafe and debounce funky reads
     } else if (g.throttle_fs_enabled) {
-        if (throttle_failsafe_level()) {
+        if (rc_failsafe_active()) {
             // we detect a failsafe from radio
             // throttle has dropped below the mark
             failsafe.ch3_counter++;
@@ -299,14 +312,15 @@ static void trim_radio()
 
 /*
   return true if throttle level is below throttle failsafe threshold
+  or RC input is invalid
  */
-static bool throttle_failsafe_level(void)
+static bool rc_failsafe_active(void)
 {
     if (!g.throttle_fs_enabled) {
         return false;
     }
-    if (hal.scheduler->millis() - failsafe.last_valid_rc_ms > 2000) {
-        // we haven't had a valid RC frame for 2 seconds
+    if (hal.scheduler->millis() - failsafe.last_valid_rc_ms > 1000) {
+        // we haven't had a valid RC frame for 1 seconds
         return true;
     }
     if (channel_throttle->get_reverse()) {
