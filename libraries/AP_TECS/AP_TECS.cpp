@@ -340,12 +340,17 @@ void AP_TECS::_update_energies(void)
     // Calculate specific energy rate
     _SPEdot = _integ2_state * GRAVITY_MSS;
     _SKEdot = _integ5_state * _vel_dot;
+
 }
 
 void AP_TECS::_update_throttle(void)
 {
-    // Calculate total energy values
-    _STE_error = _SPE_dem - _SPE_est + _SKE_dem - _SKE_est;
+    // Calculate limits to be applied to potential energy error to prevent over or underspeed occurring due to large height errors
+    float SPE_err_max = 0.5f * _TASmax * _TASmax - _SKE_dem;
+    float SPE_err_min = 0.5f * _TASmin * _TASmin - _SKE_dem;
+
+    // Calculate total energy error
+    _STE_error = constrain_float((_SPE_dem - _SPE_est), SPE_err_min, SPE_err_max) + _SKE_dem - _SKE_est;
     float STEdot_dem = constrain_float((_SPEdot_dem + _SKEdot_dem), _STEdot_min, _STEdot_max);
     float STEdot_error = STEdot_dem - _SPEdot - _SKEdot;
 
