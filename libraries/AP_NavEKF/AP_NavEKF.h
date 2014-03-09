@@ -429,6 +429,7 @@ private:
     Vector11 SQ;                    // intermediate variables used to calculate predicted covariance matrix
     Vector8 SPP;                    // intermediate variables used to calculate predicted covariance matrix
     float IMU1_weighting;           // Weighting applied to use of IMU1. Varies between 0 and 1.
+    bool yawAligned;                // true when the yaw angle has been aligned
 
     // states held by magnetomter fusion across time steps
     // magnetometer X,Y,Z measurements are fused across three time steps

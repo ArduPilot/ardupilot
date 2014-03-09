@@ -219,7 +219,8 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     TASmsecMax(200),            // maximum allowed interval between airspeed measurement updates
     fuseMeNow(false),           // forces airspeed fusion to occur on the IMU frame that data arrives
     staticMode(true),           // staticMode forces position and velocity fusion with zero values
-    prevStaticMode(true)        // staticMode from previous filter update
+    prevStaticMode(true),       // staticMode from previous filter update
+    yawAligned(false)           // set true when heading or yaw angle has been aligned
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     ,_perf_UpdateFilter(perf_alloc(PC_ELAPSED, "EKF_UpdateFilter")),
@@ -385,6 +386,7 @@ void NavEKF::InitialiseFilterDynamic(void)
 
         // calculate yaw angle rel to true north
         yaw = magDecAng - magHeading;
+        yawAligned = true;
 
         // calculate initial filter quaternion states
         initQuat.from_euler(_ahrs->roll, _ahrs->pitch, yaw);
@@ -396,6 +398,7 @@ void NavEKF::InitialiseFilterDynamic(void)
     } else {
         // calculate initial filter quaternion states
         initQuat.from_euler(_ahrs->roll, _ahrs->pitch, 0.0f);
+        yawAligned = false;
     }
 
     // write to state vector
@@ -465,8 +468,10 @@ void NavEKF::InitialiseFilterBootstrap(void)
 
         // calculate yaw angle rel to true north
         yaw = magDecAng - magHeading;
+        yawAligned = true;
     } else {
         yaw = 0.0f;
+        yawAligned = false;
     }
 
     // calculate initial filter quaternion states
@@ -2590,15 +2595,26 @@ bool NavEKF::getLLH(struct Location &loc) const
 void NavEKF::OnGroundCheck()
 {
     const AP_Airspeed *airspeed = _ahrs->get_airspeed();
-    uint8_t lowAirSpd = (!airspeed || !airspeed->use() || airspeed->get_airspeed() * airspeed->get_EAS2TAS() < 8.0f);
-    uint8_t lowGndSpd = (uint8_t)((sq(velNED[0]) + sq(velNED[1]) + sq(velNED[2])) < 4.0f);
-    uint8_t lowHgt = (uint8_t)(fabsf(hgtMea < 15.0f));
-    // inhibit onGround mode if magnetomter calibration is enabled, movement is detected and static mode isn't demanded
+    uint8_t highAirSpd = (airspeed && airspeed->use() && airspeed->get_airspeed() * airspeed->get_EAS2TAS() > 8.0f);
+    float gndSpdSq = sq(velNED[0]) + sq(velNED[1]);
+    uint8_t highGndSpdStage1 = (uint8_t)(gndSpdSq > 9.0f);
+    uint8_t highGndSpdStage2 = (uint8_t)(gndSpdSq > 36.0f);
+    uint8_t highGndSpdStage3 = (uint8_t)(gndSpdSq > 81.0f);
+    uint8_t largeHgt = (uint8_t)(fabsf(hgtMea) > 15.0f);
+    uint8_t inAirSum = highAirSpd + highGndSpdStage1 + highGndSpdStage2 + highGndSpdStage3 + largeHgt;
+    // inhibit onGround mode if magnetometer calibration is enabled, movement is detected and static mode isn't demanded
     if ((_magCal == 1) && (accNavMagHoriz > 0.5f) && !static_mode_demanded() && use_compass()) {
         onGround = false;
     } else {
-        // Go with a majority vote from three criteria
-        onGround = ((lowAirSpd + lowGndSpd + lowHgt) >= 2);
+        // detect on-ground to in-air transition
+        // if we are already on the ground then 3 or more out of 5 criteria are required
+        // if we are in the air then only 2 or more are required
+        // this prevents rapid tansitions
+        if ((onGround && (inAirSum >= 3)) || (!onGround && (inAirSum >= 2))) {
+            onGround = false;
+        } else {
+            onGround = true;
+        }
         // force a yaw alignment if exiting onGround without a compass
         if (!onGround && prevOnGround && !use_compass()) {
             ForceYawAlignment();
@@ -2891,48 +2907,55 @@ void NavEKF::calcEarthRateNED(Vector3f &omega, int32_t latitude) const
 
 /*
 This function is used to do a forced alignment of the yaw angle to aligwith the horizontal velocity
-vector from GPS. It can be used to do in-air resets of the filter, or to align the yaw angle after
-launch or takeoff without a magnetometer.
+vector from GPS. It is used to align the yaw angle after launch or takeoff without a magnetometer.
 */
 void NavEKF::ForceYawAlignment()
 {
     if ((sq(velNED[0]) + sq(velNED[1])) > 16.0f) {
         float roll;
         float pitch;
-        float yaw;
+        float oldYaw;
+        float newYaw;
+        float yawErr;
         // get quaternion from existing filter states and calculate roll, pitch and yaw angles
         Quaternion initQuat;
         Quaternion newQuat;
         for (uint8_t i=0; i<=3; i++) initQuat[i] = states[i];
-        initQuat.to_euler(&roll, &pitch, &yaw);
-        // modify yaw angle from GPS ground course
-        yaw = atan2f(velNED[1],velNED[0]);
-        // Calculate new filter quaternion states from Euler angles
-        newQuat.from_euler(roll, pitch, yaw);
-        for (uint8_t i=0; i<=3; i++) states[i] = newQuat[i];
-        // set the velocity states
-        if (_fusionModeGPS < 2) {
-            states[4] = velNED[0];
-            states[5] = velNED[1];
+        initQuat.to_euler(&roll, &pitch, &oldYaw);
+        // calculate yaw angle from GPS velocity
+        newYaw = atan2f(velNED[1],velNED[0]);
+        // modify yaw angle using GPS ground course if more than 45 degrees away or if not previously aligned
+        yawErr = fabsf(newYaw - oldYaw);
+        if (((yawErr > 0.7854f) && (yawErr < 5.4978f)) || !yawAligned) {
+            // calculate new filter quaternion states from Euler angles
+            newQuat.from_euler(roll, pitch, newYaw);
+            for (uint8_t i=0; i<=3; i++) states[i] = newQuat[i];
+            // the yaw angle is now aligned so update its status
+            yawAligned =  true;
+            // set the velocity states
+            if (_fusionModeGPS < 2) {
+                states[4] = velNED[0];
+                states[5] = velNED[1];
+            }
+            // Reinitialise the quaternion, velocity and position covariances
+            // zero the matrix entries
+            zeroRows(P,0,9);
+            zeroCols(P,0,9);
+            // Quaternions
+            // TODO - maths that sets them based on different roll, yaw and pitch uncertainties
+            P[0][0]   = 1.0e-9f;
+            P[1][1]   = 0.25f*sq(radians(1.0f));
+            P[2][2]   = 0.25f*sq(radians(1.0f));
+            P[3][3]   = 0.25f*sq(radians(1.0f));
+            // Velocities - we could have a big error coming out of static mode due to GPS lag
+            P[4][4]   = 400.0f;
+            P[5][5]   = P[4][4];
+            P[6][6]   = sq(0.7f);
+            // Positions - we could have a big error coming out of static mode due to GPS lag
+            P[7][7]   = 400.0f;
+            P[8][8]   = P[7][7];
+            P[9][9]   = sq(5.0f);
         }
-        // Reinitialise the quaternion, velocity and position covariances
-        // zero the matrix entries
-        zeroRows(P,0,9);
-        zeroCols(P,0,9);
-        // Quaternions
-        // TODO - maths that sets them based on different roll, yaw and pitch uncertainties
-        P[0][0]   = 1.0e-9f;
-        P[1][1]   = 0.25f*sq(radians(1.0f));
-        P[2][2]   = 0.25f*sq(radians(1.0f));
-        P[3][3]   = 0.25f*sq(radians(1.0f));
-        // Velocities - we could have a big error coming out of static mode due to GPS lag
-        P[4][4]   = 400.0f;
-        P[5][5]   = P[4][4];
-        P[6][6]   = sq(0.7f);
-        // Positions - we could have a big error coming out of static mode due to GPS lag
-        P[7][7]   = 400.0f;
-        P[8][8]   = P[7][7];
-        P[9][9]   = sq(5.0f);
     }
 }
 
