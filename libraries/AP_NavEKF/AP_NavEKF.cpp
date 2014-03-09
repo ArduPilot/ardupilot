@@ -541,14 +541,9 @@ void NavEKF::UpdateFilter()
 
     // define rules used to set staticMode
     // staticMode enables ground operation without GPS by fusing zeros for position and height measurements
-    // staticMode is always used when on-grond and magnetometer not used
-    // if exisiting staticMode without a compass, a forced yaw alignment is performed
-    if (onGround && (static_mode_demanded() || !use_compass())) {
+    if (static_mode_demanded()) {
         staticMode = true;
     } else {
-        if (!use_compass() && staticMode) {
-            ForceYawAlignment();
-        }
         staticMode = false;
     }
 
@@ -2598,14 +2593,18 @@ void NavEKF::OnGroundCheck()
     uint8_t lowAirSpd = (!airspeed || !airspeed->use() || airspeed->get_airspeed() * airspeed->get_EAS2TAS() < 8.0f);
     uint8_t lowGndSpd = (uint8_t)((sq(velNED[0]) + sq(velNED[1]) + sq(velNED[2])) < 4.0f);
     uint8_t lowHgt = (uint8_t)(fabsf(hgtMea < 15.0f));
-    // inhibit onGround mode if magnetomter calibration at low speed and height is enabled.
-    // A static check is still applied to prevent excessive compass drift when sitting stationary
-    if ((_magCal == 1) && (accNavMagHoriz > 0.5f)) {
+    // inhibit onGround mode if magnetomter calibration is enabled, movement is detected and static mode isn't demanded
+    if ((_magCal == 1) && (accNavMagHoriz > 0.5f) && !static_mode_demanded() && use_compass()) {
         onGround = false;
     } else {
         // Go with a majority vote from three criteria
         onGround = ((lowAirSpd + lowGndSpd + lowHgt) >= 2);
+        // force a yaw alignment if exiting onGround without a compass
+        if (!onGround && prevOnGround && !use_compass()) {
+            ForceYawAlignment();
+        }
     }
+    prevOnGround = onGround;
 }
 
 void NavEKF::CovarianceInit(float roll, float pitch, float yaw)
