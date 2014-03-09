@@ -359,37 +359,44 @@ void NavEKF::InitialiseFilterDynamic(void)
     // get initial time deltat between IMU measurements (sec)
     dtIMU = _ahrs->get_ins().get_delta_time();
 
-    // calculate initial yaw angle
+    // declare local variables required to calculate initial orientation and magnetic field
     float yaw;
     Matrix3f Tbn;
     Vector3f initMagNED;
-
-    // calculate rotation matrix from body to NED frame
-    Tbn.from_euler(_ahrs->roll, _ahrs->pitch, 0.0f);
-
-    // read the magnetometer data
-    readMagData();
-
-    // rotate the magnetic field into NED axes
-    initMagNED = Tbn*magData;
-
-    // calculate heading of mag field rel to body heading
-    float magHeading = atan2f(initMagNED.y, initMagNED.x);
-
-    // get the magnetic declination
-    float magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
-
-    // calculate yaw angle rel to true north
-    yaw = magDecAng - magHeading;
-
-    // calculate initial filter quaternion states
     Quaternion initQuat;
-    initQuat.from_euler(_ahrs->roll, _ahrs->pitch, yaw);
 
-    // calculate initial Tbn matrix and rotate Mag measurements into NED
-    // to set initial NED magnetic field states
-    initQuat.rotation_matrix(Tbn);
-    initMagNED = Tbn * magData;
+    // calculate initial yaw angle using declination and magnetic field if available
+    // otherwise set yaw to zero
+    if (use_compass()) {
+        // calculate rotation matrix from body to NED frame
+        Tbn.from_euler(_ahrs->roll, _ahrs->pitch, 0.0f);
+
+        // read the magnetometer data
+        readMagData();
+
+        // rotate the magnetic field into NED axes
+        initMagNED = Tbn*magData;
+
+        // calculate heading of mag field rel to body heading
+        float magHeading = atan2f(initMagNED.y, initMagNED.x);
+
+        // get the magnetic declination
+        float magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
+
+        // calculate yaw angle rel to true north
+        yaw = magDecAng - magHeading;
+
+        // calculate initial filter quaternion states
+        initQuat.from_euler(_ahrs->roll, _ahrs->pitch, yaw);
+
+        // calculate initial Tbn matrix and rotate Mag measurements into NED
+        // to set initial NED magnetic field states
+        initQuat.rotation_matrix(Tbn);
+        initMagNED = Tbn * magData;
+    } else {
+        // calculate initial filter quaternion states
+        initQuat.from_euler(_ahrs->roll, _ahrs->pitch, 0.0f);
+    }
 
     // write to state vector
     state.quat = initQuat;
@@ -534,9 +541,14 @@ void NavEKF::UpdateFilter()
 
     // define rules used to set staticMode
     // staticMode enables ground operation without GPS by fusing zeros for position and height measurements
-    if (onGround && static_mode_demanded()) {
+    // staticMode is always used when on-grond and magnetometer not used
+    // if exisiting staticMode without a compass, a forced yaw alignment is performed
+    if (onGround && (static_mode_demanded() || !use_compass())) {
         staticMode = true;
     } else {
+        if (!use_compass() && staticMode) {
+            ForceYawAlignment();
+        }
         staticMode = false;
     }
 
@@ -641,9 +653,16 @@ void NavEKF::SelectVelPosFusion()
 
     } else {
         // in static mode we only fuse position and height to improve long term numerical stability
+        // and only when the rate of change of velocity is less than 0.5g. This prevents attitude errors
+        // due to launch acceleration
         fuseVelData = false;
-        fusePosData = true;
-        fuseHgtData = true;
+        if (accNavMag < 4.9f) {
+            fusePosData = true;
+            fuseHgtData = true;
+        } else {
+            fusePosData = false;
+            fuseHgtData = false;
+        }
     }
 
     // perform fusion as commanded, and in accordance with specified time intervals
@@ -2871,6 +2890,11 @@ void NavEKF::calcEarthRateNED(Vector3f &omega, int32_t latitude) const
     omega.z  = -earthRate*sinf(lat_rad);
 }
 
+/*
+This function is used to do a forced alignment of the yaw angle to aligwith the horizontal velocity
+vector from GPS. It can be used to do in-air resets of the filter, or to align the yaw angle after
+launch or takeoff without a magnetometer.
+*/
 void NavEKF::ForceYawAlignment()
 {
     if ((sq(velNED[0]) + sq(velNED[1])) > 16.0f) {
@@ -2896,20 +2920,20 @@ void NavEKF::ForceYawAlignment()
         // zero the matrix entries
         zeroRows(P,0,9);
         zeroCols(P,0,9);
-        // set quaternion variances
+        // Quaternions
         // TODO - maths that sets them based on different roll, yaw and pitch uncertainties
-        P[0][0]   = 0.25f*sq(radians(1.0f));
-        P[1][1]   = P[0][0];
-        P[2][2]   = P[0][0];
-        P[3][3]   = P[0][0];
-        // set velocty and position state variances
-        // we could have a big error coming out of static mode due to GPS lag
-        P[4][4]   = 400.0f; // assume 20 m/s
+        P[0][0]   = 1.0e-9f;
+        P[1][1]   = 0.25f*sq(radians(1.0f));
+        P[2][2]   = 0.25f*sq(radians(1.0f));
+        P[3][3]   = 0.25f*sq(radians(1.0f));
+        // Velocities - we could have a big error coming out of static mode due to GPS lag
+        P[4][4]   = 400.0f;
         P[5][5]   = P[4][4];
-        P[6][6]   = P[4][4];
-        P[7][7]   = 400.0f; // assume 20 m
+        P[6][6]   = sq(0.7f);
+        // Positions - we could have a big error coming out of static mode due to GPS lag
+        P[7][7]   = 400.0f;
         P[8][8]   = P[7][7];
-        P[9][9]   = P[7][7];
+        P[9][9]   = sq(5.0f);
     }
 }
 
