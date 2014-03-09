@@ -360,7 +360,6 @@ private:
     ftype dt;                       // time lapsed since the last covariance prediction (sec)
     ftype hgtRate;                  // state for rate of change of height filter
     bool onGround;                  // boolean true when the flight vehicle is on the ground (not flying)
-    const bool useCompass;          // boolean true if magnetometer data is being used
     Vector6 innovVelPos;            // innovation output for a group of measurements
     Vector6 varInnovVelPos;         // innovation variance output for a group of measurements
     bool fuseVelData;               // this boolean causes the velNED measurements to be fused

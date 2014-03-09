@@ -214,7 +214,6 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     _ahrs(ahrs),
     _baro(baro),
     state(*reinterpret_cast<struct state_elements *>(&states)),
-    useCompass(true),           // activates fusion of airspeed data
     covTimeStepMax(0.07f),      // maximum time (sec) between covariance prediction updates
     covDelAngMax(0.05f),        // maximum delta angle between covariance prediction updates
     TASmsecMax(200),            // maximum allowed interval between airspeed measurement updates
@@ -444,7 +443,7 @@ void NavEKF::InitialiseFilterBootstrap(void)
     float yaw;
     Matrix3f Tbn;
     Vector3f initMagNED;
-    if (useCompass) {
+    if (use_compass()) {
         // calculate rotation matrix from body to NED frame
         Tbn.from_euler(roll, pitch, 0.0f);
 
@@ -669,7 +668,7 @@ void NavEKF::SelectMagFusion()
     readMagData();
 
     // determine if conditions are right to start a new fusion cycle
-    bool dataReady = statesInitialised && useCompass && newDataMag;
+    bool dataReady = statesInitialised && use_compass() && newDataMag;
     if (dataReady)
     {
         MAGmsecPrev = IMUmsec;
