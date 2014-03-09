@@ -618,7 +618,7 @@ void NavEKF::SelectVelPosFusion()
         // we only fuse position and height in static mode
         fuseVelData = false;
         fusePosData = true;
-        fusePosData = true;
+        fuseHgtData = true;
     }
 
     // Perform fusion if conditions are met
