@@ -744,8 +744,6 @@ void NavEKF::UpdateStrapdownEquationsNED()
     float rotationMag;
     float rotScaler;
     Quaternion qUpdated;
-    float quatMag;
-    float quatMagInv;
     Quaternion deltaQuat;
     const Vector3f gravityNED(0, 0, GRAVITY_MSS);
 
@@ -792,15 +790,8 @@ void NavEKF::UpdateStrapdownEquationsNED()
     qUpdated[3] = states[0]*deltaQuat[3] + states[3]*deltaQuat[0] + states[1]*deltaQuat[2] - states[2]*deltaQuat[1];
 
     // Normalise the quaternions and update the quaternion states
-    quatMag = sqrtf(sq(qUpdated[0]) + sq(qUpdated[1]) + sq(qUpdated[2]) + sq(qUpdated[3]));
-    if (quatMag > 1e-16f)
-    {
-        quatMagInv = 1.0f/quatMag;
-        states[0] = quatMagInv*qUpdated[0];
-        states[1] = quatMagInv*qUpdated[1];
-        states[2] = quatMagInv*qUpdated[2];
-        states[3] = quatMagInv*qUpdated[3];
-    }
+    qUpdated.normalize();
+    state.quat = qUpdated;
 
     // Calculate the body to nav cosine matrix
     Quaternion q(states[0],states[1],states[2],states[3]);
@@ -825,7 +816,7 @@ void NavEKF::UpdateStrapdownEquationsNED()
     // calculate a magnitude of the filtered nav acceleration (required for GPS
     // variance estimation)
     accNavMag = velDotNEDfilt.length();
-    accNavMagHoriz = sqrtf(sq(velDotNEDfilt.x) + sq(velDotNEDfilt.y));
+    accNavMagHoriz = pythagorous2(velDotNEDfilt.x , velDotNEDfilt.y);
 
     // If calculating position save previous velocity
     Vector3f lastVelocity = state.velocity;
@@ -2089,15 +2080,7 @@ void NavEKF::FuseMagnetometer()
                 states[j] = states[j] - Kfusion[j] * innovMag[obsIndex];
             }
             // normalise the quaternion states
-            float quatMag = sqrtf(states[0]*states[0] + states[1]*states[1] + states[2]*states[2] + states[3]*states[3]);
-            if (quatMag > 1e-12f)
-            {
-                for (uint8_t j= 0; j<=3; j++)
-                {
-                    float quatMagInv = 1.0f/quatMag;
-                    states[j] = states[j] * quatMagInv;
-                }
-            }
+            state.quat.normalize();
             // correct the covariance P = (I - K*H)*P
             // take advantage of the empty columns in KH to reduce the
             // number of operations
@@ -2189,12 +2172,12 @@ void NavEKF::FuseAirspeed()
     vwe = statesAtVtasMeasTime[15];
 
     // Calculate the predicted airspeed
-    VtasPred = sqrtf((ve - vwe)*(ve - vwe) + (vn - vwn)*(vn - vwn) + vd*vd);
+    VtasPred = pythagorous3((ve - vwe) , (vn - vwn) , vd);
     // Perform fusion of True Airspeed measurement
     if (VtasPred > 1.0f)
     {
         // Calculate observation jacobians
-		SH_TAS[0] = 1.0f/(sqrtf(sq(ve - vwe) + sq(vn - vwn) + sq(vd)));
+        SH_TAS[0] = 1.0f/VtasPred;
 		SH_TAS[1] = (SH_TAS[0]*(2*ve - 2*vwe))/2;
 		SH_TAS[2] = (SH_TAS[0]*(2*vn - 2*vwn))/2;
         for (uint8_t i=0; i<=21; i++) H_TAS[i] = 0.0f;
