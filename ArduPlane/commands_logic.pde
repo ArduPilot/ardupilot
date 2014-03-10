@@ -159,11 +159,7 @@ static void exit_mission()
 {
     gcs_send_text_fmt(PSTR("Returning to Home"));
     next_nav_command = rally_find_best_cmd(current_loc, home);
-    // To-Do: fix this by converting next_nav_command to cmd?
     next_nav_command.id = MAV_CMD_NAV_LOITER_UNLIM;
-    //nav_command_ID = MAV_CMD_NAV_LOITER_UNLIM;
-    //non_nav_command_ID = WAIT_COMMAND;
-    //handle_process_nav_cmd();
     start_command(next_nav_command);
 }
 
