@@ -467,7 +467,6 @@ static bool have_position;
 // There may be two active commands in Auto mode.
 // This is the command type (eg navigate to waypoint) of the active navigation command
 static uint8_t nav_command_ID          = NO_COMMAND;
-static uint8_t non_nav_command_ID      = NO_COMMAND;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Airspeed
@@ -654,8 +653,6 @@ static struct   AP_Mission::Mission_Command next_WP;
 static struct   Location guided_WP;
 // The location structure information from the Nav command being processed
 static struct   AP_Mission::Mission_Command next_nav_command;
-// The location structure information from the Non-Nav command being processed
-static struct   AP_Mission::Mission_Command next_nonnav_command;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Altitude / Climb rate control
