@@ -424,8 +424,8 @@ static void Log_Write_Performance()
 
 struct PACKED log_Cmd {
     LOG_PACKET_HEADER;
-    uint8_t command_total;
-    uint8_t command_number;
+    uint16_t command_total;
+    uint16_t command_number;
     uint8_t waypoint_id;
     uint8_t waypoint_options;
     uint8_t waypoint_param1;
@@ -439,7 +439,7 @@ static void Log_Write_Cmd(const AP_Mission::Mission_Command& cmd)
 {
     struct log_Cmd pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CMD_MSG),
-        command_total       : (uint8_t)mission.num_commands(),
+        command_total       : mission.num_commands(),
         command_number      : cmd.index,
         waypoint_id         : cmd.id,
         waypoint_options    : cmd.content.location.options,
@@ -706,7 +706,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
       "PM",  "HHIhBHB",    "NLon,NLoop,MaxT,PMT,I2CErr,INSErr,INAVErr" },
     { LOG_CMD_MSG, sizeof(log_Cmd),                 
-      "CMD", "BBBBBeLL",     "CTot,CNum,CId,COpt,Prm1,Alt,Lat,Lng" },
+      "CMD", "HHBBBeLL",     "CTot,CNum,CId,COpt,Prm1,Alt,Lat,Lng" },
     { LOG_ATTITUDE_MSG, sizeof(log_Attitude),       
       "ATT", "IccccCC",      "TimeMS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw" },
     { LOG_MODE_MSG, sizeof(log_Mode),
