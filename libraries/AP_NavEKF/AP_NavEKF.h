@@ -238,6 +238,9 @@ private:
     // determine when to perform fusion of true airspeed measurements
     void SelectTasFusion();
 
+    // determine when to perform fusion of synthetic sideslp measurements
+    void SelectBetaFusion();
+
     // determine when to perform fusion of magnetometer measurements
     void SelectMagFusion();
 
@@ -324,7 +327,8 @@ private:
     float _magVarRateScale;         // scale factor applied to magnetometer variance due to angular rate
     uint16_t _msecGpsAvg;           // average number of msec between GPS measurements
     uint16_t _msecHgtAvg;           // average number of msec between height measurements
-    float dtVelPos;                 // number of seconds between position and velocity corrections
+    uint16_t _msecBetaAvg;          // maximum number of msec between synthetic sideslip measurements
+    float dtVelPos;                 // average of msec between position and velocity corrections
 
     // Variables
     uint8_t skipCounter;            // counter used to skip position and height corrections to achieve _skipRatio
@@ -391,6 +395,7 @@ private:
     bool posVelFuseStep;            // boolean set to true when position and velocity fusion is being performed
     bool tasFuseStep;               // boolean set to true when airspeed fusion is being performed
     uint32_t TASmsecPrev;           // time stamp of last TAS fusion step
+    uint32_t BETAmsecPrev;          // time stamp of last synthetic sideslip fusion step
     const uint32_t TASmsecMax;      // maximum allowed interval between TAS fusion steps
     uint32_t MAGmsecPrev;           // time stamp of last compass fusion step
     uint32_t HGTmsecPrev;           // time stamp of last height measurement fusion step

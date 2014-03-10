@@ -217,7 +217,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     covTimeStepMax(0.07f),      // maximum time (sec) between covariance prediction updates
     covDelAngMax(0.05f),        // maximum delta angle between covariance prediction updates
     TASmsecMax(200),            // maximum allowed interval between airspeed measurement updates
-    fuseMeNow(false),           // forces airspeed fusion to occur on the IMU frame that data arrives
+    fuseMeNow(false),           // forces airspeed and sythetic sideslip fusion to occur on the IMU frame that data arrives
     staticMode(true),           // staticMode forces position and velocity fusion with zero values
     prevStaticMode(true),       // staticMode from previous filter update
     yawAligned(false)           // set true when heading or yaw angle has been aligned
@@ -247,6 +247,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     _gyroBiasNoiseScaler    = 3.0f;     // scale factor applied to gyro bias state process variance when on ground
     _msecGpsAvg             = 200;      // average number of msec between GPS measurements
     _msecHgtAvg             = 100;      // average number of msec between height measurements
+    _msecBetaAvg            = 100;      // average number of msec between synthetic sideslip measurements
     dtVelPos                = 0.02;     // number of seconds between position and velocity corrections. This should be a multiple of the imu update interval.
     // Misc initial conditions
     hgtRate = 0.0f;
@@ -584,10 +585,11 @@ void NavEKF::UpdateFilter()
         covPredStep = false;
     }
 
-    // Update states using GPS, altimeter, compass and airspeed observations
+    // Update states using GPS, altimeter, compass, airspeed and synthetic sideslip observations
     SelectVelPosFusion();
     SelectMagFusion();
     SelectTasFusion();
+    SelectBetaFusion();
 
     // stop the timer used for load measurement
     perf_end(_perf_UpdateFilter);
@@ -703,7 +705,7 @@ void NavEKF::SelectMagFusion()
 
 }
 
-// select fusion of airspeed measurements
+// select fusion of true airspeed measurements
 void NavEKF::SelectTasFusion()
 {
     readAirSpdData();
@@ -714,13 +716,23 @@ void NavEKF::SelectTasFusion()
     if (tasDataWaiting && (!magFusePerformed || timeout || fuseMeNow))
     {
         FuseAirspeed();
-        // If we have no compass to help constrain heading drift during non-manoeuvring flight and are using an airspeed sensor,
-        // then we can use a a zero sideslip assumption to constrain heading drift
-        if (!use_compass()) {
-            FuseSideslip();
-        }
         TASmsecPrev = IMUmsec;
         tasDataWaiting = false;
+    }
+}
+
+// select fusion of synthetic sideslip measurements
+void NavEKF::SelectBetaFusion()
+{
+    // Determine if synthetic sidelsip data should be fused
+    // synthetic sidelip fusion only works for fixed wing aircraft and relies on the average sideslip being close to zero
+    // it requires a stable wind estimate for best results and should not be used for aerobatic flight
+    // we only fuse synthetic sideslip measurements if we are not using a compass, are not on the ground, enough time has
+    // lapsed since our last fusion and we have not fused magnetometer data on this time step or the immediate fusion
+    // flag is set
+    if (!use_compass() && !onGround  && ((IMUmsec - BETAmsecPrev) >= _msecBetaAvg) && (!magFusePerformed || fuseMeNow)) {
+        FuseSideslip();
+        BETAmsecPrev = IMUmsec;
     }
 }
 
@@ -2308,15 +2320,15 @@ void NavEKF::FuseSideslip()
     float innovBeta;
 
     // Copy required states to local variable names
-    q0 = statesAtVtasMeasTime[0];
-    q1 = statesAtVtasMeasTime[1];
-    q2 = statesAtVtasMeasTime[2];
-    q3 = statesAtVtasMeasTime[3];
-    vn = statesAtVtasMeasTime[4];
-    ve = statesAtVtasMeasTime[5];
-    vd = statesAtVtasMeasTime[6];
-    vwn = statesAtVtasMeasTime[14];
-    vwe = statesAtVtasMeasTime[15];
+    q0 = states[0];
+    q1 = states[1];
+    q2 = states[2];
+    q3 = states[3];
+    vn = states[4];
+    ve = states[5];
+    vd = states[6];
+    vwn = states[14];
+    vwe = states[15];
 
     // Calculate predicted wind relative velocity in NED
     vel_rel_wind.x = vn - vwn;
@@ -2706,9 +2718,9 @@ void NavEKF::CopyAndFixCovariances()
             }
         }
     }
-    // if we flying, but not using airspeed, we want all the off-diagonals for the wind
+    // if we flying and are not using airspeed and are not using synthetic sideslip measurements, we want all the off-diagonals for the wind
     // states to remain zero and want to keep the old variances for these states
-    else if (!useAirspeed()) {
+    else if (!useAirspeed() && use_compass()) {
         // copy calculated variances we want to propagate
         for (uint8_t i=0; i<=13; i++) {
             P[i][i] = nextP[i][i];
@@ -3009,6 +3021,7 @@ void NavEKF::ZeroVariables()
     hgtFailTime = 0;
     storeIndex = 0;
     TASmsecPrev = 0;
+    BETAmsecPrev = 0;
     MAGmsecPrev = 0;
     HGTmsecPrev = 0;
     lastMagUpdate = 0;
