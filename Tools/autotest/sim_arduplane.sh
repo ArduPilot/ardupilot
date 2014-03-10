@@ -10,7 +10,7 @@ USE_GDB=0
 CLEAN_BUILD=0
 
 # parse options. Thanks to http://wiki.bash-hackers.org/howto/getopts_tutorial
-while getopts ":I:" opt; do
+while getopts ":I:VGc" opt; do
   case $opt in
     I)
       INSTANCE=$OPTARG
@@ -64,8 +64,10 @@ make sitl -j4 || {
 cmd="/tmp/ArduPlane.build/ArduPlane.elf -I$INSTANCE"
 
 if [ $USE_VALGRIND == 1 ]; then
-    $autotest/run_in_terminal_window.sh "ardupilot (valgrind)" valgrind -q $cmd || exit 1
+    echo "Using valgrind"
+    $autotest/run_in_terminal_window.sh "ardupilot (valgrind)" valgrind $cmd || exit 1
 elif [ $USE_GDB == 1 ]; then
+    echo "Using gdb"
     tfile=$(mktemp)
     echo r > $tfile
     $autotest/run_in_terminal_window.sh "ardupilot (gdb)" gdb -x $tfile --args $cmd || exit 1
