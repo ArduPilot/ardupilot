@@ -267,10 +267,6 @@ static void startup_ground(void)
 	// ---------------------------
 	trim_radio();
 
-	// initialize commands
-	// -------------------
-	init_commands();
-
     hal.uartA->set_blocking_writes(false);
     hal.uartC->set_blocking_writes(false);
 
