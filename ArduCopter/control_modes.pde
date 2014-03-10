@@ -198,7 +198,7 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 				}
 
                 // create new mission command
-                AP_Mission::Mission_Command cmd;
+                AP_Mission::Mission_Command cmd  = {};
 
                 // if the mission is empty save a takeoff command
                 if(mission.num_commands() == 0) {
