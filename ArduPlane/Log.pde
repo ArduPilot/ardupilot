@@ -229,8 +229,8 @@ static void Log_Write_Performance()
 
 struct PACKED log_Cmd {
     LOG_PACKET_HEADER;
-    uint8_t command_total;
-    uint8_t command_number;
+    uint16_t command_total;
+    uint16_t command_number;
     uint8_t waypoint_id;
     uint8_t waypoint_options;
     uint8_t waypoint_param1;
@@ -290,7 +290,7 @@ static void Log_Write_Camera()
 struct PACKED log_Startup {
     LOG_PACKET_HEADER;
     uint8_t startup_type;
-    uint8_t command_total;
+    uint16_t command_total;
 };
 
 static void Log_Write_Startup(uint8_t type)
@@ -564,11 +564,11 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
       "PM",  "IHIhhhBH", "LTime,MLC,gDt,GDx,GDy,GDz,I2CErr,INSErr" },
     { LOG_CMD_MSG, sizeof(log_Cmd),                 
-      "CMD", "BBBBBeLL",   "CTot,CNum,CId,COpt,Prm1,Alt,Lat,Lng" },
+      "CMD", "HHBBBeLL",   "CTot,CNum,CId,COpt,Prm1,Alt,Lat,Lng" },
     { LOG_CAMERA_MSG, sizeof(log_Camera),                 
       "CAM", "IHLLeccC",   "GPSTime,GPSWeek,Lat,Lng,Alt,Roll,Pitch,Yaw" },
     { LOG_STARTUP_MSG, sizeof(log_Startup),         
-      "STRT", "BB",         "SType,CTot" },
+      "STRT", "BH",         "SType,CTot" },
     { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     
       "CTUN", "Icccchhf",    "TimeMS,NavRoll,Roll,NavPitch,Pitch,ThrOut,RdrOut,AccY" },
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),         
@@ -624,7 +624,7 @@ static void start_logging()
 
 // dummy functions
 static void Log_Write_Startup(uint8_t type) {}
-static void Log_Write_Cmd(uint8_t num, const struct Location *wp) {}
+static void Log_Write_Cmd(const AP_Mission::Mission_Command& cmd) {}
 static void Log_Write_Current() {}
 static void Log_Write_Nav_Tuning() {}
 static void Log_Write_TECS_Tuning() {}
