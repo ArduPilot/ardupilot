@@ -215,8 +215,8 @@ void AP_TECS::_update_speed(void)
     _TAS_dem  = _EAS_dem * EAS2TAS;
     if (_landAirspeed > -1 && _ahrs.airspeed_sensor_enabled() &&
            (_flight_stage == FLIGHT_LAND_APPROACH || _flight_stage== FLIGHT_LAND_FINAL)) {
-        _TASmax = _landAirspeed;
-        _TASmin = _landAirspeed;
+        _TASmax = _landAirspeed * EAS2TAS;
+        _TASmin = _landAirspeed * EAS2TAS;
     } else { //not landing, or not using TECS_LAND_ASPD parameter
         _TASmax   = aparm.airspeed_max * EAS2TAS;
         _TASmin   = aparm.airspeed_min * EAS2TAS;
@@ -456,7 +456,7 @@ void AP_TECS::_update_throttle_option(int16_t throttle_nudge)
     //TECS_LAND_THR param then use it
     if ((_flight_stage == FLIGHT_LAND_APPROACH || _flight_stage== FLIGHT_LAND_FINAL) &&
            _landThrottle > -1) {            
-        nomThr = _landThrottle * 0.01f;
+        nomThr = (_landThrottle + throttle_nudge) * 0.01f;
     } else { //not landing or not using TECS_LAND_THR parameter
 		nomThr = (aparm.throttle_cruise + throttle_nudge)* 0.01f;
     }
