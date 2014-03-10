@@ -61,11 +61,6 @@ enum mode {
 #define FAILSAFE_EVENT_GCS      (1<<1)
 #define FAILSAFE_EVENT_RC       (1<<2)
 
-// Commands - Note that APM now uses a subset of the MAVLink protocol commands.  See enum MAV_CMD in the GCS_Mavlink library
-#define CMD_BLANK 0 // there is no command stored in the mem location requested
-#define NO_COMMAND 0
-#define WAIT_COMMAND 255
-
 //repeating events
 #define NO_REPEAT 0
 #define CH_5_TOGGLE 1
