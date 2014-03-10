@@ -108,7 +108,7 @@ public:
     mission_state state() const { return _flags.state; }
 
     /// num_commands - returns total number of commands in the mission
-    uint8_t num_commands() const { return _cmd_total; }
+    uint16_t num_commands() const { return _cmd_total; }
 
     /// start - resets current commands to point to the beginning of the mission
     ///     To-Do: should we validate the mission first and return true/false?
