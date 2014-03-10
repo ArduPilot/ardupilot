@@ -197,8 +197,8 @@ static void Log_Write_Performance()
 struct PACKED log_Cmd {
     LOG_PACKET_HEADER;
     uint32_t time_ms;
-    uint8_t command_total;
-    uint8_t command_number;
+    uint16_t command_total;
+    uint16_t command_number;
     uint8_t waypoint_id;
     uint8_t waypoint_options;
     uint8_t waypoint_param1;
@@ -208,19 +208,19 @@ struct PACKED log_Cmd {
 };
 
 // Write a command processing packet. Total length : 19 bytes
-static void Log_Write_Cmd(uint8_t num, const struct Location *wp)
+static void Log_Write_Cmd(const AP_Mission::Mission_Command& cmd)
 {
     struct log_Cmd pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CMD_MSG),
         time_ms             : millis(),
-        command_total       : g.command_total,
-        command_number      : num,
-        waypoint_id         : wp->id,
-        waypoint_options    : wp->options,
-        waypoint_param1     : wp->p1,
-        waypoint_altitude   : wp->alt,
-        waypoint_latitude   : wp->lat,
-        waypoint_longitude  : wp->lng
+        command_total       : mission.num_commands(),
+        command_number      : cmd.index,
+        waypoint_id         : cmd.id,
+        waypoint_options    : cmd.content.location.options,
+        waypoint_param1     : cmd.p1,
+        waypoint_altitude   : cmd.content.location.alt,
+        waypoint_latitude   : cmd.content.location.lat,
+        waypoint_longitude  : cmd.content.location.lng
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -279,7 +279,7 @@ struct PACKED log_Startup {
     LOG_PACKET_HEADER;
     uint32_t time_ms;
     uint8_t startup_type;
-    uint8_t command_total;
+    uint16_t command_total;
 };
 
 static void Log_Write_Startup(uint8_t type)
@@ -288,15 +288,15 @@ static void Log_Write_Startup(uint8_t type)
         LOG_PACKET_HEADER_INIT(LOG_STARTUP_MSG),
         time_ms         : millis(),
         startup_type    : type,
-        command_total   : g.command_total
+        command_total   : mission.num_commands()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 
     // write all commands to the dataflash as well
-    struct Location cmd;
-    for (uint8_t i = 0; i <= g.command_total; i++) {
-        cmd = get_cmd_with_index(i);
-        Log_Write_Cmd(i, &cmd);
+    AP_Mission::Mission_Command cmd;
+    for (uint8_t i = 0; i < mission.num_commands(); i++) {
+        mission.read_cmd_from_storage(i,cmd);
+        Log_Write_Cmd(cmd);
     }
 }
 
@@ -535,7 +535,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
       "PM",  "IIHIhhhBH", "TimeMS,LTime,MLC,gDt,GDx,GDy,GDz,I2CErr,INSErr" },
     { LOG_CMD_MSG, sizeof(log_Cmd),                 
-      "CMD", "IBBBBBeLL",   "TimeMS,CTot,CNum,CId,COpt,Prm1,Alt,Lat,Lng" },
+      "CMD", "IHHBBBeLL",   "TimeMS,CTot,CNum,CId,COpt,Prm1,Alt,Lat,Lng" },
     { LOG_CAMERA_MSG, sizeof(log_Camera),                 
       "CAM", "IIHLLeccC",   "TimeMS,GPSTime,GPSWeek,Lat,Lng,Alt,Roll,Pitch,Yaw" },
     { LOG_STARTUP_MSG, sizeof(log_Startup),         
@@ -596,7 +596,7 @@ static void start_logging()
 
 // dummy functions
 static void Log_Write_Startup(uint8_t type) {}
-static void Log_Write_Cmd(uint8_t num, const struct Location *wp) {}
+static void Log_Write_Cmd(const AP_Mission::Mission_Command& cmd) {}
 static void Log_Write_Current() {}
 static void Log_Write_Nav_Tuning() {}
 static void Log_Write_Performance() {}
