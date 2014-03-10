@@ -210,10 +210,6 @@ static bool verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
         return verify_change_alt();
         break;
 
-    case WAIT_COMMAND:
-        return false;
-        break;
-
     // do commands (always return true)
     case MAV_CMD_DO_CHANGE_SPEED:
     case MAV_CMD_DO_SET_HOME:
