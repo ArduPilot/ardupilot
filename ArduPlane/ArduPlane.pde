@@ -460,13 +460,6 @@ static uint8_t ground_start_count      = 5;
 // true if we have a position estimate from AHRS
 static bool have_position;
 
-////////////////////////////////////////////////////////////////////////////////
-// Location & Navigation
-////////////////////////////////////////////////////////////////////////////////
-
-// There may be two active commands in Auto mode.
-// This is the command type (eg navigate to waypoint) of the active navigation command
-static uint8_t nav_command_ID          = NO_COMMAND;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Airspeed
@@ -1396,9 +1389,9 @@ static void update_alt()
         if (control_mode==AUTO) {
             if (takeoff_complete == false) {
                 flight_stage = AP_SpdHgtControl::FLIGHT_TAKEOFF;
-            } else if (nav_command_ID == MAV_CMD_NAV_LAND && land_complete == true) {
+            } else if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND && land_complete == true) {
                 flight_stage = AP_SpdHgtControl::FLIGHT_LAND_FINAL;
-            } else if (nav_command_ID == MAV_CMD_NAV_LAND) {
+            } else if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
                 flight_stage = AP_SpdHgtControl::FLIGHT_LAND_APPROACH; 
             }
         }
