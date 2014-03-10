@@ -27,7 +27,7 @@ static void read_control_switch()
 		set_mode((enum mode)modes[switchPosition].get());
 
 		oldSwitchPosition = switchPosition;
-		prev_WP = current_loc;
+		prev_WP.content.location = current_loc;
 
 		// reset speed integrator
         g.pidSpeedThrottle.reset_I();
@@ -72,36 +72,28 @@ static void read_trim_switch()
 				if (control_mode == MANUAL) {
                     hal.console->println_P(PSTR("Erasing waypoints"));
                     // if SW7 is ON in MANUAL = Erase the Flight Plan
-					g.command_total.set_and_save(CH7_wp_index);
-                    g.command_total = 0;
-                    g.command_index =0;
-                    nav_command_index = 0;
+					mission.clear();
                     if (channel_steer->control_in > 3000) {
 						// if roll is full right store the current location as home
                         init_home();
                     }
-                    CH7_wp_index = 1;     
 					return;
 				} else if (control_mode == LEARNING || control_mode == STEERING) {    
                     // if SW7 is ON in LEARNING = record the Wp
-                    // set the next_WP (home is stored at 0)
 
-                    hal.console->printf_P(PSTR("Learning waypoint %u"), (unsigned)CH7_wp_index);        
-                    current_loc.id = MAV_CMD_NAV_WAYPOINT;  
-    
-                    // store the index
-                    g.command_total.set_and_save(CH7_wp_index);
-                    g.command_total = CH7_wp_index;
-                    g.command_index = CH7_wp_index;
-                    nav_command_index = 0;
-                                   
-                    // save command
-                    set_cmd_with_index(current_loc, CH7_wp_index);
-                                  
-                    // increment index
-                    CH7_wp_index++; 
-                    CH7_wp_index = constrain_int16(CH7_wp_index, 1, MAX_WAYPOINTS);
+				    // create new mission command
+				    AP_Mission::Mission_Command cmd = {};
 
+				    // set new waypoint to current location
+				    cmd.content.location = current_loc;
+
+				    // make the new command to a waypoint
+				    cmd.id = MAV_CMD_NAV_WAYPOINT;
+
+				    // save command
+				    if(mission.add_cmd(cmd)) {
+                        hal.console->printf_P(PSTR("Learning waypoint %u"), (unsigned)mission.num_commands());
+				    }
                 } else if (control_mode == AUTO) {    
                     // if SW7 is ON in AUTO = set to RTL  
                     set_mode(RTL);
