@@ -62,6 +62,7 @@ public:
         k_param_compass_enabled = 130,
         k_param_steering_learn, // unused
         k_param_NavEKF,  // Extended Kalman Filter Inertial Navigation Group
+        k_param_mission, // mission library
 
         // 140: battery controls
         k_param_battery_monitoring = 140,   // deprecated, can be deleted
@@ -137,8 +138,8 @@ public:
         //
         // 220: Waypoint data
         //
-        k_param_command_total = 220,
-        k_param_command_index,
+        k_param_command_total = 220,    // unused
+        k_param_command_index,          // unused
         k_param_waypoint_radius,
 
         //
@@ -268,8 +269,6 @@ public:
     
     // Waypoints
     //
-    AP_Int8     command_total;
-    AP_Int8     command_index;
     AP_Float    waypoint_radius;
 
     // PID controllers

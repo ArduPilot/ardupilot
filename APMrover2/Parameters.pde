@@ -390,9 +390,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
 	GSCALAR(mode6,           "MODE6",         MODE_6),
 
-	GSCALAR(command_total,          "CMD_TOTAL",        0),
-	GSCALAR(command_index,          "CMD_INDEX",        0),
-
     // @Param: WP_RADIUS
     // @DisplayName: Waypoint radius
     // @Description: The distance in meters from a waypoint when we consider the waypoint has been reached. This determines when the rover will turn along the next waypoint path.
@@ -506,6 +503,10 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/AP_NavEKF/AP_NavEKF.cpp
     GOBJECTN(ahrs.get_NavEKF(), NavEKF, "EKF_", NavEKF),
 #endif
+
+    // @Group: MIS_
+    // @Path: ../libraries/AP_Mission/AP_Mission.cpp
+    GOBJECT(mission, "MIS_",       AP_Mission),
 
 	AP_VAREND
 };

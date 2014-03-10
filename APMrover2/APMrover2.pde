@@ -71,6 +71,7 @@
 #include <AP_InertialSensor.h> // Inertial Sensor (uncalibated IMU) Library
 #include <AP_AHRS.h>         // ArduPilot Mega DCM Library
 #include <AP_NavEKF.h>
+#include <AP_Mission.h>     // Mission command library
 #include <PID.h>            // PID library
 #include <RC_Channel.h>     // RC Channel Library
 #include <AP_RangeFinder.h>	// Range finder library
@@ -298,6 +299,15 @@ static AP_Navigation *nav_controller = &L1_controller;
 // steering controller
 static AP_SteerController steerController(ahrs);
 
+////////////////////////////////////////////////////////////////////////////////
+// Mission library
+// forward declaration to avoid compiler errors
+////////////////////////////////////////////////////////////////////////////////
+static bool start_command(const AP_Mission::Mission_Command& cmd);
+static bool verify_command(const AP_Mission::Mission_Command& cmd);
+static void exit_mission();
+AP_Mission mission(ahrs, &start_command, &verify_command, &exit_mission);
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 SITL sitl;
 #endif
@@ -421,14 +431,6 @@ static bool have_position;
 
 static bool rtl_complete = false;
 
-// There may be two active commands in Auto mode.  
-// This indicates the active navigation command by index number
-static uint8_t	nav_command_index;					
-// This indicates the active non-navigation command by index number
-static uint8_t	non_nav_command_index;				
-// This is the command type (eg navigate to waypoint) of the active navigation command
-static uint8_t	nav_command_ID		= NO_COMMAND;	
-static uint8_t	non_nav_command_ID	= NO_COMMAND;	
 
 // ground speed error in m/s
 static float	groundspeed_error;	
@@ -471,9 +473,6 @@ static int16_t throttle_last = 0, throttle = 500;
 // When CH7 goes LOW PWM from HIGH PWM, this value will have been set true
 // This allows advanced functionality to know when to execute
 static bool ch7_flag;
-// This register tracks the current Mission Command index when writing
-// a mission using CH7 in flight
-static int8_t CH7_wp_index;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Battery Sensors
@@ -515,16 +514,11 @@ static const struct	Location &home = ahrs.get_home();
 // Flag for if we have g_gps lock and have set the home location
 static bool	home_is_set;
 // The location of the previous waypoint.  Used for track following and altitude ramp calculations
-static struct 	Location prev_WP;
+static struct 	AP_Mission::Mission_Command prev_WP;
 // The location of the current/active waypoint.  Used for track following
-static struct 	Location next_WP;
+static struct 	AP_Mission::Mission_Command next_WP;
 // The location of the active waypoint in Guided mode.
 static struct  	Location guided_WP;
-
-// The location structure information from the Nav command being processed
-static struct 	Location next_nav_command;	
-// The location structure information from the Non-Nav command being processed
-static struct 	Location next_nonnav_command;
 
 ////////////////////////////////////////////////////////////////////////////////
 // IMU variables
@@ -967,7 +961,7 @@ static void update_navigation()
         break;
 
     case AUTO:
-		verify_commands();
+		mission.update();
         break;
 
     case RTL:
