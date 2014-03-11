@@ -316,8 +316,6 @@ bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) con
 
     // exit immediately if index is beyond last command but we always let cmd #0 (i.e. home) be read
     if (index > _cmd_total && index != 0) {
-        // return a command with a blank id
-        cmd.id = AP_MISSION_CMD_ID_NONE;
         return false;
     }
 
@@ -325,6 +323,7 @@ bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) con
     if (index == 0) {
         cmd.index = 0;
         cmd.id = MAV_CMD_NAV_WAYPOINT;
+        cmd.p1 = 0;
         cmd.content.location = _ahrs.get_home();
     }else{
         // Find out proper location in memory by using the start_byte position + the index
@@ -395,7 +394,7 @@ bool AP_Mission::write_cmd_to_storage(uint16_t index, Mission_Command& cmd)
 ///     home is taken directly from ahrs
 void AP_Mission::write_home_to_storage()
 {
-    Mission_Command home_cmd;
+    Mission_Command home_cmd = {};
     home_cmd.id = MAV_CMD_NAV_WAYPOINT;
     home_cmd.content.location = _ahrs.get_home();
     write_cmd_to_storage(0,home_cmd);
@@ -886,7 +885,10 @@ bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool i
     // search until the end of the mission command list
     while(cmd_index < _cmd_total) {
         // load the next command
-        read_cmd_from_storage(cmd_index, temp_cmd);
+        if (!read_cmd_from_storage(cmd_index, temp_cmd)) {
+            // this should never happen because of check above but just in case
+            return false;
+        }
 
         // check for do-jump command
         if (temp_cmd.id == MAV_CMD_DO_JUMP) {
