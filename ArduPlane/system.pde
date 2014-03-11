@@ -268,6 +268,9 @@ static void startup_ground(void)
     // ------------------------------------
     //save_EEPROM_groundstart();
 
+    // initialise mission library
+    mission.init();
+
     // Makes the servos wiggle - 3 times signals ready to fly
     // -----------------------
     if (!g.skip_gyro_cal) {
