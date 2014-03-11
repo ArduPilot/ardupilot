@@ -267,6 +267,9 @@ static void startup_ground(void)
 	// ---------------------------
 	trim_radio();
 
+    // initialise mission library
+    mission.init();
+
     hal.uartA->set_blocking_writes(false);
     hal.uartC->set_blocking_writes(false);
 
