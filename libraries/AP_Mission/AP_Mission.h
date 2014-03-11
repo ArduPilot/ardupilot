@@ -23,8 +23,10 @@
 #include <AP_HAL.h>
 
 // definitions
+#define AP_MISSION_EEPROM_VERSION           0x65AD  // version number stored in first four bytes of eeprom.  increment this by one when eeprom format is changed
 #define AP_MISSION_EEPROM_MAX_ADDR          4096    // parameters get the first 1536 bytes of EEPROM, remainder is for waypoints
-#define AP_MISSION_EEPROM_START_BYTE        0x600   // where in memory home WP is stored, all mission commands appear afterthis
+#define AP_MISSION_EEPROM_VERSION_ADDR      0x600   // where version number is stored in eeprom
+#define AP_MISSION_EEPROM_START_BYTE        0x604   // where in memory home WP is stored, all mission commands appear after this
 #define AP_MISSION_EEPROM_COMMAND_SIZE      15      // size in bytes of all mission commands
 #define AP_MISSION_FENCEPOINTS_MAX          6       // we reserve space for 6 fence points at the end of EEPROM although this is not currently implemented
 #define AP_MISSION_FENCEPOINTS_SIZE         sizeof(Vector2l)    // each fence points size in eeprom
@@ -103,6 +105,9 @@ public:
     ///
     /// public mission methods
     ///
+
+    /// init - initialises this library including checks the version in eeprom matches this library
+    void init();
 
     /// status - returns the status of the mission (i.e. Mission_Started, Mission_Complete, Mission_Stopped
     mission_state state() const { return _flags.state; }
@@ -239,6 +244,10 @@ private:
 
     /// increment_jump_times_run - increments the recorded number of times the jump command has been run
     void increment_jump_times_run(Mission_Command& cmd);
+
+    /// check_eeprom_version - checks version of missions stored in eeprom matches this library
+    /// command list will be cleared if they do not match
+    void check_eeprom_version();
 
     // references to external libraries
     const AP_AHRS&   _ahrs;      // used only for home position

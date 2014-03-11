@@ -24,6 +24,14 @@ extern const AP_HAL::HAL& hal;
 /// public mission methods
 ///
 
+/// init - initialises this library including checks the version in eeprom matches this library
+void AP_Mission::init()
+{
+    // check_eeprom_version - checks version of missions stored in eeprom matches this library
+    // command list will be cleared if they do not match
+    check_eeprom_version();
+}
+
 /// start - resets current commands to point to the beginning of the mission
 ///     To-Do: should we validate the mission first and return true/false?
 void AP_Mission::start()
@@ -1032,4 +1040,18 @@ void AP_Mission::increment_jump_times_run(Mission_Command& cmd)
     // if we've gotten this far then the _jump_tracking array must be full
     // To-Do: log an error
     return;
+}
+
+// check_eeprom_version - checks version of missions stored in eeprom matches this library
+// command list will be cleared if they do not match
+void AP_Mission::check_eeprom_version()
+{
+    uint32_t eeprom_version = hal.storage->read_dword(AP_MISSION_EEPROM_VERSION_ADDR);
+
+    // if eeprom version does not match, clear the command list and update the eeprom version
+    if (eeprom_version != AP_MISSION_EEPROM_VERSION) {
+        if (clear()) {
+            hal.storage->write_dword(AP_MISSION_EEPROM_VERSION_ADDR, AP_MISSION_EEPROM_VERSION);
+        }
+    }
 }
