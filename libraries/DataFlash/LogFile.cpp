@@ -961,3 +961,20 @@ void DataFlash_Class::Log_Write_MavCmd(uint16_t cmd_total, const mavlink_mission
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
+
+void DataFlash_Class::Log_Write_Radio(const mavlink_radio_t &packet) 
+{
+    struct log_Radio pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_RADIO_MSG),
+        time_ms      : hal.scheduler->millis(),
+        rssi         : packet.rssi,
+        remrssi      : packet.remrssi,
+        txbuf        : packet.txbuf,
+        noise        : packet.noise,
+        remnoise     : packet.remnoise,
+        rxerrors     : packet.rxerrors,
+        fixed        : packet.fixed
+    };
+    WriteBlock(&pkt, sizeof(pkt)); 
+}
+

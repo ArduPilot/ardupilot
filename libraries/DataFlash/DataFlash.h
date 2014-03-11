@@ -59,6 +59,7 @@ public:
     void Log_Write_EKF(AP_AHRS_NavEKF &ahrs);
 #endif
     void Log_Write_MavCmd(uint16_t cmd_total, const mavlink_mission_item_t& mav_cmd);
+    void Log_Write_Radio(const mavlink_radio_t &packet);
     void Log_Write_Message(const char *message);
     void Log_Write_Message_P(const prog_char_t *message);
 
@@ -334,6 +335,18 @@ struct PACKED log_Cmd {
     float altitude;
 };
 
+struct PACKED log_Radio {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    uint8_t rssi;
+    uint8_t remrssi;
+    uint8_t txbuf;
+    uint8_t noise;
+    uint8_t remnoise;
+    uint16_t rxerrors;
+    uint16_t fixed;
+};
+
 #define LOG_COMMON_STRUCTURES \
     { LOG_FORMAT_MSG, sizeof(log_Format), \
       "FMT", "BBnNZ",      "Type,Length,Name,Format,Columns" },    \
@@ -370,7 +383,9 @@ struct PACKED log_Cmd {
     { LOG_EKF4_MSG, sizeof(log_EKF4), \
       "EKF4","Icccccchhhc","TimeMS,SVN,SVE,SVD,SPN,SPE,SPD,SMX,SMY,SMZ,SVT" }, \
     { LOG_CMD_MSG, sizeof(log_Cmd), \
-      "CMD", "IHHHfffffff","TimeMS,CTot,CNum,CId,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt" }
+      "CMD", "IHHHfffffff","TimeMS,CTot,CNum,CId,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt" }, \
+    { LOG_RADIO_MSG, sizeof(log_Radio), \
+      "RAD", "IBBBBBHH", "TimeMS,RSSI,RemRSSI,TxBuf,Noise,RemNoise,RxErrors,Fixed" }
 
 // message types for common messages
 #define LOG_FORMAT_MSG	  128
@@ -390,7 +405,8 @@ struct PACKED log_Cmd {
 #define LOG_EKF3_MSG      142
 #define LOG_EKF4_MSG      143
 #define LOG_GPS2_MSG	  144
-#define LOG_CMD_MSG    145
+#define LOG_CMD_MSG       145
+#define LOG_RADIO_MSG	  146
 
 #include "DataFlash_Block.h"
 #include "DataFlash_File.h"
