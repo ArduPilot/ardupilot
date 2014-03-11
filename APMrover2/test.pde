@@ -245,8 +245,9 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 
 	for(uint8_t i = 0; i < mission.num_commands(); i++){
         AP_Mission::Mission_Command temp_cmd;
-        mission.read_cmd_from_storage(i,temp_cmd);
-        test_wp_print(temp_cmd);
+        if (mission.read_cmd_from_storage(i,temp_cmd)) {
+            test_wp_print(temp_cmd);
+        }
 	}
 
 	return (0);
