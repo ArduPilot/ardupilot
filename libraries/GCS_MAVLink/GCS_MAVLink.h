@@ -32,10 +32,14 @@
 
 #include "include/mavlink/v1.0/ardupilotmega/version.h"
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
 // this allows us to make mavlink_message_t much smaller. It means we
 // can't support the largest messages in common.xml, but we don't need
-// those for APM
+// those for APM1/APM2
 #define MAVLINK_MAX_PAYLOAD_LEN 104
+#else
+#define MAVLINK_MAX_PAYLOAD_LEN 255
+#endif
 
 #include "include/mavlink/v1.0/mavlink_types.h"
 
