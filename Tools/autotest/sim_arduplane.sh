@@ -60,6 +60,7 @@ make sitl -j4 || {
     make clean
     make sitl -j4
 }
+popd
 
 cmd="/tmp/ArduPlane.build/ArduPlane.elf -I$INSTANCE"
 
@@ -77,9 +78,8 @@ fi
 
 sleep 2
 rm -f $tfile
-$autotest/run_in_terminal_window.sh "JSBSim" ../Tools/autotest/jsbsim/runsim.py --home=$SIMHOME --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT || exit 1
+$autotest/run_in_terminal_window.sh "JSBSim" $autotest/jsbsim/runsim.py --home=$SIMHOME --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT || exit 1
 sleep 2
-popd
 
 # if you wanted to forward packets out a serial link for testing
 # andropilot, then add --out /dev/serial/by-id/usb-FTDI* to your
