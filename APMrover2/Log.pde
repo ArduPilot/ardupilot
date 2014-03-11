@@ -295,8 +295,9 @@ static void Log_Write_Startup(uint8_t type)
     // write all commands to the dataflash as well
     AP_Mission::Mission_Command cmd;
     for (uint8_t i = 0; i < mission.num_commands(); i++) {
-        mission.read_cmd_from_storage(i,cmd);
-        Log_Write_Cmd(cmd);
+        if(mission.read_cmd_from_storage(i,cmd)) {
+            Log_Write_Cmd(cmd);
+        }
     }
 }
 
