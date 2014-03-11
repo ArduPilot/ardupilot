@@ -75,8 +75,8 @@ public:
     // Constructor
     NavEKF(const AP_AHRS *ahrs, AP_Baro &baro);
 
-    // Initialise the filter states from the AHRS and magnetometer data (if present)
-    // This method can be used when the vehicle is moving
+    // This function is used to initialise the filter whilst moving, using the AHRS DCM solution
+    // It should NOT be used to re-initialise after a timeout as DCM will also be corrupted
     void InitialiseFilterDynamic(void);
 
     // Initialise the states from accelerometer and magnetometer data (if present)
@@ -86,7 +86,7 @@ public:
     // Update Filter States - this should be called whenever new IMU data is available
     void UpdateFilter(void);
 
-    // return true if the filter is healthy
+    // Check basic filter health metrics and return a consolidated health status
     bool healthy(void) const;
 
     // return true if filter is dead-reckoning height
@@ -95,33 +95,26 @@ public:
     // return true if filter is dead-reckoning position
     bool PositionDrifting(void) const;
 
-    // fill in latitude, longitude and height of the reference point
-    void getRefLLH(struct Location &loc) const;
-
-    // set latitude, longitude and height of the reference point
-    void setRefLLH(int32_t lat, int32_t lng, int32_t alt_cm);
-
-    // return the last calculated NED position relative to the
-    // reference point (m). Return false if no position is available
+    // return the last calculated NED position relative to the reference point (m).
+    // return false if no position is available
     bool getPosNED(Vector3f &pos) const;
 
     // return NED velocity in m/s
     void getVelNED(Vector3f &vel) const;
 
-    // return bodyaxis gyro bias estimates in deg/hr
+    // return body axis gyro bias estimates in rad/sec
     void getGyroBias(Vector3f &gyroBias) const;
 
-    // return body axis accelerometer bias estimates in m/s^2
+    // return weighting of first IMU in blending function and the individual Z-accel bias estimates in m/s^2
     void getAccelBias(Vector3f &accelBias) const;
 
-    // return the NED wind speed estimates in m/s
-    // positive is air moving in the direction of the corresponding axis
+    // return the NED wind speed estimates in m/s (positive is air moving in the direction of the axis)
     void getWind(Vector3f &wind) const;
 
-    // return earth magnetic field estimates in measurement units
+    // return earth magnetic field estimates in measurement units / 1000
     void getMagNED(Vector3f &magNED) const;
 
-    // return body magnetic field estimates in measurement units
+    // return body magnetic field estimates in measurement units / 1000
     void getMagXYZ(Vector3f &magXYZ) const;
 
     // return the last calculated latitude, longitude and height
@@ -130,13 +123,10 @@ public:
     // return the Euler roll, pitch and yaw angle in radians
     void getEulerAngles(Vector3f &eulers) const;
 
-    // get the transformation matrix from NED to XYD (body) axes
-    void getRotationNEDToBody(Matrix3f &mat) const;
-
-    // get the transformation matrix from XYZ (body) to NED axes
+    // return the transformation matrix from XYZ (body) to NED axes
     void getRotationBodyToNED(Matrix3f &mat) const;
 
-    // get the quaternions defining the rotation from NED to XYZ (body) axes
+    // return the quaternions defining the rotation from NED to XYZ (body) axes
     void getQuaternion(Quaternion &quat) const;
 
     // return the innovations for the NED Pos, NED Vel, XYZ Mag and Vtas measurements
@@ -163,7 +153,7 @@ private:
     // copy covariances across from covariance prediction calculation and fix numerical errors
     void CopyAndFixCovariances();
 
-    // constrain variances (diagonal terms) on the state covariance matrix
+    // constrain variances (diagonal terms) in the state covariance matrix
     void ConstrainVariances();
 
     // constrain states
@@ -178,7 +168,7 @@ private:
     // fuse true airspeed measurements
     void FuseAirspeed();
 
-    // fuse sideslip measurements
+    // fuse sythetic sideslip measurement of zero
     void FuseSideslip();
 
     // zero specified range of rows in the state covariance matrix
@@ -186,9 +176,6 @@ private:
 
     // zero specified range of columns in the state covariance matrix
     void zeroCols(Matrix22 &covMat, uint8_t first, uint8_t last);
-
-    // normalise the quaternion states
-    void quatNorm(Quaternion &quatOut, const Quaternion &quatIn) const;
 
     // store states along with system time stamp in msces
     void StoreStates(void);
@@ -202,13 +189,10 @@ private:
     // calculate nav to body quaternions from body to nav rotation matrix
     void quat2Tbn(Matrix3f &Tbn, const Quaternion &quat) const;
 
-    // calculate the earth spin vector in NED axes
+    // calculate the NED earth spin vector in rad/sec
     void calcEarthRateNED(Vector3f &omega, int32_t latitude) const;
 
-    // calculate a NED velocity vector from GPS speed, course and down velocity
-    void calcvelNED(Vector3f &velNED, float gpsCourse, float gpsGndSpd, float gpsVelD) const;
-
-    // calculate from height, airspeed and ground speed whether the flight vehicle is on the ground or flying
+    // calculate whether the flight vehicle is on the ground or flying from height, airspeed and GPS speed
     void OnGroundCheck();
 
     // initialise the covariance matrix
@@ -231,9 +215,6 @@ private:
 
     // determine when to perform fusion of GPS position and  velocity measurements
     void SelectVelPosFusion();
-
-    // determine when to perform fusion of height measurements
-    void SelectHgtFusion();
 
     // determine when to perform fusion of true airspeed measurements
     void SelectTasFusion();
@@ -262,7 +243,9 @@ private:
     // return true if we should use the airspeed sensor
     bool useAirspeed(void) const;
 
-    // check if static mode has been demanded by vehicle code
+    // return true if the vehicle code has requested use of static mode
+    // in static mode, position and height are constrained to zero, allowing an attitude
+    // reference to be initialised and maintained when on the ground and without GPS lock
     bool static_mode_demanded(void) const;
 
 private:
