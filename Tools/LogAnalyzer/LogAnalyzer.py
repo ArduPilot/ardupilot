@@ -15,6 +15,7 @@
 #   - CTUN.ThrOut on copter is 0-1000, on plane+rover it is 0-100
 
 # TODO: add test for noisy baro values
+# TODO: support loading binary log files (use Tridge's mavlogdump?)
 
 
 import DataflashLog
@@ -27,6 +28,7 @@ import os, sys
 import argparse
 import datetime
 import time
+from xml.sax.saxutils import escape
 
 
 class TestResult:
@@ -144,24 +146,24 @@ class TestSuite:
 		print >>xml, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
 		print >>xml, "<loganalysis>"
 		print >>xml, "<header>"
-		print >>xml, "  <logfile>"   + self.logfile + "</logfile>"
-		print >>xml, "  <sizekb>"    + `self.logdata.filesizeKB` + "</sizekb>"
-		print >>xml, "  <sizelines>" + `self.logdata.lineCount` + "</sizelines>"
-		print >>xml, "  <duration>"  + str(datetime.timedelta(seconds=self.logdata.durationSecs)) + "</duration>"
-		print >>xml, "  <vehicletype>" + self.logdata.vehicleType + "</vehicletype>"
+		print >>xml, "  <logfile>"   + escape(self.logfile) + "</logfile>"
+		print >>xml, "  <sizekb>"    + escape(`self.logdata.filesizeKB`) + "</sizekb>"
+		print >>xml, "  <sizelines>" + escape(`self.logdata.lineCount`) + "</sizelines>"
+		print >>xml, "  <duration>"  + escape(str(datetime.timedelta(seconds=self.logdata.durationSecs))) + "</duration>"
+		print >>xml, "  <vehicletype>" + escape(self.logdata.vehicleType) + "</vehicletype>"
 		if self.logdata.vehicleType == "ArduCopter" and self.logdata.getCopterType():
-			print >>xml, "  <coptertype>"  + self.logdata.getCopterType() + "</coptertype>"
-		print >>xml, "  <firmwareversion>" + self.logdata.firmwareVersion + "</firmwareversion>"
-		print >>xml, "  <firmwarehash>" + self.logdata.firmwareHash + "</firmwarehash>"
-		print >>xml, "  <hardwaretype>" + self.logdata.hardwareType + "</hardwaretype>"
-		print >>xml, "  <freemem>" + `self.logdata.freeRAM` + "</freemem>"
-		print >>xml, "  <skippedlines>" + `self.logdata.skippedLines` + "</skippedlines>"
+			print >>xml, "  <coptertype>"  + escape(self.logdata.getCopterType()) + "</coptertype>"
+		print >>xml, "  <firmwareversion>" + escape(self.logdata.firmwareVersion) + "</firmwareversion>"
+		print >>xml, "  <firmwarehash>" + escape(self.logdata.firmwareHash) + "</firmwarehash>"
+		print >>xml, "  <hardwaretype>" + escape(self.logdata.hardwareType) + "</hardwaretype>"
+		print >>xml, "  <freemem>" + escape(`self.logdata.freeRAM`) + "</freemem>"
+		print >>xml, "  <skippedlines>" + escape(`self.logdata.skippedLines`) + "</skippedlines>"
 		print >>xml, "</header>"
 
 		# output parameters
 		print >>xml, "<params>"
 		for param, value in self.logdata.parameters.items():
-			print >>xml, "  <param name=\"%s\" value=\"%s\" />" % (param,`value`)
+			print >>xml, "  <param name=\"%s\" value=\"%s\" />" % (param,escape(`value`))
 		print >>xml, "</params>"
 
 		# output test results
@@ -171,26 +173,26 @@ class TestSuite:
 				continue
 			print >>xml, "  <result>"
 			if test.result.status == TestResult.StatusType.PASS:
-				print >>xml, "    <name>" + test.name + "</name>"
+				print >>xml, "    <name>" + escape(test.name) + "</name>"
 				print >>xml, "    <status>PASS</status>"
-				print >>xml, "    <message>" + test.result.statusMessage + "</message>"
+				print >>xml, "    <message>" + escape(test.result.statusMessage) + "</message>"
 			elif test.result.status == TestResult.StatusType.FAIL:
-				print >>xml, "    <name>" + test.name + "</name>"
+				print >>xml, "    <name>" + escape(test.name) + "</name>"
 				print >>xml, "    <status>FAIL</status>"
-				print >>xml, "    <message>" + test.result.statusMessage + "</message>"
+				print >>xml, "    <message>" + escape(test.result.statusMessage) + "</message>"
 				print >>xml, "    <data>(test data will be embeded here at some point)</data>"
 			elif test.result.status == TestResult.StatusType.WARN:
-				print >>xml, "    <name>" + test.name + "</name>"
+				print >>xml, "    <name>" + escape(test.name) + "</name>"
 				print >>xml, "    <status>WARN</status>"
-				print >>xml, "    <message>" + test.result.statusMessage + "</message>"
+				print >>xml, "    <message>" + escape(test.result.statusMessage) + "</message>"
 				print >>xml, "    <data>(test data will be embeded here at some point)</data>"
 			elif test.result.status == TestResult.StatusType.NA:
 				# skip any that aren't relevant for this vehicle/hardware/etc
 				continue
 			else:
-				print >>xml, "    <name>" + test.name + "</name>"
+				print >>xml, "    <name>" + escape(test.name) + "</name>"
 				print >>xml, "    <status>UNKNOWN</status>"
-				print >>xml, "    <message>" + test.result.statusMessage + "</message>"
+				print >>xml, "    <message>" + escape(test.result.statusMessage) + "</message>"
 			print >>xml, "  </result>"
 		print >>xml, "</results>"
 
