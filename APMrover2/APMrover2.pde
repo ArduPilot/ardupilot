@@ -126,7 +126,7 @@ const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 // must be the first AP_Param variable declared to ensure its
 // constructor runs before the constructors of the other AP_Param
 // variables
-AP_Param param_loader(var_info, WP_START_BYTE);
+AP_Param param_loader(var_info, MISSION_START_BYTE);
 
 ////////////////////////////////////////////////////////////////////////////////
 // the rate we run the main loop at
@@ -306,7 +306,7 @@ static AP_SteerController steerController(ahrs);
 static bool start_command(const AP_Mission::Mission_Command& cmd);
 static bool verify_command(const AP_Mission::Mission_Command& cmd);
 static void exit_mission();
-AP_Mission mission(ahrs, &start_command, &verify_command, &exit_mission);
+AP_Mission mission(ahrs, &start_command, &verify_command, &exit_mission, MISSION_START_BYTE, MISSION_END_BYTE);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 SITL sitl;
