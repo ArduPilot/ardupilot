@@ -296,24 +296,14 @@ enum FlipState {
 // Centi-degrees to radians
 #define DEGX100 5729.57795f
 
-
-// EEPROM addresses
-#define EEPROM_MAX_ADDR         4096
-// parameters get the first 1536 bytes of EEPROM, remainder is for waypoints
-#define WP_START_BYTE 0x600 // where in memory home WP is stored + all other
-                            // WP
-#define WP_SIZE 15
-
 // fence points are stored at the end of the EEPROM
 #define MAX_FENCEPOINTS 6
 #define FENCE_WP_SIZE sizeof(Vector2l)
-#define FENCE_START_BYTE (EEPROM_MAX_ADDR-(MAX_FENCEPOINTS*FENCE_WP_SIZE))
+#define FENCE_START_BYTE (HAL_STORAGE_SIZE_AVAILABLE-(MAX_FENCEPOINTS*FENCE_WP_SIZE))
 
-#define MAX_WAYPOINTS  ((FENCE_START_BYTE - WP_START_BYTE) / WP_SIZE) - 1 // -
-                                                                          // 1
-                                                                          // to
-                                                                          // be
-                                                                          // safe
+// parameters get the first 1536 bytes of EEPROM, mission commands are stored between these params and the fence points
+#define MISSION_START_BYTE   0x600
+#define MISSION_END_BYTE     (FENCE_START_BYTE-1)
 
 // mark a function as not to be inlined
 #define NOINLINE __attribute__((noinline))
