@@ -337,7 +337,7 @@ bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) con
         // Find out proper location in memory by using the start_byte position + the index
         // we can load a command, we don't process it yet
         // read WP position
-        pos_in_storage = (AP_MISSION_EEPROM_START_BYTE) + (index * AP_MISSION_EEPROM_COMMAND_SIZE);
+        pos_in_storage = _storage_start + 4 + (index * AP_MISSION_EEPROM_COMMAND_SIZE);
 
         cmd.id = hal.storage->read_byte(pos_in_storage);
         pos_in_storage++;
@@ -370,12 +370,12 @@ bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) con
 bool AP_Mission::write_cmd_to_storage(uint16_t index, Mission_Command& cmd)
 {
     // range check cmd's index
-    if (index >= AP_MISSION_MAX_COMMANDS) {
+    if (index >= _cmd_total_max) {
         return false;
     }
 
     // calculate where in storage the command should be placed
-    uint16_t pos_in_storage = AP_MISSION_EEPROM_START_BYTE + (index * AP_MISSION_EEPROM_COMMAND_SIZE);
+    uint16_t pos_in_storage = _storage_start + 4 + (index * AP_MISSION_EEPROM_COMMAND_SIZE);
 
     hal.storage->write_byte(pos_in_storage, cmd.id);
 
@@ -1046,12 +1046,12 @@ void AP_Mission::increment_jump_times_run(Mission_Command& cmd)
 // command list will be cleared if they do not match
 void AP_Mission::check_eeprom_version()
 {
-    uint32_t eeprom_version = hal.storage->read_dword(AP_MISSION_EEPROM_VERSION_ADDR);
+    uint32_t eeprom_version = hal.storage->read_dword(_storage_start);
 
     // if eeprom version does not match, clear the command list and update the eeprom version
     if (eeprom_version != AP_MISSION_EEPROM_VERSION) {
         if (clear()) {
-            hal.storage->write_dword(AP_MISSION_EEPROM_VERSION_ADDR, AP_MISSION_EEPROM_VERSION);
+            hal.storage->write_dword(_storage_start, AP_MISSION_EEPROM_VERSION);
         }
     }
 }

@@ -24,14 +24,7 @@
 
 // definitions
 #define AP_MISSION_EEPROM_VERSION           0x65AD  // version number stored in first four bytes of eeprom.  increment this by one when eeprom format is changed
-#define AP_MISSION_EEPROM_MAX_ADDR          4096    // parameters get the first 1536 bytes of EEPROM, remainder is for waypoints
-#define AP_MISSION_EEPROM_VERSION_ADDR      0x600   // where version number is stored in eeprom
-#define AP_MISSION_EEPROM_START_BYTE        0x604   // where in memory home WP is stored, all mission commands appear after this
 #define AP_MISSION_EEPROM_COMMAND_SIZE      15      // size in bytes of all mission commands
-#define AP_MISSION_FENCEPOINTS_MAX          6       // we reserve space for 6 fence points at the end of EEPROM although this is not currently implemented
-#define AP_MISSION_FENCEPOINTS_SIZE         sizeof(Vector2l)    // each fence points size in eeprom
-#define AP_MISSION_FENCE_START_BYTE         (AP_MISSION_EEPROM_MAX_ADDR-(AP_MISSION_FENCEPOINTS_MAX*AP_MISSION_FENCEPOINTS_SIZE))   // space reserved for fence points
-#define AP_MISSION_MAX_COMMANDS             ((AP_MISSION_FENCE_START_BYTE - AP_MISSION_EEPROM_START_BYTE) / AP_MISSION_EEPROM_COMMAND_SIZE) - 1 // -1 to be safe
 
 #define AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS 3       // only allow up to 3 do-jump commands (due to RAM limitations on the APM2)
 #define AP_MISSION_JUMP_REPEAT_FOREVER      -1      // when do-jump command's repeat count is -1 this means endless repeat
@@ -82,7 +75,7 @@ public:
     };
 
     /// constructor
-    AP_Mission(AP_AHRS &ahrs, mission_cmd_fn_t cmd_start_fn, mission_cmd_fn_t cmd_verify_fn, mission_complete_fn_t mission_complete_fn) :
+    AP_Mission(AP_AHRS &ahrs, mission_cmd_fn_t cmd_start_fn, mission_cmd_fn_t cmd_verify_fn, mission_complete_fn_t mission_complete_fn, uint16_t storage_start, uint16_t storage_end) :
         _ahrs(ahrs),
         _cmd_start_fn(cmd_start_fn),
         _cmd_verify_fn(cmd_verify_fn),
@@ -91,6 +84,10 @@ public:
     {
         // load parameter defaults
         AP_Param::setup_object_defaults(this, var_info);
+
+        // calculate
+        _storage_start = storage_start;
+        _cmd_total_max = ((storage_end - storage_start - 4) / AP_MISSION_EEPROM_COMMAND_SIZE) -1;   // -4 to remove space for eeprom version number, -1 to be safe
 
         // clear commands
         _nav_cmd.index = AP_MISSION_CMD_INDEX_NONE;
@@ -114,6 +111,9 @@ public:
 
     /// num_commands - returns total number of commands in the mission
     uint16_t num_commands() const { return _cmd_total; }
+
+    /// num_commands_max - returns maximum number of commands that can be stored
+    uint16_t num_commands_max() const {return _cmd_total_max; }
 
     /// start - resets current commands to point to the beginning of the mission
     ///     To-Do: should we validate the mission first and return true/false?
@@ -261,6 +261,8 @@ private:
     mission_complete_fn_t   _mission_complete_fn;   // pointer to function which will be called when mission completes
 
     // internal variables
+    uint16_t                _storage_start; // first position we are free to use in eeprom storage
+    uint16_t                _cmd_total_max; // maximum number of commands we can store
     struct Mission_Command  _nav_cmd;   // current "navigation" command.  It's position in the command list is held in _nav_cmd.index
     struct Mission_Command  _do_cmd;    // current "do" command.  It's position in the command list is held in _do_cmd.index
     uint16_t                _prev_nav_cmd_index;    // index of the previous "navigation" command.  Rarely used which is why we don't store the whole command
