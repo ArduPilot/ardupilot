@@ -114,7 +114,7 @@ enum log_messages {
     LOG_CTUN_MSG,
     LOG_NTUN_MSG,
     LOG_PERFORMANCE_MSG,
-    LOG_CMD_MSG,
+    LOG_CMD_MSG_DEPRECATED,     // deprecated
     LOG_CURRENT_MSG,
     LOG_STARTUP_MSG,
     TYPE_AIRSTART_MSG,
