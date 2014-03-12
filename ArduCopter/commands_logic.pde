@@ -104,6 +104,7 @@ static void process_now_command()
                                          command_cond_queue.lat);
         break;
 
+    case MAV_CMD_NAV_ROI:                   // 80
     case MAV_CMD_DO_SET_ROI:                // 201
         // point the copter and camera at a region of interest (ROI)
         do_roi();
