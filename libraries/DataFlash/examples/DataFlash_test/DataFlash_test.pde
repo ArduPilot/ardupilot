@@ -29,7 +29,7 @@
 #include <GCS_MAVLink.h>
 #include <AP_Notify.h>
 #include <AP_Vehicle.h>
-
+#include <AP_Mission.h>
 
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
