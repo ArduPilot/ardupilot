@@ -41,11 +41,18 @@ done
 shift $((OPTIND-1))
 
 # kill existing copy if this is the '0' instance only
-[ "$INSTANCE" -eq "0" ] && {
-    killall -q JSBSim lt-JSBSim ArduPlane.elf AntennaTracker.elf
-    pkill -f runsim.py sim_tracker.py
+kill_tasks() 
+{
+    [ "$INSTANCE" -eq "0" ] && {
+        killall -q JSBSim lt-JSBSim ArduPlane.elf AntennaTracker.elf
+        pkill -f runsim.py
+        pkill -f sim_tracker.py
+    }
 }
 
+kill_tasks
+
+trap kill_tasks SIGINT
 
 # setup ports for this instance
 MAVLINK_PORT="tcp:127.0.0.1:"$((5760+10*$INSTANCE))
