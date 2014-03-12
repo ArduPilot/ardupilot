@@ -1534,7 +1534,7 @@ mission_item_send_failed:
         }
 
         // start waypoint receiving
-        if (packet.count > AP_MISSION_MAX_COMMANDS) {
+        if (packet.count > mission.num_commands_max()) {
             // send NAK
             mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_NO_SPACE);
             break;
