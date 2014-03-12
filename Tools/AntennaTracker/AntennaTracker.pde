@@ -102,6 +102,7 @@ static struct {
     float bearing;
     float distance;
     float pitch;
+    float altitude_difference;
 } nav_status;
 
 

@@ -38,12 +38,12 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     // ArduPlane documentation
     switch (control_mode) {
     case MANUAL:
-        base_mode = MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
+        base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
         break;
 
     case AUTO:
-        base_mode = MAV_MODE_FLAG_GUIDED_ENABLED |
-                    MAV_MODE_FLAG_STABILIZE_ENABLED;
+        base_mode |= MAV_MODE_FLAG_GUIDED_ENABLED |
+            MAV_MODE_FLAG_STABILIZE_ENABLED;
         // note that MAV_MODE_FLAG_AUTO_ENABLED does not match what
         // APM does in any mode, as that is defined as "system finds its own goal
         // positions", which APM does not currently do
@@ -263,7 +263,7 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
         nav_status.bearing,
         nav_status.bearing,
         nav_status.distance,
-        0,
+        nav_status.altitude_difference,
         0,
         0);
 }
@@ -1069,6 +1069,15 @@ mission_failed:
         mavlink_global_position_int_t packet;
         mavlink_msg_global_position_int_decode(msg, &packet);
         tracking_update_position(packet);
+        break;
+    }
+
+    case MAVLINK_MSG_ID_SCALED_PRESSURE: 
+    {
+        // decode
+        mavlink_scaled_pressure_t packet;
+        mavlink_msg_scaled_pressure_decode(msg, &packet);
+        tracking_update_pressure(packet);
         break;
     }
 
