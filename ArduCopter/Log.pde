@@ -422,35 +422,6 @@ static void Log_Write_Performance()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-struct PACKED log_Cmd {
-    LOG_PACKET_HEADER;
-    uint16_t command_total;
-    uint16_t command_number;
-    uint8_t waypoint_id;
-    uint8_t waypoint_options;
-    uint8_t waypoint_param1;
-    int32_t waypoint_altitude;
-    int32_t waypoint_latitude;
-    int32_t waypoint_longitude;
-};
-
-// Write a command processing packet
-static void Log_Write_Cmd(const AP_Mission::Mission_Command& cmd)
-{
-    struct log_Cmd pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_CMD_MSG),
-        command_total       : mission.num_commands(),
-        command_number      : cmd.index,
-        waypoint_id         : cmd.id,
-        waypoint_options    : cmd.content.location.options,
-        waypoint_param1     : cmd.p1,
-        waypoint_altitude   : cmd.content.location.alt,
-        waypoint_latitude   : cmd.content.location.lat,
-        waypoint_longitude  : cmd.content.location.lng
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
-}
-
 struct PACKED log_Attitude {
     LOG_PACKET_HEADER;
     uint32_t time_ms;
@@ -705,8 +676,6 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "MAG2","Ihhhhhhhhh",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" },
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
       "PM",  "HHIhBHB",    "NLon,NLoop,MaxT,PMT,I2CErr,INSErr,INAVErr" },
-    { LOG_CMD_MSG, sizeof(log_Cmd),                 
-      "CMD", "HHBBBeLL",     "CTot,CNum,CId,COpt,Prm1,Alt,Lat,Lng" },
     { LOG_ATTITUDE_MSG, sizeof(log_Attitude),       
       "ATT", "IccccCC",      "TimeMS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw" },
     { LOG_MODE_MSG, sizeof(log_Mode),
@@ -781,7 +750,6 @@ static void start_logging()
 #else // LOGGING_ENABLED
 
 static void Log_Write_Startup() {}
-static void Log_Write_Cmd(const AP_Mission::Mission_Command& cmd) {}
 static void Log_Write_Mode(uint8_t mode) {}
 static void Log_Write_IMU() {}
 static void Log_Write_GPS() {}
