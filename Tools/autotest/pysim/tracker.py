@@ -16,7 +16,7 @@ class Tracker(Aircraft):
                  yaw_range = 180,
                  zero_yaw = 270, # yaw direction at startup
                  zero_pitch = 10, # pitch at startup
-                 turn_rate=20 # servo max turn rate in degrees/sec
+                 turn_rate=90 # servo max turn rate in degrees/sec
                  ):
         Aircraft.__init__(self)
         self.rate_controlled = rate_controlled
