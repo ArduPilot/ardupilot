@@ -29,6 +29,16 @@
 #include <AP_Buffer.h>          // ArduPilot general purpose FIFO buffer
 #include <GCS_MAVLink.h>
 
+// storage locations equivalent to ArduCopter
+// fence points are stored at the end of the EEPROM
+#define MAX_FENCEPOINTS 6
+#define FENCE_WP_SIZE sizeof(Vector2l)
+#define FENCE_START_BYTE (HAL_STORAGE_SIZE_AVAILABLE-(MAX_FENCEPOINTS*FENCE_WP_SIZE))
+
+// parameters get the first 1536 bytes of EEPROM, mission commands are stored between these params and the fence points
+#define MISSION_START_BYTE   0x500
+#define MISSION_END_BYTE     (FENCE_START_BYTE-1)
+
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 // INS and Baro declaration
@@ -106,7 +116,7 @@ void mission_complete(void)
 }
 
 // declaration
-AP_Mission mission(ahrs, &start_cmd, &verify_cmd, &mission_complete);
+AP_Mission mission(ahrs, &start_cmd, &verify_cmd, &mission_complete, MISSION_START_BYTE, MISSION_END_BYTE);
 
 // setup
 void setup(void)
@@ -114,9 +124,10 @@ void setup(void)
     hal.console->println("AP_Mission library test\n");
 
     // display basic info about command sizes
-    hal.console->printf_P(PSTR("Max Num Commands: %d\n"),(int)AP_MISSION_MAX_COMMANDS);
+    hal.console->printf_P(PSTR("Max Num Commands: %d\n"),(int)mission.num_commands_max());
     hal.console->printf_P(PSTR("Command size: %d bytes\n"),(int)AP_MISSION_EEPROM_COMMAND_SIZE);
-    hal.console->printf_P(PSTR("Command start in Eeprom: %x\n"),(int)AP_MISSION_EEPROM_START_BYTE);
+    hal.console->printf_P(PSTR("Command start in Eeprom: 0x%x\n"),(int)MISSION_START_BYTE);
+    hal.console->printf_P(PSTR("Command end in Eeprom: 0x%x\n"),(int)MISSION_END_BYTE);
 }
 
 // loop
@@ -176,6 +187,9 @@ void run_mission_test()
 
     // run_replace_cmd_test - tests replacing a command during a mission
     //run_replace_cmd_test();
+
+    // run_max_cmd_test - tests filling the eeprom with commands and then reading them back
+    //run_max_cmd_test();
 
     // print current mission
     print_mission();
@@ -1159,6 +1173,62 @@ void run_replace_cmd_test()
     // update the mission forever
     while(true) {
         mission.update();
+    }
+}
+
+// run_max_cmd_test - tests filling the eeprom with commands and then reading them back
+void run_max_cmd_test()
+{
+    AP_Mission::Mission_Command cmd;
+    uint16_t num_commands = 0;
+    uint16_t i;
+    bool failed_to_add = false;
+    bool failed_to_read = false;
+    bool success = true;
+
+    // test adding many commands until it fails
+    while (!failed_to_add) {
+        // Command #0 : home
+        cmd.id = MAV_CMD_NAV_WAYPOINT;
+        cmd.content.location.options = 0;
+        cmd.p1 = 0;
+        cmd.content.location.alt = num_commands;
+        cmd.content.location.lat = 12345678;
+        cmd.content.location.lng = 23456789;
+        if (!mission.add_cmd(cmd)) {
+            hal.console->printf_P(PSTR("failed to add command #%u, library says max is %u\n"),(unsigned int)num_commands, (unsigned int)mission.num_commands_max());
+            failed_to_add = true;
+        }else{
+            num_commands++;
+        }
+    }
+
+    // test retrieving commands
+    for (i=0; i<num_commands; i++) {
+        if (!mission.read_cmd_from_storage(i,cmd)) {
+            hal.console->printf_P(PSTR("failed to retrieve command #%u\n"),(unsigned int)i);
+            failed_to_read = true;
+            break;
+        }else{
+            if (cmd.content.location.alt == i) {
+                hal.console->printf_P(PSTR("successfully read command #%u\n"),(unsigned int)i);
+            }else{
+                hal.console->printf_P(PSTR("cmd #u's alt does not match, expected %u but read %u\n"),(unsigned int)i,(unsigned int)i,(unsigned int)cmd.content.location.alt);
+            }
+        }
+    }
+
+    // final success/fail message
+    if (num_commands != mission.num_commands()) {
+        hal.console->printf_P(PSTR("\nTest failed!  Only wrote %u instead of %u commands"),(unsigned int)i,(unsigned int)mission.num_commands_max());
+        success = false;
+    }
+    if (failed_to_read) {
+        hal.console->printf_P(PSTR("\nTest failed!  Only read %u instead of %u commands"),(unsigned int)i,(unsigned int)mission.num_commands_max());
+        success = false;
+    }
+    if (success) {
+        hal.console->printf_P(PSTR("\nTest Passed!  wrote and read back %u commands\n\n"),(unsigned int)mission.num_commands_max());
     }
 }
 
