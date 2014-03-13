@@ -13,6 +13,8 @@ elif [ -x /usr/bin/konsole ]; then
   /usr/bin/konsole --hold -e $*
 elif [ -x /usr/bin/gnome-terminal ]; then
   /usr/bin/gnome-terminal -e "$*"
+elif [ -x /opt/X11/bin/xterm ]; then
+  /opt/X11/bin/xterm -iconic -n "$name" -name "$name" -T "$name" -hold -e $* &
 else
   echo "ERROR: Please install xterm"
   exit 1
