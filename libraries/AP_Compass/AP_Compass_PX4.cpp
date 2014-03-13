@@ -64,7 +64,7 @@ bool AP_Compass_PX4::init(void)
 
         // remember if the compass is external
         _is_external[i] = (ioctl(_mag_fd[i], MAGIOCGEXTERNAL, 0) > 0);
-        if (_is_external[0]) {
+        if (_is_external[i]) {
             hal.console->printf("Using external compass[%u]\n", (unsigned)i);
         }
         _count[0] = 0;

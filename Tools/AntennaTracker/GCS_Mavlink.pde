@@ -269,6 +269,15 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
 }
 
 
+// report simulator state
+static void NOINLINE send_simstate(mavlink_channel_t chan)
+{
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+    sitl.simstate_send(chan);
+#endif
+}
+
+
 // try to send a message, return false if it won't fit in the serial tx buffer
 static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id, uint16_t packet_drops)
 {
@@ -339,6 +348,11 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         send_ahrs(chan);
         break;
 
+    case MSG_SIMSTATE:
+        CHECK_PAYLOAD_SIZE(SIMSTATE);
+        send_simstate(chan);
+        break;
+
     case MSG_HWSTATUS:
         CHECK_PAYLOAD_SIZE(HWSTATUS);
         send_hwstatus(chan);
@@ -354,7 +368,6 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
     case MSG_SYSTEM_TIME:
     case MSG_LIMITS_STATUS:
     case MSG_FENCE_STATUS:
-    case MSG_SIMSTATE:
     case MSG_WIND:
     case MSG_RANGEFINDER:
         break; // just here to prevent a warning
@@ -633,6 +646,7 @@ GCS_MAVLINK::data_stream_send(void)
     if (stream_trigger(STREAM_EXTRA3)) {
         send_message(MSG_AHRS);
         send_message(MSG_HWSTATUS);
+        send_message(MSG_SIMSTATE);
     }
 }
 

@@ -474,8 +474,11 @@ static void report_compass()
     case AP_COMPASS_TYPE_HIL:
         cliSerial->println_P(PSTR("HIL"));
         break;
+    case AP_COMPASS_TYPE_PX4:
+        cliSerial->println_P(PSTR("PX4"));
+        break;
     default:
-        cliSerial->println_P(PSTR("??"));
+        cliSerial->println_P(PSTR("(unknown)"));
         break;
     }
 
