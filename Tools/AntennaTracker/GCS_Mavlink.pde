@@ -24,13 +24,43 @@ static bool mavlink_active;
 
 static NOINLINE void send_heartbeat(mavlink_channel_t chan)
 {
+    uint8_t base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
+    uint8_t system_status = MAV_STATE_ACTIVE;
+    uint32_t custom_mode = control_mode;
+
+    // work out the base_mode. This value is not very useful
+    // for APM, but we calculate it as best we can so a generic
+    // MAVLink enabled ground station can work out something about
+    // what the MAV is up to. The actual bit values are highly
+    // ambiguous for most of the APM flight modes. In practice, you
+    // only get useful information from the custom_mode, which maps to
+    // the APM flight mode and has a well defined meaning in the
+    // ArduPlane documentation
+    switch (control_mode) {
+    case MANUAL:
+        base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
+        break;
+
+    case AUTO:
+        base_mode |= MAV_MODE_FLAG_GUIDED_ENABLED |
+            MAV_MODE_FLAG_STABILIZE_ENABLED;
+        // note that MAV_MODE_FLAG_AUTO_ENABLED does not match what
+        // APM does in any mode, as that is defined as "system finds its own goal
+        // positions", which APM does not currently do
+        break;
+
+    case INITIALISING:
+        system_status = MAV_STATE_CALIBRATING;
+        break;
+    }
+
     mavlink_msg_heartbeat_send(
         chan,
         MAV_TYPE_ANTENNA_TRACKER,
         MAV_AUTOPILOT_ARDUPILOTMEGA,
-        MAV_MODE_FLAG_AUTO_ENABLED,
-        0,
-        MAV_STATE_ACTIVE);
+        base_mode,
+        custom_mode,
+        system_status);
 }
 
 static NOINLINE void send_attitude(mavlink_channel_t chan)
@@ -212,15 +242,12 @@ static void NOINLINE send_hwstatus(mavlink_channel_t chan)
 
 static void NOINLINE send_waypoint_request(mavlink_channel_t chan)
 {
-    if (chan == MAVLINK_COMM_0)
-        gcs0.queued_waypoint_send();
-    else
-        gcs3.queued_waypoint_send();
+    gcs[chan-MAVLINK_COMM_0].queued_waypoint_send();
 }
 
 static void NOINLINE send_statustext(mavlink_channel_t chan)
 {
-    mavlink_statustext_t *s = (chan == MAVLINK_COMM_0?&gcs0.pending_status:&gcs3.pending_status);
+    mavlink_statustext_t *s = &gcs[chan-MAVLINK_COMM_0].pending_status;
     mavlink_msg_statustext_send(
         chan,
         s->severity,
@@ -236,7 +263,7 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
         nav_status.bearing,
         nav_status.bearing,
         nav_status.distance,
-        0,
+        nav_status.altitude_difference,
         0,
         0);
 }
@@ -294,11 +321,7 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
 
     case MSG_NEXT_PARAM:
         CHECK_PAYLOAD_SIZE(PARAM_VALUE);
-        if (chan == MAVLINK_COMM_0) {
-            gcs0.queued_param_send();
-        } else if (gcs3.initialised) {
-            gcs3.queued_param_send();
-        }
+        gcs[chan-MAVLINK_COMM_0].queued_param_send();
         break;
 
     case MSG_NEXT_WAYPOINT:
@@ -403,7 +426,7 @@ void mavlink_send_text(mavlink_channel_t chan, gcs_severity severity, const char
 {
     if (severity == SEVERITY_LOW) {
         // send via the deferred queuing system
-        mavlink_statustext_t *s = (chan == MAVLINK_COMM_0?&gcs0.pending_status:&gcs3.pending_status);
+        mavlink_statustext_t *s = &gcs[chan-MAVLINK_COMM_0].pending_status;
         s->severity = (uint8_t)severity;
         strncpy((char *)s->text, str, sizeof(s->text));
         mavlink_send_message(chan, MSG_STATUSTEXT, 0);
@@ -638,8 +661,6 @@ GCS_MAVLINK::send_text_P(gcs_severity severity, const prog_char_t *str)
 
 void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 {
-//    hal.uartA->printf("handleMessage %d\n", msg->msgid);
-
     switch (msg->msgid) {
 
     case MAVLINK_MSG_ID_REQUEST_DATA_STREAM:
@@ -866,6 +887,47 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 break;
             }
 
+            case MAV_CMD_COMPONENT_ARM_DISARM:
+                if (packet.target_component == MAV_COMP_ID_SYSTEM_CONTROL) {
+                    if (packet.param1 == 1.0f) {
+                        arm_servos();
+                        result = MAV_RESULT_ACCEPTED;
+                    } else if (packet.param1 == 0.0f)  {
+                        disarm_servos();
+                        result = MAV_RESULT_ACCEPTED;
+                    } else {
+                        result = MAV_RESULT_UNSUPPORTED;
+                    }
+                } else {
+                    result = MAV_RESULT_UNSUPPORTED;
+                }
+            break;
+            
+            case MAV_CMD_DO_SET_MODE:
+                switch ((uint16_t)packet.param1) {
+                    case MAV_MODE_MANUAL_ARMED:
+                    case MAV_MODE_MANUAL_DISARMED:
+                        set_mode(MANUAL);
+                        result = MAV_RESULT_ACCEPTED;
+                        break;
+
+                    case MAV_MODE_AUTO_ARMED:
+                    case MAV_MODE_AUTO_DISARMED:
+                        set_mode(AUTO);
+                        result = MAV_RESULT_ACCEPTED;
+                        break;
+
+                    default:
+                        result = MAV_RESULT_UNSUPPORTED;
+                }
+                break;
+
+                // mavproxy/mavutil sends this when auto command is entered 
+            case MAV_CMD_MISSION_START:
+                set_mode(AUTO);
+                result = MAV_RESULT_ACCEPTED;
+                break;
+
             case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
             {
                 if (packet.param1 == 1 || packet.param1 == 3) {
@@ -1010,6 +1072,15 @@ mission_failed:
         break;
     }
 
+    case MAVLINK_MSG_ID_SCALED_PRESSURE: 
+    {
+        // decode
+        mavlink_scaled_pressure_t packet;
+        mavlink_msg_scaled_pressure_decode(msg, &packet);
+        tracking_update_pressure(packet);
+        break;
+    }
+
     default:
         break;
 
@@ -1026,7 +1097,7 @@ mission_failed:
 static void mavlink_delay_cb()
 {
     static uint32_t last_1hz, last_50hz, last_5s;
-    if (!gcs0.initialised) return;
+    if (!gcs[0].initialised) return;
 
     in_mavlink_delay = true;
 
@@ -1054,9 +1125,10 @@ static void mavlink_delay_cb()
  */
 static void gcs_send_message(enum ap_message id)
 {
-    gcs0.send_message(id);
-    if (gcs3.initialised) {
-        gcs3.send_message(id);
+    for (uint8_t i=0; i<num_gcs; i++) {
+        if (gcs[i].initialised) {
+            gcs[i].send_message(id);
+        }
     }
 }
 
@@ -1065,9 +1137,10 @@ static void gcs_send_message(enum ap_message id)
  */
 static void gcs_data_stream_send(void)
 {
-    gcs0.data_stream_send();
-    if (gcs3.initialised) {
-        gcs3.data_stream_send();
+    for (uint8_t i=0; i<num_gcs; i++) {
+        if (gcs[i].initialised) {
+            gcs[i].data_stream_send();
+        }
     }
 }
 
@@ -1076,17 +1149,19 @@ static void gcs_data_stream_send(void)
  */
 static void gcs_update(void)
 {
-    gcs0.update();
-    if (gcs3.initialised) {
-        gcs3.update();
+    for (uint8_t i=0; i<num_gcs; i++) {
+        if (gcs[i].initialised) {
+            gcs[i].update();
+        }
     }
 }
 
 static void gcs_send_text_P(gcs_severity severity, const prog_char_t *str)
 {
-    gcs0.send_text_P(severity, str);
-    if (gcs3.initialised) {
-        gcs3.send_text_P(severity, str);
+    for (uint8_t i=0; i<num_gcs; i++) {
+        if (gcs[i].initialised) {
+            gcs[i].send_text_P(severity, str);
+        }
     }
 #if LOGGING_ENABLED == ENABLED
     DataFlash.Log_Write_Message_P(str);
@@ -1101,18 +1176,20 @@ static void gcs_send_text_P(gcs_severity severity, const prog_char_t *str)
 void gcs_send_text_fmt(const prog_char_t *fmt, ...)
 {
     va_list arg_list;
-    gcs0.pending_status.severity = (uint8_t)SEVERITY_LOW;
+    gcs[0].pending_status.severity = (uint8_t)SEVERITY_LOW;
     va_start(arg_list, fmt);
-    hal.util->vsnprintf_P((char *)gcs0.pending_status.text,
-            sizeof(gcs0.pending_status.text), fmt, arg_list);
+    hal.util->vsnprintf_P((char *)gcs[0].pending_status.text,
+            sizeof(gcs[0].pending_status.text), fmt, arg_list);
     va_end(arg_list);
 #if LOGGING_ENABLED == ENABLED
-    DataFlash.Log_Write_Message(gcs0.pending_status.text);
+    DataFlash.Log_Write_Message(gcs[0].pending_status.text);
 #endif
-    gcs3.pending_status = gcs0.pending_status;
     mavlink_send_message(MAVLINK_COMM_0, MSG_STATUSTEXT, 0);
-    if (gcs3.initialised) {
-        mavlink_send_message(MAVLINK_COMM_1, MSG_STATUSTEXT, 0);
+    for (uint8_t i=1; i<num_gcs; i++) {
+        if (gcs[i].initialised) {
+            gcs[i].pending_status = gcs[0].pending_status;
+            mavlink_send_message((mavlink_channel_t)i, MSG_STATUSTEXT, 0);
+        }
     }
 }
 

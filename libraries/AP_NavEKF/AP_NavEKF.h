@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
-  21 state EKF based on https://github.com/priseborough/InertialNav
+  22 state EKF based on https://github.com/priseborough/InertialNav
 
   Converted from Matlab to C++ by Paul Riseborough
 
@@ -178,6 +178,9 @@ private:
     // fuse true airspeed measurements
     void FuseAirspeed();
 
+    // fuse sideslip measurements
+    void FuseSideslip();
+
     // zero specified range of rows in the state covariance matrix
     void zeroRows(Matrix22 &covMat, uint8_t first, uint8_t last);
 
@@ -234,6 +237,9 @@ private:
 
     // determine when to perform fusion of true airspeed measurements
     void SelectTasFusion();
+
+    // determine when to perform fusion of synthetic sideslp measurements
+    void SelectBetaFusion();
 
     // determine when to perform fusion of magnetometer measurements
     void SelectMagFusion();
@@ -304,6 +310,7 @@ private:
     AP_Int8  _hgtInnovGate;         // Number of standard deviations applied to height innovation consistency check
     AP_Int8  _magInnovGate;         // Number of standard deviations applied to magnetometer innovation consistency check
     AP_Int8  _tasInnovGate;         // Number of standard deviations applied to true airspeed innovation consistency check
+    AP_Int8  _magCal;               // Forces magentic field states to be always active to aid magnetometer calibration
 
     // Tuning parameters
     AP_Float _gpsNEVelVarAccScale;  // scale factor applied to NE velocity measurement variance due to Vdot
@@ -320,7 +327,8 @@ private:
     float _magVarRateScale;         // scale factor applied to magnetometer variance due to angular rate
     uint16_t _msecGpsAvg;           // average number of msec between GPS measurements
     uint16_t _msecHgtAvg;           // average number of msec between height measurements
-    float dtVelPos;                 // number of seconds between position and velocity corrections
+    uint16_t _msecBetaAvg;          // maximum number of msec between synthetic sideslip measurements
+    float dtVelPos;                 // average of msec between position and velocity corrections
 
     // Variables
     uint8_t skipCounter;            // counter used to skip position and height corrections to achieve _skipRatio
@@ -347,6 +355,7 @@ private:
 	Vector3f prevDelAng;            // previous delta angle use for INS coning error compensation
     Matrix3f prevTnb;               // previous nav to body transformation used for INS earth rotation compensation
     ftype accNavMag;                // magnitude of navigation accel - used to adjust GPS obs variance (m/s^2)
+    ftype accNavMagHoriz;           // magnitude of navigation accel in horizontal plane (m/s^2)
     Vector3f earthRateNED;          // earths angular rate vector in NED (rad/s)
     Vector3f dVelIMU1;              // delta velocity vector in XYZ body axes measured by IMU1 (m/s)
     Vector3f dVelIMU2;              // delta velocity vector in XYZ body axes measured by IMU2 (m/s)
@@ -355,7 +364,7 @@ private:
     ftype dt;                       // time lapsed since the last covariance prediction (sec)
     ftype hgtRate;                  // state for rate of change of height filter
     bool onGround;                  // boolean true when the flight vehicle is on the ground (not flying)
-    const bool useCompass;          // boolean true if magnetometer data is being used
+    bool prevOnGround;              // value of onGround from previous update
     Vector6 innovVelPos;            // innovation output for a group of measurements
     Vector6 varInnovVelPos;         // innovation variance output for a group of measurements
     bool fuseVelData;               // this boolean causes the velNED measurements to be fused
@@ -386,6 +395,7 @@ private:
     bool posVelFuseStep;            // boolean set to true when position and velocity fusion is being performed
     bool tasFuseStep;               // boolean set to true when airspeed fusion is being performed
     uint32_t TASmsecPrev;           // time stamp of last TAS fusion step
+    uint32_t BETAmsecPrev;          // time stamp of last synthetic sideslip fusion step
     const uint32_t TASmsecMax;      // maximum allowed interval between TAS fusion steps
     uint32_t MAGmsecPrev;           // time stamp of last compass fusion step
     uint32_t HGTmsecPrev;           // time stamp of last height measurement fusion step
@@ -424,6 +434,7 @@ private:
     Vector11 SQ;                    // intermediate variables used to calculate predicted covariance matrix
     Vector8 SPP;                    // intermediate variables used to calculate predicted covariance matrix
     float IMU1_weighting;           // Weighting applied to use of IMU1. Varies between 0 and 1.
+    bool yawAligned;                // true when the yaw angle has been aligned
 
     // states held by magnetomter fusion across time steps
     // magnetometer X,Y,Z measurements are fused across three time steps
@@ -454,6 +465,7 @@ private:
     perf_counter_t  _perf_FuseVelPosNED;
     perf_counter_t  _perf_FuseMagnetometer;
     perf_counter_t  _perf_FuseAirspeed;
+    perf_counter_t  _perf_FuseSideslip;
 #endif
     
     // should we use the compass?

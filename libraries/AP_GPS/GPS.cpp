@@ -36,6 +36,7 @@ GPS::GPS(void) :
 	last_fix_time(0),
 	_have_raw_velocity(false),
     _last_gps_time(0),
+    _secondary_gps(false),
 	_idleTimer(0),
 	_status(GPS::NO_FIX),
 	_last_ground_speed_cm(0),
@@ -108,8 +109,10 @@ GPS::update(void)
         }
     }
 
-    // update notify with gps status
-    AP_Notify::flags.gps_status = _status;
+    if (!_secondary_gps) {
+        // update notify with gps status
+        AP_Notify::flags.gps_status = _status;
+    }
 }
 
 void

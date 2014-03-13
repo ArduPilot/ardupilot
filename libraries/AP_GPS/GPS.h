@@ -146,6 +146,8 @@ public:
 	// return true if the GPS supports vertical velocity values
     bool have_vertical_velocity(void) const { return _have_raw_velocity; }
 
+    void set_secondary(void) { _secondary_gps = true; }
+
 protected:
     AP_HAL::UARTDriver *_port;   ///< port the GPS is attached to
 
@@ -203,6 +205,9 @@ protected:
 
     // the time we got the last GPS timestamp
     uint32_t _last_gps_time;
+
+    // this is a secondary GPS, disable notify updates
+    bool _secondary_gps;
 
     // return time in seconds since GPS epoch given time components
     void _make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds);

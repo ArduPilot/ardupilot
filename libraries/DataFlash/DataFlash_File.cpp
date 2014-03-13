@@ -356,7 +356,7 @@ uint16_t DataFlash_File::get_num_logs(void)
 {
     uint16_t ret;
     uint16_t high = find_last_log();
-    for (ret=1; ret<high; ret++) {
+    for (ret=0; ret<high; ret++) {
         if (_get_log_size(high - ret) <= 0) {
             break;
         }

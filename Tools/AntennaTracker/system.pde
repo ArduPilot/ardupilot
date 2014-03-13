@@ -21,15 +21,16 @@ static void init_tracker()
     barometer.init();
 
     // init the GCS
-    gcs0.init(hal.uartA);
+    gcs[0].init(hal.uartA);
+
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
     hal.scheduler->register_delay_callback(mavlink_delay_cb, 5);
 
     // we have a 2nd serial port for telemetry
-    hal.uartC->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD),
-                     128, SERIAL2_BUFSIZE);
-    gcs3.init(hal.uartC);
+    hal.uartC->begin(map_baudrate(g.serial1_baud, SERIAL1_BAUD),
+                     128, SERIAL1_BUFSIZE);
+    gcs[1].init(hal.uartC);
 
     mavlink_system.sysid = g.sysid_this_mav;
 
@@ -72,13 +73,14 @@ static void init_tracker()
     channel_yaw.calc_pwm();
     channel_pitch.calc_pwm();
 
-    channel_yaw.enable_out();
-    channel_pitch.enable_out();
+    current_loc = get_home_eeprom(); // GPS may update this later
 
-    home_loc = get_home_eeprom(); // GPS may update this later
+    arm_servos();
 
     gcs_send_text_P(SEVERITY_LOW,PSTR("\nReady to track."));
     hal.scheduler->delay(1000); // Why????
+
+    set_mode(AUTO); // tracking
 }
 
 // Level the tracker by calibrating the INS
@@ -118,7 +120,7 @@ static uint32_t map_baudrate(int8_t rate, uint32_t default_baud)
     case 111:  return 111100;
     case 115:  return 115200;
     }
-    cliSerial->println_P(PSTR("Invalid SERIAL3_BAUD"));
+    cliSerial->println_P(PSTR("Invalid baudrate"));
     return default_baud;
 }
 
@@ -189,5 +191,27 @@ static void set_home(struct Location temp)
     if (g.compass_enabled)
         compass.set_initial_location(temp.lat, temp.lng);
     set_home_eeprom(temp);
-    home_loc = temp;
+    current_loc = temp;
 }
+
+static void arm_servos()
+{
+    channel_yaw.enable_out();
+    channel_pitch.enable_out();
+}
+
+static void disarm_servos()
+{
+    channel_yaw.disable_out();
+    channel_pitch.disable_out();
+}
+
+static void set_mode(enum ControlMode mode)
+{
+    if(control_mode == mode) {
+        // don't switch modes if we are already in the correct mode.
+        return;
+    }
+    control_mode = mode;
+}
+

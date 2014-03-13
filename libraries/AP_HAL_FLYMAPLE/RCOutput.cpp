@@ -27,6 +27,8 @@
 
 using namespace AP_HAL_FLYMAPLE_NS;
 
+extern const AP_HAL::HAL& hal;
+
 #define MAX_OVERFLOW    ((1 << 16) - 1)
 
 void FLYMAPLERCOutput::init(void* machtnichts) {}
@@ -74,7 +76,15 @@ void FLYMAPLERCOutput::disable_ch(uint8_t ch)
 {
     if (ch >= FLYMAPLE_RC_OUTPUT_NUM_CHANNELS)
 	return;
-    // Nothing really to do
+    uint8_t pin = _channel_to_flymaple_pin(ch);
+    timer_dev *tdev = PIN_MAP[pin].timer_device;
+
+    if (tdev == NULL) {
+        // don't reset any fields or ASSERT(0), to keep driving any
+        // previously attach()ed servo.
+        return;
+    }
+    pinMode(pin, INPUT);
 }
 
 void FLYMAPLERCOutput::write(uint8_t ch, uint16_t period_us)

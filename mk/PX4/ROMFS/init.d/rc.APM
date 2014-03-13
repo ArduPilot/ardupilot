@@ -198,7 +198,7 @@ then
         else 
           echo "hmc5883 calibrate failed"
           echo "hmc5883 calibrate failed" >> $logfile
-          sh /etc/init.d/rc.error
+          tone_alarm MSBBB
         fi
     else
         echo "hmc5883 start failed"
@@ -229,7 +229,7 @@ else
         else 
           echo "hmc5883 calibrate failed"
           echo "hmc5883 calibrate failed" >> $logfile
-          sh /etc/init.d/rc.error
+          tone_alarm MSBBB
         fi
     fi
 

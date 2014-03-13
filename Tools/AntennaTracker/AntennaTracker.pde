@@ -102,6 +102,7 @@ static struct {
     float bearing;
     float distance;
     float pitch;
+    float altitude_difference;
 } nav_status;
 
 
@@ -183,15 +184,18 @@ static RC_Channel channel_pitch(CH_2);
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection
 ////////////////////////////////////////////////////////////////////////////////
-static GCS_MAVLINK gcs0;
-static GCS_MAVLINK gcs3;
+static const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
+static GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
 
 ////////////////////////////////////////////////////////////////////////////////
 // 3D Location vectors
 // Location structure defined in AP_Common
 ////////////////////////////////////////////////////////////////////////////////
 static struct   Location current_loc;
-static struct   Location home_loc;
+
+// This is the state of the antenna control system
+// There are multiple states defined such as MANUAL, FBW-A, AUTO
+static enum ControlMode control_mode  = INITIALISING;
 
 /*
   scheduler table - all regular tasks apart from the fast_loop()
