@@ -24,7 +24,7 @@ public:
     AP_GPS_Auto(GPS **gps);
 
     /// Dummy init routine, does nothing
-    virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
+    virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting);
 
     /// Detect and initialise the attached GPS unit.  Updates the
     /// pointer passed into the constructor when a GPS is detected.

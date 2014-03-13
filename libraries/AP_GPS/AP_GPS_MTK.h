@@ -37,7 +37,7 @@ public:
 		_payload_counter(0)
 		{}
 
-    virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
+    virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting);
     virtual bool        read(void);
     static bool _detect(uint8_t );
 

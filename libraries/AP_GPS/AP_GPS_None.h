@@ -11,7 +11,7 @@ class AP_GPS_None : public GPS
 public:
 	AP_GPS_None() : GPS() {}
 
-    virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE) {
+    virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting) {
 		_port = s;
     };
     virtual bool        read(void) {
