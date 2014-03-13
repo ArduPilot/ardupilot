@@ -5,7 +5,7 @@ set -x
 #
 # Variables to configure SITL environment
 #
-CLEAN_BUILD=1
+CLEAN_BUILD=0
 USE_VALGRIND=0
 USE_GDB=0
 USE_LLDB=0
@@ -83,9 +83,9 @@ make $target -j4 || {
 #
 
 if [ "$OS" = "Darwin" ]; then
-  cmd="$TMPDIR/ArduCopter.build/ArduCopter.elf"
+  cmd="${TMPDIR}ArduCopter.build/ArduCopter.elf"
 else
-  cmd="$TMPDIR/ArduCopter.build/ArduCopter.elf -I$INSTANCE"
+  cmd="${TMPDIR}ArduCopter.build/ArduCopter.elf -I$INSTANCE"
 fi
 
 if [ $USE_VALGRIND == 1 ]; then
@@ -99,7 +99,9 @@ elif [ $USE_GDB == 1 ]; then
 elif [ $USE_LLDB == 1 ]; then
     echo "Using lldb"
     sfile=$(mktemp lldb.XXXX)
-    echo "r" >> $sfile
+#   echo "process handle SIGALRM -n false -p true" >> $sfile
+    echo "target create $cmd" > $sfile
+    echo "process launch" >> $sfile
     $autotest/run_in_terminal_window.sh "ardupilot (lldb)" lldb -s $sfile  || exit 1
 else
   $autotest/run_in_terminal_window.sh "ardupilot" $cmd || exit 1

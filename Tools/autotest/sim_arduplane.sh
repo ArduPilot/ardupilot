@@ -121,6 +121,7 @@ elif [ $USE_GDB == 1 ]; then
 elif [ $USE_LLDB == 1 ]; then
     echo "Using lldb"
     sfile=$(mktemp lldb.XXXX)
+    echo "process load $cmd" > $sfile
     echo "r" >> $sfile
     $autotest/run_in_terminal_window.sh "ardupilot (lldb)" lldb -s $sfile  || exit 1
 else
