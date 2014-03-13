@@ -245,7 +245,7 @@ bool AP_Mission::set_current_cmd(uint16_t index)
         _prev_nav_cmd_index = AP_MISSION_CMD_INDEX_NONE;
         // reset the jump tracking to zero
         init_jump_tracking();
-        index == 1;
+        index = 1;
     }
 
     // if the mission is stopped or completed move the nav_cmd index to the specified point and set the state to stopped
