@@ -190,7 +190,7 @@ void AC_PosControl::calc_leash_length_z()
 {
     if (_flags.recalc_leash_z) {
         _leash_up_z = calc_leash_length(_speed_up_cms, _accel_z_cms, _p_alt_pos.kP());
-        _leash_down_z = calc_leash_length(_speed_down_cms, _accel_z_cms, _p_alt_pos.kP());
+        _leash_down_z = calc_leash_length(-_speed_down_cms, _accel_z_cms, _p_alt_pos.kP());
         _flags.recalc_leash_z = false;
     }
 }
