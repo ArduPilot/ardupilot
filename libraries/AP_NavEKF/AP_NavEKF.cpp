@@ -31,7 +31,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Range: 0.05 - 5.0
     // @Increment: 0.05
     // @User: advanced
-    AP_GROUPINFO("VELNE_NOISE",    0, NavEKF, _gpsHorizVelNoise, 0.15f),
+    AP_GROUPINFO("VELNE_NOISE",    0, NavEKF, _gpsHorizVelNoise, 0.30f),
 
     // @Param: VELD_NOISE
     // @DisplayName: GPS vertical velocity measurement noise (m/s)
@@ -103,7 +103,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Range: 0.05 - 1.0    AP_Float _gpsNEVelVarAccScale;  // scale factor applied to NE velocity measurement variance due to Vdot
     // @Increment: 0.01
     // @User: advanced
-    AP_GROUPINFO("ACC_PNOISE",    9, NavEKF, _accNoise, 0.50f),
+    AP_GROUPINFO("ACC_PNOISE",    9, NavEKF, _accNoise, 0.25f),
 
     // @Param: GBIAS_PNOISE
     // @DisplayName: Rate gyro bias state process noise (rad/s)
