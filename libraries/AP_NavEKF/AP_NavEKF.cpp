@@ -2888,7 +2888,17 @@ void NavEKF::readGpsData()
         // read the NED velocity from the GPS
         velNED[0] = _ahrs->get_gps()->velocity_north();
         velNED[1] = _ahrs->get_gps()->velocity_east();
-        velNED[2] = _ahrs->get_gps()->velocity_down();
+
+        // Check if GPS can output vertical velocity and set value and GPS fusion mode accordingly
+        if (_ahrs->get_gps()->have_vertical_velocity()) {
+            velNED[2] = _ahrs->get_gps()->velocity_down();
+        } else {
+            velNED[2] = 0;
+            // vertical velocity should not be fused
+            if (_fusionModeGPS == 0) {
+                _fusionModeGPS = 1;
+            }
+        }
 
         // read latitutde and longitude from GPS and convert to NE position
         struct Location gpsloc;
@@ -2897,6 +2907,7 @@ void NavEKF::readGpsData()
         Vector2f posdiff = location_diff(_ahrs->get_home(), gpsloc);
         posNE[0] = posdiff.x;
         posNE[1] = posdiff.y;
+
     }
 }
 
