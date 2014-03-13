@@ -739,10 +739,10 @@ void NavEKF::SelectBetaFusion()
     // Determine if synthetic sidelsip data should be fused
     // synthetic sidelip fusion only works for fixed wing aircraft and relies on the average sideslip being close to zero
     // it requires a stable wind estimate for best results and should not be used for aerobatic flight
-    // we only fuse synthetic sideslip measurements if we are not using a compass, are not on the ground, enough time has
-    // lapsed since our last fusion and we have not fused magnetometer data on this time step or the immediate fusion
-    // flag is set
-    if (!use_compass() && !onGround  && ((IMUmsec - BETAmsecPrev) >= _msecBetaAvg) && (!magFusePerformed || fuseMeNow)) {
+    // we fuse synthetic sideslip measurements if:
+    // (we are not using a compass OR (we are dead-reckoning position AND using airspeed)) AND not on the ground AND enough time has lapsed since our last fusion AND
+    // (we have not fused magnetometer data on this time step OR the immediate fusion flag is set)
+    if ((!use_compass() || (!posHealth && useAirspeed())) && !onGround  && ((IMUmsec - BETAmsecPrev) >= _msecBetaAvg) && (!magFusePerformed || fuseMeNow)) {
         FuseSideslip();
         BETAmsecPrev = IMUmsec;
     }
