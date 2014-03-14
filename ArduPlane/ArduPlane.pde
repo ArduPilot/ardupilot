@@ -647,8 +647,8 @@ static struct   Location current_loc;
 static struct   AP_Mission::Mission_Command next_WP;
 // The location of the active waypoint in Guided mode.
 static struct   Location guided_WP;
-// The location structure information from the Nav command being processed
-static struct   AP_Mission::Mission_Command next_nav_command;
+// special purpose command used only after mission completed to return vehicle to home or rally point
+static struct   AP_Mission::Mission_Command auto_rtl_command;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Altitude / Climb rate control

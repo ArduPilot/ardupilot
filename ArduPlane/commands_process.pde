@@ -13,7 +13,7 @@ static void update_commands(void)
                 mission.update();
             } else {
                 // next_nav_command should have been set to MAV_CMD_NAV_LOITER_UNLIM by exit_mission
-                verify_command(next_nav_command);
+                verify_command(auto_rtl_command);
             }
         }
     }
