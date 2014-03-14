@@ -608,7 +608,7 @@ static void do_set_home()
     if (next_nonnav_command.p1 == 1 && g_gps->status() == GPS::GPS_OK_FIX_3D) {
         init_home();
     } else {
-        ahrs.set_home(next_nonnav_command.lat, next_nonnav_command.lng, next_nonnav_command.alt);
+        ahrs.set_home(next_nonnav_command.lat, next_nonnav_command.lng, next_nonnav_command.alt*100.0f);
         home_is_set = true;
     }
 }
