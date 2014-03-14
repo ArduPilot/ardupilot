@@ -1120,7 +1120,7 @@ static void handle_auto_mode(void)
 
     // we should be either running a mission or RTLing home
     if (mission.state() == AP_Mission::MISSION_RUNNING) {
-        mission.get_current_nav_cmd().id;
+        nav_cmd_id = mission.get_current_nav_cmd().id;
     }else{
         nav_cmd_id = auto_rtl_command.id;
     }
