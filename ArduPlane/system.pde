@@ -341,8 +341,12 @@ static void set_mode(enum FlightMode mode)
 
     case AUTO:
         prev_WP.content.location = current_loc;
-        // start the mission
-        mission.start();
+        // start the mission. Note that we use resume(), not start(),
+        // as the correct behaviour for plane when entering auto is to
+        // continue the mission. If the pilot wants to restart the
+        // mission they need to either use RST_MISSION_CH or change
+        // waypoint number to 0
+        mission.resume();
         break;
 
     case RTL:
