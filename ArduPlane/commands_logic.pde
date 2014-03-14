@@ -14,6 +14,11 @@ static void do_change_speed(const AP_Mission::Mission_Command& cmd);
 static void do_set_home(const AP_Mission::Mission_Command& cmd);
 static AP_Mission::Mission_Command rally_find_best_cmd(const Location &myloc, const Location &homeloc);
 
+
+/********************************************************************************/
+// Command Event Handlers
+/********************************************************************************/
+
 /********************************************************************************/
 // Command Event Handlers
 /********************************************************************************/
@@ -153,15 +158,6 @@ start_command(const AP_Mission::Mission_Command& cmd)
     }
 
     return true;
-}
-
-static void exit_mission()
-{
-    gcs_send_text_fmt(PSTR("Returning to Home"));
-    next_nav_command = rally_find_best_cmd(current_loc, home);
-    next_nav_command.id = MAV_CMD_NAV_LOITER_UNLIM;
-    setup_glide_slope();
-    start_command(next_nav_command);
 }
 
 /*******************************************************************************
@@ -586,4 +582,31 @@ static void do_take_picture()
         Log_Write_Camera();
     }
 #endif
+}
+
+static bool verify_command_callback(const AP_Mission::Mission_Command& cmd)
+{
+    if (control_mode == AUTO) {
+        return verify_command(cmd);
+    }
+    return false;
+}
+
+static void exit_mission_callback()
+{
+    if (control_mode == AUTO) {
+        gcs_send_text_fmt(PSTR("Returning to Home"));
+        next_nav_command = rally_find_best_cmd(current_loc, home);
+        next_nav_command.id = MAV_CMD_NAV_LOITER_UNLIM;
+        setup_glide_slope();
+        start_command(next_nav_command);
+    }
+}
+
+static bool start_command_callback(const AP_Mission::Mission_Command &cmd)
+{
+    if (control_mode == AUTO) {
+        return start_command(cmd);
+    }
+    return true;
 }

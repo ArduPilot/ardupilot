@@ -575,12 +575,12 @@ static int32_t nav_pitch_cd;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Mission library
-// forward declaration to keep compiler happy
 ////////////////////////////////////////////////////////////////////////////////
-static bool start_command(const AP_Mission::Mission_Command& cmd);
-static bool verify_command(const AP_Mission::Mission_Command& cmd);
-static void exit_mission();
-AP_Mission mission(ahrs, &start_command, &verify_command, &exit_mission, MISSION_START_BYTE, MISSION_END_BYTE);
+AP_Mission mission(ahrs, 
+                   &start_command_callback, 
+                   &verify_command_callback, 
+                   &exit_mission_callback, 
+                   MISSION_START_BYTE, MISSION_END_BYTE);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Waypoint distances
