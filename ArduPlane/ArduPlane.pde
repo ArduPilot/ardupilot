@@ -1116,7 +1116,16 @@ static void update_GPS_10Hz(void)
  */
 static void handle_auto_mode(void)
 {
-    switch(mission.get_current_nav_cmd().id) {
+    uint8_t nav_cmd_id;
+
+    // we should be either running a mission or RTLing home
+    if (mission.state() == AP_Mission::MISSION_RUNNING) {
+        mission.get_current_nav_cmd().id;
+    }else{
+        nav_cmd_id = auto_rtl_command.id;
+    }
+
+    switch(nav_cmd_id) {
     case MAV_CMD_NAV_TAKEOFF:
         if (steer_state.hold_course_cd == -1) {
             // we don't yet have a heading to hold - just level

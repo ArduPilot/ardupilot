@@ -8,11 +8,11 @@ static bool verify_command(const AP_Mission::Mission_Command& cmd);
 static void update_commands(void)
 {
     if(control_mode == AUTO) {
-        if(home_is_set == true && mission.num_commands() > 1) {
+        if (home_is_set) {
             if(mission.state() == AP_Mission::MISSION_RUNNING) {
                 mission.update();
             } else {
-                // next_nav_command should have been set to MAV_CMD_NAV_LOITER_UNLIM by exit_mission
+                // auto_rtl_command should have been set to MAV_CMD_NAV_LOITER_UNLIM by exit_mission
                 verify_command(auto_rtl_command);
             }
         }
