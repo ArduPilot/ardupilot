@@ -308,6 +308,10 @@ static void set_mode(enum FlightMode mode)
     if(g.auto_trim > 0 && control_mode == MANUAL)
         trim_control_surfaces();
 
+    // perform any cleanup required for prev flight mode
+    exit_mode(control_mode);
+
+    // set mode
     control_mode = mode;
 
     switch(control_mode)
@@ -386,6 +390,17 @@ static void set_mode(enum FlightMode mode)
     rollController.reset_I();
     pitchController.reset_I();
     yawController.reset_I();    
+}
+
+// exit_mode - perform any cleanup required when leaving a flight mode
+static void exit_mode(enum FlightMode mode)
+{
+    // stop mission when we leave auto
+    if (mode == AUTO) {
+        if (mission.state() == AP_Mission::MISSION_RUNNING) {
+            mission.stop();
+        }
+    }
 }
 
 static void check_long_failsafe()

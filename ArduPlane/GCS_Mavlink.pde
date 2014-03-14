@@ -1606,13 +1606,15 @@ mission_item_send_failed:
         if (mavlink_check_target(packet.target_system,packet.target_component)) break;
 
         // set current command
-        if (packet.seq == 0) {
-            mission.start();
-            mavlink_msg_mission_current_send(chan, mission.get_current_nav_cmd().index);
-        } else if (mission.set_current_cmd(packet.seq)) {
-            mission.resume();
-            mavlink_msg_mission_current_send(chan, mission.get_current_nav_cmd().index);
+        if (mission.set_current_cmd(packet.seq)) {
+            // restart/resume mission if we are in auto but the mission is not running (i.e. complete)
+            if (control_mode == AUTO && mission.state() != AP_Mission::MISSION_RUNNING) {
+                mission.resume();
+            }
         }
+
+        // update GCS with out mission command
+        mavlink_msg_mission_current_send(chan, mission.get_current_nav_cmd().index);
         break;
     }
 
