@@ -571,7 +571,7 @@ static void do_set_home(const AP_Mission::Mission_Command& cmd)
     if (cmd.p1 == 1 && g_gps->status() == GPS::GPS_OK_FIX_3D) {
         init_home();
     } else {
-        ahrs.set_home(cmd.content.location.lat, cmd.content.location.lng, cmd.content.location.alt);
+        ahrs.set_home(cmd.content.location.lat, cmd.content.location.lng, cmd.content.location.alt*100.0f);
         home_is_set = true;
     }
 }
