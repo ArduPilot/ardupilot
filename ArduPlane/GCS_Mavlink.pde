@@ -1606,7 +1606,11 @@ mission_item_send_failed:
         if (mavlink_check_target(packet.target_system,packet.target_component)) break;
 
         // set current command
-        if (mission.set_current_cmd(packet.seq)) {
+        if (packet.seq == 0) {
+            mission.start();
+            mavlink_msg_mission_current_send(chan, mission.get_current_nav_cmd().index);
+        } else if (mission.set_current_cmd(packet.seq)) {
+            mission.resume();
             mavlink_msg_mission_current_send(chan, mission.get_current_nav_cmd().index);
         }
         break;
@@ -1628,12 +1632,7 @@ mission_item_send_failed:
             break;
         }
 
-        // new mission arriving, clear current mission
-        if (!mission.clear()) {
-            // return error if we were unable to clear the mission (possibly because we're currently flying the mission)
-            mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_ERROR);
-            break;
-        }
+        mission.truncate(packet.count);
 
         waypoint_timelast_receive = millis();
         waypoint_timelast_request = 0;

@@ -160,6 +160,7 @@ static void exit_mission()
     gcs_send_text_fmt(PSTR("Returning to Home"));
     next_nav_command = rally_find_best_cmd(current_loc, home);
     next_nav_command.id = MAV_CMD_NAV_LOITER_UNLIM;
+    setup_glide_slope();
     start_command(next_nav_command);
 }
 

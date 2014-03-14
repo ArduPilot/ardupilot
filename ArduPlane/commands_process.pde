@@ -11,7 +11,7 @@ static void update_commands(void)
         if(home_is_set == true && mission.num_commands() > 1) {
             if(mission.state() == AP_Mission::MISSION_RUNNING) {
                 mission.update();
-            }else if(mission.state() == AP_Mission::MISSION_COMPLETE) {
+            } else {
                 // next_nav_command should have been set to MAV_CMD_NAV_LOITER_UNLIM by exit_mission
                 verify_command(next_nav_command);
             }
