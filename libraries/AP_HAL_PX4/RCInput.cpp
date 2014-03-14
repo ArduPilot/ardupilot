@@ -5,6 +5,8 @@
 #include <drivers/drv_hrt.h>
 #include <uORB/uORB.h>
 
+#include <stdio.h>
+
 using namespace PX4;
 
 extern const AP_HAL::HAL& hal;
@@ -16,6 +18,12 @@ void PX4RCInput::init(void* unused)
 	if (_rc_sub == -1) {
 		hal.scheduler->panic("Unable to subscribe to input_rc");		
 	}
+
+        _status_sub = orb_subscribe(ORB_ID(rc_status));
+        if (_status_sub == -1) {
+                hal.scheduler->panic("Unable to subscribe to rc_status");
+        }
+
 	clear_overrides();
         pthread_mutex_init(&rcin_mutex, NULL);
 }
@@ -23,7 +31,7 @@ void PX4RCInput::init(void* unused)
 uint8_t PX4RCInput::valid_channels() 
 {
     pthread_mutex_lock(&rcin_mutex);
-    bool valid = _rcin.timestamp != _last_read || _override_valid;
+    bool valid = _rcin.timestamp != _last_read || _status.timestamp != _last_read || _override_valid;
     pthread_mutex_unlock(&rcin_mutex);
     return valid;
 }
@@ -95,14 +103,30 @@ void PX4RCInput::clear_overrides()
 void PX4RCInput::_timer_tick(void)
 {
 	perf_begin(_perf_rcin);
-	bool rc_updated = false;
-	if (orb_check(_rc_sub, &rc_updated) == 0 && rc_updated) {
-            pthread_mutex_lock(&rcin_mutex);
-            orb_copy(ORB_ID(input_rc), _rc_sub, &_rcin);
-            pthread_mutex_unlock(&rcin_mutex);
+
+	// check for status and channel values and update them consistently
+	bool rc_updated = orb_check(_rc_sub, &rc_updated) == 0 && rc_updated;
+	bool status_updated = orb_check(_status_sub, &status_updated) == 0 && status_updated;
+	if (rc_updated || status_updated) {
+		pthread_mutex_lock(&rcin_mutex);
+		orb_copy(ORB_ID(input_rc), _rc_sub, &_rcin);
+		orb_copy(ORB_ID(rc_status), _status_sub, &_status);
+
+		// pull throttle channel low for easy and intuitive failsafe testing, preserve 
+		// all other channel values, e.g. to lower retracts on failsafe
+		if (_status.rc_lost) {
+			// we've lost RC input, RC receiver failed or cable break
+			// force channel 3 low
+			_rcin.values[2] = 900;
+		}
+		else if (_status.rc_failsafe) {
+			// we got a valid RC signal, but it contains a failsafe flag (e.g. TX switched off or out of range)
+			// force channel 3 low
+			// slightly different value allows to map failsafe action only to rc_lost state
+			_rcin.values[2] = 910;
+		}
+		pthread_mutex_unlock(&rcin_mutex);
 	}
-        // note, we rely on the vehicle code checking valid_channels() 
-        // and a timeout for the last valid input to handle failsafe
 	perf_end(_perf_rcin);
 }
 

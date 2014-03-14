@@ -4,6 +4,7 @@
 
 #include <AP_HAL_PX4.h>
 #include <drivers/drv_rc_input.h>
+#include <modules/uORB/topics/rc_status.h>
 #include <systemlib/perf_counter.h>
 #include <pthread.h>
 
@@ -24,7 +25,9 @@ private:
     /* override state */
     uint16_t _override[RC_INPUT_MAX_CHANNELS];
     struct rc_input_values _rcin;
+    struct rc_status_s _status;
     int _rc_sub;
+    int _status_sub;
     uint64_t _last_read;
     bool _override_valid;
     perf_counter_t _perf_rcin;
