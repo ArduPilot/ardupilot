@@ -130,6 +130,9 @@ public:
     ///     returns true if mission was running so it could not be cleared
     bool clear();
 
+    /// truncate - truncate any mission items beyond given index
+    void truncate(uint16_t index);
+
     /// update - ensures the command queues are loaded with the next command and calls main programs command_init and command_verify functions to progress the mission
     ///     should be called at 10hz or higher
     void update();

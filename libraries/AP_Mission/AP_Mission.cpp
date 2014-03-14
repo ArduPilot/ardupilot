@@ -113,6 +113,15 @@ bool AP_Mission::clear()
     return true;
 }
 
+
+/// trucate - trunacte any mission items beyond index
+void AP_Mission::truncate(uint16_t index)
+{
+    if (_cmd_total > index) {        
+        _cmd_total.set_and_save(index);
+    }
+}
+
 /// update - ensures the command queues are loaded with the next command and calls main programs command_init and command_verify functions to progress the mission
 ///     should be called at 10hz or higher
 void AP_Mission::update()
