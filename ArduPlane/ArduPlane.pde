@@ -576,6 +576,9 @@ static int32_t nav_pitch_cd;
 ////////////////////////////////////////////////////////////////////////////////
 // Mission library
 ////////////////////////////////////////////////////////////////////////////////
+// forward declations needed for functions with : in arguments
+static bool verify_command_callback(const AP_Mission::Mission_Command &cmd);
+static bool start_command_callback(const AP_Mission::Mission_Command &cmd);
 AP_Mission mission(ahrs, 
                    &start_command_callback, 
                    &verify_command_callback, 
