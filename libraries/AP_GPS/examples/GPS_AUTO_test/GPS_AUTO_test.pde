@@ -35,7 +35,7 @@ void setup()
 
     hal.console->println("GPS AUTO library test");
     gps = &GPS;
-    gps->init(hal.uartB, GPS::GPS_ENGINE_AIRBORNE_2G);
+    gps->init(hal.uartB, GPS::GPS_ENGINE_AIRBORNE_4G);
 
     // initialise the leds
     board_led.init();

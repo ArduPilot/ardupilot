@@ -30,7 +30,7 @@ void setup()
     gps.print_errors = true;
 
     hal.console->println("GPS UBLOX library test");
-    gps.init(hal.uartB, GPS::GPS_ENGINE_AIRBORNE_2G);       // GPS Initialization
+    gps.init(hal.uartB, GPS::GPS_ENGINE_AIRBORNE_4G);       // GPS Initialization
 }
 
 void loop()
