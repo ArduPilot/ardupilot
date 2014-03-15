@@ -41,7 +41,7 @@ handle_process_nav_cmd()
         break;
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-        do_RTL();
+        set_mode(RTL);
         break;
 
     default:
