@@ -273,3 +273,14 @@ static void tracking_update_pressure(const mavlink_scaled_pressure_t &msg)
         nav_status.altitude_difference = alt_diff;
     }
 }
+
+/**
+   handle a manual control message by using the data to command yaw and pitch
+ */
+static void tracking_manual_control(const mavlink_manual_control_t &msg)
+{
+    nav_status.bearing = msg.x;
+    nav_status.pitch   = msg.y;
+    nav_status.distance = 0.0;
+    // z, r and buttons are not used
+}

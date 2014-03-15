@@ -813,10 +813,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             set_home(tell_command); // New home in EEPROM
             send_text_P(SEVERITY_LOW,PSTR("new HOME received"));
             waypoint_receiving = false;
-
         }
-
-
 
 mission_failed:
         // we are rejecting the mission/waypoint
@@ -828,6 +825,14 @@ mission_failed:
         break;
     }
 
+    case MAVLINK_MSG_ID_MANUAL_CONTROL:
+    {
+        if(msg->sysid != g.sysid_my_gcs) break;                         // Only accept control from our gcs
+        mavlink_manual_control_t packet;
+        mavlink_msg_manual_control_decode(msg, &packet);
+        tracking_manual_control(packet);
+        break;
+    }
 
     case MAVLINK_MSG_ID_GLOBAL_POSITION_INT: 
     {
