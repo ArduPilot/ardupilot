@@ -333,10 +333,12 @@ RC_Channel::range_to_pwm()
 float
 RC_Channel::norm_input()
 {
+    float ret;
     if(radio_in < radio_trim)
-        return _reverse * (float)(radio_in - radio_trim) / (float)(radio_trim - radio_min);
+        ret = _reverse * (float)(radio_in - radio_trim) / (float)(radio_trim - radio_min);
     else
-        return _reverse * (float)(radio_in - radio_trim) / (float)(radio_max  - radio_trim);
+        ret = _reverse * (float)(radio_in - radio_trim) / (float)(radio_max  - radio_trim);
+    return constrain_float(ret, -1.0f, 1.0f);
 }
 
 /*
