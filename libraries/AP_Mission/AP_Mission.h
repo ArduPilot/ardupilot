@@ -159,7 +159,7 @@ public:
 
     /// get_prev_nav_cmd_index - returns the previous "navigation" commands index (i.e. position in the mission command list)
     ///     we do not return the entire command to save on RAM
-    uint8_t get_prev_nav_cmd_index() { return _prev_nav_cmd_index; }
+    uint16_t get_prev_nav_cmd_index() { return _prev_nav_cmd_index; }
 
     /// get_next_nav_cmd - gets next "navigation" command found at or after start_index
     ///     returns true if found, false if not found (i.e. reached end of mission command list)
