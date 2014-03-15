@@ -37,6 +37,13 @@ class AC_WPNav
 {
 public:
 
+    // spline segment end types enum
+    enum spline_segment_end_type {
+        SEGMENT_END_STOP = 0,
+        SEGMENT_END_STRAIGHT,
+        SEGMENT_END_SPLINE
+    };
+
     /// Constructor
     AC_WPNav(const AP_InertialNav* inav, const AP_AHRS* ahrs, AC_PosControl& pos_control);
 
@@ -125,6 +132,39 @@ public:
     void calculate_wp_leash_length();
 
     ///
+    /// spline methods
+    ///
+
+    // segment start types
+    // stop - vehicle is not moving at origin
+    // straight-fast - vehicle is moving, previous segment is straight.  vehicle will fly straight through the waypoint before beginning it's spline path to the next wp
+    //     _flag.segment_type holds whether prev segment is straight vs spline but we don't know if it has a delay
+    // spline-fast - vehicle is moving, previous segment is splined, vehicle will fly through waypoint but previous segment should have it flying in the correct direction (i.e. exactly parallel to position difference vector from previous segment's origin to this segment's destination)
+
+    // segment end types
+    // stop - vehicle is not moving at destination
+    // straight-fast - next segment is straight, vehicle's destination velocity should be directly along track from this segment's destination to next segment's destination
+    // spline-fast - next segment is spline, vehicle's destination velocity should be parallel to position difference vector from previous segment's origin to this segment's destination
+
+    /// set_spline_destination waypoint using position vector (distance from home in cm)
+    ///     stopped_at_start should be set to true if vehicle is stopped at the origin
+    ///     seg_end_type should be set to stopped, straight or spline depending upon the next segment's type
+    ///     next_destination should be set to the next segment's destination if the seg_end_type is SEGMENT_END_STRAIGHT or SEGMENT_END_SPLINE
+    void set_spline_destination(const Vector3f& destination, bool stopped_at_start, spline_segment_end_type seg_end_type, const Vector3f& next_destination);
+
+    /// set_spline_origin_and_destination - set origin and destination waypoints using position vectors (distance from home in cm)
+    ///     stopped_at_start should be set to true if vehicle is stopped at the origin
+    ///     seg_end_type should be set to stopped, straight or spline depending upon the next segment's type
+    ///     next_destination should be set to the next segment's destination if the seg_end_type is SEGMENT_END_STRAIGHT or SEGMENT_END_SPLINE
+    void set_spline_origin_and_destination(const Vector3f& origin, const Vector3f& destination, bool stopped_at_start, spline_segment_end_type seg_end_type, const Vector3f& next_destination);
+
+    /// reached_spline_destination - true when we have come within RADIUS cm of the waypoint
+    bool reached_spline_destination() const { return _flags.reached_destination; }
+
+    /// update_spline - update spline controller
+    void update_spline();
+
+    ///
     /// shared methods
     ///
 
@@ -137,16 +177,25 @@ public:
 
     /// set_desired_alt - set desired altitude (in cm above home)
     void set_desired_alt(float desired_alt) { _pos_control.set_alt_target(desired_alt); }
+
     /// advance_wp_target_along_track - move target location along track from origin to destination
     void advance_wp_target_along_track(float dt);
 
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
+
+    // segment types, either straight or spine
+    enum SegmentType {
+        SEGMENT_STRAIGHT = 0,
+        SEGMENT_SPLINE = 1
+    };
+
     // flags structure
     struct wpnav_flags {
         uint8_t reached_destination     : 1;    // true if we have reached the destination
         uint8_t fast_waypoint           : 1;    // true if we should ignore the waypoint radius and consider the waypoint complete once the intermediate target has reached the waypoint
+        SegmentType segment_type        : 1;    // active segment is either straight or spline
     } _flags;
 
     /// calc_loiter_desired_velocity - updates desired velocity (i.e. feed forward) with pilot requested acceleration and fake wind resistance
@@ -155,6 +204,18 @@ protected:
 
     /// get_bearing_cd - return bearing in centi-degrees between two positions
     float get_bearing_cd(const Vector3f &origin, const Vector3f &destination) const;
+
+    /// spline protected functions
+
+    /// update_spline_solution - recalculates hermite_spline_solution grid
+    void update_spline_solution(const Vector3f& origin, const Vector3f& dest, const Vector3f& origin_vel, const Vector3f& dest_vel);
+
+    /// advance_spline_target_along_track - move target location along track from origin to destination
+    void advance_spline_target_along_track(float dt);
+
+    /// calc_spline_pos_vel - update position and velocity from given spline time
+    /// 	relies on update_spline_solution being called since the previous
+    void calc_spline_pos_vel(float spline_time, Vector3f& position, Vector3f& velocity);
 
     // references to inertial nav and ahrs libraries
     const AP_InertialNav* const _inav;
@@ -188,5 +249,14 @@ protected:
     float       _track_accel;           // acceleration along track
     float       _track_speed;           // speed in cm/s along track
     float       _track_leash_length;    // leash length along track
+
+    // spline variables
+    float		_spline_time;			// current spline time between origin and destination
+    Vector3f    _spline_origin_vel;     // the target velocity vector at the origin of the spline segment
+    Vector3f    _spline_destination_vel;// the target velocity vector at the destination point of the spline segment
+    Vector3f    _hermite_spline_solution[4]; // array describing spline path between origin and destination
+    float       _spline_vel_scaler;		//
+    float       _spline_slow_down_dist; // vehicle should begin to slow down once it is within this distance from the destination
+                                        // To-Do: this should be used for straight segments as well
 };
 #endif	// AC_WPNAV_H
