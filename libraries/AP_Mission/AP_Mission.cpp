@@ -884,6 +884,7 @@ void AP_Mission::advance_current_do_cmd()
     if (get_next_do_cmd(cmd_index, cmd)) {
         // set current do command and start it
         _do_cmd = cmd;
+        _flags.do_cmd_loaded = true;
         _cmd_start_fn(_do_cmd);
     }else{
         // set flag to stop unnecessarily searching for do commands
