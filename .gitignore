@@ -46,11 +46,11 @@
 /Tools/autotest/aircraft/Rascal/reset.xml
 /Tools/autotest/jsbsim/fgout.xml
 /Tools/autotest/jsbsim/rascal_test.xml
-ArduCopter/dataflash.bin
 ArduCopter/Debug/
-ArduCopter/eeprom.bin
 ArduCopter/test.ArduCopter/
 ArduCopter/test/*
+ArduPlane/test.ArduPlane/
+APMrover2/test.APMrover2/
 build
 Build.ArduCopter/*
 Build.ArduPlane/*
