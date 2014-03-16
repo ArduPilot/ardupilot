@@ -1540,12 +1540,8 @@ mission_item_send_failed:
             break;
         }
 
-        // new mission arriving, clear current mission
-        if (!mission.clear()) {
-            // return error if we were unable to clear the mission (possibly because we're currently flying the mission)
-            mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_ERROR);
-            break;
-        }
+        // new mission arriving, truncate mission to be the same length
+        mission.truncate(packet.count);
 
         // set variables to help handle the expected receiving of commands from the GCS
         waypoint_timelast_receive = millis();   // set time we last received commands to now
