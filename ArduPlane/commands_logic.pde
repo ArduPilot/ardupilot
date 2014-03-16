@@ -25,7 +25,7 @@ start_command(const AP_Mission::Mission_Command& cmd)
 {
     // log when new commands start
     if (g.log_bitmask & MASK_LOG_CMD) {
-        DataFlash.Log_Write_Cmd(mission.num_commands(),cmd);
+        Log_Write_Cmd(cmd);
     }
 
     // special handling for nav vs non-nav commands
