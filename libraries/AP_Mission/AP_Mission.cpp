@@ -8,9 +8,9 @@
 const AP_Param::GroupInfo AP_Mission::var_info[] PROGMEM = {
 
     // @Param: TOTAL
-    // @DisplayName: Total number of commands in the mission
+    // @DisplayName: Total number of commands in the mission in eeprom
     // @Description: The number of mission mission items that has been loaded by the ground station. Do not change this manually.
-    // @Range: 0 255
+    // @Range: 0 32766
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("TOTAL",  0, AP_Mission, _cmd_total, 0),
