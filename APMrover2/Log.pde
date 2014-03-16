@@ -194,6 +194,14 @@ static void Log_Write_Performance()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
+// Write a mission command. Total length : 36 bytes
+static void Log_Write_Cmd(const AP_Mission::Mission_Command &cmd)
+{
+    mavlink_mission_item_t mav_cmd = {};
+    AP_Mission::mission_cmd_to_mavlink(cmd,mav_cmd);
+    DataFlash.Log_Write_MavCmd(mission.num_commands(),mav_cmd);
+}
+
 struct PACKED log_Camera {
     LOG_PACKET_HEADER;
     uint32_t time_ms;
@@ -265,7 +273,7 @@ static void Log_Write_Startup(uint8_t type)
     AP_Mission::Mission_Command cmd;
     for (uint16_t i = 0; i < mission.num_commands(); i++) {
         if(mission.read_cmd_from_storage(i,cmd)) {
-            DataFlash.Log_Write_Cmd(mission.num_commands(), cmd);
+            Log_Write_Cmd(cmd);
         }
     }
 }
@@ -567,6 +575,7 @@ static void Log_Write_Startup(uint8_t type) {}
 static void Log_Write_Current() {}
 static void Log_Write_Nav_Tuning() {}
 static void Log_Write_Performance() {}
+static void Log_Write_Cmd(const AP_Mission::Mission_Command &cmd) {}
 static int8_t process_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
 static void Log_Write_Control_Tuning() {}
 static void Log_Write_Sonar() {}
