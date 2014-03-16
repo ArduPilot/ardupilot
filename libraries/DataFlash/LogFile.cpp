@@ -943,35 +943,21 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
 #endif
 
 // Write a command processing packet
-void DataFlash_Class::Log_Write_Cmd(uint16_t cmd_total, const AP_Mission::Mission_Command& cmd)
+void DataFlash_Class::Log_Write_MavCmd(uint16_t cmd_total, const mavlink_mission_item_t& mav_cmd)
 {
-    if (cmd.id == MAV_CMD_DO_JUMP) {
-        struct log_Cmd pkt = {
-            LOG_PACKET_HEADER_INIT(LOG_CMD_MSG),
-            time_ms             : hal.scheduler->millis(),
-            command_total       : cmd_total,
-            command_number      : cmd.index,
-            waypoint_id         : cmd.id,
-            waypoint_options    : 0,
-            waypoint_param1     : cmd.content.jump.target,
-            waypoint_altitude   : 0,
-            waypoint_latitude   : cmd.content.jump.num_times,
-            waypoint_longitude  : 0
-        };
-        WriteBlock(&pkt, sizeof(pkt));
-    }else{
-        struct log_Cmd pkt = {
-            LOG_PACKET_HEADER_INIT(LOG_CMD_MSG),
-            time_ms             : hal.scheduler->millis(),
-            command_total       : cmd_total,
-            command_number      : cmd.index,
-            waypoint_id         : cmd.id,
-            waypoint_options    : cmd.content.location.options,
-            waypoint_param1     : (uint16_t)cmd.p1,
-            waypoint_altitude   : cmd.content.location.alt,
-            waypoint_latitude   : cmd.content.location.lat,
-            waypoint_longitude  : cmd.content.location.lng
-        };
-        WriteBlock(&pkt, sizeof(pkt));
-    }
+    struct log_Cmd pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_CMD_MSG),
+        time_ms         : hal.scheduler->millis(),
+        command_total   : (uint16_t)cmd_total,
+        sequence        : (uint16_t)mav_cmd.seq,
+        command         : (uint16_t)mav_cmd.command,
+        param1          : (float)mav_cmd.param1,
+        param2          : (float)mav_cmd.param2,
+        param3          : (float)mav_cmd.param3,
+        param4          : (float)mav_cmd.param4,
+        latitude        : (float)mav_cmd.x,
+        longitude       : (float)mav_cmd.y,
+        altitude        : (float)mav_cmd.z
+    };
+    WriteBlock(&pkt, sizeof(pkt));
 }

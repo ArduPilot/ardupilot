@@ -12,7 +12,6 @@
 #include <AP_InertialSensor.h>
 #include <AP_Baro.h>
 #include <AP_AHRS.h>
-#include <AP_Mission.h>
 #include <stdint.h>
 
 class DataFlash_Class
@@ -59,7 +58,7 @@ public:
 #if AP_AHRS_NAVEKF_AVAILABLE
     void Log_Write_EKF(AP_AHRS_NavEKF &ahrs);
 #endif
-    void Log_Write_Cmd(uint16_t cmd_total, const AP_Mission::Mission_Command& cmd);
+    void Log_Write_MavCmd(uint16_t cmd_total, const mavlink_mission_item_t& mav_cmd);
     void Log_Write_Message(const char *message);
     void Log_Write_Message_P(const prog_char_t *message);
 
@@ -324,13 +323,15 @@ struct PACKED log_Cmd {
     LOG_PACKET_HEADER;
     uint32_t time_ms;
     uint16_t command_total;
-    uint16_t command_number;
-    uint8_t waypoint_id;
-    uint8_t waypoint_options;
-    uint16_t waypoint_param1;
-    int32_t waypoint_altitude;
-    int32_t waypoint_latitude;
-    int32_t waypoint_longitude;
+    uint16_t sequence;
+    uint16_t command;
+    float param1;
+    float param2;
+    float param3;
+    float param4;
+    float latitude;
+    float longitude;
+    float altitude;
 };
 
 #define LOG_COMMON_STRUCTURES \
@@ -369,7 +370,7 @@ struct PACKED log_Cmd {
     { LOG_EKF4_MSG, sizeof(log_EKF4), \
       "EKF4","Icccccchhhc","TimeMS,SVN,SVE,SVD,SPN,SPE,SPD,SMX,SMY,SMZ,SVT" }, \
     { LOG_CMD_MSG, sizeof(log_Cmd), \
-      "CMD", "IHHBBHeLL","TimeMS,CTot,CNum,CId,COpt,Prm1,Alt,Lat,Lng" }
+      "CMD", "IHHHfffffff","TimeMS,CTot,CNum,CId,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt" }
 
 // message types for common messages
 #define LOG_FORMAT_MSG	  128
@@ -389,7 +390,7 @@ struct PACKED log_Cmd {
 #define LOG_EKF3_MSG      142
 #define LOG_EKF4_MSG      143
 #define LOG_GPS2_MSG	  144
-#define LOG_CMD_MSG       145
+#define LOG_CMD_MSG    145
 
 #include "DataFlash_Block.h"
 #include "DataFlash_File.h"
