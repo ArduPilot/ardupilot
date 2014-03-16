@@ -1695,11 +1695,11 @@ mission_item_send_failed:
         }
 
         if(packet.current == 2) {                                               //current = 2 is a flag to tell us this is a "guided mode" waypoint and not for the mission
-            guided_WP = cmd.content.location;
+            guided_WP_loc = cmd.content.location;
 
             // add home alt if needed
-            if (guided_WP.flags.relative_alt) {
-                guided_WP.alt += home.alt;
+            if (guided_WP_loc.flags.relative_alt) {
+                guided_WP_loc.alt += home.alt;
             }
 
             set_mode(GUIDED);
@@ -1721,7 +1721,7 @@ mission_item_send_failed:
                 cmd.content.location.alt += home.alt;
             }
 
-            next_WP.content.location.alt = cmd.content.location.alt;
+            next_WP_loc.alt = cmd.content.location.alt;
 
             // verify we recevied the command
             mavlink_msg_mission_ack_send(

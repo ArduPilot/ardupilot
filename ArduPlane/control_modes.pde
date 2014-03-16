@@ -43,13 +43,13 @@ static void read_control_switch()
         set_mode((enum FlightMode)(flight_modes[switchPosition].get()));
 
         oldSwitchPosition = switchPosition;
-        prev_WP.content.location = current_loc;
+        prev_WP_loc = current_loc;
     }
 
     if (g.reset_mission_chan != 0 &&
         hal.rcin->read(g.reset_mission_chan-1) > RESET_SWITCH_CHAN_PWM) {
         mission.start();
-        prev_WP.content.location = current_loc;
+        prev_WP_loc = current_loc;
     }
 
     switch_debouncer = false;

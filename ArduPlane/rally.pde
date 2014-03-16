@@ -82,20 +82,19 @@ static Location rally_location_to_location(const RallyLocation &r_loc, const Loc
 }
 
 // return best RTL location from current position
-static AP_Mission::Mission_Command rally_find_best_cmd(const Location &myloc, const Location &homeloc)
+static Location rally_find_best_location(const Location &myloc, const Location &homeloc)
 {
     RallyLocation ral_loc = {};
-    AP_Mission::Mission_Command ret = {};
-    ret.id = MAV_CMD_NAV_LOITER_UNLIM;
+    Location ret = {};
     if (find_best_rally_point(myloc, home, ral_loc)) {
         //we have setup Rally points: use them instead of Home for RTL
-        ret.content.location = rally_location_to_location(ral_loc, home);
+        ret = rally_location_to_location(ral_loc, home);
     } else {
-        ret.content.location = homeloc;
+        ret = homeloc;
         // Altitude to hold over home
-        ret.content.location.alt = read_alt_to_hold();
+        ret.alt = read_alt_to_hold();
         // read_alt_to_hold returns an absolute altitude
-        ret.content.location.flags.relative_alt = false;
+        ret.flags.relative_alt = false;
     }
     return ret;
 }

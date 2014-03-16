@@ -340,11 +340,11 @@ static void set_mode(enum FlightMode mode)
 
     case CIRCLE:
         // the altitude to circle at is taken from the current altitude
-        next_WP.content.location.alt = current_loc.alt;
+        next_WP_loc.alt = current_loc.alt;
         break;
 
     case AUTO:
-        prev_WP.content.location = current_loc;
+        prev_WP_loc = current_loc;
         // start the mission. Note that we use resume(), not start(),
         // as the correct behaviour for plane when entering auto is to
         // continue the mission. If the pilot wants to restart the
@@ -354,7 +354,7 @@ static void set_mode(enum FlightMode mode)
         break;
 
     case RTL:
-        prev_WP.content.location = current_loc;
+        prev_WP_loc = current_loc;
         do_RTL();
         break;
 
@@ -368,7 +368,7 @@ static void set_mode(enum FlightMode mode)
         break;
 
     default:
-        prev_WP.content.location = current_loc;
+        prev_WP_loc = current_loc;
         do_RTL();
         break;
     }

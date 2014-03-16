@@ -20,29 +20,29 @@ static void set_next_WP(const AP_Mission::Mission_Command& cmd)
 {
     // copy the current WP into the OldWP slot
     // ---------------------------------------
-    prev_WP = next_WP;
+    prev_WP_loc = next_WP_loc;
 
     // Load the next_WP slot
     // ---------------------
-    next_WP = cmd;
+    next_WP_loc = cmd.content.location;
 
     // if lat and lon is zero, then use current lat/lon
     // this allows a mission to contain a "loiter on the spot"
     // command
-    if (next_WP.content.location.lat == 0 && next_WP.content.location.lng == 0) {
-        next_WP.content.location.lat = current_loc.lat;
-        next_WP.content.location.lng = current_loc.lng;
+    if (next_WP_loc.lat == 0 && next_WP_loc.lng == 0) {
+        next_WP_loc.lat = current_loc.lat;
+        next_WP_loc.lng = current_loc.lng;
         // additionally treat zero altitude as current altitude
-        if (next_WP.content.location.alt == 0) {
-            next_WP.content.location.alt = current_loc.alt;
-            next_WP.content.location.flags.relative_alt = false;
+        if (next_WP_loc.alt == 0) {
+            next_WP_loc.alt = current_loc.alt;
+            next_WP_loc.flags.relative_alt = false;
         }
     }
 
     // convert relative alt to absolute alt
-    if (next_WP.content.location.flags.relative_alt) {
-        next_WP.content.location.flags.relative_alt = false;
-        next_WP.content.location.alt += home.alt;
+    if (next_WP_loc.flags.relative_alt) {
+        next_WP_loc.flags.relative_alt = false;
+        next_WP_loc.alt += home.alt;
     }
 
     // are we already past the waypoint? This happens when we jump
@@ -50,9 +50,9 @@ static void set_next_WP(const AP_Mission::Mission_Command& cmd)
     // past the waypoint when we start on a leg, then use the current
     // location as the previous waypoint, to prevent immediately
     // considering the waypoint complete
-    if (location_passed_point(current_loc, prev_WP.content.location, next_WP.content.location)) {
+    if (location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
         gcs_send_text_P(SEVERITY_LOW, PSTR("Resetting prev_WP"));
-        prev_WP.content.location = current_loc;
+        prev_WP_loc = current_loc;
     }
 
     // used to control FBW and limit the rate of climb
@@ -77,11 +77,11 @@ static void set_guided_WP(void)
 
     // copy the current location into the OldWP slot
     // ---------------------------------------
-    prev_WP.content.location = current_loc;
+    prev_WP_loc = current_loc;
 
     // Load the next_WP slot
     // ---------------------
-    next_WP.content.location = guided_WP;
+    next_WP_loc = guided_WP_loc;
 
     // used to control FBW and limit the rate of climb
     // -----------------------------------------------
@@ -118,12 +118,12 @@ static void init_home()
 
     // Save prev loc
     // -------------
-    next_WP.content.location = prev_WP.content.location = home;
+    next_WP_loc = prev_WP_loc = home;
 
     // Load home for a default guided_WP
     // -------------
-    guided_WP = home;
-    guided_WP.alt += g.RTL_altitude_cm;
+    guided_WP_loc = home;
+    guided_WP_loc.alt += g.RTL_altitude_cm;
 }
 
 /*

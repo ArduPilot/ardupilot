@@ -187,8 +187,8 @@ static void geofence_check(bool altitude_check_only)
             g.fence_total >= 5 &&
             geofence_state->boundary_uptodate &&
             geofence_state->old_switch_position == oldSwitchPosition &&
-            guided_WP.lat == geofence_state->boundary[0].x &&
-            guided_WP.lng == geofence_state->boundary[0].y) {
+            guided_WP_loc.lat == geofence_state->boundary[0].x &&
+            guided_WP_loc.lng == geofence_state->boundary[0].y) {
             geofence_state->old_switch_position = 254;
             reset_control_switch();
         }
@@ -268,18 +268,18 @@ static void geofence_check(bool altitude_check_only)
     case FENCE_ACTION_GUIDED_THR_PASS:
         if (g.fence_retalt > 0) {
             //fly to the return point using fence_retalt
-            guided_WP.alt = home.alt + 100.0*g.fence_retalt;
+            guided_WP_loc.alt = home.alt + 100.0f*g.fence_retalt;
         } else if (g.fence_minalt >= g.fence_maxalt) {
             // invalid min/max, use RTL_altitude
-            guided_WP.alt = home.alt + g.RTL_altitude_cm;
+            guided_WP_loc.alt = home.alt + g.RTL_altitude_cm;
         } else {
             // fly to the return point, with an altitude half way between
             // min and max
-            guided_WP.alt = home.alt + 100.0*(g.fence_minalt + g.fence_maxalt)/2;
+            guided_WP_loc.alt = home.alt + 100.0*(g.fence_minalt + g.fence_maxalt)/2;
         }
-        guided_WP.options = 0;
-        guided_WP.lat = geofence_state->boundary[0].x;
-        guided_WP.lng = geofence_state->boundary[0].y;
+        guided_WP_loc.options = 0;
+        guided_WP_loc.lat = geofence_state->boundary[0].x;
+        guided_WP_loc.lng = geofence_state->boundary[0].y;
 
         geofence_state->old_switch_position = oldSwitchPosition;
 

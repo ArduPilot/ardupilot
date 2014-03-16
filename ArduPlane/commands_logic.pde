@@ -12,8 +12,6 @@ static void do_within_distance(const AP_Mission::Mission_Command& cmd);
 static void do_change_alt(const AP_Mission::Mission_Command& cmd);
 static void do_change_speed(const AP_Mission::Mission_Command& cmd);
 static void do_set_home(const AP_Mission::Mission_Command& cmd);
-static AP_Mission::Mission_Command rally_find_best_cmd(const Location &myloc, const Location &homeloc);
-
 
 /********************************************************************************/
 // Command Event Handlers
@@ -242,8 +240,8 @@ static bool verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
 static void do_RTL(void)
 {
     control_mode    = RTL;
-    prev_WP.content.location = current_loc;
-    next_WP = rally_find_best_cmd(current_loc, home);
+    prev_WP_loc = current_loc;
+    next_WP_loc = rally_find_best_location(current_loc, home);
 
     if (g.loiter_radius < 0) {
         loiter.direction = -1;
@@ -262,9 +260,9 @@ static void do_takeoff(const AP_Mission::Mission_Command& cmd)
     set_next_WP(cmd);
     // pitch in deg, airspeed  m/s, throttle %, track WP 1 or 0
     takeoff_pitch_cd        = (int)cmd.p1 * 100;
-    takeoff_altitude_cm     = next_WP.content.location.alt;
-    next_WP.content.location.lat = home.lat + 10;
-    next_WP.content.location.lng = home.lng + 10;
+    takeoff_altitude_cm     = next_WP_loc.alt;
+    next_WP_loc.lat = home.lat + 10;
+    next_WP_loc.lng = home.lng + 10;
     takeoff_complete        = false;                            // set flag to use gps ground course during TO.  IMU will be doing yaw drift correction
     // Flag also used to override "on the ground" throttle disable
 }
@@ -334,7 +332,7 @@ static bool verify_takeoff()
     if (adjusted_altitude_cm() > takeoff_altitude_cm) {
         steer_state.hold_course_cd = -1;
         takeoff_complete = true;
-        next_WP.content.location = prev_WP.content.location = current_loc;
+        next_WP_loc = prev_WP_loc = current_loc;
         return true;
     } else {
         return false;
@@ -351,7 +349,7 @@ static bool verify_land()
     // Set land_complete if we are within 2 seconds distance or within
     // 3 meters altitude of the landing point
     if ((wp_distance <= (g.land_flare_sec*g_gps->ground_speed_cm*0.01f))
-        || (adjusted_altitude_cm() <= next_WP.content.location.alt + g.land_flare_alt*100)) {
+        || (adjusted_altitude_cm() <= next_WP_loc.alt + g.land_flare_alt*100)) {
 
         land_complete = true;
 
@@ -384,7 +382,7 @@ static bool verify_land()
         // recalc bearing error with hold_course;
         nav_controller->update_heading_hold(steer_state.hold_course_cd);
     } else {
-        nav_controller->update_waypoint(prev_WP.content.location, next_WP.content.location);
+        nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
     }
     return false;
 }
@@ -393,13 +391,13 @@ static bool verify_nav_wp()
 {
     steer_state.hold_course_cd = -1;
 
-    nav_controller->update_waypoint(prev_WP.content.location, next_WP.content.location);
+    nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
 
     // see if the user has specified a maximum distance to waypoint
     if (g.waypoint_max_radius > 0 && wp_distance > (uint16_t)g.waypoint_max_radius) {
-        if (location_passed_point(current_loc, prev_WP.content.location, next_WP.content.location)) {
+        if (location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
             // this is needed to ensure completion of the waypoint
-            prev_WP.content.location = current_loc;
+            prev_WP_loc = current_loc;
         }
         return false;
     }
@@ -407,15 +405,15 @@ static bool verify_nav_wp()
     if (wp_distance <= nav_controller->turn_distance(g.waypoint_radius)) {
         gcs_send_text_fmt(PSTR("Reached Waypoint #%i dist %um"),
                           (unsigned)mission.get_current_nav_cmd().index,
-                          (unsigned)get_distance(current_loc, next_WP.content.location));
+                          (unsigned)get_distance(current_loc, next_WP_loc));
         return true;
 	}
 
     // have we flown past the waypoint?
-    if (location_passed_point(current_loc, prev_WP.content.location, next_WP.content.location)) {
+    if (location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
         gcs_send_text_fmt(PSTR("Passed Waypoint #%i dist %um"),
                           (unsigned)mission.get_current_nav_cmd().index,
-                          (unsigned)get_distance(current_loc, next_WP.content.location));
+                          (unsigned)get_distance(current_loc, next_WP_loc));
         return true;
     }
 
@@ -485,7 +483,7 @@ static void do_change_alt(const AP_Mission::Mission_Command& cmd)
         condition_rate = -condition_rate;
     }
     target_altitude_cm      = adjusted_altitude_cm() + (condition_rate / 10);                  // Divide by ten for 10Hz update
-    next_WP.content.location.alt = condition_value;                                                                  // For future nav calculations
+    next_WP_loc.alt = condition_value;                                                                  // For future nav calculations
     offset_altitude_cm      = 0;                                                                                        // For future nav calculations
 }
 
@@ -538,7 +536,7 @@ static void do_loiter_at_location()
     } else {
         loiter.direction = 1;
     }
-    next_WP.content.location = current_loc;
+    next_WP_loc = current_loc;
 }
 
 static void do_change_speed(const AP_Mission::Mission_Command& cmd)
@@ -596,7 +594,8 @@ static void exit_mission_callback()
 {
     if (control_mode == AUTO) {
         gcs_send_text_fmt(PSTR("Returning to Home"));
-        auto_rtl_command = rally_find_best_cmd(current_loc, home);
+        memset(&auto_rtl_command, 0, sizeof(auto_rtl_command));
+        auto_rtl_command.content.location = rally_find_best_location(current_loc, home);
         auto_rtl_command.id = MAV_CMD_NAV_LOITER_UNLIM;
         setup_glide_slope();
         start_command(auto_rtl_command);
