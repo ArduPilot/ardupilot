@@ -114,7 +114,7 @@ bool AP_Mission::clear()
 }
 
 
-/// trucate - trunacte any mission items beyond index
+/// trucate - truncate any mission items beyond index
 void AP_Mission::truncate(uint16_t index)
 {
     if (_cmd_total > index) {        
