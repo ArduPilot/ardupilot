@@ -24,7 +24,7 @@ static void init_home()
     if (g.log_bitmask & MASK_LOG_CMD) {
         AP_Mission::Mission_Command temp_cmd;
         if (mission.read_cmd_from_storage(0, temp_cmd)) {
-            DataFlash.Log_Write_Cmd(mission.num_commands(),temp_cmd);
+            Log_Write_Cmd(temp_cmd);
         }
     }
 

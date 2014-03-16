@@ -422,6 +422,14 @@ static void Log_Write_Performance()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
+// Write a mission command. Total length : 36 bytes
+static void Log_Write_Cmd(const AP_Mission::Mission_Command &cmd)
+{
+    mavlink_mission_item_t mav_cmd = {};
+    AP_Mission::mission_cmd_to_mavlink(cmd,mav_cmd);
+    DataFlash.Log_Write_MavCmd(mission.num_commands(),mav_cmd);
+}
+
 struct PACKED log_Attitude {
     LOG_PACKET_HEADER;
     uint32_t time_ms;
@@ -770,6 +778,7 @@ static void Log_Write_Optflow() {}
 static void Log_Write_Nav_Tuning() {}
 static void Log_Write_Control_Tuning() {}
 static void Log_Write_Performance() {}
+static void Log_Write_Cmd(const AP_Mission::Mission_Command &cmd) {}
 static void Log_Write_Camera() {}
 static void Log_Write_Error(uint8_t sub_system, uint8_t error_code) {}
 static void Log_Write_Baro(void);

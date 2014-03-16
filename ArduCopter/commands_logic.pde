@@ -21,7 +21,7 @@ static bool start_command(const AP_Mission::Mission_Command& cmd)
 {
     // To-Do: logging when new commands start/end
     if (g.log_bitmask & MASK_LOG_CMD) {
-        DataFlash.Log_Write_Cmd(mission.num_commands(),cmd);
+        Log_Write_Cmd(cmd);
     }
 
     switch(cmd.id) {
