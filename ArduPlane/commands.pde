@@ -13,10 +13,9 @@ static int32_t read_alt_to_hold()
 
 
 /*
- *  This function stores waypoint commands
- *  It looks to see what the next command type is and finds the last command.
+ *  set_next_WP - sets the target location the vehicle should fly to
  */
-static void set_next_WP(const AP_Mission::Mission_Command& cmd)
+static void set_next_WP(const struct Location& loc)
 {
     // copy the current WP into the OldWP slot
     // ---------------------------------------
@@ -24,7 +23,7 @@ static void set_next_WP(const AP_Mission::Mission_Command& cmd)
 
     // Load the next_WP slot
     // ---------------------
-    next_WP_loc = cmd.content.location;
+    next_WP_loc = loc;
 
     // if lat and lon is zero, then use current lat/lon
     // this allows a mission to contain a "loiter on the spot"

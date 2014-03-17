@@ -257,7 +257,7 @@ static void do_RTL(void)
 
 static void do_takeoff(const AP_Mission::Mission_Command& cmd)
 {
-    set_next_WP(cmd);
+    set_next_WP(cmd.content.location);
     // pitch in deg, airspeed  m/s, throttle %, track WP 1 or 0
     takeoff_pitch_cd        = (int)cmd.p1 * 100;
     takeoff_altitude_cm     = next_WP_loc.alt;
@@ -269,12 +269,12 @@ static void do_takeoff(const AP_Mission::Mission_Command& cmd)
 
 static void do_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
-    set_next_WP(cmd);
+    set_next_WP(cmd.content.location);
 }
 
 static void do_land(const AP_Mission::Mission_Command& cmd)
 {
-    set_next_WP(cmd);
+    set_next_WP(cmd.content.location);
 }
 
 static void loiter_set_direction_wp(const AP_Mission::Mission_Command& cmd)
@@ -288,20 +288,20 @@ static void loiter_set_direction_wp(const AP_Mission::Mission_Command& cmd)
 
 static void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
 {
-    set_next_WP(cmd);
+    set_next_WP(cmd.content.location);
     loiter_set_direction_wp(cmd);
 }
 
 static void do_loiter_turns(const AP_Mission::Mission_Command& cmd)
 {
-    set_next_WP(cmd);
+    set_next_WP(cmd.content.location);
     loiter.total_cd = cmd.p1 * 36000UL;
     loiter_set_direction_wp(cmd);
 }
 
 static void do_loiter_time(const AP_Mission::Mission_Command& cmd)
 {
-    set_next_WP(cmd);
+    set_next_WP(cmd.content.location);
     // we set start_time_ms when we reach the waypoint
     loiter.start_time_ms = 0;
     loiter.time_max_ms = cmd.p1 * (uint32_t)1000;     // units are seconds
