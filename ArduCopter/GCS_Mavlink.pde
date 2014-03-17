@@ -1233,7 +1233,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_COMPONENT_ARM_DISARM:
-            if (packet.target_component == MAV_COMP_ID_SYSTEM_CONTROL) {
+            if (packet.target_component == MAV_COMP_ID_SYSTEM_CONTROL || packet.target_component == MAV_COMP_ID_ALL) {
                 if (packet.param1 == 1.0f) {
                     // run pre_arm_checks and arm_checks and display failures
                     pre_arm_checks(true);
