@@ -1115,7 +1115,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             mavlink_msg_command_long_decode(msg, &packet);
             if (mavlink_check_target(packet.target_system, packet.target_component)) break;
 
-        uint8_t result = MAV_RESULT_UNSUPPORTED;
+            uint8_t result = MAV_RESULT_UNSUPPORTED;
 
             // do command
             send_text_P(SEVERITY_LOW,PSTR("command received: "));
@@ -1444,12 +1444,8 @@ mission_item_send_failed:
                 break;
             }
 
-            // new mission arriving, clear current mission
-            if (!mission.clear()) {
-                // return error if we were unable to clear the mission (possibly because we're currently flying the mission)
-                mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_ERROR);
-                break;
-            }
+            // new mission arriving, truncate mission to be the same length
+            mission.truncate(packet.count);
 
             waypoint_timelast_receive = millis();
             waypoint_timelast_request = 0;
