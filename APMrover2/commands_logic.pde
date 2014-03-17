@@ -16,6 +16,11 @@ static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
 static bool
 start_command(const AP_Mission::Mission_Command& cmd)
 {
+    // exit immediately if not in AUTO mode
+    if (control_mode != AUTO) {
+        return false;
+    }
+
     gcs_send_text_fmt(PSTR("Executing command ID #%i"),cmd.id);
 
 	switch(cmd.id){
@@ -54,21 +59,21 @@ start_command(const AP_Mission::Mission_Command& cmd)
 			break;
 
     	case MAV_CMD_DO_SET_SERVO:
-            ServoRelayEvents.do_set_servo(cmd.p1, cmd.content.location.alt);
+            ServoRelayEvents.do_set_servo(cmd.content.servo.channel, cmd.content.servo.pwm);
             break;
 
     	case MAV_CMD_DO_SET_RELAY:
-            ServoRelayEvents.do_set_relay(cmd.p1, cmd.content.location.alt);
+            ServoRelayEvents.do_set_relay(cmd.content.relay.num, cmd.content.relay.state);
             break;
 
     	case MAV_CMD_DO_REPEAT_SERVO:
-            ServoRelayEvents.do_repeat_servo(cmd.p1, cmd.content.location.alt,
-                                             cmd.content.location.lat, cmd.content.location.lng);
+            ServoRelayEvents.do_repeat_servo(cmd.content.servo.channel, cmd.content.servo.pwm,
+                                             cmd.content.servo.repeat_count, cmd.content.servo.time_ms);
             break;
 
     	case MAV_CMD_DO_REPEAT_RELAY:
-            ServoRelayEvents.do_repeat_relay(cmd.p1, cmd.content.location.alt,
-                                             cmd.content.location.lat);
+            ServoRelayEvents.do_repeat_relay(cmd.content.relay.num, cmd.content.relay.repeat_count,
+                                             cmd.content.relay.time_ms);
             break;
 
 #if CAMERA == ENABLED
@@ -83,7 +88,7 @@ start_command(const AP_Mission::Mission_Command& cmd)
             break;
 
         case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
-            camera.set_trigger_distance(cmd.content.location.alt);
+            camera.set_trigger_distance(cmd.content.cam_trigg_dist.meters);
             break;
 #endif
 
@@ -96,7 +101,7 @@ start_command(const AP_Mission::Mission_Command& cmd)
 		case MAV_CMD_DO_SET_ROI:
 #if 0
             // not supported yet
-			camera_mount.set_roi_cmd();
+			camera_mount.set_roi_cmd(&cmd.content.location);
 #endif
 			break;
 
@@ -118,10 +123,14 @@ start_command(const AP_Mission::Mission_Command& cmd)
 	return true;
 }
 
+// exit_mission - callback function called from ap-mission when the mission has completed
+//      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
 static void exit_mission()
 {
-	gcs_send_text_fmt(PSTR("No commands - setting HOLD"));
-    set_mode(HOLD);
+    if (control_mode == AUTO) {
+        gcs_send_text_fmt(PSTR("No commands - setting HOLD"));
+        set_mode(HOLD);
+    }
 }
 
 /********************************************************************************/
@@ -131,6 +140,12 @@ static void exit_mission()
 
 static bool verify_command(const AP_Mission::Mission_Command& cmd)
 {
+    // exit immediately if not in AUTO mode
+    // we return true or we will continue to be called by ap-mission
+    if (control_mode != AUTO) {
+        return true;
+    }
+
 	switch(cmd.id) {
 
 		case MAV_CMD_NAV_TAKEOFF:
@@ -235,7 +250,7 @@ static bool verify_RTL()
 static void do_wait_delay(const AP_Mission::Mission_Command& cmd)
 {
 	condition_start = millis();
-	condition_value  = cmd.content.location.lat * 1000;	// convert to milliseconds
+	condition_value  = cmd.content.delay.seconds * 1000;    // convert seconds to milliseconds
 }
 
 static void do_change_alt(const AP_Mission::Mission_Command& cmd)
@@ -248,7 +263,7 @@ static void do_change_alt(const AP_Mission::Mission_Command& cmd)
 
 static void do_within_distance(const AP_Mission::Mission_Command& cmd)
 {
-	condition_value  = cmd.content.location.lat;
+	condition_value  = cmd.content.distance.meters;
 }
 
 /********************************************************************************/
@@ -291,15 +306,15 @@ static void do_change_speed(const AP_Mission::Mission_Command& cmd)
 	switch (cmd.p1)
 	{
 		case 0:
-			if (cmd.content.location.alt > 0) {
-				g.speed_cruise.set(cmd.content.location.alt);
-                gcs_send_text_fmt(PSTR("Cruise speed: %.1f"), g.speed_cruise.get());
+			if (cmd.content.speed.target_ms > 0) {
+				g.speed_cruise.set(cmd.content.speed.target_ms);
+                gcs_send_text_fmt(PSTR("Cruise speed: %.1f m/s"), g.speed_cruise.get());
             }
 			break;
 	}
 
-	if (cmd.content.location.lat > 0) {
-		g.throttle_cruise.set(cmd.content.location.lat);
+	if (cmd.content.speed.throttle_pct > 0 && cmd.content.speed.throttle_pct <= 100) {
+		g.throttle_cruise.set(cmd.content.speed.throttle_pct);
         gcs_send_text_fmt(PSTR("Cruise throttle: %.1f"), g.throttle_cruise.get());
     }
 }
