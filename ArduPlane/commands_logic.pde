@@ -97,21 +97,21 @@ start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_DO_SET_SERVO:
-        ServoRelayEvents.do_set_servo(cmd.p1, cmd.content.location.alt);
+        ServoRelayEvents.do_set_servo(cmd.content.servo.channel, cmd.content.servo.pwm);
         break;
 
     case MAV_CMD_DO_SET_RELAY:
-        ServoRelayEvents.do_set_relay(cmd.p1, cmd.content.location.alt);
+        ServoRelayEvents.do_set_relay(cmd.content.relay.num, cmd.content.relay.state);
         break;
 
     case MAV_CMD_DO_REPEAT_SERVO:
-        ServoRelayEvents.do_repeat_servo(cmd.p1, cmd.content.location.alt,
-                                         cmd.content.location.lat, cmd.content.location.lng);
+        ServoRelayEvents.do_repeat_servo(cmd.content.servo.channel, cmd.content.servo.pwm,
+                                         cmd.content.servo.repeat_count, cmd.content.servo.time_ms);
         break;
 
     case MAV_CMD_DO_REPEAT_RELAY:
-        ServoRelayEvents.do_repeat_relay(cmd.p1, cmd.content.location.alt,
-                                         cmd.content.location.lat);
+        ServoRelayEvents.do_repeat_relay(cmd.content.relay.num, cmd.content.relay.repeat_count,
+                                         cmd.content.relay.time_ms);
         break;
 
 #if CAMERA == ENABLED
@@ -126,7 +126,7 @@ start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
-        camera.set_trigger_distance(cmd.content.location.alt);
+        camera.set_trigger_distance(cmd.content.cam_trigg_dist.meters);
         break;
 #endif
 
@@ -472,24 +472,24 @@ static bool verify_RTL()
 static void do_wait_delay(const AP_Mission::Mission_Command& cmd)
 {
     condition_start = millis();
-    condition_value  = cmd.content.location.lat * 1000;          // convert to milliseconds
+    condition_value  = cmd.content.delay.seconds * 1000;    // convert seconds to milliseconds
 }
 
 static void do_change_alt(const AP_Mission::Mission_Command& cmd)
 {
-    condition_rate          = labs((int)cmd.content.location.lat);
-    condition_value         = cmd.content.location.alt;
+    condition_rate = labs((int)cmd.content.location.lat);   // climb rate in cm/s
+    condition_value = cmd.content.location.alt;             // To-Do: ensure this altitude is an absolute altitude?
     if (condition_value < adjusted_altitude_cm()) {
         condition_rate = -condition_rate;
     }
-    target_altitude_cm      = adjusted_altitude_cm() + (condition_rate / 10);                  // Divide by ten for 10Hz update
-    next_WP_loc.alt = condition_value;                                                                  // For future nav calculations
-    offset_altitude_cm      = 0;                                                                                        // For future nav calculations
+    target_altitude_cm = adjusted_altitude_cm() + (condition_rate / 10);    // condition_rate is climb rate in cm/s.  We divide by 10 because this function is called at 10hz
+    next_WP_loc.alt = condition_value;                                      // For future nav calculations
+    offset_altitude_cm = 0;                                                 // For future nav calculations
 }
 
 static void do_within_distance(const AP_Mission::Mission_Command& cmd)
 {
-    condition_value  = cmd.content.location.lat;
+    condition_value  = cmd.content.distance.meters;
 }
 
 /********************************************************************************/
@@ -512,7 +512,7 @@ static bool verify_change_alt()
         condition_value = 0;
         return true;
     }
-    target_altitude_cm += condition_rate / 10;
+    target_altitude_cm += condition_rate / 10;  // condition_rate is climb rate in cm/s.  We divide by 10 because this function is called at 10hz
     return false;
 }
 
@@ -541,23 +541,23 @@ static void do_loiter_at_location()
 
 static void do_change_speed(const AP_Mission::Mission_Command& cmd)
 {
-    switch (cmd.p1)
+    switch (cmd.content.speed.speed_type)
     {
     case 0:             // Airspeed
-        if (cmd.content.location.alt > 0) {
-            g.airspeed_cruise_cm.set(cmd.content.location.alt * 100);
-            gcs_send_text_fmt(PSTR("Set airspeed %u m/s"), (unsigned)cmd.content.location.alt);
+        if (cmd.content.speed.target_ms > 0) {
+            g.airspeed_cruise_cm.set(cmd.content.speed.target_ms * 100);
+            gcs_send_text_fmt(PSTR("Set airspeed %u m/s"), (unsigned)cmd.content.speed.target_ms);
         }
         break;
     case 1:             // Ground speed
-        gcs_send_text_fmt(PSTR("Set groundspeed %u"), (unsigned)cmd.content.location.alt);
-        g.min_gndspeed_cm.set(cmd.content.location.alt * 100);
+        gcs_send_text_fmt(PSTR("Set groundspeed %u"), (unsigned)cmd.content.speed.target_ms);
+        g.min_gndspeed_cm.set(cmd.content.speed.target_ms * 100);
         break;
     }
 
-    if (cmd.content.location.lat > 0) {
-        gcs_send_text_fmt(PSTR("Set throttle %u"), (unsigned)cmd.content.location.lat);
-        aparm.throttle_cruise.set(cmd.content.location.lat);
+    if (cmd.content.speed.throttle_pct > 0) {
+        gcs_send_text_fmt(PSTR("Set throttle %u"), (unsigned)cmd.content.speed.throttle_pct);
+        aparm.throttle_cruise.set(cmd.content.speed.throttle_pct);
     }
 }
 
