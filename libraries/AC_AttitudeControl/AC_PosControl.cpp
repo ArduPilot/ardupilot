@@ -141,10 +141,10 @@ void AC_PosControl::get_stopping_point_z(Vector3f& stopping_point) const
     const float curr_pos_z = _inav.get_altitude();
     const float curr_vel_z = _inav.get_velocity_z();
 
-    float linear_distance;  // half the distace we swap between linear and sqrt and the distace we offset sqrt
+    float linear_distance;  // half the distance we swap between linear and sqrt and the distance we offset sqrt
     float linear_velocity;  // the velocity we swap between linear and sqrt
 
-    // calculate the velocity at which we switch from calculating the stopping point using a linear funcction to a sqrt function
+    // calculate the velocity at which we switch from calculating the stopping point using a linear function to a sqrt function
     linear_velocity = POSCONTROL_ALT_HOLD_ACCEL_MAX/_p_alt_pos.kP();
 
     if (fabs(curr_vel_z) < linear_velocity) {
@@ -338,7 +338,6 @@ void AC_PosControl::accel_to_throttle(float accel_target_z)
     d = _pid_alt_accel.get_d(_accel_error.z, _dt);
 
     // To-Do: pull min/max throttle from motors
-    // To-Do: where to get hover throttle?
     // To-Do: we had a contraint here but it's now removed, is this ok?  with the motors library handle it ok?
     _attitude_control.set_throttle_out((int16_t)p+i+d+_throttle_hover, true);
     
@@ -612,7 +611,7 @@ void AC_PosControl::rate_to_accel_xy(float dt)
     _vel_error.x = _vel_target.x - vel_curr.x;
     _vel_error.y = _vel_target.y - vel_curr.y;
 
-    // combine feed foward accel with PID output from velocity error
+    // combine feed forward accel with PID output from velocity error
     // To-Do: check accel limit flag before adding I term
     _accel_target.x += _pid_rate_lat.get_pid(_vel_error.x, dt);
     _accel_target.y += _pid_rate_lon.get_pid(_vel_error.y, dt);

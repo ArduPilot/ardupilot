@@ -64,8 +64,8 @@ public:
 
     /// set_speed_z - sets maximum climb and descent rates
     /// To-Do: call this in the main code as part of flight mode initialisation
-    ///     calc_leash_length_z should be called afterwards
     ///     speed_down should be a negative number
+    ///     leash length will be recalculated the next time update_z_controller() is called
     void set_speed_z(float speed_down, float speed_up);
 
     /// get_speed_up - accessor for current up speed in cm/s
@@ -75,7 +75,7 @@ public:
     float get_speed_down() { return _speed_down_cms; }
 
     /// set_accel_z - set vertical acceleration in cm/s/s
-    ///     calc_leash_length_z should be called afterwards
+    ///     leash length will be recalculated the next time update_z_controller() is called
     void set_accel_z(float accel_cmss);
 
     /// calc_leash_length - calculates the vertical leash lengths from maximum speed, acceleration
@@ -131,12 +131,12 @@ public:
     ///
 
     /// set_accel_xy - set horizontal acceleration in cm/s/s
-    ///     calc_leash_length_xy should be called afterwards
+    ///     leash length will be recalculated the next time update_pos_controller() is called
     void set_accel_xy(float accel_cmss);
     float get_accel_xy() const { return _accel_cms; }
 
     /// set_speed_xy - set horizontal speed maximum in cm/s
-    ///     calc_leash_length_xy should be called afterwards
+    ///     leash length will be recalculated the next time update_pos_controller() is called
     void set_speed_xy(float speed_cms);
     float get_speed_xy() const { return _speed_cms; }
 
