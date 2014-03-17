@@ -629,7 +629,7 @@ static bool do_guided(const AP_Mission::Mission_Command& cmd)
 
 static void do_change_speed(const AP_Mission::Mission_Command& cmd)
 {
-    wp_nav.set_horizontal_velocity(cmd.content.speed.target_ms * 100);
+    wp_nav.set_horizontal_velocity(cmd.content.speed.target_ms * 100.0f);
 }
 
 static void do_set_home(const AP_Mission::Mission_Command& cmd)
