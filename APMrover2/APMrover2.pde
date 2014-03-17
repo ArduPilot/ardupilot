@@ -502,8 +502,6 @@ static int32_t 	condition_value;
 // A starting value used to check the status of a conditional command.
 // For example in a delay command the condition_start records that start time for the delay
 static int32_t 	condition_start;
-// A value used in condition commands.  For example the rate at which to change altitude.
-static int16_t 		condition_rate;
 
 ////////////////////////////////////////////////////////////////////////////////
 // 3D Location vectors

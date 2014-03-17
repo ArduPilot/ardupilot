@@ -1,11 +1,9 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 // forward declarations to make compiler happy
-static void do_takeoff(const AP_Mission::Mission_Command& cmd);
 static void do_nav_wp(const AP_Mission::Mission_Command& cmd);
 static void do_wait_delay(const AP_Mission::Mission_Command& cmd);
 static void do_within_distance(const AP_Mission::Mission_Command& cmd);
-static void do_change_alt(const AP_Mission::Mission_Command& cmd);
 static void do_change_speed(const AP_Mission::Mission_Command& cmd);
 static void do_set_home(const AP_Mission::Mission_Command& cmd);
 static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
@@ -24,10 +22,6 @@ start_command(const AP_Mission::Mission_Command& cmd)
     gcs_send_text_fmt(PSTR("Executing command ID #%i"),cmd.id);
 
 	switch(cmd.id){
-		case MAV_CMD_NAV_TAKEOFF:
-			do_takeoff(cmd);
-			break;
-
 		case MAV_CMD_NAV_WAYPOINT:	// Navigate to Waypoint
 			do_nav_wp(cmd);
 			break;
@@ -43,10 +37,6 @@ start_command(const AP_Mission::Mission_Command& cmd)
 
 		case MAV_CMD_CONDITION_DISTANCE:
 			do_within_distance(cmd);
-			break;
-
-		case MAV_CMD_CONDITION_CHANGE_ALT:
-			do_change_alt(cmd);
 			break;
 
         // Do commands
@@ -148,9 +138,6 @@ static bool verify_command(const AP_Mission::Mission_Command& cmd)
 
 	switch(cmd.id) {
 
-		case MAV_CMD_NAV_TAKEOFF:
-			return verify_takeoff();
-
 		case MAV_CMD_NAV_WAYPOINT:
 			return verify_nav_wp(cmd);
 
@@ -163,10 +150,6 @@ static bool verify_command(const AP_Mission::Mission_Command& cmd)
 
         case MAV_CMD_CONDITION_DISTANCE:
             return verify_within_distance();
-            break;
-
-        case MAV_CMD_CONDITION_CHANGE_ALT:
-            return verify_change_alt();
             break;
 
         default:
@@ -188,11 +171,6 @@ static void do_RTL(void)
 	next_WP = home;
 }
 
-static void do_takeoff(const AP_Mission::Mission_Command& cmd)
-{
-	set_next_WP(cmd.content.location);
-}
-
 static void do_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
 	set_next_WP(cmd.content.location);
@@ -201,10 +179,6 @@ static void do_nav_wp(const AP_Mission::Mission_Command& cmd)
 /********************************************************************************/
 //  Verify Nav (Must) commands
 /********************************************************************************/
-static bool verify_takeoff()
-{  return true;
-}
-
 static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
     if ((wp_distance > 0) && (wp_distance <= g.waypoint_radius)) {
@@ -253,14 +227,6 @@ static void do_wait_delay(const AP_Mission::Mission_Command& cmd)
 	condition_value  = cmd.content.delay.seconds * 1000;    // convert seconds to milliseconds
 }
 
-static void do_change_alt(const AP_Mission::Mission_Command& cmd)
-{
-	condition_rate		= abs((int)cmd.content.location.lat);
-	condition_value 	= cmd.content.location.alt;
-	if(condition_value < current_loc.alt) condition_rate = -condition_rate;
-	next_WP.alt = condition_value;								// For future nav calculations
-}
-
 static void do_within_distance(const AP_Mission::Mission_Command& cmd)
 {
 	condition_value  = cmd.content.distance.meters;
@@ -274,15 +240,6 @@ static bool verify_wait_delay()
 {
 	if ((uint32_t)(millis() - condition_start) > (uint32_t)condition_value){
 		condition_value 	= 0;
-		return true;
-	}
-	return false;
-}
-
-static bool verify_change_alt()
-{
-	if( (condition_rate>=0 && current_loc.alt >= condition_value) || (condition_rate<=0 && current_loc.alt <= condition_value)) {
-		condition_value = 0;
 		return true;
 	}
 	return false;

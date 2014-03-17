@@ -1293,11 +1293,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
  	        // set auto continue to 1
  	        ret_packet.autocontinue = 1;     // 1 (true), 0 (false)
 
- 	        // rover specific overrides to packet values
- 	        if (cmd.id == MAV_CMD_CONDITION_CHANGE_ALT) {
-                ret_packet.param1 = cmd.content.location.lat;  // Copter and Plane set param1 = cmd.p1/100
-			}
-
 			mavlink_msg_mission_item_send(chan,msg->sysid,
                                           msg->compid,
                                           packet.seq,
@@ -1503,11 +1498,6 @@ mission_item_send_failed:
             if (!AP_Mission::mavlink_to_mission_cmd(packet, cmd)) {
                 result = MAV_MISSION_ERROR;
                 goto mission_failed;
-            }
-
-            // rover specific overrides to mavlink to mission command conversion
-            if (cmd.id == MAV_CMD_CONDITION_CHANGE_ALT) {
-                cmd.content.location.lat = packet.param1;
             }
 
 			if(packet.current == 2){ 				//current = 2 is a flag to tell us this is a "guided mode" waypoint and not for the mission
