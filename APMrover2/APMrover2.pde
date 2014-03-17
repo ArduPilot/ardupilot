@@ -514,9 +514,9 @@ static const struct	Location &home = ahrs.get_home();
 // Flag for if we have g_gps lock and have set the home location
 static bool	home_is_set;
 // The location of the previous waypoint.  Used for track following and altitude ramp calculations
-static struct 	AP_Mission::Mission_Command prev_WP;
+static struct 	Location prev_WP;
 // The location of the current/active waypoint.  Used for track following
-static struct 	AP_Mission::Mission_Command next_WP;
+static struct 	Location next_WP;
 // The location of the active waypoint in Guided mode.
 static struct  	Location guided_WP;
 

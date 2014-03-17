@@ -138,13 +138,13 @@ static void calc_lateral_acceleration()
 {
     switch (control_mode) {
     case AUTO:
-        nav_controller->update_waypoint(prev_WP.content.location, next_WP.content.location);
+        nav_controller->update_waypoint(prev_WP, next_WP);
         break;
 
     case RTL:
     case GUIDED:
     case STEERING:
-        nav_controller->update_waypoint(current_loc, next_WP.content.location);
+        nav_controller->update_waypoint(current_loc, next_WP);
         break;
     default:
         return;

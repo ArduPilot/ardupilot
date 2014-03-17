@@ -183,19 +183,19 @@ static bool verify_command(const AP_Mission::Mission_Command& cmd)
 
 static void do_RTL(void)
 {
-    prev_WP.content.location = current_loc;
+    prev_WP = current_loc;
 	control_mode 	= RTL;
-	next_WP.content.location = home;
+	next_WP = home;
 }
 
 static void do_takeoff(const AP_Mission::Mission_Command& cmd)
 {
-	set_next_WP(cmd);
+	set_next_WP(cmd.content.location);
 }
 
 static void do_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
-	set_next_WP(cmd);
+	set_next_WP(cmd.content.location);
 }
 
 /********************************************************************************/
@@ -210,15 +210,15 @@ static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     if ((wp_distance > 0) && (wp_distance <= g.waypoint_radius)) {
         gcs_send_text_fmt(PSTR("Reached Waypoint #%i dist %um"),
                           (unsigned)cmd.index,
-                          (unsigned)get_distance(current_loc, next_WP.content.location));
+                          (unsigned)get_distance(current_loc, next_WP));
         return true;
     }
 
     // have we gone past the waypoint?
-    if (location_passed_point(current_loc, prev_WP.content.location, next_WP.content.location)) {
+    if (location_passed_point(current_loc, prev_WP, next_WP)) {
         gcs_send_text_fmt(PSTR("Passed Waypoint #%i dist %um"),
                           (unsigned)cmd.index,
-                          (unsigned)get_distance(current_loc, next_WP.content.location));
+                          (unsigned)get_distance(current_loc, next_WP));
         return true;
     }
 
@@ -234,9 +234,9 @@ static bool verify_RTL()
 	}
 
     // have we gone past the waypoint?
-    if (location_passed_point(current_loc, prev_WP.content.location, next_WP.content.location)) {
+    if (location_passed_point(current_loc, prev_WP, next_WP)) {
         gcs_send_text_fmt(PSTR("Reached Home dist %um"),
-                          (unsigned)get_distance(current_loc, next_WP.content.location));
+                          (unsigned)get_distance(current_loc, next_WP));
         return true;
     }
 
@@ -258,7 +258,7 @@ static void do_change_alt(const AP_Mission::Mission_Command& cmd)
 	condition_rate		= abs((int)cmd.content.location.lat);
 	condition_value 	= cmd.content.location.alt;
 	if(condition_value < current_loc.alt) condition_rate = -condition_rate;
-	next_WP.content.location.alt = condition_value;								// For future nav calculations
+	next_WP.alt = condition_value;								// For future nav calculations
 }
 
 static void do_within_distance(const AP_Mission::Mission_Command& cmd)

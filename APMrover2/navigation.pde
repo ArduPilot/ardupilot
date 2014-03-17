@@ -11,13 +11,13 @@ static void navigate()
 		return;
 	}
 
-	if ((next_WP.content.location.lat == 0)||(home_is_set==false)){
+	if ((next_WP.lat == 0)||(home_is_set==false)){
 		return;
 	}
 
 	// waypoint distance from rover
 	// ----------------------------
-	wp_distance = get_distance(current_loc, next_WP.content.location);
+	wp_distance = get_distance(current_loc, next_WP);
 
 	if (wp_distance < 0){
 		gcs_send_text_P(SEVERITY_HIGH,PSTR("<navigate> WP error - distance < 0"));

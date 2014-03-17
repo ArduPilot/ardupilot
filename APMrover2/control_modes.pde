@@ -27,7 +27,7 @@ static void read_control_switch()
 		set_mode((enum mode)modes[switchPosition].get());
 
 		oldSwitchPosition = switchPosition;
-		prev_WP.content.location = current_loc;
+		prev_WP = current_loc;
 
 		// reset speed integrator
         g.pidSpeedThrottle.reset_I();
