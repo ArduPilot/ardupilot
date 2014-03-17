@@ -139,7 +139,7 @@ start_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_NAV_ROI:
  #if 0
         // send the command to the camera mount
-        camera_mount.set_roi_cmd(cmd);
+        camera_mount.set_roi_cmd(&cmd.content.location);
  #else
         gcs_send_text_P(SEVERITY_LOW, PSTR("DO_SET_ROI not supported"));
  #endif
@@ -582,6 +582,18 @@ static void do_take_picture()
 #endif
 }
 
+// start_command_callback - callback function called from ap-mission when it begins a new mission command
+//      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
+static bool start_command_callback(const AP_Mission::Mission_Command &cmd)
+{
+    if (control_mode == AUTO) {
+        return start_command(cmd);
+    }
+    return true;
+}
+
+// verify_command_callback - callback function called from ap-mission at 10hz or higher when a command is being run
+//      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
 static bool verify_command_callback(const AP_Mission::Mission_Command& cmd)
 {
     if (control_mode == AUTO) {
@@ -590,6 +602,8 @@ static bool verify_command_callback(const AP_Mission::Mission_Command& cmd)
     return false;
 }
 
+// exit_mission_callback - callback function called from ap-mission when the mission has completed
+//      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
 static void exit_mission_callback()
 {
     if (control_mode == AUTO) {
@@ -600,12 +614,4 @@ static void exit_mission_callback()
         setup_glide_slope();
         start_command(auto_rtl_command);
     }
-}
-
-static bool start_command_callback(const AP_Mission::Mission_Command &cmd)
-{
-    if (control_mode == AUTO) {
-        return start_command(cmd);
-    }
-    return true;
 }
