@@ -88,21 +88,21 @@ static bool start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_DO_SET_SERVO:
-        ServoRelayEvents.do_set_servo(cmd.p1, cmd.content.location.alt);
+        ServoRelayEvents.do_set_servo(cmd.content.servo.channel, cmd.content.servo.pwm);
         break;
         
     case MAV_CMD_DO_SET_RELAY:
-        ServoRelayEvents.do_set_relay(cmd.p1, cmd.content.location.alt);
+        ServoRelayEvents.do_set_relay(cmd.content.relay.num, cmd.content.relay.state);
         break;
         
     case MAV_CMD_DO_REPEAT_SERVO:
-        ServoRelayEvents.do_repeat_servo(cmd.p1, cmd.content.location.alt,
-                                         cmd.content.location.lat, cmd.content.location.lng);
+        ServoRelayEvents.do_repeat_servo(cmd.content.servo.channel, cmd.content.servo.pwm,
+                                         cmd.content.servo.repeat_count, cmd.content.servo.time_ms);
         break;
         
     case MAV_CMD_DO_REPEAT_RELAY:
-        ServoRelayEvents.do_repeat_relay(cmd.p1, cmd.content.location.alt,
-                                         cmd.content.location.lat);
+        ServoRelayEvents.do_repeat_relay(cmd.content.relay.num, cmd.content.relay.repeat_count,
+                                         cmd.content.relay.time_ms);
         break;
 
     case MAV_CMD_DO_SET_ROI:                // 201
@@ -122,7 +122,7 @@ static bool start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
-        camera.set_trigger_distance(cmd.content.location.alt);
+        camera.set_trigger_distance(cmd.content.cam_trigg_dist.meters);
         break;
 #endif
 
@@ -273,7 +273,7 @@ static void do_nav_wp(const AP_Mission::Mission_Command& cmd)
 
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time     = 0;
-    // this is the delay, stored in seconds and expanded to millis
+    // this is the delay, stored in seconds
     loiter_time_max = cmd.p1;
     // if no delay set the waypoint as "fast"
     if (loiter_time_max == 0 ) {
@@ -505,10 +505,8 @@ static bool verify_RTL()
 
 static void do_wait_delay(const AP_Mission::Mission_Command& cmd)
 {
-    //cliSerial->print("dwd ");
     condition_start = millis();
-    condition_value = cmd.content.location.lat * 1000;     // convert to milliseconds
-    //cliSerial->println(condition_value,DEC);
+    condition_value = cmd.content.delay.seconds * 1000;     // convert seconds to milliseconds
 }
 
 static void do_change_alt(const AP_Mission::Mission_Command& cmd)
@@ -536,8 +534,7 @@ static void do_change_alt(const AP_Mission::Mission_Command& cmd)
 
 static void do_within_distance(const AP_Mission::Mission_Command& cmd)
 {
-    // To-Do: define another union of Mission_Command instead of using location's lat
-    condition_value  = cmd.content.location.lat * 100;
+    condition_value  = cmd.content.distance.meters * 100;
 }
 
 static void do_yaw(const AP_Mission::Mission_Command& cmd)
@@ -546,20 +543,20 @@ static void do_yaw(const AP_Mission::Mission_Command& cmd)
     int32_t curr_yaw_target = attitude_control.angle_ef_targets().z;
 
     // get final angle, 1 = Relative, 0 = Absolute
-    if( cmd.content.location.lng == 0 ) {
+    if (cmd.content.yaw.relative_angle == 0) {
         // absolute angle
-        yaw_look_at_heading = wrap_360_cd(cmd.content.location.alt * 100);
+        yaw_look_at_heading = wrap_360_cd(cmd.content.yaw.angle_deg * 100);
     }else{
         // relative angle
-        yaw_look_at_heading = wrap_360_cd(curr_yaw_target + cmd.content.location.alt * 100);
+        yaw_look_at_heading = wrap_360_cd(curr_yaw_target + cmd.content.yaw.angle_deg * 100);
     }
 
     // get turn speed
-    if (cmd.content.location.lat == 0 ) {
+    if (cmd.content.yaw.turn_rate_dps == 0 ) {
         // default to regular auto slew rate
         yaw_look_at_heading_slew = AUTO_YAW_SLEW_RATE;
     }else{
-        int32_t turn_rate = (wrap_180_cd(yaw_look_at_heading - curr_yaw_target) / 100) / cmd.content.location.lat;
+        int32_t turn_rate = (wrap_180_cd(yaw_look_at_heading - curr_yaw_target) / 100) / cmd.content.yaw.turn_rate_dps;
         yaw_look_at_heading_slew = constrain_int32(turn_rate, 1, 360);    // deg / sec
     }
 
@@ -567,7 +564,7 @@ static void do_yaw(const AP_Mission::Mission_Command& cmd)
     set_auto_yaw_mode(AUTO_YAW_LOOK_AT_HEADING);
 
     // TO-DO: restore support for clockwise / counter clockwise rotation held in command_cond_queue.p1
-    // command_cond_queue.p1; // 0 = undefined, 1 = clockwise, -1 = counterclockwise
+    // cmd.content.yaw.direction // 1 = clockwise, -1 = counterclockwise
 }
 
 
@@ -577,13 +574,10 @@ static void do_yaw(const AP_Mission::Mission_Command& cmd)
 
 static bool verify_wait_delay()
 {
-    //cliSerial->print("vwd");
     if (millis() - condition_start > (uint32_t)max(condition_value,0)) {
-        //cliSerial->println("y");
         condition_value = 0;
         return true;
     }
-    //cliSerial->println("n");
     return false;
 }
 
@@ -635,7 +629,7 @@ static bool do_guided(const AP_Mission::Mission_Command& cmd)
 
 static void do_change_speed(const AP_Mission::Mission_Command& cmd)
 {
-    wp_nav.set_horizontal_velocity(cmd.p1 * 100);
+    wp_nav.set_horizontal_velocity(cmd.content.speed.target_ms * 100);
 }
 
 static void do_set_home(const AP_Mission::Mission_Command& cmd)
