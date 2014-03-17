@@ -42,21 +42,88 @@ class AP_Mission {
 public:
 
     // jump command structure
-    struct Jump_Command {
-        uint16_t target;    // DO_JUMP target command id
-        int16_t num_times;  // DO_JUMP num times to repeat.  -1 = repeat forever
+    struct PACKED Jump_Command {
+        uint16_t target;        // target command id
+        int16_t num_times;      // num times to repeat.  -1 = repeat forever
     };
 
-    union Content {
+    // condition delay command structure
+    struct PACKED Conditional_Delay_Command {
+        uint16_t seconds;       // period of delay in seconds
+    };
+
+    // condition delay command structure
+    struct PACKED Conditional_Distance_Command {
+        int32_t meters;             // distance from next waypoint in meters
+    };
+
+    // condition yaw command structure
+    struct PACKED Yaw_Command {
+        int16_t angle_deg;      // target angle in degrees (0=north, 90=east)
+        int16_t turn_rate_dps;  // turn rate in degrees / second (0=use default)
+        int8_t  direction;      // -1 = ccw, +1 = cw
+        uint8_t  relative_angle;// 0 = absolute angle, 1 = relative angle
+    };
+
+    // change speed command structure
+    struct PACKED Change_Speed_Command {
+        uint8_t speed_type;     // 0=airspeed, 1=ground speed
+        float target_ms;        // target speed in m/s
+        uint8_t throttle_pct;   // throttle as a percentage (i.e. 0 ~ 100)
+    };
+
+    // set relay and repeat relay command structure
+    struct PACKED Set_Relay_Command {
+        uint8_t num;            // relay number from 1 to 4
+        uint8_t state;          // on = 3.3V or 5V (depending upon board), off = 0V.  only used for do-set-relay, not for do-repeat-relay
+        int16_t repeat_count;   // number of times to trigger the relay
+        uint32_t time_ms;       // cycle time in milliseconds (the time between peaks or the time the relay is on and off for each cycle?)
+    };
+
+    // set servo and repeat servo command structure
+    struct PACKED Set_Servo_Command {
+        uint8_t channel;        // Note: p1 holds servo channel
+        uint16_t pwm;           // pwm value for servo
+        int16_t repeat_count;   // number of times to move the servo (returns to trim in between)
+        uint16_t time_ms;       // cycle time in milliseconds (the time between peaks or the time the servo is at the specified pwm value for each cycle?)
+    };
+
+    // set cam trigger distance command structure
+    struct PACKED Cam_Trigg_Distance {
+        int32_t meters;         // distance
+    };
+
+    union PACKED Content {
         // jump structure
         Jump_Command jump;
+
+        // conditional delay
+        Conditional_Delay_Command delay;
+
+        // conditional distance
+        Conditional_Distance_Command distance;
+
+        // conditional yaw
+        Yaw_Command yaw;
+
+        // change speed
+        Change_Speed_Command speed;
+
+        // do-set-relay and do-repeat-relay
+        Set_Relay_Command relay;
+
+        // do-set-servo and do-repeate-servo
+        Set_Servo_Command servo;
+
+        // cam trigg distance
+        Cam_Trigg_Distance cam_trigg_dist;
 
         // location
         Location location;      // Waypoint location
     };
 
     // command structure
-    struct Mission_Command {
+    struct PACKED Mission_Command {
         uint16_t index;             // this commands position in the command list
         uint8_t id;                 // mavlink command id
         uint8_t p1;                 // general purpose parameter 1
