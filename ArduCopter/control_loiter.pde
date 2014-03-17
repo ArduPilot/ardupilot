@@ -8,10 +8,16 @@
 static bool loiter_init(bool ignore_checks)
 {
     if (GPS_ok() || ignore_checks) {
+
         // set target to current position
         wp_nav.init_loiter_target();
+
+        // initialize vertical speeds
+        pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+
         // initialise altitude target to stopping point
         pos_control.set_target_to_stopping_point_z();
+
         return true;
     }else{
         return false;
