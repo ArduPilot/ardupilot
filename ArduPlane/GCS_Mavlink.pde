@@ -1634,6 +1634,7 @@ mission_item_send_failed:
             break;
         }
 
+        // new mission arriving, truncate mission to be the same length
         mission.truncate(packet.count);
 
         waypoint_timelast_receive = millis();
