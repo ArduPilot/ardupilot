@@ -284,8 +284,13 @@ private:
     void handle_log_send_listing(DataFlash_Class &dataflash);
     bool handle_log_send_data(DataFlash_Class &dataflash);
 
+    void handle_mission_request_list(AP_Mission &mission, mavlink_message_t *msg);
     void handle_mission_request(AP_Mission &mission, mavlink_message_t *msg, 
                                 AP_Mission::Mission_Command &cmd);
+    void handle_mission_set_current(AP_Mission &mission, mavlink_message_t *msg);
+    void handle_mission_count(AP_Mission &mission, mavlink_message_t *msg);
+    void handle_mission_clear_all(AP_Mission &mission, mavlink_message_t *msg);
+    void handle_mission_write_partial_list(AP_Mission &mission, mavlink_message_t *msg);
 };
 
 #endif // __GCS_H

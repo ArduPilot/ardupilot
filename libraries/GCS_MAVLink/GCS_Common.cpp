@@ -179,6 +179,28 @@ void GCS_MAVLINK::send_ahrs2(AP_AHRS &ahrs)
 #endif
 }
 
+/*
+  handle a MISSION_REQUEST_LIST mavlink packet
+ */
+void GCS_MAVLINK::handle_mission_request_list(AP_Mission &mission, mavlink_message_t *msg)
+{
+    // decode
+    mavlink_mission_request_list_t packet;
+    mavlink_msg_mission_request_list_decode(msg, &packet);
+
+    // exit immediately if this command is not meant for this vehicle
+    if (mavlink_check_target(packet.target_system, packet.target_component)) {
+        return;
+    }
+
+    // reply with number of commands in the mission.  The GCS will then request each command separately
+    mavlink_msg_mission_count_send(chan,msg->sysid, msg->compid, mission.num_commands());
+
+    // set variables to help handle the expected sending of commands to the GCS
+    waypoint_receiving = false;             // record that we are sending commands (i.e. not receiving)
+    waypoint_dest_sysid = msg->sysid;       // record system id of GCS who has requested the commands
+    waypoint_dest_compid = msg->compid;     // record component id of GCS who has requested the commands
+}
 
 /*
   handle a MISSION_REQUEST mavlink packet
@@ -189,9 +211,11 @@ void GCS_MAVLINK::handle_mission_request(AP_Mission &mission, mavlink_message_t 
     // decode
     mavlink_mission_request_t packet;
     mavlink_msg_mission_request_decode(msg, &packet);
-    
-    if (mavlink_check_target(packet.target_system, packet.target_component))
+
+    // exit immediately if this command is not meant for this vehicle
+    if (mavlink_check_target(packet.target_system, packet.target_component)) {
         return;
+    }
 
     // retrieve mission from eeprom
     if (!mission.read_cmd_from_storage(packet.seq, cmd)) {
@@ -235,4 +259,109 @@ void GCS_MAVLINK::handle_mission_request(AP_Mission &mission, mavlink_message_t 
 mission_item_send_failed:
     // send failure message
     mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_ERROR);
+}
+
+/*
+  handle a MISSION_SET_CURRENT mavlink packet
+ */
+void GCS_MAVLINK::handle_mission_set_current(AP_Mission &mission, mavlink_message_t *msg)
+{
+    // decode
+    mavlink_mission_set_current_t packet;
+    mavlink_msg_mission_set_current_decode(msg, &packet);
+
+    // exit immediately if this command is not meant for this vehicle
+    if (mavlink_check_target(packet.target_system,packet.target_component)) {
+        return;
+    }
+
+    // set current command
+    if (mission.set_current_cmd(packet.seq)) {
+        mavlink_msg_mission_current_send(chan, mission.get_current_nav_cmd().index);
+    }
+}
+
+/*
+  handle a MISSION_COUNT mavlink packet
+ */
+void GCS_MAVLINK::handle_mission_count(AP_Mission &mission, mavlink_message_t *msg)
+{
+    // decode
+    mavlink_mission_count_t packet;
+    mavlink_msg_mission_count_decode(msg, &packet);
+
+    // exit immediately if this command is not meant for this vehicle
+    if (mavlink_check_target(packet.target_system,packet.target_component)) {
+        return;
+    }
+
+    // start waypoint receiving
+    if (packet.count > mission.num_commands_max()) {
+        // send NAK
+        mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_NO_SPACE);
+        return;
+    }
+
+    // new mission arriving, truncate mission to be the same length
+    mission.truncate(packet.count);
+
+    // set variables to help handle the expected receiving of commands from the GCS
+    waypoint_timelast_receive = hal.scheduler->millis();    // set time we last received commands to now
+    waypoint_receiving = true;              // record that we expect to receive commands
+    waypoint_request_i = 0;                 // reset the next expected command number to zero
+    waypoint_request_last = packet.count;   // record how many commands we expect to receive
+    waypoint_timelast_request = 0;          // set time we last requested commands to zero
+}
+
+/*
+  handle a MISSION_CLEAR_ALL mavlink packet
+ */
+void GCS_MAVLINK::handle_mission_clear_all(AP_Mission &mission, mavlink_message_t *msg)
+{
+    // decode
+    mavlink_mission_clear_all_t packet;
+    mavlink_msg_mission_clear_all_decode(msg, &packet);
+
+    // exit immediately if this command is not meant for this vehicle
+    if (mavlink_check_target(packet.target_system, packet.target_component)) {
+        return;
+    }
+
+    // clear all waypoints
+    if (mission.clear()) {
+        // send ack
+        mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_RESULT_ACCEPTED);
+    }else{
+        // send nack
+        mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, 1);
+    }
+}
+
+/*
+  handle a MISSION_WRITE_PARTIAL_LIST mavlink packet
+ */
+void GCS_MAVLINK::handle_mission_write_partial_list(AP_Mission &mission, mavlink_message_t *msg)
+{
+    // decode
+    mavlink_mission_write_partial_list_t packet;
+    mavlink_msg_mission_write_partial_list_decode(msg, &packet);
+
+    // exit immediately if this command is not meant for this vehicle
+    if (mavlink_check_target(packet.target_system,packet.target_component)) {
+        return;
+    }
+
+    // start waypoint receiving
+    if (packet.start_index > mission.num_commands() ||
+        packet.end_index > mission.num_commands() ||
+        packet.end_index < packet.start_index) {
+        send_text_P(SEVERITY_LOW,PSTR("flight plan update rejected"));
+        return;
+    }
+
+    waypoint_timelast_receive = hal.scheduler->millis();
+    waypoint_timelast_request = 0;
+    waypoint_receiving   = true;
+    waypoint_request_i   = packet.start_index;
+    waypoint_request_last= packet.end_index;
 }
