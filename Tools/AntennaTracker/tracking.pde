@@ -17,7 +17,6 @@ static struct {
  */
 static void update_pitch_servo(float pitch)
 {
-//    pitch = 0.0; // TEST
     // degrees(ahrs.pitch) is -90 to 90, where 0 is horizontal
     // pitch argument is -90 to 90, where 0 is horizontal
     // servo_out is in 100ths of a degree
@@ -64,11 +63,21 @@ static void update_pitch_servo(float pitch)
  */
 static void update_yaw_servo(float yaw)
 {
-//    yaw = 0.0; // TEST
-
     int32_t ahrs_yaw_cd = wrap_180_cd(ahrs.yaw_sensor);
     int32_t yaw_cd   = wrap_180_cd(yaw*100);
     const int16_t margin = 500; // 5 degrees slop
+
+    static uint16_t count = 0;
+    static uint32_t last_millis= 0;
+    uint32_t millis = hal.scheduler->millis();
+    if (millis > last_millis + 1000)
+    {
+//        hal.uartA->printf("ahrs_yaw_cd %ld yaw_cd %ld\n", ahrs_yaw_cd, yaw_cd);
+//        hal.uartA->printf("count %d\n", count);
+        last_millis = millis;
+        count = 0;
+    }
+    count++;
 
     // Antenna as Ballerina. Use with antenna that do not have continuously rotating servos, ie at some point in rotation
     // the servo limits are reached and the servo has to slew 360 degrees to the 'other side' to keep tracking.
