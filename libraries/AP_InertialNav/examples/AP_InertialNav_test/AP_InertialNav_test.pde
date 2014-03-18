@@ -25,6 +25,7 @@
 #include <AP_Buffer.h>          // ArduPilot general purpose FIFO buffer
 #include <DataFlash.h>
 #include <GCS_MAVLink.h>
+#include <AP_Mission.h>
 #include <AP_Notify.h>
 
 #include <AP_InertialNav.h>
