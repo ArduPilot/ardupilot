@@ -178,3 +178,80 @@ void GCS_MAVLINK::send_ahrs2(AP_AHRS &ahrs)
     }
 #endif
 }
+
+
+/*
+  handle a MISSION_REQUEST mavlink packet
+ */
+void GCS_MAVLINK::handle_mission_request(AP_Mission &mission, mavlink_message_t *msg, 
+                                         AP_Mission::Mission_Command &cmd)
+{
+    // decode
+    mavlink_mission_request_t packet;
+    mavlink_msg_mission_request_decode(msg, &packet);
+    
+    if (mavlink_check_target(packet.target_system, packet.target_component))
+        return;
+
+    // retrieve mission from eeprom
+    if (!mission.read_cmd_from_storage(packet.seq, cmd)) {
+        goto mission_item_send_failed;
+    }
+
+    // convert mission command to mavlink mission item packet
+    mavlink_mission_item_t ret_packet;
+    memset(&ret_packet, 0, sizeof(ret_packet));
+    if (!AP_Mission::mission_cmd_to_mavlink(cmd, ret_packet)) {
+        goto mission_item_send_failed;
+    }
+
+    // set packet's current field to 1 if this is the command being executed
+    if (cmd.id == (uint16_t)mission.get_current_nav_cmd().index) {
+        ret_packet.current = 1;
+    } else {
+        ret_packet.current = 0;
+    }
+
+    // set auto continue to 1
+    ret_packet.autocontinue = 1;     // 1 (true), 0 (false)
+
+    // plane specific overrides to packet values
+    switch (cmd.id) {
+    case MAV_CMD_NAV_LOITER_TIME:
+    case MAV_CMD_NAV_LOITER_TURNS:
+        if (cmd.content.location.flags.loiter_ccw) {
+            ret_packet.param3 = -1;
+        } else {
+            ret_packet.param3 = 1;
+        }
+        break;
+    case MAV_CMD_NAV_LOITER_UNLIM:
+        if (cmd.content.location.flags.loiter_ccw) {
+            ret_packet.param3 = -1;
+        } else {
+            ret_packet.param3 = 1;
+        }
+        break;
+    }
+
+    /*
+      avoid the _send() function to save memory on APM2, as it avoids
+      the stack usage of the _send() function by using the already
+      declared ret_packet above
+     */
+    ret_packet.target_system = msg->sysid;
+    ret_packet.target_component = msg->compid;
+    ret_packet.seq = packet.seq;
+    ret_packet.command = cmd.id;
+
+    _mav_finalize_message_chan_send(chan, 
+                                    MAVLINK_MSG_ID_MISSION_ITEM,
+                                    (const char *)&ret_packet,
+                                    MAVLINK_MSG_ID_MISSION_ITEM_LEN,
+                                    MAVLINK_MSG_ID_MISSION_ITEM_CRC);
+    return;
+
+mission_item_send_failed:
+    // send failure message
+    mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_ERROR);
+}

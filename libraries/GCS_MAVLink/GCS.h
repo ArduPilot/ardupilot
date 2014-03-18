@@ -11,6 +11,7 @@
 #include <AP_Common.h>
 #include <GCS_MAVLink.h>
 #include <DataFlash.h>
+#include <AP_Mission.h>
 #include <stdint.h>
 
 //  GCS Message ID's
@@ -282,6 +283,9 @@ private:
     void handle_log_send(DataFlash_Class &dataflash);
     void handle_log_send_listing(DataFlash_Class &dataflash);
     bool handle_log_send_data(DataFlash_Class &dataflash);
+
+    void handle_mission_request(AP_Mission &mission, mavlink_message_t *msg, 
+                                AP_Mission::Mission_Command &cmd);
 };
 
 #endif // __GCS_H
