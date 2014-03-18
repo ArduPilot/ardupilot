@@ -168,6 +168,39 @@ static inline void mavlink_msg_power_status_send(mavlink_channel_t chan, uint16_
 #endif
 }
 
+#if MAVLINK_MSG_ID_POWER_STATUS_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_power_status_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint16_t Vcc, uint16_t Vservo, uint16_t flags)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_uint16_t(buf, 0, Vcc);
+	_mav_put_uint16_t(buf, 2, Vservo);
+	_mav_put_uint16_t(buf, 4, flags);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_POWER_STATUS, buf, MAVLINK_MSG_ID_POWER_STATUS_LEN, MAVLINK_MSG_ID_POWER_STATUS_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_POWER_STATUS, buf, MAVLINK_MSG_ID_POWER_STATUS_LEN);
+#endif
+#else
+	mavlink_power_status_t *packet = (mavlink_power_status_t *)msgbuf;
+	packet->Vcc = Vcc;
+	packet->Vservo = Vservo;
+	packet->flags = flags;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_POWER_STATUS, (const char *)packet, MAVLINK_MSG_ID_POWER_STATUS_LEN, MAVLINK_MSG_ID_POWER_STATUS_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_POWER_STATUS, (const char *)packet, MAVLINK_MSG_ID_POWER_STATUS_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE POWER_STATUS UNPACKING

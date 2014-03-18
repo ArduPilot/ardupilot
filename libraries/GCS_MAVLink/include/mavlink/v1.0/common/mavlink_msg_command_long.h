@@ -256,6 +256,55 @@ static inline void mavlink_msg_command_long_send(mavlink_channel_t chan, uint8_t
 #endif
 }
 
+#if MAVLINK_MSG_ID_COMMAND_LONG_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_command_long_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint8_t target_system, uint8_t target_component, uint16_t command, uint8_t confirmation, float param1, float param2, float param3, float param4, float param5, float param6, float param7)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_float(buf, 0, param1);
+	_mav_put_float(buf, 4, param2);
+	_mav_put_float(buf, 8, param3);
+	_mav_put_float(buf, 12, param4);
+	_mav_put_float(buf, 16, param5);
+	_mav_put_float(buf, 20, param6);
+	_mav_put_float(buf, 24, param7);
+	_mav_put_uint16_t(buf, 28, command);
+	_mav_put_uint8_t(buf, 30, target_system);
+	_mav_put_uint8_t(buf, 31, target_component);
+	_mav_put_uint8_t(buf, 32, confirmation);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_COMMAND_LONG, buf, MAVLINK_MSG_ID_COMMAND_LONG_LEN, MAVLINK_MSG_ID_COMMAND_LONG_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_COMMAND_LONG, buf, MAVLINK_MSG_ID_COMMAND_LONG_LEN);
+#endif
+#else
+	mavlink_command_long_t *packet = (mavlink_command_long_t *)msgbuf;
+	packet->param1 = param1;
+	packet->param2 = param2;
+	packet->param3 = param3;
+	packet->param4 = param4;
+	packet->param5 = param5;
+	packet->param6 = param6;
+	packet->param7 = param7;
+	packet->command = command;
+	packet->target_system = target_system;
+	packet->target_component = target_component;
+	packet->confirmation = confirmation;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_COMMAND_LONG, (const char *)packet, MAVLINK_MSG_ID_COMMAND_LONG_LEN, MAVLINK_MSG_ID_COMMAND_LONG_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_COMMAND_LONG, (const char *)packet, MAVLINK_MSG_ID_COMMAND_LONG_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE COMMAND_LONG UNPACKING

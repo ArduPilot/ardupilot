@@ -184,6 +184,41 @@ static inline void mavlink_msg_file_transfer_start_send(mavlink_channel_t chan, 
 #endif
 }
 
+#if MAVLINK_MSG_ID_FILE_TRANSFER_START_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_file_transfer_start_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint64_t transfer_uid, const char *dest_path, uint8_t direction, uint32_t file_size, uint8_t flags)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_uint64_t(buf, 0, transfer_uid);
+	_mav_put_uint32_t(buf, 8, file_size);
+	_mav_put_uint8_t(buf, 252, direction);
+	_mav_put_uint8_t(buf, 253, flags);
+	_mav_put_char_array(buf, 12, dest_path, 240);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_FILE_TRANSFER_START, buf, MAVLINK_MSG_ID_FILE_TRANSFER_START_LEN, MAVLINK_MSG_ID_FILE_TRANSFER_START_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_FILE_TRANSFER_START, buf, MAVLINK_MSG_ID_FILE_TRANSFER_START_LEN);
+#endif
+#else
+	mavlink_file_transfer_start_t *packet = (mavlink_file_transfer_start_t *)msgbuf;
+	packet->transfer_uid = transfer_uid;
+	packet->file_size = file_size;
+	packet->direction = direction;
+	packet->flags = flags;
+	mav_array_memcpy(packet->dest_path, dest_path, sizeof(char)*240);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_FILE_TRANSFER_START, (const char *)packet, MAVLINK_MSG_ID_FILE_TRANSFER_START_LEN, MAVLINK_MSG_ID_FILE_TRANSFER_START_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_FILE_TRANSFER_START, (const char *)packet, MAVLINK_MSG_ID_FILE_TRANSFER_START_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE FILE_TRANSFER_START UNPACKING

@@ -256,6 +256,55 @@ static inline void mavlink_msg_rc_channels_scaled_send(mavlink_channel_t chan, u
 #endif
 }
 
+#if MAVLINK_MSG_ID_RC_CHANNELS_SCALED_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_rc_channels_scaled_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint32_t time_boot_ms, uint8_t port, int16_t chan1_scaled, int16_t chan2_scaled, int16_t chan3_scaled, int16_t chan4_scaled, int16_t chan5_scaled, int16_t chan6_scaled, int16_t chan7_scaled, int16_t chan8_scaled, uint8_t rssi)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_uint32_t(buf, 0, time_boot_ms);
+	_mav_put_int16_t(buf, 4, chan1_scaled);
+	_mav_put_int16_t(buf, 6, chan2_scaled);
+	_mav_put_int16_t(buf, 8, chan3_scaled);
+	_mav_put_int16_t(buf, 10, chan4_scaled);
+	_mav_put_int16_t(buf, 12, chan5_scaled);
+	_mav_put_int16_t(buf, 14, chan6_scaled);
+	_mav_put_int16_t(buf, 16, chan7_scaled);
+	_mav_put_int16_t(buf, 18, chan8_scaled);
+	_mav_put_uint8_t(buf, 20, port);
+	_mav_put_uint8_t(buf, 21, rssi);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_RC_CHANNELS_SCALED, buf, MAVLINK_MSG_ID_RC_CHANNELS_SCALED_LEN, MAVLINK_MSG_ID_RC_CHANNELS_SCALED_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_RC_CHANNELS_SCALED, buf, MAVLINK_MSG_ID_RC_CHANNELS_SCALED_LEN);
+#endif
+#else
+	mavlink_rc_channels_scaled_t *packet = (mavlink_rc_channels_scaled_t *)msgbuf;
+	packet->time_boot_ms = time_boot_ms;
+	packet->chan1_scaled = chan1_scaled;
+	packet->chan2_scaled = chan2_scaled;
+	packet->chan3_scaled = chan3_scaled;
+	packet->chan4_scaled = chan4_scaled;
+	packet->chan5_scaled = chan5_scaled;
+	packet->chan6_scaled = chan6_scaled;
+	packet->chan7_scaled = chan7_scaled;
+	packet->chan8_scaled = chan8_scaled;
+	packet->port = port;
+	packet->rssi = rssi;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_RC_CHANNELS_SCALED, (const char *)packet, MAVLINK_MSG_ID_RC_CHANNELS_SCALED_LEN, MAVLINK_MSG_ID_RC_CHANNELS_SCALED_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_RC_CHANNELS_SCALED, (const char *)packet, MAVLINK_MSG_ID_RC_CHANNELS_SCALED_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE RC_CHANNELS_SCALED UNPACKING

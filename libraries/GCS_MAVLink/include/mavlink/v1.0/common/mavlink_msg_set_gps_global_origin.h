@@ -179,6 +179,41 @@ static inline void mavlink_msg_set_gps_global_origin_send(mavlink_channel_t chan
 #endif
 }
 
+#if MAVLINK_MSG_ID_SET_GPS_GLOBAL_ORIGIN_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_set_gps_global_origin_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint8_t target_system, int32_t latitude, int32_t longitude, int32_t altitude)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_int32_t(buf, 0, latitude);
+	_mav_put_int32_t(buf, 4, longitude);
+	_mav_put_int32_t(buf, 8, altitude);
+	_mav_put_uint8_t(buf, 12, target_system);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SET_GPS_GLOBAL_ORIGIN, buf, MAVLINK_MSG_ID_SET_GPS_GLOBAL_ORIGIN_LEN, MAVLINK_MSG_ID_SET_GPS_GLOBAL_ORIGIN_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SET_GPS_GLOBAL_ORIGIN, buf, MAVLINK_MSG_ID_SET_GPS_GLOBAL_ORIGIN_LEN);
+#endif
+#else
+	mavlink_set_gps_global_origin_t *packet = (mavlink_set_gps_global_origin_t *)msgbuf;
+	packet->latitude = latitude;
+	packet->longitude = longitude;
+	packet->altitude = altitude;
+	packet->target_system = target_system;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SET_GPS_GLOBAL_ORIGIN, (const char *)packet, MAVLINK_MSG_ID_SET_GPS_GLOBAL_ORIGIN_LEN, MAVLINK_MSG_ID_SET_GPS_GLOBAL_ORIGIN_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SET_GPS_GLOBAL_ORIGIN, (const char *)packet, MAVLINK_MSG_ID_SET_GPS_GLOBAL_ORIGIN_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE SET_GPS_GLOBAL_ORIGIN UNPACKING

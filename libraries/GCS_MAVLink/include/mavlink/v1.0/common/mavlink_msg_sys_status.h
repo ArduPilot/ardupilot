@@ -278,6 +278,59 @@ static inline void mavlink_msg_sys_status_send(mavlink_channel_t chan, uint32_t 
 #endif
 }
 
+#if MAVLINK_MSG_ID_SYS_STATUS_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_sys_status_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint32_t onboard_control_sensors_present, uint32_t onboard_control_sensors_enabled, uint32_t onboard_control_sensors_health, uint16_t load, uint16_t voltage_battery, int16_t current_battery, int8_t battery_remaining, uint16_t drop_rate_comm, uint16_t errors_comm, uint16_t errors_count1, uint16_t errors_count2, uint16_t errors_count3, uint16_t errors_count4)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_uint32_t(buf, 0, onboard_control_sensors_present);
+	_mav_put_uint32_t(buf, 4, onboard_control_sensors_enabled);
+	_mav_put_uint32_t(buf, 8, onboard_control_sensors_health);
+	_mav_put_uint16_t(buf, 12, load);
+	_mav_put_uint16_t(buf, 14, voltage_battery);
+	_mav_put_int16_t(buf, 16, current_battery);
+	_mav_put_uint16_t(buf, 18, drop_rate_comm);
+	_mav_put_uint16_t(buf, 20, errors_comm);
+	_mav_put_uint16_t(buf, 22, errors_count1);
+	_mav_put_uint16_t(buf, 24, errors_count2);
+	_mav_put_uint16_t(buf, 26, errors_count3);
+	_mav_put_uint16_t(buf, 28, errors_count4);
+	_mav_put_int8_t(buf, 30, battery_remaining);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SYS_STATUS, buf, MAVLINK_MSG_ID_SYS_STATUS_LEN, MAVLINK_MSG_ID_SYS_STATUS_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SYS_STATUS, buf, MAVLINK_MSG_ID_SYS_STATUS_LEN);
+#endif
+#else
+	mavlink_sys_status_t *packet = (mavlink_sys_status_t *)msgbuf;
+	packet->onboard_control_sensors_present = onboard_control_sensors_present;
+	packet->onboard_control_sensors_enabled = onboard_control_sensors_enabled;
+	packet->onboard_control_sensors_health = onboard_control_sensors_health;
+	packet->load = load;
+	packet->voltage_battery = voltage_battery;
+	packet->current_battery = current_battery;
+	packet->drop_rate_comm = drop_rate_comm;
+	packet->errors_comm = errors_comm;
+	packet->errors_count1 = errors_count1;
+	packet->errors_count2 = errors_count2;
+	packet->errors_count3 = errors_count3;
+	packet->errors_count4 = errors_count4;
+	packet->battery_remaining = battery_remaining;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SYS_STATUS, (const char *)packet, MAVLINK_MSG_ID_SYS_STATUS_LEN, MAVLINK_MSG_ID_SYS_STATUS_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SYS_STATUS, (const char *)packet, MAVLINK_MSG_ID_SYS_STATUS_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE SYS_STATUS UNPACKING

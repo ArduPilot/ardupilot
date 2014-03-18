@@ -173,6 +173,39 @@ static inline void mavlink_msg_param_request_read_send(mavlink_channel_t chan, u
 #endif
 }
 
+#if MAVLINK_MSG_ID_PARAM_REQUEST_READ_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_param_request_read_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint8_t target_system, uint8_t target_component, const char *param_id, int16_t param_index)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_int16_t(buf, 0, param_index);
+	_mav_put_uint8_t(buf, 2, target_system);
+	_mav_put_uint8_t(buf, 3, target_component);
+	_mav_put_char_array(buf, 4, param_id, 16);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_PARAM_REQUEST_READ, buf, MAVLINK_MSG_ID_PARAM_REQUEST_READ_LEN, MAVLINK_MSG_ID_PARAM_REQUEST_READ_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_PARAM_REQUEST_READ, buf, MAVLINK_MSG_ID_PARAM_REQUEST_READ_LEN);
+#endif
+#else
+	mavlink_param_request_read_t *packet = (mavlink_param_request_read_t *)msgbuf;
+	packet->param_index = param_index;
+	packet->target_system = target_system;
+	packet->target_component = target_component;
+	mav_array_memcpy(packet->param_id, param_id, sizeof(char)*16);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_PARAM_REQUEST_READ, (const char *)packet, MAVLINK_MSG_ID_PARAM_REQUEST_READ_LEN, MAVLINK_MSG_ID_PARAM_REQUEST_READ_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_PARAM_REQUEST_READ, (const char *)packet, MAVLINK_MSG_ID_PARAM_REQUEST_READ_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE PARAM_REQUEST_READ UNPACKING

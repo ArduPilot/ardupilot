@@ -190,6 +190,43 @@ static inline void mavlink_msg_roll_pitch_yaw_thrust_setpoint_send(mavlink_chann
 #endif
 }
 
+#if MAVLINK_MSG_ID_ROLL_PITCH_YAW_THRUST_SETPOINT_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_roll_pitch_yaw_thrust_setpoint_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint32_t time_boot_ms, float roll, float pitch, float yaw, float thrust)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_uint32_t(buf, 0, time_boot_ms);
+	_mav_put_float(buf, 4, roll);
+	_mav_put_float(buf, 8, pitch);
+	_mav_put_float(buf, 12, yaw);
+	_mav_put_float(buf, 16, thrust);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_ROLL_PITCH_YAW_THRUST_SETPOINT, buf, MAVLINK_MSG_ID_ROLL_PITCH_YAW_THRUST_SETPOINT_LEN, MAVLINK_MSG_ID_ROLL_PITCH_YAW_THRUST_SETPOINT_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_ROLL_PITCH_YAW_THRUST_SETPOINT, buf, MAVLINK_MSG_ID_ROLL_PITCH_YAW_THRUST_SETPOINT_LEN);
+#endif
+#else
+	mavlink_roll_pitch_yaw_thrust_setpoint_t *packet = (mavlink_roll_pitch_yaw_thrust_setpoint_t *)msgbuf;
+	packet->time_boot_ms = time_boot_ms;
+	packet->roll = roll;
+	packet->pitch = pitch;
+	packet->yaw = yaw;
+	packet->thrust = thrust;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_ROLL_PITCH_YAW_THRUST_SETPOINT, (const char *)packet, MAVLINK_MSG_ID_ROLL_PITCH_YAW_THRUST_SETPOINT_LEN, MAVLINK_MSG_ID_ROLL_PITCH_YAW_THRUST_SETPOINT_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_ROLL_PITCH_YAW_THRUST_SETPOINT, (const char *)packet, MAVLINK_MSG_ID_ROLL_PITCH_YAW_THRUST_SETPOINT_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE ROLL_PITCH_YAW_THRUST_SETPOINT UNPACKING

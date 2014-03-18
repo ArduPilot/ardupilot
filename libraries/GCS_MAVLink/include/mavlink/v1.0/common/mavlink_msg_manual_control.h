@@ -201,6 +201,45 @@ static inline void mavlink_msg_manual_control_send(mavlink_channel_t chan, uint8
 #endif
 }
 
+#if MAVLINK_MSG_ID_MANUAL_CONTROL_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_manual_control_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint8_t target, int16_t x, int16_t y, int16_t z, int16_t r, uint16_t buttons)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_int16_t(buf, 0, x);
+	_mav_put_int16_t(buf, 2, y);
+	_mav_put_int16_t(buf, 4, z);
+	_mav_put_int16_t(buf, 6, r);
+	_mav_put_uint16_t(buf, 8, buttons);
+	_mav_put_uint8_t(buf, 10, target);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_MANUAL_CONTROL, buf, MAVLINK_MSG_ID_MANUAL_CONTROL_LEN, MAVLINK_MSG_ID_MANUAL_CONTROL_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_MANUAL_CONTROL, buf, MAVLINK_MSG_ID_MANUAL_CONTROL_LEN);
+#endif
+#else
+	mavlink_manual_control_t *packet = (mavlink_manual_control_t *)msgbuf;
+	packet->x = x;
+	packet->y = y;
+	packet->z = z;
+	packet->r = r;
+	packet->buttons = buttons;
+	packet->target = target;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_MANUAL_CONTROL, (const char *)packet, MAVLINK_MSG_ID_MANUAL_CONTROL_LEN, MAVLINK_MSG_ID_MANUAL_CONTROL_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_MANUAL_CONTROL, (const char *)packet, MAVLINK_MSG_ID_MANUAL_CONTROL_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE MANUAL_CONTROL UNPACKING

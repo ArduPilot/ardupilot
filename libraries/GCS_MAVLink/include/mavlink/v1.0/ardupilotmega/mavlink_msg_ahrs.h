@@ -212,6 +212,47 @@ static inline void mavlink_msg_ahrs_send(mavlink_channel_t chan, float omegaIx, 
 #endif
 }
 
+#if MAVLINK_MSG_ID_AHRS_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_ahrs_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, float omegaIx, float omegaIy, float omegaIz, float accel_weight, float renorm_val, float error_rp, float error_yaw)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_float(buf, 0, omegaIx);
+	_mav_put_float(buf, 4, omegaIy);
+	_mav_put_float(buf, 8, omegaIz);
+	_mav_put_float(buf, 12, accel_weight);
+	_mav_put_float(buf, 16, renorm_val);
+	_mav_put_float(buf, 20, error_rp);
+	_mav_put_float(buf, 24, error_yaw);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_AHRS, buf, MAVLINK_MSG_ID_AHRS_LEN, MAVLINK_MSG_ID_AHRS_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_AHRS, buf, MAVLINK_MSG_ID_AHRS_LEN);
+#endif
+#else
+	mavlink_ahrs_t *packet = (mavlink_ahrs_t *)msgbuf;
+	packet->omegaIx = omegaIx;
+	packet->omegaIy = omegaIy;
+	packet->omegaIz = omegaIz;
+	packet->accel_weight = accel_weight;
+	packet->renorm_val = renorm_val;
+	packet->error_rp = error_rp;
+	packet->error_yaw = error_yaw;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_AHRS, (const char *)packet, MAVLINK_MSG_ID_AHRS_LEN, MAVLINK_MSG_ID_AHRS_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_AHRS, (const char *)packet, MAVLINK_MSG_ID_AHRS_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE AHRS UNPACKING

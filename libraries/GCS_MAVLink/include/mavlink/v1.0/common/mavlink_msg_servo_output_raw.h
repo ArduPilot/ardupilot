@@ -245,6 +245,53 @@ static inline void mavlink_msg_servo_output_raw_send(mavlink_channel_t chan, uin
 #endif
 }
 
+#if MAVLINK_MSG_ID_SERVO_OUTPUT_RAW_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_servo_output_raw_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint32_t time_usec, uint8_t port, uint16_t servo1_raw, uint16_t servo2_raw, uint16_t servo3_raw, uint16_t servo4_raw, uint16_t servo5_raw, uint16_t servo6_raw, uint16_t servo7_raw, uint16_t servo8_raw)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_uint32_t(buf, 0, time_usec);
+	_mav_put_uint16_t(buf, 4, servo1_raw);
+	_mav_put_uint16_t(buf, 6, servo2_raw);
+	_mav_put_uint16_t(buf, 8, servo3_raw);
+	_mav_put_uint16_t(buf, 10, servo4_raw);
+	_mav_put_uint16_t(buf, 12, servo5_raw);
+	_mav_put_uint16_t(buf, 14, servo6_raw);
+	_mav_put_uint16_t(buf, 16, servo7_raw);
+	_mav_put_uint16_t(buf, 18, servo8_raw);
+	_mav_put_uint8_t(buf, 20, port);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SERVO_OUTPUT_RAW, buf, MAVLINK_MSG_ID_SERVO_OUTPUT_RAW_LEN, MAVLINK_MSG_ID_SERVO_OUTPUT_RAW_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SERVO_OUTPUT_RAW, buf, MAVLINK_MSG_ID_SERVO_OUTPUT_RAW_LEN);
+#endif
+#else
+	mavlink_servo_output_raw_t *packet = (mavlink_servo_output_raw_t *)msgbuf;
+	packet->time_usec = time_usec;
+	packet->servo1_raw = servo1_raw;
+	packet->servo2_raw = servo2_raw;
+	packet->servo3_raw = servo3_raw;
+	packet->servo4_raw = servo4_raw;
+	packet->servo5_raw = servo5_raw;
+	packet->servo6_raw = servo6_raw;
+	packet->servo7_raw = servo7_raw;
+	packet->servo8_raw = servo8_raw;
+	packet->port = port;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SERVO_OUTPUT_RAW, (const char *)packet, MAVLINK_MSG_ID_SERVO_OUTPUT_RAW_LEN, MAVLINK_MSG_ID_SERVO_OUTPUT_RAW_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SERVO_OUTPUT_RAW, (const char *)packet, MAVLINK_MSG_ID_SERVO_OUTPUT_RAW_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE SERVO_OUTPUT_RAW UNPACKING

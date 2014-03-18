@@ -190,6 +190,43 @@ static inline void mavlink_msg_set_global_position_setpoint_int_send(mavlink_cha
 #endif
 }
 
+#if MAVLINK_MSG_ID_SET_GLOBAL_POSITION_SETPOINT_INT_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_set_global_position_setpoint_int_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint8_t coordinate_frame, int32_t latitude, int32_t longitude, int32_t altitude, int16_t yaw)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_int32_t(buf, 0, latitude);
+	_mav_put_int32_t(buf, 4, longitude);
+	_mav_put_int32_t(buf, 8, altitude);
+	_mav_put_int16_t(buf, 12, yaw);
+	_mav_put_uint8_t(buf, 14, coordinate_frame);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SET_GLOBAL_POSITION_SETPOINT_INT, buf, MAVLINK_MSG_ID_SET_GLOBAL_POSITION_SETPOINT_INT_LEN, MAVLINK_MSG_ID_SET_GLOBAL_POSITION_SETPOINT_INT_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SET_GLOBAL_POSITION_SETPOINT_INT, buf, MAVLINK_MSG_ID_SET_GLOBAL_POSITION_SETPOINT_INT_LEN);
+#endif
+#else
+	mavlink_set_global_position_setpoint_int_t *packet = (mavlink_set_global_position_setpoint_int_t *)msgbuf;
+	packet->latitude = latitude;
+	packet->longitude = longitude;
+	packet->altitude = altitude;
+	packet->yaw = yaw;
+	packet->coordinate_frame = coordinate_frame;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SET_GLOBAL_POSITION_SETPOINT_INT, (const char *)packet, MAVLINK_MSG_ID_SET_GLOBAL_POSITION_SETPOINT_INT_LEN, MAVLINK_MSG_ID_SET_GLOBAL_POSITION_SETPOINT_INT_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SET_GLOBAL_POSITION_SETPOINT_INT, (const char *)packet, MAVLINK_MSG_ID_SET_GLOBAL_POSITION_SETPOINT_INT_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE SET_GLOBAL_POSITION_SETPOINT_INT UNPACKING

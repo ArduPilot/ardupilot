@@ -201,6 +201,45 @@ static inline void mavlink_msg_mount_configure_send(mavlink_channel_t chan, uint
 #endif
 }
 
+#if MAVLINK_MSG_ID_MOUNT_CONFIGURE_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_mount_configure_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint8_t target_system, uint8_t target_component, uint8_t mount_mode, uint8_t stab_roll, uint8_t stab_pitch, uint8_t stab_yaw)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_uint8_t(buf, 0, target_system);
+	_mav_put_uint8_t(buf, 1, target_component);
+	_mav_put_uint8_t(buf, 2, mount_mode);
+	_mav_put_uint8_t(buf, 3, stab_roll);
+	_mav_put_uint8_t(buf, 4, stab_pitch);
+	_mav_put_uint8_t(buf, 5, stab_yaw);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_MOUNT_CONFIGURE, buf, MAVLINK_MSG_ID_MOUNT_CONFIGURE_LEN, MAVLINK_MSG_ID_MOUNT_CONFIGURE_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_MOUNT_CONFIGURE, buf, MAVLINK_MSG_ID_MOUNT_CONFIGURE_LEN);
+#endif
+#else
+	mavlink_mount_configure_t *packet = (mavlink_mount_configure_t *)msgbuf;
+	packet->target_system = target_system;
+	packet->target_component = target_component;
+	packet->mount_mode = mount_mode;
+	packet->stab_roll = stab_roll;
+	packet->stab_pitch = stab_pitch;
+	packet->stab_yaw = stab_yaw;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_MOUNT_CONFIGURE, (const char *)packet, MAVLINK_MSG_ID_MOUNT_CONFIGURE_LEN, MAVLINK_MSG_ID_MOUNT_CONFIGURE_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_MOUNT_CONFIGURE, (const char *)packet, MAVLINK_MSG_ID_MOUNT_CONFIGURE_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE MOUNT_CONFIGURE UNPACKING

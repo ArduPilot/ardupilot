@@ -146,6 +146,35 @@ static inline void mavlink_msg_mission_item_reached_send(mavlink_channel_t chan,
 #endif
 }
 
+#if MAVLINK_MSG_ID_MISSION_ITEM_REACHED_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_mission_item_reached_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint16_t seq)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_uint16_t(buf, 0, seq);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_MISSION_ITEM_REACHED, buf, MAVLINK_MSG_ID_MISSION_ITEM_REACHED_LEN, MAVLINK_MSG_ID_MISSION_ITEM_REACHED_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_MISSION_ITEM_REACHED, buf, MAVLINK_MSG_ID_MISSION_ITEM_REACHED_LEN);
+#endif
+#else
+	mavlink_mission_item_reached_t *packet = (mavlink_mission_item_reached_t *)msgbuf;
+	packet->seq = seq;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_MISSION_ITEM_REACHED, (const char *)packet, MAVLINK_MSG_ID_MISSION_ITEM_REACHED_LEN, MAVLINK_MSG_ID_MISSION_ITEM_REACHED_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_MISSION_ITEM_REACHED, (const char *)packet, MAVLINK_MSG_ID_MISSION_ITEM_REACHED_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE MISSION_ITEM_REACHED UNPACKING

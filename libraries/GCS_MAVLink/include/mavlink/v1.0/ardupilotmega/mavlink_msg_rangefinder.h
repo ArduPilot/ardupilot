@@ -157,6 +157,37 @@ static inline void mavlink_msg_rangefinder_send(mavlink_channel_t chan, float di
 #endif
 }
 
+#if MAVLINK_MSG_ID_RANGEFINDER_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_rangefinder_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, float distance, float voltage)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_float(buf, 0, distance);
+	_mav_put_float(buf, 4, voltage);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_RANGEFINDER, buf, MAVLINK_MSG_ID_RANGEFINDER_LEN, MAVLINK_MSG_ID_RANGEFINDER_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_RANGEFINDER, buf, MAVLINK_MSG_ID_RANGEFINDER_LEN);
+#endif
+#else
+	mavlink_rangefinder_t *packet = (mavlink_rangefinder_t *)msgbuf;
+	packet->distance = distance;
+	packet->voltage = voltage;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_RANGEFINDER, (const char *)packet, MAVLINK_MSG_ID_RANGEFINDER_LEN, MAVLINK_MSG_ID_RANGEFINDER_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_RANGEFINDER, (const char *)packet, MAVLINK_MSG_ID_RANGEFINDER_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE RANGEFINDER UNPACKING

@@ -267,6 +267,57 @@ static inline void mavlink_msg_sensor_offsets_send(mavlink_channel_t chan, int16
 #endif
 }
 
+#if MAVLINK_MSG_ID_SENSOR_OFFSETS_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_sensor_offsets_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, int16_t mag_ofs_x, int16_t mag_ofs_y, int16_t mag_ofs_z, float mag_declination, int32_t raw_press, int32_t raw_temp, float gyro_cal_x, float gyro_cal_y, float gyro_cal_z, float accel_cal_x, float accel_cal_y, float accel_cal_z)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_float(buf, 0, mag_declination);
+	_mav_put_int32_t(buf, 4, raw_press);
+	_mav_put_int32_t(buf, 8, raw_temp);
+	_mav_put_float(buf, 12, gyro_cal_x);
+	_mav_put_float(buf, 16, gyro_cal_y);
+	_mav_put_float(buf, 20, gyro_cal_z);
+	_mav_put_float(buf, 24, accel_cal_x);
+	_mav_put_float(buf, 28, accel_cal_y);
+	_mav_put_float(buf, 32, accel_cal_z);
+	_mav_put_int16_t(buf, 36, mag_ofs_x);
+	_mav_put_int16_t(buf, 38, mag_ofs_y);
+	_mav_put_int16_t(buf, 40, mag_ofs_z);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SENSOR_OFFSETS, buf, MAVLINK_MSG_ID_SENSOR_OFFSETS_LEN, MAVLINK_MSG_ID_SENSOR_OFFSETS_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SENSOR_OFFSETS, buf, MAVLINK_MSG_ID_SENSOR_OFFSETS_LEN);
+#endif
+#else
+	mavlink_sensor_offsets_t *packet = (mavlink_sensor_offsets_t *)msgbuf;
+	packet->mag_declination = mag_declination;
+	packet->raw_press = raw_press;
+	packet->raw_temp = raw_temp;
+	packet->gyro_cal_x = gyro_cal_x;
+	packet->gyro_cal_y = gyro_cal_y;
+	packet->gyro_cal_z = gyro_cal_z;
+	packet->accel_cal_x = accel_cal_x;
+	packet->accel_cal_y = accel_cal_y;
+	packet->accel_cal_z = accel_cal_z;
+	packet->mag_ofs_x = mag_ofs_x;
+	packet->mag_ofs_y = mag_ofs_y;
+	packet->mag_ofs_z = mag_ofs_z;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SENSOR_OFFSETS, (const char *)packet, MAVLINK_MSG_ID_SENSOR_OFFSETS_LEN, MAVLINK_MSG_ID_SENSOR_OFFSETS_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SENSOR_OFFSETS, (const char *)packet, MAVLINK_MSG_ID_SENSOR_OFFSETS_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE SENSOR_OFFSETS UNPACKING

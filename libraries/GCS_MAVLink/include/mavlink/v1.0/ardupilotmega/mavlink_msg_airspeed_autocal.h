@@ -267,6 +267,57 @@ static inline void mavlink_msg_airspeed_autocal_send(mavlink_channel_t chan, flo
 #endif
 }
 
+#if MAVLINK_MSG_ID_AIRSPEED_AUTOCAL_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_airspeed_autocal_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, float vx, float vy, float vz, float diff_pressure, float EAS2TAS, float ratio, float state_x, float state_y, float state_z, float Pax, float Pby, float Pcz)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_float(buf, 0, vx);
+	_mav_put_float(buf, 4, vy);
+	_mav_put_float(buf, 8, vz);
+	_mav_put_float(buf, 12, diff_pressure);
+	_mav_put_float(buf, 16, EAS2TAS);
+	_mav_put_float(buf, 20, ratio);
+	_mav_put_float(buf, 24, state_x);
+	_mav_put_float(buf, 28, state_y);
+	_mav_put_float(buf, 32, state_z);
+	_mav_put_float(buf, 36, Pax);
+	_mav_put_float(buf, 40, Pby);
+	_mav_put_float(buf, 44, Pcz);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_AIRSPEED_AUTOCAL, buf, MAVLINK_MSG_ID_AIRSPEED_AUTOCAL_LEN, MAVLINK_MSG_ID_AIRSPEED_AUTOCAL_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_AIRSPEED_AUTOCAL, buf, MAVLINK_MSG_ID_AIRSPEED_AUTOCAL_LEN);
+#endif
+#else
+	mavlink_airspeed_autocal_t *packet = (mavlink_airspeed_autocal_t *)msgbuf;
+	packet->vx = vx;
+	packet->vy = vy;
+	packet->vz = vz;
+	packet->diff_pressure = diff_pressure;
+	packet->EAS2TAS = EAS2TAS;
+	packet->ratio = ratio;
+	packet->state_x = state_x;
+	packet->state_y = state_y;
+	packet->state_z = state_z;
+	packet->Pax = Pax;
+	packet->Pby = Pby;
+	packet->Pcz = Pcz;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_AIRSPEED_AUTOCAL, (const char *)packet, MAVLINK_MSG_ID_AIRSPEED_AUTOCAL_LEN, MAVLINK_MSG_ID_AIRSPEED_AUTOCAL_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_AIRSPEED_AUTOCAL, (const char *)packet, MAVLINK_MSG_ID_AIRSPEED_AUTOCAL_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE AIRSPEED_AUTOCAL UNPACKING

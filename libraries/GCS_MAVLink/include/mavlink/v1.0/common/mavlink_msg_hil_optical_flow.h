@@ -223,6 +223,49 @@ static inline void mavlink_msg_hil_optical_flow_send(mavlink_channel_t chan, uin
 #endif
 }
 
+#if MAVLINK_MSG_ID_HIL_OPTICAL_FLOW_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_hil_optical_flow_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint64_t time_usec, uint8_t sensor_id, int16_t flow_x, int16_t flow_y, float flow_comp_m_x, float flow_comp_m_y, uint8_t quality, float ground_distance)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_uint64_t(buf, 0, time_usec);
+	_mav_put_float(buf, 8, flow_comp_m_x);
+	_mav_put_float(buf, 12, flow_comp_m_y);
+	_mav_put_float(buf, 16, ground_distance);
+	_mav_put_int16_t(buf, 20, flow_x);
+	_mav_put_int16_t(buf, 22, flow_y);
+	_mav_put_uint8_t(buf, 24, sensor_id);
+	_mav_put_uint8_t(buf, 25, quality);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HIL_OPTICAL_FLOW, buf, MAVLINK_MSG_ID_HIL_OPTICAL_FLOW_LEN, MAVLINK_MSG_ID_HIL_OPTICAL_FLOW_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HIL_OPTICAL_FLOW, buf, MAVLINK_MSG_ID_HIL_OPTICAL_FLOW_LEN);
+#endif
+#else
+	mavlink_hil_optical_flow_t *packet = (mavlink_hil_optical_flow_t *)msgbuf;
+	packet->time_usec = time_usec;
+	packet->flow_comp_m_x = flow_comp_m_x;
+	packet->flow_comp_m_y = flow_comp_m_y;
+	packet->ground_distance = ground_distance;
+	packet->flow_x = flow_x;
+	packet->flow_y = flow_y;
+	packet->sensor_id = sensor_id;
+	packet->quality = quality;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HIL_OPTICAL_FLOW, (const char *)packet, MAVLINK_MSG_ID_HIL_OPTICAL_FLOW_LEN, MAVLINK_MSG_ID_HIL_OPTICAL_FLOW_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HIL_OPTICAL_FLOW, (const char *)packet, MAVLINK_MSG_ID_HIL_OPTICAL_FLOW_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE HIL_OPTICAL_FLOW UNPACKING

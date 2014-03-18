@@ -223,6 +223,49 @@ static inline void mavlink_msg_nav_controller_output_send(mavlink_channel_t chan
 #endif
 }
 
+#if MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_nav_controller_output_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, float nav_roll, float nav_pitch, int16_t nav_bearing, int16_t target_bearing, uint16_t wp_dist, float alt_error, float aspd_error, float xtrack_error)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_float(buf, 0, nav_roll);
+	_mav_put_float(buf, 4, nav_pitch);
+	_mav_put_float(buf, 8, alt_error);
+	_mav_put_float(buf, 12, aspd_error);
+	_mav_put_float(buf, 16, xtrack_error);
+	_mav_put_int16_t(buf, 20, nav_bearing);
+	_mav_put_int16_t(buf, 22, target_bearing);
+	_mav_put_uint16_t(buf, 24, wp_dist);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT, buf, MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT_LEN, MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT, buf, MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT_LEN);
+#endif
+#else
+	mavlink_nav_controller_output_t *packet = (mavlink_nav_controller_output_t *)msgbuf;
+	packet->nav_roll = nav_roll;
+	packet->nav_pitch = nav_pitch;
+	packet->alt_error = alt_error;
+	packet->aspd_error = aspd_error;
+	packet->xtrack_error = xtrack_error;
+	packet->nav_bearing = nav_bearing;
+	packet->target_bearing = target_bearing;
+	packet->wp_dist = wp_dist;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT, (const char *)packet, MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT_LEN, MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT, (const char *)packet, MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE NAV_CONTROLLER_OUTPUT UNPACKING

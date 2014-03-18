@@ -179,6 +179,41 @@ static inline void mavlink_msg_ping_send(mavlink_channel_t chan, uint64_t time_u
 #endif
 }
 
+#if MAVLINK_MSG_ID_PING_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_ping_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint64_t time_usec, uint32_t seq, uint8_t target_system, uint8_t target_component)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_uint64_t(buf, 0, time_usec);
+	_mav_put_uint32_t(buf, 8, seq);
+	_mav_put_uint8_t(buf, 12, target_system);
+	_mav_put_uint8_t(buf, 13, target_component);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_PING, buf, MAVLINK_MSG_ID_PING_LEN, MAVLINK_MSG_ID_PING_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_PING, buf, MAVLINK_MSG_ID_PING_LEN);
+#endif
+#else
+	mavlink_ping_t *packet = (mavlink_ping_t *)msgbuf;
+	packet->time_usec = time_usec;
+	packet->seq = seq;
+	packet->target_system = target_system;
+	packet->target_component = target_component;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_PING, (const char *)packet, MAVLINK_MSG_ID_PING_LEN, MAVLINK_MSG_ID_PING_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_PING, (const char *)packet, MAVLINK_MSG_ID_PING_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE PING UNPACKING

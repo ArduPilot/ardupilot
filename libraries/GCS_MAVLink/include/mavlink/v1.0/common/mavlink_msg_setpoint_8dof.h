@@ -234,6 +234,51 @@ static inline void mavlink_msg_setpoint_8dof_send(mavlink_channel_t chan, uint8_
 #endif
 }
 
+#if MAVLINK_MSG_ID_SETPOINT_8DOF_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_setpoint_8dof_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint8_t target_system, float val1, float val2, float val3, float val4, float val5, float val6, float val7, float val8)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_float(buf, 0, val1);
+	_mav_put_float(buf, 4, val2);
+	_mav_put_float(buf, 8, val3);
+	_mav_put_float(buf, 12, val4);
+	_mav_put_float(buf, 16, val5);
+	_mav_put_float(buf, 20, val6);
+	_mav_put_float(buf, 24, val7);
+	_mav_put_float(buf, 28, val8);
+	_mav_put_uint8_t(buf, 32, target_system);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SETPOINT_8DOF, buf, MAVLINK_MSG_ID_SETPOINT_8DOF_LEN, MAVLINK_MSG_ID_SETPOINT_8DOF_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SETPOINT_8DOF, buf, MAVLINK_MSG_ID_SETPOINT_8DOF_LEN);
+#endif
+#else
+	mavlink_setpoint_8dof_t *packet = (mavlink_setpoint_8dof_t *)msgbuf;
+	packet->val1 = val1;
+	packet->val2 = val2;
+	packet->val3 = val3;
+	packet->val4 = val4;
+	packet->val5 = val5;
+	packet->val6 = val6;
+	packet->val7 = val7;
+	packet->val8 = val8;
+	packet->target_system = target_system;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SETPOINT_8DOF, (const char *)packet, MAVLINK_MSG_ID_SETPOINT_8DOF_LEN, MAVLINK_MSG_ID_SETPOINT_8DOF_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SETPOINT_8DOF, (const char *)packet, MAVLINK_MSG_ID_SETPOINT_8DOF_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE SETPOINT_8DOF UNPACKING

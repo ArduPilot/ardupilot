@@ -256,6 +256,55 @@ static inline void mavlink_msg_battery_status_send(mavlink_channel_t chan, uint8
 #endif
 }
 
+#if MAVLINK_MSG_ID_BATTERY_STATUS_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_battery_status_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint8_t accu_id, uint16_t voltage_cell_1, uint16_t voltage_cell_2, uint16_t voltage_cell_3, uint16_t voltage_cell_4, uint16_t voltage_cell_5, uint16_t voltage_cell_6, int16_t current_battery, int32_t current_consumed, int32_t energy_consumed, int8_t battery_remaining)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_int32_t(buf, 0, current_consumed);
+	_mav_put_int32_t(buf, 4, energy_consumed);
+	_mav_put_uint16_t(buf, 8, voltage_cell_1);
+	_mav_put_uint16_t(buf, 10, voltage_cell_2);
+	_mav_put_uint16_t(buf, 12, voltage_cell_3);
+	_mav_put_uint16_t(buf, 14, voltage_cell_4);
+	_mav_put_uint16_t(buf, 16, voltage_cell_5);
+	_mav_put_uint16_t(buf, 18, voltage_cell_6);
+	_mav_put_int16_t(buf, 20, current_battery);
+	_mav_put_uint8_t(buf, 22, accu_id);
+	_mav_put_int8_t(buf, 23, battery_remaining);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_BATTERY_STATUS, buf, MAVLINK_MSG_ID_BATTERY_STATUS_LEN, MAVLINK_MSG_ID_BATTERY_STATUS_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_BATTERY_STATUS, buf, MAVLINK_MSG_ID_BATTERY_STATUS_LEN);
+#endif
+#else
+	mavlink_battery_status_t *packet = (mavlink_battery_status_t *)msgbuf;
+	packet->current_consumed = current_consumed;
+	packet->energy_consumed = energy_consumed;
+	packet->voltage_cell_1 = voltage_cell_1;
+	packet->voltage_cell_2 = voltage_cell_2;
+	packet->voltage_cell_3 = voltage_cell_3;
+	packet->voltage_cell_4 = voltage_cell_4;
+	packet->voltage_cell_5 = voltage_cell_5;
+	packet->voltage_cell_6 = voltage_cell_6;
+	packet->current_battery = current_battery;
+	packet->accu_id = accu_id;
+	packet->battery_remaining = battery_remaining;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_BATTERY_STATUS, (const char *)packet, MAVLINK_MSG_ID_BATTERY_STATUS_LEN, MAVLINK_MSG_ID_BATTERY_STATUS_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_BATTERY_STATUS, (const char *)packet, MAVLINK_MSG_ID_BATTERY_STATUS_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE BATTERY_STATUS UNPACKING

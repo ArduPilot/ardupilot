@@ -212,6 +212,47 @@ static inline void mavlink_msg_manual_setpoint_send(mavlink_channel_t chan, uint
 #endif
 }
 
+#if MAVLINK_MSG_ID_MANUAL_SETPOINT_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_manual_setpoint_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint32_t time_boot_ms, float roll, float pitch, float yaw, float thrust, uint8_t mode_switch, uint8_t manual_override_switch)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_uint32_t(buf, 0, time_boot_ms);
+	_mav_put_float(buf, 4, roll);
+	_mav_put_float(buf, 8, pitch);
+	_mav_put_float(buf, 12, yaw);
+	_mav_put_float(buf, 16, thrust);
+	_mav_put_uint8_t(buf, 20, mode_switch);
+	_mav_put_uint8_t(buf, 21, manual_override_switch);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_MANUAL_SETPOINT, buf, MAVLINK_MSG_ID_MANUAL_SETPOINT_LEN, MAVLINK_MSG_ID_MANUAL_SETPOINT_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_MANUAL_SETPOINT, buf, MAVLINK_MSG_ID_MANUAL_SETPOINT_LEN);
+#endif
+#else
+	mavlink_manual_setpoint_t *packet = (mavlink_manual_setpoint_t *)msgbuf;
+	packet->time_boot_ms = time_boot_ms;
+	packet->roll = roll;
+	packet->pitch = pitch;
+	packet->yaw = yaw;
+	packet->thrust = thrust;
+	packet->mode_switch = mode_switch;
+	packet->manual_override_switch = manual_override_switch;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_MANUAL_SETPOINT, (const char *)packet, MAVLINK_MSG_ID_MANUAL_SETPOINT_LEN, MAVLINK_MSG_ID_MANUAL_SETPOINT_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_MANUAL_SETPOINT, (const char *)packet, MAVLINK_MSG_ID_MANUAL_SETPOINT_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE MANUAL_SETPOINT UNPACKING

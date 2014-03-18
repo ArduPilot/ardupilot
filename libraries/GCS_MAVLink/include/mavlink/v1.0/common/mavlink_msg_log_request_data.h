@@ -190,6 +190,43 @@ static inline void mavlink_msg_log_request_data_send(mavlink_channel_t chan, uin
 #endif
 }
 
+#if MAVLINK_MSG_ID_LOG_REQUEST_DATA_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_log_request_data_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint8_t target_system, uint8_t target_component, uint16_t id, uint32_t ofs, uint32_t count)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_uint32_t(buf, 0, ofs);
+	_mav_put_uint32_t(buf, 4, count);
+	_mav_put_uint16_t(buf, 8, id);
+	_mav_put_uint8_t(buf, 10, target_system);
+	_mav_put_uint8_t(buf, 11, target_component);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_LOG_REQUEST_DATA, buf, MAVLINK_MSG_ID_LOG_REQUEST_DATA_LEN, MAVLINK_MSG_ID_LOG_REQUEST_DATA_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_LOG_REQUEST_DATA, buf, MAVLINK_MSG_ID_LOG_REQUEST_DATA_LEN);
+#endif
+#else
+	mavlink_log_request_data_t *packet = (mavlink_log_request_data_t *)msgbuf;
+	packet->ofs = ofs;
+	packet->count = count;
+	packet->id = id;
+	packet->target_system = target_system;
+	packet->target_component = target_component;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_LOG_REQUEST_DATA, (const char *)packet, MAVLINK_MSG_ID_LOG_REQUEST_DATA_LEN, MAVLINK_MSG_ID_LOG_REQUEST_DATA_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_LOG_REQUEST_DATA, (const char *)packet, MAVLINK_MSG_ID_LOG_REQUEST_DATA_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE LOG_REQUEST_DATA UNPACKING

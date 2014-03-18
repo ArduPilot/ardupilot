@@ -223,6 +223,49 @@ static inline void mavlink_msg_attitude_quaternion_send(mavlink_channel_t chan, 
 #endif
 }
 
+#if MAVLINK_MSG_ID_ATTITUDE_QUATERNION_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_attitude_quaternion_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint32_t time_boot_ms, float q1, float q2, float q3, float q4, float rollspeed, float pitchspeed, float yawspeed)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_uint32_t(buf, 0, time_boot_ms);
+	_mav_put_float(buf, 4, q1);
+	_mav_put_float(buf, 8, q2);
+	_mav_put_float(buf, 12, q3);
+	_mav_put_float(buf, 16, q4);
+	_mav_put_float(buf, 20, rollspeed);
+	_mav_put_float(buf, 24, pitchspeed);
+	_mav_put_float(buf, 28, yawspeed);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_ATTITUDE_QUATERNION, buf, MAVLINK_MSG_ID_ATTITUDE_QUATERNION_LEN, MAVLINK_MSG_ID_ATTITUDE_QUATERNION_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_ATTITUDE_QUATERNION, buf, MAVLINK_MSG_ID_ATTITUDE_QUATERNION_LEN);
+#endif
+#else
+	mavlink_attitude_quaternion_t *packet = (mavlink_attitude_quaternion_t *)msgbuf;
+	packet->time_boot_ms = time_boot_ms;
+	packet->q1 = q1;
+	packet->q2 = q2;
+	packet->q3 = q3;
+	packet->q4 = q4;
+	packet->rollspeed = rollspeed;
+	packet->pitchspeed = pitchspeed;
+	packet->yawspeed = yawspeed;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_ATTITUDE_QUATERNION, (const char *)packet, MAVLINK_MSG_ID_ATTITUDE_QUATERNION_LEN, MAVLINK_MSG_ID_ATTITUDE_QUATERNION_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_ATTITUDE_QUATERNION, (const char *)packet, MAVLINK_MSG_ID_ATTITUDE_QUATERNION_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE ATTITUDE_QUATERNION UNPACKING

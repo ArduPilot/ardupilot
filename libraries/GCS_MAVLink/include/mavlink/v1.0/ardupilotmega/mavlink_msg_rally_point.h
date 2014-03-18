@@ -245,6 +245,53 @@ static inline void mavlink_msg_rally_point_send(mavlink_channel_t chan, uint8_t 
 #endif
 }
 
+#if MAVLINK_MSG_ID_RALLY_POINT_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_rally_point_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint8_t target_system, uint8_t target_component, uint8_t idx, uint8_t count, int32_t lat, int32_t lng, int16_t alt, int16_t break_alt, uint16_t land_dir, uint8_t flags)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_int32_t(buf, 0, lat);
+	_mav_put_int32_t(buf, 4, lng);
+	_mav_put_int16_t(buf, 8, alt);
+	_mav_put_int16_t(buf, 10, break_alt);
+	_mav_put_uint16_t(buf, 12, land_dir);
+	_mav_put_uint8_t(buf, 14, target_system);
+	_mav_put_uint8_t(buf, 15, target_component);
+	_mav_put_uint8_t(buf, 16, idx);
+	_mav_put_uint8_t(buf, 17, count);
+	_mav_put_uint8_t(buf, 18, flags);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_RALLY_POINT, buf, MAVLINK_MSG_ID_RALLY_POINT_LEN, MAVLINK_MSG_ID_RALLY_POINT_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_RALLY_POINT, buf, MAVLINK_MSG_ID_RALLY_POINT_LEN);
+#endif
+#else
+	mavlink_rally_point_t *packet = (mavlink_rally_point_t *)msgbuf;
+	packet->lat = lat;
+	packet->lng = lng;
+	packet->alt = alt;
+	packet->break_alt = break_alt;
+	packet->land_dir = land_dir;
+	packet->target_system = target_system;
+	packet->target_component = target_component;
+	packet->idx = idx;
+	packet->count = count;
+	packet->flags = flags;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_RALLY_POINT, (const char *)packet, MAVLINK_MSG_ID_RALLY_POINT_LEN, MAVLINK_MSG_ID_RALLY_POINT_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_RALLY_POINT, (const char *)packet, MAVLINK_MSG_ID_RALLY_POINT_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE RALLY_POINT UNPACKING

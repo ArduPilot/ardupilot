@@ -256,6 +256,55 @@ static inline void mavlink_msg_simstate_send(mavlink_channel_t chan, float roll,
 #endif
 }
 
+#if MAVLINK_MSG_ID_SIMSTATE_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_simstate_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, float roll, float pitch, float yaw, float xacc, float yacc, float zacc, float xgyro, float ygyro, float zgyro, int32_t lat, int32_t lng)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_float(buf, 0, roll);
+	_mav_put_float(buf, 4, pitch);
+	_mav_put_float(buf, 8, yaw);
+	_mav_put_float(buf, 12, xacc);
+	_mav_put_float(buf, 16, yacc);
+	_mav_put_float(buf, 20, zacc);
+	_mav_put_float(buf, 24, xgyro);
+	_mav_put_float(buf, 28, ygyro);
+	_mav_put_float(buf, 32, zgyro);
+	_mav_put_int32_t(buf, 36, lat);
+	_mav_put_int32_t(buf, 40, lng);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SIMSTATE, buf, MAVLINK_MSG_ID_SIMSTATE_LEN, MAVLINK_MSG_ID_SIMSTATE_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SIMSTATE, buf, MAVLINK_MSG_ID_SIMSTATE_LEN);
+#endif
+#else
+	mavlink_simstate_t *packet = (mavlink_simstate_t *)msgbuf;
+	packet->roll = roll;
+	packet->pitch = pitch;
+	packet->yaw = yaw;
+	packet->xacc = xacc;
+	packet->yacc = yacc;
+	packet->zacc = zacc;
+	packet->xgyro = xgyro;
+	packet->ygyro = ygyro;
+	packet->zgyro = zgyro;
+	packet->lat = lat;
+	packet->lng = lng;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SIMSTATE, (const char *)packet, MAVLINK_MSG_ID_SIMSTATE_LEN, MAVLINK_MSG_ID_SIMSTATE_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SIMSTATE, (const char *)packet, MAVLINK_MSG_ID_SIMSTATE_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE SIMSTATE UNPACKING

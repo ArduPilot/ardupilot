@@ -212,6 +212,47 @@ static inline void mavlink_msg_setpoint_6dof_send(mavlink_channel_t chan, uint8_
 #endif
 }
 
+#if MAVLINK_MSG_ID_SETPOINT_6DOF_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_setpoint_6dof_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint8_t target_system, float trans_x, float trans_y, float trans_z, float rot_x, float rot_y, float rot_z)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_float(buf, 0, trans_x);
+	_mav_put_float(buf, 4, trans_y);
+	_mav_put_float(buf, 8, trans_z);
+	_mav_put_float(buf, 12, rot_x);
+	_mav_put_float(buf, 16, rot_y);
+	_mav_put_float(buf, 20, rot_z);
+	_mav_put_uint8_t(buf, 24, target_system);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SETPOINT_6DOF, buf, MAVLINK_MSG_ID_SETPOINT_6DOF_LEN, MAVLINK_MSG_ID_SETPOINT_6DOF_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SETPOINT_6DOF, buf, MAVLINK_MSG_ID_SETPOINT_6DOF_LEN);
+#endif
+#else
+	mavlink_setpoint_6dof_t *packet = (mavlink_setpoint_6dof_t *)msgbuf;
+	packet->trans_x = trans_x;
+	packet->trans_y = trans_y;
+	packet->trans_z = trans_z;
+	packet->rot_x = rot_x;
+	packet->rot_y = rot_y;
+	packet->rot_z = rot_z;
+	packet->target_system = target_system;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SETPOINT_6DOF, (const char *)packet, MAVLINK_MSG_ID_SETPOINT_6DOF_LEN, MAVLINK_MSG_ID_SETPOINT_6DOF_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SETPOINT_6DOF, (const char *)packet, MAVLINK_MSG_ID_SETPOINT_6DOF_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE SETPOINT_6DOF UNPACKING

@@ -234,6 +234,51 @@ static inline void mavlink_msg_safety_set_allowed_area_send(mavlink_channel_t ch
 #endif
 }
 
+#if MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_safety_set_allowed_area_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint8_t target_system, uint8_t target_component, uint8_t frame, float p1x, float p1y, float p1z, float p2x, float p2y, float p2z)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_float(buf, 0, p1x);
+	_mav_put_float(buf, 4, p1y);
+	_mav_put_float(buf, 8, p1z);
+	_mav_put_float(buf, 12, p2x);
+	_mav_put_float(buf, 16, p2y);
+	_mav_put_float(buf, 20, p2z);
+	_mav_put_uint8_t(buf, 24, target_system);
+	_mav_put_uint8_t(buf, 25, target_component);
+	_mav_put_uint8_t(buf, 26, frame);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA, buf, MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA_LEN, MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA, buf, MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA_LEN);
+#endif
+#else
+	mavlink_safety_set_allowed_area_t *packet = (mavlink_safety_set_allowed_area_t *)msgbuf;
+	packet->p1x = p1x;
+	packet->p1y = p1y;
+	packet->p1z = p1z;
+	packet->p2x = p2x;
+	packet->p2y = p2y;
+	packet->p2z = p2z;
+	packet->target_system = target_system;
+	packet->target_component = target_component;
+	packet->frame = frame;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA, (const char *)packet, MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA_LEN, MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA, (const char *)packet, MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE SAFETY_SET_ALLOWED_AREA UNPACKING

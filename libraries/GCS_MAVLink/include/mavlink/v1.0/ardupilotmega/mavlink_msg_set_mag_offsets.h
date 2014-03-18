@@ -190,6 +190,43 @@ static inline void mavlink_msg_set_mag_offsets_send(mavlink_channel_t chan, uint
 #endif
 }
 
+#if MAVLINK_MSG_ID_SET_MAG_OFFSETS_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_set_mag_offsets_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint8_t target_system, uint8_t target_component, int16_t mag_ofs_x, int16_t mag_ofs_y, int16_t mag_ofs_z)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_int16_t(buf, 0, mag_ofs_x);
+	_mav_put_int16_t(buf, 2, mag_ofs_y);
+	_mav_put_int16_t(buf, 4, mag_ofs_z);
+	_mav_put_uint8_t(buf, 6, target_system);
+	_mav_put_uint8_t(buf, 7, target_component);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SET_MAG_OFFSETS, buf, MAVLINK_MSG_ID_SET_MAG_OFFSETS_LEN, MAVLINK_MSG_ID_SET_MAG_OFFSETS_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SET_MAG_OFFSETS, buf, MAVLINK_MSG_ID_SET_MAG_OFFSETS_LEN);
+#endif
+#else
+	mavlink_set_mag_offsets_t *packet = (mavlink_set_mag_offsets_t *)msgbuf;
+	packet->mag_ofs_x = mag_ofs_x;
+	packet->mag_ofs_y = mag_ofs_y;
+	packet->mag_ofs_z = mag_ofs_z;
+	packet->target_system = target_system;
+	packet->target_component = target_component;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SET_MAG_OFFSETS, (const char *)packet, MAVLINK_MSG_ID_SET_MAG_OFFSETS_LEN, MAVLINK_MSG_ID_SET_MAG_OFFSETS_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SET_MAG_OFFSETS, (const char *)packet, MAVLINK_MSG_ID_SET_MAG_OFFSETS_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE SET_MAG_OFFSETS UNPACKING

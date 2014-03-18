@@ -234,6 +234,51 @@ static inline void mavlink_msg_limits_status_send(mavlink_channel_t chan, uint8_
 #endif
 }
 
+#if MAVLINK_MSG_ID_LIMITS_STATUS_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_limits_status_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint8_t limits_state, uint32_t last_trigger, uint32_t last_action, uint32_t last_recovery, uint32_t last_clear, uint16_t breach_count, uint8_t mods_enabled, uint8_t mods_required, uint8_t mods_triggered)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_uint32_t(buf, 0, last_trigger);
+	_mav_put_uint32_t(buf, 4, last_action);
+	_mav_put_uint32_t(buf, 8, last_recovery);
+	_mav_put_uint32_t(buf, 12, last_clear);
+	_mav_put_uint16_t(buf, 16, breach_count);
+	_mav_put_uint8_t(buf, 18, limits_state);
+	_mav_put_uint8_t(buf, 19, mods_enabled);
+	_mav_put_uint8_t(buf, 20, mods_required);
+	_mav_put_uint8_t(buf, 21, mods_triggered);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_LIMITS_STATUS, buf, MAVLINK_MSG_ID_LIMITS_STATUS_LEN, MAVLINK_MSG_ID_LIMITS_STATUS_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_LIMITS_STATUS, buf, MAVLINK_MSG_ID_LIMITS_STATUS_LEN);
+#endif
+#else
+	mavlink_limits_status_t *packet = (mavlink_limits_status_t *)msgbuf;
+	packet->last_trigger = last_trigger;
+	packet->last_action = last_action;
+	packet->last_recovery = last_recovery;
+	packet->last_clear = last_clear;
+	packet->breach_count = breach_count;
+	packet->limits_state = limits_state;
+	packet->mods_enabled = mods_enabled;
+	packet->mods_required = mods_required;
+	packet->mods_triggered = mods_triggered;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_LIMITS_STATUS, (const char *)packet, MAVLINK_MSG_ID_LIMITS_STATUS_LEN, MAVLINK_MSG_ID_LIMITS_STATUS_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_LIMITS_STATUS, (const char *)packet, MAVLINK_MSG_ID_LIMITS_STATUS_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE LIMITS_STATUS UNPACKING

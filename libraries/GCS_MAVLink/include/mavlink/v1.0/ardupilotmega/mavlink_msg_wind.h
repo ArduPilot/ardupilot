@@ -168,6 +168,39 @@ static inline void mavlink_msg_wind_send(mavlink_channel_t chan, float direction
 #endif
 }
 
+#if MAVLINK_MSG_ID_WIND_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_wind_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, float direction, float speed, float speed_z)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_float(buf, 0, direction);
+	_mav_put_float(buf, 4, speed);
+	_mav_put_float(buf, 8, speed_z);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_WIND, buf, MAVLINK_MSG_ID_WIND_LEN, MAVLINK_MSG_ID_WIND_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_WIND, buf, MAVLINK_MSG_ID_WIND_LEN);
+#endif
+#else
+	mavlink_wind_t *packet = (mavlink_wind_t *)msgbuf;
+	packet->direction = direction;
+	packet->speed = speed;
+	packet->speed_z = speed_z;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_WIND, (const char *)packet, MAVLINK_MSG_ID_WIND_LEN, MAVLINK_MSG_ID_WIND_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_WIND, (const char *)packet, MAVLINK_MSG_ID_WIND_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE WIND UNPACKING

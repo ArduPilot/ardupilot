@@ -201,6 +201,45 @@ static inline void mavlink_msg_ahrs2_send(mavlink_channel_t chan, float roll, fl
 #endif
 }
 
+#if MAVLINK_MSG_ID_AHRS2_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_ahrs2_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, float roll, float pitch, float yaw, float altitude, int32_t lat, int32_t lng)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_float(buf, 0, roll);
+	_mav_put_float(buf, 4, pitch);
+	_mav_put_float(buf, 8, yaw);
+	_mav_put_float(buf, 12, altitude);
+	_mav_put_int32_t(buf, 16, lat);
+	_mav_put_int32_t(buf, 20, lng);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_AHRS2, buf, MAVLINK_MSG_ID_AHRS2_LEN, MAVLINK_MSG_ID_AHRS2_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_AHRS2, buf, MAVLINK_MSG_ID_AHRS2_LEN);
+#endif
+#else
+	mavlink_ahrs2_t *packet = (mavlink_ahrs2_t *)msgbuf;
+	packet->roll = roll;
+	packet->pitch = pitch;
+	packet->yaw = yaw;
+	packet->altitude = altitude;
+	packet->lat = lat;
+	packet->lng = lng;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_AHRS2, (const char *)packet, MAVLINK_MSG_ID_AHRS2_LEN, MAVLINK_MSG_ID_AHRS2_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_AHRS2, (const char *)packet, MAVLINK_MSG_ID_AHRS2_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE AHRS2 UNPACKING

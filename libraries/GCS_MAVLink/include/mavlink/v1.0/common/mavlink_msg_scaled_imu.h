@@ -245,6 +245,53 @@ static inline void mavlink_msg_scaled_imu_send(mavlink_channel_t chan, uint32_t 
 #endif
 }
 
+#if MAVLINK_MSG_ID_SCALED_IMU_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_scaled_imu_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint32_t time_boot_ms, int16_t xacc, int16_t yacc, int16_t zacc, int16_t xgyro, int16_t ygyro, int16_t zgyro, int16_t xmag, int16_t ymag, int16_t zmag)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_uint32_t(buf, 0, time_boot_ms);
+	_mav_put_int16_t(buf, 4, xacc);
+	_mav_put_int16_t(buf, 6, yacc);
+	_mav_put_int16_t(buf, 8, zacc);
+	_mav_put_int16_t(buf, 10, xgyro);
+	_mav_put_int16_t(buf, 12, ygyro);
+	_mav_put_int16_t(buf, 14, zgyro);
+	_mav_put_int16_t(buf, 16, xmag);
+	_mav_put_int16_t(buf, 18, ymag);
+	_mav_put_int16_t(buf, 20, zmag);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SCALED_IMU, buf, MAVLINK_MSG_ID_SCALED_IMU_LEN, MAVLINK_MSG_ID_SCALED_IMU_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SCALED_IMU, buf, MAVLINK_MSG_ID_SCALED_IMU_LEN);
+#endif
+#else
+	mavlink_scaled_imu_t *packet = (mavlink_scaled_imu_t *)msgbuf;
+	packet->time_boot_ms = time_boot_ms;
+	packet->xacc = xacc;
+	packet->yacc = yacc;
+	packet->zacc = zacc;
+	packet->xgyro = xgyro;
+	packet->ygyro = ygyro;
+	packet->zgyro = zgyro;
+	packet->xmag = xmag;
+	packet->ymag = ymag;
+	packet->zmag = zmag;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SCALED_IMU, (const char *)packet, MAVLINK_MSG_ID_SCALED_IMU_LEN, MAVLINK_MSG_ID_SCALED_IMU_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SCALED_IMU, (const char *)packet, MAVLINK_MSG_ID_SCALED_IMU_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE SCALED_IMU UNPACKING

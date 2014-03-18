@@ -212,6 +212,47 @@ static inline void mavlink_msg_global_vision_position_estimate_send(mavlink_chan
 #endif
 }
 
+#if MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_global_vision_position_estimate_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint64_t usec, float x, float y, float z, float roll, float pitch, float yaw)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_uint64_t(buf, 0, usec);
+	_mav_put_float(buf, 8, x);
+	_mav_put_float(buf, 12, y);
+	_mav_put_float(buf, 16, z);
+	_mav_put_float(buf, 20, roll);
+	_mav_put_float(buf, 24, pitch);
+	_mav_put_float(buf, 28, yaw);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE, buf, MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE_LEN, MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE, buf, MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE_LEN);
+#endif
+#else
+	mavlink_global_vision_position_estimate_t *packet = (mavlink_global_vision_position_estimate_t *)msgbuf;
+	packet->usec = usec;
+	packet->x = x;
+	packet->y = y;
+	packet->z = z;
+	packet->roll = roll;
+	packet->pitch = pitch;
+	packet->yaw = yaw;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE, (const char *)packet, MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE_LEN, MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE, (const char *)packet, MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE GLOBAL_VISION_POSITION_ESTIMATE UNPACKING

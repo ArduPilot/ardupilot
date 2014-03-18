@@ -256,6 +256,55 @@ static inline void mavlink_msg_digicam_configure_send(mavlink_channel_t chan, ui
 #endif
 }
 
+#if MAVLINK_MSG_ID_DIGICAM_CONFIGURE_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_digicam_configure_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint8_t target_system, uint8_t target_component, uint8_t mode, uint16_t shutter_speed, uint8_t aperture, uint8_t iso, uint8_t exposure_type, uint8_t command_id, uint8_t engine_cut_off, uint8_t extra_param, float extra_value)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_float(buf, 0, extra_value);
+	_mav_put_uint16_t(buf, 4, shutter_speed);
+	_mav_put_uint8_t(buf, 6, target_system);
+	_mav_put_uint8_t(buf, 7, target_component);
+	_mav_put_uint8_t(buf, 8, mode);
+	_mav_put_uint8_t(buf, 9, aperture);
+	_mav_put_uint8_t(buf, 10, iso);
+	_mav_put_uint8_t(buf, 11, exposure_type);
+	_mav_put_uint8_t(buf, 12, command_id);
+	_mav_put_uint8_t(buf, 13, engine_cut_off);
+	_mav_put_uint8_t(buf, 14, extra_param);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_DIGICAM_CONFIGURE, buf, MAVLINK_MSG_ID_DIGICAM_CONFIGURE_LEN, MAVLINK_MSG_ID_DIGICAM_CONFIGURE_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_DIGICAM_CONFIGURE, buf, MAVLINK_MSG_ID_DIGICAM_CONFIGURE_LEN);
+#endif
+#else
+	mavlink_digicam_configure_t *packet = (mavlink_digicam_configure_t *)msgbuf;
+	packet->extra_value = extra_value;
+	packet->shutter_speed = shutter_speed;
+	packet->target_system = target_system;
+	packet->target_component = target_component;
+	packet->mode = mode;
+	packet->aperture = aperture;
+	packet->iso = iso;
+	packet->exposure_type = exposure_type;
+	packet->command_id = command_id;
+	packet->engine_cut_off = engine_cut_off;
+	packet->extra_param = extra_param;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_DIGICAM_CONFIGURE, (const char *)packet, MAVLINK_MSG_ID_DIGICAM_CONFIGURE_LEN, MAVLINK_MSG_ID_DIGICAM_CONFIGURE_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_DIGICAM_CONFIGURE, (const char *)packet, MAVLINK_MSG_ID_DIGICAM_CONFIGURE_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE DIGICAM_CONFIGURE UNPACKING

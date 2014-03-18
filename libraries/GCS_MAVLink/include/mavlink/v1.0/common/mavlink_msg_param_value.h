@@ -184,6 +184,41 @@ static inline void mavlink_msg_param_value_send(mavlink_channel_t chan, const ch
 #endif
 }
 
+#if MAVLINK_MSG_ID_PARAM_VALUE_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_param_value_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, const char *param_id, float param_value, uint8_t param_type, uint16_t param_count, uint16_t param_index)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_float(buf, 0, param_value);
+	_mav_put_uint16_t(buf, 4, param_count);
+	_mav_put_uint16_t(buf, 6, param_index);
+	_mav_put_uint8_t(buf, 24, param_type);
+	_mav_put_char_array(buf, 8, param_id, 16);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_PARAM_VALUE, buf, MAVLINK_MSG_ID_PARAM_VALUE_LEN, MAVLINK_MSG_ID_PARAM_VALUE_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_PARAM_VALUE, buf, MAVLINK_MSG_ID_PARAM_VALUE_LEN);
+#endif
+#else
+	mavlink_param_value_t *packet = (mavlink_param_value_t *)msgbuf;
+	packet->param_value = param_value;
+	packet->param_count = param_count;
+	packet->param_index = param_index;
+	packet->param_type = param_type;
+	mav_array_memcpy(packet->param_id, param_id, sizeof(char)*16);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_PARAM_VALUE, (const char *)packet, MAVLINK_MSG_ID_PARAM_VALUE_LEN, MAVLINK_MSG_ID_PARAM_VALUE_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_PARAM_VALUE, (const char *)packet, MAVLINK_MSG_ID_PARAM_VALUE_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE PARAM_VALUE UNPACKING

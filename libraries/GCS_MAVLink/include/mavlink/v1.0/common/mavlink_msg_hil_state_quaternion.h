@@ -305,6 +305,63 @@ static inline void mavlink_msg_hil_state_quaternion_send(mavlink_channel_t chan,
 #endif
 }
 
+#if MAVLINK_MSG_ID_HIL_STATE_QUATERNION_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_hil_state_quaternion_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint64_t time_usec, const float *attitude_quaternion, float rollspeed, float pitchspeed, float yawspeed, int32_t lat, int32_t lon, int32_t alt, int16_t vx, int16_t vy, int16_t vz, uint16_t ind_airspeed, uint16_t true_airspeed, int16_t xacc, int16_t yacc, int16_t zacc)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_uint64_t(buf, 0, time_usec);
+	_mav_put_float(buf, 24, rollspeed);
+	_mav_put_float(buf, 28, pitchspeed);
+	_mav_put_float(buf, 32, yawspeed);
+	_mav_put_int32_t(buf, 36, lat);
+	_mav_put_int32_t(buf, 40, lon);
+	_mav_put_int32_t(buf, 44, alt);
+	_mav_put_int16_t(buf, 48, vx);
+	_mav_put_int16_t(buf, 50, vy);
+	_mav_put_int16_t(buf, 52, vz);
+	_mav_put_uint16_t(buf, 54, ind_airspeed);
+	_mav_put_uint16_t(buf, 56, true_airspeed);
+	_mav_put_int16_t(buf, 58, xacc);
+	_mav_put_int16_t(buf, 60, yacc);
+	_mav_put_int16_t(buf, 62, zacc);
+	_mav_put_float_array(buf, 8, attitude_quaternion, 4);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HIL_STATE_QUATERNION, buf, MAVLINK_MSG_ID_HIL_STATE_QUATERNION_LEN, MAVLINK_MSG_ID_HIL_STATE_QUATERNION_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HIL_STATE_QUATERNION, buf, MAVLINK_MSG_ID_HIL_STATE_QUATERNION_LEN);
+#endif
+#else
+	mavlink_hil_state_quaternion_t *packet = (mavlink_hil_state_quaternion_t *)msgbuf;
+	packet->time_usec = time_usec;
+	packet->rollspeed = rollspeed;
+	packet->pitchspeed = pitchspeed;
+	packet->yawspeed = yawspeed;
+	packet->lat = lat;
+	packet->lon = lon;
+	packet->alt = alt;
+	packet->vx = vx;
+	packet->vy = vy;
+	packet->vz = vz;
+	packet->ind_airspeed = ind_airspeed;
+	packet->true_airspeed = true_airspeed;
+	packet->xacc = xacc;
+	packet->yacc = yacc;
+	packet->zacc = zacc;
+	mav_array_memcpy(packet->attitude_quaternion, attitude_quaternion, sizeof(float)*4);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HIL_STATE_QUATERNION, (const char *)packet, MAVLINK_MSG_ID_HIL_STATE_QUATERNION_LEN, MAVLINK_MSG_ID_HIL_STATE_QUATERNION_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HIL_STATE_QUATERNION, (const char *)packet, MAVLINK_MSG_ID_HIL_STATE_QUATERNION_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE HIL_STATE_QUATERNION UNPACKING

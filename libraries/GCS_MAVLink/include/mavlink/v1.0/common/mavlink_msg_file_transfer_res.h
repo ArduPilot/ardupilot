@@ -157,6 +157,37 @@ static inline void mavlink_msg_file_transfer_res_send(mavlink_channel_t chan, ui
 #endif
 }
 
+#if MAVLINK_MSG_ID_FILE_TRANSFER_RES_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_file_transfer_res_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint64_t transfer_uid, uint8_t result)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_uint64_t(buf, 0, transfer_uid);
+	_mav_put_uint8_t(buf, 8, result);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_FILE_TRANSFER_RES, buf, MAVLINK_MSG_ID_FILE_TRANSFER_RES_LEN, MAVLINK_MSG_ID_FILE_TRANSFER_RES_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_FILE_TRANSFER_RES, buf, MAVLINK_MSG_ID_FILE_TRANSFER_RES_LEN);
+#endif
+#else
+	mavlink_file_transfer_res_t *packet = (mavlink_file_transfer_res_t *)msgbuf;
+	packet->transfer_uid = transfer_uid;
+	packet->result = result;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_FILE_TRANSFER_RES, (const char *)packet, MAVLINK_MSG_ID_FILE_TRANSFER_RES_LEN, MAVLINK_MSG_ID_FILE_TRANSFER_RES_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_FILE_TRANSFER_RES, (const char *)packet, MAVLINK_MSG_ID_FILE_TRANSFER_RES_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE FILE_TRANSFER_RES UNPACKING

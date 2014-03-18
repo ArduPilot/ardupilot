@@ -256,6 +256,55 @@ static inline void mavlink_msg_hil_controls_send(mavlink_channel_t chan, uint64_
 #endif
 }
 
+#if MAVLINK_MSG_ID_HIL_CONTROLS_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_hil_controls_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint64_t time_usec, float roll_ailerons, float pitch_elevator, float yaw_rudder, float throttle, float aux1, float aux2, float aux3, float aux4, uint8_t mode, uint8_t nav_mode)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_uint64_t(buf, 0, time_usec);
+	_mav_put_float(buf, 8, roll_ailerons);
+	_mav_put_float(buf, 12, pitch_elevator);
+	_mav_put_float(buf, 16, yaw_rudder);
+	_mav_put_float(buf, 20, throttle);
+	_mav_put_float(buf, 24, aux1);
+	_mav_put_float(buf, 28, aux2);
+	_mav_put_float(buf, 32, aux3);
+	_mav_put_float(buf, 36, aux4);
+	_mav_put_uint8_t(buf, 40, mode);
+	_mav_put_uint8_t(buf, 41, nav_mode);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HIL_CONTROLS, buf, MAVLINK_MSG_ID_HIL_CONTROLS_LEN, MAVLINK_MSG_ID_HIL_CONTROLS_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HIL_CONTROLS, buf, MAVLINK_MSG_ID_HIL_CONTROLS_LEN);
+#endif
+#else
+	mavlink_hil_controls_t *packet = (mavlink_hil_controls_t *)msgbuf;
+	packet->time_usec = time_usec;
+	packet->roll_ailerons = roll_ailerons;
+	packet->pitch_elevator = pitch_elevator;
+	packet->yaw_rudder = yaw_rudder;
+	packet->throttle = throttle;
+	packet->aux1 = aux1;
+	packet->aux2 = aux2;
+	packet->aux3 = aux3;
+	packet->aux4 = aux4;
+	packet->mode = mode;
+	packet->nav_mode = nav_mode;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HIL_CONTROLS, (const char *)packet, MAVLINK_MSG_ID_HIL_CONTROLS_LEN, MAVLINK_MSG_ID_HIL_CONTROLS_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HIL_CONTROLS, (const char *)packet, MAVLINK_MSG_ID_HIL_CONTROLS_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE HIL_CONTROLS UNPACKING

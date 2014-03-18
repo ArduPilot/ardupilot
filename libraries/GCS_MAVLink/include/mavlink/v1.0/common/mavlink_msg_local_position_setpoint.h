@@ -190,6 +190,43 @@ static inline void mavlink_msg_local_position_setpoint_send(mavlink_channel_t ch
 #endif
 }
 
+#if MAVLINK_MSG_ID_LOCAL_POSITION_SETPOINT_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_local_position_setpoint_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint8_t coordinate_frame, float x, float y, float z, float yaw)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_float(buf, 0, x);
+	_mav_put_float(buf, 4, y);
+	_mav_put_float(buf, 8, z);
+	_mav_put_float(buf, 12, yaw);
+	_mav_put_uint8_t(buf, 16, coordinate_frame);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_LOCAL_POSITION_SETPOINT, buf, MAVLINK_MSG_ID_LOCAL_POSITION_SETPOINT_LEN, MAVLINK_MSG_ID_LOCAL_POSITION_SETPOINT_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_LOCAL_POSITION_SETPOINT, buf, MAVLINK_MSG_ID_LOCAL_POSITION_SETPOINT_LEN);
+#endif
+#else
+	mavlink_local_position_setpoint_t *packet = (mavlink_local_position_setpoint_t *)msgbuf;
+	packet->x = x;
+	packet->y = y;
+	packet->z = z;
+	packet->yaw = yaw;
+	packet->coordinate_frame = coordinate_frame;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_LOCAL_POSITION_SETPOINT, (const char *)packet, MAVLINK_MSG_ID_LOCAL_POSITION_SETPOINT_LEN, MAVLINK_MSG_ID_LOCAL_POSITION_SETPOINT_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_LOCAL_POSITION_SETPOINT, (const char *)packet, MAVLINK_MSG_ID_LOCAL_POSITION_SETPOINT_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE LOCAL_POSITION_SETPOINT UNPACKING

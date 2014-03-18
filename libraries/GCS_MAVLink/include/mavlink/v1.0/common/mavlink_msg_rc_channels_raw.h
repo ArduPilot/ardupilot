@@ -256,6 +256,55 @@ static inline void mavlink_msg_rc_channels_raw_send(mavlink_channel_t chan, uint
 #endif
 }
 
+#if MAVLINK_MSG_ID_RC_CHANNELS_RAW_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_rc_channels_raw_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint32_t time_boot_ms, uint8_t port, uint16_t chan1_raw, uint16_t chan2_raw, uint16_t chan3_raw, uint16_t chan4_raw, uint16_t chan5_raw, uint16_t chan6_raw, uint16_t chan7_raw, uint16_t chan8_raw, uint8_t rssi)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_uint32_t(buf, 0, time_boot_ms);
+	_mav_put_uint16_t(buf, 4, chan1_raw);
+	_mav_put_uint16_t(buf, 6, chan2_raw);
+	_mav_put_uint16_t(buf, 8, chan3_raw);
+	_mav_put_uint16_t(buf, 10, chan4_raw);
+	_mav_put_uint16_t(buf, 12, chan5_raw);
+	_mav_put_uint16_t(buf, 14, chan6_raw);
+	_mav_put_uint16_t(buf, 16, chan7_raw);
+	_mav_put_uint16_t(buf, 18, chan8_raw);
+	_mav_put_uint8_t(buf, 20, port);
+	_mav_put_uint8_t(buf, 21, rssi);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_RC_CHANNELS_RAW, buf, MAVLINK_MSG_ID_RC_CHANNELS_RAW_LEN, MAVLINK_MSG_ID_RC_CHANNELS_RAW_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_RC_CHANNELS_RAW, buf, MAVLINK_MSG_ID_RC_CHANNELS_RAW_LEN);
+#endif
+#else
+	mavlink_rc_channels_raw_t *packet = (mavlink_rc_channels_raw_t *)msgbuf;
+	packet->time_boot_ms = time_boot_ms;
+	packet->chan1_raw = chan1_raw;
+	packet->chan2_raw = chan2_raw;
+	packet->chan3_raw = chan3_raw;
+	packet->chan4_raw = chan4_raw;
+	packet->chan5_raw = chan5_raw;
+	packet->chan6_raw = chan6_raw;
+	packet->chan7_raw = chan7_raw;
+	packet->chan8_raw = chan8_raw;
+	packet->port = port;
+	packet->rssi = rssi;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_RC_CHANNELS_RAW, (const char *)packet, MAVLINK_MSG_ID_RC_CHANNELS_RAW_LEN, MAVLINK_MSG_ID_RC_CHANNELS_RAW_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_RC_CHANNELS_RAW, (const char *)packet, MAVLINK_MSG_ID_RC_CHANNELS_RAW_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE RC_CHANNELS_RAW UNPACKING

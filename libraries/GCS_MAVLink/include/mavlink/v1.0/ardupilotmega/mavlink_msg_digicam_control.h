@@ -245,6 +245,53 @@ static inline void mavlink_msg_digicam_control_send(mavlink_channel_t chan, uint
 #endif
 }
 
+#if MAVLINK_MSG_ID_DIGICAM_CONTROL_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_digicam_control_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint8_t target_system, uint8_t target_component, uint8_t session, uint8_t zoom_pos, int8_t zoom_step, uint8_t focus_lock, uint8_t shot, uint8_t command_id, uint8_t extra_param, float extra_value)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_float(buf, 0, extra_value);
+	_mav_put_uint8_t(buf, 4, target_system);
+	_mav_put_uint8_t(buf, 5, target_component);
+	_mav_put_uint8_t(buf, 6, session);
+	_mav_put_uint8_t(buf, 7, zoom_pos);
+	_mav_put_int8_t(buf, 8, zoom_step);
+	_mav_put_uint8_t(buf, 9, focus_lock);
+	_mav_put_uint8_t(buf, 10, shot);
+	_mav_put_uint8_t(buf, 11, command_id);
+	_mav_put_uint8_t(buf, 12, extra_param);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_DIGICAM_CONTROL, buf, MAVLINK_MSG_ID_DIGICAM_CONTROL_LEN, MAVLINK_MSG_ID_DIGICAM_CONTROL_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_DIGICAM_CONTROL, buf, MAVLINK_MSG_ID_DIGICAM_CONTROL_LEN);
+#endif
+#else
+	mavlink_digicam_control_t *packet = (mavlink_digicam_control_t *)msgbuf;
+	packet->extra_value = extra_value;
+	packet->target_system = target_system;
+	packet->target_component = target_component;
+	packet->session = session;
+	packet->zoom_pos = zoom_pos;
+	packet->zoom_step = zoom_step;
+	packet->focus_lock = focus_lock;
+	packet->shot = shot;
+	packet->command_id = command_id;
+	packet->extra_param = extra_param;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_DIGICAM_CONTROL, (const char *)packet, MAVLINK_MSG_ID_DIGICAM_CONTROL_LEN, MAVLINK_MSG_ID_DIGICAM_CONTROL_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_DIGICAM_CONTROL, (const char *)packet, MAVLINK_MSG_ID_DIGICAM_CONTROL_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE DIGICAM_CONTROL UNPACKING

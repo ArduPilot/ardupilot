@@ -162,6 +162,37 @@ static inline void mavlink_msg_named_value_float_send(mavlink_channel_t chan, ui
 #endif
 }
 
+#if MAVLINK_MSG_ID_NAMED_VALUE_FLOAT_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+ This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
+ The caller provides a mavlink_message_t which 
+*/
+static inline void mavlink_msg_named_value_float_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint32_t time_boot_ms, const char *name, float value)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_uint32_t(buf, 0, time_boot_ms);
+	_mav_put_float(buf, 4, value);
+	_mav_put_char_array(buf, 8, name, 10);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT, buf, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT_LEN, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT, buf, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT_LEN);
+#endif
+#else
+	mavlink_named_value_float_t *packet = (mavlink_named_value_float_t *)msgbuf;
+	packet->time_boot_ms = time_boot_ms;
+	packet->value = value;
+	mav_array_memcpy(packet->name, name, sizeof(char)*10);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT, (const char *)packet, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT_LEN, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT, (const char *)packet, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT_LEN);
+#endif
+#endif
+}
+#endif
+
 #endif
 
 // MESSAGE NAMED_VALUE_FLOAT UNPACKING
