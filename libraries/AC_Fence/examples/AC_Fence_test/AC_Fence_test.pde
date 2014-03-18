@@ -27,6 +27,7 @@
 #include <AP_InertialNav.h>     // Inertial Navigation library
 #include <AC_Fence.h>           // Fence library
 #include <GCS_MAVLink.h>
+#include <AP_Mission.h>
 #include <AP_Notify.h>
 #include <AP_Vehicle.h>
 #include <DataFlash.h>
