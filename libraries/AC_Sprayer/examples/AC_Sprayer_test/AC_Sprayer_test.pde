@@ -28,6 +28,7 @@
 #include <AP_InertialNav.h>     // Inertial Navigation library
 #include <DataFlash.h>
 #include <GCS_MAVLink.h>
+#include <AP_Mission.h>
 #include <RC_Channel.h>
 #include <AC_Sprayer.h>         // Crop Sprayer library
 #include <AP_Notify.h>
