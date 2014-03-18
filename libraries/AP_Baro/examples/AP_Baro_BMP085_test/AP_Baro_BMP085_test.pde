@@ -18,6 +18,7 @@
 #include <AP_GPS.h>
 #include <DataFlash.h>
 #include <GCS_MAVLink.h>
+#include <AP_Mission.h>
 #include <AP_Notify.h>
 #include <AP_Compass.h>
 #include <AP_Declination.h>
