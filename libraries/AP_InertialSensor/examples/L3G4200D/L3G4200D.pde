@@ -17,6 +17,7 @@
 #include <AP_ADC.h>
 #include <AP_InertialSensor.h>
 #include <GCS_MAVLink.h>
+#include <AP_Mission.h>
 #include <AP_Notify.h>
 #include <Filter.h>
 

@@ -21,6 +21,7 @@
 #include <DataFlash.h>
 #include <Filter.h>
 #include <GCS_MAVLink.h>
+#include <AP_Mission.h>
 #include <AP_AHRS.h>
 #include <AP_Airspeed.h>
 #include <AP_Vehicle.h>
