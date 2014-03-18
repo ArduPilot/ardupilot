@@ -388,7 +388,13 @@ bool GCS_MAVLINK::have_flow_control(void)
 }
 
 
-void GCS_MAVLINK::handle_request_data_stream(mavlink_message_t *msg)
+/*
+  handle a request to change stream rate. Note that copter passes in
+  save==false, as sending mavlink messages on copter on APM2 costs
+  enough that it can cause flight issues, so we don't want the save to
+  happen when the user connects the ground station.
+ */
+void GCS_MAVLINK::handle_request_data_stream(mavlink_message_t *msg, bool save)
 {
     mavlink_request_data_stream_t packet;
     mavlink_msg_request_data_stream_decode(msg, &packet);
@@ -405,37 +411,50 @@ void GCS_MAVLINK::handle_request_data_stream(mavlink_message_t *msg)
     else
         return;
 
+    AP_Int16 *rate = NULL;
     switch (packet.req_stream_id) {
     case MAV_DATA_STREAM_ALL:
         // note that we don't set STREAM_PARAMS - that is internal only
         for (uint8_t i=0; i<STREAM_PARAMS; i++) {
-            streamRates[i].set_and_save_ifchanged(freq);
+            if (save) {
+                streamRates[i].set_and_save_ifchanged(freq);
+            } else {
+                streamRates[i].set(freq);
+            }
         }
         break;
     case MAV_DATA_STREAM_RAW_SENSORS:
-        streamRates[STREAM_RAW_SENSORS].set_and_save_ifchanged(freq);
+        rate = &streamRates[STREAM_RAW_SENSORS];
         break;
     case MAV_DATA_STREAM_EXTENDED_STATUS:
-        streamRates[STREAM_EXTENDED_STATUS].set_and_save_ifchanged(freq);
+        rate = &streamRates[STREAM_EXTENDED_STATUS];
         break;
     case MAV_DATA_STREAM_RC_CHANNELS:
-        streamRates[STREAM_RC_CHANNELS].set_and_save_ifchanged(freq);
+        rate = &streamRates[STREAM_RC_CHANNELS];
         break;
     case MAV_DATA_STREAM_RAW_CONTROLLER:
-        streamRates[STREAM_RAW_CONTROLLER].set_and_save_ifchanged(freq);
+        rate = &streamRates[STREAM_RAW_CONTROLLER];
         break;
     case MAV_DATA_STREAM_POSITION:
-        streamRates[STREAM_POSITION].set_and_save_ifchanged(freq);
+        rate = &streamRates[STREAM_POSITION];
         break;
     case MAV_DATA_STREAM_EXTRA1:
-        streamRates[STREAM_EXTRA1].set_and_save_ifchanged(freq);
+        rate = &streamRates[STREAM_EXTRA1];
         break;
     case MAV_DATA_STREAM_EXTRA2:
-        streamRates[STREAM_EXTRA2].set_and_save_ifchanged(freq);
+        rate = &streamRates[STREAM_EXTRA2];
         break;
     case MAV_DATA_STREAM_EXTRA3:
-        streamRates[STREAM_EXTRA3].set_and_save_ifchanged(freq);
+        rate = &streamRates[STREAM_EXTRA3];
         break;
+    }
+
+    if (rate != NULL) {
+        if (save) {
+            rate->set_and_save_ifchanged(freq);
+        } else {
+            rate->set(freq);
+        }
     }
 }
 
