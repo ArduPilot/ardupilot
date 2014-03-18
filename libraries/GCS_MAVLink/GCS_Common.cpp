@@ -207,9 +207,9 @@ void GCS_MAVLINK::handle_mission_request_list(AP_Mission &mission, mavlink_messa
 /*
   handle a MISSION_REQUEST mavlink packet
  */
-void GCS_MAVLINK::handle_mission_request(AP_Mission &mission, mavlink_message_t *msg, 
-                                         AP_Mission::Mission_Command &cmd)
+void GCS_MAVLINK::handle_mission_request(AP_Mission &mission, mavlink_message_t *msg)
 {
+    AP_Mission::Mission_Command cmd;
     // decode
     mavlink_mission_request_t packet;
     mavlink_msg_mission_request_decode(msg, &packet);
@@ -646,4 +646,116 @@ void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg)
         // the buffer has enough space, speed up a bit
         stream_slowdown--;
     }
+}
+
+
+/*
+  handle an incoming mission item
+ */
+void GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &mission)
+{
+    mavlink_mission_item_t packet;
+    uint8_t result = MAV_MISSION_ACCEPTED;
+    struct AP_Mission::Mission_Command cmd = {};
+
+    mavlink_msg_mission_item_decode(msg, &packet);
+    if (mavlink_check_target(packet.target_system,packet.target_component)) {
+        return;
+    }
+
+    // convert mavlink packet to mission command
+    if (!AP_Mission::mavlink_to_mission_cmd(packet, cmd)) {
+        result = MAV_MISSION_ERROR;
+        goto mission_ack;
+    }
+
+    if (packet.current == 2) {                                               
+        // current = 2 is a flag to tell us this is a "guided mode"
+        // waypoint and not for the mission
+        handle_guided_request(cmd);
+
+        // verify we recevied the command
+        result = 0;
+        goto mission_ack;
+    }
+
+    if (packet.current == 3) {
+        //current = 3 is a flag to tell us this is a alt change only
+        // add home alt if needed
+        handle_change_alt_request(cmd);
+
+        // verify we recevied the command
+        result = 0;
+        goto mission_ack;
+    }
+
+    // Check if receiving waypoints (mission upload expected)
+    if (!waypoint_receiving) {
+        result = MAV_MISSION_ERROR;
+        goto mission_ack;
+    }
+
+    // check if this is the requested waypoint
+    if (packet.seq != waypoint_request_i) {
+        result = MAV_MISSION_INVALID_SEQUENCE;
+        goto mission_ack;
+    }
+    
+    // if command index is within the existing list, replace the command
+    if (packet.seq < mission.num_commands()) {
+        if (mission.replace_cmd(packet.seq,cmd)) {
+            result = MAV_MISSION_ACCEPTED;
+        }else{
+            result = MAV_MISSION_ERROR;
+            goto mission_ack;
+        }
+        // if command is at the end of command list, add the command
+    } else if (packet.seq == mission.num_commands()) {
+        if (mission.add_cmd(cmd)) {
+            result = MAV_MISSION_ACCEPTED;
+        }else{
+            result = MAV_MISSION_ERROR;
+            goto mission_ack;
+        }
+        // if beyond the end of the command list, return an error
+    } else {
+        result = MAV_MISSION_ERROR;
+        goto mission_ack;
+    }
+    
+    // update waypoint receiving state machine
+    waypoint_timelast_receive = hal.scheduler->millis();
+    waypoint_request_i++;
+    
+    if (waypoint_request_i >= waypoint_request_last) {
+        mavlink_msg_mission_ack_send_buf(
+            msg,
+            chan,
+            msg->sysid,
+            msg->compid,
+            MAV_MISSION_ACCEPTED);
+        
+        send_text_P(SEVERITY_LOW,PSTR("flight plan received"));
+        waypoint_receiving = false;
+        // XXX ignores waypoint radius for individual waypoints, can
+        // only set WP_RADIUS parameter
+    } else {
+        waypoint_timelast_request = hal.scheduler->millis();
+        // if we have enough space, then send the next WP immediately
+        if (comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES >= MAVLINK_MSG_ID_MISSION_ITEM_LEN) {
+            queued_waypoint_send();
+        } else {
+            send_message(MSG_NEXT_WAYPOINT);
+        }
+    }
+    return;
+
+mission_ack:
+    // we are rejecting the mission/waypoint
+    mavlink_msg_mission_ack_send_buf(
+        msg,
+        chan,
+        msg->sysid,
+        msg->compid,
+        result);
 }
