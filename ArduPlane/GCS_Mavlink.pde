@@ -993,7 +993,7 @@ GCS_MAVLINK::update(void)
 
     if (waypoint_receiving &&
         waypoint_request_i <= waypoint_request_last &&
-        tnow > waypoint_timelast_request + 500 + (stream_slowdown*20)) {
+        tnow - waypoint_timelast_request > 2000 + (stream_slowdown*20)) {
         waypoint_timelast_request = tnow;
         send_message(MSG_NEXT_WAYPOINT);
     }
@@ -1624,7 +1624,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             // update waypoint receiving state machine
             waypoint_timelast_receive = millis();
-            waypoint_timelast_request = 0;
             waypoint_request_i++;
 
             if (waypoint_request_i >= waypoint_request_last) {
@@ -1638,6 +1637,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 waypoint_receiving = false;
                 // XXX ignores waypoint radius for individual waypoints, can
                 // only set WP_RADIUS parameter
+            } else {
+                waypoint_timelast_request = hal.scheduler->millis();
+                // if we have enough space, then send the next WP immediately
+                if (comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES >= MAVLINK_MSG_ID_MISSION_ITEM_LEN) {
+                    queued_waypoint_send();
+                } else {
+                    send_message(MSG_NEXT_WAYPOINT);
+                }
             }
         }
         break;
