@@ -642,16 +642,31 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
 
     case MAV_CMD_NAV_LOITER_UNLIM:                      // MAV ID: 17
         copy_location = true;
+        if (cmd.content.location.flags.loiter_ccw) {
+            packet.param3 = -1;
+        }else{
+            packet.param3 = 1;
+        }
         break;
 
     case MAV_CMD_NAV_LOITER_TURNS:                      // MAV ID: 18
         copy_location = true;
         packet.param1 = cmd.p1;                         // number of times to circle is held in location.p1
+        if (cmd.content.location.flags.loiter_ccw) {
+            packet.param3 = -1;
+        }else{
+            packet.param3 = 1;
+        }
         break;
 
     case MAV_CMD_NAV_LOITER_TIME:                       // MAV ID: 19
         copy_location = true;
         packet.param1 = cmd.p1;                         // loiter time in seconds
+        if (cmd.content.location.flags.loiter_ccw) {
+            packet.param3 = -1;
+        }else{
+            packet.param3 = 1;
+        }
         break;
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:                  // MAV ID: 20
