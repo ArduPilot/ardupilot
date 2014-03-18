@@ -16,6 +16,7 @@
 #include <DataFlash.h>
 #include <AP_Baro.h>
 #include <GCS_MAVLink.h>
+#include <AP_Mission.h>
 #include <AP_Declination.h>
 
 #include <AP_HAL_AVR.h>
