@@ -141,12 +141,7 @@ void GCS_MAVLINK::handle_log_send(DataFlash_Class &dataflash)
     if (chan == MAVLINK_COMM_0 && hal.gpio->usb_connected()) {
         // when on USB we can send a lot more data
         num_sends = 40;
-    } else if (chan == MAVLINK_COMM_1 && 
-               hal.uartC->get_flow_control() != AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE) {
-        num_sends = 10;        
-    } else if (chan == MAVLINK_COMM_2 && 
-               hal.uartD != NULL &&
-               hal.uartD->get_flow_control() != AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE) {
+    } else if (have_flow_control()) {
         num_sends = 10;        
     }
 

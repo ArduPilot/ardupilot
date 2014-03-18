@@ -365,3 +365,22 @@ void GCS_MAVLINK::handle_mission_write_partial_list(AP_Mission &mission, mavlink
     waypoint_request_i   = packet.start_index;
     waypoint_request_last= packet.end_index;
 }
+
+/*
+  return true if a channel has flow control
+ */
+bool GCS_MAVLINK::have_flow_control(void)
+{
+    switch (chan) {
+    case MAVLINK_COMM_0:
+        // assume USB has flow control
+        return hal.gpio->usb_connected() || hal.uartA->get_flow_control() != AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE;
+
+    case MAVLINK_COMM_1:
+        return hal.uartC->get_flow_control() != AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE;
+
+    case MAVLINK_COMM_2:
+        return hal.uartD != NULL && hal.uartD->get_flow_control() != AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE;
+    }
+    return false;
+}
