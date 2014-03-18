@@ -179,6 +179,9 @@ public:
 
     uint32_t        last_heartbeat_time; // milliseconds
 
+    // last time we got a non-zero RSSI from RADIO_STATUS
+    static uint32_t last_radio_status_remrssi_ms;
+
     // common send functions
     void send_meminfo(void);
     void send_power_status(void);
@@ -297,6 +300,7 @@ private:
     void handle_param_request_list(mavlink_message_t *msg);
     void handle_param_request_read(mavlink_message_t *msg);
     void handle_param_set(mavlink_message_t *msg, DataFlash_Class &DataFlash);
+    void handle_radio_status(mavlink_message_t *msg);
 
     // return true if this channel has hardware flow control
     bool have_flow_control(void);

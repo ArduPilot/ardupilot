@@ -22,6 +22,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+uint32_t GCS_MAVLINK::last_radio_status_remrssi_ms;
+
 GCS_MAVLINK::GCS_MAVLINK() :
     waypoint_receive_timeout(1000)
 {
@@ -595,3 +597,32 @@ GCS_MAVLINK::send_text_P(gcs_severity severity, const prog_char_t *str)
     send_text(severity, (const char *)m.text);
 }
 
+
+void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg)
+{
+    mavlink_radio_t packet;
+    mavlink_msg_radio_decode(msg, &packet);
+
+    // record if the GCS has been receiving radio messages from
+    // the aircraft
+    if (packet.remrssi != 0) {
+        last_radio_status_remrssi_ms = hal.scheduler->millis();
+    }
+
+    // use the state of the transmit buffer in the radio to
+    // control the stream rate, giving us adaptive software
+    // flow control
+    if (packet.txbuf < 20 && stream_slowdown < 100) {
+        // we are very low on space - slow down a lot
+        stream_slowdown += 3;
+    } else if (packet.txbuf < 50 && stream_slowdown < 100) {
+        // we are a bit low on space, slow down slightly
+        stream_slowdown += 1;
+    } else if (packet.txbuf > 95 && stream_slowdown > 10) {
+        // the buffer has plenty of space, speed up a lot
+        stream_slowdown -= 2;
+    } else if (packet.txbuf > 90 && stream_slowdown != 0) {
+        // the buffer has enough space, speed up a bit
+        stream_slowdown--;
+    }
+}
