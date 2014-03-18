@@ -299,7 +299,7 @@ private:
     void handle_request_data_stream(mavlink_message_t *msg, bool save);
     void handle_param_request_list(mavlink_message_t *msg);
     void handle_param_request_read(mavlink_message_t *msg);
-    void handle_param_set(mavlink_message_t *msg, DataFlash_Class &DataFlash);
+    void handle_param_set(mavlink_message_t *msg, DataFlash_Class *DataFlash);
     void handle_radio_status(mavlink_message_t *msg);
 
     // return true if this channel has hardware flow control

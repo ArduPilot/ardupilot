@@ -518,7 +518,7 @@ void GCS_MAVLINK::handle_param_request_read(mavlink_message_t *msg)
         packet.param_index);
 }
 
-void GCS_MAVLINK::handle_param_set(mavlink_message_t *msg, DataFlash_Class &DataFlash)
+void GCS_MAVLINK::handle_param_set(mavlink_message_t *msg, DataFlash_Class *DataFlash)
 {
     AP_Param *vp;
     enum ap_var_type var_type;
@@ -581,7 +581,9 @@ void GCS_MAVLINK::handle_param_set(mavlink_message_t *msg, DataFlash_Class &Data
             mav_var_type(var_type),
             _count_parameters(),
             -1);     // XXX we don't actually know what its index is...
-        DataFlash.Log_Write_Parameter(key, vp->cast_to_float(var_type));
+        if (DataFlash != NULL) {
+            DataFlash->Log_Write_Parameter(key, vp->cast_to_float(var_type));
+        }
     }
 }
 
