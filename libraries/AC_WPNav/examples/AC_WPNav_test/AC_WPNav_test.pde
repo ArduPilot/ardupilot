@@ -35,6 +35,7 @@
 #include <AP_Motors.h>          // Motor library
 #include <DataFlash.h>
 #include <GCS_MAVLink.h>
+#include <AP_Mission.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
