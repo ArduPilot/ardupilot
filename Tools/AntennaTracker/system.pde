@@ -136,25 +136,18 @@ static struct Location get_home_eeprom()
     // --------------------------------------------------------------------------------
     if (g.command_total.get() == 0) {
         memset(&temp, 0, sizeof(temp));
-        temp.id = CMD_BLANK;
     }else{
         // read WP position
         mem = WP_START_BYTE;
-        temp.id = hal.storage->read_byte(mem);
-
-        mem++;
         temp.options = hal.storage->read_byte(mem);
-
         mem++;
-        temp.p1 = hal.storage->read_byte(mem);
 
-        mem++;
         temp.alt = hal.storage->read_dword(mem);
-
         mem += 4;
+
         temp.lat = hal.storage->read_dword(mem);
-
         mem += 4;
+
         temp.lng = hal.storage->read_dword(mem);
     }
 
@@ -165,21 +158,15 @@ static void set_home_eeprom(struct Location temp)
 {
     uint16_t mem = WP_START_BYTE;
 
-    hal.storage->write_byte(mem, temp.id);
-
-    mem++;
     hal.storage->write_byte(mem, temp.options);
-
     mem++;
-    hal.storage->write_byte(mem, temp.p1);
 
-    mem++;
     hal.storage->write_dword(mem, temp.alt);
-
     mem += 4;
+
     hal.storage->write_dword(mem, temp.lat);
-
     mem += 4;
+
     hal.storage->write_dword(mem, temp.lng);
 
     // Now have a home location in EEPROM
