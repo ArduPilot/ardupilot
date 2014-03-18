@@ -1263,57 +1263,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
 	// XXX read a WP from EEPROM and send it to the GCS
     case MAVLINK_MSG_ID_MISSION_REQUEST:
-        {
-            // decode
-            mavlink_mission_request_t packet;
-            mavlink_msg_mission_request_decode(msg, &packet);
-
- 			if (mavlink_check_target(packet.target_system, packet.target_component))
- 				break;
-
- 	        // retrieve mission from eeprom
- 	        if (!mission.read_cmd_from_storage(packet.seq, cmd)) {
- 	            goto mission_item_send_failed;
- 	        }
-
- 	        // convert mission command to mavlink mission item packet
- 	        mavlink_mission_item_t ret_packet;
- 	        memset(&ret_packet, 0, sizeof(ret_packet));
- 	        if (!AP_Mission::mission_cmd_to_mavlink(cmd, ret_packet)) {
- 	            goto mission_item_send_failed;
- 	        }
-
- 	        // set packet's current field to 1 if this is the command being executed
- 	        if (cmd.id == (uint16_t)mission.get_current_nav_cmd().index) {
- 	            ret_packet.current = 1;
- 	        }else{
- 	            ret_packet.current = 0;
- 	        }
-
- 	        // set auto continue to 1
- 	        ret_packet.autocontinue = 1;     // 1 (true), 0 (false)
-
-			mavlink_msg_mission_item_send(chan,msg->sysid,
-                                          msg->compid,
-                                          packet.seq,
-                                          ret_packet.frame,
-                                          cmd.id,
-                                          ret_packet.current,
-                                          ret_packet.autocontinue,
-                                          ret_packet.param1,
-                                          ret_packet.param2,
-                                          ret_packet.param3,
-                                          ret_packet.param4,
-                                          ret_packet.x,
-                                          ret_packet.y,
-                                          ret_packet.z);
-            break;
-
-mission_item_send_failed:
-            // send failure message
-            mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_ERROR);
-            break;
-        }
+    {
+        handle_mission_request(mission, msg, cmd);
+        break;
+    }
 
 
     case MAVLINK_MSG_ID_MISSION_ACK:
