@@ -215,25 +215,6 @@ void GCS_MAVLINK::handle_mission_request(AP_Mission &mission, mavlink_message_t 
     // set auto continue to 1
     ret_packet.autocontinue = 1;     // 1 (true), 0 (false)
 
-    // plane specific overrides to packet values
-    switch (cmd.id) {
-    case MAV_CMD_NAV_LOITER_TIME:
-    case MAV_CMD_NAV_LOITER_TURNS:
-        if (cmd.content.location.flags.loiter_ccw) {
-            ret_packet.param3 = -1;
-        } else {
-            ret_packet.param3 = 1;
-        }
-        break;
-    case MAV_CMD_NAV_LOITER_UNLIM:
-        if (cmd.content.location.flags.loiter_ccw) {
-            ret_packet.param3 = -1;
-        } else {
-            ret_packet.param3 = 1;
-        }
-        break;
-    }
-
     /*
       avoid the _send() function to save memory on APM2, as it avoids
       the stack usage of the _send() function by using the already
