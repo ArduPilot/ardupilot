@@ -1410,21 +1410,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     // GCS request the full list of commands, we return just the number and leave the GCS to then request each command individually
     case MAVLINK_MSG_ID_MISSION_REQUEST_LIST:
     {
-        // decode
-        mavlink_mission_request_list_t packet;
-        mavlink_msg_mission_request_list_decode(msg, &packet);
-        if (mavlink_check_target(packet.target_system, packet.target_component))
-            break;
-
-        // Start sending waypoints
-        mavlink_msg_mission_count_send(
-            chan,msg->sysid,
-            msg->compid,
-            mission.num_commands());
-
-        waypoint_receiving       = false;
-        waypoint_dest_sysid      = msg->sysid;
-        waypoint_dest_compid     = msg->compid;
+        handle_mission_request_list(mission, msg);
         break;
     }
 
@@ -1514,41 +1500,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_MISSION_CLEAR_ALL:
     {
-        // decode
-        mavlink_mission_clear_all_t packet;
-        mavlink_msg_mission_clear_all_decode(msg, &packet);
-        if (mavlink_check_target(packet.target_system, packet.target_component)) break;
-
-        // clear all commands
-        if (mission.clear()) {
-            // note that we don't send multiple acks, as otherwise a
-            // GCS that is doing a clear followed by a set may see
-            // the additional ACKs as ACKs of the set operations
-            mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_ACCEPTED);
-        }else{
-            // we failed to clear the mission (perhaps because we're currently running it) so send NAK
-            mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_ERROR);
-        }
+        handle_mission_clear_all(mission, msg);
         break;
     }
 
     case MAVLINK_MSG_ID_MISSION_SET_CURRENT:
     {
-        // decode
-        mavlink_mission_set_current_t packet;
-        mavlink_msg_mission_set_current_decode(msg, &packet);
-        if (mavlink_check_target(packet.target_system,packet.target_component)) break;
-
-        // set current command
-        if (mission.set_current_cmd(packet.seq)) {
-            // restart/resume mission if we are in auto but the mission is not running (i.e. complete)
-            if (control_mode == AUTO && mission.state() != AP_Mission::MISSION_RUNNING) {
-                mission.resume();
-            }
-        }
-
-        // update GCS with out mission command
-        mavlink_msg_mission_current_send(chan, mission.get_current_nav_cmd().index);
+        handle_mission_set_current(mission, msg);
         break;
     }
 
@@ -1556,49 +1514,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     //  individual commands will then be sent from the GCS using the MAVLINK_MSG_ID_MISSION_ITEM message
     case MAVLINK_MSG_ID_MISSION_COUNT:
     {
-        // decode
-        mavlink_mission_count_t packet;
-        mavlink_msg_mission_count_decode(msg, &packet);
-        if (mavlink_check_target(packet.target_system,packet.target_component)) break;
-
-        // start waypoint receiving
-        if (packet.count > mission.num_commands_max()) {
-            // send NAK
-            mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_NO_SPACE);
-            break;
-        }
-
-        // new mission arriving, truncate mission to be the same length
-        mission.truncate(packet.count);
-
-        waypoint_timelast_receive = millis();
-        waypoint_timelast_request = 0;
-        waypoint_receiving   = true;
-        waypoint_request_i   = 0;
-        waypoint_request_last= packet.count;   // record how many commands we expect to receive
+        handle_mission_count(mission, msg);
         break;
     }
 
     case MAVLINK_MSG_ID_MISSION_WRITE_PARTIAL_LIST:
     {
-        // decode
-        mavlink_mission_write_partial_list_t packet;
-        mavlink_msg_mission_write_partial_list_decode(msg, &packet);
-        if (mavlink_check_target(packet.target_system,packet.target_component)) break;
-
-        // start waypoint receiving
-        if (packet.start_index > mission.num_commands() ||
-            packet.end_index > mission.num_commands() ||
-            packet.end_index < packet.start_index) {
-            send_text_P(SEVERITY_LOW,PSTR("flight plan update rejected"));
-            break;
-        }
-
-        waypoint_timelast_receive = millis();
-        waypoint_timelast_request = 0;
-        waypoint_receiving   = true;
-        waypoint_request_i   = packet.start_index;
-        waypoint_request_last= packet.end_index;
+        handle_mission_write_partial_list(mission, msg);
         break;
     }
 
