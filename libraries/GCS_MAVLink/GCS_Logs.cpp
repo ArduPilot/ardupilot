@@ -209,20 +209,26 @@ bool GCS_MAVLINK::handle_log_send_data(DataFlash_Class &dataflash)
 
     int16_t ret = 0;
     uint32_t len = _log_data_remaining;
-    uint8_t data[90];
+	mavlink_log_data_t packet;
 
     if (len > 90) {
         len = 90;
     }
-    ret = dataflash.get_log_data(_log_num_data, _log_data_page, _log_data_offset, len, data);
+    ret = dataflash.get_log_data(_log_num_data, _log_data_page, _log_data_offset, len, packet.data);
     if (ret < 0) {
         // report as EOF on error
         ret = 0;
     }
     if (ret < 90) {
-        memset(&data[ret], 0, 90-ret);
+        memset(&packet.data[ret], 0, 90-ret);
     }
-    mavlink_msg_log_data_send(chan, _log_num_data, _log_data_offset, ret, data);
+
+    packet.ofs = _log_data_offset;
+    packet.id = _log_num_data;
+    packet.count = ret;
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_LOG_DATA, (const char *)&packet, 
+                                    MAVLINK_MSG_ID_LOG_DATA_LEN, MAVLINK_MSG_ID_LOG_DATA_CRC);
+
     _log_data_offset += len;
     _log_data_remaining -= len;
     if (ret < 90 || _log_data_remaining == 0) {
