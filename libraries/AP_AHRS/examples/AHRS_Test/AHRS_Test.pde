@@ -20,6 +20,7 @@
 #include <AP_Airspeed.h>
 #include <AP_Baro.h>
 #include <GCS_MAVLink.h>
+#include <AP_Mission.h>
 #include <Filter.h>
 #include <SITL.h>
 #include <AP_Buffer.h>
