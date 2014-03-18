@@ -1032,10 +1032,23 @@ GCS_MAVLINK::send_message(enum ap_message id)
     mavlink_send_message(chan,id, packet_drops);
 }
 
+void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
+{
+    guided_WP = cmd.content.location;
+
+    set_mode(GUIDED);
+
+    // make any new wp uploaded instant (in case we are already in Guided mode)
+    set_guided_WP();
+}
+
+void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
+{
+    // nothing to do
+}
+
 void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 {
-    struct AP_Mission::Mission_Command cmd = {};    // general purpose mission command
-
     switch (msg->msgid) {
 
     case MAVLINK_MSG_ID_REQUEST_DATA_STREAM:
@@ -1187,7 +1200,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 	// XXX read a WP from EEPROM and send it to the GCS
     case MAVLINK_MSG_ID_MISSION_REQUEST:
     {
-        handle_mission_request(mission, msg, cmd);
+        handle_mission_request(mission, msg);
         break;
     }
 
@@ -1248,104 +1261,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 	// XXX receive a WP from GCS and store in EEPROM
     case MAVLINK_MSG_ID_MISSION_ITEM:
         {
-            // decode
-            mavlink_mission_item_t packet;
-            uint8_t result = MAV_MISSION_ACCEPTED;
-
-            mavlink_msg_mission_item_decode(msg, &packet);
-            if (mavlink_check_target(packet.target_system,packet.target_component)) break;
-
-            // convert mavlink packet to mission command
-            if (!AP_Mission::mavlink_to_mission_cmd(packet, cmd)) {
-                result = MAV_MISSION_ERROR;
-                goto mission_failed;
-            }
-
-			if(packet.current == 2){ 				//current = 2 is a flag to tell us this is a "guided mode" waypoint and not for the mission
-				guided_WP = cmd.content.location;
-
-				// add home alt if needed
-				if (guided_WP.flags.relative_alt){
-					guided_WP.alt += home.alt;
-				}
-
-				set_mode(GUIDED);
-
-				// make any new wp uploaded instant (in case we are already in Guided mode)
-				set_guided_WP();
-
-				// verify we recevied the command
-				mavlink_msg_mission_ack_send_buf(
-                    msg,
-                    chan,
-                    msg->sysid,
-                    msg->compid,
-                    0);
-
-			} else {
-				// Check if receiving waypoints (mission upload expected)
-				if (!waypoint_receiving) {
-                    result = MAV_MISSION_ERROR;
-                    goto mission_failed;
-                }
-
-				// check if this is the requested waypoint
-				if (packet.seq != waypoint_request_i) {
-                    result = MAV_MISSION_INVALID_SEQUENCE;
-                    goto mission_failed;
-                }
-
-	            // if command index is within the existing list, replace the command
-	            if (packet.seq < mission.num_commands()) {
-	                if (mission.replace_cmd(packet.seq,cmd)) {
-	                    result = MAV_MISSION_ACCEPTED;
-	                }else{
-	                    result = MAV_MISSION_ERROR;
-	                    goto mission_failed;
-	                }
-	            // if command is at the end of command list, add the command
-	            }else if (packet.seq == mission.num_commands()) {
-	                if (mission.add_cmd(cmd)) {
-	                    result = MAV_MISSION_ACCEPTED;
-	                }else{
-	                    result = MAV_MISSION_ERROR;
-	                    goto mission_failed;
-	                }
-	            // if beyond the end of the command list, return an error
-	            }else{
-	                result = MAV_MISSION_ERROR;
-	                goto mission_failed;
-	            }
-
-				// update waypoint receiving state machine
-				waypoint_timelast_receive = millis();
-                waypoint_timelast_request = 0;
-				waypoint_request_i++;
-
-                if (waypoint_request_i >= waypoint_request_last) {
-					mavlink_msg_mission_ack_send_buf(
-                        msg,
-						chan,
-						msg->sysid,
-						msg->compid,
-						MAV_MISSION_ACCEPTED);
-
-					send_text_P(SEVERITY_LOW,PSTR("flight plan received"));
-					waypoint_receiving = false;
-					// XXX ignores waypoint radius for individual waypoints, can
-					// only set WP_RADIUS parameter
-				}
-			}
-            break;
-
-        mission_failed:
-            // we are rejecting the mission/waypoint
-            mavlink_msg_mission_ack_send_buf(
-                msg,
-                chan,
-                msg->sysid,
-                msg->compid,
-                result);
+            handle_mission_item(msg, mission);
             break;
         }
 
