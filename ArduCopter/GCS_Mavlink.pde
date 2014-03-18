@@ -794,24 +794,6 @@ static void mavlink_send_message(mavlink_channel_t chan, enum ap_message id, uin
     }
 }
 
-void mavlink_send_text(mavlink_channel_t chan, gcs_severity severity, const char *str)
-{
-    if (telemetry_delayed(chan)) {
-        return;
-    }
-
-    if (severity == SEVERITY_LOW) {
-        // send via the deferred queuing system
-        mavlink_statustext_t *s = &gcs[chan-MAVLINK_COMM_0].pending_status;
-        s->severity = (uint8_t)severity;
-        strncpy((char *)s->text, str, sizeof(s->text));
-        mavlink_send_message(chan, MSG_STATUSTEXT, 0);
-    } else {
-        // send immediately
-        mavlink_msg_statustext_send(chan, severity, str);
-    }
-}
-
 const AP_Param::GroupInfo GCS_MAVLINK::var_info[] PROGMEM = {
     // @Param: RAW_SENS
     // @DisplayName: Raw sensor stream rate
@@ -1089,21 +1071,6 @@ GCS_MAVLINK::send_message(enum ap_message id)
     mavlink_send_message(chan,id, packet_drops);
 }
 
-void
-GCS_MAVLINK::send_text_P(gcs_severity severity, const prog_char_t *str)
-{
-    mavlink_statustext_t m;
-    uint8_t i;
-    for (i=0; i<sizeof(m.text); i++) {
-        m.text[i] = pgm_read_byte((const prog_char *)(str++));
-        if (m.text[i] == '\0') {
-            break;
-        }
-    }
-    if (i < sizeof(m.text)) m.text[i] = 0;
-    mavlink_send_text(chan, severity, (const char *)m.text);
-}
-
 void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 {
     uint8_t result = MAV_RESULT_FAILED;         // assume failure.  Each messages id is responsible for return ACK or NAK if required
@@ -1134,153 +1101,25 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         }
 
         // send ACK or NAK
-        mavlink_msg_command_ack_send(chan, MAVLINK_MSG_ID_SET_MODE, result);
+        mavlink_msg_command_ack_send_buf(msg, chan, MAVLINK_MSG_ID_SET_MODE, result);
         break;
     }
 
     case MAVLINK_MSG_ID_PARAM_REQUEST_READ:         // MAV ID: 20
     {
-        // decode
-        mavlink_param_request_read_t packet;
-        mavlink_msg_param_request_read_decode(msg, &packet);
-
-        // exit immediately if this command is not meant for this vehicle
-        if (mavlink_check_target(packet.target_system,packet.target_component)) {
-            break;
-        }
-
-        enum ap_var_type p_type;
-        AP_Param *vp;
-        char param_name[AP_MAX_NAME_SIZE+1];
-        if (packet.param_index != -1) {
-            AP_Param::ParamToken token;
-            vp = AP_Param::find_by_index(packet.param_index, &p_type, &token);
-            if (vp == NULL) {
-                gcs_send_text_fmt(PSTR("Unknown parameter index %d"), packet.param_index);
-                break;
-            }
-            vp->copy_name_token(token, param_name, AP_MAX_NAME_SIZE, true);
-            param_name[AP_MAX_NAME_SIZE] = 0;
-        } else {
-            strncpy(param_name, packet.param_id, AP_MAX_NAME_SIZE);
-            param_name[AP_MAX_NAME_SIZE] = 0;
-            vp = AP_Param::find(param_name, &p_type);
-            if (vp == NULL) {
-                gcs_send_text_fmt(PSTR("Unknown parameter %.16s"), packet.param_id);
-                break;
-            }
-        }
-
-        float value = vp->cast_to_float(p_type);
-        mavlink_msg_param_value_send(
-            chan,
-            param_name,
-            value,
-            mav_var_type(p_type),
-            _count_parameters(),
-            packet.param_index);
+        handle_param_request_read(msg);
         break;
     }
 
     case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:         // MAV ID: 21
     {
-        // decode
-        mavlink_param_request_list_t packet;
-        mavlink_msg_param_request_list_decode(msg, &packet);
-
-        // exit immediately if this command is not meant for this vehicle
-        if (mavlink_check_target(packet.target_system,packet.target_component)) {
-            break;
-        }
-
-        // mark the firmware version in the tlog
-        send_text_P(SEVERITY_LOW, PSTR(FIRMWARE_STRING));
-
-#if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
-        send_text_P(SEVERITY_LOW, PSTR("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION));
-#endif
-
-        // send system ID if we can
-        char sysid[40];
-        if (hal.util->get_system_id(sysid)) {
-            mavlink_send_text(chan, SEVERITY_LOW, sysid);
-        }
-
-        // Start sending parameters - next call to ::update will kick the first one out
-        _queued_parameter = AP_Param::first(&_queued_parameter_token, &_queued_parameter_type);
-        _queued_parameter_index = 0;
-        _queued_parameter_count = _count_parameters();
+        handle_param_request_list(msg);
         break;
     }
 
     case MAVLINK_MSG_ID_PARAM_SET:     // 23
     {
-        AP_Param                  *vp;
-        enum ap_var_type var_type;
-
-        // decode
-        mavlink_param_set_t packet;
-        mavlink_msg_param_set_decode(msg, &packet);
-
-        // exit immediately if this command is not meant for this vehicle
-        if (mavlink_check_target(packet.target_system, packet.target_component)) {
-            break;
-        }
-
-        // set parameter
-
-        char key[AP_MAX_NAME_SIZE+1];
-        strncpy(key, (char *)packet.param_id, AP_MAX_NAME_SIZE);
-        key[AP_MAX_NAME_SIZE] = 0;
-
-        // find the requested parameter
-        vp = AP_Param::find(key, &var_type);
-        if ((NULL != vp) &&                                                                                     // exists
-            !isnan(packet.param_value) &&                                                  // not nan
-            !isinf(packet.param_value)) {                                                  // not inf
-
-            // add a small amount before casting parameter values
-            // from float to integer to avoid truncating to the
-            // next lower integer value.
-            float rounding_addition = 0.01;
-
-            // handle variables with standard type IDs
-            if (var_type == AP_PARAM_FLOAT) {
-                ((AP_Float *)vp)->set_and_save(packet.param_value);
-            } else if (var_type == AP_PARAM_INT32) {
-                if (packet.param_value < 0) rounding_addition = -rounding_addition;
-                float v = packet.param_value+rounding_addition;
-                v = constrain_float(v, -2147483648.0, 2147483647.0);
-                ((AP_Int32 *)vp)->set_and_save(v);
-            } else if (var_type == AP_PARAM_INT16) {
-                if (packet.param_value < 0) rounding_addition = -rounding_addition;
-                float v = packet.param_value+rounding_addition;
-                v = constrain_float(v, -32768, 32767);
-                ((AP_Int16 *)vp)->set_and_save(v);
-            } else if (var_type == AP_PARAM_INT8) {
-                if (packet.param_value < 0) rounding_addition = -rounding_addition;
-                float v = packet.param_value+rounding_addition;
-                v = constrain_float(v, -128, 127);
-                ((AP_Int8 *)vp)->set_and_save(v);
-            } else {
-                // we don't support mavlink set on this parameter
-                break;
-            }
-
-            // Report back the new value if we accepted the change
-            // we send the value we actually set, which could be
-            // different from the value sent, in case someone sent
-            // a fractional value to an integer type
-            mavlink_msg_param_value_send(
-                chan,
-                key,
-                vp->cast_to_float(var_type),
-                mav_var_type(var_type),
-                _count_parameters(),
-                -1);                         // XXX we don't actually know what its index is...
-            DataFlash.Log_Write_Parameter(key, vp->cast_to_float(var_type));
-        }
-
+        handle_param_set(msg, &DataFlash);
         break;
     }
 
@@ -1329,7 +1168,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
 
             // send ACK or NAK
-            mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, result);
+            mavlink_msg_mission_ack_send_buf(msg, chan, msg->sysid, msg->compid, result);
 
         } else if(packet.current == 3) {    //current = 3 is a flag to tell us this is a alt change only
 
@@ -1343,7 +1182,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             wp_nav.set_desired_alt(cmd.content.location.alt);
 
             // verify we received the command
-            mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_ACCEPTED);
+            mavlink_msg_mission_ack_send_buf(msg, chan, msg->sysid, msg->compid, MAV_MISSION_ACCEPTED);
 
         } else {
             // Check if receiving waypoints (mission upload expected)
@@ -1387,7 +1226,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             // send mission ACK after receiving the last command
             if (waypoint_request_i >= waypoint_request_last) {
-                mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, result);
+                mavlink_msg_mission_ack_send_buf(msg, chan, msg->sysid, msg->compid, result);
 
                 send_text_P(SEVERITY_LOW,PSTR("flight plan received"));
                 waypoint_receiving = false;
@@ -1397,7 +1236,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
 mission_item_receive_failed:
         // we are rejecting the mission/waypoint
-        mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, result);
+        mavlink_msg_mission_ack_send_buf(msg, chan, msg->sysid, msg->compid, result);
         break;
     }
 
@@ -1437,58 +1276,7 @@ mission_item_receive_failed:
 
     case MAVLINK_MSG_ID_REQUEST_DATA_STREAM:    // MAV ID: 66
     {
-        // decode
-        mavlink_request_data_stream_t packet;
-        mavlink_msg_request_data_stream_decode(msg, &packet);
-
-        // exit immediately if this command is not meant for this vehicle
-        if (mavlink_check_target(packet.target_system, packet.target_component)) {
-            break;
-        }
-
-        int16_t freq = 0;                 // packet frequency
-
-        if (packet.start_stop == 0) {
-            freq = 0;                     // stop sending
-        } else if (packet.start_stop == 1) {
-            freq = packet.req_message_rate;                     // start sending
-        } else {
-            break;
-        }
-
-        switch(packet.req_stream_id) {
-
-        case MAV_DATA_STREAM_ALL:
-            // note that we don't set STREAM_PARAMS - that is internal only
-            for (uint8_t i=0; i<STREAM_PARAMS; i++) {
-                streamRates[i].set(freq);
-            }
-            break;
-        case MAV_DATA_STREAM_RAW_SENSORS:
-            streamRates[STREAM_RAW_SENSORS].set(freq);
-            break;
-        case MAV_DATA_STREAM_EXTENDED_STATUS:
-            streamRates[STREAM_EXTENDED_STATUS].set(freq);
-            break;
-        case MAV_DATA_STREAM_RC_CHANNELS:
-            streamRates[STREAM_RC_CHANNELS].set(freq);
-            break;
-        case MAV_DATA_STREAM_RAW_CONTROLLER:
-            streamRates[STREAM_RAW_CONTROLLER].set(freq);
-            break;
-        case MAV_DATA_STREAM_POSITION:
-            streamRates[STREAM_POSITION].set(freq);
-            break;
-        case MAV_DATA_STREAM_EXTRA1:
-            streamRates[STREAM_EXTRA1].set(freq);
-            break;
-        case MAV_DATA_STREAM_EXTRA2:
-            streamRates[STREAM_EXTRA2].set(freq);
-            break;
-        case MAV_DATA_STREAM_EXTRA3:
-            streamRates[STREAM_EXTRA3].set(freq);
-            break;
-        }
+        handle_request_data_stream(msg, false);
         break;
     }
 
@@ -1653,7 +1441,7 @@ mission_item_receive_failed:
         }
 
         // send ACK or NAK
-        mavlink_msg_command_ack_send(chan, packet.command, result);
+        mavlink_msg_command_ack_send_buf(msg, chan, packet.command, result);
 
         break;
     }
@@ -1714,24 +1502,7 @@ mission_item_receive_failed:
     case MAVLINK_MSG_ID_RADIO:
     case MAVLINK_MSG_ID_RADIO_STATUS:       // MAV ID: 109
     {
-        mavlink_radio_t packet;
-        mavlink_msg_radio_decode(msg, &packet);
-        // use the state of the transmit buffer in the radio to
-        // control the stream rate, giving us adaptive software
-        // flow control
-        if (packet.txbuf < 20 && stream_slowdown < 100) {
-            // we are very low on space - slow down a lot
-            stream_slowdown += 3;
-        } else if (packet.txbuf < 50 && stream_slowdown < 100) {
-            // we are a bit low on space, slow down slightly
-            stream_slowdown += 1;
-        } else if (packet.txbuf > 95 && stream_slowdown > 10) {
-            // the buffer has plenty of space, speed up a lot
-            stream_slowdown -= 2;
-        } else if (packet.txbuf > 90 && stream_slowdown != 0) {
-            // the buffer has enough space, speed up a bit
-            stream_slowdown--;
-        }
+        handle_radio_status(msg);
         break;
     }
 
