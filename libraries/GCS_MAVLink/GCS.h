@@ -280,6 +280,14 @@ private:
     // start page of log data
     uint16_t _log_data_page;
 
+    // deferred message handling
+    enum ap_message deferred_messages[MSG_RETRY_DEFERRED];
+    uint8_t next_deferred_message;
+    uint8_t num_deferred_messages;
+
+    // vehicle specific message send function
+    bool try_send_message(enum ap_message id);
+
     void handle_guided_request(AP_Mission::Mission_Command &cmd);
     void handle_change_alt_request(AP_Mission::Mission_Command &cmd);
 
