@@ -1367,7 +1367,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
         }
 
-        mavlink_msg_command_ack_send(
+        mavlink_msg_command_ack_send_buf(
+            msg,
             chan,
             packet.command,
             result);
@@ -1488,7 +1489,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         }
 
         float value = vp->cast_to_float(p_type);
-        mavlink_msg_param_value_send(
+        mavlink_msg_param_value_send_buf(
+            msg,
             chan,
             param_name,
             value,
@@ -1565,7 +1567,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             set_guided_WP();
 
             // verify we recevied the command
-            mavlink_msg_mission_ack_send(
+            mavlink_msg_mission_ack_send_buf(
+                msg,
                 chan,
                 msg->sysid,
                 msg->compid,
@@ -1581,7 +1584,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             next_WP_loc.alt = cmd.content.location.alt;
 
             // verify we recevied the command
-            mavlink_msg_mission_ack_send(
+            mavlink_msg_mission_ack_send_buf(
+                msg,
                 chan,
                 msg->sysid,
                 msg->compid,
@@ -1627,7 +1631,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             waypoint_request_i++;
 
             if (waypoint_request_i >= waypoint_request_last) {
-                mavlink_msg_mission_ack_send(
+                mavlink_msg_mission_ack_send_buf(
+                    msg,
                     chan,
                     msg->sysid,
                     msg->compid,
@@ -1651,7 +1656,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
 mission_failed:
         // we are rejecting the mission/waypoint
-        mavlink_msg_mission_ack_send(
+        mavlink_msg_mission_ack_send_buf(
+            msg,
             chan,
             msg->sysid,
             msg->compid,
@@ -1689,8 +1695,8 @@ mission_failed:
             send_text_P(SEVERITY_LOW,PSTR("bad fence point"));
         } else {
             Vector2l point = get_fence_point_with_index(packet.idx);
-            mavlink_msg_fence_point_send(chan, msg->sysid, msg->compid, packet.idx, g.fence_total,
-                                         point.x*1.0e-7, point.y*1.0e-7);
+            mavlink_msg_fence_point_send_buf(msg, chan, msg->sysid, msg->compid, packet.idx, g.fence_total,
+                                             point.x*1.0e-7, point.y*1.0e-7);
         }
         break;
     }
@@ -1741,10 +1747,11 @@ mission_failed:
             break;
         }
 
-        mavlink_msg_rally_point_send(chan, msg->sysid, msg->compid, packet.idx, 
-                                     g.rally_total, rally_point.lat, rally_point.lng, 
-                                     rally_point.alt, rally_point.break_alt, rally_point.land_dir, 
-                                     rally_point.flags);
+        mavlink_msg_rally_point_send_buf(msg,
+                                         chan, msg->sysid, msg->compid, packet.idx, 
+                                         g.rally_total, rally_point.lat, rally_point.lng, 
+                                         rally_point.alt, rally_point.break_alt, rally_point.land_dir, 
+                                         rally_point.flags);
         break;
     }    
 
@@ -1804,7 +1811,8 @@ mission_failed:
             // we send the value we actually set, which could be
             // different from the value sent, in case someone sent
             // a fractional value to an integer type
-            mavlink_msg_param_value_send(
+            mavlink_msg_param_value_send_buf(
+                msg,
                 chan,
                 key,
                 vp->cast_to_float(var_type),
