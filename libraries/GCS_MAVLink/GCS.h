@@ -293,6 +293,11 @@ private:
     void handle_mission_clear_all(AP_Mission &mission, mavlink_message_t *msg);
     void handle_mission_write_partial_list(AP_Mission &mission, mavlink_message_t *msg);
 
+    void handle_request_data_stream(mavlink_message_t *msg);
+    void handle_param_request_list(mavlink_message_t *msg);
+    void handle_param_request_read(mavlink_message_t *msg);
+    void handle_param_set(mavlink_message_t *msg, DataFlash_Class &DataFlash);
+
     // return true if this channel has hardware flow control
     bool have_flow_control(void);
 };

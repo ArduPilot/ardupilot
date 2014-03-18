@@ -384,3 +384,214 @@ bool GCS_MAVLINK::have_flow_control(void)
     }
     return false;
 }
+
+
+void GCS_MAVLINK::handle_request_data_stream(mavlink_message_t *msg)
+{
+    mavlink_request_data_stream_t packet;
+    mavlink_msg_request_data_stream_decode(msg, &packet);
+
+    if (mavlink_check_target(packet.target_system, packet.target_component))
+        return;
+
+    int16_t freq = 0;     // packet frequency
+
+    if (packet.start_stop == 0)
+        freq = 0;                     // stop sending
+    else if (packet.start_stop == 1)
+        freq = packet.req_message_rate;                     // start sending
+    else
+        return;
+
+    switch (packet.req_stream_id) {
+    case MAV_DATA_STREAM_ALL:
+        // note that we don't set STREAM_PARAMS - that is internal only
+        for (uint8_t i=0; i<STREAM_PARAMS; i++) {
+            streamRates[i].set_and_save_ifchanged(freq);
+        }
+        break;
+    case MAV_DATA_STREAM_RAW_SENSORS:
+        streamRates[STREAM_RAW_SENSORS].set_and_save_ifchanged(freq);
+        break;
+    case MAV_DATA_STREAM_EXTENDED_STATUS:
+        streamRates[STREAM_EXTENDED_STATUS].set_and_save_ifchanged(freq);
+        break;
+    case MAV_DATA_STREAM_RC_CHANNELS:
+        streamRates[STREAM_RC_CHANNELS].set_and_save_ifchanged(freq);
+        break;
+    case MAV_DATA_STREAM_RAW_CONTROLLER:
+        streamRates[STREAM_RAW_CONTROLLER].set_and_save_ifchanged(freq);
+        break;
+    case MAV_DATA_STREAM_POSITION:
+        streamRates[STREAM_POSITION].set_and_save_ifchanged(freq);
+        break;
+    case MAV_DATA_STREAM_EXTRA1:
+        streamRates[STREAM_EXTRA1].set_and_save_ifchanged(freq);
+        break;
+    case MAV_DATA_STREAM_EXTRA2:
+        streamRates[STREAM_EXTRA2].set_and_save_ifchanged(freq);
+        break;
+    case MAV_DATA_STREAM_EXTRA3:
+        streamRates[STREAM_EXTRA3].set_and_save_ifchanged(freq);
+        break;
+    }
+}
+
+void GCS_MAVLINK::handle_param_request_list(mavlink_message_t *msg)
+{
+    mavlink_param_request_list_t packet;
+    mavlink_msg_param_request_list_decode(msg, &packet);
+    if (mavlink_check_target(packet.target_system,packet.target_component)) {
+        return;
+    }
+
+#if CONFIG_HAL_BOARD != HAL_BOARD_APM1 && CONFIG_HAL_BOARD != HAL_BOARD_APM2
+    // send system ID if we can
+    char sysid[40];
+    if (hal.util->get_system_id(sysid)) {
+        send_text(SEVERITY_LOW, sysid);
+    }
+#endif
+
+    // Start sending parameters - next call to ::update will kick the first one out
+    _queued_parameter = AP_Param::first(&_queued_parameter_token, &_queued_parameter_type);
+    _queued_parameter_index = 0;
+    _queued_parameter_count = _count_parameters();
+}
+
+void GCS_MAVLINK::handle_param_request_read(mavlink_message_t *msg)
+{
+    mavlink_param_request_read_t packet;
+    mavlink_msg_param_request_read_decode(msg, &packet);
+    if (mavlink_check_target(packet.target_system,packet.target_component)) {
+        return;
+    }
+    enum ap_var_type p_type;
+    AP_Param *vp;
+    char param_name[AP_MAX_NAME_SIZE+1];
+    if (packet.param_index != -1) {
+        AP_Param::ParamToken token;
+        vp = AP_Param::find_by_index(packet.param_index, &p_type, &token);
+        if (vp == NULL) {
+            return;
+        }
+        vp->copy_name_token(token, param_name, AP_MAX_NAME_SIZE, true);
+        param_name[AP_MAX_NAME_SIZE] = 0;
+    } else {
+        strncpy(param_name, packet.param_id, AP_MAX_NAME_SIZE);
+        param_name[AP_MAX_NAME_SIZE] = 0;
+        vp = AP_Param::find(param_name, &p_type);
+        if (vp == NULL) {
+            return;
+        }
+    }
+    
+    float value = vp->cast_to_float(p_type);
+    mavlink_msg_param_value_send_buf(
+        msg,
+        chan,
+        param_name,
+        value,
+        mav_var_type(p_type),
+        _count_parameters(),
+        packet.param_index);
+}
+
+void GCS_MAVLINK::handle_param_set(mavlink_message_t *msg, DataFlash_Class &DataFlash)
+{
+    AP_Param *vp;
+    enum ap_var_type var_type;
+
+    mavlink_param_set_t packet;
+    mavlink_msg_param_set_decode(msg, &packet);
+
+    if (mavlink_check_target(packet.target_system, packet.target_component)) {
+        return;
+    }
+
+    // set parameter
+    char key[AP_MAX_NAME_SIZE+1];
+    strncpy(key, (char *)packet.param_id, AP_MAX_NAME_SIZE);
+    key[AP_MAX_NAME_SIZE] = 0;
+
+    // find the requested parameter
+    vp = AP_Param::find(key, &var_type);
+    if ((NULL != vp) &&                                 // exists
+        !isnan(packet.param_value) &&                       // not nan
+        !isinf(packet.param_value)) {                       // not inf
+
+        // add a small amount before casting parameter values
+        // from float to integer to avoid truncating to the
+        // next lower integer value.
+        float rounding_addition = 0.01;
+        
+        // handle variables with standard type IDs
+        if (var_type == AP_PARAM_FLOAT) {
+            ((AP_Float *)vp)->set_and_save(packet.param_value);
+        } else if (var_type == AP_PARAM_INT32) {
+            if (packet.param_value < 0) rounding_addition = -rounding_addition;
+            float v = packet.param_value+rounding_addition;
+            v = constrain_float(v, -2147483648.0, 2147483647.0);
+            ((AP_Int32 *)vp)->set_and_save(v);
+        } else if (var_type == AP_PARAM_INT16) {
+            if (packet.param_value < 0) rounding_addition = -rounding_addition;
+            float v = packet.param_value+rounding_addition;
+            v = constrain_float(v, -32768, 32767);
+            ((AP_Int16 *)vp)->set_and_save(v);
+        } else if (var_type == AP_PARAM_INT8) {
+            if (packet.param_value < 0) rounding_addition = -rounding_addition;
+            float v = packet.param_value+rounding_addition;
+            v = constrain_float(v, -128, 127);
+            ((AP_Int8 *)vp)->set_and_save(v);
+        } else {
+            // we don't support mavlink set on this parameter
+            return;
+        }
+
+        // Report back the new value if we accepted the change
+        // we send the value we actually set, which could be
+        // different from the value sent, in case someone sent
+        // a fractional value to an integer type
+        mavlink_msg_param_value_send_buf(
+            msg,
+            chan,
+            key,
+            vp->cast_to_float(var_type),
+            mav_var_type(var_type),
+            _count_parameters(),
+            -1);     // XXX we don't actually know what its index is...
+        DataFlash.Log_Write_Parameter(key, vp->cast_to_float(var_type));
+    }
+}
+
+
+void
+GCS_MAVLINK::send_text(gcs_severity severity, const char *str)
+{
+    if (severity == SEVERITY_LOW) {
+        // send via the deferred queuing system
+        mavlink_statustext_t *s = &pending_status;
+        s->severity = (uint8_t)severity;
+        strncpy((char *)s->text, str, sizeof(s->text));
+        send_message(MSG_STATUSTEXT);
+    } else {
+        // send immediately
+        mavlink_msg_statustext_send(chan, severity, str);
+    }
+}
+
+void
+GCS_MAVLINK::send_text_P(gcs_severity severity, const prog_char_t *str)
+{
+    mavlink_statustext_t m;
+    uint8_t i;
+    for (i=0; i<sizeof(m.text); i++) {
+        m.text[i] = pgm_read_byte((const prog_char *)(str++));
+        if (m.text[i] == '\0') {
+            break;
+        }
+    }
+    if (i < sizeof(m.text)) m.text[i] = 0;
+    send_text(severity, (const char *)m.text);
+}
+
