@@ -519,9 +519,9 @@ bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP
         break;
 
     case MAV_CMD_DO_REPEAT_RELAY:                       // MAV ID: 182
-        cmd.content.relay.num = packet.param1;          // relay number
-        cmd.content.relay.repeat_count = packet.param2; // count
-        cmd.content.relay.time_ms = packet.param3*1000; // time converted from seconds to milliseconds
+        cmd.content.repeat_relay.num = packet.param1;           // relay number
+        cmd.content.repeat_relay.repeat_count = packet.param2;  // count
+        cmd.content.repeat_relay.cycle_time = packet.param3;    // time converted from seconds to milliseconds
         break;
 
     case MAV_CMD_DO_SET_SERVO:                          // MAV ID: 183
@@ -530,10 +530,10 @@ bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP
         break;
 
     case MAV_CMD_DO_REPEAT_SERVO:                       // MAV ID: 184
-        cmd.content.servo.channel = packet.param1;      // channel
-        cmd.content.servo.pwm = packet.param2;          // PWM
-        cmd.content.servo.repeat_count = packet.param3; // count
-        cmd.content.servo.time_ms = packet.param4*1000; // time in seconds converted to milliseconds
+        cmd.content.repeat_servo.channel = packet.param1;      // channel
+        cmd.content.repeat_servo.pwm = packet.param2;          // PWM
+        cmd.content.repeat_servo.repeat_count = packet.param3; // count
+        cmd.content.repeat_servo.cycle_time = packet.param4;   // time in seconds
         break;
 
     case MAV_CMD_DO_SET_ROI:                            // MAV ID: 201
@@ -733,9 +733,9 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
         break;
 
     case MAV_CMD_DO_REPEAT_RELAY:                       // MAV ID: 182
-        packet.param1 = cmd.content.relay.num;          // relay number
-        packet.param2 = cmd.content.relay.repeat_count; // count
-        packet.param3 = cmd.content.relay.time_ms*0.001f;   // time converted from milliseconds to seconds
+        packet.param1 = cmd.content.repeat_relay.num;           // relay number
+        packet.param2 = cmd.content.repeat_relay.repeat_count;  // count
+        packet.param3 = cmd.content.repeat_relay.cycle_time;    // time in seconds
         break;
 
     case MAV_CMD_DO_SET_SERVO:                          // MAV ID: 183
@@ -744,10 +744,10 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
         break;
 
     case MAV_CMD_DO_REPEAT_SERVO:                       // MAV ID: 184
-        packet.param1 = cmd.content.servo.channel;      // channel
-        packet.param2 = cmd.content.servo.pwm;          // PWM
-        packet.param3 = cmd.content.servo.repeat_count; // count
-        packet.param4 = cmd.content.servo.time_ms*0.001f;   // time in milliseconds converted to seconds
+        packet.param1 = cmd.content.repeat_servo.channel;       // channel
+        packet.param2 = cmd.content.repeat_servo.pwm;           // PWM
+        packet.param3 = cmd.content.repeat_servo.repeat_count;  // count
+        packet.param4 = cmd.content.repeat_servo.cycle_time;    // time in milliseconds converted to seconds
         break;
 
     case MAV_CMD_DO_SET_ROI:                            // MAV ID: 201

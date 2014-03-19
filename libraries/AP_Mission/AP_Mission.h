@@ -49,48 +49,59 @@ public:
 
     // condition delay command structure
     struct PACKED Conditional_Delay_Command {
-        uint16_t seconds;       // period of delay in seconds
+        float seconds;          // period of delay in seconds
     };
 
     // condition delay command structure
     struct PACKED Conditional_Distance_Command {
-        int32_t meters;             // distance from next waypoint in meters
+        float meters;           // distance from next waypoint in meters
     };
 
     // condition yaw command structure
     struct PACKED Yaw_Command {
-        int16_t angle_deg;      // target angle in degrees (0=north, 90=east)
-        int16_t turn_rate_dps;  // turn rate in degrees / second (0=use default)
-        int8_t  direction;      // -1 = ccw, +1 = cw
-        uint8_t  relative_angle;// 0 = absolute angle, 1 = relative angle
+        float angle_deg;        // target angle in degrees (0=north, 90=east)
+        float turn_rate_dps;    // turn rate in degrees / second (0=use default)
+        int8_t direction;       // -1 = ccw, +1 = cw
+        uint8_t relative_angle; // 0 = absolute angle, 1 = relative angle
     };
 
     // change speed command structure
     struct PACKED Change_Speed_Command {
         uint8_t speed_type;     // 0=airspeed, 1=ground speed
-        float target_ms;        // target speed in m/s
-        uint8_t throttle_pct;   // throttle as a percentage (i.e. 0 ~ 100)
+        float target_ms;        // target speed in m/s, -1 means no change
+        float throttle_pct;     // throttle as a percentage (i.e. 0 ~ 100), -1 means no change
     };
 
-    // set relay and repeat relay command structure
+    // set relay command structure
     struct PACKED Set_Relay_Command {
         uint8_t num;            // relay number from 1 to 4
         uint8_t state;          // on = 3.3V or 5V (depending upon board), off = 0V.  only used for do-set-relay, not for do-repeat-relay
-        int16_t repeat_count;   // number of times to trigger the relay
-        uint32_t time_ms;       // cycle time in milliseconds (the time between peaks or the time the relay is on and off for each cycle?)
     };
 
-    // set servo and repeat servo command structure
+    // repeat relay command structure
+    struct PACKED Repeat_Relay_Command {
+        uint8_t num;            // relay number from 1 to 4
+        int16_t repeat_count;   // number of times to trigger the relay
+        float cycle_time;       // cycle time in seconds (the time between peaks or the time the relay is on and off for each cycle?)
+    };
+
+    // set servo command structure
     struct PACKED Set_Servo_Command {
-        uint8_t channel;        // Note: p1 holds servo channel
+        uint8_t channel;        // servo channel
+        uint16_t pwm;           // pwm value for servo
+    };
+
+    // repeat servo command structure
+    struct PACKED Repeat_Servo_Command {
+        uint8_t channel;        // servo channel
         uint16_t pwm;           // pwm value for servo
         int16_t repeat_count;   // number of times to move the servo (returns to trim in between)
-        uint16_t time_ms;       // cycle time in milliseconds (the time between peaks or the time the servo is at the specified pwm value for each cycle?)
+        float cycle_time;       // cycle time in seconds (the time between peaks or the time the servo is at the specified pwm value for each cycle?)
     };
 
     // set cam trigger distance command structure
     struct PACKED Cam_Trigg_Distance {
-        int32_t meters;         // distance
+        float meters;           // distance
     };
 
     union PACKED Content {
@@ -109,11 +120,17 @@ public:
         // change speed
         Change_Speed_Command speed;
 
-        // do-set-relay and do-repeat-relay
+        // do-set-relay
         Set_Relay_Command relay;
 
-        // do-set-servo and do-repeate-servo
+        // do-repeat-relay
+        Repeat_Relay_Command repeat_relay;
+
+        // do-set-servo
         Set_Servo_Command servo;
+
+        // do-repeate-servo
+        Repeat_Servo_Command repeat_servo;
 
         // cam trigg distance
         Cam_Trigg_Distance cam_trigg_dist;
