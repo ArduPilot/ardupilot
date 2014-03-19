@@ -24,7 +24,7 @@ static bool
 start_command(const AP_Mission::Mission_Command& cmd)
 {
     // log when new commands start
-    if (g.log_bitmask & MASK_LOG_CMD) {
+    if (should_log(MASK_LOG_CMD)) {
         Log_Write_Cmd(cmd);
     }
 

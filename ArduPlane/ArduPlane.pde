@@ -1046,7 +1046,7 @@ static void update_GPS_50Hz(void)
         g_gps2->update();
         if (g_gps2->last_message_time_ms() != last_gps2_reading) {
             last_gps2_reading = g_gps2->last_message_time_ms();
-            if (g.log_bitmask & MASK_LOG_GPS) {
+            if (should_log(MASK_LOG_GPS)) {
                 DataFlash.Log_Write_GPS2(g_gps2);
             }
         }
