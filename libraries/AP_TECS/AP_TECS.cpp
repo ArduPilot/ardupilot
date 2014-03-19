@@ -111,7 +111,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
 
     // @Param: LAND_ARSPD
     // @DisplayName: Airspeed during landing approach (m/s)
-    // @Description: When performing an autonomus landing, this value is used as the goal airspeed during approach.  Note that this parameter is not useful if your platform does not have an airspeed sensor (use TECS_LAND_THR instead).  If set to -1 or less then this value is not used during landing.
+    // @Description: When performing an autonomus landing, this value is used as the goal airspeed during approach.  Note that this parameter is not useful if your platform does not have an airspeed sensor (use TECS_LAND_THR instead).  If negative then this value is not used during landing.
     // @Range: -1 to 127
     // @Increment: 1
     // @User: User
@@ -119,7 +119,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
 
     // @Param; LAND_THR
     // @DisplayName: Cruise throttle during landing approach (percentage)
-    // @Description: Use this parameter instead of LAND_ASPD if your platform does not have an airspeed sensor.  It is the cruise throttle during landing approach.  If set to -1 or less or if TECS_LAND_ASPD is in use then this value is not used during landing.
+    // @Description: Use this parameter instead of LAND_ASPD if your platform does not have an airspeed sensor.  It is the cruise throttle during landing approach.  If it is negative if TECS_LAND_ASPD is in use then this value is not used during landing.
     // @Range: -1 to 100
     // @Increment: 0.1
     // @User: User
@@ -213,13 +213,14 @@ void AP_TECS::_update_speed(void)
 
     float EAS2TAS = _ahrs.get_EAS2TAS();
     _TAS_dem  = _EAS_dem * EAS2TAS;
-    if (_landAirspeed > -1 && _ahrs.airspeed_sensor_enabled() &&
+	_TASmax   = aparm.airspeed_max * EAS2TAS;
+	_TASmin   = aparm.airspeed_min * EAS2TAS;
+    if (_landAirspeed >= 0 && _ahrs.airspeed_sensor_enabled() &&
            (_flight_stage == FLIGHT_LAND_APPROACH || _flight_stage== FLIGHT_LAND_FINAL)) {
-        _TASmax = _landAirspeed * EAS2TAS;
-        _TASmin = _landAirspeed * EAS2TAS;
-    } else { //not landing, or not using TECS_LAND_ASPD parameter
-        _TASmax   = aparm.airspeed_max * EAS2TAS;
-        _TASmin   = aparm.airspeed_min * EAS2TAS;
+		_TAS_dem = _landAirspeed * EAS2TAS;
+		if (_TASmin > _TAS_dem) {
+			_TASmin = _TAS_dem;
+		}
     }
 
     // Reset states of time since last update is too large
@@ -455,7 +456,7 @@ void AP_TECS::_update_throttle_option(int16_t throttle_nudge)
     //If landing and we don't have an airspeed sensor and we have a non-zero
     //TECS_LAND_THR param then use it
     if ((_flight_stage == FLIGHT_LAND_APPROACH || _flight_stage== FLIGHT_LAND_FINAL) &&
-           _landThrottle > -1) {            
+           _landThrottle >= 0) {            
         nomThr = (_landThrottle + throttle_nudge) * 0.01f;
     } else { //not landing or not using TECS_LAND_THR parameter
 		nomThr = (aparm.throttle_cruise + throttle_nudge)* 0.01f;

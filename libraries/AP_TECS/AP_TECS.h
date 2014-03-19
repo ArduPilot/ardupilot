@@ -66,6 +66,9 @@ public:
 	// log data on internal state of the controller. Called at 10Hz
 	void log_data(DataFlash_Class &dataflash, uint8_t msgid);
 
+	// return current target airspeed
+	float get_target_airspeed(void) const { return _TAS_dem / _ahrs.get_EAS2TAS(); }
+
 	// this supports the TECS_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
