@@ -57,13 +57,13 @@ start_command(const AP_Mission::Mission_Command& cmd)
             break;
 
     	case MAV_CMD_DO_REPEAT_SERVO:
-            ServoRelayEvents.do_repeat_servo(cmd.content.servo.channel, cmd.content.servo.pwm,
-                                             cmd.content.servo.repeat_count, cmd.content.servo.time_ms);
+            ServoRelayEvents.do_repeat_servo(cmd.content.repeat_servo.channel, cmd.content.repeat_servo.pwm,
+                                             cmd.content.repeat_servo.repeat_count, cmd.content.repeat_servo.cycle_time * 1000.0f);
             break;
 
     	case MAV_CMD_DO_REPEAT_RELAY:
-            ServoRelayEvents.do_repeat_relay(cmd.content.relay.num, cmd.content.relay.repeat_count,
-                                             cmd.content.relay.time_ms);
+            ServoRelayEvents.do_repeat_relay(cmd.content.repeat_relay.num, cmd.content.repeat_relay.repeat_count,
+                                             cmd.content.repeat_relay.cycle_time * 1000.0f);
             break;
 
 #if CAMERA == ENABLED
