@@ -96,13 +96,13 @@ static bool start_command(const AP_Mission::Mission_Command& cmd)
         break;
         
     case MAV_CMD_DO_REPEAT_SERVO:
-        ServoRelayEvents.do_repeat_servo(cmd.content.servo.channel, cmd.content.servo.pwm,
-                                         cmd.content.servo.repeat_count, cmd.content.servo.time_ms);
+        ServoRelayEvents.do_repeat_servo(cmd.content.repeat_servo.channel, cmd.content.repeat_servo.pwm,
+                                         cmd.content.repeat_servo.repeat_count, cmd.content.repeat_servo.cycle_time * 1000.0f);
         break;
         
     case MAV_CMD_DO_REPEAT_RELAY:
-        ServoRelayEvents.do_repeat_relay(cmd.content.relay.num, cmd.content.relay.repeat_count,
-                                         cmd.content.relay.time_ms);
+        ServoRelayEvents.do_repeat_relay(cmd.content.repeat_relay.num, cmd.content.repeat_relay.repeat_count,
+                                         cmd.content.repeat_relay.cycle_time * 1000.0f);
         break;
 
     case MAV_CMD_DO_SET_ROI:                // 201
@@ -563,8 +563,7 @@ static void do_yaw(const AP_Mission::Mission_Command& cmd)
     // set yaw mode
     set_auto_yaw_mode(AUTO_YAW_LOOK_AT_HEADING);
 
-    // TO-DO: restore support for clockwise / counter clockwise rotation held in command_cond_queue.p1
-    // cmd.content.yaw.direction // 1 = clockwise, -1 = counterclockwise
+    // TO-DO: restore support for clockwise and counter clockwise rotation held in cmd.content.yaw.direction.  1 = clockwise, -1 = counterclockwise
 }
 
 
@@ -629,7 +628,9 @@ static bool do_guided(const AP_Mission::Mission_Command& cmd)
 
 static void do_change_speed(const AP_Mission::Mission_Command& cmd)
 {
-    wp_nav.set_horizontal_velocity(cmd.content.speed.target_ms * 100.0f);
+    if (cmd.content.speed.target_ms > 0) {
+        wp_nav.set_horizontal_velocity(cmd.content.speed.target_ms * 100.0f);
+    }
 }
 
 static void do_set_home(const AP_Mission::Mission_Command& cmd)
