@@ -269,10 +269,13 @@ static inline void mavlink_msg_airspeed_autocal_send(mavlink_channel_t chan, flo
 
 #if MAVLINK_MSG_ID_AIRSPEED_AUTOCAL_LEN <= MAVLINK_MAX_PAYLOAD_LEN
 /*
- This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
- The caller provides a mavlink_message_t which 
-*/
-static inline void mavlink_msg_airspeed_autocal_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, float vx, float vy, float vz, float diff_pressure, float EAS2TAS, float ratio, float state_x, float state_y, float state_z, float Pax, float Pby, float Pcz)
+  This varient of _send() can be used to save stack space by re-using
+  memory from the receive buffer.  The caller provides a
+  mavlink_message_t which is the size of a full mavlink message. This
+  is usually the receive buffer for the channel, and allows a reply to an
+  incoming message with minimum stack space usage.
+ */
+static inline void mavlink_msg_airspeed_autocal_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan,  float vx, float vy, float vz, float diff_pressure, float EAS2TAS, float ratio, float state_x, float state_y, float state_z, float Pax, float Pby, float Pcz)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
 	char *buf = (char *)msgbuf;

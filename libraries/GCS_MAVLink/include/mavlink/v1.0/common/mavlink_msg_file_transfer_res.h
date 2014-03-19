@@ -159,10 +159,13 @@ static inline void mavlink_msg_file_transfer_res_send(mavlink_channel_t chan, ui
 
 #if MAVLINK_MSG_ID_FILE_TRANSFER_RES_LEN <= MAVLINK_MAX_PAYLOAD_LEN
 /*
- This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
- The caller provides a mavlink_message_t which 
-*/
-static inline void mavlink_msg_file_transfer_res_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint64_t transfer_uid, uint8_t result)
+  This varient of _send() can be used to save stack space by re-using
+  memory from the receive buffer.  The caller provides a
+  mavlink_message_t which is the size of a full mavlink message. This
+  is usually the receive buffer for the channel, and allows a reply to an
+  incoming message with minimum stack space usage.
+ */
+static inline void mavlink_msg_file_transfer_res_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan,  uint64_t transfer_uid, uint8_t result)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
 	char *buf = (char *)msgbuf;

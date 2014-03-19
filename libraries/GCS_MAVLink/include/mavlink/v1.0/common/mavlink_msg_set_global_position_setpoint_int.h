@@ -192,10 +192,13 @@ static inline void mavlink_msg_set_global_position_setpoint_int_send(mavlink_cha
 
 #if MAVLINK_MSG_ID_SET_GLOBAL_POSITION_SETPOINT_INT_LEN <= MAVLINK_MAX_PAYLOAD_LEN
 /*
- This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
- The caller provides a mavlink_message_t which 
-*/
-static inline void mavlink_msg_set_global_position_setpoint_int_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint8_t coordinate_frame, int32_t latitude, int32_t longitude, int32_t altitude, int16_t yaw)
+  This varient of _send() can be used to save stack space by re-using
+  memory from the receive buffer.  The caller provides a
+  mavlink_message_t which is the size of a full mavlink message. This
+  is usually the receive buffer for the channel, and allows a reply to an
+  incoming message with minimum stack space usage.
+ */
+static inline void mavlink_msg_set_global_position_setpoint_int_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan,  uint8_t coordinate_frame, int32_t latitude, int32_t longitude, int32_t altitude, int16_t yaw)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
 	char *buf = (char *)msgbuf;

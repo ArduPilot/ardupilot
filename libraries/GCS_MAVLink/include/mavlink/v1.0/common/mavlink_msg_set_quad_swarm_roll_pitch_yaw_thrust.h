@@ -200,10 +200,13 @@ static inline void mavlink_msg_set_quad_swarm_roll_pitch_yaw_thrust_send(mavlink
 
 #if MAVLINK_MSG_ID_SET_QUAD_SWARM_ROLL_PITCH_YAW_THRUST_LEN <= MAVLINK_MAX_PAYLOAD_LEN
 /*
- This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
- The caller provides a mavlink_message_t which 
-*/
-static inline void mavlink_msg_set_quad_swarm_roll_pitch_yaw_thrust_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint8_t group, uint8_t mode, const int16_t *roll, const int16_t *pitch, const int16_t *yaw, const uint16_t *thrust)
+  This varient of _send() can be used to save stack space by re-using
+  memory from the receive buffer.  The caller provides a
+  mavlink_message_t which is the size of a full mavlink message. This
+  is usually the receive buffer for the channel, and allows a reply to an
+  incoming message with minimum stack space usage.
+ */
+static inline void mavlink_msg_set_quad_swarm_roll_pitch_yaw_thrust_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan,  uint8_t group, uint8_t mode, const int16_t *roll, const int16_t *pitch, const int16_t *yaw, const uint16_t *thrust)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
 	char *buf = (char *)msgbuf;

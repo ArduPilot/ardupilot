@@ -192,10 +192,13 @@ static inline void mavlink_msg_set_quad_motors_setpoint_send(mavlink_channel_t c
 
 #if MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT_LEN <= MAVLINK_MAX_PAYLOAD_LEN
 /*
- This varient of _send() can be used to save stack space by re-using memory from the receive buffer.
- The caller provides a mavlink_message_t which 
-*/
-static inline void mavlink_msg_set_quad_motors_setpoint_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, uint8_t target_system, uint16_t motor_front_nw, uint16_t motor_right_ne, uint16_t motor_back_se, uint16_t motor_left_sw)
+  This varient of _send() can be used to save stack space by re-using
+  memory from the receive buffer.  The caller provides a
+  mavlink_message_t which is the size of a full mavlink message. This
+  is usually the receive buffer for the channel, and allows a reply to an
+  incoming message with minimum stack space usage.
+ */
+static inline void mavlink_msg_set_quad_motors_setpoint_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan,  uint8_t target_system, uint16_t motor_front_nw, uint16_t motor_right_ne, uint16_t motor_back_se, uint16_t motor_left_sw)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
 	char *buf = (char *)msgbuf;
