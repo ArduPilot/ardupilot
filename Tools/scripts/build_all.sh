@@ -57,6 +57,11 @@ for d in ArduPlane ArduCopter APMrover2; do
 done
 }
 
+pushd Tools/Replay
+make clean
+make linux -j4
+popd
+
 test -n "$PX4_ROOT" && test -d "$PX4_ROOT" && {
     ./Tools/scripts/build_all_px4.sh
 }
