@@ -619,7 +619,7 @@ GCS_MAVLINK::send_text_P(gcs_severity severity, const prog_char_t *str)
 }
 
 
-void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg)
+void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg, DataFlash_Class &dataflash, bool log_radio)
 {
     mavlink_radio_t packet;
     mavlink_msg_radio_decode(msg, &packet);
@@ -645,6 +645,11 @@ void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg)
     } else if (packet.txbuf > 90 && stream_slowdown != 0) {
         // the buffer has enough space, speed up a bit
         stream_slowdown--;
+    }
+
+    //log rssi, noise, etc if logging Performance monitoring data
+    if (log_radio) {
+        dataflash.Log_Write_Radio(packet);
     }
 }
 

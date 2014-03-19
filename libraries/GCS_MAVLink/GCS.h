@@ -311,7 +311,7 @@ private:
     void handle_param_request_list(mavlink_message_t *msg);
     void handle_param_request_read(mavlink_message_t *msg);
     void handle_param_set(mavlink_message_t *msg, DataFlash_Class *DataFlash);
-    void handle_radio_status(mavlink_message_t *msg);
+    void handle_radio_status(mavlink_message_t *msg, DataFlash_Class &dataflash, bool log_radio);
 
     // return true if this channel has hardware flow control
     bool have_flow_control(void);
