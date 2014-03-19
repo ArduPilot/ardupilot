@@ -14,6 +14,11 @@ static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
 static bool
 start_command(const AP_Mission::Mission_Command& cmd)
 {
+    // log when new commands start
+    if (should_log(MASK_LOG_CMD)) {
+        Log_Write_Cmd(cmd);
+    }
+
     // exit immediately if not in AUTO mode
     if (control_mode != AUTO) {
         return false;

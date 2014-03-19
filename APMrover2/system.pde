@@ -233,8 +233,9 @@ static void init_ardupilot()
 
 	startup_ground();
 
-	if (g.log_bitmask & MASK_LOG_CMD)
-			Log_Write_Startup(TYPE_GROUNDSTART_MSG);
+	if (should_log(MASK_LOG_CMD)) {
+        Log_Write_Startup(TYPE_GROUNDSTART_MSG);
+    }
 
     set_mode((enum mode)g.initial_mode.get());
 
@@ -328,8 +329,9 @@ static void set_mode(enum mode mode)
 			break;
 	}
 
-	if (g.log_bitmask & MASK_LOG_MODE)
+	if (should_log(MASK_LOG_MODE)) {
 		Log_Write_Mode();
+    }
 }
 
 /*
