@@ -58,6 +58,9 @@ public:
 	// log data on internal state of the controller. Called at 10Hz
 	virtual void log_data(DataFlash_Class &dataflash, uint8_t msgid) = 0;
 
+	// return current target airspeed
+	virtual float get_target_airspeed(void) const = 0;
+
 	// add new controllers to this enum. Users can then
 	// select which controller to use by setting the
 	// SPDHGT_CONTROLLER parameter
