@@ -1356,7 +1356,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_RADIO:
     case MAVLINK_MSG_ID_RADIO_STATUS:       // MAV ID: 109
     {
-        handle_radio_status(msg);
+        handle_radio_status(msg, DataFlash, (g.log_bitmask & MASK_LOG_PM) != 0);
         break;
     }
 
