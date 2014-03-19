@@ -115,9 +115,9 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Param: ABIAS_PNOISE
     // @DisplayName: Accelerometer bias state process noise (m/s^2)
     // @Description: This noise controls the growth of the vertical acelerometer bias state error estimate. Increasing it makes accelerometer bias estimation faster and noisier.
-    // @Range: 0.0001 - 0.01
+    // @Range: 0.0002 - 0.001
     // @User: advanced
-    AP_GROUPINFO("ABIAS_PNOISE",    11, NavEKF, _accelBiasProcessNoise, 1.0e-4f),
+    AP_GROUPINFO("ABIAS_PNOISE",    11, NavEKF, _accelBiasProcessNoise, 2.0e-4f),
 
     // @Param: MAGE_PNOISE
     // @DisplayName: Earth magnetic field states process noise (gauss/s)
@@ -891,7 +891,7 @@ void NavEKF::CovariancePrediction()
     // this allows for wind gradient effects.
     windVelSigma  = dt * constrain_float(_windVelProcessNoise, 0.01f, 1.0f) * (1.0f + constrain_float(_wndVarHgtRateScale, 0.0f, 1.0f) * fabsf(hgtRate));
     dAngBiasSigma = dt * constrain_float(_gyroBiasProcessNoise, 1e-7f, 1e-5f);
-    dVelBiasSigma = dt * constrain_float(_accelBiasProcessNoise, 1e-4f, 1e-2f);
+    dVelBiasSigma = dt * constrain_float(_accelBiasProcessNoise, 2e-4f, 1e-3f);
     magEarthSigma = dt * constrain_float(_magEarthProcessNoise, 1e-4f, 1e-2f);
     magBodySigma  = dt * constrain_float(_magBodyProcessNoise, 1e-4f, 1e-2f);
     for (uint8_t i= 0; i<=9;  i++) processNoise[i] = 1.0e-9f;
@@ -2690,7 +2690,7 @@ void NavEKF::CovarianceInit(float roll, float pitch, float yaw)
     P[11][11] = P[10][10];
     P[12][12] = P[10][10];
     // Z delta velocity bias
-	P[13][13] = sq(radians(0.5f * dtIMU));
+    P[13][13] = 0.0f;
     // wind velocities
     P[14][14] = sq(8.0f);
     P[15][15]  = P[14][14];
