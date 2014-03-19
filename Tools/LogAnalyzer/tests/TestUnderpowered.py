@@ -55,11 +55,15 @@ class TestUnderpowered(Test):
 					highThrottleSegments.append((start,i))
 				start = None
 
-		# loop through each checking CTUN.CRate, if < 50 FAIL, if < 100 WARN
-		# TODO: we should filter CRate and use its slope rather than value for this test
+		climbRate = "CRate"
+		if "CRate" not in logdata.channels["CTUN"]:
+			climbRate = "CRt"
+
+		# loop through each checking climbRate, if < 50 FAIL, if < 100 WARN
+		# TODO: we should filter climbRate and use its slope rather than value for this test
 		for seg in highThrottleSegments:
 			(startLine,endLine) = (data[seg[0]][0], data[seg[1]][0])
-			avgClimbRate = logdata.channels["CTUN"]["CRate"].getSegment(startLine,endLine).avg()
+			avgClimbRate = logdata.channels["CTUN"][climbRate].getSegment(startLine,endLine).avg()
 			avgThrOut    = logdata.channels["CTUN"]["ThrOut"].getSegment(startLine,endLine).avg()
 			if avgClimbRate < climbThresholdFAIL:
 				self.result.status = TestResult.StatusType.FAIL

@@ -1,6 +1,8 @@
 from LogAnalyzer import Test,TestResult
 import DataflashLog
 
+import collections
+
 
 class TestPitchRollCoupling(Test):
 	'''test for divergence between input and output pitch/roll, i.e. mechanical failure or bad PID tuning'''
@@ -25,7 +27,7 @@ class TestPitchRollCoupling(Test):
 
 		# figure out where each mode begins and ends, so we can treat auto and manual modes differently and ignore acro/tune modes
 		autoModes   = ["RTL","AUTO","LAND","LOITER","GUIDED","CIRCLE","OF_LOITER"]     # use NTUN DRol+DPit
-		manualModes = ["STABILIZE","DRIFT","ALT_HOLD"]                                 # use CTUN RollIn/DesRoll + PitchIn/DesPitch
+		manualModes = ["STABILIZE","DRIFT","ALTHOLD","ALT_HOLD"]                                 # use CTUN RollIn/DesRoll + PitchIn/DesPitch
 		ignoreModes = ["ACRO","SPORT","FLIP","AUTOTUNE"]                               # ignore data from these modes
 		autoSegments   = []  # list of (startLine,endLine) pairs
 		manualSegments = []  # list of (startLine,endLine) pairs
