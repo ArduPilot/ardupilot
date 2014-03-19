@@ -1160,32 +1160,28 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_COMPONENT_ARM_DISARM:
-            if (packet.target_component == MAV_COMP_ID_SYSTEM_CONTROL) {
-                if (packet.param1 == 1.0f) {
-                    // run pre_arm_checks and arm_checks and display failures
-                    if (arming.arm(AP_Arming::MAVLINK)) {
-                        //only log if arming was successful
-                        channel_throttle->enable_out();                        
-                        Log_Arm_Disarm();
-                        result = MAV_RESULT_ACCEPTED;
-                    } else {
-                        result = MAV_RESULT_FAILED;
-                    }
-                } else if (packet.param1 == 0.0f)  {
-                    if (arming.disarm()) {
-                        if (arming.arming_required() == AP_Arming::YES_ZERO_PWM) {
-                            channel_throttle->disable_out();  
-                        }
-                        // reset the mission on disarm
-                        mission.stop();
-                        //only log if disarming was successful
-                        Log_Arm_Disarm();
-                        result = MAV_RESULT_ACCEPTED;
-                    } else {
-                        result = MAV_RESULT_FAILED;
-                    }
+            if (packet.param1 == 1.0f) {
+                // run pre_arm_checks and arm_checks and display failures
+                if (arming.arm(AP_Arming::MAVLINK)) {
+                    //only log if arming was successful
+                    channel_throttle->enable_out();                        
+                    Log_Arm_Disarm();
+                    result = MAV_RESULT_ACCEPTED;
                 } else {
-                    result = MAV_RESULT_UNSUPPORTED;
+                    result = MAV_RESULT_FAILED;
+                }
+            } else if (packet.param1 == 0.0f)  {
+                if (arming.disarm()) {
+                    if (arming.arming_required() == AP_Arming::YES_ZERO_PWM) {
+                        channel_throttle->disable_out();  
+                    }
+                    // reset the mission on disarm
+                    mission.stop();
+                    //only log if disarming was successful
+                    Log_Arm_Disarm();
+                    result = MAV_RESULT_ACCEPTED;
+                } else {
+                    result = MAV_RESULT_FAILED;
                 }
             } else {
                 result = MAV_RESULT_UNSUPPORTED;
