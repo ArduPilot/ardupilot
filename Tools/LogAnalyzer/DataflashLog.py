@@ -297,6 +297,17 @@ class DataflashLog:
 					continue
 				if line == "----------------------------------------":  # present in pre-3.0 logs
 					raise Exception("Log file seems to be in the older format (prior to self-describing logs), which isn't supported")
+				# Some logs are missing the initial dataflash header which says the log index and the type of log, but we can catch the vehicle
+				# type here too in the MSG line
+				if not self.vehicleType and tokens[0] == "MSG":
+					tokens2 = line.split(' ')
+					vehicleTypes = ["ArduPlane", "ArduCopter", "ArduRover"]
+					if tokens2[1] in vehicleTypes and tokens2[2][0].lower() == "v":
+						self.vehicleType = tokens2[1]
+						self.firmwareVersion = tokens2[1]
+						if len(tokens2) == 3:
+							self.firmwareHash    = tokens2[2][1:-1]
+					continue
 				if len(tokens) == 1:
 					tokens2 = line.split(' ')
 					if line == "":
