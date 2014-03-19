@@ -109,7 +109,9 @@ static void calc_airspeed_errors()
     if (target_airspeed_cm > (aparm.airspeed_max * 100))
         target_airspeed_cm = (aparm.airspeed_max * 100);
 
-    airspeed_error_cm = target_airspeed_cm - aspeed_cm;
+    // use the TECS view of the target airspeed for reporting, to take
+    // account of the landing speed
+    airspeed_error_cm = SpdHgt_Controller->get_target_airspeed()*100 - aspeed_cm;
 }
 
 static void calc_gndspeed_undershoot()
