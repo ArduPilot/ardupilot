@@ -26,6 +26,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+#define MS4525DO 0
+#define HSCDRRN001ND2A5 1
 #define I2C_ADDRESS_MS4525DO	0x28
 #define I2C_ADDRESS_HSCDRRN001ND2A5     0x28
 #define SENSOR_TYPE MS4525DO
