@@ -482,25 +482,26 @@ float AC_AttitudeControl::rate_bf_to_motor_roll(float rate_target_cds)
     float p,i,d;            // used to capture pid values for logging
     float current_rate;     // this iteration's rate
     float rate_error;       // simply target_rate - current_rate
-
+    float scaler = _battery.get_pid_scaling();
+    
     // get current rate
     // To-Do: make getting gyro rates more efficient?
     current_rate = (_ins.get_gyro().x * AC_ATTITUDE_CONTROL_DEGX100);
 
     // calculate error and call pid controller
     rate_error = rate_target_cds - current_rate;
-    p = _pid_rate_roll.get_p(rate_error);
+    p = _pid_rate_roll.get_p(rate_error, scaler);
 
     // get i term
     i = _pid_rate_roll.get_integrator();
 
     // update i term as long as we haven't breached the limits or the I term will certainly reduce
     if (!_motors.limit.roll_pitch || ((i>0&&rate_error<0)||(i<0&&rate_error>0))) {
-        i = _pid_rate_roll.get_i(rate_error, _dt);
+        i = _pid_rate_roll.get_i(rate_error, _dt, scaler);
     }
 
     // get d term
-    d = _pid_rate_roll.get_d(rate_error, _dt);
+    d = _pid_rate_roll.get_d(rate_error, _dt, scaler);
 
     // constrain output and return
     return constrain_float((p+i+d), -AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX, AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX);
@@ -514,6 +515,7 @@ float AC_AttitudeControl::rate_bf_to_motor_pitch(float rate_target_cds)
     float p,i,d;            // used to capture pid values for logging
     float current_rate;     // this iteration's rate
     float rate_error;       // simply target_rate - current_rate
+    float scaler = _battery.get_pid_scaling();
 
     // get current rate
     // To-Do: make getting gyro rates more efficient?
@@ -521,18 +523,18 @@ float AC_AttitudeControl::rate_bf_to_motor_pitch(float rate_target_cds)
 
     // calculate error and call pid controller
     rate_error = rate_target_cds - current_rate;
-    p = _pid_rate_pitch.get_p(rate_error);
+    p = _pid_rate_pitch.get_p(rate_error, scaler);
 
     // get i term
     i = _pid_rate_pitch.get_integrator();
 
     // update i term as long as we haven't breached the limits or the I term will certainly reduce
     if (!_motors.limit.roll_pitch || ((i>0&&rate_error<0)||(i<0&&rate_error>0))) {
-        i = _pid_rate_pitch.get_i(rate_error, _dt);
+        i = _pid_rate_pitch.get_i(rate_error, _dt, scaler);
     }
 
     // get d term
-    d = _pid_rate_pitch.get_d(rate_error, _dt);
+    d = _pid_rate_pitch.get_d(rate_error, _dt, scaler);
 
     // constrain output and return
     return constrain_float((p+i+d), -AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX, AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX);
@@ -546,17 +548,18 @@ float AC_AttitudeControl::rate_bf_to_motor_yaw(float rate_target_cds)
     float p,i,d;            // used to capture pid values for logging
     float current_rate;     // this iteration's rate
     float rate_error;       // simply target_rate - current_rate
-
+    float scaler = _battery.get_pid_scaling();
+    
     // get current rate
     // To-Do: make getting gyro rates more efficient?
     current_rate = (_ins.get_gyro().z * AC_ATTITUDE_CONTROL_DEGX100);
 
     // calculate error and call pid controller
     rate_error  = rate_target_cds - current_rate;
-    p = _pid_rate_yaw.get_p(rate_error);
+    p = _pid_rate_yaw.get_p(rate_error, scaler);
 
     // separately calculate p, i, d values for logging
-    p = _pid_rate_yaw.get_p(rate_error);
+    p = _pid_rate_yaw.get_p(rate_error, scaler);
 
     // get i term
     i = _pid_rate_yaw.get_integrator();

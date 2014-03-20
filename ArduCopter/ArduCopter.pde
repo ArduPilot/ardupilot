@@ -668,10 +668,10 @@ static AP_InertialNav inertial_nav(ahrs, barometer, g_gps, gps_glitch);
 ////////////////////////////////////////////////////////////////////////////////
 #if FRAME_CONFIG == HELI_FRAME
 AC_AttitudeControl_Heli attitude_control(ahrs, ins, aparm, motors, g.p_stabilize_roll, g.p_stabilize_pitch, g.p_stabilize_yaw,
-                        g.pid_rate_roll, g.pid_rate_pitch, g.pid_rate_yaw);
+                        g.pid_rate_roll, g.pid_rate_pitch, g.pid_rate_yaw, battery);
 #else
 AC_AttitudeControl attitude_control(ahrs, ins, aparm, motors, g.p_stabilize_roll, g.p_stabilize_pitch, g.p_stabilize_yaw,
-                        g.pid_rate_roll, g.pid_rate_pitch, g.pid_rate_yaw);
+                        g.pid_rate_roll, g.pid_rate_pitch, g.pid_rate_yaw, battery);
 #endif
 AC_PosControl pos_control(ahrs, inertial_nav, motors, attitude_control,
                         g.p_alt_hold, g.p_throttle_rate, g.pid_throttle_accel,

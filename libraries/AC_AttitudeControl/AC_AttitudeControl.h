@@ -15,6 +15,7 @@
 #include <DataFlash.h>
 #include <AC_PID.h>
 #include <AC_P.h>
+#include <AP_BattMonitor.h>
 
 // To-Do: change the name or move to AP_Math?
 #define AC_ATTITUDE_CONTROL_DEGX100 5729.57795f                 // constant to convert from radians to centi-degrees
@@ -44,7 +45,8 @@ public:
                         const AP_Vehicle::MultiCopter &aparm,
                         AP_Motors& motors,
                         AC_P& pi_angle_roll, AC_P& pi_angle_pitch, AC_P& pi_angle_yaw,
-                        AC_PID& pid_rate_roll, AC_PID& pid_rate_pitch, AC_PID& pid_rate_yaw
+                        AC_PID& pid_rate_roll, AC_PID& pid_rate_pitch, AC_PID& pid_rate_yaw,
+                        AP_BattMonitor battery
                         ) :
 		_ahrs(ahrs),
         _ins(ins),
@@ -56,6 +58,7 @@ public:
         _pid_rate_roll(pid_rate_roll),
         _pid_rate_pitch(pid_rate_pitch),
         _pid_rate_yaw(pid_rate_yaw),
+        _battery(battery),
         _dt(AC_ATTITUDE_100HZ_DT),
         _angle_boost(0)
 		{
@@ -218,6 +221,7 @@ protected:
     AC_PID&             _pid_rate_roll;
     AC_PID&             _pid_rate_pitch;
     AC_PID&             _pid_rate_yaw;
+    AP_BattMonitor&     _battery;
 
     // parameters
     AP_Float            _angle_rate_rp_max;     // maximum rate request output from the earth-frame angle controller for roll and pitch axis
