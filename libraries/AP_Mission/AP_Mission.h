@@ -23,7 +23,7 @@
 #include <AP_HAL.h>
 
 // definitions
-#define AP_MISSION_EEPROM_VERSION           0x65AD  // version number stored in first four bytes of eeprom.  increment this by one when eeprom format is changed
+#define AP_MISSION_EEPROM_VERSION           0x65AE  // version number stored in first four bytes of eeprom.  increment this by one when eeprom format is changed
 #define AP_MISSION_EEPROM_COMMAND_SIZE      15      // size in bytes of all mission commands
 
 #define AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS 3       // only allow up to 3 do-jump commands (due to RAM limitations on the APM2)
@@ -137,13 +137,16 @@ public:
 
         // location
         Location location;      // Waypoint location
+
+        // raw bytes, for reading/writing to eeprom
+        uint8_t bytes[12];
     };
 
     // command structure
     struct PACKED Mission_Command {
         uint16_t index;             // this commands position in the command list
         uint8_t id;                 // mavlink command id
-        uint8_t p1;                 // general purpose parameter 1
+        uint16_t p1;                // general purpose parameter 1
         Content content;
     };
 

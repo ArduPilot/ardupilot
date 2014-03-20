@@ -30,6 +30,11 @@ void AP_Mission::init()
     // check_eeprom_version - checks version of missions stored in eeprom matches this library
     // command list will be cleared if they do not match
     check_eeprom_version();
+
+    // prevent an easy programming error, this will be optimised out
+    if (sizeof(union Content) != 12) {
+        hal.scheduler->panic(PSTR("AP_Mission Content must be 12 bytes"));
+    }
 }
 
 /// start - resets current commands to point to the beginning of the mission
@@ -351,21 +356,8 @@ bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) con
         pos_in_storage = _storage_start + 4 + (index * AP_MISSION_EEPROM_COMMAND_SIZE);
 
         cmd.id = hal.storage->read_byte(pos_in_storage);
-        pos_in_storage++;
-
-        cmd.content.location.options = hal.storage->read_byte(pos_in_storage);
-        pos_in_storage++;
-
-        cmd.p1 = hal.storage->read_byte(pos_in_storage);
-        pos_in_storage++;
-
-        cmd.content.location.alt = hal.storage->read_dword(pos_in_storage);
-        pos_in_storage += 4;
-
-        cmd.content.location.lat = hal.storage->read_dword(pos_in_storage);
-        pos_in_storage += 4;
-
-        cmd.content.location.lng = hal.storage->read_dword(pos_in_storage);
+        cmd.p1 = hal.storage->read_word(pos_in_storage+1);
+        hal.storage->read_block(cmd.content.bytes, pos_in_storage+3, 12);
 
         // set command's index to it's position in eeprom
         cmd.index = index;
@@ -389,21 +381,8 @@ bool AP_Mission::write_cmd_to_storage(uint16_t index, Mission_Command& cmd)
     uint16_t pos_in_storage = _storage_start + 4 + (index * AP_MISSION_EEPROM_COMMAND_SIZE);
 
     hal.storage->write_byte(pos_in_storage, cmd.id);
-
-    pos_in_storage++;
-    hal.storage->write_byte(pos_in_storage, cmd.content.location.options);
-
-    pos_in_storage++;
-    hal.storage->write_byte(pos_in_storage, cmd.p1);
-
-    pos_in_storage++;
-    hal.storage->write_dword(pos_in_storage, cmd.content.location.alt);
-
-    pos_in_storage += 4;
-    hal.storage->write_dword(pos_in_storage, cmd.content.location.lat);
-
-    pos_in_storage += 4;
-    hal.storage->write_dword(pos_in_storage, cmd.content.location.lng);
+    hal.storage->write_word(pos_in_storage+1, cmd.p1);
+    hal.storage->write_block(pos_in_storage+3, cmd.content.bytes, 12);
 
     // return success
     return true;
