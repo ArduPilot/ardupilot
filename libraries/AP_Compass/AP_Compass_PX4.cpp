@@ -92,6 +92,9 @@ bool AP_Compass_PX4::read(void)
     }
 
     for (uint8_t i=0; i<_num_instances; i++) {
+        // avoid division by zero if we haven't received any mag reports
+        if (_count[i] == 0) continue;
+
         _sum[i] /= _count[i];
         _sum[i] *= 1000;
 
