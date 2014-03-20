@@ -1339,6 +1339,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_MISSION_SET_CURRENT:
     {
         handle_mission_set_current(mission, msg);
+        if (control_mode == AUTO && mission.state() == AP_Mission::MISSION_STOPPED) {
+            mission.resume();
+        }
         break;
     }
 
