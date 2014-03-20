@@ -26,15 +26,15 @@ const AP_Param::GroupInfo AC_PID::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
-float AC_PID::get_p(float error) const
+float AC_PID::get_p(float error, float scaler) const
 {
-    return (float)error * _kp;
+    return (float)error * _kp * scaler;
 }
 
-float AC_PID::get_i(float error, float dt)
+float AC_PID::get_i(float error, float dt, float scaler)
 {
     if((_ki != 0) && (dt != 0)) {
-        _integrator += ((float)error * _ki) * dt;
+        _integrator += ((float)error * _ki * scaler) * dt;
         if (_integrator < -_imax) {
             _integrator = -_imax;
         } else if (_integrator > _imax) {
@@ -48,11 +48,11 @@ float AC_PID::get_i(float error, float dt)
 // This is an integrator which tends to decay to zero naturally
 // if the error is zero.
 
-float AC_PID::get_leaky_i(float error, float dt, float leak_rate)
+float AC_PID::get_leaky_i(float error, float dt, float leak_rate, float scaler)
 {
 	if((_ki != 0) && (dt != 0)){
 		_integrator -= (float)_integrator * leak_rate;
-		_integrator += ((float)error * _ki) * dt;
+		_integrator += ((float)error * _ki * scaler) * dt;
 		if (_integrator < -_imax) {
 			_integrator = -_imax;
 		} else if (_integrator > _imax) {
@@ -64,7 +64,7 @@ float AC_PID::get_leaky_i(float error, float dt, float leak_rate)
 	return 0;
 }
 
-float AC_PID::get_d(float input, float dt)
+float AC_PID::get_d(float input, float dt, float scaler)
 {
     if ((_kd != 0) && (dt != 0)) {
         float derivative;
@@ -89,20 +89,20 @@ float AC_PID::get_d(float input, float dt)
         _last_derivative    = derivative;
 
         // add in derivative component
-        return _kd * derivative;
+        return _kd * derivative * scaler;
     }
     return 0;
 }
 
-float AC_PID::get_pi(float error, float dt)
+float AC_PID::get_pi(float error, float dt, float scaler)
 {
-    return get_p(error) + get_i(error, dt);
+    return get_p(error, scaler) + get_i(error, dt, scaler);
 }
 
 
-float AC_PID::get_pid(float error, float dt)
+float AC_PID::get_pid(float error, float dt, float scaler)
 {
-    return get_p(error) + get_i(error, dt) + get_d(error, dt);
+    return get_p(error, scaler) + get_i(error, dt, scaler) + get_d(error, dt, scaler);
 }
 
 void AC_PID::reset_I()

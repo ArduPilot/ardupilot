@@ -64,12 +64,12 @@ public:
     ///
     /// @returns		The updated control output.
     ///
-    float       get_pid(float error, float dt);
-    float       get_pi(float error, float dt);
-    float       get_p(float error) const;
-    float       get_i(float error, float dt);
-    float       get_d(float error, float dt);
-    float       get_leaky_i(float error, float dt, float leak_rate);
+    float       get_pid(float error, float dt, float scaler = 1.0f);
+    float       get_pi(float error, float dt, float scaler = 1.0f);
+    float       get_p(float error, float scaler = 1.0f) const;
+    float       get_i(float error, float dt, float scaler = 1.0f);
+    float       get_d(float error, float dt, float scaler = 1.0f);
+    float       get_leaky_i(float error, float dt, float leak_rate, float scaler = 1.0f);
 
     /// Reset the PID integrator
     ///
