@@ -101,7 +101,11 @@ struct PACKED Location {
         Location_Option_Flags flags;                    ///< options bitmask (1<<0 = relative altitude)
         uint8_t options;                                /// allows writing all flags to eeprom as one byte
     };
-    int32_t alt;                                        ///< param 2 - Altitude in centimeters (meters * 100)
+    // by making alt 24 bit we can make p1 in a command 16 bit,
+    // allowing an accurate angle in centi-degrees. This keeps the
+    // storage cost per mission item at 15 bytes, and allows mission
+    // altitudes of up to +/- 83km
+    int32_t alt:24;                                     ///< param 2 - Altitude in centimeters (meters * 100)
     int32_t lat;                                        ///< param 3 - Lattitude * 10**7
     int32_t lng;                                        ///< param 4 - Longitude * 10**7
 };
