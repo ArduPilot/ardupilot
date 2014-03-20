@@ -59,7 +59,7 @@ void AP_Airspeed_I2C::_measure(void)
     if (hal.i2c->writeRegisters(I2C_ADDRESS_MS4525DO, 0, 0, NULL) == 0) {
         _measurement_started_ms = hal.scheduler->millis();
     }
-    #elseif SENSOR_TYPE == HSCDRRN001ND2A5
+    #elif SENSOR_TYPE == HSCDRRN001ND2A5
     if (hal.i2c->writeRegisters(I2C_ADDRESS_HSCDRRN001ND2A5, 0, 0, NULL) == 0) {
         _measurement_started_ms = hal.scheduler->millis();
     }
@@ -107,7 +107,7 @@ void AP_Airspeed_I2C::_collect(void)
 
 	_pressure = diff_press_PSI * PSI_to_Pa;
 	_temperature = ((200.0f * dT_raw) / 2047) - 50;
-    #elseif SENSOR_TYPE == HSCDRRN001ND2A5
+    #elif SENSOR_TYPE == HSCDRRN001ND2A5
     if (hal.i2c->read(I2C_ADDRESS_HSCDRRN001ND2A5, 4, data) != 0) {
         return;
     }
