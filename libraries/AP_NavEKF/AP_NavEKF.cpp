@@ -2498,10 +2498,18 @@ void NavEKF::zeroCols(Matrix22 &covMat, uint8_t first, uint8_t last)
 // store states in a history array along with time stamp
 void NavEKF::StoreStates()
 {
-    if (storeIndex > 49) storeIndex = 0;
-    for (uint8_t i=0; i<=30; i++) storedStates[i][storeIndex] = states[i];
-    statetimeStamp[storeIndex] = hal.scheduler->millis();
-    storeIndex = storeIndex + 1;
+    // Don't need to store states more often than every 10 msec
+    if (hal.scheduler->millis() - lastStateStoreTime_ms >= 10) {
+        lastStateStoreTime_ms = hal.scheduler->millis();
+        if (storeIndex > 49) {
+            storeIndex = 0;
+        }
+        for (uint8_t i=0; i<=30; i++) {
+            storedStates[i][storeIndex] = states[i];
+        }
+        statetimeStamp[storeIndex] = lastStateStoreTime_ms;
+        storeIndex = storeIndex + 1;
+    }
 }
 
 // reset the stored state history and store the current state
@@ -3080,6 +3088,7 @@ void NavEKF::ZeroVariables()
     velTimeout = false;
     posTimeout = false;
     hgtTimeout = false;
+    lastStateStoreTime_ms = 0;
     lastFixTime_ms = 0;
     secondLastFixTime_ms = 0;
     lastMagUpdate = 0;
