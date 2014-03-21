@@ -1544,7 +1544,7 @@ void NavEKF::FuseVelPosNED()
         // because there may be no stored states due to lack of real measurements.
         // in static mode, only position and height fusion is used
         if (staticMode) {
-            for (uint8_t i=7; i<=9; i++) {
+            for (uint8_t i=0; i<=30; i++) {
                 statesAtPosTime[i] = states[i];
                 statesAtHgtTime[i] = states[i];
             }
