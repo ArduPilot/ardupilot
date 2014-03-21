@@ -95,7 +95,7 @@ AP_BattMonitor::read()
         
         _voltage_pin = _volt_pin_analog_source->voltage_average();
         if (_last_time_micros != 0 && dt < 2.0f) {
-            _voltage_pin_lpf += (_voltage_pin - _voltage_pin_lpf) * dt * 0.25;
+            _voltage_pin_lpf += (_voltage_pin - _voltage_pin_lpf) * dt * 0.2;
         }
         
         _voltage_pin_lpf_max = max(_voltage_pin_lpf_max, _voltage_pin_lpf);
