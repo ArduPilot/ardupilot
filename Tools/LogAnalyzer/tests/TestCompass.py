@@ -89,7 +89,7 @@ class TestCompass(Test):
 					self.result.status = TestResult.StatusType.WARN
 				self.result.statusMessage = self.result.statusMessage + "Moderate change in mag_field (%.2f%%)\n" % (percentDiff*100)
 			else:
-				self.result.statusMessage = self.result.statusMessage + "Good mag_field (%.2f%%)\n" % (percentDiff*100)
+				self.result.statusMessage = self.result.statusMessage + "mag_field interference within limits (%.2f%%)\n" % (percentDiff*100)
 			if minMagField < minMagFieldThreshold:
 				self.result.statusMessage = self.result.statusMessage + "Min mag field length (%.2f) < recommended (%.2f)\n" % (minMagField,minMagFieldThreshold)
 			if maxMagField > maxMagFieldThreshold:

@@ -296,7 +296,8 @@
   <result>
     <name>Compass</name>
     <status>PASS</status>
-    <message></message>
+    <message>No MAG data, unable to test mag_field interference
+</message>
   </result>
   <result>
     <name>Dupe Log Data</name>
@@ -330,6 +331,11 @@
     <status>FAIL</status>
     <message>14 slow loop lines found, max 18.56% on line 2983</message>
     <data>(test data will be embeded here at some point)</data>
+  </result>
+  <result>
+    <name>Pitch/Roll</name>
+    <status>PASS</status>
+    <message></message>
   </result>
   <result>
     <name>Underpowered</name>
