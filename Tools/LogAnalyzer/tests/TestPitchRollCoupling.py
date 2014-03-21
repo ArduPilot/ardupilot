@@ -34,6 +34,7 @@ class TestPitchRollCoupling(Test):
 		orderedModes = collections.OrderedDict(sorted(logdata.modeChanges.items(), key=lambda t: t[0]))
 		isAuto = False # we always start in a manual control mode
 		prevLine = 0
+		mode = ""
 		for line,modepair in orderedModes.iteritems():
 			mode = modepair[0].upper()
 			if prevLine == 0:

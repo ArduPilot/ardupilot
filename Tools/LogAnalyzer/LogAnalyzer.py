@@ -187,8 +187,8 @@ class TestSuite:
 				print >>xml, "    <message>" + escape(test.result.statusMessage) + "</message>"
 				print >>xml, "    <data>(test data will be embeded here at some point)</data>"
 			elif test.result.status == TestResult.StatusType.NA:
-				# skip any that aren't relevant for this vehicle/hardware/etc
-				continue
+				print >>xml, "    <name>" + escape(test.name) + "</name>"
+				print >>xml, "    <status>NA</status>"
 			else:
 				print >>xml, "    <name>" + escape(test.name) + "</name>"
 				print >>xml, "    <status>UNKNOWN</status>"
