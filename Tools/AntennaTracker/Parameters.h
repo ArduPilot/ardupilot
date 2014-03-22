@@ -70,6 +70,15 @@ public:
         k_param_gcs2,               // stream rates for uartD
         k_param_serial2_baud,
 
+        k_param_yaw_slew_time,
+        k_param_pitch_slew_time,
+        k_param_min_reverse_time,
+
+        k_param_start_latitude,
+        k_param_start_longitude,
+
+        k_param_startup_delay,
+
         k_param_channel_yaw = 200,
         k_param_channel_pitch,
 
@@ -96,6 +105,15 @@ public:
 
     AP_Int8 compass_enabled;
 
+    AP_Float yaw_slew_time;
+    AP_Float pitch_slew_time;
+    AP_Float min_reverse_time;
+
+    AP_Float start_latitude;
+    AP_Float start_longitude;
+
+    AP_Float startup_delay;
+
     // Waypoints
     //
     AP_Int8 command_total; // 1 if HOME is set
@@ -105,8 +123,8 @@ public:
     PID         pidYaw2Srv;
 
     Parameters() :
-        pidPitch2Srv(1.0f, 0.2f, 0.05f, 4000.0f),
-        pidYaw2Srv(1.0f, 0.2f, 0.05f, 4000.0f)
+        pidPitch2Srv(0.2, 0, 0.05f, 4000.0f),
+        pidYaw2Srv  (0.2, 0, 0.05f, 4000.0f)
         {}
 };
 

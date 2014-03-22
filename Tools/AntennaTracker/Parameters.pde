@@ -59,6 +59,54 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(compass_enabled,        "MAG_ENABLE",     1),
 
+    // @Param: YAW_SLEW_TIME
+    // @DisplayName: Time for yaw to slew through its full range
+    // @Description: This controls how rapidly the tracker will change the servo output for yaw. It is set as the number of seconds to do a full rotation. You can use this parameter to slow the trackers movements, which may help with some types of trackers. A value of zero will allow for unlimited servo movement per update.
+    // @Units: seconds
+    // @Increment: 0.1
+    // @Range: 0 20
+    GSCALAR(yaw_slew_time,          "YAW_SLEW_TIME",    2),
+
+    // @Param: PITCH_SLEW_TIME
+    // @DisplayName: Time for pitch to slew through its full range
+    // @Description: This controls how rapidly the tracker will change the servo output for pitch. It is set as the number of seconds to do a full range of pitch movement. You can use this parameter to slow the trackers movements, which may help with some types of trackers. A value of zero will allow for unlimited servo movement per update.
+    // @Units: seconds
+    // @Increment: 0.1
+    // @Range: 0 20
+    GSCALAR(pitch_slew_time,        "PITCH_SLEW_TIME",  2),
+
+    // @Param: MIN_REVERSE_TIME
+    // @DisplayName: Minimum time to apply a yaw reversal
+    // @Description: When the tracker detects it has reached the limit of servo movement in yaw it will reverse and try moving to the other extreme of yaw. This parameter controls the minimum time it should reverse for. It is used to cope with trackers that have a significant lag in movement to ensure they do move all the way around.
+    // @Units: seconds
+    // @Increment: 1
+    // @Range: 0 20
+    GSCALAR(min_reverse_time,       "MIN_REVERSE_TIME",  1),
+
+    // @Param: START_LATITUDE
+    // @DisplayName: Initial Latitude before GPS lock
+    // @Description: Combined with START_LONGITUDE this parameter allows for an initial position of the tracker to be set. This position will be used until the GPS gets lock. It can also be used to run a stationary tracker with no GPS attached.
+    // @Units: degrees
+    // @Increment: 0.000001
+    // @Range: -90 90
+    GSCALAR(start_latitude,         "START_LATITUDE",   0),
+
+    // @Param: START_LONGITUDE
+    // @DisplayName: Initial Longitude before GPS lock
+    // @Description: Combined with START_LATITUDE this parameter allows for an initial position of the tracker to be set. This position will be used until the GPS gets lock. It can also be used to run a stationary tracker with no GPS attached.
+    // @Units: degrees
+    // @Increment: 0.000001
+    // @Range: -180 180
+    GSCALAR(start_longitude,        "START_LONGITUDE",  0),
+
+    // @Param: STARTUP_DELAY
+    // @DisplayName: Delay before first servo movement from trim
+    // @Description: This parameter can be used to force the servos to their trim value for a time on startup. This can help with some servo types
+    // @Units: seconds
+    // @Increment: 0.1
+    // @Range: 0 10
+    GSCALAR(startup_delay,          "STARTUP_DELAY",   0),
+
     // barometer ground calibration. The GND_ prefix is chosen for
     // compatibility with previous releases of ArduPlane
     // @Group: GND_
