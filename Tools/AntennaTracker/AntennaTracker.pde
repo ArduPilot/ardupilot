@@ -108,6 +108,8 @@ static struct {
 
 static uint32_t start_time_ms;
 
+static bool usb_connected;
+
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
 void gcs_send_text_fmt(const prog_char_t *fmt, ...);
@@ -216,6 +218,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { compass_accumulate,     1,   1500 },
     { barometer_accumulate,   1,    900 },
     { update_notify,          1,    100 },
+    { check_usb_mux,          5,    300 },
     { gcs_retry_deferred,     1,   1000 },
     { one_second_loop,       50,   3900 }
 };
