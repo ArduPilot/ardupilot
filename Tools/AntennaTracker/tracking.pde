@@ -41,6 +41,18 @@ static void update_pitch_servo(float pitch)
     // PITCH2SRV_IMAX   4000.000000
     int32_t new_servo_out = channel_pitch.servo_out - g.pidPitch2Srv.get_pid(err);
     channel_pitch.servo_out = constrain_float(new_servo_out, -9000, 9000);
+
+    // add slew rate limit
+    if (g.pitch_slew_time > 0.02f) {
+        uint16_t max_change = 0.02f * 18000 / g.yaw_slew_time;
+        if (max_change < 1) {
+            max_change = 1;
+        }
+        new_servo_out = constrain_float(new_servo_out,
+                                        channel_yaw.servo_out - max_change, 
+                                        channel_yaw.servo_out + max_change);
+    }
+
     channel_pitch.calc_pwm();
     channel_pitch.output();
 }
@@ -93,14 +105,25 @@ static void update_yaw_servo(float yaw)
       Use our current yawspeed to determine if we are moving in the
       right direction
      */
-    static int8_t slew_dir = 0;
+    static int8_t slew_dir;
+    static uint32_t slew_start_ms;
     int8_t new_slew_dir = slew_dir;
 
-    Vector3f omega = ahrs.get_gyro();
-    if (abs(channel_yaw.servo_out) == 18000 && abs(err) > margin && err * omega.z >= 0) {
+    Vector3f earth_rotation = ahrs.get_gyro() * ahrs.get_dcm_matrix();
+    bool making_progress;
+    if (slew_dir != 0) {
+        making_progress = (-slew_dir * earth_rotation.z >= 0);
+    } else {
+        making_progress = (err * earth_rotation.z >= 0);
+    }
+    if (abs(channel_yaw.servo_out) == 18000 && 
+        abs(err) > margin && 
+        making_progress && 
+        hal.scheduler->millis() - slew_start_ms > g.min_reverse_time*1000) {
         // we are at the limit of the servo and are not moving in the
         // right direction, so slew the other way
         new_slew_dir = -channel_yaw.servo_out / 18000;
+        slew_start_ms = hal.scheduler->millis();
     }
 
     /*
@@ -111,10 +134,13 @@ static void update_yaw_servo(float yaw)
         new_slew_dir = 0;
     }
 
-#if 0    
-    ::printf("err=%d slew_dir=%d new_slew_dir=%d servo=%d\n", 
-             err, slew_dir, new_slew_dir, channel_yaw.servo_out);
-#endif
+    if (new_slew_dir != slew_dir) {
+        gcs_send_text_fmt(PSTR("SLEW: %d/%d err=%ld servo=%ld ez=%.3f"), 
+                          (int)slew_dir, (int)new_slew_dir, 
+                          (long)err, 
+                          (long)channel_yaw.servo_out,
+                          degrees(ahrs.get_gyro().z));
+    }
 
     slew_dir = new_slew_dir;
 
@@ -128,25 +154,47 @@ static void update_yaw_servo(float yaw)
         new_servo_out = constrain_float(channel_yaw.servo_out - servo_change, -18000, 18000);
     }
 
-    if (new_servo_out - channel_yaw.servo_out > 100) {
-        new_servo_out = channel_yaw.servo_out + 100;
-    } else if (new_servo_out - channel_yaw.servo_out < -100) {
-        new_servo_out = channel_yaw.servo_out - 100;
+    // add slew rate limit
+    if (g.yaw_slew_time > 0.02f) {
+        uint16_t max_change = 0.02f * 36000.0f / g.yaw_slew_time;
+        if (max_change < 1) {
+            max_change = 1;
+        }
+        new_servo_out = constrain_float(new_servo_out,
+                                        channel_yaw.servo_out - max_change, 
+                                        channel_yaw.servo_out + max_change);
     }
+
     channel_yaw.servo_out = new_servo_out;
 
-    {
-        // Normal tracking
-        // You will need to tune the yaw PID to suit your antenna and servos
-        // For my servos, suitable PID settings are:
-        // param set YAW2SRV_P 0.1
-        // param set YAW2SRV_I 0.05
-        // param set YAW2SRV_D 0
-        // param set YAW2SRV_IMAX 4000
-        
-    }
     channel_yaw.calc_pwm();
     channel_yaw.output();
+}
+
+
+/*
+  control servos for AUTO mode
+ */
+static void update_auto(void)
+{    
+    if (g.startup_delay > 0 && 
+        hal.scheduler->millis() - start_time_ms < g.startup_delay*1000) {
+        return;
+    }
+    update_pitch_servo(nav_status.pitch);
+    update_yaw_servo(nav_status.bearing);
+}
+
+
+/*
+  control servos for MANUAL mode
+ */
+static void update_manual(void)
+{
+    channel_yaw.radio_out = channel_yaw.radio_in;
+    channel_pitch.radio_out = channel_pitch.radio_in;
+    channel_yaw.output();
+    channel_pitch.output();
 }
 
 
@@ -169,23 +217,29 @@ static void update_tracking(void)
         current_loc.options = 0; // Absolute altitude
     }
 
-    if (control_mode == AUTO)
-    {
-        // calculate the bearing to the vehicle
-        float bearing  = get_bearing_cd(current_loc, vehicle.location) * 0.01f;
-        float distance = get_distance(current_loc, vehicle.location);
-        float pitch    = degrees(atan2f(nav_status.altitude_difference, distance));
+    // calculate the bearing to the vehicle
+    float bearing  = get_bearing_cd(current_loc, vehicle.location) * 0.01f;
+    float distance = get_distance(current_loc, vehicle.location);
+    float pitch    = degrees(atan2f(nav_status.altitude_difference, distance));
 
-        // update the servos
-        update_pitch_servo(pitch);
-        update_yaw_servo(bearing);
-        
-        // update nav_status for NAV_CONTROLLER_OUTPUT
-        nav_status.bearing  = bearing;
-        nav_status.pitch    = pitch;
-        nav_status.distance = distance;
+    // update nav_status for NAV_CONTROLLER_OUTPUT
+    nav_status.bearing  = bearing;
+    nav_status.pitch    = pitch;
+    nav_status.distance = distance;
+
+    switch (control_mode) {
+    case AUTO:
+        update_auto();
+        break;
+
+    case MANUAL:
+        update_manual();
+        break;
+
+    case STOP:
+    case INITIALISING:
+        break;
     }
-
 }
 
 /**

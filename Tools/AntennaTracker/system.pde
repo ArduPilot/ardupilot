@@ -73,14 +73,24 @@ static void init_tracker()
     channel_yaw.calc_pwm();
     channel_pitch.calc_pwm();
 
-    current_loc = get_home_eeprom(); // GPS may update this later
+    // use given start positions - useful for indoor testing, and
+    // while waiting for GPS lock
+    current_loc.lat = g.start_latitude * 1.0e7f;
+    current_loc.lng = g.start_longitude * 1.0e7f;
 
-    arm_servos();
+    // see if EEPROM has a default location as well
+    get_home_eeprom(current_loc);
 
     gcs_send_text_P(SEVERITY_LOW,PSTR("\nReady to track."));
     hal.scheduler->delay(1000); // Why????
 
     set_mode(AUTO); // tracking
+
+    if (g.startup_delay > 0) {
+        // arm servos with trim value to allow them to start up (required
+        // for some servos)
+        prepare_servos();
+    }
 }
 
 // Level the tracker by calibrating the INS
@@ -127,31 +137,30 @@ static uint32_t map_baudrate(int8_t rate, uint32_t default_baud)
 /*
   fetch HOME from EEPROM
 */
-static struct Location get_home_eeprom()
+static bool get_home_eeprom(struct Location &loc)
 {
-    struct Location temp;
     uint16_t mem;
 
     // Find out proper location in memory by using the start_byte position + the index
     // --------------------------------------------------------------------------------
     if (g.command_total.get() == 0) {
-        memset(&temp, 0, sizeof(temp));
-    }else{
-        // read WP position
-        mem = WP_START_BYTE;
-        temp.options = hal.storage->read_byte(mem);
-        mem++;
-
-        temp.alt = hal.storage->read_dword(mem);
-        mem += 4;
-
-        temp.lat = hal.storage->read_dword(mem);
-        mem += 4;
-
-        temp.lng = hal.storage->read_dword(mem);
+        return false;
     }
 
-    return temp;
+    // read WP position
+    mem = WP_START_BYTE;
+    loc.options = hal.storage->read_byte(mem);
+    mem++;
+    
+    loc.alt = hal.storage->read_dword(mem);
+    mem += 4;
+    
+    loc.lat = hal.storage->read_dword(mem);
+    mem += 4;
+    
+    loc.lng = hal.storage->read_dword(mem);
+
+    return true;
 }
 
 static void set_home_eeprom(struct Location temp)
@@ -182,7 +191,7 @@ static void set_home(struct Location temp)
 }
 
 static void arm_servos()
-{
+{    
     channel_yaw.enable_out();
     channel_pitch.enable_out();
 }
@@ -193,6 +202,18 @@ static void disarm_servos()
     channel_pitch.disable_out();
 }
 
+/*
+  setup servos to trim value after initialising
+ */
+static void prepare_servos()
+{
+    start_time_ms = hal.scheduler->millis();
+    channel_yaw.radio_out = channel_yaw.radio_trim;
+    channel_pitch.radio_out = channel_pitch.radio_trim;
+    channel_yaw.output();
+    channel_pitch.output();
+}
+
 static void set_mode(enum ControlMode mode)
 {
     if(control_mode == mode) {
@@ -200,5 +221,17 @@ static void set_mode(enum ControlMode mode)
         return;
     }
     control_mode = mode;
+
+	switch (control_mode) {
+    case AUTO:
+    case MANUAL:
+        arm_servos();
+        break;
+
+    case STOP:
+    case INITIALISING:
+        disarm_servos();
+        break;
+    }
 }
 

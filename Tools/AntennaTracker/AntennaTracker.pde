@@ -106,6 +106,7 @@ static struct {
     float altitude_difference;
 } nav_status;
 
+static uint32_t start_time_ms;
 
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
