@@ -41,6 +41,9 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
         base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
         break;
 
+    case STOP:
+        break;
+
     case AUTO:
         base_mode |= MAV_MODE_FLAG_GUIDED_ENABLED |
             MAV_MODE_FLAG_STABILIZE_ENABLED;

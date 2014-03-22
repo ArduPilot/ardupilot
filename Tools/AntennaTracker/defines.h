@@ -55,6 +55,7 @@
 
 enum ControlMode {
     MANUAL=0,
+    STOP=1,
     AUTO=10,
     INITIALISING=16
 };
