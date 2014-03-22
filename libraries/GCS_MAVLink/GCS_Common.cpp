@@ -670,7 +670,7 @@ void GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
 
     // convert mavlink packet to mission command
     if (!AP_Mission::mavlink_to_mission_cmd(packet, cmd)) {
-        result = MAV_MISSION_ERROR;
+        result = MAV_MISSION_INVALID;
         goto mission_ack;
     }
 
