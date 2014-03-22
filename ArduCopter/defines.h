@@ -183,7 +183,8 @@ enum AutoMode {
     Auto_WP,
     Auto_Land,
     Auto_RTL,
-    Auto_Circle
+    Auto_Circle,
+    Auto_Spline
 };
 
 // RTL states

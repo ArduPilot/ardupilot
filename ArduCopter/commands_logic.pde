@@ -15,6 +15,7 @@ static void do_change_speed(const AP_Mission::Mission_Command& cmd);
 static void do_set_home(const AP_Mission::Mission_Command& cmd);
 static void do_roi(const AP_Mission::Mission_Command& cmd);
 static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
+static void auto_spline_start(const Vector3f& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Vector3f& next_spline_destination);
 
 // start_command - this function will be called when the ap_mission lib wishes to start a new command
 static bool start_command(const AP_Mission::Mission_Command& cmd)
@@ -264,21 +265,58 @@ static void do_takeoff(const AP_Mission::Mission_Command& cmd)
 static void do_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
     Vector3f local_pos = pv_location_to_vector(cmd.content.location);
-    // Set wp navigation target
-    auto_wp_start(local_pos);
+
+    // this will be used to remember the time in millis after we reach or pass the WP.
+    loiter_time = 0;
+    // this is the delay, stored in seconds
+    loiter_time_max = abs(cmd.p1);
+
+    // decide if this is a straight or spline segment
+    if (!cmd.content.location.flags.spline) {
+        // Set wp navigation target
+        auto_wp_start(local_pos);
+    	// if no delay set the waypoint as "fast"
+    	if (loiter_time_max == 0 ) {
+    		wp_nav.set_fast_waypoint(true);
+    	}
+    }else{
+        // determine segment start and end type
+    	bool stopped_at_start = true;
+    	AC_WPNav::spline_segment_end_type seg_end_type = AC_WPNav::SEGMENT_END_STOP;
+    	AP_Mission::Mission_Command temp_cmd;
+    	Vector3f next_spline_destination;    // end of next segment if it is a spline segment
+
+        // if previous command was a wp_nav command with no delay set stopped_at_start to false
+        // To-Do: move processing of delay into wp-nav controller to allow it to determine the stopped_at_start value itself?
+        uint16_t prev_cmd_idx = mission.get_prev_nav_cmd_index();
+        if (prev_cmd_idx != AP_MISSION_CMD_INDEX_NONE) {
+            if (mission.read_cmd_from_storage(prev_cmd_idx, temp_cmd)) {
+                if (temp_cmd.id == MAV_CMD_NAV_WAYPOINT && temp_cmd.p1 == 0) {
+                    stopped_at_start = false;
+                }
+            }
+        }
+
+        // if there is no delay at the end of this segment get next nav command
+        if (cmd.p1 == 0 && mission.get_next_nav_cmd(cmd.index, temp_cmd)) {
+            // if the next nav command is a waypoint set end type to spline or straight
+            if (temp_cmd.id == MAV_CMD_NAV_WAYPOINT) {
+                if (temp_cmd.content.location.flags.spline) {
+                    seg_end_type = AC_WPNav::SEGMENT_END_SPLINE;
+                    next_spline_destination = pv_location_to_vector(temp_cmd.content.location);
+                }else{
+                    seg_end_type = AC_WPNav::SEGMENT_END_STRAIGHT;
+                }
+            }
+        }
+
+        // set spline navigation target
+    	auto_spline_start(local_pos, stopped_at_start, seg_end_type, next_spline_destination);
+    }
 
     // initialise original_wp_bearing which is used to check if we have missed the waypoint
     wp_bearing = wp_nav.get_wp_bearing_to_destination();
     original_wp_bearing = wp_bearing;
-
-    // this will be used to remember the time in millis after we reach or pass the WP.
-    loiter_time     = 0;
-    // this is the delay, stored in seconds
-    loiter_time_max = cmd.p1;
-    // if no delay set the waypoint as "fast"
-    if (loiter_time_max == 0 ) {
-        wp_nav.set_fast_waypoint(true);
-    }
 }
 
 // do_land - initiate landing procedure
@@ -518,6 +556,7 @@ static void do_change_alt(const AP_Mission::Mission_Command& cmd)
             // To-Do: adjust waypoint target altitude to new provided altitude
             break;
         case Auto_WP:
+        case Auto_Spline:
             // To-Do; reset origin to current location + stopping distance at new altitude
             break;
         case Auto_Land:
