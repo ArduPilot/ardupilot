@@ -245,6 +245,7 @@ public:
     const Mission_Command& get_current_nav_cmd() const { return _nav_cmd; }
 
     /// get_prev_nav_cmd_index - returns the previous "navigation" commands index (i.e. position in the mission command list)
+    ///     if there was no previous nav command it returns AP_MISSION_CMD_INDEX_NONE
     ///     we do not return the entire command to save on RAM
     uint16_t get_prev_nav_cmd_index() { return _prev_nav_cmd_index; }
 
