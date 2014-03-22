@@ -41,6 +41,7 @@ private:
         uint8_t failsafe_battery   : 1;    // 1 if battery failsafe
         uint8_t gps_glitching      : 1;    // 1 if gps position is not good
         uint8_t failsafe_gps       : 1;    // 1 if gps failsafe
+        uint8_t arming_failed      : 1;    // 0 = failing checks, 1 = passed
     } flags;
 };
 
