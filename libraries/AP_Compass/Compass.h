@@ -258,6 +258,8 @@ protected:
 
     AP_Int8 _orientation[COMPASS_MAX_INSTANCES];
     AP_Vector3f _offset[COMPASS_MAX_INSTANCES];
+    AP_Vector3f _diagonals[COMPASS_MAX_INSTANCES];
+    AP_Vector3f _offdiagonals[COMPASS_MAX_INSTANCES];
     AP_Float _declination;
     AP_Int8 _use_for_yaw[COMPASS_MAX_INSTANCES];///<enable use for yaw calculation
     AP_Int8 _auto_declination;                  ///<enable automatic declination code
