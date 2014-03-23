@@ -106,7 +106,6 @@ static void calibrate_ins()
 {
     gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Beginning INS calibration; do not move tracker"));
     ahrs.init();
-    ahrs.set_fly_forward(true);
     ins.init(AP_InertialSensor::COLD_START, ins_sample_rate);
     ins.init_accel();
     ahrs.set_trim(Vector3f(0, 0, 0));
