@@ -95,10 +95,6 @@ static void rtl_return_start()
     rtl_state = ReturnHome;
     rtl_state_complete = false;
 
-    // initialise original_wp_bearing which is used to point the nose home
-    wp_bearing = wp_nav.get_wp_bearing_to_destination();
-    original_wp_bearing = wp_bearing;
-
     // set target to above home
     Vector3f destination = Vector3f(0,0,get_RTL_alt());
     wp_nav.set_wp_destination(destination);

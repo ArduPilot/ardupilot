@@ -313,10 +313,6 @@ static void do_nav_wp(const AP_Mission::Mission_Command& cmd)
         // set spline navigation target
     	auto_spline_start(local_pos, stopped_at_start, seg_end_type, next_spline_destination);
     }
-
-    // initialise original_wp_bearing which is used to check if we have missed the waypoint
-    wp_bearing = wp_nav.get_wp_bearing_to_destination();
-    original_wp_bearing = wp_bearing;
 }
 
 // do_land - initiate landing procedure
@@ -333,10 +329,6 @@ static void do_land(const AP_Mission::Mission_Command& cmd)
         Vector3f pos = pv_location_to_vector(cmd.content.location);
         pos.z = min(current_loc.alt, RTL_ALT_MAX);
         auto_wp_start(pos);
-
-        // initialise original_wp_bearing which is used to check if we have missed the waypoint
-        wp_bearing = wp_nav.get_wp_bearing_to_destination();
-        original_wp_bearing = wp_bearing;
     }else{
         // set landing state
         land_state = LAND_STATE_DESCENDING;

@@ -38,15 +38,6 @@ static void guided_set_destination(const Vector3f& destination)
         if (!guided_pilot_yaw_override_yaw) {
             // get default yaw mode
             set_auto_yaw_mode(get_default_auto_yaw_mode(false));
-            // point nose at next waypoint if it is more than 10m away
-            if (auto_yaw_mode == AUTO_YAW_LOOK_AT_NEXT_WP) {
-                // get distance to new location
-                wp_distance = wp_nav.get_wp_distance_to_destination();
-                // set original_wp_bearing to point at next waypoint
-                if (wp_distance >= GUIDED_LOOK_AT_TARGET_MIN_DISTANCE_CM) {
-                    original_wp_bearing = wp_bearing;
-                }
-            }
         }
     }
 }
