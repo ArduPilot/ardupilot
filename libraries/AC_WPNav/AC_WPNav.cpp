@@ -87,7 +87,7 @@ AC_WPNav::AC_WPNav(const AP_InertialNav* inav, const AP_AHRS* ahrs, AC_PosContro
     _spline_time(0.0),
     _spline_vel_scaler(0.0),
     _spline_slow_down_dist(0.0),
-    _spline_yaw(0.0)
+    _yaw(0.0)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -290,6 +290,9 @@ void AC_WPNav::set_wp_origin_and_destination(const Vector3f& origin, const Vecto
 
     // calculate leash lengths
     calculate_wp_leash_length();
+
+    // initialise yaw heading
+    _yaw = get_bearing_cd(_origin, _destination);
 
     // initialise intermediate point to the origin
     _pos_control.set_pos_target(origin);
@@ -595,7 +598,7 @@ void AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
     }
 
     // initialise yaw heading to current heading
-    _spline_yaw = _ahrs->yaw_sensor;
+    _yaw = _ahrs->yaw_sensor;
 
     // To-Do: handle case where this is a straight segment?
     // if this is a straight segment, origin velocity is distance vector from origin to destination
@@ -701,7 +704,7 @@ void AC_WPNav::advance_spline_target_along_track(float dt)
         _pos_control.set_pos_target(target_pos);
 
         // update the yaw
-        _spline_yaw = RadiansToCentiDegrees(atan2(target_vel.y,target_vel.x));
+        _yaw = RadiansToCentiDegrees(atan2(target_vel.y,target_vel.x));
 
         // advance spline time to next step
         _spline_time += spline_time_scale*0.1f;

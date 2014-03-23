@@ -146,8 +146,8 @@ public:
     // straight-fast - next segment is straight, vehicle's destination velocity should be directly along track from this segment's destination to next segment's destination
     // spline-fast - next segment is spline, vehicle's destination velocity should be parallel to position difference vector from previous segment's origin to this segment's destination
 
-    // get_spline_yaw - returns target yaw in centi-degrees
-    float get_spline_yaw() { return _spline_yaw; }
+    // get_yaw - returns target yaw in centi-degrees (used for wp and spline navigation)
+    float get_yaw() { return _yaw; }
 
     /// set_spline_destination waypoint using position vector (distance from home in cm)
     ///     stopped_at_start should be set to true if vehicle is stopped at the origin
@@ -261,6 +261,6 @@ protected:
     float       _spline_vel_scaler;		//
     float       _spline_slow_down_dist; // vehicle should begin to slow down once it is within this distance from the destination
                                         // To-Do: this should be used for straight segments as well
-    float       _spline_yaw;            // heading according to yaw
+    float       _yaw;                   // heading according to yaw
 };
 #endif	// AC_WPNAV_H
