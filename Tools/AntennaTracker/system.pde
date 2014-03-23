@@ -190,8 +190,6 @@ static void set_home_eeprom(struct Location temp)
 
 static void set_home(struct Location temp)
 {
-    if (g.compass_enabled)
-        compass.set_initial_location(temp.lat, temp.lng);
     set_home_eeprom(temp);
     current_loc = temp;
 }
