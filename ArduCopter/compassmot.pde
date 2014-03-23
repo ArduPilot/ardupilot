@@ -38,7 +38,7 @@ static uint8_t mavlink_compassmot(mavlink_channel_t chan)
 
     // check compass health
     compass.read();
-    if (!compass.healthy()) {
+    if (!compass.healthy(0)) {
         gcs[chan-MAVLINK_COMM_0].send_text_P(SEVERITY_HIGH, PSTR("check compass"));
         ap.compass_mot = false;
         return 1;
@@ -128,7 +128,7 @@ static uint8_t mavlink_compassmot(mavlink_channel_t chan)
     last_send_time = millis();
 
     // main run while there is no user input and the compass is healthy
-    while (command_ack_start == command_ack_counter && compass.healthy() && motors.armed()) {
+    while (command_ack_start == command_ack_counter && compass.healthy(0) && motors.armed()) {
         // 50hz loop
         if (millis() - last_run_time < 20) {
             // grab some compass values

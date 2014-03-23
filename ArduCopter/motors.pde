@@ -248,7 +248,7 @@ static void pre_arm_checks(bool display_failure)
     // check Compass
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_COMPASS)) {
         // check the compass is healthy
-        if(!compass.healthy()) {
+        if(!compass.healthy(0)) {
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not healthy"));
             }
