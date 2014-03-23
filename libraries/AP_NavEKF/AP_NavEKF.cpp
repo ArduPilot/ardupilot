@@ -641,9 +641,6 @@ void NavEKF::SelectVelPosFusion()
             fusePosData = false;
         }
 
-        // check for and read new height data
-        readHgtData();
-
         // command fusion of height data
         if (newDataHgt)
         {
@@ -660,7 +657,7 @@ void NavEKF::SelectVelPosFusion()
     } else {
         // in static mode we only fuse position and height to improve long term numerical stability
         // and only when the rate of change of velocity is less than 0.5g. This prevents attitude errors
-        // due to launch acceleration
+        // due to launch acceleration. position is assumed to be zero.
         fuseVelData = false;
         if (accNavMag < 4.9f) {
             fusePosData = true;
@@ -670,6 +667,9 @@ void NavEKF::SelectVelPosFusion()
             fuseHgtData = false;
         }
     }
+
+    // check for and read new height data
+    readHgtData();
 
     // perform fusion as commanded, and in accordance with specified time intervals
     if (fuseVelData || fusePosData || fuseHgtData) {
@@ -1555,14 +1555,14 @@ void NavEKF::FuseVelPosNED()
         if (useAirspeed()) gpsRetryTime = _gpsRetryTimeUseTAS;
         else gpsRetryTime = _gpsRetryTimeNoTAS;
 
-        // form the observation vector and zero observations if in static mode
+        // form the observation vector and zero velocity and horizontal position observations if in static mode
         if (~staticMode) {
             for (uint8_t i=0; i<=2; i++) observation[i] = velNED[i];
             for (uint8_t i=3; i<=4; i++) observation[i] = posNE[i-3];
-        observation[5] = -hgtMea;
         } else {
-            for (uint8_t i=0; i<=5; i++) observation[i] = 0.0f;
+            for (uint8_t i=0; i<=4; i++) observation[i] = 0.0f;
         }
+        observation[5] = -hgtMea;
 
         // calculate additional error in GPS velocity caused by manoeuvring
         NEvelErr = _gpsNEVelVarAccScale * accNavMag;
