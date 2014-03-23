@@ -179,7 +179,7 @@ static void auto_spline_start(const Vector3f& destination, bool stopped_at_start
     auto_mode = Auto_Spline;
 
     // initialise wpnav
-    wp_nav.set_spline_destination(destination,stopped_at_start, seg_end_type, next_spline_destination);
+    wp_nav.set_spline_destination(destination, stopped_at_start, seg_end_type, next_spline_destination);
 
     // initialise yaw
     // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
