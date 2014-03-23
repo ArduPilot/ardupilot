@@ -482,7 +482,10 @@ float AC_AttitudeControl::rate_bf_to_motor_roll(float rate_target_cds)
     float p,i,d;            // used to capture pid values for logging
     float current_rate;     // this iteration's rate
     float rate_error;       // simply target_rate - current_rate
-    float scaler = _battery.get_pid_scaling();
+    float scaler = 1.0f;
+    if(_battery) {
+        scaler = _battery->get_pid_scaling();
+    }
     
     // get current rate
     // To-Do: make getting gyro rates more efficient?
@@ -515,7 +518,10 @@ float AC_AttitudeControl::rate_bf_to_motor_pitch(float rate_target_cds)
     float p,i,d;            // used to capture pid values for logging
     float current_rate;     // this iteration's rate
     float rate_error;       // simply target_rate - current_rate
-    float scaler = _battery.get_pid_scaling();
+    float scaler = 1.0f;
+    if(_battery) {
+        scaler = _battery->get_pid_scaling();
+    }
 
     // get current rate
     // To-Do: make getting gyro rates more efficient?
@@ -548,7 +554,10 @@ float AC_AttitudeControl::rate_bf_to_motor_yaw(float rate_target_cds)
     float p,i,d;            // used to capture pid values for logging
     float current_rate;     // this iteration's rate
     float rate_error;       // simply target_rate - current_rate
-    float scaler = _battery.get_pid_scaling();
+    float scaler = 1.0f;
+    if(_battery) {
+        scaler = _battery->get_pid_scaling();
+    }
     
     // get current rate
     // To-Do: make getting gyro rates more efficient?

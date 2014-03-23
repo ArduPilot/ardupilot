@@ -45,8 +45,7 @@ public:
                         const AP_Vehicle::MultiCopter &aparm,
                         AP_Motors& motors,
                         AC_P& pi_angle_roll, AC_P& pi_angle_pitch, AC_P& pi_angle_yaw,
-                        AC_PID& pid_rate_roll, AC_PID& pid_rate_pitch, AC_PID& pid_rate_yaw,
-                        AP_BattMonitor battery
+                        AC_PID& pid_rate_roll, AC_PID& pid_rate_pitch, AC_PID& pid_rate_yaw
                         ) :
 		_ahrs(ahrs),
         _ins(ins),
@@ -58,9 +57,9 @@ public:
         _pid_rate_roll(pid_rate_roll),
         _pid_rate_pitch(pid_rate_pitch),
         _pid_rate_yaw(pid_rate_yaw),
-        _battery(battery),
         _dt(AC_ATTITUDE_100HZ_DT),
-        _angle_boost(0)
+        _angle_boost(0),
+        _battery(0)
 		{
 			AP_Param::setup_object_defaults(this, var_info);
 
@@ -74,6 +73,7 @@ public:
 
     // set_dt - sets time delta in seconds for all controllers (i.e. 100hz = 0.01, 400hz = 0.0025)
     void set_dt(float delta_sec) { _dt = delta_sec; }
+    void set_battMonitor(AP_BattMonitor* battery) { _battery = battery; }
 
     // init_targets - resets target angles to current angles
     void init_targets();
@@ -221,7 +221,7 @@ protected:
     AC_PID&             _pid_rate_roll;
     AC_PID&             _pid_rate_pitch;
     AC_PID&             _pid_rate_yaw;
-    AP_BattMonitor&     _battery;
+    AP_BattMonitor*     _battery;
 
     // parameters
     AP_Float            _angle_rate_rp_max;     // maximum rate request output from the earth-frame angle controller for roll and pitch axis
