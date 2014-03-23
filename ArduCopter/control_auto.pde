@@ -225,7 +225,7 @@ static void auto_spline_run()
         attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
     }else{
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control.angle_ef_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), wp_nav.get_spline_yaw(),true);
+        attitude_control.angle_ef_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(), true);
     }
 }
 
@@ -364,7 +364,7 @@ void set_auto_yaw_mode(uint8_t yaw_mode)
     switch (auto_yaw_mode) {
 
     case AUTO_YAW_LOOK_AT_NEXT_WP:
-        // original_wp_bearing will be set by do_nav_wp or other nav command initialisation functions so no init required
+        // wpnav will initialise heading when wpnav's set_destination method is called
         break;
 
     case AUTO_YAW_ROI:
@@ -418,7 +418,7 @@ float get_auto_heading(void)
     default:
         // point towards next waypoint.
         // we don't use wp_bearing because we don't want the copter to turn too much during flight
-        return original_wp_bearing;
+        return wp_nav.get_yaw();
         break;
     }
 }
