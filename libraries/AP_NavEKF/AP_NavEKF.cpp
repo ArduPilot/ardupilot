@@ -209,7 +209,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Range: 1 - 100
     // @Increment: 1
     // @User: advanced
-    AP_GROUPINFO("MAG_GATE",    20, NavEKF, _magInnovGate, 5),
+    AP_GROUPINFO("MAG_GATE",    20, NavEKF, _magInnovGate, 3),
 
     // @Param: EAS_GATE
     // @DisplayName: Airspeed measurement gate size
