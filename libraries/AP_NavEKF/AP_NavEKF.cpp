@@ -362,46 +362,9 @@ void NavEKF::InitialiseFilterDynamic(void)
     // get initial time deltat between IMU measurements (sec)
     dtIMU = _ahrs->get_ins().get_delta_time();
 
-    // declare local variables required to calculate initial orientation and magnetic field
-    float yaw;
-    Matrix3f Tbn;
-    Vector3f initMagNED;
+    // calculate initial orientation and earth magnetic field states
     Quaternion initQuat;
-
-    // calculate initial yaw angle using declination and magnetic field if available
-    // otherwise set yaw to zero
-    if (use_compass()) {
-        // calculate rotation matrix from body to NED frame
-        Tbn.from_euler(_ahrs->roll, _ahrs->pitch, 0.0f);
-
-        // read the magnetometer data
-        readMagData();
-
-        // rotate the magnetic field into NED axes
-        initMagNED = Tbn*magData;
-
-        // calculate heading of mag field rel to body heading
-        float magHeading = atan2f(initMagNED.y, initMagNED.x);
-
-        // get the magnetic declination
-        float magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
-
-        // calculate yaw angle rel to true north
-        yaw = magDecAng - magHeading;
-        yawAligned = true;
-
-        // calculate initial filter quaternion states
-        initQuat.from_euler(_ahrs->roll, _ahrs->pitch, yaw);
-
-        // calculate initial Tbn matrix and rotate Mag measurements into NED
-        // to set initial NED magnetic field states
-        initQuat.rotation_matrix(Tbn);
-        initMagNED = Tbn * magData;
-    } else {
-        // calculate initial filter quaternion states
-        initQuat.from_euler(_ahrs->roll, _ahrs->pitch, 0.0f);
-        yawAligned = false;
-    }
+    initQuat = calcQuatAndFieldStates(_ahrs->roll, _ahrs->pitch);
 
     // write to state vector
     state.quat = initQuat;
@@ -412,14 +375,13 @@ void NavEKF::InitialiseFilterDynamic(void)
     ResetVelocity();
     ResetPosition();
     ResetHeight();
-    state.earth_magfield = initMagNED;
     state.body_magfield  = magBias;
 
     // set to true now that states have be initialised
     statesInitialised = true;
 
     // initialise the covariance matrix
-    CovarianceInit(_ahrs->roll, _ahrs->pitch, _ahrs->yaw);
+    CovarianceInit();
 
     // define Earth rotation vector in the NED navigation frame
     calcEarthRateNED(earthRateNED, _ahrs->get_home().lat);
@@ -453,39 +415,9 @@ void NavEKF::InitialiseFilterBootstrap(void)
     // calculate initial roll angle
     float roll = -asinf(initAccVec.y / cosf(pitch));
 
-    // calculate initial yaw angle
-    float yaw;
-    Matrix3f Tbn;
-    Vector3f initMagNED;
-    if (use_compass()) {
-        // calculate rotation matrix from body to NED frame
-        Tbn.from_euler(roll, pitch, 0.0f);
-
-        // rotate the magnetic field into NED axesn
-        initMagNED = Tbn*magData;
-
-        // calculate heading of mag field rel to body heading
-        float magHeading = atan2f(initMagNED.y, initMagNED.x);
-
-        // get the magnetic declination
-        float magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
-
-        // calculate yaw angle rel to true north
-        yaw = magDecAng - magHeading;
-        yawAligned = true;
-    } else {
-        yaw = 0.0f;
-        yawAligned = false;
-    }
-
-    // calculate initial filter quaternion states
+    // calculate initial orientation and earth magnetic field states
     Quaternion initQuat;
-    initQuat.from_euler(roll, pitch, yaw);
-
-    // calculate initial Tbn matrix and rotate Mag measurements into NED
-    // to set initial NED magnetic field states
-    initQuat.rotation_matrix(Tbn);
-    initMagNED = Tbn * magData;
+    initQuat = calcQuatAndFieldStates(roll, pitch);
 
     // read the GPS
     readGpsData();
@@ -502,14 +434,13 @@ void NavEKF::InitialiseFilterBootstrap(void)
     state.accel_zbias1 = 0;
     state.accel_zbias2 = 0;
     state.wind_vel.zero();
-    state.earth_magfield = initMagNED;
     state.body_magfield = magBias;
 
     // set to true now we have intialised the states
     statesInitialised = true;
 
     // initialise the covariance matrix
-    CovarianceInit(roll, pitch, yaw);
+    CovarianceInit();
 
     // define Earth rotation vector in the NED navigation frame
     calcEarthRateNED(earthRateNED, _ahrs->get_home().lat);
@@ -563,6 +494,7 @@ void NavEKF::UpdateFilter()
         ResetPosition();
         ResetHeight();
         StoreStatesReset();
+        calcQuatAndFieldStates(_ahrs->roll, _ahrs->pitch);
         prevStaticMode = staticMode;
     }
 
@@ -2663,14 +2595,14 @@ void NavEKF::OnGroundCheck()
         }
         // force a yaw alignment if exiting onGround without a compass
         if (!onGround && prevOnGround && !use_compass()) {
-            ForceYawAlignment();
+            alignYawGPS();
         }
     }
     prevOnGround = onGround;
 }
 
 // initialise the covariance matrix
-void NavEKF::CovarianceInit(float roll, float pitch, float yaw)
+void NavEKF::CovarianceInit()
 {
     // zero the matrix
     for (uint8_t i=1; i<=21; i++)
@@ -2992,9 +2924,59 @@ void NavEKF::calcEarthRateNED(Vector3f &omega, int32_t latitude) const
     omega.z  = -earthRate*sinf(lat_rad);
 }
 
+// initialise the earth magnetic field states using declination, suppled roll/pitch
+// and magnetometer measurements and return initial attitude quaternion
+// if no magnetometer data, do not update amgentic field states and assume zero yaw angle
+Quaternion NavEKF::calcQuatAndFieldStates(float roll, float pitch)
+{
+    // declare local variables required to calculate initial orientation and magnetic field
+    float yaw;
+    Matrix3f Tbn;
+    Vector3f initMagNED;
+    Quaternion initQuat;
+
+    if (use_compass()) {
+        // calculate rotation matrix from body to NED frame
+        Tbn.from_euler(roll, pitch, 0.0f);
+
+        // read the magnetometer data
+        readMagData();
+
+        // rotate the magnetic field into NED axes
+        initMagNED = Tbn*magData;
+
+        // calculate heading of mag field rel to body heading
+        float magHeading = atan2f(initMagNED.y, initMagNED.x);
+
+        // get the magnetic declination
+        float magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
+
+        // calculate yaw angle rel to true north
+        yaw = magDecAng - magHeading;
+        yawAligned = true;
+
+        // calculate initial filter quaternion states
+        initQuat.from_euler(roll, pitch, yaw);
+
+        // calculate initial Tbn matrix and rotate Mag measurements into NED
+        // to set initial NED magnetic field states
+        initQuat.rotation_matrix(Tbn);
+        initMagNED = Tbn * magData;
+
+        // write to earth magnetic field state vector
+        state.earth_magfield = initMagNED;
+    } else {
+        initQuat.from_euler(roll, pitch, 0.0f);
+        yawAligned = false;
+    }
+
+    // return attitude quaternion
+    return initQuat;
+}
+
 // this function is used to do a forced alignment of the yaw angle to aligwith the horizontal velocity
 // vector from GPS. It is used to align the yaw angle after launch or takeoff without a magnetometer.
-void NavEKF::ForceYawAlignment()
+void NavEKF::alignYawGPS()
 {
     if ((sq(velNED[0]) + sq(velNED[1])) > 16.0f) {
         float roll;

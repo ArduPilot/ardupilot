@@ -196,7 +196,7 @@ private:
     void OnGroundCheck();
 
     // initialise the covariance matrix
-    void CovarianceInit(float roll, float pitch, float yaw);
+    void CovarianceInit();
 
     // update IMU delta angle and delta velocity measurements
     void readIMUData();
@@ -226,7 +226,11 @@ private:
     void SelectMagFusion();
 
     // force alignment of the yaw angle using GPS velocity data
-    void ForceYawAlignment();
+    void alignYawGPS();
+
+    // initialise the earth magnetic field states using declination and current attitude and magnetometer meaasurements
+    // and return attitude quaternion
+    Quaternion calcQuatAndFieldStates(float roll, float pitch);
 
     // zero stored variables
     void ZeroVariables();
