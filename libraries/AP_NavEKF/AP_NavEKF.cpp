@@ -193,7 +193,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Range: 1 - 100
     // @Increment: 1
     // @User: advanced
-    AP_GROUPINFO("POS_GATE",    18, NavEKF, _gpsPosInnovGate, 10),
+    AP_GROUPINFO("POS_GATE",    18, NavEKF, _gpsPosInnovGate, 5),
 
     // @Param: HGT_GATE
     // @DisplayName: Height measurement gate size
