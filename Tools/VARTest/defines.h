@@ -125,32 +125,6 @@ enum ap_message {
     MSG_RETRY_DEFERRED // this must be last
 };
 
-//  Logging parameters
-#define LOG_INDEX_MSG			0xF0
-#define LOG_ATTITUDE_MSG		0x01
-#define LOG_MODE_MSG			0X03
-#define LOG_CONTROL_TUNING_MSG	0X04
-#define LOG_NAV_TUNING_MSG		0X05
-#define LOG_PERFORMANCE_MSG		0X06
-#define LOG_RAW_MSG				0x07
-#define LOG_CMD_MSG				0x08
-#define LOG_CURRENT_MSG 		0x09
-#define LOG_STARTUP_MSG 		0x0A
-#define TYPE_AIRSTART_MSG		0x00
-#define TYPE_GROUNDSTART_MSG	0x01
-#define MAX_NUM_LOGS			100
-
-#define MASK_LOG_ATTITUDE_FAST 	(1<<0)
-#define MASK_LOG_ATTITUDE_MED 	(1<<1)
-#define MASK_LOG_GPS 			(1<<2)
-#define MASK_LOG_PM 			(1<<3)
-#define MASK_LOG_CTUN 			(1<<4)
-#define MASK_LOG_NTUN			(1<<5)
-#define MASK_LOG_MODE			(1<<6)
-#define MASK_LOG_RAW			(1<<7)
-#define MASK_LOG_CMD			(1<<8)
-#define MASK_LOG_CUR			(1<<9)
-
 // Waypoint Modes
 // ----------------
 #define ABS_WP 0

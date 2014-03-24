@@ -657,62 +657,6 @@
 //////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
-// Dataflash logging control
-//
-
-#ifndef LOGGING_ENABLED
-# define LOGGING_ENABLED		ENABLED
-#endif
-
-
-#ifndef LOG_ATTITUDE_FAST
-# define LOG_ATTITUDE_FAST		DISABLED
-#endif
-#ifndef LOG_ATTITUDE_MED
-# define LOG_ATTITUDE_MED 		ENABLED
-#endif
-#ifndef LOG_GPS
-# define LOG_GPS 				ENABLED
-#endif
-#ifndef LOG_PM
-# define LOG_PM 				ENABLED
-#endif
-#ifndef LOG_CTUN
-# define LOG_CTUN				DISABLED
-#endif
-#ifndef LOG_NTUN
-# define LOG_NTUN				DISABLED
-#endif
-#ifndef LOG_MODE
-# define LOG_MODE				ENABLED
-#endif
-#ifndef LOG_RAW
-# define LOG_RAW				DISABLED
-#endif
-#ifndef LOG_CMD
-# define LOG_CMD				ENABLED
-#endif
-#ifndef LOG_CUR
-# define LOG_CUR			DISABLED
-#endif
-
-// calculate the default log_bitmask
-#define LOGBIT(_s)	(LOG_##_s ? MASK_LOG_##_s : 0)
-
-#define DEFAULT_LOG_BITMASK \
-		LOGBIT(ATTITUDE_FAST)	| \
-		LOGBIT(ATTITUDE_MED)	| \
-		LOGBIT(GPS)				| \
-		LOGBIT(PM)				| \
-		LOGBIT(CTUN)			| \
-		LOGBIT(NTUN)			| \
-		LOGBIT(MODE)			| \
-		LOGBIT(RAW)				| \
-		LOGBIT(CMD)				| \
-		LOGBIT(CUR)
-
-
-//////////////////////////////////////////////////////////////////////////////
 // Navigation defaults
 //
 #ifndef WP_RADIUS_DEFAULT

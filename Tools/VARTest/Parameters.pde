@@ -87,7 +87,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(reverse_ch1_elevon,     "ELEVON_CH1_REV", ELEVON_CH1_REVERSE),
 	GSCALAR(reverse_ch2_elevon,     "ELEVON_CH2_REV", ELEVON_CH2_REVERSE),
 	GSCALAR(num_resets,             "SYS_NUM_RESETS", 0),
-	GSCALAR(log_bitmask,            "LOG_BITMASK",    DEFAULT_LOG_BITMASK),
+	GSCALAR(log_bitmask,            "LOG_BITMASK",    0),
 	GSCALAR(log_last_filenumber,    "LOG_LASTFILE",   0),
 	GSCALAR(reset_switch_chan,      "RST_SWITCH_CH",  0),
 	GSCALAR(airspeed_cruise,        "TRIM_ARSPD_CM",  AIRSPEED_CRUISE_CM),
