@@ -35,7 +35,7 @@ static const uint8_t init_messages[] PROGMEM = {
 
 // Public Methods //////////////////////////////////////////////////////////////
 void
-AP_GPS_SIRF::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
+AP_GPS_SIRF::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting, DataFlash_Class *DataFlash)
 {
 	_port = s;
     _port->flush();

@@ -27,16 +27,14 @@ GPS::GPS(void) :
     altitude_cm(0),
     ground_speed_cm(0),
     ground_course_cd(0),
-    speed_3d_cm(0),
     hdop(0),
 	num_sats(0),
 	new_data(false),
 	fix(FIX_NONE),
-	valid_read(false),
 	last_fix_time(0),
 	_have_raw_velocity(false),
-    _last_gps_time(0),
     _secondary_gps(false),
+    _last_gps_time(0),
 	_idleTimer(0),
 	_status(GPS::NO_FIX),
 	_last_ground_speed_cm(0),
@@ -63,7 +61,7 @@ GPS::update(void)
             Debug("gps read timeout %lu %lu", (unsigned long)tnow, (unsigned long)_idleTimer);
             _status = NO_GPS;
 
-            init(_port, _nav_setting);
+            init(_port, _nav_setting, _DataFlash);
             // reset the idle timer
             _idleTimer = tnow;
         }
@@ -77,7 +75,6 @@ GPS::update(void)
             _status = NO_FIX;
         }
 
-        valid_read = true;
         new_data = true;
 
         // reset the idle timer

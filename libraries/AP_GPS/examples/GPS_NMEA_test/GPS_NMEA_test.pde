@@ -51,7 +51,7 @@ void setup()
     for (uint8_t i = 0; i < sizeof(sirf_to_nmea); i++)
         hal.uartB->write(sirf_to_nmea[i]);
 
-    gps->init(hal.uartB, GPS::GPS_ENGINE_AIRBORNE_4G);
+    gps->init(hal.uartB, GPS::GPS_ENGINE_AIRBORNE_4G, NULL);
 }
 
 void loop()

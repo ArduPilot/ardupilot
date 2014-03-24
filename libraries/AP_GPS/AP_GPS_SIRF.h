@@ -38,7 +38,7 @@ public:
 		_msg_id(0)
 		{}
 
-    virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting);
+    virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting, DataFlash_Class *DataFlash);
     virtual bool        read();
 	static bool         _detect(uint8_t data);
 

@@ -27,9 +27,11 @@
 extern const AP_HAL::HAL& hal;
 
 // Public Methods //////////////////////////////////////////////////////////////
-void AP_GPS_HIL::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
+void AP_GPS_HIL::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting, DataFlash_Class *DataFlash)
 {
 	_port = s;
+    _nav_setting = nav_setting;
+    _DataFlash = DataFlash;
 }
 
 bool AP_GPS_HIL::read(void)
@@ -57,7 +59,6 @@ void AP_GPS_HIL::setHIL(Fix_Status fix_status,
     altitude_cm         = _altitude*1.0e2f;
     ground_speed_cm     = _ground_speed*1.0e2f;
     ground_course_cd    = _ground_course*1.0e2f;
-    speed_3d_cm         = _speed_3d*1.0e2f;
     num_sats            = _num_sats;
     fix                 = fix_status,
     hdop                = 200;

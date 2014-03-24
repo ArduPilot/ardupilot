@@ -27,7 +27,7 @@ void setup()
     hal.uartB->begin(57600, 128, 16);
     gps.print_errors = true;
 
-    gps.init(hal.uartB, GPS::GPS_ENGINE_AIRBORNE_4G);  // GPS Initialization
+    gps.init(hal.uartB, GPS::GPS_ENGINE_AIRBORNE_4G, NULL);  // GPS Initialization
     hal.scheduler->delay(1000);
 }
 void loop()

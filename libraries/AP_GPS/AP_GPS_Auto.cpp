@@ -25,10 +25,11 @@ AP_GPS_Auto::AP_GPS_Auto(GPS **gps)  :
 // Do nothing at init time - it may be too early to try detecting the GPS
 //
 void
-AP_GPS_Auto::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
+AP_GPS_Auto::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting, DataFlash_Class *DataFlash)
 {
 	_port = s;
     _nav_setting = nav_setting;
+    _DataFlash = DataFlash;
 }
 
 
@@ -66,7 +67,7 @@ AP_GPS_Auto::read(void)
 
 	if (NULL != (gps = _detect())) {
 		// configure the detected GPS
-		gps->init(_port, _nav_setting);
+		gps->init(_port, _nav_setting, _DataFlash);
 		hal.console->println_P(PSTR("OK"));
 		*_gps = gps;
 		return true;
@@ -126,7 +127,7 @@ AP_GPS_Auto::_detect(void)
 	}
 
 	if (new_gps != NULL) {
-		new_gps->init(_port);
+		new_gps->init(_port, _nav_setting, _DataFlash);
 	}
 
 	return new_gps;

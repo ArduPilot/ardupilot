@@ -97,7 +97,7 @@ const char AP_GPS_NMEA::_gpvtg_string[] PROGMEM = "GPVTG";
 #define DIGIT_TO_VAL(_x)        (_x - '0')
 
 // Public Methods //////////////////////////////////////////////////////////////
-void AP_GPS_NMEA::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
+void AP_GPS_NMEA::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting, DataFlash_Class *DataFlash)
 {
 	_port = s;
 

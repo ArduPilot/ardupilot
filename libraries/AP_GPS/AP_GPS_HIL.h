@@ -32,7 +32,7 @@ public:
 		_updated(false)
 		{}
 
-    virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting);
+    virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting, DataFlash_Class *DataFlash);
     virtual bool        read(void);
 
     /**

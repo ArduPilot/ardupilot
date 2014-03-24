@@ -7,10 +7,11 @@
 #define __GPS_H__
 
 #include <AP_HAL.h>
-
 #include <inttypes.h>
 #include <AP_Progmem.h>
 #include <AP_Math.h>
+
+class DataFlash_Class;
 
 /// @class	GPS
 /// @brief	Abstract base class for GPS receiver drivers.
@@ -79,7 +80,7 @@ public:
     ///
     /// Must be implemented by the GPS driver.
     ///
-    virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting engine_setting = GPS_ENGINE_NONE) = 0;
+    virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting engine_setting, DataFlash_Class *dataflash) = 0;
 
     // Properties
     uint32_t time_week_ms;              ///< GPS time (milliseconds from start of GPS week)
@@ -89,20 +90,15 @@ public:
     int32_t altitude_cm;                ///< altitude in cm
     uint32_t ground_speed_cm;           ///< ground speed in cm/sec
     int32_t ground_course_cd;           ///< ground course in 100ths of a degree
-    int32_t speed_3d_cm;                ///< 3D speed in cm/sec (not always available)
     int16_t hdop;                       ///< horizontal dilution of precision in cm
     uint8_t num_sats;           ///< Number of visible satelites
 
     /// Set to true when new data arrives.  A client may set this
     /// to false in order to avoid processing data they have
     /// already seen.
-    bool new_data;
+    bool new_data:1;
 
     Fix_Status fix;                        ///< 0 if we have no fix, 2 for 2D fix, 3 for 3D fix
-    bool valid_read;                    ///< true if we have seen data from the GPS (use ::status instead)
-
-    // Debug support
-    bool print_errors;          ///< deprecated
 
     // HIL support
     virtual void setHIL(Fix_Status fix_status,
@@ -198,7 +194,10 @@ protected:
     int32_t _vel_down;
 
     // does this GPS support raw velocity numbers?
-    bool _have_raw_velocity;
+    bool _have_raw_velocity:1;
+
+    // this is a secondary GPS, disable notify updates
+    bool _secondary_gps:1;
 
 	// detected baudrate
 	uint16_t _baudrate;
@@ -206,15 +205,13 @@ protected:
     // the time we got the last GPS timestamp
     uint32_t _last_gps_time;
 
-    // this is a secondary GPS, disable notify updates
-    bool _secondary_gps;
 
     // return time in seconds since GPS epoch given time components
     void _make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds);
 
+    DataFlash_Class *_DataFlash;
+
 private:
-
-
     /// Last time that the GPS driver got a good packet from the GPS
     ///
     uint32_t _idleTimer;
