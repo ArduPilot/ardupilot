@@ -65,7 +65,7 @@ void GCS_MAVLINK::handle_log_request_list(mavlink_message_t *msg, DataFlash_Clas
         _log_next_list_entry = 0;
         _log_last_list_entry = 0;        
     } else {
-        int16_t last_log_num = dataflash.find_last_log();
+        uint16_t last_log_num = dataflash.find_last_log();
 
         _log_next_list_entry = packet.start;
         _log_last_list_entry = packet.end;
@@ -98,7 +98,7 @@ void GCS_MAVLINK::handle_log_request_data(mavlink_message_t *msg, DataFlash_Clas
         _log_sending = false;
 
         uint16_t num_logs = dataflash.get_num_logs();
-        int16_t last_log_num = dataflash.find_last_log();
+        uint16_t last_log_num = dataflash.find_last_log();
         if (packet.id > last_log_num || packet.id < last_log_num + 1 - num_logs) {
             return;
         }

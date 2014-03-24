@@ -354,8 +354,8 @@ void GCS_MAVLINK::handle_mission_write_partial_list(AP_Mission &mission, mavlink
     }
 
     // start waypoint receiving
-    if (packet.start_index > mission.num_commands() ||
-        packet.end_index > mission.num_commands() ||
+    if ((unsigned)packet.start_index > mission.num_commands() ||
+        (unsigned)packet.end_index > mission.num_commands() ||
         packet.end_index < packet.start_index) {
         send_text_P(SEVERITY_LOW,PSTR("flight plan update rejected"));
         return;
@@ -383,6 +383,9 @@ bool GCS_MAVLINK::have_flow_control(void)
 
     case MAVLINK_COMM_2:
         return hal.uartD != NULL && hal.uartD->get_flow_control() != AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE;
+
+    default:
+        break;
     }
     return false;
 }
