@@ -515,7 +515,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_CAMERA_MSG, sizeof(log_Camera),                 
       "CAM", "IIHLLeccC",   "TimeMS,GPSTime,GPSWeek,Lat,Lng,Alt,Roll,Pitch,Yaw" },
     { LOG_STARTUP_MSG, sizeof(log_Startup),         
-      "STRT", "IBB",        "TimeMS,SType,CTot" },
+      "STRT", "IBH",        "TimeMS,SType,CTot" },
     { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     
       "CTUN", "Ihcchf",     "TimeMS,Steer,Roll,Pitch,ThrOut,AccY" },
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),         
