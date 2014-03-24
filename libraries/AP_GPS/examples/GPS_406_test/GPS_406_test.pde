@@ -13,6 +13,19 @@
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
 #include <AP_GPS.h>
+#include <DataFlash.h>
+#include <AP_InertialSensor.h>
+#include <AP_ADC.h>
+#include <GCS_MAVLink.h>
+#include <AP_Baro.h>
+#include <Filter.h>
+#include <AP_AHRS.h>
+#include <AP_Compass.h>
+#include <AP_Declination.h>
+#include <AP_Airspeed.h>
+#include <AP_Vehicle.h>
+#include <AP_ADC_AnalogSource.h>
+#include <AP_Mission.h>
 #include <AP_Notify.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
@@ -25,7 +38,6 @@ void setup()
 {
     hal.console->println("GPS 406 library test");
     hal.uartB->begin(57600, 128, 16);
-    gps.print_errors = true;
 
     gps.init(hal.uartB, GPS::GPS_ENGINE_AIRBORNE_4G, NULL);  // GPS Initialization
     hal.scheduler->delay(1000);

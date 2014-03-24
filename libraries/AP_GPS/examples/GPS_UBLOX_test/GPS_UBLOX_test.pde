@@ -15,6 +15,19 @@
 #include <AP_HAL_Empty.h>
 #include <AP_HAL_PX4.h>
 #include <AP_GPS.h>
+#include <DataFlash.h>
+#include <AP_InertialSensor.h>
+#include <AP_ADC.h>
+#include <GCS_MAVLink.h>
+#include <AP_Baro.h>
+#include <Filter.h>
+#include <AP_AHRS.h>
+#include <AP_Compass.h>
+#include <AP_Declination.h>
+#include <AP_Airspeed.h>
+#include <AP_Vehicle.h>
+#include <AP_ADC_AnalogSource.h>
+#include <AP_Mission.h>
 #include <AP_Math.h>
 #include <AP_Notify.h>
 
@@ -27,7 +40,6 @@ AP_GPS_UBLOX gps;
 void setup()
 {
     hal.uartB->begin(38400);
-    gps.print_errors = true;
 
     hal.console->println("GPS UBLOX library test");
     gps.init(hal.uartB, GPS::GPS_ENGINE_AIRBORNE_4G, NULL);       // GPS Initialization
