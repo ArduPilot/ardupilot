@@ -59,7 +59,7 @@ void setup(void)
     hal.console->println_P(PSTR("AP_InertialNav test startup..."));
 
     gps = &auto_gps;
-    gps->init(hal.uartB, GPS::GPS_ENGINE_AIRBORNE_2G);
+    gps->init(hal.uartB, GPS::GPS_ENGINE_AIRBORNE_2G, NULL);
 
     ins.init(AP_InertialSensor::COLD_START, 
 			 AP_InertialSensor::RATE_100HZ);
