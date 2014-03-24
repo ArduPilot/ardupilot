@@ -122,7 +122,7 @@ bool AP_Mission::clear()
 /// trucate - truncate any mission items beyond index
 void AP_Mission::truncate(uint16_t index)
 {
-    if (_cmd_total > index) {        
+    if ((unsigned)_cmd_total > index) {        
         _cmd_total.set_and_save(index);
     }
 }
@@ -192,7 +192,7 @@ bool AP_Mission::add_cmd(Mission_Command& cmd)
 bool AP_Mission::replace_cmd(uint16_t index, Mission_Command& cmd)
 {
     // sanity check index
-    if (index >= _cmd_total) {
+    if (index >= (unsigned)_cmd_total) {
         return false;
     }
 
@@ -215,7 +215,7 @@ bool AP_Mission::get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd)
     Mission_Command temp_cmd;
 
     // search until the end of the mission command list
-    while(cmd_index < _cmd_total) {
+    while(cmd_index < (unsigned)_cmd_total) {
         // get next command
         if (!get_next_cmd(cmd_index, temp_cmd, false)) {
             // no more commands so return failure
@@ -242,7 +242,7 @@ bool AP_Mission::set_current_cmd(uint16_t index)
     Mission_Command cmd;
 
     // sanity check index and that we have a mission
-    if (index >= _cmd_total || _cmd_total == 1) {
+    if (index >= (unsigned)_cmd_total || _cmd_total == 1) {
         return false;
     }
 
@@ -339,7 +339,7 @@ bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) con
     uint16_t pos_in_storage;    // position in storage from where we will read the next byte
 
     // exit immediately if index is beyond last command but we always let cmd #0 (i.e. home) be read
-    if (index > _cmd_total && index != 0) {
+    if (index > (unsigned)_cmd_total && index != 0) {
         return false;
     }
 
@@ -868,7 +868,7 @@ void AP_Mission::advance_current_do_cmd()
     }
 
     // check if we've reached end of mission
-    if (cmd_index >= _cmd_total) {
+    if (cmd_index >= (unsigned)_cmd_total) {
         // set flag to stop unnecessarily searching for do commands
         _flags.do_cmd_all_done = true;
         return;
@@ -897,7 +897,7 @@ bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool i
     uint16_t jump_index = AP_MISSION_CMD_INDEX_NONE;
 
     // search until the end of the mission command list
-    while(cmd_index < _cmd_total) {
+    while(cmd_index < (unsigned)_cmd_total) {
         // load the next command
         if (!read_cmd_from_storage(cmd_index, temp_cmd)) {
             // this should never happen because of check above but just in case
@@ -908,7 +908,7 @@ bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool i
         if (temp_cmd.id == MAV_CMD_DO_JUMP) {
 
             // check for invalid target
-            if (temp_cmd.content.jump.target >= _cmd_total) {
+            if (temp_cmd.content.jump.target >= (unsigned)_cmd_total) {
                 // To-Do: log an error?
                 return false;
             }
@@ -964,7 +964,7 @@ bool AP_Mission::get_next_do_cmd(uint16_t start_index, Mission_Command& cmd)
     Mission_Command temp_cmd;
 
     // check we have not passed the end of the mission list
-    if (start_index >= _cmd_total) {
+    if (start_index >= (unsigned)_cmd_total) {
         return false;
     }
 
@@ -999,7 +999,7 @@ void AP_Mission::init_jump_tracking()
 int16_t AP_Mission::get_jump_times_run(const Mission_Command& cmd)
 {
     // exit immediatley if cmd is not a do-jump command or target is invalid
-    if (cmd.id != MAV_CMD_DO_JUMP || cmd.content.jump.target >= _cmd_total) {
+    if (cmd.id != MAV_CMD_DO_JUMP || cmd.content.jump.target >= (unsigned)_cmd_total) {
         // To-Do: log an error?
         return AP_MISSION_JUMP_TIMES_MAX;
     }
