@@ -110,7 +110,6 @@ enum ChannelMixing {
 // of these then existing logs will break! Only add at the end, and 
 // mark unused ones as 'deprecated', but leave them in
 enum log_messages {
-    LOG_INDEX_MSG,
     LOG_CTUN_MSG,
     LOG_NTUN_MSG,
     LOG_PERFORMANCE_MSG,
@@ -128,8 +127,7 @@ enum log_messages {
     LOG_SONAR_MSG,
     LOG_COMPASS2_MSG,
     LOG_ARM_DISARM_MSG,
-    LOG_AIRSPEED_MSG,
-    MAX_NUM_LOGS // always at the end
+    LOG_AIRSPEED_MSG
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
