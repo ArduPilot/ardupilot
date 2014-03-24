@@ -50,14 +50,15 @@ public:
 		_payload_length(0),
 		_payload_counter(0),
 		_fix_count(0),
+        need_rate_update(false),
 		_disable_counter(0),
 		next_fix(GPS::FIX_NONE),
-        need_rate_update(false),
-        rate_update_step(0)
+        rate_update_step(0),
+        _last_hw_status(0)
 		{}
 
     // Methods
-    virtual void                    init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting);
+    virtual void                    init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting, DataFlash_Class *DataFlash);
     virtual bool                    read();
     static bool _detect(uint8_t );
 
@@ -152,6 +153,37 @@ private:
         uint32_t speed_accuracy;
         uint32_t heading_accuracy;
     };
+    struct PACKED ubx_mon_hw {
+        uint32_t pinSel;
+        uint32_t pinBank;
+        uint32_t pinDir;
+        uint32_t pinVal;
+        uint16_t noisePerMS;
+        uint16_t agcCnt;
+        uint8_t aStatus;
+        uint8_t aPower;
+        uint8_t flags;
+        uint8_t reserved1;
+        uint32_t usedMask;
+        uint8_t VP[25];
+        uint8_t jamInd;
+        uint16_t reserved3;
+        uint32_t pinIrq;
+        uint32_t pullH;
+        uint32_t pullL;
+    };
+    struct PACKED ubx_mon_hw2 {
+        int8_t ofsI;
+        uint8_t magI;
+        int8_t ofsQ;
+        uint8_t magQ;
+        uint8_t cfgSource;
+        uint8_t reserved0[3];
+        uint32_t lowLevCfg;
+        uint32_t reserved1[2];
+        uint32_t postStatus;
+        uint32_t reserved2;
+    };
     // Receive buffer
     union PACKED {
         ubx_nav_posllh posllh;
@@ -159,6 +191,8 @@ private:
         ubx_nav_solution solution;
         ubx_nav_velned velned;
         ubx_cfg_nav_settings nav_settings;
+        ubx_mon_hw mon_hw;
+        ubx_mon_hw2 mon_hw2;
         uint8_t bytes[];
     } _buffer;
 
@@ -168,6 +202,7 @@ private:
         CLASS_NAV = 0x01,
         CLASS_ACK = 0x05,
         CLASS_CFG = 0x06,
+        CLASS_MON = 0x0A,
         MSG_ACK_NACK = 0x00,
         MSG_ACK_ACK = 0x01,
         MSG_POSLLH = 0x2,
@@ -177,7 +212,9 @@ private:
         MSG_CFG_PRT = 0x00,
         MSG_CFG_RATE = 0x08,
         MSG_CFG_SET_RATE = 0x01,
-        MSG_CFG_NAV_SETTINGS = 0x24
+        MSG_CFG_NAV_SETTINGS = 0x24,
+        MSG_MON_HW = 0x09,
+        MSG_MON_HW2 = 0x0B
     };
     enum ubs_nav_fix_type {
         FIX_NONE = 0,
@@ -204,14 +241,16 @@ private:
 	// 8 bit count of fix messages processed, used for periodic
 	// processing
     uint8_t			_fix_count;
-
     uint8_t         _class;
 
     // do we have new position information?
-    bool            _new_position;
-
+    bool            _new_position:1;
     // do we have new speed information?
-    bool            _new_speed;
+    bool            _new_speed:1;
+    bool            need_rate_update:1;
+
+    // have we written the logging headers to DataFlash?
+    bool            logging_started:1;
 
     uint8_t         _disable_counter;
 
@@ -221,9 +260,9 @@ private:
     // used to update fix between status and position packets
     Fix_Status  next_fix;
 
-    bool need_rate_update;
     uint8_t rate_update_step;
     uint32_t _last_5hz_time;
+    uint32_t _last_hw_status;
 
     void 	    _configure_navigation_rate(uint16_t rate_ms);
     void        _configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate);
@@ -231,6 +270,11 @@ private:
     void        _update_checksum(uint8_t *data, uint8_t len, uint8_t &ck_a, uint8_t &ck_b);
     void        _send_message(uint8_t msg_class, uint8_t msg_id, void *msg, uint8_t size);
     void		send_next_rate_update(void);
+
+    void unexpected_message(void);
+    void write_logging_headers(void);
+    void log_mon_hw(void);
+    void log_mon_hw2(void);
 
 };
 

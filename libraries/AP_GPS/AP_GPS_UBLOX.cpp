@@ -21,6 +21,7 @@
 #include <stdint.h>
 
 #include <AP_HAL.h>
+#include <DataFlash.h>
 
 #define UBLOX_DEBUGGING 0
 #define UBLOX_FAKE_3DLOCK 0
@@ -37,13 +38,23 @@ extern const AP_HAL::HAL& hal;
 
 extern const AP_HAL::HAL& hal;
 
+/*
+  only do detailed hardware logging on boards likely to have more log
+  storage space
+ */
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+#define UBLOX_HW_LOGGING 1
+#else
+#define UBLOX_HW_LOGGING 0
+#endif
+
 const prog_char AP_GPS_UBLOX::_ublox_set_binary[] PROGMEM = UBLOX_SET_BINARY;
 const uint8_t AP_GPS_UBLOX::_ublox_set_binary_size = sizeof(AP_GPS_UBLOX::_ublox_set_binary);
 
 // Public Methods //////////////////////////////////////////////////////////////
 
 void
-AP_GPS_UBLOX::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
+AP_GPS_UBLOX::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting, DataFlash_Class *DataFlash)
 {
 	_port = s;
 
@@ -54,10 +65,12 @@ AP_GPS_UBLOX::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
 
     _port->flush();
 
+    _nav_setting = nav_setting;
+    _DataFlash = DataFlash;
+
     // configure the GPS for the messages we want
     _configure_gps();
 
-    _nav_setting = nav_setting;
 	_step = 0;
 	_new_position = false;
 	_new_speed = false;
@@ -79,27 +92,36 @@ AP_GPS_UBLOX::send_next_rate_update(void)
 
     //hal.console->printf_P(PSTR("next_rate: %u\n"), (unsigned)rate_update_step);
 
-    switch (rate_update_step) {
+    switch (rate_update_step++) {
     case 0:
         _configure_navigation_rate(200);
         break;
     case 1:
-        _configure_message_rate(CLASS_NAV, MSG_POSLLH, 1);
+        _configure_message_rate(CLASS_NAV, MSG_POSLLH, 1); // 28+8 bytes
         break;
     case 2:
-        _configure_message_rate(CLASS_NAV, MSG_STATUS, 1);
+        _configure_message_rate(CLASS_NAV, MSG_STATUS, 1); // 16+8 bytes
         break;
     case 3:
-        _configure_message_rate(CLASS_NAV, MSG_SOL, 1);
+        _configure_message_rate(CLASS_NAV, MSG_SOL, 1);    // 52+8 bytes
         break;
     case 4:
-        _configure_message_rate(CLASS_NAV, MSG_VELNED, 1);
+        _configure_message_rate(CLASS_NAV, MSG_VELNED, 1); // 36+8 bytes
         break;
-    }
-    rate_update_step++;
-    if (rate_update_step > 4) {
+#if UBLOX_HW_LOGGING
+    case 5:
+        // gather MON_HW at 0.5Hz
+        _configure_message_rate(CLASS_MON, MSG_MON_HW, 2); // 64+8 bytes
+        break;
+    case 6:
+        // gather MON_HW2 at 0.5Hz
+        _configure_message_rate(CLASS_MON, MSG_MON_HW2, 2); // 24+8 bytes
+        break;
+#endif
+    default:
         need_rate_update = false;
         rate_update_step = 0;
+        break;
     }
 }
 
@@ -231,6 +253,97 @@ AP_GPS_UBLOX::read(void)
 }
 
 // Private Methods /////////////////////////////////////////////////////////////
+#if UBLOX_HW_LOGGING
+
+#define LOG_MSG_UBX1 200
+#define LOG_MSG_UBX2 201
+
+struct PACKED log_Ubx1 {
+    LOG_PACKET_HEADER;
+    uint32_t timestamp;
+    uint8_t  instance;
+    uint16_t noisePerMS;
+    uint8_t  jamInd;
+    uint8_t  aPower;
+};
+
+struct PACKED log_Ubx2 {
+    LOG_PACKET_HEADER;
+    uint32_t timestamp;
+    uint8_t  instance;
+    int8_t   ofsI;
+    uint8_t  magI;
+    int8_t   ofsQ;
+    uint8_t  magQ;
+};
+
+static const struct LogStructure ubx_log_structures[] PROGMEM = {
+    { LOG_MSG_UBX1, sizeof(log_Ubx1),
+      "UBX1", "IBHBB",  "TimeMS,Instance,noisePerMS,jamInd,aPower" },
+    { LOG_MSG_UBX2, sizeof(log_Ubx2),
+      "UBX2", "IBbBbB", "TimeMS,Instance,ofsI,magI,ofsQ,magQ" }
+};
+
+void AP_GPS_UBLOX::write_logging_headers(void)
+{
+    if (!logging_started) {
+        logging_started = true;
+        _DataFlash->AddLogFormats(ubx_log_structures, 2);
+    }
+}
+
+void AP_GPS_UBLOX::log_mon_hw(void)
+{
+    if (_DataFlash == NULL || !_DataFlash->logging_started()) {
+        return;
+    }
+    // log mon_hw message
+    write_logging_headers();
+
+    struct log_Ubx1 pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_MSG_UBX1),
+        timestamp  : hal.scheduler->millis(),
+        instance   : (uint8_t)(_secondary_gps?1:0),
+        noisePerMS : _buffer.mon_hw.noisePerMS,
+        jamInd     : _buffer.mon_hw.jamInd,
+        aPower     : _buffer.mon_hw.aPower
+    };
+    _DataFlash->WriteBlock(&pkt, sizeof(pkt));    
+}
+
+void AP_GPS_UBLOX::log_mon_hw2(void)
+{
+    if (_DataFlash == NULL || !_DataFlash->logging_started()) {
+        return;
+    }
+    // log mon_hw message
+    write_logging_headers();
+
+    struct log_Ubx2 pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_MSG_UBX2),
+        timestamp : hal.scheduler->millis(),
+        instance  : (uint8_t)(_secondary_gps?1:0),
+        ofsI      : _buffer.mon_hw2.ofsI,
+        magI      : _buffer.mon_hw2.magI,
+        ofsQ      : _buffer.mon_hw2.ofsQ,
+        magQ      : _buffer.mon_hw2.magQ,
+    };
+    _DataFlash->WriteBlock(&pkt, sizeof(pkt));    
+}
+#endif // UBLOX_HW_LOGGING
+
+void AP_GPS_UBLOX::unexpected_message(void)
+{
+    Debug("Unexpected message 0x%02x 0x%02x", (unsigned)_class, (unsigned)_msg_id);
+    if (++_disable_counter == 0) {
+        // disable future sends of this message id, but
+        // only do this every 256 messages, as some
+        // message types can't be disabled and we don't
+        // want to get into an ack war
+        Debug("Disabling message 0x%02x 0x%02x", (unsigned)_class, (unsigned)_msg_id);
+        _configure_message_rate(_class, _msg_id, 0);
+    }
+}
 
 bool
 AP_GPS_UBLOX::_parse_gps(void)
@@ -257,16 +370,21 @@ AP_GPS_UBLOX::_parse_gps(void)
         return false;
     }
 
-    if (_class != CLASS_NAV) {
-        Debug("Unexpected message 0x%02x 0x%02x", (unsigned)_class, (unsigned)_msg_id);
-        if (++_disable_counter == 0) {
-            // disable future sends of this message id, but
-            // only do this every 256 messages, as some
-            // message types can't be disabled and we don't
-            // want to get into an ack war
-            Debug("Disabling message 0x%02x 0x%02x", (unsigned)_class, (unsigned)_msg_id);
-            _configure_message_rate(_class, _msg_id, 0);
+#if UBLOX_HW_LOGGING
+    if (_class == CLASS_MON) {
+        if (_msg_id == MSG_MON_HW) {
+            log_mon_hw();
+        } else if (_msg_id == MSG_MON_HW2) {
+            log_mon_hw2();            
+        } else {
+            unexpected_message();
         }
+        return false;
+    }
+#endif // UBLOX_HW_LOGGING
+
+    if (_class != CLASS_NAV) {
+        unexpected_message();
         return false;
     }
 
@@ -348,7 +466,6 @@ AP_GPS_UBLOX::_parse_gps(void)
         break;
     case MSG_VELNED:
         Debug("MSG_VELNED");
-        speed_3d_cm     = _buffer.velned.speed_3d;                              // cm/s
         ground_speed_cm = _buffer.velned.speed_2d;                         // cm/s
         ground_course_cd = _buffer.velned.heading_2d / 1000;       // Heading 2D deg * 100000 rescaled to deg * 100
         _have_raw_velocity = true;
