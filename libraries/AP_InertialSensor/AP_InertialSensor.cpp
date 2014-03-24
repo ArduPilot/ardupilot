@@ -184,6 +184,8 @@ AP_InertialSensor::_init_gyro()
         float diff_norm[INS_MAX_INSTANCES];
         uint8_t i;
 
+        memset(diff_norm, 0, sizeof(diff_norm));
+
         hal.console->print_P(PSTR("*"));
 
         for (uint8_t k=0; k<num_gyros; k++) {
@@ -260,6 +262,9 @@ AP_InertialSensor::_init_accel()
     Vector3f accel_offset[INS_MAX_INSTANCES];
     float total_change[INS_MAX_INSTANCES];
     float max_offset[INS_MAX_INSTANCES];
+
+    memset(max_offset, 0, sizeof(max_offset));
+    memset(total_change, 0, sizeof(total_change));
 
     // cold start
     hal.scheduler->delay(100);
