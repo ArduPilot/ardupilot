@@ -44,6 +44,7 @@ public:
 
     /* logging methods common to all vehicles */
     uint16_t StartNewLog(void);
+    void AddLogFormats(const struct LogStructure *structures, uint8_t num_types);
     void EnableWrites(bool enable) { _writes_enabled = enable; }
     void Log_Write_Format(const struct LogStructure *structure);
     void Log_Write_Parameter(const char *name, float value);
@@ -387,6 +388,8 @@ struct PACKED log_Radio {
     { LOG_RADIO_MSG, sizeof(log_Radio), \
       "RAD", "IBBBBBHH", "TimeMS,RSSI,RemRSSI,TxBuf,Noise,RemNoise,RxErrors,Fixed" }
 
+// message types 0 to 100 reversed for vehicle specific use
+
 // message types for common messages
 #define LOG_FORMAT_MSG	  128
 #define LOG_PARAMETER_MSG 129
@@ -407,6 +410,8 @@ struct PACKED log_Radio {
 #define LOG_GPS2_MSG	  144
 #define LOG_CMD_MSG       145
 #define LOG_RADIO_MSG	  146
+
+// message types 200 to 210 reversed for GPS driver use
 
 #include "DataFlash_Block.h"
 #include "DataFlash_File.h"
