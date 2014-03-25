@@ -130,7 +130,7 @@ static void rudder_arm_check()
 
 static void read_radio()
 {
-    if (!hal.rcin->valid_channels()) {
+    if (!hal.rcin->new_input()) {
         control_failsafe(channel_throttle->radio_in);
         return;
     }
