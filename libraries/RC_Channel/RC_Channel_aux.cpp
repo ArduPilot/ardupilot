@@ -19,7 +19,7 @@ const AP_Param::GroupInfo RC_Channel_aux::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
-RC_Channel_aux *RC_Channel_aux::_aux_channels[8];
+RC_Channel_aux *RC_Channel_aux::_aux_channels[RC_AUX_MAX_CHANNELS];
 uint32_t RC_Channel_aux::_function_mask;
 
 /// map a function to a servo channel and output it
