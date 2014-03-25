@@ -100,6 +100,8 @@ public:
         k_param_rc_feel_rp,
         k_param_NavEKF,                 // 41 - Extended Kalman Filter Inertial Navigation Group
         k_param_mission,                // mission library
+        k_param_rc_13,
+        k_param_rc_14,
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -397,6 +399,8 @@ public:
     RC_Channel_aux          rc_11;
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     RC_Channel_aux          rc_12;
+    RC_Channel_aux          rc_13;
+    RC_Channel_aux          rc_14;
 #endif
 
     AP_Int16                rc_speed; // speed of fast RC Channels in Hz
@@ -463,6 +467,8 @@ public:
         rc_11               (CH_11),
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
         rc_12               (CH_12),
+        rc_13               (CH_13),
+        rc_14               (CH_14),
 #endif
 
         // PID controller	    initial P	            initial I		        initial D               initial imax
