@@ -216,6 +216,12 @@ struct PACKED log_RCIN {
     uint16_t chan6;
     uint16_t chan7;
     uint16_t chan8;
+    uint16_t chan9;
+    uint16_t chan10;
+    uint16_t chan11;
+    uint16_t chan12;
+    uint16_t chan13;
+    uint16_t chan14;
 };
 
 struct PACKED log_RCOUT {
@@ -364,7 +370,7 @@ struct PACKED log_Radio {
     { LOG_MESSAGE_MSG, sizeof(log_Message), \
       "MSG",  "Z",     "Message"}, \
     { LOG_RCIN_MSG, sizeof(log_RCIN), \
-      "RCIN",  "Ihhhhhhhh",     "TimeMS,Chan1,Chan2,Chan3,Chan4,Chan5,Chan6,Chan7,Chan8" }, \
+      "RCIN",  "Ihhhhhhhhhhhhhh",     "TimeMS,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14" }, \
     { LOG_RCOUT_MSG, sizeof(log_RCOUT), \
       "RCOU",  "Ihhhhhhhh",     "TimeMS,Chan1,Chan2,Chan3,Chan4,Chan5,Chan6,Chan7,Chan8" }, \
     { LOG_BARO_MSG, sizeof(log_BARO), \

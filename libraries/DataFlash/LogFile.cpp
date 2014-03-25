@@ -709,9 +709,10 @@ void DataFlash_Class::Log_Write_GPS2(const GPS *gps)
 // Write an RCIN packet
 void DataFlash_Class::Log_Write_RCIN(void)
 {
+    uint32_t timestamp = hal.scheduler->millis();
     struct log_RCIN pkt = {
         LOG_PACKET_HEADER_INIT(LOG_RCIN_MSG),
-        timestamp     : hal.scheduler->millis(),
+        timestamp     : timestamp,
         chan1         : hal.rcin->read(0),
         chan2         : hal.rcin->read(1),
         chan3         : hal.rcin->read(2),
@@ -719,7 +720,13 @@ void DataFlash_Class::Log_Write_RCIN(void)
         chan5         : hal.rcin->read(4),
         chan6         : hal.rcin->read(5),
         chan7         : hal.rcin->read(6),
-        chan8         : hal.rcin->read(7)
+        chan8         : hal.rcin->read(7),
+        chan9         : hal.rcin->read(8),
+        chan10        : hal.rcin->read(9),
+        chan11        : hal.rcin->read(10),
+        chan12        : hal.rcin->read(11),
+        chan13        : hal.rcin->read(12),
+        chan14        : hal.rcin->read(13)
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
