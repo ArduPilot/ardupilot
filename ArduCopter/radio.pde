@@ -99,7 +99,7 @@ void output_min()
 static void read_radio()
 {
     static uint32_t last_update = 0;
-    if (hal.rcin->valid_channels() > 0) {
+    if (hal.rcin->new_input()) {
         last_update = millis();
         ap.new_radio_frame = true;
         uint16_t periods[8];
