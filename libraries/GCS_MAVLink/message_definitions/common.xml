@@ -1463,6 +1463,30 @@
                <field type="float" name="vyErr">y velocity</field>
                <field type="float" name="vzErr">z velocity</field>
           </message>
+          <message id="65" name="RC_CHANNELS">
+               <description>The PPM values of the RC channels received. The standard PPM modulation is as follows: 1000 microseconds: 0%, 2000 microseconds: 100%. Individual receivers/transmitters might violate this specification.</description>
+               <field type="uint32_t" name="time_boot_ms">Timestamp (milliseconds since system boot)</field>
+               <field type="uint8_t" name="chancount">Total number of RC channels being received. This can be larger than 18, indicating that more channels are available but not given in this message. This value should be 0 when no RC channels are available.</field>
+               <field type="uint16_t" name="chan1_raw">RC channel 1 value, in microseconds. A value of UINT16_MAX implies the channel is unused.</field>
+               <field type="uint16_t" name="chan2_raw">RC channel 2 value, in microseconds. A value of UINT16_MAX implies the channel is unused.</field>
+               <field type="uint16_t" name="chan3_raw">RC channel 3 value, in microseconds. A value of UINT16_MAX implies the channel is unused.</field>
+               <field type="uint16_t" name="chan4_raw">RC channel 4 value, in microseconds. A value of UINT16_MAX implies the channel is unused.</field>
+               <field type="uint16_t" name="chan5_raw">RC channel 5 value, in microseconds. A value of UINT16_MAX implies the channel is unused.</field>
+               <field type="uint16_t" name="chan6_raw">RC channel 6 value, in microseconds. A value of UINT16_MAX implies the channel is unused.</field>
+               <field type="uint16_t" name="chan7_raw">RC channel 7 value, in microseconds. A value of UINT16_MAX implies the channel is unused.</field>
+               <field type="uint16_t" name="chan8_raw">RC channel 8 value, in microseconds. A value of UINT16_MAX implies the channel is unused.</field>
+               <field type="uint16_t" name="chan9_raw">RC channel 9 value, in microseconds. A value of UINT16_MAX implies the channel is unused.</field>
+               <field type="uint16_t" name="chan10_raw">RC channel 10 value, in microseconds. A value of UINT16_MAX implies the channel is unused.</field>
+               <field type="uint16_t" name="chan11_raw">RC channel 11 value, in microseconds. A value of UINT16_MAX implies the channel is unused.</field>
+               <field type="uint16_t" name="chan12_raw">RC channel 12 value, in microseconds. A value of UINT16_MAX implies the channel is unused.</field>
+               <field type="uint16_t" name="chan13_raw">RC channel 13 value, in microseconds. A value of UINT16_MAX implies the channel is unused.</field>
+               <field type="uint16_t" name="chan14_raw">RC channel 14 value, in microseconds. A value of UINT16_MAX implies the channel is unused.</field>
+               <field type="uint16_t" name="chan15_raw">RC channel 15 value, in microseconds. A value of UINT16_MAX implies the channel is unused.</field>
+               <field type="uint16_t" name="chan16_raw">RC channel 16 value, in microseconds. A value of UINT16_MAX implies the channel is unused.</field>
+               <field type="uint16_t" name="chan17_raw">RC channel 17 value, in microseconds. A value of UINT16_MAX implies the channel is unused.</field>
+               <field type="uint16_t" name="chan18_raw">RC channel 18 value, in microseconds. A value of UINT16_MAX implies the channel is unused.</field>
+               <field type="uint8_t" name="rssi">Receive signal strength indicator, 0: 0%, 100: 100%, 255: invalid/unknown.</field>
+          </message>
           <message id="66" name="REQUEST_DATA_STREAM">
                <field type="uint8_t" name="target_system">The target requested to send the message stream.</field>
                <field type="uint8_t" name="target_component">The target requested to send the message stream.</field>
@@ -1809,11 +1833,11 @@
            <field type="int16_t" name="zmag">Z Magnetic field (milli tesla)</field>
          </message>
          <message id="117" name="LOG_REQUEST_LIST">
-           <description>Request a list of available logs. On some systems calling this may stop on-board logging until LOG_REQUEST_END is called.</description>
-           <field type="uint8_t" name="target_system">System ID</field>
-           <field type="uint8_t" name="target_component">Component ID</field>
-           <field type="uint16_t" name="start">First log id (0 for first available)</field>
-           <field type="uint16_t" name="end">Last log id (0xffff for last available)</field>
+          <description>Request a list of available logs. On some systems calling this may stop on-board logging until LOG_REQUEST_END is called.</description>
+          <field type="uint8_t" name="target_system">System ID</field>
+          <field type="uint8_t" name="target_component">Component ID</field>
+          <field type="uint16_t" name="start">First log id (0 for first available)</field>
+          <field type="uint16_t" name="end">Last log id (0xffff for last available)</field>
          </message>
          <message id="118" name="LOG_ENTRY">
            <description>Reply to LOG_REQUEST_LIST</description>
@@ -1925,7 +1949,6 @@
                <field type="float" name="rot_y">Rotational Component in y</field>
                <field type="float" name="rot_z">Rotational Component in z</field>
           </message>
-
           <!-- MESSAGE IDs 150 - 240: Space for custom messages in individual projectname_messages.xml files -->
           <message id="249" name="MEMORY_VECT">
                <description>Send raw controller memory. The use of this message is discouraged for normal packets, but a quite efficient way for testing new messages and getting experimental debug output.</description>
