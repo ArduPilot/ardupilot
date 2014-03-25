@@ -11,7 +11,11 @@ LinuxRCInput::LinuxRCInput()
 void LinuxRCInput::init(void* machtnichts)
 {}
 
-uint8_t LinuxRCInput::valid_channels() {
+bool LinuxRCInput::new_input() {
+    return false;
+}
+
+uint8_t LinuxRCInput::num_channels() {
     return 0;
 }
 

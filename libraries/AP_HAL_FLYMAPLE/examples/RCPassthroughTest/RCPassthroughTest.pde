@@ -22,8 +22,8 @@ void multiread(AP_HAL::RCInput* in, uint16_t* channels) {
 
 void individualread(AP_HAL::RCInput* in, uint16_t* channels) {
     /* individual channel read method: */
-    uint8_t valid;
-    valid = in->valid_channels();
+    bool valid;
+    valid = in->new_input();
     for (int i = 0; i < 8; i++) {
         channels[i] = in->read(i);
     }

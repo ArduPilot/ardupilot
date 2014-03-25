@@ -20,12 +20,20 @@ void PX4RCInput::init(void* unused)
         pthread_mutex_init(&rcin_mutex, NULL);
 }
 
-uint8_t PX4RCInput::valid_channels() 
+bool PX4RCInput::new_input() 
 {
     pthread_mutex_lock(&rcin_mutex);
     bool valid = _rcin.timestamp_last_signal != _last_read || _override_valid;
     pthread_mutex_unlock(&rcin_mutex);
     return valid;
+}
+
+uint8_t PX4RCInput::num_channels() 
+{
+    pthread_mutex_lock(&rcin_mutex);
+    uint8_t n = _rcin.channel_count;
+    pthread_mutex_unlock(&rcin_mutex);
+    return n;
 }
 
 uint16_t PX4RCInput::read(uint8_t ch) 
@@ -101,7 +109,7 @@ void PX4RCInput::_timer_tick(void)
             orb_copy(ORB_ID(input_rc), _rc_sub, &_rcin);
             pthread_mutex_unlock(&rcin_mutex);
 	}
-        // note, we rely on the vehicle code checking valid_channels() 
+        // note, we rely on the vehicle code checking new_input() 
         // and a timeout for the last valid input to handle failsafe
 	perf_end(_perf_rcin);
 }

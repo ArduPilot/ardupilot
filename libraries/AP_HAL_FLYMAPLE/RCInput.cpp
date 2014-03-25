@@ -127,9 +127,13 @@ void FLYMAPLERCInput::init(void* machtnichts)
     timer_resume(tdev); // reenabled
 }
 
-uint8_t FLYMAPLERCInput::valid_channels() {
+bool FLYMAPLERCInput::new_input() {
     if ((hal.scheduler->millis() - _last_input_interrupt_time) > 50)
 	_valid_channels = 0; // Lost RC Input?
+    return _valid_channels != 0;
+}
+
+uint8_t FLYMAPLERCInput::num_channels() {
     return _valid_channels;
 }
 

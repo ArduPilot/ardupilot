@@ -15,7 +15,8 @@ extern const HAL& hal;
 
 /* private variables to communicate with input capture isr */
 volatile uint16_t APM2RCInput::_pulse_capt[AVR_RC_INPUT_NUM_CHANNELS] = {0};  
-volatile uint8_t  APM2RCInput::_valid_channels = 0;
+volatile uint8_t  APM2RCInput::_num_channels = 0;
+volatile bool     APM2RCInput::_new_input = false;
 
 /* private callback for input capture ISR */
 void APM2RCInput::_timer5_capt_cb(void) {
@@ -34,7 +35,8 @@ void APM2RCInput::_timer5_capt_cb(void) {
     if (pulse_width > 8000) {
         // sync pulse detected.  Pass through values if at least a minimum number of channels received
         if( channel_ctr >= AVR_RC_INPUT_MIN_CHANNELS ) {
-            _valid_channels = channel_ctr;
+            _num_channels = channel_ctr;
+            _new_input = true;
         }
         channel_ctr = 0;
     } else {
@@ -42,7 +44,8 @@ void APM2RCInput::_timer5_capt_cb(void) {
             _pulse_capt[channel_ctr] = pulse_width;
             channel_ctr++;
             if (channel_ctr == AVR_RC_INPUT_NUM_CHANNELS) {
-                _valid_channels = AVR_RC_INPUT_NUM_CHANNELS;
+                _num_channels = AVR_RC_INPUT_NUM_CHANNELS;
+                _new_input = true;
             }
         }
     }
@@ -88,7 +91,8 @@ void APM2RCInput::init(void* _isrregistry) {
     SREG = oldSREG;
 }
 
-uint8_t APM2RCInput::valid_channels() { return _valid_channels; }
+bool APM2RCInput::new_input() { return _new_input; }
+uint8_t APM2RCInput::num_channels() { return _num_channels; }
 
 /* constrain captured pulse to be between min and max pulsewidth. */
 static inline uint16_t constrain_pulse(uint16_t p) {
@@ -106,7 +110,7 @@ uint16_t APM2RCInput::read(uint8_t ch) {
     cli();
     uint16_t capt = _pulse_capt[ch];
     SREG = oldSREG;
-    _valid_channels = 0;
+    _new_input = false;
     /* scale _pulse_capt from 0.5us units to 1us units. */
     uint16_t pulse = constrain_pulse(capt >> 1);
     /* Check for override */
@@ -134,9 +138,7 @@ uint8_t APM2RCInput::read(uint16_t* periods, uint8_t len) {
             periods[i] = _override[i];
         }
     }
-    uint8_t v = _valid_channels;
-    _valid_channels = 0;
-    return v;
+    return _num_channels;
 }
 
 bool APM2RCInput::set_overrides(int16_t *overrides, uint8_t len) {
@@ -152,7 +154,7 @@ bool APM2RCInput::set_override(uint8_t channel, int16_t override) {
     if (channel < AVR_RC_INPUT_NUM_CHANNELS) {
         _override[channel] = override;
         if (override != 0) {
-            _valid_channels = 1;
+            _new_input = true;
             return true;
         }
     }

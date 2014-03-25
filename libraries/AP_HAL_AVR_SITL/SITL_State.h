@@ -39,7 +39,7 @@ public:
     static uint16_t pwm_output[11];
     static uint16_t last_pwm_output[11];
     static uint16_t pwm_input[8];
-    static bool pwm_valid;
+    static bool new_rc_input;
     static void loop_hook(void);
     uint16_t base_port(void) const { return _base_port; }
 

@@ -73,7 +73,7 @@ SITL *SITL_State::_sitl;
 uint16_t SITL_State::pwm_output[11];
 uint16_t SITL_State::last_pwm_output[11];
 uint16_t SITL_State::pwm_input[8];
-bool SITL_State::pwm_valid;
+bool SITL_State::new_rc_input;
 
 // catch floating point exceptions
 void SITL_State::_sig_fpe(int signum)
@@ -263,7 +263,7 @@ void SITL_State::_timer_handler(int signum)
     // simulate RC input at 50Hz
     if (hal.scheduler->millis() - last_pwm_input >= 20 && _sitl->rc_fail == 0) {
         last_pwm_input = hal.scheduler->millis();
-        pwm_valid = true;
+        new_rc_input = true;
     }
 
 	/* check for packet from flight sim */

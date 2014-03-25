@@ -8,7 +8,8 @@ class Linux::LinuxRCInput : public AP_HAL::RCInput {
 public:
     LinuxRCInput();
     void init(void* machtnichts);
-    uint8_t  valid_channels();
+    bool new_input();
+    uint8_t num_channels();
     uint16_t read(uint8_t ch);
     uint8_t read(uint16_t* periods, uint8_t len);
 
