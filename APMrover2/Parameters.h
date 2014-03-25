@@ -36,6 +36,8 @@ public:
         k_param_relay,
         k_param_BoardConfig,
         k_param_pivot_turn_angle,
+        k_param_rc_13,
+        k_param_rc_14,
 
         // IO pins
         k_param_rssi_pin = 20,
@@ -231,6 +233,8 @@ public:
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     RC_Channel_aux rc_12;
+    RC_Channel_aux rc_13;
+    RC_Channel_aux rc_14;
 #endif
 
     // Throttle
@@ -294,6 +298,8 @@ public:
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
         rc_12                                   (CH_12),
+        rc_13                                   (CH_13),
+        rc_14                                   (CH_14),
 #endif
 
         // PID controller    initial P        initial I        initial D        initial imax
