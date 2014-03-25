@@ -312,6 +312,32 @@ static void NOINLINE send_radio_in(mavlink_channel_t chan)
         hal.rcin->read(CH_7),
         hal.rcin->read(CH_8),
         receiver_rssi);
+    if (hal.rcin->num_channels() > 8 && 
+        comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES >= MAVLINK_MSG_ID_RC_CHANNELS_LEN) {
+        mavlink_msg_rc_channels_send(
+            chan,
+            millis(),
+            hal.rcin->num_channels(),
+            hal.rcin->read(CH_1),
+            hal.rcin->read(CH_2),
+            hal.rcin->read(CH_3),
+            hal.rcin->read(CH_4),
+            hal.rcin->read(CH_5),
+            hal.rcin->read(CH_6),
+            hal.rcin->read(CH_7),
+            hal.rcin->read(CH_8),
+            hal.rcin->read(CH_9),
+            hal.rcin->read(CH_10),
+            hal.rcin->read(CH_11),
+            hal.rcin->read(CH_12),
+            hal.rcin->read(CH_13),
+            hal.rcin->read(CH_14),
+            hal.rcin->read(CH_15),
+            hal.rcin->read(CH_16),
+            hal.rcin->read(CH_17),
+            hal.rcin->read(CH_18),
+            receiver_rssi);        
+    }
 }
 
 static void NOINLINE send_radio_out(mavlink_channel_t chan)
