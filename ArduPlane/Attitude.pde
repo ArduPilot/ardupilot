@@ -975,6 +975,8 @@ static void set_servos(void)
  #endif
  #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     g.rc_12.output_ch(CH_12);
+    g.rc_13.output_ch(CH_13);
+    g.rc_14.output_ch(CH_14);
  #endif
 }
 

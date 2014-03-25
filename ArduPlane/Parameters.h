@@ -218,6 +218,8 @@ public:
         k_param_fs_batt_mah,
         k_param_short_fs_timeout,
         k_param_long_fs_timeout,
+        k_param_rc_13,
+        k_param_rc_14,
 
         //
         // 200: Feed-forward gains
@@ -442,6 +444,8 @@ public:
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     RC_Channel_aux rc_12;
+    RC_Channel_aux rc_13;
+    RC_Channel_aux rc_14;
 #endif
     uint8_t _dummy;
 
@@ -465,6 +469,8 @@ public:
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
         rc_12                                   (CH_12),
+        rc_13                                   (CH_13),
+        rc_14                                   (CH_14),
 #endif
         _dummy(0)
         {}

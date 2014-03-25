@@ -863,6 +863,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Group: RC12_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_12,                    "RC12_", RC_Channel_aux),
+
+    // @Group: RC13_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_13,                    "RC13_", RC_Channel_aux),
+
+    // @Group: RC14_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_14,                    "RC14_", RC_Channel_aux),
 #endif
 
     // @Group: RLL2SRV_
