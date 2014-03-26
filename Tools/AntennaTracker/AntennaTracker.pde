@@ -58,6 +58,7 @@
 #include <AP_BattMonitor.h> // Battery monitor library
 #include <AP_Airspeed.h>
 #include <RC_Channel.h>
+#include <AP_BoardConfig.h>
 
 // Configuration
 #include "config.h"
@@ -190,6 +191,9 @@ static RC_Channel channel_pitch(CH_2);
 ////////////////////////////////////////////////////////////////////////////////
 static const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
 static GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
+
+// board specific config
+static AP_BoardConfig BoardConfig;
 
 ////////////////////////////////////////////////////////////////////////////////
 // 3D Location vectors

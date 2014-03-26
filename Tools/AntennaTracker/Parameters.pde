@@ -149,6 +149,10 @@ const AP_Param::Info var_info[] PROGMEM = {
     GOBJECT(sitl, "SIM_", SITL),
 #endif
 
+    // @Group: BRD_
+    // @Path: ../libraries/AP_BoardConfig/AP_BoardConfig.cpp
+    GOBJECT(BoardConfig,            "BRD_",       AP_BoardConfig),
+
     // RC channel
     //-----------
     // @Group: RC1_

@@ -14,6 +14,8 @@ static void init_tracker()
     // Check the EEPROM format version before loading any parameters from EEPROM
     load_parameters();
 
+    BoardConfig.init();
+
     // reset the uartA baud rate after parameter load
     hal.uartA->begin(map_baudrate(g.serial0_baud, SERIAL0_BAUD));
 

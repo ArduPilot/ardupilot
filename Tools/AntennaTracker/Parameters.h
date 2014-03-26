@@ -76,8 +76,8 @@ public:
 
         k_param_start_latitude,
         k_param_start_longitude,
-
         k_param_startup_delay,
+        k_param_BoardConfig,
 
         k_param_channel_yaw = 200,
         k_param_channel_pitch,
