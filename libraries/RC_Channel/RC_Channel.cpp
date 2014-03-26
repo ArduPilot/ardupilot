@@ -325,6 +325,9 @@ RC_Channel::pwm_to_range()
 int16_t
 RC_Channel::range_to_pwm()
 {
+    if (_high_out == _low_out) {
+        return radio_trim;
+    }
     return ((long)(servo_out - _low_out) * (long)(radio_max - radio_min)) / (long)(_high_out - _low_out);
 }
 
