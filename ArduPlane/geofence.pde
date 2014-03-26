@@ -5,6 +5,10 @@
  */
 
 #if GEOFENCE_ENABLED == ENABLED
+
+#define MIN_GEOFENCE_POINTS 4 //3 to define a minimal polygon (triangle)
+                              //+ 1 for return point.
+
 /*
  *  The state of geo-fencing. This structure is dynamically allocated
  *  the first time it is used. This means we only pay for the pointer
@@ -126,13 +130,14 @@ failed:
 }
 
 /*
- * return true if a geo-fence has been uploaded (not necessarily enabled)
+ * return true if a geo-fence has been uploaded and
+ * FENCE_ACTION is 1 (not necessarily enabled)
  */
 static bool geofence_present(void)
 {
     //require at least a return point and a triangle
     //to define a geofence area:
-    if (g.fence_total < 4) {
+    if (g.fence_action != FENCE_ACTION_NONE && g.fence_total < MIN_GEOFENCE_POINTS) {
         return false;
     }
     return true;

@@ -275,14 +275,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: FENCE_AUTOENABLE
     // @DisplayName: Fence automatically enabled after auto takeoff and automatically disabled when starting an auto landing.  Note that this does NOT remove the need to first create a geofence.
     // @Description: When set to 1, gefence automatically enables after an auto takeoff and automatically disables at the beginning of an auto landing.  When on the ground before takeoff the fence is disabled.
-    // @Range: 0 1
+    // @Values: 0:NoAutoEnable,1:AutoEnable
     // @User: Standard
     GSCALAR(fence_autoenable,       "FENCE_AUTOENABLE", 0),
 
     // @Param: FENCE_RET_RALLY
     // @DisplayName: Fence Return to Rally
     // @Description: When set to 1: on fence breach the plane will return to the nearest rally point rather than the fence return point.  If no rally points have been defined the plane will return to the home point.  
-    // @Range: 0 1
+    // @Values: 0:FenceReturnPoint,1:NearestRallyPoint
     // @User: Standard
     GSCALAR(fence_ret_rally,        "FENCE_RET_RALLY",  0),     
 #endif
