@@ -32,6 +32,8 @@ static struct GeofenceState {
     uint8_t breach_type;
     uint32_t breach_time;
     uint8_t old_switch_position;
+    int32_t guided_lat;
+    int32_t guided_lng;
     /* point 0 is the return point */
     Vector2l boundary[MAX_FENCEPOINTS];
 } *geofence_state;
@@ -246,8 +248,8 @@ static void geofence_check(bool altitude_check_only)
             geofence_present() &&
             geofence_state->boundary_uptodate &&
             geofence_state->old_switch_position == oldSwitchPosition &&
-            guided_WP_loc.lat == geofence_state->boundary[0].x &&
-            guided_WP_loc.lng == geofence_state->boundary[0].y) {
+            guided_WP_loc.lat == geofence_state->guided_lat &&
+            guided_WP_loc.lng == geofence_state->guided_lng) {
             geofence_state->old_switch_position = 254;
             set_mode(get_previous_mode());
         }
@@ -344,7 +346,8 @@ static void geofence_check(bool altitude_check_only)
             guided_WP_loc.lat = geofence_state->boundary[0].x;
             guided_WP_loc.lng = geofence_state->boundary[0].y;
         }
-
+        geofence_state->guided_lat = guided_WP_loc.lat;
+        geofence_state->guided_lng = guided_WP_loc.lng;
         geofence_state->old_switch_position = oldSwitchPosition;
 
         set_guided_WP();
