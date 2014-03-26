@@ -58,4 +58,12 @@ public:
 #define APM_BUILD_ArduPlane      3
 #define APM_BUILD_AntennaTracker 4
 
+/*
+  using this macro catches cases where we try to check vehicle type on
+  build systems that don't support it
+ */
+#ifdef APM_BUILD_DIRECTORY
+#define APM_BUILD_TYPE(type) ((type) == APM_BUILD_DIRECTORY)
+#endif
+
 #endif // AP_VEHICLE_H
