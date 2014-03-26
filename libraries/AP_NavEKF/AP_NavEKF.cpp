@@ -15,8 +15,30 @@
 #include "AP_NavEKF.h"
 #include <AP_AHRS.h>
 #include <AP_Param.h>
+#include <AP_Vehicle.h>
 
 #include <stdio.h>
+
+/*
+  parameter defaults for different types of vehicle. The
+  APM_BUILD_DIRECTORY is taken from the main vehicle directory name
+  where the code is built. Note that this trick won't work for arduino
+  builds on APM2, but NavEKF doesn't run on APM2, so that's OK
+ */
+#if APM_BUILD_DIRECTORY == APM_BUILD_ArduCopter
+// copter defaults
+#define VELNE_NOISE_DEFAULT 0.30f
+
+#elif APM_BUILD_DIRECTORY == APM_BUILD_APMrover2
+// rover defaults
+#define VELNE_NOISE_DEFAULT 0.30f
+
+#else
+// generic defaults (and for plane)
+#define VELNE_NOISE_DEFAULT 0.30f
+
+#endif // APM_BUILD_DIRECTORY
+
 
 extern const AP_HAL::HAL& hal;
 
@@ -31,7 +53,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Range: 0.05 - 5.0
     // @Increment: 0.05
     // @User: advanced
-    AP_GROUPINFO("VELNE_NOISE",    0, NavEKF, _gpsHorizVelNoise, 0.30f),
+    AP_GROUPINFO("VELNE_NOISE",    0, NavEKF, _gpsHorizVelNoise, VELNE_NOISE_DEFAULT),
 
     // @Param: VELD_NOISE
     // @DisplayName: GPS vertical velocity measurement noise (m/s)
