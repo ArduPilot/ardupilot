@@ -390,6 +390,9 @@
                <entry value="524288" name="MAV_SYS_STATUS_SENSOR_3D_MAG2">
                     <description>0x80000 2nd 3D magnetometer</description>
                </entry>
+               <entry value="1048576" name="MAV_SYS_STATUS_GEOFENCE">
+                    <description>0x100000 geofence</description>
+               </entry>
           </enum>
           <enum name="MAV_FRAME">
                <entry value="0" name="MAV_FRAME_GLOBAL">

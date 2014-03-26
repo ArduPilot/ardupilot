@@ -76,7 +76,19 @@
 	      <param index="5">Empty</param>
 	      <param index="6">Empty</param>
 	      <param index="7">Empty</param>
-	    </entry>
+      </entry>
+
+      <entry name="MAV_CMD_DO_FENCE_ENABLE" value="207">
+          <description>Mission command to enable the geofence</description>
+          <param index="1">enable? (0=disable, 1=enable)</param>
+          <param index="2">Empty</param>
+	      <param index="3">Empty</param>
+	      <param index="4">Empty</param>
+	      <param index="5">Empty</param>
+	      <param index="6">Empty</param>
+	      <param index="7">Empty</param>
+        </entry>
+
 	  </enum>
 
 	  <!-- fenced mode enums -->
