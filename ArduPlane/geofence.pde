@@ -6,8 +6,9 @@
 
 #if GEOFENCE_ENABLED == ENABLED
 
-#define MIN_GEOFENCE_POINTS 4 //3 to define a minimal polygon (triangle)
-                              //+ 1 for return point.
+#define MIN_GEOFENCE_POINTS 5 // 3 to define a minimal polygon (triangle)
+                              // + 1 for return point and +1 for last
+                              // pt (same as first)
 
 /*
  *  The state of geo-fencing. This structure is dynamically allocated
