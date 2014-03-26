@@ -54,9 +54,9 @@ tracker hardware. The servos are moved until the yaw and pitch of the processor
 (and therfore of the antenna itself) matches the bearing and elevation to the
 tracked vehicle.
 
-How does AntennaTracker know where it is?
+How does AntennaTracker know where it is on the earth?
 
-- If the tracker is equipped with a GPS and it has a good 3D fix, the most
+- If the tracker is equipped with a GPS and it has had a good 3D fix, the most
 recent good GPS fix is used.
 
 - If the tracker is equipped with a GPS and it has lost its fix, the most
@@ -72,7 +72,17 @@ Longitude, 0 Altitude are used (which is probably not very helpful)
 How does AntennaTracker get GLOBAL_POSITION_INT messages from the tracked
 vehicle?
 
-<more here>
+mavproxy, when it runs the tracker module, intercepts all GLOBAL_POSITION_INT
+messages received from its master vehicle, and sends them to the tracker. It
+knows how to connect to the tracker with the set port and set baudrate
+commands, for example to connect by a USB-Serial  radio, such as the 3DR Radio
+on port /dev/ttyUSB0:
+
+(after starting mavproxy)
+module load tracker
+tracker set port /dev/ttyUSB0
+tracker set baudrate 57600
+tracker start
 
 Mounting
 
@@ -127,13 +137,42 @@ available)
 You can find the complete set of configuration items I used for my Flymaple
 tracker mounted on an Eagle Tree tracker WHERE?????
 
+Compass Calibration
+
+AntennaTracker uses its internal magnetic compass to determine where North is
+and therefore where to point for each bearing to the target vehicle. (On other
+ardupilot vehicles, the yaw is also calibrated by the current GPS track. This
+is not possible for AntennaTracker, so the compass is the only possible source
+for absolute bearing)
+
+The compass magnetometer is exquisitely sensitive to nearby magnetic fields from
+wires, metal fittings, servos, radios etc. Therefore is it VITALLY ESSENTIAL that you
+calibrate the compass. Further, it must be calibrated outdoors, while installed
+in situ in the tracker, with all other equipment installed, fastened down and
+ready to operate.
+
+Failure to calibrate correctly will result in the tracker pointing in the
+wrong direction, or the azimuth/yaw and elevation/pitch drifting.
+
+Use Mission Planner to calibrate the tracker:
+- Assemble the completed tracker, complete and ready to operate.
+- Power up the tracker
+- Connect to it with Mission Planner
+- On Mission Planner->INITIAL SETUP->Compass, click on Live Calibration
+- click on OK
+- rotate the complete antenna tracker assembly around, in 3 dimensions, making sure to
+rotate the tracker to every possible orientation in the 1 minute you have
+available. DONT just move the yaw and pitch motors around. You will probably have to
+pick the whole thing up.
+- At the end of the minute, Mission Planner will update AntennaTrackers compass offsets.
+
 Levelling
 
-Since AntennaTracker uses its internal accelerometers to determine the current
-elevation/pitch of the antenna, it is important to 'level' the AntennaTracker
-before use so the accelerometers are calibrated. Failure to do this will
-result in the antenna constantly pointing a bit high or a bit low compared to
-the tracked vehicle.
+Since AntennaTracker uses its internal accelerometers (amongst other things)
+to determine the current elevation/pitch of the antenna, it is also important
+to 'level' the AntennaTracker before use so the accelerometers are
+calibrated. Failure to do this will result in the antenna constantly pointing
+a bit high or a bit low compared to the tracked vehicle.
 
 You can do this by connecting to the AntennaTracker with mavproxy and issuing
 these commands:
@@ -152,7 +191,7 @@ Operation
 
 After powering up AntennaTracker, it may take up to 1 minute while it
 automatially calibrates the compass before it points in the expected
-direction.
+direction. Moving the tracker around will speed up this process.
 
 How to set the HOME location
 
