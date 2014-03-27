@@ -61,7 +61,39 @@ static void barometer_accumulate(void)
 static void update_GPS(void)
 {
     g_gps->update();
-    // REVISIT: add compass variation with compass.set_initial_location(g_gps->latitude, g_gps->longitude);
-    // when have a solid GPS fix. Also init_home();
+
+    static uint8_t ground_start_count = 5;
+    if (g_gps->new_data && g_gps->status() >= GPS::GPS_OK_FIX_3D) {
+        g_gps->new_data = false;
+        
+        if(ground_start_count > 1) {
+            ground_start_count--;
+        } else if (ground_start_count == 1) {
+            // We countdown N number of good GPS fixes
+            // so that the altitude is more accurate
+            // -------------------------------------
+            if (current_loc.lat == 0) {
+                ground_start_count = 5;
+
+            } else {
+                // Now have an initial GPS position
+                // use it as the HOME position in future startups
+                current_loc.lat = g_gps->latitude;
+                current_loc.lng = g_gps->longitude;
+                current_loc.alt = g_gps->altitude_cm;
+                current_loc.options = 0; // Absolute altitude
+                set_home(current_loc);
+
+                // set system clock for log timestamps
+                hal.util->set_system_clock(g_gps->time_epoch_usec());
+
+                if (g.compass_enabled) {
+                    // Set compass declination automatically
+                    compass.set_initial_location(g_gps->latitude, g_gps->longitude);
+                }
+                ground_start_count = 0;
+            }
+        }
+    }
 }
 
