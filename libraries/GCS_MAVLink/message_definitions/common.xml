@@ -523,6 +523,16 @@
                     <param index="6">Longitude/Y of goal</param>
                     <param index="7">Altitude/Z of goal</param>
                </entry>
+               <entry value="82" name="MAV_CMD_NAV_SPLINE_WAYPOINT">
+                    <description>Navigate to MISSION using a spline path.</description>
+                    <param index="1">Hold time in decimal seconds. (ignored by fixed wing, time to stay at MISSION for rotary wing)</param>
+                    <param index="2">Empty</param>
+                    <param index="3">Empty</param>
+                    <param index="4">Empty</param>
+                    <param index="5">Latitude/X of goal</param>
+                    <param index="6">Longitude/Y of goal</param>
+                    <param index="7">Altitude/Z of goal</param>
+               </entry>
                <entry value="95" name="MAV_CMD_NAV_LAST">
                     <description>NOP - This command is only used to mark the upper limit of the NAV/ACTION commands in the enumeration</description>
                     <param index="1">Empty</param>
