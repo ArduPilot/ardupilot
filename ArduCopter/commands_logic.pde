@@ -281,47 +281,11 @@ static void do_nav_wp(const AP_Mission::Mission_Command& cmd)
     // this is the delay, stored in seconds
     loiter_time_max = abs(cmd.p1);
 
-    // decide if this is a straight or spline segment
-    if (!cmd.content.location.flags.spline) {
-        // Set wp navigation target
-        auto_wp_start(local_pos);
-    	// if no delay set the waypoint as "fast"
-    	if (loiter_time_max == 0 ) {
-    		wp_nav.set_fast_waypoint(true);
-    	}
-    }else{
-        // determine segment start and end type
-    	bool stopped_at_start = true;
-    	AC_WPNav::spline_segment_end_type seg_end_type = AC_WPNav::SEGMENT_END_STOP;
-    	AP_Mission::Mission_Command temp_cmd;
-    	Vector3f next_spline_destination;    // end of next segment if it is a spline segment
-
-        // if previous command was a wp_nav command with no delay set stopped_at_start to false
-        // To-Do: move processing of delay into wp-nav controller to allow it to determine the stopped_at_start value itself?
-        uint16_t prev_cmd_idx = mission.get_prev_nav_cmd_index();
-        if (prev_cmd_idx != AP_MISSION_CMD_INDEX_NONE) {
-            if (mission.read_cmd_from_storage(prev_cmd_idx, temp_cmd)) {
-                if (temp_cmd.id == MAV_CMD_NAV_WAYPOINT && temp_cmd.p1 == 0) {
-                    stopped_at_start = false;
-                }
-            }
-        }
-
-        // if there is no delay at the end of this segment get next nav command
-        if (cmd.p1 == 0 && mission.get_next_nav_cmd(cmd.index, temp_cmd)) {
-            // if the next nav command is a waypoint set end type to spline or straight
-            if (temp_cmd.id == MAV_CMD_NAV_WAYPOINT) {
-                if (temp_cmd.content.location.flags.spline) {
-                    seg_end_type = AC_WPNav::SEGMENT_END_SPLINE;
-                    next_spline_destination = pv_location_to_vector(temp_cmd.content.location);
-                }else{
-                    seg_end_type = AC_WPNav::SEGMENT_END_STRAIGHT;
-                }
-            }
-        }
-
-        // set spline navigation target
-    	auto_spline_start(local_pos, stopped_at_start, seg_end_type, next_spline_destination);
+    // Set wp navigation target
+    auto_wp_start(local_pos);
+    // if no delay set the waypoint as "fast"
+    if (loiter_time_max == 0 ) {
+        wp_nav.set_fast_waypoint(true);
     }
 }
 
