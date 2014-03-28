@@ -221,7 +221,7 @@ static AP_Compass_HIL compass;
 #if   GPS_PROTOCOL == GPS_PROTOCOL_AUTO
 AP_GPS_Auto     g_gps_driver(&g_gps);
 #if GPS2_ENABLE
-AP_GPS_UBLOX    g_gps2_driver;
+AP_GPS_Auto    g_gps2_driver(&g_gps2);
 #endif
 
 #elif GPS_PROTOCOL == GPS_PROTOCOL_NMEA
