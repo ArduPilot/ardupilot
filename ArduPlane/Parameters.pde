@@ -805,6 +805,11 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/AP_Baro/AP_Baro.cpp
     GOBJECT(barometer, "GND_", AP_Baro),
 
+    // GPS driver
+    // @Group: GPS_
+    // @Path: ../libraries/AP_GPS/AP_GPS.cpp
+    GOBJECT(gps, "GPS_", AP_GPS),
+
 #if CAMERA == ENABLED
     // @Group: CAM_
     // @Path: ../libraries/AP_Camera/AP_Camera.cpp

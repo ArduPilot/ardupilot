@@ -104,6 +104,7 @@ public:
         k_param_rssi_range,
         k_param_flapin_channel,
         k_param_flaperon_output,
+        k_param_gps,
 
         // 100: Arming parameters
         k_param_arming = 100,

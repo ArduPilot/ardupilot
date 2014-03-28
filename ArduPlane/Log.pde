@@ -253,8 +253,8 @@ static void Log_Write_Camera()
 #if CAMERA == ENABLED
     struct log_Camera pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CAMERA_MSG),
-        gps_time    : g_gps->time_week_ms,
-        gps_week    : g_gps->time_week,
+        gps_time    : gps.time_week_ms(),
+        gps_week    : gps.time_week(),
         latitude    : current_loc.lat,
         longitude   : current_loc.lng,
         altitude    : current_loc.alt,
@@ -352,7 +352,7 @@ static void Log_Write_Nav_Tuning()
         altitude_error_cm   : (int16_t)altitude_error_cm,
         airspeed_cm         : (int16_t)airspeed.get_airspeed_cm(),
         altitude            : barometer.get_altitude(),
-        groundspeed_cm      : g_gps->ground_speed_cm
+        groundspeed_cm      : (uint32_t)(gps.ground_speed()*100)
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -395,7 +395,7 @@ static void Log_Write_Sonar()
         distance    : sonar.distance_cm(),
         voltage     : sonar.voltage(),
         baro_alt    : barometer.get_altitude(),
-        groundspeed : (0.01f * g_gps->ground_speed_cm),
+        groundspeed : gps.ground_speed(),
         throttle    : (uint8_t)(100 * channel_throttle->norm_output())
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
@@ -493,7 +493,7 @@ static void Log_Write_Compass()
 
 static void Log_Write_GPS(void)
 {
-    DataFlash.Log_Write_GPS(g_gps, current_loc.alt - ahrs.get_home().alt);
+    DataFlash.Log_Write_GPS(gps, current_loc.alt - ahrs.get_home().alt);
 }
 
 static void Log_Write_IMU() 

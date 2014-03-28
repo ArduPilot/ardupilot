@@ -190,11 +190,8 @@ static int32_t pitch_limit_min_cd;
 //   supply data from the simulation.
 //
 
-// All GPS access should be through this pointer.
-static GPS         *g_gps;
-#if GPS2_ENABLE
-static GPS         *g_gps2;
-#endif
+// GPS driver
+static AP_GPS gps;
 
 // flight modes convenience array
 static AP_Int8          *flight_modes = &g.flight_mode1;
@@ -227,38 +224,6 @@ static AP_Compass_HIL compass;
  #error Unrecognized CONFIG_COMPASS setting
 #endif
 
-// GPS selection
-#if   GPS_PROTOCOL == GPS_PROTOCOL_AUTO
-AP_GPS_Auto     g_gps_driver(&g_gps);
-#if GPS2_ENABLE
-AP_GPS_Auto    g_gps2_driver(&g_gps2);
-#endif
-
-#elif GPS_PROTOCOL == GPS_PROTOCOL_NMEA
-AP_GPS_NMEA     g_gps_driver;
-
-#elif GPS_PROTOCOL == GPS_PROTOCOL_SIRF
-AP_GPS_SIRF     g_gps_driver;
-
-#elif GPS_PROTOCOL == GPS_PROTOCOL_UBLOX
-AP_GPS_UBLOX    g_gps_driver;
-
-#elif GPS_PROTOCOL == GPS_PROTOCOL_MTK
-AP_GPS_MTK      g_gps_driver;
-
-#elif GPS_PROTOCOL == GPS_PROTOCOL_MTK19
-AP_GPS_MTK19    g_gps_driver;
-
-#elif GPS_PROTOCOL == GPS_PROTOCOL_NONE
-AP_GPS_None     g_gps_driver;
-
-#elif GPS_PROTOCOL == GPS_PROTOCOL_HIL
-AP_GPS_HIL      g_gps_driver;
-
-#else
-  #error Unrecognised GPS_PROTOCOL setting.
-#endif // GPS PROTOCOL
-
 #if CONFIG_INS_TYPE == CONFIG_INS_OILPAN || CONFIG_HAL_BOARD == HAL_BOARD_APM1
 AP_ADC_ADS7844 apm1_adc;
 #endif
@@ -281,9 +246,9 @@ AP_InertialSensor_L3G4200D ins;
 
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
-AP_AHRS_NavEKF ahrs(ins, barometer, g_gps);
+AP_AHRS_NavEKF ahrs(ins, barometer, gps);
 #else
-AP_AHRS_DCM ahrs(ins, barometer, g_gps);
+AP_AHRS_DCM ahrs(ins, barometer, gps);
 #endif
 
 static AP_L1_Control L1_controller(ahrs);
@@ -690,13 +655,13 @@ static uint16_t mainLoop_count;
 #if MOUNT == ENABLED
 // current_loc uses the baro/gps soloution for altitude rather than gps only.
 // mabe one could use current_loc for lat/lon too and eliminate g_gps alltogether?
-static AP_Mount camera_mount(&current_loc, g_gps, ahrs, 0);
+static AP_Mount camera_mount(&current_loc, ahrs, 0);
 #endif
 
 #if MOUNT2 == ENABLED
 // current_loc uses the baro/gps soloution for altitude rather than gps only.
 // mabe one could use current_loc for lat/lon too and eliminate g_gps alltogether?
-static AP_Mount camera_mount2(&current_loc, g_gps, ahrs, 1);
+static AP_Mount camera_mount2(&current_loc, ahrs, 1);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1003,13 +968,13 @@ static void compass_save()
 static void airspeed_ratio_update(void)
 {
     if (!airspeed.enabled() ||
-        g_gps->status() < GPS::GPS_OK_FIX_3D ||
-        g_gps->ground_speed_cm < 400) {
+        gps.status() < AP_GPS::GPS_OK_FIX_3D ||
+        gps.ground_speed() < 4) {
         // don't calibrate when not moving
         return;        
     }
     if (airspeed.get_airspeed() < aparm.airspeed_min && 
-        g_gps->ground_speed_cm < (uint32_t)aparm.airspeed_min*100) {
+        gps.ground_speed() < (uint32_t)aparm.airspeed_min) {
         // don't calibrate when flying below the minimum airspeed. We
         // check both airspeed and ground speed to catch cases where
         // the airspeed ratio is way too low, which could lead to it
@@ -1022,7 +987,7 @@ static void airspeed_ratio_update(void)
         // don't calibrate when going beyond normal flight envelope
         return;
     }
-    Vector3f vg = g_gps->velocity_vector();
+    const Vector3f &vg = gps.velocity();
     airspeed.update_calibration(vg);
     gcs_send_airspeed_calibration(vg);
 }
@@ -1034,27 +999,14 @@ static void airspeed_ratio_update(void)
 static void update_GPS_50Hz(void)
 {
     static uint32_t last_gps_reading;
-    g_gps->update();
+    gps.update();
 
-    if (g_gps->last_message_time_ms() != last_gps_reading) {
-        last_gps_reading = g_gps->last_message_time_ms();
+    if (gps.last_message_time_ms() != last_gps_reading) {
+        last_gps_reading = gps.last_message_time_ms();
         if (should_log(MASK_LOG_GPS)) {
             Log_Write_GPS();
         }
     }
-
-#if GPS2_ENABLE
-    static uint32_t last_gps2_reading;
-    if (g_gps2 != NULL) {
-        g_gps2->update();
-        if (g_gps2->last_message_time_ms() != last_gps2_reading) {
-            last_gps2_reading = g_gps2->last_message_time_ms();
-            if (should_log(MASK_LOG_GPS)) {
-                DataFlash.Log_Write_GPS2(g_gps2);
-            }
-        }
-    }
-#endif
 }
 
 /*
@@ -1065,10 +1017,11 @@ static void update_GPS_10Hz(void)
     // get position from AHRS
     have_position = ahrs.get_position(current_loc);
 
-    if (g_gps->new_data && g_gps->status() >= GPS::GPS_OK_FIX_3D) {
-        g_gps->new_data = false;
+    static uint32_t last_gps_msg_ms;
+    if (gps.last_message_time_ms() != last_gps_msg_ms && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+        last_gps_msg_ms = gps.last_message_time_ms();
 
-        if(ground_start_count > 1) {
+        if (ground_start_count > 1) {
             ground_start_count--;
         } else if (ground_start_count == 1) {
             // We countdown N number of good GPS fixes
@@ -1081,11 +1034,12 @@ static void update_GPS_10Hz(void)
                 init_home();
 
                 // set system clock for log timestamps
-                hal.util->set_system_clock(g_gps->time_epoch_usec());
+                hal.util->set_system_clock(gps.time_epoch_usec());
 
                 if (g.compass_enabled) {
                     // Set compass declination automatically
-                    compass.set_initial_location(g_gps->latitude, g_gps->longitude);
+                    const Location &loc = gps.location();
+                    compass.set_initial_location(loc.lat, loc.lng);
                 }
                 ground_start_count = 0;
             }
@@ -1143,7 +1097,7 @@ static void handle_auto_mode(void)
             if (nav_pitch_cd < takeoff_pitch_cd)
                 nav_pitch_cd = takeoff_pitch_cd;
         } else {
-            nav_pitch_cd = (g_gps->ground_speed_cm / (float)g.airspeed_cruise_cm) * takeoff_pitch_cd;
+            nav_pitch_cd = ((gps.ground_speed()*100) / (float)g.airspeed_cruise_cm) * takeoff_pitch_cd;
             nav_pitch_cd = constrain_int32(nav_pitch_cd, 500, takeoff_pitch_cd);
         }
         

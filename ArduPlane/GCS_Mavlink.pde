@@ -146,7 +146,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
     if (airspeed.enabled()) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
     }
-    if (g_gps != NULL && g_gps->status() > GPS::NO_GPS) {
+    if (gps.status() > AP_GPS::NO_GPS) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_GPS;
     }
     if (geofence_present()) {
@@ -218,7 +218,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
     if (g.compass_enabled && compass.healthy(0) && ahrs.use_compass()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_MAG;
     }
-    if (g_gps != NULL && g_gps->status() >= GPS::GPS_OK_FIX_3D) {
+    if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_GPS;
     }
     if (!ins.healthy()) {
@@ -255,27 +255,28 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
 
 static void NOINLINE send_location(mavlink_channel_t chan)
 {
-    uint32_t fix_time;
+    uint32_t fix_time_ms;
     // if we have a GPS fix, take the time as the last fix time. That
     // allows us to correctly calculate velocities and extrapolate
     // positions.
     // If we don't have a GPS fix then we are dead reckoning, and will
     // use the current boot time as the fix time.    
-    if (g_gps->status() >= GPS::GPS_OK_FIX_2D) {
-        fix_time = g_gps->last_fix_time;
+    if (gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
+        fix_time_ms = gps.last_fix_time_ms();
     } else {
-        fix_time = millis();
+        fix_time_ms = hal.scheduler->millis();
     }
+    const Vector3f &vel = gps.velocity();
     mavlink_msg_global_position_int_send(
         chan,
-        fix_time,
+        fix_time_ms,
         current_loc.lat,                // in 1E7 degrees
         current_loc.lng,                // in 1E7 degrees
-        g_gps->altitude_cm * 10,        // millimeters above sea level
+        gps.location().alt * 10UL,      // millimeters above sea level
         relative_altitude() * 1.0e3,    // millimeters above ground
-        g_gps->velocity_north() * 100,  // X speed cm/s (+ve North)
-        g_gps->velocity_east()  * 100,  // Y speed cm/s (+ve East)
-        g_gps->velocity_down()  * -100, // Z speed cm/s (+ve up)
+        vel.x * 100,  // X speed cm/s (+ve North)
+        vel.y * 100,  // Y speed cm/s (+ve East)
+        vel.z * -100, // Z speed cm/s (+ve up)
         ahrs.yaw_sensor);
 }
 
@@ -295,39 +296,45 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
 
 static void NOINLINE send_gps_raw(mavlink_channel_t chan)
 {
-    static uint32_t last_send_time;
-    if (last_send_time != 0 && last_send_time == g_gps->last_fix_time && g_gps->status() >= GPS::GPS_OK_FIX_3D) {
-        return;
+    static uint32_t last_send_time_ms;
+    if (last_send_time_ms == 0 || last_send_time_ms != gps.last_message_time_ms(0)) {
+        last_send_time_ms = gps.last_message_time_ms(0);
+        const Location &loc = gps.location(0);
+        mavlink_msg_gps_raw_int_send(
+            chan,
+            gps.last_fix_time_ms(0)*(uint64_t)1000,
+            gps.status(0),
+            loc.lat,        // in 1E7 degrees
+            loc.lng,        // in 1E7 degrees
+            loc.alt * 10UL, // in mm
+            gps.get_hdop(0),
+            65535,
+            gps.ground_speed(0)*100,  // cm/s
+            gps.ground_course_cd(0), // 1/100 degrees,
+            gps.num_sats(0));
     }
-    last_send_time = g_gps->last_fix_time;
-    mavlink_msg_gps_raw_int_send(
-        chan,
-        g_gps->last_fix_time*(uint64_t)1000,
-        g_gps->status(),
-        g_gps->latitude,      // in 1E7 degrees
-        g_gps->longitude,     // in 1E7 degrees
-        g_gps->altitude_cm * 10, // in mm
-        g_gps->hdop,
-        65535,
-        g_gps->ground_speed_cm,  // cm/s
-        g_gps->ground_course_cd, // 1/100 degrees,
-        g_gps->num_sats);
-#if GPS2_ENABLE
-    if (g_gps2 != NULL && g_gps2->status() != GPS::NO_GPS) {
+
+#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
+    static uint32_t last_send_time_ms2;
+    if (gps.num_sensors() > 1 && 
+        gps.status(1) > AP_GPS::NO_GPS &&
+        (last_send_time_ms2 == 0 || last_send_time_ms2 != gps.last_message_time_ms(1))) {
         int16_t payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
         if (payload_space >= MAVLINK_MSG_ID_GPS2_RAW_LEN) {
+            const Location &loc = gps.location(1);
+            last_send_time_ms = gps.last_message_time_ms(1);
             mavlink_msg_gps2_raw_send(
                 chan,
-                g_gps2->last_fix_time*(uint64_t)1000,
-                g_gps2->status(),
-                g_gps2->latitude,      // in 1E7 degrees
-                g_gps2->longitude,     // in 1E7 degrees
-                g_gps2->altitude_cm * 10, // in mm
-                g_gps2->hdop,
+                gps.last_fix_time_ms(1)*(uint64_t)1000,
+                gps.status(1),
+                loc.lat,
+                loc.lng,
+                loc.alt * 10UL,
+                gps.get_hdop(1),
                 65535,
-                g_gps2->ground_speed_cm,  // cm/s
-                g_gps2->ground_course_cd, // 1/100 degrees,
-                g_gps2->num_sats,
+                gps.ground_speed(1)*100,  // cm/s
+                gps.ground_course_cd(1), // 1/100 degrees,
+                gps.num_sats(1),
                 0,
                 0);
         }
@@ -339,7 +346,7 @@ static void NOINLINE send_system_time(mavlink_channel_t chan)
 {
     mavlink_msg_system_time_send(
         chan,
-        g_gps->time_epoch_usec(),
+        gps.time_epoch_usec(),
         hal.scheduler->millis());
 }
 
@@ -455,7 +462,7 @@ static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
     mavlink_msg_vfr_hud_send(
         chan,
         aspeed,
-        (float)g_gps->ground_speed_cm * 0.01f,
+        gps.ground_speed(),
         (ahrs.yaw_sensor / 100) % 360,
         throttle,
         current_loc.alt / 100.0,
@@ -1580,16 +1587,17 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         last_hil_state = packet;
 
-        float vel = pythagorous2(packet.vx, packet.vy);
-        float cog = wrap_360_cd(ToDeg(atan2f(packet.vy, packet.vx)) * 100);
+        // set gps hil sensor
+        Location loc;
+        loc.lat = packet.lat;
+        loc.lng = packet.lon;
+        loc.alt = packet.alt/10;
+        Vector3f vel(packet.vx, packet.vy, packet.vz);
+        vel *= 0.01f;
 
-        if (g_gps != NULL) {
-            // set gps hil sensor
-            g_gps->setHIL(GPS::FIX_3D,
-                          packet.time_usec/1000,
-                          packet.lat*1.0e-7, packet.lon*1.0e-7, packet.alt*1.0e-3,
-                          vel*1.0e-2, cog*1.0e-2, 0, 10);
-        }
+        gps.setHIL(AP_GPS::GPS_OK_FIX_3D,
+                   packet.time_usec/1000,
+                   loc, vel, 10);
 
         // rad/sec
         Vector3f gyros;

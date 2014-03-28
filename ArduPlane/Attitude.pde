@@ -345,7 +345,7 @@ static void stabilize()
     if (channel_throttle->control_in == 0 &&
         relative_altitude_abs_cm() < 500 && 
         fabs(barometer.get_climb_rate()) < 0.5f &&
-        g_gps->ground_speed_cm < 300) {
+        gps.ground_speed() < 3) {
         // we are low, with no climb rate, and zero throttle, and very
         // low ground speed. Zero the attitude controller
         // integrators. This prevents integrator buildup pre-takeoff.
@@ -410,7 +410,7 @@ static void calc_nav_yaw_course(void)
  */
 static void calc_nav_yaw_ground(void)
 {
-    if (g_gps->ground_speed_cm < 100 && 
+    if (gps.ground_speed() < 1 && 
         channel_throttle->control_in == 0) {
         // manual rudder control while still
         steer_state.locked_course = false;
@@ -504,7 +504,7 @@ static bool auto_takeoff_check(void)
     last_check_ms = now;
 
     // Check for bad GPS
-    if (g_gps == NULL || g_gps->status() != GPS::GPS_OK_FIX_3D) {
+    if (gps.status() < AP_GPS::GPS_OK_FIX_3D) {
         // no auto takeoff without GPS lock
         return false;
     }
@@ -539,9 +539,9 @@ static bool auto_takeoff_check(void)
     }
 
     // Check ground speed and time delay
-    if (((g_gps->ground_speed_cm > g.takeoff_throttle_min_speed*100.0f || g.takeoff_throttle_min_speed == 0.0)) && 
+    if (((gps.ground_speed() > g.takeoff_throttle_min_speed || g.takeoff_throttle_min_speed == 0.0)) && 
         ((now - last_tkoff_arm_time) >= min(uint16_t(g.takeoff_throttle_delay)*100,2500))) {
-        gcs_send_text_fmt(PSTR("Triggered AUTO, GPSspd = %.1f"), g_gps->ground_speed_cm*0.01f);
+        gcs_send_text_fmt(PSTR("Triggered AUTO, GPSspd = %.1f"), gps.ground_speed());
         launchTimerStarted = false;
         last_tkoff_arm_time = 0;
         return true;
@@ -565,9 +565,8 @@ no_launch:
 static bool is_flying(void)
 {
     // If we don't have a GPS lock then don't use GPS for this test
-    bool gpsMovement = (g_gps == NULL ||
-                        g_gps->status() < GPS::GPS_OK_FIX_2D ||
-                        g_gps->ground_speed_cm >= 500);
+    bool gpsMovement = (gps.status() < AP_GPS::GPS_OK_FIX_2D ||
+                        gps.ground_speed() >= 5);
     
     bool airspeedMovement = !airspeed.use() || airspeed.get_airspeed() >= 5;
     
@@ -623,9 +622,8 @@ static bool suppress_throttle(void)
         return false;
     }
 
-    if (g_gps != NULL && 
-        g_gps->status() >= GPS::GPS_OK_FIX_2D && 
-        g_gps->ground_speed_cm >= 500) {
+    if (gps.status() >= AP_GPS::GPS_OK_FIX_2D && 
+        gps.ground_speed() >= 5) {
         // if we have an airspeed sensor, then check it too, and
         // require 5m/s. This prevents throttle up due to spiky GPS
         // groundspeed with bad GPS reception

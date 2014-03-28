@@ -20,7 +20,6 @@ static int8_t   test_pressure(uint8_t argc,     const Menu::arg *argv);
 static int8_t   test_mag(uint8_t argc,                  const Menu::arg *argv);
 static int8_t   test_xbee(uint8_t argc,                 const Menu::arg *argv);
 static int8_t   test_eedump(uint8_t argc,               const Menu::arg *argv);
-static int8_t   test_rawgps(uint8_t argc,                       const Menu::arg *argv);
 static int8_t   test_modeswitch(uint8_t argc,           const Menu::arg *argv);
 static int8_t   test_logging(uint8_t argc,              const Menu::arg *argv);
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -52,7 +51,6 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
     {"adc",                 test_adc},
  #endif
     {"gps",                 test_gps},
-    {"rawgps",              test_rawgps},
     {"ins",                 test_ins},
     {"airspeed",    test_airspeed},
     {"airpressure", test_pressure},
@@ -406,18 +404,21 @@ test_gps(uint8_t argc, const Menu::arg *argv)
     print_hit_enter();
     delay(1000);
 
+    uint32_t last_message_time_ms = 0;
     while(1) {
         delay(100);
 
-        g_gps->update();
+        gps.update();
 
-        if (g_gps->new_data) {
+        if (gps.last_message_time_ms() != last_message_time_ms) {
+            last_message_time_ms = gps.last_message_time_ms();
+            const Location &loc = gps.location();
             cliSerial->printf_P(PSTR("Lat: %ld, Lon %ld, Alt: %ldm, #sats: %d\n"),
-                            (long)g_gps->latitude,
-                            (long)g_gps->longitude,
-                            (long)g_gps->altitude_cm/100,
-                            (int)g_gps->num_sats);
-        }else{
+                                (long)loc.lat,
+                                (long)loc.lng,
+                                (long)loc.alt/100,
+                                (int)gps.num_sats());
+        } else {
             cliSerial->printf_P(PSTR("."));
         }
         if(cliSerial->available() > 0) {
@@ -609,26 +610,6 @@ test_pressure(uint8_t argc, const Menu::arg *argv)
     }
 }
 
-static int8_t
-test_rawgps(uint8_t argc, const Menu::arg *argv)
-{
-    print_hit_enter();
-    delay(1000);
-
-    while(1) {
-        // Blink Yellow LED if we are sending data to GPS
-        if (hal.uartC->available()) {
-            hal.uartB->write(hal.uartC->read());
-        }
-        // Blink Red LED if we are receiving data from GPS
-        if (hal.uartB->available()) {
-            hal.uartC->write(hal.uartB->read());
-        }
-        if(cliSerial->available() > 0) {
-            return (0);
-        }
-    }
-}
 #endif // HIL_MODE == HIL_MODE_DISABLED
 
 #endif // CLI_ENABLED

@@ -77,17 +77,6 @@ static void init_ardupilot()
     //
     hal.uartA->begin(SERIAL0_BAUD, 128, SERIAL_BUFSIZE);
 
-    // GPS serial port.
-    //
-    // standard gps running
-    hal.uartB->begin(38400, 256, 16);
-
-#if GPS2_ENABLE
-    if (hal.uartE != NULL) {
-        hal.uartE->begin(38400, 256, 16);
-    }
-#endif
-
     cliSerial->printf_P(PSTR("\n\nInit " FIRMWARE_STRING
                          "\n\nFree RAM: %u\n"),
                         hal.util->available_memory());
@@ -178,18 +167,8 @@ static void init_ardupilot()
     // give AHRS the airspeed sensor
     ahrs.set_airspeed(&airspeed);
 
-	// Do GPS init
-	g_gps = &g_gps_driver;
     // GPS Initialization
-    g_gps->init(hal.uartB, GPS::GPS_ENGINE_AIRBORNE_4G, &DataFlash);
-
-#if GPS2_ENABLE
-    if (hal.uartE != NULL) {
-        g_gps2 = &g_gps2_driver;
-        g_gps2->init(hal.uartE, GPS::GPS_ENGINE_AIRBORNE_4G, &DataFlash);
-        g_gps2->set_secondary();
-    }
-#endif
+    gps.init(&DataFlash);
 
     //mavlink_system.sysid = MAV_SYSTEM_ID;				// Using g.sysid_this_mav
     mavlink_system.compid = 1;          //MAV_COMP_ID_IMU;   // We do not check for comp id
@@ -289,12 +268,6 @@ static void startup_ground(void)
     if (hal.uartD != NULL) {
         hal.uartD->set_blocking_writes(false);
     }
-
-#if 0
-    // leave GPS blocking until we have support for correct handling
-    // of GPS config in uBlox when non-blocking
-    hal.uartB->set_blocking_writes(false);
-#endif
 
     gcs_send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to FLY."));
 }

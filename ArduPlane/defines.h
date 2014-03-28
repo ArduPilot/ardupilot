@@ -47,17 +47,6 @@ enum gcs_failsafe {
 #define T6 1000000
 #define T7 10000000
 
-// GPS type codes - use the names, not the numbers
-#define GPS_PROTOCOL_NONE       -1
-#define GPS_PROTOCOL_NMEA       0
-#define GPS_PROTOCOL_SIRF       1
-#define GPS_PROTOCOL_UBLOX      2
-#define GPS_PROTOCOL_IMU        3
-#define GPS_PROTOCOL_MTK        4
-#define GPS_PROTOCOL_HIL        5
-#define GPS_PROTOCOL_MTK19      6
-#define GPS_PROTOCOL_AUTO       7
-
 // HIL enumerations. Note that HIL_MODE_ATTITUDE and HIL_MODE_SENSORS
 // are now the same thing, and are sensors based. The old define is
 // kept to allow old APM_Config.h headers to keep working

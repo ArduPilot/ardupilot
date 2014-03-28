@@ -97,17 +97,7 @@ static void init_home()
 {
     gcs_send_text_P(SEVERITY_LOW, PSTR("init home"));
 
-    // block until we get a good fix
-    // -----------------------------
-    while (!g_gps->new_data || !g_gps->fix) {
-        g_gps->update();
-#if HIL_MODE != HIL_MODE_DISABLED
-        // update hil gps so we have new_data
-        gcs_update();
-#endif
-    }
-
-    ahrs.set_home(g_gps->latitude, g_gps->longitude, g_gps->altitude_cm);
+    ahrs.set_home(gps.location());
     home_is_set = true;
 
     gcs_send_text_fmt(PSTR("gps alt: %lu"), (unsigned long)home.alt);
@@ -132,6 +122,6 @@ static void init_home()
 */
 static void update_home()
 {
-    ahrs.set_home(g_gps->latitude, g_gps->longitude, g_gps->altitude_cm);
+    ahrs.set_home(gps.location());
     barometer.update_calibration();
 }

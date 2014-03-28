@@ -359,7 +359,7 @@ static bool verify_land()
 
     // Set land_complete if we are within 2 seconds distance or within
     // 3 meters altitude of the landing point
-    if ((wp_distance <= (g.land_flare_sec*g_gps->ground_speed_cm*0.01f))
+    if ((wp_distance <= (g.land_flare_sec * gps.ground_speed()))
         || (adjusted_altitude_cm() <= next_WP_loc.alt + g.land_flare_alt*100)) {
 
         land_complete = true;
@@ -378,7 +378,7 @@ static bool verify_land()
             gcs_send_text_fmt(PSTR("Land Complete - Hold course %ld"), steer_state.hold_course_cd);
         }
 
-        if (g_gps->ground_speed_cm*0.01f < 3.0) {
+        if (gps.ground_speed() < 3) {
             // reload any airspeed or groundspeed parameters that may have
             // been set for landing. We don't do this till ground
             // speed drops below 3.0 m/s as otherwise we will change
@@ -574,10 +574,10 @@ static void do_change_speed(const AP_Mission::Mission_Command& cmd)
 
 static void do_set_home(const AP_Mission::Mission_Command& cmd)
 {
-    if (cmd.p1 == 1 && g_gps->status() == GPS::GPS_OK_FIX_3D) {
+    if (cmd.p1 == 1 && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
         init_home();
     } else {
-        ahrs.set_home(cmd.content.location.lat, cmd.content.location.lng, cmd.content.location.alt*100.0f);
+        ahrs.set_home(cmd.content.location);
         home_is_set = true;
     }
 }
