@@ -35,9 +35,7 @@ MODULES		+= drivers/blinkm
 MODULES		+= drivers/airspeed
 MODULES		+= drivers/ets_airspeed
 MODULES		+= drivers/meas_airspeed
-
-# mkblctrl does not compile on FMUv2 yet
-# MODULES		+= drivers/mkblctrl
+MODULES		+= drivers/mkblctrl
 
 #
 # System commands
