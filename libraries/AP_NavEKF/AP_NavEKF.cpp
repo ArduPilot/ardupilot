@@ -27,15 +27,60 @@
  */
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
 // copter defaults
-#define VELNE_NOISE_DEFAULT 0.30f
+#define VELNE_NOISE_DEFAULT     0.5f
+#define VELD_NOISE_DEFAULT      0.7f
+#define POSNE_NOISE_DEFAULT     0.5f
+#define ALT_NOISE_DEFAULT       1.0f
+#define MAG_NOISE_DEFAULT       0.05f
+#define GYRO_PNOISE_DEFAULT     0.015f
+#define ACC_PNOISE_DEFAULT      0.25f
+#define GBIAS_PNOISE_DEFAULT    1E-07f
+#define ABIAS_PNOISE_DEFAULT    0.0002f
+#define MAGE_PNOISE_DEFAULT     0.0003f
+#define MAGB_PNOISE_DEFAULT     0.0003f
+#define VEL_GATE_DEFAULT        5
+#define POS_GATE_DEFAULT        5
+#define HGT_GATE_DEFAULT        5
+#define MAG_GATE_DEFAULT        3
+#define MAG_CAL_DEFAULT         1
 
 #elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
 // rover defaults
-#define VELNE_NOISE_DEFAULT 0.30f
+#define VELNE_NOISE_DEFAULT     0.5f
+#define VELD_NOISE_DEFAULT      0.7f
+#define POSNE_NOISE_DEFAULT     0.5f
+#define ALT_NOISE_DEFAULT       1.0f
+#define MAG_NOISE_DEFAULT       0.05f
+#define GYRO_PNOISE_DEFAULT     0.015f
+#define ACC_PNOISE_DEFAULT      0.25f
+#define GBIAS_PNOISE_DEFAULT    1E-07f
+#define ABIAS_PNOISE_DEFAULT    0.0002f
+#define MAGE_PNOISE_DEFAULT     0.0003f
+#define MAGB_PNOISE_DEFAULT     0.0003f
+#define VEL_GATE_DEFAULT        5
+#define POS_GATE_DEFAULT        5
+#define HGT_GATE_DEFAULT        5
+#define MAG_GATE_DEFAULT        3
+#define MAG_CAL_DEFAULT         1
 
 #else
 // generic defaults (and for plane)
-#define VELNE_NOISE_DEFAULT 0.30f
+#define VELNE_NOISE_DEFAULT     0.3f
+#define VELD_NOISE_DEFAULT      0.5f
+#define POSNE_NOISE_DEFAULT     0.5f
+#define ALT_NOISE_DEFAULT       0.5f
+#define MAG_NOISE_DEFAULT       0.05f
+#define GYRO_PNOISE_DEFAULT     0.015f
+#define ACC_PNOISE_DEFAULT      0.25f
+#define GBIAS_PNOISE_DEFAULT    1E-07f
+#define ABIAS_PNOISE_DEFAULT    0.0002f
+#define MAGE_PNOISE_DEFAULT     0.0003f
+#define MAGB_PNOISE_DEFAULT     0.0003f
+#define VEL_GATE_DEFAULT        5
+#define POS_GATE_DEFAULT        10
+#define HGT_GATE_DEFAULT        10
+#define MAG_GATE_DEFAULT        3
+#define MAG_CAL_DEFAULT         0
 
 #endif // APM_BUILD_DIRECTORY
 
@@ -61,7 +106,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Range: 0.05 - 5.0
     // @Increment: 0.05
     // @User: advanced
-    AP_GROUPINFO("VELD_NOISE",    1, NavEKF, _gpsVertVelNoise, 0.30f),
+    AP_GROUPINFO("VELD_NOISE",    1, NavEKF, _gpsVertVelNoise, VELD_NOISE_DEFAULT),
 
     // @Param: POSNE_NOISE
     // @DisplayName: GPS horizontal position measurement noise (m)
@@ -69,7 +114,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Range: 0.1 - 10.0
     // @Increment: 0.1
     // @User: advanced
-    AP_GROUPINFO("POSNE_NOISE",    2, NavEKF, _gpsHorizPosNoise, 0.50f),
+    AP_GROUPINFO("POSNE_NOISE",    2, NavEKF, _gpsHorizPosNoise, POSNE_NOISE_DEFAULT),
 
     // @Param: ALT_NOISE
     // @DisplayName: Altitude measurement noise (m)
@@ -77,7 +122,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Range: 0.1 - 10.0
     // @Increment: 0.1
     // @User: advanced
-    AP_GROUPINFO("ALT_NOISE",    3, NavEKF, _baroAltNoise, 0.50f),
+    AP_GROUPINFO("ALT_NOISE",    3, NavEKF, _baroAltNoise, ALT_NOISE_DEFAULT),
 
     // @Param: MAG_NOISE
     // @DisplayName: Magntometer measurement noise (Gauss)
@@ -85,7 +130,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Range: 0.01 - 0.5
     // @Increment: 0.01
     // @User: advanced
-    AP_GROUPINFO("MAG_NOISE",    4, NavEKF, _magNoise, 0.05f),
+    AP_GROUPINFO("MAG_NOISE",    4, NavEKF, _magNoise, MAG_NOISE_DEFAULT),
 
     // @Param: EAS_NOISE
     // @DisplayName: Equivalent airspeed measurement noise (m/s)
@@ -117,7 +162,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Range: 0.001 - 0.05
     // @Increment: 0.001
     // @User: advanced
-    AP_GROUPINFO("GYRO_PNOISE",    8, NavEKF, _gyrNoise, 0.015f),
+    AP_GROUPINFO("GYRO_PNOISE",    8, NavEKF, _gyrNoise, GYRO_PNOISE_DEFAULT),
 
     // @Param: ACC_PNOISE
     // @DisplayName: Accelerometer noise (m/s^2)
@@ -125,35 +170,35 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Range: 0.05 - 1.0    AP_Float _gpsNEVelVarAccScale;  // scale factor applied to NE velocity measurement variance due to Vdot
     // @Increment: 0.01
     // @User: advanced
-    AP_GROUPINFO("ACC_PNOISE",    9, NavEKF, _accNoise, 0.25f),
+    AP_GROUPINFO("ACC_PNOISE",    9, NavEKF, _accNoise, ACC_PNOISE_DEFAULT),
 
     // @Param: GBIAS_PNOISE
     // @DisplayName: Rate gyro bias state process noise (rad/s)
     // @Description: This noise controls the growth of gyro bias state error estimates. Increasing it makes rate gyro bias estimation faster and noisier.
     // @Range: 0.0000001 - 0.00001
     // @User: advanced
-    AP_GROUPINFO("GBIAS_PNOISE",    10, NavEKF, _gyroBiasProcessNoise, 1.0e-7f),
+    AP_GROUPINFO("GBIAS_PNOISE",    10, NavEKF, _gyroBiasProcessNoise, GBIAS_PNOISE_DEFAULT),
 
     // @Param: ABIAS_PNOISE
     // @DisplayName: Accelerometer bias state process noise (m/s^2)
     // @Description: This noise controls the growth of the vertical acelerometer bias state error estimate. Increasing it makes accelerometer bias estimation faster and noisier.
     // @Range: 0.0002 - 0.001
     // @User: advanced
-    AP_GROUPINFO("ABIAS_PNOISE",    11, NavEKF, _accelBiasProcessNoise, 2.0e-4f),
+    AP_GROUPINFO("ABIAS_PNOISE",    11, NavEKF, _accelBiasProcessNoise, ABIAS_PNOISE_DEFAULT),
 
     // @Param: MAGE_PNOISE
     // @DisplayName: Earth magnetic field states process noise (gauss/s)
     // @Description: This noise controls the growth of earth magnetic field state error estimates. Increasing it makes earth magnetic field bias estimation faster and noisier.
     // @Range: 0.0001 - 0.01
     // @User: advanced
-    AP_GROUPINFO("MAGE_PNOISE",    12, NavEKF, _magEarthProcessNoise, 3.0e-4f),
+    AP_GROUPINFO("MAGE_PNOISE",    12, NavEKF, _magEarthProcessNoise, MAGE_PNOISE_DEFAULT),
 
     // @Param: MAGB_PNOISE
     // @DisplayName: Body magnetic field states process noise (gauss/s)
     // @Description: This noise controls the growth of body magnetic field state error estimates. Increasing it makes compass offset estimation faster and noisier.
     // @Range: 0.0001 - 0.01
     // @User: advanced
-    AP_GROUPINFO("MAGB_PNOISE",    13, NavEKF, _magBodyProcessNoise, 3.0e-4f),
+    AP_GROUPINFO("MAGB_PNOISE",    13, NavEKF, _magBodyProcessNoise, MAGB_PNOISE_DEFAULT),
 
     // @Param: VEL_DELAY
     // @DisplayName: GPS velocity measurement delay (msec)
@@ -185,7 +230,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Range: 1 - 100
     // @Increment: 1
     // @User: advanced
-    AP_GROUPINFO("VEL_GATE",    17, NavEKF, _gpsVelInnovGate, 5),
+    AP_GROUPINFO("VEL_GATE",    17, NavEKF, _gpsVelInnovGate, VEL_GATE_DEFAULT),
 
     // @Param: POS_GATE
     // @DisplayName: GPS position measurement gate size
@@ -193,7 +238,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Range: 1 - 100
     // @Increment: 1
     // @User: advanced
-    AP_GROUPINFO("POS_GATE",    18, NavEKF, _gpsPosInnovGate, 5),
+    AP_GROUPINFO("POS_GATE",    18, NavEKF, _gpsPosInnovGate, POS_GATE_DEFAULT),
 
     // @Param: HGT_GATE
     // @DisplayName: Height measurement gate size
@@ -201,7 +246,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Range: 1 - 100
     // @Increment: 1
     // @User: advanced
-    AP_GROUPINFO("HGT_GATE",    19, NavEKF, _hgtInnovGate, 10),
+    AP_GROUPINFO("HGT_GATE",    19, NavEKF, _hgtInnovGate, HGT_GATE_DEFAULT),
 
     // @Param: MAG_GATE
     // @DisplayName: Magnetometer measurement gate size
@@ -209,7 +254,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Range: 1 - 100
     // @Increment: 1
     // @User: advanced
-    AP_GROUPINFO("MAG_GATE",    20, NavEKF, _magInnovGate, 3),
+    AP_GROUPINFO("MAG_GATE",    20, NavEKF, _magInnovGate, MAG_GATE_DEFAULT),
 
     // @Param: EAS_GATE
     // @DisplayName: Airspeed measurement gate size
@@ -225,7 +270,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Range: 0 - 1
     // @Increment: 1
     // @User: advanced
-    AP_GROUPINFO("MAG_CAL",    22, NavEKF, _magCal, 0),
+    AP_GROUPINFO("MAG_CAL",    22, NavEKF, _magCal, MAG_CAL_DEFAULT),
 
     AP_GROUPEND
 };
