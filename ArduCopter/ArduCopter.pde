@@ -1312,6 +1312,9 @@ void update_simple_mode(void)
         return;
     }
 
+    // mark radio frame as consumed
+    ap.new_radio_frame = false;
+
     if (ap.simple_mode == 1) {
         // rotate roll, pitch input by -initial simple heading (i.e. north facing)
         rollx = g.rc_1.control_in*simple_cos_yaw - g.rc_2.control_in*simple_sin_yaw;
