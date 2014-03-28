@@ -38,9 +38,15 @@ public:
 		_msg_id(0)
 		{}
 
-    virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting, DataFlash_Class *DataFlash);
-    virtual bool        read();
-	static bool         _detect(uint8_t data);
+    void init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting, DataFlash_Class *DataFlash);
+    bool read();
+
+    struct detect_state {
+        uint16_t checksum;
+        uint8_t step, payload_length, payload_counter;
+    };
+
+	static bool _detect(struct detect_state &state, uint8_t data);
 
 private:
     struct PACKED sirf_geonav {

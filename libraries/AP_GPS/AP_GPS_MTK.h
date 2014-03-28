@@ -37,9 +37,16 @@ public:
 		_payload_counter(0)
 		{}
 
-    virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting, DataFlash_Class *DataFlash);
-    virtual bool        read(void);
-    static bool _detect(uint8_t );
+    void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting, DataFlash_Class *DataFlash);
+    bool        read(void);
+
+    struct detect_state {
+        uint8_t payload_counter;
+        uint8_t step;
+        uint8_t ck_a, ck_b;
+    };
+
+    static bool _detect(struct detect_state &state, uint8_t data);
 
 private:
     struct PACKED diyd_mtk_msg {

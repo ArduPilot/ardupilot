@@ -205,52 +205,48 @@ restart:
   detect a MTK16 or MTK19 GPS
  */
 bool
-AP_GPS_MTK19::_detect(uint8_t data)
+AP_GPS_MTK19::_detect(struct detect_state &state, uint8_t data)
 {
-    static uint8_t payload_counter;
-    static uint8_t step;
-    static uint8_t ck_a, ck_b;
-
 restart:
-	switch (step) {
+	switch (state.step) {
         case 0:
-            ck_b = ck_a = payload_counter = 0;
+            state.ck_b = state.ck_a = state.payload_counter = 0;
             if (data == PREAMBLE1_V16 || data == PREAMBLE1_V19) {
-                step++;
+                state.step++;
             }    
             break;
         case 1:
             if (PREAMBLE2 == data) {
-                step++;
+                state.step++;
             } else {
-				step = 0;
+				state.step = 0;
 				goto restart;
 			}
 			break;
         case 2:
             if (data == sizeof(struct diyd_mtk_msg)) {
-                step++;
-                ck_b = ck_a         = data;
+                state.step++;
+                state.ck_b = state.ck_a = data;
             } else {
-                step                = 0;
+                state.step = 0;
 				goto restart;
             }
             break;
         case 3:
-            ck_b += (ck_a += data);
-            if (++payload_counter == sizeof(struct diyd_mtk_msg))
-                step++;
+            state.ck_b += (state.ck_a += data);
+            if (++state.payload_counter == sizeof(struct diyd_mtk_msg))
+                state.step++;
             break;
         case 4:
-            step++;
-            if (ck_a != data) {
-                step 				= 0;
+            state.step++;
+            if (state.ck_a != data) {
+                state.step = 0;
 				goto restart;
             }
             break;
         case 5:
-            step                    = 0;
-            if (ck_b != data) {
+            state.step = 0;
+            if (state.ck_b != data) {
 				goto restart;
 			}
 			return true;

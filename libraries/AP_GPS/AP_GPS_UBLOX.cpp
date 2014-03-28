@@ -48,9 +48,6 @@ extern const AP_HAL::HAL& hal;
 #define UBLOX_HW_LOGGING 0
 #endif
 
-const prog_char AP_GPS_UBLOX::_ublox_set_binary[] PROGMEM = UBLOX_SET_BINARY;
-const uint8_t AP_GPS_UBLOX::_ublox_set_binary_size = sizeof(AP_GPS_UBLOX::_ublox_set_binary);
-
 // Public Methods //////////////////////////////////////////////////////////////
 
 void
@@ -582,17 +579,6 @@ AP_GPS_UBLOX::_configure_navigation_rate(uint16_t rate_ms)
 void
 AP_GPS_UBLOX::_configure_gps(void)
 {
-    const unsigned baudrates[4] = {9600U, 19200U, 38400U, 57600U};
-
-    // the GPS may be setup for a different baud rate. This ensures
-    // it gets configured correctly
-    for (uint8_t i=0; i<4; i++) {
-        _port->begin(baudrates[i]);
-        _write_progstr_block(_port, _ublox_set_binary, _ublox_set_binary_size);
-        while (_port->tx_pending()) {
-          hal.scheduler->delay(1);
-        }
-    }
     _port->begin(38400U);
 
     // start the process of updating the GPS rates
@@ -611,57 +597,53 @@ AP_GPS_UBLOX::_configure_gps(void)
   matches a UBlox
  */
 bool
-AP_GPS_UBLOX::_detect(uint8_t data)
+AP_GPS_UBLOX::_detect(struct detect_state &state, uint8_t data)
 {
-	static uint8_t payload_length, payload_counter;
-	static uint8_t step;
-	static uint8_t ck_a, ck_b;
-
 reset:
-	switch (step) {
+	switch (state.step) {
         case 1:
             if (PREAMBLE2 == data) {
-                step++;
+                state.step++;
                 break;
             }
-            step = 0;
+            state.step = 0;
         case 0:
             if (PREAMBLE1 == data)
-                step++;
+                state.step++;
             break;
         case 2:
-            step++;
-            ck_b = ck_a = data;
+            state.step++;
+            state.ck_b = state.ck_a = data;
             break;
         case 3:
-            step++;
-            ck_b += (ck_a += data);
+            state.step++;
+            state.ck_b += (state.ck_a += data);
             break;
         case 4:
-            step++;
-            ck_b += (ck_a += data);
-            payload_length = data;
+            state.step++;
+            state.ck_b += (state.ck_a += data);
+            state.payload_length = data;
             break;
         case 5:
-            step++;
-            ck_b += (ck_a += data);
-            payload_counter = 0;
+            state.step++;
+            state.ck_b += (state.ck_a += data);
+            state.payload_counter = 0;
             break;
         case 6:
-            ck_b += (ck_a += data);
-            if (++payload_counter == payload_length)
-                step++;
+            state.ck_b += (state.ck_a += data);
+            if (++state.payload_counter == state.payload_length)
+                state.step++;
             break;
         case 7:
-            step++;
-            if (ck_a != data) {
-                step = 0;
+            state.step++;
+            if (state.ck_a != data) {
+                state.step = 0;
 				goto reset;
             }
             break;
         case 8:
-            step = 0;
-			if (ck_b == data) {
+            state.step = 0;
+			if (state.ck_b == data) {
 				// a valid UBlox packet
 				return true;
 			} else {

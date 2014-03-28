@@ -175,55 +175,51 @@ restart:
   detect a MTK GPS
  */
 bool
-AP_GPS_MTK::_detect(uint8_t data)
+AP_GPS_MTK::_detect(struct detect_state &state, uint8_t data)
 {
-	static uint8_t payload_counter;
-	static uint8_t step;
-	static uint8_t ck_a, ck_b;
-
-	switch(step) {
+	switch (state.step) {
         case 1:
             if (PREAMBLE2 == data) {
-                step++;
+                state.step++;
                 break;
             }
-            step = 0;
+            state.step = 0;
         case 0:
-			ck_b = ck_a = payload_counter = 0;
+			state.ck_b = state.ck_a = state.payload_counter = 0;
             if(PREAMBLE1 == data)
-                step++;
+                state.step++;
             break;
         case 2:
             if (MESSAGE_CLASS == data) {
-                step++;
-                ck_b = ck_a = data;
+                state.step++;
+                state.ck_b = state.ck_a = data;
             } else {
-                step = 0;
+                state.step = 0;
             }
             break;
         case 3:
             if (MESSAGE_ID == data) {
-                step++;
-                ck_b += (ck_a += data);
-                payload_counter = 0;
+                state.step++;
+                state.ck_b += (state.ck_a += data);
+                state.payload_counter = 0;
             } else {
-                step = 0;
+                state.step = 0;
             }
             break;
         case 4:
-            ck_b += (ck_a += data);
-            if (++payload_counter == sizeof(struct diyd_mtk_msg))
-                step++;
+            state.ck_b += (state.ck_a += data);
+            if (++state.payload_counter == sizeof(struct diyd_mtk_msg))
+                state.step++;
             break;
         case 5:
-            step++;
-            if (ck_a != data) {
-                step = 0;
+            state.step++;
+            if (state.ck_a != data) {
+                state.step = 0;
             }
             break;
         case 6:
-            step = 0;
-            if (ck_b == data) {
+            state.step = 0;
+            if (state.ck_b == data) {
 				return true;
             }
 	}

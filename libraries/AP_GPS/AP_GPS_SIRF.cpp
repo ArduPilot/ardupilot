@@ -214,48 +214,45 @@ AP_GPS_SIRF::_accumulate(uint8_t val)
   detect a SIRF GPS
  */
 bool
-AP_GPS_SIRF::_detect(uint8_t data)
+AP_GPS_SIRF::_detect(struct detect_state &state, uint8_t data)
 {
-	static uint16_t checksum;
-	static uint8_t step, payload_length, payload_counter;
-
-	switch (step) {
+	switch (state.step) {
 	case 1:
 		if (PREAMBLE2 == data) {
-			step++;
+			state.step++;
 			break;
 		}
-		step = 0;
+		state.step = 0;
 	case 0:
-		payload_length = payload_counter = checksum = 0;
+		state.payload_length = state.payload_counter = state.checksum = 0;
 		if (PREAMBLE1 == data)
-			step++;
+			state.step++;
 		break;
 	case 2:
-		step++;
+		state.step++;
 		if (data != 0) {
 			// only look for short messages
-			step = 0;
+			state.step = 0;
 		}
 		break;
 	case 3:
-		step++;
-		payload_length = data;
+		state.step++;
+		state.payload_length = data;
 		break;
 	case 4:
-		checksum = (checksum + data) & 0x7fff;
-		if (++payload_counter == payload_length)
-			step++;
+		state.checksum = (state.checksum + data) & 0x7fff;
+		if (++state.payload_counter == state.payload_length)
+			state.step++;
 		break;
 	case 5:
-		step++;
-		if ((checksum >> 8) != data) {
-			step = 0;
+		state.step++;
+		if ((state.checksum >> 8) != data) {
+			state.step = 0;
 		}
 		break;
 	case 6:
-		step = 0;
-		if ((checksum & 0xff) == data) {
+		state.step = 0;
+		if ((state.checksum & 0xff) == data) {
 			return true;
 		}
     }

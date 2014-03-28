@@ -58,14 +58,19 @@ public:
 		{}
 
     // Methods
-    virtual void                    init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting, DataFlash_Class *DataFlash);
-    virtual bool                    read();
-    static bool _detect(uint8_t );
+    void                    init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting, DataFlash_Class *DataFlash);
+    bool                    read();
 
-    static const prog_char          _ublox_set_binary[];
-    static const uint8_t            _ublox_set_binary_size;
+    float get_lag() const { return 0.2f; }   // ublox lag is lower than the default 1second
 
-    float       get_lag() { return 0.5; }   // ublox lag is lower than the default 1second
+    // structure used for gps type detection
+    struct detect_state {
+        uint8_t payload_length, payload_counter;
+        uint8_t step;
+        uint8_t ck_a, ck_b;
+    };
+
+    static bool _detect(struct detect_state &state, uint8_t data);
 
 private:
     // u-blox UBX protocol essentials

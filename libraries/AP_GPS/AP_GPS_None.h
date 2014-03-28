@@ -11,10 +11,10 @@ class AP_GPS_None : public GPS
 public:
 	AP_GPS_None() : GPS() {}
 
-    virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting, DataFlash_Class *DataFlash) {
+    void init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting, DataFlash_Class *DataFlash) {
 		_port = s;
     };
-    virtual bool        read(void) {
+    bool read(void) {
         return false;
     };
 };

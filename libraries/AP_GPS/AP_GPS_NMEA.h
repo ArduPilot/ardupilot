@@ -70,15 +70,19 @@ public:
     /// Perform a (re)initialisation of the GPS; sends the
     /// protocol configuration messages.
     ///
-    virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting, DataFlash_Class *DataFlash);
+    void init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting, DataFlash_Class *DataFlash);
 
     /// Checks the serial receive buffer for characters,
     /// attempts to parse NMEA data and updates internal state
     /// accordingly.
     ///
-    virtual bool        read();
+    bool        read();
 
-	static bool _detect(uint8_t data);
+    struct detect_state {
+        uint8_t step;
+        uint8_t ck;
+    };
+	static bool _detect(struct detect_state &state, uint8_t data);
 
 private:
     /// Coding for the GPS sentences that the parser handles

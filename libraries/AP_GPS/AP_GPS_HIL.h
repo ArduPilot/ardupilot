@@ -32,8 +32,8 @@ public:
 		_updated(false)
 		{}
 
-    virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting, DataFlash_Class *DataFlash);
-    virtual bool        read(void);
+    void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting, DataFlash_Class *DataFlash);
+    bool        read(void);
 
     /**
      * Hardware in the loop set function
@@ -45,7 +45,7 @@ public:
      * @param speed_3d - ground speed in meters/second
      * @param altitude - altitude in meters
      */
-    virtual void        setHIL(Fix_Status fix_status,
+    void        setHIL(Fix_Status fix_status,
                                uint64_t time_epoch_ms, float latitude, float longitude, float altitude,
                                float ground_speed, float ground_course, float speed_3d, uint8_t num_sats);
 

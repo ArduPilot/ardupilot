@@ -128,7 +128,7 @@ public:
     }
 
     // the expected lag (in seconds) in the position and velocity readings from the gps
-    virtual float get_lag() { return 1.0f; }
+    virtual float get_lag() const { return 0.5f; }
 
     // the time we got our last fix in system milliseconds
     uint32_t last_fix_time;
@@ -185,8 +185,6 @@ protected:
     enum GPS_Engine_Setting _nav_setting;
 
     void _write_progstr_block(AP_HAL::UARTDriver *_fs, const prog_char *pstr, uint8_t size);
-    void _send_progstr(AP_HAL::UARTDriver *_fs, const prog_char *pstr, uint8_t size);
-    void _update_progstr(void);
 
     // velocities in cm/s if available from the GPS
     int32_t _vel_north;
