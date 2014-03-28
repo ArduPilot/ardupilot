@@ -96,19 +96,23 @@ const char AP_GPS_NMEA::_gpvtg_string[] PROGMEM = "GPVTG";
 //
 #define DIGIT_TO_VAL(_x)        (_x - '0')
 
-// Public Methods //////////////////////////////////////////////////////////////
-void AP_GPS_NMEA::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting, DataFlash_Class *DataFlash)
+AP_GPS_NMEA::AP_GPS_NMEA(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
+    AP_GPS_Backend(_gps, _state, _port),
+    _parity(0),
+    _is_checksum_term(false),
+    _sentence_type(0),
+    _term_number(0),
+    _term_offset(0),
+    _gps_data_good(false)
 {
-	_port = s;
-
     // send the SiRF init strings
-    _port->print_P((const prog_char_t *)_SiRF_init_string);
+    port->print_P((const prog_char_t *)_SiRF_init_string);
 
     // send the MediaTek init strings
-    _port->print_P((const prog_char_t *)_MTK_init_string);
+    port->print_P((const prog_char_t *)_MTK_init_string);
 
     // send the ublox init strings
-    _port->print_P((const prog_char_t *)_ublox_init_string);
+    port->print_P((const prog_char_t *)_ublox_init_string);
 }
 
 bool AP_GPS_NMEA::read(void)
@@ -116,9 +120,9 @@ bool AP_GPS_NMEA::read(void)
     int16_t numc;
     bool parsed = false;
 
-    numc = _port->available();
+    numc = port->available();
     while (numc--) {
-        if (_decode(_port->read())) {
+        if (_decode(port->read())) {
             parsed = true;
         }
     }
@@ -248,26 +252,28 @@ bool AP_GPS_NMEA::_term_complete()
                 case _GPS_SENTENCE_GPRMC:
                     //time                        = _new_time;
                     //date                        = _new_date;
-                    latitude            = _new_latitude;
-                    longitude           = _new_longitude;
-                    ground_speed_cm     = _new_speed;
-                    ground_course_cd    = _new_course;
-                    _make_gps_time(_new_date, _new_time * 10);
-                    _last_gps_time      = hal.scheduler->millis();
-                    fix                 = GPS::FIX_3D;          // To-Do: add support for proper reporting of 2D and 3D fix
+                    state.location.lat     = _new_latitude;
+                    state.location.lng     = _new_longitude;
+                    state.ground_speed     = _new_speed*0.01f;
+                    state.ground_course_cd = _new_course;
+                    make_gps_time(_new_date, _new_time * 10);
+                    state.last_gps_time_ms = hal.scheduler->millis();
+                    // To-Do: add support for proper reporting of 2D and 3D fix
+                    state.status           = AP_GPS::GPS_OK_FIX_3D;
+                    fill_3d_velocity();
                     break;
                 case _GPS_SENTENCE_GPGGA:
-                    altitude_cm         = _new_altitude;
-                    //time                        = _new_time;
-                    latitude            = _new_latitude;
-                    longitude           = _new_longitude;
-                    num_sats            = _new_satellite_count;
-                    hdop                        = _new_hdop;
-                    fix                 = GPS::FIX_3D;          // To-Do: add support for proper reporting of 2D and 3D fix
+                    state.location.alt  = _new_altitude;
+                    state.location.lat  = _new_latitude;
+                    state.location.lng  = _new_longitude;
+                    state.num_sats      = _new_satellite_count;
+                    state.hdop          = _new_hdop;
+                    // To-Do: add support for proper reporting of 2D and 3D fix
+                    state.status        = AP_GPS::GPS_OK_FIX_3D;
                     break;
                 case _GPS_SENTENCE_GPVTG:
-                    ground_speed_cm     = _new_speed;
-                    ground_course_cd    = _new_course;
+                    state.ground_speed     = _new_speed*0.01f;
+                    state.ground_course_cd = _new_course;
                     // VTG has no fix indicator, can't change fix status
                     break;
                 }
@@ -277,7 +283,7 @@ bool AP_GPS_NMEA::_term_complete()
                 case _GPS_SENTENCE_GPGGA:
                     // Only these sentences give us information about
                     // fix status.
-                    fix = GPS::FIX_NONE;
+                    state.status = AP_GPS::NO_FIX;
                 }
             }
             // we got a good message
@@ -382,7 +388,7 @@ bool AP_GPS_NMEA::_term_complete()
   matches a NMEA string
  */
 bool
-AP_GPS_NMEA::_detect(struct detect_state &state, uint8_t data)
+AP_GPS_NMEA::_detect(struct NMEA_detect_state &state, uint8_t data)
 {
 	switch (state.step) {
 	case 0:

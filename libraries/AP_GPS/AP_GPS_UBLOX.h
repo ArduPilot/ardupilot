@@ -19,12 +19,11 @@
 //	Code by Michael Smith, Jordi Munoz and Jose Julio, DIYDrones.com
 //
 //  UBlox Lea6H protocol: http://www.u-blox.com/images/downloads/Product_Docs/u-blox6_ReceiverDescriptionProtocolSpec_%28GPS.G6-SW-10018%29.pdf
+
 #ifndef __AP_GPS_UBLOX_H__
 #define __AP_GPS_UBLOX_H__
 
-#include <AP_HAL.h>
-#include <AP_Common.h>
-#include "GPS.h"
+#include <AP_GPS.h>
 
 /*
  *  try to put a UBlox into binary mode. This is in two parts. 
@@ -40,37 +39,15 @@
  */
 #define UBLOX_SET_BINARY "\265\142\006\001\003\000\001\006\001\022\117$PUBX,41,1,0003,0001,38400,0*26\r\n"
 
-class AP_GPS_UBLOX : public GPS
+class AP_GPS_UBLOX : public AP_GPS_Backend
 {
 public:
-	AP_GPS_UBLOX() :
-		GPS(),
-		_step(0),
-		_msg_id(0),
-		_payload_length(0),
-		_payload_counter(0),
-		_fix_count(0),
-        need_rate_update(false),
-		_disable_counter(0),
-		next_fix(GPS::FIX_NONE),
-        rate_update_step(0),
-        _last_hw_status(0)
-		{}
+	AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
     // Methods
-    void                    init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting, DataFlash_Class *DataFlash);
-    bool                    read();
+    bool read();
 
-    float get_lag() const { return 0.2f; }   // ublox lag is lower than the default 1second
-
-    // structure used for gps type detection
-    struct detect_state {
-        uint8_t payload_length, payload_counter;
-        uint8_t step;
-        uint8_t ck_a, ck_b;
-    };
-
-    static bool _detect(struct detect_state &state, uint8_t data);
+    static bool _detect(struct UBLOX_detect_state &state, uint8_t data);
 
 private:
     // u-blox UBX protocol essentials
@@ -263,7 +240,7 @@ private:
     bool        _parse_gps();
 
     // used to update fix between status and position packets
-    Fix_Status  next_fix;
+    AP_GPS::GPS_Status next_fix;
 
     uint8_t rate_update_step;
     uint32_t _last_5hz_time;
@@ -280,7 +257,6 @@ private:
     void write_logging_headers(void);
     void log_mon_hw(void);
     void log_mon_hw2(void);
-
 };
 
 #endif // __AP_GPS_UBLOX_H__

@@ -41,7 +41,7 @@ const AP_Param::GroupInfo GPS_Glitch::var_info[] PROGMEM = {
 };
 
 // constuctor
-GPS_Glitch::GPS_Glitch(GPS*& gps) :
+GPS_Glitch::GPS_Glitch(const AP_GPS &gps) :
     _gps(gps)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -59,18 +59,20 @@ void GPS_Glitch::check_position()
     bool all_ok;                    // true if the new gps position passes sanity checks
 
     // exit immediately if we don't have gps lock
-    if (_gps == NULL || _gps->status() != GPS::GPS_OK_FIX_3D) {
+    if (_gps.status() < AP_GPS::GPS_OK_FIX_3D) {
         _flags.glitching = true;
         return;
     }
 
     // if not initialised or disabled update last good position and exit
     if (!_flags.initialised || !_enabled) {
+        const Location &loc = _gps.location();
+        const Vector3f &vel = _gps.velocity();
         _last_good_update = now;
-        _last_good_lat = _gps->latitude;
-        _last_good_lon = _gps->longitude;
-        _last_good_vel.x = _gps->velocity_north();
-        _last_good_vel.y = _gps->velocity_east();
+        _last_good_lat = loc.lat;
+        _last_good_lon = loc.lng;
+        _last_good_vel.x = vel.x;
+        _last_good_vel.y = vel.y;
         _flags.initialised = true;
         _flags.glitching = false;
         return;
@@ -85,8 +87,9 @@ void GPS_Glitch::check_position()
     location_offset(curr_pos, _last_good_vel.x * sane_dt, _last_good_vel.y * sane_dt);
 
     // calculate distance from recent gps position to current estimate
-    gps_pos.lat = _gps->latitude;
-    gps_pos.lng = _gps->longitude;
+    const Location &loc = _gps.location();
+    gps_pos.lat = loc.lat;
+    gps_pos.lng = loc.lng;
     distance_cm = get_distance_cm(curr_pos, gps_pos);
 
     // all ok if within a given hardcoded radius
@@ -102,10 +105,11 @@ void GPS_Glitch::check_position()
     if (all_ok) {
         // position is acceptable
         _last_good_update = now;
-        _last_good_lat = _gps->latitude;
-        _last_good_lon = _gps->longitude;
-        _last_good_vel.x = _gps->velocity_north();
-        _last_good_vel.y = _gps->velocity_east();
+        _last_good_lat = loc.lat;
+        _last_good_lon = loc.lng;
+        const Vector3f &vel = _gps.velocity();
+        _last_good_vel.x = vel.x;
+        _last_good_vel.y = vel.y;
     }
     
     // update glitching flag

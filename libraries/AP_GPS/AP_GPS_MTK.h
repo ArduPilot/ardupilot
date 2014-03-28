@@ -25,28 +25,16 @@
 #ifndef __AP_GPS_MTK_H__
 #define __AP_GPS_MTK_H__
 
-#include "GPS.h"
-#include <AP_Common.h>
+#include <AP_GPS.h>
 #include "AP_GPS_MTK_Common.h"
 
-class AP_GPS_MTK : public GPS {
+class AP_GPS_MTK : public AP_GPS_Backend {
 public:
-    AP_GPS_MTK() :
-		GPS(),
-		_step(0),
-		_payload_counter(0)
-		{}
+    AP_GPS_MTK(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
-    void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting, DataFlash_Class *DataFlash);
-    bool        read(void);
+    bool read(void);
 
-    struct detect_state {
-        uint8_t payload_counter;
-        uint8_t step;
-        uint8_t ck_a, ck_b;
-    };
-
-    static bool _detect(struct detect_state &state, uint8_t data);
+    static bool _detect(struct MTK_detect_state &state, uint8_t data);
 
 private:
     struct PACKED diyd_mtk_msg {

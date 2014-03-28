@@ -21,36 +21,30 @@
 //	GPS configuration : Custom protocol per "DIYDrones Custom Binary Sentence Specification V1.1"
 //
 
-#include <stdint.h>
-
-#include <AP_HAL.h>
-
+#include <AP_GPS.h>
 #include "AP_GPS_MTK.h"
 
-// Public Methods //////////////////////////////////////////////////////////////
-void
-AP_GPS_MTK::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting, DataFlash_Class *DataFlash)
+AP_GPS_MTK::AP_GPS_MTK(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
+    AP_GPS_Backend(_gps, _state, _port),
+    _step(0),
+    _payload_counter(0)
 {
-	_port = s;
-    _port->flush();
-	_step = 0;
-
     // initialize serial port for binary protocol use
-    // XXX should assume binary, let GPS_AUTO handle dynamic config?
-    _port->print(MTK_SET_BINARY);
+    port->print(MTK_SET_BINARY);
 
     // set 5Hz update rate
-    _port->print(MTK_OUTPUT_5HZ);
+    port->print(MTK_OUTPUT_5HZ);
 
     // set SBAS on
-    _port->print(SBAS_ON);
+    port->print(SBAS_ON);
 
     // set WAAS on
-    _port->print(WAAS_ON);
+    port->print(WAAS_ON);
 
     // Set Nav Threshold to 0 m/s
-    _port->print(MTK_NAVTHRES_OFF);
+    port->print(MTK_NAVTHRES_OFF);
 }
+
 
 // Process bytes available from the stream
 //
@@ -70,11 +64,11 @@ AP_GPS_MTK::read(void)
     int16_t numc;
     bool parsed = false;
 
-    numc = _port->available();
+    numc = port->available();
     for (int16_t i = 0; i < numc; i++) {        // Process bytes received
 
         // read the next byte
-        data = _port->read();
+        data = port->read();
 
 restart:
         switch(_step) {
@@ -133,37 +127,37 @@ restart:
         case 5:
             _step++;
             if (_ck_a != data) {
-                _error("GPS_MTK: checksum error\n");
                 _step = 0;
             }
             break;
         case 6:
             _step = 0;
             if (_ck_b != data) {
-                _error("GPS_MTK: checksum error\n");
                 break;
             }
 
             // set fix type
             if (_buffer.msg.fix_type == FIX_3D) {
-                fix = GPS::FIX_3D;
+                state.status = AP_GPS::GPS_OK_FIX_3D;
             }else if (_buffer.msg.fix_type == FIX_2D) {
-                fix = GPS::FIX_2D;
+                state.status = AP_GPS::GPS_OK_FIX_2D;
             }else{
-                fix = GPS::FIX_NONE;
+                state.status = AP_GPS::NO_FIX;
             }
-            latitude            = _swapl(&_buffer.msg.latitude)  * 10;
-            longitude           = _swapl(&_buffer.msg.longitude) * 10;
-            altitude_cm         = _swapl(&_buffer.msg.altitude);
-            ground_speed_cm     = _swapl(&_buffer.msg.ground_speed);
-            ground_course_cd    = _swapl(&_buffer.msg.ground_course) / 10000;
-            num_sats            = _buffer.msg.satellites;
+            state.location.lat  = swap_int32(_buffer.msg.latitude)  * 10;
+            state.location.lng  = swap_int32(_buffer.msg.longitude) * 10;
+            state.location.alt  = swap_int32(_buffer.msg.altitude);
+            state.ground_speed      = swap_int32(_buffer.msg.ground_speed) * 0.01f;
+            state.ground_course_cd  = swap_int32(_buffer.msg.ground_course) / 10000;
+            state.num_sats          = _buffer.msg.satellites;
 
-            if (fix >= GPS::FIX_2D) {
-                _make_gps_time(0, _swapl(&_buffer.msg.utc_time)*10);
+            if (state.status >= AP_GPS::GPS_OK_FIX_2D) {
+                make_gps_time(0, swap_int32(_buffer.msg.utc_time)*10);
             }
             // we don't change _last_gps_time as we don't know the
             // full date
+
+            fill_3d_velocity();
 
             parsed = true;
         }
@@ -175,7 +169,7 @@ restart:
   detect a MTK GPS
  */
 bool
-AP_GPS_MTK::_detect(struct detect_state &state, uint8_t data)
+AP_GPS_MTK::_detect(struct MTK_detect_state &state, uint8_t data)
 {
 	switch (state.step) {
         case 1:

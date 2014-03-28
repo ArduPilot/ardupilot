@@ -33,21 +33,16 @@ static const uint8_t init_messages[] PROGMEM = {
     0xa0, 0xa2, 0x00, 0x08, 0xa6, 0x00, 0x29, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0xd0, 0xb0, 0xb3
 };
 
-// Public Methods //////////////////////////////////////////////////////////////
-void
-AP_GPS_SIRF::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting, DataFlash_Class *DataFlash)
+AP_GPS_SIRF::AP_GPS_SIRF(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
+    AP_GPS_Backend(_gps, _state, _port),
+    _step(0),
+    _gather(false),
+    _payload_length(0),
+    _payload_counter(0),
+    _msg_id(0)
 {
-	_port = s;
-    _port->flush();
-	_step = 0;
-
-    // For modules that default to something other than SiRF binary,
-    // the module-specific subclass should take care of switching to binary mode
-    // before calling us.
-
-    // send SiRF binary setup messages
-    _write_progstr_block(_port, (const prog_char *)init_messages, sizeof(init_messages));
 }
+
 
 // Process bytes available from the stream
 //
@@ -65,11 +60,11 @@ AP_GPS_SIRF::read(void)
     int16_t numc;
     bool parsed = false;
 
-    numc = _port->available();
+    numc = port->available();
     while(numc--) {
 
         // read the next byte
-        data = _port->read();
+        data = port->read();
 
         switch(_step) {
 
@@ -156,14 +151,12 @@ AP_GPS_SIRF::read(void)
         case 6:
             _step++;
             if ((_checksum >> 8) != data) {
-                _error("GPS_SIRF: checksum error\n");
                 _step = 0;
             }
             break;
         case 7:
             _step = 0;
             if ((_checksum & 0xff) != data) {
-                _error("GPS_SIRF: checksum error\n");
                 break;
             }
             if (_gather) {
@@ -182,21 +175,19 @@ AP_GPS_SIRF::_parse_gps(void)
         //time                    = _swapl(&_buffer.nav.time);
         // parse fix type
         if (_buffer.nav.fix_invalid) {
-            fix = GPS::FIX_NONE;
+            state.status = AP_GPS::NO_FIX;
         }else if ((_buffer.nav.fix_type & FIX_MASK) == FIX_3D) {
-            fix = GPS::FIX_3D;
+            state.status = AP_GPS::GPS_OK_FIX_3D;
         }else{
-            fix = GPS::FIX_2D;
+            state.status = AP_GPS::GPS_OK_FIX_2D;
         }
-        latitude                = _swapl(&_buffer.nav.latitude);
-        longitude               = _swapl(&_buffer.nav.longitude);
-        altitude_cm             = _swapl(&_buffer.nav.altitude_msl);
-        ground_speed_cm         = _swapi(&_buffer.nav.ground_speed);
-        // at low speeds, ground course wanders wildly; suppress changes if we are not moving
-        if (ground_speed_cm > 50)
-            ground_course_cd    = _swapi(&_buffer.nav.ground_course);
-        num_sats                = _buffer.nav.satellites;
-
+        state.location.lat      = swap_int32(_buffer.nav.latitude);
+        state.location.lng      = swap_int32(_buffer.nav.longitude);
+        state.location.alt      = swap_int32(_buffer.nav.altitude_msl);
+        state.ground_speed      = swap_int32(_buffer.nav.ground_speed)*0.01f;
+        state.ground_course_cd  = swap_int16(_buffer.nav.ground_course);
+        state.num_sats          = _buffer.nav.satellites;
+        fill_3d_velocity();
         return true;
     }
     return false;
@@ -214,7 +205,7 @@ AP_GPS_SIRF::_accumulate(uint8_t val)
   detect a SIRF GPS
  */
 bool
-AP_GPS_SIRF::_detect(struct detect_state &state, uint8_t data)
+AP_GPS_SIRF::_detect(struct SIRF_detect_state &state, uint8_t data)
 {
 	switch (state.step) {
 	case 1:
