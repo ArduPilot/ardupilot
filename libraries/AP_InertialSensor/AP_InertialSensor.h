@@ -227,5 +227,6 @@ protected:
 #include "AP_InertialSensor_UserInteract_MAVLink.h"
 #include "AP_InertialSensor_Flymaple.h"
 #include "AP_InertialSensor_L3G4200D.h"
+#include "AP_InertialSensor_MPU9150.h"
 
 #endif // __AP_INERTIAL_SENSOR_H__
