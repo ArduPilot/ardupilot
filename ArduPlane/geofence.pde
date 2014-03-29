@@ -352,12 +352,13 @@ static void geofence_check(bool altitude_check_only)
 
         set_guided_WP();
 
-        if (control_mode == MANUAL && g.auto_trim) {
-            // make sure we don't auto trim the surfaces on this change
-            control_mode = STABILIZE;
-        }
+        // make sure we don't auto trim the surfaces on this mode change
+        int8_t saved_auto_trim = g.auto_trim;
+        g.auto_trim.set(0);
 
         set_mode(GUIDED);
+        g.auto_trim.set(saved_auto_trim);
+
         if (g.fence_action == FENCE_ACTION_GUIDED_THR_PASS) {
             guided_throttle_passthru = true;
         }
