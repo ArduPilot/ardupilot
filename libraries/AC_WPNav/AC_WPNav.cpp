@@ -499,7 +499,9 @@ void AC_WPNav::calculate_wp_leash_length()
 ///
 
 /// set_spline_destination waypoint using position vector (distance from home in cm)
-///     seg_type should be calculated by calling function based on the mission
+///     stopped_at_start should be set to true if vehicle is stopped at the origin
+///     seg_end_type should be set to stopped, straight or spline depending upon the next segment's type
+///     next_destination should be set to the next segment's destination if the seg_end_type is SEGMENT_END_STRAIGHT or SEGMENT_END_SPLINE
 void AC_WPNav::set_spline_destination(const Vector3f& destination, bool stopped_at_start, spline_segment_end_type seg_end_type, const Vector3f& next_destination)
 {
     Vector3f origin;
@@ -599,11 +601,6 @@ void AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
 
     // initialise yaw heading to current heading
     _yaw = _ahrs->yaw_sensor;
-
-    // To-Do: handle case where this is a straight segment?
-    // if this is a straight segment, origin velocity is distance vector from origin to destination
-    // To-Do: this handles case of a fast waypoint?
-    // _spline_origin_vel = destination - origin;
 
     // store origin and destination locations
     _origin = origin;
@@ -718,9 +715,7 @@ void AC_WPNav::advance_spline_target_along_track(float dt)
 }
 
 // calc_spline_pos_vel_accel - calculates target position, velocity and acceleration for the given "spline_time"
-//  To-Do: explain what is "spline_time"
-/// calc_spline_pos_vel - update position and velocity from given spline time
-/// 	relies on update_spline_solution being called since the previous
+/// 	relies on update_spline_solution being called when the segment's origin and destination were set
 void AC_WPNav::calc_spline_pos_vel(float spline_time, Vector3f& position, Vector3f& velocity)
 {
     float spline_time_sqrd = spline_time * spline_time;
@@ -734,29 +729,6 @@ void AC_WPNav::calc_spline_pos_vel(float spline_time, Vector3f& position, Vector
     velocity = _hermite_spline_solution[1] + \
                _hermite_spline_solution[2] * 2.0f * spline_time + \
                _hermite_spline_solution[3] * 3.0f * spline_time_sqrd;
-
-    /*position.x = _hermite_spline_solution[1].x + \
-    		     _hermite_spline_solution[2].x * spline_time + \
-    		     _hermite_spline_solution[3].x * spline_time_sqrd + \
-    		     _hermite_spline_solution[4].x * spline_time_cubed;*/
-
-    /*position.y = _hermite_spline_solution[1].y + \
-    		     _hermite_spline_solution[2].y * u(aa) + \
-    		     hss(3,2)*u(aa)^2 + \
-    		     hss(4,2)*u(aa)^3;
-
-    position.z = _hermite_spline_solution[1].z + _hermite_spline_solution[2].z * u(aa) + hss(3,3)*u(aa)^2 + hss(4,3)*u(aa)^3;
-    */
-
-    //velocity.x = hss(2,1) + hss(3,1)*2*u(aa) + hss(4,1)*3*u(aa)^2;
-    //velocity.y = hss(2,2) + hss(3,2)*2*u(aa) + hss(4,2)*3*u(aa)^2;
-    //velocity.z = hss(2,3) + hss(3,3)*2*u(aa) + hss(4,3)*3*u(aa)^2;
-
-    /*for aa = 1:length(u)
-        pos(aa,:)   = [1, u(aa), u(aa)^2, u(aa)^3] * hermite_spline_solution;
-        vel(aa,:)   = [0, 1, 2*u(aa), 3*u(aa)^2] * hermite_spline_solution;
-        accel(aa,:) = [0, 0, 2, 6*u(aa)] * hermite_spline_solution;
-    end*/
 }
 
 
