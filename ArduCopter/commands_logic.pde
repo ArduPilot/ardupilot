@@ -408,7 +408,7 @@ static void do_spline_wp(const AP_Mission::Mission_Command& cmd)
     bool stopped_at_start = true;
     AC_WPNav::spline_segment_end_type seg_end_type = AC_WPNav::SEGMENT_END_STOP;
     AP_Mission::Mission_Command temp_cmd;
-    Vector3f next_spline_destination;    // end of next segment if it is a spline segment
+    Vector3f next_destination;      // end of next segment
 
     // if previous command was a wp_nav command with no delay set stopped_at_start to false
     // To-Do: move processing of delay into wp-nav controller to allow it to determine the stopped_at_start value itself?
@@ -422,18 +422,19 @@ static void do_spline_wp(const AP_Mission::Mission_Command& cmd)
     }
 
     // if there is no delay at the end of this segment get next nav command
-    if (cmd.p1 == 0 && mission.get_next_nav_cmd(cmd.index, temp_cmd)) {
+    if (cmd.p1 == 0 && mission.get_next_nav_cmd(cmd.index+1, temp_cmd)) {
         // if the next nav command is a waypoint set end type to spline or straight
         if (temp_cmd.id == MAV_CMD_NAV_WAYPOINT) {
             seg_end_type = AC_WPNav::SEGMENT_END_STRAIGHT;
+            next_destination = pv_location_to_vector(temp_cmd.content.location);
         }else if (temp_cmd.id == MAV_CMD_NAV_SPLINE_WAYPOINT) {
             seg_end_type = AC_WPNav::SEGMENT_END_SPLINE;
-            next_spline_destination = pv_location_to_vector(temp_cmd.content.location);
+            next_destination = pv_location_to_vector(temp_cmd.content.location);
         }
     }
 
     // set spline navigation target
-    auto_spline_start(local_pos, stopped_at_start, seg_end_type, next_spline_destination);
+    auto_spline_start(local_pos, stopped_at_start, seg_end_type, next_destination);
 }
 
 /********************************************************************************/
