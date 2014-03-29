@@ -207,15 +207,16 @@ void AC_AttitudeControl::angle_ef_roll_pitch_yaw(float roll_angle_ef, float pitc
     angle_ef_error.y = wrap_180_cd_float(_angle_ef_target.y - _ahrs.pitch_sensor);
     angle_ef_error.z = wrap_180_cd_float(_angle_ef_target.z - _ahrs.yaw_sensor);
 
+    // constrain the yaw angle error
+    if (slew_yaw) {
+        angle_ef_error.z = constrain_float(angle_ef_error.z,-_slew_yaw,_slew_yaw);
+    }
+
     // convert earth-frame angle errors to body-frame angle errors
     frame_conversion_ef_to_bf(angle_ef_error, _angle_bf_error);
 
     // convert body-frame angle errors to body-frame rate targets
     update_rate_bf_targets();
-
-    if (slew_yaw) {
-        _rate_bf_target.z = constrain_float(_rate_bf_target.z,-_slew_yaw,_slew_yaw);
-    }
 
     // body-frame to motor outputs should be called separately
 }
