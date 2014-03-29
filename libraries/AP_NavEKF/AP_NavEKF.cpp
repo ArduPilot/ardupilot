@@ -3010,7 +3010,7 @@ Quaternion NavEKF::calcQuatAndFieldStates(float roll, float pitch)
         readMagData();
 
         // rotate the magnetic field into NED axes
-        initMagNED = Tbn*magData;
+        initMagNED = Tbn*(magData - magBias);
 
         // calculate heading of mag field rel to body heading
         float magHeading = atan2f(initMagNED.y, initMagNED.x);
@@ -3028,7 +3028,7 @@ Quaternion NavEKF::calcQuatAndFieldStates(float roll, float pitch)
         // calculate initial Tbn matrix and rotate Mag measurements into NED
         // to set initial NED magnetic field states
         initQuat.rotation_matrix(Tbn);
-        initMagNED = Tbn * magData;
+        initMagNED = Tbn * (magData - magBias);
 
         // write to earth magnetic field state vector
         state.earth_magfield = initMagNED;
