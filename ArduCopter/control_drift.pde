@@ -5,7 +5,11 @@
  */
 
 #ifndef DRIFT_SPEEDGAIN
- # define DRIFT_SPEEDGAIN 14.0
+ # define DRIFT_SPEEDGAIN 14.0f
+#endif
+
+#ifndef DRIFT_THR_GAIN
+ # define DRIFT_THR_GAIN 2.0f
 #endif
 
 // drift_init - initialise drift controller
@@ -27,8 +31,8 @@ static void drift_run()
     float target_yaw_rate;
     int16_t pilot_throttle_scaled;
 
-    // if not armed or landed, set throttle to zero and exit immediately
-    if(!motors.armed() || ap.land_complete) {
+    // if not armed or landed and throttle at zero, set throttle to zero and exit immediately
+    if(!motors.armed() || (ap.land_complete && g.rc_3.control_in <= 0)) {
         attitude_control.init_targets();
         attitude_control.set_throttle_out(0, false);
         return;
@@ -68,9 +72,13 @@ static void drift_run()
         breaker = 0.0;
     }
 
+    // throttle assist
+    float thr_assist = 1.0 - ((float)abs(pilot_throttle_scaled - 500) / 200.0);
+    thr_assist = max(thr_assist, 0) * -DRIFT_THR_GAIN * vel.z;
+
     // call attitude controller
     attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 
     // output pilot's throttle with angle boost
-    attitude_control.set_throttle_out(pilot_throttle_scaled, true);
+    attitude_control.set_throttle_out(pilot_throttle_scaled + thr_assist, true);
 }
