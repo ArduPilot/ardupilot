@@ -587,7 +587,7 @@ void AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
 
     // code below ensures we don't get too much overshoot when the next segment is short
     float vel_len = (_spline_origin_vel + _spline_destination_vel).length();
-    float pos_len = (destination - origin).length() * 2.0f;
+    float pos_len = (destination - origin).length() * 4.0f;
     if (vel_len > pos_len) {
         // if total start+stop velocity is more than twice position difference
         // use a scaled down start and stop velocityscale the  start and stop velocities down
