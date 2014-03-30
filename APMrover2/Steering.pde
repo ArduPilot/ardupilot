@@ -124,6 +124,19 @@ static void calc_throttle(float target_speed)
     } else {
         channel_throttle->servo_out = constrain_int16(throttle, g.throttle_min, g.throttle_max);
     }
+
+    if (!in_reverse && g.braking_percent != 0 && groundspeed_error < -g.speed_cruise/2) {
+        // the user has asked to use reverse throttle to brake. Apply
+        // it in proportion to the ground speed error, but only when
+        // our ground speed error is more than half our cruise speed
+        float brake_gain = constrain_float(-groundspeed_error / (float)g.speed_cruise, 0, 1);
+        int16_t braking_throttle = g.throttle_max * (g.braking_percent * 0.01f) * brake_gain;
+        channel_throttle->servo_out = constrain_int16(-braking_throttle, -g.throttle_max, -g.throttle_min);
+        
+        // temporarily set us in reverse to allow the PWM setting to
+        // go negative
+        set_reverse(true);
+    }
     
     if (use_pivot_steering()) {
         channel_throttle->servo_out = 0;

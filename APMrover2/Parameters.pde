@@ -145,6 +145,15 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
 	GSCALAR(speed_turn_dist,    "SPEED_TURN_DIST",  2.0f),
 
+    // @Param: BRAKING_PERCENT
+    // @DisplayName: Percentage braking to apply
+    // @Description: The maximum reverse throttle braking percentage to apply when cornering
+    // @Units: percent
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+	GSCALAR(braking_percent,    "BRAKING_PERCENT",  0),
+
     // @Param: PIVOT_TURN_ANGLE
     // @DisplayName: Pivot turn angle
     // @Description: Navigation angle threshold in degrees to switch to pivot steering when SKID_STEER_OUT is 1. This allows you to setup a skid steering rover to turn on the spot in auto mode when the angle it needs to turn it greater than this angle. An angle of zero means to disable pivot turning. Note that you will probably also want to set a low value for WP_RADIUS to get neat turns.

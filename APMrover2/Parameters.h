@@ -44,6 +44,9 @@ public:
         k_param_battery_volt_pin,
         k_param_battery_curr_pin,
 
+        // braking
+        k_param_braking_percent = 30,
+
 
         // 110: Telemetry control
         //
@@ -188,6 +191,9 @@ public:
 
     // IO pins
     AP_Int8     rssi_pin;
+
+    // braking
+    AP_Int8     braking_percent;
 
 	// Telemetry control
 	//
