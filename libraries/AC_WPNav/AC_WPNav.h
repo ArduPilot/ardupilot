@@ -114,10 +114,10 @@ public:
     void get_wp_stopping_point_xy(Vector3f& stopping_point) const;
 
     /// get_wp_distance_to_destination - get horizontal distance to destination in cm
-    float get_wp_distance_to_destination();
+    float get_wp_distance_to_destination() const;
 
     /// get_bearing_to_destination - get bearing to next waypoint in centi-degrees
-    int32_t get_wp_bearing_to_destination();
+    int32_t get_wp_bearing_to_destination() const;
 
     /// reached_destination - true when we have come within RADIUS cm of the waypoint
     bool reached_wp_destination() const { return _flags.reached_destination; }
@@ -147,7 +147,7 @@ public:
     // spline-fast - next segment is spline, vehicle's destination velocity should be parallel to position difference vector from previous segment's origin to this segment's destination
 
     // get_yaw - returns target yaw in centi-degrees (used for wp and spline navigation)
-    float get_yaw() { return _yaw; }
+    float get_yaw() const { return _yaw; }
 
     /// set_spline_destination waypoint using position vector (distance from home in cm)
     ///     stopped_at_start should be set to true if vehicle is stopped at the origin

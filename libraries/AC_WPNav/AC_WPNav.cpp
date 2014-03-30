@@ -424,7 +424,7 @@ void AC_WPNav::advance_wp_target_along_track(float dt)
 }
 
 /// get_wp_distance_to_destination - get horizontal distance to destination in cm
-float AC_WPNav::get_wp_distance_to_destination()
+float AC_WPNav::get_wp_distance_to_destination() const
 {
     // get current location
     Vector3f curr = _inav->get_position();
@@ -432,7 +432,7 @@ float AC_WPNav::get_wp_distance_to_destination()
 }
 
 /// get_wp_bearing_to_destination - get bearing to next waypoint in centi-degrees
-int32_t AC_WPNav::get_wp_bearing_to_destination()
+int32_t AC_WPNav::get_wp_bearing_to_destination() const
 {
     return get_bearing_cd(_inav->get_position(), _destination);
 }
@@ -709,7 +709,7 @@ void AC_WPNav::advance_spline_target_along_track(float dt)
         _pos_control.set_pos_target(target_pos);
 
         // update the yaw
-        _yaw = RadiansToCentiDegrees(atan2(target_vel.y,target_vel.x));
+        _yaw = RadiansToCentiDegrees(atan2f(target_vel.y,target_vel.x));
 
         // advance spline time to next step
         _spline_time += spline_time_scale*dt;
