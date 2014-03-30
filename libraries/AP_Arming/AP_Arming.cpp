@@ -130,22 +130,11 @@ bool AP_Arming::gps_checks(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_GPS)) {
-        const GPS *gps = ahrs.get_gps();
-
-        //If no GPS and the user has specifically asked to check GPS, then
-        //there is a problem
-        if (gps == NULL && (checks_to_perform & ARMING_CHECK_GPS)) {
-            if (report) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: No GPS detected."));
-            }
-            return false;
-        } else if (gps == NULL) {
-            //assume the user doesn't have a GPS on purpose
-            return true;
-        } 
+        const AP_GPS &gps = ahrs.get_gps();
 
         //GPS OK?
-        if (!home_is_set || gps->status() != GPS::GPS_OK_FIX_3D ||              
+        if (!home_is_set || 
+            gps.status() < AP_GPS::GPS_OK_FIX_3D ||              
             AP_Notify::flags.gps_glitching ||
             AP_Notify::flags.failsafe_gps) {
             if (report) {
