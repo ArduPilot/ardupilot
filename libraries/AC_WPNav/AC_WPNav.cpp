@@ -543,33 +543,31 @@ void AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
     // spline-fast - vehicle is moving, previous segment is splined, vehicle will fly through waypoint but previous segment should have it flying in the correct direction (i.e. exactly parallel to position difference vector from previous segment's origin to this segment's destination)
 
     // calculate spline velocity at origin
-    if (stopped_at_start) {
+    if (stopped_at_start || !prev_segment_exists) {
     	// if vehicle is stopped at the origin, set origin velocity to 0.1 * distance vector from origin to destination
     	_spline_origin_vel = (destination - origin) * 0.1f;
     	_spline_time = 0.0f;
     	_spline_vel_scaler = 0.0f;
     }else{
     	// look at previous segment to determine velocity at origin
-        if (prev_segment_exists) {
-            if (_flags.segment_type == SEGMENT_STRAIGHT) {
-                // previous segment is straight, vehicle is moving so vehicle should fly straight through the origin
-                // before beginning it's spline path to the next waypoint. Note: we are using the previous segment's origin and destination
-                _spline_origin_vel = (_destination - _origin);
-            	_spline_time = 0.0f;	// To-Do: this should be set based on how much overrun there was from straight segment?
-            	_spline_vel_scaler = 0.0f;    // To-Do: this should be set based on speed at end of prev straight segment?
+        if (_flags.segment_type == SEGMENT_STRAIGHT) {
+            // previous segment is straight, vehicle is moving so vehicle should fly straight through the origin
+            // before beginning it's spline path to the next waypoint. Note: we are using the previous segment's origin and destination
+            _spline_origin_vel = (_destination - _origin);
+            _spline_time = 0.0f;	// To-Do: this should be set based on how much overrun there was from straight segment?
+            _spline_vel_scaler = 0.0f;    // To-Do: this should be set based on speed at end of prev straight segment?
+        }else{
+            // previous segment is splined, vehicle will fly through origin
+            // we can use the previous segment's destination velocity as this segment's origin velocity
+            // Note: previous segment will leave destination velocity parallel to position difference vector
+            //       from previous segment's origin to this segment's destination)
+            _spline_origin_vel = _spline_destination_vel;
+            if (_spline_time > 1.0f && _spline_time < 1.1f) {    // To-Do: remove hard coded 1.1f
+                _spline_time -= 1.0f;
             }else{
-                // previous segment is splined, vehicle will fly through origin
-                // we can use the previous segment's destination velocity as this segment's origin velocity
-                // Note: previous segment will leave destination velocity parallel to position difference vector
-                //       from previous segment's origin to this segment's destination)
-                _spline_origin_vel = _spline_destination_vel;
-                if (_spline_time > 1.0f && _spline_time < 1.1f) {    // To-Do: remove hard coded 1.1f
-                    _spline_time -= 1.0f;
-                }else{
-                    _spline_time = 0.0f;
-                }
-                _spline_vel_scaler = 0.0f;
+                _spline_time = 0.0f;
             }
+            _spline_vel_scaler = 0.0f;
         }
     }
 
