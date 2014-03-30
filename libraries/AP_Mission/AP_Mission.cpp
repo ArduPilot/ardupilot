@@ -81,18 +81,22 @@ void AP_Mission::resume()
             start();
             return;
         }
+    }
 
-        // restart active navigation command
-        // Note: if there is no active command then the mission must have been stopped just after the previous nav command completed
-        //      update will take care of finding and starting the nav command
-        if (_flags.nav_cmd_loaded) {
-            _cmd_start_fn(_nav_cmd);
-        }
+    // restart active navigation command. We run these on resume()
+    // regardless of whether the mission was stopped, as we may be
+    // re-entering AUTO mode and the nav_cmd callback needs to be run
+    // to setup the current target waypoint
 
-        // restart active do command
-        if (_flags.do_cmd_loaded && _do_cmd.index != AP_MISSION_CMD_INDEX_NONE) {
-            _cmd_start_fn(_do_cmd);
-        }
+    // Note: if there is no active command then the mission must have been stopped just after the previous nav command completed
+    //      update will take care of finding and starting the nav command
+    if (_flags.nav_cmd_loaded) {
+        _cmd_start_fn(_nav_cmd);
+    }
+
+    // restart active do command
+    if (_flags.do_cmd_loaded && _do_cmd.index != AP_MISSION_CMD_INDEX_NONE) {
+        _cmd_start_fn(_do_cmd);
     }
 }
 
