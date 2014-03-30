@@ -216,9 +216,8 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
-AP_Mount::AP_Mount(const struct Location *current_loc, GPS *&gps, const AP_AHRS &ahrs, uint8_t id) :
-    _ahrs(ahrs),
-    _gps(gps)
+AP_Mount::AP_Mount(const struct Location *current_loc, const AP_AHRS &ahrs, uint8_t id) :
+    _ahrs(ahrs)
 {
 	AP_Param::setup_object_defaults(this, var_info);
     _current_loc = current_loc;
@@ -381,7 +380,7 @@ void AP_Mount::update_mount_position()
     // point mount to a GPS point given by the mission planner
     case MAV_MOUNT_MODE_GPS_POINT:
     {
-        if(_gps->fix) {
+        if(_ahrs.get_gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
             calc_GPS_target_angle(&_target_GPS_location);
             stabilize();
         }
