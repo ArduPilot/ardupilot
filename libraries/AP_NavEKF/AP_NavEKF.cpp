@@ -366,7 +366,7 @@ void NavEKF::ResetPosition(void)
     if (staticMode) {
         states[7] = 0;
         states[8] = 0;
-    } else if (_ahrs->get_gps()->status() >= GPS::GPS_OK_FIX_3D) {
+    } else if (_ahrs->get_gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
 
         // read the GPS
         readGpsData();
@@ -383,7 +383,7 @@ void NavEKF::ResetVelocity(void)
          state.velocity.zero();
          state.vel1.zero();
          state.vel2.zero();
-    } else if (_ahrs->get_gps()->status() >= GPS::GPS_OK_FIX_3D) {
+    } else if (_ahrs->get_gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
         // read the GPS
         readGpsData();
         // reset horizontal velocity states
@@ -2875,14 +2875,14 @@ void NavEKF::readIMUData()
 void NavEKF::readGpsData()
 {
     // check for new GPS data
-    if ((_ahrs->get_gps()->last_message_time_ms() != lastFixTime_ms) &&
-            (_ahrs->get_gps()->status() >= GPS::GPS_OK_FIX_3D))
+    if ((_ahrs->get_gps().last_message_time_ms() != lastFixTime_ms) &&
+            (_ahrs->get_gps().status() >= AP_GPS::GPS_OK_FIX_3D))
     {
         // store fix time from previous read
         secondLastFixTime_ms = lastFixTime_ms;
 
         // get current fix time
-        lastFixTime_ms = _ahrs->get_gps()->last_message_time_ms();
+        lastFixTime_ms = _ahrs->get_gps().last_message_time_ms();
 
         // set flag that lets other functions know that new GPS data has arrived
         newDataGps = true;
@@ -2893,14 +2893,10 @@ void NavEKF::readGpsData()
         RecallStates(statesAtPosTime, (IMUmsec - constrain_int16(_msecPosDelay, 0, 500)));
 
         // read the NED velocity from the GPS
-        velNED[0] = _ahrs->get_gps()->velocity_north();
-        velNED[1] = _ahrs->get_gps()->velocity_east();
+        velNED = _ahrs->get_gps().velocity();
 
-        // Check if GPS can output vertical velocity and set value and GPS fusion mode accordingly
-        if (_ahrs->get_gps()->have_vertical_velocity()) {
-            velNED[2] = _ahrs->get_gps()->velocity_down();
-        } else {
-            velNED[2] = 0;
+        // Check if GPS can output vertical velocity and set GPS fusion mode accordingly
+        if (!_ahrs->get_gps().have_vertical_velocity()) {
             // vertical velocity should not be fused
             if (_fusionModeGPS == 0) {
                 _fusionModeGPS = 1;
@@ -2908,13 +2904,10 @@ void NavEKF::readGpsData()
         }
 
         // read latitutde and longitude from GPS and convert to NE position
-        struct Location gpsloc;
-        gpsloc.lat = _ahrs->get_gps()->latitude;
-        gpsloc.lng = _ahrs->get_gps()->longitude;
+        const struct Location &gpsloc = _ahrs->get_gps().location();
         Vector2f posdiff = location_diff(_ahrs->get_home(), gpsloc);
         posNE[0] = posdiff.x;
         posNE[1] = posdiff.y;
-
     }
 }
 
