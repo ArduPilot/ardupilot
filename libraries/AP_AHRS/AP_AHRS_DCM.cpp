@@ -26,13 +26,9 @@
 
 extern const AP_HAL::HAL& hal;
 
-// this is the speed in cm/s above which we first get a yaw lock with
+// this is the speed in m/s above which we first get a yaw lock with
 // the GPS
-#define GPS_SPEED_MIN 300
-
-// this is the speed in cm/s at which we stop using drift correction
-// from the GPS and wait for the ground speed to get above GPS_SPEED_MIN
-#define GPS_SPEED_RESET 100
+#define GPS_SPEED_MIN 3
 
 // the limit (in degrees/second) beyond which we stop integrating
 // omega_I. At larger spin rates the DCM PI controller can get 'dizzy'
@@ -314,7 +310,7 @@ AP_AHRS_DCM::_yaw_gain(void) const
 // return true if we have and should use GPS
 bool AP_AHRS_DCM::have_gps(void) const
 {
-    if (!_gps || _gps->status() <= GPS::NO_FIX || !_gps_use) {
+    if (_gps.status() <= AP_GPS::NO_FIX || !_gps_use) {
         return false;
     }
     return true;
@@ -331,7 +327,7 @@ bool AP_AHRS_DCM::use_compass(void)
         // we don't have any alterative to the compass
         return true;
     }
-    if (_gps->ground_speed_cm < GPS_SPEED_MIN) {
+    if (_gps.ground_speed() < GPS_SPEED_MIN) {
         // we are not going fast enough to use the GPS
         return true;
     }
@@ -340,8 +336,8 @@ bool AP_AHRS_DCM::use_compass(void)
     // degrees and the estimated wind speed is less than 80% of the
     // ground speed, then switch to GPS navigation. This will help
     // prevent flyaways with very bad compass offsets
-    int32_t error = abs(wrap_180_cd(yaw_sensor - _gps->ground_course_cd));
-    if (error > 4500 && _wind.length() < _gps->ground_speed_cm*0.008f) {
+    int32_t error = abs(wrap_180_cd(yaw_sensor - _gps.ground_course_cd()));
+    if (error > 4500 && _wind.length() < _gps.ground_speed()*0.8f) {
         if (hal.scheduler->millis() - _last_consistent_heading > 2000) {
             // start using the GPS for heading if the compass has been
             // inconsistent with the GPS for 2 seconds
@@ -387,18 +383,18 @@ AP_AHRS_DCM::drift_correction_yaw(void)
             // also update the _gps_last_update, so if we later
             // disable the compass due to significant yaw error we
             // don't suddenly change yaw with a reset
-            _gps_last_update = _gps->last_fix_time;
+            _gps_last_update = _gps.last_fix_time_ms();
         }
     } else if (_flags.fly_forward && have_gps()) {
         /*
           we are using GPS for yaw
          */
-        if (_gps->last_fix_time != _gps_last_update &&
-            _gps->ground_speed_cm >= GPS_SPEED_MIN) {
-            yaw_deltat = (_gps->last_fix_time - _gps_last_update) * 1.0e-3f;
-            _gps_last_update = _gps->last_fix_time;
+        if (_gps.last_fix_time_ms() != _gps_last_update &&
+            _gps.ground_speed() >= GPS_SPEED_MIN) {
+            yaw_deltat = (_gps.last_fix_time_ms() - _gps_last_update) * 1.0e-3f;
+            _gps_last_update = _gps.last_fix_time_ms();
             new_value = true;
-            float gps_course_rad = ToRad(_gps->ground_course_cd * 0.01f);
+            float gps_course_rad = ToRad(_gps.ground_course_cd() * 0.01f);
             float yaw_error_rad = wrap_PI(gps_course_rad - yaw);
             yaw_error = sinf(yaw_error_rad);
 
@@ -420,7 +416,7 @@ AP_AHRS_DCM::drift_correction_yaw(void)
             */
             if (!_flags.have_initial_yaw || 
                 yaw_deltat > 20 ||
-                (_gps->ground_speed_cm >= 3*GPS_SPEED_MIN && fabsf(yaw_error_rad) >= 1.047f)) {
+                (_gps.ground_speed() >= 3*GPS_SPEED_MIN && fabsf(yaw_error_rad) >= 1.047f)) {
                 // reset DCM matrix based on current yaw
                 _dcm_matrix.from_euler(roll, pitch, gps_course_rad);
                 _omega_yaw_P.zero();
@@ -515,8 +511,8 @@ AP_AHRS_DCM::drift_correction(float deltat)
     _ra_deltat += deltat;
 
     if (!have_gps() || 
-        _gps->status() < GPS::GPS_OK_FIX_3D || 
-        _gps->num_sats < _gps_minsats) {
+        _gps.status() < AP_GPS::GPS_OK_FIX_3D || 
+        _gps.num_sats() < _gps_minsats) {
         // no GPS, or not a good lock. From experience we need at
         // least 6 satellites to get a really reliable velocity number
         // from the GPS.
@@ -544,12 +540,12 @@ AP_AHRS_DCM::drift_correction(float deltat)
         last_correction_time = hal.scheduler->millis();
         _have_gps_lock = false;
     } else {
-        if (_gps->last_fix_time == _ra_sum_start) {
+        if (_gps.last_fix_time_ms() == _ra_sum_start) {
             // we don't have a new GPS fix - nothing more to do
             return;
         }
-        velocity = Vector3f(_gps->velocity_north(), _gps->velocity_east(), _gps->velocity_down());
-        last_correction_time = _gps->last_fix_time;
+        velocity = _gps.velocity();
+        last_correction_time = _gps.last_fix_time_ms();
         if (_have_gps_lock == false) {
             // if we didn't have GPS lock in the last drift
             // correction interval then set the velocities equal
@@ -565,8 +561,8 @@ AP_AHRS_DCM::drift_correction(float deltat)
 
     if (have_gps()) {
         // use GPS for positioning with any fix, even a 2D fix
-        _last_lat = _gps->latitude;
-        _last_lng = _gps->longitude;
+        _last_lat = _gps.location().lat;
+        _last_lng = _gps.location().lng;
         _position_offset_north = 0;
         _position_offset_east = 0;
 
@@ -714,8 +710,8 @@ AP_AHRS_DCM::drift_correction(float deltat)
         _omega_P *= 8;
     }
 
-    if (_flags.fly_forward && _gps && _gps->status() >= GPS::GPS_OK_FIX_2D && 
-        _gps->ground_speed_cm < GPS_SPEED_MIN && 
+    if (_flags.fly_forward && _gps.status() >= AP_GPS::GPS_OK_FIX_2D && 
+        _gps.ground_speed() < GPS_SPEED_MIN && 
         _ins.get_accel().x >= 7 &&
 	    pitch_sensor > -3000 && pitch_sensor < 3000) {
             // assume we are in a launch acceleration, and reduce the
@@ -875,7 +871,7 @@ bool AP_AHRS_DCM::get_position(struct Location &loc)
     loc.alt = _baro.get_altitude() * 100 + _home.alt;
     location_offset(loc, _position_offset_north, _position_offset_east);
     if (_flags.fly_forward && _have_position) {
-        location_update(loc, degrees(yaw), _gps->ground_speed_cm * 0.01 * _gps->get_lag());
+        location_update(loc, degrees(yaw), _gps.ground_speed() * _gps.get_lag());
     }
     return _have_position;
 }
@@ -899,10 +895,10 @@ bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret) const
 		ret = true;
 	}
 
-	if (ret && _wind_max > 0 && _gps && _gps->status() >= GPS::GPS_OK_FIX_2D) {
+	if (ret && _wind_max > 0 && _gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
 		// constrain the airspeed by the ground speed
 		// and AHRS_WIND_MAX
-        float gnd_speed = _gps->ground_speed_cm*0.01f;
+        float gnd_speed = _gps.ground_speed();
         float true_airspeed = *airspeed_ret * get_EAS2TAS();
 		true_airspeed = constrain_float(true_airspeed,
                                         gnd_speed - _wind_max, 
@@ -912,10 +908,9 @@ bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret) const
 	return ret;
 }
 
-void AP_AHRS_DCM::set_home(int32_t lat, int32_t lng, int32_t alt_cm)
+void AP_AHRS_DCM::set_home(const Location &loc)
 {
-    _home.lat = lat;
-    _home.lng = lng;
-    _home.alt = alt_cm;
+    _home = loc;
+    _home.options = 0;
 }
 

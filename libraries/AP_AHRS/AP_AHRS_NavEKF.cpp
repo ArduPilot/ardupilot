@@ -53,7 +53,7 @@ void AP_AHRS_NavEKF::update(void)
 
     if (!ekf_started) {
         // if we have a GPS lock we can start the EKF
-        if (get_gps()->status() >= GPS::GPS_OK_FIX_3D) {
+        if (get_gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
             if (start_time_ms == 0) {
                 start_time_ms = hal.scheduler->millis();
             }
@@ -189,9 +189,9 @@ Vector2f AP_AHRS_NavEKF::groundspeed_vector(void)
     return Vector2f(vec.x, vec.y);
 }
 
-void AP_AHRS_NavEKF::set_home(int32_t lat, int32_t lng, int32_t alt_cm)
+void AP_AHRS_NavEKF::set_home(const Location &loc)
 {
-    AP_AHRS_DCM::set_home(lat, lng, alt_cm);
+    AP_AHRS_DCM::set_home(loc);
 }
 
 // return true if inertial navigation is active

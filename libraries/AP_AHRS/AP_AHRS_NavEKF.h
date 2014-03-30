@@ -33,7 +33,7 @@ class AP_AHRS_NavEKF : public AP_AHRS_DCM
 {
 public:
     // Constructor
-    AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, GPS *&gps) :
+    AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps) :
         AP_AHRS_DCM(ins, baro, gps),
         EKF(this, baro),
         ekf_started(false),
@@ -83,7 +83,7 @@ public:
     Vector2f groundspeed_vector(void);
 
     // set home location
-    void set_home(int32_t lat, int32_t lng, int32_t alt_cm);
+    void set_home(const Location &loc);
 
     bool have_inertial_nav(void) const;
 

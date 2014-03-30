@@ -37,7 +37,7 @@ class AP_AHRS
 {
 public:
     // Constructor
-    AP_AHRS(AP_InertialSensor &ins, AP_Baro &baro, GPS *&gps) :
+    AP_AHRS(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps) :
         _compass(NULL),
         _ins(ins),
         _baro(baro),
@@ -117,7 +117,7 @@ public:
         return _airspeed;
     }
 
-    const GPS *get_gps() const {
+    const AP_GPS &get_gps() const {
         return _gps;
     }
 
@@ -219,10 +219,10 @@ public:
 
     // return ground speed estimate in meters/second. Used by ground vehicles.
     float groundspeed(void) const {
-        if (!_gps || _gps->status() <= GPS::NO_FIX) {
+        if (_gps.status() <= AP_GPS::NO_FIX) {
             return 0.0f;
         }
-        return _gps->ground_speed_cm * 0.01f;
+        return _gps.ground_speed();
     }
 
     // return true if we will use compass for yaw
@@ -298,7 +298,7 @@ public:
     // set the home location in 10e7 degrees. This should be called
     // when the vehicle is at this position. It is assumed that the
     // current barometer and GPS altitudes correspond to this altitude
-    virtual void set_home(int32_t lat, int32_t lon, int32_t alt_cm) = 0;
+    virtual void set_home(const Location &loc) = 0;
 
     // return true if the AHRS object supports inertial navigation,
     // with very accurate position and velocity
@@ -344,7 +344,7 @@ protected:
     //       IMU under us without our noticing.
     AP_InertialSensor   &_ins;
     AP_Baro             &_baro;
-    GPS                 *&_gps;
+    const AP_GPS        &_gps;
 
     // a vector to capture the difference between the controller and body frames
     AP_Vector3f         _trim;
