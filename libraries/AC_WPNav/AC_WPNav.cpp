@@ -714,7 +714,7 @@ void AC_WPNav::advance_spline_target_along_track(float dt)
         _yaw = RadiansToCentiDegrees(atan2(target_vel.y,target_vel.x));
 
         // advance spline time to next step
-        _spline_time += spline_time_scale*0.1f;
+        _spline_time += spline_time_scale*dt;
 
         // we will reach the next waypoint in the next step so set reached_destination flag
         // To-Do: is this one step too early?
