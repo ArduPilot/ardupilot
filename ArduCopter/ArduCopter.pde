@@ -89,6 +89,7 @@
 #include <AP_HAL_AVR.h>
 #include <AP_HAL_AVR_SITL.h>
 #include <AP_HAL_PX4.h>
+#include <AP_HAL_VRBRAIN.h>
 #include <AP_HAL_FLYMAPLE.h>
 #include <AP_HAL_Linux.h>
 #include <AP_HAL_Empty.h>
@@ -213,6 +214,8 @@ static DataFlash_File DataFlash("logs");
 static DataFlash_File DataFlash("/fs/microsd/APM/LOGS");
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 static DataFlash_File DataFlash("logs");
+#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+static DataFlash_File DataFlash("/fs/microsd/APM/LOGS");
 #else
 static DataFlash_Empty DataFlash;
 #endif
@@ -261,6 +264,8 @@ static AP_InertialSensor_Oilpan ins(&adc);
 static AP_InertialSensor_HIL ins;
 #elif CONFIG_IMU_TYPE == CONFIG_IMU_PX4
 static AP_InertialSensor_PX4 ins;
+#elif CONFIG_IMU_TYPE == CONFIG_IMU_VRBRAIN
+static AP_InertialSensor_VRBRAIN ins;
 #elif CONFIG_IMU_TYPE == CONFIG_IMU_FLYMAPLE
 AP_InertialSensor_Flymaple ins;
 #elif CONFIG_IMU_TYPE == CONFIG_IMU_L3G4200D
@@ -278,6 +283,8 @@ static SITL sitl;
 static AP_Baro_BMP085 barometer;
   #elif CONFIG_BARO == AP_BARO_PX4
 static AP_Baro_PX4 barometer;
+#elif CONFIG_BARO == AP_BARO_VRBRAIN
+static AP_Baro_VRBRAIN barometer;
   #elif CONFIG_BARO == AP_BARO_MS5611
    #if CONFIG_MS5611_SERIAL == AP_BARO_MS5611_SPI
 static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::spi);
@@ -290,6 +297,8 @@ static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::i2c);
 
  #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 static AP_Compass_PX4 compass;
+ #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+static AP_Compass_VRBRAIN compass;
  #else
 static AP_Compass_HMC5843 compass;
  #endif
