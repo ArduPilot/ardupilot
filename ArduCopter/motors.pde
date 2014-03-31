@@ -61,6 +61,7 @@ static void arm_motors_check()
             }else{
                 // reset arming counter if pre-arm checks fail
                 arming_counter = 0;
+                AP_Notify::flags.arming_failed = true;
             }
         }
 
@@ -84,6 +85,7 @@ static void arm_motors_check()
 
     // Yaw is centered so reset arming counter
     }else{
+        AP_Notify::flags.arming_failed = false;
         arming_counter = 0;
     }
 }
