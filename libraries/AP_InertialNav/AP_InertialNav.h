@@ -34,10 +34,9 @@ class AP_InertialNav
 public:
 
     // Constructor
-    AP_InertialNav(AP_AHRS &ahrs, AP_Baro &baro, GPS*& gps, GPS_Glitch& gps_glitch ) :
+    AP_InertialNav(AP_AHRS &ahrs, AP_Baro &baro, GPS_Glitch& gps_glitch ) :
         _ahrs(ahrs),
         _baro(baro),
-        _gps(gps),
         _xy_enabled(false),
         _gps_last_update(0),
         _gps_last_time(0),
@@ -274,7 +273,6 @@ protected:
 
     AP_AHRS                &_ahrs;                      // reference to ahrs object
     AP_Baro                &_baro;                      // reference to barometer
-    GPS*&                   _gps;                       // pointer to gps
 
     // XY Axis specific variables
     bool                    _xy_enabled;                // xy position estimates enabled

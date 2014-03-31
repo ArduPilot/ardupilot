@@ -14,8 +14,8 @@ class AP_InertialNav_NavEKF : public AP_InertialNav
 {
 public:
     // Constructor
-    AP_InertialNav_NavEKF(AP_AHRS &ahrs, AP_Baro &baro, GPS*& gps, GPS_Glitch& gps_glitch ) :
-        AP_InertialNav(ahrs, baro, gps, gps_glitch)
+    AP_InertialNav_NavEKF(AP_AHRS &ahrs, AP_Baro &baro, GPS_Glitch& gps_glitch ) :
+        AP_InertialNav(ahrs, baro, gps_glitch)
         {
         }
 
