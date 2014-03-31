@@ -65,11 +65,10 @@ AP_Param param_loader(var_info, WP_START_BYTE);
 
 static Parameters g;
 
-static GPS         *g_gps;
-AP_GPS_Auto     g_gps_driver(&g_gps);
+static AP_GPS gps;
 AP_InertialSensor_MPU6000 ins;
 AP_Baro_HIL      barometer;
-AP_AHRS_DCM  ahrs(ins, barometer, g_gps);
+AP_AHRS_DCM  ahrs(ins, barometer, gps);
 
 static AP_Compass_HIL compass;
 SITL					sitl;

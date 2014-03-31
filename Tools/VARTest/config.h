@@ -147,21 +147,6 @@
 #define HIL_MODE	HIL_MODE_DISABLED
 #endif
 
-#if HIL_MODE != HIL_MODE_DISABLED	// we are in HIL mode
- # undef GPS_PROTOCOL
- # define GPS_PROTOCOL GPS_PROTOCOL_NONE
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// GPS_PROTOCOL
-//
-// Note that this test must follow the HIL_PROTOCOL block as the HIL
-// setup may override the GPS configuration.
-//
-#ifndef GPS_PROTOCOL
-# define GPS_PROTOCOL GPS_PROTOCOL_AUTO
-#endif
-
 #ifndef MAV_SYSTEM_ID
 # define MAV_SYSTEM_ID		1
 #endif
