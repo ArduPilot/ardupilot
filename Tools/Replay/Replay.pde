@@ -58,12 +58,11 @@ static Parameters g;
 
 static AP_InertialSensor_HIL ins;
 static AP_Baro_HIL barometer;
-static AP_GPS_HIL gps_driver;
-static GPS *g_gps = &gps_driver;
+static AP_GPS gps;
 static AP_Compass_HIL compass;
-static AP_AHRS_NavEKF ahrs(ins, barometer, g_gps);
-static GPS_Glitch gps_glitch(g_gps);
-static AP_InertialNav inertial_nav(ahrs, barometer, g_gps, gps_glitch);
+static AP_AHRS_NavEKF ahrs(ins, barometer, gps);
+static GPS_Glitch gps_glitch(gps);
+static AP_InertialNav inertial_nav(ahrs, barometer, gps_glitch);
 static AP_Vehicle::FixedWing aparm;
 static AP_Airspeed airspeed(aparm);
 
@@ -73,7 +72,7 @@ SITL sitl;
 
 static const NavEKF &NavEKF = ahrs.get_NavEKF();
 
-static LogReader LogReader(ins, barometer, compass, g_gps, airspeed);
+static LogReader LogReader(ins, barometer, compass, gps, airspeed);
 
 static FILE *plotf;
 static FILE *plotf2;
@@ -221,14 +220,17 @@ void setup()
         uint8_t type;
         if (!LogReader.update(type)) break;
         read_sensors(type);
-        if (type == LOG_GPS_MSG && g_gps->status() >= GPS::GPS_OK_FIX_3D && done_baro_init && !done_home_init) {
+        if (type == LOG_GPS_MSG && 
+            gps.status() >= AP_GPS::GPS_OK_FIX_3D && 
+            done_baro_init && !done_home_init) {
+            const Location &loc = gps.location();
             ::printf("GPS Lock at %.7f %.7f %.2fm time=%.1f seconds\n", 
-                     g_gps->latitude*1.0e-7f, 
-                     g_gps->longitude*1.0e-7f,
-                     g_gps->altitude_cm*0.01f,
+                     loc.lat * 1.0e-7f, 
+                     loc.lng * 1.0e-7f,
+                     loc.alt * 0.01f,
                      hal.scheduler->millis()*0.001f);
-            ahrs.set_home(g_gps->latitude, g_gps->longitude, g_gps->altitude_cm);
-            compass.set_initial_location(g_gps->latitude, g_gps->longitude);
+            ahrs.set_home(loc);
+            compass.set_initial_location(loc.lat, loc.lng);
             inertial_nav.setup_home_position();
             done_home_init = true;
         }
@@ -263,8 +265,8 @@ static void read_sensors(uint8_t type)
         set_user_parameters();
     }
     if (type == LOG_GPS_MSG) {
-        g_gps->update();
-        if (g_gps->status() >= GPS::GPS_OK_FIX_3D) {
+        gps.update();
+        if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
             ahrs.estimate_wind();
         }
     } else if (type == LOG_IMU_MSG) {
