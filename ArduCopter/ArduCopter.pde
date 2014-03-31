@@ -1217,7 +1217,7 @@ static void update_GPS(void)
         // run glitch protection and update AP_Notify if home has been initialised
         if (ap.home_is_set) {
             gps_glitch.check_position();
-            report_gps_glitch = (gps_glitch.glitching() && !ap.usb_connected);
+            report_gps_glitch = (gps_glitch.glitching() && !ap.usb_connected && hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
             if (AP_Notify::flags.gps_glitching != report_gps_glitch) {
                 if (gps_glitch.glitching()) {
                     Log_Write_Error(ERROR_SUBSYSTEM_GPS, ERROR_CODE_GPS_GLITCH);
