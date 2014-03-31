@@ -852,6 +852,29 @@ mission_failed:
         break;
     }
 
+    case MAVLINK_MSG_ID_SET_MODE:
+    {
+        // decode
+        mavlink_set_mode_t packet;
+        mavlink_msg_set_mode_decode(msg, &packet);
+
+        if (!(packet.base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED)) {
+            // we ignore base_mode as there is no sane way to map
+            // from that bitmap to a APM flight mode. We rely on
+            // custom_mode instead.
+            break;
+        }
+        switch (packet.custom_mode) {
+        case MANUAL:
+        case STOP:
+        case AUTO:
+            set_mode((enum ControlMode)packet.custom_mode);
+            break;
+        }
+
+        break;
+    }
+
     default:
         break;
 
