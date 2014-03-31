@@ -102,6 +102,8 @@ private:
 
     bool        _parse_gps(void);
     void        _accumulate(uint8_t val);
+
+    static const uint8_t _initialisation_blob[];
 };
 
 #endif // AP_GPS_SIRF_h

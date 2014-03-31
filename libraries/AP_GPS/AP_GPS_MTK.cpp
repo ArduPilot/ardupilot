@@ -24,25 +24,24 @@
 #include <AP_GPS.h>
 #include "AP_GPS_MTK.h"
 
+// initialisation blobs to send to the GPS to try to get it into the
+// right mode
+const prog_char AP_GPS_MTK::_initialisation_blob[] PROGMEM = MTK_OUTPUT_5HZ SBAS_ON WAAS_ON MTK_NAVTHRES_OFF;
+
 AP_GPS_MTK::AP_GPS_MTK(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
     AP_GPS_Backend(_gps, _state, _port),
     _step(0),
     _payload_counter(0)
 {
-    // initialize serial port for binary protocol use
-    port->print(MTK_SET_BINARY);
+    gps.send_blob_start(state.instance, _initialisation_blob, sizeof(_initialisation_blob));
+}
 
-    // set 5Hz update rate
-    port->print(MTK_OUTPUT_5HZ);
-
-    // set SBAS on
-    port->print(SBAS_ON);
-
-    // set WAAS on
-    port->print(WAAS_ON);
-
-    // Set Nav Threshold to 0 m/s
-    port->print(MTK_NAVTHRES_OFF);
+/*
+  send an initialisation blob to configure the GPS
+ */
+void AP_GPS_MTK::send_init_blob(uint8_t instance, AP_GPS &gps)
+{
+    gps.send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
 }
 
 

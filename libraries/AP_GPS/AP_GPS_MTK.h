@@ -35,6 +35,7 @@ public:
     bool read(void);
 
     static bool _detect(struct MTK_detect_state &state, uint8_t data);
+    static void send_init_blob(uint8_t instance, AP_GPS &gps);
 
 private:
     struct PACKED diyd_mtk_msg {
@@ -76,6 +77,8 @@ private:
 
     // Buffer parse & GPS state update
     void        _parse_gps();
+
+    static const prog_char _initialisation_blob[];
 };
 
 #endif  // __AP_GPS_MTK_H__

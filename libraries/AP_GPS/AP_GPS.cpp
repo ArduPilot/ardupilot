@@ -22,14 +22,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define GPS_DEBUGGING 0
-
-#if GPS_DEBUGGING
- # define Debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(0); } while(0)
-#else
- # define Debug(fmt, args ...)
-#endif
-
 // table of user settable parameters
 const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
     // @Param: TYPE
@@ -71,6 +63,38 @@ const uint16_t AP_GPS::_baudrates[] PROGMEM = {4800U, 38400U, 57600U, 9600U};
 const prog_char AP_GPS::_initialisation_blob[] PROGMEM = UBLOX_SET_BINARY MTK_SET_BINARY SIRF_SET_BINARY;
 
 /*
+  send some more initialisation string bytes if there is room in the
+  UART transmit buffer
+ */
+void AP_GPS::send_blob_start(uint8_t instance, const prog_char *_blob, uint16_t size)
+{
+    initblob_state[instance].blob = _blob;
+    initblob_state[instance].remaining = size;
+}
+
+/*
+  send some more initialisation string bytes if there is room in the
+  UART transmit buffer
+ */
+void AP_GPS::send_blob_update(uint8_t instance)
+{
+    // see if we can write some more of the initialisation blob
+    if (initblob_state[instance].remaining > 0) {
+        AP_HAL::UARTDriver *port = instance==0?hal.uartB:hal.uartE;
+        int16_t space = port->txspace();
+        if (space > (int16_t)initblob_state[instance].remaining) {
+            space = initblob_state[instance].remaining;
+        }
+        while (space > 0) {
+            port->write(pgm_read_byte(initblob_state[instance].blob));
+            initblob_state[instance].blob++;
+            space--;
+            initblob_state[instance].remaining--;
+        }
+    }
+}
+
+/*
   run detection step for one GPS instance. If this finds a GPS then it
   will fill in drivers[instance] and change state[instance].status
   from NO_GPS to NO_FIX.
@@ -104,22 +128,10 @@ AP_GPS::detect_instance(uint8_t instance)
 		uint16_t baudrate = pgm_read_word(&_baudrates[dstate->last_baud]);
 		port->begin(baudrate, 256, 16);		
 		dstate->last_baud_change_ms = now;
-        dstate->init_blob_offset = 0;
+        send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
     }
 
-    // see if we can write some more of the initialisation blob
-    if (dstate->init_blob_offset < sizeof(_initialisation_blob)) {
-        int16_t space = port->txspace();
-        if (space > (int16_t)sizeof(_initialisation_blob) - dstate->init_blob_offset) {
-            space = sizeof(_initialisation_blob) - dstate->init_blob_offset;
-        }
-        while (space > 0) {
-            port->write(pgm_read_byte(&_initialisation_blob[dstate->init_blob_offset]));
-            dstate->init_blob_offset++;
-            space--;
-        }
-    }
-
+    send_blob_update(instance);
 
     while (port->available() > 0 && new_gps == NULL) {
         uint8_t data = port->read();
@@ -174,7 +186,7 @@ AP_GPS::detect_instance(uint8_t instance)
 
 
 /*
-  update one GPS instance
+  update one GPS instance. This should be called at 10Hz or greater
  */
 void
 AP_GPS::update_instance(uint8_t instance)
@@ -190,6 +202,8 @@ AP_GPS::update_instance(uint8_t instance)
         detect_instance(instance);
         return;
     }
+
+    send_blob_update(instance);
 
     // we have an active driver for this instance
     bool result = drivers[instance]->read();
@@ -222,6 +236,9 @@ AP_GPS::update(void)
     }
 }
 
+/*
+  set HIL (hardware in the loop) status for a GPS instance
+ */
 void 
 AP_GPS::setHIL(GPS_Status _status, uint64_t time_epoch_ms, 
                Location &_location, Vector3f &_velocity, uint8_t _num_sats)

@@ -152,6 +152,8 @@ private:
     static const prog_char _gpgga_string[];
     static const prog_char _gpvtg_string[];
     //@}
+
+    static const prog_char _initialisation_blob[];
 };
 
 #endif // __AP_GPS_NMEA_H__

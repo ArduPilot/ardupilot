@@ -34,21 +34,7 @@ AP_GPS_MTK19::AP_GPS_MTK19(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UART
     _mtk_revision(0),
     _fix_counter(0)
 {
-    // initialize serial port for binary protocol use
-    // XXX should assume binary, let GPS_AUTO handle dynamic config?
-    port->print(MTK_SET_BINARY);
-
-    // set 5Hz update rate
-    port->print(MTK_OUTPUT_5HZ);
-
-    // set SBAS on
-    port->print(SBAS_ON);
-
-    // set WAAS on
-    port->print(WAAS_ON);
-
-    // Set Nav Threshold to 0 m/s
-    port->print(MTK_NAVTHRES_OFF);
+    AP_GPS_MTK::send_init_blob(_state.instance, _gps);
 }
 
 // Process bytes available from the stream

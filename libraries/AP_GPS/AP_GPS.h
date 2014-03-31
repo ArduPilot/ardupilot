@@ -89,6 +89,10 @@ public:
         GPS_ENGINE_AIRBORNE_4G = 8
     };
 
+    /*
+      The GPS_State structure is filled in by the backend driver as it
+      parses each message from the GPS.
+     */
     struct GPS_State {
         uint8_t instance; // the instance number of this GPS
 
@@ -242,6 +246,10 @@ public:
     AP_Int8 _type[GPS_MAX_INSTANCES];
     AP_Int8 _navfilter;
 
+    // handle sending of initialisation strings to the GPS
+    void send_blob_start(uint8_t instance, const prog_char *_blob, uint16_t size);
+    void send_blob_update(uint8_t instance);
+
 private:
     struct GPS_timing {
         // the time we got our last fix in system milliseconds
@@ -262,13 +270,17 @@ private:
         uint32_t detect_started_ms;
         uint32_t last_baud_change_ms;
         uint8_t last_baud;
-        uint8_t init_blob_offset;
         struct UBLOX_detect_state ublox_detect_state;
         struct MTK_detect_state mtk_detect_state;
         struct MTK19_detect_state mtk19_detect_state;
         struct SIRF_detect_state sirf_detect_state;
         struct NMEA_detect_state nmea_detect_state;
     } detect_state[GPS_MAX_INSTANCES];
+
+    struct {
+        const prog_char *blob;
+        uint16_t remaining;
+    } initblob_state[GPS_MAX_INSTANCES];
 
     static const uint16_t  _baudrates[];
     static const prog_char _initialisation_blob[];
