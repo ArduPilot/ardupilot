@@ -113,6 +113,9 @@ AP_GPS::detect_instance(uint8_t instance)
 
     uint32_t now = hal.scheduler->millis();
 
+    state[instance].instance = instance;
+    state[instance].status = NO_GPS;
+
     // record the time when we started detection. This is used to try
     // to avoid initialising a uBlox as a NMEA GPS
     if (dstate->detect_started_ms == 0) {
@@ -178,9 +181,12 @@ AP_GPS::detect_instance(uint8_t instance)
 	}
 
 	if (new_gps != NULL) {
-        drivers[instance] = new_gps;
         state[instance].status = NO_FIX;
-        state[instance].instance = instance;
+        if (drivers[instance] != NULL) {
+            delete drivers[instance];
+        }
+        drivers[instance] = new_gps;
+        timing[instance].last_message_time_ms = now;
 	}
 }
 
