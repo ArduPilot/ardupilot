@@ -43,14 +43,13 @@ AP_InertialSensor_Oilpan ins(&adc);
 AP_Baro_BMP085 baro;
 #endif
 
-GPS *gps;
-AP_GPS_Auto auto_gps(&gps);
+AP_GPS gps;
 GPS_Glitch   gps_glitch(gps);
 
 AP_Compass_HMC5843 compass;
 AP_AHRS_DCM ahrs(ins, baro, gps);
 
-AP_InertialNav inertialnav(ahrs, baro, gps, gps_glitch);
+AP_InertialNav inertialnav(ahrs, baro, gps_glitch);
 
 uint32_t last_update;
 
@@ -58,8 +57,7 @@ void setup(void)
 {
     hal.console->println_P(PSTR("AP_InertialNav test startup..."));
 
-    gps = &auto_gps;
-    gps->init(hal.uartB, GPS::GPS_ENGINE_AIRBORNE_2G, NULL);
+    gps.init(NULL);
 
     ins.init(AP_InertialSensor::COLD_START, 
 			 AP_InertialSensor::RATE_100HZ);
@@ -76,7 +74,7 @@ void setup(void)
 void loop(void)
 {
     hal.scheduler->delay(20);
-    gps->update();
+    gps.update();
     ahrs.update();
     uint32_t currtime = hal.scheduler->millis();
     float dt = (currtime - last_update) / 1000.0f;
