@@ -42,6 +42,7 @@ public:
         uint16_t failsafe_radio     : 1;    // 1 if radio failsafe
         uint16_t failsafe_battery   : 1;    // 1 if battery failsafe
         uint16_t failsafe_gps       : 1;    // 1 if gps failsafe
+        uint16_t arming_failed      : 1;    // 1 if copter failed to arm after user input
 
         // additional flags
         uint16_t external_leds      : 1;    // 1 if external LEDs are enabled (normally only used for copter)

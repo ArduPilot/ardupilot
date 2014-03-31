@@ -64,6 +64,13 @@ void ToneAlarm_PX4::update()
     if (_tonealarm_fd == -1) {
         return;
     }
+    
+    if(flags.arming_failed != AP_Notify::flags.arming_failed) {
+        flags.arming_failed = AP_Notify::flags.arming_failed;
+        if(flags.arming_failed) {
+            play_tune(TONE_ARMING_FAILURE_TUNE);
+        }
+    }
 
     // check if arming status has changed
     if (flags.armed != AP_Notify::flags.armed) {
