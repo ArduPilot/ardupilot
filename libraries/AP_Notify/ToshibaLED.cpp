@@ -18,6 +18,7 @@
  */
 
 #include <AP_HAL.h>
+#include <AP_GPS.h>
 #include "ToshibaLED.h"
 #include "AP_Notify.h"
 
@@ -167,7 +168,7 @@ void ToshibaLED::update_colours(void)
     // solid green or flashing green if armed
     if (AP_Notify::flags.armed) {
         // solid green if armed with GPS 3d lock
-        if (AP_Notify::flags.gps_status == 3) {
+        if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D) {
             _red_des = TOSHIBA_LED_OFF;
             _blue_des = TOSHIBA_LED_OFF;
             _green_des = brightness;
@@ -213,7 +214,7 @@ void ToshibaLED::update_colours(void)
                 case 3:
                 case 4:
                     _red_des = TOSHIBA_LED_OFF;
-                    if (AP_Notify::flags.gps_status == 3) {
+                    if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D) {
                         // flashing green if disarmed with GPS 3d lock
                         _blue_des = TOSHIBA_LED_OFF;
                         _green_des = brightness;
