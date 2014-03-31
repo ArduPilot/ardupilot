@@ -43,14 +43,15 @@ static void update_pitch_servo(float pitch)
 
     // add slew rate limit
     if (g.pitch_slew_time > 0.02f) {
-        uint16_t max_change = 0.02f * 18000 / g.yaw_slew_time;
+        uint16_t max_change = 0.02f * 18000 / g.pitch_slew_time;
         if (max_change < 1) {
             max_change = 1;
         }
         new_servo_out = constrain_float(new_servo_out,
-                                        channel_yaw.servo_out - max_change, 
-                                        channel_yaw.servo_out + max_change);
+                                        channel_pitch.servo_out - max_change, 
+                                        channel_pitch.servo_out + max_change);
     }
+    channel_pitch.servo_out = new_servo_out;
 
     channel_pitch.calc_pwm();
     channel_pitch.output();
