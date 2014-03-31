@@ -132,8 +132,8 @@ public:
     // return the innovations for the NED Pos, NED Vel, XYZ Mag and Vtas measurements
     void  getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov) const;
 
-    // return the innovation variances for the NED Pos, NED Vel, XYZ Mag and Vtas measurements
-    void  getVariances(Vector3f &velVar, Vector3f &posVar, Vector3f &magVar, float &tasVar) const;
+    // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
+    void  getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f offset) const;
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -252,6 +252,10 @@ private:
     // reference to be initialised and maintained when on the ground and without GPS lock
     bool static_mode_demanded(void) const;
 
+    // decay GPS horizontal position offset to close to zero at a rate of 1 m/s
+    // this allows large GPS position jumps to be accomodated gradually
+    void decayGpsOffset(void);
+
 private:
 
     // the states are available in two forms, either as a Vector27, or
@@ -297,7 +301,9 @@ private:
     AP_Int8  _hgtInnovGate;         // Number of standard deviations applied to height innovation consistency check
     AP_Int8  _magInnovGate;         // Number of standard deviations applied to magnetometer innovation consistency check
     AP_Int8  _tasInnovGate;         // Number of standard deviations applied to true airspeed innovation consistency check
-    AP_Int8  _magCal;               // Forces magentic field states to be always active to aid magnetometer calibration
+    AP_Int8  _magCal;               // Forces magnetic field states to be always active to aid magnetometer calibration
+    AP_Int16 _gpsGlitchAccelMax;    // Maximum allowed discrepancy between inertial and GPS Horizontal acceleration before GPS data is ignored : cm/s^2
+    AP_Int8 _gpsGlitchRadiusMax;    // Maximum allowed discrepancy between inertial and GPS Horizontal position before GPS glitch is declared : m
 
     // Tuning parameters
     AP_Float _gpsNEVelVarAccScale;  // scale factor applied to NE velocity measurement variance due to Vdot
@@ -324,7 +330,7 @@ private:
     bool posHealth;                 // boolean true if position measurements have failed innovation consistency check
     bool hgtHealth;                 // boolean true if height measurements have failed innovation consistency check
     bool velTimeout;                // boolean true if velocity measurements have failed innovation consistency check and timed out
-    bool posTimeout;                // boolean true if position measurements have failed innovation consistency check and timed out
+    bool posTimeout;            // boolean true if position measurements have failed innovation consistency check and timed out
     bool hgtTimeout;                // boolean true if height measurements have failed innovation consistency check and timed out
 
     Vector31 Kfusion;               // Kalman gain vector
@@ -423,6 +429,14 @@ private:
     Vector8 SPP;                    // intermediate variables used to calculate predicted covariance matrix
     float IMU1_weighting;           // Weighting applied to use of IMU1. Varies between 0 and 1.
     bool yawAligned;                // true when the yaw angle has been aligned
+    float posnOffsetNorth;          // offset applied to GPS data in the north direction to compensate for rapid changes in GPS solution
+    float posnOffsetEast;           // offset applied to GPS data in the north direction to compensate for rapid changes in GPS solution
+    uint32_t lastDecayTime_ms;      // time of last decay of GPS position offset
+    float velTestRatio;             // sum of squares of GPS velocity innovation divided by fail threshold
+    float posTestRatio;             // sum of squares of GPS position innovation divided by fail threshold
+    float hgtTestRatio;             // sum of squares of baro height innovation divided by fail threshold
+    Vector3f magTestRatio;          // sum of squares of magnetometer innovations divided by fail threshold
+    float tasTestRatio;             // sum of squares of true airspeed innovation divided by fail threshold
 
     // states held by magnetomter fusion across time steps
     // magnetometer X,Y,Z measurements are fused across three time steps
@@ -466,4 +480,3 @@ private:
 #endif
 
 #endif // AP_NavEKF
-
