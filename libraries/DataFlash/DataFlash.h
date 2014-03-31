@@ -314,16 +314,15 @@ struct PACKED log_EKF3 {
 struct PACKED log_EKF4 {
     LOG_PACKET_HEADER;
     uint32_t time_ms;
-    int16_t sqrtvarVN;
-    int16_t sqrtvarVE;
-	int16_t sqrtvarVD;
-    int16_t sqrtvarPN;
-    int16_t sqrtvarPE;
-    int16_t sqrtvarPD;
+    int16_t sqrtvarV;
+    int16_t sqrtvarP;
+    int16_t sqrtvarH;
     int16_t sqrtvarMX;
     int16_t sqrtvarMY;
     int16_t sqrtvarMZ;
     int16_t sqrtvarVT;
+    int8_t  offsetNorth;
+    int8_t  offsetEast;
 };
 
 struct PACKED log_Cmd {
@@ -387,7 +386,7 @@ struct PACKED log_Radio {
     { LOG_EKF3_MSG, sizeof(log_EKF3), \
       "EKF3","Icccccchhhc","TimeMS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IVT" }, \
     { LOG_EKF4_MSG, sizeof(log_EKF4), \
-      "EKF4","Icccccchhhc","TimeMS,SVN,SVE,SVD,SPN,SPE,SPD,SMX,SMY,SMZ,SVT" }, \
+      "EKF4","Icccccccbb","TimeMS,SV,SP,SH,SMX,SMY,SMZ,SVT,OFN,EFE" }, \
     { LOG_CMD_MSG, sizeof(log_Cmd), \
       "CMD", "IHHHfffffff","TimeMS,CTot,CNum,CId,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt" }, \
     { LOG_RADIO_MSG, sizeof(log_Radio), \

@@ -937,24 +937,25 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
     WriteBlock(&pkt3, sizeof(pkt3));
 	
 	// Write fourth EKF packet
-	Vector3f velVar;
-	Vector3f posVar;
+    float velVar;
+    float posVar;
+    float hgtVar;
 	Vector3f magVar;
 	float tasVar;
-    ahrs.get_NavEKF().getVariances(velVar, posVar, magVar, tasVar);
+    Vector2f offset;
+    ahrs.get_NavEKF().getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
     struct log_EKF4 pkt4 = {
         LOG_PACKET_HEADER_INIT(LOG_EKF4_MSG),
         time_ms : hal.scheduler->millis(),
-        sqrtvarVN : (int16_t)(100*sqrtf(velVar.x)),
-        sqrtvarVE : (int16_t)(100*sqrtf(velVar.y)),
-        sqrtvarVD : (int16_t)(100*sqrtf(velVar.z)),
-        sqrtvarPN : (int16_t)(100*sqrtf(posVar.x)),
-        sqrtvarPE : (int16_t)(100*sqrtf(posVar.y)),
-        sqrtvarPD : (int16_t)(100*sqrtf(posVar.z)),
-        sqrtvarMX : (int16_t)(sqrtf(magVar.x)),
-        sqrtvarMY : (int16_t)(sqrtf(magVar.y)),
-        sqrtvarMZ : (int16_t)(sqrtf(magVar.z)),
-        sqrtvarVT : (int16_t)(100*sqrtf(tasVar))
+        sqrtvarV : (int16_t)(100*velVar),
+        sqrtvarP : (int16_t)(100*posVar),
+        sqrtvarH : (int16_t)(100*hgtVar),
+        sqrtvarMX : (int16_t)(100*magVar.x),
+        sqrtvarMY : (int16_t)(100*magVar.y),
+        sqrtvarMZ : (int16_t)(100*magVar.z),
+        sqrtvarVT : (int16_t)(100*tasVar),
+        offsetNorth : (int8_t)(offset.x),
+        offsetEast : (int8_t)(offset.y)
     };
     WriteBlock(&pkt4, sizeof(pkt4));
 }
