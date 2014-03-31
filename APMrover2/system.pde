@@ -187,17 +187,7 @@ static void init_ardupilot()
     init_barometer();
 
 	// Do GPS init
-	g_gps = &g_gps_driver;
-    // GPS initialisation
-	g_gps->init(hal.uartB, GPS::GPS_ENGINE_AIRBORNE_4G, &DataFlash);
-
-#if GPS2_ENABLE
-    if (hal.uartE != NULL) {
-        g_gps2 = &g_gps2_driver;
-        g_gps2->init(hal.uartE, GPS::GPS_ENGINE_AIRBORNE_4G, &DataFlash);
-        g_gps2->set_secondary();
-    }
-#endif
+	gps.init(&DataFlash);
 
 	//mavlink_system.sysid = MAV_SYSTEM_ID;				// Using g.sysid_this_mav
 	mavlink_system.compid = 1;	//MAV_COMP_ID_IMU;   // We do not check for comp id

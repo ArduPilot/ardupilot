@@ -63,7 +63,7 @@ void init_home()
 
 	gcs_send_text_P(SEVERITY_LOW, PSTR("init home"));
 
-    ahrs.set_home(g_gps->latitude, g_gps->longitude, g_gps->altitude_cm);
+    ahrs.set_home(gps.location());
 	home_is_set = true;
 
 	// Save Home to EEPROM

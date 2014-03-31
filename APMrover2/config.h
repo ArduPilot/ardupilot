@@ -100,12 +100,6 @@
 # define CURRENT_PIN_1	   -1
 #endif
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
-#define GPS2_ENABLE 1
-#else
-#define GPS2_ENABLE 0
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // IMU Selection
 //
@@ -121,24 +115,10 @@
 #endif
 
 #if HIL_MODE != HIL_MODE_DISABLED       // we are in HIL mode
- #undef GPS_PROTOCOL
- #define GPS_PROTOCOL GPS_PROTOCOL_HIL
  #undef CONFIG_INS_TYPE
  #define CONFIG_INS_TYPE CONFIG_INS_HIL
  #undef  CONFIG_COMPASS
  #define CONFIG_COMPASS  AP_COMPASS_HIL
- #undef GPS2_ENABLE
- #define GPS2_ENABLE 0
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// GPS_PROTOCOL
-//
-// Note that this test must follow the HIL_PROTOCOL block as the HIL
-// setup may override the GPS configuration.
-//
-#ifndef GPS_PROTOCOL
-# define GPS_PROTOCOL GPS_PROTOCOL_AUTO
 #endif
 
 #ifndef MAV_SYSTEM_ID

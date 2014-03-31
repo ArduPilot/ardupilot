@@ -221,8 +221,8 @@ static void Log_Write_Camera()
     struct log_Camera pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CAMERA_MSG),
         time_ms     : millis(),
-        gps_time    : g_gps->time_week_ms,
-        gps_week    : g_gps->time_week,
+        gps_time    : gps.time_week_ms(),
+        gps_week    : gps.time_week(),
         latitude    : current_loc.lat,
         longitude   : current_loc.lng,
         roll        : (int16_t)ahrs.roll_sensor,
@@ -247,7 +247,7 @@ static void Log_Write_Steering()
         LOG_PACKET_HEADER_INIT(LOG_STEERING_MSG),
         time_ms        : hal.scheduler->millis(),
         demanded_accel : lateral_acceleration,
-        achieved_accel : g_gps->ground_speed_cm * 0.01f * ins.get_gyro().z,
+        achieved_accel : gps.ground_speed() * ins.get_gyro().z,
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }

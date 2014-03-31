@@ -307,27 +307,30 @@ test_logging(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_gps(uint8_t argc, const Menu::arg *argv)
 {
-	print_hit_enter();
-	delay(1000);
+    print_hit_enter();
+    delay(1000);
 
-	while(1){
-		delay(100);
+    uint32_t last_message_time_ms = 0;
+    while(1) {
+        delay(100);
 
-		g_gps->update();
+        gps.update();
 
-		if (g_gps->new_data){
-			cliSerial->printf_P(PSTR("Lat: %ld, Lon %ld, Alt: %ldm, #sats: %d\n"),
-					g_gps->latitude,
-					g_gps->longitude,
-					g_gps->altitude_cm/100,
-					g_gps->num_sats);
-		}else{
-			cliSerial->printf_P(PSTR("."));
-		}
-		if(cliSerial->available() > 0){
-			return (0);
-		}
-	}
+        if (gps.last_message_time_ms() != last_message_time_ms) {
+            last_message_time_ms = gps.last_message_time_ms();
+            const Location &loc = gps.location();
+            cliSerial->printf_P(PSTR("Lat: %ld, Lon %ld, Alt: %ldm, #sats: %d\n"),
+                                (long)loc.lat,
+                                (long)loc.lng,
+                                (long)loc.alt/100,
+                                (int)gps.num_sats());
+        } else {
+            cliSerial->printf_P(PSTR("."));
+        }
+        if(cliSerial->available() > 0) {
+            return (0);
+        }
+    }
 }
 
 static int8_t
