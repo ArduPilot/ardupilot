@@ -241,6 +241,9 @@ AP_GPS::update(void)
     for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
         update_instance(i);
     }
+
+    // update notify with gps status
+    AP_Notify::flags.gps_status = state[0].status;
 }
 
 /*
