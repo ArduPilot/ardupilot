@@ -94,7 +94,7 @@ void ToneAlarm_PX4::update()
     }
 
     // check gps glitch
-    if (flags.gps_glitching != AP_Notify::flags.gps_glitching) {
+    if (flags.gps_glitching != AP_Notify::flags.gps_glitching && hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
         flags.gps_glitching = AP_Notify::flags.gps_glitching;
         if (flags.gps_glitching) {
             // gps glitch warning tune
