@@ -8,12 +8,19 @@
  # define DRIFT_SPEEDGAIN 14.0f
 #endif
 
-#ifndef DRIFT_THR_GAIN
- # define DRIFT_THR_GAIN 1.8f
+#ifndef DRIFT_THR_ASSIST_GAIN
+ # define DRIFT_THR_ASSIST_GAIN 1.8f    // gain controlling amount of throttle assistance
 #endif
 
-#ifndef DRIFT_THR_MAX_ASSIST
- # define DRIFT_THR_MAX_ASSIST 300.0f
+#ifndef DRIFT_THR_ASSIST_MAX
+ # define DRIFT_THR_ASSIST_MAX  300.0f  // maximum assistance throttle assist will provide
+#endif
+
+#ifndef DRIFT_THR_MIN
+ # define DRIFT_THR_MIN         213     // throttle assist will be active when pilot's throttle is above this value
+#endif
+#ifndef DRIFT_THR_MAX
+ # define DRIFT_THR_MAX         787     // throttle assist will be active when pilot's throttle is below this value
 #endif
 
 // drift_init - initialise drift controller
@@ -79,9 +86,19 @@ static void drift_run()
     // throttle assist - adjusts throttle to slow the vehicle's vertical velocity
     //      Only active when pilot's throttle is between 213 ~ 787
     //      Assistance is strongest when throttle is at mid, drops linearly to no assistance at 213 and 787
-    float thr_assist = 1.2 - ((float)abs(pilot_throttle_scaled - 500) / 240.0f);
-    thr_assist = constrain_float(thr_assist, 0.0f, 1.0f) * -DRIFT_THR_GAIN * vel.z;
-    thr_assist = constrain_float(thr_assist, -DRIFT_THR_MAX_ASSIST, DRIFT_THR_MAX_ASSIST);
+    float thr_assist = 0.0f;
+    if (pilot_throttle_scaled > g.throttle_min && pilot_throttle_scaled < g.throttle_max &&
+        pilot_throttle_scaled > DRIFT_THR_MIN && pilot_throttle_scaled < DRIFT_THR_MAX) {
+        // calculate throttle assist gain
+        thr_assist = 1.2 - ((float)abs(pilot_throttle_scaled - 500) / 240.0f);
+        thr_assist = constrain_float(thr_assist, 0.0f, 1.0f) * -DRIFT_THR_ASSIST_GAIN * vel.z;
+
+        // ensure throttle assist never adjusts the throttle by more than 300 pwm
+        thr_assist = constrain_float(thr_assist, -DRIFT_THR_ASSIST_MAX, DRIFT_THR_ASSIST_MAX);
+
+        // ensure throttle assist never pushes throttle below throttle_min or above throttle_max
+        thr_assist = constrain_float(thr_assist, g.throttle_min - pilot_throttle_scaled, g.throttle_max - pilot_throttle_scaled);
+    }
 
     // call attitude controller
     attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
