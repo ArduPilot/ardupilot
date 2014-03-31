@@ -72,7 +72,15 @@ ifneq ($(findstring px4, $(MAKECMDGOALS)),)
 # when building px4 we need all sources to be inside the sketchbook directory
 # as the NuttX build system relies on it
 BUILDROOT		:=	$(SKETCHBOOK)/Build.$(SKETCH)
-else
+endif
+
+ifneq ($(findstring vrbrain, $(MAKECMDGOALS)),)
+# when building vrbrain we need all sources to be inside the sketchbook directory
+# as the NuttX build system relies on it
+BUILDROOT		:=	$(SKETCHBOOK)/Build.$(SKETCH)
+endif
+
+ifeq ($(BUILDROOT),)
 BUILDROOT		:=	$(abspath $(TMPDIR)/$(SKETCH).build)
 endif
 
