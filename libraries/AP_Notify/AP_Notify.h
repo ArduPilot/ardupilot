@@ -33,7 +33,7 @@ public:
     /// notify_type - bitmask of notification types
     struct notify_type {
         uint16_t initialising       : 1;    // 1 if initialising and copter should not be moved
-        uint16_t gps_status         : 2;    // 0 = no gps, 1 = no lock, 2 = 2d lock, 3 = 3d lock
+        uint16_t gps_status         : 3;    // 0 = no gps, 1 = no lock, 2 = 2d lock, 3 = 3d lock, 4 = dgps lock, 5 = rtk lock
         uint16_t gps_glitching      : 1;    // 1 if gps position is not good
         uint16_t armed              : 1;    // 0 = disarmed, 1 = armed
         uint16_t pre_arm_check      : 1;    // 0 = failing checks, 1 = passed
