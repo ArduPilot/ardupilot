@@ -73,7 +73,9 @@ public:
         NO_GPS = 0,             ///< No GPS connected/detected
         NO_FIX = 1,             ///< Receiving valid GPS messages but no lock
         GPS_OK_FIX_2D = 2,      ///< Receiving valid messages and 2D lock
-        GPS_OK_FIX_3D = 3       ///< Receiving valid messages and 3D lock
+        GPS_OK_FIX_3D = 3,      ///< Receiving valid messages and 3D lock
+        GPS_OK_FIX_3D_DGPS = 4, ///< Receiving valid messages and 3D lock with differential improvements
+        GPS_OK_FIX_3D_RTK = 5,  ///< Receiving valid messages and 3D lock, with relative-positioning improvements
     };
 
     // GPS navigation engine settings. Not all GPS receivers support
