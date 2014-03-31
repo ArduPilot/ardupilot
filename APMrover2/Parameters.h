@@ -49,6 +49,7 @@ public:
 
         // misc2
         k_param_log_bitmask = 40,
+        k_param_gps,
 
 
         // 110: Telemetry control
