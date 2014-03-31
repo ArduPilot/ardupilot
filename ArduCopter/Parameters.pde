@@ -950,6 +950,11 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/AP_Baro/AP_Baro.cpp
     GOBJECT(barometer, "GND_", AP_Baro),
 
+    // GPS driver
+    // @Group: GPS_
+    // @Path: ../libraries/AP_GPS/AP_GPS.cpp
+    GOBJECT(gps, "GPS_", AP_GPS),
+
     // @Group: SCHED_
     // @Path: ../libraries/AP_Scheduler/AP_Scheduler.cpp
     GOBJECT(scheduler, "SCHED_", AP_Scheduler),

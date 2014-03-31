@@ -73,6 +73,9 @@ public:
         // BoardConfig object
         k_param_BoardConfig,
 
+        // GPS object
+        k_param_gps,
+
         // Misc
         //
         k_param_log_bitmask = 20,
