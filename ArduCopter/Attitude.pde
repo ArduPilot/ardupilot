@@ -67,8 +67,8 @@ static float get_roi_yaw()
 static float get_look_ahead_yaw()
 {
     // Commanded Yaw to automatically look ahead.
-    if (g_gps->fix && g_gps->ground_speed_cm > YAW_LOOK_AHEAD_MIN_SPEED) {
-        yaw_look_ahead_bearing = g_gps->ground_course_cd;
+    if (gps.status() >= AP_GPS::GPS_OK_FIX_2D && gps.ground_speed_cm() > YAW_LOOK_AHEAD_MIN_SPEED) {
+        yaw_look_ahead_bearing = gps.ground_course_cd();
     }
     return yaw_look_ahead_bearing;
 }

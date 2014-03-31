@@ -436,7 +436,7 @@ static bool pre_arm_gps_checks(bool display_failure)
     }
 
     // warn about hdop separately - to prevent user confusion with no gps lock
-    if (g_gps->hdop > g.gps_hdop_good) {
+    if (gps.get_hdop() > g.gps_hdop_good) {
         if (display_failure) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: High GPS HDOP"));
         }

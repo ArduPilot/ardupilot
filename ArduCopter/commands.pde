@@ -5,7 +5,12 @@
 static void init_home()
 {
     set_home_is_set(true);
-    ahrs.set_home(g_gps->latitude, g_gps->longitude, 0);
+
+    // copter uses 0 home altitude
+    Location loc = gps.location();
+    loc.alt = 0;
+
+    ahrs.set_home(loc);
 
     inertial_nav.setup_home_position();
 
