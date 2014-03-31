@@ -119,8 +119,7 @@ void gcs_send_text_fmt(const prog_char_t *fmt, ...);
 ////////////////////////////////////////////////////////////////////////////////
 // Sensors
 ////////////////////////////////////////////////////////////////////////////////
-// All GPS access should be through this pointer.
-static GPS         *g_gps;
+static AP_GPS gps;
 
 #if CONFIG_BARO == AP_BARO_BMP085
 static AP_Baro_BMP085 barometer;
@@ -150,9 +149,6 @@ static AP_Compass_HIL compass;
  #error Unrecognized CONFIG_COMPASS setting
 #endif
 
-// GPS selection
-AP_GPS_Auto     g_gps_driver(&g_gps);
-
 #if CONFIG_INS_TYPE == CONFIG_INS_MPU6000
 AP_InertialSensor_MPU6000 ins;
 #elif CONFIG_INS_TYPE == CONFIG_INS_PX4
@@ -171,9 +167,9 @@ AP_InertialSensor_L3G4200D ins;
 
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
-AP_AHRS_NavEKF ahrs(ins, barometer, g_gps);
+AP_AHRS_NavEKF ahrs(ins, barometer, gps);
 #else
-AP_AHRS_DCM ahrs(ins, barometer, g_gps);
+AP_AHRS_DCM ahrs(ins, barometer, gps);
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL

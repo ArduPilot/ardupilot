@@ -50,11 +50,8 @@ static void init_tracker()
         }
     }
 
-	// Do GPS init
-	g_gps = &g_gps_driver;
-
     // GPS Initialization
-    g_gps->init(hal.uartB, GPS::GPS_ENGINE_STATIONARY, NULL);
+    gps.init(NULL);
 
     mavlink_system.compid = 4;
     mavlink_system.type = MAV_TYPE_ANTENNA_TRACKER;

@@ -60,11 +60,13 @@ static void barometer_accumulate(void)
  */
 static void update_GPS(void)
 {
-    g_gps->update();
+    gps.update();
 
+    static uint32_t last_gps_msg_ms;
     static uint8_t ground_start_count = 5;
-    if (g_gps->new_data && g_gps->status() >= GPS::GPS_OK_FIX_3D) {
-        g_gps->new_data = false;
+    if (gps.last_message_time_ms() != last_gps_msg_ms && 
+        gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+        last_gps_msg_ms = gps.last_message_time_ms();
         
         if(ground_start_count > 1) {
             ground_start_count--;
@@ -78,18 +80,15 @@ static void update_GPS(void)
             } else {
                 // Now have an initial GPS position
                 // use it as the HOME position in future startups
-                current_loc.lat = g_gps->latitude;
-                current_loc.lng = g_gps->longitude;
-                current_loc.alt = g_gps->altitude_cm;
-                current_loc.options = 0; // Absolute altitude
+                current_loc = gps.location();
                 set_home(current_loc);
 
                 // set system clock for log timestamps
-                hal.util->set_system_clock(g_gps->time_epoch_usec());
+                hal.util->set_system_clock(gps.time_epoch_usec());
 
                 if (g.compass_enabled) {
                     // Set compass declination automatically
-                    compass.set_initial_location(g_gps->latitude, g_gps->longitude);
+                    compass.set_initial_location(gps.location().lat, gps.location().lng);
                 }
                 ground_start_count = 0;
             }
