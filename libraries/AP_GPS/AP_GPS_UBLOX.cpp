@@ -60,6 +60,9 @@ AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UART
     rate_update_step(0),
     _last_hw_status(0)
 {
+    // stop any config strings that are pending
+    gps.send_blob_start(state.instance, NULL, 0);
+
     // configure the GPS for the messages we want
     _configure_gps();
 }
