@@ -9,7 +9,11 @@
 #endif
 
 #ifndef DRIFT_THR_GAIN
- # define DRIFT_THR_GAIN 2.0f
+ # define DRIFT_THR_GAIN 1.8f
+#endif
+
+#ifndef DRIFT_THR_MAX_ASSIST
+ # define DRIFT_THR_MAX_ASSIST 300.0f
 #endif
 
 // drift_init - initialise drift controller
@@ -72,9 +76,12 @@ static void drift_run()
         breaker = 0.0;
     }
 
-    // throttle assist
-    float thr_assist = 1.0 - ((float)abs(pilot_throttle_scaled - 500) / 200.0);
-    thr_assist = max(thr_assist, 0) * -DRIFT_THR_GAIN * vel.z;
+    // throttle assist - adjusts throttle to slow the vehicle's vertical velocity
+    //      Only active when pilot's throttle is between 213 ~ 787
+    //      Assistance is strongest when throttle is at mid, drops linearly to no assistance at 213 and 787
+    float thr_assist = 1.2 - ((float)abs(pilot_throttle_scaled - 500) / 240.0f);
+    thr_assist = constrain_float(thr_assist, 0.0f, 1.0f) * -DRIFT_THR_GAIN * vel.z;
+    thr_assist = constrain_float(thr_assist, -DRIFT_THR_MAX_ASSIST, DRIFT_THR_MAX_ASSIST);
 
     // call attitude controller
     attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
