@@ -26,6 +26,8 @@
 #include <ToneAlarm_PX4.h>
 #include <ExternalLED.h>
 #include <Buzzer.h>
+#include <ToshibaLED_VRBRAIN.h>
+#include <ToneAlarm_VRBRAIN.h>
 
 class AP_Notify
 {
@@ -69,6 +71,9 @@ private:
     ToshibaLED_I2C toshibaled;
     ExternalLED externalled;
     Buzzer buzzer;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+    ToshibaLED_VRBRAIN toshibaled;
+    ToneAlarm_VRBRAIN tonealarm;
 #else
     ToshibaLED_I2C toshibaled;
 #endif
