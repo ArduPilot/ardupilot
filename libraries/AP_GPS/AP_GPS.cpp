@@ -221,12 +221,14 @@ AP_GPS::update_instance(uint8_t instance)
     // detection to run again
     if (!result) {
         if (tnow - timing[instance].last_message_time_ms > 1200) {
-            state[instance].status = NO_GPS;
-            timing[instance].last_message_time_ms = tnow;
             // free the driver before we run the next detection, so we
             // don't end up with two allocated at any time
             delete drivers[instance];
             drivers[instance] = NULL;
+            memset(&state[instance], 0, sizeof(state[instance]));
+            state[instance].instance = instance;
+            state[instance].status = NO_GPS;
+            timing[instance].last_message_time_ms = tnow;
         }
     } else {
         timing[instance].last_message_time_ms = tnow;
