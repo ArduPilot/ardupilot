@@ -27,13 +27,13 @@ const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
     // @Param: TYPE
     // @DisplayName: GPS type
     // @Description: GPS type
-    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF
+    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL
     AP_GROUPINFO("TYPE",    0, AP_GPS, _type[0], 1),
 
     // @Param: TYPE2
     // @DisplayName: 2nd GPS type
     // @Description: GPS type of 2nd GPS
-    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF
+    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL
     AP_GROUPINFO("TYPE2",   1, AP_GPS, _type[1], 0),
 
     // @Param: NAVFILTER
@@ -194,6 +194,10 @@ AP_GPS::detect_instance(uint8_t instance)
 void
 AP_GPS::update_instance(uint8_t instance)
 {
+    if (_type[instance] == GPS_TYPE_HIL) {
+        // in HIL, leave info alone
+        return;
+    }
     if (_type[instance] == GPS_TYPE_NONE) {
         // not enabled
         state[instance].status = NO_GPS;
@@ -269,5 +273,5 @@ AP_GPS::setHIL(GPS_Status _status, uint64_t time_epoch_ms,
     istate.time_week_ms  = time_epoch_ms - istate.time_week*(86400*7*(uint64_t)1000);
     timing[0].last_message_time_ms = tnow;
     timing[0].last_fix_time_ms = tnow;
-    _type[0].set(GPS_TYPE_NONE);
+    _type[0].set(GPS_TYPE_HIL);
 }

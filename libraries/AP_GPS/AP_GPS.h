@@ -64,7 +64,8 @@ public:
         GPS_TYPE_MTK   = 3,
         GPS_TYPE_MTK19 = 4,
         GPS_TYPE_NMEA  = 5,
-        GPS_TYPE_SIRF  = 6
+        GPS_TYPE_SIRF  = 6,
+        GPS_TYPE_HIL   = 7
     };
 
     /// GPS status codes
