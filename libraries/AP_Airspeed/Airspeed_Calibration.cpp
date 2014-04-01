@@ -63,7 +63,7 @@ float Airspeed_Calibration::update(float airspeed, const Vector3f &vg)
         // avoid division by a small number
         return state.z;
     }
-    float SH2 = 1/sqrt(SH1);
+    float SH2 = 1/sqrtf(SH1);
 
     // observation Jacobian
     Vector3f H_TAS(
