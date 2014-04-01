@@ -1595,9 +1595,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         Vector3f vel(packet.vx, packet.vy, packet.vz);
         vel *= 0.01f;
 
-        gps.setHIL(AP_GPS::GPS_OK_FIX_3D,
+        gps.setHIL(0, AP_GPS::GPS_OK_FIX_3D,
                    packet.time_usec/1000,
-                   loc, vel, 10);
+                   loc, vel, 10, 0, true);
 
         // rad/sec
         Vector3f gyros;
