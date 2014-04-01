@@ -197,7 +197,7 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt)
     }
 
     // constrain and scale the feed forward velocity if necessary
-    float vel_total = safe_sqrt(desired_vel.x*desired_vel.x + desired_vel.y*desired_vel.y);
+    float vel_total = pythagorous2(desired_vel.x, desired_vel.y);
     if (vel_total > _loiter_speed_cms && vel_total > 0.0f) {
     	desired_vel.x = _loiter_speed_cms * desired_vel.x/vel_total;
     	desired_vel.y = _loiter_speed_cms * desired_vel.y/vel_total;
@@ -339,7 +339,7 @@ void AC_WPNav::advance_wp_target_along_track(float dt)
     track_error = curr_delta - track_covered_pos;
 
     // calculate the horizontal error
-    float track_error_xy = safe_sqrt(track_error.x*track_error.x + track_error.y*track_error.y);
+    float track_error_xy = pythagorous2(track_error.x, track_error.y);
 
     // calculate the vertical error
     float track_error_z = fabsf(track_error.z);
@@ -466,7 +466,7 @@ void AC_WPNav::update_wpnav()
 void AC_WPNav::calculate_wp_leash_length()
 {
     // length of the unit direction vector in the horizontal
-    float pos_delta_unit_xy = sqrt(_pos_delta_unit.x*_pos_delta_unit.x+_pos_delta_unit.y*_pos_delta_unit.y);
+    float pos_delta_unit_xy = pythagorous2(_pos_delta_unit.x, _pos_delta_unit.y);
     float pos_delta_unit_z = fabsf(_pos_delta_unit.z);
 
     float speed_z;
