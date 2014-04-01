@@ -23,6 +23,8 @@
 #include <AP_HAL_AVR_SITL.h>
 #include <AP_HAL_Empty.h>
 #include <AP_AHRS.h>
+#include <SITL.h>
+#include <AP_NavEKF.h>
 #include <AP_Airspeed.h>
 #include <AP_Vehicle.h>
 #include <AP_ADC_AnalogSource.h>
