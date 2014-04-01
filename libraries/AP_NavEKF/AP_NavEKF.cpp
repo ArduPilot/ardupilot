@@ -3253,7 +3253,7 @@ void NavEKF::decayGpsOffset()
 {
     float lapsedTime = 0.001f*float(hal.scheduler->millis() - lastDecayTime_ms);
     lastDecayTime_ms = hal.scheduler->millis();
-    float offsetRadius = sqrt(sq(posnOffsetNorth) + sq(posnOffsetEast));
+    float offsetRadius = pythagorous2(posnOffsetNorth, posnOffsetEast);
     // decay radius if larger than velocity of 1.0 multiplied by lapsed time (plus a margin to prevent divide by zero)
     if (offsetRadius > (lapsedTime + 0.1f)) {
         // calculate scale factor to be applied to both offset components
