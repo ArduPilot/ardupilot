@@ -262,6 +262,28 @@ static void NOINLINE send_location(mavlink_channel_t chan)
         g_gps->velocity_down()  * -100, // Z speed cm/s (+ve up)
         ahrs.yaw_sensor);
 }
+//-------------------------------------------------------------
+// Added by Sydney Schinstock AIAA-KSU 03/31/2014
+static void NOINLINE send_time(mavlink_channel_t chan)
+{
+	uint32_t fix_time;
+	// if we have a GPS fix, take the time as the last fix time. That
+	// allows us to correctly calculate velocities and extrapolate
+	// positions.
+	// If we don't have a GPS fix then we are dead reckoning, and will
+	// use the current boot time as the fix time.
+	if (g_gps->status() >= GPS::GPS_OK_FIX_2D) {
+		fix_time = g_gps->last_fix_time;
+	}
+	else {
+		fix_time = millis();
+	}
+	mavlink_msg_system_time_send(
+		chan,
+		fix_time,
+		millis());
+}
+//-------------------------------------------------------------
 
 static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
 {
@@ -561,6 +583,11 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         CHECK_PAYLOAD_SIZE(GLOBAL_POSITION_INT);
         send_location(chan);
         break;
+	//Added by Sydney Schinstock AIAA-KSU	
+	case MSG_SYSTEM_TIME:
+		CHECK_PAYLOAD_SIZE(SYSTEM_TIME);
+		send_time(chan);
+		break;
 
     case MSG_NAV_CONTROLLER_OUTPUT:
         if (control_mode != MANUAL) {

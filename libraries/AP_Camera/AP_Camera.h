@@ -18,6 +18,8 @@
 
 #define AP_CAMERA_TRIGGER_DEFAULT_DURATION  10      // default duration servo or relay is held open in 10ths of a second (i.e. 10 = 1 second)
 
+#define AP_CAMERA_CAMERA_DELAY_DURATION		10		//default duration for delay from camera command to when actual picture was taken (Sydney Schinstock KSU AIAA)
+
 #define AP_CAMERA_SERVO_ON_PWM              1300    // default PWM value to move servo to when shutter is activated
 #define AP_CAMERA_SERVO_OFF_PWM             1100    // default PWM value to move servo to when shutter is deactivated
 
@@ -42,6 +44,9 @@ public:
     // should be called at 50hz from main program
     void            trigger_pic_cleanup();
 
+	// TODO: Add comment; AIAA:JW
+	bool			trigger_pic_notify();
+
     // MAVLink methods
     void            configure_msg(mavlink_message_t* msg);
     void            control_msg(mavlink_message_t* msg);
@@ -58,8 +63,10 @@ private:
     AP_Int8         _trigger_type;      // 0:Servo,1:Relay,2:Servo and turn off throttle,3:Servo when 3m from waypoint,4:transistor
     AP_Int8         _trigger_duration;  // duration in 10ths of a second that the camera shutter is held open
     AP_Int16        _servo_on_pwm;      // PWM value to move servo to when shutter is activated
-    AP_Int16        _servo_off_pwm;     // PWM value to move servo to when shutter is deactivated
-    uint8_t         _trigger_counter;   // count of number of cycles shutter has been held open
+	AP_Int16        _servo_off_pwm;     // PWM value to move servo to when shutter is deactivated
+	AP_Int8			_camera_delay_duration;	// Value of delay in camera trigger to when picture was actually taken (Sydney Schinstock KSU AIAA)
+	uint8_t			_camera_delay_counter;	//count number of cycles for delay
+	uint8_t         _trigger_counter;   // count of number of cycles shutter has been held open
     AP_Relay       *_apm_relay;         // pointer to relay object from the base class Relay. The subclasses could be AP_Relay_APM1 or AP_Relay_APM2
 
     void            servo_pic();        // Servo operated camera

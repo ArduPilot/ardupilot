@@ -47,6 +47,14 @@ const AP_Param::GroupInfo AP_Camera::var_info[] PROGMEM = {
     // @Range: 0 1000
     AP_GROUPINFO("TRIGG_DIST",  4, AP_Camera, _trigg_dist, 0),
 
+	//Added by Sydney Schinstock KSU AIAA (04/10/2013)
+	// @Param: CAMERA_DELAY
+	// @DisplayName: Camera trigger delay time
+	// @Description: Time in (1/10 second) delay from camera command to when actual picture was taken
+	// @User: Standard
+	// @Range: 0 1000
+	AP_GROUPINFO("CAMERA_DELAY", 5, AP_Camera, _camera_delay_duration, AP_CAMERA_CAMERA_DELAY_DURATION), 
+
     AP_GROUPEND
 };
 
@@ -59,6 +67,7 @@ AP_Camera::servo_pic()
 
 	// leave a message that it should be active for this many loops (assumes 50hz loops)
 	_trigger_counter = constrain_int16(_trigger_duration*5,0,255);
+	_camera_delay_counter = constrain_int16(_camera_delay_duration * 5, 0, 255);
 }
 
 /// basic relay activation
@@ -69,6 +78,7 @@ AP_Camera::relay_pic()
 
     // leave a message that it should be active for this many loops (assumes 50hz loops)
     _trigger_counter = constrain_int16(_trigger_duration*5,0,255);
+	_camera_delay_counter = constrain_int16(_camera_delay_duration*5,0,255);
 }
 
 /// single entry point to take pictures
@@ -91,18 +101,45 @@ AP_Camera::trigger_pic()
 void
 AP_Camera::trigger_pic_cleanup()
 {
-    if (_trigger_counter) {
-        _trigger_counter--;
-    } else {
-        switch (_trigger_type) {
-            case AP_CAMERA_TRIGGER_TYPE_SERVO:
-                RC_Channel_aux::set_radio(RC_Channel_aux::k_cam_trigger, _servo_off_pwm);
-                break;
-            case AP_CAMERA_TRIGGER_TYPE_RELAY:
-                _apm_relay->off();
-                break;
-        }
-    }
+	if (_trigger_counter) {
+		_trigger_counter--;
+	}
+	else {
+		switch (_trigger_type) {
+		case AP_CAMERA_TRIGGER_TYPE_SERVO:
+			RC_Channel_aux::set_radio(RC_Channel_aux::k_cam_trigger, _servo_off_pwm);
+			break;
+		case AP_CAMERA_TRIGGER_TYPE_RELAY:
+			_apm_relay->off();
+			break;
+
+		}
+	}
+}
+// TODO: Comment AIAA:JW
+bool
+AP_Camera::trigger_pic_notify()
+{
+	static bool notified = true;
+    //Sydney Schinstock AIAA-KSU
+	// if time is not equal to camera delay, subtract one
+	if (_camera_delay_counter)
+	{
+		_camera_delay_counter--;
+		// Check to see if the notified variable needs reset
+		if (notified == true)
+		{
+			notified = false;
+		}
+		return false;
+	}
+	// if time is equal to camera delay, send system time, attitude of plane, and lat/long of plane
+	else if (notified == false)
+	{
+		notified == true;
+		return true;
+	}
+	return false;
 }
 
 /// decode MavLink that configures camera
@@ -135,6 +172,7 @@ void
 AP_Camera::control_msg(mavlink_message_t* msg)
 {
     __mavlink_digicam_control_t packet;
+	//decode message and puts it in 'packet'
     mavlink_msg_digicam_control_decode(msg, &packet);
     if (mavlink_check_target(packet.target_system, packet.target_component)) {
         // not for us
