@@ -104,7 +104,7 @@ public:
         Location location;                  ///< last fix location
         float ground_speed;                 ///< ground speed in m/sec
         int32_t ground_course_cd;           ///< ground course in 100ths of a degree
-        int16_t hdop;                       ///< horizontal dilution of precision in cm
+        uint16_t hdop;                      ///< horizontal dilution of precision in cm
         uint8_t num_sats;                   ///< Number of visible satelites        
         Vector3f velocity;                  ///< 3D velocitiy in m/s, in NED format
         bool have_vertical_velocity:1;      ///< does this GPS give vertical velocity?
@@ -192,10 +192,10 @@ public:
     }
 
     // horizontal dilution of precision
-    int16_t get_hdop(uint8_t instance) const {
+    uint16_t get_hdop(uint8_t instance) const {
         return state[instance].hdop;
     }
-    int16_t get_hdop() const {
+    uint16_t get_hdop() const {
         return get_hdop(primary_instance());
     }
 
@@ -235,8 +235,9 @@ public:
     float get_lag() const { return 0.2f; }
 
     // set position for HIL
-    void setHIL(GPS_Status status, uint64_t time_epoch_ms, 
-                Location &location, Vector3f &velocity, uint8_t num_sats);
+    void setHIL(uint8_t instance, GPS_Status status, uint64_t time_epoch_ms, 
+                Location &location, Vector3f &velocity, uint8_t num_sats,
+                uint16_t hdop, bool _have_vertical_velocity);
 
     static const struct AP_Param::GroupInfo var_info[];
 

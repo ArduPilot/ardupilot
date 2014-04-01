@@ -256,24 +256,28 @@ AP_GPS::update(void)
   set HIL (hardware in the loop) status for a GPS instance
  */
 void 
-AP_GPS::setHIL(GPS_Status _status, uint64_t time_epoch_ms, 
-               Location &_location, Vector3f &_velocity, uint8_t _num_sats)
+AP_GPS::setHIL(uint8_t instance, GPS_Status _status, uint64_t time_epoch_ms, 
+               Location &_location, Vector3f &_velocity, uint8_t _num_sats, 
+               uint16_t hdop, bool _have_vertical_velocity)
 {
+    if (instance >= GPS_MAX_INSTANCES) {
+        return;
+    }
     uint32_t tnow = hal.scheduler->millis();
-    GPS_State &istate = state[0];
+    GPS_State &istate = state[instance];
     istate.status = _status;
     istate.location = _location;
     istate.location.options = 0;
     istate.velocity = _velocity;
     istate.ground_speed = pythagorous2(istate.velocity.x, istate.velocity.y);
     istate.ground_course_cd = degrees(atan2f(istate.velocity.y, istate.velocity.x)) * 100UL;
-    istate.hdop = 0;
+    istate.hdop = hdop;
     istate.num_sats = _num_sats;
-    istate.have_vertical_velocity = false;
+    istate.have_vertical_velocity = _have_vertical_velocity;
     istate.last_gps_time_ms = tnow;
     istate.time_week     = time_epoch_ms / (86400*7*(uint64_t)1000);
     istate.time_week_ms  = time_epoch_ms - istate.time_week*(86400*7*(uint64_t)1000);
-    timing[0].last_message_time_ms = tnow;
-    timing[0].last_fix_time_ms = tnow;
-    _type[0].set(GPS_TYPE_HIL);
+    timing[instance].last_message_time_ms = tnow;
+    timing[instance].last_fix_time_ms = tnow;
+    _type[instance].set(GPS_TYPE_HIL);
 }
