@@ -163,7 +163,7 @@ struct PACKED log_GPS {
     uint32_t gps_week_ms;
     uint16_t gps_week;
     uint8_t  num_sats;
-    int16_t  hdop;
+    uint16_t hdop;
     int32_t  latitude;
     int32_t  longitude;
     int32_t  rel_altitude;
@@ -180,7 +180,7 @@ struct PACKED log_GPS2 {
     uint32_t gps_week_ms;
     uint16_t gps_week;
     uint8_t  num_sats;
-    int16_t  hdop;
+    uint16_t hdop;
     int32_t  latitude;
     int32_t  longitude;
     int32_t  altitude;
