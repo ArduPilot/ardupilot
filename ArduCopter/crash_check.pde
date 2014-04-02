@@ -19,6 +19,11 @@ void crash_check()
     static uint8_t inverted_count;  // number of iterations we have been inverted
     static int32_t baro_alt_prev;
 
+#if PARACHUTE == ENABLED
+    // check parachute
+    parachute_check();
+#endif
+
     // return immediately if motors are not armed or pilot's throttle is above zero
     if (!motors.armed() || (g.rc_3.control_in != 0 && !failsafe.radio)) {
         inverted_count = 0;
@@ -59,3 +64,86 @@ void crash_check()
         inverted_count = 0;
     }
 }
+
+#if PARACHUTE == ENABLED
+
+// Code to detect a crash main ArduCopter code
+#ifndef PARACHUTE_CHECK_ITERATIONS_MAX
+ # define PARACHUTE_CHECK_ITERATIONS_MAX        10      // 1 second (ie. 10 iterations at 10hz) of loss of control triggers the parachute
+#endif
+#ifndef PARACHUTE_CHECK_ANGLE_DEVIATION_CD
+ # define PARACHUTE_CHECK_ANGLE_DEVIATION_CD    3000    // 30 degrees off from target indicates a loss of control
+#endif
+
+// parachute_check - disarms motors and triggers the parachute if serious loss of control has been detected
+// vehicle is considered to have a "serious loss of control" by the vehicle being more than 30 degrees off from the target roll and pitch angles continuously for 1 second
+// should be called at 10hz
+void parachute_check()
+{
+    static uint8_t control_loss_count;	// number of iterations we have been out of control
+    static int32_t baro_alt_start;
+
+    // exit immediately if parachute is not enabled
+    if (!parachute.enabled()) {
+        return;
+    }
+
+    // return immediately if motors are not armed or pilot's throttle is above zero
+    if (!motors.armed()) {
+        control_loss_count = 0;
+        return;
+    }
+
+    // return immediately if we are not in an angle stabilize flight mode or we are flipping
+    if (control_mode == ACRO || control_mode == FLIP) {
+        control_loss_count = 0;
+        return;
+    }
+
+    // get desired lean angles
+    const Vector3f& target_angle = attitude_control.angle_ef_targets();
+
+    // check roll and pitch angles
+    if (labs(ahrs.roll_sensor - target_angle.x) > CRASH_CHECK_ANGLE_DEVIATION_CD ||
+        labs(ahrs.pitch_sensor - target_angle.y) > CRASH_CHECK_ANGLE_DEVIATION_CD) {
+        control_loss_count++;
+
+        // record baro if we have just started losing control
+        if (control_loss_count == 1) {
+            baro_alt_start = baro_alt;
+
+        // exit if baro altitude change indicates we are not falling
+        }else if (baro_alt >= baro_alt_start) {
+            control_loss_count = 0;
+            return;
+
+        // To-Do: add check that the vehicle is actually falling
+
+        // check if loss of control for at least 1 second
+        }else if (control_loss_count >= PARACHUTE_CHECK_ITERATIONS_MAX) {
+            parachute_release();
+        }
+    }else{
+        // we are not inverted so reset counter
+        control_loss_count = 0;
+    }
+}
+
+// parachute_release - trigger the release of the parachute, disarm the motors and notify the user
+static void parachute_release()
+{
+    // To-Do: add warning tone and short delay before triggering release
+
+    // log an error in the dataflash
+    Log_Write_Error(ERROR_SUBSYSTEM_CRASH_CHECK, ERROR_CODE_CRASH_CHECK_CRASH);
+
+    // send message to gcs
+    gcs_send_text_P(SEVERITY_HIGH,PSTR("Parachute: Released!"));
+
+    // disarm motors
+    init_disarm_motors();
+
+    // release parachute
+    parachute.release();
+}
+#endif // PARACHUTE == ENABLED
