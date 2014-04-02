@@ -139,7 +139,7 @@ static void land_nogps_run()
 static float get_throttle_land()
 {
     // if we are above 10m and the sonar does not sense anything perform regular alt hold descent
-    if (current_loc.alt >= LAND_START_ALT && !(g.sonar_enabled && sonar_alt_health >= SONAR_ALT_HEALTH_MAX)) {
+    if (current_loc.alt >= LAND_START_ALT && !(sonar.enabled() && sonar_alt_health >= SONAR_ALT_HEALTH_MAX)) {
         return pos_control.get_speed_down();
     }else{
         return -abs(g.land_speed);
