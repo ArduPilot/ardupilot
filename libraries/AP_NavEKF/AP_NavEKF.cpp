@@ -1661,7 +1661,7 @@ void NavEKF::FuseVelPosNED()
             // calculate the test ratio
             velTestRatio = innovVelSumSq / (varVelSum * sq(_gpsVelInnovGate));
             // fail if the ratio is greater than 1
-            velHealth = !((velTestRatio > 1.0f)  && !badIMUdata);
+            velHealth = ((velTestRatio < 1.0f)  || badIMUdata);
             // If failed for too long we need to do something with the data
             velTimeout = (hal.scheduler->millis() - velFailTime) > gpsRetryTime;
             if (velHealth || velTimeout || staticMode)
@@ -1694,7 +1694,7 @@ void NavEKF::FuseVelPosNED()
             float accelScale =  (1.0f + 0.1f * accNavMagHoriz);
             float maxPosInnov2 = sq(_gpsPosInnovGate * _gpsHorizPosNoise + 0.005f * accelScale * float(_gpsGlitchAccelMax) * sq(0.001f * float(hal.scheduler->millis() - posFailTime)));
             posTestRatio = (sq(posInnov[0]) + sq(posInnov[1])) / maxPosInnov2;
-            posHealth = !((posTestRatio > 1.0f) && !badIMUdata);
+            posHealth = ((posTestRatio < 1.0f) || badIMUdata);
             // if we have timed out or exceeded the max radius, then we offset the GPS position to match the inertial solution and then decay the 
 			// offset to bring the vehicle back gradually to the new GPS position
             posTimeout = ((maxPosInnov2 > sq(float(_gpsGlitchRadiusMax))) || ((hal.scheduler->millis() - posFailTime) > gpsRetryTime));
@@ -1735,7 +1735,7 @@ void NavEKF::FuseVelPosNED()
             // calculate the innovation consistency test ratio
             hgtTestRatio = sq(hgtInnov) / (sq(_hgtInnovGate) * varInnovVelPos[5]);
             // fail if the ratio is > 1, but don't fail if bad IMU data
-            hgtHealth = !((hgtTestRatio > 1.0f) && !badIMUdata);
+            hgtHealth = ((hgtTestRatio < 1.0f) || badIMUdata);
             hgtTimeout = (hal.scheduler->millis() - hgtFailTime) > hgtRetryTime;
             // Fuse height data if healthy or timed out or in static mode
             if (hgtHealth || hgtTimeout || staticMode)
