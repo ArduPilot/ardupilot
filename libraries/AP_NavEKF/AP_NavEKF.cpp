@@ -1618,6 +1618,49 @@ void NavEKF::FuseVelPosNED()
 
 
         // calculate innovations and check GPS data validity using an innovation consistency check
+        // test position measurements
+        if (fusePosData)
+        {
+            // test horizontal position measurements
+            posInnov[0] = statesAtPosTime[7] - observation[3];
+            posInnov[1] = statesAtPosTime[8] - observation[4];
+            varInnovVelPos[3] = P[7][7] + R_OBS[3];
+            varInnovVelPos[4] = P[8][8] + R_OBS[4];
+            // apply an innovation consistency threshold test, but don't fail if bad IMU data
+            // calculate max valid position innovation squared based on a maximum horizontal inertial nav accel error and GPS noise parameter
+            // max inertial nav error is scaled with horizontal g to allow for increased errors when manoeuvring
+            float accelScale =  (1.0f + 0.1f * accNavMagHoriz);
+            float maxPosInnov2 = sq(_gpsPosInnovGate * _gpsHorizPosNoise + 0.005f * accelScale * float(_gpsGlitchAccelMax) * sq(0.001f * float(hal.scheduler->millis() - posFailTime)));
+            posTestRatio = (sq(posInnov[0]) + sq(posInnov[1])) / maxPosInnov2;
+            posHealth = ((posTestRatio < 1.0f) || badIMUdata);
+            // if we have timed out or exceeded the max radius, then we offset the GPS position to match the inertial solution and then decay the 
+			// offset to bring the vehicle back gradually to the new GPS position
+            posTimeout = ((maxPosInnov2 > sq(float(_gpsGlitchRadiusMax))) || ((hal.scheduler->millis() - posFailTime) > gpsRetryTime));
+            // fuse position data if healthy, timed out, or in static mode
+            if (posHealth || posTimeout || staticMode)
+            {
+                posHealth = true;
+                posFailTime = hal.scheduler->millis();
+				// if timed out, increment the offset applied to GPS data to compensate for large GPS position jumps
+                // offset is decayed to zero at 1.0 m/s and limited to a maximum value of 100m before it is applied to
+                // subsequent GPS measurements so we don't have to do any limiting here
+                // increment the offset applied to future reads from the GPS
+                if (posTimeout) {
+                    posnOffsetNorth += posInnov[0];
+                    posnOffsetEast  += posInnov[1];
+                    // apply the offset to the current GPS measurement
+                    posNE[0] += posInnov[0];
+                    posNE[1] += posInnov[1];
+                    // don't fuse data on this time step
+                    fusePosData = false;
+                }
+           }
+            else
+            {
+                posHealth = false;
+            }
+        }
+        // test velocity measurements
         if (fuseVelData)
         {
             // test velocity measurements
@@ -1662,64 +1705,24 @@ void NavEKF::FuseVelPosNED()
             velTestRatio = innovVelSumSq / (varVelSum * sq(_gpsVelInnovGate));
             // fail if the ratio is greater than 1
             velHealth = ((velTestRatio < 1.0f)  || badIMUdata);
-            // If failed for too long we need to do something with the data
+            // declare a timeout if we have not fused velocity data for too long
             velTimeout = (hal.scheduler->millis() - velFailTime) > gpsRetryTime;
-            if (velHealth || velTimeout || staticMode)
+            // if data is healthy  or in static mode we fuse it
+            if (velHealth || staticMode)
             {
                 velHealth = true;
                 velFailTime = hal.scheduler->millis();
-                // if timed out, reset the velocity, but do not fuse data on this time step
-                if (velTimeout)
-                {
-                    ResetVelocity();
-                    StoreStatesReset();
-                    fuseVelData =  false;
-                }
             }
+            // if data is not healthy and timed out and position is unhealthy we reset the velocity, but do not fuse data on this time step
+            else if (velTimeout && ~posHealth) {
+                ResetVelocity();
+                StoreStatesReset();
+                fuseVelData =  false;
+            }
+            // if data is unhealthy and position is healthy, we do not fuse it
             else
             {
                 velHealth = false;
-            }
-        }
-        if (fusePosData)
-        {
-            // test horizontal position measurements
-            posInnov[0] = statesAtPosTime[7] - observation[3];
-            posInnov[1] = statesAtPosTime[8] - observation[4];
-            varInnovVelPos[3] = P[7][7] + R_OBS[3];
-            varInnovVelPos[4] = P[8][8] + R_OBS[4];
-            // apply an innovation consistency threshold test, but don't fail if bad IMU data
-            // calculate max valid position innovation squared based on a maximum horizontal inertial nav accel error and GPS noise parameter
-            // max inertial nav error is scaled with horizontal g to allow for increased errors when manoeuvring
-            float accelScale =  (1.0f + 0.1f * accNavMagHoriz);
-            float maxPosInnov2 = sq(_gpsPosInnovGate * _gpsHorizPosNoise + 0.005f * accelScale * float(_gpsGlitchAccelMax) * sq(0.001f * float(hal.scheduler->millis() - posFailTime)));
-            posTestRatio = (sq(posInnov[0]) + sq(posInnov[1])) / maxPosInnov2;
-            posHealth = ((posTestRatio < 1.0f) || badIMUdata);
-            // if we have timed out or exceeded the max radius, then we offset the GPS position to match the inertial solution and then decay the 
-			// offset to bring the vehicle back gradually to the new GPS position
-            posTimeout = ((maxPosInnov2 > sq(float(_gpsGlitchRadiusMax))) || ((hal.scheduler->millis() - posFailTime) > gpsRetryTime));
-            // fuse position data if healthy, timed out, or in static mode
-            if (posHealth || posTimeout || staticMode)
-            {
-                posHealth = true;
-                posFailTime = hal.scheduler->millis();
-				// if timed out, increment the offset applied to GPS data to compensate for large GPS position jumps
-                // offset is decayed to zero at 1.0 m/s and limited to a maximum value of 100m before it is applied to
-                // subsequent GPS measurements so we don't have to do any limiting here
-                // increment the offset applied to future reads from the GPS
-                if (posTimeout) {
-                    posnOffsetNorth += posInnov[0];
-                    posnOffsetEast  += posInnov[1];
-                    // apply the offset to the current GPS measurement
-                    posNE[0] += posInnov[0];
-                    posNE[1] += posInnov[1];
-                    // don't fuse data on this time step
-                    fusePosData = false;
-                }
-           }
-            else
-            {
-                posHealth = false;
             }
         }
         // test height measurements
