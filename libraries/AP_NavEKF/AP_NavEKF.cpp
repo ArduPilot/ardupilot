@@ -1633,19 +1633,17 @@ void NavEKF::FuseVelPosNED()
             float maxPosInnov2 = sq(_gpsPosInnovGate * _gpsHorizPosNoise + 0.005f * accelScale * float(_gpsGlitchAccelMax) * sq(0.001f * float(hal.scheduler->millis() - posFailTime)));
             posTestRatio = (sq(posInnov[0]) + sq(posInnov[1])) / maxPosInnov2;
             posHealth = ((posTestRatio < 1.0f) || badIMUdata);
-            // if we have timed out or exceeded the max radius, then we offset the GPS position to match the inertial solution and then decay the 
-			// offset to bring the vehicle back gradually to the new GPS position
-            posTimeout = ((maxPosInnov2 > sq(float(_gpsGlitchRadiusMax))) || ((hal.scheduler->millis() - posFailTime) > gpsRetryTime));
-            // fuse position data if healthy, timed out, or in static mode
+            // declare a timeout condition if we have been too long without data
+            posTimeout = ((hal.scheduler->millis() - posFailTime) > gpsRetryTime);
+            // use position data if healthy, timed out, or in static mode
             if (posHealth || posTimeout || staticMode)
             {
                 posHealth = true;
                 posFailTime = hal.scheduler->millis();
-				// if timed out, increment the offset applied to GPS data to compensate for large GPS position jumps
+                // if timed out or outside the specified glitch radius, increment the offset applied to GPS data to compensate for large GPS position jumps
                 // offset is decayed to zero at 1.0 m/s and limited to a maximum value of 100m before it is applied to
                 // subsequent GPS measurements so we don't have to do any limiting here
-                // increment the offset applied to future reads from the GPS
-                if (posTimeout) {
+                if (posTimeout || (maxPosInnov2 > sq(float(_gpsGlitchRadiusMax)))) {
                     posnOffsetNorth += posInnov[0];
                     posnOffsetEast  += posInnov[1];
                     // apply the offset to the current GPS measurement
