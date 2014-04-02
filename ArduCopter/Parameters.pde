@@ -864,6 +864,12 @@ const AP_Param::Info var_info[] PROGMEM = {
     GOBJECT(epm,            "EPM_", AP_EPM),
 #endif
 
+#if PARACHUTE == ENABLED
+	// @Group: CHUTE_
+    // @Path: ../libraries/AP_Parachute/AP_Parachute.cpp
+    GOBJECT(parachute,		"CHUTE_", AP_Parachute),
+#endif
+
     // @Group: COMPASS_
     // @Path: ../libraries/AP_Compass/Compass.cpp
     GOBJECT(compass,        "COMPASS_", Compass),

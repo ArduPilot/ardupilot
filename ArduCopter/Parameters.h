@@ -76,6 +76,9 @@ public:
         // GPS object
         k_param_gps,
 
+        // Parachute object
+        k_param_parachute,	// 17
+
         // Misc
         //
         k_param_log_bitmask = 20,
