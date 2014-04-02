@@ -379,8 +379,8 @@ bool LogReader::update(uint8_t &type)
         loc.alt = msg.altitude;
         loc.options = 0;
 
-        Vector3f vel(msg.ground_speed*0.01f*cosf(msg.ground_course*0.01f),
-                     msg.ground_speed*0.01f*sinf(msg.ground_course*0.01f),
+        Vector3f vel(msg.ground_speed*0.01f*cosf(radians(msg.ground_course*0.01f)),
+                     msg.ground_speed*0.01f*sinf(radians(msg.ground_course*0.01f)),
                      msg.vel_z);
         gps.setHIL(0, (AP_GPS::GPS_Status)msg.status,
                    msg.apm_time,
@@ -410,8 +410,8 @@ bool LogReader::update(uint8_t &type)
         loc.alt = msg.altitude;
         loc.options = 0;
 
-        Vector3f vel(msg.ground_speed*0.01f*cosf(msg.ground_course*0.01f),
-                     msg.ground_speed*0.01f*sinf(msg.ground_course*0.01f),
+        Vector3f vel(msg.ground_speed*0.01f*cosf(radians(msg.ground_course*0.01f)),
+                     msg.ground_speed*0.01f*sinf(radians(msg.ground_course*0.01f)),
                      msg.vel_z);
         gps.setHIL(1, (AP_GPS::GPS_Status)msg.status,
                    msg.apm_time,
