@@ -1825,9 +1825,10 @@ void NavEKF::FuseVelPosNED()
                     // Calculate height measurement innovations using single IMU states
                     float hgtInnov1 = statesAtHgtTime[26] - observation[obsIndex];
                     float hgtInnov2 = statesAtHgtTime[30] - observation[obsIndex];
-                    // Correct single IMU prediction states using height measurement
-                    states[13] = states[13] - Kfusion[13] * hgtInnov1; // IMU1 Z accel bias
-                    states[22] = states[22] - Kfusion[22] * hgtInnov2; // IMU2 Z accel bias
+                    // Correct single IMU prediction states using height measurement, limiting rate of change of bias to 0.02 m/s3
+                    float correctionLimit = 0.02f * dtIMU *dtVelPos;
+                    states[13] = states[13] - constrain_float(Kfusion[13] * hgtInnov1, -correctionLimit, correctionLimit); // IMU1 Z accel bias
+                    states[22] = states[22] - constrain_float(Kfusion[22] * hgtInnov2, -correctionLimit, correctionLimit); // IMU2 Z accel bias
                     for (uint8_t i = 23; i<=26; i++)
                     {
                         states[i] = states[i] - Kfusion[i] * hgtInnov1; // IMU1 velNED,posD
