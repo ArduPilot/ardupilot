@@ -1608,8 +1608,8 @@ void NavEKF::FuseVelPosNED()
             // calculate innovations for height and vertical GPS vel measurements
             float hgtErr  = statesAtVelTime[9] - observation[5];
             float velDErr = statesAtVelTime[6] - observation[2];
-            // check if they are the same sign and both more than 2-sigma out of bounds
-            if ((hgtErr*velDErr > 0.0f) && (sq(hgtErr) > 4.0f * (P[9][9] + R_OBS[5])) && (sq(velDErr) > 4.0f * (P[6][6] + R_OBS[2]))) {
+            // check if they are the same sign and both more than 3-sigma out of bounds
+            if ((hgtErr*velDErr > 0.0f) && (sq(hgtErr) > 9.0f * (P[9][9] + R_OBS[5])) && (sq(velDErr) > 9.0f * (P[6][6] + R_OBS[2]))) {
                 badIMUdata = true;
             } else {
                 badIMUdata = false;
