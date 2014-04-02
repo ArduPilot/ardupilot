@@ -119,7 +119,7 @@ public:
     void limit_angle_to_rate_request(bool limit_request) { _flags.limit_angle_to_rate_request = limit_request; }
 
     // angle_ef_targets - returns angle controller earth-frame targets (for reporting)
-    Vector3f angle_ef_targets() const { return _angle_ef_target; }
+    const Vector3f& angle_ef_targets() const { return _angle_ef_target; }
 
     // rate_bf_targets - gets rate controller body-frame targets
     void rate_bf_roll_target(float rate_cds) { _rate_bf_target.x = rate_cds; }
