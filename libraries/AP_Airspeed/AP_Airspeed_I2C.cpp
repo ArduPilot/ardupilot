@@ -26,7 +26,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define MS4525D0 0
+#define MS4525DO 0
 #define HSCDRRN  1
 #define I2C_ADDRESS_MS4525DO	0x28
 #define I2C_ADDRESS_HSCDRRN     0x28
@@ -56,7 +56,7 @@ bool AP_Airspeed_I2C::init(void)
 void AP_Airspeed_I2C::_measure(void)
 {
     _measurement_started_ms = 0;
-    if (_sensor_type == MS4525D0) {
+    if (_sensor_type == MS4525DO) {
         if (hal.i2c->writeRegisters(I2C_ADDRESS_MS4525DO, 0, 0, NULL) == 0) {
             _measurement_started_ms = hal.scheduler->millis();
         }
@@ -73,7 +73,7 @@ void AP_Airspeed_I2C::_collect(void)
     uint8_t data[4];
 
     _measurement_started_ms = 0;
-    if (_sensor_type == MS4525D0) {
+    if (_sensor_type == MS4525DO) {
         if (hal.i2c->read(I2C_ADDRESS_MS4525DO, 4, data) != 0) {
             return;
         }
