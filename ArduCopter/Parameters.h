@@ -171,13 +171,13 @@ public:
         k_param_pack_capacity,  // deprecated - can be deleted
         k_param_compass_enabled,
         k_param_compass,
-        k_param_sonar_enabled,
+        k_param_sonar_enabled,	//deprecated - can be deleted
         k_param_frame_orientation,
         k_param_optflow_enabled,
         k_param_fs_batt_voltage,
         k_param_ch7_option,
         k_param_auto_slew_rate,     // deprecated - can be deleted
-        k_param_sonar_type,
+        k_param_sonar_type,			//  NOT USED, BUT FUTURE USE WITH I2C or ANALOG?  -SGF
         k_param_super_simple = 155,
         k_param_axis_enabled = 157, // deprecated - remove with next eeprom number change
         k_param_copter_leds_mode,   // deprecated - remove with next eeprom number change
@@ -229,6 +229,7 @@ public:
         k_param_radio_tuning,
         k_param_radio_tuning_high,
         k_param_radio_tuning_low,
+        k_param_sonar = 191,		//Sonar Object
         k_param_rc_speed = 192,
         k_param_failsafe_battery_enabled,
         k_param_throttle_mid,
@@ -308,11 +309,11 @@ public:
     AP_Int8         telem_delay;
 
     AP_Int16        rtl_altitude;
-    AP_Int8         sonar_enabled;
-    AP_Int8         sonar_type;       // 0 = XL, 1 = LV,
-                                      // 2 = XLL (XL with 10m range)
-                                      // 3 = HRLV
+
+    //SONAR
+
     AP_Float        sonar_gain;
+
 
     AP_Int8         failsafe_battery_enabled;   // battery failsafe enabled
     AP_Float        fs_batt_voltage;            // battery voltage below which failsafe will be triggered

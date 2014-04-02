@@ -3,11 +3,11 @@
  #if CONFIG_SONAR == ENABLED
 static void init_sonar(void)
 {
-  #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
-    sonar->calculate_scaler(g.sonar_type, 3.3f);
-  #else
-    sonar->calculate_scaler(g.sonar_type, 5.0f);
-  #endif
+	#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+    	sonar.Init(&apm1_adc);
+	#else
+    	sonar.Init(NULL);
+	#endif
 }
  #endif
 
@@ -37,14 +37,12 @@ static int16_t read_sonar(void)
 {
 #if CONFIG_SONAR == ENABLED
     // exit immediately if sonar is disabled
-    if( !g.sonar_enabled ) {
+    if( !sonar.enabled() ) {
         sonar_alt_health = 0;
         return 0;
     }
-
-    int16_t temp_alt = sonar->read();
-
-    if (temp_alt >= sonar->min_distance && temp_alt <= sonar->max_distance * SONAR_RELIABLE_DISTANCE_PCT) {
+    int16_t temp_alt = sonar.distance_cm();
+    if (sonar.in_range() && (temp_alt - baro_alt) < 1000) {	//Only update health if difference is less than 10 meters, and in specified operating range.  To prevent flyaways if sonar is blocked or failed -SGF
         if ( sonar_alt_health < SONAR_ALT_HEALTH_MAX ) {
             sonar_alt_health++;
         }
@@ -108,7 +106,7 @@ static void read_battery(void)
 
 // read the receiver RSSI as an 8 bit number for MAVLink
 // RC_CHANNELS_SCALED message
-void read_receiver_rssi(void)
+static void read_receiver_rssi(void)
 {
     // avoid divide by zero
     if (g.rssi_range <= 0) {
@@ -118,4 +116,7 @@ void read_receiver_rssi(void)
         float ret = rssi_analog_source->voltage_average() * 255 / g.rssi_range;
         receiver_rssi = constrain_int16(ret, 0, 255);
     }
+}
+static void init_rssi(void){
+	rssi_analog_source      = hal.analogin->channel(g.rssi_pin);
 }

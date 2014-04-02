@@ -87,7 +87,6 @@ setup_show(uint8_t argc, const Menu::arg *argv)
     report_radio();
     report_frame();
     report_batt_monitor();
-    report_sonar();
     report_flight_modes();
     report_ins();
     report_compass();
@@ -109,15 +108,6 @@ static void report_batt_monitor()
     if (battery.monitoring() == AP_BATT_MONITOR_DISABLED) print_enabled(false);
     if (battery.monitoring() == AP_BATT_MONITOR_VOLTAGE_ONLY) cliSerial->printf_P(PSTR("volts"));
     if (battery.monitoring() == AP_BATT_MONITOR_VOLTAGE_AND_CURRENT) cliSerial->printf_P(PSTR("volts and cur"));
-    print_blanks(2);
-}
-
-static void report_sonar()
-{
-    cliSerial->printf_P(PSTR("Sonar\n"));
-    print_divider();
-    print_enabled(g.sonar_enabled.get());
-    cliSerial->printf_P(PSTR("Type: %d (0=XL, 1=LV, 2=XLL, 3=HRLV)"), (int)g.sonar_type);
     print_blanks(2);
 }
 

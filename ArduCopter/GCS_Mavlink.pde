@@ -41,6 +41,19 @@ static void gcs_send_deferred(void)
  *  stack needed for each message type. Please be careful to follow the
  *  pattern below when adding any new messages
  */
+static void NOINLINE send_rangefinder(mavlink_channel_t chan)
+{
+    if (!sonar.enabled()){
+    	mavlink_msg_rangefinder_send(chan, 0.0f, 0.0f);	//Sonar is disabled, return 0.0 numbers to update GCS to reflect.
+    }
+    else{
+    	mavlink_msg_rangefinder_send(
+    			chan,
+    			read_sonar() * 0.01f,  	//Send Sonar distance in meters
+    			sonar.voltage()		//Send Voltage
+    	);
+    }
+}
 
 static NOINLINE void send_heartbeat(mavlink_channel_t chan)
 {
@@ -754,7 +767,8 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     case MSG_FENCE_STATUS:
     case MSG_WIND:
     case MSG_RANGEFINDER:
-        // unused
+        CHECK_PAYLOAD_SIZE(RANGEFINDER);
+        send_rangefinder(chan);
         break;
 
     case MSG_RETRY_DEFERRED:
@@ -1028,6 +1042,7 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_AHRS);
         send_message(MSG_HWSTATUS);
         send_message(MSG_SYSTEM_TIME);
+        send_message(MSG_RANGEFINDER);
     }
 }
 
