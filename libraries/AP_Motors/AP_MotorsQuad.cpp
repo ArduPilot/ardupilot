@@ -50,6 +50,38 @@ void AP_MotorsQuad::setup_motors()
         add_motor(AP_MOTORS_MOT_3,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4);
         add_motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2);
 
+    } else if (_flags.frame_orientation == AP_MOTORS_VTAIL_FRAME) {
+        /* Lynxmotion Hunter Vtail 400/500
+
+           Roll control comes only from the front motors, Yaw control only from the rear motors
+           roll factor is measured by the angle perpendicular to that of the prop arm to the roll axis (x)
+           pitch factor is measured by the angle perpendicular to the prop arm to the pitch axis (y)
+
+           assumptions:
+                                20      20
+            \      /          3_____________1
+             \    /                  |
+              \  /                   |
+           40  \/  40            20  |  20
+              Tail                  / \
+                                   2   4
+
+           All angles measured from their closest axis
+
+           Note: if we want the front motors to help with yaw,
+                 motors 1's yaw factor should be changed to sin(radians(40)).  Where "40" is the vtail angle
+                 motors 3's yaw factor should be changed to -sin(radians(40))
+         */
+
+      // front right: 70 degrees right of roll axis, 20 degrees up of pitch axis, no yaw
+      add_motor_raw(AP_MOTORS_MOT_1, cosf(radians(160)), cosf(radians(-70)), 0, 1);
+      // back left: no roll, 70 degrees down of pitch axis, full yaw
+      add_motor_raw(AP_MOTORS_MOT_2, 0, cosf(radians(160)), AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3);
+      // front left: 70 degrees left of roll axis, 20 degrees up of pitch axis, no yaw
+      add_motor_raw(AP_MOTORS_MOT_3, cosf(radians(20)), cosf(radians(70)), 0, 4);
+      // back right: no roll, 70 degrees down of pitch axis, full yaw
+      add_motor_raw(AP_MOTORS_MOT_4, 0, cosf(radians(-160)), AP_MOTORS_MATRIX_YAW_FACTOR_CW, 2);
+
     }else{
         // X frame set-up
         add_motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1);
