@@ -804,7 +804,7 @@ void AP_Param::set_value(enum ap_var_type type, void *ptr, float value)
 
 // load default values for scalars in a group. This does not recurse
 // into other objects. This is a static function that should be called
-// in the objects constructor
+// in the object's constructor
 void AP_Param::setup_object_defaults(const void *object_pointer, const struct GroupInfo *group_info)
 {
     uintptr_t base = (uintptr_t)object_pointer;

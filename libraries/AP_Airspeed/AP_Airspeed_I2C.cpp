@@ -26,9 +26,10 @@
 
 extern const AP_HAL::HAL& hal;
 
+#define MS4525D0 0
+#define HSCDRRN  1
 #define I2C_ADDRESS_MS4525DO	0x28
-#define I2C_ADDRESS_HSCDRRN001ND2A5     0x28
-#define SENSOR_TYPE MS4525DO
+#define I2C_ADDRESS_HSCDRRN     0x28
 
 // probe and initialise the sensor
 bool AP_Airspeed_I2C::init(void)
@@ -55,15 +56,15 @@ bool AP_Airspeed_I2C::init(void)
 void AP_Airspeed_I2C::_measure(void)
 {
     _measurement_started_ms = 0;
-    #if SENSOR_TYPE == MS4525DO
-    if (hal.i2c->writeRegisters(I2C_ADDRESS_MS4525DO, 0, 0, NULL) == 0) {
-        _measurement_started_ms = hal.scheduler->millis();
+    if (_sensor_type == MS4525D0) {
+        if (hal.i2c->writeRegisters(I2C_ADDRESS_MS4525DO, 0, 0, NULL) == 0) {
+            _measurement_started_ms = hal.scheduler->millis();
+        }
+    } else {
+        if (hal.i2c->writeRegisters(I2C_ADDRESS_HSCDRRN, 0, 0, NULL) == 0) {
+            _measurement_started_ms = hal.scheduler->millis();
+        }
     }
-    #elif SENSOR_TYPE == HSCDRRN001ND2A5
-    if (hal.i2c->writeRegisters(I2C_ADDRESS_HSCDRRN001ND2A5, 0, 0, NULL) == 0) {
-        _measurement_started_ms = hal.scheduler->millis();
-    }
-    #endif
 }
 
 // read the values from the sensor
@@ -72,72 +73,72 @@ void AP_Airspeed_I2C::_collect(void)
     uint8_t data[4];
 
     _measurement_started_ms = 0;
-    #if SENSOR_TYPE == MS4525DO
-    if (hal.i2c->read(I2C_ADDRESS_MS4525DO, 4, data) != 0) {
-        return;
+    if (_sensor_type == MS4525D0) {
+        if (hal.i2c->read(I2C_ADDRESS_MS4525DO, 4, data) != 0) {
+            return;
+        }
+        
+        uint8_t status = (data[0] & 0xC0) >> 6;
+        
+        switch (status) {
+            case 0: break;
+            case 1: return; // Reserved
+            case 2: return; // Stale data
+            case 3: return; // Fault
+        }
+
+        int16_t dp_raw, dT_raw;
+        dp_raw = (data[0] << 8) + data[1];
+        dp_raw = 0x3FFF & dp_raw;
+        dT_raw = (data[2] << 8) + data[3];
+        dT_raw = (0xFFE0 & dT_raw) >> 5;
+
+        const float P_min = -1.0f;
+        const float P_max = 1.0f;
+        const float PSI_to_Pa = 6894.757f;
+        /*
+          this equation is an inversion of the equation in the
+          pressure transfer function figure on page 4 of the datasheet
+
+          We negate the result so that positive differential pressures
+          are generated when the bottom port is used as the static
+          port on the pitot and top port is used as the dynamic port
+         */
+        float diff_press_PSI = -((dp_raw - 0.1f*16383) * (P_max-P_min)/(0.8f*16383) + P_min);
+
+        _pressure = diff_press_PSI * PSI_to_Pa;
+        _temperature = ((200.0f * dT_raw) / 2047) - 50;
+    } else if (_sensor_type == HSCDRRN) {
+        if (hal.i2c->read(I2C_ADDRESS_HSCDRRN, 4, data) != 0) {
+            return;
+        }
+        
+        uint8_t status = (data[0] & 0xC0) >> 6;
+        
+        switch (status) {
+            case 0: break;
+            case 1: return; // Programming mode
+            case 2: return; // Stale data
+            case 3: return; // Fault
+        }
+
+        int16_t dp_raw, dT_raw;
+        dp_raw = (data[0] << 8) + data[1];
+        dp_raw = 0x3FFF & dp_raw;
+        dT_raw = (data[2] << 8) + data[3];
+        dT_raw = (0xFFE0 & dT_raw) >> 5;
+
+        const float P_min = -1.0f;
+        const float P_max = 1.0f;
+        const float InAq_to_Pa = 248.84f;
+        
+        // Taken from Honeywell Technical Note 008201-3-EN
+        // https://sensing.honeywell.com/i2c%20comms%20digital%20output%20pressure%20sensors_tn_008201-3-en_final_30may12.pdf
+        float diff_press_PSI = -(dp_raw - 1638.0f)*(P_max - P_min)/(14745.0f-1638.0f);
+
+        _pressure = diff_press_PSI * InAq_to_Pa;
+        _temperature = ((200.0f * dT_raw) / 2047) - 50;
     }
-    
-	uint8_t status = (data[0] & 0xC0) >> 6;
-    
-	switch (status) {
-        case 0: break;
-        case 1: return; // Reserved
-        case 2: return; // Stale data
-        case 3: return; // Fault
-    }
-
-	int16_t dp_raw, dT_raw;
-	dp_raw = (data[0] << 8) + data[1];
-	dp_raw = 0x3FFF & dp_raw;
-	dT_raw = (data[2] << 8) + data[3];
-	dT_raw = (0xFFE0 & dT_raw) >> 5;
-
-	const float P_min = -1.0f;
-	const float P_max = 1.0f;
-	const float PSI_to_Pa = 6894.757f;
-	/*
-	  this equation is an inversion of the equation in the
-	  pressure transfer function figure on page 4 of the datasheet
-
-	  We negate the result so that positive differential pressures
-	  are generated when the bottom port is used as the static
-	  port on the pitot and top port is used as the dynamic port
-	 */
-	float diff_press_PSI = -((dp_raw - 0.1f*16383) * (P_max-P_min)/(0.8f*16383) + P_min);
-
-	_pressure = diff_press_PSI * PSI_to_Pa;
-	_temperature = ((200.0f * dT_raw) / 2047) - 50;
-    #elif SENSOR_TYPE == HSCDRRN001ND2A5
-    if (hal.i2c->read(I2C_ADDRESS_HSCDRRN001ND2A5, 4, data) != 0) {
-        return;
-    }
-    
-	uint8_t status = (data[0] & 0xC0) >> 6;
-    
-	switch (status) {
-        case 0: break;
-        case 1: return; // Programming mode
-        case 2: return; // Stale data
-        case 3: return; // Fault
-    }
-
-	int16_t dp_raw, dT_raw;
-	dp_raw = (data[0] << 8) + data[1];
-	dp_raw = 0x3FFF & dp_raw;
-	dT_raw = (data[2] << 8) + data[3];
-	dT_raw = (0xFFE0 & dT_raw) >> 5;
-
-	const float P_min = -1.0f;
-	const float P_max = 1.0f;
-	const float InAq_to_Pa = 248.84f;
-	
-    // Taken from Honeywell Technical Note 008201-3-EN
-    // https://sensing.honeywell.com/i2c%20comms%20digital%20output%20pressure%20sensors_tn_008201-3-en_final_30may12.pdf
-	float diff_press_PSI = -(dp_raw - 1638.0f)*(P_max - P_min)/(14745.0f-1638.0f)
-
-	_pressure = diff_press_PSI * InAq_to_Pa;
-	_temperature = ((200.0f * dT_raw) / 2047) - 50;
-    #endif
     _last_sample_time_ms = hal.scheduler->millis();
 }
 

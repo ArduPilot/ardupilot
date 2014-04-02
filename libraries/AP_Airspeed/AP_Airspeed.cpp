@@ -98,6 +98,14 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] PROGMEM = {
     // @Description: This parameter allows you to control whether the order in which the tubes are attached to your pitot tube matters. If you set this to 0 then the top connector on the sensor needs to be the dynamic pressure. If set to 1 then the bottom connector needs to be the dynamic pressure. If set to 2 (the default) then the airspeed driver will accept either order. The reason you may wish to specify the order is it will allow your airspeed sensor to detect if the aircraft it receiving excessive pressure on the static port, which would otherwise be seen as a positive airspeed.
     // @User: Advanced
     AP_GROUPINFO("TUBE_ORDER",  6, AP_Airspeed, _tube_order, 2),
+    
+    
+    // @Param: SENSOR_TYPE
+    // @DisplayName: Control I2C sensor type
+    // @Description: This parameter selects what type of I2C pressure sensor is in use. 0 selects the MS4525, the standard sensor for the PX4/PixHawk (1PSI full range). 1 selects the Honeywell HSCDRRN001ND2A5 sensor suitable only for very slow vehicles (1" H2O full range, ~0.036 PSI).
+    // @User: Advanced
+    AP_GROUPINFO("I2C_SENSOR", 7, AP_Airspeed, _sensor_type, 0),
+    
 
     AP_GROUPEND
 };
