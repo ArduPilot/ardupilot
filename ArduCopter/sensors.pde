@@ -131,6 +131,77 @@ static void update_optflow(void)
 }
 #endif  // OPTFLOW == ENABLED
 
+/* Voltage scaling of PIDs
+ * How it works:
+ * - Data from eCalc suggests that thrust is roughly linear in voltage
+ * - We use the voltage from the monitoring pin, before it is multiplied by BATT_VOLT_MULT.
+ *      This makes the scaling robust to parameter changes by users.
+ * - We store the maximum voltage that we have seen since startup, and use the voltage
+ *      relative to this value for scaling.
+ * - We use the following 3 constants to configure the scaler range:
+ *      - VSCALE_REFERENCE_VOLTAGE is set to the voltage we expect the battery to droop to
+ *           under load. I've set this to 3.7, as 3.7 is the nominal voltage of a LIPO.
+ *           This corresponds the the voltage at which the scaler is 1.0. If set equal
+ *           to VSCALE_MAX_VOLTAGE, the scaler will start at 1.0 and go up from there.
+ *      - VSCALE_MAX_VOLTAGE is set to the maximum no-load voltage of the battery
+ *           This ratio of this value and VSCALE_REFERENCE_VOLTAGE is used to determine the
+ *           minimum value of the scaler - the value that it will have when the copter is
+ *           about to start flying
+ *      - VSCALE_MIN_VOLTAGE is set to the typical "empty" voltage of the battery. This
+ *           value is used to constrain the maximum value of the scaler.
+ * - NOTE: a low-pass filter is used before saving the maximum voltage. It is not the
+ * intention of the author to use this in the output. The PIDs do not care about noise
+ * in the scaler. However, if we were to use this to scale THR_MID, we would want to
+ * store a separate, filtered scaler for that purpose only.
+ */
+#define VSCALE_REFERENCE_VOLTAGE 3.7f
+#define VSCALE_MAX_VOLTAGE 4.2f
+#define VSCALE_MIN_VOLTAGE 3.0f
+
+#define VSCALE_SCALER_MAX VSCALE_REFERENCE_VOLTAGE/VSCALE_MIN_VOLTAGE
+#define VSCALE_SCALER_MIN VSCALE_REFERENCE_VOLTAGE/VSCALE_MAX_VOLTAGE
+static void update_pid_scaling(void)
+{
+    float scaler = 1.0f;
+    static uint32_t tlast = 0.0f;
+    static float voltage_pin_lpf = 0.0f;
+    static float voltage_pin_lpf_max = 0.0f;
+
+    uint8_t monitoring = battery.monitoring();
+
+    // leave scaler at 1.0f if we are not monitoring voltage
+    if(monitoring == AP_BATT_MONITOR_VOLTAGE_AND_CURRENT || monitoring == AP_BATT_MONITOR_VOLTAGE_ONLY) {
+        // Get dt for filter
+        uint32_t tnow = hal.scheduler->micros();
+        float dt = (tnow - tlast) * 1.0E-6f;
+        tlast = tnow;
+
+        // Get pin voltage from battMonitor:
+        float voltage_pin = battery.unscaled_pin_voltage();
+
+        // Find and store maximum voltage since startup, reject noise.
+        if(tlast != 0 && dt < 2.0f) {
+            voltage_pin_lpf += (voltage_pin - voltage_pin_lpf) * dt * .2;
+            voltage_pin_lpf_max = max(voltage_pin_lpf, voltage_pin_lpf_max);
+        }
+
+        // equal to VSCALE_SCALER_MIN when vmax/v = 1.0f, increasing for smaller values of v
+        scaler = VSCALE_SCALER_MIN * voltage_pin_lpf_max / voltage_pin;
+
+        // Sanity check:
+        // isinf, isnan checks for zero values of voltage_pin_lpf_max and voltage_pin
+        // scaler < VSCALE_SCALER_MIN constrains scaler
+        // scaler > 2.0f*VSCALE_SCALER_MAX prevents problems if the wire on the voltage sensor is loose
+        if(isinf(scaler) || isnan(scaler) || scaler < VSCALE_SCALER_MIN || scaler > 2.0f*VSCALE_SCALER_MAX) {
+            scaler = VSCALE_SCALER_MIN;
+        } else if(scaler > VSCALE_SCALER_MAX) {
+            scaler = VSCALE_SCALER_MAX;
+        }
+    }
+    attitude_control.set_pid_scaler(scaler);
+    pos_control.set_pid_scaler(scaler);
+}
+
 // read_battery - check battery voltage and current and invoke failsafe if necessary
 // called at 10hz
 static void read_battery(void)
@@ -152,6 +223,7 @@ static void read_battery(void)
     if (should_log(MASK_LOG_CURRENT)) {
         Log_Write_Current();
     }
+    update_pid_scaling();
 }
 
 // read the receiver RSSI as an 8 bit number for MAVLink
