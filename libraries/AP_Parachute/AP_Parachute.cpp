@@ -44,7 +44,7 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] PROGMEM = {
 
     // @Param: ALT_MIN
     // @DisplayName: Parachute min altitude in cm above home
-    // @Description: Parachute min altitude above home.  When vehicle is below this alt parachute cannot be released
+    // @Description: Parachute min altitude above home.  Parachute will not be released below this altitude.  0 to disable alt check.
     // @Range: 0 10000
     // @Units: Centimeters
     // @Increment: 100

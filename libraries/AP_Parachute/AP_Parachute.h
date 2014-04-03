@@ -51,6 +51,7 @@ public:
     void update();
 
     /// alt_min_cm - returns the min altitude above home the vehicle should have before parachute is released
+    ///   0 = altitude check disabled
     int16_t alt_min_cm() const { return _alt_min_cm; }
 
     static const struct AP_Param::GroupInfo        var_info[];
