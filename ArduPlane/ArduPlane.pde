@@ -27,11 +27,11 @@
 // Header includes
 ////////////////////////////////////////////////////////////////////////////////
 
-#include <AP_HAL.h>
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 
+#include <AP_HAL.h>
 #include <AP_Common.h>
 #include <AP_Progmem.h>
 #include <AP_Menu.h>
