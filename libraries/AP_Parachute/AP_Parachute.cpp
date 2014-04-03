@@ -4,6 +4,7 @@
 #include <AP_Relay.h>
 #include <AP_Math.h>
 #include <RC_Channel.h>
+#include <AP_Notify.h>
 #include <AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
@@ -72,6 +73,9 @@ void AP_Parachute::release()
 
 	// leave a message that it should be active for this many loops (assumes 50hz loops)
     _release_time = hal.scheduler->millis();
+
+    // update AP_Notify
+    AP_Notify::flags.parachute_release = 1;
 }
 
 /// update - shuts off the trigger should be called at about 10hz
@@ -90,10 +94,13 @@ void AP_Parachute::update()
             RC_Channel_aux::set_radio(RC_Channel_aux::k_parachute_release, _servo_off_pwm);
         }else if (_release_type <= AP_PARACHUTE_TRIGGER_TYPE_RELAY_3) {
             // set relay back to zero volts
-            _relay.on(_release_type);
+            _relay.off(_release_type);
         }
 
         // reset release_time
         _release_time = 0;
+
+        // update AP_Notify
+        AP_Notify::flags.parachute_release = 0;
     }
 }
