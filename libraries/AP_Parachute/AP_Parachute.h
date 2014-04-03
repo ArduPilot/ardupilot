@@ -16,6 +16,7 @@
 #define AP_PARACHUTE_TRIGGER_TYPE_RELAY_3       3
 #define AP_PARACHUTE_TRIGGER_TYPE_SERVO         10
 
+#define AP_PARACHUTE_RELEASE_DELAY_MS           500    // delay in milliseconds between call to release() and when servo or relay actually moves.  Allows for warning to user
 #define AP_PARACHUTE_RELEASE_DURATION_MS       1000    // when parachute is released, servo or relay stay at their released position/value for 1000ms (1second)
 
 #define AP_PARACHUTE_SERVO_ON_PWM_DEFAULT      1300    // default PWM value to move servo to when shutter is activated
@@ -39,7 +40,7 @@ public:
     }
 
     /// enabled - enable or disable parachute release
-    void enabled(bool on_off) { _enabled = on_off; }
+    void enabled(bool on_off);
 
     /// enabled - returns true if parachute release is enabled
     bool enabled() const { return _enabled; }
@@ -66,7 +67,8 @@ private:
 
     // internal variables
     AP_Relay&   _relay;         // pointer to relay object from the base class Relay. The subclasses could be AP_Relay_APM1 or AP_Relay_APM2
-    uint32_t    _release_time;  // count of number of cycles servo or relay has been at on position
+    uint32_t    _release_time;  // system time that parachute is ordered to be released (actual release will happen 0.5 seconds later)
+    bool        _released;      // true if the parachute has been released
 };
 
 #endif /* AP_PARACHUTE_H */

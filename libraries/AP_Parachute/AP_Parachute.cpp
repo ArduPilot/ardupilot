@@ -55,6 +55,16 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
+/// enabled - enable or disable parachute release
+void AP_Parachute::enabled(bool on_off)
+{
+    _enabled = on_off;
+
+    // if disabled clear release_time
+    if (_enabled <= 0) {
+        _release_time = 0;
+    }
+}
 
 /// release - release parachute
 void AP_Parachute::release()
@@ -64,14 +74,7 @@ void AP_Parachute::release()
         return;
     }
 
-    // trigger the servo or relay
-    if (_release_type == AP_PARACHUTE_TRIGGER_TYPE_SERVO) {
-	    RC_Channel_aux::set_radio(RC_Channel_aux::k_parachute_release, _servo_on_pwm);
-    }else if (_release_type <= AP_PARACHUTE_TRIGGER_TYPE_RELAY_3) {
-        _relay.on(_release_type);
-    }
-
-	// leave a message that it should be active for this many loops (assumes 50hz loops)
+    // set release time to current system time
     _release_time = hal.scheduler->millis();
 
     // update AP_Notify
@@ -81,14 +84,27 @@ void AP_Parachute::release()
 /// update - shuts off the trigger should be called at about 10hz
 void AP_Parachute::update()
 {
-    // exit immediately if not enabled or parachute not released
+    // exit immediately if not enabled or parachute not to be released
     if (_enabled <= 0 || _release_time == 0) {
         return;
     }
 
-    // check if release mechanism has been triggered more than 1 second ago
-    if (hal.scheduler->millis() - _release_time > AP_PARACHUTE_RELEASE_DURATION_MS) {
-        // trigger the servo or relay
+    // calc time since release
+    uint32_t time_diff = hal.scheduler->millis() - _release_time;
+
+    // check if we should release parachute
+    if (!_released) {
+        if (time_diff >= AP_PARACHUTE_RELEASE_DELAY_MS) {
+            if (_release_type == AP_PARACHUTE_TRIGGER_TYPE_SERVO) {
+                // move servo
+                RC_Channel_aux::set_radio(RC_Channel_aux::k_parachute_release, _servo_on_pwm);
+            }else if (_release_type <= AP_PARACHUTE_TRIGGER_TYPE_RELAY_3) {
+                // set relay
+                _relay.on(_release_type);
+            }
+            _released = true;
+        }
+    }else if (time_diff >= AP_PARACHUTE_RELEASE_DELAY_MS + AP_PARACHUTE_RELEASE_DURATION_MS) {
         if (_release_type == AP_PARACHUTE_TRIGGER_TYPE_SERVO) {
             // move servo back to off position
             RC_Channel_aux::set_radio(RC_Channel_aux::k_parachute_release, _servo_off_pwm);
@@ -96,10 +112,9 @@ void AP_Parachute::update()
             // set relay back to zero volts
             _relay.off(_release_type);
         }
-
-        // reset release_time
+        // reset released flag and release_time
+        _released = false;
         _release_time = 0;
-
         // update AP_Notify
         AP_Notify::flags.parachute_release = 0;
     }
