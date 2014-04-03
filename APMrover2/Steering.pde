@@ -260,27 +260,7 @@ static void set_servos(void)
 	// ----------------------------------------
     channel_steer->output(); 
     channel_throttle->output();
-
-	// Route configurable aux. functions to their respective servos
-	g.rc_2.output_ch(CH_2);
-	g.rc_4.output_ch(CH_4);
-	g.rc_5.output_ch(CH_5);
-	g.rc_6.output_ch(CH_6);
-	g.rc_7.output_ch(CH_7);
-	g.rc_8.output_ch(CH_8);
- #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    g.rc_9.output_ch(CH_9);
- #endif
- #if CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    g.rc_10.output_ch(CH_10);
-    g.rc_11.output_ch(CH_11);
- #endif
- #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    g.rc_12.output_ch(CH_12);
-    g.rc_13.output_ch(CH_13);
-    g.rc_14.output_ch(CH_14);
- #endif
-
+    RC_Channel_aux::output_ch_all();
 #endif
 }
 
