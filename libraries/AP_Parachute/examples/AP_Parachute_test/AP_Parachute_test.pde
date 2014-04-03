@@ -12,6 +12,7 @@
 #include <RC_Channel.h>
 #include <AP_Relay.h>
 #include <AP_Parachute.h>
+#include <AP_Notify.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
