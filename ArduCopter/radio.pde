@@ -119,6 +119,9 @@ static void read_radio()
         if (!failsafe.rc_override_active) {
             ap.rc_receiver_present = true;
         }
+
+        // update output on any aux channels, for manual passthru
+        RC_Channel_aux::output_ch_all();
     }else{
         uint32_t elapsed = millis() - last_update;
         // turn on throttle failsafe if no update from ppm encoder for 2 seconds
