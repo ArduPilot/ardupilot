@@ -170,7 +170,7 @@ static void update_pid_scaling(void)
     uint8_t monitoring = battery.monitoring();
 
     // leave scaler at 1.0f if we are not monitoring voltage
-    if(monitoring == AP_BATT_MONITOR_VOLTAGE_AND_CURRENT || monitoring == AP_BATT_MONITOR_VOLTAGE_ONLY) {
+    if(g.pidvoltscale && (monitoring == AP_BATT_MONITOR_VOLTAGE_AND_CURRENT || monitoring == AP_BATT_MONITOR_VOLTAGE_ONLY)) {
         // Get dt for filter
         uint32_t tnow = hal.scheduler->micros();
         float dt = (tnow - tlast) * 1.0E-6f;

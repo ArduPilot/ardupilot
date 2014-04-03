@@ -417,6 +417,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     ASCALAR(angle_max, "ANGLE_MAX",                 DEFAULT_ANGLE_MAX),
 
+    // @Param: ATC_PIDVOLTSCALE
+    // @DisplayName: PID scaling enable/disable
+    // @Description: Enabling this will scale PIDs throughout the flight, based on the ratio of the
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    GSCALAR(pidvoltscale, "ATC_PIDVOLTSCALE",       ENABLED),
+
     // @Param: RC_FEEL_RP
     // @DisplayName: RC Feel Roll/Pitch
     // @Description: RC feel for roll/pitch which controls vehicle response to user input with 0 being extremely soft and 100 being crisp
