@@ -103,9 +103,14 @@ void parachute_check()
         return;
     }
 
-    // ensure we are above the minimum altitude above home
-    if (baro_alt < parachute.alt_min_cm()) {
+    // ensure we are flying
+    if (ap.land_complete) {
         control_loss_count = 0;
+        return;
+    }
+
+    // ensure the first control_loss event is from above the min altitude
+    if (control_loss_count == 0 && parachute.alt_min_cm() != 0 && baro_alt < parachute.alt_min_cm()) {
         return;
     }
 
@@ -122,7 +127,7 @@ void parachute_check()
             control_loss_count = PARACHUTE_CHECK_ITERATIONS_MAX;
         }
 
-        // record baro if we have just started losing control
+        // record baro alt if we have just started losing control
         if (control_loss_count == 1) {
             baro_alt_start = baro_alt;
 
@@ -137,6 +142,8 @@ void parachute_check()
         }else if (control_loss_count >= PARACHUTE_CHECK_ITERATIONS_MAX) {
             // reset control loss counter
             control_loss_count = 0;
+            // log an error in the dataflash
+            Log_Write_Error(ERROR_SUBSYSTEM_CRASH_CHECK, ERROR_CODE_CRASH_CHECK_LOSS_OF_CONTROL);
             // release parachute
             parachute_release();
         }
@@ -151,11 +158,9 @@ static void parachute_release()
 {
     // To-Do: add warning tone and short delay before triggering release
 
-    // log an error in the dataflash
-    Log_Write_Error(ERROR_SUBSYSTEM_CRASH_CHECK, ERROR_CODE_CRASH_CHECK_CRASH);
-
-    // send message to gcs
+    // send message to gcs and dataflash
     gcs_send_text_P(SEVERITY_HIGH,PSTR("Parachute: Released!"));
+    Log_Write_Event(DATA_PARACHUTE_RELEASED);
 
     // disarm motors
     init_disarm_motors();
@@ -169,13 +174,16 @@ static void parachute_release()
 static void parachute_manual_release()
 {
     // do not release if we are landed or below the minimum altitude above home
-    if (ap.land_complete || baro_alt < parachute.alt_min_cm()) {
+    if (ap.land_complete || (parachute.alt_min_cm() != 0 && baro_alt < parachute.alt_min_cm())) {
         // warn user of reason for failure
-        gcs_send_text_P(SEVERITY_HIGH,PSTR("Parachute: Not Released"));
+        gcs_send_text_P(SEVERITY_HIGH,PSTR("Parachute: Too Low"));
+        // log an error in the dataflash
+        Log_Write_Error(ERROR_SUBSYSTEM_PARACHUTE, ERROR_CODE_PARACHUTE_TOO_LOW);
         return;
     }
 
     // if we get this far release parachute
     parachute_release();
 }
+
 #endif // PARACHUTE == ENABLED

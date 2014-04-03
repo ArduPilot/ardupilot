@@ -282,6 +282,9 @@ enum FlipState {
 #define DATA_EPM_ON                     46
 #define DATA_EPM_OFF                    47
 #define DATA_EPM_NEUTRAL                48
+#define DATA_PARACHUTE_DISABLED         49
+#define DATA_PARACHUTE_ENABLED          50
+#define DATA_PARACHUTE_RELEASED         51
 
 // Centi-degrees to radians
 #define DEGX100 5729.57795f
@@ -327,6 +330,7 @@ enum FlipState {
 #define ERROR_SUBSYSTEM_CRASH_CHECK         12
 #define ERROR_SUBSYSTEM_FLIP                13
 #define ERROR_SUBSYSTEM_AUTOTUNE            14
+#define ERROR_SUBSYSTEM_PARACHUTE           15
 // general error codes
 #define ERROR_CODE_ERROR_RESOLVED           0
 #define ERROR_CODE_FAILED_TO_INITIALISE     1
@@ -343,10 +347,13 @@ enum FlipState {
 #define ERROR_CODE_MAIN_INS_DELAY           1
 // subsystem specific error codes -- crash checker
 #define ERROR_CODE_CRASH_CHECK_CRASH        1
+#define ERROR_CODE_CRASH_CHECK_LOSS_OF_CONTROL 2
 // subsystem specific error codes -- flip
 #define ERROR_CODE_FLIP_ABANDONED           2
 // subsystem specific error codes -- autotune
 #define ERROR_CODE_AUTOTUNE_BAD_GAINS       2
+// parachute failed to deploy because of low altitude
+#define ERROR_CODE_PARACHUTE_TOO_LOW        2
 
 // Arming Check Enable/Disable bits
 #define ARMING_CHECK_NONE                   0x00

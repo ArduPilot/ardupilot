@@ -387,9 +387,11 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
         switch (ch_flag) {
             case AUX_SWITCH_LOW:
                 parachute.enabled(false);
+                Log_Write_Event(DATA_PARACHUTE_DISABLED);
                 break;
             case AUX_SWITCH_MIDDLE:
                 parachute.enabled(true);
+                Log_Write_Event(DATA_PARACHUTE_ENABLED);
                 break;
             case AUX_SWITCH_HIGH:
                 parachute.enabled(true);
