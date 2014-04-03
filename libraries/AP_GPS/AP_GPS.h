@@ -113,13 +113,10 @@ public:
 
     // Accessor functions
 
-    // return number of active GPS sensors
+    // return number of active GPS sensors. Note that if the first GPS
+    // is not present but the 2nd is then we return 2
     uint8_t num_sensors(void) const {
-        uint8_t count = 0;
-        for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
-            if (drivers[i] != NULL) count++;
-        }
-        return count;
+        return num_instances;
     }
 
     /// Query GPS status
@@ -127,7 +124,7 @@ public:
         return state[instance].status;
     }
     GPS_Status status(void) const {
-        return status(primary_instance());
+        return status(primary_instance);
     }
 
     // location of last fix
@@ -135,7 +132,7 @@ public:
         return state[instance].location;
     }
     const Location &location() const {
-        return location(primary_instance());
+        return location(primary_instance);
     }
 
     // 3D velocity in NED format
@@ -143,7 +140,7 @@ public:
         return state[instance].velocity;
     }
     const Vector3f &velocity() const {
-        return velocity(primary_instance());
+        return velocity(primary_instance);
     }
 
     // ground speed in m/s
@@ -151,7 +148,7 @@ public:
         return state[instance].ground_speed;
     }
     float ground_speed() const {
-        return ground_speed(primary_instance());
+        return ground_speed(primary_instance);
     }
 
     // ground speed in cm/s
@@ -164,7 +161,7 @@ public:
         return state[instance].ground_course_cd;
     }
     int32_t ground_course_cd() const {
-        return ground_course_cd(primary_instance());
+        return ground_course_cd(primary_instance);
     }
 
     // number of locked satellites
@@ -172,7 +169,7 @@ public:
         return state[instance].num_sats;
     }
     uint8_t num_sats() const {
-        return num_sats(primary_instance());
+        return num_sats(primary_instance);
     }
 
     // GPS time of week in milliseconds
@@ -180,7 +177,7 @@ public:
         return state[instance].time_week_ms;
     }
     uint32_t time_week_ms() const {
-        return time_week_ms(primary_instance());
+        return time_week_ms(primary_instance);
     }
 
     // GPS week
@@ -188,7 +185,7 @@ public:
         return state[instance].time_week;
     }
     uint16_t time_week() const {
-        return time_week(primary_instance());
+        return time_week(primary_instance);
     }
 
     // horizontal dilution of precision
@@ -196,7 +193,7 @@ public:
         return state[instance].hdop;
     }
     uint16_t get_hdop() const {
-        return get_hdop(primary_instance());
+        return get_hdop(primary_instance);
     }
 
     // the time we got our last fix in system milliseconds. This is
@@ -205,7 +202,7 @@ public:
         return timing[instance].last_fix_time_ms;
     }
     uint32_t last_fix_time_ms(void) const {
-        return last_fix_time_ms(primary_instance());
+        return last_fix_time_ms(primary_instance);
     }
 
 	// the time we last processed a message in milliseconds. This is
@@ -214,13 +211,13 @@ public:
         return timing[instance].last_message_time_ms;        
     }
     uint32_t last_message_time_ms(void) const {
-        return last_message_time_ms(primary_instance());
+        return last_message_time_ms(primary_instance);
     }
 
     // return last fix time since the 1/1/1970 in microseconds
     uint64_t time_epoch_usec(uint8_t instance);
     uint64_t time_epoch_usec(void) { 
-        return time_epoch_usec(primary_instance()); 
+        return time_epoch_usec(primary_instance); 
     }
 
 	// return true if the GPS supports vertical velocity values
@@ -228,7 +225,7 @@ public:
         return state[instance].have_vertical_velocity; 
     }
     bool have_vertical_velocity(void) const { 
-        return have_vertical_velocity(primary_instance());
+        return have_vertical_velocity(primary_instance);
     }
 
     // the expected lag (in seconds) in the position and velocity readings from the gps
@@ -264,8 +261,11 @@ private:
     GPS_State state[GPS_MAX_INSTANCES];
     AP_GPS_Backend *drivers[GPS_MAX_INSTANCES];
 
-    /// return primary GPS instance
-    uint8_t primary_instance(void) const { return 0; }
+    /// primary GPS instance
+    uint8_t primary_instance:2;
+
+    /// number of GPS instances present
+    uint8_t num_instances:2;
 
     // state of auto-detection process, per instance
     struct detect_state {

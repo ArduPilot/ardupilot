@@ -248,8 +248,32 @@ AP_GPS::update(void)
         update_instance(i);
     }
 
-    // update notify with gps status
+    // update notify with gps status. We always base this on the first GPS
     AP_Notify::flags.gps_status = state[0].status;
+
+    // work out which GPS is the primary, and how many sensors we have
+    for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+        if (state[i].status != NO_GPS) {
+            num_instances = i+1;
+        }
+        if (i == primary_instance) {
+            continue;
+        }
+        if (state[i].status > state[primary_instance].status) {
+            // we have a higher status lock, change GPS
+            primary_instance = i;
+            continue;
+        }
+        if (state[i].status == state[primary_instance].status &&
+            state[i].num_sats >= state[primary_instance].num_sats + 2) {
+            // this GPS has at least 2 more satellites than the
+            // current primary, switch primary. Once we switch we will
+            // then tend to stick to the new GPS as primary. We don't
+            // want to switch too often as it will look like a
+            // position shift to the controllers.
+            primary_instance = i;
+        }
+    }
 }
 
 /*
