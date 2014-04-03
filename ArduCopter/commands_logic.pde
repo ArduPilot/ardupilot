@@ -15,6 +15,9 @@ static void do_yaw(const AP_Mission::Mission_Command& cmd);
 static void do_change_speed(const AP_Mission::Mission_Command& cmd);
 static void do_set_home(const AP_Mission::Mission_Command& cmd);
 static void do_roi(const AP_Mission::Mission_Command& cmd);
+#if PARACHUTE == ENABLED
+static void do_parachute(const AP_Mission::Mission_Command& cmd);
+#endif
 static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
 static bool verify_spline_wp(const AP_Mission::Mission_Command& cmd);
 static void auto_spline_start(const Vector3f& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Vector3f& next_spline_destination);
@@ -143,6 +146,12 @@ static bool start_command(const AP_Mission::Mission_Command& cmd)
         break;
 #endif
 
+#if PARACHUTE == ENABLED
+    case MAV_CMD_DO_PARACHUTE:                          // Mission command to configure or release parachute
+        do_parachute(cmd);
+        break;
+#endif
+
     default:
         // do nothing with unrecognized MAVLink messages
         break;
@@ -216,6 +225,13 @@ static bool verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_CONDITION_YAW:
         return verify_yaw();
         break;
+
+#if PARACHUTE == ENABLED
+    case MAV_CMD_DO_PARACHUTE:
+        // assume parachute was released successfully
+        return true;
+        break;
+#endif
 
     default:
         // return true if we do not recognise the command so that we move on to the next command
@@ -436,6 +452,29 @@ static void do_spline_wp(const AP_Mission::Mission_Command& cmd)
     // set spline navigation target
     auto_spline_start(local_pos, stopped_at_start, seg_end_type, next_destination);
 }
+
+#if PARACHUTE == ENABLED
+// do_parachute - configure or release parachute
+static void do_parachute(const AP_Mission::Mission_Command& cmd)
+{
+    switch (cmd.p1) {
+        case PARACHUTE_DISABLE:
+            parachute.enabled(false);
+            Log_Write_Event(DATA_PARACHUTE_DISABLED);
+            break;
+        case PARACHUTE_ENABLE:
+            parachute.enabled(true);
+            Log_Write_Event(DATA_PARACHUTE_ENABLED);
+            break;
+        case PARACHUTE_RELEASE:
+            parachute_release();
+            break;
+        default:
+            // do nothing
+            break;
+    }
+}
+#endif
 
 /********************************************************************************/
 //	Verify Nav (Must) commands
