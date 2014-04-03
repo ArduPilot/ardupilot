@@ -24,7 +24,7 @@ uint32_t RC_Channel_aux::_function_mask;
 
 /// map a function to a servo channel and output it
 void
-RC_Channel_aux::output_ch(unsigned char ch_nr)
+RC_Channel_aux::output_ch(void)
 {
     // take care of two corner cases
     switch(function)
@@ -35,7 +35,20 @@ RC_Channel_aux::output_ch(unsigned char ch_nr)
         radio_out = radio_in;
         break;
     }
-    hal.rcout->write(ch_nr, radio_out);
+    hal.rcout->write(_ch_out, radio_out);
+}
+
+/*
+  call output_ch() on all auxillary channels
+ */
+void
+RC_Channel_aux::output_ch_all(void)
+{
+    for (uint8_t i = 0; i < RC_AUX_MAX_CHANNELS; i++) {
+        if (_aux_channels[i]) {
+            _aux_channels[i]->output_ch();
+        }
+    }    
 }
 
 /*

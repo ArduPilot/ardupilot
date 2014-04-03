@@ -160,6 +160,19 @@ RC_Channel::set_pwm(int16_t pwm)
     }
 }
 
+/*
+  call read() and set_pwm() on all channels
+ */
+void
+RC_Channel::set_pwm_all(void)
+{
+    for (uint8_t i=0; i<RC_MAX_CHANNELS; i++) {
+        if (rc_ch[i] != NULL) {
+            rc_ch[i]->set_pwm(rc_ch[i]->read());
+        }
+    }
+}
+
 // read input from APM_RC - create a control_in value, but use a 
 // zero value for the dead zone. When done this way the control_in
 // value can be used as servo_out to give the same output as input
@@ -386,6 +399,15 @@ void RC_Channel::output() const
 void RC_Channel::output_trim() const
 {
     hal.rcout->write(_ch_out, radio_trim);
+}
+
+void RC_Channel::output_trim_all()
+{
+    for (uint8_t i=0; i<RC_MAX_CHANNELS; i++) {
+        if (rc_ch[i] != NULL) {
+            rc_ch[i]->output_trim();
+        }
+    }
 }
 
 void

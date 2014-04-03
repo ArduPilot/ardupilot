@@ -71,7 +71,11 @@ public:
 
     AP_Int8         function;           ///< see Aux_servo_function_t enum
 
-    void            output_ch(unsigned char ch_nr);
+    // output one auxillary channel
+    void            output_ch(void);
+
+    // output all auxillary channels
+    static void     output_ch_all(void);
 
 	// set radio_out for a function channel
 	static void set_radio(Aux_servo_function_t function, int16_t value);
