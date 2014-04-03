@@ -87,7 +87,7 @@ public:
     void set_monitoring(uint8_t mon) { _monitoring.set(mon); }
 
     /// Battery voltage.  Initialized to 99 to prevent low voltage events at startup
-    float voltage() const { return _voltage; }
+    float voltage() const { return _voltage_pin * _volt_multiplier; }
 
     /// Battery pack instantaneous currrent draw in amperes
     float current_amps() const { return _current_amps; }
@@ -100,6 +100,9 @@ public:
 
     /// exhausted - returns true if the voltage remains below the low_voltage for 10 seconds or remaining capacity falls below min_capacity
     bool exhausted(float low_voltage, float min_capacity_mah);
+    
+    // get_pid_scaling - returns a value between 3.0/3.7 and 4.2/3.7 that can be safely used to scale copter PID gains
+    float get_pid_scaling();
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -115,11 +118,13 @@ protected:
     AP_Int32    _pack_capacity;             /// battery pack capacity less reserve in mAh
 
     /// internal variables
-    float       _voltage;                   /// last read voltage
+    float       _voltage_pin;               /// last read voltage from _volt_pin
     float       _current_amps;              /// last read current drawn
     float       _current_total_mah;         /// total current drawn since startup (Amp-hours)
     uint32_t    _last_time_micros;          /// time when current was last read
     uint32_t    _low_voltage_start_ms;      /// time when voltage dropped below the minimum
+    float       _voltage_pin_lpf;           /// used in lowpass RC filter
+    float       _voltage_pin_lpf_max;       /// max voltage from volt measuring pin
 
     AP_HAL::AnalogSource *_volt_pin_analog_source;
     AP_HAL::AnalogSource *_curr_pin_analog_source;

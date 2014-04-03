@@ -61,10 +61,12 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] PROGMEM = {
 // their values.
 //
 AP_BattMonitor::AP_BattMonitor(void) :
-    _voltage(0),
+    _voltage_pin(0),
     _current_amps(0),
     _current_total_mah(0),
-    _last_time_micros(0)
+    _last_time_micros(0),
+    _voltage_pin_lpf(0),
+    _voltage_pin_lpf_max(0)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -84,24 +86,28 @@ AP_BattMonitor::read()
     if (_monitoring == AP_BATT_MONITOR_DISABLED) {
         return;
     }
-
+    uint32_t tnow = hal.scheduler->micros();
+    float dt = (tnow - _last_time_micros) * 1.0E-6f;
     // read voltage
     if (_monitoring == AP_BATT_MONITOR_VOLTAGE_ONLY || _monitoring == AP_BATT_MONITOR_VOLTAGE_AND_CURRENT) {
         // this copes with changing the pin at runtime
         _volt_pin_analog_source->set_pin(_volt_pin);
-        _voltage = _volt_pin_analog_source->voltage_average() * _volt_multiplier;
+        
+        _voltage_pin = _volt_pin_analog_source->voltage_average();
+        if (_last_time_micros != 0 && dt < 2.0f) {
+            _voltage_pin_lpf += (_voltage_pin - _voltage_pin_lpf) * dt * 0.2;
+        }
+        
+        _voltage_pin_lpf_max = max(_voltage_pin_lpf_max, _voltage_pin_lpf);
     }
 
     // read current
     if (_monitoring == AP_BATT_MONITOR_VOLTAGE_AND_CURRENT) {
-        uint32_t tnow = hal.scheduler->micros();
-        float dt = tnow - _last_time_micros;
         // this copes with changing the pin at runtime
         _curr_pin_analog_source->set_pin(_curr_pin);
         _current_amps = (_curr_pin_analog_source->voltage_average()-_curr_amp_offset)*_curr_amp_per_volt;
-        if (_last_time_micros != 0 && dt < 2000000.0f) {
-            // .0002778 is 1/3600 (conversion to hours)
-            _current_total_mah += _current_amps * dt * 0.0000002778f;
+        if (_last_time_micros != 0 && dt < 2.0f) {
+            _current_total_mah += _current_amps * dt * 1000.0f * 1.0f/3600.0f;
         }
         _last_time_micros = tnow;
     }
@@ -125,7 +131,7 @@ bool AP_BattMonitor::exhausted(float low_voltage, float min_capacity_mah)
     uint32_t tnow = hal.scheduler->millis();
 
     // check voltage
-    if ((_voltage != 0) && (low_voltage > 0) && (_voltage < low_voltage)) {
+    if ((voltage() != 0) && (low_voltage > 0) && (voltage() < low_voltage)) {
         // this is the first time our voltage has dropped below minimum so start timer
         if (_low_voltage_start_ms == 0) {
             _low_voltage_start_ms = tnow;
@@ -144,4 +150,13 @@ bool AP_BattMonitor::exhausted(float low_voltage, float min_capacity_mah)
 
     // if we've gotten this far battery is ok
     return false;
+}
+
+// get_pid_scaling - returns a value between 3.0/3.7 and 4.2/3.7 that can be safely used to scale copter PID gains
+float AP_BattMonitor::get_pid_scaling()
+{
+    if((_monitoring != AP_BATT_MONITOR_VOLTAGE_AND_CURRENT && _monitoring != AP_BATT_MONITOR_VOLTAGE_ONLY) || _voltage_pin_lpf_max == 0.0f) {
+        return 1.0f;
+    }
+    return 1.0f / constrain_float((4.2f/3.7f) * _voltage_pin / _voltage_pin_lpf_max, 3.0f/3.7f, 4.2f/3.7f);
 }

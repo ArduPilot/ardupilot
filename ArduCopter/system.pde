@@ -234,6 +234,7 @@ static void init_ardupilot()
 
     // initialise attitude and position controllers
     attitude_control.set_dt(MAIN_LOOP_SECONDS);
+    attitude_control.set_battMonitor(&battery);
     pos_control.set_dt(MAIN_LOOP_SECONDS);
 
     // init the optical flow sensor

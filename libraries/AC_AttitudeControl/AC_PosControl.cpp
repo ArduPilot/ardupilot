@@ -23,7 +23,7 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] PROGMEM = {
 AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
                              const AP_Motors& motors, AC_AttitudeControl& attitude_control,
                              AC_P& p_alt_pos, AC_P& p_alt_rate, AC_PID& pid_alt_accel,
-                             AC_P& p_pos_xy, AC_PID& pid_rate_lat, AC_PID& pid_rate_lon) :
+                             AC_P& p_pos_xy, AC_PID& pid_rate_lat, AC_PID& pid_rate_lon, AP_BattMonitor battery) :
     _ahrs(ahrs),
     _inav(inav),
     _motors(motors),
@@ -51,7 +51,8 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     _alt_max(0),
     _distance_to_target(0),
     _xy_step(0),
-    _dt_xy(0)
+    _dt_xy(0),
+    _battery(battery)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -307,6 +308,7 @@ void AC_PosControl::accel_to_throttle(float accel_target_z)
     uint32_t now = hal.scheduler->millis();
     float z_accel_meas;         // actual acceleration
     int32_t p,i,d;              // used to capture pid values for logging
+    float scaler = _battery.get_pid_scaling();
 
     // Calculate Earth Frame Z acceleration
     z_accel_meas = -(_ahrs.get_accel_ef().z + GRAVITY_MSS) * 100.0f;
@@ -323,7 +325,7 @@ void AC_PosControl::accel_to_throttle(float accel_target_z)
     _last_update_accel_ms = now;
 
     // separately calculate p, i, d values for logging
-    p = _pid_alt_accel.get_p(_accel_error.z);
+    p = _pid_alt_accel.get_p(_accel_error.z, scaler);
 
     // get i term
     i = _pid_alt_accel.get_integrator();
@@ -331,11 +333,11 @@ void AC_PosControl::accel_to_throttle(float accel_target_z)
     // update i term as long as we haven't breached the limits or the I term will certainly reduce
     // To-Do: should this be replaced with limits check from attitude_controller?
     if ((!_motors.limit.throttle_lower && !_motors.limit.throttle_upper) || (i>0&&_accel_error.z<0) || (i<0&&_accel_error.z>0)) {
-        i = _pid_alt_accel.get_i(_accel_error.z, _dt);
+        i = _pid_alt_accel.get_i(_accel_error.z, _dt, scaler);
     }
 
     // get d term
-    d = _pid_alt_accel.get_d(_accel_error.z, _dt);
+    d = _pid_alt_accel.get_d(_accel_error.z, _dt, scaler);
 
     // To-Do: pull min/max throttle from motors
     // To-Do: we had a contraint here but it's now removed, is this ok?  with the motors library handle it ok?
