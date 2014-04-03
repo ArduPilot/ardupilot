@@ -116,8 +116,14 @@ public:
     /// monitoring - returns whether we are monitoring voltage only or voltage and current
     void set_monitoring(uint8_t mon) { _monitoring.set(mon); }
 
-    /// Battery voltage.  Initialized to 0
-    float voltage() const { return _voltage; }
+    /// Battery voltage.  Initialized to 99 to prevent low voltage events at startup
+    float voltage() const { return _voltage_pin * _volt_multiplier; }
+
+    // Pin voltage
+    float unscaled_pin_voltage() const { return _voltage_pin; }
+
+    // Pin voltage
+    float unscaled_pin_voltage2() const { return _voltage_pin2; }
 
     /// 2nd Battery voltage, if available. return false otherwise
     bool voltage2(float &voltage) const;
@@ -152,8 +158,9 @@ protected:
     AP_Float    _volt2_multiplier;          /// voltage on volt2 pin multiplier
 
     /// internal variables
-    float       _voltage;                   /// last read voltage
-    float       _voltage2;                  /// last read voltage 2nd battery
+    float       _voltage_pin;                   /// last read voltage
+    float       _voltage_pin2;                  /// last read voltage 2nd battery
+
     float       _current_amps;              /// last read current drawn
     float       _current_total_mah;         /// total current drawn since startup (Amp-hours)
     uint32_t    _last_time_micros;          /// time when current was last read
