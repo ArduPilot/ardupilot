@@ -62,6 +62,8 @@ public:
     void set_dt(float delta_sec);
     float get_dt() const { return _dt; }
 
+    void set_pid_scaler(float pid_scaler) { _pid_scaler = pid_scaler; }
+
     ///
     /// z position controller
     ///
@@ -351,6 +353,8 @@ private:
     float       _leash;                 // horizontal leash length in cm.  target will never be further than this distance from the vehicle
     float       _leash_down_z;          // vertical leash down in cm.  target will never be further than this distance below the vehicle
     float       _leash_up_z;            // vertical leash up in cm.  target will never be further than this distance above the vehicle
+
+    float       _pid_scaler;
 
     // output from controller
     float       _roll_target;           // desired roll angle in centi-degrees calculated by position controller
