@@ -378,7 +378,7 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 
     case AUX_SWITCH_PARACHUTE_RELEASE:
         if (ch_flag == AUX_SWITCH_HIGH) {
-            parachute_release();
+            parachute_manual_release();
         }
         break;
 
@@ -393,7 +393,7 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 break;
             case AUX_SWITCH_HIGH:
                 parachute.enabled(true);
-                parachute_release();
+                parachute_manual_release();
                 break;
         }
 #endif

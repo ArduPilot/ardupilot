@@ -88,6 +88,9 @@ void parachute_check()
         return;
     }
 
+    // call update to give parachute a chance to move servo or relay back to off position
+    parachute.update();
+
     // return immediately if motors are not armed or pilot's throttle is above zero
     if (!motors.armed()) {
         control_loss_count = 0;
@@ -100,6 +103,12 @@ void parachute_check()
         return;
     }
 
+    // ensure we are above the minimum altitude above home
+    if (baro_alt < parachute.alt_min_cm()) {
+        control_loss_count = 0;
+        return;
+    }
+
     // get desired lean angles
     const Vector3f& target_angle = attitude_control.angle_ef_targets();
 
@@ -107,6 +116,11 @@ void parachute_check()
     if (labs(ahrs.roll_sensor - target_angle.x) > CRASH_CHECK_ANGLE_DEVIATION_CD ||
         labs(ahrs.pitch_sensor - target_angle.y) > CRASH_CHECK_ANGLE_DEVIATION_CD) {
         control_loss_count++;
+
+        // don't let control_loss_count get too high
+        if (control_loss_count > PARACHUTE_CHECK_ITERATIONS_MAX) {
+            control_loss_count = PARACHUTE_CHECK_ITERATIONS_MAX;
+        }
 
         // record baro if we have just started losing control
         if (control_loss_count == 1) {
@@ -121,6 +135,9 @@ void parachute_check()
 
         // check if loss of control for at least 1 second
         }else if (control_loss_count >= PARACHUTE_CHECK_ITERATIONS_MAX) {
+            // reset control loss counter
+            control_loss_count = 0;
+            // release parachute
             parachute_release();
         }
     }else{
@@ -145,5 +162,20 @@ static void parachute_release()
 
     // release parachute
     parachute.release();
+}
+
+// parachute_manual_release - trigger the release of the parachute, after performing some checks for pilot error
+//   checks if the vehicle is landed 
+static void parachute_manual_release()
+{
+    // do not release if we are landed or below the minimum altitude above home
+    if (ap.land_complete || baro_alt < parachute.alt_min_cm()) {
+        // warn user of reason for failure
+        gcs_send_text_P(SEVERITY_HIGH,PSTR("Parachute: Not Released"));
+        return;
+    }
+
+    // if we get this far release parachute
+    parachute_release();
 }
 #endif // PARACHUTE == ENABLED
