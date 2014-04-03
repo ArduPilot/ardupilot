@@ -30,11 +30,13 @@ const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
     // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL
     AP_GROUPINFO("TYPE",    0, AP_GPS, _type[0], 1),
 
+#if GPS_MAX_INSTANCES > 1
     // @Param: TYPE2
     // @DisplayName: 2nd GPS type
     // @Description: GPS type of 2nd GPS
     // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL
     AP_GROUPINFO("TYPE2",   1, AP_GPS, _type[1], 0),
+#endif
 
     // @Param: NAVFILTER
     // @DisplayName: Navigation filter setting
@@ -50,9 +52,11 @@ void AP_GPS::init(DataFlash_Class *dataflash)
 {
     _DataFlash = dataflash;
     hal.uartB->begin(38400UL, 256, 16);
+#if GPS_MAX_INSTANCES > 1
     if (hal.uartE != NULL) {
         hal.uartE->begin(38400UL, 256, 16);        
     }
+#endif
 }
 
 // baudrates to try to detect GPSes with
@@ -251,6 +255,7 @@ AP_GPS::update(void)
     // update notify with gps status. We always base this on the first GPS
     AP_Notify::flags.gps_status = state[0].status;
 
+#if GPS_MAX_INSTANCES > 1
     // work out which GPS is the primary, and how many sensors we have
     for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
         if (state[i].status != NO_GPS) {
@@ -274,6 +279,7 @@ AP_GPS::update(void)
             primary_instance = i;
         }
     }
+#endif // GPS_MAX_INSTANCES
 }
 
 /*

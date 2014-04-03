@@ -119,9 +119,18 @@ public:
         return num_instances;
     }
 
+    // using these macros saves some code space on APM2
+#if GPS_MAX_INSTANCES == 1
+#	define _GPS_STATE(instance) state[0]
+#	define _GPS_TIMING(instance) timing[0]
+#else
+#	define _GPS_STATE(instance) state[instance]
+#	define _GPS_TIMING(instance) timing[instance]
+#endif
+
     /// Query GPS status
     GPS_Status status(uint8_t instance) const {
-        return state[instance].status;
+        return _GPS_STATE(instance).status;
     }
     GPS_Status status(void) const {
         return status(primary_instance);
@@ -129,7 +138,7 @@ public:
 
     // location of last fix
     const Location &location(uint8_t instance) const {
-        return state[instance].location;
+        return _GPS_STATE(instance).location;
     }
     const Location &location() const {
         return location(primary_instance);
@@ -137,7 +146,7 @@ public:
 
     // 3D velocity in NED format
     const Vector3f &velocity(uint8_t instance) const {
-        return state[instance].velocity;
+        return _GPS_STATE(instance).velocity;
     }
     const Vector3f &velocity() const {
         return velocity(primary_instance);
@@ -145,7 +154,7 @@ public:
 
     // ground speed in m/s
     float ground_speed(uint8_t instance) const {
-        return state[instance].ground_speed;
+        return _GPS_STATE(instance).ground_speed;
     }
     float ground_speed() const {
         return ground_speed(primary_instance);
@@ -158,7 +167,7 @@ public:
 
     // ground course in centidegrees
     int32_t ground_course_cd(uint8_t instance) const {
-        return state[instance].ground_course_cd;
+        return _GPS_STATE(instance).ground_course_cd;
     }
     int32_t ground_course_cd() const {
         return ground_course_cd(primary_instance);
@@ -166,7 +175,7 @@ public:
 
     // number of locked satellites
     uint8_t num_sats(uint8_t instance) const {
-        return state[instance].num_sats;
+        return _GPS_STATE(instance).num_sats;
     }
     uint8_t num_sats() const {
         return num_sats(primary_instance);
@@ -174,7 +183,7 @@ public:
 
     // GPS time of week in milliseconds
     uint32_t time_week_ms(uint8_t instance) const {
-        return state[instance].time_week_ms;
+        return _GPS_STATE(instance).time_week_ms;
     }
     uint32_t time_week_ms() const {
         return time_week_ms(primary_instance);
@@ -182,7 +191,7 @@ public:
 
     // GPS week
     uint16_t time_week(uint8_t instance) const {
-        return state[instance].time_week;
+        return _GPS_STATE(instance).time_week;
     }
     uint16_t time_week() const {
         return time_week(primary_instance);
@@ -190,7 +199,7 @@ public:
 
     // horizontal dilution of precision
     uint16_t get_hdop(uint8_t instance) const {
-        return state[instance].hdop;
+        return _GPS_STATE(instance).hdop;
     }
     uint16_t get_hdop() const {
         return get_hdop(primary_instance);
@@ -199,7 +208,7 @@ public:
     // the time we got our last fix in system milliseconds. This is
     // used when calculating how far we might have moved since that fix
     uint32_t last_fix_time_ms(uint8_t instance) const {
-        return timing[instance].last_fix_time_ms;
+        return _GPS_TIMING(instance).last_fix_time_ms;
     }
     uint32_t last_fix_time_ms(void) const {
         return last_fix_time_ms(primary_instance);
@@ -208,7 +217,7 @@ public:
 	// the time we last processed a message in milliseconds. This is
 	// used to indicate that we have new GPS data to process
 	uint32_t last_message_time_ms(uint8_t instance) const { 
-        return timing[instance].last_message_time_ms;        
+        return _GPS_TIMING(instance).last_message_time_ms;        
     }
     uint32_t last_message_time_ms(void) const {
         return last_message_time_ms(primary_instance);
@@ -222,7 +231,7 @@ public:
 
 	// return true if the GPS supports vertical velocity values
     bool have_vertical_velocity(uint8_t instance) const { 
-        return state[instance].have_vertical_velocity; 
+        return _GPS_STATE(instance).have_vertical_velocity; 
     }
     bool have_vertical_velocity(void) const { 
         return have_vertical_velocity(primary_instance);
