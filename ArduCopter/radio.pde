@@ -99,11 +99,26 @@ void output_min()
 static void read_radio()
 {
     static uint32_t last_update = 0;
-    if (hal.rcin->new_input()) {
+    bool have_valid_channels = false;
+    uint16_t periods[8];
+
+    if (hal.rcin->new_input() && hal.rcin->num_channels() > 0 &&
+            hal.rcin->read(periods, 8) == 8) {
+        have_valid_channels = true;
+        // if any values are zero, treat as an error condition,
+        // hold the current PWM values and trigger failsafe logic
+        for (int i = 0; i < 8; ++i) {
+            if (periods[i] == 0) {
+                have_valid_channels = false;
+                break;
+            }
+        }
+    }
+
+    if (have_valid_channels) {
         last_update = millis();
         ap.new_radio_frame = true;
-        uint16_t periods[8];
-        hal.rcin->read(periods,8);
+
         g.rc_1.set_pwm(periods[rcmap.roll()-1]);
         g.rc_2.set_pwm(periods[rcmap.pitch()-1]);
 
