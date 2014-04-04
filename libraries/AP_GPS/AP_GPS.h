@@ -35,6 +35,13 @@
 #define GPS_MAX_INSTANCES 1
 #endif
 
+#define GPS_DEBUGGING 0
+#if GPS_DEBUGGING
+ # define Debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
+#else
+ # define Debug(fmt, args ...)
+#endif
+
 class DataFlash_Class;
 class AP_GPS_Backend;
 
@@ -65,7 +72,8 @@ public:
         GPS_TYPE_MTK19 = 4,
         GPS_TYPE_NMEA  = 5,
         GPS_TYPE_SIRF  = 6,
-        GPS_TYPE_HIL   = 7
+        GPS_TYPE_HIL   = 7,
+        GPS_TYPE_SBP   = 8
     };
 
     /// GPS status codes
@@ -288,6 +296,7 @@ private:
         struct MTK19_detect_state mtk19_detect_state;
         struct SIRF_detect_state sirf_detect_state;
         struct NMEA_detect_state nmea_detect_state;
+        struct SBP_detect_state sbp_detect_state;
     } detect_state[GPS_MAX_INSTANCES];
 
     struct {
@@ -295,7 +304,7 @@ private:
         uint16_t remaining;
     } initblob_state[GPS_MAX_INSTANCES];
 
-    static const uint16_t  _baudrates[];
+    static const uint32_t  _baudrates[];
     static const prog_char _initialisation_blob[];
 
     void detect_instance(uint8_t instance);
@@ -308,5 +317,6 @@ private:
 #include <AP_GPS_MTK19.h>
 #include <AP_GPS_NMEA.h>
 #include <AP_GPS_SIRF.h>
+#include <AP_GPS_SBP.h>
 
 #endif // __AP_GPS_H__
