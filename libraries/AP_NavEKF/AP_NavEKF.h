@@ -141,6 +141,26 @@ private:
     const AP_AHRS *_ahrs;
     AP_Baro &_baro;
 
+    // the states are available in two forms, either as a Vector27, or
+    // broken down as individual elements. Both are equivalent (same
+    // memory)
+    Vector31 states;
+    struct state_elements {
+        Quaternion  quat;           // 0..3
+        Vector3f    velocity;       // 4..6
+        Vector3f    position;       // 7..9
+        Vector3f    gyro_bias;      // 10..12
+        float       accel_zbias1;   // 13
+        Vector2f    wind_vel;       // 14..15
+        Vector3f    earth_magfield; // 16..18
+        Vector3f    body_magfield;  // 19..21
+        float       accel_zbias2;   // 22
+        Vector3f    vel1;           // 23 .. 25
+        float       posD1;          // 26
+        Vector3f    vel2;           // 27 .. 29
+        float       posD2;          // 30
+    } &state;
+
     // update the quaternion, velocity and position states using IMU measurements
     void UpdateStrapdownEquationsNED();
 
@@ -184,7 +204,7 @@ private:
     void StoreStatesReset(void);
 
     // recall state vector stored at closest time to the one specified by msec
-    void RecallStates(Vector31 &statesForFusion, uint32_t msec);
+    void RecallStates(state_elements &statesForFusion, uint32_t msec);
 
     // calculate nav to body quaternions from body to nav rotation matrix
     void quat2Tbn(Matrix3f &Tbn, const Quaternion &quat) const;
@@ -256,28 +276,6 @@ private:
     // this allows large GPS position jumps to be accomodated gradually
     void decayGpsOffset(void);
 
-private:
-
-    // the states are available in two forms, either as a Vector27, or
-    // broken down as individual elements. Both are equivalent (same
-    // memory)
-    Vector31 states;
-    struct state_elements {
-        Quaternion  quat;           // 0..3
-        Vector3f    velocity;       // 4..6
-        Vector3f    position;       // 7..9
-        Vector3f    gyro_bias;      // 10..12
-        float       accel_zbias1;   // 13
-        Vector2f    wind_vel;       // 14..15
-        Vector3f    earth_magfield; // 16..18
-        Vector3f    body_magfield;  // 19..21
-        float       accel_zbias2;   // 22
-        Vector3f    vel1;           // 23 .. 25
-        float       posD1;          // 26
-        Vector3f    vel2;           // 27 .. 29
-        float       posD2;          // 30
-    } &state;
-
     // EKF Mavlink Tuneable Parameters
     AP_Float _gpsHorizVelNoise;     // GPS horizontal velocity measurement noise : m/s
     AP_Float _gpsVertVelNoise;      // GPS vertical velocity measurement noise : m/s
@@ -337,7 +335,7 @@ private:
     Matrix22 KH;                    // intermediate result used for covariance updates
     Matrix22 KHP;                   // intermediate result used for covariance updates
     Matrix22 P;                     // covariance matrix
-    Matrix31_50 storedStates;       // state vectors stored for the last 50 time steps
+    VectorN<state_elements,50> storedStates;       // state vectors stored for the last 50 time steps
     uint32_t statetimeStamp[50];    // time stamp for each state vector stored
     Vector3f correctedDelAng;       // delta angles about the xyz body axes corrected for errors (rad)
     Vector3f correctedDelVel12;     // delta velocities along the XYZ body axes for weighted average of IMU1 and IMU2 corrected for errors (m/s)
@@ -366,19 +364,19 @@ private:
     Vector3f velNED;                // North, East, Down velocity measurements (m/s)
     Vector2 posNE;                  // North, East position measurements (m)
     ftype hgtMea;                   //  height measurement relative to reference point  (m)
-    Vector31 statesAtVelTime;       // States at the effective time of velNED measurements
-    Vector31 statesAtPosTime;       // States at the effective time of posNE measurements
-    Vector31 statesAtHgtTime;       // States at the effective time of hgtMea measurement
+    state_elements statesAtVelTime; // States at the effective time of velNED measurements
+    state_elements statesAtPosTime; // States at the effective time of posNE measurements
+    state_elements statesAtHgtTime; // States at the effective time of hgtMea measurement
     Vector3f innovMag;              // innovation output from fusion of X,Y,Z compass measurements
     Vector3f varInnovMag;           // innovation variance output from fusion of X,Y,Z compass measurements
     bool fuseMagData;               // boolean true when magnetometer data is to be fused
     Vector3f magData;               // magnetometer flux readings in X,Y,Z body axes
-    Vector31 statesAtMagMeasTime;   // filter states at the effective time of compass measurements
+    state_elements statesAtMagMeasTime;   // filter states at the effective time of compass measurements
     ftype innovVtas;                // innovation output from fusion of airspeed measurements
     ftype varInnovVtas;             // innovation variance output from fusion of airspeed measurements
     bool fuseVtasData;              // boolean true when airspeed data is to be fused
     float VtasMeas;                 // true airspeed measurement (m/s)
-    Vector31 statesAtVtasMeasTime;  // filter states at the effective measurement time
+    state_elements statesAtVtasMeasTime;  // filter states at the effective measurement time
     Vector3f magBias;               // magnetometer bias vector in XYZ body axes
     const ftype covTimeStepMax;     // maximum time allowed between covariance predictions
     const ftype covDelAngMax;       // maximum delta angle between covariance predictions

@@ -1565,10 +1565,8 @@ void NavEKF::FuseVelPosNED()
         // because there may be no stored states due to lack of real measurements.
         // in static mode, only position and height fusion is used
         if (staticMode) {
-            for (uint8_t i=0; i<=30; i++) {
-                statesAtPosTime[i] = states[i];
-                statesAtHgtTime[i] = states[i];
-            }
+            statesAtPosTime = state;
+            statesAtHgtTime = state;
         }
 
         // set the GPS data timeout depending on whether airspeed data is present
@@ -1606,8 +1604,8 @@ void NavEKF::FuseVelPosNED()
         bool badIMUdata = false;
             if (_fusionModeGPS == 0 && fuseVelData && fuseHgtData) {
             // calculate innovations for height and vertical GPS vel measurements
-            float hgtErr  = statesAtVelTime[9] - observation[5];
-            float velDErr = statesAtVelTime[6] - observation[2];
+            float hgtErr  = statesAtVelTime.position.z - observation[5];
+            float velDErr = statesAtVelTime.velocity.z - observation[2];
             // check if they are the same sign and both more than 3-sigma out of bounds
             if ((hgtErr*velDErr > 0.0f) && (sq(hgtErr) > 9.0f * (P[9][9] + R_OBS[5])) && (sq(velDErr) > 9.0f * (P[6][6] + R_OBS[2]))) {
                 badIMUdata = true;
@@ -1622,8 +1620,8 @@ void NavEKF::FuseVelPosNED()
         if (fusePosData)
         {
             // test horizontal position measurements
-            posInnov[0] = statesAtPosTime[7] - observation[3];
-            posInnov[1] = statesAtPosTime[8] - observation[4];
+            posInnov[0] = statesAtPosTime.position.x - observation[3];
+            posInnov[1] = statesAtPosTime.position.y - observation[4];
             varInnovVelPos[3] = P[7][7] + R_OBS[3];
             varInnovVelPos[4] = P[8][8] + R_OBS[4];
             // apply an innovation consistency threshold test, but don't fail if bad IMU data
@@ -1675,9 +1673,9 @@ void NavEKF::FuseVelPosNED()
                 // velocity states start at index 4
                 stateIndex   = i + 4;
                 // calculate innovations using blended and single IMU predicted states
-                velInnov[i]  = statesAtVelTime[stateIndex] - observation[i]; // blended
-                velInnov1[i] = statesAtVelTime[23 + i] - observation[i]; // IMU1
-                velInnov2[i] = statesAtVelTime[27 + i] - observation[i]; // IMU2
+                velInnov[i]  = statesAtVelTime.velocity[i] - observation[i]; // blended
+                velInnov1[i] = statesAtVelTime.vel1[i] - observation[i]; // IMU1
+                velInnov2[i] = statesAtVelTime.vel2[i] - observation[i]; // IMU2
                 // calculate innovation variance
                 varInnovVelPos[i] = P[stateIndex][stateIndex] + R_OBS[i];
                 // calculate error weightings for singloe IMU velocity states using
@@ -1731,7 +1729,7 @@ void NavEKF::FuseVelPosNED()
             if (_fusionModeGPS == 0) hgtRetryTime = _hgtRetryTimeMode0;
             else hgtRetryTime = _hgtRetryTimeMode12;
             // calculate height innovations
-            hgtInnov = statesAtHgtTime[9] - observation[5];
+            hgtInnov = statesAtHgtTime.position.z - observation[5];
             varInnovVelPos[5] = P[9][9] + R_OBS[5];
             // calculate the innovation consistency test ratio
             hgtTestRatio = sq(hgtInnov) / (sq(_hgtInnovGate) * varInnovVelPos[5]);
@@ -1796,15 +1794,15 @@ void NavEKF::FuseVelPosNED()
                 // calculate the measurement innovation, using states from a different time coordinate if fusing height data
                 if (obsIndex <= 2)
                 {
-                    innovVelPos[obsIndex] = statesAtVelTime[stateIndex] - observation[obsIndex];
+                    innovVelPos[obsIndex] = statesAtVelTime.velocity[obsIndex] - observation[obsIndex];
                 }
                 else if (obsIndex == 3 || obsIndex == 4)
                 {
-                    innovVelPos[obsIndex] = statesAtPosTime[stateIndex] - observation[obsIndex];
+                    innovVelPos[obsIndex] = statesAtPosTime.position[obsIndex-3] - observation[obsIndex];
                 }
                 else
                 {
-                    innovVelPos[obsIndex] = statesAtHgtTime[stateIndex] - observation[obsIndex];
+                    innovVelPos[obsIndex] = statesAtHgtTime.position[obsIndex-3] - observation[obsIndex];
                 }
                 // calculate the Kalman gain and calculate innovation variances
                 varInnovVelPos[obsIndex] = P[stateIndex][stateIndex] + R_OBS[obsIndex];
@@ -1824,8 +1822,8 @@ void NavEKF::FuseVelPosNED()
                 // Correct states that have been predicted using single (not blended) IMU data
                 if (obsIndex == 5){
                     // Calculate height measurement innovations using single IMU states
-                    float hgtInnov1 = statesAtHgtTime[26] - observation[obsIndex];
-                    float hgtInnov2 = statesAtHgtTime[30] - observation[obsIndex];
+                    float hgtInnov1 = statesAtHgtTime.posD1 - observation[obsIndex];
+                    float hgtInnov2 = statesAtHgtTime.posD2 - observation[obsIndex];
                     // Correct single IMU prediction states using height measurement, limiting rate of change of bias to 0.02 m/s3
                     float correctionLimit = 0.02f * dtIMU *dtVelPos;
                     states[13] = states[13] - constrain_float(Kfusion[13] * hgtInnov1, -correctionLimit, correctionLimit); // IMU1 Z accel bias
@@ -1943,16 +1941,16 @@ void NavEKF::FuseMagnetometer()
         if (fuseMagData)
         {
             // copy required states to local variable names
-            q0       = statesAtMagMeasTime[0];
-            q1       = statesAtMagMeasTime[1];
-            q2       = statesAtMagMeasTime[2];
-            q3       = statesAtMagMeasTime[3];
-            magN     = statesAtMagMeasTime[16];
-            magE     = statesAtMagMeasTime[17];
-            magD     = statesAtMagMeasTime[18];
-            magXbias = statesAtMagMeasTime[19];
-            magYbias = statesAtMagMeasTime[20];
-            magZbias = statesAtMagMeasTime[21];
+            q0       = statesAtMagMeasTime.quat[0];
+            q1       = statesAtMagMeasTime.quat[1];
+            q2       = statesAtMagMeasTime.quat[2];
+            q3       = statesAtMagMeasTime.quat[3];
+            magN     = statesAtMagMeasTime.earth_magfield[0];
+            magE     = statesAtMagMeasTime.earth_magfield[1];
+            magD     = statesAtMagMeasTime.earth_magfield[2];
+            magXbias = statesAtMagMeasTime.body_magfield[0];
+            magYbias = statesAtMagMeasTime.body_magfield[1];
+            magZbias = statesAtMagMeasTime.body_magfield[2];
 
             // rotate predicted earth components into body axes and calculate
             // predicted measurements
@@ -2240,11 +2238,11 @@ void NavEKF::FuseAirspeed()
     float VtasPred;
 
     // copy required states to local variable names
-    vn = statesAtVtasMeasTime[4];
-    ve = statesAtVtasMeasTime[5];
-    vd = statesAtVtasMeasTime[6];
-    vwn = statesAtVtasMeasTime[14];
-    vwe = statesAtVtasMeasTime[15];
+    vn = statesAtVtasMeasTime.velocity.x;
+    ve = statesAtVtasMeasTime.velocity.y;
+    vd = statesAtVtasMeasTime.velocity.z;
+    vwn = statesAtVtasMeasTime.wind_vel.x;
+    vwe = statesAtVtasMeasTime.wind_vel.y;
 
     // calculate the predicted airspeed
     VtasPred = pythagorous3((ve - vwe) , (vn - vwn) , vd);
@@ -2556,9 +2554,7 @@ void NavEKF::StoreStates()
         if (storeIndex > 49) {
             storeIndex = 0;
         }
-        for (uint8_t i=0; i<=30; i++) {
-            storedStates[i][storeIndex] = states[i];
-        }
+        storedStates[storeIndex] = state;
         statetimeStamp[storeIndex] = lastStateStoreTime_ms;
         storeIndex = storeIndex + 1;
     }
@@ -2568,17 +2564,17 @@ void NavEKF::StoreStates()
 void NavEKF::StoreStatesReset()
 {
     // clear stored state history
-    memset(&storedStates[0][0], 0, sizeof(storedStates));
+    memset(&storedStates[0], 0, sizeof(storedStates));
     memset(&statetimeStamp[0], 0, sizeof(statetimeStamp));
     // store current state vector in first column
     storeIndex = 0;
-    for (uint8_t i=0; i<=30; i++) storedStates[i][storeIndex] = states[i];
+    storedStates[storeIndex] = state;
     statetimeStamp[storeIndex] = hal.scheduler->millis();
     storeIndex = storeIndex + 1;
 }
 
 // recall state vector stored at closest time to the one specified by msec
-void NavEKF::RecallStates(Vector31 &statesForFusion, uint32_t msec)
+void NavEKF::RecallStates(state_elements &statesForFusion, uint32_t msec)
 {
     uint32_t timeDelta;
     uint32_t bestTimeDelta = 200;
@@ -2594,15 +2590,11 @@ void NavEKF::RecallStates(Vector31 &statesForFusion, uint32_t msec)
     }
     if (bestTimeDelta < 200) // only output stored state if < 200 msec retrieval error
     {
-        for (uint8_t i=0; i<=30; i++) {
-            statesForFusion[i] = storedStates[i][bestStoreIndex];
-        }
+        statesForFusion = storedStates[bestStoreIndex];
     }
     else // otherwise output current state
     {
-        for (uint8_t i=0; i<=30; i++) {
-            statesForFusion[i] = states[i];
-        }
+        statesForFusion = state;
     }
 }
 
@@ -3221,7 +3213,7 @@ void NavEKF::ZeroVariables()
     memset(&P[0][0], 0, sizeof(P));
     memset(&nextP[0][0], 0, sizeof(nextP));
     memset(&processNoise[0], 0, sizeof(processNoise));
-    memset(&storedStates[0][0], 0, sizeof(storedStates));
+    memset(&storedStates[0], 0, sizeof(storedStates));
     memset(&statetimeStamp[0], 0, sizeof(statetimeStamp));
     memset(&posNE[0], 0, sizeof(posNE));
 }
