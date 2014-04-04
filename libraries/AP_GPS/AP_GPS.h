@@ -258,6 +258,9 @@ public:
     void send_blob_start(uint8_t instance, const prog_char *_blob, uint16_t size);
     void send_blob_update(uint8_t instance);
 
+    // lock out a GPS port, allowing another application to use the port
+    void lock_port(uint8_t instance, bool locked);
+
 private:
     struct GPS_timing {
         // the time we got our last fix in system milliseconds
@@ -275,6 +278,9 @@ private:
 
     /// number of GPS instances present
     uint8_t num_instances:2;
+
+    // which ports are locked
+    uint8_t locked_ports:2;
 
     // state of auto-detection process, per instance
     struct detect_state {

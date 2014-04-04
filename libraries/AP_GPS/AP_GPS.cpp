@@ -207,6 +207,11 @@ AP_GPS::update_instance(uint8_t instance)
         state[instance].status = NO_GPS;
         return;
     }
+    if (locked_ports & (1U<<instance)) {
+        // the port is locked by another driver
+        return;
+    }
+
     if (drivers[instance] == NULL || state[instance].status == NO_GPS) {
         // we don't yet know the GPS type of this one, or it has timed
         // out and needs to be re-initialised
@@ -310,4 +315,22 @@ AP_GPS::setHIL(uint8_t instance, GPS_Status _status, uint64_t time_epoch_ms,
     timing[instance].last_message_time_ms = tnow;
     timing[instance].last_fix_time_ms = tnow;
     _type[instance].set(GPS_TYPE_HIL);
+}
+
+/**
+   Lock a GPS port, prevening the GPS driver from using it. This can
+   be used to allow a user to control a GPS port via the
+   SERIAL_CONTROL protocol
+ */
+void 
+AP_GPS::lock_port(uint8_t instance, bool lock)
+{
+    if (instance >= GPS_MAX_INSTANCES) {
+        return;
+    }
+    if (lock) {
+        locked_ports |= (1U<<instance);
+    } else {
+        locked_ports &= ~(1U<<instance);
+    }
 }
