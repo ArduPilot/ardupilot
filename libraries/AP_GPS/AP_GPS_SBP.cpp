@@ -52,13 +52,13 @@ AP_GPS_SBP::AP_GPS_SBP(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriv
     AP_GPS_Backend(_gps, _state, _port),
     has_updated_pos(false),
     has_updated_vel(false),
-    logging_started(false),
     pos_msg_counter(0),
     vel_msg_counter(0),
     dops_msg_counter(0),
     baseline_msg_counter(0),
     crc_error_counter(0),
-    last_healthcheck_millis(0)
+    last_healthcheck_millis(0),
+    logging_started(false)
 {
 
     Debug("Initializing SBP Driver");
@@ -327,9 +327,6 @@ AP_GPS_SBP::sbp_process_vel_ned(uint8_t* msg)
 bool
 AP_GPS_SBP::_detect(struct SBP_detect_state &state, uint8_t data) 
 {
-
-    uint16_t crc;
-
     //This switch reads one character at a time,
     //if we find something that looks like our preamble
     //we'll try to read the full message length, calculating the CRC.
