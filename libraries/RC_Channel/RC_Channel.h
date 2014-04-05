@@ -53,6 +53,7 @@ public:
 
     // read input from APM_RC - create a control_in value
     void        set_pwm(int16_t pwm);
+    static void set_pwm_all(void);
     void        set_pwm_no_deadzone(int16_t pwm);
 
     // pwm is stored here
@@ -98,6 +99,7 @@ public:
 
     void                                            output() const;
     void                                            output_trim() const;
+    static void                                     output_trim_all();
     uint16_t                                        read() const;
     void                                            input();
     void                                            enable_out();

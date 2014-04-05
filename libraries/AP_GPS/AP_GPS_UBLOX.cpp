@@ -295,10 +295,15 @@ void AP_GPS_UBLOX::log_mon_hw(void)
         LOG_PACKET_HEADER_INIT(LOG_MSG_UBX1),
         timestamp  : hal.scheduler->millis(),
         instance   : state.instance,
-        noisePerMS : _buffer.mon_hw.noisePerMS,
-        jamInd     : _buffer.mon_hw.jamInd,
-        aPower     : _buffer.mon_hw.aPower
+        noisePerMS : _buffer.mon_hw_60.noisePerMS,
+        jamInd     : _buffer.mon_hw_60.jamInd,
+        aPower     : _buffer.mon_hw_60.aPower
     };
+    if (_payload_length == 68) {
+        pkt.noisePerMS = _buffer.mon_hw_68.noisePerMS;
+        pkt.jamInd     = _buffer.mon_hw_68.jamInd;
+        pkt.aPower     = _buffer.mon_hw_68.aPower;
+    }
     gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));    
 }
 
@@ -364,9 +369,13 @@ AP_GPS_UBLOX::_parse_gps(void)
 #if UBLOX_HW_LOGGING
     if (_class == CLASS_MON) {
         if (_msg_id == MSG_MON_HW) {
-            log_mon_hw();
+            if (_payload_length == 60 || _payload_length == 68) {
+                log_mon_hw();
+            }
         } else if (_msg_id == MSG_MON_HW2) {
-            log_mon_hw2();            
+            if (_payload_length == 28) {
+                log_mon_hw2();  
+            }
         } else {
             unexpected_message();
         }

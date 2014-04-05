@@ -135,7 +135,28 @@ private:
         uint32_t speed_accuracy;
         uint32_t heading_accuracy;
     };
-    struct PACKED ubx_mon_hw {
+    // Lea6 uses a 60 byte message
+    struct PACKED ubx_mon_hw_60 {
+        uint32_t pinSel;
+        uint32_t pinBank;
+        uint32_t pinDir;
+        uint32_t pinVal;
+        uint16_t noisePerMS;
+        uint16_t agcCnt;
+        uint8_t aStatus;
+        uint8_t aPower;
+        uint8_t flags;
+        uint8_t reserved1;
+        uint32_t usedMask;
+        uint8_t VP[17];
+        uint8_t jamInd;
+        uint16_t reserved3;
+        uint32_t pinIrq;
+        uint32_t pullH;
+        uint32_t pullL;
+    };
+    // Neo7 uses a 68 byte message
+    struct PACKED ubx_mon_hw_68 {
         uint32_t pinSel;
         uint32_t pinBank;
         uint32_t pinDir;
@@ -173,7 +194,8 @@ private:
         ubx_nav_solution solution;
         ubx_nav_velned velned;
         ubx_cfg_nav_settings nav_settings;
-        ubx_mon_hw mon_hw;
+        ubx_mon_hw_60 mon_hw_60;
+        ubx_mon_hw_68 mon_hw_68;
         ubx_mon_hw2 mon_hw2;
         uint8_t bytes[];
     } _buffer;
