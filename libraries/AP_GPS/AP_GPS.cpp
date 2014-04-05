@@ -27,14 +27,14 @@ const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
     // @Param: TYPE
     // @DisplayName: GPS type
     // @Description: GPS type
-    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL
+    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftBinaryProtocol
     AP_GROUPINFO("TYPE",    0, AP_GPS, _type[0], 1),
 
 #if GPS_MAX_INSTANCES > 1
     // @Param: TYPE2
     // @DisplayName: 2nd GPS type
     // @Description: GPS type of 2nd GPS
-    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL
+    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftBinaryProtocol
     AP_GROUPINFO("TYPE2",   1, AP_GPS, _type[1], 0),
 #endif
 
@@ -60,7 +60,7 @@ void AP_GPS::init(DataFlash_Class *dataflash)
 }
 
 // baudrates to try to detect GPSes with
-const uint16_t AP_GPS::_baudrates[] PROGMEM = {4800U, 38400U, 57600U, 9600U};
+const uint32_t AP_GPS::_baudrates[] PROGMEM = {4800U, 38400U, 115200U, 57600U, 9600U};
 
 // initialisation blobs to send to the GPS to try to get it into the
 // right mode
@@ -132,8 +132,9 @@ AP_GPS::detect_instance(uint8_t instance)
 		if (dstate->last_baud == sizeof(_baudrates) / sizeof(_baudrates[0])) {
 			dstate->last_baud = 0;
 		}
-		uint16_t baudrate = pgm_read_word(&_baudrates[dstate->last_baud]);
+		uint32_t baudrate = pgm_read_dword(&_baudrates[dstate->last_baud]);
 		port->begin(baudrate, 256, 16);		
+        Debug("Switching to GPS Baudrate %d", baudrate);
 		dstate->last_baud_change_ms = now;
         send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
     }
@@ -150,7 +151,7 @@ AP_GPS::detect_instance(uint8_t instance)
           for.
         */
         if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_UBLOX) &&
-            pgm_read_word(&_baudrates[dstate->last_baud]) >= 38400 && 
+            pgm_read_dword(&_baudrates[dstate->last_baud]) >= 38400 && 
             AP_GPS_UBLOX::_detect(dstate->ublox_detect_state, data)) {
             hal.console->print_P(PSTR(" ublox "));
             new_gps = new AP_GPS_UBLOX(*this, state[instance], port);
@@ -165,6 +166,11 @@ AP_GPS::detect_instance(uint8_t instance)
 			hal.console->print_P(PSTR(" MTK "));
 			new_gps = new AP_GPS_MTK(*this, state[instance], port);
 		}
+        else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SBP) &&
+                 AP_GPS_SBP::_detect(dstate->sbp_detect_state, data)) {
+            hal.console->print_P(PSTR(" SBP "));
+            new_gps = new AP_GPS_SBP(*this, state[instance], port);
+        }
 #if !defined( __AVR_ATmega1280__ )
 		// save a bit of code space on a 1280
 		else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SIRF) &&

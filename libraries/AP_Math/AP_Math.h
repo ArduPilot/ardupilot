@@ -18,6 +18,7 @@
 #include "matrix3.h"
 #include "quaternion.h"
 #include "polygon.h"
+#include "edc.h"
 
 #ifndef M_PI_F
  #define M_PI_F 3.141592653589793f
@@ -28,8 +29,17 @@
 #ifndef M_PI_2
  # define M_PI_2 1.570796326794897f
 #endif
+//Single precision conversions
 #define DEG_TO_RAD 0.017453292519943295769236907684886f
 #define RAD_TO_DEG 57.295779513082320876798154814105f
+
+//GPS Specific double precision conversions
+//The precision here does matter when using the wsg* functions for converting
+//between LLH and ECEF coordinates. Test code in examlpes/location/location.pde
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+	#define DEG_TO_RAD_DOUBLE 0.0174532925199432954743716805978692718781530857086181640625  // equals to (M_PI / 180.0)
+	#define RAD_TO_DEG_DOUBLE 57.29577951308232286464772187173366546630859375               // equals to (180.0 / M_PI)
+#endif
 
 #define RadiansToCentiDegrees(x) ((x) * 5729.5779513082320876798154814105f)
 
@@ -45,6 +55,17 @@
 // Note: this does not include the longitude scaling which is dependent upon location
 #define LATLON_TO_M  0.01113195f
 #define LATLON_TO_CM 1.113195f
+
+// Semi-major axis of the Earth, in meters.
+#define WGS84_A 6378137.0
+//Inverse flattening of the Earth
+#define WGS84_IF 298.257223563
+// The flattening of the Earth
+#define WGS84_F (1/WGS84_IF)
+// Semi-minor axis of the Earth in meters
+#define WGS84_B (WGS84_A*(1-WGS84_F))
+// Eccentricity of the Earth
+#define WGS84_E (sqrt(2*WGS84_F - WGS84_F*WGS84_F))
 
 // define AP_Param types AP_Vector3f and Ap_Matrix3f
 AP_PARAMDEFV(Matrix3f, Matrix3f, AP_PARAM_MATRIX3F);
@@ -117,6 +138,12 @@ float wrap_PI(float angle_in_radians);
   print a int32_t lat/long in decimal degrees
  */
 void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon);
+
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+//Convert between LLH and ECEF coordinate systems
+void wgsllh2ecef(const Vector3d &llh, Vector3d &ecef);
+void wgsecef2llh(const Vector3d &ecef, Vector3d &llh);
+#endif
 
 // constrain a value
 float   constrain_float(float amt, float low, float high);
