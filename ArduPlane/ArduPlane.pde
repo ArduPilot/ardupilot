@@ -31,9 +31,9 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#include <AP_HAL.h>
 #include <AP_Common.h>
 #include <AP_Progmem.h>
-#include <AP_HAL.h>
 #include <AP_Menu.h>
 #include <AP_Param.h>
 #include <AP_GPS.h>         // ArduPilot GPS library
@@ -498,7 +498,9 @@ static struct {
     bool locked_course;
     float locked_course_err;
 } steer_state = {
-	hold_course_cd : -1,
+	hold_course_cd    : -1,
+    locked_course     : false,
+    locked_course_err : 0
 };
 
 
