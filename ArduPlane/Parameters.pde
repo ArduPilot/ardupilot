@@ -220,7 +220,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Waypoint Loiter Radius
     // @Description: Defines the distance from the waypoint center, the plane will maintain during a loiter. If you set this value to a negative number then the default loiter direction will be counter-clockwise instead of clockwise.
     // @Units: Meters
-    // @Range: 1 32767
+    // @Range: -32767 32767
     // @Increment: 1
     // @User: Standard
     GSCALAR(loiter_radius,          "WP_LOITER_RAD",  LOITER_RADIUS_DEFAULT),
