@@ -166,11 +166,13 @@ AP_GPS::detect_instance(uint8_t instance)
 			hal.console->print_P(PSTR(" MTK "));
 			new_gps = new AP_GPS_MTK(*this, state[instance], port);
 		}
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
         else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SBP) &&
                  AP_GPS_SBP::_detect(dstate->sbp_detect_state, data)) {
             hal.console->print_P(PSTR(" SBP "));
             new_gps = new AP_GPS_SBP(*this, state[instance], port);
         }
+#endif // HAL_CPU_CLASS
 #if !defined( __AVR_ATmega1280__ )
 		// save a bit of code space on a 1280
 		else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SIRF) &&

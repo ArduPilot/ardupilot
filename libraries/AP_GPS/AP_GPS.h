@@ -302,7 +302,9 @@ private:
         struct MTK19_detect_state mtk19_detect_state;
         struct SIRF_detect_state sirf_detect_state;
         struct NMEA_detect_state nmea_detect_state;
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
         struct SBP_detect_state sbp_detect_state;
+#endif
     } detect_state[GPS_MAX_INSTANCES];
 
     struct {
