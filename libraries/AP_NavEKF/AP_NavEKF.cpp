@@ -3168,7 +3168,7 @@ void  NavEKF::getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f
     magVar.x = sqrtf(magTestRatio.x);
     magVar.y = sqrtf(magTestRatio.y);
     magVar.z = sqrtf(magTestRatio.z);
-    tasVar   = sqrtf(hgtTestRatio);
+    tasVar   = sqrtf(tasTestRatio);
     offset.x = posnOffsetNorth;
     offset.y = posnOffsetEast;
 }
