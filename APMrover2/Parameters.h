@@ -46,6 +46,7 @@ public:
 
         // braking
         k_param_braking_percent = 30,
+        k_param_braking_speederr,
 
         // misc2
         k_param_log_bitmask = 40,
@@ -198,6 +199,7 @@ public:
 
     // braking
     AP_Int8     braking_percent;
+    AP_Float    braking_speederr;
 
 	// Telemetry control
 	//

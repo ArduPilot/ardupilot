@@ -125,11 +125,15 @@ static void calc_throttle(float target_speed)
         channel_throttle->servo_out = constrain_int16(throttle, g.throttle_min, g.throttle_max);
     }
 
-    if (!in_reverse && g.braking_percent != 0 && groundspeed_error < -g.speed_cruise/2) {
+    if (!in_reverse && g.braking_percent != 0 && groundspeed_error < -g.braking_speederr) {
         // the user has asked to use reverse throttle to brake. Apply
         // it in proportion to the ground speed error, but only when
-        // our ground speed error is more than half our cruise speed
-        float brake_gain = constrain_float(-groundspeed_error / (float)g.speed_cruise, 0, 1);
+        // our ground speed error is more than BRAKING_SPEEDERR.
+        //
+        // We use a linear gain, with 0 gain at a ground speed error
+        // of braking_speederr, and 100% gain when groundspeed_error
+        // is 2*braking_speederr
+        float brake_gain = constrain_float(((-groundspeed_error)-g.braking_speederr)/g.braking_speederr, 0, 1);
         int16_t braking_throttle = g.throttle_max * (g.braking_percent * 0.01f) * brake_gain;
         channel_throttle->servo_out = constrain_int16(-braking_throttle, -g.throttle_max, -g.throttle_min);
         
