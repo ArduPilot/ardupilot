@@ -1007,6 +1007,39 @@
                     <description>Power status has changed since boot</description>
                </entry>
           </enum>
+          <enum name="SERIAL_CONTROL_DEV">
+               <description>SERIAL_CONTROL device types</description>
+               <entry value="0" name="SERIAL_CONTROL_DEV_TELEM1">
+                    <description>First telemetry port</description>
+               </entry>
+               <entry value="1" name="SERIAL_CONTROL_DEV_TELEM2">
+                    <description>Second telemetry port</description>
+               </entry>
+               <entry value="2" name="SERIAL_CONTROL_DEV_GPS1">
+                    <description>First GPS port</description>
+               </entry>
+               <entry value="3" name="SERIAL_CONTROL_DEV_GPS2">
+                    <description>Second GPS port</description>
+               </entry>
+          </enum>
+          <enum name="SERIAL_CONTROL_FLAG">
+               <description>SERIAL_CONTROL flags (bitmask)</description>
+               <entry value="1" name="SERIAL_CONTROL_FLAG_REPLY">
+                    <description>Set if this is a reply</description>
+               </entry>
+               <entry value="2" name="SERIAL_CONTROL_FLAG_RESPOND">
+                    <description>Set if the sender wants the receiver to send a response as another SERIAL_CONTROL message</description>
+               </entry>
+               <entry value="4" name="SERIAL_CONTROL_FLAG_EXCLUSIVE">
+                    <description>Set if access to the serial port should be removed from whatever driver is currently using it, giving exclusive access to the SERIAL_CONTROL protocol. The port can be handed back by sending a request without this flag set</description>
+               </entry>
+               <entry value="8" name="SERIAL_CONTROL_FLAG_BLOCKING">
+                    <description>Block on writes to the serial port</description>
+               </entry>
+               <entry value="16" name="SERIAL_CONTROL_FLAG_MULTI">
+                    <description>Send multiple replies until port is drained</description>
+               </entry>
+          </enum>
      </enums>
      <messages>
           <message id="0" name="HEARTBEAT">
@@ -1912,6 +1945,15 @@
                <field type="uint16_t" name="Vcc">5V rail voltage in millivolts</field>
                <field type="uint16_t" name="Vservo">servo rail voltage in millivolts</field>
                <field type="uint16_t" name="flags">power supply status flags (see MAV_POWER_STATUS enum)</field>
+         </message>
+         <message name="SERIAL_CONTROL" id="126">
+           <description>Control a serial port. This can be used for raw access to an onboard serial peripheral such as a GPS or telemetry radio. It is designed to make it possible to update the devices firmware via MAVLink messages or change the devices settings. A message with zero bytes can be used to change just the baudrate.</description>
+           <field type="uint8_t" name="device">See SERIAL_CONTROL_DEV enum</field>
+           <field type="uint8_t" name="flags">See SERIAL_CONTROL_FLAG enum</field>
+           <field type="uint16_t" name="timeout">Timeout for reply data in milliseconds</field>
+           <field type="uint32_t" name="baudrate">Baudrate of transfer. Zero means no change.</field>
+           <field type="uint8_t" name="count">how many bytes in this transfer</field>
+           <field type="uint8_t[70]" name="data">serial data</field>
          </message>
          <message id="130" name="DATA_TRANSMISSION_HANDSHAKE">
              <field type="uint8_t" name="type">type of requested/acknowledged data (as defined in ENUM DATA_TYPES in mavlink/include/mavlink_types.h)</field>
