@@ -154,19 +154,19 @@ public:
     // extract x column
     Vector3<T>                  colx(void) const
     {
-        return Vector3f(a.x, b.x, c.x);
+        return Vector3<T>(a.x, b.x, c.x);
     }
 
     // extract y column
     Vector3<T>        coly(void) const
     {
-        return Vector3f(a.y, b.y, c.y);
+        return Vector3<T>(a.y, b.y, c.y);
     }
 
     // extract z column
     Vector3<T>        colz(void) const
     {
-        return Vector3f(a.z, b.z, c.z);
+        return Vector3<T>(a.z, b.z, c.z);
     }
 
     // multiplication by another Matrix3<T>
@@ -226,5 +226,8 @@ typedef Matrix3<uint16_t>               Matrix3ui;
 typedef Matrix3<int32_t>                Matrix3l;
 typedef Matrix3<uint32_t>               Matrix3ul;
 typedef Matrix3<float>                  Matrix3f;
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+    typedef Matrix3<double>                 Matrix3d;
+#endif
 
 #endif // MATRIX3_H

@@ -1355,6 +1355,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         }
         break;
 
+#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
+    case MAVLINK_MSG_ID_SERIAL_CONTROL:
+        handle_serial_control(msg, gps);
+        break;
+#endif
+
     default:
         // forward unknown messages to the other link if there is one
         for (uint8_t i=0; i<num_gcs; i++) {

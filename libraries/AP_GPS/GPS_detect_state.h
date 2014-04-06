@@ -53,3 +53,18 @@ struct UBLOX_detect_state {
     uint8_t step;
     uint8_t ck_a, ck_b;
 };
+
+struct SBP_detect_state {
+    enum {
+        WAITING = 0,
+        GET_TYPE = 1,
+        GET_SENDER = 2,
+        GET_LEN = 3,
+        GET_MSG = 4,
+        GET_CRC = 5
+    } state:8;
+    uint8_t n_read;
+    uint8_t msg_len;
+    uint16_t crc_so_far;
+    uint16_t crc;
+};
