@@ -216,18 +216,16 @@ bool AP_Mission::is_nav_cmd(const Mission_Command& cmd)
 bool AP_Mission::get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd)
 {
     uint16_t cmd_index = start_index;
-    Mission_Command temp_cmd;
 
     // search until the end of the mission command list
     while(cmd_index < (unsigned)_cmd_total) {
         // get next command
-        if (!get_next_cmd(cmd_index, temp_cmd, false)) {
+        if (!get_next_cmd(cmd_index, cmd, false)) {
             // no more commands so return failure
             return false;
         }else{
             // if found a "navigation" command then return it
-            if (is_nav_cmd(temp_cmd)) {
-                cmd = temp_cmd;
+            if (is_nav_cmd(cmd)) {
                 return true;
             }else{
                 // move on in list
@@ -238,6 +236,18 @@ bool AP_Mission::get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd)
 
     // if we got this far we did not find a navigation command
     return false;
+}
+
+/// get the ground course of the next navigation leg in centidegrees
+/// from 0 36000. Return default_angle if next navigation
+/// leg cannot be determined
+int32_t AP_Mission::get_next_ground_course_cd(int32_t default_angle)
+{
+    Mission_Command cmd;
+    if (!get_next_nav_cmd(_nav_cmd.index+1, cmd)) {
+        return default_angle;
+    }
+    return get_bearing_cd(_nav_cmd.content.location, cmd.content.location);
 }
 
 // set_current_cmd - jumps to command specified by index
