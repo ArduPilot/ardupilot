@@ -387,6 +387,9 @@ static bool have_position;
 static bool rtl_complete = false;
 
 
+// angle of our next navigation waypoint
+static int32_t next_navigation_leg_cd;
+
 // ground speed error in m/s
 static float	groundspeed_error;	
 // 0-(throttle_max - throttle_cruise) : throttle nudge in Auto mode using top 1/2 of throttle stick travel

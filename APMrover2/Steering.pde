@@ -98,11 +98,18 @@ static void calc_throttle(float target_speed)
     */
     float steer_rate = fabsf(lateral_acceleration / (g.turn_max_g*GRAVITY_MSS));
     steer_rate = constrain_float(steer_rate, 0.0, 1.0);
-    float reduction = 1.0 - steer_rate*(100 - g.speed_turn_gain)*0.01;
+
+    // use g.speed_turn_gain for a 90 degree turn, and in proportion
+    // for other turn angles
+    int32_t turn_angle = wrap_180_cd(next_navigation_leg_cd - ahrs.yaw_sensor);
+    float speed_turn_ratio = constrain_float(fabsf(turn_angle / 9000.0f), 0, 1);
+    float speed_turn_reduction = (100 - g.speed_turn_gain) * speed_turn_ratio * 0.01f;
+
+    float reduction = 1.0 - steer_rate*speed_turn_reduction;
     
     if (control_mode >= AUTO && wp_distance <= g.speed_turn_dist) {
         // in auto-modes we reduce speed when approaching waypoints
-        float reduction2 = 1.0 - (100-g.speed_turn_gain)*0.01*((g.speed_turn_dist - wp_distance)/g.speed_turn_dist);
+        float reduction2 = 1.0 - speed_turn_reduction*((g.speed_turn_dist - wp_distance)/g.speed_turn_dist);
         if (reduction2 < reduction) {
             reduction = reduction2;
         }
