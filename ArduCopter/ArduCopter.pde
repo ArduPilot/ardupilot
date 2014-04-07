@@ -110,6 +110,7 @@
 #include <AP_AHRS.h>
 #include <AP_NavEKF.h>
 #include <AP_Mission.h>         // Mission command library
+#include <AP_Rally.h>           // Rally point library
 #include <AC_PID.h>             // PID library
 #include <AC_P.h>               // P library
 #include <AC_AttitudeControl.h> // Attitude control library
@@ -707,6 +708,13 @@ static AP_Mount camera_mount2(&current_loc, ahrs, 1);
 ////////////////////////////////////////////////////////////////////////////////
 #if AC_FENCE == ENABLED
 AC_Fence    fence(&inertial_nav);
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
+// Rally library
+////////////////////////////////////////////////////////////////////////////////
+#if AC_RALLY == ENABLED
+AP_Rally rally(ahrs, MAX_RALLYPOINTS, RALLY_START_BYTE);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
