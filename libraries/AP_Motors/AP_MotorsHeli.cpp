@@ -330,6 +330,76 @@ void AP_MotorsHeli::output_test()
     output_min();
 }
 
+// output_test_individual - spin arbitrary motor to allow the user to confirm spin direction and motor order
+void AP_MotorsHeli::output_test_individual(uint8_t motor_num, bool enable, bool* esc_output)
+{
+	switch (motor_num)
+	{
+	case CH_1:
+		// servo 1
+		if (enable) {
+			*esc_output = false;
+			hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_1], _servo_1->radio_trim + 100);
+			hal.scheduler->delay(300);
+			hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_1], _servo_1->radio_trim - 100);
+			hal.scheduler->delay(300);
+			hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_1], _servo_1->radio_trim + 0);
+		}
+		
+		break;
+	case CH_2:
+		// servo 2
+		if (enable) {
+			*esc_output = false;
+			hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_2], _servo_2->radio_trim + 100);
+			hal.scheduler->delay(300);
+			hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_2], _servo_2->radio_trim - 100);
+			hal.scheduler->delay(300);
+			hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_2], _servo_2->radio_trim + 0);
+		}
+		
+		break;
+	case CH_3:
+		// servo 3
+		if (enable) {
+			*esc_output = false;
+			hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_3], _servo_3->radio_trim + 100);
+			hal.scheduler->delay(300);
+			hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_3], _servo_3->radio_trim - 100);
+			hal.scheduler->delay(300);
+			hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_3], _servo_3->radio_trim + 0);
+		}
+		
+		break;
+	case CH_4:
+		// servo 4
+		if (enable) {
+			*esc_output = false;
+			hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_4], _servo_4->radio_trim + 100);
+			hal.scheduler->delay(300);
+			hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_4], _servo_4->radio_trim - 100);
+			hal.scheduler->delay(300);
+			hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_4], _servo_4->radio_trim + 0);
+		}
+		
+		break;
+	case CH_8:
+		// spin main motor
+		if (enable) {
+			hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_8], _rc_throttle->radio_min + _min_throttle);
+		}
+		else {
+			hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_8], _rc_throttle->radio_min);
+		}
+		break;
+	default:
+		// Send minimum values to all motors
+		output_min();
+		*esc_output = false;
+		break;
+	}
+}
+
 // allow_arming - returns true if main rotor is spinning and it is ok to arm
 bool AP_MotorsHeli::allow_arming() const
 {

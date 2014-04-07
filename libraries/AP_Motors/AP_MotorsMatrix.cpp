@@ -368,6 +368,19 @@ void AP_MotorsMatrix::output_test()
     output_min();
 }
 
+// output_test_individual - spin arbitrary motor to allow the user to confirm spin direction and motor order
+void AP_MotorsMatrix::output_test_individual(uint8_t motor_num, bool enable, bool* esc_output)
+{
+	if (enable)
+	{
+		hal.rcout->write(_motor_to_channel_map[motor_num], _rc_throttle->radio_min + _min_throttle);
+	}
+	else
+	{
+		hal.rcout->write(_motor_to_channel_map[motor_num], _rc_throttle->radio_min);
+	}
+}
+
 // add_motor
 void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, uint8_t testing_order)
 {

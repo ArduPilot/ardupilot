@@ -201,31 +201,84 @@ test_ins(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_motors(uint8_t argc, const Menu::arg *argv)
 {
-    cliSerial->printf_P(PSTR(
-                        "Connect battery for this test.\n"
-                        "Motors will spin by frame position order.\n"
-                        "Front (& right of centerline) motor first, then in clockwise order around frame.\n"
-                        "Remember to disconnect battery after this test.\n"
-                        "Any key to exit.\n"));
+	// ensure all values have been sent to motors
+	motors.set_update_rate(g.rc_speed);
+	motors.set_frame_orientation(g.frame_orientation);
+	motors.set_min_throttle(g.throttle_min);
+	motors.set_mid_throttle(g.throttle_mid);
 
-    // ensure all values have been sent to motors
-    motors.set_update_rate(g.rc_speed);
-    motors.set_frame_orientation(g.frame_orientation);
-    motors.set_min_throttle(g.throttle_min);
-    motors.set_mid_throttle(g.throttle_mid);
+	switch (argc)
+	{
+	case 1 :
+		cliSerial->printf_P(PSTR(
+			"Connect battery for this test.\n"
+			"Motors will spin by frame position order.\n"
+			"Front (& right of centerline) motor first, then in clockwise order around frame.\n"
+			"Remember to disconnect battery after this test.\n"
+			"Any key to exit.\n"));
+		
+		// enable motors
+		init_rc_out();
 
-    // enable motors
-    init_rc_out();
+		while (1) {
+			delay(20);
+			read_radio();
+			motors.output_test();
 
-    while(1) {
-        delay(20);
-        read_radio();
-        motors.output_test();
-        if(cliSerial->available() > 0) {
-            g.esc_calibrate.set_and_save(0);
-            return(0);
-        }
-    }
+			if (cliSerial->available() > 0) {
+				g.esc_calibrate.set_and_save(0);
+				return(0);
+			}
+		}
+
+		break;
+	case 2 :
+		if (argv[1].i > 0 && argv[1].i <= AP_MOTORS_MAX_NUM_MOTORS) {
+			cliSerial->printf_P(PSTR(
+				"Connect battery for this test.\n"
+				"Motor connected to corresponding RC output will spin.\n"
+				"Remember to disconnect battery after this test.\n"));
+
+			uint8_t motor_to_spinn = argv[1].i - 1;
+
+			// enable motors
+			init_rc_out();
+			// This set to false if output is connected to a servo
+			bool esc_output = true;
+			motors.output_test_individual(motor_to_spinn, true, &esc_output);
+
+			// If motor connected to output, spinn until user exits
+			if (esc_output)
+			{
+				cliSerial->printf_P(PSTR("Any key to exit.\n"));
+				while (1) {
+					delay(20);
+					read_radio();
+
+					if (cliSerial->available() > 0) {
+						motors.output_test_individual(motor_to_spinn, false, &esc_output);
+						g.esc_calibrate.set_and_save(0);
+						return(0);
+					}
+				}
+			}
+		}
+		else {
+			cliSerial->printf_P(PSTR(
+				"Please specify a motor between 1 and %d.\n"), AP_MOTORS_MAX_NUM_MOTORS);
+			return(0);
+		}
+
+		break;
+	default:
+		cliSerial->printf_P(PSTR(
+			"Malformed argument.\n"
+			"Type \"motors\" to spin motors in clockwise order around frame.\n"
+			"Type motors followed by motor number (1-%d) to spin arbitrary motor.\n"
+			"For example \"motors 1\" will spin motor connected to RC output 1.\n"), AP_MOTORS_MAX_NUM_MOTORS);
+		return(0);
+		break;
+	}
 }
 
 
