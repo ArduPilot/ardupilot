@@ -80,7 +80,7 @@
 #define ABIAS_PNOISE_DEFAULT    0.00015f
 #define MAGE_PNOISE_DEFAULT     0.0003f
 #define MAGB_PNOISE_DEFAULT     0.0003f
-#define VEL_GATE_DEFAULT        5
+#define VEL_GATE_DEFAULT        3
 #define POS_GATE_DEFAULT        5
 #define HGT_GATE_DEFAULT        10
 #define MAG_GATE_DEFAULT        3
