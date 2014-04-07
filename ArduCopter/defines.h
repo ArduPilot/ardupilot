@@ -288,9 +288,20 @@ enum FlipState {
 #define FENCE_WP_SIZE sizeof(Vector2l)
 #define FENCE_START_BYTE (HAL_STORAGE_SIZE_AVAILABLE-(MAX_FENCEPOINTS*FENCE_WP_SIZE))
 
-// parameters get the first 1536 bytes of EEPROM, mission commands are stored between these params and the fence points
+// rally points shoehorned between fence points and waypoints
+#define MAX_RALLYPOINTS 6
+#define RALLY_WP_SIZE 15
+#define RALLY_START_BYTE (FENCE_START_BYTE-(MAX_RALLYPOINTS*RALLY_WP_SIZE))
+#define RALLY_LIMIT_KM_DEFAULT 2.0  // we'll set a per-vehicle default for this
+
+// parameters get the first 1536 bytes of EEPROM
+// mission commands are stored between these params and the rally points, or fence points if rally disabled
 #define MISSION_START_BYTE   0x600
-#define MISSION_END_BYTE     (FENCE_START_BYTE-1)
+#if AC_RALLY == ENABLED
+  #define MISSION_END_BYTE   (RALLY_START_BYTE-1)
+#else
+  #define MISSION_END_BYTE   (FENCE_START_BYTE-1)
+#endif
 
 // mark a function as not to be inlined
 #define NOINLINE __attribute__((noinline))

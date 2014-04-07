@@ -965,6 +965,12 @@ const AP_Param::Info var_info[] PROGMEM = {
     GOBJECT(fence,      "FENCE_",   AC_Fence),
 #endif
 
+#if AC_RALLY == ENABLED
+    // @Group: RALLY_
+    // @Path: ../libraries/AC_Rally/AC_Rally.cpp
+    GOBJECT(rally,      "RALLY_",   AP_Rally),
+#endif
+
     // @Group: GPSGLITCH_
     // @Path: ../libraries/AP_GPS/AP_GPS_Glitch.cpp
     GOBJECT(gps_glitch,      "GPSGLITCH_",   GPS_Glitch),
