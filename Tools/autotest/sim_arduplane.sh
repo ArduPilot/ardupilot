@@ -8,11 +8,13 @@ TRACKER_HOME="-35.362734,149.165300,586,270"
 INSTANCE=0
 USE_VALGRIND=0
 USE_GDB=0
+USE_LLDB=0
 CLEAN_BUILD=0
 START_ANTENNA_TRACKER=0
+OS=$(uname)
 
 # parse options. Thanks to http://wiki.bash-hackers.org/howto/getopts_tutorial
-while getopts ":I:VGcT" opt; do
+while getopts ":I:VGLcT" opt; do
   case $opt in
     I)
       INSTANCE=$OPTARG
@@ -25,6 +27,9 @@ while getopts ":I:VGcT" opt; do
       ;;
     G)
       USE_GDB=1
+      ;;
+    L)
+      USE_LLDB=1
       ;;
     c)
       CLEAN_BUILD=1
@@ -41,18 +46,16 @@ done
 shift $((OPTIND-1))
 
 # kill existing copy if this is the '0' instance only
-kill_tasks() 
-{
-    [ "$INSTANCE" -eq "0" ] && {
-        killall -q JSBSim lt-JSBSim ArduPlane.elf AntennaTracker.elf
-        pkill -f runsim.py
-        pkill -f sim_tracker.py
-    }
+[ "$INSTANCE" -eq "0" ] && {
+  if [ "$OS" = "Darwin" ]; then
+    KILLALL="killall"
+  else
+    KILLALL="killall -q"
+  fi
+  $KILLALL JSBSim lt-JSBSim ArduPlane.elf AntennaTracker.elf
+  pkill -f runsim.py sim_tracker.py
 }
 
-kill_tasks
-
-trap kill_tasks SIGINT
 
 # setup ports for this instance
 MAVLINK_PORT="tcp:127.0.0.1:"$((5760+10*$INSTANCE))
@@ -63,7 +66,15 @@ FG_PORT="127.0.0.1:"$((5503+10*$INSTANCE))
 set -e
 set -x
 
-autotest=$(dirname $(readlink -e $0))
+if [ -z "$TMPDIR" ]; then
+  TMPDIR="/tmp/"
+fi
+
+if [ "$OS" = "Darwin" ]; then
+  autotest=$(dirname $0)
+else
+  autotest=$(dirname $(readlink -e $0))
+fi
 pushd $autotest/../../ArduPlane
 if [ $CLEAN_BUILD == 1 ]; then
     make clean
@@ -87,13 +98,17 @@ if [ $START_ANTENNA_TRACKER == 1 ]; then
     TRACKIN_PORT="127.0.0.1:"$((5502+10*$TRACKER_INSTANCE))
     TRACKOUT_PORT="127.0.0.1:"$((5501+10*$TRACKER_INSTANCE))
     TRACKER_UARTA="tcp:127.0.0.1:"$((5760+10*$TRACKER_INSTANCE))
-    cmd="nice /tmp/AntennaTracker.build/AntennaTracker.elf -I1"
+    cmd="nice $TMPDIR/AntennaTracker.build/AntennaTracker.elf -I1"
     $autotest/run_in_terminal_window.sh "AntennaTracker" $cmd || exit 1
     $autotest/run_in_terminal_window.sh "pysim(Tracker)" nice $autotest/pysim/sim_tracker.py --home=$TRACKER_HOME --simin=$TRACKIN_PORT --simout=$TRACKOUT_PORT || exit 1
     popd
 fi
 
-cmd="/tmp/ArduPlane.build/ArduPlane.elf -I$INSTANCE"
+if [ "$OS" = "Darwin" ]; then
+  cmd="$TMPDIR/ArduPlane.build/ArduPlane.elf"
+else
+  cmd="$TMPDIR/ArduPlane.build/ArduPlane.elf -I$INSTANCE"
+fi
 
 if [ $USE_VALGRIND == 1 ]; then
     echo "Using valgrind"
@@ -103,6 +118,13 @@ elif [ $USE_GDB == 1 ]; then
     tfile=$(mktemp)
     echo r > $tfile
     $autotest/run_in_terminal_window.sh "ardupilot (gdb)" gdb -x $tfile --args $cmd || exit 1
+elif [ $USE_LLDB == 1 ]; then
+    echo "Using lldb"
+    sfile=$(mktemp lldb.XXXX)
+#   echo "process handle SIGALRM -n false -p true" >> $sfile
+    echo "target create $cmd" > $sfile
+    echo "process launch" >> $sfile
+    $autotest/run_in_terminal_window.sh "ardupilot (lldb)" lldb -s $sfile  || exit 1
 else
     $autotest/run_in_terminal_window.sh "ardupilot" $cmd || exit 1
 fi
