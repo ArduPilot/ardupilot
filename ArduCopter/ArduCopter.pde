@@ -835,6 +835,11 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { fifty_hz_logging_loop, 2,     220 },
     { perf_update,        1000,     200 },
     { read_receiver_rssi,   10,      50 },
+#ifdef HOTT_TELEMETRY
+    {_hott_update_telemetry_data, 30,100},
+#endif
+
+
 #ifdef USERHOOK_FASTLOOP
     { userhook_FastLoop,     1,    100  },
 #endif
