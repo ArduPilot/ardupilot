@@ -22,7 +22,7 @@
 #define AP_PARACHUTE_SERVO_ON_PWM_DEFAULT      1300    // default PWM value to move servo to when shutter is activated
 #define AP_PARACHUTE_SERVO_OFF_PWM_DEFAULT     1100    // default PWM value to move servo to when shutter is deactivated
 
-#define AP_PARACHUTE_ALT_MIN_DEFAULT           1000    // default min altitude the vehicle should have before parachute is released
+#define AP_PARACHUTE_ALT_MIN_DEFAULT            10     // default min altitude the vehicle should have before parachute is released
 
 /// @class	AP_Parachute
 /// @brief	Class managing the release of a parachute
@@ -52,9 +52,9 @@ public:
     /// update - shuts off the trigger should be called at about 10hz
     void update();
 
-    /// alt_min_cm - returns the min altitude above home the vehicle should have before parachute is released
+    /// alt_min - returns the min altitude above home the vehicle should have before parachute is released
     ///   0 = altitude check disabled
-    int16_t alt_min_cm() const { return _alt_min_cm; }
+    int16_t alt_min() const { return _alt_min; }
 
     static const struct AP_Param::GroupInfo        var_info[];
 
@@ -64,7 +64,7 @@ private:
     AP_Int8     _release_type;  // 0:Servo,1:Relay
     AP_Int16    _servo_on_pwm;  // PWM value to move servo to when shutter is activated
     AP_Int16    _servo_off_pwm; // PWM value to move servo to when shutter is deactivated
-    AP_Int16    _alt_min_cm;    // min altitude the vehicle should have before parachute is released
+    AP_Int16    _alt_min;       // min altitude the vehicle should have before parachute is released
 
     // internal variables
     AP_Relay&   _relay;         // pointer to relay object from the base class Relay. The subclasses could be AP_Relay_APM1 or AP_Relay_APM2
