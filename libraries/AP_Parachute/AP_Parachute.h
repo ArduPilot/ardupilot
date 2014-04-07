@@ -33,7 +33,8 @@ public:
     /// Constructor
     AP_Parachute(AP_Relay& relay) :
         _relay(relay),
-        _release_time(0)
+        _release_time(0),
+        _released(false)
     {
         // setup parameter defaults
         AP_Param::setup_object_defaults(this, var_info);
