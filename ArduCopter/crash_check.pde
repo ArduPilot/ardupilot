@@ -156,8 +156,6 @@ void parachute_check()
 // parachute_release - trigger the release of the parachute, disarm the motors and notify the user
 static void parachute_release()
 {
-    // To-Do: add warning tone and short delay before triggering release
-
     // send message to gcs and dataflash
     gcs_send_text_P(SEVERITY_HIGH,PSTR("Parachute: Released!"));
     Log_Write_Event(DATA_PARACHUTE_RELEASED);
@@ -173,6 +171,11 @@ static void parachute_release()
 //   checks if the vehicle is landed 
 static void parachute_manual_release()
 {
+    // exit immediately if parachute is not enabled
+    if (!parachute.enabled()) {
+        return;
+    }
+
     // do not release if we are landed or below the minimum altitude above home
     if (ap.land_complete || (parachute.alt_min() != 0 && (baro_alt < (uint32_t)parachute.alt_min() * 100))) {
         // warn user of reason for failure
