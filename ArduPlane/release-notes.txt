@@ -171,8 +171,8 @@ One of the most exciting things to happen in the world of GPS modules
 in the last couple of years is the announcement by SwiftNav that they
 would be producing a RTK capable GPS module called the Piksi at a
 price that (while certainly expensive!) is within reach of more
-dedicted hobbyists. It offers the possibility of decimeter and
-possibly even centimeter level relative positioning, which has a lot
+dedicated hobbyists. It offers the possibility of decimeter and
+possibly even centimetre level relative positioning, which has a lot
 of potential for small aircraft, particularly for landing control and
 more precise aerial mapping.
 
@@ -298,7 +298,7 @@ important changes not mentioned above:
   - flymaple updates from Mike McCauley
   - fixed zero logs display in MAVLink log download
   - fixed norm_input for cruise mode attitude control
-  - added RADIO_STATUS logging in aircrft logs
+  - added RADIO_STATUS logging in aircraft logs
   - added UBX monitor messages for detailed hardware logging of u-Blox status
   - added MS4525 I2C airspeed sensor voltage compensation
 
