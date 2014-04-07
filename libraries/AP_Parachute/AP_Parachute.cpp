@@ -21,7 +21,7 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] PROGMEM = {
     // @Param: TYPE
     // @DisplayName: Parachute release mechanism type (relay or servo)
     // @Description: Parachute release mechanism type (relay or servo)
-    // @Values: 0:Relay 0,1:Relay 1,2:Relay 2,3:Relay 3,10:Servo
+    // @Values: 0:First Relay,1:Second Relay,2:Third Relay,3:Fourth Relay,10:Servo
     // @User: Standard
     AP_GROUPINFO("TYPE", 1, AP_Parachute, _release_type, AP_PARACHUTE_TRIGGER_TYPE_RELAY_0),
 
