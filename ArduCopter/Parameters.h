@@ -104,10 +104,11 @@ public:
         k_param_angle_rate_max,         // remove
         k_param_rssi_range,
         k_param_rc_feel_rp,
-        k_param_NavEKF,                 // 41 - Extended Kalman Filter Inertial Navigation Group
+        k_param_NavEKF,                 // Extended Kalman Filter Inertial Navigation Group
         k_param_mission,                // mission library
         k_param_rc_13,
         k_param_rc_14,
+        k_param_rally,                  // 45
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
