@@ -685,9 +685,13 @@ void _hott_send_text_msg() {
 #define HOTT_APM_GET_CURRENT	(int16_t)(battery.current_amps()*10.0)
 #define HOTT_APM_GET_COMPASS_DIRECTION	ToDeg(compass.calculate_heading(ahrs.get_dcm_matrix())) / 2
 #define HOTT_APM_GET_COMPASS_YAW ((ahrs.yaw_sensor /100) %360) / 2
-#define HOTT_APM_GET_GPS_GROUND_SPEED  (int16_t)(((float)g_gps->ground_speed_cm * 0.036))
-#define HOTT_APM_GET_GPS_ALTITUDE (int16_t)(g_gps->altitude_cm / 100)
-#define HOTT_APM_GET_GPS_GROUND_COURSE (int8_t)(g_gps->ground_course_cd / 200)
+//#define HOTT_APM_GET_GPS_GROUND_SPEED  (int16_t)(((float)g_gps->ground_speed_cm * 0.036))
+//#define HOTT_APM_GET_GPS_GROUND_SPEED  (int16_t)(((float)gps.ground_speed_cm() * 0.036))
+#define HOTT_APM_GET_GPS_GROUND_SPEED  (int16_t)(gps.ground_speed_cm()/28)
+//#define HOTT_APM_GET_GPS_ALTITUDE (int16_t)(gps.altitude_cm() / 100)
+#define HOTT_APM_GET_GPS_ALTITUDE (int16_t)(current_loc.alt / 100)
+//#define HOTT_APM_GET_GPS_GROUND_COURSE (int8_t)(g_gps->ground_course_cd / 200)
+#define HOTT_APM_GET_GPS_GROUND_COURSE (int8_t)(gps.ground_course_cd() / 200)
 #define HOTT_APM_GET_BATTERY_VOLTAGE (int16_t)(battery.voltage() * 10.0)
 #define HOTT_APM_GET_BATTERY_USED (int16_t)(battery.current_total_mah() / 10.0)
 #define HOTT_APM_GET_BATTERY_PERCENT battery.capacity_remaining_pct()
@@ -800,7 +804,7 @@ void _hott_update_gps_msg() {
           }
 	}
 
- if(g_gps->status() == GPS::GPS_OK_FIX_3D) {
+ if(gps.status() == AP_GPS::GPS_OK_FIX_3D) {
     hott_gps_msg.alarm_invers2 = 0;
     hott_gps_msg.gps_fix_char = '3';
     hott_gps_msg.free_char3 = '3';  //3D Fix according to specs...
@@ -895,7 +899,7 @@ void _hott_update_gps_msg() {
   hott_gps_msg.climbrate = 30000 + climb_rate;
   hott_gps_msg.climbrate3s = 120 + (climb_rate / 100);  // 0 m/3s
 
-  hott_gps_msg.gps_satelites = (int8_t)g_gps->num_sats;
+  hott_gps_msg.gps_satelites = (int8_t)gps.num_sats();
 
   hott_gps_msg.angle_roll = ahrs.roll_sensor / 200;
   hott_gps_msg.angle_nick = ahrs.pitch_sensor / 200;
@@ -904,7 +908,8 @@ void _hott_update_gps_msg() {
   hott_gps_msg.angle_compass = HOTT_APM_GET_COMPASS_YAW;
   //hott_gps_msg.flight_direction = hott_gps_msg.angle_compass;	//
 
-  uint32_t t = g_gps->last_fix_time;
+  //uint32_t t = g_gps->last_fix_time;
+  uint32_t t = gps.last_fix_time_ms(0);
 
  /*
   hott_gps_msg.gps_time_h = t / 3600000;
@@ -1002,7 +1007,8 @@ void _hott_update_vario_msg() {
 
 	memcpy_P((char*)hott_vario_msg.text_msg, (motors.armed()?(char *)hott_ARMED_STR:(char *)hott_DISARMED_STR), HOTT_ARMED_STR_LEN);
 	memcpy_P((char*)&hott_vario_msg.text_msg[HOTT_ARMED_STR_LEN], hott_flight_mode_strings[control_mode],HOTT_FLIGHT_MODE_STRING_LEN);
-    if ( control_mode == AUTO) u8toa10r3((uint8_t)g.command_index,(char*)&hott_vario_msg.text_msg[HOTT_DISPLAY_WP_NUM_OFFSET]);
+//    if ( control_mode == AUTO) u8toa10r3((uint8_t)g.command_index,(char*)&hott_vario_msg.text_msg[HOTT_DISPLAY_WP_NUM_OFFSET]);
+    if ( control_mode == AUTO) u8toa10r3((uint8_t)(mission.get_current_nav_cmd().index),(char*)&hott_vario_msg.text_msg[HOTT_DISPLAY_WP_NUM_OFFSET]);
 
 	}
 #endif  // HOTT_SIM_VARIO_SENSOR
