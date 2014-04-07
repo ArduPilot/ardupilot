@@ -22,7 +22,8 @@
 //
 /*
 *   2013-10-27	msk7-ripe	Added electric time EAM functionality
-*
+*   2014-12.15  msk7-ripe	Replaced float calculations with integer where possible
+*   2014-04-07  msk7-ripe	Added AC3.1.2dev compatibility (usage of AP_GPS object)
 */
 
 #ifdef HOTT_TELEMETRY
