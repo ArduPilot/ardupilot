@@ -41,10 +41,11 @@ static const struct {
     float scaling;
 } pin_scaling[] = {
 #ifdef CONFIG_ARCH_BOARD_VRBRAIN_V4
-    { 0,  3.3f/4096 },
+    {  0, 3.3f/4096 },
     { 10, 3.3f/4096 },
+    { 11, 3.3f/4096 },
 #elif CONFIG_ARCH_BOARD_VRBRAIN_V5
-    { 0,  3.3f/4096 },
+    {  0, 3.3f/4096 },
     { 10, 3.3f/4096 },
     { 11, 3.3f/4096 },
 #elif CONFIG_ARCH_BOARD_VRHERO_V1
