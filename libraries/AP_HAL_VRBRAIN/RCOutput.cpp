@@ -39,9 +39,9 @@ void VRBRAINRCOutput::init(void* unused)
         return;
     }
 
-    _alt_fd = open("/dev/px4fmu", O_RDWR);
+    _alt_fd = open("/dev/vroutput", O_RDWR);
     if (_alt_fd == -1) {
-        hal.console->printf("RCOutput: failed to open /dev/px4fmu");
+        hal.console->printf("RCOutput: failed to open /dev/vroutput");
         return;
     }
 }
