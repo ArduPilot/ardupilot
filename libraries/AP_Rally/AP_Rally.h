@@ -29,11 +29,11 @@
 class AP_Rally {
 
 public:
-    AP_Rally(AP_AHRS &ahrs, uint16_t max_rally_points, uint16_t rally_wp_size, uint16_t rally_start_byte);
+    AP_Rally(AP_AHRS &ahrs, uint16_t max_rally_points, uint16_t rally_point_size, uint16_t rally_start_byte);
 
     // data handling
-    bool get_rally_point_with_index(unsigned i, RallyLocation &ret) const;
-    bool set_rally_point_with_index(unsigned i, const RallyLocation &rallyLoc);
+    bool get_rally_point_with_index(uint8_t i, RallyLocation &ret) const;
+    bool set_rally_point_with_index(uint8_t i, const RallyLocation &rallyLoc);
     uint8_t get_rally_total() const { return _rally_point_total_count; }
 
     // logic handling
@@ -44,10 +44,12 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+    Location rally_location_to_location(const RallyLocation &rally_loc, const Location &home_loc) const;
+
+private:
     // internal variables
     const AP_AHRS& _ahrs; // used only for home position
-    const uint16_t _max_rally_points;
-    const uint16_t _rally_wp_size;
+    uint16_t _max_rally_points;
     const uint16_t _rally_start_byte;
 
     // parameters
