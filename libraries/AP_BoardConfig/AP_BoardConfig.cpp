@@ -121,9 +121,9 @@ void AP_BoardConfig::init()
     if (_pwm_count > 8) _pwm_count.set(8);
     if (_pwm_count < 0) _pwm_count.set(0);
 
-    int fd = open("/dev/px4fmu", 0);
+    int fd = open("/dev/vroutput", 0);
     if (fd == -1) {
-        hal.scheduler->panic("Unable to open /dev/px4fmu");
+        hal.scheduler->panic("Unable to open /dev/vroutput");
     }
     if (ioctl(fd, PWM_SERVO_SET_COUNT, _pwm_count.get()) != 0) {
         hal.console->printf("RCOutput: Unable to setup alt PWM to %u channels\n", _pwm_count.get());  
