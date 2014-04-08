@@ -789,6 +789,45 @@ def fly_auto_test(mavproxy, mav):
 
     return ret
 
+# fly_avc_test - fly AVC mission
+def fly_avc_test(mavproxy, mav):
+        
+    # upload mission from file
+    print("# Upload copter_glitch_mission")
+    if not upload_mission_from_file(mavproxy, mav, os.path.join(testdir, "copter_AVC2013_mission.txt")):
+        print("upload copter_mission.txt failed")
+        return False
+
+    # get number of commands in mission
+    if not load_mission_from_file(mavproxy, mav, os.path.join(testdir, "copter_AVC2013_mission.txt")):
+        print("load copter_mission failed")
+        return False
+
+    # load the waypoint count
+    global homeloc
+    global num_wp
+    print("Fly AVC mission from 1 to %u" % num_wp)
+    mavproxy.send('wp set 1\n')
+
+    # switch into AUTO mode and raise throttle
+    mavproxy.send('switch 4\n') # auto mode
+    wait_mode(mav, 'AUTO')
+    mavproxy.send('rc 3 1500\n')
+
+    # fly the mission
+    ret = wait_waypoint(mav, 0, num_wp-1, timeout=500, mode='AUTO')
+
+    # set throttle to minimum
+    mavproxy.send('rc 3 1000\n')
+
+    # wait for disarm
+    mav.motors_disarmed_wait()
+    print("MOTORS DISARMED OK")
+
+    print("AVC mission completed: passed=%s" % ret)
+
+    return ret
+
 def land(mavproxy, mav, timeout=60):
     '''land the quad'''
     print("STARTING LANDING")
@@ -871,7 +910,7 @@ def fly_ArduCopter(viewerip=None, map=False):
     mavproxy.expect('Received [0-9]+ parameters')
 
     # setup test parameters
-    mavproxy.send("param load %s/ArduCopter.parm\n" % testdir)
+    mavproxy.send("param load %s/copter_params.parm\n" % testdir)
     mavproxy.expect('Loaded [0-9]+ parameters')
 
     # reboot with new parameters
@@ -1195,7 +1234,7 @@ def fly_CopterAVC(viewerip=None, map=False):
     mavproxy.expect('Received [0-9]+ parameters')
 
     # setup test parameters
-    mavproxy.send("param load %s/CopterAVC.parm\n" % testdir)
+    mavproxy.send("param load %s/copter_AVC2013_params.parm\n" % testdir)
     mavproxy.expect('Loaded [0-9]+ parameters')
 
     # reboot with new parameters
@@ -1266,37 +1305,14 @@ def fly_CopterAVC(viewerip=None, map=False):
             print("arm_motors failed")
             failed = True
 
-        # Fly mission #1
-        print("# Upload AVC mission")
-        if not upload_mission_from_file(mavproxy, mav, os.path.join(testdir, "AVC2013.txt")):
-            print("upload_mission_from_file failed")
-            failed = True
-
-        # this grabs our mission count
-        print("# store mission1 locally")
-        if not load_mission_from_file(mavproxy, mav, os.path.join(testdir, "AVC2013.txt")):
-            print("load_mission_from_file failed")
-            failed = True
-
-        print("# raising throttle")
-        mavproxy.send('rc 3 1300\n')
-
-        print("# Fly mission 1")
-        if not fly_mission(mavproxy, mav,height_accuracy = 0.5, target_altitude=10):
-            print("fly_mission failed")
+        print("# Fly AVC mission")
+        if not fly_avc_test(mavproxy, mav):
+            print("fly_avc_test failed")
             failed = True
         else:
-            print("Flew mission 1 OK")
+            print("Flew AVC mission OK")
 
-        print("# lowering throttle")
-        mavproxy.send('rc 3 1000\n')
-
-        #mission includes LAND at end so should be ok to disamr
-        print("# disarm motors")
-        if not disarm_motors(mavproxy, mav):
-            print("disarm_motors failed")
-            failed = True
-
+        #mission includes disarm at end so should be ok to download logs now
         if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/CopterAVC-log.bin")):
             print("Failed log download")
             failed = True
