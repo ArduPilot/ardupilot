@@ -495,6 +495,9 @@ void SITL_State::_simulator_output(void)
 	// setup wind control
     float wind_speed = _sitl->wind_speed * 100;
     float altitude = _barometer?_barometer->get_altitude():0;
+    if (altitude < 0) {
+        altitude = 0;
+    }
     if (altitude < 60) {
         wind_speed *= altitude / 60.0f;
     }
