@@ -46,16 +46,22 @@ const AP_Param::GroupInfo AP_Rally::var_info[] PROGMEM = {
 AP_Rally::AP_Rally(AP_AHRS &ahrs, uint16_t max_rally_points, uint16_t rally_wp_size, uint16_t rally_start_byte) 
     : _ahrs(ahrs)
     , _max_rally_points(max_rally_points)
-    , _rally_wp_size(rally_wp_size)
     , _rally_start_byte(rally_start_byte)
-{ 
-    AP_Param::setup_object_defaults(this, var_info); 
+{
+    AP_Param::setup_object_defaults(this, var_info);
+
+    // we only pass rally_point_size through to verify that the value used in defines.h to layout the EEPROM stays correct over time
+    // would be nice if we could reliably check at compile time, but I can't find a solution that works in the Arduino IDE too
+    // if there is a difference in passed size versus sizeof(RallyLocation) we disable rally points by setting the max count to zero
+    if (rally_wp_size != sizeof(RallyLocation)) {
+        _max_rally_points = 0;
+    }
 }
 
 // get a rally point from EEPROM
-bool AP_Rally::get_rally_point_with_index(unsigned i, RallyLocation &ret) const
+bool AP_Rally::get_rally_point_with_index(uint8_t i, RallyLocation &ret) const
 {
-    if (i >= (unsigned) _rally_point_total_count) {
+    if (i >= (uint8_t) _rally_point_total_count) {
         return false;
     }
 
@@ -69,13 +75,13 @@ bool AP_Rally::get_rally_point_with_index(unsigned i, RallyLocation &ret) const
 }
 
 // save a rally point to EEPROM - this assumes that the RALLY_TOTAL param has been incremented beforehand, which is the case in Mission Planner
-bool AP_Rally::set_rally_point_with_index(unsigned i, const RallyLocation &rallyLoc)
+bool AP_Rally::set_rally_point_with_index(uint8_t i, const RallyLocation &rallyLoc)
 {
-    if (i >= (unsigned) _rally_point_total_count) {
+    if (i >= (uint8_t) _rally_point_total_count) {
         return false;
     }
 
-    if (i >= (unsigned) _max_rally_points) {
+    if (i >= (uint8_t) _max_rally_points) {
         return false;
     }
 
@@ -84,8 +90,8 @@ bool AP_Rally::set_rally_point_with_index(unsigned i, const RallyLocation &rally
     return true;
 }
 
-// static helper function to translate a RallyLocation to a Location
-static Location rally_location_to_location(const RallyLocation &rally_loc, const Location &home_loc)
+// helper function to translate a RallyLocation to a Location
+Location AP_Rally::rally_location_to_location(const RallyLocation &rally_loc, const Location &home_loc) const
 {
     Location ret = {};
 
@@ -109,7 +115,7 @@ bool AP_Rally::find_nearest_rally_point(const Location &current_loc, RallyLocati
     float min_dis = -1;
     const struct Location &home_loc = _ahrs.get_home();
 
-    for (unsigned i = 0; i < (unsigned) _rally_point_total_count; i++) {
+    for (uint8_t i = 0; i < (uint8_t) _rally_point_total_count; i++) {
         RallyLocation next_rally;
         if (!get_rally_point_with_index(i, next_rally)) {
             continue;
