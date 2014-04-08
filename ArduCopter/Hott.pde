@@ -24,6 +24,8 @@
 *   2013-10-27	msk7-ripe	Added electric time EAM functionality
 *   2014-12.15  msk7-ripe	Replaced float calculations with integer where possible
 *   2014-04-07  msk7-ripe	Added AC3.1.2dev compatibility (usage of AP_GPS object)
+*   2014-04-08  msk7-ripe	Clered old comments
+*
 */
 
 #ifdef HOTT_TELEMETRY
@@ -215,7 +217,7 @@ struct HOTT_VARIO_MSG {
 	int8_t free_char1;			//#39 Free ASCII character.  appears right to home distance
 	int8_t free_char2;			//#40 Free ASCII character.  appears right to home direction
 	int8_t free_char3;			//#41 Free ASCII character.  appears? TODO: Check where this char appears
-	int8_t compass_direction;		//#42 Compass heading in 2° steps. 1 = 2°
+	int8_t compass_direction;		//#42 Compass heading in 2 deg steps. 1 = 2 degrees
 	int8_t version;				//#43 version number TODO: more info?
 	int8_t stop_byte;				//#44 stop int8_t, constant value 0x7d
 //	int8_t parity;				//#45 checksum / parity
@@ -289,7 +291,7 @@ struct HOTT_EAM_MSG {
 	int16_t batt1_voltage;		//#21 battery 1 voltage lower value. opt. cell8_L 0.02V steps
 	int16_t batt2_voltage;		//#23 battery 2 voltage lower value. opt cell8_H value-. 0.02V steps
 
-	int8_t temp1;					//#25 Temperature sensor 1. 0°=20, 26°=46
+	int8_t temp1;					//#25 Temperature sensor 1. 0 degrees = 20, 26 dgrees = 46
 	int8_t temp2;					//#26 temperature sensor 2
 
 	int16_t altitude;			//#27 Attitude lower value. unit: meters. Value of 500 = 0m
@@ -344,11 +346,11 @@ struct HOTT_GPS_MSG {
   int16_t gps_speed;  //08 km/h
 
   int8_t pos_NS;  //#10 north = 0, south = 1
-  int16_t pos_NS_dm;  //#11 degree minutes ie N48�39 988
+  int16_t pos_NS_dm;  //#11 degree minutes ie N48d39 988
   int16_t pos_NS_sec; //#13 position seconds
 
   int8_t pos_EW;  //#15 east = 0, west = 1
-  int16_t pos_EW_dm; //#16 degree minutes ie. E9�25 9360
+  int16_t pos_EW_dm; //#16 degree minutes ie. E9d25 9360
   int16_t pos_EW_sec;  //#18 position seconds
 
   int16_t home_distance;  //#20 meters
@@ -365,7 +367,7 @@ struct HOTT_GPS_MSG {
   int8_t home_direction; //#29 direction from starting point to Model position (2 degree steps)
   int8_t angle_roll;    //#30 angle roll in 2 degree steps
   int8_t angle_nick;    //#31 angle in 2degree steps
-  int8_t angle_compass; //#32 angle in 2degree steps. 1 = 2°, 255 = - 2° (1 int8_t) North = 0°
+  int8_t angle_compass; //#32 angle in 2degree steps. 1 = 2d, 255 = - 2d (1 int8_t) North = 0d
 
   int8_t gps_time_h;  //#33 UTC time hours
   int8_t gps_time_m;  //#34 UTC time minutes
@@ -487,7 +489,7 @@ void _hott_msgs_init() {
   called by timer_scheduler
 */
 /*
-  Called periodically (≈1ms) by timer scheduler
+  Called periodically (1ms) by timer scheduler
 
   @param tnow  timestamp in uSecond
 */
@@ -728,15 +730,15 @@ void _hott_update_gam_msg() {
 void _hott_update_eam_msg() {
 
 	static uint32_t	electric_msecs =0;	// electric time ( time with batt current > 2A) in milliseconds
-	static uint32_t last_msecs=0; 	        // previous call msecs value, ==0 if in previous call current was < 2A and we weren't conting
+	static uint32_t last_msecs=0; 	        // previous call msecs value, ==0 if in previous call current was < 2A and we weren't counting
 
 	hott_eam_msg.batt1_voltage = HOTT_APM_GET_BATTERY_VOLTAGE;
-    hott_eam_msg.batt2_voltage = hott_eam_msg.batt1_voltage;
+    	hott_eam_msg.batt2_voltage = hott_eam_msg.batt1_voltage;
 	hott_eam_msg.temp1 = HOTT_APM_GET_TEMPERATURE;
 	hott_eam_msg.temp2 = hott_eam_msg.temp1; //HOTT_CELSIUS_ZERO;	//0°
 	hott_eam_msg.altitude = HOTT_APM_GET_LOCAL_ALTITUDE;
 	hott_eam_msg.current = HOTT_APM_GET_CURRENT;
-    hott_eam_msg.main_voltage = hott_eam_msg.batt1_voltage;
+    	hott_eam_msg.main_voltage = hott_eam_msg.batt1_voltage;
 	hott_eam_msg.batt_cap = HOTT_APM_GET_BATTERY_USED;
 	hott_eam_msg.speed = HOTT_APM_GET_GPS_GROUND_SPEED;
 
@@ -774,11 +776,18 @@ void _hott_update_gps_msg() {
   hott_gps_msg.msl_altitude = HOTT_APM_GET_GPS_ALTITUDE;  //meters above sea level
   hott_gps_msg.flight_direction = HOTT_APM_GET_GPS_GROUND_COURSE;  // in 2* steps
   hott_gps_msg.gps_speed = HOTT_APM_GET_GPS_GROUND_SPEED;
+  hott_gps_msg.altitude = HOTT_APM_GET_LOCAL_ALTITUDE;  //meters above ground
+  hott_gps_msg.climbrate = 30000 + climb_rate;
+  hott_gps_msg.climbrate3s = 120 + (climb_rate / 100);  // 0 m/3s
+  hott_gps_msg.gps_satelites = (int8_t)gps.num_sats();
+  hott_gps_msg.angle_roll = ahrs.roll_sensor / 200;
+  hott_gps_msg.angle_nick = ahrs.pitch_sensor / 200;
+
+  hott_gps_msg.angle_compass = HOTT_APM_GET_COMPASS_YAW;
 
   switch(control_mode) {
 	case AUTO:
-//  case LOITER:
-          //Use home direction field to display direction and distance to next waypoint
+        	  //Use home direction field to display direction and distance to next waypoint
           {
           	  // int32_t dist = wp_nav.get_distance_to_target();
 	          //hott_gps_msg.home_distance = dist < 0 ? 0 : (int16_t)(dist / 100);
@@ -800,7 +809,7 @@ void _hott_update_gps_msg() {
 			//hott_gps_msg.home_direction = get_bearing_cd(current_loc, home) / 200; //get_bearing() return value in degrees * 100
 			hott_gps_msg.home_direction = home_bearing /200;
 			hott_gps_msg.free_char1 = 0;
-            hott_gps_msg.free_char2 = 0;
+            		hott_gps_msg.free_char2 = 0;
             break;
           }
 	}
@@ -816,119 +825,38 @@ void _hott_update_gps_msg() {
     hott_gps_msg.free_char3 = '-';
     hott_gps_msg.home_distance = (int16_t)0; // set distance to 0 since there is no GPS signal
   }
-     {
 
-        //
-        //latitude
-         /*
-         if(coord >= 0)
-         {
-          hott_gps_msg.pos_NS = 0;  //north
-          } else {
-            hott_gps_msg.pos_NS = 1;   //south
-          }
-         */
-        register uint32_t   coord = abs(current_loc.lat);     // get current coord in D.ddddddd format (degrees*10**7)
-        hott_gps_msg.pos_NS = (int8_t)(current_loc.lat < 0);  // N=0, S=1
-        hott_gps_msg.pos_NS_dm = coord / 10000000;            // get integer degrees
-        coord %= 10000000;                                    // get rid of degrees
-        coord *= 6;                                           // translate to minutes * 10**6
-        hott_gps_msg.pos_NS_dm = hott_gps_msg.pos_NS_dm *100 + coord / 1000000; // translate to deg*100+minutes
-        hott_gps_msg.pos_NS_sec = ((coord % 1000000)*3)/50;    //translate to seconds * 10**5
+    //latitude
 
-        /*
-        float coor = current_loc.lat / 10000000.0;
-        if(coor < 0.0)
-          coor *= -1.0;
-        int lat = coor;  //degree
-        coor -= lat;
-        lat *= 100;
-
-        coor *= 60;
-        int tmp = coor;  //minutes
-        lat += tmp;
-        //seconds
-        coor -= tmp;
-        coor *= 10000.0;
-        int lat_sec = coor;
-
-        hott_gps_msg.pos_NS_dm = (int16_t)lat;
-        hott_gps_msg.pos_NS_sec = (int16_t)(lat_sec);
-        */
+    register uint32_t   coord = abs(current_loc.lat);     // get current coord in D.ddddddd format (degrees*10**7)
+    hott_gps_msg.pos_NS = (int8_t)(current_loc.lat < 0);  // N=0, S=1
+    hott_gps_msg.pos_NS_dm = coord / 10000000;            // get integer degrees
+    coord %= 10000000;                                    // get rid of degrees
+    coord *= 6;                                           // translate to minutes * 10**6
+    hott_gps_msg.pos_NS_dm = hott_gps_msg.pos_NS_dm *100 + coord / 1000000; // translate to deg*100+minutes
+    hott_gps_msg.pos_NS_sec = ((coord % 1000000)*3)/50;    //translate to seconds * 10**5
 
 
-        // Longitude
-         /*
-        if(current_loc.lng >= 0) {
-           hott_gps_msg.pos_EW = 0; //east
-        } else {
-           hott_gps_msg.pos_EW = 1; //west
-        }
-        */
+
+    // Longitude
+
+    coord = abs(current_loc.lng);                         // get current coord in D.ddddddd format (degrees*10**7)
+    hott_gps_msg.pos_EW = (int8_t)(current_loc.lng < 0) ;  // E=0, W=1
+    hott_gps_msg.pos_EW_dm = coord / 10000000;            // get integer degrees
+    coord %= 10000000;                                    // get rid of degrees
+    coord *= 6;                                           // translate to minutes * 10**6
+    hott_gps_msg.pos_EW_dm = hott_gps_msg.pos_EW_dm *100 + coord / 1000000; // translate to deg*100+minutes
+    hott_gps_msg.pos_EW_sec = ((coord % 1000000)*3)/50;    //translate to seconds * 10**5
 
 
-        coord = abs(current_loc.lng);                         // get current coord in D.ddddddd format (degrees*10**7)
-        hott_gps_msg.pos_EW = (int8_t)(current_loc.lng < 0) ;  // E=0, W=1
-        hott_gps_msg.pos_EW_dm = coord / 10000000;            // get integer degrees
-        coord %= 10000000;                                    // get rid of degrees
-        coord *= 6;                                           // translate to minutes * 10**6
-        hott_gps_msg.pos_EW_dm = hott_gps_msg.pos_EW_dm *100 + coord / 1000000; // translate to deg*100+minutes
-        hott_gps_msg.pos_EW_sec = ((coord % 1000000)*3)/50;    //translate to seconds * 10**5
-
-        /*
-          coor = current_loc.lng / 10000000.0;
-        if(coor < 0.0)
-          coor *= -1.0;
-        int lng = coor;
-        coor -= lng;
-        lng *= 100;
-
-        coor *= 60;
-        tmp = coor;  //minutes
-        lng += tmp;
-        //seconds
-        coor -= tmp;
-        coor *= 10000.0;
-        int lng_sec = coor;
-
-        hott_gps_msg.pos_EW_dm = (int16_t)(lng);
-        hott_gps_msg.pos_EW_sec = (int16_t)(lng_sec);
-        */
-    }
-  hott_gps_msg.altitude = HOTT_APM_GET_LOCAL_ALTITUDE;  //meters above ground
-
-  hott_gps_msg.climbrate = 30000 + climb_rate;
-  hott_gps_msg.climbrate3s = 120 + (climb_rate / 100);  // 0 m/3s
-
-  hott_gps_msg.gps_satelites = (int8_t)gps.num_sats();
-
-  hott_gps_msg.angle_roll = ahrs.roll_sensor / 200;
-  hott_gps_msg.angle_nick = ahrs.pitch_sensor / 200;
-
-//  hott_gps_msg.angle_compass = ToDeg(compass.calculate_heading(ahrs.get_dcm_matrix())) / 2;
-  hott_gps_msg.angle_compass = HOTT_APM_GET_COMPASS_YAW;
-  //hott_gps_msg.flight_direction = hott_gps_msg.angle_compass;	//
-
-  //uint32_t t = g_gps->last_fix_time;
-  uint32_t t = gps.last_fix_time_ms(0);
-
- /*
-  hott_gps_msg.gps_time_h = t / 3600000;
-  t -= (hott_gps_msg.gps_time_h * 3600000);
-
-  hott_gps_msg.gps_time_m = t / 60000;
-  t -= hott_gps_msg.gps_time_m * 60000;
-
-  hott_gps_msg.gps_time_s = t / 1000;
-  hott_gps_msg.gps_time_sss = t - (hott_gps_msg.gps_time_s * 1000);
-   */
-
-  hott_gps_msg.gps_time_sss = t % 1000;    // milliseconds are remainder from division by 1000
-  t /= 1000;                               // throw away milliseconds
-  hott_gps_msg.gps_time_s = t % 60;        // seconds are remainder form division by 60
-  t /= 60;                                 // throw away seconds
-  hott_gps_msg.gps_time_m = t % 60;        // minutes are remainder from divisiion by 60
-  hott_gps_msg.gps_time_h = t / 60;        // throw away minutes, we have hours
+    // prepare time
+    uint32_t t = gps.last_fix_time_ms(0);
+    hott_gps_msg.gps_time_sss = t % 1000;    // milliseconds are remainder from division by 1000
+    t /= 1000;                               // throw away milliseconds
+    hott_gps_msg.gps_time_s = t % 60;        // seconds are remainder form division by 60
+    t /= 60;                                 // throw away seconds
+    hott_gps_msg.gps_time_m = t % 60;        // minutes are remainder from divisiion by 60
+    hott_gps_msg.gps_time_h = t / 60;        // throw away minutes, we have hours
 
 }
 #endif
@@ -949,7 +877,7 @@ static void u8toa10r3(uint8_t n, char s[])      // converts uint8_t to 3-digit c
  }
 
 static const char hott_flight_mode_strings[NUM_MODES+1][HOTT_FLIGHT_MODE_STRING_LEN+1] PROGMEM = {
-    "STABILIZE  ",        	// 0
+    "STABILIZE  ",                // 0
     "ACRO       ",                // 1
     "ALT_HOLD   ",                // 2
     "AUTO ->    ",                // 3
@@ -959,31 +887,23 @@ static const char hott_flight_mode_strings[NUM_MODES+1][HOTT_FLIGHT_MODE_STRING_
     "CIRCLE     ",                // 7
     "POSITION   ",                // 8
     "LAND       ",                // 9
-    "OF_LOITER  ",        	// 10
+    "OF_LOITER  ",                // 10
     "DRIFT      ",                // 11
-    "TOY_A      ",		// 12
-    "SPORT      ",		// 13
+    "TOY_A      ",                // 12
+    "SPORT      ",                // 13
+    "FLIP       ",                // 14
+    "AUTOTUNE   ",                // 15
     "???????????"
 };
 
-const char hott_ARMED_STR[] PROGMEM	= "  ARMED  ";
+const char hott_ARMED_STR[] PROGMEM =     "  ARMED  ";
 const char hott_DISARMED_STR[] PROGMEM	= "DISARMED ";
 
 
 void _hott_update_vario_msg() {
-  //	static int _hott_max_altitude = 0;
-  //	static int _hott_min_altitude = 0;
 
 	hott_vario_msg.altitude = (int16_t)((current_loc.alt - home.alt) / 100)+500;
 
-  /*	if( (current_loc.alt - home.alt) > _hott_max_altitude)
-		_hott_max_altitude = (current_loc.alt - home.alt);
-	hott_vario_msg.altitude_max = (int16_t)(_hott_max_altitude / 100)+500;
-
-	if( (current_loc.alt - home.alt) < _hott_min_altitude)
-		_hott_min_altitude = (current_loc.alt - home.alt);
-	hott_vario_msg.altitude_min = (int16_t)(_hott_min_altitude / 100)+500;
-  */
 	if ( hott_vario_msg.altitude > hott_vario_msg.altitude_max) hott_vario_msg.altitude_max =  hott_vario_msg.altitude;
 	if ( hott_vario_msg.altitude < hott_vario_msg.altitude_min) hott_vario_msg.altitude_min =  hott_vario_msg.altitude;
 
@@ -996,15 +916,6 @@ void _hott_update_vario_msg() {
 	//Free text processing
 	if(control_mode > NUM_MODES) control_mode = NUM_MODES;
 
-//	char *pArmedStr = (char *)hott_DISARMED_STR;
-//	if (motors.armed()) {
-//		pArmedStr = (char *)hott_ARMED_STR;
-//	}
-//	//clear line
-//	memset(hott_vario_msg.text_msg,0x20,HOTT_VARIO_MSG_TEXT_LEN);
-//	uint8_t len = strlen_P(pArmedStr);
-//	memcpy_P((char*)hott_vario_msg.text_msg, pArmedStr, len);
-//	memcpy_P((char*)&hott_vario_msg.text_msg[len+1], hott_flight_mode_strings[control_mode], strlen_P(hott_flight_mode_strings[control_mode]));
 
 	memcpy_P((char*)hott_vario_msg.text_msg, (motors.armed()?(char *)hott_ARMED_STR:(char *)hott_DISARMED_STR), HOTT_ARMED_STR_LEN);
 	memcpy_P((char*)&hott_vario_msg.text_msg[HOTT_ARMED_STR_LEN], hott_flight_mode_strings[control_mode],HOTT_FLIGHT_MODE_STRING_LEN);
