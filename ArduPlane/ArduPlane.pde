@@ -203,7 +203,7 @@ static AP_Int8          *flight_modes = &g.flight_mode1;
 static AP_Baro_BMP085 barometer;
 #elif CONFIG_BARO == AP_BARO_PX4
 static AP_Baro_PX4 barometer;
-#elif CONFIG_BARO == AP_BARO_VRABRAIN
+#elif CONFIG_BARO == AP_BARO_VRBRAIN
 static AP_Baro_VRBRAIN barometer;
 #elif CONFIG_BARO == AP_BARO_HIL
 static AP_Baro_HIL barometer;
