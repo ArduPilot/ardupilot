@@ -255,6 +255,10 @@ static void failsafe_gcs_check()
     set_failsafe_gcs(true);
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_GCS, ERROR_CODE_FAILSAFE_OCCURRED);
 
+    // clear overrides so that RC control can be regained with radio.
+    hal.rcin->clear_overrides();
+    failsafe.rc_override_active = false;
+
     // This is how to handle a failsafe.
     // use the throttle failsafe setting to decide what to do
     switch(control_mode) {
