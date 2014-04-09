@@ -207,6 +207,38 @@ static void update_manual(void)
     channel_pitch.output();
 }
 
+/*
+  control servos for SCAN mode
+ */
+static void update_scan(void)
+{    
+    if (!nav_status.manual_control_yaw) {
+        float yaw_delta = g.scan_speed * 0.02f;
+        nav_status.bearing   += yaw_delta   * (nav_status.scan_reverse_yaw?-1:1);
+        if (nav_status.bearing < 0 && nav_status.scan_reverse_yaw) {
+            nav_status.scan_reverse_yaw = false;
+        }
+        if (nav_status.bearing > 360 && !nav_status.scan_reverse_yaw) {
+            nav_status.scan_reverse_yaw = true;
+        }
+        nav_status.bearing = constrain_float(nav_status.bearing, 0, 360);
+    }
+
+    if (!nav_status.manual_control_pitch) {
+        float pitch_delta = g.scan_speed * 0.02f;
+        nav_status.pitch += pitch_delta * (nav_status.scan_reverse_pitch?-1:1);
+        if (nav_status.pitch < -90 && nav_status.scan_reverse_pitch) {
+            nav_status.scan_reverse_pitch = false;
+        }
+        if (nav_status.pitch > 90 && !nav_status.scan_reverse_pitch) {
+            nav_status.scan_reverse_pitch = true;
+        }
+        nav_status.pitch = constrain_float(nav_status.pitch, -90, 90);
+    }
+
+    update_auto();
+}
+
 
 /**
   main antenna tracking code, called at 50Hz
@@ -230,10 +262,10 @@ static void update_tracking(void)
     float pitch    = degrees(atan2f(nav_status.altitude_difference, distance));
 
     // update nav_status for NAV_CONTROLLER_OUTPUT
-    if (!nav_status.manual_control_yaw) {
+    if (control_mode != SCAN && !nav_status.manual_control_yaw) {
         nav_status.bearing = bearing;
     }
-    if (!nav_status.manual_control_pitch) {
+    if (control_mode != SCAN && !nav_status.manual_control_pitch) {
         nav_status.pitch = pitch;
     }
     nav_status.distance = distance;
@@ -245,6 +277,10 @@ static void update_tracking(void)
 
     case MANUAL:
         update_manual();
+        break;
+
+    case SCAN:
+        update_scan();
         break;
 
     case STOP:

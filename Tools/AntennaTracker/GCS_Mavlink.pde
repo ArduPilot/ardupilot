@@ -44,6 +44,7 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     case STOP:
         break;
 
+    case SCAN:
     case AUTO:
         base_mode |= MAV_MODE_FLAG_GUIDED_ENABLED |
             MAV_MODE_FLAG_STABILIZE_ENABLED;
@@ -897,6 +898,7 @@ mission_failed:
         switch (packet.custom_mode) {
         case MANUAL:
         case STOP:
+        case SCAN:
         case AUTO:
             set_mode((enum ControlMode)packet.custom_mode);
             break;

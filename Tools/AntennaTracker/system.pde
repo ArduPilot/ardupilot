@@ -228,6 +228,7 @@ static void set_mode(enum ControlMode mode)
 	switch (control_mode) {
     case AUTO:
     case MANUAL:
+    case SCAN:
         arm_servos();
         break;
 
