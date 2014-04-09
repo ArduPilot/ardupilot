@@ -55,8 +55,10 @@ void setup()
     motors.set_update_rate(490);
     motors.set_frame_orientation(AP_MOTORS_X_FRAME);
     motors.set_min_throttle(130);
+    motors.set_mid_throttle(500);
     motors.Init();      // initialise motors
 
+    // setup radio
     if (rc3.radio_min == 0) {
 	    // cope with AP_Param not being loaded
 	    rc3.radio_min = 1000;
@@ -65,6 +67,11 @@ void setup()
 	    // cope with AP_Param not being loaded
 	    rc3.radio_max = 2000;
     }
+    // set rc channel ranges
+    rc1.set_angle(4500);
+    rc2.set_angle(4500);
+    rc3.set_range(130, 1000);
+    rc4.set_angle(4500);
 
     motors.enable();
     motors.output_min();
@@ -75,10 +82,10 @@ void setup()
 // loop
 void loop()
 {
-    int value;
+    int16_t value;
 
     // display help
-    hal.console->println("Press 't' to test motors.  Be careful they will spin!");
+    hal.console->println("Press 't' to run motor orders test, 's' to run stability patch test.  Be careful the motors will spin!");
 
     // wait for user to enter something
     while( !hal.console->available() ) {
@@ -89,13 +96,108 @@ void loop()
     value = hal.console->read();
 
     // test motors
-    if( value == 't' || value == 'T' ) {
-        hal.console->println("testing motors...");
-        motors.armed(true);
-        motors.output_test();
-        motors.armed(false);
-        hal.console->println("finished test.");
+    if (value == 't' || value == 'T') {
+        motor_order_test();
     }
+    if (value == 's' || value == 'S') {
+        stability_test();
+    }
+}
+
+// stability_test
+void motor_order_test()
+{
+    hal.console->println("testing motor order");
+    motors.armed(true);
+    motors.output_test();
+    motors.armed(false);
+    hal.console->println("finished test.");
+
+}
+
+// stability_test
+void stability_test()
+{
+    int16_t value, roll_in, pitch_in, yaw_in, throttle_in, throttle_radio_in, avg_out;
+
+    int16_t testing_array[][4] = {
+        //  roll,   pitch,  yaw,    throttle
+        {   0,      0,      0,      0},
+        {   0,      0,      0,      100},
+        {   0,      0,      0,      200},
+        {   0,      0,      0,      300},
+        {   4500,   0,      0,      300},
+        {   -4500,  0,      0,      300},
+        {   0,   4500,      0,      300},
+        {   0,  -4500,      0,      300},
+        {   0,      0,   4500,      300},
+        {   0,      0,  -4500,      300},
+        {   0,      0,      0,      400},
+        {   0,      0,      0,      500},
+        {   0,      0,      0,      600},
+        {   0,      0,      0,      700},
+        {   0,      0,      0,      800},
+        {   0,      0,      0,      900},
+        {   0,      0,      0,      1000},
+        {   4500,   0,      0,      1000},
+        {   -4500,  0,      0,      1000},
+        {   0,   4500,      0,      1000},
+        {   0,  -4500,      0,      1000},
+        {   0,      0,   4500,      1000},
+        {   0,      0,  -4500,      1000},
+        {5000,   1000,      0,      1000},
+        {5000,   2000,      0,      1000},
+        {5000,   3000,      0,      1000},
+        {5000,   4000,      0,      1000},
+        {5000,   5000,      0,      1000},
+        {5000,      0,   1000,      1000},
+        {5000,      0,   2000,      1000},
+        {5000,      0,   3000,      1000},
+        {5000,      0,   4500,      1000}
+    };
+    uint32_t testing_array_rows = 32;
+
+    hal.console->printf_P(PSTR("\nTesting stability patch\nThrottle Min:%d Max:%d\n"),(int)rc3.radio_min,(int)rc3.radio_max);
+
+    // arm motors
+    motors.armed(true);
+
+    // run stability test
+    for (int16_t i=0; i < testing_array_rows; i++) {
+        roll_in = testing_array[i][0];
+        pitch_in = testing_array[i][1];
+        yaw_in = testing_array[i][2];
+        throttle_in = testing_array[i][3];
+        motors.set_pitch(roll_in);
+        motors.set_roll(pitch_in);
+        motors.set_yaw(yaw_in);
+        motors.set_throttle(throttle_in);
+        motors.output();
+        // calc average output
+        throttle_radio_in = rc3.radio_out;
+        avg_out = ((hal.rcout->read(0) + hal.rcout->read(1) + hal.rcout->read(2) + hal.rcout->read(3))/4);
+
+        // display input and output
+        hal.console->printf_P(PSTR("R:%5d \tP:%5d \tY:%5d \tT:%5d\tMOT1:%5d \tMOT2:%5d \tMOT3:%5d \tMOT4:%5d \t ThrIn/AvgOut:%5d/%5d\n"),
+                (int)roll_in,
+                (int)pitch_in,
+                (int)yaw_in,
+                (int)throttle_in,
+                (int)hal.rcout->read(0),
+                (int)hal.rcout->read(1),
+                (int)hal.rcout->read(2),
+                (int)hal.rcout->read(3),
+                (int)throttle_radio_in,
+                (int)avg_out);
+    }
+    // set all inputs to motor library to zero and disarm motors
+    motors.set_pitch(0);
+    motors.set_roll(0);
+    motors.set_yaw(0);
+    motors.set_throttle(0);
+    motors.armed(false);
+
+    hal.console->println("finished test.");
 }
 
 AP_HAL_MAIN();
