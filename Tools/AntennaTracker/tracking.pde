@@ -230,8 +230,12 @@ static void update_tracking(void)
     float pitch    = degrees(atan2f(nav_status.altitude_difference, distance));
 
     // update nav_status for NAV_CONTROLLER_OUTPUT
-    nav_status.bearing  = bearing;
-    nav_status.pitch    = pitch;
+    if (!nav_status.manual_control_yaw) {
+        nav_status.bearing = bearing;
+    }
+    if (!nav_status.manual_control_pitch) {
+        nav_status.pitch = pitch;
+    }
     nav_status.distance = distance;
 
     switch (control_mode) {
@@ -277,7 +281,15 @@ static void tracking_update_pressure(const mavlink_scaled_pressure_t &msg)
     // calculate altitude difference based on difference in barometric pressure
     float alt_diff = logf(scaling) * (ground_temp+273.15f) * 29271.267 * 0.001f;
     if (!isnan(alt_diff)) {
-        nav_status.altitude_difference = alt_diff;
+        nav_status.altitude_difference = alt_diff + nav_status.altitude_offset;
+    }
+
+    if (nav_status.need_altitude_calibration) {
+        // we have done a baro calibration - zero the altitude
+        // difference to the aircraft
+        nav_status.altitude_offset = -nav_status.altitude_difference;
+        nav_status.altitude_difference = 0;
+        nav_status.need_altitude_calibration = false;
     }
 }
 
@@ -289,5 +301,7 @@ static void tracking_manual_control(const mavlink_manual_control_t &msg)
     nav_status.bearing = msg.x;
     nav_status.pitch   = msg.y;
     nav_status.distance = 0.0;
+    nav_status.manual_control_yaw   = (msg.x != 0x7FFF);
+    nav_status.manual_control_pitch = (msg.y != 0x7FFF);
     // z, r and buttons are not used
 }

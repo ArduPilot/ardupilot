@@ -666,6 +666,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     calibrate_ins();
                 } else if (packet.param3 == 1) {
                     init_barometer();
+                    // zero the altitude difference on next baro update
+                    nav_status.need_altitude_calibration = true;
                 }
                 if (packet.param4 == 1) {
                     // Cant trim radio
