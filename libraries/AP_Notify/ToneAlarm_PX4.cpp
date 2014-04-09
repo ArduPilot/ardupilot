@@ -64,7 +64,8 @@ void ToneAlarm_PX4::update()
     if (_tonealarm_fd == -1) {
         return;
     }
-    
+
+    // check for arming failure
     if(flags.arming_failed != AP_Notify::flags.arming_failed) {
         flags.arming_failed = AP_Notify::flags.arming_failed;
         if(flags.arming_failed) {
@@ -108,6 +109,15 @@ void ToneAlarm_PX4::update()
         if (flags.failsafe_gps) {
             // gps glitch warning tune
             play_tune(TONE_GPS_WARNING_TUNE);
+        }
+    }
+
+    // check parachute release
+    if (flags.parachute_release != AP_Notify::flags.parachute_release) {
+        flags.parachute_release = AP_Notify::flags.parachute_release;
+        if (flags.parachute_release) {
+            // parachute release warning tune
+            play_tune(TONE_PARACHUTE_RELEASE_TUNE);
         }
     }
 }

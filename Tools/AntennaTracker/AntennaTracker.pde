@@ -105,6 +105,12 @@ static struct {
     float distance;
     float pitch;
     float altitude_difference;
+    float altitude_offset;
+    bool manual_control_yaw:1;
+    bool manual_control_pitch:1;
+    bool need_altitude_calibration:1;
+    bool scan_reverse_pitch:1;
+    bool scan_reverse_yaw:1;
 } nav_status;
 
 static uint32_t start_time_ms;

@@ -27,14 +27,16 @@ const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
     // @Param: TYPE
     // @DisplayName: GPS type
     // @Description: GPS type
-    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF
+    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftBinaryProtocol
     AP_GROUPINFO("TYPE",    0, AP_GPS, _type[0], 1),
 
+#if GPS_MAX_INSTANCES > 1
     // @Param: TYPE2
     // @DisplayName: 2nd GPS type
     // @Description: GPS type of 2nd GPS
-    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF
+    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftBinaryProtocol
     AP_GROUPINFO("TYPE2",   1, AP_GPS, _type[1], 0),
+#endif
 
     // @Param: NAVFILTER
     // @DisplayName: Navigation filter setting
@@ -50,13 +52,15 @@ void AP_GPS::init(DataFlash_Class *dataflash)
 {
     _DataFlash = dataflash;
     hal.uartB->begin(38400UL, 256, 16);
+#if GPS_MAX_INSTANCES > 1
     if (hal.uartE != NULL) {
         hal.uartE->begin(38400UL, 256, 16);        
     }
+#endif
 }
 
 // baudrates to try to detect GPSes with
-const uint16_t AP_GPS::_baudrates[] PROGMEM = {4800U, 38400U, 57600U, 9600U};
+const uint32_t AP_GPS::_baudrates[] PROGMEM = {4800U, 38400U, 115200U, 57600U, 9600U};
 
 // initialisation blobs to send to the GPS to try to get it into the
 // right mode
@@ -128,8 +132,9 @@ AP_GPS::detect_instance(uint8_t instance)
 		if (dstate->last_baud == sizeof(_baudrates) / sizeof(_baudrates[0])) {
 			dstate->last_baud = 0;
 		}
-		uint16_t baudrate = pgm_read_word(&_baudrates[dstate->last_baud]);
+		uint32_t baudrate = pgm_read_dword(&_baudrates[dstate->last_baud]);
 		port->begin(baudrate, 256, 16);		
+        Debug("Switching to GPS Baudrate %d", baudrate);
 		dstate->last_baud_change_ms = now;
         send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
     }
@@ -146,7 +151,7 @@ AP_GPS::detect_instance(uint8_t instance)
           for.
         */
         if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_UBLOX) &&
-            pgm_read_word(&_baudrates[dstate->last_baud]) >= 38400 && 
+            pgm_read_dword(&_baudrates[dstate->last_baud]) >= 38400 && 
             AP_GPS_UBLOX::_detect(dstate->ublox_detect_state, data)) {
             hal.console->print_P(PSTR(" ublox "));
             new_gps = new AP_GPS_UBLOX(*this, state[instance], port);
@@ -161,6 +166,13 @@ AP_GPS::detect_instance(uint8_t instance)
 			hal.console->print_P(PSTR(" MTK "));
 			new_gps = new AP_GPS_MTK(*this, state[instance], port);
 		}
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+        else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SBP) &&
+                 AP_GPS_SBP::_detect(dstate->sbp_detect_state, data)) {
+            hal.console->print_P(PSTR(" SBP "));
+            new_gps = new AP_GPS_SBP(*this, state[instance], port);
+        }
+#endif // HAL_CPU_CLASS
 #if !defined( __AVR_ATmega1280__ )
 		// save a bit of code space on a 1280
 		else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SIRF) &&
@@ -194,11 +206,20 @@ AP_GPS::detect_instance(uint8_t instance)
 void
 AP_GPS::update_instance(uint8_t instance)
 {
+    if (_type[instance] == GPS_TYPE_HIL) {
+        // in HIL, leave info alone
+        return;
+    }
     if (_type[instance] == GPS_TYPE_NONE) {
         // not enabled
         state[instance].status = NO_GPS;
         return;
     }
+    if (locked_ports & (1U<<instance)) {
+        // the port is locked by another driver
+        return;
+    }
+
     if (drivers[instance] == NULL || state[instance].status == NO_GPS) {
         // we don't yet know the GPS type of this one, or it has timed
         // out and needs to be re-initialised
@@ -217,12 +238,14 @@ AP_GPS::update_instance(uint8_t instance)
     // detection to run again
     if (!result) {
         if (tnow - timing[instance].last_message_time_ms > 1200) {
-            state[instance].status = NO_GPS;
-            timing[instance].last_message_time_ms = tnow;
             // free the driver before we run the next detection, so we
             // don't end up with two allocated at any time
             delete drivers[instance];
             drivers[instance] = NULL;
+            memset(&state[instance], 0, sizeof(state[instance]));
+            state[instance].instance = instance;
+            state[instance].status = NO_GPS;
+            timing[instance].last_message_time_ms = tnow;
         }
     } else {
         timing[instance].last_message_time_ms = tnow;
@@ -242,32 +265,80 @@ AP_GPS::update(void)
         update_instance(i);
     }
 
-    // update notify with gps status
+    // update notify with gps status. We always base this on the first GPS
     AP_Notify::flags.gps_status = state[0].status;
+
+#if GPS_MAX_INSTANCES > 1
+    // work out which GPS is the primary, and how many sensors we have
+    for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+        if (state[i].status != NO_GPS) {
+            num_instances = i+1;
+        }
+        if (i == primary_instance) {
+            continue;
+        }
+        if (state[i].status > state[primary_instance].status) {
+            // we have a higher status lock, change GPS
+            primary_instance = i;
+            continue;
+        }
+        if (state[i].status == state[primary_instance].status &&
+            state[i].num_sats >= state[primary_instance].num_sats + 2) {
+            // this GPS has at least 2 more satellites than the
+            // current primary, switch primary. Once we switch we will
+            // then tend to stick to the new GPS as primary. We don't
+            // want to switch too often as it will look like a
+            // position shift to the controllers.
+            primary_instance = i;
+        }
+    }
+#endif // GPS_MAX_INSTANCES
 }
 
 /*
   set HIL (hardware in the loop) status for a GPS instance
  */
 void 
-AP_GPS::setHIL(GPS_Status _status, uint64_t time_epoch_ms, 
-               Location &_location, Vector3f &_velocity, uint8_t _num_sats)
+AP_GPS::setHIL(uint8_t instance, GPS_Status _status, uint64_t time_epoch_ms, 
+               Location &_location, Vector3f &_velocity, uint8_t _num_sats, 
+               uint16_t hdop, bool _have_vertical_velocity)
 {
+    if (instance >= GPS_MAX_INSTANCES) {
+        return;
+    }
     uint32_t tnow = hal.scheduler->millis();
-    GPS_State &istate = state[0];
+    GPS_State &istate = state[instance];
     istate.status = _status;
     istate.location = _location;
     istate.location.options = 0;
     istate.velocity = _velocity;
     istate.ground_speed = pythagorous2(istate.velocity.x, istate.velocity.y);
     istate.ground_course_cd = degrees(atan2f(istate.velocity.y, istate.velocity.x)) * 100UL;
-    istate.hdop = 0;
+    istate.hdop = hdop;
     istate.num_sats = _num_sats;
-    istate.have_vertical_velocity = false;
+    istate.have_vertical_velocity = _have_vertical_velocity;
     istate.last_gps_time_ms = tnow;
     istate.time_week     = time_epoch_ms / (86400*7*(uint64_t)1000);
     istate.time_week_ms  = time_epoch_ms - istate.time_week*(86400*7*(uint64_t)1000);
-    timing[0].last_message_time_ms = tnow;
-    timing[0].last_fix_time_ms = tnow;
-    _type[0].set(GPS_TYPE_NONE);
+    timing[instance].last_message_time_ms = tnow;
+    timing[instance].last_fix_time_ms = tnow;
+    _type[instance].set(GPS_TYPE_HIL);
+}
+
+/**
+   Lock a GPS port, prevening the GPS driver from using it. This can
+   be used to allow a user to control a GPS port via the
+   SERIAL_CONTROL protocol
+ */
+void 
+AP_GPS::lock_port(uint8_t instance, bool lock)
+{
+    if (instance >= GPS_MAX_INSTANCES) {
+        return;
+    }
+    if (lock) {
+        locked_ports |= (1U<<instance);
+    } else {
+        locked_ports &= ~(1U<<instance);
+    }
 }

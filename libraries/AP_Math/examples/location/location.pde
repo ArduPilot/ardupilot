@@ -260,6 +260,93 @@ static void test_wrap_cd(void)
     hal.console->printf("wrap_cd tests done\n");
 }
 
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+static void test_wgs_conversion_functions(void)
+{
+
+    #define D2R DEG_TO_RAD_DOUBLE
+
+    /* Maximum allowable error in quantities with units of length (in meters). */
+    #define MAX_DIST_ERROR_M 1e-6
+    /* Maximum allowable error in quantities with units of angle (in sec of arc).
+     * 1 second of arc on the equator is ~31 meters. */
+    #define MAX_ANGLE_ERROR_SEC 1e-7
+    #define MAX_ANGLE_ERROR_RAD (MAX_ANGLE_ERROR_SEC*(D2R/3600.0))
+
+    /* Semi-major axis. */
+    #define EARTH_A 6378137.0
+    /* Semi-minor axis. */
+    #define EARTH_B 6356752.31424517929553985595703125
+
+
+    #define NUM_COORDS 10
+    Vector3d llhs[NUM_COORDS];
+    llhs[0] = Vector3d(0, 0, 0);        /* On the Equator and Prime Meridian. */
+    llhs[1] = Vector3d(0, 180*D2R, 0);  /* On the Equator. */
+    llhs[2] = Vector3d(0, 90*D2R, 0);   /* On the Equator. */
+    llhs[3] = Vector3d(0, -90*D2R, 0);  /* On the Equator. */
+    llhs[4] = Vector3d(90*D2R, 0, 0);   /* North pole. */
+    llhs[5] = Vector3d(-90*D2R, 0, 0);  /* South pole. */
+    llhs[6] = Vector3d(90*D2R, 0, 22);  /* 22m above the north pole. */
+    llhs[7] = Vector3d(-90*D2R, 0, 22); /* 22m above the south pole. */
+    llhs[8] = Vector3d(0, 0, 22);       /* 22m above the Equator and Prime Meridian. */
+    llhs[9] = Vector3d(0, 180*D2R, 22); /* 22m above the Equator. */
+
+    Vector3d ecefs[NUM_COORDS];
+    ecefs[0] = Vector3d(EARTH_A, 0, 0);
+    ecefs[1] = Vector3d(-EARTH_A, 0, 0);
+    ecefs[2] = Vector3d(0, EARTH_A, 0);
+    ecefs[3] = Vector3d(0, -EARTH_A, 0);
+    ecefs[4] = Vector3d(0, 0, EARTH_B);
+    ecefs[5] = Vector3d(0, 0, -EARTH_B);
+    ecefs[6] = Vector3d(0, 0, (EARTH_B+22));
+    ecefs[7] = Vector3d(0, 0, -(EARTH_B+22));
+    ecefs[8] = Vector3d((22+EARTH_A), 0, 0);
+    ecefs[9] = Vector3d(-(22+EARTH_A), 0, 0);
+
+    hal.console->printf("TESTING wgsllh2ecef\n");
+    for (int i = 0; i < NUM_COORDS; i++) {
+
+        Vector3d ecef;
+        wgsllh2ecef(llhs[i], ecef);
+
+        double x_err = fabs(ecef[0] - ecefs[i][0]);
+        double y_err = fabs(ecef[1] - ecefs[i][1]);
+        double z_err = fabs(ecef[2] - ecefs[i][2]);
+        if ((x_err < MAX_DIST_ERROR_M) &&
+                  (y_err < MAX_DIST_ERROR_M) &&
+                  (z_err < MAX_DIST_ERROR_M)) {
+            hal.console->printf("passing llh to ecef test %d\n", i);
+        } else {
+            hal.console->printf("failed llh to ecef test %d: ", i);
+            hal.console->printf("(%f - %f) (%f - %f) (%f - %f) => %.10f %.10f %.10f\n", ecef[0], ecefs[i][0], ecef[1], ecefs[i][1], ecef[2], ecefs[i][2], x_err, y_err, z_err);
+        }
+
+    }
+
+    hal.console->printf("TESTING wgsecef2llh\n");
+    for (int i = 0; i < NUM_COORDS; i++) {
+
+        Vector3d llh;
+        wgsecef2llh(ecefs[i], llh);
+
+        double lat_err = fabs(llh[0] - llhs[i][0]);
+        double lon_err = fabs(llh[1] - llhs[i][1]);
+        double hgt_err = fabs(llh[2] - llhs[i][2]);
+        if ((lat_err < MAX_ANGLE_ERROR_RAD) &&
+                  (lon_err < MAX_ANGLE_ERROR_RAD) &&
+                  (hgt_err < MAX_DIST_ERROR_M)) {
+            hal.console->printf("passing exef to llh test %d\n", i);
+        } else {
+            hal.console->printf("failed ecef to llh test %d: ", i);
+            hal.console->printf("%.10f %.10f %.10f\n", lat_err, lon_err, hgt_err);
+
+        }
+
+    }
+}
+#endif //HAL_CPU_CLASS
+
 /*
  *  polygon tests
  */
@@ -269,6 +356,10 @@ void setup(void)
     test_offset();
     test_accuracy();
     test_wrap_cd();
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+    test_wgs_conversion_functions();
+#endif
+    hal.console->printf("ALL TESTS DONE\n");
 }
 
 void loop(void){}

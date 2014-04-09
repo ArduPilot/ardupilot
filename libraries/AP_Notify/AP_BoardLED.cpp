@@ -161,7 +161,7 @@ void AP_BoardLED::update(void)
             }
             break;
 
-        case 3:
+        default:
             // solid blue on gps lock
             hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_ON);
             break;        

@@ -26,6 +26,9 @@ start_command(const AP_Mission::Mission_Command& cmd)
 
     gcs_send_text_fmt(PSTR("Executing command ID #%i"),cmd.id);
 
+    // remember the course of our next navigation leg
+    next_navigation_leg_cd = mission.get_next_ground_course_cd(0);
+
 	switch(cmd.id){
 		case MAV_CMD_NAV_WAYPOINT:	// Navigate to Waypoint
 			do_nav_wp(cmd);

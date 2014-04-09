@@ -211,7 +211,7 @@ void setup()
     fprintf(ekf1f, "timestamp TimeMS Roll Pitch Yaw VN VE VD PN PE PD GX GY GZ\n");
     fprintf(ekf2f, "timestamp TimeMS AX AY AZ VWN VWE MN ME MD MX MY MZ\n");
     fprintf(ekf3f, "timestamp TimeMS IVN IVE IVD IPN IPE IPD IMX IMY IMZ IVT\n");
-    fprintf(ekf4f, "timestamp TimeMS SVN SVE SVD SPN SPE SPD SMX SMY SMZ SVT\n");
+    fprintf(ekf4f, "timestamp TimeMS SV SP SH SMX SMY SMZ SVT OFN EFE\n");
 
     ahrs.set_ekf_use(true);
 
@@ -326,10 +326,12 @@ void loop()
             Vector3f posInnov;
             Vector3f magInnov;
             float    tasInnov;
-            Vector3f velVar;
-            Vector3f posVar;
+            float velVar;
+            float posVar;
+            float hgtVar;
             Vector3f magVar;
-            float    tasVar;
+            float tasVar;
+            Vector2f offset;
 
             const Matrix3f &dcm_matrix = ((AP_AHRS_DCM)ahrs).get_dcm_matrix();
             dcm_matrix.to_euler(&DCM_attitude.x, &DCM_attitude.y, &DCM_attitude.z);
@@ -342,7 +344,7 @@ void loop()
             NavEKF.getMagNED(magNED);
             NavEKF.getMagXYZ(magXYZ);
             NavEKF.getInnovations(velInnov, posInnov, magInnov, tasInnov);
-            NavEKF.getVariances(velVar, posVar, magVar, tasVar);
+            NavEKF.getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
             NavEKF.getPosNED(ekf_relpos);
             Vector3f inav_pos = inertial_nav.get_position() * 0.01f;
             float temp = degrees(ekf_euler.z);
@@ -486,31 +488,29 @@ void loop()
                     innovVT);
 
             // define messages for EKF4 data packet
-            int16_t sqrtvarVN = (int16_t)(100*sqrtf(velVar.x));
-            int16_t sqrtvarVE = (int16_t)(100*sqrtf(velVar.y));
-            int16_t sqrtvarVD = (int16_t)(100*sqrtf(velVar.z));
-            int16_t sqrtvarPN = (int16_t)(100*sqrtf(posVar.x));
-            int16_t sqrtvarPE = (int16_t)(100*sqrtf(posVar.y));
-            int16_t sqrtvarPD = (int16_t)(100*sqrtf(posVar.z));
-            int16_t sqrtvarMX = (int16_t)(sqrtf(magVar.x));
-            int16_t sqrtvarMY = (int16_t)(sqrtf(magVar.y));
-            int16_t sqrtvarMZ = (int16_t)(sqrtf(magVar.z));
-            int16_t sqrtvarVT = (int16_t)(100*sqrtf(tasVar));
+            int16_t sqrtvarV = (int16_t)(100*velVar);
+            int16_t sqrtvarP = (int16_t)(100*posVar);
+            int16_t sqrtvarH = (int16_t)(100*hgtVar);
+            int16_t sqrtvarMX = (int16_t)(100*magVar.x);
+            int16_t sqrtvarMY = (int16_t)(100*magVar.y);
+            int16_t sqrtvarMZ = (int16_t)(100*magVar.z);
+            int16_t sqrtvarVT = (int16_t)(100*tasVar);
+            int16_t offsetNorth = (int8_t)(offset.x);
+            int16_t offsetEast = (int8_t)(offset.y);
 
             // print EKF4 data packet
-            fprintf(ekf4f, "%.3f %d %d %d %d %d %d %d %d %d %d %d\n",
+            fprintf(ekf4f, "%.3f %d %d %d %d %d %d %d %d %d %d\n",
                     hal.scheduler->millis() * 0.001f,
                     hal.scheduler->millis(),
-                    sqrtvarVN, 
-                    sqrtvarVE, 
-                    sqrtvarVD, 
-                    sqrtvarPN, 
-                    sqrtvarPE, 
-                    sqrtvarPD, 
+                    sqrtvarV,
+                    sqrtvarP,
+                    sqrtvarH,
                     sqrtvarMX, 
                     sqrtvarMY, 
                     sqrtvarMZ,
-                    sqrtvarVT);
+                    sqrtvarVT,
+                    offsetNorth,
+                    offsetEast);
         }
     }
 }

@@ -44,6 +44,7 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     case STOP:
         break;
 
+    case SCAN:
     case AUTO:
         base_mode |= MAV_MODE_FLAG_GUIDED_ENABLED |
             MAV_MODE_FLAG_STABILIZE_ENABLED;
@@ -666,6 +667,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     calibrate_ins();
                 } else if (packet.param3 == 1) {
                     init_barometer();
+                    // zero the altitude difference on next baro update
+                    nav_status.need_altitude_calibration = true;
                 }
                 if (packet.param4 == 1) {
                     // Cant trim radio
@@ -895,6 +898,7 @@ mission_failed:
         switch (packet.custom_mode) {
         case MANUAL:
         case STOP:
+        case SCAN:
         case AUTO:
             set_mode((enum ControlMode)packet.custom_mode);
             break;
@@ -902,6 +906,12 @@ mission_failed:
 
         break;
     }
+
+#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
+    case MAVLINK_MSG_ID_SERIAL_CONTROL:
+        handle_serial_control(msg, gps);
+        break;
+#endif
 
     default:
         break;

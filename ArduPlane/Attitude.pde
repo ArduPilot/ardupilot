@@ -22,10 +22,10 @@ static float get_speed_scaler(void)
         speed_scaler = constrain_float(speed_scaler, 0.5, 2.0);
     } else {
         if (channel_throttle->servo_out > 0) {
-            speed_scaler = 0.5 + ((float)THROTTLE_CRUISE / channel_throttle->servo_out / 2.0);                 // First order taylor expansion of square root
+            speed_scaler = 0.5f + ((float)THROTTLE_CRUISE / channel_throttle->servo_out / 2.0f);                 // First order taylor expansion of square root
             // Should maybe be to the 2/7 power, but we aren't goint to implement that...
         }else{
-            speed_scaler = 1.67;
+            speed_scaler = 1.67f;
         }
         // This case is constrained tighter as we don't have real speed info
         speed_scaler = constrain_float(speed_scaler, 0.6, 1.67);
@@ -959,23 +959,7 @@ static void set_servos(void)
     channel_pitch->output();
     channel_throttle->output();
     channel_rudder->output();
-    // Route configurable aux. functions to their respective servos
-    g.rc_5.output_ch(CH_5);
-    g.rc_6.output_ch(CH_6);
-    g.rc_7.output_ch(CH_7);
-    g.rc_8.output_ch(CH_8);
- #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    g.rc_9.output_ch(CH_9);
- #endif
- #if CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    g.rc_10.output_ch(CH_10);
-    g.rc_11.output_ch(CH_11);
- #endif
- #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    g.rc_12.output_ch(CH_12);
-    g.rc_13.output_ch(CH_13);
-    g.rc_14.output_ch(CH_14);
- #endif
+    RC_Channel_aux::output_ch_all();
 }
 
 static bool demoing_servos;

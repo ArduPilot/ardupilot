@@ -83,7 +83,9 @@ static void init_tracker()
     current_loc.lng = g.start_longitude * 1.0e7f;
 
     // see if EEPROM has a default location as well
-    get_home_eeprom(current_loc);
+    if (current_loc.lat == 0 && current_loc.lng == 0) {
+        get_home_eeprom(current_loc);
+    }
 
     gcs_send_text_P(SEVERITY_LOW,PSTR("\nReady to track."));
     hal.scheduler->delay(1000); // Why????
@@ -226,6 +228,7 @@ static void set_mode(enum ControlMode mode)
 	switch (control_mode) {
     case AUTO:
     case MANUAL:
+    case SCAN:
         arm_servos();
         break;
 

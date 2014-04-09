@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduPlane V2.79beta1"
+#define THISFIRMWARE "ArduPlane V3.0.0"
 /*
    Lead developer: Andrew Tridgell
  
@@ -31,9 +31,9 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#include <AP_HAL.h>
 #include <AP_Common.h>
 #include <AP_Progmem.h>
-#include <AP_HAL.h>
 #include <AP_Menu.h>
 #include <AP_Param.h>
 #include <AP_GPS.h>         // ArduPilot GPS library
@@ -99,6 +99,7 @@ static AP_Vehicle::FixedWing aparm;
 #include <AP_HAL_FLYMAPLE.h>
 #include <AP_HAL_Linux.h>
 #include <AP_HAL_Empty.h>
+#include <AP_HAL_VRBRAIN.h>
 
 AP_HAL::BetterStream* cliSerial;
 
@@ -164,6 +165,8 @@ static DataFlash_File DataFlash("logs");
 static DataFlash_File DataFlash("/fs/microsd/APM/LOGS");
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 static DataFlash_File DataFlash("logs");
+#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+static DataFlash_File DataFlash("/fs/microsd/APM/LOGS");
 #else
 // no dataflash driver
 DataFlash_Empty DataFlash;
@@ -200,6 +203,8 @@ static AP_Int8          *flight_modes = &g.flight_mode1;
 static AP_Baro_BMP085 barometer;
 #elif CONFIG_BARO == AP_BARO_PX4
 static AP_Baro_PX4 barometer;
+#elif CONFIG_BARO == AP_BARO_VRBRAIN
+static AP_Baro_VRBRAIN barometer;
 #elif CONFIG_BARO == AP_BARO_HIL
 static AP_Baro_HIL barometer;
 #elif CONFIG_BARO == AP_BARO_MS5611
@@ -216,6 +221,8 @@ static AP_Baro_HIL barometer;
 
 #if CONFIG_COMPASS == AP_COMPASS_PX4
 static AP_Compass_PX4 compass;
+#elif CONFIG_COMPASS == AP_COMPASS_VRBRAIN
+static AP_Compass_VRBRAIN compass;
 #elif CONFIG_COMPASS == AP_COMPASS_HMC5843
 static AP_Compass_HMC5843 compass;
 #elif CONFIG_COMPASS == AP_COMPASS_HIL
@@ -232,6 +239,8 @@ AP_ADC_ADS7844 apm1_adc;
 AP_InertialSensor_MPU6000 ins;
 #elif CONFIG_INS_TYPE == CONFIG_INS_PX4
 AP_InertialSensor_PX4 ins;
+#elif CONFIG_INS_TYPE == CONFIG_INS_VRBRAIN
+AP_InertialSensor_VRBRAIN ins;
 #elif CONFIG_INS_TYPE == CONFIG_INS_HIL
 AP_InertialSensor_HIL ins;
 #elif CONFIG_INS_TYPE == CONFIG_INS_OILPAN
@@ -498,7 +507,9 @@ static struct {
     bool locked_course;
     float locked_course_err;
 } steer_state = {
-	hold_course_cd : -1,
+	hold_course_cd    : -1,
+    locked_course     : false,
+    locked_course_err : 0
 };
 
 
@@ -900,7 +911,7 @@ static void obc_fs_check(void)
     // perform OBC failsafe checks
     obc.check(OBC_MODE(control_mode),
               failsafe.last_heartbeat_ms,
-              g_gps ? g_gps->last_fix_time : 0);
+              gps, mission);
 #endif
 }
 

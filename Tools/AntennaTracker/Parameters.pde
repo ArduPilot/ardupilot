@@ -75,6 +75,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0 20
     GSCALAR(pitch_slew_time,        "PITCH_SLEW_TIME",  2),
 
+    // @Param: SCAN_SPEED
+    // @DisplayName: Speed at which to rotate in scan mode
+    // @Description: This controls how rapidly the tracker will move the servos in SCAN mode
+    // @Units: degrees/second
+    // @Increment: 1
+    // @Range: 0 100
+    GSCALAR(scan_speed,             "SCAN_SPEED",      5),
+
     // @Param: MIN_REVERSE_TIME
     // @DisplayName: Minimum time to apply a yaw reversal
     // @Description: When the tracker detects it has reached the limit of servo movement in yaw it will reverse and try moving to the other extreme of yaw. This parameter controls the minimum time it should reverse for. It is used to cope with trackers that have a significant lag in movement to ensure they do move all the way around.

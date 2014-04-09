@@ -26,23 +26,9 @@ static void init_rc_in()
 
 static void init_rc_out()
 {
-    for (uint8_t i=0; i<8; i++) {
-        RC_Channel::rc_channel(i)->enable_out();
-        RC_Channel::rc_channel(i)->output_trim();
-    }
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    servo_write(CH_9,   g.rc_9.radio_trim);
-#endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    servo_write(CH_10,  g.rc_10.radio_trim);
-    servo_write(CH_11,  g.rc_11.radio_trim);
-#endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    servo_write(CH_12,  g.rc_12.radio_trim);
-    servo_write(CH_13,  g.rc_13.radio_trim);
-    servo_write(CH_14,  g.rc_14.radio_trim);
-#endif
+    RC_Channel::rc_channel(CH_1)->enable_out();
+    RC_Channel::rc_channel(CH_3)->enable_out();
+    RC_Channel::output_trim_all();
 }
 
 static void read_radio()
@@ -54,9 +40,7 @@ static void read_radio()
 
     failsafe.last_valid_rc_ms = hal.scheduler->millis();
 
-    for (uint8_t i=0; i<8; i++) {
-        RC_Channel::rc_channel(i)->set_pwm(RC_Channel::rc_channel(i)->read());
-    }
+    RC_Channel::set_pwm_all();
 
 	control_failsafe(channel_throttle->radio_in);
 

@@ -477,6 +477,9 @@ static void report_compass()
     case AP_COMPASS_TYPE_PX4:
         cliSerial->println_P(PSTR("PX4"));
         break;
+    case AP_COMPASS_TYPE_VRBRAIN:
+        cliSerial->println_P(PSTR("VRBRAIN"));
+        break;
     default:
         cliSerial->println_P(PSTR("(unknown)"));
         break;

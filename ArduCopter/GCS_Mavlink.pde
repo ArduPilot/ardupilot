@@ -211,7 +211,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
         control_sensors_present,
         control_sensors_enabled,
         control_sensors_health,
-        (uint16_t)(scheduler.load_average(10000) * 1000),
+        (uint16_t)(scheduler.load_average(MAIN_LOOP_MICROS) * 1000),
         battery.voltage() * 1000, // mV
         battery_current,        // in 10mA units
         battery_remaining,      // in %
@@ -568,13 +568,7 @@ static void NOINLINE send_raw_imu3(mavlink_channel_t chan)
 
 static void NOINLINE send_current_waypoint(mavlink_channel_t chan)
 {
-    uint16_t current_cmd_index;
-    if (mission.state() == AP_Mission::MISSION_RUNNING) {
-        current_cmd_index = mission.get_current_nav_cmd().index;
-    }else{
-        current_cmd_index = AP_MISSION_CMD_INDEX_NONE;
-    }
-    mavlink_msg_mission_current_send(chan, current_cmd_index);
+    mavlink_msg_mission_current_send(chan, mission.get_current_nav_cmd().index);
 }
 
 static void NOINLINE send_statustext(mavlink_channel_t chan)
@@ -1351,9 +1345,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         Vector3f vel(packet.vx, packet.vy, packet.vz);
         vel *= 0.01f;
 
-        gps.setHIL(AP_GPS::GPS_OK_FIX_3D,
+        gps.setHIL(0, AP_GPS::GPS_OK_FIX_3D,
                    packet.time_usec/1000,
-                   loc, vel, 10);
+                   loc, vel, 10, 0, true);
 
         if (!ap.home_is_set) {
             init_home();
@@ -1395,6 +1389,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             handle_log_message(msg, DataFlash);
         }
         break;
+
+#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
+    case MAVLINK_MSG_ID_SERIAL_CONTROL:
+        handle_serial_control(msg, gps);
+        break;
+#endif
 
 #if CAMERA == ENABLED
     case MAVLINK_MSG_ID_DIGICAM_CONFIGURE:      // MAV ID: 202

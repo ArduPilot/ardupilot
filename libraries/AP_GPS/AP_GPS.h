@@ -35,6 +35,13 @@
 #define GPS_MAX_INSTANCES 1
 #endif
 
+#define GPS_DEBUGGING 0
+#if GPS_DEBUGGING
+ # define Debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
+#else
+ # define Debug(fmt, args ...)
+#endif
+
 class DataFlash_Class;
 class AP_GPS_Backend;
 
@@ -64,7 +71,9 @@ public:
         GPS_TYPE_MTK   = 3,
         GPS_TYPE_MTK19 = 4,
         GPS_TYPE_NMEA  = 5,
-        GPS_TYPE_SIRF  = 6
+        GPS_TYPE_SIRF  = 6,
+        GPS_TYPE_HIL   = 7,
+        GPS_TYPE_SBP   = 8
     };
 
     /// GPS status codes
@@ -72,7 +81,9 @@ public:
         NO_GPS = 0,             ///< No GPS connected/detected
         NO_FIX = 1,             ///< Receiving valid GPS messages but no lock
         GPS_OK_FIX_2D = 2,      ///< Receiving valid messages and 2D lock
-        GPS_OK_FIX_3D = 3       ///< Receiving valid messages and 3D lock
+        GPS_OK_FIX_3D = 3,      ///< Receiving valid messages and 3D lock
+        GPS_OK_FIX_3D_DGPS = 4, ///< Receiving valid messages and 3D lock with differential improvements
+        GPS_OK_FIX_3D_RTK = 5,  ///< Receiving valid messages and 3D lock, with relative-positioning improvements
     };
 
     // GPS navigation engine settings. Not all GPS receivers support
@@ -103,7 +114,7 @@ public:
         Location location;                  ///< last fix location
         float ground_speed;                 ///< ground speed in m/sec
         int32_t ground_course_cd;           ///< ground course in 100ths of a degree
-        int16_t hdop;                       ///< horizontal dilution of precision in cm
+        uint16_t hdop;                      ///< horizontal dilution of precision in cm
         uint8_t num_sats;                   ///< Number of visible satelites        
         Vector3f velocity;                  ///< 3D velocitiy in m/s, in NED format
         bool have_vertical_velocity:1;      ///< does this GPS give vertical velocity?
@@ -112,45 +123,51 @@ public:
 
     // Accessor functions
 
-    // return number of active GPS sensors
+    // return number of active GPS sensors. Note that if the first GPS
+    // is not present but the 2nd is then we return 2
     uint8_t num_sensors(void) const {
-        uint8_t count = 0;
-        for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
-            if (drivers[i] != NULL) count++;
-        }
-        return count;
+        return num_instances;
     }
+
+    // using these macros saves some code space on APM2
+#if GPS_MAX_INSTANCES == 1
+#	define _GPS_STATE(instance) state[0]
+#	define _GPS_TIMING(instance) timing[0]
+#else
+#	define _GPS_STATE(instance) state[instance]
+#	define _GPS_TIMING(instance) timing[instance]
+#endif
 
     /// Query GPS status
     GPS_Status status(uint8_t instance) const {
-        return state[instance].status;
+        return _GPS_STATE(instance).status;
     }
     GPS_Status status(void) const {
-        return status(primary_instance());
+        return status(primary_instance);
     }
 
     // location of last fix
     const Location &location(uint8_t instance) const {
-        return state[instance].location;
+        return _GPS_STATE(instance).location;
     }
     const Location &location() const {
-        return location(primary_instance());
+        return location(primary_instance);
     }
 
     // 3D velocity in NED format
     const Vector3f &velocity(uint8_t instance) const {
-        return state[instance].velocity;
+        return _GPS_STATE(instance).velocity;
     }
     const Vector3f &velocity() const {
-        return velocity(primary_instance());
+        return velocity(primary_instance);
     }
 
     // ground speed in m/s
     float ground_speed(uint8_t instance) const {
-        return state[instance].ground_speed;
+        return _GPS_STATE(instance).ground_speed;
     }
     float ground_speed() const {
-        return ground_speed(primary_instance());
+        return ground_speed(primary_instance);
     }
 
     // ground speed in cm/s
@@ -160,82 +177,83 @@ public:
 
     // ground course in centidegrees
     int32_t ground_course_cd(uint8_t instance) const {
-        return state[instance].ground_course_cd;
+        return _GPS_STATE(instance).ground_course_cd;
     }
     int32_t ground_course_cd() const {
-        return ground_course_cd(primary_instance());
+        return ground_course_cd(primary_instance);
     }
 
     // number of locked satellites
     uint8_t num_sats(uint8_t instance) const {
-        return state[instance].num_sats;
+        return _GPS_STATE(instance).num_sats;
     }
     uint8_t num_sats() const {
-        return num_sats(primary_instance());
+        return num_sats(primary_instance);
     }
 
     // GPS time of week in milliseconds
     uint32_t time_week_ms(uint8_t instance) const {
-        return state[instance].time_week_ms;
+        return _GPS_STATE(instance).time_week_ms;
     }
     uint32_t time_week_ms() const {
-        return time_week_ms(primary_instance());
+        return time_week_ms(primary_instance);
     }
 
     // GPS week
     uint16_t time_week(uint8_t instance) const {
-        return state[instance].time_week;
+        return _GPS_STATE(instance).time_week;
     }
     uint16_t time_week() const {
-        return time_week(primary_instance());
+        return time_week(primary_instance);
     }
 
     // horizontal dilution of precision
-    int16_t get_hdop(uint8_t instance) const {
-        return state[instance].hdop;
+    uint16_t get_hdop(uint8_t instance) const {
+        return _GPS_STATE(instance).hdop;
     }
-    int16_t get_hdop() const {
-        return get_hdop(primary_instance());
+    uint16_t get_hdop() const {
+        return get_hdop(primary_instance);
     }
 
     // the time we got our last fix in system milliseconds. This is
     // used when calculating how far we might have moved since that fix
     uint32_t last_fix_time_ms(uint8_t instance) const {
-        return timing[instance].last_fix_time_ms;
+        return _GPS_TIMING(instance).last_fix_time_ms;
     }
     uint32_t last_fix_time_ms(void) const {
-        return last_fix_time_ms(primary_instance());
+        return last_fix_time_ms(primary_instance);
     }
 
 	// the time we last processed a message in milliseconds. This is
 	// used to indicate that we have new GPS data to process
 	uint32_t last_message_time_ms(uint8_t instance) const { 
-        return timing[instance].last_message_time_ms;        
+        return _GPS_TIMING(instance).last_message_time_ms;        
     }
     uint32_t last_message_time_ms(void) const {
-        return last_message_time_ms(primary_instance());
+        return last_message_time_ms(primary_instance);
     }
 
     // return last fix time since the 1/1/1970 in microseconds
     uint64_t time_epoch_usec(uint8_t instance);
     uint64_t time_epoch_usec(void) { 
-        return time_epoch_usec(primary_instance()); 
+        return time_epoch_usec(primary_instance); 
     }
 
 	// return true if the GPS supports vertical velocity values
     bool have_vertical_velocity(uint8_t instance) const { 
-        return state[instance].have_vertical_velocity; 
+        return _GPS_STATE(instance).have_vertical_velocity; 
     }
     bool have_vertical_velocity(void) const { 
-        return have_vertical_velocity(primary_instance());
+        return have_vertical_velocity(primary_instance);
     }
 
     // the expected lag (in seconds) in the position and velocity readings from the gps
     float get_lag() const { return 0.2f; }
 
     // set position for HIL
-    void setHIL(GPS_Status status, uint64_t time_epoch_ms, 
-                Location &location, Vector3f &velocity, uint8_t num_sats);
+    void setHIL(uint8_t instance, GPS_Status status, uint64_t time_epoch_ms, 
+                Location &location, Vector3f &velocity, uint8_t num_sats,
+                uint16_t hdop, bool _have_vertical_velocity);
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -250,6 +268,9 @@ public:
     void send_blob_start(uint8_t instance, const prog_char *_blob, uint16_t size);
     void send_blob_update(uint8_t instance);
 
+    // lock out a GPS port, allowing another application to use the port
+    void lock_port(uint8_t instance, bool locked);
+
 private:
     struct GPS_timing {
         // the time we got our last fix in system milliseconds
@@ -262,8 +283,14 @@ private:
     GPS_State state[GPS_MAX_INSTANCES];
     AP_GPS_Backend *drivers[GPS_MAX_INSTANCES];
 
-    /// return primary GPS instance
-    uint8_t primary_instance(void) const { return 0; }
+    /// primary GPS instance
+    uint8_t primary_instance:2;
+
+    /// number of GPS instances present
+    uint8_t num_instances:2;
+
+    // which ports are locked
+    uint8_t locked_ports:2;
 
     // state of auto-detection process, per instance
     struct detect_state {
@@ -275,6 +302,9 @@ private:
         struct MTK19_detect_state mtk19_detect_state;
         struct SIRF_detect_state sirf_detect_state;
         struct NMEA_detect_state nmea_detect_state;
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+        struct SBP_detect_state sbp_detect_state;
+#endif
     } detect_state[GPS_MAX_INSTANCES];
 
     struct {
@@ -282,7 +312,7 @@ private:
         uint16_t remaining;
     } initblob_state[GPS_MAX_INSTANCES];
 
-    static const uint16_t  _baudrates[];
+    static const uint32_t  _baudrates[];
     static const prog_char _initialisation_blob[];
 
     void detect_instance(uint8_t instance);
@@ -295,5 +325,6 @@ private:
 #include <AP_GPS_MTK19.h>
 #include <AP_GPS_NMEA.h>
 #include <AP_GPS_SIRF.h>
+#include <AP_GPS_SBP.h>
 
 #endif // __AP_GPS_H__

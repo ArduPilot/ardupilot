@@ -254,6 +254,11 @@ public:
     ///     accounts for do_jump commands
     bool get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd);
 
+    /// get the ground course of the next navigation leg in centidegrees
+    /// from 0 36000. Return default_angle if next navigation
+    /// leg cannot be determined
+    int32_t get_next_ground_course_cd(int32_t default_angle);
+
     /// get_current_do_cmd - returns active "do" command
     const Mission_Command& get_current_do_cmd() const { return _do_cmd; }
 

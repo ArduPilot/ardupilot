@@ -22,6 +22,8 @@
 
 #include <AP_Common.h>
 #include <AP_Param.h>
+#include <AP_Mission.h>
+#include <AP_GPS.h>
 #include <inttypes.h>
 
 
@@ -51,16 +53,12 @@ public:
 		_state = STATE_PREFLIGHT;
 		_terminate.set(0);
 
-		// get a pointer to COMMAND_INDEX so we can resume a
-		// auto mission when a failsafe condition is resolved
-		enum ap_var_type var_type;
-		_command_index = (AP_Int8 *)AP_Param::find("CMD_INDEX", &var_type);
 		_saved_wp = 0;
 	}
 
 	void check(enum control_mode control_mode,
 		   uint32_t last_heartbeat_ms,
-		   uint32_t last_gps_fix_ms);
+                   AP_GPS &gps, AP_Mission &mission);
 
 	// should we crash the plane? Only possible with
 	// FS_TERM_ACTTION set to 43
@@ -91,9 +89,6 @@ private:
 	AP_Int8 _wp_gps_loss;
 
 	bool _heartbeat_pin_value;
-
-	// pointer to command index parameter in g
-	AP_Int8 *_command_index;
 
 	// saved waypoint for resuming mission
 	uint8_t _saved_wp;

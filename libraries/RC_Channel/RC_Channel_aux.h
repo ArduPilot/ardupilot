@@ -66,12 +66,17 @@ public:
         k_flaperon1             = 24,            ///< flaperon, left wing
         k_flaperon2             = 25,            ///< flaperon, right wing
         k_steering              = 26,            ///< ground steering, used to separate from rudder
+        k_parachute_release     = 27,            ///< parachute release
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 
     AP_Int8         function;           ///< see Aux_servo_function_t enum
 
-    void            output_ch(unsigned char ch_nr);
+    // output one auxillary channel
+    void            output_ch(void);
+
+    // output all auxillary channels
+    static void     output_ch_all(void);
 
 	// set radio_out for a function channel
 	static void set_radio(Aux_servo_function_t function, int16_t value);

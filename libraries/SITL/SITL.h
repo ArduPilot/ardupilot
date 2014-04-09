@@ -39,7 +39,9 @@ public:
         GPS_TYPE_MTK   = 2,
         GPS_TYPE_MTK16 = 3,
         GPS_TYPE_MTK19 = 4,
-        GPS_TYPE_NMEA  = 5
+        GPS_TYPE_NMEA  = 5,
+        GPS_TYPE_SBP   = 6,
+        GPS_TYPE_SBP_RTK = 7,
     };
 
 	struct sitl_fdm state;

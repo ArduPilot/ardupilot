@@ -379,18 +379,50 @@ bool LogReader::update(uint8_t &type)
         loc.alt = msg.altitude;
         loc.options = 0;
 
-        Vector3f vel(msg.ground_speed*0.01f*cosf(msg.ground_course*0.01f),
-                     msg.ground_speed*0.01f*sinf(msg.ground_course*0.01f),
+        Vector3f vel(msg.ground_speed*0.01f*cosf(radians(msg.ground_course*0.01f)),
+                     msg.ground_speed*0.01f*sinf(radians(msg.ground_course*0.01f)),
                      msg.vel_z);
-        gps.setHIL((AP_GPS::GPS_Status)msg.status,
+        gps.setHIL(0, (AP_GPS::GPS_Status)msg.status,
                    msg.apm_time,
                    loc,
                    vel,
-                   msg.num_sats);
+                   msg.num_sats,
+                   msg.hdop,
+                   msg.vel_z != 0);
         if (msg.status == 3 && ground_alt_cm == 0) {
             ground_alt_cm = msg.altitude;
         }
         rel_altitude = msg.rel_altitude*0.01f;
+        break;
+    }
+
+    case LOG_GPS2_MSG: {
+        struct log_GPS2 msg;
+        if(sizeof(msg) != f.length) {
+            printf("Bad GPS2 length\n");
+            exit(1);
+        }
+        memcpy(&msg, data, sizeof(msg));
+        wait_timestamp(msg.apm_time);
+        Location loc;
+        loc.lat = msg.latitude;
+        loc.lng = msg.longitude;
+        loc.alt = msg.altitude;
+        loc.options = 0;
+
+        Vector3f vel(msg.ground_speed*0.01f*cosf(radians(msg.ground_course*0.01f)),
+                     msg.ground_speed*0.01f*sinf(radians(msg.ground_course*0.01f)),
+                     msg.vel_z);
+        gps.setHIL(1, (AP_GPS::GPS_Status)msg.status,
+                   msg.apm_time,
+                   loc,
+                   vel,
+                   msg.num_sats,
+                   msg.hdop,
+                   msg.vel_z != 0);
+        if (msg.status == 3 && ground_alt_cm == 0) {
+            ground_alt_cm = msg.altitude;
+        }
         break;
     }
 

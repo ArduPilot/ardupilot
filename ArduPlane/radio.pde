@@ -52,22 +52,7 @@ static void init_rc_out()
     RC_Channel_aux::enable_aux_servos();
 
     // Initialization of servo outputs
-    for (uint8_t i=0; i<8; i++) {
-        RC_Channel::rc_channel(i)->output_trim();
-    }
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    servo_write(CH_9,   g.rc_9.radio_trim);
-#endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    servo_write(CH_10,  g.rc_10.radio_trim);
-    servo_write(CH_11,  g.rc_11.radio_trim);
-#endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    servo_write(CH_12,  g.rc_12.radio_trim);
-    servo_write(CH_13,  g.rc_13.radio_trim);
-    servo_write(CH_14,  g.rc_14.radio_trim);
-#endif
+    RC_Channel::output_trim_all();
 
     // setup PX4 to output the min throttle when safety off if arming
     // is setup for min on disarm
@@ -150,6 +135,8 @@ static void read_radio()
         pwm_roll = BOOL_TO_SIGN(g.reverse_elevons) * (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int16_t(elevon.ch2_temp - elevon.trim2) - BOOL_TO_SIGN(g.reverse_ch1_elevon) * int16_t(elevon.ch1_temp - elevon.trim1)) / 2 + 1500;
         pwm_pitch = (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int16_t(elevon.ch2_temp - elevon.trim2) + BOOL_TO_SIGN(g.reverse_ch1_elevon) * int16_t(elevon.ch1_temp - elevon.trim1)) / 2 + 1500;
     }
+
+    RC_Channel::set_pwm_all();
     
     if (control_mode == TRAINING) {
         // in training mode we don't want to use a deadzone, as we
@@ -161,14 +148,7 @@ static void read_radio()
     } else {
         channel_roll->set_pwm(pwm_roll);
         channel_pitch->set_pwm(pwm_pitch);
-        channel_throttle->set_pwm(channel_throttle->read());
-        channel_rudder->set_pwm(channel_rudder->read());
     }
-
-    g.rc_5.set_pwm(hal.rcin->read(CH_5));
-    g.rc_6.set_pwm(hal.rcin->read(CH_6));
-    g.rc_7.set_pwm(hal.rcin->read(CH_7));
-    g.rc_8.set_pwm(hal.rcin->read(CH_8));
 
     control_failsafe(channel_throttle->radio_in);
 
