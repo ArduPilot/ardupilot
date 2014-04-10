@@ -782,13 +782,15 @@ static void one_second_loop(void)
 
 static void update_GPS_50Hz(void)
 {        
-    static uint32_t last_gps_reading;
+    static uint32_t last_gps_reading[GPS_MAX_INSTANCES];
 	gps.update();
 
-    if (gps.last_message_time_ms() != last_gps_reading) {
-        last_gps_reading = gps.last_message_time_ms();
-        if (should_log(MASK_LOG_GPS)) {
-            DataFlash.Log_Write_GPS(gps, current_loc.alt);
+    for (uint8_t i=0; i<gps.num_sensors(); i++) {
+        if (gps.last_message_time_ms(i) != last_gps_reading[i]) {
+            last_gps_reading[i] = gps.last_message_time_ms(i);
+            if (should_log(MASK_LOG_GPS)) {
+                DataFlash.Log_Write_GPS(gps, i, current_loc.alt);
+            }
         }
     }
 }
