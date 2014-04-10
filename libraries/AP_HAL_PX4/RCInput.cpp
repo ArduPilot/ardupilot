@@ -111,7 +111,7 @@ void PX4RCInput::_timer_tick(void)
 		// rely on the vehicle code timeout while checking for the last valid input
 		if (orb_copy(ORB_ID(input_rc), _rc_sub, &_new_rcin) == OK) {
 			pthread_mutex_lock(&rcin_mutex);
-			if (!_new_rcin.rc_lost && !_new_rcin.rc_failsafe && _new_rcin.channel_count > 0) {
+			if (!_new_rcin.rc_lost && !_new_rcin.rc_failsafe && _new_rcin.channel_count >= 5) {
 				// rc ok, copy full rcin structure
 				memcpy(&_rcin, &_new_rcin, sizeof(_rcin));
 			}
