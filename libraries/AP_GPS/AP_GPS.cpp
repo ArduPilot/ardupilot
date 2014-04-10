@@ -134,7 +134,6 @@ AP_GPS::detect_instance(uint8_t instance)
 		}
 		uint32_t baudrate = pgm_read_dword(&_baudrates[dstate->last_baud]);
 		port->begin(baudrate, 256, 16);		
-        Debug("Switching to GPS Baudrate %d", baudrate);
 		dstate->last_baud_change_ms = now;
         send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
     }
