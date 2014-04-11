@@ -157,6 +157,9 @@ case $FRAME in
         EXTRA_PARM="param set VTAIL_OUTPUT 4;"
         EXTRA_SIM="--vtail"
 	;;
+    obc)
+        BUILD_TARGET="sitl-obc"
+	;;
     "")
         ;;
     *)
