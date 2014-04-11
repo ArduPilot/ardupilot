@@ -6,7 +6,7 @@ typedef struct __mavlink_sys_status_t
 {
  uint8_t mode; ///< System mode, see MAV_MODE ENUM in mavlink/include/mavlink_types.h
  uint8_t nav_mode; ///< Navigation mode, see MAV_NAV_MODE ENUM
- uint8_t status; ///< System status flag, see MAV_STATUS ENUM
+ uint8_t status; ///< System status flag, see MAV_STATE ENUM
  uint16_t load; ///< Maximum usage in percent of the mainloop time, (0%: 0, 100%: 1000) should be always below 1000
  uint16_t vbat; ///< Battery voltage, in millivolts (1 = 1 millivolt)
  uint16_t battery_remaining; ///< Remaining battery energy: (0%: 0, 100%: 1000)
@@ -40,7 +40,7 @@ typedef struct __mavlink_sys_status_t
  *
  * @param mode System mode, see MAV_MODE ENUM in mavlink/include/mavlink_types.h
  * @param nav_mode Navigation mode, see MAV_NAV_MODE ENUM
- * @param status System status flag, see MAV_STATUS ENUM
+ * @param status System status flag, see MAV_STATE ENUM
  * @param load Maximum usage in percent of the mainloop time, (0%: 0, 100%: 1000) should be always below 1000
  * @param vbat Battery voltage, in millivolts (1 = 1 millivolt)
  * @param battery_remaining Remaining battery energy: (0%: 0, 100%: 1000)
@@ -86,7 +86,7 @@ static inline uint16_t mavlink_msg_sys_status_pack(uint8_t system_id, uint8_t co
  * @param msg The MAVLink message to compress the data into
  * @param mode System mode, see MAV_MODE ENUM in mavlink/include/mavlink_types.h
  * @param nav_mode Navigation mode, see MAV_NAV_MODE ENUM
- * @param status System status flag, see MAV_STATUS ENUM
+ * @param status System status flag, see MAV_STATE ENUM
  * @param load Maximum usage in percent of the mainloop time, (0%: 0, 100%: 1000) should be always below 1000
  * @param vbat Battery voltage, in millivolts (1 = 1 millivolt)
  * @param battery_remaining Remaining battery energy: (0%: 0, 100%: 1000)
@@ -144,7 +144,7 @@ static inline uint16_t mavlink_msg_sys_status_encode(uint8_t system_id, uint8_t 
  *
  * @param mode System mode, see MAV_MODE ENUM in mavlink/include/mavlink_types.h
  * @param nav_mode Navigation mode, see MAV_NAV_MODE ENUM
- * @param status System status flag, see MAV_STATUS ENUM
+ * @param status System status flag, see MAV_STATE ENUM
  * @param load Maximum usage in percent of the mainloop time, (0%: 0, 100%: 1000) should be always below 1000
  * @param vbat Battery voltage, in millivolts (1 = 1 millivolt)
  * @param battery_remaining Remaining battery energy: (0%: 0, 100%: 1000)
@@ -207,7 +207,7 @@ static inline uint8_t mavlink_msg_sys_status_get_nav_mode(const mavlink_message_
 /**
  * @brief Get field status from sys_status message
  *
- * @return System status flag, see MAV_STATUS ENUM
+ * @return System status flag, see MAV_STATE ENUM
  */
 static inline uint8_t mavlink_msg_sys_status_get_status(const mavlink_message_t* msg)
 {
