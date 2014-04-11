@@ -633,6 +633,16 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// Hybrid parameter defaults
+//
+#ifndef HYBRID_BRAKE_RATE_DEFAULT
+ # define HYBRID_BRAKE_RATE_DEFAULT     8       // default HYBRID_BRAKE_RATE param value.  Rotation rate during braking in deg/sec
+#endif
+#ifndef HYBRID_BRAKE_ANGLE_DEFAULT
+ # define HYBRID_BRAKE_ANGLE_DEFAULT    2000    // default HYBRID_BRAKE_ANGLE param value.  Max lean angle during braking in centi-degrees
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // Throttle control gains
 //
 #ifndef THROTTLE_CRUISE
