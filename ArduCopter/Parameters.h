@@ -108,7 +108,9 @@ public:
         k_param_mission,                // mission library
         k_param_rc_13,
         k_param_rc_14,
-        k_param_rally,                  // 45
+        k_param_rally,
+        k_param_hybrid_brake_rate,
+        k_param_hybrid_brake_angle_max, // 47
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -335,6 +337,9 @@ public:
     AP_Float        rssi_range;                 // allows to set max voltage for rssi pin such as 5.0, 3.3 etc. 
     AP_Int8         wp_yaw_behavior;            // controls how the autopilot controls yaw during missions
     AP_Int8         rc_feel_rp;                 // controls vehicle response to user input with 0 being extremely soft and 100 begin extremely crisp
+
+    AP_Int16        hybrid_brake_rate;          // hybrid flight mode's rotation rate during braking in deg/sec
+    AP_Int16        hybrid_brake_angle_max;     // hybrid flight mode's max lean angle during braking in centi-degrees
     
     // Waypoints
     //
