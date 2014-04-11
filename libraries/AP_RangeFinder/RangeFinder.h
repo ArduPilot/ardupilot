@@ -19,7 +19,7 @@
  */
 
 #define AP_RANGEFINDER_LONG_GP2Y0A02YK0F 4
-#define AP_RANGEFINDER_SHORT_GP2Y0A21YK 5
+
 
 class RangeFinder
 {
@@ -46,7 +46,7 @@ public:
      * function that each child class should override to convert voltage
      * to distance (in cm)
      */
-    virtual int convert_raw_to_distance(int _raw_value) 
+    virtual int convert_raw_to_distance(float _raw_value) 
 	{
         return _raw_value;
     }

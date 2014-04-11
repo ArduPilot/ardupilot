@@ -49,7 +49,7 @@
 #endif
 
 #ifndef RANGE_FINDER_RELIABLE_DISTANCE_PCT
- #define RANGE_FINDER_RELIABLE_DISTANCE_PCT 0.70f // we trust the RANGE_FINDER out to 70% of it's maximum range
+ #define RANGE_FINDER_RELIABLE_DISTANCE_PCT 1.0f // we trust the RANGE_FINDER out to 70% of it's maximum range
 #endif
 
 #ifndef RANGE_FINDER_GAIN_DEFAULT

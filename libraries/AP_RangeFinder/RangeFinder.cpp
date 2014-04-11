@@ -37,14 +37,18 @@ int RangeFinder::read()
 {
     int temp_dist;
 
-    raw_value = _analog_source->read_average();
+    //raw_value = _analog_source->voltage_average();
     // convert analog value to distance in cm (using child implementation most likely)
-    temp_dist = convert_raw_to_distance(raw_value);
+    //temp_dist = convert_raw_to_distance(raw_value);
+
+	//raw_value = rangeFinder->_analog_source->voltage_average();
+	//temp_dist = rangeFinder->convert_raw_to_distance(raw_value);
 
     // ensure distance is within min and max
-    temp_dist = constrain_float(temp_dist, min_distance, max_distance);
+    //temp_dist = constrain_float(temp_dist, min_distance, max_distance);
 
-    distance = _mode_filter->apply(temp_dist);
-    return distance;
+    //distance = _mode_filter->apply(temp_dist);
+	distance = temp_dist;
+	return 56; // distance;
 }
 
