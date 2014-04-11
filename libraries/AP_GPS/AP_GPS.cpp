@@ -291,6 +291,8 @@ AP_GPS::update(void)
             primary_instance = i;
         }
     }
+#else
+    num_instances = 1;
 #endif // GPS_MAX_INSTANCES
 }
 
