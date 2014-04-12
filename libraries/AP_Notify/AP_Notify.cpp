@@ -34,6 +34,9 @@ void AP_Notify::init(bool enable_external_leds)
     externalled.init();
     buzzer.init();
 #endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+    tonealarm.init();
+#endif
 }
 
 // main update function, called at 50Hz
@@ -48,5 +51,8 @@ void AP_Notify::update(void)
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
     externalled.update();
     buzzer.update();
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+    tonealarm.update();
 #endif
 }

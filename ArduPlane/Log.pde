@@ -491,9 +491,9 @@ static void Log_Write_Compass()
 #endif
 }
 
-static void Log_Write_GPS(void)
+static void Log_Write_GPS(uint8_t instance)
 {
-    DataFlash.Log_Write_GPS(gps, current_loc.alt - ahrs.get_home().alt);
+    DataFlash.Log_Write_GPS(gps, instance, current_loc.alt - ahrs.get_home().alt);
 }
 
 static void Log_Write_IMU() 
@@ -612,7 +612,7 @@ static void Log_Write_Control_Tuning() {}
 static void Log_Write_Camera() {}
 static void Log_Write_Mode(uint8_t mode) {}
 static void Log_Write_Compass() {}
-static void Log_Write_GPS() {}
+static void Log_Write_GPS(uint8_t instance) {}
 static void Log_Write_IMU() {}
 static void Log_Write_RC() {}
 static void Log_Write_Airspeed(void) {}

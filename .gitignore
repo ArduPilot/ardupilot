@@ -11,6 +11,7 @@
 *.pyc
 *.tlog
 *.tlog.raw
+*.vbrain
 *.zip
 .*.swo
 .*.swp

@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -68,6 +69,27 @@ const AP_Param::GroupInfo APM_OBC::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("TERM_PIN",    7, APM_OBC, _terminate_pin,    -1),
 
+    // @Param: AMSL_LIMIT
+    // @DisplayName: AMSL limit
+    // @Description: This sets the AMSL (above mean sea level) altitude limit. If the pressure altitude determined by QNH exceeds this limit then flight termination will be forced. Note that this limit is in meters, whereas pressure altitude limits are often quoted in feet. A value of zero disables the pressure altitude limit.
+    // @User: Advanced
+    // @Units: meters
+    AP_GROUPINFO("AMSL_LIMIT",   8, APM_OBC, _amsl_limit,    0),
+
+    // @Param: AMSL_ERR_GPS
+    // @DisplayName: Error margin for GPS based AMSL limit
+    // @Description: This sets margin for error in GPS derived altitude limit. This error margin is only used if the barometer has failed. If the barometer fails then the GPS will be used to enforce the AMSL_LIMIT, but this margin will be subtracted from the AMSL_LIMIT first, to ensure that even with the given amount of GPS altitude error the pressure altitude is not breached. OBC users should set this to comply with their D2 safety case. A value of -1 will mean that barometer failure will lead to immediate termination.
+    // @User: Advanced
+    // @Units: meters
+    AP_GROUPINFO("AMSL_ERR_GPS", 9, APM_OBC, _amsl_margin_gps,  -1),
+
+    // @Param: QNH_PRESSURE
+    // @DisplayName: QNH pressure
+    // @Description: This sets the QNH pressure in millibars to be used for pressure altitude in the altitude limit. A value of zero disables the altitude limit.
+    // @Units: millibar
+    // @User: Advanced
+    AP_GROUPINFO("QNH_PRESSURE", 10, APM_OBC, _qnh_pressure,    0),
+
     AP_GROUPEND
 };
 
@@ -77,12 +99,10 @@ extern bool geofence_breached(void);
 // check for Failsafe conditions. This is called at 10Hz by the main
 // ArduPlane code
 void
-APM_OBC::check(APM_OBC::control_mode mode,
-	       uint32_t last_heartbeat_ms,
-	       AP_GPS &gps, AP_Mission &mission)
+APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms)
 {	
 	// we always check for fence breach
-	if (geofence_breached()) {
+	if (geofence_breached() || check_altlimit()) {
 		if (!_terminate) {
 			hal.console->println_P(PSTR("Fence TERMINATE"));
 			_terminate.set(1);
@@ -188,4 +208,36 @@ APM_OBC::check(APM_OBC::control_mode mode,
 		}
 		hal.gpio->write(_terminate_pin, _terminate?1:0);
 	}	
+}
+
+// check for altitude limit breach
+bool
+APM_OBC::check_altlimit(void)
+{	
+    if (_amsl_limit == 0 || _qnh_pressure <= 0) {
+        // no limit set
+        return false;
+    }
+
+    // see if the barometer is dead
+    if (hal.scheduler->millis() - baro.get_last_update() > 5000) {
+        // the barometer has been unresponsive for 5 seconds. See if we can switch to GPS
+        if (_amsl_margin_gps != -1 &&
+            gps.status() >= AP_GPS::GPS_OK_FIX_3D &&
+            gps.location().alt*0.01f <= _amsl_limit - _amsl_margin_gps) {
+            // GPS based altitude OK
+            return false;
+        }
+        // no barometer - immediate termination
+        return true;
+    }
+
+    float alt_amsl = baro.get_altitude_difference(_qnh_pressure*100, baro.get_pressure());
+    if (alt_amsl > _amsl_limit) {
+        // pressure altitude breach
+        return true;
+    }
+    
+    // all OK
+    return false;
 }

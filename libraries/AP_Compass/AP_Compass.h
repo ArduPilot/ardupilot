@@ -6,3 +6,4 @@
 #include "AP_Compass_HMC5843.h"
 #include "AP_Compass_HIL.h"
 #include "AP_Compass_PX4.h"
+#include "AP_Compass_VRBRAIN.h"

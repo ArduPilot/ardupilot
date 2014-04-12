@@ -35,7 +35,7 @@
 #define GYRO_PNOISE_DEFAULT     0.015f
 #define ACC_PNOISE_DEFAULT      0.25f
 #define GBIAS_PNOISE_DEFAULT    1E-07f
-#define ABIAS_PNOISE_DEFAULT    0.0002f
+#define ABIAS_PNOISE_DEFAULT    0.0001f
 #define MAGE_PNOISE_DEFAULT     0.0003f
 #define MAGB_PNOISE_DEFAULT     0.0003f
 #define VEL_GATE_DEFAULT        2
@@ -56,7 +56,7 @@
 #define GYRO_PNOISE_DEFAULT     0.015f
 #define ACC_PNOISE_DEFAULT      0.25f
 #define GBIAS_PNOISE_DEFAULT    1E-07f
-#define ABIAS_PNOISE_DEFAULT    0.0002f
+#define ABIAS_PNOISE_DEFAULT    0.0001f
 #define MAGE_PNOISE_DEFAULT     0.0003f
 #define MAGB_PNOISE_DEFAULT     0.0003f
 #define VEL_GATE_DEFAULT        2
@@ -77,10 +77,10 @@
 #define GYRO_PNOISE_DEFAULT     0.015f
 #define ACC_PNOISE_DEFAULT      0.25f
 #define GBIAS_PNOISE_DEFAULT    1E-07f
-#define ABIAS_PNOISE_DEFAULT    0.0002f
+#define ABIAS_PNOISE_DEFAULT    0.0001f
 #define MAGE_PNOISE_DEFAULT     0.0003f
 #define MAGB_PNOISE_DEFAULT     0.0003f
-#define VEL_GATE_DEFAULT        5
+#define VEL_GATE_DEFAULT        3
 #define POS_GATE_DEFAULT        5
 #define HGT_GATE_DEFAULT        10
 #define MAG_GATE_DEFAULT        3
@@ -188,7 +188,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Param: ABIAS_PNOISE
     // @DisplayName: Accelerometer bias state process noise (m/s^2)
     // @Description: This noise controls the growth of the vertical acelerometer bias state error estimate. Increasing it makes accelerometer bias estimation faster and noisier.
-    // @Range: 0.0002 - 0.001
+    // @Range: 0.0001 - 0.001
     // @User: advanced
     AP_GROUPINFO("ABIAS_PNOISE",    11, NavEKF, _accelBiasProcessNoise, ABIAS_PNOISE_DEFAULT),
 
@@ -311,7 +311,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     prevStaticMode(true),       // staticMode from previous filter update
     yawAligned(false)           // set true when heading or yaw angle has been aligned
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     ,_perf_UpdateFilter(perf_alloc(PC_ELAPSED, "EKF_UpdateFilter")),
     _perf_CovariancePrediction(perf_alloc(PC_ELAPSED, "EKF_CovariancePrediction")),
     _perf_FuseVelPosNED(perf_alloc(PC_ELAPSED, "EKF_FuseVelPosNED")),
@@ -912,7 +912,7 @@ void NavEKF::CovariancePrediction()
     // this allows for wind gradient effects.
     windVelSigma  = dt * constrain_float(_windVelProcessNoise, 0.01f, 1.0f) * (1.0f + constrain_float(_wndVarHgtRateScale, 0.0f, 1.0f) * fabsf(hgtRate));
     dAngBiasSigma = dt * constrain_float(_gyroBiasProcessNoise, 1e-7f, 1e-5f);
-    dVelBiasSigma = dt * constrain_float(_accelBiasProcessNoise, 2e-4f, 1e-3f);
+    dVelBiasSigma = dt * constrain_float(_accelBiasProcessNoise, 1e-4f, 1e-3f);
     magEarthSigma = dt * constrain_float(_magEarthProcessNoise, 1e-4f, 1e-2f);
     magBodySigma  = dt * constrain_float(_magBodyProcessNoise, 1e-4f, 1e-2f);
     for (uint8_t i= 0; i<=9;  i++) processNoise[i] = 1.0e-9f;
@@ -3168,7 +3168,7 @@ void  NavEKF::getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f
     magVar.x = sqrtf(magTestRatio.x);
     magVar.y = sqrtf(magTestRatio.y);
     magVar.z = sqrtf(magTestRatio.z);
-    tasVar   = sqrtf(hgtTestRatio);
+    tasVar   = sqrtf(tasTestRatio);
     offset.x = posnOffsetNorth;
     offset.y = posnOffsetEast;
 }
