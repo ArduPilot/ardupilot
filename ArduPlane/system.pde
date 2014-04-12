@@ -292,36 +292,55 @@ static void set_mode(enum FlightMode mode)
     previous_mode = control_mode;
     control_mode = mode;
 
+    if (previous_mode == AUTOTUNE && control_mode != AUTOTUNE) {
+        // restore last gains
+        autotune_restore();
+    }
+
     switch(control_mode)
     {
     case INITIALISING:
+        auto_throttle_mode = true;
+        break;
+
     case MANUAL:
     case STABILIZE:
     case TRAINING:
     case FLY_BY_WIRE_A:
+        auto_throttle_mode = false;
+        break;
+
+    case AUTOTUNE:
+        auto_throttle_mode = false;
+        autotune_start();
         break;
 
     case ACRO:
+        auto_throttle_mode = false;
         acro_state.locked_roll = false;
         acro_state.locked_pitch = false;
         break;
 
     case CRUISE:
+        auto_throttle_mode = true;
         cruise_state.locked_heading = false;
         cruise_state.lock_timer_ms = 0;
         target_altitude_cm = current_loc.alt;
         break;
 
     case FLY_BY_WIRE_B:
+        auto_throttle_mode = true;
         target_altitude_cm = current_loc.alt;
         break;
 
     case CIRCLE:
         // the altitude to circle at is taken from the current altitude
+        auto_throttle_mode = true;
         next_WP_loc.alt = current_loc.alt;
         break;
 
     case AUTO:
+        auto_throttle_mode = true;
         prev_WP_loc = current_loc;
         // start the mission. Note that we use resume(), not start(),
         // as the correct behaviour for plane when entering auto is to
@@ -332,34 +351,25 @@ static void set_mode(enum FlightMode mode)
         break;
 
     case RTL:
+        auto_throttle_mode = true;
         prev_WP_loc = current_loc;
         do_RTL();
         break;
 
     case LOITER:
+        auto_throttle_mode = true;
         do_loiter_at_location();
         break;
 
     case GUIDED:
+        auto_throttle_mode = true;
         guided_throttle_passthru = false;
         set_guided_WP();
         break;
-
-    default:
-        prev_WP_loc = current_loc;
-        do_RTL();
-        break;
     }
 
-    // if in an auto-throttle mode, start with throttle suppressed for
-    // safety. suppress_throttle() will unsupress it when appropriate
-    if (control_mode == CIRCLE || control_mode >= FLY_BY_WIRE_B) {
-        auto_throttle_mode = true;
-        throttle_suppressed = true;
-    } else {
-        auto_throttle_mode = false;        
-        throttle_suppressed = false;
-    }
+    // start with throttle suppressed in auto_throttle modes
+    throttle_suppressed = auto_throttle_mode;
 
     if (should_log(MASK_LOG_MODE))
         Log_Write_Mode(control_mode);
@@ -564,6 +574,9 @@ print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
         break;
     case FLY_BY_WIRE_A:
         port->print_P(PSTR("FBW_A"));
+        break;
+    case AUTOTUNE:
+        port->print_P(PSTR("AUTOTUNE"));
         break;
     case FLY_BY_WIRE_B:
         port->print_P(PSTR("FBW_B"));

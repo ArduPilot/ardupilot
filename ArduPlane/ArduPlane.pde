@@ -1230,6 +1230,7 @@ static void update_flight_mode(void)
         break;
     }
 
+    case AUTOTUNE:
     case FLY_BY_WIRE_A: {
         // set nav_roll and nav_pitch using sticks
         nav_roll_cd  = channel_roll->norm_input() * roll_limit_cd;
@@ -1342,6 +1343,7 @@ static void update_navigation()
     case INITIALISING:
     case ACRO:
     case FLY_BY_WIRE_A:
+    case AUTOTUNE:
     case FLY_BY_WIRE_B:
     case CIRCLE:
         // nothing to do

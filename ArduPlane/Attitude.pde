@@ -130,6 +130,7 @@ static void stabilize_stick_mixing_direct()
     if (!stick_mixing_enabled() ||
         control_mode == ACRO ||
         control_mode == FLY_BY_WIRE_A ||
+        control_mode == AUTOTUNE ||
         control_mode == FLY_BY_WIRE_B ||
         control_mode == CRUISE ||
         control_mode == TRAINING) {
@@ -148,6 +149,7 @@ static void stabilize_stick_mixing_fbw()
     if (!stick_mixing_enabled() ||
         control_mode == ACRO ||
         control_mode == FLY_BY_WIRE_A ||
+        control_mode == AUTOTUNE ||
         control_mode == FLY_BY_WIRE_B ||
         control_mode == CRUISE ||
         control_mode == TRAINING ||
@@ -842,7 +844,8 @@ static void set_servos(void)
                    (control_mode == STABILIZE || 
                     control_mode == TRAINING ||
                     control_mode == ACRO ||
-                    control_mode == FLY_BY_WIRE_A)) {
+                    control_mode == FLY_BY_WIRE_A ||
+                    control_mode == AUTOTUNE)) {
             // manual pass through of throttle while in FBWA or
             // STABILIZE mode with THR_PASS_STAB set
             channel_throttle->radio_out = channel_throttle->radio_in;
