@@ -220,7 +220,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Waypoint Loiter Radius
     // @Description: Defines the distance from the waypoint center, the plane will maintain during a loiter. If you set this value to a negative number then the default loiter direction will be counter-clockwise instead of clockwise.
     // @Units: Meters
-    // @Range: 1 32767
+    // @Range: -32767 32767
     // @Increment: 1
     // @User: Standard
     GSCALAR(loiter_radius,          "WP_LOITER_RAD",  LOITER_RADIUS_DEFAULT),
@@ -273,7 +273,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(fence_retalt,           "FENCE_RETALT",   0),
 
     // @Param: FENCE_AUTOENABLE
-    // @DisplayName: Fence automatically enabled after auto takeoff and automatically disabled when starting an auto landing.  Note that this does NOT remove the need to first create a geofence.
+    // @DisplayName: Fence automatic enable
     // @Description: When set to 1, gefence automatically enables after an auto takeoff and automatically disables at the beginning of an auto landing.  When on the ground before takeoff the fence is disabled.
     // @Values: 0:NoAutoEnable,1:AutoEnable
     // @User: Standard
@@ -575,7 +575,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: GROUND_STEER_DPS
     // @DisplayName: Ground steer rate
     // @Description: Ground steering rate in degrees per second for full rudder stick deflection
-    // @Units: Meters
+    // @Units: degrees/second
     // @Range: 10 360
     // @Increment: 1
     // @User: Advanced
@@ -862,13 +862,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_8,                    "RC8_", RC_Channel_aux),
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // @Group: RC9_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_9,                    "RC9_", RC_Channel_aux),
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // @Group: RC10_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_10,                    "RC10_", RC_Channel_aux),
@@ -878,7 +878,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     GGROUP(rc_11,                    "RC11_", RC_Channel_aux),
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // @Group: RC12_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_12,                    "RC12_", RC_Channel_aux),

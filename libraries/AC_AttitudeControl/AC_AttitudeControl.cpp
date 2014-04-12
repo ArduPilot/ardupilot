@@ -39,8 +39,7 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] PROGMEM = {
     // @DisplayName: Acceleration Max for Roll/Pitch
     // @Description: Maximum acceleration in roll/pitch axis
     // @Units: Centi-Degrees/Sec/Sec
-    // @Range: 20000 100000
-    // @Increment: 100
+    // @Values: 36000:Very Soft, 54000:Soft, 90000:Medium, 126000:Crisp, 162000:Very Crisp
     // @User: Advanced
     AP_GROUPINFO("ACCEL_RP_MAX", 3, AC_AttitudeControl, _accel_rp_max, AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT),
 

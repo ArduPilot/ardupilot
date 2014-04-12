@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduPlane V2.79beta1"
+#define THISFIRMWARE "ArduPlane V3.0.1"
 /*
    Lead developer: Andrew Tridgell
  
@@ -99,18 +99,12 @@ static AP_Vehicle::FixedWing aparm;
 #include <AP_HAL_FLYMAPLE.h>
 #include <AP_HAL_Linux.h>
 #include <AP_HAL_Empty.h>
+#include <AP_HAL_VRBRAIN.h>
 
 AP_HAL::BetterStream* cliSerial;
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
-
-////////////////////////////////////////////////////////////////////////////////
-// Outback Challenge Failsafe Support
-////////////////////////////////////////////////////////////////////////////////
-#if OBC_FAILSAFE == ENABLED
-APM_OBC obc;
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // the rate we run the main loop at
@@ -164,6 +158,8 @@ static DataFlash_File DataFlash("logs");
 static DataFlash_File DataFlash("/fs/microsd/APM/LOGS");
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 static DataFlash_File DataFlash("logs");
+#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+static DataFlash_File DataFlash("/fs/microsd/APM/LOGS");
 #else
 // no dataflash driver
 DataFlash_Empty DataFlash;
@@ -200,6 +196,8 @@ static AP_Int8          *flight_modes = &g.flight_mode1;
 static AP_Baro_BMP085 barometer;
 #elif CONFIG_BARO == AP_BARO_PX4
 static AP_Baro_PX4 barometer;
+#elif CONFIG_BARO == AP_BARO_VRBRAIN
+static AP_Baro_VRBRAIN barometer;
 #elif CONFIG_BARO == AP_BARO_HIL
 static AP_Baro_HIL barometer;
 #elif CONFIG_BARO == AP_BARO_MS5611
@@ -216,6 +214,8 @@ static AP_Baro_HIL barometer;
 
 #if CONFIG_COMPASS == AP_COMPASS_PX4
 static AP_Compass_PX4 compass;
+#elif CONFIG_COMPASS == AP_COMPASS_VRBRAIN
+static AP_Compass_VRBRAIN compass;
 #elif CONFIG_COMPASS == AP_COMPASS_HMC5843
 static AP_Compass_HMC5843 compass;
 #elif CONFIG_COMPASS == AP_COMPASS_HIL
@@ -232,6 +232,8 @@ AP_ADC_ADS7844 apm1_adc;
 AP_InertialSensor_MPU6000 ins;
 #elif CONFIG_INS_TYPE == CONFIG_INS_PX4
 AP_InertialSensor_PX4 ins;
+#elif CONFIG_INS_TYPE == CONFIG_INS_VRBRAIN
+AP_InertialSensor_VRBRAIN ins;
 #elif CONFIG_INS_TYPE == CONFIG_INS_HIL
 AP_InertialSensor_HIL ins;
 #elif CONFIG_INS_TYPE == CONFIG_INS_OILPAN
@@ -551,6 +553,13 @@ AP_Mission mission(ahrs,
                    &verify_command_callback, 
                    &exit_mission_callback, 
                    MISSION_START_BYTE, MISSION_END_BYTE);
+
+////////////////////////////////////////////////////////////////////////////////
+// Outback Challenge Failsafe Support
+////////////////////////////////////////////////////////////////////////////////
+#if OBC_FAILSAFE == ENABLED
+APM_OBC obc(mission, barometer, gps);
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Waypoint distances
@@ -900,9 +909,7 @@ static void obc_fs_check(void)
 {
 #if OBC_FAILSAFE == ENABLED
     // perform OBC failsafe checks
-    obc.check(OBC_MODE(control_mode),
-              failsafe.last_heartbeat_ms,
-              gps, mission);
+    obc.check(OBC_MODE(control_mode), failsafe.last_heartbeat_ms);
 #endif
 }
 
@@ -1000,13 +1007,15 @@ static void airspeed_ratio_update(void)
  */
 static void update_GPS_50Hz(void)
 {
-    static uint32_t last_gps_reading;
+    static uint32_t last_gps_reading[GPS_MAX_INSTANCES];
     gps.update();
 
-    if (gps.last_message_time_ms() != last_gps_reading) {
-        last_gps_reading = gps.last_message_time_ms();
-        if (should_log(MASK_LOG_GPS)) {
-            Log_Write_GPS();
+    for (uint8_t i=0; i<gps.num_sensors(); i++) {
+        if (gps.last_message_time_ms(i) != last_gps_reading[i]) {
+            last_gps_reading[i] = gps.last_message_time_ms(i);
+            if (should_log(MASK_LOG_GPS)) {
+                Log_Write_GPS(i);
+            }
         }
     }
 }

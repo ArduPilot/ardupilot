@@ -140,38 +140,48 @@ static bool geofence_present(void)
 {
     //require at least a return point and a triangle
     //to define a geofence area:
-    if (g.fence_action != FENCE_ACTION_NONE && g.fence_total < MIN_GEOFENCE_POINTS) {
+    if (g.fence_action == FENCE_ACTION_NONE || g.fence_total < MIN_GEOFENCE_POINTS) {
         return false;
     }
     return true;
 }
 
-static void geofence_update_pwm_enabled_state() {
+/*
+  check FENCE_CHANNEL and update the is_pwm_enabled state
+ */
+static void geofence_update_pwm_enabled_state() 
+{
+    bool is_pwm_enabled;
+    if (g.fence_channel == 0) {
+        is_pwm_enabled = false;
+    } else {
+        is_pwm_enabled = (hal.rcin->read(g.fence_channel-1) > FENCE_ENABLE_PWM);
+    }
+    if (is_pwm_enabled && geofence_state == NULL) {
+        // we need to load the fence
+        geofence_load();
+        return;
+    }
+
     if (geofence_state == NULL) {
+        // not loaded
         return;
     }
 
     geofence_state->previous_is_pwm_enabled = geofence_state->is_pwm_enabled;
+    geofence_state->is_pwm_enabled = is_pwm_enabled;
 
-    if (g.fence_channel == 0) {
-        geofence_state->is_pwm_enabled = false;
-    } else {
-        geofence_state->is_pwm_enabled = 
-            (hal.rcin->read(g.fence_channel-1) > FENCE_ENABLE_PWM);
-    }
-
-    if (geofence_state->is_pwm_enabled == true && 
-            geofence_state->previous_is_pwm_enabled == false) {
-        geofence_set_enabled(true, PWM_TOGGLED);
-
-    } else if (geofence_state->is_pwm_enabled == false &&
-                geofence_state->previous_is_pwm_enabled == true) {
-        geofence_set_enabled(false, PWM_TOGGLED);
+    if (geofence_state->is_pwm_enabled != geofence_state->previous_is_pwm_enabled) {
+        geofence_set_enabled(geofence_state->is_pwm_enabled, PWM_TOGGLED);
     }    
 }
 
 //return true on success, false on failure
-static bool geofence_set_enabled(bool enable, GeofenceEnableReason r) {
+static bool geofence_set_enabled(bool enable, GeofenceEnableReason r) 
+{
+    if (geofence_state == NULL && enable) {
+        geofence_load();
+    }
     if (geofence_state == NULL) {
         return false;
     }
@@ -189,15 +199,16 @@ static bool geofence_enabled(void)
 {
     geofence_update_pwm_enabled_state();
 
+    if (geofence_state == NULL) {
+        return false;
+    }
+
     if (g.fence_action == FENCE_ACTION_NONE ||
         !geofence_present() ||
-        (g.fence_action != FENCE_ACTION_REPORT &&
-            (geofence_state != NULL && !geofence_state->is_enabled))) {
+        (g.fence_action != FENCE_ACTION_REPORT && !geofence_state->is_enabled)) {
         // geo-fencing is disabled
-        if (geofence_state != NULL) {
-            // re-arm for when the channel trigger is switched on
-            geofence_state->fence_triggered = false;
-        }
+        // re-arm for when the channel trigger is switched on
+        geofence_state->fence_triggered = false;
         return false;
     }
 

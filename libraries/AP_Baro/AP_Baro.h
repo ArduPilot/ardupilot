@@ -41,6 +41,10 @@ public:
     // of the last calibrate() call
     float        get_altitude(void);
 
+    // get altitude difference in meters relative given a base
+    // pressure in Pascal
+    float        get_altitude_difference(float base_pressure, float pressure);
+
     // get scale factor required to convert equivalent to true airspeed
     float        get_EAS2TAS(void);
 
@@ -67,7 +71,7 @@ public:
     }
 
     // get last time sample was taken (in ms)
-    uint32_t        get_last_update() { return _last_update; };
+    uint32_t        get_last_update() const { return _last_update; };
 
     static const struct AP_Param::GroupInfo        var_info[];
 
@@ -90,5 +94,6 @@ private:
 #include "AP_Baro_BMP085.h"
 #include "AP_Baro_HIL.h"
 #include "AP_Baro_PX4.h"
+#include "AP_Baro_VRBRAIN.h"
 
 #endif // __AP_BARO_H__

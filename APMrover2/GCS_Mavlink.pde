@@ -518,13 +518,7 @@ static void NOINLINE send_rangefinder(mavlink_channel_t chan)
 
 static void NOINLINE send_current_waypoint(mavlink_channel_t chan)
 {
-    uint16_t current_cmd_index;
-    if (mission.state() == AP_Mission::MISSION_RUNNING) {
-        current_cmd_index = mission.get_current_nav_cmd().index;
-    }else{
-        current_cmd_index = AP_MISSION_CMD_INDEX_NONE;
-    }
-    mavlink_msg_mission_current_send(chan, current_cmd_index);
+    mavlink_msg_mission_current_send(chan, mission.get_current_nav_cmd().index);
 }
 
 static void NOINLINE send_statustext(mavlink_channel_t chan)

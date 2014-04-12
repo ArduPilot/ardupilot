@@ -30,6 +30,7 @@
 //#define AC_RALLY              DISABLED            // disable fence to save 2k of flash, and also frees rally point EEPROM for more mission commands
 //#define CAMERA                DISABLED            // disable camera trigger to save 1k of flash
 //#define CONFIG_SONAR          DISABLED            // disable sonar to save 1k of flash
+//#define PARACHUTE             DISABLED            // disable parachute release to save 1k of flash
 
 // features below are disabled by default
 //#define SPRAYER               ENABLED             // enable the crop sprayer feature (two ESC controlled pumps the speed of which depends upon the vehicle's horizontal velocity)

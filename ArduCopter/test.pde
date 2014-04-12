@@ -13,7 +13,7 @@ static int8_t   test_motors(uint8_t argc,               const Menu::arg *argv);
 static int8_t   test_motorsync(uint8_t argc,            const Menu::arg *argv);
 static int8_t   test_optflow(uint8_t argc,              const Menu::arg *argv);
 static int8_t   test_relay(uint8_t argc,                const Menu::arg *argv);
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 static int8_t   test_shell(uint8_t argc,                const Menu::arg *argv);
 #endif
 #if HIL_MODE == HIL_MODE_DISABLED
@@ -34,7 +34,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
     {"motorsync",           test_motorsync},
     {"optflow",             test_optflow},
     {"relay",               test_relay},
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     {"shell", 				test_shell},
 #endif
 #if HIL_MODE == HIL_MODE_DISABLED
@@ -403,7 +403,7 @@ static int8_t test_relay(uint8_t argc, const Menu::arg *argv)
     }
 }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 /*
  *  run a debug shell
  */

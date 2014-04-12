@@ -97,6 +97,13 @@
  # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
  # define OPTFLOW DISABLED
  # define MAIN_LOOP_RATE    400
+#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+ # define CONFIG_IMU_TYPE   CONFIG_IMU_VRBRAIN
+ # define CONFIG_BARO       AP_BARO_VRBRAIN
+ # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
+ # define MAGNETOMETER ENABLED
+ # define OPTFLOW DISABLED
+ # define MAIN_LOOP_RATE    400
 #endif
 
 #if MAIN_LOOP_RATE == 400
@@ -182,6 +189,7 @@
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
  # define LED_ON           LOW
  # define LED_OFF          HIGH
+#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -402,6 +410,12 @@
 //	EPM cargo gripper
 #ifndef EPM_ENABLED
  # define EPM_ENABLED DISABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Parachute release
+#ifndef PARACHUTE
+ # define PARACHUTE ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
