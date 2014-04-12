@@ -7,13 +7,14 @@
 #include <AP_Common.h>
 #include <AP_Vehicle.h>
 #include <AP_AutoTune.h>
-#include <math.h>
+#include <DataFlash.h>
+#include <AP_Math.h>
 
 class AP_PitchController {
 public:
-	AP_PitchController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms) :
+	AP_PitchController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, DataFlash_Class &_dataflash) :
 		aparm(parms),
-        autotune(gains),
+        autotune(gains, AP_AutoTune::AUTOTUNE_PITCH, _dataflash),
         _ahrs(ahrs)
     { 
 		AP_Param::setup_object_defaults(this, var_info);
