@@ -66,4 +66,8 @@ test -n "$PX4_ROOT" && test -d "$PX4_ROOT" && {
     ./Tools/scripts/build_all_px4.sh
 }
 
+test -n "$VRBRAIN_ROOT" && test -d "$VRBRAIN_ROOT" && {
+    ./Tools/scripts/build_all_vrbrain.sh
+}
+
 exit 0

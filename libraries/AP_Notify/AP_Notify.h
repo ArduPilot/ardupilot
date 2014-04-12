@@ -26,6 +26,8 @@
 #include <ToneAlarm_PX4.h>
 #include <ExternalLED.h>
 #include <Buzzer.h>
+#include <ToshibaLED_VRBRAIN.h>
+#include <ToneAlarm_VRBRAIN.h>
 
 class AP_Notify
 {
@@ -43,6 +45,7 @@ public:
         uint16_t failsafe_battery   : 1;    // 1 if battery failsafe
         uint16_t failsafe_gps       : 1;    // 1 if gps failsafe
         uint16_t arming_failed      : 1;    // 1 if copter failed to arm after user input
+        uint16_t parachute_release  : 1;    // 1 if parachute is being released
 
         // additional flags
         uint16_t external_leds      : 1;    // 1 if external LEDs are enabled (normally only used for copter)
@@ -68,6 +71,9 @@ private:
     ToshibaLED_I2C toshibaled;
     ExternalLED externalled;
     Buzzer buzzer;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+    ToshibaLED_VRBRAIN toshibaled;
+    ToneAlarm_VRBRAIN tonealarm;
 #else
     ToshibaLED_I2C toshibaled;
 #endif

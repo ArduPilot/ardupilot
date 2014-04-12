@@ -79,6 +79,7 @@ public:
         k_param_startup_delay,
         k_param_BoardConfig,
         k_param_gps,
+        k_param_scan_speed,
 
         k_param_channel_yaw = 200,
         k_param_channel_pitch,
@@ -109,6 +110,7 @@ public:
     AP_Float yaw_slew_time;
     AP_Float pitch_slew_time;
     AP_Float min_reverse_time;
+    AP_Float scan_speed;
 
     AP_Float start_latitude;
     AP_Float start_longitude;

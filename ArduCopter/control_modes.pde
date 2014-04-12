@@ -110,6 +110,8 @@ static void init_aux_switches()
         case AUX_SWITCH_EPM:
         case AUX_SWITCH_SPRAYER:
         case AUX_SWITCH_EKF:
+        case AUX_SWITCH_PARACHUTE_ENABLE:
+        case AUX_SWITCH_PARACHUTE_3POS:	    // we trust the vehicle will be disarmed so even if switch is in release position the chute will not release
             do_aux_switch_function(g.ch7_option, ap.CH7_flag);
             break;
     }
@@ -124,6 +126,8 @@ static void init_aux_switches()
         case AUX_SWITCH_EPM:
         case AUX_SWITCH_SPRAYER:
         case AUX_SWITCH_EKF:
+        case AUX_SWITCH_PARACHUTE_ENABLE:
+        case AUX_SWITCH_PARACHUTE_3POS:     // we trust the vehicle will be disarmed so even if switch is in release position the chute will not release
             do_aux_switch_function(g.ch8_option, ap.CH8_flag);
             break;
     }
@@ -365,7 +369,36 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
         ahrs.set_ekf_use(ch_flag==AUX_SWITCH_HIGH);
         break;
 #endif
-        
+
+#if PARACHUTE == ENABLED
+    case AUX_SWITCH_PARACHUTE_ENABLE:
+        // Parachute enable/disable
+        parachute.enabled(ch_flag == AUX_SWITCH_HIGH);
+        break;
+
+    case AUX_SWITCH_PARACHUTE_RELEASE:
+        if (ch_flag == AUX_SWITCH_HIGH) {
+            parachute_manual_release();
+        }
+        break;
+
+    case AUX_SWITCH_PARACHUTE_3POS:
+        // Parachute disable, enable, release with 3 position switch
+        switch (ch_flag) {
+            case AUX_SWITCH_LOW:
+                parachute.enabled(false);
+                Log_Write_Event(DATA_PARACHUTE_DISABLED);
+                break;
+            case AUX_SWITCH_MIDDLE:
+                parachute.enabled(true);
+                Log_Write_Event(DATA_PARACHUTE_ENABLED);
+                break;
+            case AUX_SWITCH_HIGH:
+                parachute.enabled(true);
+                parachute_manual_release();
+                break;
+        }
+#endif
     }
 }
 

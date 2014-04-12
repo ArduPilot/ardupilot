@@ -20,6 +20,8 @@
 #else
 #define RELAY_PIN 54
 #endif
+#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#define RELAY_PIN -1
 #else
 // no relay for this board
 #define RELAY_PIN -1

@@ -177,7 +177,10 @@ static void control_failsafe(uint16_t pwm)
         channel_roll->radio_in     = channel_roll->radio_trim;
         channel_pitch->radio_in    = channel_pitch->radio_trim;
         channel_rudder->radio_in   = channel_rudder->radio_trim;
-        channel_throttle->radio_in = channel_throttle->radio_min;
+
+        // note that we don't set channel_throttle->radio_in to radio_trim,
+        // as that would cause throttle failsafe to not activate
+
         channel_roll->control_in     = 0;
         channel_pitch->control_in    = 0;
         channel_rudder->control_in   = 0;

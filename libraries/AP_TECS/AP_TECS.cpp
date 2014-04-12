@@ -125,6 +125,14 @@ const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
     // @User: User
     AP_GROUPINFO("LAND_THR", 13, AP_TECS, _landThrottle, -1),
 
+    // @Param: LAND_SPDWGT
+    // @DisplayName: Weighting applied to speed control during landing.
+    // @Description: Same as SPDWEIGHT parameter, with the exception that this parameter is applied during landing flight stages.  A value closer to 2 will result in the plane ignoring height error during landing and our experience has been that the plane will therefore keep the nose up -- sometimes good for a glider landing (with the side effect that you will likely glide a ways past the landing point).  A value closer to 0 results in the plane ignoring speed error -- use caution when lowering the value below 1 -- ignoring speed could result in a stall.
+	// @Range: 0.0 to 2.0
+	// @Increment: 0.1
+	// @User: Advanced
+    AP_GROUPINFO("LAND_SPDWGT", 14, AP_TECS, _spdWeightLand, 1.0f),
+
     AP_GROUPEND
 };
 
@@ -520,17 +528,17 @@ void AP_TECS::_update_pitch(void)
     // This is used to determine how the pitch control prioritises speed and height control
     // A weighting of 1 provides equal priority (this is the normal mode of operation)
     // A SKE_weighting of 0 provides 100% priority to height control. This is used when no airspeed measurement is available
-	// A SKE_weighting of 2 provides 100% priority to speed control. This is used when an underspeed condition is detected
-	// or during takeoff/climbout where a minimum pitch angle is set to ensure height is gained. In this instance, if airspeed
+	// A SKE_weighting of 2 provides 100% priority to speed control. This is used when an underspeed condition is detected. In this instance, if airspeed
 	// rises above the demanded value, the pitch angle will be increased by the TECS controller.
-    // OR during landing approach to keep the nose up (pitch to maintain landing speed, DON'T pitch down to try to reach a desired height
 	float SKE_weighting = constrain_float(_spdWeight, 0.0f, 2.0f);
-	if ( ( _underspeed || (_flight_stage == AP_TECS::FLIGHT_TAKEOFF) || _flight_stage == AP_TECS::FLIGHT_LAND_APPROACH || _flight_stage == AP_TECS::FLIGHT_LAND_FINAL ) && 
-		 _ahrs.airspeed_sensor_enabled() ) {
-		SKE_weighting = 2.0f;
-	} else if (!_ahrs.airspeed_sensor_enabled()) {
+    if (!_ahrs.airspeed_sensor_enabled()) {
 		SKE_weighting = 0.0f;
-	}
+    } else if ( _underspeed || _flight_stage == AP_TECS::FLIGHT_TAKEOFF) {
+		SKE_weighting = 2.0f;
+    } else if (_flight_stage == AP_TECS::FLIGHT_LAND_APPROACH || _flight_stage == AP_TECS::FLIGHT_LAND_FINAL) {
+        SKE_weighting = constrain_float(_spdWeightLand, 0.0f, 2.0f);
+    }
+    
 	float SPE_weighting = 2.0f - SKE_weighting;
 
     // Calculate Specific Energy Balance demand, and error

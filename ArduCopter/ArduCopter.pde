@@ -89,6 +89,7 @@
 #include <AP_HAL_AVR.h>
 #include <AP_HAL_AVR_SITL.h>
 #include <AP_HAL_PX4.h>
+#include <AP_HAL_VRBRAIN.h>
 #include <AP_HAL_FLYMAPLE.h>
 #include <AP_HAL_Linux.h>
 #include <AP_HAL_Empty.h>
@@ -142,6 +143,9 @@
 #endif
 #if EPM_ENABLED == ENABLED
 #include <AP_EPM.h>				// EPM cargo gripper stuff
+#endif
+#if PARACHUTE == ENABLED
+#include <AP_Parachute.h>		// Parachute release library
 #endif
 
 // AP_HAL to Arduino compatibility layer
@@ -210,6 +214,8 @@ static DataFlash_File DataFlash("logs");
 static DataFlash_File DataFlash("/fs/microsd/APM/LOGS");
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 static DataFlash_File DataFlash("logs");
+#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+static DataFlash_File DataFlash("/fs/microsd/APM/LOGS");
 #else
 static DataFlash_Empty DataFlash;
 #endif
@@ -258,6 +264,8 @@ static AP_InertialSensor_Oilpan ins(&adc);
 static AP_InertialSensor_HIL ins;
 #elif CONFIG_IMU_TYPE == CONFIG_IMU_PX4
 static AP_InertialSensor_PX4 ins;
+#elif CONFIG_IMU_TYPE == CONFIG_IMU_VRBRAIN
+static AP_InertialSensor_VRBRAIN ins;
 #elif CONFIG_IMU_TYPE == CONFIG_IMU_FLYMAPLE
 AP_InertialSensor_Flymaple ins;
 #elif CONFIG_IMU_TYPE == CONFIG_IMU_L3G4200D
@@ -275,6 +283,8 @@ static SITL sitl;
 static AP_Baro_BMP085 barometer;
   #elif CONFIG_BARO == AP_BARO_PX4
 static AP_Baro_PX4 barometer;
+#elif CONFIG_BARO == AP_BARO_VRBRAIN
+static AP_Baro_VRBRAIN barometer;
   #elif CONFIG_BARO == AP_BARO_MS5611
    #if CONFIG_MS5611_SERIAL == AP_BARO_MS5611_SPI
 static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::spi);
@@ -287,6 +297,8 @@ static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::i2c);
 
  #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 static AP_Compass_PX4 compass;
+ #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+static AP_Compass_VRBRAIN compass;
  #else
 static AP_Compass_HMC5843 compass;
  #endif
@@ -710,6 +722,13 @@ static AC_Sprayer sprayer(&inertial_nav);
 ////////////////////////////////////////////////////////////////////////////////
 #if EPM_ENABLED == ENABLED
 static AP_EPM epm;
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
+// Parachute release
+////////////////////////////////////////////////////////////////////////////////
+#if PARACHUTE == ENABLED
+static AP_Parachute parachute(relay);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1164,21 +1183,28 @@ static void update_optical_flow(void)
 // called at 50hz
 static void update_GPS(void)
 {
-    static uint32_t last_gps_reading;           // time of last gps message
+    static uint32_t last_gps_reading[GPS_MAX_INSTANCES];   // time of last gps message
     static uint8_t ground_start_count = 10;     // counter used to grab at least 10 reads before commiting the Home location
     bool report_gps_glitch;
+    bool gps_updated = false;
 
     gps.update();
 
     // logging and glitch protection run after every gps message
-    if (gps.last_message_time_ms() != last_gps_reading) {
-        last_gps_reading = gps.last_message_time_ms();
+    for (uint8_t i=0; i<gps.num_sensors(); i++) {
+        if (gps.last_message_time_ms(i) != last_gps_reading[i]) {
+            last_gps_reading[i] = gps.last_message_time_ms(i);
 
-        // log GPS message
-        if (g.log_bitmask & MASK_LOG_GPS) {
-            DataFlash.Log_Write_GPS(gps, current_loc.alt);
+            // log GPS message
+            if (g.log_bitmask & MASK_LOG_GPS) {
+                DataFlash.Log_Write_GPS(gps, i, current_loc.alt);
+            }
+
+            gps_updated = true;
         }
+    }
 
+    if (gps_updated) {
         // run glitch protection and update AP_Notify if home has been initialised
         if (ap.home_is_set) {
             gps_glitch.check_position();
