@@ -5,6 +5,7 @@
 
 #include <AP_HAL.h>
 #include <AP_Param.h>
+#include <DataFlash.h>
 
 class AP_AutoTune {
 public:
@@ -17,8 +18,13 @@ public:
         AP_Int16 imax;
     };
 
+    enum ATType {
+        AUTOTUNE_ROLL  = 0,
+        AUTOTUNE_PITCH = 1
+    };
+
     // constructor
-    AP_AutoTune(ATGains &_gains);
+    AP_AutoTune(ATGains &_gains, ATType type, DataFlash_Class &_dataflash);
 
     // called when autotune mode is entered
     void start(void);
@@ -38,8 +44,16 @@ private:
     // the current gains
     ATGains &current;
 
+    // what type of autotune is this
+    ATType type;
+
+    DataFlash_Class &dataflash;
+
     // did we saturate surfaces?
     bool saturated_surfaces:1;
+
+    // have we sent log headers
+    bool logging_started:1;
 
     // values to restore if we leave autotune mode
     ATGains restore; 
@@ -63,6 +77,9 @@ private:
     void check_save(void);
     void check_state_exit(uint32_t state_time_ms);
     void save_gains(const ATGains &v);
+
+    void write_log_headers(void);
+    void write_log(int16_t servo, float demanded, float achieved);
 };
 
 #endif // __AP_AUTOTUNE_H__

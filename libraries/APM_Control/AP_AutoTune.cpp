@@ -64,12 +64,15 @@ extern const AP_HAL::HAL& hal;
 #define AUTOTUNE_MIN_P 0.3f
 
 // constructor
-AP_AutoTune::AP_AutoTune(ATGains &_gains) :
-current(_gains) {}
+AP_AutoTune::AP_AutoTune(ATGains &_gains, ATType _type, DataFlash_Class &_dataflash) :
+    current(_gains),
+    type(_type),
+    dataflash(_dataflash)
+{}
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 #include <stdio.h>
- # define Debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
+# define Debug(fmt, args ...)  do {::printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #else
  # define Debug(fmt, args ...)
 #endif
@@ -165,6 +168,9 @@ void AP_AutoTune::update(float desired_rate, float achieved_rate, float servo_ou
         state_enter_ms = now;
         saturated_surfaces = false;
     }
+    if (state != DEMAND_UNSATURATED) {
+        write_log(servo_out, desired_rate, achieved_rate);
+    }
 }
 
 /*
@@ -240,4 +246,51 @@ void AP_AutoTune::save_gains(const ATGains &v)
     current.D.set_and_save_ifchanged(v.D);
     current.rmax.set_and_save_ifchanged(v.rmax);
     current.imax.set_and_save_ifchanged(v.imax);
+}
+
+#define LOG_MSG_ATRP 211
+
+struct PACKED log_ATRP {
+    LOG_PACKET_HEADER;
+    uint32_t timestamp;
+    uint8_t  type;
+    uint8_t  state;
+    int16_t  servo;
+    float    demanded;
+    float    achieved;
+    float    P;
+};
+
+static const struct LogStructure at_log_structures[] PROGMEM = {
+    { LOG_MSG_ATRP, sizeof(log_ATRP),
+      "ATRP", "IBBhfff",  "TimeMS,Type,State,Servo,Demanded,Achieved,P" },
+};
+
+void AP_AutoTune::write_log_headers(void)
+{
+    if (!logging_started) {
+        logging_started = true;
+        dataflash.AddLogFormats(at_log_structures, 1);
+    }
+}
+
+void AP_AutoTune::write_log(int16_t servo, float demanded, float achieved)
+{
+    if (!dataflash.logging_started()) {
+        return;
+    }
+
+    write_log_headers();
+
+    struct log_ATRP pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_MSG_ATRP),
+        timestamp  : hal.scheduler->millis(),
+        type       : type,
+    	state      : (uint8_t)state,
+        servo      : servo,
+        demanded   : demanded,
+        achieved   : achieved,
+        P          : current.P.get()
+    };
+    dataflash.WriteBlock(&pkt, sizeof(pkt));    
 }
