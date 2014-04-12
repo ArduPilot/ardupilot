@@ -62,6 +62,7 @@ enum FlightMode {
     FLY_BY_WIRE_A = 5,
     FLY_BY_WIRE_B = 6,
     CRUISE        = 7,
+    AUTOTUNE      = 8,
     AUTO          = 10,
     RTL           = 11,
     LOITER        = 12,
