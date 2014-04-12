@@ -6,12 +6,14 @@
 #include <AP_AHRS.h>
 #include <AP_Common.h>
 #include <AP_Vehicle.h>
+#include <AP_AutoTune.h>
 #include <math.h>
 
 class AP_PitchController {
 public:
 	AP_PitchController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms) :
 		aparm(parms),
+        autotune(gains),
         _ahrs(ahrs)
     { 
 		AP_Param::setup_object_defaults(this, var_info);
@@ -22,18 +24,17 @@ public:
 
 	void reset_I();
 
+    void autotune_start(void) { autotune.start(); }
+    void autotune_restore(void) { autotune.stop(); }
+
 	static const struct AP_Param::GroupInfo var_info[];
 
 private:
 	const AP_Vehicle::FixedWing &aparm;
-	AP_Float _tau;
-	AP_Float _K_P;
-	AP_Float _K_I;
-	AP_Float _K_D;
-	AP_Int16 _max_rate_pos;
+    AP_AutoTune::ATGains gains;
+    AP_AutoTune autotune;
 	AP_Int16 _max_rate_neg;
 	AP_Float _roll_ff;
-    AP_Int16  _imax;
 	uint32_t _last_t;
 	float _last_out;
 	
