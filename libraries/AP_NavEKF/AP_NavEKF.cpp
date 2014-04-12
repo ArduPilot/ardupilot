@@ -39,7 +39,7 @@
 #define MAGE_PNOISE_DEFAULT     0.0003f
 #define MAGB_PNOISE_DEFAULT     0.0003f
 #define VEL_GATE_DEFAULT        2
-#define POS_GATE_DEFAULT        5
+#define POS_GATE_DEFAULT        10
 #define HGT_GATE_DEFAULT        5
 #define MAG_GATE_DEFAULT        3
 #define MAG_CAL_DEFAULT         1
@@ -60,7 +60,7 @@
 #define MAGE_PNOISE_DEFAULT     0.0003f
 #define MAGB_PNOISE_DEFAULT     0.0003f
 #define VEL_GATE_DEFAULT        2
-#define POS_GATE_DEFAULT        5
+#define POS_GATE_DEFAULT        10
 #define HGT_GATE_DEFAULT        5
 #define MAG_GATE_DEFAULT        3
 #define MAG_CAL_DEFAULT         1
@@ -81,7 +81,7 @@
 #define MAGE_PNOISE_DEFAULT     0.0003f
 #define MAGB_PNOISE_DEFAULT     0.0003f
 #define VEL_GATE_DEFAULT        3
-#define POS_GATE_DEFAULT        5
+#define POS_GATE_DEFAULT        10
 #define HGT_GATE_DEFAULT        10
 #define MAG_GATE_DEFAULT        3
 #define MAG_CAL_DEFAULT         0
