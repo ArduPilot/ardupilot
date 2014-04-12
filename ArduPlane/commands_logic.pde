@@ -241,7 +241,13 @@ static void do_RTL(void)
 {
     control_mode    = RTL;
     prev_WP_loc = current_loc;
-    next_WP_loc = rally_find_best_location(current_loc, home);
+
+// #if AC_RALLY == ENABLED        
+    //next_WP_loc = rally_find_best_location(current_loc, home);
+    next_WP_loc = rally.calc_best_rally_or_home_location(current_loc, read_alt_to_hold());
+// #else
+    //what this used to say before rally points were added
+// #endif
 
     if (g.loiter_radius < 0) {
         loiter.direction = -1;
@@ -620,7 +626,14 @@ static void exit_mission_callback()
     if (control_mode == AUTO) {
         gcs_send_text_fmt(PSTR("Returning to Home"));
         memset(&auto_rtl_command, 0, sizeof(auto_rtl_command));
-        auto_rtl_command.content.location = rally_find_best_location(current_loc, home);
+
+// #if AC_RALLY == ENABLED        
+        //auto_rtl_command.content.location = rally_find_best_location(current_loc, home);
+        auto_rtl_command.content.location = rally.calc_best_rally_or_home_location(current_loc, read_alt_to_hold());
+// #else
+        //what this used to say before rally points were added
+// #endif
+
         auto_rtl_command.id = MAV_CMD_NAV_LOITER_UNLIM;
         setup_glide_slope();
         start_command(auto_rtl_command);

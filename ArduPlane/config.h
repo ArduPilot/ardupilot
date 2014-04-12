@@ -504,6 +504,12 @@
  # define FENCE_TRIGGERED_PIN -1
 #endif
 
+// use this to disable geo-fencing
+#ifndef RALLY_ENABLED
+ # define RALLY_ENABLED ENABLED
+#endif
+
+
 // if RESET_SWITCH_CH is not zero, then this is the PWM value on
 // that channel where we reset the control mode to the current switch
 // position (to for example return to switched mode after failsafe or

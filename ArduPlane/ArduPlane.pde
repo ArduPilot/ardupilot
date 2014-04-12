@@ -71,6 +71,7 @@
 #include <AP_TECS.h>
 #include <AP_NavEKF.h>
 #include <AP_Mission.h>     // Mission command library
+#include <AP_Rally.h>       // Rally point library
 
 #include <AP_Notify.h>      // Notify library
 #include <AP_BattMonitor.h> // Battery monitor library
@@ -553,6 +554,13 @@ AP_Mission mission(ahrs,
                    &verify_command_callback, 
                    &exit_mission_callback, 
                    MISSION_START_BYTE, MISSION_END_BYTE);
+
+ ////////////////////////////////////////////////////////////////////////////////
+ // Rally library
+ ////////////////////////////////////////////////////////////////////////////////
+ //#if AC_RALLY == ENABLED
+ AP_Rally rally(ahrs, MAX_RALLYPOINTS, RALLY_WP_SIZE, RALLY_START_BYTE);
+ //#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Outback Challenge Failsafe Support

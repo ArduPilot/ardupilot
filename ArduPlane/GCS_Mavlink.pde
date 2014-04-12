@@ -1475,6 +1475,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     }
 #endif // GEOFENCE_ENABLED
 
+//#if AC_RALLY == ENABLED
     // receive a rally point from GCS and store in EEPROM
     case MAVLINK_MSG_ID_RALLY_POINT: {
         mavlink_rally_point_t packet;
@@ -1500,7 +1501,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         rally_point.break_alt = packet.break_alt;
         rally_point.land_dir = packet.land_dir;
         rally_point.flags = packet.flags;
-        set_rally_point_with_index(packet.idx, rally_point);
+
+        if (!rally.set_rally_point_with_index(packet.idx, rally_point)) {
+            send_text_P(SEVERITY_HIGH, PSTR("error setting rally point"));
+        }
+
         break;
     }
 
@@ -1514,9 +1519,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             send_text_P(SEVERITY_LOW, PSTR("bad rally point index"));   
             break;
         }
+
         RallyLocation rally_point;
-        if (!get_rally_point_with_index(packet.idx, rally_point)) {
-            send_text_P(SEVERITY_LOW, PSTR("failed to set rally point"));   
+        if (!rally.get_rally_point_with_index(packet.idx, rally_point)) {
+            send_text_P(SEVERITY_LOW, PSTR("failed to set rally point"));
             break;
         }
 
@@ -1526,7 +1532,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                                          rally_point.alt, rally_point.break_alt, rally_point.land_dir, 
                                          rally_point.flags);
         break;
-    }    
+    }
+//#endif // AC_RALLY == ENABLED
+
 
     case MAVLINK_MSG_ID_PARAM_SET:
     {
