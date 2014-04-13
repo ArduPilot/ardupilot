@@ -95,6 +95,10 @@ extern const AP_HAL::HAL& hal;
 
 #define earthRate 0.000072921f // earth rotation rate (rad/sec)
 
+// when the wind estimation first starts with no airspeed sensor,
+// assume 3m/s to start
+#define STARTUP_WIND_SPEED 3.0f
+
 // Define tuning parameters
 const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
 
@@ -3142,16 +3146,18 @@ void NavEKF::alignYawGPS()
     }
 }
 
-// This function is used to do a forced alignment of the wind velocity states so that they are set to the reciprocal of
-// the ground speed and scaled to 6 m/s. This is used when launching a fly-forward vehicle without an airspeed sensor
-// on the assumption that launch will be into wind and 6 is representative global average at height
-// http://maps.google.com/gallery/details?id=zJuaSgXp_WLc.kTBytKPmNODY&hl=en
+// This function is used to do a forced alignment of the wind velocity
+// states so that they are set to the reciprocal of the ground speed
+// and scaled to STARTUP_WIND_SPEED m/s. This is used when launching a
+// fly-forward vehicle without an airspeed sensor on the assumption
+// that launch will be into wind and STARTUP_WIND_SPEED is
+// representative of typical launch wind
 void NavEKF::setWindVelStates()
 {
     float gndSpd = sqrtf(sq(states[4]) + sq(states[5]));
     if (gndSpd > 4.0f) {
         // set the wind states to be the reciprocal of the velocity and scale to 6 m/s
-        float scaleFactor = 6.0f / gndSpd;
+        float scaleFactor = STARTUP_WIND_SPEED / gndSpd;
         states[14] = - states[4] * scaleFactor;
         states[15] = - states[5] * scaleFactor;
         // reinitialise the wind state covariances
