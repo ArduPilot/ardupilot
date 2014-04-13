@@ -49,28 +49,14 @@ extern const AP_HAL::HAL& hal;
 // how much time we have to undershoot for to increase gains
 #define AUTOTUNE_UNDERSHOOT_TIME 200
 
-// step size for increasing gains
-#define AUTOTUNE_INCREASE_STEP 0.05f
+// step size for increasing gains, percentage
+#define AUTOTUNE_INCREASE_STEP 5
 
-// step size for decreasing gains
-#define AUTOTUNE_DECREASE_STEP 0.1f
-
-// rate ranges
-#define AUTOTUNE_MAX_RATE 90
-#define AUTOTUNE_DEF_RATE 60
-#define AUTOTUNE_MIN_RATE 30
-
-// I ranges
-#define AUTOTUNE_MAX_I 0.3
-#define AUTOTUNE_DEF_I 0.1
-#define AUTOTUNE_MIN_I 0.05
-
-// D ranges
-#define AUTOTUNE_MAX_D 0.15
-#define AUTOTUNE_MIN_D 0.05
+// step size for decreasing gains, percentage
+#define AUTOTUNE_DECREASE_STEP 8
 
 // min/max P gains
-#define AUTOTUNE_MAX_P 4.0f
+#define AUTOTUNE_MAX_P 5.0f
 #define AUTOTUNE_MIN_P 0.3f
 
 // tau ranges
@@ -81,9 +67,12 @@ extern const AP_HAL::HAL& hal;
 #define AUTOTUNE_MAX_IMAX 4000
 
 // constructor
-AP_AutoTune::AP_AutoTune(ATGains &_gains, ATType _type, DataFlash_Class &_dataflash) :
+AP_AutoTune::AP_AutoTune(ATGains &_gains, ATType _type, 
+                         const AP_Vehicle::FixedWing &parms, 
+                         DataFlash_Class &_dataflash) :
     current(_gains),
     type(_type),
+    aparm(parms),
     dataflash(_dataflash)
 {}
 
@@ -93,6 +82,30 @@ AP_AutoTune::AP_AutoTune(ATGains &_gains, ATType _type, DataFlash_Class &_datafl
 #else
  # define Debug(fmt, args ...)
 #endif
+
+/*
+  auto-tuning table. This table gives the starting values for key
+  tuning parameters based on a user chosen AUTOTUNE_LEVEL parameter
+  from 1 to 10. Level 1 is a very soft tune. Level 10 is a very
+  agressive tune.
+ */
+static const struct {
+    float tau;
+    float D;
+    float rmax;
+} tuning_table[] PROGMEM = {
+    { 0.70f, 0.02f,  20 },   // level 1
+    { 0.65f, 0.03f,  30 },   // level 2
+    { 0.60f, 0.04f,  40 },   // level 3
+    { 0.55f, 0.05f,  50 },   // level 4
+    { 0.50f, 0.05f,  60 },   // level 5
+    { 0.45f, 0.07f,  75 },   // level 6
+    { 0.40f, 0.10f,  90 },   // level 7
+    { 0.30f, 0.15f, 120 },   // level 8
+    { 0.20f, 0.20f, 160 },   // level 9
+    { 0.10f, 0.30f, 210 },   // level 10
+    { 0.05f, 0.60f, 300 },   // (yes, it goes to 11)
+};
 
 /*
   start an autotune session
@@ -109,16 +122,18 @@ void AP_AutoTune::start(void)
     last_save = current;
     restore = current;
 
-    /*
-      set some reasonable values for I and D if the user hasn't set
-      them at all
-     */
-    if (current.rmax < AUTOTUNE_MIN_RATE || current.rmax > AUTOTUNE_MAX_RATE) {
-        current.rmax.set(AUTOTUNE_DEF_RATE);
+    uint8_t level = aparm.autotune_level;
+    if (level > sizeof(tuning_table)/sizeof(tuning_table[0])) {
+        level = sizeof(tuning_table)/sizeof(tuning_table[0]);
+    }
+    if (level < 1) {
+        level = 1;
     }
 
-    current.D = constrain_float(current.D, AUTOTUNE_MIN_D, AUTOTUNE_MAX_D);
-    current.tau = constrain_float(current.tau, AUTOTUNE_MIN_TAU, AUTOTUNE_MAX_TAU);
+    current.rmax.set(pgm_read_float(&tuning_table[level-1].rmax));
+    current.D.set(   pgm_read_float(&tuning_table[level-1].D));
+    current.tau.set( pgm_read_float(&tuning_table[level-1].tau));
+
     current.imax = constrain_float(current.imax, AUTOTUNE_MIN_IMAX, AUTOTUNE_MAX_IMAX);
 
     // force a 45 degree phase
@@ -193,7 +208,7 @@ void AP_AutoTune::check_state_exit(uint32_t state_time_ms)
         // we increase P if we have not saturated the surfaces during
         // this state, and we have 
         if (state_time_ms >= AUTOTUNE_UNDERSHOOT_TIME && !saturated_surfaces) {
-            current.P += AUTOTUNE_INCREASE_STEP;
+            current.P.set(current.P * (100+AUTOTUNE_INCREASE_STEP) * 0.01f);
             if (current.P > AUTOTUNE_MAX_P) {
                 current.P = AUTOTUNE_MAX_P;
             }
@@ -203,7 +218,7 @@ void AP_AutoTune::check_state_exit(uint32_t state_time_ms)
     case DEMAND_OVER_POS:
     case DEMAND_OVER_NEG:
         if (state_time_ms >= AUTOTUNE_OVERSHOOT_TIME) {
-            current.P -= AUTOTUNE_DECREASE_STEP;
+            current.P.set(current.P * (100-AUTOTUNE_DECREASE_STEP) * 0.01f);
             if (current.P < AUTOTUNE_MIN_P) {
                 current.P = AUTOTUNE_MIN_P;
             }

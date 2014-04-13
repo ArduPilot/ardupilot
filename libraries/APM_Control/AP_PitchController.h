@@ -14,7 +14,7 @@ class AP_PitchController {
 public:
 	AP_PitchController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, DataFlash_Class &_dataflash) :
 		aparm(parms),
-        autotune(gains, AP_AutoTune::AUTOTUNE_PITCH, _dataflash),
+        autotune(gains, AP_AutoTune::AUTOTUNE_PITCH, parms, _dataflash),
         _ahrs(ahrs)
     { 
 		AP_Param::setup_object_defaults(this, var_info);
