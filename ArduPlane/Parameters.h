@@ -105,6 +105,7 @@ public:
         k_param_flapin_channel,
         k_param_flaperon_output,
         k_param_gps,
+        k_param_autotune_level,
 
         // 100: Arming parameters
         k_param_arming = 100,
