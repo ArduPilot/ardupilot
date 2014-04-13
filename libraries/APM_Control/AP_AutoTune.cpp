@@ -55,13 +55,30 @@ extern const AP_HAL::HAL& hal;
 // step size for decreasing gains
 #define AUTOTUNE_DECREASE_STEP 0.1f
 
-// max rate
-#define AUTOTUNE_MAX_RATE 60
+// rate ranges
+#define AUTOTUNE_MAX_RATE 90
+#define AUTOTUNE_DEF_RATE 60
 #define AUTOTUNE_MIN_RATE 30
+
+// I ranges
+#define AUTOTUNE_MAX_I 0.3
+#define AUTOTUNE_DEF_I 0.1
+#define AUTOTUNE_MIN_I 0.05
+
+// D ranges
+#define AUTOTUNE_MAX_D 0.15
+#define AUTOTUNE_MIN_D 0.05
 
 // min/max P gains
 #define AUTOTUNE_MAX_P 4.0f
 #define AUTOTUNE_MIN_P 0.3f
+
+// tau ranges
+#define AUTOTUNE_MAX_TAU 0.7
+#define AUTOTUNE_MIN_TAU 0.3
+
+#define AUTOTUNE_MIN_IMAX 2000
+#define AUTOTUNE_MAX_IMAX 4000
 
 // constructor
 AP_AutoTune::AP_AutoTune(ATGains &_gains, ATType _type, DataFlash_Class &_dataflash) :
@@ -95,27 +112,16 @@ void AP_AutoTune::start(void)
       set some reasonable values for I and D if the user hasn't set
       them at all
      */
-    if (current.I < 0.1f) {
-        current.I.set(0.1f);
+    if (current.rmax < AUTOTUNE_MIN_RATE || current.rmax > AUTOTUNE_MAX_RATE) {
+        current.rmax.set(AUTOTUNE_DEF_RATE);
     }
-    if (current.I > 0.5f) {
-        current.I.set(0.5f);
-    }
-    if (current.imax < 2000) {
-        current.imax.set(2000);
-    }
-    if (current.rmax <= 0 || current.rmax > AUTOTUNE_MAX_RATE) {
-        current.rmax.set(AUTOTUNE_MAX_RATE);
-    }
-    if (current.rmax < AUTOTUNE_MIN_RATE) {
-        current.rmax.set(AUTOTUNE_MIN_RATE);
-    }
-    if (current.D < 0.05f) {
-        current.D.set(0.05f);
-    }
-    if (current.D > 0.5f) {
-        current.D.set(0.5f);
-    }
+
+    current.D = constrain_float(current.D, AUTOTUNE_MIN_D, AUTOTUNE_MAX_D);
+    current.tau = constrain_float(current.tau, AUTOTUNE_MIN_TAU, AUTOTUNE_MAX_TAU);
+    current.imax = constrain_float(current.imax, AUTOTUNE_MIN_IMAX, AUTOTUNE_MAX_IMAX);
+
+    // force a 45 degree phase
+    current.I = current.D / current.tau;
 
     next_save = current;
 
@@ -147,7 +153,7 @@ void AP_AutoTune::update(float desired_rate, float achieved_rate, float servo_ou
     float abs_desired_rate = fabsf(desired_rate);
     uint32_t now = hal.scheduler->millis();
 
-    if (fabsf(servo_out) >= 4500) {
+    if (fabsf(servo_out) >= 45) {
         // we have saturated the servo demand (not including
         // integrator), we cannot get any information that would allow
         // us to increase the gain
@@ -263,7 +269,7 @@ struct PACKED log_ATRP {
 
 static const struct LogStructure at_log_structures[] PROGMEM = {
     { LOG_MSG_ATRP, sizeof(log_ATRP),
-      "ATRP", "IBBhfff",  "TimeMS,Type,State,Servo,Demanded,Achieved,P" },
+      "ATRP", "IBBcfff",  "TimeMS,Type,State,Servo,Demanded,Achieved,P" },
 };
 
 void AP_AutoTune::write_log_headers(void)
@@ -274,7 +280,7 @@ void AP_AutoTune::write_log_headers(void)
     }
 }
 
-void AP_AutoTune::write_log(int16_t servo, float demanded, float achieved)
+void AP_AutoTune::write_log(float servo, float demanded, float achieved)
 {
     if (!dataflash.logging_started()) {
         return;
@@ -287,7 +293,7 @@ void AP_AutoTune::write_log(int16_t servo, float demanded, float achieved)
         timestamp  : hal.scheduler->millis(),
         type       : type,
     	state      : (uint8_t)state,
-        servo      : servo,
+        servo      : (int16_t)(servo*100),
         demanded   : demanded,
         achieved   : achieved,
         P          : current.P.get()
