@@ -58,6 +58,9 @@ private:
     // values to restore if we leave autotune mode
     ATGains restore; 
 
+    // values we last saved
+    ATGains last_save; 
+
     // values to save on the next save event
     ATGains next_save;
 

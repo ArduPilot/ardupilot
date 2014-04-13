@@ -106,6 +106,7 @@ void AP_AutoTune::start(void)
     state_enter_ms = now;
     last_save_ms = now;
     
+    last_save = current;
     restore = current;
 
     /*
@@ -246,12 +247,14 @@ void AP_AutoTune::check_save(void)
  */
 void AP_AutoTune::save_gains(const ATGains &v)
 {
+    current = last_save;
     current.tau.set_and_save_ifchanged(v.tau);
     current.P.set_and_save_ifchanged(v.P);
     current.I.set_and_save_ifchanged(v.I);
     current.D.set_and_save_ifchanged(v.D);
     current.rmax.set_and_save_ifchanged(v.rmax);
     current.imax.set_and_save_ifchanged(v.imax);
+    last_save = current;
 }
 
 #define LOG_MSG_ATRP 211
