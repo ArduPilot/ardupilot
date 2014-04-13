@@ -1185,10 +1185,18 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         v[5] = packet.chan6_raw;
         v[6] = packet.chan7_raw;
         v[7] = packet.chan8_raw;
-        hal.rcin->set_overrides(v, 8);
 
-        // record that rc are overwritten so we can trigger a failsafe if we lose contact with groundstation
-        failsafe.rc_override_active = true;
+        // if we don't have a GCS failsafe enabled we won't accept overrides
+        if(g.failsafe_gcs == FS_GCS_DISABLED) {
+        	//Send a message to the GCS rejecting overrides
+            send_text_P(SEVERITY_HIGH,PSTR("Channel Override Rejected - No GCS Failsafe!"));
+        } else {
+            hal.rcin->set_overrides(v, 8);
+
+	        // record that rc are overwritten so we can trigger a failsafe if we lose contact with groundstation
+            failsafe.rc_override_active = true;
+        }
+
         // a RC override message is consiered to be a 'heartbeat' from the ground station for failsafe purposes
         failsafe.last_heartbeat_ms = millis();
         break;
