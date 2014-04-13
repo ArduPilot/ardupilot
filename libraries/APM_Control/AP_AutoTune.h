@@ -79,7 +79,7 @@ private:
     void save_gains(const ATGains &v);
 
     void write_log_headers(void);
-    void write_log(int16_t servo, float demanded, float achieved);
+    void write_log(float servo, float demanded, float achieved);
 };
 
 #endif // __AP_AUTOTUNE_H__
