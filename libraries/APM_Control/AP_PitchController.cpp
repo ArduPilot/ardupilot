@@ -170,10 +170,8 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
         // contributed
         autotune.update(desired_rate, achieved_rate, _last_out);
         
-        // limit pitch down rate to rate up
-        if (_max_rate_neg == 0 || _max_rate_neg > gains.rmax) {
-            _max_rate_neg = gains.rmax;
-        }
+        // set down rate to rate up when auto-tuning
+        _max_rate_neg.set_and_save_ifchanged(gains.rmax);
     }
 
 	_last_out += _integrator;

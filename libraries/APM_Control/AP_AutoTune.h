@@ -24,7 +24,7 @@ public:
     };
 
     // constructor
-    AP_AutoTune(ATGains &_gains, ATType type, DataFlash_Class &_dataflash);
+    AP_AutoTune(ATGains &_gains, ATType type, const AP_Vehicle::FixedWing &parms, DataFlash_Class &_dataflash);
 
     // called when autotune mode is entered
     void start(void);
@@ -46,6 +46,8 @@ private:
 
     // what type of autotune is this
     ATType type;
+
+	const AP_Vehicle::FixedWing &aparm;
 
     DataFlash_Class &dataflash;
 
