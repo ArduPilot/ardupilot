@@ -504,7 +504,7 @@
  # define FENCE_TRIGGERED_PIN -1
 #endif
 
-// use this to disable geo-fencing
+// use this to disable rally points
 #ifndef RALLY_ENABLED
  # define RALLY_ENABLED ENABLED
 #endif
