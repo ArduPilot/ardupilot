@@ -1,0 +1,27 @@
+# This file provide reference settings for the APM code conventions
+# There are plug-ins available for nearly every text editor to automatically
+# respect the conventions contained within this file.
+#
+# Please see editorconfig.org for complete information.
+#
+# If you find errors in this file, please send a pull-request with a fix.
+#
+root = true
+
+[*]
+indent_style = space
+indent_size = 4
+tab_size = 8
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.coffee]
+indent_size = 2
+
+[*.js]
+indent_size = 2
+
+# [*.md]
+# trim_trailing_whitespace = false
