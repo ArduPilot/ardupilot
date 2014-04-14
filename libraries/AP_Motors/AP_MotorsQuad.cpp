@@ -49,6 +49,70 @@ void AP_MotorsQuad::setup_motors()
         add_motor(AP_MOTORS_MOT_2, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3);
         add_motor(AP_MOTORS_MOT_3,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4);
         add_motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2);
+    } else if ( _flags.frame_orientation == AP_MOTORS_V_TAIL_FRAME ) {
+
+      /********************************
+       Lynxmotion Hunter Vtail 400/500
+      ********************************/
+
+      /**
+        use add_motor_raw because not all of the propellors are as involved 
+        in pitch / roll as other props. 
+        - Front props control only roll
+        - Rear props control only yaw
+
+        add_motor_raw(
+          moter number,
+          roll factor,
+          pitch factor,
+          yaw factor,
+          testing order
+        )
+
+        roll factor is measured by the angle perpendicular to that of the prop arm to the roll axis (x)
+        pitch factor is measured by the angle perpendicular to the prop arm to the pitch axis (y)
+        testing order is a clockwise path around the vehicle
+
+
+        assumptions:
+                             20      20
+         \      /          3_____________1
+          \    /                  |
+           \  /                   |
+        40  \/  40            20  |  20
+           Tail                  / \
+                                2   4
+
+
+        All angles measured from their closest axis
+
+      */
+      // these are for if we want the front props to help with yaw
+      // int v_tail_angle = 40;
+      // float v_tail_thrust = sin(v_tail_angle);
+
+      add_motor_raw(AP_MOTORS_MOT_1,      // front right
+        cosf(radians(150)),               // 70 degrees right of roll axis
+        cosf(radians(-70)),                // 20 degrees up of pitch axis
+        0,                                // no yaw
+        1);
+      add_motor_raw(AP_MOTORS_MOT_2,      // back right
+        0,                                // no roll
+        cosf(radians(-160)),               // 70 degrees down of pitch axis
+        AP_MOTORS_MATRIX_YAW_FACTOR_CW,  // full yaw
+        3);
+      add_motor_raw(AP_MOTORS_MOT_3,      // front left
+        cosf(radians(20)),                // 70 degrees left of roll axis
+        cosf(radians(70)),               // 20 degrees up of pitch axis
+        0,                                // no yaw
+        4);
+      add_motor_raw(AP_MOTORS_MOT_4,      // back left
+        0,                                // no roll
+        cosf(radians(160)),              // 70 degrees down of pitch axis
+        AP_MOTORS_MATRIX_YAW_FACTOR_CCW,   // full yaw
+        2);
+
+
 
     }else{
         // X frame set-up
