@@ -67,8 +67,8 @@ extern const AP_HAL::HAL& hal;
 #define AUTOTUNE_MAX_IMAX 4000
 
 // constructor
-AP_AutoTune::AP_AutoTune(ATGains &_gains, ATType _type, 
-                         const AP_Vehicle::FixedWing &parms, 
+AP_AutoTune::AP_AutoTune(ATGains &_gains, ATType _type,
+                         const AP_Vehicle::FixedWing &parms,
                          DataFlash_Class &_dataflash) :
     current(_gains),
     type(_type),
@@ -91,20 +91,20 @@ AP_AutoTune::AP_AutoTune(ATGains &_gains, ATType _type,
  */
 static const struct {
     float tau;
-    float D;
+    float Dratio;
     float rmax;
 } tuning_table[] PROGMEM = {
-    { 0.70f, 0.02f,  20 },   // level 1
-    { 0.65f, 0.03f,  30 },   // level 2
-    { 0.60f, 0.04f,  40 },   // level 3
-    { 0.55f, 0.05f,  50 },   // level 4
-    { 0.50f, 0.05f,  60 },   // level 5
-    { 0.45f, 0.07f,  75 },   // level 6
-    { 0.40f, 0.10f,  90 },   // level 7
-    { 0.30f, 0.15f, 120 },   // level 8
-    { 0.20f, 0.20f, 160 },   // level 9
-    { 0.10f, 0.30f, 210 },   // level 10
-    { 0.05f, 0.60f, 300 },   // (yes, it goes to 11)
+    { 0.70f, 0.050f,  20 },   // level 1
+    { 0.65f, 0.055f,  30 },   // level 2
+    { 0.60f, 0.060f,  40 },   // level 3
+    { 0.55f, 0.065f,  50 },   // level 4
+    { 0.50f, 0.070f,  60 },   // level 5
+    { 0.45f, 0.075f,  75 },   // level 6
+    { 0.40f, 0.080f,  90 },   // level 7
+    { 0.30f, 0.085f, 120 },   // level 8
+    { 0.20f, 0.090f, 160 },   // level 9
+    { 0.10f, 0.095f, 210 },   // level 10
+    { 0.05f, 0.100f, 300 },   // (yes, it goes to 11)
 };
 
 /*
@@ -118,7 +118,7 @@ void AP_AutoTune::start(void)
 
     state_enter_ms = now;
     last_save_ms = now;
-    
+
     last_save = current;
     restore = current;
 
@@ -131,13 +131,14 @@ void AP_AutoTune::start(void)
     }
 
     current.rmax.set(pgm_read_float(&tuning_table[level-1].rmax));
-    current.D.set(   pgm_read_float(&tuning_table[level-1].D));
+    // D gain is scaled to a fixed ratio of P gain
+    current.D.set(   pgm_read_float(&tuning_table[level-1].Dratio) * current.P);
     current.tau.set( pgm_read_float(&tuning_table[level-1].tau));
 
     current.imax = constrain_float(current.imax, AUTOTUNE_MIN_IMAX, AUTOTUNE_MAX_IMAX);
 
-    // force a 45 degree phase
-    current.I = current.D / current.tau;
+    // force a fixed ratio of I to D gain on the rate feedback path
+    current.I = 0.5f * current.D / current.tau;
 
     next_save = current;
 
@@ -206,7 +207,7 @@ void AP_AutoTune::check_state_exit(uint32_t state_time_ms)
     case DEMAND_UNDER_POS:
     case DEMAND_UNDER_NEG:
         // we increase P if we have not saturated the surfaces during
-        // this state, and we have 
+        // this state, and we have
         if (state_time_ms >= AUTOTUNE_UNDERSHOOT_TIME && !saturated_surfaces) {
             current.P.set(current.P * (100+AUTOTUNE_INCREASE_STEP) * 0.01f);
             if (current.P > AUTOTUNE_MAX_P) {
@@ -214,6 +215,7 @@ void AP_AutoTune::check_state_exit(uint32_t state_time_ms)
             }
             Debug("UNDER P -> %.3f\n", current.P.get());
         }
+        current.D.set(   pgm_read_float(&tuning_table[aparm.autotune_level-1].Dratio) * current.P);
         break;
     case DEMAND_OVER_POS:
     case DEMAND_OVER_NEG:
@@ -224,7 +226,8 @@ void AP_AutoTune::check_state_exit(uint32_t state_time_ms)
             }
             Debug("OVER P -> %.3f\n", current.P.get());
         }
-        break;        
+        current.D.set(   pgm_read_float(&tuning_table[aparm.autotune_level-1].Dratio) * current.P);
+        break;
     }
 }
 
@@ -316,5 +319,5 @@ void AP_AutoTune::write_log(float servo, float demanded, float achieved)
         achieved   : achieved,
         P          : current.P.get()
     };
-    dataflash.WriteBlock(&pkt, sizeof(pkt));    
+    dataflash.WriteBlock(&pkt, sizeof(pkt));
 }
