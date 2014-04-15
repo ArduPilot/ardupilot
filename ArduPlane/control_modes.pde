@@ -79,3 +79,20 @@ static void reset_control_switch()
     read_control_switch();
 }
 
+/*
+  called when entering autotune
+ */
+static void autotune_start(void)
+{
+    rollController.autotune_start();
+    pitchController.autotune_start();
+}
+
+/*
+  called when exiting autotune
+ */
+static void autotune_restore(void)
+{
+    rollController.autotune_restore();
+    pitchController.autotune_restore();
+}

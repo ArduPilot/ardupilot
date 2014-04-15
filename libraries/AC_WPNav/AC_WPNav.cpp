@@ -248,11 +248,11 @@ void AC_WPNav::set_wp_destination(const Vector3f& destination)
 {
 	Vector3f origin;
 
-    // if waypoint controller is active and copter has reached the previous waypoint use it for the origin
-    if( _flags.reached_destination && ((hal.scheduler->millis() - _wp_last_update) < 1000) ) {
-        origin = _destination;
-    }else{
-        // otherwise calculate origin from the current position and velocity
+    // if waypoint controller is active use the existing position target as the origin
+    if ((hal.scheduler->millis() - _wp_last_update) < 1000) {
+        origin = _pos_control.get_pos_target();
+    } else {
+        // if waypoint controller is not active, set origin to reasonable stopping point (using curr pos and velocity)
         _pos_control.get_stopping_point_xy(origin);
         _pos_control.get_stopping_point_z(origin);
     }
