@@ -295,20 +295,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(fence_ret_rally,        "FENCE_RET_RALLY",  0),     
 #endif
 
-    // @Param: RALLY_TOTAL
-    // @DisplayName: Rally Total
-    // @Description: Number of rally points currently loaded
-    // @User: Advanced
-    GSCALAR(rally_total,            "RALLY_TOTAL",    0),
-
-    // @Param: RALLY_LIMIT_KM
-    // @DisplayName: Rally Limit
-    // @Description: Maximum distance to rally point. If the closest rally point is more than this number of kilometers from the current position and the home location is closer than any of the rally points from the current position then do RTL to home rather than to the closest rally point. This prevents a leftover rally point from a different airfield being used accidentally. If this is set to 0 then the closest rally point is always used.
-    // @User: Advanced
-    // @Units: kilometers
-    // @Increment: 0.1
-    GSCALAR(rally_limit_km,          "RALLY_LIMIT_KM",    5),
-
     // @Param: ARSPD_FBW_MIN
     // @DisplayName: Fly By Wire Minimum Airspeed
     // @Description: Airspeed corresponding to minimum throttle in auto throttle modes (FBWB, CRUISE, AUTO, GUIDED, LOITER, CIRCLE and RTL). This is a calibrated (apparent) airspeed.
@@ -1003,6 +989,12 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Group: MIS_
     // @Path: ../libraries/AP_Mission/AP_Mission.cpp
     GOBJECT(mission, "MIS_",       AP_Mission),
+
+#if AP_RALLY == ENABLED
+    // @Group: RALLY_
+    // @Path: ../libraries/AP_Rally/AP_Rally.cpp
+    GOBJECT(rally, "RALLY_",       AP_Rally),
+#endif
 
     AP_VAREND
 };

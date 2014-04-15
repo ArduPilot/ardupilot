@@ -338,10 +338,13 @@ static void geofence_check(bool altitude_check_only)
 
     case FENCE_ACTION_GUIDED:
     case FENCE_ACTION_GUIDED_THR_PASS:
+    #if AP_RALLY == ENABLED
         if (g.fence_ret_rally != 0) { //return to a rally point
-            guided_WP_loc = rally_find_best_location(current_loc, home);
-
+            guided_WP_loc = rally.calc_best_rally_or_home_location(current_loc, read_alt_to_hold());
         } else { //return to fence return point, not a rally point
+    #else // AP_RALLY
+        {
+    #endif // AP_RALLY
             if (g.fence_retalt > 0) {
                 //fly to the return point using fence_retalt
                 guided_WP_loc.alt = home.alt + 100.0*g.fence_retalt;

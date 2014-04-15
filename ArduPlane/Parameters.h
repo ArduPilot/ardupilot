@@ -96,7 +96,7 @@ public:
         k_param_waypoint_max_radius,
         k_param_ground_steer_alt,        
         k_param_ground_steer_dps,
-        k_param_rally_limit_km,
+        k_param_rally_limit_km,   // deprecated - moved to AP_Rally
         k_param_hil_err_limit,
         k_param_sonar,
         k_param_log_bitmask,
@@ -268,7 +268,7 @@ public:
         k_param_L1_controller,
         k_param_rcmap,
         k_param_TECS_controller,
-        k_param_rally_total,
+        k_param_rally,            // re-purposed pre-AP_Rally param k_param_rally_total
         k_param_steerController,
 
         //
@@ -346,9 +346,6 @@ public:
     AP_Int8 fence_autoenable;
     AP_Int8 fence_ret_rally;
 #endif
-
-    AP_Int8 rally_total;
-    AP_Float rally_limit_km;
 
     // Fly-by-wire
     //
