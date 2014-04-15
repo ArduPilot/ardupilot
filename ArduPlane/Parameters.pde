@@ -990,10 +990,11 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/AP_Mission/AP_Mission.cpp
     GOBJECT(mission, "MIS_",       AP_Mission),
 
+#if AP_RALLY == ENABLED
     // @Group: RALLY_
     // @Path: ../libraries/AP_Rally/AP_Rally.cpp
     GOBJECT(rally, "RALLY_",       AP_Rally),
-
+#endif
 
     AP_VAREND
 };

@@ -243,7 +243,6 @@ static void do_RTL(void)
     prev_WP_loc = current_loc;
 
 #if AP_RALLY == ENABLED        
-    //next_WP_loc = rally_find_best_location(current_loc, home);
     next_WP_loc = rally.calc_best_rally_or_home_location(current_loc, read_alt_to_hold());
 #else
     next_WP_loc = home;
@@ -628,7 +627,6 @@ static void exit_mission_callback()
         memset(&auto_rtl_command, 0, sizeof(auto_rtl_command));
 
 #if AP_RALLY == ENABLED        
-        //auto_rtl_command.content.location = rally_find_best_location(current_loc, home);
         auto_rtl_command.content.location = rally.calc_best_rally_or_home_location(current_loc, read_alt_to_hold());
 #else
         auto_rtl_command.content.location = home;
