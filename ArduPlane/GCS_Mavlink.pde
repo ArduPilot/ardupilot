@@ -1478,7 +1478,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     }
 #endif // GEOFENCE_ENABLED
 
-//#if AC_RALLY == ENABLED
+#if AP_RALLY == ENABLED
     // Note: this was copy+pasted from here into Copter's GCS_Mavlink, I'll come back to move them both into GCS_Common as a separate commit
     // receive a rally point from GCS and store in EEPROM
     case MAVLINK_MSG_ID_RALLY_POINT: {
@@ -1538,7 +1538,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                                          rally_point.flags);
         break;
     }
-//#endif // AC_RALLY == ENABLED
+#endif // AP_RALLY == ENABLED
 
 
     case MAVLINK_MSG_ID_PARAM_SET:

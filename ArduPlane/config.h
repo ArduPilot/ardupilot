@@ -505,8 +505,8 @@
 #endif
 
 // use this to disable rally points
-#ifndef RALLY_ENABLED
- # define RALLY_ENABLED ENABLED
+#ifndef AP_RALLY
+ # define AP_RALLY ENABLED
 #endif
 
 
