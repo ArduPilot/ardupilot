@@ -108,6 +108,7 @@ public:
         k_param_mission,                // mission library
         k_param_rc_13,
         k_param_rc_14,
+        k_param_rally,
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove

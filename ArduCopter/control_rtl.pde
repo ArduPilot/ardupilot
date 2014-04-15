@@ -81,7 +81,14 @@ static void rtl_climb_start()
     // get horizontal stopping point
     Vector3f destination;
     wp_nav.get_wp_stopping_point_xy(destination);
+
+#   if AC_RALLY == ENABLED
+    // rally_point.alt will be max of RTL_ALT and the height of the nearest rally point (if there is one)
+    Location rally_point = rally.calc_best_rally_or_home_location(current_loc, get_RTL_alt());
+    destination.z = rally_point.alt;
+#   else
     destination.z = get_RTL_alt();
+#   endif
 
     wp_nav.set_wp_destination(destination);
 
@@ -95,8 +102,13 @@ static void rtl_return_start()
     rtl_state = ReturnHome;
     rtl_state_complete = false;
 
-    // set target to above home
+    // set target to above home/rally point
+#   if AC_RALLY == ENABLED
+    Vector3f destination = pv_location_to_vector(rally.calc_best_rally_or_home_location(current_loc, get_RTL_alt()));
+#   else
     Vector3f destination = Vector3f(0,0,get_RTL_alt());
+#   endif
+
     wp_nav.set_wp_destination(destination);
 
     // initialise yaw to point home (maybe)

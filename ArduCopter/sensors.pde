@@ -27,7 +27,9 @@ static int32_t read_barometer(void)
 {
     barometer.read();
     if (g.log_bitmask & MASK_LOG_IMU) {
+#if LOGGING_ENABLED == ENABLED
         Log_Write_Baro();
+#endif
     }
     return barometer.get_altitude() * 100.0f;
 }
