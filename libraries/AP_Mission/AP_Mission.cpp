@@ -15,6 +15,12 @@ const AP_Param::GroupInfo AP_Mission::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("TOTAL",  0, AP_Mission, _cmd_total, 0),
 
+    // @Param: AUTORESET
+    // @DisplayName: Controls whether to reset mission when switching to auto
+    // @Description: When set to 0 it will continue a previous auto mission, when set to 1 it will restart from the first waypoint
+    // @Values: 0:Continue Mission, 1:Reset Mission
+    AP_GROUPINFO("AUTORESET",  1, AP_Mission, _auto_reset, 0),
+
     AP_GROUPEND
 };
 
@@ -97,6 +103,15 @@ void AP_Mission::resume()
     // restart active do command
     if (_flags.do_cmd_loaded && _do_cmd.index != AP_MISSION_CMD_INDEX_NONE) {
         _cmd_start_fn(_do_cmd);
+    }
+}
+
+void AP_Mission::start_or_resume()
+{
+    if (_auto_reset) {
+        start();
+    } else {
+        resume();
     }
 }
 

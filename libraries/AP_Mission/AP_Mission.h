@@ -213,6 +213,9 @@ public:
     ///     previous running commands will be re-initialised
     void resume();
 
+    /// start_or_resume - if MIS_AUTORESTART=0 this will call resume(), otherwise it will call start()
+    void start_or_resume();
+
     /// clear - clears out mission
     ///     returns true if mission was running so it could not be cleared
     bool clear();
@@ -355,7 +358,8 @@ private:
     const AP_AHRS&   _ahrs;      // used only for home position
 
     // parameters
-    AP_Int16                _cmd_total; // total number of commands in the mission
+    AP_Int16                _cmd_total;  // total number of commands in the mission
+    AP_Int8                 _auto_reset; // when true the mission will reset to the start when initiated
 
     // pointer to main program functions
     mission_cmd_fn_t        _cmd_start_fn;  // pointer to function which will be called when a new command is started
