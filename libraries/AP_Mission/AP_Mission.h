@@ -216,6 +216,9 @@ public:
     /// start_or_resume - if MIS_AUTORESTART=0 this will call resume(), otherwise it will call start()
     void start_or_resume();
 
+    /// reset - reset mission to the first command
+    void reset();
+
     /// clear - clears out mission
     ///     returns true if mission was running so it could not be cleared
     bool clear();
@@ -359,7 +362,7 @@ private:
 
     // parameters
     AP_Int16                _cmd_total;  // total number of commands in the mission
-    AP_Int8                 _auto_reset; // when true the mission will reset to the start when initiated
+    AP_Int8                 _auto_reset; // when true the mission will reset to the first command when initiated
 
     // pointer to main program functions
     mission_cmd_fn_t        _cmd_start_fn;  // pointer to function which will be called when a new command is started
