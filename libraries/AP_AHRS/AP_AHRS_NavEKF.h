@@ -92,6 +92,8 @@ public:
 
     void set_ekf_use(bool setting) { _ekf_use.set(setting); }
 
+    const Vector3f &get_accel_ef(void) const;
+
 private:
     bool using_EKF(void) const;
 
