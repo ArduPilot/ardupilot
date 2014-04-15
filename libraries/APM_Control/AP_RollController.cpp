@@ -32,7 +32,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	// @Units: seconds
 	// @Increment: 0.1
 	// @User: Advanced
-	AP_GROUPINFO("TCONST",      0, AP_RollController, _tau,       0.5f),
+	AP_GROUPINFO("TCONST",      0, AP_RollController, gains.tau,       0.5f),
 
 	// @Param: P
 	// @DisplayName: Proportional Gain
@@ -40,7 +40,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	// @Range: 0.1 2.0
 	// @Increment: 0.1
 	// @User: User
-	AP_GROUPINFO("P",        1, AP_RollController, _K_P,        0.4f),
+	AP_GROUPINFO("P",        1, AP_RollController, gains.P,        0.4f),
 
 	// @Param: D
 	// @DisplayName: Damping Gain
@@ -48,7 +48,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	// @Range: 0 0.1
 	// @Increment: 0.01
 	// @User: User
-	AP_GROUPINFO("D",        2, AP_RollController, _K_D,        0.02f),
+	AP_GROUPINFO("D",        2, AP_RollController, gains.D,        0.02f),
 
 	// @Param: I
 	// @DisplayName: Integrator Gain
@@ -56,7 +56,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	// @Range: 0 1.0
 	// @Increment: 0.05
 	// @User: User
-	AP_GROUPINFO("I",        3, AP_RollController, _K_I,        0.0f),
+	AP_GROUPINFO("I",        3, AP_RollController, gains.I,        0.0f),
 
 	// @Param: RMAX
 	// @DisplayName: Maximum Roll Rate
@@ -65,7 +65,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	// @Units: degrees/second
 	// @Increment: 1
 	// @User: Advanced
-	AP_GROUPINFO("RMAX",   4, AP_RollController, _max_rate,       0),
+	AP_GROUPINFO("RMAX",   4, AP_RollController, gains.rmax,       0),
 
 	// @Param: IMAX
 	// @DisplayName: Integrator limit
@@ -73,7 +73,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	// @Range: 0 4500
 	// @Increment: 1
 	// @User: Advanced
-	AP_GROUPINFO("IMAX",      5, AP_RollController, _imax,        1500),
+	AP_GROUPINFO("IMAX",      5, AP_RollController, gains.imax,        1500),
 
 	AP_GROUPEND
 };
@@ -94,22 +94,23 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
 	
 	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
     // No conversion is required for K_D
-	float ki_rate = _K_I * _tau;
-	float kp_ff = max((_K_P - _K_I * _tau) * _tau  - _K_D , 0)/_ahrs.get_EAS2TAS();
+	float ki_rate = gains.I * gains.tau;
+	float kp_ff = max((gains.P - gains.I * gains.tau) * gains.tau  - gains.D , 0)/_ahrs.get_EAS2TAS();
 	float delta_time    = (float)dt * 0.001f;
 	
 	// Limit the demanded roll rate
-	if (_max_rate && desired_rate < -_max_rate) {
-        desired_rate = -_max_rate;
-    } else if (_max_rate && desired_rate > _max_rate) {
-        desired_rate = _max_rate;
+	if (gains.rmax && desired_rate < -gains.rmax) {
+        desired_rate = - gains.rmax;
+    } else if (gains.rmax && desired_rate > gains.rmax) {
+        desired_rate = gains.rmax;
     }
 	
     // Get body rate vector (radians/sec)
 	float omega_x = _ahrs.get_gyro().x;
 	
 	// Calculate the roll rate error (deg/sec) and apply gain scaler
-	float rate_error = (desired_rate - ToDeg(omega_x)) * scaler;
+    float achieved_rate = ToDeg(omega_x);
+	float rate_error = (desired_rate - achieved_rate) * scaler;
 	
 	// Get an airspeed estimate - default to zero if none available
 	float aspeed;
@@ -139,7 +140,7 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
 	}
 	
     // Scale the integration limit
-    float intLimScaled = _imax * 0.01f;
+    float intLimScaled = gains.imax * 0.01f;
 
     // Constrain the integrator state
     _integrator = constrain_float(_integrator, -intLimScaled, intLimScaled);
@@ -148,7 +149,17 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
 	// Note the scaler is applied again. We want a 1/speed scaler applied to the feed-forward
 	// path, but want a 1/speed^2 scaler applied to the rate error path. 
 	// This is because acceleration scales with speed^2, but rate scales with speed.
-	_last_out = ( (rate_error * _K_D) + (desired_rate * kp_ff) ) * scaler + _integrator;
+	_last_out = ( (rate_error * gains.D) + (desired_rate * kp_ff) ) * scaler;
+
+    if (autotune.running && aspeed > aparm.airspeed_min) {
+        // let autotune have a go at the values 
+        // Note that we don't pass the integrator component so we get
+        // a better idea of how much the base PD controller
+        // contributed
+        autotune.update(desired_rate, achieved_rate, _last_out);
+    }
+
+	_last_out += _integrator;
 	
 	// Convert to centi-degrees and constrain
 	return constrain_float(_last_out * 100, -4500, 4500);
@@ -178,12 +189,12 @@ int32_t AP_RollController::get_rate_out(float desired_rate, float scaler)
 */
 int32_t AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool disable_integrator)
 {
-    if (_tau < 0.1) {
-        _tau = 0.1;
+    if (gains.tau < 0.1) {
+        gains.tau.set(0.1f);
     }
 	
 	// Calculate the desired roll rate (deg/sec) from the angle error
-	float desired_rate = angle_err * 0.01f / _tau;
+	float desired_rate = angle_err * 0.01f / gains.tau;
 
     return _get_rate_out(desired_rate, scaler, disable_integrator);
 }

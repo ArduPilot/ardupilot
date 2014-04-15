@@ -38,6 +38,7 @@
 #define AP_MOTORS_X_FRAME           1
 #define AP_MOTORS_V_FRAME           2
 #define AP_MOTORS_H_FRAME           3   // same as X frame but motors spin in opposite direction
+#define AP_MOTORS_VTAIL_FRAME       4   // Lynxmotion Hunter VTail 400/500
 #define AP_MOTORS_NEW_PLUS_FRAME    10  // NEW frames are same as original 4 but with motor orders changed to be clockwise from the front
 #define AP_MOTORS_NEW_X_FRAME       11
 #define AP_MOTORS_NEW_V_FRAME       12

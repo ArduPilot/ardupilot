@@ -416,6 +416,7 @@ struct PACKED log_Radio {
 #define LOG_RADIO_MSG	  146
 
 // message types 200 to 210 reversed for GPS driver use
+// message types 211 to 220 reversed for autotune use
 
 #include "DataFlash_Block.h"
 #include "DataFlash_File.h"

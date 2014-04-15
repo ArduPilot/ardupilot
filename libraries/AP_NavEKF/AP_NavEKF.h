@@ -248,6 +248,12 @@ private:
     // force alignment of the yaw angle using GPS velocity data
     void alignYawGPS();
 
+    // Forced alignment of the wind velocity states so that they are set to the reciprocal of
+    // the ground speed and scaled to 6 m/s. This is used when launching a fly-forward vehicle without an airspeed sensor
+    // on the assumption that launch will be into wind and 6 is representative global average at height
+    // http://maps.google.com/gallery/details?id=zJuaSgXp_WLc.kTBytKPmNODY&hl=en
+    void setWindVelStates();
+
     // initialise the earth magnetic field states using declination and current attitude and magnetometer meaasurements
     // and return attitude quaternion
     Quaternion calcQuatAndFieldStates(float roll, float pitch);
