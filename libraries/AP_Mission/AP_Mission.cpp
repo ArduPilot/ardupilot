@@ -48,13 +48,9 @@ void AP_Mission::init()
 void AP_Mission::start()
 {
     _flags.state = MISSION_RUNNING;
-    _flags.nav_cmd_loaded = false;
-    _flags.do_cmd_loaded = false;
-    _flags.do_cmd_all_done = false;
-    _nav_cmd.index = AP_MISSION_CMD_INDEX_NONE;
-    _do_cmd.index = AP_MISSION_CMD_INDEX_NONE;
-    _prev_nav_cmd_index = AP_MISSION_CMD_INDEX_NONE;
-    init_jump_tracking();
+
+    reset(); // reset mission to the first command, resets jump tracking
+    
     // advance to the first command
     if (!advance_current_nav_cmd()) {
         // on failure set mission complete
@@ -106,6 +102,7 @@ void AP_Mission::resume()
     }
 }
 
+/// start_or_resume - if MIS_AUTORESTART=0 this will call resume(), otherwise it will call start()
 void AP_Mission::start_or_resume()
 {
     if (_auto_reset) {
@@ -113,6 +110,18 @@ void AP_Mission::start_or_resume()
     } else {
         resume();
     }
+}
+
+/// reset - reset mission to the first command
+void AP_Mission::reset()
+{
+    _flags.nav_cmd_loaded  = false;
+    _flags.do_cmd_loaded   = false;
+    _flags.do_cmd_all_done = false;
+    _nav_cmd.index         = AP_MISSION_CMD_INDEX_NONE;
+    _do_cmd.index          = AP_MISSION_CMD_INDEX_NONE;
+    _prev_nav_cmd_index    = AP_MISSION_CMD_INDEX_NONE;
+    init_jump_tracking();
 }
 
 /// clear - clears out mission
