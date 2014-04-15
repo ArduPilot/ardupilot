@@ -88,6 +88,7 @@ public:
 
     // Check basic filter health metrics and return a consolidated health status
     bool healthy(void) const;
+    bool attHealthy(void) const;
 
     // return true if filter is dead-reckoning height
     bool HeightDrifting(void) const;
