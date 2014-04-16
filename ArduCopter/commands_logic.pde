@@ -291,7 +291,19 @@ static void do_takeoff(const AP_Mission::Mission_Command& cmd)
 // do_nav_wp - initiate move to next waypoint
 static void do_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
+    const Vector3f &curr_pos = inertial_nav.get_position();
     Vector3f local_pos = pv_location_to_vector(cmd.content.location);
+
+    // set target altitude to current altitude if not provided
+    if (cmd.content.location.alt == 0) {
+        local_pos.z = curr_pos.z;
+    }
+
+    // set lat/lon position to current position if not provided
+    if (cmd.content.location.lat == 0 && cmd.content.location.lng == 0) {
+        local_pos.x = curr_pos.x;
+        local_pos.y = curr_pos.y;
+    }
 
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
