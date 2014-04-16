@@ -546,9 +546,8 @@ static int16_t desired_climb_rate;          // pilot desired climb rate - for lo
 static float acro_level_mix;                // scales back roll, pitch and yaw inversely proportional to input from pilot
 
 ////////////////////////////////////////////////////////////////////////////////
-// Circle Mode / Loiter control
+// Loiter control
 ////////////////////////////////////////////////////////////////////////////////
-static uint8_t circle_desired_rotations;        // how many times to circle as specified by mission command
 static uint16_t loiter_time_max;                // How long we should stay in Loiter Mode for mission scripting (time in seconds)
 static uint32_t loiter_time;                    // How long have we been loitering - The start time in millis
 
