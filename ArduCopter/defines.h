@@ -175,6 +175,7 @@ enum AutoMode {
     Auto_WP,
     Auto_Land,
     Auto_RTL,
+    Auto_CircleMoveToEdge,
     Auto_Circle,
     Auto_Spline
 };
