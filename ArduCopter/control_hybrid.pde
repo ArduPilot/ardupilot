@@ -26,7 +26,7 @@
 // definitions that are independent of main loop rate
 #define HYBRID_STICK_RELEASE_SMOOTH_ANGLE       1800    // max angle required (in centi-degrees) after which the smooth stick release effect is applied
 #define HYBRID_WIND_COMP_START_TIMER            15      // delay (in 10zh increments) to start of wind compensation after loiter is engaged
-#define HYBRID_WIND_COMP_ESTIMATE_SPEED_MAX     30      // wind compensation estimates will only run when velocity is at or below this speed in cm/s
+#define HYBRID_WIND_COMP_ESTIMATE_SPEED_MAX     10      // wind compensation estimates will only run when velocity is at or below this speed in cm/s
 
 // declare some function to keep compiler happy
 static void hybrid_update_pilot_lean_angle(int16_t &lean_angle_filtered, int16_t &lean_angle_raw);
