@@ -412,15 +412,6 @@ static void calc_nav_yaw_course(void)
  */
 static void calc_nav_yaw_ground(void)
 {
-    if (gps.ground_speed() < 1 && 
-        channel_throttle->control_in == 0) {
-        // manual rudder control while still
-        steer_state.locked_course = false;
-        steer_state.locked_course_err = 0;
-        steering_control.steering = channel_rudder->control_in;
-        return;
-    }
-
     float steer_rate = (channel_rudder->control_in/4500.0f) * g.ground_steer_dps;
     if (steer_rate != 0) {
         // pilot is giving rudder input
@@ -428,15 +419,15 @@ static void calc_nav_yaw_ground(void)
     } else if (!steer_state.locked_course) {
         // pilot has released the rudder stick or we are still - lock the course
         steer_state.locked_course = true;
-        steer_state.locked_course_err = 0;
+        steer_state.locked_course_rad = ahrs.yaw+steerController.get_stopping_angle();
     }
     if (!steer_state.locked_course) {
         // use a rate controller at the pilot specified rate
         steering_control.steering = steerController.get_steering_out_rate(steer_rate);
     } else {
-        // use a error controller on the summed error
-        steer_state.locked_course_err += ahrs.get_gyro().z * G_Dt;
-        int32_t yaw_error_cd = -ToDeg(steer_state.locked_course_err)*100;
+        //steering_control.steering = steerController.get_steering_out_rate(0.0f);
+         //use a error controller on the summed error
+        int32_t yaw_error_cd = 100*ToDeg(wrap_PI(steer_state.locked_course_rad-ahrs.yaw));
         steering_control.steering = steerController.get_steering_out_angle_error(yaw_error_cd);
     }
     steering_control.steering = constrain_int16(steering_control.steering, -4500, 4500);

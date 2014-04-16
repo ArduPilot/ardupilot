@@ -35,13 +35,14 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 	// @User: Advanced
 	AP_GROUPINFO("TCONST",      0, AP_PitchController, gains.tau,       0.5f),
 
-	// @Param: P
+	// TODO hide completely
+	// @Param: DPRCTD
 	// @DisplayName: Proportional Gain
-	// @Description: This is the gain from pitch angle to elevator. This gain works the same way as PTCH2SRV_P in the old PID controller and can be set to the same value.
+	// @Description: WARNING: DEPRECATED. If this parameter is set, it will be used to recompute FF and reset to -1.
 	// @Range: 0.1 2.0
 	// @Increment: 0.1
-	// @User: User
-	AP_GROUPINFO("P",        1, AP_PitchController, gains.P,          0.4f),
+	// @User: Advanced
+	AP_GROUPINFO("DPRCTD",        1, AP_PitchController, _K_P,          -1.0f),
 
 	// @Param: D
 	// @DisplayName: Damping Gain
@@ -92,6 +93,14 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 	// @Increment: 1
 	// @User: Advanced
 	AP_GROUPINFO("IMAX",      7, AP_PitchController, gains.imax,     1500),
+
+    // @Param: FF
+    // @DisplayName: Feedforward Gain
+    // @Description: This is the proportional gain from desired rate to elevator output.
+    // @Range: 0.1 2.0
+    // @Increment: 0.1
+    // @User: User
+    AP_GROUPINFO("FF",        8, AP_PitchController, gains.FF,          0.4f),
 
 	AP_GROUPEND
 };
@@ -153,9 +162,13 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
     // Constrain the integrator state
     _integrator = constrain_float(_integrator, -intLimScaled, intLimScaled);
 
-	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
-    // No conversion is required for K_D
-	float kp_ff = max((gains.P - gains.I * gains.tau) * gains.tau  - gains.D , 0) / _ahrs.get_EAS2TAS();
+    if(_K_P != -1.0f) {
+        // compute gains.FF from _K_P
+        gains.FF.set_and_save(max((_K_P - gains.I * gains.tau) * gains.tau - gains.D , 0.0f));
+        // reset _K_P to -1.0f
+        _K_P.set_and_save(-1.0f);
+    }
+    float kp_ff = gains.FF / _ahrs.get_EAS2TAS();
 	
 	// Calculate the demanded control surface deflection
 	// Note the scaler is applied again. We want a 1/speed scaler applied to the feed-forward
