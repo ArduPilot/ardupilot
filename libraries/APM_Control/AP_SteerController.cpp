@@ -76,6 +76,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] PROGMEM = {
 	// @User: User
 	AP_GROUPINFO("MINSPD",   6, AP_SteerController, _minspeed,    1.0f),
 
+
     // @Param: FF
     // @DisplayName: Feedforward Gain
     // @Description: The feedforward gain from desired rate to servo output. This should be approximately equal to the diameter of the turning circle of the vehicle at low speed and maximum servo deflection.
@@ -83,6 +84,14 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] PROGMEM = {
     // @Increment: 0.1
     // @User: User
     AP_GROUPINFO("FF",      7, AP_SteerController, _K_FF,        1.8f),
+
+    // @Param: ACCMAX
+    // @DisplayName: Acceleration limit
+    // @Description: Angular acceleration limit in degrees per second
+    // @Range: 90 540
+    // @Increment: 0.1
+    // @User: User
+	AP_GROUPINFO("ACCMAX", 8, AP_SteerController, _acc_max, 360),
 
 	AP_GROUPEND
 };
@@ -106,6 +115,14 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
         // assume a minimum speed. This stops osciallations when first starting to move
         speed = _minspeed;
     }
+    float delta_time    = (float)dt * 0.001f;
+    //limit acceleration:
+    float max_rate_dem_change_degs = _acc_max * delta_time;
+    static float last_desired_rate = NAN;
+    if(!isnan(last_desired_rate)) {
+        desired_rate = constrain_float(desired_rate, last_desired_rate-max_rate_dem_change_degs,last_desired_rate+max_rate_dem_change_degs);
+    }
+    last_desired_rate = desired_rate;
 
     // this is a linear approximation of the inverse steering
     // equation for a ground vehicle. It returns steering as an angle from -45 to 45
@@ -113,7 +130,7 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
 
 	// Calculate the steering rate error (deg/sec) and apply gain scaler
 	float rate_error = (desired_rate - ToDeg(_ahrs.get_gyro().z)) * scaler;
-	
+
 	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
     // No conversion is required for K_D
 	float ki_rate = _K_I * _tau * 45.0f;
@@ -124,16 +141,13 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
         // reset _K_P to -1.0f
         _K_P.set_and_save(-1.0f);
     }
-    float kp_ff = _K_FF*45.0f;
-
-	float delta_time    = (float)dt * 0.001f;
 	
 	// Multiply roll rate error by _ki_rate and integrate
 	// Don't integrate if in stabilise mode as the integrator will wind up against the pilots inputs
 	if (ki_rate > 0 && speed >= _minspeed) {
 		// only integrate if gain and time step are positive.
 		if (dt > 0) {
-		    float integrator_delta = rate_error * ki_rate * delta_time * scaler;
+		    float integrator_delta = rate_error * ki_rate * delta_time;
 			// prevent the integrator from increasing if steering defln demand is above the upper limit
 			if (_last_out < -45) {
                 integrator_delta = max(integrator_delta , 0);
@@ -143,19 +157,20 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
             }
 			_integrator += integrator_delta;
 		}
-	} else {
-		_integrator = 0;
-	}
+	} else if (ki_rate == 0) {
+        _integrator = 0;
+    }
 	
     // Scale the integration limit
     float intLimScaled = _imax * 0.01f;
 
     // Constrain the integrator state
     _integrator = constrain_float(_integrator, -intLimScaled, intLimScaled);
-	
+
 	// Calculate the demanded control surface deflection
-	_last_out = (rate_error * _K_D * 4.0f) + (ToRad(desired_rate) * kp_ff) * scaler + _integrator;
+	_last_out = (rate_error * _K_D * 45.0f) + (ToRad(desired_rate) * _K_FF * 45.0f) * scaler + _integrator;
 	
+
 	// Convert to centi-degrees and constrain
 	return constrain_float(_last_out * 100, -4500, 4500);
 }
@@ -182,16 +197,46 @@ int32_t AP_SteerController::get_steering_out_lat_accel(float desired_accel)
   return a steering servo value from -4500 to 4500 given an angular
   steering error in centidegrees.
 */
-int32_t AP_SteerController::get_steering_out_angle_error(int32_t angle_err)
+int32_t AP_SteerController::get_steering_out_angle_error(int32_t angle_err_cd)
 {
     if (_tau < 0.1) {
         _tau = 0.1;
     }
-	
-	// Calculate the desired steering rate (deg/sec) from the angle error
-	float desired_rate = angle_err * 0.01f / _tau;
+
+    float angle_err = angle_err_cd *0.01;
+    float desired_rate;
+    float omega = 1.0f/_tau;
+
+    if(_acc_max == 0) {
+        desired_rate = angle_err * omega;
+    } else {
+        float linear_angle = _acc_max/(omega*omega);
+        if(angle_err > linear_angle) {
+            desired_rate = safe_sqrt(2.0f*_acc_max*(fabs(angle_err)-(linear_angle/2.0f)));
+        } else if (angle_err < -linear_angle) {
+            desired_rate = -safe_sqrt(2.0f*_acc_max*(fabs(angle_err)-(linear_angle/2.0f)));
+        } else {
+            desired_rate = angle_err/_tau;
+        }
+    }
 
     return get_steering_out_rate(desired_rate);
+}
+
+//return the stopping distance of the controller in radians
+float AP_SteerController::get_stopping_angle() {
+    float ang_vel = _ahrs.get_gyro().z;
+    float acc_max_rad_ss = ToRad((float)_acc_max);
+    if(fabs(ang_vel) < acc_max_rad_ss*_tau) {
+        return _tau*ang_vel;
+    } else {
+        float stopping_angle = acc_max_rad_ss*_tau*0.5f + 0.5f*ang_vel*ang_vel/acc_max_rad_ss;
+        if(ang_vel < 0) {
+            return -stopping_angle;
+        } else {
+            return stopping_angle;
+        }
+    }
 }
 
 void AP_SteerController::reset_I()

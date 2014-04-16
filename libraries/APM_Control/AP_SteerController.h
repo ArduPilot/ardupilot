@@ -41,6 +41,8 @@ public:
      */
     float get_turn_radius(void) const { return _K_FF * 0.5f; }
 
+    float get_stopping_angle(void);
+
 	void reset_I();
 
 	static const struct AP_Param::GroupInfo var_info[];
@@ -53,6 +55,7 @@ private:
     AP_Float _K_FF;
 	AP_Float _minspeed;
     AP_Int16  _imax;
+    AP_Int16  _acc_max;
 	uint32_t _last_t;
 	float _last_out;
 
