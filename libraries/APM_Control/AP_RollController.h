@@ -34,6 +34,7 @@ private:
 	const AP_Vehicle::FixedWing &aparm;
     AP_AutoTune::ATGains gains;
     AP_AutoTune autotune;
+    AP_Float _K_P;
 	uint32_t _last_t;
 	float _last_out;
 

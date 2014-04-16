@@ -36,6 +36,8 @@ private:
     AP_AutoTune autotune;
 	AP_Int16 _max_rate_neg;
 	AP_Float _roll_ff;
+    AP_Float _K_FF;
+    AP_Float _K_P;
 	uint32_t _last_t;
 	float _last_out;
 	

@@ -32,15 +32,16 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	// @Units: seconds
 	// @Increment: 0.1
 	// @User: Advanced
-	AP_GROUPINFO("TCONST",      0, AP_RollController, gains.tau,       0.5f),
+	AP_GROUPINFO("TCONST",   0, AP_RollController, gains.tau,      0.5f),
 
-	// @Param: P
+    // TODO hide completely
+	// @Param: DPRCTD
 	// @DisplayName: Proportional Gain
-	// @Description: This is the gain from bank angle to aileron. This gain works the same way as the P term in the old PID (RLL2SRV_P) and can be set to the same value.
+	// @Description: WARNING: DEPRECATED. If this parameter is set, it will be used to recompute FF and reset to -1.
 	// @Range: 0.1 2.0
 	// @Increment: 0.1
-	// @User: User
-	AP_GROUPINFO("P",        1, AP_RollController, gains.P,        0.4f),
+	// @User: Advanced
+	AP_GROUPINFO("DPRCTD",        1, AP_RollController, _K_P,           -1.0f),
 
 	// @Param: D
 	// @DisplayName: Damping Gain
@@ -65,7 +66,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	// @Units: degrees/second
 	// @Increment: 1
 	// @User: Advanced
-	AP_GROUPINFO("RMAX",   4, AP_RollController, gains.rmax,       0),
+	AP_GROUPINFO("RMAX",     4, AP_RollController, gains.rmax,     0),
 
 	// @Param: IMAX
 	// @DisplayName: Integrator limit
@@ -73,11 +74,18 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	// @Range: 0 4500
 	// @Increment: 1
 	// @User: Advanced
-	AP_GROUPINFO("IMAX",      5, AP_RollController, gains.imax,        1500),
+	AP_GROUPINFO("IMAX",     5, AP_RollController, gains.imax,     1500),
+
+    // @Param: FF
+    // @DisplayName: Feedforward Gain
+    // @Description: This is the proportional gain from desired rate to aileron output.
+    // @Range: 0.1 2.0
+    // @Increment: 0.1
+    // @User: User
+	AP_GROUPINFO("FF",       6, AP_RollController, gains.FF,       0.18f),
 
 	AP_GROUPEND
 };
-
 
 /*
   internal rate controller, called by attitude and rate controller
@@ -95,7 +103,15 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
 	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
     // No conversion is required for K_D
 	float ki_rate = gains.I * gains.tau;
-	float kp_ff = max((gains.P - gains.I * gains.tau) * gains.tau  - gains.D , 0)/_ahrs.get_EAS2TAS();
+
+    if(_K_P != -1.0f) {
+        // compute gains.FF from _K_P
+        gains.FF.set_and_save(max((_K_P - gains.I * gains.tau) * gains.tau - gains.D , 0.0f));
+        // reset _K_P to -1.0f
+        _K_P.set_and_save(-1.0f);
+    }
+    float kp_ff = gains.FF / _ahrs.get_EAS2TAS();
+
 	float delta_time    = (float)dt * 0.001f;
 	
 	// Limit the demanded roll rate
