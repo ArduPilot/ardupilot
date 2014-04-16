@@ -76,7 +76,8 @@ static struct {
     int16_t wind_comp_roll;                     // roll angle to compensate for wind
     int16_t wind_comp_pitch;                    // pitch angle to compensate for wind
     int8_t  wind_comp_start_timer;              // counter to delay start of wind compensation for a short time after loiter is engaged
-    int8_t  wind_comp_timer;                    // counter to reduce wind_offset calcs to 10hz
+    int8_t  wind_comp_est_timer;                // counter to reduce wind comp calcs to 10hz
+    int8_t  wind_comp_lean_angle_timer;         // counter to reduce wind comp roll/pitch lean angle calcs to 10hz
 
     // final output
     int16_t roll;   // final roll angle sent to attitude controller
@@ -123,7 +124,8 @@ static bool hybrid_init(bool ignore_checks)
     hybrid.wind_comp_ef.zero();
     hybrid.wind_comp_roll = 0;
     hybrid.wind_comp_pitch = 0;
-    hybrid.wind_comp_timer = 0;
+    hybrid.wind_comp_est_timer = 0;
+    hybrid.wind_comp_lean_angle_timer = 0;
 
     return true;
 }
@@ -177,6 +179,9 @@ static void hybrid_run()
     }else{
         // convert pilot input to lean angles
         get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, target_roll, target_pitch);
+
+        // retrieve latest wind compensation lean angles
+        hybrid_get_wind_comp_lean_angles(hybrid.wind_comp_roll, hybrid.wind_comp_pitch);
 
         // convert inertial nav earth-frame velocities to body-frame
         // To-Do: move this to AP_Math (or perhaps we already have a function to do this)
@@ -475,8 +480,6 @@ static void hybrid_run()
                         // store final loiter outputs for mixing with pilot input
                         hybrid.loiter_final_roll = wp_nav.get_roll();
                         hybrid.loiter_final_pitch = wp_nav.get_pitch();
-                        // retrieve latest wind compensation lean angles
-                        hybrid_get_wind_comp_lean_angles(hybrid.wind_comp_roll, hybrid.wind_comp_pitch);
                     }
                     break;
 
@@ -567,11 +570,11 @@ static void hybrid_update_brake_angle_from_velocity(int16_t &brake_angle, float 
 static void hybrid_update_wind_comp_estimate()
 {
     // reduce rate to 10hz
-    hybrid.wind_comp_timer++;
-    if (hybrid.wind_comp_timer < HYBRID_WIND_COMP_TIMER_10HZ) {
+    hybrid.wind_comp_est_timer++;
+    if (hybrid.wind_comp_est_timer < HYBRID_WIND_COMP_TIMER_10HZ) {
         return;
     }
-    hybrid.wind_comp_timer = 0;
+    hybrid.wind_comp_est_timer = 0;
 
     // check wind estimate start has not been delayed
     if (hybrid.wind_comp_start_timer > 0) {
@@ -606,8 +609,16 @@ static void hybrid_update_wind_comp_estimate()
 }
 
 // hybrid_get_wind_comp_lean_angles - retrieve wind compensation angles in body frame roll and pitch angles
+//  should be called at the maximum loop rate
 static void hybrid_get_wind_comp_lean_angles(int16_t &roll_angle, int16_t &pitch_angle)
 {
+    // reduce rate to 10hz
+    hybrid.wind_comp_lean_angle_timer++;
+    if (hybrid.wind_comp_lean_angle_timer < HYBRID_WIND_COMP_TIMER_10HZ) {
+        return;
+    }
+    hybrid.wind_comp_lean_angle_timer = 0;
+
     // convert earth frame desired accelerations to body frame roll and pitch lean angles
     roll_angle = (float)fast_atan((-hybrid.wind_comp_ef.x*ahrs.sin_yaw() + hybrid.wind_comp_ef.y*ahrs.cos_yaw())/981)*(18000/M_PI);
     pitch_angle = (float)fast_atan(-(hybrid.wind_comp_ef.x*ahrs.cos_yaw() + hybrid.wind_comp_ef.y*ahrs.sin_yaw())/981)*(18000/M_PI);
