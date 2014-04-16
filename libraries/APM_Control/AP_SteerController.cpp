@@ -34,13 +34,14 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] PROGMEM = {
 	// @User: Advanced
 	AP_GROUPINFO("TCONST",      0, AP_SteerController, _tau,       0.75f),
 
-	// @Param: P
+    // TODO hide completely
+	// @Param: DPRCTD
 	// @DisplayName: Steering turning gain
-	// @Description: The proportional gain for steering. This should be approximately equal to the diameter of the turning circle of the vehicle at low speed and maximum steering angle
+	// @Description: WARNING: DEPRECATED. If this parameter is set, it will be used to recompute FF and reset to -1.
 	// @Range: 0.1 10.0
 	// @Increment: 0.1
-	// @User: User
-	AP_GROUPINFO("P",      1, AP_SteerController, _K_P,        1.8f),
+	// @User: Advanced
+	AP_GROUPINFO("DPRCTD",      1, AP_SteerController, _K_P,        -1.0f),
 
 	// @Param: I
 	// @DisplayName: Integrator Gain
@@ -75,6 +76,14 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] PROGMEM = {
 	// @User: User
 	AP_GROUPINFO("MINSPD",   6, AP_SteerController, _minspeed,    1.0f),
 
+    // @Param: FF
+    // @DisplayName: Feedforward Gain
+    // @Description: The feedforward gain from desired rate to servo output. This should be approximately equal to the diameter of the turning circle of the vehicle at low speed and maximum servo deflection.
+    // @Range: 0.1 10.0
+    // @Increment: 0.1
+    // @User: User
+    AP_GROUPINFO("FF",      7, AP_SteerController, _K_FF,        1.8f),
+
 	AP_GROUPEND
 };
 
@@ -108,7 +117,15 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
 	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
     // No conversion is required for K_D
 	float ki_rate = _K_I * _tau * 45.0f;
-	float kp_ff = max((_K_P - _K_I * _tau) * _tau  - _K_D , 0) * 45.0f;
+
+    if(_K_P != -1.0f) {
+        // compute _K_FF from _K_P
+        _K_FF.set_and_save(max((_K_P - _K_I * _tau) * _tau - _K_D , 0.0f));
+        // reset _K_P to -1.0f
+        _K_P.set_and_save(-1.0f);
+    }
+    float kp_ff = _K_FF*45.0f;
+
 	float delta_time    = (float)dt * 0.001f;
 	
 	// Multiply roll rate error by _ki_rate and integrate

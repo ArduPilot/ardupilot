@@ -11,7 +11,7 @@ class AP_AutoTune {
 public:
     struct ATGains {
         AP_Float tau;
-        AP_Float P;
+        AP_Float FF;
         AP_Float I;
         AP_Float D;
         AP_Int16 rmax;
