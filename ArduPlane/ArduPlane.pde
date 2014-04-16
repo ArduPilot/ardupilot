@@ -495,14 +495,14 @@ static struct {
 	// this is a 0..36000 value, or -1 for disabled
     int32_t hold_course_cd;
 
-    // locked_course and locked_course_cd are used in stabilize mode 
+    // locked_course and locked_course_rad are used in stabilize mode
     // when ground steering is active
     bool locked_course;
-    float locked_course_err;
+    float locked_course_rad;
 } steer_state = {
 	hold_course_cd    : -1,
     locked_course     : false,
-    locked_course_err : 0
+    locked_course_rad : 0
 };
 
 
