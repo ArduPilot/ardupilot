@@ -66,7 +66,7 @@ void AP_AHRS_NavEKF::update(void)
     if (ekf_started) {
         EKF.UpdateFilter();
         EKF.getRotationBodyToNED(_dcm_matrix);
-        if (using_EKF()) {
+        if (ekf_started && _ekf_use && EKF.attHealthy()) {
             Vector3f eulers;
             EKF.getEulerAngles(eulers);
             roll  = eulers.x;
@@ -81,6 +81,14 @@ void AP_AHRS_NavEKF::update(void)
         }
     }
 }
+
+const Vector3f &AP_AHRS_NavEKF::get_accel_ef(void) const {
+    if(ekf_started && _ekf_use && EKF.attHealthy()) {
+        return _dcm_matrix * _ins.get_accel();
+    }
+    return AP_AHRS_DCM::get_accel_ef();
+}
+
 
 void AP_AHRS_NavEKF::reset(bool recover_eulers)
 {
@@ -149,7 +157,7 @@ bool AP_AHRS_NavEKF::use_compass(void)
 // return secondary attitude solution if available, as eulers in radians
 bool AP_AHRS_NavEKF::get_secondary_attitude(Vector3f &eulers)
 {
-    if (using_EKF()) {
+    if (ekf_started && _ekf_use && EKF.attHealthy()) {
         // return DCM attitude
         eulers = _dcm_attitude;
         return true;
