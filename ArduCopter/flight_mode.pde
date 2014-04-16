@@ -20,6 +20,11 @@ static bool set_mode(uint8_t mode)
         return true;
     }
 
+    // if we're switching out of AUTO, let AP_Mission know
+    if (control_mode == AUTO) {
+        mission.stop();
+    }
+
     switch(mode) {
         case ACRO:
             #if FRAME_CONFIG == HELI_FRAME
