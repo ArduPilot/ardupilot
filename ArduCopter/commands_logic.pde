@@ -19,6 +19,7 @@ static void do_roi(const AP_Mission::Mission_Command& cmd);
 static void do_parachute(const AP_Mission::Mission_Command& cmd);
 #endif
 static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
+static bool verify_circle(const AP_Mission::Mission_Command& cmd);
 static bool verify_spline_wp(const AP_Mission::Mission_Command& cmd);
 static void auto_spline_start(const Vector3f& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Vector3f& next_spline_destination);
 
@@ -192,7 +193,7 @@ static bool verify_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_NAV_LOITER_TURNS:
-        return verify_circle();
+        return verify_circle(cmd);
         break;
 
     case MAV_CMD_NAV_LOITER_TIME:
@@ -360,24 +361,35 @@ static void do_circle(const AP_Mission::Mission_Command& cmd)
 {
     Vector3f curr_pos = inertial_nav.get_position();
     Vector3f circle_center = pv_location_to_vector(cmd.content.location);
+    bool move_to_edge_required = false;
 
     // set target altitude if not provided
-    if (circle_center.z == 0) {
+    if (cmd.content.location.alt == 0) {
         circle_center.z = curr_pos.z;
+    } else {
+        move_to_edge_required = true;
     }
 
     // set lat/lon position if not provided
-    // To-Do: use stopping point instead of current location
+    // To-Do: use previous command's destination if it was a straight line or spline waypoint command
     if (cmd.content.location.lat == 0 && cmd.content.location.lng == 0) {
         circle_center.x = curr_pos.x;
         circle_center.y = curr_pos.y;
+    } else {
+        move_to_edge_required = true;
     }
 
-    // start auto_circle
-    auto_circle_start(circle_center);
+    // set circle controller's center
+    circle_nav.set_center(circle_center);
 
-    // record number of desired rotations from mission command
-    circle_desired_rotations = cmd.p1;
+    // check if we need to move to edge of circle
+    if (move_to_edge_required) {
+        // move to edge of circle (verify_circle) will ensure we begin circling once we reach the edge
+        auto_circle_movetoedge_start();
+    } else {
+        // start circling
+        auto_circle_start();
+    }
 }
 
 // do_loiter_time - initiate loitering at a point for a given time period
@@ -568,10 +580,33 @@ static bool verify_loiter_time()
 }
 
 // verify_circle - check if we have circled the point enough
-static bool verify_circle()
+static bool verify_circle(const AP_Mission::Mission_Command& cmd)
 {
-    // have we rotated around the center enough times?
-    return fabsf(circle_nav.get_angle_total()/(2*M_PI)) >= circle_desired_rotations;
+    // check if we've reached the edge
+    if (auto_mode == Auto_CircleMoveToEdge) {
+        if (wp_nav.reached_wp_destination()) {
+            Vector3f curr_pos = inertial_nav.get_position();
+            Vector3f circle_center = pv_location_to_vector(cmd.content.location);
+
+            // set target altitude if not provided
+            if (circle_center.z == 0) {
+                circle_center.z = curr_pos.z;
+            }
+
+            // set lat/lon position if not provided
+            if (cmd.content.location.lat == 0 && cmd.content.location.lng == 0) {
+                circle_center.x = curr_pos.x;
+                circle_center.y = curr_pos.y;
+            }
+
+            // start circling
+            auto_circle_start();
+        }
+        return false;
+    }
+
+    // check if we have completed circling
+    return fabsf(circle_nav.get_angle_total()/(2*M_PI)) >= cmd.p1;
 }
 
 // externs to remove compiler warning
@@ -633,6 +668,7 @@ static void do_change_alt(const AP_Mission::Mission_Command& cmd)
         case Auto_RTL:
             // ignore altitude
             break;
+        case Auto_CircleMoveToEdge:
         case Auto_Circle:
             // move circle altitude up to target (we will need to store this target in circle class)
             break;
