@@ -755,7 +755,13 @@ static bool verify_within_distance()
 // verify_yaw - return true if we have reached the desired heading
 static bool verify_yaw()
 {
-    if( labs(wrap_180_cd(ahrs.yaw_sensor-yaw_look_at_heading)) <= 200 ) {
+    // set yaw mode if it has been changed (the waypoint controller often retakes control of yaw as it executes a new waypoint command)
+    if (auto_yaw_mode != AUTO_YAW_LOOK_AT_HEADING) {
+        set_auto_yaw_mode(AUTO_YAW_LOOK_AT_HEADING);
+    }
+
+    // check if we are within 2 degrees of the target heading
+    if (labs(wrap_180_cd(ahrs.yaw_sensor-yaw_look_at_heading)) <= 200) {
         return true;
     }else{
         return false;

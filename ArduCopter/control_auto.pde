@@ -403,8 +403,8 @@ void set_auto_yaw_mode(uint8_t yaw_mode)
         break;
 
     case AUTO_YAW_LOOK_AT_HEADING:
-        // keep heading pointing in the direction held in yaw_look_at_heading with no pilot input allowed
-        yaw_look_at_heading = ahrs.yaw_sensor;
+        // keep heading pointing in the direction held in yaw_look_at_heading
+        // caller should set the yaw_look_at_heading
         break;
 
     case AUTO_YAW_LOOK_AHEAD:
