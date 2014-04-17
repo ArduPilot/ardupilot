@@ -24,25 +24,47 @@ static void calc_position(){
     }
 }
 
-// calc_distance_and_bearing - calculate distance and direction to waypoints for reporting and autopilot decisions
+// calc_distance_and_bearing - calculate distance and bearing to next waypoint and home
 static void calc_distance_and_bearing()
 {
-    Vector3f curr = inertial_nav.get_position();
+    calc_wp_distance();
+    calc_wp_bearing();
+    calc_home_distance_and_bearing();
+}
 
+// calc_wp_distance - calculate distance to next waypoint for reporting and autopilot decisions
+static void calc_wp_distance()
+{
     // get target from loiter or wpinav controller
     if (control_mode == LOITER || control_mode == CIRCLE) {
         wp_distance = wp_nav.get_loiter_distance_to_target();
-        wp_bearing = wp_nav.get_loiter_bearing_to_target();
     }else if (control_mode == AUTO) {
         wp_distance = wp_nav.get_wp_distance_to_destination();
-        wp_bearing = wp_nav.get_wp_bearing_to_destination();
     }else{
         wp_distance = 0;
+    }
+}
+
+// calc_wp_bearing - calculate bearing to next waypoint for reporting and autopilot decisions
+static void calc_wp_bearing()
+{
+    // get target from loiter or wpinav controller
+    if (control_mode == LOITER || control_mode == CIRCLE) {
+        wp_bearing = wp_nav.get_loiter_bearing_to_target();
+    } else if (control_mode == AUTO) {
+        wp_bearing = wp_nav.get_wp_bearing_to_destination();
+    } else {
         wp_bearing = 0;
     }
+}
+
+// calc_home_distance_and_bearing - calculate distance and bearing to home for reporting and autopilot decisions
+static void calc_home_distance_and_bearing()
+{
+    Vector3f curr = inertial_nav.get_position();
 
     // calculate home distance and bearing
-    if(GPS_ok()) {
+    if (GPS_ok()) {
         home_distance = pythagorous2(curr.x, curr.y);
         home_bearing = pv_get_bearing_cd(curr,Vector3f(0,0,0));
 
@@ -59,18 +81,4 @@ static void run_autopilot()
         // may call commands_process.pde's start_command and verify_command functions
         mission.update();
     }
-}
-
-// Keeps old data out of our calculation / logs
-static void reset_nav_params(void)
-{
-    // Will be set by new command
-    wp_bearing                      = 0;
-
-    // Will be set by new command
-    wp_distance                     = 0;
-
-    // Will be set by nav or loiter controllers
-    lon_error                       = 0;
-    lat_error                       = 0;
 }
