@@ -261,15 +261,28 @@ void AP_AutoTune::check_save(void)
 }
 
 /*
+  set a float and save a float if it has changed by more than
+  0.1%. This reduces the number of insignificant EEPROM writes
+ */
+void AP_AutoTune::save_float_if_changed(AP_Float &v, float value)
+{
+    float old_value = v.get();
+    v.set(value);
+    if (value <= 0 || fabsf((value-old_value)/value) > 0.001f) {
+        v.save();
+    }
+}
+
+/*
   save a set of gains
  */
 void AP_AutoTune::save_gains(const ATGains &v)
 {
     current = last_save;
-    current.tau.set_and_save_ifchanged(v.tau);
-    current.P.set_and_save_ifchanged(v.P);
-    current.I.set_and_save_ifchanged(v.I);
-    current.D.set_and_save_ifchanged(v.D);
+    save_float_if_changed(current.tau, v.tau);
+    save_float_if_changed(current.P, v.P);
+    save_float_if_changed(current.I, v.I);
+    save_float_if_changed(current.D, v.D);
     current.rmax.set_and_save_ifchanged(v.rmax);
     current.imax.set_and_save_ifchanged(v.imax);
     last_save = current;
