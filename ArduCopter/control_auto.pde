@@ -362,6 +362,10 @@ uint8_t get_default_auto_yaw_mode(bool rtl)
 {
     switch (g.wp_yaw_behavior) {
 
+        case WP_YAW_BEHAVIOR_NONE:
+            return AUTO_YAW_HOLD;
+            break;
+
         case WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL:
             if (rtl) {
                 return AUTO_YAW_HOLD;
