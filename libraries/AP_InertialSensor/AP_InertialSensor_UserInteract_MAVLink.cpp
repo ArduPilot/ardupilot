@@ -25,7 +25,7 @@ uint8_t AP_InertialSensor_UserInteract_MAVLink::blocking_read(void)
         }
     }
     hal.console->println_P(PSTR("Timed out waiting for user response"));
-    return 0;
+    return 1;
 }
 
 void AP_InertialSensor_UserInteract_MAVLink::_printf_P(const prog_char* fmt, ...) 
