@@ -745,6 +745,8 @@ static bool verify_change_alt()
 
 static bool verify_within_distance()
 {
+    // update distance calculation
+    calc_wp_distance();
     if (wp_distance < max(condition_value,0)) {
         condition_value = 0;
         return true;
