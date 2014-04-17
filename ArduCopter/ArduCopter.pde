@@ -576,7 +576,8 @@ static int32_t baro_alt;
 ////////////////////////////////////////////////////////////////////////////////
 static const struct  Location &home = ahrs.get_home();
 
-// Current location of the copter
+// Current location of the copter. Lat/Lon in centidegrees, altitude
+// in cms above the home location
 static struct   Location current_loc;
 
 

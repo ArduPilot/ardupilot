@@ -803,9 +803,7 @@ static void do_set_home(const AP_Mission::Mission_Command& cmd)
     if(cmd.p1 == 1) {
         init_home();
     } else {
-        Location loc = cmd.content.location;
-        loc.alt = 0;
-        ahrs.set_home(loc);
+        ahrs.set_home(cmd.content.location);
         set_home_is_set(true);
     }
 }
