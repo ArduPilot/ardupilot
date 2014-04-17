@@ -62,8 +62,7 @@ float AC_PID::get_d(float input, float dt)
 
         // discrete low pass filter, cuts out the
         // high frequency noise that can drive the controller crazy
-        derivative = _last_derivative +
-                      (dt / ( AC_PID_D_TERM_FILTER + dt)) * (derivative - _last_derivative);
+        derivative = _last_derivative + _d_lpf_alpha * (derivative - _last_derivative);
 
         // update state
         _last_input             = input;
@@ -108,4 +107,11 @@ void AC_PID::save_gains()
     _ki.save();
     _kd.save();
     _imax.save();
+}
+
+void AC_PID::set_d_lpf_alpha(int16_t cutoff_frequency, float time_step)
+{    
+    // calculate alpha
+    float rc = 1/(2*PI*cutoff_frequency);
+    _d_lpf_alpha = time_step / (time_step + rc);
 }
