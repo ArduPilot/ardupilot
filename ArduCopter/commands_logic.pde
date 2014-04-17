@@ -800,10 +800,16 @@ static void do_change_speed(const AP_Mission::Mission_Command& cmd)
 
 static void do_set_home(const AP_Mission::Mission_Command& cmd)
 {
+    struct Location new_home = cmd.content.location;
     if(cmd.p1 == 1) {
         init_home();
     } else {
-        ahrs.set_home(cmd.content.location);
+        // Some GCS don't set the relative_alt flag but just specify
+        // 0-altitude.  Assume that we don't want home amongst the magma.
+        if (new_home.flags.relative_alt || new_home.alt == 0)
+            new_home.alt += home.alt;
+
+        ahrs.set_home(new_home);
         set_home_is_set(true);
     }
 }
