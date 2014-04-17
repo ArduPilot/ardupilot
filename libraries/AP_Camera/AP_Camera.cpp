@@ -120,7 +120,6 @@ AP_Camera::trigger_pic_cleanup()
 bool
 AP_Camera::trigger_pic_notify()
 {
-	static bool notified = true;
     //Sydney Schinstock AIAA-KSU
 	// if time is not equal to camera delay, subtract one
 	if (_camera_delay_counter)
@@ -136,7 +135,7 @@ AP_Camera::trigger_pic_notify()
 	// if time is equal to camera delay, send system time, attitude of plane, and lat/long of plane
 	else if (notified == false)
 	{
-		notified == true;
+		notified = true;
 		return true;
 	}
 	return false;

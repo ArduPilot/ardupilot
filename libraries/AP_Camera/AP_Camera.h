@@ -35,6 +35,7 @@ public:
     {
 		AP_Param::setup_object_defaults(this, var_info);
         _apm_relay = obj_relay;
+		notified = true;
     }
 
     // single entry point to take pictures
@@ -68,6 +69,7 @@ private:
 	uint8_t			_camera_delay_counter;	//count number of cycles for delay
 	uint8_t         _trigger_counter;   // count of number of cycles shutter has been held open
     AP_Relay       *_apm_relay;         // pointer to relay object from the base class Relay. The subclasses could be AP_Relay_APM1 or AP_Relay_APM2
+	bool			notified;
 
     void            servo_pic();        // Servo operated camera
     void            relay_pic();        // basic relay activation
