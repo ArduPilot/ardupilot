@@ -79,6 +79,8 @@
 #include <AP_BoardConfig.h>
 #include <AP_ServoRelayEvents.h>
 
+#include <AP_Rally.h>
+
 // Pre-AP_HAL compatibility
 #include "compat.h"
 
@@ -319,6 +321,9 @@ static AP_ServoRelayEvents ServoRelayEvents(relay);
 #if CAMERA == ENABLED
 static AP_Camera camera(&relay);
 #endif
+
+//Rally Ponints
+AP_Rally rally(ahrs, MAX_RALLYPOINTS, RALLY_START_BYTE);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Global variables
