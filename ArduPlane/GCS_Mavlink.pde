@@ -1485,13 +1485,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         if (mavlink_check_target(packet.target_system, packet.target_component))
             break;
         
-        if (packet.idx >= g.rally_total || 
+        if (packet.idx >= rally.get_rally_total() || 
             packet.idx >= MAX_RALLYPOINTS) {
             send_text_P(SEVERITY_LOW,PSTR("bad rally point message ID"));
             break;
         }
 
-        if (packet.count != g.rally_total) {
+        if (packet.count != rally.get_rally_total()) {
             send_text_P(SEVERITY_LOW,PSTR("bad rally point message count"));
             break;
         }
@@ -1503,7 +1503,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         rally_point.break_alt = packet.break_alt;
         rally_point.land_dir = packet.land_dir;
         rally_point.flags = packet.flags;
-        set_rally_point_with_index(packet.idx, rally_point);
+        rally.set_rally_point_with_index(packet.idx, rally_point);
         break;
     }
 
@@ -1513,19 +1513,19 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         mavlink_msg_rally_fetch_point_decode(msg, &packet);
         if (mavlink_check_target(packet.target_system, packet.target_component))
             break;
-        if (packet.idx > g.rally_total) {
+        if (packet.idx > rally.get_rally_total()) {
             send_text_P(SEVERITY_LOW, PSTR("bad rally point index"));   
             break;
         }
         RallyLocation rally_point;
-        if (!get_rally_point_with_index(packet.idx, rally_point)) {
+        if (!rally.get_rally_point_with_index(packet.idx, rally_point)) {
             send_text_P(SEVERITY_LOW, PSTR("failed to set rally point"));   
             break;
         }
 
         mavlink_msg_rally_point_send_buf(msg,
                                          chan, msg->sysid, msg->compid, packet.idx, 
-                                         g.rally_total, rally_point.lat, rally_point.lng, 
+                                         rally.get_rally_total(), rally_point.lat, rally_point.lng, 
                                          rally_point.alt, rally_point.break_alt, rally_point.land_dir, 
                                          rally_point.flags);
         break;
