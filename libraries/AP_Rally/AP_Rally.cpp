@@ -39,19 +39,12 @@ const AP_Param::GroupInfo AP_Rally::var_info[] PROGMEM = {
 };
 
 // constructor
-AP_Rally::AP_Rally(AP_AHRS &ahrs, uint16_t max_rally_points, uint16_t rally_wp_size, uint16_t rally_start_byte) 
+AP_Rally::AP_Rally(AP_AHRS &ahrs, uint16_t max_rally_points, uint16_t rally_start_byte) 
     : _ahrs(ahrs)
     , _max_rally_points(max_rally_points)
     , _rally_start_byte(rally_start_byte)
 {
     AP_Param::setup_object_defaults(this, var_info);
-
-    // we only pass rally_point_size through to verify that the value used in defines.h to layout the EEPROM stays correct over time
-    // would be nice if we could reliably check at compile time, but I can't find a solution that works in the Arduino IDE too
-    // if there is a difference in passed size versus sizeof(RallyLocation) we disable rally points by setting the max count to zero
-    if (rally_wp_size != sizeof(RallyLocation)) {
-        _max_rally_points = 0;
-    }
 }
 
 // get a rally point from EEPROM
@@ -142,7 +135,6 @@ Location AP_Rally::calc_best_rally_or_home_location(const Location &current_loc,
     if (find_nearest_rally_point(current_loc, ral_loc)) {
         // valid rally point found
         return_loc = rally_location_to_location(ral_loc, home_loc);
-        return_loc.alt = max(return_loc.alt, rtl_home_alt);
     } else {
         // no valid rally point, return home position
         return_loc = home_loc;

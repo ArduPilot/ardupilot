@@ -26,7 +26,7 @@
 class AP_Rally {
 
 public:
-    AP_Rally(AP_AHRS &ahrs, uint16_t max_rally_points, uint16_t rally_point_size, uint16_t rally_start_byte);
+    AP_Rally(AP_AHRS &ahrs, uint16_t max_rally_points, uint16_t rally_start_byte);
 
     // data handling
     bool get_rally_point_with_index(uint8_t i, RallyLocation &ret) const;
