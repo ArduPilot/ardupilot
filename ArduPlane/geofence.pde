@@ -339,7 +339,7 @@ static void geofence_check(bool altitude_check_only)
     case FENCE_ACTION_GUIDED:
     case FENCE_ACTION_GUIDED_THR_PASS:
         if (g.fence_ret_rally != 0) { //return to a rally point
-            guided_WP_loc = rally_find_best_location(current_loc, home);
+            guided_WP_loc = rally.calc_best_rally_or_home_location(current_loc, read_alt_to_hold());
 
         } else { //return to fence return point, not a rally point
             if (g.fence_retalt > 0) {
