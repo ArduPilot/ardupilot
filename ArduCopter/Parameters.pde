@@ -973,7 +973,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
 #if AC_RALLY == ENABLED
     // @Group: RALLY_
-    // @Path: ../libraries/AC_Rally/AC_Rally.cpp
+    // @Path: ../libraries/AP_Rally/AP_Rally.cpp
     GOBJECT(rally,      "RALLY_",   AP_Rally),
 #endif
 
