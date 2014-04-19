@@ -6,12 +6,15 @@
 #include <AP_AHRS.h>
 #include <AP_Common.h>
 #include <AP_Vehicle.h>
-#include <math.h>
+#include <AP_AutoTune.h>
+#include <DataFlash.h>
+#include <AP_Math.h>
 
 class AP_RollController {
 public:
-	AP_RollController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms) :
+	AP_RollController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, DataFlash_Class &_dataflash) :
 		aparm(parms),
+        autotune(gains, AP_AutoTune::AUTOTUNE_ROLL, parms, _dataflash),
         _ahrs(ahrs)
     { 
 		AP_Param::setup_object_defaults(this, var_info);
@@ -22,16 +25,15 @@ public:
 
 	void reset_I();
 
+    void autotune_start(void) { autotune.start(); }
+    void autotune_restore(void) { autotune.stop(); }
+
 	static const struct AP_Param::GroupInfo var_info[];
 
 private:
 	const AP_Vehicle::FixedWing &aparm;
-	AP_Float _tau;
-	AP_Float _K_P;
-	AP_Float _K_I;
-	AP_Float _K_D;
-	AP_Int16 _max_rate;
-    AP_Int16  _imax;
+    AP_AutoTune::ATGains gains;
+    AP_AutoTune autotune;
 	uint32_t _last_t;
 	float _last_out;
 

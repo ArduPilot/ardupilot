@@ -39,7 +39,7 @@
 #define MAGE_PNOISE_DEFAULT     0.0003f
 #define MAGB_PNOISE_DEFAULT     0.0003f
 #define VEL_GATE_DEFAULT        2
-#define POS_GATE_DEFAULT        5
+#define POS_GATE_DEFAULT        10
 #define HGT_GATE_DEFAULT        5
 #define MAG_GATE_DEFAULT        3
 #define MAG_CAL_DEFAULT         1
@@ -60,7 +60,7 @@
 #define MAGE_PNOISE_DEFAULT     0.0003f
 #define MAGB_PNOISE_DEFAULT     0.0003f
 #define VEL_GATE_DEFAULT        2
-#define POS_GATE_DEFAULT        5
+#define POS_GATE_DEFAULT        10
 #define HGT_GATE_DEFAULT        5
 #define MAG_GATE_DEFAULT        3
 #define MAG_CAL_DEFAULT         1
@@ -81,7 +81,7 @@
 #define MAGE_PNOISE_DEFAULT     0.0003f
 #define MAGB_PNOISE_DEFAULT     0.0003f
 #define VEL_GATE_DEFAULT        3
-#define POS_GATE_DEFAULT        5
+#define POS_GATE_DEFAULT        10
 #define HGT_GATE_DEFAULT        10
 #define MAG_GATE_DEFAULT        3
 #define MAG_CAL_DEFAULT         0
@@ -94,6 +94,10 @@
 extern const AP_HAL::HAL& hal;
 
 #define earthRate 0.000072921f // earth rotation rate (rad/sec)
+
+// when the wind estimation first starts with no airspeed sensor,
+// assume 3m/s to start
+#define STARTUP_WIND_SPEED 3.0f
 
 // Define tuning parameters
 const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
@@ -761,9 +765,10 @@ void NavEKF::SelectBetaFusion()
     // synthetic sidelip fusion only works for fixed wing aircraft and relies on the average sideslip being close to zero
     // it requires a stable wind estimate for best results and should not be used for aerobatic flight
     // we fuse synthetic sideslip measurements if:
-    // (we are not using a compass OR (we are dead-reckoning position AND using airspeed)) AND not on the ground AND enough time has lapsed since our last fusion AND
-    // (we have not fused magnetometer data on this time step OR the immediate fusion flag is set)
-    if ((!use_compass() || (!posHealth && useAirspeed())) && !onGround  && ((IMUmsec - BETAmsecPrev) >= _msecBetaAvg) && (!magFusePerformed || fuseMeNow)) {
+    // we are a fly forward vehicle type AND NOT using a full range of sensors with healthy position
+    // AND NOT on the ground AND enough time has lapsed since our last fusion
+    // AND (we have not fused magnetometer data on this time step OR the immediate fusion flag is set)
+    if (_ahrs->get_fly_forward() && !(use_compass() && useAirspeed() && posHealth) && !onGround  && ((IMUmsec - BETAmsecPrev) >= _msecBetaAvg) && (!magFusePerformed || fuseMeNow)) {
         FuseSideslip();
         BETAmsecPrev = IMUmsec;
     }
@@ -2709,6 +2714,14 @@ void NavEKF::OnGroundCheck()
         if (!onGround && prevOnGround && !use_compass()) {
             alignYawGPS();
         }
+        // If we are flying a fly-forward type vehicle without an airspeed sensor and exiting onGround
+        // we set the wind velocity to the reciprocal of the velocity vector and scale states so that the
+        // wind speed is equal to the 6m/s. This prevents gains being too high at the start
+        // of flight if launching into a headwind until the first turn when the EKF can form a  wind speed
+        // estimate
+        if (!onGround && prevOnGround && !useAirspeed() && _ahrs->get_fly_forward()) {
+            setWindVelStates();
+        }
     }
     prevOnGround = onGround;
 }
@@ -2795,9 +2808,9 @@ void NavEKF::CopyAndFixCovariances()
             }
         }
     }
-    // if we flying and are not using airspeed and are not using synthetic sideslip measurements, we want all the off-diagonals for the wind
+    // if we have a non-forward flight vehicle type and no airspeed sensor, we want the wind
     // states to remain zero and want to keep the old variances for these states
-    else if (!useAirspeed() && use_compass()) {
+    else if (!useAirspeed() && !_ahrs->get_fly_forward()) {
         // copy calculated variances we want to propagate
         for (uint8_t i=0; i<=13; i++) {
             P[i][i] = nextP[i][i];
@@ -3130,6 +3143,28 @@ void NavEKF::alignYawGPS()
             P[8][8]   = P[7][7];
             P[9][9]   = sq(5.0f);
         }
+    }
+}
+
+// This function is used to do a forced alignment of the wind velocity
+// states so that they are set to the reciprocal of the ground speed
+// and scaled to STARTUP_WIND_SPEED m/s. This is used when launching a
+// fly-forward vehicle without an airspeed sensor on the assumption
+// that launch will be into wind and STARTUP_WIND_SPEED is
+// representative of typical launch wind
+void NavEKF::setWindVelStates()
+{
+    float gndSpd = sqrtf(sq(states[4]) + sq(states[5]));
+    if (gndSpd > 4.0f) {
+        // set the wind states to be the reciprocal of the velocity and scale to 6 m/s
+        float scaleFactor = STARTUP_WIND_SPEED / gndSpd;
+        states[14] = - states[4] * scaleFactor;
+        states[15] = - states[5] * scaleFactor;
+        // reinitialise the wind state covariances
+        zeroRows(P,14,15);
+        zeroCols(P,14,15);
+        P[14][14] = 64.0f;
+        P[15][15] = P[14][14];
     }
 }
 

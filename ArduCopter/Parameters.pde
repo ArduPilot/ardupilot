@@ -368,7 +368,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: FRAME
     // @DisplayName: Frame Orientation (+, X or V)
     // @Description: Controls motor mixing for multicopters.  Not used for Tri or Traditional Helicopters.
-    // @Values: 0:Plus, 1:X, 2:V, 3:H, 10:Y6B (New)
+    // @Values: 0:Plus, 1:X, 2:V, 3:H, 4:V-Tail, 10:Y6B (New)
     // @User: Standard
     GSCALAR(frame_orientation, "FRAME",             AP_MOTORS_X_FRAME),
 
@@ -969,6 +969,12 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Group: FENCE_
     // @Path: ../libraries/AC_Fence/AC_Fence.cpp
     GOBJECT(fence,      "FENCE_",   AC_Fence),
+#endif
+
+#if AC_RALLY == ENABLED
+    // @Group: RALLY_
+    // @Path: ../libraries/AP_Rally/AP_Rally.cpp
+    GOBJECT(rally,      "RALLY_",   AP_Rally),
 #endif
 
     // @Group: GPSGLITCH_

@@ -110,6 +110,7 @@
 #include <AP_AHRS.h>
 #include <AP_NavEKF.h>
 #include <AP_Mission.h>         // Mission command library
+#include <AP_Rally.h>           // Rally point library
 #include <AC_PID.h>             // PID library
 #include <AC_P.h>               // P library
 #include <AC_AttitudeControl.h> // Attitude control library
@@ -546,9 +547,8 @@ static int16_t desired_climb_rate;          // pilot desired climb rate - for lo
 static float acro_level_mix;                // scales back roll, pitch and yaw inversely proportional to input from pilot
 
 ////////////////////////////////////////////////////////////////////////////////
-// Circle Mode / Loiter control
+// Loiter control
 ////////////////////////////////////////////////////////////////////////////////
-static uint8_t circle_desired_rotations;        // how many times to circle as specified by mission command
 static uint16_t loiter_time_max;                // How long we should stay in Loiter Mode for mission scripting (time in seconds)
 static uint32_t loiter_time;                    // How long have we been loitering - The start time in millis
 
@@ -708,6 +708,13 @@ static AP_Mount camera_mount2(&current_loc, ahrs, 1);
 ////////////////////////////////////////////////////////////////////////////////
 #if AC_FENCE == ENABLED
 AC_Fence    fence(&inertial_nav);
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
+// Rally library
+////////////////////////////////////////////////////////////////////////////////
+#if AC_RALLY == ENABLED
+AP_Rally rally(ahrs, MAX_RALLYPOINTS, RALLY_START_BYTE);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1183,21 +1190,28 @@ static void update_optical_flow(void)
 // called at 50hz
 static void update_GPS(void)
 {
-    static uint32_t last_gps_reading;           // time of last gps message
+    static uint32_t last_gps_reading[GPS_MAX_INSTANCES];   // time of last gps message
     static uint8_t ground_start_count = 10;     // counter used to grab at least 10 reads before commiting the Home location
     bool report_gps_glitch;
+    bool gps_updated = false;
 
     gps.update();
 
     // logging and glitch protection run after every gps message
-    if (gps.last_message_time_ms() != last_gps_reading) {
-        last_gps_reading = gps.last_message_time_ms();
+    for (uint8_t i=0; i<gps.num_sensors(); i++) {
+        if (gps.last_message_time_ms(i) != last_gps_reading[i]) {
+            last_gps_reading[i] = gps.last_message_time_ms(i);
 
-        // log GPS message
-        if (g.log_bitmask & MASK_LOG_GPS) {
-            DataFlash.Log_Write_GPS(gps, current_loc.alt);
+            // log GPS message
+            if (g.log_bitmask & MASK_LOG_GPS) {
+                DataFlash.Log_Write_GPS(gps, i, current_loc.alt);
+            }
+
+            gps_updated = true;
         }
+    }
 
+    if (gps_updated) {
         // run glitch protection and update AP_Notify if home has been initialised
         if (ap.home_is_set) {
             gps_glitch.check_position();

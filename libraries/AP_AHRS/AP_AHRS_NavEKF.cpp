@@ -123,6 +123,8 @@ float AP_AHRS_NavEKF::get_error_yaw(void)
 Vector3f AP_AHRS_NavEKF::wind_estimate(void)
 {
     if (!using_EKF()) {
+        // EKF does not estimate wind speed when there is no airspeed
+        // sensor active
         return AP_AHRS_DCM::wind_estimate();
     }
     Vector3f wind;

@@ -48,7 +48,7 @@ public:
     void EnableWrites(bool enable) { _writes_enabled = enable; }
     void Log_Write_Format(const struct LogStructure *structure);
     void Log_Write_Parameter(const char *name, float value);
-    void Log_Write_GPS(const AP_GPS &gps, int32_t relative_alt);
+    void Log_Write_GPS(const AP_GPS &gps, uint8_t instance, int32_t relative_alt);
     void Log_Write_IMU(const AP_InertialSensor &ins);
     void Log_Write_RCIN(void);
     void Log_Write_RCOUT(void);
@@ -416,6 +416,7 @@ struct PACKED log_Radio {
 #define LOG_RADIO_MSG	  146
 
 // message types 200 to 210 reversed for GPS driver use
+// message types 211 to 220 reversed for autotune use
 
 #include "DataFlash_Block.h"
 #include "DataFlash_File.h"

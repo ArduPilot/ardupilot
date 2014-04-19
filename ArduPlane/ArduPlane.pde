@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduPlane V3.0.0"
+#define THISFIRMWARE "ArduPlane V3.0.1"
 /*
    Lead developer: Andrew Tridgell
  
@@ -79,6 +79,8 @@
 #include <AP_BoardConfig.h>
 #include <AP_ServoRelayEvents.h>
 
+#include <AP_Rally.h>
+
 // Pre-AP_HAL compatibility
 #include "compat.h"
 
@@ -105,13 +107,6 @@ AP_HAL::BetterStream* cliSerial;
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
-
-////////////////////////////////////////////////////////////////////////////////
-// Outback Challenge Failsafe Support
-////////////////////////////////////////////////////////////////////////////////
-#if OBC_FAILSAFE == ENABLED
-APM_OBC obc;
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // the rate we run the main loop at
@@ -264,8 +259,8 @@ static AP_L1_Control L1_controller(ahrs);
 static AP_TECS TECS_controller(ahrs, aparm);
 
 // Attitude to servo controllers
-static AP_RollController  rollController(ahrs, aparm);
-static AP_PitchController pitchController(ahrs, aparm);
+static AP_RollController  rollController(ahrs, aparm, DataFlash);
+static AP_PitchController pitchController(ahrs, aparm, DataFlash);
 static AP_YawController   yawController(ahrs, aparm);
 static AP_SteerController steerController(ahrs);
 
@@ -326,6 +321,9 @@ static AP_ServoRelayEvents ServoRelayEvents(relay);
 #if CAMERA == ENABLED
 static AP_Camera camera(&relay);
 #endif
+
+//Rally Ponints
+AP_Rally rally(ahrs, MAX_RALLYPOINTS, RALLY_START_BYTE);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Global variables
@@ -560,6 +558,13 @@ AP_Mission mission(ahrs,
                    &verify_command_callback, 
                    &exit_mission_callback, 
                    MISSION_START_BYTE, MISSION_END_BYTE);
+
+////////////////////////////////////////////////////////////////////////////////
+// Outback Challenge Failsafe Support
+////////////////////////////////////////////////////////////////////////////////
+#if OBC_FAILSAFE == ENABLED
+APM_OBC obc(mission, barometer, gps);
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Waypoint distances
@@ -909,9 +914,7 @@ static void obc_fs_check(void)
 {
 #if OBC_FAILSAFE == ENABLED
     // perform OBC failsafe checks
-    obc.check(OBC_MODE(control_mode),
-              failsafe.last_heartbeat_ms,
-              gps, mission);
+    obc.check(OBC_MODE(control_mode), failsafe.last_heartbeat_ms);
 #endif
 }
 
@@ -1009,13 +1012,15 @@ static void airspeed_ratio_update(void)
  */
 static void update_GPS_50Hz(void)
 {
-    static uint32_t last_gps_reading;
+    static uint32_t last_gps_reading[GPS_MAX_INSTANCES];
     gps.update();
 
-    if (gps.last_message_time_ms() != last_gps_reading) {
-        last_gps_reading = gps.last_message_time_ms();
-        if (should_log(MASK_LOG_GPS)) {
-            Log_Write_GPS();
+    for (uint8_t i=0; i<gps.num_sensors(); i++) {
+        if (gps.last_message_time_ms(i) != last_gps_reading[i]) {
+            last_gps_reading[i] = gps.last_message_time_ms(i);
+            if (should_log(MASK_LOG_GPS)) {
+                Log_Write_GPS(i);
+            }
         }
     }
 }
@@ -1230,6 +1235,7 @@ static void update_flight_mode(void)
         break;
     }
 
+    case AUTOTUNE:
     case FLY_BY_WIRE_A: {
         // set nav_roll and nav_pitch using sticks
         nav_roll_cd  = channel_roll->norm_input() * roll_limit_cd;
@@ -1342,6 +1348,7 @@ static void update_navigation()
     case INITIALISING:
     case ACRO:
     case FLY_BY_WIRE_A:
+    case AUTOTUNE:
     case FLY_BY_WIRE_B:
     case CIRCLE:
         // nothing to do

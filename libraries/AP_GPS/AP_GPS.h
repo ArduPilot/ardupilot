@@ -35,13 +35,6 @@
 #define GPS_MAX_INSTANCES 1
 #endif
 
-#define GPS_DEBUGGING 0
-#if GPS_DEBUGGING
- # define Debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
-#else
- # define Debug(fmt, args ...)
-#endif
-
 class DataFlash_Class;
 class AP_GPS_Backend;
 

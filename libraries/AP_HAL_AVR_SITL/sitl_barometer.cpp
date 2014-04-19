@@ -38,6 +38,11 @@ void SITL_State::_update_barometer(float altitude)
 		return;
 	}
 
+        if (_sitl->baro_disable) {
+            // barometer is disabled
+            return;
+        }
+
 	// 80Hz, to match the real APM2 barometer
         uint32_t now = hal.scheduler->millis();
 	if ((now - last_update) < 12) {

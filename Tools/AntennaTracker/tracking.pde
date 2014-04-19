@@ -311,11 +311,9 @@ static void tracking_update_pressure(const mavlink_scaled_pressure_t &msg)
 {
     float local_pressure = barometer.get_pressure();
     float aircraft_pressure = msg.press_abs*100.0f;
-    float ground_temp = barometer.get_temperature();
-    float scaling = local_pressure / aircraft_pressure;
 
     // calculate altitude difference based on difference in barometric pressure
-    float alt_diff = logf(scaling) * (ground_temp+273.15f) * 29271.267 * 0.001f;
+    float alt_diff = barometer.get_altitude_difference(local_pressure, aircraft_pressure);
     if (!isnan(alt_diff)) {
         nav_status.altitude_difference = alt_diff + nav_status.altitude_offset;
     }

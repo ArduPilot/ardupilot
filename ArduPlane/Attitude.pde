@@ -130,6 +130,7 @@ static void stabilize_stick_mixing_direct()
     if (!stick_mixing_enabled() ||
         control_mode == ACRO ||
         control_mode == FLY_BY_WIRE_A ||
+        control_mode == AUTOTUNE ||
         control_mode == FLY_BY_WIRE_B ||
         control_mode == CRUISE ||
         control_mode == TRAINING) {
@@ -148,6 +149,7 @@ static void stabilize_stick_mixing_fbw()
     if (!stick_mixing_enabled() ||
         control_mode == ACRO ||
         control_mode == FLY_BY_WIRE_A ||
+        control_mode == AUTOTUNE ||
         control_mode == FLY_BY_WIRE_B ||
         control_mode == CRUISE ||
         control_mode == TRAINING ||
@@ -814,19 +816,6 @@ static void set_servos(void)
             channel_pitch->radio_out =     elevon.trim2 + (BOOL_TO_SIGN(g.reverse_ch2_elevon) * (ch2 * 500.0/ SERVO_MAX));
         }
 
-#if OBC_FAILSAFE == ENABLED
-        // this is to allow the failsafe module to deliberately crash 
-        // the plane. Only used in extreme circumstances to meet the
-        // OBC rules
-        if (obc.crash_plane()) {
-            channel_roll->servo_out = -4500;
-            channel_pitch->servo_out = -4500;
-            channel_rudder->servo_out = -4500;
-            channel_throttle->servo_out = 0;
-        }
-#endif
-        
-
         // push out the PWM values
         if (g.mix_mode == 0) {
             channel_roll->calc_pwm();
@@ -855,7 +844,8 @@ static void set_servos(void)
                    (control_mode == STABILIZE || 
                     control_mode == TRAINING ||
                     control_mode == ACRO ||
-                    control_mode == FLY_BY_WIRE_A)) {
+                    control_mode == FLY_BY_WIRE_A ||
+                    control_mode == AUTOTUNE)) {
             // manual pass through of throttle while in FBWA or
             // STABILIZE mode with THR_PASS_STAB set
             channel_throttle->radio_out = channel_throttle->radio_in;
@@ -915,6 +905,29 @@ static void set_servos(void)
         // copy rudder in training mode
         channel_rudder->radio_out   = channel_rudder->radio_in;
     }
+
+#if OBC_FAILSAFE == ENABLED
+        // this is to allow the failsafe module to deliberately crash 
+        // the plane. Only used in extreme circumstances to meet the
+        // OBC rules
+        if (obc.crash_plane()) {
+            channel_roll->servo_out = -4500;
+            channel_pitch->servo_out = -4500;
+            channel_rudder->servo_out = -4500;
+            channel_throttle->servo_out = 0;
+            channel_roll->calc_pwm();
+            channel_pitch->calc_pwm();
+            channel_rudder->calc_pwm();
+            channel_throttle->calc_pwm();
+            RC_Channel_aux::set_servo_out(RC_Channel_aux::k_flap_auto, 100);
+            RC_Channel_aux::set_servo_out(RC_Channel_aux::k_flap, 100);
+            RC_Channel_aux::set_servo_out(RC_Channel_aux::k_aileron, 4500);
+            RC_Channel_aux::set_servo_out(RC_Channel_aux::k_rudder, 4500);
+            RC_Channel_aux::set_servo_out(RC_Channel_aux::k_elevator, 4500);
+            RC_Channel_aux::set_servo_out(RC_Channel_aux::k_elevator_with_input, 4500);
+        }
+#endif
+        
 
     if (g.flaperon_output != MIXING_DISABLED && g.elevon_output == MIXING_DISABLED && g.mix_mode == 0) {
         flaperon_update(auto_flap_percent);
