@@ -7,12 +7,14 @@ Vagrant.configure("2") do |config|
     config.vm.hostname = "apm-dev"
   # config.vm.share_folder("ardupilot", "/home/vagrant/ardupilot", ".")
 
-    config.vm.provision :virtualbox do |vb_provision|
+    # Puppet
+    config.vm.provision :puppet do |vb_provision|
         vb_provision.manifests_path="puppet/manifests"
-        vb_provision.manifest_file="puppet/apm_dev.pp"
+        vb_provision.manifest_file="apm_dev.pp"
         vb_provision.module_path="puppet/modules"
     end
   
+    # VBox Manage
     config.vm.provider :virtualbox do |vb_config|
         # Allow symlinks
         vb_config.customize ["setextradata", :id, "VBoxInternal2/SharedFoldersEnableSymlinksCreate/cross-compiler", "1"]

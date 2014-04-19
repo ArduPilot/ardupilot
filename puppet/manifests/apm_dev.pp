@@ -1,19 +1,25 @@
 Exec {path => [ "/usr/local/bin/", "/bin/", "/usr/bin/", "usr/sbin/", "/sbin/", "/usr/sbin/" ]}
 
- package { 'linux-headers-3.2.0-23-generic':
+exec { 'apt-update':
+    command => 'apt-get update',
+}
+
+package { 'linux-headers-3.2.0-23-generic':
     ensure          =>  'installed',
     provider        =>  'apt',
+    require         => Exec ['apt-update' ]
 }
 
 package { 'linux-headers-3.2.0-23-generic-pae':
     ensure          =>  'installed',
     provider        =>  'apt',
-    require         => Package [ 'linux-headers-3.2.0-23-generic' ],
+    require         => Package [ 'linux-headers-3.2.0-23-generic' ]
 }
 
 package { 'ubuntu-desktop':
     ensure          =>  'installed',
     provider        =>  'apt',
+    require         => Exec ['apt-update' ]
 }
 
 package { 'gnome-panel':
@@ -25,9 +31,11 @@ package { 'gnome-panel':
 package { 'dkms':
     ensure          =>  'installed',
     provider        =>  'apt',
+    require         => Exec ['apt-update' ]
 }
 
 package { 'build-essential':
     ensure          =>  'installed',
     provider        =>  'apt',
+    require         => Exec ['apt-update' ]
 }
