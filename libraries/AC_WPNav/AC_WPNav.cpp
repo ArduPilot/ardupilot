@@ -221,7 +221,7 @@ void AC_WPNav::update_loiter()
     float dt = (now - _loiter_last_update) / 1000.0f;
 
     // reset step back to 0 if 0.1 seconds has passed and we completed the last full cycle
-    if (dt > 0.095f) {
+    if (dt >= WPNAV_LOITER_UPDATE_TIME) {
         // double check dt is reasonable
         if (dt >= 1.0f) {
             dt = 0.0;
@@ -445,7 +445,7 @@ void AC_WPNav::update_wpnav()
     float dt = (now - _wp_last_update) / 1000.0f;
 
     // reset step back to 0 if 0.1 seconds has passed and we completed the last full cycle
-    if (dt > 0.095f) {
+    if (dt >= WPNAV_WP_UPDATE_TIME) {
         // double check dt is reasonable
         if (dt >= 1.0f) {
             dt = 0.0;
@@ -649,7 +649,7 @@ void AC_WPNav::update_spline()
     float dt = (now - _wp_last_update) / 1000.0f;
 
     // reset step back to 0 if 0.1 seconds has passed and we completed the last full cycle
-    if (dt > 0.095f) {
+    if (dt >= WPNAV_WP_UPDATE_TIME) {
         // double check dt is reasonable
         if (dt >= 1.0f) {
             dt = 0.0;
