@@ -233,8 +233,8 @@ void AC_WPNav::update_loiter()
         // trigger position controller on next update
         _pos_control.trigger_xy();
     }else{
-        // run loiter's position to velocity step
-        _pos_control.update_pos_controller(true);
+        // run horizontal position controller
+        _pos_control.update_xy_controller(true);
     }
 }
 
@@ -457,8 +457,8 @@ void AC_WPNav::update_wpnav()
         advance_wp_target_along_track(dt);
         _pos_control.trigger_xy();
     }else{
-        // run position controller
-        _pos_control.update_pos_controller(false);
+        // run horizontal position controller
+        _pos_control.update_xy_controller(false);
     }
 }
 
@@ -661,8 +661,8 @@ void AC_WPNav::update_spline()
         advance_spline_target_along_track(dt);
         _pos_control.trigger_xy();
     }else{
-        // run position controller
-        _pos_control.update_pos_controller(false);
+        // run horizontal position controller
+        _pos_control.update_xy_controller(false);
     }
 }
 
