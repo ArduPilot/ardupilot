@@ -131,12 +131,12 @@ public:
     ///
 
     /// set_accel_xy - set horizontal acceleration in cm/s/s
-    ///     leash length will be recalculated the next time update_pos_controller() is called
+    ///     leash length will be recalculated the next time update_xy_controller() is called
     void set_accel_xy(float accel_cmss);
     float get_accel_xy() const { return _accel_cms; }
 
     /// set_speed_xy - set horizontal speed maximum in cm/s
-    ///     leash length will be recalculated the next time update_pos_controller() is called
+    ///     leash length will be recalculated the next time update_xy_controller() is called
     void set_speed_xy(float speed_cms);
     float get_speed_xy() const { return _speed_cms; }
 
@@ -154,16 +154,16 @@ public:
     const Vector2f& get_desired_velocity() { return _vel_desired; }
 
     /// set_desired_velocity - sets desired velocity in cm/s in lat and lon directions
-    ///     when update_pos_controller is next called the position target is moved based on the desired velocity and
+    ///     when update_xy_controller is next called the position target is moved based on the desired velocity and
     ///     the desired velocities are fed forward into the rate_to_accel step
     void set_desired_velocity(float vel_lat_cms, float vel_lon_cms) {_vel_desired.x = vel_lat_cms; _vel_desired.y = vel_lon_cms; }
 
     /// trigger_xy - used to notify the position controller than an update has been made to the position or desired velocity so that the position controller will run as soon as possible after the update
     void trigger_xy() { _flags.force_recalc_xy = true; }
 
-    /// update_pos_controller - run the position controller - should be called at 100hz or higher
+    /// update_xy_controller - run the horizontal position controller - should be called at 100hz or higher
     ///     when use_desired_velocity is true the desired velocity (i.e. feed forward) is incorporated at the pos_to_rate step
-    void update_pos_controller(bool use_desired_velocity);
+    void update_xy_controller(bool use_desired_velocity);
 
     /// get_stopping_point_xy - calculates stopping point based on current position, velocity, vehicle acceleration
     ///     distance_max allows limiting distance to stopping point
