@@ -21,6 +21,19 @@
 #include <AP_Param.h>
 #include <AP_AHRS.h>
 
+#define AC_RALLY_WP_SIZE        15  // eeprom size of rally points
+
+struct PACKED RallyLocation {
+    int32_t lat;        //Latitude * 10^7
+    int32_t lng;        //Longitude * 10^7
+    int16_t alt;        //transit altitude (and loiter altitude) in meters;
+    int16_t break_alt;  //when autolanding, break out of loiter at this alt (meters)
+    uint16_t land_dir;   //when the time comes to auto-land, try to land in this direction (centidegrees)
+    uint8_t flags;      //bit 0 = seek favorable winds when choosing a landing poi
+                        //bit 1 = do auto land after arriving
+                        //all other bits are for future use.
+};
+
 /// @class    AP_Rally
 /// @brief    Object managing Rally Points
 class AP_Rally {
