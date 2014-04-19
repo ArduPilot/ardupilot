@@ -427,8 +427,8 @@ float AC_PosControl::get_distance_to_target() const
     return _distance_to_target;
 }
 
-/// update_pos_controller - run the horizontal position controller - should be called at 100hz or higher
-void AC_PosControl::update_pos_controller(bool use_desired_velocity)
+/// update_xy_controller - run the horizontal position controller - should be called at 100hz or higher
+void AC_PosControl::update_xy_controller(bool use_desired_velocity)
 {
     // catch if we've just been started
     uint32_t now = hal.scheduler->millis();
