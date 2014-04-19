@@ -297,8 +297,7 @@ enum FlipState {
 
 // rally points shoehorned between fence points and waypoints
 #define MAX_RALLYPOINTS 6
-#define RALLY_WP_SIZE 15
-#define RALLY_START_BYTE (FENCE_START_BYTE-(MAX_RALLYPOINTS*RALLY_WP_SIZE))
+#define RALLY_START_BYTE (FENCE_START_BYTE-(MAX_RALLYPOINTS*AC_RALLY_WP_SIZE))
 #define RALLY_LIMIT_KM_DEFAULT 2.0  // we'll set a per-vehicle default for this
 
 // parameters get the first 1536 bytes of EEPROM
