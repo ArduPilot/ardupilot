@@ -66,6 +66,8 @@ extern const AP_HAL::HAL& hal;
 #define AUTOTUNE_MIN_IMAX 2000
 #define AUTOTUNE_MAX_IMAX 4000
 
+bool AP_AutoTune::logging_started = false;
+
 // constructor
 AP_AutoTune::AP_AutoTune(ATGains &_gains, ATType _type,
                          const AP_Vehicle::FixedWing &parms,
