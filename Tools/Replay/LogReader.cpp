@@ -150,7 +150,7 @@ void LogReader::process_plane(uint8_t type, uint8_t *data, uint16_t length)
     case LOG_PLANE_ATTITUDE_MSG: {
         struct log_Plane_Attitude msg;
         if(sizeof(msg) != length) {
-            printf("Bad ATTITUDE length\n");
+            printf("Bad ATTITUDE length %u should be %u\n", (unsigned)length, (unsigned)sizeof(msg));
             exit(1);
         }
         memcpy(&msg, data, sizeof(msg));
@@ -290,7 +290,9 @@ bool LogReader::update(uint8_t &type)
         if (::read(fd, &f.type, sizeof(f)-3) != sizeof(f)-3) {
             return false;
         }
-        num_formats++;
+        if (num_formats < LOGREADER_MAX_FORMATS-1) {
+            num_formats++;
+        }
         type = f.type;
         return true;
     }
