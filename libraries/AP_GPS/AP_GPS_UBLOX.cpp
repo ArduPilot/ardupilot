@@ -44,6 +44,8 @@ extern const AP_HAL::HAL& hal;
 #define UBLOX_HW_LOGGING 0
 #endif
 
+bool AP_GPS_UBLOX::logging_started = false;
+
 AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
     AP_GPS_Backend(_gps, _state, _port),
     _step(0),

@@ -254,7 +254,7 @@ private:
     bool            need_rate_update:1;
 
     // have we written the logging headers to DataFlash?
-    bool            logging_started:1;
+    static bool     logging_started;
 
     uint8_t         _disable_counter;
 
