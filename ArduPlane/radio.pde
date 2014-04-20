@@ -54,6 +54,9 @@ static void init_rc_out()
     // Initialization of servo outputs
     RC_Channel::output_trim_all();
 
+    // setup PWM values to send if the FMU firmware dies
+    RC_Channel::setup_failsafe_trim_all();  
+
     // setup PX4 to output the min throttle when safety off if arming
     // is setup for min on disarm
     if (arming.arming_required() == AP_Arming::YES_MIN_PWM) {
