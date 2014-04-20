@@ -55,7 +55,7 @@ private:
     bool saturated_surfaces:1;
 
     // have we sent log headers
-    bool logging_started:1;
+    static bool logging_started;
 
     // values to restore if we leave autotune mode
     ATGains restore; 
