@@ -410,6 +410,18 @@ void RC_Channel::output_trim_all()
     }
 }
 
+/*
+  setup the failsafe value to the trim value for all channels
+ */
+void RC_Channel::setup_failsafe_trim_all()
+{
+    for (uint8_t i=0; i<RC_MAX_CHANNELS; i++) {
+        if (rc_ch[i] != NULL) {
+            hal.rcout->set_failsafe_pwm(1U<<i, rc_ch[i]->radio_trim);
+        }
+    }
+}
+
 void
 RC_Channel::input()
 {
