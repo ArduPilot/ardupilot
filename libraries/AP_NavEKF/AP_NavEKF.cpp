@@ -1580,7 +1580,7 @@ void NavEKF::FuseVelPosNED()
         else gpsRetryTime = _gpsRetryTimeNoTAS;
 
         // form the observation vector and zero velocity and horizontal position observations if in static mode
-        if (~staticMode) {
+        if (!staticMode) {
             for (uint8_t i=0; i<=2; i++) observation[i] = velNED[i];
             for (uint8_t i=3; i<=4; i++) observation[i] = posNE[i-3];
         } else {
@@ -1715,7 +1715,7 @@ void NavEKF::FuseVelPosNED()
                 velFailTime = hal.scheduler->millis();
             }
             // if data is not healthy and timed out and position is unhealthy we reset the velocity, but do not fuse data on this time step
-            else if (velTimeout && ~posHealth) {
+            else if (velTimeout && !posHealth) {
                 ResetVelocity();
                 StoreStatesReset();
                 fuseVelData =  false;
