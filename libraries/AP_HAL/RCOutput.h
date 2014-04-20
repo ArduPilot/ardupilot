@@ -56,6 +56,11 @@ public:
     virtual void     set_safety_pwm(uint32_t chmask, uint16_t period_us) {}
 
     /*
+      set PWM to send to a set of channels if the FMU firmware dies
+     */
+    virtual void     set_failsafe_pwm(uint32_t chmask, uint16_t period_us) {}
+
+    /*
       force the safety switch off, enabling PWM output from the IO board
      */
     virtual void     force_safety_off(void) {}

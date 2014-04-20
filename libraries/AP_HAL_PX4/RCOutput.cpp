@@ -158,6 +158,22 @@ void PX4RCOutput::set_safety_pwm(uint32_t chmask, uint16_t period_us)
     }
 }
 
+void PX4RCOutput::set_failsafe_pwm(uint32_t chmask, uint16_t period_us)
+{
+    struct pwm_output_values pwm_values;
+    memset(&pwm_values, 0, sizeof(pwm_values));
+    for (uint8_t i=0; i<_servo_count; i++) {
+        if ((1UL<<i) & chmask) {
+            pwm_values.values[i] = period_us;
+        }
+        pwm_values.channel_count++;
+    }
+    int ret = ioctl(_pwm_fd, PWM_SERVO_SET_FAILSAFE_PWM, (long unsigned int)&pwm_values);
+    if (ret != OK) {
+        hal.console->printf("Failed to setup failsafe PWM for 0x%08x to %u\n", (unsigned)chmask, period_us);
+    }
+}
+
 void PX4RCOutput::force_safety_off(void)
 {
     int ret = ioctl(_pwm_fd, PWM_SERVO_SET_FORCE_SAFETY_OFF, 0);
