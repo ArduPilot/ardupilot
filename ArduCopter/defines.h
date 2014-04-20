@@ -22,10 +22,6 @@
 #define AUTO_YAW_LOOK_AHEAD             4       // point in the direction the copter is moving
 #define AUTO_YAW_RESETTOARMEDYAW        5       // point towards heading at time motors were armed
 
-// sonar - for use with CONFIG_SONAR_SOURCE
-#define SONAR_SOURCE_ADC 1
-#define SONAR_SOURCE_ANALOG_PIN 2
-
 // Ch6, Ch7 and Ch8 aux switch control
 #define AUX_SWITCH_PWM_TRIGGER_HIGH 1800   // pwm value above which the ch7 or ch8 option will be invoked
 #define AUX_SWITCH_PWM_TRIGGER_LOW  1200   // pwm value below which the ch7 or ch8 option will be disabled
