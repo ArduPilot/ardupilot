@@ -378,6 +378,7 @@ static void startup_INS_ground(bool force_accel_level)
 
     ahrs.init();
 	ahrs.set_fly_forward(true);
+    ahrs.set_vehicle_class(AHRS_VEHICLE_GROUND);
 
     AP_InertialSensor::Start_style style;
     if (g.skip_gyro_cal && !force_accel_level) {
