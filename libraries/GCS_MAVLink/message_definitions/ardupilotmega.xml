@@ -1,4 +1,4 @@
-<?xml version='1.0'?>
+<?xml version='1.0'?> 
 <mavlink>
      <include>common.xml</include>
      <!-- note that APM specific messages should use the command id
