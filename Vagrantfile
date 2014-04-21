@@ -5,7 +5,9 @@ Vagrant.configure("2") do |config|
     config.vm.box = "ubuntu-12.04-32bit"
     config.vm.box_url = "http://files.vagrantup.com/precise32.box"
     config.vm.hostname = "apm-dev"
-  # config.vm.share_folder("ardupilot", "/home/vagrant/ardupilot", ".")
+    config.vm.synced_folder(".", "/home/vagrant/ardupilot" )
+    config.vm.synced_folder("../../diydrones/PX4Firmware", "/home/vagrant/PX4Firmware" )
+    config.vm.synced_folder("../../diydrones/PX4NuttX", "/home/vagrant/PX4NuttX" )
 
     # Puppet
     config.vm.provision :puppet do |vb_provision|
@@ -17,7 +19,7 @@ Vagrant.configure("2") do |config|
     # VBox Manage
     config.vm.provider :virtualbox do |vb_config|
         # Allow symlinks
-        vb_config.customize ["setextradata", :id, "VBoxInternal2/SharedFoldersEnableSymlinksCreate/cross-compiler", "1"]
+        vb_config.customize ["setextradata", :id, "VBoxInternal2/SharedFoldersEnableSymlinksCreate/v-root", "1"]
         # Otherwise the compile will go into swap, making things slow
         vb_config.customize ["modifyvm", :id, "--memory", "2048"]
         vb_config.customize ["modifyvm", :id, "--vram", "256"]
