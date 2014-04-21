@@ -480,6 +480,9 @@ private:
     
     // should we use the compass?
     bool use_compass(void) const;
+
+    // should we assume zero sideslip?
+    bool assume_zero_sideslip(void) const;
 };
 
 #if CONFIG_HAL_BOARD != HAL_BOARD_PX4
