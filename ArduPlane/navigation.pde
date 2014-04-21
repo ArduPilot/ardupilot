@@ -134,7 +134,7 @@ static void calc_altitude_error()
         control_mode == CRUISE) {
         return;
     }
-    if (nav_controller->reached_loiter_target()) {
+    if (nav_controller->reached_loiter_target() || (wp_distance <= 30) || (wp_totalDistance<=30)) {
         // once we reach a loiter target then lock to the final
         // altitude target
         target_altitude_cm = next_WP_loc.alt;
