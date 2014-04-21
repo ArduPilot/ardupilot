@@ -100,14 +100,16 @@
  # define OPTFLOW DISABLED
 #endif
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
- # define MAIN_LOOP_RATE    400
- # define MAIN_LOOP_SECONDS 0.0025
- # define MAIN_LOOP_MICROS  2500
-#else
+#if HAL_CPU_CLASS < HAL_CPU_CLASS_75 || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+ // low power CPUs (APM1, APM2 and SITL)
  # define MAIN_LOOP_RATE    100
  # define MAIN_LOOP_SECONDS 0.01
  # define MAIN_LOOP_MICROS  10000
+#else
+ // high power CPUs (Flymaple, PX4, Pixhawk, VRBrain)
+ # define MAIN_LOOP_RATE    400
+ # define MAIN_LOOP_SECONDS 0.0025
+ # define MAIN_LOOP_MICROS  2500
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
