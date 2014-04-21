@@ -22,6 +22,8 @@
 */
 #include <AP_HAL.h>
 #include <APM_OBC.h>
+#include <RC_Channel.h>
+#include <RC_Channel_aux.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -240,4 +242,68 @@ APM_OBC::check_altlimit(void)
     
     // all OK
     return false;
+}
+
+/*
+  setup the IO boards failsafe values for if the FMU firmware crashes
+ */
+void APM_OBC::setup_failsafe(void)
+{
+    const RC_Channel *ch_roll     = RC_Channel::rc_channel(rcmap.roll()-1);
+    const RC_Channel *ch_pitch    = RC_Channel::rc_channel(rcmap.pitch()-1);
+    const RC_Channel *ch_yaw      = RC_Channel::rc_channel(rcmap.yaw()-1);
+    const RC_Channel *ch_throttle = RC_Channel::rc_channel(rcmap.throttle()-1);
+
+    // setup primary channel output values
+    hal.rcout->set_failsafe_pwm(1U<<(rcmap.roll()-1),     ch_roll->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MAX));
+    hal.rcout->set_failsafe_pwm(1U<<(rcmap.pitch()-1),    ch_pitch->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MAX));
+    hal.rcout->set_failsafe_pwm(1U<<(rcmap.yaw()-1),      ch_yaw->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MAX));
+    hal.rcout->set_failsafe_pwm(1U<<(rcmap.throttle()-1), ch_throttle->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MIN));
+
+    // and all aux channels
+    RC_Channel_aux::set_servo_failsafe(RC_Channel_aux::k_flap_auto, RC_Channel::RC_CHANNEL_LIMIT_MAX);
+    RC_Channel_aux::set_servo_failsafe(RC_Channel_aux::k_flap, RC_Channel::RC_CHANNEL_LIMIT_MAX);
+    RC_Channel_aux::set_servo_failsafe(RC_Channel_aux::k_aileron, RC_Channel::RC_CHANNEL_LIMIT_MAX);
+    RC_Channel_aux::set_servo_failsafe(RC_Channel_aux::k_rudder, RC_Channel::RC_CHANNEL_LIMIT_MAX);
+    RC_Channel_aux::set_servo_failsafe(RC_Channel_aux::k_elevator, RC_Channel::RC_CHANNEL_LIMIT_MAX);
+    RC_Channel_aux::set_servo_failsafe(RC_Channel_aux::k_elevator_with_input, RC_Channel::RC_CHANNEL_LIMIT_MAX);
+}
+
+/*
+  setu radio_out values for all channels to termination values if we
+  are terminating
+ */
+void APM_OBC::check_crash_plane(void)
+{
+    // ensure failsafe values are setup for if FMU crashes on PX4/Pixhawk
+    if (!_failsafe_setup) {
+        _failsafe_setup = true;
+        setup_failsafe();
+    }
+
+	// should we crash the plane? Only possible with
+	// FS_TERM_ACTTION set to 42
+    if (!_terminate || _terminate_action != 42) {
+        // not terminating
+        return;
+	}
+
+    // we are terminating. Setup primary output channels radio_out values
+    RC_Channel *ch_roll     = RC_Channel::rc_channel(rcmap.roll()-1);
+    RC_Channel *ch_pitch    = RC_Channel::rc_channel(rcmap.pitch()-1);
+    RC_Channel *ch_yaw      = RC_Channel::rc_channel(rcmap.yaw()-1);
+    RC_Channel *ch_throttle = RC_Channel::rc_channel(rcmap.throttle()-1);
+
+    ch_roll->radio_out     = ch_roll->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MAX);
+    ch_pitch->radio_out    = ch_pitch->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MAX);
+    ch_yaw->radio_out      = ch_yaw->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MAX);
+    ch_throttle->radio_out = ch_throttle->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MIN);
+
+    // and all aux channels
+    RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_flap_auto, RC_Channel::RC_CHANNEL_LIMIT_MAX);
+    RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_flap, RC_Channel::RC_CHANNEL_LIMIT_MAX);
+    RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_aileron, RC_Channel::RC_CHANNEL_LIMIT_MAX);
+    RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_rudder, RC_Channel::RC_CHANNEL_LIMIT_MAX);
+    RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_elevator, RC_Channel::RC_CHANNEL_LIMIT_MAX);
+    RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_elevator_with_input, RC_Channel::RC_CHANNEL_LIMIT_MAX);
 }

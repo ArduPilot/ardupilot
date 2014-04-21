@@ -27,6 +27,7 @@
 #include <AP_Mission.h>
 #include <AP_Baro.h>
 #include <AP_GPS.h>
+#include <AP_RCMapper.h>
 #include <inttypes.h>
 
 
@@ -47,10 +48,11 @@ public:
 	};
 
 	// Constructor
-    APM_OBC(AP_Mission &_mission, AP_Baro &_baro, const AP_GPS &_gps) :
+    APM_OBC(AP_Mission &_mission, AP_Baro &_baro, const AP_GPS &_gps, const RCMapper &_rcmap) :
         mission(_mission),
         baro(_baro),
-        gps(_gps)
+        gps(_gps),
+        rcmap(_rcmap)
         {
             AP_Param::setup_object_defaults(this, var_info);
             
@@ -64,11 +66,8 @@ public:
 
 	void check(enum control_mode control_mode, uint32_t last_heartbeat_ms);
 
-	// should we crash the plane? Only possible with
-	// FS_TERM_ACTTION set to 42
-	bool crash_plane(void) {
-		return _terminate && _terminate_action == 42;
-	}
+    // called in servo output code to set servos to crash position if needed
+	void check_crash_plane(void);
 
 	// for holding parameters
 	static const struct AP_Param::GroupInfo var_info[];
@@ -79,6 +78,7 @@ private:
     AP_Mission &mission;
     AP_Baro &baro;
     const AP_GPS &gps;
+    const RCMapper &rcmap;
 
 	// digital output pins for communicating with the failsafe board
 	AP_Int8 _heartbeat_pin;
@@ -104,6 +104,12 @@ private:
 
 	// saved waypoint for resuming mission
 	uint8_t _saved_wp;
+
+    // have the failsafe values been setup?
+    bool _failsafe_setup:1;
+
+    // setup failsafe values for if FMU firmware stops running
+    void setup_failsafe(void);
 
 	bool check_altlimit(void);
 };
