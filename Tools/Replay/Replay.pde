@@ -73,7 +73,7 @@ SITL sitl;
 
 static const NavEKF &NavEKF = ahrs.get_NavEKF();
 
-static LogReader LogReader(ins, barometer, compass, gps, airspeed);
+static LogReader LogReader(ahrs, ins, barometer, compass, gps, airspeed);
 
 static FILE *plotf;
 static FILE *plotf2;

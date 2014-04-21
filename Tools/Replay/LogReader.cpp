@@ -18,9 +18,10 @@
 
 extern const AP_HAL::HAL& hal;
 
-LogReader::LogReader(AP_InertialSensor &_ins, AP_Baro_HIL &_baro, AP_Compass_HIL &_compass, AP_GPS &_gps, AP_Airspeed &_airspeed) :
+LogReader::LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro_HIL &_baro, AP_Compass_HIL &_compass, AP_GPS &_gps, AP_Airspeed &_airspeed) :
     vehicle(VEHICLE_UNKNOWN),
     fd(-1),
+    ahrs(_ahrs),
     ins(_ins),
     baro(_baro),
     compass(_compass),
@@ -323,12 +324,15 @@ bool LogReader::update(uint8_t &type)
         if (strncmp(msg.msg, "ArduPlane", strlen("ArduPlane")) == 0) {
             vehicle = VEHICLE_PLANE;
             ::printf("Detected Plane\n");
+            ahrs.set_vehicle_class(AHRS_VEHICLE_FIXED_WING);
         } else if (strncmp(msg.msg, "ArduCopter", strlen("ArduCopter")) == 0) {
             vehicle = VEHICLE_COPTER;
             ::printf("Detected Copter\n");
+            ahrs.set_vehicle_class(AHRS_VEHICLE_COPTER);
         } else if (strncmp(msg.msg, "ArduRover", strlen("ArduRover")) == 0) {
             vehicle = VEHICLE_ROVER;
             ::printf("Detected Rover\n");
+            ahrs.set_vehicle_class(AHRS_VEHICLE_GROUND);
         }
         break;
     }

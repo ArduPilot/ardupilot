@@ -19,7 +19,7 @@ enum log_messages {
 class LogReader 
 {
 public:
-    LogReader(AP_InertialSensor &_ins, AP_Baro_HIL &_baro, AP_Compass_HIL &_compass, AP_GPS &_gps, AP_Airspeed &_airspeed);
+    LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro_HIL &_baro, AP_Compass_HIL &_compass, AP_GPS &_gps, AP_Airspeed &_airspeed);
     bool open_log(const char *logfile);
     bool update(uint8_t &type);
     bool wait_type(uint8_t type);
@@ -40,6 +40,7 @@ public:
 
 private:
     int fd;
+    AP_AHRS &ahrs;
     AP_InertialSensor &ins;
     AP_Baro_HIL &baro;
     AP_Compass_HIL &compass;
