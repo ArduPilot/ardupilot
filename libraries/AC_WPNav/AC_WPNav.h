@@ -16,6 +16,7 @@
                                                     // max acceleration = max lean angle * 980 * pi / 180.  i.e. 23deg * 980 * 3.141 / 180 = 393 cm/s/s
 
 #define WPNAV_LOITER_SPEED              500.0f      // maximum default loiter speed in cm/s
+#define WPNAV_LOITER_SPEED_MIN          100.0f      // minimum loiter speed in cm/s
 #define WPNAV_LOITER_ACCEL_MAX          250.0f      // maximum acceleration in loiter mode
 #define WPNAV_LOITER_ACCEL_MIN           25.0f      // minimum acceleration in loiter mode
 #define WPNAV_LOITER_SPEED_MAX_TO_CORRECT_ERROR 200.0f      // maximum speed used to correct position error (i.e. not including feed forward)
@@ -23,6 +24,7 @@
 #define MAX_LEAN_ANGLE                  4500        // default maximum lean angle
 
 #define WPNAV_WP_SPEED                  500.0f      // default horizontal speed betwen waypoints in cm/s
+#define WPNAV_WP_SPEED_MIN              100.0f      // minimum horitzontal speed between waypoints in cm/s
 #define WPNAV_WP_RADIUS                 200.0f      // default waypoint radius in cm
 
 #define WPNAV_WP_SPEED_UP               250.0f      // default maximum climb velocity
@@ -66,7 +68,7 @@ public:
     void init_loiter_target();
 
     /// set_loiter_velocity - allows main code to pass the maximum velocity for loiter
-    void set_loiter_velocity(float velocity_cms) { _loiter_speed_cms = velocity_cms; };
+    void set_loiter_velocity(float velocity_cms);
 
     /// calculate_loiter_leash_length - calculates the maximum distance in cm that the target position may be from the current location
     void calculate_loiter_leash_length();
@@ -91,16 +93,16 @@ public:
     ///
 
     /// set_horizontal_velocity - allows main code to pass target horizontal velocity for wp navigation
-    void set_horizontal_velocity(float velocity_cms) { _wp_speed_cms = velocity_cms; };
+    void set_horizontal_velocity(float velocity_cms);
 
     /// get_horizontal_velocity - allows main code to retrieve target horizontal velocity for wp navigation
-    float get_horizontal_velocity() { return _wp_speed_cms; };
+    float get_horizontal_velocity() const { return _wp_speed_cms; }
 
     /// get_climb_velocity - returns target climb speed in cm/s during missions
-    float get_climb_velocity() const { return _wp_speed_up_cms; };
+    float get_climb_velocity() const { return _wp_speed_up_cms; }
 
     /// get_descent_velocity - returns target descent speed in cm/s during missions.  Note: always positive
-    float get_descent_velocity() const { return _wp_speed_down_cms; };
+    float get_descent_velocity() const { return _wp_speed_down_cms; }
 
     /// get_wp_radius - access for waypoint radius in cm
     float get_wp_radius() const { return _wp_radius_cm; }
