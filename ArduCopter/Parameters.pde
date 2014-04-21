@@ -801,7 +801,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: STB_RLL_P
     // @DisplayName: Roll axis stabilize controller P gain
     // @Description: Roll axis stabilize (i.e. angle) controller P gain.  Converts the error between the desired roll angle and actual angle to a desired roll rate
-    // @Range: 3.000 6.000
+    // @Range: 3.000 12.000
     // @User: Standard
 
     // @Param: STB_RLL_I
@@ -821,7 +821,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: STB_PIT_P
     // @DisplayName: Pitch axis stabilize controller P gain
     // @Description: Pitch axis stabilize (i.e. angle) controller P gain.  Converts the error between the desired pitch angle and actual angle to a desired pitch rate
-    // @Range: 3.000 6.000
+    // @Range: 3.000 12.000
     // @User: Standard
     GGROUP(p_stabilize_pitch,      "STB_PIT_", AC_P),
 
