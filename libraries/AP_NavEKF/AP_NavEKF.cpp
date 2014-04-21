@@ -339,7 +339,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     _gpsRetryTimeNoTAS      = 10000;    // GPS retry time without airspeed measurements (msec)
     _hgtRetryTimeMode0      = 10000;    // Height retry time with vertical velocity measurement (msec)
     _hgtRetryTimeMode12     = 5000;     // Height retry time without vertical velocity measurement (msec)
-    _magFailTimeLimit       = 10000;     // number of msec before a magnetometer failing innovation consistency checks is declared failed (msec)
+    _magFailTimeLimit_ms    = 10000;     // number of msec before a magnetometer failing innovation consistency checks is declared failed (msec)
     _magVarRateScale        = 0.05f;    // scale factor applied to magnetometer variance due to angular rate
     _gyroBiasNoiseScaler    = 3.0f;     // scale factor applied to gyro bias state process variance when on ground
     _msecGpsAvg             = 200;      // average number of msec between GPS measurements
@@ -665,7 +665,7 @@ void NavEKF::SelectVelPosFusion()
                 ResetVelocity();
                 StoreStatesReset();
             }
-        } else if (hal.scheduler->millis() - lastFixTime_ms > _msecGpsAvg + 40) {
+        } else if (hal.scheduler->millis() - lastFixTime_ms > (uint32_t)(_msecGpsAvg + 40)) {
             // Timeout fusion of GPS data if stale. Needed because we repeatedly fuse the same
             // measurement until the next one arrives to provide a smoother output
             fuseVelData = false;
@@ -679,7 +679,7 @@ void NavEKF::SelectVelPosFusion()
             newDataHgt = false;
             // enable fusion
             fuseHgtData = true;
-        } else if (hal.scheduler->millis() - lastHgtTime_ms > _msecHgtAvg + 40) {
+        } else if (hal.scheduler->millis() - lastHgtTime_ms > (uint32_t)(_msecHgtAvg + 40)) {
             // timeout fusion of height data if stale. Needed because we repeatedly fuse the same
             // measurement until the next one arrives to provide a smoother output
             fuseHgtData = false;
@@ -727,7 +727,7 @@ void NavEKF::SelectMagFusion()
     if (magHealth) {
         lastHealthyMagTime_ms = hal.scheduler->millis();
     } else {
-        if ((hal.scheduler->millis() - lastHealthyMagTime_ms) > uint32_t(_magFailTimeLimit) && use_compass()) {
+        if ((hal.scheduler->millis() - lastHealthyMagTime_ms) > _magFailTimeLimit_ms && use_compass()) {
             magTimeout = true;
         } else {
             magTimeout = false;
