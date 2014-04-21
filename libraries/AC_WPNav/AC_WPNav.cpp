@@ -76,7 +76,7 @@ AC_WPNav::AC_WPNav(const AP_InertialNav* inav, const AP_AHRS* ahrs, AC_PosContro
     _loiter_step(0),
     _pilot_accel_fwd_cms(0),
     _pilot_accel_rgt_cms(0),
-    _loiter_accel_cms(WPNAV_LOITER_ACCEL_MAX),
+    _loiter_accel_cms(WPNAV_LOITER_ACCEL),
     _wp_last_update(0),
     _wp_step(0),
     _track_length(0.0),
@@ -509,7 +509,7 @@ void AC_WPNav::calculate_wp_leash_length()
     if(pos_delta_unit_z == 0 && pos_delta_unit_xy == 0){
         _track_accel = 0;
         _track_speed = 0;
-        _track_leash_length = WPNAV_MIN_LEASH_LENGTH;
+        _track_leash_length = WPNAV_LEASH_LENGTH_MIN;
     }else if(_pos_delta_unit.z == 0){
         _track_accel = _wp_accel_cms/pos_delta_unit_xy;
         _track_speed = _wp_speed_cms/pos_delta_unit_xy;
