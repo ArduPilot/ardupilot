@@ -500,7 +500,6 @@ static int32_t home_bearing;
 static int32_t home_distance;
 // distance between plane and next waypoint in cm.
 static uint32_t wp_distance;
-static float lon_error, lat_error;      // Used to report how many cm we are from the next waypoint or loiter target position
 static uint8_t land_state;              // records state of land (flying to location, descending)
 
 ////////////////////////////////////////////////////////////////////////////////
