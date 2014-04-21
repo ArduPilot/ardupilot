@@ -23,6 +23,7 @@
 #include <AP_Math.h>
 #include "../AP_ADC/AP_ADC.h"
 #include <SITL_State.h>
+#include <fenv.h>
 
 
 using namespace AVR_SITL;
@@ -38,6 +39,9 @@ uint16_t SITL_State::_airspeed_sensor(float airspeed)
 
 	airspeed_pressure = (airspeed*airspeed) / airspeed_ratio;
 	airspeed_raw = airspeed_pressure + airspeed_offset;
+        if (airspeed_raw/4 > 0xFFFF) {
+            return 0xFFFF;
+        }
 	return airspeed_raw/4;
 }
 
@@ -119,6 +123,12 @@ void SITL_State::_update_ins(float roll, 	float pitch, 	float yaw,		// Relative 
 		// no inertial sensor in this sketch
 		return;
 	}
+
+        if (_sitl->float_exception) {
+            feenableexcept(FE_INVALID | FE_OVERFLOW);
+        } else {
+            feclearexcept(FE_INVALID | FE_OVERFLOW);
+        }
 
 	SITL::convert_body_frame(roll, pitch,
 				 rollRate, pitchRate, yawRate,
