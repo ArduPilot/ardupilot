@@ -654,12 +654,14 @@ void NavEKF::SelectVelPosFusion()
             // reset the counter used to schedule updates so that we always fuse data on the frame GPS data arrives
             skipCounter = velPosFuseStepRatio;
             // If a long time since last GPS update, then reset position and velocity and reset stored state history
-            if ((hal.scheduler->millis() > secondLastFixTime_ms + _gpsRetryTimeUseTAS && useAirspeed()) || (hal.scheduler->millis() > secondLastFixTime_ms + _gpsRetryTimeNoTAS && !useAirspeed())) {
-            ResetPosition();
-            ResetVelocity();
-            StoreStatesReset();
+
+            uint32_t gpsRetryTimeout = useAirspeed() ? _gpsRetryTimeUseTAS : _gpsRetryTimeNoTAS;
+            if (hal.scheduler->millis() - secondLastFixTime_ms > gpsRetryTimeout) {
+                ResetPosition();
+                ResetVelocity();
+                StoreStatesReset();
             }
-        } else if (hal.scheduler->millis() > lastFixTime_ms + _msecGpsAvg + 40) {
+        } else if (hal.scheduler->millis() - lastFixTime_ms > _msecGpsAvg + 40) {
             // Timeout fusion of GPS data if stale. Needed because we repeatedly fuse the same
             // measurement until the next one arrives to provide a smoother output
             fuseVelData = false;
@@ -673,7 +675,7 @@ void NavEKF::SelectVelPosFusion()
             newDataHgt = false;
             // enable fusion
             fuseHgtData = true;
-        } else if (hal.scheduler->millis() > lastHgtTime_ms + _msecHgtAvg + 40) {
+        } else if (hal.scheduler->millis() - lastHgtTime_ms > _msecHgtAvg + 40) {
             // timeout fusion of height data if stale. Needed because we repeatedly fuse the same
             // measurement until the next one arrives to provide a smoother output
             fuseHgtData = false;
