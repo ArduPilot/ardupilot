@@ -95,6 +95,9 @@ extern const AP_HAL::HAL& hal;
 
 #define earthRate 0.000072921f // earth rotation rate (rad/sec)
 
+// maximum value for any element in the covariance matrix
+#define EKF_COVARIENCE_MAX 1.0e8f
+
 // when the wind estimation first starts with no airspeed sensor,
 // assume 3m/s to start
 #define STARTUP_WIND_SPEED 3.0f
@@ -2641,6 +2644,10 @@ bool NavEKF::getPosNED(Vector3f &pos) const
 // return body axis gyro bias estimates in rad/sec
 void NavEKF::getGyroBias(Vector3f &gyroBias) const
 {
+    if (dtIMU == 0) {
+        gyroBias.zero();
+        return;
+    }
     gyroBias.x = states[10] / dtIMU;
     gyroBias.y = states[11] / dtIMU;
     gyroBias.z = states[12] / dtIMU;
@@ -2650,8 +2657,13 @@ void NavEKF::getGyroBias(Vector3f &gyroBias) const
 void NavEKF::getAccelBias(Vector3f &accelBias) const
 {
     accelBias.x = IMU1_weighting;
-    accelBias.y = states[22] / dtIMU;
-    accelBias.z = states[13] / dtIMU;
+    if (dtIMU == 0) {
+        accelBias.y = 0;
+        accelBias.z = 0;
+    } else {
+        accelBias.y = states[22] / dtIMU;
+        accelBias.z = states[13] / dtIMU;
+    }
 }
 
 // return the NED wind speed estimates in m/s (positive is air moving in the direction of the axis)
@@ -2778,6 +2790,12 @@ void NavEKF::ForceSymmetry()
     {
         for (uint8_t j=0; j<=i-1; j++)
         {
+            if (fabsf(P[i][j]) > EKF_COVARIENCE_MAX ||
+                fabsf(P[j][i]) > EKF_COVARIENCE_MAX) {
+                // re-initialise the filter from scratch
+                InitialiseFilterDynamic();
+                return;
+            }
             float temp = 0.5f*(P[i][j] + P[j][i]);
             P[i][j] = temp;
             P[j][i] = temp;
