@@ -46,15 +46,16 @@ public:
     bool set_rally_point_with_index(uint8_t i, const RallyLocation &rallyLoc);
     uint8_t get_rally_total() const { return _rally_point_total_count; }
 
+    float get_rally_limit_km() const { return _rally_limit_km; }
+    
+    Location rally_location_to_location(const RallyLocation &ret) const;
+
     // logic handling
     Location calc_best_rally_or_home_location(const Location &current_loc, float rtl_home_alt) const;
     bool find_nearest_rally_point(const Location &myloc, RallyLocation &ret) const;
 
     // parameter block
     static const struct AP_Param::GroupInfo var_info[];
-
-private:
-    Location rally_location_to_location(const RallyLocation &rally_loc, const Location &home_loc) const;
 
 private:
     // internal variables
