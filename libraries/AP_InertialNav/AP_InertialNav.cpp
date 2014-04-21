@@ -281,7 +281,7 @@ void AP_InertialNav::set_velocity_xy(float x, float y)
 }
 
 // set_velocity_xy - set velocity in latitude & longitude directions (in cm/s)
-float AP_InertialNav::get_velocity_xy()
+float AP_InertialNav::get_velocity_xy() const
 {
 	return pythagorous2(_velocity.x, _velocity.y);
 }
