@@ -42,8 +42,8 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     _speed_down_cms(POSCONTROL_SPEED_DOWN),
     _speed_up_cms(POSCONTROL_SPEED_UP),
     _speed_cms(POSCONTROL_SPEED),
-    _accel_z_cms(POSCONTROL_ACCEL_XY_MAX),   // To-Do: check this default
-    _accel_cms(POSCONTROL_ACCEL_XY_MAX),   // To-Do: check this default
+    _accel_z_cms(POSCONTROL_ACCEL_Z),
+    _accel_cms(POSCONTROL_ACCEL_XY),
     _leash(POSCONTROL_LEASH_LENGTH_MIN),
     _roll_target(0.0),
     _pitch_target(0.0),
@@ -145,17 +145,17 @@ void AC_PosControl::get_stopping_point_z(Vector3f& stopping_point) const
     float linear_velocity;  // the velocity we swap between linear and sqrt
 
     // calculate the velocity at which we switch from calculating the stopping point using a linear function to a sqrt function
-    linear_velocity = POSCONTROL_ALT_HOLD_ACCEL_MAX/_p_alt_pos.kP();
+    linear_velocity = _accel_z_cms/_p_alt_pos.kP();
 
     if (fabs(curr_vel_z) < linear_velocity) {
         // if our current velocity is below the cross-over point we use a linear function
         stopping_point.z = curr_pos_z + curr_vel_z/_p_alt_pos.kP();
     } else {
-        linear_distance = POSCONTROL_ALT_HOLD_ACCEL_MAX/(2.0f*_p_alt_pos.kP()*_p_alt_pos.kP());
+        linear_distance = _accel_z_cms/(2.0f*_p_alt_pos.kP()*_p_alt_pos.kP());
         if (curr_vel_z > 0){
-            stopping_point.z = curr_pos_z + (linear_distance + curr_vel_z*curr_vel_z/(2.0f*POSCONTROL_ALT_HOLD_ACCEL_MAX));
+            stopping_point.z = curr_pos_z + (linear_distance + curr_vel_z*curr_vel_z/(2.0f*_accel_z_cms));
         } else {
-            stopping_point.z = curr_pos_z - (linear_distance + curr_vel_z*curr_vel_z/(2.0f*POSCONTROL_ALT_HOLD_ACCEL_MAX));
+            stopping_point.z = curr_pos_z - (linear_distance + curr_vel_z*curr_vel_z/(2.0f*_accel_z_cms));
         }
     }
     stopping_point.z = constrain_float(stopping_point.z, curr_pos_z - POSCONTROL_STOPPING_DIST_Z_MAX, curr_pos_z + POSCONTROL_STOPPING_DIST_Z_MAX);
@@ -230,11 +230,11 @@ void AC_PosControl::pos_to_rate_z()
 
     // check kP to avoid division by zero
     if (_p_alt_pos.kP() != 0) {
-        linear_distance = POSCONTROL_ALT_HOLD_ACCEL_MAX/(2.0f*_p_alt_pos.kP()*_p_alt_pos.kP());
+        linear_distance = _accel_z_cms/(2.0f*_p_alt_pos.kP()*_p_alt_pos.kP());
         if (_pos_error.z > 2*linear_distance ) {
-            _vel_target.z = safe_sqrt(2.0f*POSCONTROL_ALT_HOLD_ACCEL_MAX*(_pos_error.z-linear_distance));
+            _vel_target.z = safe_sqrt(2.0f*_accel_z_cms*(_pos_error.z-linear_distance));
         }else if (_pos_error.z < -2.0f*linear_distance) {
-            _vel_target.z = -safe_sqrt(2.0f*POSCONTROL_ALT_HOLD_ACCEL_MAX*(-_pos_error.z-linear_distance));
+            _vel_target.z = -safe_sqrt(2.0f*_accel_z_cms*(-_pos_error.z-linear_distance));
         }else{
             _vel_target.z = _p_alt_pos.get_p(_pos_error.z);
         }
