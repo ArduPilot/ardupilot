@@ -906,29 +906,6 @@ static void set_servos(void)
         channel_rudder->radio_out   = channel_rudder->radio_in;
     }
 
-#if OBC_FAILSAFE == ENABLED
-        // this is to allow the failsafe module to deliberately crash 
-        // the plane. Only used in extreme circumstances to meet the
-        // OBC rules
-        if (obc.crash_plane()) {
-            channel_roll->servo_out = -4500;
-            channel_pitch->servo_out = -4500;
-            channel_rudder->servo_out = -4500;
-            channel_throttle->servo_out = 0;
-            channel_roll->calc_pwm();
-            channel_pitch->calc_pwm();
-            channel_rudder->calc_pwm();
-            channel_throttle->calc_pwm();
-            RC_Channel_aux::set_servo_out(RC_Channel_aux::k_flap_auto, 100);
-            RC_Channel_aux::set_servo_out(RC_Channel_aux::k_flap, 100);
-            RC_Channel_aux::set_servo_out(RC_Channel_aux::k_aileron, 4500);
-            RC_Channel_aux::set_servo_out(RC_Channel_aux::k_rudder, 4500);
-            RC_Channel_aux::set_servo_out(RC_Channel_aux::k_elevator, 4500);
-            RC_Channel_aux::set_servo_out(RC_Channel_aux::k_elevator_with_input, 4500);
-        }
-#endif
-        
-
     if (g.flaperon_output != MIXING_DISABLED && g.elevon_output == MIXING_DISABLED && g.mix_mode == 0) {
         flaperon_update(auto_flap_percent);
     }
@@ -956,6 +933,13 @@ static void set_servos(void)
         }
     }
 
+#if OBC_FAILSAFE == ENABLED
+    // this is to allow the failsafe module to deliberately crash 
+    // the plane. Only used in extreme circumstances to meet the
+    // OBC rules
+    obc.check_crash_plane();
+#endif
+        
 #if HIL_MODE != HIL_MODE_DISABLED
     // get the servos to the GCS immediately for HIL
     if (comm_get_txspace(MAVLINK_COMM_0) - MAVLINK_NUM_NON_PAYLOAD_BYTES >= MAVLINK_MSG_ID_RC_CHANNELS_SCALED_LEN) {
