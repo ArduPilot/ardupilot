@@ -140,6 +140,22 @@ void AC_WPNav::init_loiter_target()
     _pilot_accel_rgt_cms = 0;
 }
 
+/// set_loiter_velocity - allows main code to pass the maximum velocity for loiter
+void AC_WPNav::set_loiter_velocity(float velocity_cms)
+{
+    // range check velocity and update position controller
+    if (velocity_cms >= WPNAV_LOITER_SPEED_MIN) {
+        _loiter_speed_cms = velocity_cms;
+
+        // initialise pos controller speed
+        _pos_control.set_speed_xy(_loiter_speed_cms);
+
+        // initialise pos controller acceleration
+        _loiter_accel_cms = _loiter_speed_cms/2.0f;
+        _pos_control.set_accel_xy(_loiter_accel_cms);
+    }
+}
+
 /// set_pilot_desired_acceleration - sets pilot desired acceleration from roll and pitch stick input
 void AC_WPNav::set_pilot_desired_acceleration(float control_roll, float control_pitch)
 {
@@ -164,8 +180,8 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt)
     }
 
     // check loiter speed and avoid divide by zero
-    if( _loiter_speed_cms < 100.0f) {
-        _loiter_speed_cms = 100.0f;
+    if( _loiter_speed_cms < WPNAV_LOITER_SPEED_MIN) {
+        _loiter_speed_cms = WPNAV_LOITER_SPEED_MIN;
         _loiter_accel_cms = _loiter_speed_cms/2.0f;
     }
 
@@ -242,6 +258,16 @@ void AC_WPNav::update_loiter()
 ///
 /// waypoint navigation
 ///
+
+/// set_horizontal_velocity - allows main code to pass target horizontal velocity for wp navigation
+void AC_WPNav::set_horizontal_velocity(float velocity_cms)
+{
+    // range check new target speed and update position controller
+    if (_wp_speed_cms >= WPNAV_WP_SPEED_MIN) {
+        _wp_speed_cms = velocity_cms;
+        _pos_control.set_speed_xy(_wp_speed_cms);
+    }
+}
 
 /// set_destination - set destination using cm from home
 void AC_WPNav::set_wp_destination(const Vector3f& destination)
