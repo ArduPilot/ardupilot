@@ -629,6 +629,10 @@ AP_AHRS_DCM::drift_correction(float deltat)
         } else {
             GA_b[i] = _ra_sum[i];
         }
+        if (GA_b[i].is_zero()) {
+            // wait for some non-zero acceleration information
+            continue;
+        }
         GA_b[i].normalize();
         if (GA_b[i].is_inf()) {
             // wait for some non-zero acceleration information
