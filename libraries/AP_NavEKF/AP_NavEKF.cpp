@@ -786,7 +786,7 @@ void NavEKF::SelectBetaFusion()
     // we are a fly forward vehicle type AND NOT using a full range of sensors with healthy position
     // AND NOT on the ground AND enough time has lapsed since our last fusion
     // AND (we have not fused magnetometer data on this time step OR the immediate fusion flag is set)
-    if (_ahrs->get_fly_forward() && !(use_compass() && useAirspeed() && posHealth) && !onGround  && ((IMUmsec - BETAmsecPrev) >= _msecBetaAvg) && (!magFusePerformed || fuseMeNow)) {
+    if (assume_zero_sideslip() && !(use_compass() && useAirspeed() && posHealth) && !onGround  && ((IMUmsec - BETAmsecPrev) >= _msecBetaAvg) && (!magFusePerformed || fuseMeNow)) {
         FuseSideslip();
         BETAmsecPrev = IMUmsec;
     }
@@ -2166,7 +2166,7 @@ void NavEKF::FuseMagnetometer()
         magHealth = (magTestRatio[0] < 1.0f && magTestRatio[1] < 1.0f && magTestRatio[2] < 1.0f);
         // Don't fuse unless all componenets pass. The exception is if the bad health has timed out and we are not a fly forward vehicle
         // In this case we might as well try using the magnetometer, but with a reduced weighting
-        if (magHealth || ((magTestRatio[obsIndex] < 1.0f) && !_ahrs->get_fly_forward() && magTimeout))
+        if (magHealth || ((magTestRatio[obsIndex] < 1.0f) && !assume_zero_sideslip() && magTimeout))
         {
             // correct the state vector
             for (uint8_t j= 0; j<=indexLimit; j++)
@@ -2745,7 +2745,7 @@ void NavEKF::OnGroundCheck()
             onGround = true;
         }
         // force a yaw alignment if exiting onGround without a compass or if compass is timed out and we are a fly forward vehicle
-        if (!onGround && prevOnGround && (!use_compass() || (magTimeout && _ahrs->get_fly_forward()))) {
+        if (!onGround && prevOnGround && (!use_compass() || (magTimeout && assume_zero_sideslip()))) {
             alignYawGPS();
         }
         // If we are flying a fly-forward type vehicle without an airspeed sensor and exiting onGround
@@ -2753,7 +2753,7 @@ void NavEKF::OnGroundCheck()
         // wind speed is equal to the 6m/s. This prevents gains being too high at the start
         // of flight if launching into a headwind until the first turn when the EKF can form a  wind speed
         // estimate
-        if (!onGround && prevOnGround && !useAirspeed() && _ahrs->get_fly_forward()) {
+        if (!onGround && prevOnGround && !useAirspeed() && assume_zero_sideslip()) {
             setWindVelStates();
         }
     }
@@ -2850,7 +2850,7 @@ void NavEKF::CopyAndFixCovariances()
     }
     // if we have a non-forward flight vehicle type and no airspeed sensor, we want the wind
     // states to remain zero and want to keep the old variances for these states
-    else if (!useAirspeed() && !_ahrs->get_fly_forward()) {
+    else if (!useAirspeed() && !assume_zero_sideslip()) {
         // copy calculated variances we want to propagate
         for (uint8_t i=0; i<=13; i++) {
             P[i][i] = nextP[i][i];
@@ -3330,6 +3330,17 @@ void NavEKF::decayGpsOffset()
         posnOffsetNorth *= scaleFactor;
         posnOffsetEast  *= scaleFactor;
     }
+}
+
+/*
+  should we assume zero sideslip?
+ */
+bool NavEKF::assume_zero_sideslip(void) const
+{
+    // we don't assume zero sideslip for ground vehicles as EKF could
+    // be quite sensitive to a rapid spin of the ground vehicle if
+    // traction is lost
+    return _ahrs->get_fly_forward() && _ahrs->get_vehicle_class() != AHRS_VEHICLE_GROUND;
 }
 
 #endif // HAL_CPU_CLASS
