@@ -320,6 +320,7 @@ private:
     AP_Int16 _gpsRetryTimeNoTAS;    // GPS retry time following innovation consistency fail if no TAS measurements are used (msec)
     AP_Int16 _hgtRetryTimeMode0;    // height measurement retry time following innovation consistency fail if GPS fusion mode is = 0 (msec)
     AP_Int16 _hgtRetryTimeMode12;   // height measurement retry time following innovation consistency fail if GPS fusion mode is > 0 (msec)
+    AP_Int16 _magFailTimeLimit;     // number of msec before a magnetometer failing innovation consistency checks is declared failed (msec)
     float _gyroBiasNoiseScaler;     // scale factor applied to gyro bias state process variance when on ground
     float _magVarRateScale;         // scale factor applied to magnetometer variance due to angular rate
     uint16_t _msecGpsAvg;           // average number of msec between GPS measurements
@@ -330,12 +331,14 @@ private:
     // Variables
     uint8_t skipCounter;            // counter used to skip position and height corrections to achieve _skipRatio
     bool statesInitialised;         // boolean true when filter states have been initialised
-    bool velHealth;                 // boolean true if velocity measurements have failed innovation consistency check
-    bool posHealth;                 // boolean true if position measurements have failed innovation consistency check
-    bool hgtHealth;                 // boolean true if height measurements have failed innovation consistency check
+    bool velHealth;                 // boolean true if velocity measurements have passed innovation consistency check
+    bool posHealth;                 // boolean true if position measurements have passed innovation consistency check
+    bool hgtHealth;                 // boolean true if height measurements have passed innovation consistency check
+    bool magHealth;                 // boolean true if magnetometer has passed innovation consistency check
     bool velTimeout;                // boolean true if velocity measurements have failed innovation consistency check and timed out
-    bool posTimeout;            // boolean true if position measurements have failed innovation consistency check and timed out
+    bool posTimeout;                // boolean true if position measurements have failed innovation consistency check and timed out
     bool hgtTimeout;                // boolean true if height measurements have failed innovation consistency check and timed out
+    bool magTimeout;                // boolean true if magnetometer measurements have failed for too long and have timed out
 
     Vector31 Kfusion;               // Kalman gain vector
     Matrix22 KH;                    // intermediate result used for covariance updates
@@ -422,6 +425,7 @@ private:
     uint32_t lastStateStoreTime_ms; // time of last state vector storage
     uint32_t lastFixTime_ms;        // time of last GPS fix used to determine if new data has arrived
     uint32_t secondLastFixTime_ms;  // time of second last GPS fix used to determine how long since last update
+    uint32_t lastHealthyMagTime_ms; // time the magnetometer was last declared healthy
     Vector3f lastAngRate;           // angular rate from previous IMU sample used for trapezoidal integrator
     Vector3f lastAccel1;            // acceleration from previous IMU1 sample used for trapezoidal integrator
     Vector3f lastAccel2;            // acceleration from previous IMU2 sample used for trapezoidal integrator

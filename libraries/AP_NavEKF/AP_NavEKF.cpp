@@ -329,16 +329,17 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
 {
     AP_Param::setup_object_defaults(this, var_info);
     // Tuning parameters
-    _gpsNEVelVarAccScale    = 0.05f;     // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
+    _gpsNEVelVarAccScale    = 0.05f;    // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
     _gpsDVelVarAccScale     = 0.07f;    // Scale factor applied to vertical velocity measurement variance due to manoeuvre acceleration
-    _gpsPosVarAccScale      = 0.05f;     // Scale factor applied to horizontal position measurement variance due to manoeuvre acceleration
+    _gpsPosVarAccScale      = 0.05f;    // Scale factor applied to horizontal position measurement variance due to manoeuvre acceleration
     _msecHgtDelay           = 60;       // Height measurement delay (msec)
     _msecMagDelay           = 40;       // Magnetometer measurement delay (msec)
     _msecTasDelay           = 240;      // Airspeed measurement delay (msec)
     _gpsRetryTimeUseTAS     = 20000;    // GPS retry time with airspeed measurements (msec)
-    _gpsRetryTimeNoTAS      = 10000;     // GPS retry time without airspeed measurements (msec)
+    _gpsRetryTimeNoTAS      = 10000;    // GPS retry time without airspeed measurements (msec)
     _hgtRetryTimeMode0      = 10000;    // Height retry time with vertical velocity measurement (msec)
     _hgtRetryTimeMode12     = 5000;     // Height retry time without vertical velocity measurement (msec)
+    _magFailTimeLimit       = 10000;     // number of msec before a magnetometer failing innovation consistency checks is declared failed (msec)
     _magVarRateScale        = 0.05f;    // scale factor applied to magnetometer variance due to angular rate
     _gyroBiasNoiseScaler    = 3.0f;     // scale factor applied to gyro bias state process variance when on ground
     _msecGpsAvg             = 200;      // average number of msec between GPS measurements
@@ -721,6 +722,18 @@ void NavEKF::SelectMagFusion()
 {
     // check for and read new magnetometer measurements
     readMagData();
+
+    // If we are using the compass and the magnetometer has been unhealthy for too long we declare it failed
+    if (magHealth) {
+        lastHealthyMagTime_ms = hal.scheduler->millis();
+    } else {
+        if ((hal.scheduler->millis() - lastHealthyMagTime_ms) > uint32_t(_magFailTimeLimit) && use_compass()) {
+            magTimeout = true;
+        } else {
+            magTimeout = false;
+        }
+    }
+
 
     // determine if conditions are right to start a new fusion cycle
     bool dataReady = statesInitialised && use_compass() && newDataMag;
@@ -2149,12 +2162,19 @@ void NavEKF::FuseMagnetometer()
         innovMag[obsIndex] = MagPred[obsIndex] - magData[obsIndex];
         // calculate the innovation test ratio
         magTestRatio[obsIndex] = sq(innovMag[obsIndex]) / (sq(_magInnovGate) * varInnovMag[obsIndex]);
-        // test the ratio before fusing data
-        if (magTestRatio[obsIndex] < 1.0f)
+        // check the last values from all componenets and set magnetometer health accordingly
+        magHealth = (magTestRatio[0] < 1.0f && magTestRatio[1] < 1.0f && magTestRatio[2] < 1.0f);
+        // Don't fuse unless all componenets pass. The exception is if the bad health has timed out and we are not a fly forward vehicle
+        // In this case we might as well try using the magnetometer, but with a reduced weighting
+        if (magHealth || ((magTestRatio[obsIndex] < 1.0f) && !_ahrs->get_fly_forward() && magTimeout))
         {
             // correct the state vector
             for (uint8_t j= 0; j<=indexLimit; j++)
             {
+                // If we are forced to use a bad compass, we reduce the weighting by a factor of 4
+                if (!magHealth) {
+                    Kfusion[j] *= 0.25f;
+                }
                 states[j] = states[j] - Kfusion[j] * innovMag[obsIndex];
             }
             // normalise the quaternion states
@@ -2724,8 +2744,8 @@ void NavEKF::OnGroundCheck()
         } else {
             onGround = true;
         }
-        // force a yaw alignment if exiting onGround without a compass
-        if (!onGround && prevOnGround && !use_compass()) {
+        // force a yaw alignment if exiting onGround without a compass or if compass is timed out and we are a fly forward vehicle
+        if (!onGround && prevOnGround && (!use_compass() || (magTimeout && _ahrs->get_fly_forward()))) {
             alignYawGPS();
         }
         // If we are flying a fly-forward type vehicle without an airspeed sensor and exiting onGround
