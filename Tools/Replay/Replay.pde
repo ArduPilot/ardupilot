@@ -47,6 +47,7 @@
 #include <stdio.h>
 #include <getopt.h>
 #include <errno.h>
+#include <fenv.h>
 
 #include "LogReader.h"
 
@@ -84,7 +85,7 @@ static FILE *ekf4f;
 static bool done_parameters;
 static bool done_baro_init;
 static bool done_home_init;
-static uint16_t update_rate;
+static uint16_t update_rate = 50;
 static uint32_t arm_time_ms;
 
 static uint8_t num_user_parameters;
@@ -178,6 +179,8 @@ void setup()
     LogReader.wait_type(LOG_IMU_MSG);
     LogReader.wait_type(LOG_GPS_MSG);
     LogReader.wait_type(LOG_IMU_MSG);
+
+    feenableexcept(FE_INVALID | FE_OVERFLOW);
 
     ahrs.set_compass(&compass);
     ahrs.set_fly_forward(true);
