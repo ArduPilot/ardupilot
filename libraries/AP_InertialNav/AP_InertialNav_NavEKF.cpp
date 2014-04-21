@@ -137,7 +137,7 @@ const Vector3f &AP_InertialNav_NavEKF::get_velocity() const
  *
  * @returns the current horizontal velocity in cm/s
  */
-float AP_InertialNav_NavEKF::get_velocity_xy()
+float AP_InertialNav_NavEKF::get_velocity_xy() const
 {
     if (_ahrs.have_inertial_nav()) {
         return pythagorous2(_velocity_cm.x, _velocity_cm.y);

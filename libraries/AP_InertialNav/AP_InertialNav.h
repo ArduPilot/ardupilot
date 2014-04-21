@@ -129,7 +129,7 @@ public:
      *
      * @returns the current horizontal velocity in cm/s
      */
-    virtual float        get_velocity_xy();
+    virtual float get_velocity_xy() const;
 
     /**
      * set_velocity_xy - overwrites the current horizontal velocity in cm/s
