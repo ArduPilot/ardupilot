@@ -77,6 +77,9 @@ public:
     ///     leash length will be recalculated the next time update_z_controller() is called
     void set_accel_z(float accel_cmss);
 
+    /// get_accel_z - returns current vertical acceleration in cm/s/s
+    float get_accel_z() const { return _accel_z_cms; }
+
     /// calc_leash_length - calculates the vertical leash lengths from maximum speed, acceleration
     ///     called by pos_to_rate_z if z-axis speed or accelerations are changed
     void calc_leash_length_z();
