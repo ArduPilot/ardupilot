@@ -247,8 +247,14 @@ public:
     /// is_nav_cmd - returns true if the command's id is a "navigation" command, false if "do" or "conditional" command
     static bool is_nav_cmd(const Mission_Command& cmd);
 
-    /// get_active_nav_cmd - returns the current "navigation" command
+    /// get_current_nav_cmd - returns the current "navigation" command
     const Mission_Command& get_current_nav_cmd() const { return _nav_cmd; }
+
+    /// get_current_nav_index - returns the current "navigation" command index
+    /// Note that this will return 0 if there is no command. This is
+    /// used in MAVLink reporting of the mission command
+    uint16_t get_current_nav_index() const { 
+        return _nav_cmd.index==AP_MISSION_CMD_INDEX_NONE?0:_nav_cmd.index; }
 
     /// get_prev_nav_cmd_index - returns the previous "navigation" commands index (i.e. position in the mission command list)
     ///     if there was no previous nav command it returns AP_MISSION_CMD_INDEX_NONE
