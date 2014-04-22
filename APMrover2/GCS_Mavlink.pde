@@ -518,7 +518,7 @@ static void NOINLINE send_rangefinder(mavlink_channel_t chan)
 
 static void NOINLINE send_current_waypoint(mavlink_channel_t chan)
 {
-    mavlink_msg_mission_current_send(chan, mission.get_current_nav_cmd().index);
+    mavlink_msg_mission_current_send(chan, mission.get_current_nav_index());
 }
 
 static void NOINLINE send_statustext(mavlink_channel_t chan)
