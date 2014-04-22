@@ -46,6 +46,8 @@ const AP_Param::GroupInfo AP_Rally::var_info[] PROGMEM = {
 // constructor
 AP_Rally::AP_Rally(AP_AHRS &ahrs) 
     : _ahrs(ahrs)
+    , _current_rally_location()
+    , _current_rally_index(-1)
     , _last_change_time_ms(0xFFFFFFFF)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -84,6 +86,30 @@ bool AP_Rally::set_rally_point_with_index(uint8_t i, const RallyLocation &rallyL
 
     return true;
 }
+    
+bool AP_Rally::set_current_rally_point(const int8_t i, const RallyLocation &ral_loc) {
+    if (i >= _rally_point_total_count) {
+        return false;
+    }
+
+    _current_rally_index = i;
+    _current_rally_location = ral_loc;
+
+    return true;
+}
+
+const RallyLocation& AP_Rally::get_current_rally_point() const {
+    return _current_rally_location;
+}
+
+bool AP_Rally::current_rally_point_exists() const {
+    if (_current_rally_index < 0 || 
+            _current_rally_index >= _rally_point_total_count) {
+        return false;
+    }
+
+    return true;
+}
 
 // helper function to translate a RallyLocation to a Location
 Location AP_Rally::rally_location_to_location(const RallyLocation &rally_loc) const
@@ -105,7 +131,7 @@ Location AP_Rally::rally_location_to_location(const RallyLocation &rally_loc) co
 }
 
 // returns true if a valid rally point is found, otherwise returns false to indicate home position should be used
-bool AP_Rally::find_nearest_rally_point(const Location &current_loc, RallyLocation &return_loc) const
+bool AP_Rally::find_nearest_rally_point(const Location &current_loc, RallyLocation &return_loc, bool set_as_current)
 {
     float min_dis = -1;
     const struct Location &home_loc = _ahrs.get_home();
@@ -121,10 +147,16 @@ bool AP_Rally::find_nearest_rally_point(const Location &current_loc, RallyLocati
         if (dis < min_dis || min_dis < 0) {
             min_dis = dis;
             return_loc = next_rally;
+            if (set_as_current) {
+                set_current_rally_point(i, return_loc);
+            }
         }
     }
 
     if ((_rally_limit_km > 0) && (min_dis > _rally_limit_km*1000.0f) && (get_distance(current_loc, home_loc) < min_dis)) {
+        if (set_as_current) {
+            set_current_rally_point(-1, return_loc);
+        }
         return false; // use home position
     }
 
@@ -132,13 +164,13 @@ bool AP_Rally::find_nearest_rally_point(const Location &current_loc, RallyLocati
 }
 
 // return best RTL location from current position
-Location AP_Rally::calc_best_rally_or_home_location(const Location &current_loc, float rtl_home_alt) const
+Location AP_Rally::calc_best_rally_or_home_location(const Location &current_loc, float rtl_home_alt, bool set_as_current)
 {
     RallyLocation ral_loc = {};
     Location return_loc = {};
     const struct Location &home_loc = _ahrs.get_home();
     
-    if (find_nearest_rally_point(current_loc, ral_loc)) {
+    if (find_nearest_rally_point(current_loc, ral_loc, set_as_current)) {
         // valid rally point found
         return_loc = rally_location_to_location(ral_loc);
     } else {
