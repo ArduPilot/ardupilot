@@ -348,11 +348,12 @@ void AC_WPNav::get_wp_stopping_point_xy(Vector3f& stopping_point) const
 /// advance_wp_target_along_track - move target location along track from origin to destination
 void AC_WPNav::advance_wp_target_along_track(float dt)
 {
-    float track_covered;
-    Vector3f track_error;
-    float track_desired_max;
+    float track_covered;        // distance (in cm) along the track that the vehicle has traveled.  Measured by drawing a perpendicular line from the track to the vehicle.
+    Vector3f track_error;       // distance error (in cm) from the track_covered position (i.e. closest point on the line to the vehicle) and the vehicle
+    float track_desired_max;    // the farthest distance (in cm) along the track that the leash will allow
     float track_desired_temp = _track_desired;
-    float track_extra_max;
+    float track_leash_slack;    // additional distance (in cm) along the track from our track_covered position that our leash will allow
+    bool reached_leash_limit = false;   // true when track has reached leash limit and we need to slow down the target point
 
     // get current location
     Vector3f curr_pos = _inav->get_position();
@@ -380,11 +381,16 @@ void AC_WPNav::advance_wp_target_along_track(float dt)
     }
 
     // calculate how far along the track we could move the intermediate target before reaching the end of the leash
-    track_extra_max = min(_track_leash_length*(leash_z-track_error_z)/leash_z, _track_leash_length*(leash_xy-track_error_xy)/leash_xy);
-    if(track_extra_max <0) {
+    track_leash_slack = min(_track_leash_length*(leash_z-track_error_z)/leash_z, _track_leash_length*(leash_xy-track_error_xy)/leash_xy);
+    if (track_leash_slack < 0) {
         track_desired_max = track_covered;
     }else{
-        track_desired_max = track_covered + track_extra_max;
+        track_desired_max = track_covered + track_leash_slack;
+    }
+
+    // check if target is already beyond the leash
+    if (_track_desired > track_desired_max) {
+        reached_leash_limit = true;
     }
 
     // get current velocity
@@ -401,32 +407,30 @@ void AC_WPNav::advance_wp_target_along_track(float dt)
 
     // let the limited_speed_xy_cms be some range above or below current velocity along track
     if (speed_along_track < -linear_velocity) {
-        // we are travelling fast in the opposite direction of travel to the waypoint so do not move the intermediate point
+        // we are traveling fast in the opposite direction of travel to the waypoint so do not move the intermediate point
         _limited_speed_xy_cms = 0;
     }else{
-        // increase intermediate target point's velocity if not yet at target speed (we will limit it below)
-        if(dt > 0) {
-            if(track_desired_max > _track_desired) {
-                _limited_speed_xy_cms += 2.0f * _track_accel * dt;
-            }else{
-                // do nothing, velocity stays constant
-                _track_desired = track_desired_max;
-            }
+        // increase intermediate target point's velocity if not yet at the leash limit
+        if(dt > 0 && !reached_leash_limit) {
+            _limited_speed_xy_cms += 2.0f * _track_accel * dt;
         }
-        // do not go over top speed
-        if(_limited_speed_xy_cms > _track_speed) {
-            _limited_speed_xy_cms = _track_speed;
-        }
+        // do not allow speed to be below zero or over top speed
+        _limited_speed_xy_cms = constrain_float(_limited_speed_xy_cms, 0.0f, _track_speed);
+
         // if our current velocity is within the linear velocity range limit the intermediate point's velocity to be no more than the linear_velocity above or below our current velocity
         if (fabsf(speed_along_track) < linear_velocity) {
             _limited_speed_xy_cms = constrain_float(_limited_speed_xy_cms,speed_along_track-linear_velocity,speed_along_track+linear_velocity);
         }
     }
     // advance the current target
-    track_desired_temp += _limited_speed_xy_cms * dt;
+    if (!reached_leash_limit) {
+        track_desired_temp += _limited_speed_xy_cms * dt;
+    }
 
     // do not let desired point go past the end of the segment
     track_desired_temp = constrain_float(track_desired_temp, 0, _track_length);
+
+    // set our new desired position on track
     _track_desired = max(_track_desired, track_desired_temp);
 
     // recalculate the desired position
@@ -463,7 +467,7 @@ int32_t AC_WPNav::get_wp_bearing_to_destination() const
     return get_bearing_cd(_inav->get_position(), _destination);
 }
 
-/// update_wpnav - run the wp controller - should be called at 10hz
+/// update_wpnav - run the wp controller - should be called at 100hz or higher
 void AC_WPNav::update_wpnav()
 {
     // calculate dt
@@ -515,11 +519,11 @@ void AC_WPNav::calculate_wp_leash_length()
         _track_speed = _wp_speed_cms/pos_delta_unit_xy;
         _track_leash_length = _pos_control.get_leash_xy()/pos_delta_unit_xy;
     }else if(pos_delta_unit_xy == 0){
-        _track_accel = WPNAV_ALT_HOLD_ACCEL_MAX/pos_delta_unit_z;
+        _track_accel = _pos_control.get_accel_z()/pos_delta_unit_z;
         _track_speed = speed_z/pos_delta_unit_z;
         _track_leash_length = leash_z/pos_delta_unit_z;
     }else{
-        _track_accel = min(WPNAV_ALT_HOLD_ACCEL_MAX/pos_delta_unit_z, _wp_accel_cms/pos_delta_unit_xy);
+        _track_accel = min(_pos_control.get_accel_z()/pos_delta_unit_z, _wp_accel_cms/pos_delta_unit_xy);
         _track_speed = min(speed_z/pos_delta_unit_z, _wp_speed_cms/pos_delta_unit_xy);
         _track_leash_length = min(leash_z/pos_delta_unit_z, _pos_control.get_leash_xy()/pos_delta_unit_xy);
     }

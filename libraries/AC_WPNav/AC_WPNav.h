@@ -24,8 +24,6 @@
 #define WPNAV_WP_SPEED_UP               250.0f      // default maximum climb velocity
 #define WPNAV_WP_SPEED_DOWN             150.0f      // default maximum descent velocity
 
-#define WPNAV_ALT_HOLD_ACCEL_MAX        250.0f      // hard coded copy of throttle controller's maximum acceleration in cm/s.  To-Do: remove duplication with throttle controller definition
-
 #define WPNAV_LEASH_LENGTH_MIN          100.0f      // minimum leash lengths in cm
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
@@ -128,7 +126,7 @@ public:
     /// set_fast_waypoint - set to true to ignore the waypoint radius and consider the waypoint 'reached' the moment the intermediate point reaches it
     void set_fast_waypoint(bool fast) { _flags.fast_waypoint = fast; }
 
-    /// update_wp - update waypoint controller
+    /// update_wpnav - run the wp controller - should be called at 100hz or higher
     void update_wpnav();
 
     /// calculate_wp_leash_length - calculates track speed, acceleration and leash lengths for waypoint controller
