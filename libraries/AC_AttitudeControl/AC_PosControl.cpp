@@ -589,9 +589,7 @@ void AC_PosControl::rate_to_accel_xy(float dt)
 {
     const Vector3f &vel_curr = _inav.get_velocity();  // current velocity in cm/s
     float accel_total;                          // total acceleration in cm/s/s
-
-    // reset accel limit flag
-    _limit.accel_xy = false;
+    float lat_i, lon_i;
 
     // reset last velocity if this controller has just been engaged or dt is zero
     if (dt == 0.0) {
@@ -611,10 +609,21 @@ void AC_PosControl::rate_to_accel_xy(float dt)
     _vel_error.x = _vel_target.x - vel_curr.x;
     _vel_error.y = _vel_target.y - vel_curr.y;
 
+    // get current i term
+    lat_i = _pid_rate_lat.get_integrator();
+    lon_i = _pid_rate_lon.get_integrator();
+
+    // update i term if we have not hit the accel or throttle limits OR the i term will reduce
+    if ((!_limit.accel_xy && !_motors.limit.throttle_upper) || ((lat_i>0&&_vel_error.x<0)||(lat_i<0&&_vel_error.x>0))) {
+        lat_i = _pid_rate_lat.get_i(_vel_error.x, dt);
+    }
+    if ((!_limit.accel_xy && !_motors.limit.throttle_upper) || ((lon_i>0&&_vel_error.y<0)||(lon_i<0&&_vel_error.y>0))) {
+        lon_i = _pid_rate_lat.get_i(_vel_error.y, dt);
+    }
+
     // combine feed forward accel with PID output from velocity error
-    // To-Do: check accel limit flag before adding I term
-    _accel_target.x += _pid_rate_lat.get_pid(_vel_error.x, dt);
-    _accel_target.y += _pid_rate_lon.get_pid(_vel_error.y, dt);
+    _accel_target.x += _pid_rate_lat.get_p(_vel_error.x) + lat_i + _pid_rate_lat.get_d(_vel_error.x, dt);
+    _accel_target.y += _pid_rate_lon.get_p(_vel_error.y) + lon_i + _pid_rate_lon.get_d(_vel_error.y, dt);
 
     // scale desired acceleration if it's beyond acceptable limit
     // To-Do: move this check down to the accel_to_lean_angle method?
@@ -623,6 +632,9 @@ void AC_PosControl::rate_to_accel_xy(float dt)
         _accel_target.x = POSCONTROL_ACCEL_XY_MAX * _accel_target.x/accel_total;
         _accel_target.y = POSCONTROL_ACCEL_XY_MAX * _accel_target.y/accel_total;
         _limit.accel_xy = true;     // unused
+    } else {
+        // reset accel limit flag
+        _limit.accel_xy = false;
     }
 }
 
