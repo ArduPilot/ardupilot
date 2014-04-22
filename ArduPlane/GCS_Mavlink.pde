@@ -1157,7 +1157,30 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 break;
             }
             break;
+        
+        case MAV_CMD_DO_RALLY_LAND:
+            result = MAV_RESULT_FAILED;
+            //no reason to automated landing in manual mode:
+            if (control_mode == MANUAL) {
+                break;
+            }
+            set_mode(RTL);
 
+            lander.preland_init();
+            result = MAV_RESULT_ACCEPTED;
+            break;
+
+        case MAV_CMD_DO_GO_AROUND:
+            result = MAV_RESULT_ACCEPTED;
+
+            if (lander.abort_landing((uint16_t) packet.param1)) {
+                next_WP_loc.alt = (lander.get_recovery_alt()*100UL) + ahrs.get_home().alt;
+                gcs_send_text_fmt(PSTR("Land Abort Target Altitude %ld"), lander.get_recovery_alt());
+            } else {
+                result = MAV_RESULT_FAILED;
+            }
+            break;           
+            
         default:
             break;
         }

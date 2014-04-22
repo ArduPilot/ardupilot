@@ -281,6 +281,17 @@ static enum FlightMode get_previous_mode() {
 
 static void set_mode(enum FlightMode mode)
 {
+    //do this check before checking mode -- if somebody has started
+    //a rally landing they might still be in RTL when they decide to abort land
+    if(control_mode == RTL && (lander.preland_started() || lander.aborting_landing())) {
+        lander.preland_clear();
+
+        //back to loiter alt (don't want to loiter at break alt):
+        if (rally.current_rally_point_exists()) {
+            next_WP_loc.alt = (rally.get_current_rally_point().alt * 100UL) + ahrs.get_home().alt;
+        }
+    }
+
     if(control_mode == mode) {
         // don't switch modes if we are already in the correct mode.
         return;

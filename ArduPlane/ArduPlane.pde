@@ -84,6 +84,7 @@
 #include <AP_ServoRelayEvents.h>
 
 #include <AP_Rally.h>
+#include <AP_Land.h>
 
 // Pre-AP_HAL compatibility
 #include "compat.h"
@@ -611,6 +612,9 @@ AP_Mission mission(ahrs,
 #if AP_TERRAIN_AVAILABLE
 AP_Terrain terrain(ahrs, mission, rally);
 #endif
+
+//For more new auto landing method(s) (if desired)
+AP_Land lander(ahrs, gps, compass, TECS_controller, rally, mission);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Outback Challenge Failsafe Support
@@ -1440,6 +1444,30 @@ static void update_navigation()
             loiter.direction = 1;
         }
         update_loiter();
+
+        //see if it's time to start prelanding sequence for rally landing.
+        if (control_mode == RTL && lander.preland_started() 
+                && rally.current_rally_point_exists()) {
+            lander.preland_step_rally_land(rally.get_current_rally_point());
+            if (lander.head_to_break_alt()) {
+                //start descending towards the rally point's break altitude.
+                RallyLocation ralLoc = rally.get_current_rally_point();
+                next_WP_loc.alt = (ralLoc.break_alt*100UL) + ahrs.get_home().alt; 
+                if (lander.arrived_at_break_alt() && 
+                        lander.heading_as_desired_for_landing() &&
+                        lander.speed_as_desired_for_landing()) {
+                    //Done with prelanding for rally landing.  LAND!!
+
+                    //The order of these commands apears to be important.
+                    mission.set_current_cmd(lander.find_nearest_landing_wp_index(current_loc));
+                    set_mode(AUTO);
+                }
+            } 
+        //did a landing abort get called for while still in RTL mode?
+        } else if (control_mode == RTL && lander.aborting_landing()) {
+            do_RTL();
+        } 
+
         break;
 
     case CRUISE:
@@ -1509,7 +1537,24 @@ static void update_flight_stage(void)
                        auto_state.land_complete == true) {
                 set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_FINAL);
             } else if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
-                set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_APPROACH); 
+                if (! lander.aborting_landing()) {
+                    set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_APPROACH);                } else {
+                    //"Go Around" signaled before landing complete
+                    if (current_loc.alt < (int32_t) (lander.get_recovery_alt_cm_msl() - 500)) { 
+                        set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_GO_AROUND);
+                    } else {
+                        //finished reocvering altitude in wave-off -- RTL
+                        set_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);
+
+                        set_mode(RTL);
+                    }                    
+                } 
+            } else {
+                set_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);
+            }
+        } else if (control_mode == RTL) { //support for Rally Landings
+            if (lander.head_to_break_alt()) {
+                set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_APPROACH);
             } else {
                 set_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);
             }
