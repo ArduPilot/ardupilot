@@ -146,6 +146,13 @@ public:
         uint8_t action;         // action (0 = release, 1 = grab)
     };
 
+    // high altitude balloon altitude wait
+    struct PACKED Altitude_Wait {
+        float altitude; // meters
+        float descent_rate; // m/s
+        uint8_t wiggle_time; // seconds
+    };
+
     // nav guided command
     struct PACKED Guided_Limits_Command {
         // max time is held in p1 field
@@ -199,6 +206,9 @@ public:
 
         // do-guided-limits
         Guided_Limits_Command guided_limits;
+
+        // cam trigg distance
+        Altitude_Wait altitude_wait;
 
         // location
         Location location;      // Waypoint location

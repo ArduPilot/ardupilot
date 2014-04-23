@@ -671,6 +671,11 @@ bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP
         cmd.content.guided_limits.alt_min = packet.param2;  // min alt below which the command will be aborted.  0 for no lower alt limit
         cmd.content.guided_limits.alt_max = packet.param3;  // max alt above which the command will be aborted.  0 for no upper alt limit
         cmd.content.guided_limits.horiz_max = packet.param4;// max horizontal distance the vehicle can move before the command will be aborted.  0 for no horizontal limit
+
+    case MAV_CMD_NAV_ALTITUDE_WAIT:
+        cmd.content.altitude_wait.altitude = packet.param1;
+        cmd.content.altitude_wait.descent_rate = packet.param2;
+        cmd.content.altitude_wait.wiggle_time = packet.param3;
         break;
 
     default:
@@ -974,6 +979,11 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
         packet.param2 = cmd.content.guided_limits.alt_min;  // min alt below which the command will be aborted.  0 for no lower alt limit
         packet.param3 = cmd.content.guided_limits.alt_max;  // max alt above which the command will be aborted.  0 for no upper alt limit
         packet.param4 = cmd.content.guided_limits.horiz_max;// max horizontal distance the vehicle can move before the command will be aborted.  0 for no horizontal limit
+
+    case MAV_CMD_NAV_ALTITUDE_WAIT:
+        packet.param1 = cmd.content.altitude_wait.altitude;
+        packet.param2 = cmd.content.altitude_wait.descent_rate;
+        packet.param3 = cmd.content.altitude_wait.wiggle_time;
         break;
 
     default:
