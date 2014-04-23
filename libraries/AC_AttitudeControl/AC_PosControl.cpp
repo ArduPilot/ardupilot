@@ -618,7 +618,7 @@ void AC_PosControl::rate_to_accel_xy(float dt)
         lat_i = _pid_rate_lat.get_i(_vel_error.x, dt);
     }
     if ((!_limit.accel_xy && !_motors.limit.throttle_upper) || ((lon_i>0&&_vel_error.y<0)||(lon_i<0&&_vel_error.y>0))) {
-        lon_i = _pid_rate_lat.get_i(_vel_error.y, dt);
+        lon_i = _pid_rate_lon.get_i(_vel_error.y, dt);
     }
 
     // combine feed forward accel with PID output from velocity error
