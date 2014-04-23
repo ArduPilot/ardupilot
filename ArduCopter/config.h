@@ -367,7 +367,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //  OPTICAL_FLOW
 #ifndef OPTFLOW                         // sets global enabled/disabled flag for optflow (as seen in CLI)
- # define OPTFLOW                       ENABLED
+ # define OPTFLOW                       DISABLED
 #endif
 // optical flow based loiter PI values
 #ifndef OPTFLOW_ROLL_P
