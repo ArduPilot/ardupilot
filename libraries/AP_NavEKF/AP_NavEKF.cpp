@@ -401,8 +401,8 @@ void NavEKF::ResetPosition(void)
         // read the GPS
         readGpsData();
         // write to state vector
-        states[7] = posNE[0];
-        states[8] = posNE[1];
+        states[7] = gpsPosNE.x + gpsPosGlitchOffsetNE.x;
+        states[8] = gpsPosNE.y + gpsPosGlitchOffsetNE.y;
     }
 }
 
@@ -1600,7 +1600,8 @@ void NavEKF::FuseVelPosNED()
         // form the observation vector and zero velocity and horizontal position observations if in static mode
         if (!staticMode) {
             for (uint8_t i=0; i<=2; i++) observation[i] = velNED[i];
-            for (uint8_t i=3; i<=4; i++) observation[i] = posNE[i-3];
+            observation[3] = gpsPosNE.x + gpsPosGlitchOffsetNE.x;
+            observation[4] = gpsPosNE.y + gpsPosGlitchOffsetNE.y;
         } else {
             for (uint8_t i=0; i<=4; i++) observation[i] = 0.0f;
         }
@@ -1662,14 +1663,13 @@ void NavEKF::FuseVelPosNED()
                 posHealth = true;
                 posFailTime = hal.scheduler->millis();
                 // if timed out or outside the specified glitch radius, increment the offset applied to GPS data to compensate for large GPS position jumps
-                // offset is decayed to zero at 1.0 m/s and limited to a maximum value of 100m before it is applied to
-                // subsequent GPS measurements so we don't have to do any limiting here
                 if (posTimeout || (maxPosInnov2 > sq(float(_gpsGlitchRadiusMax)))) {
-                    posnOffsetNorth += posInnov[0];
-                    posnOffsetEast  += posInnov[1];
-                    // apply the offset to the current GPS measurement
-                    posNE[0] += posInnov[0];
-                    posNE[1] += posInnov[1];
+                    gpsPosGlitchOffsetNE.x += posInnov[0];
+                    gpsPosGlitchOffsetNE.y += posInnov[1];
+                    // limit the radius of the offset to 100m and decay the offset to zero radially
+                    decayGpsOffset();
+                    // reset the position to the current GPS position which will include the glitch correction offset
+                    ResetPosition();
                     // don't fuse data on this time step
                     fusePosData = false;
                 }
@@ -3003,12 +3003,9 @@ void NavEKF::readGpsData()
 
         // read latitutde and longitude from GPS and convert to NE position
         const struct Location &gpsloc = _ahrs->get_gps().location();
-        Vector2f posdiff = location_diff(_ahrs->get_home(), gpsloc);
-        // apply a position offset which is used to compensate for GPS jumps
-        // after decaying offset to allow GPS position jumps to be accommodated gradually
+        gpsPosNE = location_diff(_ahrs->get_home(), gpsloc);
+        // decay and limit the position offset which is applied to NE position wherever it is used throughout code to allow GPS position jumps to be accommodated gradually
         decayGpsOffset();
-        posNE[0] = posdiff.x + posnOffsetNorth;
-        posNE[1] = posdiff.y + posnOffsetEast;
     }
 }
 
@@ -3244,8 +3241,7 @@ void  NavEKF::getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f
     magVar.y = sqrtf(magTestRatio.y);
     magVar.z = sqrtf(magTestRatio.z);
     tasVar   = sqrtf(tasTestRatio);
-    offset.x = posnOffsetNorth;
-    offset.y = posnOffsetEast;
+    offset   = gpsPosGlitchOffsetNE;
 }
 
 // zero stored variables - this needs to be called before a full filter initialisation
@@ -3254,8 +3250,6 @@ void NavEKF::ZeroVariables()
     velTimeout = false;
     posTimeout = false;
     hgtTimeout = false;
-    posnOffsetNorth = 0;
-    posnOffsetEast = 0;
     lastStateStoreTime_ms = 0;
     lastFixTime_ms = 0;
     secondLastFixTime_ms = 0;
@@ -3284,13 +3278,14 @@ void NavEKF::ZeroVariables()
     summedDelAng.zero();
     summedDelVel.zero();
     velNED.zero();
+    gpsPosGlitchOffsetNE.zero();
+    gpsPosNE.zero();
     prevTnb.zero();
     memset(&P[0][0], 0, sizeof(P));
     memset(&nextP[0][0], 0, sizeof(nextP));
     memset(&processNoise[0], 0, sizeof(processNoise));
     memset(&storedStates[0], 0, sizeof(storedStates));
     memset(&statetimeStamp[0], 0, sizeof(statetimeStamp));
-    memset(&posNE[0], 0, sizeof(posNE));
 }
 
 // return true if we should use the airspeed sensor
@@ -3318,17 +3313,18 @@ bool NavEKF::use_compass(void) const
 
 // decay GPS horizontal position offset to close to zero at a rate of 1 m/s
 // limit radius to a maximum of 100m
+// apply glitch offset to GPS measurements
 void NavEKF::decayGpsOffset()
 {
     float lapsedTime = 0.001f*float(hal.scheduler->millis() - lastDecayTime_ms);
     lastDecayTime_ms = hal.scheduler->millis();
-    float offsetRadius = pythagorous2(posnOffsetNorth, posnOffsetEast);
+    float offsetRadius = pythagorous2(gpsPosGlitchOffsetNE.x, gpsPosGlitchOffsetNE.y);
     // decay radius if larger than velocity of 1.0 multiplied by lapsed time (plus a margin to prevent divide by zero)
     if (offsetRadius > (lapsedTime + 0.1f)) {
         // calculate scale factor to be applied to both offset components
         float scaleFactor = constrain_float((offsetRadius - lapsedTime), 0.0f, 100.0f) / offsetRadius;
-        posnOffsetNorth *= scaleFactor;
-        posnOffsetEast  *= scaleFactor;
+        gpsPosGlitchOffsetNE.x *= scaleFactor;
+        gpsPosGlitchOffsetNE.y *= scaleFactor;
     }
 }
 
