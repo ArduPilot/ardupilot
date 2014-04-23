@@ -1,5 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#if HYBRID_ENABLED == ENABLED
+
 /*
  * control_hybrid.pde - init and run calls for hybrid flight mode
  *     hybrid tries to improve upon regular loiter by mixing the pilot input with the loiter controller
@@ -661,3 +663,5 @@ static void hybrid_pitch_controller_to_pilot_override()
     // store final loiter outputs for mixing with pilot input
     hybrid.controller_final_pitch = hybrid.pitch;
 }
+
+#endif  // HYBRID_ENABLED == ENABLED

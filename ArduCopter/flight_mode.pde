@@ -87,9 +87,11 @@ static bool set_mode(uint8_t mode)
             break;
 #endif
 
+#if HYBRID_ENABLED == ENABLED
         case HYBRID:
             success = hybrid_init(ignore_checks);
             break;
+#endif
 
         default:
             success = false;
@@ -182,9 +184,11 @@ static void update_flight_mode()
             break;
 #endif
 
+#if HYBRID_ENABLED == ENABLED
         case HYBRID:
             hybrid_run();
             break;
+#endif
     }
 }
 

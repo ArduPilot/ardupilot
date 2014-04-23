@@ -407,6 +407,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Values: 0:Very Soft, 25:Soft, 50:Medium, 75:Crisp, 100:Very Crisp
     GSCALAR(rc_feel_rp, "RC_FEEL_RP",  RC_FEEL_RP_VERY_CRISP),
 
+#if HYBRID_ENABLED == ENABLED
     // @Param: HYBR_BRAKE_RATE
     // @DisplayName: Hybrid braking rate
     // @Description: hybrid flight mode's rotation rate during braking in deg/sec
@@ -421,6 +422,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 2000 4500
     // @User: Advanced
     GSCALAR(hybrid_brake_angle_max, "HYBR_BRAKE_ANGLE",  HYBRID_BRAKE_ANGLE_DEFAULT),
+#endif
 
 #if FRAME_CONFIG ==     HELI_FRAME
     // @Group: HS1_
