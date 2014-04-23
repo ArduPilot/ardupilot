@@ -635,6 +635,9 @@
 //////////////////////////////////////////////////////////////////////////////
 // Hybrid parameter defaults
 //
+#ifndef HYBRID_ENABLED
+ # define HYBRID_ENABLED                ENABLED // hybrid flight mode enabled by default
+#endif
 #ifndef HYBRID_BRAKE_RATE_DEFAULT
  # define HYBRID_BRAKE_RATE_DEFAULT     8       // default HYBRID_BRAKE_RATE param value.  Rotation rate during braking in deg/sec
 #endif
