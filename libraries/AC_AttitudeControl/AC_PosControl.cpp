@@ -64,6 +64,7 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
 #endif
     _flags.recalc_leash_xy = true;
     _flags.recalc_leash_z = true;
+    _flags.keep_xy_I_terms = false;
 }
 
 ///
@@ -428,17 +429,19 @@ float AC_PosControl::get_distance_to_target() const
 }
 
 /// update_xy_controller - run the horizontal position controller - should be called at 100hz or higher
-void AC_PosControl::update_xy_controller(bool use_desired_velocity, bool reset_I)
+void AC_PosControl::update_xy_controller(bool use_desired_velocity)
 {
     // catch if we've just been started
     uint32_t now = hal.scheduler->millis();
     if ((now - _last_update_ms) >= 1000) {
         _last_update_ms = now;
-        if (reset_I) {
+        if (!_flags.keep_xy_I_terms) {
             reset_I_xy();
         }
         _xy_step = 0;
     }
+    // reset keep_xy_I_term flag in case it has been set
+    _flags.keep_xy_I_terms = false;
 
     // check if xy leash needs to be recalculated
     calc_leash_length_xy();
