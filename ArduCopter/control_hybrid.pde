@@ -10,18 +10,22 @@
 #if MAIN_LOOP_RATE == 100
  // definitions for 100hz loop update rate
  # define HYBRID_BRAKE_TIME_ESTIMATE_MAX        600     // max number of cycles the brake will be applied before we switch to loiter
- # define HYBRID_BRAKE_TO_LOITER_TIMER          150     // Number of cycles to transition from brake mode to loiter mode.  Must be lower than HYBRID_LOITER_STAB_TIMER
+ # define HYBRID_BRAKE_TO_LOITER_TIMER          150     // Number of cycles to transition from brake mode to loiter mode. 
+ # define HYBRID_WIND_COMP_START_TIMER          150     // Number of cycles to start wind compensation update after loiter is engaged
  # define HYBRID_LOITER_TO_PILOT_MIX_TIMER      50      // Set it from 100 to 200, the number of centiseconds loiter and manual commands are mixed to make a smooth transition.
- # define HYBRID_SMOOTH_RATE_FACTOR             0.04f   // filter applied to pilot's roll/pitch input as it returns to center.  A lower number will cause the roll/pitch to return to zero more slowly if the brake_rate is also low.
+ # define HYBRID_SMOOTH_RATE_FACTOR             0.05f   // filter applied to pilot's roll/pitch input as it returns to center.  A lower number will cause the roll/pitch to return to zero more slowly if the brake_rate is also low.
  # define HYBRID_WIND_COMP_TIMER_10HZ           10      // counter value used to reduce wind compensation to 10hz
-#else
+ # define LOOP_RATE_FACTOR                      1       // used to adapt hybrid params to loop_rate
+ #else
  // definitions for 400hz loop update rate
  # define HYBRID_BRAKE_TIME_ESTIMATE_MAX        (600*4) // max number of cycles the brake will be applied before we switch to loiter
  # define HYBRID_BRAKE_TO_LOITER_TIMER          (150*4) // Number of cycles to transition from brake mode to loiter mode.  Must be lower than HYBRID_LOITER_STAB_TIMER
+ # define HYBRID_WIND_COMP_START_TIMER          (150*4) // Number of cycles to start wind compensation update after loiter is engaged
  # define HYBRID_LOITER_TO_PILOT_MIX_TIMER      (50*4)  // Set it from 100 to 200, the number of centiseconds loiter and manual commands are mixed to make a smooth transition.
- # define HYBRID_SMOOTH_RATE_FACTOR             0.01f   // filter applied to pilot's roll/pitch input as it returns to center.  A lower number will cause the roll/pitch to return to zero more slowly if the brake_rate is also low.
+ # define HYBRID_SMOOTH_RATE_FACTOR             0.0125f // filter applied to pilot's roll/pitch input as it returns to center.  A lower number will cause the roll/pitch to return to zero more slowly if the brake_rate is also low.
  # define HYBRID_WIND_COMP_TIMER_10HZ           40      // counter value used to reduce wind compensation to 10hz
-#endif
+ # define LOOP_RATE_FACTOR                      4       // used to adapt hybrid params to loop_rate
+ #endif
 
 // definitions that are independent of main loop rate
 #define HYBRID_STICK_RELEASE_SMOOTH_ANGLE       1800    // max angle required (in centi-degrees) after which the smooth stick release effect is applied
@@ -104,8 +108,9 @@ static bool hybrid_init(bool ignore_checks)
     // initialise lean angles to current attitude
     hybrid.pilot_roll = 0;
     hybrid.pilot_pitch = 0;
-    hybrid.roll = constrain_int16(ahrs.roll_sensor, -g.hybrid_brake_angle_max, g.hybrid_brake_angle_max);
-    hybrid.pitch = constrain_int16(ahrs.pitch_sensor, -g.hybrid_brake_angle_max, g.hybrid_brake_angle_max);
+    // JD - These variables will be written in hybrid_run before being used.
+    // hybrid.roll = constrain_int16(ahrs.roll_sensor, -g.hybrid_brake_angle_max, g.hybrid_brake_angle_max);
+    // hybrid.pitch = constrain_int16(ahrs.pitch_sensor, -g.hybrid_brake_angle_max, g.hybrid_brake_angle_max);
 
     // compute brake_gain
     hybrid.brake_gain = (15.0f * (float)g.hybrid_brake_rate + 95.0f) / 100.0f;
@@ -138,12 +143,13 @@ static void hybrid_run()
     float target_yaw_rate = 0;          // pilot desired yaw rate in centi-degrees/sec
     float target_climb_rate = 0;        // pilot desired climb rate in centimeters/sec
     float brake_to_loiter_mix;          // mix of brake and loiter controls.  0 = fully brake controls, 1 = fully loiter controls
-    float loiter_to_pilot_mix;          // mix of loiter and pilot controls.  0 = fully loiter controls, 1 = fully pilot controls
+    float loiter_to_pilot_roll_mix;     // mix of loiter and pilot controls.  0 = fully loiter controls, 1 = fully pilot controls
+    float loiter_to_pilot_pitch_mix;    // mix of loiter and pilot controls.  0 = fully loiter controls, 1 = fully pilot controls
     float vel_fw, vel_right;            // vehicle's current velocity in body-frame forward and right directions
     const Vector3f& vel = inertial_nav.get_velocity();
 
     // if not auto armed set throttle to zero and exit immediately
-    if(!ap.auto_armed || !inertial_nav.position_ok()) {
+    if(!ap.auto_armed || !inertial_nav.position_ok()) {  // JD - I hope this condition is safe!
         wp_nav.init_loiter_target();
         attitude_control.init_targets();
         attitude_control.set_throttle_out(0, false);
@@ -187,6 +193,10 @@ static void hybrid_run()
         // To-Do: move this to AP_Math (or perhaps we already have a function to do this)
         vel_fw = vel.x*ahrs.cos_yaw() + vel.y*ahrs.sin_yaw();
         vel_right = -vel.x*ahrs.sin_yaw() + vel.y*ahrs.cos_yaw();
+        
+        // If not in LOITER, get wind_comp related to current yaw
+        if (hybrid.roll_mode != HYBRID_LOITER || hybrid.pitch_mode == HYBRID_LOITER)
+        hybrid_get_wind_comp_lean_angles(hybrid.wind_comp_roll, hybrid.wind_comp_pitch);
 
         // Roll state machine
         //  Each state (aka mode) is responsible for:
@@ -226,14 +236,14 @@ static void hybrid_run()
                         hybrid.brake_angle_max_roll = abs(hybrid.brake_roll);
                     } else {
                         // braking angle has started decreasing so re-estimate braking time
-                        hybrid.brake_timeout_roll = 1+(uint16_t)(15L*(int32_t)(abs(hybrid.brake_roll))/(10L*(int32_t)g.hybrid_brake_rate));  // the 1.2 (12/10) factor has to be tuned in flight, here it means 120% of the "normal" time.
+                        hybrid.brake_timeout_roll = 1+(uint16_t)(LOOP_RATE_FACTOR*15L*(int32_t)(abs(hybrid.brake_roll))/(10L*(int32_t)g.hybrid_brake_rate));  // the 1.2 (12/10) factor has to be tuned in flight, here it means 120% of the "normal" time.
                         hybrid.braking_time_updated_roll = true;
                     }
                 }
 
                 // if velocity is very low reduce braking time to 0.5seconds
-                if ((fabs(vel_right) <= HYBRID_SPEED_0) && (hybrid.brake_timeout_roll > 50)) {
-                    hybrid.brake_timeout_roll = 50;
+                if ((fabs(vel_right) <= HYBRID_SPEED_0) && (hybrid.brake_timeout_roll > 50*LOOP_RATE_FACTOR)) {
+                    hybrid.brake_timeout_roll = 50*LOOP_RATE_FACTOR;
                 }
 
                 // reduce braking timer
@@ -274,10 +284,10 @@ static void hybrid_run()
                 }
 
                 // calculate loiter_to_pilot mix ratio
-                loiter_to_pilot_mix = (float)hybrid.loiter_to_pilot_timer_roll / (float)HYBRID_LOITER_TO_PILOT_MIX_TIMER;
+                loiter_to_pilot_roll_mix = (float)hybrid.loiter_to_pilot_timer_roll / (float)HYBRID_LOITER_TO_PILOT_MIX_TIMER;
 
                 // mix final loiter lean angle and pilot desired lean angles
-                hybrid.roll = hybrid_mix_controls(loiter_to_pilot_mix, hybrid.loiter_final_roll, hybrid.pilot_roll + hybrid.wind_comp_roll);
+                hybrid.roll = hybrid_mix_controls(loiter_to_pilot_roll_mix, hybrid.loiter_final_roll, hybrid.pilot_roll + hybrid.wind_comp_roll);
                 break;
         }
 
@@ -319,15 +329,15 @@ static void hybrid_run()
                         hybrid.brake_angle_max_pitch = abs(hybrid.brake_pitch);
                     } else {
                         // braking angle has started decreasing so re-estimate braking time
-                        hybrid.brake_timeout_pitch = 1+(uint16_t)(15L*(int32_t)(abs(hybrid.brake_pitch))/(10L*(int32_t)g.hybrid_brake_rate));  // the 1.2 (12/10) factor has to be tuned in flight, here it means 120% of the "normal" time.
+                        hybrid.brake_timeout_pitch = 1+(uint16_t)(LOOP_RATE_FACTOR*15L*(int32_t)(abs(hybrid.brake_pitch))/(10L*(int32_t)g.hybrid_brake_rate));  // the 1.2 (12/10) factor has to be tuned in flight, here it means 120% of the "normal" time.
                         hybrid.braking_time_updated_pitch = true;
                     }
                 }
 
                 // if velocity is very low reduce braking time to 0.5seconds
                 //  Note: this speed is extremely low (only 10cm/s) meaning this case is likely never executed
-                if ((fabs(vel_right) <= HYBRID_SPEED_0) && (hybrid.brake_timeout_pitch > 50)) {
-                    hybrid.brake_timeout_pitch = 50;
+                if ((fabs(vel_right) <= HYBRID_SPEED_0) && (hybrid.brake_timeout_pitch > 50*LOOP_RATE_FACTOR)) {
+                    hybrid.brake_timeout_pitch = 50*LOOP_RATE_FACTOR;
                 }
 
                 // reduce braking timer
@@ -368,10 +378,10 @@ static void hybrid_run()
                 }
 
                 // calculate loiter_to_pilot mix ratio
-                loiter_to_pilot_mix = (float)hybrid.loiter_to_pilot_timer_pitch / (float)HYBRID_LOITER_TO_PILOT_MIX_TIMER;
+                loiter_to_pilot_pitch_mix = (float)hybrid.loiter_to_pilot_timer_pitch / (float)HYBRID_LOITER_TO_PILOT_MIX_TIMER;
 
                 // mix final loiter lean angle and pilot desired lean angles
-                hybrid.pitch = hybrid_mix_controls(loiter_to_pilot_mix, hybrid.loiter_final_pitch, hybrid.pilot_pitch + hybrid.wind_comp_pitch);
+                hybrid.pitch = hybrid_mix_controls(loiter_to_pilot_pitch_mix, hybrid.loiter_final_pitch, hybrid.pilot_pitch + hybrid.wind_comp_pitch);
                 break;
         }
 
@@ -385,10 +395,7 @@ static void hybrid_run()
             hybrid.pitch_mode = HYBRID_BRAKE_TO_LOITER;
             hybrid.brake_to_loiter_timer = HYBRID_BRAKE_TO_LOITER_TIMER;
             // init loiter controller
-            wp_nav.init_loiter_target();
-            // move wind compensation back into loiter I term
-            g.pid_loiter_rate_lat.set_integrator(hybrid.wind_comp_ef.x);
-            g.pid_loiter_rate_lon.set_integrator(hybrid.wind_comp_ef.y);
+            wp_nav.init_loiter_target(false); // (false) to avoid I_term reset. In original code, velocity(0,0,0) was used instead of current velocity: wp_nav.init_loiter_target(inertial_nav.get_position(), Vector3f(0,0,0));
             // set delay to start of wind compensation estimate updates
             hybrid.wind_comp_start_timer = HYBRID_WIND_COMP_START_TIMER;
         }
@@ -488,7 +495,7 @@ static void hybrid_run()
                     break;
             }
         }
-
+        
         // constrain target pitch/roll angles
         hybrid.roll = constrain_int16(hybrid.roll, -aparm.angle_max, aparm.angle_max);
         hybrid.pitch = constrain_int16(hybrid.pitch, -aparm.angle_max, aparm.angle_max);
@@ -516,13 +523,13 @@ static void hybrid_update_pilot_lean_angle(int16_t &lean_angle_filtered, int16_t
     } else {
         // lean_angle_raw must be pulling lean_angle_filtered towards zero, smooth the decrease
         if (lean_angle_filtered > 0) {
-            // reduce the filtered lean angle at 4% or the brake rate (whichever is faster).
-            lean_angle_filtered -= max((float)lean_angle_filtered * HYBRID_SMOOTH_RATE_FACTOR, g.hybrid_brake_rate);
+            // reduce the filtered lean angle at 5% or the brake rate (whichever is faster).
+            lean_angle_filtered -= max((float)lean_angle_filtered * HYBRID_SMOOTH_RATE_FACTOR, max(1, g.hybrid_brake_rate/LOOP_RATE_FACTOR));
             // do not let the filtered angle fall below the pilot's input lean angle.
             // the above line pulls the filtered angle down and the below line acts as a catch
             lean_angle_filtered = max(lean_angle_filtered, lean_angle_raw);
         }else{
-            lean_angle_filtered += max(-(float)lean_angle_filtered * HYBRID_SMOOTH_RATE_FACTOR, g.hybrid_brake_rate);
+            lean_angle_filtered += max(-(float)lean_angle_filtered * HYBRID_SMOOTH_RATE_FACTOR, max(1, g.hybrid_brake_rate/LOOP_RATE_FACTOR));
             lean_angle_filtered = min(lean_angle_filtered, lean_angle_raw);
         }
     }
@@ -597,14 +604,14 @@ static void hybrid_update_wind_comp_estimate()
         hybrid.wind_comp_ef.x = accel_target.x;
     } else {
         // low pass filter the position controller's lean angle output
-        hybrid.wind_comp_ef.x = 0.97f*hybrid.wind_comp_ef.x + 0.03f*accel_target.x;
+        hybrid.wind_comp_ef.x = 0.99f*hybrid.wind_comp_ef.x + 0.01f*accel_target.x;
     }
     if (hybrid.wind_comp_ef.y == 0) {
         // if wind compensation has not been initialised set it immediately to the pos controller's desired accel in north direction
         hybrid.wind_comp_ef.y = accel_target.y;
     } else {
         // low pass filter the position controller's lean angle output
-        hybrid.wind_comp_ef.y = 0.97f*hybrid.wind_comp_ef.y + 0.03f*accel_target.y;
+        hybrid.wind_comp_ef.y = 0.99f*hybrid.wind_comp_ef.y + 0.01f*accel_target.y;
     }
 }
 
