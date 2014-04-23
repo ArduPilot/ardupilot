@@ -56,6 +56,7 @@ static struct {
     hybrid_rp_mode pitch_mode           : 3;    // pitch mode: pilot override, brake or loiter
     uint8_t braking_time_updated_roll   : 1;    // true once we have re-estimated the braking time.  This is done once as the vehicle begins to flatten out after braking
     uint8_t braking_time_updated_pitch  : 1;    // true once we have re-estimated the braking time.  This is done once as the vehicle begins to flatten out after braking
+    uint8_t loiter_reset_I              : 1;    // true the very first time hybrid enters loiter, thereafter we trust the i terms loiter has
 
     // pilot input related variables
     int16_t pilot_roll;                         // pilot requested roll angle (filtered to slow returns to zero)
@@ -89,8 +90,6 @@ static struct {
     int16_t roll;   // final roll angle sent to attitude controller
     int16_t pitch;  // final pitch angle sent to attitude controller
 } hybrid;
-
-static bool reset_I = true;
 
 // hybrid_init - initialise hybrid controller
 static bool hybrid_init(bool ignore_checks)
@@ -126,6 +125,9 @@ static bool hybrid_init(bool ignore_checks)
         hybrid.roll_mode = HYBRID_PILOT_OVERRIDE;
         hybrid.pitch_mode = HYBRID_PILOT_OVERRIDE;
     }
+
+    // loiter's I terms should be reset the first time only
+    hybrid.loiter_reset_I = true;
 
     // initialise wind_comp each time hybrid is switched on
     hybrid.wind_comp_ef.zero();
@@ -400,9 +402,9 @@ static void hybrid_run()
             // init loiter controller
             Vector3f curr_pos = inertial_nav.get_position();
             curr_pos.z = pos_control.get_alt_target(); // We don't set alt_target to current altitude but to the current alt_target... the easiest would be to set only x/y as it was on pre-onion code
-            wp_nav.set_loiter_target(curr_pos, reset_I); // (false) to avoid I_term reset. In original code, velocity(0,0,0) was used instead of current velocity: wp_nav.init_loiter_target(inertial_nav.get_position(), Vector3f(0,0,0));
+            wp_nav.set_loiter_target(curr_pos, hybrid.loiter_reset_I); // (false) to avoid I_term reset. In original code, velocity(0,0,0) was used instead of current velocity: wp_nav.init_loiter_target(inertial_nav.get_position(), Vector3f(0,0,0));
             // at this stage, we are going to run update_loiter that will reset I_term once. From now, we ensure next time that we will enter loiter and update it, I_term won't be reset anymore
-            reset_I = false; 
+            hybrid.loiter_reset_I = false;
             // set delay to start of wind compensation estimate updates
             hybrid.wind_comp_start_timer = HYBRID_WIND_COMP_START_TIMER;
         }
