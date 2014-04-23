@@ -258,7 +258,7 @@ static void hybrid_run()
 
                 // check for pilot input
                 if (target_roll != 0) {
-                    hybrid.roll_mode = HYBRID_PILOT_OVERRIDE;
+                    hybrid.roll_mode = HYBRID_PILOT_OVERRIDE;// JD-TO-DO : transition avec le mode manu à créer en utilisant LOITER TO PILOT OVERRIDE
                 }
 
                 // final lean angle is braking angle + wind compensation angle
@@ -352,7 +352,7 @@ static void hybrid_run()
 
                 // check for pilot input
                 if (target_pitch != 0) {
-                    hybrid.pitch_mode = HYBRID_PILOT_OVERRIDE;
+                    hybrid.pitch_mode = HYBRID_PILOT_OVERRIDE;// JD-TO-DO : transition avec le mode manu à créer en utilisant LOITER TO PILOT OVERRIDE
                 }
 
                 // final lean angle is braking angle + wind compensation angle
@@ -436,16 +436,16 @@ static void hybrid_run()
                     if (target_roll != 0 || target_pitch != 0) {
                         // if roll input switch to pilot override for roll
                         if (target_roll != 0) {
-                            hybrid.roll_mode = HYBRID_PILOT_OVERRIDE;
+                            hybrid.roll_mode = HYBRID_PILOT_OVERRIDE; // JD-TO-DO : transition avec le mode manu à créer en utilisant LOITER TO PILOT OVERRIDE
                             // switch pitch-mode to brake (but ready to go back to loiter anytime)
-                            hybrid.pitch_mode = HYBRID_BRAKE_READY_TO_LOITER;
+                            hybrid.pitch_mode = HYBRID_BRAKE_READY_TO_LOITER;   // JD : no need to reset hybrid.brake_pitch here as wind comp has not been updated since last brake_pitch computation
                         }
                         // if pitch input switch to pilot override for pitch
                         if (target_pitch != 0) {
-                            hybrid.pitch_mode = HYBRID_PILOT_OVERRIDE;
+                            hybrid.pitch_mode = HYBRID_PILOT_OVERRIDE; // JD-TO-DO : transition avec le mode manu à créer en utilisant LOITER TO PILOT OVERRIDE
                             if (target_roll == 0) {
                                 // switch roll-mode to brake (but ready to go back to loiter anytime)
-                                hybrid.roll_mode = HYBRID_BRAKE_READY_TO_LOITER;
+                                hybrid.roll_mode = HYBRID_BRAKE_READY_TO_LOITER; // JD : no need to reset hybrid.brake_roll here as wind comp has not been updated since last brake_roll computation
                             }
                         }
                     }
@@ -472,6 +472,7 @@ static void hybrid_run()
                             hybrid.pilot_roll = target_roll;
                             // switch pitch-mode to brake (but ready to go back to loiter anytime)
                             hybrid.pitch_mode = HYBRID_BRAKE_READY_TO_LOITER;
+                            hybrid.brake_pitch = 0; // JD : reset brake_pitch because wind_comp is now different and should give the compensation of the whole previous loiter angle
                         }
                         // if pitch input switch to pilot override for pitch
                         if (target_pitch != 0) {
@@ -482,6 +483,7 @@ static void hybrid_run()
                             // if roll not overriden switch roll-mode to brake (but be ready to go back to loiter any time)
                             if (target_roll == 0) {
                                 hybrid.roll_mode = HYBRID_BRAKE_READY_TO_LOITER;
+                                hybrid.brake_roll = 0;
                             }
                         }
                         // store final loiter outputs for mixing with pilot input
