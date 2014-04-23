@@ -371,7 +371,7 @@ private:
     bool fusePosData;               // this boolean causes the posNE measurements to be fused
     bool fuseHgtData;               // this boolean causes the hgtMea measurements to be fused
     Vector3f velNED;                // North, East, Down velocity measurements (m/s)
-    Vector2 posNE;                  // North, East position measurements (m)
+    Vector2f gpsPosNE;              // North, East position measurements (m)
     ftype hgtMea;                   //  height measurement relative to reference point  (m)
     state_elements statesAtVelTime; // States at the effective time of velNED measurements
     state_elements statesAtPosTime; // States at the effective time of posNE measurements
@@ -437,8 +437,7 @@ private:
     Vector8 SPP;                    // intermediate variables used to calculate predicted covariance matrix
     float IMU1_weighting;           // Weighting applied to use of IMU1. Varies between 0 and 1.
     bool yawAligned;                // true when the yaw angle has been aligned
-    float posnOffsetNorth;          // offset applied to GPS data in the north direction to compensate for rapid changes in GPS solution
-    float posnOffsetEast;           // offset applied to GPS data in the north direction to compensate for rapid changes in GPS solution
+    Vector2f gpsPosGlitchOffsetNE;  // offset applied to GPS data in the NE direction to compensate for rapid changes in GPS solution
     uint32_t lastDecayTime_ms;      // time of last decay of GPS position offset
     float velTestRatio;             // sum of squares of GPS velocity innovation divided by fail threshold
     float posTestRatio;             // sum of squares of GPS position innovation divided by fail threshold
