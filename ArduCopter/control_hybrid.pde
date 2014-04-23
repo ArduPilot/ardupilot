@@ -13,6 +13,7 @@
  // definitions for 100hz loop update rate
  # define HYBRID_BRAKE_TIME_ESTIMATE_MAX        600     // max number of cycles the brake will be applied before we switch to loiter
  # define HYBRID_BRAKE_TO_LOITER_TIMER          150     // Number of cycles to transition from brake mode to loiter mode. 
+ # define HYBRID_WIND_COMP_START_TIMER          150     // Number of cycles to start wind compensation update after loiter is engaged
  # define HYBRID_CONTROLLER_TO_PILOT_MIX_TIMER  50      // Set it from 100 to 200, the number of centiseconds loiter and manual commands are mixed to make a smooth transition.
  # define HYBRID_SMOOTH_RATE_FACTOR             0.05f   // filter applied to pilot's roll/pitch input as it returns to center.  A lower number will cause the roll/pitch to return to zero more slowly if the brake_rate is also low.
  # define HYBRID_WIND_COMP_TIMER_10HZ           10      // counter value used to reduce wind compensation to 10hz
@@ -22,6 +23,7 @@
  // definitions for 400hz loop update rate
  # define HYBRID_BRAKE_TIME_ESTIMATE_MAX        (600*4) // max number of cycles the brake will be applied before we switch to loiter
  # define HYBRID_BRAKE_TO_LOITER_TIMER          (150*4) // Number of cycles to transition from brake mode to loiter mode.  Must be lower than HYBRID_LOITER_STAB_TIMER
+ # define HYBRID_WIND_COMP_START_TIMER          (150*4) // Number of cycles to start wind compensation update after loiter is engaged
  # define HYBRID_CONTROLLER_TO_PILOT_MIX_TIMER  (50*4)  // Set it from 100 to 200, the number of centiseconds loiter and manual commands are mixed to make a smooth transition.
  # define HYBRID_SMOOTH_RATE_FACTOR             0.0125f // filter applied to pilot's roll/pitch input as it returns to center.  A lower number will cause the roll/pitch to return to zero more slowly if the brake_rate is also low.
  # define HYBRID_WIND_COMP_TIMER_10HZ           40      // counter value used to reduce wind compensation to 10hz
@@ -31,7 +33,6 @@
 
 // definitions that are independent of main loop rate
 #define HYBRID_STICK_RELEASE_SMOOTH_ANGLE       1800    // max angle required (in centi-degrees) after which the smooth stick release effect is applied
-#define HYBRID_WIND_COMP_START_TIMER            15      // delay (in 10zh increments) to start of wind compensation after loiter is engaged
 #define HYBRID_WIND_COMP_ESTIMATE_SPEED_MAX     10      // wind compensation estimates will only run when velocity is at or below this speed in cm/s
 
 // declare some function to keep compiler happy
@@ -85,8 +86,7 @@ static struct {
     int16_t wind_comp_roll;                     // roll angle to compensate for wind
     int16_t wind_comp_pitch;                    // pitch angle to compensate for wind
     int8_t  wind_comp_start_timer;              // counter to delay start of wind compensation for a short time after loiter is engaged
-    int8_t  wind_comp_est_timer;                // counter to reduce wind comp calcs to 10hz
-    int8_t  wind_comp_lean_angle_timer;         // counter to reduce wind comp roll/pitch lean angle calcs to 10hz
+    int8_t  wind_comp_timer;         // counter to reduce wind comp roll/pitch lean angle calcs to 10hz
 
     // final output
     int16_t roll;   // final roll angle sent to attitude controller
@@ -135,8 +135,7 @@ static bool hybrid_init(bool ignore_checks)
     hybrid.wind_comp_ef.zero();
     hybrid.wind_comp_roll = 0;
     hybrid.wind_comp_pitch = 0;
-    hybrid.wind_comp_est_timer = 0;
-    hybrid.wind_comp_lean_angle_timer = 0;
+    hybrid.wind_comp_timer = 0;
 
     return true;
 }
@@ -192,15 +191,12 @@ static void hybrid_run()
         // convert pilot input to lean angles
         get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, target_roll, target_pitch);
 
-        // retrieve latest wind compensation lean angles
-        hybrid_get_wind_comp_lean_angles(hybrid.wind_comp_roll, hybrid.wind_comp_pitch);
-
         // convert inertial nav earth-frame velocities to body-frame
         // To-Do: move this to AP_Math (or perhaps we already have a function to do this)
         vel_fw = vel.x*ahrs.cos_yaw() + vel.y*ahrs.sin_yaw();
         vel_right = -vel.x*ahrs.sin_yaw() + vel.y*ahrs.cos_yaw();
         
-        // If not in LOITER, get wind_comp related to current yaw
+        // If not in LOITER, retrieve latest wind compensation lean angles related to current yaw
         if (hybrid.roll_mode != HYBRID_LOITER || hybrid.pitch_mode != HYBRID_LOITER)
         hybrid_get_wind_comp_lean_angles(hybrid.wind_comp_roll, hybrid.wind_comp_pitch);
 
@@ -587,13 +583,6 @@ static void hybrid_update_brake_angle_from_velocity(int16_t &brake_angle, float 
 //  should be called at the maximum loop rate when loiter is engaged
 static void hybrid_update_wind_comp_estimate()
 {
-    // reduce rate to 10hz
-    hybrid.wind_comp_est_timer++;
-    if (hybrid.wind_comp_est_timer < HYBRID_WIND_COMP_TIMER_10HZ) {
-        return;
-    }
-    hybrid.wind_comp_est_timer = 0;
-
     // check wind estimate start has not been delayed
     if (hybrid.wind_comp_start_timer > 0) {
         hybrid.wind_comp_start_timer--;
@@ -631,11 +620,11 @@ static void hybrid_update_wind_comp_estimate()
 static void hybrid_get_wind_comp_lean_angles(int16_t &roll_angle, int16_t &pitch_angle)
 {
     // reduce rate to 10hz
-    hybrid.wind_comp_lean_angle_timer++;
-    if (hybrid.wind_comp_lean_angle_timer < HYBRID_WIND_COMP_TIMER_10HZ) {
+    hybrid.wind_comp_timer++;
+    if (hybrid.wind_comp_timer < HYBRID_WIND_COMP_TIMER_10HZ) {
         return;
     }
-    hybrid.wind_comp_lean_angle_timer = 0;
+    hybrid.wind_comp_timer = 0;
 
     // convert earth frame desired accelerations to body frame roll and pitch lean angles
     roll_angle = (float)fast_atan((-hybrid.wind_comp_ef.x*ahrs.sin_yaw() + hybrid.wind_comp_ef.y*ahrs.cos_yaw())/981)*(18000/M_PI);
