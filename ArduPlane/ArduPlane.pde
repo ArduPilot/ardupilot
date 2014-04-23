@@ -1397,6 +1397,8 @@ static void update_alt()
             } else {
                 update_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);
             }
+        } else {
+            update_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);
         }
 
         SpdHgt_Controller->update_pitch_throttle(target_altitude_cm - home.alt + (int32_t(g.alt_offset)*100), 
