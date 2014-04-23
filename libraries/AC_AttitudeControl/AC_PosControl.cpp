@@ -428,13 +428,15 @@ float AC_PosControl::get_distance_to_target() const
 }
 
 /// update_xy_controller - run the horizontal position controller - should be called at 100hz or higher
-void AC_PosControl::update_xy_controller(bool use_desired_velocity)
+void AC_PosControl::update_xy_controller(bool use_desired_velocity, bool reset_I)
 {
     // catch if we've just been started
     uint32_t now = hal.scheduler->millis();
     if ((now - _last_update_ms) >= 1000) {
         _last_update_ms = now;
-        reset_I_xy();
+        if (reset_I) {
+            reset_I_xy();
+        }
         _xy_step = 0;
     }
 
