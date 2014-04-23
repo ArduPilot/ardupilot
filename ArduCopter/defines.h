@@ -202,6 +202,8 @@ enum RTLState {
 enum FlipState {
     Flip_Start,
     Flip_Roll,
+    Flip_Pitch_A,
+    Flip_Pitch_B,
     Flip_Recover,
     Flip_Abandon
 };
