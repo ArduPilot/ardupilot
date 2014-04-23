@@ -82,8 +82,9 @@ static bool flip_init(bool ignore_checks)
         }
     }    
     
-    flip_roll_dir = 0; //1;
-    flip_pitch_dir = FLIP_PITCH_FORWARD;
+    // For Debugging
+    //flip_roll_dir = 0; //1;
+    //flip_pitch_dir = FLIP_PITCH_FORWARD;
     
     // log start of flip
     Log_Write_Event(DATA_FLIP_START);
