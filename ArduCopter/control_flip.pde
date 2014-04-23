@@ -6,9 +6,9 @@
  *      Adapted and updated for AC2 in 2011 by Jason Short
  *
  *      Controls:
- *          CH7_OPT or CH8_OPT parameter must be set to "Flip" (AUX_SWITCH_FLIP)
+ *          CH7_OPT or CH8_OPT parameter must be set to "Flip" (AUX_SWITCH_FLIP) which is "2"
  *          Pilot switches to Stabilize, Acro or AltHold flight mode and puts ch7/ch8 switch to ON position
- *          Roll will be to the left is roll stick is held slightly left, otherwise it will roll right
+ *          Vehicle will Roll right by default but if roll or pitch stick is held slightly left, forward or back it will flip in that direction
  *          Vehicle should complete the roll within 2.5sec and will then return to the original flight mode it was in before flip was triggered
  *          Pilot may manually exit flip by switching off ch7/ch8 or by moving roll stick to >40deg left or right
  *
@@ -65,7 +65,7 @@ static bool flip_init(bool ignore_checks)
     // initialise state
     flip_state = Flip_Start;
     flip_start_time = millis();
-    
+
     flip_roll_dir = flip_pitch_dir = 0;
 
     // choose direction based on pilot's roll and pitch sticks
@@ -73,12 +73,10 @@ static bool flip_init(bool ignore_checks)
         flip_pitch_dir = FLIP_PITCH_BACK;
     }else if(g.rc_2.control_in < -300) {
         flip_pitch_dir = FLIP_PITCH_FORWARD;
+    }else if (g.rc_1.control_in >= 0) {
+        flip_roll_dir = FLIP_ROLL_RIGHT;
     }else{
-    if (g.rc_1.control_in >= 0) {
-            flip_roll_dir = FLIP_ROLL_RIGHT;
-    }else{
-            flip_roll_dir = FLIP_ROLL_LEFT;
-    }
+        flip_roll_dir = FLIP_ROLL_LEFT;
     }
 
     // log start of flip
