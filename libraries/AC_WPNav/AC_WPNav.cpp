@@ -118,8 +118,11 @@ void AC_WPNav::set_loiter_target(const Vector3f& position)
 }
 
 /// init_loiter_target - initialize's loiter position and feed-forward velocity from current pos and velocity
-void AC_WPNav::init_loiter_target()
+void AC_WPNav::init_loiter_target(bool reset_I)
 {
+    // flag in case of loiter x_y I_term should not be reset => reset_I=false. default is true
+    _reset_I = reset_I;
+
 	Vector3f curr_vel = _inav->get_velocity();
 
 	// set target position
@@ -250,7 +253,7 @@ void AC_WPNav::update_loiter()
         _pos_control.trigger_xy();
     }else{
         // run horizontal position controller
-        _pos_control.update_xy_controller(true);
+        _pos_control.update_xy_controller(true, _reset_I);
     }
 }
 
