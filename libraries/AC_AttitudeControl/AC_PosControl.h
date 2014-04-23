@@ -165,7 +165,7 @@ public:
 
     /// update_xy_controller - run the horizontal position controller - should be called at 100hz or higher
     ///     when use_desired_velocity is true the desired velocity (i.e. feed forward) is incorporated at the pos_to_rate step
-    void update_xy_controller(bool use_desired_velocity);
+    void update_xy_controller(bool use_desired_velocity, bool reset_I=true);
 
     /// get_stopping_point_xy - calculates stopping point based on current position, velocity, vehicle acceleration
     ///     distance_max allows limiting distance to stopping point
