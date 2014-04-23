@@ -514,16 +514,24 @@ static struct {
 ////////////////////////////////////////////////////////////////////////////////
 // flight mode specific
 ////////////////////////////////////////////////////////////////////////////////
-// Flag for using gps ground course instead of INS yaw.  Set false when takeoff command in process.
-static bool takeoff_complete    = true;
-// Flag to indicate if we have landed.
-//Set land_complete if we are within 2 seconds distance or within 3 meters altitude of touchdown
-static bool land_complete;
-// Altitude threshold to complete a takeoff command in autonomous modes.  Centimeters
-static int32_t takeoff_altitude_cm;
+static struct {
+    // Flag for using gps ground course instead of INS yaw.  Set false when takeoff command in process.
+    bool takeoff_complete;
 
-// Minimum pitch to hold during takeoff command execution.  Hundredths of a degree
-static int16_t takeoff_pitch_cd;
+    // Flag to indicate if we have landed.
+    // Set land_complete if we are within 2 seconds distance or within 3 meters altitude of touchdown
+    bool land_complete;
+    // Altitude threshold to complete a takeoff command in autonomous modes.  Centimeters
+    int32_t takeoff_altitude_cm;
+
+    // Minimum pitch to hold during takeoff command execution.  Hundredths of a degree
+    int16_t takeoff_pitch_cd;
+} auto_state = {
+    takeoff_complete : true,
+    land_complete : false,
+    takeoff_altitude_cm : 0,
+    takeoff_pitch_cd : 0
+};
 
 // true if we are in an auto-throttle mode, which means
 // we need to run the speed/height controller
@@ -1110,11 +1118,11 @@ static void handle_auto_mode(void)
         
         if (airspeed.use()) {
             calc_nav_pitch();
-            if (nav_pitch_cd < takeoff_pitch_cd)
-                nav_pitch_cd = takeoff_pitch_cd;
+            if (nav_pitch_cd < auto_state.takeoff_pitch_cd)
+                nav_pitch_cd = auto_state.takeoff_pitch_cd;
         } else {
-            nav_pitch_cd = ((gps.ground_speed()*100) / (float)g.airspeed_cruise_cm) * takeoff_pitch_cd;
-            nav_pitch_cd = constrain_int32(nav_pitch_cd, 500, takeoff_pitch_cd);
+            nav_pitch_cd = ((gps.ground_speed()*100) / (float)g.airspeed_cruise_cm) * auto_state.takeoff_pitch_cd;
+            nav_pitch_cd = constrain_int32(nav_pitch_cd, 500, auto_state.takeoff_pitch_cd);
         }
         
         // max throttle for takeoff
@@ -1124,7 +1132,7 @@ static void handle_auto_mode(void)
     case MAV_CMD_NAV_LAND:
         calc_nav_roll();
         
-        if (land_complete) {
+        if (auto_state.land_complete) {
             // during final approach constrain roll to the range
             // allowed for level flight
             nav_roll_cd = constrain_int32(nav_roll_cd, -g.level_roll_limit*100UL, g.level_roll_limit*100UL);
@@ -1141,7 +1149,7 @@ static void handle_auto_mode(void)
         }
         calc_throttle();
         
-        if (land_complete) {
+        if (auto_state.land_complete) {
             // we are in the final stage of a landing - force
             // zero throttle
             channel_throttle->servo_out = 0;
@@ -1152,7 +1160,7 @@ static void handle_auto_mode(void)
         // we are doing normal AUTO flight, the special cases
         // are for takeoff and landing
         steer_state.hold_course_cd = -1;
-        land_complete = false;
+        auto_state.land_complete = false;
         calc_nav_roll();
         calc_nav_pitch();
         calc_throttle();
@@ -1388,9 +1396,10 @@ static void update_alt()
     // Update the speed & height controller states
     if (auto_throttle_mode && !throttle_suppressed) {        
         if (control_mode==AUTO) {
-            if (takeoff_complete == false) {
+            if (auto_state.takeoff_complete == false) {
                 update_flight_stage(AP_SpdHgtControl::FLIGHT_TAKEOFF);
-            } else if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND && land_complete == true) {
+            } else if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND && 
+                       auto_state.land_complete == true) {
                 update_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_FINAL);
             } else if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
                 update_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_APPROACH); 
@@ -1404,7 +1413,7 @@ static void update_alt()
         SpdHgt_Controller->update_pitch_throttle(target_altitude_cm - home.alt + (int32_t(g.alt_offset)*100), 
                                                  target_airspeed_cm,
                                                  flight_stage,
-                                                 takeoff_pitch_cd,
+                                                 auto_state.takeoff_pitch_cd,
                                                  throttle_nudge,
                                                  relative_altitude());
         if (should_log(MASK_LOG_TECS)) {

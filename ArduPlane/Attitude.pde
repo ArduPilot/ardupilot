@@ -607,7 +607,9 @@ static bool suppress_throttle(void)
         return false;
     }
 
-    if (control_mode==AUTO && takeoff_complete == false && auto_takeoff_check()) {
+    if (control_mode==AUTO && 
+        auto_state.takeoff_complete == false && 
+        auto_takeoff_check()) {
         // we're in auto takeoff 
         throttle_suppressed = false;
         if (steer_state.hold_course_cd != -1) {
