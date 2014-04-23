@@ -53,10 +53,10 @@ public:
     ///
 
     /// set_loiter_target in cm from home
-    void set_loiter_target(const Vector3f& position);
+    void set_loiter_target(const Vector3f& position, bool reset_I=true);
 
     /// init_loiter_target - initialize's loiter position and feed-forward velocity from current pos and velocity
-    void init_loiter_target(bool reset_I=true);
+    void init_loiter_target();
 
     /// set_loiter_velocity - allows main code to pass the maximum velocity for loiter
     void set_loiter_velocity(float velocity_cms);
