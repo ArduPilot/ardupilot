@@ -53,6 +53,7 @@ public:
     ///
 
     /// set_loiter_target in cm from home
+    ///     caller can set reset_I to false to preserve I term since previous time loiter controller ran.  Should only be false when caller is sure that not too much time has passed to invalidate the I terms
     void set_loiter_target(const Vector3f& position, bool reset_I=true);
 
     /// init_loiter_target - initialize's loiter position and feed-forward velocity from current pos and velocity
@@ -235,7 +236,6 @@ protected:
     AP_Float    _wp_accel_cms;          // acceleration in cm/s/s during missions
 
     // loiter controller internal variables
-    bool        _reset_I;               // if true, reset x_y_I_terms of loiter controller
     uint32_t    _loiter_last_update;    // time of last update_loiter call
     uint8_t     _loiter_step;           // used to decide which portion of loiter controller to run during this iteration
     int16_t     _pilot_accel_fwd_cms; 	// pilot's desired acceleration forward (body-frame)
