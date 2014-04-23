@@ -97,10 +97,13 @@ AC_WPNav::AC_WPNav(const AP_InertialNav* inav, const AP_AHRS* ahrs, AC_PosContro
 ///
 
 /// set_loiter_target in cm from home
-void AC_WPNav::set_loiter_target(const Vector3f& position)
+void AC_WPNav::set_loiter_target(const Vector3f& position, bool reset_I)
 {
+    // flag in case of loiter x_y I_term should not be reset => reset_I=false. default is true
+    _reset_I = reset_I;
+
     // set target position
-    _pos_control.set_pos_target(_inav->get_position());
+    _pos_control.set_pos_target(position);
 
     // initialise feed forward velocity to zero
     _pos_control.set_desired_velocity(0,0);
