@@ -84,9 +84,9 @@ AC_WPNav::AC_WPNav(const AP_InertialNav* inav, const AP_AHRS* ahrs, AC_PosContro
     _track_accel(0.0),
     _track_speed(0.0),
     _track_leash_length(0.0),
+    _slow_down_dist(0.0),
     _spline_time(0.0),
     _spline_vel_scaler(0.0),
-    _spline_slow_down_dist(0.0),
     _yaw(0.0)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -335,6 +335,11 @@ void AC_WPNav::set_wp_origin_and_destination(const Vector3f& origin, const Vecto
     _track_desired = 0;             // target is at beginning of track
     _flags.reached_destination = false;
     _flags.fast_waypoint = false;   // default waypoint back to slow
+
+    // calculate slow down distance (the distance from the destination when the target point should begin to slow down)
+    _flags.slowing_down = false;    // target is not slowing down yet
+    calc_slow_down_distance(_wp_speed_cms, _wp_accel_cms);
+
     _flags.segment_type = SEGMENT_STRAIGHT;
 
     // initialise the limited speed to current speed along the track
@@ -421,6 +426,18 @@ void AC_WPNav::advance_wp_target_along_track(float dt)
         }
         // do not allow speed to be below zero or over top speed
         _limited_speed_xy_cms = constrain_float(_limited_speed_xy_cms, 0.0f, _track_speed);
+
+        // check if we should begin slowing down
+        if (!_flags.fast_waypoint) {
+            float dist_to_dest = _track_length - _track_desired;
+            if (!_flags.slowing_down && dist_to_dest <= _slow_down_dist) {
+                _flags.slowing_down = true;
+            }
+            // if target is slowing down, limit the speed
+            if (_flags.slowing_down) {
+                _limited_speed_xy_cms = min(_limited_speed_xy_cms, get_slow_down_speed(dist_to_dest, _track_accel));
+            }
+        }
 
         // if our current velocity is within the linear velocity range limit the intermediate point's velocity to be no more than the linear_velocity above or below our current velocity
         if (fabsf(speed_along_track) < linear_velocity) {
@@ -660,10 +677,7 @@ void AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
     calculate_wp_leash_length();
 
     // calculate slow down distance
-    // To-Do: this should be used for straight segments as well
-    // To-Do: should we use a combination of horizontal and vertical speeds?
-    // To-Do: update this automatically when speed or acceleration is changed
-    _spline_slow_down_dist = _wp_speed_cms * _wp_speed_cms / (2.0f*_wp_accel_cms);
+    calc_slow_down_distance(_wp_speed_cms, _wp_accel_cms);
 
     // initialise intermediate point to the origin
     _pos_control.set_pos_target(origin);
@@ -724,7 +738,7 @@ void AC_WPNav::advance_spline_target_along_track(float dt)
         float spline_dist_to_wp = (_destination - target_pos).length();
 
         // if within the stopping distance from destination, set target velocity to sqrt of distance * 2 * acceleration
-        if (!_flags.fast_waypoint && spline_dist_to_wp < _spline_slow_down_dist) {
+        if (!_flags.fast_waypoint && spline_dist_to_wp < _slow_down_dist) {
             _spline_vel_scaler = safe_sqrt(spline_dist_to_wp * 2.0f * _wp_accel_cms);
         }else if(_spline_vel_scaler < _wp_speed_cms) {
             // increase velocity using acceleration
@@ -788,4 +802,31 @@ float AC_WPNav::get_bearing_cd(const Vector3f &origin, const Vector3f &destinati
         bearing += 36000;
     }
     return bearing;
+}
+
+/// calc_slow_down_distance - calculates distance before waypoint that target point should begin to slow-down assuming it is travelling at full speed
+void AC_WPNav::calc_slow_down_distance(float speed_cms, float accel_cmss)
+{
+    // To-Do: should we use a combination of horizontal and vertical speeds?
+    // To-Do: update this automatically when speed or acceleration is changed
+    _slow_down_dist = speed_cms * speed_cms / (4.0f*accel_cmss);
+}
+
+/// get_slow_down_speed - returns target speed of target point based on distance from the destination (in cm)
+float AC_WPNav::get_slow_down_speed(float dist_from_dest_cm, float accel_cmss)
+{
+    // return immediately if distance is zero (or less)
+    if (dist_from_dest_cm <= 0) {
+        return WPNAV_WP_TRACK_SPEED_MIN;
+    }
+
+    // calculate desired speed near destination
+    float target_speed = safe_sqrt(dist_from_dest_cm * 4.0f * accel_cmss);
+
+    // ensure desired speed never becomes too low
+    if (target_speed < WPNAV_WP_TRACK_SPEED_MIN) {
+        return WPNAV_WP_TRACK_SPEED_MIN;
+    } else {
+        return target_speed;
+    }
 }
