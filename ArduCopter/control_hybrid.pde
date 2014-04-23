@@ -12,7 +12,7 @@
  # define HYBRID_BRAKE_TIME_ESTIMATE_MAX        600     // max number of cycles the brake will be applied before we switch to loiter
  # define HYBRID_BRAKE_TO_LOITER_TIMER          150     // Number of cycles to transition from brake mode to loiter mode. 
  # define HYBRID_WIND_COMP_START_TIMER          150     // Number of cycles to start wind compensation update after loiter is engaged
- # define HYBRID_LOITER_TO_PILOT_MIX_TIMER      50      // Set it from 100 to 200, the number of centiseconds loiter and manual commands are mixed to make a smooth transition.
+ # define HYBRID_CONTROLLER_TO_PILOT_MIX_TIMER  50      // Set it from 100 to 200, the number of centiseconds loiter and manual commands are mixed to make a smooth transition.
  # define HYBRID_SMOOTH_RATE_FACTOR             0.05f   // filter applied to pilot's roll/pitch input as it returns to center.  A lower number will cause the roll/pitch to return to zero more slowly if the brake_rate is also low.
  # define HYBRID_WIND_COMP_TIMER_10HZ           10      // counter value used to reduce wind compensation to 10hz
  # define LOOP_RATE_FACTOR                      1       // used to adapt hybrid params to loop_rate
@@ -21,7 +21,7 @@
  # define HYBRID_BRAKE_TIME_ESTIMATE_MAX        (600*4) // max number of cycles the brake will be applied before we switch to loiter
  # define HYBRID_BRAKE_TO_LOITER_TIMER          (150*4) // Number of cycles to transition from brake mode to loiter mode.  Must be lower than HYBRID_LOITER_STAB_TIMER
  # define HYBRID_WIND_COMP_START_TIMER          (150*4) // Number of cycles to start wind compensation update after loiter is engaged
- # define HYBRID_LOITER_TO_PILOT_MIX_TIMER      (50*4)  // Set it from 100 to 200, the number of centiseconds loiter and manual commands are mixed to make a smooth transition.
+ # define HYBRID_CONTROLLER_TO_PILOT_MIX_TIMER  (50*4)  // Set it from 100 to 200, the number of centiseconds loiter and manual commands are mixed to make a smooth transition.
  # define HYBRID_SMOOTH_RATE_FACTOR             0.0125f // filter applied to pilot's roll/pitch input as it returns to center.  A lower number will cause the roll/pitch to return to zero more slowly if the brake_rate is also low.
  # define HYBRID_WIND_COMP_TIMER_10HZ           40      // counter value used to reduce wind compensation to 10hz
  # define LOOP_RATE_FACTOR                      4       // used to adapt hybrid params to loop_rate
@@ -38,6 +38,8 @@ static int16_t hybrid_mix_controls(float mix_ratio, int16_t first_control, int16
 static void hybrid_update_brake_angle_from_velocity(int16_t &brake_angle, float velocity);
 static void hybrid_update_wind_comp_estimate();
 static void hybrid_get_wind_comp_lean_angles(int16_t &roll_angle, int16_t &pitch_angle);
+static void hybrid_roll_controller_to_pilot_override();
+static void hybrid_pitch_controller_to_pilot_override();
 
 // mission state enumeration
 enum hybrid_rp_mode {
@@ -46,7 +48,7 @@ enum hybrid_rp_mode {
     HYBRID_BRAKE_READY_TO_LOITER,       // this axis has completed braking and is ready to enter loiter mode (both modes must be this value before moving to next stage)
     HYBRID_BRAKE_TO_LOITER,             // both vehicle's axis (roll and pitch) are transitioning from braking to loiter mode (braking and loiter controls are mixed)
     HYBRID_LOITER,                      // both vehicle axis are holding position
-    HYBRID_LOITER_TO_PILOT_OVERRIDE     // pilot has input controls on this axis and this axis is transitioning to pilot override (other axis will transition to brake if no pilot input)
+    HYBRID_CONTROLLER_TO_PILOT_OVERRIDE // pilot has input controls on this axis and this axis is transitioning to pilot override (other axis will transition to brake if no pilot input)
 };
 
 static struct {
@@ -70,10 +72,10 @@ static struct {
     int16_t brake_to_loiter_timer;              // cycles to mix brake and loiter controls in HYBRID_BRAKE_TO_LOITER
 
     // loiter related variables
-    int16_t loiter_to_pilot_timer_roll;         // cycles to mix loiter and pilot controls in HYBRID_LOITER_TO_PILOT
-    int16_t loiter_to_pilot_timer_pitch;        // cycles to mix loiter and pilot controls in HYBRID_LOITER_TO_PILOT
-    int16_t loiter_final_roll;                  // final roll angle from loiter controller as we exit loiter mode (used for mixing with pilot input)
-    int16_t loiter_final_pitch;                 // final pitch angle from loiter controller as we exit loiter mode (used for mixing with pilot input)
+    int16_t controller_to_pilot_timer_roll;     // cycles to mix controller and pilot controls in HYBRID_CONTROLLER_TO_PILOT
+    int16_t controller_to_pilot_timer_pitch;        // cycles to mix controller and pilot controls in HYBRID_CONTROLLER_TO_PILOT
+    int16_t controller_final_roll;              // final roll angle from controller as we exit brake or loiter mode (used for mixing with pilot input)
+    int16_t controller_final_pitch;             // final pitch angle from controller as we exit brake or loiter mode (used for mixing with pilot input)
 
     // wind compensation related variables
     Vector2f wind_comp_ef;                      // wind compensation in earth frame, filtered lean angles from position controller
@@ -143,8 +145,8 @@ static void hybrid_run()
     float target_yaw_rate = 0;          // pilot desired yaw rate in centi-degrees/sec
     float target_climb_rate = 0;        // pilot desired climb rate in centimeters/sec
     float brake_to_loiter_mix;          // mix of brake and loiter controls.  0 = fully brake controls, 1 = fully loiter controls
-    float loiter_to_pilot_roll_mix;     // mix of loiter and pilot controls.  0 = fully loiter controls, 1 = fully pilot controls
-    float loiter_to_pilot_pitch_mix;    // mix of loiter and pilot controls.  0 = fully loiter controls, 1 = fully pilot controls
+    float controller_to_pilot_roll_mix; // mix of controller and pilot controls.  0 = fully last controller controls, 1 = fully pilot controls
+    float controller_to_pilot_pitch_mix;    // mix of controller and pilot controls.  0 = fully last controller controls, 1 = fully pilot controls
     float vel_fw, vel_right;            // vehicle's current velocity in body-frame forward and right directions
     const Vector3f& vel = inertial_nav.get_velocity();
 
@@ -195,7 +197,7 @@ static void hybrid_run()
         vel_right = -vel.x*ahrs.sin_yaw() + vel.y*ahrs.cos_yaw();
         
         // If not in LOITER, get wind_comp related to current yaw
-        if (hybrid.roll_mode != HYBRID_LOITER || hybrid.pitch_mode == HYBRID_LOITER)
+        if (hybrid.roll_mode != HYBRID_LOITER || hybrid.pitch_mode != HYBRID_LOITER)
         hybrid_get_wind_comp_lean_angles(hybrid.wind_comp_roll, hybrid.wind_comp_pitch);
 
         // Roll state machine
@@ -256,13 +258,14 @@ static void hybrid_run()
                     hybrid.roll_mode = HYBRID_BRAKE_READY_TO_LOITER;
                 }
 
-                // check for pilot input
-                if (target_roll != 0) {
-                    hybrid.roll_mode = HYBRID_PILOT_OVERRIDE;// JD-TO-DO : transition avec le mode manu à créer en utilisant LOITER TO PILOT OVERRIDE
-                }
-
                 // final lean angle is braking angle + wind compensation angle
                 hybrid.roll = hybrid.brake_roll + hybrid.wind_comp_roll;
+
+                // check for pilot input
+                if (target_roll != 0) {
+                    // init transition to pilot override
+                    hybrid_roll_controller_to_pilot_override();
+                }
                 break;
 
             case HYBRID_BRAKE_TO_LOITER:
@@ -270,24 +273,24 @@ static void hybrid_run()
                 // these modes are combined roll-pitch modes and are handled below
                 break;
 
-            case HYBRID_LOITER_TO_PILOT_OVERRIDE:
+            case HYBRID_CONTROLLER_TO_PILOT_OVERRIDE:
                 // update pilot desired roll angle using latest radio input
                 //  this filters the input so that it returns to zero no faster than the brake-rate
                 hybrid_update_pilot_lean_angle(hybrid.pilot_roll, target_roll);
 
                 // count-down loiter to pilot timer
-                if (hybrid.loiter_to_pilot_timer_roll > 0) {
-                    hybrid.loiter_to_pilot_timer_roll--;
+                if (hybrid.controller_to_pilot_timer_roll > 0) {
+                    hybrid.controller_to_pilot_timer_roll--;
                 } else {
                     // when timer runs out switch to full pilot override for next iteration
                     hybrid.roll_mode = HYBRID_PILOT_OVERRIDE;
                 }
 
-                // calculate loiter_to_pilot mix ratio
-                loiter_to_pilot_roll_mix = (float)hybrid.loiter_to_pilot_timer_roll / (float)HYBRID_LOITER_TO_PILOT_MIX_TIMER;
+                // calculate controller_to_pilot mix ratio
+                controller_to_pilot_roll_mix = (float)hybrid.controller_to_pilot_timer_roll / (float)HYBRID_CONTROLLER_TO_PILOT_MIX_TIMER;
 
                 // mix final loiter lean angle and pilot desired lean angles
-                hybrid.roll = hybrid_mix_controls(loiter_to_pilot_roll_mix, hybrid.loiter_final_roll, hybrid.pilot_roll + hybrid.wind_comp_roll);
+                hybrid.roll = hybrid_mix_controls(controller_to_pilot_roll_mix, hybrid.controller_final_roll, hybrid.pilot_roll + hybrid.wind_comp_roll);
                 break;
         }
 
@@ -350,13 +353,14 @@ static void hybrid_run()
                     hybrid.pitch_mode = HYBRID_BRAKE_READY_TO_LOITER;
                 }
 
-                // check for pilot input
-                if (target_pitch != 0) {
-                    hybrid.pitch_mode = HYBRID_PILOT_OVERRIDE;// JD-TO-DO : transition avec le mode manu à créer en utilisant LOITER TO PILOT OVERRIDE
-                }
-
                 // final lean angle is braking angle + wind compensation angle
                 hybrid.pitch = hybrid.brake_pitch + hybrid.wind_comp_pitch;
+
+                // check for pilot input
+                if (target_pitch != 0) {
+                    // init transition to pilot override
+                    hybrid_pitch_controller_to_pilot_override();
+                }
                 break;
 
             case HYBRID_BRAKE_TO_LOITER:
@@ -364,24 +368,24 @@ static void hybrid_run()
                 // these modes are combined pitch-pitch modes and are handled below
                 break;
 
-            case HYBRID_LOITER_TO_PILOT_OVERRIDE:
+            case HYBRID_CONTROLLER_TO_PILOT_OVERRIDE:
                 // update pilot desired pitch angle using latest radio input
                 //  this filters the input so that it returns to zero no faster than the brake-rate
                 hybrid_update_pilot_lean_angle(hybrid.pilot_pitch, target_pitch);
 
                 // count-down loiter to pilot timer
-                if (hybrid.loiter_to_pilot_timer_pitch > 0) {
-                    hybrid.loiter_to_pilot_timer_pitch--;
+                if (hybrid.controller_to_pilot_timer_pitch > 0) {
+                    hybrid.controller_to_pilot_timer_pitch--;
                 } else {
                     // when timer runs out switch to full pilot override for next iteration
                     hybrid.pitch_mode = HYBRID_PILOT_OVERRIDE;
                 }
 
-                // calculate loiter_to_pilot mix ratio
-                loiter_to_pilot_pitch_mix = (float)hybrid.loiter_to_pilot_timer_pitch / (float)HYBRID_LOITER_TO_PILOT_MIX_TIMER;
+                // calculate controller_to_pilot mix ratio
+                controller_to_pilot_pitch_mix = (float)hybrid.controller_to_pilot_timer_pitch / (float)HYBRID_CONTROLLER_TO_PILOT_MIX_TIMER;
 
                 // mix final loiter lean angle and pilot desired lean angles
-                hybrid.pitch = hybrid_mix_controls(loiter_to_pilot_pitch_mix, hybrid.loiter_final_pitch, hybrid.pilot_pitch + hybrid.wind_comp_pitch);
+                hybrid.pitch = hybrid_mix_controls(controller_to_pilot_pitch_mix, hybrid.controller_final_pitch, hybrid.pilot_pitch + hybrid.wind_comp_pitch);
                 break;
         }
 
@@ -436,13 +440,15 @@ static void hybrid_run()
                     if (target_roll != 0 || target_pitch != 0) {
                         // if roll input switch to pilot override for roll
                         if (target_roll != 0) {
-                            hybrid.roll_mode = HYBRID_PILOT_OVERRIDE; // JD-TO-DO : transition avec le mode manu à créer en utilisant LOITER TO PILOT OVERRIDE
+                            // init transition to pilot override
+                            hybrid_roll_controller_to_pilot_override();
                             // switch pitch-mode to brake (but ready to go back to loiter anytime)
                             hybrid.pitch_mode = HYBRID_BRAKE_READY_TO_LOITER;   // JD : no need to reset hybrid.brake_pitch here as wind comp has not been updated since last brake_pitch computation
                         }
                         // if pitch input switch to pilot override for pitch
                         if (target_pitch != 0) {
-                            hybrid.pitch_mode = HYBRID_PILOT_OVERRIDE; // JD-TO-DO : transition avec le mode manu à créer en utilisant LOITER TO PILOT OVERRIDE
+                            // init transition to pilot override
+                            hybrid_pitch_controller_to_pilot_override();
                             if (target_roll == 0) {
                                 // switch roll-mode to brake (but ready to go back to loiter anytime)
                                 hybrid.roll_mode = HYBRID_BRAKE_READY_TO_LOITER; // JD : no need to reset hybrid.brake_roll here as wind comp has not been updated since last brake_roll computation
@@ -466,29 +472,22 @@ static void hybrid_run()
                     if (target_roll != 0 || target_pitch != 0) {
                         // if roll input switch to pilot override for roll
                         if (target_roll != 0) {
-                            hybrid.roll_mode = HYBRID_LOITER_TO_PILOT_OVERRIDE;
-                            hybrid.loiter_to_pilot_timer_roll = HYBRID_LOITER_TO_PILOT_MIX_TIMER;
-                            // initialise pilot_roll
-                            hybrid.pilot_roll = target_roll;
+                            // init transition to pilot override
+                            hybrid_roll_controller_to_pilot_override();
                             // switch pitch-mode to brake (but ready to go back to loiter anytime)
                             hybrid.pitch_mode = HYBRID_BRAKE_READY_TO_LOITER;
                             hybrid.brake_pitch = 0; // JD : reset brake_pitch because wind_comp is now different and should give the compensation of the whole previous loiter angle
                         }
                         // if pitch input switch to pilot override for pitch
                         if (target_pitch != 0) {
-                            hybrid.pitch_mode = HYBRID_LOITER_TO_PILOT_OVERRIDE;
-                            hybrid.loiter_to_pilot_timer_pitch = HYBRID_LOITER_TO_PILOT_MIX_TIMER;
-                            // initialise pilot_pitch
-                            hybrid.pilot_pitch = target_pitch;
+                            // init transition to pilot override
+                            hybrid_pitch_controller_to_pilot_override();
                             // if roll not overriden switch roll-mode to brake (but be ready to go back to loiter any time)
                             if (target_roll == 0) {
                                 hybrid.roll_mode = HYBRID_BRAKE_READY_TO_LOITER;
                                 hybrid.brake_roll = 0;
                             }
                         }
-                        // store final loiter outputs for mixing with pilot input
-                        hybrid.loiter_final_roll = wp_nav.get_roll();
-                        hybrid.loiter_final_pitch = wp_nav.get_pitch();
                     }
                     break;
 
@@ -631,4 +630,26 @@ static void hybrid_get_wind_comp_lean_angles(int16_t &roll_angle, int16_t &pitch
     // convert earth frame desired accelerations to body frame roll and pitch lean angles
     roll_angle = (float)fast_atan((-hybrid.wind_comp_ef.x*ahrs.sin_yaw() + hybrid.wind_comp_ef.y*ahrs.cos_yaw())/981)*(18000/M_PI);
     pitch_angle = (float)fast_atan(-(hybrid.wind_comp_ef.x*ahrs.cos_yaw() + hybrid.wind_comp_ef.y*ahrs.sin_yaw())/981)*(18000/M_PI);
+}
+
+// hybrid_roll_controller_to_pilot_override - initialises transition from a controller submode (brake or loiter) to a pilot override on roll axis
+static void hybrid_roll_controller_to_pilot_override()
+{
+    hybrid.roll_mode = HYBRID_CONTROLLER_TO_PILOT_OVERRIDE;
+    hybrid.controller_to_pilot_timer_roll = HYBRID_CONTROLLER_TO_PILOT_MIX_TIMER;
+    // initialise pilot_roll to 0, wind_comp will be updated to compensate and hybrid_update_pilot_lean_angle function shall not smooth this transition at next iteration. so 0 is the right value
+    hybrid.pilot_roll = 0;
+    // store final controller output for mixing with pilot input
+    hybrid.controller_final_roll = hybrid.roll;
+}
+
+// hybrid_pitch_controller_to_pilot_override - initialises transition from a controller submode (brake or loiter) to a pilot override on roll axis
+static void hybrid_pitch_controller_to_pilot_override()
+{
+    hybrid.pitch_mode = HYBRID_CONTROLLER_TO_PILOT_OVERRIDE;
+    hybrid.controller_to_pilot_timer_pitch = HYBRID_CONTROLLER_TO_PILOT_MIX_TIMER;
+    // initialise pilot_pitch to 0, wind_comp will be updated to compensate and hybrid_update_pilot_lean_angle function shall not smooth this transition at next iteration. so 0 is the right value
+    hybrid.pilot_pitch = 0;
+    // store final loiter outputs for mixing with pilot input
+    hybrid.controller_final_pitch = hybrid.pitch;
 }
