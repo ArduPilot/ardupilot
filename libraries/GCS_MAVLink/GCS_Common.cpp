@@ -611,6 +611,7 @@ GCS_MAVLINK::send_text_P(gcs_severity severity, const prog_char_t *str)
 {
     mavlink_statustext_t m;
     uint8_t i;
+    memset(m.text, 0, sizeof(m.text));
     for (i=0; i<sizeof(m.text); i++) {
         m.text[i] = pgm_read_byte((const prog_char *)(str++));
         if (m.text[i] == '\0') {
