@@ -87,6 +87,10 @@ class development::px4 {
        ensure                => 'link',
        target                => '/usr/bin/ccache',
        require               => Package [ 'ccache' ]
+    } ->
+    file_line { 'ccache-path':
+        line  => 'export PATH=/usr/lib/ccache:$PATH',
+        path  => '/home/vagrant/.profile'
     }
 
 }
