@@ -271,6 +271,8 @@ void AC_WPNav::set_horizontal_velocity(float velocity_cms)
     if (_wp_speed_cms >= WPNAV_WP_SPEED_MIN) {
         _wp_speed_cms = velocity_cms;
         _pos_control.set_speed_xy(_wp_speed_cms);
+        // flag that wp leash must be recalculated
+        _flags.recalc_wp_leash = true;
     }
 }
 
@@ -335,11 +337,7 @@ void AC_WPNav::set_wp_origin_and_destination(const Vector3f& origin, const Vecto
     _track_desired = 0;             // target is at beginning of track
     _flags.reached_destination = false;
     _flags.fast_waypoint = false;   // default waypoint back to slow
-
-    // calculate slow down distance (the distance from the destination when the target point should begin to slow down)
     _flags.slowing_down = false;    // target is not slowing down yet
-    calc_slow_down_distance(_wp_speed_cms, _wp_accel_cms);
-
     _flags.segment_type = SEGMENT_STRAIGHT;
 
     // initialise the limited speed to current speed along the track
@@ -511,6 +509,19 @@ void AC_WPNav::update_wpnav()
     }else{
         // run horizontal position controller
         _pos_control.update_xy_controller(false);
+
+        // check if leash lengths need updating
+        check_wp_leash_length();
+    }
+}
+
+// check_wp_leash_length - check if waypoint leash lengths need to be recalculated
+//  should be called after _pos_control.update_xy_controller which may have changed the position controller leash lengths
+void AC_WPNav::check_wp_leash_length()
+{
+    // exit immediately if recalc is not required
+    if (_flags.recalc_wp_leash) {
+        calculate_wp_leash_length();
     }
 }
 
@@ -549,6 +560,12 @@ void AC_WPNav::calculate_wp_leash_length()
         _track_speed = min(speed_z/pos_delta_unit_z, _wp_speed_cms/pos_delta_unit_xy);
         _track_leash_length = min(leash_z/pos_delta_unit_z, _pos_control.get_leash_xy()/pos_delta_unit_xy);
     }
+
+    // calculate slow down distance (the distance from the destination when the target point should begin to slow down)
+    calc_slow_down_distance(_track_speed, _track_accel);
+
+    // set recalc leash flag to false
+    _flags.recalc_wp_leash = false;
 }
 
 ///
@@ -672,9 +689,6 @@ void AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
     _pos_control.set_speed_z(-_wp_speed_down_cms, _wp_speed_up_cms);
     _pos_control.calc_leash_length_xy();
     _pos_control.calc_leash_length_z();
-
-    // calculate leash lengths
-    calculate_wp_leash_length();
 
     // calculate slow down distance
     calc_slow_down_distance(_wp_speed_cms, _wp_accel_cms);
