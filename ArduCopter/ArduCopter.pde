@@ -27,42 +27,45 @@
  *
  *  Special Thanks to contributors (in alphabetical order by first name):
  *
- *  Adam M Rivera		:Auto Compass Declination
- *  Amilcar Lucas		:Camera mount library
- *  Andrew Tridgell		:General development, Mavlink Support
- *  Angel Fernandez		:Alpha testing
+ *  Adam M Rivera       :Auto Compass Declination
+ *  Amilcar Lucas       :Camera mount library
+ *  Andrew Tridgell     :General development, Mavlink Support
+ *  Angel Fernandez     :Alpha testing
  *  AndreasAntonopoulous:GeoFence
  *  Arthur Benemann     :DroidPlanner GCS
  *  Benjamin Pelletier  :Libraries
  *  Bill King           :Single Copter
- *  Christof Schmid		:Alpha testing
+ *  Christof Schmid     :Alpha testing
  *  Craig Elder         :Release Management, Support
  *  Dani Saez           :V Octo Support
- *  Doug Weibel			:DCM, Libraries, Control law advice
- *  Gregory Fletcher	:Camera mount orientation math
- *  Guntars				:Arming safety suggestion
- *  HappyKillmore		:Mavlink GCS
+ *  Doug Weibel	        :DCM, Libraries, Control law advice
+ *  Emile Castelnuovo   :VRBrain port, bug fixes
+ *  Gregory Fletcher    :Camera mount orientation math
+ *  Guntars             :Arming safety suggestion
+ *  HappyKillmore       :Mavlink GCS
  *  Hein Hollander      :Octo Support, Heli Testing
  *  Igor van Airde      :Control Law optimization
- *  Jack Dunkle			:Alpha testing
- *  James Goppert		:Mavlink Support
- *  Jani Hiriven		:Testing feedback
+ *  Jack Dunkle         :Alpha testing
+ *  James Goppert       :Mavlink Support
+ *  Jani Hiriven        :Testing feedback
  *  Jean-Louis Naudin   :Auto Landing
  *  John Arne Birkeland	:PPM Encoder
- *  Jose Julio			:Stabilization Control laws, MPU6k driver
+ *  Jose Julio          :Stabilization Control laws, MPU6k driver
+ *  Julien Dubois       :Hybrid flight mode
  *  Julian Oes          :Pixhawk
  *  Jonathan Challinger :Inertial Navigation, CompassMot, Spin-When-Armed
  *  Kevin Hester        :Andropilot GCS
- *  Max Levine			:Tri Support, Graphics
- *  Leonard Hall 		:Flight Dynamics, Throttle, Loiter and Navigation Controllers
- *  Marco Robustini		:Lead tester
- *  Michael Oborne		:Mission Planner GCS
- *  Mike Smith			:Pixhawk driver, coding support
+ *  Max Levine          :Tri Support, Graphics
+ *  Leonard Hall        :Flight Dynamics, Throttle, Loiter and Navigation Controllers
+ *  Marco Robustini     :Lead tester
+ *  Michael Oborne      :Mission Planner GCS
+ *  Mike Smith          :Pixhawk driver, coding support
  *  Olivier Adler       :PPM Encoder, piezo buzzer
- *  Pat Hickey          :Hardware Abstraaction Layer (HAL)
- *  Robert Lefebvre		:Heli Support, Copter LEDs
+ *  Pat Hickey          :Hardware Abstraction Layer (HAL)
+ *  Robert Lefebvre     :Heli Support, Copter LEDs
  *  Roberto Navoni      :Library testing, Porting to VRBrain
  *  Sandro Benigno      :Camera support, MinimOSD
+ *  Sandro Tognana      :Hybrid flight mode
  *  ..and many more.
  *
  *  Code commit statistics can be found here: https://github.com/diydrones/ardupilot/graphs/contributors
