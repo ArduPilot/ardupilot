@@ -225,8 +225,17 @@ static void rtl_loiterathome_run()
     }
 
     // check if we've completed this stage of RTL
-    // To-Do: add extra check that we've reached the target yaw
-    rtl_state_complete = ((millis() - rtl_loiter_start_time) > (uint32_t)g.rtl_loiter_time.get());
+    if ((millis() - rtl_loiter_start_time) >= (uint32_t)g.rtl_loiter_time.get()) {
+        if (auto_yaw_mode == AUTO_YAW_RESETTOARMEDYAW) {
+            // check if heading is within 2 degrees of heading when vehicle was armed
+            if (labs(wrap_180_cd(ahrs.yaw_sensor-initial_armed_bearing)) <= 200) {
+                rtl_state_complete = true;
+            }
+        } else {
+            // we have loitered long enough
+            rtl_state_complete = true;
+        }
+    }
 }
 
 // rtl_loiterathome_start - initialise controllers to loiter over home
