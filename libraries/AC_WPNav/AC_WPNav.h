@@ -131,6 +131,10 @@ public:
     /// update_wpnav - run the wp controller - should be called at 100hz or higher
     void update_wpnav();
 
+    // check_wp_leash_length - check recalc_wp_leash flag and calls calculate_wp_leash_length() if necessary
+    //  should be called after _pos_control.update_xy_controller which may have changed the position controller leash lengths
+    void check_wp_leash_length();
+
     /// calculate_wp_leash_length - calculates track speed, acceleration and leash lengths for waypoint controller
     void calculate_wp_leash_length();
 
@@ -202,6 +206,7 @@ protected:
         uint8_t reached_destination     : 1;    // true if we have reached the destination
         uint8_t fast_waypoint           : 1;    // true if we should ignore the waypoint radius and consider the waypoint complete once the intermediate target has reached the waypoint
         uint8_t slowing_down            : 1;    // true when target point is slowing down before reaching the destination
+        uint8_t recalc_wp_leash         : 1;    // true if we need to recalculate the leash lengths because of changes in speed or acceleration
         SegmentType segment_type        : 1;    // active segment is either straight or spline
     } _flags;
 
