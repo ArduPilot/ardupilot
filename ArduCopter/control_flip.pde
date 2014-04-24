@@ -235,6 +235,8 @@ static void flip_run()
         Log_Write_Error(ERROR_SUBSYSTEM_FLIP,ERROR_CODE_FLIP_ABANDONED);
         break;
     }
+    
+    throttle_out = max(throttle_out, g.throttle_min);
 
     // output pilot's throttle without angle boost
     attitude_control.set_throttle_out(throttle_out, false);
