@@ -42,7 +42,7 @@ static void rtl_run()
             // do nothing
             break;
         case Land:
-            // do nothing
+            // do nothing - rtl_land_run will take care of disarming motors
             break;
         }
     }
@@ -278,6 +278,18 @@ static void rtl_land_run()
 
     // check if we've completed this stage of RTL
     rtl_state_complete = ap.land_complete;
+
+#if LAND_REQUIRE_MIN_THROTTLE_TO_DISARM == ENABLED
+    // disarm when the landing detector says we've landed and throttle is at minimum
+    if (ap.land_complete && (g.rc_3.control_in == 0 || failsafe.radio)) {
+        init_disarm_motors();
+    }
+#else
+    // disarm when the landing detector says we've landed
+    if (ap.land_complete) {
+        init_disarm_motors();
+    }
+#endif
 }
 
 // get_RTL_alt - return altitude which vehicle should return home at
