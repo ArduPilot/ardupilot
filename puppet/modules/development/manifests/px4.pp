@@ -77,6 +77,16 @@ class development::px4 {
     file_line { 'gcc-arm-path':
         line  => 'export PATH=/home/vagrant/gcc-arm-none-eabi-4_8-2013q4/bin:$PATH',
         path  => '/home/vagrant/.profile'
+    } ->
+    file { '/usr/lib/ccache/arm-none-eabi-g++':
+       ensure                => 'link',
+       target                => '/usr/bin/ccache',
+       require               => Package [ 'ccache' ]
+    } ->
+    file { '/usr/lib/ccache/arm-none-eabi-gcc':
+       ensure                => 'link',
+       target                => '/usr/bin/ccache',
+       require               => Package [ 'ccache' ]
     }
 
 }

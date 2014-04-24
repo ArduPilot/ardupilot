@@ -46,4 +46,16 @@ class development::base {
         onlyif          =>   'test `groups | grep -c "dialout"` -eq 0'
     }
     
+    # Prevent conflicts with the firmware flash
+    package { 'modemmanager':
+        ensure          =>  'purged',
+        provider        =>  'apt',
+    }
+    
+    package { 'eclipse':
+        ensure          =>  'installed',
+        provider        =>  'apt',
+    }
+    
+
 }
