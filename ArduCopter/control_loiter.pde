@@ -45,7 +45,6 @@ static void loiter_run()
         update_simple_mode();
 
         // process pilot's roll and pitch input
-        // To-Do: do we need to clear out feed forward if this is not called?
         wp_nav.set_pilot_desired_acceleration(g.rc_1.control_in, g.rc_2.control_in);
 
         // get pilot's desired yaw rate
@@ -61,6 +60,9 @@ static void loiter_run()
             // clear i term when we're taking off
             set_throttle_takeoff();
         }
+    } else {
+        // clear out pilot desired acceleration in case radio failsafe event occurs and we do not switch to RTL for some reason
+        wp_nav.clear_pilot_desired_acceleration();
     }
 
     // when landed reset targets and output zero throttle
