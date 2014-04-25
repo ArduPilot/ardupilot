@@ -51,11 +51,11 @@ static void rtl_run()
     switch (rtl_state) {
 
     case InitialClimb:
-        rtl_climb_return_descent_run();
+        rtl_climb_return_run();
         break;
 
     case ReturnHome:
-        rtl_climb_return_descent_run();
+        rtl_climb_return_run();
         break;
 
     case LoiterAtHome:
@@ -63,7 +63,7 @@ static void rtl_run()
         break;
 
     case FinalDescent:
-        rtl_climb_return_descent_run();
+        rtl_descent_run();
         break;
 
     case Land:
@@ -115,23 +115,9 @@ static void rtl_return_start()
     set_auto_yaw_mode(get_default_auto_yaw_mode(true));
 }
 
-// rtl_descent_start - initialise descent to final alt
-static void rtl_descent_start()
-{
-    rtl_state = FinalDescent;
-    rtl_state_complete = false;
-
-    // set target to above home
-    Vector3f destination = Vector3f(0,0,g.rtl_alt_final);
-    wp_nav.set_wp_destination(destination);
-
-    // initialise yaw to point home (maybe)
-    set_auto_yaw_mode(AUTO_YAW_HOLD);
-}
-
-// rtl_climb_return_descent_run - implements the initial climb, return home and descent portions of RTL which all rely on the wp controller
+// rtl_climb_return_run - implements the initial climb, return home and descent portions of RTL which all rely on the wp controller
 //      called by rtl_run at 100hz or more
-static void rtl_climb_return_descent_run()
+static void rtl_climb_return_run()
 {
     // if not auto armed set throttle to zero and exit immediately
     if(!ap.auto_armed) {
@@ -238,6 +224,63 @@ static void rtl_loiterathome_run()
     }
 }
 
+// rtl_descent_start - initialise descent to final alt
+static void rtl_descent_start()
+{
+    rtl_state = FinalDescent;
+    rtl_state_complete = false;
+
+    // Set wp navigation target to above home
+    wp_nav.set_loiter_target(Vector3f(0,0,0));
+
+    // initialise altitude target to stopping point
+    pos_control.set_target_to_stopping_point_z();
+
+    // initialise yaw
+    set_auto_yaw_mode(AUTO_YAW_HOLD);
+}
+
+// rtl_descent_run - implements the final descent to the RTL_ALT
+//      called by rtl_run at 100hz or more
+static void rtl_descent_run()
+{
+    // if not auto armed set throttle to zero and exit immediately
+    if(!ap.auto_armed || !inertial_nav.position_ok()) {
+        attitude_control.init_targets();
+        attitude_control.set_throttle_out(0, false);
+        // set target to current position
+        wp_nav.init_loiter_target();
+        return;
+    }
+
+    // process pilot's input
+    float target_yaw_rate = 0;
+    if (!failsafe.radio) {
+        // apply SIMPLE mode transform to pilot inputs
+        update_simple_mode();
+
+        // process pilot's roll and pitch input
+        // To-Do: do we need to clear out feed forward if this is not called?
+        wp_nav.set_pilot_desired_acceleration(g.rc_1.control_in, g.rc_2.control_in);
+
+        // get pilot's desired yaw rate
+        target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
+    }
+
+    // run loiter controller
+    wp_nav.update_loiter();
+
+    // call z-axis position controller
+    pos_control.set_alt_target_with_slew(g.rtl_alt_final, G_Dt);
+    pos_control.update_z_controller();
+
+    // roll & pitch from waypoint controller, yaw rate from pilot
+    attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
+
+    // check if we've reached within 20cm of final altitude
+    rtl_state_complete = fabs(g.rtl_alt_final - inertial_nav.get_altitude()) < 20.0f;
+}
+
 // rtl_loiterathome_start - initialise controllers to loiter over home
 static void rtl_land_start()
 {
@@ -259,7 +302,7 @@ static void rtl_land_start()
 static void rtl_land_run()
 {
     // if not auto armed set throttle to zero and exit immediately
-    if(!ap.auto_armed) {
+    if(!ap.auto_armed || !inertial_nav.position_ok()) {
         attitude_control.init_targets();
         attitude_control.set_throttle_out(0, false);
         // set target to current position
@@ -270,6 +313,13 @@ static void rtl_land_run()
     // process pilot's yaw input
     float target_yaw_rate = 0;
     if (!failsafe.radio) {
+        // apply SIMPLE mode transform to pilot inputs
+        update_simple_mode();
+
+        // process pilot's roll and pitch input
+        // To-Do: do we need to clear out feed forward if this is not called?
+        wp_nav.set_pilot_desired_acceleration(g.rc_1.control_in, g.rc_2.control_in);
+
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
     }
