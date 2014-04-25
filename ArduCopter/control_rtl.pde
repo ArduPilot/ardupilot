@@ -32,7 +32,7 @@ static void rtl_run()
             rtl_loiterathome_start();
             break;
         case LoiterAtHome:
-            if (g.rtl_alt_final > 0) {
+            if (g.rtl_alt_final > 0 && !failsafe.radio) {
                 rtl_descent_start();
             }else{
                 rtl_land_start();
@@ -260,11 +260,13 @@ static void rtl_descent_run()
         update_simple_mode();
 
         // process pilot's roll and pitch input
-        // To-Do: do we need to clear out feed forward if this is not called?
         wp_nav.set_pilot_desired_acceleration(g.rc_1.control_in, g.rc_2.control_in);
 
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
+    } else {
+        // clear out pilot desired acceleration in case radio failsafe event occurs while descending
+        wp_nav.clear_pilot_desired_acceleration();
     }
 
     // run loiter controller
@@ -317,11 +319,13 @@ static void rtl_land_run()
         update_simple_mode();
 
         // process pilot's roll and pitch input
-        // To-Do: do we need to clear out feed forward if this is not called?
         wp_nav.set_pilot_desired_acceleration(g.rc_1.control_in, g.rc_2.control_in);
 
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
+    } else {
+        // clear out pilot desired acceleration in case radio failsafe event occurs while landing
+        wp_nav.clear_pilot_desired_acceleration();
     }
 
     // run loiter controller
