@@ -172,3 +172,11 @@ static bool update_land_detector()
     // return current state of landing
     return ap.land_complete;
 }
+
+// land_do_not_use_GPS - forces land-mode to not use the GPS but instead rely on pilot input for roll and pitch
+//  called during GPS failsafe to ensure that if we were already in LAND mode that we do not use the GPS
+//  has no effect if we are not already in LAND mode
+static bool land_do_not_use_GPS()
+{
+    land_with_gps = false;
+}
