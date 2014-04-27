@@ -4,8 +4,6 @@
 
 #if AC_FENCE == ENABLED
 
-uint8_t lim_state = 0, lim_old_state = 0;
-
 // fence_check - ask fence library to check for breaches and initiate the response
 // called at 1hz
 void fence_check()
