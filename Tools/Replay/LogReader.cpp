@@ -325,14 +325,17 @@ bool LogReader::update(uint8_t &type)
             vehicle = VEHICLE_PLANE;
             ::printf("Detected Plane\n");
             ahrs.set_vehicle_class(AHRS_VEHICLE_FIXED_WING);
+            ahrs.set_fly_forward(true);
         } else if (strncmp(msg.msg, "ArduCopter", strlen("ArduCopter")) == 0) {
             vehicle = VEHICLE_COPTER;
             ::printf("Detected Copter\n");
             ahrs.set_vehicle_class(AHRS_VEHICLE_COPTER);
+            ahrs.set_fly_forward(false);
         } else if (strncmp(msg.msg, "ArduRover", strlen("ArduRover")) == 0) {
             vehicle = VEHICLE_ROVER;
             ::printf("Detected Rover\n");
             ahrs.set_vehicle_class(AHRS_VEHICLE_GROUND);
+            ahrs.set_fly_forward(true);
         }
         break;
     }
