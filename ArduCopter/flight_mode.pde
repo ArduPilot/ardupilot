@@ -104,6 +104,13 @@ static bool set_mode(uint8_t mode)
         exit_mode(control_mode, mode);
         control_mode = mode;
         Log_Write_Mode(control_mode);
+
+#if AC_FENCE == ENABLED
+        // pilot requested flight mode change during a fence breach indicates pilot is attempting to manually recover
+        // this flight mode change could be automatic (i.e. fence, battery, GPS or GCS failsafe)
+        // but it should be harmless to disable the fence temporarily in these situations as well
+        fence.manual_recovery_start();
+#endif
     }else{
         // Log error that we failed to enter desired flight mode
         Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
