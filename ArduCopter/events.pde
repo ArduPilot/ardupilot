@@ -215,6 +215,11 @@ static void failsafe_gps_check()
             set_mode(LAND);
         }
     }
+
+    // if flight mode is LAND ensure it's not the GPS controlled LAND
+    if (control_mode == LAND) {
+        land_do_not_use_GPS();
+    }
 }
 
 // failsafe_gps_off_event - actions to take when GPS contact is restored
