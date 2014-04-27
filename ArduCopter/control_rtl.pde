@@ -359,7 +359,16 @@ static void rtl_land_run()
 //      altitude is in cm above home
 static float get_RTL_alt()
 {
-    // return maximum of current altitude and rtl altitude
-    return max(current_loc.alt, g.rtl_altitude);
+    // maximum of current altitude and rtl altitude
+    float rtl_alt = max(current_loc.alt, g.rtl_altitude);
+
+#if AC_FENCE == ENABLED
+    // ensure not above fence altitude if alt fence is enabled
+    if ((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
+        rtl_alt = min(rtl_alt, fence.get_safe_alt()*100.0f);
+    }
+#endif
+
+    return rtl_alt;
 }
 
