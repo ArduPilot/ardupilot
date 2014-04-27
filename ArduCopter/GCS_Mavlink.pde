@@ -1316,6 +1316,26 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
             break;
 
+        case MAV_CMD_DO_FENCE_ENABLE:
+#if AC_FENCE == ENABLED
+            result = MAV_RESULT_ACCEPTED;
+            switch ((uint16_t)packet.param1) {
+                case 0:
+                    fence.enable(false);
+                    break;
+                case 1:
+                    fence.enable(true);
+                    break;
+                default:
+                    result = MAV_RESULT_FAILED;
+                    break;
+            }
+#else
+            // if fence code is not included return failure
+            result = MAV_RESULT_FAILED;
+#endif
+            break;
+
         default:
             result = MAV_RESULT_UNSUPPORTED;
             break;
