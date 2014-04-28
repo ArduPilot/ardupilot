@@ -108,8 +108,10 @@ public:
     // output_min - sends minimum values out to the motors
     virtual void        output_min() = 0;
 
-    // output_test - spin each motor for a moment to allow the user to confirm the motor order and spin direction
-    virtual void        output_test() = 0;
+    // output_test - spin a motor at the pwm value specified
+    //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
+    //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
+    virtual void        output_test(uint8_t motor_seq, int16_t pwm) = 0;
 
     // throttle_pass_through - passes pilot's throttle input directly to all motors - dangerous but used for initialising ESCs
     virtual void        throttle_pass_through();
