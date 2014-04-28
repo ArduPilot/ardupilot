@@ -556,11 +556,16 @@ static void init_disarm_motors()
 static void
 set_servos_4()
 {
+    // check if we are performing the motor test
+    if (ap.motor_test) {
+        motor_test_output();
+    } else {
 #if FRAME_CONFIG == TRI_FRAME
-    // To-Do: implement improved stability patch for tri so that we do not need to limit throttle input to motors
-    g.rc_3.servo_out = min(g.rc_3.servo_out, 800);
+        // To-Do: implement improved stability patch for tri so that we do not need to limit throttle input to motors
+        g.rc_3.servo_out = min(g.rc_3.servo_out, 800);
 #endif
-    motors.output();
+        motors.output();
+    }
 }
 
 // servo_write - writes to a servo after checking the channel is not used for a motor

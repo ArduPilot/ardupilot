@@ -402,8 +402,9 @@ static union {
         uint8_t usb_connected       : 1; // 13      // true if APM is powered from USB connection
         uint8_t rc_receiver_present : 1; // 14  // true if we have an rc receiver present (i.e. if we've ever received an update
         uint8_t compass_mot         : 1; // 15  // true if we are currently performing compassmot calibration
+        uint8_t motor_test          : 1; // 16  // true if we are currently performing the motors test
     };
-    uint16_t value;
+    uint32_t value;
 } ap;
 
 ////////////////////////////////////////////////////////////////////////////////
