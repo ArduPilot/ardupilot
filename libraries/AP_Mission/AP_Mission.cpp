@@ -8,7 +8,7 @@
 const AP_Param::GroupInfo AP_Mission::var_info[] PROGMEM = {
 
     // @Param: TOTAL
-    // @DisplayName: Total number of commands in the mission in eeprom
+    // @DisplayName: Total mission commands
     // @Description: The number of mission mission items that has been loaded by the ground station. Do not change this manually.
     // @Range: 0 32766
     // @Increment: 1
@@ -16,8 +16,8 @@ const AP_Param::GroupInfo AP_Mission::var_info[] PROGMEM = {
     AP_GROUPINFO("TOTAL",  0, AP_Mission, _cmd_total, 0),
 
     // @Param: AUTORESET
-    // @DisplayName: Controls whether to reset mission when switching to auto
-    // @Description: When set to 0 it will continue a previous auto mission, when set to 1 it will restart from the first waypoint
+    // @DisplayName: Reset mission on AUTO
+    // @Description: When set to 0 the mission will continue a previous AUTO mission when switching to AUTO mode. When set to 1 the mission will restart from the first waypoint each time AUTO mode is started.
     // @Values: 0:Continue Mission, 1:Reset Mission
     AP_GROUPINFO("AUTORESET",  1, AP_Mission, _auto_reset, 0),
 
