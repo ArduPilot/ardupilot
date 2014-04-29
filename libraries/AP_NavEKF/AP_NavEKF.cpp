@@ -138,7 +138,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     AP_GROUPINFO("ALT_NOISE",    3, NavEKF, _baroAltNoise, ALT_NOISE_DEFAULT),
 
     // @Param: MAG_NOISE
-    // @DisplayName: Magntometer measurement noise (Gauss)
+    // @DisplayName: Magnetometer measurement noise (Gauss)
     // @Description: This is the RMS value of noise in magnetometer measurements. Increasing it reduces the weighting on these measurements.
     // @Range: 0.01 - 0.5
     // @Increment: 0.01
@@ -154,7 +154,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     AP_GROUPINFO("EAS_NOISE",    5, NavEKF, _easNoise, 1.4f),
 
     // @Param: WIND_PNOISE
-    // @DisplayName: Wind velocity states process noise (m/s^2)
+    // @DisplayName: Wind velocity process noise (m/s^2)
     // @Description: This noise controls the growth of wind state error estimates. Increasing it makes wind estimation faster and noisier.
     // @Range: 0.01 - 1.0
     // @Increment: 0.1
@@ -162,7 +162,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     AP_GROUPINFO("WIND_PNOISE",    6, NavEKF, _windVelProcessNoise, 0.1f),
 
     // @Param: WIND_PSCALE
-    // @DisplayName: Scale factor applied to wind states process noise from height rate
+    // @DisplayName: Height rate to wind procss noise scaler
     // @Description: Increasing this parameter increases how rapidly the wind states adapt when changing altitude, but does make wind speed estimation noiser.
     // @Range: 0.0 - 1.0
     // @Increment: 0.1
@@ -186,28 +186,28 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     AP_GROUPINFO("ACC_PNOISE",    9, NavEKF, _accNoise, ACC_PNOISE_DEFAULT),
 
     // @Param: GBIAS_PNOISE
-    // @DisplayName: Rate gyro bias state process noise (rad/s)
+    // @DisplayName: Rate gyro bias process noise (rad/s)
     // @Description: This noise controls the growth of gyro bias state error estimates. Increasing it makes rate gyro bias estimation faster and noisier.
     // @Range: 0.0000001 - 0.00001
     // @User: advanced
     AP_GROUPINFO("GBIAS_PNOISE",    10, NavEKF, _gyroBiasProcessNoise, GBIAS_PNOISE_DEFAULT),
 
     // @Param: ABIAS_PNOISE
-    // @DisplayName: Accelerometer bias state process noise (m/s^2)
+    // @DisplayName: Accelerometer bias process noise (m/s^2)
     // @Description: This noise controls the growth of the vertical acelerometer bias state error estimate. Increasing it makes accelerometer bias estimation faster and noisier.
     // @Range: 0.0001 - 0.001
     // @User: advanced
     AP_GROUPINFO("ABIAS_PNOISE",    11, NavEKF, _accelBiasProcessNoise, ABIAS_PNOISE_DEFAULT),
 
     // @Param: MAGE_PNOISE
-    // @DisplayName: Earth magnetic field states process noise (gauss/s)
+    // @DisplayName: Earth magnetic field process noise (gauss/s)
     // @Description: This noise controls the growth of earth magnetic field state error estimates. Increasing it makes earth magnetic field bias estimation faster and noisier.
     // @Range: 0.0001 - 0.01
     // @User: advanced
     AP_GROUPINFO("MAGE_PNOISE",    12, NavEKF, _magEarthProcessNoise, MAGE_PNOISE_DEFAULT),
 
     // @Param: MAGB_PNOISE
-    // @DisplayName: Body magnetic field states process noise (gauss/s)
+    // @DisplayName: Body magnetic field process noise (gauss/s)
     // @Description: This noise controls the growth of body magnetic field state error estimates. Increasing it makes compass offset estimation faster and noisier.
     // @Range: 0.0001 - 0.01
     // @User: advanced
@@ -278,23 +278,23 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     AP_GROUPINFO("EAS_GATE",    21, NavEKF, _tasInnovGate, 10),
 
     // @Param: MAG_CAL
-    // @DisplayName: Turns on magnetometer calibration mode
+    // @DisplayName: Magnetometer calibration mode
     // @Description: Setting this parameter to 1 forces magnetic field state calibration to be active all the time the vehicle is manoeuvring regardless of its speed and altitude. This parameter should be set to 0 for aircraft use. This parameter can be set to 1 to enable in-flight compass calibration on Copter and Rover vehicles.
-    // @Range: 0 - 1
+    // @Values: 0:WhenMoving,1:Always
     // @Increment: 1
     // @User: advanced
     AP_GROUPINFO("MAG_CAL",    22, NavEKF, _magCal, MAG_CAL_DEFAULT),
 
     // @Param: GLITCH_ACCEL
-    // @DisplayName: Maximum allowed discrepancy between inertial and GPS Horizontal acceleration before GPS data is ignored (cm/s^2)
-    // @Description: This parameter controls the maximum amount of difference in horizontal acceleration (in cm/s^2) between the value predicted by the filter and the value measured by the GPS before the GPS position data is rejected. If this value is set too low, then valid GPS data will be regularly discarded, and the position accuracy will degrade. If this parameter is set too high, then large GPS glitches will cause large rapid changes in position.
+    // @DisplayName: GPS glitch accel gate size (cm/s^2)
+    // @Description: This parameter controls the maximum amount of difference in horizontal acceleration between the value predicted by the filter and the value measured by the GPS before the GPS position data is rejected. If this value is set too low, then valid GPS data will be regularly discarded, and the position accuracy will degrade. If this parameter is set too high, then large GPS glitches will cause large rapid changes in position.
     // @Range: 100 - 500
     // @Increment: 50
     // @User: advanced
     AP_GROUPINFO("GLITCH_ACCEL",    23, NavEKF, _gpsGlitchAccelMax, GLITCH_ACCEL_DEFAULT),
 
     // @Param: GLITCH_RAD
-    // @DisplayName: Maximum allowed discrepancy between inertial and GPS Horizontal position before long term GPS glitch condition is declared (m)
+    // @DisplayName: GPS glitch radius gate size (m)
     // @Description: This parameter controls the maximum amount of difference in horizontal position (in m) between the value predicted by the filter and the value measured by the GPS before the long term glitch protection logic is activated and an offset is applied to the GPS measurement to compensate. Position steps smaller than this value will be temporarily ignored, but will then be accepted and the filter will move to the new position. Position steps larger than this value will be ignored initially, but the filter will then apply an offset to the GPS position measurement.
     // @Range: 10 - 50
     // @Increment: 5
