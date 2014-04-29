@@ -686,17 +686,16 @@ void NavEKF::SelectVelPosFusion()
         }
 
     } else {
-        // in static mode we only fuse position and height to improve long term numerical stability
-        // and only when the rate of change of velocity is less than 0.5g. This prevents attitude errors
-        // due to launch acceleration. position is assumed to be zero.
-        fuseVelData = false;
+        // in static mode use synthetic position measurements set to zero
+        // only fuse synthetic measurements when rate of change of velocity is less than 0.5g to reduce attitude errors due to launch acceleration
+        // do not use velocity fusion to reduce the effect of movement on attitude
         if (accNavMag < 4.9f) {
             fusePosData = true;
-            fuseHgtData = true;
         } else {
             fusePosData = false;
-            fuseHgtData = false;
         }
+        fuseVelData = false;
+        fuseHgtData = true;
     }
 
     // check for and read new height data
