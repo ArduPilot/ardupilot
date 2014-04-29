@@ -402,7 +402,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: RC_FEEL_RP
     // @DisplayName: RC Feel Roll/Pitch
-    // @Description: RC feel for roll/pitch which controls vehicle response to user input with 0 being extremely soft and 100 begin crisp
+    // @Description: RC feel for roll/pitch which controls vehicle response to user input with 0 being extremely soft and 100 being crisp
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
