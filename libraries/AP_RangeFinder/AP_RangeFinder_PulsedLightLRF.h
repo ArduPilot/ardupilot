@@ -36,7 +36,7 @@
 #define AP_RANGEFINDER_PULSEDLIGHTLRF_DISTLOW_REG           0x10    // low byte of distance measurement
 
 // command register values
-#define AP_RANGEFINDER_PULSEDLIGHTLRF_MSRREG_ACQUIRE        0x61
+#define AP_RANGEFINDER_PULSEDLIGHTLRF_MSRREG_ACQUIRE        0x04    // Varies based on sensor revision, 0x04 is newest, 0x61 is older
 
 class AP_RangeFinder_PulsedLightLRF : public RangeFinder
 {
