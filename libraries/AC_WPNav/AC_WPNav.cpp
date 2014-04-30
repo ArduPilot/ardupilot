@@ -134,20 +134,18 @@ void AC_WPNav::set_loiter_target(const Vector3f& position, bool reset_I)
 /// init_loiter_target - initialize's loiter position and feed-forward velocity from current pos and velocity
 void AC_WPNav::init_loiter_target()
 {
-	Vector3f curr_vel = _inav->get_velocity();
+    Vector3f curr_vel = _inav->get_velocity();
 
-	// set target position
-    _pos_control.set_pos_target(_inav->get_position());
+    // initialise pos controller speed and acceleration
+    _pos_control.set_speed_xy(_loiter_speed_cms);
+    _loiter_accel_cms = _loiter_speed_cms/2.0f;
+    _pos_control.set_accel_xy(_loiter_accel_cms);
+
+    // set target position
+    _pos_control.set_target_to_stopping_point_xy();
 
     // initialise feed forward velocities to zero
     _pos_control.set_desired_velocity(curr_vel.x, curr_vel.y);
-
-    // initialise pos controller speed
-    _pos_control.set_speed_xy(_loiter_speed_cms);
-
-    // initialise pos controller acceleration
-    _loiter_accel_cms = _loiter_speed_cms/2.0f;
-    _pos_control.set_accel_xy(_loiter_accel_cms);
 
     // initialise pilot input
     _pilot_accel_fwd_cms = 0;
