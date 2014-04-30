@@ -12,8 +12,9 @@ static bool loiter_init(bool ignore_checks)
         // set target to current position
         wp_nav.init_loiter_target();
 
-        // initialize vertical speeds
+        // initialize vertical speed and accelerationj
         pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+        pos_control.set_accel_z(g.pilot_accel_z);
 
         // initialise altitude target to stopping point
         pos_control.set_target_to_stopping_point_z();

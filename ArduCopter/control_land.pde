@@ -18,6 +18,10 @@ static bool land_init(bool ignore_checks)
 
     // initialise altitude target to stopping point
     pos_control.set_target_to_stopping_point_z();
+
+    // initialize vertical speeds and leash lengths
+    pos_control.set_speed_z(wp_nav.get_speed_down(), wp_nav.get_speed_up());
+    pos_control.set_accel_z(wp_nav.get_accel_z());
     return true;
 }
 
