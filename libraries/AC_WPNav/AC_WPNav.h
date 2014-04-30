@@ -88,17 +88,17 @@ public:
     /// waypoint controller
     ///
 
-    /// set_horizontal_velocity - allows main code to pass target horizontal velocity for wp navigation
-    void set_horizontal_velocity(float velocity_cms);
+    /// set_speed_xy - allows main code to pass target horizontal velocity for wp navigation
+    void set_speed_xy(float speed_cms);
 
-    /// get_horizontal_velocity - allows main code to retrieve target horizontal velocity for wp navigation
-    float get_horizontal_velocity() const { return _wp_speed_cms; }
+    /// get_speed_xy - allows main code to retrieve target horizontal velocity for wp navigation
+    float get_speed_xy() const { return _wp_speed_cms; }
 
-    /// get_climb_velocity - returns target climb speed in cm/s during missions
-    float get_climb_velocity() const { return _wp_speed_up_cms; }
+    /// get_speed_up - returns target climb speed in cm/s during missions
+    float get_speed_up() const { return _wp_speed_up_cms; }
 
-    /// get_descent_velocity - returns target descent speed in cm/s during missions.  Note: always positive
-    float get_descent_velocity() const { return _wp_speed_down_cms; }
+    /// get_speed_down - returns target descent speed in cm/s during missions.  Note: always positive
+    float get_speed_down() const { return _wp_speed_down_cms; }
 
     /// get_wp_radius - access for waypoint radius in cm
     float get_wp_radius() const { return _wp_radius_cm; }

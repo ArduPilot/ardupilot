@@ -264,12 +264,12 @@ void AC_WPNav::update_loiter()
 /// waypoint navigation
 ///
 
-/// set_horizontal_velocity - allows main code to pass target horizontal velocity for wp navigation
-void AC_WPNav::set_horizontal_velocity(float velocity_cms)
+/// set_speed_xy - allows main code to pass target horizontal velocity for wp navigation
+void AC_WPNav::set_speed_xy(float speed_cms)
 {
     // range check new target speed and update position controller
     if (_wp_speed_cms >= WPNAV_WP_SPEED_MIN) {
-        _wp_speed_cms = velocity_cms;
+        _wp_speed_cms = speed_cms;
         _pos_control.set_speed_xy(_wp_speed_cms);
         // flag that wp leash must be recalculated
         _flags.recalc_wp_leash = true;
