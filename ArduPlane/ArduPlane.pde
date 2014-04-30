@@ -54,6 +54,7 @@
 
 #include <APM_OBC.h>
 #include <APM_Control.h>
+#include <AP_AutoTune.h>
 #include <GCS.h>
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
 #include <AP_Mount.h>           // Camera/Antenna mount

@@ -565,6 +565,8 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "ARM", "IHB", "TimeMS,ArmState,ArmChecks" },
     { LOG_AIRSPEED_MSG, sizeof(log_AIRSPEED),
       "ARSP",  "Iffc",     "TimeMS,Airspeed,DiffPress,Temp" },
+    { LOG_ATRP_MSG, sizeof(AP_AutoTune::log_ATRP),
+      "ATRP", "IBBcfff",  "TimeMS,Type,State,Servo,Demanded,Achieved,P" },
     TECS_LOG_FORMAT(LOG_TECS_MSG)
 };
 
