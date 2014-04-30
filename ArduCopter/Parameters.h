@@ -110,7 +110,8 @@ public:
         k_param_rc_14,
         k_param_rally,
         k_param_hybrid_brake_rate,
-        k_param_hybrid_brake_angle_max, // 47
+        k_param_hybrid_brake_angle_max,
+        k_param_pilot_accel_z,          // 48
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -346,7 +347,7 @@ public:
     AP_Int32        rtl_loiter_time;
     AP_Int16        land_speed;
     AP_Int16        pilot_velocity_z_max;        // maximum vertical velocity the pilot may request
-
+    AP_Int16        pilot_accel_z;               // vertical acceleration the pilot may request
 
     // Throttle
     //

@@ -226,10 +226,19 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Pilot maximum vertical speed
     // @Description: The maximum vertical velocity the pilot may request in cm/s
     // @Units: Centimeters/Second
-    // @Range: 10 500
+    // @Range: 50 500
     // @Increment: 10
     // @User: Standard
     GSCALAR(pilot_velocity_z_max,     "PILOT_VELZ_MAX",   PILOT_VELZ_MAX),
+
+    // @Param: PILOT_ACCEL_Z
+    // @DisplayName: Pilot vertical acceleration
+    // @Description: The vertical acceleration used when pilot is controlling the altitude
+    // @Units: cm/s/s
+    // @Range: 50 500
+    // @Increment: 10
+    // @User: Standard
+    GSCALAR(pilot_accel_z,  "PILOT_ACCEL_Z",    PILOT_ACCEL_Z_DEFAULT),
 
     // @Param: THR_MIN
     // @DisplayName: Throttle Minimum
