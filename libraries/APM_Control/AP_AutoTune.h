@@ -23,6 +23,18 @@ public:
         AUTOTUNE_PITCH = 1
     };
 
+    struct PACKED log_ATRP {
+        LOG_PACKET_HEADER;
+        uint32_t timestamp;
+        uint8_t  type;
+        uint8_t  state;
+        int16_t  servo;
+        float    demanded;
+        float    achieved;
+        float    P;
+    };
+
+
     // constructor
     AP_AutoTune(ATGains &_gains, ATType type, const AP_Vehicle::FixedWing &parms, DataFlash_Class &_dataflash);
 
@@ -53,9 +65,6 @@ private:
 
     // did we saturate surfaces?
     bool saturated_surfaces:1;
-
-    // have we sent log headers
-    static bool logging_started;
 
     // values to restore if we leave autotune mode
     ATGains restore; 

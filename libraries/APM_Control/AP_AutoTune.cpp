@@ -66,8 +66,6 @@ extern const AP_HAL::HAL& hal;
 #define AUTOTUNE_MIN_IMAX 2000
 #define AUTOTUNE_MAX_IMAX 4000
 
-bool AP_AutoTune::logging_started = false;
-
 // constructor
 AP_AutoTune::AP_AutoTune(ATGains &_gains, ATType _type,
                          const AP_Vehicle::FixedWing &parms,
@@ -290,42 +288,14 @@ void AP_AutoTune::save_gains(const ATGains &v)
     last_save = current;
 }
 
-#define LOG_MSG_ATRP 211
-
-struct PACKED log_ATRP {
-    LOG_PACKET_HEADER;
-    uint32_t timestamp;
-    uint8_t  type;
-    uint8_t  state;
-    int16_t  servo;
-    float    demanded;
-    float    achieved;
-    float    P;
-};
-
-static const struct LogStructure at_log_structures[] PROGMEM = {
-    { LOG_MSG_ATRP, sizeof(log_ATRP),
-      "ATRP", "IBBcfff",  "TimeMS,Type,State,Servo,Demanded,Achieved,P" },
-};
-
-void AP_AutoTune::write_log_headers(void)
-{
-    if (!logging_started) {
-        logging_started = true;
-        dataflash.AddLogFormats(at_log_structures, 1);
-    }
-}
-
 void AP_AutoTune::write_log(float servo, float demanded, float achieved)
 {
     if (!dataflash.logging_started()) {
         return;
     }
 
-    write_log_headers();
-
     struct log_ATRP pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_MSG_ATRP),
+        LOG_PACKET_HEADER_INIT(LOG_ATRP_MSG),
         timestamp  : hal.scheduler->millis(),
         type       : type,
     	state      : (uint8_t)state,
