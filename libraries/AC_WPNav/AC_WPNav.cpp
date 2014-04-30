@@ -61,6 +61,15 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("ACCEL",       5, AC_WPNav, _wp_accel_cms, WPNAV_ACCELERATION),
 
+    // @Param: ACCEL_Z
+    // @DisplayName: Waypoint Vertical Acceleration
+    // @Description: Defines the vertical acceleration in cm/s/s used during missions
+    // @Units: cm/s/s
+    // @Range: 50 500
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("ACCEL_Z",     6, AC_WPNav, _wp_accel_z_cms, WPNAV_WP_ACCEL_Z_DEFAULT),
+
     AP_GROUPEND
 };
 
@@ -323,6 +332,7 @@ void AC_WPNav::set_wp_origin_and_destination(const Vector3f& origin, const Vecto
     _pos_control.set_speed_xy(_wp_speed_cms);
     _pos_control.set_accel_xy(_wp_accel_cms);
     _pos_control.set_speed_z(-_wp_speed_down_cms, _wp_speed_up_cms);
+    _pos_control.set_accel_z(_wp_accel_z_cms);
     _pos_control.calc_leash_length_xy();
     _pos_control.calc_leash_length_z();
 
@@ -552,11 +562,11 @@ void AC_WPNav::calculate_wp_leash_length()
         _track_speed = _wp_speed_cms/pos_delta_unit_xy;
         _track_leash_length = _pos_control.get_leash_xy()/pos_delta_unit_xy;
     }else if(pos_delta_unit_xy == 0){
-        _track_accel = _pos_control.get_accel_z()/pos_delta_unit_z;
+        _track_accel = _wp_accel_z_cms/pos_delta_unit_z;
         _track_speed = speed_z/pos_delta_unit_z;
         _track_leash_length = leash_z/pos_delta_unit_z;
     }else{
-        _track_accel = min(_pos_control.get_accel_z()/pos_delta_unit_z, _wp_accel_cms/pos_delta_unit_xy);
+        _track_accel = min(_wp_accel_z_cms/pos_delta_unit_z, _wp_accel_cms/pos_delta_unit_xy);
         _track_speed = min(speed_z/pos_delta_unit_z, _wp_speed_cms/pos_delta_unit_xy);
         _track_leash_length = min(leash_z/pos_delta_unit_z, _pos_control.get_leash_xy()/pos_delta_unit_xy);
     }

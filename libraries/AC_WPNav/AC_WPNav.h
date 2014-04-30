@@ -25,6 +25,8 @@
 #define WPNAV_WP_SPEED_UP               250.0f      // default maximum climb velocity
 #define WPNAV_WP_SPEED_DOWN             150.0f      // default maximum descent velocity
 
+#define WPNAV_WP_ACCEL_Z_DEFAULT        100.0f      // default vertical acceleration betwen waypoints in cm/s/s
+
 #define WPNAV_LEASH_LENGTH_MIN          100.0f      // minimum leash lengths in cm
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
@@ -99,6 +101,9 @@ public:
 
     /// get_speed_down - returns target descent speed in cm/s during missions.  Note: always positive
     float get_speed_down() const { return _wp_speed_down_cms; }
+
+    /// get_speed_z - returns target descent speed in cm/s during missions.  Note: always positive
+    float get_accel_z() const { return _wp_accel_z_cms; }
 
     /// get_wp_radius - access for waypoint radius in cm
     float get_wp_radius() const { return _wp_radius_cm; }
@@ -249,7 +254,8 @@ protected:
     AP_Float    _wp_speed_up_cms;       // climb speed target in cm/s
     AP_Float    _wp_speed_down_cms;     // descent speed target in cm/s
     AP_Float    _wp_radius_cm;          // distance from a waypoint in cm that, when crossed, indicates the wp has been reached
-    AP_Float    _wp_accel_cms;          // acceleration in cm/s/s during missions
+    AP_Float    _wp_accel_cms;          // horizontal acceleration in cm/s/s during missions
+    AP_Float    _wp_accel_z_cms;        // vertical acceleration in cm/s/s during missions
 
     // loiter controller internal variables
     uint32_t    _loiter_last_update;    // time of last update_loiter call
