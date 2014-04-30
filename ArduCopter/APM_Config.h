@@ -26,13 +26,13 @@
 //#define MOUNT                 DISABLED            // disable the camera gimbal to save 8K of flash space
 //#define AUTOTUNE_ENABLED      DISABLED            // disable the auto tune functionality to save 7k of flash
 //#define AC_FENCE              DISABLED            // disable fence to save 2k of flash
-//#define AC_RALLY              DISABLED            // disable rally points to save 2k of flash, and also frees rally point EEPROM for more mission commands
 //#define CAMERA                DISABLED            // disable camera trigger to save 1k of flash
 //#define CONFIG_SONAR          DISABLED            // disable sonar to save 1k of flash
 //#define HYBRID_ENABLED        DISABLED            // disable hybrid flight mode to save 4.5k of flash
 
 // features below are disabled by default
 //#define OPTFLOW               ENABLED             // enable optical flow sensor and OF_LOITER flight mode at a cost of 5K of flash space
+//#define AC_RALLY              ENABLED             // disable rally points to save 2k of flash, and also frees rally point EEPROM for more mission commands
 //#define SPRAYER               ENABLED             // enable the crop sprayer feature (two ESC controlled pumps the speed of which depends upon the vehicle's horizontal velocity)
 //#define EPM_ENABLED           ENABLED             // enable epm cargo gripper costs 500bytes of flash
 //#define PARACHUTE             ENABLED             // enable parachute release at a cost of 1k of flash

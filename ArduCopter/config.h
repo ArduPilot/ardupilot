@@ -753,7 +753,7 @@
 #endif
 
 #ifndef AC_RALLY
- #define AC_RALLY ENABLED
+ #define AC_RALLY               DISABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
