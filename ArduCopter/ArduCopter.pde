@@ -1448,7 +1448,7 @@ static void tuning(){
 
     case CH6_WP_SPEED:
         // set waypoint navigation horizontal speed to 0 ~ 1000 cm/s
-        wp_nav.set_horizontal_velocity(g.rc_6.control_in);
+        wp_nav.set_speed_xy(g.rc_6.control_in);
         break;
 
     // Acro roll pitch gain
