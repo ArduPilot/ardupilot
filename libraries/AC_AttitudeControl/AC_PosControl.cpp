@@ -136,6 +136,9 @@ float AC_PosControl::get_alt_error() const
 /// set_target_to_stopping_point_z - returns reasonable stopping altitude in cm above home
 void AC_PosControl::set_target_to_stopping_point_z()
 {
+    // check if z leash needs to be recalculated
+    calc_leash_length_z();
+
     get_stopping_point_z(_pos_target);
 }
 
@@ -383,6 +386,15 @@ void AC_PosControl::set_pos_target(const Vector3f& position)
     //_pitch_target = constrain_int32(_ahrs.pitch_sensor,-_attitude_control.lean_angle_max(),_attitude_control.lean_angle_max());
 }
 
+/// set_target_to_stopping_point_xy - sets horizontal target to reasonable stopping position in cm from home
+void AC_PosControl::set_target_to_stopping_point_xy()
+{
+    // check if xy leash needs to be recalculated
+    calc_leash_length_xy();
+
+    get_stopping_point_xy(_pos_target);
+}
+
 /// get_stopping_point_xy - calculates stopping point based on current position, velocity, vehicle acceleration
 ///     distance_max allows limiting distance to stopping point
 ///     results placed in stopping_position vector
@@ -402,7 +414,8 @@ void AC_PosControl::get_stopping_point_xy(Vector3f &stopping_point) const
 
     // avoid divide by zero by using current position if the velocity is below 10cm/s, kP is very low or acceleration is zero
     if (vel_total < 10.0f || kP <= 0.0f || _accel_cms <= 0.0f) {
-        stopping_point = curr_pos;
+        stopping_point.x = curr_pos.x;
+        stopping_point.y = curr_pos.y;
         return;
     }
 

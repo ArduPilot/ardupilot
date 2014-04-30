@@ -166,6 +166,9 @@ public:
     ///     when use_desired_velocity is true the desired velocity (i.e. feed forward) is incorporated at the pos_to_rate step
     void update_xy_controller(bool use_desired_velocity);
 
+    /// set_target_to_stopping_point_xy - sets horizontal target to reasonable stopping position in cm from home
+    void set_target_to_stopping_point_xy();
+
     /// get_stopping_point_xy - calculates stopping point based on current position, velocity, vehicle acceleration
     ///     distance_max allows limiting distance to stopping point
     ///		results placed in stopping_position vector
