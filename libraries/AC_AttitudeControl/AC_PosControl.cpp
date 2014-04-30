@@ -77,6 +77,9 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
 ///     speed_down should be a negative number
 void AC_PosControl::set_speed_z(float speed_down, float speed_up)
 {
+    // ensure speed_down is always negative
+    speed_down = -fabs(speed_down);
+
     if ((fabs(_speed_down_cms-speed_down) > 1.0f) || (fabs(_speed_up_cms-speed_up) > 1.0f)) {
         _speed_down_cms = speed_down;
         _speed_up_cms = speed_up;

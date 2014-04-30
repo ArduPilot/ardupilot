@@ -62,8 +62,7 @@ public:
     void set_alt_max(float alt) { _alt_max = alt; }
 
     /// set_speed_z - sets maximum climb and descent rates
-    /// To-Do: call this in the main code as part of flight mode initialisation
-    ///     speed_down should be a negative number
+    ///     speed_down can be positive or negative but will always be interpreted as a descent speed
     ///     leash length will be recalculated the next time update_z_controller() is called
     void set_speed_z(float speed_down, float speed_up);
 
