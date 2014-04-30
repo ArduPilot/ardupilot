@@ -95,7 +95,9 @@ private:
     void write_log_headers(void);
     void write_log(float servo, float demanded, float achieved);
 
-    void save_float_if_changed(AP_Float &v, float value);
+    void log_param_change(float v, const prog_char_t *suffix);
+    void save_float_if_changed(AP_Float &v, float value, const prog_char_t *suffix);
+    void save_int16_if_changed(AP_Int16 &v, int16_t value, const prog_char_t *suffix);        
 };
 
 #endif // __AP_AUTOTUNE_H__
