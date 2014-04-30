@@ -414,6 +414,7 @@ struct PACKED log_Radio {
 #define LOG_GPS2_MSG	  144
 #define LOG_CMD_MSG       145
 #define LOG_RADIO_MSG	  146
+#define LOG_ATRP_MSG      147
 
 // message types 200 to 210 reversed for GPS driver use
 // message types 211 to 220 reversed for autotune use
