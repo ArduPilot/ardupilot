@@ -37,7 +37,7 @@ static void loiter_angle_update(void)
     loiter.old_target_bearing_cd = target_bearing_cd;
     loiter_delta_cd = wrap_180_cd(loiter_delta_cd);
 
-    loiter.sum_cd += loiter_delta_cd;
+    loiter.sum_cd += loiter_delta_cd * loiter.direction;
 }
 
 //****************************************************************
