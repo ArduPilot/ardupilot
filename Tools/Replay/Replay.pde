@@ -49,6 +49,9 @@
 #include <errno.h>
 #include <fenv.h>
 
+#define INT16_MIN -32768
+#define INT16_MAX 32767
+
 #include "LogReader.h"
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
@@ -509,15 +512,15 @@ void loop()
                     innovVT);
 
             // define messages for EKF4 data packet
-            int16_t sqrtvarV = (int16_t)(100*velVar);
-            int16_t sqrtvarP = (int16_t)(100*posVar);
-            int16_t sqrtvarH = (int16_t)(100*hgtVar);
-            int16_t sqrtvarMX = (int16_t)(100*magVar.x);
-            int16_t sqrtvarMY = (int16_t)(100*magVar.y);
-            int16_t sqrtvarMZ = (int16_t)(100*magVar.z);
-            int16_t sqrtvarVT = (int16_t)(100*tasVar);
-            int16_t offsetNorth = (int8_t)(offset.x);
-            int16_t offsetEast = (int8_t)(offset.y);
+            int16_t sqrtvarV = (int16_t)(constrain_float(100*velVar,INT16_MIN,INT16_MAX));
+            int16_t sqrtvarP = (int16_t)(constrain_float(100*posVar,INT16_MIN,INT16_MAX));
+            int16_t sqrtvarH = (int16_t)(constrain_float(100*hgtVar,INT16_MIN,INT16_MAX));
+            int16_t sqrtvarMX = (int16_t)(constrain_float(100*magVar.x,INT16_MIN,INT16_MAX));
+            int16_t sqrtvarMY = (int16_t)(constrain_float(100*magVar.y,INT16_MIN,INT16_MAX));
+            int16_t sqrtvarMZ = (int16_t)(constrain_float(100*magVar.z,INT16_MIN,INT16_MAX));
+            int16_t sqrtvarVT = (int16_t)(constrain_float(100*tasVar,INT16_MIN,INT16_MAX));
+            int16_t offsetNorth = (int8_t)(constrain_float(offset.x,INT16_MIN,INT16_MAX));
+            int16_t offsetEast = (int8_t)(constrain_float(offset.y,INT16_MIN,INT16_MAX));
 
             // print EKF4 data packet
             fprintf(ekf4f, "%.3f %d %d %d %d %d %d %d %d %d %d\n",
