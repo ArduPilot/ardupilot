@@ -239,20 +239,20 @@ static void NOINLINE send_meminfo(mavlink_channel_t chan)
 
 static void NOINLINE send_location(mavlink_channel_t chan)
 {
-    uint32_t fix_time;
+    uint32_t gps_time;
     // if we have a GPS fix, take the time as the last fix time. That
     // allows us to correctly calculate velocities and extrapolate
     // positions.
     // If we don't have a GPS fix then we are dead reckoning, and will
     // use the current boot time as the fix time.    
     if (g_gps->status() >= GPS::GPS_OK_FIX_2D) {
-        fix_time = g_gps->last_fix_time;
+        gps_time = g_gps->time;
     } else {
-        fix_time = millis();
+        gps_time = millis();
     }
     mavlink_msg_global_position_int_send(
         chan,
-        fix_time,
+        gps_time,						// Time according to the GPS (ms)
         current_loc.lat,                // in 1E7 degrees
         current_loc.lng,                // in 1E7 degrees
         g_gps->altitude_cm * 10,        // millimeters above sea level
@@ -266,21 +266,21 @@ static void NOINLINE send_location(mavlink_channel_t chan)
 // Added by Sydney Schinstock AIAA-KSU 03/31/2014
 static void NOINLINE send_time(mavlink_channel_t chan)
 {
-	uint32_t fix_time;
+	uint32_t gps_time;
 	// if we have a GPS fix, take the time as the last fix time. That
 	// allows us to correctly calculate velocities and extrapolate
 	// positions.
 	// If we don't have a GPS fix then we are dead reckoning, and will
 	// use the current boot time as the fix time.
 	if (g_gps->status() >= GPS::GPS_OK_FIX_2D) {
-		fix_time = g_gps->last_fix_time;
+		gps_time = g_gps->time;
 	}
 	else {
-		fix_time = millis();
+		gps_time = millis();
 	}
 	mavlink_msg_system_time_send(
 		chan,
-		fix_time,
+		gps_time,
 		millis());
 }
 //-------------------------------------------------------------
