@@ -340,10 +340,10 @@ static bool verify_land()
     // so we don't verify command completion. Instead we use this to
     // adjust final landing parameters
 
-    // Set land_complete if we are within 2 seconds distance or within
-    // 3 meters altitude of the landing point
-    if ((wp_distance <= (g.land_flare_sec*g_gps->ground_speed_cm*0.01f))
-        || (adjusted_altitude_cm() <= next_WP.alt + g.land_flare_alt*100)) {
+    // Set land_complete if we are within 1.2 meters altitude of the landing point
+	// and the range finder is giving valid data
+    if ((adjusted_altitude_cm() <= next_WP.alt + g.land_flare_alt*100)
+		&& (range_finder_alt_health == RANGE_FINDER_ALT_HEALTH_MAX)) {
 
         land_complete = true;
 
