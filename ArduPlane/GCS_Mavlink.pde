@@ -272,7 +272,7 @@ static void NOINLINE send_time(mavlink_channel_t chan)
 	}
 	mavlink_msg_system_time_send(
 		chan,
-		gps_time,
+		(uint64_t)gps_time,
 		millis());
 }
 //-------------------------------------------------------------
