@@ -577,6 +577,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // PID controller
     //---------------
+
     // @Param: RATE_RLL_P
     // @DisplayName: Roll axis rate controller P gain
     // @Description: Roll axis rate controller P gain.  Converts the difference between desired roll rate and actual roll rate into a motor speed output
@@ -605,7 +606,11 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0.001 0.02
     // @Increment: 0.001
     // @User: Standard
+#if FRAME_CONFIG == HELI_FRAME
+    GGROUP(pid_rate_roll,     "RATE_RLL_", AC_HELI_PID),
+#else
     GGROUP(pid_rate_roll,     "RATE_RLL_", AC_PID),
+#endif
 
     // @Param: RATE_PIT_P
     // @DisplayName: Pitch axis rate controller P gain
@@ -635,7 +640,11 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0.001 0.02
     // @Increment: 0.001
     // @User: Standard
+#if FRAME_CONFIG == HELI_FRAME
+    GGROUP(pid_rate_pitch,    "RATE_PIT_", AC_HELI_PID),
+#else
     GGROUP(pid_rate_pitch,    "RATE_PIT_", AC_PID),
+#endif
 
     // @Param: RATE_YAW_P
     // @DisplayName: Yaw axis rate controller P gain
@@ -665,7 +674,11 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0.000 0.02
     // @Increment: 0.001
     // @User: Standard
+#if FRAME_CONFIG == HELI_FRAME
+    GGROUP(pid_rate_yaw,      "RATE_YAW_", AC_HELI_PID),
+#else
     GGROUP(pid_rate_yaw,      "RATE_YAW_", AC_PID),
+#endif
 
     // @Param: LOITER_LAT_P
     // @DisplayName: Loiter latitude rate controller P gain
