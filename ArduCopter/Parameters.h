@@ -426,9 +426,15 @@ public:
     AP_Int8                 acro_trainer;
 
     // PI/D controllers
+#if FRAME_CONFIG ==     HELI_FRAME
+    AC_HELI_PID                  pid_rate_roll;
+    AC_HELI_PID                  pid_rate_pitch;
+    AC_HELI_PID                  pid_rate_yaw;
+#else       
     AC_PID                  pid_rate_roll;
     AC_PID                  pid_rate_pitch;
     AC_PID                  pid_rate_yaw;
+#endif
     AC_PID                  pid_loiter_rate_lat;
     AC_PID                  pid_loiter_rate_lon;
 
