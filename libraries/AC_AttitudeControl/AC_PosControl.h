@@ -34,6 +34,8 @@
 
 #define POSCONTROL_DT_10HZ                      0.10f   // time difference in seconds for 10hz update rate
 
+#define POSCONTROL_ACTIVE_TIMEOUT_MS            200     // position controller is considered active if it has been called within the past 200ms (0.2 seconds)
+
 class AC_PosControl
 {
 public:
@@ -116,6 +118,9 @@ public:
 
     /// init_takeoff - initialises target altitude if we are taking off
     void init_takeoff();
+
+    // is_active - returns true if the z-axis position controller has been run very recently
+    bool is_active_z() const;
 
     /// update_z_controller - fly to altitude in cm above home
     void update_z_controller();
@@ -207,6 +212,8 @@ private:
             uint8_t force_recalc_xy : 1;    // 1 if we want the xy position controller to run at it's next possible time.  set by loiter and wp controllers after they have updated the target position.
             uint8_t slow_cpu        : 1;    // 1 if we are running on a slow_cpu machine.  xy position control is broken up into multiple steps
             uint8_t keep_xy_I_terms : 1;    // 1 if we are to keep I terms when the position controller is next run.  Reset automatically back to zero in update_xy_controller.
+            uint8_t reset_rate_to_accel_z   : 1;    // 1 if we should reset the rate_to_accel_z step
+            uint8_t reset_accel_to_throttle : 1;    // 1 if we should reset the accel_to_throttle step of the z-axis controller
     } _flags;
 
     // limit flags structure
@@ -282,9 +289,8 @@ private:
 
     // internal variables
     float       _dt;                    // time difference (in seconds) between calls from the main program
-    uint32_t    _last_update_ms;        // system time of last update_position_controller call
-    uint32_t    _last_update_rate_ms;   // system time of last call to rate_to_accel_z (alt hold accel controller)
-    uint32_t    _last_update_accel_ms;  // system time of last call to accel_to_throttle (alt hold accel controller)
+    uint32_t    _last_update_xy_ms;     // system time of last update_xy_controller call
+    uint32_t    _last_update_z_ms;      // system time of last update_z_controller call
     uint8_t     _step;                  // used to decide which portion of position controller to run during this iteration
     float       _speed_down_cms;        // max descent rate in cm/s
     float       _speed_up_cms;          // max climb rate in cm/s

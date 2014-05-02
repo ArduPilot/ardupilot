@@ -35,9 +35,8 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     _pid_rate_lat(pid_rate_lat),
     _pid_rate_lon(pid_rate_lon),
     _dt(POSCONTROL_DT_10HZ),
-    _last_update_ms(0),
-    _last_update_rate_ms(0),
-    _last_update_accel_ms(0),
+    _last_update_xy_ms(0),
+    _last_update_z_ms(0),
     _step(0),
     _speed_down_cms(POSCONTROL_SPEED_DOWN),
     _speed_up_cms(POSCONTROL_SPEED_UP),
@@ -65,6 +64,8 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     _flags.recalc_leash_xy = true;
     _flags.recalc_leash_z = true;
     _flags.keep_xy_I_terms = false;
+    _flags.reset_rate_to_accel_z = true;
+    _flags.reset_accel_to_throttle = true;
 }
 
 ///
@@ -181,9 +182,23 @@ void AC_PosControl::init_takeoff()
     }
 }
 
+// is_active_z - returns true if the z-axis position controller has been run very recently
+bool AC_PosControl::is_active_z() const
+{
+    return ((hal.scheduler->millis() - _last_update_z_ms) <= POSCONTROL_ACTIVE_TIMEOUT_MS);
+}
+
 /// update_z_controller - fly to altitude in cm above home
 void AC_PosControl::update_z_controller()
 {
+    // check time since last cast
+    uint32_t now = hal.scheduler->millis();
+    if (now - _last_update_z_ms > POSCONTROL_ACTIVE_TIMEOUT_MS) {
+        _flags.reset_rate_to_accel_z = true;
+        _flags.reset_accel_to_throttle = true;
+    }
+    _last_update_z_ms = now;
+
     // check if leash lengths need to be recalculated
     calc_leash_length_z();
 
@@ -257,7 +272,6 @@ void AC_PosControl::pos_to_rate_z()
 // calculates desired acceleration and calls accel throttle controller
 void AC_PosControl::rate_to_accel_z(float vel_target_z)
 {
-    uint32_t now = hal.scheduler->millis();
     const Vector3f& curr_vel = _inav.get_velocity();
     float z_target_speed_delta;             // The change in requested speed
     float p;                                // used to capture pid values for logging
@@ -277,11 +291,12 @@ void AC_PosControl::rate_to_accel_z(float vel_target_z)
     }
 
     // reset velocity error and filter if this controller has just been engaged
-    if (now - _last_update_rate_ms > 100 ) {
+    if (_flags.reset_rate_to_accel_z) {
         // Reset Filter
         _vel_error.z = 0;
         _vel_target_filt_z = vel_target_z;
         desired_accel = 0;
+        _flags.reset_rate_to_accel_z = false;
     } else {
         // calculate rate error and filter with cut off frequency of 2 Hz
         //To-Do: adjust constant below based on update rate
@@ -291,7 +306,6 @@ void AC_PosControl::rate_to_accel_z(float vel_target_z)
         _vel_target_filt_z = _vel_target_filt_z + z_target_speed_delta;
         desired_accel = z_target_speed_delta / _dt;
     }
-    _last_update_rate_ms = now;
 
     // calculate p
     p = _p_alt_rate.kP() * _vel_error.z;
@@ -311,7 +325,6 @@ void AC_PosControl::rate_to_accel_z(float vel_target_z)
 // calculates a desired throttle which is sent directly to the motors
 void AC_PosControl::accel_to_throttle(float accel_target_z)
 {
-    uint32_t now = hal.scheduler->millis();
     float z_accel_meas;         // actual acceleration
     int32_t p,i,d;              // used to capture pid values for logging
 
@@ -319,15 +332,15 @@ void AC_PosControl::accel_to_throttle(float accel_target_z)
     z_accel_meas = -(_ahrs.get_accel_ef().z + GRAVITY_MSS) * 100.0f;
 
     // reset target altitude if this controller has just been engaged
-    if (now - _last_update_accel_ms > 100) {
+    if (_flags.reset_accel_to_throttle) {
         // Reset Filter
         _accel_error.z = 0;
+        _flags.reset_accel_to_throttle = false;
     } else {
         // calculate accel error and Filter with fc = 2 Hz
         // To-Do: replace constant below with one that is adjusted for update rate
         _accel_error.z = _accel_error.z + 0.11164f * (constrain_float(accel_target_z - z_accel_meas, -32000, 32000) - _accel_error.z);
     }
-    _last_update_accel_ms = now;
 
     // separately calculate p, i, d values for logging
     p = _pid_alt_accel.get_p(_accel_error.z);
@@ -449,8 +462,8 @@ void AC_PosControl::update_xy_controller(bool use_desired_velocity)
 {
     // catch if we've just been started
     uint32_t now = hal.scheduler->millis();
-    if ((now - _last_update_ms) >= 1000) {
-        _last_update_ms = now;
+    if ((now - _last_update_xy_ms) >= POSCONTROL_ACTIVE_TIMEOUT_MS) {
+        _last_update_xy_ms = now;
         if (!_flags.keep_xy_I_terms) {
             reset_I_xy();
         }
@@ -472,8 +485,8 @@ void AC_PosControl::update_xy_controller(bool use_desired_velocity)
     switch (_xy_step) {
         case 0:
             // capture time since last iteration
-            _dt_xy = (now - _last_update_ms) / 1000.0f;
-            _last_update_ms = now;
+            _dt_xy = (now - _last_update_xy_ms) / 1000.0f;
+            _last_update_xy_ms = now;
 
             // translate any adjustments from pilot to loiter target
             desired_vel_to_pos(_dt_xy);
