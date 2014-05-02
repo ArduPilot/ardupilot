@@ -702,6 +702,10 @@
  # define THROTTLE_ACCEL_IMAX 500
 #endif
 
+#ifndef THROTTLE_ACCEL_DTERM_FILTER
+ # define THROTTLE_ACCEL_DTERM_FILTER 20
+#endif
+
 
 //////////////////////////////////////////////////////////////////////////////
 // Dataflash logging control
