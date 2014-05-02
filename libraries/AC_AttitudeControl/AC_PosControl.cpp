@@ -147,10 +147,15 @@ void AC_PosControl::set_target_to_stopping_point_z()
 void AC_PosControl::get_stopping_point_z(Vector3f& stopping_point) const
 {
     const float curr_pos_z = _inav.get_altitude();
-    const float curr_vel_z = _inav.get_velocity_z();
+    float curr_vel_z = _inav.get_velocity_z();
 
     float linear_distance;  // half the distance we swap between linear and sqrt and the distance we offset sqrt
     float linear_velocity;  // the velocity we swap between linear and sqrt
+
+    // if position controller is active add current velocity error to avoid sudden jump in acceleration
+    if (is_active_z()) {
+        curr_vel_z += _vel_error.z;
+    }
 
     // calculate the velocity at which we switch from calculating the stopping point using a linear function to a sqrt function
     linear_velocity = _accel_z_cms/_p_alt_pos.kP();
