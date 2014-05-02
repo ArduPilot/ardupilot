@@ -77,7 +77,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
 // Note that the Vector/Matrix constructors already implicitly zero
 // their values.
 //
-AC_WPNav::AC_WPNav(const AP_InertialNav* inav, const AP_AHRS* ahrs, AC_PosControl& pos_control) :
+AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosControl& pos_control) :
     _inav(inav),
     _ahrs(ahrs),
     _pos_control(pos_control),
@@ -134,7 +134,7 @@ void AC_WPNav::set_loiter_target(const Vector3f& position, bool reset_I)
 /// init_loiter_target - initialize's loiter position and feed-forward velocity from current pos and velocity
 void AC_WPNav::init_loiter_target()
 {
-    Vector3f curr_vel = _inav->get_velocity();
+    Vector3f curr_vel = _inav.get_velocity();
 
     // initialise pos controller speed and acceleration
     _pos_control.set_speed_xy(_loiter_speed_cms);
@@ -199,8 +199,8 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt)
 
     // rotate pilot input to lat/lon frame
     Vector2f desired_accel;
-    desired_accel.x = (_pilot_accel_fwd_cms*_ahrs->cos_yaw() - _pilot_accel_rgt_cms*_ahrs->sin_yaw());
-    desired_accel.y = (_pilot_accel_fwd_cms*_ahrs->sin_yaw() + _pilot_accel_rgt_cms*_ahrs->cos_yaw());
+    desired_accel.x = (_pilot_accel_fwd_cms*_ahrs.cos_yaw() - _pilot_accel_rgt_cms*_ahrs.sin_yaw());
+    desired_accel.y = (_pilot_accel_fwd_cms*_ahrs.sin_yaw() + _pilot_accel_rgt_cms*_ahrs.cos_yaw());
 
     // get pos_control's feed forward velocity
     Vector2f desired_vel = _pos_control.get_desired_velocity();
@@ -238,7 +238,7 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt)
 /// get_bearing_to_target - get bearing to loiter target in centi-degrees
 int32_t AC_WPNav::get_loiter_bearing_to_target() const
 {
-    return get_bearing_cd(_inav->get_position(), _pos_control.get_pos_target());
+    return get_bearing_cd(_inav.get_position(), _pos_control.get_pos_target());
 }
 
 /// update_loiter - run the loiter controller - should be called at 100hz
@@ -349,7 +349,7 @@ void AC_WPNav::set_wp_origin_and_destination(const Vector3f& origin, const Vecto
     _flags.segment_type = SEGMENT_STRAIGHT;
 
     // initialise the limited speed to current speed along the track
-    const Vector3f &curr_vel = _inav->get_velocity();
+    const Vector3f &curr_vel = _inav.get_velocity();
     // get speed along track (note: we convert vertical speed into horizontal speed equivalent)
     float speed_along_track = curr_vel.x * _pos_delta_unit.x + curr_vel.y * _pos_delta_unit.y + curr_vel.z * _pos_delta_unit.z;
     _limited_speed_xy_cms = constrain_float(speed_along_track,0,_wp_speed_cms);
@@ -372,7 +372,7 @@ void AC_WPNav::advance_wp_target_along_track(float dt)
     bool reached_leash_limit = false;   // true when track has reached leash limit and we need to slow down the target point
 
     // get current location
-    Vector3f curr_pos = _inav->get_position();
+    Vector3f curr_pos = _inav.get_position();
     Vector3f curr_delta = curr_pos - _origin;
 
     // calculate how far along the track we are
@@ -410,7 +410,7 @@ void AC_WPNav::advance_wp_target_along_track(float dt)
     }
 
     // get current velocity
-    const Vector3f &curr_vel = _inav->get_velocity();
+    const Vector3f &curr_vel = _inav.get_velocity();
     // get speed along track
     float speed_along_track = curr_vel.x * _pos_delta_unit.x + curr_vel.y * _pos_delta_unit.y + curr_vel.z * _pos_delta_unit.z;
 
@@ -485,14 +485,14 @@ void AC_WPNav::advance_wp_target_along_track(float dt)
 float AC_WPNav::get_wp_distance_to_destination() const
 {
     // get current location
-    Vector3f curr = _inav->get_position();
+    Vector3f curr = _inav.get_position();
     return pythagorous2(_destination.x-curr.x,_destination.y-curr.y);
 }
 
 /// get_wp_bearing_to_destination - get bearing to next waypoint in centi-degrees
 int32_t AC_WPNav::get_wp_bearing_to_destination() const
 {
-    return get_bearing_cd(_inav->get_position(), _destination);
+    return get_bearing_cd(_inav.get_position(), _destination);
 }
 
 /// update_wpnav - run the wp controller - should be called at 100hz or higher
@@ -685,7 +685,7 @@ void AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
     }
 
     // initialise yaw heading to current heading
-    _yaw = _ahrs->yaw_sensor;
+    _yaw = _ahrs.yaw_sensor;
 
     // store origin and destination locations
     _origin = origin;
