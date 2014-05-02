@@ -108,7 +108,7 @@ public:
 
     static const struct AP_Param::GroupInfo        var_info[];
 
-private:
+protected:
     AP_Float        _kp;
     AP_Float        _ki;
     AP_Float        _kd;
