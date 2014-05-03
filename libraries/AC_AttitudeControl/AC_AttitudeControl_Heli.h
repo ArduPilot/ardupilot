@@ -7,6 +7,7 @@
 #define AC_ATTITUDECONTROL_HELI_H
 
 #include <AC_AttitudeControl.h>
+#include <AC_HELI_PID.h>
 
 #define AC_ATTITUDE_HELI_ROLL_FF                    0.0f
 #define AC_ATTITUDE_HELI_PITCH_FF                   0.0f
@@ -20,7 +21,7 @@ public:
                         const AP_Vehicle::MultiCopter &aparm,
                         AP_MotorsHeli& motors,
                         AC_P& p_angle_roll, AC_P& p_angle_pitch, AC_P& p_angle_yaw,
-                        AC_PID& pid_rate_roll, AC_PID& pid_rate_pitch, AC_PID& pid_rate_yaw
+                        AC_HELI_PID& pid_rate_roll, AC_HELI_PID& pid_rate_pitch, AC_HELI_PID& pid_rate_yaw
                         ) :
         AC_AttitudeControl(ahrs, ins, aparm, motors,
                            p_angle_roll, p_angle_pitch, p_angle_yaw,
@@ -64,10 +65,6 @@ private:
     // get_angle_boost - calculate total body frame throttle required to produce the given earth frame throttle
     virtual int16_t get_angle_boost(int16_t throttle_pwm);
 
-    // parameters
-    AP_Float _heli_roll_ff;     // body-frame roll rate to motor output feed forward
-    AP_Float _heli_pitch_ff;    // body-frame pitch rate to motor output feed forward
-    AP_Float _heli_yaw_ff;      // body-frame yaw rate to motor output feed forward
 };
 
 #endif //AC_ATTITUDECONTROL_HELI_H
