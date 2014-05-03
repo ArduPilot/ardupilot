@@ -26,8 +26,8 @@ static bool auto_init(bool ignore_checks)
         if (auto_yaw_mode == AUTO_YAW_ROI) {
             set_auto_yaw_mode(AUTO_YAW_HOLD);
         }
-        // start the mission
-        mission.start();
+        // start/resume the mission (based on MIS_AUTORESET param)
+        mission.start_or_resume();
         return true;
     }else{
         return false;
