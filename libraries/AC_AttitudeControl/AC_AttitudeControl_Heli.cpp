@@ -53,30 +53,6 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("ACCEL_Y_MAX",  4, AC_AttitudeControl_Heli, _accel_y_max, AC_ATTITUDE_CONTROL_ACCEL_Y_MAX_DEFAULT),
 
-    // @Param: RATE_RLL_FF
-    // @DisplayName: Rate Roll Feed Forward
-    // @Description: Rate Roll Feed Forward (for TradHeli Only)
-    // @Range: 0 10
-    // @Increment: 0.01
-    // @User: Standard
-    AP_GROUPINFO("RATE_RLL_FF", 5, AC_AttitudeControl_Heli,     _heli_roll_ff,  AC_ATTITUDE_HELI_ROLL_FF),
-
-    // @Param: RATE_PIT_FF
-    // @DisplayName: Rate Pitch Feed Forward
-    // @Description: Rate Pitch Feed Forward (for TradHeli Only)
-    // @Range: 0 10
-    // @Increment: 0.01
-    // @User: Standard
-    AP_GROUPINFO("RATE_PIT_FF", 6,  AC_AttitudeControl_Heli,    _heli_pitch_ff, AC_ATTITUDE_HELI_ROLL_FF),
-
-    // @Param: RATE_YAW_FF
-    // @DisplayName: Rate Yaw Feed Forward
-    // @Description: Rate Yaw Feed Forward (for TradHeli Only)
-    // @Range: 0 10
-    // @Increment: 0.01
-    // @User: Standard
-    AP_GROUPINFO("RATE_YAW_FF", 7, AC_AttitudeControl_Heli,     _heli_yaw_ff,   AC_ATTITUDE_HELI_YAW_FF),
-
     AP_GROUPEND
 };
 
@@ -106,8 +82,8 @@ void AC_AttitudeControl_Heli::rate_controller_run()
 // rate_bf_to_motor_roll_pitch - ask the rate controller to calculate the motor outputs to achieve the target rate in centi-degrees / second
 void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target_cds, float rate_pitch_target_cds)
 {
-    float roll_pd, roll_i;                      // used to capture pid values
-    float pitch_pd, pitch_i;                    // used to capture pid values
+    float roll_pd, roll_i, roll_ff;             // used to capture pid values
+    float pitch_pd, pitch_i, pitch_ff;          // used to capture pid values
     float rate_roll_error, rate_pitch_error;    // simply target_rate - current_rate
     float roll_out, pitch_out;
     const Vector3f& gyro = _ins.get_gyro();     // get current rates
@@ -131,7 +107,7 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
             }
         }else{
             if (_flags_heli.leaky_i){
-                roll_i = _pid_rate_roll.get_leaky_i(rate_roll_error, _dt, AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
+                roll_i = ((AC_HELI_PID&)_pid_rate_roll).get_leaky_i(rate_roll_error, _dt, AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
             }else{
                 roll_i = _pid_rate_roll.get_i(rate_roll_error, _dt);
             }
@@ -149,16 +125,19 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
             }
         }else{
             if (_flags_heli.leaky_i) {
-                pitch_i = _pid_rate_pitch.get_leaky_i(rate_pitch_error, _dt, AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
+                pitch_i = ((AC_HELI_PID&)_pid_rate_pitch).get_leaky_i(rate_pitch_error, _dt, AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
             }else{
                 pitch_i = _pid_rate_pitch.get_i(rate_pitch_error, _dt);
             }
         }
     }
+    
+    roll_ff  = ((AC_HELI_PID&)_pid_rate_roll).get_ff(rate_roll_target_cds);
+    pitch_ff = ((AC_HELI_PID&)_pid_rate_pitch).get_ff(rate_pitch_target_cds);
 
     // add feed forward and final output
-    roll_out = (_heli_roll_ff * rate_roll_target_cds) + roll_pd + roll_i;
-    pitch_out = (_heli_pitch_ff * rate_pitch_target_cds) + pitch_pd + pitch_i;
+    roll_out = roll_pd + roll_i + roll_ff;
+    pitch_out = pitch_pd + pitch_i + pitch_ff;
 
     // constrain output and update limit flags
     if (fabs(roll_out) > AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX) {
@@ -261,7 +240,7 @@ static LowPassFilterFloat rate_dynamics_filter;     // Rate Dynamics filter
 // rate_bf_to_motor_yaw - ask the rate controller to calculate the motor outputs to achieve the target rate in centi-degrees / second
 float AC_AttitudeControl_Heli::rate_bf_to_motor_yaw(float rate_target_cds)
 {
-    float pd,i;            // used to capture pid values for logging
+    float pd,i,ff;            // used to capture pid values for logging
     float current_rate;     // this iteration's rate
     float rate_error;       // simply target_rate - current_rate
     float yaw_out;
@@ -282,12 +261,14 @@ float AC_AttitudeControl_Heli::rate_bf_to_motor_yaw(float rate_target_cds)
         if (((AP_MotorsHeli&)_motors).motor_runup_complete()) {
             i = _pid_rate_yaw.get_i(rate_error, _dt);
         } else {
-            i = _pid_rate_yaw.get_leaky_i(rate_error, _dt, AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);    // If motor is not running use leaky I-term to avoid excessive build-up
+            i = ((AC_HELI_PID&)_pid_rate_yaw).get_leaky_i(rate_error, _dt, AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);    // If motor is not running use leaky I-term to avoid excessive build-up
         }
     }
 
+    ff  = ((AC_HELI_PID&)_pid_rate_yaw).get_ff(rate_target_cds);
+    
     // add feed forward
-    yaw_out = (_heli_yaw_ff*rate_target_cds) + pd + i;
+    yaw_out = pd + i + ff;
 
     // constrain output and update limit flag
     if (fabs(yaw_out) > AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX) {
