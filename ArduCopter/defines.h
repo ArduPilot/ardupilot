@@ -56,6 +56,7 @@
 #define AUX_SWITCH_PARACHUTE_ENABLE 21      // Parachute enable/disable
 #define AUX_SWITCH_PARACHUTE_RELEASE 22     // Parachute release
 #define AUX_SWITCH_PARACHUTE_3POS   23      // Parachute disable, enable, release with 3 position switch
+#define AUX_SWITCH_MISSIONRESET     24      // Reset auto mission to start from first command
 
 // values used by the ap.ch7_opt and ap.ch8_opt flags
 #define AUX_SWITCH_LOW              0       // indicates auxiliar switch is in the low position (pwm <1200)
