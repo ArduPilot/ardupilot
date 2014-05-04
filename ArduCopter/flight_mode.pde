@@ -20,6 +20,11 @@ static bool set_mode(uint8_t mode)
         return true;
     }
 
+    // if we're switching out of AUTO, let AP_Mission know
+    if (control_mode == AUTO) {
+        mission.stop();
+    }
+
     switch(mode) {
         case ACRO:
             #if FRAME_CONFIG == HELI_FRAME
@@ -207,6 +212,11 @@ static void exit_mode(uint8_t old_control_mode, uint8_t new_control_mode)
         autotune_stop();
     }
 #endif
+
+    // if we're switching out of AUTO, let AP_Mission know
+    if (old_control_mode == AUTO) {
+        mission.stop();
+    }
 
     // smooth throttle transition when switching from manual to automatic flight modes
     if (manual_flight_mode(old_control_mode) && !manual_flight_mode(new_control_mode) && motors.armed() && !ap.land_complete) {
