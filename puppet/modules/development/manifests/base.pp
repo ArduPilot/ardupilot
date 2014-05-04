@@ -55,7 +55,9 @@ class development::base {
     package { 'eclipse':
         ensure          =>  'installed',
         provider        =>  'apt',
+    } ->
+    package { 'eclipse-cdt':
+        ensure          =>  'installed',
+        provider        =>  'apt',
     }
-    
-
 }

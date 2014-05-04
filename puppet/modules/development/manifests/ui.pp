@@ -21,6 +21,10 @@ class development::ui {
         ensure          =>  'installed',
         provider        =>  'apt',
         require         =>  Package [ 'ubuntu-desktop' ],
+    }->
+    package { 'gnome-tweak-tool':
+        ensure          =>  'installed',
+        provider        =>  'apt',
     }
 
     package { 'dkms':
