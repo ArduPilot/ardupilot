@@ -1133,10 +1133,10 @@ bool AP_InertialSensor_MPU9150::update(void)
 
     _previous_accel[0] = _accel[0];
 
-    hal.scheduler->suspend_timer_procs();
+    // hal.scheduler->suspend_timer_procs();
     _accel[0] = _accel_filtered;
     _gyro[0] = _gyro_filtered;
-    hal.scheduler->resume_timer_procs();
+    // hal.scheduler->resume_timer_procs();
 
     // add offsets and rotation
     _accel[0].rotate(_board_orientation);
