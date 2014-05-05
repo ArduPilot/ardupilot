@@ -59,13 +59,11 @@ GCS_MAVLINK::_count_parameters()
 {
     // if we haven't cached the parameter count yet...
     if (0 == _parameter_count) {
-        AP_Param  *vp;
         AP_Param::ParamToken token;
 
-        vp = AP_Param::first(&token, NULL);
         do {
             _parameter_count++;
-        } while (NULL != (vp = AP_Param::next_scalar(&token, NULL)));
+        } while (NULL != AP_Param::next_scalar(&token, NULL));
     }
     return _parameter_count;
 }

@@ -43,7 +43,6 @@ void AP_OpticalFlow::update_position(float roll, float pitch, float sin_yaw, flo
 {
     float diff_roll     = roll  - _last_roll;
     float diff_pitch    = pitch - _last_pitch;
-    float change_x, change_y;   // actual change in x, y coordinates
 
     // only update position if surface quality is good and angle is not
     // over 45 degrees
@@ -52,8 +51,8 @@ void AP_OpticalFlow::update_position(float roll, float pitch, float sin_yaw, flo
 	    altitude = max(altitude, 0);
 
         // change in position is actual change measured by sensor (i.e. dx, dy) minus expected change due to change in roll, pitch
-        change_x = dx - (diff_roll * radians_to_pixels);
-        change_y = dy - (-diff_pitch * radians_to_pixels);
+        float change_x = dx - (diff_roll * radians_to_pixels);
+        float change_y = dy - (-diff_pitch * radians_to_pixels);
 
         float avg_altitude = (altitude + _last_altitude)*0.5f;
 

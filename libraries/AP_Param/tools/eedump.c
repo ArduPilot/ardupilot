@@ -36,7 +36,6 @@ main(int argc, char *argv[])
 {
     FILE                  *fp;
     struct EEPROM_header  *header;
-    struct Var_header     *var;
     unsigned index;
     unsigned i;
 
@@ -62,7 +61,7 @@ main(int argc, char *argv[])
 
     index = sizeof(*header);
     for (;; ) {
-        var = (struct Var_header *)&eeprom[index];
+        struct Var_header *var = (struct Var_header *)&eeprom[index];
         if (var->key == k_key_sentinel) {
             printf("end sentinel at %u\n", index);
             break;

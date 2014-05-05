@@ -280,12 +280,10 @@ AP_GPS_SBP::sbp_process_pos_llh(uint8_t* msg)
 void 
 AP_GPS_SBP::sbp_process_baseline_ecef(uint8_t* msg) 
 {
-    struct sbp_baseline_ecef_t* b = (struct sbp_baseline_ecef_t*)msg;
-
     baseline_msg_counter += 1;
 
 #if SBP_HW_LOGGING
-    logging_log_baseline(b);
+    logging_log_baseline((sbp_baseline_ecef_t*)msg);
 #endif
 }
 

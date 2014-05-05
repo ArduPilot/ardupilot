@@ -147,8 +147,7 @@ void AC_PosControl::get_stopping_point_z(Vector3f& stopping_point) const
 {
     const float curr_pos_z = _inav.get_altitude();
     const float curr_vel_z = _inav.get_velocity_z();
-
-    float linear_distance;  // half the distance we swap between linear and sqrt and the distance we offset sqrt
+    
     float linear_velocity;  // the velocity we swap between linear and sqrt
 
     // calculate the velocity at which we switch from calculating the stopping point using a linear function to a sqrt function
@@ -158,7 +157,7 @@ void AC_PosControl::get_stopping_point_z(Vector3f& stopping_point) const
         // if our current velocity is below the cross-over point we use a linear function
         stopping_point.z = curr_pos_z + curr_vel_z/_p_alt_pos.kP();
     } else {
-        linear_distance = _accel_z_cms/(2.0f*_p_alt_pos.kP()*_p_alt_pos.kP());
+        float linear_distance = _accel_z_cms/(2.0f*_p_alt_pos.kP()*_p_alt_pos.kP());
         if (curr_vel_z > 0){
             stopping_point.z = curr_pos_z + (linear_distance + curr_vel_z*curr_vel_z/(2.0f*_accel_z_cms));
         } else {
@@ -208,7 +207,6 @@ void AC_PosControl::calc_leash_length_z()
 void AC_PosControl::pos_to_rate_z()
 {
     float curr_alt = _inav.get_altitude();
-    float linear_distance;  // half the distance we swap between linear and sqrt and the distance we offset sqrt.
 
     // clear position limit flags
     _limit.pos_up = false;
@@ -237,7 +235,7 @@ void AC_PosControl::pos_to_rate_z()
 
     // check kP to avoid division by zero
     if (_p_alt_pos.kP() != 0) {
-        linear_distance = _accel_z_cms/(2.0f*_p_alt_pos.kP()*_p_alt_pos.kP());
+        float linear_distance = _accel_z_cms/(2.0f*_p_alt_pos.kP()*_p_alt_pos.kP());
         if (_pos_error.z > 2*linear_distance ) {
             _vel_target.z = safe_sqrt(2.0f*_accel_z_cms*(_pos_error.z-linear_distance));
         }else if (_pos_error.z < -2.0f*linear_distance) {
@@ -259,7 +257,6 @@ void AC_PosControl::rate_to_accel_z(float vel_target_z)
 {
     uint32_t now = hal.scheduler->millis();
     const Vector3f& curr_vel = _inav.get_velocity();
-    float z_target_speed_delta;             // The change in requested speed
     float p;                                // used to capture pid values for logging
     float desired_accel;                    // the target acceleration if the accel based throttle is enabled, otherwise the output to be sent to the motors
 
@@ -287,7 +284,7 @@ void AC_PosControl::rate_to_accel_z(float vel_target_z)
         //To-Do: adjust constant below based on update rate
         _vel_error.z = _vel_error.z + 0.20085f * ((vel_target_z - curr_vel.z) - _vel_error.z);
         // feed forward acceleration based on change in the filtered desired speed.
-        z_target_speed_delta = 0.20085f * (vel_target_z - _vel_target_filt_z);
+        float z_target_speed_delta = 0.20085f * (vel_target_z - _vel_target_filt_z);
         _vel_target_filt_z = _vel_target_filt_z + z_target_speed_delta;
         desired_accel = z_target_speed_delta / _dt;
     }

@@ -66,7 +66,7 @@ static uint8_t type_size(enum ap_var_type type)
     case AP_PARAM_MATRIX3F:
         return 3*3*4;
     }
-    printf("unknown type %u\n", type);
+    printf("unknown type %u\n", (uint16_t)type);
     return 0;
 }
 
@@ -82,7 +82,6 @@ main(int argc, char *argv[])
 {
     FILE                    *fp;
     struct EEPROM_header    *header;
-    struct Param_header     *var;
     unsigned index;
     unsigned i;
 
@@ -110,7 +109,7 @@ main(int argc, char *argv[])
     index = sizeof(*header);
     for (;; ) {
         uint8_t size;
-        var = (struct Param_header *)&eeprom[index];
+        struct Param_header *var = (struct Param_header *)&eeprom[index];
         if (var->key == _sentinal_key ||
             var->group_element == _sentinal_group ||
             var->type == _sentinal_type) {

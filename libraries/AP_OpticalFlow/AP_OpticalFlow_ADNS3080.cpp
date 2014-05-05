@@ -29,6 +29,7 @@ extern const AP_HAL::HAL& hal;
 AP_OpticalFlow_ADNS3080::AP_OpticalFlow_ADNS3080()
 {
     field_of_view = AP_OPTICALFLOW_ADNS3080_08_FOV;
+    _spi = NULL;
 }
 
 // Public Methods //////////////////////////////////////////////////////////////

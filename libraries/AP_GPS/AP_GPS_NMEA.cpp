@@ -105,6 +105,7 @@ AP_GPS_NMEA::AP_GPS_NMEA(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDr
     _gps_data_good(false)
 {
     gps.send_blob_start(state.instance, _initialisation_blob, sizeof(_initialisation_blob));
+    memset(_term, 0, sizeof(_term) );
 }
 
 bool AP_GPS_NMEA::read(void)
