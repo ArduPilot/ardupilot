@@ -9,16 +9,17 @@
 #include <AP_Baro.h>
 
 #include <AP_HAL_AVR.h>
+#include <AP_HAL_Linux.h>
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_ERLE
 
 AP_Baro_MS5611 baro(&AP_Baro_MS5611::spi);
 static uint32_t timer;
 
 void setup()
 {
-    hal.console->println("APM2 MS5611 Barometer library test");
+    hal.console->println("MS5611 Barometer library test");
 
     hal.scheduler->delay(1000);
 
