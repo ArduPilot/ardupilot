@@ -8,12 +8,18 @@
 const AP_Param::GroupInfo AP_Mission::var_info[] PROGMEM = {
 
     // @Param: TOTAL
-    // @DisplayName: Total number of commands in the mission in eeprom
+    // @DisplayName: Total mission commands
     // @Description: The number of mission mission items that has been loaded by the ground station. Do not change this manually.
     // @Range: 0 32766
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("TOTAL",  0, AP_Mission, _cmd_total, 0),
+
+    // @Param: AUTORESET
+    // @DisplayName: Reset mission on AUTO
+    // @Description: When set to 0 the mission will continue a previous AUTO mission when switching to AUTO mode. When set to 1 the mission will restart from the first waypoint each time AUTO mode is started.
+    // @Values: 0:Continue Mission, 1:Reset Mission
+    AP_GROUPINFO("AUTORESET",  1, AP_Mission, _auto_reset, 0),
 
     AP_GROUPEND
 };
@@ -42,13 +48,9 @@ void AP_Mission::init()
 void AP_Mission::start()
 {
     _flags.state = MISSION_RUNNING;
-    _flags.nav_cmd_loaded = false;
-    _flags.do_cmd_loaded = false;
-    _flags.do_cmd_all_done = false;
-    _nav_cmd.index = AP_MISSION_CMD_INDEX_NONE;
-    _do_cmd.index = AP_MISSION_CMD_INDEX_NONE;
-    _prev_nav_cmd_index = AP_MISSION_CMD_INDEX_NONE;
-    init_jump_tracking();
+
+    reset(); // reset mission to the first command, resets jump tracking
+    
     // advance to the first command
     if (!advance_current_nav_cmd()) {
         // on failure set mission complete
@@ -98,6 +100,28 @@ void AP_Mission::resume()
     if (_flags.do_cmd_loaded && _do_cmd.index != AP_MISSION_CMD_INDEX_NONE) {
         _cmd_start_fn(_do_cmd);
     }
+}
+
+/// start_or_resume - if MIS_AUTORESTART=0 this will call resume(), otherwise it will call start()
+void AP_Mission::start_or_resume()
+{
+    if (_auto_reset) {
+        start();
+    } else {
+        resume();
+    }
+}
+
+/// reset - reset mission to the first command
+void AP_Mission::reset()
+{
+    _flags.nav_cmd_loaded  = false;
+    _flags.do_cmd_loaded   = false;
+    _flags.do_cmd_all_done = false;
+    _nav_cmd.index         = AP_MISSION_CMD_INDEX_NONE;
+    _do_cmd.index          = AP_MISSION_CMD_INDEX_NONE;
+    _prev_nav_cmd_index    = AP_MISSION_CMD_INDEX_NONE;
+    init_jump_tracking();
 }
 
 /// clear - clears out mission

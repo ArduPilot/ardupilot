@@ -781,7 +781,7 @@ static void Log_Write_Performance() {}
 static void Log_Write_Cmd(const AP_Mission::Mission_Command &cmd) {}
 static void Log_Write_Camera() {}
 static void Log_Write_Error(uint8_t sub_system, uint8_t error_code) {}
-static void Log_Write_Baro(void);
+static void Log_Write_Baro(void) {}
 static int8_t process_logs(uint8_t argc, const Menu::arg *argv) {
     return 0;
 }

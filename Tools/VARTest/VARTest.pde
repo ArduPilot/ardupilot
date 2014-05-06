@@ -35,6 +35,7 @@
 #include <AP_Mission.h>
 #include <AP_SpdHgtControl.h>
 #include <memcheck.h>
+#include <AP_RCMapper.h>
 
 #include <APM_OBC.h>
 #include <APM_Control.h>

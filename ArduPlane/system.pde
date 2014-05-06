@@ -342,12 +342,8 @@ static void set_mode(enum FlightMode mode)
     case AUTO:
         auto_throttle_mode = true;
         prev_WP_loc = current_loc;
-        // start the mission. Note that we use resume(), not start(),
-        // as the correct behaviour for plane when entering auto is to
-        // continue the mission. If the pilot wants to restart the
-        // mission they need to either use RST_MISSION_CH or change
-        // waypoint number to 0
-        mission.resume();
+        // start or resume the mission, based on MIS_AUTORESET
+        mission.start_or_resume();
         break;
 
     case RTL:
@@ -472,6 +468,7 @@ static void startup_INS_ground(bool do_accel_init)
 
     ahrs.init();
     ahrs.set_fly_forward(true);
+    ahrs.set_vehicle_class(AHRS_VEHICLE_FIXED_WING);
     ahrs.set_wind_estimation(true);
 
     ins.init(style, ins_sample_rate);

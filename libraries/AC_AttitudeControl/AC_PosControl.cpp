@@ -42,8 +42,8 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     _speed_down_cms(POSCONTROL_SPEED_DOWN),
     _speed_up_cms(POSCONTROL_SPEED_UP),
     _speed_cms(POSCONTROL_SPEED),
-    _accel_z_cms(POSCONTROL_ACCEL_XY_MAX),   // To-Do: check this default
-    _accel_cms(POSCONTROL_ACCEL_XY_MAX),   // To-Do: check this default
+    _accel_z_cms(POSCONTROL_ACCEL_Z),
+    _accel_cms(POSCONTROL_ACCEL_XY),
     _leash(POSCONTROL_LEASH_LENGTH_MIN),
     _roll_target(0.0),
     _pitch_target(0.0),
@@ -64,6 +64,7 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
 #endif
     _flags.recalc_leash_xy = true;
     _flags.recalc_leash_z = true;
+    _flags.keep_xy_I_terms = false;
 }
 
 ///
@@ -76,6 +77,9 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
 ///     speed_down should be a negative number
 void AC_PosControl::set_speed_z(float speed_down, float speed_up)
 {
+    // ensure speed_down is always negative
+    speed_down = -fabs(speed_down);
+
     if ((fabs(_speed_down_cms-speed_down) > 1.0f) || (fabs(_speed_up_cms-speed_up) > 1.0f)) {
         _speed_down_cms = speed_down;
         _speed_up_cms = speed_up;
@@ -132,6 +136,9 @@ float AC_PosControl::get_alt_error() const
 /// set_target_to_stopping_point_z - returns reasonable stopping altitude in cm above home
 void AC_PosControl::set_target_to_stopping_point_z()
 {
+    // check if z leash needs to be recalculated
+    calc_leash_length_z();
+
     get_stopping_point_z(_pos_target);
 }
 
@@ -145,17 +152,17 @@ void AC_PosControl::get_stopping_point_z(Vector3f& stopping_point) const
     float linear_velocity;  // the velocity we swap between linear and sqrt
 
     // calculate the velocity at which we switch from calculating the stopping point using a linear function to a sqrt function
-    linear_velocity = POSCONTROL_ALT_HOLD_ACCEL_MAX/_p_alt_pos.kP();
+    linear_velocity = _accel_z_cms/_p_alt_pos.kP();
 
     if (fabs(curr_vel_z) < linear_velocity) {
         // if our current velocity is below the cross-over point we use a linear function
         stopping_point.z = curr_pos_z + curr_vel_z/_p_alt_pos.kP();
     } else {
-        linear_distance = POSCONTROL_ALT_HOLD_ACCEL_MAX/(2.0f*_p_alt_pos.kP()*_p_alt_pos.kP());
+        linear_distance = _accel_z_cms/(2.0f*_p_alt_pos.kP()*_p_alt_pos.kP());
         if (curr_vel_z > 0){
-            stopping_point.z = curr_pos_z + (linear_distance + curr_vel_z*curr_vel_z/(2.0f*POSCONTROL_ALT_HOLD_ACCEL_MAX));
+            stopping_point.z = curr_pos_z + (linear_distance + curr_vel_z*curr_vel_z/(2.0f*_accel_z_cms));
         } else {
-            stopping_point.z = curr_pos_z - (linear_distance + curr_vel_z*curr_vel_z/(2.0f*POSCONTROL_ALT_HOLD_ACCEL_MAX));
+            stopping_point.z = curr_pos_z - (linear_distance + curr_vel_z*curr_vel_z/(2.0f*_accel_z_cms));
         }
     }
     stopping_point.z = constrain_float(stopping_point.z, curr_pos_z - POSCONTROL_STOPPING_DIST_Z_MAX, curr_pos_z + POSCONTROL_STOPPING_DIST_Z_MAX);
@@ -230,11 +237,11 @@ void AC_PosControl::pos_to_rate_z()
 
     // check kP to avoid division by zero
     if (_p_alt_pos.kP() != 0) {
-        linear_distance = POSCONTROL_ALT_HOLD_ACCEL_MAX/(2.0f*_p_alt_pos.kP()*_p_alt_pos.kP());
+        linear_distance = _accel_z_cms/(2.0f*_p_alt_pos.kP()*_p_alt_pos.kP());
         if (_pos_error.z > 2*linear_distance ) {
-            _vel_target.z = safe_sqrt(2.0f*POSCONTROL_ALT_HOLD_ACCEL_MAX*(_pos_error.z-linear_distance));
+            _vel_target.z = safe_sqrt(2.0f*_accel_z_cms*(_pos_error.z-linear_distance));
         }else if (_pos_error.z < -2.0f*linear_distance) {
-            _vel_target.z = -safe_sqrt(2.0f*POSCONTROL_ALT_HOLD_ACCEL_MAX*(-_pos_error.z-linear_distance));
+            _vel_target.z = -safe_sqrt(2.0f*_accel_z_cms*(-_pos_error.z-linear_distance));
         }else{
             _vel_target.z = _p_alt_pos.get_p(_pos_error.z);
         }
@@ -379,6 +386,15 @@ void AC_PosControl::set_pos_target(const Vector3f& position)
     //_pitch_target = constrain_int32(_ahrs.pitch_sensor,-_attitude_control.lean_angle_max(),_attitude_control.lean_angle_max());
 }
 
+/// set_target_to_stopping_point_xy - sets horizontal target to reasonable stopping position in cm from home
+void AC_PosControl::set_target_to_stopping_point_xy()
+{
+    // check if xy leash needs to be recalculated
+    calc_leash_length_xy();
+
+    get_stopping_point_xy(_pos_target);
+}
+
 /// get_stopping_point_xy - calculates stopping point based on current position, velocity, vehicle acceleration
 ///     distance_max allows limiting distance to stopping point
 ///     results placed in stopping_position vector
@@ -398,7 +414,8 @@ void AC_PosControl::get_stopping_point_xy(Vector3f &stopping_point) const
 
     // avoid divide by zero by using current position if the velocity is below 10cm/s, kP is very low or acceleration is zero
     if (vel_total < 10.0f || kP <= 0.0f || _accel_cms <= 0.0f) {
-        stopping_point = curr_pos;
+        stopping_point.x = curr_pos.x;
+        stopping_point.y = curr_pos.y;
         return;
     }
 
@@ -427,16 +444,20 @@ float AC_PosControl::get_distance_to_target() const
     return _distance_to_target;
 }
 
-/// update_pos_controller - run the horizontal position controller - should be called at 100hz or higher
-void AC_PosControl::update_pos_controller(bool use_desired_velocity)
+/// update_xy_controller - run the horizontal position controller - should be called at 100hz or higher
+void AC_PosControl::update_xy_controller(bool use_desired_velocity)
 {
     // catch if we've just been started
     uint32_t now = hal.scheduler->millis();
     if ((now - _last_update_ms) >= 1000) {
         _last_update_ms = now;
-        reset_I_xy();
+        if (!_flags.keep_xy_I_terms) {
+            reset_I_xy();
+        }
         _xy_step = 0;
     }
+    // reset keep_xy_I_term flag in case it has been set
+    _flags.keep_xy_I_terms = false;
 
     // check if xy leash needs to be recalculated
     calc_leash_length_xy();
@@ -589,9 +610,7 @@ void AC_PosControl::rate_to_accel_xy(float dt)
 {
     const Vector3f &vel_curr = _inav.get_velocity();  // current velocity in cm/s
     float accel_total;                          // total acceleration in cm/s/s
-
-    // reset accel limit flag
-    _limit.accel_xy = false;
+    float lat_i, lon_i;
 
     // reset last velocity if this controller has just been engaged or dt is zero
     if (dt == 0.0) {
@@ -611,10 +630,21 @@ void AC_PosControl::rate_to_accel_xy(float dt)
     _vel_error.x = _vel_target.x - vel_curr.x;
     _vel_error.y = _vel_target.y - vel_curr.y;
 
+    // get current i term
+    lat_i = _pid_rate_lat.get_integrator();
+    lon_i = _pid_rate_lon.get_integrator();
+
+    // update i term if we have not hit the accel or throttle limits OR the i term will reduce
+    if ((!_limit.accel_xy && !_motors.limit.throttle_upper) || ((lat_i>0&&_vel_error.x<0)||(lat_i<0&&_vel_error.x>0))) {
+        lat_i = _pid_rate_lat.get_i(_vel_error.x, dt);
+    }
+    if ((!_limit.accel_xy && !_motors.limit.throttle_upper) || ((lon_i>0&&_vel_error.y<0)||(lon_i<0&&_vel_error.y>0))) {
+        lon_i = _pid_rate_lon.get_i(_vel_error.y, dt);
+    }
+
     // combine feed forward accel with PID output from velocity error
-    // To-Do: check accel limit flag before adding I term
-    _accel_target.x += _pid_rate_lat.get_pid(_vel_error.x, dt);
-    _accel_target.y += _pid_rate_lon.get_pid(_vel_error.y, dt);
+    _accel_target.x += _pid_rate_lat.get_p(_vel_error.x) + lat_i + _pid_rate_lat.get_d(_vel_error.x, dt);
+    _accel_target.y += _pid_rate_lon.get_p(_vel_error.y) + lon_i + _pid_rate_lon.get_d(_vel_error.y, dt);
 
     // scale desired acceleration if it's beyond acceptable limit
     // To-Do: move this check down to the accel_to_lean_angle method?
@@ -623,6 +653,9 @@ void AC_PosControl::rate_to_accel_xy(float dt)
         _accel_target.x = POSCONTROL_ACCEL_XY_MAX * _accel_target.x/accel_total;
         _accel_target.y = POSCONTROL_ACCEL_XY_MAX * _accel_target.y/accel_total;
         _limit.accel_xy = true;     // unused
+    } else {
+        // reset accel limit flag
+        _limit.accel_xy = false;
     }
 }
 

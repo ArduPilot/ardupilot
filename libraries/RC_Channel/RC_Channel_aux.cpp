@@ -261,6 +261,42 @@ RC_Channel_aux::set_servo_out(RC_Channel_aux::Aux_servo_function_t function, int
 }
 
 /*
+  setup failsafe value for an auxiliary function type to a LimitValue
+ */
+void
+RC_Channel_aux::set_servo_failsafe(RC_Channel_aux::Aux_servo_function_t function, RC_Channel::LimitValue limit)
+{
+    if (!function_assigned(function)) {
+        return;
+    }
+    for (uint8_t i = 0; i < RC_AUX_MAX_CHANNELS; i++) {
+        const RC_Channel_aux *ch = _aux_channels[i];
+        if (ch && ch->function.get() == function) {
+            uint16_t pwm = ch->get_limit_pwm(limit);
+            hal.rcout->set_failsafe_pwm(1U<<ch->get_ch_out(), pwm);
+        }
+    }
+}
+
+/*
+  set radio output value for an auxiliary function type to a LimitValue
+ */
+void
+RC_Channel_aux::set_servo_limit(RC_Channel_aux::Aux_servo_function_t function, RC_Channel::LimitValue limit)
+{
+    if (!function_assigned(function)) {
+        return;
+    }
+    for (uint8_t i = 0; i < RC_AUX_MAX_CHANNELS; i++) {
+        RC_Channel_aux *ch = _aux_channels[i];
+        if (ch && ch->function.get() == function) {
+            uint16_t pwm = ch->get_limit_pwm(limit);
+            ch->radio_out = pwm;
+        }
+    }
+}
+
+/*
   return true if a particular function is assigned to at least one RC channel
  */
 bool

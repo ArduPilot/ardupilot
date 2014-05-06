@@ -64,7 +64,8 @@ AC_Fence::AC_Fence(const AP_InertialNav* inav) :
     _home_distance(0),
     _breached_fences(AC_FENCE_TYPE_NONE),
     _breach_time(0),
-    _breach_count(0)
+    _breach_count(0),
+    _manual_recovery_start_ms(0)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -117,6 +118,17 @@ uint8_t AC_Fence::check_fence()
     // return immediately if disabled
     if (!_enabled || _enabled_fences == AC_FENCE_TYPE_NONE) {
         return AC_FENCE_TYPE_NONE;
+    }
+
+    // check if pilot is attempting to recover manually
+    if (_manual_recovery_start_ms != 0) {
+        // we ignore any fence breaches during the manual recovery period which is about 10 seconds
+        if ((hal.scheduler->millis() - _manual_recovery_start_ms) < AC_FENCE_MANUAL_RECOVERY_TIME_MIN) {
+            return AC_FENCE_TYPE_NONE;
+        } else {
+            // recovery period has passed so reset manual recovery time and continue with fence breach checks
+            _manual_recovery_start_ms = 0;
+        }
     }
 
     // get current altitude in meters
@@ -232,4 +244,17 @@ float AC_Fence::get_breach_distance(uint8_t fence_type) const
 
     // we don't recognise the fence type so just return 0
     return 0;
+}
+
+/// manual_recovery_start - caller indicates that pilot is re-taking manual control so fence should be disabled for 10 seconds
+///     has no effect if no breaches have occurred
+void AC_Fence::manual_recovery_start()
+{
+    // return immediate if we haven't breached a fence
+    if (_breached_fences == AC_FENCE_TYPE_NONE) {
+        return;
+    }
+
+    // record time pilot began manual recovery
+    _manual_recovery_start_ms = hal.scheduler->millis();
 }

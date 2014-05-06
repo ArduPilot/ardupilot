@@ -80,7 +80,7 @@ bool AP_Rally::set_rally_point_with_index(uint8_t i, const RallyLocation &rallyL
 }
 
 // helper function to translate a RallyLocation to a Location
-Location AP_Rally::rally_location_to_location(const RallyLocation &rally_loc, const Location &home_loc) const
+Location AP_Rally::rally_location_to_location(const RallyLocation &rally_loc) const
 {
     Location ret = {};
 
@@ -90,7 +90,7 @@ Location AP_Rally::rally_location_to_location(const RallyLocation &rally_loc, co
     //Currently can't do true AGL on the APM.  Relative altitudes are
     //relative to HOME point's altitude.  Terrain on the board is inbound
     //for the PX4, though.  This line will need to be updated when that happens:
-    ret.alt = (rally_loc.alt*100UL) + home_loc.alt;
+    ret.alt = (rally_loc.alt*100UL) + _ahrs.get_home().alt;
 
     ret.lat = rally_loc.lat;
     ret.lng = rally_loc.lng;
@@ -109,7 +109,7 @@ bool AP_Rally::find_nearest_rally_point(const Location &current_loc, RallyLocati
         if (!get_rally_point_with_index(i, next_rally)) {
             continue;
         }
-        Location rally_loc = rally_location_to_location(next_rally, home_loc);
+        Location rally_loc = rally_location_to_location(next_rally);
         float dis = get_distance(current_loc, rally_loc);
 
         if (dis < min_dis || min_dis < 0) {
@@ -134,7 +134,7 @@ Location AP_Rally::calc_best_rally_or_home_location(const Location &current_loc,
     
     if (find_nearest_rally_point(current_loc, ral_loc)) {
         // valid rally point found
-        return_loc = rally_location_to_location(ral_loc, home_loc);
+        return_loc = rally_location_to_location(ral_loc);
     } else {
         // no valid rally point, return home position
         return_loc = home_loc;

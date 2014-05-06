@@ -1,3 +1,99 @@
+Release 3.0.2, May 4th 2014
+---------------------------
+
+The ardupilot development team is proud to announce the release of
+version 3.0.2 of APM:Plane. This release combines some important bug
+fixes with some new features.
+
+I2C bug fix
+-----------
+
+The most important change for this release is a bug fix for an I2C bug
+in the NuttX I2C driver code that could (under some rare
+circumstances) cause a Pixhawk to crash. This bug fix is the primary
+reason for doing a new release now.
+
+This bug was able to be reproduced by creating a 1.3m GPS cable
+carrying both the I2C signals for a magnetometer and the UART signals
+for the GPS. Interference between these two signals could cause the
+I2C controller to give spurious data to the I2C driver. The I2C driver
+did not have sufficient protection against these errors and could
+crash the board.
+
+While we have not been able to reproduce this error with the normal
+cables that come with a Pixhawk we cannot rule out the bug triggering
+with shorter cables, so we are doing a fast release to fix the bug.
+
+Autotune
+--------
+
+This release also includes an important new feature - automatic
+roll/pitch tuning. While this feature is still considered experimental
+we have had very positive feedback from beta testers and have decided
+to include it in the release.
+
+Full documentation for how to use automatic tuning is available here:
+
+  http://plane.ardupilot.com/wiki/automatic-tuning-with-autotune/
+
+we hope that the automatic tuning will help users who have had
+difficulty with the standard APM:Plane manual tuning procedure. We
+plan on extending autotune to other aspects of fixed wing tuning in
+future releases.
+
+Other changes
+-------------
+
+ - fixed a glide slope calculation error when very close to waypoints
+ - fixed a bug when swithing to another auto-throttle mode during auto
+   takeoff (thanks to Marco for finding this bug!)
+ - added MIS_AUTORESET parameter (thanks to Andrew Chapman)
+ - support compassmot calibration by supplying current measurments to the
+   compass driver (thanks to Jon Challinger)
+ - fixed a GPS driver bug that could cause GPS lag in case of lost GPS
+   samples (thanks to Jon Challinger)
+ - fixed a LOITER_TURNS bug in missions for counter-clockwise loiter
+   (thanks to Iskess for finding this bug)
+ - added support for OBC termination requirements to PX4IO
+ - added support for pressure altitude termination to OBC module
+ - fixed EKF wind estimation with no airspeed sensor (thanks to Paul
+   Riseborough)
+ - improved tuning of EKF for fixed wing aircraft (thanks to Paul
+   Riseborough)
+ - Converted rally point code to library AP_Rally (thanks to Andrew
+   Chapman)
+ - added SITL checking for numerical errors
+
+Thanks to testers!
+
+Many thanks to everyone who tested the beta versions of this release!
+Special thanks to Marco, Paul, Jon, Iam, JNJO, sonicdahousecat and
+Keeyen for providing testing of both existing features and the new
+autotune code.
+
+
+Release 3.0.1, April 9th 2014
+-----------------------------
+
+I've just released APM:Plane 3.0.1, a bug fix release for the 3.0.0 release.
+This release fixes two bugs:
+
+    throttle failsafe for aircraft using PWM level for failsafe detection
+    wind reporting with EKF enabled and no airspeed sensor
+
+The throttle failsafe fix is a critical bugfix, which is why I am
+doing a new release so soon. The bug was found by Sam Tabor, and he
+posted the bug report before the 3.0.0 release, but I didn't notice it
+in the release preparations.  The bug only affects systems using PWM
+value as the sole method of detecting loss of RC control. I hadn't
+noticed it myself as my planes all use receivers which stop sending
+value PWM frames when the RC link is lost. In that case failsafe
+worked correctly. Receivers that keep sending PWM frames but with low
+throttle levels are common though, so this is a very important fix.
+Many thanks to Sam for reporting the bug, and my apologies for not
+noticing it in time for the 3.0.0 release.
+
+
 Release 3.0.0, April 8th 2014
 -----------------------------
 
@@ -309,3 +405,4 @@ of the fixed wing code for APM, and I think puts us in a great
 position for future development.
 
 Happy flying!
+

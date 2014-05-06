@@ -30,15 +30,15 @@ start_command(const AP_Mission::Mission_Command& cmd)
 
     // special handling for nav vs non-nav commands
     if (AP_Mission::is_nav_cmd(cmd)) {
-    // set land_complete to false to stop us zeroing the throttle
-    land_complete = false;
+        // set land_complete to false to stop us zeroing the throttle
+        auto_state.land_complete = false;
 
-    // set takeoff_complete to true so we don't add extra evevator
+        // set takeoff_complete to true so we don't add extra evevator
         // except in a takeoff
-    takeoff_complete = true;
-
+        auto_state.takeoff_complete = true;
+        
         gcs_send_text_fmt(PSTR("Executing nav command ID #%i"),cmd.id);
-    }else{
+    } else {
         gcs_send_text_fmt(PSTR("Executing command ID #%i"),cmd.id);
     }
 
@@ -259,11 +259,11 @@ static void do_takeoff(const AP_Mission::Mission_Command& cmd)
 {
     set_next_WP(cmd.content.location);
     // pitch in deg, airspeed  m/s, throttle %, track WP 1 or 0
-    takeoff_pitch_cd        = (int)cmd.p1 * 100;
-    takeoff_altitude_cm     = next_WP_loc.alt;
+    auto_state.takeoff_pitch_cd        = (int)cmd.p1 * 100;
+    auto_state.takeoff_altitude_cm     = next_WP_loc.alt;
     next_WP_loc.lat = home.lat + 10;
     next_WP_loc.lng = home.lng + 10;
-    takeoff_complete        = false;                            // set flag to use gps ground course during TO.  IMU will be doing yaw drift correction
+    auto_state.takeoff_complete = false;                            // set flag to use gps ground course during TO.  IMU will be doing yaw drift correction
     // Flag also used to override "on the ground" throttle disable
 }
 
@@ -329,9 +329,9 @@ static bool verify_takeoff()
     }
 
     // see if we have reached takeoff altitude
-    if (adjusted_altitude_cm() > takeoff_altitude_cm) {
+    if (adjusted_altitude_cm() > auto_state.takeoff_altitude_cm) {
         steer_state.hold_course_cd = -1;
-        takeoff_complete = true;
+        auto_state.takeoff_complete = true;
         next_WP_loc = prev_WP_loc = current_loc;
 
 #if GEOFENCE_ENABLED == ENABLED
@@ -362,7 +362,7 @@ static bool verify_land()
     if ((wp_distance <= (g.land_flare_sec * gps.ground_speed()))
         || (adjusted_altitude_cm() <= next_WP_loc.alt + g.land_flare_alt*100)) {
 
-        land_complete = true;
+        auto_state.land_complete = true;
 
         if (steer_state.hold_course_cd == -1) {
             // we have just reached the threshold of to flare for landing.

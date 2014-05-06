@@ -9,8 +9,6 @@ static int8_t   test_baro(uint8_t argc,                 const Menu::arg *argv);
 #endif
 static int8_t   test_compass(uint8_t argc,              const Menu::arg *argv);
 static int8_t   test_ins(uint8_t argc,                  const Menu::arg *argv);
-static int8_t   test_motors(uint8_t argc,               const Menu::arg *argv);
-static int8_t   test_motorsync(uint8_t argc,            const Menu::arg *argv);
 static int8_t   test_optflow(uint8_t argc,              const Menu::arg *argv);
 static int8_t   test_relay(uint8_t argc,                const Menu::arg *argv);
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
@@ -30,8 +28,6 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 #endif
     {"compass",             test_compass},
     {"ins",                 test_ins},
-    {"motors",              test_motors},
-    {"motorsync",           test_motorsync},
     {"optflow",             test_optflow},
     {"relay",               test_relay},
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
@@ -196,159 +192,6 @@ test_ins(uint8_t argc, const Menu::arg *argv)
             return (0);
         }
     }
-}
-
-static int8_t
-test_motors(uint8_t argc, const Menu::arg *argv)
-{
-    cliSerial->printf_P(PSTR(
-                        "Connect battery for this test.\n"
-                        "Motors will spin by frame position order.\n"
-                        "Front (& right of centerline) motor first, then in clockwise order around frame.\n"
-                        "Remember to disconnect battery after this test.\n"
-                        "Any key to exit.\n"));
-
-    // ensure all values have been sent to motors
-    motors.set_update_rate(g.rc_speed);
-    motors.set_frame_orientation(g.frame_orientation);
-    motors.set_min_throttle(g.throttle_min);
-    motors.set_mid_throttle(g.throttle_mid);
-
-    // enable motors
-    init_rc_out();
-
-    while(1) {
-        delay(20);
-        read_radio();
-        motors.output_test();
-        if(cliSerial->available() > 0) {
-            g.esc_calibrate.set_and_save(0);
-            return(0);
-        }
-    }
-}
-
-
-// test_motorsync - suddenly increases pwm output to motors to test if ESC loses sync
-static int8_t
-test_motorsync(uint8_t argc, const Menu::arg *argv)
-{
-    bool     test_complete = false;
-    bool     spin_motors = false;
-    uint32_t spin_start_time = 0;
-    uint32_t last_run_time;
-    int16_t  last_throttle = 0;
-    int16_t  c;
-
-    // check if radio is calibration
-    pre_arm_rc_checks();
-    if (!ap.pre_arm_rc_check) {
-        cliSerial->print_P(PSTR("radio not calibrated\n"));
-        return 0;
-    }
-
-    // print warning that motors will spin
-    // ask user to raise throttle
-    // inform how to stop test
-    cliSerial->print_P(PSTR("This sends sudden outputs to the motors based on the pilot's throttle to test for ESC loss of sync. Motors will spin so mount props up-side-down!\n   Hold throttle low, then raise throttle stick to desired level and press A.  Motors will spin for 2 sec and then return to low.\nPress any key to exit.\n"));
-
-    // clear out user input
-    while (cliSerial->available()) {
-        cliSerial->read();
-    }
-
-    // disable throttle and battery failsafe
-    g.failsafe_throttle = FS_THR_DISABLED;
-    g.failsafe_battery_enabled = FS_BATT_DISABLED;
-
-    // read radio
-    read_radio();
-
-    // exit immediately if throttle is not zero
-    if( g.rc_3.control_in != 0 ) {
-        cliSerial->print_P(PSTR("throttle not zero\n"));
-        return 0;
-    }
-
-    // clear out any user input
-    while (cliSerial->available()) {
-        cliSerial->read();
-    }
-
-    // enable motors and pass through throttle
-    init_rc_out();
-    output_min();
-    motors.armed(true);
-
-    // initialise run time
-    last_run_time = millis();
-
-    // main run while the test is not complete
-    while(!test_complete) {
-        // 50hz loop
-        if( millis() - last_run_time > 20 ) {
-            last_run_time = millis();
-
-            // read radio input
-            read_radio();
-
-            // display throttle value
-            if (abs(g.rc_3.control_in-last_throttle) > 10) {
-                cliSerial->printf_P(PSTR("\nThr:%d"),g.rc_3.control_in);
-                last_throttle = g.rc_3.control_in;
-            }
-
-            // decode user input
-            if (cliSerial->available()) {
-                c = cliSerial->read();
-                if (c == 'a' || c == 'A') {
-                    spin_motors = true;
-                    spin_start_time = millis();
-                    // display user's throttle level
-                    cliSerial->printf_P(PSTR("\nSpin motors at:%d"),(int)g.rc_3.control_in);
-                    // clear out any other use input queued up
-                    while (cliSerial->available()) {
-                        cliSerial->read();
-                    }
-                }else{
-                    // any other input ends the test
-                    test_complete = true;
-                    motors.armed(false);
-                }
-            }
-
-            // check if time to stop motors
-            if (spin_motors) {
-                if ((millis() - spin_start_time) > 2000) {
-                    spin_motors = false;
-                    cliSerial->printf_P(PSTR("\nMotors stopped"));
-                }
-            }
-
-            // output to motors
-            if (spin_motors) {
-                // pass pilot throttle through to motors
-                motors.throttle_pass_through();
-            }else{
-                // spin motors at minimum
-                output_min();
-            }
-        }
-    }
-
-    // stop motors
-    motors.output_min();
-    motors.armed(false);
-
-    // clear out any user input
-    while( cliSerial->available() ) {
-        cliSerial->read();
-    }
-
-    // display completion message
-    cliSerial->printf_P(PSTR("\nTest complete\n"));
-
-    return 0;
 }
 
 static int8_t

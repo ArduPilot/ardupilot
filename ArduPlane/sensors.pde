@@ -54,6 +54,7 @@ static void zero_airspeed(void)
 static void read_battery(void)
 {
     battery.read();
+    compass.set_current(battery.current_amps());
 
     if (!usb_connected && battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah)) {
         low_battery_event();

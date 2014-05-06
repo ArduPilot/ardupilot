@@ -226,10 +226,19 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Pilot maximum vertical speed
     // @Description: The maximum vertical velocity the pilot may request in cm/s
     // @Units: Centimeters/Second
-    // @Range: 10 500
+    // @Range: 50 500
     // @Increment: 10
     // @User: Standard
     GSCALAR(pilot_velocity_z_max,     "PILOT_VELZ_MAX",   PILOT_VELZ_MAX),
+
+    // @Param: PILOT_ACCEL_Z
+    // @DisplayName: Pilot vertical acceleration
+    // @Description: The vertical acceleration used when pilot is controlling the altitude
+    // @Units: cm/s/s
+    // @Range: 50 500
+    // @Increment: 10
+    // @User: Standard
+    GSCALAR(pilot_accel_z,  "PILOT_ACCEL_Z",    PILOT_ACCEL_Z_DEFAULT),
 
     // @Param: THR_MIN
     // @DisplayName: Throttle Minimum
@@ -285,42 +294,42 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: FLTMODE1
     // @DisplayName: Flight Mode 1
     // @Description: Flight mode when Channel 5 pwm is <= 1230
-    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport
+    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport,16:Hybrid
     // @User: Standard
     GSCALAR(flight_mode1, "FLTMODE1",               FLIGHT_MODE_1),
 
     // @Param: FLTMODE2
     // @DisplayName: Flight Mode 2
     // @Description: Flight mode when Channel 5 pwm is >1230, <= 1360
-    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport
+    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport,16:Hybrid
     // @User: Standard
     GSCALAR(flight_mode2, "FLTMODE2",               FLIGHT_MODE_2),
 
     // @Param: FLTMODE3
     // @DisplayName: Flight Mode 3
     // @Description: Flight mode when Channel 5 pwm is >1360, <= 1490
-    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport
+    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport,16:Hybrid
     // @User: Standard
     GSCALAR(flight_mode3, "FLTMODE3",               FLIGHT_MODE_3),
 
     // @Param: FLTMODE4
     // @DisplayName: Flight Mode 4
     // @Description: Flight mode when Channel 5 pwm is >1490, <= 1620
-    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport
+    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport,16:Hybrid
     // @User: Standard
     GSCALAR(flight_mode4, "FLTMODE4",               FLIGHT_MODE_4),
 
     // @Param: FLTMODE5
     // @DisplayName: Flight Mode 5
     // @Description: Flight mode when Channel 5 pwm is >1620, <= 1749
-    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport
+    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport,16:Hybrid
     // @User: Standard
     GSCALAR(flight_mode5, "FLTMODE5",               FLIGHT_MODE_5),
 
     // @Param: FLTMODE6
     // @DisplayName: Flight Mode 6
     // @Description: Flight mode when Channel 5 pwm is >=1750
-    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport
+    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport,16:Hybrid
     // @User: Standard
     GSCALAR(flight_mode6, "FLTMODE6",               FLIGHT_MODE_6),
 
@@ -375,14 +384,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: CH7_OPT
     // @DisplayName: Channel 7 option
     // @Description: Select which function if performed when CH7 is above 1800 pwm
-    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 8:Multi Mode, 9:Camera Trigger, 10:Sonar, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:EPM
+    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 8:Multi Mode, 9:Camera Trigger, 10:Sonar, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:EPM, 20:EKF, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos
     // @User: Standard
     GSCALAR(ch7_option, "CH7_OPT",                  CH7_OPTION),
 
     // @Param: CH8_OPT
     // @DisplayName: Channel 8 option
     // @Description: Select which function if performed when CH8 is above 1800 pwm
-    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 8:Multi Mode, 9:Camera Trigger, 10:Sonar, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:EPM
+    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 8:Multi Mode, 9:Camera Trigger, 10:Sonar, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:EPM, 20:EKF, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos
     // @User: Standard
     GSCALAR(ch8_option, "CH8_OPT",                  CH8_OPTION),
 
@@ -402,10 +411,29 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: RC_FEEL_RP
     // @DisplayName: RC Feel Roll/Pitch
-    // @Description: RC feel for roll/pitch which controls vehicle response to user input with 0 being extremely soft and 100 begin crisp
-    // @User: Advanced
+    // @Description: RC feel for roll/pitch which controls vehicle response to user input with 0 being extremely soft and 100 being crisp
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
     // @Values: 0:Very Soft, 25:Soft, 50:Medium, 75:Crisp, 100:Very Crisp
     GSCALAR(rc_feel_rp, "RC_FEEL_RP",  RC_FEEL_RP_VERY_CRISP),
+
+#if HYBRID_ENABLED == ENABLED
+    // @Param: HYBR_BRAKE_RATE
+    // @DisplayName: Hybrid braking rate
+    // @Description: hybrid flight mode's rotation rate during braking in deg/sec
+    // @Range: 4 12
+    // @User: Advanced
+    GSCALAR(hybrid_brake_rate, "HYBR_BRAKE_RATE",  HYBRID_BRAKE_RATE_DEFAULT),
+
+    // @Param: HYBR_BRAKE_ANGLE
+    // @DisplayName: Hybrid braking angle max
+    // @Description: hybrid flight mode's max lean angle during braking in centi-degrees
+    // @Units: Centi-degrees
+    // @Range: 2000 4500
+    // @User: Advanced
+    GSCALAR(hybrid_brake_angle_max, "HYBR_BRAKE_ANGLE",  HYBRID_BRAKE_ANGLE_DEFAULT),
+#endif
 
 #if FRAME_CONFIG ==     HELI_FRAME
     // @Group: HS1_
@@ -801,7 +829,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: STB_RLL_P
     // @DisplayName: Roll axis stabilize controller P gain
     // @Description: Roll axis stabilize (i.e. angle) controller P gain.  Converts the error between the desired roll angle and actual angle to a desired roll rate
-    // @Range: 3.000 6.000
+    // @Range: 3.000 12.000
     // @User: Standard
 
     // @Param: STB_RLL_I
@@ -821,7 +849,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: STB_PIT_P
     // @DisplayName: Pitch axis stabilize controller P gain
     // @Description: Pitch axis stabilize (i.e. angle) controller P gain.  Converts the error between the desired pitch angle and actual angle to a desired pitch rate
-    // @Range: 3.000 6.000
+    // @Range: 3.000 12.000
     // @User: Standard
     GGROUP(p_stabilize_pitch,      "STB_PIT_", AC_P),
 
@@ -886,16 +914,16 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/AC_WPNav/AC_WPNav.cpp
     GOBJECT(wp_nav, "WPNAV_",       AC_WPNav),
 
-    // @Group: WPNAV_
+    // @Group: CIRCLE_
     // @Path: ../libraries/AC_WPNav/AC_Circle.cpp
     GOBJECT(circle_nav, "CIRCLE_",  AC_Circle),
 
 #if FRAME_CONFIG == HELI_FRAME
-    // @Group: ATCON_
+    // @Group: ATC_
     // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl_Heli.cpp
     GOBJECT(attitude_control, "ATC_", AC_AttitudeControl_Heli),
 #else
-    // @Group: ATCON_
+    // @Group: ATC_
     // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl.cpp
     GOBJECT(attitude_control, "ATC_", AC_AttitudeControl),
 #endif
@@ -943,7 +971,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     GOBJECT(BoardConfig,            "BRD_",       AP_BoardConfig),    
 
 #if SPRAYER == ENABLED
-    // @Group: SPRAYER_
+    // @Group: SPRAY_
     // @Path: ../libraries/AC_Sprayer/AC_Sprayer.cpp
     GOBJECT(sprayer,                "SPRAY_",       AC_Sprayer),
 #endif

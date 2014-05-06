@@ -84,7 +84,7 @@ public:
      *
      * @returns the current horizontal velocity in cm/s
      */
-    float        get_velocity_xy();
+    float        get_velocity_xy() const;
 
     /**
      * altitude_ok - returns true if inertial based altitude and position can be trusted

@@ -95,6 +95,9 @@ extern const AP_HAL::HAL& hal;
 
 #define earthRate 0.000072921f // earth rotation rate (rad/sec)
 
+// maximum value for any element in the covariance matrix
+#define EKF_COVARIENCE_MAX 1.0e8f
+
 // when the wind estimation first starts with no airspeed sensor,
 // assume 3m/s to start
 #define STARTUP_WIND_SPEED 3.0f
@@ -135,7 +138,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     AP_GROUPINFO("ALT_NOISE",    3, NavEKF, _baroAltNoise, ALT_NOISE_DEFAULT),
 
     // @Param: MAG_NOISE
-    // @DisplayName: Magntometer measurement noise (Gauss)
+    // @DisplayName: Magnetometer measurement noise (Gauss)
     // @Description: This is the RMS value of noise in magnetometer measurements. Increasing it reduces the weighting on these measurements.
     // @Range: 0.01 - 0.5
     // @Increment: 0.01
@@ -151,7 +154,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     AP_GROUPINFO("EAS_NOISE",    5, NavEKF, _easNoise, 1.4f),
 
     // @Param: WIND_PNOISE
-    // @DisplayName: Wind velocity states process noise (m/s^2)
+    // @DisplayName: Wind velocity process noise (m/s^2)
     // @Description: This noise controls the growth of wind state error estimates. Increasing it makes wind estimation faster and noisier.
     // @Range: 0.01 - 1.0
     // @Increment: 0.1
@@ -159,7 +162,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     AP_GROUPINFO("WIND_PNOISE",    6, NavEKF, _windVelProcessNoise, 0.1f),
 
     // @Param: WIND_PSCALE
-    // @DisplayName: Scale factor applied to wind states process noise from height rate
+    // @DisplayName: Height rate to wind procss noise scaler
     // @Description: Increasing this parameter increases how rapidly the wind states adapt when changing altitude, but does make wind speed estimation noiser.
     // @Range: 0.0 - 1.0
     // @Increment: 0.1
@@ -183,28 +186,28 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     AP_GROUPINFO("ACC_PNOISE",    9, NavEKF, _accNoise, ACC_PNOISE_DEFAULT),
 
     // @Param: GBIAS_PNOISE
-    // @DisplayName: Rate gyro bias state process noise (rad/s)
+    // @DisplayName: Rate gyro bias process noise (rad/s)
     // @Description: This noise controls the growth of gyro bias state error estimates. Increasing it makes rate gyro bias estimation faster and noisier.
     // @Range: 0.0000001 - 0.00001
     // @User: advanced
     AP_GROUPINFO("GBIAS_PNOISE",    10, NavEKF, _gyroBiasProcessNoise, GBIAS_PNOISE_DEFAULT),
 
     // @Param: ABIAS_PNOISE
-    // @DisplayName: Accelerometer bias state process noise (m/s^2)
+    // @DisplayName: Accelerometer bias process noise (m/s^2)
     // @Description: This noise controls the growth of the vertical acelerometer bias state error estimate. Increasing it makes accelerometer bias estimation faster and noisier.
     // @Range: 0.0001 - 0.001
     // @User: advanced
     AP_GROUPINFO("ABIAS_PNOISE",    11, NavEKF, _accelBiasProcessNoise, ABIAS_PNOISE_DEFAULT),
 
     // @Param: MAGE_PNOISE
-    // @DisplayName: Earth magnetic field states process noise (gauss/s)
+    // @DisplayName: Earth magnetic field process noise (gauss/s)
     // @Description: This noise controls the growth of earth magnetic field state error estimates. Increasing it makes earth magnetic field bias estimation faster and noisier.
     // @Range: 0.0001 - 0.01
     // @User: advanced
     AP_GROUPINFO("MAGE_PNOISE",    12, NavEKF, _magEarthProcessNoise, MAGE_PNOISE_DEFAULT),
 
     // @Param: MAGB_PNOISE
-    // @DisplayName: Body magnetic field states process noise (gauss/s)
+    // @DisplayName: Body magnetic field process noise (gauss/s)
     // @Description: This noise controls the growth of body magnetic field state error estimates. Increasing it makes compass offset estimation faster and noisier.
     // @Range: 0.0001 - 0.01
     // @User: advanced
@@ -275,23 +278,23 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     AP_GROUPINFO("EAS_GATE",    21, NavEKF, _tasInnovGate, 10),
 
     // @Param: MAG_CAL
-    // @DisplayName: Turns on magnetometer calibration mode
+    // @DisplayName: Magnetometer calibration mode
     // @Description: Setting this parameter to 1 forces magnetic field state calibration to be active all the time the vehicle is manoeuvring regardless of its speed and altitude. This parameter should be set to 0 for aircraft use. This parameter can be set to 1 to enable in-flight compass calibration on Copter and Rover vehicles.
-    // @Range: 0 - 1
+    // @Values: 0:WhenMoving,1:Always
     // @Increment: 1
     // @User: advanced
     AP_GROUPINFO("MAG_CAL",    22, NavEKF, _magCal, MAG_CAL_DEFAULT),
 
     // @Param: GLITCH_ACCEL
-    // @DisplayName: Maximum allowed discrepancy between inertial and GPS Horizontal acceleration before GPS data is ignored (cm/s^2)
-    // @Description: This parameter controls the maximum amount of difference in horizontal acceleration (in cm/s^2) between the value predicted by the filter and the value measured by the GPS before the GPS position data is rejected. If this value is set too low, then valid GPS data will be regularly discarded, and the position accuracy will degrade. If this parameter is set too high, then large GPS glitches will cause large rapid changes in position.
+    // @DisplayName: GPS glitch accel gate size (cm/s^2)
+    // @Description: This parameter controls the maximum amount of difference in horizontal acceleration between the value predicted by the filter and the value measured by the GPS before the GPS position data is rejected. If this value is set too low, then valid GPS data will be regularly discarded, and the position accuracy will degrade. If this parameter is set too high, then large GPS glitches will cause large rapid changes in position.
     // @Range: 100 - 500
     // @Increment: 50
     // @User: advanced
     AP_GROUPINFO("GLITCH_ACCEL",    23, NavEKF, _gpsGlitchAccelMax, GLITCH_ACCEL_DEFAULT),
 
     // @Param: GLITCH_RAD
-    // @DisplayName: Maximum allowed discrepancy between inertial and GPS Horizontal position before long term GPS glitch condition is declared (m)
+    // @DisplayName: GPS glitch radius gate size (m)
     // @Description: This parameter controls the maximum amount of difference in horizontal position (in m) between the value predicted by the filter and the value measured by the GPS before the long term glitch protection logic is activated and an offset is applied to the GPS measurement to compensate. Position steps smaller than this value will be temporarily ignored, but will then be accepted and the filter will move to the new position. Position steps larger than this value will be ignored initially, but the filter will then apply an offset to the GPS position measurement.
     // @Range: 10 - 50
     // @Increment: 5
@@ -326,16 +329,17 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
 {
     AP_Param::setup_object_defaults(this, var_info);
     // Tuning parameters
-    _gpsNEVelVarAccScale    = 0.05f;     // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
+    _gpsNEVelVarAccScale    = 0.05f;    // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
     _gpsDVelVarAccScale     = 0.07f;    // Scale factor applied to vertical velocity measurement variance due to manoeuvre acceleration
-    _gpsPosVarAccScale      = 0.05f;     // Scale factor applied to horizontal position measurement variance due to manoeuvre acceleration
+    _gpsPosVarAccScale      = 0.05f;    // Scale factor applied to horizontal position measurement variance due to manoeuvre acceleration
     _msecHgtDelay           = 60;       // Height measurement delay (msec)
     _msecMagDelay           = 40;       // Magnetometer measurement delay (msec)
     _msecTasDelay           = 240;      // Airspeed measurement delay (msec)
     _gpsRetryTimeUseTAS     = 20000;    // GPS retry time with airspeed measurements (msec)
-    _gpsRetryTimeNoTAS      = 10000;     // GPS retry time without airspeed measurements (msec)
+    _gpsRetryTimeNoTAS      = 10000;    // GPS retry time without airspeed measurements (msec)
     _hgtRetryTimeMode0      = 10000;    // Height retry time with vertical velocity measurement (msec)
     _hgtRetryTimeMode12     = 5000;     // Height retry time without vertical velocity measurement (msec)
+    _magFailTimeLimit_ms    = 10000;     // number of msec before a magnetometer failing innovation consistency checks is declared failed (msec)
     _magVarRateScale        = 0.05f;    // scale factor applied to magnetometer variance due to angular rate
     _gyroBiasNoiseScaler    = 3.0f;     // scale factor applied to gyro bias state process variance when on ground
     _msecGpsAvg             = 200;      // average number of msec between GPS measurements
@@ -397,8 +401,8 @@ void NavEKF::ResetPosition(void)
         // read the GPS
         readGpsData();
         // write to state vector
-        states[7] = posNE[0];
-        states[8] = posNE[1];
+        states[7] = gpsPosNE.x + gpsPosGlitchOffsetNE.x;
+        states[8] = gpsPosNE.y + gpsPosGlitchOffsetNE.y;
     }
 }
 
@@ -654,12 +658,14 @@ void NavEKF::SelectVelPosFusion()
             // reset the counter used to schedule updates so that we always fuse data on the frame GPS data arrives
             skipCounter = velPosFuseStepRatio;
             // If a long time since last GPS update, then reset position and velocity and reset stored state history
-            if ((hal.scheduler->millis() > secondLastFixTime_ms + _gpsRetryTimeUseTAS && useAirspeed()) || (hal.scheduler->millis() > secondLastFixTime_ms + _gpsRetryTimeNoTAS && !useAirspeed())) {
-            ResetPosition();
-            ResetVelocity();
-            StoreStatesReset();
+
+            uint32_t gpsRetryTimeout = useAirspeed() ? _gpsRetryTimeUseTAS : _gpsRetryTimeNoTAS;
+            if (hal.scheduler->millis() - secondLastFixTime_ms > gpsRetryTimeout) {
+                ResetPosition();
+                ResetVelocity();
+                StoreStatesReset();
             }
-        } else if (hal.scheduler->millis() > lastFixTime_ms + _msecGpsAvg + 40) {
+        } else if (hal.scheduler->millis() - lastFixTime_ms > (uint32_t)(_msecGpsAvg + 40)) {
             // Timeout fusion of GPS data if stale. Needed because we repeatedly fuse the same
             // measurement until the next one arrives to provide a smoother output
             fuseVelData = false;
@@ -673,7 +679,7 @@ void NavEKF::SelectVelPosFusion()
             newDataHgt = false;
             // enable fusion
             fuseHgtData = true;
-        } else if (hal.scheduler->millis() > lastHgtTime_ms + _msecHgtAvg + 40) {
+        } else if (hal.scheduler->millis() - lastHgtTime_ms > (uint32_t)(_msecHgtAvg + 40)) {
             // timeout fusion of height data if stale. Needed because we repeatedly fuse the same
             // measurement until the next one arrives to provide a smoother output
             fuseHgtData = false;
@@ -716,6 +722,18 @@ void NavEKF::SelectMagFusion()
 {
     // check for and read new magnetometer measurements
     readMagData();
+
+    // If we are using the compass and the magnetometer has been unhealthy for too long we declare it failed
+    if (magHealth) {
+        lastHealthyMagTime_ms = hal.scheduler->millis();
+    } else {
+        if ((hal.scheduler->millis() - lastHealthyMagTime_ms) > _magFailTimeLimit_ms && use_compass()) {
+            magTimeout = true;
+        } else {
+            magTimeout = false;
+        }
+    }
+
 
     // determine if conditions are right to start a new fusion cycle
     bool dataReady = statesInitialised && use_compass() && newDataMag;
@@ -768,7 +786,7 @@ void NavEKF::SelectBetaFusion()
     // we are a fly forward vehicle type AND NOT using a full range of sensors with healthy position
     // AND NOT on the ground AND enough time has lapsed since our last fusion
     // AND (we have not fused magnetometer data on this time step OR the immediate fusion flag is set)
-    if (_ahrs->get_fly_forward() && !(use_compass() && useAirspeed() && posHealth) && !onGround  && ((IMUmsec - BETAmsecPrev) >= _msecBetaAvg) && (!magFusePerformed || fuseMeNow)) {
+    if (assume_zero_sideslip() && !(use_compass() && useAirspeed() && posHealth) && !onGround  && ((IMUmsec - BETAmsecPrev) >= _msecBetaAvg) && (!magFusePerformed || fuseMeNow)) {
         FuseSideslip();
         BETAmsecPrev = IMUmsec;
     }
@@ -1580,9 +1598,10 @@ void NavEKF::FuseVelPosNED()
         else gpsRetryTime = _gpsRetryTimeNoTAS;
 
         // form the observation vector and zero velocity and horizontal position observations if in static mode
-        if (~staticMode) {
+        if (!staticMode) {
             for (uint8_t i=0; i<=2; i++) observation[i] = velNED[i];
-            for (uint8_t i=3; i<=4; i++) observation[i] = posNE[i-3];
+            observation[3] = gpsPosNE.x + gpsPosGlitchOffsetNE.x;
+            observation[4] = gpsPosNE.y + gpsPosGlitchOffsetNE.y;
         } else {
             for (uint8_t i=0; i<=4; i++) observation[i] = 0.0f;
         }
@@ -1644,14 +1663,13 @@ void NavEKF::FuseVelPosNED()
                 posHealth = true;
                 posFailTime = hal.scheduler->millis();
                 // if timed out or outside the specified glitch radius, increment the offset applied to GPS data to compensate for large GPS position jumps
-                // offset is decayed to zero at 1.0 m/s and limited to a maximum value of 100m before it is applied to
-                // subsequent GPS measurements so we don't have to do any limiting here
                 if (posTimeout || (maxPosInnov2 > sq(float(_gpsGlitchRadiusMax)))) {
-                    posnOffsetNorth += posInnov[0];
-                    posnOffsetEast  += posInnov[1];
-                    // apply the offset to the current GPS measurement
-                    posNE[0] += posInnov[0];
-                    posNE[1] += posInnov[1];
+                    gpsPosGlitchOffsetNE.x += posInnov[0];
+                    gpsPosGlitchOffsetNE.y += posInnov[1];
+                    // limit the radius of the offset to 100m and decay the offset to zero radially
+                    decayGpsOffset();
+                    // reset the position to the current GPS position which will include the glitch correction offset
+                    ResetPosition();
                     // don't fuse data on this time step
                     fusePosData = false;
                 }
@@ -1715,7 +1733,7 @@ void NavEKF::FuseVelPosNED()
                 velFailTime = hal.scheduler->millis();
             }
             // if data is not healthy and timed out and position is unhealthy we reset the velocity, but do not fuse data on this time step
-            else if (velTimeout && ~posHealth) {
+            else if (velTimeout && !posHealth) {
                 ResetVelocity();
                 StoreStatesReset();
                 fuseVelData =  false;
@@ -2144,12 +2162,19 @@ void NavEKF::FuseMagnetometer()
         innovMag[obsIndex] = MagPred[obsIndex] - magData[obsIndex];
         // calculate the innovation test ratio
         magTestRatio[obsIndex] = sq(innovMag[obsIndex]) / (sq(_magInnovGate) * varInnovMag[obsIndex]);
-        // test the ratio before fusing data
-        if (magTestRatio[obsIndex] < 1.0f)
+        // check the last values from all componenets and set magnetometer health accordingly
+        magHealth = (magTestRatio[0] < 1.0f && magTestRatio[1] < 1.0f && magTestRatio[2] < 1.0f);
+        // Don't fuse unless all componenets pass. The exception is if the bad health has timed out and we are not a fly forward vehicle
+        // In this case we might as well try using the magnetometer, but with a reduced weighting
+        if (magHealth || ((magTestRatio[obsIndex] < 1.0f) && !assume_zero_sideslip() && magTimeout))
         {
             // correct the state vector
             for (uint8_t j= 0; j<=indexLimit; j++)
             {
+                // If we are forced to use a bad compass, we reduce the weighting by a factor of 4
+                if (!magHealth) {
+                    Kfusion[j] *= 0.25f;
+                }
                 states[j] = states[j] - Kfusion[j] * innovMag[obsIndex];
             }
             // normalise the quaternion states
@@ -2410,6 +2435,9 @@ void NavEKF::FuseSideslip()
     {
         // Calculate observation jacobians
         SH_BETA[0] = (vn - vwn)*(sq(q0) + sq(q1) - sq(q2) - sq(q3)) - vd*(2*q0*q2 - 2*q1*q3) + (ve - vwe)*(2*q0*q3 + 2*q1*q2);
+        if (fabsf(SH_BETA[0]) <= 1e-9f) {
+            return;
+        }
         SH_BETA[1] = (ve - vwe)*(sq(q0) - sq(q1) + sq(q2) - sq(q3)) + vd*(2*q0*q1 + 2*q2*q3) - (vn - vwn)*(2*q0*q3 - 2*q1*q2);
         SH_BETA[2] = vn - vwn;
         SH_BETA[3] = ve - vwe;
@@ -2436,7 +2464,12 @@ void NavEKF::FuseSideslip()
         H_BETA[15] = SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2) - SH_BETA[6];
 
         // Calculate Kalman gains
-        SK_BETA[0] = 1/(R_BETA - (SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7])*(P[14][4]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) - P[4][4]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) + P[5][4]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) - P[15][4]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) + P[0][4]*(SH_BETA[5]*SH_BETA[8] - SH_BETA[1]*SH_BETA[4]*SH_BETA[9]) + P[1][4]*(SH_BETA[5]*SH_BETA[10] - SH_BETA[1]*SH_BETA[4]*SH_BETA[11]) + P[2][4]*(SH_BETA[5]*SH_BETA[11] + SH_BETA[1]*SH_BETA[4]*SH_BETA[10]) - P[3][4]*(SH_BETA[5]*SH_BETA[9] + SH_BETA[1]*SH_BETA[4]*SH_BETA[8]) + P[6][4]*(SH_BETA[5]*(2*q0*q1 + 2*q2*q3) + SH_BETA[1]*SH_BETA[4]*(2*q0*q2 - 2*q1*q3))) + (SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7])*(P[14][14]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) - P[4][14]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) + P[5][14]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) - P[15][14]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) + P[0][14]*(SH_BETA[5]*SH_BETA[8] - SH_BETA[1]*SH_BETA[4]*SH_BETA[9]) + P[1][14]*(SH_BETA[5]*SH_BETA[10] - SH_BETA[1]*SH_BETA[4]*SH_BETA[11]) + P[2][14]*(SH_BETA[5]*SH_BETA[11] + SH_BETA[1]*SH_BETA[4]*SH_BETA[10]) - P[3][14]*(SH_BETA[5]*SH_BETA[9] + SH_BETA[1]*SH_BETA[4]*SH_BETA[8]) + P[6][14]*(SH_BETA[5]*(2*q0*q1 + 2*q2*q3) + SH_BETA[1]*SH_BETA[4]*(2*q0*q2 - 2*q1*q3))) + (SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2))*(P[14][5]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) - P[4][5]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) + P[5][5]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) - P[15][5]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) + P[0][5]*(SH_BETA[5]*SH_BETA[8] - SH_BETA[1]*SH_BETA[4]*SH_BETA[9]) + P[1][5]*(SH_BETA[5]*SH_BETA[10] - SH_BETA[1]*SH_BETA[4]*SH_BETA[11]) + P[2][5]*(SH_BETA[5]*SH_BETA[11] + SH_BETA[1]*SH_BETA[4]*SH_BETA[10]) - P[3][5]*(SH_BETA[5]*SH_BETA[9] + SH_BETA[1]*SH_BETA[4]*SH_BETA[8]) + P[6][5]*(SH_BETA[5]*(2*q0*q1 + 2*q2*q3) + SH_BETA[1]*SH_BETA[4]*(2*q0*q2 - 2*q1*q3))) - (SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2))*(P[14][15]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) - P[4][15]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) + P[5][15]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) - P[15][15]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) + P[0][15]*(SH_BETA[5]*SH_BETA[8] - SH_BETA[1]*SH_BETA[4]*SH_BETA[9]) + P[1][15]*(SH_BETA[5]*SH_BETA[10] - SH_BETA[1]*SH_BETA[4]*SH_BETA[11]) + P[2][15]*(SH_BETA[5]*SH_BETA[11] + SH_BETA[1]*SH_BETA[4]*SH_BETA[10]) - P[3][15]*(SH_BETA[5]*SH_BETA[9] + SH_BETA[1]*SH_BETA[4]*SH_BETA[8]) + P[6][15]*(SH_BETA[5]*(2*q0*q1 + 2*q2*q3) + SH_BETA[1]*SH_BETA[4]*(2*q0*q2 - 2*q1*q3))) + (SH_BETA[5]*SH_BETA[8] - SH_BETA[1]*SH_BETA[4]*SH_BETA[9])*(P[14][0]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) - P[4][0]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) + P[5][0]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) - P[15][0]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) + P[0][0]*(SH_BETA[5]*SH_BETA[8] - SH_BETA[1]*SH_BETA[4]*SH_BETA[9]) + P[1][0]*(SH_BETA[5]*SH_BETA[10] - SH_BETA[1]*SH_BETA[4]*SH_BETA[11]) + P[2][0]*(SH_BETA[5]*SH_BETA[11] + SH_BETA[1]*SH_BETA[4]*SH_BETA[10]) - P[3][0]*(SH_BETA[5]*SH_BETA[9] + SH_BETA[1]*SH_BETA[4]*SH_BETA[8]) + P[6][0]*(SH_BETA[5]*(2*q0*q1 + 2*q2*q3) + SH_BETA[1]*SH_BETA[4]*(2*q0*q2 - 2*q1*q3))) + (SH_BETA[5]*SH_BETA[10] - SH_BETA[1]*SH_BETA[4]*SH_BETA[11])*(P[14][1]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) - P[4][1]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) + P[5][1]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) - P[15][1]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) + P[0][1]*(SH_BETA[5]*SH_BETA[8] - SH_BETA[1]*SH_BETA[4]*SH_BETA[9]) + P[1][1]*(SH_BETA[5]*SH_BETA[10] - SH_BETA[1]*SH_BETA[4]*SH_BETA[11]) + P[2][1]*(SH_BETA[5]*SH_BETA[11] + SH_BETA[1]*SH_BETA[4]*SH_BETA[10]) - P[3][1]*(SH_BETA[5]*SH_BETA[9] + SH_BETA[1]*SH_BETA[4]*SH_BETA[8]) + P[6][1]*(SH_BETA[5]*(2*q0*q1 + 2*q2*q3) + SH_BETA[1]*SH_BETA[4]*(2*q0*q2 - 2*q1*q3))) + (SH_BETA[5]*SH_BETA[11] + SH_BETA[1]*SH_BETA[4]*SH_BETA[10])*(P[14][2]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) - P[4][2]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) + P[5][2]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) - P[15][2]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) + P[0][2]*(SH_BETA[5]*SH_BETA[8] - SH_BETA[1]*SH_BETA[4]*SH_BETA[9]) + P[1][2]*(SH_BETA[5]*SH_BETA[10] - SH_BETA[1]*SH_BETA[4]*SH_BETA[11]) + P[2][2]*(SH_BETA[5]*SH_BETA[11] + SH_BETA[1]*SH_BETA[4]*SH_BETA[10]) - P[3][2]*(SH_BETA[5]*SH_BETA[9] + SH_BETA[1]*SH_BETA[4]*SH_BETA[8]) + P[6][2]*(SH_BETA[5]*(2*q0*q1 + 2*q2*q3) + SH_BETA[1]*SH_BETA[4]*(2*q0*q2 - 2*q1*q3))) - (SH_BETA[5]*SH_BETA[9] + SH_BETA[1]*SH_BETA[4]*SH_BETA[8])*(P[14][3]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) - P[4][3]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) + P[5][3]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) - P[15][3]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) + P[0][3]*(SH_BETA[5]*SH_BETA[8] - SH_BETA[1]*SH_BETA[4]*SH_BETA[9]) + P[1][3]*(SH_BETA[5]*SH_BETA[10] - SH_BETA[1]*SH_BETA[4]*SH_BETA[11]) + P[2][3]*(SH_BETA[5]*SH_BETA[11] + SH_BETA[1]*SH_BETA[4]*SH_BETA[10]) - P[3][3]*(SH_BETA[5]*SH_BETA[9] + SH_BETA[1]*SH_BETA[4]*SH_BETA[8]) + P[6][3]*(SH_BETA[5]*(2*q0*q1 + 2*q2*q3) + SH_BETA[1]*SH_BETA[4]*(2*q0*q2 - 2*q1*q3))) + (SH_BETA[5]*(2*q0*q1 + 2*q2*q3) + SH_BETA[1]*SH_BETA[4]*(2*q0*q2 - 2*q1*q3))*(P[14][6]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) - P[4][6]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) + P[5][6]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) - P[15][6]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) + P[0][6]*(SH_BETA[5]*SH_BETA[8] - SH_BETA[1]*SH_BETA[4]*SH_BETA[9]) + P[1][6]*(SH_BETA[5]*SH_BETA[10] - SH_BETA[1]*SH_BETA[4]*SH_BETA[11]) + P[2][6]*(SH_BETA[5]*SH_BETA[11] + SH_BETA[1]*SH_BETA[4]*SH_BETA[10]) - P[3][6]*(SH_BETA[5]*SH_BETA[9] + SH_BETA[1]*SH_BETA[4]*SH_BETA[8]) + P[6][6]*(SH_BETA[5]*(2*q0*q1 + 2*q2*q3) + SH_BETA[1]*SH_BETA[4]*(2*q0*q2 - 2*q1*q3))));
+        SK_BETA[0] = (R_BETA - (SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7])*(P[14][4]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) - P[4][4]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) + P[5][4]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) - P[15][4]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) + P[0][4]*(SH_BETA[5]*SH_BETA[8] - SH_BETA[1]*SH_BETA[4]*SH_BETA[9]) + P[1][4]*(SH_BETA[5]*SH_BETA[10] - SH_BETA[1]*SH_BETA[4]*SH_BETA[11]) + P[2][4]*(SH_BETA[5]*SH_BETA[11] + SH_BETA[1]*SH_BETA[4]*SH_BETA[10]) - P[3][4]*(SH_BETA[5]*SH_BETA[9] + SH_BETA[1]*SH_BETA[4]*SH_BETA[8]) + P[6][4]*(SH_BETA[5]*(2*q0*q1 + 2*q2*q3) + SH_BETA[1]*SH_BETA[4]*(2*q0*q2 - 2*q1*q3))) + (SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7])*(P[14][14]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) - P[4][14]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) + P[5][14]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) - P[15][14]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) + P[0][14]*(SH_BETA[5]*SH_BETA[8] - SH_BETA[1]*SH_BETA[4]*SH_BETA[9]) + P[1][14]*(SH_BETA[5]*SH_BETA[10] - SH_BETA[1]*SH_BETA[4]*SH_BETA[11]) + P[2][14]*(SH_BETA[5]*SH_BETA[11] + SH_BETA[1]*SH_BETA[4]*SH_BETA[10]) - P[3][14]*(SH_BETA[5]*SH_BETA[9] + SH_BETA[1]*SH_BETA[4]*SH_BETA[8]) + P[6][14]*(SH_BETA[5]*(2*q0*q1 + 2*q2*q3) + SH_BETA[1]*SH_BETA[4]*(2*q0*q2 - 2*q1*q3))) + (SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2))*(P[14][5]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) - P[4][5]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) + P[5][5]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) - P[15][5]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) + P[0][5]*(SH_BETA[5]*SH_BETA[8] - SH_BETA[1]*SH_BETA[4]*SH_BETA[9]) + P[1][5]*(SH_BETA[5]*SH_BETA[10] - SH_BETA[1]*SH_BETA[4]*SH_BETA[11]) + P[2][5]*(SH_BETA[5]*SH_BETA[11] + SH_BETA[1]*SH_BETA[4]*SH_BETA[10]) - P[3][5]*(SH_BETA[5]*SH_BETA[9] + SH_BETA[1]*SH_BETA[4]*SH_BETA[8]) + P[6][5]*(SH_BETA[5]*(2*q0*q1 + 2*q2*q3) + SH_BETA[1]*SH_BETA[4]*(2*q0*q2 - 2*q1*q3))) - (SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2))*(P[14][15]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) - P[4][15]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) + P[5][15]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) - P[15][15]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) + P[0][15]*(SH_BETA[5]*SH_BETA[8] - SH_BETA[1]*SH_BETA[4]*SH_BETA[9]) + P[1][15]*(SH_BETA[5]*SH_BETA[10] - SH_BETA[1]*SH_BETA[4]*SH_BETA[11]) + P[2][15]*(SH_BETA[5]*SH_BETA[11] + SH_BETA[1]*SH_BETA[4]*SH_BETA[10]) - P[3][15]*(SH_BETA[5]*SH_BETA[9] + SH_BETA[1]*SH_BETA[4]*SH_BETA[8]) + P[6][15]*(SH_BETA[5]*(2*q0*q1 + 2*q2*q3) + SH_BETA[1]*SH_BETA[4]*(2*q0*q2 - 2*q1*q3))) + (SH_BETA[5]*SH_BETA[8] - SH_BETA[1]*SH_BETA[4]*SH_BETA[9])*(P[14][0]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) - P[4][0]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) + P[5][0]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) - P[15][0]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) + P[0][0]*(SH_BETA[5]*SH_BETA[8] - SH_BETA[1]*SH_BETA[4]*SH_BETA[9]) + P[1][0]*(SH_BETA[5]*SH_BETA[10] - SH_BETA[1]*SH_BETA[4]*SH_BETA[11]) + P[2][0]*(SH_BETA[5]*SH_BETA[11] + SH_BETA[1]*SH_BETA[4]*SH_BETA[10]) - P[3][0]*(SH_BETA[5]*SH_BETA[9] + SH_BETA[1]*SH_BETA[4]*SH_BETA[8]) + P[6][0]*(SH_BETA[5]*(2*q0*q1 + 2*q2*q3) + SH_BETA[1]*SH_BETA[4]*(2*q0*q2 - 2*q1*q3))) + (SH_BETA[5]*SH_BETA[10] - SH_BETA[1]*SH_BETA[4]*SH_BETA[11])*(P[14][1]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) - P[4][1]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) + P[5][1]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) - P[15][1]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) + P[0][1]*(SH_BETA[5]*SH_BETA[8] - SH_BETA[1]*SH_BETA[4]*SH_BETA[9]) + P[1][1]*(SH_BETA[5]*SH_BETA[10] - SH_BETA[1]*SH_BETA[4]*SH_BETA[11]) + P[2][1]*(SH_BETA[5]*SH_BETA[11] + SH_BETA[1]*SH_BETA[4]*SH_BETA[10]) - P[3][1]*(SH_BETA[5]*SH_BETA[9] + SH_BETA[1]*SH_BETA[4]*SH_BETA[8]) + P[6][1]*(SH_BETA[5]*(2*q0*q1 + 2*q2*q3) + SH_BETA[1]*SH_BETA[4]*(2*q0*q2 - 2*q1*q3))) + (SH_BETA[5]*SH_BETA[11] + SH_BETA[1]*SH_BETA[4]*SH_BETA[10])*(P[14][2]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) - P[4][2]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) + P[5][2]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) - P[15][2]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) + P[0][2]*(SH_BETA[5]*SH_BETA[8] - SH_BETA[1]*SH_BETA[4]*SH_BETA[9]) + P[1][2]*(SH_BETA[5]*SH_BETA[10] - SH_BETA[1]*SH_BETA[4]*SH_BETA[11]) + P[2][2]*(SH_BETA[5]*SH_BETA[11] + SH_BETA[1]*SH_BETA[4]*SH_BETA[10]) - P[3][2]*(SH_BETA[5]*SH_BETA[9] + SH_BETA[1]*SH_BETA[4]*SH_BETA[8]) + P[6][2]*(SH_BETA[5]*(2*q0*q1 + 2*q2*q3) + SH_BETA[1]*SH_BETA[4]*(2*q0*q2 - 2*q1*q3))) - (SH_BETA[5]*SH_BETA[9] + SH_BETA[1]*SH_BETA[4]*SH_BETA[8])*(P[14][3]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) - P[4][3]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) + P[5][3]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) - P[15][3]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) + P[0][3]*(SH_BETA[5]*SH_BETA[8] - SH_BETA[1]*SH_BETA[4]*SH_BETA[9]) + P[1][3]*(SH_BETA[5]*SH_BETA[10] - SH_BETA[1]*SH_BETA[4]*SH_BETA[11]) + P[2][3]*(SH_BETA[5]*SH_BETA[11] + SH_BETA[1]*SH_BETA[4]*SH_BETA[10]) - P[3][3]*(SH_BETA[5]*SH_BETA[9] + SH_BETA[1]*SH_BETA[4]*SH_BETA[8]) + P[6][3]*(SH_BETA[5]*(2*q0*q1 + 2*q2*q3) + SH_BETA[1]*SH_BETA[4]*(2*q0*q2 - 2*q1*q3))) + (SH_BETA[5]*(2*q0*q1 + 2*q2*q3) + SH_BETA[1]*SH_BETA[4]*(2*q0*q2 - 2*q1*q3))*(P[14][6]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) - P[4][6]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) + P[5][6]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) - P[15][6]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) + P[0][6]*(SH_BETA[5]*SH_BETA[8] - SH_BETA[1]*SH_BETA[4]*SH_BETA[9]) + P[1][6]*(SH_BETA[5]*SH_BETA[10] - SH_BETA[1]*SH_BETA[4]*SH_BETA[11]) + P[2][6]*(SH_BETA[5]*SH_BETA[11] + SH_BETA[1]*SH_BETA[4]*SH_BETA[10]) - P[3][6]*(SH_BETA[5]*SH_BETA[9] + SH_BETA[1]*SH_BETA[4]*SH_BETA[8]) + P[6][6]*(SH_BETA[5]*(2*q0*q1 + 2*q2*q3) + SH_BETA[1]*SH_BETA[4]*(2*q0*q2 - 2*q1*q3))));
+        if (fabsf(SK_BETA[0]) < 1e-9f) {
+            return;
+        } else {
+            SK_BETA[0] = 1 / SK_BETA[0];
+        }
         SK_BETA[1] = SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7];
         SK_BETA[2] = SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2);
         SK_BETA[3] = SH_BETA[5]*(2*q0*q1 + 2*q2*q3) + SH_BETA[1]*SH_BETA[4]*(2*q0*q2 - 2*q1*q3);
@@ -2468,8 +2501,13 @@ void NavEKF::FuseSideslip()
         Kfusion[20] = SK_BETA[0]*(P[20][0]*SK_BETA[5] + P[20][1]*SK_BETA[4] - P[20][4]*SK_BETA[1] + P[20][5]*SK_BETA[2] + P[20][2]*SK_BETA[6] + P[20][6]*SK_BETA[3] - P[20][3]*SK_BETA[7] + P[20][14]*SK_BETA[1] - P[20][15]*SK_BETA[2]);
         Kfusion[21] = SK_BETA[0]*(P[21][0]*SK_BETA[5] + P[21][1]*SK_BETA[4] - P[21][4]*SK_BETA[1] + P[21][5]*SK_BETA[2] + P[21][2]*SK_BETA[6] + P[21][6]*SK_BETA[3] - P[21][3]*SK_BETA[7] + P[21][14]*SK_BETA[1] - P[21][15]*SK_BETA[2]);
 
-        // calculate predicted sideslip angle and innovation using small angle approximation and assuming zero sideslip
+        // calculate predicted sideslip angle and innovation using small angle approximation
         innovBeta = vel_rel_wind.y / vel_rel_wind.x;
+
+        // reject measurement if greater than 3-sigma inconsistency
+        if (innovBeta > 0.5f) {
+            return;
+        }
 
         // correct the state vector
         for (uint8_t j=0; j<=21; j++)
@@ -2639,6 +2677,10 @@ bool NavEKF::getPosNED(Vector3f &pos) const
 // return body axis gyro bias estimates in rad/sec
 void NavEKF::getGyroBias(Vector3f &gyroBias) const
 {
+    if (dtIMU == 0) {
+        gyroBias.zero();
+        return;
+    }
     gyroBias.x = states[10] / dtIMU;
     gyroBias.y = states[11] / dtIMU;
     gyroBias.z = states[12] / dtIMU;
@@ -2648,8 +2690,13 @@ void NavEKF::getGyroBias(Vector3f &gyroBias) const
 void NavEKF::getAccelBias(Vector3f &accelBias) const
 {
     accelBias.x = IMU1_weighting;
-    accelBias.y = states[22] / dtIMU;
-    accelBias.z = states[13] / dtIMU;
+    if (dtIMU == 0) {
+        accelBias.y = 0;
+        accelBias.z = 0;
+    } else {
+        accelBias.y = states[22] / dtIMU;
+        accelBias.z = states[13] / dtIMU;
+    }
 }
 
 // return the NED wind speed estimates in m/s (positive is air moving in the direction of the axis)
@@ -2710,8 +2757,8 @@ void NavEKF::OnGroundCheck()
         } else {
             onGround = true;
         }
-        // force a yaw alignment if exiting onGround without a compass
-        if (!onGround && prevOnGround && !use_compass()) {
+        // force a yaw alignment if exiting onGround without a compass or if compass is timed out and we are a fly forward vehicle
+        if (!onGround && prevOnGround && (!use_compass() || (magTimeout && assume_zero_sideslip()))) {
             alignYawGPS();
         }
         // If we are flying a fly-forward type vehicle without an airspeed sensor and exiting onGround
@@ -2719,7 +2766,7 @@ void NavEKF::OnGroundCheck()
         // wind speed is equal to the 6m/s. This prevents gains being too high at the start
         // of flight if launching into a headwind until the first turn when the EKF can form a  wind speed
         // estimate
-        if (!onGround && prevOnGround && !useAirspeed() && _ahrs->get_fly_forward()) {
+        if (!onGround && prevOnGround && !useAirspeed() && assume_zero_sideslip()) {
             setWindVelStates();
         }
     }
@@ -2776,6 +2823,12 @@ void NavEKF::ForceSymmetry()
     {
         for (uint8_t j=0; j<=i-1; j++)
         {
+            if (fabsf(P[i][j]) > EKF_COVARIENCE_MAX ||
+                fabsf(P[j][i]) > EKF_COVARIENCE_MAX) {
+                // re-initialise the filter from scratch
+                InitialiseFilterDynamic();
+                return;
+            }
             float temp = 0.5f*(P[i][j] + P[j][i]);
             P[i][j] = temp;
             P[j][i] = temp;
@@ -2810,7 +2863,7 @@ void NavEKF::CopyAndFixCovariances()
     }
     // if we have a non-forward flight vehicle type and no airspeed sensor, we want the wind
     // states to remain zero and want to keep the old variances for these states
-    else if (!useAirspeed() && !_ahrs->get_fly_forward()) {
+    else if (!useAirspeed() && !assume_zero_sideslip()) {
         // copy calculated variances we want to propagate
         for (uint8_t i=0; i<=13; i++) {
             P[i][i] = nextP[i][i];
@@ -2963,12 +3016,9 @@ void NavEKF::readGpsData()
 
         // read latitutde and longitude from GPS and convert to NE position
         const struct Location &gpsloc = _ahrs->get_gps().location();
-        Vector2f posdiff = location_diff(_ahrs->get_home(), gpsloc);
-        // apply a position offset which is used to compensate for GPS jumps
-        // after decaying offset to allow GPS position jumps to be accommodated gradually
+        gpsPosNE = location_diff(_ahrs->get_home(), gpsloc);
+        // decay and limit the position offset which is applied to NE position wherever it is used throughout code to allow GPS position jumps to be accommodated gradually
         decayGpsOffset();
-        posNE[0] = posdiff.x + posnOffsetNorth;
-        posNE[1] = posdiff.y + posnOffsetEast;
     }
 }
 
@@ -3204,8 +3254,7 @@ void  NavEKF::getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f
     magVar.y = sqrtf(magTestRatio.y);
     magVar.z = sqrtf(magTestRatio.z);
     tasVar   = sqrtf(tasTestRatio);
-    offset.x = posnOffsetNorth;
-    offset.y = posnOffsetEast;
+    offset   = gpsPosGlitchOffsetNE;
 }
 
 // zero stored variables - this needs to be called before a full filter initialisation
@@ -3214,8 +3263,6 @@ void NavEKF::ZeroVariables()
     velTimeout = false;
     posTimeout = false;
     hgtTimeout = false;
-    posnOffsetNorth = 0;
-    posnOffsetEast = 0;
     lastStateStoreTime_ms = 0;
     lastFixTime_ms = 0;
     secondLastFixTime_ms = 0;
@@ -3244,13 +3291,14 @@ void NavEKF::ZeroVariables()
     summedDelAng.zero();
     summedDelVel.zero();
     velNED.zero();
+    gpsPosGlitchOffsetNE.zero();
+    gpsPosNE.zero();
     prevTnb.zero();
     memset(&P[0][0], 0, sizeof(P));
     memset(&nextP[0][0], 0, sizeof(nextP));
     memset(&processNoise[0], 0, sizeof(processNoise));
     memset(&storedStates[0], 0, sizeof(storedStates));
     memset(&statetimeStamp[0], 0, sizeof(statetimeStamp));
-    memset(&posNE[0], 0, sizeof(posNE));
 }
 
 // return true if we should use the airspeed sensor
@@ -3278,18 +3326,30 @@ bool NavEKF::use_compass(void) const
 
 // decay GPS horizontal position offset to close to zero at a rate of 1 m/s
 // limit radius to a maximum of 100m
+// apply glitch offset to GPS measurements
 void NavEKF::decayGpsOffset()
 {
     float lapsedTime = 0.001f*float(hal.scheduler->millis() - lastDecayTime_ms);
     lastDecayTime_ms = hal.scheduler->millis();
-    float offsetRadius = pythagorous2(posnOffsetNorth, posnOffsetEast);
+    float offsetRadius = pythagorous2(gpsPosGlitchOffsetNE.x, gpsPosGlitchOffsetNE.y);
     // decay radius if larger than velocity of 1.0 multiplied by lapsed time (plus a margin to prevent divide by zero)
     if (offsetRadius > (lapsedTime + 0.1f)) {
         // calculate scale factor to be applied to both offset components
         float scaleFactor = constrain_float((offsetRadius - lapsedTime), 0.0f, 100.0f) / offsetRadius;
-        posnOffsetNorth *= scaleFactor;
-        posnOffsetEast  *= scaleFactor;
+        gpsPosGlitchOffsetNE.x *= scaleFactor;
+        gpsPosGlitchOffsetNE.y *= scaleFactor;
     }
+}
+
+/*
+  should we assume zero sideslip?
+ */
+bool NavEKF::assume_zero_sideslip(void) const
+{
+    // we don't assume zero sideslip for ground vehicles as EKF could
+    // be quite sensitive to a rapid spin of the ground vehicle if
+    // traction is lost
+    return _ahrs->get_fly_forward() && _ahrs->get_vehicle_class() != AHRS_VEHICLE_GROUND;
 }
 
 #endif // HAL_CPU_CLASS

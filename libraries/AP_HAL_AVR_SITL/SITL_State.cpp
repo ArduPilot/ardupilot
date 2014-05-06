@@ -379,6 +379,13 @@ void SITL_State::_fdm_input(void)
 
         if (_sitl != NULL) {
             _sitl->state = d.fg_pkt;
+            // prevent bad inputs from SIM from corrupting our state
+            double *v = &_sitl->state.latitude;
+            for (uint8_t i=0; i<17; i++) {
+                if (isinf(v[i]) || isnan(v[i]) || fabsf(v[i]) > 1.0e10) {
+                    v[i] = 0;
+                }
+            }
         }
 		_update_count++;
 

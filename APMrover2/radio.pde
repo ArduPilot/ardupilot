@@ -28,7 +28,10 @@ static void init_rc_out()
 {
     RC_Channel::rc_channel(CH_1)->enable_out();
     RC_Channel::rc_channel(CH_3)->enable_out();
-    RC_Channel::output_trim_all();
+    RC_Channel::output_trim_all();    
+
+    // setup PWM values to send if the FMU firmware dies
+    RC_Channel::setup_failsafe_trim_all();  
 }
 
 static void read_radio()

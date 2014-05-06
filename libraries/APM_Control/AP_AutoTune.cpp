@@ -261,17 +261,52 @@ void AP_AutoTune::check_save(void)
 }
 
 /*
+  log a parameter change from autotune
+ */
+void AP_AutoTune::log_param_change(float v, const prog_char_t *suffix)
+{
+    if (!dataflash.logging_started()) {
+        return;
+    }
+    char key[AP_MAX_NAME_SIZE+1];
+    if (type == AUTOTUNE_ROLL) {
+        strncpy_P(key, PSTR("RLL2SRV_"), 8);
+        strncpy_P(&key[8], suffix, AP_MAX_NAME_SIZE-8);
+    } else {
+        strncpy_P(key, PSTR("PTCH2SRV_"), 9);
+        strncpy_P(&key[9], suffix, AP_MAX_NAME_SIZE-9);
+    }
+    key[AP_MAX_NAME_SIZE] = 0;
+    dataflash.Log_Write_Parameter(key, v);
+}
+
+/*
   set a float and save a float if it has changed by more than
   0.1%. This reduces the number of insignificant EEPROM writes
  */
-void AP_AutoTune::save_float_if_changed(AP_Float &v, float value)
+void AP_AutoTune::save_float_if_changed(AP_Float &v, float value, const prog_char_t *suffix)
 {
     float old_value = v.get();
     v.set(value);
     if (value <= 0 || fabsf((value-old_value)/value) > 0.001f) {
         v.save();
+        log_param_change(v.get(), suffix);
     }
 }
+
+/*
+  set a int16 and save if changed
+ */
+void AP_AutoTune::save_int16_if_changed(AP_Int16 &v, int16_t value, const prog_char_t *suffix)
+{
+    int16_t old_value = v.get();
+    v.set(value);
+    if (old_value != v.get()) {
+        v.save();
+        log_param_change(v.get(), suffix);
+    }
+}
+
 
 /*
   save a set of gains
@@ -279,39 +314,13 @@ void AP_AutoTune::save_float_if_changed(AP_Float &v, float value)
 void AP_AutoTune::save_gains(const ATGains &v)
 {
     current = last_save;
-    save_float_if_changed(current.tau, v.tau);
-    save_float_if_changed(current.P, v.P);
-    save_float_if_changed(current.I, v.I);
-    save_float_if_changed(current.D, v.D);
-    current.rmax.set_and_save_ifchanged(v.rmax);
-    current.imax.set_and_save_ifchanged(v.imax);
+    save_float_if_changed(current.tau, v.tau, PSTR("TCONST"));
+    save_float_if_changed(current.P, v.P, PSTR("P"));
+    save_float_if_changed(current.I, v.I, PSTR("I"));
+    save_float_if_changed(current.D, v.D, PSTR("D"));
+    save_int16_if_changed(current.rmax, v.rmax, PSTR("RMAX"));
+    save_int16_if_changed(current.imax, v.imax, PSTR("IMAX"));
     last_save = current;
-}
-
-#define LOG_MSG_ATRP 211
-
-struct PACKED log_ATRP {
-    LOG_PACKET_HEADER;
-    uint32_t timestamp;
-    uint8_t  type;
-    uint8_t  state;
-    int16_t  servo;
-    float    demanded;
-    float    achieved;
-    float    P;
-};
-
-static const struct LogStructure at_log_structures[] PROGMEM = {
-    { LOG_MSG_ATRP, sizeof(log_ATRP),
-      "ATRP", "IBBcfff",  "TimeMS,Type,State,Servo,Demanded,Achieved,P" },
-};
-
-void AP_AutoTune::write_log_headers(void)
-{
-    if (!logging_started) {
-        logging_started = true;
-        dataflash.AddLogFormats(at_log_structures, 1);
-    }
 }
 
 void AP_AutoTune::write_log(float servo, float demanded, float achieved)
@@ -320,10 +329,8 @@ void AP_AutoTune::write_log(float servo, float demanded, float achieved)
         return;
     }
 
-    write_log_headers();
-
     struct log_ATRP pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_MSG_ATRP),
+        LOG_PACKET_HEADER_INIT(LOG_ATRP_MSG),
         timestamp  : hal.scheduler->millis(),
         type       : type,
     	state      : (uint8_t)state,

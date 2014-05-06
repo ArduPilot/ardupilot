@@ -7,11 +7,12 @@
 // althold_init - initialise althold controller
 static bool althold_init(bool ignore_checks)
 {
-    // initialise altitude target to stopping point
-    pos_control.set_target_to_stopping_point_z();
-
     // initialize vertical speeds and leash lengths
     pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+    pos_control.set_accel_z(g.pilot_accel_z);
+
+    // initialise altitude target to stopping point
+    pos_control.set_target_to_stopping_point_z();
 
     return true;
 }

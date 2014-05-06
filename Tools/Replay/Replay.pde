@@ -47,6 +47,10 @@
 #include <stdio.h>
 #include <getopt.h>
 #include <errno.h>
+#include <fenv.h>
+
+#define INT16_MIN -32768
+#define INT16_MAX 32767
 
 #include "LogReader.h"
 
@@ -72,7 +76,7 @@ SITL sitl;
 
 static const NavEKF &NavEKF = ahrs.get_NavEKF();
 
-static LogReader LogReader(ins, barometer, compass, gps, airspeed);
+static LogReader LogReader(ahrs, ins, barometer, compass, gps, airspeed);
 
 static FILE *plotf;
 static FILE *plotf2;
@@ -84,7 +88,8 @@ static FILE *ekf4f;
 static bool done_parameters;
 static bool done_baro_init;
 static bool done_home_init;
-static uint16_t update_rate;
+static uint16_t update_rate = 50;
+static uint32_t arm_time_ms;
 
 static uint8_t num_user_parameters;
 static struct {
@@ -100,6 +105,7 @@ static void usage(void)
     ::printf(" -pNAME=VALUE set parameter NAME to VALUE\n");
     ::printf(" -aMASK     set accel mask (1=accel1 only, 2=accel2 only, 3=both)\n");
     ::printf(" -gMASK     set gyro mask (1=gyro1 only, 2=gyro2 only, 3=both)\n");
+    ::printf(" -A time    arm at time milliseconds)\n");
 }
 
 void setup()
@@ -113,7 +119,7 @@ void setup()
 
     hal.util->commandline_arguments(argc, argv);
 
-	while ((opt = getopt(argc, argv, "r:p:ha:g:")) != -1) {
+	while ((opt = getopt(argc, argv, "r:p:ha:g:A:")) != -1) {
 		switch (opt) {
         case 'h':
             usage();
@@ -129,6 +135,10 @@ void setup()
 
         case 'a':
             LogReader.set_accel_mask(strtol(optarg, NULL, 0));
+            break;
+
+        case 'A':
+            arm_time_ms = strtoul(optarg, NULL, 0);
             break;
 
         case 'p':
@@ -173,11 +183,17 @@ void setup()
     LogReader.wait_type(LOG_GPS_MSG);
     LogReader.wait_type(LOG_IMU_MSG);
 
+    feenableexcept(FE_INVALID | FE_OVERFLOW);
+
     ahrs.set_compass(&compass);
     ahrs.set_fly_forward(true);
     ahrs.set_wind_estimation(true);
     ahrs.set_correct_centrifugal(true);
-    
+
+    if (arm_time_ms != 0) {
+        ahrs.set_armed(false);
+    }
+
     barometer.init();
     barometer.setHIL(0);
     barometer.read();
@@ -301,6 +317,14 @@ void loop()
 {
     while (true) {
         uint8_t type;
+
+        if (arm_time_ms != 0 && hal.scheduler->millis() > arm_time_ms) {
+            if (!ahrs.get_armed()) {
+                ahrs.set_armed(true);
+                ::printf("Arming at %u ms\n", (unsigned)hal.scheduler->millis());
+            }
+        }
+
         if (!LogReader.update(type)) {
             ::printf("End of log at %.1f seconds\n", hal.scheduler->millis()*0.001f);
             fclose(plotf);
@@ -488,15 +512,15 @@ void loop()
                     innovVT);
 
             // define messages for EKF4 data packet
-            int16_t sqrtvarV = (int16_t)(100*velVar);
-            int16_t sqrtvarP = (int16_t)(100*posVar);
-            int16_t sqrtvarH = (int16_t)(100*hgtVar);
-            int16_t sqrtvarMX = (int16_t)(100*magVar.x);
-            int16_t sqrtvarMY = (int16_t)(100*magVar.y);
-            int16_t sqrtvarMZ = (int16_t)(100*magVar.z);
-            int16_t sqrtvarVT = (int16_t)(100*tasVar);
-            int16_t offsetNorth = (int8_t)(offset.x);
-            int16_t offsetEast = (int8_t)(offset.y);
+            int16_t sqrtvarV = (int16_t)(constrain_float(100*velVar,INT16_MIN,INT16_MAX));
+            int16_t sqrtvarP = (int16_t)(constrain_float(100*posVar,INT16_MIN,INT16_MAX));
+            int16_t sqrtvarH = (int16_t)(constrain_float(100*hgtVar,INT16_MIN,INT16_MAX));
+            int16_t sqrtvarMX = (int16_t)(constrain_float(100*magVar.x,INT16_MIN,INT16_MAX));
+            int16_t sqrtvarMY = (int16_t)(constrain_float(100*magVar.y,INT16_MIN,INT16_MAX));
+            int16_t sqrtvarMZ = (int16_t)(constrain_float(100*magVar.z,INT16_MIN,INT16_MAX));
+            int16_t sqrtvarVT = (int16_t)(constrain_float(100*tasVar,INT16_MIN,INT16_MAX));
+            int16_t offsetNorth = (int8_t)(constrain_float(offset.x,INT16_MIN,INT16_MAX));
+            int16_t offsetEast = (int8_t)(constrain_float(offset.y,INT16_MIN,INT16_MAX));
 
             // print EKF4 data packet
             fprintf(ekf4f, "%.3f %d %d %d %d %d %d %d %d %d %d\n",

@@ -628,7 +628,7 @@ static void NOINLINE send_rangefinder(mavlink_channel_t chan)
 
 static void NOINLINE send_current_waypoint(mavlink_channel_t chan)
 {
-    mavlink_msg_mission_current_send(chan, mission.get_current_nav_cmd().index);
+    mavlink_msg_mission_current_send(chan, mission.get_current_nav_index());
 }
 
 static void NOINLINE send_statustext(mavlink_channel_t chan)
@@ -1559,7 +1559,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         v[6] = packet.chan7_raw;
         v[7] = packet.chan8_raw;
 
-        hal.rcin->set_overrides(v, 8);
+        if (hal.rcin->set_overrides(v, 8)) {
+            failsafe.last_valid_rc_ms = hal.scheduler->millis();
+        }
 
         // a RC override message is consiered to be a 'heartbeat' from
         // the ground station for failsafe purposes

@@ -15,21 +15,20 @@
 
 // position controller default definitions
 #define POSCONTROL_THROTTLE_HOVER               450.0f  // default throttle required to maintain hover
-#define POSCONTROL_LEASH_Z                      750.0f  // leash length for z-axis altitude controller.  To-Do: replace this with calculation based on alt_pos.kP()?
-#define POSCONTROL_ACCELERATION                 100.0f  // defines the default velocity vs distant curve.  maximum acceleration in cm/s/s that position controller asks for from acceleration controller
-#define POSCONTROL_ACCELERATION_MIN             50.0f   // minimum acceleration in cm/s/s - used for sanity checking _accel parameter
+#define POSCONTROL_ACCELERATION_MIN             50.0f   // minimum horizontal acceleration in cm/s/s - used for sanity checking acceleration in leash length calculation
+#define POSCONTROL_ACCEL_XY                     100.0f  // default horizontal acceleration in cm/s/s.  This is overwritten by waypoint and loiter controllers
 #define POSCONTROL_ACCEL_XY_MAX                 980.0f  // max horizontal acceleration in cm/s/s that the position velocity controller will ask from the lower accel controller
 #define POSCONTROL_STOPPING_DIST_Z_MAX          200.0f  // max stopping distance vertically   
                                                         // should be 1.5 times larger than POSCONTROL_ACCELERATION.
                                                         // max acceleration = max lean angle * 980 * pi / 180.  i.e. 23deg * 980 * 3.141 / 180 = 393 cm/s/s
 #define POSCONTROL_TAKEOFF_JUMP_CM               20.0f  // during take-off altitude target is set to current altitude + this value
 
-#define POSCONTROL_SPEED                        500.0f  // maximum default horizontal speed in cm/s
-#define POSCONTROL_SPEED_DOWN                  -150.0f  // maximum default descent rate
-#define POSCONTROL_SPEED_UP                     250.0f  // maximum default climb rate
+#define POSCONTROL_SPEED                        500.0f  // default horizontal speed in cm/s
+#define POSCONTROL_SPEED_DOWN                  -150.0f  // default descent rate in cm/s
+#define POSCONTROL_SPEED_UP                     250.0f  // default climb rate in cm/s
 #define POSCONTROL_VEL_XY_MAX_FROM_POS_ERR      200.0f  // max speed output from pos_to_vel controller when feed forward is used
 
-#define POSCONTROL_ALT_HOLD_ACCEL_MAX           250.0f  // hard coded copy of throttle controller's maximum acceleration in cm/s.  To-Do: remove duplication with throttle controller definition
+#define POSCONTROL_ACCEL_Z                      250.0f  // default vertical acceleration in cm/s/s.
 
 #define POSCONTROL_LEASH_LENGTH_MIN             100.0f  // minimum leash lengths in cm
 
@@ -63,8 +62,7 @@ public:
     void set_alt_max(float alt) { _alt_max = alt; }
 
     /// set_speed_z - sets maximum climb and descent rates
-    /// To-Do: call this in the main code as part of flight mode initialisation
-    ///     speed_down should be a negative number
+    ///     speed_down can be positive or negative but will always be interpreted as a descent speed
     ///     leash length will be recalculated the next time update_z_controller() is called
     void set_speed_z(float speed_down, float speed_up);
 
@@ -77,6 +75,9 @@ public:
     /// set_accel_z - set vertical acceleration in cm/s/s
     ///     leash length will be recalculated the next time update_z_controller() is called
     void set_accel_z(float accel_cmss);
+
+    /// get_accel_z - returns current vertical acceleration in cm/s/s
+    float get_accel_z() const { return _accel_z_cms; }
 
     /// calc_leash_length - calculates the vertical leash lengths from maximum speed, acceleration
     ///     called by pos_to_rate_z if z-axis speed or accelerations are changed
@@ -131,12 +132,12 @@ public:
     ///
 
     /// set_accel_xy - set horizontal acceleration in cm/s/s
-    ///     leash length will be recalculated the next time update_pos_controller() is called
+    ///     leash length will be recalculated the next time update_xy_controller() is called
     void set_accel_xy(float accel_cmss);
     float get_accel_xy() const { return _accel_cms; }
 
     /// set_speed_xy - set horizontal speed maximum in cm/s
-    ///     leash length will be recalculated the next time update_pos_controller() is called
+    ///     leash length will be recalculated the next time update_xy_controller() is called
     void set_speed_xy(float speed_cms);
     float get_speed_xy() const { return _speed_cms; }
 
@@ -154,16 +155,19 @@ public:
     const Vector2f& get_desired_velocity() { return _vel_desired; }
 
     /// set_desired_velocity - sets desired velocity in cm/s in lat and lon directions
-    ///     when update_pos_controller is next called the position target is moved based on the desired velocity and
+    ///     when update_xy_controller is next called the position target is moved based on the desired velocity and
     ///     the desired velocities are fed forward into the rate_to_accel step
     void set_desired_velocity(float vel_lat_cms, float vel_lon_cms) {_vel_desired.x = vel_lat_cms; _vel_desired.y = vel_lon_cms; }
 
     /// trigger_xy - used to notify the position controller than an update has been made to the position or desired velocity so that the position controller will run as soon as possible after the update
     void trigger_xy() { _flags.force_recalc_xy = true; }
 
-    /// update_pos_controller - run the position controller - should be called at 100hz or higher
+    /// update_xy_controller - run the horizontal position controller - should be called at 100hz or higher
     ///     when use_desired_velocity is true the desired velocity (i.e. feed forward) is incorporated at the pos_to_rate step
-    void update_pos_controller(bool use_desired_velocity);
+    void update_xy_controller(bool use_desired_velocity);
+
+    /// set_target_to_stopping_point_xy - sets horizontal target to reasonable stopping position in cm from home
+    void set_target_to_stopping_point_xy();
 
     /// get_stopping_point_xy - calculates stopping point based on current position, velocity, vehicle acceleration
     ///     distance_max allows limiting distance to stopping point
@@ -185,6 +189,9 @@ public:
     /// get_pos_xy_kP - returns xy position controller's kP gain
     float get_pos_xy_kP() const { return _p_pos_xy.kP(); }
 
+    /// keep_xy_I_terms - ensure xy position controller's PID's I terms are not cleared when the xy controller is next run.  Reset automatically back to zero in update_xy_controller.
+    void keep_xy_I_terms() { _flags.keep_xy_I_terms = true; }
+
     /// accessors for reporting
     const Vector3f& get_vel_target() const { return _vel_target; }
     const Vector3f& get_accel_target() const { return _accel_target; }
@@ -199,6 +206,7 @@ private:
             uint8_t recalc_leash_xy : 1;    // 1 if we should recalculate the xy axis leash length
             uint8_t force_recalc_xy : 1;    // 1 if we want the xy position controller to run at it's next possible time.  set by loiter and wp controllers after they have updated the target position.
             uint8_t slow_cpu        : 1;    // 1 if we are running on a slow_cpu machine.  xy position control is broken up into multiple steps
+            uint8_t keep_xy_I_terms : 1;    // 1 if we are to keep I terms when the position controller is next run.  Reset automatically back to zero in update_xy_controller.
     } _flags;
 
     // limit flags structure
