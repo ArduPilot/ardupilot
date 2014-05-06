@@ -839,6 +839,15 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
   should be listed here, along with how often they should be called
   (in 10ms units) and the maximum time they are expected to take (in
   microseconds)
+  1    = 100hz
+  2    = 50hz
+  4    = 25hz
+  10   = 10hz
+  20   = 5hz
+  33   = 3hz
+  50   = 2hz
+  100  = 1hz
+  1000 = 0.1hz
  */
 static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { rc_loop,               1,     100 },
