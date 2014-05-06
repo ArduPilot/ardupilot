@@ -16,6 +16,7 @@
 #define WPNAV_LOITER_SPEED_MIN          100.0f      // minimum loiter speed in cm/s
 #define WPNAV_LOITER_ACCEL              250.0f      // default acceleration in loiter mode
 #define WPNAV_LOITER_ACCEL_MIN           25.0f      // minimum acceleration in loiter mode
+#define WPNAV_LOITER_JERK_MAX_DEFAULT   500.0f      // maximum jerk in cm/s/s/s in loiter mode
 
 #define WPNAV_WP_SPEED                  500.0f      // default horizontal speed betwen waypoints in cm/s
 #define WPNAV_WP_SPEED_MIN              100.0f      // minimum horizontal speed between waypoints in cm/s
@@ -36,6 +37,8 @@
  # define WPNAV_LOITER_UPDATE_TIME      0.095f      // 10hz update rate on low speed CPUs (APM1, APM2)
  # define WPNAV_WP_UPDATE_TIME          0.095f      // 10hz update rate on low speed CPUs (APM1, APM2)
 #endif
+
+#define WPNAV_LOITER_ACTIVE_TIMEOUT_MS     200      // loiter controller is considered active if it has been called within the past 200ms (0.2 seconds)
 
 class AC_WPNav
 {
@@ -250,6 +253,7 @@ protected:
 
     // parameters
     AP_Float    _loiter_speed_cms;      // maximum horizontal speed in cm/s while in loiter
+    AP_Float    _loiter_jerk_max_cmsss; // maximum jerk in cm/s/s/s while in loiter
     AP_Float    _wp_speed_cms;          // maximum horizontal speed in cm/s during missions
     AP_Float    _wp_speed_up_cms;       // climb speed target in cm/s
     AP_Float    _wp_speed_down_cms;     // descent speed target in cm/s
@@ -262,6 +266,7 @@ protected:
     uint8_t     _loiter_step;           // used to decide which portion of loiter controller to run during this iteration
     int16_t     _pilot_accel_fwd_cms; 	// pilot's desired acceleration forward (body-frame)
     int16_t     _pilot_accel_rgt_cms;   // pilot's desired acceleration right (body-frame)
+    Vector2f    _loiter_desired_accel;  // slewed pilot's desired acceleration in lat/lon frame
     float       _loiter_accel_cms;      // loiter's acceleration in cm/s/s
 
     // waypoint controller internal variables
