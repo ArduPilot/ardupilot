@@ -88,7 +88,6 @@ void AP_GPS_Backend::make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds)
     year = bcd_date % 100;
     mon  = (bcd_date / 100) % 100;
     day  = bcd_date / 10000;
-    msec = bcd_milliseconds % 1000;
 
     uint32_t v = bcd_milliseconds;
     msec = v % 1000; v /= 1000;

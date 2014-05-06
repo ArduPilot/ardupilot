@@ -130,7 +130,10 @@ void AP_ADC_ADS7844::read(void)
 
 
 // Constructors ////////////////////////////////////////////////////////////////
-AP_ADC_ADS7844::AP_ADC_ADS7844() { }
+AP_ADC_ADS7844::AP_ADC_ADS7844() { 
+  _spi = NULL;
+  _spi_sem = NULL;
+}
 
 // Public Methods //////////////////////////////////////////////////////////////
 void AP_ADC_ADS7844::Init()

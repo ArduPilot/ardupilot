@@ -32,7 +32,6 @@ private:
     // the data fits within the page, otherwise it will wrap to the
     // start of the page
     bool 		    BlockRead(uint8_t BufferNum, uint16_t IntPageAdr, void *pBuffer, uint16_t size);
-    uint8_t	            BufferRead (uint8_t BufferNum, uint16_t IntPageAdr);
 
     void                    PageErase (uint16_t PageAdr);
     void                    BlockErase (uint16_t BlockAdr);

@@ -119,14 +119,12 @@ void AP_PerfMon::ClearAll()
 void AP_PerfMon::DisplayResults()
 {
     uint8_t i,j,changed;
-    float hz;
     float pct;
     uint32_t totalTime;
     uint32_t avgTime;
     uint32_t sumOfTime = 0;
     uint32_t unExplainedTime;
     uint8_t order[PERFMON_MAX_FUNCTIONS];
-    bool blocking_writes;
 
     // record end time
     if( allEndTime == 0 ) {
@@ -176,7 +174,7 @@ void AP_PerfMon::DisplayResults()
             avgTime = 0;
         }
 
-        hz = numCalls[j]/(totalTime/1000000);
+        float hz = numCalls[j]/(totalTime/1000000);
         pct = ((float)time[j] / (float)totalTime) * 100.0;
         hal.console->printf_P(PSTR("%-10s\t%4.2f\t%lu\t%4.3f\t%4.3f\t%lu\t%4.1f\n"),
             functionNames[j],
