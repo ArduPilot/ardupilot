@@ -69,10 +69,10 @@ public:
     void set_speed_z(float speed_down, float speed_up);
 
     /// get_speed_up - accessor for current up speed in cm/s
-    float get_speed_up() { return _speed_up_cms; }
+    float get_speed_up() const { return _speed_up_cms; }
 
     /// get_speed_down - accessors for current down speed in cm/s.  Will be a negative number
-    float get_speed_down() { return _speed_down_cms; }
+    float get_speed_down() const { return _speed_down_cms; }
 
     /// set_accel_z - set vertical acceleration in cm/s/s
     ///     leash length will be recalculated the next time update_z_controller() is called
@@ -211,7 +211,7 @@ public:
     const Vector3f& get_accel_target() const { return _accel_target; }
 
     // lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
-    void lean_angles_to_accel(float& accel_x_cmss, float& accel_y_cmss);
+    void lean_angles_to_accel(float& accel_x_cmss, float& accel_y_cmss) const;
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -305,7 +305,6 @@ private:
     float       _dt;                    // time difference (in seconds) between calls from the main program
     uint32_t    _last_update_xy_ms;     // system time of last update_xy_controller call
     uint32_t    _last_update_z_ms;      // system time of last update_z_controller call
-    uint8_t     _step;                  // used to decide which portion of position controller to run during this iteration
     float       _speed_down_cms;        // max descent rate in cm/s
     float       _speed_up_cms;          // max climb rate in cm/s
     float       _speed_cms;             // max horizontal speed in cm/s
@@ -314,9 +313,6 @@ private:
     float       _leash;                 // horizontal leash length in cm.  target will never be further than this distance from the vehicle
     float       _leash_down_z;          // vertical leash down in cm.  target will never be further than this distance below the vehicle
     float       _leash_up_z;            // vertical leash up in cm.  target will never be further than this distance above the vehicle
-    float       _cos_yaw;               // short-cut to save on calcs required to convert roll-pitch frame to lat-lon frame
-    float       _sin_yaw;
-    float       _cos_pitch;
 
     // output from controller
     float       _roll_target;           // desired roll angle in centi-degrees calculated by position controller
@@ -328,7 +324,7 @@ private:
     Vector2f    _vel_desired;           // desired velocity in cm/s in lat and lon directions (provided by external callers of move_target_at_rate() method)
     Vector3f    _vel_target;            // velocity target in cm/s calculated by pos_to_rate step
     Vector3f    _vel_error;             // error between desired and actual acceleration in cm/s
-    Vector3f    _vel_last;              // previous iterations velocity in cm/s
+    Vector2f    _vel_last;              // previous iterations velocity in cm/s
     float       _vel_target_filt_z;     // filtered target vertical velocity
     Vector3f    _accel_target;          // desired acceleration in cm/s/s  // To-Do: are xy actually required?
     Vector3f    _accel_error;           // desired acceleration in cm/s/s  // To-Do: are xy actually required?

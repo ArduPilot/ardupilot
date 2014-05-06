@@ -37,7 +37,6 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     _dt(POSCONTROL_DT_10HZ),
     _last_update_xy_ms(0),
     _last_update_z_ms(0),
-    _step(0),
     _speed_down_cms(POSCONTROL_SPEED_DOWN),
     _speed_up_cms(POSCONTROL_SPEED_UP),
     _speed_cms(POSCONTROL_SPEED),
@@ -429,7 +428,7 @@ void AC_PosControl::set_target_to_stopping_point_xy()
 ///     set_leash_length() should have been called before this method
 void AC_PosControl::get_stopping_point_xy(Vector3f &stopping_point) const
 {
-	Vector3f curr_pos = _inav.get_position();
+	const Vector3f curr_pos = _inav.get_position();
 	Vector3f curr_vel = _inav.get_velocity();
     float linear_distance;      // the distance at which we swap from a linear to sqrt response
     float linear_velocity;      // the velocity above which we swap from a linear to sqrt response
@@ -742,7 +741,7 @@ void AC_PosControl::accel_to_lean_angles()
 }
 
 // get_lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
-void AC_PosControl::lean_angles_to_accel(float& accel_x_cmss, float& accel_y_cmss)
+void AC_PosControl::lean_angles_to_accel(float& accel_x_cmss, float& accel_y_cmss) const
 {
     // rotate our roll, pitch angles into lat/lon frame
     accel_x_cmss = (GRAVITY_MSS * 100) * (-(_ahrs.cos_yaw() * _ahrs.sin_pitch() / max(_ahrs.cos_pitch(),0.5)) - _ahrs.sin_yaw() * _ahrs.sin_roll() / max(_ahrs.cos_roll(),0.5));
