@@ -16,7 +16,7 @@
 #define WPNAV_LOITER_SPEED_MIN          100.0f      // minimum loiter speed in cm/s
 #define WPNAV_LOITER_ACCEL              250.0f      // default acceleration in loiter mode
 #define WPNAV_LOITER_ACCEL_MIN           25.0f      // minimum acceleration in loiter mode
-#define WPNAV_LOITER_JERK_MAX_DEFAULT   500.0f      // maximum jerk in cm/s/s/s in loiter mode
+#define WPNAV_LOITER_JERK_MAX_DEFAULT  1000.0f      // maximum jerk in cm/s/s/s in loiter mode
 
 #define WPNAV_WP_SPEED                  500.0f      // default horizontal speed betwen waypoints in cm/s
 #define WPNAV_WP_SPEED_MIN              100.0f      // minimum horizontal speed between waypoints in cm/s
