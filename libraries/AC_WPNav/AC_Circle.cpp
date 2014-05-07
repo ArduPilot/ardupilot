@@ -41,14 +41,17 @@ AC_Circle::AC_Circle(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosCont
 }
 
 /// init - initialise circle controller setting center specifically
+///     caller should set the position controller's x,y and z speeds and accelerations before calling this
 void AC_Circle::init(const Vector3f& center)
 {
     _center = center;
 
-	// To-Do: set target position, angle, etc so that copter begins circle from closest point to stopping point
-	_pos_control.set_pos_target(_inav.get_position());
+    // initialise position controller (sets target roll angle, pitch angle and I terms based on vehicle current lean angles)
+    _pos_control.init_xy_controller();
 
-	// To-Do: set _pos_control speed and accel
+    // set initial position target to reasonable stopping point
+    _pos_control.set_target_to_stopping_point_xy();
+    _pos_control.set_target_to_stopping_point_z();
 
     // calculate velocities
     calc_velocities();
@@ -58,21 +61,23 @@ void AC_Circle::init(const Vector3f& center)
 }
 
 /// init - initialise circle controller setting center using stopping point and projecting out based on the copter's heading
+///     caller should set the position controller's x,y and z speeds and accelerations before calling this
 void AC_Circle::init()
 {
-    Vector3f stopping_point;
+    // initialise position controller (sets target roll angle, pitch angle and I terms based on vehicle current lean angles)
+    _pos_control.init_xy_controller();
 
-    // get reasonable stopping point
-    _pos_control.get_stopping_point_xy(stopping_point);
-    _pos_control.get_stopping_point_z(stopping_point);
+    // set initial position target to reasonable stopping point
+    _pos_control.set_target_to_stopping_point_xy();
+    _pos_control.set_target_to_stopping_point_z();
+
+    // get stopping point
+    const Vector3f& stopping_point = _pos_control.get_pos_target();
 
     // set circle center to circle_radius ahead of stopping point
     _center.x = stopping_point.x + _radius * _ahrs.cos_yaw();
     _center.y = stopping_point.y + _radius * _ahrs.sin_yaw();
     _center.z = stopping_point.z;
-
-    // update pos_control target to stopping point
-    _pos_control.set_pos_target(stopping_point);
 
     // calculate velocities
     calc_velocities();
