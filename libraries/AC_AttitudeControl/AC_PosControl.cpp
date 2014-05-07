@@ -320,9 +320,6 @@ void AC_PosControl::rate_to_accel_z(float vel_target_z)
     desired_accel += p;
     desired_accel = constrain_int32(desired_accel, -32000, 32000);
 
-    // To-Do: re-enable PID logging?
-    // TO-DO: ensure throttle cruise is updated some other way in the main code or attitude control
-
     // set target for accel based throttle controller
     accel_to_throttle(desired_accel);
 }
@@ -483,6 +480,9 @@ bool AC_PosControl::is_active_xy() const
 }
 
 /// init_xy_controller - initialise the xy controller
+///     sets target roll angle, pitch angle and I terms based on vehicle current lean angles
+///     should be called once whenever significant changes to the position target are made
+///     this does not update the xy target
 void AC_PosControl::init_xy_controller()
 {
     // reset xy controller to first step
@@ -492,18 +492,16 @@ void AC_PosControl::init_xy_controller()
     _roll_target = _ahrs.roll_sensor;
     _pitch_target = _ahrs.pitch_sensor;
 
-    // initialise I terms
+    // initialise I terms from lean angles
     if (!_flags.keep_xy_I_terms) {
-        reset_I_xy();
+        // reset last velocity if this controller has just been engaged or dt is zero
+        lean_angles_to_accel(_accel_target.x, _accel_target.y);
+        _pid_rate_lat.set_integrator(_accel_target.x);
+        _pid_rate_lon.set_integrator(_accel_target.y);
     } else {
         // reset keep_xy_I_term flag in case it has been set
         _flags.keep_xy_I_terms = false;
     }
-
-    // reset last velocity if this controller has just been engaged or dt is zero
-    lean_angles_to_accel(_accel_target.x, _accel_target.y);
-    _pid_rate_lat.set_integrator(_accel_target.x);
-    _pid_rate_lon.set_integrator(_accel_target.y);
 
     // flag reset required in rate to accel step
     _flags.reset_desired_vel_to_pos = true;
@@ -746,13 +744,6 @@ void AC_PosControl::lean_angles_to_accel(float& accel_x_cmss, float& accel_y_cms
     // rotate our roll, pitch angles into lat/lon frame
     accel_x_cmss = (GRAVITY_MSS * 100) * (-(_ahrs.cos_yaw() * _ahrs.sin_pitch() / max(_ahrs.cos_pitch(),0.5)) - _ahrs.sin_yaw() * _ahrs.sin_roll() / max(_ahrs.cos_roll(),0.5));
     accel_y_cmss = (GRAVITY_MSS * 100) * (-(_ahrs.sin_yaw() * _ahrs.sin_pitch() / max(_ahrs.cos_pitch(),0.5)) + _ahrs.cos_yaw() * _ahrs.sin_roll() / max(_ahrs.cos_roll(),0.5));
-}
-
-/// reset_I_xy - clears I terms from loiter PID controller
-void AC_PosControl::reset_I_xy()
-{
-    _pid_rate_lon.reset_I();
-    _pid_rate_lat.reset_I();
 }
 
 /// calc_leash_length - calculates the horizontal leash length given a maximum speed, acceleration and position kP gain
