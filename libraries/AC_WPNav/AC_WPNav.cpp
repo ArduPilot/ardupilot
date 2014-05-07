@@ -297,6 +297,28 @@ void AC_WPNav::update_loiter()
 /// waypoint navigation
 ///
 
+/// wp_and_spline_init - initialise straight line and spline waypoint controllers
+///     updates target roll, pitch targets and I terms based on vehicle lean angles
+///     should be called once before the waypoint controller is used but does not need to be called before subsequent updates to destination
+void AC_WPNav::wp_and_spline_init()
+{
+    // check _wp_accel_cms is reasonable
+    if (_wp_accel_cms <= 0) {
+        _wp_accel_cms.set_and_save(WPNAV_ACCELERATION);
+    }
+
+    // initialise position controller
+    _pos_control.init_xy_controller();
+
+    // initialise position controller speed and acceleration
+    _pos_control.set_speed_xy(_wp_speed_cms);
+    _pos_control.set_accel_xy(_wp_accel_cms);
+    _pos_control.set_speed_z(-_wp_speed_down_cms, _wp_speed_up_cms);
+    _pos_control.set_accel_z(_wp_accel_z_cms);
+    _pos_control.calc_leash_length_xy();
+    _pos_control.calc_leash_length_z();
+}
+
 /// set_speed_xy - allows main code to pass target horizontal velocity for wp navigation
 void AC_WPNav::set_speed_xy(float speed_cms)
 {
@@ -346,19 +368,6 @@ void AC_WPNav::set_wp_origin_and_destination(const Vector3f& origin, const Vecto
     }else{
         _pos_delta_unit = pos_delta/_track_length;
     }
-
-    // check _wp_accel_cms is reasonable
-    if (_wp_accel_cms <= 0) {
-        _wp_accel_cms.set_and_save(WPNAV_ACCELERATION);
-    }
-
-    // initialise position controller speed and acceleration
-    _pos_control.set_speed_xy(_wp_speed_cms);
-    _pos_control.set_accel_xy(_wp_accel_cms);
-    _pos_control.set_speed_z(-_wp_speed_down_cms, _wp_speed_up_cms);
-    _pos_control.set_accel_z(_wp_accel_z_cms);
-    _pos_control.calc_leash_length_xy();
-    _pos_control.calc_leash_length_z();
 
     // calculate leash lengths
     calculate_wp_leash_length();
@@ -716,13 +725,6 @@ void AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
     // store origin and destination locations
     _origin = origin;
     _destination = destination;
-
-    // initialise position controller speed and acceleration
-    _pos_control.set_speed_xy(_wp_speed_cms);
-    _pos_control.set_accel_xy(_wp_accel_cms);
-    _pos_control.set_speed_z(-_wp_speed_down_cms, _wp_speed_up_cms);
-    _pos_control.calc_leash_length_xy();
-    _pos_control.calc_leash_length_z();
 
     // calculate slow down distance
     calc_slow_down_distance(_wp_speed_cms, _wp_accel_cms);
