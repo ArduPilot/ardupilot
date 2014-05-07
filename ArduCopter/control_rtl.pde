@@ -231,7 +231,7 @@ static void rtl_descent_start()
     rtl_state_complete = false;
 
     // Set wp navigation target to above home
-    wp_nav.set_loiter_target(Vector3f(0,0,0));
+    wp_nav.set_loiter_target(wp_nav.get_wp_destination());
 
     // initialise altitude target to stopping point
     pos_control.set_target_to_stopping_point_z();
@@ -290,7 +290,7 @@ static void rtl_land_start()
     rtl_state_complete = false;
 
     // Set wp navigation target to above home
-    wp_nav.set_loiter_target(Vector3f(0,0,0));
+    wp_nav.set_loiter_target(wp_nav.get_wp_destination());
 
     // initialise altitude target to stopping point
     pos_control.set_target_to_stopping_point_z();
