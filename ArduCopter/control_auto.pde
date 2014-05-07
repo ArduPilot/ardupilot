@@ -26,6 +26,10 @@ static bool auto_init(bool ignore_checks)
         if (auto_yaw_mode == AUTO_YAW_ROI) {
             set_auto_yaw_mode(AUTO_YAW_HOLD);
         }
+
+        // initialise waypoint and spline controller
+        wp_nav.wp_and_spline_init();
+
         // start the mission
         mission.start();
         return true;
