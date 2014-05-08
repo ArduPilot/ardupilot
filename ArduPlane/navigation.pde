@@ -62,11 +62,6 @@ static void navigate()
     // ----------------------------
     wp_distance = get_distance(current_loc, next_WP_loc);
 
-    if (wp_distance < 0) {
-        gcs_send_text_P(SEVERITY_HIGH,PSTR("WP error - distance < 0"));
-        return;
-    }
-
     // update total loiter angle
     loiter_angle_update();
 
