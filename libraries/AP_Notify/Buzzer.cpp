@@ -148,6 +148,15 @@ void Buzzer::update()
         }
         return;
     }
+    
+    // check if savetrim_manual status has changed
+    if (_flags.savetrim_manual != AP_Notify::flags.savetrim_manual) {
+        _flags.savetrim_manual = AP_Notify::flags.savetrim_manual;
+        if (_flags.savetrim_manual) {
+            play_pattern(DOUBLE_BUZZ);
+        }
+        return;
+    }
 
     // if battery failsafe constantly single buzz
     if (AP_Notify::flags.failsafe_battery) {

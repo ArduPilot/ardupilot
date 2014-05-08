@@ -2,6 +2,7 @@
 
 #define ARM_DELAY               20  // called at 10hz so 2 seconds
 #define DISARM_DELAY            20  // called at 10hz so 2 seconds
+#define SAVETRIM_DELAY          150 // called at 10hz so 15 seconds
 #define AUTO_TRIM_DELAY         100 // called at 10hz so 10 seconds
 #define AUTO_DISARMING_DELAY    15  // called at 1hz so 15 seconds
 
@@ -73,8 +74,8 @@ static void arm_motors_check()
     // full left
     }else if (tmp < -4000) {
 
-        // increase the counter to a maximum of 1 beyond the disarm delay
-        if( arming_counter <= DISARM_DELAY ) {
+        // increase the counter to a maximum of 1 beyond the SAVETRIM_DELAY
+        if( arming_counter <= SAVETRIM_DELAY ) {
             arming_counter++;
         }
 
@@ -82,10 +83,17 @@ static void arm_motors_check()
         if (arming_counter == DISARM_DELAY && motors.armed()) {
             init_disarm_motors();
         }
+                
+        // Save Trim
+        if (arming_counter == SAVETRIM_DELAY) {
+            save_trim();
+            AP_Notify::flags.savetrim_manual = true;
+        }
 
-    // Yaw is centered so reset arming counter
+    // Yaw is centred so reset arming counter and notify flags
     }else{
         AP_Notify::flags.arming_failed = false;
+        AP_Notify::flags.savetrim_manual = false;
         arming_counter = 0;
     }
 }
