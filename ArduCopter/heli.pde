@@ -68,8 +68,6 @@ static void check_dynamic_flight(void)
             if (heli_dynamic_flight_counter >= 100) {
                 heli_flags.dynamic_flight = true;
                 heli_dynamic_flight_counter = 100;
-                // update attitude control's leaky i term setting
-                attitude_control.use_leaky_i(!heli_flags.dynamic_flight);
             }
         }
     }else{
@@ -79,11 +77,19 @@ static void check_dynamic_flight(void)
                 heli_dynamic_flight_counter--;
             }else{
                 heli_flags.dynamic_flight = false;
-                // update attitude control's leaky i term setting
-                attitude_control.use_leaky_i(!heli_flags.dynamic_flight);
             }
         }
     }
+}
+
+// update_heli_control_dynamics - pushes several important factors up into AP_MotorsHeli.
+// should be run between the rate controller and the servo updates.
+static void update_heli_control_dynamics(void)
+{
+    // Use Leaky_I if we are not moving fast
+    attitude_control.use_leaky_i(!heli_flags.dynamic_flight);
+    
+    // To-Do: Update dynamic phase angle of swashplate
 }
 
 // heli_update_landing_swash - sets swash plate flag so higher minimum is used when landed or landing
