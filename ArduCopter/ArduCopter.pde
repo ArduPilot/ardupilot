@@ -988,6 +988,10 @@ static void fast_loop()
 
     // run low level rate controllers that only require IMU data
     attitude_control.rate_controller_run();
+    
+#if FRAME_CONFIG == HELI_FRAME
+    update_heli_control_dynamics();
+#endif //HELI_FRAME
 
     // write out the servo PWM values
     // ------------------------------
