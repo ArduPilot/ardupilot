@@ -11,6 +11,11 @@
 // counter to control dynamic flight profile
 static int8_t heli_dynamic_flight_counter;
 
+// Mode filter to reject RC Input glitches.  Filter size is 5, and it draws the 4th element, so it can reject 3 low glitches,
+// and 1 high glitch.  This is because any "off" glitches can be highly problematic for a helicopter running an ESC
+// governor.  Even a single "off" frame can cause the rotor to slow dramatically and take a long time to restart.
+ModeFilterInt16_Size5 rotor_speed_deglitch_filter(4);
+
 // Tradheli flags
 static struct {
     uint8_t dynamic_flight  : 1;    // 0   // true if we are moving at a significant speed (used to turn on/off leaky I terms)
@@ -138,6 +143,7 @@ static void heli_update_rotor_speed_targets()
 {
     // get rotor control method
     uint8_t rsc_control_mode = motors.get_rsc_mode();
+    int16_t rsc_control_deglitched = rotor_speed_deglitch_filter.apply(g.rc_8.control_in);
 
     switch (rsc_control_mode) {
         case AP_MOTORS_HELI_RSC_MODE_NONE:
@@ -145,11 +151,11 @@ static void heli_update_rotor_speed_targets()
             // rotor is spinning in case we are using direct drive tailrotor which must be spun up at same time
         case AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH:
             // pass through pilot desired rotor speed
-            motors.set_desired_rotor_speed(g.rc_8.control_in);
+            motors.set_desired_rotor_speed(rsc_control_deglitched);
             break;
         case AP_MOTORS_HELI_RSC_MODE_SETPOINT:
             // pass setpoint through as desired rotor speed
-            if (g.rc_8.control_in > 0) {
+            if (rsc_control_deglitched > 0) {
                 motors.set_desired_rotor_speed(motors.get_rsc_setpoint());
             }else{
                 motors.set_desired_rotor_speed(0);
