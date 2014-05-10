@@ -1719,8 +1719,13 @@ void update_roll_pitch_mode(void)
         control_roll            = g.rc_1.control_in;
         control_pitch           = g.rc_2.control_in;
 
-        // update loiter target from user controls
-        wp_nav.move_loiter_target(control_roll, control_pitch,0.01f);
+        if(failsafe.radio) {
+            // don't allow loiter target to move during failsafe
+            wp_nav.move_loiter_target(0.0f, 0.0f, 0.01f);
+        } else {
+            // update loiter target from user controls
+            wp_nav.move_loiter_target(g.rc_1.control_in, g.rc_2.control_in, 0.01f);
+        }
 
         // copy latest output from nav controller to stabilize controller
         nav_roll = wp_nav.get_desired_roll();
