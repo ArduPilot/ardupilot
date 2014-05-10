@@ -1507,6 +1507,18 @@ static void tuning(){
     case CH6_HELI_EXTERNAL_GYRO:
         motors.ext_gyro_gain(g.rc_6.control_in);
         break;
+
+    case CH6_RATE_PITCH_FF:
+        g.pid_rate_pitch.ff(tuning_value);
+        break;
+        
+    case CH6_RATE_ROLL_FF:
+        g.pid_rate_roll.ff(tuning_value);
+        break;
+        
+    case CH6_RATE_YAW_FF:
+        g.pid_rate_yaw.ff(tuning_value);
+        break;        
 #endif
 
     case CH6_OPTFLOW_KP:
@@ -1574,6 +1586,30 @@ static void tuning(){
     case CH6_RC_FEEL_RP:
         // roll-pitch input smoothing
         g.rc_feel_rp = g.rc_6.control_in / 10;
+        break;
+    
+    case CH6_RATE_PITCH_KP:
+        g.pid_rate_pitch.kP(tuning_value);
+        break;
+        
+    case CH6_RATE_PITCH_KI:
+        g.pid_rate_pitch.kI(tuning_value);
+        break;
+        
+    case CH6_RATE_PITCH_KD:
+        g.pid_rate_pitch.kD(tuning_value);
+        break;
+        
+    case CH6_RATE_ROLL_KP:
+        g.pid_rate_roll.kP(tuning_value);
+        break;
+        
+    case CH6_RATE_ROLL_KI:
+        g.pid_rate_roll.kI(tuning_value);
+        break;
+        
+    case CH6_RATE_ROLL_KD:
+        g.pid_rate_roll.kD(tuning_value);
         break;
     }
 }

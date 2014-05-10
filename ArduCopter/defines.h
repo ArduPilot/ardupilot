@@ -144,6 +144,15 @@
 #define CH6_EKF_HORIZONTAL_POS          43  // EKF's gps vs accel (higher rely on accels more, gps impact is reduced).  Range should be 1.0 ~ 3.0?  1.5 is default
 #define CH6_EKF_ACCEL_NOISE             44  // EKF's accel noise (lower means trust accels more, gps & baro less).  Range should be 0.02 ~ 0.5  0.5 is default (but very robust at that level)
 #define CH6_RC_FEEL_RP                  45  // roll-pitch input smoothing
+#define CH6_RATE_PITCH_KP               46  // body frame pitch rate controller's P term
+#define CH6_RATE_PITCH_KI               47  // body frame pitch rate controller's I term
+#define CH6_RATE_PITCH_KD               48  // body frame pitch rate controller's D term
+#define CH6_RATE_ROLL_KP                49  // body frame roll rate controller's P term
+#define CH6_RATE_ROLL_KI                50  // body frame roll rate controller's I term
+#define CH6_RATE_ROLL_KD                51  // body frame roll rate controller's D term
+#define CH6_RATE_PITCH_FF               52  // body frame pitch rate controller FF term
+#define CH6_RATE_ROLL_FF                53  // body frame roll rate controller FF term
+#define CH6_RATE_YAW_FF                 54  // body frame yaw rate controller FF term
 
 // Acro Trainer types
 #define ACRO_TRAINER_DISABLED   0
