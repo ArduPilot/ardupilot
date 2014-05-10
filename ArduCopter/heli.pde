@@ -2,6 +2,8 @@
 
 // Traditional helicopter variables and functions
 
+#include "heli.h"
+
 #if FRAME_CONFIG == HELI_FRAME
 
 #ifndef HELI_DYNAMIC_FLIGHT_SPEED_MIN
@@ -10,18 +12,6 @@
 
 // counter to control dynamic flight profile
 static int8_t heli_dynamic_flight_counter;
-
-// Mode filter to reject RC Input glitches.  Filter size is 5, and it draws the 4th element, so it can reject 3 low glitches,
-// and 1 high glitch.  This is because any "off" glitches can be highly problematic for a helicopter running an ESC
-// governor.  Even a single "off" frame can cause the rotor to slow dramatically and take a long time to restart.
-ModeFilterInt16_Size5 rotor_speed_deglitch_filter(4);
-
-// Tradheli flags
-static struct {
-    uint8_t dynamic_flight  : 1;    // 0   // true if we are moving at a significant speed (used to turn on/off leaky I terms)
-} heli_flags;
-
-
 
 // heli_init - perform any special initialisation required for the tradheli
 static void heli_init()
