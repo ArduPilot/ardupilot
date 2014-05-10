@@ -658,10 +658,8 @@ void AP_MotorsHeli::rsc_control()
     }else{
         // shutting down main rotor
         rotor_ramp(0);
-        // if completed shutting down main motor then shut-down tail rotor.  Note: this does nothing if not using direct drive vairable pitch tail
-        if (_rotor_speed_estimate <= 0) {
-            tail_ramp(0);
-        }
+        // shut-down tail rotor.  Note: this does nothing if not using direct drive vairable pitch tail        
+        tail_ramp(0);
     }
 
     // direct drive fixed pitch tail servo gets copy of yaw servo out (ch4) while main rotor is running
