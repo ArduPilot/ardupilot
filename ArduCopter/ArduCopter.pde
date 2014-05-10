@@ -1674,8 +1674,13 @@ void update_roll_pitch_mode(void)
         // apply SIMPLE mode transform
         update_simple_mode();
 
-        // convert pilot input to lean angles
-        get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, control_roll, control_pitch);
+        if(failsafe.radio) {
+            // don't allow copter to fly away during failsafe
+            get_pilot_desired_lean_angles(0.0f, 0.0f, control_roll, control_pitch);
+        } else {
+            // convert pilot input to lean angles
+            get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, control_roll, control_pitch);
+        }
 
         // pass desired roll, pitch to stabilize attitude controllers
         get_stabilize_roll(control_roll);
@@ -1699,8 +1704,13 @@ void update_roll_pitch_mode(void)
         // apply SIMPLE mode transform
         update_simple_mode();
 
-        // convert pilot input to lean angles
-        get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, control_roll, control_pitch);
+        if(failsafe.radio) {
+            // don't allow copter to fly away during failsafe
+            get_pilot_desired_lean_angles(0.0f, 0.0f, control_roll, control_pitch);
+        } else {
+            // convert pilot input to lean angles
+            get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, control_roll, control_pitch);
+        }
 
         // mix in user control with optical flow
         get_stabilize_roll(get_of_roll(control_roll));
