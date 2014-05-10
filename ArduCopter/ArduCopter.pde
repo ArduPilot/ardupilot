@@ -1638,8 +1638,13 @@ void update_roll_pitch_mode(void)
         // apply SIMPLE mode transform
         update_simple_mode();
 
-        // convert pilot input to lean angles
-        get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, control_roll, control_pitch);
+        if(failsafe.radio) {
+            // don't allow copter to fly away during failsafe
+            get_pilot_desired_lean_angles(0.0f, 0.0f, control_roll, control_pitch);
+        } else {
+            // convert pilot input to lean angles
+            get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, control_roll, control_pitch);
+        }
 
         // pass desired roll, pitch to stabilize attitude controllers
         get_stabilize_roll(control_roll);
@@ -1659,8 +1664,13 @@ void update_roll_pitch_mode(void)
         // apply SIMPLE mode transform
         update_simple_mode();
 
-        // convert pilot input to lean angles
-        get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, control_roll, control_pitch);
+        if(failsafe.radio) {
+            // don't allow copter to fly away during failsafe
+            get_pilot_desired_lean_angles(0.0f, 0.0f, control_roll, control_pitch);
+        } else {
+            // convert pilot input to lean angles
+            get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, control_roll, control_pitch);
+        }
 
         // mix in user control with optical flow
         control_roll = get_of_roll(control_roll);
@@ -1679,6 +1689,10 @@ void update_roll_pitch_mode(void)
         // apply SIMPLE mode transform
         update_simple_mode();
 
+        // copy user input for reporting purposes
+        control_roll            = g.rc_1.control_in;
+        control_pitch           = g.rc_2.control_in;
+
         if(failsafe.radio) {
             // don't allow loiter target to move during failsafe
             wp_nav.move_loiter_target(0.0f, 0.0f, 0.01f);
@@ -1686,10 +1700,6 @@ void update_roll_pitch_mode(void)
             // update loiter target from user controls
             wp_nav.move_loiter_target(g.rc_1.control_in, g.rc_2.control_in, 0.01f);
         }
-
-        // copy latest output from nav controller to stabilize controller
-        control_roll = wp_nav.get_desired_roll();
-        control_pitch = wp_nav.get_desired_pitch();
 
         get_stabilize_roll(control_roll);
         get_stabilize_pitch(control_pitch);
