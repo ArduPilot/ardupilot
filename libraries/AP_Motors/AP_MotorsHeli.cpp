@@ -787,3 +787,12 @@ void AP_MotorsHeli::write_aux(int16_t servo_out)
     _servo_aux.calc_pwm();
     hal.rcout->write(AP_MOTORS_HELI_AUX, _servo_aux.radio_out);
 }
+
+// set_delta_phase_angle for setting variable phase angle compensation and force
+// recalculation of collective factors
+void AP_MotorsHeli::set_delta_phase_angle(int16_t angle)
+{
+    angle = constrain_int16(angle, -90, 90);
+    _delta_phase_angle = angle;
+    calculate_roll_pitch_collective_factors();
+}
