@@ -3370,13 +3370,10 @@ void NavEKF::checkDivergence()
     // If position, velocity and magnetometer measurements have all diverged, then fail for 10 seconds
     // This is designed to catch a filter divergence and persist for long enough to prevent a badly oscillating solution from being periodically declared healthy
     bool divergenceDetected = ((posTestRatio > 1.0f) && (velTestRatio > 1.0f) && (magTestRatio.x > 1.0f) && (magTestRatio.y > 1.0f) && (magTestRatio.z > 1.0f));
-    bool divergenceTimeout = (hal.scheduler->millis() - lastDivergeTime_ms > 10000);
-    if (!divergenceTimeout) {
-        if (divergenceDetected) {
-            lastDivergeTime_ms = hal.scheduler->millis();
-        }
+    if (divergenceDetected) {
         filterDiverged = true;
-    } else {
+        lastDivergeTime_ms = hal.scheduler->millis();        
+    } else if (hal.scheduler->millis() - lastDivergeTime_ms > 10000) {
         filterDiverged = false;
     }
 }
