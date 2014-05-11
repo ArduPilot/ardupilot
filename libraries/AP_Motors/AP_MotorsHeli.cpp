@@ -351,7 +351,7 @@ void AP_MotorsHeli::recalc_scalers()
     if (_rsc_ramp_time <= 0) {
         _rsc_ramp_time = 1;
     }
-    _rsc_ramp_increment = 1000.0f / (_rsc_ramp_time * 100.0f);
+    _rsc_ramp_increment = 1000.0f / (_rsc_ramp_time / _dt);
 
     // recalculate rotor runup increment
     if (_rsc_runup_time <= 0 ) {
