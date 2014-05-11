@@ -115,7 +115,8 @@ public:
         _rsc_ramp_increment(0.0f),
         _rsc_runup_increment(0.0f),
         _rotor_speed_estimate(0.0f),
-        _tail_direct_drive_out(0)
+        _tail_direct_drive_out(0),
+        _dt(0.01f)
     {
 		AP_Param::setup_object_defaults(this, var_info);
 
@@ -189,6 +190,9 @@ public:
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
+    
+    // 
+    void set_dt(float dt) { _dt = dt; }
 
 protected:
 
@@ -283,6 +287,7 @@ private:
     float           _rsc_runup_increment;       // the amount we can increase the rotor's estimated speed during each 100hz iteration
     float           _rotor_speed_estimate;      // estimated speed of the main rotor (0~1000)
     int16_t         _tail_direct_drive_out;     // current ramped speed of output on ch7 when using direct drive variable pitch tail type
+    float           _dt;                        // main loop time
 };
 
 #endif  // AP_MOTORSHELI
