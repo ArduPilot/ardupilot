@@ -470,14 +470,14 @@ void AP_MotorsHeli::calculate_roll_pitch_collective_factors()
     if (_swash_type == AP_MOTORS_HELI_SWASH_CCPM) {                     //CCPM Swashplate, perform control mixing
 
         // roll factors
-        _rollFactor[CH_1] = cosf(radians(_servo1_pos + 90 - _phase_angle));
-        _rollFactor[CH_2] = cosf(radians(_servo2_pos + 90 - _phase_angle));
-        _rollFactor[CH_3] = cosf(radians(_servo3_pos + 90 - _phase_angle));
+        _rollFactor[CH_1] = cosf(radians(_servo1_pos + 90 - (_phase_angle + _delta_phase_angle)));
+        _rollFactor[CH_2] = cosf(radians(_servo2_pos + 90 - (_phase_angle + _delta_phase_angle)));
+        _rollFactor[CH_3] = cosf(radians(_servo3_pos + 90 - (_phase_angle + _delta_phase_angle)));
 
         // pitch factors
-        _pitchFactor[CH_1] = cosf(radians(_servo1_pos - _phase_angle));
-        _pitchFactor[CH_2] = cosf(radians(_servo2_pos - _phase_angle));
-        _pitchFactor[CH_3] = cosf(radians(_servo3_pos - _phase_angle));
+        _pitchFactor[CH_1] = cosf(radians(_servo1_pos - (_phase_angle + _delta_phase_angle)));
+        _pitchFactor[CH_2] = cosf(radians(_servo2_pos - (_phase_angle + _delta_phase_angle)));
+        _pitchFactor[CH_3] = cosf(radians(_servo3_pos - (_phase_angle + _delta_phase_angle)));
 
         // collective factors
         _collectiveFactor[CH_1] = 1;
