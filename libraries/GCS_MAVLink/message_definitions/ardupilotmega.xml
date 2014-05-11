@@ -529,6 +529,7 @@
         <field name="time_usec" type="uint64_t">Image timestamp (microseconds since UNIX epoch, according to camera clock)</field>    
         <field name="target_system" type="uint8_t" >System ID</field>   <!-- support multiple concurrent vehicles -->  
         <field name="cam_idx"   type="uint8_t" >Camera ID</field>       <!-- component ID, to support multiple cameras -->
+        <field name="img_idx"   type="uint16_t" >Image index</field>    <!-- per camera image index, should be unique+sequential within a mission, preferably non-wrapping -->
         <field name="event_id"  type="uint8_t" >See CAMERA_EVENT_TYPES enum for definition of the bitmask</field>
         <field name="p1"        type="float"   >Parameter 1 (meaning depends on event, see CAMERA_EVENT_TYPES enum)</field>
         <field name="p2"        type="float"   >Parameter 2 (meaning depends on event, see CAMERA_EVENT_TYPES enum)</field>
@@ -542,9 +543,9 @@
         <field name="time_usec" type="uint64_t">Image timestamp (microseconds since UNIX epoch), as passed in by CAMERA_EVENT message</field>
         <field name="target_system" type="uint8_t" >System ID</field>   <!-- support multiple concurrent vehicles -->  
         <field name="cam_idx"   type="uint8_t" >Camera ID</field>       <!-- component ID, to support multiple cameras -->
-        <field name="img_idx"   type="uint8_t" >Image index</field>     <!-- per camera image index, should be unique+sequential within a mission, non-wrapping -->
-        <field type="int32_t"   name="lat"     >Latitude in (deg * 1E7)</field>
-        <field type="int32_t"   name="lng"     >Longitude in (deg * 1E7)</field>
+        <field name="img_idx"   type="uint16_t">Image index</field>     <!-- per camera image index, should be unique+sequential within a mission, preferably non-wrapping -->
+        <field name="lat"       type="int32_t" >Latitude in (deg * 1E7)</field>
+        <field name="lng"       type="int32_t" >Longitude in (deg * 1E7)</field>
         <field name="alt"       type="float"   >Altitude (meters, AMSL)</field>
         <field name="roll"      type="float"   >Vehicle Roll angle (degrees, +-180)</field> <!-- gimbal or fixed cam offsets to be handled by GCS, possibly with gimbal state messages later -->
         <field name="pitch"     type="float"   >Vehicle Pitch angle (degrees, +-180)</field> <!-- gimbal or fixed cam offsets to be handled by GCS, possibly with gimbal state messages later -->
