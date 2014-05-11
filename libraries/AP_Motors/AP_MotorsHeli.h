@@ -195,8 +195,9 @@ public:
     // set_dt for setting main loop rate time
     void set_dt(float dt) { _dt = dt; }
     
-    // set_dt for setting main loop rate time
-    void set_delta_phase_angle(int16_t angle) { _delta_phase_angle = angle; }
+    // set_delta_phase_angle for setting variable phase angle compensation and force
+    // recalculation of collective factors
+    void set_delta_phase_angle(int16_t angle);
 
 protected:
 
