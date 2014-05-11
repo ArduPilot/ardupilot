@@ -623,6 +623,12 @@ static void ahrs_update()
 
     ahrs.update();
 
+    // if using the EKF get a speed update now (from accelerometers)
+    Vector3f velocity;
+    if (ahrs.get_velocity_NED(velocity)) {
+        ground_speed = pythagorous2(velocity.x, velocity.y);
+    }
+
     if (should_log(MASK_LOG_ATTITUDE_FAST))
         Log_Write_Attitude();
 
@@ -824,7 +830,12 @@ static void update_GPS_10Hz(void)
 				ground_start_count = 0;
 			}
 		}
-        ground_speed   = gps.ground_speed();
+        Vector3f velocity;
+        if (ahrs.get_velocity_NED(velocity)) {
+            ground_speed = pythagorous2(velocity.x, velocity.y);
+        } else {
+            ground_speed   = gps.ground_speed();
+        }
 
 #if CAMERA == ENABLED
         if (camera.update_location(current_loc) == true) {
