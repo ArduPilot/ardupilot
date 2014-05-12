@@ -1,0 +1,26 @@
+﻿Revert "Merge remote-tracking branch 'origin/master' into dev"
+
+This reverts commit 2952ed9d0e9a540227948243c8c122b18c7fb771, reversing
+changes made to 5f7778f11829e94953497cc5b1ecb28f2fbb8139.
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+# On branch dev
+# Changes to be committed:
+#   (use "git reset HEAD <file>..." to unstage)
+#
+#	modified:   APMrover2/APMrover2.pde
+#	modified:   ArduCopter/ArduCopter.pde
+#	modified:   ArduCopter/Log.pde
+#	modified:   ArduCopter/ReleaseNotes.txt
+#	modified:   ArduCopter/compat.h
+#	modified:   ArduCopter/motor_test.pde
+#	modified:   ArduCopter/motors.pde
+#	modified:   Tools/autotest/common.py
+#	modified:   libraries/AC_WPNav/AC_WPNav.h
+#	modified:   libraries/AP_Mission/AP_Mission.cpp
+#	modified:   libraries/AP_Mission/AP_Mission.h
+#	modified:   libraries/AP_NavEKF/AP_NavEKF.cpp
+#	modified:   libraries/AP_NavEKF/AP_NavEKF.h
+#
+
