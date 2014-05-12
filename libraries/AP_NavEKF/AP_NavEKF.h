@@ -213,7 +213,7 @@ private:
     void calcEarthRateNED(Vector3f &omega, int32_t latitude) const;
 
     // calculate whether the flight vehicle is on the ground or flying from height, airspeed and GPS speed
-    void SetFlightAndFusionModes();
+    void OnGroundCheck();
 
     // initialise the covariance matrix
     void CovarianceInit();
@@ -282,9 +282,6 @@ private:
     // this allows large GPS position jumps to be accomodated gradually
     void decayGpsOffset(void);
 
-    // Check for filter divergence
-    void checkDivergence(void);
-
     // EKF Mavlink Tuneable Parameters
     AP_Float _gpsHorizVelNoise;     // GPS horizontal velocity measurement noise : m/s
     AP_Float _gpsVertVelNoise;      // GPS vertical velocity measurement noise : m/s
@@ -308,7 +305,7 @@ private:
     AP_Int8  _hgtInnovGate;         // Number of standard deviations applied to height innovation consistency check
     AP_Int8  _magInnovGate;         // Number of standard deviations applied to magnetometer innovation consistency check
     AP_Int8  _tasInnovGate;         // Number of standard deviations applied to true airspeed innovation consistency check
-    AP_Int8  _magCal;               // Sets activation condition for in-flight magnetometer calibration
+    AP_Int8  _magCal;               // Forces magnetic field states to be always active to aid magnetometer calibration
     AP_Int16 _gpsGlitchAccelMax;    // Maximum allowed discrepancy between inertial and GPS Horizontal acceleration before GPS data is ignored : cm/s^2
     AP_Int8 _gpsGlitchRadiusMax;    // Maximum allowed discrepancy between inertial and GPS Horizontal position before GPS glitch is declared : m
 
@@ -324,7 +321,6 @@ private:
     AP_Int16 _hgtRetryTimeMode0;    // height measurement retry time following innovation consistency fail if GPS fusion mode is = 0 (msec)
     AP_Int16 _hgtRetryTimeMode12;   // height measurement retry time following innovation consistency fail if GPS fusion mode is > 0 (msec)
     uint32_t _magFailTimeLimit_ms;  // number of msec before a magnetometer failing innovation consistency checks is declared failed (msec)
-    uint32_t lastDivergeTime_ms;    // time in msec divergence of filter last detected
     float _gyroBiasNoiseScaler;     // scale factor applied to gyro bias state process variance when on ground
     float _magVarRateScale;         // scale factor applied to magnetometer variance due to angular rate
     uint16_t _msecGpsAvg;           // average number of msec between GPS measurements
@@ -343,7 +339,6 @@ private:
     bool posTimeout;                // boolean true if position measurements have failed innovation consistency check and timed out
     bool hgtTimeout;                // boolean true if height measurements have failed innovation consistency check and timed out
     bool magTimeout;                // boolean true if magnetometer measurements have failed for too long and have timed out
-    bool filterDiverged;            // boolean true if the filter has diverged
 
     Vector31 Kfusion;               // Kalman gain vector
     Matrix22 KH;                    // intermediate result used for covariance updates
@@ -449,8 +444,6 @@ private:
     float hgtTestRatio;             // sum of squares of baro height innovation divided by fail threshold
     Vector3f magTestRatio;          // sum of squares of magnetometer innovations divided by fail threshold
     float tasTestRatio;             // sum of squares of true airspeed innovation divided by fail threshold
-    bool inhibitWindStates;         // true when wind states and covariances are to remain constant
-    bool inhibitMagStates;          // true when magnetic field states and covariances are to remain constant
 
     // states held by magnetomter fusion across time steps
     // magnetometer X,Y,Z measurements are fused across three time steps
