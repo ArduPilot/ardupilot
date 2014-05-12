@@ -107,13 +107,15 @@ T AP_Buffer<T,SIZE>::pop_front()
 {
 	T result;
 
-	// return zero if buffer is empty
-	if( _num_items == 0 ) {
-		return 0;
-	}
-
 	// get next value in buffer
     result = _buff[_head];
+
+    if(_num_items == 0) {
+        // return whatever is at _head
+        // don't return zero because it is a scalar value
+        // don't return T() because PX4 compiler does not support it
+        return result;
+    }
 
     // increment to next point
     _head++;
@@ -131,12 +133,6 @@ template <class T, uint8_t SIZE>
 const T& AP_Buffer<T,SIZE>::peek(uint8_t position) const
 {
     uint8_t j = _head + position;
-
-    // return zero if position is out of range
-    if( position >= _num_items ) {
-    	const static T r = 0;
-        return r;
-    }
 
     // wrap around if necessary
     if( j >= SIZE )
