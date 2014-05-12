@@ -628,6 +628,8 @@ static void init_disarm_motors()
         compass.save_offsets();
     }
 
+    compass.save_motor_compensation();
+
     g.throttle_cruise.save();
 
 #if AUTOTUNE_ENABLED == ENABLED

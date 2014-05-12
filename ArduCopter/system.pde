@@ -220,6 +220,10 @@ static void init_ardupilot()
     // initialise attitude and position controllers
     attitude_control.set_dt(MAIN_LOOP_SECONDS);
     pos_control.set_dt(MAIN_LOOP_SECONDS);
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+    compass.set_gyro_deltat(MAIN_LOOP_SECONDS);
+    compass.set_dataflash(&DataFlash);
+#endif
 
     // init the optical flow sensor
     init_optflow();
