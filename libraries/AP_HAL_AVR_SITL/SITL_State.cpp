@@ -62,6 +62,7 @@ uint16_t SITL_State::sonar_pin_value;
 uint16_t SITL_State::airspeed_pin_value;
 uint16_t SITL_State::voltage_pin_value;
 uint16_t SITL_State::current_pin_value;
+float SITL_State::_current;
 
 AP_Baro_HIL *SITL_State::_barometer;
 AP_InertialSensor_HIL *SITL_State::_ins;
@@ -528,10 +529,10 @@ void SITL_State::_simulator_output(void)
     // lose 0.7V at full throttle
     float voltage = _sitl->batt_voltage - 0.7f*throttle;
     // assume 50A at full throttle
-    float current = 50.0 * throttle;
+    _current = 50.0 * throttle;
     // assume 3DR power brick
     voltage_pin_value = ((voltage / 10.1) / 5.0) * 1024;
-    current_pin_value = ((current / 17.0) / 5.0) * 1024;
+    current_pin_value = ((_current / 17.0) / 5.0) * 1024;
 
 	// setup wind control
     float wind_speed = _sitl->wind_speed * 100;
