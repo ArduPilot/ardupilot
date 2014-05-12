@@ -38,6 +38,8 @@ public:
     /// @return
     const T& peek(uint8_t position) const;
 
+    T& peek_mutable(uint8_t position);
+
     /// front - return a reference to the element at the begin of the queue (i.e. the oldest element)
     /// If the queue is empty, 0 is returned.
     /// @return : oldest element
@@ -137,6 +139,19 @@ const T& AP_Buffer<T,SIZE>::peek(uint8_t position) const
     	const static T r = 0;
         return r;
     }
+
+    // wrap around if necessary
+    if( j >= SIZE )
+        j -= SIZE;
+
+    // return desired value
+    return _buff[j];
+}
+
+template <class T, uint8_t SIZE>
+T& AP_Buffer<T,SIZE>::peek_mutable(uint8_t position)
+{
+    uint8_t j = _head + position;
 
     // wrap around if necessary
     if( j >= SIZE )
