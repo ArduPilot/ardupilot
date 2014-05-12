@@ -7,6 +7,9 @@
 #include <AP_Param.h>
 #include <AP_Math.h>
 #include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+    #include <AP_CompassMot.h>
+#endif
 
 // compass product id
 #define AP_COMPASS_TYPE_UNKNOWN  0x00
@@ -17,9 +20,10 @@
 #define AP_COMPASS_TYPE_VRBRAIN  0x05
 
 // motor compensation types (for use with motor_comp_enabled)
-#define AP_COMPASS_MOT_COMP_DISABLED    0x00
-#define AP_COMPASS_MOT_COMP_THROTTLE    0x01
-#define AP_COMPASS_MOT_COMP_CURRENT     0x02
+#define AP_COMPASS_MOT_COMP_DISABLED      0x00
+#define AP_COMPASS_MOT_COMP_THROTTLE      0x01
+#define AP_COMPASS_MOT_COMP_CURRENT       0x02
+#define AP_COMPASS_MOT_COMP_CURRENT_LEARN 0x03
 
 // setup default mag orientation for each board type
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
@@ -228,10 +232,16 @@ public:
     /// Set the current used by system in amps
     /// @param amps                 current flowing to the motors expressed in amps
     void set_current(float amps) {
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+        for(uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+            _compass_mot[i].update_current(amps);
+        }
+#endif
         if(_motor_comp_type == AP_COMPASS_MOT_COMP_CURRENT) {
             _thr_or_curr = amps;
         }
     }
+
 
     /// Returns True if the compasses have been configured (i.e. offsets saved)
     ///
@@ -245,6 +255,26 @@ public:
     /// @returns                    the instance number of the primary compass
     ///
     virtual uint8_t get_primary(void) const { return 0; }
+
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+    void set_gyro_deltat(float deltat) {
+        for(uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+            _compass_mot[i].set_gyro_deltat(deltat);
+        }
+    }
+
+    void update_gyro(Vector3f gyro) {
+        for(uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+            _compass_mot[i].update_gyro(gyro);
+        }
+    }
+
+    void set_dataflash(DataFlash_Class *df) {
+        for(uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+            _compass_mot[i].set_dataflash(df);
+        }
+    }
+#endif
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -262,12 +292,18 @@ protected:
     AP_Int8 _use_for_yaw[COMPASS_MAX_INSTANCES];///<enable use for yaw calculation
     AP_Int8 _auto_declination;                  ///<enable automatic declination code
     AP_Int8 _external[COMPASS_MAX_INSTANCES];   ///<compass is external
+    
 #if COMPASS_MAX_INSTANCES > 1
     AP_Int8 _primary;                           ///primary instance
     AP_Int32 _dev_id[COMPASS_MAX_INSTANCES];    // device id detected at init.  saved to eeprom when offsets are saved allowing ram & eeprom values to be compared as consistency check
 #endif
 
-    bool _null_init_done;                           ///< first-time-around flag used by offset nulling
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+    AP_CompassMot _compass_mot[COMPASS_MAX_INSTANCES];
+#endif
+
+    bool _null_init_done : 1;                           ///< first-time-around flag used by offset nulling
+    bool _param_init_done : 1;
 
     ///< used by offset correction
     static const uint8_t _mag_history_size = 20;

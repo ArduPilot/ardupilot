@@ -269,9 +269,15 @@ Compass::Compass(void) :
     last_update(0),
     _null_init_done(false),
     _thr_or_curr(0.0f),
-    _board_orientation(ROTATION_NONE)
+    _board_orientation(ROTATION_NONE),
+    _param_init_done(false)
 {
     AP_Param::setup_object_defaults(this, var_info);
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+    for(uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+        _compass_mot[i].set_i(i);
+    }
+#endif
 
 #if COMPASS_MAX_INSTANCES > 1
     // default device ids to zero.  init() method will overwrite with the actual device ids
@@ -328,6 +334,9 @@ Compass::save_offsets(void)
 void
 Compass::set_motor_compensation(uint8_t i, const Vector3f &motor_comp_factor)
 {
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+    _compass_mot[i].set_motfactors(_motor_compensation[i]);
+#endif
     _motor_compensation[i].set(motor_comp_factor);
 }
 
@@ -476,6 +485,27 @@ void Compass::apply_corrections(Vector3f &mag, uint8_t i)
       being applied so it can be logged correctly
      */
     mag += offsets;
+
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+    if(!_param_init_done) {
+        _param_init_done = true;
+
+        if(_motor_comp_type == AP_COMPASS_MOT_COMP_CURRENT || _motor_comp_type == AP_COMPASS_MOT_COMP_CURRENT_LEARN) {
+            for(uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+                _compass_mot[i].set_motfactors(_motor_compensation[i]);
+            }
+        }
+    }
+
+    if(_compass_mot[i].update_compass(mag) && (_motor_comp_type == AP_COMPASS_MOT_COMP_CURRENT_LEARN)) {
+        Vector3f motfactors = _compass_mot[i].get_motfactors();
+
+        if(!motfactors.is_nan() && !motfactors.is_inf() && fabs(motfactors.x) < 20 && fabs(motfactors.y) < 20 && fabs(motfactors.z) < 20) {
+            _motor_compensation[i].set(motfactors);
+        }
+    }
+#endif
+
     if(_motor_comp_type != AP_COMPASS_MOT_COMP_DISABLED && _thr_or_curr != 0.0f) {
         _motor_offset[i] = mot * _thr_or_curr;
         mag += _motor_offset[i];
