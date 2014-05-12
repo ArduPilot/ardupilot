@@ -135,6 +135,20 @@ public:
     // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
     void  getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
 
+    /*
+    return the filter fault status as a bitmasked integer
+     0 = filter divergence detected via gyro bias growth
+     1 = filter divergence detected by large covariances
+     2 = badly conditioned X magnetometer fusion
+     3 = badly conditioned Y magnetometer fusion
+     4 = badly conditioned Z magnetometer fusion
+     5 = badly conditioned airspeed fusion
+     6 = badly conditioned synthetic sideslip fusion
+     7 = unassigned
+    return normalised delta gyro bias length used for divergence test
+    */
+    void  getFilterFaults(uint8_t &faults, float &deltaGyroBias) const;
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -358,6 +372,7 @@ private:
     Vector3f summedDelAng;          // corrected & summed delta angles about the xyz body axes (rad)
     Vector3f summedDelVel;          // corrected & summed delta velocities along the XYZ body axes (m/s)
 	Vector3f prevDelAng;            // previous delta angle use for INS coning error compensation
+    Vector3f lastGyroBias;          // previous gyro bias vector used by filter divergence check
     Matrix3f prevTnb;               // previous nav to body transformation used for INS earth rotation compensation
     ftype accNavMag;                // magnitude of navigation accel - used to adjust GPS obs variance (m/s^2)
     ftype accNavMagHoriz;           // magnitude of navigation accel in horizontal plane (m/s^2)
@@ -451,6 +466,8 @@ private:
     float tasTestRatio;             // sum of squares of true airspeed innovation divided by fail threshold
     bool inhibitWindStates;         // true when wind states and covariances are to remain constant
     bool inhibitMagStates;          // true when magnetic field states and covariances are to remain constant
+    uint8_t faultStatus;            // filter status masked integer
+    float scaledDeltaGyrBiasLgth;   // scaled delta gyro bias vector length used to test for filter divergence
 
     // states held by magnetomter fusion across time steps
     // magnetometer X,Y,Z measurements are fused across three time steps
