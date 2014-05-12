@@ -15,11 +15,11 @@ const AP_Param::GroupInfo AP_Mission::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("TOTAL",  0, AP_Mission, _cmd_total, 0),
 
-    // @Param: AUTORESET
-    // @DisplayName: Reset mission on AUTO
-    // @Description: When set to 0 the mission will continue a previous AUTO mission when switching to AUTO mode. When set to 1 the mission will restart from the first waypoint each time AUTO mode is started.
-    // @Values: 0:Continue Mission, 1:Reset Mission
-    AP_GROUPINFO("AUTORESET",  1, AP_Mission, _auto_reset, 0),
+    // @Param: RESTART
+    // @DisplayName: Mission Restart when entering Auto mode
+    // @Description: Controls mission starting point when entering Auto mode (either restart from beginning of mission or resume from last command run)
+    // @Values: 0:Resume Mission, 1:Restart Mission
+    AP_GROUPINFO("RESTART",  1, AP_Mission, _restart, AP_MISSION_RESTART_DEFAULT),
 
     AP_GROUPEND
 };
@@ -105,7 +105,7 @@ void AP_Mission::resume()
 /// start_or_resume - if MIS_AUTORESTART=0 this will call resume(), otherwise it will call start()
 void AP_Mission::start_or_resume()
 {
-    if (_auto_reset) {
+    if (_restart) {
         start();
     } else {
         resume();
