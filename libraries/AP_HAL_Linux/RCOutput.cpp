@@ -4,8 +4,18 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_ERLE
 
 #include "RCOutput.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <dirent.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <sys/ioctl.h>
+#include <linux/spi/spidev.h>
 
-using namespace std;
+using namespace Linux;
 
 #define PWM_DIR "/sys/class/pwm"
 #define PWM_DIR_EXPORT "/sys/class/pwm/export"
@@ -14,7 +24,7 @@ using namespace std;
 int chan_pru_map[]= {10,8,11,9,7,6,5,4,3,2,1,0};                //chan_pru_map[CHANNEL_NUM] = PRU_REG_R30/31_NUM;
 int pru_chan_map[]= {11,10,9,8,7,6,5,4,1,3,0,2};                //pru_chan_map[PRU_REG_R30/31_NUM] = CHANNEL_NUM;
 
-void LinuxRCOutput::init()
+void LinuxRCOutput::init(void* machtnicht)
 {
     DIR* _pwm_dir = opendir(PWM_DIR);
     int _pwm_fd;
@@ -41,7 +51,7 @@ void LinuxRCOutput::init()
         perror("PWM DIR not found");
     }
     
-    _pwm_fd = open(PWM_DIR_EXPORT,O_WRONLY);
+    _pwm_fd = ::open(PWM_DIR_EXPORT,O_WRONLY);
 
     if(_pwm_fd < 0){
          perror("PWM_EXPORT not found");
@@ -49,7 +59,7 @@ void LinuxRCOutput::init()
 
     for(i=0;i<PWM_CHAN_COUNT;i++){
         sprintf(chan, "%d",chan_pru_map[i]);
-        write(_pwm_fd,&chan,sizeof(chan));
+       :: write(_pwm_fd,&chan,sizeof(chan));
     }
 
     close(_pwm_fd);
@@ -58,13 +68,13 @@ void LinuxRCOutput::init()
     while ((dir = readdir(_pwm_dir)) != NULL){
         pru_r30=strtol(dir->d_name+3,NULL,10);
         if(pru_r30>0 && pru_r30<12){
-            write1(pru_chan_map[pru_r30],10);                //writing absolute minimum to duty_ns necessary for pwm_sysfs to start working 
+            write(pru_chan_map[pru_r30],10);                //writing absolute minimum to duty_ns necessary for pwm_sysfs to start working 
             //printf("CHANNEL %d",pru_chan_map[pru_r30]);
             //printf(" exported\n");
             exported_count++;
         }
         else if(strcmp(dir->d_name,"pwm0")==0){
-            write1(pru_chan_map[pru_r30],10);
+            write(pru_chan_map[pru_r30],10);
             //printf("CHANNEL %d",pru_chan_map[0]);
             //printf(" exported \n");
             exported_count++;
@@ -76,10 +86,10 @@ void LinuxRCOutput::init()
     closedir(_pwm_dir);
 }
 
-void LinuxRCOutput::set_freq(uint32_t chmask, uint32_t freq_hz)            //LSB corresponds to CHAN_1
+void LinuxRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)            //LSB corresponds to CHAN_1
 {
     int _fd, ret,i;
-    unsigned long period_ns=1000000000/freq_hz;
+    unsigned long period_ns=1000000000/(unsigned long)freq_hz;
     char period_sysfs_path[20],buffer[15];
     sprintf(buffer,"%lu",(unsigned long)period_ns);
    
@@ -91,7 +101,7 @@ void LinuxRCOutput::set_freq(uint32_t chmask, uint32_t freq_hz)            //LSB
                 perror("Period/Frequency file open failed");
             }
     
-            ret = write(_fd,&buffer,sizeof(buffer));
+            ret = ::write(_fd,&buffer,sizeof(buffer));
             if(ret < 0){
                 perror("Period/Frequency write failed");
             }
@@ -111,7 +121,7 @@ uint16_t LinuxRCOutput::get_freq(uint8_t ch)
         perror("period_ns: file open failed");
     }
 
-    ret = read(_fd,&buffer,sizeof(buffer));
+    ret = ::read(_fd,&buffer,sizeof(buffer));
     if(ret < 0){
         perror("period_ns: read failed");
     }
@@ -131,7 +141,7 @@ void LinuxRCOutput::enable_ch(uint8_t ch)
         perror("run: file open failed");
     }
 
-    ret = read(_fd,&buffer,sizeof(buffer));
+    ret = ::read(_fd,&buffer,sizeof(buffer));
     if(ret < 0){
         perror("run: read failed");
     }
@@ -148,7 +158,7 @@ void LinuxRCOutput::disable_ch(uint8_t ch)
         perror("run: file open failed");
     }
 
-    ret = write(_fd,&buffer,sizeof(buffer));
+    ret = ::write(_fd,&buffer,sizeof(buffer));
     if(ret < 0){
         perror("run: read failed");
     }
@@ -166,7 +176,7 @@ void LinuxRCOutput::write(uint8_t ch, uint16_t period_us)
         perror("duty_ns: file open failed");
     }
 
-    ret = write(_fd,&buffer,sizeof(buffer));
+    ret = ::write(_fd,&buffer,sizeof(buffer));
     if(ret < 0){
         perror("duty_ns: read failed");
     }
@@ -185,7 +195,7 @@ void LinuxRCOutput::write(uint8_t ch, uint16_t* period_us, uint8_t len)
             perror("duty_ns: file open failed");
         }
 
-        ret = write(_fd,&buffer,sizeof(buffer));
+        ret = ::write(_fd,&buffer,sizeof(buffer));
         if(ret < 0){
             perror("duty_ns: read failed");
         }
@@ -204,7 +214,7 @@ uint16_t LinuxRCOutput::read(uint8_t ch) {
         perror("duty_ns: file open failed");
     }
 
-    ret = read(_fd,&buffer,sizeof(buffer));
+    ret = ::read(_fd,&buffer,sizeof(buffer));
     if(ret < 0){
         perror("duty_ns: read failed");
     }
@@ -225,7 +235,7 @@ void LinuxRCOutput::read(uint16_t* period_us, uint8_t len)
             perror("duty_ns: file open failed");
         }
 
-        ret = read(_fd,&buffer,sizeof(buffer));
+        ret = ::read(_fd,&buffer,sizeof(buffer));
         if(ret < 0){
             perror("duty_ns: read failed");
         }
@@ -234,3 +244,4 @@ void LinuxRCOutput::read(uint16_t* period_us, uint8_t len)
     }
 }
 
+#endif
