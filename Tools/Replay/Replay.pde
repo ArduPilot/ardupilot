@@ -49,8 +49,10 @@
 #include <errno.h>
 #include <fenv.h>
 
+#ifndef INT16_MIN
 #define INT16_MIN -32768
 #define INT16_MAX 32767
+#endif
 
 #include "LogReader.h"
 
