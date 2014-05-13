@@ -3,6 +3,14 @@
 #define __AP_HAL_LINUX_RCOUTPUT_H__
 
 #include <AP_HAL_Linux.h>
+#include <stdio.h>
+#include <iostream>
+#include <unistd.h>
+#include <dirent.h>
+#include <string.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <inttypes.h>
 
 class Linux::LinuxRCOutput : public AP_HAL::RCOutput {
     void     init(void* machtnichts);
