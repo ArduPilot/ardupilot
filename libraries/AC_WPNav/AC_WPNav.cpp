@@ -121,6 +121,9 @@ void AC_WPNav::set_loiter_target(const Vector3f& position, bool reset_I)
     if (!reset_I) {
         _pos_control.keep_xy_I_terms();
     }
+    
+    // initialise position controller
+    _pos_control.init_xy_controller();
 
     // set target position
     _pos_control.set_pos_target(position);
@@ -134,6 +137,10 @@ void AC_WPNav::set_loiter_target(const Vector3f& position, bool reset_I)
     // initialise pos controller acceleration
     _loiter_accel_cms = _loiter_speed_cms/2.0f;
     _pos_control.set_accel_xy(_loiter_accel_cms);
+
+    // initialise desired accel and add fake wind
+    _loiter_desired_accel.x = 0;
+    _loiter_desired_accel.y = 0;
 
     // initialise pilot input
     _pilot_accel_fwd_cms = 0;
