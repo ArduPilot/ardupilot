@@ -16,13 +16,13 @@ int pru_chan_map[]= {11,10,9,8,7,6,5,4,1,3,0,2};				//pru_chan_map[PRU_REG_R30/3
 
 void LinuxRCOutput::init()
 {
-	 DIR* _pwm_dir = opendir(PWM_DIR);
-	 int _pwm_fd;
-	 char chan[2];
-     struct dirent *dir;
-     int pru_load_success=0;
-	 int exported_count=0;
-	 int i,pru_r30;
+	DIR* _pwm_dir = opendir(PWM_DIR);
+	int _pwm_fd;
+	char chan[2];
+    struct dirent *dir;
+	int pru_load_success=0;
+	int exported_count=0;
+	int i,pru_r30;
 
      if (_pwm_dir){
 			while ((dir = readdir(_pwm_dir)) != NULL){
