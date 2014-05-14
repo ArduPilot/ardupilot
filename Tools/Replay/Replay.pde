@@ -229,7 +229,7 @@ void setup()
     fprintf(ekf1f, "timestamp TimeMS Roll Pitch Yaw VN VE VD PN PE PD GX GY GZ\n");
     fprintf(ekf2f, "timestamp TimeMS AX AY AZ VWN VWE MN ME MD MX MY MZ\n");
     fprintf(ekf3f, "timestamp TimeMS IVN IVE IVD IPN IPE IPD IMX IMY IMZ IVT\n");
-    fprintf(ekf4f, "timestamp TimeMS SV SP SH SMX SMY SMZ SVT OFN EFE\n");
+    fprintf(ekf4f, "timestamp TimeMS SV SP SH SMX SMY SMZ SVT OFN EFE FS DS\n");
 
     ahrs.set_ekf_use(true);
 
@@ -358,6 +358,8 @@ void loop()
             Vector3f magVar;
             float tasVar;
             Vector2f offset;
+            uint8_t faultStatus;
+            float deltaGyroBias;
 
             const Matrix3f &dcm_matrix = ((AP_AHRS_DCM)ahrs).get_dcm_matrix();
             dcm_matrix.to_euler(&DCM_attitude.x, &DCM_attitude.y, &DCM_attitude.z);
@@ -371,6 +373,7 @@ void loop()
             NavEKF.getMagXYZ(magXYZ);
             NavEKF.getInnovations(velInnov, posInnov, magInnov, tasInnov);
             NavEKF.getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
+            NavEKF.getFilterFaults(faultStatus,deltaGyroBias);
             NavEKF.getPosNED(ekf_relpos);
             Vector3f inav_pos = inertial_nav.get_position() * 0.01f;
             float temp = degrees(ekf_euler.z);
@@ -523,9 +526,10 @@ void loop()
             int16_t sqrtvarVT = (int16_t)(constrain_float(100*tasVar,INT16_MIN,INT16_MAX));
             int16_t offsetNorth = (int8_t)(constrain_float(offset.x,INT16_MIN,INT16_MAX));
             int16_t offsetEast = (int8_t)(constrain_float(offset.y,INT16_MIN,INT16_MAX));
+            uint8_t divergeRate = (uint8_t)(100*deltaGyroBias);
 
             // print EKF4 data packet
-            fprintf(ekf4f, "%.3f %d %d %d %d %d %d %d %d %d %d\n",
+            fprintf(ekf4f, "%.3f %d %d %d %d %d %d %d %d %d %d %d %d\n",
                     hal.scheduler->millis() * 0.001f,
                     hal.scheduler->millis(),
                     sqrtvarV,
@@ -536,7 +540,9 @@ void loop()
                     sqrtvarMZ,
                     sqrtvarVT,
                     offsetNorth,
-                    offsetEast);
+                    offsetEast,
+                    faultStatus,
+                    divergeRate);
         }
     }
 }
