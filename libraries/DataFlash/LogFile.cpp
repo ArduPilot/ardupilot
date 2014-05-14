@@ -945,7 +945,10 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
 	Vector3f magVar;
 	float tasVar;
     Vector2f offset;
+    uint8_t faultStatus;
+    float deltaGyroBias;
     ahrs.get_NavEKF().getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
+    ahrs.get_NavEKF().getFilterFaults(faultStatus, deltaGyroBias);
     struct log_EKF4 pkt4 = {
         LOG_PACKET_HEADER_INIT(LOG_EKF4_MSG),
         time_ms : hal.scheduler->millis(),
@@ -957,7 +960,9 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
         sqrtvarMZ : (int16_t)(100*magVar.z),
         sqrtvarVT : (int16_t)(100*tasVar),
         offsetNorth : (int8_t)(offset.x),
-        offsetEast : (int8_t)(offset.y)
+        offsetEast : (int8_t)(offset.y),
+        faults : (uint8_t)(faultStatus),
+        divergeRate : (uint8_t)(100*deltaGyroBias)
     };
     WriteBlock(&pkt4, sizeof(pkt4));
 }
