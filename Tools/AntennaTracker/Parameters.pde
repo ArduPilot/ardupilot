@@ -115,6 +115,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0 10
     GSCALAR(startup_delay,          "STARTUP_DELAY",   0),
 
+    // @Param: PROXY_MODE
+    // @DisplayName: Also act as a MAVLink proxy for a vehicle
+    // @Description: If true, the tracker will act as a MAVlink proxy for a remote vehicle, and will eavesdrop vehicle position reports. 
+    // @Units: boolean
+    // @Increment: 1
+    // @Range: 0 1
+    GSCALAR(proxy_mode,          "PROXY_MODE",   0),
+
     // barometer ground calibration. The GND_ prefix is chosen for
     // compatibility with previous releases of ArduPlane
     // @Group: GND_
