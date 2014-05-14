@@ -53,7 +53,8 @@ namespace AP_HAL {
         SPIDevice_MPU6000,
         SPIDevice_ADNS3080_SPI0,
         SPIDevice_ADNS3080_SPI3,
-        SPIDevice_MPU9250
+        SPIDevice_MPU9250,
+        SPIDevice_LSM9DS0
     };
 
 }

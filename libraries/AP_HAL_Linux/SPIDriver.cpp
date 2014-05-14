@@ -129,7 +129,9 @@ AP_HAL::SPIDeviceDriver* LinuxSPIDeviceManager::device(enum AP_HAL::SPIDevice de
         case AP_HAL::SPIDevice_MPU9250:
             return &_device_cs1;            
         case AP_HAL::SPIDevice_MS5611:
-            return &_device_cs1;            
+            return &_device_cs1;
+        case AP_HAL::SPIDevice_LSM9DS0:
+            return &_device_cs0;                        
     }
     return NULL;
 }
