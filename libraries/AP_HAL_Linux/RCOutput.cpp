@@ -136,12 +136,12 @@ void LinuxRCOutput::enable_ch(uint8_t ch)
     char run_sysfs_path[20],buffer[]="1";
     sprintf(run_sysfs_path,"%s/pwm%d%s",PWM_DIR,chan_pru_map[ch],"/run");
     
-    _fd=open(run_sysfs_path,O_RDONLY);
+    _fd=open(run_sysfs_path,O_WRONLY);
     if(_fd < 0){
         perror("run: file open failed");
     }
 
-    ret = ::read(_fd,&buffer,sizeof(buffer));
+    ret = ::write(_fd,&buffer,sizeof(buffer));
     if(ret < 0){
         perror("run: read failed");
     }
