@@ -30,7 +30,7 @@ static bool auto_init(bool ignore_checks)
         // initialise waypoint and spline controller
         wp_nav.wp_and_spline_init();
 
-        // start/resume the mission (based on MIS_AUTORESET param)
+        // start/resume the mission (based on MIS_RESTART parameter)
         mission.start_or_resume();
         return true;
     }else{
