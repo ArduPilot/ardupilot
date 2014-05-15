@@ -399,9 +399,7 @@ static void hybrid_run()
             hybrid.pitch_mode = HYBRID_BRAKE_TO_LOITER;
             hybrid.brake_to_loiter_timer = HYBRID_BRAKE_TO_LOITER_TIMER;
             // init loiter controller
-            Vector3f curr_pos = inertial_nav.get_position();
-            curr_pos.z = pos_control.get_alt_target(); // We don't set alt_target to current altitude but to the current alt_target... the easiest would be to set only x/y as it was on pre-onion code
-            wp_nav.set_loiter_target(curr_pos, hybrid.loiter_reset_I); // (false) to avoid I_term reset. In original code, velocity(0,0,0) was used instead of current velocity: wp_nav.init_loiter_target(inertial_nav.get_position(), Vector3f(0,0,0));
+            wp_nav.set_loiter_target(inertial_nav.get_position(), hybrid.loiter_reset_I); // (false) to avoid I_term reset. In original code, velocity(0,0,0) was used instead of current velocity: wp_nav.init_loiter_target(inertial_nav.get_position(), Vector3f(0,0,0));
             // at this stage, we are going to run update_loiter that will reset I_term once. From now, we ensure next time that we will enter loiter and update it, I_term won't be reset anymore
             hybrid.loiter_reset_I = false;
             // set delay to start of wind compensation estimate updates
