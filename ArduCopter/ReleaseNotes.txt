@@ -3,6 +3,7 @@ ArduCopter Release Notes:
 ArduCopter 3.1.5-rc1 14-May-2014
 Changes from 3.1.4
 1) Bug Fix to ignore roll and pitch inputs to loiter controller when in radio failsafe
+2) Bug Fix to allow compassmot to work on Pixhawk
 ------------------------------------------------------------------
 ArduCopter 3.1.4 8-May-2014 / 3.1.4-rc1 2-May-2014
 Changes from 3.1.3
