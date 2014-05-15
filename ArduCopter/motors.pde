@@ -535,7 +535,10 @@ static void init_disarm_motors()
 
     // we are not in the air
     set_land_complete(true);
-    
+
+    // reset the mission
+    mission.reset();
+
     // setup fast AHRS gains to get right attitude
     ahrs.set_fast_gains(true);
 
