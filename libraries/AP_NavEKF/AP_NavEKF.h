@@ -466,7 +466,15 @@ private:
     float tasTestRatio;             // sum of squares of true airspeed innovation divided by fail threshold
     bool inhibitWindStates;         // true when wind states and covariances are to remain constant
     bool inhibitMagStates;          // true when magnetic field states and covariances are to remain constant
-    uint8_t faultStatus;            // filter status masked integer
+    struct {
+        bool diverged:1;
+        bool large_covarience:1;
+        bool bad_xmag:1;
+        bool bad_ymag:1;
+        bool bad_zmag:1;
+        bool bad_airspeed:1;
+        bool bad_sideslip:1;
+    } faultStatus;
     float scaledDeltaGyrBiasLgth;   // scaled delta gyro bias vector length used to test for filter divergence
 
     // states held by magnetomter fusion across time steps
