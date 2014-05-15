@@ -32,9 +32,9 @@ private:
     Vector3f        _accel_filtered;
     Vector3f        _gyro_filtered;
     uint32_t        _sample_period_usec;
-    uint32_t        _last_sample_time;
     volatile uint32_t _gyro_samples_available;
-    volatile uint8_t  _gyro_samples_needed;
+    uint64_t        _last_sample_timestamp;    
+    bool     _have_sample_available;    
 
     // // support for updating filter at runtime
     uint8_t         _last_filter_hz;
@@ -62,6 +62,9 @@ private:
     LowPassFilter2p _gyro_filter_x;
     LowPassFilter2p _gyro_filter_y;
     LowPassFilter2p _gyro_filter_z;
+    // LowPassFilter2p _mag_filter_x;
+    // LowPassFilter2p _mag_filter_y;
+    // LowPassFilter2p _mag_filter_z;
 
 
 };

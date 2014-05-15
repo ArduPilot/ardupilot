@@ -28,6 +28,7 @@
 #include "AP_InertialSensor_MPU9150.h"
 #include <stdio.h>
 #include <unistd.h>
+#include <time.h>     
 
 const extern AP_HAL::HAL& hal;
 
@@ -327,6 +328,9 @@ AP_InertialSensor_MPU9150::AP_InertialSensor_MPU9150() :
     _gyro_filter_x(800, 10),
     _gyro_filter_y(800, 10),
     _gyro_filter_z(800, 10)    
+    // _mag_filter_x(800, 10),    
+    // _mag_filter_y(800, 10),    
+    // _mag_filter_z(800, 10)    
 {
 
 }
@@ -361,23 +365,19 @@ uint16_t AP_InertialSensor_MPU9150::_init_sensor( Sample_rate sample_rate )
     case RATE_50HZ:
         _default_filter_hz = 10;
         _sample_period_usec = (1000*1000) / 50;
-        _gyro_samples_needed = 16;
         break;
     case RATE_100HZ:
         _default_filter_hz = 20;
         _sample_period_usec = (1000*1000) / 100;
-        _gyro_samples_needed = 8;
         break;
     case RATE_200HZ:
         _default_filter_hz = 20;
         _sample_period_usec = 5000;
-        _gyro_samples_needed = 4;
         break;
     case RATE_400HZ:
     default:
         _default_filter_hz = 20;
         _sample_period_usec = 2500;
-        _gyro_samples_needed = 2;
         break;
     }
 
@@ -446,7 +446,7 @@ uint16_t AP_InertialSensor_MPU9150::_init_sensor( Sample_rate sample_rate )
         goto failed;    
     }
     // Set sampling rate (value must be between 4Hz and 1KHz)
-    if (mpu_set_sample_rate(400)){
+    if (mpu_set_sample_rate(800)){
         hal.scheduler->panic(PSTR("AP_InertialSensor_MPU9150: mpu_set_sample_rate.\n"));
         goto failed;    
     }
@@ -1103,21 +1103,29 @@ void AP_InertialSensor_MPU9150::_accumulate(void){
 
 bool AP_InertialSensor_MPU9150::_sample_available(void)
 {
-    return (_gyro_samples_available >= _gyro_samples_needed);
+    uint64_t tnow =  hal.scheduler->micros();
+    while (tnow - _last_sample_timestamp > _sample_period_usec) {
+        _have_sample_available = true;
+        _last_sample_timestamp += _sample_period_usec;
+    }
+    return _have_sample_available;    
 }
 
 bool AP_InertialSensor_MPU9150::wait_for_sample(uint16_t timeout_ms)
 {
     if (_sample_available()) {
-        _last_sample_time = hal.scheduler->micros();
         return true;
     }
     uint32_t start = hal.scheduler->millis();
     while ((hal.scheduler->millis() - start) < timeout_ms) {
-        hal.scheduler->delay_microseconds(100);
-        _accumulate();
+        uint64_t tnow = hal.scheduler->micros(); 
+        // we spin for the last timing_lag microseconds. Before that
+        // we yield the CPU to allow IO to happen
+        const uint16_t timing_lag = 400;
+        if (_last_sample_timestamp + _sample_period_usec > tnow+timing_lag) {
+            hal.scheduler->delay_microseconds(_last_sample_timestamp + _sample_period_usec - (tnow+timing_lag));
+        }
         if (_sample_available()) {
-            _last_sample_time = hal.scheduler->micros();
             return true;
         }
     }
@@ -1164,6 +1172,9 @@ bool AP_InertialSensor_MPU9150::update(void)
         _set_filter_frequency(_mpu6000_filter);
         _last_filter_hz = _mpu6000_filter;
     }
+
+    _have_sample_available = false;
+
     return true;
 }
 
