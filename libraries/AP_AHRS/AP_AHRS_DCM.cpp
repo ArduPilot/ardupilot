@@ -241,6 +241,7 @@ AP_AHRS_DCM::normalize(void)
         !renorm(t2, _dcm_matrix.c)) {
         // Our solution is blowing up and we will force back
         // to last euler angles
+        _last_failure_ms = hal.scheduler->millis();
         reset(true);
     }
 }
@@ -598,6 +599,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
         GA_e.normalize();
         if (GA_e.is_inf()) {
             // wait for some non-zero acceleration information
+            _last_failure_ms = hal.scheduler->millis();
             return;
         }
         using_gps_corrections = true;
@@ -648,6 +650,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
 
     if (besti == -1) {
         // no healthy accelerometers!
+        _last_failure_ms = hal.scheduler->millis();
         return;
     }
 
@@ -697,6 +700,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     if (error[besti].is_nan() || error[besti].is_inf()) {
         // don't allow bad values
         check_matrix();
+        _last_failure_ms = hal.scheduler->millis();
         return;
     }
 
@@ -918,3 +922,11 @@ void AP_AHRS_DCM::set_home(const Location &loc)
     _home.options = 0;
 }
 
+/*
+  check if the AHRS subsystem is healthy
+*/
+bool AP_AHRS_DCM::healthy(void)
+{
+    // consider ourselves healthy if there have been no failures for 5 seconds
+    return (_last_failure_ms == 0 || hal.scheduler->millis() - _last_failure_ms > 5000);
+}
