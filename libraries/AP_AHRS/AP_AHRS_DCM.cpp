@@ -619,7 +619,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     int8_t besti = -1;
     float best_error = 0;
     for (uint8_t i=0; i<_ins.get_accel_count(); i++) {
-        if (!_ins.get_accel_health()) {
+        if (!_ins.get_accel_health(i)) {
             // only use healthy sensors
             continue;
         }
