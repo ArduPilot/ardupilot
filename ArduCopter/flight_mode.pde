@@ -210,7 +210,9 @@ static void exit_mode(uint8_t old_control_mode, uint8_t new_control_mode)
 
     // stop mission when we leave auto mode
     if (old_control_mode == AUTO) {
-        mission.stop();
+        if (mission.state() == AP_Mission::MISSION_RUNNING) {
+            mission.stop();
+        }
     }
 
     // smooth throttle transition when switching from manual to automatic flight modes
