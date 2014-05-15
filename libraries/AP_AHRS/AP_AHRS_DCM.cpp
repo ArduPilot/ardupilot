@@ -476,6 +476,11 @@ Vector3f AP_AHRS_DCM::ra_delayed(uint8_t instance, const Vector3f &ra)
     // get the old element, and then fill it with the new element
     Vector3f ret = _ra_delay_buffer[instance];
     _ra_delay_buffer[instance] = ra;
+    if (ret.is_zero()) {
+        // use the current vector if the previous vector is exactly
+        // zero. This prevents an error on initialisation
+        return ra;
+    }
     return ret;
 }
 
