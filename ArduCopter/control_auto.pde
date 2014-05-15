@@ -252,7 +252,7 @@ static void auto_land_start(const Vector3f& destination)
     auto_mode = Auto_Land;
 
     // initialise loiter target destination
-    wp_nav.set_loiter_target(destination);
+    wp_nav.init_loiter_target(destination);
 
     // initialise altitude target to stopping point
     pos_control.set_target_to_stopping_point_z();

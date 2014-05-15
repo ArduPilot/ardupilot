@@ -13,7 +13,7 @@ static bool land_init(bool ignore_checks)
         // set target to stopping point
         Vector3f stopping_point;
         wp_nav.get_loiter_stopping_point_xy(stopping_point);
-        wp_nav.set_loiter_target(stopping_point);
+        wp_nav.init_loiter_target(stopping_point);
     }
 
     // initialize vertical speeds and leash lengths
