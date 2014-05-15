@@ -114,8 +114,8 @@ AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosContro
 /// loiter controller
 ///
 
-/// set_loiter_target in cm from home
-void AC_WPNav::set_loiter_target(const Vector3f& position, bool reset_I)
+/// init_loiter_target in cm from home
+void AC_WPNav::init_loiter_target(const Vector3f& position, bool reset_I)
 {
     // if reset_I is false we warn position controller not to reset I terms
     if (!reset_I) {
