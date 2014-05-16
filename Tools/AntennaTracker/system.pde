@@ -35,9 +35,7 @@ static void init_tracker()
     check_usb_mux();
 
     // we have a 2nd serial port for telemetry
-    hal.uartC->begin(map_baudrate(g.serial1_baud, SERIAL1_BAUD),
-                     128, SERIAL1_BUFSIZE);
-    gcs[1].init(hal.uartC);
+    gcs[1].setup_uart(hal.uartC, map_baudrate(g.serial1_baud, SERIAL1_BAUD), 128, SERIAL1_BUFSIZE);
 
     mavlink_system.sysid = g.sysid_this_mav;
 
