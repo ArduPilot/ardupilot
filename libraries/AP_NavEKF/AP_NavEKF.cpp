@@ -3398,7 +3398,8 @@ void NavEKF::checkDivergence()
     Vector3f tempVec = state.gyro_bias - lastGyroBias;
     float tempLength = tempVec.length();
     if (tempLength != 0.0f) {
-        scaledDeltaGyrBiasLgth = 5e4f*tempVec.length()/dtIMU;
+        float temp = constrain_float((P[10][10] + P[11][11] + P[12][12]),1e-12f,1e-8f);
+        scaledDeltaGyrBiasLgth = (2e-6f / temp) * tempVec.length() / dtIMU;
     }
     bool divergenceDetected = (scaledDeltaGyrBiasLgth > 1.0f);
     lastGyroBias = state.gyro_bias;
