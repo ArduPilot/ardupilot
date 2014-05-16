@@ -355,6 +355,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     IMU1_weighting = 0.5f;
     lastDivergeTime_ms = 0;
     filterDiverged = false;
+    memset(&faultStatus, 0, sizeof(faultStatus));
 }
 
 // Check basic filter health metrics and return a consolidated health status
@@ -3299,7 +3300,6 @@ void NavEKF::ZeroVariables()
     velTimeout = false;
     posTimeout = false;
     hgtTimeout = false;
-    filterDiverged = false;
     lastStateStoreTime_ms = 0;
     lastFixTime_ms = 0;
     secondLastFixTime_ms = 0;
@@ -3320,7 +3320,6 @@ void NavEKF::ZeroVariables()
     dt = 0;
     hgtMea = 0;
     storeIndex = 0;
-    memset(&faultStatus, 0, sizeof(faultStatus));
     lastGyroBias.zero();
 	prevDelAng.zero();
     lastAngRate.zero();
