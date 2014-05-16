@@ -186,14 +186,10 @@ static void init_ardupilot()
     // we have a 2nd serial port for telemetry on all boards except
     // APM2. We actually do have one on APM2 but it isn't necessary as
     // a MUX is used
-    hal.uartC->begin(map_baudrate(g.serial1_baud, SERIAL1_BAUD), 128, 128);
-    gcs[1].init(hal.uartC);
+    gcs[1].setup_uart(hal.uartC, map_baudrate(g.serial1_baud, SERIAL1_BAUD), 128, 128);
 #endif
 #if MAVLINK_COMM_NUM_BUFFERS > 2
-    if (hal.uartD != NULL) {
-        hal.uartD->begin(map_baudrate(g.serial2_baud, SERIAL2_BAUD), 128, 128);
-        gcs[2].init(hal.uartD);
-    }
+    gcs[2].setup_uart(hal.uartD, map_baudrate(g.serial2_baud, SERIAL2_BAUD), 128, 128);
 #endif
 
     // identify ourselves correctly with the ground station
