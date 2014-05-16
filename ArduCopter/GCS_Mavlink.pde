@@ -571,6 +571,13 @@ static void NOINLINE send_current_waypoint(mavlink_channel_t chan)
     mavlink_msg_mission_current_send(chan, mission.get_current_nav_cmd().index);
 }
 
+#if CONFIG_SONAR == ENABLED
+static void NOINLINE send_rangefinder(mavlink_channel_t chan)
+{
+    mavlink_msg_rangefinder_send(chan, sonar_alt * 0.01f, 0);
+}
+#endif
+
 static void NOINLINE send_statustext(mavlink_channel_t chan)
 {
     mavlink_statustext_t *s = &gcs[chan-MAVLINK_COMM_0].pending_status;
@@ -712,6 +719,13 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         gcs[chan-MAVLINK_COMM_0].queued_waypoint_send();
         break;
 
+#if CONFIG_SONAR == ENABLED
+    case MSG_RANGEFINDER:
+        CHECK_PAYLOAD_SIZE(RANGEFINDER);
+        send_rangefinder(chan);
+        break;
+#endif
+
     case MSG_STATUSTEXT:
         CHECK_PAYLOAD_SIZE(STATUSTEXT);
         send_statustext(chan);
@@ -747,7 +761,6 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_FENCE_STATUS:
     case MSG_WIND:
-    case MSG_RANGEFINDER:
         // unused
         break;
 
@@ -1022,6 +1035,7 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_AHRS);
         send_message(MSG_HWSTATUS);
         send_message(MSG_SYSTEM_TIME);
+        send_message(MSG_RANGEFINDER);
     }
 }
 
