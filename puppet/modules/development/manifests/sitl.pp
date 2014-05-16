@@ -41,11 +41,11 @@ class development::sitl {
         path  => '/home/vagrant/.profile'
     } ->
     file_line { 'MAVProxy-path':
-        line  => 'export PATH=/home/vagrant/MAVProxy',
+        line  => 'export PATH=$PATH:/home/vagrant/MAVProxy',
         path  => '/home/vagrant/.profile'
     } ->
     file_line { 'MAVProxy-path-examples':
-        line  => 'export PATH=/home/vagrant/mavlink/pymavlink/examples',
+        line  => 'export PATH=$PATH:/home/vagrant/mavlink/pymavlink/examples',
         path  => '/home/vagrant/.profile'
     }
 
