@@ -9,7 +9,8 @@ int main (int argc, char * const argv[]) {        \
 	hal.init(argc, argv);			\
         setup();\
         hal.scheduler->system_initialized(); \
-        for(;;) loop();\
+        for(;;) { loop(); \
+            hal.scheduler->delay_microseconds(500); }    \
         return 0;\
     }\
     }
