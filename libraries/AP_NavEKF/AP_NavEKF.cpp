@@ -354,7 +354,6 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     mag_state.DCM.identity();
     IMU1_weighting = 0.5f;
     lastDivergeTime_ms = 0;
-    filterDiverged = false;
     memset(&faultStatus, 0, sizeof(faultStatus));
 }
 
@@ -370,7 +369,7 @@ bool NavEKF::healthy(void) const
     if (state.velocity.is_nan()) {
         return false;
     }
-    if (filterDiverged) {
+    if (filterDiverged || (hal.scheduler->millis() - lastDivergeTime_ms < 10000)) {
         return false;
     }
     // If measurements have failed innovation consistency checks for long enough to time-out
@@ -3300,6 +3299,7 @@ void NavEKF::ZeroVariables()
     velTimeout = false;
     posTimeout = false;
     hgtTimeout = false;
+    filterDiverged = false;
     lastStateStoreTime_ms = 0;
     lastFixTime_ms = 0;
     secondLastFixTime_ms = 0;
@@ -3394,6 +3394,7 @@ bool NavEKF::assume_zero_sideslip(void) const
 void NavEKF::checkDivergence()
 {
     // If filter is diverging, then fail for 10 seconds
+    // delay checking to allow bias estimate to settle after reset
     // filter divergence is detected by looking for rapid changes in gyro bias
     Vector3f tempVec = state.gyro_bias - lastGyroBias;
     float tempLength = tempVec.length();
@@ -3403,12 +3404,14 @@ void NavEKF::checkDivergence()
     }
     bool divergenceDetected = (scaledDeltaGyrBiasLgth > 1.0f);
     lastGyroBias = state.gyro_bias;
-    if (divergenceDetected) {
-        filterDiverged = true;
-        faultStatus.diverged = true;
-        lastDivergeTime_ms = hal.scheduler->millis();
-    } else if (hal.scheduler->millis() - lastDivergeTime_ms > 10000) {
-        filterDiverged = false;
+    if (hal.scheduler->millis() - lastDivergeTime_ms > 10000) {
+        if (divergenceDetected) {
+            filterDiverged = true;
+            faultStatus.diverged = true;
+            lastDivergeTime_ms = hal.scheduler->millis();
+        } else {
+            filterDiverged = false;
+        }
     }
 
 }
