@@ -195,7 +195,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Param: ABIAS_PNOISE
     // @DisplayName: Accelerometer bias process noise (m/s^2)
     // @Description: This noise controls the growth of the vertical acelerometer bias state error estimate. Increasing it makes accelerometer bias estimation faster and noisier.
-    // @Range: 0.0001 - 0.001
+    // @Range: 0.00001 - 0.001
     // @User: advanced
     AP_GROUPINFO("ABIAS_PNOISE",    11, NavEKF, _accelBiasProcessNoise, ABIAS_PNOISE_DEFAULT),
 
@@ -950,7 +950,7 @@ void NavEKF::CovariancePrediction()
         windVelSigma  = 0.0f;
     }
     dAngBiasSigma = dt * constrain_float(_gyroBiasProcessNoise, 1e-7f, 1e-5f);
-    dVelBiasSigma = dt * constrain_float(_accelBiasProcessNoise, 1e-4f, 1e-3f);
+    dVelBiasSigma = dt * constrain_float(_accelBiasProcessNoise, 1e-5f, 1e-3f);
     if (!inhibitMagStates) {
         magEarthSigma = dt * constrain_float(_magEarthProcessNoise, 1e-4f, 1e-2f);
         magBodySigma  = dt * constrain_float(_magBodyProcessNoise, 1e-4f, 1e-2f);
@@ -1823,8 +1823,10 @@ void NavEKF::FuseVelPosNED()
                     Kfusion[i] = P[i][stateIndex]*SK;
                 }
                 // Only height observations are used to update z accel bias estimate
-                if (obsIndex == 5) {
-                    Kfusion[13] = P[13][stateIndex]*SK;
+                // Protect Kalman gain from ill-conditioning
+                // Don't update Z accel bias if off-level by greater than 60 degrees to avoid scale factor error effects
+                if (obsIndex == 5 && prevTnb.c.z > 0.5f) {
+                    Kfusion[13] = constrain_float(P[13][stateIndex]*SK,-1.0f,0.0f);
                 } else {
                     Kfusion[13] = 0.0f;
                 }
