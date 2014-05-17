@@ -56,7 +56,7 @@
 #define GYRO_PNOISE_DEFAULT     0.015f
 #define ACC_PNOISE_DEFAULT      0.25f
 #define GBIAS_PNOISE_DEFAULT    1E-06f
-#define ABIAS_PNOISE_DEFAULT    0.0001f
+#define ABIAS_PNOISE_DEFAULT    0.0002f
 #define MAGE_PNOISE_DEFAULT     0.0003f
 #define MAGB_PNOISE_DEFAULT     0.0003f
 #define VEL_GATE_DEFAULT        2
@@ -77,16 +77,16 @@
 #define GYRO_PNOISE_DEFAULT     0.015f
 #define ACC_PNOISE_DEFAULT      0.25f
 #define GBIAS_PNOISE_DEFAULT    1E-06f
-#define ABIAS_PNOISE_DEFAULT    0.0001f
+#define ABIAS_PNOISE_DEFAULT    0.0002f
 #define MAGE_PNOISE_DEFAULT     0.0003f
 #define MAGB_PNOISE_DEFAULT     0.0003f
-#define VEL_GATE_DEFAULT        3
+#define VEL_GATE_DEFAULT        2
 #define POS_GATE_DEFAULT        10
 #define HGT_GATE_DEFAULT        10
 #define MAG_GATE_DEFAULT        3
 #define MAG_CAL_DEFAULT         0
 #define GLITCH_ACCEL_DEFAULT    150
-#define GLITCH_RADIUS_DEFAULT   50
+#define GLITCH_RADIUS_DEFAULT   15
 
 #endif // APM_BUILD_DIRECTORY
 
@@ -3400,7 +3400,7 @@ void NavEKF::checkDivergence()
     float tempLength = tempVec.length();
     if (tempLength != 0.0f) {
         float temp = constrain_float((P[10][10] + P[11][11] + P[12][12]),1e-12f,1e-8f);
-        scaledDeltaGyrBiasLgth = (2e-6f / temp) * tempVec.length() / dtIMU;
+        scaledDeltaGyrBiasLgth = (1e-6f / temp) * tempVec.length() / dtIMU;
     }
     bool divergenceDetected = (scaledDeltaGyrBiasLgth > 1.0f);
     lastGyroBias = state.gyro_bias;
