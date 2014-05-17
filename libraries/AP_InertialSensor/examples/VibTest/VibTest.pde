@@ -117,6 +117,7 @@ void loop(void)
 }
 
 #else
+const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 void setup() {}
 void loop() {}
 #endif // CONFIG_HAL_BOARD
