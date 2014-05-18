@@ -1,0 +1,10 @@
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+Version=1.0
+Type=Application
+Terminal=false
+Icon[en_US]=terminator
+Name[en_US]=Terminator
+Exec=/usr/bin/terminator
+Name=Terminator
+Icon=terminator
