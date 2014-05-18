@@ -32,7 +32,7 @@ static void rtl_run()
             rtl_loiterathome_start();
             break;
         case LoiterAtHome:
-            if (g.rtl_alt_final > 0) {
+            if (g.rtl_alt_final > 0 && !failsafe.radio) {
                 rtl_descent_start();
             }else{
                 rtl_land_start();
@@ -42,7 +42,7 @@ static void rtl_run()
             // do nothing
             break;
         case Land:
-            // do nothing
+            // do nothing - rtl_land_run will take care of disarming motors
             break;
         }
     }
@@ -51,11 +51,11 @@ static void rtl_run()
     switch (rtl_state) {
 
     case InitialClimb:
-        rtl_climb_return_descent_run();
+        rtl_climb_return_run();
         break;
 
     case ReturnHome:
-        rtl_climb_return_descent_run();
+        rtl_climb_return_run();
         break;
 
     case LoiterAtHome:
@@ -63,7 +63,7 @@ static void rtl_run()
         break;
 
     case FinalDescent:
-        rtl_climb_return_descent_run();
+        rtl_descent_run();
         break;
 
     case Land:
@@ -78,12 +78,24 @@ static void rtl_climb_start()
     rtl_state = InitialClimb;
     rtl_state_complete = false;
 
+    // initialise waypoint and spline controller
+    wp_nav.wp_and_spline_init();
+
     // get horizontal stopping point
     Vector3f destination;
     wp_nav.get_wp_stopping_point_xy(destination);
-    destination.z = get_RTL_alt();
 
+#if AC_RALLY == ENABLED
+    // rally_point.alt will be max of RTL_ALT and the height of the nearest rally point (if there is one)
+    Location rally_point = rally.calc_best_rally_or_home_location(current_loc, get_RTL_alt());
+    destination.z = rally_point.alt;
+#else
+    destination.z = get_RTL_alt();
+#endif
+
+    // set the destination
     wp_nav.set_wp_destination(destination);
+    wp_nav.set_fast_waypoint(true);
 
     // hold current yaw during initial climb
     set_auto_yaw_mode(AUTO_YAW_HOLD);
@@ -95,31 +107,22 @@ static void rtl_return_start()
     rtl_state = ReturnHome;
     rtl_state_complete = false;
 
-    // set target to above home
+    // set target to above home/rally point
+#if AC_RALLY == ENABLED
+    Vector3f destination = pv_location_to_vector(rally.calc_best_rally_or_home_location(current_loc, get_RTL_alt()));
+#else
     Vector3f destination = Vector3f(0,0,get_RTL_alt());
+#endif
+
     wp_nav.set_wp_destination(destination);
 
     // initialise yaw to point home (maybe)
     set_auto_yaw_mode(get_default_auto_yaw_mode(true));
 }
 
-// rtl_descent_start - initialise descent to final alt
-static void rtl_descent_start()
-{
-    rtl_state = FinalDescent;
-    rtl_state_complete = false;
-
-    // set target to above home
-    Vector3f destination = Vector3f(0,0,g.rtl_alt_final);
-    wp_nav.set_wp_destination(destination);
-
-    // initialise yaw to point home (maybe)
-    set_auto_yaw_mode(AUTO_YAW_HOLD);
-}
-
-// rtl_climb_return_descent_run - implements the initial climb, return home and descent portions of RTL which all rely on the wp controller
+// rtl_climb_return_run - implements the initial climb, return home and descent portions of RTL which all rely on the wp controller
 //      called by rtl_run at 100hz or more
-static void rtl_climb_return_descent_run()
+static void rtl_climb_return_run()
 {
     // if not auto armed set throttle to zero and exit immediately
     if(!ap.auto_armed) {
@@ -213,8 +216,76 @@ static void rtl_loiterathome_run()
     }
 
     // check if we've completed this stage of RTL
-    // To-Do: add extra check that we've reached the target yaw
-    rtl_state_complete = ((millis() - rtl_loiter_start_time) > (uint32_t)g.rtl_loiter_time.get());
+    if ((millis() - rtl_loiter_start_time) >= (uint32_t)g.rtl_loiter_time.get()) {
+        if (auto_yaw_mode == AUTO_YAW_RESETTOARMEDYAW) {
+            // check if heading is within 2 degrees of heading when vehicle was armed
+            if (labs(wrap_180_cd(ahrs.yaw_sensor-initial_armed_bearing)) <= 200) {
+                rtl_state_complete = true;
+            }
+        } else {
+            // we have loitered long enough
+            rtl_state_complete = true;
+        }
+    }
+}
+
+// rtl_descent_start - initialise descent to final alt
+static void rtl_descent_start()
+{
+    rtl_state = FinalDescent;
+    rtl_state_complete = false;
+
+    // Set wp navigation target to above home
+    wp_nav.set_loiter_target(wp_nav.get_wp_destination());
+
+    // initialise altitude target to stopping point
+    pos_control.set_target_to_stopping_point_z();
+
+    // initialise yaw
+    set_auto_yaw_mode(AUTO_YAW_HOLD);
+}
+
+// rtl_descent_run - implements the final descent to the RTL_ALT
+//      called by rtl_run at 100hz or more
+static void rtl_descent_run()
+{
+    // if not auto armed set throttle to zero and exit immediately
+    if(!ap.auto_armed || !inertial_nav.position_ok()) {
+        attitude_control.init_targets();
+        attitude_control.set_throttle_out(0, false);
+        // set target to current position
+        wp_nav.init_loiter_target();
+        return;
+    }
+
+    // process pilot's input
+    float target_yaw_rate = 0;
+    if (!failsafe.radio) {
+        // apply SIMPLE mode transform to pilot inputs
+        update_simple_mode();
+
+        // process pilot's roll and pitch input
+        wp_nav.set_pilot_desired_acceleration(g.rc_1.control_in, g.rc_2.control_in);
+
+        // get pilot's desired yaw rate
+        target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
+    } else {
+        // clear out pilot desired acceleration in case radio failsafe event occurs while descending
+        wp_nav.clear_pilot_desired_acceleration();
+    }
+
+    // run loiter controller
+    wp_nav.update_loiter();
+
+    // call z-axis position controller
+    pos_control.set_alt_target_with_slew(g.rtl_alt_final, G_Dt);
+    pos_control.update_z_controller();
+
+    // roll & pitch from waypoint controller, yaw rate from pilot
+    attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
+
+    // check if we've reached within 20cm of final altitude
+    rtl_state_complete = fabs(g.rtl_alt_final - inertial_nav.get_altitude()) < 20.0f;
 }
 
 // rtl_loiterathome_start - initialise controllers to loiter over home
@@ -224,7 +295,7 @@ static void rtl_land_start()
     rtl_state_complete = false;
 
     // Set wp navigation target to above home
-    wp_nav.set_loiter_target(Vector3f(0,0,0));
+    wp_nav.set_loiter_target(wp_nav.get_wp_destination());
 
     // initialise altitude target to stopping point
     pos_control.set_target_to_stopping_point_z();
@@ -238,7 +309,7 @@ static void rtl_land_start()
 static void rtl_land_run()
 {
     // if not auto armed set throttle to zero and exit immediately
-    if(!ap.auto_armed) {
+    if(!ap.auto_armed || !inertial_nav.position_ok()) {
         attitude_control.init_targets();
         attitude_control.set_throttle_out(0, false);
         // set target to current position
@@ -249,8 +320,17 @@ static void rtl_land_run()
     // process pilot's yaw input
     float target_yaw_rate = 0;
     if (!failsafe.radio) {
+        // apply SIMPLE mode transform to pilot inputs
+        update_simple_mode();
+
+        // process pilot's roll and pitch input
+        wp_nav.set_pilot_desired_acceleration(g.rc_1.control_in, g.rc_2.control_in);
+
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
+    } else {
+        // clear out pilot desired acceleration in case radio failsafe event occurs while landing
+        wp_nav.clear_pilot_desired_acceleration();
     }
 
     // run loiter controller
@@ -266,13 +346,34 @@ static void rtl_land_run()
 
     // check if we've completed this stage of RTL
     rtl_state_complete = ap.land_complete;
+
+#if LAND_REQUIRE_MIN_THROTTLE_TO_DISARM == ENABLED
+    // disarm when the landing detector says we've landed and throttle is at minimum
+    if (ap.land_complete && (g.rc_3.control_in == 0 || failsafe.radio)) {
+        init_disarm_motors();
+    }
+#else
+    // disarm when the landing detector says we've landed
+    if (ap.land_complete) {
+        init_disarm_motors();
+    }
+#endif
 }
 
 // get_RTL_alt - return altitude which vehicle should return home at
 //      altitude is in cm above home
 static float get_RTL_alt()
 {
-    // return maximum of current altitude and rtl altitude
-    return max(current_loc.alt, g.rtl_altitude);
+    // maximum of current altitude and rtl altitude
+    float rtl_alt = max(current_loc.alt, g.rtl_altitude);
+
+#if AC_FENCE == ENABLED
+    // ensure not above fence altitude if alt fence is enabled
+    if ((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
+        rtl_alt = min(rtl_alt, fence.get_safe_alt()*100.0f);
+    }
+#endif
+
+    return rtl_alt;
 }
 

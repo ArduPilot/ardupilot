@@ -144,6 +144,7 @@ public:
     GCS_MAVLINK();
     void        update(void);
     void        init(AP_HAL::UARTDriver *port);
+    void        setup_uart(AP_HAL::UARTDriver *port, uint32_t baudrate, uint16_t rxS, uint16_t txS);
     void        send_message(enum ap_message id);
     void        send_text(gcs_severity severity, const char *str);
     void        send_text_P(gcs_severity severity, const prog_char_t *str);

@@ -26,8 +26,12 @@ static bool auto_init(bool ignore_checks)
         if (auto_yaw_mode == AUTO_YAW_ROI) {
             set_auto_yaw_mode(AUTO_YAW_HOLD);
         }
-        // start the mission
-        mission.start();
+
+        // initialise waypoint and spline controller
+        wp_nav.wp_and_spline_init();
+
+        // start/resume the mission (based on MIS_RESTART parameter)
+        mission.start_or_resume();
         return true;
     }else{
         return false;
@@ -47,6 +51,7 @@ static void auto_run()
         break;
 
     case Auto_WP:
+    case Auto_CircleMoveToEdge:
         auto_wp_run();
         break;
 
@@ -304,13 +309,41 @@ void auto_rtl_run()
     rtl_run();
 }
 
+// auto_circle_movetoedge_start - initialise waypoint controller to move to edge of a circle with it's center at the specified location
+//  we assume the caller has set the circle's circle with circle_nav.set_center()
+//  we assume the caller has performed all required GPS_ok checks
+static void auto_circle_movetoedge_start()
+{
+    // check our distance from edge of circle
+    Vector3f circle_edge;
+    circle_nav.get_closest_point_on_circle(circle_edge);
+
+    // set the state to move to the edge of the circle
+    auto_mode = Auto_CircleMoveToEdge;
+
+    // initialise wpnav to move to edge of circle
+    wp_nav.set_wp_destination(circle_edge);
+
+    // if we are outside the circle, point at the edge, otherwise hold yaw
+    const Vector3f &curr_pos = inertial_nav.get_position();
+    const Vector3f &circle_center = circle_nav.get_center();
+    float dist_to_center = pythagorous2(circle_center.x - curr_pos.x, circle_center.y - curr_pos.y);
+    if (dist_to_center > circle_nav.get_radius() && dist_to_center > 500) {
+        set_auto_yaw_mode(get_default_auto_yaw_mode(false));
+    } else {
+        // vehicle is within circle so hold yaw to avoid spinning as we move to edge of circle
+        set_auto_yaw_mode(AUTO_YAW_HOLD);
+    }
+}
+
 // auto_circle_start - initialises controller to fly a circle in AUTO flight mode
-static void auto_circle_start(const Vector3f& center)
+static void auto_circle_start()
 {
     auto_mode = Auto_Circle;
 
-    // set circle center
-    circle_nav.set_center(center);
+    // initialise circle controller
+    // center was set in do_circle so initialise with current center
+    circle_nav.init(circle_nav.get_center());
 }
 
 // auto_circle_run - circle in AUTO flight mode
@@ -332,6 +365,10 @@ void auto_circle_run()
 uint8_t get_default_auto_yaw_mode(bool rtl)
 {
     switch (g.wp_yaw_behavior) {
+
+        case WP_YAW_BEHAVIOR_NONE:
+            return AUTO_YAW_HOLD;
+            break;
 
         case WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL:
             if (rtl) {
@@ -374,8 +411,8 @@ void set_auto_yaw_mode(uint8_t yaw_mode)
         break;
 
     case AUTO_YAW_LOOK_AT_HEADING:
-        // keep heading pointing in the direction held in yaw_look_at_heading with no pilot input allowed
-        yaw_look_at_heading = ahrs.yaw_sensor;
+        // keep heading pointing in the direction held in yaw_look_at_heading
+        // caller should set the yaw_look_at_heading
         break;
 
     case AUTO_YAW_LOOK_AHEAD:

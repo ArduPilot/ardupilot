@@ -51,6 +51,7 @@ public:
 
 private:
     void _parse_command_line(int argc, char * const argv[]);
+    void _set_param_default(char *parm);
     void _usage(void);
     void _sitl_setup(void);
     void _setup_fdm(void);
@@ -128,6 +129,7 @@ private:
     static SITL *_sitl;
     static uint16_t _rcout_port;
     static uint16_t _simin_port;
+    static float _current;
 };
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL

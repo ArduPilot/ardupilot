@@ -241,6 +241,7 @@ AP_AHRS_DCM::normalize(void)
         !renorm(t2, _dcm_matrix.c)) {
         // Our solution is blowing up and we will force back
         // to last euler angles
+        _last_failure_ms = hal.scheduler->millis();
         reset(true);
     }
 }
@@ -475,6 +476,11 @@ Vector3f AP_AHRS_DCM::ra_delayed(uint8_t instance, const Vector3f &ra)
     // get the old element, and then fill it with the new element
     Vector3f ret = _ra_delay_buffer[instance];
     _ra_delay_buffer[instance] = ra;
+    if (ret.is_zero()) {
+        // use the current vector if the previous vector is exactly
+        // zero. This prevents an error on initialisation
+        return ra;
+    }
     return ret;
 }
 
@@ -598,6 +604,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
         GA_e.normalize();
         if (GA_e.is_inf()) {
             // wait for some non-zero acceleration information
+            _last_failure_ms = hal.scheduler->millis();
             return;
         }
         using_gps_corrections = true;
@@ -617,7 +624,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     int8_t besti = -1;
     float best_error = 0;
     for (uint8_t i=0; i<_ins.get_accel_count(); i++) {
-        if (!_ins.get_accel_health()) {
+        if (!_ins.get_accel_health(i)) {
             // only use healthy sensors
             continue;
         }
@@ -628,6 +635,10 @@ AP_AHRS_DCM::drift_correction(float deltat)
             GA_b[i] = ra_delayed(i, _ra_sum[i]);
         } else {
             GA_b[i] = _ra_sum[i];
+        }
+        if (GA_b[i].is_zero()) {
+            // wait for some non-zero acceleration information
+            continue;
         }
         GA_b[i].normalize();
         if (GA_b[i].is_inf()) {
@@ -644,6 +655,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
 
     if (besti == -1) {
         // no healthy accelerometers!
+        _last_failure_ms = hal.scheduler->millis();
         return;
     }
 
@@ -693,6 +705,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     if (error[besti].is_nan() || error[besti].is_inf()) {
         // don't allow bad values
         check_matrix();
+        _last_failure_ms = hal.scheduler->millis();
         return;
     }
 
@@ -914,3 +927,11 @@ void AP_AHRS_DCM::set_home(const Location &loc)
     _home.options = 0;
 }
 
+/*
+  check if the AHRS subsystem is healthy
+*/
+bool AP_AHRS_DCM::healthy(void)
+{
+    // consider ourselves healthy if there have been no failures for 5 seconds
+    return (_last_failure_ms == 0 || hal.scheduler->millis() - _last_failure_ms > 5000);
+}

@@ -216,7 +216,7 @@ private:
     // ************************************************************************
 
     // have we written the logging headers to DataFlash?
-    bool            logging_started:1;
+    static bool logging_started;
 
     void logging_write_headers();
     void logging_log_health(float pos_msg_hz, float vel_msg_hz, float dops_msg_hz, float baseline_msg_hz, float crc_error_hz);

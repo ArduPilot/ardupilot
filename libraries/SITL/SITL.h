@@ -56,6 +56,7 @@ public:
 	AP_Float aspd_noise;  // in m/s
 	AP_Float mag_noise;   // in mag units (earth field is 818)
 	AP_Float mag_error;   // in degrees
+	AP_Vector3f mag_mot;  // in mag units per amp
     AP_Float servo_rate;  // servo speed in degrees/second
 
     AP_Float sonar_glitch;// probablility between 0-1 that any given sonar sample will read as max distance
@@ -75,6 +76,8 @@ public:
     AP_Float batt_voltage; // battery voltage base
     AP_Float accel_fail;  // accelerometer failure value
 	AP_Int8  rc_fail;     // fail RC input
+	AP_Int8  baro_disable; // disable simulated barometer
+    AP_Int8  float_exception; // enable floating point exception checks
 
     // wind control
     AP_Float wind_speed;

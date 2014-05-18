@@ -48,7 +48,7 @@ public:
     void EnableWrites(bool enable) { _writes_enabled = enable; }
     void Log_Write_Format(const struct LogStructure *structure);
     void Log_Write_Parameter(const char *name, float value);
-    void Log_Write_GPS(const AP_GPS &gps, int32_t relative_alt);
+    void Log_Write_GPS(const AP_GPS &gps, uint8_t instance, int32_t relative_alt);
     void Log_Write_IMU(const AP_InertialSensor &ins);
     void Log_Write_RCIN(void);
     void Log_Write_RCOUT(void);
@@ -323,6 +323,8 @@ struct PACKED log_EKF4 {
     int16_t sqrtvarVT;
     int8_t  offsetNorth;
     int8_t  offsetEast;
+    uint8_t faults;
+    uint8_t divergeRate;
 };
 
 struct PACKED log_Cmd {
@@ -386,7 +388,7 @@ struct PACKED log_Radio {
     { LOG_EKF3_MSG, sizeof(log_EKF3), \
       "EKF3","Icccccchhhc","TimeMS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IVT" }, \
     { LOG_EKF4_MSG, sizeof(log_EKF4), \
-      "EKF4","Icccccccbb","TimeMS,SV,SP,SH,SMX,SMY,SMZ,SVT,OFN,EFE" }, \
+      "EKF4","IcccccccbbBB","TimeMS,SV,SP,SH,SMX,SMY,SMZ,SVT,OFN,EFE,FS,DS" }, \
     { LOG_CMD_MSG, sizeof(log_Cmd), \
       "CMD", "IHHHfffffff","TimeMS,CTot,CNum,CId,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt" }, \
     { LOG_RADIO_MSG, sizeof(log_Radio), \
@@ -414,8 +416,10 @@ struct PACKED log_Radio {
 #define LOG_GPS2_MSG	  144
 #define LOG_CMD_MSG       145
 #define LOG_RADIO_MSG	  146
+#define LOG_ATRP_MSG      147
 
 // message types 200 to 210 reversed for GPS driver use
+// message types 211 to 220 reversed for autotune use
 
 #include "DataFlash_Block.h"
 #include "DataFlash_File.h"

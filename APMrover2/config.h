@@ -98,6 +98,12 @@
 # define CONFIG_BARO     AP_BARO_BMP085
 # define BATTERY_PIN_1     -1
 # define CURRENT_PIN_1	   -1
+#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+# define CONFIG_INS_TYPE   CONFIG_INS_VRBRAIN
+# define CONFIG_COMPASS  AP_COMPASS_VRBRAIN
+# define CONFIG_BARO AP_BARO_VRBRAIN
+# define BATTERY_PIN_1	  -1
+# define CURRENT_PIN_1	  -1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

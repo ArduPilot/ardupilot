@@ -175,8 +175,8 @@ void AP_InertialNav::correct_with_gps(uint32_t now, int32_t lon, int32_t lat)
     // sanity check the gps position.  Relies on the main code calling GPS_Glitch::check_position() immediatley after a GPS update
     if (_glitch_detector.glitching()) {
         // failed sanity check so degrate position_error to 10% over 2 seconds (assumes 5hz update rate)
-        _position_error.x *= 0.7934;
-        _position_error.y *= 0.7934;
+        _position_error.x *= 0.7943;
+        _position_error.y *= 0.7943;
     }else{
         // if our internal glitching flag (from previous iteration) is true we have just recovered from a glitch
         // reset the inertial nav position and velocity to gps values
@@ -281,7 +281,7 @@ void AP_InertialNav::set_velocity_xy(float x, float y)
 }
 
 // set_velocity_xy - set velocity in latitude & longitude directions (in cm/s)
-float AP_InertialNav::get_velocity_xy()
+float AP_InertialNav::get_velocity_xy() const
 {
 	return pythagorous2(_velocity.x, _velocity.y);
 }

@@ -1,5 +1,52 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.2-rc1 9-May-2014
+Changes from 3.1.4
+1) Hybrid mode - position hold mode but with direct response to pilot input during repositioning (JulienD, SandroT)
+2) Spline waypoints (created by David Dewey, modified and integrated by Leonard, Randy)
+3) Drift mode uses "throttle assist" for altitude control (Jason)
+4) Extended Kalman Filter for potentially more reliable attitude and position control (Pixhawk only) (Paul Riseborough).  Set AHRS_EKF_USE to 1 to enable or use Ch7/8 switch to enable/disable in flight. 
+5) Manual flight smoothness:
+    a) Smoother roll, pitch response using RC_FEEL_RP parameter (100 = crisp, 0 = extremely soft)
+    b) Adjustable max rotation rate (ATC_RATE_RP_MAX, ATC_RATE_Y_MAX) and acceleration (ATC_ACCEL_RP_MAX, ATC_ACCEL_Y_MAX)
+6) Autopilot smoothness:
+    a) Vertical acceleration in AltHold, Loiter, Hybrid modes can be configured with PILOT_ACCEL_Z parameter (higher = faster acceleration)
+    b) Maximum roll and pitch angle acceleration in Loiter mode can be configured with WPNAV_LOIT_JERK (higher = more responsive but potentially jerky)
+    c) Yaw speed can be adjusted with ATC_SLEW_YAW parameter (higher = faster)
+    d) smoother takeoff with configurable acceleration using WPNAV_ACCEL_Z parameter
+    e) Twitches removed during guided mode or when entering Loiter or RTL from high speeds  
+7) Mission improvements:
+    a) mission will be resumed from last active command when pilot switches out and then back into Auto mode (prev behaviour can be restored by setting MIS_RESTART param to 1)
+    b) DO_SET_ROI persistent across waypoints.  All-zero DO_SET_ROI command restores default yaw behaviour
+    c) do-jump fixed
+    d) conditional_distance fixed
+    e) conditional_delay fixed
+    f) do-change-speed command takes effect immediately during mission
+    g) vehicle faces directly at next waypoint (previously it could be about 10deg off)
+    h) loiter turns fix to ensure it will circle around lat/lon point specified in mission command (previously it could be off by CIRCLE_RADIUS)
+8) Safety improvements:
+    a) After a fence breach, if the pilot re-takes control he/she will be given a minimum of 10 seconds and 20m to recover before the autopilot will invoke RTL or LAND
+    b) Parachute support including automatic deployment during mechanical failures
+9) Other enhancements:
+    a) V-tail quad support
+    b) Dual GPS support (secondary GPS output is simply logged, not actually used yet)
+    c) Electro Permanent Magnet (aka Gripper) support
+    d) Servo pass through for channels 6 ~ 8 (set RC6_FUNCTION to 1)
+    e) Remove 80m limit on RTL's return altitude but never let it be above fence's max altitude
+10) Other bug fixes:
+    a) Bug fix for LAND sometimes getting stuck at 10m
+    b) During missions, vehicle will maintain altitude even if WPNAV_SPEED is set above the vehicle's capabilities
+    c) when autopilot controls throttle (i.e. Loiter, Auto, etc) vehicle will reach speeds specified in PILOT_VELZ_MAX and WPNAV_SPEED_UP, WPNAV_SPEED_DN parameters
+11) CLI removed from APM1/2 to save flash space, critical functions moved to MAVLink:
+    a) Individual motor tests (see MP's Initial Setup > Optional Hardware > Motor Test)
+    b) compassmot (see MP's Initial Setup > Optional Hardware > Compass/Motor Calib)
+    c) parameter reset to factory defautls (see MP's Config/Tuning > Full Parameter List > Reset to Default)
+  
+------------------------------------------------------------------
+ArduCopter 3.1.4 8-May-2014 / 3.1.4-rc1 2-May-2014
+Changes from 3.1.3
+1) Bug Fix for Pixhawk/PX4 NuttX I2C memory corruption when errors are found on I2C bus
+------------------------------------------------------------------
 ArduCopter 3.1.3 7-Apr-2014
 Changes from 3.1.2
 1) Stability patch fix which could cause motors to go to min at full throttle and with large roll/pitch inputs

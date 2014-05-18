@@ -30,24 +30,10 @@ extern "C" {
 // ENUM DEFINITIONS
 
 
-/** @brief Enumeration of possible mount operation modes */
-#ifndef HAVE_ENUM_MAV_MOUNT_MODE
-#define HAVE_ENUM_MAV_MOUNT_MODE
-enum MAV_MOUNT_MODE
-{
-	MAV_MOUNT_MODE_RETRACT=0, /* Load and keep safe position (Roll,Pitch,Yaw) from EEPROM and stop stabilization | */
-	MAV_MOUNT_MODE_NEUTRAL=1, /* Load and keep neutral position (Roll,Pitch,Yaw) from EEPROM. | */
-	MAV_MOUNT_MODE_MAVLINK_TARGETING=2, /* Load neutral position and start MAVLink Roll,Pitch,Yaw control with stabilization | */
-	MAV_MOUNT_MODE_RC_TARGETING=3, /* Load neutral position and start RC Roll,Pitch,Yaw control with stabilization | */
-	MAV_MOUNT_MODE_GPS_POINT=4, /* Load neutral position and start to point to Lat,Lon,Alt | */
-	MAV_MOUNT_MODE_ENUM_END=5, /*  | */
-};
-#endif
-
 /** @brief  */
 #ifndef HAVE_ENUM_MAV_CMD
 #define HAVE_ENUM_MAV_CMD
-enum MAV_CMD
+typedef enum MAV_CMD
 {
 	MAV_CMD_NAV_WAYPOINT=16, /* Navigate to MISSION. |Hold time in decimal seconds. (ignored by fixed wing, time to stay at MISSION for rotary wing)| Acceptance radius in meters (if the sphere with this radius is hit, the MISSION counts as reached)| 0 to pass through the WP, if > 0 radius in meters to pass by WP. Positive value for clockwise orbit, negative value for counter-clockwise orbit. Allows trajectory control.| Desired yaw angle at MISSION (rotary wing)| Latitude| Longitude| Altitude|  */
 	MAV_CMD_NAV_LOITER_UNLIM=17, /* Loiter around this MISSION an unlimited amount of time |Empty| Empty| Radius around MISSION, in meters. If positive loiter clockwise, else counter-clockwise| Desired yaw angle.| Latitude| Longitude| Altitude|  */
@@ -79,10 +65,12 @@ enum MAV_CMD
 	MAV_CMD_DO_DIGICAM_CONFIGURE=202, /* Mission command to configure an on-board camera controller system. |Modes: P, TV, AV, M, Etc| Shutter speed: Divisor number for one second| Aperture: F stop number| ISO number e.g. 80, 100, 200, Etc| Exposure type enumerator| Command Identity| Main engine cut-off time before camera trigger in seconds/10 (0 means no cut-off)|  */
 	MAV_CMD_DO_DIGICAM_CONTROL=203, /* Mission command to control an on-board camera controller system. |Session control e.g. show/hide lens| Zoom's absolute position| Zooming step value to offset zoom from the current position| Focus Locking, Unlocking or Re-locking| Shooting Command| Command Identity| Empty|  */
 	MAV_CMD_DO_MOUNT_CONFIGURE=204, /* Mission command to configure a camera or antenna mount |Mount operation mode (see MAV_MOUNT_MODE enum)| stabilize roll? (1 = yes, 0 = no)| stabilize pitch? (1 = yes, 0 = no)| stabilize yaw? (1 = yes, 0 = no)| Empty| Empty| Empty|  */
-	MAV_CMD_DO_MOUNT_CONTROL=205, /* Mission command to control a camera or antenna mount |pitch(deg*100) or lat, depending on mount mode.| roll(deg*100) or lon depending on mount mode| yaw(deg*100) or alt (in cm) depending on mount mode| Empty| Empty| Empty| Empty|  */
+	MAV_CMD_DO_MOUNT_CONTROL=205, /* Mission command to control a camera or antenna mount |pitch or lat in degrees, depending on mount mode.| roll or lon in degrees depending on mount mode| yaw or alt (in meters) depending on mount mode| reserved| reserved| reserved| MAV_MOUNT_MODE enum value|  */
 	MAV_CMD_DO_SET_CAM_TRIGG_DIST=206, /* Mission command to set CAM_TRIGG_DIST for this flight |Camera trigger distance (meters)| Empty| Empty| Empty| Empty| Empty| Empty|  */
 	MAV_CMD_DO_FENCE_ENABLE=207, /* Mission command to enable the geofence |enable? (0=disable, 1=enable)| Empty| Empty| Empty| Empty| Empty| Empty|  */
-	MAV_CMD_DO_PARACHUTE=208, /* Mission command to trigger a parachute |action (0=disable, 1=enable, 2=release, See PARACHUTE_ACTION enum)| Empty| Empty| Empty| Empty| Empty| Empty|  */
+	MAV_CMD_DO_PARACHUTE=208, /* Mission command to trigger a parachute |action (0=disable, 1=enable, 2=release, for some systems see PARACHUTE_ACTION enum, not in general message set.)| Empty| Empty| Empty| Empty| Empty| Empty|  */
+	MAV_CMD_DO_MOTOR_TEST=209, /* Mission command to perform motor test |motor sequence number (a number from 1 to max number of motors on the vehicle)| throttle type (0=throttle percentage, 1=PWM, 2=pilot throttle channel pass-through. See MOTOR_TEST_THROTTLE_TYPE enum)| throttle| timeout (in seconds)| Empty| Empty| Empty|  */
+	MAV_CMD_DO_MOUNT_CONTROL_QUAT=220, /* Mission command to control a camera or antenna mount, using a quaternion as reference. |q1 - quaternion param #1| q2 - quaternion param #2| q3 - quaternion param #3| q4 - quaternion param #4| Empty| Empty| Empty|  */
 	MAV_CMD_DO_LAST=240, /* NOP - This command is only used to mark the upper limit of the DO commands in the enumeration |Empty| Empty| Empty| Empty| Empty| Empty| Empty|  */
 	MAV_CMD_PREFLIGHT_CALIBRATION=241, /* Trigger calibration. This command will be only accepted if in pre-flight mode. |Gyro calibration: 0: no, 1: yes| Magnetometer calibration: 0: no, 1: yes| Ground pressure: 0: no, 1: yes| Radio calibration: 0: no, 1: yes| Accelerometer calibration: 0: no, 1: yes| Compass/Motor interference calibration: 0: no, 1: yes| Empty|  */
 	MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS=242, /* Set sensor offsets. This command will be only accepted if in pre-flight mode. |Sensor to adjust the offsets for: 0: gyros, 1: accelerometer, 2: magnetometer, 3: barometer, 4: optical flow| X axis offset (or generic dimension 1), in the sensor's raw units| Y axis offset (or generic dimension 2), in the sensor's raw units| Z axis offset (or generic dimension 3), in the sensor's raw units| Generic dimension 4, in the sensor's raw units| Generic dimension 5, in the sensor's raw units| Generic dimension 6, in the sensor's raw units|  */
@@ -93,39 +81,13 @@ enum MAV_CMD
 	MAV_CMD_COMPONENT_ARM_DISARM=400, /* Arms / Disarms a component |1 to arm, 0 to disarm|  */
 	MAV_CMD_START_RX_PAIR=500, /* Starts receiver pairing |0:Spektrum| 0:Spektrum DSM2, 1:Spektrum DSMX|  */
 	MAV_CMD_ENUM_END=501, /*  | */
-};
-#endif
-
-/** @brief  */
-#ifndef HAVE_ENUM_FENCE_ACTION
-#define HAVE_ENUM_FENCE_ACTION
-enum FENCE_ACTION
-{
-	FENCE_ACTION_NONE=0, /* Disable fenced mode | */
-	FENCE_ACTION_GUIDED=1, /* Switched to guided mode to return point (fence point 0) | */
-	FENCE_ACTION_REPORT=2, /* Report fence breach, but don't take action | */
-	FENCE_ACTION_GUIDED_THR_PASS=3, /* Switched to guided mode to return point (fence point 0) with manual throttle control | */
-	FENCE_ACTION_ENUM_END=4, /*  | */
-};
-#endif
-
-/** @brief  */
-#ifndef HAVE_ENUM_FENCE_BREACH
-#define HAVE_ENUM_FENCE_BREACH
-enum FENCE_BREACH
-{
-	FENCE_BREACH_NONE=0, /* No last fence breach | */
-	FENCE_BREACH_MINALT=1, /* Breached minimum altitude | */
-	FENCE_BREACH_MAXALT=2, /* Breached maximum altitude | */
-	FENCE_BREACH_BOUNDARY=3, /* Breached fence boundary | */
-	FENCE_BREACH_ENUM_END=4, /*  | */
-};
+} MAV_CMD;
 #endif
 
 /** @brief  */
 #ifndef HAVE_ENUM_LIMITS_STATE
 #define HAVE_ENUM_LIMITS_STATE
-enum LIMITS_STATE
+typedef enum LIMITS_STATE
 {
 	LIMITS_INIT=0, /*  pre-initialization | */
 	LIMITS_DISABLED=1, /*  disabled | */
@@ -134,42 +96,54 @@ enum LIMITS_STATE
 	LIMITS_RECOVERING=4, /*  taking action eg. RTL | */
 	LIMITS_RECOVERED=5, /*  we're no longer in breach of a limit | */
 	LIMITS_STATE_ENUM_END=6, /*  | */
-};
+} LIMITS_STATE;
 #endif
 
 /** @brief  */
 #ifndef HAVE_ENUM_LIMIT_MODULE
 #define HAVE_ENUM_LIMIT_MODULE
-enum LIMIT_MODULE
+typedef enum LIMIT_MODULE
 {
 	LIMIT_GPSLOCK=1, /*  pre-initialization | */
 	LIMIT_GEOFENCE=2, /*  disabled | */
 	LIMIT_ALTITUDE=4, /*  checking limits | */
 	LIMIT_MODULE_ENUM_END=5, /*  | */
-};
+} LIMIT_MODULE;
 #endif
 
 /** @brief Flags in RALLY_POINT message */
 #ifndef HAVE_ENUM_RALLY_FLAGS
 #define HAVE_ENUM_RALLY_FLAGS
-enum RALLY_FLAGS
+typedef enum RALLY_FLAGS
 {
 	FAVORABLE_WIND=1, /* Flag set when requiring favorable winds for landing.  | */
 	LAND_IMMEDIATELY=2, /* Flag set when plane is to immediately descend to break altitude and land without GCS intervention.  Flag not set when plane is to loiter at Rally point until commanded to land. | */
 	RALLY_FLAGS_ENUM_END=3, /*  | */
-};
+} RALLY_FLAGS;
 #endif
 
 /** @brief  */
 #ifndef HAVE_ENUM_PARACHUTE_ACTION
 #define HAVE_ENUM_PARACHUTE_ACTION
-enum PARACHUTE_ACTION
+typedef enum PARACHUTE_ACTION
 {
 	PARACHUTE_DISABLE=0, /* Disable parachute release | */
 	PARACHUTE_ENABLE=1, /* Enable parachute release | */
 	PARACHUTE_RELEASE=2, /* Release parachute | */
 	PARACHUTE_ACTION_ENUM_END=3, /*  | */
-};
+} PARACHUTE_ACTION;
+#endif
+
+/** @brief  */
+#ifndef HAVE_ENUM_MOTOR_TEST_THROTTLE_TYPE
+#define HAVE_ENUM_MOTOR_TEST_THROTTLE_TYPE
+typedef enum MOTOR_TEST_THROTTLE_TYPE
+{
+	MOTOR_TEST_THROTTLE_PERCENT=0, /* throttle as a percentage from 0 ~ 100 | */
+	MOTOR_TEST_THROTTLE_PWM=1, /* throttle as an absolute PWM value (normally in range of 1000~2000) | */
+	MOTOR_TEST_THROTTLE_PILOT=2, /* throttle pass-through from pilot's transmitter | */
+	MOTOR_TEST_THROTTLE_TYPE_ENUM_END=3, /*  | */
+} MOTOR_TEST_THROTTLE_TYPE;
 #endif
 
 #include "../common/common.h"

@@ -49,15 +49,14 @@ AP_Baro_BMP085 baro;
 #endif
 
 // GPS declaration
-GPS *gps;
-AP_GPS_Auto auto_gps(&gps);
+AP_GPS gps;
 GPS_Glitch gps_glitch(gps);
 
 AP_Compass_HMC5843 compass;
 AP_AHRS_DCM ahrs(ins, baro, gps);
 
 // Inertial Nav declaration
-AP_InertialNav inertial_nav(ahrs, baro, gps, gps_glitch);
+AP_InertialNav inertial_nav(ahrs, baro, gps_glitch);
 
 // Sprayer
 AC_Sprayer sprayer(&inertial_nav);

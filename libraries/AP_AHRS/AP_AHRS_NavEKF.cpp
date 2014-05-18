@@ -123,6 +123,8 @@ float AP_AHRS_NavEKF::get_error_yaw(void)
 Vector3f AP_AHRS_NavEKF::wind_estimate(void)
 {
     if (!using_EKF()) {
+        // EKF does not estimate wind speed when there is no airspeed
+        // sensor active
         return AP_AHRS_DCM::wind_estimate();
     }
     Vector3f wind;
@@ -224,6 +226,17 @@ bool AP_AHRS_NavEKF::get_relative_position_NED(Vector3f &vec) const
 bool AP_AHRS_NavEKF::using_EKF(void) const
 {
     return ekf_started && _ekf_use && EKF.healthy();
+}
+
+/*
+  check if the AHRS subsystem is healthy
+*/
+bool AP_AHRS_NavEKF::healthy(void)
+{
+    if (_ekf_use) {
+        return ekf_started && EKF.healthy();
+    }
+    return AP_AHRS_DCM::healthy();    
 }
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE

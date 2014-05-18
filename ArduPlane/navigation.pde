@@ -37,7 +37,7 @@ static void loiter_angle_update(void)
     loiter.old_target_bearing_cd = target_bearing_cd;
     loiter_delta_cd = wrap_180_cd(loiter_delta_cd);
 
-    loiter.sum_cd += loiter_delta_cd;
+    loiter.sum_cd += loiter_delta_cd * loiter.direction;
 }
 
 //****************************************************************
@@ -61,11 +61,6 @@ static void navigate()
     // waypoint distance from plane
     // ----------------------------
     wp_distance = get_distance(current_loc, next_WP_loc);
-
-    if (wp_distance < 0) {
-        gcs_send_text_P(SEVERITY_HIGH,PSTR("WP error - distance < 0"));
-        return;
-    }
 
     // update total loiter angle
     loiter_angle_update();
@@ -134,7 +129,7 @@ static void calc_altitude_error()
         control_mode == CRUISE) {
         return;
     }
-    if (nav_controller->reached_loiter_target()) {
+    if (nav_controller->reached_loiter_target() || (wp_distance <= 30) || (wp_totalDistance<=30)) {
         // once we reach a loiter target then lock to the final
         // altitude target
         target_altitude_cm = next_WP_loc.alt;
@@ -261,8 +256,8 @@ static void setup_glide_slope(void)
         // is basically to prevent situations where we try to slowly
         // gain height at low altitudes, potentially hitting
         // obstacles.
-        if (relative_altitude() > 40 || next_WP_loc.alt < prev_WP_loc.alt) {
-            offset_altitude_cm = next_WP_loc.alt - prev_WP_loc.alt;
+        if (relative_altitude() > 40 || next_WP_loc.alt < current_loc.alt) {
+            offset_altitude_cm = next_WP_loc.alt - current_loc.alt;
         } else {
             offset_altitude_cm = 0;        
         }

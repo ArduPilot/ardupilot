@@ -62,6 +62,7 @@ enum FlightMode {
     FLY_BY_WIRE_A = 5,
     FLY_BY_WIRE_B = 6,
     CRUISE        = 7,
+    AUTOTUNE      = 8,
     AUTO          = 10,
     RTL           = 11,
     LOITER        = 12,
@@ -182,8 +183,7 @@ enum log_messages {
 
 // rally points shoehorned between fence points and waypoints
 #define MAX_RALLYPOINTS 10
-#define RALLY_WP_SIZE 15
-#define RALLY_START_BYTE (FENCE_START_BYTE-(MAX_RALLYPOINTS*RALLY_WP_SIZE))
+#define RALLY_START_BYTE (FENCE_START_BYTE-(MAX_RALLYPOINTS*AC_RALLY_WP_SIZE))
 
 // parameters get the first 1280 bytes of EEPROM, mission commands are stored between these params and the rally points
 #define MISSION_START_BYTE  0x500
@@ -203,17 +203,20 @@ enum log_messages {
 #define CONFIG_INS_PX4     4
 #define CONFIG_INS_FLYMAPLE 5
 #define CONFIG_INS_L3G4200D 6
+#define CONFIG_INS_VRBRAIN  7
 
 // barometer driver types
 #define AP_BARO_BMP085   1
 #define AP_BARO_MS5611   2
 #define AP_BARO_PX4      3
 #define AP_BARO_HIL      4
+#define AP_BARO_VRBRAIN  5
 
 // compass driver types
 #define AP_COMPASS_HMC5843   1
 #define AP_COMPASS_PX4       2
 #define AP_COMPASS_HIL       3
+#define AP_COMPASS_VRBRAIN   4
 
 // altitude control algorithms
 enum {

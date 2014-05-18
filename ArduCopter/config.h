@@ -59,7 +59,6 @@
  # define CONFIG_IMU_TYPE   CONFIG_IMU_MPU6000
  # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
  # define MAGNETOMETER ENABLED
- # define MAIN_LOOP_RATE    100
  # ifdef APM2_BETA_HARDWARE
   #  define CONFIG_BARO     AP_BARO_BMP085
  # else // APM2 Production Hardware (default)
@@ -71,14 +70,12 @@
  # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
  # define MAGNETOMETER ENABLED
  # define OPTFLOW DISABLED
- # define MAIN_LOOP_RATE    100
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
  # define CONFIG_IMU_TYPE   CONFIG_IMU_PX4
  # define CONFIG_BARO       AP_BARO_PX4
  # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
  # define MAGNETOMETER ENABLED
  # define OPTFLOW DISABLED
- # define MAIN_LOOP_RATE    400
 #elif CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
  # define CONFIG_IMU_TYPE CONFIG_IMU_FLYMAPLE
  # define CONFIG_BARO AP_BARO_BMP085
@@ -87,7 +84,6 @@
  # define MAGNETOMETER ENABLED
  # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
  # define OPTFLOW DISABLED
- # define MAIN_LOOP_RATE    400
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
  # define CONFIG_IMU_TYPE CONFIG_IMU_L3G4200D
  # define CONFIG_BARO AP_BARO_BMP085
@@ -96,15 +92,24 @@
  # define MAGNETOMETER ENABLED
  # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
  # define OPTFLOW DISABLED
- # define MAIN_LOOP_RATE    400
+#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+ # define CONFIG_IMU_TYPE   CONFIG_IMU_VRBRAIN
+ # define CONFIG_BARO       AP_BARO_VRBRAIN
+ # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
+ # define MAGNETOMETER ENABLED
+ # define OPTFLOW DISABLED
 #endif
 
-#if MAIN_LOOP_RATE == 400
- # define MAIN_LOOP_SECONDS 0.0025
- # define MAIN_LOOP_MICROS  2500
-#else
+#if HAL_CPU_CLASS < HAL_CPU_CLASS_75 || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+ // low power CPUs (APM1, APM2 and SITL)
+ # define MAIN_LOOP_RATE    100
  # define MAIN_LOOP_SECONDS 0.01
  # define MAIN_LOOP_MICROS  10000
+#else
+ // high power CPUs (Flymaple, PX4, Pixhawk, VRBrain)
+ # define MAIN_LOOP_RATE    400
+ # define MAIN_LOOP_SECONDS 0.0025
+ # define MAIN_LOOP_MICROS  2500
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -182,6 +187,7 @@
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
  # define LED_ON           LOW
  # define LED_OFF          HIGH
+#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -361,7 +367,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //  OPTICAL_FLOW
 #ifndef OPTFLOW                         // sets global enabled/disabled flag for optflow (as seen in CLI)
- # define OPTFLOW                       ENABLED
+ # define OPTFLOW                       DISABLED
 #endif
 // optical flow based loiter PI values
 #ifndef OPTFLOW_ROLL_P
@@ -407,7 +413,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // Parachute release
 #ifndef PARACHUTE
- # define PARACHUTE ENABLED
+ # define PARACHUTE DISABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -623,7 +629,20 @@
  # define LOITER_RATE_D          	0.0f
 #endif
 #ifndef LOITER_RATE_IMAX
- # define LOITER_RATE_IMAX       	400             // maximum acceleration from I term build-up in cm/s/s
+ # define LOITER_RATE_IMAX          1000        // maximum acceleration from I term build-up in cm/s/s
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Hybrid parameter defaults
+//
+#ifndef HYBRID_ENABLED
+ # define HYBRID_ENABLED                ENABLED // hybrid flight mode enabled by default
+#endif
+#ifndef HYBRID_BRAKE_RATE_DEFAULT
+ # define HYBRID_BRAKE_RATE_DEFAULT     8       // default HYBRID_BRAKE_RATE param value.  Rotation rate during braking in deg/sec
+#endif
+#ifndef HYBRID_BRAKE_ANGLE_DEFAULT
+ # define HYBRID_BRAKE_ANGLE_DEFAULT    3000    // default HYBRID_BRAKE_ANGLE param value.  Max lean angle during braking in centi-degrees
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -657,9 +676,12 @@
  # define THROTTLE_RATE_P       6.0f
 #endif
 
-// default maximum vertical velocity the pilot may request
+// default maximum vertical velocity and acceleration the pilot may request
 #ifndef PILOT_VELZ_MAX
  # define PILOT_VELZ_MAX    250     // maximum vertical velocity in cm/s
+#endif
+#ifndef PILOT_ACCEL_Z_DEFAULT
+ # define PILOT_ACCEL_Z_DEFAULT 250 // vertical acceleration in cm/s/s while altitude is under pilot control
 #endif
 
 // max distance in cm above or below current location that will be used for the alt target when transitioning to alt-hold mode
@@ -730,6 +752,9 @@
  #define AC_FENCE ENABLED
 #endif
 
+#ifndef AC_RALLY
+ #define AC_RALLY               DISABLED
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Developer Items

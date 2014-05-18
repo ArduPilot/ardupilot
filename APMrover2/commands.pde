@@ -82,5 +82,5 @@ static void restart_nav()
 {  
     g.pidSpeedThrottle.reset_I();
     prev_WP = current_loc;
-    mission.resume();
+    mission.start_or_resume();
 }

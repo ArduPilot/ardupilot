@@ -33,7 +33,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 	// @Units: seconds
 	// @Increment: 0.1
 	// @User: Advanced
-	AP_GROUPINFO("TCONST",      0, AP_PitchController, _tau,       0.5f),
+	AP_GROUPINFO("TCONST",      0, AP_PitchController, gains.tau,       0.5f),
 
 	// @Param: P
 	// @DisplayName: Proportional Gain
@@ -41,7 +41,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 	// @Range: 0.1 2.0
 	// @Increment: 0.1
 	// @User: User
-	AP_GROUPINFO("P",        1, AP_PitchController, _K_P,          0.4f),
+	AP_GROUPINFO("P",        1, AP_PitchController, gains.P,          0.4f),
 
 	// @Param: D
 	// @DisplayName: Damping Gain
@@ -49,7 +49,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 	// @Range: 0 0.1
 	// @Increment: 0.01
 	// @User: User
-	AP_GROUPINFO("D",        2, AP_PitchController, _K_D,        0.02f),
+	AP_GROUPINFO("D",        2, AP_PitchController, gains.D,        0.02f),
 
 	// @Param: I
 	// @DisplayName: Integrator Gain
@@ -57,7 +57,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 	// @Range: 0 0.5
 	// @Increment: 0.05
 	// @User: User
-	AP_GROUPINFO("I",        3, AP_PitchController, _K_I,        0.0f),
+	AP_GROUPINFO("I",        3, AP_PitchController, gains.I,        0.0f),
 
 	// @Param: RMAX_UP
 	// @DisplayName: Pitch up max rate
@@ -66,7 +66,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 	// @Units: degrees/second
 	// @Increment: 1
 	// @User: Advanced
-	AP_GROUPINFO("RMAX_UP",     4, AP_PitchController, _max_rate_pos,   0.0f),
+	AP_GROUPINFO("RMAX_UP",     4, AP_PitchController, gains.rmax,   0.0f),
 
 	// @Param: RMAX_DN
 	// @DisplayName: Pitch down max rate
@@ -91,7 +91,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 	// @Range: 0 4500
 	// @Increment: 1
 	// @User: Advanced
-	AP_GROUPINFO("IMAX",      7, AP_PitchController, _imax,        1500),
+	AP_GROUPINFO("IMAX",      7, AP_PitchController, gains.imax,     1500),
 
 	AP_GROUPEND
 };
@@ -122,14 +122,15 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
 	float omega_y = _ahrs.get_gyro().y;
 	
 	// Calculate the pitch rate error (deg/sec) and scale
-	float rate_error = (desired_rate - ToDeg(omega_y)) * scaler;
+    float achieved_rate = ToDeg(omega_y);
+	float rate_error = (desired_rate - achieved_rate) * scaler;
 	
 	// Multiply pitch rate error by _ki_rate and integrate
 	// Scaler is applied before integrator so that integrator state relates directly to elevator deflection
 	// This means elevator trim offset doesn't change as the value of scaler changes with airspeed
 	// Don't integrate if in stabilise mode as the integrator will wind up against the pilots inputs
-	if (!disable_integrator && _K_I > 0) {
-        float ki_rate = _K_I * _tau;
+	if (!disable_integrator && gains.I > 0) {
+        float ki_rate = gains.I * gains.tau;
 		//only integrate if gain and time step are positive and airspeed above min value.
 		if (dt > 0 && aspeed > 0.5f*float(aparm.airspeed_min)) {
 		    float integrator_delta = rate_error * ki_rate * delta_time * scaler;
@@ -147,20 +148,33 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
 	}
 
     // Scale the integration limit
-    float intLimScaled = _imax * 0.01f;
+    float intLimScaled = gains.imax * 0.01f;
 
     // Constrain the integrator state
     _integrator = constrain_float(_integrator, -intLimScaled, intLimScaled);
 
 	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
     // No conversion is required for K_D
-	float kp_ff = max((_K_P - _K_I * _tau) * _tau  - _K_D , 0) / _ahrs.get_EAS2TAS();
+	float kp_ff = max((gains.P - gains.I * gains.tau) * gains.tau  - gains.D , 0) / _ahrs.get_EAS2TAS();
 	
 	// Calculate the demanded control surface deflection
 	// Note the scaler is applied again. We want a 1/speed scaler applied to the feed-forward
 	// path, but want a 1/speed^2 scaler applied to the rate error path. 
 	// This is because acceleration scales with speed^2, but rate scales with speed.
-	_last_out = ( (rate_error * _K_D) + (desired_rate * kp_ff) ) * scaler + _integrator;
+	_last_out = ( (rate_error * gains.D) + (desired_rate * kp_ff) ) * scaler;
+
+    if (autotune.running && aspeed > aparm.airspeed_min) {
+        // let autotune have a go at the values 
+        // Note that we don't pass the integrator component so we get
+        // a better idea of how much the base PD controller
+        // contributed
+        autotune.update(desired_rate, achieved_rate, _last_out);
+        
+        // set down rate to rate up when auto-tuning
+        _max_rate_neg.set_and_save_ifchanged(gains.rmax);
+    }
+
+	_last_out += _integrator;
 	
 	// Convert to centi-degrees and constrain
 	return constrain_float(_last_out * 100, -4500, 4500);
@@ -244,14 +258,14 @@ int32_t AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool 
 	float rate_offset;
 	bool inverted;
 
-    if (_tau < 0.1) {
-        _tau = 0.1;
+    if (gains.tau < 0.1f) {
+        gains.tau.set(0.1f);
     }
 
     rate_offset = _get_coordination_rate_offset(aspeed, inverted);
 	
 	// Calculate the desired pitch rate (deg/sec) from the angle error
-	float desired_rate = angle_err * 0.01f / _tau;
+	float desired_rate = angle_err * 0.01f / gains.tau;
 	
 	// limit the maximum pitch rate demand. Don't apply when inverted
 	// as the rates will be tuned when upright, and it is common that
@@ -259,8 +273,8 @@ int32_t AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool 
 	if (!inverted) {
 		if (_max_rate_neg && desired_rate < -_max_rate_neg) {
 			desired_rate = -_max_rate_neg;
-		} else if (_max_rate_pos && desired_rate > _max_rate_pos) {
-			desired_rate = _max_rate_pos;
+		} else if (gains.rmax && desired_rate > gains.rmax) {
+			desired_rate = gains.rmax;
 		}
 	}
 	

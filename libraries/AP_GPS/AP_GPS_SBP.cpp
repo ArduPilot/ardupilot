@@ -47,6 +47,7 @@ extern const AP_HAL::HAL& hal;
 #define SBP_HW_LOGGING 0
 #endif
 
+bool AP_GPS_SBP::logging_started = false;
 
 AP_GPS_SBP::AP_GPS_SBP(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
     AP_GPS_Backend(_gps, _state, _port),
@@ -57,8 +58,7 @@ AP_GPS_SBP::AP_GPS_SBP(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriv
     dops_msg_counter(0),
     baseline_msg_counter(0),
     crc_error_counter(0),
-    last_healthcheck_millis(0),
-    logging_started(false)
+    last_healthcheck_millis(0)
 {
 
     Debug("Initializing SBP Driver");

@@ -104,10 +104,14 @@ public:
         k_param_angle_rate_max,         // remove
         k_param_rssi_range,
         k_param_rc_feel_rp,
-        k_param_NavEKF,                 // 41 - Extended Kalman Filter Inertial Navigation Group
+        k_param_NavEKF,                 // Extended Kalman Filter Inertial Navigation Group
         k_param_mission,                // mission library
         k_param_rc_13,
         k_param_rc_14,
+        k_param_rally,
+        k_param_hybrid_brake_rate,
+        k_param_hybrid_brake_angle_max,
+        k_param_pilot_accel_z,          // 48
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -334,13 +338,16 @@ public:
     AP_Float        rssi_range;                 // allows to set max voltage for rssi pin such as 5.0, 3.3 etc. 
     AP_Int8         wp_yaw_behavior;            // controls how the autopilot controls yaw during missions
     AP_Int8         rc_feel_rp;                 // controls vehicle response to user input with 0 being extremely soft and 100 begin extremely crisp
+
+    AP_Int16        hybrid_brake_rate;          // hybrid flight mode's rotation rate during braking in deg/sec
+    AP_Int16        hybrid_brake_angle_max;     // hybrid flight mode's max lean angle during braking in centi-degrees
     
     // Waypoints
     //
     AP_Int32        rtl_loiter_time;
     AP_Int16        land_speed;
     AP_Int16        pilot_velocity_z_max;        // maximum vertical velocity the pilot may request
-
+    AP_Int16        pilot_accel_z;               // vertical acceleration the pilot may request
 
     // Throttle
     //
@@ -398,12 +405,12 @@ public:
     RC_Channel_aux          rc_6;
     RC_Channel_aux          rc_7;
     RC_Channel_aux          rc_8;
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     RC_Channel_aux          rc_9;
 #endif
     RC_Channel_aux          rc_10;
     RC_Channel_aux          rc_11;
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     RC_Channel_aux          rc_12;
     RC_Channel_aux          rc_13;
     RC_Channel_aux          rc_14;
@@ -466,12 +473,12 @@ public:
         rc_6                (CH_6),
         rc_7                (CH_7),
         rc_8                (CH_8),
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
         rc_9                (CH_9),
 #endif
         rc_10               (CH_10),
         rc_11               (CH_11),
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
         rc_12               (CH_12),
         rc_13               (CH_13),
         rc_14               (CH_14),

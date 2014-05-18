@@ -117,6 +117,7 @@ private:
     AP_Float _vertAccLim;
 	AP_Float _rollComp;
 	AP_Float _spdWeight;
+	AP_Float _spdWeightLand;
     AP_Float _landThrottle;
     AP_Float _landAirspeed;
 	

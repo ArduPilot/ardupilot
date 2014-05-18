@@ -12,8 +12,9 @@ static bool loiter_init(bool ignore_checks)
         // set target to current position
         wp_nav.init_loiter_target();
 
-        // initialize vertical speeds
+        // initialize vertical speed and accelerationj
         pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+        pos_control.set_accel_z(g.pilot_accel_z);
 
         // initialise altitude target to stopping point
         pos_control.set_target_to_stopping_point_z();
@@ -45,7 +46,6 @@ static void loiter_run()
         update_simple_mode();
 
         // process pilot's roll and pitch input
-        // To-Do: do we need to clear out feed forward if this is not called?
         wp_nav.set_pilot_desired_acceleration(g.rc_1.control_in, g.rc_2.control_in);
 
         // get pilot's desired yaw rate
@@ -61,6 +61,9 @@ static void loiter_run()
             // clear i term when we're taking off
             set_throttle_takeoff();
         }
+    } else {
+        // clear out pilot desired acceleration in case radio failsafe event occurs and we do not switch to RTL for some reason
+        wp_nav.clear_pilot_desired_acceleration();
     }
 
     // when landed reset targets and output zero throttle

@@ -393,6 +393,9 @@
                <entry value="1048576" name="MAV_SYS_STATUS_GEOFENCE">
                     <description>0x100000 geofence</description>
                </entry>
+               <entry value="2097152" name="MAV_SYS_STATUS_AHRS">
+                    <description>0x200000 AHRS subsystem health</description>
+               </entry>
           </enum>
           <enum name="MAV_FRAME">
                <entry value="0" name="MAV_FRAME_GLOBAL">
@@ -409,6 +412,12 @@
                </entry>
                <entry value="4" name="MAV_FRAME_LOCAL_ENU">
                     <description>Local coordinate frame, Z-down (x: east, y: north, z: up)</description>
+               </entry>
+               <entry value="5" name="MAV_FRAME_GLOBAL_INT">
+                   <description>Global coordinate frame with some fields as scaled integers, WGS84 coordinate system. First value / x: latitude, second value / y: longitude, third value / z: positive altitude over mean sea level (MSL). Lat / Lon are scaled * 1E7 to avoid floating point accuracy limitations.</description>
+               </entry>
+               <entry value="6" name="MAV_FRAME_GLOBAL_RELATIVE_ALT_INT">
+                   <description>Global coordinate frame with some fields as scaled integers, WGS84 coordinate system, relative altitude over ground with respect to the home position. First value / x: latitude, second value / y: longitude, third value / z: positive altitude with 0 being at the altitude of the home location. Lat / Lon are scaled * 1E7 to avoid floating point accuracy limitations.</description>
                </entry>
           </enum>
           <enum name="MAVLINK_DATA_STREAM_TYPE">
@@ -430,6 +439,45 @@
                <entry name="MAVLINK_DATA_STREAM_IMG_PNG">
                     <description/>
                </entry>
+          </enum>
+          <!-- fenced mode enums -->
+          <enum name="FENCE_ACTION">
+              <entry name="FENCE_ACTION_NONE" value="0">
+                  <description>Disable fenced mode</description>
+              </entry>
+              <entry name="FENCE_ACTION_GUIDED" value="1">
+                  <description>Switched to guided mode to return point (fence point 0)</description>
+              </entry>
+              <entry name="FENCE_ACTION_REPORT" value="2">
+                  <description>Report fence breach, but don't take action</description>
+              </entry>
+              <entry name="FENCE_ACTION_GUIDED_THR_PASS" value="3">
+                  <description>Switched to guided mode to return point (fence point 0) with manual throttle control</description>
+              </entry>
+          </enum>
+
+          <enum name="FENCE_BREACH">
+              <entry name="FENCE_BREACH_NONE" value="0">
+                  <description>No last fence breach</description>
+              </entry>
+              <entry name="FENCE_BREACH_MINALT" value="1">
+                  <description>Breached minimum altitude</description>
+              </entry>
+              <entry name="FENCE_BREACH_MAXALT" value="2">
+                  <description>Breached maximum altitude</description>
+              </entry>
+              <entry name="FENCE_BREACH_BOUNDARY" value="3">
+                  <description>Breached fence boundary</description>
+              </entry>
+          </enum>
+          <!-- Camera Mount mode Enumeration -->
+          <enum name="MAV_MOUNT_MODE">
+              <description>Enumeration of possible mount operation modes</description>
+              <entry name="MAV_MOUNT_MODE_RETRACT" value="0"><description>Load and keep safe position (Roll,Pitch,Yaw) from permant memory and stop stabilization</description></entry>
+              <entry name="MAV_MOUNT_MODE_NEUTRAL" value="1"><description>Load and keep neutral position (Roll,Pitch,Yaw) from permanent memory.</description></entry>
+              <entry name="MAV_MOUNT_MODE_MAVLINK_TARGETING" value="2"><description>Load neutral position and start MAVLink Roll,Pitch,Yaw control with stabilization</description></entry>
+              <entry name="MAV_MOUNT_MODE_RC_TARGETING" value="3"><description>Load neutral position and start RC Roll,Pitch,Yaw control with stabilization</description></entry>
+              <entry name="MAV_MOUNT_MODE_GPS_POINT" value="4"><description>Load neutral position and start to point to Lat,Lon,Alt</description></entry>
           </enum>
           <enum name="MAV_CMD">
                <description>Commands to be executed by the MAV. They can be executed on user request, or as part of a mission script. If the action is used in a mission, the parameter mapping to the waypoint/mission message is as follows: Param 1, Param 2, Param 3, Param 4, X: Param 5, Y:Param 6, Z:Param 7. This command list is similar what ARINC 424 is for commercial aircraft: A data format how to interpret waypoint/mission data.</description>
@@ -703,6 +751,97 @@
                     <param index="6">y</param>
                     <param index="7">z</param>
                </entry>
+
+               <!-- Camera Controller Mission Commands Enumeration -->
+               <entry name="MAV_CMD_DO_DIGICAM_CONFIGURE" value="202">
+                   <description>Mission command to configure an on-board camera controller system.</description>
+                   <param index="1">Modes: P, TV, AV, M, Etc</param>
+                   <param index="2">Shutter speed: Divisor number for one second</param>
+                   <param index="3">Aperture: F stop number</param>
+                   <param index="4">ISO number e.g. 80, 100, 200, Etc</param>
+                   <param index="5">Exposure type enumerator</param>
+                   <param index="6">Command Identity</param>
+                   <param index="7">Main engine cut-off time before camera trigger in seconds/10 (0 means no cut-off)</param>
+               </entry>
+
+               <entry name="MAV_CMD_DO_DIGICAM_CONTROL" value="203">
+                   <description>Mission command to control an on-board camera controller system.</description>
+                   <param index="1">Session control e.g. show/hide lens</param>
+                   <param index="2">Zoom's absolute position</param>
+                   <param index="3">Zooming step value to offset zoom from the current position</param>
+                   <param index="4">Focus Locking, Unlocking or Re-locking</param>
+                   <param index="5">Shooting Command</param>
+                   <param index="6">Command Identity</param>
+                   <param index="7">Empty</param>
+               </entry>
+
+               <!-- Camera Mount Mission Commands Enumeration -->
+               <entry name="MAV_CMD_DO_MOUNT_CONFIGURE" value="204">
+                   <description>Mission command to configure a camera or antenna mount</description>
+                   <param index="1">Mount operation mode (see MAV_MOUNT_MODE enum)</param>
+                   <param index="2">stabilize roll? (1 = yes, 0 = no)</param>
+                   <param index="3">stabilize pitch? (1 = yes, 0 = no)</param>
+                   <param index="4">stabilize yaw? (1 = yes, 0 = no)</param>
+                   <param index="5">Empty</param>
+                   <param index="6">Empty</param>
+                   <param index="7">Empty</param>
+               </entry>
+
+               <entry name="MAV_CMD_DO_MOUNT_CONTROL" value="205">
+                   <description>Mission command to control a camera or antenna mount</description>
+                   <param index="1">pitch or lat in degrees, depending on mount mode.</param>
+                   <param index="2">roll or lon in degrees depending on mount mode</param>
+                   <param index="3">yaw or alt (in meters) depending on mount mode</param>
+                   <param index="4">reserved</param>
+                   <param index="5">reserved</param>
+                   <param index="6">reserved</param>
+                   <param index="7">MAV_MOUNT_MODE enum value</param>
+               </entry>
+
+               <entry name="MAV_CMD_DO_SET_CAM_TRIGG_DIST" value="206">
+                   <description>Mission command to set CAM_TRIGG_DIST for this flight</description>
+                   <param index="1">Camera trigger distance (meters)</param>
+                   <param index="2">Empty</param>
+                   <param index="3">Empty</param>
+                   <param index="4">Empty</param>
+                   <param index="5">Empty</param>
+                   <param index="6">Empty</param>
+                   <param index="7">Empty</param>
+               </entry>
+
+               <entry name="MAV_CMD_DO_FENCE_ENABLE" value="207">
+                   <description>Mission command to enable the geofence</description>
+                   <param index="1">enable? (0=disable, 1=enable)</param>
+                   <param index="2">Empty</param>
+                   <param index="3">Empty</param>
+                   <param index="4">Empty</param>
+                   <param index="5">Empty</param>
+                   <param index="6">Empty</param>
+                   <param index="7">Empty</param>
+               </entry>
+
+               <entry name="MAV_CMD_DO_PARACHUTE" value="208">
+                   <description>Mission command to trigger a parachute</description>
+                   <param index="1">action (0=disable, 1=enable, 2=release, for some systems see PARACHUTE_ACTION enum, not in general message set.)</param>
+                   <param index="2">Empty</param>
+                   <param index="3">Empty</param>
+                   <param index="4">Empty</param>
+                   <param index="5">Empty</param>
+                   <param index="6">Empty</param>
+                   <param index="7">Empty</param>
+               </entry>
+
+              <entry value="220" name="MAV_CMD_DO_MOUNT_CONTROL_QUAT">
+                <description>Mission command to control a camera or antenna mount, using a quaternion as reference.</description>
+                <param index="1">q1 - quaternion param #1</param>
+                <param index="2">q2 - quaternion param #2</param>
+                <param index="3">q3 - quaternion param #3</param>
+                <param index="4">q4 - quaternion param #4</param>
+                <param index="5">Empty</param>
+                <param index="6">Empty</param>
+                <param index="7">Empty</param>
+              </entry>
+
                <entry value="240" name="MAV_CMD_DO_LAST">
                     <description>NOP - This command is only used to mark the upper limit of the DO commands in the enumeration</description>
                     <param index="1">Empty</param>
@@ -1046,7 +1185,7 @@
                <description>The heartbeat message shows that a system is present and responding. The type of the MAV and Autopilot hardware allow the receiving system to treat further messages from this system appropriate (e.g. by laying out the user interface based on the autopilot).</description>
                <field type="uint8_t" name="type">Type of the MAV (quadrotor, helicopter, etc., up to 15 types, defined in MAV_TYPE ENUM)</field>
                <field type="uint8_t" name="autopilot">Autopilot type / class. defined in MAV_AUTOPILOT ENUM</field>
-               <field type="uint8_t" name="base_mode">System mode bitfield, see MAV_MODE_FLAGS ENUM in mavlink/include/mavlink_types.h</field>
+               <field type="uint8_t" name="base_mode">System mode bitfield, see MAV_MODE_FLAG ENUM in mavlink/include/mavlink_types.h</field>
                <field type="uint32_t" name="custom_mode">A bitfield for use for autopilot-specific flags.</field>
                <field type="uint8_t" name="system_status">System status flag, see MAV_STATE ENUM</field>
                <field type="uint8_t_mavlink_version" name="mavlink_version">MAVLink version, not writable by user, gets added by protocol because of magic data type: uint8_t_mavlink_version</field>
@@ -1100,7 +1239,7 @@
           <message id="11" name="SET_MODE">
                <description>Set the system mode, as defined by enum MAV_MODE. There is no target component id as the mode is by definition for the overall aircraft, not only for one component.</description>
                <field type="uint8_t" name="target_system">The system setting the mode</field>
-               <field type="uint8_t" name="base_mode">The new base mode</field>
+               <field type="uint8_t" name="base_mode" enum="MAV_MODE">The new base mode</field>
                <field type="uint32_t" name="custom_mode">The new autopilot-specific mode. This field can be ignored by an autopilot.</field>
           </message>
           <message id="20" name="PARAM_REQUEST_READ">
@@ -1119,7 +1258,7 @@
                <description>Emit the value of a onboard parameter. The inclusion of param_count and param_index in the message allows the recipient to keep track of received parameters and allows him to re-request missing parameters after a loss or timeout.</description>
                <field type="char[16]" name="param_id">Onboard parameter id, terminated by NULL if the length is less than 16 human-readable chars and WITHOUT null termination (NULL) byte if the length is exactly 16 chars - applications have to provide 16+1 bytes storage if the ID is stored as string</field>
                <field type="float" name="param_value">Onboard parameter value</field>
-               <field type="uint8_t" name="param_type">Onboard parameter type: see the MAV_PARAM_TYPE enum for supported data types.</field>
+               <field type="uint8_t" name="param_type" enum="MAV_PARAM_TYPE">Onboard parameter type: see the MAV_PARAM_TYPE enum for supported data types.</field>
                <field type="uint16_t" name="param_count">Total number of onboard parameters</field>
                <field type="uint16_t" name="param_index">Index of this onboard parameter</field>
           </message>
@@ -1129,7 +1268,7 @@
                <field type="uint8_t" name="target_component">Component ID</field>
                <field type="char[16]" name="param_id">Onboard parameter id, terminated by NULL if the length is less than 16 human-readable chars and WITHOUT null termination (NULL) byte if the length is exactly 16 chars - applications have to provide 16+1 bytes storage if the ID is stored as string</field>
                <field type="float" name="param_value">Onboard parameter value</field>
-               <field type="uint8_t" name="param_type">Onboard parameter type: see the MAV_PARAM_TYPE enum for supported data types.</field>
+               <field type="uint8_t" name="param_type" enum="MAV_PARAM_TYPE">Onboard parameter type: see the MAV_PARAM_TYPE enum for supported data types.</field>
           </message>
           <message id="24" name="GPS_RAW_INT">
                <description>The global position, as returned by the Global Positioning System (GPS). This is
@@ -1352,7 +1491,7 @@
                <description>Ack message during MISSION handling. The type field states if this message is a positive ack (type=0) or if an error happened (type=non-zero).</description>
                <field type="uint8_t" name="target_system">System ID</field>
                <field type="uint8_t" name="target_component">Component ID</field>
-               <field type="uint8_t" name="type">See MAV_MISSION_RESULT enum</field>
+               <field type="uint8_t" name="type" enum="MAV_MISSION_RESULT">See MAV_MISSION_RESULT enum</field>
           </message>
           <message id="48" name="SET_GPS_GLOBAL_ORIGIN">
                <description>As local waypoints exist, the global MISSION reference allows to transform between the local coordinate frame and the global (GPS) coordinate frame. This can be necessary when e.g. in- and outdoor settings are connected and the MAV should move from in- to outdoor.</description>
@@ -1405,7 +1544,7 @@
                <description>Set a safety zone (volume), which is defined by two corners of a cube. This message can be used to tell the MAV which setpoints/MISSIONs to accept and which to reject. Safety areas are often enforced by national or competition regulations.</description>
                <field type="uint8_t" name="target_system">System ID</field>
                <field type="uint8_t" name="target_component">Component ID</field>
-               <field type="uint8_t" name="frame">Coordinate frame, as defined by MAV_FRAME enum in mavlink_types.h. Can be either global, GPS, right-handed with Z axis up or local, right handed, Z axis down.</field>
+               <field type="uint8_t" name="frame" enum="MAV_FRAME">Coordinate frame, as defined by MAV_FRAME enum in mavlink_types.h. Can be either global, GPS, right-handed with Z axis up or local, right handed, Z axis down.</field>
                <field type="float" name="p1x">x position 1 / Latitude 1</field>
                <field type="float" name="p1y">y position 1 / Longitude 1</field>
                <field type="float" name="p1z">z position 1 / Altitude 1</field>
@@ -1415,7 +1554,7 @@
           </message>
           <message id="55" name="SAFETY_ALLOWED_AREA">
                <description>Read out the safety zone the MAV currently assumes.</description>
-               <field type="uint8_t" name="frame">Coordinate frame, as defined by MAV_FRAME enum in mavlink_types.h. Can be either global, GPS, right-handed with Z axis up or local, right handed, Z axis down.</field>
+               <field type="uint8_t" name="frame" enum="MAV_FRAME">Coordinate frame, as defined by MAV_FRAME enum in mavlink_types.h. Can be either global, GPS, right-handed with Z axis up or local, right handed, Z axis down.</field>
                <field type="float" name="p1x">x position 1 / Latitude 1</field>
                <field type="float" name="p1y">y position 1 / Longitude 1</field>
                <field type="float" name="p1z">z position 1 / Altitude 1</field>
@@ -1580,7 +1719,7 @@
                <description>Send a command with up to seven parameters to the MAV</description>
                <field type="uint8_t" name="target_system">System which should execute the command</field>
                <field type="uint8_t" name="target_component">Component which should execute the command, 0 for all components</field>
-               <field type="uint16_t" name="command">Command ID, as defined by MAV_CMD enum.</field>
+               <field type="uint16_t" name="command" enum="MAV_CMD">Command ID, as defined by MAV_CMD enum.</field>
                <field type="uint8_t" name="confirmation">0: First transmission of this command. 1-255: Confirmation transmissions (e.g. for kill command)</field>
                <field type="float" name="param1">Parameter 1, as defined by MAV_CMD enum.</field>
                <field type="float" name="param2">Parameter 2, as defined by MAV_CMD enum.</field>
@@ -1592,7 +1731,7 @@
           </message>
           <message id="77" name="COMMAND_ACK">
                <description>Report status of a command. Includes feedback wether the command was executed.</description>
-               <field type="uint16_t" name="command">Command ID, as defined by MAV_CMD enum.</field>
+               <field type="uint16_t" name="command" enum="MAV_CMD">Command ID, as defined by MAV_CMD enum.</field>
                <field type="uint8_t" name="result">See MAV_RESULT enum</field>
           </message>
          <message id="80" name="ROLL_PITCH_YAW_RATES_THRUST_SETPOINT">
@@ -2033,7 +2172,7 @@
           </message>
           <message id="253" name="STATUSTEXT">
                <description>Status text message. These messages are printed in yellow in the COMM console of QGroundControl. WARNING: They consume quite some bandwidth, so use only for important status and error messages. If implemented wisely, these messages are buffered on the MCU and sent only at a limited rate (e.g. 10 Hz).</description>
-               <field type="uint8_t" name="severity">Severity of status. Relies on the definitions within RFC-5424. See enum MAV_SEVERITY.</field>
+               <field type="uint8_t" name="severity" enum="MAV_SEVERITY">Severity of status. Relies on the definitions within RFC-5424. See enum MAV_SEVERITY.</field>
                <field type="char[50]" name="text">Status text message, without null termination character</field>
           </message>
           <message id="254" name="DEBUG">

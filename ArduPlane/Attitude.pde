@@ -130,6 +130,7 @@ static void stabilize_stick_mixing_direct()
     if (!stick_mixing_enabled() ||
         control_mode == ACRO ||
         control_mode == FLY_BY_WIRE_A ||
+        control_mode == AUTOTUNE ||
         control_mode == FLY_BY_WIRE_B ||
         control_mode == CRUISE ||
         control_mode == TRAINING) {
@@ -148,6 +149,7 @@ static void stabilize_stick_mixing_fbw()
     if (!stick_mixing_enabled() ||
         control_mode == ACRO ||
         control_mode == FLY_BY_WIRE_A ||
+        control_mode == AUTOTUNE ||
         control_mode == FLY_BY_WIRE_B ||
         control_mode == CRUISE ||
         control_mode == TRAINING ||
@@ -605,7 +607,9 @@ static bool suppress_throttle(void)
         return false;
     }
 
-    if (control_mode==AUTO && takeoff_complete == false && auto_takeoff_check()) {
+    if (control_mode==AUTO && 
+        auto_state.takeoff_complete == false && 
+        auto_takeoff_check()) {
         // we're in auto takeoff 
         throttle_suppressed = false;
         if (steer_state.hold_course_cd != -1) {
@@ -814,19 +818,6 @@ static void set_servos(void)
             channel_pitch->radio_out =     elevon.trim2 + (BOOL_TO_SIGN(g.reverse_ch2_elevon) * (ch2 * 500.0/ SERVO_MAX));
         }
 
-#if OBC_FAILSAFE == ENABLED
-        // this is to allow the failsafe module to deliberately crash 
-        // the plane. Only used in extreme circumstances to meet the
-        // OBC rules
-        if (obc.crash_plane()) {
-            channel_roll->servo_out = -4500;
-            channel_pitch->servo_out = -4500;
-            channel_rudder->servo_out = -4500;
-            channel_throttle->servo_out = 0;
-        }
-#endif
-        
-
         // push out the PWM values
         if (g.mix_mode == 0) {
             channel_roll->calc_pwm();
@@ -855,7 +846,8 @@ static void set_servos(void)
                    (control_mode == STABILIZE || 
                     control_mode == TRAINING ||
                     control_mode == ACRO ||
-                    control_mode == FLY_BY_WIRE_A)) {
+                    control_mode == FLY_BY_WIRE_A ||
+                    control_mode == AUTOTUNE)) {
             // manual pass through of throttle while in FBWA or
             // STABILIZE mode with THR_PASS_STAB set
             channel_throttle->radio_out = channel_throttle->radio_in;
@@ -943,6 +935,13 @@ static void set_servos(void)
         }
     }
 
+#if OBC_FAILSAFE == ENABLED
+    // this is to allow the failsafe module to deliberately crash 
+    // the plane. Only used in extreme circumstances to meet the
+    // OBC rules
+    obc.check_crash_plane();
+#endif
+        
 #if HIL_MODE != HIL_MODE_DISABLED
     // get the servos to the GCS immediately for HIL
     if (comm_get_txspace(MAVLINK_COMM_0) - MAVLINK_NUM_NON_PAYLOAD_BYTES >= MAVLINK_MSG_ID_RC_CHANNELS_SCALED_LEN) {

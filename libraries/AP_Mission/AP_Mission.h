@@ -35,6 +35,8 @@
 
 #define AP_MISSION_FIRST_REAL_COMMAND       1       // command #0 reserved to hold home position
 
+#define AP_MISSION_RESTART_DEFAULT          0       // resume the mission from the last command run by default
+
 /// @class    AP_Mission
 /// @brief    Object managing Mission
 class AP_Mission {
@@ -213,6 +215,12 @@ public:
     ///     previous running commands will be re-initialised
     void resume();
 
+    /// start_or_resume - if MIS_AUTORESTART=0 this will call resume(), otherwise it will call start()
+    void start_or_resume();
+
+    /// reset - reset mission to the first command
+    void reset();
+
     /// clear - clears out mission
     ///     returns true if mission was running so it could not be cleared
     bool clear();
@@ -241,8 +249,14 @@ public:
     /// is_nav_cmd - returns true if the command's id is a "navigation" command, false if "do" or "conditional" command
     static bool is_nav_cmd(const Mission_Command& cmd);
 
-    /// get_active_nav_cmd - returns the current "navigation" command
+    /// get_current_nav_cmd - returns the current "navigation" command
     const Mission_Command& get_current_nav_cmd() const { return _nav_cmd; }
+
+    /// get_current_nav_index - returns the current "navigation" command index
+    /// Note that this will return 0 if there is no command. This is
+    /// used in MAVLink reporting of the mission command
+    uint16_t get_current_nav_index() const { 
+        return _nav_cmd.index==AP_MISSION_CMD_INDEX_NONE?0:_nav_cmd.index; }
 
     /// get_prev_nav_cmd_index - returns the previous "navigation" commands index (i.e. position in the mission command list)
     ///     if there was no previous nav command it returns AP_MISSION_CMD_INDEX_NONE
@@ -349,7 +363,8 @@ private:
     const AP_AHRS&   _ahrs;      // used only for home position
 
     // parameters
-    AP_Int16                _cmd_total; // total number of commands in the mission
+    AP_Int16                _cmd_total;  // total number of commands in the mission
+    AP_Int8                 _restart;   // controls mission starting point when entering Auto mode (either restart from beginning of mission or resume from last command run)
 
     // pointer to main program functions
     mission_cmd_fn_t        _cmd_start_fn;  // pointer to function which will be called when a new command is started

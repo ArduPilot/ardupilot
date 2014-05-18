@@ -12,6 +12,7 @@
 #include <AP_HAL_AVR.h>
 #include <AP_HAL_AVR_SITL.h>
 #include <AP_HAL_PX4.h>
+#include <AP_HAL_Linux.h>
 #include <AP_HAL_Empty.h>
 #include <AP_GPS.h>
 #include <DataFlash.h>
@@ -30,6 +31,7 @@
 #include <AP_Math.h>
 #include <AP_Notify.h>
 #include <AP_BoardLED.h>
+#include <AP_NavEKF.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
@@ -69,6 +71,7 @@ void loop()
                             gps.time_week_ms(),
                             gps.status());
     }
+    hal.scheduler->delay(10);
 }
 
 AP_HAL_MAIN();

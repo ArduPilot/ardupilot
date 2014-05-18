@@ -34,7 +34,7 @@ class AP_AHRS_NavEKF : public AP_AHRS_DCM
 public:
     // Constructor
     AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps) :
-        AP_AHRS_DCM(ins, baro, gps),
+    AP_AHRS_DCM(ins, baro, gps),
         EKF(this, baro),
         ekf_started(false),
         startup_delay_ms(10000)
@@ -91,6 +91,9 @@ public:
     bool get_relative_position_NED(Vector3f &vec) const;
 
     void set_ekf_use(bool setting) { _ekf_use.set(setting); }
+
+    // is the AHRS subsystem healthy?
+    bool healthy(void);
 
 private:
     bool using_EKF(void) const;

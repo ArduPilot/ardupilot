@@ -186,14 +186,10 @@ static void init_ardupilot()
     // we have a 2nd serial port for telemetry on all boards except
     // APM2. We actually do have one on APM2 but it isn't necessary as
     // a MUX is used
-    hal.uartC->begin(map_baudrate(g.serial1_baud, SERIAL1_BAUD), 128, 128);
-    gcs[1].init(hal.uartC);
+    gcs[1].setup_uart(hal.uartC, map_baudrate(g.serial1_baud, SERIAL1_BAUD), 128, 128);
 #endif
 #if MAVLINK_COMM_NUM_BUFFERS > 2
-    if (hal.uartD != NULL) {
-        hal.uartD->begin(map_baudrate(g.serial2_baud, SERIAL2_BAUD), 128, 128);
-        gcs[2].init(hal.uartD);
-    }
+    gcs[2].setup_uart(hal.uartD, map_baudrate(g.serial2_baud, SERIAL2_BAUD), 128, 128);
 #endif
 
     // identify ourselves correctly with the ground station
@@ -314,6 +310,7 @@ static void startup_ground(bool force_gyro_cal)
 
     // initialise ahrs (may push imu calibration into the mpu6000 if using that device).
     ahrs.init();
+    ahrs.set_vehicle_class(AHRS_VEHICLE_COPTER);
 
     // Warm up and read Gyro offsets
     // -----------------------------
@@ -333,7 +330,7 @@ static void startup_ground(bool force_gyro_cal)
 // returns true if the GPS is ok and home position is set
 static bool GPS_ok()
 {
-    if (ap.home_is_set && gps.status() == AP_GPS::GPS_OK_FIX_3D && 
+    if (ap.home_is_set && gps.status() >= AP_GPS::GPS_OK_FIX_3D && 
         !gps_glitch.glitching() && !failsafe.gps) {
         return true;
     }else{

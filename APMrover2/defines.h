@@ -117,9 +117,6 @@ enum mode {
 // Climb rate calculations
 #define	ALTITUDE_HISTORY_LENGTH 8	//Number of (time,altitude) points to regress a climb rate from
 
-#define RELAY_PIN 47
-
-
 // sonar
 #define MAX_SONAR_XL 0
 #define MAX_SONAR_LV 1
@@ -148,16 +145,19 @@ enum mode {
 #define CONFIG_INS_PX4     4
 #define CONFIG_INS_FLYMAPLE 5
 #define CONFIG_INS_L3G4200D 6
+#define CONFIG_INS_VRBRAIN 7
 
 // barometer driver types
 #define AP_BARO_BMP085   1
 #define AP_BARO_MS5611   2
 #define AP_BARO_PX4      3
 #define AP_BARO_HIL      4
+#define AP_BARO_VRBRAIN  5
 
 // compass driver types
 #define AP_COMPASS_HMC5843   1
 #define AP_COMPASS_PX4       2
 #define AP_COMPASS_HIL       3
+#define AP_COMPASS_VRBRAIN   4
 
 #endif // _DEFINES_H

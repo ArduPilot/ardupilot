@@ -55,8 +55,7 @@ AP_Baro_BMP085 baro;
 #endif
 
 // GPS declaration
-GPS *gps;
-AP_GPS_Auto auto_gps(&gps);
+static AP_GPS  gps;
 GPS_Glitch gps_glitch(gps);
 
 AP_Compass_HMC5843 compass;

@@ -56,6 +56,7 @@
 #define AUX_SWITCH_PARACHUTE_ENABLE 21      // Parachute enable/disable
 #define AUX_SWITCH_PARACHUTE_RELEASE 22     // Parachute release
 #define AUX_SWITCH_PARACHUTE_3POS   23      // Parachute disable, enable, release with 3 position switch
+#define AUX_SWITCH_MISSIONRESET     24      // Reset auto mission to start from first command
 
 // values used by the ap.ch7_opt and ap.ch8_opt flags
 #define AUX_SWITCH_LOW              0       // indicates auxiliar switch is in the low position (pwm <1200)
@@ -100,7 +101,8 @@
 #define SPORT 13                        // earth frame rate control
 #define FLIP        14                  // flip the vehicle on the roll axis
 #define AUTOTUNE    15                  // autotune the vehicle's roll and pitch gains
-#define NUM_MODES   16
+#define HYBRID      16                  // hybrid - position hold with manual override
+#define NUM_MODES   17
 
 
 // CH_6 Tuning
@@ -175,6 +177,7 @@ enum AutoMode {
     Auto_WP,
     Auto_Land,
     Auto_RTL,
+    Auto_CircleMoveToEdge,
     Auto_Circle,
     Auto_Spline
 };
@@ -294,9 +297,19 @@ enum FlipState {
 #define FENCE_WP_SIZE sizeof(Vector2l)
 #define FENCE_START_BYTE (HAL_STORAGE_SIZE_AVAILABLE-(MAX_FENCEPOINTS*FENCE_WP_SIZE))
 
-// parameters get the first 1536 bytes of EEPROM, mission commands are stored between these params and the fence points
+// rally points shoehorned between fence points and waypoints
+#define MAX_RALLYPOINTS 6
+#define RALLY_START_BYTE (FENCE_START_BYTE-(MAX_RALLYPOINTS*AC_RALLY_WP_SIZE))
+#define RALLY_LIMIT_KM_DEFAULT 2.0  // we'll set a per-vehicle default for this
+
+// parameters get the first 1536 bytes of EEPROM
+// mission commands are stored between these params and the rally points, or fence points if rally disabled
 #define MISSION_START_BYTE   0x600
-#define MISSION_END_BYTE     (FENCE_START_BYTE-1)
+#if AC_RALLY == ENABLED
+  #define MISSION_END_BYTE   (RALLY_START_BYTE-1)
+#else
+  #define MISSION_END_BYTE   (FENCE_START_BYTE-1)
+#endif
 
 // mark a function as not to be inlined
 #define NOINLINE __attribute__((noinline))
@@ -307,10 +320,12 @@ enum FlipState {
 #define CONFIG_IMU_SITL    3
 #define CONFIG_IMU_PX4     4
 #define CONFIG_IMU_FLYMAPLE 5
+#define CONFIG_IMU_VRBRAIN 6
 
 #define AP_BARO_BMP085    1
 #define AP_BARO_MS5611    2
 #define AP_BARO_PX4       3
+#define AP_BARO_VRBRAIN   4
 
 #define AP_BARO_MS5611_SPI 1
 #define AP_BARO_MS5611_I2C 2
