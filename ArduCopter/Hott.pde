@@ -20,12 +20,12 @@
 // Receiver GR-12 v3a40_e9
 //
 //
-/*
+/**
 *   2013-10-27	msk7-ripe	Added electric time EAM functionality
 *   2014-12.15  msk7-ripe	Replaced float calculations with integer where possible
 *   2014-04-07  msk7-ripe	Added AC3.1.2dev compatibility (usage of AP_GPS object)
 *   2014-04-08  msk7-ripe	Clered old comments
-*
+*   2014-05-12  msk7-ripe	Added HYBRID mode support
 */
 
 #ifdef HOTT_TELEMETRY
@@ -148,10 +148,10 @@ struct HOTT_GAM_MSG {
 	int8_t cell4;					//#10
 	int8_t cell5;					//#11
 	int8_t cell6;					//#12
-	int16_t batt1;				//#13 battery 1 voltage LSB value. 0.1V steps. 50 = 5.5V
-	int16_t batt2;				//#15 battery 2 voltage LSB value. 0.1V steps. 50 = 5.5V
-	int8_t temperature1;			//#17 temperature 1. offset of 20. a value of 20 = 0°C
-	int8_t temperature2;			//#18 temperature 2. offset of 20. a value of 20 = 0°C
+	int16_t batt1;				//#13 battery 1 voltage value. 0.1V steps. 50 = 5.5V
+	int16_t batt2;				//#15 battery 2 voltage value. 0.1V steps. 50 = 5.5V
+	int8_t temperature1;			//#17 temperature 1. offset of 20. a value of 20 = 0 dC
+	int8_t temperature2;			//#18 temperature 2. offset of 20. a value of 20 = 0 dC
 	int8_t fuel_procent;			//#19 Fuel capacity in %. Values 0--100
 								// graphical display ranges: 0-25% 50% 75% 100%
 	int16_t fuel_ml;				//#20 Fuel in ml scale. Full = 65535!
@@ -649,7 +649,7 @@ void _hott_send_msg(int8_t *buffer, int len) {
   if(_hott_telemetry_is_sending == true) return;
   _hott_msg_ptr = buffer;
   _hott_msg_len = len +1; //len + 1 byte for crc
-  _hott_telemetry_sendig_msgs_id = buffer[1];	//HoTT msgs id is the 2. byte
+  _hott_telemetry_sendig_msgs_id = buffer[1];   //HoTT msgs id is the 2nd byte
 }
 
 #ifdef HOTT_SIM_GAM_SENSOR
@@ -683,7 +683,8 @@ void _hott_send_text_msg() {
 }
 #endif
 
-#define HOTT_APM_GET_TEMPERATURE (int8_t)((barometer.get_temperature() / 10) + 20)
+#define HOTT_CELSIUS_ZERO 20   // 0 degrees C in Hott spec
+#define HOTT_APM_GET_TEMPERATURE (int8_t)((int8_t)barometer.get_temperature() + HOTT_CELSIUS_ZERO )
 #define HOTT_APM_GET_PRESSURE	(int8_t)((barometer.get_pressure()/10132.5))
 #define HOTT_APM_GET_CURRENT	(int16_t)(battery.current_amps()*10.0)
 #define HOTT_APM_GET_COMPASS_DIRECTION	ToDeg(compass.calculate_heading(ahrs.get_dcm_matrix())) / 2
@@ -692,14 +693,17 @@ void _hott_send_text_msg() {
 //#define HOTT_APM_GET_GPS_GROUND_SPEED  (int16_t)(((float)gps.ground_speed_cm() * 0.036))
 #define HOTT_APM_GET_GPS_GROUND_SPEED  (int16_t)(gps.ground_speed_cm()/28)
 //#define HOTT_APM_GET_GPS_ALTITUDE (int16_t)(gps.altitude_cm() / 100)
-#define HOTT_APM_GET_GPS_ALTITUDE (int16_t)(current_loc.alt / 100)
+#define HOTT_APM_GET_GPS_ALTITUDE (int16_t)(gps.location().alt / 100)
 //#define HOTT_APM_GET_GPS_GROUND_COURSE (int8_t)(g_gps->ground_course_cd / 200)
 #define HOTT_APM_GET_GPS_GROUND_COURSE (int8_t)(gps.ground_course_cd() / 200)
 #define HOTT_APM_GET_BATTERY_VOLTAGE (int16_t)(battery.voltage() * 10.0)
 #define HOTT_APM_GET_BATTERY_USED (int16_t)(battery.current_total_mah() / 10.0)
 #define HOTT_APM_GET_BATTERY_PERCENT battery.capacity_remaining_pct()
 #define HOTT_APM_GET_LOCAL_ALTITUDE (int16_t)((current_loc.alt - home.alt) / 100)+500
-#define HOTT_CELSIUS_ZERO 20   // 0 degrees C in Hott spec
+#define HOTT_APM_GET_CLIMBRATE           (int16_t)(30000 + climb_rate)               // climbrate in cm/s, 3000=0
+#define HOTT_APM_GET_VARIO_CLIMBRATE_3S          (int16_t)(30000 + climb_rate *3)
+#define HOTT_APM_GET_VARIO_CLIMBRATE_10S         (int16_t)(30000 + climb_rate *10)
+#define HOTT_APM_GET_GPS_CLIMBRATE_3S    (int8_t)(120 + (climb_rate / 100)*3)   // climbrate in m/3s, 120=0
 
 #ifdef HOTT_SIM_GAM_SENSOR
 void _hott_update_gam_msg() {
@@ -707,8 +711,8 @@ void _hott_update_gam_msg() {
 	hott_gam_msg.temperature2 = hott_gam_msg.temperature1; //HOTT_CELSIUS_ZERO;
 	hott_gam_msg.pressure = HOTT_APM_GET_PRESSURE;
 	hott_gam_msg.altitude = HOTT_APM_GET_LOCAL_ALTITUDE;
-	hott_gam_msg.climbrate = 30000 + climb_rate;
-	hott_gam_msg.climbrate3s = 120 + (climb_rate / 100);  // 0 m/3s using filtered data here
+    hott_gam_msg.climbrate = HOTT_APM_GET_CLIMBRATE;
+    hott_gam_msg.climbrate3s = HOTT_APM_GET_GPS_CLIMBRATE_3S;  // 0 m/3s using filtered data here
 	hott_gam_msg.current = HOTT_APM_GET_CURRENT;
 	hott_gam_msg.main_voltage = HOTT_APM_GET_BATTERY_VOLTAGE;
 	hott_gam_msg.batt_cap = HOTT_APM_GET_BATTERY_USED;
@@ -717,11 +721,12 @@ void _hott_update_gam_msg() {
 	// TODO hott_gam_msg.fuel_ml =  battery.capacity - battery.current_total_mah();
 	hott_gam_msg.fuel_ml =  battery.current_total_mah(); // Now showing used batt capacity in mAh
     //display ON when motors are armed
-    if (motors.armed()) {
-    	hott_gam_msg.alarm_invers2 |= 0x80;
-    } else {
-        hott_gam_msg.alarm_invers2 &= 0x7f;
-    }
+
+   // if (motors.armed()) {
+   //    hott_gam_msg.alarm_invers2 |= 0x80;
+   // } else {
+   //     hott_gam_msg.alarm_invers2 &= 0x7f;
+   // }
 }
 #endif
 
@@ -732,38 +737,38 @@ void _hott_update_eam_msg() {
 	static uint32_t	electric_msecs =0;	// electric time ( time with batt current > 2A) in milliseconds
 	static uint32_t last_msecs=0; 	        // previous call msecs value, ==0 if in previous call current was < 2A and we weren't counting
 
-	hott_eam_msg.batt1_voltage = HOTT_APM_GET_BATTERY_VOLTAGE;
-    	hott_eam_msg.batt2_voltage = hott_eam_msg.batt1_voltage;
+    hott_eam_msg.main_voltage =  HOTT_APM_GET_BATTERY_VOLTAGE;
+    hott_eam_msg.batt1_voltage = hott_eam_msg.main_voltage;
+    hott_eam_msg.batt2_voltage = hott_eam_msg.main_voltage;
 	hott_eam_msg.temp1 = HOTT_APM_GET_TEMPERATURE;
-	hott_eam_msg.temp2 = hott_eam_msg.temp1; //HOTT_CELSIUS_ZERO;	//0°
-	hott_eam_msg.altitude = HOTT_APM_GET_LOCAL_ALTITUDE;
+    hott_eam_msg.temp2 = hott_eam_msg.temp1;
+    hott_eam_msg.altitude = HOTT_APM_GET_LOCAL_ALTITUDE;
 	hott_eam_msg.current = HOTT_APM_GET_CURRENT;
-    	hott_eam_msg.main_voltage = hott_eam_msg.batt1_voltage;
+    hott_eam_msg.main_voltage = hott_eam_msg.batt1_voltage;
 	hott_eam_msg.batt_cap = HOTT_APM_GET_BATTERY_USED;
 	hott_eam_msg.speed = HOTT_APM_GET_GPS_GROUND_SPEED;
 
-  	hott_eam_msg.climbrate = 30000 + climb_rate;
-  	hott_eam_msg.climbrate3s = 120 + (climb_rate / 100);  // 0 m/3s using filtered data here
+    hott_eam_msg.climbrate = HOTT_APM_GET_CLIMBRATE;
+    hott_eam_msg.climbrate3s = HOTT_APM_GET_GPS_CLIMBRATE_3S;  // 0 m/3s using filtered data here
 
   	{
         register uint32_t current_msecs = millis(); //   g_gps->time_week_ms;
 
-
-            if(last_msecs) { 					  // if we were counting time since previous call, update time
-        	electric_msecs+=(current_msecs - last_msecs);
- 		hott_eam_msg.electric_min=(int8_t)(electric_msecs / 60000); // milliseconds in minute
-		hott_eam_msg.electric_sec=(int8_t)((electric_msecs / 1000) % 60);
+       if(last_msecs) {                       // if we were counting time since previous call, update time
+            electric_msecs+=(current_msecs - last_msecs);
+            hott_eam_msg.electric_min=(int8_t)(electric_msecs / 60000); // milliseconds in minute
+            hott_eam_msg.electric_sec=(int8_t)((electric_msecs / 1000) % 60);
 	    }
 
   	    if(battery.current_amps() >= 2) last_msecs=current_msecs;  // it there is battery current, update timestamp: we continue counting
 	    else last_msecs=0;					// if no current, clear timestamp, stop counting
 	}
     //display ON when motors are armed
-    if (motors.armed()) {
-       hott_eam_msg.alarm_invers2 |= 0x80;
-     } else {
-       hott_eam_msg.alarm_invers2 &= 0x7f;
-     }
+   // if (motors.armed()) {
+   //    hott_eam_msg.alarm_invers2 |= 0x80;
+   //  } else {
+   //    hott_eam_msg.alarm_invers2 &= 0x7f;
+   //  }
 }
 
 #endif
@@ -777,11 +782,11 @@ void _hott_update_gps_msg() {
   hott_gps_msg.flight_direction = HOTT_APM_GET_GPS_GROUND_COURSE;  // in 2* steps
   hott_gps_msg.gps_speed = HOTT_APM_GET_GPS_GROUND_SPEED;
   hott_gps_msg.altitude = HOTT_APM_GET_LOCAL_ALTITUDE;  //meters above ground
-  hott_gps_msg.climbrate = 30000 + climb_rate;
-  hott_gps_msg.climbrate3s = 120 + (climb_rate / 100);  // 0 m/3s
+  hott_gps_msg.climbrate = HOTT_APM_GET_CLIMBRATE;
+  hott_gps_msg.climbrate3s = HOTT_APM_GET_GPS_CLIMBRATE_3S;
   hott_gps_msg.gps_satelites = (int8_t)gps.num_sats();
-  hott_gps_msg.angle_roll = ahrs.roll_sensor / 200;
-  hott_gps_msg.angle_nick = ahrs.pitch_sensor / 200;
+  hott_gps_msg.angle_roll = (int8_t)(ahrs.roll_sensor / 200);
+  hott_gps_msg.angle_nick = (int8_t)(ahrs.pitch_sensor / 200);
 
   hott_gps_msg.angle_compass = HOTT_APM_GET_COMPASS_YAW;
 
@@ -791,9 +796,9 @@ void _hott_update_gps_msg() {
           {
           	  // int32_t dist = wp_nav.get_distance_to_target();
 	          //hott_gps_msg.home_distance = dist < 0 ? 0 : (int16_t)(dist / 100);
-			  hott_gps_msg.home_distance = (int16_t)(wp_distance /100);
+              hott_gps_msg.home_distance = (int16_t)(wp_nav.get_wp_distance_to_destination() /100);
     	       //	  hott_gps_msg.home_direction = wp_nav.get_bearing_to_destination() / 200; //get_bearing() return value in degrees * 100
-			  hott_gps_msg.home_direction = wp_bearing /200;
+              hott_gps_msg.home_direction = (int8_t)(wp_nav.get_wp_bearing_to_destination() /200);
 			  //Display WP to mark the change of meaning!
            	hott_gps_msg.free_char1 ='W';
            	hott_gps_msg.free_char2 ='P';
@@ -807,9 +812,9 @@ void _hott_update_gps_msg() {
             //hott_gps_msg.home_distance = dist < 0 ? 0 : (int16_t)dist;
 			hott_gps_msg.home_distance = (int16_t)(home_distance/100);
 			//hott_gps_msg.home_direction = get_bearing_cd(current_loc, home) / 200; //get_bearing() return value in degrees * 100
-			hott_gps_msg.home_direction = home_bearing /200;
+            hott_gps_msg.home_direction = (int8_t)(home_bearing /200);
 			hott_gps_msg.free_char1 = 0;
-            		hott_gps_msg.free_char2 = 0;
+            hott_gps_msg.free_char2 = 0;
             break;
           }
 	}
@@ -824,11 +829,12 @@ void _hott_update_gps_msg() {
     hott_gps_msg.gps_fix_char = '-';
     hott_gps_msg.free_char3 = '-';
     hott_gps_msg.home_distance = (int16_t)0; // set distance to 0 since there is no GPS signal
+    hott_gps_msg.home_direction = 0;                                  // also no direction without GPS fix
   }
 
     //latitude
 
-    register uint32_t   coord = abs(current_loc.lat);     // get current coord in D.ddddddd format (degrees*10**7)
+    register uint32_t   coord = labs(current_loc.lat);     // get current coord in D.ddddddd format (degrees*10**7)
     hott_gps_msg.pos_NS = (int8_t)(current_loc.lat < 0);  // N=0, S=1
     hott_gps_msg.pos_NS_dm = coord / 10000000;            // get integer degrees
     coord %= 10000000;                                    // get rid of degrees
@@ -840,7 +846,7 @@ void _hott_update_gps_msg() {
 
     // Longitude
 
-    coord = abs(current_loc.lng);                         // get current coord in D.ddddddd format (degrees*10**7)
+    coord = labs(current_loc.lng);                         // get current coord in D.ddddddd format (degrees*10**7)
     hott_gps_msg.pos_EW = (int8_t)(current_loc.lng < 0) ;  // E=0, W=1
     hott_gps_msg.pos_EW_dm = coord / 10000000;            // get integer degrees
     coord %= 10000000;                                    // get rid of degrees
@@ -879,7 +885,7 @@ static void u8toa10r3(uint8_t n, char s[])      // converts uint8_t to 3-digit c
 static const char hott_flight_mode_strings[NUM_MODES+1][HOTT_FLIGHT_MODE_STRING_LEN+1] PROGMEM = {
     "STABILIZE  ",                // 0
     "ACRO       ",                // 1
-    "ALT_HOLD   ",                // 2
+    "ALT HOLD   ",                // 2
     "AUTO ->    ",                // 3
     "GUIDED     ",                // 4
     "LOITER     ",                // 5
@@ -887,12 +893,13 @@ static const char hott_flight_mode_strings[NUM_MODES+1][HOTT_FLIGHT_MODE_STRING_
     "CIRCLE     ",                // 7
     "POSITION   ",                // 8
     "LAND       ",                // 9
-    "OF_LOITER  ",                // 10
+    "OF LOITER  ",                // 10
     "DRIFT      ",                // 11
-    "TOY_A      ",                // 12
+    "TOY A      ",                // 12
     "SPORT      ",                // 13
     "FLIP       ",                // 14
     "AUTOTUNE   ",                // 15
+    "HYBRID     ",		  // 16
     "???????????"
 };
 
@@ -902,14 +909,14 @@ const char hott_DISARMED_STR[] PROGMEM	= "DISARMED ";
 
 void _hott_update_vario_msg() {
 
-	hott_vario_msg.altitude = (int16_t)((current_loc.alt - home.alt) / 100)+500;
+    hott_vario_msg.altitude = HOTT_APM_GET_LOCAL_ALTITUDE;
 
 	if ( hott_vario_msg.altitude > hott_vario_msg.altitude_max) hott_vario_msg.altitude_max =  hott_vario_msg.altitude;
 	if ( hott_vario_msg.altitude < hott_vario_msg.altitude_min) hott_vario_msg.altitude_min =  hott_vario_msg.altitude;
 
-	hott_vario_msg.climbrate = 30000 + climb_rate;
-	hott_vario_msg.climbrate3s = 30000 + climb_rate;	//using filtered data here
-	hott_vario_msg.climbrate10s = 30000;	//TODO: calc this stuff
+    hott_vario_msg.climbrate = HOTT_APM_GET_CLIMBRATE;
+    hott_vario_msg.climbrate3s = HOTT_APM_GET_VARIO_CLIMBRATE_3S;
+    hott_vario_msg.climbrate10s = HOTT_APM_GET_VARIO_CLIMBRATE_10S;
 
 	hott_vario_msg.compass_direction = HOTT_APM_GET_COMPASS_YAW; // use ahrs yaw sensor
 
