@@ -335,7 +335,7 @@ static void set_mode(enum FlightMode mode)
 
     case AUTO:
         auto_throttle_mode = true;
-        prev_WP_loc = current_loc;
+        next_WP_loc = prev_WP_loc = current_loc;
         // start or resume the mission, based on MIS_AUTORESET
         mission.start_or_resume();
         break;

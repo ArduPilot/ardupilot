@@ -256,8 +256,8 @@ static void setup_glide_slope(void)
         // is basically to prevent situations where we try to slowly
         // gain height at low altitudes, potentially hitting
         // obstacles.
-        if (relative_altitude() > 40 || next_WP_loc.alt < prev_WP_loc.alt) {
-            offset_altitude_cm = next_WP_loc.alt - prev_WP_loc.alt;
+        if (relative_altitude() > 40 || next_WP_loc.alt < current_loc.alt) {
+            offset_altitude_cm = next_WP_loc.alt - current_loc.alt;
         } else {
             offset_altitude_cm = 0;        
         }
