@@ -5,9 +5,13 @@ Vagrant.configure("2") do |config|
     config.vm.box = "ubuntu-12.04-32bit"
     config.vm.box_url = "http://files.vagrantup.com/precise32.box"
     config.vm.hostname = "apm-dev"
+    config.vm.network "public_network"
     config.vm.synced_folder(".", "/home/vagrant/ardupilot" )
     config.vm.synced_folder("../../diydrones/PX4Firmware", "/home/vagrant/PX4Firmware" )
     config.vm.synced_folder("../../diydrones/PX4NuttX", "/home/vagrant/PX4NuttX" )
+    config.vm.synced_folder("../../mavlink/mavlink", "/home/vagrant/mavlink" )
+    config.vm.synced_folder("C:/Users/fchan/Dropbox/Private/APM", "/home/vagrant/dropbox" )
+    
 
     # Puppet
     config.vm.provision :puppet do |vb_provision|
