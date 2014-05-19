@@ -10,12 +10,14 @@
 #define DISABLED                0
 
 #if defined( __AVR_ATmega1280__ )
+ # define MNT_SMOOTH_TLT_OPTION DISABLED // Smoothing factor for RC input to tilt/pitch movement
  # define MNT_JSTICK_SPD_OPTION DISABLED // Allow RC joystick to control the speed of the mount movements instead of the position of the mount
  # define MNT_RETRACT_OPTION    DISABLED // Use a servo to retract the mount inside the fuselage (i.e. for landings)
  # define MNT_GPSPOINT_OPTION    ENABLED // Point the mount to a GPS point defined via a mouse click in the Mission Planner GUI
  # define MNT_STABILIZE_OPTION  DISABLED // stabilize camera using frame attitude information
  # define MNT_MOUNT2_OPTION     DISABLED // second mount, can for example be used to keep an antenna pointed at the home position
 #else
+ # define MNT_SMOOTH_TLT_OPTION ENABLED // uses  286 bytes of memory
  # define MNT_JSTICK_SPD_OPTION ENABLED // uses  844 bytes of memory
  # define MNT_RETRACT_OPTION    ENABLED // uses  244 bytes of memory
  # define MNT_GPSPOINT_OPTION   ENABLED // uses  580 bytes of memory
@@ -213,6 +215,16 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     AP_GROUPINFO("JSTICK_SPD",  16, AP_Mount, _joystick_speed, 0),
 #endif
 
+#if MNT_SMOOTH_TLT_OPTION == ENABLED
+    // @Param: SMOOTH_TILT
+    // @DisplayName: RC-in smoothing factor for tilt
+    // @Description: Smoothing factor applied to RC-input of tilt/pitch movement, 0 for none, 50 for average
+    // @Range: 0 255
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("SMOOTH_TILT", 17, AP_Mount, _in_smooth_tilt, 0),
+#endif
+
     AP_GROUPEND
 };
 
@@ -245,6 +257,8 @@ AP_Mount::AP_Mount(const struct Location *current_loc, const AP_AHRS &ahrs, uint
         _open_idx = RC_Channel_aux::k_mount2_open;
     }
 #endif
+
+    _tilt_radio_trk = 0;     // init PWM-value tracker for tilt smoothing
 }
 
 /// Auto-detect the mount gimbal type depending on the functions assigned to the servos
@@ -363,9 +377,34 @@ void AP_Mount::update_mount_position()
             if (_roll_rc_in && (rc_ch(_roll_rc_in))) {
                 _roll_control_angle = angle_input_rad(rc_ch(_roll_rc_in), _roll_angle_min, _roll_angle_max);
             }
+#if MNT_SMOOTH_TLT_OPTION == ENABLED
+            if (_tilt_rc_in && (rc_ch(_tilt_rc_in))) {     //if tilt input from RC is enabled
+                int16_t dvdrval = _in_smooth_tilt;              //get configured smoothing facter
+                if(dvdrval > 2 && _tilt_radio_trk > 0) {        //if smoothing and tracking value both >0
+                    dvdrval = (dvdrval * 4) / 10;          //value for divider and deadband (50=>20)
+                             //calculate difference between RC-in and tracking value:
+                    int16_t diffval = rc_ch(_tilt_rc_in)->radio_in - _tilt_radio_trk;
+                             //if difference less than divider/deadband value then do nothing:
+                    if(diffval < -dvdrval || diffval > dvdrval) {
+                        int16_t limitval = 20000 / _in_smooth_tilt;  //calc limit value (50=>400)
+                        if(diffval < -limitval)            //if difference > limit then
+                            diffval = -limitval;           // use limit value
+                        else if (diffval > limitval)
+                            diffval = limitval;
+                             //apply difference-offset value, with divider:
+                        _tilt_radio_trk += diffval/dvdrval;
+                    }
+                }
+                else    //no smoothing or first time through; use RC-in value
+                    _tilt_radio_trk = rc_ch(_tilt_rc_in)->radio_in;
+                        //apply positioning for tilt (using calculated value):
+                _tilt_control_angle = angle_input_rad_i(rc_ch(_tilt_rc_in), _tilt_angle_min, _tilt_angle_max, _tilt_radio_trk);
+            }
+#else
             if (_tilt_rc_in && (rc_ch(_tilt_rc_in))) {
                 _tilt_control_angle = angle_input_rad(rc_ch(_tilt_rc_in), _tilt_angle_min, _tilt_angle_max);
             }
+#endif
             if (_pan_rc_in && (rc_ch(_pan_rc_in))) {
                 _pan_control_angle = angle_input_rad(rc_ch(_pan_rc_in), _pan_angle_min, _pan_angle_max);
             }
@@ -556,17 +595,30 @@ void AP_Mount::control_cmd()
 
 /// returns the angle (degrees*100) that the RC_Channel input is receiving
 int32_t
-AP_Mount::angle_input(RC_Channel* rc, int16_t angle_min, int16_t angle_max)
+AP_Mount::angle_input(int16_t rc_in_val, bool rc_in_rev, int16_t rc_in_min,
+                      int16_t rc_in_max, int16_t angle_min, int16_t angle_max)
 {
-    return (rc->get_reverse() ? -1 : 1) * (rc->radio_in - rc->radio_min) * (int32_t)(angle_max - angle_min) / (rc->radio_max - rc->radio_min) + (rc->get_reverse() ? angle_max : angle_min);
+    return (rc_in_rev ? -1 : 1) * (rc_in_val - rc_in_min) * (int32_t)(angle_max - angle_min) / (rc_in_max - rc_in_min) + (rc_in_rev ? angle_max : angle_min);
 }
 
 /// returns the angle (radians) that the RC_Channel input is receiving
 float
 AP_Mount::angle_input_rad(RC_Channel* rc, int16_t angle_min, int16_t angle_max)
 {
-    return radians(angle_input(rc, angle_min, angle_max)*0.01f);
+    return radians(angle_input(rc->radio_in, rc->get_reverse(), rc->radio_min,
+                               rc->radio_max, angle_min, angle_max)*0.01f);
 }
+
+#if MNT_SMOOTH_TLT_OPTION == ENABLED
+/// returns the angle (radians) that the RC_Channel input is receiving
+///  (this version uses input from 'rc_in_val' instead of 'rc' parameter)
+float
+AP_Mount::angle_input_rad_i(RC_Channel* rc, int16_t angle_min, int16_t angle_max, int16_t rc_in_val)
+{
+    return radians(angle_input(rc_in_val, rc->get_reverse(), rc->radio_min,
+                               rc->radio_max, angle_min, angle_max)*0.01f);
+}
+#endif
 
 void
 AP_Mount::calc_GPS_target_angle(const struct Location *target)

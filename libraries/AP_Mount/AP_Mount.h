@@ -83,8 +83,10 @@ private:
     void                            stabilize();
     int16_t                         closest_limit(int16_t angle, int16_t* angle_min, int16_t* angle_max);
     void                            move_servo(uint8_t rc, int16_t angle, int16_t angle_min, int16_t angle_max);
-    int32_t                         angle_input(RC_Channel* rc, int16_t angle_min, int16_t angle_max);
+    int32_t                         angle_input(int16_t rc_in_val, bool rc_in_rev, int16_t rc_in_min,
+                                                int16_t rc_in_max, int16_t angle_min, int16_t angle_max);
     float                           angle_input_rad(RC_Channel* rc, int16_t angle_min, int16_t angle_max);
+    float                           angle_input_rad_i(RC_Channel* rc, int16_t angle_min, int16_t angle_max, int16_t rc_in_val);
 
     //members
     const AP_AHRS                   &_ahrs; ///< Rotation matrix from earth to plane.
@@ -105,6 +107,8 @@ private:
     float                           _tilt_angle; ///< degrees
     float                           _pan_angle;  ///< degrees
 
+    int16_t                         _tilt_radio_trk;     //PWM-value tracker for tilt smoothing
+
     // EEPROM parameters
     AP_Int8                         _stab_roll; ///< (1 = yes, 0 = no)
     AP_Int8                         _stab_tilt; ///< (1 = yes, 0 = no)
@@ -124,6 +128,7 @@ private:
     AP_Int16                        _pan_angle_max;  ///< max angle limit of actuated surface in 0.01 degree units
 
     AP_Int8                         _joystick_speed;
+    AP_Int8                         _in_smooth_tilt; ///< smoothing factor for RC input to tilt/pitch movement
 
     AP_Vector3f                     _retract_angles; ///< retracted position for mount, vector.x = roll vector.y = tilt, vector.z=pan
     AP_Vector3f                     _neutral_angles; ///< neutral position for mount, vector.x = roll vector.y = tilt, vector.z=pan
