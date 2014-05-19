@@ -106,8 +106,8 @@ void LinuxSPIDeviceDriver::transfer(const uint8_t *data, uint16_t len)
 }
 
 LinuxSPIDeviceManager::LinuxSPIDeviceManager() :
-    _device_cs0("/dev/spidev0.0", SPI_MODE_0, 8, 2600000),
-    _device_cs1("/dev/spidev0.1", SPI_MODE_0, 8, 1000000)
+    _device_cs0("/dev/spidev2.0", SPI_MODE_0, 8, 2600000),
+    _device_cs1("/dev/spidev1.0", SPI_MODE_0, 8, 1000000)
 {}
 
 void LinuxSPIDeviceManager::init(void *)
