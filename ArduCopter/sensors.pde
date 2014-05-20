@@ -43,6 +43,9 @@ static int16_t read_sonar(void)
     }
 
     int16_t temp_alt = (int16_t)sonar.distance_cm();
+    //Apply Filter to pull out those transient Spikes and Smooth out the readings
+    temp_alt = sonarMFilter.apply(temp_alt);
+    
     if (sonar.in_range()){
         if ( sonar_alt_health < SONAR_ALT_HEALTH_MAX ) {
             sonar_alt_health++;
@@ -50,8 +53,6 @@ static int16_t read_sonar(void)
     }else{
         sonar_alt_health = 0;
     }
-//Apply Filter to pull out those transient Spikes and Smooth out the readings
-    temp_alt = sonarMFilter.apply(temp_alt);
 
  #if SONAR_TILT_CORRECTION == 1
     // correct alt for angle of the sonar
