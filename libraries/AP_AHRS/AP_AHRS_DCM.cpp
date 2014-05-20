@@ -62,7 +62,16 @@ AP_AHRS_DCM::update(void)
     matrix_update(delta_t);
 
     // Normalize the DCM matrix
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75 && CONFIG_HAL_BOARD != HAL_BOARD_AVR_SITL
     normalize();
+#else
+    static uint8_t i = 0;
+    if(i >= 10) {
+        i == 0;
+        normalize();
+    }
+    i++
+#endif
 
     // Perform drift correction
     drift_correction(delta_t);
