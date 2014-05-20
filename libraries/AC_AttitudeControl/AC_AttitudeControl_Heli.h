@@ -15,8 +15,7 @@
 
 class AC_AttitudeControl_Heli : public AC_AttitudeControl {
 public:
-    AC_AttitudeControl_Heli( AP_AHRS &ahrs,
-                        AP_InertialSensor& ins,
+    AC_AttitudeControl_Heli( AP_AHRS &ahrs, AP_InertialSensor &ins,
                         const AP_Vehicle::MultiCopter &aparm,
                         AP_MotorsHeli& motors,
                         AC_P& p_angle_roll, AC_P& p_angle_pitch, AC_P& p_angle_yaw,
