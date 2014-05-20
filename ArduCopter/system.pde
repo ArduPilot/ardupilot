@@ -240,6 +240,11 @@ static void init_ardupilot()
     // initialise inertial nav
     inertial_nav.init();
 
+#ifdef HOTT_TELEMETRY
+	_hott_setup();
+#endif
+
+
 #ifdef USERHOOK_INIT
     USERHOOK_INIT
 #endif

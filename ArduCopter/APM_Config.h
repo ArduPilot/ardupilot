@@ -35,6 +35,7 @@
 //#define AC_RALLY              ENABLED             // disable rally points to save 2k of flash, and also frees rally point EEPROM for more mission commands
 //#define SPRAYER               ENABLED             // enable the crop sprayer feature (two ESC controlled pumps the speed of which depends upon the vehicle's horizontal velocity)
 //#define EPM_ENABLED           ENABLED             // enable epm cargo gripper costs 500bytes of flash
+#define HOTT_TELEMETRY        ENABLED             // enable HOTT v4 telemetry for Graupner RCs
 //#define PARACHUTE             ENABLED             // enable parachute release at a cost of 1k of flash
 
 // other settings
