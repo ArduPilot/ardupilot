@@ -41,7 +41,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
     // @Param: NAVFILTER
     // @DisplayName: Navigation filter setting
     // @Description: Navigation filter engine setting
-    // @Values: 0:Portable,1:Stationary,2:Pedestrian,3:Automotive,4:Sea,5:Airborne1G,6:Airborne2G,8:Airborne4G
+    // @Values: 0:Portable,2:Stationary,3:Pedestrian,4:Automotive,5:Sea,6:Airborne1G,7:Airborne2G,8:Airborne4G
     AP_GROUPINFO("NAVFILTER", 2, AP_GPS, _navfilter, GPS_ENGINE_AIRBORNE_4G),
 
     AP_GROUPEND
