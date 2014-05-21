@@ -6,9 +6,6 @@
 // use this to prevent recursion during sensor init
 static bool in_mavlink_delay;
 
-// true when we have received at least 1 MAVLink packet
-static bool mavlink_active;
-
 // check if a message will fit in the payload space available
 #define CHECK_PAYLOAD_SIZE(id) if (payload_space < MAVLINK_MSG_ID_ ## id ## _LEN) return false
 
@@ -495,36 +492,6 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
-void
-GCS_MAVLINK::update(void)
-{
-    // receive new packets
-    mavlink_message_t msg;
-    mavlink_status_t status;
-    status.packet_rx_drop_count = 0;
-
-    // process received bytes
-    uint16_t nbytes = comm_get_available(chan);
-    for (uint16_t i=0; i<nbytes; i++)
-    {
-        uint8_t c = comm_receive_ch(chan);
-
-        // Try to get a new message
-        if (mavlink_parse_char(chan, c, &msg, &status)) {
-            // we exclude radio packets to make it possible to use the
-            // CLI over the radio
-            if (msg.msgid != MAVLINK_MSG_ID_RADIO && msg.msgid != MAVLINK_MSG_ID_RADIO_STATUS) {
-                mavlink_active = true;
-            }
-            handleMessage(&msg);
-        }
-    }
-
-    // Update packet drops counter
-    packet_drops += status.packet_rx_drop_count;
-
-}
-
 // see if we should send a stream now. Called at 50Hz
 bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
 {
@@ -983,7 +950,7 @@ static void gcs_update(void)
 {
     for (uint8_t i=0; i<num_gcs; i++) {
         if (gcs[i].initialised) {
-            gcs[i].update();
+            gcs[i].update(NULL);
         }
     }
 }

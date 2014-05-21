@@ -17,7 +17,7 @@ static void init_tracker()
     BoardConfig.init();
 
     // reset the uartA baud rate after parameter load
-    hal.uartA->begin(map_baudrate(g.serial0_baud, SERIAL0_BAUD));
+    hal.uartA->begin(map_baudrate(g.serial0_baud));
 
     // init baro before we start the GCS, so that the CLI baro test works
     barometer.init();
@@ -35,7 +35,7 @@ static void init_tracker()
     check_usb_mux();
 
     // we have a 2nd serial port for telemetry
-    gcs[1].setup_uart(hal.uartC, map_baudrate(g.serial1_baud, SERIAL1_BAUD), 128, SERIAL1_BUFSIZE);
+    gcs[1].setup_uart(hal.uartC, map_baudrate(g.serial1_baud), 128, SERIAL1_BUFSIZE);
 
     mavlink_system.sysid = g.sysid_this_mav;
 
@@ -115,26 +115,6 @@ static void calibrate_ins()
 static void update_notify()
 {
     notify.update();
-}
-
-/*
- *  map from a 8 bit EEPROM baud rate to a real baud rate
- */
-static uint32_t map_baudrate(int8_t rate, uint32_t default_baud)
-{
-    switch (rate) {
-    case 1:    return 1200;
-    case 2:    return 2400;
-    case 4:    return 4800;
-    case 9:    return 9600;
-    case 19:   return 19200;
-    case 38:   return 38400;
-    case 57:   return 57600;
-    case 111:  return 111100;
-    case 115:  return 115200;
-    }
-    cliSerial->println_P(PSTR("Invalid baudrate"));
-    return default_baud;
 }
 
 /*
@@ -255,7 +235,7 @@ static void check_usb_mux(void)
     if (usb_connected) {
         hal.uartA->begin(SERIAL0_BAUD);
     } else {
-        hal.uartA->begin(map_baudrate(g.serial1_baud, SERIAL1_BAUD));
+        hal.uartA->begin(map_baudrate(g.serial1_baud));
     }
 #endif
 }
