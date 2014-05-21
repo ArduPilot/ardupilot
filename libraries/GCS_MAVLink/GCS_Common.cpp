@@ -23,9 +23,10 @@
 extern const AP_HAL::HAL& hal;
 
 uint32_t GCS_MAVLINK::last_radio_status_remrssi_ms;
+bool GCS_MAVLINK::mavlink_active = false;
 
 GCS_MAVLINK::GCS_MAVLINK() :
-    waypoint_receive_timeout(1000)
+    waypoint_receive_timeout(5000)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -850,5 +851,66 @@ void GCS_MAVLINK::send_message(enum ap_message id)
         }
         deferred_messages[nextid] = id;
         num_deferred_messages++;
+    }
+}
+
+void
+GCS_MAVLINK::update(void (*run_cli)(AP_HAL::UARTDriver *))
+{
+    // receive new packets
+    mavlink_message_t msg;
+    mavlink_status_t status;
+    status.packet_rx_drop_count = 0;
+
+    // process received bytes
+    uint16_t nbytes = comm_get_available(chan);
+    for (uint16_t i=0; i<nbytes; i++)
+    {
+        uint8_t c = comm_receive_ch(chan);
+
+        if (run_cli != NULL) {
+            /* allow CLI to be started by hitting enter 3 times, if no
+             *  heartbeat packets have been received */
+            if (!mavlink_active && (hal.scheduler->millis() - _cli_timeout) < 20000 && 
+                comm_is_idle(chan)) {
+                if (c == '\n' || c == '\r') {
+                    crlf_count++;
+                } else {
+                    crlf_count = 0;
+                }
+                if (crlf_count == 3) {
+                    run_cli(_port);
+                }
+            }
+        }
+
+        // Try to get a new message
+        if (mavlink_parse_char(chan, c, &msg, &status)) {
+            // we exclude radio packets to make it possible to use the
+            // CLI over the radio
+            if (msg.msgid != MAVLINK_MSG_ID_RADIO && msg.msgid != MAVLINK_MSG_ID_RADIO_STATUS) {
+                mavlink_active = true;
+            }
+            handleMessage(&msg);
+        }
+    }
+
+    if (!waypoint_receiving) {
+        return;
+    }
+
+    uint32_t tnow = hal.scheduler->millis();
+    uint32_t wp_recv_time = 1000U + (stream_slowdown*20);
+
+    if (waypoint_receiving &&
+        waypoint_request_i <= waypoint_request_last &&
+        tnow - waypoint_timelast_request > wp_recv_time) {
+        waypoint_timelast_request = tnow;
+        send_message(MSG_NEXT_WAYPOINT);
+    }
+
+    // stop waypoint receiving if timeout
+    if (waypoint_receiving && (tnow - waypoint_timelast_receive) > wp_recv_time+waypoint_receive_timeout) {
+        waypoint_receiving = false;
     }
 }

@@ -142,7 +142,7 @@ class GCS_MAVLINK : public GCS_Class
 {
 public:
     GCS_MAVLINK();
-    void        update(void);
+    void        update(void (*run_cli)(AP_HAL::UARTDriver *));
     void        init(AP_HAL::UARTDriver *port);
     void        setup_uart(AP_HAL::UARTDriver *port, uint32_t baudrate, uint16_t rxS, uint16_t txS);
     void        send_message(enum ap_message id);
@@ -285,6 +285,8 @@ private:
     enum ap_message deferred_messages[MSG_RETRY_DEFERRED];
     uint8_t next_deferred_message;
     uint8_t num_deferred_messages;
+
+    static bool mavlink_active;
 
     // vehicle specific message send function
     bool try_send_message(enum ap_message id);
