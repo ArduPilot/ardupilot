@@ -331,8 +331,8 @@ struct PACKED log_Nav_Tuning {
     uint32_t time_ms;
     uint16_t yaw;
     uint32_t wp_distance;
-    uint16_t target_bearing_cd;
-    uint16_t nav_bearing_cd;
+    int16_t target_bearing_cd;
+    int16_t nav_bearing_cd;
     int16_t altitude_error_cm;
     int16_t airspeed_cm;
     float   altitude;
@@ -347,8 +347,8 @@ static void Log_Write_Nav_Tuning()
         time_ms             : hal.scheduler->millis(),
         yaw                 : (uint16_t)ahrs.yaw_sensor,
         wp_distance         : wp_distance,
-        target_bearing_cd   : (uint16_t)nav_controller->target_bearing_cd(),
-        nav_bearing_cd      : (uint16_t)nav_controller->nav_bearing_cd(),
+        target_bearing_cd   : (int16_t)nav_controller->target_bearing_cd(),
+        nav_bearing_cd      : (int16_t)nav_controller->nav_bearing_cd(),
         altitude_error_cm   : (int16_t)altitude_error_cm,
         airspeed_cm         : (int16_t)airspeed.get_airspeed_cm(),
         altitude            : barometer.get_altitude(),
@@ -550,7 +550,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     
       "CTUN", "Icccchhf",    "TimeMS,NavRoll,Roll,NavPitch,Pitch,ThrOut,RdrOut,AccY" },
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),         
-      "NTUN", "ICICCccfI",   "TimeMS,Yaw,WpDist,TargBrg,NavBrg,AltErr,Arspd,Alt,GSpdCM" },
+      "NTUN", "ICIccccfI",   "TimeMS,Yaw,WpDist,TargBrg,NavBrg,AltErr,Arspd,Alt,GSpdCM" },
     { LOG_SONAR_MSG, sizeof(log_Sonar),             
       "SONR", "IffffB",   "TimeMS,DistCM,Volt,BaroAlt,GSpd,Thr" },
     { LOG_MODE_MSG, sizeof(log_Mode),             
