@@ -26,10 +26,17 @@ public:
     /* readRegister: read from a device register - writes the register,
      * then reads back an 8-bit value. */
     virtual uint8_t readRegister(uint8_t addr, uint8_t reg, uint8_t* data) = 0;
-    /* readRegister: read contigious device registers - writes the first 
+
+    /* readRegisters: read contigious device registers - writes the first 
      * register, then reads back multiple bytes */
     virtual uint8_t readRegisters(uint8_t addr, uint8_t reg,
                                   uint8_t len, uint8_t* data) = 0;
+
+    /* readRegistersMultiple: read contigious device registers. 
+       Equivalent to count calls to readRegisters() */
+    virtual uint8_t readRegistersMultiple(uint8_t addr, uint8_t reg,
+                                          uint8_t len, uint8_t count, 
+                                          uint8_t* data) = 0;
 
     virtual uint8_t lockup_count() = 0;
     void ignore_errors(bool b) { _ignore_errors = b; }
