@@ -110,6 +110,10 @@ public:
         k_param_serial0_baud,
         k_param_serial1_baud,
         k_param_serial2_baud,
+        k_param_takeoff_tdrag_elevator,
+        k_param_takeoff_tdrag_speed1,
+        k_param_takeoff_rotate_speed,
+        k_param_takeoff_throttle_slewrate,
 
         // 100: Arming parameters
         k_param_arming = 100,
@@ -429,6 +433,10 @@ public:
     AP_Float takeoff_throttle_min_speed;
     AP_Float takeoff_throttle_min_accel;
     AP_Int8 takeoff_throttle_delay;
+    AP_Int8 takeoff_tdrag_elevator;
+    AP_Float takeoff_tdrag_speed1;
+    AP_Float takeoff_rotate_speed;
+    AP_Int8 takeoff_throttle_slewrate;
     AP_Int8 level_roll_limit;
     AP_Int8 flapin_channel;
     AP_Int8 flaperon_output;

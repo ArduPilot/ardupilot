@@ -81,3 +81,67 @@ no_launch:
     return false;
 }
 
+/*
+  calculate desired bank angle during takeoff, setting nav_roll_cd
+ */
+static void takeoff_calc_roll(void)
+{
+    if (steer_state.hold_course_cd == -1) {
+        // we don't yet have a heading to hold - just level
+        // the wings until we get up enough speed to get a GPS heading
+        nav_roll_cd = 0;
+        return;
+    }
+
+    calc_nav_roll();
+
+    // during takeoff use the level flight roll limit to
+    // prevent large course corrections
+    nav_roll_cd = constrain_int32(nav_roll_cd, -g.level_roll_limit*100UL, g.level_roll_limit*100UL);
+}
+
+        
+/*
+  calculate desired pitch angle during takeoff, setting nav_pitch_cd
+ */
+static void takeoff_calc_pitch(void)
+{
+    if (auto_state.highest_airspeed < g.takeoff_rotate_speed) {
+        // we have not reached rotate speed, use a target pitch of
+        // zero, holding the plane level until we reach rotate speed
+        nav_pitch_cd = 0;
+        return;
+    }
+
+    if (airspeed.use()) {
+        calc_nav_pitch();
+        if (nav_pitch_cd < auto_state.takeoff_pitch_cd) {
+            nav_pitch_cd = auto_state.takeoff_pitch_cd;
+        }
+    } else {
+        nav_pitch_cd = ((gps.ground_speed()*100) / (float)g.airspeed_cruise_cm) * auto_state.takeoff_pitch_cd;
+        nav_pitch_cd = constrain_int32(nav_pitch_cd, 500, auto_state.takeoff_pitch_cd);
+    }
+}
+
+/*
+  return a tail hold percentage during initial takeoff for a tail dragger
+ */
+static int8_t takeoff_tail_hold(void)
+{
+    if (control_mode != AUTO || auto_state.takeoff_complete) {
+        // not in takeoff
+        return 0;
+    }
+    if (g.takeoff_tdrag_elevator == 0) {
+        // no takeoff elevator set
+        return 0;
+    }
+    if (auto_state.highest_airspeed >= g.takeoff_tdrag_speed1) {
+        // we've passed speed1. We now raise the tail and aim for
+        // level pitch. Return 0 meaning no fixed elevator setting
+        return 0;
+    }
+    // we are holding the tail down
+    return g.takeoff_tdrag_elevator;
+}

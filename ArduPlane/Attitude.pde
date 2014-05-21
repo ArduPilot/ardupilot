@@ -14,6 +14,9 @@ static float get_speed_scaler(void)
 {
     float aspeed, speed_scaler;
     if (ahrs.airspeed_estimate(&aspeed)) {
+        if (aspeed > auto_state.highest_airspeed) {
+            auto_state.highest_airspeed = aspeed;
+        }
         if (aspeed > 0) {
             speed_scaler = g.scaling_speed / aspeed;
         } else {
@@ -94,6 +97,13 @@ static void stabilize_roll(float speed_scaler)
  */
 static void stabilize_pitch(float speed_scaler)
 {
+    int8_t force_elevator = takeoff_tail_hold();
+    if (force_elevator != 0) {
+        // we are holding the tail down during takeoff. Just covert
+        // from a percentage to a -4500..4500 centidegree angle
+        channel_pitch->servo_out = 45*force_elevator;
+        return;
+    }
     int32_t demanded_pitch = nav_pitch_cd + g.pitch_trim_cd + channel_throttle->servo_out * g.kff_throttle_to_pitch;
     bool disable_integrator = false;
     if (control_mode == STABILIZE && channel_pitch->control_in != 0) {
@@ -464,10 +474,14 @@ static void calc_nav_roll()
 *****************************************/
 static void throttle_slew_limit(int16_t last_throttle)
 {
+    uint8_t slewrate = aparm.throttle_slewrate;
+    if (control_mode==AUTO && auto_state.takeoff_complete == false) {
+        slewrate = g.takeoff_throttle_slewrate;
+    }
     // if slew limit rate is set to zero then do not slew limit
     if (aparm.throttle_slewrate) {                   
         // limit throttle change by the given percentage per second
-        float temp = aparm.throttle_slewrate * G_Dt * 0.01f * fabsf(channel_throttle->radio_max - channel_throttle->radio_min);
+        float temp = slewrate * G_Dt * 0.01f * fabsf(channel_throttle->radio_max - channel_throttle->radio_min);
         // allow a minimum change of 1 PWM per cycle
         if (temp < 1) {
             temp = 1;

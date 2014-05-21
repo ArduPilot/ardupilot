@@ -142,6 +142,42 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: User
     GSCALAR(takeoff_throttle_delay,     "TKOFF_THR_DELAY",  2),
 
+    // @Param: TKOFF_TDRAG_ELEV
+    // @DisplayName: Takeoff tail dragger elevator
+    // @Description: This parameter sets the amount of elevator to apply during the initial stage of a takeoff. It is used to hold the tail wheel of a taildragger on the ground during the initial takeoff stage to give maximum steering. This option should be conbined with the TKOFF_TDRAG_SPD1 option and the GROUND_STEER_ALT option along with tuning of the ground steering controller. A value of zero means to bypass the initial "tail hold" stage of takeoff. Set to zero for hand and catapult launch. For tail-draggers you should normally set this to 100, meaning full up elevator during the initial stage of takeoff. For most tricycle undercarriage aircraft a value of zero will work well, but for some tricycle aircraft a negative value will apply down elevator which will hold the nose wheel firmly on the ground during initial acceleration.
+    // @Units: Percent
+    // @Range: -100 100
+    // @Increment: 1
+    // @User: User
+    GSCALAR(takeoff_tdrag_elevator,     "TKOFF_TDRAG_ELEV",  0),
+
+    // @Param: TKOFF_TDRAG_SPD1
+    // @DisplayName: Takeoff tail dragger speed1
+    // @Description: This parameter sets the airspeed at which to stop holding the tail down and transition to rudder control of steering on the ground. When TKOFF_TDRAG_SPD1 is reached the pitch of the aircraft will be held level until TKOFF_ROTATE_SPD is reached, at which point the takeoff pitch specified in the mission will be used to "rotate" the pitch for takeoff climb. Set TKOFF_TDRAG_SPD1 to zero to go straight to rotation. This should be set to zero for hand launch and catapult launch. It should also be set to zero for tricycle undercarriages. For tail dragger aircraft it should be set just below the stall speed.
+    // @Units: m/s
+    // @Range: 0 30
+    // @Increment: 0.1
+    // @User: User
+    GSCALAR(takeoff_tdrag_speed1,     "TKOFF_TDRAG_SPD1",  0),
+
+    // @Param: TKOFF_ROTATE_SPD
+    // @DisplayName: Takeoff rotate speed
+    // @Description: This parameter sets the airspeed at which the aircraft will "rotate", setting climb pitch specified in the mission. If TKOFF_ROTATE_SPD is zero then the climb pitch will be used as soon as takeoff is started. For hand launch and catapult launches a TKOFF_ROTATE_SPD of zero should be set. For all ground launches TKOFF_ROTATE_SPD should be set above the stall speed, usually by about 2 to 3 meters/second.
+    // @Units: m/s
+    // @Range: 0 30
+    // @Increment: 0.1
+    // @User: User
+    GSCALAR(takeoff_rotate_speed,     "TKOFF_ROTATE_SPD",  0),
+
+    // @Param: TKOFF_THR_SLEW
+    // @DisplayName: Takeoff throttle slew rate
+    // @Description: This parameter sets the slew rate for the throttle during auto takeoff. When this is zero the THR_SLEWRATE parameter is used during takeoff. For rolling takeoffs it can be a good idea to set a lower slewrate for takeoff to give a slower acceleration which can improve ground steering control. The value is a percentage throttle change per second, so a value of 20 means to advance the throttle over 5 seconds on takeoff.
+    // @Units: percent
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: User
+    GSCALAR(takeoff_throttle_slewrate, "TKOFF_THR_SLEW",  0),
+
     // @Param: LEVEL_ROLL_LIMIT
     // @DisplayName: Level flight roll limit
     // @Description: This controls the maximum bank angle in degrees during flight modes where level flight is desired, such as in the final stages of landing, and during auto takeoff. This should be a small angle (such as 5 degrees) to prevent a wing hitting the runway during takeoff or landing. Setting this to zero will completely disable heading hold on auto takeoff and final landing approach.
