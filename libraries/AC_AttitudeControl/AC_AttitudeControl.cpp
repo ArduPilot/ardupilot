@@ -72,18 +72,9 @@ void AC_AttitudeControl::set_dt(float delta_sec)
 // init_targets - resets target angles to current angles
 void AC_AttitudeControl::init_targets()
 {
-    // set earth frame angle targets to current lean angles
-    _angle_ef_target.x = _ahrs.roll_sensor;
-    _angle_ef_target.y = _ahrs.pitch_sensor;
-    _angle_ef_target.z = _ahrs.yaw_sensor;
-
-    // clear body frame angle errors
-    _angle_bf_error.zero();
-
-    // clear earth-frame and body-frame feed forward rates
+    // ensure zero error in body frame rate controllers
     const Vector3f& gyro = _ins.get_gyro();
-    _rate_bf_desired = gyro * AC_ATTITUDE_CONTROL_DEGX100;
-    frame_conversion_bf_to_ef(_rate_bf_desired,_rate_ef_desired);
+    _rate_bf_target = gyro * AC_ATTITUDE_CONTROL_DEGX100;
 }
 
 //
