@@ -107,9 +107,11 @@ static void takeoff_calc_roll(void)
 static void takeoff_calc_pitch(void)
 {
     if (auto_state.highest_airspeed < g.takeoff_rotate_speed) {
-        // we have not reached rotate speed, use a target pitch of
-        // zero, holding the plane level until we reach rotate speed
-        nav_pitch_cd = 0;
+        // we have not reached rotate speed, use a target pitch of 5
+        // degrees. This should be enough to get the tail off the
+        // ground, while making it unlikely that overshoot in the
+        // pitch controller will cause a prop strike
+        nav_pitch_cd = 500;
         return;
     }
 
