@@ -142,6 +142,14 @@ static int8_t takeoff_tail_hold(void)
         // level pitch. Return 0 meaning no fixed elevator setting
         return 0;
     }
+    if (ahrs.pitch_sensor > auto_state.initial_pitch_cd + 1000) {
+        // the pitch has gone up by more then 10 degrees over the
+        // initial pitch. This may mean the nose is coming up for an
+        // early liftoff, perhaps due to a bad setting of
+        // g.takeoff_tdrag_speed1. Go to level flight to prevent a
+        // stall
+        return 0;
+    }
     // we are holding the tail down
     return g.takeoff_tdrag_elevator;
 }

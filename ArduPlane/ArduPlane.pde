@@ -530,12 +530,16 @@ static struct {
     // the highest airspeed we have reached since entering AUTO. Used
     // to control ground takeoff
     float highest_airspeed;
+
+    // initial pitch. Used to detect if nose is rising in a tail dragger
+    int16_t initial_pitch_cd;
 } auto_state = {
     takeoff_complete : true,
     land_complete : false,
     takeoff_altitude_cm : 0,
     takeoff_pitch_cd : 0,
-    highest_airspeed : 0
+    highest_airspeed : 0,
+    initial_pitch_cd : 0
 };
 
 // true if we are in an auto-throttle mode, which means

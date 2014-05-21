@@ -337,6 +337,7 @@ static void set_mode(enum FlightMode mode)
         auto_throttle_mode = true;
         next_WP_loc = prev_WP_loc = current_loc;
         auto_state.highest_airspeed = 0;
+        auto_state.initial_pitch_cd = ahrs.pitch_sensor;
         // start or resume the mission, based on MIS_AUTORESET
         mission.start_or_resume();
         break;
