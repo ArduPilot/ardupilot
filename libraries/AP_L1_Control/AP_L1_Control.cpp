@@ -67,7 +67,7 @@ int32_t AP_L1_Control::bearing_error_cd(void) const
 
 int32_t AP_L1_Control::target_bearing_cd(void) const
 {
-	return _target_bearing_cd;
+	return wrap_180_cd(_target_bearing_cd);
 }
 
 float AP_L1_Control::turn_distance(float wp_radius) const
