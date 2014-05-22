@@ -862,6 +862,11 @@ float AC_WPNav::get_bearing_cd(const Vector3f &origin, const Vector3f &destinati
 /// calc_slow_down_distance - calculates distance before waypoint that target point should begin to slow-down assuming it is travelling at full speed
 void AC_WPNav::calc_slow_down_distance(float speed_cms, float accel_cmss)
 {
+	// protect against divide by zero
+	if (accel_cmss <= 0.0f) {
+		_slow_down_dist = 0.0f;
+		return;
+	}
     // To-Do: should we use a combination of horizontal and vertical speeds?
     // To-Do: update this automatically when speed or acceleration is changed
     _slow_down_dist = speed_cms * speed_cms / (4.0f*accel_cmss);
