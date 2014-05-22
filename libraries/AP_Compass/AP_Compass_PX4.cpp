@@ -149,6 +149,9 @@ void AP_Compass_PX4::accumulate(void)
 
 uint8_t AP_Compass_PX4::_get_primary(void) const
 {
+    if (_primary < _num_instances && _healthy[_primary]) {
+        return _primary;
+    }
     for (uint8_t i=0; i<_num_instances; i++) {
         if (_healthy[i]) return i;
     }    
