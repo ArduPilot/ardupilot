@@ -70,6 +70,12 @@ static void auto_run()
     case Auto_Spline:
         auto_spline_run();
         break;
+
+#if NAV_GUIDED == ENABLED
+    case Auto_NavGuided:
+        auto_nav_guided_run();
+        break;
+#endif
     }
 }
 
@@ -363,6 +369,25 @@ void auto_circle_run()
     // roll & pitch from waypoint controller, yaw rate from pilot
     attitude_control.angle_ef_roll_pitch_yaw(circle_nav.get_roll(), circle_nav.get_pitch(), circle_nav.get_yaw(),true);
 }
+
+#if NAV_GUIDED == ENABLED
+// auto_nav_guided_start - hand over control to external navigation controller in AUTO mode
+void auto_nav_guided_start()
+{
+    auto_mode = Auto_NavGuided;
+
+    // call regular guided flight mode initialisation
+    guided_init(true);
+}
+
+// auto_nav_guided_run - allows control by external navigation controller
+//      called by auto_run at 100hz or more
+void auto_nav_guided_run()
+{
+    // call regular guided flight mode run function
+    guided_run();
+}
+#endif  // NAV_GUIDED
 
 // get_default_auto_yaw_mode - returns auto_yaw_mode based on WP_YAW_BEHAVIOR parameter
 // set rtl parameter to true if this is during an RTL
