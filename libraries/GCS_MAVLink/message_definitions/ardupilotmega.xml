@@ -13,6 +13,16 @@
 
           <!-- ardupilot specific MAV_CMD_* commands -->
           <enum name="MAV_CMD">
+            <entry name="MAV_CMD_NAV_GUIDED" value="90">
+              <description>Pass control to an external controller.</description>
+              <param index="1">Timeout in seconds.  The maximum amount of time that the external controller will be allowed to control the vehicle.  0 means no timeout</param>
+              <param index="2">Altitude min. If vehicle moves below this altitude the command will be aborted and the mission will continue.  0 for no lower alt limit</param>
+              <param index="3">Altitude max. If vehicle moves above this altitude the command will be aborted and the mission will continue.  0 for no upper alt limit</param>
+              <param index="4">Horizontal move limit. If vehicle moves more than this distance from it's location at the moment the command was begun, the command will be aborted and the mission will continue.  0 for no horizontal movement limit</param>
+              <param index="5">Empty</param>
+              <param index="6">Empty</param>
+              <param index="7">Empty</param>
+            </entry>
             <entry name="MAV_CMD_DO_MOTOR_TEST" value="209">
               <description>Mission command to perform motor test</description>
               <param index="1">motor sequence number (a number from 1 to max number of motors on the vehicle)</param>
