@@ -8,6 +8,9 @@ static void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
 static void do_circle(const AP_Mission::Mission_Command& cmd);
 static void do_loiter_time(const AP_Mission::Mission_Command& cmd);
 static void do_spline_wp(const AP_Mission::Mission_Command& cmd);
+#if NAV_GUIDED == ENABLED
+static void do_nav_guided(const AP_Mission::Mission_Command& cmd);
+#endif
 static void do_wait_delay(const AP_Mission::Mission_Command& cmd);
 static void do_within_distance(const AP_Mission::Mission_Command& cmd);
 static void do_change_alt(const AP_Mission::Mission_Command& cmd);
@@ -21,6 +24,9 @@ static void do_parachute(const AP_Mission::Mission_Command& cmd);
 static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
 static bool verify_circle(const AP_Mission::Mission_Command& cmd);
 static bool verify_spline_wp(const AP_Mission::Mission_Command& cmd);
+#if NAV_GUIDED == ENABLED
+static bool verify_nav_guided(const AP_Mission::Mission_Command& cmd);
+#endif
 static void auto_spline_start(const Vector3f& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Vector3f& next_spline_destination);
 
 // start_command - this function will be called when the ap_mission lib wishes to start a new command
@@ -67,6 +73,12 @@ static bool start_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_NAV_SPLINE_WAYPOINT:           // 82  Navigate to Waypoint using spline
         do_spline_wp(cmd);
         break;
+
+#if NAV_GUIDED == ENABLED
+    case MAV_CMD_NAV_GUIDED:                    // 90  accept navigation commands from external nav computer
+        do_nav_guided(cmd);
+        break;
+#endif
 
     //
     // conditional commands
@@ -207,6 +219,12 @@ static bool verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_NAV_SPLINE_WAYPOINT:
         return verify_spline_wp(cmd);
         break;
+
+#if NAV_GUIDED == ENABLED
+    case MAV_CMD_NAV_GUIDED:
+        return verify_nav_guided(cmd);
+        break;
+#endif
 
     ///
     /// conditional commands
@@ -483,6 +501,22 @@ static void do_spline_wp(const AP_Mission::Mission_Command& cmd)
     auto_spline_start(local_pos, stopped_at_start, seg_end_type, next_destination);
 }
 
+#if NAV_GUIDED == ENABLED
+// do_nav_guided - initiate accepting commands from exernal nav computer
+static void do_nav_guided(const AP_Mission::Mission_Command& cmd)
+{
+    // record start time so it can be compared vs timeout
+    nav_guided.start_time = millis();
+
+    // record start position so it can be compared vs horizontal limit
+    nav_guided.start_position = inertial_nav.get_position();
+
+    // set spline navigation target
+    auto_nav_guided_start();
+}
+#endif  // NAV_GUIDED
+
+
 #if PARACHUTE == ENABLED
 // do_parachute - configure or release parachute
 static void do_parachute(const AP_Mission::Mission_Command& cmd)
@@ -660,6 +694,42 @@ static bool verify_spline_wp(const AP_Mission::Mission_Command& cmd)
     }
 }
 
+#if NAV_GUIDED == ENABLED
+// verify_nav_guided - check if we have breached any limits
+static bool verify_nav_guided(const AP_Mission::Mission_Command& cmd)
+{
+    // check if we have passed the timeout
+    if ((cmd.p1 > 0) && ((millis() - nav_guided.start_time) / 1000 >= cmd.p1)) {
+        return true;
+    }
+
+    // get current location
+    const Vector3f& curr_pos = inertial_nav.get_position();
+
+    // check if we have gone below min alt
+    if (cmd.content.nav_guided.alt_min != 0 && (curr_pos.z / 100) < cmd.content.nav_guided.alt_min) {
+        return true;
+    }
+
+    // check if we have gone above max alt
+    if (cmd.content.nav_guided.alt_max != 0 && (curr_pos.z / 100) > cmd.content.nav_guided.alt_max) {
+        return true;
+    }
+
+    // check if we have gone beyond horizontal limit
+    if (cmd.content.nav_guided.horiz_max != 0) {
+        float horiz_move = pv_get_horizontal_distance_cm(nav_guided.start_position, curr_pos) / 100;
+        if (horiz_move > cmd.content.nav_guided.horiz_max) {
+            return true;
+        }
+    }
+
+    // if we got here we should continue with the external nav controls
+    return false;
+}
+#endif  // NAV_GUIDED
+
+
 /********************************************************************************/
 //	Condition (May) commands
 /********************************************************************************/
@@ -689,6 +759,9 @@ static void do_change_alt(const AP_Mission::Mission_Command& cmd)
         case Auto_CircleMoveToEdge:
         case Auto_Circle:
             // move circle altitude up to target (we will need to store this target in circle class)
+            break;
+        case Auto_NavGuided:
+            // ignore altitude
             break;
         }
     }
