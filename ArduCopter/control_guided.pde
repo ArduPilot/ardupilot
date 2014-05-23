@@ -37,12 +37,10 @@ static bool guided_init(bool ignore_checks)
 // guided_set_destination - sets guided mode's target destination
 static void guided_set_destination(const Vector3f& destination)
 {
-    if (control_mode == GUIDED) {
-        wp_nav.set_wp_destination(destination);
-        if (!guided_pilot_yaw_override_yaw) {
-            // get default yaw mode
-            set_auto_yaw_mode(get_default_auto_yaw_mode(false));
-        }
+    wp_nav.set_wp_destination(destination);
+    if (!guided_pilot_yaw_override_yaw) {
+        // get default yaw mode
+        set_auto_yaw_mode(get_default_auto_yaw_mode(false));
     }
 }
 
