@@ -19,8 +19,8 @@
  *               Note: this final stage relies upon the AttitudeControl libraries angle_ef_targets having been saved by the attitude_control.init_targets() call and not modified afterwards
  */
 
-#define FLIP_THR_INC        170     // throttle increase during Flip_Start stage (under 45deg lean angle)
-#define FLIP_THR_DEC        120     // throttle decrease during Flip_Roll stage (between 45deg ~ -90deg roll)
+#define FLIP_THR_INC        200     // throttle increase during Flip_Start stage (under 45deg lean angle)
+#define FLIP_THR_DEC        240     // throttle decrease during Flip_Roll stage (between 45deg ~ -90deg roll)
 #define FLIP_ROLL_RATE      40000   // roll rate request in centi-degrees / sec (i.e. 400 deg/sec)
 #define FLIP_TIMEOUT_MS     2500    // timeout after 2.5sec.  Vehicle will switch back to original flight mode
 #define FLIP_RECOVERY_ANGLE 500     // consider successful recovery when roll is back within 5 degrees of original
@@ -28,10 +28,14 @@
 #define FLIP_ROLL_RIGHT      1      // used to set flip_dir
 #define FLIP_ROLL_LEFT      -1      // used to set flip_dir
 
+#define FLIP_PITCH_BACK      1      // used to set flip_dir
+#define FLIP_PITCH_FORWARD   -1      // used to set flip_dir
+
 FlipState flip_state;               // current state of flip
 uint8_t   flip_orig_control_mode;   // flight mode when flip was initated
 uint32_t  flip_start_time;          // time since flip began
-int8_t    flip_dir;                 // roll direction (-1 = roll left, 1 = roll right)
+int8_t    flip_roll_dir;            // roll direction (-1 = roll left, 1 = roll right)
+int8_t    flip_pitch_dir;           // roll direction (-1 = roll left, 1 = roll right)
 
 // flip_init - initialise flip controller
 static bool flip_init(bool ignore_checks)
@@ -62,14 +66,26 @@ static bool flip_init(bool ignore_checks)
     // initialise state
     flip_state = Flip_Start;
     flip_start_time = millis();
+    
+    flip_roll_dir = flip_pitch_dir = 0;
 
     // choose direction based on pilot's roll stick
-    if (g.rc_1.control_in >= 0) {
-        flip_dir = FLIP_ROLL_RIGHT;
+    if (g.rc_2.control_in > 300) {
+        flip_pitch_dir = FLIP_PITCH_BACK;
+    }else if(g.rc_2.control_in < -300) {
+        flip_pitch_dir = FLIP_PITCH_FORWARD;
     }else{
-        flip_dir = FLIP_ROLL_LEFT;
-    }
-
+        if (g.rc_1.control_in >= 0) {
+            flip_roll_dir = FLIP_ROLL_RIGHT;
+        }else{
+            flip_roll_dir = FLIP_ROLL_LEFT;
+        }
+    }    
+    
+    // For Debugging
+    //flip_roll_dir = 0; //1;
+    //flip_pitch_dir = FLIP_PITCH_FORWARD;
+    
     // log start of flip
     Log_Write_Event(DATA_FLIP_START);
 
@@ -104,39 +120,80 @@ static void flip_run()
 {
     const Vector3f curr_ef_targets = attitude_control.angle_ef_targets();   // original earth-frame angle targets to recover
     int16_t throttle_out;
+    float recovery_angle;
 
     // if pilot inputs roll > 40deg or timeout occurs abandon flip
-    if (!motors.armed() || (abs(g.rc_1.control_in) >= 4000) || ((millis() - flip_start_time) > FLIP_TIMEOUT_MS)) {
+    if (!motors.armed() || (abs(g.rc_1.control_in) >= 4000) || (abs(g.rc_2.control_in) >= 4000) || ((millis() - flip_start_time) > FLIP_TIMEOUT_MS)) {
         flip_state = Flip_Abandon;
     }
 
     // get pilot's desired throttle
     throttle_out = get_pilot_desired_throttle(g.rc_3.control_in);
 
-    // get roll rate
-    int32_t roll_angle = ahrs.roll_sensor * flip_dir;
-
+    // get corrected angle based on direction and axis of rotation
+    // we flip the sign of flip_angle to minimize the code repetition
+    int32_t flip_angle;
+    
+    if(flip_roll_dir != 0){
+        flip_angle = ahrs.roll_sensor * flip_roll_dir;
+    }else{
+        flip_angle = ahrs.pitch_sensor * flip_pitch_dir;
+    }
+    
     // state machine
     switch (flip_state) {
 
     case Flip_Start:
         // under 45 degrees request 400deg/sec roll
-        attitude_control.rate_bf_roll_pitch_yaw(FLIP_ROLL_RATE * flip_dir, 0.0, 0.0);
+        attitude_control.rate_bf_roll_pitch_yaw(FLIP_ROLL_RATE * flip_roll_dir, FLIP_ROLL_RATE * flip_pitch_dir, 0.0);
+
         // increase throttle
         throttle_out += FLIP_THR_INC;
+
         // beyond 45deg lean angle move to next stage
-        if (roll_angle >= 4500) {
-            flip_state = Flip_Roll;
+        if (flip_angle >= 4500) {
+            if(flip_roll_dir != 0){
+                // we are rolling
+                flip_state = Flip_Roll;
+            }else{
+                // we are pitching
+                flip_state = Flip_Pitch_A;
+            }
         }
         break;
 
     case Flip_Roll:
         // between 45deg ~ -90deg request 400deg/sec roll
-        attitude_control.rate_bf_roll_pitch_yaw(FLIP_ROLL_RATE * flip_dir, 0.0, 0.0);
+        attitude_control.rate_bf_roll_pitch_yaw(FLIP_ROLL_RATE * flip_roll_dir, 0.0, 0.0);
         // decrease throttle
         throttle_out -= FLIP_THR_DEC;
+        
         // beyond -90deg move on to recovery
-        if((roll_angle < 4500) && (roll_angle > -9000)) {
+        if((flip_angle < 4500) && (flip_angle > -9000)){
+            flip_state = Flip_Recover;
+        }
+        break;
+
+    case Flip_Pitch_A:
+        // between 45deg ~ -90deg request 400deg/sec roll
+        attitude_control.rate_bf_roll_pitch_yaw(0.0, FLIP_ROLL_RATE * flip_pitch_dir, 0.0);
+        // decrease throttle
+        throttle_out -= FLIP_THR_DEC;
+
+        // check roll for inversion
+        if((labs(ahrs.roll_sensor) > 9000) && (flip_angle > 4500)){
+            flip_state = Flip_Pitch_B;
+        }
+        break;
+
+    case Flip_Pitch_B:
+        // between 45deg ~ -90deg request 400deg/sec roll
+        attitude_control.rate_bf_roll_pitch_yaw(0.0, FLIP_ROLL_RATE * flip_pitch_dir, 0.0);
+        // decrease throttle
+        throttle_out -= FLIP_THR_DEC;
+
+        // check roll for inversion
+        if((labs(ahrs.roll_sensor) < 9000) && (flip_angle > -4500)){
             flip_state = Flip_Recover;
         }
         break;
@@ -147,9 +204,17 @@ static void flip_run()
 
         // increase throttle to gain any lost alitude
         throttle_out += FLIP_THR_INC;
-
+        
+        if(flip_roll_dir != 0){
+            // we are rolling
+            recovery_angle = fabs(curr_ef_targets.x - (float)ahrs.roll_sensor);
+        }else{
+            // we are pitching
+            recovery_angle = fabs(curr_ef_targets.y - (float)ahrs.pitch_sensor);
+        }
+        
         // check for successful recovery
-        if (fabs(curr_ef_targets.x - (float)ahrs.roll_sensor) <= FLIP_RECOVERY_ANGLE) {
+        if (recovery_angle <= FLIP_RECOVERY_ANGLE) {
             // restore original flight mode
             if (!set_mode(flip_orig_control_mode)) {
                 // this should never happen but just in case
@@ -170,6 +235,8 @@ static void flip_run()
         Log_Write_Error(ERROR_SUBSYSTEM_FLIP,ERROR_CODE_FLIP_ABANDONED);
         break;
     }
+    
+    throttle_out = max(throttle_out, g.throttle_min);
 
     // output pilot's throttle without angle boost
     attitude_control.set_throttle_out(throttle_out, false);
