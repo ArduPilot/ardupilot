@@ -60,14 +60,27 @@ void LinuxGPIO::init()
 
 void LinuxGPIO::pinMode(uint8_t pin, uint8_t output)
 {
-    int fd;
+    int fd,len;
     char buf[64];
 
     snprintf(buf, sizeof(buf), SYSFS_GPIO_DIR  "/gpio%d/direction", pin);
 
     fd = ::open(buf, O_WRONLY);
     if (fd < 0) {
-        perror("LinuxGPIO::direction");
+        fd = open(SYSFS_GPIO_DIR "/export", O_WRONLY);                              //try exporting GPIO pin
+        if (fd < 0) {
+           perror("LinuxGPIO::direction");
+        }
+ 
+        len = snprintf(buf, sizeof(buf), "%d", pin);
+        ::write(fd, buf, len);
+        close(fd);
+
+        snprintf(buf, sizeof(buf), SYSFS_GPIO_DIR  "/gpio%d/direction", pin);       //retry writing direction
+        fd = ::open(buf, O_WRONLY);
+        if (fd < 0) {
+            perror("LinuxGPIO::direction");                                         //report faillure
+        }
     }
 
     if (output == GPIO_OUTPUT)
