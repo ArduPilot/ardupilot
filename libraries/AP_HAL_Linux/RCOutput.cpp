@@ -90,7 +90,7 @@ void LinuxRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)            //LSB
 {
     int _fd, ret,i;
     unsigned long period_ns=1000000000/(unsigned long)freq_hz;
-    char period_sysfs_path[20],buffer[15];
+    char period_sysfs_path[30],buffer[15];
     sprintf(buffer,"%lu",(unsigned long)period_ns);
    
     for(i=0;i<12;i++){
@@ -113,7 +113,7 @@ uint16_t LinuxRCOutput::get_freq(uint8_t ch)
 {
     int _fd, ret;
     int freq_hz;
-    char period_sysfs_path[20],buffer[15];
+    char period_sysfs_path[30],buffer[15];
     sprintf(period_sysfs_path,"%s/pwm%d%s",PWM_DIR,chan_pru_map[ch],"/period_ns");
     
     _fd=open(period_sysfs_path,O_RDONLY);
@@ -133,7 +133,7 @@ uint16_t LinuxRCOutput::get_freq(uint8_t ch)
 void LinuxRCOutput::enable_ch(uint8_t ch)
 {
     int _fd, ret;
-    char run_sysfs_path[20],buffer[]="1";
+    char run_sysfs_path[30],buffer[]="1";
     sprintf(run_sysfs_path,"%s/pwm%d%s",PWM_DIR,chan_pru_map[ch],"/run");
     
     _fd=open(run_sysfs_path,O_WRONLY);
@@ -150,7 +150,7 @@ void LinuxRCOutput::enable_ch(uint8_t ch)
 void LinuxRCOutput::disable_ch(uint8_t ch)
 {
     int _fd, ret;
-    char run_sysfs_path[20],buffer[]="0";
+    char run_sysfs_path[30],buffer[]="0";
     sprintf(run_sysfs_path,"%s/pwm%d%s",PWM_DIR,chan_pru_map[ch],"/run");
     
     _fd=open(run_sysfs_path,O_WRONLY);
@@ -167,7 +167,7 @@ void LinuxRCOutput::disable_ch(uint8_t ch)
 void LinuxRCOutput::write(uint8_t ch, uint16_t period_us)
 {
     int _fd, ret;
-    char duty_sysfs_path[20],buffer[15];
+    char duty_sysfs_path[30],buffer[15];
     sprintf(buffer,"%lu",(unsigned long)period_us*1000);
     sprintf(duty_sysfs_path,"%s/pwm%d%s",PWM_DIR,chan_pru_map[ch],"/duty_ns");
     
@@ -185,7 +185,7 @@ void LinuxRCOutput::write(uint8_t ch, uint16_t period_us)
 void LinuxRCOutput::write(uint8_t ch, uint16_t* period_us, uint8_t len)
 {
     int _fd, ret,i;
-    char duty_sysfs_path[25],buffer[15];
+    char duty_sysfs_path[30],buffer[15];
     for(i=0;i<len;i++){
         sprintf(buffer,"%lu",(unsigned long)period_us[i]*1000);
         sprintf(duty_sysfs_path,"%s/pwm%d%s",PWM_DIR,chan_pru_map[ch+i],"/duty_ns");
@@ -205,7 +205,7 @@ void LinuxRCOutput::write(uint8_t ch, uint16_t* period_us, uint8_t len)
 
 uint16_t LinuxRCOutput::read(uint8_t ch) {
     int _fd, ret;
-    char duty_sysfs_path[25],buffer[15];
+    char duty_sysfs_path[30],buffer[15];
     
     sprintf(duty_sysfs_path,"%s/pwm%d%s",PWM_DIR,chan_pru_map[ch],"/duty_ns");
     
@@ -226,7 +226,7 @@ uint16_t LinuxRCOutput::read(uint8_t ch) {
 void LinuxRCOutput::read(uint16_t* period_us, uint8_t len)
 {
     int _fd, ret ,i;
-    char duty_sysfs_path[25],buffer[15];
+    char duty_sysfs_path[30],buffer[15];
     for(i=0;i<len;i++){
         sprintf(duty_sysfs_path,"%s/pwm%d%s",PWM_DIR,chan_pru_map[i],"/duty_ns");
     
