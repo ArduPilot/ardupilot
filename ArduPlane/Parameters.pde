@@ -375,12 +375,21 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: THR_MAX
     // @DisplayName: Maximum Throttle
-    // @Description: The maximum throttle setting to which the autopilot will apply.
+    // @Description: The maximum throttle setting as a percentage which the autopilot will apply.
     // @Units: Percent
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
     ASCALAR(throttle_max,           "THR_MAX",        THROTTLE_MAX),
+
+    // @Param: TKOFF_THR_MAX
+    // @DisplayName: Maximum Throttle for takeoff
+    // @Description: The maximum throttle setting during automatic takeoff. If this is zero then THR_MAX is used for takeoff as well.
+    // @Units: Percent
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Advanced
+    GSCALAR(takeoff_throttle_max,   "TKOFF_THR_MAX",        0),
 
     // @Param: THR_SLEWRATE
     // @DisplayName: Throttle slew rate

@@ -155,3 +155,14 @@ static int8_t takeoff_tail_hold(void)
     // we are holding the tail down
     return g.takeoff_tdrag_elevator;
 }
+
+/*
+  return throttle percentage for takeoff
+ */
+static uint8_t takeoff_throttle(void)
+{
+    if (g.takeoff_throttle_max != 0) {
+        return g.takeoff_throttle_max;
+    }
+    return aparm.throttle_max;
+}

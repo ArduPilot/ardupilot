@@ -1118,7 +1118,7 @@ static void handle_auto_mode(void)
         takeoff_calc_pitch();
         
         // max throttle for takeoff
-        channel_throttle->servo_out = aparm.throttle_max;
+        channel_throttle->servo_out = takeoff_throttle();
         break;
 
     case MAV_CMD_NAV_LAND:
