@@ -2,6 +2,7 @@
 
 #include <AP_HAL.h>
 #include "AP_InertialSensor_MPU6000.h"
+#include "GPIO.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -180,10 +181,7 @@ uint16_t AP_InertialSensor_MPU6000::_init_sensor( Sample_rate sample_rate )
     _spi = hal.spi->device(AP_HAL::SPIDevice_MPU6000);
     _spi_sem = _spi->get_semaphore();
 
-    /* Pin 70 defined especially to hook
-       up PE6 to the hal.gpio abstraction.
-       (It is not a valid pin under Arduino.) */
-    _drdy_pin = hal.gpio->channel(70);
+    _drdy_pin = hal.gpio->channel(26); // BBB_P8_14
 
     hal.scheduler->suspend_timer_procs();
 

@@ -9,7 +9,7 @@
 #include <AP_Progmem.h>
 #include "AP_InertialSensor.h"
 
-#define MPU6000_CS_PIN       53        // APM pin connected to mpu6000's chip select pin
+#define MPU6000_CS_PIN       113        // Corresponding to P9_28
 
 // enable debug to see a register dump on startup
 #define MPU6000_DEBUG 0
