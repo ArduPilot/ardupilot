@@ -150,7 +150,7 @@ void LinuxGPIO::toggle(uint8_t pin)
 
 /* Alternative interface: */
 AP_HAL::DigitalSource* LinuxGPIO::channel(uint16_t n) {
-    return new LinuxDigitalSource(0);
+    return new LinuxDigitalSource(n);
 }
 
 /* Interrupt interface: */
@@ -166,21 +166,103 @@ bool LinuxGPIO::usb_connected(void)
 
 LinuxDigitalSource::LinuxDigitalSource(uint8_t v) :
     _v(v)
-{}
+{
+    int fd, len;
+    char buf[64];
+
+    fd = open(SYSFS_GPIO_DIR "/export", O_WRONLY);
+    if (fd < 0) {
+        perror("LinuxGPIO::init");
+    }
+
+    len = snprintf(buf, sizeof(buf), "%d", v);
+    ::write(fd, buf, len);
+    close(fd);
+    
+}
 
 void LinuxDigitalSource::mode(uint8_t output)
-{}
+{
+    
+    int fd,len;
+    char buf[64];
+
+    snprintf(buf, sizeof(buf), SYSFS_GPIO_DIR  "/gpio%d/direction",_v);
+
+    fd = ::open(buf, O_WRONLY);
+    if (fd < 0) {
+        fd = open(SYSFS_GPIO_DIR "/export", O_WRONLY);                              //try exporting GPIO pin
+        if (fd < 0) {
+           perror("LinuxGPIO::direction");
+        }
+ 
+        len = snprintf(buf, sizeof(buf), "%d",_v);
+        ::write(fd, buf, len);
+        close(fd);
+
+        snprintf(buf, sizeof(buf), SYSFS_GPIO_DIR  "/gpio%d/direction",_v);       //retry writing direction
+        fd = ::open(buf, O_WRONLY);
+        if (fd < 0) {
+            perror("LinuxGPIO::direction");                                         //report faillure
+        }
+    }
+
+    if (output == GPIO_OUTPUT)
+        ::write(fd, "out", 4);
+    else
+        ::write(fd, "in", 3);
+
+    close(fd);
+
+}
 
 uint8_t LinuxDigitalSource::read() {
-    return _v;
+    int fd;
+    char buf[64];
+    char ch;
+
+    snprintf(buf, sizeof(buf), SYSFS_GPIO_DIR "/gpio%d/value",_v);
+
+    fd = open(buf, O_RDONLY);
+    if (fd < 0) {
+        perror("LinuxGPIO::read");
+    }
+
+    ::read(fd, &ch, 1);
+    
+    close(fd);
+
+    if (ch == '0') {
+        return 0;
+    } 
+    else if (ch == '1'){
+        return 1;
+    }
+
+    return -1;
 }
 
 void LinuxDigitalSource::write(uint8_t value) {
-    _v = value;
+    int fd;
+    char buf[64];
+
+    snprintf(buf, sizeof(buf), SYSFS_GPIO_DIR "/gpio%d/value",_v);
+
+    fd = open(buf, O_WRONLY);
+    if (fd < 0) {
+        perror("LinuxGPIO::write");
+    }
+
+    if (value==LOW)
+       ::write(fd, "0", 2);
+    else
+       ::write(fd, "1", 2);
+
+    close(fd);
 }
 
 void LinuxDigitalSource::toggle() {
-    _v = !_v;
+    write(!read());
 }
 
 #endif // CONFIG_HAL_BOARD
