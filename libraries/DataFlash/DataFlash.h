@@ -323,6 +323,8 @@ struct PACKED log_EKF4 {
     int16_t sqrtvarVT;
     int8_t  offsetNorth;
     int8_t  offsetEast;
+    uint8_t faults;
+    uint8_t divergeRate;
 };
 
 struct PACKED log_Cmd {
@@ -386,7 +388,7 @@ struct PACKED log_Radio {
     { LOG_EKF3_MSG, sizeof(log_EKF3), \
       "EKF3","Icccccchhhc","TimeMS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IVT" }, \
     { LOG_EKF4_MSG, sizeof(log_EKF4), \
-      "EKF4","Icccccccbb","TimeMS,SV,SP,SH,SMX,SMY,SMZ,SVT,OFN,EFE" }, \
+      "EKF4","IcccccccbbBB","TimeMS,SV,SP,SH,SMX,SMY,SMZ,SVT,OFN,EFE,FS,DS" }, \
     { LOG_CMD_MSG, sizeof(log_Cmd), \
       "CMD", "IHHHfffffff","TimeMS,CTot,CNum,CId,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt" }, \
     { LOG_RADIO_MSG, sizeof(log_Radio), \

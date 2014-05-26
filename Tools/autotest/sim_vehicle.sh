@@ -6,6 +6,7 @@ TRACKER_LOCATION="CMAC_PILOTSBOX"
 VEHICLE=""
 BUILD_TARGET="sitl"
 FRAME=""
+NUM_PROCS=1
 
 # check the instance number to allow for multiple copies of the sim running at once
 INSTANCE=0
@@ -35,6 +36,7 @@ Options:
     -f FRAME         set aircraft frame type
                      for copters can choose +, X, quad or octa
                      for planes can choose elevon or vtail
+    -j NUM_PROC      number of processors to use during build (default 1)
 
 mavproxy_options:
     --map            start with a map
@@ -51,7 +53,7 @@ EOF
 
 
 # parse options. Thanks to http://wiki.bash-hackers.org/howto/getopts_tutorial
-while getopts ":I:VgGcTL:v:hwf:" opt; do
+while getopts ":I:VgGcj:TL:v:hwf:" opt; do
   case $opt in
     v)
       VEHICLE=$OPTARG
@@ -83,6 +85,9 @@ while getopts ":I:VgGcTL:v:hwf:" opt; do
       ;;
     c)
       CLEAN_BUILD=1
+      ;;
+    j)
+      NUM_PROCS=$OPTARG
       ;;
     w)
       WIPE_EEPROM=1
@@ -178,9 +183,9 @@ pushd $autotest/../../$VEHICLE || {
 if [ $CLEAN_BUILD == 1 ]; then
     make clean
 fi
-make $BUILD_TARGET -j4 || {
+make $BUILD_TARGET -j$NUM_PROCS || {
     make clean
-    make $BUILD_TARGET -j4
+    make $BUILD_TARGET -j$NUM_PROCS
 }
 popd
 
@@ -206,9 +211,9 @@ if [ $START_ANTENNA_TRACKER == 1 ]; then
     if [ $CLEAN_BUILD == 1 ]; then
         make clean
     fi
-    make sitl -j4 || {
+    make sitl -j$NUM_PROCS || {
         make clean
-        make sitl -j4
+        make sitl -j$NUM_PROCS
     }
     TRACKER_INSTANCE=1
     TRACKIN_PORT="127.0.0.1:"$((5502+10*$TRACKER_INSTANCE))

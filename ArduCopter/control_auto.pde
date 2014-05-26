@@ -26,8 +26,12 @@ static bool auto_init(bool ignore_checks)
         if (auto_yaw_mode == AUTO_YAW_ROI) {
             set_auto_yaw_mode(AUTO_YAW_HOLD);
         }
-        // start the mission
-        mission.start();
+
+        // initialise waypoint and spline controller
+        wp_nav.wp_and_spline_init();
+
+        // start/resume the mission (based on MIS_RESTART parameter)
+        mission.start_or_resume();
         return true;
     }else{
         return false;
@@ -248,7 +252,7 @@ static void auto_land_start(const Vector3f& destination)
     auto_mode = Auto_Land;
 
     // initialise loiter target destination
-    wp_nav.set_loiter_target(destination);
+    wp_nav.init_loiter_target(destination);
 
     // initialise altitude target to stopping point
     pos_control.set_target_to_stopping_point_z();

@@ -34,6 +34,8 @@
 
 #define POSCONTROL_DT_10HZ                      0.10f   // time difference in seconds for 10hz update rate
 
+#define POSCONTROL_ACTIVE_TIMEOUT_MS            200     // position controller is considered active if it has been called within the past 200ms (0.2 seconds)
+
 class AC_PosControl
 {
 public:
@@ -67,10 +69,10 @@ public:
     void set_speed_z(float speed_down, float speed_up);
 
     /// get_speed_up - accessor for current up speed in cm/s
-    float get_speed_up() { return _speed_up_cms; }
+    float get_speed_up() const { return _speed_up_cms; }
 
     /// get_speed_down - accessors for current down speed in cm/s.  Will be a negative number
-    float get_speed_down() { return _speed_down_cms; }
+    float get_speed_down() const { return _speed_down_cms; }
 
     /// set_accel_z - set vertical acceleration in cm/s/s
     ///     leash length will be recalculated the next time update_z_controller() is called
@@ -117,6 +119,9 @@ public:
     /// init_takeoff - initialises target altitude if we are taking off
     void init_takeoff();
 
+    // is_active - returns true if the z-axis position controller has been run very recently
+    bool is_active_z() const;
+
     /// update_z_controller - fly to altitude in cm above home
     void update_z_controller();
 
@@ -130,6 +135,12 @@ public:
     ///
     /// xy position controller
     ///
+
+    /// init_xy_controller - initialise the xy controller
+    ///     sets target roll angle, pitch angle and I terms based on vehicle current lean angles
+    ///     should be called once whenever significant changes to the position target are made
+    ///     this does not update the xy target
+    void init_xy_controller();
 
     /// set_accel_xy - set horizontal acceleration in cm/s/s
     ///     leash length will be recalculated the next time update_xy_controller() is called
@@ -151,6 +162,9 @@ public:
     /// set_pos_target in cm from home
     void set_pos_target(const Vector3f& position);
 
+    /// set_xy_target in cm from home
+    void set_xy_target(float x, float y);
+
     /// get_desired_velocity - returns xy desired velocity (i.e. feed forward) in cm/s in lat and lon direction
     const Vector2f& get_desired_velocity() { return _vel_desired; }
 
@@ -161,6 +175,9 @@ public:
 
     /// trigger_xy - used to notify the position controller than an update has been made to the position or desired velocity so that the position controller will run as soon as possible after the update
     void trigger_xy() { _flags.force_recalc_xy = true; }
+
+    // is_active_xy - returns true if the xy position controller has been run very recently
+    bool is_active_xy() const;
 
     /// update_xy_controller - run the horizontal position controller - should be called at 100hz or higher
     ///     when use_desired_velocity is true the desired velocity (i.e. feed forward) is incorporated at the pos_to_rate step
@@ -196,6 +213,9 @@ public:
     const Vector3f& get_vel_target() const { return _vel_target; }
     const Vector3f& get_accel_target() const { return _accel_target; }
 
+    // lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
+    void lean_angles_to_accel(float& accel_x_cmss, float& accel_y_cmss) const;
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -207,6 +227,10 @@ private:
             uint8_t force_recalc_xy : 1;    // 1 if we want the xy position controller to run at it's next possible time.  set by loiter and wp controllers after they have updated the target position.
             uint8_t slow_cpu        : 1;    // 1 if we are running on a slow_cpu machine.  xy position control is broken up into multiple steps
             uint8_t keep_xy_I_terms : 1;    // 1 if we are to keep I terms when the position controller is next run.  Reset automatically back to zero in update_xy_controller.
+            uint8_t reset_desired_vel_to_pos: 1;    // 1 if we should reset the rate_to_accel_xy step
+            uint8_t reset_rate_to_accel_xy  : 1;    // 1 if we should reset the rate_to_accel_xy step
+            uint8_t reset_rate_to_accel_z   : 1;    // 1 if we should reset the rate_to_accel_z step
+            uint8_t reset_accel_to_throttle : 1;    // 1 if we should reset the accel_to_throttle step of the z-axis controller
     } _flags;
 
     // limit flags structure
@@ -257,9 +281,6 @@ private:
     ///    converts desired accelerations provided in lat/lon frame to roll/pitch angles
     void accel_to_lean_angles();
 
-    /// reset_I_xy - clears I terms from horizontal position PID controller
-    void reset_I_xy();
-
     /// calc_leash_length - calculates the horizontal leash length given a maximum speed, acceleration and position kP gain
     float calc_leash_length(float speed_cms, float accel_cms, float kP) const;
 
@@ -282,10 +303,8 @@ private:
 
     // internal variables
     float       _dt;                    // time difference (in seconds) between calls from the main program
-    uint32_t    _last_update_ms;        // system time of last update_position_controller call
-    uint32_t    _last_update_rate_ms;   // system time of last call to rate_to_accel_z (alt hold accel controller)
-    uint32_t    _last_update_accel_ms;  // system time of last call to accel_to_throttle (alt hold accel controller)
-    uint8_t     _step;                  // used to decide which portion of position controller to run during this iteration
+    uint32_t    _last_update_xy_ms;     // system time of last update_xy_controller call
+    uint32_t    _last_update_z_ms;      // system time of last update_z_controller call
     float       _speed_down_cms;        // max descent rate in cm/s
     float       _speed_up_cms;          // max climb rate in cm/s
     float       _speed_cms;             // max horizontal speed in cm/s
@@ -294,9 +313,6 @@ private:
     float       _leash;                 // horizontal leash length in cm.  target will never be further than this distance from the vehicle
     float       _leash_down_z;          // vertical leash down in cm.  target will never be further than this distance below the vehicle
     float       _leash_up_z;            // vertical leash up in cm.  target will never be further than this distance above the vehicle
-    float       _cos_yaw;               // short-cut to save on calcs required to convert roll-pitch frame to lat-lon frame
-    float       _sin_yaw;
-    float       _cos_pitch;
 
     // output from controller
     float       _roll_target;           // desired roll angle in centi-degrees calculated by position controller
@@ -308,7 +324,7 @@ private:
     Vector2f    _vel_desired;           // desired velocity in cm/s in lat and lon directions (provided by external callers of move_target_at_rate() method)
     Vector3f    _vel_target;            // velocity target in cm/s calculated by pos_to_rate step
     Vector3f    _vel_error;             // error between desired and actual acceleration in cm/s
-    Vector3f    _vel_last;              // previous iterations velocity in cm/s
+    Vector2f    _vel_last;              // previous iterations velocity in cm/s
     float       _vel_target_filt_z;     // filtered target vertical velocity
     Vector3f    _accel_target;          // desired acceleration in cm/s/s  // To-Do: are xy actually required?
     Vector3f    _accel_error;           // desired acceleration in cm/s/s  // To-Do: are xy actually required?

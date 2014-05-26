@@ -107,6 +107,14 @@ public:
         k_param_gps,
         k_param_autotune_level,
         k_param_rally,
+        k_param_serial0_baud,
+        k_param_serial1_baud,
+        k_param_serial2_baud,
+        k_param_takeoff_tdrag_elevator,
+        k_param_takeoff_tdrag_speed1,
+        k_param_takeoff_rotate_speed,
+        k_param_takeoff_throttle_slewrate,
+        k_param_takeoff_throttle_max,
 
         // 100: Arming parameters
         k_param_arming = 100,
@@ -122,11 +130,11 @@ public:
         k_param_gcs1,               // stream rates for uartC
         k_param_sysid_this_mav,
         k_param_sysid_my_gcs,
-        k_param_serial1_baud,
+        k_param_serial1_baud_old,   // deprecated
         k_param_telem_delay,
-        k_param_serial0_baud,
+        k_param_serial0_baud_old,   // deprecated
         k_param_gcs2,               // stream rates for uartD
-        k_param_serial2_baud,
+        k_param_serial2_baud_old,   // deprecated
 
         // 120: Fly-by-wire control
         //
@@ -293,10 +301,10 @@ public:
     //
     AP_Int16 sysid_this_mav;
     AP_Int16 sysid_my_gcs;
-    AP_Int8 serial0_baud;
-    AP_Int8 serial1_baud;
+    AP_Int16 serial0_baud;
+    AP_Int16 serial1_baud;
 #if MAVLINK_COMM_NUM_BUFFERS > 2
-    AP_Int8 serial2_baud;
+    AP_Int16 serial2_baud;
 #endif
     AP_Int8 telem_delay;
 
@@ -426,6 +434,11 @@ public:
     AP_Float takeoff_throttle_min_speed;
     AP_Float takeoff_throttle_min_accel;
     AP_Int8 takeoff_throttle_delay;
+    AP_Int8 takeoff_tdrag_elevator;
+    AP_Float takeoff_tdrag_speed1;
+    AP_Float takeoff_rotate_speed;
+    AP_Int8 takeoff_throttle_slewrate;
+    AP_Int8 takeoff_throttle_max;
     AP_Int8 level_roll_limit;
     AP_Int8 flapin_channel;
     AP_Int8 flaperon_output;

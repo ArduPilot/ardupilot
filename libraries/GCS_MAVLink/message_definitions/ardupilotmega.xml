@@ -10,139 +10,20 @@
     -->
 
 	<enums>
-	  <!-- Camera Mount mode Enumeration -->
-	  <enum name="MAV_MOUNT_MODE">
-	    <description>Enumeration of possible mount operation modes</description>
-	    <entry name="MAV_MOUNT_MODE_RETRACT" value="0"><description>Load and keep safe position (Roll,Pitch,Yaw) from EEPROM and stop stabilization</description></entry>
-	    <entry name="MAV_MOUNT_MODE_NEUTRAL" value="1"><description>Load and keep neutral position (Roll,Pitch,Yaw) from EEPROM.</description></entry>
-	    <entry name="MAV_MOUNT_MODE_MAVLINK_TARGETING" value="2"><description>Load neutral position and start MAVLink Roll,Pitch,Yaw control with stabilization</description></entry>
-	    <entry name="MAV_MOUNT_MODE_RC_TARGETING" value="3"><description>Load neutral position and start RC Roll,Pitch,Yaw control with stabilization</description></entry>
-	    <entry name="MAV_MOUNT_MODE_GPS_POINT" value="4"><description>Load neutral position and start to point to Lat,Lon,Alt</description></entry>
-	  </enum>
 
-	  <enum name="MAV_CMD" >
-	    <!-- Camera Controller Mission Commands Enumeration -->
-	    <entry name="MAV_CMD_DO_DIGICAM_CONFIGURE" value="202">
-	      <description>Mission command to configure an on-board camera controller system.</description>
-	      <param index="1">Modes: P, TV, AV, M, Etc</param>
-	      <param index="2">Shutter speed: Divisor number for one second</param>
-	      <param index="3">Aperture: F stop number</param>
-	      <param index="4">ISO number e.g. 80, 100, 200, Etc</param>
-	      <param index="5">Exposure type enumerator</param>
-	      <param index="6">Command Identity</param>
-	      <param index="7">Main engine cut-off time before camera trigger in seconds/10 (0 means no cut-off)</param>
-	    </entry>
-	    
-	    <entry name="MAV_CMD_DO_DIGICAM_CONTROL" value="203">
-	      <description>Mission command to control an on-board camera controller system.</description>
-	      <param index="1">Session control e.g. show/hide lens</param>
-	      <param index="2">Zoom's absolute position</param>
-	      <param index="3">Zooming step value to offset zoom from the current position</param>
-	      <param index="4">Focus Locking, Unlocking or Re-locking</param>
-	      <param index="5">Shooting Command</param>
-	      <param index="6">Command Identity</param>
-	      <param index="7">Empty</param>
-	    </entry>
-	    
-	    <!-- Camera Mount Mission Commands Enumeration -->
-	    <entry name="MAV_CMD_DO_MOUNT_CONFIGURE" value="204">
-	      <description>Mission command to configure a camera or antenna mount</description>
-	      <param index="1">Mount operation mode (see MAV_MOUNT_MODE enum)</param>
-	      <param index="2">stabilize roll? (1 = yes, 0 = no)</param>
-	      <param index="3">stabilize pitch? (1 = yes, 0 = no)</param>
-	      <param index="4">stabilize yaw? (1 = yes, 0 = no)</param>
-	      <param index="5">Empty</param>
-	      <param index="6">Empty</param>
-	      <param index="7">Empty</param>
-	    </entry>
-	
-	    <entry name="MAV_CMD_DO_MOUNT_CONTROL" value="205">
-	      <description>Mission command to control a camera or antenna mount</description>
-	      <param index="1">pitch(deg*100) or lat, depending on mount mode.</param>
-	      <param index="2">roll(deg*100) or lon depending on mount mode</param>
-	      <param index="3">yaw(deg*100) or alt (in cm) depending on mount mode</param>
-	      <param index="4">Empty</param>
-	      <param index="5">Empty</param>
-	      <param index="6">Empty</param>
-	      <param index="7">Empty</param>
-	    </entry>
-
-	    <entry name="MAV_CMD_DO_SET_CAM_TRIGG_DIST" value="206">
-	      <description>Mission command to set CAM_TRIGG_DIST for this flight</description>
-	      <param index="1">Camera trigger distance (meters)</param>
-	      <param index="2">Empty</param>
-	      <param index="3">Empty</param>
-	      <param index="4">Empty</param>
-	      <param index="5">Empty</param>
-	      <param index="6">Empty</param>
-	      <param index="7">Empty</param>
-      </entry>
-
-      <entry name="MAV_CMD_DO_FENCE_ENABLE" value="207">
-          <description>Mission command to enable the geofence</description>
-          <param index="1">enable? (0=disable, 1=enable)</param>
-          <param index="2">Empty</param>
-	      <param index="3">Empty</param>
-	      <param index="4">Empty</param>
-	      <param index="5">Empty</param>
-	      <param index="6">Empty</param>
-	      <param index="7">Empty</param>
-        </entry>
-
-      <entry name="MAV_CMD_DO_PARACHUTE" value="208">
-          <description>Mission command to trigger a parachute</description>
-          <param index="1">action (0=disable, 1=enable, 2=release, See PARACHUTE_ACTION enum)</param>
-          <param index="2">Empty</param>
-          <param index="3">Empty</param>
-          <param index="4">Empty</param>
-          <param index="5">Empty</param>
-          <param index="6">Empty</param>
-          <param index="7">Empty</param>
-      </entry>
-
-      <entry name="MAV_CMD_DO_MOTOR_TEST" value="209">
-          <description>Mission command to perform motor test</description>
-          <param index="1">motor sequence number (a number from 1 to max number of motors on the vehicle)</param>
-          <param index="2">throttle type (0=throttle percentage, 1=PWM, 2=pilot throttle channel pass-through. See MOTOR_TEST_THROTTLE_TYPE enum)</param>
-          <param index="3">throttle</param>
-          <param index="4">timeout (in seconds)</param>
-          <param index="5">Empty</param>
-          <param index="6">Empty</param>
-          <param index="7">Empty</param>
-      </entry>
-
-	  </enum>
-
-	  <!-- fenced mode enums -->
-	  <enum name="FENCE_ACTION">
-	    <entry name="FENCE_ACTION_NONE" value="0">
-	      <description>Disable fenced mode</description>
-	    </entry>
-	    <entry name="FENCE_ACTION_GUIDED" value="1">
-	      <description>Switched to guided mode to return point (fence point 0)</description>
-	    </entry>
-	    <entry name="FENCE_ACTION_REPORT" value="2">
-	      <description>Report fence breach, but don't take action</description>
-	    </entry>
-            <entry name="FENCE_ACTION_GUIDED_THR_PASS" value="3">
-              <description>Switched to guided mode to return point (fence point 0) with manual throttle control</description>
+          <!-- ardupilot specific MAV_CMD_* commands -->
+          <enum name="MAV_CMD">
+            <entry name="MAV_CMD_DO_MOTOR_TEST" value="209">
+              <description>Mission command to perform motor test</description>
+              <param index="1">motor sequence number (a number from 1 to max number of motors on the vehicle)</param>
+              <param index="2">throttle type (0=throttle percentage, 1=PWM, 2=pilot throttle channel pass-through. See MOTOR_TEST_THROTTLE_TYPE enum)</param>
+              <param index="3">throttle</param>
+              <param index="4">timeout (in seconds)</param>
+              <param index="5">Empty</param>
+              <param index="6">Empty</param>
+              <param index="7">Empty</param>
             </entry>
-	  </enum>
-
-	  <enum name="FENCE_BREACH">
-	    <entry name="FENCE_BREACH_NONE" value="0">
-	      <description>No last fence breach</description>
-	    </entry>
-	    <entry name="FENCE_BREACH_MINALT" value="1">
-	      <description>Breached minimum altitude</description>
-	    </entry>
-	    <entry name="FENCE_BREACH_MAXALT" value="2">
-	      <description>Breached maximum altitude</description>
-	    </entry>
-	    <entry name="FENCE_BREACH_BOUNDARY" value="3">
-	      <description>Breached fence boundary</description>
-	    </entry>
-	  </enum>
+          </enum>
 	  
 	  	<!--  AP_Limits Enums -->
 	<enum name="LIMITS_STATE">
@@ -183,15 +64,15 @@
 
     <!-- motor test type enum -->
     <enum name="MOTOR_TEST_THROTTLE_TYPE">
-        <entry name="MOTOR_TEST_THROTTLE_PERCENT" value="0">
+      <entry name="MOTOR_TEST_THROTTLE_PERCENT" value="0">
         <description>throttle as a percentage from 0 ~ 100</description>
-        </entry>
-        <entry name="MOTOR_TEST_THROTTLE_PWM" value="1">
+      </entry>
+      <entry name="MOTOR_TEST_THROTTLE_PWM" value="1">
         <description>throttle as an absolute PWM value (normally in range of 1000~2000)</description>
-        </entry>
-        <entry name="MOTOR_TEST_THROTTLE_PILOT" value="2">
+      </entry>
+      <entry name="MOTOR_TEST_THROTTLE_PILOT" value="2">
         <description>throttle pass-through from pilot's transmitter</description>
-        </entry>
+      </entry>
     </enum>
 
       </enums>
@@ -274,7 +155,7 @@
 	    <description>Message to configure a camera mount, directional antenna, etc.</description>
 	    <field name="target_system" type="uint8_t">System ID</field>
 	    <field name="target_component" type="uint8_t">Component ID</field>
-	    <field name="mount_mode" type="uint8_t">mount operating mode (see MAV_MOUNT_MODE enum)</field>
+	    <field name="mount_mode" type="uint8_t" enum="MAV_MOUNT_MODE">mount operating mode (see MAV_MOUNT_MODE enum)</field>
 	    <field name="stab_roll" type="uint8_t">(1 = yes, 0 = no)</field>
 	    <field name="stab_pitch" type="uint8_t">(1 = yes, 0 = no)</field>
 	    <field name="stab_yaw" type="uint8_t">(1 = yes, 0 = no)</field>
@@ -323,7 +204,7 @@
 	    status stream when fencing enabled</description>
 	    <field name="breach_status" type="uint8_t">0 if currently inside fence, 1 if outside</field>
 	    <field name="breach_count" type="uint16_t">number of fence breaches</field>
-	    <field name="breach_type" type="uint8_t">last breach type (see FENCE_BREACH_* enum)</field>
+	    <field name="breach_type" type="uint8_t" enum="FENCE_BREACH">last breach type (see FENCE_BREACH_* enum)</field>
 	    <field name="breach_time" type="uint32_t">time of last breach in milliseconds since boot</field>
 	  </message>
 
@@ -375,7 +256,7 @@
 	  <message name="LIMITS_STATUS" id="167">
 	    <description>Status of AP_Limits. Sent in extended
 	    status stream when AP_Limits is enabled</description>
-	    <field name="limits_state" type="uint8_t">state of AP_Limits, (see enum LimitState, LIMITS_STATE)</field>
+	    <field name="limits_state" type="uint8_t" enum="LIMITS_STATE">state of AP_Limits, (see enum LimitState, LIMITS_STATE)</field>
 	    <field name="last_trigger" type="uint32_t">time of last breach in milliseconds since boot</field>
 	    <field name="last_action" type="uint32_t">time of last recovery action in milliseconds since boot</field>
 	    <field name="last_recovery" type="uint32_t">time of last successful recovery in milliseconds since boot</field>

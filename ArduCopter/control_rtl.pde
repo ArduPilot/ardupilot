@@ -78,6 +78,9 @@ static void rtl_climb_start()
     rtl_state = InitialClimb;
     rtl_state_complete = false;
 
+    // initialise waypoint and spline controller
+    wp_nav.wp_and_spline_init();
+
     // get horizontal stopping point
     Vector3f destination;
     wp_nav.get_wp_stopping_point_xy(destination);
@@ -90,7 +93,9 @@ static void rtl_climb_start()
     destination.z = get_RTL_alt();
 #endif
 
+    // set the destination
     wp_nav.set_wp_destination(destination);
+    wp_nav.set_fast_waypoint(true);
 
     // hold current yaw during initial climb
     set_auto_yaw_mode(AUTO_YAW_HOLD);
@@ -231,7 +236,7 @@ static void rtl_descent_start()
     rtl_state_complete = false;
 
     // Set wp navigation target to above home
-    wp_nav.set_loiter_target(Vector3f(0,0,0));
+    wp_nav.init_loiter_target(wp_nav.get_wp_destination());
 
     // initialise altitude target to stopping point
     pos_control.set_target_to_stopping_point_z();
@@ -290,7 +295,7 @@ static void rtl_land_start()
     rtl_state_complete = false;
 
     // Set wp navigation target to above home
-    wp_nav.set_loiter_target(Vector3f(0,0,0));
+    wp_nav.init_loiter_target(wp_nav.get_wp_destination());
 
     // initialise altitude target to stopping point
     pos_control.set_target_to_stopping_point_z();

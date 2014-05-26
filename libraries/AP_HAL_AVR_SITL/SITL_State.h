@@ -129,6 +129,7 @@ private:
     static SITL *_sitl;
     static uint16_t _rcout_port;
     static uint16_t _simin_port;
+    static float _current;
 };
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL

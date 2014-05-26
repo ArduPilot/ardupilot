@@ -1,16 +1,13 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 // default sensors are present and healthy: gyro, accelerometer, barometer, rate_control, attitude_stabilization, yaw_position, altitude control, x/y position control, motor_control
-#define MAVLINK_SENSOR_PRESENT_DEFAULT (MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL | MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE | MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL | MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION | MAV_SYS_STATUS_SENSOR_YAW_POSITION | MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL | MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL | MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS)
+#define MAVLINK_SENSOR_PRESENT_DEFAULT (MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL | MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE | MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL | MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION | MAV_SYS_STATUS_SENSOR_YAW_POSITION | MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL | MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL | MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS | MAV_SYS_STATUS_AHRS)
 
 // forward declarations to make compiler happy
 static bool do_guided(const AP_Mission::Mission_Command& cmd);
 
 // use this to prevent recursion during sensor init
 static bool in_mavlink_delay;
-
-// true when we have received at least 1 MAVLink packet
-static bool mavlink_active;
 
 // true if we are out of time in our event timeslice
 static bool	gcs_out_of_time;
@@ -198,6 +195,11 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
     }
     if (!ins.healthy()) {
         control_sensors_health &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
+    }
+
+    if (!ahrs.healthy()) {
+        // AHRS subsystem is unhealthy
+        control_sensors_health &= ~MAV_SYS_STATUS_AHRS;
     }
 
     int16_t battery_current = -1;
@@ -573,6 +575,17 @@ static void NOINLINE send_current_waypoint(mavlink_channel_t chan)
     mavlink_msg_mission_current_send(chan, mission.get_current_nav_index());
 }
 
+#if CONFIG_SONAR == ENABLED
+static void NOINLINE send_rangefinder(mavlink_channel_t chan)
+{
+    // exit immediately if sonar is disabled
+    if (!g.sonar_enabled) {
+        return;
+    }
+    mavlink_msg_rangefinder_send(chan, sonar_alt * 0.01f, 0);
+}
+#endif
+
 static void NOINLINE send_statustext(mavlink_channel_t chan)
 {
     mavlink_statustext_t *s = &gcs[chan-MAVLINK_COMM_0].pending_status;
@@ -714,6 +727,13 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         gcs[chan-MAVLINK_COMM_0].queued_waypoint_send();
         break;
 
+#if CONFIG_SONAR == ENABLED
+    case MSG_RANGEFINDER:
+        CHECK_PAYLOAD_SIZE(RANGEFINDER);
+        send_rangefinder(chan);
+        break;
+#endif
+
     case MSG_STATUSTEXT:
         CHECK_PAYLOAD_SIZE(STATUSTEXT);
         send_statustext(chan);
@@ -749,7 +769,6 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_FENCE_STATUS:
     case MSG_WIND:
-    case MSG_RANGEFINDER:
         // unused
         break;
 
@@ -845,64 +864,6 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
-void
-GCS_MAVLINK::update(void)
-{
-    // receive new packets
-    mavlink_message_t msg;
-    mavlink_status_t status;
-    status.packet_rx_drop_count = 0;
-
-    // process received bytes
-    uint16_t nbytes = comm_get_available(chan);
-    for (uint16_t i=0; i<nbytes; i++)
-    {
-        uint8_t c = comm_receive_ch(chan);
-
-#if CLI_ENABLED == ENABLED
-        /* allow CLI to be started by hitting enter 3 times, if no
-         *  heartbeat packets have been received */
-        if (mavlink_active == 0 && (millis() - _cli_timeout) < 20000 && 
-            !motors.armed() && comm_is_idle(chan)) {
-            if (c == '\n' || c == '\r') {
-                crlf_count++;
-            } else {
-                crlf_count = 0;
-            }
-            if (crlf_count == 3) {
-                run_cli(_port);
-            }
-        }
-#endif
-
-        // Try to get a new message
-        if (mavlink_parse_char(chan, c, &msg, &status)) {
-            // we exclude radio packets to make it possible to use the
-            // CLI over the radio
-            if (msg.msgid != MAVLINK_MSG_ID_RADIO && msg.msgid != MAVLINK_MSG_ID_RADIO_STATUS) {
-                mavlink_active = true;
-            }
-            handleMessage(&msg);
-        }
-    }
-
-    // handle receiving commands from GCS
-    if (waypoint_receiving) {
-        uint32_t tnow = millis();
-
-        // request another command from the GCS if at least 500ms has passed
-        if (waypoint_request_i <= waypoint_request_last &&
-            tnow > waypoint_timelast_request + 500 + (stream_slowdown*20)) {
-            waypoint_timelast_request = tnow;
-            send_message(MSG_NEXT_WAYPOINT);
-        }
-
-        // stop waypoint receiving if timeout
-        if ((tnow - waypoint_timelast_receive) > waypoint_receive_timeout) {
-            waypoint_receiving = false;
-        }
-    }
-}
 
 // see if we should send a stream now. Called at 50Hz
 bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
@@ -1024,6 +985,7 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_AHRS);
         send_message(MSG_HWSTATUS);
         send_message(MSG_SYSTEM_TIME);
+        send_message(MSG_RANGEFINDER);
     }
 }
 
@@ -1593,7 +1555,11 @@ static void gcs_check_input(void)
 {
     for (uint8_t i=0; i<num_gcs; i++) {
         if (gcs[i].initialised) {
-            gcs[i].update();
+#if CLI_ENABLED == ENABLED
+            gcs[i].update(run_cli);
+#else
+            gcs[i].update(NULL);
+#endif
         }
     }
 }

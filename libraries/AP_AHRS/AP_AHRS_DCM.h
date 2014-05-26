@@ -81,6 +81,9 @@ public:
     void set_home(const Location &loc);
     void estimate_wind(void);
 
+    // is the AHRS subsystem healthy?
+    bool healthy(void);
+
 private:
     float _ki;
     float _ki_yaw;
@@ -165,6 +168,9 @@ private:
 
     // estimated wind in m/s
     Vector3f _wind;
+
+    // last time AHRS failed in milliseconds
+    uint32_t _last_failure_ms;
 };
 
 #endif // __AP_AHRS_DCM_H__

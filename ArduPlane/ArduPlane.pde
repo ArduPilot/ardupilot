@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduPlane V3.0.2"
+#define THISFIRMWARE "ArduPlane V3.0.4-beta"
 /*
    Lead developer: Andrew Tridgell
  
@@ -511,7 +511,6 @@ static struct {
     locked_course_err : 0
 };
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // flight mode specific
 ////////////////////////////////////////////////////////////////////////////////
@@ -527,11 +526,20 @@ static struct {
 
     // Minimum pitch to hold during takeoff command execution.  Hundredths of a degree
     int16_t takeoff_pitch_cd;
+
+    // the highest airspeed we have reached since entering AUTO. Used
+    // to control ground takeoff
+    float highest_airspeed;
+
+    // initial pitch. Used to detect if nose is rising in a tail dragger
+    int16_t initial_pitch_cd;
 } auto_state = {
     takeoff_complete : true,
     land_complete : false,
     takeoff_altitude_cm : 0,
-    takeoff_pitch_cd : 0
+    takeoff_pitch_cd : 0,
+    highest_airspeed : 0,
+    initial_pitch_cd : 0
 };
 
 // true if we are in an auto-throttle mode, which means
@@ -1106,28 +1114,11 @@ static void handle_auto_mode(void)
 
     switch(nav_cmd_id) {
     case MAV_CMD_NAV_TAKEOFF:
-        if (steer_state.hold_course_cd == -1) {
-            // we don't yet have a heading to hold - just level
-            // the wings until we get up enough speed to get a GPS heading
-            nav_roll_cd = 0;
-        } else {
-            calc_nav_roll();
-            // during takeoff use the level flight roll limit to
-            // prevent large course corrections
-            nav_roll_cd = constrain_int32(nav_roll_cd, -g.level_roll_limit*100UL, g.level_roll_limit*100UL);
-        }
-        
-        if (airspeed.use()) {
-            calc_nav_pitch();
-            if (nav_pitch_cd < auto_state.takeoff_pitch_cd)
-                nav_pitch_cd = auto_state.takeoff_pitch_cd;
-        } else {
-            nav_pitch_cd = ((gps.ground_speed()*100) / (float)g.airspeed_cruise_cm) * auto_state.takeoff_pitch_cd;
-            nav_pitch_cd = constrain_int32(nav_pitch_cd, 500, auto_state.takeoff_pitch_cd);
-        }
+        takeoff_calc_roll();
+        takeoff_calc_pitch();
         
         // max throttle for takeoff
-        channel_throttle->servo_out = aparm.throttle_max;
+        channel_throttle->servo_out = takeoff_throttle();
         break;
 
     case MAV_CMD_NAV_LAND:

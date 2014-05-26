@@ -629,7 +629,7 @@
  # define LOITER_RATE_D          	0.0f
 #endif
 #ifndef LOITER_RATE_IMAX
- # define LOITER_RATE_IMAX       	400             // maximum acceleration from I term build-up in cm/s/s
+ # define LOITER_RATE_IMAX          1000        // maximum acceleration from I term build-up in cm/s/s
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

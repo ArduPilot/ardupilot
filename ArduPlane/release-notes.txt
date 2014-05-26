@@ -1,3 +1,50 @@
+Release 3.0.3, May 19th 2014
+----------------------------
+
+The ardupilot development team is proud to announce the release of
+version 3.0.3 of APM:Plane. This release contains some important bug
+fixes for all supported boards.
+
+The key bug fixes in this release are:
+
+ - fixed handling of filter divergance in the EKF filter
+ - fixed a glide slope calculation bug when entering AUTO mode
+
+The EKF fixes are the main focus of this release. During testing of
+APM:Plane with the AHRS_EKF_USE enabled it was found that under some
+circumstances the EKF could diverge, resulting in loss of attitude
+estimate. Unless the pilot quickly took control in MANUAL this could
+result in the aircraft crashing.
+
+The fix for this problem was in several parts. The main fix was to
+prevent the divergance, but as a precuation against future bugs of
+this type additional numerical checks were added to allow the EKF to
+automatically reset in flight when the internal state shows
+large gyro bias changes, which are the first sign of something going
+wrong in the filter. If this happens again the EKF will automatically
+disable itself for 10 seconds, allowing APM:Plane to fall back to the
+old DCM code. The EKF will then reset itself using initial state based
+on the DCM state. The aircraft will report the failure using the AHRS
+health bit in the SYS_STATUS MAVLink message.
+
+The default EKF tuning parameters were also updated based on a number
+of user supplied flight logs to increase the robustness of the filter.
+
+The second bug fixed in this release relates to the glide slope
+calculation when the aircraft enters AUTO mode for the first time when
+at an altitude above the altitude of the first waypoint in the
+mission. The starting point for the glide slope was incorrectly
+calculated using the home altitude, which resulted in the aircraft
+descending below the first waypoint altitude before climbing again. In
+some circumstances this could lead to a crash due to local terrain.
+
+Many thanks to everyone who tested this release. Special thanks to
+Dellarb for reporting the glide slope bug and to Paul Riseborough for
+all his work on the EKF code over the last few weeks.
+
+Happy flying!
+
+
 Release 3.0.2, May 4th 2014
 ---------------------------
 

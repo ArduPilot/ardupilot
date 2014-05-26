@@ -208,6 +208,13 @@ static void exit_mode(uint8_t old_control_mode, uint8_t new_control_mode)
     }
 #endif
 
+    // stop mission when we leave auto mode
+    if (old_control_mode == AUTO) {
+        if (mission.state() == AP_Mission::MISSION_RUNNING) {
+            mission.stop();
+        }
+    }
+
     // smooth throttle transition when switching from manual to automatic flight modes
     if (manual_flight_mode(old_control_mode) && !manual_flight_mode(new_control_mode) && motors.armed() && !ap.land_complete) {
         // this assumes all manual flight modes use get_pilot_desired_throttle to translate pilot input to output throttle

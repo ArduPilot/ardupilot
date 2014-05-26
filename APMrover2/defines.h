@@ -117,9 +117,6 @@ enum mode {
 // Climb rate calculations
 #define	ALTITUDE_HISTORY_LENGTH 8	//Number of (time,altitude) points to regress a climb rate from
 
-#define RELAY_PIN 47
-
-
 // sonar
 #define MAX_SONAR_XL 0
 #define MAX_SONAR_LV 1

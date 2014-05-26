@@ -37,7 +37,7 @@ const AP_Param::GroupInfo APM_OBC::var_info[] PROGMEM = {
 
     // @Param: HB_PIN
     // @DisplayName: Heartbeat Pin
-    // @Description: This sets a digital output pin which is cycled at 10Hz when termination is not activated
+    // @Description: This sets a digital output pin which is cycled at 10Hz when termination is not activated. Note that if a FS_TERM_PIN is set then the heartbeat pin will continue to cycle at 10Hz when termination is activated, to allow the termination board to distinguish between autopilot crash and termination.
     // @User: Advanced
     AP_GROUPINFO("HB_PIN",      1, APM_OBC, _heartbeat_pin, -1),
 

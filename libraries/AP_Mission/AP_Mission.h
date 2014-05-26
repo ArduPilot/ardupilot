@@ -35,6 +35,8 @@
 
 #define AP_MISSION_FIRST_REAL_COMMAND       1       // command #0 reserved to hold home position
 
+#define AP_MISSION_RESTART_DEFAULT          0       // resume the mission from the last command run by default
+
 /// @class    AP_Mission
 /// @brief    Object managing Mission
 class AP_Mission {
@@ -362,7 +364,7 @@ private:
 
     // parameters
     AP_Int16                _cmd_total;  // total number of commands in the mission
-    AP_Int8                 _auto_reset; // when true the mission will reset to the first command when initiated
+    AP_Int8                 _restart;   // controls mission starting point when entering Auto mode (either restart from beginning of mission or resume from last command run)
 
     // pointer to main program functions
     mission_cmd_fn_t        _cmd_start_fn;  // pointer to function which will be called when a new command is started

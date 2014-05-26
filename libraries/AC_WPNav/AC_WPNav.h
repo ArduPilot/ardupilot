@@ -16,6 +16,7 @@
 #define WPNAV_LOITER_SPEED_MIN          100.0f      // minimum loiter speed in cm/s
 #define WPNAV_LOITER_ACCEL              250.0f      // default acceleration in loiter mode
 #define WPNAV_LOITER_ACCEL_MIN           25.0f      // minimum acceleration in loiter mode
+#define WPNAV_LOITER_JERK_MAX_DEFAULT  1000.0f      // maximum jerk in cm/s/s/s in loiter mode
 
 #define WPNAV_WP_SPEED                  500.0f      // default horizontal speed betwen waypoints in cm/s
 #define WPNAV_WP_SPEED_MIN              100.0f      // minimum horizontal speed between waypoints in cm/s
@@ -29,13 +30,15 @@
 
 #define WPNAV_LEASH_LENGTH_MIN          100.0f      // minimum leash lengths in cm
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
- # define WPNAV_LOITER_UPDATE_TIME      0.020f      // 50hz update rate on high speed CPUs (Pixhawk, Flymaple)
- # define WPNAV_WP_UPDATE_TIME          0.020f      // 50hz update rate on high speed CPUs (Pixhawk, Flymaple)
-#else
+#if HAL_CPU_CLASS < HAL_CPU_CLASS_75 || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
  # define WPNAV_LOITER_UPDATE_TIME      0.095f      // 10hz update rate on low speed CPUs (APM1, APM2)
  # define WPNAV_WP_UPDATE_TIME          0.095f      // 10hz update rate on low speed CPUs (APM1, APM2)
+#else
+ # define WPNAV_LOITER_UPDATE_TIME      0.020f      // 50hz update rate on high speed CPUs (Pixhawk, Flymaple)
+ # define WPNAV_WP_UPDATE_TIME          0.020f      // 50hz update rate on high speed CPUs (Pixhawk, Flymaple)
 #endif
+
+#define WPNAV_LOITER_ACTIVE_TIMEOUT_MS     200      // loiter controller is considered active if it has been called within the past 200ms (0.2 seconds)
 
 class AC_WPNav
 {
@@ -49,15 +52,15 @@ public:
     };
 
     /// Constructor
-    AC_WPNav(const AP_InertialNav* inav, const AP_AHRS* ahrs, AC_PosControl& pos_control);
+    AC_WPNav(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosControl& pos_control);
 
     ///
     /// loiter controller
     ///
 
-    /// set_loiter_target in cm from home
+    /// init_loiter_target to a position in cm from home
     ///     caller can set reset_I to false to preserve I term since previous time loiter controller ran.  Should only be false when caller is sure that not too much time has passed to invalidate the I terms
-    void set_loiter_target(const Vector3f& position, bool reset_I=true);
+    void init_loiter_target(const Vector3f& position, bool reset_I=true);
 
     /// init_loiter_target - initialize's loiter position and feed-forward velocity from current pos and velocity
     void init_loiter_target();
@@ -89,6 +92,11 @@ public:
     ///
     /// waypoint controller
     ///
+
+    /// wp_and_spline_init - initialise straight line and spline waypoint controllers
+    ///     updates target roll, pitch targets and I terms based on vehicle lean angles
+    ///     should be called once before the waypoint controller is used but does not need to be called before subsequent updates to destination
+    void wp_and_spline_init();
 
     /// set_speed_xy - allows main code to pass target horizontal velocity for wp navigation
     void set_speed_xy(float speed_cms);
@@ -244,12 +252,13 @@ protected:
     void calc_spline_pos_vel(float spline_time, Vector3f& position, Vector3f& velocity);
 
     // references to inertial nav and ahrs libraries
-    const AP_InertialNav* const _inav;
-    const AP_AHRS*        const _ahrs;
-    AC_PosControl&              _pos_control;
+    const AP_InertialNav&   _inav;
+    const AP_AHRS&          _ahrs;
+    AC_PosControl&          _pos_control;
 
     // parameters
     AP_Float    _loiter_speed_cms;      // maximum horizontal speed in cm/s while in loiter
+    AP_Float    _loiter_jerk_max_cmsss; // maximum jerk in cm/s/s/s while in loiter
     AP_Float    _wp_speed_cms;          // maximum horizontal speed in cm/s during missions
     AP_Float    _wp_speed_up_cms;       // climb speed target in cm/s
     AP_Float    _wp_speed_down_cms;     // descent speed target in cm/s
@@ -262,6 +271,7 @@ protected:
     uint8_t     _loiter_step;           // used to decide which portion of loiter controller to run during this iteration
     int16_t     _pilot_accel_fwd_cms; 	// pilot's desired acceleration forward (body-frame)
     int16_t     _pilot_accel_rgt_cms;   // pilot's desired acceleration right (body-frame)
+    Vector2f    _loiter_desired_accel;  // slewed pilot's desired acceleration in lat/lon frame
     float       _loiter_accel_cms;      // loiter's acceleration in cm/s/s
 
     // waypoint controller internal variables
@@ -279,11 +289,11 @@ protected:
     float       _slow_down_dist;        // vehicle should begin to slow down once it is within this distance from the destination
 
     // spline variables
-    float		_spline_time;			// current spline time between origin and destination
+    float		_spline_time;           // current spline time between origin and destination
     Vector3f    _spline_origin_vel;     // the target velocity vector at the origin of the spline segment
     Vector3f    _spline_destination_vel;// the target velocity vector at the destination point of the spline segment
     Vector3f    _hermite_spline_solution[4]; // array describing spline path between origin and destination
-    float       _spline_vel_scaler;		//
+    float       _spline_vel_scaler;	    //
     float       _yaw;                   // heading according to yaw
 };
 #endif	// AC_WPNAV_H

@@ -95,7 +95,7 @@ static void init_ardupilot()
     set_control_channels();
 
     // reset the uartA baud rate after parameter load
-    hal.uartA->begin(map_baudrate(g.serial0_baud, SERIAL0_BAUD));
+    hal.uartA->begin(map_baudrate(g.serial0_baud));
 
     // keep a record of how many resets have happened. This can be
     // used to detect in-flight resets
@@ -116,16 +116,10 @@ static void init_ardupilot()
     check_usb_mux();
 
     // we have a 2nd serial port for telemetry
-    hal.uartC->begin(map_baudrate(g.serial1_baud, SERIAL1_BAUD),
-                     128, SERIAL1_BUFSIZE);
-    gcs[1].init(hal.uartC);
+    gcs[1].setup_uart(hal.uartC, map_baudrate(g.serial1_baud), 128, SERIAL1_BUFSIZE);
 
 #if MAVLINK_COMM_NUM_BUFFERS > 2
-    if (hal.uartD != NULL) {
-        hal.uartD->begin(map_baudrate(g.serial2_baud, SERIAL2_BAUD),
-                         128, SERIAL2_BUFSIZE);        
-        gcs[2].init(hal.uartD);
-    }
+    gcs[2].setup_uart(hal.uartD, map_baudrate(g.serial2_baud), 128, SERIAL2_BUFSIZE);
 #endif
 
     mavlink_system.sysid = g.sysid_this_mav;
@@ -341,7 +335,9 @@ static void set_mode(enum FlightMode mode)
 
     case AUTO:
         auto_throttle_mode = true;
-        prev_WP_loc = current_loc;
+        next_WP_loc = prev_WP_loc = current_loc;
+        auto_state.highest_airspeed = 0;
+        auto_state.initial_pitch_cd = ahrs.pitch_sensor;
         // start or resume the mission, based on MIS_AUTORESET
         mission.start_or_resume();
         break;
@@ -505,27 +501,6 @@ static void resetPerfData(void) {
 }
 
 
-/*
- *  map from a 8 bit EEPROM baud rate to a real baud rate
- */
-static uint32_t map_baudrate(int8_t rate, uint32_t default_baud)
-{
-    switch (rate) {
-    case 1:    return 1200;
-    case 2:    return 2400;
-    case 4:    return 4800;
-    case 9:    return 9600;
-    case 19:   return 19200;
-    case 38:   return 38400;
-    case 57:   return 57600;
-    case 111:  return 111100;
-    case 115:  return 115200;
-    }
-    cliSerial->println_P(PSTR("Invalid baudrate"));
-    return default_baud;
-}
-
-
 static void check_usb_mux(void)
 {
     bool usb_check = hal.gpio->usb_connected();
@@ -544,7 +519,7 @@ static void check_usb_mux(void)
     if (usb_connected) {
         hal.uartA->begin(SERIAL0_BAUD);
     } else {
-        hal.uartA->begin(map_baudrate(g.serial1_baud, SERIAL1_BAUD));
+        hal.uartA->begin(map_baudrate(g.serial1_baud));
     }
 #endif
 }

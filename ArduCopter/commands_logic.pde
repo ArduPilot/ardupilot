@@ -777,12 +777,9 @@ static bool verify_yaw()
 // do_guided - start guided mode
 static bool do_guided(const AP_Mission::Mission_Command& cmd)
 {
-    // switch to guided mode if we're not already in guided mode
+    // only process guided waypoint if we are in guided mode
     if (control_mode != GUIDED) {
-        if (!set_mode(GUIDED)) {
-            // if we failed to enter guided mode return immediately
-            return false;
-        }
+        return false;
     }
 
     // set wp_nav's destination
