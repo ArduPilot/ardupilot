@@ -719,7 +719,7 @@ void GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
         // waypoint and not for the mission
         handle_guided_request(cmd);
 
-        // verify we recevied the command
+        // verify we received the command
         result = 0;
         goto mission_ack;
     }
