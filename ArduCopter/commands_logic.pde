@@ -856,14 +856,34 @@ static bool verify_yaw()
 // do_guided - start guided mode
 static bool do_guided(const AP_Mission::Mission_Command& cmd)
 {
+    Vector3f pos;       // target location
+
     // only process guided waypoint if we are in guided mode
     if (control_mode != GUIDED && !(control_mode == AUTO && auto_mode == Auto_NavGuided)) {
         return false;
     }
 
-    // set wp_nav's destination
-    Vector3f pos = pv_location_to_vector(cmd.content.location);
-    guided_set_destination(pos);
+    // switch to handle different commands
+    switch (cmd.id) {
+
+        case MAV_CMD_NAV_WAYPOINT:
+            // set wp_nav's destination
+            pos = pv_location_to_vector(cmd.content.location);
+            guided_set_destination(pos);
+            return true;
+            break;
+
+        case MAV_CMD_CONDITION_YAW:
+            do_yaw(cmd);
+            return true;
+            break;
+
+        default:
+            // reject unrecognised command
+            return false;
+            break;
+    }
+
     return true;
 }
 
