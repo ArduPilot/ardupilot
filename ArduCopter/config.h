@@ -560,6 +560,11 @@
 //////////////////////////////////////////////////////////////////////////////
 // Rate controller gains
 //
+
+#ifndef RATE_PID_DTERM_FILTER
+ # define RATE_PID_DTERM_FILTER     20              // D-term filter rate cutoff frequency.  Used for Roll, Pitch and Yaw Rate PID controllers.
+#endif
+
 #ifndef RATE_ROLL_P
  # define RATE_ROLL_P        		0.150f
 #endif
@@ -695,6 +700,10 @@
 #endif
 #ifndef THROTTLE_ACCEL_IMAX
  # define THROTTLE_ACCEL_IMAX 500
+#endif
+
+#ifndef THROTTLE_ACCEL_DTERM_FILTER
+ # define THROTTLE_ACCEL_DTERM_FILTER 20
 #endif
 
 
