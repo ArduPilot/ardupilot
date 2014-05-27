@@ -231,10 +231,6 @@ static void init_ardupilot()
     // initialise attitude and position controllers
     attitude_control.set_dt(MAIN_LOOP_SECONDS);
     pos_control.set_dt(MAIN_LOOP_SECONDS);
-    g.pid_rate_roll.set_d_lpf_alpha(RATE_PID_DTERM_FILTER, MAIN_LOOP_SECONDS);
-    g.pid_rate_pitch.set_d_lpf_alpha(RATE_PID_DTERM_FILTER, MAIN_LOOP_SECONDS);
-    g.pid_rate_yaw.set_d_lpf_alpha(RATE_PID_DTERM_FILTER, MAIN_LOOP_SECONDS);
-    g.pid_throttle_accel.set_d_lpf_alpha(THROTTLE_ACCEL_DTERM_FILTER, MAIN_LOOP_SECONDS);
 
     // init the optical flow sensor
     if(g.optflow_enabled) {
