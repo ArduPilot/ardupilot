@@ -1062,8 +1062,9 @@ static void gcs_update(void)
         }
     }
     // Also check for messages from the remote if we are in proxy mode
-    if (g.proxy_mode == true && proxy_vehicle.initialised)
-        proxy_vehicle.update();
+    if (g.proxy_mode == true && proxy_vehicle.initialised) {
+        proxy_vehicle.update(NULL);
+    }
 }
 
 static void gcs_send_text_P(gcs_severity severity, const prog_char_t *str)
