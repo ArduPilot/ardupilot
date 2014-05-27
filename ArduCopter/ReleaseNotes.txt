@@ -1,5 +1,12 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.2-rc2 27-May-2014
+Changes from 3.2-rc1
+1) Hybrid mode initialisation bug fix
+2) Throttle pulsing bug fix on Pixhawk
+3) Parachute enabled on Pixhawk
+4) Rally Points enabled on Pixhawk
+------------------------------------------------------------------
 ArduCopter 3.2-rc1 9-May-2014
 Changes from 3.1.4
 1) Hybrid mode - position hold mode but with direct response to pilot input during repositioning (JulienD, SandroT)
