@@ -73,6 +73,16 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
 /// z-axis position controller
 ///
 
+
+/// set_dt - sets time delta in seconds for all controllers (i.e. 100hz = 0.01, 400hz = 0.0025)
+void AC_PosControl::set_dt(float delta_sec)
+{
+    _dt = delta_sec;
+
+    // update rate controller's d filter
+    _pid_alt_accel.set_d_lpf_alpha(POSCONTROOL_ACCEL_Z_DTERM_FILTER, _dt);
+}
+
 /// set_speed_z - sets maximum climb and descent rates
 /// To-Do: call this in the main code as part of flight mode initialisation
 ///     calc_leash_length_z should be called afterwards

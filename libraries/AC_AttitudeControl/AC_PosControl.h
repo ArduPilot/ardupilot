@@ -36,6 +36,8 @@
 
 #define POSCONTROL_ACTIVE_TIMEOUT_MS            200     // position controller is considered active if it has been called within the past 200ms (0.2 seconds)
 
+#define POSCONTROOL_ACCEL_Z_DTERM_FILTER        20      // Z axis accel controller's D term filter (in hz)
+
 class AC_PosControl
 {
 public:
@@ -51,7 +53,8 @@ public:
     ///
 
     /// set_dt - sets time delta in seconds for all controllers (i.e. 100hz = 0.01, 400hz = 0.0025)
-    void set_dt(float delta_sec) { _dt = delta_sec; }
+    ///     updates z axis accel controller's D term filter
+    void set_dt(float delta_sec);
     float get_dt() const { return _dt; }
 
     ///
