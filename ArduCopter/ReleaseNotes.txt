@@ -1,6 +1,6 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
-ArduCopter 3.1.5-rc2 20-May-2014
+ArduCopter 3.1.5 27-May-2014 / 3.1.5-rc2 20-May-2014
 Changes from 3.1.5-rc1
 1) Bug Fix to broken loiter (pixhawk only)
 2) Workaround to read from FRAM in 128byte chunks to resolve a few users boot issues (Pixhawk only)
