@@ -59,6 +59,16 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] PROGMEM = {
 // high level controllers
 //
 
+void AC_AttitudeControl::set_dt(float delta_sec)
+{
+    _dt = delta_sec;
+
+    // set attitude controller's D term filters
+    _pid_rate_roll.set_d_lpf_alpha(AC_ATTITUDE_RATE_RP_PID_DTERM_FILTER, _dt);
+    _pid_rate_pitch.set_d_lpf_alpha(AC_ATTITUDE_RATE_RP_PID_DTERM_FILTER, _dt);
+    _pid_rate_yaw.set_d_lpf_alpha(AC_ATTITUDE_RATE_Y_PID_DTERM_FILTER, _dt);
+}
+
 // init_targets - resets target angles to current angles
 void AC_AttitudeControl::init_targets()
 {
