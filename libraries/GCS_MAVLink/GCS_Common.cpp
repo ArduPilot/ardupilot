@@ -914,3 +914,123 @@ GCS_MAVLINK::update(void (*run_cli)(AP_HAL::UARTDriver *))
         waypoint_receiving = false;
     }
 }
+
+
+/*
+  send raw GPS position information (GPS_RAW_INT and GPS2_RAW)
+ */
+void GCS_MAVLINK::send_gps_raw(AP_GPS &gps)
+{
+    static uint32_t last_send_time_ms;
+    if (last_send_time_ms == 0 || last_send_time_ms != gps.last_message_time_ms(0)) {
+        last_send_time_ms = gps.last_message_time_ms(0);
+        const Location &loc = gps.location(0);
+        mavlink_msg_gps_raw_int_send(
+            chan,
+            gps.last_fix_time_ms(0)*(uint64_t)1000,
+            gps.status(0),
+            loc.lat,        // in 1E7 degrees
+            loc.lng,        // in 1E7 degrees
+            loc.alt * 10UL, // in mm
+            gps.get_hdop(0),
+            65535,
+            gps.ground_speed(0)*100,  // cm/s
+            gps.ground_course_cd(0), // 1/100 degrees,
+            gps.num_sats(0));
+    }
+
+#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
+    static uint32_t last_send_time_ms2;
+    if (gps.num_sensors() > 1 && 
+        gps.status(1) > AP_GPS::NO_GPS &&
+        (last_send_time_ms2 == 0 || last_send_time_ms2 != gps.last_message_time_ms(1))) {
+        int16_t payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
+        if (payload_space >= MAVLINK_MSG_ID_GPS2_RAW_LEN) {
+            const Location &loc = gps.location(1);
+            last_send_time_ms = gps.last_message_time_ms(1);
+            mavlink_msg_gps2_raw_send(
+                chan,
+                gps.last_fix_time_ms(1)*(uint64_t)1000,
+                gps.status(1),
+                loc.lat,
+                loc.lng,
+                loc.alt * 10UL,
+                gps.get_hdop(1),
+                65535,
+                gps.ground_speed(1)*100,  // cm/s
+                gps.ground_course_cd(1), // 1/100 degrees,
+                gps.num_sats(1),
+                0,
+                0);
+        }
+    }
+#endif
+}
+
+
+/*
+  send the SYSTEM_TIME message
+ */
+void GCS_MAVLINK::send_system_time(AP_GPS &gps)
+{
+    mavlink_msg_system_time_send(
+        chan,
+        gps.time_epoch_usec(),
+        hal.scheduler->millis());
+}
+
+
+/*
+  send RC_CHANNELS_RAW, and RC_CHANNELS messages
+ */
+void GCS_MAVLINK::send_radio_in(uint8_t receiver_rssi)
+{
+    uint32_t now = hal.scheduler->millis();
+
+    uint16_t values[8];
+    memset(values, 0, sizeof(values));
+    hal.rcin->read(values, 8);
+
+    mavlink_msg_rc_channels_raw_send(
+        chan,
+        now,
+        0, // port
+        values[0],
+        values[1],
+        values[2],
+        values[3],
+        values[4],
+        values[5],
+        values[6],
+        values[7],
+        receiver_rssi);
+
+#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
+    if (hal.rcin->num_channels() > 8 && 
+        comm_get_txspace(chan) >= MAVLINK_MSG_ID_RC_CHANNELS_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
+        mavlink_msg_rc_channels_send(
+            chan,
+            now,
+            hal.rcin->num_channels(),
+            hal.rcin->read(CH_1),
+            hal.rcin->read(CH_2),
+            hal.rcin->read(CH_3),
+            hal.rcin->read(CH_4),
+            hal.rcin->read(CH_5),
+            hal.rcin->read(CH_6),
+            hal.rcin->read(CH_7),
+            hal.rcin->read(CH_8),
+            hal.rcin->read(CH_9),
+            hal.rcin->read(CH_10),
+            hal.rcin->read(CH_11),
+            hal.rcin->read(CH_12),
+            hal.rcin->read(CH_13),
+            hal.rcin->read(CH_14),
+            hal.rcin->read(CH_15),
+            hal.rcin->read(CH_16),
+            hal.rcin->read(CH_17),
+            hal.rcin->read(CH_18),
+            receiver_rssi);        
+    }
+#endif
+}
