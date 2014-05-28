@@ -156,7 +156,7 @@ static float get_throttle_land()
 static bool update_land_detector()
 {
     // detect whether we have landed by watching for low climb rate and minimum throttle
-    if (abs(climb_rate) < 20 && motors.limit.throttle_lower) {
+    if (abs(climb_rate) < 40 && motors.limit.throttle_lower) {
         if (!ap.land_complete) {
             // run throttle controller if accel based throttle controller is enabled and active (active means it has been given a target)
             if( land_detector < LAND_DETECTOR_TRIGGER) {
@@ -166,7 +166,7 @@ static bool update_land_detector()
                 land_detector = 0;
             }
         }
-    }else{
+    } else if (g.rc_3.control_in != 0 || failsafe.radio) {
         // we've sensed movement up or down so reset land_detector
         land_detector = 0;
         if(ap.land_complete) {
