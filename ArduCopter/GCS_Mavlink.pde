@@ -1214,6 +1214,24 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             result = mavlink_motor_test_start(chan, (uint8_t)packet.param1, (uint8_t)packet.param2, (uint16_t)packet.param3, packet.param4);
             break;
 
+        case MAV_CMD_DO_CHANGE_SPEED:
+            // param1 : unused
+            // param2 : new speed in m/s
+            // param3 : unused
+            // param4 : unused
+            if (packet.param2 < 0 && packet.param2 != -1) {
+               result = MAV_RESULT_TEMPORARILY_REJECTED;
+               break;
+            }
+            if (packet.param2 == -1){
+               result = MAV_RESULT_ACCEPTED;  
+               break;             
+            } else {
+               wp_nav.set_speed_xy (packet.param2 * 100.0);
+               result = MAV_RESULT_ACCEPTED;      
+               break;     
+            }
+
         default:
             result = MAV_RESULT_UNSUPPORTED;
             break;
