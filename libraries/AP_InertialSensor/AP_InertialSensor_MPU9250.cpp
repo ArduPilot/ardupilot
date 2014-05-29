@@ -201,12 +201,7 @@ uint16_t AP_InertialSensor_MPU9250::_init_sensor( Sample_rate sample_rate )
 
     _spi = hal.spi->device(AP_HAL::SPIDevice_MPU9250);
     _spi_sem = _spi->get_semaphore();
-
-    // TODO review
-    /* Pin 70 defined especially to hook
-       up PE6 to the hal.gpio abstraction.
-       (It is not a valid pin under Arduino.) */
-    //_drdy_pin = hal.gpio->channel(70);
+    _drdy_pin = hal.gpio->channel(66); // BBB_P8_7 
 
     hal.scheduler->suspend_timer_procs();
 
