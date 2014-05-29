@@ -9,8 +9,6 @@
 #include <AP_Progmem.h>
 #include "AP_InertialSensor.h"
 
-#define MPU9250_CS_PIN       117        // GPIO1_17, pin connected to mpu9150's chip select pin
-
 // enable debug to see a register dump on startup
 #define MPU9250_DEBUG 0
 
