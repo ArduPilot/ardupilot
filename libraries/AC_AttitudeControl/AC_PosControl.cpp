@@ -80,7 +80,7 @@ void AC_PosControl::set_dt(float delta_sec)
     _dt = delta_sec;
 
     // update rate controller's d filter
-    _pid_alt_accel.set_d_lpf_alpha(POSCONTROOL_ACCEL_Z_DTERM_FILTER, _dt);
+    _pid_alt_accel.set_d_lpf_alpha(POSCONTROL_ACCEL_Z_DTERM_FILTER, _dt);
 }
 
 /// set_speed_z - sets maximum climb and descent rates
