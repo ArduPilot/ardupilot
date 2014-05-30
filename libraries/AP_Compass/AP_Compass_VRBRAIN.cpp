@@ -92,6 +92,9 @@ bool AP_Compass_VRBRAIN::read(void)
     }
 
     for (uint8_t i=0; i<_num_instances; i++) {
+        // avoid division by zero if we haven't received any mag reports
+        if (_count[i] == 0) continue;
+
         _sum[i] /= _count[i];
         _sum[i] *= 1000;
 
@@ -126,9 +129,9 @@ bool AP_Compass_VRBRAIN::read(void)
         _count[i] = 0;
     }
 
-    last_update = _last_timestamp[0];
+    last_update = _last_timestamp[_get_primary()];
     
-    return _healthy[0];
+    return _healthy[_get_primary()];
 }
 
 void AP_Compass_VRBRAIN::accumulate(void)

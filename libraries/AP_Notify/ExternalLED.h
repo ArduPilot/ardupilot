@@ -32,6 +32,11 @@
  #define EXTERNAL_LED_ARMED   65    // Armed LED - AN11
  #define EXTERNAL_LED_MOTOR1  62    // Motor1 LED - AN8
  #define EXTERNAL_LED_MOTOR2  66    // Motor2 LED - AN12
+#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+ #define EXTERNAL_LED_GPS     28    // GPS LED - AN10
+ #define EXTERNAL_LED_ARMED   29    // Armed LED - AN11
+ #define EXTERNAL_LED_MOTOR1  30    // Motor1 LED - AN8
+ #define EXTERNAL_LED_MOTOR2  31    // Motor2 LED - AN12
 #else
  #define EXTERNAL_LED_GPS     0     // pin definitions to allow this lib to build for
  #define EXTERNAL_LED_ARMED   0     // for other boards besides APM1, APM2 even though

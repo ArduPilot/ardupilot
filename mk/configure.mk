@@ -26,9 +26,9 @@ endif
 	@echo NUTTX_SRC=../PX4NuttX/nuttx >> $(SKETCHBOOK)/config.mk
 ###################### VRBRAIN ##################################	
 	@echo \# VRBRAIN Firmware tree: >> $(SKETCHBOOK)/config.mk
-	@echo VRBRAIN_ROOT=../VRBRAINFirmware >> $(SKETCHBOOK)/config.mk
+	@echo VRBRAIN_ROOT=../VRNuttX >> $(SKETCHBOOK)/config.mk
 	@echo  >> $(SKETCHBOOK)/config.mk
 	@echo \# VRBRAIN NuttX tree: >> $(SKETCHBOOK)/config.mk
-	@echo VRBRAIN_NUTTX_SRC=../VRBRAINFirmware/NuttX/nuttx >> $(SKETCHBOOK)/config.mk
+	@echo VRBRAIN_NUTTX_SRC=../VRNuttX/NuttX/nuttx >> $(SKETCHBOOK)/config.mk
 	@echo  >> $(SKETCHBOOK)/config.mk
 	

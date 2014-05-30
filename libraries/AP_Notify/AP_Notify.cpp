@@ -35,7 +35,8 @@ void AP_Notify::init(bool enable_external_leds)
     buzzer.init();
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    tonealarm.init();
+    externalled.init();
+    buzzer.init();
 #endif
 }
 
@@ -53,6 +54,7 @@ void AP_Notify::update(void)
     buzzer.update();
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    tonealarm.update();
+    externalled.update();
+    buzzer.update();
 #endif
 }
