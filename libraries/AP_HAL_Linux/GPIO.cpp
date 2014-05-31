@@ -10,85 +10,110 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <poll.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
 
 using namespace Linux;
+
+struct GPIO{
+    volatile unsigned *base;
+    volatile unsigned *oe;
+    volatile unsigned *in;
+    volatile unsigned *out;
+}gpio0,gpio1,gpio2,gpio3;
+
+
 
 LinuxGPIO::LinuxGPIO()
 {}
 
 void LinuxGPIO::init()
 {
-    int fd, len;
-    char buf[64];
+    int mem_fd;
+    // Enable all GPIO banks
+    // Without this, access to deactivated banks (i.e. those with no clock source set up) will (logically) fail with SIGBUS
+    // Idea taken from https://groups.google.com/forum/#!msg/beagleboard/OYFp4EXawiI/Mq6s3sg14HoJ
+    system("echo 5 > /sys/class/gpio/export");
+    system("echo 65 > /sys/class/gpio/export");
+    system("echo 105 > /sys/class/gpio/export");
 
-    fd = open(SYSFS_GPIO_DIR "/export", O_WRONLY);
-    if (fd < 0) {
-        perror("LinuxGPIO::init");
+    /* open /dev/mem */
+    if ((mem_fd = open("/dev/mem", O_RDWR|O_SYNC) ) < 0) {
+            printf("can't open /dev/mem \n");
+            exit (-1);
     }
 
-    len = snprintf(buf, sizeof(buf), "%d", LED_AMBER);
-    ::write(fd, buf, len);
-    close(fd);
-    
-      fd = open(SYSFS_GPIO_DIR "/export", O_WRONLY);
-    if (fd < 0) {
-        perror("LinuxGPIO::init");
+    /* mmap GPIO */
+    gpio0.base = (volatile unsigned *)mmap(0, GPIO_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, GPIO0_BASE);
+    if ((char *)gpio0.base == MAP_FAILED) {
+            printf("mmap error %d\n", (int)gpio0.base);
+            exit (-1);
+    }
+    gpio1.base = (volatile unsigned *)mmap(0, GPIO_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, GPIO1_BASE);
+    if ((char *)gpio1.base == MAP_FAILED) {
+            printf("mmap error %d\n", (int)gpio1.base);
+            exit (-1);
+    }
+    gpio2.base = (volatile unsigned *)mmap(0, GPIO_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, GPIO2_BASE);
+    if ((char *)gpio2.base == MAP_FAILED) {
+            printf("mmap error %d\n", (int)gpio2.base);
+            exit (-1);
+    }
+    gpio3.base = (volatile unsigned *)mmap(0, GPIO_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, GPIO3_BASE);
+    if ((char *)gpio3.base == MAP_FAILED) {
+            printf("mmap error %d\n", (int)gpio3.base);
+            exit (-1);
     }
 
-    len = snprintf(buf, sizeof(buf), "%d", LED_BLUE);
-    ::write(fd, buf, len);
-    close(fd);
 
-    fd = open(SYSFS_GPIO_DIR "/export", O_WRONLY);
-    if (fd < 0) {
-        perror("LinuxGPIO::init");
-    }
+    gpio0.oe = gpio0.base + GPIO_OE;
+    gpio0.in = gpio0.base + GPIO_IN;
+    gpio0.out = gpio0.base + GPIO_OUT;
 
-    len = snprintf(buf, sizeof(buf), "%d", LED_SAFETY);
-    ::write(fd, buf, len);
-    close(fd);
+    gpio1.oe = gpio1.base + GPIO_OE;
+    gpio1.in = gpio1.base + GPIO_IN;
+    gpio1.out = gpio1.base + GPIO_OUT;
 
-    fd = open(SYSFS_GPIO_DIR "/export", O_WRONLY);
-    if (fd < 0) {
-        perror("LinuxGPIO::init");
-    }
+    gpio2.oe = gpio2.base + GPIO_OE;
+    gpio2.in = gpio2.base + GPIO_IN;
+    gpio2.out = gpio2.base + GPIO_OUT;
 
-    len = snprintf(buf, sizeof(buf), "%d", SAFETY_SWITCH);
-    ::write(fd, buf, len);
-    close(fd);
+    gpio3.oe = gpio3.base + GPIO_OE;
+    gpio3.in = gpio3.base + GPIO_IN;
+    gpio3.out = gpio3.base + GPIO_OUT;
+    close(mem_fd);
 }
 
 void LinuxGPIO::pinMode(uint8_t pin, uint8_t output)
 {
-    int fd,len;
-    char buf[64];
-
-    snprintf(buf, sizeof(buf), SYSFS_GPIO_DIR  "/gpio%d/direction", pin);
-
-    fd = ::open(buf, O_WRONLY);
-    if (fd < 0) {
-        fd = open(SYSFS_GPIO_DIR "/export", O_WRONLY);                              //try exporting GPIO pin
-        if (fd < 0) {
-           perror("LinuxGPIO::direction");
+    if(output == GPIO_INPUT){
+        if(pin/32 < 1){
+            *gpio0.oe = *gpio0.oe | (1<<pin);
         }
- 
-        len = snprintf(buf, sizeof(buf), "%d", pin);
-        ::write(fd, buf, len);
-        close(fd);
-
-        snprintf(buf, sizeof(buf), SYSFS_GPIO_DIR  "/gpio%d/direction", pin);       //retry writing direction
-        fd = ::open(buf, O_WRONLY);
-        if (fd < 0) {
-            perror("LinuxGPIO::direction");                                         //report faillure
+        else if(pin/32 < 2){
+            *gpio1.oe = *gpio1.oe | (1<<(pin-32));
+        }
+        else if(pin/32 < 3){
+            *gpio2.oe = *gpio2.oe | (1<<(pin-64));
+        }
+        else if(pin/32 < 4){
+            *gpio3.oe = *gpio3.oe | (1<<(pin-96));
         }
     }
-
-    if (output == GPIO_OUTPUT)
-        ::write(fd, "out", 4);
-    else
-        ::write(fd, "in", 3);
-
-    close(fd);
+    else{
+        if(pin/32 < 1){
+            *gpio0.oe = *gpio0.oe & (~(1<<pin));
+        }
+        else if(pin/32 < 2){
+            *gpio1.oe = *gpio1.oe & (~(1<<(pin-32)));
+        }
+        else if(pin/32 < 3){
+            *gpio2.oe = *gpio2.oe & (~(1<<(pin-64)));
+        }
+        else if(pin/32 < 4){
+            *gpio3.oe = *gpio3.oe & (~(1<<(pin-96)));
+        }
+    }
 }
 
 int8_t LinuxGPIO::analogPinToDigitalPin(uint8_t pin)
@@ -98,49 +123,55 @@ int8_t LinuxGPIO::analogPinToDigitalPin(uint8_t pin)
 
 
 uint8_t LinuxGPIO::read(uint8_t pin) {
-    int fd;
-    char buf[64];
-    char ch;
-
-    snprintf(buf, sizeof(buf), SYSFS_GPIO_DIR "/gpio%d/value", pin);
-
-    fd = open(buf, O_RDONLY);
-    if (fd < 0) {
-        perror("LinuxGPIO::read");
-    }
-
-    ::read(fd, &ch, 1);
     
-    close(fd);
+    uint8_t value;
 
-    if (ch == '0') {
-        return 0;
-    } 
-    else if (ch == '1'){
-        return 1;
+    if(pin/32 < 1){
+        value = (bool)(*gpio0.in & (1<<pin));
+    }
+    else if(pin/32 < 2){
+        value = (bool)(*gpio1.in & (1<<(pin-32)));
+    }
+    else if(pin/32 < 3){
+        value = (bool)(*gpio2.in & (1<<(pin-64)));
+    }
+    else if(pin/32 < 4){
+        value = (bool)(*gpio3.in & (1<<(pin-96)));
     }
 
-    return -1;
+    return value;
 }
 
 void LinuxGPIO::write(uint8_t pin, uint8_t value)
 {
-    int fd;
-    char buf[64];
-
-    snprintf(buf, sizeof(buf), SYSFS_GPIO_DIR "/gpio%d/value", pin);
-
-    fd = open(buf, O_WRONLY);
-    if (fd < 0) {
-        perror("LinuxGPIO::write");
+    if(value == HIGH){
+        if(pin/32 < 1){
+            *gpio0.out = *gpio0.out | (1<<pin);
+        }
+        else if(pin/32 < 2){
+            *gpio1.out = *gpio1.out | (1<<(pin-32));
+        }
+        else if(pin/32 < 3){
+            *gpio2.out = *gpio2.out | (1<<(pin-64));
+        }
+        else if(pin/32 < 4){
+            *gpio3.out = *gpio3.out | (1<<(pin-96));
+        }
     }
-
-    if (value==LOW)
-       ::write(fd, "0", 2);
-    else
-       ::write(fd, "1", 2);
-
-    close(fd);
+    else{
+        if(pin/32 < 1){
+            *gpio0.out = *gpio0.out & (~(1<<pin));
+        }
+        else if(pin/32 < 2){
+            *gpio1.out = *gpio1.out & (~(1<<(pin-32)));
+        }
+        else if(pin/32 < 3){
+            *gpio2.out = *gpio2.out & (~(1<<(pin-64)));
+        }
+        else if(pin/32 < 4){
+            *gpio3.out = *gpio3.out & (~(1<<(pin-96)));
+        }
+    }
 }
 
 void LinuxGPIO::toggle(uint8_t pin)
@@ -167,98 +198,95 @@ bool LinuxGPIO::usb_connected(void)
 LinuxDigitalSource::LinuxDigitalSource(uint8_t v) :
     _v(v)
 {
-    int fd, len;
-    char buf[64];
-
-    fd = open(SYSFS_GPIO_DIR "/export", O_WRONLY);
-    if (fd < 0) {
-        perror("LinuxGPIO::init");
-    }
-
-    len = snprintf(buf, sizeof(buf), "%d", v);
-    ::write(fd, buf, len);
-    close(fd);
-    
+   
 }
 
 void LinuxDigitalSource::mode(uint8_t output)
 {
-    
-    int fd,len;
-    char buf[64];
+    uint8_t pin = _v;
 
-    snprintf(buf, sizeof(buf), SYSFS_GPIO_DIR  "/gpio%d/direction",_v);
-
-    fd = ::open(buf, O_WRONLY);
-    if (fd < 0) {
-        fd = open(SYSFS_GPIO_DIR "/export", O_WRONLY);                              //try exporting GPIO pin
-        if (fd < 0) {
-           perror("LinuxGPIO::direction");
+    if(output == GPIO_INPUT){
+        if(pin/32 < 1){
+            *gpio0.oe = *gpio0.oe | (1<<pin);
         }
- 
-        len = snprintf(buf, sizeof(buf), "%d",_v);
-        ::write(fd, buf, len);
-        close(fd);
-
-        snprintf(buf, sizeof(buf), SYSFS_GPIO_DIR  "/gpio%d/direction",_v);       //retry writing direction
-        fd = ::open(buf, O_WRONLY);
-        if (fd < 0) {
-            perror("LinuxGPIO::direction");                                         //report faillure
+        else if(pin/32 < 2){
+            *gpio1.oe = *gpio1.oe | (1<<(pin-32));
+        }
+        else if(pin/32 < 3){
+            *gpio2.oe = *gpio2.oe | (1<<(pin-64));
+        }
+        else if(pin/32 < 4){
+            *gpio3.oe = *gpio3.oe | (1<<(pin-96));
         }
     }
-
-    if (output == GPIO_OUTPUT)
-        ::write(fd, "out", 4);
-    else
-        ::write(fd, "in", 3);
-
-    close(fd);
+    else{
+        if(pin/32 < 1){
+            *gpio0.oe = *gpio0.oe & (~(1<<pin));
+        }
+        else if(pin/32 < 2){
+            *gpio1.oe = *gpio1.oe & (~(1<<(pin-32)));
+        }
+        else if(pin/32 < 3){
+            *gpio2.oe = *gpio2.oe & (~(1<<(pin-64)));
+        }
+        else if(pin/32 < 4){
+            *gpio3.oe = *gpio3.oe & (~(1<<(pin-96)));
+        }
+    }
 
 }
 
 uint8_t LinuxDigitalSource::read() {
-    int fd;
-    char buf[64];
-    char ch;
+    uint8_t value, pin = _v;
 
-    snprintf(buf, sizeof(buf), SYSFS_GPIO_DIR "/gpio%d/value",_v);
-
-    fd = open(buf, O_RDONLY);
-    if (fd < 0) {
-        perror("LinuxGPIO::read");
+    if(pin/32 < 1){
+        value = (bool)(*gpio0.in & (1<<pin));
+    }
+    else if(pin/32 < 2){
+        value = (bool)(*gpio1.in & (1<<(pin-32)));
+    }
+    else if(pin/32 < 3){
+        value = (bool)(*gpio2.in & (1<<(pin-64)));
+    }
+    else if(pin/32 < 4){
+        value = (bool)(*gpio3.in & (1<<(pin-96)));
     }
 
-    ::read(fd, &ch, 1);
-    
-    close(fd);
-
-    if (ch == '0') {
-        return 0;
-    } 
-    else if (ch == '1'){
-        return 1;
-    }
-
-    return -1;
+    return value;
 }
 
 void LinuxDigitalSource::write(uint8_t value) {
-    int fd;
-    char buf[64];
+   
+   uint8_t pin = _v;
 
-    snprintf(buf, sizeof(buf), SYSFS_GPIO_DIR "/gpio%d/value",_v);
-
-    fd = open(buf, O_WRONLY);
-    if (fd < 0) {
-        perror("LinuxGPIO::write");
+   if(value == HIGH){
+        if(pin/32 < 1){
+            *gpio0.out = *gpio0.out | (1<<pin);
+        }
+        else if(pin/32 < 2){
+            *gpio1.out = *gpio1.out | (1<<(pin-32));
+        }
+        else if(pin/32 < 3){
+            *gpio2.out = *gpio2.out | (1<<(pin-64));
+        }
+        else if(pin/32 < 4){
+            *gpio3.out = *gpio3.out | (1<<(pin-96));
+        }
     }
-
-    if (value==LOW)
-       ::write(fd, "0", 2);
-    else
-       ::write(fd, "1", 2);
-
-    close(fd);
+    else{
+        if(pin/32 < 1){
+            *gpio0.out = *gpio0.out & (~(1<<pin));
+        }
+        else if(pin/32 < 2){
+            *gpio1.out = *gpio1.out & (~(1<<(pin-32)));
+        }
+        else if(pin/32 < 3){
+            *gpio2.out = *gpio2.out & (~(1<<(pin-64)));
+        }
+        else if(pin/32 < 4){
+            *gpio3.out = *gpio3.out & (~(1<<(pin-96)));
+        }
+    }
 }
 
 void LinuxDigitalSource::toggle() {
