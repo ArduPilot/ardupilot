@@ -475,11 +475,11 @@ static void calc_nav_roll()
 static void throttle_slew_limit(int16_t last_throttle)
 {
     uint8_t slewrate = aparm.throttle_slewrate;
-    if (control_mode==AUTO && auto_state.takeoff_complete == false) {
+    if (control_mode==AUTO && auto_state.takeoff_complete == false && g.takeoff_throttle_slewrate != 0) {
         slewrate = g.takeoff_throttle_slewrate;
     }
     // if slew limit rate is set to zero then do not slew limit
-    if (aparm.throttle_slewrate) {                   
+    if (slewrate) {                   
         // limit throttle change by the given percentage per second
         float temp = slewrate * G_Dt * 0.01f * fabsf(channel_throttle->radio_max - channel_throttle->radio_min);
         // allow a minimum change of 1 PWM per cycle
