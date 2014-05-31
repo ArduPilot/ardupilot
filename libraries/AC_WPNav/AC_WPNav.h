@@ -290,6 +290,7 @@ protected:
 
     // spline variables
     float		_spline_time;           // current spline time between origin and destination
+    float		_spline_time_scale;           // current spline time between origin and destination
     Vector3f    _spline_origin_vel;     // the target velocity vector at the origin of the spline segment
     Vector3f    _spline_destination_vel;// the target velocity vector at the destination point of the spline segment
     Vector3f    _hermite_spline_solution[4]; // array describing spline path between origin and destination

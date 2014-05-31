@@ -492,14 +492,16 @@ void AC_WPNav::advance_wp_target_along_track(float dt)
     }
     // advance the current target
     if (!reached_leash_limit) {
-        track_desired_temp += _limited_speed_xy_cms * dt;
+    	_track_desired += _limited_speed_xy_cms * dt;
+
+        if (_track_desired > track_desired_max){
+        	_track_desired = track_desired_max;
+        	_limited_speed_xy_cms -= 2.0f * _track_accel * dt;
+    	}
     }
 
     // do not let desired point go past the end of the segment
-    track_desired_temp = constrain_float(track_desired_temp, 0, _track_length);
-
-    // set our new desired position on track
-    _track_desired = max(_track_desired, track_desired_temp);
+    _track_desired = constrain_float(_track_desired, 0, _track_length);
 
     // recalculate the desired position
     _pos_control.set_pos_target(_origin + _pos_delta_unit * _track_desired);
@@ -807,7 +809,7 @@ void AC_WPNav::advance_spline_target_along_track(float dt)
         }
 
         // scale the spline_time by the velocity we've calculated vs the velocity that came out of the spline calculator
-        float spline_time_scale = _spline_vel_scaler/target_vel.length();
+        float _spline_time_scale = _spline_vel_scaler/target_vel.length();
 
         // update target position
         _pos_control.set_pos_target(target_pos);
@@ -816,7 +818,7 @@ void AC_WPNav::advance_spline_target_along_track(float dt)
         _yaw = RadiansToCentiDegrees(atan2f(target_vel.y,target_vel.x));
 
         // advance spline time to next step
-        _spline_time += spline_time_scale*dt;
+        _spline_time += _spline_time_scale*dt;
 
         // we will reach the next waypoint in the next step so set reached_destination flag
         // To-Do: is this one step too early?
