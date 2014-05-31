@@ -45,7 +45,6 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     _leash(POSCONTROL_LEASH_LENGTH_MIN),
     _roll_target(0.0),
     _pitch_target(0.0),
-    _vel_target_filt_z(0),
     _alt_max(0),
     _distance_to_target(0),
     _xy_step(0),
@@ -281,15 +280,14 @@ void AC_PosControl::pos_to_rate_z()
     }
 
     // call rate based throttle controller which will update accel based throttle controller targets
-    rate_to_accel_z(_vel_target.z);
+    rate_to_accel_z();
 }
 
 // rate_to_accel_z - calculates desired accel required to achieve the velocity target
 // calculates desired acceleration and calls accel throttle controller
-void AC_PosControl::rate_to_accel_z(float vel_target_z)
+void AC_PosControl::rate_to_accel_z()
 {
     const Vector3f& curr_vel = _inav.get_velocity();
-    float z_target_speed_delta;             // The change in requested speed
     float p;                                // used to capture pid values for logging
     float desired_accel;                    // the target acceleration if the accel based throttle is enabled, otherwise the output to be sent to the motors
 
@@ -306,28 +304,41 @@ void AC_PosControl::rate_to_accel_z(float vel_target_z)
         _limit.vel_up = true;
     }
 
+    // reset last velocity target to current target
+    if (_flags.reset_rate_to_accel_z) {
+        _vel_last.z = _vel_target.z;
+        _flags.reset_rate_to_accel_z = false;
+    }
+
+    // feed forward desired acceleration calculation
+    if (_dt > 0.0f) {
+    	if(!_limit.freeze_ff_z) {
+    		_accel_feedforward.z = (_vel_target.z - _vel_last.z)/_dt;
+        } else {
+    		_limit.freeze_ff_z = false;
+    	}
+    } else {
+    	_accel_feedforward.z = 0.0f;
+    }
+
+    // store this iteration's velocities for the next iteration
+    _vel_last.z = _vel_target.z;
+
     // reset velocity error and filter if this controller has just been engaged
     if (_flags.reset_rate_to_accel_z) {
         // Reset Filter
         _vel_error.z = 0;
-        _vel_target_filt_z = vel_target_z;
         desired_accel = 0;
         _flags.reset_rate_to_accel_z = false;
     } else {
-        // calculate rate error and filter with cut off frequency of 2 Hz
-        //To-Do: adjust constant below based on update rate
-        _vel_error.z = _vel_error.z + 0.20085f * ((vel_target_z - curr_vel.z) - _vel_error.z);
-        // feed forward acceleration based on change in the filtered desired speed.
-        z_target_speed_delta = 0.20085f * (vel_target_z - _vel_target_filt_z);
-        _vel_target_filt_z = _vel_target_filt_z + z_target_speed_delta;
-        desired_accel = z_target_speed_delta / _dt;
+        _vel_error.z = (_vel_target.z - curr_vel.z);
     }
 
     // calculate p
     p = _p_alt_rate.kP() * _vel_error.z;
 
     // consolidate and constrain target acceleration
-    desired_accel += p;
+    desired_accel = _accel_feedforward.z + p;
     desired_accel = constrain_int32(desired_accel, -32000, 32000);
 
     // set target for accel based throttle controller
@@ -686,11 +697,15 @@ void AC_PosControl::rate_to_accel_xy(float dt)
 
     // feed forward desired acceleration calculation
     if (dt > 0.0f) {
-        _accel_target.x = (_vel_target.x - _vel_last.x)/dt;
-        _accel_target.y = (_vel_target.y - _vel_last.y)/dt;
+    	if(!_limit.freeze_ff_xy) {
+    		_accel_feedforward.x = (_vel_target.x - _vel_last.x)/dt;
+    		_accel_feedforward.y = (_vel_target.y - _vel_last.y)/dt;
+        } else {
+    		_limit.freeze_ff_xy = false;
+    	}
     } else {
-        _accel_target.x = 0.0f;
-        _accel_target.y = 0.0f;
+    	_accel_feedforward.x = 0.0f;
+    	_accel_feedforward.y = 0.0f;
     }
 
     // store this iteration's velocities for the next iteration
@@ -714,8 +729,8 @@ void AC_PosControl::rate_to_accel_xy(float dt)
     }
 
     // combine feed forward accel with PID output from velocity error
-    _accel_target.x += _pid_rate_lat.get_p(_vel_error.x) + lat_i + _pid_rate_lat.get_d(_vel_error.x, dt);
-    _accel_target.y += _pid_rate_lon.get_p(_vel_error.y) + lon_i + _pid_rate_lon.get_d(_vel_error.y, dt);
+    _accel_target.x = _accel_feedforward.x + _pid_rate_lat.get_p(_vel_error.x) + lat_i + _pid_rate_lat.get_d(_vel_error.x, dt);
+    _accel_target.y = _accel_feedforward.y + _pid_rate_lon.get_p(_vel_error.y) + lon_i + _pid_rate_lon.get_d(_vel_error.y, dt);
 
     // scale desired acceleration if it's beyond acceptable limit
     // To-Do: move this check down to the accel_to_lean_angle method?

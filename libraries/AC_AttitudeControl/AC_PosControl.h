@@ -243,6 +243,8 @@ private:
         uint8_t vel_up      : 1;    // 1 if we have hit the vertical velocity limit going up
         uint8_t vel_down    : 1;    // 1 if we have hit the vertical velocity limit going down
         uint8_t accel_xy    : 1;    // 1 if we have hit the horizontal accel limit
+        uint8_t freeze_ff_xy: 1;    // 1 use to freeze feed forward during step updates
+        uint8_t freeze_ff_z : 1;    // 1 use to freeze feed forward during step updates
     } _limit;
 
     ///
@@ -257,7 +259,7 @@ private:
     void pos_to_rate_z();
 
     // rate_to_accel_z - calculates desired accel required to achieve the velocity target
-    void rate_to_accel_z(float vel_target_z);
+    void rate_to_accel_z();
 
     // accel_to_throttle - alt hold's acceleration controller
     void accel_to_throttle(float accel_target_z);
@@ -327,10 +329,10 @@ private:
     Vector2f    _vel_desired;           // desired velocity in cm/s in lat and lon directions (provided by external callers of move_target_at_rate() method)
     Vector3f    _vel_target;            // velocity target in cm/s calculated by pos_to_rate step
     Vector3f    _vel_error;             // error between desired and actual acceleration in cm/s
-    Vector2f    _vel_last;              // previous iterations velocity in cm/s
-    float       _vel_target_filt_z;     // filtered target vertical velocity
+    Vector3f    _vel_last;              // previous iterations velocity in cm/s
     Vector3f    _accel_target;          // desired acceleration in cm/s/s  // To-Do: are xy actually required?
     Vector3f    _accel_error;           // desired acceleration in cm/s/s  // To-Do: are xy actually required?
+    Vector3f    _accel_feedforward;     // feedforward acceleration in cm/s/s
     float       _alt_max;               // max altitude - should be updated from the main code with altitude limit from fence
     float       _distance_to_target;    // distance to position target - for reporting only
     uint8_t     _xy_step;               // used to decide which portion of horizontal position controller to run during this iteration
