@@ -471,6 +471,9 @@ void AC_AttitudeControl::update_rate_bf_targets()
     if (_flags.limit_angle_to_rate_request) {
         _rate_bf_target.z = constrain_float(_rate_bf_target.z,-_angle_rate_y_max,_angle_rate_y_max);
     }
+
+	_rate_bf_target.x += -_angle_bf_error.y * _ins.get_gyro().z;
+	_rate_bf_target.y +=  _angle_bf_error.x * _ins.get_gyro().z;
 }
 
 //
