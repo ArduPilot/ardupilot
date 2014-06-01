@@ -470,7 +470,7 @@ static uint8_t check_digital_pin(uint8_t pin)
         return 0;
     }
     // ensure we are in input mode
-    hal.gpio->pinMode(dpin, GPIO_INPUT);
+    hal.gpio->pinMode(dpin, HAL_GPIO_INPUT);
 
     // enable pullup
     hal.gpio->write(dpin, 1);
