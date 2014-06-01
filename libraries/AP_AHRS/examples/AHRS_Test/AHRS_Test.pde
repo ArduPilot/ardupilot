@@ -64,7 +64,7 @@ void setup(void)
 
 #ifdef APM2_HARDWARE
     // we need to stop the barometer from holding the SPI bus
-    hal.gpio->pinMode(40, GPIO_OUTPUT);
+    hal.gpio->pinMode(40, HAL_HAL_GPIO_OUTPUT);
     hal.gpio->write(40, HIGH);
 #endif
 
