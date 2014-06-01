@@ -6,12 +6,12 @@
 
 #include "AP_HAL_Namespace.h"
 
-#define GPIO_INPUT  0
-#define GPIO_OUTPUT 1
-#define GPIO_INTERRUPT_LOW 0
-#define GPIO_INTERRUPT_HIGH 1
-#define GPIO_INTERRUPT_FALLING 2
-#define GPIO_INTERRUPT_RISING 3
+#define HAL_GPIO_INPUT  0
+#define HAL_GPIO_OUTPUT 1
+#define HAL_GPIO_INTERRUPT_LOW 0
+#define HAL_GPIO_INTERRUPT_HIGH 1
+#define HAL_GPIO_INTERRUPT_FALLING 2
+#define HAL_GPIO_INTERRUPT_RISING 3
 
 class AP_HAL::DigitalSource {
 public:
