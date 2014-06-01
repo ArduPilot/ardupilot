@@ -28,10 +28,10 @@ void ExternalLED::init(void)
     }
 
     // setup the main LEDs as outputs
-    hal.gpio->pinMode(EXTERNAL_LED_ARMED, GPIO_OUTPUT);
-    hal.gpio->pinMode(EXTERNAL_LED_GPS, GPIO_OUTPUT);
-    hal.gpio->pinMode(EXTERNAL_LED_MOTOR1, GPIO_OUTPUT);
-    hal.gpio->pinMode(EXTERNAL_LED_MOTOR2, GPIO_OUTPUT);
+    hal.gpio->pinMode(EXTERNAL_LED_ARMED, HAL_GPIO_OUTPUT);
+    hal.gpio->pinMode(EXTERNAL_LED_GPS, HAL_GPIO_OUTPUT);
+    hal.gpio->pinMode(EXTERNAL_LED_MOTOR1, HAL_GPIO_OUTPUT);
+    hal.gpio->pinMode(EXTERNAL_LED_MOTOR2, HAL_GPIO_OUTPUT);
 
     // turn leds off
     hal.gpio->write(EXTERNAL_LED_ARMED, HAL_GPIO_LED_OFF);

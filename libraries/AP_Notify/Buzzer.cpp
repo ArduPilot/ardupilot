@@ -31,7 +31,7 @@ void Buzzer::init()
     }
 
     // setup the pin and ensure it's off
-    hal.gpio->pinMode(BUZZER_PIN, GPIO_OUTPUT);
+    hal.gpio->pinMode(BUZZER_PIN, HAL_GPIO_OUTPUT);
     on(false);
 
     // set initial boot states. This prevents us issueing a arming
