@@ -93,8 +93,8 @@ void DataFlash_APM2::Init(const struct LogStructure *structure, uint8_t num_type
     // init to zero
     df_NumPages = 0;
 
-    hal.gpio->pinMode(DF_RESET, GPIO_OUTPUT);
-    hal.gpio->pinMode(DF_CARDDETECT, GPIO_INPUT);
+    hal.gpio->pinMode(DF_RESET, HAL_GPIO_OUTPUT);
+    hal.gpio->pinMode(DF_CARDDETECT, HAL_GPIO_INPUT);
 
     // Reset the chip
     hal.gpio->write(DF_RESET,0);
