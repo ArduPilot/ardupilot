@@ -26,9 +26,9 @@ void AVRSPI3DeviceDriver::init() {
      * by the arduino pin numbers, so we access it directly
      * with AVRDigitalSource. */
     AVRDigitalSource spi3_sck(_BV(2), PJ);
-    spi3_sck.mode(GPIO_OUTPUT);
-    hal.gpio->pinMode(SPI3_MOSI, GPIO_OUTPUT);
-    hal.gpio->pinMode(SPI3_MISO, GPIO_INPUT);
+    spi3_sck.mode(HAL_GPIO_OUTPUT);
+    hal.gpio->pinMode(SPI3_MOSI, HAL_GPIO_OUTPUT);
+    hal.gpio->pinMode(SPI3_MISO, HAL_GPIO_INPUT);
 
     /* UMSELn1 and UMSELn2: USART in SPI Master mode */
     UCSR3C = _BV(UMSEL31) | _BV(UMSEL30);
@@ -36,7 +36,7 @@ void AVRSPI3DeviceDriver::init() {
     UCSR3B = _BV(RXEN3) | _BV(TXEN3);
 
     /* Setup chip select pin */
-    _cs_pin->mode(GPIO_OUTPUT);
+    _cs_pin->mode(HAL_GPIO_OUTPUT);
     _cs_pin->write(1);
 }
 

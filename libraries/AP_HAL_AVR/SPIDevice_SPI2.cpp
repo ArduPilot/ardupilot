@@ -17,13 +17,13 @@ AVRSemaphore AVRSPI2DeviceDriver::_semaphore;
 
 void AVRSPI2DeviceDriver::init() {
     AVRDigitalSource spi2_miso(_BV(0), PH);
-    spi2_miso.mode(GPIO_INPUT);
+    spi2_miso.mode(HAL_GPIO_INPUT);
 
     AVRDigitalSource spi2_mosi(_BV(1), PH);
-    spi2_mosi.mode(GPIO_OUTPUT);
+    spi2_mosi.mode(HAL_GPIO_OUTPUT);
 
     AVRDigitalSource spi2_sck(_BV(2), PH);
-    spi2_sck.mode(GPIO_OUTPUT);
+    spi2_sck.mode(HAL_GPIO_OUTPUT);
 
     /* UMSELn1 and UMSELn2: USART in SPI Master mode */
     UCSR2C = _BV(UMSEL21) | _BV(UMSEL20);
@@ -31,7 +31,7 @@ void AVRSPI2DeviceDriver::init() {
     UCSR2B = _BV(RXEN2) | _BV(TXEN2);
 
     /* Setup chip select pin */
-    _cs_pin->mode(GPIO_OUTPUT);
+    _cs_pin->mode(HAL_GPIO_OUTPUT);
     _cs_pin->write(1);
 }
 

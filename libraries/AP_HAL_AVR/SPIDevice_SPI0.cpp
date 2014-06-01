@@ -22,11 +22,11 @@ bool AVRSPI0DeviceDriver::_force_low_speed;
 static volatile bool spi0_transferflag = false;
 
 void AVRSPI0DeviceDriver::init() {
-    hal.gpio->pinMode(SPI0_MISO_PIN, GPIO_INPUT);
-    hal.gpio->pinMode(SPI0_MOSI_PIN, GPIO_OUTPUT);
-    hal.gpio->pinMode(SPI0_SCK_PIN, GPIO_OUTPUT);
+    hal.gpio->pinMode(SPI0_MISO_PIN, HAL_GPIO_INPUT);
+    hal.gpio->pinMode(SPI0_MOSI_PIN, HAL_GPIO_OUTPUT);
+    hal.gpio->pinMode(SPI0_SCK_PIN, HAL_GPIO_OUTPUT);
 
-    _cs_pin->mode(GPIO_OUTPUT);
+    _cs_pin->mode(HAL_GPIO_OUTPUT);
     _cs_pin->write(1);
 
     /* Enable the SPI0 peripheral as a master */

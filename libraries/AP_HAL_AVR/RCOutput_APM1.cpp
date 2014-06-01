@@ -13,9 +13,9 @@ extern const AP_HAL::HAL& hal;
 /* No init argument required */
 void APM1RCOutput::init(void* machtnichts) {
     // --------------------- TIMER1: CH_3, CH_4, and CH_10 ---------------
-    hal.gpio->pinMode(11,GPIO_OUTPUT); // CH_10 (PB5/OC1A)
-    hal.gpio->pinMode(12,GPIO_OUTPUT); // CH_3 (PB6/OC1B)
-    hal.gpio->pinMode(13,GPIO_OUTPUT); // CH_4 (PB7/OC1C)
+    hal.gpio->pinMode(11,HAL_GPIO_OUTPUT); // CH_10 (PB5/OC1A)
+    hal.gpio->pinMode(12,HAL_GPIO_OUTPUT); // CH_3 (PB6/OC1B)
+    hal.gpio->pinMode(13,HAL_GPIO_OUTPUT); // CH_4 (PB7/OC1C)
 
     // WGM: 1 1 1 0. Clear Timer on Compare, TOP is ICR1.
     // CS11: prescale by 8 => 0.5us tick
@@ -27,9 +27,9 @@ void APM1RCOutput::init(void* machtnichts) {
     OCR1C = 0xFFFF;
     
     //--------------- TIMER3: CH_7, CH_8, and CH_11 ---------------------
-    hal.gpio->pinMode(5,GPIO_OUTPUT); // CH_11 (PE3/OC3A)
-    hal.gpio->pinMode(2,GPIO_OUTPUT); // CH_8 (PE4/OC3B)
-    hal.gpio->pinMode(3,GPIO_OUTPUT); // CH_7 (PE5/OC3C)
+    hal.gpio->pinMode(5,HAL_GPIO_OUTPUT); // CH_11 (PE3/OC3A)
+    hal.gpio->pinMode(2,HAL_GPIO_OUTPUT); // CH_8 (PE4/OC3B)
+    hal.gpio->pinMode(3,HAL_GPIO_OUTPUT); // CH_7 (PE5/OC3C)
 
     // WGM: 1 1 1 0. Clear timer on Compare, TOP is ICR3
     // CS31: prescale by 8 => 0.5us tick
@@ -43,14 +43,14 @@ void APM1RCOutput::init(void* machtnichts) {
     //--------------- TIMER4: CH_6 and CH_5  ----------------------------
     // NB TIMER4 is shared with PPM input from RCInput_APM1.cpp
     // The TIMER4 registers are assumed to be setup already.
-    hal.gpio->pinMode(7,GPIO_OUTPUT); // CH_5 (PH4/OC4B)
-    hal.gpio->pinMode(8,GPIO_OUTPUT); // CH_6 (PH5/OC4C)
+    hal.gpio->pinMode(7,HAL_GPIO_OUTPUT); // CH_5 (PH4/OC4B)
+    hal.gpio->pinMode(8,HAL_GPIO_OUTPUT); // CH_6 (PH5/OC4C)
 
 
     //--------------- TIMER5: CH_1, CH_2 and CH_9 -----------------------
-    hal.gpio->pinMode(46, GPIO_OUTPUT); // CH_9 (PL3/OC5A)
-    hal.gpio->pinMode(45, GPIO_OUTPUT); // CH_1 (PL4/OC5B)
-    hal.gpio->pinMode(44, GPIO_OUTPUT); // CH_2 (PL5/OC5C)
+    hal.gpio->pinMode(46, HAL_GPIO_OUTPUT); // CH_9 (PL3/OC5A)
+    hal.gpio->pinMode(45, HAL_GPIO_OUTPUT); // CH_1 (PL4/OC5B)
+    hal.gpio->pinMode(44, HAL_GPIO_OUTPUT); // CH_2 (PL5/OC5C)
     
     // WGM: 1 1 1 0. Clear timer on Compare, TOP is ICR5
     // CS51: prescale by 8 => 0.5us tick
