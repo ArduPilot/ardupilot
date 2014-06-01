@@ -115,10 +115,7 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms)
 	// mode. This tells it to pass through controls from the
 	// receiver
 	if (_manual_pin != -1) {
-		if (_manual_pin != _last_manual_pin) {
-			hal.gpio->pinMode(_manual_pin, GPIO_OUTPUT);
-			_last_manual_pin = _manual_pin;
-		}
+        hal.gpio->pinMode(_manual_pin, HAL_GPIO_OUTPUT);
 		hal.gpio->write(_manual_pin, mode==OBC_MANUAL);
 	}
 
@@ -194,20 +191,14 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms)
 	// if we are not terminating or if there is a separate terminate
 	// pin configured then toggle the heartbeat pin at 10Hz
 	if (_heartbeat_pin != -1 && (_terminate_pin != -1 || !_terminate)) {
-		if (_heartbeat_pin != _last_heartbeat_pin) {
-			hal.gpio->pinMode(_heartbeat_pin, GPIO_OUTPUT);
-			_last_heartbeat_pin = _heartbeat_pin;
-		}
 		_heartbeat_pin_value = !_heartbeat_pin_value;
+        hal.gpio->pinMode(_heartbeat_pin, HAL_GPIO_OUTPUT);
 		hal.gpio->write(_heartbeat_pin, _heartbeat_pin_value);
 	}	
 
 	// set the terminate pin
 	if (_terminate_pin != -1) {
-		if (_terminate_pin != _last_terminate_pin) {
-			hal.gpio->pinMode(_terminate_pin, GPIO_OUTPUT);
-			_last_terminate_pin = _terminate_pin;
-		}
+        hal.gpio->pinMode(_terminate_pin, HAL_GPIO_OUTPUT);
 		hal.gpio->write(_terminate_pin, _terminate?1:0);
 	}	
 }

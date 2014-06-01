@@ -56,8 +56,6 @@ public:
         {
             AP_Param::setup_object_defaults(this, var_info);
             
-            _last_heartbeat_pin = -1;
-            _last_manual_pin = -1;
             _state = STATE_PREFLIGHT;
             _terminate.set(0);
             
@@ -86,11 +84,6 @@ private:
 	AP_Int8 _terminate_pin;
 	AP_Int8 _terminate;
 	AP_Int8 _terminate_action;
-
-	// last pins to cope with changing at runtime
-	int8_t _last_heartbeat_pin;
-	int8_t _last_manual_pin;
-	int8_t _last_terminate_pin;
 
 	// waypoint numbers to jump to on failsafe conditions
 	AP_Int8 _wp_comms_hold;
