@@ -78,7 +78,7 @@ void loop (void) {
 
 void setup (void) {
 //    hal.scheduler->delay(5000);
-    hal.gpio->pinMode(13, GPIO_OUTPUT);
+    hal.gpio->pinMode(13, HAL_GPIO_OUTPUT);
     hal.gpio->write(13, 0);
     for (uint8_t i=0; i<16; i++) {
         hal.rcout->enable_ch(i);
