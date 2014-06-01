@@ -209,9 +209,25 @@ void ToshibaLED::update_colours(void)
             // flashing blue if disarmed with no gps lock
             switch(step) {
                 case 0:
+                    if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D_DGPS) {
+                        _green_des = brightness;
+                    }
+                    break;
                 case 1:
+                    if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D_DGPS) {
+                        _green_des = TOSHIBA_LED_OFF;
+                    }
+                    break;
                 case 2:
+                    if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D_DGPS) {
+                        _green_des = brightness;
+                    }
+                    break;
                 case 3:
+                    if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D_DGPS) {
+                        _green_des = TOSHIBA_LED_OFF;
+                    }
+                    break;
                 case 4:
                     _red_des = TOSHIBA_LED_OFF;
                     if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D) {
@@ -225,9 +241,27 @@ void ToshibaLED::update_colours(void)
                     }
                     break;
                 case 5:
+                    if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D_DGPS) {
+                        _green_des = TOSHIBA_LED_OFF;
+                    }
+                    break;
+
                 case 6:
+                    if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D_DGPS) {
+                        _green_des = brightness;
+                    }
+                    break;
+
                 case 7:
+                    if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D_DGPS) {
+                        _green_des = TOSHIBA_LED_OFF;
+                    }
+                    break;
                 case 8:
+                    if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D_DGPS) {
+                        _green_des = brightness;
+                    }
+                    break;
                 case 9:
                     // all off
                     _red_des = TOSHIBA_LED_OFF;
