@@ -1382,6 +1382,37 @@ static void tuning(){
         g.pid_rate_roll.kP(tuning_value);
         g.pid_rate_pitch.kP(tuning_value);
         break;
+        
+// popwebz edit ---- individual tuning
+    case CH6_RATE_PITCH_KP:
+        g.pid_rate_pitch.kP(tuning_value);
+        break;
+        
+    case CH6_RATE_PITCH_KI:
+        g.pid_rate_pitch.kI(tuning_value);
+        break;
+        
+    case CH6_RATE_PITCH_KD:
+        g.pid_rate_pitch.kD(tuning_value);
+        break;
+
+	case CH6_RATE_ROLL_KP:
+        g.pid_rate_roll.kP(tuning_value);
+        break;
+        
+    case CH6_RATE_ROLL_KI:
+        g.pid_rate_roll.kI(tuning_value);
+        break;
+        
+    case CH6_RATE_ROLL_KD:
+        g.pid_rate_roll.kD(tuning_value);
+        break;
+//------ End popwebz edit
+//popwebz edit --- tune circle radius
+	case CH6_CIRCLE_RADIUS:
+        g._radius(tuning_value); //not sure if I am setting the right var
+        break;
+//end popwebz edit
 
     case CH6_RATE_ROLL_PITCH_KI:
         g.pid_rate_roll.kI(tuning_value);

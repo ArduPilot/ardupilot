@@ -109,7 +109,19 @@
 // -----------
 #define CH6_NONE                        0   // no tuning performed
 #define CH6_STABILIZE_ROLL_PITCH_KP     1   // stabilize roll/pitch angle controller's P term
+
 #define CH6_RATE_ROLL_PITCH_KP          4   // body frame roll/pitch rate controller's P term
+
+//popwebz edit --- individual tuning for frames such as QAV500
+#define CH6_RATE_PITCH_KP               46  // body frame pitch rate controller's P term
+#define CH6_RATE_PITCH_KI               47  // body frame pitch rate controller's I term
+#define CH6_RATE_PITCH_KD               48  // body frame pitch rate controller's D term
+
+#define CH6_RATE_ROLL_KP                49  // body frame roll rate controller's P term
+#define CH6_RATE_ROLL_KP                50  // body frame roll rate controller's I term
+#define CH6_RATE_ROLL_KD                51  // body frame roll rate controller's D term
+//----
+
 #define CH6_RATE_ROLL_PITCH_KI          5   // body frame roll/pitch rate controller's I term
 #define CH6_RATE_ROLL_PITCH_KD          21  // body frame roll/pitch rate controller's D term
 #define CH6_STABILIZE_YAW_KP            3   // stabilize yaw heading controller's P term
@@ -137,6 +149,10 @@
 #define CH6_INAV_TC                     32  // inertial navigation baro/accel and gps/accel time constant (1.5 = strong baro/gps correction on accel estimatehas very strong does not correct accel estimate, 7 = very weak correction)
 #define CH6_DECLINATION                 38  // compass declination in radians
 #define CH6_CIRCLE_RATE                 39  // circle turn rate in degrees (hard coded to about 45 degrees in either direction)
+
+//popwebz edit -- modify circle radius in flight
+#define CH6_CIRCLE_RADIUS               52  // circle radius edit
+
 #define CH6_SONAR_GAIN                  41  // sonar gain
 #define CH6_EKF_VERTICAL_POS            42  // EKF's baro vs accel (higher rely on accels more, baro impact is reduced).  Range should be 0.2 ~ 4.0?  2.0 is default
 #define CH6_EKF_HORIZONTAL_POS          43  // EKF's gps vs accel (higher rely on accels more, gps impact is reduced).  Range should be 1.0 ~ 3.0?  1.5 is default
