@@ -179,6 +179,12 @@ public:
     /// trigger_xy - used to notify the position controller than an update has been made to the position or desired velocity so that the position controller will run as soon as possible after the update
     void trigger_xy() { _flags.force_recalc_xy = true; }
 
+    /// freeze_ff_z - used to stop the feed forward being calculated during a known discontinuity
+    void freeze_ff_z() { _limit.freeze_ff_z = true; }
+
+    /// freeze_ff_xy - used to stop the feed forward being calculated during a known discontinuity
+    void freeze_ff_xy() { _limit.freeze_ff_xy = true; }
+
     // is_active_xy - returns true if the xy position controller has been run very recently
     bool is_active_xy() const;
 

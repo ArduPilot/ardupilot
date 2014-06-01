@@ -560,6 +560,7 @@ void AC_WPNav::update_wpnav()
         // advance the target if necessary
         advance_wp_target_along_track(dt);
         _pos_control.trigger_xy();
+        _pos_control.freeze_ff_z();
     }else{
         // run horizontal position controller
         _pos_control.update_xy_controller(false);
