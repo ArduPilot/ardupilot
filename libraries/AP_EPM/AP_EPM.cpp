@@ -35,8 +35,8 @@ void AP_EPM::init()
         return;
     }
 
-    hal.gpio->pinMode(EPM_PIN_1, GPIO_OUTPUT);
-    hal.gpio->pinMode(EPM_PIN_2, GPIO_OUTPUT);
+    hal.gpio->pinMode(EPM_PIN_1, HAL_GPIO_OUTPUT);
+    hal.gpio->pinMode(EPM_PIN_2, HAL_GPIO_OUTPUT);
 
     neutral();
 }
