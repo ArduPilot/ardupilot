@@ -185,6 +185,12 @@ enum AutoMode {
     Auto_NavGuided
 };
 
+// Guided modes
+enum GuidedMode {
+    Guided_WP,
+    Guided_Velocity
+};
+
 // RTL states
 enum RTLState {
     InitialClimb,

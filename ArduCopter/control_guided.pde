@@ -14,34 +14,77 @@ static bool guided_pilot_yaw_override_yaw = false;
 static bool guided_init(bool ignore_checks)
 {
     if (GPS_ok() || ignore_checks) {
-
-        // initialise waypoint and spline controller
-        wp_nav.wp_and_spline_init();
-
-        // initialise wpnav to stopping point at current altitude
-        // To-Do: set to current location if disarmed?
-        // To-Do: set to stopping point altitude?
-        Vector3f stopping_point;
-        stopping_point.z = inertial_nav.get_altitude();
-        wp_nav.get_wp_stopping_point_xy(stopping_point);
-        wp_nav.set_wp_destination(stopping_point);
-        guided_pilot_yaw_override_yaw = false;
-        // initialise yaw to hold at current heading (reset to point at waypoint in guided_set_destination)
-        set_auto_yaw_mode(AUTO_YAW_HOLD);
+        // start in position control mode
+        guided_pos_control_start();
         return true;
     }else{
         return false;
     }
 }
 
+// initialise guided mode's position controller
+void guided_pos_control_start()
+{
+    // set to position control mode
+    guided_mode = Guided_WP;
+
+    // initialise waypoint and spline controller
+    wp_nav.wp_and_spline_init();
+
+    // initialise wpnav to stopping point at current altitude
+    // To-Do: set to current location if disarmed?
+    // To-Do: set to stopping point altitude?
+    Vector3f stopping_point;
+    stopping_point.z = inertial_nav.get_altitude();
+    wp_nav.get_wp_stopping_point_xy(stopping_point);
+    wp_nav.set_wp_destination(stopping_point);
+    guided_pilot_yaw_override_yaw = false;
+
+    // initialise yaw to hold at current heading (reset to point at waypoint in guided_set_destination)
+    set_auto_yaw_mode(AUTO_YAW_HOLD);
+}
+
+// initialise guided mode's velocity controller
+void guided_vel_control_start()
+{
+    // set guided_mode to velocity controller
+    guided_mode = Guided_Velocity;
+
+    // initialize vertical speeds and leash lengths
+    pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+    pos_control.set_accel_z(g.pilot_accel_z);
+
+    // initialise velocity controller
+    pos_control.init_vel_controller_xyz();
+
+    // To-Do: set yaw override and auto_yaw_mode?
+}
+
 // guided_set_destination - sets guided mode's target destination
 static void guided_set_destination(const Vector3f& destination)
 {
+    // ensure we are in position control mode
+    if (guided_mode != Guided_WP) {
+        guided_pos_control_start();
+    }
+
     wp_nav.set_wp_destination(destination);
     if (!guided_pilot_yaw_override_yaw) {
         // get default yaw mode
         set_auto_yaw_mode(get_default_auto_yaw_mode(false));
     }
+}
+
+// guided_set_velocity - sets guided mode's target velocity
+static void guided_set_velocity(const Vector3f& velocity)
+{
+    // check we are in velocity control mode
+    if (guided_mode != Guided_Velocity) {
+        guided_vel_control_start();
+    }
+
+    // set position controller velocity target
+    pos_control.set_vel_target(velocity);
 }
 
 // guided_run - runs the guided controller
@@ -58,6 +101,19 @@ static void guided_run()
         return;
     }
 
+    // run position or velocity controller
+    if (guided_mode == Guided_WP) {
+        guided_pos_control_run();
+    } else {
+        // must be velocity controller
+        guided_vel_control_run();
+    }
+ }
+
+// guided_pos_control_run - runs the guided position controller
+// called from guided_run
+static void guided_pos_control_run()
+{
     // process pilot's yaw input
     float target_yaw_rate = 0;
     if (!failsafe.radio) {
@@ -80,6 +136,33 @@ static void guided_run()
         attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
     }else{
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control.angle_ef_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(),true);
+        attitude_control.angle_ef_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(), true);
+    }
+}
+
+// guided_vel_control_run - runs the guided velocity controller
+// called from guided_run
+static void guided_vel_control_run()
+{
+    // process pilot's yaw input
+    float target_yaw_rate = 0;
+    if (!failsafe.radio) {
+        // get pilot's desired yaw rate
+        target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
+        if (target_yaw_rate != 0) {
+            set_auto_yaw_mode(AUTO_YAW_HOLD);
+        }
+    }
+
+    // call velocity controller which includes z axis controller
+    pos_control.update_vel_controller_xyz();
+
+    // call attitude controller
+    if (auto_yaw_mode == AUTO_YAW_HOLD) {
+        // roll & pitch from waypoint controller, yaw rate from pilot
+        attitude_control.angle_ef_roll_pitch_rate_ef_yaw(pos_control.get_roll(), pos_control.get_pitch(), target_yaw_rate);
+    }else{
+        // roll, pitch from waypoint controller, yaw heading from auto_heading()
+        attitude_control.angle_ef_roll_pitch_yaw(pos_control.get_roll(), pos_control.get_pitch(), get_auto_heading(), true);
     }
 }
