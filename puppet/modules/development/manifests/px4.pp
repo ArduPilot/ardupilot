@@ -51,6 +51,11 @@ class development::px4 {
         ensure          =>  'installed',
         provider        =>  'apt',
     }
+
+    package { 'libexpat1-dev':
+        ensure          =>  'installed',
+        provider        =>  'apt',
+    }
     
     package { 'zlib1g-dev':
         ensure          =>  'installed',
@@ -63,6 +68,11 @@ class development::px4 {
     }
     
     package { 'genromfs':
+        ensure          =>  'installed',
+        provider        =>  'apt',
+    }
+
+    package { 'automake':
         ensure          =>  'installed',
         provider        =>  'apt',
     }

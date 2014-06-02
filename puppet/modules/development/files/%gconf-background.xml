@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<gconf>
+	<entry name="picture_filename" mtime="1400253936" type="string">
+		<stringvalue>file:///usr/share/themes/Adwaita/backgrounds/adwaita-timed.xml</stringvalue>
+	</entry>
+</gconf>

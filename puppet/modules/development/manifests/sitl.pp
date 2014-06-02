@@ -49,5 +49,21 @@ class development::sitl {
         path  => '/home/vagrant/.profile'
     }
 
- 
+    common::netinstall{ 'zeromq-3':
+        url                  =>   'http://download.zeromq.org/zeromq-3.2.4.tar.gz',
+        extracted_dir        =>   'zeromq-3.2.4',
+        destination_dir      =>   '/home/vagrant',
+    }
+
+    exec { 'pip-libzmq':
+        command         =>   'pip install pyzmq',
+        onlyif          =>   'test `pip freeze | grep -c "pyzmq"` -eq 0',
+        require         =>    Package [ 'python-pip' ]
+    }
+
+    package { 'flightgear':
+        ensure          =>  'installed',
+        provider        =>  'apt',
+    }
+    
 }

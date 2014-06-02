@@ -70,10 +70,5 @@ class development::base {
         ensure          =>  'installed',
         provider        =>  'apt',
     }
-    
-    exec { 'pip-libzmq':
-        command         =>   'pip install pyzmq',
-        onlyif          =>   'test `pip freeze | grep -c "pyzmq"` -eq 0',
-        require         =>    Package [ 'python-pip' ]
-    }
+
 }

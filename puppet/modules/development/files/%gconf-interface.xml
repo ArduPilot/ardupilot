@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<gconf>
+	<entry name="monospace_font_name" mtime="1400253507" type="string">
+		<stringvalue>Ubuntu Mono 10</stringvalue>
+	</entry>
+	<entry name="document_font_name" mtime="1400253457" type="string">
+		<stringvalue>Sans 10</stringvalue>
+	</entry>
+	<entry name="font_name" mtime="1400253520" type="string">
+		<stringvalue>Ubuntu 10</stringvalue>
+	</entry>
+</gconf>
