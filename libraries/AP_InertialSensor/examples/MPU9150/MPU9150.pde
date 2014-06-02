@@ -30,6 +30,7 @@
 #include <AP_Baro.h>
 #include <AP_ADC_AnalogSource.h>
 #include <DataFlash.h>
+#include <AP_Mission.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 AP_InertialSensor_MPU9150 ins;
