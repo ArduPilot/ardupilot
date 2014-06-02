@@ -37,6 +37,7 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     _dt(POSCONTROL_DT_10HZ),
     _last_update_xy_ms(0),
     _last_update_z_ms(0),
+    _last_update_vel_xyz_ms(0),
     _speed_down_cms(POSCONTROL_SPEED_DOWN),
     _speed_up_cms(POSCONTROL_SPEED_UP),
     _speed_cms(POSCONTROL_SPEED),
@@ -48,7 +49,8 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     _alt_max(0),
     _distance_to_target(0),
     _xy_step(0),
-    _dt_xy(0)
+    _dt_xy(0),
+    _vel_xyz_step(0)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -578,6 +580,81 @@ void AC_PosControl::update_xy_controller(bool use_desired_velocity)
             _xy_step++;
             break;
     }
+}
+
+/// init_vel_controller_xyz - initialise the velocity controller - should be called once before the caller attempts to use the controller
+void AC_PosControl::init_vel_controller_xyz()
+{
+    // force the xy velocity controller to run immediately
+    _vel_xyz_step = 3;
+
+    // set roll, pitch lean angle targets to current attitude
+    _roll_target = _ahrs.roll_sensor;
+    _pitch_target = _ahrs.pitch_sensor;
+
+    // reset last velocity if this controller has just been engaged or dt is zero
+    lean_angles_to_accel(_accel_target.x, _accel_target.y);
+    _pid_rate_lat.set_integrator(_accel_target.x);
+    _pid_rate_lon.set_integrator(_accel_target.y);
+
+    // flag reset required in rate to accel step
+    _flags.reset_desired_vel_to_pos = true;
+    _flags.reset_rate_to_accel_xy = true;
+
+    // set target position in xy axis
+    const Vector3f& curr_pos = _inav.get_position();
+    set_xy_target(curr_pos.x, curr_pos.y);
+
+    // move current vehicle velocity into feed forward velocity
+    const Vector3f& curr_vel = _inav.get_velocity();
+    set_desired_velocity_xy(curr_vel.x, curr_vel.y);
+
+    // record update time
+    _last_update_vel_xyz_ms = hal.scheduler->millis();
+}
+
+/// update_velocity_controller_xyz - run the velocity controller - should be called at 100hz or higher
+///     velocity targets should we set using set_desired_velocity_xyz() method
+///     callers should use get_roll() and get_pitch() methods and sent to the attitude controller
+///     throttle targets will be sent directly to the motors
+void AC_PosControl::update_vel_controller_xyz()
+{
+    // capture time since last iteration
+    uint32_t now = hal.scheduler->millis();
+    float dt_xy = (now - _last_update_vel_xyz_ms) / 1000.0f;
+
+    // check if xy leash needs to be recalculated
+    calc_leash_length_xy();
+
+    // we will run the horizontal component every 4th iteration (i.e. 50hz on Pixhawk, 20hz on APM)
+    if (dt_xy >= POSCONTROL_VEL_UPDATE_TIME) {
+
+        // record update time
+        _last_update_vel_xyz_ms = now;
+
+        // sanity check dt
+        if (dt_xy >= POSCONTROL_ACTIVE_TIMEOUT_MS) {
+            dt_xy = 0.0f;
+        }
+
+        // apply desired velocity request to position target
+        desired_vel_to_pos(dt_xy);
+
+        // run position controller's position error to desired velocity step
+        pos_to_rate_xy(true, dt_xy);
+
+        // run velocity to acceleration step
+        rate_to_accel_xy(dt_xy);
+
+        // run acceleration to lean angle step
+        accel_to_lean_angles();
+    }
+
+    // update altitude target
+    set_alt_target_from_climb_rate(_vel_desired.z, _dt);
+
+    // run z-axis position controller
+    update_z_controller();
 }
 
 ///
