@@ -24,3 +24,9 @@ float pv_get_bearing_cd(const Vector3f &origin, const Vector3f &destination)
     }
     return bearing;
 }
+
+// pv_get_horizontal_distance_cm - return distance between two positions in cm
+float pv_get_horizontal_distance_cm(const Vector3f &origin, const Vector3f &destination)
+{
+    return pythagorous2(destination.x-origin.x,destination.y-origin.y);
+}
