@@ -15,9 +15,9 @@
  */
 
 /*
-	APM_OBC.cpp
+    APM_OBC.cpp
 
-	Outback Challenge Failsafe module
+    Outback Challenge Failsafe module
 
 */
 #include <AP_HAL.h>
@@ -102,111 +102,111 @@ extern bool geofence_breached(void);
 // ArduPlane code
 void
 APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms)
-{	
-	// we always check for fence breach
-	if (geofence_breached() || check_altlimit()) {
-		if (!_terminate) {
-			hal.console->println_P(PSTR("Fence TERMINATE"));
-			_terminate.set(1);
-		}
-	}
-	
-	// tell the failsafe board if we are in manual control
-	// mode. This tells it to pass through controls from the
-	// receiver
-	if (_manual_pin != -1) {
+{    
+    // we always check for fence breach
+    if (geofence_breached() || check_altlimit()) {
+        if (!_terminate) {
+            hal.console->println_P(PSTR("Fence TERMINATE"));
+            _terminate.set(1);
+        }
+    }
+    
+    // tell the failsafe board if we are in manual control
+    // mode. This tells it to pass through controls from the
+    // receiver
+    if (_manual_pin != -1) {
         hal.gpio->pinMode(_manual_pin, HAL_GPIO_OUTPUT);
-		hal.gpio->write(_manual_pin, mode==OBC_MANUAL);
-	}
+        hal.gpio->write(_manual_pin, mode==OBC_MANUAL);
+    }
 
-	uint32_t now = hal.scheduler->millis();
-	bool gcs_link_ok = ((now - last_heartbeat_ms) < 10000);
-	bool gps_lock_ok = ((now - gps.last_fix_time_ms()) < 3000);
+    uint32_t now = hal.scheduler->millis();
+    bool gcs_link_ok = ((now - last_heartbeat_ms) < 10000);
+    bool gps_lock_ok = ((now - gps.last_fix_time_ms()) < 3000);
 
-	switch (_state) {
-	case STATE_PREFLIGHT:
-		// we startup in preflight mode. This mode ends when
-		// we first enter auto.
-		if (mode == OBC_AUTO) {
-			hal.console->println_P(PSTR("Starting OBC_AUTO"));
-			_state = STATE_AUTO;
-		}
-		break;
+    switch (_state) {
+    case STATE_PREFLIGHT:
+        // we startup in preflight mode. This mode ends when
+        // we first enter auto.
+        if (mode == OBC_AUTO) {
+            hal.console->println_P(PSTR("Starting OBC_AUTO"));
+            _state = STATE_AUTO;
+        }
+        break;
 
-	case STATE_AUTO:
-		// this is the normal mode. 
-		if (!gcs_link_ok) {
-			hal.console->println_P(PSTR("State DATA_LINK_LOSS"));
-			_state = STATE_DATA_LINK_LOSS;
-			if (_wp_comms_hold) {
-                            	_saved_wp = mission.get_current_nav_cmd().index;
-				mission.set_current_cmd(_wp_comms_hold);
-			}
-			break;
-		}
-		if (!gps_lock_ok) {
-			hal.console->println_P(PSTR("State GPS_LOSS"));
-			_state = STATE_GPS_LOSS;
-			if (_wp_gps_loss) {
-                            	_saved_wp = mission.get_current_nav_cmd().index;
-				mission.set_current_cmd(_wp_gps_loss);
-			}
-			break;
-		}
-		break;
+    case STATE_AUTO:
+        // this is the normal mode. 
+        if (!gcs_link_ok) {
+            hal.console->println_P(PSTR("State DATA_LINK_LOSS"));
+            _state = STATE_DATA_LINK_LOSS;
+            if (_wp_comms_hold) {
+                                _saved_wp = mission.get_current_nav_cmd().index;
+                mission.set_current_cmd(_wp_comms_hold);
+            }
+            break;
+        }
+        if (!gps_lock_ok) {
+            hal.console->println_P(PSTR("State GPS_LOSS"));
+            _state = STATE_GPS_LOSS;
+            if (_wp_gps_loss) {
+                                _saved_wp = mission.get_current_nav_cmd().index;
+                mission.set_current_cmd(_wp_gps_loss);
+            }
+            break;
+        }
+        break;
 
-	case STATE_DATA_LINK_LOSS:
-		if (!gps_lock_ok) {
-			// losing GPS lock when data link is lost
-			// leads to termination
-			hal.console->println_P(PSTR("Dual loss TERMINATE"));
-			_terminate.set(1);
-		} else if (gcs_link_ok) {
-			_state = STATE_AUTO;
-			hal.console->println_P(PSTR("GCS OK"));
-			if (_saved_wp != 0) {
-                            	mission.set_current_cmd(_saved_wp);			
-				_saved_wp = 0;
-			}
-		}
-		break;
+    case STATE_DATA_LINK_LOSS:
+        if (!gps_lock_ok) {
+            // losing GPS lock when data link is lost
+            // leads to termination
+            hal.console->println_P(PSTR("Dual loss TERMINATE"));
+            _terminate.set(1);
+        } else if (gcs_link_ok) {
+            _state = STATE_AUTO;
+            hal.console->println_P(PSTR("GCS OK"));
+            if (_saved_wp != 0) {
+                                mission.set_current_cmd(_saved_wp);            
+                _saved_wp = 0;
+            }
+        }
+        break;
 
-	case STATE_GPS_LOSS:
-		if (!gcs_link_ok) {
-			// losing GCS link when GPS lock lost
-			// leads to termination
-			hal.console->println_P(PSTR("Dual loss TERMINATE"));
-			_terminate.set(1);
-		} else if (gps_lock_ok) {
-			hal.console->println_P(PSTR("GPS OK"));
-			_state = STATE_AUTO;
-			if (_saved_wp != 0) {
-				mission.set_current_cmd(_saved_wp);			
-				_saved_wp = 0;
-			}
-		}
-		break;
-	}
+    case STATE_GPS_LOSS:
+        if (!gcs_link_ok) {
+            // losing GCS link when GPS lock lost
+            // leads to termination
+            hal.console->println_P(PSTR("Dual loss TERMINATE"));
+            _terminate.set(1);
+        } else if (gps_lock_ok) {
+            hal.console->println_P(PSTR("GPS OK"));
+            _state = STATE_AUTO;
+            if (_saved_wp != 0) {
+                mission.set_current_cmd(_saved_wp);            
+                _saved_wp = 0;
+            }
+        }
+        break;
+    }
 
-	// if we are not terminating or if there is a separate terminate
-	// pin configured then toggle the heartbeat pin at 10Hz
-	if (_heartbeat_pin != -1 && (_terminate_pin != -1 || !_terminate)) {
-		_heartbeat_pin_value = !_heartbeat_pin_value;
+    // if we are not terminating or if there is a separate terminate
+    // pin configured then toggle the heartbeat pin at 10Hz
+    if (_heartbeat_pin != -1 && (_terminate_pin != -1 || !_terminate)) {
+        _heartbeat_pin_value = !_heartbeat_pin_value;
         hal.gpio->pinMode(_heartbeat_pin, HAL_GPIO_OUTPUT);
-		hal.gpio->write(_heartbeat_pin, _heartbeat_pin_value);
-	}	
+        hal.gpio->write(_heartbeat_pin, _heartbeat_pin_value);
+    }    
 
-	// set the terminate pin
-	if (_terminate_pin != -1) {
+    // set the terminate pin
+    if (_terminate_pin != -1) {
         hal.gpio->pinMode(_terminate_pin, HAL_GPIO_OUTPUT);
-		hal.gpio->write(_terminate_pin, _terminate?1:0);
-	}	
+        hal.gpio->write(_terminate_pin, _terminate?1:0);
+    }    
 }
 
 // check for altitude limit breach
 bool
 APM_OBC::check_altlimit(void)
-{	
+{    
     if (_amsl_limit == 0 || _qnh_pressure <= 0) {
         // no limit set
         return false;
@@ -272,12 +272,12 @@ void APM_OBC::check_crash_plane(void)
         setup_failsafe();
     }
 
-	// should we crash the plane? Only possible with
-	// FS_TERM_ACTTION set to 42
+    // should we crash the plane? Only possible with
+    // FS_TERM_ACTTION set to 42
     if (!_terminate || _terminate_action != 42) {
         // not terminating
         return;
-	}
+    }
 
     // we are terminating. Setup primary output channels radio_out values
     RC_Channel *ch_roll     = RC_Channel::rc_channel(rcmap.roll()-1);
