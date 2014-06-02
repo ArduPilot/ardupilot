@@ -30,6 +30,7 @@
 #include <AP_NavEKF.h>
 #include <AP_HAL_Linux.h>
 #include <AP_InertialSensor_MPU9250.h>
+#include <AP_Mission.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 AP_InertialSensor_MPU9250 ins;
