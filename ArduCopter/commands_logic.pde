@@ -856,7 +856,7 @@ static bool verify_yaw()
 // do_guided - start guided mode
 static bool do_guided(const AP_Mission::Mission_Command& cmd)
 {
-    Vector3f pos;       // target location
+    Vector3f pos_or_vel;    // target location or velocity
 
     // only process guided waypoint if we are in guided mode
     if (control_mode != GUIDED && !(control_mode == AUTO && auto_mode == Auto_NavGuided)) {
@@ -868,8 +868,17 @@ static bool do_guided(const AP_Mission::Mission_Command& cmd)
 
         case MAV_CMD_NAV_WAYPOINT:
             // set wp_nav's destination
-            pos = pv_location_to_vector(cmd.content.location);
-            guided_set_destination(pos);
+            pos_or_vel = pv_location_to_vector(cmd.content.location);
+            guided_set_destination(pos_or_vel);
+            return true;
+            break;
+
+        case MAV_CMD_NAV_VELOCITY:
+            // set target velocity
+            pos_or_vel.x = cmd.content.nav_velocity.x * 100.0f;
+            pos_or_vel.y = cmd.content.nav_velocity.y * 100.0f;
+            pos_or_vel.z = cmd.content.nav_velocity.z * 100.0f;
+            guided_set_velocity(pos_or_vel);
             return true;
             break;
 
