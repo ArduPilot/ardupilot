@@ -23,6 +23,16 @@
               <param index="6">Empty</param>
               <param index="7">Empty</param>
             </entry>
+           <entry name="MAV_CMD_NAV_VELOCITY" value="91">
+                <description>Navigate at the specified velocity</description>
+                <param index="1">coordinate_frame - see MAV_FRAME enum</param>
+                <param index="2">Empty</param>
+                <param index="3">Empty</param>
+                <param index="4">Empty</param>
+                <param index="5">x velocity</param>
+                <param index="6">y velocity</param>
+                <param index="7">z velocity</param>
+           </entry>
             <entry name="MAV_CMD_DO_MOTOR_TEST" value="209">
               <description>Mission command to perform motor test</description>
               <param index="1">motor sequence number (a number from 1 to max number of motors on the vehicle)</param>
