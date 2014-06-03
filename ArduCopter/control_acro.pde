@@ -52,7 +52,6 @@ static void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int
     rate_bf_request.x = roll_in * g.acro_rp_p;
     rate_bf_request.y = pitch_in * g.acro_rp_p;
     rate_bf_request.z = yaw_in * g.acro_yaw_p;
-    // todo: add acceleration slew
 
     // calculate earth frame rate corrections to pull the copter back to level while in ACRO mode
 
