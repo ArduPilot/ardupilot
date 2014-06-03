@@ -6,6 +6,6 @@
   <vt unit="FT/SEC">      0.0 </vt>
   <gamma unit="DEG">      0.0 </gamma>
   <phi unit="DEG">        0.0 </phi>
-  <theta unit="DEG">      0.0 </theta>
+  <theta unit="DEG">      13.0 </theta>
   <psi unit="DEG">        %(HEADING)s </psi>
 </initialize>
