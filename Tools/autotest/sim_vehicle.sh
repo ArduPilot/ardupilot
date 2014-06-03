@@ -16,6 +16,7 @@ USE_GDB_STOPPED=0
 CLEAN_BUILD=0
 START_ANTENNA_TRACKER=0
 WIPE_EEPROM=0
+REVERSE_THROTTLE=0
 
 usage()
 {
@@ -33,6 +34,7 @@ Options:
     -L               select start location from Tools/autotest/locations.txt
     -c               do a make clean before building
     -w               wipe EEPROM and reload parameters
+    -R               reverse throttle in plane
     -f FRAME         set aircraft frame type
                      for copters can choose +, X, quad or octa
                      for planes can choose elevon or vtail
@@ -53,7 +55,7 @@ EOF
 
 
 # parse options. Thanks to http://wiki.bash-hackers.org/howto/getopts_tutorial
-while getopts ":I:VgGcj:TL:v:hwf:" opt; do
+while getopts ":I:VgGcj:TL:v:hwf:R" opt; do
   case $opt in
     v)
       VEHICLE=$OPTARG
@@ -66,6 +68,9 @@ while getopts ":I:VgGcj:TL:v:hwf:" opt; do
       ;;
     T)
       START_ANTENNA_TRACKER=1
+      ;;
+    R)
+      REVERSE_THROTTLE=1
       ;;
     G)
       USE_GDB=1
@@ -232,6 +237,9 @@ fi
 
 case $VEHICLE in
     ArduPlane)
+        [ "$REVERSE_THROTTLE" == 1 ] && {
+            EXTRA_SIM="$EXTRA_SIM --revthr"
+        }
         RUNSIM="nice $autotest/jsbsim/runsim.py --home=$SIMHOME --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT $EXTRA_SIM"
         PARMS="ArduPlane.parm"
         if [ $WIPE_EEPROM == 1 ]; then
