@@ -248,7 +248,7 @@ fdm = fgFDM.fgFDM()
 
 jsb_console.send('info\n')
 jsb_console.send('resume\n')
-jsb.expect("trim computation time")
+jsb.expect(["trim computation time","Trim Results"])
 time.sleep(1.5)
 jsb_console.logfile = None
 
