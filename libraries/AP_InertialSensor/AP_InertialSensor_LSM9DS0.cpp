@@ -22,6 +22,7 @@
 #include <AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_ERLE
 #include "AP_InertialSensor_LSM9DS0.h"
+#include "../AP_HAL_Linux/GPIO.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -120,7 +121,8 @@ extern const AP_HAL::HAL& hal;
 
 AP_InertialSensor_LSM9DS0::AP_InertialSensor_LSM9DS0():
     AP_InertialSensor(),
-    _drdy_pin_xm(NULL),
+    _drdy_pin_a(NULL),
+    _drdy_pin_m(NULL),
     _drdy_pin_g(NULL),
     _initialised(false),
     _lsm9ds0_product_id(AP_PRODUCT_ID_NONE)
@@ -135,10 +137,17 @@ uint16_t AP_InertialSensor_LSM9DS0::_init_sensor( Sample_rate sample_rate)
     _spi = hal.spi->device(AP_HAL::SPIDevice_LSM9DS0);
     _spi_sem = _spi->get_semaphore();
     
-    _drdy_pin_xm = hal.gpio->channel(LSM9DS0_SPI_ACCELMAG_DRDY);
-    _drdy_pin_g = hal.gpio->channel(LSM9DS0_SPI_GYRO_DRDY);
-    _cs_xm = hal.gpio->channel(LSM9DS0_SPI_ACCELMAG_CS);
-    _cs_g = hal.gpio->channel(LSM9DS0_SPI_GYRO_CS);
+    _drdy_pin_a = hal.gpio->channel(BBB_P8_8);
+    _drdy_pin_m = hal.gpio->channel(BBB_P8_10);
+    _drdy_pin_g = hal.gpio->channel(BBB_P8_34);
+
+    // For some reason configuring the pins as an inputs make the driver fail
+    // _drdy_pin_a->mode(GPIO_IN);
+    // _drdy_pin_m->mode(GPIO_IN);
+    // _drdy_pin_g->mode(GPIO_IN);
+
+    _cs_xm = hal.gpio->channel(BBB_P9_17);
+    _cs_g = hal.gpio->channel(BBB_P8_9);
 
     hal.scheduler->suspend_timer_procs();
 
@@ -349,20 +358,20 @@ bool AP_InertialSensor_LSM9DS0::_hardware_init(Sample_rate sample_rate)
  * TODO, read the
  * status register.
  */
-bool AP_InertialSensor_LSM9DS0::_data_ready()
+uint8_t AP_InertialSensor_LSM9DS0::_data_ready()
 {
     uint8_t rvalue = 0;
     if (_drdy_pin_g) {
         if (_drdy_pin_g->read() != 0){
             rvalue=1;
         }
-        if (_drdy_pin_xm) {
-            if (_drdy_pin_xm->read() != 0){
+        if (_drdy_pin_a) {
+            if (_drdy_pin_a->read() != 0){
                 rvalue = 3;
             }
         }
-    } else if (_drdy_pin_xm) {
-        if (_drdy_pin_xm->read() != 0){
+    } else if (_drdy_pin_a) {
+        if (_drdy_pin_a->read() != 0){
             rvalue = 2;
         }
     }

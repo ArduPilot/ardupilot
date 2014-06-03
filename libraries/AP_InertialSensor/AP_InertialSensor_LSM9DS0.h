@@ -10,13 +10,6 @@
 #include "AP_InertialSensor.h"
 
 
-// TODO review these pins
-#define LSM9DS0_SPI_ACCELMAG_CS                 1       // Accel and mag chip select pin
-#define LSM9DS0_SPI_GYRO_CS                     2       // Gyro chip select pin
-#define LSM9DS0_SPI_ACCELMAG_DRDY               3       // Accel and mag data ready pin
-#define LSM9DS0_SPI_GYRO_DRDY                   4       // Gyro data ready pin
-
-
 // gyro_scale_lsm9ds0 defines the possible full-scale ranges of the gyroscope:
 enum gyro_scale_lsm9ds0
 {
@@ -121,7 +114,8 @@ protected:
     uint16_t                    _init_sensor( Sample_rate sample_rate );
 
 private:
-    AP_HAL::DigitalSource *_drdy_pin_xm;
+    AP_HAL::DigitalSource *_drdy_pin_a;
+    AP_HAL::DigitalSource *_drdy_pin_m;
     AP_HAL::DigitalSource *_drdy_pin_g;
     AP_HAL::DigitalSource *_cs_xm;
     AP_HAL::DigitalSource *_cs_g;
@@ -169,7 +163,7 @@ private:
     bool                 _sample_available();
     void                 _read_data_transaction_g();
     void                 _read_data_transaction_xm();    
-    bool                 _data_ready();
+    uint8_t              _data_ready();
     void                 _poll_data(void);
     uint8_t              _register_read_xm( uint8_t reg );
     uint8_t              _register_read_g( uint8_t reg );
