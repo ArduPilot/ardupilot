@@ -2,7 +2,7 @@
 
 #include <AP_HAL.h>
 #include "AP_InertialSensor_MPU6000.h"
-#include "GPIO.h"
+#include "../AP_HAL_Linux/GPIO.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -181,7 +181,9 @@ uint16_t AP_InertialSensor_MPU6000::_init_sensor( Sample_rate sample_rate )
     _spi = hal.spi->device(AP_HAL::SPIDevice_MPU6000);
     _spi_sem = _spi->get_semaphore();
 
-    _drdy_pin = hal.gpio->channel(26); // BBB_P8_14
+    _drdy_pin = hal.gpio->channel(BBB_P8_14);
+    // For some reason configuring the pin as an input make the driver fail
+    //_drdy_pin->mode(GPIO_IN);
 
     hal.scheduler->suspend_timer_procs();
 
