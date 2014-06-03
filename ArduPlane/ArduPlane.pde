@@ -1254,6 +1254,7 @@ static void update_flight_mode(void)
             // FBWA failsafe glide
             nav_roll_cd = 0;
             nav_pitch_cd = 0;
+            channel_throttle->servo_out = 0;
         }
         break;
     }
