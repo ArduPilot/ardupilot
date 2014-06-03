@@ -7,7 +7,7 @@
 
 class Linux::LinuxSPIDeviceDriver : public AP_HAL::SPIDeviceDriver {
 public:
-    LinuxSPIDeviceDriver(const char *spipath, uint8_t mode, uint8_t bitsPerWord, uint32_t speed);
+    LinuxSPIDeviceDriver(const char *spipath, uint8_t mode, uint8_t bitsPerWord, uint8_t cs_pin, uint32_t speed);
     void init();
     AP_HAL::Semaphore* get_semaphore();
     void transaction(const uint8_t *tx, uint8_t *rx, uint16_t len);
@@ -20,6 +20,8 @@ private:
     LinuxSemaphore _semaphore;
     const char *_spipath;
     int _fd;
+    uint8_t _cs_pin;
+    AP_HAL::DigitalSource *_cs;
     uint8_t _mode;
     uint8_t _bitsPerWord;
     uint32_t _speed;
@@ -33,6 +35,8 @@ public:
 private:
     LinuxSPIDeviceDriver _device_cs0;
     LinuxSPIDeviceDriver _device_cs1;
+    LinuxSPIDeviceDriver _device_cs2;
+    LinuxSPIDeviceDriver _device_cs3;
 };
 
 #endif // __AP_HAL_LINUX_SPIDRIVER_H__

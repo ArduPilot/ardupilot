@@ -10,16 +10,24 @@
 #include <stdint.h>
 #include <sys/ioctl.h>
 #include <linux/spi/spidev.h>
+#include "GPIO.h"
 
 using namespace Linux;
 
-LinuxSPIDeviceDriver::LinuxSPIDeviceDriver(const char *spipath, uint8_t mode, uint8_t bitsPerWord, uint32_t speed) :
+extern const AP_HAL::HAL& hal;
+
+#define SPI0_BUS_SPEED 1000000
+#define SPI1_BUS_SPEED 2600000
+
+LinuxSPIDeviceDriver::LinuxSPIDeviceDriver(const char *spipath, uint8_t mode, uint8_t bitsPerWord, uint8_t cs_pin, uint32_t speed):
     _spipath(spipath),
     _fd(-1),
     _mode(mode),
-    _bitsPerWord(bitsPerWord),
-    _speed(speed)
-{}
+    _bitsPerWord(bitsPerWord),    
+    _speed(speed),
+    _cs_pin(cs_pin)
+{    
+}
 
 void LinuxSPIDeviceDriver::init()
 {
@@ -58,6 +66,10 @@ void LinuxSPIDeviceDriver::init()
         goto failed;
     }
 
+    // Init the CS
+    _cs = hal.gpio->channel(_cs_pin);
+    _cs->mode(GPIO_OUT);
+    _cs->write(HIGH);       // do not hold the SPI bus initially
     return;
 
 failed:
@@ -72,6 +84,7 @@ AP_HAL::Semaphore* LinuxSPIDeviceDriver::get_semaphore()
 
 void LinuxSPIDeviceDriver::transaction(const uint8_t *tx, uint8_t *rx, uint16_t len)
 {
+    cs_assert();
     struct spi_ioc_transfer spi[1];
     spi[0].tx_buf        = (uint64_t)tx;
     spi[0].rx_buf        = (uint64_t)rx;
@@ -82,15 +95,18 @@ void LinuxSPIDeviceDriver::transaction(const uint8_t *tx, uint8_t *rx, uint16_t 
     spi[0].cs_change     = 0;
  
     ioctl(_fd, SPI_IOC_MESSAGE(1), &spi);
+    cs_release();
 }
 
 
 void LinuxSPIDeviceDriver::cs_assert()
 {
+    _cs->write(0);
 }
 
 void LinuxSPIDeviceDriver::cs_release()
 {
+    _cs->write(1);
 }
 
 uint8_t LinuxSPIDeviceDriver::transfer(uint8_t data)
@@ -106,14 +122,18 @@ void LinuxSPIDeviceDriver::transfer(const uint8_t *data, uint16_t len)
 }
 
 LinuxSPIDeviceManager::LinuxSPIDeviceManager() :
-    _device_cs0("/dev/spidev1.0", SPI_MODE_0, 8, 2600000),
-    _device_cs1("/dev/spidev2.0", SPI_MODE_0, 8, 1000000)
+    _device_cs0("/dev/spidev2.0", SPI_MODE_0, 8, 7, SPI1_BUS_SPEED), /* SPIDevice_MS5611 */
+    _device_cs1("/dev/spidev2.0", SPI_MODE_0, 8, 113, SPI1_BUS_SPEED), /* SPIDevice_MPU6000 */
+    _device_cs2("/dev/spidev2.0", SPI_MODE_0, 8, 49, SPI1_BUS_SPEED), /* SPIDevice_MPU9250 */
+    _device_cs3("/dev/spidev1.0", SPI_MODE_0, 8, 5,SPI0_BUS_SPEED) /* SPIDevice_LSM9DS0 */
 {}
 
 void LinuxSPIDeviceManager::init(void *)
 {
     _device_cs0.init();
     _device_cs1.init();
+    _device_cs2.init();
+    _device_cs3.init();
 }
 
 /*
@@ -122,16 +142,14 @@ void LinuxSPIDeviceManager::init(void *)
 AP_HAL::SPIDeviceDriver* LinuxSPIDeviceManager::device(enum AP_HAL::SPIDevice dev)
 {
     switch (dev) {
-        case AP_HAL::SPIDevice_ADS7844:
-            return &_device_cs0;
         case AP_HAL::SPIDevice_MPU6000:
             return &_device_cs1;            
         case AP_HAL::SPIDevice_MPU9250:
-            return &_device_cs1;            
+            return &_device_cs2;            
         case AP_HAL::SPIDevice_MS5611:
-            return &_device_cs1;
+            return &_device_cs0;
         case AP_HAL::SPIDevice_LSM9DS0:
-            return &_device_cs0;                        
+            return &_device_cs3;                        
     }
     return NULL;
 }
