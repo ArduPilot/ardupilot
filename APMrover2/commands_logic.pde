@@ -161,6 +161,10 @@ static bool verify_command(const AP_Mission::Mission_Command& cmd)
             break;
 
         default:
+            if (cmd.id > MAV_CMD_CONDITION_LAST) {
+                // this is a command that doesn't require verify
+                return true;
+            }
             gcs_send_text_P(SEVERITY_HIGH,PSTR("verify_conditon: Unsupported command"));
             return true;
             break;
