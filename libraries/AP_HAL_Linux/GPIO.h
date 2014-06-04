@@ -25,6 +25,8 @@
 #define LOW             0
 #define HIGH            1
 
+#define LINUX_GPIO_NUM_BANKS 4
+
 // BeagleBone Black GPIO mappings
 #define BBB_USR0 53
 #define BBB_USR1 54
@@ -98,8 +100,15 @@
 #define BBB_P9_41 20
 #define BBB_P9_42 7
 
-
 class Linux::LinuxGPIO : public AP_HAL::GPIO {
+private:
+    struct GPIO {
+        volatile uint32_t *base;
+        volatile uint32_t *oe;
+        volatile uint32_t *in;
+        volatile uint32_t *out;
+     } gpio_bank[LINUX_GPIO_NUM_BANKS];
+
 public:
     LinuxGPIO();
     void    init();
@@ -129,6 +138,7 @@ public:
     void    toggle();
 private:
     uint8_t _v;
+
 };
 
 #endif // __AP_HAL_LINUX_GPIO_H__
