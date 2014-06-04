@@ -23,9 +23,10 @@ void setup()
 
     hal.scheduler->delay(1000);
 
-    /* What's this for? */
-    hal.gpio->pinMode(63, HAL_GPIO_OUTPUT);
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+    hal.gpio->pinMode(63, GPIO_OUTPUT);
     hal.gpio->write(63, 1);
+#endif
     
     baro.init();
     baro.calibrate();
