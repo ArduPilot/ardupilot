@@ -70,10 +70,31 @@ int32_t AP_L1_Control::target_bearing_cd(void) const
 	return wrap_180_cd(_target_bearing_cd);
 }
 
+/*
+  this is the turn distance assuming a 90 degree turn
+ */
 float AP_L1_Control::turn_distance(float wp_radius) const
 {
     wp_radius *= sq(_ahrs.get_EAS2TAS());
 	return min(wp_radius, _L1_dist);
+}
+
+/*
+  this approximates the turn distance for a given turn angle. If the
+  turn_angle is > 90 then a 90 degree turn distance is used, otherwise
+  the turn distance is reduced linearly. 
+  This function allows straight ahead mission legs to avoid thinking
+  they have reached the waypoint early, which makes things like camera
+  trigger and ball drop at exact positions under mission control much easier
+ */
+float AP_L1_Control::turn_distance(float wp_radius, float turn_angle) const
+{
+    float distance_90 = turn_distance(wp_radius);
+    turn_angle = fabsf(turn_angle);
+    if (turn_angle >= 90) {
+        return distance_90;
+    }
+    return distance_90 * turn_angle / 90.0f;
 }
 
 bool AP_L1_Control::reached_loiter_target(void)
