@@ -66,7 +66,7 @@ void LinuxGPIO::pinMode(uint8_t pin, uint8_t output)
         hal.scheduler->panic("invalid pin number");
         return;
     }
-    if (output == GPIO_INPUT) {
+    if (output == HAL_GPIO_INPUT) {
         *gpio_bank[bank].oe |= (1U<<bankpin);
     } else {
         *gpio_bank[bank].oe &= ~(1U<<bankpin);
