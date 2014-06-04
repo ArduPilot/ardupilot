@@ -413,7 +413,7 @@ static bool verify_nav_wp()
         return false;
     }
     
-    if (wp_distance <= nav_controller->turn_distance(g.waypoint_radius)) {
+    if (wp_distance <= nav_controller->turn_distance(g.waypoint_radius, auto_state.next_turn_angle)) {
         gcs_send_text_fmt(PSTR("Reached Waypoint #%i dist %um"),
                           (unsigned)mission.get_current_nav_cmd().index,
                           (unsigned)get_distance(current_loc, next_WP_loc));

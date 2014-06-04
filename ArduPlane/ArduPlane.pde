@@ -533,13 +533,17 @@ static struct {
 
     // initial pitch. Used to detect if nose is rising in a tail dragger
     int16_t initial_pitch_cd;
+
+    // turn angle for next leg of mission
+    float next_turn_angle;
 } auto_state = {
     takeoff_complete : true,
     land_complete : false,
     takeoff_altitude_cm : 0,
     takeoff_pitch_cd : 0,
     highest_airspeed : 0,
-    initial_pitch_cd : 0
+    initial_pitch_cd : 0,
+    next_turn_angle  : 90.0f
 };
 
 // true if we are in an auto-throttle mode, which means

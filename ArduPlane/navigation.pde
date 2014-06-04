@@ -225,6 +225,9 @@ static void update_fbwb_speed_height(void)
     calc_nav_pitch();
 }
 
+/*
+  setup for a gradual glide slope to the next waypoint, if appropriate
+ */
 static void setup_glide_slope(void)
 {
     // establish the distance we are travelling to the next waypoint,
@@ -266,7 +269,29 @@ static void setup_glide_slope(void)
         offset_altitude_cm = 0;        
         break;
     }
+
+
+    // calculate turn angle for next leg
+    setup_turn_angle();
 }
+
+/*
+  calculate the turn angle for the next leg of the mission
+ */
+static void setup_turn_angle(void)
+{
+    int32_t next_ground_course_cd = mission.get_next_ground_course_cd(-1);
+    if (next_ground_course_cd == -1) {
+        // the mission library can't determine a turn angle, assume 90 degrees
+        auto_state.next_turn_angle = 90.0f;
+    } else {
+        // get the heading of the current leg
+        int32_t ground_course_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
+
+        // work out the angle we need to turn through
+        auto_state.next_turn_angle = wrap_180_cd(next_ground_course_cd - ground_course_cd) * 0.01f;
+    }
+}    
 
 /*
   return relative altitude in meters (relative to home)
