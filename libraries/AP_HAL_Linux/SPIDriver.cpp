@@ -12,6 +12,8 @@
 #include <linux/spi/spidev.h>
 #include "GPIO.h"
 
+#define SPI_DEBUGGING 1
+
 using namespace Linux;
 
 extern const AP_HAL::HAL& hal;
@@ -30,36 +32,57 @@ void LinuxSPIDeviceDriver::init()
 {
     _fd = open(_spipath, O_RDWR);
     if (_fd == -1) {
+#if SPI_DEBUGGING
+        hal.console->printf("LinuxSPIDeviceDriver failed opening _spipath\n");
+#endif        
         return;
     }
     int ret;
     ret = ioctl(_fd, SPI_IOC_WR_MODE, &_mode);
     if (ret == -1) {
+#if SPI_DEBUGGING
+        hal.console->printf("LinuxSPIDeviceDriver ioctl SPI_IOC_WR_MODE failed\n");
+#endif                
         goto failed;
     }
  
     ret = ioctl(_fd, SPI_IOC_RD_MODE, &_mode);
     if (ret == -1) {
+#if SPI_DEBUGGING
+        hal.console->printf("LinuxSPIDeviceDriver ioctl SPI_IOC_RD_MODE failed\n");
+#endif                
         goto failed;
     }
  
     ret = ioctl(_fd, SPI_IOC_WR_BITS_PER_WORD, &_bitsPerWord);
     if (ret == -1) {
+#if SPI_DEBUGGING
+        hal.console->printf("LinuxSPIDeviceDriver ioctl SPI_IOC_WR_BITS_PER_WORD failed\n");
+#endif                        
         goto failed;
     }
     
     ret = ioctl(_fd, SPI_IOC_RD_BITS_PER_WORD, &_bitsPerWord);
     if (ret == -1) {
+#if SPI_DEBUGGING
+        hal.console->printf("LinuxSPIDeviceDriver ioctl SPI_IOC_RD_BITS_PER_WORD failed\n");
+#endif                        
         goto failed;
     }
  
     ret = ioctl(_fd, SPI_IOC_WR_MAX_SPEED_HZ, &_speed);    
     if (ret == -1) {
+#if SPI_DEBUGGING
+        hal.console->printf("LinuxSPIDeviceDriver ioctl SPI_IOC_WR_MAX_SPEED_HZ failed\n");
+#endif                                
         goto failed;
     }
  
     ret = ioctl(_fd, SPI_IOC_RD_MAX_SPEED_HZ, &_speed);    
     if (ret == -1) {
+#if SPI_DEBUGGING
+        hal.console->printf("LinuxSPIDeviceDriver ioctl SPI_IOC_RD_MAX_SPEED_HZ failed\n");
+#endif                                        
         goto failed;
     }
 
@@ -72,6 +95,7 @@ void LinuxSPIDeviceDriver::init()
 failed:
     close(_fd);
     _fd = -1;
+    hal.scheduler->panic("SPI init failed");
 }
 
 AP_HAL::Semaphore* LinuxSPIDeviceDriver::get_semaphore()
