@@ -23,7 +23,7 @@ class AP_RangeFinder_PX4 : public RangeFinder
 {
 public:
     // constructor
-    AP_RangeFinder_PX4(FilterInt16 *filter);
+    AP_RangeFinder_PX4(FilterInt16 *);
     
     // initialize all the range finder devices
     bool init(void);
