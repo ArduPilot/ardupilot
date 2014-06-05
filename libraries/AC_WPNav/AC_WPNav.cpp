@@ -104,6 +104,7 @@ AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosContro
     _track_leash_length(0.0),
     _slow_down_dist(0.0),
     _spline_time(0.0),
+    _spline_time_scale(0.0),
     _spline_vel_scaler(0.0),
     _yaw(0.0)
 {
@@ -407,7 +408,6 @@ void AC_WPNav::advance_wp_target_along_track(float dt)
     float track_covered;        // distance (in cm) along the track that the vehicle has traveled.  Measured by drawing a perpendicular line from the track to the vehicle.
     Vector3f track_error;       // distance error (in cm) from the track_covered position (i.e. closest point on the line to the vehicle) and the vehicle
     float track_desired_max;    // the farthest distance (in cm) along the track that the leash will allow
-    float track_desired_temp = _track_desired;
     float track_leash_slack;    // additional distance (in cm) along the track from our track_covered position that our leash will allow
     bool reached_leash_limit = false;   // true when track has reached leash limit and we need to slow down the target point
 
@@ -494,9 +494,13 @@ void AC_WPNav::advance_wp_target_along_track(float dt)
     if (!reached_leash_limit) {
     	_track_desired += _limited_speed_xy_cms * dt;
 
-        if (_track_desired > track_desired_max){
+    	// reduce speed if we reach end of leash
+        if (_track_desired > track_desired_max) {
         	_track_desired = track_desired_max;
         	_limited_speed_xy_cms -= 2.0f * _track_accel * dt;
+        	if (_limited_speed_xy_cms < 0.0f) {
+        	    _limited_speed_xy_cms = 0.0f;
+        	}
     	}
     }
 
@@ -809,7 +813,10 @@ void AC_WPNav::advance_spline_target_along_track(float dt)
         }
 
         // scale the spline_time by the velocity we've calculated vs the velocity that came out of the spline calculator
-        float _spline_time_scale = _spline_vel_scaler/target_vel.length();
+        float target_vel_length = target_vel.length();
+        if (target_vel_length != 0.0f) {
+            _spline_time_scale = _spline_vel_scaler/target_vel_length;
+        }
 
         // update target position
         _pos_control.set_pos_target(target_pos);
