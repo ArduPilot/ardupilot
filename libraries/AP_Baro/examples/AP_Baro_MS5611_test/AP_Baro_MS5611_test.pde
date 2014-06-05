@@ -7,6 +7,7 @@
 #include <AP_Buffer.h>
 #include <Filter.h>
 #include <AP_Baro.h>
+#include <../../../AP_HAL_Linux/GPIO.h>
 
 #include <AP_HAL_AVR.h>
 #include <AP_HAL_Linux.h>
@@ -24,8 +25,13 @@ void setup()
     hal.scheduler->delay(1000);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-    hal.gpio->pinMode(63, GPIO_OUTPUT);
+    hal.gpio->pinMode(63, HAL_GPIO_OUTPUT);
     hal.gpio->write(63, 1);
+#endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_ERLE
+    hal.gpio->pinMode(BBB_P9_28, HAL_GPIO_OUTPUT);
+    hal.gpio->write(BBB_P9_28, 1);
 #endif
     
     baro.init();
