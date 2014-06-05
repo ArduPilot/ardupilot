@@ -107,6 +107,7 @@ void LinuxRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)            //LSB
             }
         }
     }
+    close(_fd);
 }
 
 uint16_t LinuxRCOutput::get_freq(uint8_t ch) 
@@ -126,7 +127,7 @@ uint16_t LinuxRCOutput::get_freq(uint8_t ch)
         perror("period_ns: read failed");
     }
     freq_hz=1000000000/(unsigned long)strtol(buffer,NULL,10);
-
+    close(_fd);
     return freq_hz;
 }
 
@@ -145,6 +146,7 @@ void LinuxRCOutput::enable_ch(uint8_t ch)
     if(ret < 0){
         perror("run: read failed");
     }
+    close(_fd);
 }
 
 void LinuxRCOutput::disable_ch(uint8_t ch)
@@ -162,6 +164,7 @@ void LinuxRCOutput::disable_ch(uint8_t ch)
     if(ret < 0){
         perror("run: read failed");
     }
+    close(_fd);
 }
 
 void LinuxRCOutput::write(uint8_t ch, uint16_t period_us)
@@ -180,6 +183,7 @@ void LinuxRCOutput::write(uint8_t ch, uint16_t period_us)
     if(ret < 0){
         perror("duty_ns: read failed");
     }
+    close(_fd);
 }
 
 void LinuxRCOutput::write(uint8_t ch, uint16_t* period_us, uint8_t len)
