@@ -536,6 +536,9 @@ static struct {
 
     // turn angle for next leg of mission
     float next_turn_angle;
+
+    // should we fly inverted?
+    bool inverted_flight;
 } auto_state = {
     takeoff_complete : true,
     land_complete : false,
@@ -543,7 +546,8 @@ static struct {
     takeoff_pitch_cd : 0,
     highest_airspeed : 0,
     initial_pitch_cd : 0,
-    next_turn_angle  : 90.0f
+    next_turn_angle  : 90.0f,
+    inverted_flight  : false
 };
 
 // true if we are in an auto-throttle mode, which means
@@ -1218,7 +1222,7 @@ static void update_flight_mode(void)
             training_manual_pitch = true;
             nav_pitch_cd = 0;
         }
-        if (inverted_flight) {
+        if (fly_inverted()) {
             nav_pitch_cd = -nav_pitch_cd;
         }
         break;
@@ -1251,7 +1255,7 @@ static void update_flight_mode(void)
             nav_pitch_cd = -(pitch_input * pitch_limit_min_cd);
         }
         nav_pitch_cd = constrain_int32(nav_pitch_cd, pitch_limit_min_cd, aparm.pitch_limit_max_cd.get());
-        if (inverted_flight) {
+        if (fly_inverted()) {
             nav_pitch_cd = -nav_pitch_cd;
         }
         if (failsafe.ch3_failsafe && g.short_fs_action == 2) {

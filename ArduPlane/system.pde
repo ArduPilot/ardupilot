@@ -282,6 +282,9 @@ static void set_mode(enum FlightMode mode)
     // perform any cleanup required for prev flight mode
     exit_mode(control_mode);
 
+    // cancel inverted flight
+    auto_state.inverted_flight = false;
+
     // set mode
     previous_mode = control_mode;
     control_mode = mode;

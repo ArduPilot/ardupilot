@@ -96,3 +96,18 @@ static void autotune_restore(void)
     rollController.autotune_restore();
     pitchController.autotune_restore();
 }
+
+/*
+  are we flying inverted?
+ */
+static bool fly_inverted(void)
+{
+    if (g.inverted_flight_ch != 0 && inverted_flight) {
+        // controlled with INVERTED_FLIGHT_CH
+        return true;
+    }
+    if (control_mode == AUTO && auto_state.inverted_flight) {
+        return true;
+    }
+    return false;
+}

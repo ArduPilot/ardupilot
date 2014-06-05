@@ -71,7 +71,7 @@ static bool stick_mixing_enabled(void)
  */
 static void stabilize_roll(float speed_scaler)
 {
-    if (inverted_flight) {
+    if (fly_inverted()) {
         // we want to fly upside down. We need to cope with wrap of
         // the roll_sensor interfering with wrap of nav_roll, which
         // would really confuse the PID code. The easiest way to
@@ -185,7 +185,7 @@ static void stabilize_stick_mixing_fbw()
     if (fabsf(pitch_input) > 0.5f) {
         pitch_input = (3*pitch_input - 1);
     }
-    if (inverted_flight) {
+    if (fly_inverted()) {
         pitch_input = -pitch_input;
     }
     if (pitch_input > 0) {
