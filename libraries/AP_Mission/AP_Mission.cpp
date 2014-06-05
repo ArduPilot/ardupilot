@@ -576,6 +576,10 @@ bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP
         cmd.p1 = packet.param1;                        // action 0=disable, 1=enable, 2=release.  See PARACHUTE_ACTION enum
         break;
 
+    case MAV_CMD_DO_INVERTED_FLIGHT:                    // MAV ID: 210
+        cmd.p1 = packet.param1;                         // normal=0 inverted=1
+        break;
+
     default:
         // unrecognised command
         return false;
@@ -797,6 +801,10 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
 
     case MAV_CMD_DO_PARACHUTE:                          // MAV ID: 208
         packet.param1 = cmd.p1;                         // action 0=disable, 1=enable, 2=release.  See PARACHUTE_ACTION enum
+        break;
+
+    case MAV_CMD_DO_INVERTED_FLIGHT:                    // MAV ID: 210
+        packet.param1 = cmd.p1;                         // normal=0 inverted=1
         break;
 
     default:
