@@ -33,10 +33,10 @@ public:
     void init(void *);
     AP_HAL::SPIDeviceDriver* device(enum AP_HAL::SPIDevice);
 private:
-    LinuxSPIDeviceDriver _device_cs0;
-    LinuxSPIDeviceDriver _device_cs1;
-    LinuxSPIDeviceDriver _device_cs2;
-    LinuxSPIDeviceDriver _device_cs3;
+    LinuxSPIDeviceDriver _device_ms5611;
+    LinuxSPIDeviceDriver _device_mpu6000;
+    LinuxSPIDeviceDriver _device_mpu9250;
+    LinuxSPIDeviceDriver _device_lsm9ds0;
 };
 
 #endif // __AP_HAL_LINUX_SPIDRIVER_H__

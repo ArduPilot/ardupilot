@@ -119,18 +119,18 @@ void LinuxSPIDeviceDriver::transfer(const uint8_t *data, uint16_t len)
 }
 
 LinuxSPIDeviceManager::LinuxSPIDeviceManager() :
-    _device_cs0("/dev/spidev2.0", SPI_MODE_0, 8, 7, 6*1000*1000), /* SPIDevice_MS5611 */
-    _device_cs1("/dev/spidev2.0", SPI_MODE_0, 8, 113, 20*1000*1000), /* SPIDevice_MPU6000 */
-    _device_cs2("/dev/spidev2.0", SPI_MODE_0, 8, 49, 6*1000*1000), /* SPIDevice_MPU9250 */
-    _device_cs3("/dev/spidev1.0", SPI_MODE_0, 8, 5, 6*1000*1000) /* SPIDevice_LSM9DS0 */
+    _device_ms5611("/dev/spidev2.0", SPI_MODE_0, 8, 7, 6*1000*1000), /* SPIDevice_MS5611 */
+    _device_mpu6000("/dev/spidev2.0", SPI_MODE_0, 8, 113, 20*1000*1000), /* SPIDevice_MPU6000 */
+    _device_mpu9250("/dev/spidev2.0", SPI_MODE_0, 8, 49, 6*1000*1000), /* SPIDevice_MPU9250 */
+    _device_lsm9ds0("/dev/spidev1.0", SPI_MODE_0, 8, 5, 6*1000*1000) /* SPIDevice_LSM9DS0 */
 {}
 
 void LinuxSPIDeviceManager::init(void *)
 {
-    _device_cs0.init();
-    _device_cs1.init();
-    _device_cs2.init();
-    _device_cs3.init();
+    _device_ms5611.init();
+    _device_mpu6000.init();
+    _device_mpu9250.init();
+    _device_lsm9ds0.init();
 }
 
 /*
@@ -140,13 +140,13 @@ AP_HAL::SPIDeviceDriver* LinuxSPIDeviceManager::device(enum AP_HAL::SPIDevice de
 {
     switch (dev) {
         case AP_HAL::SPIDevice_MPU6000:
-            return &_device_cs1;            
+            return &_device_mpu6000;            
         case AP_HAL::SPIDevice_MPU9250:
-            return &_device_cs2;            
+            return &_device_mpu9250;            
         case AP_HAL::SPIDevice_MS5611:
-            return &_device_cs0;
+            return &_device_ms5611;
         case AP_HAL::SPIDevice_LSM9DS0:
-            return &_device_cs3;                        
+            return &_device_lsm9ds0;                        
     }
     return NULL;
 }
