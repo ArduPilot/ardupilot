@@ -750,6 +750,11 @@
 // Developer Items
 //
 
+// Incremental Version Code
+#ifndef VERSION_CODE
+ # define VERSION_CODE      1
+#endif
+
 // use this to completely disable the CLI
 #ifndef CLI_ENABLED
   #  define CLI_ENABLED           ENABLED

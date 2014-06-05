@@ -38,6 +38,12 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(software_type,  "SYSID_SW_TYPE",   Parameters::k_software_type),
 
+    // @Param: VERSION_CODE
+    // @DisplayName: Version of the code
+    // @Description: An integer value that represents the version of the application code, relative to other versions.
+    // @User: Advanced
+    GSCALAR(versionCode, "VERSION_CODE",   VERSION_CODE),
+
     // @Param: SYSID_THISMAV
     // @DisplayName: Mavlink version
     // @Description: Allows reconising the mavlink version
