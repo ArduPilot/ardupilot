@@ -96,11 +96,8 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw_smooth(float roll_angle
     float rate_ef_desired;
     float angle_to_target;
 
-    // calculate earth-frame roll and pitch angle error
-    angle_ef_error.x = wrap_180_cd_float(_angle_ef_target.x - _ahrs.roll_sensor);
-    angle_ef_error.y = wrap_180_cd_float(_angle_ef_target.y - _ahrs.pitch_sensor);
-
     if(_accel_rp_max > 0){
+
     	// calculate earth-frame feed forward roll rate using linear response when close to the target, sqrt response when we're further away
     	angle_to_target = roll_angle_ef - _angle_ef_target.x;
     	if (angle_to_target > linear_angle){
@@ -113,7 +110,7 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw_smooth(float roll_angle
     	_rate_ef_desired.x = constrain_float(rate_ef_desired, _rate_ef_desired.x-rate_change_limit, _rate_ef_desired.x+rate_change_limit);
 
     	// update earth-frame roll angle target using desired roll rate
-    	_angle_ef_target.x += _rate_ef_desired.x*_dt;
+        update_ef_roll_angle_and_error(_rate_ef_desired.x, angle_ef_error);
 
     	// calculate earth-frame feed forward pitch rate using linear response when close to the target, sqrt response when we're further away
     	angle_to_target = pitch_angle_ef - _angle_ef_target.y;
@@ -127,11 +124,15 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw_smooth(float roll_angle
     	_rate_ef_desired.y = constrain_float(rate_ef_desired, _rate_ef_desired.y-rate_change_limit, _rate_ef_desired.y+rate_change_limit);
 
     	// update earth-frame pitch angle target using desired pitch rate
-    	_angle_ef_target.y += _rate_ef_desired.y*_dt;
+        update_ef_pitch_angle_and_error(_rate_ef_desired.y, angle_ef_error);
     } else {
         // target roll and pitch to desired input roll and pitch
     	_angle_ef_target.x = roll_angle_ef;
+        angle_ef_error.x = wrap_180_cd_float(_angle_ef_target.x - _ahrs.roll_sensor);
+
     	_angle_ef_target.y = pitch_angle_ef;
+        angle_ef_error.y = wrap_180_cd_float(_angle_ef_target.y - _ahrs.pitch_sensor);
+
         // set roll and pitch feed forward to zero
     	_rate_ef_desired.x = 0;
     	_rate_ef_desired.y = 0;
