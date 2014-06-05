@@ -77,7 +77,7 @@ bool AP_RangeFinder_PX4::take_reading(void)
     // try to accumulate one more sample, so we have the latest data
     accumulate();
 
-    // consider the compass healthy if we got a reading in the last 0.2s
+    // consider the range finder healthy if we got a reading in the last 0.2s
     for (uint8_t i=0; i<_num_instances; i++) {
         _healthy[i] = (hrt_absolute_time() - _last_timestamp[i] < 200000);
     }
@@ -89,7 +89,12 @@ bool AP_RangeFinder_PX4::take_reading(void)
         _sum[i] /= _count[i];
         _sum[i] *= 100.00f;
     
-        _distance[i] = _mode_filter->apply(_sum[i]);
+        if (_mode_filter) {
+            _distance[i] = _mode_filter->apply(_sum[i]);
+        }
+        else {
+            _distance[i] = _sum[i];
+        }
     
         _sum[i] = 0;
         _count[i] = 0;

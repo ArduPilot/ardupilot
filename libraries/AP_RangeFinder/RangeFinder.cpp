@@ -36,7 +36,12 @@ int16_t RangeFinder::read()
     // ensure distance is within min and max
     temp_dist = constrain_float(temp_dist, min_distance, max_distance);
 
-    distance = _mode_filter->apply(temp_dist);
+    if (_mode_filter) {
+        distance = _mode_filter->apply(temp_dist);
+    }
+    else {
+        distance = temp_dist;
+    }
     return distance;
 }
 
