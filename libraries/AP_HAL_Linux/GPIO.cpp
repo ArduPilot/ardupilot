@@ -63,7 +63,6 @@ void LinuxGPIO::pinMode(uint8_t pin, uint8_t output)
     uint8_t bank = pin/32;
     uint8_t bankpin = pin & 0x1F;
     if (bank >= LINUX_GPIO_NUM_BANKS) {
-        hal.scheduler->panic("invalid pin number");
         return;
     }
     if (output == HAL_GPIO_INPUT) {
@@ -83,7 +82,6 @@ uint8_t LinuxGPIO::read(uint8_t pin) {
     uint8_t bank = pin/32;
     uint8_t bankpin = pin & 0x1F;
     if (bank >= LINUX_GPIO_NUM_BANKS) {
-        hal.scheduler->panic("invalid pin number");
         return 0;
     }
     return *gpio_bank[bank].in & (1U<<bankpin) ? HIGH : LOW;
@@ -95,7 +93,6 @@ void LinuxGPIO::write(uint8_t pin, uint8_t value)
     uint8_t bank = pin/32;
     uint8_t bankpin = pin & 0x1F;
     if (bank >= LINUX_GPIO_NUM_BANKS) {
-        hal.scheduler->panic("invalid pin number");
         return;
     }
     if (value == LOW) {
