@@ -16,9 +16,6 @@ using namespace Linux;
 
 extern const AP_HAL::HAL& hal;
 
-#define SPI0_BUS_SPEED 1000000
-#define SPI1_BUS_SPEED 2600000
-
 LinuxSPIDeviceDriver::LinuxSPIDeviceDriver(const char *spipath, uint8_t mode, uint8_t bitsPerWord, uint8_t cs_pin, uint32_t speed):
     _spipath(spipath),
     _fd(-1),
@@ -122,10 +119,10 @@ void LinuxSPIDeviceDriver::transfer(const uint8_t *data, uint16_t len)
 }
 
 LinuxSPIDeviceManager::LinuxSPIDeviceManager() :
-    _device_cs0("/dev/spidev2.0", SPI_MODE_0, 8, 7, SPI1_BUS_SPEED), /* SPIDevice_MS5611 */
-    _device_cs1("/dev/spidev2.0", SPI_MODE_0, 8, 113, SPI1_BUS_SPEED), /* SPIDevice_MPU6000 */
-    _device_cs2("/dev/spidev2.0", SPI_MODE_0, 8, 49, SPI1_BUS_SPEED), /* SPIDevice_MPU9250 */
-    _device_cs3("/dev/spidev1.0", SPI_MODE_0, 8, 5,SPI0_BUS_SPEED) /* SPIDevice_LSM9DS0 */
+    _device_cs0("/dev/spidev2.0", SPI_MODE_0, 8, 7, 6*1000*1000), /* SPIDevice_MS5611 */
+    _device_cs1("/dev/spidev2.0", SPI_MODE_0, 8, 113, 20*1000*1000), /* SPIDevice_MPU6000 */
+    _device_cs2("/dev/spidev2.0", SPI_MODE_0, 8, 49, 6*1000*1000), /* SPIDevice_MPU9250 */
+    _device_cs3("/dev/spidev1.0", SPI_MODE_0, 8, 5, 6*1000*1000) /* SPIDevice_LSM9DS0 */
 {}
 
 void LinuxSPIDeviceManager::init(void *)
