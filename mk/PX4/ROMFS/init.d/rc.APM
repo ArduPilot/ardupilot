@@ -324,6 +324,11 @@ then
     echo "Found ll40ls sensor"
 fi
 
+if mb12xx start
+then
+    echo "Found mb12xx sensor"
+fi
+
 echo "Trying PX4IO board"
 
 if mtd start /fs/mtd
