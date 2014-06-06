@@ -69,8 +69,8 @@ void AC_AttitudeControl::set_dt(float delta_sec)
     _pid_rate_yaw.set_d_lpf_alpha(AC_ATTITUDE_RATE_Y_PID_DTERM_FILTER, _dt);
 }
 
-// init_targets - resets target angles to current angles
-void AC_AttitudeControl::init_targets()
+// relax_bf_rate_controller - ensure body-frame rate controller has zero errors to relax rate controller output
+void AC_AttitudeControl::relax_bf_rate_controller()
 {
     // ensure zero error in body frame rate controllers
     const Vector3f& gyro = _ins.get_gyro();

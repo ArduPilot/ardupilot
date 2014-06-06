@@ -75,8 +75,8 @@ public:
     // set_dt - sets time delta in seconds for all controllers (i.e. 100hz = 0.01, 400hz = 0.0025)
     void set_dt(float delta_sec);
 
-    // init_targets - resets target angles to current angles
-    void init_targets();
+    // relax_bf_rate_controller - ensure body-frame rate controller has zero errors to relax rate controller output
+    void relax_bf_rate_controller();
 
     //
     // methods to be called by upper controllers to request and implement a desired attitude
@@ -233,7 +233,7 @@ protected:
     // To-Do: make rate targets a typedef instead of Vector3f?
     float               _dt;                    // time delta in seconds
     Vector3f            _angle_ef_target;       // angle controller earth-frame targets
-    Vector3f            _angle_bf_error;        // angle controller earth-frame targets
+    Vector3f            _angle_bf_error;        // angle controller body-frame error
     Vector3f            _rate_bf_target;        // rate controller body-frame targets
     Vector3f            _rate_ef_desired;       // earth-frame feed forward rates
     Vector3f            _rate_bf_desired;       // body-frame feed forward rates
