@@ -56,6 +56,14 @@ public:
     /// more) to process incoming data.
     void update(void);
 
+    //True if any of the underlying GPS Drivers are ready to enter
+    //a dgps-based fix beyond 3D lock, such as RTK mode. 
+    bool can_calculate_base_pos(void);
+
+    //Allows the underlying GPS Drivers to enter a differential lock
+    //Might cause a position jump, thus only do this on the ground.
+    void calculate_base_pos(void);
+
     // GPS driver types
     enum GPS_Type {
         GPS_TYPE_NONE  = 0,
@@ -122,6 +130,10 @@ public:
         return num_instances;
     }
 
+    uint8_t primary_sensor(void) const {
+        return primary_instance;
+    }
+
     // using these macros saves some code space on APM2
 #if GPS_MAX_INSTANCES == 1
 #	define _GPS_STATE(instance) state[0]
@@ -138,6 +150,10 @@ public:
     GPS_Status status(void) const {
         return status(primary_instance);
     }
+
+    // Query the highest status this GPS supports
+    GPS_Status highest_supported_status(uint8_t instance) const;
+    GPS_Status highest_supported_status(void) const;
 
     // location of last fix
     const Location &location(uint8_t instance) const {
@@ -255,7 +271,9 @@ public:
 
     // configuration parameters
     AP_Int8 _type[GPS_MAX_INSTANCES];
+    AP_Int8 _auto_switch;
     AP_Int8 _navfilter;
+    AP_Int8 _min_dgps;
 
     // handle sending of initialisation strings to the GPS
     void send_blob_start(uint8_t instance, const prog_char *_blob, uint16_t size);

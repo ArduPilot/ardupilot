@@ -29,6 +29,18 @@ public:
     // override with a custom destructor if need be.
     virtual ~AP_GPS_Backend(void) {}
 
+    // true once an RTK GPS Driver has a converged baseline vector and
+    // absolute single point solution to enter into an RTK Fix. 
+    virtual bool can_calculate_base_pos(void) { return false; };
+
+    // tells a RTK GPS Driver to capture the current single-point solution
+    // and baseline solution as the current home data.
+    virtual void calculate_base_pos(void) {};
+
+    // Highest status supported by this GPS. 
+    // Allows external system to identify type of receiver connected.
+    virtual AP_GPS::GPS_Status highest_supported_status(void) { return AP_GPS::GPS_OK_FIX_3D; }
+
     // The read() method is the only one needed in each driver. It
     // should return true when the backend has successfully received a
     // valid packet from the GPS.
