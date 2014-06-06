@@ -40,6 +40,8 @@
 #define AC_ATTITUDE_RATE_RP_PID_DTERM_FILTER            20      // D-term filter rate cutoff frequency for Roll and Pitch rate controllers
 #define AC_ATTITUDE_RATE_Y_PID_DTERM_FILTER             5       // D-term filter rate cutoff frequency for Yaw rate controller
 
+#define AC_ATTITUDE_CONTROL_RATE_BF_FF_DEFAULT          1       // body-frame rate feedforward enabled by default
+
 class AC_AttitudeControl {
 public:
 	AC_AttitudeControl( AP_AHRS &ahrs,
@@ -228,6 +230,7 @@ protected:
     AP_Float            _slew_yaw;              // maximum rate the yaw target can be updated in Loiter, RTL, Auto flight modes
     AP_Float            _accel_rp_max;          // maximum rotation acceleration for earth-frame roll and pitch axis
     AP_Float            _accel_y_max;           // maximum rotation acceleration for earth-frame yaw axis
+    AP_Int8             _rate_bf_ff_enabled;    // Enable/Disable body frame rate feed forward
 
     // internal variables
     // To-Do: make rate targets a typedef instead of Vector3f?

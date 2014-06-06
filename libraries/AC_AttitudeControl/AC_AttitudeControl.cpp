@@ -52,6 +52,13 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("ACCEL_Y_MAX",  4, AC_AttitudeControl, _accel_y_max, AC_ATTITUDE_CONTROL_ACCEL_Y_MAX_DEFAULT),
 
+    // @Param: ATC_RATE_FF_ENAB
+    // @DisplayName: Rate Feedforward Enable
+    // @Description: Controls whether body-frame rate feedfoward is enabled or disabled
+    // @Values: 0:Disabled, 1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("RATE_FF_ENAB", 5, AC_AttitudeControl, _rate_bf_ff_enabled, AC_ATTITUDE_CONTROL_RATE_BF_FF_DEFAULT),
+
     AP_GROUPEND
 };
 
@@ -96,7 +103,7 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw_smooth(float roll_angle
     float rate_ef_desired;
     float angle_to_target;
 
-    if (_accel_rp_max > 0) {
+    if (_rate_bf_ff_enabled) {
 
     	// calculate earth-frame feed forward roll rate using linear response when close to the target, sqrt response when we're further away
     	angle_to_target = roll_angle_ef - _angle_ef_target.x;
@@ -138,7 +145,7 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw_smooth(float roll_angle
     	_rate_ef_desired.y = 0;
     }
 
-    if (_accel_y_max > 0) {
+    if (_rate_bf_ff_enabled) {
     	// set earth-frame feed forward rate for yaw
         rate_change_limit = _accel_y_max * _dt;
 
@@ -168,9 +175,9 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw_smooth(float roll_angle
     update_rate_bf_targets();
 
     // add body frame rate feed forward
-    // if(do feedforward){
-    _rate_bf_target += _rate_bf_desired;
-    // }
+    if (_rate_bf_ff_enabled) {
+        _rate_bf_target += _rate_bf_desired;
+    }
 
     // body-frame to motor outputs should be called separately
 }
@@ -213,9 +220,9 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw(float roll_angle_ef, fl
     update_rate_bf_targets();
 
     // add body frame rate feed forward
-    // if(do feedforward){
-    _rate_bf_target += _rate_bf_desired;
-    // }
+    if (_rate_bf_ff_enabled) {
+        _rate_bf_target += _rate_bf_desired;
+    }
 
     // body-frame to motor outputs should be called separately
 }
@@ -291,9 +298,9 @@ void AC_AttitudeControl::rate_ef_roll_pitch_yaw(float roll_rate_ef, float pitch_
     update_rate_bf_targets();
 
     // add body frame rate feed forward
-    // if(do feedforward){
-    _rate_bf_target += _rate_bf_desired;
-    // }
+    if (_rate_bf_ff_enabled) {
+        _rate_bf_target += _rate_bf_desired;
+    }
 
     // body-frame to motor outputs should be called separately
 }
@@ -341,8 +348,7 @@ void AC_AttitudeControl::rate_bf_roll_pitch_yaw(float roll_rate_bf, float pitch_
     float rate_change, rate_change_limit;
 
     // update the rate feed forward with angular acceleration limits 
-
-    if (_accel_rp_max > 0) {
+    if (_rate_bf_ff_enabled) {
     	rate_change_limit = _accel_rp_max * _dt;
 
     	rate_change = roll_rate_bf - _rate_bf_desired.x;
@@ -357,7 +363,7 @@ void AC_AttitudeControl::rate_bf_roll_pitch_yaw(float roll_rate_bf, float pitch_
     	_rate_bf_desired.y = pitch_rate_bf;
     }
 
-    if (_accel_y_max > 0) {
+    if (_rate_bf_ff_enabled) {
         rate_change_limit = _accel_y_max * _dt;
 
         rate_change = yaw_rate_bf - _rate_bf_desired.z;
@@ -368,9 +374,9 @@ void AC_AttitudeControl::rate_bf_roll_pitch_yaw(float roll_rate_bf, float pitch_
     }
 
     // body-frame rate commands added
-    // if(do feedforward){
-    _rate_bf_target += _rate_bf_desired;
-    // }
+    if (_rate_bf_ff_enabled) {
+        _rate_bf_target += _rate_bf_desired;
+    }
 }
 
 //
