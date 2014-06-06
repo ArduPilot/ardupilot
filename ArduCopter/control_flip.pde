@@ -16,7 +16,6 @@
  *          Flip_Start (while copter is leaning <45deg) : roll right at 400deg/sec, increase throttle
  *          Flip_Roll (while copter is between +45deg ~ -90) : roll right at 400deg/sec, reduce throttle
  *          Flip_Recover (while copter is between -90deg and original target angle) : use earth frame angle controller to return vehicle to original attitude
- *               Note: this final stage relies upon the AttitudeControl libraries angle_ef_targets having been saved by the attitude_control.init_targets() call and not modified afterwards
  */
 
 #define FLIP_THR_INC        170     // throttle increase during Flip_Start stage (under 45deg lean angle)
@@ -73,9 +72,10 @@ static bool flip_init(bool ignore_checks)
     // log start of flip
     Log_Write_Event(DATA_FLIP_START);
 
-    // capture current attitude in angle_ef_targets while will be used as attitude targets during the Flip_Recovery stage
-    // clear stabilized rate errors which will be used during the Flip_Start and Flip_Roll stages
-    attitude_control.init_targets();
+    // capture current attitude which will be used during the Flip_Recovery stage
+    flip_orig_attitude.x = constrain_float(ahrs.roll_sensor, -aparm.angle_max, aparm.angle_max);
+    flip_orig_attitude.y = constrain_float(ahrs.pitch_sensor, -aparm.angle_max, aparm.angle_max);
+    flip_orig_attitude.z = ahrs.yaw_sensor;
 
     return true;
 }
@@ -143,13 +143,13 @@ static void flip_run()
 
     case Flip_Recover:
         // use originally captured earth-frame angle targets to recover
-        attitude_control.angle_ef_roll_pitch_yaw(curr_ef_targets.x, curr_ef_targets.y, curr_ef_targets.z,false);
+        attitude_control.angle_ef_roll_pitch_yaw(flip_orig_attitude.x, flip_orig_attitude.y, flip_orig_attitude.z, false);
 
         // increase throttle to gain any lost alitude
         throttle_out += FLIP_THR_INC;
 
         // check for successful recovery
-        if (fabs(curr_ef_targets.x - (float)ahrs.roll_sensor) <= FLIP_RECOVERY_ANGLE) {
+        if (fabs(flip_orig_attitude.x - (float)ahrs.roll_sensor) <= FLIP_RECOVERY_ANGLE) {
             // restore original flight mode
             if (!set_mode(flip_orig_control_mode)) {
                 // this should never happen but just in case

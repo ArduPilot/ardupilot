@@ -556,6 +556,10 @@ static float acro_level_mix;                // scales back roll, pitch and yaw i
 static uint16_t loiter_time_max;                // How long we should stay in Loiter Mode for mission scripting (time in seconds)
 static uint32_t loiter_time;                    // How long have we been loitering - The start time in millis
 
+////////////////////////////////////////////////////////////////////////////////
+// Flip
+////////////////////////////////////////////////////////////////////////////////
+static Vector3f flip_orig_attitude;         // original copter attitude before flip
 
 ////////////////////////////////////////////////////////////////////////////////
 // Battery Sensors
