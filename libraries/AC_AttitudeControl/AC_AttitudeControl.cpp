@@ -96,13 +96,13 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw_smooth(float roll_angle
     float rate_ef_desired;
     float angle_to_target;
 
-    if(_accel_rp_max > 0){
+    if (_accel_rp_max > 0) {
 
     	// calculate earth-frame feed forward roll rate using linear response when close to the target, sqrt response when we're further away
     	angle_to_target = roll_angle_ef - _angle_ef_target.x;
-    	if (angle_to_target > linear_angle){
+    	if (angle_to_target > linear_angle) {
     		rate_ef_desired = safe_sqrt(2.0f*_accel_rp_max*(fabs(angle_to_target)-(linear_angle/2.0f)));
-    	} else if (angle_to_target < -linear_angle){
+    	} else if (angle_to_target < -linear_angle) {
     		rate_ef_desired = -safe_sqrt(2.0f*_accel_rp_max*(fabs(angle_to_target)-(linear_angle/2.0f)));
     	} else {
     		rate_ef_desired = smoothing_gain*angle_to_target;
@@ -114,9 +114,9 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw_smooth(float roll_angle
 
     	// calculate earth-frame feed forward pitch rate using linear response when close to the target, sqrt response when we're further away
     	angle_to_target = pitch_angle_ef - _angle_ef_target.y;
-    	if (angle_to_target > linear_angle){
+    	if (angle_to_target > linear_angle) {
     		rate_ef_desired = safe_sqrt(2.0f*_accel_rp_max*(fabs(angle_to_target)-(linear_angle/2.0f)));
-    	} else if (angle_to_target < -linear_angle){
+    	} else if (angle_to_target < -linear_angle) {
     		rate_ef_desired = -safe_sqrt(2.0f*_accel_rp_max*(fabs(angle_to_target)-(linear_angle/2.0f)));
     	} else {
     		rate_ef_desired = smoothing_gain*angle_to_target;
@@ -138,7 +138,7 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw_smooth(float roll_angle
     	_rate_ef_desired.y = 0;
     }
 
-    if(_accel_y_max > 0){
+    if (_accel_y_max > 0) {
     	// set earth-frame feed forward rate for yaw
         rate_change_limit = _accel_y_max * _dt;
 
@@ -292,7 +292,7 @@ void AC_AttitudeControl::rate_bf_roll_pitch_yaw(float roll_rate_bf, float pitch_
     Vector3f    angle_ef_error;
 
     // Update angle error
-    if (labs(_ahrs.pitch_sensor)<_acro_angle_switch){
+    if (labs(_ahrs.pitch_sensor)<_acro_angle_switch) {
         _acro_angle_switch = 6000;
         // convert body-frame rates to earth-frame rates
         frame_conversion_bf_to_ef(_rate_bf_desired, _rate_ef_desired);
@@ -311,15 +311,15 @@ void AC_AttitudeControl::rate_bf_roll_pitch_yaw(float roll_rate_bf, float pitch_
         _angle_ef_target.x = wrap_180_cd_float(angle_ef_error.x + _ahrs.roll_sensor);
         _angle_ef_target.y = wrap_180_cd_float(angle_ef_error.y + _ahrs.pitch_sensor);
         _angle_ef_target.z = wrap_360_cd_float(angle_ef_error.z + _ahrs.yaw_sensor);
-        if (_angle_ef_target.y>9000){
-            _angle_ef_target.x = wrap_180_cd_float(_angle_ef_target.x + 18000);
-            _angle_ef_target.y = wrap_180_cd_float(18000-_angle_ef_target.x);
-            _angle_ef_target.z = wrap_360_cd_float(_angle_ef_target.z + 18000);
+        if (_angle_ef_target.y > 9000.0f) {
+            _angle_ef_target.x = wrap_180_cd_float(_angle_ef_target.x + 18000.0f);
+            _angle_ef_target.y = wrap_180_cd_float(18000.0f - _angle_ef_target.x);
+            _angle_ef_target.z = wrap_360_cd_float(_angle_ef_target.z + 18000.0f);
         }
-        if (_angle_ef_target.y<-9000){
-            _angle_ef_target.x = wrap_180_cd_float(_angle_ef_target.x + 18000);
-            _angle_ef_target.y = wrap_180_cd_float(-18000-_angle_ef_target.x);
-            _angle_ef_target.z = wrap_360_cd_float(_angle_ef_target.z + 18000);
+        if (_angle_ef_target.y < -9000.0f) {
+            _angle_ef_target.x = wrap_180_cd_float(_angle_ef_target.x + 18000.0f);
+            _angle_ef_target.y = wrap_180_cd_float(-18000.0f - _angle_ef_target.x);
+            _angle_ef_target.z = wrap_360_cd_float(_angle_ef_target.z + 18000.0f);
         }
     }
 
