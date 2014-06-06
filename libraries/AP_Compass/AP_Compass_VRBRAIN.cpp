@@ -149,11 +149,9 @@ void AP_Compass_VRBRAIN::accumulate(void)
 
 uint8_t AP_Compass_VRBRAIN::_get_primary(void) const
 {
-#if COMPASS_MAX_INSTANCES > 1
     if (_primary < _num_instances && _healthy[_primary]) {
         return _primary;
     }
-#endif
     for (uint8_t i=0; i<_num_instances; i++) {
         if (_healthy[i]) return i;
     }    
