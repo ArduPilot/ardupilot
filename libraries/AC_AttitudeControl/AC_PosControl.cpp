@@ -312,11 +312,11 @@ void AC_PosControl::rate_to_accel_z()
 
     // feed forward desired acceleration calculation
     if (_dt > 0.0f) {
-    	if(!_limit.freeze_ff_z) {
+    	if (!_flags.freeze_ff_z) {
     		_accel_feedforward.z = (_vel_target.z - _vel_last.z)/_dt;
         } else {
     		// stop the feed forward being calculated during a known discontinuity
-    		_limit.freeze_ff_z = false;
+    		_flags.freeze_ff_z = false;
     	}
     } else {
     	_accel_feedforward.z = 0.0f;
@@ -698,12 +698,12 @@ void AC_PosControl::rate_to_accel_xy(float dt)
 
     // feed forward desired acceleration calculation
     if (dt > 0.0f) {
-    	if(!_limit.freeze_ff_xy) {
+    	if (!_flags.freeze_ff_xy) {
     		_accel_feedforward.x = (_vel_target.x - _vel_last.x)/dt;
     		_accel_feedforward.y = (_vel_target.y - _vel_last.y)/dt;
         } else {
     		// stop the feed forward being calculated during a known discontinuity
-    		_limit.freeze_ff_xy = false;
+    		_flags.freeze_ff_xy = false;
     	}
     } else {
     	_accel_feedforward.x = 0.0f;

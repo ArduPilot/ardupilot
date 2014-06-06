@@ -180,10 +180,10 @@ public:
     void trigger_xy() { _flags.force_recalc_xy = true; }
 
     /// freeze_ff_z - used to stop the feed forward being calculated during a known discontinuity
-    void freeze_ff_z() { _limit.freeze_ff_z = true; }
+    void freeze_ff_z() { _flags.freeze_ff_z = true; }
 
     /// freeze_ff_xy - used to stop the feed forward being calculated during a known discontinuity
-    void freeze_ff_xy() { _limit.freeze_ff_xy = true; }
+    void freeze_ff_xy() { _flags.freeze_ff_xy = true; }
 
     // is_active_xy - returns true if the xy position controller has been run very recently
     bool is_active_xy() const;
@@ -240,6 +240,8 @@ private:
             uint8_t reset_rate_to_accel_xy  : 1;    // 1 if we should reset the rate_to_accel_xy step
             uint8_t reset_rate_to_accel_z   : 1;    // 1 if we should reset the rate_to_accel_z step
             uint8_t reset_accel_to_throttle : 1;    // 1 if we should reset the accel_to_throttle step of the z-axis controller
+            uint8_t freeze_ff_xy    : 1;    // 1 use to freeze feed forward during step updates
+            uint8_t freeze_ff_z     : 1;    // 1 use to freeze feed forward during step updates
     } _flags;
 
     // limit flags structure
@@ -249,8 +251,6 @@ private:
         uint8_t vel_up      : 1;    // 1 if we have hit the vertical velocity limit going up
         uint8_t vel_down    : 1;    // 1 if we have hit the vertical velocity limit going down
         uint8_t accel_xy    : 1;    // 1 if we have hit the horizontal accel limit
-        uint8_t freeze_ff_xy: 1;    // 1 use to freeze feed forward during step updates
-        uint8_t freeze_ff_z : 1;    // 1 use to freeze feed forward during step updates
     } _limit;
 
     ///
