@@ -248,7 +248,7 @@ void AC_Circle::init_start_angle(bool use_heading)
             _angle = wrap_PI(_ahrs.yaw-PI);
         } else {
             // get bearing from circle center to vehicle in radians
-            float bearing_rad = ToRad(90) + atan2f(-(curr_pos.x-_center.x), curr_pos.y-_center.y);
+            float bearing_rad = ToRad(90) + fast_atan2(-(curr_pos.x-_center.x), curr_pos.y-_center.y);
             _angle = wrap_PI(bearing_rad);
         }
     }
