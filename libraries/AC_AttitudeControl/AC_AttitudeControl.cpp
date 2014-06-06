@@ -154,6 +154,10 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw_smooth(float roll_angle
         update_ef_yaw_angle_and_error(yaw_rate_ef, angle_ef_error);
     }
 
+    // constrain earth-frame angle targets
+    _angle_ef_target.x = constrain_float(_angle_ef_target.x, -_aparm.angle_max, _aparm.angle_max);
+    _angle_ef_target.y = constrain_float(_angle_ef_target.y, -_aparm.angle_max, _aparm.angle_max);
+
     // convert earth-frame angle errors to body-frame angle errors
     frame_conversion_ef_to_bf(angle_ef_error, _angle_bf_error);
 
@@ -195,6 +199,10 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw(float roll_angle_ef, fl
 
     update_ef_yaw_angle_and_error(_rate_ef_desired.z, angle_ef_error);
 
+    // constrain earth-frame angle targets
+    _angle_ef_target.x = constrain_float(_angle_ef_target.x, -_aparm.angle_max, _aparm.angle_max);
+    _angle_ef_target.y = constrain_float(_angle_ef_target.y, -_aparm.angle_max, _aparm.angle_max);
+
     // convert earth-frame angle errors to body-frame angle errors
     frame_conversion_ef_to_bf(angle_ef_error, _angle_bf_error);
 
@@ -219,8 +227,8 @@ void AC_AttitudeControl::angle_ef_roll_pitch_yaw(float roll_angle_ef, float pitc
     Vector3f    angle_ef_error;
 
     // set earth-frame angle targets
-    _angle_ef_target.x = roll_angle_ef;
-    _angle_ef_target.y = pitch_angle_ef;
+    _angle_ef_target.x = constrain_float(roll_angle_ef, -_aparm.angle_max, _aparm.angle_max);
+    _angle_ef_target.y = constrain_float(pitch_angle_ef, -_aparm.angle_max, _aparm.angle_max);
     _angle_ef_target.z = yaw_angle_ef;
 
     // calculate earth frame errors
@@ -268,6 +276,10 @@ void AC_AttitudeControl::rate_ef_roll_pitch_yaw(float roll_rate_ef, float pitch_
     update_ef_roll_angle_and_error(_rate_ef_desired.x, angle_ef_error);
     update_ef_pitch_angle_and_error(_rate_ef_desired.y, angle_ef_error);
     update_ef_yaw_angle_and_error(_rate_ef_desired.z, angle_ef_error);
+
+    // constrain earth-frame angle targets
+    _angle_ef_target.x = constrain_float(_angle_ef_target.x, -_aparm.angle_max, _aparm.angle_max);
+    _angle_ef_target.y = constrain_float(_angle_ef_target.y, -_aparm.angle_max, _aparm.angle_max);
 
     // convert earth-frame angle errors to body-frame angle errors
     frame_conversion_ef_to_bf(angle_ef_error, _angle_bf_error);
