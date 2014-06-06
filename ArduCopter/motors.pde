@@ -46,6 +46,12 @@ static void arm_motors_check()
 
     // full right
     if (tmp > 4000) {
+        // Calibrate baro and clear previous z history in InertialNav
+        if (arming_counter == 0){
+            // fast baro calibration to reset ground pressure
+            init_barometer(false);
+            inertial_nav.set_altitude(0.0f);
+        }
 
         // increase the arming counter to a maximum of 1 beyond the auto trim counter
         if( arming_counter <= AUTO_TRIM_DELAY ) {
@@ -165,9 +171,6 @@ static void init_arm_motors()
         did_ground_start = true;
         startup_ground(true);
     }
-
-    // fast baro calibration to reset ground pressure
-    init_barometer(false);
 
     // go back to normal AHRS gains
     ahrs.set_fast_gains(false);
