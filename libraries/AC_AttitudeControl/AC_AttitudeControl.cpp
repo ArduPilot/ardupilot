@@ -423,8 +423,6 @@ void AC_AttitudeControl::update_ef_roll_angle_and_error(float roll_rate_ef, Vect
     angle_ef_error.x = wrap_180_cd(_angle_ef_target.x - _ahrs.roll_sensor);
     angle_ef_error.x  = constrain_float(angle_ef_error.x, -AC_ATTITUDE_RATE_STAB_ROLL_OVERSHOOT_ANGLE_MAX, AC_ATTITUDE_RATE_STAB_ROLL_OVERSHOOT_ANGLE_MAX);
 
-    // To-Do: handle check for traditional heli's motors.motor_runup_complete
-
     // update roll angle target to be within max angle overshoot of our roll angle
     _angle_ef_target.x = angle_ef_error.x + _ahrs.roll_sensor;
 
@@ -440,8 +438,6 @@ void AC_AttitudeControl::update_ef_pitch_angle_and_error(float pitch_rate_ef, Ve
     // To-Do: should we do something better as we cross 90 degrees?
     angle_ef_error.y = wrap_180_cd(_angle_ef_target.y - _ahrs.pitch_sensor);
     angle_ef_error.y  = constrain_float(angle_ef_error.y, -AC_ATTITUDE_RATE_STAB_PITCH_OVERSHOOT_ANGLE_MAX, AC_ATTITUDE_RATE_STAB_PITCH_OVERSHOOT_ANGLE_MAX);
-
-    // To-Do: handle check for traditional heli's motors.motor_runup_complete
 
     // update pitch angle target to be within max angle overshoot of our pitch angle
     _angle_ef_target.y = angle_ef_error.y + _ahrs.pitch_sensor;
