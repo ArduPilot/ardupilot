@@ -169,6 +169,9 @@ static void init_arm_motors()
     // fast baro calibration to reset ground pressure
     init_barometer(false);
 
+    // reset inertial nav alt to zero
+    inertial_nav.set_altitude(0.0f);
+
     // go back to normal AHRS gains
     ahrs.set_fast_gains(false);
 
