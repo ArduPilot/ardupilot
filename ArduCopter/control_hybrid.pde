@@ -158,6 +158,7 @@ static void hybrid_run()
     if(!ap.auto_armed || !inertial_nav.position_ok()) {
         wp_nav.init_loiter_target();
         attitude_control.relax_bf_rate_controller();
+        attitude_control.set_yaw_target_to_current_heading();
         attitude_control.set_throttle_out(0, false);
         return;
     }
@@ -186,6 +187,7 @@ static void hybrid_run()
     if (ap.land_complete) {
         wp_nav.init_loiter_target();
         attitude_control.relax_bf_rate_controller();
+        attitude_control.set_yaw_target_to_current_heading();
         attitude_control.set_throttle_out(0, false);
         return;
     }else{

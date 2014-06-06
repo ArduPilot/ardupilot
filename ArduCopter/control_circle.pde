@@ -36,6 +36,7 @@ static void circle_run()
     if(!ap.auto_armed || ap.land_complete) {
         // To-Do: add some initialisation of position controllers
         attitude_control.relax_bf_rate_controller();
+        attitude_control.set_yaw_target_to_current_heading();
         attitude_control.set_throttle_out(0, false);
         return;
     }
