@@ -7,8 +7,7 @@
 // acro_init - initialise acro controller
 static bool acro_init(bool ignore_checks)
 {
-    // clear stabilized rate errors
-    attitude_control.init_targets();
+    // always successfully enter acro
     return true;
 }
 
@@ -21,7 +20,7 @@ static void acro_run()
 
     // if motors not running reset angle targets
     if(!motors.armed() || g.rc_3.control_in <= 0) {
-        attitude_control.init_targets();
+        attitude_control.relax_bf_rate_controller();
         attitude_control.set_throttle_out(0, false);
         return;
     }
