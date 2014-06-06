@@ -124,7 +124,7 @@ vrhero-v10: showflags $(VRBRAIN_ROOT)/Archives/vrhero-v10.export $(SKETCHCPP) mo
 	$(v) echo "VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrhero-v10.vrx"
 
 #vrbrain: vrbrain-v40 vrbrain-v45 vrbrain-v50 vrbrain-v51 vrubrain-v51 vrhero-v10
-vrbrain: vrbrain-v45 vrubrain-v51
+vrbrain: vrbrain-v45 vrbrain-v51 vrubrain-v51
 
 vrbrain-clean: clean vrbrain-archives-clean
 	$(v) /bin/rm -rf $(VRBRAIN_ROOT)/makefiles/build $(VRBRAIN_ROOT)/Build
