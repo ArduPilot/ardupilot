@@ -80,6 +80,9 @@ public:
     // relax_bf_rate_controller - ensure body-frame rate controller has zero errors to relax rate controller output
     void relax_bf_rate_controller();
 
+    // set_yaw_target_to_current_heading - sets yaw target to current heading
+    void set_yaw_target_to_current_heading() { _angle_ef_target.z = _ahrs.yaw_sensor; }
+
     //
     // methods to be called by upper controllers to request and implement a desired attitude
     //
