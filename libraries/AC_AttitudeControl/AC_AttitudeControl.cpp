@@ -198,13 +198,21 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw(float roll_angle_ef, fl
     _angle_ef_target.y = pitch_angle_ef;
     angle_ef_error.y = wrap_180_cd_float(_angle_ef_target.y - _ahrs.pitch_sensor);
 
-    // set earth-frame feed forward rate for yaw
-    float rate_change_limit = _accel_y_max * _dt;
-    float rate_change = yaw_rate_ef - _rate_ef_desired.z;
-    rate_change = constrain_float(rate_change, -rate_change_limit, rate_change_limit);
-    _rate_ef_desired.z += rate_change;
+    if (_accel_y_max > 0.0f) {
+        // set earth-frame feed forward rate for yaw
+        float rate_change_limit = _accel_y_max * _dt;
 
-    update_ef_yaw_angle_and_error(_rate_ef_desired.z, angle_ef_error);
+        float rate_change = yaw_rate_ef - _rate_ef_desired.z;
+        rate_change = constrain_float(rate_change, -rate_change_limit, rate_change_limit);
+        _rate_ef_desired.z += rate_change;
+        // calculate yaw target angle and angle error
+        update_ef_yaw_angle_and_error(_rate_ef_desired.z, angle_ef_error);
+    } else {
+        // set yaw feed forward to zero
+        _rate_ef_desired.z = 0;
+        // calculate yaw target angle and angle error
+        update_ef_yaw_angle_and_error(yaw_rate_ef, angle_ef_error);
+    }
 
     // constrain earth-frame angle targets
     _angle_ef_target.x = constrain_float(_angle_ef_target.x, -_aparm.angle_max, _aparm.angle_max);
