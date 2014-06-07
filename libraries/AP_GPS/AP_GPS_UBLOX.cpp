@@ -281,6 +281,8 @@ AP_GPS_UBLOX::_parse_gps(void)
         altitude_cm     = _buffer.posllh.altitude_msl / 10;
         fix             = next_fix;
         _new_position = true;
+		last_gps_time = time;
+		last_gps_fix_time = hal.scheduler->millis();
 #if UBLOX_FAKE_3DLOCK
         longitude = 1491652300L;
         latitude  = -353632610L;

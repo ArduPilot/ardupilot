@@ -34,6 +34,8 @@ GPS::GPS(void) :
 	fix(FIX_NONE),
 	valid_read(false),
 	last_fix_time(0),
+	last_gps_time(0),
+	last_gps_fix_time(0),
 	_have_raw_velocity(false),
 	_idleTimer(0),
 	_status(GPS::NO_FIX),

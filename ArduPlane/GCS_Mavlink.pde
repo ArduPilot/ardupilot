@@ -264,8 +264,9 @@ static void NOINLINE send_time(mavlink_channel_t chan)
 	// positions.
 	// If we don't have a GPS fix then we are dead reckoning, and will
 	// use the current boot time as the fix time.
+	// Make millis variable to ensure same millis time
 	if (g_gps->status() >= GPS::GPS_OK_FIX_3D) {
-		gps_time = g_gps->time;
+		gps_time = g_gps->last_gps_time + (millis() - g_gps->last_gps_fix_time);
 	}
 	else {
 		gps_time = millis();
