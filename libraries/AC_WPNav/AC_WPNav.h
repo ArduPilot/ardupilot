@@ -30,6 +30,8 @@
 
 #define WPNAV_LEASH_LENGTH_MIN          100.0f      // minimum leash lengths in cm
 
+#define WPNAV_WP_FAST_OVERSHOOT_MAX     200.0f      // 2m overshoot is allowed during fast waypoints to allow for smooth transitions to next waypoint
+
 #if HAL_CPU_CLASS < HAL_CPU_CLASS_75 || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
  # define WPNAV_LOITER_UPDATE_TIME      0.095f      // 10hz update rate on low speed CPUs (APM1, APM2)
  # define WPNAV_WP_UPDATE_TIME          0.095f      // 10hz update rate on low speed CPUs (APM1, APM2)
@@ -223,6 +225,7 @@ protected:
         uint8_t fast_waypoint           : 1;    // true if we should ignore the waypoint radius and consider the waypoint complete once the intermediate target has reached the waypoint
         uint8_t slowing_down            : 1;    // true when target point is slowing down before reaching the destination
         uint8_t recalc_wp_leash         : 1;    // true if we need to recalculate the leash lengths because of changes in speed or acceleration
+        uint8_t new_wp_destination      : 1;    // true if we have just received a new destination.  allows us to freeze the position controller's xy feed forward
         SegmentType segment_type        : 1;    // active segment is either straight or spline
     } _flags;
 

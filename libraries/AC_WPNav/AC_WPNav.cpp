@@ -388,6 +388,7 @@ void AC_WPNav::set_wp_origin_and_destination(const Vector3f& origin, const Vecto
     _flags.fast_waypoint = false;   // default waypoint back to slow
     _flags.slowing_down = false;    // target is not slowing down yet
     _flags.segment_type = SEGMENT_STRAIGHT;
+    _flags.new_wp_destination = true;   // flag new waypoint so we can freeze the pos controller's feed forward and smooth the transition
 
     // initialise the limited speed to current speed along the track
     const Vector3f &curr_vel = _inav.get_velocity();
@@ -504,8 +505,12 @@ void AC_WPNav::advance_wp_target_along_track(float dt)
     	}
     }
 
-    // do not let desired point go past the end of the segment
-    _track_desired = constrain_float(_track_desired, 0, _track_length);
+    // do not let desired point go past the end of the track unless it's a fast waypoint
+    if (!_flags.fast_waypoint) {
+        _track_desired = constrain_float(_track_desired, 0, _track_length);
+    } else {
+        _track_desired = constrain_float(_track_desired, 0, _track_length + WPNAV_WP_FAST_OVERSHOOT_MAX);
+    }
 
     // recalculate the desired position
     _pos_control.set_pos_target(_origin + _pos_delta_unit * _track_desired);
@@ -560,6 +565,10 @@ void AC_WPNav::update_wpnav()
         // advance the target if necessary
         advance_wp_target_along_track(dt);
         _pos_control.trigger_xy();
+        if (_flags.new_wp_destination) {
+            _flags.new_wp_destination = false;
+            _pos_control.freeze_ff_xy();
+        }
         _pos_control.freeze_ff_z();
     }else{
         // run horizontal position controller
@@ -745,6 +754,7 @@ void AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
     _pos_control.set_pos_target(origin);
     _flags.reached_destination = false;
     _flags.segment_type = SEGMENT_SPLINE;
+    _flags.new_wp_destination = true;   // flag new waypoint so we can freeze the pos controller's feed forward and smooth the transition
 }
 
 /// update_spline - update spline controller
@@ -771,6 +781,11 @@ void AC_WPNav::update_spline()
         // advance the target if necessary
         advance_spline_target_along_track(dt);
         _pos_control.trigger_xy();
+        if (_flags.new_wp_destination) {
+            _flags.new_wp_destination = false;
+            _pos_control.freeze_ff_xy();
+        }
+        _pos_control.freeze_ff_z();
     }else{
         // run horizontal position controller
         _pos_control.update_xy_controller(false);
