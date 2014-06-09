@@ -635,9 +635,9 @@ void AC_WPNav::set_spline_destination(const Vector3f& destination, bool stopped_
 {
     Vector3f origin;
 
-    // if waypoint controller is active and copter has reached the previous waypoint use it for the origin
-    if( _flags.reached_destination && ((hal.scheduler->millis() - _wp_last_update) < 1000) ) {
-        origin = _destination;
+    // if waypoint controller is active and copter has reached the previous waypoint use current pos target as the origin
+    if ((hal.scheduler->millis() - _wp_last_update) < 1000) {
+        origin = _pos_control.get_pos_target();
     }else{
         // otherwise calculate origin from the current position and velocity
         _pos_control.get_stopping_point_xy(origin);
