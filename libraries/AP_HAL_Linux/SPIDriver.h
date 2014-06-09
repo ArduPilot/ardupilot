@@ -37,6 +37,7 @@ private:
     LinuxSPIDeviceDriver _device_mpu6000;
     LinuxSPIDeviceDriver _device_mpu9250;
     LinuxSPIDeviceDriver _device_lsm9ds0;
+    LinuxSPIDeviceDriver _device_fram;
 };
 
 #endif // __AP_HAL_LINUX_SPIDRIVER_H__

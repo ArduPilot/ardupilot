@@ -146,7 +146,8 @@ LinuxSPIDeviceManager::LinuxSPIDeviceManager() :
     _device_ms5611("/dev/spidev2.0", SPI_MODE_0, 8, 7, 6*1000*1000), /* SPIDevice_MS5611 */
     _device_mpu6000("/dev/spidev2.0", SPI_MODE_0, 8, 113, 20*1000*1000), /* SPIDevice_MPU6000 */
     _device_mpu9250("/dev/spidev2.0", SPI_MODE_0, 8, 49, 6*1000*1000), /* SPIDevice_MPU9250 */
-    _device_lsm9ds0("/dev/spidev1.0", SPI_MODE_0, 8, 5, 6*1000*1000) /* SPIDevice_LSM9DS0 */
+    _device_lsm9ds0("/dev/spidev1.0", SPI_MODE_0, 8, 5, 6*1000*1000), /* SPIDevice_LSM9DS0 */
+    _device_fram("/dev/spidev2.0", SPI_MODE_0, 8, 5, 6*1000*1000) /* SPIDevice_Dataflash */
 {}
 
 void LinuxSPIDeviceManager::init(void *)
@@ -171,6 +172,9 @@ AP_HAL::SPIDeviceDriver* LinuxSPIDeviceManager::device(enum AP_HAL::SPIDevice de
             return &_device_ms5611;
         case AP_HAL::SPIDevice_LSM9DS0:
             return &_device_lsm9ds0;                        
+        case AP_HAL::SPIDevice_Dataflash:
+            return &_device_fram;                        
+
     }
     return NULL;
 }
