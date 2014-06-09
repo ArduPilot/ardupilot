@@ -121,14 +121,14 @@ void LinuxRCOutput::write(uint8_t ch, uint16_t* period_us, uint8_t len)
 
 uint16_t LinuxRCOutput::read(uint8_t ch) 
 {
-    return TICK_PER_S/pwm_hi[chan_pru_map[ch]];
+    return (pwm_hi[chan_pru_map[ch]]/TICK_PER_US);
 }
 
 void LinuxRCOutput::read(uint16_t* period_us, uint8_t len)
 {
     int i;
     for(i=0;i<len;i++){
-        period_us[i] = TICK_PER_S/pwm_hi[chan_pru_map[i]];
+        period_us[i] = pwm_hi[chan_pru_map[i]]/TICK_PER_US;
     }
 }
 
