@@ -14,237 +14,121 @@
 #include <stdint.h>
 #include <sys/ioctl.h>
 #include <linux/spi/spidev.h>
-
+#include <sys/mman.h>
 using namespace Linux;
 
-#define PWM_DIR "/sys/class/pwm"
-#define PWM_DIR_EXPORT "/sys/class/pwm/export"
+
 #define PWM_CHAN_COUNT 12
 
 int chan_pru_map[]= {10,8,11,9,7,6,5,4,3,2,1,0};                //chan_pru_map[CHANNEL_NUM] = PRU_REG_R30/31_NUM;
 int pru_chan_map[]= {11,10,9,8,7,6,5,4,1,3,0,2};                //pru_chan_map[PRU_REG_R30/31_NUM] = CHANNEL_NUM;
 
+static const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+
 void LinuxRCOutput::init(void* machtnicht)
 {
-    DIR* _pwm_dir = opendir(PWM_DIR);
-    int _pwm_fd;
-    char chan[2];
-    struct dirent *dir;
-    int pru_load_success=0;
-    int exported_count=0;
-    int i,pru_r30;
-
-     if (_pwm_dir){
-            while ((dir = readdir(_pwm_dir)) != NULL){
-            if(strcmp(dir->d_name,"pwmchip0")==0){
-                pru_load_success = 1;
-                closedir(_pwm_dir);
-                break;
-            }
-        }
-        if(!pru_load_success){
-            perror("PRU PWM LOAD failed: PRU might not be enabled");
-        }
-
+    int mem_fd;
+    mem_fd = open("/dev/mem", O_RDWR|O_SYNC);
+    sharedMem_cmd = (struct pwm_cmd *) mmap(0, 0x1000, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, PRUSS_SHAREDRAM_BASE);
+    close(mem_fd);
+    sharedMem_cmd->cmd = PWM_CMD_CONFIG;
+    sharedMem_cmd->u.cfg.enmask = 0xFFF;
+    for(int i=0;i<PWM_CHAN_COUNT;i++){
+        sharedMem_cmd->u.cfg.hilo[i][0] = 1000;
+        sharedMem_cmd->u.cfg.hilo[i][1] = 1000;
     }
-    else{
-        perror("PWM DIR not found");
-    }
-    
-    _pwm_fd = ::open(PWM_DIR_EXPORT,O_WRONLY);
-
-    if(_pwm_fd < 0){
-         perror("PWM_EXPORT not found");
-    }
-
-    for(i=0;i<PWM_CHAN_COUNT;i++){
-        sprintf(chan, "%d",chan_pru_map[i]);
-       :: write(_pwm_fd,&chan,sizeof(chan));
-    }
-
-    close(_pwm_fd);
-    _pwm_dir = opendir(PWM_DIR);
-
-    while ((dir = readdir(_pwm_dir)) != NULL){
-        pru_r30=strtol(dir->d_name+3,NULL,10);
-        if(pru_r30>0 && pru_r30<12){
-            write(pru_chan_map[pru_r30],10);                //writing absolute minimum to duty_ns necessary for pwm_sysfs to start working 
-            //printf("CHANNEL %d",pru_chan_map[pru_r30]);
-            //printf(" exported\n");
-            exported_count++;
-        }
-        else if(strcmp(dir->d_name,"pwm0")==0){
-            write(pru_chan_map[pru_r30],10);
-            //printf("CHANNEL %d",pru_chan_map[0]);
-            //printf(" exported \n");
-            exported_count++;
-        }
-    }
-    if(exported_count != PWM_CHAN_COUNT){
-        printf("WARNING: All channels not exported\n");
-    }
-    closedir(_pwm_dir);
+    sharedMem_cmd->magic = PWM_CMD_MAGIC;
 }
 
 void LinuxRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)            //LSB corresponds to CHAN_1
 {
-    int _fd, ret,i;
-    unsigned long period_ns=1000000000/(unsigned long)freq_hz;
-    char period_sysfs_path[30],buffer[15];
-    sprintf(buffer,"%lu",(unsigned long)period_ns);
-   
+    int i;
+    unsigned long tick=200000000/(unsigned long)freq_hz;
     for(i=0;i<12;i++){
         if(chmask&(1<<i)){
-            sprintf(period_sysfs_path,"%s/pwm%d%s",PWM_DIR,chan_pru_map[i],"/period_ns");
-               _fd=open(period_sysfs_path,O_WRONLY);
-            if(_fd < 0){
-                perror("Period/Frequency file open failed");
-            }
-    
-            ret = ::write(_fd,&buffer,sizeof(buffer));
-            if(ret < 0){
-                perror("Period/Frequency write failed");
-            }
+            period[chan_pru_map[i]]=tick;
         }
     }
-    close(_fd);
 }
 
-uint16_t LinuxRCOutput::get_freq(uint8_t ch) 
+uint16_t LinuxRCOutput::get_freq(uint8_t ch)
 {
-    int _fd, ret;
-    int freq_hz;
-    char period_sysfs_path[30],buffer[15];
-    sprintf(period_sysfs_path,"%s/pwm%d%s",PWM_DIR,chan_pru_map[ch],"/period_ns");
-    
-    _fd=open(period_sysfs_path,O_RDONLY);
-    if(_fd < 0){
-        perror("period_ns: file open failed");
-    }
-
-    ret = ::read(_fd,&buffer,sizeof(buffer));
-    if(ret < 0){
-        perror("period_ns: read failed");
-    }
-    freq_hz=1000000000/(unsigned long)strtol(buffer,NULL,10);
-    close(_fd);
-    return freq_hz;
+    return TICK_PER_S/period[chan_pru_map[ch]];
 }
 
 void LinuxRCOutput::enable_ch(uint8_t ch)
 {
-    int _fd, ret;
-    char run_sysfs_path[30],buffer[]="1";
-    sprintf(run_sysfs_path,"%s/pwm%d%s",PWM_DIR,chan_pru_map[ch],"/run");
-    
-    _fd=open(run_sysfs_path,O_WRONLY);
-    if(_fd < 0){
-        perror("run: file open failed");
+    int i;
+    while(sharedMem_cmd->magic != PWM_REPLY_MAGIC && i < 5){
+        usleep(2);
+        i++;
+    }
+    if(i == 5){
+        hal.console->println("RCOutput: PWM Write Failed!");
+        return;
     }
 
-    ret = ::write(_fd,&buffer,sizeof(buffer));
-    if(ret < 0){
-        perror("run: read failed");
-    }
-    close(_fd);
+    sharedMem_cmd->cmd = PWM_CMD_ENABLE;
+    sharedMem_cmd->pwm_nr = chan_pru_map[ch];
+    sharedMem_cmd->magic = PWM_CMD_MAGIC;
 }
 
 void LinuxRCOutput::disable_ch(uint8_t ch)
 {
-    int _fd, ret;
-    char run_sysfs_path[30],buffer[]="0";
-    sprintf(run_sysfs_path,"%s/pwm%d%s",PWM_DIR,chan_pru_map[ch],"/run");
-    
-    _fd=open(run_sysfs_path,O_WRONLY);
-    if(_fd < 0){
-        perror("run: file open failed");
+    int i;
+    while(sharedMem_cmd->magic != PWM_REPLY_MAGIC && i < 5){
+        usleep(2);
+        i++;
+    }
+    if(i == 5){
+        hal.console->println("RCOutput: PWM Write Failed!");
+        return;
     }
 
-    ret = ::write(_fd,&buffer,sizeof(buffer));
-    if(ret < 0){
-        perror("run: read failed");
-    }
-    close(_fd);
+    sharedMem_cmd->cmd = PWM_CMD_DISABLE;
+    sharedMem_cmd->pwm_nr = chan_pru_map[ch];
+    sharedMem_cmd->magic = PWM_CMD_MAGIC;
 }
 
 void LinuxRCOutput::write(uint8_t ch, uint16_t period_us)
 {
-    int _fd, ret;
-    char duty_sysfs_path[30],buffer[15];
-    sprintf(buffer,"%lu",(unsigned long)period_us*1000);
-    sprintf(duty_sysfs_path,"%s/pwm%d%s",PWM_DIR,chan_pru_map[ch],"/duty_ns");
-    
-    _fd=open(duty_sysfs_path,O_WRONLY);
-    if(_fd < 0){
-        perror("duty_ns: file open failed");
+    int i;
+    pwm_hi[chan_pru_map[ch]]=period_us*TICK_PER_US;
+
+    while(sharedMem_cmd->magic != PWM_REPLY_MAGIC && i < 5){
+        usleep(2);
+        i++;
+    }
+    if(i == 5){
+        hal.console->println("RCOutput: PWM Write Failed!");
+        return;
     }
 
-    ret = ::write(_fd,&buffer,sizeof(buffer));
-    if(ret < 0){
-        perror("duty_ns: read failed");
-    }
-    close(_fd);
+    sharedMem_cmd->cmd = PWM_CMD_MODIFY;
+    sharedMem_cmd->pwm_nr = chan_pru_map[ch];
+    sharedMem_cmd->u.hilo[0] = pwm_hi[chan_pru_map[ch]];
+    sharedMem_cmd->u.hilo[1] = period[chan_pru_map[ch]] - pwm_hi[chan_pru_map[ch]];
+    sharedMem_cmd->magic = PWM_CMD_MAGIC;
 }
 
 void LinuxRCOutput::write(uint8_t ch, uint16_t* period_us, uint8_t len)
 {
-    int _fd, ret,i;
-    char duty_sysfs_path[30],buffer[15];
+    int i;
     for(i=0;i<len;i++){
-        sprintf(buffer,"%lu",(unsigned long)period_us[i]*1000);
-        sprintf(duty_sysfs_path,"%s/pwm%d%s",PWM_DIR,chan_pru_map[ch+i],"/duty_ns");
-    
-        _fd=open(duty_sysfs_path,O_WRONLY);
-        if(_fd < 0){
-            perror("duty_ns: file open failed");
-        }
-
-        ret = ::write(_fd,&buffer,sizeof(buffer));
-        if(ret < 0){
-            perror("duty_ns: read failed");
-        }
-        close(_fd);
+        write(ch+i,period_us[i]);
     }
 }
 
-uint16_t LinuxRCOutput::read(uint8_t ch) {
-    int _fd, ret;
-    char duty_sysfs_path[30],buffer[15];
-    
-    sprintf(duty_sysfs_path,"%s/pwm%d%s",PWM_DIR,chan_pru_map[ch],"/duty_ns");
-    
-    _fd=open(duty_sysfs_path,O_RDONLY);
-    if(_fd < 0){
-        perror("duty_ns: file open failed");
-    }
-
-    ret = ::read(_fd,&buffer,sizeof(buffer));
-    if(ret < 0){
-        perror("duty_ns: read failed");
-    }
-    close(_fd);        
-    return strtol(buffer,NULL,10)/1000;
-    
+uint16_t LinuxRCOutput::read(uint8_t ch) 
+{
+    return TICK_PER_S/pwm_hi[chan_pru_map[ch]];
 }
 
 void LinuxRCOutput::read(uint16_t* period_us, uint8_t len)
 {
-    int _fd, ret ,i;
-    char duty_sysfs_path[30],buffer[15];
+    int i;
     for(i=0;i<len;i++){
-        sprintf(duty_sysfs_path,"%s/pwm%d%s",PWM_DIR,chan_pru_map[i],"/duty_ns");
-    
-        _fd=open(duty_sysfs_path,O_RDONLY);
-        if(_fd < 0){
-            perror("duty_ns: file open failed");
-        }
-
-        ret = ::read(_fd,&buffer,sizeof(buffer));
-        if(ret < 0){
-            perror("duty_ns: read failed");
-        }
-        period_us[i]=strtol(buffer,NULL,10)/1000;
-        close(_fd);
+        period_us[i] = TICK_PER_S/pwm_hi[chan_pru_map[i]];
     }
 }
 
