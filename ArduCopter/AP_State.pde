@@ -133,7 +133,7 @@ void set_pre_arm_rc_check(bool b)
  */
 int sonar_DistanceToGroundIsWithin( float distance )
 {
-	if (sonar_alt_health == TRUE && sonar_alt < distance)
+	if (sonar_alt_health > SONAR_ALT_HEALTH_MAX && sonar_alt < distance)
 		{
 		return 1;
 		}
