@@ -134,6 +134,12 @@ public:
     void rate_bf_pitch_target(float rate_cds) { _rate_bf_target.y = rate_cds; }
     void rate_bf_yaw_target(float rate_cds) { _rate_bf_target.z = rate_cds; }
 
+    // enable_bf_feedforward - enable or disable body-frame feed forward
+    void bf_feedforward(bool enable_or_disable) { _rate_bf_ff_enabled = enable_or_disable; }
+
+    // enable_bf_feedforward - enable or disable body-frame feed forward
+    void accel_limiting(bool enable_or_disable);
+
     //
     // throttle functions
     //

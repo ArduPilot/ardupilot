@@ -640,6 +640,24 @@ float AC_AttitudeControl::rate_bf_to_motor_yaw(float rate_target_cds)
     // To-Do: allow logging of PIDs?
 }
 
+// accel_limiting - enable or disable accel limiting
+void AC_AttitudeControl::accel_limiting(bool enable_limits)
+{
+    if (enable_limits) {
+        // if enabling limits, reload from eeprom or set to defaults
+        if (_accel_rp_max == 0.0f) {
+            _accel_rp_max.load();
+        }
+        if (_accel_y_max == 0.0f) {
+            _accel_y_max.load();
+        }
+    } else {
+        // if disabling limits, set to zero
+        _accel_rp_max = 0.0f;
+        _accel_y_max = 0.0f;
+    }
+    hal.console->printf_P(PSTR("AccLim:%d"),(int)enable_limits);
+}
 
 //
 // throttle functions
