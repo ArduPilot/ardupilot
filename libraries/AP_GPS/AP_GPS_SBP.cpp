@@ -18,9 +18,13 @@
 //  Swift Navigation GPS driver for ArduPilot
 //	Origin code by Niels Joubert njoubert.com
 //
+
+
 #include <AP_GPS.h>
 #include "AP_GPS_SBP.h"
 #include <DataFlash.h>
+
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 
 #define SBP_DEBUGGING 0
 #define SBP_FAKE_3DLOCK 0
@@ -911,9 +915,11 @@ AP_GPS_SBP::logging_log_tracking_state(struct sbp_tracking_state_t* state, uint8
         };
         gps._DataFlash->WriteBlock(&pkt2, sizeof(pkt));
 
-    }
+    };
 
 
 };
 
 #endif // SBP_HW_LOGGING
+
+#endif // HAL_CPU_CLASS >= HAL_CPU_CLASS_75

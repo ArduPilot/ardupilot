@@ -23,6 +23,8 @@
 #ifndef __AP_GPS_SBP_H__
 #define __AP_GPS_SBP_H__
 
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+
 #include <AP_GPS.h>
 
 
@@ -284,4 +286,7 @@ private:
 
 };
 
-#endif // __AP_GPS_SBP_H__
+#endif //  HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+
+#endif // __AP_GPS_SBP_H__ 
+
