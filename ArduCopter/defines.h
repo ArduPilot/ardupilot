@@ -57,6 +57,8 @@
 #define AUX_SWITCH_PARACHUTE_RELEASE 22     // Parachute release
 #define AUX_SWITCH_PARACHUTE_3POS   23      // Parachute disable, enable, release with 3 position switch
 #define AUX_SWITCH_MISSIONRESET     24      // Reset auto mission to start from first command
+#define AUX_SWITCH_ATTCON_FEEDFWD   25      // enable/disable the roll and pitch rate feed forward
+#define AUX_SWITCH_ATTCON_ACCEL_LIM 26      // enable/disable the roll, pitch and yaw accel limiting
 
 // values used by the ap.ch7_opt and ap.ch8_opt flags
 #define AUX_SWITCH_LOW              0       // indicates auxiliar switch is in the low position (pwm <1200)

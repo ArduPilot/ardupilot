@@ -113,6 +113,8 @@ static void init_aux_switches()
         case AUX_SWITCH_PARACHUTE_ENABLE:
         case AUX_SWITCH_PARACHUTE_3POS:	    // we trust the vehicle will be disarmed so even if switch is in release position the chute will not release
         case AUX_SWITCH_MISSIONRESET:
+        case AUX_SWITCH_ATTCON_FEEDFWD:
+        case AUX_SWITCH_ATTCON_ACCEL_LIM:
             do_aux_switch_function(g.ch7_option, ap.CH7_flag);
             break;
     }
@@ -131,6 +133,8 @@ static void init_aux_switches()
         case AUX_SWITCH_PARACHUTE_ENABLE:
         case AUX_SWITCH_PARACHUTE_3POS:     // we trust the vehicle will be disarmed so even if switch is in release position the chute will not release
         case AUX_SWITCH_MISSIONRESET:
+        case AUX_SWITCH_ATTCON_FEEDFWD:
+        case AUX_SWITCH_ATTCON_ACCEL_LIM:
             do_aux_switch_function(g.ch8_option, ap.CH8_flag);
             break;
     }
@@ -408,6 +412,16 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
         if (ch_flag == AUX_SWITCH_HIGH) {
             mission.reset();
         }
+        break;
+
+    case AUX_SWITCH_ATTCON_FEEDFWD:
+        // enable or disable feed forward
+        attitude_control.bf_feedforward(ch_flag == AUX_SWITCH_HIGH);
+        break;
+
+    case AUX_SWITCH_ATTCON_ACCEL_LIM:
+        // enable or disable accel limiting by restoring defaults
+        attitude_control.accel_limiting(ch_flag == AUX_SWITCH_HIGH);
         break;
     }
 }
