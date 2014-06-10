@@ -526,7 +526,7 @@ void AP_Mount::status_msg(mavlink_message_t *msg)
 
     // status reply
     // TODO: is COMM_3 correct ?
-    mavlink_msg_mount_status_send(MAVLINK_COMM_3, packet.target_system, packet.target_component,
+    mavlink_msg_mount_status_send_buf(packet.target_system, packet.target_component,
                                   packet.pointing_a, packet.pointing_b, packet.pointing_c);
 }
 
