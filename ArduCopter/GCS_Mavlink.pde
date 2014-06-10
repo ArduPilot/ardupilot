@@ -574,9 +574,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         break;
 
     case MSG_GPS_RAW:
-        CHECK_PAYLOAD_SIZE(GPS_RAW_INT);
-        gcs[chan-MAVLINK_COMM_0].send_gps_raw(gps);
-        break;
+        return gcs[chan-MAVLINK_COMM_0].send_gps_raw(gps);
 
     case MSG_SYSTEM_TIME:
         CHECK_PAYLOAD_SIZE(SYSTEM_TIME);
