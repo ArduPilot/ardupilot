@@ -269,7 +269,7 @@ static void auto_land_start(const Vector3f& destination)
 static void auto_land_run()
 {
     // if not auto armed set throttle to zero and exit immediately
-    if(!ap.auto_armed) {
+    if(!ap.auto_armed || ap.land_complete) {
         attitude_control.relax_bf_rate_controller();
         attitude_control.set_yaw_target_to_current_heading();
         attitude_control.set_throttle_out(0, false);
