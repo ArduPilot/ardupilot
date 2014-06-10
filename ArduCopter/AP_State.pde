@@ -125,3 +125,20 @@ void set_pre_arm_rc_check(bool b)
     }
 }
 
+// ---------------------------------------------
+
+/* 
+ * Function to check if the sonar is within "distance" of ground 
+ * If this condition is tru the function returns 1.
+ */
+int sonar_DistanceToGroundIsWithin( float distance )
+{
+	if (sonar_alt_health > SONAR_ALT_HEALTH_MAX && sonar_alt < distance)
+		{
+		return 1;
+		}
+	else
+		{
+		return 0;
+		}
+}

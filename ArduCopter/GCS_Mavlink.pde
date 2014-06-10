@@ -1159,7 +1159,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     AP_Notify::flags.arming_failed = true;  // init_arm_motors function will reset flag back to false
                     result = MAV_RESULT_UNSUPPORTED;
                 }
-            } else if (packet.param1 == 0.0f)  {
+            /******************************************************************************************
+			 * Stops You From Disarming the Motors when the Sonar is more than 50 cm from the ground. *
+			 ******************************************************************************************/
+            } else if ((packet.param1 == 0.0f)&&(sonar_DistanceToGroundIsWithin(50.0f) == 1))  {
                 init_disarm_motors();
                 result = MAV_RESULT_ACCEPTED;
             } else {
