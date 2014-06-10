@@ -64,6 +64,7 @@ AP_GPS_SBP::AP_GPS_SBP(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriv
     last_heatbeat_received_ms(0),
     last_tracking_state_ms(0),
     iar_num_hypotheses(-1),
+    baseline_recv_rate(0),
 
     dgps_corrections_incoming(false),
     rtk_corrections_incoming(false),
@@ -173,6 +174,8 @@ AP_GPS_SBP::read(void)
         float vel_msg_hz      = vel_msg_counter / (float) elapsed * 1000;
         float baseline_msg_hz = baseline_msg_counter / (float) elapsed * 1000;
         float full_update_hz  = full_update_counter / (float) elapsed * 1000;
+
+        baseline_recv_rate = uint8_t (baseline_msg_hz * 10);
 
         pos_msg_counter = 0;
         vel_msg_counter = 0;

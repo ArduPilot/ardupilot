@@ -249,6 +249,7 @@ private:
     uint32_t last_baseline_received_ms;
     uint32_t last_heatbeat_received_ms;
     uint32_t last_tracking_state_ms;
+    uint8_t baseline_recv_rate; //in hertz * 10
     int32_t iar_num_hypotheses;
 
     //Sticky bits to track updating of state
