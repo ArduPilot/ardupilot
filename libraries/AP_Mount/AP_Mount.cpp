@@ -213,6 +213,13 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     AP_GROUPINFO("JSTICK_SPD",  16, AP_Mount, _joystick_speed, 0),
 #endif
 
+    // @Param: DRIVE_MODE
+    // @DisplayName: Drive mode for mount
+    // @Description: 0 for a standard mount with a servo per axis, 1 for super simple gimbal style mount
+    // @Values: 0:standard,1:super_simple
+    // @User: Standard
+    AP_GROUPINFO("DRIVE_MODE",  17, AP_Mount, _drive_mode,  0),
+
     AP_GROUPEND
 };
 
@@ -403,9 +410,17 @@ void AP_Mount::update_mount_position()
 #endif
 
     // write the results to the servos
-    move_servo(_roll_idx, _roll_angle*10, _roll_angle_min*0.1f, _roll_angle_max*0.1f);
-    move_servo(_tilt_idx, _tilt_angle*10, _tilt_angle_min*0.1f, _tilt_angle_max*0.1f);
-    move_servo(_pan_idx,  _pan_angle*10,  _pan_angle_min*0.1f,  _pan_angle_max*0.1f);
+    if (_drive_mode == 1) {
+        // Super Simple Gimbal, need to mix tilt and roll angles to move both servos at once
+        move_servo(_roll_idx, (_tilt_angle+_roll_angle)*10, _roll_angle_min*0.1f, _roll_angle_max*0.1f);
+        move_servo(_tilt_idx, (_tilt_angle-_roll_angle)*10, _tilt_angle_min*0.1f, _tilt_angle_max*0.1f);
+        move_servo(_pan_idx,  _pan_angle*10,  _pan_angle_min*0.1f,  _pan_angle_max*0.1f);
+    } else {
+        // Standard drive, one servo per axis
+        move_servo(_roll_idx, _roll_angle*10, _roll_angle_min*0.1f, _roll_angle_max*0.1f);
+        move_servo(_tilt_idx, _tilt_angle*10, _tilt_angle_min*0.1f, _tilt_angle_max*0.1f);
+        move_servo(_pan_idx,  _pan_angle*10,  _pan_angle_min*0.1f,  _pan_angle_max*0.1f);
+    }
 }
 
 void AP_Mount::set_mode(enum MAV_MOUNT_MODE mode)
