@@ -303,7 +303,7 @@ static void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
 static void do_loiter_turns(const AP_Mission::Mission_Command& cmd)
 {
     set_next_WP(cmd.content.location);
-    loiter.total_cd = cmd.p1 * 36000UL;
+    loiter.total_cd = (uint32_t)(LOWBYTE(cmd.p1)) * 36000UL;
     loiter_set_direction_wp(cmd);
 }
 
