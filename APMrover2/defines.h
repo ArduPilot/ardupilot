@@ -71,7 +71,7 @@ enum mode {
 #define LOG_ATTITUDE_MSG        0x08
 #define LOG_MODE_MSG            0x09
 #define LOG_COMPASS_MSG         0x0A
-#define LOG_CAMERA_MSG          0x0B
+#define LOG_CAMERA_MSG          0x0B    // deprecated
 #define LOG_COMPASS2_MSG        0x0C
 #define LOG_STEERING_MSG        0x0D
 
