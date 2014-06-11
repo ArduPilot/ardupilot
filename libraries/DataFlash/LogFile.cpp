@@ -1004,3 +1004,29 @@ void DataFlash_Class::Log_Write_Radio(const mavlink_radio_t &packet)
     WriteBlock(&pkt, sizeof(pkt)); 
 }
 
+// Write a Camera packet
+void DataFlash_Class::Log_Write_Camera(const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc)
+{
+    int32_t altitude, altitude_rel;
+    if (current_loc.flags.relative_alt) {
+        altitude = current_loc.alt+ahrs.get_home().alt;
+        altitude_rel = current_loc.alt;
+    } else {
+        altitude = current_loc.alt;
+        altitude_rel = current_loc.alt - ahrs.get_home().alt;
+    }
+
+    struct log_Camera pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_CAMERA_MSG),
+        gps_time    : gps.time_week_ms(),
+        gps_week    : gps.time_week(),
+        latitude    : current_loc.lat,
+        longitude   : current_loc.lng,
+        altitude    : altitude,
+        altitude_rel: altitude_rel,
+        roll        : (int16_t)ahrs.roll_sensor,
+        pitch       : (int16_t)ahrs.pitch_sensor,
+        yaw         : (uint16_t)ahrs.yaw_sensor
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}

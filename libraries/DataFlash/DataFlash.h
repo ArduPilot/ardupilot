@@ -62,6 +62,7 @@ public:
     void Log_Write_Radio(const mavlink_radio_t &packet);
     void Log_Write_Message(const char *message);
     void Log_Write_Message_P(const prog_char_t *message);
+    void Log_Write_Camera(const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);
 
     bool logging_started(void) const { return log_write_started; }
 
@@ -354,6 +355,19 @@ struct PACKED log_Radio {
     uint16_t fixed;
 };
 
+struct PACKED log_Camera {
+    LOG_PACKET_HEADER;
+    uint32_t gps_time;
+    uint16_t gps_week;
+    int32_t  latitude;
+    int32_t  longitude;
+    int32_t  altitude;
+    int32_t  altitude_rel;
+    int16_t  roll;
+    int16_t  pitch;
+    uint16_t yaw;
+};
+
 #define LOG_COMMON_STRUCTURES \
     { LOG_FORMAT_MSG, sizeof(log_Format), \
       "FMT", "BBnNZ",      "Type,Length,Name,Format,Columns" },    \
@@ -392,7 +406,9 @@ struct PACKED log_Radio {
     { LOG_CMD_MSG, sizeof(log_Cmd), \
       "CMD", "IHHHfffffff","TimeMS,CTot,CNum,CId,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt" }, \
     { LOG_RADIO_MSG, sizeof(log_Radio), \
-      "RAD", "IBBBBBHH", "TimeMS,RSSI,RemRSSI,TxBuf,Noise,RemNoise,RxErrors,Fixed" }
+      "RAD", "IBBBBBHH", "TimeMS,RSSI,RemRSSI,TxBuf,Noise,RemNoise,RxErrors,Fixed" }, \
+    { LOG_CAMERA_MSG, sizeof(log_Camera), \
+      "CAM", "IHLLeeccC","GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,Roll,Pitch,Yaw" }
 
 // message types 0 to 100 reversed for vehicle specific use
 
@@ -417,6 +433,7 @@ struct PACKED log_Radio {
 #define LOG_CMD_MSG       145
 #define LOG_RADIO_MSG	  146
 #define LOG_ATRP_MSG      147
+#define LOG_CAMERA_MSG    148
 
 // message types 200 to 210 reversed for GPS driver use
 // message types 211 to 220 reversed for autotune use
