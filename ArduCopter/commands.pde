@@ -8,7 +8,6 @@ static void init_home()
 
     // copter uses 0 home altitude
     Location loc = gps.location();
-    loc.alt = 0;
 
     ahrs.set_home(loc);
 
