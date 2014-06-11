@@ -609,37 +609,6 @@ static void Log_Write_Data(uint8_t id, float value)
     }
 }
 
-struct PACKED log_Camera {
-    LOG_PACKET_HEADER;
-    uint32_t gps_time;
-    uint16_t gps_week;
-    int32_t  latitude;
-    int32_t  longitude;
-    int32_t  altitude;
-    int16_t  roll;
-    int16_t  pitch;
-    uint16_t yaw;
-};
-
-// Write a Camera packet
-static void Log_Write_Camera()
-{
-#if CAMERA == ENABLED
-    struct log_Camera pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_CAMERA_MSG),
-        gps_time    : gps.time_week_ms(),
-        gps_week    : gps.time_week(),
-        latitude    : current_loc.lat,
-        longitude   : current_loc.lng,
-        altitude    : current_loc.alt,
-        roll        : (int16_t)ahrs.roll_sensor,
-        pitch       : (int16_t)ahrs.pitch_sensor,
-        yaw         : (uint16_t)ahrs.yaw_sensor
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
-#endif
-}
-
 struct PACKED log_Error {
     LOG_PACKET_HEADER;
     uint8_t sub_system;
@@ -702,8 +671,6 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "DU32",  "BI",         "Id,Value" },
     { LOG_DATA_FLOAT_MSG, sizeof(log_Data_Float),         
       "DFLT",  "Bf",         "Id,Value" },
-    { LOG_CAMERA_MSG, sizeof(log_Camera),                 
-      "CAM",   "IHLLeccC",   "GPSTime,GPSWeek,Lat,Lng,Alt,Roll,Pitch,Yaw" },
     { LOG_ERROR_MSG, sizeof(log_Error),         
       "ERR",   "BB",         "Subsys,ECode" },
 };
@@ -778,7 +745,6 @@ static void Log_Write_Nav_Tuning() {}
 static void Log_Write_Control_Tuning() {}
 static void Log_Write_Performance() {}
 static void Log_Write_Cmd(const AP_Mission::Mission_Command &cmd) {}
-static void Log_Write_Camera() {}
 static void Log_Write_Error(uint8_t sub_system, uint8_t error_code) {}
 static void Log_Write_Baro(void) {}
 static int8_t process_logs(uint8_t argc, const Menu::arg *argv) {

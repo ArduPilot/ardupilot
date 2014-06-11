@@ -853,7 +853,7 @@ static void do_take_picture()
 #if CAMERA == ENABLED
     camera.trigger_pic();
     if (g.log_bitmask & MASK_LOG_CAMERA) {
-        Log_Write_Camera();
+        DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
     }
 #endif
 }
