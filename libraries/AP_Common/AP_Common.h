@@ -70,6 +70,10 @@
  */
 #define BIT_IS_SET(value, bitnumber) (((value) & (1U<<(bitnumber))) != 0)
 
+// get high or low bytes from 2 byte integer
+#define LOWBYTE(i) ((uint8_t)(i))
+#define HIGHBYTE(i) ((uint8_t)(((uint16_t)(i))>>8))
+
 // @}
 
 
