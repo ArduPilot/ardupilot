@@ -84,7 +84,7 @@ static void guided_set_velocity(const Vector3f& velocity)
     }
 
     // set position controller velocity target
-    pos_control.set_vel_target(velocity);
+    pos_control.set_desired_velocity(velocity);
 }
 
 // guided_run - runs the guided controller
