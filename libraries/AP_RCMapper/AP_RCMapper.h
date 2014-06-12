@@ -24,6 +24,18 @@ public:
 
     /// yaw - return input channel number for yaw / rudder input
     uint8_t yaw() const { return _ch_yaw; }
+    
+    /// flightmode
+    uint8_t flightmode() const { return _ch_flightmode; }
+    
+    /// tune
+    uint8_t tune() const { return _ch_tune; }
+    
+    /// aux1
+    uint8_t aux1() const { return _ch_aux1; }
+    
+    /// aux2
+    uint8_t aux2() const { return _ch_aux2; }
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -33,5 +45,9 @@ private:
     AP_Int8 _ch_pitch;
     AP_Int8 _ch_yaw;
     AP_Int8 _ch_throttle;
+    AP_Int8 _ch_flightmode;
+    AP_Int8 _ch_tune;
+    AP_Int8 _ch_aux1;
+    AP_Int8 _ch_aux2;
 };
 #endif
