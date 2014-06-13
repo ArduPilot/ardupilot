@@ -1096,6 +1096,21 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
             break;
 
+        case MAV_CMD_CONDITION_YAW:
+            // param1 : target angle [0-360]
+            // param2 : speed during change [deg per second]
+            // param3 : direction (not supported)
+            // param4 : relative offset (1) or absolute angle (0)
+            if ((packet.param1 >= 0.0f)   &&
+            	(packet.param1 <= 360.0f) &&
+            	((packet.param4 == 0) || (packet.param4 == 1))) {
+            	set_auto_yaw_look_at_heading(packet.param1, packet.param2, (uint8_t)packet.param4);
+                result = MAV_RESULT_ACCEPTED;
+            } else {
+                result = MAV_RESULT_FAILED;
+            }
+            break;
+
         case MAV_CMD_DO_CHANGE_SPEED:
             // param1 : unused
             // param2 : new speed in m/s
