@@ -455,6 +455,36 @@ void set_auto_yaw_mode(uint8_t yaw_mode)
     }
 }
 
+// set_auto_yaw_look_at_heading - sets the yaw look at heading for auto mode 
+static void set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, uint8_t relative_angle)
+{
+    // get current yaw target
+    int32_t curr_yaw_target = attitude_control.angle_ef_targets().z;
+
+    // get final angle, 1 = Relative, 0 = Absolute
+    if (relative_angle == 0) {
+        // absolute angle
+        yaw_look_at_heading = wrap_360_cd(angle_deg * 100);
+    } else {
+        // relative angle
+        yaw_look_at_heading = wrap_360_cd(angle_deg * 100);
+    }
+
+    // get turn speed
+    if (turn_rate_dps == 0 ) {
+        // default to regular auto slew rate
+        yaw_look_at_heading_slew = AUTO_YAW_SLEW_RATE;
+    }else{
+        int32_t turn_rate = (wrap_180_cd(yaw_look_at_heading - curr_yaw_target) / 100) / turn_rate_dps;
+        yaw_look_at_heading_slew = constrain_int32(turn_rate, 1, 360);    // deg / sec
+    }
+
+    // set yaw mode
+    set_auto_yaw_mode(AUTO_YAW_LOOK_AT_HEADING);
+
+    // TO-DO: restore support for clockwise and counter clockwise rotation held in cmd.content.yaw.direction.  1 = clockwise, -1 = counterclockwise
+}
+
 // get_auto_heading - returns target heading depending upon auto_yaw_mode
 // 100hz update rate
 float get_auto_heading(void)
