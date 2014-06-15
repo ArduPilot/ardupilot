@@ -67,7 +67,7 @@ try:
 	# ...
 
 
-	print "All unit/regression tests passed\n"
+	print "All unit/regression tests GOOD\n"
 
 except Exception as e:
 	print "Error found: " + traceback.format_exc()

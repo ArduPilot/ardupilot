@@ -60,7 +60,7 @@ class TestVibration(Test):
 			self.result.status = TestResult.StatusType.WARN
 			self.result.statusMessage = "Vibration slightly high (X:%.2fg, Y:%.2fg, Z:%.2fg)" % (stdDevX,stdDevY,stdDevZ)
 		else:
-			self.result.status = TestResult.StatusType.PASS
+			self.result.status = TestResult.StatusType.GOOD
 			self.result.statusMessage = "Good vibration values (X:%.2fg, Y:%.2fg, Z:%.2fg)" % (stdDevX,stdDevY,stdDevZ)
 
 		

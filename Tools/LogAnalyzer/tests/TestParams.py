@@ -31,7 +31,7 @@ class TestParams(Test):
 
 	def run(self, logdata, verbose):
 		self.result = TestResult()
-		self.result.status = TestResult.StatusType.PASS  # PASS by default, tests below will override it if they fail
+		self.result.status = TestResult.StatusType.GOOD  # GOOD by default, tests below will override it if they fail
 
 		# check all params for NaN
 		for name,value in logdata.parameters.iteritems():

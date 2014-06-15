@@ -15,7 +15,7 @@ class TestDualGyroDrift(Test):
 		
 	def run(self, logdata, verbose):
 		self.result = TestResult()
-		self.result.status = TestResult.StatusType.PASS
+		self.result.status = TestResult.StatusType.GOOD
 
 		# if "IMU" not in logdata.channels or "IMU2" not in logdata.channels:
 		# 	self.result.status = TestResult.StatusType.NA

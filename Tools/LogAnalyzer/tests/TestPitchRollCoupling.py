@@ -14,7 +14,7 @@ class TestPitchRollCoupling(Test):
 
 	def run(self, logdata, verbose):
 		self.result = TestResult()
-		self.result.status = TestResult.StatusType.PASS
+		self.result.status = TestResult.StatusType.GOOD
 
 		if logdata.vehicleType != "ArduCopter":
 			self.result.status = TestResult.StatusType.NA

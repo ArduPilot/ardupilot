@@ -10,7 +10,7 @@ class TestPerformance(Test):
 
 	def run(self, logdata, verbose):
 		self.result = TestResult()
-		self.result.status = TestResult.StatusType.PASS
+		self.result.status = TestResult.StatusType.GOOD
 
 		# this test should be valid for all vehicle types, just need to figure out why PM logging data is different in each
 		if logdata.vehicleType != "ArduCopter":
