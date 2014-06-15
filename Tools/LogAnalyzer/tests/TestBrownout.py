@@ -11,7 +11,7 @@ class TestBrownout(Test):
 
 	def run(self, logdata, verbose):
 		self.result = TestResult()
-		self.result.status = TestResult.StatusType.PASS
+		self.result.status = TestResult.StatusType.GOOD
 
 		if "EV" in logdata.channels:
 			# step through the arm/disarm events in order, to see if they're symmetrical

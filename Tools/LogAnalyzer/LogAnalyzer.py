@@ -32,10 +32,10 @@ from xml.sax.saxutils import escape
 
 
 class TestResult:
-	'''all tests pass back a standardized result'''
+	'''all tests return a standardized result type'''
 	class StatusType:
 		# NA means not applicable for this log (e.g. copter tests against a plane log), UNKNOWN means it is missing data required for the test
-		PASS, FAIL, WARN, UNKNOWN, NA = range(5)
+		GOOD, FAIL, WARN, UNKNOWN, NA = range(5)
 	status = None
 	statusMessage = "" # can be multi-line
 
@@ -111,8 +111,8 @@ class TestSuite:
 			execTime = ""
 			if outputStats:
 				execTime = "  (%6.2fms)" % (test.execTime)
-			if test.result.status == TestResult.StatusType.PASS:
-				print "  %20s:  PASS       %-55s%s" % (test.name, statusMessageFirstLine, execTime)
+			if test.result.status == TestResult.StatusType.GOOD:
+				print "  %20s:  GOOD       %-55s%s" % (test.name, statusMessageFirstLine, execTime)
 			elif test.result.status == TestResult.StatusType.FAIL:
 				print "  %20s:  FAIL       %-55s%s    [GRAPH]" % (test.name, statusMessageFirstLine, execTime)
 			elif test.result.status == TestResult.StatusType.WARN:
@@ -172,9 +172,9 @@ class TestSuite:
 			if not test.enable:
 				continue
 			print >>xml, "  <result>"
-			if test.result.status == TestResult.StatusType.PASS:
+			if test.result.status == TestResult.StatusType.GOOD:
 				print >>xml, "    <name>" + escape(test.name) + "</name>"
-				print >>xml, "    <status>PASS</status>"
+				print >>xml, "    <status>GOOD</status>"
 				print >>xml, "    <message>" + escape(test.result.statusMessage) + "</message>"
 			elif test.result.status == TestResult.StatusType.FAIL:
 				print >>xml, "    <name>" + escape(test.name) + "</name>"
