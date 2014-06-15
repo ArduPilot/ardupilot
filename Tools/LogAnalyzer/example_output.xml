@@ -290,23 +290,23 @@
 <results>
   <result>
     <name>Brownout</name>
-    <status>PASS</status>
+    <status>GOOD</status>
     <message></message>
   </result>
   <result>
     <name>Compass</name>
-    <status>PASS</status>
+    <status>GOOD</status>
     <message>No MAG data, unable to test mag_field interference
 </message>
   </result>
   <result>
     <name>Dupe Log Data</name>
-    <status>PASS</status>
+    <status>GOOD</status>
     <message></message>
   </result>
   <result>
     <name>Empty</name>
-    <status>PASS</status>
+    <status>GOOD</status>
     <message></message>
   </result>
   <result>
@@ -323,7 +323,7 @@
   </result>
   <result>
     <name>Parameters</name>
-    <status>PASS</status>
+    <status>GOOD</status>
     <message></message>
   </result>
   <result>
@@ -334,17 +334,17 @@
   </result>
   <result>
     <name>Pitch/Roll</name>
-    <status>PASS</status>
+    <status>GOOD</status>
     <message></message>
   </result>
   <result>
     <name>Underpowered</name>
-    <status>PASS</status>
+    <status>GOOD</status>
     <message></message>
   </result>
   <result>
     <name>VCC</name>
-    <status>PASS</status>
+    <status>GOOD</status>
     <message></message>
   </result>
   <result>

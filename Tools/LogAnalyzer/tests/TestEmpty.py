@@ -10,7 +10,7 @@ class TestEmpty(Test):
 		
 	def run(self, logdata, verbose):
 		self.result = TestResult()
-		self.result.status = TestResult.StatusType.PASS
+		self.result.status = TestResult.StatusType.GOOD
 
 		# all the logic for this test is in the helper function, as it can also be called up front as an early exit
 		emptyErr = DataflashLog.DataflashLogHelper.isLogEmpty(logdata)

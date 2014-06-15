@@ -12,7 +12,7 @@ class TestCompass(Test):
 
 	def run(self, logdata, verbose):
 		self.result = TestResult()
-		self.result.status = TestResult.StatusType.PASS
+		self.result.status = TestResult.StatusType.GOOD
 
 		# test that compass offset parameters are within recommended range (+/- 150)
 		maxOffset = 150

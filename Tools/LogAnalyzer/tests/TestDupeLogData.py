@@ -36,7 +36,7 @@ class TestDupeLogData(Test):
 
 	def run(self, logdata, verbose):
 		self.result = TestResult()
-		self.result.status = TestResult.StatusType.PASS
+		self.result.status = TestResult.StatusType.GOOD
 
 		# this could be made more flexible by not hard-coding to use ATT data, could make it dynamic based on whatever is available as long as it is highly variable
 		if "ATT" not in logdata.channels:

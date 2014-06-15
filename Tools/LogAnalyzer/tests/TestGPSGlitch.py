@@ -10,7 +10,7 @@ class TestGPSGlitch(Test):
 
 	def run(self, logdata, verbose):
 		self.result = TestResult()
-		self.result.status = TestResult.StatusType.PASS
+		self.result.status = TestResult.StatusType.GOOD
 
 		if "GPS" not in logdata.channels:
 			self.result.status = TestResult.StatusType.UNKNOWN
