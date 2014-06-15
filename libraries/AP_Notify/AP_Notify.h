@@ -45,6 +45,7 @@ public:
 
         // additional flags
         uint16_t external_leds      : 1;    // 1 if external LEDs are enabled (normally only used for copter)
+		uint16_t aux_led      : 1;    // tied to ch7/ch8 to indicate aux function ON
     };
 
     // the notify flags are static to allow direct class access
@@ -63,7 +64,7 @@ private:
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     ToshibaLED_PX4 toshibaled;
     ToneAlarm_PX4 tonealarm;
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2 
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_MPNG
     ToshibaLED_I2C toshibaled;
     ExternalLED externalled;
     Buzzer buzzer;

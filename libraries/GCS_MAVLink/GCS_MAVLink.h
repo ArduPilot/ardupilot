@@ -20,7 +20,7 @@
 // into progmem
 #define MAVLINK_MESSAGE_CRC(msgid) mavlink_get_message_crc(msgid)
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_MPNG
 #include <util/crc16.h>
 #define HAVE_CRC_ACCUMULATE
 // only two telemetry ports on APM1/APM2

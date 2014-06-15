@@ -643,6 +643,8 @@ get_autotune_roll_pitch_controller(int16_t pilot_roll_angle, int16_t pilot_pitch
                             auto_tune_update_gcs(AUTO_TUNE_MESSAGE_SUCCESS);
                             Log_Write_Event(DATA_AUTOTUNE_COMPLETE);
                             set_roll_pitch_mode(ROLL_PITCH_STABLE);
+							
+							//flash the LEDS if we have them to let the pilot know we're done...AP_Notify::flags.save_trim = true;
                         }
                     }
                 }

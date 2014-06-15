@@ -78,7 +78,7 @@ AP_Motors::AP_Motors( RC_Channel* rc_roll, RC_Channel* rc_pitch, RC_Channel* rc_
     AP_Param::setup_object_defaults(this, var_info);
 
     // initialise motor map
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_MPNG
         set_motor_to_channel_map(APM1_MOTOR_TO_CHANNEL_MAP);
 #else
         set_motor_to_channel_map(APM2_MOTOR_TO_CHANNEL_MAP);

@@ -32,12 +32,13 @@ void ExternalLED::init(void)
     hal.gpio->pinMode(EXTERNAL_LED_GPS, GPIO_OUTPUT);
     hal.gpio->pinMode(EXTERNAL_LED_MOTOR1, GPIO_OUTPUT);
     hal.gpio->pinMode(EXTERNAL_LED_MOTOR2, GPIO_OUTPUT);
-
+    hal.gpio->pinMode(EXTERNAL_LED_AUX, GPIO_OUTPUT);
     // turn leds off
     hal.gpio->write(EXTERNAL_LED_ARMED, HAL_GPIO_LED_OFF);
     hal.gpio->write(EXTERNAL_LED_GPS, HAL_GPIO_LED_OFF);
     hal.gpio->write(EXTERNAL_LED_MOTOR1, HAL_GPIO_LED_OFF);
     hal.gpio->write(EXTERNAL_LED_MOTOR2, HAL_GPIO_LED_OFF);
+    hal.gpio->write(EXTERNAL_LED_AUX, HAL_GPIO_LED_OFF);  
 }
 
 /*
@@ -57,14 +58,14 @@ void ExternalLED::update(void)
     }
     _counter = 0;
 
-    // internal counter used to control step of armed and gps led
+    // internal counter used to control step of armed, aux and gps led
     _counter2++;
     if (_counter2 >= 10) {
         _counter2 = 0;
     }
 
-    // initialising
-    if (AP_Notify::flags.initialising) {
+    // initialising or just finished auto-tune/save trim
+    if (AP_Notify::flags.initialising || AP_Notify::flags.save_trim) {
         // blink arming and gps leds at 5hz
         switch(_counter2) {
             case 0:
@@ -82,6 +83,16 @@ void ExternalLED::update(void)
             case 9:
                 armed_led(false);
                 gps_led(true);
+				//expire LED alert if it's for save trim/auto-tune success
+				if(AP_Notify::flags.save_trim)
+				{
+					_counter3++;
+					if(_counter3 > 2)
+					{
+						AP_Notify::flags.save_trim = false;
+						_counter3 = 0;
+					}
+				}
                 break;
         }
         return;
@@ -200,9 +211,33 @@ void ExternalLED::update(void)
         else{
             // otherwise do whatever the armed led is doing
             motor_led1(_flags.armedled_on);
-            motor_led2(_flags.armedled_on);
+			motor_led2(_flags.armedled_on);
+			
+			//pulse aux LED if either AUX channel is active
+			if(AP_Notify::flags.aux_led)
+			{
+			    // pulse at 1Hz
+				switch(_counter2) {
+					case 0:
+					case 1:
+					case 2:
+					case 4:
+					case 5:
+					case 6:
+					case 7:
+					case 8:
+					case 9:
+						aux_led(false);
+						break;
+					case 3:       
+						aux_led(true);
+						break;
+				}
+            }
+			else aux_led(false);
         }
     }
+
 }
 
 // set_pattern - sets pattern for motor leds
@@ -245,5 +280,15 @@ void ExternalLED::motor_led2(bool on_off)
     if (_flags.motorled2_on != on_off) {
         _flags.motorled2_on = on_off;
         hal.gpio->write(EXTERNAL_LED_MOTOR2, _flags.motorled2_on);
+    }
+}
+
+//set aux LED
+// 	Note - I've HIjacked motorled2. But this code is separate in case we want to have an AUX LEX and a motor2 led
+void ExternalLED::aux_led(bool on_off)
+{
+	    if (_flags.auxled_on != on_off) {
+        _flags.auxled_on = on_off;
+        hal.gpio->write(EXTERNAL_LED_AUX, _flags.auxled_on);
     }
 }

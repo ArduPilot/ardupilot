@@ -30,12 +30,11 @@ void AP_Notify::init(bool enable_external_leds)
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     tonealarm.init();
 #endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_MPNG
     externalled.init();
     buzzer.init();
 #endif
 }
-
 // main update function, called at 50Hz
 void AP_Notify::update(void)
 {
@@ -45,8 +44,9 @@ void AP_Notify::update(void)
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     tonealarm.update();
 #endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_MPNG
     externalled.update();
     buzzer.update();
 #endif
 }
+

@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V3.1.5"
+#define THISFIRMWARE "ArduCopter V3.1.5-MPNG"
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -87,6 +87,7 @@
 // AP_HAL
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
+#include <AP_HAL_MPNG.h>
 #include <AP_HAL_AVR_SITL.h>
 #include <AP_HAL_PX4.h>
 #include <AP_HAL_FLYMAPLE.h>
@@ -193,6 +194,8 @@ static void print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode);
 static DataFlash_APM2 DataFlash;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
 static DataFlash_APM1 DataFlash;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_MPNG
+static DataFlash_MPNG DataFlash;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 static DataFlash_File DataFlash("logs");
 //static DataFlash_SITL DataFlash;
@@ -236,8 +239,12 @@ static AP_Int8 *flight_modes = &g.flight_mode1;
 static AP_ADC_ADS7844 adc;
  #endif
 
- #if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000
+#if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000
 static AP_InertialSensor_MPU6000 ins;
+#elif CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000_I2C
+static AP_InertialSensor_MPU6000_I2C ins;
+#elif CONFIG_IMU_TYPE == CONFIG_IMU_ITG3200
+static AP_InertialSensor_ITG3200 ins(MPNG_BOARD_TYPE);
 #elif CONFIG_IMU_TYPE == CONFIG_IMU_OILPAN
 static AP_InertialSensor_Oilpan ins(&adc);
 #elif CONFIG_IMU_TYPE == CONFIG_IMU_SITL
@@ -261,6 +268,8 @@ static SITL sitl;
 static AP_Baro_BMP085 barometer;
   #elif CONFIG_BARO == AP_BARO_PX4
 static AP_Baro_PX4 barometer;
+  #elif CONFIG_BARO == AP_BARO_BMP085_MPNG
+static AP_Baro_BMP085_MPNG barometer;
   #elif CONFIG_BARO == AP_BARO_MS5611
    #if CONFIG_MS5611_SERIAL == AP_BARO_MS5611_SPI
 static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::spi);
@@ -357,8 +366,14 @@ static GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
 //
 ModeFilterInt16_Size3 sonar_mode_filter(1);
 #if CONFIG_SONAR == ENABLED
-static AP_HAL::AnalogSource *sonar_analog_source;
-static AP_RangeFinder_MaxsonarXL *sonar;
+  #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_SERIAL
+    static AP_HAL::UARTDriver *sonar_serial_port;
+    static AP_RangeFinder_MaxsonarSerialXL *sonar;
+
+  #else
+    static AP_HAL::AnalogSource *sonar_analog_source;
+    static AP_RangeFinder_MaxsonarXL *sonar;
+  #endif
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -487,7 +502,6 @@ static MOTOR_CLASS motors(&g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4);
 static Vector3f omega;
 // This is used to hold radio tuning values for in-flight CH6 tuning
 float tuning_value;
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // GPS variables
@@ -868,6 +882,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { gcs_send_heartbeat,  100,     150 },
     { gcs_send_deferred,     2,     720 },
     { gcs_data_stream_send,  2,     950 },
+
     { update_mount,          2,     450 },
     { ten_hz_logging_loop,  10,     300 },
     { fifty_hz_logging_loop, 2,     220 },
@@ -2047,7 +2062,7 @@ static void read_AHRS(void)
 #endif
 
     ahrs.update();
-    omega = ins.get_gyro();
+	omega = ins.get_gyro();
 }
 
 static void update_trig(void){

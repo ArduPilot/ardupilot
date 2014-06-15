@@ -25,6 +25,15 @@
 
 extern const AP_HAL::HAL& hal;
 
+// Redirect Motor2 to Motor3 for tricopter only and MPNG boards
+// Because Motor2 shares hardware timer with YAW servo, so servo must run in 490Hz
+// After changeging to Motor3, servo will run at 50Hz, all motors at 490Hz by default
+#if CONFIG_HAL_BOARD == HAL_BOARD_MPNG 
+#define AP_MOTORS_MOT_AFT AP_MOTORS_MOT_3
+#else
+#define AP_MOTORS_MOT_AFT AP_MOTORS_MOT_2 
+#endif
+
 // init
 void AP_MotorsTri::Init()
 {
@@ -36,7 +45,7 @@ void AP_MotorsTri::Init()
 
     // set the motor_enabled flag so that the ESCs can be calibrated like other frame types
     motor_enabled[AP_MOTORS_MOT_1] = true;
-    motor_enabled[AP_MOTORS_MOT_2] = true;
+    motor_enabled[AP_MOTORS_MOT_AFT] = true;
     motor_enabled[AP_MOTORS_MOT_4] = true;
 }
 
@@ -49,7 +58,7 @@ void AP_MotorsTri::set_update_rate( uint16_t speed_hz )
     // set update rate for the 3 motors (but not the servo on channel 7)
     uint32_t mask = 
 	    1U << _motor_to_channel_map[AP_MOTORS_MOT_1] |
-	    1U << _motor_to_channel_map[AP_MOTORS_MOT_2] |
+	    1U << _motor_to_channel_map[AP_MOTORS_MOT_AFT] |
 	    1U << _motor_to_channel_map[AP_MOTORS_MOT_4];
     hal.rcout->set_freq(mask, _speed_hz);
 }
@@ -59,7 +68,7 @@ void AP_MotorsTri::enable()
 {
     // enable output channels
     hal.rcout->enable_ch(_motor_to_channel_map[AP_MOTORS_MOT_1]);
-    hal.rcout->enable_ch(_motor_to_channel_map[AP_MOTORS_MOT_2]);
+    hal.rcout->enable_ch(_motor_to_channel_map[AP_MOTORS_MOT_AFT]);
     hal.rcout->enable_ch(_motor_to_channel_map[AP_MOTORS_MOT_4]);
     hal.rcout->enable_ch(AP_MOTORS_CH_TRI_YAW);
 }
@@ -72,12 +81,12 @@ void AP_MotorsTri::output_min()
 
     // set all motors to minimum
     motor_out[AP_MOTORS_MOT_1] = _rc_throttle->radio_min;
-    motor_out[AP_MOTORS_MOT_2] = _rc_throttle->radio_min;
+    motor_out[AP_MOTORS_MOT_AFT] = _rc_throttle->radio_min;
     motor_out[AP_MOTORS_MOT_4] = _rc_throttle->radio_min;
 
     // send minimum value to each motor
     hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_1], _rc_throttle->radio_min);
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_2], _rc_throttle->radio_min);
+    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_AFT], _rc_throttle->radio_min);
     hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_4], _rc_throttle->radio_min);
     hal.rcout->write(_motor_to_channel_map[AP_MOTORS_CH_TRI_YAW], _rc_yaw->radio_trim);
 }
@@ -110,7 +119,7 @@ void AP_MotorsTri::output_armed()
             _spin_when_armed_ramped = _min_throttle;
         }
         motor_out[AP_MOTORS_MOT_1] = _rc_throttle->radio_min + _spin_when_armed_ramped;
-        motor_out[AP_MOTORS_MOT_2] = _rc_throttle->radio_min + _spin_when_armed_ramped;
+        motor_out[AP_MOTORS_MOT_AFT] = _rc_throttle->radio_min + _spin_when_armed_ramped;
         motor_out[AP_MOTORS_MOT_4] = _rc_throttle->radio_min + _spin_when_armed_ramped;
 
         // Every thing is limited
@@ -125,7 +134,7 @@ void AP_MotorsTri::output_armed()
             limit.throttle_lower = true;
         }
         //left front
-        motor_out[AP_MOTORS_MOT_2] = _rc_throttle->radio_out + roll_out + pitch_out;
+        motor_out[AP_MOTORS_MOT_AFT] = _rc_throttle->radio_out + roll_out + pitch_out;
         //right front
         motor_out[AP_MOTORS_MOT_1] = _rc_throttle->radio_out - roll_out + pitch_out;
         // rear
@@ -133,39 +142,39 @@ void AP_MotorsTri::output_armed()
 
         // Tridge's stability patch
         if(motor_out[AP_MOTORS_MOT_1] > out_max) {
-            motor_out[AP_MOTORS_MOT_2] -= (motor_out[AP_MOTORS_MOT_1] - out_max);
+            motor_out[AP_MOTORS_MOT_AFT] -= (motor_out[AP_MOTORS_MOT_1] - out_max);
             motor_out[AP_MOTORS_MOT_4] -= (motor_out[AP_MOTORS_MOT_1] - out_max);
             motor_out[AP_MOTORS_MOT_1] = out_max;
         }
 
-        if(motor_out[AP_MOTORS_MOT_2] > out_max) {
-            motor_out[AP_MOTORS_MOT_1] -= (motor_out[AP_MOTORS_MOT_2] - out_max);
-            motor_out[AP_MOTORS_MOT_4] -= (motor_out[AP_MOTORS_MOT_2] - out_max);
-            motor_out[AP_MOTORS_MOT_2] = out_max;
+        if(motor_out[AP_MOTORS_MOT_AFT] > out_max) {
+            motor_out[AP_MOTORS_MOT_1] -= (motor_out[AP_MOTORS_MOT_AFT] - out_max);
+            motor_out[AP_MOTORS_MOT_4] -= (motor_out[AP_MOTORS_MOT_AFT] - out_max);
+            motor_out[AP_MOTORS_MOT_AFT] = out_max;
         }
 
         if(motor_out[AP_MOTORS_MOT_4] > out_max) {
             motor_out[AP_MOTORS_MOT_1] -= (motor_out[AP_MOTORS_MOT_4] - out_max);
-            motor_out[AP_MOTORS_MOT_2] -= (motor_out[AP_MOTORS_MOT_4] - out_max);
+            motor_out[AP_MOTORS_MOT_AFT] -= (motor_out[AP_MOTORS_MOT_4] - out_max);
             motor_out[AP_MOTORS_MOT_4] = out_max;
         }
 
         // adjust for throttle curve
         if( _throttle_curve_enabled ) {
             motor_out[AP_MOTORS_MOT_1] = _throttle_curve.get_y(motor_out[AP_MOTORS_MOT_1]);
-            motor_out[AP_MOTORS_MOT_2] = _throttle_curve.get_y(motor_out[AP_MOTORS_MOT_2]);
+            motor_out[AP_MOTORS_MOT_AFT] = _throttle_curve.get_y(motor_out[AP_MOTORS_MOT_AFT]);
             motor_out[AP_MOTORS_MOT_4] = _throttle_curve.get_y(motor_out[AP_MOTORS_MOT_4]);
         }
 
         // ensure motors don't drop below a minimum value and stop
         motor_out[AP_MOTORS_MOT_1] = max(motor_out[AP_MOTORS_MOT_1],    out_min);
-        motor_out[AP_MOTORS_MOT_2] = max(motor_out[AP_MOTORS_MOT_2],    out_min);
+        motor_out[AP_MOTORS_MOT_AFT] = max(motor_out[AP_MOTORS_MOT_AFT],    out_min);
         motor_out[AP_MOTORS_MOT_4] = max(motor_out[AP_MOTORS_MOT_4],    out_min);
     }
 
     // send output to each motor
     hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_1], motor_out[AP_MOTORS_MOT_1]);
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_2], motor_out[AP_MOTORS_MOT_2]);
+    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_AFT], motor_out[AP_MOTORS_MOT_AFT]);
     hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_4], motor_out[AP_MOTORS_MOT_4]);
 
     // also send out to tail command (we rely on any auto pilot to have updated the rc_yaw->radio_out to the correct value)
@@ -197,7 +206,7 @@ void AP_MotorsTri::output_test()
     // Send minimum values to all motors
     output_min();
 
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_2], _rc_throttle->radio_min);
+    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_AFT], _rc_throttle->radio_min);
     hal.scheduler->delay(4000);
     hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_1], _rc_throttle->radio_min + _min_throttle);
     hal.scheduler->delay(300);
@@ -209,7 +218,7 @@ void AP_MotorsTri::output_test()
 
     hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_4], _rc_throttle->radio_min);
     hal.scheduler->delay(2000);
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_2], _rc_throttle->radio_min + _min_throttle);
+    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_AFT], _rc_throttle->radio_min + _min_throttle);
     hal.scheduler->delay(300);
 
     // Send minimum values to all motors

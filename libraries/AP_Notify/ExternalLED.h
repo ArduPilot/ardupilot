@@ -27,16 +27,25 @@
  #define EXTERNAL_LED_GPS     60    // GPS LED - AN6
  #define EXTERNAL_LED_MOTOR1  58    // Motor1 LED - AN4
  #define EXTERNAL_LED_MOTOR2  62    // Motor2 LED - AN8
+ #define EXTERNAL_LED_AUX    57    // Aux LED - AN3
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
  #define EXTERNAL_LED_GPS     64    // GPS LED - AN10
  #define EXTERNAL_LED_ARMED   65    // Armed LED - AN11
  #define EXTERNAL_LED_MOTOR1  62    // Motor1 LED - AN8
  #define EXTERNAL_LED_MOTOR2  66    // Motor2 LED - AN12
+ #define EXTERNAL_LED_AUX    57    // Aux LED - AN3
+#elif CONFIG_HAL_BOARD == HAL_BOARD_MPNG
+ #define EXTERNAL_LED_ARMED   60    // Armed LED - AN6
+ #define EXTERNAL_LED_GPS     59    // GPS LED - AN5
+ #define EXTERNAL_LED_MOTOR1  58    // Motor1 LED - AN4
+ #define EXTERNAL_LED_MOTOR2  57    // Motor2 LED - AN3
+ #define EXTERNAL_LED_AUX    61    // Aux LED - AN7
 #else
  #define EXTERNAL_LED_GPS     0     // pin definitions to allow this lib to build for
  #define EXTERNAL_LED_ARMED   0     // for other boards besides APM1, APM2 even though
  #define EXTERNAL_LED_MOTOR1  0     // they will never be used
  #define EXTERNAL_LED_MOTOR2  0
+ #define EXTERNAL_LED_AUX     0
 #endif
 
 class ExternalLED
@@ -66,16 +75,19 @@ private:
         uint8_t gpsled_on           : 1;    // 1 if the gps led is currently on
         uint8_t motorled1_on        : 1;    // 1 if motor led #1 is currently on
         uint8_t motorled2_on        : 1;    // 1 if motor led #2 is currently on
+		uint8_t auxled_on         	: 1;    // 1 if aux led is currently on
     } _flags;
 
     uint8_t         _counter;           // reduces 50hz calls to 10hz
     uint8_t         _counter2;          // used to control steps of arming and gps leds
+	uint8_t         _counter3;          // used to kill 'save trim' flash after a few
     LEDPattern      _pattern;           // current pattern for motor leds
     uint8_t         _pattern_counter;   // used to time on/off of current patter
 
     // armed_led - set armed light on or off
     void armed_led(bool on_off);
-
+    // aux_led - set aux light on or off
+    void aux_led(bool on_off);
     // gps_led - set gps light on or off
     void gps_led(bool on_off);
 

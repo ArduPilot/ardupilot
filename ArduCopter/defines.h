@@ -342,6 +342,8 @@
 #define CONFIG_IMU_SITL    3
 #define CONFIG_IMU_PX4     4
 #define CONFIG_IMU_FLYMAPLE 5
+#define CONFIG_IMU_MPU6000_I2C 6
+#define CONFIG_IMU_ITG3200 7
 
 #define AP_BARO_BMP085    1
 #define AP_BARO_MS5611    2
@@ -349,6 +351,13 @@
 
 #define AP_BARO_MS5611_SPI 1
 #define AP_BARO_MS5611_I2C 2
+
+// MPNG board types
+#define CRIUS_V1  1
+#define RCTIMER_CRIUS_V2 2
+#define HK_RED_MULTIWII_PRO 3
+#define BLACK_VORTEX 4
+#define MULTIWII_PRO_EZ3_BLACK 5
 
 // Error message sub systems and error codes
 #define ERROR_SUBSYSTEM_MAIN                1

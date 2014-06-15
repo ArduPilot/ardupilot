@@ -76,7 +76,6 @@ static void read_aux_switches()
     if (ap.CH7_flag != switch_position) {
         // set the CH7 flag
         ap.CH7_flag = switch_position;
-
         // invoke the appropriate function
         do_aux_switch_function(g.ch7_option, ap.CH7_flag);
     }
@@ -86,10 +85,10 @@ static void read_aux_switches()
     if (ap.CH8_flag != switch_position) {
         // set the CH8 flag
         ap.CH8_flag = switch_position;
-
         // invoke the appropriate function
         do_aux_switch_function(g.ch8_option, ap.CH8_flag);
     }
+
 }
 
 // init_aux_switches - invoke configured actions at start-up for aux function where it is safe to do so
@@ -132,6 +131,13 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 {
     int8_t tmp_function = ch_function;
 
+	//set the Aux LED 
+	if(ch_flag == AUX_SWITCH_HIGH)
+	{
+		AP_Notify::flags.aux_led = true;	
+	}
+	else AP_Notify::flags.aux_led = false;
+	
     // multi mode check
     if(ch_function == AUX_SWITCH_MULTI_MODE) {
         if (g.rc_6.radio_in < CH6_PWM_TRIGGER_LOW) {
@@ -368,6 +374,7 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             }
             break;
     }
+
 }
 
 // save_trim - adds roll and pitch trims from the radio to ahrs

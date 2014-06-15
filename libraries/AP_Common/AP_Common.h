@@ -131,6 +131,7 @@ struct PACKED RallyLocation {
 #define AP_PRODUCT_ID_APM2ES_REV_D6     0x16    // APM2 with MPU6000ES_REV_D6
 #define AP_PRODUCT_ID_APM2ES_REV_D7     0x17    // APM2 with MPU6000ES_REV_D7
 #define AP_PRODUCT_ID_APM2ES_REV_D8     0x18    // APM2 with MPU6000ES_REV_D8
+#define AP_PRODUCT_ID_MPNG         0x40    // MPNG
 #define AP_PRODUCT_ID_APM2_REV_C4       0x54    // APM2 with MPU6000_REV_C4
 #define AP_PRODUCT_ID_APM2_REV_C5       0x55    // APM2 with MPU6000_REV_C5
 #define AP_PRODUCT_ID_APM2_REV_D6       0x56    // APM2 with MPU6000_REV_D6

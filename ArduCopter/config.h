@@ -57,7 +57,9 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
  # define CONFIG_IMU_TYPE   CONFIG_IMU_MPU6000
- # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
+ #ifndef CONFIG_SONAR_SOURCE
+   # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
+ #endif
  # define MAGNETOMETER ENABLED
  # ifdef APM2_BETA_HARDWARE
   #  define CONFIG_BARO     AP_BARO_BMP085
@@ -67,14 +69,49 @@
  # endif
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
  # define CONFIG_IMU_TYPE   CONFIG_IMU_SITL
- # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
+ #ifndef CONFIG_SONAR_SOURCE
+   # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
+ #endif
  # define MAGNETOMETER ENABLED
  # define OPTFLOW DISABLED
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
  # define CONFIG_IMU_TYPE   CONFIG_IMU_PX4
  # define CONFIG_BARO       AP_BARO_PX4
- # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
+ #ifndef CONFIG_SONAR_SOURCE
+   # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
+ #endif
  # define MAGNETOMETER ENABLED
+ # define OPTFLOW DISABLED
+#elif CONFIG_HAL_BOARD == HAL_BOARD_MPNG
+ #ifndef MPNG_BOARD_TYPE
+  #define MPNG_BOARD_TYPE RCTIMER_CRIUS_V2
+ #endif
+
+ #ifndef LOGGING_ENABLED
+   #define LOGGING_ENABLED ENABLED
+ #endif
+
+ #define PIEZO_PIN AN3
+ 
+ #if MPNG_BOARD_TYPE == HK_RED_MULTIWII_PRO || MPNG_BOARD_TYPE == BLACK_VORTEX
+	 # define CONFIG_IMU_TYPE   CONFIG_IMU_ITG3200
+	 # define CONFIG_BARO       AP_BARO_BMP085
+ #else
+	 # define CONFIG_IMU_TYPE   CONFIG_IMU_MPU6000_I2C
+	 # define CONFIG_BARO       AP_BARO_MS5611
+	 # define CONFIG_MS5611_SERIAL AP_BARO_MS5611_I2C
+ #endif
+ 
+ # define CONFIG_ADC        DISABLED
+ #ifndef CONFIG_SONAR_SOURCE
+   # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
+ #endif
+ # define MAGNETOMETER ENABLED
+ # define CONFIG_ADC        DISABLED
+ # define MAGNETOMETER ENABLED
+ #ifndef CONFIG_SONAR_SOURCE
+   # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
+ #endif
  # define OPTFLOW DISABLED
 #elif CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
  # define CONFIG_IMU_TYPE CONFIG_IMU_FLYMAPLE
@@ -82,7 +119,9 @@
  # define CONFIG_COMPASS  AP_COMPASS_HMC5843
  # define CONFIG_ADC        DISABLED
  # define MAGNETOMETER ENABLED
- # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
+ #ifndef CONFIG_SONAR_SOURCE
+   # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
+ #endif
  # define OPTFLOW DISABLED
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
  # define CONFIG_IMU_TYPE CONFIG_IMU_L3G4200D
@@ -90,7 +129,9 @@
  # define CONFIG_COMPASS  AP_COMPASS_HMC5843
  # define CONFIG_ADC        DISABLED
  # define MAGNETOMETER ENABLED
- # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
+ #ifndef CONFIG_SONAR_SOURCE
+   # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
+ #endif
  # define OPTFLOW DISABLED
 #endif
 
@@ -169,7 +210,7 @@
 // PWM control
 // default RC speed in Hz
 #ifndef RC_FAST_SPEED
-   #   define RC_FAST_SPEED 490
+   #   define RC_FAST_SPEED 250
 #endif
 
 ////////////////////////////////////////////////////////
@@ -216,6 +257,8 @@
  # ifndef CONFIG_SONAR_SOURCE_ANALOG_PIN
   #  define CONFIG_SONAR_SOURCE_ANALOG_PIN 0
  # endif
+ #elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_SERIAL
+      //don't do anything ;-)
 #else
  # warning Invalid value for CONFIG_SONAR_SOURCE, disabling sonar
  # define CONFIG_SONAR DISABLED
@@ -293,7 +336,7 @@
  # define SERIAL1_BAUD                    57600
 #endif
 #ifndef SERIAL2_BAUD
- # define SERIAL2_BAUD                    57600
+ # define SERIAL2_BAUD                    38400
 #endif
 
 
@@ -309,7 +352,7 @@
 #endif
 
 #ifndef BOARD_VOLTAGE_MIN
- # define BOARD_VOLTAGE_MIN             4300        // min board voltage in milli volts for pre-arm checks
+ # define BOARD_VOLTAGE_MIN             3300        // min board voltage in milli volts for pre-arm checks
 #endif
 
 #ifndef BOARD_VOLTAGE_MAX
@@ -944,6 +987,16 @@
  // APM1 & APM2 default logging
  # define DEFAULT_LOG_BITMASK \
     MASK_LOG_ATTITUDE_MED | \
+    MASK_LOG_GPS | \
+    MASK_LOG_PM | \
+    MASK_LOG_CTUN | \
+    MASK_LOG_NTUN | \
+    MASK_LOG_RCIN | \
+    MASK_LOG_CMD | \
+    MASK_LOG_CURRENT
+#elseif CONFIG_HAL_BOARD == HAL_BOARD_MPNG
+ // Crius default logging
+ # define DEFAULT_LOG_BITMASK \
     MASK_LOG_GPS | \
     MASK_LOG_PM | \
     MASK_LOG_CTUN | \

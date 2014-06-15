@@ -1,0 +1,724 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectVersion>6.1</ProjectVersion>
+    <ToolchainName>com.Atmel.AVRGCC8.CPP</ToolchainName>
+    <ProjectGuid>{07b459b4-8d76-4638-bc6d-a459ba2d616b}</ProjectGuid>
+    <avrdevice>atmega2560</avrdevice>
+    <avrdeviceseries>none</avrdeviceseries>
+    <OutputType>Executable</OutputType>
+    <Language>CPP</Language>
+    <OutputFileName>$(MSBuildProjectName)</OutputFileName>
+    <OutputFileExtension>.elf</OutputFileExtension>
+    <OutputDirectory>$(MSBuildProjectDirectory)\$(Configuration)</OutputDirectory>
+    <AssemblyName>ArduCopter</AssemblyName>
+    <Name>ArduCopter</Name>
+    <RootNamespace>ArduCopter</RootNamespace>
+    <ToolchainFlavour>Native</ToolchainFlavour>
+    <KeepTimersRunning>true</KeepTimersRunning>
+    <OverrideVtor>false</OverrideVtor>
+    <OverrideVtorValue>
+    </OverrideVtorValue>
+    <eraseonlaunchrule>0</eraseonlaunchrule>
+    <ProgFlashFromRam>true</ProgFlashFromRam>
+    <RamSnippetAddress>0x20000000</RamSnippetAddress>
+    <CacheFlash>true</CacheFlash>
+    <UncachedRange />
+    <BootSegment>0</BootSegment>
+    <AsfFrameworkConfig>
+      <framework-data>
+  <options />
+  <configurations />
+  <files />
+  <documentation help="" />
+  <offline-documentation help="" />
+  <dependencies>
+    <content-extension eid="atmel.asf" uuidref="Atmel.ASF" version="3.6.0" />
+  </dependencies>
+</framework-data>
+    </AsfFrameworkConfig>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <ToolchainSettings>
+      <AvrGccCpp>
+        <avrgcc.common.optimization.RelaxBranches>True</avrgcc.common.optimization.RelaxBranches>
+        <avrgcc.common.outputfiles.hex>True</avrgcc.common.outputfiles.hex>
+        <avrgcc.common.outputfiles.lss>True</avrgcc.common.outputfiles.lss>
+        <avrgcc.common.outputfiles.eep>True</avrgcc.common.outputfiles.eep>
+        <avrgcc.common.outputfiles.srec>True</avrgcc.common.outputfiles.srec>
+        <avrgcc.common.outputfiles.usersignatures>False</avrgcc.common.outputfiles.usersignatures>
+        <avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>True</avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>
+        <avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>True</avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>
+        <avrgcc.compiler.directories.IncludePaths>
+          <ListValues>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Common</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Common\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Progmem</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Progmem\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Menu</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Menu\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Param</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Param\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_AVR</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_AVR\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_MPNG</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_MPNG\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_AVR_SITL</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_AVR_SITL\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_PX4</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_PX4\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_FLYMAPLE</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_FLYMAPLE\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_Linux</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_Linux\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_Empty</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_Empty\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\GCS_MAVLink</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\GCS_MAVLink\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_GPS</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_GPS\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\DataFlash</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\DataFlash\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_ADC</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_ADC\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_ADC_AnalogSource</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_ADC_AnalogSource\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Baro</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Baro\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Compass</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Compass\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Math</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Math\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Curve</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Curve\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_InertialSensor</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_InertialSensor\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_AHRS</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_AHRS\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\APM_PI</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\APM_PI\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AC_PID</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AC_PID\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\RC_Channel</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\RC_Channel\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Motors</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Motors\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_RangeFinder</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_RangeFinder\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_OpticalFlow</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_OpticalFlow\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\Filter</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\Filter\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Buffer</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Buffer\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Relay</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Relay\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_ServoRelayEvents</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_ServoRelayEvents\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Camera</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Camera\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Mount</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Mount\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Airspeed</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Airspeed\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Vehicle</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Vehicle\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_InertialNav</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_InertialNav\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AC_WPNav</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AC_WPNav\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Declination</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Declination\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AC_Fence</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AC_Fence\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\SITL</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\SITL\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Scheduler</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Scheduler\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_RCMapper</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_RCMapper\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Notify</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Notify\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_BattMonitor</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_BattMonitor\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_BoardConfig</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_BoardConfig\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AC_Sprayer</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AC_Sprayer\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_EPM</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_EPM\utility</Value>
+            <Value>C:\ArduPilot-Arduino-1.0.3-windows\libraries</Value>
+            <Value>C:\ArduPilot-Arduino-1.0.3-windows\hardware\apm\libraries</Value>
+            <Value>C:\Program Files\Visual Micro\Visual Micro for Arduino\Micro Platforms\default\debuggers</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries</Value>
+            <Value>c:\ardupilot-arduino-1.0.3-windows\hardware\tools\avr\avr\include\</Value>
+            <Value>c:\ardupilot-arduino-1.0.3-windows\hardware\tools\avr\avr\include\avr\</Value>
+            <Value>c:\ardupilot-arduino-1.0.3-windows\hardware\tools\avr\avr\</Value>
+            <Value>c:\ardupilot-arduino-1.0.3-windows\hardware\tools\avr\lib\gcc\avr\4.3.2\include\</Value>
+          </ListValues>
+        </avrgcc.compiler.directories.IncludePaths>
+        <avrgcc.compiler.optimization.level>Optimize (-O1)</avrgcc.compiler.optimization.level>
+        <avrgcc.compiler.optimization.PackStructureMembers>True</avrgcc.compiler.optimization.PackStructureMembers>
+        <avrgcc.compiler.optimization.AllocateBytesNeededForEnum>True</avrgcc.compiler.optimization.AllocateBytesNeededForEnum>
+        <avrgcc.compiler.optimization.DebugLevel>Default (-g2)</avrgcc.compiler.optimization.DebugLevel>
+        <avrgcc.compiler.warnings.AllWarnings>True</avrgcc.compiler.warnings.AllWarnings>
+        <avrgcc.compiler.miscellaneous.OtherFlags>-std=gnu99 -include=arduino.h</avrgcc.compiler.miscellaneous.OtherFlags>
+        <avrgcccpp.compiler.general.ChangeDefaultCharTypeUnsigned>True</avrgcccpp.compiler.general.ChangeDefaultCharTypeUnsigned>
+        <avrgcccpp.compiler.general.ChangeDefaultBitFieldUnsigned>True</avrgcccpp.compiler.general.ChangeDefaultBitFieldUnsigned>
+        <avrgcccpp.compiler.symbols.DefSymbols>
+          <ListValues>
+            <Value>__AVR_ATmega2560__</Value>
+            <Value>ARDUINO=101</Value>
+            <Value>ARDUINO_MAIN</Value>
+            <Value>F_CPU=16000000L</Value>
+            <Value>__AVR__</Value>
+            <Value>CONFIG_HAL_BOARD=HAL_BOARD_MPNG</Value>
+            <Value>EXCLUDECORE</Value>
+            <Value>__cplusplus</Value>
+          </ListValues>
+        </avrgcccpp.compiler.symbols.DefSymbols>
+        <avrgcccpp.compiler.directories.IncludePaths>
+          <ListValues>
+            <Value>
+            </Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Common</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Common\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Progmem</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Progmem\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Menu</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Menu\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Param</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Param\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_AVR</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_AVR\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_MPNG</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_MPNG\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_AVR_SITL</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_AVR_SITL\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_PX4</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_PX4\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_FLYMAPLE</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_FLYMAPLE\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_Linux</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_Linux\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_Empty</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_Empty\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\GCS_MAVLink</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\GCS_MAVLink\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_GPS</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_GPS\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\DataFlash</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\DataFlash\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_ADC</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_ADC\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_ADC_AnalogSource</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_ADC_AnalogSource\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Baro</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Baro\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Compass</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Compass\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Math</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Math\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Curve</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Curve\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_InertialSensor</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_InertialSensor\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_AHRS</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_AHRS\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\APM_PI</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\APM_PI\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AC_PID</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AC_PID\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\RC_Channel</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\RC_Channel\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Motors</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Motors\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_RangeFinder</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_RangeFinder\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_OpticalFlow</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_OpticalFlow\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\Filter</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\Filter\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Buffer</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Buffer\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Relay</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Relay\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_ServoRelayEvents</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_ServoRelayEvents\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Camera</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Camera\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Mount</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Mount\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Airspeed</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Airspeed\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Vehicle</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Vehicle\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_InertialNav</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_InertialNav\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AC_WPNav</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AC_WPNav\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Declination</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Declination\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AC_Fence</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AC_Fence\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\SITL</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\SITL\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Scheduler</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Scheduler\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_RCMapper</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_RCMapper\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Notify</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Notify\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_BattMonitor</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_BattMonitor\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_BoardConfig</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_BoardConfig\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AC_Sprayer</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AC_Sprayer\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_EPM</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_EPM\utility</Value>
+            <Value>C:\ArduPilot-Arduino-1.0.3-windows\libraries</Value>
+            <Value>C:\ArduPilot-Arduino-1.0.3-windows\hardware\apm\libraries</Value>
+            <Value>C:\Program Files\Visual Micro\Visual Micro for Arduino\Micro Platforms\default\debuggers</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries</Value>
+            <Value>c:\ardupilot-arduino-1.0.3-windows\hardware\tools\avr\avr\include\</Value>
+            <Value>c:\ardupilot-arduino-1.0.3-windows\hardware\tools\avr\avr\include\avr\</Value>
+            <Value>c:\ardupilot-arduino-1.0.3-windows\hardware\tools\avr\avr\</Value>
+            <Value>c:\ardupilot-arduino-1.0.3-windows\hardware\tools\avr\lib\gcc\avr\4.3.2\include\</Value>
+            <Value>
+            </Value>
+          </ListValues>
+        </avrgcccpp.compiler.directories.IncludePaths>
+        <avrgcccpp.compiler.optimization.level>Optimize (-O1)</avrgcccpp.compiler.optimization.level>
+        <avrgcccpp.compiler.optimization.PackStructureMembers>True</avrgcccpp.compiler.optimization.PackStructureMembers>
+        <avrgcccpp.compiler.optimization.AllocateBytesNeededForEnum>True</avrgcccpp.compiler.optimization.AllocateBytesNeededForEnum>
+        <avrgcccpp.compiler.optimization.DebugLevel>Default (-g2)</avrgcccpp.compiler.optimization.DebugLevel>
+        <avrgcccpp.compiler.warnings.AllWarnings>True</avrgcccpp.compiler.warnings.AllWarnings>
+        <avrgcccpp.compiler.miscellaneous.OtherFlags>-include=arduino.h</avrgcccpp.compiler.miscellaneous.OtherFlags>
+        <avrgcccpp.assembler.debugging.DebugLevel>Default (-Wa,-g)</avrgcccpp.assembler.debugging.DebugLevel>
+        <avrgcc.compiler.symbols.DefSymbols>
+          <ListValues>
+            <Value>__AVR_ATmega2560__</Value>
+            <Value>ARDUINO=101</Value>
+            <Value>ARDUINO_MAIN</Value>
+            <Value>F_CPU=16000000L</Value>
+            <Value>__AVR__</Value>
+            <Value>CONFIG_HAL_BOARD=HAL_BOARD_MPNG</Value>
+            <Value>EXCLUDECORE</Value>
+            <Value>__cplusplus</Value>
+          </ListValues>
+        </avrgcc.compiler.symbols.DefSymbols>
+      </AvrGccCpp>
+    </ToolchainSettings>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <ToolchainSettings>
+      <AvrGccCpp>
+        <avrgcc.common.optimization.RelaxBranches>True</avrgcc.common.optimization.RelaxBranches>
+        <avrgcc.common.outputfiles.hex>True</avrgcc.common.outputfiles.hex>
+        <avrgcc.common.outputfiles.lss>True</avrgcc.common.outputfiles.lss>
+        <avrgcc.common.outputfiles.eep>True</avrgcc.common.outputfiles.eep>
+        <avrgcc.common.outputfiles.srec>True</avrgcc.common.outputfiles.srec>
+        <avrgcc.common.outputfiles.usersignatures>False</avrgcc.common.outputfiles.usersignatures>
+        <avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>True</avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>
+        <avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>True</avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>
+        <avrgcc.compiler.directories.IncludePaths>
+          <ListValues>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Common</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Common\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Progmem</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Progmem\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Menu</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Menu\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Param</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Param\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_AVR</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_AVR\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_MPNG</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_MPNG\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_AVR_SITL</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_AVR_SITL\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_PX4</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_PX4\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_FLYMAPLE</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_FLYMAPLE\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_Linux</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_Linux\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_Empty</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_Empty\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\GCS_MAVLink</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\GCS_MAVLink\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_GPS</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_GPS\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\DataFlash</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\DataFlash\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_ADC</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_ADC\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_ADC_AnalogSource</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_ADC_AnalogSource\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Baro</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Baro\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Compass</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Compass\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Math</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Math\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Curve</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Curve\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_InertialSensor</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_InertialSensor\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_AHRS</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_AHRS\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\APM_PI</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\APM_PI\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AC_PID</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AC_PID\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\RC_Channel</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\RC_Channel\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Motors</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Motors\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_RangeFinder</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_RangeFinder\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_OpticalFlow</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_OpticalFlow\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\Filter</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\Filter\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Buffer</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Buffer\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Relay</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Relay\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_ServoRelayEvents</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_ServoRelayEvents\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Camera</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Camera\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Mount</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Mount\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Airspeed</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Airspeed\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Vehicle</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Vehicle\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_InertialNav</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_InertialNav\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AC_WPNav</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AC_WPNav\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Declination</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Declination\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AC_Fence</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AC_Fence\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\SITL</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\SITL\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Scheduler</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Scheduler\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_RCMapper</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_RCMapper\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Notify</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Notify\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_BattMonitor</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_BattMonitor\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_BoardConfig</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_BoardConfig\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AC_Sprayer</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AC_Sprayer\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_EPM</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_EPM\utility</Value>
+            <Value>C:\ArduPilot-Arduino-1.0.3-windows\libraries</Value>
+            <Value>C:\ArduPilot-Arduino-1.0.3-windows\hardware\apm\libraries</Value>
+            <Value>C:\Program Files\Visual Micro\Visual Micro for Arduino\Micro Platforms\default\debuggers</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries</Value>
+            <Value>c:\ardupilot-arduino-1.0.3-windows\hardware\tools\avr\avr\include\</Value>
+            <Value>c:\ardupilot-arduino-1.0.3-windows\hardware\tools\avr\avr\include\avr\</Value>
+            <Value>c:\ardupilot-arduino-1.0.3-windows\hardware\tools\avr\avr\</Value>
+            <Value>c:\ardupilot-arduino-1.0.3-windows\hardware\tools\avr\lib\gcc\avr\4.3.2\include\</Value>
+          </ListValues>
+        </avrgcc.compiler.directories.IncludePaths>
+        <avrgcc.compiler.optimization.level>Optimize (-O1)</avrgcc.compiler.optimization.level>
+        <avrgcc.compiler.optimization.PackStructureMembers>True</avrgcc.compiler.optimization.PackStructureMembers>
+        <avrgcc.compiler.optimization.AllocateBytesNeededForEnum>True</avrgcc.compiler.optimization.AllocateBytesNeededForEnum>
+        <avrgcc.compiler.optimization.DebugLevel>Default (-g2)</avrgcc.compiler.optimization.DebugLevel>
+        <avrgcc.compiler.warnings.AllWarnings>True</avrgcc.compiler.warnings.AllWarnings>
+        <avrgcc.compiler.miscellaneous.OtherFlags>-std=gnu99 -include=arduino.h</avrgcc.compiler.miscellaneous.OtherFlags>
+        <avrgcccpp.compiler.general.ChangeDefaultCharTypeUnsigned>True</avrgcccpp.compiler.general.ChangeDefaultCharTypeUnsigned>
+        <avrgcccpp.compiler.general.ChangeDefaultBitFieldUnsigned>True</avrgcccpp.compiler.general.ChangeDefaultBitFieldUnsigned>
+        <avrgcccpp.compiler.symbols.DefSymbols>
+          <ListValues>
+            <Value>__AVR_ATmega2560__</Value>
+            <Value>ARDUINO=101</Value>
+            <Value>ARDUINO_MAIN</Value>
+            <Value>F_CPU=16000000L</Value>
+            <Value>__AVR__</Value>
+            <Value>CONFIG_HAL_BOARD=HAL_BOARD_MPNG</Value>
+            <Value>EXCLUDECORE</Value>
+            <Value>__cplusplus</Value>
+          </ListValues>
+        </avrgcccpp.compiler.symbols.DefSymbols>
+        <avrgcccpp.compiler.directories.IncludePaths>
+          <ListValues>
+            <Value>
+            </Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Common</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Common\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Progmem</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Progmem\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Menu</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Menu\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Param</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Param\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_AVR</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_AVR\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_MPNG</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_MPNG\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_AVR_SITL</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_AVR_SITL\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_PX4</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_PX4\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_FLYMAPLE</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_FLYMAPLE\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_Linux</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_Linux\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_Empty</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_HAL_Empty\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\GCS_MAVLink</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\GCS_MAVLink\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_GPS</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_GPS\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\DataFlash</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\DataFlash\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_ADC</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_ADC\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_ADC_AnalogSource</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_ADC_AnalogSource\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Baro</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Baro\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Compass</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Compass\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Math</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Math\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Curve</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Curve\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_InertialSensor</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_InertialSensor\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_AHRS</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_AHRS\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\APM_PI</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\APM_PI\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AC_PID</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AC_PID\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\RC_Channel</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\RC_Channel\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Motors</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Motors\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_RangeFinder</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_RangeFinder\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_OpticalFlow</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_OpticalFlow\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\Filter</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\Filter\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Buffer</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Buffer\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Relay</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Relay\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_ServoRelayEvents</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_ServoRelayEvents\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Camera</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Camera\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Mount</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Mount\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Airspeed</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Airspeed\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Vehicle</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Vehicle\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_InertialNav</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_InertialNav\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AC_WPNav</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AC_WPNav\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Declination</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Declination\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AC_Fence</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AC_Fence\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\SITL</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\SITL\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Scheduler</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Scheduler\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_RCMapper</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_RCMapper\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Notify</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_Notify\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_BattMonitor</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_BattMonitor\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_BoardConfig</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_BoardConfig\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AC_Sprayer</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AC_Sprayer\utility</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_EPM</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries\AP_EPM\utility</Value>
+            <Value>C:\ArduPilot-Arduino-1.0.3-windows\libraries</Value>
+            <Value>C:\ArduPilot-Arduino-1.0.3-windows\hardware\apm\libraries</Value>
+            <Value>C:\Program Files\Visual Micro\Visual Micro for Arduino\Micro Platforms\default\debuggers</Value>
+            <Value>C:\sketches\ardupilot-ArduCopter-3.1.5\libraries</Value>
+            <Value>c:\ardupilot-arduino-1.0.3-windows\hardware\tools\avr\avr\include\</Value>
+            <Value>c:\ardupilot-arduino-1.0.3-windows\hardware\tools\avr\avr\include\avr\</Value>
+            <Value>c:\ardupilot-arduino-1.0.3-windows\hardware\tools\avr\avr\</Value>
+            <Value>c:\ardupilot-arduino-1.0.3-windows\hardware\tools\avr\lib\gcc\avr\4.3.2\include\</Value>
+            <Value>
+            </Value>
+          </ListValues>
+        </avrgcccpp.compiler.directories.IncludePaths>
+        <avrgcccpp.compiler.optimization.level>Optimize (-O1)</avrgcccpp.compiler.optimization.level>
+        <avrgcccpp.compiler.optimization.PackStructureMembers>True</avrgcccpp.compiler.optimization.PackStructureMembers>
+        <avrgcccpp.compiler.optimization.AllocateBytesNeededForEnum>True</avrgcccpp.compiler.optimization.AllocateBytesNeededForEnum>
+        <avrgcccpp.compiler.optimization.DebugLevel>Default (-g2)</avrgcccpp.compiler.optimization.DebugLevel>
+        <avrgcccpp.compiler.warnings.AllWarnings>True</avrgcccpp.compiler.warnings.AllWarnings>
+        <avrgcccpp.compiler.miscellaneous.OtherFlags>-include=arduino.h</avrgcccpp.compiler.miscellaneous.OtherFlags>
+        <avrgcccpp.assembler.debugging.DebugLevel>Default (-Wa,-g)</avrgcccpp.assembler.debugging.DebugLevel>
+        <avrgcc.compiler.symbols.DefSymbols>
+          <ListValues>
+            <Value>__AVR_ATmega2560__</Value>
+            <Value>ARDUINO=101</Value>
+            <Value>ARDUINO_MAIN</Value>
+            <Value>F_CPU=16000000L</Value>
+            <Value>__AVR__</Value>
+            <Value>CONFIG_HAL_BOARD=HAL_BOARD_MPNG</Value>
+            <Value>EXCLUDECORE</Value>
+            <Value>__cplusplus</Value>
+          </ListValues>
+        </avrgcc.compiler.symbols.DefSymbols>
+      </AvrGccCpp>
+    </ToolchainSettings>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AP_State.ino">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="compat.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="config.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="config_channels.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="defines.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="Parameters.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="UserVariables.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="ArduCopter.ino">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="Attitude.ino">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="GCS_Mavlink.ino">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="Log.ino">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="Parameters.ino">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="UserCode.ino">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="auto_tune.ino">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="commands.ino">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="commands_logic.ino">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="commands_process.ino">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="compat.ino">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="control_modes.ino">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="crash_check.ino">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="drift.ino">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="events.ino">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="failsafe.ino">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="fence.ino">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="flip.ino">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="heli.ino">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="inertia.ino">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="leds.ino">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="motors.ino">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="navigation.ino">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="perf_info.ino">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="position_vector.ino">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="radio.ino">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="sensors.ino">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="setup.ino">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="system.ino">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="test.ino">
+      <SubType>compile</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Visual Micro\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="APM_Config.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="APM_Config_mavlink_hil.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="Visual Micro\.ArduCopter.vsarduino.h">
+      <SubType>compile</SubType>
+    </Compile>
+  </ItemGroup>
+  <Import Project="$(AVRSTUDIO_EXE_PATH)\\Vs\\Compiler.targets" />
+</Project>

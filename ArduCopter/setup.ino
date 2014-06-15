@@ -80,8 +80,14 @@ setup_compass(uint8_t argc, const Menu::arg *argv)
 {
     if (!strcmp_P(argv[1].str, PSTR("on"))) {
         g.compass_enabled.set_and_save(true);
+  	#if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000_I2C && HIL_MODE == HIL_MODE_DISABLED
+          ins.hardware_init_i2c_bypass();
+    	#endif
+    
+        hal.scheduler->suspend_timer_procs();
         init_compass();
-
+        hal.scheduler->resume_timer_procs();
+        
     } else if (!strcmp_P(argv[1].str, PSTR("off"))) {
         Vector3f mag_offsets(0,0,0);
         compass.set_offsets(mag_offsets);
@@ -137,7 +143,14 @@ setup_compassmot(uint8_t argc, const Menu::arg *argv)
     }
 
     // initialise compass
-    init_compass();
+
+  	#if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000_I2C && HIL_MODE == HIL_MODE_DISABLED
+          ins.hardware_init_i2c_bypass();
+    	#endif
+    
+	hal.scheduler->suspend_timer_procs();
+        init_compass();
+	hal.scheduler->resume_timer_procs();
 
     // disable motor compensation
     compass.motor_compensation_type(AP_COMPASS_MOT_COMP_DISABLED);

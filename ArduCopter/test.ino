@@ -94,17 +94,25 @@ test_compass(uint8_t argc, const Menu::arg *argv)
     uint8_t delta_ms_fast_loop;
     uint8_t medium_loopCounter = 0;
 
+	#if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000_I2C && HIL_MODE == HIL_MODE_DISABLED
+    ins.hardware_init_i2c_bypass();
+    #endif
+        
+
+        
     if (!g.compass_enabled) {
         cliSerial->printf_P(PSTR("Compass: "));
         print_enabled(false);
         return (0);
     }
-
+    hal.scheduler->suspend_timer_procs();
     if (!compass.init()) {
         cliSerial->println_P(PSTR("Compass initialisation failed!"));
+        hal.scheduler->resume_timer_procs();
         return 0;
     }
-
+    hal.scheduler->resume_timer_procs();
+    
     ahrs.init();
     ahrs.set_fly_forward(true);
     ahrs.set_compass(&compass);

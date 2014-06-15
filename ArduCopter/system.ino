@@ -100,15 +100,16 @@ static void init_ardupilot()
 #if GPS_PROTOCOL != GPS_PROTOCOL_IMU
     // standard gps running. Note that we need a 256 byte buffer for some
     // GPS types (eg. UBLOX)
-    hal.uartB->begin(38400, 256, 16);
+    hal.uartB->begin(SERIAL2_BAUD, 256, 16);
 #endif
 
     cliSerial->printf_P(PSTR("\n\nInit " FIRMWARE_STRING
                          "\n\nFree RAM: %u\n"),
                         hal.util->available_memory());
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-    /*
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2 
+    //|| CONFIG_HAL_BOARD == HAL_BOARD_MPNG   //? 
+     /*
       run the timer a bit slower on APM2 to reduce the interrupt load
       on the CPU
      */
@@ -149,14 +150,21 @@ static void init_ardupilot()
  #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
     sonar_analog_source = new AP_ADC_AnalogSource(
             &adc, CONFIG_SONAR_SOURCE_ADC_CHANNEL, 0.25);
+    sonar = new AP_RangeFinder_MaxsonarXL(sonar_analog_source,
+            &sonar_mode_filter);
  #elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
     sonar_analog_source = hal.analogin->channel(
             CONFIG_SONAR_SOURCE_ANALOG_PIN);
- #else
-  #warning "Invalid CONFIG_SONAR_SOURCE"
- #endif
     sonar = new AP_RangeFinder_MaxsonarXL(sonar_analog_source,
             &sonar_mode_filter);
+ #elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_SERIAL
+    hal.uartC->begin(SERIAL3_BAUD, 128, 128);  
+    sonar_serial_port = hal.uartC;
+     sonar = new AP_RangeFinder_MaxsonarSerialXL(sonar_serial_port, &sonar_mode_filter); 
+#else
+  #warning "Invalid CONFIG_SONAR_SOURCE"
+ #endif
+
 #endif
 
     rssi_analog_source      = hal.analogin->channel(g.rssi_pin);
@@ -179,7 +187,7 @@ static void init_ardupilot()
     ap.usb_connected = true;
     check_usb_mux();
 
-#if CONFIG_HAL_BOARD != HAL_BOARD_APM2
+#if CONFIG_HAL_BOARD != HAL_BOARD_APM2 && CONFIG_SONAR_SOURCE != SONAR_SOURCE_SERIAL
     // we have a 2nd serial port for telemetry on all boards except
     // APM2. We actually do have one on APM2 but it isn't necessary as
     // a MUX is used
@@ -230,8 +238,12 @@ static void init_ardupilot()
     // GPS Initialization
     g_gps->init(hal.uartB, GPS::GPS_ENGINE_AIRBORNE_1G);
 
-    if(g.compass_enabled)
+    if(g.compass_enabled) {
+        #if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000_I2C && HIL_MODE == HIL_MODE_DISABLED
+          ins.hardware_init_i2c_bypass();
+    	#endif
         init_compass();
+    }
 
     // init the optical flow sensor
     if(g.optflow_enabled) {
@@ -248,9 +260,11 @@ static void init_ardupilot()
 #if CLI_ENABLED == ENABLED
     const prog_char_t *msg = PSTR("\nPress ENTER 3 times to start interactive setup\n");
     cliSerial->println_P(msg);
+#if CONFIG_SONAR == DISABLED || CONFIG_SONAR_SOURCE != SONAR_SOURCE_SERIAL
     if (gcs[1].initialised) {
         hal.uartC->println_P(msg);
     }
+#endif
     if (num_gcs > 2 && gcs[2].initialised) {
         hal.uartD->println_P(msg);
     }
@@ -578,15 +592,15 @@ static void check_usb_mux(void)
     // the user has switched to/from the telemetry port
     ap.usb_connected = usb_check;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_MPNG
     // the APM2 has a MUX setup where the first serial port switches
     // between USB and a TTL serial connection. When on USB we use
     // SERIAL0_BAUD, but when connected as a TTL serial port we run it
-    // at SERIAL1_BAUD.
+    // at SERIAL3_BAUD.
     if (ap.usb_connected) {
         hal.uartA->begin(SERIAL0_BAUD);
     } else {
-        hal.uartA->begin(map_baudrate(g.serial1_baud, SERIAL1_BAUD));
+        hal.uartA->begin(SERIAL1_BAUD);
     }
 #endif
 }
