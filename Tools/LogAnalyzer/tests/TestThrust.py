@@ -2,11 +2,11 @@ from LogAnalyzer import Test,TestResult
 import DataflashLog
 
 
-class TestUnderpowered(Test):
-	'''test for underpowered copter'''
+class TestThrust(Test):
+	'''test for sufficient thrust (copter only for now)'''
 
 	def __init__(self):
-		self.name = "Underpowered"
+		self.name = "Thrust"
 		
 	def run(self, logdata, verbose):
 		self.result = TestResult()
