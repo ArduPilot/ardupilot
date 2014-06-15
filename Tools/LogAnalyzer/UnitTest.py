@@ -14,8 +14,8 @@ try:
 
 	# test DataflashLog reading 1
 	logdata = DataflashLog.DataflashLog()
-	logdata.read("logs/robert_lefebvre_octo_PM.log", ignoreBadlines=False)
-	assert(logdata.filename        == "logs/robert_lefebvre_octo_PM.log")
+	logdata.read("examples/robert_lefebvre_octo_PM.log", ignoreBadlines=False)
+	assert(logdata.filename        == "examples/robert_lefebvre_octo_PM.log")
 	assert(logdata.vehicleType     == "ArduCopter")
 	assert(logdata.firmwareVersion == "V3.0.1")
 	assert(logdata.firmwareHash    == "5c6503e2")

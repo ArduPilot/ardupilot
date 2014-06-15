@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <loganalysis>
 <header>
-  <logfile>logs/robert_lefebvre_octo_PM.log</logfile>
+  <logfile>examples/robert_lefebvre_octo_PM.log</logfile>
   <sizekb>302.7548828125</sizekb>
   <sizelines>4750</sizelines>
   <duration>0:02:35</duration>
