@@ -6,9 +6,12 @@ http://www.megapirateng.com/ and http://dev.ardupilot.com/
 
 NOTE - This is a complete re-merge of the MPNG HAL code with ArduCopter 3.1.5. All features of ArduCopter 3.1.5 
 are available and the code plays nicely with the latest versions of Mission Planner. However, the AtMega 2560 processor is being 
-pushed to it's limits. You can easily push it beyond by enabling too much in APMConfig.h. Be Careful!!! This is especially true on the Crius All-in-One v 2.0 which has 
-dataflash logging and power issues.
-###You Have Been Warned.
+pushed to it's limits. You can easily push it beyond by enabling too much in APMConfig.h. Be Careful!!! This is especially true 
+on the Crius All-in-One v 2.0 which has dataflash logging (CPU hungry) and power issues. This is an experiment to see how far an 
+8-bit flight controller can be pushed without breaking. If that sounds like fun you are in the right place. If it sounds scary, 
+you are not. I am willing to sacrifice my flying ROBOTs to find a better algorithm. Not everyone is.
+
+###This is NOT production software NOR is it supported. You Have Been Warned.
 
 ## Getting the source
 
@@ -36,4 +39,6 @@ Now open the ArduCopter sketch in Arduino IDE and navigate to APMConfig.h. Edit 
 documented on the MegaPirate site, ArduCopter options are documented on the arducopter site. 
 ### Step 5: Build!!!
 
+## Contributing
+The end goal of this project is to improve the scheduler code to be able to more efficiently defer non-essential tasks on 8-bit without loop slow-downs. If you have fixes or code to contribute you may contact me at info@boffinry.org
 
