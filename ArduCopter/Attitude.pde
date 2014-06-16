@@ -208,8 +208,8 @@ static float get_throttle_surface_tracking(int16_t target_rate, float current_al
     // Note: the 750cm limit is perhaps too wide but is consistent with the regular althold limits and helps ensure a smooth transition
     target_sonar_alt = constrain_float(target_sonar_alt,sonar_alt-pos_control.get_leash_down_z(),sonar_alt+pos_control.get_leash_up_z());
 
-    // calc desired velocity correction from target sonar alt vs actual sonar alt
-    distance_error = target_sonar_alt-sonar_alt;
+    // calc desired velocity correction from target sonar alt vs actual sonar alt (remove the error already passed to Altitude controller to avoid oscillations)
+    distance_error = (target_sonar_alt - sonar_alt) - (current_alt_target - current_loc.alt);
     velocity_correction = distance_error * g.sonar_gain;
     velocity_correction = constrain_float(velocity_correction, -THR_SURFACE_TRACKING_VELZ_MAX, THR_SURFACE_TRACKING_VELZ_MAX);
 

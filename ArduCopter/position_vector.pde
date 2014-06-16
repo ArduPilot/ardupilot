@@ -10,14 +10,15 @@
 // pv_latlon_to_vector - convert lat/lon coordinates to a position vector
 Vector3f pv_location_to_vector(const Location& loc)
 {
-    Vector3f tmp((loc.lat-home.lat) * LATLON_TO_CM, (loc.lng-home.lng) * LATLON_TO_CM * scaleLongDown, loc.alt);
+    const struct Location &temp_home = ahrs.get_home();
+    Vector3f tmp((loc.lat-temp_home.lat) * LATLON_TO_CM, (loc.lng-temp_home.lng) * LATLON_TO_CM * scaleLongDown, loc.alt);
     return tmp;
 }
 
 // pv_get_bearing_cd - return bearing in centi-degrees between two positions
 float pv_get_bearing_cd(const Vector3f &origin, const Vector3f &destination)
 {
-    float bearing = 9000 + atan2f(-(destination.x-origin.x), destination.y-origin.y) * DEGX100;
+    float bearing = 9000 + fast_atan2(-(destination.x-origin.x), destination.y-origin.y) * DEGX100;
     if (bearing < 0) {
         bearing += 36000;
     }

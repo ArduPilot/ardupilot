@@ -245,7 +245,7 @@ static void NOINLINE send_location(mavlink_channel_t chan)
         current_loc.lat,                // in 1E7 degrees
         current_loc.lng,                // in 1E7 degrees
         gps.location().alt * 10UL,      // millimeters above sea level
-        (current_loc.alt - home.alt) * 10,           // millimeters above ground
+        current_loc.alt * 10,           // millimeters above ground
         vel.x * 100,  // X speed cm/s (+ve North)
         vel.y * 100,  // Y speed cm/s (+ve East)
         vel.x * -100, // Z speed cm/s (+ve up)
@@ -296,55 +296,6 @@ static void NOINLINE send_hwstatus(mavlink_channel_t chan)
         chan,
         hal.analogin->board_voltage()*1000,
         hal.i2c->lockup_count());
-}
-
-static void NOINLINE send_gps_raw(mavlink_channel_t chan)
-{
-    const Location &loc = gps.location(0);
-    mavlink_msg_gps_raw_int_send(
-        chan,
-        gps.last_fix_time_ms(0)*(uint64_t)1000,
-        gps.status(0),
-        loc.lat,        // in 1E7 degrees
-        loc.lng,        // in 1E7 degrees
-        loc.alt * 10UL, // in mm
-        gps.get_hdop(0),
-        65535,
-        gps.ground_speed(0)*100,  // cm/s
-        gps.ground_course_cd(0), // 1/100 degrees,
-        gps.num_sats(0));
-
-#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
-    if (gps.num_sensors() > 1 && 
-        gps.status(1) > AP_GPS::NO_GPS) {
-        int16_t payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
-        if (payload_space >= MAVLINK_MSG_ID_GPS2_RAW_LEN) {
-            const Location &loc2 = gps.location(1);
-            mavlink_msg_gps2_raw_send(
-                chan,
-                gps.last_fix_time_ms(1)*(uint64_t)1000,
-                gps.status(1),
-                loc2.lat,
-                loc2.lng,
-                loc2.alt * 10UL,
-                gps.get_hdop(1),
-                65535,
-                gps.ground_speed(1)*100,  // cm/s
-                gps.ground_course_cd(1), // 1/100 degrees,
-                gps.num_sats(1),
-                0,
-                0);
-        }
-    }
-#endif
-}
-
-static void NOINLINE send_system_time(mavlink_channel_t chan)
-{
-    mavlink_msg_system_time_send(
-        chan,
-        gps.time_epoch_usec(),
-        hal.scheduler->millis());
 }
 
 #if HIL_MODE != HIL_MODE_DISABLED
@@ -419,49 +370,6 @@ static void NOINLINE send_servo_out(mavlink_channel_t chan)
 #endif
 }
 #endif // HIL_MODE
-
-static void NOINLINE send_radio_in(mavlink_channel_t chan)
-{
-    mavlink_msg_rc_channels_raw_send(
-        chan,
-        millis(),
-        0, // port
-        g.rc_1.radio_in,
-        g.rc_2.radio_in,
-        g.rc_3.radio_in,
-        g.rc_4.radio_in,
-        g.rc_5.radio_in,
-        g.rc_6.radio_in,
-        g.rc_7.radio_in,
-        g.rc_8.radio_in,
-        receiver_rssi);
-    if (hal.rcin->num_channels() > 8 && 
-        comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES >= MAVLINK_MSG_ID_RC_CHANNELS_LEN) {
-        mavlink_msg_rc_channels_send(
-            chan,
-            millis(),
-            hal.rcin->num_channels(),
-            hal.rcin->read(CH_1),
-            hal.rcin->read(CH_2),
-            hal.rcin->read(CH_3),
-            hal.rcin->read(CH_4),
-            hal.rcin->read(CH_5),
-            hal.rcin->read(CH_6),
-            hal.rcin->read(CH_7),
-            hal.rcin->read(CH_8),
-            hal.rcin->read(CH_9),
-            hal.rcin->read(CH_10),
-            hal.rcin->read(CH_11),
-            hal.rcin->read(CH_12),
-            hal.rcin->read(CH_13),
-            hal.rcin->read(CH_14),
-            hal.rcin->read(CH_15),
-            hal.rcin->read(CH_16),
-            hal.rcin->read(CH_17),
-            hal.rcin->read(CH_18),
-            receiver_rssi);        
-    }
-}
 
 static void NOINLINE send_radio_out(mavlink_channel_t chan)
 {
@@ -667,12 +575,12 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_GPS_RAW:
         CHECK_PAYLOAD_SIZE(GPS_RAW_INT);
-        send_gps_raw(chan);
+        gcs[chan-MAVLINK_COMM_0].send_gps_raw(gps);
         break;
 
     case MSG_SYSTEM_TIME:
         CHECK_PAYLOAD_SIZE(SYSTEM_TIME);
-        send_system_time(chan);
+        gcs[chan-MAVLINK_COMM_0].send_system_time(gps);
         break;
 
     case MSG_SERVO_OUT:
@@ -684,7 +592,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_RADIO_IN:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
-        send_radio_in(chan);
+        gcs[chan-MAVLINK_COMM_0].send_radio_in(receiver_rssi);
         break;
 
     case MSG_RADIO_OUT:
@@ -999,7 +907,7 @@ void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
 {
     // add home alt if needed
     if (cmd.content.location.options & LOCATION_MASK_OPTIONS_RELATIVE_ALT) {
-        cmd.content.location.alt += home.alt;
+        cmd.content.location.alt += ahrs.get_home().alt;
     }
 
     // To-Do: update target altitude for loiter or waypoint controller depending upon nav mode
@@ -1187,6 +1095,19 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         case MAV_CMD_NAV_LAND:
             if (set_mode(LAND)) {
                 result = MAV_RESULT_ACCEPTED;
+            }
+            break;
+
+        case MAV_CMD_DO_CHANGE_SPEED:
+            // param1 : unused
+            // param2 : new speed in m/s
+            // param3 : unused
+            // param4 : unused
+            if (packet.param2 > 0.0f) {
+                wp_nav.set_speed_xy(packet.param2 * 100.0f);
+                result = MAV_RESULT_ACCEPTED;
+            } else {
+                result = MAV_RESULT_FAILED;
             }
             break;
 

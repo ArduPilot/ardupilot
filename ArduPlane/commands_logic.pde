@@ -114,6 +114,13 @@ start_command(const AP_Mission::Mission_Command& cmd)
                                          cmd.content.repeat_relay.cycle_time * 1000.0f);
         break;
 
+    case MAV_CMD_DO_INVERTED_FLIGHT:
+        if (cmd.p1 == 0 || cmd.p1 == 1) {
+            auto_state.inverted_flight = (bool)cmd.p1;
+            gcs_send_text_fmt(PSTR("Set inverted %u"), cmd.p1);
+        }
+        break;
+
 #if CAMERA == ENABLED
     case MAV_CMD_DO_CONTROL_VIDEO:                      // Control on-board camera capturing. |Camera ID (-1 for all)| Transmission: 0: disabled, 1: enabled compressed, 2: enabled raw| Transmission mode: 0: video stream, >0: single images every n seconds (decimal)| Recording: 0: disabled, 1: enabled compressed, 2: enabled raw| Empty| Empty| Empty|
         break;
@@ -219,6 +226,7 @@ static bool verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_NAV_ROI:
     case MAV_CMD_DO_MOUNT_CONFIGURE:
     case MAV_CMD_DO_MOUNT_CONTROL:
+    case MAV_CMD_DO_INVERTED_FLIGHT:
         return true;
 
     default:
@@ -413,7 +421,7 @@ static bool verify_nav_wp()
         return false;
     }
     
-    if (wp_distance <= nav_controller->turn_distance(g.waypoint_radius)) {
+    if (wp_distance <= nav_controller->turn_distance(g.waypoint_radius, auto_state.next_turn_angle)) {
         gcs_send_text_fmt(PSTR("Reached Waypoint #%i dist %um"),
                           (unsigned)mission.get_current_nav_cmd().index,
                           (unsigned)get_distance(current_loc, next_WP_loc));

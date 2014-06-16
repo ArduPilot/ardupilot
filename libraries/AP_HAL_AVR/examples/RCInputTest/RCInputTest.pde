@@ -61,7 +61,7 @@ void loop (void) {
 
 void setup (void) {
     hal.console->printf_P(PSTR("reading rc in:"));
-    hal.gpio->pinMode(27, GPIO_OUTPUT);
+    hal.gpio->pinMode(27, HAL_GPIO_OUTPUT);
     hal.gpio->write(27, 0);
 }
 

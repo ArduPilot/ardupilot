@@ -101,54 +101,6 @@ static void NOINLINE send_location(mavlink_channel_t chan)
         ahrs.yaw_sensor);
 }
 
-static void NOINLINE send_gps_raw(mavlink_channel_t chan)
-{
-    static uint32_t last_send_time_ms;
-    if (last_send_time_ms == 0 || last_send_time_ms != gps.last_message_time_ms(0)) {
-        last_send_time_ms = gps.last_message_time_ms(0);
-        const Location &loc = gps.location(0);
-        mavlink_msg_gps_raw_int_send(
-            chan,
-            gps.last_fix_time_ms(0)*(uint64_t)1000,
-            gps.status(0),
-            loc.lat,        // in 1E7 degrees
-            loc.lng,        // in 1E7 degrees
-            loc.alt * 10UL, // in mm
-            gps.get_hdop(0),
-            65535,
-            gps.ground_speed(0)*100,  // cm/s
-            gps.ground_course_cd(0), // 1/100 degrees,
-            gps.num_sats(0));
-    }
-
-#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
-    static uint32_t last_send_time_ms2;
-    if (gps.num_sensors() > 1 && 
-        gps.status(1) > AP_GPS::NO_GPS &&
-        (last_send_time_ms2 == 0 || last_send_time_ms2 != gps.last_message_time_ms(1))) {
-        int16_t payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
-        if (payload_space >= MAVLINK_MSG_ID_GPS2_RAW_LEN) {
-            const Location &loc = gps.location(1);
-            last_send_time_ms = gps.last_message_time_ms(1);
-            mavlink_msg_gps2_raw_send(
-                chan,
-                gps.last_fix_time_ms(1)*(uint64_t)1000,
-                gps.status(1),
-                loc.lat,
-                loc.lng,
-                loc.alt * 10UL,
-                gps.get_hdop(1),
-                65535,
-                gps.ground_speed(1)*100,  // cm/s
-                gps.ground_course_cd(1), // 1/100 degrees,
-                gps.num_sats(1),
-                0,
-                0);
-        }
-    }
-#endif
-}
-
 static void NOINLINE send_radio_out(mavlink_channel_t chan)
 {
     mavlink_msg_servo_output_raw_send(
@@ -334,7 +286,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_GPS_RAW:
         CHECK_PAYLOAD_SIZE(GPS_RAW_INT);
-        send_gps_raw(chan);
+        gcs[chan-MAVLINK_COMM_0].send_gps_raw(gps);
         break;
 
     case MSG_RADIO_OUT:
@@ -576,14 +528,73 @@ GCS_MAVLINK::data_stream_send(void)
     }
 }
 
-
-
 void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 {
+    if (g.proxy_mode == true)
+    {
+        if (chan == proxy_vehicle.chan)
+        {
+            // From the remote vehicle.
+            // All messages from the remote are proxied to GCS
+            // We also eavesdrop on MAVLINK_MSG_ID_GLOBAL_POSITION_INT and MAVLINK_MSG_ID_SCALED_PRESSUREs
+
+            switch (msg->msgid)
+            {
+                case MAVLINK_MSG_ID_GLOBAL_POSITION_INT: 
+                {
+                    // decode
+                    mavlink_global_position_int_t packet;
+                    mavlink_msg_global_position_int_decode(msg, &packet);
+                    tracking_update_position(packet);
+                    break;
+                }
+                
+                case MAVLINK_MSG_ID_SCALED_PRESSURE: 
+                {
+                    // decode
+                    mavlink_scaled_pressure_t packet;
+                    mavlink_msg_scaled_pressure_decode(msg, &packet);
+                    tracking_update_pressure(packet);
+                    break;
+                }
+            }
+            // Proxy to all the GCS stations
+            for (uint8_t i=0; i<num_gcs; i++) {
+                if (gcs[i].initialised) {
+                    mavlink_channel_t out_chan = (mavlink_channel_t)i;
+                    // only forward if it would fit in the transmit buffer
+                    if (comm_get_txspace(out_chan) > ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
+                        _mavlink_resend_uart(out_chan, msg);
+                    }
+                }
+            }
+        }
+        // Else its from the GCS, and it might be for the remote and.or it might be for the tracker
+        // So we fall through to the below
+    }
+
+
     switch (msg->msgid) {
 
+    // If we are currently operating as a proxy for a remote, 
+    // alas we have to look inside each packet to see if its for us or for the remote
     case MAVLINK_MSG_ID_REQUEST_DATA_STREAM:
     {
+        if (g.proxy_mode == true && proxy_vehicle.initialised)
+        {
+            // See if its for the remote
+            mavlink_request_data_stream_t packet;
+            mavlink_msg_request_data_stream_decode(msg, &packet);
+            
+            if (mavlink_check_target(packet.target_system, packet.target_component))
+            {
+                // Not for us, must be for the remote
+                if (comm_get_txspace(proxy_vehicle.chan) > ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) 
+                    _mavlink_resend_uart(proxy_vehicle.chan, msg);
+                break;
+            }
+            // Else its for us, the tracker
+        }
         handle_request_data_stream(msg, true);
         break;
     }
@@ -591,24 +602,75 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
     {
+        if (g.proxy_mode == true && proxy_vehicle.initialised)
+        {
+            // See if its for the remote
+            mavlink_param_request_list_t packet;
+            mavlink_msg_param_request_list_decode(msg, &packet);
+            
+            if (mavlink_check_target(packet.target_system, packet.target_component))
+            {
+                // Not for us, must be for the remote
+                if (comm_get_txspace(proxy_vehicle.chan) > ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) 
+                    _mavlink_resend_uart(proxy_vehicle.chan, msg);
+                break;
+            }
+            // Else its for us, the tracker
+        }
         handle_param_request_list(msg);
         break;
     }
 
     case MAVLINK_MSG_ID_PARAM_REQUEST_READ:
     {
+        if (g.proxy_mode == true && proxy_vehicle.initialised)
+        {
+            // See if its for the remote
+            mavlink_param_request_read_t packet;
+            mavlink_msg_param_request_read_decode(msg, &packet);
+            
+            if (mavlink_check_target(packet.target_system, packet.target_component))
+            {
+                // Not for us, must be for the remote
+                if (comm_get_txspace(proxy_vehicle.chan) > ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) 
+                    _mavlink_resend_uart(proxy_vehicle.chan, msg);
+                break;
+            }
+            // Else its for us, the tracker
+        }
         handle_param_request_read(msg);
         break;
     }
 
     case MAVLINK_MSG_ID_PARAM_SET:
     {
+        if (g.proxy_mode == true && proxy_vehicle.initialised)
+        {
+            // See if its for the remote
+            mavlink_param_set_t packet;
+            mavlink_msg_param_set_decode(msg, &packet);
+            
+            if (mavlink_check_target(packet.target_system, packet.target_component))
+            {
+                // Not for us, must be for the remote
+                if (comm_get_txspace(proxy_vehicle.chan) > ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) 
+                    _mavlink_resend_uart(proxy_vehicle.chan, msg);
+                break;
+            }
+            // Else its for us, the tracker
+        }
         handle_param_set(msg, NULL);
         break;
     }
 
     case MAVLINK_MSG_ID_HEARTBEAT:
     {
+        // Heartbeats are always proxied to the remote and also handled locally
+        if (g.proxy_mode == true && proxy_vehicle.initialised)
+        {
+            if (comm_get_txspace(proxy_vehicle.chan) > ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) 
+                _mavlink_resend_uart(proxy_vehicle.chan, msg);
+        }
         if (msg->sysid != g.sysid_my_gcs) break;
         break;
     }
@@ -618,7 +680,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         // decode
         mavlink_command_long_t packet;
         mavlink_msg_command_long_decode(msg, &packet);
-        if (mavlink_check_target(packet.target_system, packet.target_component)) break;
+        if (mavlink_check_target(packet.target_system, packet.target_component)) {
+            // Its for the remote, proxy it
+            if (g.proxy_mode == true && proxy_vehicle.initialised) {
+                if (comm_get_txspace(proxy_vehicle.chan) > ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) 
+                    _mavlink_resend_uart(proxy_vehicle.chan, msg);
+            }
+            break;
+        }
         
         uint8_t result = MAV_RESULT_UNSUPPORTED;
         
@@ -722,8 +791,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         // decode
         mavlink_mission_write_partial_list_t packet;
         mavlink_msg_mission_write_partial_list_decode(msg, &packet);
-        if (mavlink_check_target(packet.target_system,packet.target_component)) break;
-
+        if (mavlink_check_target(packet.target_system,packet.target_component)) {
+            if (g.proxy_mode == true && proxy_vehicle.initialised) {
+                // Its for the remote, proxy it
+                if (comm_get_txspace(proxy_vehicle.chan) > ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) 
+                    _mavlink_resend_uart(proxy_vehicle.chan, msg);
+            }
+            break;
+        }
         if (packet.start_index == 0)
         {
             // New home at wp index 0. Ask for it
@@ -744,7 +819,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         uint8_t result = MAV_MISSION_ACCEPTED;
 
         mavlink_msg_mission_item_decode(msg, &packet);
-        if (mavlink_check_target(packet.target_system,packet.target_component)) break;
+        if (mavlink_check_target(packet.target_system,packet.target_component)) {
+            if (g.proxy_mode == true && proxy_vehicle.initialised) {
+                // Its for the remote, proxy it
+                if (comm_get_txspace(proxy_vehicle.chan) > ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) 
+                    _mavlink_resend_uart(proxy_vehicle.chan, msg);
+            }
+            break;
+        }
 
         struct Location tell_command = {};
 
@@ -825,9 +907,15 @@ mission_failed:
 
     case MAVLINK_MSG_ID_MANUAL_CONTROL:
     {
-        if(msg->sysid != g.sysid_my_gcs) break;                         // Only accept control from our gcs
         mavlink_manual_control_t packet;
         mavlink_msg_manual_control_decode(msg, &packet);
+
+        if (g.proxy_mode == true && proxy_vehicle.initialised) {
+            // Also proxy it to the remote
+            if (comm_get_txspace(proxy_vehicle.chan) > ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) 
+                _mavlink_resend_uart(proxy_vehicle.chan, msg);
+        }
+        if(msg->sysid != g.sysid_my_gcs) break;                         // Only accept control from our gcs
         tracking_manual_control(packet);
         break;
     }
@@ -837,6 +925,11 @@ mission_failed:
         // decode
         mavlink_global_position_int_t packet;
         mavlink_msg_global_position_int_decode(msg, &packet);
+        if (g.proxy_mode == true && proxy_vehicle.initialised) {
+            // Also proxy it to the remote
+            if (comm_get_txspace(proxy_vehicle.chan) > ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) 
+                _mavlink_resend_uart(proxy_vehicle.chan, msg);
+        }
         tracking_update_position(packet);
         break;
     }
@@ -846,6 +939,11 @@ mission_failed:
         // decode
         mavlink_scaled_pressure_t packet;
         mavlink_msg_scaled_pressure_decode(msg, &packet);
+        if (g.proxy_mode == true && proxy_vehicle.initialised) {
+            // Also proxy it to the remote
+            if (comm_get_txspace(proxy_vehicle.chan) > ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) 
+                _mavlink_resend_uart(proxy_vehicle.chan, msg);
+        }
         tracking_update_pressure(packet);
         break;
     }
@@ -855,6 +953,11 @@ mission_failed:
         // decode
         mavlink_set_mode_t packet;
         mavlink_msg_set_mode_decode(msg, &packet);
+        if (g.proxy_mode == true && proxy_vehicle.initialised) {
+            // Also proxy it to the remote
+            if (comm_get_txspace(proxy_vehicle.chan) > ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) 
+                _mavlink_resend_uart(proxy_vehicle.chan, msg);
+        }
 
         if (!(packet.base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED)) {
             // we ignore base_mode as there is no sane way to map
@@ -881,6 +984,11 @@ mission_failed:
 #endif
 
     default:
+        // Proxy all other messages to the remote
+        if (g.proxy_mode && proxy_vehicle.initialised) {
+            if (comm_get_txspace(proxy_vehicle.chan) > ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) 
+                _mavlink_resend_uart(proxy_vehicle.chan, msg);
+        }
         break;
 
     } // end switch
@@ -952,6 +1060,10 @@ static void gcs_update(void)
         if (gcs[i].initialised) {
             gcs[i].update(NULL);
         }
+    }
+    // Also check for messages from the remote if we are in proxy mode
+    if (g.proxy_mode == true && proxy_vehicle.initialised) {
+        proxy_vehicle.update(NULL);
     }
 }
 

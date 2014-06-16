@@ -7,8 +7,7 @@
 // heli_acro_init - initialise acro controller
 static bool heli_acro_init(bool ignore_checks)
 {
-    // clear stabilized rate errors
-    attitude_control.init_targets();
+    // always successfully enter acro
     return true;
 }
 
@@ -22,7 +21,8 @@ static void heli_acro_run()
     // if not armed or main rotor not up to full speed clear stabilized rate errors
     // unlike multicopters we do not set throttle (i.e. collective pitch) to zero so the swash servos move
     if(!motors.armed() || !motors.motor_runup_complete()) {
-        attitude_control.init_targets();
+        attitude_control.relax_bf_rate_controller();
+        attitude_control.set_yaw_target_to_current_heading();
     }
 
     // To-Do: add support for flybarred helis

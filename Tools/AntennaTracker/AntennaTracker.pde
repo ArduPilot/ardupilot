@@ -194,6 +194,10 @@ static RC_Channel channel_pitch(CH_2);
 static const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
 static GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
 
+// If proxy_mode is enabled, uartC is connected to a remote vehicle,
+// not gcs[1]
+static GCS_MAVLINK proxy_vehicle;
+
 // board specific config
 static AP_BoardConfig BoardConfig;
 

@@ -25,7 +25,8 @@ static void stabilize_run()
 
     // if not armed or throttle at zero, set throttle to zero and exit immediately
     if(!motors.armed() || g.rc_3.control_in <= 0) {
-        attitude_control.init_targets();
+        attitude_control.relax_bf_rate_controller();
+        attitude_control.set_yaw_target_to_current_heading();
         attitude_control.set_throttle_out(0, false);
         return;
     }
@@ -45,7 +46,8 @@ static void stabilize_run()
 
     // reset target lean angles and heading while landed
     if (ap.land_complete) {
-        attitude_control.init_targets();
+        attitude_control.relax_bf_rate_controller();
+        attitude_control.set_yaw_target_to_current_heading();
     }else{
         // call attitude controller
         attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());

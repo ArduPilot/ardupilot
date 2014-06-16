@@ -80,7 +80,7 @@ void AP_Relay::init()
 void AP_Relay::on(uint8_t relay) 
 {    
     if (relay < AP_RELAY_NUM_RELAYS && _pin[relay] != -1) {
-        hal.gpio->pinMode(_pin[relay], GPIO_OUTPUT);
+        hal.gpio->pinMode(_pin[relay], HAL_GPIO_OUTPUT);
         hal.gpio->write(_pin[relay], 1);
     }
 }
@@ -89,7 +89,7 @@ void AP_Relay::on(uint8_t relay)
 void AP_Relay::off(uint8_t relay) 
 {
     if (relay < AP_RELAY_NUM_RELAYS && _pin[relay] != -1) {
-        hal.gpio->pinMode(_pin[relay], GPIO_OUTPUT);
+        hal.gpio->pinMode(_pin[relay], HAL_GPIO_OUTPUT);
         hal.gpio->write(_pin[relay], 0);
     }
 }

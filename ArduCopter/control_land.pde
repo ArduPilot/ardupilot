@@ -47,7 +47,8 @@ static void land_gps_run()
 
     // if not auto armed or landed set throttle to zero and exit immediately
     if(!ap.auto_armed || ap.land_complete) {
-        attitude_control.init_targets();
+        attitude_control.relax_bf_rate_controller();
+        attitude_control.set_yaw_target_to_current_heading();
         attitude_control.set_throttle_out(0, false);
         wp_nav.init_loiter_target();
 
@@ -102,7 +103,8 @@ static void land_nogps_run()
 
     // if not auto armed or landed set throttle to zero and exit immediately
     if(!ap.auto_armed || ap.land_complete) {
-        attitude_control.init_targets();
+        attitude_control.relax_bf_rate_controller();
+        attitude_control.set_yaw_target_to_current_heading();
         attitude_control.set_throttle_out(0, false);
 #if LAND_REQUIRE_MIN_THROTTLE_TO_DISARM == ENABLED
         // disarm when the landing detector says we've landed and throttle is at minimum
@@ -156,7 +158,7 @@ static float get_throttle_land()
 static bool update_land_detector()
 {
     // detect whether we have landed by watching for low climb rate and minimum throttle
-    if (abs(climb_rate) < 20 && motors.limit.throttle_lower) {
+    if (abs(climb_rate) < 40 && motors.limit.throttle_lower) {
         if (!ap.land_complete) {
             // run throttle controller if accel based throttle controller is enabled and active (active means it has been given a target)
             if( land_detector < LAND_DETECTOR_TRIGGER) {
@@ -166,7 +168,7 @@ static bool update_land_detector()
                 land_detector = 0;
             }
         }
-    }else{
+    } else if (g.rc_3.control_in != 0 || failsafe.radio) {
         // we've sensed movement up or down so reset land_detector
         land_detector = 0;
         if(ap.land_complete) {

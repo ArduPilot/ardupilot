@@ -115,6 +115,7 @@
 #include <AP_Mission.h>         // Mission command library
 #include <AP_Rally.h>           // Rally point library
 #include <AC_PID.h>             // PID library
+#include <AC_HELI_PID.h>        // Heli specific Rate PID library
 #include <AC_P.h>               // P library
 #include <AC_AttitudeControl.h> // Attitude control library
 #include <AC_AttitudeControl_Heli.h> // Attitude control library for traditional helicopter
@@ -555,6 +556,10 @@ static float acro_level_mix;                // scales back roll, pitch and yaw i
 static uint16_t loiter_time_max;                // How long we should stay in Loiter Mode for mission scripting (time in seconds)
 static uint32_t loiter_time;                    // How long have we been loitering - The start time in millis
 
+////////////////////////////////////////////////////////////////////////////////
+// Flip
+////////////////////////////////////////////////////////////////////////////////
+static Vector3f flip_orig_attitude;         // original copter attitude before flip
 
 ////////////////////////////////////////////////////////////////////////////////
 // Battery Sensors
@@ -578,8 +583,6 @@ static int32_t baro_alt;
 ////////////////////////////////////////////////////////////////////////////////
 // 3D Location vectors
 ////////////////////////////////////////////////////////////////////////////////
-static const struct  Location &home = ahrs.get_home();
-
 // Current location of the copter
 static struct   Location current_loc;
 

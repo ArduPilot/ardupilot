@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduPlane V3.0.4-beta"
+#define THISFIRMWARE "ArduPlane V3.0.4-beta2"
 /*
    Lead developer: Andrew Tridgell
  
@@ -533,13 +533,21 @@ static struct {
 
     // initial pitch. Used to detect if nose is rising in a tail dragger
     int16_t initial_pitch_cd;
+
+    // turn angle for next leg of mission
+    float next_turn_angle;
+
+    // should we fly inverted?
+    bool inverted_flight;
 } auto_state = {
     takeoff_complete : true,
     land_complete : false,
     takeoff_altitude_cm : 0,
     takeoff_pitch_cd : 0,
     highest_airspeed : 0,
-    initial_pitch_cd : 0
+    initial_pitch_cd : 0,
+    next_turn_angle  : 90.0f,
+    inverted_flight  : false
 };
 
 // true if we are in an auto-throttle mode, which means
@@ -1214,7 +1222,7 @@ static void update_flight_mode(void)
             training_manual_pitch = true;
             nav_pitch_cd = 0;
         }
-        if (inverted_flight) {
+        if (fly_inverted()) {
             nav_pitch_cd = -nav_pitch_cd;
         }
         break;
@@ -1247,13 +1255,14 @@ static void update_flight_mode(void)
             nav_pitch_cd = -(pitch_input * pitch_limit_min_cd);
         }
         nav_pitch_cd = constrain_int32(nav_pitch_cd, pitch_limit_min_cd, aparm.pitch_limit_max_cd.get());
-        if (inverted_flight) {
+        if (fly_inverted()) {
             nav_pitch_cd = -nav_pitch_cd;
         }
         if (failsafe.ch3_failsafe && g.short_fs_action == 2) {
             // FBWA failsafe glide
             nav_roll_cd = 0;
             nav_pitch_cd = 0;
+            channel_throttle->servo_out = 0;
         }
         break;
     }

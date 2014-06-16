@@ -97,7 +97,8 @@ static void auto_takeoff_run()
     // if not auto armed set throttle to zero and exit immediately
     if(!ap.auto_armed) {
         // reset attitude control targets
-        attitude_control.init_targets();
+        attitude_control.relax_bf_rate_controller();
+        attitude_control.set_yaw_target_to_current_heading();
         attitude_control.set_throttle_out(0, false);
         // tell motors to do a slow start
         motors.slow_start(true);
@@ -145,7 +146,8 @@ static void auto_wp_run()
     if(!ap.auto_armed) {
         // To-Do: reset waypoint origin to current location because copter is probably on the ground so we don't want it lurching left or right on take-off
         //    (of course it would be better if people just used take-off)
-        attitude_control.init_targets();
+        attitude_control.relax_bf_rate_controller();
+        attitude_control.set_yaw_target_to_current_heading();
         attitude_control.set_throttle_out(0, false);
         // tell motors to do a slow start
         motors.slow_start(true);
@@ -202,7 +204,8 @@ static void auto_spline_run()
     if(!ap.auto_armed) {
         // To-Do: reset waypoint origin to current location because copter is probably on the ground so we don't want it lurching left or right on take-off
         //    (of course it would be better if people just used take-off)
-        attitude_control.init_targets();
+        attitude_control.relax_bf_rate_controller();
+        attitude_control.set_yaw_target_to_current_heading();
         attitude_control.set_throttle_out(0, false);
         // tell motors to do a slow start
         motors.slow_start(true);
@@ -266,8 +269,9 @@ static void auto_land_start(const Vector3f& destination)
 static void auto_land_run()
 {
     // if not auto armed set throttle to zero and exit immediately
-    if(!ap.auto_armed) {
-        attitude_control.init_targets();
+    if(!ap.auto_armed || ap.land_complete) {
+        attitude_control.relax_bf_rate_controller();
+        attitude_control.set_yaw_target_to_current_heading();
         attitude_control.set_throttle_out(0, false);
         // set target to current position
         wp_nav.init_loiter_target();

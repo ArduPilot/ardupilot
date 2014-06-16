@@ -80,6 +80,8 @@ def process_sitl_input(buf):
     aileron  = (pwm[0]-1500)/500.0
     elevator = (pwm[1]-1500)/500.0
     throttle = (pwm[2]-1000)/1000.0
+    if opts.revthr:
+        throttle = 1.0 - throttle
     rudder   = (pwm[3]-1500)/500.0
 
     if opts.elevon:
@@ -170,6 +172,7 @@ parser.add_option("--home",    type='string', help="home lat,lng,alt,hdg (requir
 parser.add_option("--script",  type='string', help='jsbsim model script', default='jsbsim/rascal_test.xml')
 parser.add_option("--options", type='string', help='jsbsim startup options')
 parser.add_option("--elevon", action='store_true', default=False, help='assume elevon input')
+parser.add_option("--revthr", action='store_true', default=False, help='reverse throttle')
 parser.add_option("--vtail", action='store_true', default=False, help='assume vtail input')
 parser.add_option("--wind", dest="wind", help="Simulate wind (speed,direction,turbulance)", default='0,0,0')
 
@@ -248,7 +251,7 @@ fdm = fgFDM.fgFDM()
 
 jsb_console.send('info\n')
 jsb_console.send('resume\n')
-jsb.expect("trim computation time")
+jsb.expect(["trim computation time","Trim Results"])
 time.sleep(1.5)
 jsb_console.logfile = None
 

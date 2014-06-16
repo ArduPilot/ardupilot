@@ -80,6 +80,7 @@ public:
         k_param_BoardConfig,
         k_param_gps,
         k_param_scan_speed,
+        k_param_proxy_mode,
 
         k_param_channel_yaw = 200,
         k_param_channel_pitch,
@@ -116,6 +117,7 @@ public:
     AP_Float start_longitude;
 
     AP_Float startup_delay;
+    AP_Int8  proxy_mode;
 
     // Waypoints
     //

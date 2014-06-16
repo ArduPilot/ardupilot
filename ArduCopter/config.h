@@ -560,6 +560,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // Rate controller gains
 //
+
 #ifndef RATE_ROLL_P
  # define RATE_ROLL_P        		0.150f
 #endif
@@ -696,7 +697,6 @@
 #ifndef THROTTLE_ACCEL_IMAX
  # define THROTTLE_ACCEL_IMAX 500
 #endif
-
 
 //////////////////////////////////////////////////////////////////////////////
 // Dataflash logging control

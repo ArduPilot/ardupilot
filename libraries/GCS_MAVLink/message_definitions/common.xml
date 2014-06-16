@@ -831,6 +831,17 @@
                    <param index="7">Empty</param>
                </entry>
 
+               <entry name="MAV_CMD_DO_INVERTED_FLIGHT" value="210">
+                   <description>Change to/from inverted flight</description>
+                   <param index="1">inverted (0=normal, 1=inverted)</param>
+                   <param index="2">Empty</param>
+                   <param index="3">Empty</param>
+                   <param index="4">Empty</param>
+                   <param index="5">Empty</param>
+                   <param index="6">Empty</param>
+                   <param index="7">Empty</param>
+               </entry>
+
               <entry value="220" name="MAV_CMD_DO_MOUNT_CONTROL_QUAT">
                 <description>Mission command to control a camera or antenna mount, using a quaternion as reference.</description>
                 <param index="1">q1 - quaternion param #1</param>

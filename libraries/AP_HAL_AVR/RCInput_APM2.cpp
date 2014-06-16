@@ -59,7 +59,7 @@ void APM2RCInput::init(void* _isrregistry) {
     /* initialize overrides */
     clear_overrides();
     /* Arduino pin 48 is ICP5 / PL1,  timer 5 input capture */
-    hal.gpio->pinMode(48, GPIO_INPUT);
+    hal.gpio->pinMode(48, HAL_GPIO_INPUT);
     /**
      * WGM: 1 1 1 1. Fast WPM, TOP is in OCR5A
      * COM all disabled

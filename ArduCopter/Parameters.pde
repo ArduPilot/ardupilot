@@ -391,14 +391,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: CH7_OPT
     // @DisplayName: Channel 7 option
     // @Description: Select which function if performed when CH7 is above 1800 pwm
-    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 8:Multi Mode, 9:Camera Trigger, 10:Sonar, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:EPM, 20:EKF, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset
+    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 8:Multi Mode, 9:Camera Trigger, 10:Sonar, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:EPM, 20:EKF, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits
     // @User: Standard
     GSCALAR(ch7_option, "CH7_OPT",                  CH7_OPTION),
 
     // @Param: CH8_OPT
     // @DisplayName: Channel 8 option
     // @Description: Select which function if performed when CH8 is above 1800 pwm
-    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 8:Multi Mode, 9:Camera Trigger, 10:Sonar, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:EPM, 20:EKF, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset
+    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 8:Multi Mode, 9:Camera Trigger, 10:Sonar, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:EPM, 20:EKF, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits
     // @User: Standard
     GSCALAR(ch8_option, "CH8_OPT",                  CH8_OPTION),
 
@@ -577,6 +577,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // PID controller
     //---------------
+
     // @Param: RATE_RLL_P
     // @DisplayName: Roll axis rate controller P gain
     // @Description: Roll axis rate controller P gain.  Converts the difference between desired roll rate and actual roll rate into a motor speed output
@@ -605,7 +606,11 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0.001 0.02
     // @Increment: 0.001
     // @User: Standard
+#if FRAME_CONFIG == HELI_FRAME
+    GGROUP(pid_rate_roll,     "RATE_RLL_", AC_HELI_PID),
+#else
     GGROUP(pid_rate_roll,     "RATE_RLL_", AC_PID),
+#endif
 
     // @Param: RATE_PIT_P
     // @DisplayName: Pitch axis rate controller P gain
@@ -635,7 +640,11 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0.001 0.02
     // @Increment: 0.001
     // @User: Standard
+#if FRAME_CONFIG == HELI_FRAME
+    GGROUP(pid_rate_pitch,    "RATE_PIT_", AC_HELI_PID),
+#else
     GGROUP(pid_rate_pitch,    "RATE_PIT_", AC_PID),
+#endif
 
     // @Param: RATE_YAW_P
     // @DisplayName: Yaw axis rate controller P gain
@@ -665,7 +674,11 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0.000 0.02
     // @Increment: 0.001
     // @User: Standard
+#if FRAME_CONFIG == HELI_FRAME
+    GGROUP(pid_rate_yaw,      "RATE_YAW_", AC_HELI_PID),
+#else
     GGROUP(pid_rate_yaw,      "RATE_YAW_", AC_PID),
+#endif
 
     // @Param: LOITER_LAT_P
     // @DisplayName: Loiter latitude rate controller P gain
