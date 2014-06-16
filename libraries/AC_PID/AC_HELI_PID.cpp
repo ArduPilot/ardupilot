@@ -1,7 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 /// @file	AC_HELI_PID.cpp
-/// @brief	Generic PID algorithm
+/// @brief	Generic PID algorithm sadasd
 
 #include <AP_Math.h>
 #include "AC_HELI_PID.h"
