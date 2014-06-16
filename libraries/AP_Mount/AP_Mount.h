@@ -98,6 +98,8 @@ private:
     uint8_t                         _pan_idx;  ///< RC_Channel_aux mount pan  function index
     uint8_t                         _open_idx; ///< RC_Channel_aux mount open function index
 
+    uint8_t                         mount_axis_mask; //  used to track user input on each axis
+    
     float                           _roll_control_angle; ///< radians
     float                           _tilt_control_angle; ///< radians
     float                           _pan_control_angle;  ///< radians
