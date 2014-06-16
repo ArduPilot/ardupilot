@@ -49,7 +49,7 @@ void AP_MotorsQuad::setup_motors()
         add_motor(AP_MOTORS_MOT_2, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3);
         add_motor(AP_MOTORS_MOT_3,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4);
         add_motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2);
-    }else if (_flags.frame_orientation == AP_MOTORS_VTAIL_FRAME) {
+    }else if(_flags.frame_orientation == AP_MOTORS_VTAIL_FRAME) {
         /* Lynxmotion Hunter Vtail 400/500
 
            Roll control comes only from the front motors, Yaw control only from the rear motors
