@@ -153,9 +153,9 @@ void Buzzer::update()
     if (AP_Notify::flags.failsafe_battery) {
         play_pattern(SINGLE_BUZZ);
     }
-#if LOSTMODELBUZZER == ENABLED
+#if NOTIFY_LOCATION_STICKCOMBO == ENABLED
     // locatemodel constantly double buzz
-    if (AP_Notify::flags.locatemodel) {
+    if (AP_Notify::flags.notify_location) {
         play_pattern(DOUBLE_BUZZ);
     }
 #endif
