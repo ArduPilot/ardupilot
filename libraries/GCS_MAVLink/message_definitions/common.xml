@@ -644,7 +644,7 @@
                <entry value="176" name="MAV_CMD_DO_SET_MODE">
                     <description>Set system mode.</description>
                     <param index="1">Mode, as defined by ENUM MAV_MODE</param>
-                    <param index="2">Empty</param>
+                    <param index="2">Custom mode - this is system specific, please refer to the individual autopilot specifications for details.</param>
                     <param index="3">Empty</param>
                     <param index="4">Empty</param>
                     <param index="5">Empty</param>
@@ -1189,6 +1189,15 @@
                <entry value="16" name="SERIAL_CONTROL_FLAG_MULTI">
                     <description>Send multiple replies until port is drained</description>
                </entry>
+          </enum>
+          <enum name="MAV_DISTANCE_SENSOR">
+              <description>Enumeration of distance sensor types</description>
+              <entry value="0" name="MAV_DISTANCE_SENSOR_LASER">
+                  <description>Laser altimeter, e.g. LightWare SF02/F or PulsedLight units</description>
+              </entry>
+              <entry value="1" name="MAV_DISTANCE_SENSOR_ULTRASOUND">
+                  <description>Ultrasound altimeter, e.g. MaxBotix units</description>
+              </entry>
           </enum>
      </enums>
      <messages>
@@ -2117,6 +2126,16 @@
          <message id="131" name="ENCAPSULATED_DATA">
              <field type="uint16_t" name="seqnr">sequence number (starting with 0 on every transmission)</field>
              <field type="uint8_t[253]" name="data">image data bytes</field>
+         </message>
+        <message id="132" name="DISTANCE_SENSOR">
+            <field type="uint32_t" name="time_boot_ms">Time since system boot</field>
+            <field type="uint16_t" name="min_distance">Minimum distance the sensor can measure in centimeters</field>
+            <field type="uint16_t" name="max_distance">Maximum distance the sensor can measure in centimeters</field>
+            <field type="uint16_t" name="current_distance">Current distance reading</field>
+            <field type="uint8_t" name="type">Type from MAV_DISTANCE_SENSOR enum.</field>
+            <field type="uint8_t" name="id">Onboard ID of the sensor</field>
+            <field type="uint8_t" name="orientation">Direction the sensor faces from FIXME enum.</field>
+            <field type="uint8_t" name="covariance">Measurement covariance in centimeters, 0 for unknown / invalid readings</field>
          </message>
          <message id="147" name="BATTERY_STATUS">
                <description>Transmitte battery informations for a accu pack.</description>
