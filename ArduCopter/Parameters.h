@@ -115,10 +115,10 @@ public:
         k_param_serial0_baud,
         k_param_serial1_baud,
         k_param_serial2_baud,
-        k_param_ch_flightmode,          //52
-        k_param_ch_tune,                //53
-        k_param_ch_aux1,                //54
-        k_param_ch_aux2,                //55
+        k_param_fltmode_ch = 52,             //52
+        k_param_tune_ch,                //53
+        k_param_aux1_ch,                //54
+        k_param_aux2_ch,                //55
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -387,10 +387,10 @@ public:
     AP_Int8         ch7_option;
     AP_Int8         ch8_option;
     AP_Int8         arming_check;
-    AP_Int8         ch_flightmode;
-    AP_Int8         ch_tune;
-    AP_Int8         ch_aux1;
-    AP_Int8         ch_aux2;
+    AP_Int8         fltmode_ch;
+    AP_Int8         tune_ch;
+    AP_Int8         aux1_ch;
+    AP_Int8         aux2_ch;
 
 #if FRAME_CONFIG ==     HELI_FRAME
     // Heli

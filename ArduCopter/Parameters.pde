@@ -425,47 +425,47 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Values: 0:Very Soft, 25:Soft, 50:Medium, 75:Crisp, 100:Very Crisp
     GSCALAR(rc_feel_rp, "RC_FEEL_RP",  RC_FEEL_RP_VERY_CRISP),
 
-    // @Param: CH_FLIGHTMODE
+    // @Param: FLTMODE_CH
     // @DisplayName: Flight Mode Channel/CH5
     // @Description: Flight Mode channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Flight Mode is normally on channel 5, but you can move it to any channel with this parameter.
     // @Range: 1 8
     // @Increment: 1
     // @User: Advanced
-    GSCALAR(ch_flightmode,          "CH_FLIGHTMODE",   5),
+    GSCALAR(fltmode_ch, "FLTMODE_CH", 5),
 
-    // @Param: CH_TUNE
+    // @Param: TUNE_CH
     // @DisplayName: Tune channel/CH6
     // @Description: Tune channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Tune (also known as CH6) is normally on channel 6, but you can move it to any channel with this parameter.
     // @Range: 1 8
     // @Increment: 1
     // @User: Advanced
-    GSCALAR(ch_tune,                "CH_TUNE",   6),
+    GSCALAR(tune_ch, "TUNE_CH", 6),
 
-    // @Param: CH_AUX1
+    // @Param: AUX1_CH
     // @DisplayName: AUX1 channel/CH7 
     // @Description: AUX1 channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Aux1 (also known as CH7) is normally on channel 7, but you can move it to any channel with this parameter.
     // @Range: 1 8
     // @Increment: 1
     // @User: Advanced
-    GSCALAR(ch_aux1,           "CH_AUX1",   7),
+    GSCALAR(aux1_ch, "AUX1_CH", 7),
 
 
 #if FRAME_CONFIG == HELI_FRAME
-    // @Param: CH_ROTORSPEED 
+    // @Param: ROTORSPEED_CH
     // @DisplayName: CH_ROTORSPEED channel/CH8
     // @Description: CH_ROTORSPEED channel number. This is useful when you have a RC transmitter that can't change the channel order easily. RotorSpeed (also known as CH8) is normally on channel 8, but you can move it to any channel with this parameter.
     // @Range: 1 8
     // @Increment: 1
     // @User: Advanced
-    GSCALAR(ch_aux2,           "CH_ROTORSPEED",   8),
+    GSCALAR(aux2_ch, "ROTORSPEED_CH", 8),
 #else
-    // @Param: CH_AUX2
+    // @Param: AUX2_CH
     // @DisplayName: AUX2 channel/CH8
     // @Description: AUX2 channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Aux2 (also known as CH8) is normally on channel 8, but you can move it to any channel with this parameter.
     // @Range: 1 8
     // @Increment: 1
     // @User: Advanced
-    GSCALAR(ch_aux2,           "CH_AUX2",   8),
+    GSCALAR(aux2_ch, "AUX2_CH", 8),
 #endif
 
 #if HYBRID_ENABLED == ENABLED
