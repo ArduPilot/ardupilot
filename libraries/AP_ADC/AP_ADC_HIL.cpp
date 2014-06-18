@@ -2,16 +2,24 @@
 #include "AP_ADC_HIL.h"
 #include <AP_HAL.h>
 extern const AP_HAL::HAL& hal;
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
 
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 /*
  *       AP_ADC_HIL.cpp
  *       Author: James Goppert
  *
- *       License:
- *       This library is free software; you can redistribute it and/or
- *       modify it under the terms of the GNU Lesser General Public
- *       License as published by the Free Software Foundation; either
- *       version 2.1 of the License, or (at your option) any later version.
  */
 
 const uint8_t AP_ADC_HIL::sensors[6] = {1,2,0,4,5,6};
@@ -22,8 +30,6 @@ const float AP_ADC_HIL::accelBias[3]    = {2025,2025,2025};
 const float AP_ADC_HIL::gyroScale[3] = {143.239, 139.746, 139.746};
 const float AP_ADC_HIL::accelScale[3] = {418,418,418}; // adcPerG
     
-uint16_t  AP_ADC_HIL::_count; // number of samples captured
-
 AP_ADC_HIL::AP_ADC_HIL()
 {
     // gyros set to zero for calibration
@@ -43,7 +49,7 @@ AP_ADC_HIL::AP_ADC_HIL()
 
 void AP_ADC_HIL::Init()
 {
-    hal.scheduler->register_timer_process( AP_ADC_HIL::read );
+    hal.scheduler->register_timer_process( AP_HAL_MEMBERPROC(&AP_ADC_HIL::read));
 }
 
 // Read one channel value

@@ -1,14 +1,23 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 //	Code by Jon Challinger
 //  Modified by Paul Riseborough to implement a three loop autopilot
 //  topology
 //
-//	This library is free software; you can redistribute it and / or
-//	modify it under the terms of the GNU Lesser General Public
-//	License as published by the Free Software Foundation; either
-//	version 2.1 of the License, or (at your option) any later version.
-
 #include <AP_Math.h>
 #include <AP_HAL.h>
 #include "AP_YawController.h"
@@ -62,7 +71,7 @@ const AP_Param::GroupInfo AP_YawController::var_info[] PROGMEM = {
 	AP_GROUPEND
 };
 
-int32_t AP_YawController::get_servo_out(float scaler, bool stabilize, int16_t aspd_min, int16_t aspd_max)
+int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
 {
 	uint32_t tnow = hal.scheduler->millis();
 	uint32_t dt = tnow - _last_t;
@@ -71,10 +80,8 @@ int32_t AP_YawController::get_servo_out(float scaler, bool stabilize, int16_t as
 	}
 	_last_t = tnow;
 	
-	if(_ins == NULL) { // can't control without a reference
-		return 0; 
-	}
 
+    int16_t aspd_min = aparm.airspeed_min;
     if (aspd_min < 1) {
         aspd_min = 1;
     }
@@ -84,22 +91,22 @@ int32_t AP_YawController::get_servo_out(float scaler, bool stabilize, int16_t as
 	// Calculate yaw rate required to keep up with a constant height coordinated turn
 	float aspeed;
 	float rate_offset;
-	float bank_angle = _ahrs->roll;
+	float bank_angle = _ahrs.roll;
 	// limit bank angle between +- 80 deg if right way up
 	if (fabsf(bank_angle) < 1.5707964f)	{
 	    bank_angle = constrain_float(bank_angle,-1.3962634f,1.3962634f);
 	}
-	if (!_ahrs->airspeed_estimate(&aspeed)) {
+	if (!_ahrs.airspeed_estimate(&aspeed)) {
 	    // If no airspeed available use average of min and max
-        aspeed = 0.5f*(float(aspd_min) + float(aspd_max));
+        aspeed = 0.5f*(float(aspd_min) + float(aparm.airspeed_max));
 	}
     rate_offset = (GRAVITY_MSS / max(aspeed , float(aspd_min))) * tanf(bank_angle) * cosf(bank_angle) * _K_FF;
 
     // Get body rate vector (radians/sec)
-	float omega_z = _ahrs->get_gyro().z;
+	float omega_z = _ahrs.get_gyro().z;
 	
 	// Get the accln vector (m/s^2)
-	float accel_y = _ins->get_accel().y;
+	float accel_y = _ahrs.get_ins().get_accel().y;
 
 	// Subtract the steady turn component of rate from the measured rate
 	// to calculate the rate relative to the turn requirement in degrees/sec
@@ -119,7 +126,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool stabilize, int16_t as
 	// Apply integrator, but clamp input to prevent control saturation and freeze integrator below min FBW speed
 	// Don't integrate if in stabilise mode as the integrator will wind up against the pilots inputs
 	// Don't integrate if _K_D is zero as integrator will keep winding up
-	if (!stabilize && _K_D > 0) {
+	if (!disable_integrator && _K_D > 0) {
 		//only integrate if airspeed above min value
 		if (aspeed > float(aspd_min))
 		{

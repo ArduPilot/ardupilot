@@ -18,13 +18,7 @@ uint16_t SITLRCOutput::get_freq(uint8_t ch) {
 void SITLRCOutput::enable_ch(uint8_t ch)
 {}
 
-void SITLRCOutput::enable_mask(uint32_t chmask)
-{}
-
 void SITLRCOutput::disable_ch(uint8_t ch)
-{}
-
-void SITLRCOutput::disable_mask(uint32_t chmask)
 {}
 
 void SITLRCOutput::write(uint8_t ch, uint16_t period_us)

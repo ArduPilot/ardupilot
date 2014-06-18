@@ -30,7 +30,7 @@ void delay_toggle() {
     hal.gpio->write(DELAY_TOGGLE_PIN, 0);
 }
 
-void failsafe_toggle(uint32_t machtnichts) {
+void failsafe_toggle(void *) {
     volatile int i;
     hal.gpio->write(FAILSAFE_TOGGLE_PIN, 1);
     for (i = 0; i < 10; i++);
@@ -38,28 +38,28 @@ void failsafe_toggle(uint32_t machtnichts) {
 }
 
 
-void schedule_toggle_1(uint32_t machtnichts) {
+void schedule_toggle_1(void *) {
     volatile int i;
     hal.gpio->write(SCHEDULED_TOGGLE_PIN_1, 1);
     for (i = 0; i < 10; i++);
     hal.gpio->write(SCHEDULED_TOGGLE_PIN_1, 0);
 }
 
-void schedule_toggle_2(uint32_t machtnichts) {
+void schedule_toggle_2(void *) {
     volatile int i;
     hal.gpio->write(SCHEDULED_TOGGLE_PIN_2, 1);
     for (i = 0; i < 10; i++);
     hal.gpio->write(SCHEDULED_TOGGLE_PIN_2, 0);
 }
 
-void schedule_toggle_hang(uint32_t machtnichts) {
+void schedule_toggle_hang(void *) {
     hal.gpio->write(SCHEDULED_TOGGLE_PIN_2, 1); 
     for(;;);
 }
 
 void setup_pin(int pin_num) {
     hal.console->printf_P(PSTR("Setup pin %d\r\n"), pin_num);
-    hal.gpio->pinMode(pin_num,GPIO_OUTPUT);
+    hal.gpio->pinMode(pin_num,HAL_GPIO_OUTPUT);
     /* Blink so we can see setup on the logic analyzer.*/
     hal.gpio->write(pin_num,1);
     hal.gpio->write(pin_num,0);
@@ -95,8 +95,8 @@ void setup (void) {
     hal.console->printf_P(PSTR("Pin %d should toggle at 1khz.\r\n"),
             (int) SCHEDULED_TOGGLE_PIN_2);
 
-    hal.scheduler->register_timer_process(schedule_toggle_1);
-    hal.scheduler->register_timer_process(schedule_toggle_2);
+    hal.scheduler->register_timer_process(schedule_toggle_1, NULL);
+    hal.scheduler->register_timer_process(schedule_toggle_2, NULL);
 
     hal.scheduler->delay(100);
 
@@ -105,7 +105,7 @@ void setup (void) {
                 "dominates the processor."));
     hal.console->printf_P(PSTR("Pin %d should toggle then go high forever.\r\n"),
             (int) SCHEDULED_TOGGLE_PIN_2);
-    hal.scheduler->register_timer_process(schedule_toggle_hang);
+    hal.scheduler->register_timer_process(schedule_toggle_hang, NULL);
 }
 
 void loop (void) { }

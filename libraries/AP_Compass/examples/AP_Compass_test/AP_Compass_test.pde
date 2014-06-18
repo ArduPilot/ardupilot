@@ -9,6 +9,7 @@
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
 #include <AP_HAL_PX4.h>
+#include <AP_HAL_Linux.h>
 #include <AP_HAL_Empty.h>
 
 #include <AP_Math.h>    // ArduPilot Mega Vector/Matrix math Library
@@ -72,7 +73,7 @@ void loop()
         unsigned long read_time = hal.scheduler->micros() - timer;
         float heading;
 
-        if (!compass.healthy) {
+        if (!compass.healthy()) {
             hal.console->println("not healthy");
             return;
         }
@@ -80,23 +81,24 @@ void loop()
 	// use roll = 0, pitch = 0 for this example
 	dcm_matrix.from_euler(0, 0, 0);
         heading = compass.calculate_heading(dcm_matrix);
-        compass.null_offsets();
+        compass.learn_offsets();
 
         // capture min
-        if( compass.mag_x < min[0] )
-            min[0] = compass.mag_x;
-        if( compass.mag_y < min[1] )
-            min[1] = compass.mag_y;
-        if( compass.mag_z < min[2] )
-            min[2] = compass.mag_z;
+        const Vector3f &mag = compass.get_field();
+        if( mag.x < min[0] )
+            min[0] = mag.x;
+        if( mag.y < min[1] )
+            min[1] = mag.y;
+        if( mag.z < min[2] )
+            min[2] = mag.z;
 
         // capture max
-        if( compass.mag_x > max[0] )
-            max[0] = compass.mag_x;
-        if( compass.mag_y > max[1] )
-            max[1] = compass.mag_y;
-        if( compass.mag_z > max[2] )
-            max[2] = compass.mag_z;
+        if( mag.x > max[0] )
+            max[0] = mag.x;
+        if( mag.y > max[1] )
+            max[1] = mag.y;
+        if( mag.z > max[2] )
+            max[2] = mag.z;
 
         // calculate offsets
         offset[0] = -(max[0]+min[0])/2;
@@ -106,9 +108,9 @@ void loop()
         // display all to user
         hal.console->printf("Heading: %.2f (%3d,%3d,%3d) i2c error: %u",
 			    ToDeg(heading),
-			    (int)compass.mag_x,
-			    (int)compass.mag_y,
-			    (int)compass.mag_z, 
+			    (int)mag.x,
+			    (int)mag.y,
+			    (int)mag.z, 
 			    (unsigned)hal.i2c->lockup_count());
 
         // display offsets

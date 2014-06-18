@@ -36,10 +36,10 @@ def takeoff(mavproxy, mav):
 
     # hit the gas harder now, and give it some more elevator
     mavproxy.send('rc 2 1100\n')
-    mavproxy.send('rc 3 1800\n')
+    mavproxy.send('rc 3 2000\n')
 
     # gain a bit of altitude
-    if not wait_altitude(mav, homeloc.alt+30, homeloc.alt+60, timeout=30):
+    if not wait_altitude(mav, homeloc.alt+150, homeloc.alt+180, timeout=30):
         return False
 
     # level off
@@ -86,7 +86,6 @@ def fly_RTL(mavproxy, mav):
 def fly_LOITER(mavproxy, mav, num_circles=4):
     '''loiter where we are'''
     print("Testing LOITER for %u turns" % num_circles)
-    mavproxy.send('switch 3\n')
     mavproxy.send('loiter\n')
     wait_mode(mav, 'LOITER')
 
@@ -104,7 +103,7 @@ def fly_LOITER(mavproxy, mav, num_circles=4):
 
     m = mav.recv_match(type='VFR_HUD', blocking=True)
     final_alt = m.alt
-    print("Final altitude %u\n" % final_alt)
+    print("Final altitude %u initial %u\n" % (final_alt, initial_alt))
 
     mavproxy.send('mode FBWA\n')
     wait_mode(mav, 'FBWA')
@@ -136,7 +135,7 @@ def fly_CIRCLE(mavproxy, mav, num_circles=1):
 
     m = mav.recv_match(type='VFR_HUD', blocking=True)
     final_alt = m.alt
-    print("Final altitude %u\n" % final_alt)
+    print("Final altitude %u initial %u\n" % (final_alt, initial_alt))
 
     mavproxy.send('mode FBWA\n')
     wait_mode(mav, 'FBWA')
@@ -153,6 +152,9 @@ def wait_level_flight(mavproxy, mav, accuracy=5, timeout=30):
     '''wait for level flight'''
     tstart = time.time()
     print("Waiting for level flight")
+    mavproxy.send('rc 1 1500\n')
+    mavproxy.send('rc 2 1500\n')
+    mavproxy.send('rc 4 1500\n')
     while time.time() < tstart + timeout:
         m = mav.recv_match(type='ATTITUDE', blocking=True)
         roll = math.degrees(m.roll)
@@ -196,10 +198,13 @@ def axial_left_roll(mavproxy, mav, count=1):
         print("Starting roll")
         mavproxy.send('rc 1 1000\n')
         if not wait_roll(mav, -150, accuracy=90):
+            mavproxy.send('rc 1 1500\n')
             return False
         if not wait_roll(mav, 150, accuracy=90):
+            mavproxy.send('rc 1 1500\n')
             return False
         if not wait_roll(mav, 0, accuracy=90):
+            mavproxy.send('rc 1 1500\n')
             return False
         count -= 1
 
@@ -357,7 +362,7 @@ def test_FBWB(mavproxy, mav, count=1, mode='FBWB'):
     for i in range(0,4):
         # hard left
         print("Starting turn %u" % i)
-        mavproxy.send('rc 4 1700\n')
+        mavproxy.send('rc 4 1900\n')
         if not wait_heading(mav, 360 - (90*i), accuracy=20, timeout=60):
             mavproxy.send('rc 4 1500\n')
             return False
@@ -369,7 +374,7 @@ def test_FBWB(mavproxy, mav, count=1, mode='FBWB'):
 
     m = mav.recv_match(type='VFR_HUD', blocking=True)
     final_alt = m.alt
-    print("Final altitude %u\n" % final_alt)
+    print("Final altitude %u initial %u\n" % (final_alt, initial_alt))
 
     # back to FBWA
     mavproxy.send('mode FBWA\n')
@@ -427,9 +432,10 @@ def fly_ArduPlane(viewerip=None, map=False):
     mavproxy.expect('Received [0-9]+ parameters')
 
     # setup test parameters
-    mavproxy.send('param set SYSID_THISMAV %u\n' % random.randint(100, 200))
     mavproxy.send("param load %s/ArduPlane.parm\n" % testdir)
     mavproxy.expect('Loaded [0-9]+ parameters')
+
+    mavproxy.send("param fetch\n")
 
     # restart with new parms
     util.pexpect_close(mavproxy)
@@ -528,6 +534,9 @@ def fly_ArduPlane(viewerip=None, map=False):
         if not fly_mission(mavproxy, mav, os.path.join(testdir, "ap1.txt"), height_accuracy = 10,
                            target_altitude=homeloc.alt+100):
             print("Failed mission")
+            failed = True
+        if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/ArduPlane-log.bin")):
+            print("Failed log download")
             failed = True
     except pexpect.TIMEOUT, e:
         print("Failed with timeout")

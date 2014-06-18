@@ -10,19 +10,23 @@ class AP_Compass_PX4 : public Compass
 public:
     AP_Compass_PX4() : Compass() {
         product_id = AP_COMPASS_TYPE_PX4;
+        _num_instances = 0;
     }
     bool        init(void);
     bool        read(void);
     void        accumulate(void);
 
+    // return the number of compass instances
+    uint8_t get_count(void) const { return _num_instances; }
+
 private:
-    static int _mag_fd;
-    static Vector3f _sum;
-    static uint32_t _count;
-    static uint32_t _last_timer;
-    static uint64_t _last_timestamp;
-    static void _accumulate(void);
-    static void _compass_timer(uint32_t now);
+    uint8_t _get_primary(void) const;
+    uint8_t _num_instances;
+    int _mag_fd[COMPASS_MAX_INSTANCES];
+    Vector3f _sum[COMPASS_MAX_INSTANCES];
+    uint32_t _count[COMPASS_MAX_INSTANCES];
+    uint64_t _last_timestamp[COMPASS_MAX_INSTANCES];
+    bool _is_external[COMPASS_MAX_INSTANCES];
 };
 
 #endif // AP_Compass_PX4_H

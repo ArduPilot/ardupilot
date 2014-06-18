@@ -5,14 +5,8 @@
 // If you used to define your CONFIG_APM_HARDWARE setting here, it is no longer
 // valid! You should switch to using a HAL_BOARD flag in your local config.mk.
 
-//#define HIL_MODE              HIL_MODE_SENSORS    // build for hardware-in-the-loop simulation
-//#define LOGGING_ENABLED       DISABLED            // disable logging to save code space
-//#define DMP_ENABLED           ENABLED             // use MPU6000's DMP instead of DCM for attitude estimation
-//#define SECONDARY_DMP_ENABLED ENABLED             // allows running DMP in parallel with DCM for testing purposes
-
 //#define FRAME_CONFIG QUAD_FRAME
-/*
- *  options:
+/*  options:
  *  QUAD_FRAME
  *  TRI_FRAME
  *  HEXA_FRAME
@@ -20,7 +14,36 @@
  *  OCTA_FRAME
  *  OCTA_QUAD_FRAME
  *  HELI_FRAME
+ *  SINGLE_FRAME
+ *  COAX_FRAME
  */
+
+// uncomment the lines below to save on flash space if compiling for the APM using Arduino IDE.  Top items save the most flash space
+#if (CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_APM1)
+ # define CLI_ENABLED           DISABLED            // disable the CLI (command-line-interface) to save 21K of flash space
+#endif
+//#define LOGGING_ENABLED       DISABLED            // disable dataflash logging to save 11K of flash space
+//#define MOUNT                 DISABLED            // disable the camera gimbal to save 8K of flash space
+//#define AUTOTUNE_ENABLED      DISABLED            // disable the auto tune functionality to save 7k of flash
+//#define AC_FENCE              DISABLED            // disable fence to save 2k of flash
+//#define CAMERA                DISABLED            // disable camera trigger to save 1k of flash
+//#define CONFIG_SONAR          DISABLED            // disable sonar to save 1k of flash
+//#define HYBRID_ENABLED        DISABLED            // disable hybrid flight mode to save 4.5k of flash
+
+// features below are disabled by default on APM (but enabled on Pixhawk)
+//#define AC_RALLY              ENABLED             // disable rally points to save 2k of flash, and also frees rally point EEPROM for more mission commands
+//#define PARACHUTE             ENABLED             // enable parachute release at a cost of 1k of flash
+
+// features below are disabled by default on all boards
+//#define OPTFLOW               ENABLED             // enable optical flow sensor and OF_LOITER flight mode at a cost of 5K of flash space
+//#define SPRAYER               ENABLED             // enable the crop sprayer feature (two ESC controlled pumps the speed of which depends upon the vehicle's horizontal velocity)
+//#define EPM_ENABLED           ENABLED             // enable epm cargo gripper costs 500bytes of flash
+
+// other settings
+//#define THROTTLE_IN_DEADBAND   100                // redefine size of throttle deadband in pwm (0 ~ 1000)
+//#define LAND_REQUIRE_MIN_THROTTLE_TO_DISARM   DISABLED    // when set to DISABLED vehicle will disarm after landing (in LAND mode or RTL) even if pilot has not put throttle to zero
+
+//#define HIL_MODE              HIL_MODE_SENSORS    // build for hardware-in-the-loop simulation
 
 // User Hooks : For User Developed code that you wish to run
 // Put your variable definitions into the UserVariables.h file (or another file name and then change the #define below).

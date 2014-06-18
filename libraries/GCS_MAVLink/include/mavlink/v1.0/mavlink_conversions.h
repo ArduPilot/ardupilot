@@ -9,6 +9,10 @@
 #endif
 #include <math.h>
 
+#ifndef M_PI_2
+    #define M_PI_2 ((float)asin(1))
+#endif
+
 /**
  * @file mavlink_conversions.h
  *
@@ -49,12 +53,12 @@ MAVLINK_HELPER void mavlink_dcm_to_euler(const float dcm[3][3], float* roll, flo
     float phi, theta, psi;
     theta = asin(-dcm[2][0]);
 
-    if (fabs(theta - M_PI_2) < 1.0e-3f) {
+    if (fabsf(theta - (float)M_PI_2) < 1.0e-3f) {
         phi = 0.0f;
-        psi = (atan2(dcm[1][2] - dcm[0][1],
+        psi = (atan2f(dcm[1][2] - dcm[0][1],
                 dcm[0][2] + dcm[1][1]) + phi);
 
-    } else if (fabs(theta + M_PI_2) < 1.0e-3f) {
+    } else if (fabsf(theta + (float)M_PI_2) < 1.0e-3f) {
         phi = 0.0f;
         psi = atan2f(dcm[1][2] - dcm[0][1],
                   dcm[0][2] + dcm[1][1] - phi);

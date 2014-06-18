@@ -10,9 +10,14 @@ static void read_control_switch()
     // If we get this value we do not want to change modes.
     if(switchPosition == 255) return;
 
-    if (ch3_failsafe) {
+    if (failsafe.ch3_failsafe || failsafe.ch3_counter > 0) {
         // when we are in ch3_failsafe mode then RC input is not
         // working, and we need to ignore the mode switch channel
+        return;
+    }
+
+    if (hal.scheduler->millis() - failsafe.last_valid_rc_ms > 100) {
+        // only use signals that are less than 0.1s old.
         return;
     }
 
@@ -38,14 +43,13 @@ static void read_control_switch()
         set_mode((enum FlightMode)(flight_modes[switchPosition].get()));
 
         oldSwitchPosition = switchPosition;
-        prev_WP = current_loc;
+        prev_WP_loc = current_loc;
     }
 
     if (g.reset_mission_chan != 0 &&
         hal.rcin->read(g.reset_mission_chan-1) > RESET_SWITCH_CHAN_PWM) {
-        // reset to first waypoint in mission
-        prev_WP = current_loc;
-        change_command(0);
+        mission.start();
+        prev_WP_loc = current_loc;
     }
 
     switch_debouncer = false;
@@ -57,9 +61,10 @@ static void read_control_switch()
     }
 }
 
-static uint8_t readSwitch(void){
+static uint8_t readSwitch(void)
+{
     uint16_t pulsewidth = hal.rcin->read(g.flight_mode_channel - 1);
-    if (pulsewidth <= 910 || pulsewidth >= 2090) return 255;            // This is an error condition
+    if (pulsewidth <= 900 || pulsewidth >= 2200) return 255;            // This is an error condition
     if (pulsewidth > 1230 && pulsewidth <= 1360) return 1;
     if (pulsewidth > 1360 && pulsewidth <= 1490) return 2;
     if (pulsewidth > 1490 && pulsewidth <= 1620) return 3;
@@ -70,7 +75,39 @@ static uint8_t readSwitch(void){
 
 static void reset_control_switch()
 {
-    oldSwitchPosition = 0;
+    oldSwitchPosition = 254;
     read_control_switch();
 }
 
+/*
+  called when entering autotune
+ */
+static void autotune_start(void)
+{
+    rollController.autotune_start();
+    pitchController.autotune_start();
+}
+
+/*
+  called when exiting autotune
+ */
+static void autotune_restore(void)
+{
+    rollController.autotune_restore();
+    pitchController.autotune_restore();
+}
+
+/*
+  are we flying inverted?
+ */
+static bool fly_inverted(void)
+{
+    if (g.inverted_flight_ch != 0 && inverted_flight) {
+        // controlled with INVERTED_FLIGHT_CH
+        return true;
+    }
+    if (control_mode == AUTO && auto_state.inverted_flight) {
+        return true;
+    }
+    return false;
+}

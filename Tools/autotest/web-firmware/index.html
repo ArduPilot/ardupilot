@@ -79,6 +79,10 @@ The software and hardware we provide is only for use in unmanned
 		     alt="Rover">APM Rover</a> - for land vehicles and boats<p>
 <a href="PX4IO"><img src="images/PX4IO.png" width="80"
 		     alt="PX4IO">PX4IO</a> - for the PX4IO board<p>
+<a href="Tools/MissionPlanner"><img src="images/planner.png" width="80"
+		     alt="MissionPlanner">MissionPlanner</a> - Mission Planner tool<p>
+<a href="SiK"><img src="images/3DR_Radio.jpg" width="80"
+		     alt="Radio">SiK</a> - 3DR Radio Firmware<p>
 <a href="Tools"><img src="images/tools.png" width="80"
 		     alt="Tools">Tools</a> - Build and development tools<p>
 
@@ -119,26 +123,6 @@ autopilot board supported by that vehicle type
 <li>You can load the <b>latest</b> version of the firmware by downloading a firmware image from one of the links and selecting the "Load custom firmware" button in
 the bottom right corner of the screen.</li>
 </ul>
-
-<h2>Loading firmware to a PX4IO board</h2>
-
-If you have
-a <a href="https://pixhawk.ethz.ch/px4/modules/px4io">PX4IO board</a>
-attached to your PX4FMU then you will need to separately load the
-latest firmware to that board. To load the PX4IO firmware you need to
-download the px4io.bin file from the above link, then put it in the
-root directory of the microSD card you have in your PX4FMU board.<p>
-
-You then need to hold the arming switch while applying power to your
-PX4FMU board. The PX4IO board detects that the arming switch is held
-when it powers on, and will enter bootloader mode, which is indicated
-by a rapidly flashing red light on your PX4IO board.<p>
-
-The APM firmware for your PX4FMU board will check in the root
-directory of your microSD card every time it boots, and if it finds a
-new px4io.bin file it will attempt to load it to your PX4IO board. A
-log of the firmware load attempt is placed in the APM directory of
-your microSD card to aid with debugging.
 
 <h2>Load your firmware using QUpgrade</h2>
 

@@ -54,7 +54,7 @@ void blink_a3() {
 
 void setup_pin(int pin_num) {
     hal.console->printf_P(PSTR("Setup pin %d\r\n"), pin_num);
-    hal.gpio->pinMode(pin_num,GPIO_OUTPUT);
+    hal.gpio->pinMode(pin_num,HAL_GPIO_OUTPUT);
     /* Blink so we can see setup on the logic analyzer.*/
     hal.gpio->write(pin_num,1);
     hal.gpio->write(pin_num,0);
@@ -82,15 +82,19 @@ void setup (void) {
         hal.scheduler->panic(PSTR("Error: No SPIDeviceDriver semaphore!"));
     }
 
-    hal.scheduler->register_timer_process(async_blinker);
+    hal.scheduler->register_timer_process(async_blinker, NULL);
 }
 
 
-uint32_t async_last_run = 0;
-void async_blinker(uint32_t millis) {
-    if (async_last_run - millis < 5)  {
+static uint32_t async_last_run;
+
+void async_blinker(void *) 
+{
+    uint32_t now = hal.scheduler->millis();
+    if ((now - async_last_run) < 5)  {
         return;
     }
+    async_last_run = now;
     
     if (sem->take_nonblocking()) {
         blink_a0();

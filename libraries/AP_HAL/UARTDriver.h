@@ -38,6 +38,26 @@ public:
     virtual bool is_initialized() = 0;
     virtual void set_blocking_writes(bool blocking) = 0;
     virtual bool tx_pending() = 0;
+
+    enum flow_control {
+        FLOW_CONTROL_DISABLE=0, FLOW_CONTROL_ENABLE=1, FLOW_CONTROL_AUTO=2
+    };
+    virtual void set_flow_control(enum flow_control flow_control_setting) {};
+    virtual enum flow_control get_flow_control(void) { return FLOW_CONTROL_DISABLE; };
+
+    /* Implementations of BetterStream virtual methods. These are
+     * provided by AP_HAL to ensure consistency between ports to
+     * different boards
+     */
+    void print_P(const prog_char_t *s);
+    void println_P(const prog_char_t *s);
+    void printf(const char *s, ...)
+            __attribute__ ((format(__printf__, 2, 3)));
+    void _printf_P(const prog_char *s, ...)
+            __attribute__ ((format(__printf__, 2, 3)));
+
+    void vprintf(const char *s, va_list ap);
+    void vprintf_P(const prog_char *s, va_list ap);
 };
 
 #endif // __AP_HAL_UART_DRIVER_H__

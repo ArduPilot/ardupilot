@@ -60,59 +60,48 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 # define CONFIG_INS_TYPE   CONFIG_INS_OILPAN
 # define CONFIG_COMPASS  AP_COMPASS_HMC5843
-# define A_LED_PIN        37
-# define B_LED_PIN        36
-# define C_LED_PIN        35
-# define LED_ON           HIGH
-# define LED_OFF          LOW
-# define SLIDE_SWITCH_PIN 40
-# define PUSHBUTTON_PIN   41
-# define USB_MUX_PIN      -1
+# define CONFIG_BARO     AP_BARO_BMP085
 # define BATTERY_PIN_1	  0
 # define CURRENT_PIN_1	  1
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
 # define CONFIG_INS_TYPE   CONFIG_INS_MPU6000
 # define CONFIG_COMPASS  AP_COMPASS_HMC5843
-# define CONFIG_PUSHBUTTON DISABLED
-# define A_LED_PIN        27
-# define B_LED_PIN        26
-# define C_LED_PIN        25
-# define LED_ON           LOW
-# define LED_OFF          HIGH
-# define SLIDE_SWITCH_PIN (-1)
-# define PUSHBUTTON_PIN   (-1)
-# define CLI_SLIDER_ENABLED DISABLED
-# define USB_MUX_PIN 23
+# ifdef APM2_BETA_HARDWARE
+#  define CONFIG_BARO     AP_BARO_BMP085
+# else // APM2 Production Hardware (default)
+#  define CONFIG_BARO          AP_BARO_MS5611
+#  define CONFIG_MS5611_SERIAL AP_BARO_MS5611_SPI
+# endif
 # define BATTERY_PIN_1	  1
 # define CURRENT_PIN_1	  2
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
-# define CONFIG_INS_TYPE CONFIG_INS_STUB
+# define CONFIG_INS_TYPE CONFIG_INS_HIL
 # define CONFIG_COMPASS  AP_COMPASS_HIL
-# define CONFIG_PUSHBUTTON DISABLED
-# define A_LED_PIN        27
-# define B_LED_PIN        26
-# define C_LED_PIN        25
-# define LED_ON           LOW
-# define LED_OFF          HIGH
-# define SLIDE_SWITCH_PIN (-1)
-# define PUSHBUTTON_PIN   (-1)
-# define CLI_SLIDER_ENABLED DISABLED
-# define USB_MUX_PIN -1
+# define CONFIG_BARO     AP_BARO_HIL
 # define BATTERY_PIN_1	  1
 # define CURRENT_PIN_1	  2
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
 # define CONFIG_INS_TYPE   CONFIG_INS_PX4
 # define CONFIG_COMPASS  AP_COMPASS_PX4
-# define CONFIG_PUSHBUTTON DISABLED
-# define A_LED_PIN        27
-# define B_LED_PIN        26
-# define C_LED_PIN        25
-# define LED_ON           LOW
-# define LED_OFF          HIGH
-# define SLIDE_SWITCH_PIN (-1)
-# define PUSHBUTTON_PIN   (-1)
-# define CLI_SLIDER_ENABLED DISABLED
-# define USB_MUX_PIN -1
+# define CONFIG_BARO AP_BARO_PX4
+# define BATTERY_PIN_1	  -1
+# define CURRENT_PIN_1	  -1
+#elif CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
+# define CONFIG_INS_TYPE   CONFIG_INS_FLYMAPLE
+# define CONFIG_COMPASS  AP_COMPASS_HMC5843
+# define CONFIG_BARO AP_BARO_BMP085
+# define BATTERY_PIN_1     20
+# define CURRENT_PIN_1	   19
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+# define CONFIG_INS_TYPE   CONFIG_INS_L3G4200D
+# define CONFIG_COMPASS  AP_COMPASS_HMC5843
+# define CONFIG_BARO     AP_BARO_BMP085
+# define BATTERY_PIN_1     -1
+# define CURRENT_PIN_1	   -1
+#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+# define CONFIG_INS_TYPE   CONFIG_INS_VRBRAIN
+# define CONFIG_COMPASS  AP_COMPASS_VRBRAIN
+# define CONFIG_BARO AP_BARO_VRBRAIN
 # define BATTERY_PIN_1	  -1
 # define CURRENT_PIN_1	  -1
 #endif
@@ -132,22 +121,10 @@
 #endif
 
 #if HIL_MODE != HIL_MODE_DISABLED       // we are in HIL mode
- #undef GPS_PROTOCOL
- #define GPS_PROTOCOL GPS_PROTOCOL_HIL
  #undef CONFIG_INS_TYPE
- #define CONFIG_INS_TYPE CONFIG_INS_STUB
+ #define CONFIG_INS_TYPE CONFIG_INS_HIL
  #undef  CONFIG_COMPASS
  #define CONFIG_COMPASS  AP_COMPASS_HIL
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// GPS_PROTOCOL
-//
-// Note that this test must follow the HIL_PROTOCOL block as the HIL
-// setup may override the GPS configuration.
-//
-#ifndef GPS_PROTOCOL
-# define GPS_PROTOCOL GPS_PROTOCOL_AUTO
 #endif
 
 #ifndef MAV_SYSTEM_ID
@@ -160,8 +137,11 @@
 #ifndef SERIAL0_BAUD
 # define SERIAL0_BAUD			115200
 #endif
-#ifndef SERIAL3_BAUD
-# define SERIAL3_BAUD			 57600
+#ifndef SERIAL1_BAUD
+# define SERIAL1_BAUD			 57600
+#endif
+#ifndef SERIAL2_BAUD
+# define SERIAL2_BAUD			 57600
 #endif
 
 #ifndef CH7_OPTION
@@ -170,30 +150,6 @@
 
 #ifndef TUNING_OPTION
 # define TUNING_OPTION		          TUN_NONE
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Battery monitoring
-//
-#ifndef BATTERY_EVENT
-# define BATTERY_EVENT			DISABLED
-#endif
-#ifndef LOW_VOLTAGE
-# define LOW_VOLTAGE			9.6
-#endif
-#ifndef VOLT_DIV_RATIO
-# define VOLT_DIV_RATIO			3.56	// This is the proper value for an on-board APM1 voltage divider with a 3.9kOhm resistor
-#endif
-
-#ifndef CURR_AMP_PER_VOLT
-# define CURR_AMP_PER_VOLT		27.32	// This is the proper value for the AttoPilot 50V/90A sensor
-#endif
-
-#ifndef CURR_AMPS_OFFSET
-# define CURR_AMPS_OFFSET		0.0
-#endif
-#ifndef HIGH_DISCHARGE
-# define HIGH_DISCHARGE		1760
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -368,6 +324,7 @@
 # define LOGGING_ENABLED		ENABLED
 #endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
 #define DEFAULT_LOG_BITMASK     \
     MASK_LOG_ATTITUDE_MED | \
     MASK_LOG_GPS | \
@@ -379,7 +336,12 @@
     MASK_LOG_SONAR | \
     MASK_LOG_COMPASS | \
     MASK_LOG_CURRENT | \
+    MASK_LOG_STEERING | \
     MASK_LOG_CAMERA
+#else
+// other systems have plenty of space for full logs
+#define DEFAULT_LOG_BITMASK   0xffff
+#endif
 
 
 
@@ -417,4 +379,14 @@
 
 #ifndef SONAR_ENABLED
 # define SONAR_ENABLED       DISABLED
+#endif
+
+/*
+  build a firmware version string.
+  GIT_VERSION comes from Makefile builds
+*/
+#ifndef GIT_VERSION
+#define FIRMWARE_STRING THISFIRMWARE
+#else
+#define FIRMWARE_STRING THISFIRMWARE " (" GIT_VERSION ")"
 #endif

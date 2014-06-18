@@ -1,11 +1,20 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-//
-// This is free software; you can redistribute it and/or modify it under
-// the terms of the GNU Lesser General Public License as published by the
-// Free Software Foundation; either version 2.1 of the License, or (at
-// your option) any later version.
-//
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
 
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+//
 /// @file	AP_Param.h
 /// @brief	A system for managing and storing variables that are of
 ///			general interest to the system.
@@ -103,8 +112,6 @@ public:
         uint16_t i;
         for (i=0; pgm_read_byte(&info[i].type) != AP_PARAM_NONE; i++) ;
         _num_vars = i;
-        
-        check_var_info();
     }
 
     // empty constructor
@@ -236,6 +243,9 @@ public:
     /// cast a variable to a float given its type
     float                   cast_to_float(enum ap_var_type type) const;
 
+    // check var table for consistency
+    static bool             check_var_info(void);
+
 private:
     /// EEPROM header
     ///
@@ -276,7 +286,6 @@ private:
 
     static bool                 check_group_info(const struct GroupInfo *group_info, uint16_t *total_size, uint8_t max_bits);
     static bool                 duplicate_key(uint8_t vindex, uint8_t key);
-    static bool                 check_var_info(void);
     const struct Info *         find_var_info_group(
                                     const struct GroupInfo *    group_info,
                                     uint8_t                     vindex,

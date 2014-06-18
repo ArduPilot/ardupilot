@@ -172,19 +172,6 @@
                <field type="float" name="zp2">Z2 Position</field>
                <field type="char[26]" name="name">POI connection name</field>
           </message>
-          <message id="193" name="DATA_TRANSMISSION_HANDSHAKE">
-               <field type="uint8_t" name="type">type of requested/acknowledged data (as defined in ENUM DATA_TYPES in mavlink/include/mavlink_types.h)</field>
-               <field type="uint32_t" name="size">total data size in bytes (set on ACK only)</field>
-               <field type="uint16_t" name="width">Width of a matrix or image</field>
-               <field type="uint16_t" name="height">Height of a matrix or image</field>
-               <field type="uint8_t" name="packets">number of packets beeing sent (set on ACK only)</field>
-               <field type="uint8_t" name="payload">payload size per packet (normally 253 byte, see DATA field size in message ENCAPSULATED_DATA) (set on ACK only)</field>
-               <field type="uint8_t" name="jpg_quality">JPEG quality out of [1,100]</field>
-          </message>
-          <message id="194" name="ENCAPSULATED_DATA">
-               <field type="uint16_t" name="seqnr">sequence number (starting with 0 on every transmission)</field>
-               <field type="uint8_t[253]" name="data">image data bytes</field>
-          </message>
           <message id="195" name="BRIEF_FEATURE">
                <field type="float" name="x">x position in m</field>
                <field type="float" name="y">y position in m</field>

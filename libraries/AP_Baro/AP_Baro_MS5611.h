@@ -77,20 +77,17 @@ public:
     bool            init();
     uint8_t         read();
     float           get_pressure(); // in mbar*100 units
-    float           get_temperature(); // in celsius degrees * 100 units
+    float           get_temperature(); // in celsius degrees
 
-    int32_t         get_raw_pressure();
-    int32_t         get_raw_temp();
-
-    void            _calculate();
 
     /* Serial port drivers to pass to "init". */
     static AP_Baro_MS5611_SPI spi;
     static AP_Baro_MS5611_I2C i2c;
 
 private:
+    void            _calculate();
     /* Asynchronous handler functions: */
-    static void                     _update(uint32_t );
+    void                            _update();
     /* Asynchronous state: */
     static volatile bool            _updated;
     static volatile uint8_t         _d1_count;

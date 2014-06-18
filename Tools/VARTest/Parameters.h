@@ -61,8 +61,8 @@ public:
 
         // 120: Fly-by-wire control
         //
-        k_param_flybywire_airspeed_min = 120,
-        k_param_flybywire_airspeed_max,
+        k_param_airspeed_min = 120,
+        k_param_airspeed_max,
         k_param_FBWB_min_altitude,  // 0=disabled, minimum value for altitude in cm (for first time try 30 meters = 3000 cm)
 
         //
@@ -254,8 +254,8 @@ public:
 
     // Fly-by-wire
     //
-    AP_Int8     flybywire_airspeed_min;
-    AP_Int8     flybywire_airspeed_max;
+    AP_Int8     airspeed_min;
+    AP_Int8     airspeed_max;
     AP_Int16    FBWB_min_altitude;
 
     // Throttle

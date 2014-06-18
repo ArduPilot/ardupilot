@@ -1,36 +1,39 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 //
 //  SiRF Binary GPS driver for ArduPilot and ArduPilotMega.
 //	Code by Michael Smith.
-//
-//	This library is free software; you can redistribute it and / or
-//	modify it under the terms of the GNU Lesser General Public
-//	License as published by the Free Software Foundation; either
-//	version 2.1 of the License, or (at your option) any later version.
 //
 #ifndef __AP_GPS_SIRF_H__
 #define __AP_GPS_SIRF_H__
 
 #include <AP_HAL.h>
 #include <AP_Common.h>
-#include "GPS.h"
+#include <AP_GPS.h>
 
 #define SIRF_SET_BINARY "$PSRF100,0,38400,8,1,0*3C"
 
-class AP_GPS_SIRF : public GPS {
+class AP_GPS_SIRF : public AP_GPS_Backend {
 public:
-	AP_GPS_SIRF() : 
-		GPS(),
-		_step(0),
-		_gather(false),
-		_payload_length(0),
-		_payload_counter(0),
-		_msg_id(0)
-		{}
+	AP_GPS_SIRF(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
-    virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
-    virtual bool        read();
-	static bool         _detect(uint8_t data);
+    bool read();
+
+	static bool _detect(struct SIRF_detect_state &state, uint8_t data);
 
 private:
     struct PACKED sirf_geonav {
@@ -99,6 +102,8 @@ private:
 
     bool        _parse_gps(void);
     void        _accumulate(uint8_t val);
+
+    static const uint8_t _initialisation_blob[];
 };
 
 #endif // AP_GPS_SIRF_h

@@ -8,7 +8,7 @@ ifeq ($(ARDUINO),)
   #
   ifeq ($(SYSTYPE),Darwin)
     # use Spotlight to find Arduino.app
-    ARDUINO_QUERY	=	'kMDItemKind == Application && kMDItemFSName == Arduino.app'
+    ARDUINO_QUERY	=	'kMDItemContentType == com.apple.application-bundle && kMDItemFSName == Arduino.app'
     ARDUINOS		:=	$(addsuffix /Contents/Resources/Java,$(shell mdfind -literal $(ARDUINO_QUERY)))
     ifeq ($(ARDUINOS),)
       $(error ERROR: Spotlight cannot find Arduino on your system.)

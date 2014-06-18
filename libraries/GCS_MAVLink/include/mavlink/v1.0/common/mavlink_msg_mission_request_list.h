@@ -64,7 +64,7 @@ static inline uint16_t mavlink_msg_mission_request_list_pack(uint8_t system_id, 
  * @brief Pack a mission_request_list message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param target_system System ID
  * @param target_component Component ID
@@ -97,7 +97,7 @@ static inline uint16_t mavlink_msg_mission_request_list_pack_chan(uint8_t system
 }
 
 /**
- * @brief Encode a mission_request_list struct into a message
+ * @brief Encode a mission_request_list struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -107,6 +107,20 @@ static inline uint16_t mavlink_msg_mission_request_list_pack_chan(uint8_t system
 static inline uint16_t mavlink_msg_mission_request_list_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_mission_request_list_t* mission_request_list)
 {
 	return mavlink_msg_mission_request_list_pack(system_id, component_id, msg, mission_request_list->target_system, mission_request_list->target_component);
+}
+
+/**
+ * @brief Encode a mission_request_list struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param mission_request_list C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_mission_request_list_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_mission_request_list_t* mission_request_list)
+{
+	return mavlink_msg_mission_request_list_pack_chan(system_id, component_id, chan, msg, mission_request_list->target_system, mission_request_list->target_component);
 }
 
 /**
@@ -142,6 +156,40 @@ static inline void mavlink_msg_mission_request_list_send(mavlink_channel_t chan,
 #endif
 #endif
 }
+
+#if MAVLINK_MSG_ID_MISSION_REQUEST_LIST_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+  This varient of _send() can be used to save stack space by re-using
+  memory from the receive buffer.  The caller provides a
+  mavlink_message_t which is the size of a full mavlink message. This
+  is usually the receive buffer for the channel, and allows a reply to an
+  incoming message with minimum stack space usage.
+ */
+static inline void mavlink_msg_mission_request_list_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan,  uint8_t target_system, uint8_t target_component)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_uint8_t(buf, 0, target_system);
+	_mav_put_uint8_t(buf, 1, target_component);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_MISSION_REQUEST_LIST, buf, MAVLINK_MSG_ID_MISSION_REQUEST_LIST_LEN, MAVLINK_MSG_ID_MISSION_REQUEST_LIST_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_MISSION_REQUEST_LIST, buf, MAVLINK_MSG_ID_MISSION_REQUEST_LIST_LEN);
+#endif
+#else
+	mavlink_mission_request_list_t *packet = (mavlink_mission_request_list_t *)msgbuf;
+	packet->target_system = target_system;
+	packet->target_component = target_component;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_MISSION_REQUEST_LIST, (const char *)packet, MAVLINK_MSG_ID_MISSION_REQUEST_LIST_LEN, MAVLINK_MSG_ID_MISSION_REQUEST_LIST_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_MISSION_REQUEST_LIST, (const char *)packet, MAVLINK_MSG_ID_MISSION_REQUEST_LIST_LEN);
+#endif
+#endif
+}
+#endif
 
 #endif
 

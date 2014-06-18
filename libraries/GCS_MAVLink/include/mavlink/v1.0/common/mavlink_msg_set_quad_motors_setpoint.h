@@ -79,7 +79,7 @@ static inline uint16_t mavlink_msg_set_quad_motors_setpoint_pack(uint8_t system_
  * @brief Pack a set_quad_motors_setpoint message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param target_system System ID of the system that should set these motor commands
  * @param motor_front_nw Front motor in + configuration, front left motor in x configuration
@@ -121,7 +121,7 @@ static inline uint16_t mavlink_msg_set_quad_motors_setpoint_pack_chan(uint8_t sy
 }
 
 /**
- * @brief Encode a set_quad_motors_setpoint struct into a message
+ * @brief Encode a set_quad_motors_setpoint struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -131,6 +131,20 @@ static inline uint16_t mavlink_msg_set_quad_motors_setpoint_pack_chan(uint8_t sy
 static inline uint16_t mavlink_msg_set_quad_motors_setpoint_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_set_quad_motors_setpoint_t* set_quad_motors_setpoint)
 {
 	return mavlink_msg_set_quad_motors_setpoint_pack(system_id, component_id, msg, set_quad_motors_setpoint->target_system, set_quad_motors_setpoint->motor_front_nw, set_quad_motors_setpoint->motor_right_ne, set_quad_motors_setpoint->motor_back_se, set_quad_motors_setpoint->motor_left_sw);
+}
+
+/**
+ * @brief Encode a set_quad_motors_setpoint struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param set_quad_motors_setpoint C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_set_quad_motors_setpoint_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_set_quad_motors_setpoint_t* set_quad_motors_setpoint)
+{
+	return mavlink_msg_set_quad_motors_setpoint_pack_chan(system_id, component_id, chan, msg, set_quad_motors_setpoint->target_system, set_quad_motors_setpoint->motor_front_nw, set_quad_motors_setpoint->motor_right_ne, set_quad_motors_setpoint->motor_back_se, set_quad_motors_setpoint->motor_left_sw);
 }
 
 /**
@@ -175,6 +189,46 @@ static inline void mavlink_msg_set_quad_motors_setpoint_send(mavlink_channel_t c
 #endif
 #endif
 }
+
+#if MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+  This varient of _send() can be used to save stack space by re-using
+  memory from the receive buffer.  The caller provides a
+  mavlink_message_t which is the size of a full mavlink message. This
+  is usually the receive buffer for the channel, and allows a reply to an
+  incoming message with minimum stack space usage.
+ */
+static inline void mavlink_msg_set_quad_motors_setpoint_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan,  uint8_t target_system, uint16_t motor_front_nw, uint16_t motor_right_ne, uint16_t motor_back_se, uint16_t motor_left_sw)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_uint16_t(buf, 0, motor_front_nw);
+	_mav_put_uint16_t(buf, 2, motor_right_ne);
+	_mav_put_uint16_t(buf, 4, motor_back_se);
+	_mav_put_uint16_t(buf, 6, motor_left_sw);
+	_mav_put_uint8_t(buf, 8, target_system);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT, buf, MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT_LEN, MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT, buf, MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT_LEN);
+#endif
+#else
+	mavlink_set_quad_motors_setpoint_t *packet = (mavlink_set_quad_motors_setpoint_t *)msgbuf;
+	packet->motor_front_nw = motor_front_nw;
+	packet->motor_right_ne = motor_right_ne;
+	packet->motor_back_se = motor_back_se;
+	packet->motor_left_sw = motor_left_sw;
+	packet->target_system = target_system;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT, (const char *)packet, MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT_LEN, MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT, (const char *)packet, MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT_LEN);
+#endif
+#endif
+}
+#endif
 
 #endif
 

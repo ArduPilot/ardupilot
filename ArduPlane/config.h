@@ -79,40 +79,14 @@
  #endif
 #endif
 
-// use this to enable telemetry on UART2. This is used
-// when you have setup the solder bridge on an APM2 to enable UART2
-#ifndef TELEMETRY_UART2
- # define TELEMETRY_UART2 DISABLED
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // main board differences
 //
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
- # define A_LED_PIN        37
- # define B_LED_PIN        36
- # define C_LED_PIN        35
- # define LED_ON           HIGH
- # define LED_OFF          LOW
- # define USB_MUX_PIN      -1
- # define BATTERY_VOLT_PIN      0      // Battery voltage on A0
- # define BATTERY_CURR_PIN      1      // Battery current on A1
  # define CONFIG_INS_TYPE CONFIG_INS_OILPAN
  # define CONFIG_BARO     AP_BARO_BMP085
  # define CONFIG_COMPASS  AP_COMPASS_HMC5843
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
- # define A_LED_PIN        27
- # define B_LED_PIN        26
- # define C_LED_PIN        25
- # define LED_ON           LOW
- # define LED_OFF          HIGH
- #if TELEMETRY_UART2 == ENABLED
-  # define USB_MUX_PIN -1
- #else
-  # define USB_MUX_PIN 23
- #endif
- # define BATTERY_VOLT_PIN      1      // Battery voltage on A1
- # define BATTERY_CURR_PIN      2      // Battery current on A2
  # define CONFIG_INS_TYPE CONFIG_INS_MPU6000
  # ifdef APM2_BETA_HARDWARE
  #  define CONFIG_BARO     AP_BARO_BMP085
@@ -122,28 +96,29 @@
  # endif
  # define CONFIG_COMPASS  AP_COMPASS_HMC5843
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
- # define A_LED_PIN        27
- # define B_LED_PIN        26
- # define C_LED_PIN        25
- # define LED_ON           LOW
- # define LED_OFF          HIGH
- # define BATTERY_VOLT_PIN      1      // Battery voltage on A1
- # define BATTERY_CURR_PIN      2      // Battery current on A2
- # define CONFIG_INS_TYPE CONFIG_INS_STUB
+ # define CONFIG_INS_TYPE CONFIG_INS_HIL
  # define CONFIG_BARO     AP_BARO_HIL
  # define CONFIG_COMPASS  AP_COMPASS_HIL
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
- # define A_LED_PIN        27
- # define B_LED_PIN        26
- # define C_LED_PIN        25
- # define LED_ON           LOW
- # define LED_OFF          HIGH
- # define USB_MUX_PIN -1
- # define BATTERY_VOLT_PIN      -1
- # define BATTERY_CURR_PIN      -1
  # define CONFIG_INS_TYPE CONFIG_INS_PX4
  # define CONFIG_BARO AP_BARO_PX4
  # define CONFIG_COMPASS  AP_COMPASS_PX4
+ # define SERIAL0_BAUD 115200
+#elif CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
+ # define CONFIG_INS_TYPE CONFIG_INS_FLYMAPLE
+ # define CONFIG_BARO AP_BARO_BMP085
+ # define CONFIG_COMPASS  AP_COMPASS_HMC5843
+ # define SERIAL0_BAUD 115200
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+ # define BATTERY_VOLT_PIN      -1
+ # define BATTERY_CURR_PIN      -1
+ # define CONFIG_INS_TYPE CONFIG_INS_L3G4200D
+ # define CONFIG_BARO     AP_BARO_BMP085
+ # define CONFIG_COMPASS  AP_COMPASS_HMC5843
+#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+ # define CONFIG_INS_TYPE CONFIG_INS_VRBRAIN
+ # define CONFIG_BARO AP_BARO_VRBRAIN
+ # define CONFIG_COMPASS  AP_COMPASS_VRBRAIN
  # define SERIAL0_BAUD 115200
 #endif
 
@@ -164,24 +139,12 @@
 #endif
 
 #if HIL_MODE != HIL_MODE_DISABLED       // we are in HIL mode
- #undef GPS_PROTOCOL
- #define GPS_PROTOCOL GPS_PROTOCOL_HIL
  #undef CONFIG_BARO
  #define CONFIG_BARO AP_BARO_HIL
  #undef CONFIG_INS_TYPE
- #define CONFIG_INS_TYPE CONFIG_INS_STUB
+ #define CONFIG_INS_TYPE CONFIG_INS_HIL
  #undef  CONFIG_COMPASS
  #define CONFIG_COMPASS  AP_COMPASS_HIL
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// GPS_PROTOCOL
-//
-// Note that this test must follow the HIL_PROTOCOL block as the HIL
-// setup may override the GPS configuration.
-//
-#ifndef GPS_PROTOCOL
- # define GPS_PROTOCOL GPS_PROTOCOL_AUTO
 #endif
 
 #ifndef MAV_SYSTEM_ID
@@ -194,25 +157,13 @@
 #ifndef SERIAL0_BAUD
  # define SERIAL0_BAUD                   115200
 #endif
-#ifndef SERIAL3_BAUD
- # define SERIAL3_BAUD                    57600
+#ifndef SERIAL1_BAUD
+ # define SERIAL1_BAUD                    57600
+#endif
+#ifndef SERIAL2_BAUD
+ # define SERIAL2_BAUD                    57600
 #endif
 
-
-//////////////////////////////////////////////////////////////////////////////
-// Battery monitoring
-//
-#ifndef VOLT_DIV_RATIO
- # define VOLT_DIV_RATIO                 3.56   // This is the proper value for an on-board APM1 voltage divider with a 3.9kOhm resistor
-//# define VOLT_DIV_RATIO		15.70	// This is the proper value for the AttoPilot 50V/90A sensor
-//# define VOLT_DIV_RATIO		4.127	// This is the proper value for the AttoPilot 13.6V/45A sensor
-
-#endif
-
-#ifndef CURR_AMP_PER_VOLT
- # define CURR_AMP_PER_VOLT              27.32  // This is the proper value for the AttoPilot 50V/90A sensor
-//# define CURR_AMP_PER_VOLT	13.66	// This is the proper value for the AttoPilot 13.6V/45A sensor
-#endif
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -284,10 +235,10 @@
  # define FLIGHT_MODE_2                  RTL
 #endif
 #if !defined(FLIGHT_MODE_3)
- # define FLIGHT_MODE_3                  STABILIZE
+ # define FLIGHT_MODE_3                  FLY_BY_WIRE_A
 #endif
 #if !defined(FLIGHT_MODE_4)
- # define FLIGHT_MODE_4                  STABILIZE
+ # define FLIGHT_MODE_4                  FLY_BY_WIRE_A
 #endif
 #if !defined(FLIGHT_MODE_5)
  # define FLIGHT_MODE_5                  MANUAL
@@ -302,8 +253,6 @@
 // THROTTLE_FS_VALUE
 // SHORT_FAILSAFE_ACTION
 // LONG_FAILSAFE_ACTION
-// GCS_HEARTBEAT_FAILSAFE
-//
 #ifndef THROTTLE_FAILSAFE
  # define THROTTLE_FAILSAFE              ENABLED
 #endif
@@ -316,10 +265,6 @@
 #ifndef LONG_FAILSAFE_ACTION
  # define LONG_FAILSAFE_ACTION           0
 #endif
-#ifndef GCS_HEARTBEAT_FAILSAFE
- # define GCS_HEARTBEAT_FAILSAFE         DISABLED
-#endif
-
 
 //////////////////////////////////////////////////////////////////////////////
 // AUTO_TRIM
@@ -349,13 +294,6 @@
 //
 #ifndef GROUND_START_DELAY
  # define GROUND_START_DELAY             0
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// ENABLE_AIR_START
-//
-#ifndef ENABLE_AIR_START
- # define ENABLE_AIR_START               DISABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -405,9 +343,6 @@
 //////////////////////////////////////////////////////////////////////////////
 // Altitude measurement and control.
 //
-#ifndef ALT_EST_GAIN
- # define ALT_EST_GAIN                   0.01
-#endif
 #ifndef ALTITUDE_MIX
  # define ALTITUDE_MIX                   1
 #endif
@@ -435,7 +370,7 @@
 // FLY_BY_WIRE_B airspeed control
 //
 #ifndef AIRSPEED_FBW_MIN
- # define AIRSPEED_FBW_MIN               6
+ # define AIRSPEED_FBW_MIN               9
 #endif
 #ifndef AIRSPEED_FBW_MAX
  # define AIRSPEED_FBW_MAX               22
@@ -445,24 +380,6 @@
  # define ALT_HOLD_FBW 0
 #endif
 #define ALT_HOLD_FBW_CM ALT_HOLD_FBW*100
-
-
-
-/*  The following parameters have no corresponding control implementation
- * #ifndef THROTTLE_ALT_P
- # define THROTTLE_ALT_P         0.32
- ##endif
- ##ifndef THROTTLE_ALT_I
- # define THROTTLE_ALT_I         0.0
- ##endif
- ##ifndef THROTTLE_ALT_D
- # define THROTTLE_ALT_D         0.0
- ##endif
- ##ifndef THROTTLE_ALT_INT_MAX
- # define THROTTLE_ALT_INT_MAX   20
- ##endif
- ##define THROTTLE_ALT_INT_MAX_CM THROTTLE_ALT_INT_MAX*100
- */
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -485,7 +402,7 @@
  # define HEAD_MAX                               45
 #endif
 #ifndef PITCH_MAX
- # define PITCH_MAX                              15
+ # define PITCH_MAX                              20
 #endif
 #ifndef PITCH_MIN
  # define PITCH_MIN                              -25
@@ -494,135 +411,10 @@
 #define PITCH_MAX_CENTIDEGREE PITCH_MAX * 100
 #define PITCH_MIN_CENTIDEGREE PITCH_MIN * 100
 
-//////////////////////////////////////////////////////////////////////////////
-// Attitude control gains
-//
-#ifndef SERVO_ROLL_P
- # define SERVO_ROLL_P         0.4
-#endif
-#ifndef SERVO_ROLL_I
- # define SERVO_ROLL_I         0.0
-#endif
-#ifndef SERVO_ROLL_D
- # define SERVO_ROLL_D         0.0
-#endif
-#ifndef SERVO_ROLL_INT_MAX
- # define SERVO_ROLL_INT_MAX   5
-#endif
-#define SERVO_ROLL_INT_MAX_CENTIDEGREE SERVO_ROLL_INT_MAX*100
-#ifndef ROLL_SLEW_LIMIT
- # define ROLL_SLEW_LIMIT      0
-#endif
-#ifndef SERVO_PITCH_P
- # define SERVO_PITCH_P        0.6
-#endif
-#ifndef SERVO_PITCH_I
- # define SERVO_PITCH_I        0.0
-#endif
-#ifndef SERVO_PITCH_D
- # define SERVO_PITCH_D        0.0
-#endif
-#ifndef SERVO_PITCH_INT_MAX
- # define SERVO_PITCH_INT_MAX  5
-#endif
-#define SERVO_PITCH_INT_MAX_CENTIDEGREE SERVO_PITCH_INT_MAX*100
-#ifndef PITCH_COMP
- # define PITCH_COMP           0.2
-#endif
-#ifndef SERVO_YAW_P
- # define SERVO_YAW_P          0.0
-#endif
-#ifndef SERVO_YAW_I
- # define SERVO_YAW_I          0.0
-#endif
-#ifndef SERVO_YAW_D
- # define SERVO_YAW_D          0.0
-#endif
-#ifndef SERVO_YAW_INT_MAX
- # define SERVO_YAW_INT_MAX    0
-#endif
 #ifndef RUDDER_MIX
  # define RUDDER_MIX           0.5
 #endif
 
-
-//////////////////////////////////////////////////////////////////////////////
-// Navigation control gains
-//
-#ifndef NAV_ROLL_P
- # define NAV_ROLL_P           0.7
-#endif
-#ifndef NAV_ROLL_I
- # define NAV_ROLL_I           0.02
-#endif
-#ifndef NAV_ROLL_D
- # define NAV_ROLL_D           0.1
-#endif
-#ifndef NAV_ROLL_INT_MAX
- # define NAV_ROLL_INT_MAX     5
-#endif
-#define NAV_ROLL_INT_MAX_CENTIDEGREE NAV_ROLL_INT_MAX*100
-#ifndef NAV_PITCH_ASP_P
- # define NAV_PITCH_ASP_P      0.65
-#endif
-#ifndef NAV_PITCH_ASP_I
- # define NAV_PITCH_ASP_I      0.1
-#endif
-#ifndef NAV_PITCH_ASP_D
- # define NAV_PITCH_ASP_D      0.0
-#endif
-#ifndef NAV_PITCH_ASP_INT_MAX
- # define NAV_PITCH_ASP_INT_MAX 5
-#endif
-#define NAV_PITCH_ASP_INT_MAX_CMSEC NAV_PITCH_ASP_INT_MAX*100
-#ifndef NAV_PITCH_ALT_P
- # define NAV_PITCH_ALT_P      0.65
-#endif
-#ifndef NAV_PITCH_ALT_I
- # define NAV_PITCH_ALT_I      0.1
-#endif
-#ifndef NAV_PITCH_ALT_D
- # define NAV_PITCH_ALT_D      0.0
-#endif
-#ifndef NAV_PITCH_ALT_INT_MAX
- # define NAV_PITCH_ALT_INT_MAX 5
-#endif
-#define NAV_PITCH_ALT_INT_MAX_CM NAV_PITCH_ALT_INT_MAX*100
-
-
-//////////////////////////////////////////////////////////////////////////////
-// Energy/Altitude control gains
-//
-#ifndef THROTTLE_TE_P
- # define THROTTLE_TE_P        0.50
-#endif
-#ifndef THROTTLE_TE_I
- # define THROTTLE_TE_I        0.0
-#endif
-#ifndef THROTTLE_TE_D
- # define THROTTLE_TE_D        0.0
-#endif
-#ifndef THROTTLE_TE_INT_MAX
- # define THROTTLE_TE_INT_MAX  20
-#endif
-#ifndef THROTTLE_SLEW_LIMIT
- # define THROTTLE_SLEW_LIMIT  0
-#endif
-#ifndef PITCH_TARGET
- # define PITCH_TARGET         0
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Crosstrack compensation
-//
-#ifndef XTRACK_GAIN
- # define XTRACK_GAIN          1 // deg/m
-#endif
-#ifndef XTRACK_ENTRY_ANGLE
- # define XTRACK_ENTRY_ANGLE   30 // deg
-#endif
-# define XTRACK_GAIN_SCALED XTRACK_GAIN*100
-# define XTRACK_ENTRY_ANGLE_CENTIDEGREE XTRACK_ENTRY_ANGLE*100
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -638,6 +430,7 @@
  # define LOGGING_ENABLED                ENABLED
 #endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
 #define DEFAULT_LOG_BITMASK     \
     MASK_LOG_ATTITUDE_MED | \
     MASK_LOG_GPS | \
@@ -649,7 +442,12 @@
     MASK_LOG_COMPASS | \
     MASK_LOG_CURRENT | \
     MASK_LOG_TECS | \
-    MASK_LOG_CAMERA
+    MASK_LOG_CAMERA | \
+    MASK_LOG_RC
+#else
+// other systems have plenty of space for full logs
+#define DEFAULT_LOG_BITMASK   0xffff
+#endif
 
 
 
@@ -720,6 +518,23 @@
 #endif
 
 #ifndef SERIAL_BUFSIZE
- # define SERIAL_BUFSIZE 256
+ # define SERIAL_BUFSIZE 512
 #endif
 
+#ifndef SERIAL1_BUFSIZE
+ # define SERIAL1_BUFSIZE 256
+#endif
+
+#ifndef SERIAL2_BUFSIZE
+ # define SERIAL2_BUFSIZE 256
+#endif
+
+/*
+  build a firmware version string.
+  GIT_VERSION comes from Makefile builds
+*/
+#ifndef GIT_VERSION
+#define FIRMWARE_STRING THISFIRMWARE
+#else
+#define FIRMWARE_STRING THISFIRMWARE " (" GIT_VERSION ")"
+#endif

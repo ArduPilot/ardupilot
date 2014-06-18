@@ -99,7 +99,7 @@ static inline uint16_t mavlink_msg_setpoint_8dof_pack(uint8_t system_id, uint8_t
  * @brief Pack a setpoint_8dof message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param target_system System ID
  * @param val1 Value 1
@@ -153,7 +153,7 @@ static inline uint16_t mavlink_msg_setpoint_8dof_pack_chan(uint8_t system_id, ui
 }
 
 /**
- * @brief Encode a setpoint_8dof struct into a message
+ * @brief Encode a setpoint_8dof struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -163,6 +163,20 @@ static inline uint16_t mavlink_msg_setpoint_8dof_pack_chan(uint8_t system_id, ui
 static inline uint16_t mavlink_msg_setpoint_8dof_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_setpoint_8dof_t* setpoint_8dof)
 {
 	return mavlink_msg_setpoint_8dof_pack(system_id, component_id, msg, setpoint_8dof->target_system, setpoint_8dof->val1, setpoint_8dof->val2, setpoint_8dof->val3, setpoint_8dof->val4, setpoint_8dof->val5, setpoint_8dof->val6, setpoint_8dof->val7, setpoint_8dof->val8);
+}
+
+/**
+ * @brief Encode a setpoint_8dof struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param setpoint_8dof C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_setpoint_8dof_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_setpoint_8dof_t* setpoint_8dof)
+{
+	return mavlink_msg_setpoint_8dof_pack_chan(system_id, component_id, chan, msg, setpoint_8dof->target_system, setpoint_8dof->val1, setpoint_8dof->val2, setpoint_8dof->val3, setpoint_8dof->val4, setpoint_8dof->val5, setpoint_8dof->val6, setpoint_8dof->val7, setpoint_8dof->val8);
 }
 
 /**
@@ -219,6 +233,54 @@ static inline void mavlink_msg_setpoint_8dof_send(mavlink_channel_t chan, uint8_
 #endif
 #endif
 }
+
+#if MAVLINK_MSG_ID_SETPOINT_8DOF_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+  This varient of _send() can be used to save stack space by re-using
+  memory from the receive buffer.  The caller provides a
+  mavlink_message_t which is the size of a full mavlink message. This
+  is usually the receive buffer for the channel, and allows a reply to an
+  incoming message with minimum stack space usage.
+ */
+static inline void mavlink_msg_setpoint_8dof_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan,  uint8_t target_system, float val1, float val2, float val3, float val4, float val5, float val6, float val7, float val8)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_float(buf, 0, val1);
+	_mav_put_float(buf, 4, val2);
+	_mav_put_float(buf, 8, val3);
+	_mav_put_float(buf, 12, val4);
+	_mav_put_float(buf, 16, val5);
+	_mav_put_float(buf, 20, val6);
+	_mav_put_float(buf, 24, val7);
+	_mav_put_float(buf, 28, val8);
+	_mav_put_uint8_t(buf, 32, target_system);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SETPOINT_8DOF, buf, MAVLINK_MSG_ID_SETPOINT_8DOF_LEN, MAVLINK_MSG_ID_SETPOINT_8DOF_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SETPOINT_8DOF, buf, MAVLINK_MSG_ID_SETPOINT_8DOF_LEN);
+#endif
+#else
+	mavlink_setpoint_8dof_t *packet = (mavlink_setpoint_8dof_t *)msgbuf;
+	packet->val1 = val1;
+	packet->val2 = val2;
+	packet->val3 = val3;
+	packet->val4 = val4;
+	packet->val5 = val5;
+	packet->val6 = val6;
+	packet->val7 = val7;
+	packet->val8 = val8;
+	packet->target_system = target_system;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SETPOINT_8DOF, (const char *)packet, MAVLINK_MSG_ID_SETPOINT_8DOF_LEN, MAVLINK_MSG_ID_SETPOINT_8DOF_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SETPOINT_8DOF, (const char *)packet, MAVLINK_MSG_ID_SETPOINT_8DOF_LEN);
+#endif
+#endif
+}
+#endif
 
 #endif
 

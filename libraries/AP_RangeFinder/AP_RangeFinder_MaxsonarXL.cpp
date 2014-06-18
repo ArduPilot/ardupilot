@@ -1,13 +1,23 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*
  *       AP_RangeFinder_MaxsonarXL.cpp - Arduino Library for Sharpe GP2Y0A02YK0F
  *       infrared proximity sensor
  *       Code by Jose Julio and Randy Mackay. DIYDrones.com
- *
- *       This library is free software; you can redistribute it and/or
- *   modify it under the terms of the GNU Lesser General Public
- *   License as published by the Free Software Foundation; either
- *   version 2.1 of the License, or (at your option) any later version.
  *
  *       Sparkfun URL: http://www.sparkfun.com/products/9491
  *       datasheet: http://www.sparkfun.com/datasheets/Sensors/Proximity/XL-EZ0-Datasheet.pdf
@@ -15,7 +25,6 @@
  *       Sensor should be connected to one of the analog ports
  *
  *       Variables:
- *               int raw_value : raw value from the sensor
  *               int distance : distance in cm
  *               int max_distance : maximum measurable distance (in cm)
  *               int min_distance : minimum measurable distance (in cm)
@@ -38,7 +47,7 @@ AP_RangeFinder_MaxsonarXL::AP_RangeFinder_MaxsonarXL(AP_HAL::AnalogSource *sourc
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
-float AP_RangeFinder_MaxsonarXL::calculate_scaler(int sonar_type, float adc_refence_voltage)
+float AP_RangeFinder_MaxsonarXL::calculate_scaler(int16_t sonar_type, float adc_refence_voltage)
 {
     float type_scaler = 1.0f;
     switch(sonar_type) {

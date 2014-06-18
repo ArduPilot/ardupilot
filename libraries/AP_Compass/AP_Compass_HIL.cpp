@@ -1,12 +1,23 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*
  *       AP_Compass_HIL.cpp - Arduino Library for HIL model of HMC5843 I2C Magnetometer
  *       Code by James Goppert. DIYDrones.com
  *
- *       This library is free software; you can redistribute it and / or
- *               modify it under the terms of the GNU Lesser General Public
- *               License as published by the Free Software Foundation; either
- *               version 2.1 of the License, or (at your option) any later version.
  */
 
 
@@ -40,21 +51,17 @@ void AP_Compass_HIL::_setup_earth_field(void)
 bool AP_Compass_HIL::read()
 {
     // get offsets
-    Vector3f ofs = _offset.get();
+    Vector3f ofs = _offset[0].get();
 
     // apply motor compensation
     if(_motor_comp_type != AP_COMPASS_MOT_COMP_DISABLED && _thr_or_curr != 0.0f) {
-        _motor_offset = _motor_compensation.get() * _thr_or_curr;
+        _motor_offset[0] = _motor_compensation[0].get() * _thr_or_curr;
     }else{
-        _motor_offset.x = 0;
-        _motor_offset.y = 0;
-        _motor_offset.z = 0;
+        _motor_offset[0].zero();
     }
 
     // return last values provided by setHIL function
-    mag_x = _hil_mag.x + ofs.x + _motor_offset.x;
-    mag_y = _hil_mag.y + ofs.y + _motor_offset.y;
-    mag_z = _hil_mag.z + ofs.z + _motor_offset.z;
+    _field[0] = _hil_mag + ofs + _motor_offset[0];
 
     // values set by setHIL function
     last_update = hal.scheduler->micros();      // record time of update
@@ -91,10 +98,26 @@ void AP_Compass_HIL::setHIL(float roll, float pitch, float yaw)
     // add user selectable orientation
     _hil_mag.rotate((enum Rotation)_orientation.get());
 
-    // and add in AHRS_ORIENTATION setting
-    _hil_mag.rotate(_board_orientation);
+    if (!_external) {
+        // and add in AHRS_ORIENTATION setting if not an external compass
+        _hil_mag.rotate(_board_orientation);
+    }
 
-    healthy = true;
+    _healthy[0] = true;
+}
+
+// Update raw magnetometer values from HIL mag vector
+//
+void AP_Compass_HIL::setHIL(const Vector3f &mag)
+{
+    _hil_mag.x = mag.x;
+    _hil_mag.y = mag.y;
+    _hil_mag.z = mag.z;
+    _healthy[0] = true;
+}
+
+const Vector3f& AP_Compass_HIL::getHIL() const {
+    return _hil_mag;
 }
 
 void AP_Compass_HIL::accumulate(void)

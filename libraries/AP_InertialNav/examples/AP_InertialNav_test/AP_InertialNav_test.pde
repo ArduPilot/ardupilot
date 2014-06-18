@@ -8,6 +8,7 @@
 #include <AP_HAL_AVR.h>
 
 #include <AP_GPS.h>             // ArduPilot GPS library
+#include <AP_GPS_Glitch.h>      // GPS glitch protection library
 #include <AP_ADC.h>             // ArduPilot Mega Analog to Digital Converter Library
 #include <AP_ADC_AnalogSource.h>
 #include <AP_Baro.h>            // ArduPilot Mega Barometer Library
@@ -17,57 +18,49 @@
 #include <AP_InertialSensor.h>  // ArduPilot Mega Inertial Sensor (accel & gyro) Library
 #include <AP_AHRS.h>
 #include <AP_Airspeed.h>
+#include <AP_Vehicle.h>
+#include <DataFlash.h>
 #include <AC_PID.h>             // PID library
-#include <APM_PI.h>             // PID library
+#include <AC_P.h>               // P library
 #include <AP_Buffer.h>          // ArduPilot general purpose FIFO buffer
+#include <DataFlash.h>
 #include <GCS_MAVLink.h>
+#include <AP_Mission.h>
+#include <AP_Notify.h>
 
 #include <AP_InertialNav.h>
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
 
-#define A_LED_PIN 27
-#define C_LED_PIN 25
 AP_InertialSensor_MPU6000 ins;
 AP_Baro_MS5611 baro(&AP_Baro_MS5611::spi);
 
 #else
 
-#define A_LED_PIN 37
-#define C_LED_PIN 35
 AP_ADC_ADS7844 adc;
 AP_InertialSensor_Oilpan ins(&adc);
 AP_Baro_BMP085 baro;
 #endif
 
-GPS *gps;
-AP_GPS_Auto auto_gps(&gps);
+AP_GPS gps;
+GPS_Glitch   gps_glitch(gps);
 
 AP_Compass_HMC5843 compass;
-AP_AHRS_DCM ahrs(&ins, gps);
+AP_AHRS_DCM ahrs(ins, baro, gps);
 
-AP_InertialNav inertialnav(&ahrs, &ins, &baro, &gps);
+AP_InertialNav inertialnav(ahrs, baro, gps_glitch);
 
 uint32_t last_update;
-
-static void flash_leds(bool on) {
-    hal.gpio->write(A_LED_PIN, on);
-    hal.gpio->write(C_LED_PIN, ~on);
-}
 
 void setup(void)
 {
     hal.console->println_P(PSTR("AP_InertialNav test startup..."));
-    hal.gpio->pinMode(A_LED_PIN, GPIO_OUTPUT);
-    hal.gpio->pinMode(C_LED_PIN, GPIO_OUTPUT);
 
-    gps = &auto_gps;
-    gps->init(hal.uartB, GPS::GPS_ENGINE_AIRBORNE_2G);
+    gps.init(NULL);
 
     ins.init(AP_InertialSensor::COLD_START, 
-			 AP_InertialSensor::RATE_100HZ,
-			 flash_leds);
+			 AP_InertialSensor::RATE_100HZ);
 
     ahrs.set_compass(&compass);
 
@@ -75,13 +68,13 @@ void setup(void)
 
     inertialnav.init();
     inertialnav.set_velocity_xy(0,0);
-    inertialnav.set_current_position(0,0);
+    inertialnav.setup_home_position();
 }
 
 void loop(void)
 {
     hal.scheduler->delay(20);
-    gps->update();
+    gps.update();
     ahrs.update();
     uint32_t currtime = hal.scheduler->millis();
     float dt = (currtime - last_update) / 1000.0f;
@@ -90,12 +83,10 @@ void loop(void)
 
     float dx =  inertialnav.get_latitude_diff();
     float dy =  inertialnav.get_longitude_diff();
-    float velx =  inertialnav.get_latitude_velocity();
-    float vely =  inertialnav.get_longitude_velocity();
 
     hal.console->printf_P(
-            PSTR("inertial nav pos: (%f,%f) velocity: (%f, %f)\r\n"),
-            dx, dy, velx, vely);
+            PSTR("inertial nav pos: (%f,%f)\r\n"),
+            dx, dy);
 }
 
 AP_HAL_MAIN();

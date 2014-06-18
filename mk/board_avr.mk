@@ -7,11 +7,11 @@ include $(MK_DIR)/find_tools.mk
 # Tool options
 #
 DEFINES         =   -DF_CPU=$(F_CPU)
-DEFINES        +=   -DSKETCH=\"$(SKETCH)\"
+DEFINES        +=   -DSKETCH=\"$(SKETCH)\" -DAPM_BUILD_DIRECTORY=APM_BUILD_$(SKETCH)
 DEFINES        +=   $(EXTRAFLAGS) # from user config.mk
 DEFINES        +=   -DCONFIG_HAL_BOARD=$(HAL_BOARD)
 WARNFLAGS       =   -Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align
-WARNFLAGS      +=   -Wwrite-strings -Wformat=2
+WARNFLAGS      +=   -Wwrite-strings -Wformat=2 -Wno-unused-parameter -Wno-missing-field-initializers
 WARNFLAGSCXX    =   -Wno-reorder
 DEPFLAGS        =   -MD -MT $@
 

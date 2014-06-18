@@ -6,7 +6,6 @@
 static int8_t   setup_radio                             (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_show                              (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_factory                   (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_flightmodes               (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_level                             (uint8_t argc, const Menu::arg *argv);
 #if !defined( __AVR_ATmega1280__ )
 static int8_t   setup_accel_scale                       (uint8_t argc, const Menu::arg *argv);
@@ -14,8 +13,6 @@ static int8_t   setup_set                               (uint8_t argc, const Men
 #endif
 static int8_t   setup_erase                             (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_compass                   (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_declination               (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_batt_monitor              (uint8_t argc, const Menu::arg *argv);
 
 
 // Command/function table for the setup menu
@@ -24,14 +21,11 @@ static const struct Menu::command setup_menu_commands[] PROGMEM = {
     // =======          ===============
     {"reset",                       setup_factory},
     {"radio",                       setup_radio},
-    {"modes",                       setup_flightmodes},
     {"level",                       setup_level},
 #if !defined( __AVR_ATmega1280__ )
     {"accel",                       setup_accel_scale},
 #endif
     {"compass",                     setup_compass},
-    {"declination",         setup_declination},
-    {"battery",                     setup_batt_monitor},
     {"show",                        setup_show},
 #if !defined( __AVR_ATmega1280__ )
     {"set",                         setup_set},
@@ -169,7 +163,7 @@ setup_factory(uint8_t argc, const Menu::arg *argv)
     if (('y' != c) && ('Y' != c))
         return(-1);
     AP_Param::erase_all();
-    cliSerial->printf_P(PSTR("\nFACTORY RESET complete - please reset APM to continue"));
+    cliSerial->printf_P(PSTR("\nFACTORY RESET complete - please reset board to continue"));
 
     //default_flight_modes();   // This will not work here.  Replacement code located in init_ardupilot()
 
@@ -268,97 +262,6 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
 
 
 static int8_t
-setup_flightmodes(uint8_t argc, const Menu::arg *argv)
-{
-    uint8_t switchPosition, mode = 0;
-
-    cliSerial->printf_P(PSTR("\nMove RC toggle switch to each position to edit, move aileron stick to select modes."));
-    print_hit_enter();
-    trim_radio();
-
-    while(1) {
-        delay(20);
-        read_radio();
-        switchPosition = readSwitch();
-
-
-        // look for control switch change
-        if (oldSwitchPosition != switchPosition) {
-            // force position 5 to MANUAL
-            if (switchPosition > 4) {
-                flight_modes[switchPosition] = MANUAL;
-            }
-            // update our current mode
-            mode = flight_modes[switchPosition];
-
-            // update the user
-            print_switch(switchPosition, mode);
-
-            // Remember switch position
-            oldSwitchPosition = switchPosition;
-        }
-
-        // look for stick input
-        int16_t radioInputSwitch = radio_input_switch();
-
-        if (radioInputSwitch != 0) {
-
-            mode += radioInputSwitch;
-
-            while (
-                mode != MANUAL &&
-                mode != CIRCLE &&
-                mode != STABILIZE &&
-                mode != TRAINING &&
-                mode != ACRO &&
-                mode != FLY_BY_WIRE_A &&
-                mode != FLY_BY_WIRE_B &&
-                mode != CRUISE &&
-                mode != AUTO &&
-                mode != RTL &&
-                mode != LOITER)
-            {
-                if (mode < MANUAL)
-                    mode = LOITER;
-                else if (mode >LOITER)
-                    mode = MANUAL;
-                else
-                    mode += radioInputSwitch;
-            }
-
-            // Override position 5
-            if(switchPosition > 4)
-                mode = MANUAL;
-
-            // save new mode
-            flight_modes[switchPosition] = mode;
-
-            // print new mode
-            print_switch(switchPosition, mode);
-        }
-
-        // escape hatch
-        if(cliSerial->available() > 0) {
-            // save changes
-            for (mode=0; mode<6; mode++)
-                flight_modes[mode].save();
-            report_flight_modes();
-            print_done();
-            return (0);
-        }
-    }
-}
-
-static int8_t
-setup_declination(uint8_t argc, const Menu::arg *argv)
-{
-    compass.set_declination(radians(argv[1].f));
-    report_compass();
-    return 0;
-}
-
-
-static int8_t
 setup_erase(uint8_t argc, const Menu::arg *argv)
 {
     int c;
@@ -397,11 +300,9 @@ setup_accel_scale(uint8_t argc, const Menu::arg *argv)
     ahrs.set_fly_forward(true);
     ahrs.set_wind_estimation(true);
 
-    ins.init(AP_InertialSensor::COLD_START, 
-             ins_sample_rate,
-             flash_leds);
+    ins.init(AP_InertialSensor::COLD_START, ins_sample_rate);
     AP_InertialSensor_UserInteractStream interact(hal.console);
-    bool success = ins.calibrate_accel(flash_leds, &interact, trim_roll, trim_pitch);
+    bool success = ins.calibrate_accel(&interact, trim_roll, trim_pitch);
     if (success) {
         // reset ahrs's trim to suggested values from calibration routine
         ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
@@ -438,34 +339,10 @@ setup_compass(uint8_t argc, const Menu::arg *argv)
     return 0;
 }
 
-static int8_t
-setup_batt_monitor(uint8_t argc, const Menu::arg *argv)
-{
-    if(argv[1].i >= 0 && argv[1].i <= 4) {
-        g.battery_monitoring.set_and_save(argv[1].i);
-
-    } else {
-        cliSerial->printf_P(PSTR("\nOptions: 3-4"));
-    }
-
-    report_batt_monitor();
-    return 0;
-}
-
 /***************************************************************************/
 // CLI reports
 /***************************************************************************/
 
-static void report_batt_monitor()
-{
-    //print_blanks(2);
-    cliSerial->printf_P(PSTR("Batt Mointor\n"));
-    print_divider();
-    if(g.battery_monitoring == 0) cliSerial->printf_P(PSTR("Batt monitoring disabled"));
-    if(g.battery_monitoring == 3) cliSerial->printf_P(PSTR("Monitoring batt volts"));
-    if(g.battery_monitoring == 4) cliSerial->printf_P(PSTR("Monitoring volts and current"));
-    print_blanks(2);
-}
 static void report_radio()
 {
     //print_blanks(2);
@@ -502,18 +379,20 @@ static void report_compass()
     case AP_COMPASS_TYPE_HIL:
         cliSerial->println_P(PSTR("HIL"));
         break;
+    case AP_COMPASS_TYPE_PX4:
+        cliSerial->println_P(PSTR("PX4"));
+        break;
+    case AP_COMPASS_TYPE_VRBRAIN:
+        cliSerial->println_P(PSTR("VRBRAIN"));
+        break;
     default:
-        cliSerial->println_P(PSTR("??"));
+        cliSerial->println_P(PSTR("(unknown)"));
         break;
     }
 
     print_divider();
 
     print_enabled(g.compass_enabled);
-
-    // mag declination
-    cliSerial->printf_P(PSTR("Mag Declination: %4.4f\n"),
-                    degrees(compass.get_declination()));
 
     Vector3f offsets = compass.get_offsets();
 
@@ -522,18 +401,6 @@ static void report_compass()
                     offsets.x,
                     offsets.y,
                     offsets.z);
-    print_blanks(2);
-}
-
-static void report_flight_modes()
-{
-    //print_blanks(2);
-    cliSerial->printf_P(PSTR("Flight modes\n"));
-    print_divider();
-
-    for(int16_t i = 0; i < 6; i++ ) {
-        print_switch(i, flight_modes[i]);
-    }
     print_blanks(2);
 }
 
@@ -553,14 +420,6 @@ print_radio_values()
     cliSerial->printf_P(PSTR("CH7: %d | %d | %d\n"), (int)g.rc_7.radio_min, (int)g.rc_7.radio_trim, (int)g.rc_7.radio_max);
     cliSerial->printf_P(PSTR("CH8: %d | %d | %d\n"), (int)g.rc_8.radio_min, (int)g.rc_8.radio_trim, (int)g.rc_8.radio_max);
 
-}
-
-static void
-print_switch(uint8_t p, uint8_t m)
-{
-    cliSerial->printf_P(PSTR("Pos %d: "),p);
-    print_flight_mode(cliSerial, m);
-    cliSerial->println();
 }
 
 static void
@@ -587,38 +446,11 @@ print_divider(void)
     cliSerial->println();
 }
 
-static int8_t
-radio_input_switch(void)
-{
-    static int8_t bouncer = 0;
-
-
-    if (int16_t(channel_roll->radio_in - channel_roll->radio_trim) > 100) {
-        bouncer = 10;
-    }
-    if (int16_t(channel_roll->radio_in - channel_roll->radio_trim) < -100) {
-        bouncer = -10;
-    }
-    if (bouncer >0) {
-        bouncer--;
-    }
-    if (bouncer <0) {
-        bouncer++;
-    }
-
-    if (bouncer == 1 || bouncer == -1) {
-        return bouncer;
-    } else {
-        return 0;
-    }
-}
-
-
 static void zero_eeprom(void)
 {
     uint8_t b = 0;
     cliSerial->printf_P(PSTR("\nErasing EEPROM\n"));
-    for (uint16_t i = 0; i < EEPROM_MAX_ADDR; i++) {
+    for (uint16_t i = 0; i < HAL_STORAGE_SIZE_AVAILABLE; i++) {
         hal.storage->write_byte(i, b);
     }
     cliSerial->printf_P(PSTR("done\n"));

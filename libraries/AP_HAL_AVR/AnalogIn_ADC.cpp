@@ -61,6 +61,26 @@ float ADCSource::voltage_average(void)
 }
 
 /*
+  return voltage from 0.0 to 5.0V, scaled to Vcc
+ */
+float ADCSource::voltage_latest(void)
+{
+    if (_pin == ANALOG_INPUT_BOARD_VCC) {
+        return read_latest() * 0.001f;
+    }
+    float vcc_mV = hal.analogin->channel(ANALOG_INPUT_BOARD_VCC)->read_average();
+    float v = read_latest();
+    // constrain Vcc reading so that a bad Vcc doesn't throw off
+    // the reading of other sources too badly
+    if (vcc_mV < 4000) {
+        vcc_mV = 4000;
+    } else if (vcc_mV > 6000) {
+        vcc_mV = 6000;
+    }
+    return v * vcc_mV * 9.765625e-7; // 9.765625e-7 = 1.0/(1024*1000)
+}
+
+/*
   return voltage from 0.0 to 5.0V, assuming a ratiometric sensor. This
   means the result is really a pseudo-voltage, that assumes the supply
   voltage is exactly 5.0V.
@@ -79,7 +99,7 @@ void ADCSource::set_pin(uint8_t pin) {
             if (dpin != -1) {
                 // enable as input without a pull-up. This gives the
                 // best results for our analog sensors
-                hal.gpio->pinMode(dpin, GPIO_INPUT);
+                hal.gpio->pinMode(dpin, HAL_GPIO_INPUT);
                 hal.gpio->write(dpin, 0);
             }
         }
@@ -133,7 +153,7 @@ float ADCSource::_read_average() {
 void ADCSource::setup_read() {
     if (_stop_pin != ANALOG_INPUT_NONE) {
         uint8_t digital_pin = hal.gpio->analogPinToDigitalPin(_stop_pin);
-        hal.gpio->pinMode(digital_pin, GPIO_OUTPUT);
+        hal.gpio->pinMode(digital_pin, HAL_GPIO_OUTPUT);
         hal.gpio->write(digital_pin, 1);
     }
     if (_settle_time_ms != 0) {
@@ -153,7 +173,7 @@ void ADCSource::setup_read() {
 void ADCSource::stop_read() {
     if (_stop_pin != ANALOG_INPUT_NONE) {
         uint8_t digital_pin = hal.gpio->analogPinToDigitalPin(_stop_pin);
-        hal.gpio->pinMode(digital_pin, GPIO_OUTPUT);
+        hal.gpio->pinMode(digital_pin, HAL_GPIO_OUTPUT);
         hal.gpio->write(digital_pin, 0);
     }
 }

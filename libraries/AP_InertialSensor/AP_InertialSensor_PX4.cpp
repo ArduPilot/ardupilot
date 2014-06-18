@@ -13,66 +13,54 @@ const extern AP_HAL::HAL& hal;
 
 #include <drivers/drv_accel.h>
 #include <drivers/drv_gyro.h>
+#include <drivers/drv_hrt.h>
 
-Vector3f AP_InertialSensor_PX4::_accel_sum;
-uint32_t AP_InertialSensor_PX4::_accel_sum_count;
-Vector3f AP_InertialSensor_PX4::_gyro_sum;
-uint32_t AP_InertialSensor_PX4::_gyro_sum_count;
-volatile bool AP_InertialSensor_PX4::_in_accumulate;
-uint64_t AP_InertialSensor_PX4::_last_accel_timestamp;
-uint64_t AP_InertialSensor_PX4::_last_gyro_timestamp;
-int AP_InertialSensor_PX4::_accel_fd;
-int AP_InertialSensor_PX4::_gyro_fd;
+#include <AP_Notify.h>
 
 uint16_t AP_InertialSensor_PX4::_init_sensor( Sample_rate sample_rate ) 
 {
-    switch (sample_rate) {
-    case RATE_50HZ:
-        _sample_divider = 4;
-        _default_filter_hz = 10;
-        break;
-    case RATE_100HZ:
-        _sample_divider = 2;
-        _default_filter_hz = 20;
-        break;
-    case RATE_200HZ:
-    default:
-        _sample_divider = 1;
-        _default_filter_hz = 20;
-        break;
-    }
+    // assumes max 2 instances
+    _accel_fd[0] = open(ACCEL_DEVICE_PATH, O_RDONLY);
+    _accel_fd[1] = open(ACCEL_DEVICE_PATH "1", O_RDONLY);
+    _gyro_fd[0] = open(GYRO_DEVICE_PATH, O_RDONLY);
+    _gyro_fd[1] = open(GYRO_DEVICE_PATH "1", O_RDONLY);
 
-	// init accelerometers
-	_accel_fd = open(ACCEL_DEVICE_PATH, O_RDONLY);
-	if (_accel_fd < 0) {
+	if (_accel_fd[0] < 0) {
         hal.scheduler->panic("Unable to open accel device " ACCEL_DEVICE_PATH);
     }
-
-	_gyro_fd = open(GYRO_DEVICE_PATH, O_RDONLY);
-	if (_gyro_fd < 0) {
+	if (_gyro_fd[0] < 0) {
         hal.scheduler->panic("Unable to open gyro device " GYRO_DEVICE_PATH);
     }
+    _num_accel_instances = _accel_fd[1] >= 0?2:1;
+    _num_gyro_instances  = _gyro_fd[1]  >= 0?2:1;
 
-    /* 
-     * set the accel and gyro sampling rate. We always set these to
-     * 200 then average in this driver
-     */
-    ioctl(_accel_fd, ACCELIOCSSAMPLERATE, 200);
-    ioctl(_accel_fd, SENSORIOCSPOLLRATE,  200);
-    ioctl(_gyro_fd,  GYROIOCSSAMPLERATE,  200);
-    ioctl(_gyro_fd,  SENSORIOCSPOLLRATE,  200);
-
-    // ask for a 10 sample buffer. The mpu6000 PX4 driver doesn't
-    // support this yet, but when it does we want to use it
-    ioctl(_accel_fd, SENSORIOCSQUEUEDEPTH, 10);
-    ioctl(_gyro_fd,  SENSORIOCSQUEUEDEPTH, 10);
-
-    // register a 1kHz timer to read from PX4 sensor drivers
-    hal.scheduler->register_timer_process(_ins_timer);
+    switch (sample_rate) {
+    case RATE_50HZ:
+        _default_filter_hz = 15;
+        _sample_time_usec = 20000;
+        break;
+    case RATE_100HZ:
+        _default_filter_hz = 30;
+        _sample_time_usec = 10000;
+        break;
+    case RATE_200HZ:
+        _default_filter_hz = 30;
+        _sample_time_usec = 5000;
+        break;
+    case RATE_400HZ:
+    default:
+        _default_filter_hz = 30;
+        _sample_time_usec = 2500;
+        break;
+    }
 
     _set_filter_frequency(_mpu6000_filter);
 
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+    return AP_PRODUCT_ID_PX4_V2;
+#else
     return AP_PRODUCT_ID_PX4;
+#endif
 }
 
 /*
@@ -83,106 +71,193 @@ void AP_InertialSensor_PX4::_set_filter_frequency(uint8_t filter_hz)
     if (filter_hz == 0) {
         filter_hz = _default_filter_hz;
     }
-    ioctl(_gyro_fd,  GYROIOCSLOWPASS,  filter_hz);
-    ioctl(_accel_fd, ACCELIOCSLOWPASS, filter_hz);
+    for (uint8_t i=0; i<_num_gyro_instances; i++) {
+        ioctl(_gyro_fd[i],  GYROIOCSLOWPASS,  filter_hz);
+    }
+    for (uint8_t i=0; i<_num_accel_instances; i++) {
+        ioctl(_accel_fd[i], ACCELIOCSLOWPASS, filter_hz);
+    }
 }
 
 /*================ AP_INERTIALSENSOR PUBLIC INTERFACE ==================== */
 
+// multi-device interface
+bool AP_InertialSensor_PX4::get_gyro_health(uint8_t instance) const
+{
+    if (_sample_time_usec == 0 || _last_get_sample_timestamp == 0) {
+        // not initialised yet, show as healthy to prevent scary GCS
+        // warnings
+        return true;
+    }
+    if (instance >= _num_gyro_instances) {
+        return false;
+    }
+
+    if ((_last_get_sample_timestamp - _last_gyro_timestamp[instance]) > 2*_sample_time_usec) {
+        // gyros have not updated
+        return false;
+    }
+    return true;
+}
+
+uint8_t AP_InertialSensor_PX4::get_gyro_count(void) const
+{
+    return _num_gyro_instances;
+}
+
+bool AP_InertialSensor_PX4::get_accel_health(uint8_t k) const
+{
+    if (_sample_time_usec == 0 || _last_get_sample_timestamp == 0) {
+        // not initialised yet, show as healthy to prevent scary GCS
+        // warnings
+        return true;
+    }
+    if (k >= _num_accel_instances) {
+        return false;
+    }
+
+    if ((_last_get_sample_timestamp - _last_accel_timestamp[k]) > 2*_sample_time_usec) {
+        // accels have not updated
+        return false;
+    }
+    if (fabsf(_accel[k].x) > 30 && fabsf(_accel[k].y) > 30 && fabsf(_accel[k].z) > 30 &&
+        (_previous_accel[k] - _accel[k]).length() < 0.01f) {
+        // unchanging accel, large in all 3 axes. This is a likely
+        // accelerometer failure of the LSM303d
+        return false;
+    }
+    return true;
+    
+}
+
+uint8_t AP_InertialSensor_PX4::get_accel_count(void) const
+{
+    return _num_accel_instances;
+}
+
 bool AP_InertialSensor_PX4::update(void) 
 {
-    while (num_samples_available() == 0) {
-        hal.scheduler->delay(1);
+    if (!wait_for_sample(100)) {
+        return false;
     }
-    Vector3f accel_scale = _accel_scale.get();
 
-    hal.scheduler->suspend_timer_procs();
+    // get the latest sample from the sensor drivers
+    _get_sample();
 
-    // base the time on the gyro timestamp, as that is what is
-    // multiplied by time to integrate in DCM
-    _delta_time = (_last_gyro_timestamp - _last_update_usec) * 1.0e-6f;
-    _last_update_usec = _last_gyro_timestamp;
 
-    _accel = _accel_sum / _accel_sum_count;
-    _accel_sum.zero();
-    _accel_sum_count = 0;
+    for (uint8_t k=0; k<_num_accel_instances; k++) {
+        _previous_accel[k] = _accel[k];
+        _accel[k] = _accel_in[k];
+        _accel[k].rotate(_board_orientation);
+        _accel[k].x *= _accel_scale[k].get().x;
+        _accel[k].y *= _accel_scale[k].get().y;
+        _accel[k].z *= _accel_scale[k].get().z;
+        _accel[k]   -= _accel_offset[k];
+    }
 
-    _gyro = _gyro_sum / _gyro_sum_count;
-    _gyro_sum.zero();
-    _gyro_sum_count = 0;
-
-    hal.scheduler->resume_timer_procs();
-
-    // add offsets and rotation
-    _accel.rotate(_board_orientation);
-    _accel.x *= accel_scale.x;
-    _accel.y *= accel_scale.y;
-    _accel.z *= accel_scale.z;
-    _accel   -= _accel_offset;
-
-    _gyro.rotate(_board_orientation);
-    _gyro -= _gyro_offset;
+    for (uint8_t k=0; k<_num_gyro_instances; k++) {
+        _gyro[k] = _gyro_in[k];
+        _gyro[k].rotate(_board_orientation);
+        _gyro[k] -= _gyro_offset[k];
+    }
 
     if (_last_filter_hz != _mpu6000_filter) {
         _set_filter_frequency(_mpu6000_filter);
         _last_filter_hz = _mpu6000_filter;
     }
 
+    _have_sample_available = false;
+
     return true;
 }
 
-float AP_InertialSensor_PX4::get_delta_time(void) 
+float AP_InertialSensor_PX4::get_delta_time(void) const
 {
-    return _delta_time;
-}
-
-uint32_t AP_InertialSensor_PX4::get_last_sample_time_micros(void) 
-{
-    return _last_update_usec;
+    return _sample_time_usec * 1.0e-6f;
 }
 
 float AP_InertialSensor_PX4::get_gyro_drift_rate(void) 
 {
-    // 0.5 degrees/second/minute
+    // assume 0.5 degrees/second/minute
     return ToRad(0.5/60);
 }
 
-void AP_InertialSensor_PX4::_accumulate(void)
+void AP_InertialSensor_PX4::_get_sample(void)
 {
-    struct accel_report	accel_report;
-    struct gyro_report	gyro_report;
-
-    if (_in_accumulate) {
-        return;
+    for (uint8_t i=0; i<_num_accel_instances; i++) {
+        struct accel_report	accel_report;
+        while (_accel_fd[i] != -1 && 
+               ::read(_accel_fd[i], &accel_report, sizeof(accel_report)) == sizeof(accel_report) &&
+               accel_report.timestamp != _last_accel_timestamp[i]) {        
+            _accel_in[i] = Vector3f(accel_report.x, accel_report.y, accel_report.z);
+            _last_accel_timestamp[i] = accel_report.timestamp;
+        }
     }
-    _in_accumulate = true;
-
-    if (::read(_accel_fd, &accel_report, sizeof(accel_report)) == sizeof(accel_report) &&
-        accel_report.timestamp != _last_accel_timestamp) {        
-        _accel_sum += Vector3f(accel_report.x, accel_report.y, accel_report.z);
-        _accel_sum_count++;
-        _last_accel_timestamp = accel_report.timestamp;
-	}
-
-    if (::read(_gyro_fd, &gyro_report, sizeof(gyro_report)) == sizeof(gyro_report) &&
-        gyro_report.timestamp != _last_gyro_timestamp) {        
-        _gyro_sum += Vector3f(gyro_report.x, gyro_report.y, gyro_report.z);
-        _gyro_sum_count++;
-        _last_gyro_timestamp = gyro_report.timestamp;
-	}
-
-    _in_accumulate = false;
+    for (uint8_t i=0; i<_num_gyro_instances; i++) {
+        struct gyro_report	gyro_report;
+        while (_gyro_fd[i] != -1 && 
+               ::read(_gyro_fd[i], &gyro_report, sizeof(gyro_report)) == sizeof(gyro_report) &&
+               gyro_report.timestamp != _last_gyro_timestamp[i]) {        
+            _gyro_in[i] = Vector3f(gyro_report.x, gyro_report.y, gyro_report.z);
+            _last_gyro_timestamp[i] = gyro_report.timestamp;
+        }
+    }
+    _last_get_sample_timestamp = hrt_absolute_time();
 }
 
-void AP_InertialSensor_PX4::_ins_timer(uint32_t now)
+bool AP_InertialSensor_PX4::_sample_available(void)
 {
-    _accumulate();
+    uint64_t tnow = hrt_absolute_time();
+    while (tnow - _last_sample_timestamp > _sample_time_usec) {
+        _have_sample_available = true;
+        _last_sample_timestamp += _sample_time_usec;
+    }
+    return _have_sample_available;
 }
 
-uint16_t AP_InertialSensor_PX4::num_samples_available(void)
+bool AP_InertialSensor_PX4::wait_for_sample(uint16_t timeout_ms)
 {
-    _accumulate();
-    return min(_accel_sum_count, _gyro_sum_count) / _sample_divider;
+    if (_sample_available()) {
+        return true;
+    }
+    uint32_t start = hal.scheduler->millis();
+    while ((hal.scheduler->millis() - start) < timeout_ms) {
+        uint64_t tnow = hrt_absolute_time();
+        // we spin for the last timing_lag microseconds. Before that
+        // we yield the CPU to allow IO to happen
+        const uint16_t timing_lag = 400;
+        if (_last_sample_timestamp + _sample_time_usec > tnow+timing_lag) {
+            hal.scheduler->delay_microseconds(_last_sample_timestamp + _sample_time_usec - (tnow+timing_lag));
+        }
+        if (_sample_available()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+   try to detect bad accel/gyro sensors
+ */
+bool AP_InertialSensor_PX4::healthy(void) const
+{
+    return get_gyro_health(0) && get_accel_health(0);
+}
+
+uint8_t AP_InertialSensor_PX4::_get_primary_gyro(void) const 
+{
+    for (uint8_t i=0; i<_num_gyro_instances; i++) {
+        if (get_gyro_health(i)) return i;
+    }    
+    return 0;
+}
+
+uint8_t AP_InertialSensor_PX4::get_primary_accel(void) const 
+{
+    for (uint8_t i=0; i<_num_accel_instances; i++) {
+        if (get_accel_health(i)) return i;
+    }    
+    return 0;
 }
 
 #endif // CONFIG_HAL_BOARD

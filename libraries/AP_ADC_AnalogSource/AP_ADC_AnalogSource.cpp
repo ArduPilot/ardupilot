@@ -28,7 +28,6 @@ float AP_ADC_AnalogSource::voltage_average()
     return fullscale * 3.3 * 2.44140625e-4f;
 }
 
-
 void AP_ADC_AnalogSource::set_pin(uint8_t machtnichts) {
     /* it would be an error to call this
      * but for now we'll leave it a no-op. */

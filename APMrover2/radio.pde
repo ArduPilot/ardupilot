@@ -26,35 +26,31 @@ static void init_rc_in()
 
 static void init_rc_out()
 {
-    for (uint8_t i=0; i<8; i++) {
-        RC_Channel::rc_channel(i)->enable_out();
-        RC_Channel::rc_channel(i)->output_trim();
-    }
+    RC_Channel::rc_channel(CH_1)->enable_out();
+    RC_Channel::rc_channel(CH_3)->enable_out();
+    RC_Channel::output_trim_all();    
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    servo_write(CH_9,   g.rc_9.radio_trim);
-#endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    servo_write(CH_10,  g.rc_10.radio_trim);
-    servo_write(CH_11,  g.rc_11.radio_trim);
-#endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    servo_write(CH_12,  g.rc_12.radio_trim);
-#endif
+    // setup PWM values to send if the FMU firmware dies
+    RC_Channel::setup_failsafe_trim_all();  
 }
 
 static void read_radio()
 {
-    for (uint8_t i=0; i<8; i++) {
-        RC_Channel::rc_channel(i)->set_pwm(RC_Channel::rc_channel(i)->read());
+    if (!hal.rcin->new_input()) {
+        control_failsafe(channel_throttle->radio_in);
+        return;
     }
+
+    failsafe.last_valid_rc_ms = hal.scheduler->millis();
+
+    RC_Channel::set_pwm_all();
 
 	control_failsafe(channel_throttle->radio_in);
 
 	channel_throttle->servo_out = channel_throttle->control_in;
 
-	if (channel_throttle->servo_out > 50) {
-        throttle_nudge = (g.throttle_max - g.throttle_cruise) * ((channel_throttle->norm_input()-0.5) / 0.5);
+	if (abs(channel_throttle->servo_out) > 50) {
+        throttle_nudge = (g.throttle_max - g.throttle_cruise) * ((fabsf(channel_throttle->norm_input())-0.5) / 0.5);
 	} else {
 		throttle_nudge = 0;
 	}
@@ -101,7 +97,11 @@ static void control_failsafe(uint16_t pwm)
 	if (rc_override_active) {
         failsafe_trigger(FAILSAFE_EVENT_RC, (millis() - failsafe.rc_override_timer) > 1500);
 	} else if (g.fs_throttle_enabled) {
-        failsafe_trigger(FAILSAFE_EVENT_THROTTLE, pwm < (uint16_t)g.fs_throttle_value);
+        bool failed = pwm < (uint16_t)g.fs_throttle_value;
+        if (hal.scheduler->millis() - failsafe.last_valid_rc_ms > 2000) {
+            failed = true;
+        }
+        failsafe_trigger(FAILSAFE_EVENT_THROTTLE, failed);
 	}
 }
 

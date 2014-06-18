@@ -20,8 +20,8 @@ const AP_Param::GroupInfo AC_Fence::var_info[] PROGMEM = {
     AP_GROUPINFO("TYPE",        1,  AC_Fence,   _enabled_fences,  AC_FENCE_TYPE_ALT_MAX | AC_FENCE_TYPE_CIRCLE),
 
     // @Param: ACTION
-    // @DisplayName: Action to perform when the limit is breached
-    // @Description: What to do on fence breach
+    // @DisplayName: Fence Action
+    // @Description: What action should be taken when fence is breached
     // @Values: 0:Report Only,1:RTL or Land
     // @User: Standard
     AP_GROUPINFO("ACTION",      2,  AC_Fence,   _action,        AC_FENCE_ACTION_RTL_AND_LAND),
@@ -39,15 +39,23 @@ const AP_Param::GroupInfo AC_Fence::var_info[] PROGMEM = {
     // @DisplayName: Circular Fence Radius
     // @Description: Circle fence radius which when breached will cause an RTL
     // @Units: Meters
-    // @Range: 0 10000
+    // @Range: 30 10000
     // @User: Standard
     AP_GROUPINFO("RADIUS",      4,  AC_Fence,   _circle_radius, AC_FENCE_CIRCLE_RADIUS_DEFAULT),
+
+    // @Param: MARGIN
+    // @DisplayName: Fence Margin
+    // @Description: Distance that autopilot's should maintain from the fence to avoid a breach
+    // @Units: Meters
+    // @Range: 1 10
+    // @User: Standard
+    AP_GROUPINFO("MARGIN",      5,  AC_Fence,   _margin, AC_FENCE_MARGIN_DEFAULT),
     
     AP_GROUPEND
 };
 
 /// Default constructor.
-AC_Fence::AC_Fence(AP_InertialNav* inav) :
+AC_Fence::AC_Fence(const AP_InertialNav* inav) :
     _inav(inav),
     _alt_max_backup(0),
     _circle_radius_backup(0),
@@ -56,7 +64,8 @@ AC_Fence::AC_Fence(AP_InertialNav* inav) :
     _home_distance(0),
     _breached_fences(AC_FENCE_TYPE_NONE),
     _breach_time(0),
-    _breach_count(0)
+    _breach_count(0),
+    _manual_recovery_start_ms(0)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -111,8 +120,19 @@ uint8_t AC_Fence::check_fence()
         return AC_FENCE_TYPE_NONE;
     }
 
+    // check if pilot is attempting to recover manually
+    if (_manual_recovery_start_ms != 0) {
+        // we ignore any fence breaches during the manual recovery period which is about 10 seconds
+        if ((hal.scheduler->millis() - _manual_recovery_start_ms) < AC_FENCE_MANUAL_RECOVERY_TIME_MIN) {
+            return AC_FENCE_TYPE_NONE;
+        } else {
+            // recovery period has passed so reset manual recovery time and continue with fence breach checks
+            _manual_recovery_start_ms = 0;
+        }
+    }
+
     // get current altitude in meters
-    float curr_alt = _inav->get_position().z * 0.01f;
+    float curr_alt = _inav->get_altitude() * 0.01f;
 
     // altitude fence check
     if ((_enabled_fences & AC_FENCE_TYPE_ALT_MAX) != 0) {
@@ -224,4 +244,17 @@ float AC_Fence::get_breach_distance(uint8_t fence_type) const
 
     // we don't recognise the fence type so just return 0
     return 0;
+}
+
+/// manual_recovery_start - caller indicates that pilot is re-taking manual control so fence should be disabled for 10 seconds
+///     has no effect if no breaches have occurred
+void AC_Fence::manual_recovery_start()
+{
+    // return immediate if we haven't breached a fence
+    if (_breached_fences == AC_FENCE_TYPE_NONE) {
+        return;
+    }
+
+    // record time pilot began manual recovery
+    _manual_recovery_start_ms = hal.scheduler->millis();
 }

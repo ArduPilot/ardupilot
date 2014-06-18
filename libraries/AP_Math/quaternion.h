@@ -1,16 +1,28 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 // Copyright 2012 Andrew Tridgell, all rights reserved.
-
-//	This library is free software; you can redistribute it and / or
-//	modify it under the terms of the GNU Lesser General Public
-//	License as published by the Free Software Foundation; either
-//	version 2.1 of the License, or (at your option) any later version.
 
 #ifndef QUATERNION_H
 #define QUATERNION_H
 
 #include <math.h>
+#if MATH_CHECK_INDEXES
+#include <assert.h>
+#endif
 
 class Quaternion
 {
@@ -35,21 +47,43 @@ public:
     }
 
     // check if any elements are NAN
-    bool        is_nan(void)
+    bool        is_nan(void) const
     {
         return isnan(q1) || isnan(q2) || isnan(q3) || isnan(q4);
     }
 
     // return the rotation matrix equivalent for this quaternion
-    void        rotation_matrix(Matrix3f &m);
+    void        rotation_matrix(Matrix3f &m) const;
+
+    void		from_rotation_matrix(const Matrix3f &m);
 
     // convert a vector from earth to body frame
-    void        earth_to_body(Vector3f &v);
+    void        earth_to_body(Vector3f &v) const;
 
     // create a quaternion from Euler angles
     void        from_euler(float roll, float pitch, float yaw);
 
     // create eulers from a quaternion
-    void        to_euler(float *roll, float *pitch, float *yaw);
+    void        to_euler(float *roll, float *pitch, float *yaw) const;
+
+    float length(void) const;
+    void normalize();
+
+    // allow a quaternion to be used as an array, 0 indexed
+    float & operator[](uint8_t i) {
+        float *_v = &q1;
+#if MATH_CHECK_INDEXES
+        assert(i >= 0 && i < 4);
+#endif
+        return _v[i];
+    }
+
+    const float & operator[](uint8_t i) const {
+        const float *_v = &q1;
+#if MATH_CHECK_INDEXES
+        assert(i >= 0 && i < 4);
+#endif
+        return _v[i];
+    }
 };
 #endif // QUATERNION_H

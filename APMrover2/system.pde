@@ -45,7 +45,7 @@ MENU(main_menu, THISFIRMWARE, main_menu_commands);
 
 static int8_t reboot_board(uint8_t argc, const Menu::arg *argv)
 {
-    reboot_apm();
+    hal.scheduler->reboot(false);
     return 0;
 }
 
@@ -71,24 +71,6 @@ static void run_cli(AP_HAL::UARTDriver *port)
 
 static void init_ardupilot()
 {
-#if USB_MUX_PIN > 0
-    // on the APM2 board we have a mux thet switches UART0 between
-    // USB and the board header. If the right ArduPPM firmware is
-    // installed we can detect if USB is connected using the
-    // USB_MUX_PIN
-    pinMode(USB_MUX_PIN, INPUT);
-
-    usb_connected = !digitalRead(USB_MUX_PIN);
-    if (!usb_connected) {
-        // USB is not connected, this means UART0 may be a Xbee, with
-        // its darned bricking problem. We can't write to it for at
-        // least one second after powering up. Simplest solution for
-        // now is to delay for 1 second. Something more elegant may be
-        // added later
-        delay(1000);
-    }
-#endif
-
 	// Console serial port
 	//
 	// The console port buffers are defined to be sufficiently large to support
@@ -110,11 +92,17 @@ static void init_ardupilot()
 	// on the message set configured.
 	//
     // standard gps running
-    hal.uartB->begin(115200, 128, 16);
+    hal.uartB->begin(38400, 256, 16);
 
-	cliSerial->printf_P(PSTR("\n\nInit " THISFIRMWARE
+#if GPS2_ENABLE
+    if (hal.uartE != NULL) {
+        hal.uartE->begin(38400, 256, 16);
+    }
+#endif
+
+	cliSerial->printf_P(PSTR("\n\nInit " FIRMWARE_STRING
 						 "\n\nFree RAM: %u\n"),
-                    memcheck_available_memory());
+                        hal.util->available_memory());
                     
 	//
 	// Check the EEPROM format version before loading any parameters from EEPROM.
@@ -122,38 +110,41 @@ static void init_ardupilot()
 	
     load_parameters();
 
+    BoardConfig.init();
+
+    ServoRelayEvents.set_channel_mask(0xFFF0);
+
     set_control_channels();
 
     // after parameter load setup correct baud rate on uartA
-    hal.uartA->begin(map_baudrate(g.serial0_baud, SERIAL0_BAUD));
+    hal.uartA->begin(map_baudrate(g.serial0_baud));
 
     // keep a record of how many resets have happened. This can be
     // used to detect in-flight resets
     g.num_resets.set_and_save(g.num_resets+1);
 
+    // init baro before we start the GCS, so that the CLI baro test works
+    barometer.init();
+
 	// init the GCS
-	gcs0.init(hal.uartA);
+	gcs[0].init(hal.uartA);
 
-    // Register mavlink_delay_cb, which will run anytime you have
-    // more than 5ms remaining in your call to hal.scheduler->delay
-    hal.scheduler->register_delay_callback(mavlink_delay_cb, 5);
+    // we start by assuming USB connected, as we initialed the serial
+    // port with SERIAL0_BAUD. check_usb_mux() fixes this if need be.    
+    usb_connected = true;
+    check_usb_mux();
 
-#if USB_MUX_PIN > 0
-    if (!usb_connected) {
-        // we are not connected via USB, re-init UART0 with right
-        // baud rate
-        hal.uartA->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
-    }
-#else
     // we have a 2nd serial port for telemetry
-    hal.uartC->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
-	gcs3.init(hal.uartC);
+    gcs[1].setup_uart(hal.uartC, map_baudrate(g.serial1_baud), 128, 128);
+
+#if MAVLINK_COMM_NUM_BUFFERS > 2
+    gcs[2].setup_uart(hal.uartD, map_baudrate(g.serial2_baud), 128, 128);
 #endif
 
 	mavlink_system.sysid = g.sysid_this_mav;
 
 #if LOGGING_ENABLED == ENABLED
-	DataFlash.Init(); 	// DataFlash log initialization
+	DataFlash.Init(log_structure, sizeof(log_structure)/sizeof(log_structure[0]));
     if (!DataFlash.CardInserted()) {
         gcs_send_text_P(SEVERITY_LOW, PSTR("No dataflash card inserted"));
         g.log_bitmask.set(0);
@@ -165,6 +156,10 @@ static void init_ardupilot()
 		start_logging();
 	}
 #endif
+
+    // Register mavlink_delay_cb, which will run anytime you have
+    // more than 5ms remaining in your call to hal.scheduler->delay
+    hal.scheduler->register_delay_callback(mavlink_delay_cb, 5);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
     adc.Init();      // APM ADC library initialization
@@ -183,10 +178,11 @@ static void init_ardupilot()
 	// initialise sonar
     init_sonar();
 
+    // and baro for EKF
+    init_barometer();
+
 	// Do GPS init
-	g_gps = &g_gps_driver;
-    // GPS initialisation
-	g_gps->init(hal.uartB, GPS::GPS_ENGINE_AUTOMOTIVE);
+	gps.init(&DataFlash);
 
 	//mavlink_system.sysid = MAV_SYSTEM_ID;				// Using g.sysid_this_mav
 	mavlink_system.compid = 1;	//MAV_COMP_ID_IMU;   // We do not check for comp id
@@ -197,15 +193,6 @@ static void init_ardupilot()
 	init_rc_in();		// sets up rc channels from radio
 	init_rc_out();		// sets up the timer libs
 
-	pinMode(C_LED_PIN, OUTPUT);			// GPS status LED
-	pinMode(A_LED_PIN, OUTPUT);			// GPS status LED
-	pinMode(B_LED_PIN, OUTPUT);			// GPS status LED
-#if SLIDE_SWITCH_PIN > 0
-	pinMode(SLIDE_SWITCH_PIN, INPUT);	// To enter interactive mode
-#endif
-#if CONFIG_PUSHBUTTON == ENABLED
-	pinMode(PUSHBUTTON_PIN, INPUT);		// unused
-#endif
     relay.init();
 
     /*
@@ -220,30 +207,20 @@ static void init_ardupilot()
 	// the system in an odd state, we don't let the user exit the top
 	// menu; they must reset in order to fly.
 	//
-#if CLI_ENABLED == ENABLED && CLI_SLIDER_ENABLED == ENABLED
-	if (digitalRead(SLIDE_SWITCH_PIN) == 0) {
-		digitalWrite(A_LED_PIN,LED_ON);		// turn on setup-mode LED
-		cliSerial->printf_P(PSTR("\n"
-							 "Entering interactive setup mode...\n"
-							 "\n"
-							 "If using the Arduino Serial Monitor, ensure Line Ending is set to Carriage Return.\n"
-							 "Type 'help' to list commands, 'exit' to leave a submenu.\n"
-							 "Visit the 'setup' menu for first-time configuration.\n"));
-        cliSerial->println_P(PSTR("\nMove the slide switch and reset to FLY.\n"));
-        run_cli(&cliSerial);
-	}
-#else
     const prog_char_t *msg = PSTR("\nPress ENTER 3 times to start interactive setup\n");
     cliSerial->println_P(msg);
-#if USB_MUX_PIN == 0
-    hal.uartC->println_P(msg);
-#endif
-#endif // CLI_ENABLED
+    if (gcs[1].initialised) {
+        hal.uartC->println_P(msg);
+    }
+    if (num_gcs > 2 && gcs[2].initialised) {
+        hal.uartD->println_P(msg);
+    }
 
 	startup_ground();
 
-	if (g.log_bitmask & MASK_LOG_CMD)
-			Log_Write_Startup(TYPE_GROUNDSTART_MSG);
+	if (should_log(MASK_LOG_CMD)) {
+        Log_Write_Startup(TYPE_GROUNDSTART_MSG);
+    }
 
     set_mode((enum mode)g.initial_mode.get());
 
@@ -266,11 +243,6 @@ static void startup_ground(void)
 		delay(GROUND_START_DELAY * 1000);
 	#endif
 
-	// Makes the servos wiggle
-	// step 1 = 1 wiggle
-	// -----------------------
-	demo_servos(1);
-
 	//IMU ground start
 	//------------------------
     //
@@ -281,18 +253,26 @@ static void startup_ground(void)
 	// ---------------------------
 	trim_radio();
 
-	// initialize commands
-	// -------------------
-	init_commands();
-
-	// Makes the servos wiggle - 3 times signals ready to fly
-	// -----------------------
-	demo_servos(3);
+    // initialise mission library
+    mission.init();
 
     hal.uartA->set_blocking_writes(false);
     hal.uartC->set_blocking_writes(false);
 
 	gcs_send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to drive."));
+}
+
+/*
+  set the in_reverse flag
+  reset the throttle integrator if this changes in_reverse
+ */
+static void set_reverse(bool reverse)
+{
+    if (in_reverse == reverse) {
+        return;
+    }
+    g.pidSpeedThrottle.reset_I();    
+    in_reverse = reverse;
 }
 
 static void set_mode(enum mode mode)
@@ -305,6 +285,8 @@ static void set_mode(enum mode mode)
 	control_mode = mode;
     throttle_last = 0;
     throttle = 500;
+    set_reverse(false);
+    g.pidSpeedThrottle.reset_I();
 
     if (control_mode != AUTO) {
         auto_triggered = false;
@@ -332,8 +314,9 @@ static void set_mode(enum mode mode)
 			break;
 	}
 
-	if (g.log_bitmask & MASK_LOG_MODE)
+	if (should_log(MASK_LOG_MODE)) {
 		Log_Write_Mode();
+    }
 }
 
 /*
@@ -385,126 +368,69 @@ static void startup_INS_ground(bool force_accel_level)
 
 	// Makes the servos wiggle twice - about to begin INS calibration - HOLD LEVEL AND STILL!!
 	// -----------------------
-	demo_servos(2);
     gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Beginning INS calibration; do not move vehicle"));
 	mavlink_delay(1000);
 
     ahrs.init();
 	ahrs.set_fly_forward(true);
-	ins.init(AP_InertialSensor::COLD_START, 
-             ins_sample_rate, 
-             flash_leds);
+    ahrs.set_vehicle_class(AHRS_VEHICLE_GROUND);
+
+    AP_InertialSensor::Start_style style;
+    if (g.skip_gyro_cal && !force_accel_level) {
+        style = AP_InertialSensor::WARM_START;
+    } else {
+        style = AP_InertialSensor::COLD_START;
+    }
+
+	ins.init(style, ins_sample_rate);
+
     if (force_accel_level) {
         // when MANUAL_LEVEL is set to 1 we don't do accelerometer
         // levelling on each boot, and instead rely on the user to do
         // it once via the ground station	
-        ins.init_accel(flash_leds);
+        ins.init_accel();
         ahrs.set_trim(Vector3f(0, 0, 0));
 	}
     ahrs.reset();
-
-	digitalWrite(B_LED_PIN, LED_ON);		// Set LED B high to indicate INS ready
-	digitalWrite(A_LED_PIN, LED_OFF);
-	digitalWrite(C_LED_PIN, LED_OFF);
 }
 
-static void update_GPS_light(void)
+// updates the notify state
+// should be called at 50hz
+static void update_notify()
 {
-	// GPS LED on if we have a fix or Blink GPS LED if we are receiving data
-	// ---------------------------------------------------------------------
-	switch (g_gps->status()) {
-		case(2):
-			digitalWrite(C_LED_PIN, LED_ON);  //Turn LED C on when gps has valid fix.
-			break;
-
-		case(1):
-			if (g_gps->valid_read == true){
-				GPS_light = !GPS_light; // Toggle light on and off to indicate gps messages being received, but no GPS fix lock
-				if (GPS_light){
-					digitalWrite(C_LED_PIN, LED_OFF);
-				} else {
-					digitalWrite(C_LED_PIN, LED_ON);
-				}
-				g_gps->valid_read = false;
-			}
-			break;
-
-		default:
-			digitalWrite(C_LED_PIN, LED_OFF);
-			break;
-	}
+    notify.update();
 }
-
 
 static void resetPerfData(void) {
 	mainLoop_count 			= 0;
 	G_Dt_max 				= 0;
-	ahrs.renorm_range_count 	= 0;
-	ahrs.renorm_blowup_count = 0;
-	gps_fix_count 			= 0;
-	pmTest1					= 0;
 	perf_mon_timer 			= millis();
-}
-
-
-/*
-  map from a 8 bit EEPROM baud rate to a real baud rate
- */
-static uint32_t map_baudrate(int8_t rate, uint32_t default_baud)
-{
-    switch (rate) {
-    case 1:    return 1200;
-    case 2:    return 2400;
-    case 4:    return 4800;
-    case 9:    return 9600;
-    case 19:   return 19200;
-    case 38:   return 38400;
-    case 57:   return 57600;
-    case 111:  return 111100;
-    case 115:  return 115200;
-    }
-    cliSerial->println_P(PSTR("Invalid SERIAL3_BAUD"));
-    return default_baud;
 }
 
 
 static void check_usb_mux(void)
 {
-#if USB_MUX_PIN > 0
-    bool usb_check = !digitalRead(USB_MUX_PIN);
+    bool usb_check = hal.gpio->usb_connected();
     if (usb_check == usb_connected) {
         return;
     }
 
     // the user has switched to/from the telemetry port
     usb_connected = usb_check;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+    // the APM2 has a MUX setup where the first serial port switches
+    // between USB and a TTL serial connection. When on USB we use
+    // SERIAL0_BAUD, but when connected as a TTL serial port we run it
+    // at SERIAL1_BAUD.
     if (usb_connected) {
-        hal.uartA->begin(SERIAL0_BAUD, 128, 128);
+        hal.uartA->begin(SERIAL0_BAUD);
     } else {
-        hal.uartA->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
+        hal.uartA->begin(map_baudrate(g.serial1_baud));
     }
 #endif
 }
 
-
-
-/*
-  called by gyro/accel init to flash LEDs so user
-  has some mesmerising lights to watch while waiting
- */
-void flash_leds(bool on)
-{
-    digitalWrite(A_LED_PIN, on?LED_OFF:LED_ON);
-    digitalWrite(C_LED_PIN, on?LED_ON:LED_OFF);
-}
-
-/*
- * Read Vcc vs 1.1v internal reference
- */
-uint16_t board_voltage(void)
-{
-    return vcc_pin->read_latest();
-}
 
 static void
 print_mode(AP_HAL::BetterStream *port, uint8_t mode)
@@ -520,7 +446,7 @@ print_mode(AP_HAL::BetterStream *port, uint8_t mode)
         port->print_P(PSTR("Learning"));
         break;
     case STEERING:
-        port->print_P(PSTR("Stearing"));
+        port->print_P(PSTR("Steering"));
         break;
     case AUTO:
         port->print_P(PSTR("AUTO"));
@@ -535,15 +461,6 @@ print_mode(AP_HAL::BetterStream *port, uint8_t mode)
 }
 
 /*
-  force a software reset of the APM
- */
-static void reboot_apm(void)
-{
-    hal.scheduler->reboot();
-    while (1);
-}
-
-/*
   check a digitial pin for high,low (1/0)
  */
 static uint8_t check_digital_pin(uint8_t pin)
@@ -553,7 +470,7 @@ static uint8_t check_digital_pin(uint8_t pin)
         return 0;
     }
     // ensure we are in input mode
-    hal.gpio->pinMode(dpin, GPIO_INPUT);
+    hal.gpio->pinMode(dpin, HAL_GPIO_INPUT);
 
     // enable pullup
     hal.gpio->write(dpin, 1);
@@ -574,4 +491,23 @@ static void servo_write(uint8_t ch, uint16_t pwm)
     hal.rcout->enable_ch(ch);
     hal.rcout->write(ch, pwm);
 #endif
+}
+
+/*
+  should we log a message type now?
+ */
+static bool should_log(uint32_t mask)
+{
+    if (!(mask & g.log_bitmask) || in_mavlink_delay) {
+        return false;
+    }
+    bool ret = ahrs.get_armed() || (g.log_bitmask & MASK_LOG_WHEN_DISARMED) != 0;
+    if (ret && !DataFlash.logging_started() && !in_log_download) {
+        // we have to set in_mavlink_delay to prevent logging while
+        // writing headers
+        in_mavlink_delay = true;
+        start_logging();
+        in_mavlink_delay = false;
+    }
+    return ret;
 }

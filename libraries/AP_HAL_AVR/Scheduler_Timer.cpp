@@ -10,47 +10,57 @@ using namespace AP_HAL_AVR;
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
 #define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
 
-static volatile uint32_t timer0_overflow_count = 0;
-static volatile uint32_t timer0_millis = 0;
-static uint8_t timer0_fract = 0;
+#if (CONFIG_HAL_BOARD == HAL_BOARD_APM1 )
+#define  AVR_TIMER_OVF_VECT     TIMER4_OVF_vect
+#define  AVR_TIMER_TCNT             TCNT4
+#define  AVR_TIMER_TIFR              TIFR4
+#define  AVR_TIMER_TCCRA           TCCR4A
+#define  AVR_TIMER_TCCRB           TCCR4B
+#define  AVR_TIMER_OCRA            OCR4A
+#define  AVR_TIMER_TIMSK           TIMSK4
+#define  AVR_TIMER_TOIE             TOIE4
+#define  AVR_TIMER_WGM0           WGM40
+#define  AVR_TIMER_WGM1           WGM41
+#define  AVR_TIMER_WGM2           WGM42
+#define  AVR_TIMER_WGM3           WGM43
+#define  AVR_TIMER_CS1               CS41
 
+
+#elif (CONFIG_HAL_BOARD == HAL_BOARD_APM2 )
+#define  AVR_TIMER_OVF_VECT     TIMER5_OVF_vect 
+#define  AVR_TIMER_TCNT             TCNT5
+#define  AVR_TIMER_TIFR              TIFR5
+#define  AVR_TIMER_TCCRA           TCCR5A
+#define  AVR_TIMER_TCCRB           TCCR5B
+#define  AVR_TIMER_OCRA            OCR5A
+#define  AVR_TIMER_TIMSK           TIMSK5
+#define  AVR_TIMER_TOIE             TOIE5
+#define  AVR_TIMER_WGM0           WGM50
+#define  AVR_TIMER_WGM1           WGM51
+#define  AVR_TIMER_WGM2           WGM52
+#define  AVR_TIMER_WGM3           WGM53
+#define  AVR_TIMER_CS1               CS51
+
+#endif
+
+static volatile uint32_t timer_micros_counter = 0;
+static volatile uint32_t timer_millis_counter = 0;
 
 void AVRTimer::init() {
-    // this needs to be called before setup() or some functions won't
-    // work there
-    sei();
- 
-    // set timer 0 prescale factor to 64
-    // this combination is for the standard 168/328/1280/2560
-    sbi(TCCR0B, CS01);
-    sbi(TCCR0B, CS00);
-    // enable timer 0 overflow interrupt
-    sbi(TIMSK0, TOIE0);
+    uint8_t oldSREG = SREG;
+    cli();
 
-    // timers 1 and 2 are used for phase-correct hardware pwm
-    // this is better for motors as it ensures an even waveform
-    // note, however, that fast pwm mode can achieve a frequency of up
-    // 8 MHz (with a 16 MHz clock) at 50% duty cycle
+    // Timer cleanup before configuring
+    AVR_TIMER_TCNT = 0;
+    AVR_TIMER_TIFR = 0;
+    
+    // Set timer 8x prescaler fast PWM mode toggle compare at OCRA
+    AVR_TIMER_TCCRA = _BV( AVR_TIMER_WGM0 ) | _BV( AVR_TIMER_WGM1 );
+    AVR_TIMER_TCCRB |= _BV( AVR_TIMER_WGM3 ) | _BV( AVR_TIMER_WGM2 ) | _BV( AVR_TIMER_CS1 );
+    AVR_TIMER_OCRA  = 40000 - 1; // -1 to correct for wrap
 
-    TCCR1B = 0;
-
-    // set timer 1 prescale factor to 64
-    sbi(TCCR1B, CS11);
-    sbi(TCCR1B, CS10);
-    // put timer 1 in 8-bit phase correct pwm mode
-    sbi(TCCR1A, WGM10);
-
-    sbi(TCCR3B, CS31);      // set timer 3 prescale factor to 64
-    sbi(TCCR3B, CS30);
-    sbi(TCCR3A, WGM30);     // put timer 3 in 8-bit phase correct pwm mode
-
-    sbi(TCCR4B, CS41);      // set timer 4 prescale factor to 64
-    sbi(TCCR4B, CS40);
-    sbi(TCCR4A, WGM40);     // put timer 4 in 8-bit phase correct pwm mode
-
-    sbi(TCCR5B, CS51);      // set timer 5 prescale factor to 64
-    sbi(TCCR5B, CS50);
-    sbi(TCCR5A, WGM50);     // put timer 5 in 8-bit phase correct pwm mode
+    // Enable overflow interrupt
+    AVR_TIMER_TIMSK |= _BV( AVR_TIMER_TOIE );
 
     // set a2d prescale factor to 128
     // 16 MHz / 128 = 125 KHz, inside the desired 50-200 KHz range.
@@ -67,75 +77,58 @@ void AVRTimer::init() {
     // here so they can be used as normal digital i/o; they will be
     // reconnected in Serial.begin()
     UCSR0B = 0;
+    
+    SREG = oldSREG;
 }
 
-#define clockCyclesPerMicrosecond() ( F_CPU / 1000000L )
-#define clockCyclesToMicroseconds(a) ( ((a) * 1000L) / (F_CPU / 1000L) )
-
-// the prescaler is set so that timer0 ticks every 64 clock cycles, and the
-// the overflow handler is called every 256 ticks.
-#define MICROSECONDS_PER_TIMER0_OVERFLOW (clockCyclesToMicroseconds(64 * 256))
-
-// the whole number of milliseconds per timer0 overflow
-#define MILLIS_INC (MICROSECONDS_PER_TIMER0_OVERFLOW / 1000)
-
-// the fractional number of milliseconds per timer0 overflow. we shift right
-// by three to fit these numbers into a byte. (for the clock speeds we care
-// about - 8 and 16 MHz - this doesn't lose precision.)
-#define FRACT_INC ((MICROSECONDS_PER_TIMER0_OVERFLOW % 1000) >> 3)
-#define FRACT_MAX (1000 >> 3)
-
-
-SIGNAL(TIMER0_OVF_vect)
+SIGNAL( AVR_TIMER_OVF_VECT)
 {
-	// copy these to local variables so they can be stored in registers
-	// (volatile variables must be read from memory on every access)
-	uint32_t m = timer0_millis;
-	uint8_t f = timer0_fract;
-
-	m += MILLIS_INC;
-	f += FRACT_INC;
-	if (f >= FRACT_MAX) {
-		f -= FRACT_MAX;
-		m += 1;
-	}
-
-	timer0_fract = f;
-	timer0_millis = m;
-	timer0_overflow_count++;
-}
-
-uint32_t AVRTimer::millis()
-{
-	uint32_t m;
-	uint8_t oldSREG = SREG;
-
-	// disable interrupts while we read timer0_millis or we might get an
-	// inconsistent value (e.g. in the middle of a write to timer0_millis)
-	cli();
-	m = timer0_millis;
-	SREG = oldSREG;
-
-	return m;
+    // Hardcoded for AVR@16MHZ and 8x pre-scale 16-bit timer overflow at 40000
+    timer_micros_counter += 40000 / 2; // 20000us each overflow
+    timer_millis_counter += 40000 / 2000; // 20ms each overlflow
 }
 
 uint32_t AVRTimer::micros() {
-	uint32_t m;
-    uint8_t t;
-	
-	uint8_t oldSREG = SREG;
+    uint8_t oldSREG = SREG;
 	cli();
 
-	m = timer0_overflow_count;
-	t = TCNT0;
-  
-	if ((TIFR0 & _BV(TOV0)) && (t < 255))
-		m++;
-
-	SREG = oldSREG;
+    // Hardcoded for AVR@16MHZ and 8x pre-scale 16-bit timer
+    //uint32_t time_micros = timer_micros_counter + (AVR_TIMER_TCNT / 2);
+    //uint32_t time_micros = timer_micros_counter + (AVR_TIMER_TCNT >> 1);
+    
+    uint32_t time_micros = timer_micros_counter;
+    uint16_t tcnt = AVR_TIMER_TCNT;
 	
-	return ((m << 8) + t) * (64 / clockCyclesPerMicrosecond());
+    // Check for  imminent timer overflow interrupt and pre-increment counter
+    if ( AVR_TIMER_TIFR & 1 && tcnt < 39999 )
+    {
+            time_micros += 40000 / 2;
+    }
+    SREG = oldSREG;
+
+	return  time_micros + (tcnt >> 1);
 }
+
+uint32_t AVRTimer::millis() {
+	uint8_t oldSREG = SREG;
+	cli();
+    // Hardcoded for AVR@16MHZ and 8x pre-scale 16-bit timer
+    //uint32_t time_millis = timer_millis_counter + (AVR_TIMER_TCNT / 2000) ;
+    //uint32_t time_millis =  timer_millis_counter + (AVR_TIMER_TCNT >> 11); // AVR_TIMER_CNT / 2048 is close enough (24us counter delay)
+
+    uint32_t time_millis =  timer_millis_counter;
+    uint16_t tcnt = AVR_TIMER_TCNT;
+    
+    // Check for imminent timer overflow interrupt and pre-increment counter
+    if ( AVR_TIMER_TIFR & 1 && tcnt < 39999 )
+    {
+            time_millis += 40000 / 2000;
+    }
+    SREG = oldSREG;
+
+	return  time_millis + (tcnt >> 11);
+}
+
 
 /* Delay for the given number of microseconds.  Assumes a 16 MHz clock. */
 void AVRTimer::delay_microseconds(uint16_t us)

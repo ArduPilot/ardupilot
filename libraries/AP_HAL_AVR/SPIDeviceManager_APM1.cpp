@@ -17,14 +17,14 @@ void APM1SPIDeviceManager::init(void* machtnichts) {
     /* dataflash: divide clock by 2 to 8Mhz, set SPI_MODE_3
      * spcr gets 0x0C to set SPI_MODE_3
      * spsr gets bit SPI2X for clock divider */
-    _dataflash = new AVRSPI0DeviceDriver(df_cs, 0x0C, _BV(SPI2X));
+    _dataflash = new AVRSPI0DeviceDriver(df_cs, 0x0C, 0x0C, _BV(SPI2X));
     _dataflash->init();
 
     /* optflow cs is on Arduino pin 34, PORTC3 */
     AVRDigitalSource* opt_cs = new AVRDigitalSource(_BV(3), PC);
     /* optflow: divide clock by 8 to 2Mhz
      * spcr gets bit SPR0, spsr gets bit SPI2X */
-    _optflow = new AVRSPI0DeviceDriver(opt_cs, _BV(SPR0), 0);
+    _optflow = new AVRSPI0DeviceDriver(opt_cs, _BV(SPR0), _BV(SPR0), 0);
     _optflow->init();
 
     /* adc cs is on Arduino pin 33, PORTC4 */

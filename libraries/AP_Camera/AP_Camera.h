@@ -29,8 +29,7 @@ public:
     /// Constructor
     ///
     AP_Camera(AP_Relay *obj_relay) :
-        _trigger_counter(0),            // count of number of cycles shutter has been held open
-        _thr_pic_counter(0)             // timer variable for throttle_pic
+        _trigger_counter(0)             // count of number of cycles shutter has been held open
     {
 		AP_Param::setup_object_defaults(this, var_info);
         _apm_relay = obj_relay;
@@ -47,25 +46,24 @@ public:
     void            configure_msg(mavlink_message_t* msg);
     void            control_msg(mavlink_message_t* msg);
 
+    // set camera trigger distance in a mission
+    void            set_trigger_distance(uint32_t distance_m) { _trigg_dist.set(distance_m); }
+
     // Update location of vehicle and return true if a picture should be taken
     bool update_location(const struct Location &loc);
 
     static const struct AP_Param::GroupInfo        var_info[];
 
 private:
-    AP_Int8         _trigger_type;      // 0:Servo,1:Relay,2:Servo and turn off throttle,3:Servo when 3m from waypoint,4:transistor
+    AP_Int8         _trigger_type;      // 0:Servo,1:Relay
     AP_Int8         _trigger_duration;  // duration in 10ths of a second that the camera shutter is held open
     AP_Int16        _servo_on_pwm;      // PWM value to move servo to when shutter is activated
     AP_Int16        _servo_off_pwm;     // PWM value to move servo to when shutter is deactivated
     uint8_t         _trigger_counter;   // count of number of cycles shutter has been held open
-    uint8_t         _thr_pic_counter;   // timer variable for throttle_pic
     AP_Relay       *_apm_relay;         // pointer to relay object from the base class Relay. The subclasses could be AP_Relay_APM1 or AP_Relay_APM2
 
     void            servo_pic();        // Servo operated camera
     void            relay_pic();        // basic relay activation
-    void            throttle_pic();     // pictures blurry? use this trigger. Turns off the throttle until for # of cycles of medium loop then takes the picture and re-enables the throttle.
-    void            distance_pic();     // pictures blurry? use this trigger. Turns off the throttle until closer to waypoint then takes the picture and re-enables the throttle.
-    void            transistor_pic();   // hacked the circuit to run a transistor? use this trigger to send output.
 
     AP_Float        _trigg_dist;     // distance between trigger points (meters)
     struct Location _last_location;

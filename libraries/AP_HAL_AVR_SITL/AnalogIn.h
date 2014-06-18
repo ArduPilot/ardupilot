@@ -19,6 +19,7 @@ public:
     float read_latest();
     void set_pin(uint8_t p);
     float voltage_average();
+    float voltage_latest();
     float voltage_average_ratiometric() { return voltage_average(); }
     void set_stop_pin(uint8_t pin) {}
     void set_settle_time(uint16_t settle_time_ms) {}
@@ -37,7 +38,7 @@ public:
     }
     void init(void* ap_hal_scheduler);
     AP_HAL::AnalogSource* channel(int16_t n);
-
+    float board_voltage(void) { return 5.0f; }
 private:
     static ADCSource* _channels[SITL_INPUT_MAX_CHANNELS];
     SITL_State *_sitlState;

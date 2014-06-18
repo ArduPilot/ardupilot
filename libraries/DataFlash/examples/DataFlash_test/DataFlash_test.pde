@@ -27,7 +27,10 @@
 #include <AP_GPS.h>
 #include <DataFlash.h>
 #include <GCS_MAVLink.h>
-
+#include <AP_Mission.h>
+#include <AP_Notify.h>
+#include <AP_Vehicle.h>
+#include <AP_Mission.h>
 
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
@@ -60,7 +63,7 @@ static uint16_t log_num;
 
 void setup()
 {
-    DataFlash.Init();                            // DataFlash initialization
+    DataFlash.Init(log_structure, sizeof(log_structure)/sizeof(log_structure[0]));
 
     hal.console->println("Dataflash Log Test 1.0");
 
@@ -77,7 +80,7 @@ void setup()
 
     // We start to write some info (sequentialy) starting from page 1
     // This is similar to what we will do...
-    log_num = DataFlash.StartNewLog(sizeof(log_structure)/sizeof(log_structure[0]), log_structure);
+    log_num = DataFlash.StartNewLog();
     hal.console->printf("Using log number %u\n", log_num);
     hal.console->println("After testing perform erase before using DataFlash for logging!");
     hal.console->println("");
@@ -124,8 +127,6 @@ void loop()
 
     DataFlash.get_log_boundaries(log_num, start, end); 
 	DataFlash.LogReadProcess(log_num, start, end, 
-                             sizeof(log_structure)/sizeof(log_structure[0]),
-                             log_structure, 
                              print_mode,
                              hal.console);
     hal.console->printf("\nTest complete.  Test will repeat in 20 seconds\n");

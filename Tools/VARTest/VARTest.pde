@@ -22,6 +22,7 @@
 #include <AP_ADC_AnalogSource.h>
 #include <AP_InertialSensor.h> // Inertial Sensor Library
 #include <AP_AHRS.h>         // ArduPilot Mega DCM Library
+#include <AP_NavEKF.h>
 #include <PID.h>            // PID library
 #include <RC_Channel.h>     // RC Channel Library
 #include <AP_RangeFinder.h>     // Range finder library
@@ -30,7 +31,11 @@
 #include <AP_Relay.h>       // APM relay
 #include <AP_Camera.h>          // Photo or video camera
 #include <AP_Airspeed.h>
+#include <AP_Vehicle.h>
+#include <AP_Mission.h>
+#include <AP_SpdHgtControl.h>
 #include <memcheck.h>
+#include <AP_RCMapper.h>
 
 #include <APM_OBC.h>
 #include <APM_Control.h>
@@ -39,6 +44,7 @@
 #include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
 #include <DataFlash.h>
 #include <SITL.h>
+#include <AP_Notify.h>
 
 #include "config.h"
 #include "Parameters.h"
@@ -60,13 +66,12 @@ AP_Param param_loader(var_info, WP_START_BYTE);
 
 static Parameters g;
 
-static GPS         *g_gps;
-AP_GPS_Auto     g_gps_driver(&g_gps);
+static AP_GPS gps;
 AP_InertialSensor_MPU6000 ins;
-AP_AHRS_DCM  ahrs(&ins, g_gps);
+AP_Baro_HIL      barometer;
+AP_AHRS_DCM  ahrs(ins, barometer, gps);
 
 static AP_Compass_HIL compass;
-AP_Baro_HIL      barometer;
 SITL					sitl;
 
 #define SERIAL0_BAUD 115200

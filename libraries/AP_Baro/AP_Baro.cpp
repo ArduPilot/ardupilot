@@ -1,11 +1,22 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*
  *       APM_Baro.cpp - barometer driver
  *
- *   This library is free software; you can redistribute it and/or
- *   modify it under the terms of the GNU Lesser General Public License
- *   as published by the Free Software Foundation; either version 2.1
- *   of the License, or (at your option) any later version.
  */
 
 #include <AP_Math.h>
@@ -104,7 +115,40 @@ void AP_Baro::calibrate()
     }
 
     _ground_pressure.set_and_save(ground_pressure);
-    _ground_temperature.set_and_save(ground_temperature / 10.0f);
+    _ground_temperature.set_and_save(ground_temperature);
+}
+
+/**
+   update the barometer calibration
+   this updates the baro ground calibration to the current values. It
+   can be used before arming to keep the baro well calibrated
+*/
+void AP_Baro::update_calibration()
+{
+    _ground_pressure.set(get_pressure());
+    _ground_temperature.set(get_temperature());
+}
+
+// return altitude difference in meters between current pressure and a
+// given base_pressure in Pascal
+float AP_Baro::get_altitude_difference(float base_pressure, float pressure)
+{
+    float ret;
+#if HAL_CPU_CLASS <= HAL_CPU_CLASS_16
+    // on slower CPUs use a less exact, but faster, calculation
+    float scaling = base_pressure / pressure;
+    float temp    = _ground_temperature + 273.15f;
+    ret = logf(scaling) * temp * 29.271267f;
+#else
+    // on faster CPUs use a more exact calculation
+    float scaling = pressure / base_pressure;
+    float temp    = _ground_temperature + 273.15f;
+
+    // This is an exact calculation that is within +-2.5m of the standard atmosphere tables
+    // in the troposphere (up to 11,000 m amsl).
+	ret = 153.8462f * temp * (1.0f - expf(0.190259f * logf(scaling)));
+#endif
+    return ret;
 }
 
 // return current altitude estimate relative to time that calibrate()
@@ -112,28 +156,17 @@ void AP_Baro::calibrate()
 // note that this relies on read() being called regularly to get new data
 float AP_Baro::get_altitude(void)
 {
-    float scaling, temp;
+    if (_ground_pressure == 0) {
+        // called before initialisation
+        return 0;
+    }
 
     if (_last_altitude_t == _last_update) {
         // no new information
         return _altitude + _alt_offset;
     }
 
-
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-    // on AVR use a less exact, but faster, calculation
-    scaling                                 = (float)_ground_pressure / (float)get_pressure();
-    temp                                    = ((float)_ground_temperature) + 273.15f;
-    _altitude = logf(scaling) * temp * 29.271267f;
-#else
-    // on faster CPUs use a more exact calculation
-    scaling                                 = (float)get_pressure() / (float)_ground_pressure;
-    temp                                    = ((float)_ground_temperature) + 273.15f;
-
-    // This is an exact calculation that is within +-2.5m of the standard atmosphere tables
-    // in the troposphere (up to 11,000 m amsl).
-	_altitude = 153.8462f * temp * (1.0f - expf(0.190259f * logf(scaling)));
-#endif
+    _altitude = get_altitude_difference(_ground_pressure, get_pressure());
 
     _last_altitude_t = _last_update;
 
@@ -148,7 +181,7 @@ float AP_Baro::get_altitude(void)
 // assumes standard atmosphere lapse rate
 float AP_Baro::get_EAS2TAS(void)
 {
-    if ((abs(_altitude - _last_altitude_EAS2TAS) < 100.0f) && (_EAS2TAS != 0.0f)) {
+    if ((fabs(_altitude - _last_altitude_EAS2TAS) < 100.0f) && (_EAS2TAS != 0.0f)) {
         // not enough change to require re-calculating
         return _EAS2TAS;
     }

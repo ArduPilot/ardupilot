@@ -42,7 +42,7 @@ const AP_Param::GroupInfo AP_Camera::var_info[] PROGMEM = {
 
     // @Param: TRIGG_DIST
     // @DisplayName: Camera trigger distance
-    // @Description: Distance in meters between camera triggers. If this value is non-zero then the camera will trigger whenever the GPS position changes by this number of meters regardless of what mode the APM is in
+    // @Description: Distance in meters between camera triggers. If this value is non-zero then the camera will trigger whenever the GPS position changes by this number of meters regardless of what mode the APM is in. Note that this parameter can also be set in an auto mission using the DO_SET_CAM_TRIGG_DIST command, allowing you to enable/disable the triggering of the camera during the flight.
     // @User: Standard
     // @Range: 0 1000
     AP_GROUPINFO("TRIGG_DIST",  4, AP_Camera, _trigg_dist, 0),
@@ -65,7 +65,7 @@ AP_Camera::servo_pic()
 void
 AP_Camera::relay_pic()
 {
-    _apm_relay->on();
+    _apm_relay->on(0);
 
     // leave a message that it should be active for this many loops (assumes 50hz loops)
     _trigger_counter = constrain_int16(_trigger_duration*5,0,255);
@@ -99,7 +99,7 @@ AP_Camera::trigger_pic_cleanup()
                 RC_Channel_aux::set_radio(RC_Channel_aux::k_cam_trigger, _servo_off_pwm);
                 break;
             case AP_CAMERA_TRIGGER_TYPE_RELAY:
-                _apm_relay->off();
+                _apm_relay->off(0);
                 break;
         }
     }
@@ -178,7 +178,7 @@ bool AP_Camera::update_location(const struct Location &loc)
         // be called without a new GPS fix
         return false;
     }
-    if (get_distance(&loc, &_last_location) < _trigg_dist) {
+    if (get_distance(loc, _last_location) < _trigg_dist) {
         return false;
     }
     _last_location = loc;

@@ -8,8 +8,9 @@
 #define DF_NUM_PAGES 4096
 
 // Public Methods //////////////////////////////////////////////////////////////
-void DataFlash_Empty::Init(void)
+void DataFlash_Empty::Init(const struct LogStructure *structure, uint8_t num_types)
 {
+    DataFlash_Class::Init(structure, num_types);
 	df_PageSize = DF_PAGE_SIZE;
     // reserve last page for config information
     df_NumPages   = DF_NUM_PAGES - 1;
@@ -70,7 +71,10 @@ void DataFlash_Empty::BlockWrite(uint8_t BufferNum, uint16_t IntPageAdr,
 
 bool DataFlash_Empty::BlockRead(uint8_t BufferNum, uint16_t IntPageAdr,
         void *pBuffer, uint16_t size)
-{ return false; }
+{ 
+    memset(pBuffer, 0, size);
+    return false; 
+}
 
 // *** END OF INTERNAL FUNCTIONS ***
 

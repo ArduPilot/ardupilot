@@ -6,13 +6,12 @@ import pexpect, os, sys, shutil, atexit
 
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pysim'))
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..', 'mavlink', 'pymavlink'))
 
-import optparse, fnmatch, time, glob, traceback, signal, util, time, math, common
+import optparse, fnmatch, time, glob, traceback, signal, util, time, math, common, random
 from common import *
 
 
-import mavutil, mavwp, random
+from pymavlink import mavutil, mavwp
 import arduplane, arducopter
 
 # Defaults
@@ -151,7 +150,6 @@ def fly_ArduCopter_scripted(testname):
     mavproxy.expect('Received [0-9]+ parameters')
 
     # setup test parameters
-    mavproxy.send('param set SYSID_THISMAV %u\n' % random.randint(100, 200))
     mavproxy.send("param load %s/ArduCopter.parm\n" % testdir)
     mavproxy.expect('Loaded [0-9]+ parameters')
 
@@ -263,8 +261,7 @@ class TestResults(object):
 
 def write_XMLresults(atype, results):
     '''write XML JUnit results'''
-    sys.path.insert(0, os.path.join(util.reltopdir("../mavlink/pymavlink/generator")))
-    import mavtemplate
+    from pymavlink.generator import mavtemplate
     t = mavtemplate.MAVTemplate()
     for x in glob.glob(util.reltopdir('Tools/autotest/junit.xml')):
         junit_xml = util.loadfile(x)
@@ -274,8 +271,7 @@ def write_XMLresults(atype, results):
 
 def write_webresults(results):
     '''write webpage results'''
-    sys.path.insert(0, os.path.join(util.reltopdir("../mavlink/pymavlink/generator")))
-    import mavtemplate
+    from pymavlink.generator import mavtemplate
     t = mavtemplate.MAVTemplate()
     for h in glob.glob(util.reltopdir('Tools/autotest/web/*.html')):
         html = util.loadfile(h)

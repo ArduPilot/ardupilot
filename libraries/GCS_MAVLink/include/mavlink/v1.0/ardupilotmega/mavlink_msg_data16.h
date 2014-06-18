@@ -67,7 +67,7 @@ static inline uint16_t mavlink_msg_data16_pack(uint8_t system_id, uint8_t compon
  * @brief Pack a data16 message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param type data type
  * @param len data length
@@ -101,7 +101,7 @@ static inline uint16_t mavlink_msg_data16_pack_chan(uint8_t system_id, uint8_t c
 }
 
 /**
- * @brief Encode a data16 struct into a message
+ * @brief Encode a data16 struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -111,6 +111,20 @@ static inline uint16_t mavlink_msg_data16_pack_chan(uint8_t system_id, uint8_t c
 static inline uint16_t mavlink_msg_data16_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_data16_t* data16)
 {
 	return mavlink_msg_data16_pack(system_id, component_id, msg, data16->type, data16->len, data16->data);
+}
+
+/**
+ * @brief Encode a data16 struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param data16 C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_data16_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_data16_t* data16)
+{
+	return mavlink_msg_data16_pack_chan(system_id, component_id, chan, msg, data16->type, data16->len, data16->data);
 }
 
 /**
@@ -147,6 +161,40 @@ static inline void mavlink_msg_data16_send(mavlink_channel_t chan, uint8_t type,
 #endif
 #endif
 }
+
+#if MAVLINK_MSG_ID_DATA16_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+  This varient of _send() can be used to save stack space by re-using
+  memory from the receive buffer.  The caller provides a
+  mavlink_message_t which is the size of a full mavlink message. This
+  is usually the receive buffer for the channel, and allows a reply to an
+  incoming message with minimum stack space usage.
+ */
+static inline void mavlink_msg_data16_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan,  uint8_t type, uint8_t len, const uint8_t *data)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_uint8_t(buf, 0, type);
+	_mav_put_uint8_t(buf, 1, len);
+	_mav_put_uint8_t_array(buf, 2, data, 16);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_DATA16, buf, MAVLINK_MSG_ID_DATA16_LEN, MAVLINK_MSG_ID_DATA16_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_DATA16, buf, MAVLINK_MSG_ID_DATA16_LEN);
+#endif
+#else
+	mavlink_data16_t *packet = (mavlink_data16_t *)msgbuf;
+	packet->type = type;
+	packet->len = len;
+	mav_array_memcpy(packet->data, data, sizeof(uint8_t)*16);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_DATA16, (const char *)packet, MAVLINK_MSG_ID_DATA16_LEN, MAVLINK_MSG_ID_DATA16_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_DATA16, (const char *)packet, MAVLINK_MSG_ID_DATA16_LEN);
+#endif
+#endif
+}
+#endif
 
 #endif
 

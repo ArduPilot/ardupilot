@@ -45,7 +45,7 @@ private:
     AP_HAL::Semaphore* _spi_sem;
 
 public:
-    void        Init();
+    void        Init(const struct LogStructure *structure, uint8_t num_types);
     void        ReadManufacturerID();
     bool        CardInserted();
 };

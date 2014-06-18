@@ -11,6 +11,14 @@
 #include <stdlib.h>
 #include <math.h>               // for fabs()
 
+// Examples for _filter:
+// f_cut = 10 Hz -> _alpha = 0.385869
+// f_cut = 15 Hz -> _alpha = 0.485194
+// f_cut = 20 Hz -> _alpha = 0.556864
+// f_cut = 25 Hz -> _alpha = 0.611015
+// f_cut = 30 Hz -> _alpha = 0.653373
+#define AC_PID_D_TERM_FILTER 0.556864f    // Default 100Hz Filter Rate with 20Hz Cutoff Frequency
+
 /// @class	AC_PID
 /// @brief	Object managing one PID control
 class AC_PID {
@@ -30,7 +38,8 @@ public:
         const float &   initial_p = 0.0,
         const float &   initial_i = 0.0,
         const float &   initial_d = 0.0,
-        const int16_t & initial_imax = 0.0)
+        const int16_t & initial_imax = 0.0):
+        _d_lpf_alpha(AC_PID_D_TERM_FILTER)
     {
 		AP_Param::setup_object_defaults(this, var_info);
 
@@ -56,13 +65,11 @@ public:
     ///
     /// @returns		The updated control output.
     ///
-    int32_t         get_pid(int32_t error, float dt);
-    int32_t         get_pi(int32_t error, float dt);
-    int32_t         get_p(int32_t error);
-    int32_t         get_i(int32_t error, float dt);
-    int32_t         get_d(int32_t error, float dt);
-	int32_t 		get_leaky_i(int32_t error, float dt, float leak_rate);
-
+    float       get_pid(float error, float dt);
+    float       get_pi(float error, float dt);
+    float       get_p(float error) const;
+    float       get_i(float error, float dt);
+    float       get_d(float error, float dt);
 
     /// Reset the PID integrator
     ///
@@ -75,6 +82,9 @@ public:
     /// Save gain properties
     ///
     void        save_gains();
+    
+    /// Sets filter Alpha for D-term LPF
+    void        set_d_lpf_alpha(int16_t cutoff_frequency, float time_step);
 
     /// @name	parameter accessors
     //@{
@@ -87,54 +97,30 @@ public:
         _kp = p; _ki = i; _kd = d; _imax = abs(imaxval);
     }
 
-    float        kP() const {
-        return _kp.get();
-    }
-    float        kI() const {
-        return _ki.get();
-    }
-    float        kD() const {
-        return _kd.get();
-    }
-    int16_t        imax() const {
-        return _imax.get();
-    }
-
-    void        kP(const float v)               {
-        _kp.set(v);
-    }
-    void        kI(const float v)               {
-        _ki.set(v);
-    }
-    void        kD(const float v)               {
-        _kd.set(v);
-    }
-    void        imax(const int16_t v)   {
-        _imax.set(abs(v));
-    }
-
-    float        get_integrator() const {
-        return _integrator;
-    }
-    void        set_integrator(float i) {
-        _integrator = i;
-    }
+    // accessors
+    float       kP() const { return _kp.get(); }
+    float       kI() const { return _ki.get(); }
+    float       kD() const { return _kd.get(); }
+    int16_t     imax() const { return _imax.get(); }
+    void        kP(const float v) { _kp.set(v); }
+    void        kI(const float v) { _ki.set(v); }
+    void        kD(const float v) { _kd.set(v); }
+    void        imax(const int16_t v) { _imax.set(abs(v)); }
+    float       get_integrator() const { return _integrator; }
+    void        set_integrator(float i) { _integrator = i; }
 
     static const struct AP_Param::GroupInfo        var_info[];
 
-private:
+protected:
     AP_Float        _kp;
     AP_Float        _ki;
     AP_Float        _kd;
     AP_Int16        _imax;
 
     float           _integrator;                                ///< integrator value
-    int32_t         _last_input;                                ///< last input for derivative
+    float           _last_input;                                ///< last input for derivative
     float           _last_derivative;                           ///< last derivative for low-pass filter
-
-    /// Low pass filter cut frequency for derivative calculation.
-    ///
-    static const float  _filter;
+    float           _d_lpf_alpha;                               ///< alpha used in D-term LPF
 };
 
 #endif // __AC_PID_H__

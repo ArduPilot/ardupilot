@@ -4,7 +4,7 @@
 mavdir="$(dirname $0)"
 dname="$(basename $mavdir)"
 [ "$dname" = "GCS_MAVLink" ] || {
-    echo "This script should be run from the libraries/GCS_MAVLink directory"
+    echo "This script should be run from the ardupilot directory with the command ./libraries/GCS_MAVLink/generate.sh"
     exit 1
 }
 

@@ -1,8 +1,10 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include "AP_InertialSensor_Oilpan.h"
+
+const extern AP_HAL::HAL& hal;
 
 // ADC channel mappings on for the APM Oilpan
 // Sensors: GYROX, GYROY, GYROZ, ACCELX, ACCELY, ACCELZ
@@ -60,9 +62,7 @@ uint16_t AP_InertialSensor_Oilpan::_init_sensor( Sample_rate sample_rate)
         break;
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
-    return AP_PRODUCT_ID_SITL;
-#elif defined(__AVR_ATmega1280__)
+#if defined(__AVR_ATmega1280__)
     return AP_PRODUCT_ID_APM1_1280;
 #else
     return AP_PRODUCT_ID_APM1_2560;
@@ -71,33 +71,37 @@ uint16_t AP_InertialSensor_Oilpan::_init_sensor( Sample_rate sample_rate)
 
 bool AP_InertialSensor_Oilpan::update()
 {
+    if (!wait_for_sample(100)) {
+        return false;
+    }
     float adc_values[6];
-    Vector3f gyro_offset = _gyro_offset.get();
-    Vector3f accel_scale = _accel_scale.get();
-    Vector3f accel_offset = _accel_offset.get();
-
+    Vector3f gyro_offset = _gyro_offset[0].get();
+    Vector3f accel_scale = _accel_scale[0].get();
+    Vector3f accel_offset = _accel_offset[0].get();
 
     _delta_time_micros = _adc->Ch6(_sensors, adc_values);
     _temp = _adc->Ch(_gyro_temp_ch);
 
-    _gyro   = Vector3f(_sensor_signs[0] * ( adc_values[0] - OILPAN_RAW_GYRO_OFFSET ),
-                       _sensor_signs[1] * ( adc_values[1] - OILPAN_RAW_GYRO_OFFSET ),
-                       _sensor_signs[2] * ( adc_values[2] - OILPAN_RAW_GYRO_OFFSET ));
-    _gyro.rotate(_board_orientation);
-    _gyro.x *= _gyro_gain_x;
-    _gyro.y *= _gyro_gain_y;
-    _gyro.z *= _gyro_gain_z;
-    _gyro -= gyro_offset;
+    _gyro[0] = Vector3f(_sensor_signs[0] * ( adc_values[0] - OILPAN_RAW_GYRO_OFFSET ),
+                        _sensor_signs[1] * ( adc_values[1] - OILPAN_RAW_GYRO_OFFSET ),
+                        _sensor_signs[2] * ( adc_values[2] - OILPAN_RAW_GYRO_OFFSET ));
+    _gyro[0].rotate(_board_orientation);
+    _gyro[0].x *= _gyro_gain_x;
+    _gyro[0].y *= _gyro_gain_y;
+    _gyro[0].z *= _gyro_gain_z;
+    _gyro[0] -= gyro_offset;
 
-    _accel  = Vector3f(_sensor_signs[3] * (adc_values[3] - OILPAN_RAW_ACCEL_OFFSET),
-                       _sensor_signs[4] * (adc_values[4] - OILPAN_RAW_ACCEL_OFFSET),
-                       _sensor_signs[5] * (adc_values[5] - OILPAN_RAW_ACCEL_OFFSET));
-    _accel.rotate(_board_orientation);
-    _accel.x *= accel_scale.x;
-    _accel.y *= accel_scale.y;
-    _accel.z *= accel_scale.z;
-    _accel   *= OILPAN_ACCEL_SCALE_1G;
-    _accel -= accel_offset;
+    _previous_accel[0] = _accel[0];
+
+    _accel[0]  = Vector3f(_sensor_signs[3] * (adc_values[3] - OILPAN_RAW_ACCEL_OFFSET),
+                          _sensor_signs[4] * (adc_values[4] - OILPAN_RAW_ACCEL_OFFSET),
+                          _sensor_signs[5] * (adc_values[5] - OILPAN_RAW_ACCEL_OFFSET));
+    _accel[0].rotate(_board_orientation);
+    _accel[0].x *= accel_scale.x;
+    _accel[0].y *= accel_scale.y;
+    _accel[0].z *= accel_scale.z;
+    _accel[0]   *= OILPAN_ACCEL_SCALE_1G;
+    _accel[0] -= accel_offset;
 
 /*
  *  X  = 1619.30 to 2445.69
@@ -108,7 +112,7 @@ bool AP_InertialSensor_Oilpan::update()
     return true;
 }
 
-float AP_InertialSensor_Oilpan::get_delta_time() {
+float AP_InertialSensor_Oilpan::get_delta_time() const {
     return _delta_time_micros * 1.0e-6;
 }
 
@@ -121,10 +125,26 @@ float AP_InertialSensor_Oilpan::get_gyro_drift_rate(void)
     return ToRad(3.0/60);
 }
 
-// get number of samples read from the sensors
-uint16_t AP_InertialSensor_Oilpan::num_samples_available()
+// return true if a new sample is available
+bool AP_InertialSensor_Oilpan::_sample_available()
 {
-    return _adc->num_samples_available(_sensors) / _sample_threshold;
+    return (_adc->num_samples_available(_sensors) / _sample_threshold) > 0;
 }
+
+bool AP_InertialSensor_Oilpan::wait_for_sample(uint16_t timeout_ms)
+{
+    if (_sample_available()) {
+        return true;
+    }
+    uint32_t start = hal.scheduler->millis();
+    while ((hal.scheduler->millis() - start) < timeout_ms) {
+        hal.scheduler->delay_microseconds(100);
+        if (_sample_available()) {
+            return true;
+        }
+    }
+    return false;
+}
+
 #endif // CONFIG_HAL_BOARD
 

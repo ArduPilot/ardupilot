@@ -17,6 +17,7 @@ class Rover(Aircraft):
                  wheeltrack=0.296,
                  max_wheel_turn=35,
                  turning_circle=1.8,
+                 skid_turn_rate=140, # degrees/sec
                  skid_steering=False):
         Aircraft.__init__(self)
         self.max_speed = max_speed
@@ -27,6 +28,12 @@ class Rover(Aircraft):
         self.max_wheel_turn = max_wheel_turn
         self.last_time = time.time()
         self.skid_steering = skid_steering
+        self.skid_turn_rate = skid_turn_rate
+        if self.skid_steering:
+            # these are taken from a 6V wild thumper with skid steering,
+            # with a sabertooth controller
+            self.max_accel = 14
+            self.max_speed = 4
 
     def turn_circle(self, steering):
         '''return turning circle (diameter) in meters for steering angle proportion in degrees
@@ -37,6 +44,8 @@ class Rover(Aircraft):
 
     def yaw_rate(self, steering, speed):
         '''return yaw rate in degrees/second given steering_angle and speed'''
+        if self.skid_steering:
+            return steering * self.skid_turn_rate
         if abs(steering) < 1.0e-6 or abs(speed) < 1.0e-6:
             return 0
         d = self.turn_circle(steering)

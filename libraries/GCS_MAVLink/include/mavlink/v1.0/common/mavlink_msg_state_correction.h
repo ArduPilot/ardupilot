@@ -99,7 +99,7 @@ static inline uint16_t mavlink_msg_state_correction_pack(uint8_t system_id, uint
  * @brief Pack a state_correction message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param xErr x position error
  * @param yErr y position error
@@ -153,7 +153,7 @@ static inline uint16_t mavlink_msg_state_correction_pack_chan(uint8_t system_id,
 }
 
 /**
- * @brief Encode a state_correction struct into a message
+ * @brief Encode a state_correction struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -163,6 +163,20 @@ static inline uint16_t mavlink_msg_state_correction_pack_chan(uint8_t system_id,
 static inline uint16_t mavlink_msg_state_correction_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_state_correction_t* state_correction)
 {
 	return mavlink_msg_state_correction_pack(system_id, component_id, msg, state_correction->xErr, state_correction->yErr, state_correction->zErr, state_correction->rollErr, state_correction->pitchErr, state_correction->yawErr, state_correction->vxErr, state_correction->vyErr, state_correction->vzErr);
+}
+
+/**
+ * @brief Encode a state_correction struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param state_correction C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_state_correction_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_state_correction_t* state_correction)
+{
+	return mavlink_msg_state_correction_pack_chan(system_id, component_id, chan, msg, state_correction->xErr, state_correction->yErr, state_correction->zErr, state_correction->rollErr, state_correction->pitchErr, state_correction->yawErr, state_correction->vxErr, state_correction->vyErr, state_correction->vzErr);
 }
 
 /**
@@ -219,6 +233,54 @@ static inline void mavlink_msg_state_correction_send(mavlink_channel_t chan, flo
 #endif
 #endif
 }
+
+#if MAVLINK_MSG_ID_STATE_CORRECTION_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+  This varient of _send() can be used to save stack space by re-using
+  memory from the receive buffer.  The caller provides a
+  mavlink_message_t which is the size of a full mavlink message. This
+  is usually the receive buffer for the channel, and allows a reply to an
+  incoming message with minimum stack space usage.
+ */
+static inline void mavlink_msg_state_correction_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan,  float xErr, float yErr, float zErr, float rollErr, float pitchErr, float yawErr, float vxErr, float vyErr, float vzErr)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_float(buf, 0, xErr);
+	_mav_put_float(buf, 4, yErr);
+	_mav_put_float(buf, 8, zErr);
+	_mav_put_float(buf, 12, rollErr);
+	_mav_put_float(buf, 16, pitchErr);
+	_mav_put_float(buf, 20, yawErr);
+	_mav_put_float(buf, 24, vxErr);
+	_mav_put_float(buf, 28, vyErr);
+	_mav_put_float(buf, 32, vzErr);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_STATE_CORRECTION, buf, MAVLINK_MSG_ID_STATE_CORRECTION_LEN, MAVLINK_MSG_ID_STATE_CORRECTION_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_STATE_CORRECTION, buf, MAVLINK_MSG_ID_STATE_CORRECTION_LEN);
+#endif
+#else
+	mavlink_state_correction_t *packet = (mavlink_state_correction_t *)msgbuf;
+	packet->xErr = xErr;
+	packet->yErr = yErr;
+	packet->zErr = zErr;
+	packet->rollErr = rollErr;
+	packet->pitchErr = pitchErr;
+	packet->yawErr = yawErr;
+	packet->vxErr = vxErr;
+	packet->vyErr = vyErr;
+	packet->vzErr = vzErr;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_STATE_CORRECTION, (const char *)packet, MAVLINK_MSG_ID_STATE_CORRECTION_LEN, MAVLINK_MSG_ID_STATE_CORRECTION_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_STATE_CORRECTION, (const char *)packet, MAVLINK_MSG_ID_STATE_CORRECTION_LEN);
+#endif
+#endif
+}
+#endif
 
 #endif
 

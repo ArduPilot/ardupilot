@@ -83,7 +83,7 @@ static inline uint16_t mavlink_msg_omnidirectional_flow_pack(uint8_t system_id, 
  * @brief Pack a omnidirectional_flow message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param time_usec Timestamp (microseconds, synced to UNIX time or since system boot)
  * @param sensor_id Sensor ID
@@ -126,7 +126,7 @@ static inline uint16_t mavlink_msg_omnidirectional_flow_pack_chan(uint8_t system
 }
 
 /**
- * @brief Encode a omnidirectional_flow struct into a message
+ * @brief Encode a omnidirectional_flow struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -136,6 +136,20 @@ static inline uint16_t mavlink_msg_omnidirectional_flow_pack_chan(uint8_t system
 static inline uint16_t mavlink_msg_omnidirectional_flow_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_omnidirectional_flow_t* omnidirectional_flow)
 {
 	return mavlink_msg_omnidirectional_flow_pack(system_id, component_id, msg, omnidirectional_flow->time_usec, omnidirectional_flow->sensor_id, omnidirectional_flow->left, omnidirectional_flow->right, omnidirectional_flow->quality, omnidirectional_flow->front_distance_m);
+}
+
+/**
+ * @brief Encode a omnidirectional_flow struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param omnidirectional_flow C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_omnidirectional_flow_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_omnidirectional_flow_t* omnidirectional_flow)
+{
+	return mavlink_msg_omnidirectional_flow_pack_chan(system_id, component_id, chan, msg, omnidirectional_flow->time_usec, omnidirectional_flow->sensor_id, omnidirectional_flow->left, omnidirectional_flow->right, omnidirectional_flow->quality, omnidirectional_flow->front_distance_m);
 }
 
 /**
@@ -181,6 +195,46 @@ static inline void mavlink_msg_omnidirectional_flow_send(mavlink_channel_t chan,
 #endif
 #endif
 }
+
+#if MAVLINK_MSG_ID_OMNIDIRECTIONAL_FLOW_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+  This varient of _send() can be used to save stack space by re-using
+  memory from the receive buffer.  The caller provides a
+  mavlink_message_t which is the size of a full mavlink message. This
+  is usually the receive buffer for the channel, and allows a reply to an
+  incoming message with minimum stack space usage.
+ */
+static inline void mavlink_msg_omnidirectional_flow_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan,  uint64_t time_usec, uint8_t sensor_id, const int16_t *left, const int16_t *right, uint8_t quality, float front_distance_m)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_uint64_t(buf, 0, time_usec);
+	_mav_put_float(buf, 8, front_distance_m);
+	_mav_put_uint8_t(buf, 52, sensor_id);
+	_mav_put_uint8_t(buf, 53, quality);
+	_mav_put_int16_t_array(buf, 12, left, 10);
+	_mav_put_int16_t_array(buf, 32, right, 10);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_OMNIDIRECTIONAL_FLOW, buf, MAVLINK_MSG_ID_OMNIDIRECTIONAL_FLOW_LEN, MAVLINK_MSG_ID_OMNIDIRECTIONAL_FLOW_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_OMNIDIRECTIONAL_FLOW, buf, MAVLINK_MSG_ID_OMNIDIRECTIONAL_FLOW_LEN);
+#endif
+#else
+	mavlink_omnidirectional_flow_t *packet = (mavlink_omnidirectional_flow_t *)msgbuf;
+	packet->time_usec = time_usec;
+	packet->front_distance_m = front_distance_m;
+	packet->sensor_id = sensor_id;
+	packet->quality = quality;
+	mav_array_memcpy(packet->left, left, sizeof(int16_t)*10);
+	mav_array_memcpy(packet->right, right, sizeof(int16_t)*10);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_OMNIDIRECTIONAL_FLOW, (const char *)packet, MAVLINK_MSG_ID_OMNIDIRECTIONAL_FLOW_LEN, MAVLINK_MSG_ID_OMNIDIRECTIONAL_FLOW_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_OMNIDIRECTIONAL_FLOW, (const char *)packet, MAVLINK_MSG_ID_OMNIDIRECTIONAL_FLOW_LEN);
+#endif
+#endif
+}
+#endif
 
 #endif
 

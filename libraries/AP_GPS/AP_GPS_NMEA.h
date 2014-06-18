@@ -1,4 +1,18 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 //
 // NMEA parser, adapted by Michael Smith from TinyGPS v9:
@@ -7,15 +21,6 @@
 // Copyright (C) 2008-9 Mikal Hart
 // All rights reserved.
 //
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 2.1 of the License, or (at your option) any later version.
-//
-// This library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Lesser General Public License for more details.
 //
 
 /// @file	AP_GPS_NMEA.h
@@ -42,38 +47,21 @@
 #ifndef __AP_GPS_NMEA_H__
 #define __AP_GPS_NMEA_H__
 
-#include <AP_HAL.h>
-#include "GPS.h"
-#include <AP_Progmem.h>
-
+#include <AP_GPS.h>
 
 /// NMEA parser
 ///
-class AP_GPS_NMEA : public GPS
+class AP_GPS_NMEA : public AP_GPS_Backend
 {
 public:
-	AP_GPS_NMEA(void) : 
-	GPS(),
-	_parity(0),
-	_is_checksum_term(false),
-	_sentence_type(0),
-	_term_number(0),
-	_term_offset(0),
-	_gps_data_good(false)
-		{}
-
-    /// Perform a (re)initialisation of the GPS; sends the
-    /// protocol configuration messages.
-    ///
-    virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
+	AP_GPS_NMEA(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
     /// Checks the serial receive buffer for characters,
     /// attempts to parse NMEA data and updates internal state
     /// accordingly.
-    ///
-    virtual bool        read();
+    bool        read();
 
-	static bool _detect(uint8_t data);
+	static bool _detect(struct NMEA_detect_state &state, uint8_t data);
 
 private:
     /// Coding for the GPS sentences that the parser handles
@@ -105,15 +93,15 @@ private:
     /// @returns		The value expressed by the string in _term,
     ///					multiplied by 100.
     ///
-    uint32_t    _parse_decimal();
+    uint32_t    _parse_decimal_100();
 
     /// Parses the current term as a NMEA-style degrees + minutes
     /// value with up to four decimal digits.
     ///
-    /// This gives a theoretical resolution limit of around 18cm.
+    /// This gives a theoretical resolution limit of around 1cm.
     ///
     /// @returns		The value expressed by the string in _term,
-    ///					multiplied by 10000.
+    ///					multiplied by 1e7.
     ///
     uint32_t    _parse_degrees();
 
@@ -145,7 +133,7 @@ private:
     int32_t _new_altitude;                                      ///< altitude parsed from a term
     int32_t _new_speed;                                                 ///< speed parsed from a term
     int32_t _new_course;                                        ///< course parsed from a term
-    int16_t _new_hdop;                                                  ///< HDOP parsed from a term
+    uint16_t _new_hdop;                                                 ///< HDOP parsed from a term
     uint8_t _new_satellite_count;                       ///< satellite count parsed from a term
 
     /// @name	Init strings
@@ -164,6 +152,8 @@ private:
     static const prog_char _gpgga_string[];
     static const prog_char _gpvtg_string[];
     //@}
+
+    static const prog_char _initialisation_blob[];
 };
 
 #endif // __AP_GPS_NMEA_H__

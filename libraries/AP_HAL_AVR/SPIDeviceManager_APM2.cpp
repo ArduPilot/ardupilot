@@ -20,25 +20,29 @@ void APM2SPIDeviceManager::init(void* machtnichts) {
      * the MS5611 CS pin works around the problem
      */
 
+    #define SPI0_SPCR_8MHz   0
+    #define SPI0_SPSR_8MHz   _BV(SPI2X)
+    #define SPI0_SPCR_500kHz _BV(SPR1)
+    #define SPI0_SPSR_500kHz _BV(SPI2X)
+
     /* mpu6k cs is on Arduino pin 53, PORTB0 */
     AVRDigitalSource* mpu6k_cs = new AVRDigitalSource(_BV(0), PB);
-    /* mpu6k: divide clock by 32 to 500khz
-     * spcr gets bit SPR1,  spsr gets bit SPI2X */
-    _mpu6k = new AVRSPI0DeviceDriver(mpu6k_cs, _BV(SPR1), _BV(SPI2X));
+    /* mpu6k: run clock at 8MHz in high speed mode and 512kHz for low
+     * speed */
+    _mpu6k = new AVRSPI0DeviceDriver(mpu6k_cs, SPI0_SPCR_500kHz, SPI0_SPCR_8MHz, SPI0_SPSR_8MHz);
     _mpu6k->init();
 
     /* ms5611 cs is on Arduino pin 40, PORTG1 */
     AVRDigitalSource* ms5611_cs = new AVRDigitalSource(_BV(1), PG);
-    /* ms5611: divide clock by 32 to 500khz
-     * spcr gets bit SPR1,  spsr gets bit SPI2X */
-    _ms5611 = new AVRSPI0DeviceDriver(ms5611_cs, _BV(SPR1), _BV(SPI2X));
+    /* ms5611: run clock at 8MHz */
+    _ms5611 = new AVRSPI0DeviceDriver(ms5611_cs, SPI0_SPCR_500kHz, SPI0_SPCR_8MHz, SPI0_SPSR_8MHz);
     _ms5611->init();
    
     /* optflow cs is on Arduino pin A3, PORTF3 */
     AVRDigitalSource* optflow_cs = new AVRDigitalSource(_BV(3), PF);
     /* optflow: divide clock by 8 to 2Mhz
      * spcr gets bit SPR0, spsr gets bit SPI2X */
-    _optflow_spi0 = new AVRSPI0DeviceDriver(optflow_cs, _BV(SPR0), _BV(SPI2X));
+    _optflow_spi0 = new AVRSPI0DeviceDriver(optflow_cs, _BV(SPR0)|_BV(CPOL)|_BV(CPHA), _BV(SPR0)|_BV(CPOL)|_BV(CPHA), _BV(SPI2X));
     _optflow_spi0->init();
 
     /* Dataflash CS is on Arduino pin 28, PORTA6 */
@@ -49,8 +53,10 @@ void APM2SPIDeviceManager::init(void* machtnichts) {
     _dataflash = new AVRSPI3DeviceDriver(df_cs, 0, 0);
     _dataflash->init();
 
-    /* XXX need correct mode and baud */
-    _optflow_spi3 = new AVRSPI3DeviceDriver(optflow_cs, 0, 0);
+    /* optflow uses mode 3 and a clock of 2mhz
+     * ucsr3c = _BV(UCPHA3N)|_BV(UCPOL3) = 3
+     * ubrr3 = 3 */
+    _optflow_spi3 = new AVRSPI3DeviceDriver(optflow_cs, 3, 3);
     _optflow_spi3->init();
 }
 

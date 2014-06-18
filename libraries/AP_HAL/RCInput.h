@@ -18,12 +18,14 @@ public:
     virtual void init(void* implspecific) = 0;
 
     /**
-     * Return the number of currently valid channels.
-     * Typically 0 (no valid radio channels) or 8 (implementation-defined)
-     * Could be less than or greater than 8 depending on your incoming radio
-     * or PPM stream
+     * Return true if there has been new input since the last read() call
      */
-    virtual uint8_t  valid_channels() = 0;
+    virtual bool  new_input() = 0;
+
+    /**
+     * Return the number of valid channels in the last read
+     */
+    virtual uint8_t  num_channels() = 0;
 
     /* Read a single channel at a time */
     virtual uint16_t read(uint8_t ch) = 0;

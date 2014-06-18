@@ -1,11 +1,20 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 // Copyright 2010 Michael Smith, all rights reserved.
-
-//	This library is free software; you can redistribute it and / or
-//	modify it under the terms of the GNU Lesser General Public
-//	License as published by the Free Software Foundation; either
-//	version 2.1 of the License, or (at your option) any later version.
 
 // Derived closely from:
 /****************************************
@@ -44,9 +53,17 @@
 #include <math.h>
 #include <string.h>
 
+#if MATH_CHECK_INDEXES
+#include <assert.h>
+#endif
+
+template <typename T>
+class Matrix3;
+
 template <typename T>
 class Vector3
 {
+
 public:
     T        x, y, z;
 
@@ -98,8 +115,31 @@ public:
     // uniform scaling
     Vector3<T> &operator /=(const T num);
 
+    // allow a vector3 to be used as an array, 0 indexed
+    T & operator[](uint8_t i) {
+        T *_v = &x;
+#if MATH_CHECK_INDEXES
+        assert(i >= 0 && i < 3);
+#endif
+        return _v[i];
+    }
+
+    const T & operator[](uint8_t i) const {
+        const T *_v = &x;
+#if MATH_CHECK_INDEXES
+        assert(i >= 0 && i < 3);
+#endif
+        return _v[i];
+    }
+
     // dot product
     T operator *(const Vector3<T> &v) const;
+
+    // multiply a row vector by a matrix, to give a row vector
+    Vector3<T> operator *(const Matrix3<T> &m) const;
+
+    // multiply a column vector by a row vector, returning a 3x3 matrix
+    Matrix3<T> mul_rowcol(const Vector3<T> &v) const;
 
     // cross product
     Vector3<T> operator %(const Vector3<T> &v) const;
@@ -112,6 +152,9 @@ public:
 
     // check if any elements are infinity
     bool is_inf(void) const;
+
+    // check if all elements are zero
+    bool is_zero(void) const { return x==0 && y == 0 && z == 0; }
 
     // rotate by a standard rotation
     void rotate(enum Rotation rotation);
@@ -134,7 +177,7 @@ public:
     // zero the vector
     void zero()
     {
-        x = y = z = 0.0;
+        x = y = z = 0;
     }
 
     // returns the normalized version of this vector
@@ -171,5 +214,8 @@ typedef Vector3<uint16_t>               Vector3ui;
 typedef Vector3<int32_t>                Vector3l;
 typedef Vector3<uint32_t>               Vector3ul;
 typedef Vector3<float>                  Vector3f;
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+    typedef Vector3<double>                 Vector3d;
+#endif
 
 #endif // VECTOR3_H

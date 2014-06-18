@@ -5,7 +5,10 @@ set -e
 # work from either APM directory or above
 [ -d ArduPlane ] || cd APM
 
-./Tools/autotest/param_metadata/param_parse.py > param.out || exit 1
+./Tools/autotest/param_metadata/param_parse.py > param.out || {
+    echo "Parameter parsing failed"
+    exit 1
+}
 /bin/mkdir -p ../buildlogs/Parameters
 /bin/cp Parameters.wiki Parameters.html *.pdef.xml ../buildlogs/Parameters/
 

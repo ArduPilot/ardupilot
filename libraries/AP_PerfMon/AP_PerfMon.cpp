@@ -160,7 +160,7 @@ void AP_PerfMon::DisplayResults()
 
     // ensure serial is blocking
     //blocking_writes = hal.console->get_blocking_writes();
-    //hal.console->set_blocking_writes(true);
+    hal.console->set_blocking_writes(true);
 
     // print table of results
     hal.console->printf_P(PSTR("\nPerfMon elapsed:%lu(ms)\n"),(unsigned long)totalTime/1000);
@@ -197,7 +197,7 @@ void AP_PerfMon::DisplayResults()
     hal.console->printf_P(PSTR("unexpl:\t\t%4.2f\t%lu\n"),pct,(unsigned long)unExplainedTime/1000);
 
     // restore to blocking writes if necessary
-    //hal.console->set_blocking_writes(blocking_writes);
+    hal.console->set_blocking_writes(false);
 
     // turn back on any time recording
     if( lastCreated != NULL ) {

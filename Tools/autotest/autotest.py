@@ -7,9 +7,6 @@ import optparse, fnmatch, time, glob, traceback, signal
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pysim'))
 
-# cope with the mavlink package not being installed, and just being a git tree
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..', 'mavlink'))
-
 import util
 
 os.environ['PYTHONUNBUFFERED'] = '1'
@@ -30,50 +27,12 @@ def get_default_params(atype):
         mavproxy = util.start_MAVProxy_SIL(atype)
         idx = mavproxy.expect('Saved [0-9]+ parameters to (\S+)')
     parmfile = mavproxy.match.group(1)
-    dest = util.reltopdir('../buildlogs/%s.defaults.txt' % atype)
+    dest = util.reltopdir('../buildlogs/%s-defaults.parm' % atype)
     shutil.copy(parmfile, dest)
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
     print("Saved defaults for %s to %s" % (atype, dest))
     return True
-
-def dump_logs(atype, logname=None):
-    '''dump DataFlash logs'''
-    print("Dumping logs for %s" % atype)
-
-    if logname is None:
-        logname = atype
-        
-    sil = util.start_SIL(atype)
-    logfile = util.reltopdir('../buildlogs/%s.flashlog' % logname)
-    log = open(logfile, mode='w')
-    mavproxy = util.start_MAVProxy_SIL(atype, setup=True, logfile=log)
-    mavproxy.send('\n\n\n')
-    print("navigating menus")
-    mavproxy.expect(']')
-    mavproxy.send("logs\n")
-    mavproxy.expect("logs enabled:")
-    lognums = []
-    i = mavproxy.expect(["No logs", "(\d+) logs"])
-    if i == 0:
-        numlogs = 0
-    else:
-        numlogs = int(mavproxy.match.group(1))
-    for i in range(numlogs):
-        mavproxy.expect("Log (\d+)")
-        lognums.append(int(mavproxy.match.group(1)))
-    mavproxy.expect("Log]")
-    for i in range(numlogs):
-        print("Dumping log %u (i=%u)" % (lognums[i], i))
-        mavproxy.send("dump %u\n" % lognums[i])
-        mavproxy.expect("logs enabled:", timeout=120)
-        mavproxy.expect("Log]")
-    util.pexpect_close(mavproxy)
-    util.pexpect_close(sil)
-    log.close()
-    print("Saved log for %s to %s" % (atype, logfile))
-    return True
-
 
 def build_all():
     '''run the build_all.sh script'''
@@ -124,7 +83,7 @@ def convert_gpx():
         kml = m + '.kml'
         util.run_cmd('gpsbabel -i gpx -f %s -o kml,units=m,floating=1,extrude=1 -F %s' % (gpx, kml), checkfail=False)
         util.run_cmd('zip %s.kmz %s.kml' % (m, m), checkfail=False)
-        util.run_cmd(util.reltopdir("../MAVProxy/tools/mavflightview.py") + " --imagefile=%s.png %s" % (m,m))
+        util.run_cmd("mavflightview.py --imagefile=%s.png %s" % (m,m))
     return True
 
 
@@ -171,22 +130,17 @@ steps = [
     'build.ArduPlane',
     'defaults.ArduPlane',
     'fly.ArduPlane',
-    'logs.ArduPlane',
 
-    'build1280.APMrover2',
     'build2560.APMrover2',
     'build.APMrover2',
     'defaults.APMrover2',
     'drive.APMrover2',
-    'logs.APMrover2',
 
     'build2560.ArduCopter',
     'build.ArduCopter',
     'defaults.ArduCopter',
     'fly.ArduCopter',
-    'logs.ArduCopter',
     'fly.CopterAVC',
-    'logs.CopterAVC',
 
     'convertgpx',
     ]
@@ -229,9 +183,6 @@ def run_step(step):
     if step == 'build2560.ArduPlane':
         return util.build_AVR('ArduPlane', board='mega2560')
 
-    if step == 'build1280.APMrover2':
-        return util.build_AVR('APMrover2', board='mega')
-
     if step == 'build2560.APMrover2':
         return util.build_AVR('APMrover2', board='mega2560')
 
@@ -243,18 +194,6 @@ def run_step(step):
 
     if step == 'defaults.APMrover2':
         return get_default_params('APMrover2')
-
-    if step == 'logs.ArduPlane':
-        return dump_logs('ArduPlane')
-
-    if step == 'logs.ArduCopter':
-        return dump_logs('ArduCopter')
-
-    if step == 'logs.CopterAVC':
-        return dump_logs('ArduCopter', 'CopterAVC')
-
-    if step == 'logs.APMrover2':
-        return dump_logs('APMrover2')
 
     if step == 'fly.ArduCopter':
         return arducopter.fly_ArduCopter(viewerip=opts.viewerip, map=opts.map)
@@ -335,8 +274,7 @@ class TestResults(object):
 
 def write_webresults(results):
     '''write webpage results'''
-    sys.path.insert(0, os.path.join(util.reltopdir("../mavlink/pymavlink/generator")))
-    import mavtemplate
+    from pymavlink.generator import mavtemplate
     t = mavtemplate.MAVTemplate()
     for h in glob.glob(util.reltopdir('Tools/autotest/web/*.html')):
         html = util.loadfile(h)
@@ -351,21 +289,25 @@ def write_fullresults():
     global results
     results.addglob("Google Earth track", '*.kmz')
     results.addfile('Full Logs', 'autotest-output.txt')
-    results.addglob('DataFlash Log', '*.flashlog')
+    results.addglob('DataFlash Log', '*-log.bin')
     results.addglob("MAVLink log", '*.tlog')
     results.addglob("GPX track", '*.gpx')
     results.addfile('ArduPlane build log', 'ArduPlane.txt')
     results.addfile('ArduPlane code size', 'ArduPlane.sizes.txt')
     results.addfile('ArduPlane stack sizes', 'ArduPlane.framesizes.txt')
-    results.addfile('ArduPlane defaults', 'ArduPlane.defaults.txt')
+    results.addfile('ArduPlane defaults', 'ArduPlane-defaults.parm')
     results.addfile('ArduCopter build log', 'ArduCopter.txt')
     results.addfile('ArduCopter code size', 'ArduCopter.sizes.txt')
     results.addfile('ArduCopter stack sizes', 'ArduCopter.framesizes.txt')
-    results.addfile('ArduCopter defaults', 'ArduCopter.defaults.txt')
+    results.addfile('ArduCopter defaults', 'ArduCopter-defaults.parm')
     results.addfile('APMrover2 build log', 'APMrover2.txt')
     results.addfile('APMrover2 code size', 'APMrover2.sizes.txt')
     results.addfile('APMrover2 stack sizes', 'APMrover2.framesizes.txt')
-    results.addfile('APMrover2 defaults', 'APMrover2.defaults.txt')
+    results.addfile('APMrover2 defaults', 'APMrover2-defaults.parm')
+    results.addglob('APM:Libraries documentation', 'docs/libraries/index.html')
+    results.addglob('APM:Plane documentation', 'docs/ArduPlane/index.html')
+    results.addglob('APM:Copter documentation', 'docs/ArduCopter/index.html')
+    results.addglob('APM:Rover documentation', 'docs/APMrover2/index.html')
     results.addglobimage("Flight Track", '*.png')
 
     write_webresults(results)

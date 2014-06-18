@@ -84,7 +84,7 @@ static inline uint16_t mavlink_msg_set_roll_pitch_yaw_speed_thrust_pack(uint8_t 
  * @brief Pack a set_roll_pitch_yaw_speed_thrust message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param target_system System ID
  * @param target_component Component ID
@@ -129,7 +129,7 @@ static inline uint16_t mavlink_msg_set_roll_pitch_yaw_speed_thrust_pack_chan(uin
 }
 
 /**
- * @brief Encode a set_roll_pitch_yaw_speed_thrust struct into a message
+ * @brief Encode a set_roll_pitch_yaw_speed_thrust struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -139,6 +139,20 @@ static inline uint16_t mavlink_msg_set_roll_pitch_yaw_speed_thrust_pack_chan(uin
 static inline uint16_t mavlink_msg_set_roll_pitch_yaw_speed_thrust_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_set_roll_pitch_yaw_speed_thrust_t* set_roll_pitch_yaw_speed_thrust)
 {
 	return mavlink_msg_set_roll_pitch_yaw_speed_thrust_pack(system_id, component_id, msg, set_roll_pitch_yaw_speed_thrust->target_system, set_roll_pitch_yaw_speed_thrust->target_component, set_roll_pitch_yaw_speed_thrust->roll_speed, set_roll_pitch_yaw_speed_thrust->pitch_speed, set_roll_pitch_yaw_speed_thrust->yaw_speed, set_roll_pitch_yaw_speed_thrust->thrust);
+}
+
+/**
+ * @brief Encode a set_roll_pitch_yaw_speed_thrust struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param set_roll_pitch_yaw_speed_thrust C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_set_roll_pitch_yaw_speed_thrust_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_set_roll_pitch_yaw_speed_thrust_t* set_roll_pitch_yaw_speed_thrust)
+{
+	return mavlink_msg_set_roll_pitch_yaw_speed_thrust_pack_chan(system_id, component_id, chan, msg, set_roll_pitch_yaw_speed_thrust->target_system, set_roll_pitch_yaw_speed_thrust->target_component, set_roll_pitch_yaw_speed_thrust->roll_speed, set_roll_pitch_yaw_speed_thrust->pitch_speed, set_roll_pitch_yaw_speed_thrust->yaw_speed, set_roll_pitch_yaw_speed_thrust->thrust);
 }
 
 /**
@@ -186,6 +200,48 @@ static inline void mavlink_msg_set_roll_pitch_yaw_speed_thrust_send(mavlink_chan
 #endif
 #endif
 }
+
+#if MAVLINK_MSG_ID_SET_ROLL_PITCH_YAW_SPEED_THRUST_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+  This varient of _send() can be used to save stack space by re-using
+  memory from the receive buffer.  The caller provides a
+  mavlink_message_t which is the size of a full mavlink message. This
+  is usually the receive buffer for the channel, and allows a reply to an
+  incoming message with minimum stack space usage.
+ */
+static inline void mavlink_msg_set_roll_pitch_yaw_speed_thrust_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan,  uint8_t target_system, uint8_t target_component, float roll_speed, float pitch_speed, float yaw_speed, float thrust)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_float(buf, 0, roll_speed);
+	_mav_put_float(buf, 4, pitch_speed);
+	_mav_put_float(buf, 8, yaw_speed);
+	_mav_put_float(buf, 12, thrust);
+	_mav_put_uint8_t(buf, 16, target_system);
+	_mav_put_uint8_t(buf, 17, target_component);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SET_ROLL_PITCH_YAW_SPEED_THRUST, buf, MAVLINK_MSG_ID_SET_ROLL_PITCH_YAW_SPEED_THRUST_LEN, MAVLINK_MSG_ID_SET_ROLL_PITCH_YAW_SPEED_THRUST_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SET_ROLL_PITCH_YAW_SPEED_THRUST, buf, MAVLINK_MSG_ID_SET_ROLL_PITCH_YAW_SPEED_THRUST_LEN);
+#endif
+#else
+	mavlink_set_roll_pitch_yaw_speed_thrust_t *packet = (mavlink_set_roll_pitch_yaw_speed_thrust_t *)msgbuf;
+	packet->roll_speed = roll_speed;
+	packet->pitch_speed = pitch_speed;
+	packet->yaw_speed = yaw_speed;
+	packet->thrust = thrust;
+	packet->target_system = target_system;
+	packet->target_component = target_component;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SET_ROLL_PITCH_YAW_SPEED_THRUST, (const char *)packet, MAVLINK_MSG_ID_SET_ROLL_PITCH_YAW_SPEED_THRUST_LEN, MAVLINK_MSG_ID_SET_ROLL_PITCH_YAW_SPEED_THRUST_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SET_ROLL_PITCH_YAW_SPEED_THRUST, (const char *)packet, MAVLINK_MSG_ID_SET_ROLL_PITCH_YAW_SPEED_THRUST_LEN);
+#endif
+#endif
+}
+#endif
 
 #endif
 

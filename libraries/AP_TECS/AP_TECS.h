@@ -25,14 +25,14 @@
 #include <AP_Math.h>
 #include <AP_AHRS.h>
 #include <AP_Param.h>
+#include <AP_Vehicle.h>
 #include <AP_SpdHgtControl.h>
 #include <DataFlash.h>
 
 class AP_TECS : public AP_SpdHgtControl {
 public:
-	AP_TECS(AP_AHRS *ahrs, AP_Baro *baro, const AP_SpdHgtControl::AircraftParameters &parms) :
+	AP_TECS(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms) :
 		_ahrs(ahrs),
-		_baro(baro),
 		aparm(parms)
 		{
 			AP_Param::setup_object_defaults(this, var_info);
@@ -47,7 +47,7 @@ public:
 	// Update the control loop calculations
     void update_pitch_throttle(int32_t hgt_dem_cm, 
                                int32_t EAS_dem_cm, 
-                               bool climbOutDem, 
+                               enum FlightStage flight_stage,
                                int32_t ptchMinCO_cd,
                                int16_t throttle_nudge,
 							   float hgt_afe);
@@ -66,11 +66,15 @@ public:
 	// log data on internal state of the controller. Called at 10Hz
 	void log_data(DataFlash_Class &dataflash, uint8_t msgid);
 
+	// return current target airspeed
+	float get_target_airspeed(void) const { return _TAS_dem / _ahrs.get_EAS2TAS(); }
+
 	// this supports the TECS_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
 	struct PACKED log_TECS_Tuning {
 		LOG_PACKET_HEADER;
+		uint32_t time_ms;
 		float hgt;
 		float dhgt;
 		float hgt_dem;
@@ -95,13 +99,10 @@ private:
     // Last time update_pitch_throttle was called
     uint32_t _update_pitch_throttle_last_usec;
 
-	// pointer to the AHRS object
-    AP_AHRS *_ahrs;
+	// reference to the AHRS object
+    AP_AHRS &_ahrs;
 
-	// pointer to the Baro object
-    AP_Baro *_baro;
-
-	const AP_SpdHgtControl::AircraftParameters &aparm;
+	const AP_Vehicle::FixedWing &aparm;
 
 	// TECS tuning parameters
 	AP_Float _hgtCompFiltOmega;
@@ -116,6 +117,9 @@ private:
     AP_Float _vertAccLim;
 	AP_Float _rollComp;
 	AP_Float _spdWeight;
+	AP_Float _spdWeightLand;
+    AP_Float _landThrottle;
+    AP_Float _landAirspeed;
 	
 	// throttle demand in the range from 0.0 to 1.0
     float _throttle_dem;
@@ -193,7 +197,7 @@ private:
     bool _badDescent;
 
     // climbout mode
-    bool _climbOutDem;
+    enum FlightStage _flight_stage;
 
 	// throttle demand before limiting
 	float _throttle_dem_unc;
@@ -267,6 +271,6 @@ private:
 };
 
 #define TECS_LOG_FORMAT(msg) { msg, sizeof(AP_TECS::log_TECS_Tuning),	\
-							   "TECS", "ffffffffffff", "h,dh,h_dem,dh_dem,sp_dem,sp,dsp,ith,iph,th,ph,dsp_dem" }
+							   "TECS", "Iffffffffffff", "TimeMS,h,dh,h_dem,dh_dem,sp_dem,sp,dsp,ith,iph,th,ph,dsp_dem" }
 
 #endif //AP_TECS_H

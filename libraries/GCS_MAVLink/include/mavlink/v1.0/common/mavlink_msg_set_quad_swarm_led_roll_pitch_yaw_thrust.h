@@ -103,7 +103,7 @@ static inline uint16_t mavlink_msg_set_quad_swarm_led_roll_pitch_yaw_thrust_pack
  * @brief Pack a set_quad_swarm_led_roll_pitch_yaw_thrust message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param group ID of the quadrotor group (0 - 255, up to 256 groups supported)
  * @param mode ID of the flight mode (0 - 255, up to 256 modes supported)
@@ -155,7 +155,7 @@ static inline uint16_t mavlink_msg_set_quad_swarm_led_roll_pitch_yaw_thrust_pack
 }
 
 /**
- * @brief Encode a set_quad_swarm_led_roll_pitch_yaw_thrust struct into a message
+ * @brief Encode a set_quad_swarm_led_roll_pitch_yaw_thrust struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -165,6 +165,20 @@ static inline uint16_t mavlink_msg_set_quad_swarm_led_roll_pitch_yaw_thrust_pack
 static inline uint16_t mavlink_msg_set_quad_swarm_led_roll_pitch_yaw_thrust_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_set_quad_swarm_led_roll_pitch_yaw_thrust_t* set_quad_swarm_led_roll_pitch_yaw_thrust)
 {
 	return mavlink_msg_set_quad_swarm_led_roll_pitch_yaw_thrust_pack(system_id, component_id, msg, set_quad_swarm_led_roll_pitch_yaw_thrust->group, set_quad_swarm_led_roll_pitch_yaw_thrust->mode, set_quad_swarm_led_roll_pitch_yaw_thrust->led_red, set_quad_swarm_led_roll_pitch_yaw_thrust->led_blue, set_quad_swarm_led_roll_pitch_yaw_thrust->led_green, set_quad_swarm_led_roll_pitch_yaw_thrust->roll, set_quad_swarm_led_roll_pitch_yaw_thrust->pitch, set_quad_swarm_led_roll_pitch_yaw_thrust->yaw, set_quad_swarm_led_roll_pitch_yaw_thrust->thrust);
+}
+
+/**
+ * @brief Encode a set_quad_swarm_led_roll_pitch_yaw_thrust struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param set_quad_swarm_led_roll_pitch_yaw_thrust C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_set_quad_swarm_led_roll_pitch_yaw_thrust_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_set_quad_swarm_led_roll_pitch_yaw_thrust_t* set_quad_swarm_led_roll_pitch_yaw_thrust)
+{
+	return mavlink_msg_set_quad_swarm_led_roll_pitch_yaw_thrust_pack_chan(system_id, component_id, chan, msg, set_quad_swarm_led_roll_pitch_yaw_thrust->group, set_quad_swarm_led_roll_pitch_yaw_thrust->mode, set_quad_swarm_led_roll_pitch_yaw_thrust->led_red, set_quad_swarm_led_roll_pitch_yaw_thrust->led_blue, set_quad_swarm_led_roll_pitch_yaw_thrust->led_green, set_quad_swarm_led_roll_pitch_yaw_thrust->roll, set_quad_swarm_led_roll_pitch_yaw_thrust->pitch, set_quad_swarm_led_roll_pitch_yaw_thrust->yaw, set_quad_swarm_led_roll_pitch_yaw_thrust->thrust);
 }
 
 /**
@@ -219,6 +233,52 @@ static inline void mavlink_msg_set_quad_swarm_led_roll_pitch_yaw_thrust_send(mav
 #endif
 #endif
 }
+
+#if MAVLINK_MSG_ID_SET_QUAD_SWARM_LED_ROLL_PITCH_YAW_THRUST_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+  This varient of _send() can be used to save stack space by re-using
+  memory from the receive buffer.  The caller provides a
+  mavlink_message_t which is the size of a full mavlink message. This
+  is usually the receive buffer for the channel, and allows a reply to an
+  incoming message with minimum stack space usage.
+ */
+static inline void mavlink_msg_set_quad_swarm_led_roll_pitch_yaw_thrust_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan,  uint8_t group, uint8_t mode, const uint8_t *led_red, const uint8_t *led_blue, const uint8_t *led_green, const int16_t *roll, const int16_t *pitch, const int16_t *yaw, const uint16_t *thrust)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_uint8_t(buf, 32, group);
+	_mav_put_uint8_t(buf, 33, mode);
+	_mav_put_int16_t_array(buf, 0, roll, 4);
+	_mav_put_int16_t_array(buf, 8, pitch, 4);
+	_mav_put_int16_t_array(buf, 16, yaw, 4);
+	_mav_put_uint16_t_array(buf, 24, thrust, 4);
+	_mav_put_uint8_t_array(buf, 34, led_red, 4);
+	_mav_put_uint8_t_array(buf, 38, led_blue, 4);
+	_mav_put_uint8_t_array(buf, 42, led_green, 4);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SET_QUAD_SWARM_LED_ROLL_PITCH_YAW_THRUST, buf, MAVLINK_MSG_ID_SET_QUAD_SWARM_LED_ROLL_PITCH_YAW_THRUST_LEN, MAVLINK_MSG_ID_SET_QUAD_SWARM_LED_ROLL_PITCH_YAW_THRUST_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SET_QUAD_SWARM_LED_ROLL_PITCH_YAW_THRUST, buf, MAVLINK_MSG_ID_SET_QUAD_SWARM_LED_ROLL_PITCH_YAW_THRUST_LEN);
+#endif
+#else
+	mavlink_set_quad_swarm_led_roll_pitch_yaw_thrust_t *packet = (mavlink_set_quad_swarm_led_roll_pitch_yaw_thrust_t *)msgbuf;
+	packet->group = group;
+	packet->mode = mode;
+	mav_array_memcpy(packet->roll, roll, sizeof(int16_t)*4);
+	mav_array_memcpy(packet->pitch, pitch, sizeof(int16_t)*4);
+	mav_array_memcpy(packet->yaw, yaw, sizeof(int16_t)*4);
+	mav_array_memcpy(packet->thrust, thrust, sizeof(uint16_t)*4);
+	mav_array_memcpy(packet->led_red, led_red, sizeof(uint8_t)*4);
+	mav_array_memcpy(packet->led_blue, led_blue, sizeof(uint8_t)*4);
+	mav_array_memcpy(packet->led_green, led_green, sizeof(uint8_t)*4);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SET_QUAD_SWARM_LED_ROLL_PITCH_YAW_THRUST, (const char *)packet, MAVLINK_MSG_ID_SET_QUAD_SWARM_LED_ROLL_PITCH_YAW_THRUST_LEN, MAVLINK_MSG_ID_SET_QUAD_SWARM_LED_ROLL_PITCH_YAW_THRUST_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SET_QUAD_SWARM_LED_ROLL_PITCH_YAW_THRUST, (const char *)packet, MAVLINK_MSG_ID_SET_QUAD_SWARM_LED_ROLL_PITCH_YAW_THRUST_LEN);
+#endif
+#endif
+}
+#endif
 
 #endif
 

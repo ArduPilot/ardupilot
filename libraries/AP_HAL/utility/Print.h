@@ -32,10 +32,14 @@
  *   not on other platforms)
  */
 
-#define DEC 10
-#define HEX 16
-#define OCT 8
-#define BIN 2
+enum {
+    BASE_DEFAULT = 0,
+    BASE_BIN     = 2,
+    BASE_OCT     = 8,
+    BASE_DEC     = 10,
+    BASE_HEX     = 16
+};
+
 
 class AP_HAL::Print {
   private:
@@ -45,28 +49,27 @@ class AP_HAL::Print {
     Print() {}
 
     virtual size_t write(uint8_t) = 0;
+    virtual size_t write(const uint8_t *buffer, size_t size) = 0;
 
     size_t write(const char *str) { return write((const uint8_t *)str, strlen(str)); }
-    size_t write(const uint8_t *buffer, size_t size) {return write_implementation(buffer, size);}
-    virtual size_t write_implementation(const uint8_t *buffer, size_t size);
   public:
     size_t print(const char[]);
     size_t print(char);
-    size_t print(unsigned char, int = DEC);
-    size_t print(int, int = DEC);
-    size_t print(unsigned int, int = DEC);
-    size_t print(long, int = DEC);
-    size_t print(unsigned long, int = DEC);
+    size_t print(unsigned char, int = BASE_DEC);
+    size_t print(int, int = BASE_DEC);
+    size_t print(unsigned int, int = BASE_DEC);
+    size_t print(long, int = BASE_DEC);
+    size_t print(unsigned long, int = BASE_DEC);
     size_t print(float , int = 2);
     size_t print(double , int = 2);
 
     size_t println(const char[]);
     size_t println(char);
-    size_t println(unsigned char, int = DEC);
-    size_t println(int, int = DEC);
-    size_t println(unsigned int, int = DEC);
-    size_t println(long, int = DEC);
-    size_t println(unsigned long, int = DEC);
+    size_t println(unsigned char, int = BASE_DEC);
+    size_t println(int, int = BASE_DEC);
+    size_t println(unsigned int, int = BASE_DEC);
+    size_t println(long, int = BASE_DEC);
+    size_t println(unsigned long, int = BASE_DEC);
     size_t println(float , int = 2);
     size_t println(double , int = 2);
     size_t println(void);

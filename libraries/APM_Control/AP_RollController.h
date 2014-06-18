@@ -5,38 +5,43 @@
 
 #include <AP_AHRS.h>
 #include <AP_Common.h>
-#include <math.h> // for fabs()
+#include <AP_Vehicle.h>
+#include <AP_AutoTune.h>
+#include <DataFlash.h>
+#include <AP_Math.h>
 
 class AP_RollController {
 public:
-	AP_RollController() { 
+	AP_RollController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, DataFlash_Class &_dataflash) :
+		aparm(parms),
+        autotune(gains, AP_AutoTune::AUTOTUNE_ROLL, parms, _dataflash),
+        _ahrs(ahrs)
+    { 
 		AP_Param::setup_object_defaults(this, var_info);
 	}
 
-	void set_ahrs(AP_AHRS *ahrs) { _ahrs = ahrs; }
-
-	int32_t get_rate_out(float desired_rate, float scaler=1.0);
-	int32_t get_servo_out(int32_t angle_err, float scaler=1.0, bool stabilize=false, int16_t aspd_min = 0);
+	int32_t get_rate_out(float desired_rate, float scaler);
+	int32_t get_servo_out(int32_t angle_err, float scaler, bool disable_integrator);
 
 	void reset_I();
+
+    void autotune_start(void) { autotune.start(); }
+    void autotune_restore(void) { autotune.stop(); }
 
 	static const struct AP_Param::GroupInfo var_info[];
 
 private:
-	AP_Float _tau;
-	AP_Float _K_P;
-	AP_Float _K_I;
-	AP_Float _K_D;
-	AP_Int16 _max_rate;
-    AP_Int16  _imax;
+	const AP_Vehicle::FixedWing &aparm;
+    AP_AutoTune::ATGains gains;
+    AP_AutoTune autotune;
 	uint32_t _last_t;
 	float _last_out;
 
 	float _integrator;
 
-	int32_t _get_rate_out(float desired_rate, float scaler, bool stabilize, int16_t aspd_min);
+	int32_t _get_rate_out(float desired_rate, float scaler, bool disable_integrator);
 
-	AP_AHRS *_ahrs;
+	AP_AHRS &_ahrs;
 
 };
 

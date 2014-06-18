@@ -8,8 +8,6 @@ import util, time, os, sys, math
 import socket, struct
 import select, errno
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..', '..', 'mavlink', 'pymavlink'))
-
 def sim_send(a):
     '''send flight information to mavproxy'''
     from math import degrees

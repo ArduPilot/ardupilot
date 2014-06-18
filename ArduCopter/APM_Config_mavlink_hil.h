@@ -3,9 +3,8 @@
 // HIL_MODE SELECTION
 //
 // Mavlink supports
-// 1. HIL_MODE_ATTITUDE : simulated position, airspeed, and attitude
-// 2. HIL_MODE_SENSORS: full sensor simulation
-#define HIL_MODE            HIL_MODE_ATTITUDE
+// 1. HIL_MODE_SENSORS: full sensor simulation
+#define HIL_MODE            HIL_MODE_SENSORS
 
 // HIL_PORT SELCTION
 //
@@ -25,18 +24,10 @@
 // the loop port.  Alternatively, use a telemetry/HIL shim like FGShim
 // https://ardupilot-mega.googlecode.com/svn/Tools/trunk/FlightGear
 //
-// The buad rate is controlled by SERIAL3_BAUD in this mode.
+// The buad rate is controlled by SERIAL1_BAUD in this mode.
 
 #define HIL_PORT            3
 
-// You can set your gps protocol here for your actual
-// hardware and leave it without affecting the hardware
-// in the loop simulation
-#define GPS_PROTOCOL            GPS_PROTOCOL_MTK
-
 // Sensors
 // All sensors are supported in all modes.
-// The magnetometer is not used in
-// HIL_MODE_ATTITUDE but you may leave it
-// enabled if you wish.
 #define MAGNETOMETER        ENABLED
