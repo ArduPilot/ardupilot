@@ -1329,7 +1329,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
 
     case MAVLINK_MSG_ID_MOUNT_STATUS:
-        camera_mount.status_msg(msg);
+        camera_mount.status_msg(msg, chan);
         break;
 #endif // MOUNT == ENABLED
 
