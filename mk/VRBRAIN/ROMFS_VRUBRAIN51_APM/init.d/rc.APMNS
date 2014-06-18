@@ -47,18 +47,18 @@ else
     sh /etc/init.d/rc.error
 fi
 
-if hmc5883_onboard start
+if hmc5883_external start
 then
-    echo "[APMNS] HMC5883 onboard started OK"
+    echo "[APMNS] HMC5883 external started OK"
 #    if hmc5883 calibrate
 #    then
-#      echo "[APMNS] HMC5883 onboard calibrate OK"
+#      echo "[APMNS] HMC5883 external calibrate OK"
 #    else 
-#      echo "[APMNS] HMC5883 onboard calibrate failed"
+#      echo "[APMNS] HMC5883 external calibrate failed"
 #    fi
 else
-    echo "[APMNS] HMC5883 onboard start failed"
-    sh /etc/init.d/rc.error
+    echo "[APMNS] HMC5883 external start failed"
+#    sh /etc/init.d/rc.error
 fi
 
 if mpu6000_onboard start

@@ -85,7 +85,7 @@ then
 #    fi
 else
     echo "[APM] HMC5883 external start failed"
-    sh /etc/init.d/rc.error
+#    sh /etc/init.d/rc.error
 fi
 
 if mpu6000_onboard start
