@@ -33,12 +33,13 @@ endif
 
 
 # we have different config files for vrbrain_v40, vrbrain_v45, vrbrain_v50, vrbrain_v51, vrubrain_v51 and vrhero_v10
-VRBRAIN_VB40_CONFIG_FILE=$(MK_DIR)/VRBRAIN/config_vrbrain-v40_APM.mk
-VRBRAIN_VB45_CONFIG_FILE=$(MK_DIR)/VRBRAIN/config_vrbrain-v45_APM.mk
-VRBRAIN_VB50_CONFIG_FILE=$(MK_DIR)/VRBRAIN/config_vrbrain-v50_APM.mk
-VRBRAIN_VB51_CONFIG_FILE=$(MK_DIR)/VRBRAIN/config_vrbrain-v51_APM.mk
-VRBRAIN_VU51_CONFIG_FILE=$(MK_DIR)/VRBRAIN/config_vrubrain-v51_APM.mk
-VRBRAIN_VH10_CONFIG_FILE=$(MK_DIR)/VRBRAIN/config_vrhero-v10_APM.mk
+VRBRAIN_MK_DIR=$(SRCROOT)/$(MK_DIR)/VRBRAIN
+VRBRAIN_VB40_CONFIG_FILE=config_vrbrain-v40_APM.mk
+VRBRAIN_VB45_CONFIG_FILE=config_vrbrain-v45_APM.mk
+VRBRAIN_VB50_CONFIG_FILE=config_vrbrain-v50_APM.mk
+VRBRAIN_VB51_CONFIG_FILE=config_vrbrain-v51_APM.mk
+VRBRAIN_VU51_CONFIG_FILE=config_vrubrain-v51_APM.mk
+VRBRAIN_VH10_CONFIG_FILE=config_vrhero-v10_APM.mk
 
 SKETCHFLAGS=$(SKETCHLIBINCLUDES) -I$(PWD) -DARDUPILOT_BUILD -DCONFIG_HAL_BOARD=HAL_BOARD_VRBRAIN -DSKETCHNAME="\\\"$(SKETCH)\\\"" -DSKETCH_MAIN=ArduPilot_main -DAPM_BUILD_DIRECTORY=APM_BUILD_$(SKETCH)
 
@@ -60,9 +61,12 @@ module_mk:
 vrbrain-v40: showflags $(VRBRAIN_ROOT)/Archives/vrbrain-v40.export $(SKETCHCPP) module_mk
 	$(RULEHDR)
 	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB40_CONFIG_FILE)
-	$(v) cp $(SRCROOT)/$(VRBRAIN_VB40_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
+	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_VB40_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
 	$(v) $(VRBRAIN_MAKE) vrbrain-v40_APM
-	$(v) /bin/rm -f $(SKETCH)-vrbrain-v40.vrx
+	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB40_CONFIG_FILE)
+	$(v) rm -f $(SKETCH)-vrbrain-v40.vrx
+	$(v) rm -f $(SKETCH)-vrbrain-v40.hex
+	$(v) rm -f $(SKETCH)-vrbrain-v40.bin
 	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v40_APM.vrx $(SKETCH)-vrbrain-v40.vrx
 	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v40_APM.hex $(SKETCH)-vrbrain-v40.hex
 	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v40_APM.bin $(SKETCH)-vrbrain-v40.bin
@@ -71,9 +75,12 @@ vrbrain-v40: showflags $(VRBRAIN_ROOT)/Archives/vrbrain-v40.export $(SKETCHCPP) 
 vrbrain-v45: showflags $(VRBRAIN_ROOT)/Archives/vrbrain-v45.export $(SKETCHCPP) module_mk
 	$(RULEHDR)
 	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB45_CONFIG_FILE)
-	$(v) cp $(SRCROOT)/$(VRBRAIN_VB45_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
+	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_VB45_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
 	$(v) $(VRBRAIN_MAKE) vrbrain-v45_APM
-	$(v) /bin/rm -f $(SKETCH)-vrbrain-v45.vrx
+	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB45_CONFIG_FILE)
+	$(v) rm -f $(SKETCH)-vrbrain-v45.vrx
+	$(v) rm -f $(SKETCH)-vrbrain-v45.hex
+	$(v) rm -f $(SKETCH)-vrbrain-v45.bin
 	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v45_APM.vrx $(SKETCH)-vrbrain-v45.vrx
 	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v45_APM.hex $(SKETCH)-vrbrain-v45.hex
 	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v45_APM.bin $(SKETCH)-vrbrain-v45.bin
@@ -82,9 +89,12 @@ vrbrain-v45: showflags $(VRBRAIN_ROOT)/Archives/vrbrain-v45.export $(SKETCHCPP) 
 vrbrain-v50: showflags $(VRBRAIN_ROOT)/Archives/vrbrain-v50.export $(SKETCHCPP) module_mk
 	$(RULEHDR)
 	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB50_CONFIG_FILE)
-	$(v) cp $(SRCROOT)/$(VRBRAIN_VB50_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
+	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_VB50_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
 	$(v) $(VRBRAIN_MAKE) vrbrain-v50_APM
-	$(v) /bin/rm -f $(SKETCH)-vrbrain-v50.vrx
+	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB50_CONFIG_FILE)
+	$(v) rm -f $(SKETCH)-vrbrain-v50.vrx
+	$(v) rm -f $(SKETCH)-vrbrain-v50.hex
+	$(v) rm -f $(SKETCH)-vrbrain-v50.bin
 	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v50_APM.vrx $(SKETCH)-vrbrain-v50.vrx
 	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v50_APM.hex $(SKETCH)-vrbrain-v50.hex
 	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v50_APM.bin $(SKETCH)-vrbrain-v50.bin
@@ -93,9 +103,12 @@ vrbrain-v50: showflags $(VRBRAIN_ROOT)/Archives/vrbrain-v50.export $(SKETCHCPP) 
 vrbrain-v51: showflags $(VRBRAIN_ROOT)/Archives/vrbrain-v51.export $(SKETCHCPP) module_mk
 	$(RULEHDR)
 	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB51_CONFIG_FILE)
-	$(v) cp $(SRCROOT)/$(VRBRAIN_VB51_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
+	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_VB51_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
 	$(v) $(VRBRAIN_MAKE) vrbrain-v51_APM
-	$(v) /bin/rm -f $(SKETCH)-vrbrain-v51.vrx
+	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB51_CONFIG_FILE)
+	$(v) rm -f $(SKETCH)-vrbrain-v51.vrx
+	$(v) rm -f $(SKETCH)-vrbrain-v51.hex
+	$(v) rm -f $(SKETCH)-vrbrain-v51.bin
 	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v51_APM.vrx $(SKETCH)-vrbrain-v51.vrx
 	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v51_APM.hex $(SKETCH)-vrbrain-v51.hex
 	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v51_APM.bin $(SKETCH)-vrbrain-v51.bin
@@ -104,9 +117,12 @@ vrbrain-v51: showflags $(VRBRAIN_ROOT)/Archives/vrbrain-v51.export $(SKETCHCPP) 
 vrubrain-v51: showflags $(VRBRAIN_ROOT)/Archives/vrubrain-v51.export $(SKETCHCPP) module_mk
 	$(RULEHDR)
 	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VU51_CONFIG_FILE)
-	$(v) cp $(SRCROOT)/$(VRBRAIN_VU51_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
+	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_VU51_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
 	$(v) $(VRBRAIN_MAKE) vrubrain-v51_APM
-	$(v) /bin/rm -f $(SKETCH)-vrubrain-v51.vrx
+	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VU51_CONFIG_FILE)
+	$(v) rm -f $(SKETCH)-vrubrain-v51.vrx
+	$(v) rm -f $(SKETCH)-vrubrain-v51.hex
+	$(v) rm -f $(SKETCH)-vrubrain-v51.bin
 	$(v) cp $(VRBRAIN_ROOT)/Images/vrubrain-v51_APM.vrx $(SKETCH)-vrubrain-v51.vrx
 	$(v) cp $(VRBRAIN_ROOT)/Images/vrubrain-v51_APM.hex $(SKETCH)-vrubrain-v51.hex
 	$(v) cp $(VRBRAIN_ROOT)/Images/vrubrain-v51_APM.bin $(SKETCH)-vrubrain-v51.bin
@@ -115,9 +131,12 @@ vrubrain-v51: showflags $(VRBRAIN_ROOT)/Archives/vrubrain-v51.export $(SKETCHCPP
 vrhero-v10: showflags $(VRBRAIN_ROOT)/Archives/vrhero-v10.export $(SKETCHCPP) module_mk
 	$(RULEHDR)
 	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VH10_CONFIG_FILE)
-	$(v) cp $(SRCROOT)/$(VRBRAIN_VH10_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
+	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_VH10_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
 	$(v) $(VRBRAIN_MAKE) vrhero-v10_APM
-	$(v) /bin/rm -f $(SKETCH)-vrhero-v10.vrx
+	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VH10_CONFIG_FILE)
+	$(v) rm -f $(SKETCH)-vrhero-v10.vrx
+	$(v) rm -f $(SKETCH)-vrhero-v10.hex
+	$(v) rm -f $(SKETCH)-vrhero-v10.bin
 	$(v) cp $(VRBRAIN_ROOT)/Images/vrhero-v10_APM.vrx $(SKETCH)-vrhero-v10.vrx
 	$(v) cp $(VRBRAIN_ROOT)/Images/vrhero-v10_APM.hex $(SKETCH)-vrhero-v10.hex
 	$(v) cp $(VRBRAIN_ROOT)/Images/vrhero-v10_APM.bin $(SKETCH)-vrhero-v10.bin
