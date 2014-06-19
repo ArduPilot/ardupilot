@@ -34,8 +34,8 @@ void LinuxRCOutput::init(void* machtnicht)
     sharedMem_cmd->cmd = PWM_CMD_CONFIG;
     sharedMem_cmd->u.cfg.enmask = 0xFFF;
     for(int i=0;i<PWM_CHAN_COUNT;i++){
-        sharedMem_cmd->u.cfg.hilo[i][0] = 1000;
-        sharedMem_cmd->u.cfg.hilo[i][1] = 1000;
+        sharedMem_cmd->u.cfg.hilo[i][0] = TICK_PER_US*1000;
+        sharedMem_cmd->u.cfg.hilo[i][1] = (TICK_PER_S/490)-TICK_PER_US*1000;
     }
     sharedMem_cmd->magic = PWM_CMD_MAGIC;
 }
