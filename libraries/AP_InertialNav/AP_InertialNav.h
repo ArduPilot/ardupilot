@@ -208,7 +208,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     // public variables
-    Vector3f                accel_correction_ef;        // earth frame accelerometer corrections. here for logging purposes only
+    Vector3f                accel_correction_hbf;       // horizontal body frame accelerometer corrections. here for logging purposes only
 
 protected:
 

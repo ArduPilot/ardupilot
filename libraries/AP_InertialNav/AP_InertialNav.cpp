@@ -65,10 +65,15 @@ void AP_InertialNav::update(float dt)
     //Convert North-East-Down to North-East-Up
     accel_ef.z = -accel_ef.z;
 
+    // convert ef position error to horizontal body frame
+    Vector2f position_error_hbf;
+    position_error_hbf.x = _position_error.x * _ahrs.cos_yaw() + _position_error.y * _ahrs.sin_yaw();
+    position_error_hbf.y = -_position_error.x * _ahrs.sin_yaw() + _position_error.y * _ahrs.cos_yaw();
+
     float tmp = _k3_xy * dt;
-    accel_correction_ef.x += _position_error.x * tmp;
-    accel_correction_ef.y += _position_error.y * tmp;
-    accel_correction_ef.z += _position_error.z * _k3_z  * dt;
+    accel_correction_hbf.x += position_error_hbf.x * tmp;
+    accel_correction_hbf.y += position_error_hbf.y * tmp;
+    accel_correction_hbf.z += _position_error.z * _k3_z  * dt;
 
     tmp = _k2_xy * dt;
     _velocity.x += _position_error.x * tmp;
@@ -80,8 +85,16 @@ void AP_InertialNav::update(float dt)
     _position_correction.y += _position_error.y * tmp;
     _position_correction.z += _position_error.z * _k1_z  * dt;
 
+    // convert horizontal body frame accel correction to earth frame
+    Vector2f accel_correction_ef;
+    accel_correction_ef.x = accel_correction_hbf.x * _ahrs.cos_yaw() - accel_correction_hbf.y * _ahrs.sin_yaw();
+    accel_correction_ef.y = accel_correction_hbf.x * _ahrs.sin_yaw() + accel_correction_hbf.y * _ahrs.cos_yaw();
+
     // calculate velocity increase adding new acceleration from accelerometers
-    const Vector3f &velocity_increase = (accel_ef + accel_correction_ef) * dt;
+    Vector3f velocity_increase;
+    velocity_increase.x = (accel_ef.x + accel_correction_ef.x) * dt;
+    velocity_increase.y = (accel_ef.y + accel_correction_ef.y) * dt;
+    velocity_increase.z = (accel_ef.z + accel_correction_hbf.z) * dt;
 
     // calculate new estimate of position
     _position_base += (_velocity + velocity_increase*0.5) * dt;
