@@ -1,12 +1,13 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter APS4.172.2qc"
+#define THISFIRMWARE "ArduCopter APS4.172.3qc"
 /* 
  *  MODIFICATIONS:
  *  
  *       ArduCopter: Parameter POSCONTROL_STPG_LSH / _lsh_stpg added for stopping distance control, ~libraries\AL_AltitudeControl\AC_PosControl.cpp~h 
  *       ArduCopter: Parameter FLTMODE_SSPD / g.fltmode_swcgspd Minimum Mode Switching Speed, Control_Modes.pde, Parameter.pde, Parameter.h 
  *           defines iterations at 100hz (i.e. 2/10th of a second) at a new switch position will cause flight mode change
+ *       ArduCopter: Parameter FLTAUTO_MINTOA / g.min_toff_alt, Minimum Auto-Takeoff Min Alt, commands_logic.pde, Parameter.pde, Parameter.h 
  *       
  *  TODOS : 
  *

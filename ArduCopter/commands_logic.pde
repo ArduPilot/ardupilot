@@ -284,7 +284,7 @@ static void do_takeoff(const AP_Mission::Mission_Command& cmd)
     // Set wp navigation target to safe altitude above current position
     float takeoff_alt = cmd.content.location.alt;
     takeoff_alt = max(takeoff_alt,current_loc.alt);
-    takeoff_alt = max(takeoff_alt,100.0f);
+    takeoff_alt = max(takeoff_alt,g.min_toff_alt);
     auto_takeoff_start(takeoff_alt);
 }
 

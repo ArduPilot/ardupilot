@@ -353,7 +353,16 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Increment: 5
     // @User: Standard
     GSCALAR(fltmode_swcgspd,  "FLTMODE_SSPD",      10), 
-      
+        
+    // @Param: FLTAUTO_MINTOA
+    // @DisplayName: Minimum Auto-Takeoff Alt
+    // @Description:  Defines the minimum altitude for autotakeoff in cm.
+    // @Range: 100 5000
+    // @Increment: 5
+    // @Units: cm
+    // @User: Standard
+    GSCALAR(min_toff_alt,  "FLTAUTO_MINTOA",      100.0f), 
+     
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
     // @Description: 2 byte bitmap of log types to enable
