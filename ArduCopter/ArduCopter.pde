@@ -12,6 +12,7 @@
  *       ArduCopter: Parameter value THROTTLE_IN_DEADBAND set to 70, config.h
  *       ArduCopter: Parameter THR_DEADBAND / g.thr_ddband, Throttle Dead Band, attitude.pde, Parameter.pde, Parameter.h
  *       ArduCopter: Parameter GPS_GLITCH_ACCEL_MAX_CMSS def. value reduced to 700.0f from 1000, ~libraries\AP_GPS\AP_GPS_Glitch.h
+ *       ArduCopter: Increase WPNAV_ACCELERATION from 100 to 200 for locked-in waypoint stops, ~libraries\AL_AltitudeControl\AC_WPNav.h
  *       
  *  TODOS : 
  *
