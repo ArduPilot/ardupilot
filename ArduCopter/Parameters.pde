@@ -346,6 +346,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(simple_modes, "SIMPLE",                 0),
 
+    // @Param: SONAR_ERPCT
+    // @DisplayName: Sonar effective range percentage
+    // @Description: Sonar effective above ground altitude percentage. Default 0.60.
+    // @Range: 0.20 0.90
+    // @Increment: 0.01
+    // @User: Standard
+    GSCALAR(sonar_pcter,     "SONAR_ERPCT",           SONAR_RELIABLE_DISTANCE_PCT),
+
     // @Param: FLTMODE_SSPD
     // @DisplayName: Flight Mode Speed
     // @Description:  Adjusts the speed of mode switching by xx at 100hz (xx/10th/sec).  Lower values for faster mode switching response.

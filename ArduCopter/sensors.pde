@@ -44,7 +44,7 @@ static int16_t read_sonar(void)
 
     int16_t temp_alt = sonar->read();
 
-    if (temp_alt >= sonar->min_distance && temp_alt <= sonar->max_distance * SONAR_RELIABLE_DISTANCE_PCT) {
+    if (temp_alt >= sonar->min_distance && temp_alt <= sonar->max_distance * g.sonar_pcter) {
         if ( sonar_alt_health < SONAR_ALT_HEALTH_MAX ) {
             sonar_alt_health++;
         }

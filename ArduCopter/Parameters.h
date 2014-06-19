@@ -266,7 +266,8 @@ public:
         k_param_fltmode_swcgspd,
         //       minimum take-off altitude in cm
         k_param_min_toff_alt,
-        
+        //      Sonar reliable range percentage
+        k_param_sonar_pcter,
         
         //
         // 210: Waypoint data
@@ -388,6 +389,8 @@ public:
     AP_Int16        fltmode_swcgspd;
     //       minimum take-off altitude in cm
     AP_Float        min_toff_alt;
+    //  Sonar reliable range percentage
+    AP_Float        sonar_pcter;
     
     // Misc
     //
