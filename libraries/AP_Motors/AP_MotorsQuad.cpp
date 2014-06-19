@@ -49,6 +49,22 @@ void AP_MotorsQuad::setup_motors()
         add_motor(AP_MOTORS_MOT_2, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3);
         add_motor(AP_MOTORS_MOT_3,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4);
         add_motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2);
+    }else if(_flags.frame_orientation == AP_MOTORS_ATAIL_FRAME) {
+      /*
+        The A-Shaped VTail is the exact same as a V-Shaped VTail, with one difference:
+        - The Yaw factors are reversed, because the rear motors are facing different directions
+
+        With V-Shaped VTails, the rear motors blow down and away from the aircraft, but with
+        A-Shaped VTails, the rear motors blow down and towards the center of the aircraft.
+
+        Still functions the same as the V-Shaped VTail mixing below:
+        - Yaw control is entirely in the rear motors
+        - Roll is is entirely in the front motors
+      */
+      add_motor_raw(AP_MOTORS_MOT_1, cosf(radians(160)), cosf(radians(-70)), 0, 1);
+      add_motor_raw(AP_MOTORS_MOT_2, 0, cosf(radians(160)), AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3);
+      add_motor_raw(AP_MOTORS_MOT_3, cosf(radians(20)), cosf(radians(70)), 0, 4);
+      add_motor_raw(AP_MOTORS_MOT_4, 0, cosf(radians(-160)), AP_MOTORS_MATRIX_YAW_FACTOR_CW, 2);
     }else if(_flags.frame_orientation == AP_MOTORS_VTAIL_FRAME) {
         /* Lynxmotion Hunter Vtail 400/500
 
@@ -80,7 +96,6 @@ void AP_MotorsQuad::setup_motors()
       add_motor_raw(AP_MOTORS_MOT_3, cosf(radians(20)), cosf(radians(70)), 0, 4);
       // back right: no roll, 70 degrees down of pitch axis, full yaw
       add_motor_raw(AP_MOTORS_MOT_4, 0, cosf(radians(-160)), AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2);
-
     }else{
         // X frame set-up
         add_motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1);
