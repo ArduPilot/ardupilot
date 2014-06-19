@@ -11,6 +11,7 @@
  *       ArduCopter: Parameter SONAR_ERPCT  / g.sonar_pcter, Sonar effective range percentage, sensors.pde, Parameter.pde, Parameter.h
  *       ArduCopter: Parameter value THROTTLE_IN_DEADBAND set to 70, config.h
  *       ArduCopter: Parameter THR_DEADBAND / g.thr_ddband, Throttle Dead Band, attitude.pde, Parameter.pde, Parameter.h
+ *       ArduCopter: Parameter GPS_GLITCH_ACCEL_MAX_CMSS def. value reduced to 700.0f from 1000, ~libraries\AP_GPS\AP_GPS_Glitch.h
  *       
  *  TODOS : 
  *

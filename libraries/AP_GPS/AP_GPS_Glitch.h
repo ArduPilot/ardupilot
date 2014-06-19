@@ -13,7 +13,7 @@
 #include <AP_Math.h>
 #include <AP_GPS.h>
 
-#define GPS_GLITCH_ACCEL_MAX_CMSS   1000.0f // vehicle can accelerate at up to 5m/s/s in any direction
+#define GPS_GLITCH_ACCEL_MAX_CMSS   700.0f // vehicle can accelerate at up to 5m/s/s in any direction
 #define GPS_GLITCH_RADIUS_CM        200.0f  // gps movement within 2m of current position are always ok
 
 /// @class	GPS_Glitch
