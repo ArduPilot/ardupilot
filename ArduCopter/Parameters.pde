@@ -370,7 +370,16 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Units: cm
     // @User: Standard
     GSCALAR(min_toff_alt,  "FLTAUTO_MINTOA",      100.0f), 
-     
+    
+    // @Param: THR_DEADBAND
+    // @DisplayName: Throttle Dead Band
+    // @Description:  Defines the throttle middle dead band top and bottom range in PWM.
+    // @Range: 20  100
+    // @Increment: 1
+    // @Units: pwm
+    // @User: Standard
+    GSCALAR(thr_ddband,  "THR_DEADBAND",         THROTTLE_IN_DEADBAND), 
+   
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
     // @Description: 2 byte bitmap of log types to enable

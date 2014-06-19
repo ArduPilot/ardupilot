@@ -655,7 +655,7 @@
 #endif
 
 #ifndef THROTTLE_IN_DEADBAND
-# define THROTTLE_IN_DEADBAND    100            // the throttle input channel's deadband in PWM
+# define THROTTLE_IN_DEADBAND    70             // the throttle input channel's deadband in PWM
 #endif
 
 #ifndef ALT_HOLD_P

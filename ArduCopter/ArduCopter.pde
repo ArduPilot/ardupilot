@@ -8,6 +8,9 @@
  *       ArduCopter: Parameter FLTMODE_SSPD / g.fltmode_swcgspd Minimum Mode Switching Speed, Control_Modes.pde, Parameter.pde, Parameter.h 
  *           defines iterations at 100hz (i.e. 2/10th of a second) at a new switch position will cause flight mode change
  *       ArduCopter: Parameter FLTAUTO_MINTOA / g.min_toff_alt, Minimum Auto-Takeoff Min Alt, commands_logic.pde, Parameter.pde, Parameter.h 
+ *       ArduCopter: Parameter SONAR_ERPCT  / g.sonar_pcter, Sonar effective range percentage, sensors.pde, Parameter.pde, Parameter.h
+ *       ArduCopter: Parameter value THROTTLE_IN_DEADBAND set to 70, config.h
+ *       ArduCopter: Parameter THR_DEADBAND / g.thr_ddband, Throttle Dead Band, attitude.pde, Parameter.pde, Parameter.h
  *       
  *  TODOS : 
  *

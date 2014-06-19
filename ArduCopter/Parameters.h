@@ -268,6 +268,8 @@ public:
         k_param_min_toff_alt,
         //      Sonar reliable range percentage
         k_param_sonar_pcter,
+        //      Throttle dead band PWM range
+        k_param_thr_ddband,
         
         //
         // 210: Waypoint data
@@ -391,6 +393,8 @@ public:
     AP_Float        min_toff_alt;
     //  Sonar reliable range percentage
     AP_Float        sonar_pcter;
+    //  Throttle dead band PWM range
+    AP_Int8         thr_ddband;
     
     // Misc
     //
