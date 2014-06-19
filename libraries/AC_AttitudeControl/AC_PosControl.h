@@ -38,6 +38,8 @@
 
 #define POSCONTROL_ACCEL_Z_DTERM_FILTER         20      // Z axis accel controller's D term filter (in hz)
 
+#define POSCONTROL_STPG_LSH						1.0f	// default stopping-strength leash rate, target xy stopping point and loiter breaking strength
+
 class AC_PosControl
 {
 public:
@@ -311,6 +313,7 @@ private:
 
     // parameters
     AP_Float    _throttle_hover;        // estimated throttle required to maintain a level hover
+    AP_Float    _pitch_target;          // desired roll pitch in centi-degrees calculated by position controller
 
     // internal variables
     float       _dt;                    // time difference (in seconds) between calls from the main program

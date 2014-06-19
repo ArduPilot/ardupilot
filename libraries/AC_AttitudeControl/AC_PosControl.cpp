@@ -13,6 +13,15 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("THR_HOVER",       0, AC_PosControl, _throttle_hover, POSCONTROL_THROTTLE_HOVER),
 
+    // @Param: STPG_LSH
+    // @DisplayName: Stopping XYLeash Rate
+    // @Description: Controls stopping leash distance.  Lower values for stronger locked-in precision stops, higher for smoother stops, good for photogrametry flights. Suggested range: 0.7 min, 2.5 max
+    // @Units: Pct
+    // @Range: 0.7 2.5
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("STPG_LSH",    	1, AC_PosControl, _lsh_stpg, POSCONTROL_STPG_LSH),
+
     AP_GROUPEND
 };
 
@@ -482,7 +491,7 @@ void AC_PosControl::get_stopping_point_xy(Vector3f &stopping_point) const
     }
 
     // constrain stopping distance
-    stopping_dist = constrain_float(stopping_dist, 0, _leash);
+    stopping_dist = constrain_float(stopping_dist, 0, *_lsh_stpg);  
 
     // convert the stopping distance into a stopping point using velocity vector
     stopping_point.x = curr_pos.x + (stopping_dist * curr_vel.x / vel_total);
