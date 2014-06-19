@@ -1,78 +1,97 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V3.2-rc2"
-/*
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-/*
- *  ArduCopter Version 3.0
+#define THISFIRMWARE "ArduCopter APS4.172.2qc"
+/* 
+ *  MODIFICATIONS:
+ *  
+ *       ArduCopter: Parameter POSCONTROL_STPG_LSH / _lsh_stpg added for stopping distance control, ~libraries\AL_AltitudeControl\AC_PosControl.cpp~h 
+ *       ArduCopter: Parameter FLTMODE_SSPD / g.fltmode_swcgspd Minimum Mode Switching Speed, Control_Modes.pde, Parameter.pde, Parameter.h 
+ *           defines iterations at 100hz (i.e. 2/10th of a second) at a new switch position will cause flight mode change
+ *       
+ *  TODOS : 
+ *
+ *       Plane: Incorporate LOGO flightplan scripting capability from MatrixPilot APS to support auto-thermal hunting feature for gliders
+ *       Add loiter option to geofence feature - will switch to loiter when geofence is breached
+ *       ** DEVWIP : Total port to Odroid-U2, Linaro Linux OS, rt flavor
+ *
+ *  RELEASE NOTES:
+ *  
+ *  Baseline: #define THISFIRMWARE "ArduCopter V3.2-rc2"
+ *  Last modified date  June 18, 2014
+ *  commits (p0 12,199 ~ p1 12,203): (p0)b473f8fd4da9dbebf1098044ac414999b08ba1bb ~ (p1)017e4b4c8a7861686af70a1ba9f36f85beb5a418
+ *     AP_RCMapper (p0): Added warning to RCMAP_THROTTLE, Warning user that changing RCMAP_Throttle could be dangerous
+ *     Plane (p1): update for AP_Mount change 
+ *     ArduCopter (p2): (Modification) Added option to disable (default) SPLINE, to save 3.55K flash space
+ *
+ *  Work best with latest MP-GCS 1.3.5 or higher 
+ *    (ParameterMetaData.xml replaced by our modified version to get all the parameter description)
+ *
+ *  ACKNOWLEDGEMENTS AND SPECIAL THANKS:
+ *
  *  Creator:        Jason Short
  *  Lead Developer: Randy Mackay
  *  Lead Tester:    Marco Robustini 
  *  Based on code and ideas from the Arducopter team: Leonard Hall, Andrew Tridgell, Robert Lefebvre, Pat Hickey, Michael Oborne, Jani Hirvinen, 
-                                                      Olivier Adler, Kevin Hester, Arthur Benemann, Jonathan Challinger, John Arne Birkeland,
-                                                      Jean-Louis Naudin, Mike Smith, and more
+ *                                                    Olivier Adler, Kevin Hester, Arthur Benemann, Jonathan Challinger, John Arne Birkeland,
+ *                                                    Jean-Louis Naudin, Mike Smith, and more
  *  Thanks to:	Chris Anderson, Jordi Munoz, Jason Short, Doug Weibel, Jose Julio
  *
  *  Special Thanks to contributors (in alphabetical order by first name):
  *
- *  Adam M Rivera       :Auto Compass Declination
- *  Amilcar Lucas       :Camera mount library
- *  Andrew Tridgell     :General development, Mavlink Support
- *  Angel Fernandez     :Alpha testing
- *  AndreasAntonopoulous:GeoFence
- *  Arthur Benemann     :DroidPlanner GCS
- *  Benjamin Pelletier  :Libraries
- *  Bill King           :Single Copter
- *  Christof Schmid     :Alpha testing
- *  Craig Elder         :Release Management, Support
- *  Dani Saez           :V Octo Support
- *  Doug Weibel	        :DCM, Libraries, Control law advice
- *  Emile Castelnuovo   :VRBrain port, bug fixes
- *  Gregory Fletcher    :Camera mount orientation math
- *  Guntars             :Arming safety suggestion
- *  HappyKillmore       :Mavlink GCS
- *  Hein Hollander      :Octo Support, Heli Testing
- *  Igor van Airde      :Control Law optimization
- *  Jack Dunkle         :Alpha testing
- *  James Goppert       :Mavlink Support
- *  Jani Hiriven        :Testing feedback
- *  Jean-Louis Naudin   :Auto Landing
- *  John Arne Birkeland	:PPM Encoder
- *  Jose Julio          :Stabilization Control laws, MPU6k driver
- *  Julien Dubois       :Hybrid flight mode
- *  Julian Oes          :Pixhawk
- *  Jonathan Challinger :Inertial Navigation, CompassMot, Spin-When-Armed
- *  Kevin Hester        :Andropilot GCS
- *  Max Levine          :Tri Support, Graphics
- *  Leonard Hall        :Flight Dynamics, Throttle, Loiter and Navigation Controllers
- *  Marco Robustini     :Lead tester
- *  Michael Oborne      :Mission Planner GCS
- *  Mike Smith          :Pixhawk driver, coding support
- *  Olivier Adler       :PPM Encoder, piezo buzzer
- *  Pat Hickey          :Hardware Abstraction Layer (HAL)
- *  Robert Lefebvre     :Heli Support, Copter LEDs
- *  Roberto Navoni      :Library testing, Porting to VRBrain
- *  Sandro Benigno      :Camera support, MinimOSD
- *  Sandro Tognana      :Hybrid flight mode
+ *  Adam M Rivera		:Auto Compass Declination
+ *  Amilcar Lucas		:Camera mount library
+ *  Andrew Tridgell		:General development, Mavlink Support
+ *  Angel Fernandez		:Alpha testing
+ *  AndreasAntonopoulous        :GeoFence
+ *  Arthur Benemann             :DroidPlanner GCS
+ *  Benjamin Pelletier          :Libraries
+ *  Bill King                   :Single Copter
+ *  Christof Schmid		:Alpha testing
+ *  Craig Elder                 :Release Management, Support
+ *  Dani Saez                   :V Octo Support
+ *  Doug Weibel			:DCM, Libraries, Control law advice
+ *  Gregory Fletcher	        :Camera mount orientation math
+ *  Guntars			:Arming safety suggestion
+ *  HappyKillmore		:Mavlink GCS
+ *  Hein Hollander              :Octo Support, Heli Testing
+ *  Igor van Airde              :Control Law optimization
+ *  Jack Dunkle			:Alpha testing
+ *  James Goppert		:Mavlink Support
+ *  Jani Hiriven		:Testing feedback
+ *  Jean-Louis Naudin           :Auto Landing
+ *  John Arne Birkeland	        :PPM Encoder
+ *  Jose Julio			:Stabilization Control laws, MPU6k driver
+ *  Julian Oes                  :Pixhawk
+ *  Jonathan Challinger         :Inertial Navigation, CompassMot, Spin-When-Armed
+ *  Kevin Hester                :Andropilot GCS
+ *  Max Levine			:Tri Support, Graphics
+ *  Leonard Hall 		:Flight Dynamics, Throttle, Loiter and Navigation Controllers
+ *  Marco Robustini		:Lead tester
+ *  Michael Oborne		:Mission Planner GCS
+ *  Mike Smith			:Pixhawk driver, coding support
+ *  Olivier Adler               :PPM Encoder, piezo buzzer
+ *  Pat Hickey                  :Hardware Abstraaction Layer (HAL)
+ *  Robert Lefebvre		:Heli Support, Copter LEDs
+ *  Roberto Navoni              :Library testing, Porting to VRBrain
+ *  Sandro Benigno              :Camera support, MinimOSD
  *  ..and many more.
  *
- *  Code commit statistics can be found here: https://github.com/diydrones/ardupilot/graphs/contributors
- *  Wiki: http://copter.ardupilot.com/
- *  Requires modified version of Arduino, which can be found here: http://ardupilot.com/downloads/?category=6
+ *  Please contribute your ideas! See http://dev.ardupilot.com for details
  *
+ * This program is free open source software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or (at your 
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Header includes

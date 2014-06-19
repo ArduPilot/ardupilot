@@ -258,7 +258,13 @@ public:
         k_param_flight_mode5,
         k_param_flight_mode6,
         k_param_simple_modes,
-
+        
+        //
+        //  dberroya misc parameterized customizations
+        //
+        //       mode switching speed rate multiplier
+        k_param_fltmode_swcgspd,
+        
         //
         // 210: Waypoint data
         //
@@ -372,6 +378,12 @@ public:
     AP_Int8         flight_mode6;
     AP_Int8         simple_modes;
 
+    //
+    //  dberroya misc parameterized customizations
+    //
+    //       mode switch speed rate multiplier
+    AP_Int16        fltmode_swcgspd;
+    
     // Misc
     //
     AP_Int16        log_bitmask;

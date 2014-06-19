@@ -346,6 +346,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(simple_modes, "SIMPLE",                 0),
 
+    // @Param: FLTMODE_SSPD
+    // @DisplayName: Flight Mode Speed
+    // @Description:  Adjusts the speed of mode switching by xx at 100hz (xx/10th/sec).  Lower values for faster mode switching response.
+    // @Range: 5 30
+    // @Increment: 5
+    // @User: Standard
+    GSCALAR(fltmode_swcgspd,  "FLTMODE_SSPD",      10), 
+      
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
     // @Description: 2 byte bitmap of log types to enable
