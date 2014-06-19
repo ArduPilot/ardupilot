@@ -74,6 +74,20 @@ else
     sh /etc/init.d/rc.error
 fi
 
+#if hmc5883_onboard start
+#then
+#    echo "[APM] HMC5883 onboard started OK"
+#    if hmc5883 calibrate
+#    then
+#      echo "[APM] HMC5883 onboard calibrate OK"
+#    else 
+#      echo "[APM] HMC5883 onboard calibrate failed"
+#    fi
+#else
+#    echo "[APM] HMC5883 onboard start failed"
+#    sh /etc/init.d/rc.error
+#fi
+
 if hmc5883_external start
 then
     echo "[APM] HMC5883 external started OK"
@@ -95,6 +109,14 @@ else
     echo "[APM] MPU6000 onboard start failed"
     sh /etc/init.d/rc.error
 fi
+
+#if mpu6000_external start
+#then
+#    echo "[APM] MPU6000 external started OK"
+#else
+#    echo "[APM] MPU6000 external start failed"
+#    sh /etc/init.d/rc.error
+#fi
 
 echo "[APM] Starting MTD driver"
 if mtd start /fs/mtd
