@@ -755,6 +755,11 @@
   #  define CLI_ENABLED           ENABLED
 #endif
 
+// use this to enable/disable the SPLINE waypoint function by default disabled (also in ~libraries\AP_Mission\AP_Mission.h)
+#ifndef SPLINE
+  #  define SPLINE                DISABLED
+#endif
+
 /*
   build a firmware version string.
   GIT_VERSION comes from Makefile builds

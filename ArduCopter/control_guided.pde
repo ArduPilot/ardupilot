@@ -15,8 +15,8 @@ static bool guided_init(bool ignore_checks)
 {
     if (GPS_ok() || ignore_checks) {
 
-        // initialise waypoint and spline controller
-        wp_nav.wp_and_spline_init();
+        // initialise waypoint controllers
+        wp_nav.wp_init();
 
         // initialise wpnav to stopping point at current altitude
         // To-Do: set to current location if disarmed?

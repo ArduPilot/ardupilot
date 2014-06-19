@@ -42,17 +42,25 @@
 
 #define WPNAV_LOITER_ACTIVE_TIMEOUT_MS     200      // loiter controller is considered active if it has been called within the past 200ms (0.2 seconds)
 
+// use this to enable/disable the SPLINE waypoint function by default disabled (also in ~libraries\AP_Mission\AP_Mission.h)
+//    to save of flash space 4.8k
+#ifndef SPLINE
+  #define SPLINE                DISABLED //ENABLED //
+#endif
+
 class AC_WPNav
 {
 public:
 
+#if SPLINE == ENABLED
     // spline segment end types enum
     enum spline_segment_end_type {
         SEGMENT_END_STOP = 0,
         SEGMENT_END_STRAIGHT,
         SEGMENT_END_SPLINE
     };
-
+#endif
+    
     /// Constructor
     AC_WPNav(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosControl& pos_control);
 
@@ -94,11 +102,11 @@ public:
     ///
     /// waypoint controller
     ///
-
-    /// wp_and_spline_init - initialise straight line and spline waypoint controllers
-    ///     updates target roll, pitch targets and I terms based on vehicle lean angles
-    ///     should be called once before the waypoint controller is used but does not need to be called before subsequent updates to destination
-    void wp_and_spline_init();
+    
+    /// wp_init - initialise waypoint controllers, updates target roll, pitch targets and I terms based  
+    ///     on vehicle lean angles, should be called once, before the waypoint controller is used but 
+    ///     does not need to be called before subsequent updates to destination
+    void wp_init();
 
     /// set_speed_xy - allows main code to pass target horizontal velocity for wp navigation
     void set_speed_xy(float speed_cms);
@@ -156,6 +164,7 @@ public:
     /// calculate_wp_leash_length - calculates track speed, acceleration and leash lengths for waypoint controller
     void calculate_wp_leash_length();
 
+#if SPLINE == ENABLED
     ///
     /// spline methods
     ///
@@ -191,7 +200,8 @@ public:
 
     /// update_spline - update spline controller
     void update_spline();
-
+#endif 
+    
     ///
     /// shared methods
     ///
@@ -212,13 +222,15 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
-
+    
+#if SPLINE == ENABLED
     // segment types, either straight or spine
     enum SegmentType {
         SEGMENT_STRAIGHT = 0,
         SEGMENT_SPLINE = 1
     };
-
+#endif 
+    
     // flags structure
     struct wpnav_flags {
         uint8_t reached_destination     : 1;    // true if we have reached the destination
@@ -226,7 +238,10 @@ protected:
         uint8_t slowing_down            : 1;    // true when target point is slowing down before reaching the destination
         uint8_t recalc_wp_leash         : 1;    // true if we need to recalculate the leash lengths because of changes in speed or acceleration
         uint8_t new_wp_destination      : 1;    // true if we have just received a new destination.  allows us to freeze the position controller's xy feed forward
+#if SPLINE == ENABLED
         SegmentType segment_type        : 1;    // active segment is either straight or spline
+#endif
+        
     } _flags;
 
     /// calc_loiter_desired_velocity - updates desired velocity (i.e. feed forward) with pilot requested acceleration and fake wind resistance
@@ -242,6 +257,7 @@ protected:
     /// get_slow_down_speed - returns target speed of target point based on distance from the destination (in cm)
     float get_slow_down_speed(float dist_from_dest_cm, float accel_cmss);
 
+#if SPLINE == ENABLED
     /// spline protected functions
 
     /// update_spline_solution - recalculates hermite_spline_solution grid
@@ -253,7 +269,8 @@ protected:
     /// calc_spline_pos_vel - update position and velocity from given spline time
     /// 	relies on update_spline_solution being called since the previous
     void calc_spline_pos_vel(float spline_time, Vector3f& position, Vector3f& velocity);
-
+#endif
+    
     // references to inertial nav and ahrs libraries
     const AP_InertialNav&   _inav;
     const AP_AHRS&          _ahrs;
@@ -290,7 +307,8 @@ protected:
     float       _track_speed;           // speed in cm/s along track
     float       _track_leash_length;    // leash length along track
     float       _slow_down_dist;        // vehicle should begin to slow down once it is within this distance from the destination
-
+    
+#if SPLINE == ENABLED
     // spline variables
     float       _spline_time;           // current spline time between origin and destination
     float       _spline_time_scale;     // current spline time between origin and destination
@@ -299,5 +317,7 @@ protected:
     Vector3f    _hermite_spline_solution[4]; // array describing spline path between origin and destination
     float       _spline_vel_scaler;	    //
     float       _yaw;                   // heading according to yaw
+#endif
+    
 };
 #endif	// AC_WPNAV_H

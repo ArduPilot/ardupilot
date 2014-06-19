@@ -27,8 +27,8 @@ static bool auto_init(bool ignore_checks)
             set_auto_yaw_mode(AUTO_YAW_HOLD);
         }
 
-        // initialise waypoint and spline controller
-        wp_nav.wp_and_spline_init();
+        // initialise waypoint controllers
+        wp_nav.wp_init();
 
         // start/resume the mission (based on MIS_RESTART parameter)
         mission.start_or_resume();
@@ -66,10 +66,13 @@ static void auto_run()
     case Auto_Circle:
         auto_circle_run();
         break;
-
+        
+#if SPLINE == ENABLED
     case Auto_Spline:
         auto_spline_run();
         break;
+#endif
+
     }
 }
 
@@ -180,6 +183,8 @@ static void auto_wp_run()
     }
 }
 
+#if SPLINE == ENABLED
+
 // auto_spline_start - initialises waypoint controller to implement flying to a particular destination using the spline controller
 //  seg_end_type can be SEGMENT_END_STOP, SEGMENT_END_STRAIGHT or SEGMENT_END_SPLINE.  If Straight or Spline the next_destination should be provided
 static void auto_spline_start(const Vector3f& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Vector3f& next_destination)
@@ -237,6 +242,8 @@ static void auto_spline_run()
         attitude_control.angle_ef_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(), true);
     }
 }
+
+#endif  // #if SPLINE == ENABLED
 
 // auto_land_start - initialises controller to implement a landing
 static void auto_land_start()

@@ -181,7 +181,9 @@ enum AutoMode {
     Auto_RTL,
     Auto_CircleMoveToEdge,
     Auto_Circle,
+#if SPLINE == ENABLED
     Auto_Spline
+#endif
 };
 
 // RTL states

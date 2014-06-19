@@ -103,9 +103,11 @@ AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosContro
     _track_speed(0.0),
     _track_leash_length(0.0),
     _slow_down_dist(0.0),
+#if SPLINE == ENABLED
     _spline_time(0.0),
     _spline_time_scale(0.0),
     _spline_vel_scaler(0.0),
+#endif
     _yaw(0.0)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -303,10 +305,10 @@ void AC_WPNav::update_loiter()
 /// waypoint navigation
 ///
 
-/// wp_and_spline_init - initialise straight line and spline waypoint controllers
-///     updates target roll, pitch targets and I terms based on vehicle lean angles
-///     should be called once before the waypoint controller is used but does not need to be called before subsequent updates to destination
-void AC_WPNav::wp_and_spline_init()
+/// wp_init - initialise waypoint controllers, updates target roll, pitch targets and I terms based  
+///     on vehicle lean angles, should be called once, before the waypoint controller is used but 
+///     does not need to be called before subsequent updates to destination
+void AC_WPNav::wp_init()
 {
     // check _wp_accel_cms is reasonable
     if (_wp_accel_cms <= 0) {
@@ -387,7 +389,11 @@ void AC_WPNav::set_wp_origin_and_destination(const Vector3f& origin, const Vecto
     _flags.reached_destination = false;
     _flags.fast_waypoint = false;   // default waypoint back to slow
     _flags.slowing_down = false;    // target is not slowing down yet
+    
+#if SPLINE == ENABLED
     _flags.segment_type = SEGMENT_STRAIGHT;
+#endif 
+    
     _flags.new_wp_destination = true;   // flag new waypoint so we can freeze the pos controller's feed forward and smooth the transition
 
     // initialise the limited speed to current speed along the track
@@ -632,6 +638,8 @@ void AC_WPNav::calculate_wp_leash_length()
     _flags.recalc_wp_leash = false;
 }
 
+#if SPLINE == ENABLED  
+
 ///
 /// spline methods
 ///
@@ -868,6 +876,7 @@ void AC_WPNav::calc_spline_pos_vel(float spline_time, Vector3f& position, Vector
                _hermite_spline_solution[3] * 3.0f * spline_time_sqrd;
 }
 
+#endif  // #if SPLINE == ENABLED
 
 ///
 /// shared methods

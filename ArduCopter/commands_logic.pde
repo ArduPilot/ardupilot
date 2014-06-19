@@ -7,7 +7,11 @@ static void do_land(const AP_Mission::Mission_Command& cmd);
 static void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
 static void do_circle(const AP_Mission::Mission_Command& cmd);
 static void do_loiter_time(const AP_Mission::Mission_Command& cmd);
+#if SPLINE == ENABLED
 static void do_spline_wp(const AP_Mission::Mission_Command& cmd);
+static bool verify_spline_wp(const AP_Mission::Mission_Command& cmd);
+static void auto_spline_start(const Vector3f& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Vector3f& next_spline_destination);
+#endif
 static void do_wait_delay(const AP_Mission::Mission_Command& cmd);
 static void do_within_distance(const AP_Mission::Mission_Command& cmd);
 static void do_change_alt(const AP_Mission::Mission_Command& cmd);
@@ -20,9 +24,6 @@ static void do_parachute(const AP_Mission::Mission_Command& cmd);
 #endif
 static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
 static bool verify_circle(const AP_Mission::Mission_Command& cmd);
-static bool verify_spline_wp(const AP_Mission::Mission_Command& cmd);
-static void auto_spline_start(const Vector3f& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Vector3f& next_spline_destination);
-
 // start_command - this function will be called when the ap_mission lib wishes to start a new command
 static bool start_command(const AP_Mission::Mission_Command& cmd)
 {
@@ -44,7 +45,7 @@ static bool start_command(const AP_Mission::Mission_Command& cmd)
         do_nav_wp(cmd);
         break;
 
-    case MAV_CMD_NAV_LAND:              // 21 LAND to Waypoint
+    case MAV_CMD_NAV_LAND:                      // 21 LAND to Waypoint
         do_land(cmd);
         break;
 
@@ -56,34 +57,38 @@ static bool start_command(const AP_Mission::Mission_Command& cmd)
         do_circle(cmd);
         break;
 
-    case MAV_CMD_NAV_LOITER_TIME:              // 19
+    case MAV_CMD_NAV_LOITER_TIME:               // 19
         do_loiter_time(cmd);
         break;
 
-    case MAV_CMD_NAV_RETURN_TO_LAUNCH:             //20
+    case MAV_CMD_NAV_RETURN_TO_LAUNCH:          //20
         do_RTL();
         break;
 
-    case MAV_CMD_NAV_SPLINE_WAYPOINT:           // 82  Navigate to Waypoint using spline
+    case MAV_CMD_NAV_SPLINE_WAYPOINT:           // 82  Navigate to Waypoint using spline or non-spline if disabled
+#if SPLINE == ENABLED
         do_spline_wp(cmd);
         break;
-
+#else                                           //  WIP/TBD : a catch all for now, incase spline wp is defined at the GCS while SPLINE is disabled
+        do_nav_wp(cmd);
+        break;
+#endif
     //
     // conditional commands
     //
-    case MAV_CMD_CONDITION_DELAY:             // 112
+    case MAV_CMD_CONDITION_DELAY:              // 112
         do_wait_delay(cmd);
         break;
 
-    case MAV_CMD_CONDITION_DISTANCE:             // 114
+    case MAV_CMD_CONDITION_DISTANCE:           // 114
         do_within_distance(cmd);
         break;
 
-    case MAV_CMD_CONDITION_CHANGE_ALT:             // 113
+    case MAV_CMD_CONDITION_CHANGE_ALT:         // 113
         do_change_alt(cmd);
         break;
 
-    case MAV_CMD_CONDITION_YAW:             // 115
+    case MAV_CMD_CONDITION_YAW:                // 115
         do_yaw(cmd);
         break;
 
@@ -203,11 +208,11 @@ static bool verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
         return verify_RTL();
         break;
-
+#if SPLINE == ENABLED
     case MAV_CMD_NAV_SPLINE_WAYPOINT:
         return verify_spline_wp(cmd);
         break;
-
+#endif
     ///
     /// conditional commands
     ///
@@ -384,7 +389,6 @@ static void do_circle(const AP_Mission::Mission_Command& cmd)
     }
 
     // set lat/lon position if not provided
-    // To-Do: use previous command's destination if it was a straight line or spline waypoint command
     if (cmd.content.location.lat == 0 && cmd.content.location.lng == 0) {
         circle_center.x = curr_pos.x;
         circle_center.y = curr_pos.y;
@@ -440,6 +444,7 @@ static void do_loiter_time(const AP_Mission::Mission_Command& cmd)
     loiter_time_max = cmd.p1;     // units are (seconds)
 }
 
+#if SPLINE == ENABLED
 // do_spline_wp - initiate move to next waypoint
 static void do_spline_wp(const AP_Mission::Mission_Command& cmd)
 {
@@ -482,6 +487,7 @@ static void do_spline_wp(const AP_Mission::Mission_Command& cmd)
     // set spline navigation target
     auto_spline_start(local_pos, stopped_at_start, seg_end_type, next_destination);
 }
+#endif  // #if SPLINE == ENABLED
 
 #if PARACHUTE == ENABLED
 // do_parachute - configure or release parachute
@@ -638,6 +644,7 @@ static bool verify_RTL()
     return (rtl_state_complete && (rtl_state == FinalDescent || rtl_state == Land));
 }
 
+#if SPLINE == ENABLED
 // verify_spline_wp - check if we have reached the next way point using spline
 static bool verify_spline_wp(const AP_Mission::Mission_Command& cmd)
 {
@@ -659,6 +666,7 @@ static bool verify_spline_wp(const AP_Mission::Mission_Command& cmd)
         return false;
     }
 }
+#endif
 
 /********************************************************************************/
 //	Condition (May) commands
@@ -679,9 +687,11 @@ static void do_change_alt(const AP_Mission::Mission_Command& cmd)
             // To-Do: adjust waypoint target altitude to new provided altitude
             break;
         case Auto_WP:
+#if SPLINE == ENABLED
         case Auto_Spline:
             // To-Do; reset origin to current location + stopping distance at new altitude
             break;
+#endif
         case Auto_Land:
         case Auto_RTL:
             // ignore altitude

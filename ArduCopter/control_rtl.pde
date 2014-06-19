@@ -78,8 +78,8 @@ static void rtl_climb_start()
     rtl_state = InitialClimb;
     rtl_state_complete = false;
 
-    // initialise waypoint and spline controller
-    wp_nav.wp_and_spline_init();
+    // initialise waypoint controllers
+    wp_nav.wp_init();
 
     // get horizontal stopping point
     Vector3f destination;
