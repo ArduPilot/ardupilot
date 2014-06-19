@@ -68,6 +68,13 @@ fi
 
 if [ $HAVE_MICROSD == 1 ]
 then
+	if [ -f /fs/microsd/bootloader.bin ]
+	then
+		bl_update /fs/microsd/bootloader.bin
+		rm /fs/microsd/bootloader.bin
+	else
+	fi
+
 	if [ ! -f /fs/microsd/APM/nostart ]
 	then
 		if [ -f /etc/init.d/rc.APM ]
