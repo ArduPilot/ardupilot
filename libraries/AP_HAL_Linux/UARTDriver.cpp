@@ -77,7 +77,11 @@ void LinuxUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
             {
                 _connected = false;
                 if (_flag != NULL){
-                    _tcp_start_connection(true);    
+                    if (!strcmp(_flag, "wait")){    
+                        _tcp_start_connection(true);    
+                    } else {
+                        _tcp_start_connection(false);    
+                    }
                 } else {
                     _tcp_start_connection(false);    
                 }
