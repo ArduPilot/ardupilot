@@ -96,16 +96,13 @@ void motor_order_test()
 
     motors.armed(true);
     for (int8_t i=1; i <= 4; i++) {
-
-        hal.console->printf_P(PSTR("Motor %d\n"),(int)i);
-        struct timeval tv;
-        struct timeval start_tv;
-        gettimeofday(&start_tv, NULL);                                                   //Time Test
+		hal.console->printf_P(PSTR("Motor %d\n"),(int)i);
+        int elapsed =0,stop;
+		int start = hal.scheduler->micros();                                                   //Time Test
         motors.output_test(i, 1150);
-        double elapsed = 0.0;
-        gettimeofday(&tv, NULL);
-        elapsed = (tv.tv_sec - start_tv.tv_sec) +  (tv.tv_usec - start_tv.tv_usec) / 1000000.0;
-        hal.console->printf_P(PSTR("  Elapsed Time: %fs\n"),elapsed);
+        stop = hal.scheduler->micros();
+        elapsed = stop - start;
+        hal.console->printf_P(PSTR("  Elapsed Time: %dus\n"),elapsed);
         hal.scheduler->delay(300);
         motors.output_test(i, 1000);
         hal.scheduler->delay(2000);
