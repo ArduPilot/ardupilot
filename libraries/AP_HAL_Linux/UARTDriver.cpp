@@ -242,7 +242,7 @@ void LinuxUARTDriver::_tcp_start_connection(bool wait_for_connection)
     int ret;    
     int listen_fd = -1;  // socket we are listening on    
     int net_fd = -1; // network file descriptor, will be linked to wr_fd and rd_fd
-    uint8_t portNumber = 1;
+    uint8_t portNumber = 0; // connecto to _base_port + portNumber
 
     // if (_console) {
     //         // hack for console access
