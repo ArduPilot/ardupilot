@@ -385,20 +385,6 @@ static bool verify_land()
 
         auto_state.land_complete = true;
 
-        if (steer_state.hold_course_cd == -1) {
-            // we have just reached the threshold of to flare for landing.
-            // We now don't want to do any radical
-            // turns, as rolling could put the wings into the runway.
-            // To prevent further turns we set steer_state.hold_course_cd to the
-            // current heading. Previously we set this to
-            // crosstrack_bearing, but the xtrack bearing can easily
-            // be quite large at this point, and that could induce a
-            // sudden large roll correction which is very nasty at
-            // this point in the landing.
-            steer_state.hold_course_cd = ahrs.yaw_sensor;
-            gcs_send_text_fmt(PSTR("Land Complete - Hold course %ld"), steer_state.hold_course_cd);
-        }
-
         if (gps.ground_speed() < 3) {
             // reload any airspeed or groundspeed parameters that may have
             // been set for landing. We don't do this till ground
@@ -410,12 +396,22 @@ static bool verify_land()
         }
     }
 
-    if (steer_state.hold_course_cd != -1) {
-        // recalc bearing error with hold_course;
-        nav_controller->update_heading_hold(steer_state.hold_course_cd);
-    } else {
-        nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
-    }
+    /*
+      when landing we keep the L1 navigation waypoint 200m ahead. This
+      prevents sudden turns if we overshoot the landing point
+     */
+    struct Location land_WP_loc = next_WP_loc;
+	int32_t land_bearing_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
+    location_update(land_WP_loc,
+                    land_bearing_cd*0.01f, 
+                    get_distance(prev_WP_loc, current_loc) + 200);
+    nav_controller->update_waypoint(prev_WP_loc, land_WP_loc);
+
+    /*
+      we always return false as a landing mission item never
+      completes - we stay on this waypoint unless the GCS commands us
+      to change mission item or reset the mission
+     */
     return false;
 }
 
