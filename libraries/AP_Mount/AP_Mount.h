@@ -52,7 +52,7 @@ public:
     // MAVLink methods
     void                    configure_msg(mavlink_message_t* msg);
     void                    control_msg(mavlink_message_t* msg);
-    void                    status_msg(mavlink_message_t* msg);
+    void                    status_msg(mavlink_message_t* msg, mavlink_channel_t chan);
     void                    set_roi_cmd(const struct Location *target_loc);
     void                    configure_cmd();
     void                    control_cmd();

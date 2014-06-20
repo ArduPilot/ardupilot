@@ -516,7 +516,7 @@ private:
     bool assume_zero_sideslip(void) const;
 };
 
-#if CONFIG_HAL_BOARD != HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD != HAL_BOARD_PX4 && CONFIG_HAL_BOARD != HAL_BOARD_VRBRAIN
 #define perf_begin(x)
 #define perf_end(x)
 #endif

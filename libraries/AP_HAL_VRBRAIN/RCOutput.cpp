@@ -90,7 +90,6 @@ void VRBRAINRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
      */
     if (freq_hz > 50) {
         // we are setting high rates on the given channels
-#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V4) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V5) || defined(CONFIG_ARCH_BOARD_VRHERO_V1)
         _rate_mask |= chmask & 0xFF;
         if (_rate_mask & 0x07) {
             _rate_mask |= 0x07;
@@ -101,21 +100,8 @@ void VRBRAINRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
         if (_rate_mask & 0xC0) {
             _rate_mask |= 0xC0;
         }
-#else
-        _rate_mask |= chmask & 0xFF;
-        if (_rate_mask & 0x3) {
-            _rate_mask |= 0x3;
-        }
-        if (_rate_mask & 0xc) {
-            _rate_mask |= 0xc;
-        }
-        if (_rate_mask & 0xF0) {
-            _rate_mask |= 0xF0;
-        }
-#endif
     } else {
         // we are setting low rates on the given channels
-#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V4) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V5) || defined(CONFIG_ARCH_BOARD_VRHERO_V1)
         if (chmask & 0x07) {
             _rate_mask &= ~0x07;
         }
@@ -125,17 +111,6 @@ void VRBRAINRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
         if (chmask & 0xC0) {
             _rate_mask &= ~0xC0;
         }
-#else
-        if (chmask & 0x3) {
-            _rate_mask &= ~0x3;
-        }
-        if (chmask & 0xc) {
-            _rate_mask &= ~0xc;
-        }
-        if (chmask & 0xf0) {
-            _rate_mask &= ~0xf0;
-        }
-#endif
     }
 
     if (ioctl(_pwm_fd, PWM_SERVO_SET_SELECT_UPDATE_RATE, _rate_mask) != 0) {
@@ -180,6 +155,22 @@ void VRBRAINRCOutput::set_safety_pwm(uint32_t chmask, uint16_t period_us)
     int ret = ioctl(_pwm_fd, PWM_SERVO_SET_DISARMED_PWM, (long unsigned int)&pwm_values);
     if (ret != OK) {
         hal.console->printf("Failed to setup disarmed PWM for 0x%08x to %u\n", (unsigned)chmask, period_us);
+    }
+}
+
+void VRBRAINRCOutput::set_failsafe_pwm(uint32_t chmask, uint16_t period_us)
+{
+    struct pwm_output_values pwm_values;
+    memset(&pwm_values, 0, sizeof(pwm_values));
+    for (uint8_t i=0; i<_servo_count; i++) {
+        if ((1UL<<i) & chmask) {
+            pwm_values.values[i] = period_us;
+        }
+        pwm_values.channel_count++;
+    }
+    int ret = ioctl(_pwm_fd, PWM_SERVO_SET_FAILSAFE_PWM, (long unsigned int)&pwm_values);
+    if (ret != OK) {
+        hal.console->printf("Failed to setup failsafe PWM for 0x%08x to %u\n", (unsigned)chmask, period_us);
     }
 }
 

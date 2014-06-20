@@ -74,19 +74,25 @@ else
     sh /etc/init.d/rc.error
 fi
 
-if hmc5883 start
+if hmc5883_external start
 then
-    echo "[APM] HMC5883 started OK"
+    echo "[APM] HMC5883 external started OK"
+#    if hmc5883 calibrate
+#    then
+#      echo "[APM] HMC5883 external calibrate OK"
+#    else 
+#      echo "[APM] HMC5883 external calibrate failed"
+#    fi
 else
-    echo "[APM] HMC5883 start failed"
-    sh /etc/init.d/rc.error
+    echo "[APM] HMC5883 external start failed"
+#    sh /etc/init.d/rc.error
 fi
 
-if mpu6000 start
+if mpu6000_onboard start
 then
-    echo "[APM] MPU6000 started OK"
+    echo "[APM] MPU6000 onboard started OK"
 else
-    echo "[APM] MPU6000 start failed"
+    echo "[APM] MPU6000 onboard start failed"
     sh /etc/init.d/rc.error
 fi
 
@@ -132,8 +138,9 @@ set sketch NONE
 set deviceA /dev/ttyACM0
 set deviceC /dev/ttyS2
 
-echo "[APM] Starting ArduPilot" $deviceA $deviceC
-if ArduPilot -d $deviceA -d2 $deviceC start
+echo "[APM] Starting ArduPilot"
+#if ArduPilot -d $deviceA -d2 $deviceC start
+if ArduPilot start
 then
     echo "[APM] ArduPilot started OK"
 else

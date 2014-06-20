@@ -494,7 +494,7 @@ void AP_Mount::control_msg(mavlink_message_t *msg)
 
 /// Return mount status information (depends on the previously set mount configuration)
 /// triggered by a MavLink packet.
-void AP_Mount::status_msg(mavlink_message_t *msg)
+void AP_Mount::status_msg(mavlink_message_t *msg, mavlink_channel_t chan)
 {
     __mavlink_mount_status_t packet;
     mavlink_msg_mount_status_decode(msg, &packet);
@@ -524,9 +524,7 @@ void AP_Mount::status_msg(mavlink_message_t *msg)
         break;
     }
 
-    // status reply
-    // TODO: is COMM_3 correct ?
-    mavlink_msg_mount_status_send(MAVLINK_COMM_3, packet.target_system, packet.target_component,
+    mavlink_msg_mount_status_send_buf(msg, chan, packet.target_system, packet.target_component,
                                   packet.pointing_a, packet.pointing_b, packet.pointing_c);
 }
 

@@ -906,7 +906,7 @@ void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
 void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
 {
     // add home alt if needed
-    if (cmd.content.location.options & LOCATION_MASK_OPTIONS_RELATIVE_ALT) {
+    if (cmd.content.location.flags.relative_alt) {
         cmd.content.location.alt += ahrs.get_home().alt;
     }
 
@@ -1329,7 +1329,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
 
     case MAVLINK_MSG_ID_MOUNT_STATUS:
-        camera_mount.status_msg(msg);
+        camera_mount.status_msg(msg, chan);
         break;
 #endif // MOUNT == ENABLED
 

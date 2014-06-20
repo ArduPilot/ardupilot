@@ -1,11 +1,11 @@
 #
-# Makefile for the vrbrain-v4_APM configuration
+# Makefile for the VRBRAIN 4.5 APM configuration
 #
 
 #
 # Use the configuration's ROMFS.
 #
-ROMFS_ROOT	 = $(SKETCHBOOK)/mk/VRBRAIN/ROMFS
+ROMFS_ROOT	 = $(SKETCHBOOK)/mk/VRBRAIN/ROMFS_VRBRAIN45_APM
 
 MODULES		+= $(APM_MODULE_DIR)
 
@@ -17,18 +17,25 @@ MODULES		+= drivers/stm32
 MODULES		+= drivers/stm32/adc
 MODULES		+= drivers/stm32/tone_alarm
 MODULES		+= drivers/led
+MODULES		+= drivers/buzzer
 
 
-MODULES		+= drivers/boards/vrbrain-v4
+MODULES		+= drivers/boards/vrbrain-v45
 MODULES		+= drivers/vrbrain/vroutput
 MODULES		+= drivers/vrbrain/vrinput/controls
 MODULES		+= drivers/vrbrain/vrinput
 
 
 
-MODULES		+= drivers/mpu6000
-MODULES		+= drivers/hmc5883
+#MODULES		+= drivers/mpu6000
+MODULES		+= drivers/mpu6000_external
+MODULES		+= drivers/mpu6000_onboard
+#MODULES		+= drivers/hmc5883
+MODULES		+= drivers/hmc5883_external
+MODULES		+= drivers/hmc5883_onboard
 MODULES		+= drivers/ms5611
+
+
 
 
 
@@ -53,10 +60,11 @@ MODULES		+= systemcmds/mtd
 
 
 
-
-
+MODULES		+= systemcmds/pwm
 
 MODULES		+= systemcmds/top
+MODULES		+= systemcmds/reboot
+
 
 MODULES		+= systemcmds/tests
 

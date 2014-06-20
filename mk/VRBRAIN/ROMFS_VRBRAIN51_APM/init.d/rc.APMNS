@@ -1,0 +1,150 @@
+#!nsh
+
+# APM startup script for NuttX on VRBRAIN
+
+# mount binfs so we can find the built-in apps
+if [ -f /bin/reboot ]
+then
+	echo "[APMNS] binfs already mounted"
+else
+	echo "[APMNS] Mounting binfs"
+    if mount -t binfs /dev/null /bin
+    then
+        echo "[APMNS] binfs mounted OK"
+    else
+        sh /etc/init.d/rc.error
+    fi
+fi
+
+if [ ! -f /bin/ArduPilot ]
+then
+   echo "[APMNS] /bin/ArduPilot not found"
+   sh /etc/init.d/rc.error
+fi
+
+echo "[APMNS] Starting UORB"
+if uorb start
+then
+    echo "[APMNS] UORB started OK"
+else
+    sh /etc/init.d/rc.error
+fi
+
+echo "[APMNS] Starting ADC"
+if adc start
+then
+    echo "[APMNS] ADC started OK"
+else
+    sh /etc/init.d/rc.error
+fi
+
+echo "[APMNS] Starting APM sensors"
+if ms5611 start
+then
+    echo "[APMNS] MS5611 started OK"
+else
+    echo "[APMNS] MS5611 start failed"
+    sh /etc/init.d/rc.error
+fi
+
+if hmc5883_onboard start
+then
+    echo "[APMNS] HMC5883 onboard started OK"
+#    if hmc5883 calibrate
+#    then
+#      echo "[APMNS] HMC5883 onboard calibrate OK"
+#    else 
+#      echo "[APMNS] HMC5883 onboard calibrate failed"
+#    fi
+else
+    echo "[APMNS] HMC5883 onboard start failed"
+    sh /etc/init.d/rc.error
+fi
+
+if hmc5883_external start
+then
+    echo "[APMNS] HMC5883 external started OK"
+#    if hmc5883 calibrate
+#    then
+#      echo "[APMNS] HMC5883 external calibrate OK"
+#    else 
+#      echo "[APMNS] HMC5883 external calibrate failed"
+#    fi
+else
+    echo "[APMNS] HMC5883 external start failed"
+#    sh /etc/init.d/rc.error
+fi
+
+if mpu6000_onboard start
+then
+    echo "[APMNS] MPU6000 onboard started OK"
+else
+    echo "[APMNS] MPU6000 onboard start failed"
+    sh /etc/init.d/rc.error
+fi
+
+if mpu6000_external start
+then
+    echo "[APMNS] MPU6000 external started OK"
+else
+    echo "[APMNS] MPU6000 external start failed"
+#    sh /etc/init.d/rc.error
+fi
+
+echo "[APMNS] Starting MTD driver"
+if mtd start /fs/mtd
+then
+    echo "[APMNS] MTD driver started OK"
+else
+    echo "[APMNS] MTD driver start failed"
+    sh /etc/init.d/rc.error           
+fi
+
+echo "[APMNS] MTD driver read test"
+if mtd readtest /fs/mtd
+then
+    echo "[APMNS] MTD driver readtest OK"
+else
+    echo "[APMNS] MTD driver failed to read"
+    sh /etc/init.d/rc.error           
+fi
+
+echo "[APMNS] Starting VROUTPUT driver"
+vroutput mode_pwm
+#if vroutput mode_pwm
+#then
+#    echo "[APMNS] VROUTPUT driver started OK"
+#else
+#    echo "[APMNS] VROUTPUT driver start failed"
+#    sh /etc/init.d/rc.error           
+#fi
+
+echo "[APMNS] Starting VRINPUT driver"
+vrinput start
+#if vrinput start
+#then
+#    echo "[APMNS] VRINPUT driver started OK"
+#else
+#    echo "[APMNS] VRINPUT driver start failed"
+#    sh /etc/init.d/rc.error           
+#fi
+
+set sketch NONE
+set deviceA /dev/ttyACM0
+set deviceC /dev/ttyS2
+
+echo "[APMNS] Starting ArduPilot"
+#if ArduPilot -d $deviceA -d2 $deviceC start
+if ArduPilot start
+then
+    echo "[APMNS] ArduPilot started OK"
+else
+    echo "[APMNS] ArduPilot start failed"
+    sh /etc/init.d/rc.error
+fi
+
+echo "[APMNS] Exiting from nsh shell"
+exit
+
+echo "[APMNS] Script finished"
+

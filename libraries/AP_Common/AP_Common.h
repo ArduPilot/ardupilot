@@ -70,6 +70,10 @@
  */
 #define BIT_IS_SET(value, bitnumber) (((value) & (1U<<(bitnumber))) != 0)
 
+// get high or low bytes from 2 byte integer
+#define LOWBYTE(i) ((uint8_t)(i))
+#define HIGHBYTE(i) ((uint8_t)(((uint16_t)(i))>>8))
+
 // @}
 
 
@@ -87,8 +91,6 @@
 /// bit 7: Move to next Command             0: YES,         1: Loiter until commanded
 
 //@{
-#define LOCATION_MASK_OPTIONS_RELATIVE_ALT      (1<<0)     // 1 = Relative altitude
-#define LOCATION_MASK_OPTIONS_LOITER_DIRECTION  (1<<2)     // 0 = CW, 1 = CCW
 
 struct PACKED Location_Option_Flags {
     uint8_t relative_alt : 1;           // 1 if altitude is relateive to home

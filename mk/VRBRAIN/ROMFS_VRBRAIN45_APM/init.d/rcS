@@ -28,13 +28,9 @@ if mount -t vfat /dev/mmcsd0 /fs/microsd
 then
 	echo "[init] card mounted at /fs/microsd"
         set HAVE_MICROSD 1
-	# Start playing the startup tune
-	tone_alarm start
 else
 	echo "[init] no microSD card found"
         set HAVE_MICROSD 0
-	# Play SOS
-	tone_alarm 2
 fi
 
 #
@@ -92,6 +88,6 @@ else
 		# if APM startup is successful then nsh will exit
 		sh /etc/init.d/rc.APMNS
 	else
-        nshterm /dev/ttyACM0 &
+		nshterm /dev/ttyACM0 &
 	fi
 fi

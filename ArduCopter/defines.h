@@ -220,7 +220,7 @@ enum FlipState {
 #define LOG_PID_MSG                     0x0E    // deprecated
 #define LOG_COMPASS_MSG                 0x0F
 #define LOG_INAV_MSG                    0x11    // deprecated
-#define LOG_CAMERA_MSG                  0x12
+#define LOG_CAMERA_MSG_DEPRECATED       0x12    // deprecated
 #define LOG_ERROR_MSG                   0x13
 #define LOG_DATA_INT16_MSG              0x14
 #define LOG_DATA_UINT16_MSG             0x15
