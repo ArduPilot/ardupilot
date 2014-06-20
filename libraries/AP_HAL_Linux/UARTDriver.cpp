@@ -294,12 +294,12 @@ void LinuxUARTDriver::_tcp_start_connection(bool wait_for_connection)
 
         printf("Serial port %u on TCP port %u\n", portNumber, 
                 _base_port + portNumber);
-        // fflush(stdout);
+        fflush(stdout);
     }
 
     if (wait_for_connection) {
         printf("Waiting for connection ....\n");
-        // fflush(stdout);
+        fflush(stdout);
         net_fd = accept(listen_fd, NULL, NULL);
         if (net_fd == -1) {
             printf("accept() error - %s", strerror(errno));
@@ -307,6 +307,11 @@ void LinuxUARTDriver::_tcp_start_connection(bool wait_for_connection)
         }
         setsockopt(net_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
         setsockopt(net_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+
+        // always run the file descriptor non-blocking, and deal with                                         |
+        // blocking IO in the higher level calls
+        fcntl(net_fd, F_SETFL, fcntl(net_fd, F_GETFL, 0) | O_NONBLOCK);
+
         _connected = true;
         _rd_fd = net_fd;
         _wr_fd = net_fd;
