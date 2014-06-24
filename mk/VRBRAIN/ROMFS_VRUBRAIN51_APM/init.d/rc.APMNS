@@ -47,7 +47,7 @@ else
     sh /etc/init.d/rc.error
 fi
 
-#if hmc5883_onboard start
+#if hmc5883i start
 #then
 #    echo "[APMNS] HMC5883 onboard started OK"
 #    if hmc5883 calibrate
@@ -61,7 +61,7 @@ fi
 #    sh /etc/init.d/rc.error
 #fi
 
-if hmc5883_external start
+if hmc5883e start
 then
     echo "[APMNS] HMC5883 external started OK"
 #    if hmc5883 calibrate
@@ -75,7 +75,7 @@ else
 #    sh /etc/init.d/rc.error
 fi
 
-if mpu6000_onboard start
+if mpu6000i start
 then
     echo "[APMNS] MPU6000 onboard started OK"
 else
@@ -83,7 +83,7 @@ else
     sh /etc/init.d/rc.error
 fi
 
-#if mpu6000_external start
+#if mpu6000e start
 #then
 #    echo "[APMNS] MPU6000 external started OK"
 #else
