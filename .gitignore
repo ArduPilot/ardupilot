@@ -4,6 +4,7 @@
 *.dll
 *.elf
 *.hex
+*.dfu
 *.exe
 *.lst
 *.o
