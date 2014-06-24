@@ -206,7 +206,7 @@ def main():
 
     # deal with command line arguments
     parser = argparse.ArgumentParser(description='Analyze an APM Dataflash log for known issues')
-    parser.add_argument('logfile', type=argparse.FileType('r'), help='path to Dataflash log file')
+    parser.add_argument('logfile', type=argparse.FileType('r'), help='path to Dataflash log file (or - for stdin)')
     parser.add_argument('-q', '--quiet',  metavar='', action='store_const', const=True, help='quiet mode, do not print results')
     parser.add_argument('-p', '--profile', metavar='', action='store_const', const=True, help='output performance profiling data')
     parser.add_argument('-s', '--skip_bad', metavar='', action='store_const', const=True, help='skip over corrupt dataflash lines')
