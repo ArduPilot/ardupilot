@@ -136,7 +136,10 @@ class TestSuite:
         # open the file for writing
         xml = None
         try:
-            xml = open(xmlFile, 'w')
+            if xmlFile == '-':
+                xml = sys.stdout
+            else:
+                xml = open(xmlFile, 'w')
         except:
             sys.stderr.write("Error opening output xml file: %s" % xmlFile)
             sys.exit(1)
@@ -211,7 +214,7 @@ def main():
     parser.add_argument('-p', '--profile', metavar='', action='store_const', const=True, help='output performance profiling data')
     parser.add_argument('-s', '--skip_bad', metavar='', action='store_const', const=True, help='skip over corrupt dataflash lines')
     parser.add_argument('-e', '--empty',  metavar='', action='store_const', const=True, help='run an initial check for an empty log')
-    parser.add_argument('-x', '--xml', type=str, metavar='XML file', nargs='?', const='', default='', help='write output to specified XML file')
+    parser.add_argument('-x', '--xml', type=str, metavar='XML file', nargs='?', const='', default='', help='write output to specified XML file (or - for stdout)')
     parser.add_argument('-v', '--verbose', metavar='', action='store_const', const=True, help='verbose output')
     args = parser.parse_args()
 
