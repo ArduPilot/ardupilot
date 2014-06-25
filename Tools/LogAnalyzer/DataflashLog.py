@@ -173,6 +173,9 @@ class DataflashLogHelper:
                 return logdata.channels["GPS"][timeLabel].dictData[lineNumber]
             lineNumber = lineNumber + 1
 
+        sys.stderr.write("didn't find GPS data for " + str(lineNumber) + " - using maxtime\n")
+        return logdata.channels["GPS"][timeLabel].max()
+
     @staticmethod
     def findLoiterChunks(logdata, minLengthSeconds=0, noRCInputs=True):
         '''returns a list of (to,from) pairs defining sections of the log which are in loiter mode. Ordered from longest to shortest in time. If noRCInputs == True it only returns chunks with no control inputs'''
