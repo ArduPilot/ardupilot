@@ -349,15 +349,15 @@ void AP_MotorsMatrix::output_test(uint8_t motor_seq, int16_t pwm)
 }
 
 /*!
- \brief Adds a motor and sets up how it reacts to pitch, roll, and yaw commands
+    \brief Adds a motor and sets up how it reacts to pitch, roll, and yaw commands
 
- \param motor_num number assigned to this motor for wiring reference
-   see http://copter.ardupilot.com/wiki/motor-setup/
- \param roll_fac Roll Factor. Calculated by the angle of the line perpendicular to the roll axis (in radians). 
- \param pitch_fac Pitch Factor. Calculated by the angle of the line perpendicular to the pitch axis (in radians).
- \param yaw_fac. Traditionally, which direction the motor will be used for. 1 for CCW. -1 for CW. 0 for not used.
-   can also be passed in as radians if a motor is desired to only partially help with yaw.
- \param testing_order the position in queue in which this motor will spin up during a motor test.
+    \param motor_num number assigned to this motor for wiring reference
+        see http://copter.ardupilot.com/wiki/motor-setup/
+    \param roll_fac Roll Factor. Calculated by the angle of the line perpendicular to the roll axis (in radians).
+    \param pitch_fac Pitch Factor. Calculated by the angle of the line perpendicular to the pitch axis (in radians).
+    \param yaw_fac. Traditionally, which direction the motor will be used for. 1 for CCW. -1 for CW. 0 for not used.
+        can also be passed in as radians if a motor is desired to only partially help with yaw.
+    \param testing_order the position in queue in which this motor will spin up during a motor test.
 */
 void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, uint8_t testing_order)
 {
@@ -382,7 +382,19 @@ void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitc
     }
 }
 
-// add_motor using just position and prop direction
+/*!
+    \brief add_motor using just position and prop direction
+
+    Adds a motor and sets up how it reacts to pitch, roll and yaw commands.
+    This method assumes roll and pitch have equal weight.
+
+    \param motor_num number assigned to this motor for wiring reference
+        see http://copter.ardupilot.com/wiki/motor-setup/
+    \param angle_degrees is the angle from the origin on the unit circle in degrees
+    \param yaw_fac. Traditionally, which direction the motor will be used for. 1 for CCW. -1 for CW. 0 for not used.
+        can also be passed in as radians if a motor is desired to only partially help with yaw.
+    \param testing_order the position in queue in which this motor will spin up during a motor test.
+*/
 void AP_MotorsMatrix::add_motor(int8_t motor_num, float angle_degrees, float yaw_factor, uint8_t testing_order)
 {
     // call raw motor set-up method
