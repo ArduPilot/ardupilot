@@ -4,12 +4,12 @@
 # Initial code by Andrew Chapman (amchapman@gmail.com), 16th Jan 2014
 #
 
+from __future__ import print_function
 import collections
 import os
 import numpy
 import bisect
 import sys
-
 
 class Format:
     '''Data channel format as specified by the FMT lines in the log file'''
@@ -332,7 +332,7 @@ class DataflashLog:
                     else:
                         errorMsg = "Error parsing line %d of log file: %s" % (lineNumber, self.filename)
                         if ignoreBadlines:
-                            print errorMsg + " (skipping line)"
+                            print(errorMsg + " (skipping line)", file=sys.stderr)
                             self.skippedLines += 1
                         else:
                             raise Exception("")
@@ -372,7 +372,7 @@ class DataflashLog:
                     if (len(tokens2)-1) != len(self.formats[groupName].labels):
                         errorMsg = "%s line's value count (%d) not matching FMT specification (%d) on line %d" % (groupName, len(tokens2)-1, len(self.formats[groupName].labels), lineNumber)
                         if ignoreBadlines:
-                            print errorMsg + " (skipping line)"
+                            print(errorMsg + " (skipping line)", file=sys.stderr)
                             self.skippedLines += 1
                             continue
                         else:
@@ -386,6 +386,7 @@ class DataflashLog:
                         channel.dictData[lineNumber] = value
                         channel.listData.append((lineNumber,value))
             except Exception as e:
+                print("BAD LINE: " + line, file=sys.stderr)
                 raise Exception("Error parsing line %d of log file %s - %s" % (lineNumber,self.filename,e.args[0]))
 
 
