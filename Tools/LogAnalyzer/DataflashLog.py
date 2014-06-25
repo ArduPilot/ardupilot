@@ -287,11 +287,13 @@ class DataflashLog:
             f = open(self.filename, 'r')
         if f.read(4) == '\xa3\x95\x80\x80':
             raise Exception("Unable to parse binary log files at this time, will be added soon")
-        f.seek(0)
+
         lineNumber = 0
         knownHardwareTypes = ["APM", "PX4", "MPNG"]
+        numBytes = 0
         for line in f:
             lineNumber = lineNumber + 1
+            numBytes += len(line) + 1
             try:
                 #print "Reading line: %d" % lineNumber
                 line = line.strip('\n\r')
@@ -389,7 +391,8 @@ class DataflashLog:
 
         # gather some general stats about the log
         self.lineCount  = lineNumber
-        self.filesizeKB = f.tell() / 1024.0
+        self.filesizeKB = numBytes / 1024.0 # For data that comes from a process pipe, filesize is not supported
+
         # TODO: switch duration calculation to use TimeMS values rather than GPS timestemp
         if "GPS" in self.channels:
             # the GPS time label changed at some point, need to handle both
