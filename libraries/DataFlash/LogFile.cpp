@@ -798,6 +798,22 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
         accel_z : accel2.z
     };
     WriteBlock(&pkt2, sizeof(pkt2));
+    if (ins.get_gyro_count() < 3 && ins.get_accel_count() < 3) {
+        return;
+    }
+    const Vector3f &gyro3 = ins.get_gyro(2);
+    const Vector3f &accel3 = ins.get_accel(2);
+    struct log_IMU pkt3 = {
+        LOG_PACKET_HEADER_INIT(LOG_IMU3_MSG),
+        timestamp : tstamp,
+        gyro_x  : gyro3.x,
+        gyro_y  : gyro3.y,
+        gyro_z  : gyro3.z,
+        accel_x : accel3.x,
+        accel_y : accel3.y,
+        accel_z : accel3.z
+    };
+    WriteBlock(&pkt3, sizeof(pkt3));
 }
 
 // Write a text message to the log

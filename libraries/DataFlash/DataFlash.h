@@ -381,6 +381,8 @@ struct PACKED log_Camera {
       "IMU",  "Iffffff",     "TimeMS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ" }, \
     { LOG_IMU2_MSG, sizeof(log_IMU), \
       "IMU2",  "Iffffff",     "TimeMS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ" }, \
+    { LOG_IMU3_MSG, sizeof(log_IMU), \
+      "IMU3",  "Iffffff",     "TimeMS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ" }, \
     { LOG_MESSAGE_MSG, sizeof(log_Message), \
       "MSG",  "Z",     "Message"}, \
     { LOG_RCIN_MSG, sizeof(log_RCIN), \
@@ -434,6 +436,7 @@ struct PACKED log_Camera {
 #define LOG_RADIO_MSG	  146
 #define LOG_ATRP_MSG      147
 #define LOG_CAMERA_MSG    148
+#define LOG_IMU3_MSG	  149
 
 // message types 200 to 210 reversed for GPS driver use
 // message types 211 to 220 reversed for autotune use
