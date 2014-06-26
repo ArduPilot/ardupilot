@@ -61,7 +61,7 @@ MODULES		+= systemcmds/bl_update
 
 
 MODULES		+= systemcmds/pwm
-
+MODULES		+= systemcmds/esc_calib
 MODULES		+= systemcmds/reboot
 MODULES		+= systemcmds/top
 
