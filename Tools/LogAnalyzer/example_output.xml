@@ -1,0 +1,356 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<loganalysis>
+<header>
+  <logfile>examples/robert_lefebvre_octo_PM.log</logfile>
+  <sizekb>302.7548828125</sizekb>
+  <sizelines>4750</sizelines>
+  <duration>0:02:35</duration>
+  <vehicletype>ArduCopter</vehicletype>
+  <coptertype>octo</coptertype>
+  <firmwareversion>V3.0.1</firmwareversion>
+  <firmwarehash>5c6503e2</firmwarehash>
+  <hardwaretype>APM 2</hardwaretype>
+  <freemem>1331</freemem>
+  <skippedlines>0</skippedlines>
+</header>
+<params>
+  <param name="RC7_REV" value="1.0" />
+  <param name="MNT_MODE" value="3.0" />
+  <param name="LOITER_LON_P" value="1.0" />
+  <param name="FLTMODE1" value="1.0" />
+  <param name="FLTMODE3" value="0.0" />
+  <param name="FLTMODE2" value="6.0" />
+  <param name="TUNE_HIGH" value="10000.0" />
+  <param name="FLTMODE4" value="5.0" />
+  <param name="FLTMODE6" value="2.0" />
+  <param name="SYSID_SW_TYPE" value="10.0" />
+  <param name="LOITER_LON_D" value="0.0" />
+  <param name="RC5_REV" value="1.0" />
+  <param name="THR_RATE_IMAX" value="300.0" />
+  <param name="MNT_RC_IN_PAN" value="0.0" />
+  <param name="RC2_MIN" value="1110.0" />
+  <param name="LOITER_LON_I" value="0.5" />
+  <param name="HLD_LON_P" value="1.0" />
+  <param name="STB_RLL_I" value="0.0" />
+  <param name="LOW_VOLT" value="10.5" />
+  <param name="MNT_CONTROL_Y" value="0.0" />
+  <param name="MNT_CONTROL_X" value="0.0" />
+  <param name="FRAME" value="1.0" />
+  <param name="MNT_CONTROL_Z" value="0.0" />
+  <param name="OF_PIT_IMAX" value="100.0" />
+  <param name="AHRS_ORIENTATION" value="0.0" />
+  <param name="SIMPLE" value="0.0" />
+  <param name="RC2_MAX" value="1929.0" />
+  <param name="MNT_JSTICK_SPD" value="0.0" />
+  <param name="RC8_FUNCTION" value="0.0" />
+  <param name="INS_ACCSCAL_X" value="0.992788" />
+  <param name="ACRO_P" value="4.5" />
+  <param name="MNT_ANGMIN_ROL" value="-4500.0" />
+  <param name="OF_RLL_P" value="2.5" />
+  <param name="STB_RLL_P" value="3.5" />
+  <param name="STB_YAW_P" value="3.0" />
+  <param name="SR0_RAW_SENS" value="2.0" />
+  <param name="FLTMODE5" value="0.0" />
+  <param name="RATE_YAW_I" value="0.02" />
+  <param name="MAG_ENABLE" value="1.0" />
+  <param name="MNT_RETRACT_Y" value="0.0" />
+  <param name="MNT_RETRACT_X" value="0.0" />
+  <param name="RATE_YAW_IMAX" value="800.0" />
+  <param name="WPNAV_SPEED_DN" value="150.0" />
+  <param name="WP_YAW_BEHAVIOR" value="2.0" />
+  <param name="RC11_REV" value="1.0" />
+  <param name="SYSID_THISMAV" value="1.0" />
+  <param name="SR0_EXTRA1" value="10.0" />
+  <param name="SR0_EXTRA2" value="10.0" />
+  <param name="ACRO_BAL_PITCH" value="200.0" />
+  <param name="STB_YAW_I" value="0.0" />
+  <param name="INS_ACCSCAL_Z" value="0.97621" />
+  <param name="INS_ACCSCAL_Y" value="1.00147" />
+  <param name="LED_MODE" value="9.0" />
+  <param name="FS_GCS_ENABLE" value="0.0" />
+  <param name="MNT_RC_IN_ROLL" value="0.0" />
+  <param name="INAV_TC_Z" value="8.0" />
+  <param name="RATE_PIT_IMAX" value="4500.0" />
+  <param name="HLD_LON_IMAX" value="3000.0" />
+  <param name="THR_RATE_I" value="0.0" />
+  <param name="SR3_EXTRA1" value="0.0" />
+  <param name="STB_PIT_IMAX" value="800.0" />
+  <param name="AHRS_TRIM_Z" value="0.0" />
+  <param name="RC2_REV" value="1.0" />
+  <param name="INS_MPU6K_FILTER" value="20.0" />
+  <param name="THR_MIN" value="130.0" />
+  <param name="AHRS_TRIM_Y" value="0.021683" />
+  <param name="RC11_DZ" value="0.0" />
+  <param name="THR_MAX" value="1000.0" />
+  <param name="SR3_EXTRA2" value="0.0" />
+  <param name="MNT_NEUTRAL_Z" value="0.0" />
+  <param name="THR_MID" value="300.0" />
+  <param name="MNT_NEUTRAL_X" value="0.0" />
+  <param name="AMP_PER_VOLT" value="18.002001" />
+  <param name="SR0_POSITION" value="3.0" />
+  <param name="MNT_STAB_PAN" value="0.0" />
+  <param name="FS_BATT_ENABLE" value="0.0" />
+  <param name="LAND_SPEED" value="50.0" />
+  <param name="OF_PIT_D" value="0.12" />
+  <param name="SR0_PARAMS" value="50.0" />
+  <param name="COMPASS_ORIENT" value="0.0" />
+  <param name="WPNAV_ACCEL" value="200.0" />
+  <param name="THR_ACCEL_IMAX" value="5000.0" />
+  <param name="SR3_POSITION" value="0.0" />
+  <param name="WPNAV_RADIUS" value="100.0" />
+  <param name="WP_TOTAL" value="14.0" />
+  <param name="RC8_MAX" value="1856.0" />
+  <param name="OF_PIT_P" value="2.5" />
+  <param name="SR3_RAW_SENS" value="0.0" />
+  <param name="RTL_ALT_FINAL" value="0.0" />
+  <param name="SR3_PARAMS" value="0.0" />
+  <param name="SR0_EXTRA3" value="2.0" />
+  <param name="LOITER_LAT_I" value="0.5" />
+  <param name="RC6_DZ" value="0.0" />
+  <param name="RC4_TRIM" value="1524.0" />
+  <param name="RATE_RLL_P" value="0.07" />
+  <param name="LOITER_LAT_D" value="0.0" />
+  <param name="STB_PIT_P" value="3.5" />
+  <param name="OF_PIT_I" value="0.5" />
+  <param name="RATE_RLL_I" value="1.0" />
+  <param name="AHRS_TRIM_X" value="0.003997" />
+  <param name="RC3_REV" value="1.0" />
+  <param name="STB_PIT_I" value="0.0" />
+  <param name="FS_THR_ENABLE" value="0.0" />
+  <param name="LOITER_LAT_P" value="1.0" />
+  <param name="AHRS_RP_P" value="0.1" />
+  <param name="FENCE_ACTION" value="1.0" />
+  <param name="TOY_RATE" value="1.0" />
+  <param name="RATE_RLL_D" value="0.006" />
+  <param name="RC5_MIN" value="1151.0" />
+  <param name="RC5_TRIM" value="1676.0" />
+  <param name="STB_RLL_IMAX" value="800.0" />
+  <param name="RC4_DZ" value="40.0" />
+  <param name="AHRS_YAW_P" value="0.1" />
+  <param name="RC11_TRIM" value="1500.0" />
+  <param name="MOT_TCRV_ENABLE" value="1.0" />
+  <param name="CAM_TRIGG_TYPE" value="1.0" />
+  <param name="STB_YAW_IMAX" value="800.0" />
+  <param name="RC4_MAX" value="1942.0" />
+  <param name="LOITER_LAT_IMAX" value="400.0" />
+  <param name="CH7_OPT" value="9.0" />
+  <param name="RC11_FUNCTION" value="7.0" />
+  <param name="SR0_EXT_STAT" value="2.0" />
+  <param name="SONAR_TYPE" value="0.0" />
+  <param name="RC3_MAX" value="1930.0" />
+  <param name="RATE_YAW_D" value="0.0" />
+  <param name="FENCE_ALT_MAX" value="30.0" />
+  <param name="COMPASS_MOT_Y" value="0.0" />
+  <param name="AXIS_ENABLE" value="1.0" />
+  <param name="FENCE_ENABLE" value="0.0" />
+  <param name="RC10_DZ" value="0.0" />
+  <param name="PILOT_VELZ_MAX" value="250.0" />
+  <param name="BATT_CAPACITY" value="1760.0" />
+  <param name="FS_THR_VALUE" value="975.0" />
+  <param name="RC4_MIN" value="1115.0" />
+  <param name="MNT_ANGMAX_TIL" value="4500.0" />
+  <param name="RTL_LOIT_TIME" value="5000.0" />
+  <param name="ARMING_CHECK" value="1.0" />
+  <param name="THR_RATE_P" value="6.0" />
+  <param name="OF_RLL_IMAX" value="100.0" />
+  <param name="RC6_MIN" value="971.0" />
+  <param name="SR0_RAW_CTRL" value="0.0" />
+  <param name="RC6_MAX" value="2078.0" />
+  <param name="RC5_MAX" value="1829.0" />
+  <param name="LOITER_LON_IMAX" value="400.0" />
+  <param name="MNT_STAB_TILT" value="0.0" />
+  <param name="MOT_TCRV_MIDPCT" value="52.0" />
+  <param name="COMPASS_OFS_Z" value="-5.120774" />
+  <param name="COMPASS_OFS_Y" value="46.709824" />
+  <param name="COMPASS_OFS_X" value="-20.490345" />
+  <param name="THR_ALT_I" value="0.0" />
+  <param name="RC10_TRIM" value="1500.0" />
+  <param name="INS_PRODUCT_ID" value="88.0" />
+  <param name="RC11_MIN" value="1100.0" />
+  <param name="FS_GPS_ENABLE" value="1.0" />
+  <param name="HLD_LAT_IMAX" value="3000.0" />
+  <param name="RC3_TRIM" value="1476.0" />
+  <param name="RC6_FUNCTION" value="0.0" />
+  <param name="TRIM_THROTTLE" value="260.0" />
+  <param name="MNT_STAB_ROLL" value="0.0" />
+  <param name="INAV_TC_XY" value="2.5" />
+  <param name="RC1_DZ" value="30.0" />
+  <param name="MNT_RETRACT_Z" value="0.0" />
+  <param name="THR_ACC_ENABLE" value="1.0" />
+  <param name="LOG_BITMASK" value="830.0" />
+  <param name="TUNE_LOW" value="0.0" />
+  <param name="CIRCLE_RATE" value="5.0" />
+  <param name="CAM_DURATION" value="10.0" />
+  <param name="MNT_NEUTRAL_Y" value="0.0" />
+  <param name="RC10_MIN" value="1100.0" />
+  <param name="INS_ACCOFFS_X" value="-0.019376" />
+  <param name="THR_RATE_D" value="0.0" />
+  <param name="INS_ACCOFFS_Z" value="1.370947" />
+  <param name="RC4_REV" value="1.0" />
+  <param name="CIRCLE_RADIUS" value="10.0" />
+  <param name="RATE_RLL_IMAX" value="4500.0" />
+  <param name="HLD_LAT_P" value="1.0" />
+  <param name="AHRS_GPS_MINSATS" value="6.0" />
+  <param name="FLOW_ENABLE" value="0.0" />
+  <param name="RC8_REV" value="1.0" />
+  <param name="SONAR_GAIN" value="0.2" />
+  <param name="RC2_TRIM" value="1521.0" />
+  <param name="WP_INDEX" value="0.0" />
+  <param name="RC1_REV" value="1.0" />
+  <param name="RC7_DZ" value="0.0" />
+  <param name="AHRS_GPS_USE" value="1.0" />
+  <param name="MNT_ANGMIN_PAN" value="-4500.0" />
+  <param name="SR3_RC_CHAN" value="0.0" />
+  <param name="COMPASS_LEARN" value="0.0" />
+  <param name="ACRO_TRAINER" value="1.0" />
+  <param name="CAM_SERVO_OFF" value="1100.0" />
+  <param name="RC5_DZ" value="0.0" />
+  <param name="SCHED_DEBUG" value="0.0" />
+  <param name="RC11_MAX" value="1900.0" />
+  <param name="AHRS_WIND_MAX" value="0.0" />
+  <param name="SR3_EXT_STAT" value="0.0" />
+  <param name="MNT_ANGMAX_PAN" value="4500.0" />
+  <param name="MNT_ANGMAX_ROL" value="4500.0" />
+  <param name="RC_SPEED" value="490.0" />
+  <param name="SUPER_SIMPLE" value="0.0" />
+  <param name="VOLT_DIVIDER" value="10.0" />
+  <param name="COMPASS_MOTCT" value="0.0" />
+  <param name="SR3_RAW_CTRL" value="0.0" />
+  <param name="SONAR_ENABLE" value="0.0" />
+  <param name="INS_ACCOFFS_Y" value="0.362242" />
+  <param name="SYSID_SW_MREV" value="120.0" />
+  <param name="WPNAV_LOIT_SPEED" value="1000.0" />
+  <param name="BATT_MONITOR" value="4.0" />
+  <param name="MNT_RC_IN_TILT" value="8.0" />
+  <param name="CH8_OPT" value="0.0" />
+  <param name="RTL_ALT" value="1000.0" />
+  <param name="SR0_RC_CHAN" value="2.0" />
+  <param name="RC1_MIN" value="1111.0" />
+  <param name="RSSI_PIN" value="-1.0" />
+  <param name="MOT_TCRV_MAXPCT" value="93.0" />
+  <param name="GND_ABS_PRESS" value="101566.97" />
+  <param name="RC1_MAX" value="1936.0" />
+  <param name="FENCE_TYPE" value="3.0" />
+  <param name="RC5_FUNCTION" value="0.0" />
+  <param name="OF_RLL_D" value="0.12" />
+  <param name="BATT_VOLT_PIN" value="13.0" />
+  <param name="WPNAV_SPEED" value="1000.0" />
+  <param name="RC7_MAX" value="1884.0" />
+  <param name="CAM_SERVO_ON" value="1300.0" />
+  <param name="RATE_PIT_I" value="1.0" />
+  <param name="RC7_MIN" value="969.0" />
+  <param name="AHRS_COMP_BETA" value="0.1" />
+  <param name="OF_RLL_I" value="0.5" />
+  <param name="COMPASS_DEC" value="0.0" />
+  <param name="RC3_MIN" value="1113.0" />
+  <param name="RC2_DZ" value="30.0" />
+  <param name="FENCE_RADIUS" value="30.0" />
+  <param name="HLD_LON_I" value="0.0" />
+  <param name="ACRO_BAL_ROLL" value="200.0" />
+  <param name="COMPASS_AUTODEC" value="1.0" />
+  <param name="SR3_EXTRA3" value="0.0" />
+  <param name="COMPASS_USE" value="1.0" />
+  <param name="RC10_MAX" value="1900.0" />
+  <param name="RATE_PIT_P" value="0.07" />
+  <param name="GND_TEMP" value="21.610104" />
+  <param name="RC7_TRIM" value="970.0" />
+  <param name="RC10_REV" value="1.0" />
+  <param name="RATE_YAW_P" value="0.2" />
+  <param name="THR_ALT_P" value="1.0" />
+  <param name="RATE_PIT_D" value="0.006" />
+  <param name="ESC" value="0.0" />
+  <param name="MNT_ANGMIN_TIL" value="-4500.0" />
+  <param name="SERIAL3_BAUD" value="57.0" />
+  <param name="RC8_MIN" value="968.0" />
+  <param name="THR_ALT_IMAX" value="300.0" />
+  <param name="SYSID_MYGCS" value="255.0" />
+  <param name="INS_GYROFFS_Y" value="0.581989" />
+  <param name="TUNE" value="0.0" />
+  <param name="RC8_TRIM" value="970.0" />
+  <param name="RC3_DZ" value="30.0" />
+  <param name="AHRS_GPS_GAIN" value="1.0" />
+  <param name="THR_ACCEL_D" value="0.0" />
+  <param name="TELEM_DELAY" value="0.0" />
+  <param name="THR_ACCEL_I" value="0.5" />
+  <param name="COMPASS_MOT_X" value="0.0" />
+  <param name="COMPASS_MOT_Z" value="0.0" />
+  <param name="RC10_FUNCTION" value="0.0" />
+  <param name="INS_GYROFFS_X" value="-0.001698" />
+  <param name="INS_GYROFFS_Z" value="0.01517" />
+  <param name="RC6_TRIM" value="1473.0" />
+  <param name="THR_ACCEL_P" value="1.2" />
+  <param name="RC8_DZ" value="0.0" />
+  <param name="HLD_LAT_I" value="0.0" />
+  <param name="RC7_FUNCTION" value="0.0" />
+  <param name="RC6_REV" value="1.0" />
+  <param name="BATT_CURR_PIN" value="12.0" />
+  <param name="WPNAV_SPEED_UP" value="250.0" />
+  <param name="RC1_TRIM" value="1524.0" />
+</params>
+<results>
+  <result>
+    <name>Brownout</name>
+    <status>GOOD</status>
+    <message></message>
+  </result>
+  <result>
+    <name>Compass</name>
+    <status>GOOD</status>
+    <message>No MAG data, unable to test mag_field interference
+</message>
+  </result>
+  <result>
+    <name>Dupe Log Data</name>
+    <status>GOOD</status>
+    <message></message>
+  </result>
+  <result>
+    <name>Empty</name>
+    <status>GOOD</status>
+    <message></message>
+  </result>
+  <result>
+    <name>Event/Failsafe</name>
+    <status>FAIL</status>
+    <message>ERR found: GPS </message>
+    <data>(test data will be embeded here at some point)</data>
+  </result>
+  <result>
+    <name>GPS</name>
+    <status>WARN</status>
+    <message>Min satellites: 6, Max HDop: 4.68</message>
+    <data>(test data will be embeded here at some point)</data>
+  </result>
+  <result>
+    <name>Parameters</name>
+    <status>GOOD</status>
+    <message></message>
+  </result>
+  <result>
+    <name>PM</name>
+    <status>FAIL</status>
+    <message>14 slow loop lines found, max 18.56% on line 2983</message>
+    <data>(test data will be embeded here at some point)</data>
+  </result>
+  <result>
+    <name>Pitch/Roll</name>
+    <status>GOOD</status>
+    <message></message>
+  </result>
+  <result>
+    <name>Thrust</name>
+    <status>GOOD</status>
+    <message></message>
+  </result>
+  <result>
+    <name>VCC</name>
+    <status>GOOD</status>
+    <message></message>
+  </result>
+  <result>
+    <name>Vibration</name>
+    <status>UNKNOWN</status>
+    <message>No IMU log data</message>
+  </result>
+</results>
+</loganalysis>
