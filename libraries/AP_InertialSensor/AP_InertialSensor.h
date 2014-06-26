@@ -12,7 +12,7 @@
    than 1 then redundent sensors may be available
  */
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
-#define INS_MAX_INSTANCES 2
+#define INS_MAX_INSTANCES 3
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #define INS_MAX_INSTANCES 2
 #else

@@ -95,6 +95,12 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     AP_GROUPINFO("GYR2OFFS",    7, AP_InertialSensor, _gyro_offset[1],   0),
 #endif
 
+#if INS_MAX_INSTANCES > 2
+    AP_GROUPINFO("ACC3SCAL",    8, AP_InertialSensor, _accel_scale[2],   0),
+    AP_GROUPINFO("ACC3OFFS",    9, AP_InertialSensor, _accel_offset[2],  0),
+    AP_GROUPINFO("GYR3OFFS",   10, AP_InertialSensor, _gyro_offset[2],   0),
+#endif
+
     AP_GROUPEND
 };
 
