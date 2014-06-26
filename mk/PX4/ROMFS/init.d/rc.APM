@@ -259,13 +259,29 @@ else
     then
        echo "l3gd20 started OK"
     else
-       sh /etc/init.d/rc.error
+        if l3gd20 -X start
+        then
+               echo "l3gd20 external started OK"
+        else
+               sh /etc/init.d/rc.error
+        fi
     fi
     if lsm303d start
     then
        echo "lsm303d started OK"
     else
-       sh /etc/init.d/rc.error
+        if lsm303d -X start
+        then
+               echo "lsm303d external started OK"
+        else
+               sh /etc/init.d/rc.error
+        fi
+    fi
+    if mpu6000 -X start
+    then
+       echo "Found MPU6000 external"
+    else
+       echo "No MPU6000 external"
     fi
 fi
 
