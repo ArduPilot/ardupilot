@@ -93,20 +93,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(rtl_altitude,   "RTL_ALT",     RTL_ALT),
 
-    // @Param: SONAR_ENABLE
-    // @DisplayName: Sonar enable/disable
-    // @Description: Setting this to Enabled(1) will enable the sonar. Setting this to Disabled(0) will disable the sonar
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Standard
-    GSCALAR(sonar_enabled,  "SONAR_ENABLE",     DISABLED),
-
-    // @Param: SONAR_TYPE
-    // @DisplayName: Sonar type
-    // @Description: Used to adjust scaling to match the sonar used (only Maxbotix sonars are supported at this time)
-    // @Values: 0:XL-EZ0 / XL-EZ4,1:LV-EZ0,2:XLL-EZ0,3:HRLV
-    // @User: Standard
-    GSCALAR(sonar_type,     "SONAR_TYPE",           AP_RANGEFINDER_MAXSONARXL),
-
     // @Param: SONAR_GAIN
     // @DisplayName: Sonar gain
     // @Description: Used to adjust the speed with which the target altitude is changed when objects are sensed below the copter
@@ -1088,6 +1074,12 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Group: MIS_
     // @Path: ../libraries/AP_Mission/AP_Mission.cpp
     GOBJECT(mission, "MIS_",       AP_Mission),
+
+#if CONFIG_SONAR == ENABLED
+    // @Group: SONAR
+    // @Path: ../libraries/AP_RangeFinder/RangeFinder.cpp
+    GOBJECT(sonar,   "SONAR", RangeFinder),
+#endif
 
     AP_VAREND
 };

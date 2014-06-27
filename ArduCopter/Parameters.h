@@ -116,6 +116,7 @@ public:
         k_param_serial1_baud,
         k_param_serial2_baud,
         k_param_land_repositioning,     // 52
+        k_param_sonar, // sonar object
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -182,13 +183,13 @@ public:
         k_param_pack_capacity,  // deprecated - can be deleted
         k_param_compass_enabled,
         k_param_compass,
-        k_param_sonar_enabled,
+        k_param_sonar_enabled_old, // deprecated
         k_param_frame_orientation,
         k_param_optflow_enabled,
         k_param_fs_batt_voltage,
         k_param_ch7_option,
         k_param_auto_slew_rate,     // deprecated - can be deleted
-        k_param_sonar_type,
+        k_param_sonar_type_old,     // deprecated
         k_param_super_simple = 155,
         k_param_axis_enabled = 157, // deprecated - remove with next eeprom number change
         k_param_copter_leds_mode,   // deprecated - remove with next eeprom number change
@@ -320,10 +321,6 @@ public:
     AP_Int8         telem_delay;
 
     AP_Int16        rtl_altitude;
-    AP_Int8         sonar_enabled;
-    AP_Int8         sonar_type;       // 0 = XL, 1 = LV,
-                                      // 2 = XLL (XL with 10m range)
-                                      // 3 = HRLV
     AP_Float        sonar_gain;
 
     AP_Int8         failsafe_battery_enabled;   // battery failsafe enabled

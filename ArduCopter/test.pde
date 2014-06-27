@@ -266,7 +266,7 @@ static int8_t
 test_sonar(uint8_t argc, const Menu::arg *argv)
 {
 #if CONFIG_SONAR == ENABLED
-    if(g.sonar_enabled == false) {
+    if(!sonar.healthy()) {
         cliSerial->printf_P(PSTR("Sonar disabled\n"));
         return (0);
     }
@@ -277,8 +277,8 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
     print_hit_enter();
     while(1) {
         delay(100);
-
-        cliSerial->printf_P(PSTR("Sonar: %d cm\n"), sonar->read());
+        sonar.update();
+        cliSerial->printf_P(PSTR("Sonar: %d cm\n"), sonar.distance_cm());
 
         if(cliSerial->available() > 0) {
             return (0);
