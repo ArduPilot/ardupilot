@@ -6,6 +6,7 @@ class TestEmpty(Test):
 	'''test for empty or near-empty logs'''
 
 	def __init__(self):
+		Test.__init__(self)
 		self.name = "Empty"
 		
 	def run(self, logdata, verbose):

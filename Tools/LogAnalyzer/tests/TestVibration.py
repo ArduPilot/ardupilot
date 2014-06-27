@@ -8,6 +8,7 @@ class TestVibration(Test):
 	'''test for accelerometer vibration (accX/accY/accZ) within recommendations'''
 
 	def __init__(self):
+		Test.__init__(self)
 		self.name = "Vibration"
 
 

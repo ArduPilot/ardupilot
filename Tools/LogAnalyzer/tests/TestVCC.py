@@ -8,6 +8,7 @@ class TestVCC(Test):
 	'''test for VCC within recommendations, or abrupt end to log in flight'''
 
 	def __init__(self):
+		Test.__init__(self)
 		self.name = "VCC"
 
 	def run(self, logdata, verbose):

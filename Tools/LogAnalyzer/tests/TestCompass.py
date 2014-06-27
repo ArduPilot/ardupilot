@@ -8,6 +8,7 @@ class TestCompass(Test):
 	'''test for compass offsets and throttle interference'''
 
 	def __init__(self):
+		Test.__init__(self)
 		self.name = "Compass"
 
 	def run(self, logdata, verbose):
