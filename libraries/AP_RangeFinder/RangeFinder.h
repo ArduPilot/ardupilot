@@ -19,56 +19,63 @@
 
 #include <AP_Common.h>
 #include <AP_HAL.h>
-#include <Filter.h> // Filter library
-#include <rotations.h>
+#include <AP_Param.h>
 
 // Maximum number of range finder instances available on this platform
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 #define RANGEFINDER_MAX_INSTANCES 2
 #else
 #define RANGEFINDER_MAX_INSTANCES 1
 #endif
- 
-class AP_RangeFinder_Backend;
+
+class AP_RangeFinder_Backend; 
  
 class RangeFinder
 {
 public:
-    RangeFinder(FilterInt16 *filter) :
-        _mode_filter(filter)    {
+    RangeFinder(void) :
+    num_instances(0)
+    {
         AP_Param::setup_object_defaults(this, var_info);
     }
 
     // RangeFinder driver types
     enum RangeFinder_Type {
-        RangeFinder_TYPE_NONE  = 0,
-        RangeFinder_TYPE_AUTO  = 1,
+        RangeFinder_TYPE_NONE   = 0,
+        RangeFinder_TYPE_AUTO   = 1,
         RangeFinder_TYPE_ANALOG = 2,
         RangeFinder_TYPE_MBI2C  = 3,
-        RangeFinder_TYPE_PLI2C = 4
+        RangeFinder_TYPE_PLI2C  = 4,
+        RangeFinder_TYPE_PX4    = 5
     };
 
-    enum RangeFinder_Location {
-        RangeFinder_LOCATION_FRONT  = 0,
-        RangeFinder_LOCATION_RIGHT  = 1,
-        RangeFinder_LOCATION_LEFT = 2,
-        RangeFinder_LOCATION_BACK  = 3
+    enum RangeFinder_Function {
+        FUNCTION_LINEAR    = 0,
+        FUNCTION_INVERTED  = 1,
+        FUNCTION_HYPERBOLA = 2
     };
-    
+
+
     // The RangeFinder_State structure is filled in by the backend driver
     struct RangeFinder_State {
-        uint8_t                instance; // the instance number of this RangeFinder
-        int16_t                distance; // distance: in cm
-        int16_t                max_distance; // maximum measurable distance: in cm
-        int16_t                min_distance; // minimum measurable distance: in cm
-        bool                   healthy; // sensor is communicating correctly
-        Rotation               orientation; // none would imply that it is pointing out the craft front
-        RangeFinder_Location   location; // generic approximation of the sensor's location on the craft
+        uint8_t                instance;    // the instance number of this RangeFinder
+        uint16_t               distance_cm; // distance: in cm
+        uint16_t               voltage_mv;  // voltage in millivolts,
+                                            // if applicable, otherwise 0
+        bool                   healthy;     // sensor is communicating correctly
     };
 
-    AP_Int8                                 _type[RANGEFINDER_MAX_INSTANCES];
-    AP_Int8                                 _pin[RANGEFINDER_MAX_INSTANCES];
-    FilterInt16 *                           _mode_filter;
+    // parameters for each instance
+    AP_Int8  _type[RANGEFINDER_MAX_INSTANCES];
+    AP_Int8  _pin[RANGEFINDER_MAX_INSTANCES];
+    AP_Int8  _stop_pin[RANGEFINDER_MAX_INSTANCES];
+    AP_Int16 _settle_time_ms[RANGEFINDER_MAX_INSTANCES];
+    AP_Float _scaling[RANGEFINDER_MAX_INSTANCES];
+    AP_Float _offset[RANGEFINDER_MAX_INSTANCES];
+    AP_Int8  _function[RANGEFINDER_MAX_INSTANCES];
+    AP_Int16 _min_distance_cm[RANGEFINDER_MAX_INSTANCES];
+    AP_Int16 _max_distance_cm[RANGEFINDER_MAX_INSTANCES];
+
     static const struct AP_Param::GroupInfo var_info[];
     
     // Return the number of range finder instances
@@ -76,7 +83,11 @@ public:
         return num_instances;
     }
 
+    // detect and initialise any available rangefinders
     void init(void);
+
+    // update state of all rangefinders. Should be called at around
+    // 10Hz from main loop
     void update(void);
     
 #if RANGEFINDER_MAX_INSTANCES == 1
@@ -85,25 +96,32 @@ public:
 #	define _RangeFinder_STATE(instance) state[instance]
 #endif
 
-    int16_t distance(uint8_t instance) const {
-        return _RangeFinder_STATE(instance).distance;
+    uint16_t distance_cm(uint8_t instance) const {
+        return _RangeFinder_STATE(instance).distance_cm;
     }
-    int16_t distance() const {
-        return distance(primary_instance);
-    }
-
-    int16_t max_distance(uint8_t instance) const {
-        return _RangeFinder_STATE(instance).max_distance;
-    }
-    int16_t max_distance() const {
-        return max_distance(primary_instance);
+    uint16_t distance_cm() const {
+        return distance_cm(primary_instance);
     }
 
-    int16_t min_distance(uint8_t instance) const {
-        return _RangeFinder_STATE(instance).min_distance;
+    uint16_t voltage_mv(uint8_t instance) const {
+        return _RangeFinder_STATE(instance).voltage_mv;
     }
-    int16_t min_distance() const {
-        return min_distance(primary_instance);
+    uint16_t voltage_mv() const {
+        return voltage_mv(primary_instance);
+    }
+
+    int16_t max_distance_cm(uint8_t instance) const {
+        return _max_distance_cm[instance];
+    }
+    int16_t max_distance_cm() const {
+        return max_distance_cm(primary_instance);
+    }
+
+    int16_t min_distance_cm(uint8_t instance) const {
+        return _min_distance_cm[instance];
+    }
+    int16_t min_distance_cm() const {
+        return min_distance_cm(primary_instance);
     }
     
     bool healthy(uint8_t instance) const {
@@ -113,20 +131,6 @@ public:
         return healthy(primary_instance);
     }
     
-    Rotation orientation(uint8_t instance) const {
-        return _RangeFinder_STATE(instance).orientation;
-    }
-    Rotation orientation() const {
-        return orientation(primary_instance);
-    }
-    
-    RangeFinder_Location location(uint8_t instance) const {
-        return _RangeFinder_STATE(instance).location;
-    }
-    RangeFinder_Location location() const {
-        return location(primary_instance);
-    }
-
 private:
     RangeFinder_State state[RANGEFINDER_MAX_INSTANCES];
     AP_RangeFinder_Backend *drivers[RANGEFINDER_MAX_INSTANCES];

@@ -14,28 +14,17 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __AP_RANGEFINDER_BACKEND_H__
-#define __AP_RANGEFINDER_BACKEND_H__
-
 #include <AP_Common.h>
 #include <AP_HAL.h>
 #include "RangeFinder.h"
+#include "RangeFinder_Backend.h"
 
-class AP_RangeFinder_Backend
+/*
+  base class constructor. 
+  This incorporates initialisation as well.
+*/
+AP_RangeFinder_Backend::AP_RangeFinder_Backend(RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state) :
+        ranger(_ranger),
+        state(_state) 
 {
-public:
-    // constructor. This incorporates initialisation as well.
-	AP_RangeFinder_Backend(RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state);
-
-    // we declare a virtual destructor so that RangeFinder drivers can
-    // override with a custom destructor if need be
-    virtual ~AP_RangeFinder_Backend(void) {}
-
-    // update the state structure
-    virtual void update() = 0;
-    
-protected:
-    RangeFinder &ranger;
-    RangeFinder::RangeFinder_State &state;
-};
-#endif // __AP_RANGEFINDER_BACKEND_H__
+}
