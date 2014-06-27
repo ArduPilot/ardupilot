@@ -18,8 +18,20 @@ using namespace Linux;
 
 extern const AP_HAL::HAL& hal;
 
-LinuxSPIDeviceDriver::LinuxSPIDeviceDriver(const char *spipath, uint8_t mode, uint8_t bitsPerWord, uint8_t cs_pin, uint32_t speed):
-    _spipath(spipath),
+LinuxSPIDeviceDriver LinuxSPIDeviceManager::_device[LINUX_SPI_DEVICE_NUM_DEVICES] = {
+    LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_MS5611,  SPI_MODE_0, 8,   7,  6*1000*1000), /* SPIDevice_MS5611 */
+    LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_MPU6000, SPI_MODE_0, 8, 113, 20*1000*1000), /* SPIDevice_MPU6000 */
+    LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_MPU9250, SPI_MODE_0, 8,  49,  6*1000*1000), /* SPIDevice_MPU9250 */
+    LinuxSPIDeviceDriver(0, LINUX_SPI_DEVICE_LSM9DS0, SPI_MODE_0, 8,   5,  6*1000*1000), /* SPIDevice_LSM9DS0 */
+    LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_FRAM,    SPI_MODE_0, 8,  44,  6*1000*1000)  /* SPIDevice_Dataflash */
+};
+
+// have a separate semaphore per bus
+LinuxSemaphore LinuxSPIDeviceManager::_semaphore[LINUX_SPI_NUM_BUSES];
+
+LinuxSPIDeviceDriver::LinuxSPIDeviceDriver(uint8_t bus, LinuxSPIDeviceType type, uint8_t mode, uint8_t bitsPerWord, uint8_t cs_pin, uint32_t speed):
+    _bus(bus),
+    _type(type),
     _fd(-1),
     _mode(mode),
     _bitsPerWord(bitsPerWord),    
@@ -30,10 +42,11 @@ LinuxSPIDeviceDriver::LinuxSPIDeviceDriver(const char *spipath, uint8_t mode, ui
 
 void LinuxSPIDeviceDriver::init()
 {
-    _fd = open(_spipath, O_RDWR);
+    const char *path = _bus==0?"/dev/spidev1.0":"/dev/spidev2.0";
+    _fd = open(path, O_RDWR);
     if (_fd == -1) {
 #if SPI_DEBUGGING
-        hal.console->printf("LinuxSPIDeviceDriver failed opening _spipath\n");
+        hal.console->printf("LinuxSPIDeviceDriver failed opening %s\n", path);
 #endif        
         return;
     }
@@ -88,7 +101,7 @@ void LinuxSPIDeviceDriver::init()
 
     // Init the CS
     _cs = hal.gpio->channel(_cs_pin);
-    _cs->mode(GPIO_OUT);
+    _cs->mode(HAL_GPIO_OUTPUT);
     _cs->write(HIGH);       // do not hold the SPI bus initially
     return;
 
@@ -100,7 +113,7 @@ failed:
 
 AP_HAL::Semaphore* LinuxSPIDeviceDriver::get_semaphore()
 {
-    return &_semaphore;
+    return LinuxSPIDeviceManager::get_semaphore(_bus);
 }
 
 void LinuxSPIDeviceDriver::transaction(const uint8_t *tx, uint8_t *rx, uint16_t len)
@@ -122,12 +135,12 @@ void LinuxSPIDeviceDriver::transaction(const uint8_t *tx, uint8_t *rx, uint16_t 
 
 void LinuxSPIDeviceDriver::cs_assert()
 {
-    _cs->write(0);
+    LinuxSPIDeviceManager::cs_assert(_type);
 }
 
 void LinuxSPIDeviceDriver::cs_release()
 {
-    _cs->write(1);
+    LinuxSPIDeviceManager::cs_release(_type);
 }
 
 uint8_t LinuxSPIDeviceDriver::transfer(uint8_t data)
@@ -142,21 +155,38 @@ void LinuxSPIDeviceDriver::transfer(const uint8_t *data, uint16_t len)
     transaction(data, NULL, len);
 }
 
-LinuxSPIDeviceManager::LinuxSPIDeviceManager() :
-    _device_ms5611("/dev/spidev2.0", SPI_MODE_0, 8, 7, 6*1000*1000), /* SPIDevice_MS5611 */
-    _device_mpu6000("/dev/spidev2.0", SPI_MODE_0, 8, 113, 20*1000*1000), /* SPIDevice_MPU6000 */
-    _device_mpu9250("/dev/spidev2.0", SPI_MODE_0, 8, 49, 6*1000*1000), /* SPIDevice_MPU9250 */
-    _device_lsm9ds0("/dev/spidev1.0", SPI_MODE_0, 8, 5, 6*1000*1000), /* SPIDevice_LSM9DS0 */
-    _device_fram("/dev/spidev2.0", SPI_MODE_0, 8, 44, 6*1000*1000) /* SPIDevice_Dataflash */
-{}
-
 void LinuxSPIDeviceManager::init(void *)
 {
-    _device_ms5611.init();
-    _device_mpu6000.init();
-    _device_mpu9250.init();
-    _device_lsm9ds0.init();
-    _device_fram.init();
+    for (uint8_t i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
+        _device[i].init();
+    }
+}
+
+void LinuxSPIDeviceManager::cs_assert(LinuxSPIDeviceType type)
+{
+    for (uint8_t i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
+        if (_device[i].get_bus() != _device[type].get_bus()) {
+            // not the same bus
+            continue;
+        }
+        if (i != type) {
+            if (_device[i].get_cs()->read() != 1) {
+                hal.scheduler->panic("two CS enabled at once");
+            }
+        }
+    }
+    _device[type].get_cs()->write(0);
+}
+
+void LinuxSPIDeviceManager::cs_release(LinuxSPIDeviceType type)
+{
+    for (uint8_t i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
+        if (_device[i].get_bus() != _device[type].get_bus()) {
+            // not the same bus
+            continue;
+        }
+        _device[i].get_cs()->write(1);
+    }
 }
 
 /*
@@ -166,18 +196,26 @@ AP_HAL::SPIDeviceDriver* LinuxSPIDeviceManager::device(enum AP_HAL::SPIDevice de
 {
     switch (dev) {
         case AP_HAL::SPIDevice_MPU6000:
-            return &_device_mpu6000;            
+            return &_device[LINUX_SPI_DEVICE_MPU6000];
         case AP_HAL::SPIDevice_MPU9250:
-            return &_device_mpu9250;            
+            return &_device[LINUX_SPI_DEVICE_MPU9250];
         case AP_HAL::SPIDevice_MS5611:
-            return &_device_ms5611;
+            return &_device[LINUX_SPI_DEVICE_MS5611];
         case AP_HAL::SPIDevice_LSM9DS0:
-            return &_device_lsm9ds0;                        
+            return &_device[LINUX_SPI_DEVICE_LSM9DS0];       
         case AP_HAL::SPIDevice_Dataflash:
-            return &_device_fram;                        
+            return &_device[LINUX_SPI_DEVICE_FRAM];   
 
     }
     return NULL;
+}
+
+/*
+  return the bus specific semaphore
+ */
+AP_HAL::Semaphore *LinuxSPIDeviceManager::get_semaphore(uint8_t bus)
+{
+    return &_semaphore[bus];
 }
 
 #endif // CONFIG_HAL_BOARD
