@@ -32,11 +32,6 @@ class development::ui {
         provider        =>  'apt',
     }
 
-    package { 'build-essential':
-        ensure          =>  'installed',
-        provider        =>  'apt',
-    }
-    
     file { '/home/vagrant/vbox_patch.sh':
         source      => 'puppet:///modules/development/vbox_patch.sh',
         mode        =>  '777',

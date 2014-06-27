@@ -10,12 +10,25 @@ class development::base {
         ensure          =>  'installed',
         provider        =>  'apt',
     }
-    
-    package { 'git':
+
+    package { 'cmake':
         ensure          =>  'installed',
         provider        =>  'apt',
     }    
-
+    
+    # Need to build gtest after gmock so set an explicit dependency chain
+    package { 'google-mock':
+        ensure          =>  'installed',
+        provider        =>  'apt',
+        require         =>  Package[ 'cmake' ]
+    } ->
+    exec { 'build_gtest':
+        cwd             =>  '/usr/src/gtest',
+        command         =>  'cmake -E make_directory build && cmake -E chdir build cmake .. && cmake --build build && cp build/libgtest* /usr/local/lib',
+        path            =>  '/usr/bin:/usr/sbin:/sbin:/bin',
+    }
+    
+    
     package { 'arduino-core':
         ensure          =>  'installed',
         provider        =>  'apt',
