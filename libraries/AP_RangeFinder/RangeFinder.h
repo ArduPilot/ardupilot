@@ -22,11 +22,7 @@
 #include <AP_Param.h>
 
 // Maximum number of range finder instances available on this platform
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 #define RANGEFINDER_MAX_INSTANCES 2
-#else
-#define RANGEFINDER_MAX_INSTANCES 1
-#endif
 
 class AP_RangeFinder_Backend; 
  
@@ -91,11 +87,7 @@ public:
     // 10Hz from main loop
     void update(void);
     
-#if RANGEFINDER_MAX_INSTANCES == 1
-#	define _RangeFinder_STATE(instance) state[0]
-#else
-#	define _RangeFinder_STATE(instance) state[instance]
-#endif
+#define _RangeFinder_STATE(instance) state[instance]
 
     uint16_t distance_cm(uint8_t instance) const {
         return _RangeFinder_STATE(instance).distance_cm;
@@ -126,7 +118,7 @@ public:
     }
     
     bool healthy(uint8_t instance) const {
-        return _RangeFinder_STATE(instance).healthy;
+        return instance < num_instances && _RangeFinder_STATE(instance).healthy;
     }
     bool healthy() const {
         return healthy(primary_instance);
