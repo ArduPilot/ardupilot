@@ -12,15 +12,10 @@ import bisect
 import sys
 import ctypes
 
-class Format:
+class Format(object):
     '''Data channel format as specified by the FMT lines in the log file'''
-    NAME = 'FMT'
-    msgType = 0
-    msgLen  = 0
-    name    = ""
-    types   = ""
-    labels  = []
     def __init__(self,msgType,msgLen,name,types,labels):
+		self.NAME    = 'FMT'
         self.msgType = msgType
         self.msgLen  = msgLen
         self.name    = name
@@ -197,17 +192,15 @@ class BinaryFormat(ctypes.LittleEndianStructure):
 
 BinaryFormat.SIZE = ctypes.sizeof(BinaryFormat)
 
-class Channel:
+class Channel(object):
     '''storage for a single stream of data, i.e. all GPS.RelAlt values'''
 
     # TODO: rethink data storage, but do more thorough regression testing before refactoring it
     # TODO: store data as a scipy spline curve so we can more easily interpolate and sample the slope?
-    dictData = None #  dict of linenum->value      # store dupe data in dict and list for now, until we decide which is the better way to go
-    listData = None #  list of (linenum,value)     # store dupe data in dict and list for now, until we decide which is the better way to go
 
     def __init__(self):
-        self.dictData = {}
-        self.listData = []
+        self.dictData = {} #  dict of linenum->value      # store dupe data in dict and list for now, until we decide which is the better way to go
+        self.listData = [] #  list of (linenum,value)     # store dupe data in dict and list for now, until we decide which is the better way to go
     def getSegment(self, startLine, endLine):
         '''returns a segment of this data (from startLine to endLine, inclusive) as a new Channel instance'''
         segment = Channel()
@@ -392,27 +385,35 @@ class DataflashLogHelper:
         return None
 
 
-class DataflashLog:
+class DataflashLog(object):
     '''APM Dataflash log file reader and container class. Keep this simple, add more advanced or specific functions to DataflashLogHelper class'''
+    
+    knownHardwareTypes = ["APM", "PX4", "MPNG"]
+    intTypes   = "bBhHiIM"
+    floatTypes = "fcCeEL"
+    charTypes  = "nNZ"    
 
-    filename = None
+    def __init__(self, logfile, ignoreBadlines=False):
+        self.filename = None
 
-    vehicleType     = "" # ArduCopter, ArduPlane, ArduRover, etc, verbatim as given by header
-    firmwareVersion = ""
-    firmwareHash    = ""
-    freeRAM         = 0
-    hardwareType    = "" # APM 1, APM 2, PX4, MPNG, etc What is VRBrain? BeagleBone, etc? Needs more testing
-
-    formats     = {} # name -> Format
-    parameters  = {} # token -> value
-    messages    = {} # lineNum -> message
-    modeChanges = {} # lineNum -> (mode,value)
-    channels    = {} # lineLabel -> {dataLabel:Channel}
-
-    filesizeKB   = 0
-    durationSecs = 0
-    lineCount    = 0
-    skippedLines = 0
+        self.vehicleType     = "" # ArduCopter, ArduPlane, ArduRover, etc, verbatim as given by header
+        self.firmwareVersion = ""
+        self.firmwareHash    = ""
+        self.freeRAM         = 0
+        self.hardwareType    = "" # APM 1, APM 2, PX4, MPNG, etc What is VRBrain? BeagleBone, etc? Needs more testing
+    
+        self.formats     = {} # name -> Format
+        self.parameters  = {} # token -> value
+        self.messages    = {} # lineNum -> message
+        self.modeChanges = {} # lineNum -> (mode,value)
+        self.channels    = {} # lineLabel -> {dataLabel:Channel}
+    
+        self.filesizeKB   = 0
+        self.durationSecs = 0
+        self.lineCount    = 0
+        self.skippedLines = 0
+        
+        self.read(logfile, ignoreBadlines)
 
     def getCopterType(self):
         '''returns quad/hex/octo/tradheli if this is a copter log'''
