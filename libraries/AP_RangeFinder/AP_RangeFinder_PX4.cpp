@@ -31,107 +31,92 @@
 
 extern const AP_HAL::HAL& hal;
 
-// Constructor ////////////////////////////////////////////////////////
-AP_RangeFinder_PX4::AP_RangeFinder_PX4(FilterInt16 *filter) :
-    RangeFinder(NULL, filter),
-    _num_instances(0){ }
+uint8_t AP_RangeFinder_PX4::num_px4_instances = 0;
 
-bool AP_RangeFinder_PX4::init(void)
+/* 
+   The constructor also initialises the rangefinder. Note that this
+   constructor is not called until detect() returns true, so we
+   already know that we should setup the rangefinder
+*/
+AP_RangeFinder_PX4::AP_RangeFinder_PX4(RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state) :
+    AP_RangeFinder_Backend(_ranger, instance, _state)
 {
-	_range_fd[0] = open(RANGE_FINDER_DEVICE_PATH, O_RDONLY);
-	if (_range_fd[0] < 0) {
-        hal.console->printf("Unable to open " RANGE_FINDER_DEVICE_PATH "\n");
-        return false;
+    _fd = open_driver();
+
+    // consider this path used up
+    num_px4_instances++;
+
+	if (_fd == -1) {
+        hal.console->printf("Unable to open PX4 rangefinder %u\n", num_px4_instances);
+        state.healthy = false;
+        return;
 	}
 
-	_range_fd[1] = open(RANGE_FINDER_DEVICE_PATH "1", O_RDONLY);
-	if (_range_fd[1] >= 0) {
-        _num_instances = 2;
-	} else {
-        _num_instances = 1;
+    // average over up to 20 samples
+    if (ioctl(_fd, SENSORIOCSQUEUEDEPTH, 20) != 0) {
+        hal.console->printf("Failed to setup range finder queue\n");
+        state.healthy = false;
+        return;
     }
 
-    for (uint8_t i=0; i<_num_instances; i++) {
-        // average over up to 20 samples
-        if (ioctl(_range_fd[i], SENSORIOCSQUEUEDEPTH, 20) != 0) {
-            hal.console->printf("Failed to setup range finder queue\n");
-            return false;                
-        }
+    state.healthy = true;
+}
 
-        _count[0] = 0;
-        _sum[i] = 0;
-        _healthy[i] = false;
+/* 
+   open the PX4 driver, returning the file descriptor
+*/
+int AP_RangeFinder_PX4::open_driver(void)
+{
+    // work out the device path based on how many PX4 drivers we have loaded
+    char path[] = RANGE_FINDER_DEVICE_PATH "n";
+    if (num_px4_instances == 0) {
+        path[strlen(path)-1] = 0;
+    } else {
+        path[strlen(path)-1] = '1' + (num_px4_instances-1);
     }
+    return open(path, O_RDONLY);
+}
 
-    // give the driver a chance to run, and gather one sample
-    hal.scheduler->delay(40);
-    accumulate();
-    if (_count[0] == 0) {
-        hal.console->printf("Failed initial range finder accumulate\n");        
+/* 
+   see if the PX4 driver is available
+*/
+bool AP_RangeFinder_PX4::detect(RangeFinder &_ranger, uint8_t instance)
+{
+    int fd = open_driver();
+    if (fd == -1) {
+        return false;
     }
+    close(fd);
     return true;
 }
 
-bool AP_RangeFinder_PX4::take_reading(void)
+void AP_RangeFinder_PX4::update(void)
 {
-    // try to accumulate one more sample, so we have the latest data
-    accumulate();
-
-    // consider the range finder healthy if we got a reading in the last 0.2s
-    for (uint8_t i=0; i<_num_instances; i++) {
-        _healthy[i] = (hrt_absolute_time() - _last_timestamp[i] < 200000);
+    if (_fd == -1) {
+        state.healthy = false;
+        return;
     }
 
-    for (uint8_t i=0; i<_num_instances; i++) {
-        // avoid division by zero if we haven't received any range reports
-        if (_count[i] == 0) continue;
-
-        _sum[i] /= _count[i];
-        _sum[i] *= 100.00f;
-    
-        if (_mode_filter) {
-            _distance[i] = _mode_filter->apply(_sum[i]);
-        }
-        else {
-            _distance[i] = _sum[i];
-        }
-    
-        _sum[i] = 0;
-        _count[i] = 0;
-    }
-    
-    return _healthy[_get_primary()];
-}
-
-void AP_RangeFinder_PX4::accumulate(void)
-{
     struct range_finder_report range_report;
-    for (uint8_t i=0; i<_num_instances; i++) {
-        while (::read(_range_fd[i], &range_report, sizeof(range_report)) == sizeof(range_report) &&
-               range_report.timestamp != _last_timestamp[i]) {
-            
+    float sum = 0;
+    uint16_t count = 0;
+
+    while (::read(_fd, &range_report, sizeof(range_report)) == sizeof(range_report) &&
+           range_report.timestamp != _last_timestamp) {
             // Only take valid readings
             if (range_report.valid == 1) {
-               _sum[i] += range_report.distance;
-               _count[i]++;
-               _last_timestamp[i] = range_report.timestamp;
+                sum += range_report.distance;
+                count++;
+                _last_timestamp = range_report.timestamp;
             }
-        }
     }
-}
 
-uint8_t AP_RangeFinder_PX4::_get_primary(void) const
-{
-    for (uint8_t i=0; i<_num_instances; i++) {
-        if (_healthy[i]) return i;
-    }    
-    return 0;
-}
+    // consider the range finder healthy if we got a reading in the last 0.2s
+    state.healthy = (hrt_absolute_time() - _last_timestamp < 200000);
 
-int16_t AP_RangeFinder_PX4::read()
-{
-    take_reading();
-    return _distance[_get_primary()];
+    if (count != 0) {
+        state.distance_cm = sum / count * 100.0f;
+    }
 }
 
 #endif // CONFIG_HAL_BOARD

@@ -18,32 +18,30 @@
 #define AP_RangeFinder_PX4_H
 
 #include "RangeFinder.h"
+#include "RangeFinder_Backend.h"
 
-class AP_RangeFinder_PX4 : public RangeFinder
+class AP_RangeFinder_PX4 : public AP_RangeFinder_Backend
 {
 public:
     // constructor
-    AP_RangeFinder_PX4(FilterInt16 *);
-    
-    // initialize all the range finder devices
-    bool init(void);
-    
-    bool take_reading(void);
-    
-    void accumulate(void);
-    
-    // read value from primary sensor and return distance in cm
-    int16_t read();
-    
-    // return the number of compass instances
-    uint8_t get_count(void) const { return _num_instances; }
+    AP_RangeFinder_PX4(RangeFinder &ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state);
+
+    // static detection function
+    static bool detect(RangeFinder &ranger, uint8_t instance);
+
+    // update state
+    void update(void);
+
 private:
-    uint8_t _get_primary(void) const;
-    uint8_t _num_instances;
-    int _range_fd[RANGEFINDER_MAX_INSTANCES];
-    float _sum[RANGEFINDER_MAX_INSTANCES];
-    uint32_t _count[RANGEFINDER_MAX_INSTANCES];
-    uint64_t _last_timestamp[RANGEFINDER_MAX_INSTANCES];
+    int _fd;
+    uint64_t _last_timestamp;
+
+    // we need to keep track of how many PX4 drivers have been loaded
+    // so we can open the right device filename
+    static uint8_t num_px4_instances;
+
+    // try to open the PX4 driver and return its fd
+    static int open_driver(void);
 };
 
 #endif // AP_RangeFinder_PX4_H

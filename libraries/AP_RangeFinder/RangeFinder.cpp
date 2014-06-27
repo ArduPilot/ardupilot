@@ -18,6 +18,7 @@
 #include "AP_RangeFinder_analog.h"
 #include "AP_RangeFinder_PulsedLightLRF.h"
 #include "AP_RangeFinder_MaxsonarI2CXL.h"
+#include "AP_RangeFinder_PX4.h"
 
 // table of user settable parameters
 const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
@@ -209,6 +210,13 @@ void RangeFinder::detect_instance(uint8_t instance)
             state[instance].instance = instance;
             drivers[instance] = new AP_RangeFinder_MaxsonarI2CXL(*this, instance, state[instance]);
         }
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    } else if (_type[instance] == RangeFinder_TYPE_AUTO || _type[instance] == RangeFinder_TYPE_PX4) {
+        if (AP_RangeFinder_PX4::detect(*this, instance)) {
+            state[instance].instance = instance;
+            drivers[instance] = new AP_RangeFinder_PX4(*this, instance, state[instance]);
+        }
+#endif
     } else if (_type[instance] == RangeFinder_TYPE_AUTO || _type[instance] == RangeFinder_TYPE_ANALOG) {
         // note that analog must be the last to be checked, as it will
         // always come back as present if the pin is valid
