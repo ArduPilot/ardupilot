@@ -8,6 +8,7 @@ class TestParams(Test):
 	'''test for any obviously bad parameters in the config'''
 
 	def __init__(self):
+		Test.__init__(self)
 		self.name = "Parameters"
 
 

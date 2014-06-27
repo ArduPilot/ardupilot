@@ -9,6 +9,7 @@ class TestPitchRollCoupling(Test):
 	# TODO: currently we're only checking for roll/pitch outside of max lean angle, will come back later to analyze roll/pitch in versus out values
 
 	def __init__(self):
+		Test.__init__(self)
 		self.name = "Pitch/Roll"
 		self.enable = True   # TEMP
 

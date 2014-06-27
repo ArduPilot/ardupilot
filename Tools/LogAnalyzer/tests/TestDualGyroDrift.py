@@ -10,6 +10,7 @@ class TestDualGyroDrift(Test):
 	'''test for gyro drift between dual IMU data'''
 
 	def __init__(self):
+		Test.__init__(self)
 		self.name = "Gyro Drift"
 		self.enable = False 
 		

@@ -6,6 +6,7 @@ class TestThrust(Test):
 	'''test for sufficient thrust (copter only for now)'''
 
 	def __init__(self):
+		Test.__init__(self)
 		self.name = "Thrust"
 		
 	def run(self, logdata, verbose):
