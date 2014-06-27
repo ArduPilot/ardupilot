@@ -72,7 +72,11 @@ void AP_RangeFinder_analog::update_voltage(void)
    source->set_pin(ranger._pin[state.instance]);
    source->set_stop_pin((uint8_t)ranger._stop_pin[state.instance]);
    source->set_settle_time((uint16_t)ranger._settle_time_ms[state.instance]);
-   state.voltage_mv = source->voltage_average_ratiometric() * 1000U;
+   if (ranger._ratiometric[state.instance]) {
+       state.voltage_mv = source->voltage_average_ratiometric() * 1000U;
+   } else {
+       state.voltage_mv = source->voltage_average() * 1000U;
+   }
 }
 
 /*

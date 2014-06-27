@@ -76,7 +76,13 @@ const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
     // @Increment: 1
     AP_GROUPINFO("_SETTLE_MS", 8, RangeFinder, _settle_time_ms[0], 0),
 
-    // 9..12 left for future expansion
+    // @Param: _RMETRIC
+    // @DisplayName: Ratiometric
+    // @Description: This parameter sets whether an analog rangefinder is ratiometric. Most analog sonars are ratiometric, meaning that their output voltage is influenced by the supply voltage. Some analog rangefinders (such as the SF/02) have their own internal voltage regulators so they are not ratiometric
+    // @Values: 0:No,1:Yes
+    AP_GROUPINFO("_RMETRIC", 9, RangeFinder, _ratiometric[0], 1),
+
+    // 10..12 left for future expansion
 
 #if RANGEFINDER_MAX_INSTANCES > 1
     // @Param: 2_PIN
@@ -129,6 +135,12 @@ const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
     // @Units: milliseconds
     // @Increment: 1
     AP_GROUPINFO("2_SETTLE_MS", 20, RangeFinder, _settle_time_ms[1], 0),
+
+    // @Param: 2_RMETRIC
+    // @DisplayName: Ratiometric
+    // @Description: This parameter sets whether an analog rangefinder is ratiometric. Most analog sonars are ratiometric, meaning that their output voltage is influenced by the supply voltage. Some analog rangefinders (such as the SF/02) have their own internal voltage regulators so they are not ratiometric
+    // @Values: 0:No,1:Yes
+    AP_GROUPINFO("2_RMETRIC", 21, RangeFinder, _ratiometric[1], 1),
 #endif
 
     AP_GROUPEND

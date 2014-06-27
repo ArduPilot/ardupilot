@@ -68,6 +68,7 @@ public:
     // parameters for each instance
     AP_Int8  _type[RANGEFINDER_MAX_INSTANCES];
     AP_Int8  _pin[RANGEFINDER_MAX_INSTANCES];
+    AP_Int8  _ratiometric[RANGEFINDER_MAX_INSTANCES];
     AP_Int8  _stop_pin[RANGEFINDER_MAX_INSTANCES];
     AP_Int16 _settle_time_ms[RANGEFINDER_MAX_INSTANCES];
     AP_Float _scaling[RANGEFINDER_MAX_INSTANCES];
