@@ -17,6 +17,7 @@
 #include "RangeFinder.h"
 #include "AP_RangeFinder_analog.h"
 #include "AP_RangeFinder_PulsedLightLRF.h"
+#include "AP_RangeFinder_MaxsonarI2CXL.h"
 
 // table of user settable parameters
 const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
@@ -202,6 +203,11 @@ void RangeFinder::detect_instance(uint8_t instance)
         if (AP_RangeFinder_PulsedLightLRF::detect(*this, instance)) {
             state[instance].instance = instance;
             drivers[instance] = new AP_RangeFinder_PulsedLightLRF(*this, instance, state[instance]);
+        }
+    } else if (_type[instance] == RangeFinder_TYPE_AUTO || _type[instance] == RangeFinder_TYPE_MBI2C) {
+        if (AP_RangeFinder_MaxsonarI2CXL::detect(*this, instance)) {
+            state[instance].instance = instance;
+            drivers[instance] = new AP_RangeFinder_MaxsonarI2CXL(*this, instance, state[instance]);
         }
     } else if (_type[instance] == RangeFinder_TYPE_AUTO || _type[instance] == RangeFinder_TYPE_ANALOG) {
         // note that analog must be the last to be checked, as it will
