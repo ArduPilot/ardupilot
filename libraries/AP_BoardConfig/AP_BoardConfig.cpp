@@ -37,13 +37,7 @@
 #define BOARD_SER1_RTSCTS_DEFAULT 2
 #endif
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <drivers/drv_pwm_output.h>
 
-#define BOARD_PWM_COUNT_DEFAULT 8
 #endif
 
 extern const AP_HAL::HAL& hal;
@@ -75,11 +69,6 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] PROGMEM = {
     // @Values: 0:Disabled,1:Enabled
     AP_GROUPINFO("SAFETYENABLE",   3, AP_BoardConfig, _safety_enable, 1),
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    // @Param: PWM_COUNT
-    // @DisplayName: PWM Count
-    // @Description: Number of auxillary PWMs to enable
-    // @Values: 0:No PWMs,2:Two PWMs,4:Four PWMs,6:Six PWMs,8:Six PWMs
-    AP_GROUPINFO("PWM_COUNT",    0, AP_BoardConfig, _pwm_count, BOARD_PWM_COUNT_DEFAULT),
 #endif
 
     AP_GROUPEND
@@ -117,17 +106,5 @@ void AP_BoardConfig::init()
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     /* configure the VRBRAIN driver for the right number of PWMs */
 
-    // ensure only valid values are set, rounding up
-    if (_pwm_count > 8) _pwm_count.set(8);
-    if (_pwm_count < 0) _pwm_count.set(0);
-
-    int fd = open("/dev/vroutput", 0);
-    if (fd == -1) {
-        hal.scheduler->panic("Unable to open /dev/vroutput");
-    }
-    if (ioctl(fd, PWM_SERVO_SET_COUNT, _pwm_count.get()) != 0) {
-        hal.console->printf("RCOutput: Unable to setup alt PWM to %u channels\n", _pwm_count.get());  
-    }   
-    close(fd);
 #endif    
 }
