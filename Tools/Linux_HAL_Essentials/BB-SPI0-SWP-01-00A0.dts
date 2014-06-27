@@ -1,0 +1,42 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+    compatible = "ti,beaglebone", "ti,beaglebone-black";
+
+    /* identification */
+    part-number = "spi0pinmux";
+
+    fragment@0 {
+        target = <&am33xx_pinmux>;
+        __overlay__ {
+            spi0_pins_s0: spi0_pins_s0 {
+                pinctrl-single,pins = <
+                  0x150 0x30  /* spi0_sclk, INPUT_PULLUP | MODE0 */
+                  0x154 0x10  /* spi0_d0, OUTPUT_PULLUP | MODE0 */
+                  0x158 0x30  /* spi0_d1, INPUT_PULLUP | MODE0 */
+                  0x054 0x07 /* spi0_cs0, OUTPUT_PULLUP | MODE0 */
+                >;
+            };
+        };
+    };
+
+    fragment@1 {
+        target = <&spi0>;
+        __overlay__ {
+             #address-cells = <1>;
+             #size-cells = <0>;
+
+             status = "okay";
+             pinctrl-names = "default";
+             pinctrl-0 = <&spi0_pins_s0>;
+             ti,pindir-d0-out-d1-in = <1>;
+  
+             spidev@0 {
+                 spi-max-frequency = <24000000>;
+                 reg = <0>;
+                 compatible = "linux,spidev";
+            };
+        };
+    };
+};
