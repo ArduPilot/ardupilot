@@ -383,6 +383,53 @@ void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitc
 }
 
 /*!
+    \brief add_motor_raw but does the radian and normalizing so degrees can be passed as the motor movement factors
+
+    Example with X Quad:
+
+    \code
+
+                  Y: 0*
+                    |
+     -45* :M3       |       M1: 45*
+             .      |      .
+                .   |   .
+                   .|.
+          ----------|---------- X: 90*
+                   .|.
+                .   |   .
+             .      |      .
+    -135* :M2       |       M4: 135*
+                    |
+                 -Y: 180*
+    \endcode
+
+    - Lets call the Y Axis the the origin. Just like in the unit circle, angles are measure from the origin.
+        - this is also the forward direction of the aircraft.
+    - Positive angles are to the right of the origin, negative angles to the left, like the rectangular coordinate system.
+    - Rear motors will be obtuse angles, as they will be behind the midpoint of the aircraft.
+    - Maximum angle is 180 degrees.
+
+
+    \param motor_num number assigned to this motor for wiring reference
+        see http://copter.ardupilot.com/wiki/motor-setup/
+    \param roll_angle angle of the motor from the north Y axis
+    \param pitch_angle angle of the motor from the Y axis
+    \param yaw_fac. Traditionally, which direction the motor will be used for. 1 for CCW. -1 for CW. 0 for not used.
+        can also be passed in as radians if a motor is desired to only partially help with yaw.
+    \param testing_order the position in queue in which this motor will spin up during a motor test.
+*/
+void AP_MotorsMatrix::add_motor_raw_degrees(int8_t motor_num, float roll_angle, float pitch_angle, float yaw_factor, uint8_t testing_order)
+{
+    add_motor_raw(
+        motor_num,
+        cosf(radians(roll_angle + 90)),
+        cosf(radians(pitch_angle)),
+        yaw_factor,
+        testing_order);
+}
+
+/*!
     \brief add_motor using just position and prop direction
 
     Adds a motor and sets up how it reacts to pitch, roll and yaw commands.
