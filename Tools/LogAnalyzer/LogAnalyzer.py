@@ -31,7 +31,7 @@ import time
 from xml.sax.saxutils import escape
 
 
-class TestResult:
+class TestResult(object):
     '''all tests return a standardized result type'''
     class StatusType:
         # NA means not applicable for this log (e.g. copter tests against a plane log), UNKNOWN means it is missing data required for the test
@@ -40,23 +40,24 @@ class TestResult:
     statusMessage = "" # can be multi-line
 
 
-class Test:
+class Test(object):
     '''base class to be inherited by log tests. Each test should be quite granular so we have lots of small tests with clear results'''
-    name     = ""
-    result   = None   # will be an instance of TestResult after being run
-    execTime = None
-    enable   = True
+    def __init__(self):
+        self.name     = ""
+        self.result   = None   # will be an instance of TestResult after being run
+        self.execTime = None
+        self.enable   = True
+
     def run(self, logdata, verbose=False):
         pass
 
 
-class TestSuite:
+class TestSuite(object):
     '''registers test classes, loading using a basic plugin architecture, and can run them all in one run() operation'''
-    tests   = []
-    logfile = None
-    logdata = None
-
     def __init__(self):
+        self.tests   = []
+        self.logfile = None
+        self.logdata = None  
         # dynamically load in Test subclasses from the 'tests' folder
         # to prevent one being loaded, move it out of that folder, or set that test's .enable attribute to False
         dirName = os.path.dirname(os.path.abspath(__file__))
@@ -221,8 +222,7 @@ def main():
 
     # load the log
     startTime = time.time()
-    logdata = DataflashLog.DataflashLog()
-    logdata.read(args.logfile.name, args.format, ignoreBadlines=args.skip_bad)  # read log
+    logdata = DataflashLog.DataflashLog(args.logfile.name, ignoreBadlines=args.skip_bad) # read log
     endTime = time.time()
     if args.profile:
         print "Log file read time: %.2f seconds" % (endTime-startTime)
