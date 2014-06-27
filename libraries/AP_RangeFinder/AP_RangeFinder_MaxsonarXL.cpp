@@ -1,3 +1,4 @@
+#if 0
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
@@ -75,3 +76,5 @@ float AP_RangeFinder_MaxsonarXL::calculate_scaler(int16_t sonar_type, float adc_
     _scaler = type_scaler * adc_refence_voltage / 5.0f;
     return _scaler;
 }
+
+#endif

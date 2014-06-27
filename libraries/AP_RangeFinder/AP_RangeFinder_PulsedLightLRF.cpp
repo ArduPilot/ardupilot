@@ -1,3 +1,4 @@
+#if 0
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
@@ -126,3 +127,4 @@ int16_t AP_RangeFinder_PulsedLightLRF::read()
     // to-do: do we really want to return 0 if reading the distance fails?
     return ret_value;
 }
+#endif

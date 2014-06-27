@@ -31,6 +31,7 @@
  *
  */
 
+#if 0
 // AVR LibC Includes
 #include "AP_RangeFinder_MaxsonarI2CXL.h"
 #include <AP_HAL.h>
@@ -87,3 +88,4 @@ int16_t AP_RangeFinder_MaxsonarI2CXL::read()
     
     return ret_value;
 }
+#endif
