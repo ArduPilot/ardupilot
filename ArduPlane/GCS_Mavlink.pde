@@ -520,14 +520,14 @@ static void NOINLINE send_wind(mavlink_channel_t chan)
 
 static void NOINLINE send_rangefinder(mavlink_channel_t chan)
 {
-    if (!sonar.enabled()) {
+    if (!sonar.healthy()) {
         // no sonar to report
         return;
     }
     mavlink_msg_rangefinder_send(
         chan,
         sonar.distance_cm() * 0.01f,
-        sonar.voltage());
+        sonar.voltage_mv()*0.001f);
 }
 
 static void NOINLINE send_current_waypoint(mavlink_channel_t chan)

@@ -98,7 +98,7 @@ public:
         k_param_ground_steer_dps,
         k_param_rally_limit_km_old, //unused anymore -- just holding this index
         k_param_hil_err_limit,
-        k_param_sonar,
+        k_param_sonar_old, // unused
         k_param_log_bitmask,
         k_param_BoardConfig,
         k_param_rssi_range,
@@ -115,6 +115,7 @@ public:
         k_param_takeoff_rotate_speed,
         k_param_takeoff_throttle_slewrate,
         k_param_takeoff_throttle_max,
+        k_param_sonar,
 
         // 100: Arming parameters
         k_param_arming = 100,
