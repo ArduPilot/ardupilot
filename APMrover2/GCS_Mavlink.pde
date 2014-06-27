@@ -389,7 +389,7 @@ static void NOINLINE send_hwstatus(mavlink_channel_t chan)
 
 static void NOINLINE send_rangefinder(mavlink_channel_t chan)
 {
-    if (!sonar.enabled()) {
+    if (!sonar.healthy()) {
         // no sonar to report
         return;
     }
@@ -398,18 +398,18 @@ static void NOINLINE send_rangefinder(mavlink_channel_t chan)
       report smaller distance of two sonars if more than one enabled
      */
     float distance_cm, voltage;
-    if (!sonar2.enabled()) {
-        distance_cm = sonar.distance_cm();
-        voltage = sonar.voltage();
+    if (!sonar.healthy(1)) {
+        distance_cm = sonar.distance_cm(0);
+        voltage = sonar.voltage_mv(0) * 0.001f;
     } else {
-        float dist1 = sonar.distance_cm();
-        float dist2 = sonar2.distance_cm();
+        float dist1 = sonar.distance_cm(0);
+        float dist2 = sonar.distance_cm(1);
         if (dist1 <= dist2) {
             distance_cm = dist1;
-            voltage = sonar.voltage();
+            voltage = sonar.voltage_mv(0) * 0.001f;
         } else {
             distance_cm = dist2;
-            voltage = sonar2.voltage();
+            voltage = sonar.voltage_mv(1) * 0.001f;
         }
     }
     mavlink_msg_rangefinder_send(

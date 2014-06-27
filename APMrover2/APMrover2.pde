@@ -298,11 +298,8 @@ static GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
 AP_HAL::AnalogSource *rssi_analog_source;
 
 ////////////////////////////////////////////////////////////////////////////////
-// SONAR selection
-////////////////////////////////////////////////////////////////////////////////
-//
-static AP_RangeFinder_analog sonar;
-static AP_RangeFinder_analog sonar2;
+// SONAR
+static RangeFinder sonar;
 
 // relay support
 AP_Relay relay;
