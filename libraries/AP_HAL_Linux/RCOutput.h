@@ -29,26 +29,14 @@ class Linux::LinuxRCOutput : public AP_HAL::RCOutput {
     void     read(uint16_t* period_us, uint8_t len);
 
 private:
-    uint32_t period[MAX_PWMS];
-    uint32_t pwm_hi[MAX_PWMS];
-    struct pwm_multi_config {
-       uint32_t enmask;        /* enable mask */
-       uint32_t offmsk;        /* state when pwm is off */
-       uint32_t hilo[MAX_PWMS][2];
-    };
-
     struct pwm_cmd {
-       uint32_t magic;
-       uint8_t cmd;
-       uint8_t pwm_nr; /* in case it is required */
-       uint8_t pad[2];
-       union {
-          struct pwm_multi_config cfg;
-          uint32_t hilo[2];
-       }u;
-    };
-
-    struct pwm_cmd *sharedMem_cmd;
+        uint32_t magic;
+        uint32_t enmask;     /* enable mask */
+        uint32_t offmsk;     /* state when pwm is off */
+        uint32_t periodhi[MAX_PWMS][2];
+        uint32_t hilo_read[MAX_PWMS][2];
+        uint32_t enmask_read;
+    }*sharedMem_cmd;
 
 };
 
