@@ -288,13 +288,14 @@ class DataflashLog:
             f = sys.stdin
         else:
             f = open(self.filename, 'r')
-        if f.read(4) == '\xa3\x95\x80\x80':
-            raise Exception("Unable to parse binary log files at this time, will be added soon")
 
         lineNumber = 0
         knownHardwareTypes = ["APM", "PX4", "MPNG"]
         numBytes = 0
         for line in f:
+            if len(line) >= 4 and line[0:4] == '\xa3\x95\x80\x80':
+                raise Exception("Unable to parse binary log files at this time, will be added soon")
+
             lineNumber = lineNumber + 1
             numBytes += len(line) + 1
             try:
