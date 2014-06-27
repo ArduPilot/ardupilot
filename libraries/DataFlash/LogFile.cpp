@@ -785,6 +785,7 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
     if (ins.get_gyro_count() < 2 && ins.get_accel_count() < 2) {
         return;
     }
+#if INS_MAX_INSTANCES > 1
     const Vector3f &gyro2 = ins.get_gyro(1);
     const Vector3f &accel2 = ins.get_accel(1);
     struct log_IMU pkt2 = {
@@ -814,6 +815,7 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
         accel_z : accel3.z
     };
     WriteBlock(&pkt3, sizeof(pkt3));
+#endif
 }
 
 // Write a text message to the log
