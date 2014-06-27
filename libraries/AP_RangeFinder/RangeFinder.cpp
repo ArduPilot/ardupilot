@@ -16,6 +16,7 @@
 
 #include "RangeFinder.h"
 #include "AP_RangeFinder_analog.h"
+#include "AP_RangeFinder_PulsedLightLRF.h"
 
 // table of user settable parameters
 const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
@@ -197,7 +198,14 @@ void RangeFinder::update(void)
  */
 void RangeFinder::detect_instance(uint8_t instance)
 {
-    if (_type[instance] == RangeFinder_TYPE_AUTO || _type[instance] == RangeFinder_TYPE_ANALOG) {
+    if (_type[instance] == RangeFinder_TYPE_AUTO || _type[instance] == RangeFinder_TYPE_PLI2C) {
+        if (AP_RangeFinder_PulsedLightLRF::detect(*this, instance)) {
+            state[instance].instance = instance;
+            drivers[instance] = new AP_RangeFinder_PulsedLightLRF(*this, instance, state[instance]);
+        }
+    } else if (_type[instance] == RangeFinder_TYPE_AUTO || _type[instance] == RangeFinder_TYPE_ANALOG) {
+        // note that analog must be the last to be checked, as it will
+        // always come back as present if the pin is valid
         if (AP_RangeFinder_analog::detect(*this, instance)) {
             state[instance].instance = instance;
             drivers[instance] = new AP_RangeFinder_analog(*this, instance, state[instance]);

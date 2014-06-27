@@ -4,6 +4,7 @@
 #define __AP_RANGEFINDER_PULSEDLIGHTLRF_H__
 
 #include "RangeFinder.h"
+#include "RangeFinder_Backend.h"
 
 /* Connection diagram
  *
@@ -38,27 +39,23 @@
 // command register values
 #define AP_RANGEFINDER_PULSEDLIGHTLRF_MSRREG_ACQUIRE        0x04    // Varies based on sensor revision, 0x04 is newest, 0x61 is older
 
-class AP_RangeFinder_PulsedLightLRF : public RangeFinder
+class AP_RangeFinder_PulsedLightLRF : public AP_RangeFinder_Backend
 {
 
 public:
-
     // constructor
-    AP_RangeFinder_PulsedLightLRF(FilterInt16 *filter);
+    AP_RangeFinder_PulsedLightLRF(RangeFinder &ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state);
 
-    // init - simply sets the i2c address
-    void init(uint8_t address = AP_RANGEFINDER_PULSEDLIGHTLRF_ADDR);
+    // static detection function
+    static bool detect(RangeFinder &ranger, uint8_t instance);
 
-    // take_reading - ask sensor to make a range reading
-    bool            take_reading();
+    // update state
+    void update(void);
 
-    // read value from sensor and return distance in cm
-    int16_t         read();
 
-    // heath
-    bool            healthy;
-
-protected:
-    uint8_t _addr;
+private:
+    // start a reading
+    static bool start_reading(void);
+    static bool get_reading(uint16_t &reading_cm);
 };
 #endif  // __AP_RANGEFINDER_PULSEDLIGHTLRF_H__
