@@ -26,7 +26,7 @@ class TestPitchRollCoupling(Test):
 			return
 
 		# figure out where each mode begins and ends, so we can treat auto and manual modes differently and ignore acro/tune modes
-		autoModes   = ["RTL","AUTO","LAND","LOITER","GUIDED","CIRCLE","OF_LOITER"]     # use NTUN DRol+DPit
+		autoModes   = ["RTL","AUTO","LAND","LOITER","GUIDED","CIRCLE","OF_LOITER","HYBRID"]     # use NTUN DRol+DPit
 		manualModes = ["STABILIZE","DRIFT","ALTHOLD","ALT_HOLD"]                                 # use CTUN RollIn/DesRoll + PitchIn/DesPitch
 		ignoreModes = ["ACRO","SPORT","FLIP","AUTOTUNE"]                               # ignore data from these modes
 		autoSegments   = []  # list of (startLine,endLine) pairs
