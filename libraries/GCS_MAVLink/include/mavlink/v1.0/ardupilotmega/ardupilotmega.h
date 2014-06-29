@@ -170,7 +170,9 @@ typedef enum CAMERA_FEEDBACK_FLAGS
 {
 	VIDEO=1, /* Shooting video, not stills | */
 	BADEXPOSURE=2, /* Unable to achieve requested exposure (e.g. shutter speed too low) | */
-	CAMERA_FEEDBACK_FLAGS_ENUM_END=3, /*  | */
+	CLOSEDLOOP=3, /* Closed loop feedback from camera, we know for sure it has successfully taken a picture | */
+	OPENLOOP=4, /* Open loop camera, an image trigger has been requested but we can't know for sure it has successfully taken a picture | */
+	CAMERA_FEEDBACK_FLAGS_ENUM_END=5, /*  | */
 } CAMERA_FEEDBACK_FLAGS;
 #endif
 
