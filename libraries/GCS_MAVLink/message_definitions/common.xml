@@ -1294,7 +1294,7 @@
                <description>The global position, as returned by the Global Positioning System (GPS). This is
                 NOT the global position estimate of the sytem, but rather a RAW sensor value. See message GLOBAL_POSITION for the global position estimate. Coordinate frame is right-handed, Z-axis up (GPS frame).</description>
                <field type="uint64_t" name="time_usec">Timestamp (microseconds since UNIX epoch or microseconds since system boot)</field>
-               <field type="uint8_t" name="fix_type">0-1: no fix, 2: 2D fix, 3: 3D fix. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.</field>
+               <field type="uint8_t" name="fix_type">0-1: no fix, 2: 2D fix, 3: 3D fix, 4: DGPS, 5: RTK. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.</field>
                <field type="int32_t" name="lat">Latitude (WGS84), in degrees * 1E7</field>
                <field type="int32_t" name="lon">Longitude (WGS84), in degrees * 1E7</field>
                <field type="int32_t" name="alt">Altitude (WGS84), in meters * 1000 (positive for up)</field>
@@ -2087,7 +2087,7 @@
          <message id="124" name="GPS2_RAW">
            <description>Second GPS data. Coordinate frame is right-handed, Z-axis up (GPS frame).</description>
            <field type="uint64_t" name="time_usec">Timestamp (microseconds since UNIX epoch or microseconds since system boot)</field>
-           <field type="uint8_t" name="fix_type">0-1: no fix, 2: 2D fix, 3: 3D fix. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.</field>
+           <field type="uint8_t" name="fix_type">0-1: no fix, 2: 2D fix, 3: 3D fix, 4: DGPS fix, 5: RTK Fix. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.</field>
            <field type="int32_t" name="lat">Latitude (WGS84), in degrees * 1E7</field>
            <field type="int32_t" name="lon">Longitude (WGS84), in degrees * 1E7</field>
            <field type="int32_t" name="alt">Altitude (WGS84), in meters * 1000 (positive for up)</field>
@@ -2114,7 +2114,39 @@
            <field type="uint8_t" name="count">how many bytes in this transfer</field>
            <field type="uint8_t[70]" name="data">serial data</field>
          </message>
-         <message id="130" name="DATA_TRANSMISSION_HANDSHAKE">
+         <message id="127" name="GPS_RTK">
+            <description>RTK GPS data. Gives information on the relative baseline calculation the GPS is reporting</description>
+            <field type="uint32_t" name="time_last_baseline_ms">Time since boot of last baseline message received in ms.</field>
+            <field type="uint8_t" name="rtk_receiver_id">Identification of connected RTK receiver.</field>
+            <field type="uint16_t" name="wn">GPS Week Number of last baseline</field>
+            <field type="uint32_t" name="tow">GPS Time of Week of last baseline</field>
+            <field type="uint8_t" name="rtk_health">GPS-specific health report for RTK data.</field>
+            <field type="uint8_t" name="rtk_rate">Rate of baseline messages being received by GPS, in HZ</field>
+            <field type="uint8_t" name="nsats">Current number of sats used for RTK calculation.</field>
+            <field type="uint8_t" name="baseline_coords_type">Coordinate system of baseline. 0 == ECEF, 1 == NED</field>
+            <field type="int32_t" name="baseline_a_mm">Current baseline in ECEF x or NED north component in mm.</field>
+            <field type="int32_t" name="baseline_b_mm">Current baseline in ECEF y or NED east component in mm.</field>
+            <field type="int32_t" name="baseline_c_mm">Current baseline in ECEF z or NED down component in mm.</field>
+            <field type="uint32_t" name="accuracy">Current estimate of baseline accuracy.</field>
+            <field type="int32_t" name="iar_num_hypotheses">Current number of integer ambiguity hypotheses.</field>
+         </message>
+         <message id="128" name="GPS2_RTK">
+            <description>RTK GPS data. Gives information on the relative baseline calculation the GPS is reporting</description>
+            <field type="uint32_t" name="time_last_baseline_ms">Time since boot of last baseline message received in ms.</field>
+            <field type="uint8_t" name="rtk_receiver_id">Identification of connected RTK receiver.</field>
+            <field type="uint16_t" name="wn">GPS Week Number of last baseline</field>
+            <field type="uint32_t" name="tow">GPS Time of Week of last baseline</field>
+            <field type="uint8_t" name="rtk_health">GPS-specific health report for RTK data.</field>
+            <field type="uint8_t" name="rtk_rate">Rate of baseline messages being received by GPS, in HZ</field>
+            <field type="uint8_t" name="nsats">Current number of sats used for RTK calculation.</field>
+            <field type="uint8_t" name="baseline_coords_type">Coordinate system of baseline. 0 == ECEF, 1 == NED</field>
+            <field type="int32_t" name="baseline_a_mm">Current baseline in ECEF x or NED north component in mm.</field>
+            <field type="int32_t" name="baseline_b_mm">Current baseline in ECEF y or NED east component in mm.</field>
+            <field type="int32_t" name="baseline_c_mm">Current baseline in ECEF z or NED down component in mm.</field>
+            <field type="uint32_t" name="accuracy">Current estimate of baseline accuracy.</field>
+            <field type="int32_t" name="iar_num_hypotheses">Current number of integer ambiguity hypotheses.</field>
+         </message>
+          <message id="130" name="DATA_TRANSMISSION_HANDSHAKE">
              <field type="uint8_t" name="type">type of requested/acknowledged data (as defined in ENUM DATA_TYPES in mavlink/include/mavlink_types.h)</field>
              <field type="uint32_t" name="size">total data size in bytes (set on ACK only)</field>
              <field type="uint16_t" name="width">Width of a matrix or image</field>

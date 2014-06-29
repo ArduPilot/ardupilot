@@ -917,54 +917,53 @@ GCS_MAVLINK::update(void (*run_cli)(AP_HAL::UARTDriver *))
 
 
 /*
-  send raw GPS position information (GPS_RAW_INT and GPS2_RAW)
+  send raw GPS position information (GPS_RAW_INT, GPS2_RAW, GPS_RTK and GPS2_RTK).
+  returns true if messages fit into transmit buffer, false otherwise.
  */
-void GCS_MAVLINK::send_gps_raw(AP_GPS &gps)
+bool GCS_MAVLINK::send_gps_raw(AP_GPS &gps)
 {
-    static uint32_t last_send_time_ms;
-    if (last_send_time_ms == 0 || last_send_time_ms != gps.last_message_time_ms(0)) {
-        last_send_time_ms = gps.last_message_time_ms(0);
-        const Location &loc = gps.location(0);
-        mavlink_msg_gps_raw_int_send(
-            chan,
-            gps.last_fix_time_ms(0)*(uint64_t)1000,
-            gps.status(0),
-            loc.lat,        // in 1E7 degrees
-            loc.lng,        // in 1E7 degrees
-            loc.alt * 10UL, // in mm
-            gps.get_hdop(0),
-            65535,
-            gps.ground_speed(0)*100,  // cm/s
-            gps.ground_course_cd(0), // 1/100 degrees,
-            gps.num_sats(0));
+
+    int16_t payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
+    if (payload_space >= MAVLINK_MSG_ID_GPS_RAW_INT_LEN) {
+        gps.send_mavlink_gps_raw(chan);
+    } else {
+        return false;
     }
 
-#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
-    static uint32_t last_send_time_ms2;
-    if (gps.num_sensors() > 1 && 
-        gps.status(1) > AP_GPS::NO_GPS &&
-        (last_send_time_ms2 == 0 || last_send_time_ms2 != gps.last_message_time_ms(1))) {
+#if GPS_RTK_AVAILABLE
+    if (gps.highest_supported_status(0) > AP_GPS::GPS_OK_FIX_3D) {
+        int16_t payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
+        if (payload_space >= MAVLINK_MSG_ID_GPS_RTK_LEN) {
+            gps.send_mavlink_gps_rtk(chan);
+        }
+
+    }
+#endif
+
+#if GPS_MAX_INSTANCES > 1
+
+    if (gps.num_sensors() > 1 && gps.status(1) > AP_GPS::NO_GPS) {
+
         int16_t payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
         if (payload_space >= MAVLINK_MSG_ID_GPS2_RAW_LEN) {
-            const Location &loc = gps.location(1);
-            last_send_time_ms = gps.last_message_time_ms(1);
-            mavlink_msg_gps2_raw_send(
-                chan,
-                gps.last_fix_time_ms(1)*(uint64_t)1000,
-                gps.status(1),
-                loc.lat,
-                loc.lng,
-                loc.alt * 10UL,
-                gps.get_hdop(1),
-                65535,
-                gps.ground_speed(1)*100,  // cm/s
-                gps.ground_course_cd(1), // 1/100 degrees,
-                gps.num_sats(1),
-                0,
-                0);
+            gps.send_mavlink_gps2_raw(chan);
+        }
+
+#if GPS_RTK_AVAILABLE
+        if (gps.highest_supported_status(1) > AP_GPS::GPS_OK_FIX_3D) {
+            int16_t payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
+            if (payload_space >= MAVLINK_MSG_ID_GPS2_RTK_LEN) {
+                gps.send_mavlink_gps2_rtk(chan);
+            }
         }
     }
 #endif
+
+#endif
+
+    //TODO: Should check what else managed to get through...
+    return true;
+
 }
 
 
