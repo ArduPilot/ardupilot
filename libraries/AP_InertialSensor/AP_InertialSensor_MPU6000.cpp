@@ -575,14 +575,17 @@ bool AP_InertialSensor_MPU6000::_sample_available()
 void AP_InertialSensor_MPU6000::_dump_registers(void)
 {
     hal.console->println_P(PSTR("MPU6000 registers"));
-    for (uint8_t reg=MPUREG_PRODUCT_ID; reg<=108; reg++) {
-        uint8_t v = _register_read(reg);
-        hal.console->printf_P(PSTR("%02x:%02x "), (unsigned)reg, (unsigned)v);
-        if ((reg - (MPUREG_PRODUCT_ID-1)) % 16 == 0) {
-            hal.console->println();
+    if (_spi_sem->take(100)) {
+        for (uint8_t reg=MPUREG_PRODUCT_ID; reg<=108; reg++) {
+            uint8_t v = _register_read(reg);
+            hal.console->printf_P(PSTR("%02x:%02x "), (unsigned)reg, (unsigned)v);
+            if ((reg - (MPUREG_PRODUCT_ID-1)) % 16 == 0) {
+                hal.console->println();
+            }
         }
+        hal.console->println();
+        _spi_sem->give();
     }
-    hal.console->println();
 }
 #endif
 
