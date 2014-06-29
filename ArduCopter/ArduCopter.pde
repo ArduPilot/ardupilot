@@ -1261,6 +1261,15 @@ static void update_GPS(void)
                 }
             }
 
+            //If we are not currently armed, and we're ready to 
+            //enter RTK mode, then capture current state as home,
+            //and enter RTK fixes!
+            if (!motors.armed() && gps.can_calculate_base_pos()) {
+
+                gps.calculate_base_pos();
+
+            }
+
 #if CAMERA == ENABLED
             if (camera.update_location(current_loc) == true) {
                 do_take_picture();

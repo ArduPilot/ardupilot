@@ -27,22 +27,37 @@ const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
     // @Param: TYPE
     // @DisplayName: GPS type
     // @Description: GPS type
-    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftBinaryProtocol
+    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav
     AP_GROUPINFO("TYPE",    0, AP_GPS, _type[0], 1),
-
-#if GPS_MAX_INSTANCES > 1
-    // @Param: TYPE2
-    // @DisplayName: 2nd GPS type
-    // @Description: GPS type of 2nd GPS
-    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftBinaryProtocol
-    AP_GROUPINFO("TYPE2",   1, AP_GPS, _type[1], 0),
-#endif
 
     // @Param: NAVFILTER
     // @DisplayName: Navigation filter setting
     // @Description: Navigation filter engine setting
     // @Values: 0:Portable,2:Stationary,3:Pedestrian,4:Automotive,5:Sea,6:Airborne1G,7:Airborne2G,8:Airborne4G
-    AP_GROUPINFO("NAVFILTER", 2, AP_GPS, _navfilter, GPS_ENGINE_AIRBORNE_4G),
+    AP_GROUPINFO("NAVFILTER", 1, AP_GPS, _navfilter, GPS_ENGINE_AIRBORNE_4G),
+
+    // @Param: DGPS_MIN_LOCK
+    // @DisplayName: Minimum Lock Type Accepted for DGPS
+    // @Description: Sets the minimum type of differential GPS corrections required before allowing to switch into DGPS mode.
+    // @Values: 0:Any,50:FloatRTK,100:IntegerRTK
+    // @User: Advanced
+    AP_GROUPINFO("MIN_DGPS", 2, AP_GPS, _min_dgps, 100),
+
+#if GPS_MAX_INSTANCES > 1
+    // @Param: TYPE2
+    // @DisplayName: 2nd GPS type
+    // @Description: GPS type of 2nd GPS
+    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav
+    AP_GROUPINFO("TYPE2",   3, AP_GPS, _type[1], 0),
+
+    // @Param: AUTO_SWITCH
+    // @DisplayName: Automatic Switchover Setting
+    // @Description: Automatic switchover to GPS reporting best lock
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("AUTO_SWITCH", 4, AP_GPS, _auto_switch, 1),
+#endif
+
 
     AP_GROUPEND
 };
@@ -53,6 +68,7 @@ void AP_GPS::init(DataFlash_Class *dataflash)
     _DataFlash = dataflash;
     hal.uartB->begin(38400UL, 256, 16);
 #if GPS_MAX_INSTANCES > 1
+    primary_instance = 0;
     if (hal.uartE != NULL) {
         hal.uartE->begin(38400UL, 256, 16);        
     }
@@ -198,6 +214,44 @@ AP_GPS::detect_instance(uint8_t instance)
 	}
 }
 
+bool 
+AP_GPS::can_calculate_base_pos(void)
+{
+    for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+        if (drivers[i] != NULL && drivers[i]->can_calculate_base_pos()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/*
+    Tells the underlying GPS drivers to capture its current position as home.
+ */
+void 
+AP_GPS::calculate_base_pos(void) 
+{
+    for (uint8_t i = 0; i<GPS_MAX_INSTANCES; i++) {
+        if (drivers[i] != NULL && drivers[i]->can_calculate_base_pos()) {
+            drivers[i]->calculate_base_pos(); 
+        }
+    }
+}
+
+AP_GPS::GPS_Status 
+AP_GPS::highest_supported_status(uint8_t instance) const
+{
+    if (drivers[instance] != NULL)
+        drivers[instance]->highest_supported_status();
+}
+
+AP_GPS::GPS_Status 
+AP_GPS::highest_supported_status(void) const
+{
+    if (drivers[primary_instance] != NULL)
+        drivers[primary_instance]->highest_supported_status();
+}
+
 
 /*
   update one GPS instance. This should be called at 10Hz or greater
@@ -260,6 +314,7 @@ AP_GPS::update_instance(uint8_t instance)
 void
 AP_GPS::update(void)
 {
+
     for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
         update_instance(i);
     }
@@ -273,22 +328,26 @@ AP_GPS::update(void)
         if (state[i].status != NO_GPS) {
             num_instances = i+1;
         }
-        if (i == primary_instance) {
-            continue;
-        }
-        if (state[i].status > state[primary_instance].status) {
-            // we have a higher status lock, change GPS
-            primary_instance = i;
-            continue;
-        }
-        if (state[i].status == state[primary_instance].status &&
-            state[i].num_sats >= state[primary_instance].num_sats + 2) {
-            // this GPS has at least 2 more satellites than the
-            // current primary, switch primary. Once we switch we will
-            // then tend to stick to the new GPS as primary. We don't
-            // want to switch too often as it will look like a
-            // position shift to the controllers.
-            primary_instance = i;
+        if (_auto_switch) {            
+            if (i == primary_instance) {
+                continue;
+            }
+            if (state[i].status > state[primary_instance].status) {
+                // we have a higher status lock, change GPS
+                primary_instance = i;
+                continue;
+            }
+            if (state[i].status == state[primary_instance].status &&
+                state[i].num_sats >= state[primary_instance].num_sats + 2) {
+                // this GPS has at least 2 more satellites than the
+                // current primary, switch primary. Once we switch we will
+                // then tend to stick to the new GPS as primary. We don't
+                // want to switch too often as it will look like a
+                // position shift to the controllers.
+                primary_instance = i;
+            }
+        } else {
+            primary_instance = 0;
         }
     }
 #else
