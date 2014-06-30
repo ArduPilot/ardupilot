@@ -76,7 +76,7 @@
     </enum>
 
     <!-- Camera event types -->
-    <enum name="CAMERA_EVENT_TYPES">
+    <enum name="CAMERA_STATUS_TYPES">
         <entry name="HEARTBEAT"  value="0"><description>Camera heartbeat, announce camera component ID at 1hz</description></entry>
         <entry name="TRIGGER"    value="1"><description>Camera image triggered</description></entry>
         <entry name="DISCONNECT" value="2"><description>Camera connection lost</description></entry>
@@ -406,33 +406,34 @@
             <field type="int32_t" name="lng">Longitude in degrees * 1E7</field>
 	  </message>
 
-  <!-- camera event message from CCB to autopilot: most obviously for image trigger events but also things like error, low power, full card, etc -->
-    <message name="CAMERA_EVENT" id="179">
+  <!-- camera event message from CCB to autopilot: for image trigger events but also things like heartbeat, error, low power, full card, etc -->
+    <message name="CAMERA_STATUS" id="179">
         <description>Camera Event</description>
         <field name="time_usec" type="uint64_t">Image timestamp (microseconds since UNIX epoch, according to camera clock)</field>    
         <field name="target_system" type="uint8_t" >System ID</field>   <!-- support multiple concurrent vehicles -->  
         <field name="cam_idx"   type="uint8_t" >Camera ID</field>       <!-- component ID, to support multiple cameras -->
         <field name="img_idx"   type="uint16_t" >Image index</field>    <!-- per camera image index, should be unique+sequential within a mission, preferably non-wrapping -->
-        <field name="event_id"  type="uint8_t" >See CAMERA_EVENT_TYPES enum for definition of the bitmask</field>
-        <field name="p1"        type="float"   >Parameter 1 (meaning depends on event, see CAMERA_EVENT_TYPES enum)</field>
-        <field name="p2"        type="float"   >Parameter 2 (meaning depends on event, see CAMERA_EVENT_TYPES enum)</field>
-        <field name="p3"        type="float"   >Parameter 3 (meaning depends on event, see CAMERA_EVENT_TYPES enum)</field>
-        <field name="p4"        type="float"   >Parameter 4 (meaning depends on event, see CAMERA_EVENT_TYPES enum)</field>
+        <field name="event_id"  type="uint8_t" >See CAMERA_STATUS_TYPES enum for definition of the bitmask</field>
+        <field name="p1"        type="float"   >Parameter 1 (meaning depends on event, see CAMERA_STATUS_TYPES enum)</field>
+        <field name="p2"        type="float"   >Parameter 2 (meaning depends on event, see CAMERA_STATUS_TYPES enum)</field>
+        <field name="p3"        type="float"   >Parameter 3 (meaning depends on event, see CAMERA_STATUS_TYPES enum)</field>
+        <field name="p4"        type="float"   >Parameter 4 (meaning depends on event, see CAMERA_STATUS_TYPES enum)</field>
     </message>
 
-    <!-- camera feedback message from autopilot to both CCB and GCS in response to a CAMERA_EVENT trigger -->
+    <!-- camera feedback message - can be originated from CCB (in response to a CAMERA_STATUS), or directly from the autopilot as part of a DO_DIGICAM_CONTROL-->
     <message name="CAMERA_FEEDBACK" id="180">
         <description>Camera Capture Feedback</description>
-        <field name="time_usec" type="uint64_t">Image timestamp (microseconds since UNIX epoch), as passed in by CAMERA_EVENT message</field>
+        <field name="time_usec" type="uint64_t">Image timestamp (microseconds since UNIX epoch), as passed in by CAMERA_STATUS message (or autopilot if no CCB)</field>
         <field name="target_system" type="uint8_t" >System ID</field>   <!-- support multiple concurrent vehicles -->  
         <field name="cam_idx"   type="uint8_t" >Camera ID</field>       <!-- component ID, to support multiple cameras -->
         <field name="img_idx"   type="uint16_t">Image index</field>     <!-- per camera image index, should be unique+sequential within a mission, preferably non-wrapping -->
         <field name="lat"       type="int32_t" >Latitude in (deg * 1E7)</field>
         <field name="lng"       type="int32_t" >Longitude in (deg * 1E7)</field>
-        <field name="alt"       type="float"   >Altitude (meters, AMSL)</field>
-        <field name="roll"      type="float"   >Vehicle Roll angle (degrees, +-180)</field> <!-- gimbal or fixed cam offsets to be handled by GCS, possibly with gimbal state messages later -->
-        <field name="pitch"     type="float"   >Vehicle Pitch angle (degrees, +-180)</field> <!-- gimbal or fixed cam offsets to be handled by GCS, possibly with gimbal state messages later -->
-        <field name="yaw"       type="float"   >Vehicle Heading (degrees, 0-360, true)</field> <!-- gimbal or fixed cam offsets to be handled by GCS, possibly with gimbal state messages later -->
+        <field name="alt_msl"   type="float"   >Altitude Absolute (meters AMSL)</field>
+        <field name="alt_rel"   type="float"   >Altitude Relative (meters above HOME location)</field>
+        <field name="roll"      type="float"   >Camera Roll angle (earth frame, degrees, +-180)</field>  <!-- initially only supporting fixed cameras, in future we'll need feedback messages from the gimbal so we can include that offset here -->
+        <field name="pitch"     type="float"   >Camera Pitch angle (earth frame, degrees, +-180)</field> <!-- initially only supporting fixed cameras, in future we'll need feedback messages from the gimbal so we can include that offset here -->
+        <field name="yaw"       type="float"   >Camera Yaw (earth frame, degrees, 0-360, true)</field>   <!-- initially only supporting fixed cameras, in future we'll need feedback messages from the gimbal so we can include that offset here -->
         <field name="foc_len"   type="float"   >Focal Length (mm)</field> <!-- per-image to support zooms. Zero means fixed focal length or unknown. Should be true mm, not scaled to 35mm film equivalent -->
         <field name="flags"     type="uint8_t" >See CAMERA_FEEDBACK_FLAGS enum for definition of the bitmask</field> <!-- future proofing -->
     </message>
