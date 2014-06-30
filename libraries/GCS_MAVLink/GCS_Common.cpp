@@ -932,7 +932,7 @@ bool GCS_MAVLINK::send_gps_raw(AP_GPS &gps)
 
 #if GPS_RTK_AVAILABLE
     if (gps.highest_supported_status(0) > AP_GPS::GPS_OK_FIX_3D) {
-        int16_t payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
+        payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
         if (payload_space >= MAVLINK_MSG_ID_GPS_RTK_LEN) {
             gps.send_mavlink_gps_rtk(chan);
         }
