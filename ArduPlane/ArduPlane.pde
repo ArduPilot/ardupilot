@@ -51,6 +51,7 @@
 #include <AP_Relay.h>       // APM relay
 #include <AP_Camera.h>          // Photo or video camera
 #include <AP_Airspeed.h>
+#include <AP_Terrain.h>
 
 #include <APM_OBC.h>
 #include <APM_Control.h>
@@ -463,6 +464,10 @@ static AP_BattMonitor battery;
 // Airspeed Sensors
 ////////////////////////////////////////////////////////////////////////////////
 AP_Airspeed airspeed(aparm);
+
+////////////////////////////////////////////////////////////////////////////////
+// terrain handling
+AP_Terrain terrain(ahrs);
 
 ////////////////////////////////////////////////////////////////////////////////
 // ACRO controller state
