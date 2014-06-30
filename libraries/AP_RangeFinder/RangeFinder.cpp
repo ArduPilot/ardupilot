@@ -88,6 +88,12 @@ const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
     // 10..12 left for future expansion
 
 #if RANGEFINDER_MAX_INSTANCES > 1
+    // @Param: 2_TYPE
+    // @DisplayName: Second Rangefinder type
+    // @Description: what type of rangefinder is connected
+    // @Values: 0:None,1:Auto,2:Analog,3:MaxbotixI2C,4:PulsedLightI2C,5:PX4
+    AP_GROUPINFO("2_TYPE",    12, RangeFinder, _type[1], 0),
+
     // @Param: 2_PIN
     // @DisplayName: Rangefinder pin
     // @Description: Analog pin that rangefinder is connected to. Set this to 0..9 for the APM2 analog pins. Set to 64 on an APM1 for the dedicated 'airspeed' port on the end of the board. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
