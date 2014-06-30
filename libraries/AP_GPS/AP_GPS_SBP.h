@@ -249,8 +249,8 @@ private:
     uint32_t last_baseline_received_ms;
     uint32_t last_heatbeat_received_ms;
     uint32_t last_tracking_state_ms;
-    uint8_t baseline_recv_rate; //in hertz * 10
     int32_t iar_num_hypotheses;
+    uint8_t baseline_recv_rate; //in hertz * 10
 
     //Sticky bits to track updating of state
     bool dgps_corrections_incoming:1;
@@ -284,9 +284,7 @@ private:
 
     void logging_write_headers();
 
-    void logging_log_health(float pos_msg_hz, float vel_msg_hz, float baseline_msg_hz, float full_update_hz, 
-        uint32_t crc_error_counter, bool dgps_corrections_incoming, bool rtk_corrections_incoming, 
-        bool has_rtk_base_pos, int32_t iar_num_hypotheses);
+    void logging_log_health(float pos_msg_hz, float vel_msg_hz, float baseline_msg_hz, float full_update_hz);
     void logging_log_llh(struct sbp_pos_llh_t* p);
     void logging_log_baseline_ecef(struct sbp_baseline_ecef_t*);      
     void logging_log_tracking_state(struct sbp_tracking_state_t*, uint8_t num);      

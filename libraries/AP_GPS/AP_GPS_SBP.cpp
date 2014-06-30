@@ -196,15 +196,9 @@ AP_GPS_SBP::read(void)
 
 #if SBP_HW_LOGGING
         logging_log_health(pos_msg_hz,
-            vel_msg_hz,
-            baseline_msg_hz,
-            full_update_hz,
-            crc_error_counter,
-            dgps_corrections_incoming,
-            rtk_corrections_incoming,
-            has_rtk_base_pos,
-            iar_num_hypotheses);
-
+                           vel_msg_hz,
+                           baseline_msg_hz,
+                           full_update_hz);
 #endif
 
     }
@@ -835,9 +829,7 @@ AP_GPS_SBP::logging_write_headers(void)
 }
 
 void 
-AP_GPS_SBP::logging_log_health(float pos_msg_hz, float vel_msg_hz, float baseline_msg_hz, float full_update_hz, 
-    uint32_t crc_error_counter, bool dgps_corrections_incoming, bool rtk_corrections_incoming, 
-    bool has_rtk_base_pos, int32_t iar_num_hypotheses)
+AP_GPS_SBP::logging_log_health(float pos_msg_hz, float vel_msg_hz, float baseline_msg_hz, float full_update_hz)
 {
 
     if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
@@ -920,7 +912,7 @@ AP_GPS_SBP::logging_log_baseline_ecef(struct sbp_baseline_ecef_t* b)
 
 
 void 
-AP_GPS_SBP::logging_log_tracking_state(struct sbp_tracking_state_t* state, uint8_t num)
+AP_GPS_SBP::logging_log_tracking_state(struct sbp_tracking_state_t* tstate, uint8_t num)
 {
     if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
       return;
@@ -931,20 +923,20 @@ AP_GPS_SBP::logging_log_tracking_state(struct sbp_tracking_state_t* state, uint8
     struct log_SbpTracking1 pkt = {
         LOG_PACKET_HEADER_INIT(LOG_MSG_SBPTRACKING1),
         timestamp         : hal.scheduler->millis(),
-        ch1_prn           : state[0].prn,
-        ch1_cn0           : state[0].cn0,
-        ch2_prn           : num < 1 ? 0 : state[1].prn,
-        ch2_cn0           : num < 1 ? 0 : state[1].cn0,
-        ch3_prn           : num < 2 ? 0 : state[2].prn,
-        ch3_cn0           : num < 2 ? 0 : state[2].cn0,
-        ch4_prn           : num < 3 ? 0 : state[3].prn,
-        ch4_cn0           : num < 3 ? 0 : state[3].cn0,
-        ch5_prn           : num < 4 ? 0 : state[4].prn,
-        ch5_cn0           : num < 4 ? 0 : state[4].cn0,
-        ch6_prn           : num < 5 ? 0 : state[5].prn,
-        ch6_cn0           : num < 5 ? 0 : state[5].cn0,
-        ch7_prn           : num < 6 ? 0 : state[6].prn,
-        ch7_cn0           : num < 6 ? 0 : state[6].cn0,
+        ch1_prn           : tstate[0].prn,
+        ch1_cn0           : tstate[0].cn0,
+        ch2_prn           : (uint8_t)(num < 1 ? 0 : tstate[1].prn),
+        ch2_cn0           : num < 1 ? 0 : tstate[1].cn0,
+        ch3_prn           : (uint8_t)(num < 2 ? 0 : tstate[2].prn),
+        ch3_cn0           : num < 2 ? 0 : tstate[2].cn0,
+        ch4_prn           : (uint8_t)(num < 3 ? 0 : tstate[3].prn),
+        ch4_cn0           : num < 3 ? 0 : tstate[3].cn0,
+        ch5_prn           : (uint8_t)(num < 4 ? 0 : tstate[4].prn),
+        ch5_cn0           : num < 4 ? 0 : tstate[4].cn0,
+        ch6_prn           : (uint8_t)(num < 5 ? 0 : tstate[5].prn),
+        ch6_cn0           : num < 5 ? 0 : tstate[5].cn0,
+        ch7_prn           : (uint8_t)(num < 6 ? 0 : tstate[6].prn),
+        ch7_cn0           : num < 6 ? 0 : tstate[6].cn0,
     };
     gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));    
 
@@ -953,20 +945,20 @@ AP_GPS_SBP::logging_log_tracking_state(struct sbp_tracking_state_t* state, uint8
         struct log_SbpTracking2 pkt2 = {
             LOG_PACKET_HEADER_INIT(LOG_MSG_SBPTRACKING2),
             timestamp         : hal.scheduler->millis(),
-            ch8_prn           : num < 7  ? 0 : state[7].prn,
-            ch8_cn0           : num < 7  ? 0 : state[7].cn0,
-            ch9_prn           : num < 8  ? 0 : state[8].prn,
-            ch9_cn0           : num < 8  ? 0 : state[8].cn0,
-            ch10_prn          : num < 9  ? 0 : state[9].prn,
-            ch10_cn0          : num < 9  ? 0 : state[9].cn0,
-            ch11_prn          : num < 10 ? 0 : state[10].prn,
-            ch11_cn0          : num < 10 ? 0 : state[10].cn0,
-            ch12_prn          : num < 11 ? 0 : state[11].prn,
-            ch12_cn0          : num < 11 ? 0 : state[11].cn0,
-            ch13_prn          : num < 12 ? 0 : state[12].prn,
-            ch13_cn0          : num < 12 ? 0 : state[12].cn0,
-            ch14_prn          : num < 13 ? 0 : state[13].prn,
-            ch14_cn0          : num < 13 ? 0 : state[13].cn0,
+            ch8_prn           : (uint8_t)(num < 7  ? 0 : tstate[7].prn),
+            ch8_cn0           : num < 7  ? 0 : tstate[7].cn0,
+            ch9_prn           : (uint8_t)(num < 8  ? 0 : tstate[8].prn),
+            ch9_cn0           : num < 8  ? 0 : tstate[8].cn0,
+            ch10_prn          : (uint8_t)(num < 9  ? 0 : tstate[9].prn),
+            ch10_cn0          : num < 9  ? 0 : tstate[9].cn0,
+            ch11_prn          : (uint8_t)(num < 10 ? 0 : tstate[10].prn),
+            ch11_cn0          : num < 10 ? 0 : tstate[10].cn0,
+            ch12_prn          : (uint8_t)(num < 11 ? 0 : tstate[11].prn),
+            ch12_cn0          : num < 11 ? 0 : tstate[11].cn0,
+            ch13_prn          : (uint8_t)(num < 12 ? 0 : tstate[12].prn),
+            ch13_cn0          : num < 12 ? 0 : tstate[12].cn0,
+            ch14_prn          : (uint8_t)(num < 13 ? 0 : tstate[13].prn),
+            ch14_cn0          : num < 13 ? 0 : tstate[13].cn0,
         };
         gps._DataFlash->WriteBlock(&pkt2, sizeof(pkt));
 
