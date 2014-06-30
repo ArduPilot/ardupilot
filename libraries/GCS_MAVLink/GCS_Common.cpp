@@ -944,21 +944,20 @@ bool GCS_MAVLINK::send_gps_raw(AP_GPS &gps)
 
     if (gps.num_sensors() > 1 && gps.status(1) > AP_GPS::NO_GPS) {
 
-        int16_t payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
+        payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
         if (payload_space >= MAVLINK_MSG_ID_GPS2_RAW_LEN) {
             gps.send_mavlink_gps2_raw(chan);
         }
 
 #if GPS_RTK_AVAILABLE
         if (gps.highest_supported_status(1) > AP_GPS::GPS_OK_FIX_3D) {
-            int16_t payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
+            payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
             if (payload_space >= MAVLINK_MSG_ID_GPS2_RTK_LEN) {
                 gps.send_mavlink_gps2_rtk(chan);
             }
         }
-    }
 #endif
-
+    }
 #endif
 
     //TODO: Should check what else managed to get through...
