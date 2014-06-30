@@ -112,7 +112,7 @@ fi
 # try the px4io start twice. Some FMUv2 board don't
 # come up the first time
 set HAVE_PX4IO false
-if px4io start
+if px4io start norc
 then
     set HAVE_PX4IO true
 else
@@ -128,7 +128,7 @@ else
         tone_alarm MNGGG
     fi
     sleep 1
-    if px4io start
+    if px4io start norc
     then
         set HAVE_PX4IO true
         # play happy tune again
@@ -149,7 +149,7 @@ then
         if px4io forceupdate 14662 /etc/px4io/px4io.bin
         then
                sleep 1
-               if px4io start
+               if px4io start norc
                then
                   echo "PX4IO restart OK"
                   echo "PX4IO restart OK" >> $logfile    
