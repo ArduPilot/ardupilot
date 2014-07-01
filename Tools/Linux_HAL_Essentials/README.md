@@ -26,7 +26,7 @@ source ~/.bashrc
 
 ###Compiling and loading the code
 * just `make`
-* copy generated executable `testpru1` to `ardupilot/Tools/Linux_HAL_Essentials/`.
+* copy generated executable `pwmpru1` to `ardupilot/Tools/Linux_HAL_Essentials/`.
 * To load firmware use 
   - `./startup.sh load` : only once after reboot it will copy overlays and firmware to `/lib/firmware/` and loads them.
   - `./startup.sh reload` : it only copies firmware to `/lib/firmware/` and reloads pru firmware.
