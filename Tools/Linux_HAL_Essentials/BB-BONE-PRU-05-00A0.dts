@@ -300,7 +300,7 @@
 					pdbg  = <0x24400>;
 
 					firmware-elf;
-					firmware = "testpru1";
+					firmware = "pwmpru1";
 
 					/* NOTE: no resource table, no vrings for this one */
 				};

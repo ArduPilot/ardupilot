@@ -4,7 +4,6 @@
  */
 
 #define PRU1
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -16,36 +15,6 @@
 #include "prucomm.h"
 
 
-extern void delay_cycles(u32 delay);
-extern void delay_cycles_accurate(u32 delay);
-extern void delay_cycles_accurate2(u32 delay);
-extern u32 read_other_r30(void);
-
-extern void update_gpo(u32 clrmsk, u32 setmsk);
-
-void pwm_loop(u32 hi, u32 lo)
-{
-	while (!pru_signal()) {
-		__R30 |=  (1 << 13);
-		delay_cycles(hi);
-		__R30 &= ~(1 << 13);
-		delay_cycles(lo);
-	}
-}
-
-void pwm_loop2(u32 hi, u32 lo)
-{
-	while (!pru_signal()) {
-		__R30 |=  (1 << 13);
-		delay_cycles_accurate2(hi);
-		__R30 &= ~(1 << 13);
-		delay_cycles_accurate2(lo);
-	}
-}
-
-#define T1 asm (" .global T1\nT1:");
-#define T2 asm (" .global T2\nT2:");
-
 struct pwm_cmd_l cfg;
 
 static void pwm_setup(void)
@@ -55,29 +24,8 @@ static void pwm_setup(void)
 	cfg.enmask = 0;
 	for (i = 0; i < MAX_PWMS; i++)
 		cfg.hilo[i][0] = cfg.hilo[i][1] = PRU_us(200);
-
-#if 0
-	cfg.enmask = BIT(13) | BIT(12);
-	cfg.hilo[12][0] = PRU_us(333);
-	cfg.hilo[12][1] = PRU_us(333);
-	cfg.hilo[13][0] = PRU_us(100);
-	cfg.hilo[13][1] = PRU_us(100);
-#endif
 }
 
-#undef USE_PWM_LOOP
-#define USE_PWM_MACRO
-
-struct cxt {
-	u32 cnt;
-	u32 next;
-	u32 enmask;
-	u32 stmask;
-	u32 setmsk;
-	u32 clrmsk;
-	u32 deltamin;
-	u32 *next_hi_lo;
-};
 
 static inline u32 read_PIEP_COUNT(void)
 {
@@ -85,70 +33,10 @@ static inline u32 read_PIEP_COUNT(void)
 
 }
 
-static void handle_pwm_cmd(struct cxt *cxt)
-{
-	u8 i;
-	u32 msk, setmsk, clrmsk;
-	u32 enmask, stmask, cnt, deltamin, next;
-	u32 *nextp;
-	u32 *next_hi_lop;
-	const u32 *hilop;
-	cnt = cxt->cnt;
-	next = cxt->next;
-	enmask = cxt->enmask;
-	stmask = cxt->stmask;
-	setmsk = cxt->setmsk;
-	clrmsk = cxt->clrmsk;
-	deltamin = cxt->deltamin;
-	next_hi_lop = cxt->next_hi_lo;
-
-	// sc_printf("cnt=%x next=%x deltamin=%x", cnt, next, deltamin);
-
-	for (i = 0; i < MAX_PWMS; i++){
-	    cfg.hilo[i][0] = PWM_CMD->periodhi[i][1];
-            cfg.hilo[i][1] = PWM_CMD->periodhi[i][0] - PWM_CMD->periodhi[i][1];
-            PWM_CMD->hilo_read[i][0] = cfg.hilo[i][0];
-            PWM_CMD->hilo_read[i][1] = cfg.hilo[i][1];
-        }
-
-        cfg.enmask = PWM_CMD->enmask;
-        PWM_CMD->enmask_read = cfg.enmask;
-	enmask = cfg.enmask;
-	stmask = 0;		/* starting all low */
-
-	clrmsk = 0;
-	for (i = 0, msk = 1, nextp = next_hi_lop, hilop = &cfg.hilo[0][0];
-			i < MAX_PWMS;
-			i++, msk <<= 1, nextp += 3, hilop += 2) {
-		if ((enmask & msk) == 0) {
-			nextp[1] = PRU_us(100);	/* default */
-			nextp[2] = PRU_us(100);
-			continue;
-		}
-		nextp[0] = cnt;		/* next */
-		nextp[1] = hilop[0];	/* hi */
-		nextp[2] = hilop[1];	/* lo */
-	}
-
-	clrmsk = enmask;
-	setmsk = 0;
-	/* guaranteed to be immediate */
-	deltamin = 0;
-
-	cxt->cnt = cnt;
-	cxt->next = next;
-	cxt->enmask = enmask;
-	cxt->stmask = stmask;
-	cxt->setmsk = setmsk;
-	cxt->clrmsk = clrmsk;
-        cxt->deltamin = deltamin;
-}
-
-
 int main(int argc, char *argv[])
 {
        	u8 i;
-	u32 cnt, next, magic;
+	u32 cnt, next;
 	u32 msk, setmsk, clrmsk;
 	u32 delta, deltamin, tnext, hi, lo;
 	u32 *nextp;
@@ -164,11 +52,7 @@ int main(int argc, char *argv[])
 			SYSCFG_IDLE_MODE_NO | SYSCFG_STANDBY_MODE_NO;
 
 	/* our PRU wins arbitration */
-#if defined(PRU0)
-	PRUCFG_SPP &= ~SPP_PRU1_PAD_HP_EN;
-#elif defined(PRU1)
 	PRUCFG_SPP |=  SPP_PRU1_PAD_HP_EN;
-#endif
 	pwm_setup();
 
 	/* configure timer */
@@ -178,9 +62,6 @@ int main(int argc, char *argv[])
         PIEP_CMP_CMP1   = 0x0;
 	PIEP_CMP_CFG |= CMP_CFG_CMP_EN(1);
         PIEP_GLOBAL_CFG |= GLOBAL_CFG_CNT_ENABLE;
-
-	/* copy from cfg to cxt */
-
 
 	/* initialize */
 	cnt = read_PIEP_COUNT();
@@ -212,25 +93,43 @@ int main(int argc, char *argv[])
 	while(1) {
 
 		/* signalled interrupt from either PRU0 or host */
+
 		if(PWM_CMD->magic == PWM_CMD_MAGIC) {
-      			cxt.cnt = cnt;
-			cxt.next = next;
-			cxt.enmask = enmask;
-			cxt.stmask = stmask;
-			cxt.setmsk = setmsk;
-			cxt.clrmsk = clrmsk;
-			cxt.deltamin = deltamin;
-			cxt.next_hi_lo = &next_hi_lo[0][0];
+			clrmsk = enmask;
+			setmsk = 0;
+			/* guaranteed to be immediate */
+			deltamin = 0;
 
- 			handle_pwm_cmd(&cxt);
+			for (i = 0; i < MAX_PWMS; i++){
+			    cfg.hilo[i][0] = PWM_CMD->periodhi[i][1];
+		            cfg.hilo[i][1] = PWM_CMD->periodhi[i][0] - PWM_CMD->periodhi[i][1];
+		            PWM_CMD->hilo_read[i][0] = cfg.hilo[i][0];
+		            PWM_CMD->hilo_read[i][1] = cfg.hilo[i][1];
+		        }
+	
+		        cfg.enmask = PWM_CMD->enmask;
+		        PWM_CMD->enmask_read = cfg.enmask;
+			enmask = cfg.enmask;
+			stmask = 0;		/* starting all low */
+	
+			clrmsk = 0;
+			for (i = 0, msk = 1, nextp = next_hi_lo, hilop = &cfg.hilo[0][0];
+				i < MAX_PWMS;
+				i++, msk <<= 1, nextp += 3, hilop += 2) {
+				if ((enmask & msk) == 0) {
+					nextp[1] = PRU_us(100);	/* default */
+					nextp[2] = PRU_us(100);
+					continue;
+				}
+				nextp[0] = cnt;		/* next */
+				nextp[1] = hilop[0];	/* hi */
+				nextp[2] = hilop[1];	/* lo */
+			}
+      			clrmsk = enmask;
+			setmsk = 0;
+			/* guaranteed to be immediate */
+			deltamin = 0;
 
-			cnt = cxt.cnt;
-			next = cxt.next;
-			enmask = cxt.enmask;
-			stmask = cxt.stmask;
-			setmsk = cxt.setmsk;
-			clrmsk = cxt.clrmsk;
-			deltamin = cxt.deltamin;
                    	PWM_CMD->magic = PWM_REPLY_MAGIC;
 		}
                 PWM_CMD->enmask_read = enmask;
@@ -271,38 +170,7 @@ int main(int argc, char *argv[])
 		} \
 	} while (0)
 
-#ifdef USE_PWM_LOOP
-		for (i = 0, msk = 1, nextp = &next_hi_lo[0][0]; i < MAX_PWMS; i++, msk <<= 1, nextp += 3) {
 
-			if ((enmask & msk) == 0)
-				continue;
-
-			tnext = nextp[0];
-			hi = nextp[1];
-			lo = nextp[2];
-
-			/* avoid signed arithmetic */
-			while (((delta = (tnext - cnt)) & (1U << 31)) != 0) {
-				/* toggle the state */
-				if (stmask & msk) {
-					stmask &= ~msk;
-					clrmsk &= ~msk;
-					tnext += lo;
-				} else {
-					stmask |= msk;
-					setmsk |= msk;
-					tnext += hi;
-				}
-			}
-			if (delta <= deltamin) {
-				deltamin = delta;
-				next = tnext;
-			}
-			nextp[0] = tnext;
-		}
-#endif
-
-#ifdef USE_PWM_MACRO
 
 #if MAX_PWMS > 0 && (PWM_EN_MASK & BIT(0))
 		SINGLE_PWM(0);
@@ -398,8 +266,7 @@ int main(int argc, char *argv[])
 		SINGLE_PWM(30);
 #endif
 #if MAX_PWMS > 31 && (PWM_EN_MASK & BIT(31))
-		SINGLE_PWM(30);
-#endif
+		SINGLE_PWM(31);
 #endif
 		/* results in set bits where there are changes */
 		delta = ~clrmsk | setmsk;
@@ -409,18 +276,12 @@ int main(int argc, char *argv[])
 		if ((delta >> 16) != 0)
 			pru_other_and_or_reg(30, (clrmsk >> 16) | 0xffff0000, setmsk >> 16);
 
-#if 0
-		cnt = read_PIEP_COUNT();
-		if (((next - cnt) & (1U << 31)) == 0 && delta > PRU_ms(1)) {
-			sc_printf("bad next=%x cnt=%x", next, cnt);
-		}
-#endif
 		/* loop while nothing changes */
 		do {
 			cnt = read_PIEP_COUNT();
 			if(PWM_CMD->magic == PWM_CMD_MAGIC){
 				break;
-			}		
+			}
 		} while (((next - cnt) & (1U << 31)) == 0);
 	}
 }

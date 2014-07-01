@@ -5,7 +5,7 @@
 
 .PHONY: all clean
 
-all: testpru1.stripped testpru1.lst
+all: pwmpru1.stripped pwmpru1.lst
 
 CC=clpru
 LD=lnkpru
@@ -30,7 +30,7 @@ LDFLAGS=-cr --diag_warning=225 -llnk-am33xx.cmd -x
 
 STRIPFLAGS=-p
 
-OBJS1:=testpru1.obj
+OBJS1:=pwmpru1.obj
 
 %.obj: %.c
 	$(CC) $(CFLAGS) -c $< -ea=.s
@@ -38,18 +38,18 @@ OBJS1:=testpru1.obj
 %.obj: %.asm
 	$(CC) $(CFLAGS) -c $<
 
-testpru1: $(OBJS1)
+pwmpru1: $(OBJS1)
 	$(CC) $(CFLAGS) $^ -q -z $(LDFLAGS) -o $@
 
-testpru1.stripped: testpru1
+pwmpru1.stripped: pwmpru1
 	$(STRIP) $(STRIPFLAGS) $< -o $@
 
-testpru1.lst: testpru1
+pwmpru1.lst: pwmpru1
 	$(OBJDUMP) -1 $< > $@
 
 clean:
 	rm -f \
-		testpru1 testpru1.asm \
+		pwmpru1 pwmpru1.asm \
 		*.obj *.lst *.out *.stripped \
 		tags
 

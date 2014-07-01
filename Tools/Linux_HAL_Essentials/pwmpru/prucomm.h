@@ -21,8 +21,7 @@ struct pwm_config {
 /* 14, 15 are not routed out for PRU1 */
 #define PWM_EN_MASK	( \
 	BIT( 0)|BIT( 1)|BIT( 2)|BIT( 3)|BIT( 4)|BIT( 5)|BIT( 6)|BIT( 7)| \
-	BIT( 8)|BIT( 9)|BIT(10)|BIT(11)|BIT(12)|BIT(13) | \
-	BIT(16 + 5) \
+	BIT( 8)|BIT( 9)|BIT(10)|BIT(11)|BIT(12) \
 	)
 
 #define MIN_PWM_PULSE	PRU_us(4)
@@ -55,6 +54,18 @@ struct pwm_cmd_l{
     u32 enmask;
     u32 offmsk;
     u32 hilo[MAX_PWMS][2];
+};
+
+
+struct cxt {
+        u32 cnt;
+        u32 next;
+        u32 enmask;
+        u32 stmask;
+        u32 setmsk;
+        u32 clrmsk;
+        u32 deltamin;
+        u32 *next_hi_lo;
 };
 
 
