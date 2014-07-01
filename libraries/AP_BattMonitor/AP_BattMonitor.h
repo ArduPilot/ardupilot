@@ -52,27 +52,27 @@
  # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1
  # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN && defined(CONFIG_ARCH_BOARD_VRBRAIN_V40)
- # define AP_BATT_VOLT_PIN                  100
+ # define AP_BATT_VOLT_PIN                  10
  # define AP_BATT_CURR_PIN                   -1
  # define AP_BATT_VOLTDIVIDER_DEFAULT       1.1
  # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN && defined(CONFIG_ARCH_BOARD_VRBRAIN_V45)
- # define AP_BATT_VOLT_PIN                  100
- # define AP_BATT_CURR_PIN                   -1
+ # define AP_BATT_VOLT_PIN                  10
+ # define AP_BATT_CURR_PIN                  11
  # define AP_BATT_VOLTDIVIDER_DEFAULT       1.1
  # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN && defined(CONFIG_ARCH_BOARD_VRBRAIN_V50)
- # define AP_BATT_VOLT_PIN                  100
- # define AP_BATT_CURR_PIN                  101
+ # define AP_BATT_VOLT_PIN                  10
+ # define AP_BATT_CURR_PIN                  11
  # define AP_BATT_VOLTDIVIDER_DEFAULT       1.1
  # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN && defined(CONFIG_ARCH_BOARD_VRBRAIN_V51)
- # define AP_BATT_VOLT_PIN                  100
- # define AP_BATT_CURR_PIN                  101
+ # define AP_BATT_VOLT_PIN                  10
+ # define AP_BATT_CURR_PIN                  11
  # define AP_BATT_VOLTDIVIDER_DEFAULT       1.1
  # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN && defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
- # define AP_BATT_VOLT_PIN                  100
+ # define AP_BATT_VOLT_PIN                  10
  # define AP_BATT_CURR_PIN                  -1
  # define AP_BATT_VOLTDIVIDER_DEFAULT       1.1
  # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0
