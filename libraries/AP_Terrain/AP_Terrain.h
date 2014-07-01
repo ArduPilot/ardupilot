@@ -25,7 +25,7 @@
 class AP_Terrain
 {
 public:
-    AP_Terrain(const AP_AHRS &_ahrs);
+    AP_Terrain(AP_AHRS &_ahrs);
 
     // parameters
     AP_Int8  enable;
@@ -39,21 +39,7 @@ public:
 
     // return terrain height in meters above sea level for a location
     // return false if not available
-    bool height_amsl(const Location &loc);
-    
-private:
-    // allocate the terrain subsystem data
-    void allocate(void);
-
-    // reference to AHRS, so we can ask for our position,
-    // heading and speed
-    const AP_AHRS &ahrs;
-
-    // the grid spacing for the current data
-    uint16_t last_grid_spacing;
-
-    // number of grids in array
-    uint16_t grids_allocated;
+    bool height_amsl(const Location &loc, float &height);
 
     // a single 5x5 grid, matching a single MAVLink TERRAIN_DATA message
     struct grid {
@@ -61,7 +47,47 @@ private:
         int32_t lon;
         int16_t height[5][5];
         bool valid:1;
-    } grid;
+    };
+    
+private:
+    // allocate the terrain subsystem data
+    void allocate(void);
+
+    /*
+      grid_info is a broken down representation of a Location, giving
+      the index terms for finding the right grid
+     */
+    struct grid_info {
+        // rounded latitude/longitude in degrees. 
+        int8_t lat_degrees;
+        uint8_t lon_degrees;
+
+        // lat and lon of SW corner of 5x5 grid
+        int32_t grid_lat;
+        int32_t grid_lon;
+        // indexes into 5x5 grid. x is north, y is east
+        uint8_t idx_x;
+        uint8_t idx_y;
+        // fraction (0..1) within grid square. x is north, y is east
+        float frac_x;
+        float frac_y;
+    };
+
+    // given a location, fill a grid_info structure
+    void calculate_grid_info(const Location &loc, struct grid_info &info) const;
+
+    // find a grid
+    const struct grid *find_grid(const Location &loc, uint16_t ofs_north, uint16_t ofs_east) const;
+
+    // reference to AHRS, so we can ask for our position,
+    // heading and speed
+    AP_AHRS &ahrs;
+
+    // the grid spacing for the current data
+    uint16_t last_grid_spacing;
+
+    // number of grids in array
+    uint16_t grids_allocated;
 
     // current grids
     struct grid *grids;
