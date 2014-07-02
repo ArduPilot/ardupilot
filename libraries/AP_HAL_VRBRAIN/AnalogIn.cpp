@@ -79,11 +79,6 @@ VRBRAINAnalogSource::VRBRAINAnalogSource(int16_t pin, float initial_value) :
     _sum_value(0),
     _sum_ratiometric(0)
 {
-
-
-
-
-
 }
 
 float VRBRAINAnalogSource::read_average()
@@ -224,15 +219,6 @@ void VRBRAINAnalogIn::_timer_tick(void)
     if (ret > 0) {
         // match the incoming channels to the currently active pins
         for (uint8_t i=0; i<ret/sizeof(buf_adc[0]); i++) {
-
-
-
-
-
-
-
-        }
-        for (uint8_t i=0; i<ret/sizeof(buf_adc[0]); i++) {
             Debug("chan %u value=%u\n",
                   (unsigned)buf_adc[i].am_channel,
                   (unsigned)buf_adc[i].am_data);
@@ -244,7 +230,6 @@ void VRBRAINAnalogIn::_timer_tick(void)
             }
         }
     }
-
 
     // check for new battery data on FMUv1
     if (_battery_handle != -1) {
@@ -269,51 +254,6 @@ void VRBRAINAnalogIn::_timer_tick(void)
             }
         }
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
 
 AP_HAL::AnalogSource* VRBRAINAnalogIn::channel(int16_t pin)

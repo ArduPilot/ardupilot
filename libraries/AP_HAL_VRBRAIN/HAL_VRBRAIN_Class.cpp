@@ -43,12 +43,6 @@ static VRBRAINAnalogIn analogIn;
 static VRBRAINUtil utilInstance;
 static VRBRAINGPIO gpioDriver;
 
-
-
-
-
-
-
 //We only support 3 serials for VRBRAIN at the moment
 #if  defined(CONFIG_ARCH_BOARD_VRBRAIN_V40)
 #define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"
