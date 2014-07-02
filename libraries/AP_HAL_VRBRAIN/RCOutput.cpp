@@ -38,30 +38,11 @@ void VRBRAINRCOutput::init(void* unused)
         hal.console->printf("RCOutput: Unable to get servo count\n");        
         return;
     }
-
-
-
-
-
-
 }
 
 
 void VRBRAINRCOutput::_init_alt_channels(void)
 {
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 }
 
@@ -128,12 +109,6 @@ uint16_t VRBRAINRCOutput::get_freq(uint8_t ch)
 
 void VRBRAINRCOutput::enable_ch(uint8_t ch)
 {
-
-
-
-
-
-
     _enabled_channels |= (1U<<ch);
 }
 
@@ -236,19 +211,7 @@ void VRBRAINRCOutput::_timer_tick(void)
     if (_need_update && _pwm_fd != -1) {
         _need_update = false;
         perf_begin(_perf_rcout);
-
-            ::write(_pwm_fd, _period, _max_channel*sizeof(_period[0]));
-
-
-
-
-
-
-
-
-
-
-
+        ::write(_pwm_fd, _period, _max_channel*sizeof(_period[0]));
         perf_end(_perf_rcout);
         _last_output = now;
     }
