@@ -47,10 +47,11 @@ private:
 
     // To-Do: move these limits flags into the heli motors class
     struct AttControlHeliFlags {
-        uint8_t limit_roll      :   1;  // 1 if we have requested larger roll angle than swash can physically move
-        uint8_t limit_pitch     :   1;  // 1 if we have requested larger pitch angle than swash can physically move
-        uint8_t limit_yaw       :   1;  // 1 if we have requested larger yaw angle than tail servo can physically move
-        uint8_t leaky_i         :   1;  // 1 if we should use leaky i term for body-frame rate to motor stage
+        uint8_t limit_roll          :   1;  // 1 if we have requested larger roll angle than swash can physically move
+        uint8_t limit_pitch         :   1;  // 1 if we have requested larger pitch angle than swash can physically move
+        uint8_t limit_yaw           :   1;  // 1 if we have requested larger yaw angle than tail servo can physically move
+        uint8_t leaky_i             :   1;  // 1 if we should use leaky i term for body-frame rate to motor stage
+        uint8_t flybar_passthrough  :   1;  // 1 if we should pass through pilots input directly to swash-plate
     } _flags_heli;
 
     //
