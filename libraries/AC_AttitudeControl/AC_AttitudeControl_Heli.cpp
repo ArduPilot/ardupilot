@@ -73,7 +73,6 @@ void AC_AttitudeControl_Heli::rate_controller_run()
 {	
     // call rate controllers and send output to motors object
     // To-Do: should the outputs from get_rate_roll, pitch, yaw be int16_t which is the input to the motors library?
-    // To-Do: skip this step if the throttle out is zero?
     rate_bf_to_motor_roll_pitch(_rate_bf_target.x, _rate_bf_target.y);
     _motors.set_yaw(rate_bf_to_motor_yaw(_rate_bf_target.z));
 }
