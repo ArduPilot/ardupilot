@@ -62,6 +62,7 @@ MODULES		+= modules/uORB
 MODULES		+= lib/mathlib/math/filter
 MODULES	        += modules/libtomfastmath
 MODULES         += modules/libtomcrypt
+MODULES		+= lib/conversion
 
 #
 # Transitional support - add commands from the NuttX export archive.
