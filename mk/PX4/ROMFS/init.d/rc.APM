@@ -254,8 +254,10 @@ else
        set HAVE_FMUV3 true
     else
        echo "No MPU6000 external"
+       set HAVE_FMUV3 false
     fi
     if [ $HAVE_FMUV3 == true ]
+    then
         if mpu6000 -R 14 start
         then
                echo "Found MPU6000 internal"
