@@ -45,6 +45,7 @@ private:
     void                 _poll_data(void);
     uint8_t              _register_read( uint8_t reg );
     void                 _register_write( uint8_t reg, uint8_t val );
+    void                 _register_write_check(uint8_t reg, uint8_t val);
     bool                 _hardware_init(Sample_rate sample_rate);
 
     AP_HAL::SPIDeviceDriver *_spi;
