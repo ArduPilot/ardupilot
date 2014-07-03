@@ -51,11 +51,11 @@ class Format:
             labels = self.labels[:],
         )
 
-        fieldformats = [i for i in self.types]
-        fieldnames = self.labels[:]
+        fieldtypes = [i for i in self.types]
+        fieldlabels = self.labels[:]
 
         # field access
-        for (xname,xformat) in zip(fieldnames,fieldformats):
+        for (label, _type) in zip(fieldlabels, fieldtypes):
             def createproperty(name, format):
                 # extra scope for variable sanity
                 # scaling via _NAME and def NAME(self): return self._NAME / SCALE
@@ -65,7 +65,7 @@ class Format:
                              lambda x, v:setattr(x,attributename, Format.trycastToFormatType(v,format)))
                 members[propertyname] = p
                 members[attributename] = None
-            createproperty(xname, xformat)
+            createproperty(label, _type)
 
         # repr shows all values but the header
         members['__repr__'] = lambda x: "<{cls} {data}>".format(cls=x.__class__.__name__, data = ' '.join(["{}:{}".format(k,getattr(x,'_'+k)) for k in x.labels]))
@@ -139,7 +139,7 @@ class BinaryFormat(ctypes.LittleEndianStructure):
         ('type', ctypes.c_uint8),
         ('length', ctypes.c_uint8),
         ('name', ctypes.c_char * 4),
-        ('format', ctypes.c_char * 16),
+        ('types', ctypes.c_char * 16),
         ('labels', ctypes.c_char * 64),
     ]
     def __repr__(self):
@@ -153,12 +153,12 @@ class BinaryFormat(ctypes.LittleEndianStructure):
             labels = self.labels.split(","),
             _pack_ = True)
 
-        fieldformats = [i for i in self.format]
-        fieldnames = self.labels.split(",")
+        fieldtypes = [i for i in self.types]
+        fieldlabels = self.labels.split(",")
         fields = [('head',logheader)]
 
         # field access
-        for (xname,xformat) in zip(fieldnames,fieldformats):
+        for (label, _type) in zip(fieldlabels, fieldtypes):
             def createproperty(name, format):
                 # extra scope for variable sanity
                 # scaling via _NAME and def NAME(self): return self._NAME / SCALE
@@ -170,7 +170,7 @@ class BinaryFormat(ctypes.LittleEndianStructure):
                     p = property(lambda x:getattr(x, attributename) / scale) 
                 members[propertyname] = p
                 fields.append((attributename, BinaryFormat.FIELD_FORMAT[format]))
-            createproperty(xname, xformat)
+            createproperty(label, _type)
         members['_fields_'] = fields
 
         # repr shows all values but the header
