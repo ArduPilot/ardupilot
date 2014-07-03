@@ -41,6 +41,9 @@ public:
 	// use_leaky_i - controls whether we use leaky i term for body-frame to motor output stage
 	void use_leaky_i(bool leaky_i) {  _flags_heli.leaky_i = leaky_i; }
     
+    // use_flybar_passthrough - controls whether we pass-through control inputs to swash-plate
+	void use_flybar_passthrough(bool passthrough) {  _flags_heli.flybar_passthrough = passthrough; }
+    
     void update_feedforward_filter_rates(float time_step);
 
     // user settable parameters
