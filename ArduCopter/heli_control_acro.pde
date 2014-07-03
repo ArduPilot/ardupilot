@@ -7,6 +7,9 @@
 // heli_acro_init - initialise acro controller
 static bool heli_acro_init(bool ignore_checks)
 {
+    // if heli is equipped with a flybar, then tell the attitude controller to pass through controls directly to servos
+    attitude_control.use_flybar_passthrough(motors.has_flybar());
+
     // always successfully enter acro
     return true;
 }
