@@ -80,6 +80,13 @@
 #define AP_MOTORS_HELI_NOFLYBAR                 0
 #define AP_MOTORS_HELI_FLYBAR                   1
 
+// throttle defaults
+#define AP_MOTORS_HELI_THROTTLE_MIN             1200
+#define AP_MOTORS_HELI_THROTTLE_IDLE            1250
+#define AP_MOTORS_HELI_THROTTLE_LOW             1300
+#define AP_MOTORS_HELI_THROTTLE_HIGH            1700
+#define AP_MOTORS_HELI_THROTTLE_MAX             1800
+
 class AP_HeliControls;
 
 /// @class      AP_MotorsHeli
@@ -275,6 +282,11 @@ private:
     AP_Int8         _flybar_mode;               // Flybar present or not.  Affects attitude controller used during ACRO flight mode
     AP_Int16        _land_collective_min;       // Minimum collective when landed or landing
     AP_Int16        _direct_drive_tailspeed;    // Direct Drive VarPitch Tail ESC speed (0 ~ 1000)
+    AP_Int16        _throttle_min_pwm;          // Minimum PWM value to send to motor throttle servo
+    AP_Int16        _throttle_idle_pwm;         // PWM value to send to motor throttle servo to idle motor
+    AP_Int16        _throttle_low_pwm;          // PWM value to send to motor throttle servo at 0 collective pitch
+    AP_Int16        _throttle_high_pwm;         // PWM value to send to motor throttle servo at maximum collective pitch
+    AP_Int16        _throttle_max_pwm;          // Maximum PWM value to send to motor throttle servo
 
     // internal variables
     float           _rollFactor[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];

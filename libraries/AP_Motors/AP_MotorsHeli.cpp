@@ -205,6 +205,51 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("TAIL_SPEED", 24, AP_MotorsHeli,  _direct_drive_tailspeed, AP_MOTOR_HELI_DDTAIL_DEFAULT),
+    
+    // @Param: THROTTLE_MIN
+    // @DisplayName: Minimum Throttle Servo Position
+    // @Description: PWM sent to throttle servo when disarmed.
+    // @Range: 1000 2000
+    // @Units: PWM
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("THROTTLE_MIN", 25, AP_MotorsHeli, _throttle_min_pwm, AP_MOTORS_HELI_THROTTLE_MIN),
+    
+    // @Param: THROTTLE_IDLE
+    // @DisplayName: Throttle Servo Idle Position
+    // @Description: PWM sent to throttle servo for idle.
+    // @Range: 1000 2000
+    // @Units: PWM
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("THROTTLE_IDLE", 26, AP_MotorsHeli, _throttle_idle_pwm, AP_MOTORS_HELI_THROTTLE_IDLE),
+    
+    // @Param: THROTTLE_LOW
+    // @DisplayName: Throttle Servo Low Power Position
+    // @Description: PWM sent to throttle servo at zero pitch.
+    // @Range: 1000 2000
+    // @Units: PWM
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("THROTTLE_LOW", 27, AP_MotorsHeli, _throttle_low_pwm, AP_MOTORS_HELI_THROTTLE_LOW),
+    
+    // @Param: THROTTLE_HIGH
+    // @DisplayName: Throttle Servo High Power Position
+    // @Description: PWM sent to throttle servo at max collective pitch.
+    // @Range: 1000 2000
+    // @Units: PWM
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("THROTTLE_HIGH", 28, AP_MotorsHeli, _throttle_high_pwm, AP_MOTORS_HELI_THROTTLE_HIGH),
+    
+    // @Param: THROTTLE_MAX
+    // @DisplayName: Maximum Throttle Servo Position
+    // @Description: Maximum permissible throttle servo position.
+    // @Range: 1000 2000
+    // @Units: PWM
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("THROTTLE_MAX", 29, AP_MotorsHeli, _throttle_max_pwm, AP_MOTORS_HELI_THROTTLE_MAX),
 
     AP_GROUPEND
 };
