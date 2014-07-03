@@ -815,7 +815,7 @@ static const struct LogStructure sbp_log_structures[] PROGMEM = {
     { LOG_MSG_SBPTRACKING1, sizeof(log_SbpTracking1),
       "SBT1", "IBfBfBfBfBfBfBf",  "TimeMS,s1,c1,s2,c2,s3,c3,s4,c4,s5,c5,s6,c6,s7,c7" },
     { LOG_MSG_SBPTRACKING2, sizeof(log_SbpTracking2),      
-      "SBT2", "IBfBfBfBfBfBfBF",  "TimeMS,s8,c8,s9,c9,s10,c10,s11,c11,s12,c12,s13,c13,s14,c14" }
+      "SBT2", "IBfBfBfBfBfBfBf",  "TimeMS,s8,c8,s9,c9,s10,c10,s11,c11,s12,c12,s13,c13,s14,c14" }
 
 };
 
@@ -891,7 +891,7 @@ AP_GPS_SBP::logging_log_baseline_ecef(struct sbp_baseline_ecef_t* b)
     float x = b->x / 1000.0;
     float y = b->y / 1000.0;
     float z = b->z / 1000.0;
-    int32_t len = (int32_t) safe_sqrt(x*x+y*y+z*z) * 1000.0;
+    int32_t len = (int32_t) (safe_sqrt(x*x+y*y+z*z) * 1000.0);
 
     struct log_SbpBaseline pkt = {
         LOG_PACKET_HEADER_INIT(LOG_MSG_SBPBASELINE),
