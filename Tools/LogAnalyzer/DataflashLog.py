@@ -10,6 +10,7 @@ import os
 import numpy
 import bisect
 import sys
+import ctypes
 
 class Format:
     '''Data channel format as specified by the FMT lines in the log file'''
@@ -91,6 +92,101 @@ class Format:
         #print(members)
         return cls
 
+
+class logheader(ctypes.LittleEndianStructure):
+    _fields_ = [ \
+        ('head1', ctypes.c_uint8),
+        ('head2', ctypes.c_uint8),
+        ('msgid', ctypes.c_uint8),
+    ]
+    def __repr__(self):
+        return "<logheader head1=0x{self.head1:x} head2=0x{self.head2:x} msgid=0x{self.msgid:x} ({self.msgid})>".format(self=self)
+
+
+class BinaryFormat(ctypes.LittleEndianStructure):
+    NAME = 'FMT'
+    MSG = 128
+    SIZE = 0
+    FIELD_FORMAT = {
+        'b': ctypes.c_int8,
+        'B': ctypes.c_uint8,
+        'h': ctypes.c_int16,
+        'H': ctypes.c_uint16,
+        'i': ctypes.c_int32,
+        'I': ctypes.c_uint32,
+        'f': ctypes.c_float,
+        'n': ctypes.c_char * 4,
+        'N': ctypes.c_char * 16,
+        'Z': ctypes.c_char * 64,
+        'c': ctypes.c_int16,# * 100,
+        'C': ctypes.c_uint16,# * 100,
+        'e': ctypes.c_int32,# * 100,
+        'E': ctypes.c_uint32,# * 100,
+        'L': ctypes.c_int32,
+        'M': ctypes.c_uint8,
+    }
+
+    FIELD_SCALE = {
+        'c': 100,
+        'C': 100,
+        'e': 100,
+        'E': 100,
+    }
+
+    _packed_ = True
+    _fields_ = [ \
+        ('head', logheader),
+        ('type', ctypes.c_uint8),
+        ('length', ctypes.c_uint8),
+        ('name', ctypes.c_char * 4),
+        ('format', ctypes.c_char * 16),
+        ('labels', ctypes.c_char * 64),
+    ]
+    def __repr__(self):
+        return "<{cls} {data}>".format(cls=self.__class__.__name__, data = ' '.join(["{}:{}".format(k,getattr(self,k)) for (k,_) in self._fields_[1:]]))
+
+    def to_class(self):
+        members = dict(
+            NAME = self.name,
+            MSG = self.type,
+            SIZE = self.length,
+            labels = self.labels.split(","),
+            _pack_ = True)
+
+        fieldformats = [i for i in self.format]
+        fieldnames = self.labels.split(",")
+        fields = [('head',logheader)]
+
+        # field access
+        for (xname,xformat) in zip(fieldnames,fieldformats):
+            def createproperty(name, format):
+                # extra scope for variable sanity
+                # scaling via _NAME and def NAME(self): return self._NAME / SCALE
+                propertyname = name
+                attributename = '_' + name
+                scale = BinaryFormat.FIELD_SCALE.get(format, None)
+                p = property(lambda x:getattr(x, attributename))
+                if scale is not None:
+                    p = property(lambda x:getattr(x, attributename) / scale) 
+                members[propertyname] = p
+                fields.append((attributename, BinaryFormat.FIELD_FORMAT[format]))
+            createproperty(xname, xformat)
+        members['_fields_'] = fields
+
+        # repr shows all values but the header
+        members['__repr__'] = lambda x: "<{cls} {data}>".format(cls=x.__class__.__name__, data = ' '.join(["{}:{}".format(k,getattr(x,k)) for k in x.labels]))
+
+        # finally, create the class
+        cls = type(\
+            'Log__{:s}'.format(self.name),
+            (ctypes.LittleEndianStructure,),
+            members
+        )
+#			print(members)
+        assert ctypes.sizeof(cls) == cls.SIZE, "size mismatch"
+        return cls
+
+BinaryFormat.SIZE = ctypes.sizeof(BinaryFormat)
 
 class Channel:
     '''storage for a single stream of data, i.e. all GPS.RelAlt values'''
@@ -352,7 +448,7 @@ class DataflashLog:
             raise ValueError("Unknown log format for {}: {}".format(self.logfile, format))
 
         if head == '\xa3\x95\x80\x80':
-#            lineNumber = self.read_binary(f, ignoreBadlines)
+            numBytes, lineNumber = self.read_binary(f, ignoreBadlines)
             pass
         else:
             numBytes, lineNumber = self.read_text(f, ignoreBadlines)
@@ -484,4 +580,36 @@ class DataflashLog:
                 raise Exception("Error parsing line %d of log file %s - %s" % (lineNumber,self.filename,e.args[0]))
         return (numBytes,lineNumber)
 
+    def read_binary(self, f, ignoreBadlines):
+        lineNumber = 0
+        numBytes = 0
+        for e in self._read_binary(f, ignoreBadlines):
+            lineNumber += 1
+            if e is None:
+                continue
+            numBytes += e.SIZE
+#            print(e)
+            self.process(lineNumber, e)
+        return (numBytes,lineNumber)
 
+    def _read_binary(self, f, ignoreBadlines):
+        self._formats = {128:BinaryFormat}
+        data = bytearray(f.read())
+        offset = 0
+        while len(data) > offset:
+            h = logheader.from_buffer(data, offset)
+            if not (h.head1 == 0xa3 and h.head2 == 0x95):
+                raise ValueError(h)
+            if h.msgid in self._formats:
+                typ = self._formats[h.msgid]
+                if len(data) <= offset + typ.SIZE:
+                    break
+                try:
+                    e = typ.from_buffer(data, offset)
+                except:
+                    print("data:{} offset:{} size:{} sizeof:{} sum:{}".format(len(data),offset,typ.SIZE,ctypes.sizeof(typ),offset+typ.SIZE))
+                    raise
+                offset += typ.SIZE
+            else:
+                raise ValueError(str(h) + "unknown type")
+            yield e
