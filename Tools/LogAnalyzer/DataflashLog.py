@@ -510,7 +510,7 @@ class DataflashLog:
                 except:
                     self.modeChanges[lineNumber] = (e.Mode, e.ThrCrs)
             elif self.vehicleType == "ArduPlane" or self.vehicleType == "ArduRover":
-                self.modeChanges[lineNumber] = (tokens[2],int(tokens[3]))
+                self.modeChanges[lineNumber] = (e.Mode, e.ModeNum)
             else:
                 raise Exception("Unknown log type for MODE line {} {}".format(self.vehicleType, repr(e)))
         # anything else must be the log data
