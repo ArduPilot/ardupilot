@@ -12,6 +12,13 @@ chmod +x install-me.sh
 ```
 * After above steps reboot and check your kernel version using `uname -r`,it should be `3.8.13bone57`
 
+----
+
+NOTE: For Ubuntu different scripts shall be used. E.g., for precise:
+    - http://rcn-ee.net/deb/precise-armhf/v3.8.13-bone57/install-me.sh
+
+----
+
 ###Setting Up PRU Compiler
 * Download [PRU C Compiler v2.0.0B2 installer](http://software-dl.ti.com/codegen/non-esd/downloads/beta.htm)
 * Please check the path where you install PRU compiler.
@@ -30,3 +37,4 @@ source ~/.bashrc
 * To load firmware use 
   - `./startup.sh load` : only once after reboot it will copy overlays and firmware to `/lib/firmware/` and loads them.
   - `./startup.sh reload` : it only copies firmware to `/lib/firmware/` and reloads pru firmware.
+
