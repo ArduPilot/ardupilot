@@ -155,6 +155,10 @@ class BinaryFormat(ctypes.LittleEndianStructure):
 
         fieldtypes = [i for i in self.types]
         fieldlabels = self.labels.split(",")
+        if len(fieldtypes) != len(fieldlabels):
+            print("Broken FMT message for {} .. ignoring".format(self.name), file=sys.stderr)
+            return None
+
         fields = [('head',logheader)]
 
         # field access
@@ -182,8 +186,13 @@ class BinaryFormat(ctypes.LittleEndianStructure):
             (ctypes.LittleEndianStructure,),
             members
         )
-#			print(members)
-        assert ctypes.sizeof(cls) == cls.SIZE, "size mismatch"
+
+        if ctypes.sizeof(cls) != cls.SIZE:
+            print("size mismatch for {} expected {} got {}".format(cls, ctypes.sizeof(cls), cls.SIZE), file=sys.stderr)
+#            for i in cls.labels:
+#                print("{} = {}".format(i,getattr(cls,'_'+i)))
+            return None
+
         return cls
 
 BinaryFormat.SIZE = ctypes.sizeof(BinaryFormat)
@@ -472,10 +481,11 @@ class DataflashLog:
     def process(self, lineNumber, e):
         if e.NAME == 'FMT':
             cls = e.to_class()
-            if hasattr(e, 'type') and e.type not in self._formats: # binary log specific
-                self._formats[e.type] = cls
-            if cls.NAME not in self.formats:
-                self.formats[cls.NAME] = cls
+            if cls is not None: # FMT messages can be broken ...
+                if hasattr(e, 'type') and e.type not in self._formats: # binary log specific
+                    self._formats[e.type] = cls
+                if cls.NAME not in self.formats:
+                    self.formats[cls.NAME] = cls
         elif e.NAME == "PARM":
             self.parameters[e.Name] = e.Value
         elif e.NAME == "MSG":
