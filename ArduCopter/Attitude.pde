@@ -31,9 +31,17 @@ static void get_pilot_desired_lean_angles(int16_t roll_in, int16_t pitch_in, int
         _scaler = (float)aparm.angle_max/(float)ROLL_PITCH_INPUT_MAX;
     }
 
+    float roll_unit = roll_in / (float) ROLL_PITCH_INPUT_MAX;
+    float pitch_unit = pitch_in / (float) ROLL_PITCH_INPUT_MAX;
+    float length = sqrt(roll_unit * roll_unit + pitch_unit * pitch_unit);
+    if (length > 1.0) {
+        roll_unit = roll_unit / length;
+        pitch_unit = pitch_unit / length;
+    }
+
     // convert pilot input to lean angle
-    roll_out = (int16_t)((float)roll_in * _scaler);
-    pitch_out = (int16_t)((float)pitch_in * _scaler);
+    roll_out = (int16_t)(roll_unit * aparm.angle_max);
+    pitch_out = (int16_t)(pitch_unit * aparm.angle_max);
 }
 
 // get_pilot_desired_heading - transform pilot's yaw input into a desired heading
