@@ -458,6 +458,23 @@ static void Log_Write_Compass()
         DataFlash.WriteBlock(&pkt2, sizeof(pkt2));
     }
 #endif
+#if COMPASS_MAX_INSTANCES > 2
+    if (compass.get_count() > 2) {
+        const Vector3f &mag3_offsets = compass.get_offsets(2);
+        const Vector3f &mag3 = compass.get_field(2);
+        struct log_Compass pkt3 = {
+            LOG_PACKET_HEADER_INIT(LOG_COMPASS3_MSG),
+            time_ms         : hal.scheduler->millis(),
+            mag_x           : (int16_t)mag3.x,
+            mag_y           : (int16_t)mag3.y,
+            mag_z           : (int16_t)mag3.z,
+            offset_x        : (int16_t)mag3_offsets.x,
+            offset_y        : (int16_t)mag3_offsets.y,
+            offset_z        : (int16_t)mag3_offsets.z
+        };
+        DataFlash.WriteBlock(&pkt3, sizeof(pkt3));
+    }
+#endif
 }
 
 static void Log_Write_GPS(uint8_t instance)
