@@ -717,11 +717,15 @@ void AP_MotorsHeli::rsc_control()
                 // note: this always returns true if not using direct drive variable pitch tail
                 if (tail_rotor_runup_complete()) {
                     rotor_ramp(_rotor_desired);
+                    // output to rsc servo
+                    write_rsc_range(_rotor_out);
                 }
             }else{
                 // shutting down main rotor
                 rotor_ramp(0);
-                // shut-down tail rotor.  Note: this does nothing if not using direct drive vairable pitch tail        
+                // output to rsc servo
+                write_rsc_range(_rotor_out);
+                // shut-down tail rotor.  Note: this does nothing if not using direct drive variable pitch tail        
                 tail_ramp(0);
             }
             break;
@@ -798,9 +802,6 @@ void AP_MotorsHeli::rotor_ramp(int16_t rotor_target)
     if (_heliflags.motor_runup_complete && rotor_target == 0 && _rotor_speed_estimate <= 0) {
         _heliflags.motor_runup_complete = false;
     }
-
-    // output to rsc servo
-    write_rsc_range(_rotor_out);
 }
 
 // tail_ramp - ramps tail motor towards target.  Only used for direct drive variable pitch tails
