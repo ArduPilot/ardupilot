@@ -406,6 +406,12 @@ void AP_MotorsHeli::recalc_scalers()
         _rsc_runup_time = _rsc_ramp_time;
     }
     _rsc_runup_increment = 1000.0f / (_rsc_runup_time * 100.0f);
+    
+    // calculate collective mid point as a number from 0 to 1000
+    _collective_mid_pwm = ((float)(_collective_mid-_collective_min))/((float)(_collective_max-_collective_min))*1000.0f;
+
+    _throttle_range = _throttle_high_pwm - _throttle_low_pwm;    
+    _collective_range = 1000 - _collective_mid_pwm;
 }
 
 //
@@ -485,10 +491,7 @@ void AP_MotorsHeli::init_swash()
         _collective_max = 2000;
     }
     _collective_mid = constrain_int16(_collective_mid, _collective_min, _collective_max);
-
-    // calculate collective mid point as a number from 0 to 1000
-    _collective_mid_pwm = ((float)(_collective_mid-_collective_min))/((float)(_collective_max-_collective_min))*1000.0f;
-
+    
     // determine roll, pitch and collective input scaling
     _roll_scaler = (float)_roll_max/4500.0f;
     _pitch_scaler = (float)_pitch_max/4500.0f;
@@ -577,6 +580,7 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
 
         // check if we need to reinitialise the swash
         if (!_heliflags.swash_initialised) {
+            recalc_scalers();
             init_swash();
         }
 
@@ -684,29 +688,55 @@ void AP_MotorsHeli::rsc_control()
             write_aux(_tail_direct_drive_out);
         }
         // shut down main rotor
-        if (_rsc_mode != AP_MOTORS_HELI_RSC_MODE_NONE) {
-            _rotor_out = 0;
-            _rotor_speed_estimate = 0;
-            write_rsc_range(_rotor_out);
+        switch (_rsc_mode){
+            case AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH:
+            case AP_MOTORS_HELI_RSC_MODE_SETPOINT:
+                _rotor_out = 0;
+                _rotor_speed_estimate = 0;
+                write_rsc_range(_rotor_out);
+                break;
+            case AP_MOTORS_HELI_RSC_MODE_THROTTLE_CURVE:
+                _rotor_out = 0;
+                _rotor_speed_estimate = 0;
+                write_rsc_pwm(_throttle_min_pwm);
+                break;
+            default:
+                break;
         }
         return;
     }
 
-    // ramp up or down main rotor and tail
-    if (_rotor_desired > 0) {
-        // ramp up tail rotor (this does nothing if not using direct drive variable pitch tail)
-        tail_ramp(_direct_drive_tailspeed);
-        // note: this always returns true if not using direct drive variable pitch tail
-        if (tail_rotor_runup_complete()) {
-            rotor_ramp(_rotor_desired);
-        }
-    }else{
-        // shutting down main rotor
-        rotor_ramp(0);
-        // shut-down tail rotor.  Note: this does nothing if not using direct drive vairable pitch tail        
-        tail_ramp(0);
+    switch (_rsc_mode){
+        case AP_MOTORS_HELI_RSC_MODE_NONE:
+        case AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH:
+        case AP_MOTORS_HELI_RSC_MODE_SETPOINT:
+            // ramp up or down main rotor and tail
+            if (_rotor_desired > 0) {
+                // ramp up tail rotor (this does nothing if not using direct drive variable pitch tail)
+                tail_ramp(_direct_drive_tailspeed);
+                // note: this always returns true if not using direct drive variable pitch tail
+                if (tail_rotor_runup_complete()) {
+                    rotor_ramp(_rotor_desired);
+                }
+            }else{
+                // shutting down main rotor
+                rotor_ramp(0);
+                // shut-down tail rotor.  Note: this does nothing if not using direct drive vairable pitch tail        
+                tail_ramp(0);
+            }
+            break;
+        case AP_MOTORS_HELI_RSC_MODE_THROTTLE_CURVE:
+            int16_t throttle_out;
+            if (_rotor_desired > 0){
+                throttle_out = _throttle_low_pwm + (_throttle_range * (abs(_collective_out - _collective_mid_pwm)) / _collective_range);
+                throttle_out = constrain_int16(throttle_out, _throttle_low_pwm, _throttle_max_pwm);
+            }else{
+                throttle_out = _throttle_idle_pwm;
+            }
+            write_rsc_pwm(throttle_out);
+            break;
     }
-
+        
     // direct drive fixed pitch tail servo gets copy of yaw servo out (ch4) while main rotor is running
     if (_tail_type == AP_MOTORS_HELI_TAILTYPE_DIRECTDRIVE_FIXEDPITCH) {
         // output fixed-pitch speed control if Ch8 is high
@@ -822,6 +852,13 @@ void AP_MotorsHeli::write_rsc_range(int16_t servo_out)
     _servo_rsc.servo_out = servo_out;
     _servo_rsc.calc_pwm();
     hal.rcout->write(AP_MOTORS_HELI_RSC, _servo_rsc.radio_out);
+}
+
+// write_rsc_pwm - outputs pwm onto output rsc channel (ch8)
+// direct pass-through of pwm range 1000-2000
+void AP_MotorsHeli::write_rsc_pwm(int16_t pwm_out)
+{
+    hal.rcout->write(AP_MOTORS_HELI_RSC, pwm_out);
 }
 
 // write_aux - outputs pwm onto output aux channel (ch7)
