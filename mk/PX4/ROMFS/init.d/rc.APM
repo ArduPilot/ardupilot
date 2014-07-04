@@ -241,7 +241,7 @@ else
     else
         echo "No external hmc5883"
     fi
-    if hmc5883 -C -I -R 8 start
+    if hmc5883 -C -I -R 4 start
     then
         echo "Have internal hmc5883"
     else
