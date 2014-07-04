@@ -266,7 +266,7 @@ else
                echo "No MPU6000" >> $logfile
                sh /etc/init.d/rc.error
         fi
-        if l3gd20 -X -R 6 start
+        if l3gd20 -X -R 4 start
         then
                echo "l3gd20 external started OK"
         else
