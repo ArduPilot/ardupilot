@@ -485,6 +485,43 @@ static void set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, u
     // TO-DO: restore support for clockwise and counter clockwise rotation held in cmd.content.yaw.direction.  1 = clockwise, -1 = counterclockwise
 }
 
+// set_auto_yaw_roi - sets the yaw to look at roi for auto mode
+static void set_auto_yaw_roi(const Location &roi_location)
+{
+    // if location is zero lat, lon and altitude turn off ROI
+    if (auto_yaw_mode == AUTO_YAW_ROI && (roi_location.alt == 0 && roi_location.lat == 0 && roi_location.lng == 0)) {
+        // set auto yaw mode back to default assuming the active command is a waypoint command.  A more sophisticated method is required to ensure we return to the proper yaw control for the active command
+        set_auto_yaw_mode(get_default_auto_yaw_mode(false));
+#if MOUNT == ENABLED
+        // switch off the camera tracking if enabled
+        if (camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
+            camera_mount.set_mode_to_default();
+        }
+#endif  // MOUNT == ENABLED
+    }else{
+#if MOUNT == ENABLED
+        // check if mount type requires us to rotate the quad
+        if(camera_mount.get_mount_type() != AP_Mount::k_pan_tilt && camera_mount.get_mount_type() != AP_Mount::k_pan_tilt_roll) {
+            roi_WP = pv_location_to_vector(roi_location);
+            set_auto_yaw_mode(AUTO_YAW_ROI);
+        }
+        // send the command to the camera mount
+        camera_mount.set_roi_cmd(&roi_location);
+
+        // TO-DO: expand handling of the do_nav_roi to support all modes of the MAVLink.  Currently we only handle mode 4 (see below)
+        //      0: do nothing
+        //      1: point at next waypoint
+        //      2: point at a waypoint taken from WP# parameter (2nd parameter?)
+        //      3: point at a location given by alt, lon, lat parameters
+        //      4: point at a target given a target id (can't be implemented)
+#else
+        // if we have no camera mount aim the quad at the location
+        roi_WP = pv_location_to_vector(roi_location);
+        set_auto_yaw_mode(AUTO_YAW_ROI);
+#endif  // MOUNT == ENABLED
+    }
+}
+
 // get_auto_heading - returns target heading depending upon auto_yaw_mode
 // 100hz update rate
 float get_auto_heading(void)

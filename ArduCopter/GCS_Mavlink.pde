@@ -1124,6 +1124,21 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
             break;
 
+        case MAV_CMD_DO_SET_ROI:
+            // param1 : regional of interest mode (not supported)
+            // param2 : mission index/ target id (not supported)
+            // param3 : ROI index (not supported)
+            // param5 : x / lat
+            // param6 : y / lon
+            // param7 : z / alt
+            Location roi_loc;
+            roi_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
+            roi_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
+            roi_loc.alt = (int32_t)(packet.param7 * 100.0f);
+            set_auto_yaw_roi(roi_loc);
+            result = MAV_RESULT_ACCEPTED;
+            break;
+
         case MAV_CMD_MISSION_START:
             if (set_mode(AUTO)) {
                 result = MAV_RESULT_ACCEPTED;
