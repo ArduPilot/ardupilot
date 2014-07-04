@@ -74,6 +74,7 @@ enum mode {
 #define LOG_CAMERA_MSG          0x0B    // deprecated
 #define LOG_COMPASS2_MSG        0x0C
 #define LOG_STEERING_MSG        0x0D
+#define LOG_COMPASS3_MSG        0x0E
 
 #define TYPE_AIRSTART_MSG		0x00
 #define TYPE_GROUNDSTART_MSG	0x01
