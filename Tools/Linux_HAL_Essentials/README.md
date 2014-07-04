@@ -24,8 +24,8 @@ NOTE: For Ubuntu different scripts shall be used. E.g., for precise:
 * Please check the path where you install PRU compiler.
 * Setting environment variable
 ```
-echo export PATH=/path/to/pru/compiler/bin:$PATH > ~/.bashrc
-echo export PRU_C_DIR="/path/to/pru/compiler/include;/path/to/pru/compiler/lib" > ~/.bashrc
+echo export PATH=/path/to/pru/compiler/bin:$PATH >> ~/.bashrc
+echo export PRU_C_DIR="/path/to/pru/compiler/include;/path/to/pru/compiler/lib" >> ~/.bashrc
 source ~/.bashrc
 ```
 
