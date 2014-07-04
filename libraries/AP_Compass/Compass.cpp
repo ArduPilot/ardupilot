@@ -110,6 +110,11 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     AP_GROUPINFO("PRIMARY", 12, Compass, _primary, 0),
 #endif
 
+#if COMPASS_MAX_INSTANCES > 2
+    AP_GROUPINFO("OFS3",    13, Compass, _offset[2], 0),
+    AP_GROUPINFO("MOT3",    14, Compass, _motor_compensation[2], 0),
+#endif
+
     AP_GROUPEND
 };
 

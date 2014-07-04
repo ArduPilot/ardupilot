@@ -45,7 +45,7 @@
    than 1 then redundent sensors may be available
  */
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-#define COMPASS_MAX_INSTANCES 2
+#define COMPASS_MAX_INSTANCES 3
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #define COMPASS_MAX_INSTANCES 2
 #else
