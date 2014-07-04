@@ -235,17 +235,17 @@ then
     fi
 else
     echo "Starting FMUv2 sensors"
-    if hmc5883 start
+    if hmc5883 -C -X start
     then
-        echo "Using external magnetometer"
-        if hmc5883 calibrate
-        then
-          echo "hmc5883 calibrate OK"
-        else 
-          echo "hmc5883 calibrate failed"
-          echo "hmc5883 calibrate failed" >> $logfile
-          tone_alarm MSBBB
-        fi
+        echo "Have external hmc5883"
+    else
+        echo "No external hmc5883"
+    fi
+    if hmc5883 -C -I -R 8 start
+    then
+        echo "Have internal hmc5883"
+    else
+        echo "No internal hmc5883"
     fi
 
     # external MPU6000 is rotated YAW_180 from standard
