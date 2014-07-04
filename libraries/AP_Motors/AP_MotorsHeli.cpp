@@ -156,8 +156,8 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
 
     // @Param: RSC_MODE
     // @DisplayName: Rotor Speed Control Mode
-    // @Description: Controls the source of the desired rotor speed, either ch8 or RSC_SETPOINT
-    // @Values: 0:None, 1:Ch8 Input, 2:SetPoint
+    // @Description: Controls the method of rotor speed control
+    // @Values: 0:None, 1:Ch8 Input, 2:SetPoint, 3:Throttle Curve
     // @User: Standard
     AP_GROUPINFO("RSC_MODE", 16, AP_MotorsHeli,     _rsc_mode, AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH),
 
@@ -687,7 +687,7 @@ void AP_MotorsHeli::rsc_control()
         if (_rsc_mode != AP_MOTORS_HELI_RSC_MODE_NONE) {
             _rotor_out = 0;
             _rotor_speed_estimate = 0;
-            write_rsc(_rotor_out);
+            write_rsc_range(_rotor_out);
         }
         return;
     }
@@ -770,7 +770,7 @@ void AP_MotorsHeli::rotor_ramp(int16_t rotor_target)
     }
 
     // output to rsc servo
-    write_rsc(_rotor_out);
+    write_rsc_range(_rotor_out);
 }
 
 // tail_ramp - ramps tail motor towards target.  Only used for direct drive variable pitch tails
@@ -815,9 +815,9 @@ bool AP_MotorsHeli::tail_rotor_runup_complete()
     return (armed() && _tail_direct_drive_out >= _direct_drive_tailspeed);
 }
 
-// write_rsc - outputs pwm onto output rsc channel (ch8)
+// write_rsc_range - outputs pwm onto output rsc channel (ch8)
 // servo_out parameter is of the range 0 ~ 1000
-void AP_MotorsHeli::write_rsc(int16_t servo_out)
+void AP_MotorsHeli::write_rsc_range(int16_t servo_out)
 {
     _servo_rsc.servo_out = servo_out;
     _servo_rsc.calc_pwm();

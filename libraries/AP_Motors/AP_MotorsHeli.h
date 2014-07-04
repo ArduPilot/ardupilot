@@ -61,9 +61,10 @@
 
 
 // main rotor speed control types (ch8 out)
-#define AP_MOTORS_HELI_RSC_MODE_NONE            0       // main rotor ESC is directly connected to receiver, pilot controls ESC speed through transmitter directly
-#define AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH 1       // main rotor ESC is connected to RC8 (out), pilot desired rotor speed provided by CH8 input
-#define AP_MOTORS_HELI_RSC_MODE_SETPOINT        2       // main rotor ESC is connected to RC8 (out), desired speed is held in RSC_SETPOINT parameter
+#define AP_MOTORS_HELI_RSC_MODE_NONE            0       // main rotor motor control is directly connected to receiver, pilot controls ESC speed through transmitter directly
+#define AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH 1       // main rotor speed is controlled by an ESC connected to RC8 (out), pilot desired rotor speed provided by CH8 input
+#define AP_MOTORS_HELI_RSC_MODE_SETPOINT        2       // main rotor speed is controlled by an ESC connected to RC8 (out), desired speed is held in RSC_SETPOINT parameter
+#define AP_MOTORS_HELI_RSC_MODE_THROTTLE_CURVE  3       // main rotor speed is controlled open-loop by a throttle servo or ESC connected to RC8(out)
 
 // default main rotor speed (ch8 out) as a number from 0 ~ 1000
 #define AP_MOTORS_HELI_RSC_SETPOINT             500
@@ -239,8 +240,8 @@ private:
     // return true if the tail rotor is up to speed
     bool tail_rotor_runup_complete();
 
-    // write_rsc - outputs pwm onto output rsc channel (ch8).  servo_out parameter is of the range 0 ~ 1000
-    void write_rsc(int16_t servo_out);
+    // write_rsc_range - outputs pwm onto output rsc channel (ch8).  servo_out parameter is of the range 0 ~ 1000
+    void write_rsc_range(int16_t servo_out);
 
     // write_aux - outputs pwm onto output aux channel (ch7). servo_out parameter is of the range 0 ~ 1000
     void write_aux(int16_t servo_out);
