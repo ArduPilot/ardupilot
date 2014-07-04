@@ -143,13 +143,16 @@ start_command(const AP_Mission::Mission_Command& cmd)
     // system to control the vehicle attitude and the attitude of various
     // devices such as cameras.
     //    |Region of interest mode. (see MAV_ROI enum)| Waypoint index/ target ID. (see MAV_ROI enum)| ROI index (allows a vehicle to manage multiple cameras etc.)| Empty| x the location of the fixed ROI (see MAV_FRAME)| y| z|
-    case MAV_CMD_NAV_ROI:
- #if 0
-        // send the command to the camera mount
-        camera_mount.set_roi_cmd(&cmd.content.location);
- #else
-        gcs_send_text_P(SEVERITY_LOW, PSTR("DO_SET_ROI not supported"));
- #endif
+    case MAV_CMD_DO_SET_ROI:
+        if (cmd.content.location.alt == 0 && cmd.content.location.lat == 0 && cmd.content.location.lng == 0) {
+            // switch off the camera tracking if enabled
+            if (camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
+                camera_mount.set_mode_to_default();
+            }
+        } else {
+            // send the command to the camera mount
+            camera_mount.set_roi_cmd(&cmd.content.location);
+        }
         break;
 
     case MAV_CMD_DO_MOUNT_CONFIGURE:                    // Mission command to configure a camera mount |Mount operation mode (see MAV_CONFIGURE_MOUNT_MODE enum)| stabilize roll? (1 = yes, 0 = no)| stabilize pitch? (1 = yes, 0 = no)| stabilize yaw? (1 = yes, 0 = no)| Empty| Empty| Empty|
