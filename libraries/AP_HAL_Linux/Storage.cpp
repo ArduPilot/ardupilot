@@ -19,7 +19,7 @@ using namespace Linux;
 
 // name the storage file after the sketch so you can use the same board
 // card for ArduCopter and ArduPlane
-#define STORAGE_DIR "/var/run/APM"
+#define STORAGE_DIR "/var/APM"
 #define STORAGE_FILE STORAGE_DIR "/" SKETCHNAME ".stg"
 
 extern const AP_HAL::HAL& hal;
