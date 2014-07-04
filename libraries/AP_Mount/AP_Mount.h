@@ -61,6 +61,8 @@ public:
     void                    update_mount_position();
     void                    update_mount_type(); ///< Auto-detect the mount gimbal type depending on the functions assigned to the servos
     void                    debug_output();      ///< For testing and development. Called in the medium loop.
+    void                    auto_retract(bool retract_mount);  
+
     // Accessors
     enum MountType          get_mount_type() {
         return _mount_type;

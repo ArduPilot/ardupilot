@@ -1028,6 +1028,36 @@ static void update_mount()
 #if MOUNT == ENABLED
     // update camera mount's position
     camera_mount.update_mount_position();
+    
+    // lasts < 10 us on APM2
+    // automatically retract camera mount before hitting the ground in stabilize, rtl, land 
+#if MNT_AUTO_RETRACT == ENABLED  
+    if (g.mnt_autortrct_h > 0)  // = 0 to disable auto retract  
+    {
+        switch (control_mode) 
+        {
+        case STABILIZE:
+        case RTL:
+        case LAND:
+            if (sonar_alt_health < SONAR_ALT_HEALTH_MAX) break;
+            if (sonar_alt < g.mnt_autortrct_h)
+            {   // retract to avoid hitting the ground
+                camera_mount.auto_retract(true);
+            }
+            break;
+
+        default:
+            if (sonar_alt_health < SONAR_ALT_HEALTH_MAX) break;
+            if (sonar_alt > g.mnt_autortrct_h)
+            {
+                // return to previous position
+                camera_mount.auto_retract(false);
+            }
+            break;
+        } // switch
+    } // (g.mnt_autortrct_h > 0)  
+#endif    
+    
 #endif
 
 #if MOUNT2 == ENABLED
