@@ -862,6 +862,26 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 result = MAV_RESULT_ACCEPTED;
                 break;
 
+#if MOUNT == ENABLED
+            // Sets the region of interest (ROI) for the camera
+            case MAV_CMD_DO_SET_ROI:
+                Location roi_loc;
+                roi_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
+                roi_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
+                roi_loc.alt = (int32_t)(packet.param7 * 100.0f);
+                if (roi_loc.lat == 0 && roi_loc.lng == 0 && roi_loc.alt == 0) {
+                    // switch off the camera tracking if enabled
+                    if (camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
+                        camera_mount.set_mode_to_default();
+                    }
+                } else {
+                    // send the command to the camera mount
+                    camera_mount.set_roi_cmd(&roi_loc);
+                }
+                result = MAV_RESULT_ACCEPTED;
+                break;
+#endif
+
             case MAV_CMD_MISSION_START:
                 set_mode(AUTO);
                 result = MAV_RESULT_ACCEPTED;
