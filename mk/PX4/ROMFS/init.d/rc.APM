@@ -248,6 +248,7 @@ else
         fi
     fi
 
+    # external MPU6000 is rotated YAW_180 from standard
     if mpu6000 -X -R 4 start
     then
        echo "Found MPU6000 external"
@@ -258,6 +259,7 @@ else
     fi
     if [ $HAVE_FMUV3 == true ]
     then
+        # internal MPU6000 is rotated ROLL_180_YAW_270 from standard
         if mpu6000 -R 14 start
         then
                echo "Found MPU6000 internal"
@@ -266,6 +268,7 @@ else
                echo "No MPU6000" >> $logfile
                sh /etc/init.d/rc.error
         fi
+        # external L3GD20 is rotated YAW_180 from standard
         if l3gd20 -X -R 4 start
         then
                echo "l3gd20 external started OK"
@@ -273,6 +276,7 @@ else
                echo "No l3gd20"
                sh /etc/init.d/rc.error
         fi
+        # external LSM303D is rotated YAW_270 from standard
         if lsm303d -X -R 6 start
         then
                echo "lsm303d external started OK"
