@@ -405,7 +405,7 @@ void AP_MotorsHeli::recalc_scalers()
     if (_rsc_runup_time < _rsc_ramp_time) {
         _rsc_runup_time = _rsc_ramp_time;
     }
-    _rsc_runup_increment = 1000.0f / (_rsc_runup_time * 100.0f);
+    _rsc_runup_increment = 1000.0f / (_rsc_runup_time / _dt);
     
     // calculate collective mid point as a number from 0 to 1000
     _collective_mid_pwm = ((float)(_collective_mid-_collective_min))/((float)(_collective_max-_collective_min))*1000.0f;
