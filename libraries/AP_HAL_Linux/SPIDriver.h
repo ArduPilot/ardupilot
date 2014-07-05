@@ -18,7 +18,7 @@ enum LinuxSPIDeviceType {
 
 class Linux::LinuxSPIDeviceDriver : public AP_HAL::SPIDeviceDriver {
 public:
-    LinuxSPIDeviceDriver(uint8_t bus, LinuxSPIDeviceType type, uint8_t mode, uint8_t bitsPerWord, uint8_t cs_pin, uint32_t speed);
+    LinuxSPIDeviceDriver(uint8_t bus, LinuxSPIDeviceType type, uint8_t mode, uint8_t bitsPerWord, uint8_t cs_pin, uint32_t lowspeed, uint32_t highspeed);
     void init();
     AP_HAL::Semaphore *get_semaphore();
     void transaction(const uint8_t *tx, uint8_t *rx, uint16_t len);
@@ -29,6 +29,7 @@ public:
     void transfer (const uint8_t *data, uint16_t len);
 
     uint8_t get_bus(void) const { return _bus; }
+    void set_bus_speed(enum bus_speed speed);
     AP_HAL::DigitalSource *get_cs(void) const { return _cs; }
 
 private:
@@ -37,6 +38,8 @@ private:
     AP_HAL::DigitalSource *_cs;
     uint8_t _mode;
     uint8_t _bitsPerWord;
+    uint32_t _lowspeed;
+    uint32_t _highspeed;
     uint32_t _speed;
     LinuxSPIDeviceType _type;
     uint8_t _bus;

@@ -18,24 +18,28 @@ using namespace Linux;
 
 extern const AP_HAL::HAL& hal;
 
+#define MHZ (1000U*1000U)
+
 LinuxSPIDeviceDriver LinuxSPIDeviceManager::_device[LINUX_SPI_DEVICE_NUM_DEVICES] = {
-    LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_MS5611,  SPI_MODE_3, 8,   7,  6*1000*1000), /* SPIDevice_MS5611 */
-    LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_MPU6000, SPI_MODE_3, 8, 113, 20*1000*1000), /* SPIDevice_MPU6000 */
-    LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_MPU9250, SPI_MODE_0, 8,  49,  6*1000*1000), /* SPIDevice_MPU9250 */
-    LinuxSPIDeviceDriver(0, LINUX_SPI_DEVICE_LSM9DS0, SPI_MODE_0, 8,   5,  6*1000*1000), /* SPIDevice_LSM9DS0 */
-    LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_FRAM,    SPI_MODE_0, 8,  44,  6*1000*1000)  /* SPIDevice_Dataflash */
+    LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_MS5611,  SPI_MODE_3, 8,   7,  6*MHZ, 6*MHZ),
+    LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_MPU6000, SPI_MODE_3, 8, 113,  500*1000, 20*MHZ),
+    LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_MPU9250, SPI_MODE_0, 8,  49,  6*MHZ, 6*MHZ),
+    LinuxSPIDeviceDriver(0, LINUX_SPI_DEVICE_LSM9DS0, SPI_MODE_0, 8,   5,  6*MHZ, 6*MHZ),
+    LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_FRAM,    SPI_MODE_0, 8,  44,  6*MHZ, 6*MHZ)
 };
 
 // have a separate semaphore per bus
 LinuxSemaphore LinuxSPIDeviceManager::_semaphore[LINUX_SPI_NUM_BUSES];
 
-LinuxSPIDeviceDriver::LinuxSPIDeviceDriver(uint8_t bus, LinuxSPIDeviceType type, uint8_t mode, uint8_t bitsPerWord, uint8_t cs_pin, uint32_t speed):
+LinuxSPIDeviceDriver::LinuxSPIDeviceDriver(uint8_t bus, LinuxSPIDeviceType type, uint8_t mode, uint8_t bitsPerWord, uint8_t cs_pin, uint32_t lowspeed, uint32_t highspeed):
     _bus(bus),
     _type(type),
     _fd(-1),
     _mode(mode),
     _bitsPerWord(bitsPerWord),    
-    _speed(speed),
+    _lowspeed(lowspeed),
+    _highspeed(highspeed),
+    _speed(highspeed),
     _cs_pin(cs_pin)
 {    
 }
@@ -110,6 +114,14 @@ void LinuxSPIDeviceDriver::transaction(const uint8_t *tx, uint8_t *rx, uint16_t 
     cs_release();
 }
 
+void LinuxSPIDeviceDriver::set_bus_speed(enum bus_speed speed)
+{
+    if (speed == SPI_SPEED_LOW) {
+        _speed = _lowspeed;
+    } else {
+        _speed = _highspeed;
+    }
+}
 
 void LinuxSPIDeviceDriver::cs_assert()
 {
