@@ -15,12 +15,17 @@
  # define MNT_GPSPOINT_OPTION    ENABLED // Point the mount to a GPS point defined via a mouse click in the Mission Planner GUI
  # define MNT_STABILIZE_OPTION  DISABLED // stabilize camera using frame attitude information
  # define MNT_MOUNT2_OPTION     DISABLED // second mount, can for example be used to keep an antenna pointed at the home position
+ # define MNT_AUTO_RETRACT      DISABLED // automatic retracting of camera mount when at low alt in stabilize, rtl, land
+ # define MNT_AUTO_MOVEOUT      DISABLED // automatic mount move out at certain altitude when not in stabilize, rtl, land
+
 #else
  # define MNT_JSTICK_SPD_OPTION ENABLED // uses  844 bytes of memory
  # define MNT_RETRACT_OPTION    ENABLED // uses  244 bytes of memory
  # define MNT_GPSPOINT_OPTION   ENABLED // uses  580 bytes of memory
  # define MNT_STABILIZE_OPTION  ENABLED // uses 2424 bytes of memory
  # define MNT_MOUNT2_OPTION     ENABLED // uses   58 bytes of memory (must also be enabled in APM_Config.h)
+ # define MNT_AUTO_RETRACT      ENABLED // (must also be enabled in APM_Config.h)            
+ # define MNT_AUTO_MOVEOUT      ENABLED  
 #endif
 
 const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
@@ -690,3 +695,32 @@ AP_Mount::move_servo(uint8_t function_idx, int16_t angle, int16_t angle_min, int
 	int16_t servo_out = closest_limit(angle, &angle_min, &angle_max);
 	RC_Channel_aux::move_servo((RC_Channel_aux::Aux_servo_function_t)function_idx, servo_out, angle_min, angle_max);
 }
+
+
+/// true = retract camera mount; false = move out
+void 
+AP_Mount::auto_retract(bool retract_mount)
+{
+#if MNT_AUTO_RETRACT == ENABLED
+    static enum MAV_MOUNT_MODE usr_last_mmode = MAV_MOUNT_MODE_RC_TARGETING;
+
+    if (retract_mount)  // retract camera mount 
+    {
+        if ((enum MAV_MOUNT_MODE)_mount_mode.get() != MAV_MOUNT_MODE_RETRACT) {
+            usr_last_mmode = (enum MAV_MOUNT_MODE)_mount_mode.get();
+            set_mode(MAV_MOUNT_MODE_RETRACT);
+        }
+    }
+#if MNT_AUTO_MOVEOUT == ENABLED
+    else
+    {
+        if ((enum MAV_MOUNT_MODE)_mount_mode.get() == MAV_MOUNT_MODE_RETRACT)
+        {   // return to previous position ( move out camera mount )
+            set_mode(usr_last_mmode);
+        }
+    }
+#endif
+
+#endif
+}
+
