@@ -11,6 +11,7 @@ extern const AP_HAL::HAL& hal;
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
 #define MPU6000_DRDY_PIN 70
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_ERLE
+#include "../AP_HAL_Linux/GPIO.h"
 #define MPU6000_DRDY_PIN BBB_P8_14
 #endif
 
