@@ -59,14 +59,6 @@ void LinuxSPIDeviceDriver::init()
         goto failed;
     }
  
-    ret = ioctl(_fd, SPI_IOC_RD_MODE, &_mode);
-    if (ret == -1) {
-#if SPI_DEBUGGING
-        hal.console->printf("LinuxSPIDeviceDriver ioctl SPI_IOC_RD_MODE failed\n");
-#endif                
-        goto failed;
-    }
- 
     ret = ioctl(_fd, SPI_IOC_WR_BITS_PER_WORD, &_bitsPerWord);
     if (ret == -1) {
 #if SPI_DEBUGGING
@@ -75,14 +67,6 @@ void LinuxSPIDeviceDriver::init()
         goto failed;
     }
     
-    ret = ioctl(_fd, SPI_IOC_RD_BITS_PER_WORD, &_bitsPerWord);
-    if (ret == -1) {
-#if SPI_DEBUGGING
-        hal.console->printf("LinuxSPIDeviceDriver ioctl SPI_IOC_RD_BITS_PER_WORD failed\n");
-#endif                        
-        goto failed;
-    }
- 
     ret = ioctl(_fd, SPI_IOC_WR_MAX_SPEED_HZ, &_speed);    
     if (ret == -1) {
 #if SPI_DEBUGGING
@@ -91,14 +75,6 @@ void LinuxSPIDeviceDriver::init()
         goto failed;
     }
  
-    ret = ioctl(_fd, SPI_IOC_RD_MAX_SPEED_HZ, &_speed);    
-    if (ret == -1) {
-#if SPI_DEBUGGING
-        hal.console->printf("LinuxSPIDeviceDriver ioctl SPI_IOC_RD_MAX_SPEED_HZ failed\n");
-#endif                                        
-        goto failed;
-    }
-
     // Init the CS
     _cs = hal.gpio->channel(_cs_pin);
     _cs->mode(HAL_GPIO_OUTPUT);
@@ -119,7 +95,9 @@ AP_HAL::Semaphore* LinuxSPIDeviceDriver::get_semaphore()
 void LinuxSPIDeviceDriver::transaction(const uint8_t *tx, uint8_t *rx, uint16_t len)
 {
     cs_assert();
+    ioctl(_fd, SPI_IOC_WR_MODE, &_mode);
     struct spi_ioc_transfer spi[1];
+    memset(spi, 0, sizeof(spi));
     spi[0].tx_buf        = (uint64_t)tx;
     spi[0].rx_buf        = (uint64_t)rx;
     spi[0].len           = len;
