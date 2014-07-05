@@ -18,6 +18,8 @@ static void heli_init()
 {
     attitude_control.update_feedforward_filter_rates(MAIN_LOOP_SECONDS);
     motors.set_dt(MAIN_LOOP_SECONDS);
+    // force recalculation of RSC ramp rates after setting _dt
+    motors.recalc_scalers();
 }
 
 // get_pilot_desired_collective - converts pilot input (from 0 ~ 1000) to a value that can be fed into the g.rc_3.servo_out function
