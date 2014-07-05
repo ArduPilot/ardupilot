@@ -527,6 +527,8 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
         if (_heliflags.swash_initialised) {
             reset_swash();
         }
+        // To-Do:  This equation seems to be wrong.  It probably restricts swash movement so that swash setup doesn't work right.
+        // _collective_scalar should probably not be used or set to 1?
         coll_out_scaled = coll_in * _collective_scalar + _rc_throttle.radio_min - 1000;
     }else{      // regular flight mode
 
