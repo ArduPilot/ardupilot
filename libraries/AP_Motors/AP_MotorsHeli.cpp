@@ -730,11 +730,24 @@ void AP_MotorsHeli::rsc_control()
             }
             break;
         case AP_MOTORS_HELI_RSC_MODE_THROTTLE_CURVE:
+            // Throttle Curve is a simple open-loop rotor speed control system similar to what used to be built into computer radios in the days
+            // before throttle governors.  It requires the user to input the high throttle to use at max pitch (positive and negative), and low throttle
+            // to use at zero pitch.  In this implementation, it includes an idle setting, and minimum and maximum settings which is the limit of throttle servo travel.
+            // In operation, throttle servo output is linearly ramped between low and high, corresponding to zero pitch, and max pitch.  It also features a damper
+            // softens the hit on the clutch when transitioning from idle to full speed.
             int16_t throttle_out;
+            float throttle_rate_damper;
             if (_rotor_desired > 0){
-                throttle_out = _throttle_low_pwm + (_throttle_range * (abs(_collective_out - _collective_mid_pwm)) / _collective_range);
-                throttle_out = constrain_int16(throttle_out, _throttle_low_pwm, _throttle_max_pwm);
+                rotor_ramp(_rotor_desired);
+                // throttle rate damper is a simple 0 to 1 float multiplier which is used to scale the throttle output
+                throttle_rate_damper = _rotor_out/_rotor_desired;
+                // basic throttle output is always idle setting.  Load throttle is added on top, damped during run-up.
+                throttle_out = _throttle_idle_pwm + ((_throttle_low_pwm - _throttle_idle_pwm) +
+                                (_throttle_range * (abs(_collective_out - _collective_mid_pwm)) / _collective_range))*throttle_rate_damper;
+                throttle_out = constrain_int16(throttle_out, _throttle_idle_pwm, _throttle_max_pwm);
             }else{
+                // shut down main rotor, return to idle
+                rotor_ramp(0);
                 throttle_out = _throttle_idle_pwm;
             }
             write_rsc_pwm(throttle_out);
