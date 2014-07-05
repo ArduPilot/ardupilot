@@ -115,6 +115,7 @@ public:
         k_param_serial0_baud,
         k_param_serial1_baud,
         k_param_serial2_baud,
+        k_param_stb_angleboost = 56,         // 56
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -428,6 +429,7 @@ public:
     AP_Float                acro_balance_roll;
     AP_Float                acro_balance_pitch;
     AP_Int8                 acro_trainer;
+    AP_Int8                 stb_angleboost;
 
     // PI/D controllers
 #if FRAME_CONFIG == HELI_FRAME

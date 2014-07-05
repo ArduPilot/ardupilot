@@ -575,6 +575,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(acro_trainer,   "ACRO_TRAINER",     ACRO_TRAINER_LIMITED),
 
+    // @Param: STB_ANGLEBOOST
+    // @DisplayName: Angle boost in stabilize mode
+    // @Description: If you like having full throttle control in stabilize mode you can disable angle boost here.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    GSCALAR(stb_angleboost,   "STB_ANGLEBOOST",     1),
+
     // PID controller
     //---------------
 
