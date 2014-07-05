@@ -19,8 +19,8 @@ using namespace Linux;
 extern const AP_HAL::HAL& hal;
 
 LinuxSPIDeviceDriver LinuxSPIDeviceManager::_device[LINUX_SPI_DEVICE_NUM_DEVICES] = {
-    LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_MS5611,  SPI_MODE_0, 8,   7,  6*1000*1000), /* SPIDevice_MS5611 */
-    LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_MPU6000, SPI_MODE_0, 8, 113, 20*1000*1000), /* SPIDevice_MPU6000 */
+    LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_MS5611,  SPI_MODE_3, 8,   7,  6*1000*1000), /* SPIDevice_MS5611 */
+    LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_MPU6000, SPI_MODE_3, 8, 113, 20*1000*1000), /* SPIDevice_MPU6000 */
     LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_MPU9250, SPI_MODE_0, 8,  49,  6*1000*1000), /* SPIDevice_MPU9250 */
     LinuxSPIDeviceDriver(0, LINUX_SPI_DEVICE_LSM9DS0, SPI_MODE_0, 8,   5,  6*1000*1000), /* SPIDevice_LSM9DS0 */
     LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_FRAM,    SPI_MODE_0, 8,  44,  6*1000*1000)  /* SPIDevice_Dataflash */
