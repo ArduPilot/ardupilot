@@ -2,12 +2,17 @@
 
 #include <AP_HAL.h>
 #include "AP_InertialSensor_MPU6000.h"
-#include "../AP_HAL_Linux/GPIO.h"
 
 extern const AP_HAL::HAL& hal;
 
 // MPU6000 accelerometer scaling
 #define MPU6000_ACCEL_SCALE_1G    (GRAVITY_MSS / 4096.0f)
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+#define MPU6000_DRDY_PIN 70
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_ERLE
+#define MPU6000_DRDY_PIN BBB_P8_14
+#endif
 
 // MPU 6000 registers
 #define MPUREG_XG_OFFS_TC                               0x00
@@ -181,9 +186,10 @@ uint16_t AP_InertialSensor_MPU6000::_init_sensor( Sample_rate sample_rate )
     _spi = hal.spi->device(AP_HAL::SPIDevice_MPU6000);
     _spi_sem = _spi->get_semaphore();
 
-    _drdy_pin = hal.gpio->channel(BBB_P8_14);
-    // For some reason configuring the pin as an input make the driver fail
-    //_drdy_pin->mode(GPIO_IN);
+#ifdef MPU6000_DRDY_PIN
+    _drdy_pin = hal.gpio->channel(MPU6000_DRDY_PIN);
+    _drdy_pin->mode(HAL_GPIO_INPUT);
+#endif
 
     hal.scheduler->suspend_timer_procs();
 
