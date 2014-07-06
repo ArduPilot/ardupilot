@@ -109,6 +109,12 @@ static void init_ardupilot()
     }
 #endif
 
+#if PX4FLOW == ENABLED
+    if (hal.uartE != NULL) {
+        hal.uartE->begin(115200, 256, 16);
+    }
+#endif
+
     cliSerial->printf_P(PSTR("\n\nInit " FIRMWARE_STRING
                          "\n\nFree RAM: %u\n"),
                         hal.util->available_memory());
@@ -190,6 +196,15 @@ static void init_ardupilot()
 #endif
 #if MAVLINK_COMM_NUM_BUFFERS > 2
     gcs[2].setup_uart(hal.uartD, map_baudrate(g.serial2_baud), 128, 128);
+#endif
+#if PX4FLOW == ENABLED
+#if MAVLINK_COMM_NUM_BUFFERS < 4
+#error need at least 4 comm buffers
+#endif
+    if (hal.uartE != NULL) {
+        gcs[3].init(hal.uartE);
+        gcs[3].setup_uart(hal.uartE, 115200, 256, 16);
+    }
 #endif
 
     // identify ourselves correctly with the ground station

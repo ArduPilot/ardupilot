@@ -23,11 +23,16 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
 #include <util/crc16.h>
 #define HAVE_CRC_ACCUMULATE
+#endif
+
+#ifndef MAVLINK_COMM_NUM_BUFFERS
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
 // only two telemetry ports on APM1/APM2
 #define MAVLINK_COMM_NUM_BUFFERS 2
 #else
-// allow three telemetry ports on other boards
-#define MAVLINK_COMM_NUM_BUFFERS 3
+// allow four telemetry ports on other boards
+#define MAVLINK_COMM_NUM_BUFFERS 4
+#endif
 #endif
 
 #include "include/mavlink/v1.0/ardupilotmega/version.h"
@@ -52,6 +57,11 @@ extern AP_HAL::BetterStream	*mavlink_comm_1_port;
 #if MAVLINK_COMM_NUM_BUFFERS > 2
 /// MAVLink stream used for uartD
 extern AP_HAL::BetterStream	*mavlink_comm_2_port;
+#endif
+
+#if MAVLINK_COMM_NUM_BUFFERS > 3
+/// MAVLink stream used for uartE
+extern AP_HAL::BetterStream	*mavlink_comm_3_port;
 #endif
 
 /// MAVLink system definition
