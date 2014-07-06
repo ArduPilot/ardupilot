@@ -356,10 +356,11 @@ static GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
 // SONAR selection
 ////////////////////////////////////////////////////////////////////////////////
 //
-ModeFilterInt16_Size3 sonar_mode_filter(1);
 #if CONFIG_SONAR == ENABLED
-static AP_HAL::AnalogSource *sonar_analog_source;
-static AP_RangeFinder_MaxsonarXL *sonar;
+static AP_RangeFinder_analog sonar;
+static ModeFilterInt16_Size5 sonarMFilter(2);	//Make filter buffer size 5, any larger and sampling rate will take too
+												//long to see quick changes.  Sampled at 20Hz so should still be reasonably
+												//fast response.
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////

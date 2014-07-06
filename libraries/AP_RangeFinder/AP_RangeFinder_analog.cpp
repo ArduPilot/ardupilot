@@ -188,3 +188,9 @@ bool AP_RangeFinder_analog::in_range(void)
    }
    return true;
 }
+
+//Setter for enabled flag
+void AP_RangeFinder_analog::enabled(bool x){
+
+	_enabled = (int)x;
+}

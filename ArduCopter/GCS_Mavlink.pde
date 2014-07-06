@@ -486,11 +486,16 @@ static void NOINLINE send_current_waypoint(mavlink_channel_t chan)
 #if CONFIG_SONAR == ENABLED
 static void NOINLINE send_rangefinder(mavlink_channel_t chan)
 {
-    // exit immediately if sonar is disabled
-    if (!g.sonar_enabled) {
-        return;
+    if (!sonar.enabled()){
+    	mavlink_msg_rangefinder_send(chan, 0.0f, 0.0f);	//Sonar is disabled, return 0.0 numbers to update GCS to reflect.
     }
-    mavlink_msg_rangefinder_send(chan, sonar_alt * 0.01f, 0);
+    else{
+    	mavlink_msg_rangefinder_send(
+    			chan,
+    			read_sonar() * 0.01f,  	//Send Sonar distance in meters
+    			sonar.voltage()		//Send Voltage
+    	);
+    }
 }
 #endif
 

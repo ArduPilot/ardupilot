@@ -33,6 +33,9 @@ public:
         FUNCTION_HYPERBOLA = 2
     };
 
+    //Setter for enabled flag
+    void enabled(bool);
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
