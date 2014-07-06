@@ -111,10 +111,11 @@ public:
         k_param_rally,
         k_param_hybrid_brake_rate,
         k_param_hybrid_brake_angle_max,
-        k_param_pilot_accel_z,          // 48
+        k_param_pilot_accel_z,
         k_param_serial0_baud,
         k_param_serial1_baud,
         k_param_serial2_baud,
+        k_param_land_repositioning,     // 52
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -383,6 +384,8 @@ public:
     AP_Int8         ch7_option;
     AP_Int8         ch8_option;
     AP_Int8         arming_check;
+
+    AP_Int8         land_repositioning;
 
 #if FRAME_CONFIG ==     HELI_FRAME
     // Heli

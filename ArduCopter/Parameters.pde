@@ -442,6 +442,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(hybrid_brake_angle_max, "HYBR_BRAKE_ANGLE",  HYBRID_BRAKE_ANGLE_DEFAULT),
 #endif
 
+    // @Param: LAND_REPOSITION
+    // @DisplayName: Land repositioning
+    // @Description: Enables user input during LAND mode, the landing phase of RTL, and auto mode landings.
+    // @Values: 0:No repositiong, 1:Repositioning
+    // @User: Advanced
+    GSCALAR(land_repositioning, "LAND_REPOSITION",     LAND_REPOSITION_DEFAULT),
+
 #if FRAME_CONFIG ==     HELI_FRAME
     // @Group: HS1_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp

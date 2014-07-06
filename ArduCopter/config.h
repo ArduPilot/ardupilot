@@ -461,6 +461,9 @@
 #ifndef LAND_REQUIRE_MIN_THROTTLE_TO_DISARM // require pilot to reduce throttle to minimum before vehicle will disarm
  # define LAND_REQUIRE_MIN_THROTTLE_TO_DISARM ENABLED
 #endif
+#ifndef LAND_REPOSITION_DEFAULT
+ # define LAND_REPOSITION_DEFAULT   0   // by default the pilot cannot override roll/pitch during landing
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // CAMERA TRIGGER AND CONTROL
