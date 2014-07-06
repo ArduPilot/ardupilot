@@ -14,6 +14,8 @@ static bool guided_pilot_yaw_override_yaw = false;
 static bool guided_init(bool ignore_checks)
 {
     if (GPS_ok() || ignore_checks) {
+        // initialise yaw
+        set_auto_yaw_mode(get_default_auto_yaw_mode(false));
         // start in position control mode
         guided_pos_control_start();
         return true;
@@ -40,8 +42,8 @@ void guided_pos_control_start()
     wp_nav.set_wp_destination(stopping_point);
     guided_pilot_yaw_override_yaw = false;
 
-    // initialise yaw to hold at current heading (reset to point at waypoint in guided_set_destination)
-    set_auto_yaw_mode(AUTO_YAW_HOLD);
+    // initialise yaw
+    set_auto_yaw_mode(get_default_auto_yaw_mode(false));
 }
 
 // initialise guided mode's velocity controller
@@ -56,8 +58,6 @@ void guided_vel_control_start()
 
     // initialise velocity controller
     pos_control.init_vel_controller_xyz();
-
-    // To-Do: set yaw override and auto_yaw_mode?
 }
 
 // guided_set_destination - sets guided mode's target destination
@@ -69,10 +69,6 @@ static void guided_set_destination(const Vector3f& destination)
     }
 
     wp_nav.set_wp_destination(destination);
-    if (!guided_pilot_yaw_override_yaw) {
-        // get default yaw mode
-        set_auto_yaw_mode(get_default_auto_yaw_mode(false));
-    }
 }
 
 // guided_set_velocity - sets guided mode's target velocity
