@@ -245,6 +245,8 @@ AP_InertialSensor_Oilpan ins( &apm1_adc );
 AP_InertialSensor_Flymaple ins;
 #elif CONFIG_INS_TYPE == CONFIG_INS_L3G4200D
 AP_InertialSensor_L3G4200D ins;
+#elif CONFIG_INS_TYPE == CONFIG_INS_MPU9250
+AP_InertialSensor_MPU9250 ins;
 #else
   #error Unrecognised CONFIG_INS_TYPE setting.
 #endif // CONFIG_INS_TYPE
