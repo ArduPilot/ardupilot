@@ -9,6 +9,8 @@
 #include <AP_Progmem.h>
 #include "AP_InertialSensor.h"
 
+// enable debug to see a register dump on startup
+#define LSM9DS0_DEBUG 1
 
 // gyro_scale_lsm9ds0 defines the possible full-scale ranges of the gyroscope:
 enum gyro_scale_lsm9ds0

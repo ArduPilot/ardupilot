@@ -115,9 +115,6 @@ extern const AP_HAL::HAL& hal;
 #define ACT_THS             0x3E
 #define ACT_DUR             0x3F
 
-// enable debug to see a register dump on startup
-#define LSM9DS0_DEBUG 1
-
 
 AP_InertialSensor_LSM9DS0::AP_InertialSensor_LSM9DS0():
     AP_InertialSensor(),
