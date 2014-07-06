@@ -380,7 +380,12 @@ void AC_WPNav::set_wp_origin_and_destination(const Vector3f& origin, const Vecto
     calculate_wp_leash_length();
 
     // initialise yaw heading
-    _yaw = get_bearing_cd(_origin, _destination);
+    if (_track_length >= WPNAV_YAW_DIST_MIN) {
+        _yaw = get_bearing_cd(_origin, _destination);
+    } else {
+        // set target yaw to current heading.  Alternatively we could pull this from the attitude controller if we had access to it
+        _yaw = _ahrs.yaw_sensor;
+    }
 
     // initialise intermediate point to the origin
     _pos_control.set_pos_target(origin);
