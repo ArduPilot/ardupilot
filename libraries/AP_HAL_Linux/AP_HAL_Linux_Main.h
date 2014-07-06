@@ -8,7 +8,7 @@
 int main (int argc, char * const argv[]) {        \
 	hal.init(argc, argv);			\
         hal.scheduler->system_initialized(); \
-        setup();\        
+        setup();\
         for(;;) loop();\
         return 0;\
     }\
