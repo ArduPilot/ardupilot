@@ -64,8 +64,11 @@ BBONE_LD      :=  arm-linux-gnueabihf-g++-4.7
 BBONE_GDB     :=  gdb
 BBONE_OBJCOPY :=  objcopy
 
-CXX = $($(TOOLCHAIN)_CXX)
-CC = $($(TOOLCHAIN)_CC)
+# enable ccache if installed
+CCACHE :=  $(call FIND_TOOL,ccache)
+
+CXX = $(CCACHE) $($(TOOLCHAIN)_CXX)
+CC = $(CCACHE) $($(TOOLCHAIN)_CC)
 AS = $($(TOOLCHAIN)_AS)
 AR = $($(TOOLCHAIN)_AR)
 LD = $($(TOOLCHAIN)_LD)
