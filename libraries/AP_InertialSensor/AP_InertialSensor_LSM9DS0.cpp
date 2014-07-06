@@ -787,15 +787,27 @@ void AP_InertialSensor_LSM9DS0::_calcmRes(mag_scale mScl)
 // dump all config registers - used for debug
 void AP_InertialSensor_LSM9DS0::_dump_registers(void)
 {
-    hal.console->println_P(PSTR("LSM9DS0 registers"));
-    for (uint8_t reg=init; reg<=108; reg++) {
-        uint8_t v = _register_read(reg);
+    hal.console->println_P(PSTR("LSM9DS0 registers:"));
+    hal.console->println_P(PSTR("Gyroscope registers:"));
+    for (uint8_t reg=init; reg<=56; reg++) {
+        uint8_t v = _register_read_g(reg);
         hal.console->printf_P(PSTR("%02x:%02x "), (unsigned)reg, (unsigned)v);
         if ((reg - (init-1)) % 16 == 0) {
             hal.console->println();
         }
     }
     hal.console->println();
+
+    hal.console->println_P(PSTR("Accelerometer and Magnetometers registers:"));
+    for (uint8_t reg=init; reg<=63; reg++) {
+        uint8_t v = _register_read_xm(reg);
+        hal.console->printf_P(PSTR("%02x:%02x "), (unsigned)reg, (unsigned)v);
+        if ((reg - (init-1)) % 16 == 0) {
+            hal.console->println();
+        }
+    }
+    hal.console->println();
+
 }
 #endif
 
