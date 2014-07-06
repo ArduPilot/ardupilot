@@ -4,6 +4,9 @@
 static uint16_t land_detector;
 static bool land_with_gps;
 
+static uint32_t land_start_time;
+static bool land_pause;
+
 // land_init - initialise land controller
 static bool land_init(bool ignore_checks)
 {
@@ -22,6 +25,10 @@ static bool land_init(bool ignore_checks)
 
     // initialise altitude target to stopping point
     pos_control.set_target_to_stopping_point_z();
+
+    land_start_time = millis();
+
+    land_pause = false;
 
     return true;
 }
@@ -90,8 +97,17 @@ static void land_gps_run()
     // call attitude controller
     attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
 
+    //pause 4 seconds before beginning land descent
+    float cmb_rate;
+    if(land_pause && millis()-land_start_time < 4000) {
+        cmb_rate = 0;
+    } else {
+        land_pause = false;
+        cmb_rate = get_throttle_land();
+    }
+
     // update altitude target and call position controller
-    pos_control.set_alt_target_from_climb_rate(get_throttle_land(), G_Dt);
+    pos_control.set_alt_target_from_climb_rate(cmb_rate, G_Dt);
     pos_control.update_z_controller();
 }
 
@@ -139,8 +155,17 @@ static void land_nogps_run()
     // call attitude controller
     attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 
+    //pause 4 seconds before beginning land descent
+    float cmb_rate;
+    if(land_pause && millis()-land_start_time < LAND_WITH_DELAY_MS) {
+        cmb_rate = 0;
+    } else {
+        land_pause = false;
+        cmb_rate = get_throttle_land();
+    }
+
     // call position controller
-    pos_control.set_alt_target_from_climb_rate(get_throttle_land(), G_Dt);
+    pos_control.set_alt_target_from_climb_rate(cmb_rate, G_Dt);
     pos_control.update_z_controller();
 }
 
@@ -190,4 +215,11 @@ static bool update_land_detector()
 static void land_do_not_use_GPS()
 {
     land_with_gps = false;
+}
+
+// set_mode_land_with_pause - sets mode to LAND and triggers 4 second delay before descent starts
+static void set_mode_land_with_pause()
+{
+    set_mode(LAND);
+    land_pause = true;
 }

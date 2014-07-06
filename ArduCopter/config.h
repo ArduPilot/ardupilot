@@ -464,6 +464,9 @@
 #ifndef LAND_REPOSITION_DEFAULT
  # define LAND_REPOSITION_DEFAULT   0   // by default the pilot cannot override roll/pitch during landing
 #endif
+#ifndef LAND_WITH_DELAY_MS
+ # define LAND_WITH_DELAY_MS        4000    // default delay (in milliseconds) when a land-with-delay is triggered during a failsafe event
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // CAMERA TRIGGER AND CONTROL
