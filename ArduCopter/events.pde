@@ -21,14 +21,14 @@ static void failsafe_radio_on_event()
                 init_disarm_motors();
             }else if(g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
                 // if failsafe_throttle is 3 (i.e. FS_THR_ENABLED_ALWAYS_LAND) land immediately
-                set_mode(LAND);
+                set_mode_land_with_pause();
             }else if(home_distance > wp_nav.get_wp_radius()) {
                 if (!set_mode(RTL)) {
-                    set_mode(LAND);
+                    set_mode_land_with_pause();
                 }
             }else{
                 // We have no GPS or are very close to home so we will land
-                set_mode(LAND);
+                set_mode_land_with_pause();
             }
             break;
         case AUTO:
@@ -36,15 +36,15 @@ static void failsafe_radio_on_event()
             if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_RTL) {
                 if(home_distance > wp_nav.get_wp_radius()) {
                     if (!set_mode(RTL)) {
-                        set_mode(LAND);
+                        set_mode_land_with_pause();
                     }
                 }else{
                     // We are very close to home so we will land
-                    set_mode(LAND);
+                    set_mode_land_with_pause();
                 }
             }else if(g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
                 // if failsafe_throttle is 3 (i.e. FS_THR_ENABLED_ALWAYS_LAND) land immediately
-            	set_mode(LAND);
+            	set_mode_land_with_pause();
             }
             // if failsafe_throttle is 2 (i.e. FS_THR_ENABLED_CONTINUE_MISSION) no need to do anything
             break;
@@ -56,14 +56,14 @@ static void failsafe_radio_on_event()
                 init_disarm_motors();
             }else if(g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
                 // if failsafe_throttle is 3 (i.e. FS_THR_ENABLED_ALWAYS_LAND) land immediately
-                set_mode(LAND);
+                set_mode_land_with_pause();
             }else if(home_distance > wp_nav.get_wp_radius()) {
                 if (!set_mode(RTL)) {
-                    set_mode(LAND);
+                    set_mode_land_with_pause();
                 }
             }else{
                 // We have no GPS or are very close to home so we will land
-                set_mode(LAND);
+                set_mode_land_with_pause();
             }
             break;
         case LAND:
@@ -74,14 +74,14 @@ static void failsafe_radio_on_event()
         default:
             if(g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
                 // if failsafe_throttle is 3 (i.e. FS_THR_ENABLED_ALWAYS_LAND) land immediately
-                set_mode(LAND);
+                set_mode_land_with_pause();
             }else if(home_distance > wp_nav.get_wp_radius()) {
                 if (!set_mode(RTL)){
-                    set_mode(LAND);
+                    set_mode_land_with_pause();
                 }
             }else{
                 // We have no GPS or are very close to home so we will land
-                set_mode(LAND);
+                set_mode_land_with_pause();
             }
             break;
     }
@@ -121,10 +121,10 @@ static void failsafe_battery_event(void)
                     // set mode to RTL or LAND
                     if (g.failsafe_battery_enabled == FS_BATT_RTL && home_distance > wp_nav.get_wp_radius()) {
                         if (!set_mode(RTL)) {
-                            set_mode(LAND);
+                            set_mode_land_with_pause();
                         }
                     }else{
-                        set_mode(LAND);
+                        set_mode_land_with_pause();
                     }
                 }
                 break;
@@ -132,10 +132,10 @@ static void failsafe_battery_event(void)
                 // set mode to RTL or LAND
                 if (home_distance > wp_nav.get_wp_radius()) {
                     if (!set_mode(RTL)) {
-                        set_mode(LAND);
+                        set_mode_land_with_pause();
                     }
                 }else{
-                    set_mode(LAND);
+                    set_mode_land_with_pause();
                 }
                 break;
             case LOITER:
@@ -150,10 +150,10 @@ static void failsafe_battery_event(void)
                 // set mode to RTL or LAND
                 if (g.failsafe_battery_enabled == FS_BATT_RTL && home_distance > wp_nav.get_wp_radius()) {
                     if (!set_mode(RTL)) {
-                        set_mode(LAND);
+                        set_mode_land_with_pause();
                     }
                 }else{
-                    set_mode(LAND);
+                    set_mode_land_with_pause();
                 }
                 break;
         }
@@ -212,7 +212,7 @@ static void failsafe_gps_check()
         if (g.failsafe_gps_enabled == FS_GPS_ALTHOLD && !failsafe.radio) {
             set_mode(ALT_HOLD);
         }else{
-            set_mode(LAND);
+            set_mode_land_with_pause();
         }
     }
 
@@ -277,11 +277,11 @@ static void failsafe_gcs_check()
                 init_disarm_motors();
             }else if(home_distance > wp_nav.get_wp_radius()) {
                 if (!set_mode(RTL)) {
-                    set_mode(LAND);
+                    set_mode_land_with_pause();
                 }
             }else{
                 // We have no GPS or are very close to home so we will land
-                set_mode(LAND);
+                set_mode_land_with_pause();
             }
             break;
         case AUTO:
@@ -289,11 +289,11 @@ static void failsafe_gcs_check()
             if (g.failsafe_gcs == FS_GCS_ENABLED_ALWAYS_RTL) {
                 if (home_distance > wp_nav.get_wp_radius()) {
                     if (!set_mode(RTL)) {
-                        set_mode(LAND);
+                        set_mode_land_with_pause();
                     }
                 }else{
                     // We are very close to home so we will land
-                    set_mode(LAND);
+                    set_mode_land_with_pause();
                 }
             }
             // if failsafe_throttle is 2 (i.e. FS_THR_ENABLED_CONTINUE_MISSION) no need to do anything
@@ -301,11 +301,11 @@ static void failsafe_gcs_check()
         default:
             if(home_distance > wp_nav.get_wp_radius()) {
                 if (!set_mode(RTL)) {
-                    set_mode(LAND);
+                    set_mode_land_with_pause();
                 }
             }else{
                 // We have no GPS or are very close to home so we will land
-                set_mode(LAND);
+                set_mode_land_with_pause();
             }
             break;
     }
