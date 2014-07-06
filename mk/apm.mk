@@ -31,7 +31,7 @@ include $(MK_DIR)/board_avr.mk
 endif
 
 ifeq ($(HAL_BOARD),HAL_BOARD_AVR_SITL)
-include $(MK_DIR)/board_avr_sitl.mk
+include $(MK_DIR)/board_native.mk
 endif
 
 ifeq ($(HAL_BOARD),HAL_BOARD_LINUX)
