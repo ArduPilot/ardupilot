@@ -409,6 +409,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(arming_check, "ARMING_CHECK",           ARMING_CHECK_ALL),
 
+    // @Param: LAND_REPOSITION
+    // @DisplayName: Land repositioning
+    // @Description: Enables user input during LAND mode, the landing phase of RTL, and auto mode landings.
+    // @Values: 0:No repositiong, 1:Repositioning
+    // @User: Advanced
+    GSCALAR(land_repositioning, "LAND_REPOSITION",     DEFAULT_LAND_REPOSITION),
+
     // @Param: ANGLE_MAX
     // @DisplayName: Angle Max
     // @Description: Maximum lean angle in all flight modes

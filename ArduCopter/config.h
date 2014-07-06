@@ -556,6 +556,9 @@
 #ifndef ROLL_PITCH_INPUT_MAX
  # define ROLL_PITCH_INPUT_MAX      4500            // roll, pitch input range
 #endif
+#ifndef DEFAULT_LAND_REPOSITION
+ # define DEFAULT_LAND_REPOSITION   0
+#endif
 #ifndef DEFAULT_ANGLE_MAX
  # define DEFAULT_ANGLE_MAX         4500            // ANGLE_MAX parameters default value
 #endif

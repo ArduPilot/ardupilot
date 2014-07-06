@@ -251,6 +251,9 @@ static void rtl_descent_start()
 //      called by rtl_run at 100hz or more
 static void rtl_descent_run()
 {
+    int16_t roll_control = 0, pitch_control = 0;
+    float target_yaw_rate = 0;
+
     // if not auto armed set throttle to zero and exit immediately
     if(!ap.auto_armed || !inertial_nav.position_ok()) {
         attitude_control.relax_bf_rate_controller();
@@ -262,20 +265,22 @@ static void rtl_descent_run()
     }
 
     // process pilot's input
-    float target_yaw_rate = 0;
     if (!failsafe.radio) {
-        // apply SIMPLE mode transform to pilot inputs
-        update_simple_mode();
+        if (g.land_repositioning) {
+            // apply SIMPLE mode transform to pilot inputs
+            update_simple_mode();
 
-        // process pilot's roll and pitch input
-        wp_nav.set_pilot_desired_acceleration(g.rc_1.control_in, g.rc_2.control_in);
+            // process pilot's roll and pitch input
+            roll_control = g.rc_1.control_in;
+            pitch_control = g.rc_2.control_in;
+        }
 
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
-    } else {
-        // clear out pilot desired acceleration in case radio failsafe event occurs while descending
-        wp_nav.clear_pilot_desired_acceleration();
     }
+
+    // process roll, pitch inputs
+    wp_nav.set_pilot_desired_acceleration(roll_control, pitch_control);
 
     // run loiter controller
     wp_nav.update_loiter();
@@ -311,6 +316,8 @@ static void rtl_land_start()
 //      called by rtl_run at 100hz or more
 static void rtl_land_run()
 {
+    int16_t roll_control = 0, pitch_control = 0;
+    float target_yaw_rate = 0;
     // if not auto armed set throttle to zero and exit immediately
     if(!ap.auto_armed || !inertial_nav.position_ok()) {
         attitude_control.relax_bf_rate_controller();
@@ -321,21 +328,23 @@ static void rtl_land_run()
         return;
     }
 
-    // process pilot's yaw input
-    float target_yaw_rate = 0;
+    // process pilot's input
     if (!failsafe.radio) {
-        // apply SIMPLE mode transform to pilot inputs
-        update_simple_mode();
+        if (g.land_repositioning) {
+            // apply SIMPLE mode transform to pilot inputs
+            update_simple_mode();
 
-        // process pilot's roll and pitch input
-        wp_nav.set_pilot_desired_acceleration(g.rc_1.control_in, g.rc_2.control_in);
+            // process pilot's roll and pitch input
+            roll_control = g.rc_1.control_in;
+            pitch_control = g.rc_2.control_in;
+        }
 
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
-    } else {
-        // clear out pilot desired acceleration in case radio failsafe event occurs while landing
-        wp_nav.clear_pilot_desired_acceleration();
     }
+
+     // process pilot's roll and pitch input
+    wp_nav.set_pilot_desired_acceleration(roll_control, pitch_control);
 
     // run loiter controller
     wp_nav.update_loiter();

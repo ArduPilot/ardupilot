@@ -274,6 +274,9 @@ static void auto_land_start(const Vector3f& destination)
 //      called by auto_run at 100hz or more
 static void auto_land_run()
 {
+    int16_t roll_control = 0, pitch_control = 0;
+    float target_yaw_rate = 0;
+
     // if not auto armed set throttle to zero and exit immediately
     if(!ap.auto_armed || ap.land_complete) {
         attitude_control.relax_bf_rate_controller();
@@ -284,12 +287,23 @@ static void auto_land_run()
         return;
     }
 
-    // process pilot's yaw input
-    float target_yaw_rate = 0;
+    // process pilot's input
     if (!failsafe.radio) {
+        if (g.land_repositioning) {
+            // apply SIMPLE mode transform to pilot inputs
+            update_simple_mode();
+
+            // process pilot's roll and pitch input
+            roll_control = g.rc_1.control_in;
+            pitch_control = g.rc_2.control_in;
+        }
+
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
     }
+
+    // process roll, pitch inputs
+    wp_nav.set_pilot_desired_acceleration(roll_control, pitch_control);
 
     // run loiter controller
     wp_nav.update_loiter();
