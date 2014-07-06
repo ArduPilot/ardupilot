@@ -116,7 +116,7 @@ extern const AP_HAL::HAL& hal;
 #define ACT_DUR             0x3F
 
 // enable debug to see a register dump on startup
-#define LSM9DS0_DEBUG 0
+#define LSM9DS0_DEBUG 1
 
 
 AP_InertialSensor_LSM9DS0::AP_InertialSensor_LSM9DS0():
@@ -145,10 +145,7 @@ uint16_t AP_InertialSensor_LSM9DS0::_init_sensor( Sample_rate sample_rate)
     // _drdy_pin_a->mode(GPIO_IN);
     // _drdy_pin_m->mode(GPIO_IN);
     // _drdy_pin_g->mode(GPIO_IN);
-
-    _cs_xm = hal.gpio->channel(BBB_P9_17);
-    _cs_g = hal.gpio->channel(BBB_P8_9);
-
+    
     hal.scheduler->suspend_timer_procs();
 
     uint8_t tries = 0;
@@ -534,7 +531,6 @@ bool AP_InertialSensor_LSM9DS0::_sample_available()
 
 uint8_t AP_InertialSensor_LSM9DS0::_register_read_xm( uint8_t reg )
 {
-    // TODO select the right CS    
     uint8_t addr = reg | 0x80; // Set most significant bit
 
     uint8_t tx[2];
@@ -549,7 +545,6 @@ uint8_t AP_InertialSensor_LSM9DS0::_register_read_xm( uint8_t reg )
 
 uint8_t AP_InertialSensor_LSM9DS0::_register_read_g( uint8_t reg )
 {
-    // TODO select the right CS    
     uint8_t addr = reg | 0x80; // Set most significant bit
 
     uint8_t tx[2];
@@ -565,7 +560,6 @@ uint8_t AP_InertialSensor_LSM9DS0::_register_read_g( uint8_t reg )
 
 void AP_InertialSensor_LSM9DS0::_register_write_xm(uint8_t reg, uint8_t val)
 {
-    // TODO select the right CS
     uint8_t tx[2];
     uint8_t rx[2];
 
@@ -576,7 +570,6 @@ void AP_InertialSensor_LSM9DS0::_register_write_xm(uint8_t reg, uint8_t val)
 
 void AP_InertialSensor_LSM9DS0::_register_write_g(uint8_t reg, uint8_t val)
 {
-    // TODO select the right CS
     uint8_t tx[2];
     uint8_t rx[2];
 

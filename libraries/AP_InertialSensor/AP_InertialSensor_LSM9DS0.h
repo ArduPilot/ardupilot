@@ -117,8 +117,6 @@ private:
     AP_HAL::DigitalSource *_drdy_pin_a;
     AP_HAL::DigitalSource *_drdy_pin_m;
     AP_HAL::DigitalSource *_drdy_pin_g;
-    AP_HAL::DigitalSource *_cs_xm;
-    AP_HAL::DigitalSource *_cs_g;
     uint32_t _gRes, _aRes, _mRes;
 
     void _calcgRes(gyro_scale_lsm9ds0 gScl);
