@@ -252,7 +252,7 @@ static void pre_arm_checks(bool display_failure)
 
     // check Compass
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_COMPASS)) {
-        // check the compass is healthy
+        // check the primary compass is healthy
         if(!compass.healthy(0)) {
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not healthy"));
@@ -261,8 +261,7 @@ static void pre_arm_checks(bool display_failure)
         }
 
         // check compass learning is on or offsets have been set
-        Vector3f offsets = compass.get_offsets();
-        if(!compass._learn && offsets.length() == 0) {
+        if(!compass._learn && !compass.configured()) {
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not calibrated"));
             }
@@ -270,6 +269,7 @@ static void pre_arm_checks(bool display_failure)
         }
 
         // check for unreasonable compass offsets
+        Vector3f offsets = compass.get_offsets();
         if(offsets.length() > 500) {
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass offsets too high"));
