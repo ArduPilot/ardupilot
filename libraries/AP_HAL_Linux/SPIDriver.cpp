@@ -21,11 +21,11 @@ extern const AP_HAL::HAL& hal;
 #define MHZ (1000U*1000U)
 
 LinuxSPIDeviceDriver LinuxSPIDeviceManager::_device[LINUX_SPI_DEVICE_NUM_DEVICES] = {
-    LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_MS5611,  SPI_MODE_3, 8,   7,  6*MHZ, 6*MHZ),
-    LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_MPU6000, SPI_MODE_3, 8, 113,  500*1000, 20*MHZ),
-    LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_MPU9250, SPI_MODE_3, 8,  49,  6*MHZ, 20*MHZ),
-    LinuxSPIDeviceDriver(0, LINUX_SPI_DEVICE_LSM9DS0, SPI_MODE_0, 8,   5,  6*MHZ, 6*MHZ),
-    LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_FRAM,    SPI_MODE_0, 8,  44,  6*MHZ, 6*MHZ)
+    LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_MS5611,  SPI_MODE_3, 8, BBB_P9_42,  6*MHZ, 6*MHZ),
+    LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_MPU6000, SPI_MODE_3, 8, BBB_P9_28,  500*1000, 20*MHZ),
+    LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_MPU9250, SPI_MODE_3, 8, BBB_P9_23,  6*MHZ, 20*MHZ),
+    LinuxSPIDeviceDriver(0, LINUX_SPI_DEVICE_LSM9DS0, SPI_MODE_0, 8, BBB_P9_17,  6*MHZ, 6*MHZ),
+    LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_FRAM,    SPI_MODE_0, 8, BBB_P8_12,  6*MHZ, 6*MHZ)
 };
 
 // have a separate semaphore per bus
