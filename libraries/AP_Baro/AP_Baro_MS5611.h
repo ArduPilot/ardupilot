@@ -99,6 +99,11 @@ private:
     void            _calculate();
     /* Asynchronous handler functions: */
     void                            _update();
+
+#if CONFIG_HAL_BOARD != HAL_BOARD_APM2
+    bool check_crc(void);
+#endif
+
     /* Asynchronous state: */
     static volatile bool            _updated;
     static volatile uint8_t         _d1_count;

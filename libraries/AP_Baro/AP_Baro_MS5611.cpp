@@ -231,6 +231,55 @@ void AP_Baro_MS5611_I2C::sem_give()
 
 // Public Methods //////////////////////////////////////////////////////////////
 
+#if CONFIG_HAL_BOARD != HAL_BOARD_APM2
+/**
+ * MS5611 crc4 method based on PX4Firmware code
+ */
+bool AP_Baro_MS5611::check_crc(void)
+{
+    int16_t cnt;
+    uint16_t n_rem;
+    uint16_t crc_read;
+    uint8_t n_bit;
+    uint16_t n_prom[8] = { _serial->read_16bits(CMD_MS5611_PROM_Setup),
+                           C1, C2, C3, C4, C5, C6,
+                           _serial->read_16bits(CMD_MS5611_PROM_CRC) };
+    n_rem = 0x00;
+
+    /* save the read crc */
+    crc_read = n_prom[7];
+
+    /* remove CRC byte */
+    n_prom[7] = (0xFF00 & (n_prom[7]));
+
+    for (cnt = 0; cnt < 16; cnt++) {
+        /* uneven bytes */
+        if (cnt & 1) {
+            n_rem ^= (uint8_t)((n_prom[cnt >> 1]) & 0x00FF);
+
+        } else {
+            n_rem ^= (uint8_t)(n_prom[cnt >> 1] >> 8);
+        }
+
+        for (n_bit = 8; n_bit > 0; n_bit--) {
+            if (n_rem & 0x8000) {
+                n_rem = (n_rem << 1) ^ 0x3000;
+
+            } else {
+                n_rem = (n_rem << 1);
+            }
+        }
+    }
+
+    /* final 4 bit remainder is CRC value */
+    n_rem = (0x000F & (n_rem >> 12));
+    n_prom[7] = crc_read;
+
+    /* return true if CRCs match */
+    return (0x000F & crc_read) == (n_rem ^ 0x00);
+}
+#endif
+
 // SPI should be initialized externally
 bool AP_Baro_MS5611::init()
 {
@@ -258,6 +307,12 @@ bool AP_Baro_MS5611::init()
     C5 = _serial->read_16bits(CMD_MS5611_PROM_C5);
     C6 = _serial->read_16bits(CMD_MS5611_PROM_C6);
 
+    // if not on APM2 then check CRC
+#if CONFIG_HAL_BOARD != HAL_BOARD_APM2
+    if (!check_crc()) {
+        hal.scheduler->panic("Bad CRC on MS5611");
+    }
+#endif
 
     //Send a command to read Temp first
     _serial->write(CMD_CONVERT_D2_OSR4096);
