@@ -11,7 +11,6 @@ Vagrant.configure("2") do |config|
     config.vm.synced_folder("../../diydrones/PX4NuttX", "/home/vagrant/PX4NuttX" )
     config.vm.synced_folder("../../mavlink/mavlink", "/home/vagrant/mavlink" )
     config.vm.synced_folder("../../tridge/jsbsim", "/home/vagrant/jsbsim" )
-    config.vm.synced_folder("C:/Users/fchan/Dropbox/Private/APM", "/home/vagrant/dropbox" )
 
     
     config.vm.provision "shell", inline: "cp /home/vagrant/ardupilot/puppet/Puppetfile /tmp"
