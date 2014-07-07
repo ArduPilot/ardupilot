@@ -19,9 +19,10 @@ COPTS           =   -ffunction-sections -fdata-sections -fsigned-char
 
 ASOPTS          =   -x assembler-with-cpp 
 
-ifneq ($(SYSTYPE),Darwin)
-LISTOPTS        =   -adhlns=$(@:.o=.lst)
-endif
+# disable as this breaks distcc
+#ifneq ($(SYSTYPE),Darwin)
+#LISTOPTS        =   -adhlns=$(@:.o=.lst)
+#endif
 
 CPUFLAGS     = -D_GNU_SOURCE
 CPULDFLAGS   = -g
