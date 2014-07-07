@@ -21,6 +21,7 @@
 
 #include "AP_InertialSensor_MPU9250.h"
 #include "../AP_HAL_Linux/GPIO.h"
+#include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -209,6 +210,14 @@ uint16_t AP_InertialSensor_MPU9250::_init_sensor( Sample_rate sample_rate )
     // _drdy_pin->mode(GPIO_IN);
 
     hal.scheduler->suspend_timer_procs();
+
+    uint8_t whoami = _register_read(MPUREG_WHOAMI);
+    if (whoami != 0x71) {
+        // TODO: we should probably accept multiple chip
+        // revisions. This is the one on the PXF
+        hal.console->printf("MPU9250: unexpected WHOAMI 0x%x\n", (unsigned)whoami);
+        hal.scheduler->panic("MPU9250: bad WHOAMI");
+    }
 
     uint8_t tries = 0;
     do {
