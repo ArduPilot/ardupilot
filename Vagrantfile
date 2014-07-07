@@ -7,10 +7,10 @@ Vagrant.configure("2") do |config|
     config.vm.hostname = "apm-dev"
     config.vm.network "public_network"
     config.vm.synced_folder(".", "/home/vagrant/ardupilot" )
-    config.vm.synced_folder("../../diydrones/PX4Firmware", "/home/vagrant/PX4Firmware" )
-    config.vm.synced_folder("../../diydrones/PX4NuttX", "/home/vagrant/PX4NuttX" )
-    config.vm.synced_folder("../../mavlink/mavlink", "/home/vagrant/mavlink" )
-    config.vm.synced_folder("../../tridge/jsbsim", "/home/vagrant/jsbsim" )
+    config.vm.synced_folder("../diydrones/PX4Firmware", "/home/vagrant/PX4Firmware" )
+    config.vm.synced_folder("../diydrones/PX4NuttX", "/home/vagrant/PX4NuttX" )
+    config.vm.synced_folder("../mavlink/mavlink", "/home/vagrant/mavlink" )
+    config.vm.synced_folder("../tridge/jsbsim", "/home/vagrant/jsbsim" )
 
     
     config.vm.provision "shell", inline: "cp /home/vagrant/ardupilot/puppet/Puppetfile /tmp"
