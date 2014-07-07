@@ -30,6 +30,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include <drivers/drv_device.h>
 #include <drivers/drv_mag.h>
 #include <drivers/drv_hrt.h>
 #include <stdio.h>
@@ -58,6 +59,9 @@ bool AP_Compass_PX4::init(void)
 	}
 
     for (uint8_t i=0; i<_num_instances; i++) {
+        // get device id
+        _dev_id[i] = ioctl(_mag_fd[i], DEVIOCGDEVICEID, 0);
+
         // average over up to 20 samples
         if (ioctl(_mag_fd[i], SENSORIOCSQUEUEDEPTH, 20) != 0) {
             hal.console->printf("Failed to setup compass queue\n");
