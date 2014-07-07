@@ -53,48 +53,50 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// FLIGHT CONTROLLER HARDWARE DEFAULT SETTINGS
-//
+// sensor types
+
+#define CONFIG_INS_TYPE HAL_INS_DEFAULT
+#define CONFIG_BARO     HAL_BARO_DEFAULT
+#define CONFIG_COMPASS  HAL_COMPASS_DEFAULT
+
+#ifdef HAL_SERIAL0_BAUD_DEFAULT
+# define SERIAL0_BAUD HAL_SERIAL0_BAUD_DEFAULT
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// HIL_MODE                                 OPTIONAL
+
+#ifndef HIL_MODE
+ #define HIL_MODE        HIL_MODE_DISABLED
+#endif
+
+#if HIL_MODE != HIL_MODE_DISABLED       // we are in HIL mode
+ #undef CONFIG_BARO
+ #define CONFIG_BARO HAL_BARO_HIL
+ #undef CONFIG_INS_TYPE
+ #define CONFIG_INS_TYPE HAL_INS_HIL
+ #undef  CONFIG_COMPASS
+ #define CONFIG_COMPASS HAL_COMPASS_HIL
+#endif
+
+#define MAGNETOMETER ENABLED
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
- # define CONFIG_IMU_TYPE   CONFIG_IMU_MPU6000
  # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
- # define MAGNETOMETER ENABLED
  # define PARACHUTE DISABLED
  # define AC_RALLY DISABLED
- # ifdef APM2_BETA_HARDWARE
-  #  define CONFIG_BARO     AP_BARO_BMP085
- # else // APM2 Production Hardware (default)
-  #  define CONFIG_BARO          AP_BARO_MS5611
-  #  define CONFIG_MS5611_SERIAL AP_BARO_MS5611_SPI
- # endif
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
- # define CONFIG_IMU_TYPE   CONFIG_IMU_SITL
  # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
- # define MAGNETOMETER ENABLED
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
- # define CONFIG_IMU_TYPE   CONFIG_IMU_PX4
- # define CONFIG_BARO       AP_BARO_PX4
  # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
- # define MAGNETOMETER ENABLED
 #elif CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
- # define CONFIG_IMU_TYPE CONFIG_IMU_FLYMAPLE
- # define CONFIG_BARO AP_BARO_BMP085
- # define CONFIG_COMPASS  AP_COMPASS_HMC5843
  # define CONFIG_ADC        DISABLED
- # define MAGNETOMETER ENABLED
  # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
- # define CONFIG_IMU_TYPE CONFIG_IMU_L3G4200D
- # define CONFIG_BARO AP_BARO_BMP085
- # define CONFIG_COMPASS  AP_COMPASS_HMC5843
  # define CONFIG_ADC        DISABLED
- # define MAGNETOMETER ENABLED
  # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
- # define CONFIG_IMU_TYPE   CONFIG_IMU_VRBRAIN
- # define CONFIG_BARO       AP_BARO_VRBRAIN
  # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
- # define MAGNETOMETER ENABLED
 #endif
 
 #if HAL_CPU_CLASS < HAL_CPU_CLASS_75 || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
@@ -102,6 +104,11 @@
  # define MAIN_LOOP_RATE    100
  # define MAIN_LOOP_SECONDS 0.01
  # define MAIN_LOOP_MICROS  10000
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+ // Linux boards
+ # define MAIN_LOOP_RATE    200
+ # define MAIN_LOOP_SECONDS 0.005
+ # define MAIN_LOOP_MICROS  5000
 #else
  // high power CPUs (Flymaple, PX4, Pixhawk, VRBrain)
  # define MAIN_LOOP_RATE    400
@@ -142,17 +149,10 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// IMU Selection
-//
-#ifndef CONFIG_IMU_TYPE
- # define CONFIG_IMU_TYPE CONFIG_IMU_OILPAN
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // ADC Enable - used to eliminate for systems which don't have ADC.
 //
 #ifndef CONFIG_ADC
- # if CONFIG_IMU_TYPE == CONFIG_IMU_OILPAN
+ # if CONFIG_INS_TYPE == HAL_INS_OILPAN || CONFIG_HAL_BOARD == HAL_BOARD_APM1
   #   define CONFIG_ADC ENABLED
  # else
   #   define CONFIG_ADC DISABLED

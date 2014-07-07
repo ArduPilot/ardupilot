@@ -215,15 +215,8 @@ static void print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode);
 static DataFlash_APM2 DataFlash;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
 static DataFlash_APM1 DataFlash;
-#elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
-static DataFlash_File DataFlash("logs");
-//static DataFlash_SITL DataFlash;
-#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
-static DataFlash_File DataFlash("/fs/microsd/APM/LOGS");
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-static DataFlash_File DataFlash("logs");
-#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-static DataFlash_File DataFlash("/fs/microsd/APM/LOGS");
+#elif defined(HAL_BOARD_LOG_DIRECTORY)
+static DataFlash_File DataFlash(HAL_BOARD_LOG_DIRECTORY);
 #else
 static DataFlash_Empty DataFlash;
 #endif
@@ -258,83 +251,67 @@ static GPS_Glitch gps_glitch(gps);
 // flight modes convenience array
 static AP_Int8 *flight_modes = &g.flight_mode1;
 
-#if HIL_MODE == HIL_MODE_DISABLED
-
- #if CONFIG_ADC == ENABLED
-static AP_ADC_ADS7844 adc;
- #endif
-
- #if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000
-static AP_InertialSensor_MPU6000 ins;
-#elif CONFIG_IMU_TYPE == CONFIG_IMU_MPU9250
-static AP_InertialSensor_MPU9250 ins;
-#elif CONFIG_IMU_TYPE == CONFIG_IMU_OILPAN
-static AP_InertialSensor_Oilpan ins(&adc);
-#elif CONFIG_IMU_TYPE == CONFIG_IMU_SITL
-static AP_InertialSensor_HIL ins;
-#elif CONFIG_IMU_TYPE == CONFIG_IMU_PX4
-static AP_InertialSensor_PX4 ins;
-#elif CONFIG_IMU_TYPE == CONFIG_IMU_VRBRAIN
-static AP_InertialSensor_VRBRAIN ins;
-#elif CONFIG_IMU_TYPE == CONFIG_IMU_FLYMAPLE
-AP_InertialSensor_Flymaple ins;
-#elif CONFIG_IMU_TYPE == CONFIG_IMU_L3G4200D
-AP_InertialSensor_L3G4200D ins;
-#endif
-
- #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
- // When building for SITL we use the HIL barometer and compass drivers
-static AP_Baro_HIL barometer;
-static AP_Compass_HIL compass;
-static SITL sitl;
- #else
-// Otherwise, instantiate a real barometer and compass driver
-  #if CONFIG_BARO == AP_BARO_BMP085
+#if CONFIG_BARO == HAL_BARO_BMP085
 static AP_Baro_BMP085 barometer;
-  #elif CONFIG_BARO == AP_BARO_PX4
+#elif CONFIG_BARO == HAL_BARO_PX4
 static AP_Baro_PX4 barometer;
-#elif CONFIG_BARO == AP_BARO_VRBRAIN
+#elif CONFIG_BARO == HAL_BARO_VRBRAIN
 static AP_Baro_VRBRAIN barometer;
-  #elif CONFIG_BARO == AP_BARO_MS5611
-   #if CONFIG_MS5611_SERIAL == AP_BARO_MS5611_SPI
-static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::spi);
-   #elif CONFIG_MS5611_SERIAL == AP_BARO_MS5611_I2C
+#elif CONFIG_BARO == HAL_BARO_HIL
+static AP_Baro_HIL barometer;
+#elif CONFIG_BARO == HAL_BARO_MS5611
 static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::i2c);
-   #else
-    #error Unrecognized CONFIG_MS5611_SERIAL setting.
-   #endif
-  #endif
-
- #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-static AP_Compass_PX4 compass;
- #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-static AP_Compass_VRBRAIN compass;
- #else
-static AP_Compass_HMC5843 compass;
- #endif
- #endif
-
-#elif HIL_MODE != HIL_MODE_DISABLED
-// sensor emulators
-static AP_ADC_HIL              adc;
-static AP_Baro_HIL      barometer;
-static AP_Compass_HIL          compass;
-static AP_InertialSensor_HIL   ins;
-
- #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
- // When building for SITL we use the HIL barometer and compass drivers
-static SITL sitl;
+#elif CONFIG_BARO == HAL_BARO_MS5611_SPI
+static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::spi);
+#else
+ #error Unrecognized CONFIG_BARO setting
 #endif
 
+#if CONFIG_COMPASS == HAL_COMPASS_PX4
+static AP_Compass_PX4 compass;
+#elif CONFIG_COMPASS == HAL_COMPASS_VRBRAIN
+static AP_Compass_VRBRAIN compass;
+#elif CONFIG_COMPASS == HAL_COMPASS_HMC5843
+static AP_Compass_HMC5843 compass;
+#elif CONFIG_COMPASS == HAL_COMPASS_HIL
+static AP_Compass_HIL compass;
 #else
- #error Unrecognised HIL_MODE setting.
-#endif // HIL MODE
+ #error Unrecognized CONFIG_COMPASS setting
+#endif
+
+#if CONFIG_INS_TYPE == HAL_INS_OILPAN || CONFIG_HAL_BOARD == HAL_BOARD_APM1
+AP_ADC_ADS7844 apm1_adc;
+#endif
+
+#if CONFIG_INS_TYPE == HAL_INS_MPU6000
+AP_InertialSensor_MPU6000 ins;
+#elif CONFIG_INS_TYPE == HAL_INS_PX4
+AP_InertialSensor_PX4 ins;
+#elif CONFIG_INS_TYPE == HAL_INS_VRBRAIN
+AP_InertialSensor_VRBRAIN ins;
+#elif CONFIG_INS_TYPE == HAL_INS_HIL
+AP_InertialSensor_HIL ins;
+#elif CONFIG_INS_TYPE == HAL_INS_OILPAN
+AP_InertialSensor_Oilpan ins( &apm1_adc );
+#elif CONFIG_INS_TYPE == HAL_INS_FLYMAPLE
+AP_InertialSensor_Flymaple ins;
+#elif CONFIG_INS_TYPE == HAL_INS_L3G4200D
+AP_InertialSensor_L3G4200D ins;
+#elif CONFIG_INS_TYPE == HAL_INS_MPU9250
+AP_InertialSensor_MPU9250 ins;
+#else
+  #error Unrecognised CONFIG_INS_TYPE setting.
+#endif // CONFIG_INS_TYPE
 
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
 AP_AHRS_NavEKF ahrs(ins, barometer, gps);
 #else
 AP_AHRS_DCM ahrs(ins, barometer, gps);
+#endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+SITL sitl;
 #endif
 
 // Mission library
