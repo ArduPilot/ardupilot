@@ -23,7 +23,8 @@ extern const AP_HAL::HAL& hal;
 LinuxSPIDeviceDriver LinuxSPIDeviceManager::_device[LINUX_SPI_DEVICE_NUM_DEVICES] = {
     LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_MS5611,  SPI_MODE_3, 8, BBB_P9_42,  6*MHZ, 6*MHZ),
     LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_MPU6000, SPI_MODE_3, 8, BBB_P9_28,  500*1000, 20*MHZ),
-    LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_MPU9250, SPI_MODE_3, 8, BBB_P9_23,  6*MHZ, 20*MHZ),
+    /* MPU9250 is restricted to 1MHz for non-data and interrupt registers */
+    LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_MPU9250, SPI_MODE_3, 8, BBB_P9_23,  1*MHZ, 20*MHZ),
     LinuxSPIDeviceDriver(0, LINUX_SPI_DEVICE_LSM9DS0, SPI_MODE_0, 8, BBB_P9_17,  6*MHZ, 6*MHZ),
     LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_FRAM,    SPI_MODE_0, 8, BBB_P8_12,  6*MHZ, 6*MHZ)
 };
