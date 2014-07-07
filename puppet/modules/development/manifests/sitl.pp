@@ -44,7 +44,7 @@ class development::sitl {
         line  => 'export PATH=/home/vagrant/MAVProxy',
         path  => '/home/vagrant/.profile'
     } ->
-    file_line { 'MAVProxy-path':
+    file_line { 'MAVProxy-path-examples':
         line  => 'export PATH=/home/vagrant/mavlink/pymavlink/examples',
         path  => '/home/vagrant/.profile'
     }
