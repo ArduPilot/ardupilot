@@ -52,6 +52,25 @@
 #define COMPASS_MAX_INSTANCES 1
 #endif
 
+// default compass device ids for each board type to most common set-up to reduce eeprom usage
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+# define COMPASS_EXPECTED_DEV_ID  0x011E0101    // external hmc5883
+# define COMPASS_EXPECTED_DEV_ID2 0x02020102    // internal ldm303d
+# define COMPASS_EXPECTED_DEV_ID3 0
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+# define COMPASS_EXPECTED_DEV_ID  0
+# define COMPASS_EXPECTED_DEV_ID2 0
+# define COMPASS_EXPECTED_DEV_ID3 0
+#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+# define COMPASS_EXPECTED_DEV_ID  0
+# define COMPASS_EXPECTED_DEV_ID2 0
+# define COMPASS_EXPECTED_DEV_ID3 0
+#else
+# define COMPASS_EXPECTED_DEV_ID  0
+# define COMPASS_EXPECTED_DEV_ID2 0
+# define COMPASS_EXPECTED_DEV_ID3 0
+#endif
+
 class Compass
 {
 public:
@@ -216,6 +235,13 @@ public:
         }
     }
 
+    /// Returns True if the compasses have been configured (i.e. offsets saved)
+    ///
+    /// @returns                    True if compass has been configured
+    ///
+    bool configured(uint8_t i);
+    bool configured(void);
+
     static const struct AP_Param::GroupInfo var_info[];
 
     // settable parameters
@@ -235,6 +261,7 @@ protected:
     AP_Int8 _external;                          ///<compass is external
 #if COMPASS_MAX_INSTANCES > 1
     AP_Int8 _primary;                           ///primary instance
+    AP_Int32 _dev_id[COMPASS_MAX_INSTANCES];    // device id detected at init.  saved to eeprom when offsets are saved allowing ram & eeprom values to be compared as consistency check
 #endif
 
     bool _null_init_done;                           ///< first-time-around flag used by offset nulling
