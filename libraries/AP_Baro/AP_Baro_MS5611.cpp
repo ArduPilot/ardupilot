@@ -363,30 +363,39 @@ void AP_Baro_MS5611::_update(void)
     _timer = tnow;
 
     if (_state == 0) {
-        _s_D2 += _serial->read_adc();// On state 0 we read temp
-        _d2_count++;
-        if (_d2_count == 32) {
-            // we have summed 32 values. This only happens
-            // when we stop reading the barometer for a long time
-            // (more than 1.2 seconds)
-            _s_D2 >>= 1;
-            _d2_count = 16;
+        // On state 0 we read temp
+        uint32_t d2 = _serial->read_adc();
+        if (d2 != 0) {
+            _s_D2 += d2;
+            _d2_count++;
+            if (_d2_count == 32) {
+                // we have summed 32 values. This only happens
+                // when we stop reading the barometer for a long time
+                // (more than 1.2 seconds)
+                _s_D2 >>= 1;
+                _d2_count = 16;
+            }
         }
         _state++;
         _serial->write(CMD_CONVERT_D1_OSR4096);      // Command to read pressure
     } else {
-        _s_D1 += _serial->read_adc();
-        _d1_count++;
-        if (_d1_count == 128) {
-            // we have summed 128 values. This only happens
-            // when we stop reading the barometer for a long time
-            // (more than 1.2 seconds)
-            _s_D1 >>= 1;
-            _d1_count = 64;
+        uint32_t d1 = _serial->read_adc();;
+        if (d1 != 0) {
+            // occasional zero values have been seen on the PXF
+            // board. These may be SPI errors, but safest to ignore
+            _s_D1 += d1;
+            _d1_count++;
+            if (_d1_count == 128) {
+                // we have summed 128 values. This only happens
+                // when we stop reading the barometer for a long time
+                // (more than 1.2 seconds)
+                _s_D1 >>= 1;
+                _d1_count = 64;
+            }
+            // Now a new reading exists
+            _updated = true;
         }
         _state++;
-        // Now a new reading exists
-        _updated = true;
         if (_state == 5) {
             _serial->write(CMD_CONVERT_D2_OSR4096); // Command to read temperature
             _state = 0;
