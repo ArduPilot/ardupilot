@@ -392,6 +392,13 @@ void AP_InertialSensor_MPU9250::_read_data_transaction() {
     
     _spi->transaction((const uint8_t *)&tx, (uint8_t *)&rx, sizeof(rx));
 
+    if (_drdy_pin) {
+        if (_drdy_pin->read() != 0) {
+            // data ready should have gone low after a read
+            printf("MPU9250: DRDY didn't go low\n");
+        }
+    }
+
     /*
       detect a bad SPI bus transaction by looking for all 14 bytes
       zero, or the wrong INT_STATUS register value. This is used to
