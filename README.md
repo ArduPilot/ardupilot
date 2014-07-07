@@ -131,7 +131,7 @@ git clone git://github.com/tridge/jsbsim.git C:\<your git working root>\tridge\j
  
  6. <strong>Wait for Puppet to complete provisioning</strong> Once the provisioning is complete (it takes a while (30min or so) due to the large UI install packages)
  
- 7. <strong>Reboot</strong> to get a nice UI] run `vagrant reload` and upon reboot, the UI will appear. I recommend logging in using GNOME 2d (no effects) and installing the 
+ 7. <strong>Reboot</strong> to get a nice UI run `vagrant reload` and upon reboot, the UI will appear. I recommend logging in using GNOME 2d (no effects) and installing the 
  GuestBoxAdditions from the Guest machine.
 
  8. <strong>Login</strong> Login password is "vagrant" as well as sudo password.
