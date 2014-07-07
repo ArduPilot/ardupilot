@@ -1,7 +1,7 @@
 
 #include <AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_ERLE
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include "I2CDriver.h"
 
 #include <sys/types.h>
@@ -13,9 +13,12 @@
 #include <linux/i2c-dev.h>
 #ifndef I2C_SMBUS_BLOCK_MAX
 #include <linux/i2c.h>
-#define I2C_DATA_TYPE __u8
-#else
+#endif
+
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NONE
 #define I2C_DATA_TYPE char
+#else
+#define I2C_DATA_TYPE __u8
 #endif
 
 using namespace Linux;
@@ -182,7 +185,7 @@ uint8_t LinuxI2CDriver::readRegistersMultiple(uint8_t addr, uint8_t reg,
             msgs[i*2].addr = addr;
             msgs[i*2].flags = 0;
             msgs[i*2].len = 1;
-            msgs[i*2].buf = &reg;
+            msgs[i*2].buf = (I2C_DATA_TYPE *)&reg;
             msgs[i*2+1].addr = addr;
             msgs[i*2+1].flags = I2C_M_RD;
             msgs[i*2+1].len = len;

@@ -1,5 +1,5 @@
 #include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_ERLE
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <stdio.h>
 #include <stdarg.h>
 #include <unistd.h>
@@ -20,4 +20,4 @@ void LinuxUtil::commandline_arguments(uint8_t &argc, char * const *&argv)
     argv = saved_argv;
 }
 
-#endif // CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_ERLE
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_LINUX

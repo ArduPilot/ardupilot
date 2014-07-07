@@ -1,5 +1,5 @@
 #include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_ERLE
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
 #include "HAL_Linux_Class.h"
 #include "AP_HAL_Linux_Private.h"
