@@ -109,6 +109,11 @@ void LinuxSPIDeviceDriver::transaction(const uint8_t *tx, uint8_t *rx, uint16_t 
     spi[0].speed_hz      = _speed;
     spi[0].bits_per_word = _bitsPerWord;
     spi[0].cs_change     = 0;
+
+    if (rx != NULL) {
+        // keep valgrind happy
+        memset(rx, 0, len);
+    }
  
     ioctl(_fd, SPI_IOC_MESSAGE(1), &spi);
     cs_release();

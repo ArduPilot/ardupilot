@@ -163,6 +163,7 @@ void LinuxUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     if (b != 0 && _rd_fd == _wr_fd) {
         // set the baud rate
         struct termios t;
+        memset(&t, 0, sizeof(t));
         tcgetattr(_rd_fd, &t);
         cfsetspeed(&t, b);
         // disable LF -> CR/LF

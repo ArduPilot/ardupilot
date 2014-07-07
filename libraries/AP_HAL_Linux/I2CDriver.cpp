@@ -162,6 +162,9 @@ uint8_t LinuxI2CDriver::readRegisters(uint8_t addr, uint8_t reg,
     nmsgs : 2
     };
 
+    // prevent valgrind error
+    memset(data, 0, len);
+
     if (ioctl(_fd, I2C_RDWR, &i2c_data) == -1) {
         return 1;
     }
@@ -207,6 +210,7 @@ uint8_t LinuxI2CDriver::readRegister(uint8_t addr, uint8_t reg, uint8_t* data)
         return 1;
     }
     union i2c_smbus_data v;
+    memset(&v, 0, sizeof(v));
     if (_i2c_smbus_access(_fd,I2C_SMBUS_READ, reg,
                           I2C_SMBUS_BYTE_DATA, &v)) {
         return 1;
