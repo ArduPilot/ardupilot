@@ -20,7 +20,7 @@
 */
 
 #include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_ERLE
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include "AP_InertialSensor_LSM9DS0.h"
 #include "../AP_HAL_Linux/GPIO.h"
 

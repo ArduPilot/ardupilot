@@ -17,6 +17,8 @@
 */
 
 #include <AP_HAL.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+
 #include "AP_InertialSensor_MPU9250.h"
 #include "../AP_HAL_Linux/GPIO.h"
 
@@ -621,4 +623,8 @@ float AP_InertialSensor_MPU9250::get_delta_time() const
 {
     // the sensor runs at 200Hz
     return 0.005 * _num_samples;
+
 }
+
+#endif // CONFIG_HAL_BOARD
+

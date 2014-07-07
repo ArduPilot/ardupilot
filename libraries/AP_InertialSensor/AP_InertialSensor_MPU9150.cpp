@@ -22,7 +22,7 @@
 */
 
 #include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_ERLE
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
 #include <AP_Math.h>
 #include "AP_InertialSensor_MPU9150.h"

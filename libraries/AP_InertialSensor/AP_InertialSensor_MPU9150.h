@@ -4,7 +4,7 @@
 #define __AP_INERTIAL_SENSOR_MPU9150_H__
 
 #include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_ERLE
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
 #include <AP_Progmem.h>
 #include "AP_InertialSensor.h"
