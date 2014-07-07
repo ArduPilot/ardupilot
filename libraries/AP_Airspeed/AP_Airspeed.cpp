@@ -64,6 +64,8 @@ extern const AP_HAL::HAL& hal;
 #elif defined(CONFIG_ARCH_BOARD_VRHERO_V10)
  #define ARSPD_DEFAULT_PIN 0
 #endif
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+ #define ARSPD_DEFAULT_PIN AP_AIRSPEED_I2C_PIN
 #else
  #define ARSPD_DEFAULT_PIN 0
 #endif
