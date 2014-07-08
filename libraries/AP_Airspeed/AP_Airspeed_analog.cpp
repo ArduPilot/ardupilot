@@ -34,7 +34,7 @@ extern const AP_HAL::HAL& hal;
 extern AP_ADC_ADS7844 apm1_adc;
 #endif
 
-bool AP_Airspeed_Analog::init()
+bool AP_Airspeed_Analog::init(AP_Float * scale)
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
     if (_pin == 64) {

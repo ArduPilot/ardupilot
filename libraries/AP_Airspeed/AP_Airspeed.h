@@ -49,6 +49,8 @@ public:
         _hil_set(false),
         _last_update_ms(0),
         _calibration(parms),
+        _last_saved_ratio(0.0f),
+        _counter(0),
         analog(_pin, _sensor_scale_analog),
         digital(_sensor_scale_digital)
     {
