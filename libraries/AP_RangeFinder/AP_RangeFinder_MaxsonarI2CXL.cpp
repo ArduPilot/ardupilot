@@ -104,6 +104,9 @@ bool AP_RangeFinder_MaxsonarI2CXL::get_reading(uint16_t &reading_cm)
     // combine results into distance
     reading_cm = ((uint16_t)buff[0]) << 8 | buff[1];
 
+    // trigger a new reading
+    start_reading();
+
     return true;
 }
 
