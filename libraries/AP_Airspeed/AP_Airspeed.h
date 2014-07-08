@@ -48,9 +48,10 @@ public:
         _healthy(false),
         _last_update_ms(0),
         _calibration(parms),
-        _last_saved_ratio(0.0f),
-        _counter(0),
-        analog(_pin)
+		_last_saved_ratio(0.0f),
+		_counter(0),
+        analog(_pin, _sensor_scale_analog),
+        digital(_sensor_scale_digital)
     {
 		AP_Param::setup_object_defaults(this, var_info);
     };
@@ -162,6 +163,8 @@ private:
     float           _EAS2TAS;
     bool		    _healthy;
     uint32_t        _last_update_ms;
+    AP_Float        _sensor_scale_analog;
+    AP_Float        _sensor_scale_digital;
 
     Airspeed_Calibration _calibration;
     float _last_saved_ratio;

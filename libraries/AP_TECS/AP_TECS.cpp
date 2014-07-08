@@ -563,7 +563,7 @@ void AP_TECS::_update_pitch(void)
 	// 5deg of saturation. This allows for some pitch variation due to gusts before the 
 	// integrator is clipped. Otherwise the effectiveness of the integrator will be reduced in turbulence
     // During climbout/takeoff, bias the demanded pitch angle so that zero speed error produces a pitch angle 
-    // demand equal to the minimum value (which is )set by the mission plan during this mode). Otherwise the
+    // demand equal to the minimum value (which is set by the mission plan during this mode). Otherwise the
     // integrator has to catch up before the nose can be raised to reduce speed during climbout.
 	float gainInv = (_integ5_state * _timeConst * GRAVITY_MSS);
     float temp = SEB_error + SEBdot_error * _ptchDamp + SEBdot_dem * _timeConst;

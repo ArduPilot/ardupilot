@@ -28,10 +28,13 @@
 class AP_Airspeed_PX4 : public AP_Airspeed_Backend {
 public:
     // constructor
-    AP_Airspeed_PX4() : _fd(-1) {}
+    AP_Airspeed_PX4(const AP_Float &scale) : 
+    AP_Airspeed_Backend(scale),
+    _fd(-1)
+    {}
 
     // probe and initialise the sensor
-    bool init(void);
+    bool init();
 
     // return the current differential_pressure in Pascal
     bool get_differential_pressure(float &pressure);
@@ -42,6 +45,8 @@ public:
 private:
     int _fd;
     uint64_t _last_timestamp;
+    AP_Float * _sensor_scale; // Sensor scale requested by user.
+    float   _sensor_scale_active; // Sensor value that was used for the most recent measurements.
     float _temperature;
 };
 

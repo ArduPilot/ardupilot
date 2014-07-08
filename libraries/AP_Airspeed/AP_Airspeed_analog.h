@@ -9,14 +9,15 @@
 class AP_Airspeed_Analog : public AP_Airspeed_Backend
 {
 public:
-    AP_Airspeed_Analog(const AP_Int8 &pin) : 
+    AP_Airspeed_Analog(const AP_Int8 &pin, const AP_Float &scale) : 
+        AP_Airspeed_Backend(_scale),
         _source(NULL),
         _pin(pin),
         _last_pin(-1)
     {}
 
     // probe and initialise the sensor
-    bool init(void);
+    bool init();
 
     // return the current differential_pressure in Pascal
     bool get_differential_pressure(float &pressure);
@@ -27,6 +28,7 @@ public:
 private:
     AP_HAL::AnalogSource *_source;
     const AP_Int8 &_pin;
+    float sensor_scale_active;
     int8_t _last_pin;
 };
 
