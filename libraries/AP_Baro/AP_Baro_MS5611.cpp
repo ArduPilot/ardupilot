@@ -69,7 +69,9 @@ bool volatile AP_Baro_MS5611::_updated;
 
 AP_Baro_MS5611_Serial* AP_Baro_MS5611::_serial = NULL;
 AP_Baro_MS5611_SPI AP_Baro_MS5611::spi;
+#if MS5611_WITH_I2C
 AP_Baro_MS5611_I2C AP_Baro_MS5611::i2c;
+#endif
 
 // SPI Device //////////////////////////////////////////////////////////////////
 
@@ -154,7 +156,7 @@ void AP_Baro_MS5611_SPI::sem_give()
 }
 
 // I2C Device //////////////////////////////////////////////////////////////////
-
+#if MS5611_WITH_I2C
 /** I2C address of the MS5611 on the PX4 board. */
 #define MS5611_ADDR 0x76
 
@@ -225,6 +227,7 @@ void AP_Baro_MS5611_I2C::sem_give()
 {
     _i2c_sem->give();
 }
+#endif // MS5611_WITH_I2C
 
 // Public Methods //////////////////////////////////////////////////////////////
 
