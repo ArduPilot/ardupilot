@@ -425,7 +425,6 @@
             <field type="int32_t" name="lat">Latitude in degrees * 1E7</field>
             <field type="int32_t" name="lng">Longitude in degrees * 1E7</field>
 	  </message>
-
   <!-- camera event message from CCB to autopilot: for image trigger events but also things like heartbeat, error, low power, full card, etc -->
     <message name="CAMERA_STATUS" id="179">
         <description>Camera Event</description>
@@ -457,6 +456,5 @@
         <field name="foc_len"   type="float"   >Focal Length (mm)</field> <!-- per-image to support zooms. Zero means fixed focal length or unknown. Should be true mm, not scaled to 35mm film equivalent -->
         <field name="flags"     type="uint8_t" >See CAMERA_FEEDBACK_FLAGS enum for definition of the bitmask</field> <!-- future proofing -->
     </message>
-
      </messages>
 </mavlink>

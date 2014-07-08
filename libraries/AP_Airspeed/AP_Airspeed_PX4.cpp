@@ -32,8 +32,10 @@
 
 extern const AP_HAL::HAL& hal;
 
-bool AP_Airspeed_PX4::init()
+bool AP_Airspeed_PX4::init(AP_Float * scale)
 {
+    _sensor_scale = scale;
+    _sensor_scale_active = (*scale).get();
     _fd = open(AIRSPEED_DEVICE_PATH, O_RDONLY);
     if (_fd == -1) {
         return false;
@@ -42,6 +44,11 @@ bool AP_Airspeed_PX4::init()
         OK != ioctl(_fd, SENSORIOCSQUEUEDEPTH, 15)) {
         hal.console->println("Failed to setup airspeed driver rate and queue");
     }
+    
+    struct airspeed_scale scale_struct;
+    scale_struct.offset_pa = 0.0;
+    scale_struct.scale = (*scale).get();
+    ioctl(_fd, AIRSPEEDIOCSSCALE, (unsigned long) (&scale_struct));
     return true;
 }
 
@@ -51,15 +58,25 @@ bool AP_Airspeed_PX4::get_differential_pressure(float &pressure)
     if (_fd == -1) {
         return false;
     }
+    struct differential_pressure_s report;
+    // Check if our pressure scaling has changed since the last update.
+    if ((*_sensor_scale) != _sensor_scale_active) {
+        // Update the pressure sensor scaling.
+        struct airspeed_scale scale_struct;
+        scale_struct.offset_pa = 0.0;
+        scale_struct.scale = *_sensor_scale;
+        ioctl(_fd, AIRSPEEDIOCSSCALE, (unsigned long) (&scale_struct));
+        _sensor_scale_active = (*_sensor_scale);
+        return false;
+    } 
 
     // read from the PX4 airspeed sensor
     float psum = 0;
     float tsum = 0;
     uint16_t count = 0;
-    struct differential_pressure_s report;
     
-    while (::read(_fd, &report, sizeof(report)) == sizeof(report) &&
-           report.timestamp != _last_timestamp) {
+    while (::read(_fd, &report, sizeof(report)) == sizeof(report) && report.timestamp != _last_timestamp) {
+            
         psum += report.differential_pressure_raw_pa;
         tsum += report.temperature;
         count++;

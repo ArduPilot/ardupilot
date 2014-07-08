@@ -29,7 +29,7 @@ extern const AP_HAL::HAL& hal;
 #define I2C_ADDRESS_MS4525DO	0x28
 
 // probe and initialise the sensor
-bool AP_Airspeed_I2C::init(void)
+bool AP_Airspeed_I2C::init(AP_Float * scale)
 {
     // get pointer to i2c bus semaphore
     AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
@@ -69,7 +69,7 @@ void AP_Airspeed_I2C::_collect(void)
         return;
     }
     
-	uint8_t status = data[0] & 0xC0;
+	uint8_t status = (data[0] & 0xC0) >> 6;
 	if (status == 2) {
         return;
 	} else if (status == 3) {
