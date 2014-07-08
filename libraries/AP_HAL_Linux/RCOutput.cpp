@@ -15,6 +15,7 @@
 #include <sys/ioctl.h>
 #include <linux/spi/spidev.h>
 #include <sys/mman.h>
+#include <signal.h>
 using namespace Linux;
 
 
@@ -24,10 +25,14 @@ static const uint8_t chan_pru_map[]= {10,8,11,9,7,6,5,4,3,2,1,0};               
 static const uint8_t pru_chan_map[]= {11,10,9,8,7,6,5,4,1,3,0,2};                //pru_chan_map[PRU_REG_R30/31_NUM] = CHANNEL_NUM;
 
 static const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
-
+static void catch_sigbus(int sig)
+{
+    hal.scheduler->panic("RCOutput.cpp:SIGBUS error gernerated\n");
+}
 void LinuxRCOutput::init(void* machtnicht)
 {
     uint32_t mem_fd;
+    signal(SIGBUS,catch_sigbus);
     mem_fd = open("/dev/mem", O_RDWR|O_SYNC);
     sharedMem_cmd = (struct pwm_cmd *) mmap(0, 0x1000, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, PRUSS_SHAREDRAM_BASE);
     close(mem_fd);
@@ -35,7 +40,7 @@ void LinuxRCOutput::init(void* machtnicht)
 
 void LinuxRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)            //LSB corresponds to CHAN_1
 {
-    int i;
+    uint8_t i;
     unsigned long tick=TICK_PER_S/(unsigned long)freq_hz;
     for(i=0;i<12;i++){
         if(chmask&(1<<i)){
@@ -51,12 +56,12 @@ uint16_t LinuxRCOutput::get_freq(uint8_t ch)
 
 void LinuxRCOutput::enable_ch(uint8_t ch)
 {
-    sharedMem_cmd->enmask |= 1<<chan_pru_map[ch];
+    sharedMem_cmd->enmask |= 1U<<chan_pru_map[ch];
 }
 
 void LinuxRCOutput::disable_ch(uint8_t ch)
 {
-    sharedMem_cmd->enmask &= !(1<<chan_pru_map[ch]);
+    sharedMem_cmd->enmask &= !(1U<<chan_pru_map[ch]);
 }
 
 void LinuxRCOutput::write(uint8_t ch, uint16_t period_us)
@@ -68,6 +73,9 @@ void LinuxRCOutput::write(uint8_t ch, uint16_t period_us)
 void LinuxRCOutput::write(uint8_t ch, uint16_t* period_us, uint8_t len)
 {
     uint8_t i;
+    if(len>PWM_CHAN_COUNT){
+        len = PWM_CHAN_COUNT;
+    }
     for(i=0;i<len;i++){
         write(ch+i,period_us[i]);
     }
@@ -81,6 +89,9 @@ uint16_t LinuxRCOutput::read(uint8_t ch)
 void LinuxRCOutput::read(uint16_t* period_us, uint8_t len)
 {
     uint8_t i;
+    if(len>PWM_CHAN_COUNT){
+        len = PWM_CHAN_COUNT;
+    }
     for(i=0;i<len;i++){
         period_us[i] = sharedMem_cmd->hilo_read[chan_pru_map[i]][1]/TICK_PER_US;
     }
