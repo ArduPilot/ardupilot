@@ -20,14 +20,14 @@ using namespace Linux;
 
 #define PWM_CHAN_COUNT 12
 
-int chan_pru_map[]= {10,8,11,9,7,6,5,4,3,2,1,0};                //chan_pru_map[CHANNEL_NUM] = PRU_REG_R30/31_NUM;
-int pru_chan_map[]= {11,10,9,8,7,6,5,4,1,3,0,2};                //pru_chan_map[PRU_REG_R30/31_NUM] = CHANNEL_NUM;
+static const uint8_t chan_pru_map[]= {10,8,11,9,7,6,5,4,3,2,1,0};                //chan_pru_map[CHANNEL_NUM] = PRU_REG_R30/31_NUM;
+static const uint8_t pru_chan_map[]= {11,10,9,8,7,6,5,4,1,3,0,2};                //pru_chan_map[PRU_REG_R30/31_NUM] = CHANNEL_NUM;
 
 static const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 void LinuxRCOutput::init(void* machtnicht)
 {
-    int mem_fd;
+    uint32_t mem_fd;
     mem_fd = open("/dev/mem", O_RDWR|O_SYNC);
     sharedMem_cmd = (struct pwm_cmd *) mmap(0, 0x1000, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, PRUSS_SHAREDRAM_BASE);
     close(mem_fd);
@@ -67,7 +67,7 @@ void LinuxRCOutput::write(uint8_t ch, uint16_t period_us)
 
 void LinuxRCOutput::write(uint8_t ch, uint16_t* period_us, uint8_t len)
 {
-    int i;
+    uint8_t i;
     for(i=0;i<len;i++){
         write(ch+i,period_us[i]);
     }
@@ -75,14 +75,14 @@ void LinuxRCOutput::write(uint8_t ch, uint16_t* period_us, uint8_t len)
 
 uint16_t LinuxRCOutput::read(uint8_t ch)
 {
-    return (sharedMem_cmd->periodhi[chan_pru_map[ch]][1]/TICK_PER_US);
+    return (sharedMem_cmd->hilo_read[chan_pru_map[ch]][1]/TICK_PER_US);
 }
 
 void LinuxRCOutput::read(uint16_t* period_us, uint8_t len)
 {
-    int i;
+    uint8_t i;
     for(i=0;i<len;i++){
-        period_us[i] = sharedMem_cmd->periodhi[chan_pru_map[i]][1]/TICK_PER_US;
+        period_us[i] = sharedMem_cmd->hilo_read[chan_pru_map[i]][1]/TICK_PER_US;
     }
 }
 
