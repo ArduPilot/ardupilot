@@ -67,12 +67,14 @@ bool AP_RangeFinder_PulsedLightLRF::take_reading()
     }
 
     // send command to take reading
-    if (hal.i2c->writeRegister(_addr, AP_RANGEFINDER_PULSEDLIGHTLRF_COMMAND_REG, AP_RANGEFINDER_PULSEDLIGHTLRF_CMDREG_ACQUISITION) != 0) {
+    if (hal.i2c->writeRegister(_addr, AP_RANGEFINDER_PULSEDLIGHTLRF_MEASURE_REG, AP_RANGEFINDER_PULSEDLIGHTLRF_MSRREG_ACQUIRE) != 0) {
         healthy = false;
     }else{
         healthy = true;
     }
 
+    hal.scheduler->delay_microseconds(200);
+    
     // return semaphore
     i2c_sem->give();
 
@@ -99,6 +101,7 @@ int16_t AP_RangeFinder_PulsedLightLRF::read()
 
     // read the high byte
     if (hal.i2c->readRegisters(_addr, AP_RANGEFINDER_PULSEDLIGHTLRF_DISTHIGH_REG, 1, &buff[0]) == 0) {
+        hal.scheduler->delay_microseconds(200);
         // read the low byte
         if (hal.i2c->readRegisters(_addr, AP_RANGEFINDER_PULSEDLIGHTLRF_DISTLOW_REG, 1, &buff[1]) == 0) {
             healthy = true;
@@ -111,6 +114,8 @@ int16_t AP_RangeFinder_PulsedLightLRF::read()
     ret_value = constrain_int16(ret_value, min_distance, max_distance);
     ret_value = _mode_filter->apply(ret_value);
 
+    hal.scheduler->delay_microseconds(200);
+    
     // return semaphore
     i2c_sem->give();
 
