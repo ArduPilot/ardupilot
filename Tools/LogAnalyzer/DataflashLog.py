@@ -455,7 +455,7 @@ class DataflashLog(object):
                 head = f.read(4)
                 f.seek(0)
         else:
-            raise ValueError("Unknown log format for {}: {}".format(self.logfile, format))
+            raise ValueError("Unknown log format for {}: {}".format(self.filename, format))
 
         if head == '\xa3\x95\x80\x80':
             numBytes, lineNumber = self.read_binary(f, ignoreBadlines)
