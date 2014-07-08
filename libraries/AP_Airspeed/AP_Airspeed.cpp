@@ -114,6 +114,14 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] PROGMEM = {
     // @Description: This parameter allows you to control whether the order in which the tubes are attached to your pitot tube matters. If you set this to 0 then the top connector on the sensor needs to be the dynamic pressure. If set to 1 then the bottom connector needs to be the dynamic pressure. If set to 2 (the default) then the airspeed driver will accept either order. The reason you may wish to specify the order is it will allow your airspeed sensor to detect if the aircraft it receiving excessive pressure on the static port, which would otherwise be seen as a positive airspeed.
     // @User: Advanced
     AP_GROUPINFO("TUBE_ORDER",  6, AP_Airspeed, _tube_order, 2),
+    
+    
+    // @Param: SENSOR_SCALE
+    // @DisplayName: Control scaling of pressure sensor
+    // @Description: This parameter allows you to set custom scaling for the pressure sensor, if you aren't using one of the standard sensors. Units are Pascals per count, zero to use standard scaling for the sensor. Currently only supported on PX4/PixHawk.
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("SENS_SCALE", 7, AP_Airspeed, _sensor_scale, 0.0),
 
     AP_GROUPEND
 };
@@ -133,8 +141,8 @@ void AP_Airspeed::init()
     _last_saved_ratio = _ratio;
     _counter = 0;
     
-    analog.init();
-    digital.init();
+    analog.init(&_sensor_scale);
+    digital.init(&_sensor_scale);
 }
 
 // read the airspeed sensor
@@ -206,6 +214,7 @@ void AP_Airspeed::read(void)
     if (!_enable) {
         return;
     }
+    
     airspeed_pressure = get_pressure() - _offset;
 
     /*
