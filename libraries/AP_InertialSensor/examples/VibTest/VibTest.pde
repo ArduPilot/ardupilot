@@ -147,8 +147,8 @@ void loop(void)
 
                 struct log_GYRO pkt = {
                     LOG_PACKET_HEADER_INIT((uint8_t)(LOG_GYR1_MSG+i)),
-                    timestamp : (uint32_t)(accel_report.timestamp/1000),
-                    timestamp_us : (uint32_t)accel_report.timestamp,
+                    timestamp : (uint32_t)(gyro_report.timestamp/1000),
+                    timestamp_us : (uint32_t)gyro_report.timestamp,
                     GyrX      : gyro_report.x,
                     GyrY      : gyro_report.y,
                     GyrZ      : gyro_report.z
