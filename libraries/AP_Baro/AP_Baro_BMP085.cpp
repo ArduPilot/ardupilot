@@ -291,8 +291,8 @@ void AP_Baro_BMP085::Calculate()
 
     _count++;
     if (_count == 254) {
-        _temp_sum *= 0.5;
-        _press_sum *= 0.5;
+        _temp_sum *= 0.5f;
+        _press_sum *= 0.5f;
         _count /= 2;
     }
 }
