@@ -138,6 +138,7 @@ void loop(void)
                 };
                 DataFlash.WriteBlock(&pkt, sizeof(pkt));
                 got_sample = true;
+                total_samples[i]++;
             }
             if (gyro_fd[i] != -1 && ::read(gyro_fd[i], &gyro_report, sizeof(gyro_report)) == 
                 sizeof(gyro_report) &&
@@ -154,14 +155,14 @@ void loop(void)
                 };
                 DataFlash.WriteBlock(&pkt, sizeof(pkt));
                 got_sample = true;
-            }
-            if (got_sample) {
                 total_samples[i]++;
-                if (total_samples[i] % 2000 == 0) {
-                    hal.console->printf("t=%lu total_samples=%lu/%lu/%lu\n",
-                                        hal.scheduler->millis(), 
-                                        total_samples[0], total_samples[1],total_samples[2]);
-                }
+            }
+        }
+        if (got_sample) {
+            if (total_samples[0] % 2000 == 0) {
+                hal.console->printf("t=%lu total_samples=%lu/%lu/%lu\n",
+                                    hal.scheduler->millis(), 
+                                    total_samples[0], total_samples[1],total_samples[2]);
             }
         }
     } while (got_sample);
