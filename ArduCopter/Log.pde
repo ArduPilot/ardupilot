@@ -5,6 +5,7 @@
 // Code to Write and Read packets from DataFlash log memory
 // Code to interact with the user to dump or erase logs
 
+#if CLI_ENABLED == ENABLED
 // These are function definitions so the Menu can be constructed before the functions
 // are defined below. Order matters to the compiler.
 static bool     print_log_menu(void);
@@ -86,13 +87,6 @@ dump_log(uint8_t argc, const Menu::arg *argv)
     return (0);
 }
 
-static void do_erase_logs(void)
-{
-	gcs_send_text_P(SEVERITY_LOW, PSTR("Erasing logs\n"));
-    DataFlash.EraseAll();
-	gcs_send_text_P(SEVERITY_LOW, PSTR("Log erase complete\n"));
-}
-
 static int8_t
 erase_logs(uint8_t argc, const Menu::arg *argv)
 {
@@ -155,6 +149,14 @@ process_logs(uint8_t argc, const Menu::arg *argv)
 {
     log_menu.run();
     return 0;
+}
+#endif // CLI_ENABLED
+
+static void do_erase_logs(void)
+{
+	gcs_send_text_P(SEVERITY_LOW, PSTR("Erasing logs\n"));
+    DataFlash.EraseAll();
+	gcs_send_text_P(SEVERITY_LOW, PSTR("Log erase complete\n"));
 }
 
 #if AUTOTUNE_ENABLED == ENABLED
