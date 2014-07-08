@@ -393,7 +393,7 @@ class DataflashLog(object):
     floatTypes = "fcCeEL"
     charTypes  = "nNZ"    
 
-    def __init__(self, logfile, ignoreBadlines=False):
+    def __init__(self, logfile=None, ignoreBadlines=False):
         self.filename = None
 
         self.vehicleType     = "" # ArduCopter, ArduPlane, ArduRover, etc, verbatim as given by header
@@ -413,7 +413,8 @@ class DataflashLog(object):
         self.lineCount    = 0
         self.skippedLines = 0
         
-        self.read(logfile, ignoreBadlines)
+        if logfile:
+            self.read(logfile, ignoreBadlines)
 
     def getCopterType(self):
         '''returns quad/hex/octo/tradheli if this is a copter log'''
