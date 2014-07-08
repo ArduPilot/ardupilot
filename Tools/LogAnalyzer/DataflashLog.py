@@ -433,7 +433,7 @@ class DataflashLog(object):
         else:
             return ""
 
-    def read(self, logfile, format, ignoreBadlines=False):
+    def read(self, logfile, format="auto", ignoreBadlines=False):
         '''returns on successful log read (including bad lines if ignoreBadlines==True), will throw an Exception otherwise'''
         # TODO: dataflash log parsing code is pretty hacky, should re-write more methodically
         self.filename = logfile
