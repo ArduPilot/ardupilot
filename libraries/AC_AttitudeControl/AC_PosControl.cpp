@@ -44,8 +44,8 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     _accel_z_cms(POSCONTROL_ACCEL_Z),
     _accel_cms(POSCONTROL_ACCEL_XY),
     _leash(POSCONTROL_LEASH_LENGTH_MIN),
-    _roll_target(0.0),
-    _pitch_target(0.0),
+    _roll_target(0.0f),
+    _pitch_target(0.0f),
     _alt_max(0),
     _distance_to_target(0),
     _xy_step(0),
@@ -136,7 +136,7 @@ void AC_PosControl::set_alt_target_from_climb_rate(float climb_rate_cms, float d
     // adjust desired alt if motors have not hit their limits
     // To-Do: add check of _limit.pos_up and _limit.pos_down?
     if ((climb_rate_cms<0 && !_motors.limit.throttle_lower) || (climb_rate_cms>0 && !_motors.limit.throttle_upper)) {
-        _pos_target.z += climb_rate_cms * _dt;
+        _pos_target.z += climb_rate_cms * dt;
     }
 }
 
@@ -701,8 +701,8 @@ void AC_PosControl::pos_to_rate_xy(bool use_desired_rate, float dt)
 
     // avoid divide by zero
     if (kP <= 0.0f) {
-        _vel_target.x = 0.0;
-        _vel_target.y = 0.0;
+        _vel_target.x = 0.0f;
+        _vel_target.y = 0.0f;
     }else{
         // calculate distance error
         _pos_error.x = _pos_target.x - curr_pos.x;
@@ -846,8 +846,8 @@ void AC_PosControl::accel_to_lean_angles()
 void AC_PosControl::lean_angles_to_accel(float& accel_x_cmss, float& accel_y_cmss) const
 {
     // rotate our roll, pitch angles into lat/lon frame
-    accel_x_cmss = (GRAVITY_MSS * 100) * (-(_ahrs.cos_yaw() * _ahrs.sin_pitch() / max(_ahrs.cos_pitch(),0.5)) - _ahrs.sin_yaw() * _ahrs.sin_roll() / max(_ahrs.cos_roll(),0.5));
-    accel_y_cmss = (GRAVITY_MSS * 100) * (-(_ahrs.sin_yaw() * _ahrs.sin_pitch() / max(_ahrs.cos_pitch(),0.5)) + _ahrs.cos_yaw() * _ahrs.sin_roll() / max(_ahrs.cos_roll(),0.5));
+    accel_x_cmss = (GRAVITY_MSS * 100) * (-(_ahrs.cos_yaw() * _ahrs.sin_pitch() / max(_ahrs.cos_pitch(),0.5f)) - _ahrs.sin_yaw() * _ahrs.sin_roll() / max(_ahrs.cos_roll(),0.5f));
+    accel_y_cmss = (GRAVITY_MSS * 100) * (-(_ahrs.sin_yaw() * _ahrs.sin_pitch() / max(_ahrs.cos_pitch(),0.5f)) + _ahrs.cos_yaw() * _ahrs.sin_roll() / max(_ahrs.cos_roll(),0.5f));
 }
 
 /// calc_leash_length - calculates the horizontal leash length given a maximum speed, acceleration and position kP gain
