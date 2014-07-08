@@ -6,8 +6,8 @@ class TestBalanceTwist(Test):
 	'''test for badly unbalanced copter, including yaw twist'''
 
 	def __init__(self):
+                Test.__init__(self)
 		self.name = "Balance/Twist"
-		self.enable = False   # TEMP
 		
 	def run(self, logdata, verbose):
 		self.result = TestResult()

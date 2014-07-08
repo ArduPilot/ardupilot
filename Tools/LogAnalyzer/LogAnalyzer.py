@@ -222,7 +222,7 @@ def main():
 
     # load the log
     startTime = time.time()
-    logdata = DataflashLog.DataflashLog(args.logfile.name, ignoreBadlines=args.skip_bad) # read log
+    logdata = DataflashLog.DataflashLog(args.logfile.name, format='auto', ignoreBadlines=args.skip_bad) # read log
     endTime = time.time()
     if args.profile:
         print "Log file read time: %.2f seconds" % (endTime-startTime)

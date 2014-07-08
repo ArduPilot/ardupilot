@@ -6,7 +6,7 @@ class TestAutotune(Test):
     '''test for autotune success (copter only)'''
 
     def __init__(self):
-#        Test.__init__(self)
+        Test.__init__(self)
         self.name = "Autotune"
 
     def run(self, logdata, verbose):
