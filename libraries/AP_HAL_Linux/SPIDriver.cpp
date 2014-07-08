@@ -25,17 +25,17 @@ LinuxSPIDeviceDriver LinuxSPIDeviceManager::_device[LINUX_SPI_DEVICE_NUM_DEVICES
     LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_MPU6000, SPI_MODE_3, 8, BBB_P9_28,  500*1000, 20*MHZ),
     /* MPU9250 is restricted to 1MHz for non-data and interrupt registers */
     LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_MPU9250, SPI_MODE_3, 8, BBB_P9_23,  1*MHZ, 20*MHZ),
-    LinuxSPIDeviceDriver(0, LINUX_SPI_DEVICE_LSM9DS0, SPI_MODE_0, 8, BBB_P9_17,  6*MHZ, 6*MHZ),
+    LinuxSPIDeviceDriver(0, LINUX_SPI_DEVICE_LSM9DS0, SPI_MODE_3, 8, BBB_P9_17,  10*MHZ,10*MHZ),
     LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_FRAM,    SPI_MODE_0, 8, BBB_P8_12,  6*MHZ, 6*MHZ)
 };
 
 // have a separate semaphore per bus
 LinuxSemaphore LinuxSPIDeviceManager::_semaphore[LINUX_SPI_NUM_BUSES];
+int LinuxSPIDeviceManager::_fd[LINUX_SPI_NUM_BUSES];
 
 LinuxSPIDeviceDriver::LinuxSPIDeviceDriver(uint8_t bus, LinuxSPIDeviceType type, uint8_t mode, uint8_t bitsPerWord, uint8_t cs_pin, uint32_t lowspeed, uint32_t highspeed):
     _bus(bus),
     _type(type),
-    _fd(-1),
     _mode(mode),
     _bitsPerWord(bitsPerWord),    
     _lowspeed(lowspeed),
@@ -47,49 +47,13 @@ LinuxSPIDeviceDriver::LinuxSPIDeviceDriver(uint8_t bus, LinuxSPIDeviceType type,
 
 void LinuxSPIDeviceDriver::init()
 {
-    const char *path = _bus==0?"/dev/spidev1.0":"/dev/spidev2.0";
-    _fd = open(path, O_RDWR);
-    if (_fd == -1) {
-#if SPI_DEBUGGING
-        hal.console->printf("LinuxSPIDeviceDriver failed opening %s\n", path);
-#endif        
-        return;
-    }
-    int ret;
-    ret = ioctl(_fd, SPI_IOC_WR_MODE, &_mode);
-    if (ret == -1) {
-#if SPI_DEBUGGING
-        hal.console->printf("LinuxSPIDeviceDriver ioctl SPI_IOC_WR_MODE failed\n");
-#endif                
-        goto failed;
-    }
- 
-    ret = ioctl(_fd, SPI_IOC_WR_BITS_PER_WORD, &_bitsPerWord);
-    if (ret == -1) {
-#if SPI_DEBUGGING
-        hal.console->printf("LinuxSPIDeviceDriver ioctl SPI_IOC_WR_BITS_PER_WORD failed\n");
-#endif                        
-        goto failed;
-    }
-    
-    ret = ioctl(_fd, SPI_IOC_WR_MAX_SPEED_HZ, &_speed);    
-    if (ret == -1) {
-#if SPI_DEBUGGING
-        hal.console->printf("LinuxSPIDeviceDriver ioctl SPI_IOC_WR_MAX_SPEED_HZ failed\n");
-#endif                                
-        goto failed;
-    }
- 
     // Init the CS
     _cs = hal.gpio->channel(_cs_pin);
+    if (_cs == NULL) {
+        hal.scheduler->panic("Unable to instantiate cs pin");
+    }
     _cs->mode(HAL_GPIO_OUTPUT);
     _cs->write(HIGH);       // do not hold the SPI bus initially
-    return;
-
-failed:
-    close(_fd);
-    _fd = -1;
-    hal.scheduler->panic("SPI init failed");
 }
 
 AP_HAL::Semaphore* LinuxSPIDeviceDriver::get_semaphore()
@@ -99,25 +63,7 @@ AP_HAL::Semaphore* LinuxSPIDeviceDriver::get_semaphore()
 
 void LinuxSPIDeviceDriver::transaction(const uint8_t *tx, uint8_t *rx, uint16_t len)
 {
-    cs_assert();
-    ioctl(_fd, SPI_IOC_WR_MODE, &_mode);
-    struct spi_ioc_transfer spi[1];
-    memset(spi, 0, sizeof(spi));
-    spi[0].tx_buf        = (uint64_t)tx;
-    spi[0].rx_buf        = (uint64_t)rx;
-    spi[0].len           = len;
-    spi[0].delay_usecs   = 0;
-    spi[0].speed_hz      = _speed;
-    spi[0].bits_per_word = _bitsPerWord;
-    spi[0].cs_change     = 0;
-
-    if (rx != NULL) {
-        // keep valgrind happy
-        memset(rx, 0, len);
-    }
- 
-    ioctl(_fd, SPI_IOC_MESSAGE(1), &spi);
-    cs_release();
+    LinuxSPIDeviceManager::transaction(*this, tx, rx, len);
 }
 
 void LinuxSPIDeviceDriver::set_bus_speed(enum bus_speed speed)
@@ -153,6 +99,14 @@ void LinuxSPIDeviceDriver::transfer(const uint8_t *data, uint16_t len)
 
 void LinuxSPIDeviceManager::init(void *)
 {
+    char path[] = "/dev/spidevN.0";
+    for (uint8_t i=0; i<LINUX_SPI_NUM_BUSES; i++) {
+        path[11] = '1' + i;
+        _fd[i] = open(path, O_RDWR);
+        if (_fd[i] == -1) {
+            hal.scheduler->panic("SPIDriver: unable to open SPI bus");
+        }
+    }
     for (uint8_t i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
         _device[i].init();
     }
@@ -161,28 +115,54 @@ void LinuxSPIDeviceManager::init(void *)
 void LinuxSPIDeviceManager::cs_assert(LinuxSPIDeviceType type)
 {
     for (uint8_t i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
-        if (_device[i].get_bus() != _device[type].get_bus()) {
+        if (_device[i]._bus != _device[type]._bus) {
             // not the same bus
             continue;
         }
         if (i != type) {
-            if (_device[i].get_cs()->read() != 1) {
+            if (_device[i]._cs->read() != 1) {
                 hal.scheduler->panic("two CS enabled at once");
             }
         }
     }
-    _device[type].get_cs()->write(0);
+    _device[type]._cs->write(0);
 }
 
 void LinuxSPIDeviceManager::cs_release(LinuxSPIDeviceType type)
 {
     for (uint8_t i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
-        if (_device[i].get_bus() != _device[type].get_bus()) {
+        if (_device[i]._bus != _device[type]._bus) {
             // not the same bus
             continue;
         }
-        _device[i].get_cs()->write(1);
+        _device[i]._cs->write(1);
     }
+}
+
+void LinuxSPIDeviceManager::transaction(LinuxSPIDeviceDriver &driver, const uint8_t *tx, uint8_t *rx, uint16_t len)
+{
+    // we set the mode before we assert the CS line so that the bus is
+    // in the correct idle state before the chip is selected
+    ioctl(_fd[driver._bus], SPI_IOC_WR_MODE, &driver._mode);
+
+    cs_assert(driver._type);
+    struct spi_ioc_transfer spi[1];
+    memset(spi, 0, sizeof(spi));
+    spi[0].tx_buf        = (uint64_t)tx;
+    spi[0].rx_buf        = (uint64_t)rx;
+    spi[0].len           = len;
+    spi[0].delay_usecs   = 0;
+    spi[0].speed_hz      = driver._speed;
+    spi[0].bits_per_word = driver._bitsPerWord;
+    spi[0].cs_change     = 0;
+
+    if (rx != NULL) {
+        // keep valgrind happy
+        memset(rx, 0, len);
+    }
+ 
+    ioctl(_fd[driver._bus], SPI_IOC_MESSAGE(1), &spi);
+    cs_release(driver._type);
 }
 
 /*
