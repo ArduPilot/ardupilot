@@ -15,7 +15,7 @@ import ctypes
 class Format(object):
     '''Data channel format as specified by the FMT lines in the log file'''
     def __init__(self,msgType,msgLen,name,types,labels):
-		self.NAME    = 'FMT'
+        self.NAME    = 'FMT'
         self.msgType = msgType
         self.msgLen  = msgLen
         self.name    = name
