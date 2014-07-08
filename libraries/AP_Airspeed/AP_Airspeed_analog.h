@@ -28,6 +28,7 @@ public:
 private:
     AP_HAL::AnalogSource *_source;
     const AP_Int8 &_pin;
+    float sensor_scale_active;
     int8_t _last_pin;
 };
 
