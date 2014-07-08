@@ -139,8 +139,8 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
         }
     }
     
-    roll_ff  = ((AC_HELI_PID&)_pid_rate_roll).get_ff(rate_roll_target_cds);
-    pitch_ff = ((AC_HELI_PID&)_pid_rate_pitch).get_ff(rate_pitch_target_cds);
+    roll_ff = roll_feedforward_filter.apply(((AC_HELI_PID&)_pid_rate_roll).get_ff(rate_roll_target_cds));
+    pitch_ff = pitch_feedforward_filter.apply(((AC_HELI_PID&)_pid_rate_pitch).get_ff(rate_pitch_target_cds));
 
     // add feed forward and final output
     roll_out = roll_pd + roll_i + roll_ff;
@@ -271,8 +271,8 @@ float AC_AttitudeControl_Heli::rate_bf_to_motor_yaw(float rate_target_cds)
             i = ((AC_HELI_PID&)_pid_rate_yaw).get_leaky_i(rate_error, _dt, AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);    // If motor is not running use leaky I-term to avoid excessive build-up
         }
     }
-
-    ff  = ((AC_HELI_PID&)_pid_rate_yaw).get_ff(rate_target_cds);
+    
+    ff = yaw_feedforward_filter.apply(((AC_HELI_PID&)_pid_rate_yaw).get_ff(rate_target_cds));
     
     // add feed forward
     yaw_out = pd + i + ff;
@@ -301,3 +301,12 @@ int16_t AC_AttitudeControl_Heli::get_angle_boost(int16_t throttle_pwm)
     _angle_boost = 0;
     return throttle_pwm;
 }
+
+// update_feedforward_filter_rate - Sets LPF cutoff frequency
+void AC_AttitudeControl_Heli::update_feedforward_filter_rates(float time_step)
+{
+    pitch_feedforward_filter.set_cutoff_frequency(time_step, AC_ATTITUDE_HELI_RATE_FF_FILTER);
+    roll_feedforward_filter.set_cutoff_frequency(time_step, AC_ATTITUDE_HELI_RATE_FF_FILTER);
+    yaw_feedforward_filter.set_cutoff_frequency(time_step, AC_ATTITUDE_HELI_RATE_FF_FILTER);
+}
+

@@ -8,11 +8,13 @@
 
 #include <AC_AttitudeControl.h>
 #include <AC_HELI_PID.h>
+#include <FILTER.h>
 
 #define AC_ATTITUDE_HELI_ROLL_FF                    0.0f
 #define AC_ATTITUDE_HELI_PITCH_FF                   0.0f
 #define AC_ATTITUDE_HELI_YAW_FF                     0.0f
 #define AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE  0.02f
+#define AC_ATTITUDE_HELI_RATE_FF_FILTER             5.0f
 
 class AC_AttitudeControl_Heli : public AC_AttitudeControl {
 public:
@@ -36,6 +38,8 @@ public:
 
 	// use_leaky_i - controls whether we use leaky i term for body-frame to motor output stage
 	void use_leaky_i(bool leaky_i) {  _flags_heli.leaky_i = leaky_i; }
+    
+    void update_feedforward_filter_rates(float time_step);
 
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -64,6 +68,13 @@ private:
 
     // get_angle_boost - calculate total body frame throttle required to produce the given earth frame throttle
     virtual int16_t get_angle_boost(int16_t throttle_pwm);
+    
+    // LPF filters to act on Rate Feedforward terms to linearize output.
+    // Due to complicated aerodynamic effects, feedforwards acting too fast can lead
+    // to jerks on rate change requests.
+    LowPassFilterInt32 pitch_feedforward_filter;
+    LowPassFilterInt32 roll_feedforward_filter;
+    LowPassFilterInt32 yaw_feedforward_filter;
 
 };
 
