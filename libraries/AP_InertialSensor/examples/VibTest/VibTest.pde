@@ -94,7 +94,7 @@ void setup(void)
         accel_fd[i] = open(accel_path, O_RDONLY);
         gyro_fd[i] = open(gyro_path, O_RDONLY);
     }
-    if (accel_fd[0] == -1 || gyro_fd[-1] == -1) {
+    if (accel_fd[0] == -1 || gyro_fd[0] == -1) {
             hal.scheduler->panic("Failed to open accel/gyro 0");
     }
 
