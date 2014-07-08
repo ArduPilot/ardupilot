@@ -189,7 +189,7 @@ int32_t AP_RollController::get_rate_out(float desired_rate, float scaler)
 */
 int32_t AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool disable_integrator)
 {
-    if (gains.tau < 0.1) {
+    if (gains.tau < 0.1f) {
         gains.tau.set(0.1f);
     }
 	
