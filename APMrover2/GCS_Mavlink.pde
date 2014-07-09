@@ -899,6 +899,19 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 result = MAV_RESULT_ACCEPTED;
                 break;
 
+            case MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS:
+                if (packet.param1 == 2) {
+                    // save first compass's offsets
+                    compass.set_and_save_offsets(0, packet.param2, packet.param3, packet.param4);
+                    result = MAV_RESULT_ACCEPTED;
+                }
+                if (packet.param1 == 5) {
+                    // save secondary compass's offsets
+                    compass.set_and_save_offsets(1, packet.param2, packet.param3, packet.param4);
+                    result = MAV_RESULT_ACCEPTED;
+                }
+                break;
+
         case MAV_CMD_DO_SET_MODE:
             switch ((uint16_t)packet.param1) {
             case MAV_MODE_MANUAL_ARMED:
@@ -1052,17 +1065,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         handle_mission_write_partial_list(mission, msg);
         break;
     }
-
-#ifdef MAVLINK_MSG_ID_SET_MAG_OFFSETS
-    case MAVLINK_MSG_ID_SET_MAG_OFFSETS:
-    {
-        mavlink_set_mag_offsets_t packet;
-        mavlink_msg_set_mag_offsets_decode(msg, &packet);
-        if (mavlink_check_target(packet.target_system,packet.target_component)) break;
-        compass.set_offsets(Vector3f(packet.mag_ofs_x, packet.mag_ofs_y, packet.mag_ofs_z));
-        break;
-    }
-#endif
 
 	// XXX receive a WP from GCS and store in EEPROM
     case MAVLINK_MSG_ID_MISSION_ITEM:
