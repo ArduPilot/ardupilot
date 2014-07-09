@@ -113,8 +113,7 @@ bool AP_Arming::compass_checks(bool report)
             return false;
         }
         // check compass learning is on or offsets have been set
-        Vector3f offsets = compass->get_offsets();
-        if(!compass->_learn && offsets.length() == 0) {
+        if (!compass.learn_offsets_enabled() && !compass.configured()) {
             if (report) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not calibrated"));
             }
