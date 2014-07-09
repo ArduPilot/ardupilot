@@ -162,6 +162,9 @@ public:
         set_and_save_offsets(i, Vector3f(x, y, z));
     }
 
+    // learn offsets accessor
+    bool learn_offsets_enabled() const { return _learn; }
+
     /// Perform automatic offset updates
     ///
     void learn_offsets(void);
