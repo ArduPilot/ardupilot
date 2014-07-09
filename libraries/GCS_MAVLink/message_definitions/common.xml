@@ -875,7 +875,7 @@
                </entry>
                <entry value="242" name="MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS">
                     <description>Set sensor offsets. This command will be only accepted if in pre-flight mode.</description>
-                    <param index="1">Sensor to adjust the offsets for: 0: gyros, 1: accelerometer, 2: magnetometer, 3: barometer, 4: optical flow</param>
+                    <param index="1">Sensor to adjust the offsets for: 0: gyros, 1: accelerometer, 2: magnetometer, 3: barometer, 4: optical flow, 5: second magnetometer</param>
                     <param index="2">X axis offset (or generic dimension 1), in the sensor's raw units</param>
                     <param index="3">Y axis offset (or generic dimension 2), in the sensor's raw units</param>
                     <param index="4">Z axis offset (or generic dimension 3), in the sensor's raw units</param>
