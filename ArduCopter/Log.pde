@@ -173,7 +173,7 @@ struct PACKED log_AutoTune {
     float   new_gain_sp;       // newly calculated gain
 };
 
-// Write an Current data packet
+// Write an Autotune data packet
 static void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float rate_min, float rate_max, float new_gain_rp, float new_gain_rd, float new_gain_sp)
 {
     struct log_AutoTune pkt = {
@@ -195,7 +195,7 @@ struct PACKED log_AutoTuneDetails {
     float   rate_cds;       // current rotation rate in centi-degrees / second
 };
 
-// Write an Current data packet
+// Write an Autotune data packet
 static void Log_Write_AutoTuneDetails(int16_t angle_cd, float rate_cds)
 {
     struct log_AutoTuneDetails pkt = {
