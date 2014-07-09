@@ -971,20 +971,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-#ifdef MAVLINK_MSG_ID_SET_MAG_OFFSETS
-    case MAVLINK_MSG_ID_SET_MAG_OFFSETS:
-    {
-        mavlink_set_mag_offsets_t packet;
-        mavlink_msg_set_mag_offsets_decode(msg, &packet);
-        // exit immediately if this command is not meant for this vehicle
-        if (mavlink_check_target(packet.target_system,packet.target_component)) {
-            break;
-        }
-        compass.set_offsets(Vector3f(packet.mag_ofs_x, packet.mag_ofs_y, packet.mag_ofs_z));
-        break;
-    }
-#endif
-
     // GCS has sent us a command from GCS, store to EEPROM
     case MAVLINK_MSG_ID_MISSION_ITEM:           // MAV ID: 39
     {
@@ -1173,6 +1159,19 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             if (packet.param6 == 1) {
                 // compassmot calibration
                 result = mavlink_compassmot(chan);
+            }
+            break;
+
+        case MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS:
+            if (packet.param1 == 2) {
+                // save first compass's offsets
+                compass.set_and_save_offsets(0, packet.param2, packet.param3, packet.param4);
+                result = MAV_RESULT_ACCEPTED;
+            }
+            if (packet.param1 == 5) {
+                // save secondary compass's offsets
+                compass.set_and_save_offsets(1, packet.param2, packet.param3, packet.param4);
+                result = MAV_RESULT_ACCEPTED;
             }
             break;
 
