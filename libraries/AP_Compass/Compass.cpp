@@ -160,9 +160,10 @@ Compass::init()
 }
 
 void
-Compass::set_offsets(const Vector3f &offsets)
+Compass::set_and_save_offsets(uint8_t i, const Vector3f &offsets)
 {
-    _offset[0].set(offsets);
+    _offset[i].set(offsets);
+    save_offsets(i);
 }
 
 void

@@ -106,11 +106,12 @@ public:
     ///
     float calculate_heading(const Matrix3f &dcm_matrix) const;
 
-    /// Sets the compass offset x/y/z values.
+    /// Sets and saves the compass offset x/y/z values.
     ///
+    /// @param  i                   compass instance
     /// @param  offsets             Offsets to the raw mag_ values.
     ///
-    void set_offsets(const Vector3f &offsets);
+    void set_and_save_offsets(uint8_t i, const Vector3f &offsets);
 
     /// Saves the current offset x/y/z values for one or all compasses
     ///
@@ -152,12 +153,13 @@ public:
 
     /// Program new offset values.
     ///
+    /// @param  i                   compass instance
     /// @param  x                   Offset to the raw mag_x value.
     /// @param  y                   Offset to the raw mag_y value.
     /// @param  z                   Offset to the raw mag_z value.
     ///
-    void set_offsets(int x, int y, int z) {
-        set_offsets(Vector3f(x, y, z));
+    void set_and_save_offsets(uint8_t i, int x, int y, int z) {
+        set_and_save_offsets(i, Vector3f(x, y, z));
     }
 
     /// Perform automatic offset updates
