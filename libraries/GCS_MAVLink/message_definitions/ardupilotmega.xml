@@ -135,7 +135,7 @@
           </message>
 
           <message id="151" name="SET_MAG_OFFSETS">
-               <description>set the magnetometer offsets</description>
+               <description>Deprecated. Use MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS instead. Set the magnetometer offsets</description>
                <field type="uint8_t" name="target_system">System ID</field>
                <field type="uint8_t" name="target_component">Component ID</field>
                <field type="int16_t" name="mag_ofs_x">magnetometer X offset</field>
