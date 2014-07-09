@@ -34,7 +34,7 @@ void setup() {
     }
     hal.console->println("init done");
 
-    compass.set_offsets(0,0,0); // set offsets to account for surrounding interference
+    compass.set_and_save_offsets(0,0,0,0); // set offsets to account for surrounding interference
     compass.set_declination(ToRad(0.0)); // set local difference between magnetic north and true north
 
     hal.console->print("Compass auto-detected as: ");
