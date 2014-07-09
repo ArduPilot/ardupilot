@@ -31,10 +31,10 @@ public:
     AP_Airspeed_PX4() : _fd(-1) {}
 
     // probe and initialise the sensor
-    bool init(AP_Float * scale);
+    bool init(float scale);
 
     // return the current differential_pressure in Pascal
-    bool get_differential_pressure(float &pressure);
+    bool get_differential_pressure(float &pressure, float scale);
 
     // return the current temperature in degrees C, if available
     bool get_temperature(float &temperature);

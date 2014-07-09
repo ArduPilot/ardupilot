@@ -157,7 +157,6 @@ private:
     bool		    _healthy;
     uint32_t        _last_update_ms;
     AP_Float        _sensor_scale; // Sensor scale that the user has set
-    AP_Float        _sensor_scale_active; // Sensor scale that's actually being used right now.
 
     Airspeed_Calibration _calibration;
     float _last_saved_ratio;

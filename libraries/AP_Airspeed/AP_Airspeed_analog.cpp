@@ -34,7 +34,7 @@ extern const AP_HAL::HAL& hal;
 extern AP_ADC_ADS7844 apm1_adc;
 #endif
 
-bool AP_Airspeed_Analog::init(AP_Float * scale)
+bool AP_Airspeed_Analog::init(float scale)
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
     if (_pin == 64) {
@@ -43,17 +43,22 @@ bool AP_Airspeed_Analog::init(AP_Float * scale)
     }
 #endif
     _source = hal.analogin->channel(_pin);
+    // Scale is unused for this one.
     return true;
 }
 
 // read the airspeed sensor
-bool AP_Airspeed_Analog::get_differential_pressure(float &pressure)
+bool AP_Airspeed_Analog::get_differential_pressure(float &pressure, float scale)
 {
     if (_source == NULL) {
         return false;
     }
     _source->set_pin(_pin);
-    pressure = _source->voltage_average_ratiometric() * VOLTS_TO_PASCAL;
+    if (scale == 0.0f) {
+        pressure = _source->voltage_average_ratiometric() * VOLTS_TO_PASCAL;
+    } else {
+        pressure = _source->voltage_average_ratiometric() * scale;
+    }
     return true;
 }
 

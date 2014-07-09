@@ -29,10 +29,10 @@
 class AP_Airspeed_Backend {
 public:
     // probe and initialise the sensor
-    virtual bool init(AP_Float * scale) = 0;
+    virtual bool init(float scale) = 0;
 
     // return the current differential_pressure in Pascal
-    virtual bool get_differential_pressure(float &pressure) = 0;
+    virtual bool get_differential_pressure(float &pressure, float scale) = 0;
 
     // return the current temperature in degrees C, if available
     virtual bool get_temperature(float &temperature) = 0;
