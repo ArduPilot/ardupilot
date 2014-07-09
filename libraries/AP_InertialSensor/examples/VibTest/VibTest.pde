@@ -49,6 +49,10 @@ static int gyro_fd[INS_MAX_INSTANCES];
 static uint32_t total_samples[INS_MAX_INSTANCES];
 static uint64_t last_accel_timestamp[INS_MAX_INSTANCES];
 static uint64_t last_gyro_timestamp[INS_MAX_INSTANCES];
+static uint32_t accel_deltat_min[INS_MAX_INSTANCES];
+static uint32_t accel_deltat_max[INS_MAX_INSTANCES];
+static uint32_t gyro_deltat_min[INS_MAX_INSTANCES];
+static uint32_t gyro_deltat_max[INS_MAX_INSTANCES];
 static DataFlash_File DataFlash("/fs/microsd/VIBTEST");
 
 #define LOG_ACC1_MSG 215
@@ -117,6 +121,7 @@ void setup(void)
 void loop(void)
 {
     bool got_sample = false;
+    static uint32_t last_print;
     do {
         got_sample = false;
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
@@ -126,6 +131,13 @@ void loop(void)
             if (accel_fd[i] != -1 && ::read(accel_fd[i], &accel_report, sizeof(accel_report)) == 
                 sizeof(accel_report) &&
                 accel_report.timestamp != last_accel_timestamp[i]) {        
+                uint32_t deltat = accel_report.timestamp - last_accel_timestamp[i];
+                if (deltat > accel_deltat_max[i]) {
+                    accel_deltat_max[i] = deltat;
+                }
+                if (accel_deltat_min[i] == 0 || deltat < accel_deltat_max[i]) {
+                    accel_deltat_min[i] = deltat;
+                }
                 last_accel_timestamp[i] = accel_report.timestamp;
 
                 struct log_ACCEL pkt = {
@@ -143,6 +155,13 @@ void loop(void)
             if (gyro_fd[i] != -1 && ::read(gyro_fd[i], &gyro_report, sizeof(gyro_report)) == 
                 sizeof(gyro_report) &&
                 gyro_report.timestamp != last_gyro_timestamp[i]) {        
+                uint32_t deltat = gyro_report.timestamp - last_gyro_timestamp[i];
+                if (deltat > gyro_deltat_max[i]) {
+                    gyro_deltat_max[i] = deltat;
+                }
+                if (gyro_deltat_min[i] == 0 || deltat < gyro_deltat_max[i]) {
+                    gyro_deltat_min[i] = deltat;
+                }
                 last_gyro_timestamp[i] = gyro_report.timestamp;
 
                 struct log_GYRO pkt = {
@@ -159,10 +178,22 @@ void loop(void)
             }
         }
         if (got_sample) {
-            if (total_samples[0] % 2000 == 0) {
-                hal.console->printf("t=%lu total_samples=%lu/%lu/%lu\n",
+            if (total_samples[0] % 2000 == 0 && last_print != total_samples[0]) {
+                last_print = total_samples[0];
+                hal.console->printf("t=%lu total_samples=%lu/%lu/%lu adt=%u:%u/%u:%u/%u:%u gdt=%u:%u/%u:%u/%u:%u\n",
                                     hal.scheduler->millis(), 
-                                    total_samples[0], total_samples[1],total_samples[2]);
+                                    total_samples[0], total_samples[1],total_samples[2],
+                                    accel_deltat_min[0], accel_deltat_max[0], 
+                                    accel_deltat_min[1], accel_deltat_max[1], 
+                                    accel_deltat_min[2], accel_deltat_max[2], 
+                                    gyro_deltat_min[0], gyro_deltat_max[0], 
+                                    gyro_deltat_min[1], gyro_deltat_max[1], 
+                                    gyro_deltat_min[2], gyro_deltat_max[2]);
+
+                memset(accel_deltat_min, 0, sizeof(accel_deltat_min));
+                memset(accel_deltat_max, 0, sizeof(accel_deltat_max));
+                memset(gyro_deltat_min, 0, sizeof(gyro_deltat_min));
+                memset(gyro_deltat_max, 0, sizeof(gyro_deltat_max));
             }
         }
     } while (got_sample);
