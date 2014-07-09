@@ -8,7 +8,7 @@
 
 #include <AC_AttitudeControl.h>
 #include <AC_HELI_PID.h>
-#include <FILTER.h>
+#include <Filter.h>
 
 #define AC_ATTITUDE_HELI_ROLL_FF                    0.0f
 #define AC_ATTITUDE_HELI_PITCH_FF                   0.0f
