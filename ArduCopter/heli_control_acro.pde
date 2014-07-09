@@ -16,7 +16,6 @@ static bool heli_acro_init(bool ignore_checks)
 static void heli_acro_run()
 {
     float target_roll, target_pitch, target_yaw;
-    static bool init_targets_on_arming;
     
     // Tradheli should not reset roll, pitch, yaw targets when motors are not runup, because
     // we may be in autorotation flight.  These should be reset only when transitioning from disarmed
@@ -25,12 +24,12 @@ static void heli_acro_run()
     // Also, unlike multicopters we do not set throttle (i.e. collective pitch) to zero so the swash servos move
     
     if(!motors.armed()) {
-        init_targets_on_arming=true;
+        heli_flags.init_targets_on_arming=true;
         attitude_control.set_yaw_target_to_current_heading();
     }
 
-    if(motors.armed() && init_targets_on_arming) {
-        init_targets_on_arming=false;
+    if(motors.armed() && heli_flags.init_targets_on_arming) {
+        heli_flags.init_targets_on_arming=false;
         attitude_control.relax_bf_rate_controller();
         
     }   
