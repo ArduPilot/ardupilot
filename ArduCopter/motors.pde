@@ -261,7 +261,7 @@ static void pre_arm_checks(bool display_failure)
         }
 
         // check compass learning is on or offsets have been set
-        if(!compass._learn && !compass.configured()) {
+        if(!compass.learn_offsets_enabled() && !compass.configured()) {
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not calibrated"));
             }
@@ -527,7 +527,10 @@ static void init_disarm_motors()
     // disable inertial nav errors temporarily
     inertial_nav.ignore_next_error();
 
-    compass.save_offsets();
+    // save offsets if automatic offset learning is on
+    if (compass.learn_offsets_enabled()) {
+        compass.save_offsets();
+    }
 
     g.throttle_cruise.save();
 
