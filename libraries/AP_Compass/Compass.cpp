@@ -166,13 +166,19 @@ Compass::set_offsets(const Vector3f &offsets)
 }
 
 void
-Compass::save_offsets()
+Compass::save_offsets(uint8_t i)
 {
-    for (uint8_t k=0; k<COMPASS_MAX_INSTANCES; k++) {
-        _offset[k].save();  // save offsets
+    _offset[i].save();  // save offsets
 #if COMPASS_MAX_INSTANCES > 1
-        _dev_id[k].save();  // save device id corresponding to these offsets
+    _dev_id[i].save();  // save device id corresponding to these offsets
 #endif
+}
+
+void
+Compass::save_offsets(void)
+{
+    for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+        save_offsets(i);
     }
 }
 

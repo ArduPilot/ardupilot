@@ -112,12 +112,15 @@ public:
     ///
     void set_offsets(const Vector3f &offsets);
 
-    /// Saves the current compass offset x/y/z values.
+    /// Saves the current offset x/y/z values for one or all compasses
+    ///
+    /// @param  i                   compass instance
     ///
     /// This should be invoked periodically to save the offset values maintained by
     /// ::learn_offsets.
     ///
-    void save_offsets();
+    void save_offsets(uint8_t i);
+    void save_offsets(void);
 
     // return the number of compass instances
     virtual uint8_t get_count(void) const { return 1; }
