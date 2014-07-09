@@ -27,10 +27,18 @@
 extern const AP_HAL::HAL& hal;
 
 #define I2C_ADDRESS_MS4525DO	0x28
+#define SENSOR_SCALE_MS4525DO ((6894.8*2)/(0.8*16383))
 
 // probe and initialise the sensor
-bool AP_Airspeed_I2C::init(AP_Float * scale)
+bool AP_Airspeed_I2C::init(float scale)
 {
+    // Check whether scale has been set.
+    if (scale == 0.0f) {
+        _sensor_scale_active = SENSOR_SCALE_MS4525DO;
+    } else {
+        _sensor_scale_active = scale;
+    }
+    
     // get pointer to i2c bus semaphore
     AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
 
@@ -82,20 +90,18 @@ void AP_Airspeed_I2C::_collect(void)
 	dT_raw = (data[2] << 8) + data[3];
 	dT_raw = (0xFFE0 & dT_raw) >> 5;
 
-	const float P_min = -1.0f;
-	const float P_max = 1.0f;
-	const float PSI_to_Pa = 6894.757f;
 	/*
-	  this equation is an inversion of the equation in the
-	  pressure transfer function figure on page 4 of the datasheet
+	  This equation is taken from the MS4525DO datasheet, but
+      rewritten in a form that neatly separates the zero offset
+      (16383/2 counts) from the sensor scale so that they can be 
+      individually adjusted.
 
 	  We negate the result so that positive differential pressures
 	  are generated when the bottom port is used as the static
 	  port on the pitot and top port is used as the dynamic port
 	 */
-	float diff_press_PSI = -((dp_raw - 0.1f*16383) * (P_max-P_min)/(0.8f*16383) + P_min);
-
-	_pressure = diff_press_PSI * PSI_to_Pa;
+    _pressure = -(dp_raw - 16383.0f/2) * _sensor_scale_active;
+    
 	_temperature = ((200.0f * dT_raw) / 2047) - 50;
 
     _last_sample_time_ms = hal.scheduler->millis();
@@ -123,9 +129,18 @@ void AP_Airspeed_I2C::_timer(void)
 }
 
 // return the current differential_pressure in Pascal
-bool AP_Airspeed_I2C::get_differential_pressure(float &pressure)
+bool AP_Airspeed_I2C::get_differential_pressure(float &pressure, float scale)
 {
     if ((hal.scheduler->millis() - _last_sample_time_ms) > 100) {
+        return false;
+    }
+    // Check whether scaling has changed, since all these measurements have
+    // been made at the current scale.
+    if ((scale == 0.0f) && (_sensor_scale_active != SENSOR_SCALE_MS4525DO)) {
+        _sensor_scale_active = SENSOR_SCALE_MS4525DO;
+        return false; 
+    } else if (scale != _sensor_scale_active) {
+        scale = _sensor_scale_active;
         return false;
     }
     pressure = _pressure;

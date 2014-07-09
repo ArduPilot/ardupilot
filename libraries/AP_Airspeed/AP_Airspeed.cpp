@@ -118,7 +118,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] PROGMEM = {
     
     // @Param: SENSOR_SCALE
     // @DisplayName: Control scaling of pressure sensor
-    // @Description: This parameter allows you to set custom scaling for the pressure sensor, if you aren't using one of the standard sensors. Units are Pascals per count, zero to use standard scaling for the sensor. Currently only supported on PX4/PixHawk.
+    // @Description: This parameter allows you to set custom scaling for the pressure sensor. For digital sensors, the units are Pascals per LSB, or zero to use default scaling for the MS4525DO 1PSI sensor. For analog sensors, the units are Pascals per volt, or zero to use default scaling for the 3DR analog airspeed sensor.
     // @Increment: 0.01
     // @User: Advanced
     AP_GROUPINFO("SENS_SCALE", 7, AP_Airspeed, _sensor_scale, 0.0),
@@ -141,8 +141,8 @@ void AP_Airspeed::init()
     _last_saved_ratio = _ratio;
     _counter = 0;
     
-    analog.init(&_sensor_scale);
-    digital.init(&_sensor_scale);
+    analog.init(_sensor_scale);
+    digital.init(_sensor_scale);
 }
 
 // read the airspeed sensor
@@ -157,9 +157,9 @@ float AP_Airspeed::get_pressure(void)
     }
     float pressure = 0;
     if (_pin == AP_AIRSPEED_I2C_PIN) {
-        _healthy = digital.get_differential_pressure(pressure);
+        _healthy = digital.get_differential_pressure(pressure, _sensor_scale);
     } else {
-        _healthy = analog.get_differential_pressure(pressure);
+        _healthy = analog.get_differential_pressure(pressure, _sensor_scale);
     }
     return pressure;
 }

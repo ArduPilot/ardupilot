@@ -16,10 +16,10 @@ public:
     {}
 
     // probe and initialise the sensor
-    bool init(AP_Float * scale);
+    bool init(float scale);
 
     // return the current differential_pressure in Pascal
-    bool get_differential_pressure(float &pressure);
+    bool get_differential_pressure(float &pressure, float scale);
 
     // temperature not available via analog backend
     bool get_temperature(float &temperature) { return false; }
@@ -27,6 +27,7 @@ public:
 private:
     AP_HAL::AnalogSource *_source;
     const AP_Int8 &_pin;
+    float sensor_scale_active;
     int8_t _last_pin;
 };
 
