@@ -14,7 +14,8 @@ ModeFilterInt16_Size5 rotor_speed_deglitch_filter(4);
 
 // Tradheli flags
 static struct {
-    uint8_t dynamic_flight  : 1;    // 0   // true if we are moving at a significant speed (used to turn on/off leaky I terms)
+    uint8_t dynamic_flight          : 1;    // 0   // true if we are moving at a significant speed (used to turn on/off leaky I terms)
+    uint8_t init_targets_on_arming  : 1;    // 1   // true if we have been disarmed, and need to reset rate controller targets when we arm
 } heli_flags;
 
 #endif  // FRAME_CONFIG == HELI_FRAME
