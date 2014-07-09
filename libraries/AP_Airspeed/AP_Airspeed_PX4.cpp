@@ -32,10 +32,8 @@
 
 extern const AP_HAL::HAL& hal;
 
-bool AP_Airspeed_PX4::init(AP_Float * scale)
+bool AP_Airspeed_PX4::init(float scale)
 {
-    _sensor_scale = scale;
-    _sensor_scale_active = (*scale).get();
     _fd = open(AIRSPEED_DEVICE_PATH, O_RDONLY);
     if (_fd == -1) {
         return false;
@@ -47,26 +45,29 @@ bool AP_Airspeed_PX4::init(AP_Float * scale)
     
     struct airspeed_scale scale_struct;
     scale_struct.offset_pa = 0.0;
-    scale_struct.scale = (*scale).get();
+    scale_struct.scale = scale;
     ioctl(_fd, AIRSPEEDIOCSSCALE, (unsigned long) (&scale_struct));
+    _sensor_scale_active = scale;
     return true;
 }
 
 // read the airspeed sensor
-bool AP_Airspeed_PX4::get_differential_pressure(float &pressure)
+bool AP_Airspeed_PX4::get_differential_pressure(float &pressure, float scale)
 {
     if (_fd == -1) {
         return false;
     }
+    // Scaling used for the sensor.
     struct differential_pressure_s report;
-    // Check if our pressure scaling has changed since the last update.
-    if ((*_sensor_scale) != _sensor_scale_active) {
+    // Check whether the scale that has been used for all these measurements is
+    // the scale that's been set by the user.
+    if (scale != _sensor_scale_active) {
         // Update the pressure sensor scaling.
         struct airspeed_scale scale_struct;
         scale_struct.offset_pa = 0.0;
-        scale_struct.scale = *_sensor_scale;
+        scale_struct.scale = scale;
         ioctl(_fd, AIRSPEEDIOCSSCALE, (unsigned long) (&scale_struct));
-        _sensor_scale_active = (*_sensor_scale);
+        _sensor_scale_active = scale;
         return false;
     } 
 

@@ -23,7 +23,7 @@ void setup()
     hal.scheduler->delay(1000);
 
     /* What's this for? */
-    hal.gpio->pinMode(63, GPIO_OUTPUT);
+    hal.gpio->pinMode(63, HAL_GPIO_OUTPUT);
     hal.gpio->write(63, 1);
     
     baro.init();

@@ -34,7 +34,7 @@ public:
     bool init(void);
 
     // return the current differential_pressure in Pascal
-    bool get_differential_pressure(float &pressure);
+    bool get_differential_pressure(float &pressure, float scale);
 
     // return the current temperature in degrees C, if available
     bool get_temperature(float &temperature);
