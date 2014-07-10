@@ -149,6 +149,13 @@ Compass::Compass(void) :
     _null_init_done(false)
 {
     AP_Param::setup_object_defaults(this, var_info);
+
+#if COMPASS_MAX_INSTANCES > 1
+    // default device ids to zero.  init() method will overwrite with the actual device ids
+    for (uint8_t i; i<COMPASS_MAX_INSTANCES; i++) {
+        _dev_id[i] = 0;
+    }
+#endif
 }
 
 // Default init method, just returns success.
