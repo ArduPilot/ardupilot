@@ -1433,6 +1433,16 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     }  
 #endif // AC_RALLY == ENABLED
 
+#if PX4FLOW == ENABLED
+    case MAVLINK_MSG_ID_OPTICAL_FLOW: {
+        mavlink_optical_flow_t packet;
+        mavlink_msg_optical_flow_decode(msg, &packet);
+
+        Log_Write_PX4Flow(&packet);
+        break;
+    }
+#endif
+
 
     }     // end switch
 } // end handle mavlink

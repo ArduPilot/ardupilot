@@ -49,6 +49,12 @@ GCS_MAVLINK::init(AP_HAL::UARTDriver *port)
         chan = MAVLINK_COMM_2;
         initialised = true;
 #endif
+#if MAVLINK_COMM_NUM_BUFFERS > 3
+    } else if (port == (AP_HAL::BetterStream*)hal.uartE) {
+        mavlink_comm_3_port = port;
+        chan = MAVLINK_COMM_3;
+        initialised = true;
+#endif
     }
     _queued_parameter = NULL;
     reset_cli_timeout();

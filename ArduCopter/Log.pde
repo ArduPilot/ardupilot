@@ -49,6 +49,7 @@ print_log_menu(void)
         if (g.log_bitmask & MASK_LOG_OPTFLOW) cliSerial->printf_P(PSTR(" OPTFLOW"));
         if (g.log_bitmask & MASK_LOG_COMPASS) cliSerial->printf_P(PSTR(" COMPASS"));
         if (g.log_bitmask & MASK_LOG_CAMERA) cliSerial->printf_P(PSTR(" CAMERA"));
+        if (g.log_bitmask & MASK_LOG_PX4FLOW) cliSerial->printf_P(PSTR(" PX4FLOW"));
     }
 
     cliSerial->println();
@@ -132,6 +133,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
         TARG(OPTFLOW);
         TARG(COMPASS);
         TARG(CAMERA);
+        TARG(PX4FLOW);
  #undef TARG
     }
 
@@ -263,6 +265,40 @@ static void Log_Write_Optflow()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
  #endif     // OPTFLOW == ENABLED
 }
+
+#if PX4FLOW == ENABLED
+struct PACKED log_PX4Flow {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    uint8_t id;
+    int16_t flow_x;
+    int16_t flow_y;
+    float flow_comp_m_x;
+    float flow_comp_m_y;
+    uint8_t quality;
+    float ground_distance;
+};
+
+// Write a PX4Flow packet
+static void Log_Write_PX4Flow(mavlink_optical_flow_t* packet)
+{
+    if (!(g.log_bitmask & MASK_LOG_PX4FLOW)) {
+        return;
+    }
+    struct log_PX4Flow pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_PX4FLOW_MSG),
+        time_ms         : hal.scheduler->millis(),
+        id              : packet->sensor_id,
+        flow_x          : packet->flow_x,
+        flow_y          : packet->flow_y,
+        flow_comp_m_x   : packet->flow_comp_m_x,
+        flow_comp_m_y   : packet->flow_comp_m_y,
+        quality         : packet->quality,
+        ground_distance : packet->ground_distance,
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
+#endif
 
 struct PACKED log_Nav_Tuning {
     LOG_PACKET_HEADER;
@@ -666,6 +702,10 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "CURR", "IhIhhhf",     "TimeMS,ThrOut,ThrInt,Volt,Curr,Vcc,CurrTot" },
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),       
       "OF",   "hhBccee",   "Dx,Dy,SQual,X,Y,Roll,Pitch" },
+#if PX4FLOW == ENABLED
+    { LOG_PX4FLOW_MSG, sizeof(log_PX4Flow),
+      "PX4F", "IBhhffBf",   "TimeMS,Id,X,Y,CompX,CompY,Qual,Dist" },
+#endif
     { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),       
       "NTUN", "Iffffffffff", "TimeMS,DPosX,DPosY,PosX,PosY,DVelX,DVelY,VelX,VelY,DAccX,DAccY" },
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),

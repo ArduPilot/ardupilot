@@ -247,6 +247,7 @@ enum FlipState {
 #define LOG_AUTOTUNEDETAILS_MSG         0x1A
 #define LOG_COMPASS2_MSG                0x1B
 #define LOG_COMPASS3_MSG                0x1C
+#define LOG_PX4FLOW_MSG                 0x1D
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
 #define MASK_LOG_ATTITUDE_MED           (1<<1)
@@ -264,6 +265,7 @@ enum FlipState {
 #define MASK_LOG_COMPASS                (1<<13)
 #define MASK_LOG_INAV                   (1<<14) // deprecated
 #define MASK_LOG_CAMERA                 (1<<15)
+#define MASK_LOG_PX4FLOW                (1<<12) // reused
 
 // DATA - event logging
 #define DATA_MAVLINK_FLOAT              1

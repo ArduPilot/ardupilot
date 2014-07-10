@@ -767,6 +767,9 @@
   #  define CLI_ENABLED           ENABLED
 #endif
 
+// use this to enable PX4Flow logging
+#define PX4FLOW DISABLED
+
 /*
   build a firmware version string.
   GIT_VERSION comes from Makefile builds
