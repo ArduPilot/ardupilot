@@ -105,7 +105,7 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @Param: PRIMARY
     // @DisplayName: Choose primary compass
     // @Description: If more than one compass is available this selects which compass is the primary.
-    // @Values: 0:FirstCompas,1:SecondCompass
+    // @Values: 0:FirstCompass,1:SecondCompass
     // @User: Advanced
     AP_GROUPINFO("PRIMARY", 12, Compass, _primary, 0),
 #endif
