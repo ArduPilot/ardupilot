@@ -40,7 +40,7 @@
 #define AC_ATTITUDE_RATE_RP_PID_DTERM_FILTER            20      // D-term filter rate cutoff frequency for Roll and Pitch rate controllers
 #define AC_ATTITUDE_RATE_Y_PID_DTERM_FILTER             5       // D-term filter rate cutoff frequency for Yaw rate controller
 
-#define AC_ATTITUDE_CONTROL_RATE_BF_FF_DEFAULT          0       // body-frame rate feedforward disabled by default
+#define AC_ATTITUDE_CONTROL_RATE_BF_FF_DEFAULT          1       // body-frame rate feedforward enabled by default
 
 class AC_AttitudeControl {
 public:
