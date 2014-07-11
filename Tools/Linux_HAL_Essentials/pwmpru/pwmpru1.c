@@ -41,6 +41,7 @@ int main(int argc, char *argv[])
 	u32 delta, deltamin, tnext, hi, lo;
 	u32 *nextp;
 	const u32 *hilop;
+    u32 period;
 	u32 enmask;	/* enable mask */
 	u32 stmask;	/* state mask */
 	static u32 next_hi_lo[MAX_PWMS][3];
@@ -79,60 +80,67 @@ int main(int argc, char *argv[])
 			continue;
 		}
 		nextp[0] = cnt;		/* next */
-		nextp[1] = hilop[0];	/* hi */
-		nextp[2] = hilop[1];	/* lo */
+		nextp[1] = 200000;	/* hi */
+        nextp[2] = 208000;	/* lo */
+        PWM_CMD->periodhi[i][0] = 408000;
+        PWM_CMD->periodhi[i][1] = 180000;        
 	}
-
+    PWM_CMD->enmask = 0;
 	clrmsk = enmask;
 	setmsk = 0;
 	/* guaranteed to be immediate */
 	deltamin = 0;
 	next = cnt + deltamin;
-        PWM_CMD->magic = 0;
-
+    PWM_CMD->magic = PWM_REPLY_MAGIC;
+    
 	while(1) {
 
-		/* signalled interrupt from either PRU0 or host */
 
-		if(PWM_CMD->magic == PWM_CMD_MAGIC) {
-			clrmsk = enmask;
-			setmsk = 0;
-			/* guaranteed to be immediate */
+        //if(PWM_CMD->magic == PWM_CMD_MAGIC) 
+        {
+			msk = PWM_CMD->enmask;
+            for(i=0, nextp = &next_hi_lo[0][0]; i<MAX_PWMS; 
+                i++, nextp += 3){
+                //Enable
+                if ((PWM_EN_MASK & (msk&(1U<<i))) && (enmask & (msk&(1U<<i))) == 0) {
+        		        enmask |= (msk&(1U<<i));
+
+    				    __R30 |= (msk&(1U<<i));
+                        nextp[0] = cnt;	//since we start high, wait this amount 
+
+                        // first enable
+                        if (enmask == (msk&(1U<<i)))
+            			    cnt = read_PIEP_COUNT();
+                        deltamin = 0;
+                        next = cnt;
+                }
+                //Disable
+        		if ((PWM_EN_MASK & (msk&(1U<<i))) && ((msk & ~(1U<<i)) == 0)) {
+        			enmask &= ~(1U<<i);
+        			__R30 &= ~(1U<<i);
+        		}
+                
+                //get and set pwm_vals
+                if (PWM_EN_MASK & (msk&(1U<<i))) {
+
+            			//nextp = &next_hi_lo[i * 3];
+                		nextp[1] = PWM_CMD->periodhi[i][1];
+                        period = PWM_CMD->periodhi[i][0]; 
+                		nextp[2] =period - nextp[1];
+                        
+                }
+                PWM_CMD->hilo_read[i][0] = nextp[0];
+                PWM_CMD->hilo_read[i][1] = nextp[1];
+                
+                
+            }
+                    
+			// guaranteed to be immediate 
 			deltamin = 0;
-
-			for (i = 0; i < MAX_PWMS; i++){
-			    cfg.hilo[i][0] = PWM_CMD->periodhi[i][1];
-		            cfg.hilo[i][1] = PWM_CMD->periodhi[i][0] - PWM_CMD->periodhi[i][1];
-		            PWM_CMD->hilo_read[i][0] = cfg.hilo[i][0];
-		            PWM_CMD->hilo_read[i][1] = cfg.hilo[i][1];
-		        }
-	
-		        cfg.enmask = PWM_CMD->enmask;
-		        PWM_CMD->enmask_read = cfg.enmask;
-			enmask = cfg.enmask;
-			stmask = 0;		/* starting all low */
-	
-			clrmsk = 0;
-			for (i = 0, msk = 1, nextp = next_hi_lo, hilop = &cfg.hilo[0][0];
-				i < MAX_PWMS;
-				i++, msk <<= 1, nextp += 3, hilop += 2) {
-				if ((enmask & msk) == 0) {
-					nextp[1] = PRU_us(100);	/* default */
-					nextp[2] = PRU_us(100);
-					continue;
-				}
-				nextp[0] = cnt;		/* next */
-				nextp[1] = hilop[0];	/* hi */
-				nextp[2] = hilop[1];	/* lo */
-			}
-      			clrmsk = enmask;
-			setmsk = 0;
-			/* guaranteed to be immediate */
-			deltamin = 0;
-
-                   	PWM_CMD->magic = PWM_REPLY_MAGIC;
+        
+            PWM_CMD->magic = PWM_REPLY_MAGIC;
 		}
-                PWM_CMD->enmask_read = enmask;
+        PWM_CMD->enmask_read = enmask;
 		/* if nothing is enabled just skip it all */
 		if (enmask == 0)
 			continue;
@@ -211,71 +219,11 @@ int main(int argc, char *argv[])
 #if MAX_PWMS > 12 && (PWM_EN_MASK & BIT(12))
 		SINGLE_PWM(12);
 #endif
-#if MAX_PWMS > 13 && (PWM_EN_MASK & BIT(13))
-		SINGLE_PWM(13);
-#endif
-#if MAX_PWMS > 14 && (PWM_EN_MASK & BIT(14))
-		SINGLE_PWM(14);
-#endif
-#if MAX_PWMS > 15 && (PWM_EN_MASK & BIT(15))
-		SINGLE_PWM(15);
-#endif
-#if MAX_PWMS > 16 && (PWM_EN_MASK & BIT(16))
-		SINGLE_PWM(16);
-#endif
-#if MAX_PWMS > 17 && (PWM_EN_MASK & BIT(17))
-		SINGLE_PWM(17);
-#endif
-#if MAX_PWMS > 18 && (PWM_EN_MASK & BIT(18))
-		SINGLE_PWM(18);
-#endif
-#if MAX_PWMS > 19 && (PWM_EN_MASK & BIT(19))
-		SINGLE_PWM(19);
-#endif
-#if MAX_PWMS > 20 && (PWM_EN_MASK & BIT(20))
-		SINGLE_PWM(20);
-#endif
-#if MAX_PWMS > 21 && (PWM_EN_MASK & BIT(21))
-		SINGLE_PWM(21);
-#endif
-#if MAX_PWMS > 22 && (PWM_EN_MASK & BIT(22))
-		SINGLE_PWM(22);
-#endif
-#if MAX_PWMS > 23 && (PWM_EN_MASK & BIT(23))
-		SINGLE_PWM(23);
-#endif
-#if MAX_PWMS > 24 && (PWM_EN_MASK & BIT(24))
-		SINGLE_PWM(24);
-#endif
-#if MAX_PWMS > 25 && (PWM_EN_MASK & BIT(25))
-		SINGLE_PWM(25);
-#endif
-#if MAX_PWMS > 26 && (PWM_EN_MASK & BIT(26))
-		SINGLE_PWM(26);
-#endif
-#if MAX_PWMS > 27 && (PWM_EN_MASK & BIT(27))
-		SINGLE_PWM(27);
-#endif
-#if MAX_PWMS > 28 && (PWM_EN_MASK & BIT(28))
-		SINGLE_PWM(28);
-#endif
-#if MAX_PWMS > 29 && (PWM_EN_MASK & BIT(29))
-		SINGLE_PWM(29);
-#endif
-#if MAX_PWMS > 30 && (PWM_EN_MASK & BIT(30))
-		SINGLE_PWM(30);
-#endif
-#if MAX_PWMS > 31 && (PWM_EN_MASK & BIT(31))
-		SINGLE_PWM(31);
-#endif
+
 		/* results in set bits where there are changes */
-		delta = ~clrmsk | setmsk;
 
-		if ((delta & 0xffff) != 0)
-			__R30 = (__R30 & (clrmsk & 0xffff)) | (setmsk & 0xffff);
-		if ((delta >> 16) != 0)
-			pru_other_and_or_reg(30, (clrmsk >> 16) | 0xffff0000, setmsk >> 16);
-
+      __R30 = (__R30 & (clrmsk & 0xfff)) | (setmsk & 0xfff);
+		
 		/* loop while nothing changes */
 		do {
 			cnt = read_PIEP_COUNT();
