@@ -278,6 +278,15 @@ static void init_ardupilot()
     Log_Write_Startup();
 #endif
 
+    // we don't want writes to the serial port to cause us to pause
+    // mid-flight, so set the serial ports non-blocking once we are
+    // ready to fly
+    hal.uartA->set_blocking_writes(false);
+    hal.uartC->set_blocking_writes(false);
+    if (hal.uartD != NULL) {
+        hal.uartD->set_blocking_writes(false);
+    }
+
     cliSerial->print_P(PSTR("\nReady to FLY "));
 }
 

@@ -139,15 +139,6 @@ static void init_arm_motors()
     gcs_send_text_P(SEVERITY_HIGH, PSTR("ARMING MOTORS"));
 #endif
 
-    // we don't want writes to the serial port to cause us to pause
-    // mid-flight, so set the serial ports non-blocking once we arm
-    // the motors
-    hal.uartA->set_blocking_writes(false);
-    hal.uartC->set_blocking_writes(false);
-    if (hal.uartD != NULL) {
-        hal.uartD->set_blocking_writes(false);
-    }
-
     // Remember Orientation
     // --------------------
     init_simple_bearing();
