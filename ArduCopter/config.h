@@ -636,16 +636,16 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Hybrid parameter defaults
+// PosHold parameter defaults
 //
-#ifndef HYBRID_ENABLED
- # define HYBRID_ENABLED                ENABLED // hybrid flight mode enabled by default
+#ifndef POSHOLD_ENABLED
+ # define POSHOLD_ENABLED               ENABLED // PosHold flight mode enabled by default
 #endif
-#ifndef HYBRID_BRAKE_RATE_DEFAULT
- # define HYBRID_BRAKE_RATE_DEFAULT     8       // default HYBRID_BRAKE_RATE param value.  Rotation rate during braking in deg/sec
+#ifndef POSHOLD_BRAKE_RATE_DEFAULT
+ # define POSHOLD_BRAKE_RATE_DEFAULT    8       // default POSHOLD_BRAKE_RATE param value.  Rotation rate during braking in deg/sec
 #endif
-#ifndef HYBRID_BRAKE_ANGLE_DEFAULT
- # define HYBRID_BRAKE_ANGLE_DEFAULT    3000    // default HYBRID_BRAKE_ANGLE param value.  Max lean angle during braking in centi-degrees
+#ifndef POSHOLD_BRAKE_ANGLE_DEFAULT
+ # define POSHOLD_BRAKE_ANGLE_DEFAULT   3000    // default POSHOLD_BRAKE_ANGLE param value.  Max lean angle during braking in centi-degrees
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

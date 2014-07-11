@@ -28,7 +28,7 @@
 //#define AC_FENCE              DISABLED            // disable fence to save 2k of flash
 //#define CAMERA                DISABLED            // disable camera trigger to save 1k of flash
 //#define CONFIG_SONAR          DISABLED            // disable sonar to save 1k of flash
-//#define HYBRID_ENABLED        DISABLED            // disable hybrid flight mode to save 4.5k of flash
+//#define POSHOLD_ENABLED       DISABLED            // disable PosHold flight mode to save 4.5k of flash
 
 // features below are disabled by default on APM (but enabled on Pixhawk)
 //#define AC_RALLY              ENABLED             // disable rally points to save 2k of flash, and also frees rally point EEPROM for more mission commands

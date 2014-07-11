@@ -50,7 +50,7 @@ static void failsafe_radio_on_event()
             break;
         case LOITER:
         case ALT_HOLD:
-        case HYBRID:
+        case POSHOLD:
             // if landed with throttle at zero disarm, otherwise do the regular thing
             if (g.rc_3.control_in == 0 && ap.land_complete) {
                 init_disarm_motors();
@@ -140,7 +140,7 @@ static void failsafe_battery_event(void)
                 break;
             case LOITER:
             case ALT_HOLD:
-            case HYBRID:
+            case POSHOLD:
                 // if landed with throttle at zero disarm, otherwise fall through to default handling
                 if (g.rc_3.control_in == 0 && ap.land_complete) {
                     init_disarm_motors();

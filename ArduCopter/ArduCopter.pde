@@ -51,7 +51,7 @@
  *  Jean-Louis Naudin   :Auto Landing
  *  John Arne Birkeland	:PPM Encoder
  *  Jose Julio          :Stabilization Control laws, MPU6k driver
- *  Julien Dubois       :Hybrid flight mode
+ *  Julien Dubois       :PosHold flight mode
  *  Julian Oes          :Pixhawk
  *  Jonathan Challinger :Inertial Navigation, CompassMot, Spin-When-Armed
  *  Kevin Hester        :Andropilot GCS
@@ -65,7 +65,7 @@
  *  Robert Lefebvre     :Heli Support, Copter LEDs
  *  Roberto Navoni      :Library testing, Porting to VRBrain
  *  Sandro Benigno      :Camera support, MinimOSD
- *  Sandro Tognana      :Hybrid flight mode
+ *  Sandro Tognana      :PosHold flight mode
  *  ..and many more.
  *
  *  Code commit statistics can be found here: https://github.com/diydrones/ardupilot/graphs/contributors
