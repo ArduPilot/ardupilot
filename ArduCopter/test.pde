@@ -198,17 +198,18 @@ static int8_t
 test_optflow(uint8_t argc, const Menu::arg *argv)
 {
 #if OPTFLOW == ENABLED
-    if(g.optflow_enabled) {
-        cliSerial->printf_P(PSTR("man id: %d\t"),optflow.read_register(ADNS3080_PRODUCT_ID));
+    if(optflow.enabled()) {
+        cliSerial->printf_P(PSTR("dev id: %d\t"),(int)optflow.device_id());
         print_hit_enter();
 
         while(1) {
             delay(200);
             optflow.update();
+            const Vector2i& raw = optflow.raw();
             cliSerial->printf_P(PSTR("dx:%d\t dy:%d\t squal:%d\n"),
-                            optflow.dx,
-                            optflow.dy,
-                            optflow.surface_quality);
+                            (int)raw.x,
+                            (int)raw.y,
+                            (int)optflow.quality());
 
             if(cliSerial->available() > 0) {
                 return (0);

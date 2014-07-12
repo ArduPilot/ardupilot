@@ -386,7 +386,7 @@ void report_optflow()
     cliSerial->printf_P(PSTR("OptFlow\n"));
     print_divider();
 
-    print_enabled(g.optflow_enabled);
+    print_enabled(optflow.enabled());
 
     print_blanks(2);
  #endif     // OPTFLOW == ENABLED

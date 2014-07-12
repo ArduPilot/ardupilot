@@ -93,9 +93,14 @@ static void init_compass()
 static void init_optflow()
 {
 #if OPTFLOW == ENABLED
+    // exit immediately if not enabled
+    if (!optflow.enabled()) {
+        return;
+    }
+
+    // initialise sensor and display error on failure
     optflow.init();
     if (!optflow.healthy()) {
-        g.optflow_enabled = false;
         cliSerial->print_P(PSTR("Failed to Init OptFlow\n"));
         Log_Write_Error(ERROR_SUBSYSTEM_OPTFLOW,ERROR_CODE_FAILED_TO_INITIALISE);
     }
