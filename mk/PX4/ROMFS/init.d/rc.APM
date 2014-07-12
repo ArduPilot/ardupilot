@@ -340,6 +340,14 @@ then
     echo "Found mb12xx sensor"
 fi
 
+# optional PX4Flow sensor
+if px4flow start
+then
+    echo "Found px4flow sensor"
+fi
+
+echo "Trying PX4IO board"
+
 if mtd start /fs/mtd
 then
     echo "started mtd driver OK"
