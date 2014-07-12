@@ -133,8 +133,7 @@ void setup() {
 	ofs.x += 1.1;
 	ofs.y += 1.2;
 	ofs.z += 1.3;
-	compass.set_offsets(ofs);
-	compass.save_offsets();
+	compass.set_and_save_offsets(0, ofs);
 	cliSerial->printf_P(PSTR("Compass: %f %f %f\n"),
 					ofs.x, ofs.y, ofs.z);
 
