@@ -239,28 +239,32 @@ static void Log_Write_Current()
 
 struct PACKED log_Optflow {
     LOG_PACKET_HEADER;
-    int16_t dx;
-    int16_t dy;
+    uint32_t time_ms;
     uint8_t surface_quality;
-    int16_t x_cm;
-    int16_t y_cm;
-    int32_t roll;
-    int32_t pitch;
+    int16_t raw_x;
+    int16_t raw_y;
+    float vel_x;
+    float vel_y;
 };
 
 // Write an optical flow packet
 static void Log_Write_Optflow()
 {
  #if OPTFLOW == ENABLED
+    // exit immediately if not enabled
+    if (!optflow.enabled()) {
+        return;
+    }
+    const Vector2i &raw = optflow.raw();
+    const Vector2f &vel = optflow.velocity();
     struct log_Optflow pkt = {
         LOG_PACKET_HEADER_INIT(LOG_OPTFLOW_MSG),
-        dx              : optflow.dx,
-        dy              : optflow.dy,
-        surface_quality : optflow.surface_quality,
-        x_cm            : (int16_t) optflow.x_cm,
-        y_cm            : (int16_t) optflow.y_cm,
-        roll            : of_roll,
-        pitch           : of_pitch
+        time_ms         : hal.scheduler->millis(),
+        surface_quality : optflow.quality(),
+        raw_x           : raw.x,
+        raw_y           : raw.y,
+        vel_x           : vel.x,
+        vel_y           : vel.y
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
  #endif     // OPTFLOW == ENABLED
@@ -666,7 +670,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_CURRENT_MSG, sizeof(log_Current),             
       "CURR", "IhIhhhf",     "TimeMS,ThrOut,ThrInt,Volt,Curr,Vcc,CurrTot" },
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),       
-      "OF",   "hhBccee",   "Dx,Dy,SQual,X,Y,Roll,Pitch" },
+      "OF",   "IBhhff",   "TimeMS,Qual,RawX,RawY,VelX,VelY" },
     { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),       
       "NTUN", "Iffffffffff", "TimeMS,DPosX,DPosY,PosX,PosY,DVelX,DVelY,VelX,VelY,DAccX,DAccY" },
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
