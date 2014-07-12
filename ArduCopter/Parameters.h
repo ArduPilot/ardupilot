@@ -121,6 +121,7 @@ public:
         k_param_terrain,
         k_param_acro_expo,
         k_param_throttle_deadzone,      // 57
+        k_param_optflow,                // 54 - optflow object
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -191,7 +192,7 @@ public:
         k_param_compass,
         k_param_sonar_enabled_old, // deprecated
         k_param_frame_orientation,
-        k_param_optflow_enabled,
+        k_param_optflow_enabled,    // deprecated
         k_param_fs_batt_voltage,
         k_param_ch7_option,
         k_param_auto_slew_rate,     // deprecated - can be deleted
@@ -339,7 +340,6 @@ public:
     AP_Int16        gps_hdop_good;              // GPS Hdop value at or below this value represent a good position
 
     AP_Int8         compass_enabled;
-    AP_Int8         optflow_enabled;
     AP_Int8         super_simple;
     AP_Int16        rtl_alt_final;
 
