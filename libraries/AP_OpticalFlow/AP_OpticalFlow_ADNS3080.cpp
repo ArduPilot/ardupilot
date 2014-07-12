@@ -25,12 +25,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-// Constructors ////////////////////////////////////////////////////////////////
-AP_OpticalFlow_ADNS3080::AP_OpticalFlow_ADNS3080()
-{
-    field_of_view = AP_OPTICALFLOW_ADNS3080_08_FOV;
-}
-
 // Public Methods //////////////////////////////////////////////////////////////
 // init - initialise sensor
 // assumes SPI bus has been initialised but will attempt to initialise 
@@ -50,6 +44,7 @@ void AP_OpticalFlow_ADNS3080::init()
         while (!_flags.healthy && retry < 3) {
             if (read_register(ADNS3080_PRODUCT_ID) == 0x17) {
                 _flags.healthy = true;
+                _device_id = ADNS3080_PRODUCT_ID;
             }
             retry++;
         }
@@ -176,28 +171,20 @@ void AP_OpticalFlow_ADNS3080::update(void)
 {
     uint8_t motion_reg;
     int16_t  raw_dx, raw_dy;    // raw sensor change in x and y position (i.e. unrotated)
-    surface_quality = read_register(ADNS3080_SQUAL);
+    _surface_quality = read_register(ADNS3080_SQUAL);
     hal.scheduler->delay_microseconds(50);
 
     // check for movement, update x,y values
     motion_reg = read_register(ADNS3080_MOTION);
     if ((motion_reg & 0x80) != 0) {
-        raw_dx = ((int8_t)read_register(ADNS3080_DELTA_X));
+        _raw.x = ((int8_t)read_register(ADNS3080_DELTA_X));
         hal.scheduler->delay_microseconds(50);
-        raw_dy = ((int8_t)read_register(ADNS3080_DELTA_Y));
+        _raw.y = ((int8_t)read_register(ADNS3080_DELTA_Y));
     }else{
-        raw_dx = 0;
-        raw_dy = 0;
+        _raw.zero();
     }
 
-    last_update = hal.scheduler->millis();
-
-    Vector3f rot_vector(raw_dx, raw_dy, 0);
-
-    // rotate dx and dy
-    rot_vector.rotate(_orientation);
-    dx = rot_vector.x;
-    dy = rot_vector.y;
+    _last_update = hal.scheduler->millis();
 }
 
 // parent method called at 1khz by periodic process
@@ -219,11 +206,9 @@ void AP_OpticalFlow_ADNS3080::clear_motion()
 {
     // writing anything to this register will clear the sensor's motion
     // registers
-    write_register(ADNS3080_MOTION_CLEAR,0xFF); 
-    x_cm = 0;
-    y_cm = 0;
-    dx = 0;
-    dy = 0;
+    write_register(ADNS3080_MOTION_CLEAR,0xFF);
+    _raw.zero();
+    _velocity.zero();
 }
 
 // get_pixel_data - captures an image from the sensor and stores it to the
@@ -268,8 +253,8 @@ void AP_OpticalFlow_ADNS3080::update_conversion_factors()
     // multiply this number by altitude and pixel change to get horizontal
     // move (in same units as altitude)
     conv_factor = ((1.0f / (float)(ADNS3080_PIXELS_X * AP_OPTICALFLOW_ADNS3080_SCALER_1600))
-                   * 2.0f * tanf(field_of_view / 2.0f));
+                   * 2.0f * tanf(AP_OPTICALFLOW_ADNS3080_08_FOV / 2.0f));
     // 0.00615
-    radians_to_pixels = (ADNS3080_PIXELS_X * AP_OPTICALFLOW_ADNS3080_SCALER_1600) / field_of_view;
+    radians_to_pixels = (ADNS3080_PIXELS_X * AP_OPTICALFLOW_ADNS3080_SCALER_1600) / AP_OPTICALFLOW_ADNS3080_08_FOV;
     // 162.99
 }
