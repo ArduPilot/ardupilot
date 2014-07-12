@@ -117,7 +117,7 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw_smooth(float roll_angle
     	_rate_ef_desired.x = constrain_float(rate_ef_desired, _rate_ef_desired.x-rate_change_limit, _rate_ef_desired.x+rate_change_limit);
 
     	// update earth-frame roll angle target using desired roll rate
-        update_ef_roll_angle_and_error(_rate_ef_desired.x, angle_ef_error);
+        update_ef_roll_angle_and_error(_rate_ef_desired.x, angle_ef_error, AC_ATTITUDE_RATE_STAB_ROLL_OVERSHOOT_ANGLE_MAX);
 
     	// calculate earth-frame feed forward pitch rate using linear response when close to the target, sqrt response when we're further away
     	angle_to_target = pitch_angle_ef - _angle_ef_target.y;
@@ -131,7 +131,7 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw_smooth(float roll_angle
     	_rate_ef_desired.y = constrain_float(rate_ef_desired, _rate_ef_desired.y-rate_change_limit, _rate_ef_desired.y+rate_change_limit);
 
     	// update earth-frame pitch angle target using desired pitch rate
-        update_ef_pitch_angle_and_error(_rate_ef_desired.y, angle_ef_error);
+        update_ef_pitch_angle_and_error(_rate_ef_desired.y, angle_ef_error, AC_ATTITUDE_RATE_STAB_PITCH_OVERSHOOT_ANGLE_MAX);
     } else {
         // target roll and pitch to desired input roll and pitch
     	_angle_ef_target.x = roll_angle_ef;
@@ -156,12 +156,12 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw_smooth(float roll_angle
         rate_change = constrain_float(rate_change, -rate_change_limit, rate_change_limit);
         _rate_ef_desired.z += rate_change;
         // calculate yaw target angle and angle error
-        update_ef_yaw_angle_and_error(_rate_ef_desired.z, angle_ef_error);
+        update_ef_yaw_angle_and_error(_rate_ef_desired.z, angle_ef_error, AC_ATTITUDE_RATE_STAB_YAW_OVERSHOOT_ANGLE_MAX);
     } else {
         // set yaw feed forward to zero
     	_rate_ef_desired.z = yaw_rate_ef;
         // calculate yaw target angle and angle error
-        update_ef_yaw_angle_and_error(_rate_ef_desired.z, angle_ef_error);
+        update_ef_yaw_angle_and_error(_rate_ef_desired.z, angle_ef_error, AC_ATTITUDE_RATE_STAB_YAW_OVERSHOOT_ANGLE_MAX);
     }
 
     // convert earth-frame angle errors to body-frame angle errors
@@ -210,12 +210,12 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw(float roll_angle_ef, fl
         rate_change = constrain_float(rate_change, -rate_change_limit, rate_change_limit);
         _rate_ef_desired.z += rate_change;
         // calculate yaw target angle and angle error
-        update_ef_yaw_angle_and_error(_rate_ef_desired.z, angle_ef_error);
+        update_ef_yaw_angle_and_error(_rate_ef_desired.z, angle_ef_error, AC_ATTITUDE_RATE_STAB_YAW_OVERSHOOT_ANGLE_MAX);
     } else {
         // set yaw feed forward to zero
         _rate_ef_desired.z = yaw_rate_ef;
         // calculate yaw target angle and angle error
-        update_ef_yaw_angle_and_error(_rate_ef_desired.z, angle_ef_error);
+        update_ef_yaw_angle_and_error(_rate_ef_desired.z, angle_ef_error, AC_ATTITUDE_RATE_STAB_YAW_OVERSHOOT_ANGLE_MAX);
     }
 
     // convert earth-frame angle errors to body-frame angle errors
@@ -299,9 +299,9 @@ void AC_AttitudeControl::rate_ef_roll_pitch_yaw(float roll_rate_ef, float pitch_
     }
 
     // update earth frame angle targets and errors
-    update_ef_roll_angle_and_error(_rate_ef_desired.x, angle_ef_error);
-    update_ef_pitch_angle_and_error(_rate_ef_desired.y, angle_ef_error);
-    update_ef_yaw_angle_and_error(_rate_ef_desired.z, angle_ef_error);
+    update_ef_roll_angle_and_error(_rate_ef_desired.x, angle_ef_error, AC_ATTITUDE_RATE_STAB_ROLL_OVERSHOOT_ANGLE_MAX);
+    update_ef_pitch_angle_and_error(_rate_ef_desired.y, angle_ef_error, AC_ATTITUDE_RATE_STAB_PITCH_OVERSHOOT_ANGLE_MAX);
+    update_ef_yaw_angle_and_error(_rate_ef_desired.z, angle_ef_error, AC_ATTITUDE_RATE_STAB_YAW_OVERSHOOT_ANGLE_MAX);
 
     // constrain earth-frame angle targets
     _angle_ef_target.x = constrain_float(_angle_ef_target.x, -_aparm.angle_max, _aparm.angle_max);
@@ -334,9 +334,9 @@ void AC_AttitudeControl::rate_bf_roll_pitch_yaw(float roll_rate_bf, float pitch_
         frame_conversion_bf_to_ef(_rate_bf_desired, _rate_ef_desired);
 
         // update earth frame angle targets and errors
-        update_ef_roll_angle_and_error(_rate_ef_desired.x, angle_ef_error);
-        update_ef_pitch_angle_and_error(_rate_ef_desired.y, angle_ef_error);
-        update_ef_yaw_angle_and_error(_rate_ef_desired.z, angle_ef_error);
+        update_ef_roll_angle_and_error(_rate_ef_desired.x, angle_ef_error, AC_ATTITUDE_RATE_STAB_ACRO_OVERSHOOT_ANGLE_MAX);
+        update_ef_pitch_angle_and_error(_rate_ef_desired.y, angle_ef_error, AC_ATTITUDE_RATE_STAB_ACRO_OVERSHOOT_ANGLE_MAX);
+        update_ef_yaw_angle_and_error(_rate_ef_desired.z, angle_ef_error, AC_ATTITUDE_RATE_STAB_ACRO_OVERSHOOT_ANGLE_MAX);
 
         // convert earth-frame angle errors to body-frame angle errors
         frame_conversion_ef_to_bf(angle_ef_error, _angle_bf_error);
@@ -438,11 +438,11 @@ void AC_AttitudeControl::frame_conversion_bf_to_ef(const Vector3f& bf_vector, Ve
 //
 
 // update_ef_roll_angle_and_error - update _angle_ef_target.x using an earth frame roll rate request
-void AC_AttitudeControl::update_ef_roll_angle_and_error(float roll_rate_ef, Vector3f &angle_ef_error)
+void AC_AttitudeControl::update_ef_roll_angle_and_error(float roll_rate_ef, Vector3f &angle_ef_error, float overshoot_max)
 {
     // calculate angle error with maximum of +- max angle overshoot
     angle_ef_error.x = wrap_180_cd(_angle_ef_target.x - _ahrs.roll_sensor);
-    angle_ef_error.x  = constrain_float(angle_ef_error.x, -AC_ATTITUDE_RATE_STAB_ROLL_OVERSHOOT_ANGLE_MAX, AC_ATTITUDE_RATE_STAB_ROLL_OVERSHOOT_ANGLE_MAX);
+    angle_ef_error.x  = constrain_float(angle_ef_error.x, -overshoot_max, overshoot_max);
 
     // update roll angle target to be within max angle overshoot of our roll angle
     _angle_ef_target.x = angle_ef_error.x + _ahrs.roll_sensor;
@@ -453,12 +453,12 @@ void AC_AttitudeControl::update_ef_roll_angle_and_error(float roll_rate_ef, Vect
 }
 
 // update_ef_pitch_angle_and_error - update _angle_ef_target.y using an earth frame pitch rate request
-void AC_AttitudeControl::update_ef_pitch_angle_and_error(float pitch_rate_ef, Vector3f &angle_ef_error)
+void AC_AttitudeControl::update_ef_pitch_angle_and_error(float pitch_rate_ef, Vector3f &angle_ef_error, float overshoot_max)
 {
     // calculate angle error with maximum of +- max angle overshoot
     // To-Do: should we do something better as we cross 90 degrees?
     angle_ef_error.y = wrap_180_cd(_angle_ef_target.y - _ahrs.pitch_sensor);
-    angle_ef_error.y  = constrain_float(angle_ef_error.y, -AC_ATTITUDE_RATE_STAB_PITCH_OVERSHOOT_ANGLE_MAX, AC_ATTITUDE_RATE_STAB_PITCH_OVERSHOOT_ANGLE_MAX);
+    angle_ef_error.y  = constrain_float(angle_ef_error.y, -overshoot_max, overshoot_max);
 
     // update pitch angle target to be within max angle overshoot of our pitch angle
     _angle_ef_target.y = angle_ef_error.y + _ahrs.pitch_sensor;
@@ -469,11 +469,11 @@ void AC_AttitudeControl::update_ef_pitch_angle_and_error(float pitch_rate_ef, Ve
 }
 
 // update_ef_yaw_angle_and_error - update _angle_ef_target.z using an earth frame yaw rate request
-void AC_AttitudeControl::update_ef_yaw_angle_and_error(float yaw_rate_ef, Vector3f &angle_ef_error)
+void AC_AttitudeControl::update_ef_yaw_angle_and_error(float yaw_rate_ef, Vector3f &angle_ef_error, float overshoot_max)
 {
     // calculate angle error with maximum of +- max angle overshoot
     angle_ef_error.z = wrap_180_cd(_angle_ef_target.z - _ahrs.yaw_sensor);
-    angle_ef_error.z  = constrain_float(angle_ef_error.z, -AC_ATTITUDE_RATE_STAB_YAW_OVERSHOOT_ANGLE_MAX, AC_ATTITUDE_RATE_STAB_YAW_OVERSHOOT_ANGLE_MAX);
+    angle_ef_error.z  = constrain_float(angle_ef_error.z, -overshoot_max, overshoot_max);
 
     // update yaw angle target to be within max angle overshoot of our current heading
     _angle_ef_target.z = angle_ef_error.z + _ahrs.yaw_sensor;
@@ -491,19 +491,19 @@ void AC_AttitudeControl::integrate_bf_rate_error_to_angle_errors()
     // roll - calculate body-frame angle error by integrating body-frame rate error
     _angle_bf_error.x += (_rate_bf_desired.x - (_ahrs.get_gyro().x * AC_ATTITUDE_CONTROL_DEGX100)) * _dt;
     // roll - limit maximum error
-    _angle_bf_error.x = constrain_float(_angle_bf_error.x, -AC_ATTITUDE_RATE_STAB_ROLL_OVERSHOOT_ANGLE_MAX, AC_ATTITUDE_RATE_STAB_ROLL_OVERSHOOT_ANGLE_MAX);
+    _angle_bf_error.x = constrain_float(_angle_bf_error.x, -AC_ATTITUDE_RATE_STAB_ACRO_OVERSHOOT_ANGLE_MAX, AC_ATTITUDE_RATE_STAB_ACRO_OVERSHOOT_ANGLE_MAX);
 
 
     // pitch - calculate body-frame angle error by integrating body-frame rate error
     _angle_bf_error.y += (_rate_bf_desired.y - (_ahrs.get_gyro().y * AC_ATTITUDE_CONTROL_DEGX100)) * _dt;
     // pitch - limit maximum error
-    _angle_bf_error.y = constrain_float(_angle_bf_error.y, -AC_ATTITUDE_RATE_STAB_PITCH_OVERSHOOT_ANGLE_MAX, AC_ATTITUDE_RATE_STAB_PITCH_OVERSHOOT_ANGLE_MAX);
+    _angle_bf_error.y = constrain_float(_angle_bf_error.y, -AC_ATTITUDE_RATE_STAB_ACRO_OVERSHOOT_ANGLE_MAX, AC_ATTITUDE_RATE_STAB_ACRO_OVERSHOOT_ANGLE_MAX);
 
 
     // yaw - calculate body-frame angle error by integrating body-frame rate error
     _angle_bf_error.z += (_rate_bf_desired.z - (_ahrs.get_gyro().z * AC_ATTITUDE_CONTROL_DEGX100)) * _dt;
     // yaw - limit maximum error
-    _angle_bf_error.z = constrain_float(_angle_bf_error.z, -AC_ATTITUDE_RATE_STAB_YAW_OVERSHOOT_ANGLE_MAX, AC_ATTITUDE_RATE_STAB_YAW_OVERSHOOT_ANGLE_MAX);
+    _angle_bf_error.z = constrain_float(_angle_bf_error.z, -AC_ATTITUDE_RATE_STAB_ACRO_OVERSHOOT_ANGLE_MAX, AC_ATTITUDE_RATE_STAB_ACRO_OVERSHOOT_ANGLE_MAX);
 
     // To-Do: handle case of motors being disarmed or g.rc_3.servo_out == 0 and set error to zero
 }
