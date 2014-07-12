@@ -164,13 +164,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(compass_enabled,        "MAG_ENABLE",   MAGNETOMETER),
 
-    // @Param: FLOW_ENABLE
-    // @DisplayName: Optical Flow enable/disable
-    // @Description: Setting this to Enabled(1) will enable optical flow. Setting this to Disabled(0) will disable optical flow
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Standard
-    GSCALAR(optflow_enabled,        "FLOW_ENABLE",  DISABLED),
-
     // @Param: SUPER_SIMPLE
     // @DisplayName: Super Simple Mode
     // @Description: Bitmask to enable Super Simple mode for some flight modes. Setting this to Disabled(0) will disable Super Simple Mode
@@ -1113,6 +1106,12 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Group: TERRAIN_
     // @Path: ../libraries/AP_Terrain/AP_Terrain.cpp
     GOBJECT(terrain,                "TERRAIN_", AP_Terrain),
+#endif
+
+#if OPTFLOW == ENABLED
+    // @Group: FLOW
+    // @Path: ../libraries/AP_OpticalFlow/OptFlow.cpp
+    GOBJECT(optflow,   "FLOW", OpticalFlow),
 #endif
 
     AP_VAREND
