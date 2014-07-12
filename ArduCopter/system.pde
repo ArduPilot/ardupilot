@@ -222,9 +222,7 @@ static void init_ardupilot()
     pos_control.set_dt(MAIN_LOOP_SECONDS);
 
     // init the optical flow sensor
-    if(g.optflow_enabled) {
-        init_optflow();
-    }
+    init_optflow();
 
     // initialise inertial nav
     inertial_nav.init();
