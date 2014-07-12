@@ -330,7 +330,11 @@ AP_Mission mission(ahrs, &start_command, &verify_command, &exit_mission);
 // Optical flow sensor
 ////////////////////////////////////////////////////////////////////////////////
  #if OPTFLOW == ENABLED
-static AP_OpticalFlow_ADNS3080 optflow;
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
+static AP_OpticalFlow_ADNS3080 optflow(ahrs);
+#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
+static AP_OpticalFlow_PX4 optflow(ahrs);
+#endif
  #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -783,6 +787,9 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { rc_loop,               4,     10 },
     { throttle_loop,         8,     45 },
     { update_GPS,            8,     90 },
+#if OPTFLOW == ENABLED
+    { update_optical_flow,   8,     20 },
+#endif
     { update_batt_compass,  40,     72 },
     { read_aux_switches,    40,      5 },
     { arm_motors_check,     40,      1 },
@@ -854,6 +861,9 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { rc_loop,               1,     100 },
     { throttle_loop,         2,     450 },
     { update_GPS,            2,     900 },
+#if OPTFLOW == ENABLED
+    { update_optical_flow,   2,     100 },
+#endif
     { update_batt_compass,  10,     720 },
     { read_aux_switches,    10,      50 },
     { arm_motors_check,     10,      10 },
@@ -1014,15 +1024,6 @@ static void fast_loop()
 
     // run the attitude controllers
     update_flight_mode();
-
-    // optical flow
-    // --------------------
-#if OPTFLOW == ENABLED
-    if(g.optflow_enabled) {
-        update_optical_flow();
-    }
-#endif  // OPTFLOW == ENABLED
-
 }
 
 // rc_loops - reads user input from transmitter/receiver
@@ -1207,20 +1208,20 @@ static void one_hz_loop()
 static void update_optical_flow(void)
 {
     static uint32_t last_of_update = 0;
-    static uint8_t of_log_counter = 0;
 
-    // if new data has arrived, process it
-    if( optflow.last_update != last_of_update ) {
-        last_of_update = optflow.last_update;
-        optflow.update_position(ahrs.roll, ahrs.pitch, ahrs.sin_yaw(), ahrs.cos_yaw(), current_loc.alt);      // updates internal lon and lat with estimation based on optical flow
+    // exit immediately if not enabled
+    if (!optflow.enabled()) {
+        return;
+    }
 
-        // write to log at 5hz
-        of_log_counter++;
-        if( of_log_counter >= 4 ) {
-            of_log_counter = 0;
-            if (g.log_bitmask & MASK_LOG_OPTFLOW) {
-                Log_Write_Optflow();
-            }
+    // read from sensor
+    optflow.update();
+
+    // write to log if new data has arrived
+    if (optflow.last_update() != last_of_update) {
+        last_of_update = optflow.last_update();
+        if (g.log_bitmask & MASK_LOG_OPTFLOW) {
+            Log_Write_Optflow();
         }
     }
 }
