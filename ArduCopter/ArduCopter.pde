@@ -266,6 +266,8 @@ static AP_ADC_ADS7844 adc;
 
  #if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000
 static AP_InertialSensor_MPU6000 ins;
+#elif CONFIG_IMU_TYPE == CONFIG_IMU_MPU9250
+static AP_InertialSensor_MPU9250 ins;
 #elif CONFIG_IMU_TYPE == CONFIG_IMU_OILPAN
 static AP_InertialSensor_Oilpan ins(&adc);
 #elif CONFIG_IMU_TYPE == CONFIG_IMU_SITL
