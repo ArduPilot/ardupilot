@@ -4,6 +4,16 @@
 
 #include <AP_HAL_Linux.h>
 
+#define SYSFS_GPIO_DIR "/sys/class/gpio"
+#define LED_AMBER       117
+#define LED_BLUE        48
+#define LED_SAFETY      61
+#define SAFETY_SWITCH   116
+#define LOW             0
+#define HIGH            1
+
+
+
 class Linux::LinuxGPIO : public AP_HAL::GPIO {
 public:
     LinuxGPIO();
