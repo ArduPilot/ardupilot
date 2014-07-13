@@ -308,7 +308,7 @@ bool AP_Baro_MS5611::init()
     C6 = _serial->read_16bits(CMD_MS5611_PROM_C6);
 
     // if not on APM2 then check CRC
-#if CONFIG_HAL_BOARD != HAL_BOARD_APM2
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
     if (!check_crc()) {
         hal.scheduler->panic("Bad CRC on MS5611");
     }
