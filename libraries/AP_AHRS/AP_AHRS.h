@@ -163,7 +163,7 @@ public:
     int32_t yaw_sensor;
 
     // return a smoothed and corrected gyro vector
-    virtual const Vector3f get_gyro(void) const = 0;
+    virtual const Vector3f &get_gyro(void) const = 0;
 
     // return the current estimate of the gyro drift
     virtual const Vector3f &get_gyro_drift(void) const = 0;

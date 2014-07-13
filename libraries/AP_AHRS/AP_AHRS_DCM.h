@@ -39,7 +39,7 @@ public:
     }
 
     // return the smoothed gyro vector corrected for drift
-    const Vector3f get_gyro(void) const {
+    const Vector3f &get_gyro(void) const {
         return _omega;
     }
 
