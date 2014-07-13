@@ -24,6 +24,7 @@
 #include <AP_Param.h>
 #include <AP_Math.h>
 #include <GCS_MAVLink.h>
+#include <AP_Vehicle.h>
 #include "GPS_detect_state.h"
 
 /**
@@ -40,6 +41,15 @@
 #define GPS_RTK_AVAILABLE 1
 #else
 #define GPS_RTK_AVAILABLE 0
+#endif
+
+/**
+ * save flash by skipping NMEA and SIRF support on ArduCopter on APM1/2 or any frame type on AVR1280 CPUs
+ */
+#if HAL_CPU_CLASS < HAL_CPU_CLASS_75 && defined(APM_BUILD_DIRECTORY)
+  #if (APM_BUILD_TYPE(APM_BUILD_ArduCopter) || defined(__AVR_ATmega1280__))
+    #define GPS_SKIP_SIRF_NMEA
+  #endif
 #endif
 
 class DataFlash_Class;
