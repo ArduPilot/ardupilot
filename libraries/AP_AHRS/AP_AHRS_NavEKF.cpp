@@ -28,7 +28,29 @@ extern const AP_HAL::HAL& hal;
 // return the smoothed gyro vector corrected for drift
 const Vector3f AP_AHRS_NavEKF::get_gyro(void) const
 {
-    return AP_AHRS_DCM::get_gyro();
+    if (!using_EKF()) {
+        return AP_AHRS_DCM::get_gyro();
+    }
+
+    Vector3f angRate;
+
+    // average the available gyro sensors
+    angRate.zero();
+    uint8_t gyro_count = 0;
+    for (uint8_t i = 0; i<_ins.get_gyro_count(); i++) {
+        if (_ins.get_gyro_health(i)) {
+            angRate += _ins.get_gyro(i);
+            gyro_count++;
+        }
+    }
+    if (gyro_count != 0) {
+        angRate /= gyro_count;
+    }
+
+    Vector3f gyrobias;
+    EKF.getGyroBias(gyrobias);
+
+    return angRate+gyrobias;
 }
 
 const Matrix3f &AP_AHRS_NavEKF::get_dcm_matrix(void) const
