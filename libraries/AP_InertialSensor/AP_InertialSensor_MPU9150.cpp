@@ -22,7 +22,7 @@
 */
 
 #include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_ERLE
 
 #include <AP_Math.h>
 #include "AP_InertialSensor_MPU9150.h"
@@ -412,22 +412,23 @@ uint16_t AP_InertialSensor_MPU9150::_init_sensor( Sample_rate sample_rate )
     rev = ((buff[5] & 0x01) << 2) | ((buff[3] & 0x01) << 1) |
         (buff[1] & 0x01);
 
-    if (rev) {        
-        if (rev == 1){
-            /* Congrats, these parts are better. */
-            ;
-        }
-        else if (rev == 2){
-            ;
-        }
-        else {
-            hal.scheduler->panic(PSTR("AP_InertialSensor_MPU9150: Unsupported software product rev.\n"));
-            goto failed;
-        }
-    } else {
-            hal.scheduler->panic(PSTR("Product ID read as 0 indicates device is either incompatible or an MPU3050.\n"));
-            goto failed;            
-    }
+    // Do not do the checking, for some reason the MPU-9150 returns 0
+    // if (rev) {        
+    //     if (rev == 1){
+    //         /* Congrats, these parts are better. */
+    //         ;
+    //     }
+    //     else if (rev == 2){
+    //         ;
+    //     }
+    //     else {
+    //         hal.scheduler->panic(PSTR("AP_InertialSensor_MPU9150: Unsupported software product rev.\n"));
+    //         goto failed;
+    //     }
+    // } else {
+    //         hal.scheduler->panic(PSTR("Product ID read as 0 indicates device is either incompatible or an MPU3050.\n"));
+    //         goto failed;            
+    // }
 
     // Set gyro full-scale range [250, 500, 1000, 2000]
     if (mpu_set_gyro_fsr(2000)){

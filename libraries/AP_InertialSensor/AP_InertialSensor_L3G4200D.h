@@ -4,7 +4,7 @@
 #define __AP_INERTIAL_SENSOR_L3G4200D_H__
 
 #include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_ERLE
 
 #include <AP_Progmem.h>
 #include "AP_InertialSensor.h"
