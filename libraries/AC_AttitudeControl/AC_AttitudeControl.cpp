@@ -52,7 +52,7 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("ACCEL_Y_MAX",  4, AC_AttitudeControl, _accel_y_max, AC_ATTITUDE_CONTROL_ACCEL_Y_MAX_DEFAULT),
 
-    // @Param: ATC_RATE_FF_ENAB
+    // @Param: RATE_FF_ENAB
     // @DisplayName: Rate Feedforward Enable
     // @Description: Controls whether body-frame rate feedfoward is enabled or disabled
     // @Values: 0:Disabled, 1:Enabled
