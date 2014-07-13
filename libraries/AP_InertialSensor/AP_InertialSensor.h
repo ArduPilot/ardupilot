@@ -228,5 +228,6 @@ protected:
 #include "AP_InertialSensor_Flymaple.h"
 #include "AP_InertialSensor_L3G4200D.h"
 #include "AP_InertialSensor_MPU9150.h"
+#include "AP_InertialSensor_MPU9250.h"
 
 #endif // __AP_INERTIAL_SENSOR_H__
