@@ -11,7 +11,9 @@ on the Crius All-in-One v 2.0 which has dataflash logging (CPU hungry) and power
 8-bit flight controller can be pushed without breaking. If that sounds like fun you are in the right place. If it sounds scary, 
 you are not. I am willing to sacrifice my flying ROBOTs to find a better algorithm. Not everyone is.
 
-###This is NOT production software NOR is it supported. You Have Been Warned.
+###This software is NOT supported. You Have Been Warned.
+
+(Note - The above having been said, I've been flying this firmware for several months now on Crius All-In-One v2 and MultiWii Pro boards [both Red HK and Witespy v2/3] without any flyaways, reboots, controller hangs or weird behavior. In addition SONAR, Power module, MAV/OSD, GPS, Autotune have ALL been tested and work normally. It has been tested with tricopter, quadcopter and traditional heliconfigurations. It has NOT been tested with Hex or Octo-copters yet. (CPU load may be an issue here as the board is generating twice as many PWM signals.) 
 
 ## Getting the source
 
