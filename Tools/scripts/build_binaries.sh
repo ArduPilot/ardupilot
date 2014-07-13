@@ -114,7 +114,7 @@ copyit() {
 # build plane binaries
 build_arduplane() {
     tag="$1"
-    echo "Building ArduPlane $tag binaries"
+    echo "Building ArduPlane $tag binaries from $(pwd)"
     pushd ArduPlane
     for b in apm1 apm2 apm1-hilsensors apm2-hilsensors; do
         checkout ArduPlane $tag $b || {
@@ -166,7 +166,7 @@ build_arduplane() {
 # build copter binaries
 build_arducopter() {
     tag="$1"
-    echo "Building ArduCopter $tag binaries"
+    echo "Building ArduCopter $tag binaries from $(pwd)"
     pushd ArduCopter
     frames="quad tri hexa y6 octa octa-quad heli"
     for b in apm1 apm2; do
@@ -217,7 +217,7 @@ build_arducopter() {
 # build rover binaries
 build_rover() {
     tag="$1"
-    echo "Building APMrover2 $tag binaries"
+    echo "Building APMrover2 $tag binaries from $(pwd)"
     pushd APMrover2
     for b in apm1 apm2; do
 	echo "Building APMrover2 $b binaries"
