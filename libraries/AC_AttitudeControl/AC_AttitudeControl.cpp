@@ -80,7 +80,7 @@ void AC_AttitudeControl::set_dt(float delta_sec)
 void AC_AttitudeControl::relax_bf_rate_controller()
 {
     // ensure zero error in body frame rate controllers
-    const Vector3f& gyro = _ins.get_gyro();
+    const Vector3f& gyro = _ahrs.get_gyro();
     _rate_bf_target = gyro * AC_ATTITUDE_CONTROL_DEGX100;
 }
 
@@ -488,19 +488,19 @@ void AC_AttitudeControl::update_ef_yaw_angle_and_error(float yaw_rate_ef, Vector
 void AC_AttitudeControl::integrate_bf_rate_error_to_angle_errors()
 {
     // roll - calculate body-frame angle error by integrating body-frame rate error
-    _angle_bf_error.x += (_rate_bf_desired.x - (_ins.get_gyro().x * AC_ATTITUDE_CONTROL_DEGX100)) * _dt;
+    _angle_bf_error.x += (_rate_bf_desired.x - (_ahrs.get_gyro().x * AC_ATTITUDE_CONTROL_DEGX100)) * _dt;
     // roll - limit maximum error
     _angle_bf_error.x = constrain_float(_angle_bf_error.x, -AC_ATTITUDE_RATE_STAB_ROLL_OVERSHOOT_ANGLE_MAX, AC_ATTITUDE_RATE_STAB_ROLL_OVERSHOOT_ANGLE_MAX);
 
 
     // pitch - calculate body-frame angle error by integrating body-frame rate error
-    _angle_bf_error.y += (_rate_bf_desired.y - (_ins.get_gyro().y * AC_ATTITUDE_CONTROL_DEGX100)) * _dt;
+    _angle_bf_error.y += (_rate_bf_desired.y - (_ahrs.get_gyro().y * AC_ATTITUDE_CONTROL_DEGX100)) * _dt;
     // pitch - limit maximum error
     _angle_bf_error.y = constrain_float(_angle_bf_error.y, -AC_ATTITUDE_RATE_STAB_PITCH_OVERSHOOT_ANGLE_MAX, AC_ATTITUDE_RATE_STAB_PITCH_OVERSHOOT_ANGLE_MAX);
 
 
     // yaw - calculate body-frame angle error by integrating body-frame rate error
-    _angle_bf_error.z += (_rate_bf_desired.z - (_ins.get_gyro().z * AC_ATTITUDE_CONTROL_DEGX100)) * _dt;
+    _angle_bf_error.z += (_rate_bf_desired.z - (_ahrs.get_gyro().z * AC_ATTITUDE_CONTROL_DEGX100)) * _dt;
     // yaw - limit maximum error
     _angle_bf_error.z = constrain_float(_angle_bf_error.z, -AC_ATTITUDE_RATE_STAB_YAW_OVERSHOOT_ANGLE_MAX, AC_ATTITUDE_RATE_STAB_YAW_OVERSHOOT_ANGLE_MAX);
 
@@ -533,8 +533,8 @@ void AC_AttitudeControl::update_rate_bf_targets()
         _rate_bf_target.z = constrain_float(_rate_bf_target.z,-_angle_rate_y_max,_angle_rate_y_max);
     }
 
-	_rate_bf_target.x += -_angle_bf_error.y * _ins.get_gyro().z;
-	_rate_bf_target.y +=  _angle_bf_error.x * _ins.get_gyro().z;
+	_rate_bf_target.x += -_angle_bf_error.y * _ahrs.get_gyro().z;
+	_rate_bf_target.y +=  _angle_bf_error.x * _ahrs.get_gyro().z;
 }
 
 //
@@ -550,7 +550,7 @@ float AC_AttitudeControl::rate_bf_to_motor_roll(float rate_target_cds)
 
     // get current rate
     // To-Do: make getting gyro rates more efficient?
-    current_rate = (_ins.get_gyro().x * AC_ATTITUDE_CONTROL_DEGX100);
+    current_rate = (_ahrs.get_gyro().x * AC_ATTITUDE_CONTROL_DEGX100);
 
     // calculate error and call pid controller
     rate_error = rate_target_cds - current_rate;
@@ -582,7 +582,7 @@ float AC_AttitudeControl::rate_bf_to_motor_pitch(float rate_target_cds)
 
     // get current rate
     // To-Do: make getting gyro rates more efficient?
-    current_rate = (_ins.get_gyro().y * AC_ATTITUDE_CONTROL_DEGX100);
+    current_rate = (_ahrs.get_gyro().y * AC_ATTITUDE_CONTROL_DEGX100);
 
     // calculate error and call pid controller
     rate_error = rate_target_cds - current_rate;
@@ -614,7 +614,7 @@ float AC_AttitudeControl::rate_bf_to_motor_yaw(float rate_target_cds)
 
     // get current rate
     // To-Do: make getting gyro rates more efficient?
-    current_rate = (_ins.get_gyro().z * AC_ATTITUDE_CONTROL_DEGX100);
+    current_rate = (_ahrs.get_gyro().z * AC_ATTITUDE_CONTROL_DEGX100);
 
     // calculate error and call pid controller
     rate_error  = rate_target_cds - current_rate;

@@ -90,7 +90,7 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
     float pitch_pd, pitch_i, pitch_ff;          // used to capture pid values
     float rate_roll_error, rate_pitch_error;    // simply target_rate - current_rate
     float roll_out, pitch_out;
-    const Vector3f& gyro = _ins.get_gyro();     // get current rates
+    const Vector3f& gyro = _ahrs.get_gyro();     // get current rates
 
     // calculate error
     rate_roll_error = rate_roll_target_cds - gyro.x * AC_ATTITUDE_CONTROL_DEGX100;
@@ -251,7 +251,7 @@ float AC_AttitudeControl_Heli::rate_bf_to_motor_yaw(float rate_target_cds)
 
     // get current rate
     // To-Do: make getting gyro rates more efficient?
-    current_rate = (_ins.get_gyro().z * AC_ATTITUDE_CONTROL_DEGX100);
+    current_rate = (_ahrs.get_gyro().z * AC_ATTITUDE_CONTROL_DEGX100);
 
     // calculate error and call pid controller
     rate_error  = rate_target_cds - current_rate;
