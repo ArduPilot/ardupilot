@@ -45,14 +45,12 @@
 class AC_AttitudeControl {
 public:
 	AC_AttitudeControl( AP_AHRS &ahrs,
-                        AP_InertialSensor& ins,
                         const AP_Vehicle::MultiCopter &aparm,
                         AP_Motors& motors,
                         AC_P& pi_angle_roll, AC_P& pi_angle_pitch, AC_P& pi_angle_yaw,
                         AC_PID& pid_rate_roll, AC_PID& pid_rate_pitch, AC_PID& pid_rate_yaw
                         ) :
 		_ahrs(ahrs),
-        _ins(ins),
         _aparm(aparm),
         _motors(motors),
         _p_angle_roll(pi_angle_roll),
@@ -223,7 +221,6 @@ protected:
 
     // references to external libraries
     const AP_AHRS&      _ahrs;
-    const AP_InertialSensor&  _ins;
     const AP_Vehicle::MultiCopter &_aparm;
     AP_Motors&          _motors;
     AC_P&	            _p_angle_roll;

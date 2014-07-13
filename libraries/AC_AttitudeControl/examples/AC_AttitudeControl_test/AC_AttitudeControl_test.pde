@@ -80,7 +80,7 @@ AP_MotorsQuad motors(rc_roll, rc_pitch, rc_throttle, rc_yaw);
 int16_t motor_roll, motor_pitch, motor_yaw, motor_throttle;
 
 // Attitude Control
-AC_AttitudeControl ac_control(ahrs, ins, aparm, motors, p_angle_roll, p_angle_pitch, p_angle_yaw, pid_rate_roll, pid_rate_pitch, pid_rate_yaw);
+AC_AttitudeControl ac_control(ahrs, aparm, motors, p_angle_roll, p_angle_pitch, p_angle_yaw, pid_rate_roll, pid_rate_pitch, pid_rate_yaw);
 
 /// Position Control
 AC_PosControl pos_control(ahrs, inertial_nav, motors, ac_control, p_alt_pos, pid_alt_rate, pid_alt_accel, p_pos_xy, pid_rate_lat, pid_rate_lon);
