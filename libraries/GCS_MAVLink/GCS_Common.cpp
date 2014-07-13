@@ -1032,3 +1032,99 @@ void GCS_MAVLINK::send_radio_in(uint8_t receiver_rssi)
     }
 #endif
 }
+
+void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &compass)
+{
+    const Vector3f &accel = ins.get_accel(0);
+    const Vector3f &gyro = ins.get_gyro(0);
+    const Vector3f &mag = compass.get_field(0);
+
+    mavlink_msg_raw_imu_send(
+        chan,
+        hal.scheduler->micros(),
+        accel.x * 1000.0f / GRAVITY_MSS,
+        accel.y * 1000.0f / GRAVITY_MSS,
+        accel.z * 1000.0f / GRAVITY_MSS,
+        gyro.x * 1000.0f,
+        gyro.y * 1000.0f,
+        gyro.z * 1000.0f,
+        mag.x,
+        mag.y,
+        mag.z);
+#if INS_MAX_INSTANCES > 1
+    if (ins.get_gyro_count() <= 1 &&
+        ins.get_accel_count() <= 1 &&
+        compass.get_count() <= 1) {
+        return;
+    }
+    const Vector3f &accel2 = ins.get_accel(1);
+    const Vector3f &gyro2 = ins.get_gyro(1);
+    const Vector3f &mag2 = compass.get_field(1);
+    mavlink_msg_scaled_imu2_send(
+        chan,
+        hal.scheduler->millis(),
+        accel2.x * 1000.0f / GRAVITY_MSS,
+        accel2.y * 1000.0f / GRAVITY_MSS,
+        accel2.z * 1000.0f / GRAVITY_MSS,
+        gyro2.x * 1000.0f,
+        gyro2.y * 1000.0f,
+        gyro2.z * 1000.0f,
+        mag2.x,
+        mag2.y,
+        mag2.z);        
+#endif
+}
+
+void GCS_MAVLINK::send_scaled_pressure(AP_Baro &barometer)
+{
+    float pressure = barometer.get_pressure();
+    mavlink_msg_scaled_pressure_send(
+        chan,
+        hal.scheduler->millis(),
+        pressure*0.01f, // hectopascal
+        (pressure - barometer.get_ground_pressure())*0.01f, // hectopascal
+        barometer.get_temperature()*100); // 0.01 degrees C
+}
+
+void GCS_MAVLINK::send_sensor_offsets(const AP_InertialSensor &ins, const Compass &compass, AP_Baro &barometer)
+{
+    // run this message at a much lower rate - otherwise it
+    // pointlessly wastes quite a lot of bandwidth
+    static uint8_t counter;
+    if (counter++ < 10) {
+        return;
+    }
+    counter = 0;
+
+    const Vector3f &mag_offsets = compass.get_offsets(0);
+    const Vector3f &accel_offsets = ins.get_accel_offsets(0);
+    const Vector3f &gyro_offsets = ins.get_gyro_offsets(0);
+
+    mavlink_msg_sensor_offsets_send(chan,
+                                    mag_offsets.x,
+                                    mag_offsets.y,
+                                    mag_offsets.z,
+                                    compass.get_declination(),
+                                    barometer.get_pressure(),
+                                    barometer.get_temperature()*100,
+                                    gyro_offsets.x,
+                                    gyro_offsets.y,
+                                    gyro_offsets.z,
+                                    accel_offsets.x,
+                                    accel_offsets.y,
+                                    accel_offsets.z);
+}
+
+void GCS_MAVLINK::send_ahrs(AP_AHRS &ahrs)
+{
+    const Vector3f &omega_I = ahrs.get_gyro_drift();
+    mavlink_msg_ahrs_send(
+        chan,
+        omega_I.x,
+        omega_I.y,
+        omega_I.z,
+        0,
+        0,
+        ahrs.get_error_rp(),
+        ahrs.get_error_yaw());
+}
