@@ -1,6 +1,6 @@
 #include <AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_ERLE
 #include "SPIDriver.h"
 #include <sys/types.h>
 #include <sys/stat.h>

@@ -4,7 +4,7 @@
 
 #include <AP_HAL_Linux.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_ERLE
 #include <sys/time.h>
 #include <pthread.h>
 
