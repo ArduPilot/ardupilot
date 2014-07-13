@@ -634,10 +634,10 @@ static AP_InertialNav inertial_nav(ahrs, barometer, gps_glitch);
 // To-Do: move inertial nav up or other navigation variables down here
 ////////////////////////////////////////////////////////////////////////////////
 #if FRAME_CONFIG == HELI_FRAME
-AC_AttitudeControl_Heli attitude_control(ahrs, ins, aparm, motors, g.p_stabilize_roll, g.p_stabilize_pitch, g.p_stabilize_yaw,
+AC_AttitudeControl_Heli attitude_control(ahrs, aparm, motors, g.p_stabilize_roll, g.p_stabilize_pitch, g.p_stabilize_yaw,
                         g.pid_rate_roll, g.pid_rate_pitch, g.pid_rate_yaw);
 #else
-AC_AttitudeControl attitude_control(ahrs, ins, aparm, motors, g.p_stabilize_roll, g.p_stabilize_pitch, g.p_stabilize_yaw,
+AC_AttitudeControl attitude_control(ahrs, aparm, motors, g.p_stabilize_roll, g.p_stabilize_pitch, g.p_stabilize_yaw,
                         g.pid_rate_roll, g.pid_rate_pitch, g.pid_rate_yaw);
 #endif
 AC_PosControl pos_control(ahrs, inertial_nav, motors, attitude_control,
