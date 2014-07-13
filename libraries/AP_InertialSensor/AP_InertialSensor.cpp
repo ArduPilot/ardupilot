@@ -490,7 +490,14 @@ failed:
 /// @note this should not be called while flying because it reads from the eeprom which can be slow
 bool AP_InertialSensor::calibrated()
 {
-    return _accel_offset[0].load();
+    // check each accelerometer has offsets saved
+    for (uint8_t i=0; i<get_accel_count(); i++) {
+        if (!_accel_offset[i].load()) {
+            return false;
+        }
+    }
+    // if we got this far the accelerometers must have been calibrated
+    return true;
 }
 
 // _calibrate_model - perform low level accel calibration
