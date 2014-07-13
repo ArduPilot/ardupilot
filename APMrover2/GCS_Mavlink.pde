@@ -296,81 +296,6 @@ static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
         0);
 }
 
-static void NOINLINE send_raw_imu1(mavlink_channel_t chan)
-{
-    const Vector3f &accel = ins.get_accel();
-    const Vector3f &gyro = ins.get_gyro();
-    const Vector3f &mag = compass.get_field();
-
-    mavlink_msg_raw_imu_send(
-        chan,
-        micros(),
-        accel.x * 1000.0 / GRAVITY_MSS,
-        accel.y * 1000.0 / GRAVITY_MSS,
-        accel.z * 1000.0 / GRAVITY_MSS,
-        gyro.x * 1000.0,
-        gyro.y * 1000.0,
-        gyro.z * 1000.0,
-        mag.x,
-        mag.y,
-        mag.z);
-
-    if (ins.get_gyro_count() <= 1 &&
-        ins.get_accel_count() <= 1 &&
-        compass.get_count() <= 1) {
-        return;
-    }
-    const Vector3f &accel2 = ins.get_accel(1);
-    const Vector3f &gyro2 = ins.get_gyro(1);
-    const Vector3f &mag2 = compass.get_field(1);
-    mavlink_msg_scaled_imu2_send(
-        chan,
-        millis(),
-        accel2.x * 1000.0f / GRAVITY_MSS,
-        accel2.y * 1000.0f / GRAVITY_MSS,
-        accel2.z * 1000.0f / GRAVITY_MSS,
-        gyro2.x * 1000.0f,
-        gyro2.y * 1000.0f,
-        gyro2.z * 1000.0f,
-        mag2.x,
-        mag2.y,
-        mag2.z);        
-}
-
-static void NOINLINE send_raw_imu3(mavlink_channel_t chan)
-{
-    const Vector3f &mag_offsets = compass.get_offsets();
-    const Vector3f &accel_offsets = ins.get_accel_offsets();
-    const Vector3f &gyro_offsets = ins.get_gyro_offsets();
-
-    mavlink_msg_sensor_offsets_send(chan,
-                                    mag_offsets.x,
-                                    mag_offsets.y,
-                                    mag_offsets.z,
-                                    compass.get_declination(),
-                                    0, 0,
-                                    gyro_offsets.x,
-                                    gyro_offsets.y,
-                                    gyro_offsets.z,
-                                    accel_offsets.x,
-                                    accel_offsets.y,
-                                    accel_offsets.z);
-}
-
-static void NOINLINE send_ahrs(mavlink_channel_t chan)
-{
-    const Vector3f &omega_I = ahrs.get_gyro_drift();
-    mavlink_msg_ahrs_send(
-        chan,
-        omega_I.x,
-        omega_I.y,
-        omega_I.z,
-        0,
-        0,
-        ahrs.get_error_rp(),
-        ahrs.get_error_yaw());
-}
-
 // report simulator state
 static void NOINLINE send_simstate(mavlink_channel_t chan)
 {
@@ -536,12 +461,12 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_RAW_IMU1:
         CHECK_PAYLOAD_SIZE(RAW_IMU);
-        send_raw_imu1(chan);
+        gcs[chan-MAVLINK_COMM_0].send_raw_imu(ins, compass);
         break;
 
     case MSG_RAW_IMU3:
         CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
-        send_raw_imu3(chan);
+        gcs[chan-MAVLINK_COMM_0].send_sensor_offsets(ins, compass, barometer);
         break;
 
     case MSG_CURRENT_WAYPOINT:
@@ -566,7 +491,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_AHRS:
         CHECK_PAYLOAD_SIZE(AHRS);
-        send_ahrs(chan);
+        gcs[chan-MAVLINK_COMM_0].send_ahrs(ahrs);
         break;
 
     case MSG_SIMSTATE:
