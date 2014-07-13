@@ -140,14 +140,18 @@ build_arduplane() {
         checkout ArduPlane $tag PX4 || {
             echo "Failed checkout of ArduPlane PX4 $tag"
             error_count=$((error_count+1))
-            continue
+            checkout ArduPlane "latest" ""
+            popd
+            return
         }
 	skip_build $tag $ddir || {
 	    make px4-clean &&
 	    make px4 || {
                 echo "Failed build of ArduPlane PX4 $tag"
                 error_count=$((error_count+1))
-                continue
+                checkout ArduPlane "latest" ""
+                popd
+                return
             }
 	    copyit ArduPlane-v1.px4 $ddir $tag &&
 	    copyit ArduPlane-v2.px4 $ddir $tag
@@ -193,7 +197,9 @@ build_arducopter() {
         checkout ArduCopter $tag PX4 || {
             echo "Failed checkout of ArduCopter PX4 $tag"
             error_count=$((error_count+1))
-            continue
+            checkout ArduCopter "latest" ""
+            popd
+            return
         }
 	make px4-clean || return
 	for f in $frames quad-hil heli-hil; do
@@ -236,13 +242,19 @@ build_rover() {
     test -n "$PX4_ROOT" && {
 	echo "Building APMrover2 PX4 binaries"
 	ddir=$binaries/Rover/$hdate/PX4
-        checkout APMrover2 $tag PX4 || continue
+        checkout APMrover2 $tag PX4 || {
+            checkout APMrover2 "latest" ""
+            popd
+            return
+        }
 	skip_build $tag $ddir || {
 	    make px4-clean &&
 	    make px4 || {
                 echo "Failed build of APMrover2 PX4 $tag"
                 error_count=$((error_count+1))
-                continue
+                checkout APMrover2 "latest" ""
+                popd
+                return
             }
 	    copyit APMrover2-v1.px4 $binaries/Rover/$hdate/PX4 $tag &&
 	    copyit APMrover2-v2.px4 $binaries/Rover/$hdate/PX4 $tag 
