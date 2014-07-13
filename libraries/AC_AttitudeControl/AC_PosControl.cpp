@@ -246,6 +246,12 @@ void AC_PosControl::pos_to_rate_z()
     _limit.pos_up = false;
     _limit.pos_down = false;
 
+    // do not let target alt get above limit
+    if (_alt_max > 0 && _pos_target.z > _alt_max) {
+        _pos_target.z = _alt_max;
+        _limit.pos_up = true;
+    }
+
     // calculate altitude error
     _pos_error.z = _pos_target.z - curr_alt;
 
@@ -259,12 +265,6 @@ void AC_PosControl::pos_to_rate_z()
         _pos_target.z = curr_alt - _leash_down_z;
         _pos_error.z = -_leash_down_z;
         _limit.pos_down = true;
-    }
-
-    // do not let target alt get above limit
-    if (_alt_max > 0 && _pos_target.z > _alt_max) {
-        _pos_target.z = _alt_max;
-        _limit.pos_up = true;
     }
 
     // check kP to avoid division by zero
