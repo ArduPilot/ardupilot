@@ -20,20 +20,26 @@ extern const AP_HAL::HAL& hal;
 
 #define MHZ (1000U*1000U)
 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLE
 LinuxSPIDeviceDriver LinuxSPIDeviceManager::_device[LINUX_SPI_DEVICE_NUM_DEVICES] = {
-    LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_MS5611,  SPI_MODE_3, 8, BBB_P9_42,  6*MHZ, 6*MHZ),
-    LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_MPU6000, SPI_MODE_3, 8, BBB_P9_28,  500*1000, 20*MHZ),
+    // different SPI tables per board subtype
+    LinuxSPIDeviceDriver(1, AP_HAL::SPIDevice_MS5611,  SPI_MODE_3, 8, BBB_P9_42,  6*MHZ, 6*MHZ),
+    LinuxSPIDeviceDriver(1, AP_HAL::SPIDevice_MPU6000, SPI_MODE_3, 8, BBB_P9_28,  500*1000, 20*MHZ),
     /* MPU9250 is restricted to 1MHz for non-data and interrupt registers */
-    LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_MPU9250, SPI_MODE_3, 8, BBB_P9_23,  1*MHZ, 20*MHZ),
-    LinuxSPIDeviceDriver(0, LINUX_SPI_DEVICE_LSM9DS0, SPI_MODE_3, 8, BBB_P9_17,  10*MHZ,10*MHZ),
-    LinuxSPIDeviceDriver(1, LINUX_SPI_DEVICE_FRAM,    SPI_MODE_0, 8, BBB_P8_12,  6*MHZ, 6*MHZ)
+    LinuxSPIDeviceDriver(1, AP_HAL::SPIDevice_MPU9250, SPI_MODE_3, 8, BBB_P9_23,  1*MHZ, 20*MHZ),
+    LinuxSPIDeviceDriver(0, AP_HAL::SPIDevice_LSM9DS0, SPI_MODE_3, 8, BBB_P9_17,  10*MHZ,10*MHZ),
+    LinuxSPIDeviceDriver(1, AP_HAL::SPIDevice_FRAM,    SPI_MODE_0, 8, BBB_P8_12,  6*MHZ, 6*MHZ)
 };
+#else
+// empty device table
+LinuxSPIDeviceDriver LinuxSPIDeviceManager::_device[0];
+#endif
 
 // have a separate semaphore per bus
 LinuxSemaphore LinuxSPIDeviceManager::_semaphore[LINUX_SPI_NUM_BUSES];
 int LinuxSPIDeviceManager::_fd[LINUX_SPI_NUM_BUSES];
 
-LinuxSPIDeviceDriver::LinuxSPIDeviceDriver(uint8_t bus, LinuxSPIDeviceType type, uint8_t mode, uint8_t bitsPerWord, uint8_t cs_pin, uint32_t lowspeed, uint32_t highspeed):
+LinuxSPIDeviceDriver::LinuxSPIDeviceDriver(uint8_t bus, enum AP_HAL::SPIDevice type, uint8_t mode, uint8_t bitsPerWord, uint8_t cs_pin, uint32_t lowspeed, uint32_t highspeed):
     _bus(bus),
     _type(type),
     _mode(mode),
@@ -112,23 +118,27 @@ void LinuxSPIDeviceManager::init(void *)
     }
 }
 
-void LinuxSPIDeviceManager::cs_assert(LinuxSPIDeviceType type)
+void LinuxSPIDeviceManager::cs_assert(enum AP_HAL::SPIDevice type)
 {
     for (uint8_t i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
         if (_device[i]._bus != _device[type]._bus) {
             // not the same bus
             continue;
         }
-        if (i != type) {
+        if (_device[i]._type != type) {
             if (_device[i]._cs->read() != 1) {
                 hal.scheduler->panic("two CS enabled at once");
             }
         }
     }
-    _device[type]._cs->write(0);
+    for (uint8_t i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
+        if (_device[i]._type == type) {
+            _device[type]._cs->write(0);
+        }
+    }
 }
 
-void LinuxSPIDeviceManager::cs_release(LinuxSPIDeviceType type)
+void LinuxSPIDeviceManager::cs_release(enum AP_HAL::SPIDevice type)
 {
     for (uint8_t i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
         if (_device[i]._bus != _device[type]._bus) {
@@ -168,20 +178,12 @@ void LinuxSPIDeviceManager::transaction(LinuxSPIDeviceDriver &driver, const uint
 /*
   return a SPIDeviceDriver for a particular device
  */
-AP_HAL::SPIDeviceDriver* LinuxSPIDeviceManager::device(enum AP_HAL::SPIDevice dev)
+AP_HAL::SPIDeviceDriver *LinuxSPIDeviceManager::device(enum AP_HAL::SPIDevice dev)
 {
-    switch (dev) {
-        case AP_HAL::SPIDevice_MPU6000:
-            return &_device[LINUX_SPI_DEVICE_MPU6000];
-        case AP_HAL::SPIDevice_MPU9250:
-            return &_device[LINUX_SPI_DEVICE_MPU9250];
-        case AP_HAL::SPIDevice_MS5611:
-            return &_device[LINUX_SPI_DEVICE_MS5611];
-        case AP_HAL::SPIDevice_LSM9DS0:
-            return &_device[LINUX_SPI_DEVICE_LSM9DS0];       
-        case AP_HAL::SPIDevice_Dataflash:
-            return &_device[LINUX_SPI_DEVICE_FRAM];   
-
+    for (uint8_t i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
+        if (_device[i]._type == dev) {
+            return &_device[i];
+        }
     }
     return NULL;
 }

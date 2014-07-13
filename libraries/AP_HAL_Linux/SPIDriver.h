@@ -5,21 +5,18 @@
 #include <AP_HAL_Linux.h>
 #include "Semaphores.h"
 
-enum LinuxSPIDeviceType {
-    LINUX_SPI_DEVICE_MS5611  = 0,
-    LINUX_SPI_DEVICE_MPU6000 = 1,
-    LINUX_SPI_DEVICE_MPU9250 = 2,
-    LINUX_SPI_DEVICE_LSM9DS0 = 3,
-    LINUX_SPI_DEVICE_FRAM    = 4,
-    LINUX_SPI_DEVICE_NUM_DEVICES = 5
-};
-
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLE
 #define LINUX_SPI_NUM_BUSES 2
+#define LINUX_SPI_DEVICE_NUM_DEVICES 5
+#else
+#define LINUX_SPI_NUM_BUSES 0
+#define LINUX_SPI_DEVICE_NUM_DEVICES 0
+#endif
 
 class Linux::LinuxSPIDeviceDriver : public AP_HAL::SPIDeviceDriver {
 public:
     friend class Linux::LinuxSPIDeviceManager;
-    LinuxSPIDeviceDriver(uint8_t bus, LinuxSPIDeviceType type, uint8_t mode, uint8_t bitsPerWord, uint8_t cs_pin, uint32_t lowspeed, uint32_t highspeed);
+    LinuxSPIDeviceDriver(uint8_t bus, enum AP_HAL::SPIDevice type, uint8_t mode, uint8_t bitsPerWord, uint8_t cs_pin, uint32_t lowspeed, uint32_t highspeed);
     void init();
     AP_HAL::Semaphore *get_semaphore();
     void transaction(const uint8_t *tx, uint8_t *rx, uint16_t len);
@@ -38,7 +35,7 @@ private:
     uint32_t _lowspeed;
     uint32_t _highspeed;
     uint32_t _speed;
-    LinuxSPIDeviceType _type;
+    enum AP_HAL::SPIDevice _type;
     uint8_t _bus;
 };
 
@@ -49,8 +46,8 @@ public:
 
     static AP_HAL::Semaphore *get_semaphore(uint8_t bus);
 
-    static void cs_assert(enum LinuxSPIDeviceType type);
-    static void cs_release(enum LinuxSPIDeviceType type);
+    static void cs_assert(enum AP_HAL::SPIDevice type);
+    static void cs_release(enum AP_HAL::SPIDevice type);
     static void transaction(LinuxSPIDeviceDriver &driver, const uint8_t *tx, uint8_t *rx, uint16_t len);
 
 private:

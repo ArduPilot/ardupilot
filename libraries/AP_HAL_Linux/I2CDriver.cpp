@@ -143,6 +143,9 @@ uint8_t LinuxI2CDriver::read(uint8_t addr, uint8_t len, uint8_t* data)
 uint8_t LinuxI2CDriver::readRegisters(uint8_t addr, uint8_t reg,
                                       uint8_t len, uint8_t* data)
 {
+    if (_fd == -1) {
+        return 1;
+    }
     struct i2c_msg msgs[] = {
         {
         addr  : addr,
@@ -177,6 +180,9 @@ uint8_t LinuxI2CDriver::readRegistersMultiple(uint8_t addr, uint8_t reg,
                                               uint8_t len, 
                                               uint8_t count, uint8_t* data)
 {
+    if (_fd == -1) {
+        return 1;
+    }
     while (count > 0) {
         uint8_t n = count>8?8:count;
         struct i2c_msg msgs[2*n];

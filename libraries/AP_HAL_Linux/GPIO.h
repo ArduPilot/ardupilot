@@ -25,7 +25,12 @@
 #define LOW             0
 #define HIGH            1
 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLE
 #define LINUX_GPIO_NUM_BANKS 4
+#else
+// disable GPIO
+#define LINUX_GPIO_NUM_BANKS 0
+#endif
 
 // BeagleBone Black GPIO mappings
 #define BBB_USR0 53
