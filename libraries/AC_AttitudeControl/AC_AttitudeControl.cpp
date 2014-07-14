@@ -108,9 +108,9 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw_smooth(float roll_angle
     	// calculate earth-frame feed forward roll rate using linear response when close to the target, sqrt response when we're further away
     	angle_to_target = roll_angle_ef - _angle_ef_target.x;
     	if (angle_to_target > linear_angle) {
-    		rate_ef_desired = safe_sqrt(2.0f*_accel_rp_max*(fabs(angle_to_target)-(linear_angle/2.0f)));
+    		rate_ef_desired = safe_sqrt(2.0f*_accel_rp_max*((float)fabs(angle_to_target)-(linear_angle/2.0f)));
     	} else if (angle_to_target < -linear_angle) {
-    		rate_ef_desired = -safe_sqrt(2.0f*_accel_rp_max*(fabs(angle_to_target)-(linear_angle/2.0f)));
+    		rate_ef_desired = -safe_sqrt(2.0f*_accel_rp_max*((float)fabs(angle_to_target)-(linear_angle/2.0f)));
     	} else {
     		rate_ef_desired = smoothing_gain*angle_to_target;
     	}
@@ -122,9 +122,9 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw_smooth(float roll_angle
     	// calculate earth-frame feed forward pitch rate using linear response when close to the target, sqrt response when we're further away
     	angle_to_target = pitch_angle_ef - _angle_ef_target.y;
     	if (angle_to_target > linear_angle) {
-    		rate_ef_desired = safe_sqrt(2.0f*_accel_rp_max*(fabs(angle_to_target)-(linear_angle/2.0f)));
+    		rate_ef_desired = safe_sqrt(2.0f*_accel_rp_max*((float)fabs(angle_to_target)-(linear_angle/2.0f)));
     	} else if (angle_to_target < -linear_angle) {
-    		rate_ef_desired = -safe_sqrt(2.0f*_accel_rp_max*(fabs(angle_to_target)-(linear_angle/2.0f)));
+    		rate_ef_desired = -safe_sqrt(2.0f*_accel_rp_max*((float)fabs(angle_to_target)-(linear_angle/2.0f)));
     	} else {
     		rate_ef_desired = smoothing_gain*angle_to_target;
     	}
