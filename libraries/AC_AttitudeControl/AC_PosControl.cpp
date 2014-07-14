@@ -44,12 +44,14 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     _accel_z_cms(POSCONTROL_ACCEL_Z),
     _accel_cms(POSCONTROL_ACCEL_XY),
     _leash(POSCONTROL_LEASH_LENGTH_MIN),
+    _leash_down_z(POSCONTROL_LEASH_LENGTH_MIN),
+    _leash_up_z(POSCONTROL_LEASH_LENGTH_MIN),
     _roll_target(0.0f),
     _pitch_target(0.0f),
-    _alt_max(0),
-    _distance_to_target(0),
+    _alt_max(0.0f),
+    _distance_to_target(0.0f),
     _xy_step(0),
-    _dt_xy(0),
+    _dt_xy(0.0f),
     _vel_xyz_step(0)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -268,7 +270,7 @@ void AC_PosControl::pos_to_rate_z()
     }
 
     // check kP to avoid division by zero
-    if (_p_alt_pos.kP() != 0) {
+    if (_p_alt_pos.kP() != 0.0f) {
         linear_distance = _accel_z_cms/(2.0f*_p_alt_pos.kP()*_p_alt_pos.kP());
         if (_pos_error.z > 2*linear_distance ) {
             _vel_target.z = safe_sqrt(2.0f*_accel_z_cms*(_pos_error.z-linear_distance));
