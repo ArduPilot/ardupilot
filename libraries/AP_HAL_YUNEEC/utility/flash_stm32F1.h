@@ -1,6 +1,6 @@
 #include <AP_HAL_Boards.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
+#if CONFIG_HAL_BOARD == HAL_BOARD_YUNEEC
 
 #include "libmaple.h"
 #include "util.h"
