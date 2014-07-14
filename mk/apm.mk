@@ -50,6 +50,10 @@ ifeq ($(HAL_BOARD),HAL_BOARD_FLYMAPLE)
 include $(MK_DIR)/board_flymaple.mk
 endif
 
+ifeq ($(HAL_BOARD),HAL_BOARD_YUNEEC)
+include $(MK_DIR)/board_yuneec.mk
+endif
+
 endif
 
 endif

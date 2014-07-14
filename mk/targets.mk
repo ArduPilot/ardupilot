@@ -27,6 +27,10 @@ linux: HAL_BOARD = HAL_BOARD_LINUX
 linux: TOOLCHAIN = NATIVE
 linux: all
 
+yuneec: HAL_BOARD = HAL_BOARD_YUNEEC
+yuneec: TOOLCHAIN = ARM
+yuneec: all
+
 empty: HAL_BOARD = HAL_BOARD_EMPTY
 empty: TOOLCHAIN = AVR
 empty: all
