@@ -22,27 +22,27 @@
 #include "HAL_YUNEEC_Class.h"
 #include "AP_HAL_YUNEEC_Private.h"
 
-using namespace AP_HAL_FLYMAPLE_NS;
+using namespace AP_HAL_YUNEEC;
 class HardwareSerial;
 extern HardwareSerial Serial1; // Serial1 is labelled "COM1" on Flymaple pins 7 and 8
 extern HardwareSerial Serial2; // Serial2 is Flymaple pins 0 and 1
 extern HardwareSerial Serial3; // Serial3 is labelled "GPS" on Flymaple pins 29 and 30
 
-static FLYMAPLEUARTDriver uartADriver(&Serial1); // AP Console and highspeed mavlink
-static FLYMAPLEUARTDriver uartBDriver(&Serial2); // AP GPS connection
-static FLYMAPLEUARTDriver uartCDriver(&Serial3); // Optional AP telemetry radio
-static FLYMAPLESemaphore  i2cSemaphore;
-static FLYMAPLEI2CDriver  i2cDriver(&i2cSemaphore);
-static FLYMAPLESPIDeviceManager spiDeviceManager;
-static FLYMAPLEAnalogIn analogIn;
-static FLYMAPLEStorage storageDriver;
-static FLYMAPLEGPIO gpioDriver;
-static FLYMAPLERCInput rcinDriver;
-static FLYMAPLERCOutput rcoutDriver;
-static FLYMAPLEScheduler schedulerInstance;
-static FLYMAPLEUtil utilInstance;
+static YUNEECUARTDriver uartADriver(&Serial1); // AP Console and highspeed mavlink
+static YUNEECUARTDriver uartBDriver(&Serial2); // AP GPS connection
+static YUNEECUARTDriver uartCDriver(&Serial3); // Optional AP telemetry radio
+static YUNEECSemaphore  i2cSemaphore;
+static YUNEECI2CDriver  i2cDriver(&i2cSemaphore);
+static YUNEECSPIDeviceManager spiDeviceManager;
+static YUNEECAnalogIn analogIn;
+static YUNEECStorage storageDriver;
+static YUNEECGPIO gpioDriver;
+static YUNEECRCInput rcinDriver;
+static YUNEECRCOutput rcoutDriver;
+static YUNEECScheduler schedulerInstance;
+static YUNEECUtil utilInstance;
 
-HAL_FLYMAPLE::HAL_FLYMAPLE() :
+HAL_YUNEEC::HAL_YUNEEC() :
     AP_HAL::HAL(
         &uartADriver,
         &uartBDriver,
@@ -62,7 +62,7 @@ HAL_FLYMAPLE::HAL_FLYMAPLE() :
 	)
 {}
 
-void HAL_FLYMAPLE::init(int argc,char* const argv[]) const {
+void HAL_YUNEEC::init(int argc,char* const argv[]) const {
     /* initialize all drivers and private members here.
      * up to the programmer to do this in the correct order.
      * Scheduler should likely come first. */
@@ -83,6 +83,6 @@ void HAL_FLYMAPLE::init(int argc,char* const argv[]) const {
     storage->init(NULL); // Uses EEPROM.*, flash_stm* copied from AeroQuad_v3.2
 }
 
-const HAL_FLYMAPLE AP_HAL_YUNEEC;
+const HAL_YUNEEC AP_HAL_YUNEEC;
 
 #endif

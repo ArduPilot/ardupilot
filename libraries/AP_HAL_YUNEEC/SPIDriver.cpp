@@ -25,30 +25,30 @@
 #include "SPIDriver.h"
 #include "FlymapleWirish.h"
 
-using namespace AP_HAL_FLYMAPLE_NS;
+using namespace AP_HAL_YUNEEC;
 
-#define FLYMAPLE_SPI_CS_PIN 8
+#define YUNEEC_SPI_CS_PIN 8
 // Only one port so far:
-#define FLYMAPLE_SPI_PORT 1
-HardwareSPI spi(FLYMAPLE_SPI_PORT);
+#define YUNEEC_SPI_PORT 1
+HardwareSPI spi(YUNEEC_SPI_PORT);
 
 
-FLYMAPLESPIDeviceDriver::FLYMAPLESPIDeviceDriver()
+YUNEECSPIDeviceDriver::YUNEECSPIDeviceDriver()
 {}
 
-void FLYMAPLESPIDeviceDriver::init()
+void YUNEECSPIDeviceDriver::init()
 {
     spi.begin(SPI_9MHZ, MSBFIRST, SPI_MODE_0);
-    digitalWrite(FLYMAPLE_SPI_CS_PIN, 1);
-    pinMode(FLYMAPLE_SPI_CS_PIN, OUTPUT);
+    digitalWrite(YUNEEC_SPI_CS_PIN, 1);
+    pinMode(YUNEEC_SPI_CS_PIN, OUTPUT);
 }
 
-AP_HAL::Semaphore* FLYMAPLESPIDeviceDriver::get_semaphore()
+AP_HAL::Semaphore* YUNEECSPIDeviceDriver::get_semaphore()
 {
     return &_semaphore;
 }
 
-void FLYMAPLESPIDeviceDriver::transaction(const uint8_t *tx, uint8_t *rx, uint16_t len)
+void YUNEECSPIDeviceDriver::transaction(const uint8_t *tx, uint8_t *rx, uint16_t len)
 {
     cs_assert();
     if (rx == NULL) {
@@ -64,35 +64,35 @@ void FLYMAPLESPIDeviceDriver::transaction(const uint8_t *tx, uint8_t *rx, uint16
 }
 
 
-void FLYMAPLESPIDeviceDriver::cs_assert()
+void YUNEECSPIDeviceDriver::cs_assert()
 {
-    digitalWrite(FLYMAPLE_SPI_CS_PIN, 0);
+    digitalWrite(YUNEEC_SPI_CS_PIN, 0);
 }
 
-void FLYMAPLESPIDeviceDriver::cs_release()
+void YUNEECSPIDeviceDriver::cs_release()
 {
-    digitalWrite(FLYMAPLE_SPI_CS_PIN, 1);
+    digitalWrite(YUNEEC_SPI_CS_PIN, 1);
 }
 
-uint8_t FLYMAPLESPIDeviceDriver::transfer (uint8_t data)
+uint8_t YUNEECSPIDeviceDriver::transfer (uint8_t data)
 {
     return spi.transfer(data);
 }
 
-void FLYMAPLESPIDeviceDriver::transfer (const uint8_t *data, uint16_t len)
+void YUNEECSPIDeviceDriver::transfer (const uint8_t *data, uint16_t len)
 {
     spi.write(data, len);
 }
 
-FLYMAPLESPIDeviceManager::FLYMAPLESPIDeviceManager()
+YUNEECSPIDeviceManager::YUNEECSPIDeviceManager()
 {
 }
 
-void FLYMAPLESPIDeviceManager::init(void *)
+void YUNEECSPIDeviceManager::init(void *)
 {
 }
 
-AP_HAL::SPIDeviceDriver* FLYMAPLESPIDeviceManager::device(enum AP_HAL::SPIDevice)
+AP_HAL::SPIDeviceDriver* YUNEECSPIDeviceManager::device(enum AP_HAL::SPIDevice)
 {
     _device.init(); // Defer this until GPIO pin 13 is set up else its a slave
     return &_device;

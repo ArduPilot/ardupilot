@@ -26,34 +26,34 @@
 #include "I2CDriver.h"
 #include "FlymapleWirish.h"
 
-using namespace AP_HAL_FLYMAPLE_NS;
+using namespace AP_HAL_YUNEEC;
 
 extern const AP_HAL::HAL& hal;
 
 // This is the instance of the libmaple I2C device to use
-#define FLYMAPLE_I2C_DEVICE I2C1
+#define YUNEEC_I2C_DEVICE I2C1
 
-FLYMAPLEI2CDriver::FLYMAPLEI2CDriver(AP_HAL::Semaphore* semaphore) 
+YUNEECI2CDriver::YUNEECI2CDriver(AP_HAL::Semaphore* semaphore)
     : _semaphore(semaphore),
       _timeout_ms(0) 
 {
 }
 
-void FLYMAPLEI2CDriver::begin() 
+void YUNEECI2CDriver::begin()
 {
     _reset();
 }
 
-void FLYMAPLEI2CDriver::end() {}
+void YUNEECI2CDriver::end() {}
 
-void FLYMAPLEI2CDriver::setTimeout(uint16_t ms) 
+void YUNEECI2CDriver::setTimeout(uint16_t ms)
 {
     _timeout_ms = ms;
 }
 
-void FLYMAPLEI2CDriver::setHighSpeed(bool active) {}
+void YUNEECI2CDriver::setHighSpeed(bool active) {}
 
-uint8_t FLYMAPLEI2CDriver::write(uint8_t addr, uint8_t len, uint8_t* data)
+uint8_t YUNEECI2CDriver::write(uint8_t addr, uint8_t len, uint8_t* data)
 {
     i2c_msg msgs[1];
     msgs[0].addr = addr;
@@ -63,12 +63,12 @@ uint8_t FLYMAPLEI2CDriver::write(uint8_t addr, uint8_t len, uint8_t* data)
     return _transfer(msgs, 1);
 } 
 
-uint8_t FLYMAPLEI2CDriver::writeRegister(uint8_t addr, uint8_t reg, uint8_t val)
+uint8_t YUNEECI2CDriver::writeRegister(uint8_t addr, uint8_t reg, uint8_t val)
 {
     return writeRegisters(addr, reg, 1, &val);
 }
 
-uint8_t FLYMAPLEI2CDriver::writeRegisters(uint8_t addr, uint8_t reg,
+uint8_t YUNEECI2CDriver::writeRegisters(uint8_t addr, uint8_t reg,
                                uint8_t len, uint8_t* data)
 {
     uint8_t buffer[100];
@@ -83,9 +83,9 @@ uint8_t FLYMAPLEI2CDriver::writeRegisters(uint8_t addr, uint8_t reg,
     return _transfer(msgs, 1);
 }
 
-uint8_t FLYMAPLEI2CDriver::read(uint8_t addr, uint8_t len, uint8_t* data)
+uint8_t YUNEECI2CDriver::read(uint8_t addr, uint8_t len, uint8_t* data)
 {
-    // For devices that do not honour normal register conventions (not on flymaple?)
+    // For devices that do not honour normal register conventions (not on YUNEEC?)
     // Now read it
     i2c_msg msgs[1];
     msgs[0].addr = addr;
@@ -95,12 +95,12 @@ uint8_t FLYMAPLEI2CDriver::read(uint8_t addr, uint8_t len, uint8_t* data)
     return _transfer(msgs, 1);
 }
 
-uint8_t FLYMAPLEI2CDriver::readRegister(uint8_t addr, uint8_t reg, uint8_t* data)
+uint8_t YUNEECI2CDriver::readRegister(uint8_t addr, uint8_t reg, uint8_t* data)
 {
     return readRegisters(addr, reg, 1, data);
 }
 
-uint8_t FLYMAPLEI2CDriver::readRegisters(uint8_t addr, uint8_t reg,
+uint8_t YUNEECI2CDriver::readRegisters(uint8_t addr, uint8_t reg,
                               uint8_t len, uint8_t* data)
 {
     // We conduct a write of the register number we want followed by a read
@@ -118,11 +118,11 @@ uint8_t FLYMAPLEI2CDriver::readRegisters(uint8_t addr, uint8_t reg,
     return _transfer(msgs, 2);
 }
 
-uint8_t FLYMAPLEI2CDriver::lockup_count() {
+uint8_t YUNEECI2CDriver::lockup_count() {
 return _lockup_count;
 }
 
-uint8_t            FLYMAPLEI2CDriver::_transfer(i2c_msg *msgs, uint16 num)
+uint8_t            YUNEECI2CDriver::_transfer(i2c_msg *msgs, uint16 num)
 {
     // ALERT: patch to libmaple required for this to work else
     // crashes next line due to a bug in latest git libmaple see http://forums.leaflabs.com/topic.php?id=13458
@@ -137,10 +137,10 @@ uint8_t            FLYMAPLEI2CDriver::_transfer(i2c_msg *msgs, uint16 num)
     return result != 0;
 }
 
-void FLYMAPLEI2CDriver::_reset()
+void YUNEECI2CDriver::_reset()
 {
-    i2c_disable(FLYMAPLE_I2C_DEVICE);
-    i2c_master_enable(FLYMAPLE_I2C_DEVICE, I2C_FAST_MODE | I2C_BUS_RESET);
+    i2c_disable(YUNEEC_I2C_DEVICE);
+    i2c_master_enable(YUNEEC_I2C_DEVICE, I2C_FAST_MODE | I2C_BUS_RESET);
 }
 
 #endif

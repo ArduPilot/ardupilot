@@ -23,13 +23,13 @@
 
 #include "AP_HAL_YUNEEC_Namespace.h"
 
-class HAL_FLYMAPLE : public AP_HAL::HAL {
+class HAL_YUNEEC : public AP_HAL::HAL {
 public:
-    HAL_FLYMAPLE();
+    HAL_YUNEEC();
     void init(int argc, char * const * argv) const;
 };
 
-extern const HAL_FLYMAPLE AP_HAL_YUNEEC;
+extern const HAL_YUNEEC AP_HAL_YUNEEC;
 
-#endif // __AP_HAL_FLYMAPLE_CLASS_H__
+#endif // __AP_HAL_YUNEEC_CLASS_H__
 

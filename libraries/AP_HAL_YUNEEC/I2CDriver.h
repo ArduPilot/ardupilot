@@ -23,9 +23,9 @@
 
 #include <i2c.h>
 
-class AP_HAL_FLYMAPLE_NS::FLYMAPLEI2CDriver : public AP_HAL::I2CDriver {
+class AP_HAL_YUNEEC::YUNEECI2CDriver : public AP_HAL::I2CDriver {
 public:
-    FLYMAPLEI2CDriver(AP_HAL::Semaphore* semaphore);
+    YUNEECI2CDriver(AP_HAL::Semaphore* semaphore);
     void begin();
     void end();
     void setTimeout(uint16_t ms);
@@ -61,4 +61,4 @@ private:
     uint16_t           _timeout_ms;
 };
 
-#endif // __AP_HAL_FLYMAPLE_I2CDRIVER_H__
+#endif // __AP_HAL_YUNEEC_I2CDRIVER_H__

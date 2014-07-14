@@ -21,9 +21,9 @@
 
 #include <AP_HAL_YUNEEC.h>
 
-class AP_HAL_FLYMAPLE_NS::FLYMAPLEStorage : public AP_HAL::Storage {
+class AP_HAL_YUNEEC::YUNEECStorage : public AP_HAL::Storage {
 public:
-    FLYMAPLEStorage();
+    YUNEECStorage();
     void init(void *);
     uint8_t  read_byte(uint16_t loc);
     uint16_t read_word(uint16_t loc);
@@ -36,4 +36,4 @@ public:
     void write_block(uint16_t dst, const void* src, size_t n);
 };
 
-#endif // __AP_HAL_FLYMAPLE_STORAGE_H__
+#endif // __AP_HAL_YUNEEC_STORAGE_H__

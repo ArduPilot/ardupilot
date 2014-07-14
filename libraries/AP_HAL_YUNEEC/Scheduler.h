@@ -21,11 +21,11 @@
 
 #include <AP_HAL_YUNEEC.h>
 
-#define FLYMAPLE_SCHEDULER_MAX_TIMER_PROCS 4
+#define YUNEEC_SCHEDULER_MAX_TIMER_PROCS 4
 
-class AP_HAL_FLYMAPLE_NS::FLYMAPLEScheduler : public AP_HAL::Scheduler {
+class AP_HAL_YUNEEC::YUNEECScheduler : public AP_HAL::Scheduler {
 public:
-    FLYMAPLEScheduler();
+    YUNEECScheduler();
     void     init(void* machtnichts);
     void     delay(uint16_t ms);
     uint32_t millis();
@@ -71,8 +71,8 @@ private:
 
     static volatile bool _timer_suspended;
     static volatile bool _timer_event_missed;
-    static AP_HAL::MemberProc _timer_proc[FLYMAPLE_SCHEDULER_MAX_TIMER_PROCS];
+    static AP_HAL::MemberProc _timer_proc[YUNEEC_SCHEDULER_MAX_TIMER_PROCS];
     static uint8_t _num_timer_procs;
 };
 
-#endif // __AP_HAL_FLYMAPLE_SCHEDULER_H__
+#endif // __AP_HAL_YUNEEC_SCHEDULER_H__

@@ -24,21 +24,21 @@
  * C++ namespace rules.)
  */
 
-namespace AP_HAL_FLYMAPLE_NS {
-    class FLYMAPLEUARTDriver;
-    class FLYMAPLEI2CDriver;
-    class FLYMAPLESPIDeviceManager;
-    class FLYMAPLESPIDeviceDriver;
-    class FLYMAPLEAnalogSource;
-    class FLYMAPLEAnalogIn;
-    class FLYMAPLEStorage;
-    class FLYMAPLEGPIO;
-    class FLYMAPLEDigitalSource;
-    class FLYMAPLERCInput;
-    class FLYMAPLERCOutput;
+namespace AP_HAL_YUNEEC {
+    class YUNEECUARTDriver;
+    class YUNEECI2CDriver;
+    class YUNEECSPIDeviceManager;
+    class YUNEECSPIDeviceDriver;
+    class YUNEECAnalogSource;
+    class YUNEECAnalogIn;
+    class YUNEECStorage;
+    class YUNEECGPIO;
+    class YUNEECDigitalSource;
+    class YUNEECRCInput;
+    class YUNEECRCOutput;
     class FLYMAPLESemaphore;
-    class FLYMAPLEScheduler;
-    class FLYMAPLEUtil;
+    class YUNEECScheduler;
+    class YUNEECUtil;
 }
 
 #endif // __AP_HAL_YUNEEC_NAMESPACE_H__

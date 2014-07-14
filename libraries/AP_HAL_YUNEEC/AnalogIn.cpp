@@ -24,7 +24,7 @@
 #include "FlymapleWirish.h"
 #include <AP_HAL.h>
 #include "AnalogIn.h"
-using namespace AP_HAL_FLYMAPLE_NS;
+using namespace AP_HAL_YUNEEC;
 
 extern const AP_HAL::HAL& hal;
 
@@ -32,28 +32,28 @@ extern const AP_HAL::HAL& hal;
  * This seems to be determined empirically */
 #define CHANNEL_READ_REPEAT 2
 
-FLYMAPLEAnalogIn::FLYMAPLEAnalogIn() :
-    _vcc(FLYMAPLEAnalogSource(ANALOG_INPUT_BOARD_VCC))
+YUNEECAnalogIn::YUNEECAnalogIn() :
+    _vcc(YUNEECAnalogSource(ANALOG_INPUT_BOARD_VCC))
 {}
 
-void FLYMAPLEAnalogIn::init(void* machtnichts) {
-    /* Register FLYMAPLEAnalogIn::_timer_event with the scheduler. */
-    hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&FLYMAPLEAnalogIn::_timer_event));
-    /* Register each private channel with FLYMAPLEAnalogIn. */
+void YUNEECAnalogIn::init(void* machtnichts) {
+    /* Register YUNEECAnalogIn::_timer_event with the scheduler. */
+    hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&YUNEECAnalogIn::_timer_event));
+    /* Register each private channel with YUNEECAnalogIn. */
     _register_channel(&_vcc);
 }
 
-FLYMAPLEAnalogSource* FLYMAPLEAnalogIn::_create_channel(int16_t chnum) {
-    FLYMAPLEAnalogSource *ch = new FLYMAPLEAnalogSource(chnum);
+YUNEECAnalogSource* YUNEECAnalogIn::_create_channel(int16_t chnum) {
+    YUNEECAnalogSource *ch = new YUNEECAnalogSource(chnum);
     _register_channel(ch);
     return ch;
 }
 
-void FLYMAPLEAnalogIn::_register_channel(FLYMAPLEAnalogSource* ch) {
-    if (_num_channels >= FLYMAPLE_INPUT_MAX_CHANNELS) {
+void YUNEECAnalogIn::_register_channel(YUNEECAnalogSource* ch) {
+    if (_num_channels >= YUNEEC_INPUT_MAX_CHANNELS) {
         for(;;) {
             hal.console->print_P(PSTR(
-                "Error: AP_HAL_FLYMAPLE::FLYMAPLEAnalogIn out of channels\r\n"));
+                "Error: AP_HAL_YUNEEC::YUNEECAnalogIn out of channels\r\n"));
             hal.scheduler->delay(1000);
         }
     }
@@ -68,7 +68,7 @@ void FLYMAPLEAnalogIn::_register_channel(FLYMAPLEAnalogSource* ch) {
     regs->CR2 |= ADC_CR2_SWSTART;
 }
 
-void FLYMAPLEAnalogIn::_timer_event(void) 
+void YUNEECAnalogIn::_timer_event(void)
 {
     adc_reg_map *regs = ADC1->regs;
     if (_channels[_active_channel]->_pin == ANALOG_INPUT_NONE) {
@@ -117,7 +117,7 @@ next_channel:
 }
 
 
-AP_HAL::AnalogSource* FLYMAPLEAnalogIn::channel(int16_t ch) 
+AP_HAL::AnalogSource* YUNEECAnalogIn::channel(int16_t ch)
 {
     if (ch == ANALOG_INPUT_BOARD_VCC) {
             return &_vcc;
@@ -126,7 +126,7 @@ AP_HAL::AnalogSource* FLYMAPLEAnalogIn::channel(int16_t ch)
     }
 }
 
-float FLYMAPLEAnalogIn::board_voltage(void)
+float YUNEECAnalogIn::board_voltage(void)
 {
     return _vcc.voltage_latest();
 }

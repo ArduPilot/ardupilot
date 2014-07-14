@@ -24,9 +24,9 @@
 
 class HardwareSPI; // in libmaple
 
-class AP_HAL_FLYMAPLE_NS::FLYMAPLESPIDeviceDriver : public AP_HAL::SPIDeviceDriver {
+class AP_HAL_YUNEEC::YUNEECSPIDeviceDriver : public AP_HAL::SPIDeviceDriver {
 public:
-    FLYMAPLESPIDeviceDriver();
+    YUNEECSPIDeviceDriver();
     void init();
     AP_HAL::Semaphore* get_semaphore();
     void transaction(const uint8_t *tx, uint8_t *rx, uint16_t len);
@@ -36,16 +36,16 @@ public:
     uint8_t transfer (uint8_t data);
     void transfer (const uint8_t *data, uint16_t len);
 private:
-    FLYMAPLESemaphore _semaphore;
+    YUNEECSemaphore _semaphore;
 };
 
-class AP_HAL_FLYMAPLE_NS::FLYMAPLESPIDeviceManager : public AP_HAL::SPIDeviceManager {
+class AP_HAL_YUNEEC::YUNEECSPIDeviceManager : public AP_HAL::SPIDeviceManager {
 public:
-    FLYMAPLESPIDeviceManager();
+    YUNEECSPIDeviceManager();
     void init(void *);
     AP_HAL::SPIDeviceDriver* device(enum AP_HAL::SPIDevice);
 private:
-    FLYMAPLESPIDeviceDriver _device;
+    YUNEECSPIDeviceDriver _device;
 };
 
-#endif // __AP_HAL_FLYMAPLE_SPIDRIVER_H__
+#endif // __AP_HAL_YUNEEC_SPIDRIVER_H__

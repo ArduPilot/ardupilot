@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  Flymaple port by Mike McCauley
+  YUNEEC port by Mike McCauley
  */
 
 #ifndef __AP_HAL_YUNEEC_GPIO_H__
@@ -21,9 +21,9 @@
 
 #include <AP_HAL_YUNEEC.h>
 
-class AP_HAL_FLYMAPLE_NS::FLYMAPLEGPIO : public AP_HAL::GPIO {
+class AP_HAL_YUNEEC::YUNEECGPIO : public AP_HAL::GPIO {
 public:
-    FLYMAPLEGPIO();
+    YUNEECGPIO();
     void    init();
     void    pinMode(uint8_t pin, uint8_t output);
     int8_t  analogPinToDigitalPin(uint8_t pin);
@@ -43,9 +43,9 @@ public:
 
 };
 
-class AP_HAL_FLYMAPLE_NS::FLYMAPLEDigitalSource : public AP_HAL::DigitalSource {
+class AP_HAL_YUNEEC::YUNEECDigitalSource : public AP_HAL::DigitalSource {
 public:
-    FLYMAPLEDigitalSource(uint8_t v);
+    YUNEECDigitalSource(uint8_t v);
     void    mode(uint8_t output);
     uint8_t read();
     void    write(uint8_t value); 
@@ -55,4 +55,4 @@ private:
     uint8_t _v;
 };
 
-#endif // __AP_HAL_FLYMAPLE_GPIO_H__
+#endif // __AP_HAL_YUNEEC_GPIO_H__

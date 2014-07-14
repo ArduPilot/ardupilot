@@ -21,13 +21,13 @@
 
 #include <AP_HAL_YUNEEC.h>
 
-#define FLYMAPLE_RC_INPUT_NUM_CHANNELS 8
+#define YUNEEC_RC_INPUT_NUM_CHANNELS 8
 
-#define FLYMAPLE_RC_INPUT_MIN_CHANNELS 5     // for ppm sum we allow less than 8 channels to make up a valid packet
+#define YUNEEC_RC_INPUT_MIN_CHANNELS 5     // for ppm sum we allow less than 8 channels to make up a valid packet
 
-class AP_HAL_FLYMAPLE_NS::FLYMAPLERCInput : public AP_HAL::RCInput {
+class AP_HAL_YUNEEC::YUNEECRCInput : public AP_HAL::RCInput {
 public:
-    FLYMAPLERCInput();
+    YUNEECRCInput();
     void init(void* machtnichts);
     bool new_input();
     uint8_t num_channels();
@@ -43,12 +43,12 @@ private:
     static void _timer_capt_cb(void);
 
     /* private variables to communicate with input capture isr */
-    static volatile uint16_t _pulse_capt[FLYMAPLE_RC_INPUT_NUM_CHANNELS];
+    static volatile uint16_t _pulse_capt[YUNEEC_RC_INPUT_NUM_CHANNELS];
     static volatile uint8_t  _valid_channels;
     static volatile uint32_t _last_input_interrupt_time;
 
     /* override state */
-    uint16_t _override[FLYMAPLE_RC_INPUT_NUM_CHANNELS]; 
+    uint16_t _override[YUNEEC_RC_INPUT_NUM_CHANNELS];
 };
 
-#endif // __AP_HAL_FLYMAPLE_RCINPUT_H__
+#endif // __AP_HAL_YUNEEC_RCINPUT_H__

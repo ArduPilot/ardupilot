@@ -22,9 +22,9 @@
 #include <AP_HAL.h>
 #include "AP_HAL_YUNEEC_Namespace.h"
 
-class AP_HAL_FLYMAPLE_NS::FLYMAPLEUtil : public AP_HAL::Util {
+class AP_HAL_YUNEEC::YUNEECUtil : public AP_HAL::Util {
 public:
     bool run_debug_shell(AP_HAL::BetterStream *stream) { return false; }
 };
 
-#endif // __AP_HAL_FLYMAPLE_UTIL_H__
+#endif // __AP_HAL_YUNEEC_UTIL_H__

@@ -21,9 +21,9 @@
 
 #include <AP_HAL_YUNEEC.h>
 
-#define FLYMAPLE_RC_OUTPUT_NUM_CHANNELS 6
+#define YUNEEC_RC_OUTPUT_NUM_CHANNELS 6
 
-class AP_HAL_FLYMAPLE_NS::FLYMAPLERCOutput : public AP_HAL::RCOutput {
+class AP_HAL_YUNEEC::YUNEECRCOutput : public AP_HAL::RCOutput {
     void     init(void* machtnichts);
     void     set_freq(uint32_t chmask, uint16_t freq_hz);
     uint16_t get_freq(uint8_t ch);
@@ -35,16 +35,16 @@ class AP_HAL_FLYMAPLE_NS::FLYMAPLERCOutput : public AP_HAL::RCOutput {
     void     read(uint16_t* period_us, uint8_t len);
 
 private:
-    // We map channels to Flymaple pins so AP channels 1 to 6 map to
-    // the conventional Flymaple PWM output pins on J5 (pins 28, 27, 11, 12, 24, 14 respectively)
+    // We map channels to YUNEEC pins so AP channels 1 to 6 map to
+    // the conventional YUNEEC PWM output pins on J5 (pins 28, 27, 11, 12, 24, 14 respectively)
     // also
     // Channel 7 -> pin 5
     // channel 8 -> pin 9
-    uint8_t _channel_to_flymaple_pin(uint8_t ch);
+    uint8_t _channel_to_YUNEEC_pin(uint8_t ch);
 
     void _set_freq(uint8_t ch, uint16_t freq_hz);
 
-    uint32_t _clocks_per_msecond[FLYMAPLE_RC_OUTPUT_NUM_CHANNELS];
+    uint32_t _clocks_per_msecond[YUNEEC_RC_OUTPUT_NUM_CHANNELS];
 };
 
-#endif // __AP_HAL_FLYMAPLE_RCOUTPUT_H__
+#endif // __AP_HAL_YUNEEC_RCOUTPUT_H__

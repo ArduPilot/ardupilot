@@ -28,11 +28,11 @@
 #include <HardwareSerial.h>
 #include <usart.h>
 
-using namespace AP_HAL_FLYMAPLE_NS;
+using namespace AP_HAL_YUNEEC;
 
 extern const AP_HAL::HAL& hal;
 
-FLYMAPLEUARTDriver::FLYMAPLEUARTDriver(HardwareSerial* hws):
+YUNEECUARTDriver::YUNEECUARTDriver(HardwareSerial* hws):
     _hws(hws),
     _txBuf(NULL),
     _txBufSize(63), // libmaple internal usart default driver buffer is 63
@@ -40,7 +40,7 @@ FLYMAPLEUARTDriver::FLYMAPLEUARTDriver(HardwareSerial* hws):
     _rxBufSize(63)  // libmaple internal usart default driver buffer is 63
  {}
 
-void FLYMAPLEUARTDriver::begin(uint32_t b) 
+void YUNEECUARTDriver::begin(uint32_t b)
 {
     // Dont let the ISRs access the ring buffers until we are fully set up:
     nvic_irq_disable(_hws->c_dev()->irq_num);
@@ -52,7 +52,7 @@ void FLYMAPLEUARTDriver::begin(uint32_t b)
     nvic_irq_enable(_hws->c_dev()->irq_num);
 }
 
-void FLYMAPLEUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS) 
+void YUNEECUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
     // Our private buffers can only grow, never shrink
     // rxS == 0 or txS == 0 means no change to buffer size
@@ -89,50 +89,50 @@ void FLYMAPLEUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 	free(oldRxBuf);
 }
 
-void FLYMAPLEUARTDriver::end() 
+void YUNEECUARTDriver::end()
 {
     _hws->end();
 }
 
-void FLYMAPLEUARTDriver::flush() 
+void YUNEECUARTDriver::flush()
 {
     _hws->flush();
 }
 
-bool FLYMAPLEUARTDriver::is_initialized() 
+bool YUNEECUARTDriver::is_initialized()
 { 
     return true; 
 }
 
-void FLYMAPLEUARTDriver::set_blocking_writes(bool blocking) {}
+void YUNEECUARTDriver::set_blocking_writes(bool blocking) {}
 
-bool FLYMAPLEUARTDriver::tx_pending() { return false; }
+bool YUNEECUARTDriver::tx_pending() { return false; }
 
-/* FLYMAPLE implementations of Stream virtual methods */
-int16_t FLYMAPLEUARTDriver::available() 
+/* YUNEEC implementations of Stream virtual methods */
+int16_t YUNEECUARTDriver::available()
 { 
     return _hws->available(); 
 }
 
-int16_t FLYMAPLEUARTDriver::txspace() 
+int16_t YUNEECUARTDriver::txspace()
 { 
     // Mikems fork of libmaple includes usart TX buffering
     return _hws->c_dev()->tx_rb->size - rb_full_count(_hws->c_dev()->tx_rb);
 }
 
-int16_t FLYMAPLEUARTDriver::read() 
+int16_t YUNEECUARTDriver::read()
 { 
     return _hws->read(); 
 }
 
-/* FLYMAPLE implementations of Print virtual methods */
-size_t FLYMAPLEUARTDriver::write(uint8_t c) 
+/* YUNEEC implementations of Print virtual methods */
+size_t YUNEECUARTDriver::write(uint8_t c)
 {
     _hws->write(c); 
     return 1; 
 }
 
-size_t FLYMAPLEUARTDriver::write(const uint8_t *buffer, size_t size)
+size_t YUNEECUARTDriver::write(const uint8_t *buffer, size_t size)
 {
     size_t n = 0;
     while (size--) {

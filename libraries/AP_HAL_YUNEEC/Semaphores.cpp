@@ -21,7 +21,7 @@
 
 #include "Semaphores.h"
 
-using namespace AP_HAL_FLYMAPLE_NS;
+using namespace AP_HAL_YUNEEC;
 
 #include <AP_HAL_YUNEEC.h>
 #include "Semaphores.h"
@@ -31,9 +31,9 @@ using namespace AP_HAL_FLYMAPLE_NS;
 extern const AP_HAL::HAL& hal;
 
 // Constructor
-FLYMAPLESemaphore::FLYMAPLESemaphore() : _taken(false) {}
+YUNEECSemaphore::YUNEECSemaphore() : _taken(false) {}
 
-bool FLYMAPLESemaphore::give() {
+bool YUNEECSemaphore::give() {
     if (!_taken) {
         return false;
     } else {
@@ -42,16 +42,16 @@ bool FLYMAPLESemaphore::give() {
     }
 }
 
-bool FLYMAPLESemaphore::take(uint32_t timeout_ms) {
+bool YUNEECSemaphore::take(uint32_t timeout_ms) {
     if (hal.scheduler->in_timerprocess()) {
-        hal.scheduler->panic(PSTR("PANIC: FLYMAPLESemaphore::take used from "
+        hal.scheduler->panic(PSTR("PANIC: YUNEECSemaphore::take used from "
                     "inside timer process"));
         return false; /* Never reached - panic does not return */
     }
     return _take_from_mainloop(timeout_ms);
 }
 
-bool FLYMAPLESemaphore::take_nonblocking() {
+bool YUNEECSemaphore::take_nonblocking() {
     if (hal.scheduler->in_timerprocess()) {
         return _take_nonblocking();
     } else {
@@ -59,7 +59,7 @@ bool FLYMAPLESemaphore::take_nonblocking() {
     }
 }
 
-bool FLYMAPLESemaphore::_take_from_mainloop(uint32_t timeout_ms) {
+bool YUNEECSemaphore::_take_from_mainloop(uint32_t timeout_ms) {
     /* Try to take immediately */
     if (_take_nonblocking()) {
         return true;
@@ -80,7 +80,7 @@ bool FLYMAPLESemaphore::_take_from_mainloop(uint32_t timeout_ms) {
     return false;
 }
 
-bool FLYMAPLESemaphore::_take_nonblocking() {
+bool YUNEECSemaphore::_take_nonblocking() {
     bool result = false;
     noInterrupts();
     if (!_taken) {

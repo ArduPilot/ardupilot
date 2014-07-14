@@ -38,24 +38,24 @@ extern "C"
 // nvic_irq_set_priority
 static HardwareTimer _failsafe_timer(2);
 
-using namespace AP_HAL_FLYMAPLE_NS;
+using namespace AP_HAL_YUNEEC;
 
 extern const AP_HAL::HAL& hal;
 
-AP_HAL::Proc FLYMAPLEScheduler::_failsafe = NULL;
-volatile bool     FLYMAPLEScheduler::_timer_suspended = false;
-volatile bool     FLYMAPLEScheduler::_timer_event_missed = false;
-volatile bool     FLYMAPLEScheduler::_in_timer_proc = false;
-AP_HAL::MemberProc FLYMAPLEScheduler::_timer_proc[FLYMAPLE_SCHEDULER_MAX_TIMER_PROCS] = {NULL};
-uint8_t           FLYMAPLEScheduler::_num_timer_procs = 0;
+AP_HAL::Proc YUNEECScheduler::_failsafe = NULL;
+volatile bool     YUNEECScheduler::_timer_suspended = false;
+volatile bool     YUNEECScheduler::_timer_event_missed = false;
+volatile bool     YUNEECScheduler::_in_timer_proc = false;
+AP_HAL::MemberProc YUNEECScheduler::_timer_proc[YUNEEC_SCHEDULER_MAX_TIMER_PROCS] = {NULL};
+uint8_t           YUNEECScheduler::_num_timer_procs = 0;
 
-FLYMAPLEScheduler::FLYMAPLEScheduler() :
+YUNEECScheduler::YUNEECScheduler() :
     _delay_cb(NULL),
     _min_delay_cb_ms(65535),
     _initialized(false)
 {}
 
-void FLYMAPLEScheduler::init(void* machtnichts)
+void YUNEECScheduler::init(void* machtnichts)
 {
     delay_us(2000000); // Wait for startup so we have time to connect a new USB console
     // 1kHz interrupts from systick for normal timers
@@ -77,7 +77,7 @@ void FLYMAPLEScheduler::init(void* machtnichts)
 }
 
 // This function may calls the _delay_cb to use up time
-void FLYMAPLEScheduler::delay(uint16_t ms)
+void YUNEECScheduler::delay(uint16_t ms)
 {    
     uint32_t start = libmaple_micros();
     
@@ -95,26 +95,26 @@ void FLYMAPLEScheduler::delay(uint16_t ms)
     }
 }
 
-uint32_t FLYMAPLEScheduler::millis() {
+uint32_t YUNEECScheduler::millis() {
     return libmaple_millis();
 }
 
-uint32_t FLYMAPLEScheduler::micros() {
+uint32_t YUNEECScheduler::micros() {
     return libmaple_micros();
 }
 
-void FLYMAPLEScheduler::delay_microseconds(uint16_t us)
+void YUNEECScheduler::delay_microseconds(uint16_t us)
 { 
     delay_us(us);
 }
 
-void FLYMAPLEScheduler::register_delay_callback(AP_HAL::Proc proc, uint16_t min_time_ms)
+void YUNEECScheduler::register_delay_callback(AP_HAL::Proc proc, uint16_t min_time_ms)
 {
     _delay_cb = proc;
     _min_delay_cb_ms = min_time_ms;
 }
 
-void FLYMAPLEScheduler::register_timer_process(AP_HAL::MemberProc proc)
+void YUNEECScheduler::register_timer_process(AP_HAL::MemberProc proc)
 {
     for (int i = 0; i < _num_timer_procs; i++) {
         if (_timer_proc[i] == proc) {
@@ -122,7 +122,7 @@ void FLYMAPLEScheduler::register_timer_process(AP_HAL::MemberProc proc)
         }
     }
 
-    if (_num_timer_procs < FLYMAPLE_SCHEDULER_MAX_TIMER_PROCS) {
+    if (_num_timer_procs < YUNEEC_SCHEDULER_MAX_TIMER_PROCS) {
         /* this write to _timer_proc can be outside the critical section
          * because that memory won't be used until _num_timer_procs is
          * incremented. */
@@ -134,23 +134,23 @@ void FLYMAPLEScheduler::register_timer_process(AP_HAL::MemberProc proc)
     }
 }
 
-void FLYMAPLEScheduler::register_io_process(AP_HAL::MemberProc k)
+void YUNEECScheduler::register_io_process(AP_HAL::MemberProc k)
 {
-    // IO processes not supported on FLYMAPLE
+    // IO processes not supported on YUNEEC
 }
 
-void FLYMAPLEScheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_us)
+void YUNEECScheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_us)
 {
     /* XXX Assert period_us == 1000 */
     _failsafe = failsafe;
 }
 
-void FLYMAPLEScheduler::suspend_timer_procs()
+void YUNEECScheduler::suspend_timer_procs()
 {
     _timer_suspended = true;
 }
 
-void FLYMAPLEScheduler::resume_timer_procs()
+void YUNEECScheduler::resume_timer_procs()
 {
     _timer_suspended = false;
     if (_timer_event_missed == true) {
@@ -159,33 +159,33 @@ void FLYMAPLEScheduler::resume_timer_procs()
     }
 }
 
-bool FLYMAPLEScheduler::in_timerprocess() {
+bool YUNEECScheduler::in_timerprocess() {
     return _in_timer_proc;
 }
 
-void FLYMAPLEScheduler::_timer_procs_timer_event() {
+void YUNEECScheduler::_timer_procs_timer_event() {
     _run_timer_procs(true);
 }
 
 // Called by HardwareTimer when a failsafe timer event occurs
-void FLYMAPLEScheduler::_failsafe_timer_event() 
+void YUNEECScheduler::_failsafe_timer_event()
 {
     // run the failsafe, if one is setup
     if (_failsafe != NULL)
         _failsafe();
 }
 
-void FLYMAPLEScheduler::begin_atomic()
+void YUNEECScheduler::begin_atomic()
 {
     noInterrupts();
 }
 
-void FLYMAPLEScheduler::end_atomic()
+void YUNEECScheduler::end_atomic()
 {
     interrupts();
 }
 
-void FLYMAPLEScheduler::_run_timer_procs(bool called_from_isr) 
+void YUNEECScheduler::_run_timer_procs(bool called_from_isr)
 {
     _in_timer_proc = true;
 
@@ -203,11 +203,11 @@ void FLYMAPLEScheduler::_run_timer_procs(bool called_from_isr)
     _in_timer_proc = false;
 }
 
-bool FLYMAPLEScheduler::system_initializing() {
+bool YUNEECScheduler::system_initializing() {
     return !_initialized;
 }
 
-void FLYMAPLEScheduler::system_initialized()
+void YUNEECScheduler::system_initialized()
 {
     if (_initialized) {
         panic(PSTR("PANIC: scheduler::system_initialized called"
@@ -216,16 +216,16 @@ void FLYMAPLEScheduler::system_initialized()
     _initialized = true;
 }
 
-void FLYMAPLEScheduler::panic(const prog_char_t *errormsg) {
+void YUNEECScheduler::panic(const prog_char_t *errormsg) {
     /* Suspend timer processes. We still want the timer event to go off
      * to run the _failsafe code, however. */
-    // REVISIT: not tested on FLYMAPLE
+    // REVISIT: not tested on YUNEEC
     _timer_suspended = true;
     hal.console->println_P(errormsg);
     for(;;);
 }
 
-void FLYMAPLEScheduler::reboot(bool hold_in_bootloader) {
+void YUNEECScheduler::reboot(bool hold_in_bootloader) {
     hal.uartA->println_P(PSTR("GOING DOWN FOR A REBOOT\r\n"));
     hal.scheduler->delay(100);
     nvic_sys_reset();

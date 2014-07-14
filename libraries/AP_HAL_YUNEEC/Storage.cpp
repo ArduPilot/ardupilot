@@ -28,7 +28,7 @@
 #include "FlymapleWirish.h"
 #include "utility/EEPROM.h"
 
-using namespace AP_HAL_FLYMAPLE_NS;
+using namespace AP_HAL_YUNEEC;
 
 extern const AP_HAL::HAL& hal;
 
@@ -48,17 +48,17 @@ const uint32_t last_flash_page = 0x0807F800;
 const uint32 pageSize  = 0x800;
 
 // This defines the base addresses of the 2 FLASH ROM pages that will be used to emulate EEPROM
-// These are the last 2 2k pages in the FLASH ROM address space on the RET6 used by Flymaple
+// These are the last 2 2k pages in the FLASH ROM address space on the RET6 used by YUNEEC
 // This will effectively provide a total of 1kb of emulated EEPROM storage
 const uint32 pageBase0 = 0x0807F000;
 const uint32 pageBase1 = 0x0807F800;
 
 static EEPROMClass eeprom[num_eeprom_blocks];
 
-FLYMAPLEStorage::FLYMAPLEStorage()
+YUNEECStorage::YUNEECStorage()
 {}
 
-void FLYMAPLEStorage::init(void*)
+void YUNEECStorage::init(void*)
 {
     for (int i = 0; i < num_eeprom_blocks; i++)
     {
@@ -66,17 +66,17 @@ void FLYMAPLEStorage::init(void*)
 				       last_flash_page - (((2*i)+1) * pageSize), 
 				       pageSize);
 	if (result != EEPROM_OK)
-	    hal.console->printf("FLYMAPLEStorage::init eeprom.init[%d] failed: %x\n", i, result);
+	    hal.console->printf("YUNEECStorage::init eeprom.init[%d] failed: %x\n", i, result);
     }
 }
 
-uint8_t FLYMAPLEStorage::read_byte(uint16_t loc){
+uint8_t YUNEECStorage::read_byte(uint16_t loc){
 //hal.console->printf("read_byte %d\n", loc);
     uint16_t eeprom_index = loc >> 10;
     uint16_t eeprom_offset = loc & 0x3ff;
     if (eeprom_index >= num_eeprom_blocks)
     {
-	hal.console->printf("FLYMAPLEStorage::read_byte loc %d out of range\n", loc);
+	hal.console->printf("YUNEECStorage::read_byte loc %d out of range\n", loc);
 	return 0xff; // What else?
     }
 
@@ -89,28 +89,28 @@ uint8_t FLYMAPLEStorage::read_byte(uint16_t loc){
 	return data & 0xff; // Even lower byte
 }
 
-uint16_t FLYMAPLEStorage::read_word(uint16_t loc){
+uint16_t YUNEECStorage::read_word(uint16_t loc){
 //hal.console->printf("read_word %d\n", loc);
     uint16_t value;
     read_block(&value, loc, sizeof(value));
     return value;
 }
 
-uint32_t FLYMAPLEStorage::read_dword(uint16_t loc){
+uint32_t YUNEECStorage::read_dword(uint16_t loc){
 //hal.console->printf("read_dword %d\n", loc);
     uint32_t value;
     read_block(&value, loc, sizeof(value));
     return value;
 }
 
-void FLYMAPLEStorage::read_block(void* dst, uint16_t src, size_t n) {
+void YUNEECStorage::read_block(void* dst, uint16_t src, size_t n) {
 //    hal.console->printf("read_block %d %d\n", src, n);
     // Treat as a block of bytes
     for (size_t i = 0; i < n; i++)
 	((uint8_t*)dst)[i] = read_byte(src+i);
 }
 
-void FLYMAPLEStorage::write_byte(uint16_t loc, uint8_t value)
+void YUNEECStorage::write_byte(uint16_t loc, uint8_t value)
 {
 //    hal.console->printf("write_byte %d, %d\n", loc, value);
 
@@ -118,7 +118,7 @@ void FLYMAPLEStorage::write_byte(uint16_t loc, uint8_t value)
     uint16_t eeprom_offset = loc & 0x3ff;
     if (eeprom_index >= num_eeprom_blocks)
     {
-	hal.console->printf("FLYMAPLEStorage::write_byte loc %d out of range\n", loc);
+	hal.console->printf("YUNEECStorage::write_byte loc %d out of range\n", loc);
 	return;
     }
     
@@ -132,19 +132,19 @@ void FLYMAPLEStorage::write_byte(uint16_t loc, uint8_t value)
     eeprom[eeprom_index].write(eeprom_offset >> 1, data);
 }
 
-void FLYMAPLEStorage::write_word(uint16_t loc, uint16_t value)
+void YUNEECStorage::write_word(uint16_t loc, uint16_t value)
 {
 //    hal.console->printf("write_word %d, %d\n", loc, value);
     write_block(loc, &value, sizeof(value));
 }
 
-void FLYMAPLEStorage::write_dword(uint16_t loc, uint32_t value)
+void YUNEECStorage::write_dword(uint16_t loc, uint32_t value)
 {
 //    hal.console->printf("write_dword %d, %d\n", loc, value);
     write_block(loc, &value, sizeof(value));
 }
 
-void FLYMAPLEStorage::write_block(uint16_t loc, const void* src, size_t n)
+void YUNEECStorage::write_block(uint16_t loc, const void* src, size_t n)
 {
 //    hal.console->printf("write_block %d, %d\n", loc, n);
     // Treat as a block of bytes

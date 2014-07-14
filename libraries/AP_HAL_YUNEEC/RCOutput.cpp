@@ -13,27 +13,27 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  Flymaple port by Mike McCauley
+  YUNEEC port by Mike McCauley
  */
 #include <AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_YUNEEC
 
-// Flymaple RC Outputs
+// YUNEEC RC Outputs
 // Derived from libmaple Servo.cpp
 
 #include "RCOutput.h"
 #include "FlymapleWirish.h"
 
-using namespace AP_HAL_FLYMAPLE_NS;
+using namespace AP_HAL_YUNEEC;
 
 extern const AP_HAL::HAL& hal;
 
 #define MAX_OVERFLOW    ((1 << 16) - 1)
 
-void FLYMAPLERCOutput::init(void* machtnichts) {}
+void YUNEECRCOutput::init(void* machtnichts) {}
 
-void FLYMAPLERCOutput::set_freq(uint32_t chmask, uint16_t freq_hz) 
+void YUNEECRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
 {
     for (int i = 0; i < 32; i++) {
         if ((chmask >> i) & 1) {
@@ -42,11 +42,11 @@ void FLYMAPLERCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
     }
 }
 
-uint16_t FLYMAPLERCOutput::get_freq(uint8_t ch) 
+uint16_t YUNEECRCOutput::get_freq(uint8_t ch)
 {
-    if (ch >= FLYMAPLE_RC_OUTPUT_NUM_CHANNELS)
+    if (ch >= YUNEEC_RC_OUTPUT_NUM_CHANNELS)
 	return 0;
-    uint8_t pin = _channel_to_flymaple_pin(ch);
+    uint8_t pin = _channel_to_YUNEEC_pin(ch);
     timer_dev *tdev = PIN_MAP[pin].timer_device;
 
     if (tdev == NULL)
@@ -56,11 +56,11 @@ uint16_t FLYMAPLERCOutput::get_freq(uint8_t ch)
     return F_CPU / (prescaler+1) / overflow;
 }
 
-void FLYMAPLERCOutput::enable_ch(uint8_t ch)
+void YUNEECRCOutput::enable_ch(uint8_t ch)
 {
-    if (ch >= FLYMAPLE_RC_OUTPUT_NUM_CHANNELS)
+    if (ch >= YUNEEC_RC_OUTPUT_NUM_CHANNELS)
 	return;
-    uint8_t pin = _channel_to_flymaple_pin(ch);
+    uint8_t pin = _channel_to_YUNEEC_pin(ch);
     timer_dev *tdev = PIN_MAP[pin].timer_device;
 
     if (tdev == NULL) {
@@ -72,11 +72,11 @@ void FLYMAPLERCOutput::enable_ch(uint8_t ch)
     _set_freq(ch, 50); // Default to 50 Hz
 }
 
-void FLYMAPLERCOutput::disable_ch(uint8_t ch)
+void YUNEECRCOutput::disable_ch(uint8_t ch)
 {
-    if (ch >= FLYMAPLE_RC_OUTPUT_NUM_CHANNELS)
+    if (ch >= YUNEEC_RC_OUTPUT_NUM_CHANNELS)
 	return;
-    uint8_t pin = _channel_to_flymaple_pin(ch);
+    uint8_t pin = _channel_to_YUNEEC_pin(ch);
     timer_dev *tdev = PIN_MAP[pin].timer_device;
 
     if (tdev == NULL) {
@@ -87,59 +87,59 @@ void FLYMAPLERCOutput::disable_ch(uint8_t ch)
     pinMode(pin, INPUT);
 }
 
-void FLYMAPLERCOutput::write(uint8_t ch, uint16_t period_us)
+void YUNEECRCOutput::write(uint8_t ch, uint16_t period_us)
 {
-    if (ch >= FLYMAPLE_RC_OUTPUT_NUM_CHANNELS)
+    if (ch >= YUNEEC_RC_OUTPUT_NUM_CHANNELS)
 	return;
-    uint8_t pin = _channel_to_flymaple_pin(ch);
+    uint8_t pin = _channel_to_YUNEEC_pin(ch);
     pwmWrite(pin, (period_us * _clocks_per_msecond[ch]) / 1000);
 }
 
-void FLYMAPLERCOutput::write(uint8_t ch, uint16_t* period_us, uint8_t len)
+void YUNEECRCOutput::write(uint8_t ch, uint16_t* period_us, uint8_t len)
 {
     for (int i = 0; i < len; i++)
         write(i + ch, period_us[i]); 
 }
 
-uint16_t FLYMAPLERCOutput::read(uint8_t ch) 
+uint16_t YUNEECRCOutput::read(uint8_t ch)
 {
-    if (ch >= FLYMAPLE_RC_OUTPUT_NUM_CHANNELS)
+    if (ch >= YUNEEC_RC_OUTPUT_NUM_CHANNELS)
 	return 0;
-    uint8_t pin = _channel_to_flymaple_pin(ch);
+    uint8_t pin = _channel_to_YUNEEC_pin(ch);
     timer_dev *tdev = PIN_MAP[pin].timer_device;
     uint8 timer_channel = PIN_MAP[pin].timer_channel;
     __io uint32 *ccr = &(tdev->regs).gen->CCR1 + (timer_channel - 1);
     return *ccr * 1000 / _clocks_per_msecond[ch];
 }
 
-void FLYMAPLERCOutput::read(uint16_t* period_us, uint8_t len)
+void YUNEECRCOutput::read(uint16_t* period_us, uint8_t len)
 {
     for (int i = 0; i < len; i++)
         period_us[i] = read(i);
 }
 
-uint8_t FLYMAPLERCOutput::_channel_to_flymaple_pin(uint8_t ch)
+uint8_t YUNEECRCOutput::_channel_to_YUNEEC_pin(uint8_t ch)
 {
-    // This maps the ArduPilot channel numbers to Flymaple PWM output pins
+    // This maps the ArduPilot channel numbers to YUNEEC PWM output pins
     // Channels on the same timer ALWAYS use the same frequency (the last one set)
     // 28, 27, 11, 12 use Timer 3 OK
     // 24, 14, 5,  9  use Timer 4 BREAKS I2C on pins 5 and 9
     // 35, 36, 37, 38 use Timer 8 DONT USE: CRASHES. WHY?
     // 0   1,  2,  3  use Timer 2 OK
-    static uint8_t ch_to_pin[FLYMAPLE_RC_OUTPUT_NUM_CHANNELS] = { 28, 27, 11, 12, 24, 14 };
-    if (ch >= FLYMAPLE_RC_OUTPUT_NUM_CHANNELS)
+    static uint8_t ch_to_pin[YUNEEC_RC_OUTPUT_NUM_CHANNELS] = { 28, 27, 11, 12, 24, 14 };
+    if (ch >= YUNEEC_RC_OUTPUT_NUM_CHANNELS)
 	return 0; // Should never happen. REVISIT?
     else
 	return ch_to_pin[ch];
 }
 
-void FLYMAPLERCOutput::_set_freq(uint8_t ch, uint16_t freq_hz) 
+void YUNEECRCOutput::_set_freq(uint8_t ch, uint16_t freq_hz)
 {
-    if (ch >= FLYMAPLE_RC_OUTPUT_NUM_CHANNELS)
+    if (ch >= YUNEEC_RC_OUTPUT_NUM_CHANNELS)
 	return;
     if (freq_hz == 0)
 	return; // Silly, avoid divide by 0 later
-    uint8_t pin = _channel_to_flymaple_pin(ch);
+    uint8_t pin = _channel_to_YUNEEC_pin(ch);
     timer_dev *tdev = PIN_MAP[pin].timer_device;
 
     if (tdev == NULL)

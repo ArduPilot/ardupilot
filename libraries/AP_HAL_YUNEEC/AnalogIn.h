@@ -21,18 +21,18 @@
 
 #include <AP_HAL_YUNEEC.h>
 
-#define FLYMAPLE_INPUT_MAX_CHANNELS 12
+#define YUNEEC_INPUT_MAX_CHANNELS 12
 
 // This is the pin number of the pin connected to VCC
-// this is not built in to the flymaple board, so you must connect
+// this is not built in to the YUNEEC board, so you must connect
 // this pin to the board 3.3V VCC
-#define FLYMAPLE_VCC_ANALOG_IN_PIN 15
+#define YUNEEC_VCC_ANALOG_IN_PIN 15
 
-class AP_HAL_FLYMAPLE_NS::FLYMAPLEAnalogSource : public AP_HAL::AnalogSource {
+class AP_HAL_YUNEEC::YUNEECAnalogSource : public AP_HAL::AnalogSource {
 public:
-    friend class AP_HAL_FLYMAPLE_NS::FLYMAPLEAnalogIn;
+    friend class AP_HAL_YUNEEC_NS::YUNEECAnalogIn;
 
-    FLYMAPLEAnalogSource(uint8_t pin);
+    YUNEECAnalogSource(uint8_t pin);
     float read_average();
     float read_latest();
     void set_pin(uint8_t p);
@@ -79,26 +79,26 @@ private:
     uint32_t _read_start_time_ms;
 };
 
-class AP_HAL_FLYMAPLE_NS::FLYMAPLEAnalogIn : public AP_HAL::AnalogIn {
+class AP_HAL_YUNEEC_NS::YUNEECAnalogIn : public AP_HAL::AnalogIn {
 public:
-    FLYMAPLEAnalogIn();
+    YUNEECAnalogIn();
     void init(void* implspecific);
     AP_HAL::AnalogSource* channel(int16_t n);
     float board_voltage(void);
 
 protected: 
-    FLYMAPLEAnalogSource* _create_channel(int16_t num);
-    void _register_channel(FLYMAPLEAnalogSource*);
+    YUNEECAnalogSource* _create_channel(int16_t num);
+    void _register_channel(YUNEECAnalogSource*);
     void _timer_event(void);
-    FLYMAPLEAnalogSource* _channels[FLYMAPLE_INPUT_MAX_CHANNELS];
+    YUNEECAnalogSource* _channels[YUNEEC_INPUT_MAX_CHANNELS];
     int16_t _num_channels;
     int16_t _active_channel;
     uint16_t _channel_repeat_count;
     
 private:
-    // On Flymaple, VCC measurement is at pin 20. VCC (=VIN) of 5V is only present
+    // On YUNEEC, VCC measurement is at pin 20. VCC (=VIN) of 5V is only present
     // if external voltage (not USB) is connected. Also there is a voltage
     // divider (25k/5k) 
-    FLYMAPLEAnalogSource _vcc;
+    YUNEECAnalogSource _vcc;
 };
-#endif // __AP_HAL_FLYMAPLE_ANALOGIN_H__
+#endif // __AP_HAL_YUNEEC_ANALOGIN_H__

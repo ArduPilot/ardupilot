@@ -22,7 +22,7 @@
 #include "GPIO.h"
 #include "FlymapleWirish.h"
 
-using namespace AP_HAL_FLYMAPLE_NS;
+using namespace AP_HAL_YUNEEC;
 
 // Glue into libmaple
 void libmaple_pinMode(uint8_t pin, uint8_t output)
@@ -40,85 +40,85 @@ void libmaple_digitalWrite(uint8_t pin, uint8_t value)
     digitalWrite(pin, value);
 }
 
-FLYMAPLEGPIO::FLYMAPLEGPIO()
+YUNEECGPIO::YUNEECGPIO()
 {}
 
-void FLYMAPLEGPIO::init()
+void YUNEECGPIO::init()
 {}
 
-void FLYMAPLEGPIO::pinMode(uint8_t pin, uint8_t output)
+void YUNEECGPIO::pinMode(uint8_t pin, uint8_t output)
 {
     return libmaple_pinMode(pin, output);
 }
 
-int8_t FLYMAPLEGPIO::analogPinToDigitalPin(uint8_t pin)
+int8_t YUNEECGPIO::analogPinToDigitalPin(uint8_t pin)
 {
     return pin;
 }
 
 
-uint8_t FLYMAPLEGPIO::read(uint8_t pin) 
+uint8_t YUNEECGPIO::read(uint8_t pin)
 {
     return libmaple_digitalRead(pin);
 }
 
-void FLYMAPLEGPIO::write(uint8_t pin, uint8_t value)
+void YUNEECGPIO::write(uint8_t pin, uint8_t value)
 {
     libmaple_digitalWrite(pin, value);
 }
 
-void FLYMAPLEGPIO::toggle(uint8_t pin)
+void YUNEECGPIO::toggle(uint8_t pin)
 {
     libmaple_digitalWrite(pin, !libmaple_digitalRead(pin));
 }
 
 /* Alternative interface: */
-AP_HAL::DigitalSource* FLYMAPLEGPIO::channel(uint16_t n) {
-    return new FLYMAPLEDigitalSource(n);
+AP_HAL::DigitalSource* YUNEECGPIO::channel(uint16_t n) {
+    return new YUNEECDigitalSource(n);
 }
 
 /* Interrupt interface: */
-bool FLYMAPLEGPIO::attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p, uint8_t mode) 
+bool YUNEECGPIO::attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p, uint8_t mode)
 {
-    // Flymaple can only handle RISING, FALLING and CHANGE
-    ExtIntTriggerMode flymaple_interrupt_mode;
+    // YUNEEC can only handle RISING, FALLING and CHANGE
+    ExtIntTriggerMode YUNEEC_interrupt_mode;
     if (mode == HAL_GPIO_INTERRUPT_FALLING)
-	flymaple_interrupt_mode = FALLING;
+	YUNEEC_interrupt_mode = FALLING;
     else if (mode == HAL_GPIO_INTERRUPT_RISING)
-	flymaple_interrupt_mode = RISING;
+	YUNEEC_interrupt_mode = RISING;
     else 
 	return false;
 	
     // REVISIT: Assumes pin and interrupt number are the same. Are they? 
-    attachInterrupt(interrupt_num, p, flymaple_interrupt_mode);
+    attachInterrupt(interrupt_num, p, YUNEEC_interrupt_mode);
     return true;
 }
 
-bool    FLYMAPLEGPIO::usb_connected(void)
+bool    YUNEECGPIO::usb_connected(void)
 {
     return SerialUSB.isConnected();
 }
 
-FLYMAPLEDigitalSource::FLYMAPLEDigitalSource(uint8_t v) :
+YUNEECDigitalSource::YUNEECDigitalSource(uint8_t v) :
     _v(v)
 {
     SerialUSB.println(_v);
 }
 
-void FLYMAPLEDigitalSource::mode(uint8_t output)
+void YUNEECDigitalSource::mode(uint8_t output)
 {
     libmaple_pinMode(_v, output);
 }
 
-uint8_t FLYMAPLEDigitalSource::read() {
+uint8_t YUNEECDigitalSource::read() {
     return libmaple_digitalRead(_v);
 }
 
-void FLYMAPLEDigitalSource::write(uint8_t value) {
+void YUNEECDigitalSource::write(uint8_t value) {
     libmaple_digitalWrite(_v, value);
 }
 
-void FLYMAPLEDigitalSource::toggle() {
+void YUNEECDigitalSource::toggle() {
     libmaple_digitalWrite(_v, !libmaple_digitalRead(_v));
 }
 #endif
