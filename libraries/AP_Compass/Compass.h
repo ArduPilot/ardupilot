@@ -36,6 +36,8 @@
 # define MAG_BOARD_ORIENTATION ROTATION_YAW_90
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 # define MAG_BOARD_ORIENTATION ROTATION_NONE
+#elif CONFIG_HAL_BOARD == HAL_BOARD_YUNEEC
+# define MAG_BOARD_ORIENTATION ROTATION_NONE
 #else
 # error "You must define a default compass orientation for this board"
 #endif

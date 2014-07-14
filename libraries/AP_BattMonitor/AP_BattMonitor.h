@@ -81,6 +81,15 @@
  # define AP_BATT_CURR_PIN                  101
  # define AP_BATT_VOLTDIVIDER_DEFAULT       1.1
  # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0
+#elif CONFIG_HAL_BOARD == HAL_BOARD_YUNEEC
+// Flymaple board pin 20 is connected to the external battery supply
+// via a 24k/5.1k voltage divider. The schematic claims the divider is 25k/5k,
+// but the actual installed resistors are not so.
+// So the divider ratio is 5.70588 = (24000+5100)/5100
+ # define AP_BATT_VOLT_PIN                  20
+ # define AP_BATT_CURR_PIN                  19
+ # define AP_BATT_VOLTDIVIDER_DEFAULT       5.70588
+ # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0
 #else
  # define AP_BATT_VOLT_PIN                  -1
  # define AP_BATT_CURR_PIN                  -1

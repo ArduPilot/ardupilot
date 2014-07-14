@@ -4,7 +4,7 @@
 #define __AP_INERTIAL_SENSOR_FLYMAPLE_H__
 
 #include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
+#if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE || CONFIG_HAL_BOARD == HAL_BOARD_YUNEEC
 
 #include <AP_Progmem.h>
 #include "AP_InertialSensor.h"
