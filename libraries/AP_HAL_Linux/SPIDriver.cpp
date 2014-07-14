@@ -120,8 +120,18 @@ void LinuxSPIDeviceManager::init(void *)
 
 void LinuxSPIDeviceManager::cs_assert(enum AP_HAL::SPIDevice type)
 {
-    for (uint8_t i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
-        if (_device[i]._bus != _device[type]._bus) {
+    uint8_t bus = 0, i;
+    for (i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
+        if (_device[i]._type == type) {
+            bus = _device[i]._bus;
+            break;
+        }
+    }
+    if (i == LINUX_SPI_DEVICE_NUM_DEVICES) {
+        hal.scheduler->panic("Bad device type");
+    }
+    for (i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
+        if (_device[i]._bus != bus) {
             // not the same bus
             continue;
         }
@@ -133,15 +143,25 @@ void LinuxSPIDeviceManager::cs_assert(enum AP_HAL::SPIDevice type)
     }
     for (uint8_t i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
         if (_device[i]._type == type) {
-            _device[type]._cs->write(0);
+            _device[i]._cs->write(0);
         }
     }
 }
 
 void LinuxSPIDeviceManager::cs_release(enum AP_HAL::SPIDevice type)
 {
-    for (uint8_t i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
-        if (_device[i]._bus != _device[type]._bus) {
+    uint8_t bus = 0, i;
+    for (i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
+        if (_device[i]._type == type) {
+            bus = _device[i]._bus;
+            break;
+        }
+    }
+    if (i == LINUX_SPI_DEVICE_NUM_DEVICES) {
+        hal.scheduler->panic("Bad device type");
+    }
+    for (i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
+        if (_device[i]._bus != bus) {
             // not the same bus
             continue;
         }
