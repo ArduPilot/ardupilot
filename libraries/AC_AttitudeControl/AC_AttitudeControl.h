@@ -60,7 +60,8 @@ public:
         _pid_rate_pitch(pid_rate_pitch),
         _pid_rate_yaw(pid_rate_yaw),
         _dt(AC_ATTITUDE_100HZ_DT),
-        _angle_boost(0)
+        _angle_boost(0),
+        _acro_angle_switch(0)
 		{
 			AP_Param::setup_object_defaults(this, var_info);
 
