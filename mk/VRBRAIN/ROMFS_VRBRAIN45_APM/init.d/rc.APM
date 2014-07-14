@@ -66,43 +66,48 @@ else
 fi
 
 echo "[APM] Starting APM sensors"
-if ms5611 start
+
+echo "[APM] Starting MS5611 Internal"
+if ms5611 -I start
 then
-    echo "[APM] MS5611 started OK"
+    echo "[APM] MS5611 onboard started OK"
 else
-    echo "[APM] MS5611 start failed"
+    echo "[APM] MS5611 onboard start failed"
     sh /etc/init.d/rc.error
 fi
 
-if hmc5883i start
+echo "[APM] Starting HMC5883 Internal"
+if hmc5883 -I start
 then
     echo "[APM] HMC5883 onboard started OK"
-#    if hmc5883 calibrate
-#    then
-#      echo "[APM] HMC5883 onboard calibrate OK"
-#    else 
-#      echo "[APM] HMC5883 onboard calibrate failed"
-#    fi
+    if hmc5883 calibrate
+    then
+      echo "[APM] HMC5883 onboard calibrate OK"
+    else 
+      echo "[APM] HMC5883 onboard calibrate failed"
+    fi
 else
     echo "[APM] HMC5883 onboard start failed"
-    sh /etc/init.d/rc.error
-fi
-
-if hmc5883e start
-then
-    echo "[APM] HMC5883 external started OK"
-#    if hmc5883 calibrate
-#    then
-#      echo "[APM] HMC5883 external calibrate OK"
-#    else 
-#      echo "[APM] HMC5883 external calibrate failed"
-#    fi
-else
-    echo "[APM] HMC5883 external start failed"
 #    sh /etc/init.d/rc.error
 fi
 
-if mpu6000i start
+echo "[APM] Starting HMC5883 External GPS"
+if hmc5883 -X start
+then
+    echo "[APM] HMC5883 External GPS started OK"
+    if hmc5883 -X calibrate
+    then
+      echo "[APM] HMC5883 External GPS calibrate OK"
+    else 
+      echo "[APM] HMC5883 External GPS calibrate failed"
+    fi
+else
+    echo "[APM] HMC5883 External GPS start failed"
+#    sh /etc/init.d/rc.error
+fi
+
+echo "[APM] Starting MPU6000 Internal"
+if mpu6000 -I start
 then
     echo "[APM] MPU6000 onboard started OK"
 else
@@ -110,7 +115,8 @@ else
     sh /etc/init.d/rc.error
 fi
 
-if mpu6000e start
+echo "[APM] Starting MPU6000 External"
+if mpu6000 -X start
 then
     echo "[APM] MPU6000 external started OK"
 else
