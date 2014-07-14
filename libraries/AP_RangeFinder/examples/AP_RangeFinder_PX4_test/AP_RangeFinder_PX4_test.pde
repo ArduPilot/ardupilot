@@ -14,6 +14,7 @@
 #include <AP_HAL_PX4.h>
 #include <GCS_MAVLink.h>
 #include <AP_HAL_Empty.h>
+#include <AP_HAL_AVR.h>
 #include <DataFlash.h>
 #include <AP_GPS.h>
 #include <AP_InertialSensor.h>
