@@ -146,13 +146,13 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
     pitch_out = pitch_pd + pitch_i + pitch_ff;
 
     // constrain output and update limit flags
-    if (fabs(roll_out) > AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX) {
+    if ((float)fabs(roll_out) > AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX) {
         roll_out = constrain_float(roll_out,-AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX,AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX);
         _flags_heli.limit_roll = true;
     }else{
         _flags_heli.limit_roll = false;
     }
-    if (fabs(pitch_out) > AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX) {
+    if ((float)fabs(pitch_out) > AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX) {
         pitch_out = constrain_float(pitch_out,-AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX,AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX);
         _flags_heli.limit_pitch = true;
     }else{
@@ -277,7 +277,7 @@ float AC_AttitudeControl_Heli::rate_bf_to_motor_yaw(float rate_target_cds)
     yaw_out = pd + i + ff;
 
     // constrain output and update limit flag
-    if (fabs(yaw_out) > AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX) {
+    if ((float)fabs(yaw_out) > AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX) {
         yaw_out = constrain_float(yaw_out,-AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX,AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX);
         _flags_heli.limit_yaw = true;
     }else{
