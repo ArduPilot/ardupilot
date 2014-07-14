@@ -68,6 +68,9 @@ public:
 			_flags.limit_angle_to_rate_request = true;
 		}
 
+	// empty destructor to suppress compiler warning
+	virtual ~AC_AttitudeControl() {}
+
     //
     // initialisation functions
     //
