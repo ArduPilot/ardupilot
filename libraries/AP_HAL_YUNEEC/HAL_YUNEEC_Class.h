@@ -29,7 +29,7 @@ public:
     void init(int argc, char * const * argv) const;
 };
 
-extern const HAL_FLYMAPLE AP_HAL_FLYMAPLE;
+extern const HAL_FLYMAPLE AP_HAL_YUNEEC;
 
 #endif // __AP_HAL_FLYMAPLE_CLASS_H__
 
