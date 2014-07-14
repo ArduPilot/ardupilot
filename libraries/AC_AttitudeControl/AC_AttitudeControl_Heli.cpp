@@ -3,8 +3,6 @@
 #include "AC_AttitudeControl_Heli.h"
 #include <AP_HAL.h>
 
-extern const AP_HAL::HAL& hal;
-
 // table of user settable parameters
 const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] PROGMEM = {
 
