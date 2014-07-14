@@ -101,6 +101,7 @@ private:
     NavEKF EKF;
     bool ekf_started;
     Matrix3f _dcm_matrix;
+    Matrix3f _body_dcm_matrix;
     Vector3f _dcm_attitude;
     Vector3f _gyro_bias;
     Vector3f _gyro_estimate;
