@@ -39,7 +39,7 @@ const Matrix3f &AP_AHRS_NavEKF::get_dcm_matrix(void) const
     if (!using_EKF()) {
         return AP_AHRS_DCM::get_dcm_matrix();
     }
-    return _dcm_matrix;
+    return _body_dcm_matrix;
 }
 
 const Vector3f &AP_AHRS_NavEKF::get_gyro_drift(void) const
@@ -73,11 +73,10 @@ void AP_AHRS_NavEKF::update(void)
         EKF.UpdateFilter();
         EKF.getRotationBodyToNED(_dcm_matrix);
         if (using_EKF()) {
-            Vector3f eulers;
-            EKF.getEulerAngles(eulers);
-            roll  = eulers.x;
-            pitch = eulers.y;
-            yaw   = eulers.z;
+            _body_dcm_matrix = _dcm_matrix;
+            _body_dcm_matrix.rotateXYinv(_trim);
+            _body_dcm_matrix.to_euler(&roll, &pitch, &yaw);
+
             roll_sensor  = degrees(roll) * 100;
             pitch_sensor = degrees(pitch) * 100;
             yaw_sensor   = degrees(yaw) * 100;
