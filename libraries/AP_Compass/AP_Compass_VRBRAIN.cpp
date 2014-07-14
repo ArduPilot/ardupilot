@@ -57,8 +57,10 @@ bool AP_Compass_VRBRAIN::init(void)
     }
 
     for (uint8_t i=0; i<_num_instances; i++) {
+#ifdef DEVIOCGDEVICEID
         // get device id
         _dev_id[i] = ioctl(_mag_fd[i], DEVIOCGDEVICEID, 0);
+#endif
 
         // average over up to 20 samples
         if (ioctl(_mag_fd[i], SENSORIOCSQUEUEDEPTH, 20) != 0) {
