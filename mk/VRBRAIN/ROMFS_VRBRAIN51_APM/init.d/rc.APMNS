@@ -39,43 +39,81 @@ else
 fi
 
 echo "[APMNS] Starting APM sensors"
-if ms5611 start
+
+echo "[APMNS] Starting MS5611 Internal"
+if ms5611 -I start
 then
-    echo "[APMNS] MS5611 started OK"
+    echo "[APMNS] MS5611 onboard started OK"
 else
-    echo "[APMNS] MS5611 start failed"
+    echo "[APMNS] MS5611 onboard start failed"
     sh /etc/init.d/rc.error
 fi
 
-if hmc5883i start
+echo "[APMNS] Starting MS5611 External EXP"
+if ms5611 -X start
 then
-    echo "[APMNS] HMC5883 onboard started OK"
-#    if hmc5883 calibrate
-#    then
-#      echo "[APMNS] HMC5883 onboard calibrate OK"
-#    else 
-#      echo "[APMNS] HMC5883 onboard calibrate failed"
-#    fi
+    echo "[APMNS] MS5611 external EXP started OK"
 else
-    echo "[APMNS] HMC5883 onboard start failed"
-    sh /etc/init.d/rc.error
-fi
-
-if hmc5883e start
-then
-    echo "[APMNS] HMC5883 external started OK"
-#    if hmc5883 calibrate
-#    then
-#      echo "[APMNS] HMC5883 external calibrate OK"
-#    else 
-#      echo "[APMNS] HMC5883 external calibrate failed"
-#    fi
-else
-    echo "[APMNS] HMC5883 external start failed"
+    echo "[APMNS] MS5611 external EXP start failed"
 #    sh /etc/init.d/rc.error
 fi
 
-if mpu6000i start
+echo "[APMNS] Starting MS5611 External IMU"
+if ms5611 -U start
+then
+    echo "[APMNS] MS5611 external IMU started OK"
+else
+    echo "[APMNS] MS5611 external IMU start failed"
+#    sh /etc/init.d/rc.error
+fi
+
+echo "[APMNS] Starting HMC5883 External GPS"
+if hmc5883 -X start
+then
+    echo "[APMNS] HMC5883 External GPS started OK"
+    if hmc5883 -X calibrate
+    then
+      echo "[APMNS] HMC5883 External GPS calibrate OK"
+    else 
+      echo "[APMNS] HMC5883 External GPS calibrate failed"
+    fi
+else
+    echo "[APMNS] HMC5883 External GPS start failed"
+#    sh /etc/init.d/rc.error
+fi
+
+echo "[APMNS] Starting HMC5983 External EXP"
+if hmc5983 -X start
+then
+    echo "[APMNS] HMC5983 external EXP started OK"
+    if hmc5983 -X calibrate
+    then
+      echo "[APMNS] HMC5983 external EXP calibrate OK"
+    else 
+      echo "[APMNS] HMC5983 external EXP calibrate failed"
+    fi
+else
+    echo "[APMNS] HMC5983 external EXP start failed"
+#    sh /etc/init.d/rc.error
+fi
+
+echo "[APMNS] Starting HMC5983 External IMU"
+if hmc5983 -U start
+then
+    echo "[APMNS] HMC5983 external IMU started OK"
+    if hmc5983 -U calibrate
+    then
+      echo "[APMNS] HMC5983 external IMU calibrate OK"
+    else 
+      echo "[APMNS] HMC5983 external IMU calibrate failed"
+    fi
+else
+    echo "[APMNS] HMC5983 external IMU start failed"
+#    sh /etc/init.d/rc.error
+fi
+
+echo "[APMNS] Starting MPU6000 Internal"
+if mpu6000 -I start
 then
     echo "[APMNS] MPU6000 onboard started OK"
 else
@@ -83,11 +121,21 @@ else
     sh /etc/init.d/rc.error
 fi
 
-if mpu6000e start
+echo "[APMNS] Starting MPU6000 External EXP"
+if mpu6000 -X start
 then
-    echo "[APMNS] MPU6000 external started OK"
+    echo "[APMNS] MPU6000 external EXP started OK"
 else
-    echo "[APMNS] MPU6000 external start failed"
+    echo "[APMNS] MPU6000 external EXP start failed"
+#    sh /etc/init.d/rc.error
+fi
+
+echo "[APMNS] Starting MPU6000 External IMU"
+if mpu6000 -U start
+then
+    echo "[APMNS] MPU6000 external IMU started OK"
+else
+    echo "[APMNS] MPU6000 external IMU start failed"
 #    sh /etc/init.d/rc.error
 fi
 

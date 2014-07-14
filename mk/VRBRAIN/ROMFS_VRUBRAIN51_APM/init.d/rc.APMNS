@@ -39,57 +39,39 @@ else
 fi
 
 echo "[APMNS] Starting APM sensors"
-if ms5611 start
+
+echo "[APMNS] Starting MS5611 Internal"
+if ms5611 -I start
 then
-    echo "[APMNS] MS5611 started OK"
+    echo "[APMNS] MS5611 onboard started OK"
 else
-    echo "[APMNS] MS5611 start failed"
+    echo "[APMNS] MS5611 onboard start failed"
     sh /etc/init.d/rc.error
 fi
 
-#if hmc5883i start
-#then
-#    echo "[APMNS] HMC5883 onboard started OK"
-#    if hmc5883 calibrate
-#    then
-#      echo "[APMNS] HMC5883 onboard calibrate OK"
-#    else 
-#      echo "[APMNS] HMC5883 onboard calibrate failed"
-#    fi
-#else
-#    echo "[APMNS] HMC5883 onboard start failed"
-#    sh /etc/init.d/rc.error
-#fi
-
-if hmc5883e start
+echo "[APMNS] Starting HMC5883 External GPS"
+if hmc5883 -X start
 then
-    echo "[APMNS] HMC5883 external started OK"
-#    if hmc5883 calibrate
-#    then
-#      echo "[APMNS] HMC5883 external calibrate OK"
-#    else 
-#      echo "[APMNS] HMC5883 external calibrate failed"
-#    fi
+    echo "[APMNS] HMC5883 External GPS started OK"
+    if hmc5883 -X calibrate
+    then
+      echo "[APMNS] HMC5883 External GPS calibrate OK"
+    else 
+      echo "[APMNS] HMC5883 External GPS calibrate failed"
+    fi
 else
-    echo "[APMNS] HMC5883 external start failed"
+    echo "[APMNS] HMC5883 External GPS start failed"
 #    sh /etc/init.d/rc.error
 fi
 
-if mpu6000i start
+echo "[APMNS] Starting MPU6000 Internal"
+if mpu6000 -I start
 then
     echo "[APMNS] MPU6000 onboard started OK"
 else
     echo "[APMNS] MPU6000 onboard start failed"
     sh /etc/init.d/rc.error
 fi
-
-#if mpu6000e start
-#then
-#    echo "[APMNS] MPU6000 external started OK"
-#else
-#    echo "[APMNS] MPU6000 external start failed"
-#    sh /etc/init.d/rc.error
-#fi
 
 echo "[APMNS] Starting MTD driver"
 if mtd start /fs/mtd
