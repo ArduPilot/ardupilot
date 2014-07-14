@@ -168,7 +168,7 @@ ifneq ($(findstring flymaple, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_FLYMAPLE
 endif
 
-ifneq ($(findstring flymaple, $(MAKECMDGOALS)),)
+ifneq ($(findstring yuneec, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_YUNEEC
 endif
 
