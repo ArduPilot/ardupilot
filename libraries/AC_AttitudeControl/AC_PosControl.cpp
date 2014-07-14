@@ -91,9 +91,9 @@ void AC_PosControl::set_dt(float delta_sec)
 void AC_PosControl::set_speed_z(float speed_down, float speed_up)
 {
     // ensure speed_down is always negative
-    speed_down = -fabs(speed_down);
+    speed_down = (float)-fabs(speed_down);
 
-    if ((fabs(_speed_down_cms-speed_down) > 1.0f) || (fabs(_speed_up_cms-speed_up) > 1.0f)) {
+    if (((float)fabs(_speed_down_cms-speed_down) > 1.0f) || ((float)fabs(_speed_up_cms-speed_up) > 1.0f)) {
         _speed_down_cms = speed_down;
         _speed_up_cms = speed_up;
         _flags.recalc_leash_z = true;
@@ -103,7 +103,7 @@ void AC_PosControl::set_speed_z(float speed_down, float speed_up)
 /// set_accel_z - set vertical acceleration in cm/s/s
 void AC_PosControl::set_accel_z(float accel_cmss)
 {
-    if (fabs(_accel_z_cms-accel_cmss) > 1.0f) {
+    if ((float)fabs(_accel_z_cms-accel_cmss) > 1.0f) {
         _accel_z_cms = accel_cmss;
         _flags.recalc_leash_z = true;
     }
@@ -172,7 +172,7 @@ void AC_PosControl::get_stopping_point_z(Vector3f& stopping_point) const
     // calculate the velocity at which we switch from calculating the stopping point using a linear function to a sqrt function
     linear_velocity = _accel_z_cms/_p_alt_pos.kP();
 
-    if (fabs(curr_vel_z) < linear_velocity) {
+    if ((float)fabs(curr_vel_z) < linear_velocity) {
         // if our current velocity is below the cross-over point we use a linear function
         stopping_point.z = curr_pos_z + curr_vel_z/_p_alt_pos.kP();
     } else {
@@ -399,7 +399,7 @@ void AC_PosControl::accel_to_throttle(float accel_target_z)
 ///     calc_leash_length_xy should be called afterwards
 void AC_PosControl::set_accel_xy(float accel_cmss)
 {
-    if (fabs(_accel_cms-accel_cmss) > 1.0f) {
+    if ((float)fabs(_accel_cms-accel_cmss) > 1.0f) {
         _accel_cms = accel_cmss;
         _flags.recalc_leash_xy = true;
     }
@@ -409,7 +409,7 @@ void AC_PosControl::set_accel_xy(float accel_cmss)
 ///     calc_leash_length_xy should be called afterwards
 void AC_PosControl::set_speed_xy(float speed_cms)
 {
-    if (fabs(_speed_cms-speed_cms) > 1.0f) {
+    if ((float)fabs(_speed_cms-speed_cms) > 1.0f) {
         _speed_cms = speed_cms;
         _flags.recalc_leash_xy = true;
     }
