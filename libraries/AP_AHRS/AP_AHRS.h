@@ -46,8 +46,16 @@ class AP_AHRS
 public:
     // Constructor
     AP_AHRS(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps) :
+        roll(0.0f),
+        pitch(0.0f),
+        yaw(0.0f),
+        roll_sensor(0),
+        pitch_sensor(0),
+        yaw_sensor(0),
         _vehicle_class(AHRS_VEHICLE_UNKNOWN),
         _compass(NULL),
+        _airspeed(NULL),
+        _compass_last_update(0),
         _ins(ins),
         _baro(baro),
         _gps(gps),
