@@ -16,10 +16,10 @@
   Flymaple port by Mike McCauley
  */
 
-#ifndef __AP_HAL_FLYMAPLE_GPIO_H__
-#define __AP_HAL_FLYMAPLE_GPIO_H__
+#ifndef __AP_HAL_YUNEEC_GPIO_H__
+#define __AP_HAL_YUNEEC_GPIO_H__
 
-#include <AP_HAL_FLYMAPLE.h>
+#include <AP_HAL_YUNEEC.h>
 
 class AP_HAL_FLYMAPLE_NS::FLYMAPLEGPIO : public AP_HAL::GPIO {
 public:

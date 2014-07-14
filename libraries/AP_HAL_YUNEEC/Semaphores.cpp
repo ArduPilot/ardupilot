@@ -17,13 +17,13 @@
  */
 #include <AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
+#if CONFIG_HAL_BOARD == HAL_BOARD_YUNEEC
 
 #include "Semaphores.h"
 
 using namespace AP_HAL_FLYMAPLE_NS;
 
-#include <AP_HAL_FLYMAPLE.h>
+#include <AP_HAL_YUNEEC.h>
 #include "Semaphores.h"
 #include "Scheduler.h"
 #include "FlymapleWirish.h"

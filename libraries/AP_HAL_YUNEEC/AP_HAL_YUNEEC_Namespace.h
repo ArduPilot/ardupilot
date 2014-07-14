@@ -16,11 +16,11 @@
   Flymaple port by Mike McCauley
  */
 
-#ifndef __AP_HAL_FLYMAPLE_NAMESPACE_H__
-#define __AP_HAL_FLYMAPLE_NAMESPACE_H__
+#ifndef __AP_HAL_YUNEEC_NAMESPACE_H__
+#define __AP_HAL_YUNEEC_NAMESPACE_H__
 
-/* While not strictly required, names inside the FLYMAPLE namespace are prefixed
- * AP_HAL_FLYMAPLE_NS for clarity. (Some of our users aren't familiar with all of the
+/* While not strictly required, names inside the YUNEEC namespace are prefixed
+ * AP_HAL_YUNEEC_NS for clarity. (Some of our users aren't familiar with all of the
  * C++ namespace rules.)
  */
 
@@ -41,5 +41,5 @@ namespace AP_HAL_FLYMAPLE_NS {
     class FLYMAPLEUtil;
 }
 
-#endif // __AP_HAL_FLYMAPLE_NAMESPACE_H__
+#endif // __AP_HAL_YUNEEC_NAMESPACE_H__
 

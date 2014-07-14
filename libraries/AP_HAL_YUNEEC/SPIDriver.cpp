@@ -17,7 +17,7 @@
  */
 #include <AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
+#if CONFIG_HAL_BOARD == HAL_BOARD_YUNEEC
 
 // Flymaple SPI driver
 // Flymaple has no actual SPI devices, so this generic

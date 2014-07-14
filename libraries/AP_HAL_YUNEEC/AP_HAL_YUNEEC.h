@@ -16,8 +16,8 @@
   Flymaple port by Mike McCauley
  */
 
-#ifndef __AP_HAL_FLYMAPLE_H__
-#define __AP_HAL_FLYMAPLE_H__
+#ifndef __AP_HAL_YUNEEC_H__
+#define __AP_HAL_YUNEEC_H__
 
 /* Your layer exports should depend on AP_HAL.h ONLY. */
 #include <AP_HAL.h>
@@ -44,12 +44,12 @@
  * `void setup()` and `void loop()`, ala Arduino.
  */
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
+#if CONFIG_HAL_BOARD == HAL_BOARD_YUNEEC
 
-#include "HAL_FLYMAPLE_Class.h"
-#include "AP_HAL_FLYMAPLE_Main.h"
+#include "HAL_YUNEEC_Class.h"
+#include "AP_HAL_YUNEEC_Main.h"
 
 #endif // CONFIG_HAL_BOARD
 
-#endif //__AP_HAL_FLYMAPLE_H__
+#endif //__AP_HAL_YUNEEC_H__
 

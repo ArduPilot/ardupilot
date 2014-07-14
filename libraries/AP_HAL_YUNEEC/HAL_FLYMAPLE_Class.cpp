@@ -17,10 +17,10 @@
  */
 
 #include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
+#if CONFIG_HAL_BOARD == HAL_BOARD_YUNEEC
 
-#include "HAL_FLYMAPLE_Class.h"
-#include "AP_HAL_FLYMAPLE_Private.h"
+#include "HAL_YUNEEC_Class.h"
+#include "AP_HAL_YUNEEC_Private.h"
 
 using namespace AP_HAL_FLYMAPLE_NS;
 class HardwareSerial;

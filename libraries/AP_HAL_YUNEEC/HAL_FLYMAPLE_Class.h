@@ -16,12 +16,12 @@
   Flymaple port by Mike McCauley
  */
 
-#ifndef __AP_HAL_FLYMAPLE_CLASS_H__
-#define __AP_HAL_FLYMAPLE_CLASS_H__
+#ifndef __AP_HAL_YUNEEC_CLASS_H__
+#define __AP_HAL_YUNEEC_CLASS_H__
 
 #include <AP_HAL.h>
 
-#include "AP_HAL_FLYMAPLE_Namespace.h"
+#include "AP_HAL_YUNEEC_Namespace.h"
 
 class HAL_FLYMAPLE : public AP_HAL::HAL {
 public:

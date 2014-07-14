@@ -16,10 +16,10 @@
   Flymaple port by Mike McCauley
  */
 
-#ifndef __AP_HAL_FLYMAPLE_SPIDRIVER_H__
-#define __AP_HAL_FLYMAPLE_SPIDRIVER_H__
+#ifndef __AP_HAL_YUNEEC_SPIDRIVER_H__
+#define __AP_HAL_YUNEEC_SPIDRIVER_H__
 
-#include <AP_HAL_FLYMAPLE.h>
+#include <AP_HAL_YUNEEC.h>
 #include "Semaphores.h"
 
 class HardwareSPI; // in libmaple

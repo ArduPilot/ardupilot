@@ -16,10 +16,10 @@
   Flymaple port by Mike McCauley
  */
 
-#ifndef __AP_HAL_FLYMAPLE_RCINPUT_H__
-#define __AP_HAL_FLYMAPLE_RCINPUT_H__
+#ifndef __AP_HAL_YUNEEC_RCINPUT_H__
+#define __AP_HAL_YUNEEC_RCINPUT_H__
 
-#include <AP_HAL_FLYMAPLE.h>
+#include <AP_HAL_YUNEEC.h>
 
 #define FLYMAPLE_RC_INPUT_NUM_CHANNELS 8
 

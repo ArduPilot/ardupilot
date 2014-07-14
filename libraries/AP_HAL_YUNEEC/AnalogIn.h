@@ -16,10 +16,10 @@
   Flymaple port by Mike McCauley
  */
 
-#ifndef __AP_HAL_FLYMAPLE_ANALOGIN_H__
-#define __AP_HAL_FLYMAPLE_ANALOGIN_H__
+#ifndef __AP_HAL_YUNEEC_ANALOGIN_H__
+#define __AP_HAL_YUNEEC_ANALOGIN_H__
 
-#include <AP_HAL_FLYMAPLE.h>
+#include <AP_HAL_YUNEEC.h>
 
 #define FLYMAPLE_INPUT_MAX_CHANNELS 12
 

@@ -16,10 +16,10 @@
   Flymaple port by Mike McCauley
  */
 
-#ifndef __AP_HAL_FLYMAPLE_UARTDRIVER_H__
-#define __AP_HAL_FLYMAPLE_UARTDRIVER_H__
+#ifndef __AP_HAL_YUNEEC_UARTDRIVER_H__
+#define __AP_HAL_YUNEEC_UARTDRIVER_H__
 
-#include <AP_HAL_FLYMAPLE.h>
+#include <AP_HAL_YUNEEC.h>
 
 class HardwareSerial; // A libmaple classs
 
