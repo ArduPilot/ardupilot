@@ -4,7 +4,6 @@
  */
 
 // Libraries
-#include <sys/time.h>
 #include <AP_Common.h>
 #include <AP_Progmem.h>
 #include <AP_Param.h>
