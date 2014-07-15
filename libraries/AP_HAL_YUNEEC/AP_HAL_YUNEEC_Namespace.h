@@ -36,7 +36,7 @@ namespace AP_HAL_YUNEEC {
     class YUNEECDigitalSource;
     class YUNEECRCInput;
     class YUNEECRCOutput;
-    class FLYMAPLESemaphore;
+    class YUNEECSemaphore;
     class YUNEECScheduler;
     class YUNEECUtil;
 }
