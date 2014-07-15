@@ -95,6 +95,7 @@
 #include <AP_HAL_VRBRAIN.h>
 #include <AP_HAL_FLYMAPLE.h>
 #include <AP_HAL_Linux.h>
+#include <AP_HAL_YUNEEC.h>
 #include <AP_HAL_Empty.h>
 
 // Application dependencies
