@@ -612,7 +612,13 @@ class DataflashLog(object):
         while len(data) > offset:
             h = logheader.from_buffer(data, offset)
             if not (h.head1 == 0xa3 and h.head2 == 0x95):
-                raise ValueError(h)
+                if ignoreBadlines == False:
+                    raise ValueError(h)
+                else:
+                    if h.head1 == 0xff and h.head2 == 0xff and h.msgid == 0xff:
+                        print("Assuming EOF due to dataflash block tail filled with \\xff... (offset={off})".format(off=offset))
+                        break
+
             if h.msgid in self._formats:
                 typ = self._formats[h.msgid]
                 if len(data) <= offset + typ.SIZE:
