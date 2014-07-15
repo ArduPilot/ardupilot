@@ -54,7 +54,7 @@ public:
 
     void calculate_base_pos(void);
 
-    void invalidate_base_pos(void);
+    void reset_base_pos(void);
 
     AP_GPS::GPS_Status highest_supported_status(void) { return AP_GPS::GPS_OK_FIX_3D_RTK; }
 

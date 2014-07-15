@@ -83,6 +83,8 @@ AP_GPS_SBP::AP_GPS_SBP(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriv
     last_healthcheck_millis(0)
 {
 
+    reset_base_pos();
+
     parser_state.state = sbp_parser_state_t::WAITING;
 
     state.status = AP_GPS::NO_FIX;
@@ -138,10 +140,17 @@ AP_GPS_SBP::calculate_base_pos(void)
         base_pos_ecef[1],
         base_pos_ecef[2]);
 }
+
 void
-AP_GPS_SBP::invalidate_base_pos()
+AP_GPS_SBP::reset_base_pos()
 {
     has_rtk_base_pos = false;
+
+    if (gps.dgps_given_base()) {
+        Vector3d base_llh;
+        has_rtk_base_pos = gps.dgps_given_base_llh(base_llh);
+        wgsllh2ecef(base_llh, base_pos_ecef);
+    }
 }
 
 bool 
@@ -598,7 +607,7 @@ AP_GPS_SBP::sbp_process_iar_state(uint8_t* msg)
 void 
 AP_GPS_SBP::sbp_process_startup(uint8_t* msg)
 {
-    invalidate_base_pos();
+    reset_base_pos();
 }
 
 bool
