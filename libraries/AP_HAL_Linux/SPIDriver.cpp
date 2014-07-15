@@ -141,7 +141,7 @@ void LinuxSPIDeviceManager::cs_assert(enum AP_HAL::SPIDevice type)
             }
         }
     }
-    for (uint8_t i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
+    for (i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
         if (_device[i]._type == type) {
             _device[i]._cs->write(0);
         }
