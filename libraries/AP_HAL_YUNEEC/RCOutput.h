@@ -23,7 +23,7 @@
 
 #define YUNEEC_RC_OUTPUT_NUM_CHANNELS 6
 
-class AP_HAL_YUNEEC::YUNEECRCOutput : public AP_HAL::RCOutput {
+class YUNEEC::YUNEECRCOutput : public AP_HAL::RCOutput {
     void     init(void* machtnichts);
     void     set_freq(uint32_t chmask, uint16_t freq_hz);
     uint16_t get_freq(uint8_t ch);
