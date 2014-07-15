@@ -176,8 +176,15 @@ const float AP_InertialSensor_MPU6000::_gyro_scale = (0.0174532f / 16.4f);
 AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000() : 
 	AP_InertialSensor(),
     _drdy_pin(NULL),
+    _spi(NULL),
+    _spi_sem(NULL),
+    _num_samples(0),
+    _last_sample_time_micros(0),
     _initialised(false),
-    _mpu6000_product_id(AP_PRODUCT_ID_NONE)
+    _mpu6000_product_id(AP_PRODUCT_ID_NONE),
+    _sample_shift(0),
+    _last_filter_hz(0),
+    _error_count(0)
 {
 }
 
