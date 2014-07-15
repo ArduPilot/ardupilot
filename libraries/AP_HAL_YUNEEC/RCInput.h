@@ -25,7 +25,7 @@
 
 #define YUNEEC_RC_INPUT_MIN_CHANNELS 5     // for ppm sum we allow less than 8 channels to make up a valid packet
 
-class AYUNEEC::YUNEECRCInput : public AP_HAL::RCInput {
+class YUNEEC::YUNEECRCInput : public AP_HAL::RCInput {
 public:
     YUNEECRCInput();
     void init(void* machtnichts);
