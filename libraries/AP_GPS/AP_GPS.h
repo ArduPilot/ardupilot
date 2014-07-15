@@ -293,6 +293,22 @@ public:
     AP_Int8 _auto_switch;
     AP_Int8 _min_dgps;
 #endif
+
+#if GPS_RTK_AVAILABLE
+    AP_Int8 _dgps_use_given_base;
+    AP_Int32 _dgps_base_lat_wgs;
+    AP_Int32 _dgps_base_lon_wgs;
+    AP_Int32 _dgps_base_alt_wgs;
+
+    // Returns true if we have a stored base station position to use.
+    bool dgps_given_base();
+
+    // Returns true and sets the given vector
+    // to the stored base position.
+    // LLH in radians and meters according to the WGS84 ellipse.
+    bool dgps_given_base_llh(Vector3d&);
+
+#endif
     
     // handle sending of initialisation strings to the GPS
     void send_blob_start(uint8_t instance, const prog_char *_blob, uint16_t size);

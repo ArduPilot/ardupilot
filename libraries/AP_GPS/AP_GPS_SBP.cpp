@@ -38,7 +38,6 @@ extern const AP_HAL::HAL& hal;
 
 #define SBP_MILLIS_BETWEEN_TRACKING_LOG 1800U
 
-#define SBP_DEBUGGING 0
 #if SBP_DEBUGGING
  # define Debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
 #else
@@ -82,6 +81,8 @@ AP_GPS_SBP::AP_GPS_SBP(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriv
     crc_error_counter(0),
     last_healthcheck_millis(0)
 {
+
+    reset_base_pos();
 
     parser_state.state = sbp_parser_state_t::WAITING;
 
@@ -138,10 +139,17 @@ AP_GPS_SBP::calculate_base_pos(void)
         base_pos_ecef[1],
         base_pos_ecef[2]);
 }
+
 void
-AP_GPS_SBP::invalidate_base_pos()
+AP_GPS_SBP::reset_base_pos()
 {
     has_rtk_base_pos = false;
+
+    if (gps.dgps_given_base()) {
+        Vector3d base_llh;
+        has_rtk_base_pos = gps.dgps_given_base_llh(base_llh);
+        wgsllh2ecef(base_llh, base_pos_ecef);
+    }
 }
 
 bool 
@@ -598,7 +606,7 @@ AP_GPS_SBP::sbp_process_iar_state(uint8_t* msg)
 void 
 AP_GPS_SBP::sbp_process_startup(uint8_t* msg)
 {
-    invalidate_base_pos();
+    reset_base_pos();
 }
 
 bool
@@ -835,6 +843,8 @@ AP_GPS_SBP::logging_log_health(float pos_msg_hz, float vel_msg_hz, float baselin
     if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
       return;
     }
+
+    Debug("Logging health now.");
 
     logging_write_headers();
 
