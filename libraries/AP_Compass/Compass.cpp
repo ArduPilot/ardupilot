@@ -146,13 +146,16 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
 //
 Compass::Compass(void) :
     product_id(AP_COMPASS_TYPE_UNKNOWN),
-    _null_init_done(false)
+    last_update(0),
+    _null_init_done(false),
+    _thr_or_curr(0.0f),
+    _board_orientation(ROTATION_NONE)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
 #if COMPASS_MAX_INSTANCES > 1
     // default device ids to zero.  init() method will overwrite with the actual device ids
-    for (uint8_t i; i<COMPASS_MAX_INSTANCES; i++) {
+    for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
         _dev_id[i] = 0;
     }
 #endif
