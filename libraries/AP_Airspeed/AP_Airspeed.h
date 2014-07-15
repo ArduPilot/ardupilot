@@ -40,10 +40,16 @@ class AP_Airspeed
 {
 public:
     // constructor
-    AP_Airspeed(const AP_Vehicle::FixedWing &parms) : 
+    AP_Airspeed(const AP_Vehicle::FixedWing &parms) :
+        _raw_airspeed(0.0f),
+        _airspeed(0.0f),
+        _last_pressure(0.0f),
         _EAS2TAS(1.0f),
         _healthy(false),
+        _last_update_ms(0),
         _calibration(parms),
+        _last_saved_ratio(0.0f),
+        _counter(0),
         analog(_pin)
     {
 		AP_Param::setup_object_defaults(this, var_info);
