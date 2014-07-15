@@ -90,6 +90,9 @@ public:
         _home.lat        = 0;
     }
 
+    // empty virtual destructor
+    virtual ~AP_AHRS() {}
+
     // init sets up INS board orientation
     virtual void init() {
         set_orientation();
