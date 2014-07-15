@@ -204,7 +204,7 @@ public:
     /**
      * error_count - returns number of missed updates from GPS
      */
-    virtual uint8_t     error_count() const { return _error_count; }
+    uint8_t     error_count() const { return _error_count; }
 
     /**
      * ignore_next_error - the next error (if it occurs immediately) will not be added to the error count
