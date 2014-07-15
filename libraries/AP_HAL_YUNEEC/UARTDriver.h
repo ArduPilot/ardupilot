@@ -23,7 +23,7 @@
 
 class HardwareSerial; // A libmaple classs
 
-class AP_HAL_YUNEEC::YUNEECUARTDriver : public AP_HAL::UARTDriver {
+class YUNEEC::YUNEECUARTDriver : public AP_HAL::UARTDriver {
 public:
     YUNEECUARTDriver(HardwareSerial* hws);
 

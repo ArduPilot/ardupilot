@@ -38,7 +38,7 @@ extern "C"
 // nvic_irq_set_priority
 static HardwareTimer _failsafe_timer(2);
 
-using namespace AP_HAL_YUNEEC;
+using namespace YUNEEC;
 
 extern const AP_HAL::HAL& hal;
 

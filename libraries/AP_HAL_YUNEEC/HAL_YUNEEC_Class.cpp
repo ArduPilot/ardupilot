@@ -22,7 +22,7 @@
 #include "HAL_YUNEEC_Class.h"
 #include "AP_HAL_YUNEEC_Private.h"
 
-using namespace AP_HAL_YUNEEC;
+using namespace YUNEEC;
 class HardwareSerial;
 extern HardwareSerial Serial1; // Serial1 is labelled "COM1" on Flymaple pins 7 and 8
 extern HardwareSerial Serial2; // Serial2 is Flymaple pins 0 and 1
@@ -50,15 +50,15 @@ HAL_YUNEEC::HAL_YUNEEC() :
         NULL,            /* no uartD */
         NULL,            /* no uartE */
         &i2cDriver,
-	&spiDeviceManager,
-	&analogIn,
-	&storageDriver,
+        &spiDeviceManager,
+        &analogIn,
+        &storageDriver,
         &uartADriver,
-	&gpioDriver,
-	&rcinDriver,
-	&rcoutDriver,
+        &gpioDriver,
+        &rcinDriver,
+		&rcoutDriver,
         &schedulerInstance,
-	&utilInstance
+        &utilInstance
 	)
 {}
 

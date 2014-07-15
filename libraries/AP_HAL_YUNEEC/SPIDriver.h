@@ -24,7 +24,7 @@
 
 class HardwareSPI; // in libmaple
 
-class AP_HAL_YUNEEC::YUNEECSPIDeviceDriver : public AP_HAL::SPIDeviceDriver {
+class YUNEEC::YUNEECSPIDeviceDriver : public AP_HAL::SPIDeviceDriver {
 public:
     YUNEECSPIDeviceDriver();
     void init();
@@ -39,7 +39,7 @@ private:
     YUNEECSemaphore _semaphore;
 };
 
-class AP_HAL_YUNEEC::YUNEECSPIDeviceManager : public AP_HAL::SPIDeviceManager {
+class YUNEEC::YUNEECSPIDeviceManager : public AP_HAL::SPIDeviceManager {
 public:
     YUNEECSPIDeviceManager();
     void init(void *);

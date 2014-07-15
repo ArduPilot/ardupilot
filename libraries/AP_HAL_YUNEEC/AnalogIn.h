@@ -28,9 +28,9 @@
 // this pin to the board 3.3V VCC
 #define YUNEEC_VCC_ANALOG_IN_PIN 15
 
-class AP_HAL_YUNEEC::YUNEECAnalogSource : public AP_HAL::AnalogSource {
+class YUNEEC::YUNEECAnalogSource : public AP_HAL::AnalogSource {
 public:
-    friend class AP_HAL_YUNEEC::YUNEECAnalogIn;
+    friend class YUNEEC::YUNEECAnalogIn;
 
     YUNEECAnalogSource(uint8_t pin);
     float read_average();
@@ -79,7 +79,7 @@ private:
     uint32_t _read_start_time_ms;
 };
 
-class AP_HAL_YUNEEC::YUNEECAnalogIn : public AP_HAL::AnalogIn {
+class YUNEEC::YUNEECAnalogIn : public AP_HAL::AnalogIn {
 public:
     YUNEECAnalogIn();
     void init(void* implspecific);

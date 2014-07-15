@@ -24,7 +24,7 @@
  * C++ namespace rules.)
  */
 
-namespace AP_HAL_YUNEEC {
+namespace YUNEEC {
     class YUNEECUARTDriver;
     class YUNEECI2CDriver;
     class YUNEECSPIDeviceManager;

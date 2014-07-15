@@ -22,7 +22,7 @@
 #include "GPIO.h"
 #include "FlymapleWirish.h"
 
-using namespace AP_HAL_YUNEEC;
+using namespace YUNEEC;
 
 // Glue into libmaple
 void libmaple_pinMode(uint8_t pin, uint8_t output)

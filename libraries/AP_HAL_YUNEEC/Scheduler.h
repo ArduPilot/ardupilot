@@ -23,7 +23,7 @@
 
 #define YUNEEC_SCHEDULER_MAX_TIMER_PROCS 4
 
-class AP_HAL_YUNEEC::YUNEECScheduler : public AP_HAL::Scheduler {
+class YUNEEC::YUNEECScheduler : public AP_HAL::Scheduler {
 public:
     YUNEECScheduler();
     void     init(void* machtnichts);

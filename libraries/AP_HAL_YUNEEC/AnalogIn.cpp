@@ -24,7 +24,8 @@
 #include "FlymapleWirish.h"
 #include <AP_HAL.h>
 #include "AnalogIn.h"
-using namespace AP_HAL_YUNEEC;
+
+using namespace YUNEEC;
 
 extern const AP_HAL::HAL& hal;
 

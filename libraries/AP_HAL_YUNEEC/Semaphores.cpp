@@ -21,7 +21,7 @@
 
 #include "Semaphores.h"
 
-using namespace AP_HAL_YUNEEC;
+using namespace YUNEEC;
 
 #include <AP_HAL_YUNEEC.h>
 #include "Semaphores.h"

@@ -21,7 +21,7 @@
 
 #include <AP_HAL_YUNEEC.h>
 
-class AP_HAL_YUNEEC::YUNEECStorage : public AP_HAL::Storage {
+class YUNEEC::YUNEECStorage : public AP_HAL::Storage {
 public:
     YUNEECStorage();
     void init(void *);

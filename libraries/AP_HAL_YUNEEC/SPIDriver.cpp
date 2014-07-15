@@ -25,7 +25,7 @@
 #include "SPIDriver.h"
 #include "FlymapleWirish.h"
 
-using namespace AP_HAL_YUNEEC;
+using namespace YUNEEC;
 
 #define YUNEEC_SPI_CS_PIN 8
 // Only one port so far:

@@ -22,7 +22,7 @@
 #include <AP_HAL.h>
 #include "AP_HAL_YUNEEC_Namespace.h"
 
-class AP_HAL_YUNEEC::YUNEECUtil : public AP_HAL::Util {
+class YUNEEC::YUNEECUtil : public AP_HAL::Util {
 public:
     bool run_debug_shell(AP_HAL::BetterStream *stream) { return false; }
 };

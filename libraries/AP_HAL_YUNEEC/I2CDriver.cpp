@@ -26,7 +26,7 @@
 #include "I2CDriver.h"
 #include "FlymapleWirish.h"
 
-using namespace AP_HAL_YUNEEC;
+using namespace YUNEEC;
 
 extern const AP_HAL::HAL& hal;
 

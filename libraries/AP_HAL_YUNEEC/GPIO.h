@@ -21,7 +21,7 @@
 
 #include <AP_HAL_YUNEEC.h>
 
-class AP_HAL_YUNEEC::YUNEECGPIO : public AP_HAL::GPIO {
+class YUNEEC::YUNEECGPIO : public AP_HAL::GPIO {
 public:
     YUNEECGPIO();
     void    init();
@@ -43,7 +43,7 @@ public:
 
 };
 
-class AP_HAL_YUNEEC::YUNEECDigitalSource : public AP_HAL::DigitalSource {
+class YUNEEC::YUNEECDigitalSource : public AP_HAL::DigitalSource {
 public:
     YUNEECDigitalSource(uint8_t v);
     void    mode(uint8_t output);

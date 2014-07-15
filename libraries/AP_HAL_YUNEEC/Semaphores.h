@@ -21,7 +21,7 @@
 
 #include <AP_HAL_YUNEEC.h>
 
-class AP_HAL_YUNEEC::YUNEECSemaphore : public AP_HAL::Semaphore {
+class YUNEEC::YUNEECSemaphore : public AP_HAL::Semaphore {
 public:
     YUNEECSemaphore();
     bool give();

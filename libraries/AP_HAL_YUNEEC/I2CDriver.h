@@ -23,7 +23,7 @@
 
 #include <i2c.h>
 
-class AP_HAL_YUNEEC::YUNEECI2CDriver : public AP_HAL::I2CDriver {
+class YUNEEC::YUNEECI2CDriver : public AP_HAL::I2CDriver {
 public:
     YUNEECI2CDriver(AP_HAL::Semaphore* semaphore);
     void begin();
