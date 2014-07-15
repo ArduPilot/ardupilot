@@ -28,6 +28,11 @@
 class AP_Airspeed_I2C : public AP_Airspeed_Backend 
 {
 public:
+    // Constructor
+    AP_Airspeed_I2C(const AP_Int8 &sensor_type) :
+        _sensor_type(sensor_type)
+    {};
+
     // probe and initialise the sensor
     bool init(void);
 
@@ -37,12 +42,15 @@ public:
     // return the current temperature in degrees C, if available
     bool get_temperature(float &temperature);
 
+    static const struct AP_Param::GroupInfo var_info[];
+
 private:
     void _measure(void);
     void _collect(void);
     void _timer(void);
     float _temperature;
     float _pressure;
+    const AP_Int8 &_sensor_type;
     uint32_t _last_sample_time_ms;
     uint32_t _measurement_started_ms;
 };

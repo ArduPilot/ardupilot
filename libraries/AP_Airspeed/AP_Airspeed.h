@@ -44,7 +44,8 @@ public:
         _EAS2TAS(1.0f),
         _healthy(false),
         _calibration(parms),
-        analog(_pin)
+        analog(_pin),
+        digital(_sensor_type)
     {
 		AP_Param::setup_object_defaults(this, var_info);
     };
@@ -150,6 +151,7 @@ private:
     AP_Int8         _pin;
     AP_Int8         _autocal;
     AP_Int8         _tube_order;
+    AP_Int8         _sensor_type;
     float           _raw_airspeed;
     float           _airspeed;
     float			_last_pressure;

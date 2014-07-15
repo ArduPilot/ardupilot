@@ -28,7 +28,13 @@
 class AP_Airspeed_PX4 : public AP_Airspeed_Backend {
 public:
     // constructor
-    AP_Airspeed_PX4() : _fd(-1) {}
+    AP_Airspeed_PX4(const AP_Int8 &sensor_type) : 
+        _fd(-1),
+    // _sensor_type is not used at the moment. Implementing it requires a 
+    // modification to the PX4 firmware rather than APM since all the
+    // scaling is done by the PX4 firmware.
+        _sensor_type(sensor_type) 
+    {}
 
     // probe and initialise the sensor
     bool init(void);
@@ -41,6 +47,7 @@ public:
 
 private:
     int _fd;
+    AP_Int8 _sensor_type;
     uint64_t _last_timestamp;
     float _temperature;
 };
