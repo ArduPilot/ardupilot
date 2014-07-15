@@ -35,6 +35,9 @@ class AP_InertialSensor
 public:
     AP_InertialSensor();
 
+    // empty virtual destructor
+    virtual ~AP_InertialSensor() {}
+
     enum Start_style {
         COLD_START = 0,
         WARM_START
