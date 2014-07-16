@@ -863,9 +863,9 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/AP_Relay/AP_Relay.cpp
     GOBJECT(relay,                  "RELAY_", AP_Relay),
 
-    // @Group: SONAR
+    // @Group: RNGFND
     // @Path: ../libraries/AP_RangeFinder/RangeFinder.cpp
-    GOBJECT(sonar,                  "SONAR", RangeFinder),
+    GOBJECT(sonar,                  "RNGFND", RangeFinder),
 
     // RC channel
     //-----------
