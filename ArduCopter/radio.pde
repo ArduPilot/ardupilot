@@ -95,7 +95,6 @@ void output_min()
     motors.output_min();
 }
 
-#define FAILSAFE_RADIO_TIMEOUT_MS 2000       // 2 seconds
 static void read_radio()
 {
     static uint32_t last_update = 0;
@@ -125,8 +124,8 @@ static void read_radio()
     }else{
         uint32_t elapsed = millis() - last_update;
         // turn on throttle failsafe if no update from ppm encoder for 2 seconds
-        if ((elapsed >= FAILSAFE_RADIO_TIMEOUT_MS)
-                && g.failsafe_throttle && motors.armed() && !failsafe.radio) {
+        if ((ap.rc_receiver_present && (elapsed >= FAILSAFE_RADIO_TIMEOUT_MS)) || (!ap.rc_receiver_present && (elapsed >= FS_GCS_TIMEOUT_MS))
+            && g.failsafe_throttle && motors.armed() && !failsafe.radio) {
             Log_Write_Error(ERROR_SUBSYSTEM_RADIO, ERROR_CODE_RADIO_LATE_FRAME);
             set_failsafe_radio(true);
         }
