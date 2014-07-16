@@ -55,33 +55,33 @@ const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
 
     // @Param: _MIN_CM
     // @DisplayName: Rangefinder minimum distance
-    // @Description: minimum distance in centimeters that rangefinder can reliably read
+    // @Description: Minimum distance in centimeters that rangefinder can reliably read
 	// @Units: centimeters
     // @Increment: 1
     AP_GROUPINFO("_MIN_CM",  5, RangeFinder, _min_distance_cm[0], 20),
 
     // @Param: _MAX_CM
     // @DisplayName: Rangefinder maximum distance
-    // @Description: maximum distance in centimeters that rangefinder can reliably read
+    // @Description: Maximum distance in centimeters that rangefinder can reliably read
 	// @Units: centimeters
     // @Increment: 1
     AP_GROUPINFO("_MAX_CM",  6, RangeFinder, _max_distance_cm[0], 700),
 
     // @Param: _STOP_PIN
     // @DisplayName: Rangefinder stop pin
-    // @Description: Digital pin that enables/disables rangefinder measurement for an analog sonar. A value of -1 means no pin. If this is set, then the pin is set to 1 to enable the sonar and set to 0 to disable it. This can be used to ensure that multiple sonars don't interfere with each other.
+    // @Description: Digital pin that enables/disables rangefinder measurement for an analog rangefinder. A value of -1 means no pin. If this is set, then the pin is set to 1 to enable the rangefinder and set to 0 to disable it. This can be used to ensure that multiple sonar rangefinders don't interfere with each other.
     AP_GROUPINFO("_STOP_PIN", 7, RangeFinder, _stop_pin[0], -1),
 
     // @Param: _SETTLE_MS
-    // @DisplayName: Sonar settle time
-    // @Description: The time in milliseconds that the sonar reading takes to settle. This is only used when a STOP_PIN is specified. It determines how long we have to wait for the sonar to give a reading after we set the STOP_PIN high. For a sonar with a range of around 7m this would need to be around 50 milliseconds to allow for the sonar pulse to travel to the target and back again.
+    // @DisplayName: Rangefinder settle time
+    // @Description: The time in milliseconds that the rangefinder reading takes to settle. This is only used when a STOP_PIN is specified. It determines how long we have to wait for the rangefinder to give a reading after we set the STOP_PIN high. For a sonar rangefinder with a range of around 7m this would need to be around 50 milliseconds to allow for the sonar pulse to travel to the target and back again.
     // @Units: milliseconds
     // @Increment: 1
     AP_GROUPINFO("_SETTLE_MS", 8, RangeFinder, _settle_time_ms[0], 0),
 
     // @Param: _RMETRIC
     // @DisplayName: Ratiometric
-    // @Description: This parameter sets whether an analog rangefinder is ratiometric. Most analog sonars are ratiometric, meaning that their output voltage is influenced by the supply voltage. Some analog rangefinders (such as the SF/02) have their own internal voltage regulators so they are not ratiometric
+    // @Description: This parameter sets whether an analog rangefinder is ratiometric. Most analog rangefinders are ratiometric, meaning that their output voltage is influenced by the supply voltage. Some analog rangefinders (such as the SF/02) have their own internal voltage regulators so they are not ratiometric.
     // @Values: 0:No,1:Yes
     AP_GROUPINFO("_RMETRIC", 9, RangeFinder, _ratiometric[0], 1),
 
@@ -121,33 +121,33 @@ const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
 
     // @Param: 2_MIN_CM
     // @DisplayName: Rangefinder minimum distance
-    // @Description: minimum distance in centimeters that rangefinder can reliably read
+    // @Description: Minimum distance in centimeters that rangefinder can reliably read
 	// @Units: centimeters
     // @Increment: 1
     AP_GROUPINFO("2_MIN_CM",  17, RangeFinder, _min_distance_cm[1], 20),
 
     // @Param: 2_MAX_CM
     // @DisplayName: Rangefinder maximum distance
-    // @Description: maximum distance in centimeters that rangefinder can reliably read
+    // @Description: Maximum distance in centimeters that rangefinder can reliably read
 	// @Units: centimeters
     // @Increment: 1
     AP_GROUPINFO("2_MAX_CM",  18, RangeFinder, _max_distance_cm[1], 700),
 
     // @Param: 2_STOP_PIN
     // @DisplayName: Rangefinder stop pin
-    // @Description: Digital pin that enables/disables rangefinder measurement for an analog sonar. A value of -1 means no pin. If this is set, then the pin is set to 1 to enable the sonar and set to 0 to disable it. This can be used to ensure that multiple sonars don't interfere with each other.
+    // @Description: Digital pin that enables/disables rangefinder measurement for an analog rangefinder. A value of -1 means no pin. If this is set, then the pin is set to 1 to enable the rangefinder and set to 0 to disable it. This can be used to ensure that multiple sonar rangefinders don't interfere with each other.
     AP_GROUPINFO("2_STOP_PIN", 19, RangeFinder, _stop_pin[1], -1),
 
     // @Param: 2_SETTLE_MS
     // @DisplayName: Sonar settle time
-    // @Description: The time in milliseconds that the sonar reading takes to settle. This is only used when a STOP_PIN is specified. It determines how long we have to wait for the sonar to give a reading after we set the STOP_PIN high. For a sonar with a range of around 7m this would need to be around 50 milliseconds to allow for the sonar pulse to travel to the target and back again.
+    // @Description: The time in milliseconds that the rangefinder reading takes to settle. This is only used when a STOP_PIN is specified. It determines how long we have to wait for the rangefinder to give a reading after we set the STOP_PIN high. For a sonar rangefinder with a range of around 7m this would need to be around 50 milliseconds to allow for the sonar pulse to travel to the target and back again.
     // @Units: milliseconds
     // @Increment: 1
     AP_GROUPINFO("2_SETTLE_MS", 20, RangeFinder, _settle_time_ms[1], 0),
 
     // @Param: 2_RMETRIC
     // @DisplayName: Ratiometric
-    // @Description: This parameter sets whether an analog rangefinder is ratiometric. Most analog sonars are ratiometric, meaning that their output voltage is influenced by the supply voltage. Some analog rangefinders (such as the SF/02) have their own internal voltage regulators so they are not ratiometric
+    // @Description: This parameter sets whether an analog rangefinder is ratiometric. Most analog rangefinders are ratiometric, meaning that their output voltage is influenced by the supply voltage. Some analog rangefinders (such as the SF/02) have their own internal voltage regulators so they are not ratiometric.
     // @Values: 0:No,1:Yes
     AP_GROUPINFO("2_RMETRIC", 21, RangeFinder, _ratiometric[1], 1),
 #endif
