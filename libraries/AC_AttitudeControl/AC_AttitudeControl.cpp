@@ -177,9 +177,8 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw_smooth(float roll_angle
         frame_conversion_ef_to_bf(_rate_ef_desired, _rate_bf_desired);
         _rate_bf_target += _rate_bf_desired;
     } else {
-        Vector3f rate_ef_desired(0,0,_rate_ef_desired.z);   // set roll and pitch feed forward to zero
         // convert earth-frame feed forward rates to body-frame feed forward rates
-        frame_conversion_ef_to_bf(rate_ef_desired, _rate_bf_desired);
+        frame_conversion_ef_to_bf(Vector3f(0,0,_rate_ef_desired.z), _rate_bf_desired);
         _rate_bf_target += _rate_bf_desired;
     }
 
