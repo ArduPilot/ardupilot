@@ -243,7 +243,7 @@ void AP_TECS::_update_speed(void)
     // airspeed is not being used and set speed rate to zero
     if (!_ahrs.airspeed_sensor_enabled() || !_ahrs.airspeed_estimate(&_EAS)) {
         // If no airspeed available use average of min and max
-        _EAS = 0.5f * (aparm.airspeed_min + aparm.airspeed_max);
+        _EAS = 0.5f * (aparm.airspeed_min.get() + (float)aparm.airspeed_max.get());
     }
 
     // Implement a second order complementary filter to obtain a

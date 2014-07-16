@@ -117,7 +117,7 @@ enum log_messages {
     LOG_STARTUP_MSG,
     TYPE_AIRSTART_MSG,
     TYPE_GROUNDSTART_MSG,
-    LOG_CAMERA_MSG,
+    LOG_CAMERA_MSG_DEPRECATED,
     LOG_ATTITUDE_MSG,
     LOG_MODE_MSG,
     LOG_COMPASS_MSG,
@@ -126,7 +126,8 @@ enum log_messages {
     LOG_SONAR_MSG,
     LOG_COMPASS2_MSG,
     LOG_ARM_DISARM_MSG,
-    LOG_AIRSPEED_MSG
+    LOG_AIRSPEED_MSG,
+    LOG_COMPASS3_MSG
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
@@ -195,28 +196,6 @@ enum log_messages {
 
 // mark a function as not to be inlined
 #define NOINLINE __attribute__((noinline))
-
-// InertialSensor driver types
-#define CONFIG_INS_OILPAN  1
-#define CONFIG_INS_MPU6000 2
-#define CONFIG_INS_HIL     3
-#define CONFIG_INS_PX4     4
-#define CONFIG_INS_FLYMAPLE 5
-#define CONFIG_INS_L3G4200D 6
-#define CONFIG_INS_VRBRAIN  7
-
-// barometer driver types
-#define AP_BARO_BMP085   1
-#define AP_BARO_MS5611   2
-#define AP_BARO_PX4      3
-#define AP_BARO_HIL      4
-#define AP_BARO_VRBRAIN  5
-
-// compass driver types
-#define AP_COMPASS_HMC5843   1
-#define AP_COMPASS_PX4       2
-#define AP_COMPASS_HIL       3
-#define AP_COMPASS_VRBRAIN   4
 
 // altitude control algorithms
 enum {

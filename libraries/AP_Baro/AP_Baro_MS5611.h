@@ -6,6 +6,13 @@
 #include <AP_HAL.h>
 #include "AP_Baro.h"
 
+#if CONFIG_HAL_BOARD != HAL_BOARD_APM2
+#define MS5611_WITH_I2C 1
+#else
+#define MS5611_WITH_I2C 0
+#endif
+
+
 /** Abstract serial device driver for MS5611. */
 class AP_Baro_MS5611_Serial
 {
@@ -49,6 +56,7 @@ private:
     AP_HAL::Semaphore *_spi_sem;
 };
 
+#if MS5611_WITH_I2C
 /** I2C serial device. */
 class AP_Baro_MS5611_I2C : public AP_Baro_MS5611_Serial
 {
@@ -64,6 +72,7 @@ public:
 private:
     AP_HAL::Semaphore *_i2c_sem;
 };
+#endif // MS5611_WITH_I2C
 
 class AP_Baro_MS5611 : public AP_Baro
 {
@@ -82,12 +91,19 @@ public:
 
     /* Serial port drivers to pass to "init". */
     static AP_Baro_MS5611_SPI spi;
+#if MS5611_WITH_I2C
     static AP_Baro_MS5611_I2C i2c;
+#endif
 
 private:
     void            _calculate();
     /* Asynchronous handler functions: */
     void                            _update();
+
+#if CONFIG_HAL_BOARD != HAL_BOARD_APM2
+    bool check_crc(void);
+#endif
+
     /* Asynchronous state: */
     static volatile bool            _updated;
     static volatile uint8_t         _d1_count;

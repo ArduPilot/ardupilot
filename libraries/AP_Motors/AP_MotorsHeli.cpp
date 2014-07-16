@@ -351,7 +351,7 @@ void AP_MotorsHeli::recalc_scalers()
     if (_rsc_ramp_time <= 0) {
         _rsc_ramp_time = 1;
     }
-    _rsc_ramp_increment = 1000.0f / (_rsc_ramp_time * 100.0f);
+    _rsc_ramp_increment = 1000.0f / (_rsc_ramp_time / _dt);
 
     // recalculate rotor runup increment
     if (_rsc_runup_time <= 0 ) {
@@ -470,14 +470,14 @@ void AP_MotorsHeli::calculate_roll_pitch_collective_factors()
     if (_swash_type == AP_MOTORS_HELI_SWASH_CCPM) {                     //CCPM Swashplate, perform control mixing
 
         // roll factors
-        _rollFactor[CH_1] = cosf(radians(_servo1_pos + 90 - _phase_angle));
-        _rollFactor[CH_2] = cosf(radians(_servo2_pos + 90 - _phase_angle));
-        _rollFactor[CH_3] = cosf(radians(_servo3_pos + 90 - _phase_angle));
+        _rollFactor[CH_1] = cosf(radians(_servo1_pos + 90 - (_phase_angle + _delta_phase_angle)));
+        _rollFactor[CH_2] = cosf(radians(_servo2_pos + 90 - (_phase_angle + _delta_phase_angle)));
+        _rollFactor[CH_3] = cosf(radians(_servo3_pos + 90 - (_phase_angle + _delta_phase_angle)));
 
         // pitch factors
-        _pitchFactor[CH_1] = cosf(radians(_servo1_pos - _phase_angle));
-        _pitchFactor[CH_2] = cosf(radians(_servo2_pos - _phase_angle));
-        _pitchFactor[CH_3] = cosf(radians(_servo3_pos - _phase_angle));
+        _pitchFactor[CH_1] = cosf(radians(_servo1_pos - (_phase_angle + _delta_phase_angle)));
+        _pitchFactor[CH_2] = cosf(radians(_servo2_pos - (_phase_angle + _delta_phase_angle)));
+        _pitchFactor[CH_3] = cosf(radians(_servo3_pos - (_phase_angle + _delta_phase_angle)));
 
         // collective factors
         _collectiveFactor[CH_1] = 1;
@@ -527,6 +527,8 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
         if (_heliflags.swash_initialised) {
             reset_swash();
         }
+        // To-Do:  This equation seems to be wrong.  It probably restricts swash movement so that swash setup doesn't work right.
+        // _collective_scalar should probably not be used or set to 1?
         coll_out_scaled = coll_in * _collective_scalar + _rc_throttle.radio_min - 1000;
     }else{      // regular flight mode
 
@@ -658,10 +660,8 @@ void AP_MotorsHeli::rsc_control()
     }else{
         // shutting down main rotor
         rotor_ramp(0);
-        // if completed shutting down main motor then shut-down tail rotor.  Note: this does nothing if not using direct drive vairable pitch tail
-        if (_rotor_speed_estimate <= 0) {
-            tail_ramp(0);
-        }
+        // shut-down tail rotor.  Note: this does nothing if not using direct drive vairable pitch tail        
+        tail_ramp(0);
     }
 
     // direct drive fixed pitch tail servo gets copy of yaw servo out (ch4) while main rotor is running
@@ -788,4 +788,13 @@ void AP_MotorsHeli::write_aux(int16_t servo_out)
     _servo_aux.servo_out = servo_out;
     _servo_aux.calc_pwm();
     hal.rcout->write(AP_MOTORS_HELI_AUX, _servo_aux.radio_out);
+}
+
+// set_delta_phase_angle for setting variable phase angle compensation and force
+// recalculation of collective factors
+void AP_MotorsHeli::set_delta_phase_angle(int16_t angle)
+{
+    angle = constrain_int16(angle, -90, 90);
+    _delta_phase_angle = angle;
+    calculate_roll_pitch_collective_factors();
 }

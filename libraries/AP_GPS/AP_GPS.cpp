@@ -27,15 +27,17 @@ const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
     // @Param: TYPE
     // @DisplayName: GPS type
     // @Description: GPS type
-    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftBinaryProtocol
+    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav
     AP_GROUPINFO("TYPE",    0, AP_GPS, _type[0], 1),
 
 #if GPS_MAX_INSTANCES > 1
+
     // @Param: TYPE2
     // @DisplayName: 2nd GPS type
     // @Description: GPS type of 2nd GPS
-    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftBinaryProtocol
+    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav
     AP_GROUPINFO("TYPE2",   1, AP_GPS, _type[1], 0),
+
 #endif
 
     // @Param: NAVFILTER
@@ -43,6 +45,24 @@ const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
     // @Description: Navigation filter engine setting
     // @Values: 0:Portable,2:Stationary,3:Pedestrian,4:Automotive,5:Sea,6:Airborne1G,7:Airborne2G,8:Airborne4G
     AP_GROUPINFO("NAVFILTER", 2, AP_GPS, _navfilter, GPS_ENGINE_AIRBORNE_4G),
+
+#if GPS_MAX_INSTANCES > 1
+    // @Param: AUTO_SWITCH
+    // @DisplayName: Automatic Switchover Setting
+    // @Description: Automatic switchover to GPS reporting best lock
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("AUTO_SWITCH", 3, AP_GPS, _auto_switch, 1),
+#endif
+
+#if GPS_RTK_AVAILABLE
+    // @Param: DGPS_MIN_LOCK
+    // @DisplayName: Minimum Lock Type Accepted for DGPS
+    // @Description: Sets the minimum type of differential GPS corrections required before allowing to switch into DGPS mode.
+    // @Values: 0:Any,50:FloatRTK,100:IntegerRTK
+    // @User: Advanced
+    AP_GROUPINFO("MIN_DGPS", 4, AP_GPS, _min_dgps, 100),
+#endif
 
     AP_GROUPEND
 };
@@ -53,6 +73,7 @@ void AP_GPS::init(DataFlash_Class *dataflash)
     _DataFlash = dataflash;
     hal.uartB->begin(38400UL, 256, 16);
 #if GPS_MAX_INSTANCES > 1
+    primary_instance = 0;
     if (hal.uartE != NULL) {
         hal.uartE->begin(38400UL, 256, 16);        
     }
@@ -165,14 +186,14 @@ AP_GPS::detect_instance(uint8_t instance)
 			hal.console->print_P(PSTR(" MTK "));
 			new_gps = new AP_GPS_MTK(*this, state[instance], port);
 		}
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+#if GPS_RTK_AVAILABLE
         else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SBP) &&
                  AP_GPS_SBP::_detect(dstate->sbp_detect_state, data)) {
             hal.console->print_P(PSTR(" SBP "));
             new_gps = new AP_GPS_SBP(*this, state[instance], port);
         }
 #endif // HAL_CPU_CLASS
-#if !defined( __AVR_ATmega1280__ )
+#if !defined(GPS_SKIP_SIRF_NMEA)
 		// save a bit of code space on a 1280
 		else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SIRF) &&
                  AP_GPS_SIRF::_detect(dstate->sirf_detect_state, data)) {
@@ -196,6 +217,55 @@ AP_GPS::detect_instance(uint8_t instance)
         drivers[instance] = new_gps;
         timing[instance].last_message_time_ms = now;
 	}
+}
+
+bool 
+AP_GPS::can_calculate_base_pos(void)
+{
+#if GPS_RTK_AVAILABLE
+    for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+        if (drivers[i] != NULL && drivers[i]->can_calculate_base_pos()) {
+            return true;
+        }
+    }
+#endif
+    return false;
+}
+
+/*
+    Tells the underlying GPS drivers to capture its current position as home.
+ */
+void 
+AP_GPS::calculate_base_pos(void) 
+{
+#if GPS_RTK_AVAILABLE
+    for (uint8_t i = 0; i<GPS_MAX_INSTANCES; i++) {
+        if (drivers[i] != NULL && drivers[i]->can_calculate_base_pos()) {
+            drivers[i]->calculate_base_pos(); 
+        }
+    }
+#endif
+}
+
+AP_GPS::GPS_Status 
+AP_GPS::highest_supported_status(uint8_t instance) const
+{
+#if GPS_RTK_AVAILABLE
+    if (drivers[instance] != NULL)
+        return drivers[instance]->highest_supported_status();
+#endif
+    return AP_GPS::GPS_OK_FIX_3D;
+}
+
+AP_GPS::GPS_Status 
+AP_GPS::highest_supported_status(void) const
+{
+#if GPS_RTK_AVAILABLE
+
+    if (drivers[primary_instance] != NULL)
+        return drivers[primary_instance]->highest_supported_status();
+#endif
+    return AP_GPS::GPS_OK_FIX_3D;
 }
 
 
@@ -260,6 +330,7 @@ AP_GPS::update_instance(uint8_t instance)
 void
 AP_GPS::update(void)
 {
+
     for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
         update_instance(i);
     }
@@ -273,22 +344,26 @@ AP_GPS::update(void)
         if (state[i].status != NO_GPS) {
             num_instances = i+1;
         }
-        if (i == primary_instance) {
-            continue;
-        }
-        if (state[i].status > state[primary_instance].status) {
-            // we have a higher status lock, change GPS
-            primary_instance = i;
-            continue;
-        }
-        if (state[i].status == state[primary_instance].status &&
-            state[i].num_sats >= state[primary_instance].num_sats + 2) {
-            // this GPS has at least 2 more satellites than the
-            // current primary, switch primary. Once we switch we will
-            // then tend to stick to the new GPS as primary. We don't
-            // want to switch too often as it will look like a
-            // position shift to the controllers.
-            primary_instance = i;
+        if (_auto_switch) {            
+            if (i == primary_instance) {
+                continue;
+            }
+            if (state[i].status > state[primary_instance].status) {
+                // we have a higher status lock, change GPS
+                primary_instance = i;
+                continue;
+            }
+            if (state[i].status == state[primary_instance].status &&
+                state[i].num_sats >= state[primary_instance].num_sats + 2) {
+                // this GPS has at least 2 more satellites than the
+                // current primary, switch primary. Once we switch we will
+                // then tend to stick to the new GPS as primary. We don't
+                // want to switch too often as it will look like a
+                // position shift to the controllers.
+                primary_instance = i;
+            }
+        } else {
+            primary_instance = 0;
         }
     }
 #else
@@ -343,3 +418,73 @@ AP_GPS::lock_port(uint8_t instance, bool lock)
         locked_ports &= ~(1U<<instance);
     }
 }
+
+void 
+AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
+{
+    static uint32_t last_send_time_ms;
+    if (last_send_time_ms == 0 || last_send_time_ms != last_message_time_ms(0)) {
+        last_send_time_ms = last_message_time_ms(0);
+        const Location &loc = location(0);
+        mavlink_msg_gps_raw_int_send(
+            chan,
+            last_fix_time_ms(0)*(uint64_t)1000,
+            status(0),
+            loc.lat,        // in 1E7 degrees
+            loc.lng,        // in 1E7 degrees
+            loc.alt * 10UL, // in mm
+            get_hdop(0),
+            65535,
+            ground_speed(0)*100,  // cm/s
+            ground_course_cd(0), // 1/100 degrees,
+            num_sats(0));
+    }
+}
+
+#if GPS_MAX_INSTANCES > 1
+void 
+AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
+{
+    static uint32_t last_send_time_ms2;
+    if (num_sensors() > 1 && 
+        status(1) > AP_GPS::NO_GPS &&
+        (last_send_time_ms2 == 0 || last_send_time_ms2 != last_message_time_ms(1))) {
+            const Location &loc = location(1);
+            last_send_time_ms2 = last_message_time_ms(1);
+            mavlink_msg_gps2_raw_send(
+                chan,
+                last_fix_time_ms(1)*(uint64_t)1000,
+                status(1),
+                loc.lat,
+                loc.lng,
+                loc.alt * 10UL,
+                get_hdop(1),
+                65535,
+                ground_speed(1)*100,  // cm/s
+                ground_course_cd(1), // 1/100 degrees,
+                num_sats(1),
+                0,
+                0);
+    }
+}
+#endif
+
+#if GPS_RTK_AVAILABLE
+void 
+AP_GPS::send_mavlink_gps_rtk(mavlink_channel_t chan)
+{
+    if (drivers[0] != NULL && drivers[0]->highest_supported_status() > AP_GPS::GPS_OK_FIX_3D) {
+        drivers[0]->send_mavlink_gps_rtk(chan);
+    }
+}
+
+#if GPS_MAX_INSTANCES > 1
+void 
+AP_GPS::send_mavlink_gps2_rtk(mavlink_channel_t chan)
+{
+    if (drivers[1] != NULL && drivers[1]->highest_supported_status() > AP_GPS::GPS_OK_FIX_3D) {
+        drivers[1]->send_mavlink_gps_rtk(chan);
+    }
+}
+#endif
+#endif

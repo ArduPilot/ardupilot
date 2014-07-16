@@ -10,20 +10,13 @@ static void init_barometer(void)
 
 static void init_sonar(void)
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-    sonar.Init(&apm1_adc);
-#else
-    sonar.Init(NULL);
-#endif
+    sonar.init();
 }
 
 // read the sonars
 static void read_sonars(void)
 {
-    if (!sonar.enabled()) {
-        // this makes it possible to disable sonar at runtime
-        return;
-    }
+    sonar.update();
 
     if (should_log(MASK_LOG_SONAR))
         Log_Write_Sonar();

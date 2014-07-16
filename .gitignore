@@ -3,11 +3,14 @@
 *.d
 *.dll
 *.elf
+*.hex
+*.dfu
 *.exe
 *.lst
 *.o
 *.obj
 *.px4
+*.vrx
 *.pyc
 *.tlog
 *.tlog.raw
@@ -71,3 +74,4 @@ serialsent.raw
 status.txt
 tags
 test.ArduCopter/*
+Thumbs.db

@@ -23,6 +23,8 @@
 #include <AP_Common.h>
 #include <AP_Param.h>
 #include <AP_Math.h>
+#include <GCS_MAVLink.h>
+#include <AP_Vehicle.h>
 #include "GPS_detect_state.h"
 
 /**
@@ -33,6 +35,21 @@
 #define GPS_MAX_INSTANCES 2
 #else
 #define GPS_MAX_INSTANCES 1
+#endif
+
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+#define GPS_RTK_AVAILABLE 1
+#else
+#define GPS_RTK_AVAILABLE 0
+#endif
+
+/**
+ * save flash by skipping NMEA and SIRF support on ArduCopter on APM1/2 or any frame type on AVR1280 CPUs
+ */
+#if HAL_CPU_CLASS < HAL_CPU_CLASS_75 && defined(APM_BUILD_DIRECTORY)
+  #if (APM_BUILD_TYPE(APM_BUILD_ArduCopter) || defined(__AVR_ATmega1280__))
+    #define GPS_SKIP_SIRF_NMEA
+  #endif
 #endif
 
 class DataFlash_Class;
@@ -55,6 +72,14 @@ public:
     /// This routine must be called periodically (typically at 10Hz or
     /// more) to process incoming data.
     void update(void);
+
+    //True if any of the underlying GPS Drivers are ready to enter
+    //a dgps-based fix beyond 3D lock, such as RTK mode. 
+    bool can_calculate_base_pos(void);
+
+    //Allows the underlying GPS Drivers to enter a differential lock
+    //Might cause a position jump, thus only do this on the ground.
+    void calculate_base_pos(void);
 
     // GPS driver types
     enum GPS_Type {
@@ -122,6 +147,10 @@ public:
         return num_instances;
     }
 
+    uint8_t primary_sensor(void) const {
+        return primary_instance;
+    }
+
     // using these macros saves some code space on APM2
 #if GPS_MAX_INSTANCES == 1
 #	define _GPS_STATE(instance) state[0]
@@ -138,6 +167,10 @@ public:
     GPS_Status status(void) const {
         return status(primary_instance);
     }
+
+    // Query the highest status this GPS supports
+    GPS_Status highest_supported_status(uint8_t instance) const;
+    GPS_Status highest_supported_status(void) const;
 
     // location of last fix
     const Location &location(uint8_t instance) const {
@@ -256,13 +289,30 @@ public:
     // configuration parameters
     AP_Int8 _type[GPS_MAX_INSTANCES];
     AP_Int8 _navfilter;
-
+#if GPS_MAX_INSTANCES > 1
+    AP_Int8 _auto_switch;
+    AP_Int8 _min_dgps;
+#endif
+    
     // handle sending of initialisation strings to the GPS
     void send_blob_start(uint8_t instance, const prog_char *_blob, uint16_t size);
     void send_blob_update(uint8_t instance);
 
     // lock out a GPS port, allowing another application to use the port
     void lock_port(uint8_t instance, bool locked);
+
+    //MAVLink Status Sending
+    void send_mavlink_gps_raw(mavlink_channel_t chan);
+#if GPS_MAX_INSTANCES > 1    
+    void send_mavlink_gps2_raw(mavlink_channel_t chan);
+#endif
+
+#if GPS_RTK_AVAILABLE
+    void send_mavlink_gps_rtk(mavlink_channel_t chan);
+#if GPS_MAX_INSTANCES > 1    
+    void send_mavlink_gps2_rtk(mavlink_channel_t chan);
+#endif
+#endif
 
 private:
     struct GPS_timing {
@@ -295,7 +345,7 @@ private:
         struct MTK19_detect_state mtk19_detect_state;
         struct SIRF_detect_state sirf_detect_state;
         struct NMEA_detect_state nmea_detect_state;
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+#if GPS_RTK_AVAILABLE
         struct SBP_detect_state sbp_detect_state;
 #endif
     } detect_state[GPS_MAX_INSTANCES];

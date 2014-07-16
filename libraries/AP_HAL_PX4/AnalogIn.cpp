@@ -69,13 +69,13 @@ using namespace PX4;
 
 PX4AnalogSource::PX4AnalogSource(int16_t pin, float initial_value) :
 	_pin(pin),
+    _stop_pin(-1),
+    _settle_time_ms(0),
     _value(initial_value),
     _value_ratiometric(initial_value),
     _latest_value(initial_value),
     _sum_count(0),
     _sum_value(0),
-    _stop_pin(-1),
-    _settle_time_ms(0),
     _sum_ratiometric(0)
 {
 #ifdef PX4_ANALOG_VCC_5V_PIN
@@ -192,10 +192,10 @@ void PX4AnalogSource::_add_value(float v, float vcc5V)
 
 
 PX4AnalogIn::PX4AnalogIn() :
+    _current_stop_pin_i(0),
 	_board_voltage(0),
     _servorail_voltage(0),
-    _power_flags(0),
-    _current_stop_pin_i(0)
+    _power_flags(0)
 {}
 
 void PX4AnalogIn::init(void* machtnichts)

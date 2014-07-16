@@ -644,7 +644,7 @@
                <entry value="176" name="MAV_CMD_DO_SET_MODE">
                     <description>Set system mode.</description>
                     <param index="1">Mode, as defined by ENUM MAV_MODE</param>
-                    <param index="2">Empty</param>
+                    <param index="2">Custom mode - this is system specific, please refer to the individual autopilot specifications for details.</param>
                     <param index="3">Empty</param>
                     <param index="4">Empty</param>
                     <param index="5">Empty</param>
@@ -875,7 +875,7 @@
                </entry>
                <entry value="242" name="MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS">
                     <description>Set sensor offsets. This command will be only accepted if in pre-flight mode.</description>
-                    <param index="1">Sensor to adjust the offsets for: 0: gyros, 1: accelerometer, 2: magnetometer, 3: barometer, 4: optical flow</param>
+                    <param index="1">Sensor to adjust the offsets for: 0: gyros, 1: accelerometer, 2: magnetometer, 3: barometer, 4: optical flow, 5: second magnetometer</param>
                     <param index="2">X axis offset (or generic dimension 1), in the sensor's raw units</param>
                     <param index="3">Y axis offset (or generic dimension 2), in the sensor's raw units</param>
                     <param index="4">Z axis offset (or generic dimension 3), in the sensor's raw units</param>
@@ -1190,6 +1190,15 @@
                     <description>Send multiple replies until port is drained</description>
                </entry>
           </enum>
+          <enum name="MAV_DISTANCE_SENSOR">
+              <description>Enumeration of distance sensor types</description>
+              <entry value="0" name="MAV_DISTANCE_SENSOR_LASER">
+                  <description>Laser altimeter, e.g. LightWare SF02/F or PulsedLight units</description>
+              </entry>
+              <entry value="1" name="MAV_DISTANCE_SENSOR_ULTRASOUND">
+                  <description>Ultrasound altimeter, e.g. MaxBotix units</description>
+              </entry>
+          </enum>
      </enums>
      <messages>
           <message id="0" name="HEARTBEAT">
@@ -1285,7 +1294,7 @@
                <description>The global position, as returned by the Global Positioning System (GPS). This is
                 NOT the global position estimate of the sytem, but rather a RAW sensor value. See message GLOBAL_POSITION for the global position estimate. Coordinate frame is right-handed, Z-axis up (GPS frame).</description>
                <field type="uint64_t" name="time_usec">Timestamp (microseconds since UNIX epoch or microseconds since system boot)</field>
-               <field type="uint8_t" name="fix_type">0-1: no fix, 2: 2D fix, 3: 3D fix. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.</field>
+               <field type="uint8_t" name="fix_type">0-1: no fix, 2: 2D fix, 3: 3D fix, 4: DGPS, 5: RTK. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.</field>
                <field type="int32_t" name="lat">Latitude (WGS84), in degrees * 1E7</field>
                <field type="int32_t" name="lon">Longitude (WGS84), in degrees * 1E7</field>
                <field type="int32_t" name="alt">Altitude (WGS84), in meters * 1000 (positive for up)</field>
@@ -2078,7 +2087,7 @@
          <message id="124" name="GPS2_RAW">
            <description>Second GPS data. Coordinate frame is right-handed, Z-axis up (GPS frame).</description>
            <field type="uint64_t" name="time_usec">Timestamp (microseconds since UNIX epoch or microseconds since system boot)</field>
-           <field type="uint8_t" name="fix_type">0-1: no fix, 2: 2D fix, 3: 3D fix. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.</field>
+           <field type="uint8_t" name="fix_type">0-1: no fix, 2: 2D fix, 3: 3D fix, 4: DGPS fix, 5: RTK Fix. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.</field>
            <field type="int32_t" name="lat">Latitude (WGS84), in degrees * 1E7</field>
            <field type="int32_t" name="lon">Longitude (WGS84), in degrees * 1E7</field>
            <field type="int32_t" name="alt">Altitude (WGS84), in meters * 1000 (positive for up)</field>
@@ -2105,7 +2114,39 @@
            <field type="uint8_t" name="count">how many bytes in this transfer</field>
            <field type="uint8_t[70]" name="data">serial data</field>
          </message>
-         <message id="130" name="DATA_TRANSMISSION_HANDSHAKE">
+         <message id="127" name="GPS_RTK">
+            <description>RTK GPS data. Gives information on the relative baseline calculation the GPS is reporting</description>
+            <field type="uint32_t" name="time_last_baseline_ms">Time since boot of last baseline message received in ms.</field>
+            <field type="uint8_t" name="rtk_receiver_id">Identification of connected RTK receiver.</field>
+            <field type="uint16_t" name="wn">GPS Week Number of last baseline</field>
+            <field type="uint32_t" name="tow">GPS Time of Week of last baseline</field>
+            <field type="uint8_t" name="rtk_health">GPS-specific health report for RTK data.</field>
+            <field type="uint8_t" name="rtk_rate">Rate of baseline messages being received by GPS, in HZ</field>
+            <field type="uint8_t" name="nsats">Current number of sats used for RTK calculation.</field>
+            <field type="uint8_t" name="baseline_coords_type">Coordinate system of baseline. 0 == ECEF, 1 == NED</field>
+            <field type="int32_t" name="baseline_a_mm">Current baseline in ECEF x or NED north component in mm.</field>
+            <field type="int32_t" name="baseline_b_mm">Current baseline in ECEF y or NED east component in mm.</field>
+            <field type="int32_t" name="baseline_c_mm">Current baseline in ECEF z or NED down component in mm.</field>
+            <field type="uint32_t" name="accuracy">Current estimate of baseline accuracy.</field>
+            <field type="int32_t" name="iar_num_hypotheses">Current number of integer ambiguity hypotheses.</field>
+         </message>
+         <message id="128" name="GPS2_RTK">
+            <description>RTK GPS data. Gives information on the relative baseline calculation the GPS is reporting</description>
+            <field type="uint32_t" name="time_last_baseline_ms">Time since boot of last baseline message received in ms.</field>
+            <field type="uint8_t" name="rtk_receiver_id">Identification of connected RTK receiver.</field>
+            <field type="uint16_t" name="wn">GPS Week Number of last baseline</field>
+            <field type="uint32_t" name="tow">GPS Time of Week of last baseline</field>
+            <field type="uint8_t" name="rtk_health">GPS-specific health report for RTK data.</field>
+            <field type="uint8_t" name="rtk_rate">Rate of baseline messages being received by GPS, in HZ</field>
+            <field type="uint8_t" name="nsats">Current number of sats used for RTK calculation.</field>
+            <field type="uint8_t" name="baseline_coords_type">Coordinate system of baseline. 0 == ECEF, 1 == NED</field>
+            <field type="int32_t" name="baseline_a_mm">Current baseline in ECEF x or NED north component in mm.</field>
+            <field type="int32_t" name="baseline_b_mm">Current baseline in ECEF y or NED east component in mm.</field>
+            <field type="int32_t" name="baseline_c_mm">Current baseline in ECEF z or NED down component in mm.</field>
+            <field type="uint32_t" name="accuracy">Current estimate of baseline accuracy.</field>
+            <field type="int32_t" name="iar_num_hypotheses">Current number of integer ambiguity hypotheses.</field>
+         </message>
+          <message id="130" name="DATA_TRANSMISSION_HANDSHAKE">
              <field type="uint8_t" name="type">type of requested/acknowledged data (as defined in ENUM DATA_TYPES in mavlink/include/mavlink_types.h)</field>
              <field type="uint32_t" name="size">total data size in bytes (set on ACK only)</field>
              <field type="uint16_t" name="width">Width of a matrix or image</field>
@@ -2117,6 +2158,16 @@
          <message id="131" name="ENCAPSULATED_DATA">
              <field type="uint16_t" name="seqnr">sequence number (starting with 0 on every transmission)</field>
              <field type="uint8_t[253]" name="data">image data bytes</field>
+         </message>
+        <message id="132" name="DISTANCE_SENSOR">
+            <field type="uint32_t" name="time_boot_ms">Time since system boot</field>
+            <field type="uint16_t" name="min_distance">Minimum distance the sensor can measure in centimeters</field>
+            <field type="uint16_t" name="max_distance">Maximum distance the sensor can measure in centimeters</field>
+            <field type="uint16_t" name="current_distance">Current distance reading</field>
+            <field type="uint8_t" name="type">Type from MAV_DISTANCE_SENSOR enum.</field>
+            <field type="uint8_t" name="id">Onboard ID of the sensor</field>
+            <field type="uint8_t" name="orientation">Direction the sensor faces from FIXME enum.</field>
+            <field type="uint8_t" name="covariance">Measurement covariance in centimeters, 0 for unknown / invalid readings</field>
          </message>
          <message id="147" name="BATTERY_STATUS">
                <description>Transmitte battery informations for a accu pack.</description>

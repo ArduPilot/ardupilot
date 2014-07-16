@@ -934,12 +934,14 @@ def fly_ArduCopter(viewerip=None, map=False):
 
     buildlog = util.reltopdir("../buildlogs/ArduCopter-test.tlog")
     print("buildlog=%s" % buildlog)
+    copyTLog = False
     if os.path.exists(buildlog):
         os.unlink(buildlog)
     try:
         os.link(logfile, buildlog)
     except Exception:
-        pass
+        print( "WARN: Failed to create symlink: " + logfile + " => " + buildlog + ", Will copy tlog manually to target location" )
+        copyTLog = True
 
     # the received parameters can come before or after the ready to fly message
     mavproxy.expect(['Received [0-9]+ parameters', 'Ready to FLY'])
@@ -1249,6 +1251,11 @@ def fly_ArduCopter(viewerip=None, map=False):
         os.chmod('ArduCopter-valgrind.log', 0644)
         shutil.copy("ArduCopter-valgrind.log", util.reltopdir("../buildlogs/ArduCopter-valgrind.log"))
 
+    # [2014/05/07] FC Because I'm doing a cross machine build (source is on host, build is on guest VM) I cannot hard link
+    # This flag tells me that I need to copy the data out
+    if copyTLog:
+        shutil.copy(logfile, buildlog)
+        
     if failed:
         print("FAILED: %s" % failed_test_msg)
         return False

@@ -87,9 +87,9 @@ static bool set_mode(uint8_t mode)
             break;
 #endif
 
-#if HYBRID_ENABLED == ENABLED
-        case HYBRID:
-            success = hybrid_init(ignore_checks);
+#if POSHOLD_ENABLED == ENABLED
+        case POSHOLD:
+            success = poshold_init(ignore_checks);
             break;
 #endif
 
@@ -191,9 +191,9 @@ static void update_flight_mode()
             break;
 #endif
 
-#if HYBRID_ENABLED == ENABLED
-        case HYBRID:
-            hybrid_run();
+#if POSHOLD_ENABLED == ENABLED
+        case POSHOLD:
+            poshold_run();
             break;
 #endif
     }
@@ -213,6 +213,9 @@ static void exit_mode(uint8_t old_control_mode, uint8_t new_control_mode)
         if (mission.state() == AP_Mission::MISSION_RUNNING) {
             mission.stop();
         }
+#if MOUNT == ENABLED
+        camera_mount.set_mode_to_default();
+#endif  // MOUNT == ENABLED
     }
 
     // smooth throttle transition when switching from manual to automatic flight modes
@@ -231,7 +234,7 @@ static bool mode_requires_GPS(uint8_t mode) {
         case RTL:
         case CIRCLE:
         case DRIFT:
-        case HYBRID:
+        case POSHOLD:
             return true;
         default:
             return false;
@@ -304,8 +307,8 @@ print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
     case AUTOTUNE:
         port->print_P(PSTR("AUTOTUNE"));
         break;
-    case HYBRID:
-        port->print_P(PSTR("HYBRID"));
+    case POSHOLD:
+        port->print_P(PSTR("POSHOLD"));
         break;
     default:
         port->printf_P(PSTR("Mode(%u)"), (unsigned)mode);

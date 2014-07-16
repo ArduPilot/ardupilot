@@ -1,0 +1,10 @@
+language: cpp
+
+before_install:
+  - cd .. && ./ardupilot/Tools/scripts/install-prereqs-ubuntu.sh -y && . ~/.profile
+
+script: 
+  - cd ./ardupilot/ArduCopter && make configure && make && make px4-v2
+  - cd ../ArduPlane  && make configure && make && make px4-v2
+  - cd ../APMrover2  && make configure && make && make px4-v2
+  - cd ../ArduCopter && make configure && make && make vrubrain-v51

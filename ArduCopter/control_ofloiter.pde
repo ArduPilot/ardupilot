@@ -36,7 +36,8 @@ static void ofloiter_run()
 
     // if not auto armed set throttle to zero and exit immediately
     if(!ap.auto_armed) {
-        attitude_control.init_targets();
+        attitude_control.relax_bf_rate_controller();
+        attitude_control.set_yaw_target_to_current_heading();
         attitude_control.set_throttle_out(0, false);
         reset_optflow_I();
         return;
@@ -67,7 +68,8 @@ static void ofloiter_run()
 
     // when landed reset targets and output zero throttle
     if (ap.land_complete) {
-        attitude_control.init_targets();
+        attitude_control.relax_bf_rate_controller();
+        attitude_control.set_yaw_target_to_current_heading();
         attitude_control.set_throttle_out(0, false);
         reset_optflow_I();
     }else{

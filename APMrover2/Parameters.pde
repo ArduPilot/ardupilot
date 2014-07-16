@@ -482,13 +482,9 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/AP_L1_Control/AP_L1_Control.cpp
     GOBJECT(L1_controller,         "NAVL1_",   AP_L1_Control),
 
-    // @Group: SONAR_
-    // @Path: ../libraries/AP_RangeFinder/AP_RangeFinder_analog.cpp
-    GOBJECT(sonar,                  "SONAR_", AP_RangeFinder_analog),
-
-    // @Group: SONAR2_
-    // @Path: ../libraries/AP_RangeFinder/AP_RangeFinder_analog.cpp
-    GOBJECT(sonar2,                 "SONAR2_", AP_RangeFinder_analog),
+    // @Group: SONAR
+    // @Path: ../libraries/AP_RangeFinder/RangeFinder.cpp
+    GOBJECT(sonar,                 "SONAR", RangeFinder),
 
     // @Group: INS_
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp

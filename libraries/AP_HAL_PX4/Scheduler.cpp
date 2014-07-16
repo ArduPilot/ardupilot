@@ -22,6 +22,7 @@
 #include "Storage.h"
 #include "RCOutput.h"
 #include "RCInput.h"
+#include <AP_Scheduler.h>
 
 using namespace PX4;
 
@@ -229,8 +230,11 @@ void PX4Scheduler::_run_timers(bool called_from_timer_thread)
     _in_timer_proc = false;
 }
 
+extern bool px4_ran_overtime;
+
 void *PX4Scheduler::_timer_thread(void)
 {
+    uint32_t last_ran_overtime = 0;
     while (!_hal_initialized) {
         poll(NULL, 0, 1);        
     }
@@ -247,6 +251,12 @@ void *PX4Scheduler::_timer_thread(void)
 
         // process any pending RC input requests
         ((PX4RCInput *)hal.rcin)->_timer_tick();
+
+        if (px4_ran_overtime && millis() - last_ran_overtime > 2000) {
+            last_ran_overtime = millis();
+            printf("Overtime in task %d\n", (int)AP_Scheduler::current_task);
+            hal.console->printf("Overtime in task %d\n", (int)AP_Scheduler::current_task);
+        }
     }
     return NULL;
 }

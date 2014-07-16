@@ -24,7 +24,7 @@ static void arm_motors_check()
     }
 
     // allow arming/disarming in Loiter and AltHold if landed
-    if (ap.land_complete && (control_mode == LOITER || control_mode == ALT_HOLD || control_mode == HYBRID)) {
+    if (ap.land_complete && (control_mode == LOITER || control_mode == ALT_HOLD || control_mode == POSHOLD || control_mode == AUTOTUNE)) {
         allow_arming = true;
     }
 
@@ -103,7 +103,7 @@ static void auto_disarm_check()
     }
 
     // allow auto disarm in manual flight modes or Loiter/AltHold if we're landed
-    if(manual_flight_mode(control_mode) || (ap.land_complete && (control_mode == LOITER || control_mode == ALT_HOLD || control_mode == HYBRID))) {
+    if(manual_flight_mode(control_mode) || (ap.land_complete && (control_mode == LOITER || control_mode == ALT_HOLD || control_mode == POSHOLD || control_mode == AUTOTUNE))) {
         auto_disarming_counter++;
 
         if(auto_disarming_counter >= AUTO_DISARMING_DELAY) {
@@ -138,15 +138,6 @@ static void init_arm_motors()
 #if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
     gcs_send_text_P(SEVERITY_HIGH, PSTR("ARMING MOTORS"));
 #endif
-
-    // we don't want writes to the serial port to cause us to pause
-    // mid-flight, so set the serial ports non-blocking once we arm
-    // the motors
-    hal.uartA->set_blocking_writes(false);
-    hal.uartC->set_blocking_writes(false);
-    if (hal.uartD != NULL) {
-        hal.uartD->set_blocking_writes(false);
-    }
 
     // Remember Orientation
     // --------------------
@@ -252,7 +243,7 @@ static void pre_arm_checks(bool display_failure)
 
     // check Compass
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_COMPASS)) {
-        // check the compass is healthy
+        // check the primary compass is healthy
         if(!compass.healthy(0)) {
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not healthy"));
@@ -261,8 +252,7 @@ static void pre_arm_checks(bool display_failure)
         }
 
         // check compass learning is on or offsets have been set
-        Vector3f offsets = compass.get_offsets();
-        if(!compass._learn && offsets.length() == 0) {
+        if(!compass.learn_offsets_enabled() && !compass.configured()) {
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not calibrated"));
             }
@@ -270,6 +260,7 @@ static void pre_arm_checks(bool display_failure)
         }
 
         // check for unreasonable compass offsets
+        Vector3f offsets = compass.get_offsets();
         if(offsets.length() > 500) {
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass offsets too high"));
@@ -527,7 +518,10 @@ static void init_disarm_motors()
     // disable inertial nav errors temporarily
     inertial_nav.ignore_next_error();
 
-    compass.save_offsets();
+    // save offsets if automatic offset learning is on
+    if (compass.learn_offsets_enabled()) {
+        compass.save_offsets();
+    }
 
     g.throttle_cruise.save();
 

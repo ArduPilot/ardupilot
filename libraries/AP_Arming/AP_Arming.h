@@ -38,7 +38,7 @@ public:
     //for the hacky funciton pointer to gcs_send_text_p
     typedef void (*gcs_send_t_p)(gcs_severity, const prog_char_t*);
 
-    AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro,
+    AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
               const bool &home_set, gcs_send_t_p);
 
     ArmingRequired arming_required();
@@ -67,6 +67,7 @@ private:
 
     const AP_AHRS                                       &ahrs;
     const AP_Baro                                  &barometer;
+    Compass                                         &_compass;
     const bool                                   &home_is_set;
     gcs_send_t_p                              gcs_send_text_P;
 

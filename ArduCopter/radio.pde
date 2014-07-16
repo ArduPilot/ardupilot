@@ -57,7 +57,7 @@ static void init_rc_out()
     g.rc_3.set_range_out(0,1000);
 
     // full throttle means to enter ESC calibration
-    if(g.rc_3.control_in >= (g.throttle_max - 50)) {
+    if(g.rc_3.control_in >= (g.throttle_max - 50) || (g.esc_calibrate == 2)) {
         if(g.esc_calibrate == 0) {
             // we will enter esc_calibrate mode on next reboot
             g.esc_calibrate.set_and_save(1);

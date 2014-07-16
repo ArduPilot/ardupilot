@@ -213,7 +213,8 @@ static void autotune_run()
     // if not auto armed set throttle to zero and exit immediately
     // this should not actually be possible because of the autotune_init() checks
     if(!ap.auto_armed) {
-        attitude_control.init_targets();
+        attitude_control.relax_bf_rate_controller();
+        attitude_control.set_yaw_target_to_current_heading();
         attitude_control.set_throttle_out(0, false);
         return;
     }
@@ -240,7 +241,8 @@ static void autotune_run()
 
     // reset target lean angles and heading while landed
     if (ap.land_complete) {
-        attitude_control.init_targets();
+        attitude_control.relax_bf_rate_controller();
+        attitude_control.set_yaw_target_to_current_heading();
         // move throttle to minimum to keep us on the ground
         attitude_control.set_throttle_out(0, false);
     }else{

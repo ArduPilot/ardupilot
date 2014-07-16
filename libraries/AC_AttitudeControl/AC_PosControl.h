@@ -38,6 +38,8 @@
 
 #define POSCONTROL_ACCEL_Z_DTERM_FILTER         20      // Z axis accel controller's D term filter (in hz)
 
+#define POSCONTROL_VEL_UPDATE_TIME              0.020f  // 50hz update rate on high speed CPUs (Pixhawk, Flymaple)
+
 class AC_PosControl
 {
 public:
@@ -169,15 +171,25 @@ public:
     void set_xy_target(float x, float y);
 
     /// get_desired_velocity - returns xy desired velocity (i.e. feed forward) in cm/s in lat and lon direction
-    const Vector2f& get_desired_velocity() { return _vel_desired; }
+    const Vector3f& get_desired_velocity() { return _vel_desired; }
 
-    /// set_desired_velocity - sets desired velocity in cm/s in lat and lon directions
+    /// set_desired_velocity_xy - sets desired velocity in cm/s in lat and lon directions
     ///     when update_xy_controller is next called the position target is moved based on the desired velocity and
     ///     the desired velocities are fed forward into the rate_to_accel step
-    void set_desired_velocity(float vel_lat_cms, float vel_lon_cms) {_vel_desired.x = vel_lat_cms; _vel_desired.y = vel_lon_cms; }
+    void set_desired_velocity_xy(float vel_lat_cms, float vel_lon_cms) {_vel_desired.x = vel_lat_cms; _vel_desired.y = vel_lon_cms; }
+
+    /// set_desired_velocity - sets desired velocity in cm/s in all 3 axis
+    ///     when update_vel_controller_xyz is next called the position target is moved based on the desired velocity
+    void set_desired_velocity(const Vector3f &des_vel) { _vel_desired = des_vel; freeze_ff_xy(); }
 
     /// trigger_xy - used to notify the position controller than an update has been made to the position or desired velocity so that the position controller will run as soon as possible after the update
     void trigger_xy() { _flags.force_recalc_xy = true; }
+
+    /// freeze_ff_z - used to stop the feed forward being calculated during a known discontinuity
+    void freeze_ff_z() { _flags.freeze_ff_z = true; }
+
+    /// freeze_ff_xy - used to stop the feed forward being calculated during a known discontinuity
+    void freeze_ff_xy() { _flags.freeze_ff_xy = true; }
 
     // is_active_xy - returns true if the xy position controller has been run very recently
     bool is_active_xy() const;
@@ -198,6 +210,20 @@ public:
 
     /// get_distance_to_target - get horizontal distance to position target in cm (used for reporting)
     float get_distance_to_target() const;
+
+    /// xyz velocity controller
+
+    /// init_vel_controller_xyz - initialise the velocity controller - should be called once before the caller attempts to use the controller
+    void init_vel_controller_xyz();
+
+    /// set_vel_target - sets target velocity in cm/s in north, east and up directions
+    void set_vel_target(const Vector3f& vel_target);
+
+    /// update_velocity_controller_xyz - run the velocity controller - should be called at 100hz or higher
+    ///     velocity targets should we set using set_desired_velocity_xyz() method
+    ///     callers should use get_roll() and get_pitch() methods and sent to the attitude controller
+    ///     throttle targets will be sent directly to the motors
+    void update_vel_controller_xyz();
 
     /// get desired roll, pitch which should be fed into stabilize controllers
     float get_roll() const { return _roll_target; }
@@ -234,6 +260,8 @@ private:
             uint8_t reset_rate_to_accel_xy  : 1;    // 1 if we should reset the rate_to_accel_xy step
             uint8_t reset_rate_to_accel_z   : 1;    // 1 if we should reset the rate_to_accel_z step
             uint8_t reset_accel_to_throttle : 1;    // 1 if we should reset the accel_to_throttle step of the z-axis controller
+            uint8_t freeze_ff_xy    : 1;    // 1 use to freeze feed forward during step updates
+            uint8_t freeze_ff_z     : 1;    // 1 use to freeze feed forward during step updates
     } _flags;
 
     // limit flags structure
@@ -257,7 +285,7 @@ private:
     void pos_to_rate_z();
 
     // rate_to_accel_z - calculates desired accel required to achieve the velocity target
-    void rate_to_accel_z(float vel_target_z);
+    void rate_to_accel_z();
 
     // accel_to_throttle - alt hold's acceleration controller
     void accel_to_throttle(float accel_target_z);
@@ -308,6 +336,7 @@ private:
     float       _dt;                    // time difference (in seconds) between calls from the main program
     uint32_t    _last_update_xy_ms;     // system time of last update_xy_controller call
     uint32_t    _last_update_z_ms;      // system time of last update_z_controller call
+    uint32_t    _last_update_vel_xyz_ms;// system time of last update_vel_controller_xyz call
     float       _speed_down_cms;        // max descent rate in cm/s
     float       _speed_up_cms;          // max climb rate in cm/s
     float       _speed_cms;             // max horizontal speed in cm/s
@@ -324,16 +353,19 @@ private:
     // position controller internal variables
     Vector3f    _pos_target;            // target location in cm from home
     Vector3f    _pos_error;             // error between desired and actual position in cm
-    Vector2f    _vel_desired;           // desired velocity in cm/s in lat and lon directions (provided by external callers of move_target_at_rate() method)
+    Vector3f    _vel_desired;           // desired velocity in cm/s
     Vector3f    _vel_target;            // velocity target in cm/s calculated by pos_to_rate step
     Vector3f    _vel_error;             // error between desired and actual acceleration in cm/s
-    Vector2f    _vel_last;              // previous iterations velocity in cm/s
-    float       _vel_target_filt_z;     // filtered target vertical velocity
+    Vector3f    _vel_last;              // previous iterations velocity in cm/s
     Vector3f    _accel_target;          // desired acceleration in cm/s/s  // To-Do: are xy actually required?
     Vector3f    _accel_error;           // desired acceleration in cm/s/s  // To-Do: are xy actually required?
+    Vector3f    _accel_feedforward;     // feedforward acceleration in cm/s/s
     float       _alt_max;               // max altitude - should be updated from the main code with altitude limit from fence
     float       _distance_to_target;    // distance to position target - for reporting only
     uint8_t     _xy_step;               // used to decide which portion of horizontal position controller to run during this iteration
     float       _dt_xy;                 // time difference in seconds between horizontal position updates
+
+    // velocity controller internal variables
+    uint8_t     _vel_xyz_step;          // used to decide which portion of velocity controller to run during this iteration
 };
 #endif	// AC_POSCONTROL_H

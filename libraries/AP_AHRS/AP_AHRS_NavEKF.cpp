@@ -26,9 +26,12 @@
 extern const AP_HAL::HAL& hal;
 
 // return the smoothed gyro vector corrected for drift
-const Vector3f AP_AHRS_NavEKF::get_gyro(void) const
+const Vector3f &AP_AHRS_NavEKF::get_gyro(void) const
 {
-    return AP_AHRS_DCM::get_gyro();
+    if (!using_EKF()) {
+        return AP_AHRS_DCM::get_gyro();
+    }
+    return _gyro_estimate;
 }
 
 const Matrix3f &AP_AHRS_NavEKF::get_dcm_matrix(void) const
@@ -41,7 +44,10 @@ const Matrix3f &AP_AHRS_NavEKF::get_dcm_matrix(void) const
 
 const Vector3f &AP_AHRS_NavEKF::get_gyro_drift(void) const
 {
-    return AP_AHRS_DCM::get_gyro_drift();
+    if (!using_EKF()) {
+        return AP_AHRS_DCM::get_gyro_drift();
+    }
+    return _gyro_bias;
 }
 
 void AP_AHRS_NavEKF::update(void)
@@ -78,6 +84,24 @@ void AP_AHRS_NavEKF::update(void)
             if (yaw_sensor < 0)
                 yaw_sensor += 36000;
             update_trig();
+
+            // keep _gyro_bias for get_gyro_drift()
+            EKF.getGyroBias(_gyro_bias);
+            _gyro_bias = -_gyro_bias;
+
+            // calculate corrected gryo estimate for get_gyro()
+            _gyro_estimate.zero();
+            uint8_t healthy_count = 0;    
+            for (uint8_t i=0; i<_ins.get_gyro_count(); i++) {
+                if (_ins.get_gyro_health(i)) {
+                    _gyro_estimate += _ins.get_gyro(i);
+                    healthy_count++;
+                }
+            }
+            if (healthy_count > 1) {
+                _gyro_estimate /= healthy_count;
+            }
+            _gyro_estimate += _gyro_bias;
         }
     }
 }

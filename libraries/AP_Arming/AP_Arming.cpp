@@ -46,12 +46,13 @@ const AP_Param::GroupInfo AP_Arming::var_info[] PROGMEM = {
 
 //The function point is particularly hacky, hacky, tacky
 //but I don't want to reimplement messaging to GCS at the moment:
-AP_Arming::AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro,
+AP_Arming::AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
                      const bool &home_set, gcs_send_t_p gcs_print_func)
    : armed(false)
    , arming_method(NONE)
    , ahrs(ahrs_ref)
    , barometer(baro)
+   , _compass(compass)
    , home_is_set(home_set)
    , gcs_send_text_P(gcs_print_func)
 {
@@ -91,30 +92,15 @@ bool AP_Arming::compass_checks(bool report)
 {
     if ((checks_to_perform) & ARMING_CHECK_ALL ||
         (checks_to_perform) & ARMING_CHECK_COMPASS) {
-        const Compass* compass = ahrs.get_compass();
 
-        //if there is no compass and the user has specifically asked to check
-        //the compass, then there is a problem
-        if (compass == NULL && (checks_to_perform & ARMING_CHECK_COMPASS)) {
-            if (report) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: No compass detected."));
-            }
-            return false;
-        } else if (compass == NULL) {
-            //if the user's not asking to check and there isn't a compass
-            //then skip compass checks
-            return true;
-        }
-
-        if (! compass->healthy()) {
+        if (!_compass.healthy()) {
             if (report) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not healthy!"));
             }
             return false;
         }
         // check compass learning is on or offsets have been set
-        Vector3f offsets = compass->get_offsets();
-        if(!compass->_learn && offsets.length() == 0) {
+        if (!_compass.learn_offsets_enabled() && !_compass.configured()) {
             if (report) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not calibrated"));
             }

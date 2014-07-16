@@ -28,6 +28,7 @@
 #include <AP_Vehicle.h>
 #include <AP_ADC_AnalogSource.h>
 #include <AP_Compass.h>
+#include <AP_Scheduler.h>
 #include <AP_Declination.h>
 #include <AP_Notify.h>
 #include <AP_NavEKF.h>
@@ -43,45 +44,74 @@
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
-
-#define NUM_ACCELS 2
-
-static int accel_fd[NUM_ACCELS];
-static uint32_t total_samples[NUM_ACCELS];
-static uint64_t last_accel_timestamp[NUM_ACCELS];
+static int accel_fd[INS_MAX_INSTANCES];
+static int gyro_fd[INS_MAX_INSTANCES];
+static uint32_t total_samples[INS_MAX_INSTANCES];
+static uint64_t last_accel_timestamp[INS_MAX_INSTANCES];
+static uint64_t last_gyro_timestamp[INS_MAX_INSTANCES];
+static uint32_t accel_deltat_min[INS_MAX_INSTANCES];
+static uint32_t accel_deltat_max[INS_MAX_INSTANCES];
+static uint32_t gyro_deltat_min[INS_MAX_INSTANCES];
+static uint32_t gyro_deltat_max[INS_MAX_INSTANCES];
 static DataFlash_File DataFlash("/fs/microsd/VIBTEST");
 
-#define LOG_ACCEL0_MSG 215
+#define LOG_ACC1_MSG 215
+#define LOG_GYR1_MSG 225
 
-struct PACKED log_Accel {
+struct PACKED log_ACCEL {
     LOG_PACKET_HEADER;
     uint32_t timestamp;
-    float X, Y, Z;
+    uint32_t timestamp_us;
+    float AccX, AccY, AccZ;
+};
+
+struct PACKED log_GYRO {
+    LOG_PACKET_HEADER;
+    uint32_t timestamp;
+    uint32_t timestamp_us;
+    float GyrX, GyrY, GyrZ;
 };
 
 static const struct LogStructure log_structure[] PROGMEM = {
     LOG_COMMON_STRUCTURES,
-    { LOG_ACCEL0_MSG, sizeof(log_Accel),       
-      "ACC0", "Ifff",        "TimeUS,X,Y,Z" },
-    { LOG_ACCEL0_MSG+1, sizeof(log_Accel),       
-      "ACC1", "Ifff",        "TimeUS,X,Y,Z" }
+    { LOG_ACC1_MSG, sizeof(log_ACCEL),       
+      "ACC1", "IIfff",        "TimeMS,TimeUS,AccX,AccY,AccZ" },
+    { LOG_ACC1_MSG+1, sizeof(log_ACCEL),       
+      "ACC2", "IIfff",        "TimeMS,TimeUS,AccX,AccY,AccZ" },
+    { LOG_ACC1_MSG+2, sizeof(log_ACCEL),       
+      "ACC3", "IIfff",        "TimeMS,TimeUS,AccX,AccY,AccZ" },
+    { LOG_GYR1_MSG, sizeof(log_GYRO),       
+      "GYR1", "IIfff",        "TimeMS,TimeUS,GyrX,GyrY,GyrZ" },
+    { LOG_GYR1_MSG+1, sizeof(log_GYRO),       
+      "GYR2", "IIfff",        "TimeMS,TimeUS,GyrX,GyrY,GyrZ" },
+    { LOG_GYR1_MSG+2, sizeof(log_GYRO),       
+      "GYR3", "IIfff",        "TimeMS,TimeUS,GyrX,GyrY,GyrZ" }
 };
 
 void setup(void)
 {
-    accel_fd[0] = open(ACCEL_DEVICE_PATH, O_RDONLY);
-    accel_fd[1] = open(ACCEL_DEVICE_PATH "1", O_RDONLY);
+    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+        char accel_path[] = ACCEL_DEVICE_PATH "n";
+        char gyro_path[] = GYRO_DEVICE_PATH "n";
+        accel_path[strlen(accel_path)-1] = (i==0?0:'1'+(i-1));
+        gyro_path[strlen(gyro_path)-1] = (i==0?0:'1'+(i-1));
+        accel_fd[i] = open(accel_path, O_RDONLY);
+        gyro_fd[i] = open(gyro_path, O_RDONLY);
+    }
+    if (accel_fd[0] == -1 || gyro_fd[0] == -1) {
+            hal.scheduler->panic("Failed to open accel/gyro 0");
+    }
 
-    for (uint8_t i=0; i<NUM_ACCELS; i++) {
-        if (accel_fd[i] == -1) {
-            hal.console->printf("Failed to open accel[%u]\n", (unsigned)i);
-            hal.scheduler->panic("Failed to open accel");
-        }
+    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
         // disable software filtering
-        ioctl(accel_fd[i], ACCELIOCSLOWPASS, 0);
-
-        // max queue depth
-        ioctl(accel_fd[i], SENSORIOCSQUEUEDEPTH, 100);
+        if (accel_fd[i] != -1) {
+            ioctl(accel_fd[i], ACCELIOCSLOWPASS, 0);
+            ioctl(accel_fd[i], SENSORIOCSQUEUEDEPTH, 100);
+        }
+        if (gyro_fd[i] != -1) {
+            ioctl(gyro_fd[i], GYROIOCSLOWPASS, 0);
+            ioctl(gyro_fd[i], SENSORIOCSQUEUEDEPTH, 100);
+        }
     }
 
     DataFlash.Init(log_structure, sizeof(log_structure)/sizeof(log_structure[0]));
@@ -90,30 +120,84 @@ void setup(void)
 
 void loop(void)
 {
-    for (uint8_t i=0; i<NUM_ACCELS; i++) {
-        struct accel_report	accel_report;
-        while (::read(accel_fd[i], &accel_report, sizeof(accel_report)) == 
-               sizeof(accel_report) &&
-               accel_report.timestamp != last_accel_timestamp[i]) {        
-            last_accel_timestamp[i] = accel_report.timestamp;
+    bool got_sample = false;
+    static uint32_t last_print;
+    do {
+        got_sample = false;
+        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+            struct accel_report	accel_report;
+            struct gyro_report	gyro_report;
+            
+            if (accel_fd[i] != -1 && ::read(accel_fd[i], &accel_report, sizeof(accel_report)) == 
+                sizeof(accel_report) &&
+                accel_report.timestamp != last_accel_timestamp[i]) {        
+                uint32_t deltat = accel_report.timestamp - last_accel_timestamp[i];
+                if (deltat > accel_deltat_max[i]) {
+                    accel_deltat_max[i] = deltat;
+                }
+                if (accel_deltat_min[i] == 0 || deltat < accel_deltat_max[i]) {
+                    accel_deltat_min[i] = deltat;
+                }
+                last_accel_timestamp[i] = accel_report.timestamp;
 
-            struct log_Accel pkt = {
-                LOG_PACKET_HEADER_INIT((uint8_t)(LOG_ACCEL0_MSG+i)),
-                timestamp : (uint32_t)accel_report.timestamp,
-                X         : accel_report.x,
-                Y         : accel_report.y,
-                Z         : accel_report.z
-            };
-            DataFlash.WriteBlock(&pkt, sizeof(pkt));
-            total_samples[i]++;
-            if (total_samples[i] % 2000 == 0) {
-                hal.console->printf("t=%lu total_samples=%lu/%lu\n",
-                                    hal.scheduler->millis(), 
-                                    total_samples[0], total_samples[1]);
+                struct log_ACCEL pkt = {
+                    LOG_PACKET_HEADER_INIT((uint8_t)(LOG_ACC1_MSG+i)),
+                    timestamp : (uint32_t)(accel_report.timestamp/1000),
+                    timestamp_us : (uint32_t)accel_report.timestamp,
+                    AccX      : accel_report.x,
+                    AccY      : accel_report.y,
+                    AccZ      : accel_report.z
+                };
+                DataFlash.WriteBlock(&pkt, sizeof(pkt));
+                got_sample = true;
+                total_samples[i]++;
+            }
+            if (gyro_fd[i] != -1 && ::read(gyro_fd[i], &gyro_report, sizeof(gyro_report)) == 
+                sizeof(gyro_report) &&
+                gyro_report.timestamp != last_gyro_timestamp[i]) {        
+                uint32_t deltat = gyro_report.timestamp - last_gyro_timestamp[i];
+                if (deltat > gyro_deltat_max[i]) {
+                    gyro_deltat_max[i] = deltat;
+                }
+                if (gyro_deltat_min[i] == 0 || deltat < gyro_deltat_max[i]) {
+                    gyro_deltat_min[i] = deltat;
+                }
+                last_gyro_timestamp[i] = gyro_report.timestamp;
+
+                struct log_GYRO pkt = {
+                    LOG_PACKET_HEADER_INIT((uint8_t)(LOG_GYR1_MSG+i)),
+                    timestamp : (uint32_t)(gyro_report.timestamp/1000),
+                    timestamp_us : (uint32_t)gyro_report.timestamp,
+                    GyrX      : gyro_report.x,
+                    GyrY      : gyro_report.y,
+                    GyrZ      : gyro_report.z
+                };
+                DataFlash.WriteBlock(&pkt, sizeof(pkt));
+                got_sample = true;
+                total_samples[i]++;
             }
         }
-    }
-    hal.scheduler->delay(1);
+        if (got_sample) {
+            if (total_samples[0] % 2000 == 0 && last_print != total_samples[0]) {
+                last_print = total_samples[0];
+                hal.console->printf("t=%lu total_samples=%lu/%lu/%lu adt=%u:%u/%u:%u/%u:%u gdt=%u:%u/%u:%u/%u:%u\n",
+                                    hal.scheduler->millis(), 
+                                    total_samples[0], total_samples[1],total_samples[2],
+                                    accel_deltat_min[0], accel_deltat_max[0], 
+                                    accel_deltat_min[1], accel_deltat_max[1], 
+                                    accel_deltat_min[2], accel_deltat_max[2], 
+                                    gyro_deltat_min[0], gyro_deltat_max[0], 
+                                    gyro_deltat_min[1], gyro_deltat_max[1], 
+                                    gyro_deltat_min[2], gyro_deltat_max[2]);
+
+                memset(accel_deltat_min, 0, sizeof(accel_deltat_min));
+                memset(accel_deltat_max, 0, sizeof(accel_deltat_max));
+                memset(gyro_deltat_min, 0, sizeof(gyro_deltat_min));
+                memset(gyro_deltat_max, 0, sizeof(gyro_deltat_max));
+            }
+        }
+    } while (got_sample);
+    hal.scheduler->delay_microseconds(200);
 }
 
 #else

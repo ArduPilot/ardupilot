@@ -93,20 +93,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(rtl_altitude,   "RTL_ALT",     RTL_ALT),
 
-    // @Param: SONAR_ENABLE
-    // @DisplayName: Sonar enable/disable
-    // @Description: Setting this to Enabled(1) will enable the sonar. Setting this to Disabled(0) will disable the sonar
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Standard
-    GSCALAR(sonar_enabled,  "SONAR_ENABLE",     DISABLED),
-
-    // @Param: SONAR_TYPE
-    // @DisplayName: Sonar type
-    // @Description: Used to adjust scaling to match the sonar used (only Maxbotix sonars are supported at this time)
-    // @Values: 0:XL-EZ0 / XL-EZ4,1:LV-EZ0,2:XLL-EZ0,3:HRLV
-    // @User: Standard
-    GSCALAR(sonar_type,     "SONAR_TYPE",           AP_RANGEFINDER_MAXSONARXL),
-
     // @Param: SONAR_GAIN
     // @DisplayName: Sonar gain
     // @Description: Used to adjust the speed with which the target altitude is changed when objects are sensed below the copter
@@ -301,42 +287,42 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: FLTMODE1
     // @DisplayName: Flight Mode 1
     // @Description: Flight mode when Channel 5 pwm is <= 1230
-    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport,16:Hybrid
+    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport,16:PosHold
     // @User: Standard
     GSCALAR(flight_mode1, "FLTMODE1",               FLIGHT_MODE_1),
 
     // @Param: FLTMODE2
     // @DisplayName: Flight Mode 2
     // @Description: Flight mode when Channel 5 pwm is >1230, <= 1360
-    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport,16:Hybrid
+    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport,16:PosHold
     // @User: Standard
     GSCALAR(flight_mode2, "FLTMODE2",               FLIGHT_MODE_2),
 
     // @Param: FLTMODE3
     // @DisplayName: Flight Mode 3
     // @Description: Flight mode when Channel 5 pwm is >1360, <= 1490
-    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport,16:Hybrid
+    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport,16:PosHold
     // @User: Standard
     GSCALAR(flight_mode3, "FLTMODE3",               FLIGHT_MODE_3),
 
     // @Param: FLTMODE4
     // @DisplayName: Flight Mode 4
     // @Description: Flight mode when Channel 5 pwm is >1490, <= 1620
-    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport,16:Hybrid
+    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport,16:PosHold
     // @User: Standard
     GSCALAR(flight_mode4, "FLTMODE4",               FLIGHT_MODE_4),
 
     // @Param: FLTMODE5
     // @DisplayName: Flight Mode 5
     // @Description: Flight mode when Channel 5 pwm is >1620, <= 1749
-    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport,16:Hybrid
+    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport,16:PosHold
     // @User: Standard
     GSCALAR(flight_mode5, "FLTMODE5",               FLIGHT_MODE_5),
 
     // @Param: FLTMODE6
     // @DisplayName: Flight Mode 6
     // @Description: Flight mode when Channel 5 pwm is >=1750
-    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport,16:Hybrid
+    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport,16:PosHold
     // @User: Standard
     GSCALAR(flight_mode6, "FLTMODE6",               FLIGHT_MODE_6),
 
@@ -357,14 +343,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: ESC Calibration
     // @Description: Controls whether ArduCopter will enter ESC calibration on the next restart.  Do not adjust this parameter manually.
     // @User: Advanced
-    // @Values: 0:Normal Start-up,1:Start-up in ESC Calibration mode
+    // @Values: 0:Normal Start-up, 1:Start-up in ESC Calibration mode if throttle high, 2:Start-up in ESC Calibration mode regardless of throttle
     GSCALAR(esc_calibrate, "ESC",                   0),
 
     // @Param: TUNE
     // @DisplayName: Channel 6 Tuning
     // @Description: Controls which parameters (normally PID gains) are being tuned with transmitter's channel 6 knob
     // @User: Standard
-    // @Values: 0:None,1:Stab Roll/Pitch kP,4:Rate Roll/Pitch kP,5:Rate Roll/Pitch kI,21:Rate Roll/Pitch kD,3:Stab Yaw kP,6:Rate Yaw kP,26:Rate Yaw kD,14:Altitude Hold kP,7:Throttle Rate kP,34:Throttle Accel kP,35:Throttle Accel kI,36:Throttle Accel kD,42:Loiter Speed,12:Loiter Pos kP,22:Loiter Rate kP,28:Loiter Rate kI,23:Loiter Rate kD,10:WP Speed,25:Acro RollPitch kP,40:Acro Yaw kP,9:Relay On/Off,13:Heli Ext Gyro,17:OF Loiter kP,18:OF Loiter kI,19:OF Loiter kD,30:AHRS Yaw kP,31:AHRS kP,32:INAV_TC,38:Declination,39:Circle Rate,41:Sonar Gain
+    // @Values: 0:None,1:Stab Roll/Pitch kP,4:Rate Roll/Pitch kP,5:Rate Roll/Pitch kI,21:Rate Roll/Pitch kD,3:Stab Yaw kP,6:Rate Yaw kP,26:Rate Yaw kD,14:Altitude Hold kP,7:Throttle Rate kP,34:Throttle Accel kP,35:Throttle Accel kI,36:Throttle Accel kD,42:Loiter Speed,12:Loiter Pos kP,22:Loiter Rate kP,28:Loiter Rate kI,23:Loiter Rate kD,10:WP Speed,25:Acro RollPitch kP,40:Acro Yaw kP,9:Relay On/Off,13:Heli Ext Gyro,17:OF Loiter kP,18:OF Loiter kI,19:OF Loiter kD,30:AHRS Yaw kP,31:AHRS kP,32:INAV_TC,38:Declination,39:Circle Rate,41:Sonar Gain,46:Rate Pitch kP,47:Rate Pitch kI,48:Rate Pitch kD,49:Rate Roll kP,50:Rate Roll kI,51:Rate Roll kD,52:Rate Pitch FF,53:Rate Roll FF,54:Rate Yaw FF
     GSCALAR(radio_tuning, "TUNE",                   0),
 
     // @Param: TUNE_LOW
@@ -391,14 +377,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: CH7_OPT
     // @DisplayName: Channel 7 option
     // @Description: Select which function if performed when CH7 is above 1800 pwm
-    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 8:Multi Mode, 9:Camera Trigger, 10:Sonar, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:EPM, 20:EKF, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset
+    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 8:Multi Mode, 9:Camera Trigger, 10:Sonar, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:EPM, 20:EKF, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount
     // @User: Standard
     GSCALAR(ch7_option, "CH7_OPT",                  CH7_OPTION),
 
     // @Param: CH8_OPT
     // @DisplayName: Channel 8 option
     // @Description: Select which function if performed when CH8 is above 1800 pwm
-    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 8:Multi Mode, 9:Camera Trigger, 10:Sonar, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:EPM, 20:EKF, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset
+    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 8:Multi Mode, 9:Camera Trigger, 10:Sonar, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:EPM, 20:EKF, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount
     // @User: Standard
     GSCALAR(ch8_option, "CH8_OPT",                  CH8_OPTION),
 
@@ -425,22 +411,29 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Values: 0:Very Soft, 25:Soft, 50:Medium, 75:Crisp, 100:Very Crisp
     GSCALAR(rc_feel_rp, "RC_FEEL_RP",  RC_FEEL_RP_VERY_CRISP),
 
-#if HYBRID_ENABLED == ENABLED
-    // @Param: HYBR_BRAKE_RATE
-    // @DisplayName: Hybrid braking rate
-    // @Description: hybrid flight mode's rotation rate during braking in deg/sec
+#if POSHOLD_ENABLED == ENABLED
+    // @Param: PHLD_BRAKE_RATE
+    // @DisplayName: PosHold braking rate
+    // @Description: PosHold flight mode's rotation rate during braking in deg/sec
     // @Range: 4 12
     // @User: Advanced
-    GSCALAR(hybrid_brake_rate, "HYBR_BRAKE_RATE",  HYBRID_BRAKE_RATE_DEFAULT),
+    GSCALAR(poshold_brake_rate, "PHLD_BRAKE_RATE",  POSHOLD_BRAKE_RATE_DEFAULT),
 
-    // @Param: HYBR_BRAKE_ANGLE
-    // @DisplayName: Hybrid braking angle max
-    // @Description: hybrid flight mode's max lean angle during braking in centi-degrees
+    // @Param: PHLD_BRAKE_ANGLE
+    // @DisplayName: PosHold braking angle max
+    // @Description: PosHold flight mode's max lean angle during braking in centi-degrees
     // @Units: Centi-degrees
     // @Range: 2000 4500
     // @User: Advanced
-    GSCALAR(hybrid_brake_angle_max, "HYBR_BRAKE_ANGLE",  HYBRID_BRAKE_ANGLE_DEFAULT),
+    GSCALAR(poshold_brake_angle_max, "PHLD_BRAKE_ANGLE",  POSHOLD_BRAKE_ANGLE_DEFAULT),
 #endif
+
+    // @Param: LAND_REPOSITION
+    // @DisplayName: Land repositioning
+    // @Description: Enables user input during LAND mode, the landing phase of RTL, and auto mode landings.
+    // @Values: 0:No repositiong, 1:Repositioning
+    // @User: Advanced
+    GSCALAR(land_repositioning, "LAND_REPOSITION",     LAND_REPOSITION_DEFAULT),
 
 #if FRAME_CONFIG ==     HELI_FRAME
     // @Group: HS1_
@@ -1081,6 +1074,12 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Group: MIS_
     // @Path: ../libraries/AP_Mission/AP_Mission.cpp
     GOBJECT(mission, "MIS_",       AP_Mission),
+
+#if CONFIG_SONAR == ENABLED
+    // @Group: SONAR
+    // @Path: ../libraries/AP_RangeFinder/RangeFinder.cpp
+    GOBJECT(sonar,   "SONAR", RangeFinder),
+#endif
 
     AP_VAREND
 };

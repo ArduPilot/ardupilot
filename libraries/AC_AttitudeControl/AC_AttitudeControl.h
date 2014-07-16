@@ -33,6 +33,7 @@
 #define AC_ATTITUDE_RATE_STAB_ROLL_OVERSHOOT_ANGLE_MAX  3000.0f // earth-frame rate stabilize controller's maximum overshoot angle
 #define AC_ATTITUDE_RATE_STAB_PITCH_OVERSHOOT_ANGLE_MAX 3000.0f // earth-frame rate stabilize controller's maximum overshoot angle
 #define AC_ATTITUDE_RATE_STAB_YAW_OVERSHOOT_ANGLE_MAX   1000.0f // earth-frame rate stabilize controller's maximum overshoot angle
+#define AC_ATTITUDE_RATE_STAB_ACRO_OVERSHOOT_ANGLE_MAX  1000.0f // earth-frame rate stabilize controller's maximum overshoot angle
 
 #define AC_ATTITUDE_100HZ_DT                            0.0100f // delta time in seconds for 100hz update rate
 #define AC_ATTITUDE_400HZ_DT                            0.0025f // delta time in seconds for 400hz update rate
@@ -40,17 +41,17 @@
 #define AC_ATTITUDE_RATE_RP_PID_DTERM_FILTER            20      // D-term filter rate cutoff frequency for Roll and Pitch rate controllers
 #define AC_ATTITUDE_RATE_Y_PID_DTERM_FILTER             5       // D-term filter rate cutoff frequency for Yaw rate controller
 
+#define AC_ATTITUDE_CONTROL_RATE_BF_FF_DEFAULT          1       // body-frame rate feedforward enabled by default
+
 class AC_AttitudeControl {
 public:
 	AC_AttitudeControl( AP_AHRS &ahrs,
-                        AP_InertialSensor& ins,
                         const AP_Vehicle::MultiCopter &aparm,
                         AP_Motors& motors,
                         AC_P& pi_angle_roll, AC_P& pi_angle_pitch, AC_P& pi_angle_yaw,
                         AC_PID& pid_rate_roll, AC_PID& pid_rate_pitch, AC_PID& pid_rate_yaw
                         ) :
 		_ahrs(ahrs),
-        _ins(ins),
         _aparm(aparm),
         _motors(motors),
         _p_angle_roll(pi_angle_roll),
@@ -60,13 +61,17 @@ public:
         _pid_rate_pitch(pid_rate_pitch),
         _pid_rate_yaw(pid_rate_yaw),
         _dt(AC_ATTITUDE_100HZ_DT),
-        _angle_boost(0)
+        _angle_boost(0),
+        _acro_angle_switch(0)
 		{
 			AP_Param::setup_object_defaults(this, var_info);
 
 			// initialise flags
 			_flags.limit_angle_to_rate_request = true;
 		}
+
+	// empty destructor to suppress compiler warning
+	virtual ~AC_AttitudeControl() {}
 
     //
     // initialisation functions
@@ -75,8 +80,11 @@ public:
     // set_dt - sets time delta in seconds for all controllers (i.e. 100hz = 0.01, 400hz = 0.0025)
     void set_dt(float delta_sec);
 
-    // init_targets - resets target angles to current angles
-    void init_targets();
+    // relax_bf_rate_controller - ensure body-frame rate controller has zero errors to relax rate controller output
+    void relax_bf_rate_controller();
+
+    // set_yaw_target_to_current_heading - sets yaw target to current heading
+    void set_yaw_target_to_current_heading() { _angle_ef_target.z = _ahrs.yaw_sensor; }
 
     //
     // methods to be called by upper controllers to request and implement a desired attitude
@@ -129,6 +137,12 @@ public:
     void rate_bf_pitch_target(float rate_cds) { _rate_bf_target.y = rate_cds; }
     void rate_bf_yaw_target(float rate_cds) { _rate_bf_target.z = rate_cds; }
 
+    // enable_bf_feedforward - enable or disable body-frame feed forward
+    void bf_feedforward(bool enable_or_disable) { _rate_bf_ff_enabled = enable_or_disable; }
+
+    // enable_bf_feedforward - enable or disable body-frame feed forward
+    void accel_limiting(bool enable_or_disable);
+
     //
     // throttle functions
     //
@@ -158,13 +172,13 @@ protected:
     } _flags;
     
     // update_ef_roll_angle_and_error - update _angle_ef_target.x using an earth frame roll rate request
-    void update_ef_roll_angle_and_error(float roll_rate_ef, Vector3f &angle_ef_error);
+    void update_ef_roll_angle_and_error(float roll_rate_ef, Vector3f &angle_ef_error, float overshoot_max);
 
     // update_ef_pitch_angle_and_error - update _angle_ef_target.y using an earth frame pitch rate request
-    void update_ef_pitch_angle_and_error(float pitch_rate_ef, Vector3f &angle_ef_error);
+    void update_ef_pitch_angle_and_error(float pitch_rate_ef, Vector3f &angle_ef_error, float overshoot_max);
 
     // update_ef_yaw_angle_and_error - update _angle_ef_target.z using an earth frame yaw rate request
-    void update_ef_yaw_angle_and_error(float yaw_rate_ef, Vector3f &angle_ef_error);
+    void update_ef_yaw_angle_and_error(float yaw_rate_ef, Vector3f &angle_ef_error, float overshoot_max);
 
     // integrate_bf_rate_error_to_angle_errors - calculates body frame angle errors
     //   body-frame feed forward rates (centi-degrees / second) taken from _angle_bf_error
@@ -212,7 +226,6 @@ protected:
 
     // references to external libraries
     const AP_AHRS&      _ahrs;
-    const AP_InertialSensor&  _ins;
     const AP_Vehicle::MultiCopter &_aparm;
     AP_Motors&          _motors;
     AC_P&	            _p_angle_roll;
@@ -228,12 +241,13 @@ protected:
     AP_Float            _slew_yaw;              // maximum rate the yaw target can be updated in Loiter, RTL, Auto flight modes
     AP_Float            _accel_rp_max;          // maximum rotation acceleration for earth-frame roll and pitch axis
     AP_Float            _accel_y_max;           // maximum rotation acceleration for earth-frame yaw axis
+    AP_Int8             _rate_bf_ff_enabled;    // Enable/Disable body frame rate feed forward
 
     // internal variables
     // To-Do: make rate targets a typedef instead of Vector3f?
     float               _dt;                    // time delta in seconds
     Vector3f            _angle_ef_target;       // angle controller earth-frame targets
-    Vector3f            _angle_bf_error;        // angle controller earth-frame targets
+    Vector3f            _angle_bf_error;        // angle controller body-frame error
     Vector3f            _rate_bf_target;        // rate controller body-frame targets
     Vector3f            _rate_ef_desired;       // earth-frame feed forward rates
     Vector3f            _rate_bf_desired;       // body-frame feed forward rates

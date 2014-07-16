@@ -70,6 +70,10 @@
  */
 #define BIT_IS_SET(value, bitnumber) (((value) & (1U<<(bitnumber))) != 0)
 
+// get high or low bytes from 2 byte integer
+#define LOWBYTE(i) ((uint8_t)(i))
+#define HIGHBYTE(i) ((uint8_t)(((uint16_t)(i))>>8))
+
 // @}
 
 
@@ -87,8 +91,6 @@
 /// bit 7: Move to next Command             0: YES,         1: Loiter until commanded
 
 //@{
-#define LOCATION_MASK_OPTIONS_RELATIVE_ALT      (1<<0)     // 1 = Relative altitude
-#define LOCATION_MASK_OPTIONS_LOITER_DIRECTION  (1<<2)     // 0 = CW, 1 = CCW
 
 struct PACKED Location_Option_Flags {
     uint8_t relative_alt : 1;           // 1 if altitude is relateive to home
@@ -141,6 +143,7 @@ struct PACKED Location {
 #define AP_PRODUCT_ID_APM2_REV_D9       0x59    // APM2 with MPU6000_REV_D9
 #define AP_PRODUCT_ID_FLYMAPLE          0x100   // Flymaple with ITG3205, ADXL345, HMC5883, BMP085
 #define AP_PRODUCT_ID_L3G4200D          0x101   // Linux with L3G4200D and ADXL345
+#define AP_PRODUCT_ID_PIXHAWK_FIRE_CAPE 0x102   // Linux with the PixHawk Fire Cape
 #define AP_PRODUCT_ID_VRBRAIN           0x150   // VRBRAIN on NuttX
 
 // map from kbaud rate to baudrate

@@ -151,20 +151,6 @@ static void init_ardupilot()
     // initialise battery monitor
     battery.init();
     
-#if CONFIG_SONAR == ENABLED
- #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
-    sonar_analog_source = new AP_ADC_AnalogSource(
-            &adc, CONFIG_SONAR_SOURCE_ADC_CHANNEL, 0.25);
- #elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
-    sonar_analog_source = hal.analogin->channel(
-            CONFIG_SONAR_SOURCE_ANALOG_PIN);
- #else
-  #warning "Invalid CONFIG_SONAR_SOURCE"
- #endif
-    sonar = new AP_RangeFinder_MaxsonarXL(sonar_analog_source,
-            &sonar_mode_filter);
-#endif
-
     rssi_analog_source      = hal.analogin->channel(g.rssi_pin);
 
     barometer.init();
@@ -219,7 +205,7 @@ static void init_ardupilot()
 
  #if CONFIG_ADC == ENABLED
     // begin filtering the ADC Gyros
-    adc.Init();           // APM ADC library initialization
+    apm1_adc.Init();           // APM ADC library initialization
  #endif // CONFIG_ADC
 
     // Do GPS init
@@ -291,6 +277,15 @@ static void init_ardupilot()
 #if LOGGING_ENABLED == ENABLED
     Log_Write_Startup();
 #endif
+
+    // we don't want writes to the serial port to cause us to pause
+    // mid-flight, so set the serial ports non-blocking once we are
+    // ready to fly
+    hal.uartA->set_blocking_writes(false);
+    hal.uartC->set_blocking_writes(false);
+    if (hal.uartD != NULL) {
+        hal.uartD->set_blocking_writes(false);
+    }
 
     cliSerial->print_P(PSTR("\nReady to FLY "));
 }

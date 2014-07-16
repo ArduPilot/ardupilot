@@ -181,7 +181,7 @@ float AP_Baro::get_altitude(void)
 // assumes standard atmosphere lapse rate
 float AP_Baro::get_EAS2TAS(void)
 {
-    if ((fabs(_altitude - _last_altitude_EAS2TAS) < 100.0f) && (_EAS2TAS != 0.0f)) {
+    if ((fabsf(_altitude - _last_altitude_EAS2TAS) < 100.0f) && (_EAS2TAS != 0.0f)) {
         // not enough change to require re-calculating
         return _EAS2TAS;
     }

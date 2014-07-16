@@ -127,46 +127,54 @@ void gcs_send_text_fmt(const prog_char_t *fmt, ...);
 ////////////////////////////////////////////////////////////////////////////////
 static AP_GPS gps;
 
-#if CONFIG_BARO == AP_BARO_BMP085
+#if CONFIG_BARO == HAL_BARO_BMP085
 static AP_Baro_BMP085 barometer;
-#elif CONFIG_BARO == AP_BARO_PX4
+#elif CONFIG_BARO == HAL_BARO_PX4
 static AP_Baro_PX4 barometer;
-#elif CONFIG_BARO == AP_BARO_HIL
+#elif CONFIG_BARO == HAL_BARO_VRBRAIN
+static AP_Baro_VRBRAIN barometer;
+#elif CONFIG_BARO == HAL_BARO_HIL
 static AP_Baro_HIL barometer;
-#elif CONFIG_BARO == AP_BARO_MS5611
- #if CONFIG_MS5611_SERIAL == AP_BARO_MS5611_SPI
- static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::spi);
- #elif CONFIG_MS5611_SERIAL == AP_BARO_MS5611_I2C
- static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::i2c);
- #else
- #error Unrecognized CONFIG_MS5611_SERIAL setting.
- #endif
+#elif CONFIG_BARO == HAL_BARO_MS5611
+static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::i2c);
+#elif CONFIG_BARO == HAL_BARO_MS5611_SPI
+static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::spi);
 #else
  #error Unrecognized CONFIG_BARO setting
 #endif
 
-#if CONFIG_COMPASS == AP_COMPASS_PX4
+#if CONFIG_COMPASS == HAL_COMPASS_PX4
 static AP_Compass_PX4 compass;
-#elif CONFIG_COMPASS == AP_COMPASS_HMC5843
+#elif CONFIG_COMPASS == HAL_COMPASS_VRBRAIN
+static AP_Compass_VRBRAIN compass;
+#elif CONFIG_COMPASS == HAL_COMPASS_HMC5843
 static AP_Compass_HMC5843 compass;
-#elif CONFIG_COMPASS == AP_COMPASS_HIL
+#elif CONFIG_COMPASS == HAL_COMPASS_HIL
 static AP_Compass_HIL compass;
 #else
  #error Unrecognized CONFIG_COMPASS setting
 #endif
 
-#if CONFIG_INS_TYPE == CONFIG_INS_MPU6000
+#if CONFIG_INS_TYPE == HAL_INS_OILPAN || CONFIG_HAL_BOARD == HAL_BOARD_APM1
+AP_ADC_ADS7844 apm1_adc;
+#endif
+
+#if CONFIG_INS_TYPE == HAL_INS_MPU6000
 AP_InertialSensor_MPU6000 ins;
-#elif CONFIG_INS_TYPE == CONFIG_INS_PX4
+#elif CONFIG_INS_TYPE == HAL_INS_PX4
 AP_InertialSensor_PX4 ins;
-#elif CONFIG_INS_TYPE == CONFIG_INS_HIL
+#elif CONFIG_INS_TYPE == HAL_INS_VRBRAIN
+AP_InertialSensor_VRBRAIN ins;
+#elif CONFIG_INS_TYPE == HAL_INS_HIL
 AP_InertialSensor_HIL ins;
-#elif CONFIG_INS_TYPE == CONFIG_INS_OILPAN
+#elif CONFIG_INS_TYPE == HAL_INS_OILPAN
 AP_InertialSensor_Oilpan ins( &apm1_adc );
-#elif CONFIG_INS_TYPE == CONFIG_INS_FLYMAPLE
+#elif CONFIG_INS_TYPE == HAL_INS_FLYMAPLE
 AP_InertialSensor_Flymaple ins;
-#elif CONFIG_INS_TYPE == CONFIG_INS_L3G4200D
+#elif CONFIG_INS_TYPE == HAL_INS_L3G4200D
 AP_InertialSensor_L3G4200D ins;
+#elif CONFIG_INS_TYPE == HAL_INS_MPU9250
+AP_InertialSensor_MPU9250 ins;
 #else
   #error Unrecognised CONFIG_INS_TYPE setting.
 #endif // CONFIG_INS_TYPE
