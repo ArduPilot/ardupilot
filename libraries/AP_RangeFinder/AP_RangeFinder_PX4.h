@@ -26,6 +26,9 @@ public:
     // constructor
     AP_RangeFinder_PX4(RangeFinder &ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state);
 
+    // destructor
+    ~AP_RangeFinder_PX4(void);
+    
     // static detection function
     static bool detect(RangeFinder &ranger, uint8_t instance);
 

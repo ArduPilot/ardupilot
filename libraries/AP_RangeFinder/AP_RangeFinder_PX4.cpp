@@ -63,6 +63,16 @@ AP_RangeFinder_PX4::AP_RangeFinder_PX4(RangeFinder &_ranger, uint8_t instance, R
 }
 
 /* 
+   close the file descriptor
+*/
+AP_RangeFinder_PX4::~AP_RangeFinder_PX4()
+{
+    if (_fd != -1) {
+        close(_fd);
+    }
+}
+
+/* 
    open the PX4 driver, returning the file descriptor
 */
 int AP_RangeFinder_PX4::open_driver(void)
