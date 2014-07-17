@@ -83,16 +83,9 @@ bool AP_RangeFinder_PulsedLightLRF::get_reading(uint16_t &reading_cm)
         return false;
     }
 
-    // read the high byte
+    // read the high and low byte distance registers
     if (hal.i2c->readRegisters(AP_RANGEFINDER_PULSEDLIGHTLRF_ADDR, 
-                               AP_RANGEFINDER_PULSEDLIGHTLRF_DISTHIGH_REG, 1, &buff[0]) != 0) {
-        i2c_sem->give();
-        return false;
-    }
-    hal.scheduler->delay_microseconds(200);
-    // read the low byte
-    if (hal.i2c->readRegisters(AP_RANGEFINDER_PULSEDLIGHTLRF_ADDR, 
-                               AP_RANGEFINDER_PULSEDLIGHTLRF_DISTLOW_REG, 1, &buff[1]) != 0) {
+                               AP_RANGEFINDER_PULSEDLIGHTLRF_DISTHIGH_REG, 2, &buff[0]) != 0) {
         i2c_sem->give();
         return false;
     }
