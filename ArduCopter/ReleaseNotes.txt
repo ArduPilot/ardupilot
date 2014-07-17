@@ -17,6 +17,7 @@ Changes from 3.2-rc2
 7) Safety items:
     a) increased default circular Fence radius to 300m to reduce chance of breach when GPS lock first acquired
     b) radio failsafe timeout for late frames reduced to 0.5sec for normal receivers or 2.0sec when flying with joystick (Craig)
+    c) accelerometer pre-arm check for all active accelerometers (previously only checked the primary accelerometer)
 8) Other features:
     a) ch7/ch8 option to retract mount (svefro)
     b) Do-Set-ROI supported in Guided, RTL mode
@@ -28,6 +29,7 @@ Changes from 3.2-rc2
 10) Bug fixes:
     a) bug fix to flip on take-off in stabilize mode when landing flag cleared slowly (JonathanC)
     b) allow disarming in AutoTune (JonathanC)
+    c) bug fix to unpredictable behaviour when two spline points placed directly ontop of each other
 ------------------------------------------------------------------
 ArduCopter 3.2-rc2 27-May-2014
 Changes from 3.2-rc1
