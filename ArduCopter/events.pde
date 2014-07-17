@@ -71,6 +71,7 @@ static void failsafe_radio_on_event()
             if (g.failsafe_battery_enabled == FS_BATT_LAND && failsafe.battery) {
                 break;
             }
+            // no break
         default:
             if(g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
                 // if failsafe_throttle is 3 (i.e. FS_THR_ENABLED_ALWAYS_LAND) land immediately
@@ -146,6 +147,7 @@ static void failsafe_battery_event(void)
                     init_disarm_motors();
                     break;
                 }
+                // no break
             default:
                 // set mode to RTL or LAND
                 if (g.failsafe_battery_enabled == FS_BATT_RTL && home_distance > wp_nav.get_wp_radius()) {
