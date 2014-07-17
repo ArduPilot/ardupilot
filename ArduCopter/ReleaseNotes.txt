@@ -13,16 +13,19 @@ Changes from 3.2-rc2
     b) bug-fixes when feed-forward turned off (Leonard)
 6) TradHeli improvements (RobL):
     a) bug fix to use full collective range in stabilize and acro flight modes
-    b) filter added to main rotor input (ch8) to ensure momentary blip doesn't affect main rotor speed 
-7) Other features:
+    b) filter added to main rotor input (ch8) to ensure momentary blip doesn't affect main rotor speed
+7) Safety items:
+    a) increased default circular Fence radius to 300m to reduce chance of breach when GPS lock first acquired
+    b) radio failsafe timeout for late frames reduced to 0.5sec for normal receivers or 2.0sec when flying with joystick (Craig)
+8) Other features:
     a) ch7/ch8 option to retract mount (svefro)
     b) Do-Set-ROI supported in Guided, RTL mode
     c) Condition-Yaw accepted in Guided, RTL modes (MoussSS)
     d) CAMERA dataflash message includes relative and absolute altitude (Craig)
-8) Red Balloon Popper support (Randy, Leonard):
+9) Red Balloon Popper support (Randy, Leonard):
     a) Velocity controller added to Guided mode
     b) NAV_GUIDED mission command added
-9) Bug fixes:
+10) Bug fixes:
     a) bug fix to flip on take-off in stabilize mode when landing flag cleared slowly (JonathanC)
     b) allow disarming in AutoTune (JonathanC)
 ------------------------------------------------------------------
