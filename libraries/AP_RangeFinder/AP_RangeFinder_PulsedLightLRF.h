@@ -33,8 +33,7 @@
 
 // registers
 #define AP_RANGEFINDER_PULSEDLIGHTLRF_MEASURE_REG           0x00
-#define AP_RANGEFINDER_PULSEDLIGHTLRF_DISTHIGH_REG          0x0f    // high byte of distance measurement
-#define AP_RANGEFINDER_PULSEDLIGHTLRF_DISTLOW_REG           0x10    // low byte of distance measurement
+#define AP_RANGEFINDER_PULSEDLIGHTLRF_DISTHIGH_REG          0x8f    // high byte of distance measurement
 
 // command register values
 #define AP_RANGEFINDER_PULSEDLIGHTLRF_MSRREG_ACQUIRE        0x04    // Varies based on sensor revision, 0x04 is newest, 0x61 is older
