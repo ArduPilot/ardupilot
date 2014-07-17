@@ -202,7 +202,7 @@ static bool update_land_detector()
                 land_detector = 0;
             }
         }
-    } else if (g.rc_3.control_in != 0 || failsafe.radio) {
+    } else if ((motors.get_throttle_out() >= get_non_takeoff_throttle()) || failsafe.radio) {
         // we've sensed movement up or down so reset land_detector
         land_detector = 0;
         if(ap.land_complete) {
