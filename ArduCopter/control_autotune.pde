@@ -243,8 +243,8 @@ static void autotune_run()
     if (ap.land_complete) {
         attitude_control.relax_bf_rate_controller();
         attitude_control.set_yaw_target_to_current_heading();
-        // move throttle to minimum to keep us on the ground
-        attitude_control.set_throttle_out(0, false);
+        // move throttle to between minimum and non-takeoff-throttle to keep us on the ground
+        attitude_control.set_throttle_out(get_throttle_pre_takeoff(g.rc_3.control_in), false);
     }else{
         // check if pilot is overriding the controls
         if (target_roll != 0 || target_pitch != 0 || target_yaw_rate != 0.0f || target_climb_rate != 0) {
