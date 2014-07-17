@@ -317,9 +317,14 @@
  # define FS_GCS_TIMEOUT_MS             5000    // gcs failsafe triggers after 5 seconds with no GCS heartbeat
 #endif
 
+// Radio failsafe while using RC_override
+#ifndef FS_RADIO_RC_OVERRIDE_TIMEOUT_MS
+ # define FS_RADIO_RC_OVERRIDE_TIMEOUT_MS  2000    // RC Radio failsafe triggers after 2 seconds while using RC_override from ground station
+#endif
+
 // Radio failsafe
-#ifndef FAILSAFE_RADIO_TIMEOUT_MS
- #define FAILSAFE_RADIO_TIMEOUT_MS      200     // RC Radio Failsafe triggers after 200 miliseconds with No RC Input
+#ifndef FS_RADIO_TIMEOUT_MS
+ #define FS_RADIO_TIMEOUT_MS            500     // RC Radio Failsafe triggers after 500 miliseconds with No RC Input
 #endif
 
 // possible values for FS_GCS parameter

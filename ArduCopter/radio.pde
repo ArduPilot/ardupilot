@@ -123,11 +123,11 @@ static void read_radio()
         RC_Channel_aux::output_ch_all();
     }else{
         uint32_t elapsed = millis() - last_update;
-        // turn on throttle failsafe if no update from ppm encoder for 2 seconds
-        if ((ap.rc_receiver_present && (elapsed >= FAILSAFE_RADIO_TIMEOUT_MS)) || (!ap.rc_receiver_present && (elapsed >= FS_GCS_TIMEOUT_MS))
-            && g.failsafe_throttle && motors.armed() && !failsafe.radio) {
-            Log_Write_Error(ERROR_SUBSYSTEM_RADIO, ERROR_CODE_RADIO_LATE_FRAME);
-            set_failsafe_radio(true);
+        // turn on throttle failsafe if no update from the RC Radio for 500ms or 2000ms if we are using RC_OVERRIDE
+                if ((!failsafe.rc_override_active && (elapsed >= FS_RADIO_TIMEOUT_MS)) || (failsafe.rc_override_active && (elapsed >= FS_RADIO_RC_OVERRIDE_TIMEOUT_MS))
+                    && g.failsafe_throttle && motors.armed() && !failsafe.radio) {
+                    Log_Write_Error(ERROR_SUBSYSTEM_RADIO, ERROR_CODE_RADIO_LATE_FRAME);
+                    set_failsafe_radio(true);
         }
     }
 }
