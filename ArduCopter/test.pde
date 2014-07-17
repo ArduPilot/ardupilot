@@ -34,7 +34,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
     {"shell", 				test_shell},
 #endif
 #if HIL_MODE == HIL_MODE_DISABLED
-    {"sonar",               test_sonar},
+    {"rangefinder",         test_sonar},
 #endif
 };
 
@@ -260,25 +260,24 @@ test_shell(uint8_t argc, const Menu::arg *argv)
 
 #if HIL_MODE == HIL_MODE_DISABLED
 /*
- *  test the sonar
+ *  test the rangefinders
  */
 static int8_t
 test_sonar(uint8_t argc, const Menu::arg *argv)
 {
 #if CONFIG_SONAR == ENABLED
-    if(!sonar.healthy()) {
-        cliSerial->printf_P(PSTR("Sonar disabled\n"));
-        return (0);
-    }
+	sonar.init();
 
-    // make sure sonar is initialised
-    init_sonar();
+    cliSerial->printf_P(PSTR("RangeFinder: %d devices detected\n"), sonar.num_sensors());
 
     print_hit_enter();
     while(1) {
         delay(100);
         sonar.update();
-        cliSerial->printf_P(PSTR("Sonar: %d cm\n"), sonar.distance_cm());
+
+        cliSerial->printf_P(PSTR("Primary: health %d distance_cm %d \n"), (int)sonar.healthy(), sonar.distance_cm());
+        cliSerial->printf_P(PSTR("All: device_0 type %d health %d distance_cm %d, device_1 type %d health %d distance_cm %d\n"), 
+        (int)sonar._type[0], (int)sonar.healthy(0), sonar.distance_cm(0), (int)sonar._type[1], (int)sonar.healthy(1), sonar.distance_cm(1));
 
         if(cliSerial->available() > 0) {
             return (0);
