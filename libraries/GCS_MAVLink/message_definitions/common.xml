@@ -2298,9 +2298,8 @@
             <description>Request for terrain data and terrain status</description>
             <field type="uint32_t" name="lat">Latitude of SW corner of first grid (degrees *10^7)</field>
             <field type="uint32_t" name="lon">Longitude of SW corner of first grid (in degrees *10^7)</field>
-            <field type="uint16_t" name="mask">Bitmask of requested 5x5 grids (row major 4x4 array of grids)</field>
             <field type="uint16_t" name="grid_spacing">Grid spacing in meters</field>
-            <field type="uint16_t" name="flags">Terrain status flags</field>
+            <field type="uint8_t[9]" name="mask">Bitmask of requested 5x5 grids (row major 9x9 array of grids)</field>
          </message>
          <message id="134" name="TERRAIN_DATA">
             <description>Terrain data sent from GCS</description>
