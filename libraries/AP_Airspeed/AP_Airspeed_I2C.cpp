@@ -30,15 +30,8 @@ extern const AP_HAL::HAL& hal;
 #define SENSOR_SCALE_MS4525DO ((6894.8*2)/(0.8*16383))
 
 // probe and initialise the sensor
-bool AP_Airspeed_I2C::init(float scale)
-{
-    // Check whether scale has been set.
-    if (scale == 0.0f) {
-        _sensor_scale_active = SENSOR_SCALE_MS4525DO;
-    } else {
-        _sensor_scale_active = scale;
-    }
-    
+bool AP_Airspeed_I2C::init()
+{    
     // get pointer to i2c bus semaphore
     AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
 
@@ -100,7 +93,7 @@ void AP_Airspeed_I2C::_collect(void)
 	  are generated when the bottom port is used as the static
 	  port on the pitot and top port is used as the dynamic port
 	 */
-    _pressure = -(dp_raw - 16383.0f/2) * _sensor_scale_active;
+    _pressure = -(dp_raw - 16383.0f/2) * _scale;
     
 	_temperature = ((200.0f * dT_raw) / 2047) - 50;
 
@@ -129,18 +122,9 @@ void AP_Airspeed_I2C::_timer(void)
 }
 
 // return the current differential_pressure in Pascal
-bool AP_Airspeed_I2C::get_differential_pressure(float &pressure, float scale)
+bool AP_Airspeed_I2C::get_differential_pressure(float &pressure)
 {
     if ((hal.scheduler->millis() - _last_sample_time_ms) > 100) {
-        return false;
-    }
-    // Check whether scaling has changed, since all these measurements have
-    // been made at the current scale.
-    if ((scale == 0.0f) && (_sensor_scale_active != SENSOR_SCALE_MS4525DO)) {
-        _sensor_scale_active = SENSOR_SCALE_MS4525DO;
-        return false; 
-    } else if (scale != _sensor_scale_active) {
-        scale = _sensor_scale_active;
         return false;
     }
     pressure = _pressure;

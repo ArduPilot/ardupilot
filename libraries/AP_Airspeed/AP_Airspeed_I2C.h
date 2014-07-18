@@ -28,11 +28,14 @@
 class AP_Airspeed_I2C : public AP_Airspeed_Backend 
 {
 public:
+    AP_Airspeed_I2C(const AP_Float &scale) : 
+    AP_Airspeed_Backend(scale)
+    {}
     // probe and initialise the sensor
-    bool init(float scale);
+    bool init();
 
     // return the current differential_pressure in Pascal
-    bool get_differential_pressure(float &pressure, float scale);
+    bool get_differential_pressure(float &pressure);
 
     // return the current temperature in degrees C, if available
     bool get_temperature(float &temperature);
@@ -43,7 +46,6 @@ private:
     void _timer(void);
     float _temperature;
     float _pressure;
-    float _sensor_scale_active;
     uint32_t _last_sample_time_ms;
     uint32_t _measurement_started_ms;
 };
