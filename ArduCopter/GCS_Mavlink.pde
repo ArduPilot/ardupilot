@@ -406,7 +406,10 @@ static void NOINLINE send_rangefinder(mavlink_channel_t chan)
     if (!sonar.healthy()) {
         return;
     }
-    mavlink_msg_rangefinder_send(chan, sonar_alt * 0.01f, 0);
+    mavlink_msg_rangefinder_send(
+            chan,
+            sonar_alt * 0.01f,
+            sonar.voltage_mv() * 0.001f);
 }
 #endif
 
