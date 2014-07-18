@@ -113,14 +113,22 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("TUBE_ORDER",  6, AP_Airspeed, _tube_order, 2),
     
-    
-    // @Param: SENSOR_SCALE
-    // @DisplayName: Control scaling of pressure sensor
-    // @Description: This parameter allows you to set custom scaling for the pressure sensor. For digital sensors, the units are Pascals per LSB, or zero to use default scaling for the MS4525DO 1PSI sensor. For analog sensors, the units are Pascals per volt, or zero to use default scaling for the 3DR analog airspeed sensor.
+    // @Param: SENSOR_SCALE_I2C
+    // @DisplayName: Control scaling of digital pressure sensor
+    // @Description: This parameter allows you to set custom scaling for the digital pressure sensor. The units are Pascals per LSB.
+    // @Values: 1.052: MS4525DO +/-1PSI sensor (PX4 I2C airspeed sensor), 1.000: ETS airspeed sensor, 0.038: Honeywell +/- 1" H2O (2.5mbar) sensor
     // @Increment: 0.01
     // @User: Advanced
-    AP_GROUPINFO("SENS_SCALE", 7, AP_Airspeed, _sensor_scale, 0.0),
-
+    AP_GROUPINFO("DIG_SCALE", 7, AP_Airspeed, _sensor_scale_digital, 1.052),
+    
+    // @Param: SENSOR_SCALE_ANALOG
+    // @DisplayName: Control scaling of analog pressure sensor
+    // @Description: This parameter allows you to set custom scaling for the analog pressure sensor. The units are Pascals per volt.
+    // @Values: 819: 3DR analog pressure sensor
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("ANA_SCALE", 8, AP_Airspeed, _sensor_scale_analog, 819),
+    
     AP_GROUPEND
 };
 
@@ -139,8 +147,8 @@ void AP_Airspeed::init()
     _last_saved_ratio = _ratio;
     _counter = 0;
     
-    analog.init(_sensor_scale);
-    digital.init(_sensor_scale);
+    analog.init();
+    digital.init();
 }
 
 // read the airspeed sensor
@@ -151,9 +159,9 @@ float AP_Airspeed::get_pressure(void)
     }
     float pressure = 0;
     if (_pin == AP_AIRSPEED_I2C_PIN) {
-        _healthy = digital.get_differential_pressure(pressure, _sensor_scale);
+        _healthy = digital.get_differential_pressure(pressure);
     } else {
-        _healthy = analog.get_differential_pressure(pressure, _sensor_scale);
+        _healthy = analog.get_differential_pressure(pressure);
     }
     return pressure;
 }
