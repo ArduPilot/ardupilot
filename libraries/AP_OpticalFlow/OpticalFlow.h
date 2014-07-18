@@ -62,6 +62,9 @@ public:
     // device_id - returns device id
     uint8_t device_id() const { return _device_id; }
 
+    // return ground distance in meters (if available)
+    float ground_distance_m() const { return _ground_distance_m; }
+
     // last_update() - returns system time of last sensor update
     uint32_t last_update() const { return _last_update; }
 
@@ -85,6 +88,7 @@ protected:
     uint8_t  _surface_quality;      // image quality (below 15 you can't trust the dx,dy values returned)
     Vector2i _raw;                  // raw x,y values from sensor
     Vector2f _velocity;             // x, y velocity in m/s
+    float    _ground_distance_m;    // ground distance in m
     uint32_t _last_update;          // millis() time of last update
 };
 

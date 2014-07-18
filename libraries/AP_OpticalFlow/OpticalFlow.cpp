@@ -18,6 +18,7 @@ OpticalFlow::OpticalFlow(const AP_AHRS &ahrs) :
     _ahrs(ahrs),
     _device_id(0),
     _surface_quality(0),
+    _ground_distance_m(0.0f),
     _last_update(0)
 {
     AP_Param::setup_object_defaults(this, var_info);
