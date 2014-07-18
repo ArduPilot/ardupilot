@@ -245,6 +245,7 @@ struct PACKED log_Optflow {
     int16_t raw_y;
     float vel_x;
     float vel_y;
+    float dist;
 };
 
 // Write an optical flow packet
@@ -264,7 +265,8 @@ static void Log_Write_Optflow()
         raw_x           : raw.x,
         raw_y           : raw.y,
         vel_x           : vel.x,
-        vel_y           : vel.y
+        vel_y           : vel.y,
+        dist            : optflow.ground_distance_m()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
  #endif     // OPTFLOW == ENABLED
@@ -670,7 +672,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_CURRENT_MSG, sizeof(log_Current),             
       "CURR", "IhIhhhf",     "TimeMS,ThrOut,ThrInt,Volt,Curr,Vcc,CurrTot" },
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),       
-      "OF",   "IBhhff",   "TimeMS,Qual,RawX,RawY,VelX,VelY" },
+      "OF",   "IBhhfff",   "TimeMS,Qual,RawX,RawY,VelX,VelY,Dist" },
     { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),       
       "NTUN", "Iffffffffff", "TimeMS,DPosX,DPosY,PosX,PosY,DVelX,DVelY,VelX,VelY,DAccX,DAccY" },
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
