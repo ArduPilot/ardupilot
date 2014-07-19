@@ -621,6 +621,7 @@ void SITL_State::_update_gps_sbp(const struct gps_data *d, bool sim_rtk)
         uint8_t n_sats;      //< Number of satellites used in solution
         uint8_t flags;       //< Status flags (reserved)
     } baseline;
+    static const uint16_t SBP_HEARTBEAT_MSGTYPE = 0xFFFF;
     static const uint16_t SBP_GPS_TIME_MSGTYPE = 0x0100;
     static const uint16_t SBP_DOPS_MSGTYPE = 0x0206;
     static const uint16_t SBP_POS_LLH_MSGTYPE = 0x0201;
@@ -662,13 +663,23 @@ void SITL_State::_update_gps_sbp(const struct gps_data *d, bool sim_rtk)
     velned.flags = 0;
     _sbp_send_message(SBP_VEL_NED_MSGTYPE, 0x2222, sizeof(velned), (uint8_t*)&velned);
 
-    dops.tow = time_week_ms;
-    dops.gdop = 1;
-    dops.pdop = 1;
-    dops.tdop = 1;
-    dops.hdop = 100;
-    dops.vdop = 1;    
-    _sbp_send_message(SBP_DOPS_MSGTYPE, 0x2222, sizeof(dops), (uint8_t*)&dops);
+    static uint32_t do_every_count = 0;
+    if (do_every_count % 5 == 0) {
+
+	    dops.tow = time_week_ms;
+	    dops.gdop = 1;
+	    dops.pdop = 1;
+	    dops.tdop = 1;
+	    dops.hdop = 100;
+	    dops.vdop = 1;    
+	    _sbp_send_message(SBP_DOPS_MSGTYPE, 0x2222, sizeof(dops), (uint8_t*)&dops);
+
+	    uint32_t system_flags = 0;
+	    _sbp_send_message(SBP_HEARTBEAT_MSGTYPE, 0x2222, sizeof(system_flags), (uint8_t*)&system_flags);
+    	
+    }
+    do_every_count++;
+
 
     //Also send baseline messages
     if (sim_rtk && _gps_has_basestation_position) {
@@ -696,9 +707,9 @@ void SITL_State::_update_gps_sbp(const struct gps_data *d, bool sim_rtk)
         baseline.x = (int32_t) (baselineVector[0]*1e3); //Convert to MM
         baseline.y = (int32_t) (baselineVector[1]*1e3); //Convert to MM
         baseline.z = (int32_t) (baselineVector[2]*1e3); //Convert to MM
-        baseline.accuracy = 5e3;
+        baseline.accuracy = 0;
         baseline.n_sats = _sitl->gps_numsats;
-        baseline.flags = 0;
+        baseline.flags = 1;
         //printf("Sending baseline with length %f\n",baselineVector.length());
         _sbp_send_message(SBP_BASELINE_ECEF_MSGTYPE, 0x2222, sizeof(baseline), (uint8_t*)&baseline);
     }

@@ -64,6 +64,8 @@ extern const AP_HAL::HAL& hal;
 #elif defined(CONFIG_ARCH_BOARD_VRHERO_V10)
  #define ARSPD_DEFAULT_PIN 0
 #endif
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+ #define ARSPD_DEFAULT_PIN AP_AIRSPEED_I2C_PIN
 #else
  #define ARSPD_DEFAULT_PIN 0
 #endif
@@ -209,7 +211,7 @@ void AP_Airspeed::read(void)
     switch ((enum pitot_tube_order)_tube_order.get()) {
     case PITOT_TUBE_ORDER_NEGATIVE:
         airspeed_pressure = -airspeed_pressure;
-        // fall thru
+        // no break
     case PITOT_TUBE_ORDER_POSITIVE:
         if (airspeed_pressure < -32) {
             // we're reading more than about -8m/s. The user probably has

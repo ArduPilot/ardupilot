@@ -227,7 +227,7 @@ uint32_t AP_GPS_NMEA::_parse_degrees()
     }
     ret = (deg * (int32_t)10000000UL);
     ret += (min * (int32_t)10000000UL / 60);
-    ret += (int32_t) (frac_min * (1.0e7 / 60.0f));
+    ret += (int32_t) (frac_min * (1.0e7f / 60.0f));
     return ret;
 }
 

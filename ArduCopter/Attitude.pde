@@ -183,6 +183,46 @@ static int16_t get_pilot_desired_climb_rate(int16_t throttle_control)
     return desired_rate;
 }
 
+// get_non_takeoff_throttle - a throttle somewhere between min and mid throttle which should not lead to a takeoff
+static int16_t get_non_takeoff_throttle()
+{
+    return (g.throttle_mid / 2.0f);
+}
+
+// get_throttle_pre_takeoff - convert pilot's input throttle to a throttle output before take-off
+// used only for althold, loiter, hybrid flight modes
+// returns throttle output 0 to 1000
+static int16_t get_throttle_pre_takeoff(int16_t throttle_control)
+{
+    int16_t throttle_out;
+
+    // exit immediately if throttle_control is zero
+    if (throttle_control <= 0) {
+        return 0;
+    }
+
+    // sanity check throttle input
+    throttle_control = constrain_int16(throttle_control,0,1000);
+
+    // sanity check throttle_mid
+    g.throttle_mid = constrain_int16(g.throttle_mid,300,700);
+
+    // sanity check throttle_min vs throttle_mid
+    if (g.throttle_min > get_non_takeoff_throttle()) {
+        return g.throttle_min;
+    }
+
+    // check throttle is below top of deadband
+    if (throttle_control < THROTTLE_IN_DEADBAND_TOP) {
+        throttle_out = g.throttle_min + ((float)(throttle_control-g.throttle_min))*((float)(get_non_takeoff_throttle() - g.throttle_min))/((float)(THROTTLE_IN_DEADBAND_TOP-g.throttle_min));
+    }else{
+        // must be in the deadband
+        throttle_out = get_non_takeoff_throttle();
+    }
+
+    return throttle_out;
+}
+
 // get_throttle_surface_tracking - hold copter at the desired distance above the ground
 //      returns climb rate (in cm/s) which should be passed to the position controller
 static float get_throttle_surface_tracking(int16_t target_rate, float current_alt_target, float dt)

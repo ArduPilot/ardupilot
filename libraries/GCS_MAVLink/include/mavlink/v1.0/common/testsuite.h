@@ -5136,6 +5136,140 @@ static void mavlink_test_serial_control(uint8_t system_id, uint8_t component_id,
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 }
 
+static void mavlink_test_gps_rtk(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
+{
+	mavlink_message_t msg;
+        uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
+        uint16_t i;
+	mavlink_gps_rtk_t packet_in = {
+		963497464,
+	}963497672,
+	}963497880,
+	}963498088,
+	}963498296,
+	}963498504,
+	}963498712,
+	}18691,
+	}223,
+	}34,
+	}101,
+	}168,
+	}235,
+	};
+	mavlink_gps_rtk_t packet1, packet2;
+        memset(&packet1, 0, sizeof(packet1));
+        	packet1.time_last_baseline_ms = packet_in.time_last_baseline_ms;
+        	packet1.tow = packet_in.tow;
+        	packet1.baseline_a_mm = packet_in.baseline_a_mm;
+        	packet1.baseline_b_mm = packet_in.baseline_b_mm;
+        	packet1.baseline_c_mm = packet_in.baseline_c_mm;
+        	packet1.accuracy = packet_in.accuracy;
+        	packet1.iar_num_hypotheses = packet_in.iar_num_hypotheses;
+        	packet1.wn = packet_in.wn;
+        	packet1.rtk_receiver_id = packet_in.rtk_receiver_id;
+        	packet1.rtk_health = packet_in.rtk_health;
+        	packet1.rtk_rate = packet_in.rtk_rate;
+        	packet1.nsats = packet_in.nsats;
+        	packet1.baseline_coords_type = packet_in.baseline_coords_type;
+        
+        
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_gps_rtk_encode(system_id, component_id, &msg, &packet1);
+	mavlink_msg_gps_rtk_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_gps_rtk_pack(system_id, component_id, &msg , packet1.time_last_baseline_ms , packet1.rtk_receiver_id , packet1.wn , packet1.tow , packet1.rtk_health , packet1.rtk_rate , packet1.nsats , packet1.baseline_coords_type , packet1.baseline_a_mm , packet1.baseline_b_mm , packet1.baseline_c_mm , packet1.accuracy , packet1.iar_num_hypotheses );
+	mavlink_msg_gps_rtk_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_gps_rtk_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.time_last_baseline_ms , packet1.rtk_receiver_id , packet1.wn , packet1.tow , packet1.rtk_health , packet1.rtk_rate , packet1.nsats , packet1.baseline_coords_type , packet1.baseline_a_mm , packet1.baseline_b_mm , packet1.baseline_c_mm , packet1.accuracy , packet1.iar_num_hypotheses );
+	mavlink_msg_gps_rtk_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+        mavlink_msg_to_send_buffer(buffer, &msg);
+        for (i=0; i<mavlink_msg_get_send_buffer_length(&msg); i++) {
+        	comm_send_ch(MAVLINK_COMM_0, buffer[i]);
+        }
+	mavlink_msg_gps_rtk_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+        
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_gps_rtk_send(MAVLINK_COMM_1 , packet1.time_last_baseline_ms , packet1.rtk_receiver_id , packet1.wn , packet1.tow , packet1.rtk_health , packet1.rtk_rate , packet1.nsats , packet1.baseline_coords_type , packet1.baseline_a_mm , packet1.baseline_b_mm , packet1.baseline_c_mm , packet1.accuracy , packet1.iar_num_hypotheses );
+	mavlink_msg_gps_rtk_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+}
+
+static void mavlink_test_gps2_rtk(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
+{
+	mavlink_message_t msg;
+        uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
+        uint16_t i;
+	mavlink_gps2_rtk_t packet_in = {
+		963497464,
+	}963497672,
+	}963497880,
+	}963498088,
+	}963498296,
+	}963498504,
+	}963498712,
+	}18691,
+	}223,
+	}34,
+	}101,
+	}168,
+	}235,
+	};
+	mavlink_gps2_rtk_t packet1, packet2;
+        memset(&packet1, 0, sizeof(packet1));
+        	packet1.time_last_baseline_ms = packet_in.time_last_baseline_ms;
+        	packet1.tow = packet_in.tow;
+        	packet1.baseline_a_mm = packet_in.baseline_a_mm;
+        	packet1.baseline_b_mm = packet_in.baseline_b_mm;
+        	packet1.baseline_c_mm = packet_in.baseline_c_mm;
+        	packet1.accuracy = packet_in.accuracy;
+        	packet1.iar_num_hypotheses = packet_in.iar_num_hypotheses;
+        	packet1.wn = packet_in.wn;
+        	packet1.rtk_receiver_id = packet_in.rtk_receiver_id;
+        	packet1.rtk_health = packet_in.rtk_health;
+        	packet1.rtk_rate = packet_in.rtk_rate;
+        	packet1.nsats = packet_in.nsats;
+        	packet1.baseline_coords_type = packet_in.baseline_coords_type;
+        
+        
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_gps2_rtk_encode(system_id, component_id, &msg, &packet1);
+	mavlink_msg_gps2_rtk_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_gps2_rtk_pack(system_id, component_id, &msg , packet1.time_last_baseline_ms , packet1.rtk_receiver_id , packet1.wn , packet1.tow , packet1.rtk_health , packet1.rtk_rate , packet1.nsats , packet1.baseline_coords_type , packet1.baseline_a_mm , packet1.baseline_b_mm , packet1.baseline_c_mm , packet1.accuracy , packet1.iar_num_hypotheses );
+	mavlink_msg_gps2_rtk_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_gps2_rtk_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.time_last_baseline_ms , packet1.rtk_receiver_id , packet1.wn , packet1.tow , packet1.rtk_health , packet1.rtk_rate , packet1.nsats , packet1.baseline_coords_type , packet1.baseline_a_mm , packet1.baseline_b_mm , packet1.baseline_c_mm , packet1.accuracy , packet1.iar_num_hypotheses );
+	mavlink_msg_gps2_rtk_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+        mavlink_msg_to_send_buffer(buffer, &msg);
+        for (i=0; i<mavlink_msg_get_send_buffer_length(&msg); i++) {
+        	comm_send_ch(MAVLINK_COMM_0, buffer[i]);
+        }
+	mavlink_msg_gps2_rtk_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+        
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_gps2_rtk_send(MAVLINK_COMM_1 , packet1.time_last_baseline_ms , packet1.rtk_receiver_id , packet1.wn , packet1.tow , packet1.rtk_health , packet1.rtk_rate , packet1.nsats , packet1.baseline_coords_type , packet1.baseline_a_mm , packet1.baseline_b_mm , packet1.baseline_c_mm , packet1.accuracy , packet1.iar_num_hypotheses );
+	mavlink_msg_gps2_rtk_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+}
+
 static void mavlink_test_data_transmission_handshake(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
 {
 	mavlink_message_t msg;
@@ -5852,6 +5986,8 @@ static void mavlink_test_common(uint8_t system_id, uint8_t component_id, mavlink
 	mavlink_test_gps2_raw(system_id, component_id, last_msg);
 	mavlink_test_power_status(system_id, component_id, last_msg);
 	mavlink_test_serial_control(system_id, component_id, last_msg);
+	mavlink_test_gps_rtk(system_id, component_id, last_msg);
+	mavlink_test_gps2_rtk(system_id, component_id, last_msg);
 	mavlink_test_data_transmission_handshake(system_id, component_id, last_msg);
 	mavlink_test_encapsulated_data(system_id, component_id, last_msg);
 	mavlink_test_distance_sensor(system_id, component_id, last_msg);

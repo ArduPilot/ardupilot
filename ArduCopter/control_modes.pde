@@ -112,6 +112,7 @@ static void init_aux_switches()
         case AUX_SWITCH_EKF:
         case AUX_SWITCH_PARACHUTE_ENABLE:
         case AUX_SWITCH_PARACHUTE_3POS:	    // we trust the vehicle will be disarmed so even if switch is in release position the chute will not release
+        case AUX_SWITCH_RETRACT_MOUNT:
         case AUX_SWITCH_MISSIONRESET:
         case AUX_SWITCH_ATTCON_FEEDFWD:
         case AUX_SWITCH_ATTCON_ACCEL_LIM:
@@ -132,6 +133,7 @@ static void init_aux_switches()
         case AUX_SWITCH_EKF:
         case AUX_SWITCH_PARACHUTE_ENABLE:
         case AUX_SWITCH_PARACHUTE_3POS:     // we trust the vehicle will be disarmed so even if switch is in release position the chute will not release
+        case AUX_SWITCH_RETRACT_MOUNT:
         case AUX_SWITCH_MISSIONRESET:
         case AUX_SWITCH_ATTCON_FEEDFWD:
         case AUX_SWITCH_ATTCON_ACCEL_LIM:
@@ -258,11 +260,13 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 
         case AUX_SWITCH_SONAR:
             // enable or disable the sonar
+#if CONFIG_SONAR == ENABLED
             if (ch_flag == AUX_SWITCH_HIGH) {
-                g.sonar_enabled = true;
+                sonar_enabled = true;
             }else{
-                g.sonar_enabled = false;
+                sonar_enabled = false;
             }
+#endif
             break;
 
 #if AC_FENCE == ENABLED
@@ -423,6 +427,19 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
         // enable or disable accel limiting by restoring defaults
         attitude_control.accel_limiting(ch_flag == AUX_SWITCH_HIGH);
         break;
+        
+#if MOUNT == ENABLE
+    case AUX_SWITCH_RETRACT_MOUNT:
+        switch (ch_flag) {
+            case AUX_SWITCH_HIGH:
+                camera_mount.set_mode(MAV_MOUNT_MODE_RETRACT);
+                break;
+            case AUX_SWITCH_LOW:
+                camera_mount.set_mode_to_default();
+                break;
+        }
+        break;
+#endif
     }
 }
 

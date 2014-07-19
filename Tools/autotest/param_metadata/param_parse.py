@@ -69,7 +69,7 @@ for vehicle in vehicles:
                 setattr(l, field[0], field[1])
             else:
                 error("unknown parameter metadata field '%s'" % field[0])
-        if l not in libraries:
+        if not any(l.name == parsed_l.name for parsed_l in libraries):
             libraries.append(l)
         
         

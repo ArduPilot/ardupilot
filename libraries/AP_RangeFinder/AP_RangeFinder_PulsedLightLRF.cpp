@@ -14,110 +14,107 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*
- *       AP_RangeFinder_PulsedLightLRF.cpp - Arduino Library for Pulsed Light's Laser Range Finder
- *       Code by Randy Mackay. DIYDrones.com
- *
- *       Sensor should be connected to the I2C port
- *
- *       Variables:
- *               bool healthy : indicates whether last communication with sensor was successful
- *
- *       Methods:
- *               take_reading(): ask the sonar to take a new distance measurement
- *               read() : read last distance measured (in cm)
- *
- */
-
 #include "AP_RangeFinder_PulsedLightLRF.h"
 #include <AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
 
-// Constructor //////////////////////////////////////////////////////////////
-
-AP_RangeFinder_PulsedLightLRF::AP_RangeFinder_PulsedLightLRF(FilterInt16 *filter) :
-    RangeFinder(NULL, filter),
-    healthy(true),
-    _addr(AP_RANGEFINDER_PULSEDLIGHTLRF_ADDR)
+/* 
+   The constructor also initialises the rangefinder. Note that this
+   constructor is not called until detect() returns true, so we
+   already know that we should setup the rangefinder
+*/
+AP_RangeFinder_PulsedLightLRF::AP_RangeFinder_PulsedLightLRF(RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state) :
+    AP_RangeFinder_Backend(_ranger, instance, _state)
 {
-    min_distance = AP_RANGEFINDER_PULSEDLIGHTLRF_MIN_DISTANCE;
-    max_distance = AP_RANGEFINDER_PULSEDLIGHTLRF_MAX_DISTANCE;
 }
 
-// Public Methods //////////////////////////////////////////////////////////////
-
-// init - simply sets the i2c address
-void AP_RangeFinder_PulsedLightLRF::init(uint8_t address)
+/* 
+   detect if a PulsedLight rangefinder is connected. We'll detect by
+   trying to take a reading on I2C. If we get a result the sensor is
+   there.
+*/
+bool AP_RangeFinder_PulsedLightLRF::detect(RangeFinder &_ranger, uint8_t instance)
 {
-    // set sensor i2c address
-    _addr = address;
+    if (!start_reading()) {
+        return false;
+    }
+    // give time for the sensor to process the request
+    hal.scheduler->delay(50);
+    uint16_t reading_cm;
+    return get_reading(reading_cm);
 }
 
-// take_reading - ask sensor to make a range reading
-bool AP_RangeFinder_PulsedLightLRF::take_reading()
+// start_reading() - ask sensor to make a range reading
+bool AP_RangeFinder_PulsedLightLRF::start_reading()
 {
     // get pointer to i2c bus semaphore
     AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
 
     // exit immediately if we can't take the semaphore
-    if (i2c_sem == NULL || !i2c_sem->take(5)) {
-        healthy = false;
-        return healthy;
+    if (i2c_sem == NULL || !i2c_sem->take(1)) {
+        return false;
     }
 
     // send command to take reading
-    if (hal.i2c->writeRegister(_addr, AP_RANGEFINDER_PULSEDLIGHTLRF_COMMAND_REG, AP_RANGEFINDER_PULSEDLIGHTLRF_CMDREG_ACQUISITION) != 0) {
-        healthy = false;
-    }else{
-        healthy = true;
+    if (hal.i2c->writeRegister(AP_RANGEFINDER_PULSEDLIGHTLRF_ADDR, 
+                               AP_RANGEFINDER_PULSEDLIGHTLRF_MEASURE_REG, 
+                               AP_RANGEFINDER_PULSEDLIGHTLRF_MSRREG_ACQUIRE) != 0) {
+        i2c_sem->give();
+        return false;
     }
 
     // return semaphore
     i2c_sem->give();
 
-    return healthy;
+    return true;
 }
 
 // read - return last value measured by sensor
-int16_t AP_RangeFinder_PulsedLightLRF::read()
+bool AP_RangeFinder_PulsedLightLRF::get_reading(uint16_t &reading_cm)
 {
     uint8_t buff[2];
-    int16_t ret_value = 0;
 
     // get pointer to i2c bus semaphore
     AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
 
     // exit immediately if we can't take the semaphore
-    if (i2c_sem == NULL || !i2c_sem->take(5)) {
-        healthy = false;
-        return healthy;
+    if (i2c_sem == NULL || !i2c_sem->take(1)) {
+        return false;
     }
-
-    // assume the worst
-    healthy = false;
 
     // read the high byte
-    if (hal.i2c->readRegisters(_addr, AP_RANGEFINDER_PULSEDLIGHTLRF_DISTHIGH_REG, 1, &buff[0]) == 0) {
-        // read the low byte
-        if (hal.i2c->readRegisters(_addr, AP_RANGEFINDER_PULSEDLIGHTLRF_DISTLOW_REG, 1, &buff[1]) == 0) {
-            healthy = true;
-            // combine results into distance
-            ret_value = buff[0] << 8 | buff[1];
-        }
+    if (hal.i2c->readRegisters(AP_RANGEFINDER_PULSEDLIGHTLRF_ADDR, 
+                               AP_RANGEFINDER_PULSEDLIGHTLRF_DISTHIGH_REG, 1, &buff[0]) != 0) {
+        i2c_sem->give();
+        return false;
+    }
+    hal.scheduler->delay_microseconds(200);
+    // read the low byte
+    if (hal.i2c->readRegisters(AP_RANGEFINDER_PULSEDLIGHTLRF_ADDR, 
+                               AP_RANGEFINDER_PULSEDLIGHTLRF_DISTLOW_REG, 1, &buff[1]) != 0) {
+        i2c_sem->give();
+        return false;
     }
 
-    // ensure distance is within min and max
-    ret_value = constrain_int16(ret_value, min_distance, max_distance);
-    ret_value = _mode_filter->apply(ret_value);
+    // combine results into distance
+    reading_cm = ((uint16_t)buff[0]) << 8 | buff[1];
 
     // return semaphore
     i2c_sem->give();
 
     // kick off another reading for next time
     // To-Do: replace this with continuous mode
-    take_reading();
+    hal.scheduler->delay_microseconds(200);
+    start_reading();
 
-    // to-do: do we really want to return 0 if reading the distance fails?
-    return ret_value;
+    return true;
+}
+
+/* 
+   update the state of the sensor
+*/
+void AP_RangeFinder_PulsedLightLRF::update(void)
+{
+    state.healthy = get_reading(state.distance_cm);
 }

@@ -368,8 +368,8 @@ static void Log_Write_Sonar()
         LOG_PACKET_HEADER_INIT(LOG_SONAR_MSG),
         time_ms         : millis(),
         lateral_accel   : lateral_acceleration,
-        sonar1_distance : (uint16_t)sonar.distance_cm(),
-        sonar2_distance : (uint16_t)sonar2.distance_cm(),
+        sonar1_distance : (uint16_t)sonar.distance_cm(0),
+        sonar2_distance : (uint16_t)sonar.distance_cm(1),
         detected_count  : obstacle.detected_count,
         turn_angle      : (int8_t)obstacle.turn_angle,
         turn_time       : turn_time,
@@ -459,6 +459,27 @@ static void Log_Write_Compass()
             motor_offset_z  : (int16_t)mag2_motor_offsets.z
         };
         DataFlash.WriteBlock(&pkt2, sizeof(pkt2));
+    }
+#endif
+#if COMPASS_MAX_INSTANCES > 2
+    if (compass.get_count() > 2) {
+        const Vector3f &mag3_offsets = compass.get_offsets(2);
+        const Vector3f &mag3_motor_offsets = compass.get_motor_offsets(2);
+        const Vector3f &mag3 = compass.get_field(2);
+        struct log_Compass pkt3 = {
+            LOG_PACKET_HEADER_INIT(LOG_COMPASS3_MSG),
+            time_ms         : millis(),
+            mag_x           : (int16_t)mag3.x,
+            mag_y           : (int16_t)mag3.y,
+            mag_z           : (int16_t)mag3.z,
+            offset_x        : (int16_t)mag3_offsets.x,
+            offset_y        : (int16_t)mag3_offsets.y,
+            offset_z        : (int16_t)mag3_offsets.z,
+            motor_offset_x  : (int16_t)mag3_motor_offsets.x,
+            motor_offset_y  : (int16_t)mag3_motor_offsets.y,
+            motor_offset_z  : (int16_t)mag3_motor_offsets.z
+        };
+        DataFlash.WriteBlock(&pkt3, sizeof(pkt3));
     }
 #endif
 }

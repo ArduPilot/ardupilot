@@ -6,6 +6,7 @@ class TestPerformance(Test):
 	'''check performance monitoring messages (PM) for issues with slow loops, etc'''
 
 	def __init__(self):
+		Test.__init__(self)
 		self.name = "PM"
 
 	def run(self, logdata, verbose):

@@ -2,6 +2,8 @@
 
 // Traditional helicopter variables and functions
 
+#include "heli.h"
+
 #if FRAME_CONFIG == HELI_FRAME
 
 #ifndef HELI_DYNAMIC_FLIGHT_SPEED_MIN
@@ -11,16 +13,13 @@
 // counter to control dynamic flight profile
 static int8_t heli_dynamic_flight_counter;
 
-// Tradheli flags
-static struct {
-    uint8_t dynamic_flight  : 1;    // 0   // true if we are moving at a significant speed (used to turn on/off leaky I terms)
-} heli_flags;
-
-
-
 // heli_init - perform any special initialisation required for the tradheli
 static void heli_init()
 {
+    attitude_control.update_feedforward_filter_rates(MAIN_LOOP_SECONDS);
+    motors.set_dt(MAIN_LOOP_SECONDS);
+    // force recalculation of RSC ramp rates after setting _dt
+    motors.recalc_scalers();
 }
 
 // get_pilot_desired_collective - converts pilot input (from 0 ~ 1000) to a value that can be fed into the g.rc_3.servo_out function
@@ -68,8 +67,6 @@ static void check_dynamic_flight(void)
             if (heli_dynamic_flight_counter >= 100) {
                 heli_flags.dynamic_flight = true;
                 heli_dynamic_flight_counter = 100;
-                // update attitude control's leaky i term setting
-                attitude_control.use_leaky_i(!heli_flags.dynamic_flight);
             }
         }
     }else{
@@ -79,11 +76,19 @@ static void check_dynamic_flight(void)
                 heli_dynamic_flight_counter--;
             }else{
                 heli_flags.dynamic_flight = false;
-                // update attitude control's leaky i term setting
-                attitude_control.use_leaky_i(!heli_flags.dynamic_flight);
             }
         }
     }
+}
+
+// update_heli_control_dynamics - pushes several important factors up into AP_MotorsHeli.
+// should be run between the rate controller and the servo updates.
+static void update_heli_control_dynamics(void)
+{
+    // Use Leaky_I if we are not moving fast
+    attitude_control.use_leaky_i(!heli_flags.dynamic_flight);
+    
+    // To-Do: Update dynamic phase angle of swashplate
 }
 
 // heli_update_landing_swash - sets swash plate flag so higher minimum is used when landed or landing
@@ -132,6 +137,7 @@ static void heli_update_rotor_speed_targets()
 {
     // get rotor control method
     uint8_t rsc_control_mode = motors.get_rsc_mode();
+    int16_t rsc_control_deglitched = rotor_speed_deglitch_filter.apply(g.rc_8.control_in);
 
     switch (rsc_control_mode) {
         case AP_MOTORS_HELI_RSC_MODE_NONE:
@@ -139,11 +145,11 @@ static void heli_update_rotor_speed_targets()
             // rotor is spinning in case we are using direct drive tailrotor which must be spun up at same time
         case AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH:
             // pass through pilot desired rotor speed
-            motors.set_desired_rotor_speed(g.rc_8.control_in);
+            motors.set_desired_rotor_speed(rsc_control_deglitched);
             break;
         case AP_MOTORS_HELI_RSC_MODE_SETPOINT:
             // pass setpoint through as desired rotor speed
-            if (g.rc_8.control_in > 0) {
+            if (rsc_control_deglitched > 0) {
                 motors.set_desired_rotor_speed(motors.get_rsc_setpoint());
             }else{
                 motors.set_desired_rotor_speed(0);

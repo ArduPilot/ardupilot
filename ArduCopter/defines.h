@@ -59,6 +59,7 @@
 #define AUX_SWITCH_MISSIONRESET     24      // Reset auto mission to start from first command
 #define AUX_SWITCH_ATTCON_FEEDFWD   25      // enable/disable the roll and pitch rate feed forward
 #define AUX_SWITCH_ATTCON_ACCEL_LIM 26      // enable/disable the roll, pitch and yaw accel limiting
+#define AUX_SWITCH_RETRACT_MOUNT    27      // Retract Mount
 
 // values used by the ap.ch7_opt and ap.ch8_opt flags
 #define AUX_SWITCH_LOW              0       // indicates auxiliar switch is in the low position (pwm <1200)
@@ -103,7 +104,7 @@
 #define SPORT 13                        // earth frame rate control
 #define FLIP        14                  // flip the vehicle on the roll axis
 #define AUTOTUNE    15                  // autotune the vehicle's roll and pitch gains
-#define HYBRID      16                  // hybrid - position hold with manual override
+#define POSHOLD     16                  // position hold with manual override
 #define NUM_MODES   17
 
 
@@ -144,6 +145,15 @@
 #define CH6_EKF_HORIZONTAL_POS          43  // EKF's gps vs accel (higher rely on accels more, gps impact is reduced).  Range should be 1.0 ~ 3.0?  1.5 is default
 #define CH6_EKF_ACCEL_NOISE             44  // EKF's accel noise (lower means trust accels more, gps & baro less).  Range should be 0.02 ~ 0.5  0.5 is default (but very robust at that level)
 #define CH6_RC_FEEL_RP                  45  // roll-pitch input smoothing
+#define CH6_RATE_PITCH_KP               46  // body frame pitch rate controller's P term
+#define CH6_RATE_PITCH_KI               47  // body frame pitch rate controller's I term
+#define CH6_RATE_PITCH_KD               48  // body frame pitch rate controller's D term
+#define CH6_RATE_ROLL_KP                49  // body frame roll rate controller's P term
+#define CH6_RATE_ROLL_KI                50  // body frame roll rate controller's I term
+#define CH6_RATE_ROLL_KD                51  // body frame roll rate controller's D term
+#define CH6_RATE_PITCH_FF               52  // body frame pitch rate controller FF term
+#define CH6_RATE_ROLL_FF                53  // body frame roll rate controller FF term
+#define CH6_RATE_YAW_FF                 54  // body frame yaw rate controller FF term
 
 // Acro Trainer types
 #define ACRO_TRAINER_DISABLED   0
@@ -181,7 +191,14 @@ enum AutoMode {
     Auto_RTL,
     Auto_CircleMoveToEdge,
     Auto_Circle,
-    Auto_Spline
+    Auto_Spline,
+    Auto_NavGuided
+};
+
+// Guided modes
+enum GuidedMode {
+    Guided_WP,
+    Guided_Velocity
 };
 
 // RTL states
@@ -230,6 +247,7 @@ enum FlipState {
 #define LOG_AUTOTUNE_MSG                0x19
 #define LOG_AUTOTUNEDETAILS_MSG         0x1A
 #define LOG_COMPASS2_MSG                0x1B
+#define LOG_COMPASS3_MSG                0x1C
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
 #define MASK_LOG_ATTITUDE_MED           (1<<1)
@@ -315,22 +333,6 @@ enum FlipState {
 
 // mark a function as not to be inlined
 #define NOINLINE __attribute__((noinline))
-
-// IMU selection
-#define CONFIG_IMU_OILPAN  1
-#define CONFIG_IMU_MPU6000 2
-#define CONFIG_IMU_SITL    3
-#define CONFIG_IMU_PX4     4
-#define CONFIG_IMU_FLYMAPLE 5
-#define CONFIG_IMU_VRBRAIN 6
-
-#define AP_BARO_BMP085    1
-#define AP_BARO_MS5611    2
-#define AP_BARO_PX4       3
-#define AP_BARO_VRBRAIN   4
-
-#define AP_BARO_MS5611_SPI 1
-#define AP_BARO_MS5611_I2C 2
 
 // Error message sub systems and error codes
 #define ERROR_SUBSYSTEM_MAIN                1

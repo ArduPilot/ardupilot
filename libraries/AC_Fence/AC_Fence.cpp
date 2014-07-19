@@ -70,7 +70,7 @@ AC_Fence::AC_Fence(const AP_InertialNav* inav) :
     AP_Param::setup_object_defaults(this, var_info);
 
     // check for silly fence values
-    if (_alt_max < 0) {
+    if (_alt_max < 0.0f) {
         _alt_max.set_and_save(AC_FENCE_ALT_MAX_DEFAULT);
     }
     if (_circle_radius < 0) {
@@ -144,7 +144,7 @@ uint8_t AC_Fence::check_fence()
             _alt_max_breach_distance = curr_alt - _alt_max;
 
             // check for a new breach or a breach of the backup fence
-            if ((_breached_fences & AC_FENCE_TYPE_ALT_MAX) == 0 || (_alt_max_backup != 0 && curr_alt >= _alt_max_backup)) {
+            if ((_breached_fences & AC_FENCE_TYPE_ALT_MAX) == 0 || (_alt_max_backup != 0.0f && curr_alt >= _alt_max_backup)) {
 
                 // record that we have breached the upper limit
                 record_breach(AC_FENCE_TYPE_ALT_MAX);
@@ -157,8 +157,8 @@ uint8_t AC_Fence::check_fence()
             // clear alt breach if present
             if ((_breached_fences & AC_FENCE_TYPE_ALT_MAX) != 0) {
                 clear_breach(AC_FENCE_TYPE_ALT_MAX);
-                _alt_max_backup = 0;
-                _alt_max_breach_distance = 0;
+                _alt_max_backup = 0.0f;
+                _alt_max_breach_distance = 0.0f;
             }
         }
     }
@@ -173,7 +173,7 @@ uint8_t AC_Fence::check_fence()
             _circle_breach_distance = _home_distance - _circle_radius;
 
             // check for a new breach or a breach of the backup fence
-            if ((_breached_fences & AC_FENCE_TYPE_CIRCLE) == 0 || (_circle_radius_backup != 0 && _home_distance >= _circle_radius_backup)) {
+            if ((_breached_fences & AC_FENCE_TYPE_CIRCLE) == 0 || (_circle_radius_backup != 0.0f && _home_distance >= _circle_radius_backup)) {
 
                 // record that we have breached the circular distance limit
                 record_breach(AC_FENCE_TYPE_CIRCLE);
@@ -186,8 +186,8 @@ uint8_t AC_Fence::check_fence()
             // clear circle breach if present
             if ((_breached_fences & AC_FENCE_TYPE_CIRCLE) != 0) {
                 clear_breach(AC_FENCE_TYPE_CIRCLE);
-                _circle_radius_backup = 0;
-                _circle_breach_distance = 0;
+                _circle_radius_backup = 0.0f;
+                _circle_breach_distance = 0.0f;
             }
         }
     }

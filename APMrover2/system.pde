@@ -162,7 +162,7 @@ static void init_ardupilot()
     hal.scheduler->register_delay_callback(mavlink_delay_cb, 5);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-    adc.Init();      // APM ADC library initialization
+    apm1_adc.Init();      // APM ADC library initialization
 #endif
 
 	if (g.compass_enabled==true) {

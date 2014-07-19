@@ -112,7 +112,7 @@ fi
 # try the px4io start twice. Some FMUv2 board don't
 # come up the first time
 set HAVE_PX4IO false
-if px4io start
+if px4io start norc
 then
     set HAVE_PX4IO true
 else
@@ -128,7 +128,7 @@ else
         tone_alarm MNGGG
     fi
     sleep 1
-    if px4io start
+    if px4io start norc
     then
         set HAVE_PX4IO true
         # play happy tune again
@@ -149,7 +149,7 @@ then
         if px4io forceupdate 14662 /etc/px4io/px4io.bin
         then
                sleep 1
-               if px4io start
+               if px4io start norc
                then
                   echo "PX4IO restart OK"
                   echo "PX4IO restart OK" >> $logfile    
@@ -235,37 +235,75 @@ then
     fi
 else
     echo "Starting FMUv2 sensors"
-    if hmc5883 start
+    if hmc5883 -C -X start
     then
-        echo "Using external magnetometer"
-        if hmc5883 calibrate
-        then
-          echo "hmc5883 calibrate OK"
-        else 
-          echo "hmc5883 calibrate failed"
-          echo "hmc5883 calibrate failed" >> $logfile
-          tone_alarm MSBBB
-        fi
+        echo "Have external hmc5883"
+    else
+        echo "No external hmc5883"
+    fi
+    if hmc5883 -C -I -R 4 start
+    then
+        echo "Have internal hmc5883"
+    else
+        echo "No internal hmc5883"
     fi
 
-    if mpu6000 start
+    # external MPU6000 is rotated YAW_180 from standard
+    if mpu6000 -X -R 4 start
     then
-       echo "Found MPU6000"
+       echo "Found MPU6000 external"
+       set HAVE_FMUV3 true
     else
-       echo "No MPU6000"
-       echo "No MPU6000" >> $logfile
+       echo "No MPU6000 external"
+       set HAVE_FMUV3 false
     fi
-    if l3gd20 start
+    if [ $HAVE_FMUV3 == true ]
     then
-       echo "l3gd20 started OK"
+        # internal MPU6000 is rotated ROLL_180_YAW_270 from standard
+        if mpu6000 -R 14 start
+        then
+               echo "Found MPU6000 internal"
+        else
+               echo "No MPU6000"
+               echo "No MPU6000" >> $logfile
+               sh /etc/init.d/rc.error
+        fi
+        # external L3GD20 is rotated YAW_180 from standard
+        if l3gd20 -X -R 4 start
+        then
+               echo "l3gd20 external started OK"
+        else
+               echo "No l3gd20"
+               sh /etc/init.d/rc.error
+        fi
+        # external LSM303D is rotated YAW_270 from standard
+        if lsm303d -X -R 6 start
+        then
+               echo "lsm303d external started OK"
+        else
+               echo "No lsm303d"
+               sh /etc/init.d/rc.error
+        fi
     else
-       sh /etc/init.d/rc.error
-    fi
-    if lsm303d start
-    then
-       echo "lsm303d started OK"
-    else
-       sh /etc/init.d/rc.error
+        if mpu6000 start
+        then
+               echo "Found MPU6000"
+        else
+               echo "No MPU6000"
+               echo "No MPU6000" >> $logfile
+        fi
+        if l3gd20 start
+        then
+               echo "l3gd20 started OK"
+        else
+               sh /etc/init.d/rc.error
+        fi
+        if lsm303d start
+        then
+               echo "lsm303d started OK"
+        else
+               sh /etc/init.d/rc.error
+        fi
     fi
 fi
 
@@ -278,6 +316,17 @@ fi
 if meas_airspeed start
 then
     echo "Found MEAS airspeed sensor"
+fi
+
+# optional Range Finder sensor
+if ll40ls start
+then
+    echo "Found ll40ls sensor"
+fi
+
+if mb12xx start
+then
+    echo "Found mb12xx sensor"
 fi
 
 echo "Trying PX4IO board"

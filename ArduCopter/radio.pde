@@ -57,7 +57,7 @@ static void init_rc_out()
     g.rc_3.set_range_out(0,1000);
 
     // full throttle means to enter ESC calibration
-    if(g.rc_3.control_in >= (g.throttle_max - 50)) {
+    if(g.rc_3.control_in >= (g.throttle_max - 50) || (g.esc_calibrate == 2)) {
         if(g.esc_calibrate == 0) {
             // we will enter esc_calibrate mode on next reboot
             g.esc_calibrate.set_and_save(1);
@@ -95,7 +95,6 @@ void output_min()
     motors.output_min();
 }
 
-#define FAILSAFE_RADIO_TIMEOUT_MS 2000       // 2 seconds
 static void read_radio()
 {
     static uint32_t last_update = 0;
@@ -124,9 +123,9 @@ static void read_radio()
         RC_Channel_aux::output_ch_all();
     }else{
         uint32_t elapsed = millis() - last_update;
-        // turn on throttle failsafe if no update from ppm encoder for 2 seconds
-        if ((elapsed >= FAILSAFE_RADIO_TIMEOUT_MS)
-                && g.failsafe_throttle && motors.armed() && !failsafe.radio) {
+        // turn on throttle failsafe if no update from the RC Radio for 500ms or 2000ms if we are using RC_OVERRIDE
+        if ((!failsafe.rc_override_active && (elapsed >= FS_RADIO_TIMEOUT_MS)) || (failsafe.rc_override_active && (elapsed >= FS_RADIO_RC_OVERRIDE_TIMEOUT_MS))
+            && g.failsafe_throttle && motors.armed() && !failsafe.radio) {
             Log_Write_Error(ERROR_SUBSYSTEM_RADIO, ERROR_CODE_RADIO_LATE_FRAME);
             set_failsafe_radio(true);
         }

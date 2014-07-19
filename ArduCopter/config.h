@@ -53,48 +53,50 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// FLIGHT CONTROLLER HARDWARE DEFAULT SETTINGS
-//
+// sensor types
+
+#define CONFIG_INS_TYPE HAL_INS_DEFAULT
+#define CONFIG_BARO     HAL_BARO_DEFAULT
+#define CONFIG_COMPASS  HAL_COMPASS_DEFAULT
+
+#ifdef HAL_SERIAL0_BAUD_DEFAULT
+# define SERIAL0_BAUD HAL_SERIAL0_BAUD_DEFAULT
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// HIL_MODE                                 OPTIONAL
+
+#ifndef HIL_MODE
+ #define HIL_MODE        HIL_MODE_DISABLED
+#endif
+
+#if HIL_MODE != HIL_MODE_DISABLED       // we are in HIL mode
+ #undef CONFIG_BARO
+ #define CONFIG_BARO HAL_BARO_HIL
+ #undef CONFIG_INS_TYPE
+ #define CONFIG_INS_TYPE HAL_INS_HIL
+ #undef  CONFIG_COMPASS
+ #define CONFIG_COMPASS HAL_COMPASS_HIL
+#endif
+
+#define MAGNETOMETER ENABLED
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
- # define CONFIG_IMU_TYPE   CONFIG_IMU_MPU6000
  # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
- # define MAGNETOMETER ENABLED
  # define PARACHUTE DISABLED
  # define AC_RALLY DISABLED
- # ifdef APM2_BETA_HARDWARE
-  #  define CONFIG_BARO     AP_BARO_BMP085
- # else // APM2 Production Hardware (default)
-  #  define CONFIG_BARO          AP_BARO_MS5611
-  #  define CONFIG_MS5611_SERIAL AP_BARO_MS5611_SPI
- # endif
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
- # define CONFIG_IMU_TYPE   CONFIG_IMU_SITL
  # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
- # define MAGNETOMETER ENABLED
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
- # define CONFIG_IMU_TYPE   CONFIG_IMU_PX4
- # define CONFIG_BARO       AP_BARO_PX4
  # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
- # define MAGNETOMETER ENABLED
 #elif CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
- # define CONFIG_IMU_TYPE CONFIG_IMU_FLYMAPLE
- # define CONFIG_BARO AP_BARO_BMP085
- # define CONFIG_COMPASS  AP_COMPASS_HMC5843
  # define CONFIG_ADC        DISABLED
- # define MAGNETOMETER ENABLED
  # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
- # define CONFIG_IMU_TYPE CONFIG_IMU_L3G4200D
- # define CONFIG_BARO AP_BARO_BMP085
- # define CONFIG_COMPASS  AP_COMPASS_HMC5843
  # define CONFIG_ADC        DISABLED
- # define MAGNETOMETER ENABLED
  # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
- # define CONFIG_IMU_TYPE   CONFIG_IMU_VRBRAIN
- # define CONFIG_BARO       AP_BARO_VRBRAIN
  # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
- # define MAGNETOMETER ENABLED
 #endif
 
 #if HAL_CPU_CLASS < HAL_CPU_CLASS_75 || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
@@ -102,6 +104,11 @@
  # define MAIN_LOOP_RATE    100
  # define MAIN_LOOP_SECONDS 0.01
  # define MAIN_LOOP_MICROS  10000
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+ // Linux boards
+ # define MAIN_LOOP_RATE    200
+ # define MAIN_LOOP_SECONDS 0.005
+ # define MAIN_LOOP_MICROS  5000
 #else
  // high power CPUs (Flymaple, PX4, Pixhawk, VRBrain)
  # define MAIN_LOOP_RATE    400
@@ -142,17 +149,10 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// IMU Selection
-//
-#ifndef CONFIG_IMU_TYPE
- # define CONFIG_IMU_TYPE CONFIG_IMU_OILPAN
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // ADC Enable - used to eliminate for systems which don't have ADC.
 //
 #ifndef CONFIG_ADC
- # if CONFIG_IMU_TYPE == CONFIG_IMU_OILPAN
+ # if CONFIG_INS_TYPE == HAL_INS_OILPAN || CONFIG_HAL_BOARD == HAL_BOARD_APM1
   #   define CONFIG_ADC ENABLED
  # else
   #   define CONFIG_ADC DISABLED
@@ -316,6 +316,17 @@
 #ifndef FS_GCS_TIMEOUT_MS
  # define FS_GCS_TIMEOUT_MS             5000    // gcs failsafe triggers after 5 seconds with no GCS heartbeat
 #endif
+
+// Radio failsafe while using RC_override
+#ifndef FS_RADIO_RC_OVERRIDE_TIMEOUT_MS
+ # define FS_RADIO_RC_OVERRIDE_TIMEOUT_MS  2000    // RC Radio failsafe triggers after 2 seconds while using RC_override from ground station
+#endif
+
+// Radio failsafe
+#ifndef FS_RADIO_TIMEOUT_MS
+ #define FS_RADIO_TIMEOUT_MS            500     // RC Radio Failsafe triggers after 500 miliseconds with No RC Input
+#endif
+
 // possible values for FS_GCS parameter
 #define FS_GCS_DISABLED                     0
 #define FS_GCS_ENABLED_ALWAYS_RTL           1
@@ -407,6 +418,12 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// Nav-Guided - allows external nav computer to control vehicle
+#ifndef NAV_GUIDED
+ # define NAV_GUIDED DISABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // RADIO CONFIGURATION
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -454,6 +471,12 @@
 #endif
 #ifndef LAND_REQUIRE_MIN_THROTTLE_TO_DISARM // require pilot to reduce throttle to minimum before vehicle will disarm
  # define LAND_REQUIRE_MIN_THROTTLE_TO_DISARM ENABLED
+#endif
+#ifndef LAND_REPOSITION_DEFAULT
+ # define LAND_REPOSITION_DEFAULT   0   // by default the pilot cannot override roll/pitch during landing
+#endif
+#ifndef LAND_WITH_DELAY_MS
+ # define LAND_WITH_DELAY_MS        4000    // default delay (in milliseconds) when a land-with-delay is triggered during a failsafe event
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -624,16 +647,16 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Hybrid parameter defaults
+// PosHold parameter defaults
 //
-#ifndef HYBRID_ENABLED
- # define HYBRID_ENABLED                ENABLED // hybrid flight mode enabled by default
+#ifndef POSHOLD_ENABLED
+ # define POSHOLD_ENABLED               ENABLED // PosHold flight mode enabled by default
 #endif
-#ifndef HYBRID_BRAKE_RATE_DEFAULT
- # define HYBRID_BRAKE_RATE_DEFAULT     8       // default HYBRID_BRAKE_RATE param value.  Rotation rate during braking in deg/sec
+#ifndef POSHOLD_BRAKE_RATE_DEFAULT
+ # define POSHOLD_BRAKE_RATE_DEFAULT    8       // default POSHOLD_BRAKE_RATE param value.  Rotation rate during braking in deg/sec
 #endif
-#ifndef HYBRID_BRAKE_ANGLE_DEFAULT
- # define HYBRID_BRAKE_ANGLE_DEFAULT    3000    // default HYBRID_BRAKE_ANGLE param value.  Max lean angle during braking in centi-degrees
+#ifndef POSHOLD_BRAKE_ANGLE_DEFAULT
+ # define POSHOLD_BRAKE_ANGLE_DEFAULT   3000    // default POSHOLD_BRAKE_ANGLE param value.  Max lean angle during braking in centi-degrees
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

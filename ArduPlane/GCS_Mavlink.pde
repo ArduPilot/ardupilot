@@ -277,7 +277,7 @@ static void NOINLINE send_location(mavlink_channel_t chan)
         current_loc.lat,                // in 1E7 degrees
         current_loc.lng,                // in 1E7 degrees
         gps.location().alt * 10UL,      // millimeters above sea level
-        relative_altitude() * 1.0e3,    // millimeters above ground
+        relative_altitude() * 1.0e3f,    // millimeters above ground
         vel.x * 100,  // X speed cm/s (+ve North)
         vel.y * 100,  // Y speed cm/s (+ve East)
         vel.z * -100, // Z speed cm/s (+ve up)
@@ -375,102 +375,6 @@ static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
         barometer.get_climb_rate());
 }
 
-static void NOINLINE send_raw_imu1(mavlink_channel_t chan)
-{
-    const Vector3f &accel = ins.get_accel();
-    const Vector3f &gyro = ins.get_gyro();
-    const Vector3f &mag = compass.get_field();
-
-    mavlink_msg_raw_imu_send(
-        chan,
-        micros(),
-        accel.x * 1000.0 / GRAVITY_MSS,
-        accel.y * 1000.0 / GRAVITY_MSS,
-        accel.z * 1000.0 / GRAVITY_MSS,
-        gyro.x * 1000.0,
-        gyro.y * 1000.0,
-        gyro.z * 1000.0,
-        mag.x,
-        mag.y,
-        mag.z);
-
-    if (ins.get_gyro_count() <= 1 &&
-        ins.get_accel_count() <= 1 &&
-        compass.get_count() <= 1) {
-        return;
-    }
-    const Vector3f &accel2 = ins.get_accel(1);
-    const Vector3f &gyro2 = ins.get_gyro(1);
-    const Vector3f &mag2 = compass.get_field(1);
-    mavlink_msg_scaled_imu2_send(
-        chan,
-        millis(),
-        accel2.x * 1000.0f / GRAVITY_MSS,
-        accel2.y * 1000.0f / GRAVITY_MSS,
-        accel2.z * 1000.0f / GRAVITY_MSS,
-        gyro2.x * 1000.0f,
-        gyro2.y * 1000.0f,
-        gyro2.z * 1000.0f,
-        mag2.x,
-        mag2.y,
-        mag2.z);        
-}
-
-static void NOINLINE send_raw_imu2(mavlink_channel_t chan)
-{
-    float pressure = barometer.get_pressure();
-    mavlink_msg_scaled_pressure_send(
-        chan,
-        millis(),
-        pressure*0.01f, // hectopascal
-        (pressure - barometer.get_ground_pressure())*0.01f, // hectopascal
-        barometer.get_temperature()*100); // 0.01 degrees C
-}
-
-static void NOINLINE send_raw_imu3(mavlink_channel_t chan)
-{
-    // run this message at a much lower rate - otherwise it
-    // pointlessly wastes quite a lot of bandwidth
-    static uint8_t counter;
-    if (counter++ < 10) {
-        return;
-    }
-    counter = 0;
-
-    Vector3f mag_offsets = compass.get_offsets();
-    Vector3f accel_offsets = ins.get_accel_offsets();
-    Vector3f gyro_offsets = ins.get_gyro_offsets();
-
-    mavlink_msg_sensor_offsets_send(chan,
-                                    mag_offsets.x,
-                                    mag_offsets.y,
-                                    mag_offsets.z,
-                                    compass.get_declination(),
-                                    barometer.get_pressure(),
-                                    barometer.get_temperature()*100,
-                                    gyro_offsets.x,
-                                    gyro_offsets.y,
-                                    gyro_offsets.z,
-                                    accel_offsets.x,
-                                    accel_offsets.y,
-                                    accel_offsets.z);
-}
-
-static void NOINLINE send_ahrs(mavlink_channel_t chan)
-{
-    const Vector3f &omega_I = ahrs.get_gyro_drift();
-    mavlink_msg_ahrs_send(
-        chan,
-        omega_I.x,
-        omega_I.y,
-        omega_I.z,
-        0,
-        0,
-        ahrs.get_error_rp(),
-        ahrs.get_error_yaw());
-}
-
-
 #if HIL_MODE != HIL_MODE_DISABLED
 /*
   keep last HIL_STATE message to allow sending SIM_STATE
@@ -520,14 +424,14 @@ static void NOINLINE send_wind(mavlink_channel_t chan)
 
 static void NOINLINE send_rangefinder(mavlink_channel_t chan)
 {
-    if (!sonar.enabled()) {
+    if (!sonar.healthy()) {
         // no sonar to report
         return;
     }
     mavlink_msg_rangefinder_send(
         chan,
         sonar.distance_cm() * 0.01f,
-        sonar.voltage());
+        sonar.voltage_mv()*0.001f);
 }
 
 static void NOINLINE send_current_waypoint(mavlink_channel_t chan)
@@ -648,17 +552,17 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_RAW_IMU1:
         CHECK_PAYLOAD_SIZE(RAW_IMU);
-        send_raw_imu1(chan);
+        gcs[chan-MAVLINK_COMM_0].send_raw_imu(ins, compass);
         break;
 
     case MSG_RAW_IMU2:
         CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
-        send_raw_imu2(chan);
+        gcs[chan-MAVLINK_COMM_0].send_scaled_pressure(barometer);
         break;
 
     case MSG_RAW_IMU3:
         CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
-        send_raw_imu3(chan);
+        gcs[chan-MAVLINK_COMM_0].send_sensor_offsets(ins, compass, barometer);
         break;
 
     case MSG_CURRENT_WAYPOINT:
@@ -690,7 +594,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_AHRS:
         CHECK_PAYLOAD_SIZE(AHRS);
-        send_ahrs(chan);
+        gcs[chan-MAVLINK_COMM_0].send_ahrs(ahrs);
         break;
 
     case MSG_SIMSTATE:
@@ -826,7 +730,7 @@ bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
     // parameter sends
     if ((stream_num != STREAM_PARAMS) && 
         (waypoint_receiving || _queued_parameter != NULL)) {
-        rate *= 0.25;
+        rate *= 0.25f;
     }
 
     if (rate <= 0) {
@@ -1014,6 +918,26 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             result = MAV_RESULT_ACCEPTED;
             break;
 
+#if MOUNT == ENABLED
+        // Sets the region of interest (ROI) for the camera
+        case MAV_CMD_DO_SET_ROI:
+            Location roi_loc;
+            roi_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
+            roi_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
+            roi_loc.alt = (int32_t)(packet.param7 * 100.0f);
+            if (roi_loc.lat == 0 && roi_loc.lng == 0 && roi_loc.alt == 0) {
+                // switch off the camera tracking if enabled
+                if (camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
+                    camera_mount.set_mode_to_default();
+                }
+            } else {
+                // send the command to the camera mount
+                camera_mount.set_roi_cmd(&roi_loc);
+            }
+            result = MAV_RESULT_ACCEPTED;
+            break;
+#endif
+
         case MAV_CMD_MISSION_START:
             set_mode(AUTO);
             result = MAV_RESULT_ACCEPTED;
@@ -1043,6 +967,19 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
 #endif
             result = MAV_RESULT_ACCEPTED;
+            break;
+
+        case MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS:
+            if (packet.param1 == 2) {
+                // save first compass's offsets
+                compass.set_and_save_offsets(0, packet.param2, packet.param3, packet.param4);
+                result = MAV_RESULT_ACCEPTED;
+            }
+            if (packet.param1 == 5) {
+                // save secondary compass's offsets
+                compass.set_and_save_offsets(1, packet.param2, packet.param3, packet.param4);
+                result = MAV_RESULT_ACCEPTED;
+            }
             break;
 
         case MAV_CMD_COMPONENT_ARM_DISARM:
@@ -1268,17 +1205,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-#ifdef MAVLINK_MSG_ID_SET_MAG_OFFSETS
-    case MAVLINK_MSG_ID_SET_MAG_OFFSETS:
-    {
-        mavlink_set_mag_offsets_t packet;
-        mavlink_msg_set_mag_offsets_decode(msg, &packet);
-        if (mavlink_check_target(packet.target_system,packet.target_component)) break;
-        compass.set_offsets(Vector3f(packet.mag_ofs_x, packet.mag_ofs_y, packet.mag_ofs_z));
-        break;
-    }
-#endif
-
     // GCS has sent us a command from GCS, store to EEPROM
     case MAVLINK_MSG_ID_MISSION_ITEM:
     {
@@ -1299,8 +1225,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             send_text_P(SEVERITY_LOW,PSTR("bad fence point"));
         } else {
             Vector2l point;
-            point.x = packet.lat*1.0e7;
-            point.y = packet.lng*1.0e7;
+            point.x = packet.lat*1.0e7f;
+            point.y = packet.lng*1.0e7f;
             set_fence_point_with_index(point, packet.idx);
         }
         break;

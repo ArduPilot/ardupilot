@@ -65,9 +65,11 @@ uint16_t SITL_State::_ground_sonar(float altitude)
 	static float home_alt = -1;
 	// TODO Find the current sonar object and load these params from it
 	// rather than assuming XL type
-	float scaler = AP_RANGEFINDER_MAXSONARXL_SCALER;
+	float scaler = 3.0f;
+        int16_t max_distance_cm = 700;
+        int16_t min_distance_cm = 20;
 
-	if (home_alt == -1)
+	if (home_alt == -1 && altitude > 0)
 		home_alt = altitude;
 
 	altitude = altitude - home_alt;
@@ -75,14 +77,17 @@ uint16_t SITL_State::_ground_sonar(float altitude)
 	altitude += _sitl->sonar_noise * _rand_float();
 
 	if (_sitl->sonar_glitch >= (_rand_float() + 1.0f)/2.0f)
-		altitude = AP_RANGEFINDER_MAXSONARXL_MAX_DISTANCE / 100.0f;
+		altitude = max_distance_cm / 100.0f;
 
 	altitude = constrain_float(altitude,
-		AP_RANGEFINDER_MAXSONARXL_MIN_DISTANCE / 100.0f,
-		AP_RANGEFINDER_MAXSONARXL_MAX_DISTANCE / 100.0f);
+                                   min_distance_cm / 100.0f,
+                                   max_distance_cm / 100.0f);
 
-	// Altitude in in m, scaler relative to cm
-	return (uint16_t)(altitude * 100.0f / scaler);
+	// Altitude in in m, scaler in meters/volt
+	float voltage = altitude / scaler;
+        voltage = constrain_float(voltage, 0, 5.0f);
+
+        return 1023*(voltage / 5.0f);
 }
 
 /*

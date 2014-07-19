@@ -136,6 +136,17 @@ endif
 
 ifneq ($(findstring linux, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_LINUX
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_NONE
+endif
+
+ifneq ($(findstring erle, $(MAKECMDGOALS)),)
+HAL_BOARD = HAL_BOARD_LINUX
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_ERLE
+endif
+
+ifneq ($(findstring pxf, $(MAKECMDGOALS)),)
+HAL_BOARD = HAL_BOARD_LINUX
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_PXF
 endif
 
 ifneq ($(findstring vrbrain, $(MAKECMDGOALS)),)

@@ -70,6 +70,12 @@ static void auto_run()
     case Auto_Spline:
         auto_spline_run();
         break;
+
+#if NAV_GUIDED == ENABLED
+    case Auto_NavGuided:
+        auto_nav_guided_run();
+        break;
+#endif
     }
 }
 
@@ -268,6 +274,9 @@ static void auto_land_start(const Vector3f& destination)
 //      called by auto_run at 100hz or more
 static void auto_land_run()
 {
+    int16_t roll_control = 0, pitch_control = 0;
+    float target_yaw_rate = 0;
+
     // if not auto armed set throttle to zero and exit immediately
     if(!ap.auto_armed || ap.land_complete) {
         attitude_control.relax_bf_rate_controller();
@@ -278,12 +287,23 @@ static void auto_land_run()
         return;
     }
 
-    // process pilot's yaw input
-    float target_yaw_rate = 0;
+    // process pilot's input
     if (!failsafe.radio) {
+        if (g.land_repositioning) {
+            // apply SIMPLE mode transform to pilot inputs
+            update_simple_mode();
+
+            // process pilot's roll and pitch input
+            roll_control = g.rc_1.control_in;
+            pitch_control = g.rc_2.control_in;
+        }
+
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
     }
+
+    // process roll, pitch inputs
+    wp_nav.set_pilot_desired_acceleration(roll_control, pitch_control);
 
     // run loiter controller
     wp_nav.update_loiter();
@@ -364,6 +384,25 @@ void auto_circle_run()
     attitude_control.angle_ef_roll_pitch_yaw(circle_nav.get_roll(), circle_nav.get_pitch(), circle_nav.get_yaw(),true);
 }
 
+#if NAV_GUIDED == ENABLED
+// auto_nav_guided_start - hand over control to external navigation controller in AUTO mode
+void auto_nav_guided_start()
+{
+    auto_mode = Auto_NavGuided;
+
+    // call regular guided flight mode initialisation
+    guided_init(true);
+}
+
+// auto_nav_guided_run - allows control by external navigation controller
+//      called by auto_run at 100hz or more
+void auto_nav_guided_run()
+{
+    // call regular guided flight mode run function
+    guided_run();
+}
+#endif  // NAV_GUIDED
+
 // get_default_auto_yaw_mode - returns auto_yaw_mode based on WP_YAW_BEHAVIOR parameter
 // set rtl parameter to true if this is during an RTL
 uint8_t get_default_auto_yaw_mode(bool rtl)
@@ -427,6 +466,73 @@ void set_auto_yaw_mode(uint8_t yaw_mode)
     case AUTO_YAW_RESETTOARMEDYAW:
         // initial_armed_bearing will be set during arming so no init required
         break;
+    }
+}
+
+// set_auto_yaw_look_at_heading - sets the yaw look at heading for auto mode 
+static void set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, uint8_t relative_angle)
+{
+    // get current yaw target
+    int32_t curr_yaw_target = attitude_control.angle_ef_targets().z;
+
+    // get final angle, 1 = Relative, 0 = Absolute
+    if (relative_angle == 0) {
+        // absolute angle
+        yaw_look_at_heading = wrap_360_cd(angle_deg * 100);
+    } else {
+        // relative angle
+        yaw_look_at_heading = wrap_360_cd(angle_deg * 100);
+    }
+
+    // get turn speed
+    if (turn_rate_dps == 0 ) {
+        // default to regular auto slew rate
+        yaw_look_at_heading_slew = AUTO_YAW_SLEW_RATE;
+    }else{
+        int32_t turn_rate = (wrap_180_cd(yaw_look_at_heading - curr_yaw_target) / 100) / turn_rate_dps;
+        yaw_look_at_heading_slew = constrain_int32(turn_rate, 1, 360);    // deg / sec
+    }
+
+    // set yaw mode
+    set_auto_yaw_mode(AUTO_YAW_LOOK_AT_HEADING);
+
+    // TO-DO: restore support for clockwise and counter clockwise rotation held in cmd.content.yaw.direction.  1 = clockwise, -1 = counterclockwise
+}
+
+// set_auto_yaw_roi - sets the yaw to look at roi for auto mode
+static void set_auto_yaw_roi(const Location &roi_location)
+{
+    // if location is zero lat, lon and altitude turn off ROI
+    if (auto_yaw_mode == AUTO_YAW_ROI && (roi_location.alt == 0 && roi_location.lat == 0 && roi_location.lng == 0)) {
+        // set auto yaw mode back to default assuming the active command is a waypoint command.  A more sophisticated method is required to ensure we return to the proper yaw control for the active command
+        set_auto_yaw_mode(get_default_auto_yaw_mode(false));
+#if MOUNT == ENABLED
+        // switch off the camera tracking if enabled
+        if (camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
+            camera_mount.set_mode_to_default();
+        }
+#endif  // MOUNT == ENABLED
+    }else{
+#if MOUNT == ENABLED
+        // check if mount type requires us to rotate the quad
+        if(camera_mount.get_mount_type() != AP_Mount::k_pan_tilt && camera_mount.get_mount_type() != AP_Mount::k_pan_tilt_roll) {
+            roi_WP = pv_location_to_vector(roi_location);
+            set_auto_yaw_mode(AUTO_YAW_ROI);
+        }
+        // send the command to the camera mount
+        camera_mount.set_roi_cmd(&roi_location);
+
+        // TO-DO: expand handling of the do_nav_roi to support all modes of the MAVLink.  Currently we only handle mode 4 (see below)
+        //      0: do nothing
+        //      1: point at next waypoint
+        //      2: point at a waypoint taken from WP# parameter (2nd parameter?)
+        //      3: point at a location given by alt, lon, lat parameters
+        //      4: point at a target given a target id (can't be implemented)
+#else
+        // if we have no camera mount aim the quad at the location
+        roi_WP = pv_location_to_vector(roi_location);
+        set_auto_yaw_mode(AUTO_YAW_ROI);
+#endif  // MOUNT == ENABLED
     }
 }
 

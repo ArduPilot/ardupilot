@@ -39,8 +39,8 @@ public:
     }
 
     // return the smoothed gyro vector corrected for drift
-    const Vector3f get_gyro(void) const {
-        return _omega + _omega_P + _omega_yaw_P;
+    const Vector3f &get_gyro(void) const {
+        return _omega;
     }
 
     // return rotation matrix representing rotaton from body to earth axes

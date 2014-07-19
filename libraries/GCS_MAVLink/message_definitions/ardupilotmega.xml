@@ -13,6 +13,26 @@
 
           <!-- ardupilot specific MAV_CMD_* commands -->
           <enum name="MAV_CMD">
+            <entry name="MAV_CMD_NAV_GUIDED" value="90">
+              <description>Pass control to an external controller.</description>
+              <param index="1">Timeout in seconds.  The maximum amount of time that the external controller will be allowed to control the vehicle.  0 means no timeout</param>
+              <param index="2">Altitude min. If vehicle moves below this altitude the command will be aborted and the mission will continue.  0 for no lower alt limit</param>
+              <param index="3">Altitude max. If vehicle moves above this altitude the command will be aborted and the mission will continue.  0 for no upper alt limit</param>
+              <param index="4">Horizontal move limit. If vehicle moves more than this distance from it's location at the moment the command was begun, the command will be aborted and the mission will continue.  0 for no horizontal movement limit</param>
+              <param index="5">Empty</param>
+              <param index="6">Empty</param>
+              <param index="7">Empty</param>
+            </entry>
+           <entry name="MAV_CMD_NAV_VELOCITY" value="91">
+                <description>Navigate at the specified velocity</description>
+                <param index="1">coordinate_frame - see MAV_FRAME enum</param>
+                <param index="2">Empty</param>
+                <param index="3">Empty</param>
+                <param index="4">Empty</param>
+                <param index="5">x velocity</param>
+                <param index="6">y velocity</param>
+                <param index="7">z velocity</param>
+           </entry>
             <entry name="MAV_CMD_DO_MOTOR_TEST" value="209">
               <description>Mission command to perform motor test</description>
               <param index="1">motor sequence number (a number from 1 to max number of motors on the vehicle)</param>
@@ -76,7 +96,7 @@
     </enum>
 
     <!-- Camera event types -->
-    <enum name="CAMERA_EVENT_TYPES">
+    <enum name="CAMERA_STATUS_TYPES">
         <entry name="HEARTBEAT"  value="0"><description>Camera heartbeat, announce camera component ID at 1hz</description></entry>
         <entry name="TRIGGER"    value="1"><description>Camera image triggered</description></entry>
         <entry name="DISCONNECT" value="2"><description>Camera connection lost</description></entry>
@@ -90,6 +110,8 @@
     <enum name="CAMERA_FEEDBACK_FLAGS">
         <entry name="VIDEO"       value="1"> <description>Shooting video, not stills</description></entry>
         <entry name="BADEXPOSURE" value="2"> <description>Unable to achieve requested exposure (e.g. shutter speed too low)</description></entry>
+        <entry name="CLOSEDLOOP"  value="3"> <description>Closed loop feedback from camera, we know for sure it has successfully taken a picture</description></entry>
+        <entry name="OPENLOOP"    value="4"> <description>Open loop camera, an image trigger has been requested but we can't know for sure it has successfully taken a picture</description></entry>
     </enum>
 
       </enums>
@@ -113,7 +135,7 @@
           </message>
 
           <message id="151" name="SET_MAG_OFFSETS">
-               <description>set the magnetometer offsets</description>
+               <description>Deprecated. Use MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS instead. Set the magnetometer offsets</description>
                <field type="uint8_t" name="target_system">System ID</field>
                <field type="uint8_t" name="target_component">Component ID</field>
                <field type="int16_t" name="mag_ofs_x">magnetometer X offset</field>
@@ -404,33 +426,34 @@
             <field type="int32_t" name="lng">Longitude in degrees * 1E7</field>
 	  </message>
 
-  <!-- camera event message from CCB to autopilot: most obviously for image trigger events but also things like error, low power, full card, etc -->
-    <message name="CAMERA_EVENT" id="179">
+  <!-- camera event message from CCB to autopilot: for image trigger events but also things like heartbeat, error, low power, full card, etc -->
+    <message name="CAMERA_STATUS" id="179">
         <description>Camera Event</description>
         <field name="time_usec" type="uint64_t">Image timestamp (microseconds since UNIX epoch, according to camera clock)</field>    
         <field name="target_system" type="uint8_t" >System ID</field>   <!-- support multiple concurrent vehicles -->  
         <field name="cam_idx"   type="uint8_t" >Camera ID</field>       <!-- component ID, to support multiple cameras -->
         <field name="img_idx"   type="uint16_t" >Image index</field>    <!-- per camera image index, should be unique+sequential within a mission, preferably non-wrapping -->
-        <field name="event_id"  type="uint8_t" >See CAMERA_EVENT_TYPES enum for definition of the bitmask</field>
-        <field name="p1"        type="float"   >Parameter 1 (meaning depends on event, see CAMERA_EVENT_TYPES enum)</field>
-        <field name="p2"        type="float"   >Parameter 2 (meaning depends on event, see CAMERA_EVENT_TYPES enum)</field>
-        <field name="p3"        type="float"   >Parameter 3 (meaning depends on event, see CAMERA_EVENT_TYPES enum)</field>
-        <field name="p4"        type="float"   >Parameter 4 (meaning depends on event, see CAMERA_EVENT_TYPES enum)</field>
+        <field name="event_id"  type="uint8_t" >See CAMERA_STATUS_TYPES enum for definition of the bitmask</field>
+        <field name="p1"        type="float"   >Parameter 1 (meaning depends on event, see CAMERA_STATUS_TYPES enum)</field>
+        <field name="p2"        type="float"   >Parameter 2 (meaning depends on event, see CAMERA_STATUS_TYPES enum)</field>
+        <field name="p3"        type="float"   >Parameter 3 (meaning depends on event, see CAMERA_STATUS_TYPES enum)</field>
+        <field name="p4"        type="float"   >Parameter 4 (meaning depends on event, see CAMERA_STATUS_TYPES enum)</field>
     </message>
 
-    <!-- camera feedback message from autopilot to both CCB and GCS in response to a CAMERA_EVENT trigger -->
+    <!-- camera feedback message - can be originated from CCB (in response to a CAMERA_STATUS), or directly from the autopilot as part of a DO_DIGICAM_CONTROL-->
     <message name="CAMERA_FEEDBACK" id="180">
         <description>Camera Capture Feedback</description>
-        <field name="time_usec" type="uint64_t">Image timestamp (microseconds since UNIX epoch), as passed in by CAMERA_EVENT message</field>
+        <field name="time_usec" type="uint64_t">Image timestamp (microseconds since UNIX epoch), as passed in by CAMERA_STATUS message (or autopilot if no CCB)</field>
         <field name="target_system" type="uint8_t" >System ID</field>   <!-- support multiple concurrent vehicles -->  
         <field name="cam_idx"   type="uint8_t" >Camera ID</field>       <!-- component ID, to support multiple cameras -->
         <field name="img_idx"   type="uint16_t">Image index</field>     <!-- per camera image index, should be unique+sequential within a mission, preferably non-wrapping -->
         <field name="lat"       type="int32_t" >Latitude in (deg * 1E7)</field>
         <field name="lng"       type="int32_t" >Longitude in (deg * 1E7)</field>
-        <field name="alt"       type="float"   >Altitude (meters, AMSL)</field>
-        <field name="roll"      type="float"   >Vehicle Roll angle (degrees, +-180)</field> <!-- gimbal or fixed cam offsets to be handled by GCS, possibly with gimbal state messages later -->
-        <field name="pitch"     type="float"   >Vehicle Pitch angle (degrees, +-180)</field> <!-- gimbal or fixed cam offsets to be handled by GCS, possibly with gimbal state messages later -->
-        <field name="yaw"       type="float"   >Vehicle Heading (degrees, 0-360, true)</field> <!-- gimbal or fixed cam offsets to be handled by GCS, possibly with gimbal state messages later -->
+        <field name="alt_msl"   type="float"   >Altitude Absolute (meters AMSL)</field>
+        <field name="alt_rel"   type="float"   >Altitude Relative (meters above HOME location)</field>
+        <field name="roll"      type="float"   >Camera Roll angle (earth frame, degrees, +-180)</field>  <!-- initially only supporting fixed cameras, in future we'll need feedback messages from the gimbal so we can include that offset here -->
+        <field name="pitch"     type="float"   >Camera Pitch angle (earth frame, degrees, +-180)</field> <!-- initially only supporting fixed cameras, in future we'll need feedback messages from the gimbal so we can include that offset here -->
+        <field name="yaw"       type="float"   >Camera Yaw (earth frame, degrees, 0-360, true)</field>   <!-- initially only supporting fixed cameras, in future we'll need feedback messages from the gimbal so we can include that offset here -->
         <field name="foc_len"   type="float"   >Focal Length (mm)</field> <!-- per-image to support zooms. Zero means fixed focal length or unknown. Should be true mm, not scaled to 35mm film equivalent -->
         <field name="flags"     type="uint8_t" >See CAMERA_FEEDBACK_FLAGS enum for definition of the bitmask</field> <!-- future proofing -->
     </message>

@@ -55,8 +55,20 @@ ARM_LD      :=  $(call FIND_TOOL,arm-none-eabi-g++)
 ARM_GDB     :=  $(call FIND_TOOL,arm-none-eabi-gdb)
 ARM_OBJCOPY :=  $(call FIND_TOOL,arm-none-eabi-objcopy)
 
-CXX = $($(TOOLCHAIN)_CXX)
-CC = $($(TOOLCHAIN)_CC)
+# toolchains for beagleboneblack
+BBONE_CXX     :=  arm-linux-gnueabihf-g++-4.7
+BBONE_CC      :=  arm-linux-gnueabihf-gcc-4.7
+BBONE_AS      :=  arm-linux-gnueabihf-gcc-4.7
+BBONE_AR      :=  ar
+BBONE_LD      :=  arm-linux-gnueabihf-g++-4.7
+BBONE_GDB     :=  gdb
+BBONE_OBJCOPY :=  objcopy
+
+# enable ccache if installed
+CCACHE :=  $(call FIND_TOOL,ccache)
+
+CXX = $(CCACHE) $($(TOOLCHAIN)_CXX)
+CC = $(CCACHE) $($(TOOLCHAIN)_CC)
 AS = $($(TOOLCHAIN)_AS)
 AR = $($(TOOLCHAIN)_AR)
 LD = $($(TOOLCHAIN)_LD)

@@ -144,7 +144,7 @@ void LogReader::process_plane(uint8_t type, uint8_t *data, uint16_t length)
         memcpy(&msg, data, sizeof(msg));
         wait_timestamp(msg.time_ms);
         compass.setHIL(Vector3f(msg.mag_x - msg.offset_x, msg.mag_y - msg.offset_y, msg.mag_z - msg.offset_z));
-        compass.set_offsets(msg.offset_x, msg.offset_y, msg.offset_z);
+        compass.set_and_save_offsets(0, msg.offset_x, msg.offset_y, msg.offset_z);
         break;
     }
 
@@ -186,7 +186,7 @@ void LogReader::process_rover(uint8_t type, uint8_t *data, uint16_t length)
         memcpy(&msg, data, sizeof(msg));
         wait_timestamp(msg.time_ms);
         compass.setHIL(Vector3f(msg.mag_x - msg.offset_x, msg.mag_y - msg.offset_y, msg.mag_z - msg.offset_z));
-        compass.set_offsets(msg.offset_x, msg.offset_y, msg.offset_z);
+        compass.set_and_save_offsets(0, msg.offset_x, msg.offset_y, msg.offset_z);
         break;
     }
 
@@ -216,7 +216,7 @@ void LogReader::process_copter(uint8_t type, uint8_t *data, uint16_t length)
         memcpy(&msg, data, sizeof(msg));
         wait_timestamp(msg.time_ms);
         compass.setHIL(Vector3f(msg.mag_x - msg.offset_x, msg.mag_y - msg.offset_y, msg.mag_z - msg.offset_z));
-        compass.set_offsets(msg.offset_x, msg.offset_y, msg.offset_z);
+        compass.set_and_save_offsets(0, msg.offset_x, msg.offset_y, msg.offset_z);
         break;
     }
 

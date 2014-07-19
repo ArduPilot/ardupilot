@@ -35,7 +35,12 @@ AC_Circle::AC_Circle(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosCont
     _ahrs(ahrs),
     _pos_control(pos_control),
     _last_update(0),
-    _angle(0)
+    _yaw(0.0f),
+    _angle(0.0f),
+    _angle_total(0.0f),
+    _angular_vel(0.0f),
+    _angular_vel_max(0.0f),
+    _angular_accel(0.0f)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -123,7 +128,7 @@ void AC_Circle::update()
         _angle_total += angle_change;
 
         // if the circle_radius is zero we are doing panorama so no need to update loiter target
-        if (_radius != 0.0) {
+        if (_radius != 0.0f) {
             // calculate target position
             Vector3f target;
             target.x = _center.x + _radius * cosf(-_angle);

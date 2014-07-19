@@ -9,6 +9,7 @@ class TestPitchRollCoupling(Test):
 	# TODO: currently we're only checking for roll/pitch outside of max lean angle, will come back later to analyze roll/pitch in versus out values
 
 	def __init__(self):
+		Test.__init__(self)
 		self.name = "Pitch/Roll"
 		self.enable = True   # TEMP
 
@@ -26,9 +27,9 @@ class TestPitchRollCoupling(Test):
 			return
 
 		# figure out where each mode begins and ends, so we can treat auto and manual modes differently and ignore acro/tune modes
-		autoModes   = ["RTL","AUTO","LAND","LOITER","GUIDED","CIRCLE","OF_LOITER"]     # use NTUN DRol+DPit
+		autoModes   = ["RTL","AUTO","LAND","LOITER","GUIDED","CIRCLE","OF_LOITER","HYBRID"]     # use NTUN DRol+DPit
 		manualModes = ["STABILIZE","DRIFT","ALTHOLD","ALT_HOLD"]                                 # use CTUN RollIn/DesRoll + PitchIn/DesPitch
-		ignoreModes = ["ACRO","SPORT","FLIP","AUTOTUNE"]                               # ignore data from these modes
+		ignoreModes = ["ACRO","SPORT","FLIP","AUTOTUNE",""]                            # ignore data from these modes
 		autoSegments   = []  # list of (startLine,endLine) pairs
 		manualSegments = []  # list of (startLine,endLine) pairs
 		orderedModes = collections.OrderedDict(sorted(logdata.modeChanges.items(), key=lambda t: t[0]))

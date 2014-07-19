@@ -38,9 +38,16 @@ public:
         _ahrs(ahrs),
         _baro(baro),
         _xy_enabled(false),
+        _k1_xy(0.0f),
+        _k2_xy(0.0f),
+        _k3_xy(0.0f),
         _gps_last_update(0),
         _gps_last_time(0),
         _historic_xy_counter(0),
+        _lon_to_cm_scaling(LATLON_TO_CM),
+        _k1_z(0.0f),
+        _k2_z(0.0f),
+        _k3_z(0.0f),
         _baro_last_update(0),
         _glitch_detector(gps_glitch),
         _error_count(0)
@@ -197,7 +204,7 @@ public:
     /**
      * error_count - returns number of missed updates from GPS
      */
-    virtual uint8_t     error_count() const { return _error_count; }
+    uint8_t     error_count() const { return _error_count; }
 
     /**
      * ignore_next_error - the next error (if it occurs immediately) will not be added to the error count
@@ -274,9 +281,12 @@ protected:
     AP_AHRS                &_ahrs;                      // reference to ahrs object
     AP_Baro                &_baro;                      // reference to barometer
 
+    // parameters
+    AP_Float                _time_constant_xy;          // time constant for horizontal corrections in s
+    AP_Float                _time_constant_z;           // time constant for vertical corrections in s
+
     // XY Axis specific variables
     bool                    _xy_enabled;                // xy position estimates enabled
-    AP_Float                _time_constant_xy;          // time constant for horizontal corrections in s
     float                   _k1_xy;                     // gain for horizontal position correction
     float                   _k2_xy;                     // gain for horizontal velocity correction
     float                   _k3_xy;                     // gain for horizontal accelerometer offset correction
@@ -288,7 +298,6 @@ protected:
     float                   _lon_to_cm_scaling;         // conversion of longitude to centimeters
 
     // Z Axis specific variables
-    AP_Float                _time_constant_z;           // time constant for vertical corrections in s
     float                   _k1_z;                      // gain for vertical position correction
     float                   _k2_z;                      // gain for vertical velocity correction
     float                   _k3_z;                      // gain for vertical accelerometer offset correction

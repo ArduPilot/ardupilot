@@ -27,12 +27,11 @@ MODULES		+= drivers/vrbrain/vrinput
 
 
 
-#MODULES		+= drivers/mpu6000
-#MODULES		+= drivers/mpu6000_external
-MODULES		+= drivers/mpu6000_onboard
-#MODULES		+= drivers/hmc5883
-MODULES		+= drivers/hmc5883_external
-#MODULES		+= drivers/hmc5883_onboard
+
+MODULES		+= drivers/mpu6000
+MODULES		+= drivers/hmc5883
+MODULES		+= drivers/hmc5983
+
 MODULES		+= drivers/ms5611
 
 
@@ -54,16 +53,16 @@ MODULES		+= drivers/ms5611
 # System commands
 #
 MODULES		+= systemcmds/mtd
-
+MODULES		+= systemcmds/bl_update
 
 
 
 
 
 MODULES		+= systemcmds/pwm
-
-MODULES		+= systemcmds/top
+MODULES		+= systemcmds/esc_calib
 MODULES		+= systemcmds/reboot
+MODULES		+= systemcmds/top
 
 
 MODULES		+= systemcmds/tests
@@ -127,7 +126,7 @@ MODULES		+= lib/mathlib/math/filter
 
 
 
-
+MODULES		+= lib/conversion
 
 
 

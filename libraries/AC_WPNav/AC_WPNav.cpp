@@ -135,7 +135,7 @@ void AC_WPNav::init_loiter_target(const Vector3f& position, bool reset_I)
     _pos_control.set_xy_target(position.x, position.y);
 
     // initialise feed forward velocity to zero
-    _pos_control.set_desired_velocity(0,0);
+    _pos_control.set_desired_velocity_xy(0,0);
 
     // initialise desired accel and add fake wind
     _loiter_desired_accel.x = 0;
@@ -164,7 +164,7 @@ void AC_WPNav::init_loiter_target()
     _pos_control.set_xy_target(curr_pos.x, curr_pos.y);
 
     // move current vehicle velocity into feed forward velocity
-    _pos_control.set_desired_velocity(curr_vel.x, curr_vel.y);
+    _pos_control.set_desired_velocity_xy(curr_vel.x, curr_vel.y);
 
     // initialise desired accel and add fake wind
     _loiter_desired_accel.x = (_loiter_accel_cms)*curr_vel.x/_loiter_speed_cms;
@@ -239,10 +239,11 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt)
     _loiter_desired_accel += des_accel_diff;
 
     // get pos_control's feed forward velocity
-    Vector2f desired_vel = _pos_control.get_desired_velocity();
+    Vector3f desired_vel = _pos_control.get_desired_velocity();
 
     // add pilot commanded acceleration
-    desired_vel += _loiter_desired_accel * nav_dt;
+    desired_vel.x += _loiter_desired_accel.x * nav_dt;
+    desired_vel.y += _loiter_desired_accel.y * nav_dt;
 
     // reduce velocity with fake wind resistance
     if (_pilot_accel_fwd_cms != 0.0f || _pilot_accel_rgt_cms != 0.0f) {
@@ -264,7 +265,7 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt)
     }
 
     // send adjusted feed forward velocity back to position controller
-    _pos_control.set_desired_velocity(desired_vel.x,desired_vel.y);
+    _pos_control.set_desired_velocity_xy(desired_vel.x,desired_vel.y);
 }
 
 /// get_bearing_to_target - get bearing to loiter target in centi-degrees
@@ -379,7 +380,12 @@ void AC_WPNav::set_wp_origin_and_destination(const Vector3f& origin, const Vecto
     calculate_wp_leash_length();
 
     // initialise yaw heading
-    _yaw = get_bearing_cd(_origin, _destination);
+    if (_track_length >= WPNAV_YAW_DIST_MIN) {
+        _yaw = get_bearing_cd(_origin, _destination);
+    } else {
+        // set target yaw to current heading.  Alternatively we could pull this from the attitude controller if we had access to it
+        _yaw = _ahrs.yaw_sensor;
+    }
 
     // initialise intermediate point to the origin
     _pos_control.set_pos_target(origin);

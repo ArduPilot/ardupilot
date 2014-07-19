@@ -60,7 +60,7 @@ static void SimpleAtmosphere(
   const float GMR    = 34.163195f;     // gas constant
   float h=alt*REARTH/(alt+REARTH);     // geometric to geopotential altitude
 
-  if (h<11.0)
+  if (h<11.0f)
     {                                                          // Troposphere
       theta=(288.15f-6.5f*h)/288.15f;
       delta=powf(theta, GMR/6.5f);
@@ -80,9 +80,9 @@ void AP_Baro_HIL::setHIL(float altitude_msl)
     float sigma, delta, theta;
     const float p0 = 101325;
 
-    SimpleAtmosphere(altitude_msl*0.001, sigma, delta, theta);
+    SimpleAtmosphere(altitude_msl*0.001f, sigma, delta, theta);
     float p = p0 * delta;
-    float T = 303.16 * theta - 273.16; // Assume 30 degrees at sea level - converted to degrees Kelvin
+    float T = 303.16f * theta - 273.16f; // Assume 30 degrees at sea level - converted to degrees Kelvin
 
     setHIL(p, T);
 }

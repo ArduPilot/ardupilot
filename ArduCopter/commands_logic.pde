@@ -8,6 +8,9 @@ static void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
 static void do_circle(const AP_Mission::Mission_Command& cmd);
 static void do_loiter_time(const AP_Mission::Mission_Command& cmd);
 static void do_spline_wp(const AP_Mission::Mission_Command& cmd);
+#if NAV_GUIDED == ENABLED
+static void do_nav_guided(const AP_Mission::Mission_Command& cmd);
+#endif
 static void do_wait_delay(const AP_Mission::Mission_Command& cmd);
 static void do_within_distance(const AP_Mission::Mission_Command& cmd);
 static void do_change_alt(const AP_Mission::Mission_Command& cmd);
@@ -21,6 +24,9 @@ static void do_parachute(const AP_Mission::Mission_Command& cmd);
 static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
 static bool verify_circle(const AP_Mission::Mission_Command& cmd);
 static bool verify_spline_wp(const AP_Mission::Mission_Command& cmd);
+#if NAV_GUIDED == ENABLED
+static bool verify_nav_guided(const AP_Mission::Mission_Command& cmd);
+#endif
 static void auto_spline_start(const Vector3f& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Vector3f& next_spline_destination);
 
 // start_command - this function will be called when the ap_mission lib wishes to start a new command
@@ -67,6 +73,12 @@ static bool start_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_NAV_SPLINE_WAYPOINT:           // 82  Navigate to Waypoint using spline
         do_spline_wp(cmd);
         break;
+
+#if NAV_GUIDED == ENABLED
+    case MAV_CMD_NAV_GUIDED:                    // 90  accept navigation commands from external nav computer
+        do_nav_guided(cmd);
+        break;
+#endif
 
     //
     // conditional commands
@@ -207,6 +219,12 @@ static bool verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_NAV_SPLINE_WAYPOINT:
         return verify_spline_wp(cmd);
         break;
+
+#if NAV_GUIDED == ENABLED
+    case MAV_CMD_NAV_GUIDED:
+        return verify_nav_guided(cmd);
+        break;
+#endif
 
     ///
     /// conditional commands
@@ -483,6 +501,22 @@ static void do_spline_wp(const AP_Mission::Mission_Command& cmd)
     auto_spline_start(local_pos, stopped_at_start, seg_end_type, next_destination);
 }
 
+#if NAV_GUIDED == ENABLED
+// do_nav_guided - initiate accepting commands from exernal nav computer
+static void do_nav_guided(const AP_Mission::Mission_Command& cmd)
+{
+    // record start time so it can be compared vs timeout
+    nav_guided.start_time = millis();
+
+    // record start position so it can be compared vs horizontal limit
+    nav_guided.start_position = inertial_nav.get_position();
+
+    // set spline navigation target
+    auto_nav_guided_start();
+}
+#endif  // NAV_GUIDED
+
+
 #if PARACHUTE == ENABLED
 // do_parachute - configure or release parachute
 static void do_parachute(const AP_Mission::Mission_Command& cmd)
@@ -660,6 +694,42 @@ static bool verify_spline_wp(const AP_Mission::Mission_Command& cmd)
     }
 }
 
+#if NAV_GUIDED == ENABLED
+// verify_nav_guided - check if we have breached any limits
+static bool verify_nav_guided(const AP_Mission::Mission_Command& cmd)
+{
+    // check if we have passed the timeout
+    if ((cmd.p1 > 0) && ((millis() - nav_guided.start_time) / 1000 >= cmd.p1)) {
+        return true;
+    }
+
+    // get current location
+    const Vector3f& curr_pos = inertial_nav.get_position();
+
+    // check if we have gone below min alt
+    if (cmd.content.nav_guided.alt_min != 0 && (curr_pos.z / 100) < cmd.content.nav_guided.alt_min) {
+        return true;
+    }
+
+    // check if we have gone above max alt
+    if (cmd.content.nav_guided.alt_max != 0 && (curr_pos.z / 100) > cmd.content.nav_guided.alt_max) {
+        return true;
+    }
+
+    // check if we have gone beyond horizontal limit
+    if (cmd.content.nav_guided.horiz_max != 0) {
+        float horiz_move = pv_get_horizontal_distance_cm(nav_guided.start_position, curr_pos) / 100;
+        if (horiz_move > cmd.content.nav_guided.horiz_max) {
+            return true;
+        }
+    }
+
+    // if we got here we should continue with the external nav controls
+    return false;
+}
+#endif  // NAV_GUIDED
+
+
 /********************************************************************************/
 //	Condition (May) commands
 /********************************************************************************/
@@ -690,6 +760,9 @@ static void do_change_alt(const AP_Mission::Mission_Command& cmd)
         case Auto_Circle:
             // move circle altitude up to target (we will need to store this target in circle class)
             break;
+        case Auto_NavGuided:
+            // ignore altitude
+            break;
         }
     }
     // To-Do: store desired altitude in a variable so that it can be verified later
@@ -702,31 +775,10 @@ static void do_within_distance(const AP_Mission::Mission_Command& cmd)
 
 static void do_yaw(const AP_Mission::Mission_Command& cmd)
 {
-    // get current yaw target
-    int32_t curr_yaw_target = attitude_control.angle_ef_targets().z;
-
-    // get final angle, 1 = Relative, 0 = Absolute
-    if (cmd.content.yaw.relative_angle == 0) {
-        // absolute angle
-        yaw_look_at_heading = wrap_360_cd(cmd.content.yaw.angle_deg * 100);
-    }else{
-        // relative angle
-        yaw_look_at_heading = wrap_360_cd(curr_yaw_target + cmd.content.yaw.angle_deg * 100);
-    }
-
-    // get turn speed
-    if (cmd.content.yaw.turn_rate_dps == 0 ) {
-        // default to regular auto slew rate
-        yaw_look_at_heading_slew = AUTO_YAW_SLEW_RATE;
-    }else{
-        int32_t turn_rate = (wrap_180_cd(yaw_look_at_heading - curr_yaw_target) / 100) / cmd.content.yaw.turn_rate_dps;
-        yaw_look_at_heading_slew = constrain_int32(turn_rate, 1, 360);    // deg / sec
-    }
-
-    // set yaw mode
-    set_auto_yaw_mode(AUTO_YAW_LOOK_AT_HEADING);
-
-    // TO-DO: restore support for clockwise and counter clockwise rotation held in cmd.content.yaw.direction.  1 = clockwise, -1 = counterclockwise
+	set_auto_yaw_look_at_heading(
+		cmd.content.yaw.angle_deg,
+		cmd.content.yaw.turn_rate_dps,
+		cmd.content.yaw.relative_angle);
 }
 
 
@@ -783,14 +835,43 @@ static bool verify_yaw()
 // do_guided - start guided mode
 static bool do_guided(const AP_Mission::Mission_Command& cmd)
 {
+    Vector3f pos_or_vel;    // target location or velocity
+
     // only process guided waypoint if we are in guided mode
-    if (control_mode != GUIDED) {
+    if (control_mode != GUIDED && !(control_mode == AUTO && auto_mode == Auto_NavGuided)) {
         return false;
     }
 
-    // set wp_nav's destination
-    Vector3f pos = pv_location_to_vector(cmd.content.location);
-    guided_set_destination(pos);
+    // switch to handle different commands
+    switch (cmd.id) {
+
+        case MAV_CMD_NAV_WAYPOINT:
+            // set wp_nav's destination
+            pos_or_vel = pv_location_to_vector(cmd.content.location);
+            guided_set_destination(pos_or_vel);
+            return true;
+            break;
+
+        case MAV_CMD_NAV_VELOCITY:
+            // set target velocity
+            pos_or_vel.x = cmd.content.nav_velocity.x * 100.0f;
+            pos_or_vel.y = cmd.content.nav_velocity.y * 100.0f;
+            pos_or_vel.z = cmd.content.nav_velocity.z * 100.0f;
+            guided_set_velocity(pos_or_vel);
+            return true;
+            break;
+
+        case MAV_CMD_CONDITION_YAW:
+            do_yaw(cmd);
+            return true;
+            break;
+
+        default:
+            // reject unrecognised command
+            return false;
+            break;
+    }
+
     return true;
 }
 
@@ -815,42 +896,10 @@ static void do_set_home(const AP_Mission::Mission_Command& cmd)
 // do_roi - starts actions required by MAV_CMD_NAV_ROI
 //          this involves either moving the camera to point at the ROI (region of interest)
 //          and possibly rotating the copter to point at the ROI if our mount type does not support a yaw feature
-//          Note: the ROI should already be in the command_nav_queue global variable
 //	TO-DO: add support for other features of MAV_CMD_DO_SET_ROI including pointing at a given waypoint
 static void do_roi(const AP_Mission::Mission_Command& cmd)
 {
-    // if location is zero lat, lon and altitude turn off ROI
-    if (auto_yaw_mode == AUTO_YAW_ROI && (cmd.content.location.alt == 0 && cmd.content.location.lat == 0 && cmd.content.location.lng == 0)) {
-        // set auto yaw mode back to default assuming the active command is a waypoint command.  A more sophisticated method is required to ensure we return to the proper yaw control for the active command
-        set_auto_yaw_mode(get_default_auto_yaw_mode(false));
-#if MOUNT == ENABLED
-        // switch off the camera tracking if enabled
-        if (camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
-            camera_mount.set_mode_to_default();
-        }
-#endif  // MOUNT == ENABLED
-    }else{
-#if MOUNT == ENABLED
-        // check if mount type requires us to rotate the quad
-        if(camera_mount.get_mount_type() != AP_Mount::k_pan_tilt && camera_mount.get_mount_type() != AP_Mount::k_pan_tilt_roll) {
-            roi_WP = pv_location_to_vector(cmd.content.location);
-            set_auto_yaw_mode(AUTO_YAW_ROI);
-        }
-        // send the command to the camera mount
-        camera_mount.set_roi_cmd(&cmd.content.location);
-
-        // TO-DO: expand handling of the do_nav_roi to support all modes of the MAVLink.  Currently we only handle mode 4 (see below)
-        //		0: do nothing
-        //		1: point at next waypoint
-        //		2: point at a waypoint taken from WP# parameter (2nd parameter?)
-        //		3: point at a location given by alt, lon, lat parameters
-        //		4: point at a target given a target id (can't be implemented)
-#else
-        // if we have no camera mount aim the quad at the location
-        roi_WP = pv_location_to_vector(cmd.content.location);
-        set_auto_yaw_mode(AUTO_YAW_ROI);
-#endif  // MOUNT == ENABLED
-    }
+    set_auto_yaw_roi(cmd.content.location);
 }
 
 // do_take_picture - take a picture with the camera library

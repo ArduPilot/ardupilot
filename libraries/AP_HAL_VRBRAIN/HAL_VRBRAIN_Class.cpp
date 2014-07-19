@@ -43,13 +43,7 @@ static VRBRAINAnalogIn analogIn;
 static VRBRAINUtil utilInstance;
 static VRBRAINGPIO gpioDriver;
 
-
-
-
-
-
-
-
+//We only support 3 serials for VRBRAIN at the moment
 #if  defined(CONFIG_ARCH_BOARD_VRBRAIN_V40)
 #define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"
 #define UARTB_DEFAULT_DEVICE "/dev/ttyS1"
@@ -124,7 +118,7 @@ HAL_VRBRAIN::HAL_VRBRAIN() :
 bool _vrbrain_thread_should_exit = false;        /**< Daemon exit flag */
 static bool thread_running = false;        /**< Daemon status flag */
 static int daemon_task;                /**< Handle of daemon task / thread */
-static bool ran_overtime;
+bool vrbrain_ran_overtime;
 
 extern const AP_HAL::HAL& hal;
 
@@ -147,7 +141,7 @@ static void set_priority(uint8_t priority)
 static void loop_overtime(void *)
 {
     set_priority(APM_OVERTIME_PRIORITY);
-    ran_overtime = true;
+    vrbrain_ran_overtime = true;
 }
 
 static int main_loop(int argc, char **argv)
@@ -203,14 +197,14 @@ static int main_loop(int argc, char **argv)
 
         loop();
 
-        if (ran_overtime) {
+        if (vrbrain_ran_overtime) {
             /*
               we ran over 1s in loop(), and our priority was lowered
               to let a driver run. Set it back to high priority now.
              */
             set_priority(APM_MAIN_PRIORITY);
             perf_count(perf_overrun);
-            ran_overtime = false;
+            vrbrain_ran_overtime = false;
         }
 
         perf_end(perf_loop);

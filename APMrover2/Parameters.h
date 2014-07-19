@@ -129,12 +129,13 @@ public:
 
         // obstacle control
         k_param_sonar_enabled = 190, // deprecated, can be removed
-        k_param_sonar, // sonar object
+        k_param_sonar_old, // unused
         k_param_sonar_trigger_cm,
         k_param_sonar_turn_angle,
         k_param_sonar_turn_time,
-        k_param_sonar2, // sonar2 object
+        k_param_sonar2_old, // unused
         k_param_sonar_debounce,
+        k_param_sonar, // sonar object
         
         //
         // 210: driving modes
