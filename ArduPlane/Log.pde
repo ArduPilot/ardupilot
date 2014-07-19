@@ -428,8 +428,8 @@ struct PACKED log_Compass {
 // Write a Compass packet. Total length : 15 bytes
 static void Log_Write_Compass()
 {
-    const Vector3f &mag_offsets = compass.get_offsets();
-    const Vector3f &mag = compass.get_field();
+    const Vector3f &mag_offsets = compass.get_offsets(0);
+    const Vector3f &mag = compass.get_field(0);
     struct log_Compass pkt = {
         LOG_PACKET_HEADER_INIT(LOG_COMPASS_MSG),
         time_ms         : hal.scheduler->millis(),
