@@ -131,7 +131,7 @@ uint16_t AP_InertialSensor_LSM9DS0::_init_sensor( Sample_rate sample_rate)
     if (_initialised) return _lsm9ds0_product_id;
     _initialised = true;
 
-    _spi = hal.spi->device(AP_HAL::SPIDevice_LSM9DS0);
+    _spi = hal.spi->device(AP_HAL::SPIDevice_LSM9DS0_AM);
     _spi_sem = _spi->get_semaphore();
     
     _drdy_pin_a = hal.gpio->channel(BBB_P8_8);
