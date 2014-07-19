@@ -119,7 +119,7 @@ int AP_RangeFinder_MaxsonarSerialXL::read()
 		    //	_ser->flush();
 		}
 
-		return distance;
+		return distance * _scaler; //raw value is inches, convert to cm
 
 
 
