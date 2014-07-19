@@ -3,6 +3,14 @@
 
 static void failsafe_short_on_event(enum failsafe_state fstype)
 {
+    //don't fire a failsafe when landing.  Avoids changing heading or rolling
+    //unexpectedly at low altitude.
+    if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
+        flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL ||
+        flight_stage == AP_SpdHgtControl::FLIGHT_LAND_GO_AROUND) {
+        return;
+    }
+
     // This is how to handle a short loss of control signal failsafe.
     failsafe.state = fstype;
     failsafe.ch3_timer_ms = millis();
@@ -50,6 +58,14 @@ static void failsafe_short_on_event(enum failsafe_state fstype)
 
 static void failsafe_long_on_event(enum failsafe_state fstype)
 {
+    //don't fire a failsafe when landing.  Avoids changing heading or rolling
+    //unexpectedly at low altitude.
+    if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
+        flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL ||
+        flight_stage == AP_SpdHgtControl::FLIGHT_LAND_GO_AROUND) {
+        return;
+    }
+
     // This is how to handle a long loss of control signal failsafe.
     gcs_send_text_P(SEVERITY_LOW, PSTR("Failsafe - Long event on, "));
     //  If the GCS is locked up we allow control to revert to RC
@@ -109,6 +125,14 @@ static void failsafe_short_off_event()
 
 void low_battery_event(void)
 {
+    //don't fire a failsafe when landing.  Avoids changing heading or rolling
+    //unexpectedly at low altitude.
+    if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
+        flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL ||
+        flight_stage == AP_SpdHgtControl::FLIGHT_LAND_GO_AROUND) {
+        return;
+    }
+
     if (failsafe.low_battery) {
         return;
     }
