@@ -61,10 +61,10 @@ void AP_MotorsQuad::setup_motors()
         - Yaw control is entirely in the rear motors
         - Roll is is entirely in the front motors
       */
-      add_motor_raw_degrees(AP_MOTORS_MOT_1, 60, 60, 0, 1);
-      add_motor_raw_degrees(AP_MOTORS_MOT_2, 0, -160, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3);
-      add_motor_raw_degrees(AP_MOTORS_MOT_3, -60, -60, 0, 4);
-      add_motor_raw_degrees(AP_MOTORS_MOT_4, 0, 160, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 2);
+      add_motor(AP_MOTORS_MOT_1, 60, 60, 0, 1);
+      add_motor(AP_MOTORS_MOT_2, 0, -160, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3);
+      add_motor(AP_MOTORS_MOT_3, -60, -60, 0, 4);
+      add_motor(AP_MOTORS_MOT_4, 0, 160, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 2);
     }else if(_flags.frame_orientation == AP_MOTORS_VTAIL_FRAME) {
         /*
           Tested with: Lynxmotion Hunter Vtail 400
@@ -83,13 +83,13 @@ void AP_MotorsQuad::setup_motors()
          */
 
       // front right: no yaw
-      add_motor_raw_degrees(AP_MOTORS_MOT_1, 60, 60, 0, 1);
+      add_motor(AP_MOTORS_MOT_1, 60, 60, 0, 1);
       // back left: no roll, full yaw (pushing the aircraft in the CW direction)
-      add_motor_raw_degrees(AP_MOTORS_MOT_2, 0, -160, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 3);
+      add_motor(AP_MOTORS_MOT_2, 0, -160, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 3);
       // front left: no yaw
-      add_motor_raw_degrees(AP_MOTORS_MOT_3, -60, -60, 0, 4);
+      add_motor(AP_MOTORS_MOT_3, -60, -60, 0, 4);
       // back right: no roll, full yaw (pushing the aircraft in the CCW direction)
-      add_motor_raw_degrees(AP_MOTORS_MOT_4, 0, 160, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2);
+      add_motor(AP_MOTORS_MOT_4, 0, 160, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2);
     }else{
         // X frame set-up
         add_motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1);

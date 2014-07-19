@@ -373,7 +373,7 @@ void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitc
 }
 
 // add_motor_raw but does the radian and normalizing so degrees can be passed as the motor movement factors
-void AP_MotorsMatrix::add_motor_raw_degrees(int8_t motor_num, float roll_angle, float pitch_angle, float yaw_factor, uint8_t testing_order)
+void AP_MotorsMatrix::add_motor(int8_t motor_num, float roll_angle, float pitch_angle, float yaw_factor, uint8_t testing_order)
 {
     add_motor_raw(
         motor_num,
@@ -386,14 +386,7 @@ void AP_MotorsMatrix::add_motor_raw_degrees(int8_t motor_num, float roll_angle, 
 // add_motor using just position and prop direction
 void AP_MotorsMatrix::add_motor(int8_t motor_num, float angle_degrees, float yaw_factor, uint8_t testing_order)
 {
-    // call raw motor set-up method
-    add_motor_raw(
-        motor_num,
-        cosf(radians(angle_degrees + 90)),               // roll factor
-        cosf(radians(angle_degrees)),                    // pitch factor
-        yaw_factor,                                      // yaw factor
-        testing_order);
-
+    add_motor(motor_num, angle_degrees, angle_degrees, yaw_factor, testing_order);
 }
 
 // remove_motor - disabled motor and clears all roll, pitch, throttle factors for this motor
