@@ -24,9 +24,12 @@ static struct {
     enum AP_HAL::SPIDevice dev;
     uint8_t whoami_reg;
 } whoami_list[] = {
-    { "MPU9250", AP_HAL::SPIDevice_MPU9250, 0x75 | 0x80 },
-    { "LSM9DSO", AP_HAL::SPIDevice_LSM9DS0, 0x0f | 0x80 },
-    { "MPU6000", AP_HAL::SPIDevice_MPU6000, 0x75 | 0x80 },
+    { "MS5611",     AP_HAL::SPIDevice_MS5611,     0x00 | 0x80 },
+    { "MPU9250",    AP_HAL::SPIDevice_MPU9250,    0x75 | 0x80 },
+    { "MPU6000",    AP_HAL::SPIDevice_MPU6000,    0x75 | 0x80 },
+    { "FRAM",       AP_HAL::SPIDevice_Dataflash,  0x00 | 0x80 },
+    { "LSM9DS0_AM", AP_HAL::SPIDevice_LSM9DS0_AM, 0x0F | 0x80 },
+    { "LSM9DS0_G",  AP_HAL::SPIDevice_LSM9DS0_G,  0x0F | 0x80 },
 };
 
 void loop(void)
@@ -55,7 +58,7 @@ void loop(void)
         hal.console->printf("WHO_AM_I for %s: 0x%02x\n", whoami_list[i].name, (unsigned)rx[1]);
         spi_sem->give();
     }        
-    hal.scheduler->delay(2000);
+    hal.scheduler->delay(200);
 }
 
 AP_HAL_MAIN();
