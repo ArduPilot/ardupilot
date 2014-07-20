@@ -819,6 +819,24 @@ void AP_Param::setup_object_defaults(const void *object_pointer, const struct Gr
     }
 }
 
+// set a value directly in an object. This should only be used by
+// example code, not by mainline vehicle code
+void AP_Param::set_object_value(const void *object_pointer, 
+                                const struct GroupInfo *group_info, 
+                                const char *name, float value)
+{
+    uintptr_t base = (uintptr_t)object_pointer;
+    uint8_t type;
+    for (uint8_t i=0;
+         (type=PGM_UINT8(&group_info[i].type)) != AP_PARAM_NONE;
+         i++) {
+        if (strcmp(name, group_info[i].name) == 0 && type <= AP_PARAM_FLOAT) {
+            void *ptr = (void *)(base + PGM_UINT16(&group_info[i].offset));
+            set_value((enum ap_var_type)type, ptr, value);
+        }
+    }
+}
+
 
 // load default values for all scalars in a sketch. This does not
 // recurse into sub-objects
