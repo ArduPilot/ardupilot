@@ -25,6 +25,8 @@
 
 #if HAVE_AP_TERRAIN
 
+#define TERRAIN_DEBUG 0
+
 extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
@@ -53,7 +55,11 @@ AP_Terrain::AP_Terrain(AP_AHRS &_ahrs) :
     AP_Param::setup_object_defaults(this, var_info);
 }
 
+#if TERRAIN_DEBUG
 #define ASSERT_RANGE(v,minv,maxv) assert((v)<=(maxv)&&(v)>=(minv))
+#else
+#define ASSERT_RANGE(v,minv,maxv)
+#endif
 
 /*
   calculate bit number in grid_block bitmap. This corresponds to a
@@ -221,8 +227,7 @@ bool AP_Terrain::request_missing(mavlink_channel_t chan, const struct grid_info 
     struct grid_block &grid = find_grid(info).grid;
 
     // see if it is fully populated
-    const uint64_t mask = (((uint64_t)1U)<<(TERRAIN_GRID_BLOCK_MUL_X*TERRAIN_GRID_BLOCK_MUL_Y)) - 1;
-    if ((grid.bitmap & mask) == mask) {
+    if ((grid.bitmap & bitmap_mask) == bitmap_mask) {
         // it is fully populated, nothing to do
         return false;
     }
@@ -230,7 +235,7 @@ bool AP_Terrain::request_missing(mavlink_channel_t chan, const struct grid_info 
     /*
       ask the GCS to send a set of 4x4 grids
      */
-    mavlink_msg_terrain_request_send(chan, grid.lat, grid.lon, grid_spacing, mask & ~grid.bitmap);
+    mavlink_msg_terrain_request_send(chan, grid.lat, grid.lon, grid_spacing, bitmap_mask & ~grid.bitmap);
     last_request_time_ms = hal.scheduler->millis();
 
     return true;
@@ -300,9 +305,25 @@ void AP_Terrain::handle_data(mavlink_message_t *msg)
                 ASSERT_RANGE(grid.height[idx_x+x][idx_y+y], 1, 20000);
             }
         }
+        gcache.grid.bitmap |= ((uint64_t)1) << packet.gridbit;
+#if TERRAIN_DEBUG
         hal.console->printf("Filled bit %u idx_x=%u idx_y=%u\n", 
                             (unsigned)packet.gridbit, (unsigned)idx_x, (unsigned)idx_y);
-        gcache.grid.bitmap |= ((uint64_t)1) << packet.gridbit;
+        if (gcache.grid.bitmap == bitmap_mask) {
+            hal.console->printf("--lat=%12.7f --lon=%12.7f %u\n",
+                                grid.lat*1.0e-7f,
+                                grid.lon*1.0e-7f,
+                                grid.height[0][0]);
+            Location loc2;
+            loc2.lat = grid.lat;
+            loc2.lng = grid.lon;
+            location_offset(loc2, 28*grid_spacing, 32*grid_spacing);
+            hal.console->printf("--lat=%12.7f --lon=%12.7f %u\n",
+                                loc2.lat*1.0e-7f,
+                                loc2.lng*1.0e-7f,
+                                grid.height[27][31]);            
+        }
+#endif
 }
 
 /*
@@ -311,15 +332,17 @@ void AP_Terrain::handle_data(mavlink_message_t *msg)
  */
 void AP_Terrain::update(void)
 {
-    float height;
     Location loc;
     if (!ahrs.get_position(loc)) {
         // we don't know where we are
         return;
     }
+#if TERRAIN_DEBUG
+    float height;
     if (height_amsl(loc, height)) {
         printf("height %.2f\n", height);
     }
+#endif
 }
 
 #endif // HAVE_AP_TERRAIN

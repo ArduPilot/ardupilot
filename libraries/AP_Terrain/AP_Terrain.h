@@ -192,6 +192,7 @@ private:
     // last time we asked for more grids
     uint32_t last_request_time_ms;
 
+    static const uint64_t bitmap_mask = (((uint64_t)1U)<<(TERRAIN_GRID_BLOCK_MUL_X*TERRAIN_GRID_BLOCK_MUL_Y)) - 1;
 };
 #endif // HAVE_AP_TERRAIN
 #endif // __AP_TERRAIN_H__
