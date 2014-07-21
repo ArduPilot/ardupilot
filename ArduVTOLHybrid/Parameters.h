@@ -292,9 +292,6 @@ public:
         k_param_pidWheelSteer, // unused
 
         // 254,255: reserved
-
-        //first step
-        k_param_frame_orientation,
     };
 
     AP_Int16 format_version;
@@ -468,14 +465,6 @@ public:
     RC_Channel_aux rc_14;
 #endif
     uint8_t _dummy;
-
-
-
- //First step
-    AP_Int8         frame_orientation;
-
-
-
 
     Parameters() :
         // variable				default

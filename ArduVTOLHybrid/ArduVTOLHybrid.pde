@@ -96,14 +96,6 @@ static AP_Vehicle::FixedWing aparm;
 
 #include "Parameters.h"
 
-
-
-
-static MOTOR_CLASS motors(g.rc_1, g.rc_2, g.rc_3, g.rc_4);
-
-
-
-
 #include <AP_HAL_AVR.h>
 #include <AP_HAL_AVR_SITL.h>
 #include <AP_HAL_PX4.h>
@@ -111,15 +103,6 @@ static MOTOR_CLASS motors(g.rc_1, g.rc_2, g.rc_3, g.rc_4);
 #include <AP_HAL_Linux.h>
 #include <AP_HAL_Empty.h>
 #include <AP_HAL_VRBRAIN.h>
-
-//First step include
-#include <AP_Motors.h>
-#include <AP_Curve.h>
-
-# define FRAME_CONFIG   QUAD_FRAME
-#define MOTOR_CLASS AP_MotorsQuad
-
-//
 
 AP_HAL::BetterStream* cliSerial;
 
@@ -738,13 +721,13 @@ static AP_Arming arming(ahrs, barometer, home_is_set, gcs_send_text_P);
  */
 static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { read_radio,             1,    700 }, // 0
-    { test_radio, 			  1,     50	},
     { check_short_failsafe,   1,   1000 },
     { ahrs_update,            1,   6400 },
     { update_speed_height,    1,   1600 },
     { update_flight_mode,     1,   1400 },
     { stabilize,              1,   3500 },
-    { test_servos_4,          2,    100 },
+    { test_servos_4,		  20,    100 },
+    { set_servos,             1,   1600 },
     { read_control_switch,    7,   1000 },
     { gcs_retry_deferred,     1,   1000 },
     { update_GPS_50Hz,        1,   2500 },
@@ -1336,10 +1319,6 @@ static void update_flight_mode(void)
         break;
         //roll: -13788.000,  pitch: -13698.000,   thr: 0.000, rud: -13742.000
         
-    case STABILIZE_COPTER:
-    	stabilize_run();
-    	break;
-
     case INITIALISING:
         // handled elsewhere
         break;
@@ -1448,48 +1427,4 @@ static void update_alt()
     airspeed.set_EAS2TAS(barometer.get_EAS2TAS());
 }
 
-
-//First step
-
-
-
-static void
-test_servos_4()
-{
-	static uint16_t counter = 0;
-	static uint8_t start = 0;
-
-	counter += 10;
-	if(counter >= 1000) counter = 0;
-
-//	hal.rcout->enable_ch(5);
-//	hal.rcout->write(5, counter);
-
-	if(start == 0)
-	{
-		motors.Init();
-		//	motors.set_frame_orientation(g.frame_orientation);
-		motors.enable();
-	    motors.armed(true);
-		start = 1;
-	}
-
-
-    cliSerial->printf_P(PSTR("h"));
-
-    // set_roll, set_pitch, set_yaw, set_throttle
-    motors.set_roll(counter);              // range -4500 ~ 4500
-    motors.set_pitch(counter);             // range -4500 ~ 4500
-    motors.set_yaw(counter);               // range -4500 ~ 4500
-    motors.set_throttle(counter);  	 // range 0 ~ 1000
-
-    motors.output();
-
-}
-//end of first step
-
 AP_HAL_MAIN();
-
-
-
-

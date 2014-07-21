@@ -67,8 +67,7 @@ enum FlightMode {
     RTL           = 11,
     LOITER        = 12,
     GUIDED        = 15,
-    INITIALISING  = 16,
-    STABILIZE_COPTER = 17
+    INITIALISING  = 16
 };
 
 // type of stick mixing enabled
@@ -127,7 +126,8 @@ enum log_messages {
     LOG_SONAR_MSG,
     LOG_COMPASS2_MSG,
     LOG_ARM_DISARM_MSG,
-    LOG_AIRSPEED_MSG
+    LOG_AIRSPEED_MSG,
+    LOG_COMPASS3_MSG
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
@@ -185,6 +185,7 @@ enum log_messages {
 // rally points shoehorned between fence points and waypoints
 #define MAX_RALLYPOINTS 10
 #define RALLY_START_BYTE (FENCE_START_BYTE-(MAX_RALLYPOINTS*AC_RALLY_WP_SIZE))
+
 
 // parameters get the first 1280 bytes of EEPROM, mission commands are stored between these params and the rally points
 #define MISSION_START_BYTE  0x500

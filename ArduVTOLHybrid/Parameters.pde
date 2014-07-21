@@ -12,14 +12,6 @@
 #define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, &v, {group_info : class::var_info} }
 
 const AP_Param::Info var_info[] PROGMEM = {
-
-	    // @Param: FRAME
-	    // @DisplayName: Frame Orientation (+, X or V)
-	    // @Description: Controls motor mixing for multicopters.  Not used for Tri or Traditional Helicopters.
-	    // @Values: 0:Plus, 1:X, 2:V, 3:H, 4:V-Tail, 10:Y6B (New)
-	    // @User: Standard
-	    GSCALAR(frame_orientation, "FRAME",             AP_MOTORS_X_FRAME),
-
     // @Param: FORMAT_VERSION
     // @DisplayName: Eeprom format version number
     // @Description: This value is incremented when changes are made to the eeprom format

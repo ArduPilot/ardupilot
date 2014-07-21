@@ -887,8 +887,8 @@ GCS_MAVLINK::data_stream_send(void)
 
     if (stream_trigger(STREAM_RAW_SENSORS)) {
         send_message(MSG_RAW_IMU1);
-//        send_message(MSG_RAW_IMU2);
-//        send_message(MSG_RAW_IMU3);
+        send_message(MSG_RAW_IMU2);
+        send_message(MSG_RAW_IMU3);
     }
 
     if (gcs_out_of_time) return;
