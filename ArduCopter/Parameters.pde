@@ -435,6 +435,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(land_repositioning, "LAND_REPOSITION",     LAND_REPOSITION_DEFAULT),
 
+    // @Param: EKFCHECK_COMPASS
+    // @DisplayName: EKF checker compass variance threshold
+    // @Description: Allows setting the maximum acceptable compass/magnetometer variance (0 to disable check)
+    // @Values: 0:Disabled, 0.6:Default, 1.0:Relaxed
+    // @User: Advanced
+    GSCALAR(ekfcheck_compass_thresh, "EKFCHECK_COMPASS", EKFCHECK_COMPASS_THRESHOLD_DEFAULT),
+
 #if FRAME_CONFIG ==     HELI_FRAME
     // @Group: HS1_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp

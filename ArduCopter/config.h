@@ -338,6 +338,12 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+//  EKF Checker
+#ifndef EKFCHECK_COMPASS_THRESHOLD_DEFAULT
+ # define EKFCHECK_COMPASS_THRESHOLD_DEFAULT    0.6f    // EKF checker's default compass variance above which the EKF's horizontal position will be considered bad
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 //  MAGNETOMETER
 #ifndef MAGNETOMETER
  # define MAGNETOMETER                   ENABLED

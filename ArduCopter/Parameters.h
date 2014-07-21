@@ -115,8 +115,9 @@ public:
         k_param_serial0_baud,
         k_param_serial1_baud,
         k_param_serial2_baud,
-        k_param_land_repositioning,     // 52
+        k_param_land_repositioning,
         k_param_sonar, // sonar object
+        k_param_ekfcheck_compass_thresh,// 54
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -383,6 +384,7 @@ public:
     AP_Int8         arming_check;
 
     AP_Int8         land_repositioning;
+    AP_Float        ekfcheck_compass_thresh;
 
 #if FRAME_CONFIG ==     HELI_FRAME
     // Heli
