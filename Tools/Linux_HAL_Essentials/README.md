@@ -37,4 +37,8 @@ source ~/.bashrc
 * To load firmware use 
   - `./startup.sh load` : only once after reboot it will copy overlays and firmware to `/lib/firmware/` and loads them.
   - `./startup.sh reload` : it only copies firmware to `/lib/firmware/` and reloads pru firmware.
+* Enable loading cape during BBB startup (no need to follow above step if you do this step once):
+  - `cp BB-PXF-01-00A0.dtbo /lib/firmware`
+  - add `cape_enable=capemgr.enable_partno=BB-PXF-01` to `/boot/uboot/uEnv.txt`
+  - add `CAPE=BB-PXF-01` to `/etc/default/capemgr`
 
