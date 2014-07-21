@@ -21,6 +21,7 @@ test_servos_4()
 
 	if(start == 0)
 	{
+		hal.gpio->pinMode(13, 0x0);
 		motors.Init();
 		//	motors.set_frame_orientation(g.frame_orientation);
 		motors.enable();
