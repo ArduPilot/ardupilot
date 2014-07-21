@@ -40,9 +40,10 @@ void setup()
     // print welcome message
     hal.console->println("Range Finder library test");
 
-    // setup for auto-detect with analog pin 13
-    AP_Param::set_object_value(&sonar, sonar.var_info, "_TYPE", RangeFinder::RangeFinder_TYPE_AUTO);
+    // setup for analog pin 13
+    AP_Param::set_object_value(&sonar, sonar.var_info, "_TYPE", RangeFinder::RangeFinder_TYPE_ANALOG);
     AP_Param::set_object_value(&sonar, sonar.var_info, "_PIN", 13);
+    AP_Param::set_object_value(&sonar, sonar.var_info, "_SCALING", 3.10);
 
     // initialise sensor, delaying to make debug easier
     hal.scheduler->delay(2000);
@@ -53,7 +54,12 @@ void loop()
 {
     // Delay between reads
     hal.scheduler->delay(100);
+
+    hal.console->printf_P(PSTR("RangeFinder: %d devices detected\n"), sonar.num_sensors());
+    hal.console->printf_P(PSTR("Primary: health %d distance_cm %d \n"), (int)sonar.healthy(), sonar.distance_cm());
+    hal.console->printf_P(PSTR("All: device_0 type %d health %d distance_cm %d, pin %d, device_1 type %d health %d distance_cm %d, pin %d\n"), 
+    (int)sonar._type[0], (int)sonar.healthy(0), sonar.distance_cm(0), sonar._pin[0], (int)sonar._type[1], (int)sonar.healthy(1), sonar.distance_cm(1), sonar._pin[1]);
     
-    hal.console->printf("Distance %.2f\n", (float)sonar.distance_cm());
+    hal.console->printf("Distance %.2f, Voltage-first  %d, Voltage-second %d\n", (float)sonar.distance_cm(), sonar.voltage_mv(0), sonar.voltage_mv(1));
 }
 AP_HAL_MAIN();
