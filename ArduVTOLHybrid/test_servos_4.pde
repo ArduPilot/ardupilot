@@ -13,7 +13,7 @@ test_servos_4()
 	static uint16_t counter = 0;
 	static uint8_t start = 0;
 
-	counter += 10;
+	counter += 100;
 	if(counter >= 1000) counter = 0;
 
 //	hal.rcout->enable_ch(5);
@@ -21,7 +21,8 @@ test_servos_4()
 
 	if(start == 0)
 	{
-		hal.gpio->pinMode(13, 0x1);
+	    hal.gpio->pinMode(13, HAL_GPIO_OUTPUT);
+	    hal.gpio->write(13, 0);
 		motors.Init();
 		//	motors.set_frame_orientation(g.frame_orientation);
 		motors.enable();
@@ -29,6 +30,10 @@ test_servos_4()
 		start++;
 	}
 
+    if(counter < 500)
+    	hal.gpio->write(13, 0x0);
+    else
+    	hal.gpio->write(13, 0x1);
 
     cliSerial->printf_P(PSTR("h"));
 
@@ -40,10 +45,7 @@ test_servos_4()
 
     motors.output();
 
-    if(counter < 500)
-    	hal.gpio->write(13, 0x0);
-    else
-    	hal.gpio->write(13, 0x1);
+
 
 }
 //end of first step
