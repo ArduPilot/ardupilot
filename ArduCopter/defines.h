@@ -350,6 +350,8 @@ enum FlipState {
 #define ERROR_SUBSYSTEM_FLIP                13
 #define ERROR_SUBSYSTEM_AUTOTUNE            14
 #define ERROR_SUBSYSTEM_PARACHUTE           15
+#define ERROR_SUBSYSTEM_EKF_CHECK           16
+#define ERROR_SUBSYSTEM_FAILSAFE_EKF        17
 // general error codes
 #define ERROR_CODE_ERROR_RESOLVED           0
 #define ERROR_CODE_FAILED_TO_INITIALISE     1
@@ -373,6 +375,9 @@ enum FlipState {
 #define ERROR_CODE_AUTOTUNE_BAD_GAINS       2
 // parachute failed to deploy because of low altitude
 #define ERROR_CODE_PARACHUTE_TOO_LOW        2
+// EKF check definitions
+#define ERROR_CODE_EKF_CHECK_BAD_COMPASS    2
+#define ERROR_CODE_EKF_CHECK_BAD_COMPASS_CLEARED    0
 
 // Arming Check Enable/Disable bits
 #define ARMING_CHECK_NONE                   0x00

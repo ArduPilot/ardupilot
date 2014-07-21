@@ -321,7 +321,8 @@ static void startup_ground(bool force_gyro_cal)
 static bool GPS_ok()
 {
     if (ap.home_is_set && gps.status() >= AP_GPS::GPS_OK_FIX_3D && 
-        !gps_glitch.glitching() && !failsafe.gps) {
+        !gps_glitch.glitching() && !failsafe.gps &&
+        !ekf_check_state.bad_compass && !failsafe.ekf) {
         return true;
     }else{
         return false;
