@@ -120,6 +120,15 @@ void ToneAlarm_PX4::update()
             play_tune(TONE_PARACHUTE_RELEASE_TUNE);
         }
     }
+
+    // check ekf has gone bad
+    if (flags.ekf_bad != AP_Notify::flags.ekf_bad) {
+        flags.ekf_bad = AP_Notify::flags.ekf_bad;
+        if (flags.ekf_bad) {
+            // ekf warning tune
+            play_tune(TONE_EKF_WARNING_TUNE);
+        }
+    }
 }
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4

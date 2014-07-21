@@ -132,9 +132,12 @@ void ToshibaLED::update_colours(void)
         return;
     }
 
-    // failsafe patterns for radio and battery - single flash yellow
-    // failsafe pattern for gps - flashing blue and yellow
-    if (AP_Notify::flags.failsafe_radio || AP_Notify::flags.failsafe_battery || AP_Notify::flags.failsafe_gps || AP_Notify::flags.gps_glitching) {
+    // radio and battery failsafe patter: flash yellow
+    // gps failsafe pattern : flashing yellow and blue
+    // ekf_bad pattern : flashing yellow and red
+    if (AP_Notify::flags.failsafe_radio || AP_Notify::flags.failsafe_battery ||
+            AP_Notify::flags.failsafe_gps || AP_Notify::flags.gps_glitching ||
+            AP_Notify::flags.ekf_bad) {
         switch(step) {
             case 0:
             case 1:
@@ -151,14 +154,22 @@ void ToshibaLED::update_colours(void)
             case 7:
             case 8:
             case 9:
-                // all off of radio or battery, blue on for gps
-                _red_des = TOSHIBA_LED_OFF;
                 if (AP_Notify::flags.failsafe_gps || AP_Notify::flags.gps_glitching) {
+                    // blue on for gps failsafe or glitching
+                    _red_des = TOSHIBA_LED_OFF;
                     _blue_des = brightness;
-                }else{
+                    _green_des = TOSHIBA_LED_OFF;
+                } else if (AP_Notify::flags.ekf_bad) {
+                    // red on if ekf bad
+                    _red_des = brightness;
                     _blue_des = TOSHIBA_LED_OFF;
+                    _green_des = TOSHIBA_LED_OFF;
+                }else{
+                    // all off for radio or battery failsafe
+                    _red_des = TOSHIBA_LED_OFF;
+                    _blue_des = TOSHIBA_LED_OFF;
+                    _green_des = TOSHIBA_LED_OFF;
                 }
-                _green_des = TOSHIBA_LED_OFF;
                 break;
         }
         // exit so no other status modify this pattern
