@@ -270,6 +270,27 @@ void AP_Terrain::send_request(mavlink_channel_t chan)
     if (request_missing(chan, info)) {
         return;
     }
+
+    // also request a larger set of up to 9 grids
+    for (int8_t x=-1; x<=1; x++) {
+        for (int8_t y=-1; y<=1; y++) {
+            Location loc2 = loc;
+            location_offset(loc2, 
+                            x*TERRAIN_GRID_BLOCK_SIZE_X*0.7f*grid_spacing,
+                            y*TERRAIN_GRID_BLOCK_SIZE_Y*0.7f*grid_spacing);
+            struct grid_info info2;
+            calculate_grid_info(loc2, info2);            
+            if (request_missing(chan, info2)) {
+                return;
+            }
+        }
+    }
+
+    // request the current loc last to ensure it has highest last
+    // access time
+    if (request_missing(chan, info)) {
+        return;
+    }
 }
 
 /* 
