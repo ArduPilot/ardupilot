@@ -39,5 +39,10 @@ test_servos_4()
 
     motors.output();
 
+    if(counter < 500)
+    	hal.gpio->write(13, 0x0);
+    else
+    	hal.gpio->write(13, 0x1);
+
 }
 //end of first step
