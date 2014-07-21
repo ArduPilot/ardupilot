@@ -2296,17 +2296,18 @@
          </message>
          <message id="133" name="TERRAIN_REQUEST">
             <description>Request for terrain data and terrain status</description>
-            <field type="uint32_t" name="lat">Latitude of SW corner of first grid (degrees *10^7)</field>
-            <field type="uint32_t" name="lon">Longitude of SW corner of first grid (in degrees *10^7)</field>
+            <field type="int32_t" name="lat">Latitude of SW corner of first grid (degrees *10^7)</field>
+            <field type="int32_t" name="lon">Longitude of SW corner of first grid (in degrees *10^7)</field>
             <field type="uint16_t" name="grid_spacing">Grid spacing in meters</field>
-            <field type="uint8_t[9]" name="mask">Bitmask of requested 5x5 grids (row major 9x9 array of grids)</field>
+            <field type="uint64_t" name="mask" print_format="0x%07x">Bitmask of requested 4x4 grids (row major 8x7 array of grids, 56 bits)</field>
          </message>
          <message id="134" name="TERRAIN_DATA">
-            <description>Terrain data sent from GCS</description>
-            <field type="uint32_t" name="lat">Latitude of SW corner of first grid (degrees *10^7)</field>
-            <field type="uint32_t" name="lon">Longitude of SW corner of first grid (in degrees *10^7)</field>
+            <description>Terrain data sent from GCS. The lat/lon and grid_spacing must be the same as a lat/lon from a TERRAIN_REQUEST</description>
+            <field type="int32_t" name="lat">Latitude of SW corner of first grid (degrees *10^7)</field>
+            <field type="int32_t" name="lon">Longitude of SW corner of first grid (in degrees *10^7)</field>
             <field type="uint16_t" name="grid_spacing">Grid spacing in meters</field>
-            <field type="int16_t[25]" name="data">Terrain data in meters AMSL</field>
+            <field type="uint8_t" name="gridbit">bit within the terrain request mask</field>
+            <field type="int16_t[16]" name="data">Terrain data in meters AMSL</field>
          </message>
          <message id="147" name="BATTERY_STATUS">
                <description>Transmitte battery informations for a accu pack.</description>
