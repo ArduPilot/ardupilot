@@ -720,42 +720,42 @@ static AP_Arming arming(ahrs, barometer, home_is_set, gcs_send_text_P);
   they are expected to take (in microseconds)
  */
 static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
-    { read_radio,             1,    700 }, // 0
-    { check_short_failsafe,   1,   1000 },
-    { ahrs_update,            1,   6400 },
-    { update_speed_height,    1,   1600 },
-    { update_flight_mode,     1,   1400 },
-    { stabilize,              1,   3500 },
+//    { read_radio,             1,    700 }, // 0
+//    { check_short_failsafe,   1,   1000 },
+//    { ahrs_update,            1,   6400 },
+//    { update_speed_height,    1,   1600 },
+//    { update_flight_mode,     1,   1400 },
+//    { stabilize,              1,   3500 },
     { test_servos_4,		  20,    100 },
-    { set_servos,             1,   1600 },
-    { read_control_switch,    7,   1000 },
-    { gcs_retry_deferred,     1,   1000 },
-    { update_GPS_50Hz,        1,   2500 },
-    { update_GPS_10Hz,        5,   2500 }, // 10
-    { navigate,               5,   3000 },
-    { update_compass,         5,   1200 },
-    { read_airspeed,          5,   1200 },
-    { update_alt,             5,   3400 },
-    { calc_altitude_error,    5,   1000 },
-    { obc_fs_check,           5,   1000 },
+//    { set_servos,             1,   1600 },
+//    { read_control_switch,    7,   1000 },
+//    { gcs_retry_deferred,     1,   1000 },
+//    { update_GPS_50Hz,        1,   2500 },
+//    { update_GPS_10Hz,        5,   2500 }, // 10
+//    { navigate,               5,   3000 },
+//    { update_compass,         5,   1200 },
+//    { read_airspeed,          5,   1200 },
+//    { update_alt,             5,   3400 },
+//    { calc_altitude_error,    5,   1000 },
+//    { obc_fs_check,           5,   1000 },
     { gcs_update,             1,   1700 },
     { gcs_data_stream_send,   1,   3000 },
-    { update_events,		  1,   1500 }, // 20
-    { check_usb_mux,          5,    300 },
-    { read_battery,           5,   1000 },
-    { compass_accumulate,     1,   1500 },
-    { barometer_accumulate,   1,    900 },
-    { update_notify,          1,    300 },
-    { read_sonars,            1,    500 },
-    { one_second_loop,       50,   1000 },
-    { check_long_failsafe,   15,   1000 },
-    { read_receiver_rssi,     5,   1000 },
-    { airspeed_ratio_update, 50,   1000 }, // 30
-    { update_mount,           1,   1500 },
-    { log_perf_info,        500,   1000 },
-    { compass_save,        3000,   2500 },
-    { update_logging1,        5,   1700 },
-    { update_logging2,        5,   1700 },
+//    { update_events,		  1,   1500 }, // 20
+//    { check_usb_mux,          5,    300 },
+//    { read_battery,           5,   1000 },
+//    { compass_accumulate,     1,   1500 },
+//    { barometer_accumulate,   1,    900 },
+//    { update_notify,          1,    300 },
+//    { read_sonars,            1,    500 },
+//    { one_second_loop,       50,   1000 },
+//    { check_long_failsafe,   15,   1000 },
+//    { read_receiver_rssi,     5,   1000 },
+//    { airspeed_ratio_update, 50,   1000 }, // 30
+//    { update_mount,           1,   1500 },
+//    { log_perf_info,        500,   1000 },
+//    { compass_save,        3000,   2500 },
+//    { update_logging1,        5,   1700 },
+//    { update_logging2,        5,   1700 },
 };
 
 // setup the var_info table
