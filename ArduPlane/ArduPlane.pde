@@ -467,7 +467,9 @@ AP_Airspeed airspeed(aparm);
 
 ////////////////////////////////////////////////////////////////////////////////
 // terrain handling
+#if HAVE_AP_TERRAIN
 AP_Terrain terrain(ahrs);
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // ACRO controller state
@@ -977,6 +979,10 @@ static void one_second_loop()
     // update notify flags
     AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
     AP_Notify::flags.armed = arming.is_armed() || arming.arming_required() == AP_Arming::NO;
+
+#if HAVE_AP_TERRAIN
+    terrain.update();
+#endif
 }
 
 static void log_perf_info()

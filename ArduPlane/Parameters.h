@@ -116,6 +116,7 @@ public:
         k_param_takeoff_throttle_slewrate,
         k_param_takeoff_throttle_max,
         k_param_sonar,
+        k_param_terrain,
 
         // 100: Arming parameters
         k_param_arming = 100,
