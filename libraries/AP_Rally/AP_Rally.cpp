@@ -20,6 +20,8 @@ extern const AP_HAL::HAL& hal;
   #define RALLY_LIMIT_KM_DEFAULT 1.0
 #endif // APM_BUILD_DIRECTORY
 
+#define RALLY_LIMIT_KM_DEFAULT 1.0
+
 const AP_Param::GroupInfo AP_Rally::var_info[] PROGMEM = {
     // @Param: TOTAL
     // @DisplayName: Rally Total
