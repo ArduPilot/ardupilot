@@ -40,6 +40,8 @@
 //#define EPM_ENABLED           ENABLED             // enable epm cargo gripper costs 500bytes of flash
 //#define NAV_GUIDED            ENABLED             // enable external navigation computer to control vehicle through MAV_CMD_NAV_GUIDED mission commands
 
+//#define NOTIFY_LOCATION_STICKCOMBO       ENABLED             // enable notify_location (activate when disarmed, throttle down, elevator back and roll right)
+
 // other settings
 //#define THROTTLE_IN_DEADBAND   100                // redefine size of throttle deadband in pwm (0 ~ 1000)
 //#define LAND_REQUIRE_MIN_THROTTLE_TO_DISARM   DISABLED    // when set to DISABLED vehicle will disarm after landing (in LAND mode or RTL) even if pilot has not put throttle to zero
