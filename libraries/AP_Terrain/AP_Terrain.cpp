@@ -482,8 +482,17 @@ void AP_Terrain::handle_terrain_data(mavlink_message_t *msg)
 /*
   find cache index of disk_block
  */
-int16_t AP_Terrain::find_io_idx(void)
+int16_t AP_Terrain::find_io_idx(enum GridCacheState state)
 {
+    // try first with given state
+    for (uint16_t i=0; i<TERRAIN_GRID_BLOCK_CACHE_SIZE; i++) {
+        if (disk_block.block.lat == cache[i].grid.lat &&
+            disk_block.block.lon == cache[i].grid.lon && 
+            cache[i].state == state) {
+            return i;
+        }
+    }    
+    // then any state
     for (uint16_t i=0; i<TERRAIN_GRID_BLOCK_CACHE_SIZE; i++) {
         if (disk_block.block.lat == cache[i].grid.lat &&
             disk_block.block.lon == cache[i].grid.lon) {
@@ -548,7 +557,7 @@ void AP_Terrain::update(void)
         
     case DiskIoDoneRead: {
         // a read has completed
-        int16_t cache_idx = find_io_idx();
+        int16_t cache_idx = find_io_idx(GRID_CACHE_DISKWAIT);
         if (cache_idx != -1) {
             if (disk_block.block.bitmap != 0) {
                 // when bitmap is zero we read an empty block
@@ -563,7 +572,7 @@ void AP_Terrain::update(void)
 
     case DiskIoDoneWrite: {
         // a write has completed
-        int16_t cache_idx = find_io_idx();
+        int16_t cache_idx = find_io_idx(GRID_CACHE_DIRTY);
         if (cache_idx != -1) {
             if (cache[cache_idx].grid.bitmap == disk_block.block.bitmap) {
                 // only mark valid if more grids haven't been added

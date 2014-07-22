@@ -221,7 +221,7 @@ private:
     /*
       disk IO functions
      */
-    int16_t find_io_idx(void);
+    int16_t find_io_idx(enum GridCacheState state);
     uint16_t get_block_crc(struct grid_block &block);
     void check_disk_read(void);
     void check_disk_write(void);
