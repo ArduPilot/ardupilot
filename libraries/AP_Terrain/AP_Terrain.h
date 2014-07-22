@@ -81,8 +81,11 @@ public:
     // send any pending terrain request message
     void send_request(mavlink_channel_t chan);
 
-    // handle terrain data from GCS
-    void handle_data(mavlink_message_t *msg);
+    // handle terrain data and reports from GCS
+    void send_terrain_report(mavlink_channel_t chan, const Location &loc);
+    void handle_data(mavlink_channel_t chan, mavlink_message_t *msg);
+    void handle_terrain_check(mavlink_channel_t chan, mavlink_message_t *msg);
+    void handle_terrain_data(mavlink_message_t *msg);
 
     // return terrain height in meters above sea level for a location
     // return false if not available
@@ -206,7 +209,14 @@ private:
     /*
       request any missing 4x4 grids from a block
     */
+    bool request_missing(mavlink_channel_t chan, struct grid_cache &gcache);
     bool request_missing(mavlink_channel_t chan, const struct grid_info &info);
+
+    /*
+      get some statistics for TERRAIN_REPORT
+     */
+    uint8_t bitcount64(uint64_t b);
+    void get_statistics(uint16_t &pending, uint16_t &loaded);
 
     /*
       disk IO functions

@@ -30,7 +30,7 @@
 
 #if HAVE_AP_TERRAIN
 
-#define TERRAIN_DEBUG 1
+#define TERRAIN_DEBUG 0
 
 extern const AP_HAL::HAL& hal;
 
@@ -180,6 +180,7 @@ AP_Terrain::grid_cache &AP_Terrain::find_grid(const struct grid_info &info)
     grid.grid.grid_idx_y = info.grid_idx_y;
     grid.grid.lat_degrees = info.lat_degrees;
     grid.grid.lon_degrees = info.lon_degrees;
+    grid.grid.version = TERRAIN_GRID_FORMAT_VERSION;
     grid.last_access_ms = hal.scheduler->millis();
 
     // mark as waiting for disk read
@@ -238,12 +239,10 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height)
 }
 
 /*
-  request any missing 4x4 grids from a block
+  request any missing 4x4 grids from a block, given a grid_cache
  */
-bool AP_Terrain::request_missing(mavlink_channel_t chan, const struct grid_info &info)
+bool AP_Terrain::request_missing(mavlink_channel_t chan, struct grid_cache &gcache)
 {
-    // find the grid
-    struct grid_cache &gcache = find_grid(info);
     struct grid_block &grid = gcache.grid;
 
     // see if we are waiting for disk read
@@ -268,6 +267,16 @@ bool AP_Terrain::request_missing(mavlink_channel_t chan, const struct grid_info 
 }
 
 /*
+  request any missing 4x4 grids from a block
+ */
+bool AP_Terrain::request_missing(mavlink_channel_t chan, const struct grid_info &info)
+{
+    // find the grid
+    struct grid_cache &gcache = find_grid(info);
+    return request_missing(chan, gcache);
+}
+
+/*
   send any pending terrain request to the GCS
  */
 void AP_Terrain::send_request(mavlink_channel_t chan)
@@ -276,6 +285,9 @@ void AP_Terrain::send_request(mavlink_channel_t chan)
         // not enabled
         return;
     }
+
+    // see if we need to schedule some disk IO
+    update();
 
     // did we request recently?
     if (hal.scheduler->millis() - last_request_time_ms < 2000) {
@@ -312,69 +324,158 @@ void AP_Terrain::send_request(mavlink_channel_t chan)
         }
     }
 
+    // check cache blocks that may have been setup by a TERRAIN_CHECK
+    for (uint16_t i=0; i<TERRAIN_GRID_BLOCK_CACHE_SIZE; i++) {
+        if (cache[i].state >= GRID_CACHE_VALID) {
+            if (request_missing(chan, cache[i])) {
+                return;
+            }
+        }
+    }
+
     // request the current loc last to ensure it has highest last
     // access time
     if (request_missing(chan, info)) {
         return;
     }
+
+    // nothing to request, send a terrain report
+    send_terrain_report(chan, loc);
+}
+
+/*
+  count bits in a uint64_t
+*/
+uint8_t AP_Terrain::bitcount64(uint64_t b)
+{
+    return __builtin_popcount((unsigned)(b&0xFFFFFFFF)) + __builtin_popcount((unsigned)(b>>32));
+}
+
+/*
+  get some statistics for TERRAIN_REPORT
+*/
+void AP_Terrain::get_statistics(uint16_t &pending, uint16_t &loaded)
+{
+    pending = 0;
+    loaded = 0;
+    for (uint16_t i=0; i<TERRAIN_GRID_BLOCK_CACHE_SIZE; i++) {
+        if (cache[i].state == GRID_CACHE_INVALID) {
+            continue;
+        }
+        uint8_t maskbits = TERRAIN_GRID_BLOCK_MUL_X*TERRAIN_GRID_BLOCK_MUL_Y;
+        if (cache[i].state == GRID_CACHE_DISKWAIT) {
+            pending += maskbits;
+            continue;
+        }
+        uint8_t bitcount = bitcount64(cache[i].grid.bitmap);
+        pending += maskbits - bitcount;
+        loaded += bitcount;
+    }
+}
+
+
+/* 
+   handle terrain messages from GCS
+ */
+void AP_Terrain::handle_data(mavlink_channel_t chan, mavlink_message_t *msg)
+{
+    if (msg->msgid == MAVLINK_MSG_ID_TERRAIN_DATA) {
+        handle_terrain_data(msg);
+    } else if (msg->msgid == MAVLINK_MSG_ID_TERRAIN_CHECK) {
+        handle_terrain_check(chan, msg);
+    }
+}
+
+
+/* 
+   send a TERRAIN_REPORT for a location
+ */
+void AP_Terrain::send_terrain_report(mavlink_channel_t chan, const Location &loc)
+{
+    float height = 0;
+    uint16_t spacing = 0;
+    if (height_amsl(loc, height)) {
+        spacing = grid_spacing;
+    }
+    uint16_t pending, loaded;
+    get_statistics(pending, loaded);
+    if (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_TERRAIN_REPORT_LEN) {
+        mavlink_msg_terrain_report_send(chan, loc.lat, loc.lng, spacing, height, pending, loaded);
+    }
 }
 
 /* 
-   handle terrain data from GCS
+   handle TERRAIN_CHECK messages from GCS
  */
-void AP_Terrain::handle_data(mavlink_message_t *msg)
+void AP_Terrain::handle_terrain_check(mavlink_channel_t chan, mavlink_message_t *msg)
 {
-        mavlink_terrain_data_t packet;
-        mavlink_msg_terrain_data_decode(msg, &packet);
+    mavlink_terrain_check_t packet;
+    mavlink_msg_terrain_check_decode(msg, &packet);
+    Location loc;
+    loc.lat = packet.lat;
+    loc.lng = packet.lon;
+    send_terrain_report(chan, loc);
+}
 
-        uint16_t i;
-        for (i=0; i<TERRAIN_GRID_BLOCK_CACHE_SIZE; i++) {
-            if (cache[i].grid.lat == packet.lat && 
-                cache[i].grid.lon == packet.lon && 
-                cache[i].grid.spacing == packet.grid_spacing &&
-                packet.gridbit < 56) {
-                break;
-            }
-        }
-        if (i == TERRAIN_GRID_BLOCK_CACHE_SIZE) {
-            // we don't have that grid, ignore data
-            return;
-        }
-        struct grid_cache &gcache = cache[i];
-        struct grid_block &grid = gcache.grid;
-        uint8_t idx_x = (packet.gridbit / TERRAIN_GRID_BLOCK_MUL_Y) * TERRAIN_GRID_MAVLINK_SIZE;
-        uint8_t idx_y = (packet.gridbit % TERRAIN_GRID_BLOCK_MUL_Y) * TERRAIN_GRID_MAVLINK_SIZE;
-        ASSERT_RANGE(idx_x,0,(TERRAIN_GRID_BLOCK_MUL_X-1)*TERRAIN_GRID_MAVLINK_SIZE);
-        ASSERT_RANGE(idx_y,0,(TERRAIN_GRID_BLOCK_MUL_Y-1)*TERRAIN_GRID_MAVLINK_SIZE);
-        for (uint8_t x=0; x<TERRAIN_GRID_MAVLINK_SIZE; x++) {
-            for (uint8_t y=0; y<TERRAIN_GRID_MAVLINK_SIZE; y++) {
-                grid.height[idx_x+x][idx_y+y] = packet.data[x*TERRAIN_GRID_MAVLINK_SIZE+y];
-                ASSERT_RANGE(grid.height[idx_x+x][idx_y+y], 1, 20000);
-            }
-        }
-        gcache.grid.bitmap |= ((uint64_t)1) << packet.gridbit;
+/* 
+   handle TERRAIN_DATA messages from GCS
+ */
+void AP_Terrain::handle_terrain_data(mavlink_message_t *msg)
+{
+    mavlink_terrain_data_t packet;
+    mavlink_msg_terrain_data_decode(msg, &packet);
 
-        // mark dirty for disk IO
-        gcache.state = GRID_CACHE_DIRTY;
-
+    uint16_t i;
+    for (i=0; i<TERRAIN_GRID_BLOCK_CACHE_SIZE; i++) {
+        if (cache[i].grid.lat == packet.lat && 
+            cache[i].grid.lon == packet.lon && 
+            cache[i].grid.spacing == packet.grid_spacing &&
+            packet.gridbit < 56) {
+            break;
+        }
+    }
+    if (i == TERRAIN_GRID_BLOCK_CACHE_SIZE) {
+        // we don't have that grid, ignore data
+        return;
+    }
+    struct grid_cache &gcache = cache[i];
+    struct grid_block &grid = gcache.grid;
+    uint8_t idx_x = (packet.gridbit / TERRAIN_GRID_BLOCK_MUL_Y) * TERRAIN_GRID_MAVLINK_SIZE;
+    uint8_t idx_y = (packet.gridbit % TERRAIN_GRID_BLOCK_MUL_Y) * TERRAIN_GRID_MAVLINK_SIZE;
+    ASSERT_RANGE(idx_x,0,(TERRAIN_GRID_BLOCK_MUL_X-1)*TERRAIN_GRID_MAVLINK_SIZE);
+    ASSERT_RANGE(idx_y,0,(TERRAIN_GRID_BLOCK_MUL_Y-1)*TERRAIN_GRID_MAVLINK_SIZE);
+    for (uint8_t x=0; x<TERRAIN_GRID_MAVLINK_SIZE; x++) {
+        for (uint8_t y=0; y<TERRAIN_GRID_MAVLINK_SIZE; y++) {
+            grid.height[idx_x+x][idx_y+y] = packet.data[x*TERRAIN_GRID_MAVLINK_SIZE+y];
+            ASSERT_RANGE(grid.height[idx_x+x][idx_y+y], 1, 20000);
+        }
+    }
+    gcache.grid.bitmap |= ((uint64_t)1) << packet.gridbit;
+    
+    // mark dirty for disk IO
+    gcache.state = GRID_CACHE_DIRTY;
+    
 #if TERRAIN_DEBUG
-        hal.console->printf("Filled bit %u idx_x=%u idx_y=%u\n", 
-                            (unsigned)packet.gridbit, (unsigned)idx_x, (unsigned)idx_y);
-        if (gcache.grid.bitmap == bitmap_mask) {
-            hal.console->printf("--lat=%12.7f --lon=%12.7f %u\n",
-                                grid.lat*1.0e-7f,
-                                grid.lon*1.0e-7f,
-                                grid.height[0][0]);
-            Location loc2;
-            loc2.lat = grid.lat;
-            loc2.lng = grid.lon;
-            location_offset(loc2, 28*grid_spacing, 32*grid_spacing);
-            hal.console->printf("--lat=%12.7f --lon=%12.7f %u\n",
-                                loc2.lat*1.0e-7f,
-                                loc2.lng*1.0e-7f,
-                                grid.height[27][31]);            
-        }
+    hal.console->printf("Filled bit %u idx_x=%u idx_y=%u\n", 
+                        (unsigned)packet.gridbit, (unsigned)idx_x, (unsigned)idx_y);
+    if (gcache.grid.bitmap == bitmap_mask) {
+        hal.console->printf("--lat=%12.7f --lon=%12.7f %u\n",
+                            grid.lat*1.0e-7f,
+                            grid.lon*1.0e-7f,
+                            grid.height[0][0]);
+        Location loc2;
+        loc2.lat = grid.lat;
+        loc2.lng = grid.lon;
+        location_offset(loc2, 28*grid_spacing, 32*grid_spacing);
+        hal.console->printf("--lat=%12.7f --lon=%12.7f %u\n",
+                            loc2.lat*1.0e-7f,
+                            loc2.lng*1.0e-7f,
+                            grid.height[27][31]);            
+    }
 #endif
+    
+    // see if we need to schedule some disk IO
+    update();
 }
 
 /*
@@ -420,8 +521,8 @@ void AP_Terrain::check_disk_write(void)
 }
 
 /*
-  update terrain data. Check if we need to request more grids. This
-  should be called at 1Hz
+  update terrain data. Check if we need to do disk IO for grids. This
+  should be called at around 1Hz
  */
 void AP_Terrain::update(void)
 {
@@ -483,10 +584,14 @@ void AP_Terrain::update(void)
         // we don't know where we are
         return;
     }
+
 #if TERRAIN_DEBUG
+    static uint32_t last_report_ms;
     float height;
-    if (height_amsl(loc, height)) {
+    
+    if (hal.scheduler->millis() - last_report_ms > 1000 && height_amsl(loc, height)) {
         printf("height %.2f\n", height);
+        last_report_ms = hal.scheduler->millis();
     }
 #endif
 }
@@ -585,13 +690,16 @@ void AP_Terrain::write_block(void)
         ::close(fd);
         fd = -1;
         io_failure = true;
-    }
+    } else {
+        ::fsync(fd);
 #if TERRAIN_DEBUG
-    printf("wrote block at %ld %ld ret=%d\n",
-           (long)disk_block.block.lat,
-           (long)disk_block.block.lon,
-           (int)ret);
+        printf("wrote block at %ld %ld ret=%d mask=%07llx\n",
+               (long)disk_block.block.lat,
+               (long)disk_block.block.lon,
+               (int)ret,
+               (unsigned long long)disk_block.block.bitmap);
 #endif
+    }
     disk_io_state = DiskIoDoneWrite;
 }
 
@@ -610,7 +718,9 @@ void AP_Terrain::read_block(void)
     ssize_t ret = ::read(fd, &disk_block, sizeof(disk_block));
     if (ret != sizeof(disk_block) || 
         disk_block.block.lat != lat || 
-        disk_block.block.lon != lon) {
+        disk_block.block.lon != lon ||
+        disk_block.block.bitmap == 0 ||
+        disk_block.block.version != TERRAIN_GRID_FORMAT_VERSION) {
 #if TERRAIN_DEBUG
         printf("read empty block at %ld %ld ret=%d\n",
                (long)lat,
@@ -625,10 +735,11 @@ void AP_Terrain::read_block(void)
         disk_block.block.bitmap = 0;
     } else {
 #if TERRAIN_DEBUG
-        printf("read block at %ld %ld ret=%d\n",
+        printf("read block at %ld %ld ret=%d mask=%07llx\n",
                (long)lat,
                (long)lon,
-               (int)ret);
+               (int)ret,
+               (unsigned long long)disk_block.block.bitmap);
 #endif
     }
     disk_io_state = DiskIoDoneRead;
