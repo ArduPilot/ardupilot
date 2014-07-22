@@ -19,8 +19,10 @@ public:
     // return the number of compass instances
     uint8_t get_count(void) const { return _num_instances; }
 
-private:
+    // return the primary compass
     uint8_t _get_primary(void) const;
+
+private:
     uint8_t _num_instances;
     int _mag_fd[COMPASS_MAX_INSTANCES];
     Vector3f _sum[COMPASS_MAX_INSTANCES];
