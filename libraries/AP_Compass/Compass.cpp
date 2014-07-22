@@ -197,7 +197,7 @@ Compass::save_offsets(void)
 }
 
 void
-Compass::set_motor_compensation(const Vector3f &motor_comp_factor, uint8_t i)
+Compass::set_motor_compensation(uint8_t i, const Vector3f &motor_comp_factor)
 {
     _motor_compensation[i].set(motor_comp_factor);
 }

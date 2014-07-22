@@ -195,7 +195,9 @@ public:
         if (_motor_comp_type <= AP_COMPASS_MOT_COMP_CURRENT && _motor_comp_type != (int8_t)comp_type) {
             _motor_comp_type = (int8_t)comp_type;
             _thr_or_curr = 0;                               // set current current or throttle to zero
-            set_motor_compensation(Vector3f(0,0,0));        // clear out invalid compensation vector
+            for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+                set_motor_compensation(i, Vector3f(0,0,0)); // clear out invalid compensation vectors
+            }
         }
     }
 
@@ -206,13 +208,14 @@ public:
 
     /// Set the motor compensation factor x/y/z values.
     ///
+    /// @param  i                   instance of compass
     /// @param  offsets             Offsets multiplied by the throttle value and added to the raw mag_ values.
     ///
-    void set_motor_compensation(const Vector3f &motor_comp_factor, uint8_t i=0);
+    void set_motor_compensation(uint8_t i, const Vector3f &motor_comp_factor);
 
     /// get motor compensation factors as a vector
     const Vector3f& get_motor_compensation(uint8_t i) const { return _motor_compensation[i]; }
-    const Vector3f& get_motor_compensation(void) const { return get_motor_compensation(0); }
+    const Vector3f& get_motor_compensation(void) const { return get_motor_compensation(_get_primary()); }
 
     /// Saves the current motor compensation x/y/z values.
     ///
@@ -225,7 +228,7 @@ public:
     /// @returns                    The current compass offsets.
     ///
     const Vector3f &get_motor_offsets(uint8_t i) const { return _motor_offset[i]; }
-    const Vector3f &get_motor_offsets(void) const { return get_motor_offsets(0); }
+    const Vector3f &get_motor_offsets(void) const { return get_motor_offsets(_get_primary()); }
 
     /// Set the throttle as a percentage from 0.0 to 1.0
     /// @param thr_pct              throttle expressed as a percentage from 0 to 1.0
