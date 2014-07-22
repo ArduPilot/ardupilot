@@ -20,7 +20,7 @@
 #include <AP_Common.h>
 #include <AP_HAL.h>
 
-#if HAL_OS_POSIX_IO
+#if HAL_OS_POSIX_IO && defined(HAL_BOARD_TERRAIN_DIRECTORY)
 #define HAVE_AP_TERRAIN 1
 #else
 #define HAVE_AP_TERRAIN 0
@@ -61,6 +61,7 @@
   array[x][y]: x is increasing north, y is increasing east
   array[x]:    low order bits increase east first
   bitmap:      low order bits increase east first
+  file:        first entries increase east, then north
  */
 
 class AP_Terrain
@@ -97,6 +98,13 @@ private:
       block oriented SD cards efficient
      */
     struct PACKED grid_block {
+        // bitmap of 4x4 grids filled in from GCS (56 bits are used)
+        uint64_t bitmap;
+
+        // south west corner of block in degrees*10^7
+        int32_t lat;
+        int32_t lon;
+
         // crc of whole block, taken with crc=0
         uint16_t crc;
 
@@ -109,20 +117,29 @@ private:
         // heights in meters over a 32*28 grid
         int16_t height[TERRAIN_GRID_BLOCK_SIZE_X][TERRAIN_GRID_BLOCK_SIZE_Y];
 
-        // south west corner of block in degrees*10^7
-        int32_t lat;
-        int32_t lon;
+        // indices info 32x28 grids for this degree reference
+        uint16_t grid_idx_x;
+        uint16_t grid_idx_y;
 
-        // bitmap of 4x4 grids filled in from GCS (56 bits are used)
-        uint64_t bitmap;
+        // rounded latitude/longitude in degrees. 
+        int16_t lon_degrees;
+        int8_t lat_degrees;
     };
 
     /*
       grid_block for disk IO, aligned on 2048 byte boundaries
      */
     union grid_io_block {
-        struct grid_block grid;
+        struct grid_block block;
         uint8_t buffer[2048];
+    };
+
+    enum GridCacheState {
+        GRID_CACHE_INVALID=0,    // when first initialised
+        GRID_CACHE_DISKWAIT=1,   // when waiting for disk read
+        GRID_CACHE_VALID=2,      // when at least partially valid
+        GRID_CACHE_DIRTY=3       // when updates have been made, and
+                                 // disk write needed
     };
 
     /*
@@ -130,6 +147,8 @@ private:
      */
     struct grid_cache {
         struct grid_block grid;
+
+        volatile enum GridCacheState state;
 
         // the last time access was requested to this block, used for LRU
         uint32_t last_access_ms;
@@ -148,6 +167,10 @@ private:
         int32_t grid_lat;
         int32_t grid_lon;
 
+        // indices info 32x28 grids for this degree reference
+        uint16_t grid_idx_x;
+        uint16_t grid_idx_y;
+
         // indexes into 32x28 grid
         uint8_t idx_x; // north (0..27)
         uint8_t idx_y; // east  (0..31)
@@ -155,6 +178,9 @@ private:
         // fraction within the grid square
         float frac_x; // north (0..1)
         float frac_y; // east  (0..1)
+
+        // file offset of this grid
+        uint32_t file_offset;
     };
 
     // given a location, fill a grid_info structure
@@ -182,6 +208,18 @@ private:
     */
     bool request_missing(mavlink_channel_t chan, const struct grid_info &info);
 
+    /*
+      disk IO functions
+     */
+    int16_t find_io_idx(void);
+    void check_disk_read(void);
+    void check_disk_write(void);
+    void io_timer(void);
+    void open_file(void);
+    void seek_offset(void);
+    void write_block(void);
+    void read_block(void);
+
     // reference to AHRS, so we can ask for our position,
     // heading and speed
     AP_AHRS &ahrs;
@@ -189,10 +227,37 @@ private:
     // cache of grids in memory, LRU
     struct grid_cache cache[TERRAIN_GRID_BLOCK_CACHE_SIZE];
 
+    // a grid_cache block waiting for disk IO
+    enum DiskIoState {
+        DiskIoIdle      = 0,
+        DiskIoWaitWrite = 1,
+        DiskIoWaitRead  = 2,
+        DiskIoDoneRead  = 3,
+        DiskIoDoneWrite = 4
+    };
+    volatile enum DiskIoState disk_io_state;
+    union grid_io_block disk_block;
+
     // last time we asked for more grids
     uint32_t last_request_time_ms;
 
     static const uint64_t bitmap_mask = (((uint64_t)1U)<<(TERRAIN_GRID_BLOCK_MUL_X*TERRAIN_GRID_BLOCK_MUL_Y)) - 1;
+
+    // open file handle on degree file
+    int fd;
+
+    // has the timer been setup?
+    bool timer_setup;
+
+    // degrees lat and lon of file
+    int8_t file_lat_degrees;
+    int16_t file_lon_degrees;
+
+    // do we have an IO failure
+    volatile bool io_failure;
+
+    // have we created the terrain directory?
+    bool directory_created;
 };
 #endif // HAVE_AP_TERRAIN
 #endif // __AP_TERRAIN_H__
