@@ -867,9 +867,11 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/AP_RangeFinder/RangeFinder.cpp
     GOBJECT(sonar,                  "RNGFND", RangeFinder),
 
+#if HAVE_AP_TERRAIN
     // @Group: TERRAIN
     // @Path: ../libraries/AP_Terrain/AP_Terrain.cpp
     GOBJECT(terrain,                "TERRAIN_", AP_Terrain),
+#endif
 
     // RC channel
     //-----------

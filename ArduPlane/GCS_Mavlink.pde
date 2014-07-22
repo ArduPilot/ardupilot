@@ -1473,8 +1473,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 #endif
 
     case MAVLINK_MSG_ID_TERRAIN_DATA:
+    case MAVLINK_MSG_ID_TERRAIN_CHECK:
 #if HAVE_AP_TERRAIN
-        terrain.handle_data(msg);
+        terrain.handle_data(chan, msg);
 #endif
         break;
         
