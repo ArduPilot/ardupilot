@@ -398,13 +398,17 @@ static void report_compass()
     cliSerial->printf_P(PSTR("Mag Dec: %4.4f\n"),
                     degrees(compass.get_declination()));
 
-    Vector3f offsets = compass.get_offsets();
-
     // mag offsets
-    cliSerial->printf_P(PSTR("Mag off: %4.4f, %4.4f, %4.4f\n"),
-                    offsets.x,
-                    offsets.y,
-                    offsets.z);
+    Vector3f offsets;
+    for (uint8_t i=0; i<compass.get_count(); i++) {
+        offsets = compass.get_offsets(i);
+        // mag offsets
+        cliSerial->printf_P(PSTR("Mag%d off: %4.4f, %4.4f, %4.4f\n"),
+                        (int)i,
+                        offsets.x,
+                        offsets.y,
+                        offsets.z);
+    }
 
     // motor compensation
     cliSerial->print_P(PSTR("Motor Comp: "));
@@ -417,11 +421,15 @@ static void report_compass()
         if( compass.motor_compensation_type() == AP_COMPASS_MOT_COMP_CURRENT ) {
             cliSerial->print_P(PSTR("Current"));
         }
-        Vector3f motor_compensation = compass.get_motor_compensation();
-        cliSerial->printf_P(PSTR("\nComp Vec: %4.2f, %4.2f, %4.2f\n"),
+        Vector3f motor_compensation;
+        for (uint8_t i=0; i<compass.get_count(); i++) {
+            motor_compensation = compass.get_motor_compensation(i);
+            cliSerial->printf_P(PSTR("\nComMot%d: %4.2f, %4.2f, %4.2f\n"),
+                        (int)i,
                         motor_compensation.x,
                         motor_compensation.y,
                         motor_compensation.z);
+        }
     }
     print_blanks(1);
 }
