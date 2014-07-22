@@ -20,6 +20,9 @@
 #include <GCS_MAVLink.h>
 #include <GCS.h>
 #include "AP_Terrain.h"
+
+#if HAVE_AP_TERRAIN
+
 #include <assert.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -27,8 +30,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
-
-#if HAVE_AP_TERRAIN
 
 #define TERRAIN_DEBUG 0
 
