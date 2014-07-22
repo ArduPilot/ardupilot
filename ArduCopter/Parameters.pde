@@ -1088,6 +1088,12 @@ const AP_Param::Info var_info[] PROGMEM = {
     GOBJECT(sonar,   "RNGFND", RangeFinder),
 #endif
 
+#if HAVE_AP_TERRAIN
+    // @Group: TERRAIN
+    // @Path: ../libraries/AP_Terrain/AP_Terrain.cpp
+    GOBJECT(terrain,                "TERRAIN_", AP_Terrain),
+#endif
+
     AP_VAREND
 };
 

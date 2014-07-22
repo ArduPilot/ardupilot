@@ -559,6 +559,13 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         break;
 #endif
 
+    case MSG_TERRAIN:
+#if HAVE_AP_TERRAIN
+        CHECK_PAYLOAD_SIZE(TERRAIN_REQUEST);
+        terrain.send_request(chan);
+#endif
+        break;
+
     case MSG_STATUSTEXT:
         CHECK_PAYLOAD_SIZE(STATUSTEXT);
         send_statustext(chan);
@@ -811,6 +818,9 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_HWSTATUS);
         send_message(MSG_SYSTEM_TIME);
         send_message(MSG_RANGEFINDER);
+#if HAVE_AP_TERRAIN
+        send_message(MSG_TERRAIN);
+#endif
     }
 }
 
@@ -1278,6 +1288,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         camera_mount.status_msg(msg, chan);
         break;
 #endif // MOUNT == ENABLED
+
+    case MAVLINK_MSG_ID_TERRAIN_DATA:
+    case MAVLINK_MSG_ID_TERRAIN_CHECK:
+#if HAVE_AP_TERRAIN
+        terrain.handle_data(chan, msg);
+#endif
+        break;
 
 #if AC_RALLY == ENABLED
     // receive a rally point from GCS and store in EEPROM

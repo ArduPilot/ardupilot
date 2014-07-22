@@ -118,6 +118,7 @@ public:
         k_param_land_repositioning,
         k_param_sonar, // sonar object
         k_param_ekfcheck_compass_thresh,// 54
+        k_param_terrain,
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove

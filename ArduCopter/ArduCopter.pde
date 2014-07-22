@@ -152,6 +152,7 @@
 #if PARACHUTE == ENABLED
 #include <AP_Parachute.h>		// Parachute release library
 #endif
+#include <AP_Terrain.h>
 
 // AP_HAL to Arduino compatibility layer
 #include "compat.h"
@@ -730,6 +731,12 @@ static AP_Parachute parachute(relay);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
+// terrain handling
+#if HAVE_AP_TERRAIN
+AP_Terrain terrain(ahrs);
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
 // Nav Guided - allows external computer to control the vehicle during missions
 ////////////////////////////////////////////////////////////////////////////////
 #if NAV_GUIDED == ENABLED
@@ -1177,6 +1184,10 @@ static void one_hz_loop()
 #endif
 
     check_usb_mux();
+
+#if HAVE_AP_TERRAIN
+    terrain.update();
+#endif
 }
 
 // called at 100hz but data from sensor only arrives at 20 Hz
