@@ -159,7 +159,8 @@ AP_Terrain::grid_cache &AP_Terrain::find_grid(const struct grid_info &info)
     // see if we have that grid
     for (uint16_t i=0; i<TERRAIN_GRID_BLOCK_CACHE_SIZE; i++) {
         if (cache[i].grid.lat == info.grid_lat && 
-            cache[i].grid.lon == info.grid_lon) {
+            cache[i].grid.lon == info.grid_lon &&
+            cache[i].grid.spacing == grid_spacing) {
             cache[i].last_access_ms = hal.scheduler->millis();
             return cache[i];
         }
@@ -598,6 +599,18 @@ void AP_Terrain::update(void)
 
 
 /*
+  get CRC for a block
+ */
+uint16_t AP_Terrain::get_block_crc(struct grid_block &block)
+{
+    uint16_t saved_crc = block.crc;
+    block.crc = 0;
+    uint16_t ret = crc16_ccitt((const uint8_t *)&block, sizeof(block), 0);
+    block.crc = saved_crc;
+    return ret;
+}
+
+/*
   open the current degree file
  */
 void AP_Terrain::open_file(void)
@@ -682,6 +695,9 @@ void AP_Terrain::write_block(void)
     if (io_failure) {
         return;
     }
+
+    disk_block.block.crc = get_block_crc(disk_block.block);
+
     ssize_t ret = ::write(fd, &disk_block, sizeof(disk_block));
     if (ret  != sizeof(disk_block)) {
 #if TERRAIN_DEBUG
@@ -720,7 +736,9 @@ void AP_Terrain::read_block(void)
         disk_block.block.lat != lat || 
         disk_block.block.lon != lon ||
         disk_block.block.bitmap == 0 ||
-        disk_block.block.version != TERRAIN_GRID_FORMAT_VERSION) {
+        disk_block.block.spacing != grid_spacing ||
+        disk_block.block.version != TERRAIN_GRID_FORMAT_VERSION ||
+        disk_block.block.crc != get_block_crc(disk_block.block)) {
 #if TERRAIN_DEBUG
         printf("read empty block at %ld %ld ret=%d\n",
                (long)lat,

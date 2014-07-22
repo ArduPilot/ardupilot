@@ -222,6 +222,7 @@ private:
       disk IO functions
      */
     int16_t find_io_idx(void);
+    uint16_t get_block_crc(struct grid_block &block);
     void check_disk_read(void);
     void check_disk_write(void);
     void io_timer(void);
