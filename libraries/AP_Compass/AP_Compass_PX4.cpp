@@ -135,9 +135,9 @@ bool AP_Compass_PX4::read(void)
         _count[i] = 0;
     }
 
-    last_update = _last_timestamp[_get_primary()];
+    last_update = _last_timestamp[get_primary()];
     
-    return _healthy[_get_primary()];
+    return _healthy[get_primary()];
 }
 
 void AP_Compass_PX4::accumulate(void)
@@ -153,7 +153,7 @@ void AP_Compass_PX4::accumulate(void)
     }
 }
 
-uint8_t AP_Compass_PX4::_get_primary(void) const
+uint8_t AP_Compass_PX4::get_primary(void) const
 {
     if (_primary < _num_instances && _healthy[_primary]) {
         return _primary;
