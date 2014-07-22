@@ -125,7 +125,8 @@ void AP_Baro::calibrate()
 */
 void AP_Baro::update_calibration()
 {
-    _ground_pressure.set(get_pressure());
+    float pressure = get_pressure();
+    _ground_pressure.set(pressure);
     _ground_temperature.set(get_temperature());
 }
 
@@ -166,7 +167,8 @@ float AP_Baro::get_altitude(void)
         return _altitude + _alt_offset;
     }
 
-    _altitude = get_altitude_difference(_ground_pressure, get_pressure());
+    float pressure = get_pressure();
+    _altitude = get_altitude_difference(_ground_pressure, pressure);
 
     _last_altitude_t = _last_update;
 
