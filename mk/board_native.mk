@@ -19,6 +19,10 @@ COPTS           =   -ffunction-sections -fdata-sections -fsigned-char
 
 ASOPTS          =   -x assembler-with-cpp 
 
+ifeq ($(findstring CYGWIN, $(SYSTYPE)),CYGWIN) 
+DEFINES        += -DCYGWIN=1
+endif
+
 # disable as this breaks distcc
 #ifneq ($(SYSTYPE),Darwin)
 #LISTOPTS        =   -adhlns=$(@:.o=.lst)

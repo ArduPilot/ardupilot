@@ -116,6 +116,74 @@ Back at the terminal:
 # make px4-upload  # (optional)
 ```
 
+## Development using Windows and Cygwin
+
+SITL mode of Ardupilot can be used in Windows via the Cygwin software suite:
+
+ 1. [Download Cygwin](http://cygwin.com/install.html). When installing, 
+ ensure the make, wget, git, gcc-core, gcc-g++, libintl2, gdb, xterm, 
+ python, python-numpy, python-imaging, autoconf, libtool, automake,
+ libexpat-devel, xinit, xkill, procps packages are selected.
+ 
+ 2. Start the Cygwin console and download the Ardupilot code, along with
+ the JSBSim, Mavlink, MAVProxy software:
+ 
+ ```
+ git clone https://github.com/diydrones/ardupilot.git
+ git clone https://github.com/tridge/jsbsim.git
+ wget https://bootstrap.pypa.io/ez_setup.py -O - | python
+ easy_install pymavlink
+ easy_install MAVProxy
+ easy_install Pexpect
+ ```
+
+ 3. Build JSBSim:
+
+ ```
+ cd ./jsbsim
+ ./autogen.sh
+ make
+ make install
+ cp ./src/JSBSim.exe /usr/local/bin
+ cd ../
+ ```
+
+ 4. Configure Ardupilot:
+
+ ```
+ cd ./ardupilot/ArduPlane
+ make configure
+ cd ../../
+ ```
+
+ 5. To build and run SITL mode for each of the 3 branches:
+ 
+ Plane:
+ ```
+ cd ./ardupilot/ArduPlane/
+ ../Tools/autotest/sim_vehicle.sh
+ ```
+
+ Copter:
+ ```
+ cd ./ardupilot/ArduCopter/
+ ../Tools/autotest/sim_vehicle.sh
+ ```
+
+ Rover:
+ ```
+ cd ./ardupilot/APMrover2/
+ ../Tools/autotest/sim_vehicle.sh
+ ```
+
+ 6. The Windows Firewall may ask to allow network access for the SITL environment.
+ 
+ 7. Start up your favourite ground station software (Mission Planner, APMPlanner2)
+ and connect via UDP port 14551.
+ 
+ 8. Use Ctrl+C in the main Cygwin console to end a SITL session
+ 
+ 
 # User Technical Support
 
 ArduPilot users should use the DIYDrones.com forums for technical support.
