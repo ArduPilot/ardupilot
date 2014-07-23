@@ -431,6 +431,9 @@
                <entry value="9" name="MAV_FRAME_BODY_OFFSET_NED">
                    <description>Offset in body NED frame. This makes sense if adding setpoints to the current flight path, to avoid an obstacle - e.g. useful to command 2 m/s^2 acceleration to the east.</description>
                </entry>
+               <entry value="10" name="MAV_FRAME_GLOBAL_TERRAIN_ALT">
+                   <description>Global coordinate frame with above terrain level altitude. WGS84 coordinate system, relative altitude over terrain with respect to the waypoint coordinate. First value / x: latitude, second value / y: longitude, third value / z: positive altitude with 0 being at ground level in terrain model.</description>
+               </entry>
           </enum>
           <enum name="MAVLINK_DATA_STREAM_TYPE">
                <entry name="MAVLINK_DATA_STREAM_IMG_JPEG">
