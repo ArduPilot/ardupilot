@@ -14,7 +14,7 @@ export LANG=C
 # Locate the sketch sources based on the initial Makefile's path
 #
 SRCROOT			:=	$(realpath $(dir $(firstword $(MAKEFILE_LIST))))
-ifneq ($(findstring CYGWIN, $(SYSTYPE)),) 
+ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
   # Workaround a $(realpath ) bug on cygwin
   ifeq ($(SRCROOT),)
     SRCROOT	:=	$(shell cygpath -m ${CURDIR})
@@ -48,7 +48,7 @@ else
     $(warning WARNING: sketchbook directory $(SKETCHBOOK) contains no libraries)
   endif
 endif
-ifneq ($(findstring CYGWIN, $(SYSTYPE)),) 
+ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
     # Convert cygwin path into a windows normal path
     SKETCHBOOK	:= $(shell cygpath ${SKETCHBOOK})
 endif
@@ -149,6 +149,11 @@ HAL_BOARD = HAL_BOARD_LINUX
 HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_PXF
 endif
 
+ifneq ($(findstring navio, $(MAKECMDGOALS)),)
+HAL_BOARD = HAL_BOARD_LINUX
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_NAVIO
+endif
+
 ifneq ($(findstring vrbrain, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_VRBRAIN
 endif
@@ -189,4 +194,3 @@ BOARD = mega
 endif
 
 endif
-
