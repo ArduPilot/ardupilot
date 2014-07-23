@@ -30,6 +30,10 @@
 
 #include <AP_Param.h>
 #include <AP_AHRS.h>
+#include <AP_Baro.h>
+
+#define TERRAIN_DEBUG 0
+
 
 // MAVLink sends 4x4 grids
 #define TERRAIN_GRID_MAVLINK_SIZE 4
@@ -54,6 +58,13 @@
 
 // format of grid on disk
 #define TERRAIN_GRID_FORMAT_VERSION 1
+
+#if TERRAIN_DEBUG
+#define ASSERT_RANGE(v,minv,maxv) assert((v)<=(maxv)&&(v)>=(minv))
+#else
+#define ASSERT_RANGE(v,minv,maxv)
+#endif
+
 
 /*
   Data conventions in this library:
