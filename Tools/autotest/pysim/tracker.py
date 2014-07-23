@@ -11,16 +11,18 @@ from rotmat import Vector3
 class Tracker(Aircraft):
     '''a simple antenna tracker'''
     def __init__(self,
-                 rate_controlled=False,
+                 onoff=False,
+                 yawrate=9.0,
+                 pitchrate=1.0,
                  pitch_range = 45,
-                 yaw_range = 180,
+                 yaw_range = 170,
                  zero_yaw = 270, # yaw direction at startup
-                 zero_pitch = 10, # pitch at startup
-                 turn_rate=90 # servo max turn rate in degrees/sec
+                 zero_pitch = 10 # pitch at startup
                  ):
         Aircraft.__init__(self)
-        self.rate_controlled = rate_controlled
-        self.turn_rate = turn_rate
+        self.onoff = onoff
+        self.yawrate = yawrate
+        self.pitchrate = pitchrate
         self.last_time = time.time()
         self.pitch_range = pitch_range
         self.yaw_range = yaw_range
@@ -40,14 +42,11 @@ class Tracker(Aircraft):
         if target - current < -dv:
             return current - dv
         return target
-        
 
-    def update(self, state):
-        # how much time has passed?
-        t = time.time()
-        delta_time = t - self.last_time
-        self.last_time = t
 
+    def update_position_servos(self, state):
+        '''update function for position (normal) servos.
+        Returns (yaw_rate,pitch_rate) tuple'''
         self.pitch_current = self.slew_limit(self.pitch_current, state.pitch_input, self.pitch_range, delta_time)
         self.yaw_current = self.slew_limit(self.yaw_current, state.yaw_input, self.yaw_range, delta_time)
 
@@ -74,10 +73,58 @@ class Tracker(Aircraft):
         yaw_rate = min(self.turn_rate, yaw_rate)
         yaw_rate = max(-self.turn_rate, yaw_rate)
 
+        return (yaw_rate, pitch_rate)
+
+    def update_onoff_servos(self, state):
+        '''update function for onoff servos.
+        These servos either move at a constant rate or are still 
+        Returns (yaw_rate,pitch_rate) tuple'''
+        if abs(state.yaw_input) < 0.1:
+            yaw_rate = 0
+        elif state.yaw_input >= 0.1:
+            yaw_rate = self.yawrate
+        else:
+            yaw_rate = -self.yawrate
+
+        if abs(state.pitch_input) < 0.1:
+            pitch_rate = 0
+        elif state.pitch_input >= 0.1:
+            pitch_rate = self.pitchrate
+        else:
+            pitch_rate = -self.pitchrate
+        return (yaw_rate, pitch_rate)
+
+    def update(self, state):
+        # how much time has passed?
+        t = time.time()
+        delta_time = t - self.last_time
+        self.last_time = t
+
+        if self.onoff:
+            (yaw_rate,pitch_rate) = self.update_onoff_servos(state)
+        else:
+            (yaw_rate,pitch_rate) = self.update_position_servos(state)
+
+        # implement yaw and pitch limits
+        (r,p,y) = self.dcm.to_euler()
+        pitch_current = degrees(p)
+        yaw_current = degrees(y)
+        roll_current = degrees(r)
+
+        if yaw_rate > 0 and yaw_current >= self.yaw_range:
+            yaw_rate = 0
+        if yaw_rate < 0 and yaw_current <= -self.yaw_range:
+            yaw_rate = 0
+
+        if pitch_rate > 0 and pitch_current >= self.pitch_range:
+            pitch_rate = 0
+        if pitch_rate < 0 and pitch_current <= -self.pitch_range:
+            pitch_rate = 0
+
         # keep it level
         roll_rate = 0 - roll_current
 
-        if time.time() - self.last_debug > 2:
+        if time.time() - self.last_debug > 2 and not self.onoff:
             self.last_debug = time.time()
             print("roll=%.1f/%.1f pitch=%.1f/%.1f yaw=%.1f/%.1f rates=%.1f/%.1f/%.1f" % (
                 roll_current, 0,

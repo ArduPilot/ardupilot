@@ -17,6 +17,7 @@ CLEAN_BUILD=0
 START_ANTENNA_TRACKER=0
 WIPE_EEPROM=0
 REVERSE_THROTTLE=0
+TRACKER_ARGS=""
 
 usage()
 {
@@ -30,6 +31,7 @@ Options:
     -G               use gdb for debugging ardupilot
     -g               use gdb for debugging ardupilot, but don't auto-start
     -T               start an antenna tracker instance
+    -A               pass arguments to antenna tracker
     -t               set antenna tracker start location
     -L               select start location from Tools/autotest/locations.txt
     -c               do a make clean before building
@@ -55,7 +57,7 @@ EOF
 
 
 # parse options. Thanks to http://wiki.bash-hackers.org/howto/getopts_tutorial
-while getopts ":I:VgGcj:TL:v:hwf:R" opt; do
+while getopts ":I:VgGcj:TA:t:L:v:hwf:R" opt; do
   case $opt in
     v)
       VEHICLE=$OPTARG
@@ -68,6 +70,9 @@ while getopts ":I:VgGcj:TL:v:hwf:R" opt; do
       ;;
     T)
       START_ANTENNA_TRACKER=1
+      ;;
+    A)
+      TRACKER_ARGS="$OPTARG"
       ;;
     R)
       REVERSE_THROTTLE=1
@@ -226,7 +231,7 @@ if [ $START_ANTENNA_TRACKER == 1 ]; then
     TRACKER_UARTA="tcp:127.0.0.1:"$((5760+10*$TRACKER_INSTANCE))
     cmd="nice /tmp/AntennaTracker.build/AntennaTracker.elf -I1"
     $autotest/run_in_terminal_window.sh "AntennaTracker" $cmd || exit 1
-    $autotest/run_in_terminal_window.sh "pysim(Tracker)" nice $autotest/pysim/sim_tracker.py --home=$TRACKER_HOME --simin=$TRACKIN_PORT --simout=$TRACKOUT_PORT || exit 1
+    $autotest/run_in_terminal_window.sh "pysim(Tracker)" nice $autotest/pysim/sim_tracker.py --home=$TRACKER_HOME --simin=$TRACKIN_PORT --simout=$TRACKOUT_PORT $TRACKER_ARGS || exit 1
     popd
 fi
 
