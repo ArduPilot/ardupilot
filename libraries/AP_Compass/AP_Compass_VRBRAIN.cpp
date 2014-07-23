@@ -44,17 +44,17 @@ extern const AP_HAL::HAL& hal;
 bool AP_Compass_VRBRAIN::init(void)
 {
 	_mag_fd[0] = open(MAG_DEVICE_PATH, O_RDONLY);
-	if (_mag_fd[0] < 0) {
+    _mag_fd[1] = open(MAG_DEVICE_PATH "1", O_RDONLY);
+    _num_instances = 0;
+    for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+        if (_mag_fd[i] >= 0) {
+            _num_instances = i+1;
+        }
+    }
+    if (_num_instances == 0) {
         hal.console->printf("Unable to open " MAG_DEVICE_PATH "\n");
         return false;
 	}
-
-	_mag_fd[1] = open(MAG_DEVICE_PATH "1", O_RDONLY);
-	if (_mag_fd[1] >= 0) {
-        _num_instances = 2;
-	} else {
-        _num_instances = 1;
-    }
 
     for (uint8_t i=0; i<_num_instances; i++) {
 #ifdef DEVIOCGDEVICEID
