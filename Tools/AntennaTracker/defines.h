@@ -61,5 +61,10 @@ enum ControlMode {
     INITIALISING=16
 };
 
+enum ServoType {
+    SERVO_TYPE_POSITION=0,
+    SERVO_TYPE_ONOFF=1
+};
+
 #endif // _DEFINES_H
 

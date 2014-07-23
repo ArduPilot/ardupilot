@@ -15,7 +15,7 @@ static struct {
    update the pitch (elevation) servo. The aim is to drive the boards ahrs pitch to the
    requested pitch, so the board (and therefore the antenna) will be pointing at the target
  */
-static void update_pitch_servo(float pitch)
+static void update_pitch_position_servo(float pitch)
 {
     // degrees(ahrs.pitch) is -90 to 90, where 0 is horizontal
     // pitch argument is -90 to 90, where 0 is horizontal
@@ -52,17 +52,63 @@ static void update_pitch_servo(float pitch)
                                         channel_pitch.servo_out + max_change);
     }
     channel_pitch.servo_out = new_servo_out;
+}
 
+
+/**
+   update the pitch (elevation) servo. The aim is to drive the boards ahrs pitch to the
+   requested pitch, so the board (and therefore the antenna) will be pointing at the target
+ */
+static void update_pitch_onoff_servo(float pitch)
+{
+    // degrees(ahrs.pitch) is -90 to 90, where 0 is horizontal
+    // pitch argument is -90 to 90, where 0 is horizontal
+    // servo_out is in 100ths of a degree
+    float ahrs_pitch = degrees(ahrs.pitch);
+    float err = ahrs_pitch - pitch; 
+
+    float acceptable_error = g.onoff_pitch_rate * g.onoff_pitch_mintime;
+    if (fabsf(err) < acceptable_error) {
+        channel_pitch.servo_out = 0;
+    } else if (err > 0) {
+        // positive error means we are pointing too high, so push the
+        // servo down
+        channel_pitch.servo_out = -9000;        
+    } else {
+        // negative error means we are pointing too low, so push the
+        // servo up
+        channel_pitch.servo_out = 9000;
+    }
+}
+
+
+/**
+   update the pitch (elevation) servo. The aim is to drive the boards ahrs pitch to the
+   requested pitch, so the board (and therefore the antenna) will be pointing at the target
+ */
+static void update_pitch_servo(float pitch)
+{
+    switch ((enum ServoType)g.servo_type.get()) {
+    case SERVO_TYPE_ONOFF:
+        update_pitch_onoff_servo(pitch);
+        break;
+
+    case SERVO_TYPE_POSITION:
+    default:
+        update_pitch_position_servo(pitch);
+        break;
+    }
     channel_pitch.calc_pwm();
     channel_pitch.output();
 }
+
 
 /**
    update the yaw (azimuth) servo. The aim is to drive the boards ahrs
    yaw to the requested yaw, so the board (and therefore the antenna)
    will be pointing at the target
  */
-static void update_yaw_servo(float yaw)
+static void update_yaw_position_servo(float yaw)
 {
     int32_t ahrs_yaw_cd = wrap_180_cd(ahrs.yaw_sensor);
     int32_t yaw_cd   = wrap_180_cd(yaw*100);
@@ -176,7 +222,50 @@ static void update_yaw_servo(float yaw)
     }
 
     channel_yaw.servo_out = new_servo_out;
+}
 
+
+/**
+   update the yaw (azimuth) servo. The aim is to drive the boards ahrs
+   yaw to the requested yaw, so the board (and therefore the antenna)
+   will be pointing at the target
+ */
+static void update_yaw_onoff_servo(float yaw)
+{
+    int32_t ahrs_yaw_cd = wrap_180_cd(ahrs.yaw_sensor);
+    int32_t yaw_cd   = wrap_180_cd(yaw*100);
+    int32_t err_cd = wrap_180_cd(ahrs_yaw_cd - yaw_cd);
+    float err = err_cd * 0.01f;
+    
+    float acceptable_error = g.onoff_yaw_rate * g.onoff_yaw_mintime;
+    if (fabsf(err) < acceptable_error) {
+        channel_yaw.servo_out = 0;
+    } else if (err > 0) {
+        // positive error means we are clockwise of the target, so
+        // move anti-clockwise
+        channel_yaw.servo_out = -18000;        
+    } else {
+        // negative error means we are anti-clockwise of the target, so
+        // move clockwise
+        channel_yaw.servo_out = 18000;        
+    }
+}
+
+/**
+   update the yaw (azimuth) servo. 
+ */
+static void update_yaw_servo(float pitch)
+{
+    switch ((enum ServoType)g.servo_type.get()) {
+    case SERVO_TYPE_ONOFF:
+        update_yaw_onoff_servo(pitch);
+        break;
+
+    case SERVO_TYPE_POSITION:
+    default:
+        update_yaw_position_servo(pitch);
+        break;
+    }
     channel_yaw.calc_pwm();
     channel_yaw.output();
 }

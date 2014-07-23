@@ -123,6 +123,44 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0 1
     GSCALAR(proxy_mode,          "PROXY_MODE",   0),
 
+    // @Param: SERVO_TYPE
+    // @DisplayName: Type of servo system being used
+    // @Description: This allows selection of position servos or on/off servos
+    // @Values: Position:0,OnOff:1
+    GSCALAR(servo_type,          "SERVO_TYPE",   SERVO_TYPE_POSITION),
+
+    // @Param: ONOFF_YAW_RATE
+    // @DisplayName: Yaw rate for on/off servos
+    // @Description: Rate of change of yaw in degrees/second for on/off servos
+    // @Units: degrees/second
+    // @Increment: 0.1
+    // @Range: 0 50
+    GSCALAR(onoff_yaw_rate,      "ONOFF_YAW_RATE", 9.0f),
+
+    // @Param: ONOFF_PITCH_RATE
+    // @DisplayName: Pitch rate for on/off servos
+    // @Description: Rate of change of pitch in degrees/second for on/off servos
+    // @Units: degrees/second
+    // @Increment: 0.1
+    // @Range: 0 50
+    GSCALAR(onoff_pitch_rate,      "ONOFF_PITCH_RATE", 1.0f),
+
+    // @Param: ONOFF_YAW_MINT
+    // @DisplayName: Yaw minimum movement time
+    // @Description: Minimum amount of time in seconds to move in yaw
+    // @Units: seconds
+    // @Increment: 0.01
+    // @Range: 0 2
+    GSCALAR(onoff_yaw_mintime,     "ONOFF_YAW_MINT", 0.1f),
+
+    // @Param: ONOFF_PITCH_MINT
+    // @DisplayName: Pitch minimum movement time
+    // @Description: Minimim amount of time in seconds to move in pitch
+    // @Units: seconds
+    // @Increment: 0.01
+    // @Range: 0 2
+    GSCALAR(onoff_pitch_mintime,   "ONOFF_PITCH_MINT", 0.1f),
+
     // barometer ground calibration. The GND_ prefix is chosen for
     // compatibility with previous releases of ArduPlane
     // @Group: GND_
