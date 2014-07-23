@@ -213,6 +213,11 @@ private:
     bool request_missing(mavlink_channel_t chan, const struct grid_info &info);
 
     /*
+      look for blocks that need to be read/written to disk
+     */
+    void schedule_disk_io(void);
+
+    /*
       get some statistics for TERRAIN_REPORT
      */
     uint8_t bitcount64(uint64_t b);

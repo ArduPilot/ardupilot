@@ -304,7 +304,7 @@ void AP_Terrain::send_request(mavlink_channel_t chan)
     }
 
     // see if we need to schedule some disk IO
-    update();
+    schedule_disk_io();
 
     // did we request recently?
     if (hal.scheduler->millis() - last_request_time_ms < 2000) {
@@ -547,10 +547,9 @@ void AP_Terrain::check_disk_write(void)
 }
 
 /*
-  update terrain data. Check if we need to do disk IO for grids. This
-  should be called at around 1Hz
+  Check if we need to do disk IO for grids. 
  */
-void AP_Terrain::update(void)
+void AP_Terrain::schedule_disk_io(void)
 {
     if (enable == 0) {
         return;
@@ -604,24 +603,18 @@ void AP_Terrain::update(void)
         // waiting for io_timer()
         break;
     }
-    
-    Location loc;
-    if (!ahrs.get_position(loc)) {
-        // we don't know where we are
-        return;
-    }
-
-#if TERRAIN_DEBUG
-    static uint32_t last_report_ms;
-    float height;
-    
-    if (hal.scheduler->millis() - last_report_ms > 1000 && height_amsl(loc, height)) {
-        printf("height %.2f\n", height);
-        last_report_ms = hal.scheduler->millis();
-    }
-#endif
 }
 
+/*
+  1Hz update function. This is here to ensure progress is made on disk
+  IO even if no MAVLink send_request() operations are called for a
+  while.
+ */
+void AP_Terrain::update(void)
+{
+    // just schedule any needed disk IO
+    schedule_disk_io();
+}
 
 /*
   get CRC for a block
@@ -634,6 +627,22 @@ uint16_t AP_Terrain::get_block_crc(struct grid_block &block)
     block.crc = saved_crc;
     return ret;
 }
+
+
+/********************************************************
+All the functions below this point run in the IO timer
+context, which is a separate thread. The code uses the state
+machine controlled by disk_io_state to manage who has 
+access to the structures and to prevent race conditions.
+
+The IO timer context owns the data when disk_io_state is 
+DiskIoWaitWrite or DiskIoWaitRead. The main thread owns the
+data when disk_io_state is DiskIoIdle, DiskIoDoneWrite or
+DiskIoDoneRead
+
+All file operations are done by the IO thread.
+*********************************************************/
+
 
 /*
   open the current degree file
