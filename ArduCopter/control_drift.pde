@@ -66,7 +66,7 @@ static void drift_run()
     float pitch_vel2 = min(fabs(pitch_vel), 800);
 
     // simple gain scheduling for yaw input
-    target_yaw_rate = (float)(target_roll/2) * (1.0 - (pitch_vel2 / 2400.0));
+    target_yaw_rate = (float)(target_roll/2.0f) * (1.0f - (pitch_vel2 / 2400.0f)) * g.acro_yaw_p;
 
     roll_vel = constrain_float(roll_vel, -322, 322);
     pitch_vel = constrain_float(pitch_vel, -322, 322);
