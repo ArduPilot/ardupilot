@@ -9,7 +9,7 @@
  * Its not an elegant solution but we cant get too fancy if we want to
  * work with the Arduino mk and IDE builds without too much modification.
  */
- 
+
 #define HAL_BOARD_APM1     1
 #define HAL_BOARD_APM2     2
 #define HAL_BOARD_AVR_SITL 3
@@ -24,9 +24,10 @@
 /**
    HAL Linux sub-types
  */
-#define HAL_BOARD_SUBTYPE_LINUX_NONE 0
-#define HAL_BOARD_SUBTYPE_LINUX_ERLE 1
-#define HAL_BOARD_SUBTYPE_LINUX_PXF  2
+#define HAL_BOARD_SUBTYPE_LINUX_NONE     0
+#define HAL_BOARD_SUBTYPE_LINUX_ERLE     1
+#define HAL_BOARD_SUBTYPE_LINUX_PXF      2
+#define HAL_BOARD_SUBTYPE_LINUX_NAVIO    3
 
 // InertialSensor driver types
 #define HAL_INS_OILPAN  1
@@ -37,6 +38,7 @@
 #define HAL_INS_L3G4200D 6
 #define HAL_INS_VRBRAIN  7
 #define HAL_INS_MPU9250  8
+#define HAL_INS_L3GD20   9
 
 // barometer driver types
 #define HAL_BARO_BMP085     1
@@ -55,7 +57,7 @@
 /**
    CPU classes, used to select if CPU intensive algorithms should be used
 
-   Note that these are only approximate, not exact CPU speeds. 
+   Note that these are only approximate, not exact CPU speeds.
  */
 #define HAL_CPU_CLASS_16   1   // 16Mhz, AVR2560 or similar
 #define HAL_CPU_CLASS_75   2   // 75Mhz, Flymaple or similar
@@ -162,6 +164,11 @@
 #define HAL_INS_DEFAULT HAL_INS_MPU9250
 #define HAL_BARO_DEFAULT HAL_BARO_MS5611_SPI
 #define HAL_COMPASS_DEFAULT HAL_COMPASS_HMC5843
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
+#define HAL_BOARD_LOG_DIRECTORY "/var/APM/logs"
+#define HAL_INS_DEFAULT HAL_INS_MPU9250
+#define HAL_BARO_DEFAULT HAL_BARO_MS5611
+#define HAL_COMPASS_DEFAULT HAL_COMPASS_HIL
 #endif
 
 #elif CONFIG_HAL_BOARD == HAL_BOARD_EMPTY
@@ -193,4 +200,3 @@
 
 
 #endif // __AP_HAL_BOARDS_H__
-
