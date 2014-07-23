@@ -201,6 +201,13 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height)
         return false;
     }
 
+    // quick access for home altitude
+    if (loc.lat == home_loc.lat &&
+        loc.lng == home_loc.lng) {
+        height = home_height;
+        return true;
+    }
+
     struct grid_info info;
 
     calculate_grid_info(loc, info);
@@ -237,6 +244,14 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height)
     float avg  = (1.0f-info.frac_y) * avg1 + info.frac_y * avg2;
 
     height = avg;
+
+    if (loc.lat == ahrs.get_home().lat &&
+        loc.lng == ahrs.get_home().lng) {
+        // remember home altitude as a special case
+        home_height = height;
+        home_loc = loc;
+    }
+
     return true;
 }
 

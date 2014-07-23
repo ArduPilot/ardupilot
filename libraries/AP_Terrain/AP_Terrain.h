@@ -269,6 +269,10 @@ private:
 
     // have we created the terrain directory?
     bool directory_created;
+
+    // cache the home altitude, as it is needed so often
+    float home_height;
+    Location home_loc;
 };
 #endif // HAVE_AP_TERRAIN
 #endif // __AP_TERRAIN_H__
