@@ -69,6 +69,9 @@ AP_Terrain::AP_Terrain(AP_AHRS &_ahrs) :
 /*
   return terrain height in meters above average sea level (WGS84) for
   a given position
+
+  This is the base function that other height calculations are derived
+  from. The functions below are more convenient for most uses
  */
 bool AP_Terrain::height_amsl(const Location &loc, float &height)
 {
@@ -114,6 +117,9 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height)
     h10 = grid.height[info.idx_x+1][info.idx_y+0];
     h11 = grid.height[info.idx_x+1][info.idx_y+1];
 
+    // do a simple dual linear interpolation. We could do something
+    // fancier, but it probably isn't worth it as long as the
+    // grid_spacing is kept small enough
     float avg1 = (1.0f-info.frac_x) * h00  + info.frac_x * h10;
     float avg2 = (1.0f-info.frac_x) * h01  + info.frac_x * h11;
     float avg  = (1.0f-info.frac_y) * avg1 + info.frac_y * avg2;
@@ -127,6 +133,72 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height)
         home_loc = loc;
     }
 
+    return true;
+}
+
+
+/* 
+   find difference between home terrain height and the terrain height
+   at a given location, in meters. A positive result means the terrain
+   is higher than home.
+
+   return false is terrain at the given location or at home
+   location is not available
+*/
+bool AP_Terrain::height_terrain_difference(const Location &loc, float &terrain_difference)
+{
+    float height_home, height_loc;
+    if (!height_amsl(ahrs.get_home(), height_home)) {
+        // we don't know the height of home
+        return false;
+    }
+
+    if (!height_amsl(loc, height_loc)) {
+        // we don't know the height of the given location
+        return false;
+    }
+
+    terrain_difference = height_loc - height_home;
+
+    return true;
+}
+
+/* 
+   return estimated height above the terrain given a relative-to-home
+   altitude (such as a barometric altitude) for a given location
+       
+   return false if terrain data is not available either at the given
+   location or at the home location.  
+*/
+bool AP_Terrain::height_above_terrain(const Location &loc, float relative_altitude, float &terrain_altitude)
+{
+    float terrain_difference;
+    if (!height_terrain_difference(loc, terrain_difference)) {
+        return false;
+    }
+    terrain_altitude = relative_altitude - terrain_difference;
+    return true;
+}
+
+/* 
+   return estimated equivalent relative-to-home altitude in meters of
+   a given height above the terrain for a given location.
+
+   This function allows existing height controllers which work on
+   barometric altitude (relative to home) to be used with terrain
+   based target altitude, by translating the "above terrain" altitude
+   into an equivalent barometric relative height.
+
+   return false if terrain data is not available either at the given
+   location or at the home location.  
+*/
+bool AP_Terrain::height_relative_equivalent(const Location &loc, float terrain_altitude, float &relative_altitude)
+{
+    float terrain_difference;
+    if (!height_terrain_difference(loc, terrain_difference)) {
+        return false;
+    }
+    relative_altitude = terrain_altitude + terrain_difference;
     return true;
 }
 

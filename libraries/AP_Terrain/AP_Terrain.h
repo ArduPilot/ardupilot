@@ -30,7 +30,6 @@
 
 #include <AP_Param.h>
 #include <AP_AHRS.h>
-#include <AP_Baro.h>
 
 #define TERRAIN_DEBUG 0
 
@@ -101,6 +100,40 @@ public:
     // return terrain height in meters above sea level for a location
     // return false if not available
     bool height_amsl(const Location &loc, float &height);
+
+    /* 
+       find difference between home terrain height and the terrain
+       height at a given location in meters. A positive result means
+       the terrain is higher than home.
+
+       return false is terrain at the given location or at home
+       location is not available
+    */
+    bool height_terrain_difference(const Location &loc, float &terrain_difference);
+
+    /* 
+       return estimated equivalent relative-to-home altitude in meters
+       of a given height above the terrain for a given location.
+       
+       This function allows existing height controllers which work on
+       barometric altitude (relative to home) to be used with terrain
+       based target altitude, by translating the "above terrain" altitude
+       into an equivalent barometric relative height.
+       
+       return false if terrain data is not available either at the given
+       location or at the home location.  
+    */
+    bool height_relative_equivalent(const Location &loc, float terrain_altitude, float &relative_altitude);
+
+    /* 
+       return estimated height above the terrain in meters given a
+       relative-to-home altitude (such as barometric altitude) for a
+       given location
+       
+       return false if terrain data is not available either at the given
+       location or at the home location.  
+    */
+    bool height_above_terrain(const Location &loc, float relative_altitude, float &terrain_altitude);
 
 private:
     // allocate the terrain subsystem data
