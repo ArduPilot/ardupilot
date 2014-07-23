@@ -17,11 +17,11 @@ ifeq ($(SYSTYPE),Linux)
   TOOLPATH :=  $(subst :, ,$(PATH))
   FIND_TOOL    =  $(firstword $(wildcard $(addsuffix /$(1),$(TOOLPATH))))
 endif
-ifeq ($(findstring CYGWIN, $(SYSTYPE)),CYGWIN) 
+ifeq ($(findstring CYGWIN, $(SYSTYPE)),CYGWIN)
   TOOLPATH :=  $(ARDUINO)/hardware/tools/avr/bin
   FIND_TOOL    =  $(firstword $(wildcard $(addsuffix /$(1).exe,$(TOOLPATH))))
 endif
-ifeq ($(findstring MINGW, $(SYSTYPE)),MINGW) 
+ifeq ($(findstring MINGW, $(SYSTYPE)),MINGW)
   TOOLPATH :=  $(ARDUINO)/hardware/tools/avr/bin
   FIND_TOOL    =  $(firstword $(wildcard $(addsuffix /$(1).exe,$(TOOLPATH))))
 endif
@@ -64,6 +64,15 @@ BBONE_LD      :=  arm-linux-gnueabihf-g++-4.7
 BBONE_GDB     :=  gdb
 BBONE_OBJCOPY :=  objcopy
 
+# toolchains for Raspberry Pi
+RPI_CXX     :=  arm-linux-gnueabihf-g++
+RPI_CC      :=  arm-linux-gnueabihf-gcc
+RPI_AS      :=  arm-linux-gnueabihf-gcc
+RPI_AR      :=  arm-linux-gnueabihf-ar
+RPI_LD      :=  arm-linux-gnueabihf-g++
+RPI_GDB     :=  arm-linux-gnueabihf-gdb
+RPI_OBJCOPY :=  arm-linux-gnueabihf-obj
+
 # enable ccache if installed
 CCACHE :=  $(call FIND_TOOL,ccache)
 
@@ -84,4 +93,3 @@ AWK			?=	gawk
 ifeq ($(shell which $(AWK)),)
 $(error ERROR: cannot find $(AWK) - you may need to install GNU awk)
 endif
-
