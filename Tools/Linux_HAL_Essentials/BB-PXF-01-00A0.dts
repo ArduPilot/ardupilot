@@ -20,11 +20,7 @@
 		/* the pin header uses */
 	        /* PRU */
 		"P8.11",	/* pru0: pr1_pru0_pru_r30_15 */
-		"P8.12",	/* pru0: pr1_pru0_pru_r30_14 */
 		"P8.15",	/* pru0: pr1_pru0_pru_r31_15*/
-		"P8.16",	/* pru0: pr1_pru0_pru_r31_14*/
-		"P9.25",	/* pru0: pr1_pru0_pru_r30_7 */
-		"P9.41",	/* pru0: pr1_pru0_pru_r30_6 */		
 	
 		"P8.27",	/* pru1: pr1_pru1_pru_r30_8 */
 		"P8.28",	/* pru1: pr1_pru1_pru_r30_10 */
@@ -78,11 +74,7 @@
 			pru_pru_pins: pinmux_pru_pru_pins {
 				pinctrl-single,pins = <
 					0x034 0x26	/* gpmc_ad13.pr1_pru0_pru_r30_15, MODE6 | OUTPUT | PRU */
-					0x030 0x26	/* gpmc_ad12.pr1_pru0_pru_r30_14, MODE6 | OUTPUT | PRU */
 					0x03c 0x2e	/* gpmc_ad15.pr1_pru0_pru_r30_15, MODE 6 | INPUT | PRU */
-					0x038 0x2e	/* gpmc_ad14.pr1_pru0_pru_r30_14, MODE 6 | INPUT | PRU */
-					0x1ac 0x25	/* mcasp0_ahclkx.pr1_pru0_pru_r30_7, MODE5 | OUTPUT | PRU */	
-					0x1a8 0x25	/* mcasp0_axr1.pr1_pru0_pru_r30_6, MODE5 | OUTPUT | PRU */
 
 					0x0e0 0x25	/* lcd_vsync.pr1_pru1_pru_r30_8, MODE5 | OUTPUT | PRU */
 					0x0e8 0x25	/* lcd_pclk.pr1_pru1_pru_r30_10, MODE5 | OUTPUT | PRU */
