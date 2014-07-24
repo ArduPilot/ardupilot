@@ -493,19 +493,23 @@ bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP
         cmd.p1 = packet.param1;                         // delay at waypoint in seconds
         break;
 
-    case MAV_CMD_NAV_GUIDED:                            // MAV ID: 90
+#ifdef MAV_CMD_NAV_GUIDED
+    case MAV_CMD_NAV_GUIDED:                     // MAV ID: 90
         cmd.p1 = packet.param1;                         // max time in seconds the external controller will be allowed to control the vehicle
         cmd.content.nav_guided.alt_min = packet.param2; // min alt below which the command will be aborted.  0 for no lower alt limit
         cmd.content.nav_guided.alt_max = packet.param3; // max alt above which the command will be aborted.  0 for no upper alt limit
         cmd.content.nav_guided.horiz_max = packet.param4;   // max horizontal distance the vehicle can move before the command will be aborted.  0 for no horizontal limit
         break;
+#endif
 
+#ifdef MAV_CMD_NAV_VELOCITY
     case MAV_CMD_NAV_VELOCITY:                          // MAV ID: 91
         cmd.p1 = packet.param1;                         // frame - unused
         cmd.content.nav_velocity.x = packet.x;          // lat (i.e. north) velocity in m/s
         cmd.content.nav_velocity.y = packet.y;          // lon (i.e. east) velocity in m/s
         cmd.content.nav_velocity.z = packet.z;          // vertical (i.e. up) velocity in m/s
         break;
+#endif
 
     case MAV_CMD_CONDITION_DELAY:                       // MAV ID: 112
         cmd.content.delay.seconds = packet.param1;      // delay in seconds
@@ -733,19 +737,23 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
         packet.param1 = cmd.p1;                         // delay at waypoint in seconds
         break;
 
-    case MAV_CMD_NAV_GUIDED:                            // MAV ID: 90
+#ifdef MAV_CMD_NAV_GUIDED
+    case MAV_CMD_NAV_GUIDED:                     // MAV ID: 90
         packet.param1 = cmd.p1;                         // max time in seconds the external controller will be allowed to control the vehicle
         packet.param2 = cmd.content.nav_guided.alt_min; // min alt below which the command will be aborted.  0 for no lower alt limit
         packet.param3 = cmd.content.nav_guided.alt_max; // max alt above which the command will be aborted.  0 for no upper alt limit
         packet.param4 = cmd.content.nav_guided.horiz_max;   // max horizontal distance the vehicle can move before the command will be aborted.  0 for no horizontal limit
         break;
+#endif
 
+#ifdef MAV_CMD_NAV_VELOCITY
     case MAV_CMD_NAV_VELOCITY:                          // MAV ID: 91
         packet.param1 = cmd.p1;                         // frame - unused
         packet.x = cmd.content.nav_velocity.x;          // lat (i.e. north) velocity in m/s
         packet.y = cmd.content.nav_velocity.y;          // lon (i.e. east) velocity in m/s
         packet.z = cmd.content.nav_velocity.z;          // vertical (i.e. up) velocity in m/s
         break;
+#endif
 
     case MAV_CMD_CONDITION_DELAY:                       // MAV ID: 112
         packet.param1 = cmd.content.delay.seconds;      // delay in seconds
