@@ -357,9 +357,11 @@ static bool above_location_current(const Location &loc)
  */
 static void setup_terrain_target_alt(Location &loc)
 {
+#if AP_TERRAIN_AVAILABLE
     if (g.terrain_follow) {
         loc.flags.terrain_alt = true;
     }
+#endif
 }
 
 /*
