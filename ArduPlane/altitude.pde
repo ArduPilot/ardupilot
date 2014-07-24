@@ -312,11 +312,16 @@ static void set_offset_altitude_location(const Location &loc)
     target_altitude.offset_cm = loc.alt - current_loc.alt;
 
 #if AP_TERRAIN_AVAILABLE
-    float terrain_altitude_loc, terrain_altitude_current;
+    /*
+      if this location has the terrain_alt flag set and we know the
+      terrain altitude of our current location then treat it as a
+      terrain altitude
+     */
+    float height;
     if (loc.flags.terrain_alt && 
-        terrain.height_amsl(current_loc, terrain_altitude_current) &&
-        terrain.height_amsl(loc, terrain_altitude_loc)) {
-        target_altitude.offset_cm = (terrain_altitude_loc - terrain_altitude_current) * 100;
+        target_altitude.terrain_following &&
+        terrain.height_above_terrain(current_loc, height)) {
+        target_altitude.offset_cm = target_altitude.terrain_alt_cm - (height * 100);
     }
 #endif
 }
