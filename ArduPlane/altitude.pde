@@ -134,7 +134,7 @@ static void set_target_altitude_current(void)
     // reset any glide slope offset
     reset_offset_altitude();
 
-#if HAVE_AP_TERRAIN
+#if AP_TERRAIN_AVAILABLE
     // also record the terrain altitude if possible
     float terrain_altitude;
     if (g.terrain_follow && terrain.height_above_terrain(current_loc, terrain_altitude)) {
@@ -169,7 +169,7 @@ static void set_target_altitude_location(const Location &loc)
     if (loc.flags.relative_alt) {
         target_altitude.amsl_cm += home.alt;
     }
-#if HAVE_AP_TERRAIN
+#if AP_TERRAIN_AVAILABLE
     /*
       if this location has the terrain_alt flag set and we know the
       terrain altitude of our current location then treat it as a
@@ -195,7 +195,7 @@ static void set_target_altitude_location(const Location &loc)
  */
 static int32_t relative_target_altitude_cm(void)
 {
-#if HAVE_AP_TERRAIN
+#if AP_TERRAIN_AVAILABLE
     float relative_home_height;
     if (target_altitude.terrain_following && 
         terrain.height_relative_home_equivalent(current_loc, 
@@ -216,7 +216,7 @@ static int32_t relative_target_altitude_cm(void)
 static void change_target_altitude(int32_t change_cm)
 {
     target_altitude.amsl_cm += change_cm;
-#if HAVE_AP_TERRAIN
+#if AP_TERRAIN_AVAILABLE
     if (target_altitude.terrain_following) {
         target_altitude.terrain_alt_cm += change_cm;
     }
@@ -259,7 +259,7 @@ static void constrain_target_altitude_location(const Location &loc1, const Locat
  */
 static int32_t calc_altitude_error_cm(void)
 {
-#if HAVE_AP_TERRAIN
+#if AP_TERRAIN_AVAILABLE
     float terrain_height;
     if (target_altitude.terrain_following && 
         terrain.height_above_terrain(current_loc, terrain_height)) {
@@ -278,7 +278,7 @@ static void check_minimum_altitude(void)
         return;
     }
 
-#if HAVE_AP_TERRAIN
+#if AP_TERRAIN_AVAILABLE
     if (target_altitude.terrain_following) {
             // set our target terrain height to be at least the min set
             if (target_altitude.terrain_alt_cm < g.FBWB_min_altitude_cm) {
@@ -311,7 +311,7 @@ static void set_offset_altitude_location(const Location &loc)
 {
     target_altitude.offset_cm = loc.alt - current_loc.alt;
 
-#if HAVE_AP_TERRAIN
+#if AP_TERRAIN_AVAILABLE
     float terrain_altitude_loc, terrain_altitude_current;
     if (loc.flags.terrain_alt && 
         terrain.height_amsl(current_loc, terrain_altitude_current) &&
@@ -336,7 +336,7 @@ static void set_offset_altitude_location(const Location &loc)
  */
 static bool above_location_current(const Location &loc)
 {
-#if HAVE_AP_TERRAIN
+#if AP_TERRAIN_AVAILABLE
     float terrain_alt;
     if (loc.flags.terrain_alt && 
         terrain.height_above_terrain(current_loc, terrain_alt)) {

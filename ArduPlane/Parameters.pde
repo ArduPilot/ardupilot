@@ -356,7 +356,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(flybywire_elev_reverse, "FBWB_ELEV_REV",  0),
 
-#if HAVE_AP_TERRAIN
+#if AP_TERRAIN_AVAILABLE
     // @Param: TERRAIN_FOLLOW
     // @DisplayName: Use terrain following
     // @Description: This enables terrain following for CRUISE mode, FBWB mode and RTL. To use this option you also need to set TERRAIN_ENABLE to 1, which enables terrain data fetching from the GCS, and you need to have a GCS that supports sending terrain data to the aircraft. When terrain following is enabled then CRUISE and FBWB mode will hold height above terrain rather than height above home. In RTL the return to launch altitude will be considered to be a height above the terrain.
@@ -876,7 +876,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/AP_RangeFinder/RangeFinder.cpp
     GOBJECT(sonar,                  "RNGFND", RangeFinder),
 
-#if HAVE_AP_TERRAIN
+#if AP_TERRAIN_AVAILABLE
     // @Group: TERRAIN
     // @Path: ../libraries/AP_Terrain/AP_Terrain.cpp
     GOBJECT(terrain,                "TERRAIN_", AP_Terrain),

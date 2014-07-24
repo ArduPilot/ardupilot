@@ -467,7 +467,7 @@ AP_Airspeed airspeed(aparm);
 
 ////////////////////////////////////////////////////////////////////////////////
 // terrain handling
-#if HAVE_AP_TERRAIN
+#if AP_TERRAIN_AVAILABLE
 AP_Terrain terrain(ahrs);
 #endif
 
@@ -665,7 +665,7 @@ static struct {
     // centimeters. Used for glide slope handling
     int32_t offset_cm;
 
-#if HAVE_AP_TERRAIN
+#if AP_TERRAIN_AVAILABLE
     // are we trying to follow terrain?
     bool terrain_following;
 
@@ -993,7 +993,7 @@ static void one_second_loop()
     AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
     AP_Notify::flags.armed = arming.is_armed() || arming.arming_required() == AP_Arming::NO;
 
-#if HAVE_AP_TERRAIN
+#if AP_TERRAIN_AVAILABLE
     terrain.update();
 #endif
 }

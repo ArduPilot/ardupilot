@@ -445,7 +445,7 @@ public:
     AP_Int8 level_roll_limit;
     AP_Int8 flapin_channel;
     AP_Int8 flaperon_output;
-#if HAVE_AP_TERRAIN
+#if AP_TERRAIN_AVAILABLE
     AP_Int8 terrain_follow;
 #endif
 
