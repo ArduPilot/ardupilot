@@ -181,11 +181,8 @@ bool AP_Terrain::height_above_terrain(const Location &loc, float relative_home_a
 }
 
 /* 
-   return estimated height above the terrain given a relative-to-home
-   altitude (such as a barometric altitude) for a given location
-       
-   return false if terrain data is not available either at the given
-   location or at the home location.  
+   alternative interface to height_above_terrain where
+   relative_altitude is taken from loc.alt (in centimeters)
 */
 bool AP_Terrain::height_above_terrain(const Location &loc, float &terrain_altitude)
 {
