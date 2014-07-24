@@ -21,12 +21,12 @@
 #include <AP_HAL.h>
 
 #if HAL_OS_POSIX_IO && defined(HAL_BOARD_TERRAIN_DIRECTORY)
-#define HAVE_AP_TERRAIN 1
+#define AP_TERRAIN_AVAILABLE 1
 #else
-#define HAVE_AP_TERRAIN 0
+#define AP_TERRAIN_AVAILABLE 0
 #endif
 
-#if HAVE_AP_TERRAIN
+#if AP_TERRAIN_AVAILABLE
 
 #include <AP_Param.h>
 #include <AP_AHRS.h>
@@ -344,5 +344,5 @@ private:
     float home_height;
     Location home_loc;
 };
-#endif // HAVE_AP_TERRAIN
+#endif // AP_TERRAIN_AVAILABLE
 #endif // __AP_TERRAIN_H__

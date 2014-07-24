@@ -21,7 +21,7 @@
 #include <GCS.h>
 #include "AP_Terrain.h"
 
-#if HAVE_AP_TERRAIN
+#if AP_TERRAIN_AVAILABLE
 
 #include <assert.h>
 #include <stdio.h>
@@ -280,4 +280,4 @@ enum AP_Terrain::TerrainStatus AP_Terrain::status(void)
     return TerrainStatusOK; 
 }
 
-#endif // HAVE_AP_TERRAIN
+#endif // AP_TERRAIN_AVAILABLE

@@ -24,7 +24,7 @@
 #include <GCS.h>
 #include "AP_Terrain.h"
 
-#if HAVE_AP_TERRAIN
+#if AP_TERRAIN_AVAILABLE
 
 #include <assert.h>
 #include <stdio.h>
@@ -271,4 +271,4 @@ void AP_Terrain::handle_terrain_data(mavlink_message_t *msg)
 }
 
 
-#endif // HAVE_AP_TERRAIN
+#endif // AP_TERRAIN_AVAILABLE
