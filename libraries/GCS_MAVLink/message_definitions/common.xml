@@ -593,26 +593,12 @@
                     <param index="6">Longitude/Y of goal</param>
                     <param index="7">Altitude/Z of goal</param>
                </entry>
-               <entry value="90" name="MAV_CMD_NAV_GUIDED_LIMITS">
-                    <description>set limits for external control</description>
-                    <param index="1">timeout - maximum time (in seconds) that external controller will be allowed to control vehicle. 0 means no timeout</param>
-                    <param index="2">absolute altitude min (in meters, WGS84) - if vehicle moves below this alt, the command will be aborted and the mission will continue.  0 means no lower altitude limit</param>
-                    <param index="3">absolute altitude max (in meters)- if vehicle moves above this alt, the command will be aborted and the mission will continue.  0 means no upper altitude limit</param>
-                    <param index="4">horizontal move limit (in meters, WGS84) - if vehicle moves more than this distance from it's location at the moment the command was executed, the command will be aborted and the mission will continue. 0 means no horizontal altitude limit</param>
-                    <param index="5">Empty</param>
-                    <param index="6">Empty</param>
-                    <param index="7">Empty</param>
-               </entry>
-               <entry value="91" name="MAV_CMD_NAV_GUIDED_MASTER">
-                    <description>set id of master controller</description>
-                    <param index="1">System ID</param>
-                    <param index="2">Component ID</param>
-                    <param index="3">Empty</param>
-                    <param index="4">Empty</param>
-                    <param index="5">Empty</param>
-                    <param index="6">Empty</param>
-                    <param index="7">Empty</param>
-               </entry>
+
+               <!-- IDs 90 and 91 are reserved until the end of 2014,
+                    as they were used in some conflicting proposals
+                    between PX4 and ardupilot and need to be kept
+                    unused to prevent errors -->
+
                <entry value="92" name="MAV_CMD_NAV_GUIDED_ENABLE">
                     <description>hand control over to an external controller</description>
                     <param index="1">On / Off (> 0.5f on)</param>
@@ -924,6 +910,28 @@
                 <param index="6">Empty</param>
                 <param index="7">Empty</param>
               </entry>
+
+               <entry value="221" name="MAV_CMD_DO_GUIDED_MASTER">
+                    <description>set id of master controller</description>
+                    <param index="1">System ID</param>
+                    <param index="2">Component ID</param>
+                    <param index="3">Empty</param>
+                    <param index="4">Empty</param>
+                    <param index="5">Empty</param>
+                    <param index="6">Empty</param>
+                    <param index="7">Empty</param>
+               </entry>
+
+               <entry value="222" name="MAV_CMD_DO_GUIDED_LIMITS">
+                 <description>set limits for external control</description>
+                 <param index="1">timeout - maximum time (in seconds) that external controller will be allowed to control vehicle. 0 means no timeout</param>
+                 <param index="2">absolute altitude min (in meters, WGS84) - if vehicle moves below this alt, the command will be aborted and the mission will continue.  0 means no lower altitude limit</param>
+                 <param index="3">absolute altitude max (in meters)- if vehicle moves above this alt, the command will be aborted and the mission will continue.  0 means no upper altitude limit</param>
+                 <param index="4">horizontal move limit (in meters, WGS84) - if vehicle moves more than this distance from it's location at the moment the command was executed, the command will be aborted and the mission will continue. 0 means no horizontal altitude limit</param>
+                 <param index="5">Empty</param>
+                 <param index="6">Empty</param>
+                 <param index="7">Empty</param>
+               </entry>
 
                <entry value="240" name="MAV_CMD_DO_LAST">
                     <description>NOP - This command is only used to mark the upper limit of the DO commands in the enumeration</description>
