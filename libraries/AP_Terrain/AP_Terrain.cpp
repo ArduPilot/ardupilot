@@ -189,7 +189,7 @@ bool AP_Terrain::height_above_terrain(const Location &loc, float relative_home_a
 */
 bool AP_Terrain::height_above_terrain(const Location &loc, float &terrain_altitude)
 {
-    float relative_home_altitude = loc.alt;
+    float relative_home_altitude = loc.alt*0.01f;
     if (!loc.flags.relative_alt) {
         // loc.alt has home altitude added, remove it
         relative_home_altitude -= ahrs.get_home().alt*0.01f;
