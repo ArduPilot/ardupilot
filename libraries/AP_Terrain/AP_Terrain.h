@@ -83,10 +83,19 @@ public:
     AP_Int8  enable;
     AP_Int16 grid_spacing; // meters between grid points
 
+    enum TerrainStatus {
+        TerrainStatusDisabled  = 0, // not enabled
+        TerrainStatusUnhealthy = 1, // no terrain data for current location
+        TerrainStatusOK        = 2  // terrain data available
+    };
+
     static const struct AP_Param::GroupInfo var_info[];
     
     // update terrain state. Should be called at 1Hz or more
     void update(void);
+
+    // return status enum for health reporting
+    enum TerrainStatus status(void);
 
     // send any pending terrain request message
     void send_request(mavlink_channel_t chan);

@@ -262,4 +262,25 @@ void AP_Terrain::update(void)
     height_amsl(ahrs.get_home(), height);
 }
 
+/*
+  return status enum for health reporting
+*/
+enum AP_Terrain::TerrainStatus AP_Terrain::status(void)
+{
+    if (!enable) {
+        return TerrainStatusDisabled;
+    }
+    Location loc;
+    if (!ahrs.get_position(loc)) {
+        // we don't know where we are
+        return TerrainStatusUnhealthy;
+    }
+    float height;
+    if (!height_amsl(loc, height)) {
+        // we don't have terrain data at current location
+        return TerrainStatusUnhealthy;        
+    }
+    return TerrainStatusOK; 
+}
+
 #endif // HAVE_AP_TERRAIN
