@@ -79,10 +79,6 @@ class AP_Terrain
 public:
     AP_Terrain(AP_AHRS &_ahrs);
 
-    // parameters
-    AP_Int8  enable;
-    AP_Int16 grid_spacing; // meters between grid points
-
     enum TerrainStatus {
         TerrainStatusDisabled  = 0, // not enabled
         TerrainStatusUnhealthy = 1, // no terrain data for current location
@@ -300,6 +296,10 @@ private:
     void seek_offset(void);
     void write_block(void);
     void read_block(void);
+
+    // parameters
+    AP_Int8  enable;
+    AP_Int16 grid_spacing; // meters between grid points
 
     // reference to AHRS, so we can ask for our position,
     // heading and speed
