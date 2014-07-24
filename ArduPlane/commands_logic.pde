@@ -253,6 +253,7 @@ static void do_RTL(void)
     control_mode    = RTL;
     prev_WP_loc = current_loc;
     next_WP_loc = rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude());
+    setup_terrain_target_alt(next_WP_loc);
 
     if (g.loiter_radius < 0) {
         loiter.direction = -1;
@@ -498,6 +499,9 @@ static void do_wait_delay(const AP_Mission::Mission_Command& cmd)
     condition_value  = cmd.content.delay.seconds * 1000;    // convert seconds to milliseconds
 }
 
+/*
+  process a DO_CHANGE_ALT request
+ */
 static void do_change_alt(const AP_Mission::Mission_Command& cmd)
 {
     condition_rate = labs((int)cmd.content.location.lat);   // climb rate in cm/s
@@ -638,6 +642,7 @@ static void exit_mission_callback()
         auto_rtl_command.content.location = 
             rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude());
         auto_rtl_command.id = MAV_CMD_NAV_LOITER_UNLIM;
+        setup_terrain_target_alt(auto_rtl_command.content.location);
         setup_glide_slope();
         setup_turn_angle();
         start_command(auto_rtl_command);

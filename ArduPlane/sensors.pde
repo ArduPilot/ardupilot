@@ -69,13 +69,3 @@ void read_receiver_rssi(void)
     }
 }
 
-/*
-  return current_loc.alt adjusted for ALT_OFFSET
-  This is useful during long flights to account for barometer changes
-  from the GCS, or to adjust the flying height of a long mission
- */
-static int32_t adjusted_altitude_cm(void)
-{
-    return current_loc.alt - (g.alt_offset*100);
-}
-

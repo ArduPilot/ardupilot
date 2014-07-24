@@ -15,7 +15,8 @@
  */
 
 /*
-  altitude handling routines
+  altitude handling routines. These cope with both barometric control
+  and terrain following control
  */
 
 /*
@@ -65,7 +66,7 @@ static void setup_glide_slope(void)
            rapidly if below it. See
            https://github.com/diydrones/ardupilot/issues/39
         */
-        if (above_location(next_WP_loc)) {
+        if (above_location_current(next_WP_loc)) {
             set_offset_altitude_location(next_WP_loc);
         } else {
             reset_offset_altitude();
@@ -78,7 +79,7 @@ static void setup_glide_slope(void)
         // is basically to prevent situations where we try to slowly
         // gain height at low altitudes, potentially hitting
         // obstacles.
-        if (relative_altitude() > 40 || !above_location(next_WP_loc)) {
+        if (relative_altitude() > 40 || !above_location_current(next_WP_loc)) {
             set_offset_altitude_location(next_WP_loc);
         } else {
             reset_offset_altitude();
@@ -126,7 +127,26 @@ static int32_t relative_altitude_abs_cm(void)
  */
 static void set_target_altitude_current(void)
 {
+    // record altitude above sea level at the current time as our
+    // target altitude
     target_altitude.amsl_cm = current_loc.alt;
+
+    // reset any glide slope offset
+    reset_offset_altitude();
+
+#if HAVE_AP_TERRAIN
+    // also record the terrain altitude if possible
+    float terrain_altitude;
+    if (g.terrain_follow && terrain.height_above_terrain(current_loc, terrain_altitude)) {
+        target_altitude.terrain_following = true;
+        target_altitude.terrain_alt_cm = terrain_altitude*100;
+    } else {
+        // if terrain following is disabled, or we don't know our
+        // terrain altitude when we set the altitude then don't
+        // terrain follow
+        target_altitude.terrain_following = false;        
+    }
+#endif
 }
 
 /*
@@ -134,6 +154,9 @@ static void set_target_altitude_current(void)
  */
 static void set_target_altitude_current_adjusted(void)
 {
+    set_target_altitude_current();
+
+    // use adjusted_altitude_cm() to take account of ALTITUDE_OFFSET
     target_altitude.amsl_cm = adjusted_altitude_cm();
 }
 
@@ -143,6 +166,27 @@ static void set_target_altitude_current_adjusted(void)
 static void set_target_altitude_location(const Location &loc)
 {
     target_altitude.amsl_cm = loc.alt;
+    if (loc.flags.relative_alt) {
+        target_altitude.amsl_cm += home.alt;
+    }
+#if HAVE_AP_TERRAIN
+    /*
+      if this location has the terrain_alt flag set and we know the
+      terrain altitude of our current location then treat it as a
+      terrain altitude
+     */
+    float height;
+    if (loc.flags.terrain_alt && terrain.height_above_terrain(current_loc, height)) {
+        target_altitude.terrain_following = true;
+        target_altitude.terrain_alt_cm = loc.alt;
+        if (!loc.flags.relative_alt) {
+            // it has home added, remove it
+            target_altitude.terrain_alt_cm -= home.alt;
+        }
+    } else {
+        target_altitude.terrain_following = false;
+    }
+#endif
 }
 
 /*
@@ -151,6 +195,17 @@ static void set_target_altitude_location(const Location &loc)
  */
 static int32_t relative_target_altitude_cm(void)
 {
+#if HAVE_AP_TERRAIN
+    float relative_home_height;
+    if (target_altitude.terrain_following && 
+        terrain.height_relative_home_equivalent(current_loc, 
+                                                target_altitude.terrain_alt_cm*0.01f,
+                                                relative_home_height)) {
+        // we are following terrain, and have terrain data for the
+        // current location. Use it.
+        return relative_home_height*100;
+    }
+#endif
     return target_altitude.amsl_cm - home.alt + (int32_t(g.alt_offset)*100);
 }
 
@@ -161,6 +216,11 @@ static int32_t relative_target_altitude_cm(void)
 static void change_target_altitude(int32_t change_cm)
 {
     target_altitude.amsl_cm += change_cm;
+#if HAVE_AP_TERRAIN
+    if (target_altitude.terrain_following) {
+        target_altitude.terrain_alt_cm += change_cm;
+    }
+#endif
 }
 
 /*
@@ -187,7 +247,7 @@ static void set_target_altitude_proportion(const Location &loc, float proportion
  */
 static void constrain_target_altitude_location(const Location &loc1, const Location &loc2)
 {
-    if (loc1.alt > loc2.alt) {
+    if (above_location(loc1, loc2)) {
         target_altitude.amsl_cm = constrain_int32(target_altitude.amsl_cm, loc2.alt, loc1.alt);
     } else {
         target_altitude.amsl_cm = constrain_int32(target_altitude.amsl_cm, loc1.alt, loc2.alt);
@@ -199,6 +259,13 @@ static void constrain_target_altitude_location(const Location &loc1, const Locat
  */
 static int32_t calc_altitude_error_cm(void)
 {
+#if HAVE_AP_TERRAIN
+    float terrain_height;
+    if (target_altitude.terrain_following && 
+        terrain.height_above_terrain(current_loc, terrain_height)) {
+        return target_altitude.terrain_alt_cm - (terrain_height*100);
+    }
+#endif
     return target_altitude.amsl_cm - adjusted_altitude_cm();
 }
 
@@ -207,7 +274,21 @@ static int32_t calc_altitude_error_cm(void)
  */
 static void check_minimum_altitude(void)
 {
-    if (g.FBWB_min_altitude_cm != 0 && target_altitude.amsl_cm < home.alt + g.FBWB_min_altitude_cm) {
+    if (g.FBWB_min_altitude_cm == 0) {
+        return;
+    }
+
+#if HAVE_AP_TERRAIN
+    if (target_altitude.terrain_following) {
+            // set our target terrain height to be at least the min set
+            if (target_altitude.terrain_alt_cm < g.FBWB_min_altitude_cm) {
+                target_altitude.terrain_alt_cm = g.FBWB_min_altitude_cm;
+            }
+            return;
+    }
+#endif
+
+    if (target_altitude.amsl_cm < home.alt + g.FBWB_min_altitude_cm) {
         target_altitude.amsl_cm = home.alt + g.FBWB_min_altitude_cm;
     }
 }
@@ -229,12 +310,57 @@ static void reset_offset_altitude(void)
 static void set_offset_altitude_location(const Location &loc)
 {
     target_altitude.offset_cm = loc.alt - current_loc.alt;
+
+#if HAVE_AP_TERRAIN
+    float terrain_altitude_loc, terrain_altitude_current;
+    if (loc.flags.terrain_alt && 
+        terrain.height_amsl(current_loc, terrain_altitude_current) &&
+        terrain.height_amsl(loc, terrain_altitude_loc)) {
+        target_altitude.offset_cm = (terrain_altitude_loc - terrain_altitude_current) * 100;
+    }
+#endif
+}
+
+/*
+  return true if loc1 is above loc2
+ */
+static bool above_location(const Location &loc1, const Location &loc2)
+{
+#if HAVE_AP_TERRAIN
+    float alt1, alt2;
+    if (terrain.location_to_relative_home(loc1, alt1) &&
+        terrain.location_to_relative_home(loc2, alt2)) {
+        return alt1 - alt2;
+    }
+#endif
+    return loc1.alt > loc2.alt;
 }
 
 /*
   are we above the altitude given by a location?
  */
-static bool above_location(const Location &loc)
+static bool above_location_current(const Location &loc)
 {
-    return current_loc.alt > loc.alt;
+    return above_location(current_loc, loc);
+}
+
+/*
+  modify a destination to be setup for terrain following if
+  TERRAIN_FOLLOW is enabled
+ */
+static void setup_terrain_target_alt(Location &loc)
+{
+    if (g.terrain_follow) {
+        loc.flags.terrain_alt = true;
+    }
+}
+
+/*
+  return current_loc.alt adjusted for ALT_OFFSET
+  This is useful during long flights to account for barometer changes
+  from the GCS, or to adjust the flying height of a long mission
+ */
+static int32_t adjusted_altitude_cm(void)
+{
+    return current_loc.alt - (g.alt_offset*100);
 }

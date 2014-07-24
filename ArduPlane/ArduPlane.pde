@@ -664,6 +664,15 @@ static struct {
     // Altitude difference between previous and current waypoint in
     // centimeters. Used for glide slope handling
     int32_t offset_cm;
+
+#if HAVE_AP_TERRAIN
+    // are we trying to follow terrain?
+    bool terrain_following;
+
+    // target altitude above terrain in cm, valid if terrain_following
+    // is set
+    int32_t terrain_alt_cm;
+#endif
 } target_altitude;
 
 ////////////////////////////////////////////////////////////////////////////////
