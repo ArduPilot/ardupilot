@@ -75,9 +75,11 @@ static bool start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
 #if NAV_GUIDED == ENABLED
-    case MAV_CMD_NAV_GUIDED:                    // 90  accept navigation commands from external nav computer
+#ifdef MAV_CMD_NAV_GUIDED
+    case MAV_CMD_NAV_GUIDED:             // 90  accept navigation commands from external nav computer
         do_nav_guided(cmd);
         break;
+#endif
 #endif
 
     //
@@ -221,9 +223,11 @@ static bool verify_command(const AP_Mission::Mission_Command& cmd)
         break;
 
 #if NAV_GUIDED == ENABLED
+#ifdef MAV_CMD_NAV_GUIDED
     case MAV_CMD_NAV_GUIDED:
         return verify_nav_guided(cmd);
         break;
+#endif
 #endif
 
     ///
@@ -852,6 +856,7 @@ static bool do_guided(const AP_Mission::Mission_Command& cmd)
             return true;
             break;
 
+#ifdef MAV_CMD_NAV_VELOCITY
         case MAV_CMD_NAV_VELOCITY:
             // set target velocity
             pos_or_vel.x = cmd.content.nav_velocity.x * 100.0f;
@@ -860,6 +865,7 @@ static bool do_guided(const AP_Mission::Mission_Command& cmd)
             guided_set_velocity(pos_or_vel);
             return true;
             break;
+#endif
 
         case MAV_CMD_CONDITION_YAW:
             do_yaw(cmd);
