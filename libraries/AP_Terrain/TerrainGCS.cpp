@@ -240,7 +240,6 @@ void AP_Terrain::handle_terrain_data(mavlink_message_t *msg)
     for (uint8_t x=0; x<TERRAIN_GRID_MAVLINK_SIZE; x++) {
         for (uint8_t y=0; y<TERRAIN_GRID_MAVLINK_SIZE; y++) {
             grid.height[idx_x+x][idx_y+y] = packet.data[x*TERRAIN_GRID_MAVLINK_SIZE+y];
-            ASSERT_RANGE(grid.height[idx_x+x][idx_y+y], 1, 20000);
         }
     }
     gcache.grid.bitmap |= ((uint64_t)1) << packet.gridbit;
