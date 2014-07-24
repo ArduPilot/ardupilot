@@ -655,12 +655,16 @@ static struct Location guided_WP_loc;
 static struct AP_Mission::Mission_Command auto_rtl_command;
 
 ////////////////////////////////////////////////////////////////////////////////
-// Altitude / Climb rate control
-////////////////////////////////////////////////////////////////////////////////
-// The current desired altitude.  Altitude is linearly ramped between waypoints.  Centimeters
-static int32_t target_altitude_cm;
-// Altitude difference between previous and current waypoint.  Centimeters
-static int32_t offset_altitude_cm;
+// Altitude control
+static struct {
+    // target altitude above sea level in cm. Used for barometric
+    // altitude navigation
+    int32_t amsl_cm;
+
+    // Altitude difference between previous and current waypoint in
+    // centimeters. Used for glide slope handling
+    int32_t offset_cm;
+} target_altitude;
 
 ////////////////////////////////////////////////////////////////////////////////
 // INS variables
@@ -733,7 +737,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { update_compass,         5,   1200 },
     { read_airspeed,          5,   1200 },
     { update_alt,             5,   3400 },
-    { calc_altitude_error,    5,   1000 },
+    { adjust_altitude_target, 5,   1000 },
     { obc_fs_check,           5,   1000 },
     { gcs_update,             1,   1700 },
     { gcs_data_stream_send,   1,   3000 },
@@ -1413,7 +1417,7 @@ static void update_alt()
             update_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);
         }
 
-        SpdHgt_Controller->update_pitch_throttle(target_altitude_cm - home.alt + (int32_t(g.alt_offset)*100), 
+        SpdHgt_Controller->update_pitch_throttle(relative_target_altitude_cm(),
                                                  target_airspeed_cm,
                                                  flight_stage,
                                                  auto_state.takeoff_pitch_cd,

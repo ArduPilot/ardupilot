@@ -322,12 +322,12 @@ static void set_mode(enum FlightMode mode)
         auto_throttle_mode = true;
         cruise_state.locked_heading = false;
         cruise_state.lock_timer_ms = 0;
-        target_altitude_cm = current_loc.alt;
+        set_target_altitude_current();
         break;
 
     case FLY_BY_WIRE_B:
         auto_throttle_mode = true;
-        target_altitude_cm = current_loc.alt;
+        set_target_altitude_current();
         break;
 
     case CIRCLE:
