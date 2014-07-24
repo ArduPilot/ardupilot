@@ -115,7 +115,7 @@ void AP_Terrain::calculate_grid_info(const Location &loc, struct grid_info &info
 /*
   find a grid structure given a grid_info
  */
-AP_Terrain::grid_cache &AP_Terrain::find_grid(const struct grid_info &info)
+AP_Terrain::grid_cache &AP_Terrain::find_grid_cache(const struct grid_info &info)
 {
     uint16_t oldest_i = 0;
 

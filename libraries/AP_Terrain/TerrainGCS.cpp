@@ -65,7 +65,7 @@ bool AP_Terrain::request_missing(mavlink_channel_t chan, struct grid_cache &gcac
 bool AP_Terrain::request_missing(mavlink_channel_t chan, const struct grid_info &info)
 {
     // find the grid
-    struct grid_cache &gcache = find_grid(info);
+    struct grid_cache &gcache = find_grid_cache(info);
     return request_missing(chan, gcache);
 }
 

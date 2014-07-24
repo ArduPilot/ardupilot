@@ -253,7 +253,7 @@ private:
     /*
       find a grid structure given a grid_info
     */
-    struct grid_cache &find_grid(const struct grid_info &info);
+    struct grid_cache &find_grid_cache(const struct grid_info &info);
 
     /*
       calculate bit number in grid_block bitmap. This corresponds to a

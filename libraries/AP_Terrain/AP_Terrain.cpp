@@ -94,7 +94,7 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height)
     calculate_grid_info(loc, info);
 
     // find the grid
-    const struct grid_block &grid = find_grid(info).grid;
+    const struct grid_block &grid = find_grid_cache(info).grid;
 
     /*
       note that we rely on the one square overlap to ensure these
