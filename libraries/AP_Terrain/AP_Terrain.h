@@ -109,7 +109,7 @@ public:
        return false is terrain at the given location or at home
        location is not available
     */
-    bool height_terrain_difference(const Location &loc, float &terrain_difference);
+    bool height_terrain_difference_home(const Location &loc, float &terrain_difference);
 
     /* 
        return estimated equivalent relative-to-home altitude in meters
@@ -123,7 +123,7 @@ public:
        return false if terrain data is not available either at the given
        location or at the home location.  
     */
-    bool height_relative_equivalent(const Location &loc, float terrain_altitude, float &relative_altitude);
+    bool height_relative_home_equivalent(const Location &loc, float terrain_altitude, float &relative_altitude);
 
     /* 
        return estimated height above the terrain in meters given a
@@ -133,7 +133,13 @@ public:
        return false if terrain data is not available either at the given
        location or at the home location.  
     */
-    bool height_above_terrain(const Location &loc, float relative_altitude, float &terrain_altitude);
+    bool height_above_terrain(const Location &loc, float relative_home_altitude, float &terrain_altitude);
+
+    /* 
+       alternative interface to height_above_terrain where
+       relative_altitude is taken from loc.alt (in centimeters)
+    */
+    bool height_above_terrain(const Location &loc, float &terrain_altitude);
 
 private:
     // allocate the terrain subsystem data

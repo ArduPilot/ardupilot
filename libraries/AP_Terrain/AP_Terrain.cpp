@@ -145,7 +145,7 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height)
    return false is terrain at the given location or at home
    location is not available
 */
-bool AP_Terrain::height_terrain_difference(const Location &loc, float &terrain_difference)
+bool AP_Terrain::height_terrain_difference_home(const Location &loc, float &terrain_difference)
 {
     float height_home, height_loc;
     if (!height_amsl(ahrs.get_home(), height_home)) {
@@ -170,14 +170,31 @@ bool AP_Terrain::height_terrain_difference(const Location &loc, float &terrain_d
    return false if terrain data is not available either at the given
    location or at the home location.  
 */
-bool AP_Terrain::height_above_terrain(const Location &loc, float relative_altitude, float &terrain_altitude)
+bool AP_Terrain::height_above_terrain(const Location &loc, float relative_home_altitude, float &terrain_altitude)
 {
     float terrain_difference;
-    if (!height_terrain_difference(loc, terrain_difference)) {
+    if (!height_terrain_difference_home(loc, terrain_difference)) {
         return false;
     }
-    terrain_altitude = relative_altitude - terrain_difference;
+    terrain_altitude = relative_home_altitude - terrain_difference;
     return true;
+}
+
+/* 
+   return estimated height above the terrain given a relative-to-home
+   altitude (such as a barometric altitude) for a given location
+       
+   return false if terrain data is not available either at the given
+   location or at the home location.  
+*/
+bool AP_Terrain::height_above_terrain(const Location &loc, float &terrain_altitude)
+{
+    float relative_home_altitude = loc.alt;
+    if (!loc.flags.relative_alt) {
+        // loc.alt has home altitude added, remove it
+        relative_home_altitude -= ahrs.get_home().alt*0.01f;
+    }
+    return height_above_terrain(loc, relative_home_altitude, terrain_altitude);
 }
 
 /* 
@@ -192,13 +209,13 @@ bool AP_Terrain::height_above_terrain(const Location &loc, float relative_altitu
    return false if terrain data is not available either at the given
    location or at the home location.  
 */
-bool AP_Terrain::height_relative_equivalent(const Location &loc, float terrain_altitude, float &relative_altitude)
+bool AP_Terrain::height_relative_home_equivalent(const Location &loc, float terrain_altitude, float &relative_home_altitude)
 {
     float terrain_difference;
-    if (!height_terrain_difference(loc, terrain_difference)) {
+    if (!height_terrain_difference_home(loc, terrain_difference)) {
         return false;
     }
-    relative_altitude = terrain_altitude + terrain_difference;
+    relative_home_altitude = terrain_altitude + terrain_difference;
     return true;
 }
 
