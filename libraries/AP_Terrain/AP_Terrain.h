@@ -141,6 +141,12 @@ public:
     */
     bool height_above_terrain(const Location &loc, float &terrain_altitude);
 
+    /* 
+       convert a Location altitude to a relative-to-home altitude in meters
+       This obeys the relative_alt and terrain_alt flags in Location.flags
+    */
+    bool location_to_relative_home(const Location &loc, float &relative_altitude);
+
 private:
     // allocate the terrain subsystem data
     void allocate(void);

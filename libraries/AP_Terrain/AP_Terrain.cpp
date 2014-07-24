@@ -219,9 +219,36 @@ bool AP_Terrain::height_relative_home_equivalent(const Location &loc, float terr
     return true;
 }
 
+/* 
+   convert a Location altitude to a relative-to-home altitude in meters
+   This obeys the relative_alt and terrain_alt flags in Location.flags
+*/
+bool AP_Terrain::location_to_relative_home(const Location &loc, float &relative_altitude)
+{
+    if (!loc.flags.terrain_alt) {
+        // its not a terrain alt
+        relative_altitude = loc.alt*0.01f;
+        if (!loc.flags.relative_alt) {
+            relative_altitude -= ahrs.get_home().alt*0.01f;
+        }
+        return true;
+    }
+
+    if (!height_relative_home_equivalent(loc, loc.alt*0.01f, relative_altitude)) {
+        return false;
+    }
+
+    // if terrain_alt is set and relative_alt is not set then Location
+    // is still offset by home alt
+    if (!loc.flags.relative_alt) {
+        relative_altitude -= ahrs.get_home().alt*0.01f;
+    }
+    return true;
+}
+
 
 /*
-  1Hz update function. This is here to ensure progress is made on disk
+  1hz update function. This is here to ensure progress is made on disk
   IO even if no MAVLink send_request() operations are called for a
   while.
  */
