@@ -96,6 +96,7 @@ struct PACKED Location_Option_Flags {
     uint8_t relative_alt : 1;           // 1 if altitude is relateive to home
     uint8_t unused1      : 1;           // unused flag (defined so that loiter_ccw uses the correct bit)
     uint8_t loiter_ccw   : 1;           // 0 if clockwise, 1 if counter clockwise
+    uint8_t terrain_alt  : 1;           // this altitude is above terrain
 };
 
 struct PACKED Location {
