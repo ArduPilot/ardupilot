@@ -210,7 +210,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
         battery_current = battery.current_amps() * 100;
     }
 
-#if HAVE_AP_TERRAIN
+#if AP_TERRAIN_AVAILABLE
     switch (terrain.status()) {
     case AP_Terrain::TerrainStatusDisabled:
         break;
@@ -576,7 +576,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 #endif
 
     case MSG_TERRAIN:
-#if HAVE_AP_TERRAIN
+#if AP_TERRAIN_AVAILABLE
         CHECK_PAYLOAD_SIZE(TERRAIN_REQUEST);
         terrain.send_request(chan);
 #endif
@@ -834,7 +834,7 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_HWSTATUS);
         send_message(MSG_SYSTEM_TIME);
         send_message(MSG_RANGEFINDER);
-#if HAVE_AP_TERRAIN
+#if AP_TERRAIN_AVAILABLE
         send_message(MSG_TERRAIN);
 #endif
     }
@@ -1307,7 +1307,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_TERRAIN_DATA:
     case MAVLINK_MSG_ID_TERRAIN_CHECK:
-#if HAVE_AP_TERRAIN
+#if AP_TERRAIN_AVAILABLE
         terrain.handle_data(chan, msg);
 #endif
         break;

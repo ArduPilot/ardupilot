@@ -732,7 +732,7 @@ static AP_Parachute parachute(relay);
 
 ////////////////////////////////////////////////////////////////////////////////
 // terrain handling
-#if HAVE_AP_TERRAIN
+#if AP_TERRAIN_AVAILABLE
 AP_Terrain terrain(ahrs);
 #endif
 
@@ -1185,7 +1185,7 @@ static void one_hz_loop()
 
     check_usb_mux();
 
-#if HAVE_AP_TERRAIN
+#if AP_TERRAIN_AVAILABLE
     terrain.update();
 #endif
 }
