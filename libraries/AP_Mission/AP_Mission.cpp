@@ -4,6 +4,7 @@
 /// @brief   Handles the MAVLINK command mission stack.  Reads and writes mission to storage.
 
 #include "AP_Mission.h"
+#include <AP_Terrain.h>
 
 const AP_Param::GroupInfo AP_Mission::var_info[] PROGMEM = {
 
@@ -654,6 +655,21 @@ bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP
             break;
 #endif
 
+#if AP_TERRAIN_AVAILABLE
+        case MAV_FRAME_GLOBAL_TERRAIN_ALT:
+            if (copy_location) {
+                cmd.content.location.lat = 1.0e7f * packet.x;   // floating point latitude to int32_t
+                cmd.content.location.lng = 1.0e7f * packet.y;   // floating point longitude to int32_t
+            }
+            cmd.content.location.alt = packet.z * 100.0f;       // convert packet's alt (m) to cmd alt (cm)
+            // we mark it as a relative altitude, as it doesn't have
+            // home alt added
+            cmd.content.location.flags.relative_alt = 1;
+            // mark altitude as above terrain, not above home
+            cmd.content.location.flags.terrain_alt = 1;
+            break;
+#endif
+
         default:
             return false;
             break;
@@ -863,6 +879,27 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
         }else{
             packet.frame = MAV_FRAME_GLOBAL;
         }
+#if AP_TERRAIN_AVAILABLE
+        if (cmd.content.location.flags.terrain_alt) {
+            // this is a above-terrain altitude
+            if (!cmd.content.location.flags.relative_alt) {
+                // refuse to return non-relative terrain mission
+                // items. Internally we do have these, and they
+                // have home.alt added, but we should never be
+                // returning them to the GCS, as the GCS doesn't know
+                // our home.alt, so it would have no way to properly
+                // interpret it
+                return false;
+            }
+            packet.z = cmd.content.location.alt * 0.01f;
+            packet.frame = MAV_FRAME_GLOBAL_TERRAIN_ALT;
+        }
+#else
+        // don't ever return terrain mission items if no terrain support
+        if (cmd.content.location.flags.terrain_alt) {
+            return false;
+        }
+#endif
     }
 
     // if we got this far then it must have been successful
