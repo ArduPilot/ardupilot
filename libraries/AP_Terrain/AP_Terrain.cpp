@@ -54,16 +54,19 @@ const AP_Param::GroupInfo AP_Terrain::var_info[] PROGMEM = {
 // constructor
 AP_Terrain::AP_Terrain(AP_AHRS &_ahrs) :
     ahrs(_ahrs),
-    last_request_time_ms(0),
     disk_io_state(DiskIoIdle),
+    last_request_time_ms(0),
     fd(-1),
     timer_setup(false),
     file_lat_degrees(0),
     file_lon_degrees(0),
     io_failure(false),
-    directory_created(false)
+    directory_created(false),
+    home_height(0)
 {
     AP_Param::setup_object_defaults(this, var_info);
+    memset(&home_loc, 0, sizeof(home_loc));
+    memset(&disk_block, 0, sizeof(disk_block));
 }
 
 /*
