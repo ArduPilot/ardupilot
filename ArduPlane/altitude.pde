@@ -247,7 +247,7 @@ static void set_target_altitude_proportion(const Location &loc, float proportion
  */
 static void constrain_target_altitude_location(const Location &loc1, const Location &loc2)
 {
-    if (above_location(loc1, loc2)) {
+    if (loc1.alt > loc2.alt) {
         target_altitude.amsl_cm = constrain_int32(target_altitude.amsl_cm, loc2.alt, loc1.alt);
     } else {
         target_altitude.amsl_cm = constrain_int32(target_altitude.amsl_cm, loc1.alt, loc2.alt);
@@ -322,26 +322,33 @@ static void set_offset_altitude_location(const Location &loc)
 }
 
 /*
-  return true if loc1 is above loc2
- */
-static bool above_location(const Location &loc1, const Location &loc2)
-{
-#if HAVE_AP_TERRAIN
-    float alt1, alt2;
-    if (terrain.location_to_relative_home(loc1, alt1) &&
-        terrain.location_to_relative_home(loc2, alt2)) {
-        return alt1 - alt2;
-    }
-#endif
-    return loc1.alt > loc2.alt;
-}
+  return true if current_loc is above loc. Used for glide slope
+  calculations.
 
-/*
-  are we above the altitude given by a location?
+  "above" is simple if we are not terrain following, as it just means
+  the pressure altitude of one is above the other.
+
+  When in terrain following mode "above" means the over-the-terrain
+  current altitude is above the over-the-terrain alt of loc. It is
+  quite possible for current_loc to be "above" loc when it is at a
+  lower pressure altitude, if current_loc is in a low part of the
+  terrain
  */
 static bool above_location_current(const Location &loc)
 {
-    return above_location(current_loc, loc);
+#if HAVE_AP_TERRAIN
+    float terrain_alt;
+    if (loc.flags.terrain_alt && 
+        terrain.height_above_terrain(current_loc, terrain_alt)) {
+        float loc_alt = loc.alt*0.01f;
+        if (!loc.flags.relative_alt) {
+            loc_alt -= home.alt*0.01f;
+        }
+        return terrain_alt > loc.alt;
+    }
+#endif
+
+    return current_loc.alt > loc.alt;
 }
 
 /*
