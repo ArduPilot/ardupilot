@@ -243,6 +243,22 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
         battery_current = battery.current_amps() * 100;
     }
 
+#if HAVE_AP_TERRAIN
+    switch (terrain.status()) {
+    case AP_Terrain::TerrainStatusDisabled:
+        break;
+    case AP_Terrain::TerrainStatusUnhealthy:
+        control_sensors_present |= MAV_SYS_STATUS_TERRAIN;
+        control_sensors_enabled |= MAV_SYS_STATUS_TERRAIN;
+        break;
+    case AP_Terrain::TerrainStatusOK:
+        control_sensors_present |= MAV_SYS_STATUS_TERRAIN;
+        control_sensors_enabled |= MAV_SYS_STATUS_TERRAIN;
+        control_sensors_health  |= MAV_SYS_STATUS_TERRAIN;
+        break;
+    }
+#endif
+
     mavlink_msg_sys_status_send(
         chan,
         control_sensors_present,
