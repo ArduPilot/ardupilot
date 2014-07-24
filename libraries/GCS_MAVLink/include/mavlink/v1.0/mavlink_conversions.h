@@ -77,7 +77,7 @@ MAVLINK_HELPER void mavlink_quaternion_to_euler(const float quaternion[4], float
 {
     float dcm[3][3];
     mavlink_quaternion_to_dcm(quaternion, dcm);
-    mavlink_dcm_to_euler(dcm, roll, pitch, yaw);
+    mavlink_dcm_to_euler((const float(*)[3])dcm, roll, pitch, yaw);
 }
 
 MAVLINK_HELPER void mavlink_euler_to_quaternion(float roll, float pitch, float yaw, float quaternion[4])

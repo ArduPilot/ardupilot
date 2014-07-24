@@ -36,6 +36,7 @@ static inline void crc_accumulate(uint8_t data, uint16_t *crcAccum)
 }
 #endif
 
+
 /**
  * @brief Initiliaze the buffer for the X.25 CRC
  *
@@ -64,6 +65,7 @@ static inline uint16_t crc_calculate(const uint8_t* pBuffer, uint16_t length)
         return crcTmp;
 }
 
+
 /**
  * @brief Accumulate the X.25 CRC by adding an array of bytes
  *
@@ -80,9 +82,6 @@ static inline void crc_accumulate_buffer(uint16_t *crcAccum, const char *pBuffer
                 crc_accumulate(*p++, crcAccum);
         }
 }
-
-
-
 
 #endif /* _CHECKSUM_H_ */
 

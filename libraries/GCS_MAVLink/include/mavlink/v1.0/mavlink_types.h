@@ -34,6 +34,14 @@
 #define MAVLINK_MAX_EXTENDED_PAYLOAD_LEN (MAVLINK_MAX_EXTENDED_PACKET_LEN - MAVLINK_EXTENDED_HEADER_LEN - MAVLINK_NUM_NON_PAYLOAD_BYTES)
 
 #pragma pack(push, 1)
+
+/**
+ * This struct is the data format to be used when sending
+ * parameters. The parameter should be copied to the native
+ * type (without type conversion)
+ * and re-instanted on the receiving side using the
+ * native type as well.
+ */
 typedef struct param_union {
 	union {
 		float param_float;
