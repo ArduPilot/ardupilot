@@ -28,6 +28,7 @@
 #include <AC_Fence.h>           // Fence library
 #include <GCS_MAVLink.h>
 #include <AP_Mission.h>
+#include <AP_Terrain.h>
 #include <AP_Notify.h>
 #include <AP_Vehicle.h>
 #include <DataFlash.h>
