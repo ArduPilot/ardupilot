@@ -110,6 +110,20 @@ void Buzzer::update()
                         break;
                 }
                 return;
+            case ARMING_BUZZ:
+                // record start time
+                if (_pattern_counter == 1) {
+                    _arming_buzz_start_ms = hal.scheduler->millis();
+                    on(true);
+                } else {
+                    // turn off buzzer after 3 seconds
+                    if (hal.scheduler->millis() - _arming_buzz_start_ms >= BUZZER_ARMING_BUZZ_MS) {
+                        _arming_buzz_start_ms = 0;
+                        on(false);
+                        _pattern = NONE;
+                    }
+                }
+                return;
             default:
                 // do nothing
                 break;
@@ -121,7 +135,7 @@ void Buzzer::update()
         _flags.armed = AP_Notify::flags.armed;
         if (_flags.armed) {
             // double buzz when armed
-            play_pattern(DOUBLE_BUZZ);
+            play_pattern(ARMING_BUZZ);
         }else{
             // single buzz when disarmed
             play_pattern(SINGLE_BUZZ);

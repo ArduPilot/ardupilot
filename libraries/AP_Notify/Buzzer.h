@@ -28,11 +28,18 @@
  # define BUZZER_PIN    0       // pin undefined on other boards
 #endif
 
+#define BUZZER_ARMING_BUZZ_MS   3000    // arming buzz length in milliseconds (i.e. 3 seconds)
+
 class Buzzer
 {
 public:
     /// Constructor
-    Buzzer() : _counter(0), _pattern(NONE), _pattern_counter(0) {}
+    Buzzer() :
+        _counter(0),
+        _pattern(NONE),
+        _pattern_counter(0),
+        _arming_buzz_start_ms(0)
+    {}
 
     /// init - initialise the buzzer
     void init(void);
@@ -47,7 +54,8 @@ public:
         NONE = 0,
         SINGLE_BUZZ = 1,
         DOUBLE_BUZZ = 2,
-        GPS_GLITCH = 3
+        GPS_GLITCH = 3,
+        ARMING_BUZZ = 4
     };
 
     /// play_pattern - plays the defined buzzer pattern
@@ -68,6 +76,7 @@ private:
     uint8_t         _counter;           // reduces 50hz update down to 10hz for internal processing
     BuzzerPattern   _pattern;           // current pattern
     uint8_t         _pattern_counter;   // used to time on/off of current patter
+    uint32_t        _arming_buzz_start_ms;  // arming_buzz start time in milliseconds
 };
 
 #endif // __BUZZER_H__
