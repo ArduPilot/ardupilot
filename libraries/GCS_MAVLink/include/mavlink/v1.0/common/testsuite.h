@@ -5776,15 +5776,17 @@ static void mavlink_test_terrain_report(uint8_t system_id, uint8_t component_id,
 		963497464,
 	}963497672,
 	}73.0,
-	}17859,
-	}17963,
+	}101.0,
 	}18067,
+	}18171,
+	}18275,
 	};
 	mavlink_terrain_report_t packet1, packet2;
         memset(&packet1, 0, sizeof(packet1));
         	packet1.lat = packet_in.lat;
         	packet1.lon = packet_in.lon;
-        	packet1.height = packet_in.height;
+        	packet1.terrain_height = packet_in.terrain_height;
+        	packet1.current_height = packet_in.current_height;
         	packet1.spacing = packet_in.spacing;
         	packet1.pending = packet_in.pending;
         	packet1.loaded = packet_in.loaded;
@@ -5797,12 +5799,12 @@ static void mavlink_test_terrain_report(uint8_t system_id, uint8_t component_id,
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 
         memset(&packet2, 0, sizeof(packet2));
-	mavlink_msg_terrain_report_pack(system_id, component_id, &msg , packet1.lat , packet1.lon , packet1.spacing , packet1.height , packet1.pending , packet1.loaded );
+	mavlink_msg_terrain_report_pack(system_id, component_id, &msg , packet1.lat , packet1.lon , packet1.spacing , packet1.terrain_height , packet1.current_height , packet1.pending , packet1.loaded );
 	mavlink_msg_terrain_report_decode(&msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 
         memset(&packet2, 0, sizeof(packet2));
-	mavlink_msg_terrain_report_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.lat , packet1.lon , packet1.spacing , packet1.height , packet1.pending , packet1.loaded );
+	mavlink_msg_terrain_report_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.lat , packet1.lon , packet1.spacing , packet1.terrain_height , packet1.current_height , packet1.pending , packet1.loaded );
 	mavlink_msg_terrain_report_decode(&msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 
@@ -5815,7 +5817,7 @@ static void mavlink_test_terrain_report(uint8_t system_id, uint8_t component_id,
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
         
         memset(&packet2, 0, sizeof(packet2));
-	mavlink_msg_terrain_report_send(MAVLINK_COMM_1 , packet1.lat , packet1.lon , packet1.spacing , packet1.height , packet1.pending , packet1.loaded );
+	mavlink_msg_terrain_report_send(MAVLINK_COMM_1 , packet1.lat , packet1.lon , packet1.spacing , packet1.terrain_height , packet1.current_height , packet1.pending , packet1.loaded );
 	mavlink_msg_terrain_report_decode(last_msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 }
