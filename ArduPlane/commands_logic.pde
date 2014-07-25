@@ -265,7 +265,7 @@ static void do_RTL(void)
     auto_state.next_wp_no_crosstrack = true;
     auto_state.no_crosstrack = true;
     prev_WP_loc = current_loc;
-    next_WP_loc = rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude());
+    next_WP_loc = rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude(), true);
     setup_terrain_target_alt(next_WP_loc);
     set_target_altitude_location(next_WP_loc);
 
