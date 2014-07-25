@@ -359,7 +359,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 #if AP_TERRAIN_AVAILABLE
     // @Param: TERRAIN_FOLLOW
     // @DisplayName: Use terrain following
-    // @Description: This enables terrain following for CRUISE mode, FBWB mode and RTL. To use this option you also need to set TERRAIN_ENABLE to 1, which enables terrain data fetching from the GCS, and you need to have a GCS that supports sending terrain data to the aircraft. When terrain following is enabled then CRUISE and FBWB mode will hold height above terrain rather than height above home. In RTL the return to launch altitude will be considered to be a height above the terrain.
+    // @Description: This enables terrain following for CRUISE mode, FBWB mode, RTL and for rally points. To use this option you also need to set TERRAIN_ENABLE to 1, which enables terrain data fetching from the GCS, and you need to have a GCS that supports sending terrain data to the aircraft. When terrain following is enabled then CRUISE and FBWB mode will hold height above terrain rather than height above home. In RTL the return to launch altitude will be considered to be a height above the terrain. Rally point altitudes will be taken as height above the terrain. This option does not affect mission items, which have a per-waypoint flag for whether they are height above home or height above the terrain. To use terrain following missions you need a ground station which can set the waypoint type to be a terrain height waypoint when creating the mission.
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     GSCALAR(terrain_follow, "TERRAIN_FOLLOW",  0),
