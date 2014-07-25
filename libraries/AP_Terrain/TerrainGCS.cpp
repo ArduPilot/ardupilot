@@ -50,6 +50,11 @@ bool AP_Terrain::request_missing(mavlink_channel_t chan, struct grid_cache &gcac
         return false;
     }
 
+    if (comm_get_txspace(chan) < MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_TERRAIN_REQUEST_LEN) {
+        // not enough buffer space
+        return false;
+    }
+
     /*
       ask the GCS to send a set of 4x4 grids
      */
@@ -82,15 +87,18 @@ void AP_Terrain::send_request(mavlink_channel_t chan)
     // see if we need to schedule some disk IO
     schedule_disk_io();
 
-    // did we request recently?
-    if (hal.scheduler->millis() - last_request_time_ms < 2000) {
-        // too soon to request again
-        return;
-    }
-
     Location loc;
     if (!ahrs.get_position(loc)) {
         // we don't know where we are
+        return;
+    }
+
+    // always send a terrain report
+    send_terrain_report(chan, loc);
+
+    // did we request recently?
+    if (hal.scheduler->millis() - last_request_time_ms < 2000) {
+        // too soon to request again
         return;
     }
 
@@ -131,9 +139,6 @@ void AP_Terrain::send_request(mavlink_channel_t chan)
     if (request_missing(chan, info)) {
         return;
     }
-
-    // nothing to request, send a terrain report
-    send_terrain_report(chan, loc);
 }
 
 /*
@@ -185,15 +190,31 @@ void AP_Terrain::handle_data(mavlink_channel_t chan, mavlink_message_t *msg)
  */
 void AP_Terrain::send_terrain_report(mavlink_channel_t chan, const Location &loc)
 {
-    float height = 0;
+    float terrain_height = 0;
+    float home_terrain_height = 0;
     uint16_t spacing = 0;
-    if (height_amsl(loc, height)) {
+    Location current_loc;
+    if (height_amsl(loc, terrain_height) && 
+        ahrs.get_position(current_loc) &&
+        height_amsl(ahrs.get_home(), home_terrain_height)) {
+        // non-zero spacing indicates we have data
         spacing = grid_spacing;
     }
     uint16_t pending, loaded;
     get_statistics(pending, loaded);
+
+    float current_height;
+    if (current_loc.flags.relative_alt) {
+        current_height = current_loc.alt*0.01f;
+    } else {
+        current_height = (current_loc.alt - ahrs.get_home().alt)*0.01f;
+    }
+    current_height += home_terrain_height - terrain_height;
+
     if (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_TERRAIN_REPORT_LEN) {
-        mavlink_msg_terrain_report_send(chan, loc.lat, loc.lng, spacing, height, pending, loaded);
+        mavlink_msg_terrain_report_send(chan, loc.lat, loc.lng, spacing, 
+                                        terrain_height, current_height,
+                                        pending, loaded);
     }
 }
 
