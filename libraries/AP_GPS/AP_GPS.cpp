@@ -62,6 +62,35 @@ const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
     // @Values: 0:Any,50:FloatRTK,100:IntegerRTK
     // @User: Advanced
     AP_GROUPINFO("MIN_DGPS", 4, AP_GPS, _min_dgps, 100),
+
+    // @Param: DGPS_GIVEN_BASE
+    // @DisplayName:  Specify, don't calculate a DGPS base station position
+    // @Description: Use the GDPS_BASE_LAT/LON/ALT parameter as the base station position for DGPS.
+    // @Values: 0:False, 1:True
+    // @User: Advanced
+    AP_GROUPINFO("DGPS_GIVEN_BASE", 5, AP_GPS, _dgps_use_given_base, 0),
+
+    // @Param: DGPS_BASE_LAT
+    // @DisplayName: DGPS Base Station Latitude in WGS84 (deg*1e7)
+    // @Description: Use this value as the DGPS base station position.
+    // @Values: deg * 1e7 
+    // @User: Advanced
+    AP_GROUPINFO("DGPS_BASE_LAT", 6, AP_GPS, _dgps_base_lat_wgs, 0),
+
+    // @Param: DGPS_BASE_LON
+    // @DisplayName: DGPS Base Station Latitude in WGS84 (deg*1e7)
+    // @Description: Use this value as the DGPS base station position.
+    // @Values: deg * 1e7
+    // @User: Advanced
+    AP_GROUPINFO("DGPS_BASE_LON", 7, AP_GPS, _dgps_base_lon_wgs, 0),
+
+    // @Param: DGPS_BASE_ALT
+    // @DisplayName: DGPS Base Station Altitude in WGS84 (cm)
+    // @Description: Use this value as the DGPS base station position.
+    // @Values: cm
+    // @User: Advanced
+    AP_GROUPINFO("DGPS_BASE_ALT", 8, AP_GPS, _dgps_base_alt_wgs, 0),
+
 #endif
 
     AP_GROUPEND
@@ -79,6 +108,24 @@ void AP_GPS::init(DataFlash_Class *dataflash)
     }
 #endif
 }
+
+#if GPS_RTK_AVAILABLE
+bool AP_GPS::dgps_given_base() 
+{
+    return _dgps_use_given_base > 0;
+}
+
+bool AP_GPS::dgps_given_base_llh(Vector3d& v) 
+{
+    if (_dgps_use_given_base > 0) {
+        v[0] = (((double)_dgps_base_lat_wgs) / 1e7) * DEG_TO_RAD_DOUBLE;
+        v[1] = (((double)_dgps_base_lon_wgs) / 1e7) * DEG_TO_RAD_DOUBLE;
+        v[2] = ((double)_dgps_base_alt_wgs) / 1e2;   
+        return true;
+    }
+    return false;
+}
+#endif
 
 // baudrates to try to detect GPSes with
 const uint32_t AP_GPS::_baudrates[] PROGMEM = {4800U, 38400U, 115200U, 57600U, 9600U};
