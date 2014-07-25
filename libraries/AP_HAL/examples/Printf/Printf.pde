@@ -12,6 +12,7 @@
 #include <DataFlash.h>
 #include <GCS_MAVLink.h>
 #include <AP_Mission.h>
+#include <AP_Terrain.h>
 #include <AP_Compass.h>
 #include <AP_Declination.h>
 #include <SITL.h>
