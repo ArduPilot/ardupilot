@@ -6,7 +6,7 @@
 set -e
 set -x
 
-targets="clean apm1 clean apm2"
+targets="clean apm2"
 
 [ $# -gt 0 ] && {
     targets="$*"
