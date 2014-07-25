@@ -888,6 +888,7 @@ void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
     // add home alt if needed
     if (guided_WP_loc.flags.relative_alt) {
         guided_WP_loc.alt += home.alt;
+        guided_WP_loc.flags.relative_alt = 0;
     }
 
     set_mode(GUIDED);
@@ -902,11 +903,11 @@ void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
  */
 void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
 {
-    if (cmd.content.location.flags.relative_alt) {
-        cmd.content.location.alt += home.alt;
-    }
-
     next_WP_loc.alt = cmd.content.location.alt;
+    if (cmd.content.location.flags.relative_alt) {
+        next_WP_loc.alt += home.alt;
+    }
+    next_WP_loc.flags.relative_alt = false;
 }
 
 

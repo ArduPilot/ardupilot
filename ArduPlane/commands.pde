@@ -26,6 +26,7 @@ static void set_next_WP(const struct Location& loc)
         if (next_WP_loc.alt == 0) {
             next_WP_loc.alt = current_loc.alt;
             next_WP_loc.flags.relative_alt = false;
+            next_WP_loc.flags.terrain_alt = false;
         }
     }
 
