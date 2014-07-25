@@ -417,9 +417,11 @@ static struct {
     uint8_t ekf                 : 1; // 5   // true if ekf failsafe has occurred
 
     int8_t radio_counter;                  // number of iterations with throttle below throttle_fs_value
-
+    
     uint32_t last_heartbeat_ms;             // the time when the last HEARTBEAT message arrived from a GCS - used for triggering gcs failsafe
 } failsafe;
+
+static uint32_t last_nonzero_throttle_ms;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Motor Output
