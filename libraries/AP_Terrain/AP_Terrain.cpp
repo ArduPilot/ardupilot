@@ -37,13 +37,13 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo AP_Terrain::var_info[] PROGMEM = {
     // @Param: ENABLE
     // @DisplayName: Terrain following enable
-    // @Description: enable terrain following
+    // @Description: enable terrain following. This enables the vehicle storing a database of terrain data on the SD card. The terrain data is requested from the ground station as needed, and stored for later use on the SD card. To be useful the ground station must support TERRAIN_REQUEST messages and have access to a terrain database, such as the SRTM database.
     // @Values: 0:Disable,1:Enable
     AP_GROUPINFO("ENABLE",    0, AP_Terrain, enable, 0),
 
     // @Param: SPACING
     // @DisplayName: Terrain grid spacing
-    // @Description: distance between terrain grid points in meters
+    // @Description: Distance between terrain grid points in meters. This controls the horizontal resolution of the terrain data that is stored on te SD card and requested from the ground station. If your GCS is using the worldwide SRTM database then a resolution of 100 meters is appropriate. Some parts of the world may have higher resolution data available, such as 30 meter data available in the SRTM database in the USA. The grid spacing also controls how much data is kept in memory during flight. A larger grid spacing will allow for a larger amount of data in memory. A grid spacing of 100 meters results in the vehicle keeping 12 grid squares in memory with each grid square having a size of 2.7 kilometers by 3.2 kilometers. Any additional grid squares are stored on the SD once they are fetched from the GCS and will be demand loaded as needed.
     // @Units: meters
     // @Increment: 1
     AP_GROUPINFO("SPACING",   1, AP_Terrain, grid_spacing, 100),
