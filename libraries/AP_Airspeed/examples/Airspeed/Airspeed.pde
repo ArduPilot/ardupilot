@@ -37,6 +37,8 @@
 #include <AP_Compass.h>
 #include <AP_Declination.h>
 #include <AP_AHRS.h>
+#include <AP_NavEKF.h>
+#include <AP_Terrain.h>
 #include <DataFlash.h>
 #include <AP_Baro.h>
 #include <GCS_MAVLink.h>
@@ -57,6 +59,8 @@ AP_Airspeed airspeed(aparm);
 void setup()
 {
     hal.console->println("ArduPilot Airspeed library test");
+
+    AP_Param::set_object_value(&airspeed, airspeed.var_info, "_PIN", 65);
 
     airspeed.init();
     airspeed.calibrate();
