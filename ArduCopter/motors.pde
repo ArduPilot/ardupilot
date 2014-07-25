@@ -130,6 +130,13 @@ static void init_arm_motors()
     // disable inertial nav errors temporarily
     inertial_nav.ignore_next_error();
 
+    // notify that arming will occur (we do this early to give plenty of warning)
+    AP_Notify::flags.armed = true;
+    // call update_notify a few times to ensure the message gets out
+    for (uint8_t i=0; i<=10; i++) {
+        update_notify();
+    }
+
 #if LOGGING_ENABLED == ENABLED
     // start dataflash
     start_logging();
@@ -178,6 +185,8 @@ static void init_arm_motors()
     if (g.rc_3.control_in > g.throttle_cruise && g.throttle_cruise > 100) {
         motors.output_min();
         failsafe_enable();
+        AP_Notify::flags.armed = false;
+        AP_Notify::flags.arming_failed = false;
         return;
     }
 
