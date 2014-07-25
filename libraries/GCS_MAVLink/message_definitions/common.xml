@@ -905,10 +905,10 @@
 
               <entry value="220" name="MAV_CMD_DO_MOUNT_CONTROL_QUAT">
                 <description>Mission command to control a camera or antenna mount, using a quaternion as reference.</description>
-                <param index="1">q1 - quaternion param #1</param>
-                <param index="2">q2 - quaternion param #2</param>
-                <param index="3">q3 - quaternion param #3</param>
-                <param index="4">q4 - quaternion param #4</param>
+                <param index="1">q1 - quaternion param #1, w (1 in null-rotation)</param>
+                <param index="2">q2 - quaternion param #2, x (0 in null-rotation)</param>
+                <param index="3">q3 - quaternion param #3, y (0 in null-rotation)</param>
+                <param index="4">q4 - quaternion param #4, z (0 in null-rotation)</param>
                 <param index="5">Empty</param>
                 <param index="6">Empty</param>
                 <param index="7">Empty</param>
@@ -1450,10 +1450,10 @@
           <message id="31" name="ATTITUDE_QUATERNION">
                <description>The attitude in the aeronautical frame (right-handed, Z-down, X-front, Y-right), expressed as quaternion.</description>
                <field type="uint32_t" name="time_boot_ms">Timestamp (milliseconds since system boot)</field>
-               <field type="float" name="q1">Quaternion component 1</field>
-               <field type="float" name="q2">Quaternion component 2</field>
-               <field type="float" name="q3">Quaternion component 3</field>
-               <field type="float" name="q4">Quaternion component 4</field>
+               <field type="float" name="q1">Quaternion component 1, w (1 in null-rotation)</field>
+               <field type="float" name="q2">Quaternion component 2, x (0 in null-rotation)</field>
+               <field type="float" name="q3">Quaternion component 3, y (0 in null-rotation)</field>
+               <field type="float" name="q4">Quaternion component 4, z (0 in null-rotation)</field>
                <field type="float" name="rollspeed">Roll angular speed (rad/s)</field>
                <field type="float" name="pitchspeed">Pitch angular speed (rad/s)</field>
                <field type="float" name="yawspeed">Yaw angular speed (rad/s)</field>
@@ -2052,10 +2052,10 @@
 
 	  <message name="SIM_STATE" id="108">
 	    <description>Status of simulation environment, if used</description>
-            <field type="float" name="q1">True attitude quaternion component 1</field>
-            <field type="float" name="q2">True attitude quaternion component 2</field>
-            <field type="float" name="q3">True attitude quaternion component 3</field>
-            <field type="float" name="q4">True attitude quaternion component 4</field>
+            <field type="float" name="q1">True attitude quaternion component 1, w (1 in null-rotation)</field>
+            <field type="float" name="q2">True attitude quaternion component 2, x (0 in null-rotation)</field>
+            <field type="float" name="q3">True attitude quaternion component 3, y (0 in null-rotation)</field>
+            <field type="float" name="q4">True attitude quaternion component 4, z (0 in null-rotation)</field>
             <field type="float" name="roll">Attitude roll expressed as Euler angles, not recommended except for human-readable outputs</field>
             <field type="float" name="pitch">Attitude pitch expressed as Euler angles, not recommended except for human-readable outputs</field>
             <field type="float" name="yaw">Attitude yaw expressed as Euler angles, not recommended except for human-readable outputs</field>
@@ -2136,7 +2136,7 @@
          <message id="115" name="HIL_STATE_QUATERNION">
              <description>Sent from simulation to autopilot, avoids in contrast to HIL_STATE singularities. This packet is useful for high throughput applications such as hardware in the loop simulations.</description>
              <field type="uint64_t" name="time_usec">Timestamp (microseconds since UNIX epoch or microseconds since system boot)</field>
-             <field type="float[4]" name="attitude_quaternion">Vehicle attitude expressed as normalized quaternion</field>
+             <field type="float[4]" name="attitude_quaternion">Vehicle attitude expressed as normalized quaternion in w, x, y, z order (with 1 0 0 0 being the null-rotation)</field>
              <field type="float" name="rollspeed">Body frame roll / phi angular speed (rad/s)</field>
              <field type="float" name="pitchspeed">Body frame pitch / theta angular speed (rad/s)</field>
              <field type="float" name="yawspeed">Body frame yaw / psi angular speed (rad/s)</field>
@@ -2322,7 +2322,8 @@
             <field type="int32_t" name="lat">Latitude (degrees *10^7)</field>
             <field type="int32_t" name="lon">Longitude (degrees *10^7)</field>
             <field type="uint16_t" name="spacing">grid spacing (zero if terrain at this location unavailable)</field>
-            <field type="float" name="height">Terrain height in meters AMSL (-32767 if unavailable)</field>
+            <field type="float" name="terrain_height">Terrain height in meters AMSL</field>
+            <field type="float" name="current_height">Current vehicle height above lat/lon terrain height (meters)</field>
             <field type="uint16_t" name="pending">Number of 4x4 terrain blocks waiting to be received or read from disk</field>
             <field type="uint16_t" name="loaded">Number of 4x4 terrain blocks in memory</field>
          </message>
