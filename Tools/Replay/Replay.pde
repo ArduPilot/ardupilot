@@ -43,6 +43,7 @@
 #include <AP_InertialNav.h>
 #include <AP_NavEKF.h>
 #include <AP_Mission.h>
+#include <AP_Terrain.h>
 #include <Parameters.h>
 #include <stdio.h>
 #include <getopt.h>
