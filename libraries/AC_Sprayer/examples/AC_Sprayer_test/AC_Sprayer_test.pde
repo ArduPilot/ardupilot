@@ -29,6 +29,7 @@
 #include <DataFlash.h>
 #include <GCS_MAVLink.h>
 #include <AP_Mission.h>
+#include <AP_Terrain.h>
 #include <RC_Channel.h>
 #include <AC_Sprayer.h>         // Crop Sprayer library
 #include <AP_Notify.h>
