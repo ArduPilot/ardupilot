@@ -2807,6 +2807,8 @@ bool NavEKF::getLLH(struct Location &loc) const
     loc.lat = _ahrs->get_home().lat;
     loc.lng = _ahrs->get_home().lng;
     loc.alt = _ahrs->get_home().alt - states[9]*100;
+    loc.flags.relative_alt = 0;
+    loc.flags.terrain_alt = 0;
     location_offset(loc, states[7], states[8]);
     return true;
 }
