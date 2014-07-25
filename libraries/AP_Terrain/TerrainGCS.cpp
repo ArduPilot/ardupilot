@@ -204,10 +204,14 @@ void AP_Terrain::send_terrain_report(mavlink_channel_t chan, const Location &loc
     get_statistics(pending, loaded);
 
     float current_height;
-    if (current_loc.flags.relative_alt) {
-        current_height = current_loc.alt*0.01f;
+    if (spacing == 0) {
+        current_height = 0;
     } else {
-        current_height = (current_loc.alt - ahrs.get_home().alt)*0.01f;
+        if (current_loc.flags.relative_alt) {
+            current_height = current_loc.alt*0.01f;
+        } else {
+            current_height = (current_loc.alt - ahrs.get_home().alt)*0.01f;
+        }
     }
     current_height += home_terrain_height - terrain_height;
 
