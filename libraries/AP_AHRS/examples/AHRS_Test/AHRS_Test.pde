@@ -21,6 +21,7 @@
 #include <AP_Baro.h>
 #include <GCS_MAVLink.h>
 #include <AP_Mission.h>
+#include <AP_Terrain.h>
 #include <Filter.h>
 #include <SITL.h>
 #include <AP_Buffer.h>
