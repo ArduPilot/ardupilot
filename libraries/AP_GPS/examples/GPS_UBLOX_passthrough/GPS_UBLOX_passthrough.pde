@@ -29,6 +29,7 @@
 #include <AP_Vehicle.h>
 #include <AP_ADC_AnalogSource.h>
 #include <AP_Mission.h>
+#include <AP_Terrain.h>
 #include <AP_Math.h>
 #include <AP_Notify.h>
 #include <AP_NavEKF.h>
