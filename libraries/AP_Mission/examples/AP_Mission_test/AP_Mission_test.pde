@@ -15,6 +15,7 @@
 #include <AP_Vehicle.h>
 #include <DataFlash.h>
 #include <AP_Mission.h>
+#include <AP_Terrain.h>
 #include <AP_GPS.h>             // ArduPilot GPS library
 #include <AP_GPS_Glitch.h>      // GPS glitch protection library
 #include <AP_ADC.h>             // ArduPilot Mega Analog to Digital Converter Library
