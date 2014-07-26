@@ -130,6 +130,10 @@ public:
     // Note: this must be set immediately before a step up in throttle
     void                slow_start(bool true_false);
 
+    // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
+    //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
+    virtual uint16_t    get_motor_mask() = 0;
+
     // structure for holding motor limit flags
     struct AP_Motors_limit {
         uint8_t roll_pitch      : 1; // we have reached roll or pitch limit
