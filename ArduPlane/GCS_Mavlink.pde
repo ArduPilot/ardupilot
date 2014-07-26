@@ -9,9 +9,6 @@ static bool in_mavlink_delay;
 // true if we are out of time in our event timeslice
 static bool	gcs_out_of_time;
 
-// check if a message will fit in the payload space available
-#define CHECK_PAYLOAD_SIZE(id) if (payload_space < MAVLINK_MSG_ID_ ## id ## _LEN) return false
-
 /*
  *  !!NOTE!!
  *
@@ -480,11 +477,14 @@ static bool telemetry_delayed(mavlink_channel_t chan)
     return true;
 }
 
+// check if a message will fit in the payload space available
+#define CHECK_PAYLOAD_SIZE(id) if (txspace < MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_ ## id ## _LEN) return false
+
 
 // try to send a message, return false if it won't fit in the serial tx buffer
 bool GCS_MAVLINK::try_send_message(enum ap_message id)
 {
-    int16_t payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
+    uint16_t txspace = comm_get_txspace(chan);
 
     if (telemetry_delayed(chan)) {
         return false;
