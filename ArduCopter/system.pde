@@ -131,11 +131,6 @@ static void init_ardupilot()
 
     BoardConfig.init();
 
-    // FIX: this needs to be the inverse motors mask
-    ServoRelayEvents.set_channel_mask(0xFFF0);
-
-    relay.init();
-
     bool enable_external_leds = true;
 
     // init EPM cargo gripper
@@ -196,6 +191,11 @@ static void init_ardupilot()
 
     init_rc_in();               // sets up rc channels from radio
     init_rc_out();              // sets up motors and output to escs
+
+    // initialise which outputs Servo and Relay events can use
+    ServoRelayEvents.set_channel_mask(~motors.get_motor_mask());
+
+    relay.init();
 
     /*
      *  setup the 'main loop is dead' check. Note that this relies on
