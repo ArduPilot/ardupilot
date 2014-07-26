@@ -363,6 +363,14 @@ void AP_MotorsHeli::recalc_scalers()
     _rsc_runup_increment = 1000.0f / (_rsc_runup_time * 100.0f);
 }
 
+// get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
+//  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
+uint16_t AP_MotorsHeli::get_motor_mask()
+{
+    // heli uses channels 1,2,3,4,7 and 8
+    return (1U << 0 | 1U << 1 | 1U << 2 | 1U << 3 | 1U << AP_MOTORS_HELI_AUX | 1U << AP_MOTORS_HELI_RSC);
+}
+
 //
 // protected methods
 //
