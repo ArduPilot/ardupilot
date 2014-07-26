@@ -105,6 +105,19 @@ void AP_MotorsMatrix::output_min()
     }
 }
 
+// get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
+//  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
+uint16_t AP_MotorsMatrix::get_motor_mask()
+{
+    uint16_t mask = 0;
+    for (uint8_t i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+        if (motor_enabled[i]) {
+            mask |= 1U << i;
+        }
+    }
+    return mask;
+}
+
 // output_armed - sends commands to the motors
 // includes new scaling stability patch
 void AP_MotorsMatrix::output_armed()

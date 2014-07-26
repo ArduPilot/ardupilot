@@ -60,6 +60,10 @@ public:
         remove_all_motors();
     };
 
+    // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
+    //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
+    virtual uint16_t    get_motor_mask();
+
 protected:
     // output - sends commands to the motors
     virtual void        output_armed();
