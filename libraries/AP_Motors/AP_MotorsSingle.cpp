@@ -151,6 +151,14 @@ void AP_MotorsSingle::output_min()
     hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_7]), _rc_throttle.radio_min);
 }
 
+// get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
+//  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
+uint16_t AP_MotorsSingle::get_motor_mask()
+{
+    // single copter uses channels 1,2,3,4 and 7
+    return (1U << 0 | 1U << 1 | 1U << 2 | 1U << 3 | 1U << 6);
+}
+
 // output_armed - sends commands to the motors
 void AP_MotorsSingle::output_armed()
 {
