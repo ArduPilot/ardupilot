@@ -39,7 +39,7 @@ void AP_InertialSensor_UserInteract_MAVLink::_printf_P(const prog_char* fmt, ...
         // STATUSTEXT messages should not add linefeed
         msg[strlen(msg)-1] = 0;
     }
-    while (comm_get_txspace(_chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES < (int)sizeof(mavlink_statustext_t)) {
+    while (comm_get_txspace(_chan) < MAVLINK_NUM_NON_PAYLOAD_BYTES + (int)sizeof(mavlink_statustext_t)) {
         hal.scheduler->delay(1);        
     }
     mavlink_msg_statustext_send(_chan, SEVERITY_USER_RESPONSE, msg);
