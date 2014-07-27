@@ -5,7 +5,6 @@
 #include "Scheduler.h"
 #include "Storage.h"
 #include "UARTDriver.h"
-#include <unistd.h>
 #include <sys/time.h>
 #include <poll.h>
 #include <unistd.h>
