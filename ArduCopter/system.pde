@@ -169,8 +169,14 @@ static void init_ardupilot()
     // a MUX is used
     gcs[1].setup_uart(hal.uartC, map_baudrate(g.serial1_baud), 128, 128);
 #endif
+
 #if MAVLINK_COMM_NUM_BUFFERS > 2
-    gcs[2].setup_uart(hal.uartD, map_baudrate(g.serial2_baud), 128, 128);
+    if (g.telem2_protocol == TELEM2_FRSKY_DPORT || 
+        g.telem2_protocol == TELEM2_FRSKY_SPORT) {
+        frsky_telemetry.init(hal.uartD, g.telem2_protocol);
+    } else {
+        gcs[2].setup_uart(hal.uartD, map_baudrate(g.serial2_baud), 128, 128);
+    }
 #endif
 
     // identify ourselves correctly with the ground station
@@ -383,3 +389,13 @@ static void check_usb_mux(void)
 #endif
 }
 
+/*
+  send FrSky telemetry. Should be called at 5Hz by scheduler
+ */
+static void telemetry_send(void)
+{
+#if FRSKY_TELEM_ENABLED == ENABLED
+    frsky_telemetry.send_frames((uint8_t)control_mode, 
+                                (AP_Frsky_Telem::FrSkyProtocol)g.telem2_protocol.get());
+#endif
+}

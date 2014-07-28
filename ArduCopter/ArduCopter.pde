@@ -144,6 +144,7 @@
 #include <AP_Notify.h>          // Notify library
 #include <AP_BattMonitor.h>     // Battery monitor library
 #include <AP_BoardConfig.h>     // board configuration library
+#include <AP_Frsky_Telem.h>
 #if SPRAYER == ENABLED
 #include <AC_Sprayer.h>         // crop sprayer library
 #endif
@@ -554,6 +555,11 @@ static Vector3f flip_orig_attitude;         // original copter attitude before f
 ////////////////////////////////////////////////////////////////////////////////
 static AP_BattMonitor battery;
 
+////////////////////////////////////////////////////////////////////////////////
+// FrSky telemetry support
+#if FRSKY_TELEM_ENABLED == ENABLED
+static AP_Frsky_Telem frsky_telemetry(ahrs, battery);
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Altitude
@@ -810,6 +816,9 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { fifty_hz_logging_loop, 8,     22 },
     { perf_update,        4000,     20 },
     { read_receiver_rssi,   40,      5 },
+#if FRSKY_TELEM_ENABLED == ENABLED
+    { telemetry_send,       80,     10 },	
+#endif
 #ifdef USERHOOK_FASTLOOP
     { userhook_FastLoop,     4,     10 },
 #endif
@@ -872,6 +881,9 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { fifty_hz_logging_loop, 2,     220 },
     { perf_update,        1000,     200 },
     { read_receiver_rssi,   10,      50 },
+#if FRSKY_TELEM_ENABLED == ENABLED
+    { telemetry_send,       20,     100 },	
+#endif
 #ifdef USERHOOK_FASTLOOP
     { userhook_FastLoop,     1,    100  },
 #endif
