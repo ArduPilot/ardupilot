@@ -64,6 +64,8 @@ AP_GPS_SBP::AP_GPS_SBP(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriv
     last_tracking_state_ms(0),
     iar_num_hypotheses(-1),
     baseline_recv_rate(0),
+    obs_latency_avg(-1),
+    obs_latency(-1),
 
     dgps_corrections_incoming(false),
     rtk_corrections_incoming(false),
@@ -455,6 +457,9 @@ AP_GPS_SBP::sbp_process()
                             case SBP_IAR_STATE_MSGTYPE:
                                 sbp_process_iar_state(parser_state.msg_buff);
                                 break;
+                            case SBP_UART_STATE_MSGTYPE:
+                                sbp_process_uart_state(parser_state.msg_buff, parser_state.msg_len);
+                                break;
                             case SBP_HEARTBEAT_MSGTYPE:
                                 sbp_process_heartbeat(parser_state.msg_buff);
                                 break;
@@ -601,6 +606,19 @@ AP_GPS_SBP::sbp_process_iar_state(uint8_t* msg)
 {
     struct sbp_iar_state_t* iar_state = (struct sbp_iar_state_t*)msg;
     iar_num_hypotheses = (int32_t) iar_state->num_hypotheses;
+}
+
+void
+AP_GPS_SBP::sbp_process_uart_state(uint8_t* msg, uint8_t len)
+{
+    if (len != sizeof(sbp_uart_state_t))
+        return;
+
+    struct sbp_uart_state_t* uart_state = (struct sbp_uart_state_t*)msg;
+ 
+    obs_latency_avg = uart_state->avg_latency;
+    obs_latency = uart_state->latency;
+
 }
 
 void 
@@ -750,6 +768,8 @@ struct PACKED log_SbpHealth {
     uint8_t rtk_corrections_incoming;
     uint8_t has_rtk_base_pos;
     int32_t iar_num_hypotheses;
+    int32_t avg_latency;
+    int32_t latency;
 };
 
 struct PACKED log_SbpLLH {
@@ -815,7 +835,7 @@ struct PACKED log_SbpTracking2 {
 
 static const struct LogStructure sbp_log_structures[] PROGMEM = {
     { LOG_MSG_SBPHEALTH, sizeof(log_SbpHealth),
-      "SBPH", "IffffIBBBi",  "TimeMS,PHz,VHz,BHz,UpHz,CrcError,dgpsOn,rtkOn,hasRtkBase,IAR" },
+      "SBPH", "IffffIBBBiii",  "TimeMS,P,V,B,Up,CrcErr,dOn,rOn,hasBase,IAR,lat,wlat" },
     { LOG_MSG_SBPLLH, sizeof(log_SbpLLH),
       "SBPL", "IIiiiB",      "TimeMS,tow,lat,lon,alt,num_sats" },
     { LOG_MSG_SBPBASELINE, sizeof(log_SbpBaseline),
@@ -859,7 +879,9 @@ AP_GPS_SBP::logging_log_health(float pos_msg_hz, float vel_msg_hz, float baselin
         dgps_corrections_incoming  : dgps_corrections_incoming,
         rtk_corrections_incoming   : rtk_corrections_incoming,
         has_rtk_base_pos           : has_rtk_base_pos,
-        iar_num_hypotheses         : iar_num_hypotheses
+        iar_num_hypotheses         : iar_num_hypotheses,
+        avg_latency                : obs_latency_avg,
+        latency                    : obs_latency
     };
     gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));    
 

@@ -106,7 +106,8 @@ private:
     static const uint16_t SBP_VEL_NED_MSGTYPE        = 0x0205;
     static const uint16_t SBP_TRACKING_STATE_MSGTYPE = 0x0016;
     static const uint16_t SBP_IAR_STATE_MSGTYPE      = 0x0019;
-    
+    static const uint16_t SBP_UART_STATE_MSGTYPE     = 0x0018;
+
     // GPS Time
     struct PACKED sbp_gps_time_t {
         uint16_t wn;     //< GPS week number (unit: weeks)
@@ -206,6 +207,20 @@ private:
         uint32_t num_hypotheses;
     };
 
+    struct PACKED sbp_uart_state_t {
+        struct PACKED {
+            float tx_throughput;
+            float rx_throughput;
+            uint16_t crc_error_count;
+            uint8_t tx_buffer_level;
+            uint8_t rx_buffer_level;
+        } uarts[3];
+        int32_t avg_latency;
+        int32_t min_latency;
+        int32_t max_latency;
+        int32_t latency;
+    };
+
 
 
     // ************************************************************************
@@ -234,6 +249,7 @@ private:
     void sbp_process_vel_ned(uint8_t* msg);
     void sbp_process_tracking_state(uint8_t* msg, uint8_t len);
     void sbp_process_iar_state(uint8_t* msg);
+    void sbp_process_uart_state(uint8_t* msg, uint8_t len);
     void sbp_process_startup(uint8_t* msg);
 
 
@@ -251,6 +267,9 @@ private:
     uint32_t last_tracking_state_ms;
     int32_t iar_num_hypotheses;
     uint8_t baseline_recv_rate; //in hertz * 10
+
+    int32_t obs_latency_avg;
+    int32_t obs_latency;
 
     //Sticky bits to track updating of state
     bool dgps_corrections_incoming:1;
