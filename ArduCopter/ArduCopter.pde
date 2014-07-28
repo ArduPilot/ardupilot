@@ -106,6 +106,7 @@
 #include <AP_ADC.h>             // ArduPilot Mega Analog to Digital Converter Library
 #include <AP_ADC_AnalogSource.h>
 #include <AP_Baro.h>
+#include <AP_Baro_Glitch.h>     // Baro glitch protection library
 #include <AP_Compass.h>         // ArduPilot Mega Magnetometer Library
 #include <AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
 #include <AP_Curve.h>           // Curve used to linearlise throttle pwm to thrust
@@ -267,6 +268,7 @@ static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::spi);
 #else
  #error Unrecognized CONFIG_BARO setting
 #endif
+static Baro_Glitch baro_glitch(barometer);
 
 #if CONFIG_COMPASS == HAL_COMPASS_PX4
 static AP_Compass_PX4 compass;
@@ -626,9 +628,9 @@ static float G_Dt = 0.02;
 // Inertial Navigation
 ////////////////////////////////////////////////////////////////////////////////
 #if AP_AHRS_NAVEKF_AVAILABLE
-static AP_InertialNav_NavEKF inertial_nav(ahrs, barometer, gps_glitch);
+static AP_InertialNav_NavEKF inertial_nav(ahrs, barometer, gps_glitch, baro_glitch);
 #else
-static AP_InertialNav inertial_nav(ahrs, barometer, gps_glitch);
+static AP_InertialNav inertial_nav(ahrs, barometer, gps_glitch, baro_glitch);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1377,7 +1379,7 @@ static void read_AHRS(void)
     ahrs.update();
 }
 
-// read baro and sonar altitude at 20hz
+// read baro and sonar altitude at 10hz
 static void update_altitude()
 {
     // read in baro altitude

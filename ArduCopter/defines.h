@@ -348,6 +348,7 @@ enum FlipState {
 #define ERROR_SUBSYSTEM_PARACHUTE           15
 #define ERROR_SUBSYSTEM_EKF_CHECK           16
 #define ERROR_SUBSYSTEM_FAILSAFE_EKF        17
+#define ERROR_SUBSYSTEM_BARO                18
 // general error codes
 #define ERROR_CODE_ERROR_RESOLVED           0
 #define ERROR_CODE_FAILED_TO_INITIALISE     1
@@ -374,6 +375,8 @@ enum FlipState {
 // EKF check definitions
 #define ERROR_CODE_EKF_CHECK_BAD_COMPASS    2
 #define ERROR_CODE_EKF_CHECK_BAD_COMPASS_CLEARED    0
+// Baro specific error codes
+#define ERROR_CODE_BARO_GLITCH              2
 
 // Arming Check Enable/Disable bits
 #define ARMING_CHECK_NONE                   0x00
