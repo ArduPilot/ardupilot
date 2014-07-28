@@ -149,9 +149,11 @@ void SITL_State::_update_ins(float roll, 	float pitch, 	float yaw,		// Relative 
 		accel_noise += _sitl->accel_noise;
 		gyro_noise += ToRad(_sitl->gyro_noise);
 	}
-	float xAccel1 = xAccel + accel_noise * _rand_float();
-	float yAccel1 = yAccel + accel_noise * _rand_float();
-	float zAccel1 = zAccel + accel_noise * _rand_float();
+	// get accel bias (add only to first accelerometer)
+	Vector3f accel_bias = _sitl->accel_bias.get();
+	float xAccel1 = xAccel + accel_noise * _rand_float() + accel_bias.x;
+	float yAccel1 = yAccel + accel_noise * _rand_float() + accel_bias.y;
+	float zAccel1 = zAccel + accel_noise * _rand_float() + accel_bias.z;
 
 	float xAccel2 = xAccel + accel_noise * _rand_float();
 	float yAccel2 = yAccel + accel_noise * _rand_float();
