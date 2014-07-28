@@ -1029,9 +1029,9 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/AP_GPS/AP_GPS_Glitch.cpp
     GOBJECT(gps_glitch,      "GPSGLITCH_",   GPS_Glitch),
 
-    // @Group: BAROGLITCH_
+    // @Group: BAROGLTCH_
     // @Path: ../libraries/AP_Baro/AP_Baro_Glitch.cpp
-    GOBJECT(baro_glitch,    "BAROGLITCH_",  Baro_Glitch),
+    GOBJECT(baro_glitch,    "BAROGLTCH_",   Baro_Glitch),
 
 #if FRAME_CONFIG ==     HELI_FRAME
     // @Group: H_
