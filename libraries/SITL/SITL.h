@@ -51,8 +51,10 @@ public:
 	// noise levels for simulated sensors
 	AP_Float baro_noise;  // in metres
 	AP_Float baro_drift;  // in metres per second
+	AP_Float baro_glitch; // glitch in meters
 	AP_Float gyro_noise;  // in degrees/second
 	AP_Float accel_noise; // in m/s/s
+	AP_Vector3f accel_bias; // in m/s/s
 	AP_Float aspd_noise;  // in m/s
 	AP_Float mag_noise;   // in mag units (earth field is 818)
 	AP_Float mag_error;   // in degrees

@@ -58,6 +58,8 @@ const AP_Param::GroupInfo SITL::var_info[] PROGMEM = {
     AP_GROUPINFO("BARO_DISABLE",  27, SITL,  baro_disable, 0),
     AP_GROUPINFO("FLOAT_EXCEPT",  28, SITL,  float_exception, 1),
     AP_GROUPINFO("MAG_MOT",       29, SITL,  mag_mot, 0),
+    AP_GROUPINFO("ACC_BIAS",      30, SITL,  accel_bias, 0),
+    AP_GROUPINFO("BARO_GLITCH",   31, SITL,  baro_glitch, 0),
     AP_GROUPEND
 };
 
