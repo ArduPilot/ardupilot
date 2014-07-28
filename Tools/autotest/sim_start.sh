@@ -61,7 +61,7 @@ read -p "Do you want to reset parameters to default? (y/n) " RESP
     else
         WIPE=''
     fi
-echo "We are Ready to start: $ARDUPILOT_TOOLS_AUTOTEST_SIM_VEHICLE $FIRMWARE $EXTRAPARAMS $WIPE $OUT"
+echo "We are Ready to start: $ARDUPILOT_TOOLS_AUTOTEST_SIM_VEHICLE $FIRMWARE $WIPE $EXTRAPARAMS $OUT"
 read -p "Are you Ready to start? (y/n)" RESPS
 if [ "$RESPS" = "y" ]; then
     cd $FIRMWARE_FOLDER
