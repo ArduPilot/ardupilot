@@ -747,6 +747,11 @@
   #  define CLI_ENABLED           ENABLED
 #endif
 
+//use this to completely disable FRSKY TELEM
+#ifndef FRSKY_TELEM_ENABLED
+  #  define FRSKY_TELEM_ENABLED          ENABLED
+#endif
+
 /*
   build a firmware version string.
   GIT_VERSION comes from Makefile builds

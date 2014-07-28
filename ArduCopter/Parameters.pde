@@ -72,8 +72,19 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Description: The baud rate used on the second telemetry port. The APM2 can support all baudrates up to 115, and also can support 500. The PX4 can support rates of up to 1500. If you setup a rate you cannot support on APM2 and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,500:500000,921:921600,1500:1500000
     // @User: Standard
+
     GSCALAR(serial2_baud,           "SERIAL2_BAUD",   SERIAL2_BAUD/1000),
-#endif
+
+#if FRSKY_TELEM_ENABLED == ENABLED
+    // @Param: TELEM2_PROTOCOL
+    // @DisplayName: TELEM2 protocol selection
+    // @Description: Control what protocol telemetry 2 port should be used for
+    // @Values: 1:GCS Mavlink,2:Frsky D-PORT
+    // @User: Standard
+    GSCALAR(telem2_protocol,        "TELEM2_PROTOCOL", TELEM2_MAVLINK),
+#endif // FRSKY_TELEM_ENABLED
+
+#endif // MAVLINK_COMM_NUM_BUFFERS
 
     // @Param: TELEM_DELAY
     // @DisplayName: Telemetry startup delay
