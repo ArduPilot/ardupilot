@@ -4,7 +4,7 @@ set -e
 CWD=$(pwd)
 OPT="/opt"
 
-BASE_PKGS="gawk make git arduino-core curl"
+BASE_PKGS="gawk make git arduino-core curl g++-4.7 dos2unix git"
 SITL_PKGS="g++ python-pip python-matplotlib python-serial python-wxgtk2.8 python-scipy python-opencv python-numpy python-pyparsing ccache"
 PYTHON_PKGS="pymavlink MAVProxy droneapi"
 PX4_PKGS="python-serial python-argparse openocd flex bison libncurses5-dev \
