@@ -112,6 +112,15 @@ void ToneAlarm_PX4::update()
         }
     }
 
+    // check baro glitch
+    if (flags.baro_glitching != AP_Notify::flags.baro_glitching) {
+        flags.baro_glitching = AP_Notify::flags.baro_glitching;
+        if (flags.baro_glitching) {
+            // gps glitch warning tune
+            play_tune(TONE_BARO_WARNING_TUNE);
+        }
+    }
+
     // check parachute release
     if (flags.parachute_release != AP_Notify::flags.parachute_release) {
         flags.parachute_release = AP_Notify::flags.parachute_release;

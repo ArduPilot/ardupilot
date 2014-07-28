@@ -41,6 +41,7 @@ private:
         uint8_t failsafe_battery   : 1;    // 1 if battery failsafe
         uint8_t gps_glitching      : 1;    // 1 if gps position is not good
         uint8_t failsafe_gps       : 1;    // 1 if gps failsafe
+        uint8_t baro_glitching     : 1;    // 1 if baro alt is glitching
         uint8_t arming_failed      : 1;    // 0 = failing checks, 1 = passed
         uint8_t parachute_release  : 1;    // 1 if parachute is being released
         uint8_t ekf_bad            : 1;    // 1 if ekf position has gone bad
