@@ -124,6 +124,54 @@ void Buzzer::update()
                     }
                 }
                 return;
+            case BARO_GLITCH:
+                // four fast tones
+                switch (_pattern_counter) {
+                    case 1:
+                    case 3:
+                    case 5:
+                    case 7:
+                    case 9:
+                        on(true);
+                        break;
+                    case 2:
+                    case 4:
+                    case 6:
+                    case 8:
+                        on(false);
+                        break;
+                    case 10:
+                        on(false);
+                        _pattern = NONE;
+                        break;
+                    default:
+                        // do nothing
+                        break;
+                }
+                return;
+            case EKF_BAD:
+                // four tones getting shorter)
+                switch (_pattern_counter) {
+                    case 1:
+                    case 5:
+                    case 8:
+                    case 10:
+                        on(true);
+                        break;
+                    case 4:
+                    case 7:
+                    case 9:
+                        on(false);
+                        break;
+                    case 11:
+                        on(false);
+                        _pattern = NONE;
+                        break;
+                    default:
+                        // do nothing
+                        break;
+                }
+                return;
             default:
                 // do nothing
                 break;
@@ -138,6 +186,16 @@ void Buzzer::update()
             play_pattern(ARMING_BUZZ);
         }else{
             // single buzz when disarmed
+            play_pattern(SINGLE_BUZZ);
+        }
+        return;
+    }
+
+    // check arming failed
+    if (_flags.arming_failed != AP_Notify::flags.arming_failed) {
+        _flags.arming_failed = AP_Notify::flags.arming_failed;
+        if (_flags.arming_failed) {
+            // arming failed buzz
             play_pattern(SINGLE_BUZZ);
         }
         return;
@@ -159,6 +217,26 @@ void Buzzer::update()
         if (_flags.failsafe_gps) {
             // gps glitch warning buzz
             play_pattern(GPS_GLITCH);
+        }
+        return;
+    }
+
+    // check ekf bad
+    if (_flags.ekf_bad != AP_Notify::flags.ekf_bad) {
+        _flags.ekf_bad = AP_Notify::flags.ekf_bad;
+        if (_flags.ekf_bad) {
+            // ekf bad warning buzz
+            play_pattern(EKF_BAD);
+        }
+        return;
+    }
+
+    // check baro glitch
+    if (_flags.baro_glitching != AP_Notify::flags.baro_glitching) {
+        _flags.baro_glitching = AP_Notify::flags.baro_glitching;
+        if (_flags.baro_glitching) {
+            // baro glitch warning buzz
+            play_pattern(BARO_GLITCH);
         }
         return;
     }

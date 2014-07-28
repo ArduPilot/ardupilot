@@ -55,7 +55,9 @@ public:
         SINGLE_BUZZ = 1,
         DOUBLE_BUZZ = 2,
         GPS_GLITCH = 3,
-        ARMING_BUZZ = 4
+        ARMING_BUZZ = 4,
+        BARO_GLITCH = 5,
+        EKF_BAD = 6
     };
 
     /// play_pattern - plays the defined buzzer pattern
@@ -71,6 +73,9 @@ private:
         uint8_t armed               : 1;    // 0 = disarmed, 1 = armed
         uint8_t failsafe_battery    : 1;    // 1 if battery failsafe has triggered
         uint8_t failsafe_gps        : 1;    // 1 if gps failsafe
+        uint8_t baro_glitching     : 1;    // 1 if baro alt is glitching
+        uint8_t arming_failed      : 1;    // 0 = failing checks, 1 = passed
+        uint8_t ekf_bad            : 1;    // 1 if ekf position has gone bad
     } _flags;
 
     uint8_t         _counter;           // reduces 50hz update down to 10hz for internal processing
