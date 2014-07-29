@@ -39,6 +39,7 @@
 #include <SITL.h>
 #include <AP_Compass.h>
 #include <AP_Baro.h>
+#include <AP_Baro_Glitch.h>
 #include <AP_InertialSensor.h>
 #include <AP_InertialNav.h>
 #include <AP_NavEKF.h>
@@ -69,7 +70,8 @@ static AP_GPS gps;
 static AP_Compass_HIL compass;
 static AP_AHRS_NavEKF ahrs(ins, barometer, gps);
 static GPS_Glitch gps_glitch(gps);
-static AP_InertialNav inertial_nav(ahrs, barometer, gps_glitch);
+static Baro_Glitch baro_glitch(barometer);
+static AP_InertialNav inertial_nav(ahrs, barometer, gps_glitch, baro_glitch);
 static AP_Vehicle::FixedWing aparm;
 static AP_Airspeed airspeed(aparm);
 
