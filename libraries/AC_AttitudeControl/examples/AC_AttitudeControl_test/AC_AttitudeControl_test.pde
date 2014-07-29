@@ -16,6 +16,7 @@
 #include <AP_ADC.h>             // ArduPilot Mega Analog to Digital Converter Library
 #include <AP_ADC_AnalogSource.h>
 #include <AP_Baro.h>            // ArduPilot Mega Barometer Library
+#include <AP_Baro_Glitch.h>     // Baro glitch protection library
 #include <Filter.h>
 #include <AP_Compass.h>         // ArduPilot Mega Magnetometer Library
 #include <AP_Declination.h>
@@ -58,12 +59,13 @@ AP_Baro_BMP085 baro;
 // GPS declaration
 AP_GPS gps;
 GPS_Glitch gps_glitch(gps);
+Baro_Glitch baro_glitch(baro);
 
 AP_Compass_HMC5843 compass;
 AP_AHRS_DCM ahrs(ins, baro, gps);
 
 // Inertial Nav declaration
-AP_InertialNav inertial_nav(ahrs, baro, gps_glitch);
+AP_InertialNav inertial_nav(ahrs, baro, gps_glitch, baro_glitch);
 
 // fake PIDs
 AC_P   p_angle_roll, p_angle_pitch, p_angle_yaw;
