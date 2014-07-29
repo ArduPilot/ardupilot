@@ -59,7 +59,17 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,500:500000,921:921600,1500:1500000
     // @User: Standard
     GSCALAR(serial2_baud,           "SERIAL2_BAUD",   SERIAL2_BAUD/1000),
-#endif
+
+#if FRSKY_TELEM_ENABLED == ENABLED
+    // @Param: SERIAL2_PROTOCOL
+    // @DisplayName: SERIAL2 protocol selection
+    // @Description: Control what protocol telemetry 2 port should be used for
+    // @Values: 1:GCS Mavlink,2:Frsky D-PORT
+    // @User: Standard
+    GSCALAR(serial2_protocol,        "SERIAL2_PROTOCOL", SERIAL2_MAVLINK),
+#endif // FRSKY_TELEM_ENABLED
+
+#endif // MAVLINK_COMM_NUM_BUFFERS
 
     // @Param: AUTOTUNE_LEVEL
     // @DisplayName: Autotune level
