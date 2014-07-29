@@ -116,6 +116,7 @@ public:
         k_param_serial1_baud,
         k_param_serial2_baud,
 <<<<<<< HEAD
+<<<<<<< HEAD
         k_param_land_repositioning,
         k_param_sonar, // sonar object
         k_param_ekfcheck_compass_thresh,// 54
@@ -123,6 +124,9 @@ public:
 =======
         k_param_mnt_autortrct_h,
 >>>>>>> Arducopter/AP_Mount: retract camera mount near ground
+=======
+        k_param_mnt_autortrct_h,
+>>>>>>> origin/ArduCopter_cameramount_autoretract
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -390,9 +394,12 @@ public:
     AP_Int8         arming_check;
     AP_Int8         mnt_autortrct_h;
 
+<<<<<<< HEAD
 
     AP_Int8         land_repositioning;
     AP_Float        ekfcheck_compass_thresh;
+=======
+>>>>>>> origin/ArduCopter_cameramount_autoretract
 
 #if FRAME_CONFIG ==     HELI_FRAME
     // Heli

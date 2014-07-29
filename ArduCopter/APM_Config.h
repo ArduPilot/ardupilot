@@ -40,10 +40,14 @@
 //#define SPRAYER               ENABLED             // enable the crop sprayer feature (two ESC controlled pumps the speed of which depends upon the vehicle's horizontal velocity)
 //#define EPM_ENABLED           ENABLED             // enable epm cargo gripper costs 500bytes of flash
 <<<<<<< HEAD
+<<<<<<< HEAD
 //#define NAV_GUIDED            ENABLED             // enable external navigation computer to control vehicle through MAV_CMD_NAV_GUIDED mission commands
 =======
 #define MNT_AUTO_RETRACT      ENABLED             // enable automatic retracting of camera mount
 >>>>>>> Arducopter/AP_Mount: retract camera mount near ground
+=======
+#define MNT_AUTO_RETRACT      ENABLED             // enable automatic retracting of camera mount
+>>>>>>> origin/ArduCopter_cameramount_autoretract
 
 // other settings
 //#define THROTTLE_IN_DEADBAND   100                // redefine size of throttle deadband in pwm (0 ~ 1000)
