@@ -145,7 +145,9 @@ vrhero-v10: $(BUILDROOT)/make.flags $(VRBRAIN_ROOT)/Archives/vrhero-v10.export $
 #vrbrain: vrbrain-v40 vrbrain-v45 vrbrain-v50 vrbrain-v51 vrubrain-v51 vrhero-v10
 vrbrain: vrbrain-v45 vrbrain-v51 vrubrain-v51
 
-vrbrain-clean: clean vrbrain-archives-clean
+vrbrain-clean: clean vrbrain-build-clean vrbrain-archives-clean
+
+vrbrain-build-clean:
 	$(v) /bin/rm -rf $(VRBRAIN_ROOT)/makefiles/build $(VRBRAIN_ROOT)/Build
 
 vrbrain-cleandep: clean
