@@ -79,6 +79,7 @@
 
 #include <AP_Arming.h>
 #include <AP_BoardConfig.h>
+#include <AP_Frsky_Telem.h>
 #include <AP_ServoRelayEvents.h>
 
 #include <AP_Rally.h>
@@ -461,6 +462,12 @@ static int32_t altitude_error_cm;
 static AP_BattMonitor battery;
 
 ////////////////////////////////////////////////////////////////////////////////
+// FrSky telemetry support
+#if FRSKY_TELEM_ENABLED == ENABLED
+static AP_Frsky_Telem frsky_telemetry(ahrs, battery);
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
 // Airspeed Sensors
 ////////////////////////////////////////////////////////////////////////////////
 AP_Airspeed airspeed(aparm);
@@ -766,6 +773,10 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { compass_save,        3000,   2500 },
     { update_logging1,        5,   1700 },
     { update_logging2,        5,   1700 },
+#if FRSKY_TELEM_ENABLED == ENABLED
+    { telemetry_send,        10,    100 },	
+#endif
+
 };
 
 // setup the var_info table
