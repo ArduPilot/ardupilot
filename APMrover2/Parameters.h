@@ -68,6 +68,7 @@ public:
         k_param_skip_gyro_cal,
         k_param_gcs2,       // stream rates for uartD
         k_param_serial2_baud_old,
+        k_param_serial2_protocol,
 
         //
         // 130: Sensor parameters
@@ -213,6 +214,7 @@ public:
     AP_Int16    serial1_baud;
 #if MAVLINK_COMM_NUM_BUFFERS > 2
     AP_Int16    serial2_baud;
+    AP_Int8     serial2_protocol;
 #endif
     AP_Int8     telem_delay;
     AP_Int8     skip_gyro_cal;

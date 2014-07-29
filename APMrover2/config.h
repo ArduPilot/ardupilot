@@ -122,6 +122,19 @@
 # define SERIAL2_BAUD			 57600
 #endif
 
+//////////////////////////////////////////////////////////////////////////////
+// FrSky telemetry support
+//
+
+#ifndef FRSKY_TELEM_ENABLED
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
+ # define FRSKY_TELEM_ENABLED DISABLED
+#else
+ # define FRSKY_TELEM_ENABLED ENABLED
+#endif
+#endif
+
+
 #ifndef CH7_OPTION
 # define CH7_OPTION		          CH7_SAVE_WP
 #endif
