@@ -20,7 +20,8 @@ if [ "$RESP0" = "y" ]; then
     echo '######################################################'
     cd ~/ardupilot/Tools/scripts
     chmod +x install-prereqs-ubuntu.sh
-    ./install-prereqs-ubuntu.sh -y
+    cd
+    ~/ardupilot/Tools/scripts/install-prereqs-ubuntu.sh -y
 fi
 
 
