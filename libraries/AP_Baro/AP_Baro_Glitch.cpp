@@ -59,9 +59,6 @@ void Baro_Glitch::check_alt()
 
     // exit immediately if baro is unhealthy
     if (!_baro.healthy) {
-        if (!_flags.glitching) {
-            hal.console->printf_P(PSTR("\nPGlitching 'cuz unhealthy!"));
-        }
         _flags.glitching = true;
         return;
     }
