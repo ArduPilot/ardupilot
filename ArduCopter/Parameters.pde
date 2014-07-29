@@ -574,6 +574,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Values: 0:Disabled,1:Leveling,2:Leveling and Limited
     // @User: Advanced
     GSCALAR(acro_trainer,   "ACRO_TRAINER",     ACRO_TRAINER_LIMITED),
+    
+    
+    // @Param: MNT_AUTORTRCT_H
+    // @DisplayName: Mnt AutoRetract Hight
+    // @Description: retract camera mount below this hight(cm) (stabilize/land/rtl mode)
+    // @User: Standard
+    // @Range: 0 255
+    GSCALAR(mnt_autortrct_h, "MNT_AUTORTRCT_H", MNT_AUTORTRCT_H),    
 
     // PID controller
     //---------------

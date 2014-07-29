@@ -406,4 +406,7 @@ enum FlipState {
 #define FS_GPS_ALTHOLD                      2       // switch to ALTHOLD mode on GPS failsafe
 #define FS_GPS_LAND_EVEN_STABILIZE          3       // switch to LAND mode on GPS failsafe even if in a manual flight mode like Stabilize
 
+// Camera mount
+#define MNT_AUTORTRCT_H 100 // cm
+
 #endif // _DEFINES_H

@@ -1047,7 +1047,43 @@ static void update_mount()
 #if MOUNT == ENABLED
     // update camera mount's position
     camera_mount.update_mount_position();
-#endif
+    
+    // lasts < 10 us on APM2
+    // automatically retract camera mount before hitting the ground
+#if CONFIG_SONAR == ENABLED
+#if MNT_AUTO_RETRACT == ENABLED  
+    if ( (g.mnt_autortrct_h > 0) && (g.sonar_enabled) )  // mnt_autortrct_h = 0 to disable auto retract  
+    {
+        // retract mount if approaching the ground
+        if ((sonar_alt < g.mnt_autortrct_h) && (sonar_alt_health >= SONAR_ALT_HEALTH_MAX))
+        {   
+            camera_mount.auto_retract(true);
+        }
+
+        // move out again if we're flying higher
+        switch (control_mode) 
+        {
+        case STABILIZE:
+        case RTL:
+        case LAND:
+            break;
+
+        default:   
+            //  move out only when not in stabilize, rtl, land 
+            //  sonar reports wrong alt after landing on lawn
+            if (sonar_alt_health < SONAR_ALT_HEALTH_MAX) break;
+            if (sonar_alt > (g.mnt_autortrct_h + 100))
+            {
+                // return to previous position
+                camera_mount.auto_retract(false);
+            }
+            break;
+        } // switch
+    } // (g.mnt_autortrct_h > 0)  
+#endif // MNT_AUTO_RETRACT     
+#endif // CONFIG_SONAR
+
+#endif // MOUNT
 
 #if MOUNT2 == ENABLED
     // update camera mount's position
