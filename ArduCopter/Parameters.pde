@@ -76,12 +76,12 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(serial2_baud,           "SERIAL2_BAUD",   SERIAL2_BAUD/1000),
 
 #if FRSKY_TELEM_ENABLED == ENABLED
-    // @Param: TELEM2_PROTOCOL
-    // @DisplayName: TELEM2 protocol selection
+    // @Param: SERIAL2_PROTOCOL
+    // @DisplayName: Serial2 protocol selection
     // @Description: Control what protocol telemetry 2 port should be used for
     // @Values: 1:GCS Mavlink,2:Frsky D-PORT
     // @User: Standard
-    GSCALAR(telem2_protocol,        "TELEM2_PROTOCOL", TELEM2_MAVLINK),
+    GSCALAR(serial2_protocol,        "SERIAL2_PROTOCOL", SERIAL2_MAVLINK),
 #endif // FRSKY_TELEM_ENABLED
 
 #endif // MAVLINK_COMM_NUM_BUFFERS

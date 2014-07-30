@@ -174,7 +174,7 @@ public:
         k_param_telem_delay,
         k_param_gcs2,
         k_param_serial2_baud_old, // deprecated
-        k_param_telem2_protocol,
+        k_param_serial2_protocol,
 
         //
         // 140: Sensor parameters
@@ -321,7 +321,7 @@ public:
     AP_Int16        serial1_baud;
 #if MAVLINK_COMM_NUM_BUFFERS > 2
     AP_Int16        serial2_baud;
-    AP_Int8         telem2_protocol;
+    AP_Int8         serial2_protocol;
 #endif
     AP_Int8         telem_delay;
 
