@@ -1,5 +1,17 @@
 #!/usr/bin/env python
 
+import logging
+import sys
+
+log = logging.getLogger()
+log.setLevel(logging.DEBUG)
+
+ch = logging.StreamHandler(sys.stdout)
+ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+log.addHandler(ch)
+
 import DataflashLog
 
 import sqlalchemy
@@ -7,6 +19,8 @@ from sqlalchemy import Table, MetaData, Column, ForeignKey, Integer, String, Flo
 from sqlalchemy.orm import mapper
 from sqlalchemy.schema import ForeignKeyConstraint
 
+class mappings(object):
+    pass
 
 class DataflashSQL(object):
     """Use SQLAlchemy to convert a DataflashLog to a sqlite Database
@@ -14,7 +28,9 @@ class DataflashSQL(object):
     as indicated in the FMT message
     Columns are learned of the FMT messages as well,
     the column _{tablename} is special -the primary key- useful for self joins
-
+    Mapped Tables can be accessed via DataflashSQL.m.NAME
+    Tables are mapped and of type sqlalchemy.schema.Table, so you have to use table.c for the columns
+    e.g: db.m.ATUN.c.line
     *special* tables/views are prefixed with _
 
     _record is a list of all parsed lines, with the TimeMS of the closest message carrying a TimeMS value
@@ -24,42 +40,186 @@ class DataflashSQL(object):
 
     _mode is a view on the flight modes used, adding Start/Stop line and TimeMS values
     """
-
-    metadata = MetaData()
-    tables = {}
-    classes = {}
-    mapping = {}
-
     def __init__(self, db):
         self.engine = sqlalchemy.create_engine('sqlite:///{}'.format(db))#, isolation_level='SERIALIZABLE', echo=True)
         Session = sqlalchemy.orm.sessionmaker(bind=self.engine)
         self.session = Session()
-        DataflashSQL.metadata.create_all(self.engine)
+        self.m = mappings()
+        self.metadata = MetaData()
 
-    def insert(self, line, obj):
-        if obj.NAME not in self.tables:
-            return
-        if obj.NAME == 'FMT':
-            self.session.add(SQLFormat.from_object(line, obj))
-            self.session.commit()
-            if obj.name == 'FMT':
-                return
-            DataflashSQL.classes[obj.name] = self.class_from_FMT(obj)
-            DataflashSQL.tables[obj.name] = self.table_from_FMT(obj)
-            DataflashSQL.mapping[obj.name] = mapper(
-                DataflashSQL.classes[obj.name],
-                DataflashSQL.tables[obj.name],
-                inherits=SQLRecord,
+        # create mappings for FMT _record _timems tables
+        self._init_FMT()
+
+        # learn formats from DB
+        q = self.session.query(self.m.FMT)
+        r = q.all()
+        for obj in r:
+            if hasattr(self.m, obj.name) == True or obj.name == 'FMT':
+                continue
+
+            tbl = DataflashSQL.table_from_FMT(obj, self.metadata)
+            attr = mapper(
+                self.class_from_FMT(obj),
+                tbl,
+                inherits=self.m._record.class_,
                 polymorphic_identity=obj.name,
-                primary_key=DataflashSQL.tables[obj.name].c.line,
+                primary_key=tbl.c.line,
             )
-            self.session.commit()
-            DataflashSQL.metadata.create_all(self.engine, tables=[DataflashSQL.tables[obj.name]])
-        else:
-            self.session.add(DataflashSQL.classes[obj.NAME](line, obj.NAME, obj))
+            setattr(self.m, obj.name, attr)
 
-    def commit(self):
+    def _init_FMT(self):
+        if hasattr(self.m, '_record') == False:
+
+            class SQLRecord(object):
+                def __init__(self, line, type):
+                    self.line = line
+                    self.type = type
+
+            tbl = Table('_record', self.metadata,
+                        Column('line', Integer, primary_key=True, nullable=False),
+                        Column('type', String(8), nullable=False, index=True),
+                        Column('_TimeMS', Integer, nullable=True),
+                        )
+            setattr(self.m, '_record',
+                    mapper(
+                        SQLRecord,
+                        tbl,
+                        polymorphic_on=tbl.c.type,
+                        with_polymorphic='*'
+                    )
+                )
+        self.metadata.create_all(self.engine, tables=[self.m._record.local_table])
+
+        if hasattr(self.m, 'FMT') == False:
+            class SQLFormat(SQLRecord):
+                def __init__(self, line, length, name, types, labels):
+                    SQLRecord.__init__(self, line, 'FMT')
+                    self.length = length
+                    self.name = name
+                    self.types = types
+                    self.labels = labels
+                @staticmethod
+                def from_object(line, obj):
+                    l = getattr(obj,'length', -1) # Text Log files lack length
+                    return SQLFormat(line, l, obj.name, obj.types, obj.labels)
+            setattr(self.m, 'FMT',
+                    mapper(
+                        SQLFormat,
+                        Table('fmt', self.metadata,
+                              Column('_fmt', Integer, nullable=False, primary_key=True),
+                              Column('line', Integer, nullable=False, index=True),
+                              Column('type', String(8), nullable=False, default='FMT'),
+                              Column('length', Integer, nullable=True),
+                              Column('name', String(4), nullable=False),
+                              Column('types', String(16), nullable=False),
+                              Column('labels', String(64), nullable=False),
+                              ForeignKeyConstraint(['line', 'type'], ['_record.line', '_record.type'])
+                              ),
+                        inherits=self.m._record.class_, # aka SQLRecord
+                        polymorphic_identity='FMT'
+                        )
+                    )
+        self._handle_FMT(SQLFormat(-1, -1, '_timems', 'I', 'TimeMS'))
+        self.metadata.create_all(self.engine, tables=[self.m.FMT.local_table])
         self.session.commit()
+
+    def _handle_FMT(self, obj):
+        if hasattr(self.m, obj.name) == False: # we can't map the same table twice
+            setattr(self.m,
+                    obj.name,
+                    mapper(
+                        self.class_from_FMT(obj),
+                        DataflashSQL.table_from_FMT(obj, self.metadata),
+                        inherits=self.m._record.class_,
+                        polymorphic_identity=obj.name
+                        )
+                    )
+        self.metadata.create_all(self.engine, tables=[getattr(self.m, obj.name).local_table])
+
+    @staticmethod
+    def table_from_FMT(obj, metadata):
+        cols = []
+        fieldtypes = [i for i in obj.types]
+        fieldlabels = obj.labels.split(",")
+
+        for (label, _type) in zip(fieldlabels, fieldtypes):
+            if _type in "fcCeEL":
+                t = Float
+            elif _type in "bBhHiIM":
+                t = Integer
+            elif _type in "nNZ":
+                t = String
+            cols.append(Column(label, t))#, nullable=False))
+        return Table(obj.name.lower(),
+                     metadata,
+                     Column('_{}'.format(obj.name.lower()), Integer, nullable=False, primary_key=True),
+                     Column('line', Integer, nullable=False, index=True),
+                     Column('type', String(8), nullable=False, default=obj.name),
+                     ForeignKeyConstraint(['line', 'type'], ['_record.line', '_record.type']),
+                     *cols)
+
+    def class_from_FMT(self, obj):
+        labels = obj.labels.split(",")
+        def init(a, line, fmt, obj):
+            self.m._record.class_.__init__(a, line, fmt)
+            for l in labels:
+                try:
+                    setattr(a, l, getattr(obj,l))
+                except Exception as e:
+                    print("{} {} failed".format(a,l))
+                    print(e)
+
+        members = {}
+        members['__init__'] = init
+        members['__repr__'] = lambda x: "<{cls} {data}>".format(cls=x.__class__.__name__, data = ' '.join(["{}:{}".format(k,getattr(x,k,None)) for k in labels]))
+
+        # create the class
+        cls = type(\
+            'SQL__{:s}'.format(obj.name),
+            (self.m._record.class_,),
+            members
+        )
+        return cls
+
+    def convert(self, logfile, format='auto'):
+        _self = self
+        class Import(DataflashLog.DataflashLog):
+            def __init__(self, logfile, format):
+                DataflashLog.DataflashLog.__init__(self)
+                self.logfile=logfile
+                self.format=format
+            def run(self):
+                self.read(self.logfile, self.format, True)
+
+            def process(self, lineNumber, e):
+                if e.NAME == 'FMT':
+                    cls = e.to_class()
+                    if cls is not None: # FMT messages can be broken ...
+                        if hasattr(e, 'type') and e.type not in self._formats: # binary log specific
+                            self._formats[e.type] = cls
+                        if cls.NAME not in self.formats:
+                            self.formats[cls.NAME] = cls
+                try:
+                    cls = getattr(_self.m, e.NAME, None)
+                    if cls is None:
+                        return
+                    if e.NAME == 'FMT':
+                        a = _self.m.FMT.class_.from_object(lineNumber, e)
+                        _self.session.add(a)
+                        if e.name == 'FMT':
+                            return
+                        _self._handle_FMT(e)
+                        _self.session.commit()
+                    else:
+                        _self.session.add(cls.class_(lineNumber, e.NAME, e))
+                except Exception as ex:
+                    log.exception(ex)
+                    raise ex
+
+        i = Import(logfile, format)
+        i.run()
+        self.session.commit()
+        self.finish()
 
     def finish(self):
         self._finish_timems()
@@ -70,8 +230,12 @@ class DataflashSQL(object):
         # update timems table
         # a view is possible but very slow
         names = []
-        for name, cls in DataflashSQL.tables.items():
-            if name.startswith("GPS"):
+        for i in dir(self.m):
+            cls = getattr(self.m, i)
+            if not type(cls) == type(self.m._record):
+                continue
+
+            if i.startswith("GPS"):
                 # gps timestamps differ to much and do not drift as the other timestamps do
                 continue
             try:
@@ -89,7 +253,7 @@ class DataflashSQL(object):
     timems AS timems
 FROM
     "{cls}"
-""".format(cls=i.name)
+""".format(cls=i.local_table.name)
             stmts.append(q)
 
         stmt = "INSERT INTO _timems (line,type,TimeMS) {stmts}".format(stmts="\nUNION\n".join(stmts))
@@ -129,108 +293,6 @@ FROM
     LEFT OUTER JOIN _record AS re ON( re.line = end.line )""")
         self.session.commit()
 
-    def table_from_FMT(self, obj):
-        cols = []
-        fieldtypes = [i for i in obj.types]
-        fieldlabels = obj.labels.split(",")
-
-        for (label, _type) in zip(fieldlabels, fieldtypes):
-            if _type in "fcCeEL":
-                t = Float
-            elif _type in "bBhHiIM":
-                t = Integer
-            elif _type in "nNZ":
-                t = String
-            cols.append(Column(label, t))#, nullable=False))
-        return Table(obj.name.lower(),
-                     DataflashSQL.metadata,
-                     Column('_{}'.format(obj.name.lower()), Integer, nullable=False, primary_key=True),
-                     Column('line', Integer, nullable=False, index=True),
-                     Column('type', String(8), nullable=False, default=obj.name),
-                     ForeignKeyConstraint(['line', 'type'], ['_record.line', '_record.type']),
-                     *cols)
-
-    def class_from_FMT(self, obj):
-        labels = obj.labels.split(",")
-        def init(a, line, fmt, obj):
-            SQLRecord.__init__(a, line, fmt)
-            for l in labels:
-                try:
-                    setattr(a, l, getattr(obj,l))
-                except Exception as e:
-                    print("{} {} failed".format(a,l))
-                    print(e)
-
-        members = {}
-        members['__init__'] = init
-        members['__repr__'] = lambda x: "<{cls} {data}>".format(cls=x.__class__.__name__, data = ' '.join(["{}:{}".format(k,getattr(x,k,None)) for k in labels]))
-
-        # create the class
-        cls = type(\
-            'SQL__{:s}'.format(obj.name),
-            (SQLRecord,),
-            members
-        )
-        return cls
-
-DataflashSQL.tables['_record'] = Table('_record', DataflashSQL.metadata,
-    Column('line', Integer, primary_key=True, nullable=False),
-    Column('type', String(8), nullable=False, index=True),
-    Column('_TimeMS', Integer, nullable=True),
-)
-
-DataflashSQL.tables['FMT'] = Table('fmt', DataflashSQL.metadata,
-    Column('_fmt', Integer, nullable=False, primary_key=True),
-    Column('line', Integer, nullable=False, index=True),
-    Column('type', String(8), nullable=False, default='FMT'),
-    Column('length', Integer, nullable=True),
-    Column('name', String(4), nullable=False),
-    Column('types', String(16), nullable=False),
-    Column('labels', String(64), nullable=False),
-    ForeignKeyConstraint(['line', 'type'], ['_record.line', '_record.type'])
-)
-
-DataflashSQL.tables['_timems'] = Table('_timems', DataflashSQL.metadata,
-    Column('line', Integer, nullable=False, index=True, primary_key=True),
-    Column('type', String(8), nullable=False, default='FMT'),
-    Column('TimeMS', Integer, nullable=True),
-)
-
-class SQLRecord(object):
-    def __init__(self, line, type):
-        self.line = line
-        self.type = type
-
-DataflashSQL.classes['_record'] = SQLRecord
-
-DataflashSQL.mapping['_record'] = mapper(
-    SQLRecord,
-    DataflashSQL.tables['_record'],
-    polymorphic_on=DataflashSQL.tables['_record'].c.type,
-    with_polymorphic='*'
-)
-
-
-class SQLFormat(SQLRecord):
-    def __init__(self, line, length, name, types, labels):
-        SQLRecord.__init__(self, line, 'FMT')
-        self.length = length
-        self.name = name
-        self.types = types
-        self.labels = labels
-    @staticmethod
-    def from_object(line, obj):
-        l = getattr(obj,'length', -1) # Text Log files lack length
-        return SQLFormat(line, l, obj.name, obj.types, obj.labels)
-
-DataflashSQL.mapping['FMT'] = mapper(
-    SQLFormat,
-    DataflashSQL.tables['FMT'],
-    inherits=SQLRecord,
-    polymorphic_identity='FMT',
-    primary_key=DataflashSQL.tables['FMT'].c.line,
-)
-
 
 # FOREIGN KEYS break multi row inserts in SQLite
 #
@@ -241,36 +303,6 @@ DataflashSQL.mapping['FMT'] = mapper(
 #    cursor.execute("PRAGMA foreign_keys=ON")
 #    cursor.close()
 
-class Import(DataflashLog.DataflashLog):
-    def __init__(self, dbx, logfile, format):
-        DataflashLog.DataflashLog.__init__(self)
-        self.db = dbx
-        self.logfile=logfile
-        self.format=format
-    def run(self):
-        self.read(self.logfile, self.format, True)
-
-    def process(self, lineNumber, e):
-        if e.NAME == 'FMT':
-            cls = e.to_class()
-            if cls is not None: # FMT messages can be broken ...
-                if hasattr(e, 'type') and e.type not in self._formats: # binary log specific
-                    self._formats[e.type] = cls
-                if cls.NAME not in self.formats:
-                    self.formats[cls.NAME] = cls
-        try:
-            self.db.insert(lineNumber, e)
-        except Exception as ex:
-            print(ex)
-
-    def close(self):
-        self.db.commit()
-        self.db.finish()
-
-
-class Explorer(object):
-    def __init__(self):
-        pass
 
 class ExampleAutotune(object):
     AUTOTUNE_INITIALISED       = 30
@@ -284,12 +316,11 @@ class ExampleAutotune(object):
     def __init__(self):
         pass
 
-    def run(self, db, verbose):
-        if 'ATUN' not in db.mapping:
+    def run(self, e, verbose):
+        if getattr(e.m, 'ATUN', None) is None:
             return
 
-        self.db = db
-        sessions = self.db.session.execute("""SELECT
+        sessions = e.session.execute("""SELECT
     Id,
     begin.line AS StartLine,
     IFNULL(MIN(end.line)-1,MAX(end.max)) AS StopLine
@@ -303,9 +334,9 @@ GROUP BY
     begin.line""".format(id=self.AUTOTUNE_INITIALISED))
 
         for s in sessions:
-            EV = self.db.mapping['EV']
+            EV = e.m.EV
 
-            q = self.db.session.query(EV.c.Id)
+            q = e.session.query(EV.c.Id)
             q = q.filter(EV.c.line >= s.StartLine, EV.c.line <= s.StopLine) # limit to session
             q = q.filter(EV.c.Id >= self.AUTOTUNE_INITIALISED , EV.c.Id <= self.AUTOTUNE_SAVEDGAINS) # only AUTOTUNE related Id
 
@@ -316,17 +347,16 @@ GROUP BY
             else:
                 print("Autotune {}-{} ---".format(s.StartLine,s.StopLine))
             if verbose:
-                _record = self.db.mapping['_record']
+                _record = e.m._record
 
-                q = self.db.session.query(_record)
-                q = q.with_polymorphic([self.db.mapping['EV'],self.db.mapping['ATUN']]) # polymorphic lookup only for tables required
+                q = e.session.query(_record)
+                q = q.with_polymorphic([e.m.EV, e.m.ATUN]) # polymorphic lookup only for tables required
                 q = q.filter(_record.c.line >= s.StartLine, _record.c.line <= s.StopLine) # limit to session
                 q = q.filter(_record.c.type.in_(['ATUN','EV'])) # we only want ATUN & EV
                 q = q.order_by(sqlalchemy.asc(_record.c.line)) # order by line ascending
 
                 for i in q.all():
                     print(i)
-
 
 def main():
     import argparse
@@ -340,9 +370,7 @@ def main():
     db = DataflashSQL(args.db)
 
     if args.logfile:
-        i = Import(db, args.logfile.name, args.format)
-        i.run()
-        i.close()
+        db.convert(args.logfile.name, args.format)
 
     x = ExampleAutotune()
     x.run(db, args.verbose)
