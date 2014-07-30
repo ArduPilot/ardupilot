@@ -1,19 +1,5 @@
 /*
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-/*
-  YUNEEC port by Mike McCauley
+  YUNEEC port by Maelok
  */
 
 #ifndef __AP_HAL_YUNEEC_GPIO_H__
@@ -45,14 +31,15 @@ public:
 
 class YUNEEC::YUNEECDigitalSource : public AP_HAL::DigitalSource {
 public:
-    YUNEECDigitalSource(uint8_t v);
+    YUNEECDigitalSource(uint32_t port, uint16_t bit) : _port(port), _bit(bit) {}
     void    mode(uint8_t output);
     uint8_t read();
     void    write(uint8_t value); 
     void    toggle();
 
 private:
-    uint8_t _v;
+    uint32_t _port;
+    uint16_t _bit;
 };
 
 #endif // __AP_HAL_YUNEEC_GPIO_H__

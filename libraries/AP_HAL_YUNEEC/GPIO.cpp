@@ -20,24 +20,50 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_YUNEEC
 
 #include "GPIO.h"
-#include "FlymapleWirish.h"
+#include <libopencm3/stm32/rcc.h>
+#include <libopencm3/stm32/gpio.h>
+#include <utility/pipmap_typedef.h>
 
 using namespace YUNEEC;
 
-// Glue into libmaple
-void libmaple_pinMode(uint8_t pin, uint8_t output)
+void setPinMode(const uint32_t port, const uint16_t bit, const uint8_t output)
 {
-    WiringPinMode mode = output ? OUTPUT : INPUT;
-    pinMode(pin, mode);
-}
+	enum rcc_periph_clken clken;
+	switch(port){
+	case GPIOA:
+		clken = RCC_GPIOA;
+		break;
+	case GPIOB:
+		clken = RCC_GPIOB;
+		break;
+	case GPIOC:
+		clken = RCC_GPIOC;
+		break;
+	case GPIOD:
+		clken = RCC_GPIOD;
+		break;
+	case GPIOE:
+		clken = RCC_GPIOE;
+		break;
+	case GPIOF:
+		clken = RCC_GPIOF;
+		break;
+	default:
+		return;
+		break;
+	}
 
-uint8_t libmaple_digitalRead(uint8_t pin) 
-{
-    return digitalRead(pin);
-}
-void libmaple_digitalWrite(uint8_t pin, uint8_t value)
-{
-    digitalWrite(pin, value);
+	rcc_periph_clock_enable(clken);
+
+	if(output == HAL_GPIO_INPUT){
+		gpio_mode_setup(port, GPIO_MODE_INPUT, GPIO_PUPD_NONE, bit);
+		return;
+	}
+	else
+		gpio_mode_setup(port, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, bit);
+		gpio_set_output_options(port, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, bit);
+		return;
+	}
 }
 
 YUNEECGPIO::YUNEECGPIO()
@@ -48,77 +74,81 @@ void YUNEECGPIO::init()
 
 void YUNEECGPIO::pinMode(uint8_t pin, uint8_t output)
 {
-    return libmaple_pinMode(pin, output);
+	if(!have_this_pin(pin)) return;
+
+	uint32_t port = get_port(pin);
+	uint16_t bit = get_bit(pin);
+
+
+	setPinMode(port, bit, output);
 }
 
 int8_t YUNEECGPIO::analogPinToDigitalPin(uint8_t pin)
-{
-    return pin;
-}
-
+{}
 
 uint8_t YUNEECGPIO::read(uint8_t pin)
 {
-    return libmaple_digitalRead(pin);
+	if(!have_this_pin(pin)) return 0;
+
+	uint32_t port = get_port(pin);
+	uint16_t bit = get_bit(pin);
+
+    return (gpio_port_read(port) & bit) ? 1 : 0;
 }
 
 void YUNEECGPIO::write(uint8_t pin, uint8_t value)
 {
-    libmaple_digitalWrite(pin, value);
+	if(!have_this_pin(pin)) return;
+
+	uint32_t port = get_port(pin);
+	uint16_t bit = get_bit(pin);
+
+	gpio_port_write(port, (1U << bit));
 }
 
 void YUNEECGPIO::toggle(uint8_t pin)
 {
-    libmaple_digitalWrite(pin, !libmaple_digitalRead(pin));
+	if(!have_this_pin(pin)) return;
+
+	uint32_t port = get_port(pin);
+	uint16_t bit = get_bit(pin);
+
+    gpio_toggle(port, bit);
 }
 
 /* Alternative interface: */
 AP_HAL::DigitalSource* YUNEECGPIO::channel(uint16_t n) {
-    return new YUNEECDigitalSource(n);
+	if(!have_this_pin(pin)) return NULL;
+
+	uint32_t port = get_port(pin);
+	uint16_t bit = get_bit(pin);
+
+	return new YUNEECDigitalSource(port, bit);
 }
 
 /* Interrupt interface: */
 bool YUNEECGPIO::attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p, uint8_t mode)
 {
-    // YUNEEC can only handle RISING, FALLING and CHANGE
-    ExtIntTriggerMode YUNEEC_interrupt_mode;
-    if (mode == HAL_GPIO_INTERRUPT_FALLING)
-	YUNEEC_interrupt_mode = FALLING;
-    else if (mode == HAL_GPIO_INTERRUPT_RISING)
-	YUNEEC_interrupt_mode = RISING;
-    else 
-	return false;
-	
-    // REVISIT: Assumes pin and interrupt number are the same. Are they? 
-    attachInterrupt(interrupt_num, p, YUNEEC_interrupt_mode);
-    return true;
 }
 
 bool    YUNEECGPIO::usb_connected(void)
 {
-    return SerialUSB.isConnected();
-}
-
-YUNEECDigitalSource::YUNEECDigitalSource(uint8_t v) :
-    _v(v)
-{
-    SerialUSB.println(_v);
 }
 
 void YUNEECDigitalSource::mode(uint8_t output)
 {
-    libmaple_pinMode(_v, output);
+	setPinMode(_port, _bit, output);
 }
 
 uint8_t YUNEECDigitalSource::read() {
-    return libmaple_digitalRead(_v);
+    return (gpio_port_read(_port) & _bit) ? 1 : 0;
 }
 
 void YUNEECDigitalSource::write(uint8_t value) {
-    libmaple_digitalWrite(_v, value);
+	gpio_port_write(_port, (1U << _bit));
 }
 
 void YUNEECDigitalSource::toggle() {
-    libmaple_digitalWrite(_v, !libmaple_digitalRead(_v));
+    gpio_toggle(_port, _bit);
 }
 #endif

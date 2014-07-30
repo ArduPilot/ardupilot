@@ -5,7 +5,8 @@
 #include <AP_Progmem.h>
 
 #include <AP_HAL.h>
-#include <AP_HAL_FLYMAPLE.h>
+#include <AP_HAL_YUNEEC.h>
+#include <utility/pinmap_typedef.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
@@ -14,36 +15,29 @@ AP_HAL::DigitalSource *b_led;
 AP_HAL::DigitalSource *c_led;
 
 void loop (void) {
-    hal.scheduler->delay(1000);
+	for (i = 0; i < 2000000; i++) /* Wait a bit. */
+		__asm__("nop");
+
     hal.gpio->write(13, 1);
+    blue_led->write(1);
 
-    a_led->write(1);
-    b_led->write(0);
-    c_led->write(1);
+	for (i = 0; i < 2000000; i++) /* Wait a bit. */
+		__asm__("nop");
 
-    hal.scheduler->delay(1000);
     hal.gpio->write(13, 0);
+    blue_led->write(0);
 
-    a_led->write(0);
-    b_led->write(1);
-    c_led->write(0);
 }
 
 void setup (void) {
-    hal.gpio->pinMode(13, HAL_GPIO_OUTPUT);
-    hal.gpio->write(13, 0);
+    hal.gpio->pinMode(PE8, HAL_GPIO_OUTPUT);
 
-    a_led = hal.gpio->channel(27);
-    b_led = hal.gpio->channel(26);
-    c_led = hal.gpio->channel(25);
+    blue_led = hal.gpio->channel(PE9);
+    blue_led->mode(HAL_GPIO_OUTPUT);
 
-    a_led->mode(HAL_GPIO_OUTPUT);
-    b_led->mode(HAL_GPIO_OUTPUT);
-    c_led->mode(HAL_GPIO_OUTPUT);
+    hal.gpio->write(PE8, 0);
+    blue_led->write(0);
 
-    a_led->write(0);
-    b_led->write(0);
-    c_led->write(0);
 }
 
 AP_HAL_MAIN();

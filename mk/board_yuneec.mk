@@ -1,48 +1,66 @@
-# board_flymaple.mk
-#
-# Build ArduPlane for Flymaple http://www.open-drone.org/flymaple
+############################################################################### 
+# File name: board_flymaple.mk
+#    Author: Maelok
+###############################################################################
+###############################################################################
+# Specify the MCU info for libopencm3
 
-# cope with relative paths
-ifeq ($(wildcard $(LIBMAPLE_PATH)/wirish),)
-LIBMAPLE_PATH := $(shell cd $(SKETCHBOOK)/../libmaple && pwd)
+TOOLCHAIN   := ARM
+SERIES      := STM32F3
+MCU 		:= STM32F372CC
+FAMILY 		:= cortex-m4
+F_CPU 		:= 72000000L
+LIBNAME		:= opencm3_stm32f3
+
+# Put the 'libopencm3' within the same folder with 'ardupilot'
+OPENCM3_DIR = $(SKETCHBOOK)/../libopencm3
+LDSCRIPT 	= $(SKETCHBOOK)/libraries/AP_HAL_YUNEEC/utility/ld/stm32f372.ld
+###############################################################################
+# Source files
+
+LDSCRIPT	?= $(SKETCH).ld
+
+ifeq ($(strip $(OPENCM3_DIR)),)
+# user has not specified the library path, so we try to detect it
+
+# where we search for the library
+LIBPATHS := ./libopencm3 ../../../../libopencm3 ../../../../../libopencm3
+
+OPENCM3_DIR := $(wildcard $(LIBPATHS:=/locm3.sublime-project))
+OPENCM3_DIR := $(firstword $(dir $(OPENCM3_DIR)))
+
+ifeq ($(strip $(OPENCM3_DIR)),)
+$(warning Cannot find libopencm3 library in the standard search paths.)
+$(error Please specify it through OPENCM3_DIR variable!)
+endif
 endif
 
-ifeq ($(wildcard $(LIBMAPLE_PATH)/wirish),)
-$(error ERROR: failed to find libmaple - please see libraries/AP_HAL_FLYMAPLE/FlymaplePortingNotes.txt)
+ifeq ($(V),1)
+$(info Using $(OPENCM3_DIR) path to library)
 endif
 
+OPENCM3_INCLUDE_DIR	= $(OPENCM3_DIR)/include
+OPENCM3_LIB_DIR		= $(OPENCM3_DIR)/lib
+OPENCM3_SCRIPT_DIR	= $(OPENCM3_DIR)/scripts
 
-TOOLCHAIN = ARM
-
-#include $(MK_DIR)/find_arduino.mk
-include $(MK_DIR)/find_tools.mk
-
-HARDWARE := leaflabs
-MCU := STM32F103RE
-FAMILY := cortex-m3
-F_CPU := 72000000L
-LINKER := maple_RET6/flash.ld
-HARDWARE_CORE := maple
-UPLOADER := dfu-util
-USBID := 1EAF:0003
-PRODUCT_ID := 0003
-LD_MEM_DIR := sram_64k_flash_512k
-
-#
+###############################################################################
 # Tool options
 #
-DEFINES         =   -DF_CPU=$(F_CPU) -DMCU_$(MCU) -DBOARD_$(BOARD) -DERROR_LED_PORT=GPIOA -DERROR_LED_PIN=5 -DVECT_TAB_FLASH 
+include $(MK_DIR)/find_tools.mk
+
+DEFINES         =   -DF_CPU=$(F_CPU) -D$(SERIES)
 DEFINES        +=   -DSKETCH=\"$(SKETCH)\" -DAPM_BUILD_DIRECTORY=APM_BUILD_$(SKETCH)
 DEFINES        +=   $(EXTRAFLAGS) # from user config.mk
 DEFINES        +=   -DCONFIG_HAL_BOARD=$(HAL_BOARD)
-WARNFLAGS       =   -Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align -Wno-psabi
-WARNFLAGS      +=   -Wwrite-strings -Wformat=2 
-WARNFLAGSCXX    =   -Wno-reorder
+WARNFLAGS       =   -Wformat -Wall -Wextra -Wshadow -Wpointer-arith -Wcast-align -Wundef -Wredundant-decls
+WARNFLAGS      +=   -Wwrite-strings -Wformat=2 -Wno-unused-parameter -Wno-missing-field-initializers
+WARNFLAGSCXX    =   -Wno-reorder -Weffc++ 
+WARNFLAGSC      =   -Wimplicit-function-declaration  -Wmissing-prototypes -Wstrict-prototypes
 DEPFLAGS        =   -MD -MT $@
+DEPFLAGS	   +=	-I$(OPENCM3_INCLUDE_DIR)  
 
-CXXOPTS         =   -ffunction-sections -fdata-sections -fno-exceptions -fsigned-char 
-COPTS           =   -ffunction-sections -fdata-sections -fsigned-char
-
+CXXOPTS         =   -ffunction-sections -fdata-sections -fno-exceptions -fsigned-char -fno-rtti -fno-common
+COPTS           =   -ffunction-sections -fdata-sections -fsigned-char -fno-common
 ASOPTS          =   -x assembler-with-cpp 
 LISTOPTS        =   -adhlns=$(@:.o=.lst)
 
@@ -50,39 +68,25 @@ NATIVE_CPUFLAGS     = -D_GNU_SOURCE
 NATIVE_CPULDFLAGS   = -g
 NATIVE_OPTFLAGS     = -O0 -g
 
-ARM_CPUFLAGS        = -mcpu=$(FAMILY) -march=armv7-m -mthumb -DBOARD_maple -DMCU_$(MCU)
-ARM_CPULDFLAGS      = -T$(LIBMAPLE_PATH)/support/ld/flash.ld -L $(LIBMAPLE_PATH)/support/ld/stm32/series/stm32f1/performance -L $(LIBMAPLE_PATH)/support/ld/stm32/mem/$(LD_MEM_DIR) -L $(LIBMAPLE_PATH)/support/ld -L $(LIBMAPLE_PATH)/support/ld/toolchains/generic 
-ARM_OPTFLAGS        = -Os
+ARM_CPUFLAGS        = -mcpu=$(FAMILY) -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16
+ARM_CPULDFLAGS      = -T$(LDSCRIPT) -L(OPENCM3_LIB_DIR)
+ARM_OPTFLAGS        = -Os -g
 
 CPUFLAGS= $($(TOOLCHAIN)_CPUFLAGS)
 CPULDFLAGS= $($(TOOLCHAIN)_CPULDFLAGS)
 OPTFLAGS= $($(TOOLCHAIN)_OPTFLAGS)
 
-CXXFLAGS        =   $(CPUFLAGS) $(DEFINES) -Os -g3 -gdwarf-2 -nostdlib \
-                   -ffunction-sections -fdata-sections \
-                   -fno-rtti -fno-exceptions -Wl,--gc-sections $(OPTFLAGS)
+CXXFLAGS        =   $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS)
 CXXFLAGS       +=   $(WARNFLAGS) $(WARNFLAGSCXX) $(DEPFLAGS) $(CXXOPTS)
-CFLAGS          =   $(CPUFLAGS) $(DEFINES) -Os -g3 -gdwarf-2 -nostdlib \
-                   -ffunction-sections -fdata-sections \
-                   -fno-exceptions -Wl,--gc-sections $(OPTFLAGS)
-CFLAGS         +=   $(WARNFLAGS) $(DEPFLAGS) $(COPTS)
-ASFLAGS         =   $(CPUFLAGS) $(DEFINES) -x assembler-with-cpp 
+CFLAGS          =   $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS)
+CFLAGS         +=   $(WARNFLAGS) $(WARNFLAGSC) $(DEPFLAGS) $(COPTS)
+ASFLAGS         =   $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS) $(DEPFLAGS)
 ASFLAGS        +=   $(ASOPTS)
+LDFLAGS         =   $(CPUFLAGS) $(CPULDFLAGS) $(OPTFLAGS) $(WARNFLAGS)
+LDFLAGS        +=   --static -nostartfiles -Wl,--gc-sections -Wl,-Map=$(SKETCHMAP) 
 
-LDFLAGS         =   $(CPUFLAGS) $(OPTFLAGS) $(WARNFLAGS) -mcpu=cortex-m3 -mthumb \
-           -Xlinker --gc-sections \
-           -Xassembler --march=armv7-m -Wall 
-LDFLAGS        +=   -Wl,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP) $(CPULDFLAGS)
-
-# under certain situations with certain avr-gcc versions the --relax flag causes
-# a bug. Give the user a way to disable this flag per-sketch.
-# I know this is a rotten hack but we're really close to sunset on AVR.
-EXCLUDE_RELAX := $(wildcard $(SRCROOT)/norelax.inoflag)
-ifeq ($(EXCLUDE_RELAX),)
-#  LDFLAGS      +=   -Wl,--relax
-endif
-
-LIBS = -lm
+LDLIBS		    = -lm -l$(LIBNAME)
+LDLIBS		   += -Wl,--start-group -lc -lgcc -lnosys -Wl,--end-group
 
 ifeq ($(VERBOSE),)
 v = @
@@ -90,8 +94,8 @@ else
 v =
 endif
 
-COREOBJS = $(LIBMAPLE_PATH)/build/libmaple/*.o $(LIBMAPLE_PATH)/build/libmaple/usb/stm32f1/*.o $(LIBMAPLE_PATH)/build/libmaple/stm32f1/*.o $(LIBMAPLE_PATH)/build/libmaple/usb/usb_lib/*.o $(LIBMAPLE_PATH)/build/libmaple/usb/usb_lib/*.o $(LIBMAPLE_PATH)/build/libmaple/stm32f1/performance/*.o $(LIBMAPLE_PATH)/build/wirish/*.o $(LIBMAPLE_PATH)/build/wirish/boards/maple/*.o $(LIBMAPLE_PATH)/build/wirish/stm32f1/*.o $(LIBMAPLE_PATH)/build/libraries/Wire/*.o
-COREINCLUDES = -I$(LIBMAPLE_PATH)/libmaple/include/libmaple -I$(LIBMAPLE_PATH)/wirish/include/wirish -I$(LIBMAPLE_PATH)/libraries  -I$(LIBMAPLE_PATH)/libmaple/include/libmaple -I$(LIBMAPLE_PATH)/wirish/include/wirish -I$(LIBMAPLE_PATH)/libraries   -I$(LIBMAPLE_PATH)/libmaple/include -I$(LIBMAPLE_PATH)/libmaple/stm32f1/include -I$(LIBMAPLE_PATH)/wirish/include -I$(LIBMAPLE_PATH)/wirish/boards/maple/include  -I$(LIBMAPLE_PATH)/libraries/Wire
+COREOBJS = $(OPENCM3_LIB_DIR)/lib$(LIBNAME).a
+COREINCLUDES = 
 
 # Library object files
 LIBOBJS			:=	$(SKETCHLIBOBJS) $(COREOBJS)
@@ -130,22 +134,6 @@ all: $(SKETCHELF) $(SKETCHEEP) $(SKETCHHEX)
 print-%:
 	echo "$*=$($*)"
 
-flymaple-upload: upload
-
-.PHONY: upload
-upload: $(SKETCHBIN)
-	$(LIBMAPLE_PATH)/support/scripts/reset.py && sleep 1 &&  $(UPLOADER) -a1 -d $(USBID) -D $(SKETCHBIN) -R
-
-debug:
-	$(AVARICE) --mkII --capture --jtag usb :4242 & \
-	gnome-terminal -x $(GDB) $(SKETCHELF) & \
-	echo -e '\n\nat the gdb prompt type "target remote localhost:4242"'
-
-# this allows you to flash your image via JTAG for when you
-# have completely broken your USB
-jtag-program:
-	$(AVARICE) --mkII --jtag usb --erase --program --file $(SKETCHELF)
-
 ################################################################################
 # Rules
 #
@@ -154,9 +142,9 @@ jtag-program:
 -include $(ALLDEPS)
 
 # Link the final object
-$(SKETCHELF):	$(SKETCHOBJS) $(LIBOBJS)
+$(SKETCHELF):	$(SKETCHOBJS) $(LIBOBJS) $(LDSCRIPT)
 	$(RULEHDR)
-	$(v)$(LD) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(v)$(LD) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 # Create the hex file
 $(SKETCHHEX):	$(SKETCHELF)
@@ -176,7 +164,7 @@ $(SKETCHEEP):	$(SKETCHELF)
 #
 # Build sketch objects
 #
-SKETCH_INCLUDES	=	$(SKETCHLIBINCLUDES) $(ARDUINOLIBINCLUDES) $(COREINCLUDES)
+SKETCH_INCLUDES	=	$(SKETCHLIBINCLUDES) $(COREINCLUDES)
 
 $(BUILDROOT)/%.o: $(BUILDROOT)/%.cpp
 	$(RULEHDR)
@@ -197,7 +185,7 @@ $(BUILDROOT)/%.o: $(SRCROOT)/%.S
 #
 # Build library objects from sources in the sketchbook
 #
-SLIB_INCLUDES	=	-I$(dir $<)/utility $(SKETCHLIBINCLUDES) $(ARDUINOLIBINCLUDES) $(COREINCLUDES)
+SLIB_INCLUDES	=	-I$(dir $<)/utility $(SKETCHLIBINCLUDES) $(COREINCLUDES)
 
 $(BUILDROOT)/libraries/%.o: $(SKETCHBOOK)/libraries/%.cpp
 	$(RULEHDR)
