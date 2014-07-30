@@ -375,27 +375,18 @@ static void NOINLINE send_servo_out(mavlink_channel_t chan)
 
 static void NOINLINE send_radio_out(mavlink_channel_t chan)
 {
-    uint8_t i;
-    uint16_t rcout[8];
-    hal.rcout->read(rcout,8);
-    // clear out unreasonable values
-    for (i=0; i<8; i++) {
-        if (rcout[i] > 10000) {
-            rcout[i] = 0;
-        }
-    }
     mavlink_msg_servo_output_raw_send(
         chan,
         micros(),
-        0, // port
-        rcout[0],
-        rcout[1],
-        rcout[2],
-        rcout[3],
-        rcout[4],
-        rcout[5],
-        rcout[6],
-        rcout[7]);
+        0,     // port
+        hal.rcout->read(0),
+        hal.rcout->read(1),
+        hal.rcout->read(2),
+        hal.rcout->read(3),
+        hal.rcout->read(4),
+        hal.rcout->read(5),
+        hal.rcout->read(6),
+        hal.rcout->read(7));
 }
 
 static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
