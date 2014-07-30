@@ -1033,34 +1033,35 @@ static void update_mount()
     // automatically retract camera mount before hitting the ground
 #if CONFIG_SONAR == ENABLED
 #if MNT_AUTO_RETRACT == ENABLED  
-    if ( (g.mnt_autortrct_h > 0) && (g.sonar_enabled) )  // mnt_autortrct_h = 0 to disable auto retract  
+    if ( (camera_mount.get_autoretract_hight() > 0) && (sonar_enabled) )  // mnt_autortrct_h = 0 to disable auto retract  
     {
-        // retract mount if approaching the ground
-        if ((sonar_alt < g.mnt_autortrct_h) && (sonar_alt_health >= SONAR_ALT_HEALTH_MAX))
-        {   
-            camera_mount.auto_retract(true);
-        }
-
-        // move out again if we're flying higher
+        sonar.healthy();
         switch (control_mode) 
         {
-        case STABILIZE:
+        case STABILIZE:  // do not move out when flying these modes
         case RTL:
+            break;
         case LAND:
+            // retract mount if approaching the ground
+            if ((sonar_alt < camera_mount.get_autoretract_hight()) && (sonar_alt_health >= SONAR_ALT_HEALTH_MAX))
+            {   
+                camera_mount.auto_retract(true);
+            }
             break;
 
         default:   
+            //  move out again if we're flying higher
             //  move out only when not in stabilize, rtl, land 
             //  sonar reports wrong alt after landing on lawn
             if (sonar_alt_health < SONAR_ALT_HEALTH_MAX) break;
-            if (sonar_alt > (g.mnt_autortrct_h + 100))
+            if (sonar_alt > (camera_mount.get_autoretract_hight() + 100))
             {
                 // return to previous position
                 camera_mount.auto_retract(false);
             }
             break;
         } // switch
-    } // (g.mnt_autortrct_h > 0)  
+    } // (camera_mount.get_autoretract_hight > 0)  
 #endif // MNT_AUTO_RETRACT     
 #endif // CONFIG_SONAR
 

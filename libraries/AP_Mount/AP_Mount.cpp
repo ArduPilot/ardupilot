@@ -218,6 +218,16 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     AP_GROUPINFO("JSTICK_SPD",  16, AP_Mount, _joystick_speed, 0),
 #endif
 
+#if MNT_AUTO_RETRACT == ENABLED 
+    // @Param: AUTORETR_H
+    // @DisplayName: mount auto retract altitude
+    // @Description: automatically retract camera mount below AUTORETR_H. AUTORETR_H = 0 disables this function.
+    // @Range: 0 500
+    // @Increment: 50
+    // @User: Standard
+    AP_GROUPINFO("AUTORETR_H",  17, AP_Mount, _autoretract_hight, 100),
+#endif
+
     AP_GROUPEND
 };
 
@@ -698,7 +708,7 @@ AP_Mount::move_servo(uint8_t function_idx, int16_t angle, int16_t angle_min, int
 
 
 /// true = retract camera mount; false = move out
-void 
+void
 AP_Mount::auto_retract(bool retract_mount)
 {
 #if MNT_AUTO_RETRACT == ENABLED

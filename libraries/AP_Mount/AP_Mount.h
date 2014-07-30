@@ -67,13 +67,19 @@ public:
     enum MountType          get_mount_type() {
         return _mount_type;
     }
+   
+    int16_t                 get_autoretract_hight() {
+        return _autoretract_hight;
+    }
+
     // hook for eeprom variables
     static const struct AP_Param::GroupInfo        var_info[];
+
+    void                    set_mode(enum MAV_MOUNT_MODE mode);
 
 private:
 
     //methods
-    void                            set_mode(enum MAV_MOUNT_MODE mode);
 
     void                            set_retract_angles(float roll, float tilt, float pan); ///< set mount retracted position
     void                            set_neutral_angles(float roll, float tilt, float pan);
@@ -126,6 +132,8 @@ private:
     AP_Int16                        _pan_angle_max;  ///< max angle limit of actuated surface in 0.01 degree units
 
     AP_Int8                         _joystick_speed;
+    
+    AP_Int16                        _autoretract_hight;
 
     AP_Vector3f                     _retract_angles; ///< retracted position for mount, vector.x = roll vector.y = tilt, vector.z=pan
     AP_Vector3f                     _neutral_angles; ///< neutral position for mount, vector.x = roll vector.y = tilt, vector.z=pan
