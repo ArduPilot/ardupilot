@@ -211,7 +211,7 @@ enum {
     ATT_CONTROL_APMCONTROL = 1
 };
 
-enum Telem2Protocol {
+enum Serial2Protocol {
     SERIAL2_MAVLINK     = 1,
     SERIAL2_FRSKY_DPORT = 2,
     SERIAL2_FRSKY_SPORT = 3 // not supported yet
