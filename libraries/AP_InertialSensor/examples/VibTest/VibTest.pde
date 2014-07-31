@@ -42,6 +42,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <stdio.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
@@ -108,10 +109,12 @@ void setup(void)
         if (accel_fd[i] != -1) {
             ioctl(accel_fd[i], ACCELIOCSLOWPASS, 0);
             ioctl(accel_fd[i], SENSORIOCSQUEUEDEPTH, 100);
+            ::printf("Setup accel[%u] OK\n", i);
         }
         if (gyro_fd[i] != -1) {
             ioctl(gyro_fd[i], GYROIOCSLOWPASS, 0);
             ioctl(gyro_fd[i], SENSORIOCSQUEUEDEPTH, 100);
+            ::printf("Setup gyro[%u] OK\n", i);
         }
     }
 
@@ -190,6 +193,17 @@ void loop(void)
                                     gyro_deltat_min[0], gyro_deltat_max[0], 
                                     gyro_deltat_min[1], gyro_deltat_max[1], 
                                     gyro_deltat_min[2], gyro_deltat_max[2]);
+#if 0
+                ::printf("t=%lu total_samples=%lu/%lu/%lu adt=%u:%u/%u:%u/%u:%u gdt=%u:%u/%u:%u/%u:%u\n",
+                         hal.scheduler->millis(), 
+                         total_samples[0], total_samples[1],total_samples[2],
+                         accel_deltat_min[0], accel_deltat_max[0], 
+                         accel_deltat_min[1], accel_deltat_max[1], 
+                         accel_deltat_min[2], accel_deltat_max[2], 
+                         gyro_deltat_min[0], gyro_deltat_max[0], 
+                         gyro_deltat_min[1], gyro_deltat_max[1], 
+                         gyro_deltat_min[2], gyro_deltat_max[2]);
+#endif
 
                 memset(accel_deltat_min, 0, sizeof(accel_deltat_min));
                 memset(accel_deltat_max, 0, sizeof(accel_deltat_max));
