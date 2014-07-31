@@ -280,7 +280,7 @@ void LinuxUARTDriver::_tcp_start_connection(bool wait_for_connection)
 
         printf("bind port %u for %u\n", 
                 (unsigned)ntohs(sockaddr.sin_port),
-                (unsigned)portNumber),
+                (unsigned)portNumber);
 
         ret = bind(listen_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
         if (ret == -1) {
