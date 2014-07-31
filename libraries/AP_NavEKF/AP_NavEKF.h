@@ -358,6 +358,7 @@ private:
     bool hgtTimeout;                // boolean true if height measurements have failed innovation consistency check and timed out
     bool magTimeout;                // boolean true if magnetometer measurements have failed for too long and have timed out
     bool filterDiverged;            // boolean true if the filter has diverged
+    bool magFailed;                 // boolean true if the magnetometer has failed
 
     Vector31 Kfusion;               // Kalman gain vector
     Matrix22 KH;                    // intermediate result used for covariance updates
