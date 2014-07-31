@@ -45,11 +45,12 @@ void ekf_check()
 
     // variances
     float compass_variance = 0;
+    float velVar;
 
 #if AP_AHRS_NAVEKF_AVAILABLE
     if (ahrs.have_inertial_nav()) {
         // use EKF to get variance
-        float velVar, posVar, hgtVar, tasVar;
+        float posVar, hgtVar, tasVar;
         Vector3f magVar;
         Vector2f offset;
         ahrs.get_NavEKF().getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
@@ -57,6 +58,8 @@ void ekf_check()
     } else {
         // use complementary filter's acceleration corrections multiplied by conversion factor to make them general in the same range as the EKF's variances
         compass_variance = safe_sqrt(inertial_nav.accel_correction_hbf.x * inertial_nav.accel_correction_hbf.x + inertial_nav.accel_correction_hbf.y * inertial_nav.accel_correction_hbf.y) * EKF_CHECK_COMPASS_INAV_CONVERSION;
+        // set velocity variance to a value that will enable failsafe trigger if not using EKF
+        velVar = 2.0f;
     }
 #else
     // use complementary filter's acceleration corrections multiplied by conversion factor to make them general in the same range as the EKF's variances
@@ -81,8 +84,14 @@ void ekf_check()
                     gcs_send_text_P(SEVERITY_HIGH,PSTR("EKF: compass variance"));
                     ekf_check_state.last_warn_time = hal.scheduler->millis();
                 }
-                // trigger failsafe
+#if AP_AHRS_NAVEKF_AVAILABLE
+                // trigger failsafe if there is also a large velocity variance indicating a divergence from GPS
+                if (velVar > 1.0f) {
+                    failsafe_ekf_event();
+                }
+#else
                 failsafe_ekf_event();
+#endif
             }
         }
     } else {
