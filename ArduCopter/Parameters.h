@@ -117,7 +117,7 @@ public:
         k_param_serial2_baud,
         k_param_land_repositioning,
         k_param_sonar, // sonar object
-        k_param_ekfcheck_compass_thresh,// 54
+        k_param_ekfcheck_thresh,        // 54
         k_param_terrain,
 
         // 65: AP_Limits Library
@@ -388,7 +388,7 @@ public:
     AP_Int8         arming_check;
 
     AP_Int8         land_repositioning;
-    AP_Float        ekfcheck_compass_thresh;
+    AP_Float        ekfcheck_thresh;
 
 #if FRAME_CONFIG ==     HELI_FRAME
     // Heli

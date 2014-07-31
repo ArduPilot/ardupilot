@@ -35,7 +35,7 @@ static struct {
 void ekf_check()
 {
     // return immediately if motors are not armed, ekf check is disabled, no inertial-nav position yet or usb is connected
-    if (!motors.armed() || g.ekfcheck_compass_thresh == 0.0f || !inertial_nav.position_ok() || ap.usb_connected) {
+    if (!motors.armed() || g.ekfcheck_thresh == 0.0f || !inertial_nav.position_ok() || ap.usb_connected) {
         ekf_check_state.fail_count_compass = 0;
         ekf_check_state.bad_compass = 0;
         AP_Notify::flags.ekf_bad = ekf_check_state.bad_compass;
@@ -45,7 +45,7 @@ void ekf_check()
 
     // variances
     float compass_variance = 0;
-    float velVar;
+    float vel_variance = 9.0;   // default set high to enable failsafe trigger if not using EKF
 
 #if AP_AHRS_NAVEKF_AVAILABLE
     if (ahrs.have_inertial_nav()) {
@@ -53,21 +53,19 @@ void ekf_check()
         float posVar, hgtVar, tasVar;
         Vector3f magVar;
         Vector2f offset;
-        ahrs.get_NavEKF().getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
+        ahrs.get_NavEKF().getVariances(vel_variance, posVar, hgtVar, magVar, tasVar, offset);
         compass_variance = magVar.length();
     } else {
         // use complementary filter's acceleration corrections multiplied by conversion factor to make them general in the same range as the EKF's variances
         compass_variance = safe_sqrt(inertial_nav.accel_correction_hbf.x * inertial_nav.accel_correction_hbf.x + inertial_nav.accel_correction_hbf.y * inertial_nav.accel_correction_hbf.y) * EKF_CHECK_COMPASS_INAV_CONVERSION;
-        // set velocity variance to a value that will enable failsafe trigger if not using EKF
-        velVar = 2.0f;
     }
 #else
     // use complementary filter's acceleration corrections multiplied by conversion factor to make them general in the same range as the EKF's variances
     compass_variance = safe_sqrt(inertial_nav.accel_correction_hbf.x * inertial_nav.accel_correction_hbf.x + inertial_nav.accel_correction_hbf.y * inertial_nav.accel_correction_hbf.y) * EKF_CHECK_COMPASS_INAV_CONVERSION;
 #endif
 
-    // compare compass variance vs threshold
-    if (compass_variance >= g.ekfcheck_compass_thresh) {
+    // compare compass and velocity variance vs threshold
+    if (compass_variance >= g.ekfcheck_thresh && vel_variance > g.ekfcheck_thresh) {
         // if compass is not yet flagged as bad
         if (!ekf_check_state.bad_compass) {
             // increase counter
@@ -84,14 +82,7 @@ void ekf_check()
                     gcs_send_text_P(SEVERITY_HIGH,PSTR("EKF: compass variance"));
                     ekf_check_state.last_warn_time = hal.scheduler->millis();
                 }
-#if AP_AHRS_NAVEKF_AVAILABLE
-                // trigger failsafe if there is also a large velocity variance indicating a divergence from GPS
-                if (velVar > 1.0f) {
-                    failsafe_ekf_event();
-                }
-#else
                 failsafe_ekf_event();
-#endif
             }
         }
     } else {
@@ -126,7 +117,7 @@ static void failsafe_ekf_event()
     uint32_t last_gps_update_ms;
 
     // return immediately if ekf failsafe already triggered or disabled
-    if (failsafe.ekf || g.ekfcheck_compass_thresh <= 0.0f) {
+    if (failsafe.ekf || g.ekfcheck_thresh <= 0.0f) {
         return;
     }
 
