@@ -58,7 +58,7 @@ module_mk:
 	$(v) cmp $(SKETCHBOOK)/module.mk $(SKETCHBOOK)/module.mk.new 2>/dev/null || mv $(SKETCHBOOK)/module.mk.new $(SKETCHBOOK)/module.mk
 	$(v) rm -f $(SKETCHBOOK)/module.mk.new
 
-vrbrain-v40: showflags $(VRBRAIN_ROOT)/Archives/vrbrain-v40.export $(SKETCHCPP) module_mk
+vrbrain-v40: $(BUILDROOT)/make.flags $(VRBRAIN_ROOT)/Archives/vrbrain-v40.export $(SKETCHCPP) module_mk
 	$(RULEHDR)
 	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB40_CONFIG_FILE)
 	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_VB40_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
@@ -72,7 +72,7 @@ vrbrain-v40: showflags $(VRBRAIN_ROOT)/Archives/vrbrain-v40.export $(SKETCHCPP) 
 	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v40_APM.bin $(SKETCH)-vrbrain-v40.bin
 	$(v) echo "VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrbrain-v40.vrx"
 
-vrbrain-v45: showflags $(VRBRAIN_ROOT)/Archives/vrbrain-v45.export $(SKETCHCPP) module_mk
+vrbrain-v45: $(BUILDROOT)/make.flags $(VRBRAIN_ROOT)/Archives/vrbrain-v45.export $(SKETCHCPP) module_mk
 	$(RULEHDR)
 	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB45_CONFIG_FILE)
 	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_VB45_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
@@ -86,7 +86,7 @@ vrbrain-v45: showflags $(VRBRAIN_ROOT)/Archives/vrbrain-v45.export $(SKETCHCPP) 
 	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v45_APM.bin $(SKETCH)-vrbrain-v45.bin
 	$(v) echo "VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrbrain-v45.vrx"
 
-vrbrain-v50: showflags $(VRBRAIN_ROOT)/Archives/vrbrain-v50.export $(SKETCHCPP) module_mk
+vrbrain-v50: $(BUILDROOT)/make.flags $(VRBRAIN_ROOT)/Archives/vrbrain-v50.export $(SKETCHCPP) module_mk
 	$(RULEHDR)
 	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB50_CONFIG_FILE)
 	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_VB50_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
@@ -100,7 +100,7 @@ vrbrain-v50: showflags $(VRBRAIN_ROOT)/Archives/vrbrain-v50.export $(SKETCHCPP) 
 	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v50_APM.bin $(SKETCH)-vrbrain-v50.bin
 	$(v) echo "VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrbrain-v50.vrx"
 
-vrbrain-v51: showflags $(VRBRAIN_ROOT)/Archives/vrbrain-v51.export $(SKETCHCPP) module_mk
+vrbrain-v51: $(BUILDROOT)/make.flags $(VRBRAIN_ROOT)/Archives/vrbrain-v51.export $(SKETCHCPP) module_mk
 	$(RULEHDR)
 	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB51_CONFIG_FILE)
 	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_VB51_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
@@ -114,7 +114,7 @@ vrbrain-v51: showflags $(VRBRAIN_ROOT)/Archives/vrbrain-v51.export $(SKETCHCPP) 
 	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v51_APM.bin $(SKETCH)-vrbrain-v51.bin
 	$(v) echo "VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrbrain-v51.vrx"
 
-vrubrain-v51: showflags $(VRBRAIN_ROOT)/Archives/vrubrain-v51.export $(SKETCHCPP) module_mk
+vrubrain-v51: $(BUILDROOT)/make.flags $(VRBRAIN_ROOT)/Archives/vrubrain-v51.export $(SKETCHCPP) module_mk
 	$(RULEHDR)
 	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VU51_CONFIG_FILE)
 	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_VU51_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
@@ -128,7 +128,7 @@ vrubrain-v51: showflags $(VRBRAIN_ROOT)/Archives/vrubrain-v51.export $(SKETCHCPP
 	$(v) cp $(VRBRAIN_ROOT)/Images/vrubrain-v51_APM.bin $(SKETCH)-vrubrain-v51.bin
 	$(v) echo "MICRO VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrubrain-v51.vrx"
 
-vrhero-v10: showflags $(VRBRAIN_ROOT)/Archives/vrhero-v10.export $(SKETCHCPP) module_mk
+vrhero-v10: $(BUILDROOT)/make.flags $(VRBRAIN_ROOT)/Archives/vrhero-v10.export $(SKETCHCPP) module_mk
 	$(RULEHDR)
 	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VH10_CONFIG_FILE)
 	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_VH10_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
