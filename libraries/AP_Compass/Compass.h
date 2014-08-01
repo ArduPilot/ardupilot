@@ -282,5 +282,7 @@ protected:
 
     // board orientation from AHRS
     enum Rotation _board_orientation;
+    
+    void apply_corrections(Vector3f &mag, uint8_t i);
 };
 #endif
