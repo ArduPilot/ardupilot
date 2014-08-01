@@ -1,5 +1,23 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.2-rc4 01-Aug-2014
+Changes from 3.2-rc3
+1) Pre-takeoff throttle feedback in AltHold, Loiter, PosHold
+2) Terrain altitude retrieval from ground station (informational purposes only so far, Pixhawk only) 
+3) Safety Items:
+    a) "EKF check" will switch to LAND mode if EKF's compass or velocity variance over 0.6 (configurable with EKFCHECK_THRESH param)
+       When EKF is not used inertial nav's accelerometer corrections are used as a substitute
+    b) Barometer glitch protection added.  BAROGLTCH_DIST and BAROGLTCH_ACCEL parameters control sensitivity similar to GPSGLITCH protection
+       When glitching occurs barometer values are temporarily ignored
+    c) Throttle/radio and battery failsafes now disarm vehicle when landed regardless of pilot's throttle position
+    d) auto-disarm extended to Drift, Sport and OF_Loiter flight modes
+    e) APM2 buzzer notification added for arming failure
+    f) APM2 arming buzz made longer (now matches Pixhawk)
+    g) do-set-servo commands cannot interfere with motor output
+4) Bug Fixes:
+    a) Drift slow yaw response fixed
+    b) AC3.2-rc3 failsafe bug resolved.  In -rc3 the throttle failsafe could be triggered even when disabled or motors armed (although vehicle would not takeoff) 
+------------------------------------------------------------------
 ArduCopter 3.2-rc3 16-Jul-2014
 Changes from 3.2-rc2
 1) Hybrid renamed to PosHold
