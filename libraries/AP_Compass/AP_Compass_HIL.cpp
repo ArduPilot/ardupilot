@@ -50,18 +50,9 @@ void AP_Compass_HIL::_setup_earth_field(void)
 
 bool AP_Compass_HIL::read()
 {
-    // get offsets
-    Vector3f ofs = _offset[0].get();
-
-    // apply motor compensation
-    if(_motor_comp_type != AP_COMPASS_MOT_COMP_DISABLED && _thr_or_curr != 0.0f) {
-        _motor_offset[0] = _motor_compensation[0].get() * _thr_or_curr;
-    }else{
-        _motor_offset[0].zero();
-    }
-
-    // return last values provided by setHIL function
-    _field[0] = _hil_mag + ofs + _motor_offset[0];
+    _field[0] = _hil_mag;
+    
+    apply_corrections(_field[0],0);
 
     // values set by setHIL function
     last_update = hal.scheduler->micros();      // record time of update
