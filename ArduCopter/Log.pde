@@ -58,6 +58,7 @@ print_log_menu(void)
     return(true);
 }
 
+#if CLI_ENABLED == ENABLED
 static int8_t
 dump_log(uint8_t argc, const Menu::arg *argv)
 {
@@ -86,6 +87,7 @@ dump_log(uint8_t argc, const Menu::arg *argv)
     Log_Read((uint16_t)dump_log, dump_log_start, dump_log_end);
     return (0);
 }
+#endif
 
 static int8_t
 erase_logs(uint8_t argc, const Menu::arg *argv)
