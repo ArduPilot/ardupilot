@@ -704,6 +704,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "ERR",   "BB",         "Subsys,ECode" },
 };
 
+#if CLI_ENABLED == ENABLED
 // Read the DataFlash log memory
 static void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page)
 {
@@ -721,6 +722,7 @@ static void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page)
                              print_flight_mode,
                              cliSerial);
 }
+#endif // CLI_ENABLED
 
 // start a new log
 static void start_logging() 
