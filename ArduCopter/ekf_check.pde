@@ -114,8 +114,6 @@ void ekf_check()
 // failsafe_ekf_event - perform ekf failsafe
 static void failsafe_ekf_event()
 {
-    uint32_t last_gps_update_ms;
-
     // return immediately if ekf failsafe already triggered or disabled
     if (failsafe.ekf || g.ekfcheck_thresh <= 0.0f) {
         return;
