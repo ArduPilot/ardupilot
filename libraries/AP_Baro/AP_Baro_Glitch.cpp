@@ -42,9 +42,16 @@ const AP_Param::GroupInfo Baro_Glitch::var_info[] PROGMEM = {
 
 // constuctor
 Baro_Glitch::Baro_Glitch(AP_Baro &baro) :
-    _baro(baro)
+    _baro(baro),
+    _last_good_update(0),
+    _last_good_alt(0),
+    _last_good_vel(0.0f)
 {
     AP_Param::setup_object_defaults(this, var_info);
+
+    // initialise flags
+    _flags.initialised = 0;
+    _flags.glitching = 0;
 }
 
 // check_alt - checks latest baro altitude against last know alt, velocity and maximum acceleration and updates glitching flag
