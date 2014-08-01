@@ -38,7 +38,7 @@ public:
                         AP_HAL::BetterStream *port);
     void DumpPageInfo(AP_HAL::BetterStream *port);
     void ShowDeviceInfo(AP_HAL::BetterStream *port);
-    void ListAvailableLogs(AP_HAL::BetterStream *port)
+    void ListAvailableLogs(AP_HAL::BetterStream *port);
 #endif
 
 private:
