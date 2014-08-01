@@ -584,10 +584,12 @@ static struct   Location current_loc;
 ////////////////////////////////////////////////////////////////////////////////
 // Navigation Roll/Pitch functions
 ////////////////////////////////////////////////////////////////////////////////
+#if OPTFLOW == ENABLED
 // The Commanded ROll from the autopilot based on optical flow sensor.
 static int32_t of_roll;
 // The Commanded pitch from the autopilot based on optical flow sensor. negative Pitch means go forward.
 static int32_t of_pitch;
+#endif // OPTFLOW == ENABLED
 
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -65,9 +65,11 @@ static bool set_mode(uint8_t mode)
             success = rtl_init(ignore_checks);
             break;
 
+#if OPTFLOW == ENABLED
         case OF_LOITER:
             success = ofloiter_init(ignore_checks);
             break;
+#endif
 
         case DRIFT:
             success = drift_init(ignore_checks);
@@ -169,9 +171,11 @@ static void update_flight_mode()
             rtl_run();
             break;
 
+#if OPTFLOW == ENABLED
         case OF_LOITER:
             ofloiter_run();
             break;
+#endif
 
         case DRIFT:
             drift_run();

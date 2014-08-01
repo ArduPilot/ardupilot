@@ -4,10 +4,11 @@
  * control_ofloiter.pde - init and run calls for of_loiter (optical flow loiter) flight mode
  */
 
+#if OPTFLOW == ENABLED
+
 // ofloiter_init - initialise ofloiter controller
 static bool ofloiter_init(bool ignore_checks)
 {
-#if OPTFLOW == ENABLED
     if (g.optflow_enabled || ignore_checks) {
 
         // initialize vertical speed and acceleration
@@ -21,9 +22,6 @@ static bool ofloiter_init(bool ignore_checks)
     }else{
         return false;
     }
-#else
-    return false;
-#endif
 }
 
 // ofloiter_run - runs the optical flow loiter controller
@@ -97,7 +95,6 @@ static void ofloiter_run()
 // calculate modified roll/pitch depending upon optical flow calculated position
 static int32_t get_of_roll(int32_t input_roll)
 {
-#if OPTFLOW == ENABLED
     static float tot_x_cm = 0;      // total distance from target
     static uint32_t last_of_roll_update = 0;
     int32_t new_roll = 0;
@@ -131,14 +128,10 @@ static int32_t get_of_roll(int32_t input_roll)
     of_roll = constrain_int32(of_roll, -1000, 1000);
 
     return input_roll+of_roll;
-#else
-    return input_roll;
-#endif
 }
 
 static int32_t get_of_pitch(int32_t input_pitch)
 {
-#if OPTFLOW == ENABLED
     static float tot_y_cm = 0;  // total distance from target
     static uint32_t last_of_pitch_update = 0;
     int32_t new_pitch = 0;
@@ -173,9 +166,6 @@ static int32_t get_of_pitch(int32_t input_pitch)
     of_pitch = constrain_int32(of_pitch, -1000, 1000);
 
     return input_pitch+of_pitch;
-#else
-    return input_pitch;
-#endif
 }
 
 // reset_optflow_I - reset optflow position hold I terms
@@ -186,3 +176,5 @@ static void reset_optflow_I(void)
     of_roll = 0;
     of_pitch = 0;
 }
+
+#endif // OPTFLOW == ENABLED
