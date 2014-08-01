@@ -102,7 +102,6 @@ static void flip_stop()
 // should be called at 100hz or more
 static void flip_run()
 {
-    const Vector3f curr_ef_targets = attitude_control.angle_ef_targets();   // original earth-frame angle targets to recover
     int16_t throttle_out;
 
     // if pilot inputs roll > 40deg or timeout occurs abandon flip
