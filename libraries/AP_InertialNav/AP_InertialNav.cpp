@@ -121,16 +121,6 @@ void AP_InertialNav::update(float dt)
 // XY Axis specific methods
 //
 
-// set time constant - set timeconstant used by complementary filter
-void AP_InertialNav::set_time_constant_xy( float time_constant_in_seconds )
-{
-    // ensure it's a reasonable value
-    if (time_constant_in_seconds > 0.0f && time_constant_in_seconds < 30.0f) {
-        _time_constant_xy = time_constant_in_seconds;
-        update_gains();
-    }
-}
-
 // position_ok - return true if position has been initialised and have received gps data within 3 seconds
 bool AP_InertialNav::position_ok() const
 {
@@ -302,16 +292,6 @@ float AP_InertialNav::get_velocity_xy() const
 //
 // Z Axis methods
 //
-
-// set time constant - set timeconstant used by complementary filter
-void AP_InertialNav::set_time_constant_z( float time_constant_in_seconds )
-{
-    // ensure it's a reasonable value
-    if (time_constant_in_seconds > 0.0f && time_constant_in_seconds < 30.0f) {
-        _time_constant_z = time_constant_in_seconds;
-        update_gains();
-    }
-}
 
 // check_baro - check if new baro readings have arrived and use them to correct vertical accelerometer offsets
 void AP_InertialNav::check_baro()

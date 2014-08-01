@@ -75,16 +75,6 @@ public:
     //
 
     /**
-     * set_time_constant_xy - sets time constant used by complementary filter for horizontal position estimate
-     *
-     * smaller values means higher influence of gps on position estimation
-     * bigger values favor the integrated accelerometer data for position estimation
-     *
-     * @param time_constant_in_seconds : constant in seconds; 0 < constant < 30 must hold
-     */
-    void        set_time_constant_xy( float time_constant_in_seconds );
-
-    /**
      * position_ok - true if inertial based altitude and position can be trusted
      * @return
      */
@@ -156,16 +146,6 @@ public:
     //
     // Z Axis methods
     //
-
-    /**
-     * set_time_constant_z - sets timeconstant used by complementary filter for vertical position estimation
-     *
-     * smaller values means higher influence of barometer in altitude estimation
-     * bigger values favor the integrated accelerometer data for altitude estimation
-     *
-     * @param time_constant_in_seconds : constant in s; 0 < constant < 30 must hold
-     */
-    void        set_time_constant_z( float time_constant_in_seconds );
 
     /**
      * altitude_ok - returns true if inertial based altitude and position can be trusted
@@ -256,11 +236,6 @@ protected:
 
     /**
      * update gains from time constant.
-     *
-     * The time constants (in s) can be set with the following methods:
-     *
-     * @see: AP_InertialNav::set_time_constant_xy(float)
-     * @see: AP_InertialNav::set_time_constant_z(float)
      */
     void                    update_gains();
 
