@@ -161,6 +161,22 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0 2
     GSCALAR(onoff_pitch_mintime,   "ONOFF_PITCH_MINT", 0.1f),
 
+    // @Param: YAW_TRIM
+    // @DisplayName: Yaw trim
+    // @Description: Amount of extra yaw to add when tracking. This allows for small adjustments for an out of trim compass.
+    // @Units: degrees
+    // @Increment: 0.1
+    // @Range: -10 10
+    GSCALAR(yaw_trim,              "YAW_TRIM", 0),
+
+    // @Param: PITCH_TRIM
+    // @DisplayName: Pitch trim
+    // @Description: Amount of extra pitch to add when tracking. This allows for small adjustments for a badly calibrated barometer.
+    // @Units: degrees
+    // @Increment: 0.1
+    // @Range: -10 10
+    GSCALAR(pitch_trim,              "PITCH_TRIM", 0),
+
     // barometer ground calibration. The GND_ prefix is chosen for
     // compatibility with previous releases of ArduPlane
     // @Group: GND_

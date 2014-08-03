@@ -86,6 +86,8 @@ public:
         k_param_onoff_pitch_rate,
         k_param_onoff_yaw_mintime,
         k_param_onoff_pitch_mintime,
+        k_param_yaw_trim,
+        k_param_pitch_trim,
 
         k_param_channel_yaw = 200,
         k_param_channel_pitch,
@@ -128,6 +130,8 @@ public:
     AP_Float onoff_pitch_rate;
     AP_Float onoff_yaw_mintime;
     AP_Float onoff_pitch_mintime;
+    AP_Float yaw_trim;
+    AP_Float pitch_trim;
 
     // Waypoints
     //

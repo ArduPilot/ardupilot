@@ -254,16 +254,16 @@ static void update_yaw_onoff_servo(float yaw)
 /**
    update the yaw (azimuth) servo. 
  */
-static void update_yaw_servo(float pitch)
+static void update_yaw_servo(float yaw)
 {
     switch ((enum ServoType)g.servo_type.get()) {
     case SERVO_TYPE_ONOFF:
-        update_yaw_onoff_servo(pitch);
+        update_yaw_onoff_servo(yaw);
         break;
 
     case SERVO_TYPE_POSITION:
     default:
-        update_yaw_position_servo(pitch);
+        update_yaw_position_servo(yaw);
         break;
     }
     channel_yaw.calc_pwm();
@@ -280,8 +280,10 @@ static void update_auto(void)
         hal.scheduler->millis() - start_time_ms < g.startup_delay*1000) {
         return;
     }
-    update_pitch_servo(nav_status.pitch);
-    update_yaw_servo(nav_status.bearing);
+    float yaw = wrap_180_cd((nav_status.bearing+g.yaw_trim)*100) * 0.01f;
+    float pitch = constrain_float(nav_status.pitch+g.pitch_trim, -90, 90);
+    update_pitch_servo(pitch);
+    update_yaw_servo(yaw);
 }
 
 
