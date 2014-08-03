@@ -100,6 +100,9 @@ static void init_tracker()
         // for some servos)
         prepare_servos();
     }
+
+    // calibrate pressure on startup by default
+    nav_status.need_altitude_calibration = true;
 }
 
 // Level the tracker by calibrating the INS
