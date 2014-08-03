@@ -33,9 +33,9 @@ class Tracker(Aircraft):
         self.pitch_current = 0
         self.yaw_current = 0
 
-    def slew_limit(self, current, target, range, delta_time):
+    def slew_limit(self, current, target, range, delta_time, turn_rate):
         '''limit speed of servo movement'''
-        dangle = self.turn_rate * delta_time
+        dangle = turn_rate * delta_time
         dv = dangle / range
         if target - current > dv:
             return current + dv
@@ -44,11 +44,11 @@ class Tracker(Aircraft):
         return target
 
 
-    def update_position_servos(self, state):
+    def update_position_servos(self, state, delta_time):
         '''update function for position (normal) servos.
         Returns (yaw_rate,pitch_rate) tuple'''
-        self.pitch_current = self.slew_limit(self.pitch_current, state.pitch_input, self.pitch_range, delta_time)
-        self.yaw_current = self.slew_limit(self.yaw_current, state.yaw_input, self.yaw_range, delta_time)
+        self.pitch_current = self.slew_limit(self.pitch_current, state.pitch_input, self.pitch_range, delta_time, self.yawrate)
+        self.yaw_current = self.slew_limit(self.yaw_current, state.yaw_input, self.yaw_range, delta_time, self.pitchrate)
 
         pitch_target = self.zero_pitch + self.pitch_current*self.pitch_range
         yaw_target = self.zero_yaw + self.yaw_current*self.yaw_range
@@ -61,8 +61,8 @@ class Tracker(Aircraft):
         roll_current = degrees(r)
 
         pitch_rate = pitch_target - pitch_current
-        pitch_rate = min(self.turn_rate, pitch_rate)
-        pitch_rate = max(-self.turn_rate, pitch_rate)
+        pitch_rate = min(self.pitchrate, pitch_rate)
+        pitch_rate = max(-self.pitchrate, pitch_rate)
 
         yaw_diff = yaw_target - yaw_current
         if yaw_diff > 180:
@@ -70,8 +70,8 @@ class Tracker(Aircraft):
         if yaw_diff < -180:
             yaw_diff += 360            
         yaw_rate = yaw_diff
-        yaw_rate = min(self.turn_rate, yaw_rate)
-        yaw_rate = max(-self.turn_rate, yaw_rate)
+        yaw_rate = min(self.yawrate, yaw_rate)
+        yaw_rate = max(-self.yawrate, yaw_rate)
 
         return (yaw_rate, pitch_rate)
 
@@ -103,7 +103,7 @@ class Tracker(Aircraft):
         if self.onoff:
             (yaw_rate,pitch_rate) = self.update_onoff_servos(state)
         else:
-            (yaw_rate,pitch_rate) = self.update_position_servos(state)
+            (yaw_rate,pitch_rate) = self.update_position_servos(state, delta_time)
 
         # implement yaw and pitch limits
         (r,p,y) = self.dcm.to_euler()
@@ -126,10 +126,10 @@ class Tracker(Aircraft):
 
         if time.time() - self.last_debug > 2 and not self.onoff:
             self.last_debug = time.time()
-            print("roll=%.1f/%.1f pitch=%.1f/%.1f yaw=%.1f/%.1f rates=%.1f/%.1f/%.1f" % (
+            print("roll=%.1f/%.1f pitch=%.1f yaw=%.1f rates=%.1f/%.1f/%.1f" % (
                 roll_current, 0,
-                pitch_current, pitch_target,
-                yaw_current, yaw_target,
+                pitch_current, 
+                yaw_current, 
                 roll_rate, pitch_rate, yaw_rate))
 
         self.gyro = Vector3(radians(roll_rate),radians(pitch_rate),radians(yaw_rate))
