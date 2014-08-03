@@ -634,3 +634,14 @@ static void telemetry_send(void)
                                 (AP_Frsky_Telem::FrSkyProtocol)g.serial2_protocol.get());
 #endif
 }
+
+
+/*
+  return throttle percentage from 0 to 100
+ */
+static uint8_t throttle_percentage(void)
+{
+    // to get the real throttle we need to use norm_output() which
+    // returns a number from -1 to 1.
+    return constrain_int16(50*(channel_throttle->norm_output()+1), 0, 100);
+}

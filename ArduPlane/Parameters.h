@@ -118,6 +118,7 @@ public:
         k_param_sonar,
         k_param_terrain,
         k_param_terrain_follow,
+        k_param_stab_pitch_down_cd,
 
         // 100: Arming parameters
         k_param_arming = 100,
@@ -324,6 +325,7 @@ public:
     AP_Float kff_throttle_to_pitch;
     AP_Float ground_steer_alt;
     AP_Int16 ground_steer_dps;
+    AP_Int16 stab_pitch_down_cd;
 
     // speed used for speed scaling
     AP_Float scaling_speed;

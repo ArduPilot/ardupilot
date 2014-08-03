@@ -1280,6 +1280,7 @@ static void update_flight_mode(void)
         } else {
             nav_pitch_cd = -(pitch_input * pitch_limit_min_cd);
         }
+        adjust_nav_pitch_throttle();
         nav_pitch_cd = constrain_int32(nav_pitch_cd, pitch_limit_min_cd, aparm.pitch_limit_max_cd.get());
         if (fly_inverted()) {
             nav_pitch_cd = -nav_pitch_cd;
