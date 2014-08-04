@@ -34,7 +34,7 @@ static int32_t read_barometer(void)
         if (baro_glitch.glitching()) {
             Log_Write_Error(ERROR_SUBSYSTEM_BARO, ERROR_CODE_BARO_GLITCH);
         } else {
-            Log_Write_Error(ERROR_SUBSYSTEM_GPS, ERROR_CODE_ERROR_RESOLVED);
+            Log_Write_Error(ERROR_SUBSYSTEM_BARO, ERROR_CODE_ERROR_RESOLVED);
         }
         AP_Notify::flags.baro_glitching = report_baro_glitch;
     }
