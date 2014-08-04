@@ -195,10 +195,11 @@ void AC_PosControl::init_takeoff()
 
     _pos_target.z = curr_pos.z + POSCONTROL_TAKEOFF_JUMP_CM;
 
-    // clear i term from acceleration controller
-    if (_pid_alt_accel.get_integrator() < 0) {
-        _pid_alt_accel.reset_I();
-    }
+    // freeze feedforward to avoid jump
+    freeze_ff_z();
+
+    // shift difference between last motor out and hover throttle into accelerometer I
+    _pid_alt_accel.set_integrator(_motors.get_throttle_out()-_throttle_hover);
 }
 
 // is_active_z - returns true if the z-axis position controller has been run very recently
