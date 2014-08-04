@@ -273,7 +273,7 @@ static void do_takeoff(const AP_Mission::Mission_Command& cmd)
 {
     set_next_WP(cmd.content.location);
     // pitch in deg, airspeed  m/s, throttle %, track WP 1 or 0
-    auto_state.takeoff_pitch_cd        = (int)cmd.p1 * 100;
+    auto_state.takeoff_pitch_cd        = (int16_t)cmd.p1 * 100;
     auto_state.takeoff_altitude_cm     = next_WP_loc.alt;
     next_WP_loc.lat = home.lat + 10;
     next_WP_loc.lng = home.lng + 10;
