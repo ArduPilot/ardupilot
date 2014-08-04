@@ -100,8 +100,8 @@ static void update_thr_cruise()
     if (throttle > g.throttle_min && abs(climb_rate) < 60 && labs(ahrs.roll_sensor) < 500 && labs(ahrs.pitch_sensor) < 500) {
         throttle_avg = throttle_avg * 0.99f + (float)throttle * 0.01f;
         g.throttle_cruise = throttle_avg;
-    // update position controller
-    pos_control.set_throttle_hover(throttle_avg);
+        // update position controller
+        pos_control.set_throttle_hover(throttle_avg);
     }
 }
 
