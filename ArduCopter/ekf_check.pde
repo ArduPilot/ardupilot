@@ -12,7 +12,7 @@
 #endif
 
 #ifndef EKF_CHECK_COMPASS_INAV_CONVERSION
- # define EKF_CHECK_COMPASS_INAV_CONVERSION 0.01f  // converts the inertial nav's acceleration corrections to a form that is comparable to the ekf variance
+ # define EKF_CHECK_COMPASS_INAV_CONVERSION 0.0075f // converts the inertial nav's acceleration corrections to a form that is comparable to the ekf variance
 #endif
 
 #ifndef EKF_CHECK_WARNING_TIME
