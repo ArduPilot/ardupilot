@@ -193,6 +193,7 @@ enum AutoMode {
 
 // Guided modes
 enum GuidedMode {
+    Guided_TakeOff,
     Guided_WP,
     Guided_Velocity
 };
