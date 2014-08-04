@@ -97,9 +97,9 @@ def convert_gpx():
     return True
 
 
-def test_prerequesites():
+def test_prerequisites():
     '''check we have the right directories and tools to run tests'''
-    print("Testing prerequesites")
+    print("Testing prerequisites")
     util.mkdir_p(util.reltopdir('../buildlogs'))
     return True
 
