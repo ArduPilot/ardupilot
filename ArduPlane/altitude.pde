@@ -74,12 +74,12 @@ static void setup_glide_slope(void)
         break;
 
     case AUTO:
-        // we only do glide slide handling in AUTO when above 40m or
-        // when descending. The 40 meter threshold is arbitrary, and
+        // we only do glide slide handling in AUTO when above 20m or
+        // when descending. The 20 meter threshold is arbitrary, and
         // is basically to prevent situations where we try to slowly
         // gain height at low altitudes, potentially hitting
         // obstacles.
-        if (relative_altitude() > 40 || above_location_current(next_WP_loc)) {
+        if (relative_altitude() > 20 || above_location_current(next_WP_loc)) {
             set_offset_altitude_location(next_WP_loc);
         } else {
             reset_offset_altitude();
