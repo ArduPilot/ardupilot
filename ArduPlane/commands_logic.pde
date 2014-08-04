@@ -250,10 +250,10 @@ static bool verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
 
 static void do_RTL(void)
 {
-    control_mode    = RTL;
     prev_WP_loc = current_loc;
     next_WP_loc = rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude());
     setup_terrain_target_alt(next_WP_loc);
+    set_target_altitude_location(next_WP_loc);
 
     if (g.loiter_radius < 0) {
         loiter.direction = -1;

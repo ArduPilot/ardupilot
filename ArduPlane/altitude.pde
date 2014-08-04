@@ -349,11 +349,15 @@ static bool above_location_current(const Location &loc)
         if (!loc.flags.relative_alt) {
             loc_alt -= home.alt*0.01f;
         }
-        return terrain_alt > loc.alt;
+        return terrain_alt > loc_alt;
     }
 #endif
 
-    return current_loc.alt > loc.alt;
+    float loc_alt_cm = loc.alt;
+    if (!loc.flags.relative_alt) {
+        loc_alt_cm -= home.alt;
+    }
+    return current_loc.alt > loc_alt_cm;
 }
 
 /*
