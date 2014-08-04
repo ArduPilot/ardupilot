@@ -521,11 +521,15 @@ static struct {
 ////////////////////////////////////////////////////////////////////////////////
 static struct {
     // Flag for using gps ground course instead of INS yaw.  Set false when takeoff command in process.
-    bool takeoff_complete;
+    bool takeoff_complete:1;
 
     // Flag to indicate if we have landed.
     // Set land_complete if we are within 2 seconds distance or within 3 meters altitude of touchdown
-    bool land_complete;
+    bool land_complete:1;
+
+    // should we fly inverted?
+    bool inverted_flight:1;
+
     // Altitude threshold to complete a takeoff command in autonomous modes.  Centimeters
     int32_t takeoff_altitude_cm;
 
@@ -541,18 +545,15 @@ static struct {
 
     // turn angle for next leg of mission
     float next_turn_angle;
-
-    // should we fly inverted?
-    bool inverted_flight;
 } auto_state = {
     takeoff_complete : true,
     land_complete : false,
+    inverted_flight  : false,
     takeoff_altitude_cm : 0,
     takeoff_pitch_cd : 0,
     highest_airspeed : 0,
     initial_pitch_cd : 0,
-    next_turn_angle  : 90.0f,
-    inverted_flight  : false
+    next_turn_angle  : 90.0f
 };
 
 // true if we are in an auto-throttle mode, which means
