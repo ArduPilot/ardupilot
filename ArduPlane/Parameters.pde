@@ -113,6 +113,15 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(stab_pitch_down_cd, "STAB_PITCH_DN_CD",   200),
 
+    // @Param: GLIDE_SLOPE_MIN
+    // @DisplayName: Glide slope threshold
+    // @Description: This controls the minimum altitude change for a waypoint before a glide slope will be used instead of an immediate altitude change. The default value is 15 meters, which helps to smooth out waypoint missions where small altitude changes happen near waypoints. If you don't want glide slopes to be used in missions then you can set this to zero, which will disable glide slope calculations. Otherwise you can set it to a minimum number of meters of altitude error to the destination waypoint before a glide slope will be used to change altitude.
+    // @Range: 0 1000
+    // @Increment: 1
+    // @Units: meters
+    // @User: Advanced
+    GSCALAR(glide_slope_threshold, "GLIDE_SLOPE_MIN", 15),
+
     // @Param: STICK_MIXING
     // @DisplayName: Stick Mixing
     // @Description: When enabled, this adds user stick input to the control surfaces in auto modes, allowing the user to have some degree of flight control without changing modes.  There are two types of stick mixing available. If you set STICK_MIXING to 1 then it will use "fly by wire" mixing, which controls the roll and pitch in the same way that the FBWA mode does. This is the safest option if you usually fly ArduPlane in FBWA or FBWB mode. If you set STICK_MIXING to 2 then it will enable direct mixing mode, which is what the STABILIZE mode uses. That will allow for much more extreme maneuvers while in AUTO mode.

@@ -1392,10 +1392,14 @@ static void update_navigation()
     }
 }
 
-static void update_flight_stage(AP_SpdHgtControl::FlightStage fs) {
+/*
+  set the flight stage
+ */
+static void set_flight_stage(AP_SpdHgtControl::FlightStage fs) 
+{
     //if just now entering land flight stage
     if (fs == AP_SpdHgtControl::FLIGHT_LAND_APPROACH &&
-            flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
+        flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
 
 #if GEOFENCE_ENABLED == ENABLED 
         if (g.fence_autoenable == 1) {
@@ -1406,7 +1410,6 @@ static void update_flight_stage(AP_SpdHgtControl::FlightStage fs) {
             }
         }
 #endif
-
     }
     
     flight_stage = fs;
@@ -1421,21 +1424,29 @@ static void update_alt()
 
     geofence_check(true);
 
+    update_flight_stage();
+}
+
+/*
+  recalculate the flight_stage
+ */
+static void update_flight_stage(void)
+{
     // Update the speed & height controller states
     if (auto_throttle_mode && !throttle_suppressed) {        
         if (control_mode==AUTO) {
             if (auto_state.takeoff_complete == false) {
-                update_flight_stage(AP_SpdHgtControl::FLIGHT_TAKEOFF);
+                set_flight_stage(AP_SpdHgtControl::FLIGHT_TAKEOFF);
             } else if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND && 
                        auto_state.land_complete == true) {
-                update_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_FINAL);
+                set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_FINAL);
             } else if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
-                update_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_APPROACH); 
+                set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_APPROACH); 
             } else {
-                update_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);
+                set_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);
             }
         } else {
-            update_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);
+            set_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);
         }
 
         SpdHgt_Controller->update_pitch_throttle(relative_target_altitude_cm(),

@@ -119,6 +119,7 @@ public:
         k_param_terrain,
         k_param_terrain_follow,
         k_param_stab_pitch_down_cd,
+        k_param_glide_slope_threshold,
 
         // 100: Arming parameters
         k_param_arming = 100,
@@ -452,6 +453,7 @@ public:
 #if AP_TERRAIN_AVAILABLE
     AP_Int8 terrain_follow;
 #endif
+    AP_Int16 glide_slope_threshold;
 
     // RC channels
     RC_Channel rc_1;

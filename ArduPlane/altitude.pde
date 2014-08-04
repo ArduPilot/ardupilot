@@ -325,13 +325,17 @@ static void set_offset_altitude_location(const Location &loc)
     }
 #endif
 
-    // if we are within 15 meters of the target altitude then reset
-    // the offset to not use a glide slope. This allows for more
-    // accurate flight of missions where the aircraft may lose or gain
-    // a bit of altitude near waypoint turn points due to local
-    // terrain changes
-    if (labs(target_altitude.offset_cm) < 1500) {
-        target_altitude.offset_cm = 0;
+    if (flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH &&
+        flight_stage != AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
+        // if we are within GLIDE_SLOPE_MIN meters of the target altitude
+        // then reset the offset to not use a glide slope. This allows for
+        // more accurate flight of missions where the aircraft may lose or
+        // gain a bit of altitude near waypoint turn points due to local
+        // terrain changes
+        if (g.glide_slope_threshold <= 0 ||
+            labs(target_altitude.offset_cm)*0.01f < g.glide_slope_threshold) {
+            target_altitude.offset_cm = 0;
+        }
     }
 }
 

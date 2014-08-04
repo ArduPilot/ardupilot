@@ -79,6 +79,7 @@ static void set_guided_WP(void)
     // -----------------------------------------------
     set_target_altitude_current();
 
+    update_flight_stage();
     setup_glide_slope();
     setup_turn_angle();
 

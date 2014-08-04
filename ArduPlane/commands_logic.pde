@@ -261,6 +261,7 @@ static void do_RTL(void)
         loiter.direction = 1;
     }
 
+    update_flight_stage();
     setup_glide_slope();
     setup_turn_angle();
 
@@ -643,6 +644,7 @@ static void exit_mission_callback()
             rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude());
         auto_rtl_command.id = MAV_CMD_NAV_LOITER_UNLIM;
         setup_terrain_target_alt(auto_rtl_command.content.location);
+        update_flight_stage();
         setup_glide_slope();
         setup_turn_angle();
         start_command(auto_rtl_command);
