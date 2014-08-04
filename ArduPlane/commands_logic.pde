@@ -250,6 +250,8 @@ static bool verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
 
 static void do_RTL(void)
 {
+    auto_state.next_wp_no_crosstrack = true;
+    auto_state.no_crosstrack = true;
     prev_WP_loc = current_loc;
     next_WP_loc = rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude());
     setup_terrain_target_alt(next_WP_loc);
@@ -358,13 +360,18 @@ static bool verify_takeoff()
         }
 #endif
 
+        // don't cross-track on completion of takeoff, as otherwise we
+        // can end up doing too sharp a turn
+        auto_state.next_wp_no_crosstrack = true;
         return true;
     } else {
         return false;
     }
 }
 
-// we are executing a landing
+/*
+  update navigation for landing
+ */
 static bool verify_land()
 {
     // we don't 'verify' landing in the sense that it never completes,
@@ -412,11 +419,19 @@ static bool verify_land()
     return false;
 }
 
+/*
+  update navigation for normal mission waypoints. Return true when the
+  waypoint is complete
+ */
 static bool verify_nav_wp()
 {
     steer_state.hold_course_cd = -1;
 
-    nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
+    if (auto_state.no_crosstrack) {
+        nav_controller->update_waypoint(current_loc, next_WP_loc);
+    } else {
+        nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
+    }
 
     // see if the user has specified a maximum distance to waypoint
     if (g.waypoint_max_radius > 0 && wp_distance > (uint16_t)g.waypoint_max_radius) {

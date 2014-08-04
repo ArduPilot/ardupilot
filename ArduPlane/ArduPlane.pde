@@ -530,6 +530,12 @@ static struct {
     // should we fly inverted?
     bool inverted_flight:1;
 
+    // should we disable cross-tracking for the next waypoint?
+    bool next_wp_no_crosstrack:1;
+
+    // should we use cross-tracking for this waypoint?
+    bool no_crosstrack:1;
+
     // Altitude threshold to complete a takeoff command in autonomous modes.  Centimeters
     int32_t takeoff_altitude_cm;
 
@@ -549,6 +555,8 @@ static struct {
     takeoff_complete : true,
     land_complete : false,
     inverted_flight  : false,
+    next_wp_no_crosstrack : true,
+    no_crosstrack : true,
     takeoff_altitude_cm : 0,
     takeoff_pitch_cd : 0,
     highest_airspeed : 0,

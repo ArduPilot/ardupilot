@@ -290,6 +290,9 @@ static void set_mode(enum FlightMode mode)
     // cancel inverted flight
     auto_state.inverted_flight = false;
 
+    // don't cross-track when starting a mission
+    auto_state.next_wp_no_crosstrack = true;
+
     // set mode
     previous_mode = control_mode;
     control_mode = mode;

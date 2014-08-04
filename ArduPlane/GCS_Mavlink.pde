@@ -1208,6 +1208,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_MISSION_SET_CURRENT:
     {
+        // disable cross-track when user asks for WP change, to
+        // prevent unexpected flight paths
+        auto_state.next_wp_no_crosstrack = true;
         handle_mission_set_current(mission, msg);
         if (control_mode == AUTO && mission.state() == AP_Mission::MISSION_STOPPED) {
             mission.resume();
