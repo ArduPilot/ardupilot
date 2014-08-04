@@ -103,7 +103,7 @@ public:
     void                set_throttle(int16_t throttle_in) { _rc_throttle.servo_out = throttle_in; };    // range 0 ~ 1000
 
     // get_throttle_out - returns throttle sent to motors in the range 0 ~ 1000
-    int16_t             get_throttle_out() { return _rc_throttle.servo_out; }
+    int16_t             get_throttle_out() const { return _rc_throttle.servo_out; }
 
     // output - sends commands to the motors
     void                output();
