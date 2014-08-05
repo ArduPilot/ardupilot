@@ -51,7 +51,7 @@ ARM_CXX     :=  $(call FIND_TOOL,arm-none-eabi-g++)
 ARM_CC      :=  $(call FIND_TOOL,arm-none-eabi-gcc)
 ARM_AS      :=  $(call FIND_TOOL,arm-none-eabi-gcc)
 ARM_AR      :=  $(call FIND_TOOL,arm-none-eabi-ar)
-ARM_LD      :=  $(call FIND_TOOL,arm-none-eabi-g++)
+ARM_LD      :=  $(call FIND_TOOL,arm-none-eabi-gcc)
 ARM_GDB     :=  $(call FIND_TOOL,arm-none-eabi-gdb)
 ARM_OBJCOPY :=  $(call FIND_TOOL,arm-none-eabi-objcopy)
 

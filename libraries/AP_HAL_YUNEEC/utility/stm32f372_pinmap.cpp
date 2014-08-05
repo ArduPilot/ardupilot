@@ -1,7 +1,8 @@
 #include "pinmap_typedef.h"
+
 #include <libopencm3/stm32/gpio.h>
 
-enum HAVE_PINS {NONE, HAVE};
+enum HAVE_PINS {NONE = 0, HAVE = 1};
 
 #define PINS_NUM	96
 
@@ -35,7 +36,7 @@ uint32_t get_port(uint8_t pin)
 			break;
 		case PD0 ... PD15: return GPIOD;
 			break;
-		case PE0 ... PE5: return GPIOE;
+		case PE0 ... PE15: return GPIOE;
 			break;
 		case PF0 ... PF15: return GPIOF;
 			break;
@@ -49,5 +50,5 @@ uint16_t get_bit(uint8_t pin)
 	if(!have_this_pin(pin))
 		return 0;
 	else
-		return (uint16_t)(pin % 16);
+		return (uint16_t)(1 << (pin % 16));
 }

@@ -92,12 +92,6 @@ ifneq ($(findstring vrhero, $(MAKECMDGOALS)),)
 BUILDROOT		:=	$(SKETCHBOOK)/Build.$(SKETCH)
 endif
 
-ifneq ($(findstring yuneec, $(MAKECMDGOALS)),)
-# when building yuneec we need all sources to be inside the sketchbook directory
-# as the NuttX build system relies on it
-BUILDROOT		:=	$(SKETCHBOOK)/Build.$(SKETCH)
-endif
-
 ifeq ($(BUILDROOT),)
 BUILDROOT		:=	$(abspath $(TMPDIR)/$(SKETCH).build)
 endif
