@@ -329,6 +329,34 @@ void AC_AttitudeControl::rate_bf_roll_pitch_yaw(float roll_rate_bf, float pitch_
 {
     Vector3f    angle_ef_error;
 
+    float rate_change, rate_change_limit;
+
+    // update the rate feed forward with angular acceleration limits
+    if (_accel_rp_max > 0.0f) {
+    	rate_change_limit = _accel_rp_max * _dt;
+
+    	rate_change = roll_rate_bf - _rate_bf_desired.x;
+    	rate_change = constrain_float(rate_change, -rate_change_limit, rate_change_limit);
+    	_rate_bf_desired.x += rate_change;
+
+    	rate_change = pitch_rate_bf - _rate_bf_desired.y;
+    	rate_change = constrain_float(rate_change, -rate_change_limit, rate_change_limit);
+    	_rate_bf_desired.y += rate_change;
+    } else {
+    	_rate_bf_desired.x = roll_rate_bf;
+    	_rate_bf_desired.y = pitch_rate_bf;
+    }
+
+    if (_accel_y_max > 0.0f) {
+        rate_change_limit = _accel_y_max * _dt;
+
+        rate_change = yaw_rate_bf - _rate_bf_desired.z;
+        rate_change = constrain_float(rate_change, -rate_change_limit, rate_change_limit);
+        _rate_bf_desired.z += rate_change;
+    } else {
+    	_rate_bf_desired.z = yaw_rate_bf;
+    }
+
     // Update angle error
     if (labs(_ahrs.pitch_sensor)<_acro_angle_switch) {
         _acro_angle_switch = 6000;
@@ -363,34 +391,6 @@ void AC_AttitudeControl::rate_bf_roll_pitch_yaw(float roll_rate_bf, float pitch_
 
     // convert body-frame angle errors to body-frame rate targets
     update_rate_bf_targets();
-
-    float rate_change, rate_change_limit;
-
-    // update the rate feed forward with angular acceleration limits 
-    if (_accel_rp_max > 0.0f) {
-    	rate_change_limit = _accel_rp_max * _dt;
-
-    	rate_change = roll_rate_bf - _rate_bf_desired.x;
-    	rate_change = constrain_float(rate_change, -rate_change_limit, rate_change_limit);
-    	_rate_bf_desired.x += rate_change;
-    
-    	rate_change = pitch_rate_bf - _rate_bf_desired.y;
-    	rate_change = constrain_float(rate_change, -rate_change_limit, rate_change_limit);
-    	_rate_bf_desired.y += rate_change;
-    } else {
-    	_rate_bf_desired.x = roll_rate_bf;
-    	_rate_bf_desired.y = pitch_rate_bf;
-    }
-
-    if (_accel_y_max > 0.0f) {
-        rate_change_limit = _accel_y_max * _dt;
-
-        rate_change = yaw_rate_bf - _rate_bf_desired.z;
-        rate_change = constrain_float(rate_change, -rate_change_limit, rate_change_limit);
-        _rate_bf_desired.z += rate_change;
-    } else {
-    	_rate_bf_desired.z = yaw_rate_bf;
-    }
 
     // body-frame rate commands added
     _rate_bf_target += _rate_bf_desired;
