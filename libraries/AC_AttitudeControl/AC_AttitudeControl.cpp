@@ -536,8 +536,8 @@ void AC_AttitudeControl::update_rate_bf_targets()
         _rate_bf_target.z = constrain_float(_rate_bf_target.z,-_angle_rate_y_max,_angle_rate_y_max);
     }
 
-	_rate_bf_target.x += -_angle_bf_error.y * _ahrs.get_gyro().z;
-	_rate_bf_target.y +=  _angle_bf_error.x * _ahrs.get_gyro().z;
+	_rate_bf_target.x += _angle_bf_error.y * _ahrs.get_gyro().z;
+	_rate_bf_target.y += -_angle_bf_error.x * _ahrs.get_gyro().z;
 }
 
 //
