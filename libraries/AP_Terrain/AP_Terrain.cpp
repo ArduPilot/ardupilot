@@ -19,6 +19,7 @@
 #include <AP_Math.h>
 #include <GCS_MAVLink.h>
 #include <GCS.h>
+#include <DataFlash.h>
 #include "AP_Terrain.h"
 
 #if AP_TERRAIN_AVAILABLE
@@ -279,6 +280,42 @@ enum AP_Terrain::TerrainStatus AP_Terrain::status(void)
         return TerrainStatusUnhealthy;        
     }
     return TerrainStatusOK; 
+}
+
+/*
+  log terrain data to dataflash log
+ */
+void AP_Terrain::log_terrain_data(DataFlash_Class &dataflash)
+{
+    if (!enable) {
+        return;
+    }
+    Location loc;
+    if (!ahrs.get_position(loc)) {
+        // we don't know where we are
+        return;
+    }
+    float terrain_height = 0;
+    float current_height = 0;
+    uint16_t pending, loaded;
+
+    height_amsl(loc, terrain_height);
+    height_above_terrain(current_height, true);
+    get_statistics(pending, loaded);
+
+    struct log_TERRAIN pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_TERRAIN_MSG),
+        time_ms        : hal.scheduler->millis(),
+        status         : (uint8_t)status(),
+        lat            : loc.lat,
+        lng            : loc.lng,
+        spacing        : grid_spacing,
+        terrain_height : terrain_height,
+        current_height : current_height,
+        pending        : pending,
+        loaded         : loaded
+    };
+    dataflash.WriteBlock(&pkt, sizeof(pkt));
 }
 
 #endif // AP_TERRAIN_AVAILABLE

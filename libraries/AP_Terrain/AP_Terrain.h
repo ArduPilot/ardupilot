@@ -19,6 +19,7 @@
 
 #include <AP_Common.h>
 #include <AP_HAL.h>
+#include <DataFlash.h>
 
 #if HAL_OS_POSIX_IO && defined(HAL_BOARD_TERRAIN_DIRECTORY)
 #define AP_TERRAIN_AVAILABLE 1
@@ -150,6 +151,11 @@ public:
        Return true if height is available, otherwise false.
     */
     bool height_above_terrain(float &terrain_altitude, bool extrapolate = false);
+
+    /*
+      log terrain status to DataFlash
+     */
+    void log_terrain_data(DataFlash_Class &dataflash);
 
 private:
     // allocate the terrain subsystem data
