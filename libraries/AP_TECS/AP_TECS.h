@@ -120,6 +120,8 @@ private:
 	AP_Float _spdWeightLand;
     AP_Float _landThrottle;
     AP_Float _landAirspeed;
+	AP_Int8  _pitch_max;
+	AP_Int8  _pitch_min;
 	
 	// throttle demand in the range from 0.0 to 1.0
     float _throttle_dem;
