@@ -80,6 +80,8 @@ AP_Terrain::AP_Terrain(AP_AHRS &_ahrs, const AP_Mission &_mission, const AP_Rall
 
   This is the base function that other height calculations are derived
   from. The functions below are more convenient for most uses
+
+  This function costs about 20 microseconds on Pixhawk
  */
 bool AP_Terrain::height_amsl(const Location &loc, float &height)
 {
