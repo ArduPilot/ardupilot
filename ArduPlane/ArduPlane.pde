@@ -1015,6 +1015,9 @@ static void one_second_loop()
 
 #if AP_TERRAIN_AVAILABLE
     terrain.update();
+    if (should_log(MASK_LOG_GPS)) {
+        terrain.log_terrain_data(DataFlash);
+    }
 #endif
 }
 
