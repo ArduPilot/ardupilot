@@ -31,6 +31,7 @@
 
 #include <AP_Param.h>
 #include <AP_AHRS.h>
+#include <AP_Mission.h>
 
 #define TERRAIN_DEBUG 0
 
@@ -78,7 +79,7 @@
 class AP_Terrain
 {
 public:
-    AP_Terrain(AP_AHRS &_ahrs);
+    AP_Terrain(AP_AHRS &_ahrs, const AP_Mission &_mission);
 
     enum TerrainStatus {
         TerrainStatusDisabled  = 0, // not enabled
@@ -302,6 +303,11 @@ private:
     void write_block(void);
     void read_block(void);
 
+    /*
+      check for mission terrain data
+     */
+    void update_mission_data(void);
+
     // parameters
     AP_Int8  enable;
     AP_Int16 grid_spacing; // meters between grid points
@@ -309,6 +315,10 @@ private:
     // reference to AHRS, so we can ask for our position,
     // heading and speed
     AP_AHRS &ahrs;
+
+    // reference to AP_Mission, so we can ask preload terrain data for 
+    // all waypoints
+    const AP_Mission &mission;
 
     // cache of grids in memory, LRU
     struct grid_cache cache[TERRAIN_GRID_BLOCK_CACHE_SIZE];
@@ -354,6 +364,15 @@ private:
     // temporarily unavailable
     bool have_current_loc_height;
     float last_current_loc_height;
+
+    // next mission command to check
+    uint16_t next_mission_index;
+
+    // last time the mission changed
+    uint32_t last_mission_change_ms;
+
+    // grid spacing during mission check
+    uint16_t last_mission_spacing;
 };
 #endif // AP_TERRAIN_AVAILABLE
 #endif // __AP_TERRAIN_H__

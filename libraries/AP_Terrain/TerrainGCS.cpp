@@ -38,6 +38,11 @@ bool AP_Terrain::request_missing(mavlink_channel_t chan, struct grid_cache &gcac
 {
     struct grid_block &grid = gcache.grid;
 
+    if (grid.spacing != grid_spacing) {
+        // an invalid grid
+        return false;
+    }
+
     // see if we are waiting for disk read
     if (gcache.state == GRID_CACHE_DISKWAIT) {
         // don't request data from the GCS till we know its not on disk
@@ -157,6 +162,9 @@ void AP_Terrain::get_statistics(uint16_t &pending, uint16_t &loaded)
     pending = 0;
     loaded = 0;
     for (uint16_t i=0; i<TERRAIN_GRID_BLOCK_CACHE_SIZE; i++) {
+        if (cache[i].grid.spacing != grid_spacing) {
+            continue;
+        }
         if (cache[i].state == GRID_CACHE_INVALID) {
             continue;
         }
@@ -164,6 +172,11 @@ void AP_Terrain::get_statistics(uint16_t &pending, uint16_t &loaded)
         if (cache[i].state == GRID_CACHE_DISKWAIT) {
             pending += maskbits;
             continue;
+        }
+        if (cache[i].state == GRID_CACHE_DIRTY) {
+            // count dirty grids as a pending, so we know where there 
+            // are disk writes pending
+            pending++;
         }
         uint8_t bitcount = bitcount64(cache[i].grid.bitmap);
         pending += maskbits - bitcount;
@@ -252,6 +265,7 @@ void AP_Terrain::handle_terrain_data(mavlink_message_t *msg)
         if (cache[i].grid.lat == packet.lat && 
             cache[i].grid.lon == packet.lon && 
             cache[i].grid.spacing == packet.grid_spacing &&
+            grid_spacing == packet.grid_spacing &&
             packet.gridbit < 56) {
             break;
         }
