@@ -79,7 +79,15 @@ void ekf_check()
                 Log_Write_Error(ERROR_SUBSYSTEM_EKF_CHECK, ERROR_CODE_EKF_CHECK_BAD_COMPASS);
                 // send message to gcs
                 if ((hal.scheduler->millis() - ekf_check_state.last_warn_time) > EKF_CHECK_WARNING_TIME) {
-                    gcs_send_text_P(SEVERITY_HIGH,PSTR("EKF variance"));
+#if AP_AHRS_NAVEKF_AVAILABLE
+                    if (ahrs.have_inertial_nav()) {
+                        gcs_send_text_P(SEVERITY_HIGH,PSTR("EKF variance"));
+                    } else {
+                        gcs_send_text_P(SEVERITY_HIGH,PSTR("INAV variance"));
+                    }
+#else
+                    gcs_send_text_P(SEVERITY_HIGH,PSTR("INAV variance"));
+#endif
                     ekf_check_state.last_warn_time = hal.scheduler->millis();
                 }
                 failsafe_ekf_event();
@@ -126,7 +134,16 @@ static void failsafe_ekf_event()
 
     // EKF failsafe event has occurred
     failsafe.ekf = true;
-    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_EKF, ERROR_CODE_FAILSAFE_OCCURRED);
+#if AP_AHRS_NAVEKF_AVAILABLE
+    if (ahrs.have_inertial_nav()) {
+        Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_EKF, ERROR_CODE_FAILSAFE_OCCURRED);
+    } else {
+        Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_INAV, ERROR_CODE_FAILSAFE_OCCURRED);
+    }
+#else
+    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_INAV, ERROR_CODE_FAILSAFE_OCCURRED);
+#endif
+
 
     // take action based on flight mode
     if (mode_requires_GPS(control_mode)) {
@@ -149,5 +166,13 @@ static void failsafe_ekf_off_event(void)
 
     // clear flag and log recovery
     failsafe.ekf = false;
-    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_EKF, ERROR_CODE_FAILSAFE_RESOLVED);
+#if AP_AHRS_NAVEKF_AVAILABLE
+    if (ahrs.have_inertial_nav()) {
+        Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_EKF, ERROR_CODE_FAILSAFE_RESOLVED);
+    } else {
+        Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_INAV, ERROR_CODE_FAILSAFE_RESOLVED);
+    }
+#else
+    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_INAV, ERROR_CODE_FAILSAFE_RESOLVED);
+#endif
 }

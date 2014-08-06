@@ -350,6 +350,8 @@ enum FlipState {
 #define ERROR_SUBSYSTEM_EKF_CHECK           16
 #define ERROR_SUBSYSTEM_FAILSAFE_EKF        17
 #define ERROR_SUBSYSTEM_BARO                18
+#define ERROR_SUBSYSTEM_INAV_CHECK          19
+#define ERROR_SUBSYSTEM_FAILSAFE_INAV       20
 // general error codes
 #define ERROR_CODE_ERROR_RESOLVED           0
 #define ERROR_CODE_FAILED_TO_INITIALISE     1
