@@ -43,6 +43,7 @@ AP_Rally::AP_Rally(AP_AHRS &ahrs, uint16_t max_rally_points, uint16_t rally_star
     : _ahrs(ahrs)
     , _max_rally_points(max_rally_points)
     , _rally_start_byte(rally_start_byte)
+    , _last_change_time_ms(0xFFFFFFFF)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -75,6 +76,8 @@ bool AP_Rally::set_rally_point_with_index(uint8_t i, const RallyLocation &rallyL
     }
 
     hal.storage->write_block(_rally_start_byte + (i * sizeof(RallyLocation)), &rallyLoc, sizeof(RallyLocation));
+
+    _last_change_time_ms = hal.scheduler->millis();
 
     return true;
 }
