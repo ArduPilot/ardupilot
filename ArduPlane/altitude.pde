@@ -200,6 +200,9 @@ static int32_t relative_target_altitude_cm(void)
     if (target_altitude.terrain_following && 
         terrain.height_relative_home_equivalent(target_altitude.terrain_alt_cm*0.01f,
                                                 relative_home_height, true)) {
+        // add lookahead adjustment the target altitude
+        target_altitude.lookahead = lookahead_adjustment();
+        relative_home_height += target_altitude.lookahead;
         // we are following terrain, and have terrain data for the
         // current location. Use it.
         return relative_home_height*100;
@@ -262,7 +265,7 @@ static int32_t calc_altitude_error_cm(void)
     float terrain_height;
     if (target_altitude.terrain_following && 
         terrain.height_above_terrain(terrain_height, true)) {
-        return target_altitude.terrain_alt_cm - (terrain_height*100);
+        return target_altitude.lookahead*100 + target_altitude.terrain_alt_cm - (terrain_height*100);
     }
 #endif
     return target_altitude.amsl_cm - adjusted_altitude_cm();
@@ -393,4 +396,60 @@ static void setup_terrain_target_alt(Location &loc)
 static int32_t adjusted_altitude_cm(void)
 {
     return current_loc.alt - (g.alt_offset*100);
+}
+
+/*
+  work out target altitude adjustment from terrain lookahead
+ */
+static float lookahead_adjustment(void)
+{
+#if AP_TERRAIN_AVAILABLE
+    int32_t bearing_cd;
+    int16_t distance;
+    // work out distance and bearing to target
+    if (control_mode == FLY_BY_WIRE_B) {
+        // there is no target waypoint in FBWB, so use yaw as an approximation
+        bearing_cd = ahrs.yaw_sensor;
+        distance = g.terrain_lookahead;
+    } else if (!nav_controller->reached_loiter_target()) {
+        bearing_cd = nav_controller->target_bearing_cd();
+        distance = constrain_float(wp_distance, 0, g.terrain_lookahead);
+    } else {
+        // no lookahead when loitering
+        bearing_cd = 0;
+        distance = 0;
+    }
+    if (distance <= 0) {
+        // no lookahead
+        return 0;
+    }
+
+    
+    float groundspeed = ahrs.groundspeed();
+    if (groundspeed < 1) {
+        // we're not moving
+        return 0;
+    }
+    // we need to know the climb ratio. We use 50% of the maximum
+    // climb rate so we are not constantly at 100% throttle and to
+    // give a bit more margin on terrain
+    float climb_ratio = 0.5f * SpdHgt_Controller->get_max_climbrate() / groundspeed;
+
+    if (climb_ratio <= 0) {
+        // lookahead makes no sense for negative climb rates
+        return 0;
+    }
+    
+    // ask the terrain code for the lookahead altitude change
+    float lookahead = terrain.lookahead(bearing_cd*0.01f, distance, climb_ratio);
+    
+    if (target_altitude.offset_cm < 0) {
+        // we are heading down to the waypoint, so we don't need to
+        // climb as much
+        lookahead += target_altitude.offset_cm*0.01f;
+    }
+
+    // constrain lookahead to a reasonable limit
+    return constrain_float(lookahead, 0, 1000.0f);
+#endif
 }

@@ -688,6 +688,9 @@ static struct {
     // target altitude above terrain in cm, valid if terrain_following
     // is set
     int32_t terrain_alt_cm;
+
+    // lookahead value for height error reporting
+    float lookahead;
 #endif
 } target_altitude;
 

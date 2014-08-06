@@ -391,6 +391,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     GSCALAR(terrain_follow, "TERRAIN_FOLLOW",  0),
+
+    // @Param: TERRAIN_LOOKAHD
+    // @DisplayName: Terrain lookahead
+    // @Description: This controls how far ahead the terrain following code looks to ensure it stays above upcoming terrain. A value of zero means no lookahead, so the controller will track only the terrain directly below the aircraft. The lookahead will never extend beyond the next waypoint when in AUTO mode.
+    // @Range: 0 10000
+    // @Units: meters
+    // @User: Standard
+    GSCALAR(terrain_lookahead, "TERRAIN_LOOKAHD",  2000),
 #endif
 
     // @Param: FBWB_CLIMB_RATE
