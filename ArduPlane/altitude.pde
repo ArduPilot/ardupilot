@@ -137,7 +137,7 @@ static void set_target_altitude_current(void)
 #if AP_TERRAIN_AVAILABLE
     // also record the terrain altitude if possible
     float terrain_altitude;
-    if (g.terrain_follow && terrain.height_above_terrain(current_loc, terrain_altitude)) {
+    if (g.terrain_follow && terrain.height_above_terrain(terrain_altitude, true)) {
         target_altitude.terrain_following = true;
         target_altitude.terrain_alt_cm = terrain_altitude*100;
     } else {
@@ -176,7 +176,7 @@ static void set_target_altitude_location(const Location &loc)
       terrain altitude
      */
     float height;
-    if (loc.flags.terrain_alt && terrain.height_above_terrain(current_loc, height)) {
+    if (loc.flags.terrain_alt && terrain.height_above_terrain(height, true)) {
         target_altitude.terrain_following = true;
         target_altitude.terrain_alt_cm = loc.alt;
         if (!loc.flags.relative_alt) {
@@ -198,9 +198,8 @@ static int32_t relative_target_altitude_cm(void)
 #if AP_TERRAIN_AVAILABLE
     float relative_home_height;
     if (target_altitude.terrain_following && 
-        terrain.height_relative_home_equivalent(current_loc, 
-                                                target_altitude.terrain_alt_cm*0.01f,
-                                                relative_home_height)) {
+        terrain.height_relative_home_equivalent(target_altitude.terrain_alt_cm*0.01f,
+                                                relative_home_height, true)) {
         // we are following terrain, and have terrain data for the
         // current location. Use it.
         return relative_home_height*100;
@@ -262,7 +261,7 @@ static int32_t calc_altitude_error_cm(void)
 #if AP_TERRAIN_AVAILABLE
     float terrain_height;
     if (target_altitude.terrain_following && 
-        terrain.height_above_terrain(current_loc, terrain_height)) {
+        terrain.height_above_terrain(terrain_height, true)) {
         return target_altitude.terrain_alt_cm - (terrain_height*100);
     }
 #endif
@@ -320,7 +319,7 @@ static void set_offset_altitude_location(const Location &loc)
     float height;
     if (loc.flags.terrain_alt && 
         target_altitude.terrain_following &&
-        terrain.height_above_terrain(current_loc, height)) {
+        terrain.height_above_terrain(height, true)) {
         target_altitude.offset_cm = target_altitude.terrain_alt_cm - (height * 100);
     }
 #endif
@@ -357,7 +356,7 @@ static bool above_location_current(const Location &loc)
 #if AP_TERRAIN_AVAILABLE
     float terrain_alt;
     if (loc.flags.terrain_alt && 
-        terrain.height_above_terrain(current_loc, terrain_alt)) {
+        terrain.height_above_terrain(terrain_alt, true)) {
         float loc_alt = loc.alt*0.01f;
         if (!loc.flags.relative_alt) {
             loc_alt -= home.alt*0.01f;
