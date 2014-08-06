@@ -886,7 +886,7 @@ bool AP_AHRS_DCM::get_position(struct Location &loc)
     loc.flags.terrain_alt = 0;
     location_offset(loc, _position_offset_north, _position_offset_east);
     if (_flags.fly_forward && _have_position) {
-        location_update(loc, degrees(yaw), _gps.ground_speed() * _gps.get_lag());
+        location_update(loc, _gps.ground_course_cd() * 0.01f, _gps.ground_speed() * _gps.get_lag());
     }
     return _have_position;
 }
