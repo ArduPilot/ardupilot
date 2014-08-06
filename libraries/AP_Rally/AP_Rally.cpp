@@ -16,9 +16,11 @@ extern const AP_HAL::HAL& hal;
   #elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
     #define RALLY_LIMIT_KM_DEFAULT 0.5
   #endif
-#else 
-  #define RALLY_LIMIT_KM_DEFAULT 1.0
-#endif // APM_BUILD_DIRECTORY
+#endif  // APM_BUILD_DIRECTORY
+
+#ifndef RALLY_LIMIT_KM_DEFAULT
+#define RALLY_LIMIT_KM_DEFAULT 1.0
+#endif
 
 const AP_Param::GroupInfo AP_Rally::var_info[] PROGMEM = {
     // @Param: TOTAL
