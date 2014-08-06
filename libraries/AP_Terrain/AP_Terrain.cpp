@@ -62,7 +62,9 @@ AP_Terrain::AP_Terrain(AP_AHRS &_ahrs) :
     file_lon_degrees(0),
     io_failure(false),
     directory_created(false),
-    home_height(0)
+    home_height(0),
+    have_current_loc_height(false),
+    last_current_loc_height(0)
 {
     AP_Param::setup_object_defaults(this, var_info);
     memset(&home_loc, 0, sizeof(home_loc));
@@ -148,7 +150,7 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height)
    return false is terrain at the given location or at home
    location is not available
 */
-bool AP_Terrain::height_terrain_difference_home(const Location &loc, float &terrain_difference)
+bool AP_Terrain::height_terrain_difference_home(float &terrain_difference, bool extrapolate)
 {
     float height_home, height_loc;
     if (!height_amsl(ahrs.get_home(), height_home)) {
@@ -156,9 +158,22 @@ bool AP_Terrain::height_terrain_difference_home(const Location &loc, float &terr
         return false;
     }
 
-    if (!height_amsl(loc, height_loc)) {
-        // we don't know the height of the given location
+    Location loc;
+    if (!ahrs.get_position(loc)) {
+        // we don't know where we are
         return false;
+    }
+
+    if (!height_amsl(loc, height_loc)) {
+        if (!extrapolate || !have_current_loc_height) {
+            // we don't know the height of the given location
+            return false;
+        }
+        // we don't have data at the current location, but the caller
+        // has asked for extrapolation, so use the last available
+        // terrain height. This can be used to fill in while new data
+        // is fetched. It should be very rarely used
+        height_loc = last_current_loc_height;
     }
 
     terrain_difference = height_loc - height_home;
@@ -167,85 +182,61 @@ bool AP_Terrain::height_terrain_difference_home(const Location &loc, float &terr
 }
 
 /* 
-   return estimated height above the terrain given a relative-to-home
-   altitude (such as a barometric altitude) for a given location
-       
-   return false if terrain data is not available either at the given
-   location or at the home location.  
+   return current height above terrain at current AHRS
+   position. 
+   
+   If extrapolate is true then extrapolate from most recently
+   available terrain data is terrain data is not available for the
+   current location.
+   
+   Return true if height is available, otherwise false.
 */
-bool AP_Terrain::height_above_terrain(const Location &loc, float relative_home_altitude, float &terrain_altitude)
+bool AP_Terrain::height_above_terrain(float &terrain_altitude, bool extrapolate)
 {
     float terrain_difference;
-    if (!height_terrain_difference_home(loc, terrain_difference)) {
+    if (!height_terrain_difference_home(terrain_difference, extrapolate)) {
         return false;
+    }
+    Location loc;
+    if (!ahrs.get_position(loc)) {
+        // we don't know where we are
+        return false;
+    }
+    float relative_home_altitude = loc.alt*0.01f;
+    if (!loc.flags.relative_alt) {
+        // loc.alt has home altitude added, remove it
+        relative_home_altitude -= ahrs.get_home().alt*0.01f;
     }
     terrain_altitude = relative_home_altitude - terrain_difference;
     return true;
 }
 
 /* 
-   alternative interface to height_above_terrain where
-   relative_altitude is taken from loc.alt (in centimeters)
-*/
-bool AP_Terrain::height_above_terrain(const Location &loc, float &terrain_altitude)
-{
-    float relative_home_altitude = loc.alt*0.01f;
-    if (!loc.flags.relative_alt) {
-        // loc.alt has home altitude added, remove it
-        relative_home_altitude -= ahrs.get_home().alt*0.01f;
-    }
-    return height_above_terrain(loc, relative_home_altitude, terrain_altitude);
-}
-
-/* 
-   return estimated equivalent relative-to-home altitude in meters of
-   a given height above the terrain for a given location.
-
+   return estimated equivalent relative-to-home altitude in meters
+   of a given height above the terrain at the current location
+       
    This function allows existing height controllers which work on
    barometric altitude (relative to home) to be used with terrain
    based target altitude, by translating the "above terrain" altitude
    into an equivalent barometric relative height.
-
+   
    return false if terrain data is not available either at the given
    location or at the home location.  
+   
+   If extrapolate is true then allow return of an extrapolated
+   terrain altitude based on the last available data
 */
-bool AP_Terrain::height_relative_home_equivalent(const Location &loc, float terrain_altitude, float &relative_home_altitude)
+bool AP_Terrain::height_relative_home_equivalent(float terrain_altitude, 
+                                                 float &relative_home_altitude,
+                                                 bool extrapolate)
 {
     float terrain_difference;
-    if (!height_terrain_difference_home(loc, terrain_difference)) {
+    if (!height_terrain_difference_home(terrain_difference, extrapolate)) {
         return false;
     }
     relative_home_altitude = terrain_altitude + terrain_difference;
     return true;
 }
-
-/* 
-   convert a Location altitude to a relative-to-home altitude in meters
-   This obeys the relative_alt and terrain_alt flags in Location.flags
-*/
-bool AP_Terrain::location_to_relative_home(const Location &loc, float &relative_altitude)
-{
-    if (!loc.flags.terrain_alt) {
-        // its not a terrain alt
-        relative_altitude = loc.alt*0.01f;
-        if (!loc.flags.relative_alt) {
-            relative_altitude -= ahrs.get_home().alt*0.01f;
-        }
-        return true;
-    }
-
-    if (!height_relative_home_equivalent(loc, loc.alt*0.01f, relative_altitude)) {
-        return false;
-    }
-
-    // if terrain_alt is set and relative_alt is not set then Location
-    // is still offset by home alt
-    if (!loc.flags.relative_alt) {
-        relative_altitude -= ahrs.get_home().alt*0.01f;
-    }
-    return true;
-}
-
 
 /*
   1hz update function. This is here to ensure progress is made on disk
@@ -260,6 +251,13 @@ void AP_Terrain::update(void)
     // try to ensure the home location is populated
     float height;
     height_amsl(ahrs.get_home(), height);
+
+    // update the cached current location height
+    Location loc;
+    if (ahrs.get_position(loc) && height_amsl(loc, height)) {
+        last_current_loc_height = height;
+        have_current_loc_height = true;
+    }
 }
 
 /*

@@ -97,7 +97,7 @@ public:
     void send_request(mavlink_channel_t chan);
 
     // handle terrain data and reports from GCS
-    void send_terrain_report(mavlink_channel_t chan, const Location &loc);
+    void send_terrain_report(mavlink_channel_t chan, const Location &loc, bool extrapolate);
     void handle_data(mavlink_channel_t chan, mavlink_message_t *msg);
     void handle_terrain_check(mavlink_channel_t chan, mavlink_message_t *msg);
     void handle_terrain_data(mavlink_message_t *msg);
@@ -108,17 +108,21 @@ public:
 
     /* 
        find difference between home terrain height and the terrain
-       height at a given location in meters. A positive result means
-       the terrain is higher than home.
+       height at the current location in meters. A positive result
+       means the terrain is higher than home.
 
-       return false is terrain at the given location or at home
+       return false is terrain at the current location or at home
        location is not available
+
+       If extrapolate is true then allow return of an extrapolated
+       terrain altitude based on the last available data       
     */
-    bool height_terrain_difference_home(const Location &loc, float &terrain_difference);
+    bool height_terrain_difference_home(float &terrain_difference, 
+                                        bool extrapolate = false);
 
     /* 
        return estimated equivalent relative-to-home altitude in meters
-       of a given height above the terrain for a given location.
+       of a given height above the terrain at the current location
        
        This function allows existing height controllers which work on
        barometric altitude (relative to home) to be used with terrain
@@ -127,30 +131,25 @@ public:
        
        return false if terrain data is not available either at the given
        location or at the home location.  
+
+       If extrapolate is true then allow return of an extrapolated
+       terrain altitude based on the last available data
     */
-    bool height_relative_home_equivalent(const Location &loc, float terrain_altitude, float &relative_altitude);
+    bool height_relative_home_equivalent(float terrain_altitude, 
+                                         float &relative_altitude, 
+                                         bool extrapolate = false);
 
     /* 
-       return estimated height above the terrain in meters given a
-       relative-to-home altitude (such as barometric altitude) for a
-       given location
-       
-       return false if terrain data is not available either at the given
-       location or at the home location.  
-    */
-    bool height_above_terrain(const Location &loc, float relative_home_altitude, float &terrain_altitude);
+       return current height above terrain at current AHRS
+       position. 
 
-    /* 
-       alternative interface to height_above_terrain where
-       relative_altitude is taken from loc.alt (in centimeters)
-    */
-    bool height_above_terrain(const Location &loc, float &terrain_altitude);
+       If extrapolate is true then extrapolate from most recently
+       available terrain data is terrain data is not available for the
+       current location.
 
-    /* 
-       convert a Location altitude to a relative-to-home altitude in meters
-       This obeys the relative_alt and terrain_alt flags in Location.flags
+       Return true if height is available, otherwise false.
     */
-    bool location_to_relative_home(const Location &loc, float &relative_altitude);
+    bool height_above_terrain(float &terrain_altitude, bool extrapolate = false);
 
 private:
     // allocate the terrain subsystem data
@@ -343,6 +342,12 @@ private:
     // cache the home altitude, as it is needed so often
     float home_height;
     Location home_loc;
+
+    // cache the last terrain height (AMSL) of the AHRS current
+    // location. This is used for extrapolation when terrain data is
+    // temporarily unavailable
+    bool have_current_loc_height;
+    float last_current_loc_height;
 };
 #endif // AP_TERRAIN_AVAILABLE
 #endif // __AP_TERRAIN_H__

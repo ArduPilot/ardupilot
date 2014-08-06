@@ -94,7 +94,7 @@ void AP_Terrain::send_request(mavlink_channel_t chan)
     }
 
     // always send a terrain report
-    send_terrain_report(chan, loc);
+    send_terrain_report(chan, loc, true);
 
     // did we request recently?
     if (hal.scheduler->millis() - last_request_time_ms < 2000) {
@@ -188,23 +188,27 @@ void AP_Terrain::handle_data(mavlink_channel_t chan, mavlink_message_t *msg)
 /* 
    send a TERRAIN_REPORT for a location
  */
-void AP_Terrain::send_terrain_report(mavlink_channel_t chan, const Location &loc)
+void AP_Terrain::send_terrain_report(mavlink_channel_t chan, const Location &loc, bool extrapolate)
 {
     float terrain_height = 0;
     float home_terrain_height = 0;
     uint16_t spacing = 0;
     Location current_loc;
-    if (height_amsl(loc, terrain_height) && 
-        ahrs.get_position(current_loc) &&
-        height_amsl(ahrs.get_home(), home_terrain_height)) {
+    if (ahrs.get_position(current_loc) &&
+        height_amsl(ahrs.get_home(), home_terrain_height) &&
+        height_amsl(loc, terrain_height)) {
         // non-zero spacing indicates we have data
         spacing = grid_spacing;
+    } else if (extrapolate && have_current_loc_height) {
+        // show the extrapolated height, so logs show what height is
+        // being used for navigation
+        terrain_height = last_current_loc_height;
     }
     uint16_t pending, loaded;
     get_statistics(pending, loaded);
 
     float current_height;
-    if (spacing == 0) {
+    if (spacing == 0 && !(extrapolate && have_current_loc_height)) {
         current_height = 0;
     } else {
         if (current_loc.flags.relative_alt) {
@@ -232,7 +236,7 @@ void AP_Terrain::handle_terrain_check(mavlink_channel_t chan, mavlink_message_t 
     Location loc;
     loc.lat = packet.lat;
     loc.lng = packet.lon;
-    send_terrain_report(chan, loc);
+    send_terrain_report(chan, loc, false);
 }
 
 /* 
