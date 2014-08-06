@@ -155,6 +155,12 @@ public:
     bool height_above_terrain(float &terrain_altitude, bool extrapolate = false);
 
     /*
+      calculate lookahead rise in terrain. This returns extra altitude
+      needed to clear upcoming terrain in meters
+     */
+    float lookahead(float bearing, float distance, float climb_ratio);
+
+    /*
       log terrain status to DataFlash
      */
     void log_terrain_data(DataFlash_Class &dataflash);

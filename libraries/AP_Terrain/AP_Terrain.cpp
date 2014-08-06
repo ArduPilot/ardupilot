@@ -241,6 +241,49 @@ bool AP_Terrain::height_relative_home_equivalent(float terrain_altitude,
     return true;
 }
 
+
+/*
+  calculate lookahead rise in terrain. This returns extra altitude
+  needed to clear upcoming terrain in meters
+*/
+float AP_Terrain::lookahead(float bearing, float distance, float climb_ratio)
+{
+    if (!enable || grid_spacing <= 0) {
+        return 0;
+    }
+
+    Location loc;
+    if (!ahrs.get_position(loc)) {
+        // we don't know where we are
+        return 0;
+    }
+    float base_height;
+    if (!height_amsl(loc, base_height)) {
+        // we don't know our current terrain height
+        return 0;
+    }
+
+    float climb = 0;
+    float lookahead_estimate = 0;
+
+    // check for terrain at grid spacing intervals
+    while (distance > 0) {
+        location_update(loc, bearing, grid_spacing);
+        climb += climb_ratio * grid_spacing;
+        distance -= grid_spacing;
+        float height;
+        if (height_amsl(loc, height)) {
+            float rise = (height - base_height) - climb;
+            if (rise > lookahead_estimate) {
+                lookahead_estimate = rise;
+            }
+        }
+    }
+
+    return lookahead_estimate;
+}
+
+
 /*
   1hz update function. This is here to ensure progress is made on disk
   IO even if no MAVLink send_request() operations are called for a
