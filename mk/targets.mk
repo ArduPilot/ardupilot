@@ -47,7 +47,7 @@ empty: all
 %-obc: EXTRAFLAGS += "-DOBC_FAILSAFE=ENABLED "
 
 # cope with copter and hil targets
-FRAMES = quad tri hexa y6 octa octa-quad heli single obc
+FRAMES = quad tri hexa y6 octa octa-quad heli single obc hil
 BOARDS = apm1 apm2 apm2beta apm1-1280 px4 px4-v1 px4-v2 sitl flymaple linux vrbrain vrbrain-v40 vrbrain-v45 vrbrainv-50 vrbrain-v51 vrubrain-v51 vrhero-v10 erle pxf
 
 define frame_template
