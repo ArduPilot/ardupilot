@@ -189,7 +189,8 @@ public:
         _cmd_start_fn(cmd_start_fn),
         _cmd_verify_fn(cmd_verify_fn),
         _mission_complete_fn(mission_complete_fn),
-        _prev_nav_cmd_index(AP_MISSION_CMD_INDEX_NONE)
+        _prev_nav_cmd_index(AP_MISSION_CMD_INDEX_NONE),
+        _last_change_time_ms(0)
     {
         // load parameter defaults
         AP_Param::setup_object_defaults(this, var_info);
@@ -320,6 +321,9 @@ public:
     //  return true on success, false on failure
     static bool mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, mavlink_mission_item_t& packet);
 
+    // return the last time the mission changed in milliseconds
+    uint32_t last_change_time_ms(void) const { return _last_change_time_ms; }
+
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -403,6 +407,9 @@ private:
         uint16_t index;                 // index of do-jump commands in mission
         int16_t num_times_run;          // number of times this jump command has been run
     } _jump_tracking[AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS];
+
+    // last time that mission changed
+    uint32_t _last_change_time_ms;
 };
 
 #endif
