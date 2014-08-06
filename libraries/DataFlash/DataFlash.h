@@ -376,6 +376,22 @@ struct PACKED log_Camera {
     uint16_t yaw;
 };
 
+/*
+  terrain log structure
+ */
+struct PACKED log_TERRAIN {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    uint8_t status;
+    int32_t lat;
+    int32_t lng;
+    uint16_t spacing;
+    float terrain_height;
+    float current_height;
+    uint16_t pending;
+    uint16_t loaded;
+};
+
 // messages for all boards
 #define LOG_BASE_STRUCTURES \
     { LOG_FORMAT_MSG, sizeof(log_Format), \
@@ -422,7 +438,9 @@ struct PACKED log_Camera {
     { LOG_EKF3_MSG, sizeof(log_EKF3), \
       "EKF3","Icccccchhhc","TimeMS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IVT" }, \
     { LOG_EKF4_MSG, sizeof(log_EKF4), \
-      "EKF4","IcccccccbbBB","TimeMS,SV,SP,SH,SMX,SMY,SMZ,SVT,OFN,EFE,FS,DS" }
+      "EKF4","IcccccccbbBB","TimeMS,SV,SP,SH,SMX,SMY,SMZ,SVT,OFN,EFE,FS,DS" }, \
+    { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
+      "TERR","IBLLHffHH","TimeMS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded" }
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 #define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_EXTRA_STRUCTURES
@@ -455,6 +473,7 @@ struct PACKED log_Camera {
 #define LOG_ATRP_MSG      147
 #define LOG_CAMERA_MSG    148
 #define LOG_IMU3_MSG	  149
+#define LOG_TERRAIN_MSG   150
 
 // message types 200 to 210 reversed for GPS driver use
 // message types 211 to 220 reversed for autotune use
