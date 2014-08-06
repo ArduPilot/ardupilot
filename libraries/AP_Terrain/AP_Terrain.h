@@ -32,6 +32,7 @@
 #include <AP_Param.h>
 #include <AP_AHRS.h>
 #include <AP_Mission.h>
+#include <AP_Rally.h>
 
 #define TERRAIN_DEBUG 0
 
@@ -79,7 +80,7 @@
 class AP_Terrain
 {
 public:
-    AP_Terrain(AP_AHRS &_ahrs, const AP_Mission &_mission);
+    AP_Terrain(AP_AHRS &_ahrs, const AP_Mission &_mission, const AP_Rally &_rally);
 
     enum TerrainStatus {
         TerrainStatusDisabled  = 0, // not enabled
@@ -304,9 +305,15 @@ private:
     void read_block(void);
 
     /*
-      check for mission terrain data
+      check for missing mission terrain data
      */
     void update_mission_data(void);
+
+    /*
+      check for missing rally data
+     */
+    void update_rally_data(void);
+
 
     // parameters
     AP_Int8  enable;
@@ -319,6 +326,10 @@ private:
     // reference to AP_Mission, so we can ask preload terrain data for 
     // all waypoints
     const AP_Mission &mission;
+
+    // reference to AP_Rally, so we can ask preload terrain data for 
+    // all rally points
+    const AP_Rally &rally;
 
     // cache of grids in memory, LRU
     struct grid_cache cache[TERRAIN_GRID_BLOCK_CACHE_SIZE];
@@ -373,6 +384,15 @@ private:
 
     // grid spacing during mission check
     uint16_t last_mission_spacing;
+
+    // next rally command to check
+    uint16_t next_rally_index;
+
+    // last time the rally points changed
+    uint32_t last_rally_change_ms;
+
+    // grid spacing during rally check
+    uint16_t last_rally_spacing;
 };
 #endif // AP_TERRAIN_AVAILABLE
 #endif // __AP_TERRAIN_H__

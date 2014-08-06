@@ -53,9 +53,10 @@ const AP_Param::GroupInfo AP_Terrain::var_info[] PROGMEM = {
 };
 
 // constructor
-AP_Terrain::AP_Terrain(AP_AHRS &_ahrs, const AP_Mission &_mission) :
+AP_Terrain::AP_Terrain(AP_AHRS &_ahrs, const AP_Mission &_mission, const AP_Rally &_rally) :
     ahrs(_ahrs),
     mission(_mission),
+    rally(_rally),
     disk_io_state(DiskIoIdle),
     last_request_time_ms(0),
     fd(-1),
@@ -263,6 +264,9 @@ void AP_Terrain::update(void)
 
     // check for pending mission data
     update_mission_data();
+
+    // check for pending rally data
+    update_rally_data();
 }
 
 /*
