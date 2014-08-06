@@ -606,7 +606,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: RATE_RLL_IMAX
     // @DisplayName: Roll axis rate controller I gain maximum
     // @Description: Roll axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
-    // @Range: 0 500
+    // @Range: 0 4500
     // @Increment: 10
     // @Units: Percent*10
     // @User: Standard
@@ -640,7 +640,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: RATE_PIT_IMAX
     // @DisplayName: Pitch axis rate controller I gain maximum
     // @Description: Pitch axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
-    // @Range: 0 500
+    // @Range: 0 4500
     // @Increment: 10
     // @Units: Percent*10
     // @User: Standard
@@ -674,7 +674,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: RATE_YAW_IMAX
     // @DisplayName: Yaw axis rate controller I gain maximum
     // @Description: Yaw axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
-    // @Range: 0 800
+    // @Range: 0 4500
     // @Increment: 10
     // @Units: Percent*10
     // @User: Standard
@@ -855,25 +855,12 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GGROUP(pid_optflow_pitch, "OF_PIT_",   AC_PID),
 
-    // PI controller
+    // P controllers
     //--------------
     // @Param: STB_RLL_P
     // @DisplayName: Roll axis stabilize controller P gain
     // @Description: Roll axis stabilize (i.e. angle) controller P gain.  Converts the error between the desired roll angle and actual angle to a desired roll rate
     // @Range: 3.000 12.000
-    // @User: Standard
-
-    // @Param: STB_RLL_I
-    // @DisplayName: Roll axis stabilize controller I gain
-    // @Description: Roll axis stabilize (i.e. angle) controller I gain.  Corrects for longer-term difference in desired roll angle and actual angle
-    // @Range: 0.000 0.100
-    // @User: Standard
-
-    // @Param: STB_RLL_IMAX
-    // @DisplayName: Roll axis stabilize controller I gain maximum
-    // @Description: Roll axis stabilize (i.e. angle) controller I gain maximum.  Constrains the maximum roll rate that the I term will generate
-    // @Range: 0 4500
-    // @Units: Centi-Degrees/Sec
     // @User: Standard
     GGROUP(p_stabilize_roll,       "STB_RLL_", AC_P),
 
