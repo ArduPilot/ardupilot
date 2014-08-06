@@ -72,6 +72,7 @@
 #include <AP_AHRS.h>         // ArduPilot Mega DCM Library
 #include <AP_NavEKF.h>
 #include <AP_Mission.h>     // Mission command library
+#include <AP_Rally.h>
 #include <AP_Terrain.h>
 #include <PID.h>            // PID library
 #include <RC_Channel.h>     // RC Channel Library

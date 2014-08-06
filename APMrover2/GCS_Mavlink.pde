@@ -517,6 +517,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         break;
 
     case MSG_RETRY_DEFERRED:
+    case MSG_TERRAIN:
         break; // just here to prevent a warning
 	}
 
