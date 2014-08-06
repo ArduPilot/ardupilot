@@ -1629,9 +1629,11 @@ void gcs_send_text_fmt(const prog_char_t *fmt, ...)
 static void gcs_send_airspeed_calibration(const Vector3f &vg)
 {
     for (uint8_t i=0; i<num_gcs; i++) {
-        if (comm_get_txspace((mavlink_channel_t)i) >= 
-            MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_AIRSPEED_AUTOCAL_LEN) {
-            airspeed.log_mavlink_send((mavlink_channel_t)i, vg);
+        if (gcs[i].initialised) {
+            if (comm_get_txspace((mavlink_channel_t)i) - MAVLINK_NUM_NON_PAYLOAD_BYTES >= 
+                MAVLINK_MSG_ID_AIRSPEED_AUTOCAL_LEN) {
+                airspeed.log_mavlink_send((mavlink_channel_t)i, vg);
+            }
         }
     }
 }
