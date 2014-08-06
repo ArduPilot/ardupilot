@@ -65,8 +65,9 @@ void AP_Terrain::update_mission_data(void)
 
         // we only want nav waypoint commands. That should be enough to
         // prefill the terrain data and makes many things much simpler
-        while (cmd.id != MAV_CMD_NAV_WAYPOINT &&
-               cmd.id != MAV_CMD_NAV_SPLINE_WAYPOINT) {
+        while ((cmd.id != MAV_CMD_NAV_WAYPOINT &&
+                cmd.id != MAV_CMD_NAV_SPLINE_WAYPOINT) ||
+               (cmd.content.location.lat == 0 && cmd.content.location.lng == 0)) {
             next_mission_index++;
             if (!mission.read_cmd_from_storage(next_mission_index, cmd)) {
                 // nothing more to do
