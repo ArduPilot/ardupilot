@@ -924,6 +924,6 @@ static void adjust_nav_pitch_throttle(void)
     uint8_t throttle = throttle_percentage();
     if (throttle < aparm.throttle_cruise) {
         float p = (aparm.throttle_cruise - throttle) / (float)aparm.throttle_cruise;
-        nav_pitch_cd -= g.stab_pitch_down_cd * p;
+        nav_pitch_cd -= g.stab_pitch_down * 100.0f * p;
     }
 }

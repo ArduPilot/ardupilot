@@ -104,14 +104,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(kff_throttle_to_pitch,  "KFF_THR2PTCH",   0),
 
-    // @Param: STAB_PITCH_DN_CD
+    // @Param: STAB_PITCH_DOWN
     // @DisplayName: Low throttle pitch down trim 
-    // @Description: This controls the amount of downpitch to add in FBWA and AUTOTUNE modes when at low throttle. No down trim is added when throttle is above TRIM_THROTTLE. Below TRIM_THROTTLE downtrim is added in proportion to the amount the throttle is below TRIM_THROTTLE. At zero throttle the full downpitch specified in this parameter is added. This parameter is meant to help keep airspeed up when flying in FBWA mode with low throttle, such as when on a landing approach. A value of 200 (2 degrees) is good for many planes, although a higher value may be needed for high drag aircraft.
-    // @Range: 0 1000
-    // @Increment: 1
-    // @Units: centi-Degrees
+    // @Description: This controls the amount of downpitch to add in FBWA and AUTOTUNE modes when at low throttle. No down trim is added when throttle is above TRIM_THROTTLE. Below TRIM_THROTTLE downtrim is added in proportion to the amount the throttle is below TRIM_THROTTLE. At zero throttle the full downpitch specified in this parameter is added. This parameter is meant to help keep airspeed up when flying in FBWA mode with low throttle, such as when on a landing approach, without relying on an airspeed sensor. A value of 2 degrees is good for many planes, although a higher value may be needed for high drag aircraft.
+    // @Range: 0 15
+    // @Increment: 0.1
+    // @Units: Degrees
     // @User: Advanced
-    GSCALAR(stab_pitch_down_cd, "STAB_PITCH_DN_CD",   200),
+    GSCALAR(stab_pitch_down, "STAB_PITCH_DOWN",   2.0f),
 
     // @Param: GLIDE_SLOPE_MIN
     // @DisplayName: Glide slope threshold
