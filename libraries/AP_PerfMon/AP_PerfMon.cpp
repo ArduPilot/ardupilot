@@ -126,7 +126,6 @@ void AP_PerfMon::DisplayResults()
     uint32_t sumOfTime = 0;
     uint32_t unExplainedTime;
     uint8_t order[PERFMON_MAX_FUNCTIONS];
-    bool blocking_writes;
 
     // record end time
     if( allEndTime == 0 ) {
