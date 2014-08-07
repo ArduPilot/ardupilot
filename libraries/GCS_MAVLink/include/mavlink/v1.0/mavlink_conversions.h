@@ -27,6 +27,13 @@
  * @author James Goppert
  */
 
+
+/**
+ * Converts a quaternion to a rotation matrix
+ *
+ * @param quaternion a [w, x, y, z] ordered quaternion (null-rotation being 1 0 0 0)
+ * @param dcm a 3x3 rotation matrix
+ */
 MAVLINK_HELPER void mavlink_quaternion_to_dcm(const float quaternion[4], float dcm[3][3])
 {
     double a = quaternion[0];
@@ -48,6 +55,15 @@ MAVLINK_HELPER void mavlink_quaternion_to_dcm(const float quaternion[4], float d
     dcm[2][2] = aSq - bSq - cSq + dSq;
 }
 
+
+/**
+ * Converts a rotation matrix to euler angles
+ *
+ * @param dcm a 3x3 rotation matrix
+ * @param roll the roll angle in radians
+ * @param pitch the pitch angle in radians
+ * @param yaw the yaw angle in radians
+ */
 MAVLINK_HELPER void mavlink_dcm_to_euler(const float dcm[3][3], float* roll, float* pitch, float* yaw)
 {
     float phi, theta, psi;
@@ -73,6 +89,15 @@ MAVLINK_HELPER void mavlink_dcm_to_euler(const float dcm[3][3], float* roll, flo
     *yaw = psi;
 }
 
+
+/**
+ * Converts a quaternion to euler angles
+ *
+ * @param quaternion a [w, x, y, z] ordered quaternion (null-rotation being 1 0 0 0)
+ * @param roll the roll angle in radians
+ * @param pitch the pitch angle in radians
+ * @param yaw the yaw angle in radians
+ */
 MAVLINK_HELPER void mavlink_quaternion_to_euler(const float quaternion[4], float* roll, float* pitch, float* yaw)
 {
     float dcm[3][3];
@@ -80,6 +105,15 @@ MAVLINK_HELPER void mavlink_quaternion_to_euler(const float quaternion[4], float
     mavlink_dcm_to_euler((const float(*)[3])dcm, roll, pitch, yaw);
 }
 
+
+/**
+ * Converts euler angles to a quaternion
+ *
+ * @param roll the roll angle in radians
+ * @param pitch the pitch angle in radians
+ * @param yaw the yaw angle in radians
+ * @param quaternion a [w, x, y, z] ordered quaternion (null-rotation being 1 0 0 0)
+ */
 MAVLINK_HELPER void mavlink_euler_to_quaternion(float roll, float pitch, float yaw, float quaternion[4])
 {
     double cosPhi_2 = cos((double)roll / 2.0);
@@ -98,6 +132,13 @@ MAVLINK_HELPER void mavlink_euler_to_quaternion(float roll, float pitch, float y
             sinPhi_2 * sinTheta_2 * cosPsi_2);
 }
 
+
+/**
+ * Converts a rotation matrix to a quaternion
+ *
+ * @param dcm a 3x3 rotation matrix
+ * @param quaternion a [w, x, y, z] ordered quaternion (null-rotation being 1 0 0 0)
+ */
 MAVLINK_HELPER void mavlink_dcm_to_quaternion(const float dcm[3][3], float quaternion[4])
 {
     quaternion[0] = (0.5 * sqrt(1.0 +
@@ -110,6 +151,15 @@ MAVLINK_HELPER void mavlink_dcm_to_quaternion(const float dcm[3][3], float quate
             (double)(-dcm[0][0] - dcm[1][1] + dcm[2][2])));
 }
 
+
+/**
+ * Converts euler angles to a rotation matrix
+ *
+ * @param roll the roll angle in radians
+ * @param pitch the pitch angle in radians
+ * @param yaw the yaw angle in radians
+ * @param dcm a 3x3 rotation matrix
+ */
 MAVLINK_HELPER void mavlink_euler_to_dcm(float roll, float pitch, float yaw, float dcm[3][3])
 {
     double cosPhi = cos(roll);
