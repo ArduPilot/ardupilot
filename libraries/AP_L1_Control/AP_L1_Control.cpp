@@ -265,8 +265,9 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
     // protect against being on the waypoint and having zero velocity
     // if too close to the waypoint, use the velocity vector
     // if the velocity vector is too small, use the heading vector
+    Vector2f A_air_unit;
     if (A_air.length() > 0.1) {
-        Vector2f A_air_unit = A_air.normalized();
+        A_air_unit = A_air.normalized();
     } else {
         if (_groundspeed_vector.length() < 0.1f) {
             A_air_unit = Vector2f(cosf(_ahrs.yaw), sinf(_ahrs.yaw));
