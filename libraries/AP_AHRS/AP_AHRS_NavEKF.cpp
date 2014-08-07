@@ -317,5 +317,10 @@ bool AP_AHRS_NavEKF::initialised(void) const
     return (ekf_started && (hal.scheduler->millis() - start_time_ms > AP_AHRS_NAVEKF_SETTLE_TIME_MS));
 };
 
+// write optical flow data to EKF
+void  AP_AHRS_NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, float &rawSonarRange, uint32_t &msecFlowMeas)
+{
+    EKF.writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawSonarRange, msecFlowMeas);
+}
 #endif // AP_AHRS_NAVEKF_AVAILABLE
 
