@@ -630,15 +630,17 @@ void GCS_MAVLINK::handle_param_set(mavlink_message_t *msg, DataFlash_Class *Data
 void
 GCS_MAVLINK::send_text(gcs_severity severity, const char *str)
 {
-    if (severity == SEVERITY_LOW) {
+    if (severity != SEVERITY_LOW && 
+        comm_get_txspace(chan) >= 
+        MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_STATUSTEXT_LEN) {
+        // send immediately
+        mavlink_msg_statustext_send(chan, severity, str);
+    } else {
         // send via the deferred queuing system
         mavlink_statustext_t *s = &pending_status;
         s->severity = (uint8_t)severity;
         strncpy((char *)s->text, str, sizeof(s->text));
         send_message(MSG_STATUSTEXT);
-    } else {
-        // send immediately
-        mavlink_msg_statustext_send(chan, severity, str);
     }
 }
 
