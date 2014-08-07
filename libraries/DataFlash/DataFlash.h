@@ -347,6 +347,18 @@ struct PACKED log_EKF4 {
     uint8_t staticmode;
 };
 
+struct PACKED log_EKF5 {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    float obsX;
+    float obsY;
+    float innovX;
+    float innovY;
+    float gndPos;
+    uint8_t scaler;
+    uint8_t quality;
+};
+
 struct PACKED log_Cmd {
     LOG_PACKET_HEADER;
     uint32_t time_ms;
@@ -514,7 +526,9 @@ struct PACKED log_Esc {
     { LOG_ESC7_MSG, sizeof(log_Esc), \
       "ESC7",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
     { LOG_ESC8_MSG, sizeof(log_Esc), \
-      "ESC8",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }
+      "ESC8",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
+    { LOG_EKF5_MSG, sizeof(log_EKF5), \
+      "EKF5","IfffffBB","TimeMS,FX,FY,IFX,IFY,GP,SF,Q" }
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 #define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_EXTRA_STRUCTURES
@@ -559,6 +573,7 @@ struct PACKED log_Esc {
 #define LOG_ESC6_MSG      159
 #define LOG_ESC7_MSG      160
 #define LOG_ESC8_MSG      161
+#define LOG_EKF5_MSG      162
 
 // message types 200 to 210 reversed for GPS driver use
 // message types 211 to 220 reversed for autotune use

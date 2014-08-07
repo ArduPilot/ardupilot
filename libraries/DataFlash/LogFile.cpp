@@ -992,6 +992,26 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
         staticmode : (uint8_t)(ahrs.get_NavEKF().getStaticMode())
     };
     WriteBlock(&pkt4, sizeof(pkt4));
+
+    // Write fifth EKF packet
+    float fscale;
+    float gndPos;
+    float obsX, obsY;
+    float innovX, innovY;
+    uint8_t flowQual;
+    ahrs.get_NavEKF().getFlowDebug(fscale, obsX, obsY, innovX, innovY, gndPos, flowQual);
+    struct log_EKF5 pkt5 = {
+        LOG_PACKET_HEADER_INIT(LOG_EKF5_MSG),
+        time_ms : hal.scheduler->millis(),
+        obsX : (float)(obsX),
+        obsY : (float)(obsY),
+        innovX : (float)(innovX),
+        innovY : (float)(innovY),
+        gndPos : (float)(gndPos),
+        scaler: (uint8_t)(100*fscale),
+        quality : (uint8_t)(flowQual)
+     };
+    WriteBlock(&pkt5, sizeof(pkt5));
 }
 #endif
 
