@@ -1,3 +1,41 @@
+Release 3.1.0, August XXth 2014
+-------------------------------
+
+DRAFT DRAFT
+
+Changes in this release:
+
+  - added terrain following support. See
+    http://plane.ardupilot.com/wiki/common-terrain-following/
+
+  - added support for higher baudrates on telemetry ports, to make it
+    easier to use high rate telemetry to companion boards
+
+  - added new takeoff code, including new parameters:
+      TKOFF_TDRAG_ELEV, TKOFF_TDRAG_SPD1, TKOFF_ROTATE_SPD,
+      TKOFF_THR_SLEW and TKOFF_THR_MAX
+
+  - overhauled glide slope code to fix glide slope handling in many
+    situations. This should make transitions between different
+    altitudes much smoother
+
+  - prevent early waypoint completion for straight ahead waypoints
+
+  - added MAV_CMD_DO_INVERTED_FLIGHT command in missions, to change
+    from normal to inverted flight in AUTO
+
+  - new Rangefinder code with support for a wider range of rangefinder
+    types
+
+  - added support for FrSky telemetry via SERIAL2_PROTOCOL parameter
+
+  - added new STAB_PITCH_DOWN parameter to improve low throttle
+    behaviour in FBWA mode
+
+  - added GLIDE_SLOPE_MIN parameter for better handling of small
+    altitude deviations in AUTO
+
+
 Release 3.0.3, May 19th 2014
 ----------------------------
 
