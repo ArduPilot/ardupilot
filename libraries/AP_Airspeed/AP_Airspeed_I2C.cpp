@@ -61,20 +61,13 @@ void AP_Airspeed_I2C::_measure(void)
 // read the values from the sensor
 void AP_Airspeed_I2C::_collect(void)
 {
-    uint8_t data[4];
+  uint8_t data[4];
 
-    _measurement_started_ms = 0;
+  _measurement_started_ms = 0;
 
-    if (hal.i2c->read(I2C_ADDRESS_MS4525DO, 4, data) != 0) {
-        return;
-    }
-    
-	uint8_t status = data[0] & 0xC0;
-	if (status == 2) {
-        return;
-	} else if (status == 3) {
-        return;
-	}
+  if (hal.i2c->read(I2C_ADDRESS_MS4525DO, 4, data) != 0) {
+      return;
+  }
 
 	int16_t dp_raw, dT_raw;
 	dp_raw = (data[0] << 8) + data[1];
