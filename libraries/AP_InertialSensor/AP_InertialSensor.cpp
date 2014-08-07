@@ -419,7 +419,7 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
                 PSTR("Place vehicle %S and press any key.\n"), msg);
 
         // wait for user input
-        if (interact->blocking_read()) {
+        if (!interact->blocking_read()) {
             //No need to use interact->printf_P for an error, blocking_read does this when it fails
             goto failed;
         }
