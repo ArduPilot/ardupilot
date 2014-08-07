@@ -610,7 +610,6 @@ bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP
     default:
         // unrecognised command
         return false;
-        break;
     }
 
     // copy location from mavlink to command
@@ -677,7 +676,6 @@ bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP
 
         default:
             return false;
-            break;
         }
     }
 
@@ -869,7 +867,6 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
     default:
         // unrecognised command
         return false;
-        break;
     }
 
     // copy location from mavlink to command
