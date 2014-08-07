@@ -193,5 +193,32 @@
                <field type="uint8_t" name="yaw_manual">yaw auto:0, manual:1</field>
                <field type="uint8_t" name="thrust_manual">thrust auto:0, manual:1</field>
           </message>
+          <message id="205" name="DETECTION_STATS">
+               <field type="uint16_t" name="detections">Number of detections</field>
+               <field type="float" name="best_score">Best score</field>
+               <field type="int32_t" name="best_lat">Latitude of best detection * 1E7</field>
+               <field type="int32_t" name="best_lon">Longitude of best detection * 1E7</field>
+               <field type="int16_t" name="best_alt">Altitude of best detection * 1E3</field>
+               <field type="int32_t" name="best_detection_id">ID of best detection</field>
+               <field type="uint16_t" name="images_done">Number of images already processed</field>
+               <field type="uint16_t" name="images_todo">Number of images still to process</field>
+               <field type="float" name="fps">Average images per seconds processed</field>
+          </message>
+          <message id="206" name="ONBOARD_HEALTH">
+               <field type="uint32_t" name="uptime">Uptime of system</field>
+               <field type="uint16_t" name="cpu_freq">CPU frequency</field>
+               <field type="uint8_t" name="cpu_load">CPU load in percent</field>
+               <field type="uint8_t" name="ram_usage">RAM usage in percent</field>
+               <field type="float" name="ram_total">RAM size in GiB</field>
+               <field type="uint8_t" name="swap_usage">Swap usage in percent</field>
+               <field type="float" name="swap_total">Swap size in GiB</field>
+               <field type="int8_t" name="disk_health">Disk health (-1: N/A, 0: ERR, 1: RO, 2: RW)</field>
+               <field type="uint8_t" name="disk_usage">Disk usage in percent</field>
+               <field type="float" name="disk_total">Disk total in GiB</field>
+               <field type="float" name="temp">Temperature</field>
+               <field type="float" name="voltage">Supply voltage V</field>
+               <field type="float" name="network_load_in">Network load inbound KiB/s</field>
+               <field type="float" name="network_load_out">Network load outbound in KiB/s </field>
+          </message>
      </messages>
 </mavlink>

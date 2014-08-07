@@ -77,13 +77,13 @@
 
     <!-- Camera event types -->
     <enum name="CAMERA_STATUS_TYPES">
-        <entry name="HEARTBEAT"  value="0"><description>Camera heartbeat, announce camera component ID at 1hz</description></entry>
-        <entry name="TRIGGER"    value="1"><description>Camera image triggered</description></entry>
-        <entry name="DISCONNECT" value="2"><description>Camera connection lost</description></entry>
-        <entry name="ERROR"      value="3"><description>Camera unknown error</description></entry>
-        <entry name="LOWBATT"    value="4"><description>Camera battery low. Parameter p1 shows reported voltage</description></entry>
-        <entry name="LOWSTORE"   value="5"><description>Camera storage low. Parameter p1 shows reported shots remaining</description></entry>
-        <entry name="LOWSTOREV"  value="6"><description>Camera storage low. Parameter p1 shows reported video minutes remaining</description></entry>
+        <entry name="CAMERA_STATUS_TYPE_HEARTBEAT"  value="0"><description>Camera heartbeat, announce camera component ID at 1hz</description></entry>
+        <entry name="CAMERA_STATUS_TYPE_TRIGGER"    value="1"><description>Camera image triggered</description></entry>
+        <entry name="CAMERA_STATUS_TYPE_DISCONNECT" value="2"><description>Camera connection lost</description></entry>
+        <entry name="CAMERA_STATUS_TYPE_ERROR"      value="3"><description>Camera unknown error</description></entry>
+        <entry name="CAMERA_STATUS_TYPE_LOWBATT"    value="4"><description>Camera battery low. Parameter p1 shows reported voltage</description></entry>
+        <entry name="CAMERA_STATUS_TYPE_LOWSTORE"   value="5"><description>Camera storage low. Parameter p1 shows reported shots remaining</description></entry>
+        <entry name="CAMERA_STATUS_TYPE_LOWSTOREV"  value="6"><description>Camera storage low. Parameter p1 shows reported video minutes remaining</description></entry>
     </enum>
 
     <!-- camera feedback flags, a little bit of future-proofing -->
