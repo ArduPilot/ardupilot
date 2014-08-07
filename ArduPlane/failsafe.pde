@@ -67,8 +67,8 @@ void failsafe_check(void)
 
         if (!demoing_servos) {
             channel_roll->output();
+            channel_pitch->output();
         }
-        channel_pitch->output();
         channel_throttle->output();
         channel_rudder->output();
 
