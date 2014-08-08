@@ -451,5 +451,7 @@ static float lookahead_adjustment(void)
 
     // constrain lookahead to a reasonable limit
     return constrain_float(lookahead, 0, 1000.0f);
+#else
+    return 0;
 #endif
 }
