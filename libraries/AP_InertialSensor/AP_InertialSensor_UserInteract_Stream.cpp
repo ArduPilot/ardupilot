@@ -10,8 +10,6 @@ bool AP_InertialSensor_UserInteractStream::blocking_read()
     while(!_s->available()) {
         hal.scheduler->delay(20);
     }
-    /* Grab first character */
-    uint8_t ret = (uint8_t) _s->read();
     /* Clear all available input */
     while (_s->available()) {
         _s->read();
