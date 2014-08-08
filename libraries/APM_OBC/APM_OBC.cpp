@@ -92,6 +92,12 @@ const AP_Param::GroupInfo APM_OBC::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("QNH_PRESSURE", 10, APM_OBC, _qnh_pressure,    0),
 
+    // @Param: ENABLE
+    // @DisplayName: Enable Advanced Failsafe
+    // @Description: This enables the advanced failsafe system. If this is set to zero (disable) then all the other AFS options have no effect
+    // @User: Advanced
+    AP_GROUPINFO("ENABLE",       11, APM_OBC, _enable,    0),
+
     AP_GROUPEND
 };
 
@@ -103,6 +109,9 @@ extern bool geofence_breached(void);
 void
 APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms)
 {    
+    if (!_enable) {
+        return;
+    }
     // we always check for fence breach
     if (geofence_breached() || check_altlimit()) {
         if (!_terminate) {
@@ -139,7 +148,7 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms)
             hal.console->println_P(PSTR("State DATA_LINK_LOSS"));
             _state = STATE_DATA_LINK_LOSS;
             if (_wp_comms_hold) {
-                                _saved_wp = mission.get_current_nav_cmd().index;
+                _saved_wp = mission.get_current_nav_cmd().index;
                 mission.set_current_cmd(_wp_comms_hold);
             }
             break;
@@ -148,7 +157,7 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms)
             hal.console->println_P(PSTR("State GPS_LOSS"));
             _state = STATE_GPS_LOSS;
             if (_wp_gps_loss) {
-                                _saved_wp = mission.get_current_nav_cmd().index;
+                _saved_wp = mission.get_current_nav_cmd().index;
                 mission.set_current_cmd(_wp_gps_loss);
             }
             break;
@@ -159,13 +168,15 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms)
         if (!gps_lock_ok) {
             // losing GPS lock when data link is lost
             // leads to termination
-            hal.console->println_P(PSTR("Dual loss TERMINATE"));
-            _terminate.set(1);
+            if (!_terminate) {
+                hal.console->println_P(PSTR("Dual loss TERMINATE"));
+                _terminate.set(1);
+            }
         } else if (gcs_link_ok) {
             _state = STATE_AUTO;
             hal.console->println_P(PSTR("GCS OK"));
             if (_saved_wp != 0) {
-                                mission.set_current_cmd(_saved_wp);            
+                mission.set_current_cmd(_saved_wp);            
                 _saved_wp = 0;
             }
         }
@@ -175,8 +186,10 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms)
         if (!gcs_link_ok) {
             // losing GCS link when GPS lock lost
             // leads to termination
-            hal.console->println_P(PSTR("Dual loss TERMINATE"));
-            _terminate.set(1);
+            if (!_terminate) {
+                hal.console->println_P(PSTR("Dual loss TERMINATE"));
+                _terminate.set(1);
+            }
         } else if (gps_lock_ok) {
             hal.console->println_P(PSTR("GPS OK"));
             _state = STATE_AUTO;
@@ -207,6 +220,9 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms)
 bool
 APM_OBC::check_altlimit(void)
 {    
+    if (!_enable) {
+        return false;
+    }
     if (_amsl_limit == 0 || _qnh_pressure <= 0) {
         // no limit set
         return false;
@@ -240,6 +256,9 @@ APM_OBC::check_altlimit(void)
  */
 void APM_OBC::setup_failsafe(void)
 {
+    if (!_enable) {
+        return;
+    }
     const RC_Channel *ch_roll     = RC_Channel::rc_channel(rcmap.roll()-1);
     const RC_Channel *ch_pitch    = RC_Channel::rc_channel(rcmap.pitch()-1);
     const RC_Channel *ch_yaw      = RC_Channel::rc_channel(rcmap.yaw()-1);
@@ -258,6 +277,8 @@ void APM_OBC::setup_failsafe(void)
     RC_Channel_aux::set_servo_failsafe(RC_Channel_aux::k_rudder, RC_Channel::RC_CHANNEL_LIMIT_MAX);
     RC_Channel_aux::set_servo_failsafe(RC_Channel_aux::k_elevator, RC_Channel::RC_CHANNEL_LIMIT_MAX);
     RC_Channel_aux::set_servo_failsafe(RC_Channel_aux::k_elevator_with_input, RC_Channel::RC_CHANNEL_LIMIT_MAX);
+    RC_Channel_aux::set_servo_failsafe(RC_Channel_aux::k_manual, RC_Channel::RC_CHANNEL_LIMIT_TRIM);
+    RC_Channel_aux::set_servo_failsafe(RC_Channel_aux::k_none, RC_Channel::RC_CHANNEL_LIMIT_TRIM);
 }
 
 /*
@@ -266,6 +287,9 @@ void APM_OBC::setup_failsafe(void)
  */
 void APM_OBC::check_crash_plane(void)
 {
+    if (!_enable) {
+        return;
+    }
     // ensure failsafe values are setup for if FMU crashes on PX4/Pixhawk
     if (!_failsafe_setup) {
         _failsafe_setup = true;
@@ -297,4 +321,6 @@ void APM_OBC::check_crash_plane(void)
     RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_rudder, RC_Channel::RC_CHANNEL_LIMIT_MAX);
     RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_elevator, RC_Channel::RC_CHANNEL_LIMIT_MAX);
     RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_elevator_with_input, RC_Channel::RC_CHANNEL_LIMIT_MAX);
+    RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_manual, RC_Channel::RC_CHANNEL_LIMIT_TRIM);
+    RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_none, RC_Channel::RC_CHANNEL_LIMIT_TRIM);
 }

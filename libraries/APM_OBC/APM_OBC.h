@@ -78,6 +78,7 @@ private:
     const AP_GPS &gps;
     const RCMapper &rcmap;
 
+    AP_Int8 _enable;
     // digital output pins for communicating with the failsafe board
     AP_Int8 _heartbeat_pin;
     AP_Int8 _manual_pin;
