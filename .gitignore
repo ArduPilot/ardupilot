@@ -28,6 +28,8 @@
 .project
 .settings/
 .vagrant
+/docs/*
+/test/*
 /tmp/*
 /Tools/ArdupilotMegaPlanner/3DRRadio/bin
 /Tools/ArdupilotMegaPlanner/3DRRadio/obj

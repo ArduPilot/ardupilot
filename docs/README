@@ -1,4 +1,0 @@
-You need doxygen and graphviz installed.
-
-Run the build-libs script first, then the project you're interested in. 
-HTMl will be generated and placed into docs/projectname.

@@ -1,7 +1,0 @@
-@INCLUDE = docs/config/default
-
-PROJECT_NAME = "APM:Plane"
-INPUT = ArduPlane/
-OUTPUT_DIRECTORY = $(DOCS_OUTPUT_BASE)/ArduPlane
-HTML_OUTPUT = .
-TAGFILES = $(DOCS_OUTPUT_BASE)/tags/libraries=../libraries
