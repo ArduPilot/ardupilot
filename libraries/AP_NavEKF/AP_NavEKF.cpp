@@ -511,13 +511,16 @@ void NavEKF::InitialiseFilterBootstrap(void)
     readMagData();
 
     // normalise the acceleration vector
-    initAccVec.normalize();
+    float pitch=0, roll=0;
+    if (initAccVec.length() > 0.001f) {
+        initAccVec.normalize();
 
-    // calculate initial pitch angle
-    float pitch = asinf(initAccVec.x);
+        // calculate initial pitch angle
+        pitch = asinf(initAccVec.x);
 
-    // calculate initial roll angle
-    float roll = -asinf(initAccVec.y / cosf(pitch));
+        // calculate initial roll angle
+        roll = -asinf(initAccVec.y / cosf(pitch));
+    }
 
     // calculate initial orientation and earth magnetic field states
     Quaternion initQuat;
