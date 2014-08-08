@@ -200,6 +200,13 @@ public:
     // over active channels to send to all active channels    
     static uint8_t active_channel_mask(void) { return mavlink_active; }
 
+    /*
+      send a statustext message to all active MAVLink
+      connections. This function is static so it can be called from
+      any library
+    */
+    static void send_statustext_all(const prog_char_t *msg);
+
 private:
     void        handleMessage(mavlink_message_t * msg);
 
