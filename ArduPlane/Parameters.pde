@@ -1073,7 +1073,9 @@ const AP_Param::Info var_info[] PROGMEM = {
 #endif
 
 #if OBC_FAILSAFE == ENABLED
-    GOBJECT(obc,  "FS_", APM_OBC),
+    // @Group: AFS_
+    // @Path: ../libraries/APM_OBC/APM_OBC.cpp
+    GOBJECT(obc,  "AFS_", APM_OBC),
 #endif
 
 #if AP_AHRS_NAVEKF_AVAILABLE

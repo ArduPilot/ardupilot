@@ -138,7 +138,6 @@
 #endif
 #endif
 
-
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 // RADIO CONFIGURATION
@@ -488,7 +487,11 @@
 
 // OBC Failsafe enable
 #ifndef OBC_FAILSAFE
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+ # define OBC_FAILSAFE ENABLED
+#else
  # define OBC_FAILSAFE DISABLED
+#endif
 #endif
 
 #ifndef SERIAL_BUFSIZE
