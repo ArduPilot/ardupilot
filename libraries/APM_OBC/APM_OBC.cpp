@@ -24,6 +24,7 @@
 #include <APM_OBC.h>
 #include <RC_Channel.h>
 #include <RC_Channel_aux.h>
+#include <GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -115,7 +116,7 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms)
     // we always check for fence breach
     if (geofence_breached() || check_altlimit()) {
         if (!_terminate) {
-            hal.console->println_P(PSTR("Fence TERMINATE"));
+            GCS_MAVLINK::send_statustext_all(PSTR("Fence TERMINATE"));
             _terminate.set(1);
         }
     }
@@ -137,7 +138,7 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms)
         // we startup in preflight mode. This mode ends when
         // we first enter auto.
         if (mode == OBC_AUTO) {
-            hal.console->println_P(PSTR("Starting OBC_AUTO"));
+            GCS_MAVLINK::send_statustext_all(PSTR("Starting AFS_AUTO"));
             _state = STATE_AUTO;
         }
         break;
@@ -145,7 +146,7 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms)
     case STATE_AUTO:
         // this is the normal mode. 
         if (!gcs_link_ok) {
-            hal.console->println_P(PSTR("State DATA_LINK_LOSS"));
+            GCS_MAVLINK::send_statustext_all(PSTR("State DATA_LINK_LOSS"));
             _state = STATE_DATA_LINK_LOSS;
             if (_wp_comms_hold) {
                 _saved_wp = mission.get_current_nav_cmd().index;
@@ -154,7 +155,7 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms)
             break;
         }
         if (!gps_lock_ok) {
-            hal.console->println_P(PSTR("State GPS_LOSS"));
+            GCS_MAVLINK::send_statustext_all(PSTR("State GPS_LOSS"));
             _state = STATE_GPS_LOSS;
             if (_wp_gps_loss) {
                 _saved_wp = mission.get_current_nav_cmd().index;
@@ -169,12 +170,12 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms)
             // losing GPS lock when data link is lost
             // leads to termination
             if (!_terminate) {
-                hal.console->println_P(PSTR("Dual loss TERMINATE"));
+                GCS_MAVLINK::send_statustext_all(PSTR("Dual loss TERMINATE"));
                 _terminate.set(1);
             }
         } else if (gcs_link_ok) {
             _state = STATE_AUTO;
-            hal.console->println_P(PSTR("GCS OK"));
+            GCS_MAVLINK::send_statustext_all(PSTR("GCS OK"));
             if (_saved_wp != 0) {
                 mission.set_current_cmd(_saved_wp);            
                 _saved_wp = 0;
@@ -187,11 +188,11 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms)
             // losing GCS link when GPS lock lost
             // leads to termination
             if (!_terminate) {
-                hal.console->println_P(PSTR("Dual loss TERMINATE"));
+                GCS_MAVLINK::send_statustext_all(PSTR("Dual loss TERMINATE"));
                 _terminate.set(1);
             }
         } else if (gps_lock_ok) {
-            hal.console->println_P(PSTR("GPS OK"));
+            GCS_MAVLINK::send_statustext_all(PSTR("GPS OK"));
             _state = STATE_AUTO;
             if (_saved_wp != 0) {
                 mission.set_current_cmd(_saved_wp);            
