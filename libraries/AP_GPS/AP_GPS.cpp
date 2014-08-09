@@ -330,7 +330,6 @@ AP_GPS::update_instance(uint8_t instance)
 void
 AP_GPS::update(void)
 {
-
     for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
         update_instance(i);
     }
@@ -376,7 +375,7 @@ AP_GPS::update(void)
  */
 void 
 AP_GPS::setHIL(uint8_t instance, GPS_Status _status, uint64_t time_epoch_ms, 
-               Location &_location, Vector3f &_velocity, uint8_t _num_sats, 
+               const Location &_location, const Vector3f &_velocity, uint8_t _num_sats, 
                uint16_t hdop, bool _have_vertical_velocity)
 {
     if (instance >= GPS_MAX_INSTANCES) {

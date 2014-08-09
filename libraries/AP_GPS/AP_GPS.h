@@ -278,7 +278,7 @@ public:
 
     // set position for HIL
     void setHIL(uint8_t instance, GPS_Status status, uint64_t time_epoch_ms, 
-                Location &location, Vector3f &velocity, uint8_t num_sats,
+                const Location &location, const Vector3f &velocity, uint8_t num_sats,
                 uint16_t hdop, bool _have_vertical_velocity);
 
     static const struct AP_Param::GroupInfo var_info[];
