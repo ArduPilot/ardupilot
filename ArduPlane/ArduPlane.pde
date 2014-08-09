@@ -804,8 +804,6 @@ void setup() {
 
     notify.init(false);
 
-    battery.init();
-
     rssi_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE);
 
     init_ardupilot();

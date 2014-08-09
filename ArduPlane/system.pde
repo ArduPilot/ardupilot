@@ -107,6 +107,9 @@ static void init_ardupilot()
     // initialise sonar
     init_sonar();
 
+    // initialise battery monitoring
+    battery.init();
+
     // init the GCS
     gcs[0].init(hal.uartA);
 
