@@ -17,6 +17,7 @@ CLEAN_BUILD=0
 START_ANTENNA_TRACKER=0
 WIPE_EEPROM=0
 REVERSE_THROTTLE=0
+NO_REBUILD=0
 TRACKER_ARGS=""
 
 usage()
@@ -35,6 +36,7 @@ Options:
     -t               set antenna tracker start location
     -L               select start location from Tools/autotest/locations.txt
     -c               do a make clean before building
+    -N               don't rebuild before starting ardupilot
     -w               wipe EEPROM and reload parameters
     -R               reverse throttle in plane
     -f FRAME         set aircraft frame type
@@ -57,7 +59,7 @@ EOF
 
 
 # parse options. Thanks to http://wiki.bash-hackers.org/howto/getopts_tutorial
-while getopts ":I:VgGcj:TA:t:L:v:hwf:R" opt; do
+while getopts ":I:VgGcj:TA:t:L:v:hwf:RN" opt; do
   case $opt in
     v)
       VEHICLE=$OPTARG
@@ -67,6 +69,9 @@ while getopts ":I:VgGcj:TA:t:L:v:hwf:R" opt; do
       ;;
     V)
       USE_VALGRIND=1
+      ;;
+    N)
+      NO_REBUILD=1
       ;;
     T)
       START_ANTENNA_TRACKER=1
@@ -185,6 +190,7 @@ case $FRAME in
 esac
 
 autotest=$(dirname $(readlink -e $0))
+if [ $NO_REBUILD == 0 ]; then
 pushd $autotest/../../$VEHICLE || {
     echo "Failed to change to vehicle directory for $VEHICLE"
     usage
@@ -198,6 +204,7 @@ make $BUILD_TARGET -j$NUM_PROCS || {
     make $BUILD_TARGET -j$NUM_PROCS
 }
 popd
+fi
 
 # get the location information
 SIMHOME=$(cat $autotest/locations.txt | grep -i "^$LOCATION=" | cut -d= -f2)
