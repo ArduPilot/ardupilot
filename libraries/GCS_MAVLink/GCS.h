@@ -12,6 +12,7 @@
 #include <GCS_MAVLink.h>
 #include <DataFlash.h>
 #include <AP_Mission.h>
+#include <AP_BattMonitor.h>
 #include <stdint.h>
 
 //  GCS Message ID's
@@ -47,6 +48,7 @@ enum ap_message {
     MSG_WIND,
     MSG_RANGEFINDER,
     MSG_TERRAIN,
+    MSG_BATTERY2,
     MSG_RETRY_DEFERRED // this must be last
 };
 
@@ -195,6 +197,7 @@ public:
     void send_scaled_pressure(AP_Baro &barometer);
     void send_sensor_offsets(const AP_InertialSensor &ins, const Compass &compass, AP_Baro &barometer);
     void send_ahrs(AP_AHRS &ahrs);
+    void send_battery2(const AP_BattMonitor &battery);
 
     // return a bitmap of active channels. Used by libraries to loop
     // over active channels to send to all active channels    
