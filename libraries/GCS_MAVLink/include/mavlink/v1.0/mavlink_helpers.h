@@ -209,13 +209,18 @@ MAVLINK_HELPER void mavlink_update_checksum(mavlink_message_t* msg, uint8_t c)
  * it could be successfully decoded. Checksum and other failures will be silently
  * ignored.
  *
+ * Messages are parsed into an internal buffer (one for each channel). When a complete
+ * message is received it is copies into *returnMsg and the channel's status is
+ * copied into *returnStats.
+ *
  * @param chan     ID of the current channel. This allows to parse different channels with this function.
  *                 a channel is not a physical message channel like a serial port, but a logic partition of
  *                 the communication streams in this case. COMM_NB is the limit for the number of channels
  *                 on MCU (e.g. ARM7), while COMM_NB_HIGH is the limit for the number of channels in Linux/Windows
- * @param c        The char to barse
+ * @param c        The char to parse
  *
  * @param returnMsg NULL if no message could be decoded, the message data else
+ * @param returnStats if a message was decoded, this is filled with the channel's stats
  * @return 0 if no message could be decoded, 1 else
  *
  * A typical use scenario of this function call is:
