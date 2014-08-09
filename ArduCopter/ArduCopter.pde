@@ -1510,11 +1510,6 @@ static void tuning(){
         g.acro_yaw_p = tuning_value;
         break;
 
-    case CH6_RELAY:
-        if (g.rc_6.control_in > 525) relay.on(0);
-        if (g.rc_6.control_in < 475) relay.off(0);
-        break;
-
 #if FRAME_CONFIG == HELI_FRAME
     case CH6_HELI_EXTERNAL_GYRO:
         motors.ext_gyro_gain(g.rc_6.control_in);
