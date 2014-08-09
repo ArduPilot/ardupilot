@@ -359,8 +359,13 @@ void PX4AnalogIn::_timer_tick(void)
             if (system_power.servo_valid)   flags |= MAV_POWER_STATUS_SERVO_VALID;
             if (system_power.periph_5V_OC)  flags |= MAV_POWER_STATUS_PERIPH_OVERCURRENT;
             if (system_power.hipower_5V_OC) flags |= MAV_POWER_STATUS_PERIPH_HIPOWER_OVERCURRENT;
-            if (_power_flags != 0 && _power_flags != flags) {
-                // the power status has changed since boot
+            if (_power_flags != 0 && 
+                _power_flags != flags && 
+                hal.scheduler->millis() > 5000) {
+                // the power status has changed since boot, and more
+                // than 5s after power on. The 5 second threshold is
+                // for users who have multiple switches, and they
+                // don't switch both at the same time.
                 flags |= MAV_POWER_STATUS_CHANGED;
             }
             _power_flags = flags;
