@@ -438,5 +438,11 @@
         <field name="flags"     type="uint8_t" >See CAMERA_FEEDBACK_FLAGS enum for definition of the bitmask</field> <!-- future proofing -->
     </message>
 
+    <message name="BATTERY2" id="181">
+      <description>2nd Battery status</description>
+      <field type="uint16_t" name="voltage">voltage in millivolts</field>
+      <field type="int16_t" name="current_battery">Battery current, in 10*milliamperes (1 = 10 milliampere), -1: autopilot does not measure the current</field>
+    </message>
+
      </messages>
 </mavlink>
