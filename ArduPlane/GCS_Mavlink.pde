@@ -1392,6 +1392,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         // set gps hil sensor
         Location loc;
+        memset(&loc, 0, sizeof(loc));
         loc.lat = packet.lat;
         loc.lng = packet.lon;
         loc.alt = packet.alt/10;
