@@ -446,8 +446,8 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(land_repositioning, "LAND_REPOSITION",     LAND_REPOSITION_DEFAULT),
 
-    // @Param: EKFCHECK_THRESH
-    // @DisplayName: EKF checker compass and velocity variance threshold
+    // @Param: EKF_CHECK_THRESH
+    // @DisplayName: EKF and InertialNav check compass and velocity variance threshold
     // @Description: Allows setting the maximum acceptable compass and velocity variance (0 to disable check)
     // @Values: 0:Disabled, 0.6:Default, 1.0:Relaxed
     // @User: Advanced
