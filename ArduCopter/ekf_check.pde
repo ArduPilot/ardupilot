@@ -76,7 +76,7 @@ void ekf_check()
                 ekf_check_state.fail_count_compass = EKF_CHECK_ITERATIONS_MAX;
                 ekf_check_state.bad_compass = true;
                 // log an error in the dataflash
-                Log_Write_Error(ERROR_SUBSYSTEM_EKF_CHECK, ERROR_CODE_EKF_CHECK_BAD_COMPASS);
+                Log_Write_Error(ERROR_SUBSYSTEM_EKF_CHECK, ERROR_CODE_EKF_CHECK_BAD_VARIANCE);
                 // send message to gcs
                 if ((hal.scheduler->millis() - ekf_check_state.last_warn_time) > EKF_CHECK_WARNING_TIME) {
                     gcs_send_text_P(SEVERITY_HIGH,PSTR("EKF variance"));
@@ -94,7 +94,7 @@ void ekf_check()
             if (ekf_check_state.fail_count_compass == 0) {
                 ekf_check_state.bad_compass = false;
                 // log recovery in the dataflash
-                Log_Write_Error(ERROR_SUBSYSTEM_EKF_CHECK, ERROR_CODE_EKF_CHECK_BAD_COMPASS_CLEARED);
+                Log_Write_Error(ERROR_SUBSYSTEM_EKF_CHECK, ERROR_CODE_EKF_CHECK_BAD_VARIANCE_CLEARED);
                 // clear failsafe
                 failsafe_ekf_off_event();
             }
