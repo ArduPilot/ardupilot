@@ -13,7 +13,7 @@
 #include <AP_Math.h>
 #include <AP_Baro.h>
 
-#define BARO_GLITCH_ACCEL_MAX_CMSS  1000.0f // vehicle can accelerate at up to 10m/s/s vertically
+#define BARO_GLITCH_ACCEL_MAX_CMSS  1500.0f // vehicle can accelerate at up to 15m/s/s vertically
 #define BARO_GLITCH_DISTANCE_OK_CM  500.0f  // baro movement within 5m of current position is always ok
 
 /// @class	Baro_Glitch
