@@ -60,10 +60,6 @@ void DataFlash_Empty::BufferWrite (unsigned char BufferNum,
         uint16_t IntPageAdr, unsigned char Data)
 { }
 
-unsigned char DataFlash_Empty::BufferRead (unsigned char BufferNum,
-        uint16_t IntPageAdr)
-{ return 0; }
-
 void DataFlash_Empty::BlockWrite(uint8_t BufferNum, uint16_t IntPageAdr, 
                     const void *pHeader, uint8_t hdr_size,
                     const void *pBuffer, uint16_t size)
