@@ -158,7 +158,6 @@ void AP_PerfMon::DisplayResults()
     totalTime = allEndTime - allStartTime;
 
     // ensure serial is blocking
-    //blocking_writes = hal.console->get_blocking_writes();
     hal.console->set_blocking_writes(true);
 
     // print table of results
