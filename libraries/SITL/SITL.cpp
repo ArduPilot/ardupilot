@@ -60,6 +60,7 @@ const AP_Param::GroupInfo SITL::var_info[] PROGMEM = {
     AP_GROUPINFO("MAG_MOT",       29, SITL,  mag_mot, 0),
     AP_GROUPINFO("ACC_BIAS",      30, SITL,  accel_bias, 0),
     AP_GROUPINFO("BARO_GLITCH",   31, SITL,  baro_glitch, 0),
+    AP_GROUPINFO("SONAR_SCALE",   32, SITL,  sonar_scale, 12.1212f),
     AP_GROUPEND
 };
 

@@ -63,6 +63,7 @@ public:
 
     AP_Float sonar_glitch;// probablility between 0-1 that any given sonar sample will read as max distance
     AP_Float sonar_noise; // in metres
+    AP_Float sonar_scale; // meters per volt
 
 	AP_Float drift_speed; // degrees/second/minute
 	AP_Float drift_time;  // period in minutes
