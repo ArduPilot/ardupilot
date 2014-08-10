@@ -218,6 +218,7 @@ void AP_Airspeed::read(void)
     if (!_enable) {
         return;
     }
+    
     airspeed_pressure = get_pressure() - _offset;
 
     /*
