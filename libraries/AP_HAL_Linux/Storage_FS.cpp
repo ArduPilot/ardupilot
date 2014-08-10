@@ -1,5 +1,5 @@
 #include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && HAL_STORAGE == USE_FS
 
 #include <assert.h>
 #include <sys/types.h>
@@ -9,7 +9,7 @@
 #include <errno.h>
 #include <stdio.h>
 
-#include "Storage.h"
+#include "Storage_FS.h"
 using namespace Linux;
 
 /*
