@@ -31,6 +31,7 @@
 #include <AP_Vehicle.h>
 #include <AP_Mission.h>
 #include <AP_Terrain.h>
+#include <AP_BattMonitor.h>
 #include <AP_Rally.h>
 #include <AP_ADC_AnalogSource.h>
 
