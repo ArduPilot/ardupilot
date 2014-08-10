@@ -63,29 +63,24 @@ float SITL_State::_gyro_drift(void)
 uint16_t SITL_State::_ground_sonar(float altitude)
 {
 	static float home_alt = -1;
-	// TODO Find the current sonar object and load these params from it
-	// rather than assuming XL type
-	float scaler = 3.0f;
-        int16_t max_distance_cm = 700;
-        int16_t min_distance_cm = 20;
 
 	if (home_alt == -1 && altitude > 0)
 		home_alt = altitude;
 
 	altitude = altitude - home_alt;
 
+        // adjust for apparent altitude with roll
+        altitude *= cos(radians(_sitl->state.rollDeg)) * cos(radians(_sitl->state.pitchDeg));
+
 	altitude += _sitl->sonar_noise * _rand_float();
 
-	if (_sitl->sonar_glitch >= (_rand_float() + 1.0f)/2.0f)
-		altitude = max_distance_cm / 100.0f;
-
-	altitude = constrain_float(altitude,
-                                   min_distance_cm / 100.0f,
-                                   max_distance_cm / 100.0f);
-
 	// Altitude in in m, scaler in meters/volt
-	float voltage = altitude / scaler;
+	float voltage = altitude / _sitl->sonar_scale;
         voltage = constrain_float(voltage, 0, 5.0f);
+
+	if (_sitl->sonar_glitch >= (_rand_float() + 1.0f)/2.0f) {
+            voltage = 5.0f;
+        }
 
         return 1023*(voltage / 5.0f);
 }
