@@ -1399,6 +1399,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         Vector3f vel(packet.vx, packet.vy, packet.vz);
         vel *= 0.01f;
 
+        // setup airspeed pressure based on 3D speed, no wind
+        airspeed.setHIL(sq(vel.length()) / 2.0f + 2013);
+
         gps.setHIL(0, AP_GPS::GPS_OK_FIX_3D,
                    packet.time_usec/1000,
                    loc, vel, 10, 0, true);
@@ -1420,7 +1423,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         barometer.setHIL(packet.alt*0.001f);
         compass.setHIL(packet.roll, packet.pitch, packet.yaw);
-        airspeed.disable();
 
         // cope with DCM getting badly off due to HIL lag
         if (g.hil_err_limit > 0 &&
