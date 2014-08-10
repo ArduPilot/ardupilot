@@ -259,7 +259,7 @@ case $VEHICLE in
         fi
         ;;
     ArduCopter)
-        RUNSIM="nice $autotest/pysim/sim_multicopter.py --home=$SIMHOME $EXTRA_SIM"
+        RUNSIM="nice $autotest/pysim/sim_multicopter.py --home=$SIMHOME --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT $EXTRA_SIM"
         PARMS="copter_params.parm"
         ;;
     APMrover2)
