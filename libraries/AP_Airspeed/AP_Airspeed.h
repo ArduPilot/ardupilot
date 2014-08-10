@@ -46,6 +46,7 @@ public:
         _last_pressure(0.0f),
         _EAS2TAS(1.0f),
         _healthy(false),
+        _hil_set(false),
         _last_update_ms(0),
         _calibration(parms),
         _last_saved_ratio(0.0f),
@@ -137,6 +138,8 @@ public:
     // return health status of sensor
     bool healthy(void) const { return _healthy; }
 
+    void setHIL(float pressure) { _hil_set=true; _hil_pressure=pressure; };
+
     // return time in ms of last update
     uint32_t last_update_ms(void) const { return _last_update_ms; }
 
@@ -160,7 +163,9 @@ private:
     float           _airspeed;
     float			_last_pressure;
     float           _EAS2TAS;
-    bool		    _healthy;
+    bool		    _healthy:1;
+    bool		    _hil_set:1;
+    float           _hil_pressure;
     uint32_t        _last_update_ms;
 
     Airspeed_Calibration _calibration;
