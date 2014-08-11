@@ -123,6 +123,7 @@ private:
 	AP_Float _spdWeightLand;
     AP_Float _landThrottle;
     AP_Float _landAirspeed;
+    AP_Float _land_sink;
 	AP_Int8  _pitch_max;
 	AP_Int8  _pitch_min;
 	
