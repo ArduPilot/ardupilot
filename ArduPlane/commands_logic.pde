@@ -378,11 +378,32 @@ static bool verify_land()
     // so we don't verify command completion. Instead we use this to
     // adjust final landing parameters
 
-    // Set land_complete if we are within 2 seconds distance or within
-    // 3 meters altitude of the landing point
-    if ((wp_distance <= (g.land_flare_sec * gps.ground_speed()))
-        || (adjusted_altitude_cm() <= next_WP_loc.alt + g.land_flare_alt*100)) {
+    float height = height_above_target();
 
+    // calculate the sink rate. 
+    float sink_rate, ground_speed;
+    Vector3f vel;
+    if (ahrs.get_velocity_NED(vel)) {
+        sink_rate = vel.z;
+        ground_speed = pythagorous2(vel.x, vel.y);
+    } else {
+        sink_rate = gps.velocity().z;
+        ground_speed = gps.ground_speed();
+    }
+    
+    /* Set land_complete (which starts the flare) under 3 conditions:
+       1) we are within LAND_FLARE_ALT meters of the landing altitude
+       2) we are within LAND_FLARE_SEC of the landing point
+          horizontally
+       3) we are within LAND_FLARE_SEC of the landing point vertically
+    */
+    if (wp_distance <= g.land_flare_sec * ground_speed || 
+        height <= g.land_flare_alt ||
+        height <= -sink_rate * g.land_flare_sec) {
+
+        if (!auto_state.land_complete) {
+            gcs_send_text_fmt(PSTR("Flare %.1fm sink=%.2f speed=%.1f"), height, sink_rate, ground_speed);
+        }
         auto_state.land_complete = true;
 
         if (gps.ground_speed() < 3) {

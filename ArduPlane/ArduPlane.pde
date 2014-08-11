@@ -1170,16 +1170,16 @@ static void handle_auto_mode(void)
 
     case MAV_CMD_NAV_LAND:
         calc_nav_roll();
+        calc_nav_pitch();
         
         if (auto_state.land_complete) {
             // during final approach constrain roll to the range
             // allowed for level flight
             nav_roll_cd = constrain_int32(nav_roll_cd, -g.level_roll_limit*100UL, g.level_roll_limit*100UL);
             
-            // hold pitch constant in final approach
-            nav_pitch_cd = g.land_pitch_cd;
+            // hold pitch above the specified land pitch in final approach
+            nav_pitch_cd = constrain_int32(nav_pitch_cd, g.land_pitch_cd, nav_pitch_cd);
         } else {
-            calc_nav_pitch();
             if (!airspeed.use()) {
                 // when not under airspeed control, don't allow
                 // down pitch in landing
