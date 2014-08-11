@@ -867,8 +867,10 @@ public:
 	FastDelegate0() { clear(); }
 	FastDelegate0(const FastDelegate0 &x) {
 		m_Closure.CopyFrom(this, x.m_Closure); }
-	void operator = (const FastDelegate0 &x)  {
-		m_Closure.CopyFrom(this, x.m_Closure); }
+	FastDelegate0 &operator = (const FastDelegate0 &x)  {
+		m_Closure.CopyFrom(this, x.m_Closure); 
+    return *this;
+  }
 	bool operator ==(const FastDelegate0 &x) const {
 		return m_Closure.IsEqual(x.m_Closure);	}
 	bool operator !=(const FastDelegate0 &x) const {
@@ -952,8 +954,10 @@ public:
 	FastDelegate1() { clear(); }
 	FastDelegate1(const FastDelegate1 &x) {
 		m_Closure.CopyFrom(this, x.m_Closure); }
-	void operator = (const FastDelegate1 &x)  {
-		m_Closure.CopyFrom(this, x.m_Closure); }
+	FastDelegate1 &operator = (const FastDelegate1 &x)  {
+		m_Closure.CopyFrom(this, x.m_Closure); 
+    return *this;
+  }
 	bool operator ==(const FastDelegate1 &x) const {
 		return m_Closure.IsEqual(x.m_Closure);	}
 	bool operator !=(const FastDelegate1 &x) const {
@@ -1037,8 +1041,10 @@ public:
 	FastDelegate2() { clear(); }
 	FastDelegate2(const FastDelegate2 &x) {
 		m_Closure.CopyFrom(this, x.m_Closure); }
-	void operator = (const FastDelegate2 &x)  {
-		m_Closure.CopyFrom(this, x.m_Closure); }
+	FastDelegate2 &operator = (const FastDelegate2 &x)  {
+		m_Closure.CopyFrom(this, x.m_Closure); 
+    return *this;
+  }
 	bool operator ==(const FastDelegate2 &x) const {
 		return m_Closure.IsEqual(x.m_Closure);	}
 	bool operator !=(const FastDelegate2 &x) const {
@@ -1122,8 +1128,10 @@ public:
 	FastDelegate3() { clear(); }
 	FastDelegate3(const FastDelegate3 &x) {
 		m_Closure.CopyFrom(this, x.m_Closure); }
-	void operator = (const FastDelegate3 &x)  {
-		m_Closure.CopyFrom(this, x.m_Closure); }
+	FastDelegate3 &operator = (const FastDelegate3 &x)  {
+		m_Closure.CopyFrom(this, x.m_Closure); 
+    return *this;
+  }
 	bool operator ==(const FastDelegate3 &x) const {
 		return m_Closure.IsEqual(x.m_Closure);	}
 	bool operator !=(const FastDelegate3 &x) const {
@@ -1207,8 +1215,10 @@ public:
 	FastDelegate4() { clear(); }
 	FastDelegate4(const FastDelegate4 &x) {
 		m_Closure.CopyFrom(this, x.m_Closure); }
-	void operator = (const FastDelegate4 &x)  {
-		m_Closure.CopyFrom(this, x.m_Closure); }
+	FastDelegate4 &operator = (const FastDelegate4 &x)  {
+		m_Closure.CopyFrom(this, x.m_Closure); 
+    return *this;
+  }
 	bool operator ==(const FastDelegate4 &x) const {
 		return m_Closure.IsEqual(x.m_Closure);	}
 	bool operator !=(const FastDelegate4 &x) const {
@@ -1292,8 +1302,10 @@ public:
 	FastDelegate5() { clear(); }
 	FastDelegate5(const FastDelegate5 &x) {
 		m_Closure.CopyFrom(this, x.m_Closure); }
-	void operator = (const FastDelegate5 &x)  {
-		m_Closure.CopyFrom(this, x.m_Closure); }
+	FastDelegate5 &operator = (const FastDelegate5 &x)  {
+		m_Closure.CopyFrom(this, x.m_Closure); 
+    return *this;
+  }
 	bool operator ==(const FastDelegate5 &x) const {
 		return m_Closure.IsEqual(x.m_Closure);	}
 	bool operator !=(const FastDelegate5 &x) const {
@@ -1377,8 +1389,10 @@ public:
 	FastDelegate6() { clear(); }
 	FastDelegate6(const FastDelegate6 &x) {
 		m_Closure.CopyFrom(this, x.m_Closure); }
-	void operator = (const FastDelegate6 &x)  {
-		m_Closure.CopyFrom(this, x.m_Closure); }
+	FastDelegate6 &operator = (const FastDelegate6 &x)  {
+		m_Closure.CopyFrom(this, x.m_Closure); 
+    return *this;
+  }
 	bool operator ==(const FastDelegate6 &x) const {
 		return m_Closure.IsEqual(x.m_Closure);	}
 	bool operator !=(const FastDelegate6 &x) const {
@@ -1462,8 +1476,10 @@ public:
 	FastDelegate7() { clear(); }
 	FastDelegate7(const FastDelegate7 &x) {
 		m_Closure.CopyFrom(this, x.m_Closure); }
-	void operator = (const FastDelegate7 &x)  {
-		m_Closure.CopyFrom(this, x.m_Closure); }
+	FastDelegate7 &operator = (const FastDelegate7 &x)  {
+		m_Closure.CopyFrom(this, x.m_Closure); 
+    return *this;
+  }
 	bool operator ==(const FastDelegate7 &x) const {
 		return m_Closure.IsEqual(x.m_Closure);	}
 	bool operator !=(const FastDelegate7 &x) const {
@@ -1547,8 +1563,10 @@ public:
 	FastDelegate8() { clear(); }
 	FastDelegate8(const FastDelegate8 &x) {
 		m_Closure.CopyFrom(this, x.m_Closure); }
-	void operator = (const FastDelegate8 &x)  {
-		m_Closure.CopyFrom(this, x.m_Closure); }
+	FastDelegate8 &operator = (const FastDelegate8 &x)  {
+		m_Closure.CopyFrom(this, x.m_Closure); 
+    return *this;
+  }
 	bool operator ==(const FastDelegate8 &x) const {
 		return m_Closure.IsEqual(x.m_Closure);	}
 	bool operator !=(const FastDelegate8 &x) const {

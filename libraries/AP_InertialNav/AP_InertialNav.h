@@ -296,8 +296,4 @@ protected:
 
 };
 
-#if AP_AHRS_NAVEKF_AVAILABLE
-#include "AP_InertialNav_NavEKF.h"
-#endif
-
 #endif // __AP_INERTIALNAV_H__
