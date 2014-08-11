@@ -445,6 +445,8 @@ static struct {
  #define MOTOR_CLASS AP_MotorsSingle
 #elif FRAME_CONFIG == COAX_FRAME
  #define MOTOR_CLASS AP_MotorsCoax
+#elif FRAME_CONFIG == PX4MIX_FRAME
+ #define MOTOR_CLASS AP_MotorsPX4
 #else
  #error Unrecognised frame type
 #endif
