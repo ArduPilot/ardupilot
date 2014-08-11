@@ -12,7 +12,7 @@
 #include <GCS_MAVLink.h>
 #include <DataFlash.h>
 #include <AP_Mission.h>
-#include <AP_BattMonitor.h>
+#include "../AP_BattMonitor/AP_BattMonitor.h"
 #include <stdint.h>
 
 //  GCS Message ID's
