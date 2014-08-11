@@ -73,10 +73,19 @@ void AC_AttitudeControl::set_dt(float delta_sec)
 {
     _dt = delta_sec;
 
+    // get filter from ahrs
+    const AP_InertialSensor &ins = _ahrs.get_ins();
+    float ins_filter = (float)ins.get_filter();
+
+    // sanity check filter
+    if (ins_filter <= 0.0f) {
+        ins_filter = AC_ATTITUDE_RATE_RP_PID_DTERM_FILTER;
+    }
+
     // set attitude controller's D term filters
-    _pid_rate_roll.set_d_lpf_alpha(AC_ATTITUDE_RATE_RP_PID_DTERM_FILTER, _dt);
-    _pid_rate_pitch.set_d_lpf_alpha(AC_ATTITUDE_RATE_RP_PID_DTERM_FILTER, _dt);
-    _pid_rate_yaw.set_d_lpf_alpha(AC_ATTITUDE_RATE_Y_PID_DTERM_FILTER, _dt);
+    _pid_rate_roll.set_d_lpf_alpha(ins_filter, _dt);
+    _pid_rate_pitch.set_d_lpf_alpha(ins_filter, _dt);
+    _pid_rate_yaw.set_d_lpf_alpha(ins_filter/2.0f, _dt);  // half
 }
 
 // relax_bf_rate_controller - ensure body-frame rate controller has zero errors to relax rate controller output
