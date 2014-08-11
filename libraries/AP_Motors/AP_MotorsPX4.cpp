@@ -25,9 +25,9 @@
 
 #include <drivers/drv_hrt.h>
 
-#include <cfcntl>
-#include <cstdio>
-#include <cunistd>
+#include <fcntl.h>
+#include <stdio.h>
+#include <unistd.h>
 
 
 #define FRAME_CONFIG_COUNT 5
