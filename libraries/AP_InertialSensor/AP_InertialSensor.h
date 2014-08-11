@@ -164,6 +164,9 @@ public:
         }
     }
 
+    // get_filter - return filter in hz
+    virtual uint8_t get_filter() const { return _mpu6000_filter.get(); }
+
     virtual uint16_t error_count(void) const { return 0; }
     virtual bool healthy(void) const { return get_gyro_health() && get_accel_health(); }
 
