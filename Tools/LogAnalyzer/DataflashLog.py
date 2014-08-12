@@ -589,7 +589,8 @@ class DataflashLog(object):
                     self.process(lineNumber, e)
             except Exception as e:
                 print("BAD LINE: " + line, file=sys.stderr)
-                raise Exception("Error parsing line %d of log file %s - %s" % (lineNumber,self.filename,e.args[0]))
+                if not ignoreBadlines:
+                    raise Exception("Error parsing line %d of log file %s - %s" % (lineNumber,self.filename,e.args[0]))
         return (numBytes,lineNumber)
 
     def read_binary(self, f, ignoreBadlines):
