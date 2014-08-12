@@ -119,11 +119,6 @@ void DataFlash_SITL::BlockWrite(uint8_t BufferNum, uint16_t IntPageAdr,
            size);
 }
 
-unsigned char DataFlash_SITL::BufferRead (unsigned char BufferNum, uint16_t IntPageAdr)
-{
-	return (unsigned char)buffer[BufferNum][IntPageAdr];
-}
-
 // read size bytes of data to a page. The caller must ensure that
 // the data fits within the page, otherwise it will wrap to the
 // start of the page

@@ -57,10 +57,18 @@ void failsafe_check(void)
         } else if (g.elevon_output != MIXING_DISABLED) {
             channel_output_mixer(g.elevon_output, channel_pitch->radio_out, channel_roll->radio_out);
         }
+
+#if OBC_FAILSAFE == ENABLED
+        // this is to allow the failsafe module to deliberately crash 
+        // the plane. Only used in extreme circumstances to meet the
+        // OBC rules
+        obc.check_crash_plane();
+#endif
+
         if (!demoing_servos) {
             channel_roll->output();
+            channel_pitch->output();
         }
-        channel_pitch->output();
         channel_throttle->output();
         channel_rudder->output();
 

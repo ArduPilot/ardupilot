@@ -227,7 +227,7 @@ void *LinuxScheduler::_timer_thread(void)
         poll(NULL, 0, 1);        
     }
     while (true) {
-        _microsleep(5000);
+        _microsleep(1000);
 
         // run registered timers
         _run_timers(true);

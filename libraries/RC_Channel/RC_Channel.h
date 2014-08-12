@@ -33,6 +33,13 @@ public:
         }
     }
 
+    // used to get min/max/trim limit value based on _reverse
+    enum LimitValue {
+        RC_CHANNEL_LIMIT_TRIM,
+        RC_CHANNEL_LIMIT_MIN,
+        RC_CHANNEL_LIMIT_MAX
+    };
+
     // setup min and max radio values in CLI
     void        update_min_max();
     void        zero_min_max();
@@ -48,13 +55,19 @@ public:
     void        set_range_out(int16_t low, int16_t high);
     void        set_angle(int16_t angle);
     void        set_reverse(bool reverse);
-    bool        get_reverse(void);
+    bool        get_reverse(void) const;
     void        set_default_dead_zone(int16_t dzone);
+    
+    // get the channel number
+    uint8_t     get_ch_out(void) const { return _ch_out; };
 
     // read input from APM_RC - create a control_in value
     void        set_pwm(int16_t pwm);
     static void set_pwm_all(void);
     void        set_pwm_no_deadzone(int16_t pwm);
+
+    // return a limit PWM value
+    uint16_t    get_limit_pwm(LimitValue limit) const;
 
     // pwm is stored here
     int16_t        radio_in;
@@ -100,6 +113,7 @@ public:
     void                                            output() const;
     void                                            output_trim() const;
     static void                                     output_trim_all();
+    static void                                     setup_failsafe_trim_all();
     uint16_t                                        read() const;
     void                                            input();
     void                                            enable_out();

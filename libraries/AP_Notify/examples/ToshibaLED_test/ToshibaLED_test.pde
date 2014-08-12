@@ -12,6 +12,7 @@
 #include <DataFlash.h>
 #include <GCS_MAVLink.h>
 #include <AP_Mission.h>
+#include <AP_Terrain.h>
 #include <AP_Declination.h>
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
@@ -23,6 +24,7 @@
 #include <AP_Notify.h>          // Notify library
 #include <ToshibaLED.h>
 #include <AP_AHRS.h>
+#include <AP_NavEKF.h>
 #include <AP_Airspeed.h>
 #include <AP_Vehicle.h>
 #include <AP_ADC_AnalogSource.h>

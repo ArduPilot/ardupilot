@@ -55,6 +55,12 @@ const AP_Param::GroupInfo SITL::var_info[] PROGMEM = {
     AP_GROUPINFO("SONAR_RND",     24, SITL,  sonar_noise, 0),
     AP_GROUPINFO("RC_FAIL",       25, SITL,  rc_fail, 0),
     AP_GROUPINFO("GPS2_ENABLE",   26, SITL,  gps2_enable, 0),
+    AP_GROUPINFO("BARO_DISABLE",  27, SITL,  baro_disable, 0),
+    AP_GROUPINFO("FLOAT_EXCEPT",  28, SITL,  float_exception, 1),
+    AP_GROUPINFO("MAG_MOT",       29, SITL,  mag_mot, 0),
+    AP_GROUPINFO("ACC_BIAS",      30, SITL,  accel_bias, 0),
+    AP_GROUPINFO("BARO_GLITCH",   31, SITL,  baro_glitch, 0),
+    AP_GROUPINFO("SONAR_SCALE",   32, SITL,  sonar_scale, 12.1212f),
     AP_GROUPEND
 };
 

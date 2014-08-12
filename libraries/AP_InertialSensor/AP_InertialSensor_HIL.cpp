@@ -30,7 +30,7 @@ uint16_t AP_InertialSensor_HIL::_init_sensor( Sample_rate sample_rate ) {
 
 bool AP_InertialSensor_HIL::update( void ) {
     uint32_t now = hal.scheduler->micros();
-    _last_update_usec = now;
+    _last_sample_usec = now;
     return true;
 }
 
@@ -45,10 +45,13 @@ float AP_InertialSensor_HIL::get_gyro_drift_rate(void) {
 
 bool AP_InertialSensor_HIL::_sample_available()
 {
-    uint16_t ret = (hal.scheduler->micros() - _last_update_usec) 
-        / _sample_period_usec;
-    
-    return ret > 0;
+    uint32_t tnow = hal.scheduler->micros();
+    bool have_sample = false;
+    while (tnow - _last_sample_usec > _sample_period_usec) {
+        have_sample = true;
+        _last_sample_usec += _sample_period_usec;
+    }
+    return have_sample;
 }
 
 bool AP_InertialSensor_HIL::wait_for_sample(uint16_t timeout_ms)
@@ -56,9 +59,13 @@ bool AP_InertialSensor_HIL::wait_for_sample(uint16_t timeout_ms)
     if (_sample_available()) {
         return true;
     }
-    uint32_t start = hal.scheduler->millis();
+    uint32_t start = hal.scheduler->micros();
     while ((hal.scheduler->millis() - start) < timeout_ms) {
-        hal.scheduler->delay(1);
+        uint32_t tnow = hal.scheduler->micros();
+        uint32_t tdelay = (_last_sample_usec + _sample_period_usec) - tnow;
+        if (tdelay < 100000) {
+            hal.scheduler->delay_microseconds(tdelay);
+        }
         if (_sample_available()) {
             return true;
         }

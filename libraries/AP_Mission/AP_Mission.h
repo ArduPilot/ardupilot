@@ -35,11 +35,27 @@
 
 #define AP_MISSION_FIRST_REAL_COMMAND       1       // command #0 reserved to hold home position
 
+#define AP_MISSION_RESTART_DEFAULT          0       // resume the mission from the last command run by default
+
 /// @class    AP_Mission
 /// @brief    Object managing Mission
 class AP_Mission {
 
 public:
+
+    // nav guided command
+    struct PACKED Nav_Guided_Command {
+        float alt_min;          // min alt below which the command will be aborted.  0 for no lower alt limit
+        float alt_max;          // max alt above which the command will be aborted.  0 for no upper alt limit
+        float horiz_max;        // max horizontal distance the vehicle can move before the command will be aborted.  0 for no horizontal limit
+    };
+
+    // nav velocity command
+    struct PACKED Nav_Velocity_Command {
+        float x;                // lat (i.e. north) velocity in m/s
+        float y;                // lon (i.e. east) velocity in m/s
+        float z;                // vertical velocity in m/s
+    };
 
     // jump command structure
     struct PACKED Jump_Command {
@@ -105,6 +121,12 @@ public:
     };
 
     union PACKED Content {
+        // Nav_Guided_Command
+        Nav_Guided_Command nav_guided;
+
+        // Nav_Velocity_Command
+        Nav_Velocity_Command nav_velocity;
+
         // jump structure
         Jump_Command jump;
 
@@ -167,7 +189,8 @@ public:
         _cmd_start_fn(cmd_start_fn),
         _cmd_verify_fn(cmd_verify_fn),
         _mission_complete_fn(mission_complete_fn),
-        _prev_nav_cmd_index(AP_MISSION_CMD_INDEX_NONE)
+        _prev_nav_cmd_index(AP_MISSION_CMD_INDEX_NONE),
+        _last_change_time_ms(0)
     {
         // load parameter defaults
         AP_Param::setup_object_defaults(this, var_info);
@@ -213,6 +236,12 @@ public:
     ///     previous running commands will be re-initialised
     void resume();
 
+    /// start_or_resume - if MIS_AUTORESTART=0 this will call resume(), otherwise it will call start()
+    void start_or_resume();
+
+    /// reset - reset mission to the first command
+    void reset();
+
     /// clear - clears out mission
     ///     returns true if mission was running so it could not be cleared
     bool clear();
@@ -241,8 +270,14 @@ public:
     /// is_nav_cmd - returns true if the command's id is a "navigation" command, false if "do" or "conditional" command
     static bool is_nav_cmd(const Mission_Command& cmd);
 
-    /// get_active_nav_cmd - returns the current "navigation" command
+    /// get_current_nav_cmd - returns the current "navigation" command
     const Mission_Command& get_current_nav_cmd() const { return _nav_cmd; }
+
+    /// get_current_nav_index - returns the current "navigation" command index
+    /// Note that this will return 0 if there is no command. This is
+    /// used in MAVLink reporting of the mission command
+    uint16_t get_current_nav_index() const { 
+        return _nav_cmd.index==AP_MISSION_CMD_INDEX_NONE?0:_nav_cmd.index; }
 
     /// get_prev_nav_cmd_index - returns the previous "navigation" commands index (i.e. position in the mission command list)
     ///     if there was no previous nav command it returns AP_MISSION_CMD_INDEX_NONE
@@ -285,6 +320,9 @@ public:
     // mission_cmd_to_mavlink - converts an AP_Mission::Mission_Command object to a mavlink message which can be sent to the GCS
     //  return true on success, false on failure
     static bool mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, mavlink_mission_item_t& packet);
+
+    // return the last time the mission changed in milliseconds
+    uint32_t last_change_time_ms(void) const { return _last_change_time_ms; }
 
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -349,7 +387,8 @@ private:
     const AP_AHRS&   _ahrs;      // used only for home position
 
     // parameters
-    AP_Int16                _cmd_total; // total number of commands in the mission
+    AP_Int16                _cmd_total;  // total number of commands in the mission
+    AP_Int8                 _restart;   // controls mission starting point when entering Auto mode (either restart from beginning of mission or resume from last command run)
 
     // pointer to main program functions
     mission_cmd_fn_t        _cmd_start_fn;  // pointer to function which will be called when a new command is started
@@ -368,6 +407,9 @@ private:
         uint16_t index;                 // index of do-jump commands in mission
         int16_t num_times_run;          // number of times this jump command has been run
     } _jump_tracking[AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS];
+
+    // last time that mission changed
+    uint32_t _last_change_time_ms;
 };
 
 #endif

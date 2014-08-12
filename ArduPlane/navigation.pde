@@ -37,7 +37,7 @@ static void loiter_angle_update(void)
     loiter.old_target_bearing_cd = target_bearing_cd;
     loiter_delta_cd = wrap_180_cd(loiter_delta_cd);
 
-    loiter.sum_cd += loiter_delta_cd;
+    loiter.sum_cd += loiter_delta_cd * loiter.direction;
 }
 
 //****************************************************************
@@ -61,11 +61,6 @@ static void navigate()
     // waypoint distance from plane
     // ----------------------------
     wp_distance = get_distance(current_loc, next_WP_loc);
-
-    if (wp_distance < 0) {
-        gcs_send_text_P(SEVERITY_HIGH,PSTR("WP error - distance < 0"));
-        return;
-    }
 
     // update total loiter angle
     loiter_angle_update();
@@ -128,33 +123,6 @@ static void calc_gndspeed_undershoot()
     }
 }
 
-static void calc_altitude_error()
-{
-    if (control_mode == FLY_BY_WIRE_B ||
-        control_mode == CRUISE) {
-        return;
-    }
-    if (nav_controller->reached_loiter_target()) {
-        // once we reach a loiter target then lock to the final
-        // altitude target
-        target_altitude_cm = next_WP_loc.alt;
-    } else if (offset_altitude_cm != 0) {
-        // control climb/descent rate
-        target_altitude_cm = next_WP_loc.alt - (offset_altitude_cm*((float)(wp_distance-30) / (float)(wp_totalDistance-30)));
-
-        // stay within the range of the start and end locations in altitude
-        if (prev_WP_loc.alt > next_WP_loc.alt) {
-            target_altitude_cm = constrain_int32(target_altitude_cm, next_WP_loc.alt, prev_WP_loc.alt);
-        } else {
-            target_altitude_cm = constrain_int32(target_altitude_cm, prev_WP_loc.alt, next_WP_loc.alt);
-        }
-    } else if (mission.get_current_do_cmd().id != MAV_CMD_CONDITION_CHANGE_ALT) {
-        target_altitude_cm = next_WP_loc.alt;
-    }
-
-    altitude_error_cm       = target_altitude_cm - adjusted_altitude_cm();
-}
-
 static void update_loiter()
 {
     nav_controller->update_loiter(next_WP_loc, abs(g.loiter_radius), loiter.direction);
@@ -210,19 +178,18 @@ static void update_fbwb_speed_height(void)
         elevator_input = -elevator_input;
     }
     
-    target_altitude_cm += g.flybywire_climb_rate * elevator_input * delta_us_fast_loop * 0.0001f;
+    change_target_altitude(g.flybywire_climb_rate * elevator_input * delta_us_fast_loop * 0.0001f);
     
     if (elevator_input == 0.0f && last_elevator_input != 0.0f) {
         // the user has just released the elevator, lock in
         // the current altitude
-        target_altitude_cm = current_loc.alt;
+        set_target_altitude_current();
     }
 
     // check for FBWB altitude limit
-    if (g.FBWB_min_altitude_cm != 0 && target_altitude_cm < home.alt + g.FBWB_min_altitude_cm) {
-        target_altitude_cm = home.alt + g.FBWB_min_altitude_cm;
-    }
-    altitude_error_cm = target_altitude_cm - adjusted_altitude_cm();
+    check_minimum_altitude();
+
+    altitude_error_cm = calc_altitude_error_cm();
     
     last_elevator_input = elevator_input;
     
@@ -230,62 +197,21 @@ static void update_fbwb_speed_height(void)
     calc_nav_pitch();
 }
 
-static void setup_glide_slope(void)
+/*
+  calculate the turn angle for the next leg of the mission
+ */
+static void setup_turn_angle(void)
 {
-    // establish the distance we are travelling to the next waypoint,
-    // for calculating out rate of change of altitude
-    wp_totalDistance        = get_distance(current_loc, next_WP_loc);
-    wp_distance             = wp_totalDistance;
+    int32_t next_ground_course_cd = mission.get_next_ground_course_cd(-1);
+    if (next_ground_course_cd == -1) {
+        // the mission library can't determine a turn angle, assume 90 degrees
+        auto_state.next_turn_angle = 90.0f;
+    } else {
+        // get the heading of the current leg
+        int32_t ground_course_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
 
-    /*
-      work out if we will gradually change altitude, or try to get to
-      the new altitude as quickly as possible.
-     */
-    switch (control_mode) {
-    case RTL:
-    case GUIDED:
-        /* glide down slowly if above target altitude, but ascend more
-           rapidly if below it. See
-           https://github.com/diydrones/ardupilot/issues/39
-        */
-        if (current_loc.alt > next_WP_loc.alt) {
-            offset_altitude_cm = next_WP_loc.alt - current_loc.alt;
-        } else {
-            offset_altitude_cm = 0;
-        }
-        break;
-
-    case AUTO:
-        // we only do glide slide handling in AUTO when above 40m or
-        // when descending. The 40 meter threshold is arbitrary, and
-        // is basically to prevent situations where we try to slowly
-        // gain height at low altitudes, potentially hitting
-        // obstacles.
-        if (relative_altitude() > 40 || next_WP_loc.alt < prev_WP_loc.alt) {
-            offset_altitude_cm = next_WP_loc.alt - prev_WP_loc.alt;
-        } else {
-            offset_altitude_cm = 0;        
-        }
-        break;
-    default:
-        offset_altitude_cm = 0;        
-        break;
+        // work out the angle we need to turn through
+        auto_state.next_turn_angle = wrap_180_cd(next_ground_course_cd - ground_course_cd) * 0.01f;
     }
-}
-
-/*
-  return relative altitude in meters (relative to home)
- */
-static float relative_altitude(void)
-{
-    return (current_loc.alt - home.alt) * 0.01f;
-}
-
-/*
-  return relative altitude in centimeters, absolute value
- */
-static int32_t relative_altitude_abs_cm(void)
-{
-    return labs(current_loc.alt - home.alt);
-}
+}    
 

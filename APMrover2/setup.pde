@@ -445,7 +445,7 @@ setup_compass(uint8_t argc, const Menu::arg *argv)
 		g.compass_enabled = false;
 
 	} else if (!strcmp_P(argv[1].str, PSTR("reset"))) {
-		compass.set_offsets(0,0,0);
+		compass.set_and_save_offsets(0,0,0,0);
 
 	} else {
 		cliSerial->printf_P(PSTR("\nOptions:[on,off,reset]\n"));

@@ -13,6 +13,7 @@ static void failsafe_short_on_event(enum failsafe_state fstype)
     case STABILIZE:
     case ACRO:
     case FLY_BY_WIRE_A:
+    case AUTOTUNE:
     case FLY_BY_WIRE_B:
     case CRUISE:
     case TRAINING:
@@ -60,6 +61,7 @@ static void failsafe_long_on_event(enum failsafe_state fstype)
     case STABILIZE:
     case ACRO:
     case FLY_BY_WIRE_A:
+    case AUTOTUNE:
     case FLY_BY_WIRE_B:
     case CRUISE:
     case TRAINING:
@@ -84,6 +86,9 @@ static void failsafe_long_on_event(enum failsafe_state fstype)
     case RTL:
     default:
         break;
+    }
+    if (fstype == FAILSAFE_GCS) {
+        gcs_send_text_P(SEVERITY_HIGH, PSTR("No GCS heartbeat."));
     }
     gcs_send_text_fmt(PSTR("flight mode = %u"), (unsigned)control_mode);
 }

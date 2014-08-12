@@ -7,7 +7,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-uint8_t AP_InertialSensor_UserInteract_MAVLink::blocking_read(void) 
+bool AP_InertialSensor_UserInteract_MAVLink::blocking_read(void) 
 {
     uint32_t start_ms = hal.scheduler->millis();
     /* Wait for a COMMAND_ACK message to be received from the ground station */
@@ -20,12 +20,12 @@ uint8_t AP_InertialSensor_UserInteract_MAVLink::blocking_read(void)
         mavlink_status_t status;
         if (mavlink_parse_char(_chan, c, &msg, &status)) {
             if (msg.msgid == MAVLINK_MSG_ID_COMMAND_ACK) {
-                return 0;
+                return true;
             }
         }
     }
     hal.console->println_P(PSTR("Timed out waiting for user response"));
-    return 0;
+    return false;
 }
 
 void AP_InertialSensor_UserInteract_MAVLink::_printf_P(const prog_char* fmt, ...) 
@@ -39,7 +39,7 @@ void AP_InertialSensor_UserInteract_MAVLink::_printf_P(const prog_char* fmt, ...
         // STATUSTEXT messages should not add linefeed
         msg[strlen(msg)-1] = 0;
     }
-    while (comm_get_txspace(_chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES < (int)sizeof(mavlink_statustext_t)) {
+    while (comm_get_txspace(_chan) < MAVLINK_NUM_NON_PAYLOAD_BYTES + (int)sizeof(mavlink_statustext_t)) {
         hal.scheduler->delay(1);        
     }
     mavlink_msg_statustext_send(_chan, SEVERITY_USER_RESPONSE, msg);

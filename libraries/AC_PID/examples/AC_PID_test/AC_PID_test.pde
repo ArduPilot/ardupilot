@@ -10,6 +10,7 @@
 #include <AP_Math.h>
 #include <AP_Param.h>
 #include <AC_PID.h>
+#include <AC_HELI_PID.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
@@ -32,14 +33,15 @@ void loop()
 {
     // setup (unfortunately must be done here as we cannot create a global AC_PID object)
     AC_PID pid(TEST_P, TEST_I, TEST_D, TEST_IMAX * 100);
+    AC_HELI_PID heli_pid(TEST_P, TEST_I, TEST_D, TEST_IMAX * 100);
     uint16_t radio_in;
     uint16_t radio_trim;
-    int error;
-    int control;
+    int16_t error;
+    float control_P, control_I, control_D;
     float dt = 1000/50;
 
     // display PID gains
-    hal.console->printf("P %f  I %f  D %f  imax %f\n", pid.kP(), pid.kI(), pid.kD(), pid.imax());
+    hal.console->printf("P %f  I %f  D %f  imax %f\n", (float)pid.kP(), (float)pid.kI(), (float)pid.kD(), (float)pid.imax());
 
     // capture radio trim
     radio_trim = hal.rcin->read(0);
@@ -47,10 +49,15 @@ void loop()
     while( true ) {
         radio_in = hal.rcin->read(0);
         error = radio_in - radio_trim;
-        control = pid.get_pid(error, dt);
+        control_P = pid.get_p(error);
+        control_I = pid.get_i(error, dt);
+        control_D = pid.get_d(error, dt);
 
         // display pid results
-        hal.console->printf("radio: %d\t err: %d\t pid:%d\n", radio_in, error, control);
+        hal.console->printf("radio: %d\t err: %d\t pid:%4.2f (p:%4.2f i:%4.2f d:%4.2f)\n",
+                (int)radio_in, (int)error,
+                (float)(control_P+control_I+control_D),
+                (float)control_P, (float)control_I, (float)control_D);
         hal.scheduler->delay(50);
     }
 }

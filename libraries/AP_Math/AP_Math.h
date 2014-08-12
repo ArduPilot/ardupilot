@@ -80,6 +80,12 @@ float           safe_sqrt(float v);
 // a faster varient of atan.  accurate to 6 decimal places for values between -1 ~ 1 but then diverges quickly
 float           fast_atan(float v);
 
+// fast_atan2 - faster version of atan2
+//      126 us on AVR cpu vs 199 for regular atan2
+//      absolute error is < 0.005 radians or 0.28 degrees
+//      origin source: https://gist.github.com/volkansalma/2972237/raw/
+float           fast_atan2(float y, float x);
+
 #if ROTATION_COMBINATION_SUPPORT
 // find a rotation that is the combination of two other
 // rotations. This is used to allow us to add an overall board
@@ -140,8 +146,14 @@ float wrap_PI(float angle_in_radians);
 void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon);
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
-//Convert between LLH and ECEF coordinate systems
+// Converts from WGS84 geodetic coordinates (lat, lon, height)
+// into WGS84 Earth Centered, Earth Fixed (ECEF) coordinates
+// (X, Y, Z)
 void wgsllh2ecef(const Vector3d &llh, Vector3d &ecef);
+
+// Converts from WGS84 Earth Centered, Earth Fixed (ECEF) 
+// coordinates (X, Y, Z), into WHS84 geodetic 
+// coordinates (lat, lon, height)
 void wgsecef2llh(const Vector3d &ecef, Vector3d &llh);
 #endif
 

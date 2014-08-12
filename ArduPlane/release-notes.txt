@@ -1,3 +1,184 @@
+Release 3.1.0, August XXth 2014
+-------------------------------
+
+DRAFT DRAFT
+
+Changes in this release:
+
+  - added terrain following support. See
+    http://plane.ardupilot.com/wiki/common-terrain-following/
+
+  - added support for higher baudrates on telemetry ports, to make it
+    easier to use high rate telemetry to companion boards
+
+  - added new takeoff code, including new parameters:
+      TKOFF_TDRAG_ELEV, TKOFF_TDRAG_SPD1, TKOFF_ROTATE_SPD,
+      TKOFF_THR_SLEW and TKOFF_THR_MAX
+
+  - overhauled glide slope code to fix glide slope handling in many
+    situations. This should make transitions between different
+    altitudes much smoother
+
+  - prevent early waypoint completion for straight ahead waypoints
+
+  - added MAV_CMD_DO_INVERTED_FLIGHT command in missions, to change
+    from normal to inverted flight in AUTO
+
+  - new Rangefinder code with support for a wider range of rangefinder
+    types
+
+  - added support for FrSky telemetry via SERIAL2_PROTOCOL parameter
+
+  - added new STAB_PITCH_DOWN parameter to improve low throttle
+    behaviour in FBWA mode
+
+  - added GLIDE_SLOPE_MIN parameter for better handling of small
+    altitude deviations in AUTO
+
+
+Release 3.0.3, May 19th 2014
+----------------------------
+
+The ardupilot development team is proud to announce the release of
+version 3.0.3 of APM:Plane. This release contains some important bug
+fixes for all supported boards.
+
+The key bug fixes in this release are:
+
+ - fixed handling of filter divergance in the EKF filter
+ - fixed a glide slope calculation bug when entering AUTO mode
+
+The EKF fixes are the main focus of this release. During testing of
+APM:Plane with the AHRS_EKF_USE enabled it was found that under some
+circumstances the EKF could diverge, resulting in loss of attitude
+estimate. Unless the pilot quickly took control in MANUAL this could
+result in the aircraft crashing.
+
+The fix for this problem was in several parts. The main fix was to
+prevent the divergance, but as a precuation against future bugs of
+this type additional numerical checks were added to allow the EKF to
+automatically reset in flight when the internal state shows
+large gyro bias changes, which are the first sign of something going
+wrong in the filter. If this happens again the EKF will automatically
+disable itself for 10 seconds, allowing APM:Plane to fall back to the
+old DCM code. The EKF will then reset itself using initial state based
+on the DCM state. The aircraft will report the failure using the AHRS
+health bit in the SYS_STATUS MAVLink message.
+
+The default EKF tuning parameters were also updated based on a number
+of user supplied flight logs to increase the robustness of the filter.
+
+The second bug fixed in this release relates to the glide slope
+calculation when the aircraft enters AUTO mode for the first time when
+at an altitude above the altitude of the first waypoint in the
+mission. The starting point for the glide slope was incorrectly
+calculated using the home altitude, which resulted in the aircraft
+descending below the first waypoint altitude before climbing again. In
+some circumstances this could lead to a crash due to local terrain.
+
+Many thanks to everyone who tested this release. Special thanks to
+Dellarb for reporting the glide slope bug and to Paul Riseborough for
+all his work on the EKF code over the last few weeks.
+
+Happy flying!
+
+
+Release 3.0.2, May 4th 2014
+---------------------------
+
+The ardupilot development team is proud to announce the release of
+version 3.0.2 of APM:Plane. This release combines some important bug
+fixes with some new features.
+
+I2C bug fix
+-----------
+
+The most important change for this release is a bug fix for an I2C bug
+in the NuttX I2C driver code that could (under some rare
+circumstances) cause a Pixhawk to crash. This bug fix is the primary
+reason for doing a new release now.
+
+This bug was able to be reproduced by creating a 1.3m GPS cable
+carrying both the I2C signals for a magnetometer and the UART signals
+for the GPS. Interference between these two signals could cause the
+I2C controller to give spurious data to the I2C driver. The I2C driver
+did not have sufficient protection against these errors and could
+crash the board.
+
+While we have not been able to reproduce this error with the normal
+cables that come with a Pixhawk we cannot rule out the bug triggering
+with shorter cables, so we are doing a fast release to fix the bug.
+
+Autotune
+--------
+
+This release also includes an important new feature - automatic
+roll/pitch tuning. While this feature is still considered experimental
+we have had very positive feedback from beta testers and have decided
+to include it in the release.
+
+Full documentation for how to use automatic tuning is available here:
+
+  http://plane.ardupilot.com/wiki/automatic-tuning-with-autotune/
+
+we hope that the automatic tuning will help users who have had
+difficulty with the standard APM:Plane manual tuning procedure. We
+plan on extending autotune to other aspects of fixed wing tuning in
+future releases.
+
+Other changes
+-------------
+
+ - fixed a glide slope calculation error when very close to waypoints
+ - fixed a bug when swithing to another auto-throttle mode during auto
+   takeoff (thanks to Marco for finding this bug!)
+ - added MIS_AUTORESET parameter (thanks to Andrew Chapman)
+ - support compassmot calibration by supplying current measurments to the
+   compass driver (thanks to Jon Challinger)
+ - fixed a GPS driver bug that could cause GPS lag in case of lost GPS
+   samples (thanks to Jon Challinger)
+ - fixed a LOITER_TURNS bug in missions for counter-clockwise loiter
+   (thanks to Iskess for finding this bug)
+ - added support for OBC termination requirements to PX4IO
+ - added support for pressure altitude termination to OBC module
+ - fixed EKF wind estimation with no airspeed sensor (thanks to Paul
+   Riseborough)
+ - improved tuning of EKF for fixed wing aircraft (thanks to Paul
+   Riseborough)
+ - Converted rally point code to library AP_Rally (thanks to Andrew
+   Chapman)
+ - added SITL checking for numerical errors
+
+Thanks to testers!
+
+Many thanks to everyone who tested the beta versions of this release!
+Special thanks to Marco, Paul, Jon, Iam, JNJO, sonicdahousecat and
+Keeyen for providing testing of both existing features and the new
+autotune code.
+
+
+Release 3.0.1, April 9th 2014
+-----------------------------
+
+I've just released APM:Plane 3.0.1, a bug fix release for the 3.0.0 release.
+This release fixes two bugs:
+
+    throttle failsafe for aircraft using PWM level for failsafe detection
+    wind reporting with EKF enabled and no airspeed sensor
+
+The throttle failsafe fix is a critical bugfix, which is why I am
+doing a new release so soon. The bug was found by Sam Tabor, and he
+posted the bug report before the 3.0.0 release, but I didn't notice it
+in the release preparations.  The bug only affects systems using PWM
+value as the sole method of detecting loss of RC control. I hadn't
+noticed it myself as my planes all use receivers which stop sending
+value PWM frames when the RC link is lost. In that case failsafe
+worked correctly. Receivers that keep sending PWM frames but with low
+throttle levels are common though, so this is a very important fix.
+Many thanks to Sam for reporting the bug, and my apologies for not
+noticing it in time for the 3.0.0 release.
+
+
 Release 3.0.0, April 8th 2014
 -----------------------------
 
@@ -309,3 +490,4 @@ of the fixed wing code for APM, and I think puts us in a great
 position for future development.
 
 Happy flying!
+

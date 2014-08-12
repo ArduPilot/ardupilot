@@ -17,11 +17,13 @@
 #include <AP_Baro.h>
 #include <GCS_MAVLink.h>
 #include <AP_Mission.h>
+#include <AP_Terrain.h>
 #include <AP_Declination.h>
 
 #include <AP_HAL_AVR.h>
 #include <AP_HAL_AVR_SITL.h>
 #include <AP_HAL_Empty.h>
+#include <AP_HAL_Linux.h>
 #include <AP_AHRS.h>
 #include <SITL.h>
 #include <AP_NavEKF.h>

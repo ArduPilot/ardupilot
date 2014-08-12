@@ -11,6 +11,7 @@
 #include <AP_HAL_AVR_SITL.h>
 #include <AP_HAL_Empty.h>
 #include <AP_HAL_PX4.h>
+#include <AP_HAL_Linux.h>
 #include <AP_Math.h>
 #include <Filter.h>
 #include <AP_ADC.h>
@@ -23,6 +24,7 @@
 #include <DataFlash.h>
 #include <GCS_MAVLink.h>
 #include <AP_Mission.h>
+#include <AP_Terrain.h>
 #include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
 #include <AP_AHRS.h>
 #include <AP_NavEKF.h>

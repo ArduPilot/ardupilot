@@ -46,6 +46,16 @@ HAL_Linux::HAL_Linux() :
         &utilInstance)
 {}
 
+void _usage(void)
+{
+    printf("Usage: -A uartAPath -B uartBPath -C uartCPath\n");
+    printf("Options:\n");
+    printf("\t-serial:          -A /dev/ttyO4\n");
+    printf("\t                  -B /dev/ttyS1\n");    
+    printf("\t-tcp:             -C tcp:192.168.2.15:1243:wait\n");
+    printf("\t                  -A tcp:11.0.0.2:5678\n");    
+}
+
 void HAL_Linux::init(int argc,char* const argv[]) const 
 {
     int opt;
@@ -64,7 +74,7 @@ void HAL_Linux::init(int argc,char* const argv[]) const
             uartCDriver.set_device_path(optarg);
             break;
         case 'h':
-            printf("Usage: -A uartAPath -B uartBPath -C uartCPath\n");
+            _usage();
             exit(0);
         default:
             printf("Unknown option '%c'\n", (char)opt);
@@ -73,6 +83,8 @@ void HAL_Linux::init(int argc,char* const argv[]) const
     }
 
     scheduler->init(NULL);
+    gpio->init();
+    rcout->init(NULL);
     uartA->begin(115200);
     i2c->begin();
     spi->init(NULL);

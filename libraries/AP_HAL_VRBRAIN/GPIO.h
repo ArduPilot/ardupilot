@@ -5,27 +5,16 @@
 
 #include <AP_HAL_VRBRAIN.h>
 
-#define VRBRAIN_GPIO_PIEZO_PIN              110
-
-
-
-
-
-
-
-
-
-
-
-
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
- # define HAL_GPIO_A_LED_PIN        27
+ # define HAL_GPIO_A_LED_PIN        25
  # define HAL_GPIO_B_LED_PIN        26
- # define HAL_GPIO_C_LED_PIN        25
+ # define HAL_GPIO_C_LED_PIN        27
+ # define EXTERNAL_LED_GPS          28
+ # define EXTERNAL_LED_ARMED        29
+ # define EXTERNAL_LED_MOTOR1       30
+ # define EXTERNAL_LED_MOTOR2       31
+ # define BUZZER_PIN                32
  # define HAL_GPIO_LED_ON           HIGH
  # define HAL_GPIO_LED_OFF          LOW
-#endif
 
 class VRBRAIN::VRBRAINGPIO : public AP_HAL::GPIO {
 public:
@@ -48,9 +37,7 @@ public:
 
 private:
     int _led_fd;
-    int _tone_alarm_fd;
-
-
+    int _buzzer_fd;
 };
 
 class VRBRAIN::VRBRAINDigitalSource : public AP_HAL::DigitalSource {

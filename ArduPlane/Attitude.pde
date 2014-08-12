@@ -14,6 +14,9 @@ static float get_speed_scaler(void)
 {
     float aspeed, speed_scaler;
     if (ahrs.airspeed_estimate(&aspeed)) {
+        if (aspeed > auto_state.highest_airspeed) {
+            auto_state.highest_airspeed = aspeed;
+        }
         if (aspeed > 0) {
             speed_scaler = g.scaling_speed / aspeed;
         } else {
@@ -68,7 +71,7 @@ static bool stick_mixing_enabled(void)
  */
 static void stabilize_roll(float speed_scaler)
 {
-    if (inverted_flight) {
+    if (fly_inverted()) {
         // we want to fly upside down. We need to cope with wrap of
         // the roll_sensor interfering with wrap of nav_roll, which
         // would really confuse the PID code. The easiest way to
@@ -94,6 +97,13 @@ static void stabilize_roll(float speed_scaler)
  */
 static void stabilize_pitch(float speed_scaler)
 {
+    int8_t force_elevator = takeoff_tail_hold();
+    if (force_elevator != 0) {
+        // we are holding the tail down during takeoff. Just covert
+        // from a percentage to a -4500..4500 centidegree angle
+        channel_pitch->servo_out = 45*force_elevator;
+        return;
+    }
     int32_t demanded_pitch = nav_pitch_cd + g.pitch_trim_cd + channel_throttle->servo_out * g.kff_throttle_to_pitch;
     bool disable_integrator = false;
     if (control_mode == STABILIZE && channel_pitch->control_in != 0) {
@@ -116,8 +126,8 @@ static void stick_mix_channel(RC_Channel *channel, int16_t &servo_out)
         
     ch_inf = (float)channel->radio_in - (float)channel->radio_trim;
     ch_inf = fabsf(ch_inf);
-    ch_inf = min(ch_inf, 400.0);
-    ch_inf = ((400.0 - ch_inf) / 400.0);
+    ch_inf = min(ch_inf, 400.0f);
+    ch_inf = ((400.0f - ch_inf) / 400.0f);
     servo_out *= ch_inf;
     servo_out += channel->pwm_to_angle();
 }
@@ -130,6 +140,7 @@ static void stabilize_stick_mixing_direct()
     if (!stick_mixing_enabled() ||
         control_mode == ACRO ||
         control_mode == FLY_BY_WIRE_A ||
+        control_mode == AUTOTUNE ||
         control_mode == FLY_BY_WIRE_B ||
         control_mode == CRUISE ||
         control_mode == TRAINING) {
@@ -148,6 +159,7 @@ static void stabilize_stick_mixing_fbw()
     if (!stick_mixing_enabled() ||
         control_mode == ACRO ||
         control_mode == FLY_BY_WIRE_A ||
+        control_mode == AUTOTUNE ||
         control_mode == FLY_BY_WIRE_B ||
         control_mode == CRUISE ||
         control_mode == TRAINING ||
@@ -173,7 +185,7 @@ static void stabilize_stick_mixing_fbw()
     if (fabsf(pitch_input) > 0.5f) {
         pitch_input = (3*pitch_input - 1);
     }
-    if (inverted_flight) {
+    if (fly_inverted()) {
         pitch_input = -pitch_input;
     }
     if (pitch_input > 0) {
@@ -344,7 +356,7 @@ static void stabilize()
      */
     if (channel_throttle->control_in == 0 &&
         relative_altitude_abs_cm() < 500 && 
-        fabs(barometer.get_climb_rate()) < 0.5f &&
+        fabsf(barometer.get_climb_rate()) < 0.5f &&
         gps.ground_speed() < 3) {
         // we are low, with no climb rate, and zero throttle, and very
         // low ground speed. Zero the attitude controller
@@ -462,10 +474,14 @@ static void calc_nav_roll()
 *****************************************/
 static void throttle_slew_limit(int16_t last_throttle)
 {
+    uint8_t slewrate = aparm.throttle_slewrate;
+    if (control_mode==AUTO && auto_state.takeoff_complete == false && g.takeoff_throttle_slewrate != 0) {
+        slewrate = g.takeoff_throttle_slewrate;
+    }
     // if slew limit rate is set to zero then do not slew limit
-    if (aparm.throttle_slewrate) {                   
+    if (slewrate) {                   
         // limit throttle change by the given percentage per second
-        float temp = aparm.throttle_slewrate * G_Dt * 0.01f * fabsf(channel_throttle->radio_max - channel_throttle->radio_min);
+        float temp = slewrate * G_Dt * 0.01f * fabsf(channel_throttle->radio_max - channel_throttle->radio_min);
         // allow a minimum change of 1 PWM per cycle
         if (temp < 1) {
             temp = 1;
@@ -474,87 +490,6 @@ static void throttle_slew_limit(int16_t last_throttle)
     }
 }
 
-
-/*   Check for automatic takeoff conditions being met using the following sequence:
- *   1) Check for adequate GPS lock - if not return false
- *   2) Check the gravity compensated longitudinal acceleration against the threshold and start the timer if true
- *   3) Wait until the timer has reached the specified value (increments of 0.1 sec) and then check the GPS speed against the threshold
- *   4) If the GPS speed is above the threshold and the attitude is within limits then return true and reset the timer
- *   5) If the GPS speed and attitude within limits has not been achieved after 2.5 seconds, return false and reset the timer
- *   6) If the time lapsed since the last timecheck is greater than 0.2 seconds, return false and reset the timer
- *   NOTE : This function relies on the TECS 50Hz processing for its acceleration measure.
- */
-static bool auto_takeoff_check(void)
-{
-    // this is a more advanced check that relies on TECS
-    uint32_t now = hal.scheduler->millis();
-    static bool launchTimerStarted;
-    static uint32_t last_tkoff_arm_time;
-    static uint32_t last_check_ms;
-
-    // Reset states if process has been interrupted
-    if (last_check_ms && (now - last_check_ms) > 200) {
-        gcs_send_text_fmt(PSTR("Timer Interrupted AUTO"));
-	    launchTimerStarted = false;
-	    last_tkoff_arm_time = 0;
-        last_check_ms = now;
-        return false;
-    }
-
-    last_check_ms = now;
-
-    // Check for bad GPS
-    if (gps.status() < AP_GPS::GPS_OK_FIX_3D) {
-        // no auto takeoff without GPS lock
-        return false;
-    }
-
-    // Check for launch acceleration or timer started. NOTE: relies on TECS 50Hz processing
-    if (!launchTimerStarted &&
-        g.takeoff_throttle_min_accel != 0.0 &&
-        SpdHgt_Controller->get_VXdot() < g.takeoff_throttle_min_accel) {
-        goto no_launch;
-    }
-
-    // we've reached the acceleration threshold, so start the timer
-    if (!launchTimerStarted) {
-        launchTimerStarted = true;
-        last_tkoff_arm_time = now;
-        gcs_send_text_fmt(PSTR("Armed AUTO, xaccel = %.1f m/s/s, waiting %.1f sec"), 
-                          SpdHgt_Controller->get_VXdot(), 0.1f*float(min(g.takeoff_throttle_delay,25)));
-    }
-
-    // Only perform velocity check if not timed out
-    if ((now - last_tkoff_arm_time) > 2500) {
-        gcs_send_text_fmt(PSTR("Timeout AUTO"));
-        goto no_launch;
-    }
-
-    // Check aircraft attitude for bad launch
-    if (ahrs.pitch_sensor <= -3000 ||
-        ahrs.pitch_sensor >= 4500 ||
-        abs(ahrs.roll_sensor) > 3000) {
-        gcs_send_text_fmt(PSTR("Bad Launch AUTO"));
-        goto no_launch;
-    }
-
-    // Check ground speed and time delay
-    if (((gps.ground_speed() > g.takeoff_throttle_min_speed || g.takeoff_throttle_min_speed == 0.0)) && 
-        ((now - last_tkoff_arm_time) >= min(uint16_t(g.takeoff_throttle_delay)*100,2500))) {
-        gcs_send_text_fmt(PSTR("Triggered AUTO, GPSspd = %.1f"), gps.ground_speed());
-        launchTimerStarted = false;
-        last_tkoff_arm_time = 0;
-        return true;
-    }
-
-    // we're not launching yet, but the timer is still going
-    return false;
-
-no_launch:
-    launchTimerStarted = false;
-    last_tkoff_arm_time = 0;
-    return false;
-}
 
 
 /**
@@ -605,7 +540,9 @@ static bool suppress_throttle(void)
         return false;
     }
 
-    if (control_mode==AUTO && takeoff_complete == false && auto_takeoff_check()) {
+    if (control_mode==AUTO && 
+        auto_state.takeoff_complete == false && 
+        auto_takeoff_check()) {
         // we're in auto takeoff 
         throttle_suppressed = false;
         if (steer_state.hold_course_cd != -1) {
@@ -810,22 +747,9 @@ static void set_servos(void)
 			}
 
             // directly set the radio_out values for elevon mode
-            channel_roll->radio_out  =     elevon.trim1 + (BOOL_TO_SIGN(g.reverse_ch1_elevon) * (ch1 * 500.0/ SERVO_MAX));
-            channel_pitch->radio_out =     elevon.trim2 + (BOOL_TO_SIGN(g.reverse_ch2_elevon) * (ch2 * 500.0/ SERVO_MAX));
+            channel_roll->radio_out  =     elevon.trim1 + (BOOL_TO_SIGN(g.reverse_ch1_elevon) * (ch1 * 500.0f/ SERVO_MAX));
+            channel_pitch->radio_out =     elevon.trim2 + (BOOL_TO_SIGN(g.reverse_ch2_elevon) * (ch2 * 500.0f/ SERVO_MAX));
         }
-
-#if OBC_FAILSAFE == ENABLED
-        // this is to allow the failsafe module to deliberately crash 
-        // the plane. Only used in extreme circumstances to meet the
-        // OBC rules
-        if (obc.crash_plane()) {
-            channel_roll->servo_out = -4500;
-            channel_pitch->servo_out = -4500;
-            channel_rudder->servo_out = -4500;
-            channel_throttle->servo_out = 0;
-        }
-#endif
-        
 
         // push out the PWM values
         if (g.mix_mode == 0) {
@@ -855,7 +779,8 @@ static void set_servos(void)
                    (control_mode == STABILIZE || 
                     control_mode == TRAINING ||
                     control_mode == ACRO ||
-                    control_mode == FLY_BY_WIRE_A)) {
+                    control_mode == FLY_BY_WIRE_A ||
+                    control_mode == AUTOTUNE)) {
             // manual pass through of throttle while in FBWA or
             // STABILIZE mode with THR_PASS_STAB set
             channel_throttle->radio_out = channel_throttle->radio_in;
@@ -943,9 +868,17 @@ static void set_servos(void)
         }
     }
 
+#if OBC_FAILSAFE == ENABLED
+    // this is to allow the failsafe module to deliberately crash 
+    // the plane. Only used in extreme circumstances to meet the
+    // OBC rules
+    obc.check_crash_plane();
+#endif
+
 #if HIL_MODE != HIL_MODE_DISABLED
     // get the servos to the GCS immediately for HIL
-    if (comm_get_txspace(MAVLINK_COMM_0) - MAVLINK_NUM_NON_PAYLOAD_BYTES >= MAVLINK_MSG_ID_RC_CHANNELS_SCALED_LEN) {
+    if (comm_get_txspace(MAVLINK_COMM_0) >= 
+        MAVLINK_MSG_ID_RC_CHANNELS_SCALED_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
         send_servo_out(MAVLINK_COMM_0);
     }
     if (!g.hil_servos) {
@@ -980,3 +913,17 @@ static void demo_servos(uint8_t i)
     }
 }
 
+/*
+  adjust nav_pitch_cd for STAB_PITCH_DOWN_CD. This is used to make
+  keeping up good airspeed in FBWA mode easier, as the plane will
+  automatically pitch down a little when at low throttle. It makes
+  FBWA landings without stalling much easier.
+ */
+static void adjust_nav_pitch_throttle(void)
+{
+    uint8_t throttle = throttle_percentage();
+    if (throttle < aparm.throttle_cruise) {
+        float p = (aparm.throttle_cruise - throttle) / (float)aparm.throttle_cruise;
+        nav_pitch_cd -= g.stab_pitch_down * 100.0f * p;
+    }
+}

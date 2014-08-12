@@ -65,9 +65,11 @@ static bool set_mode(uint8_t mode)
             success = rtl_init(ignore_checks);
             break;
 
+#if OPTFLOW == ENABLED
         case OF_LOITER:
             success = ofloiter_init(ignore_checks);
             break;
+#endif
 
         case DRIFT:
             success = drift_init(ignore_checks);
@@ -87,6 +89,12 @@ static bool set_mode(uint8_t mode)
             break;
 #endif
 
+#if POSHOLD_ENABLED == ENABLED
+        case POSHOLD:
+            success = poshold_init(ignore_checks);
+            break;
+#endif
+
         default:
             success = false;
             break;
@@ -98,6 +106,13 @@ static bool set_mode(uint8_t mode)
         exit_mode(control_mode, mode);
         control_mode = mode;
         Log_Write_Mode(control_mode);
+
+#if AC_FENCE == ENABLED
+        // pilot requested flight mode change during a fence breach indicates pilot is attempting to manually recover
+        // this flight mode change could be automatic (i.e. fence, battery, GPS or GCS failsafe)
+        // but it should be harmless to disable the fence temporarily in these situations as well
+        fence.manual_recovery_start();
+#endif
     }else{
         // Log error that we failed to enter desired flight mode
         Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
@@ -156,9 +171,11 @@ static void update_flight_mode()
             rtl_run();
             break;
 
+#if OPTFLOW == ENABLED
         case OF_LOITER:
             ofloiter_run();
             break;
+#endif
 
         case DRIFT:
             drift_run();
@@ -177,6 +194,12 @@ static void update_flight_mode()
             autotune_run();
             break;
 #endif
+
+#if POSHOLD_ENABLED == ENABLED
+        case POSHOLD:
+            poshold_run();
+            break;
+#endif
     }
 }
 
@@ -188,6 +211,16 @@ static void exit_mode(uint8_t old_control_mode, uint8_t new_control_mode)
         autotune_stop();
     }
 #endif
+
+    // stop mission when we leave auto mode
+    if (old_control_mode == AUTO) {
+        if (mission.state() == AP_Mission::MISSION_RUNNING) {
+            mission.stop();
+        }
+#if MOUNT == ENABLED
+        camera_mount.set_mode_to_default();
+#endif  // MOUNT == ENABLED
+    }
 
     // smooth throttle transition when switching from manual to automatic flight modes
     if (manual_flight_mode(old_control_mode) && !manual_flight_mode(new_control_mode) && motors.armed() && !ap.land_complete) {
@@ -205,6 +238,7 @@ static bool mode_requires_GPS(uint8_t mode) {
         case RTL:
         case CIRCLE:
         case DRIFT:
+        case POSHOLD:
             return true;
         default:
             return false;
@@ -276,6 +310,9 @@ print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
         break;
     case AUTOTUNE:
         port->print_P(PSTR("AUTOTUNE"));
+        break;
+    case POSHOLD:
+        port->print_P(PSTR("POSHOLD"));
         break;
     default:
         port->printf_P(PSTR("Mode(%u)"), (unsigned)mode);

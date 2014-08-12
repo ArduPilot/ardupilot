@@ -15,6 +15,7 @@
 #include <AP_Vehicle.h>
 #include <DataFlash.h>
 #include <AP_Mission.h>
+#include <AP_Terrain.h>
 #include <AP_GPS.h>             // ArduPilot GPS library
 #include <AP_GPS_Glitch.h>      // GPS glitch protection library
 #include <AP_ADC.h>             // ArduPilot Mega Analog to Digital Converter Library
@@ -55,8 +56,7 @@ AP_Baro_BMP085 baro;
 #endif
 
 // GPS declaration
-GPS *gps;
-AP_GPS_Auto auto_gps(&gps);
+static AP_GPS  gps;
 GPS_Glitch gps_glitch(gps);
 
 AP_Compass_HMC5843 compass;

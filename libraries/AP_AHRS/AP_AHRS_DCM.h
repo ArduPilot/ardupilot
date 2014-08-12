@@ -26,7 +26,7 @@ class AP_AHRS_DCM : public AP_AHRS
 public:
     // Constructors
     AP_AHRS_DCM(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps) :
-        AP_AHRS(ins, baro, gps),
+    AP_AHRS(ins, baro, gps),
         _last_declination(0),
         _mag_earth(1,0)
     {
@@ -39,8 +39,8 @@ public:
     }
 
     // return the smoothed gyro vector corrected for drift
-    const Vector3f get_gyro(void) const {
-        return _omega + _omega_P + _omega_yaw_P;
+    const Vector3f &get_gyro(void) const {
+        return _omega;
     }
 
     // return rotation matrix representing rotaton from body to earth axes
@@ -80,6 +80,9 @@ public:
 
     void set_home(const Location &loc);
     void estimate_wind(void);
+
+    // is the AHRS subsystem healthy?
+    bool healthy(void);
 
 private:
     float _ki;
@@ -165,6 +168,9 @@ private:
 
     // estimated wind in m/s
     Vector3f _wind;
+
+    // last time AHRS failed in milliseconds
+    uint32_t _last_failure_ms;
 };
 
 #endif // __AP_AHRS_DCM_H__

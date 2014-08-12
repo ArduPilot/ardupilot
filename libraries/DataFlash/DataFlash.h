@@ -14,6 +14,12 @@
 #include <AP_AHRS.h>
 #include <stdint.h>
 
+#if HAL_CPU_CLASS < HAL_CPU_CLASS_75 && defined(APM_BUILD_DIRECTORY)
+  #if (APM_BUILD_TYPE(APM_BUILD_ArduCopter) || defined(__AVR_ATmega1280__))
+    #define DATAFLASH_NO_CLI
+  #endif
+#endif
+
 class DataFlash_Class
 {
 public:
@@ -34,6 +40,7 @@ public:
     virtual void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc) = 0;
     virtual int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) = 0;
     virtual uint16_t get_num_logs(void) = 0;
+#ifndef DATAFLASH_NO_CLI
     virtual void LogReadProcess(uint16_t log_num,
                                 uint16_t start_page, uint16_t end_page, 
                                 void (*printMode)(AP_HAL::BetterStream *port, uint8_t mode),
@@ -41,6 +48,7 @@ public:
     virtual void DumpPageInfo(AP_HAL::BetterStream *port) = 0;
     virtual void ShowDeviceInfo(AP_HAL::BetterStream *port) = 0;
     virtual void ListAvailableLogs(AP_HAL::BetterStream *port) = 0;
+#endif // DATAFLASH_NO_CLI
 
     /* logging methods common to all vehicles */
     uint16_t StartNewLog(void);
@@ -62,6 +70,7 @@ public:
     void Log_Write_Radio(const mavlink_radio_t &packet);
     void Log_Write_Message(const char *message);
     void Log_Write_Message_P(const prog_char_t *message);
+    void Log_Write_Camera(const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);
 
     bool logging_started(void) const { return log_write_started; }
 
@@ -323,6 +332,8 @@ struct PACKED log_EKF4 {
     int16_t sqrtvarVT;
     int8_t  offsetNorth;
     int8_t  offsetEast;
+    uint8_t faults;
+    uint8_t divergeRate;
 };
 
 struct PACKED log_Cmd {
@@ -352,19 +363,45 @@ struct PACKED log_Radio {
     uint16_t fixed;
 };
 
-#define LOG_COMMON_STRUCTURES \
+struct PACKED log_Camera {
+    LOG_PACKET_HEADER;
+    uint32_t gps_time;
+    uint16_t gps_week;
+    int32_t  latitude;
+    int32_t  longitude;
+    int32_t  altitude;
+    int32_t  altitude_rel;
+    int16_t  roll;
+    int16_t  pitch;
+    uint16_t yaw;
+};
+
+/*
+  terrain log structure
+ */
+struct PACKED log_TERRAIN {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    uint8_t status;
+    int32_t lat;
+    int32_t lng;
+    uint16_t spacing;
+    float terrain_height;
+    float current_height;
+    uint16_t pending;
+    uint16_t loaded;
+};
+
+// messages for all boards
+#define LOG_BASE_STRUCTURES \
     { LOG_FORMAT_MSG, sizeof(log_Format), \
       "FMT", "BBnNZ",      "Type,Length,Name,Format,Columns" },    \
     { LOG_PARAMETER_MSG, sizeof(log_Parameter), \
       "PARM", "Nf",        "Name,Value" },    \
     { LOG_GPS_MSG, sizeof(log_GPS), \
       "GPS",  "BIHBcLLeeEefI", "Status,TimeMS,Week,NSats,HDop,Lat,Lng,RelAlt,Alt,Spd,GCrs,VZ,T" }, \
-    { LOG_GPS2_MSG, sizeof(log_GPS2), \
-      "GPS2",  "BIHBcLLeEefIBI", "Status,TimeMS,Week,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,T,DSc,DAg" }, \
     { LOG_IMU_MSG, sizeof(log_IMU), \
       "IMU",  "Iffffff",     "TimeMS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ" }, \
-    { LOG_IMU2_MSG, sizeof(log_IMU), \
-      "IMU2",  "Iffffff",     "TimeMS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ" }, \
     { LOG_MESSAGE_MSG, sizeof(log_Message), \
       "MSG",  "Z",     "Message"}, \
     { LOG_RCIN_MSG, sizeof(log_RCIN), \
@@ -375,6 +412,21 @@ struct PACKED log_Radio {
       "BARO",  "Iffc",     "TimeMS,Alt,Press,Temp" }, \
     { LOG_POWR_MSG, sizeof(log_POWR), \
       "POWR","ICCH","TimeMS,Vcc,VServo,Flags" },  \
+    { LOG_CMD_MSG, sizeof(log_Cmd), \
+      "CMD", "IHHHfffffff","TimeMS,CTot,CNum,CId,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt" }, \
+    { LOG_RADIO_MSG, sizeof(log_Radio), \
+      "RAD", "IBBBBBHH", "TimeMS,RSSI,RemRSSI,TxBuf,Noise,RemNoise,RxErrors,Fixed" }, \
+    { LOG_CAMERA_MSG, sizeof(log_Camera), \
+      "CAM", "IHLLeeccC","GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,Roll,Pitch,Yaw" }
+
+// messages for more advanced boards
+#define LOG_EXTRA_STRUCTURES \
+    { LOG_GPS2_MSG, sizeof(log_GPS2), \
+      "GPS2",  "BIHBcLLeEefIBI", "Status,TimeMS,Week,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,T,DSc,DAg" }, \
+    { LOG_IMU2_MSG, sizeof(log_IMU), \
+      "IMU2",  "Iffffff",     "TimeMS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ" }, \
+    { LOG_IMU3_MSG, sizeof(log_IMU), \
+      "IMU3",  "Iffffff",     "TimeMS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ" }, \
     { LOG_AHR2_MSG, sizeof(log_AHRS), \
       "AHR2","IccCfLL","TimeMS,Roll,Pitch,Yaw,Alt,Lat,Lng" }, \
     { LOG_SIMSTATE_MSG, sizeof(log_AHRS), \
@@ -386,11 +438,15 @@ struct PACKED log_Radio {
     { LOG_EKF3_MSG, sizeof(log_EKF3), \
       "EKF3","Icccccchhhc","TimeMS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IVT" }, \
     { LOG_EKF4_MSG, sizeof(log_EKF4), \
-      "EKF4","Icccccccbb","TimeMS,SV,SP,SH,SMX,SMY,SMZ,SVT,OFN,EFE" }, \
-    { LOG_CMD_MSG, sizeof(log_Cmd), \
-      "CMD", "IHHHfffffff","TimeMS,CTot,CNum,CId,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt" }, \
-    { LOG_RADIO_MSG, sizeof(log_Radio), \
-      "RAD", "IBBBBBHH", "TimeMS,RSSI,RemRSSI,TxBuf,Noise,RemNoise,RxErrors,Fixed" }
+      "EKF4","IcccccccbbBB","TimeMS,SV,SP,SH,SMX,SMY,SMZ,SVT,OFN,EFE,FS,DS" }, \
+    { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
+      "TERR","IBLLHffHH","TimeMS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded" }
+
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+#define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_EXTRA_STRUCTURES
+#else
+#define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES
+#endif
 
 // message types 0 to 100 reversed for vehicle specific use
 
@@ -414,8 +470,13 @@ struct PACKED log_Radio {
 #define LOG_GPS2_MSG	  144
 #define LOG_CMD_MSG       145
 #define LOG_RADIO_MSG	  146
+#define LOG_ATRP_MSG      147
+#define LOG_CAMERA_MSG    148
+#define LOG_IMU3_MSG	  149
+#define LOG_TERRAIN_MSG   150
 
 // message types 200 to 210 reversed for GPS driver use
+// message types 211 to 220 reversed for autotune use
 
 #include "DataFlash_Block.h"
 #include "DataFlash_File.h"

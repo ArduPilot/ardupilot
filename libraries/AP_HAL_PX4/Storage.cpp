@@ -154,8 +154,14 @@ void PX4Storage::_storage_open(void)
 	if (fd == -1) {
             hal.scheduler->panic("Failed to open " MTD_PARAMS_FILE);
 	}
-	if (read(fd, _buffer, sizeof(_buffer)) != sizeof(_buffer)) {
-            hal.scheduler->panic("Failed to read " MTD_PARAMS_FILE);
+        const uint16_t chunk_size = 128;
+        for (uint16_t ofs=0; ofs<sizeof(_buffer); ofs += chunk_size) {
+            ssize_t ret = read(fd, &_buffer[ofs], chunk_size);
+            if (ret != chunk_size) {
+                ::printf("storage read of %u bytes at %u to %p failed - got %d errno=%d\n",
+                         (unsigned)sizeof(_buffer), (unsigned)ofs, &_buffer[ofs], (int)ret, (int)errno);
+                hal.scheduler->panic("Failed to read " MTD_PARAMS_FILE);
+            }
 	}
 	close(fd);
 	_initialised = true;

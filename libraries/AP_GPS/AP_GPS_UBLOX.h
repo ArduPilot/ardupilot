@@ -247,6 +247,9 @@ private:
     uint8_t			_fix_count;
     uint8_t         _class;
 
+    uint32_t        _last_vel_time;
+    uint32_t        _last_pos_time;
+
     // do we have new position information?
     bool            _new_position:1;
     // do we have new speed information?
@@ -254,7 +257,7 @@ private:
     bool            need_rate_update:1;
 
     // have we written the logging headers to DataFlash?
-    bool            logging_started:1;
+    static bool     logging_started;
 
     uint8_t         _disable_counter;
 

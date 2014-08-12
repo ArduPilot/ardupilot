@@ -9,6 +9,7 @@ extern const AP_HAL::HAL& hal;
 // Public Methods //////////////////////////////////////////////////////////////
 bool AP_Baro_HIL::init()
 {
+    healthy = false;
     return true;
 }
 
@@ -35,11 +36,13 @@ uint8_t AP_Baro_HIL::read()
 
 void AP_Baro_HIL::setHIL(float pressure, float temperature)
 {
-    _count = 1;
-    _pressure_sum = pressure;
-    _temperature_sum = temperature;
-    _last_update = hal.scheduler->millis();
-    healthy = true;
+    if (pressure > 0) {
+        _count = 1;
+        _pressure_sum = pressure;
+        _temperature_sum = temperature;
+        _last_update = hal.scheduler->millis();
+        healthy = true;
+    }
 }
 
 
@@ -60,7 +63,7 @@ static void SimpleAtmosphere(
   const float GMR    = 34.163195f;     // gas constant
   float h=alt*REARTH/(alt+REARTH);     // geometric to geopotential altitude
 
-  if (h<11.0)
+  if (h<11.0f)
     {                                                          // Troposphere
       theta=(288.15f-6.5f*h)/288.15f;
       delta=powf(theta, GMR/6.5f);
@@ -80,9 +83,9 @@ void AP_Baro_HIL::setHIL(float altitude_msl)
     float sigma, delta, theta;
     const float p0 = 101325;
 
-    SimpleAtmosphere(altitude_msl*0.001, sigma, delta, theta);
+    SimpleAtmosphere(altitude_msl*0.001f, sigma, delta, theta);
     float p = p0 * delta;
-    float T = 303.16 * theta - 273.16; // Assume 30 degrees at sea level - converted to degrees Kelvin
+    float T = 303.16f * theta - 273.16f; // Assume 30 degrees at sea level - converted to degrees Kelvin
 
     setHIL(p, T);
 }

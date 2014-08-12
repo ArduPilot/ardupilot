@@ -151,6 +151,14 @@ void AP_MotorsSingle::output_min()
     hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_7]), _rc_throttle.radio_min);
 }
 
+// get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
+//  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
+uint16_t AP_MotorsSingle::get_motor_mask()
+{
+    // single copter uses channels 1,2,3,4 and 7
+    return (1U << 0 | 1U << 1 | 1U << 2 | 1U << 3 | 1U << 6);
+}
+
 // output_armed - sends commands to the motors
 void AP_MotorsSingle::output_armed()
 {
@@ -216,50 +224,40 @@ void AP_MotorsSingle::output_disarmed()
     output_min();
 }
 
-// output_test - spin each motor for a moment to allow the user to confirm the motor order and spin direction
-void AP_MotorsSingle::output_test()
+// output_test - spin a motor at the pwm value specified
+//  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
+//  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
+void AP_MotorsSingle::output_test(uint8_t motor_seq, int16_t pwm)
 {
-    // Send minimum values to all motors
-    output_min();
+    // exit immediately if not armed
+    if (!_flags.armed) {
+        return;
+    }
 
-    // spin main motor
-    hal.scheduler->delay(1000);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_7]), _rc_throttle.radio_min + _min_throttle);
-    hal.scheduler->delay(1000);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_7]), _rc_throttle.radio_min);
-    hal.scheduler->delay(2000);   
-
-    // flap servo 1
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _servo1.radio_min);
-    hal.scheduler->delay(1000);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _servo1.radio_max);
-    hal.scheduler->delay(1000);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _servo1.radio_trim);
-    hal.scheduler->delay(2000);
-
-    // flap servo 2
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _servo2.radio_min);
-    hal.scheduler->delay(1000);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _servo2.radio_max);
-    hal.scheduler->delay(1000);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _servo2.radio_trim);
-    hal.scheduler->delay(2000);
-
-    // flap servo 3
-	hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]), _servo3.radio_min);
-    hal.scheduler->delay(1000);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]), _servo3.radio_max);
-    hal.scheduler->delay(1000);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]), _servo3.radio_trim);
-    hal.scheduler->delay(2000);
-
-    // flap servo 4
-	hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _servo4.radio_min);
-    hal.scheduler->delay(1000);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _servo4.radio_max);
-    hal.scheduler->delay(1000);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _servo4.radio_trim);
-
-    // Send minimum values to all motors
-    output_min();
+    // output to motors and servos
+    switch (motor_seq) {
+        case 1:
+            // flap servo 1
+            hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), pwm);
+            break;
+        case 2:
+            // flap servo 2
+            hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), pwm);
+            break;
+        case 3:
+            // flap servo 3
+            hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]), pwm);
+            break;
+        case 4:
+            // flap servo 4
+            hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), pwm);
+            break;
+        case 5:
+            // spin main motor
+            hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_7]), pwm);
+            break;
+        default:
+            // do nothing
+            break;
+    }
 }

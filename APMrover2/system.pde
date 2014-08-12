@@ -117,7 +117,7 @@ static void init_ardupilot()
     set_control_channels();
 
     // after parameter load setup correct baud rate on uartA
-    hal.uartA->begin(map_baudrate(g.serial0_baud, SERIAL0_BAUD));
+    hal.uartA->begin(map_baudrate(g.serial0_baud));
 
     // keep a record of how many resets have happened. This can be
     // used to detect in-flight resets
@@ -135,14 +135,14 @@ static void init_ardupilot()
     check_usb_mux();
 
     // we have a 2nd serial port for telemetry
-    hal.uartC->begin(map_baudrate(g.serial1_baud, SERIAL1_BAUD), 128, 128);
-	gcs[1].init(hal.uartC);
+    gcs[1].setup_uart(hal.uartC, map_baudrate(g.serial1_baud), 128, 128);
 
 #if MAVLINK_COMM_NUM_BUFFERS > 2
-    // we may have a 3rd serial port for telemetry
-    if (hal.uartD != NULL) {
-        hal.uartD->begin(map_baudrate(g.serial2_baud, SERIAL2_BAUD), 128, 128);
-        gcs[2].init(hal.uartD);
+    if (g.serial2_protocol == SERIAL2_FRSKY_DPORT || 
+        g.serial2_protocol == SERIAL2_FRSKY_SPORT) {
+        frsky_telemetry.init(hal.uartD, g.serial2_protocol);
+    } else {
+        gcs[2].setup_uart(hal.uartD, map_baudrate(g.serial2_baud), 128, 128);
     }
 #endif
 
@@ -167,7 +167,7 @@ static void init_ardupilot()
     hal.scheduler->register_delay_callback(mavlink_delay_cb, 5);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-    adc.Init();      // APM ADC library initialization
+    apm1_adc.Init();      // APM ADC library initialization
 #endif
 
 	if (g.compass_enabled==true) {
@@ -378,6 +378,7 @@ static void startup_INS_ground(bool force_accel_level)
 
     ahrs.init();
 	ahrs.set_fly_forward(true);
+    ahrs.set_vehicle_class(AHRS_VEHICLE_GROUND);
 
     AP_InertialSensor::Start_style style;
     if (g.skip_gyro_cal && !force_accel_level) {
@@ -412,27 +413,6 @@ static void resetPerfData(void) {
 }
 
 
-/*
-  map from a 8 bit EEPROM baud rate to a real baud rate
- */
-static uint32_t map_baudrate(int8_t rate, uint32_t default_baud)
-{
-    switch (rate) {
-    case 1:    return 1200;
-    case 2:    return 2400;
-    case 4:    return 4800;
-    case 9:    return 9600;
-    case 19:   return 19200;
-    case 38:   return 38400;
-    case 57:   return 57600;
-    case 111:  return 111100;
-    case 115:  return 115200;
-    }
-    cliSerial->println_P(PSTR("Invalid baudrate"));
-    return default_baud;
-}
-
-
 static void check_usb_mux(void)
 {
     bool usb_check = hal.gpio->usb_connected();
@@ -451,7 +431,7 @@ static void check_usb_mux(void)
     if (usb_connected) {
         hal.uartA->begin(SERIAL0_BAUD);
     } else {
-        hal.uartA->begin(map_baudrate(g.serial1_baud, SERIAL1_BAUD));
+        hal.uartA->begin(map_baudrate(g.serial1_baud));
     }
 #endif
 }
@@ -495,7 +475,7 @@ static uint8_t check_digital_pin(uint8_t pin)
         return 0;
     }
     // ensure we are in input mode
-    hal.gpio->pinMode(dpin, GPIO_INPUT);
+    hal.gpio->pinMode(dpin, HAL_GPIO_INPUT);
 
     // enable pullup
     hal.gpio->write(dpin, 1);
@@ -535,4 +515,15 @@ static bool should_log(uint32_t mask)
         in_mavlink_delay = false;
     }
     return ret;
+}
+
+/*
+  send FrSky telemetry. Should be called at 5Hz by scheduler
+ */
+static void telemetry_send(void)
+{
+#if FRSKY_TELEM_ENABLED == ENABLED
+    frsky_telemetry.send_frames((uint8_t)control_mode, 
+                                (AP_Frsky_Telem::FrSkyProtocol)g.serial2_protocol.get());
+#endif
 }

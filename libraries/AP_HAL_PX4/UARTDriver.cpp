@@ -138,6 +138,9 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 		tcgetattr(_fd, &t);
 		t.c_cflag |= CRTS_IFLOW;
 		tcsetattr(_fd, TCSANOW, &t);
+
+		// reset _total_written to reset flow control auto check
+		_total_written = 0;
 	}
 
     if (_writebuf_size != 0 && _readbuf_size != 0 && _fd != -1) {

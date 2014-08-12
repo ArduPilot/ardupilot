@@ -10,7 +10,9 @@
 #include <AP_HAL_AVR.h>
 #include <AP_HAL_PX4.h>
 #include <AP_HAL_Linux.h>
+#include <AP_HAL_FLYMAPLE.h>
 #include <AP_HAL_Empty.h>
+#include <AP_HAL_VRBRAIN.h>
 
 #include <AP_Math.h>    // ArduPilot Mega Vector/Matrix math Library
 #include <AP_Declination.h>
@@ -18,11 +20,20 @@
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-AP_Compass_PX4 compass;
+#define CONFIG_COMPASS HAL_COMPASS_DEFAULT
+
+#if CONFIG_COMPASS == HAL_COMPASS_PX4
+static AP_Compass_PX4 compass;
+#elif CONFIG_COMPASS == HAL_COMPASS_VRBRAIN
+static AP_Compass_VRBRAIN compass;
+#elif CONFIG_COMPASS == HAL_COMPASS_HMC5843
+static AP_Compass_HMC5843 compass;
+#elif CONFIG_COMPASS == HAL_COMPASS_HIL
+static AP_Compass_HIL compass;
 #else
-AP_Compass_HMC5843 compass;
+ #error Unrecognized CONFIG_COMPASS setting
 #endif
+
 uint32_t timer;
 
 void setup() {
@@ -34,7 +45,7 @@ void setup() {
     }
     hal.console->println("init done");
 
-    compass.set_offsets(0,0,0); // set offsets to account for surrounding interference
+    compass.set_and_save_offsets(0,0,0,0); // set offsets to account for surrounding interference
     compass.set_declination(ToRad(0.0)); // set local difference between magnetic north and true north
 
     hal.console->print("Compass auto-detected as: ");

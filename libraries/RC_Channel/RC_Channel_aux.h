@@ -99,6 +99,12 @@ public:
 	// set servo_out
 	static void set_servo_out(Aux_servo_function_t function, int16_t value);
 
+	// setup failsafe for an auxillary channel function
+	static void set_servo_failsafe(Aux_servo_function_t function, RC_Channel::LimitValue limit);
+
+	// set servo to a LimitValue
+	static void set_servo_limit(Aux_servo_function_t function, RC_Channel::LimitValue limit);
+
 	// return true if a function is assigned to a channel
 	static bool function_assigned(Aux_servo_function_t function);
 

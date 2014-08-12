@@ -4,18 +4,17 @@
 
 extern const AP_HAL::HAL& hal;
 
-uint8_t AP_InertialSensor_UserInteractStream::blocking_read() {
+bool AP_InertialSensor_UserInteractStream::blocking_read() 
+{
     /* Wait for input to be available */
     while(!_s->available()) {
         hal.scheduler->delay(20);
     }
-    /* Grab first character */
-    uint8_t ret = (uint8_t) _s->read();
     /* Clear all available input */
     while (_s->available()) {
         _s->read();
     }
-    return ret;
+    return true;
 }
 
 void AP_InertialSensor_UserInteractStream::_printf_P(

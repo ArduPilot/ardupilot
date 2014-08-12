@@ -8,6 +8,7 @@
 #include <AP_Baro.h>                    // ArduPilot Mega Barometer Library
 #include <AP_Buffer.h>                  // FIFO buffer library
 #include <AP_GPS_Glitch.h>              // GPS Glitch detection library
+#include <AP_Baro_Glitch.h>             // Baro Glitch detection library
 
 #define AP_INTERTIALNAV_TC_XY   2.5f // default time constant for complementary filter's X & Y axis
 #define AP_INTERTIALNAV_TC_Z    5.0f // default time constant for complementary filter's Z axis
@@ -34,15 +35,23 @@ class AP_InertialNav
 public:
 
     // Constructor
-    AP_InertialNav(AP_AHRS &ahrs, AP_Baro &baro, GPS_Glitch& gps_glitch ) :
+    AP_InertialNav(AP_AHRS &ahrs, AP_Baro &baro, GPS_Glitch& gps_glitch, Baro_Glitch &baro_glitch) :
         _ahrs(ahrs),
         _baro(baro),
         _xy_enabled(false),
+        _k1_xy(0.0f),
+        _k2_xy(0.0f),
+        _k3_xy(0.0f),
         _gps_last_update(0),
         _gps_last_time(0),
         _historic_xy_counter(0),
+        _lon_to_cm_scaling(LATLON_TO_CM),
+        _k1_z(0.0f),
+        _k2_z(0.0f),
+        _k3_z(0.0f),
         _baro_last_update(0),
         _glitch_detector(gps_glitch),
+        _baro_glitch(baro_glitch),
         _error_count(0)
         {
             AP_Param::setup_object_defaults(this, var_info);
@@ -64,16 +73,6 @@ public:
     //
     // XY Axis specific methods
     //
-
-    /**
-     * set_time_constant_xy - sets time constant used by complementary filter for horizontal position estimate
-     *
-     * smaller values means higher influence of gps on position estimation
-     * bigger values favor the integrated accelerometer data for position estimation
-     *
-     * @param time_constant_in_seconds : constant in seconds; 0 < constant < 30 must hold
-     */
-    void        set_time_constant_xy( float time_constant_in_seconds );
 
     /**
      * position_ok - true if inertial based altitude and position can be trusted
@@ -129,7 +128,7 @@ public:
      *
      * @returns the current horizontal velocity in cm/s
      */
-    virtual float        get_velocity_xy();
+    virtual float get_velocity_xy() const;
 
     /**
      * set_velocity_xy - overwrites the current horizontal velocity in cm/s
@@ -147,16 +146,6 @@ public:
     //
     // Z Axis methods
     //
-
-    /**
-     * set_time_constant_z - sets timeconstant used by complementary filter for vertical position estimation
-     *
-     * smaller values means higher influence of barometer in altitude estimation
-     * bigger values favor the integrated accelerometer data for altitude estimation
-     *
-     * @param time_constant_in_seconds : constant in s; 0 < constant < 30 must hold
-     */
-    void        set_time_constant_z( float time_constant_in_seconds );
 
     /**
      * altitude_ok - returns true if inertial based altitude and position can be trusted
@@ -197,7 +186,7 @@ public:
     /**
      * error_count - returns number of missed updates from GPS
      */
-    virtual uint8_t     error_count() const { return _error_count; }
+    uint8_t     error_count() const { return _error_count; }
 
     /**
      * ignore_next_error - the next error (if it occurs immediately) will not be added to the error count
@@ -208,7 +197,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     // public variables
-    Vector3f                accel_correction_ef;        // earth frame accelerometer corrections. here for logging purposes only
+    Vector3f                accel_correction_hbf;       // horizontal body frame accelerometer corrections. here for logging purposes only
 
 protected:
 
@@ -247,11 +236,6 @@ protected:
 
     /**
      * update gains from time constant.
-     *
-     * The time constants (in s) can be set with the following methods:
-     *
-     * @see: AP_InertialNav::set_time_constant_xy(float)
-     * @see: AP_InertialNav::set_time_constant_z(float)
      */
     void                    update_gains();
 
@@ -268,15 +252,19 @@ protected:
     // structure for holding flags
     struct InertialNav_flags {
         uint8_t gps_glitching       : 1;                // 1 if glitch detector was previously indicating a gps glitch
+        uint8_t baro_glitching      : 1;                // 1 if baro glitch detector was previously indicating a baro glitch
         uint8_t ignore_error        : 3;                // the number of iterations for which we should ignore errors
     } _flags;
 
     AP_AHRS                &_ahrs;                      // reference to ahrs object
     AP_Baro                &_baro;                      // reference to barometer
 
+    // parameters
+    AP_Float                _time_constant_xy;          // time constant for horizontal corrections in s
+    AP_Float                _time_constant_z;           // time constant for vertical corrections in s
+
     // XY Axis specific variables
     bool                    _xy_enabled;                // xy position estimates enabled
-    AP_Float                _time_constant_xy;          // time constant for horizontal corrections in s
     float                   _k1_xy;                     // gain for horizontal position correction
     float                   _k2_xy;                     // gain for horizontal velocity correction
     float                   _k3_xy;                     // gain for horizontal accelerometer offset correction
@@ -288,7 +276,6 @@ protected:
     float                   _lon_to_cm_scaling;         // conversion of longitude to centimeters
 
     // Z Axis specific variables
-    AP_Float                _time_constant_z;           // time constant for vertical corrections in s
     float                   _k1_z;                      // gain for vertical position correction
     float                   _k2_z;                      // gain for vertical velocity correction
     float                   _k3_z;                      // gain for vertical accelerometer offset correction
@@ -304,6 +291,7 @@ protected:
 
     // error handling
     GPS_Glitch&             _glitch_detector;           // GPS Glitch detector
+    Baro_Glitch&            _baro_glitch;               // Baro glitch detector
     uint8_t                 _error_count;               // number of missed GPS updates
 
 };

@@ -104,10 +104,21 @@ public:
         k_param_angle_rate_max,         // remove
         k_param_rssi_range,
         k_param_rc_feel_rp,
-        k_param_NavEKF,                 // 41 - Extended Kalman Filter Inertial Navigation Group
+        k_param_NavEKF,                 // Extended Kalman Filter Inertial Navigation Group
         k_param_mission,                // mission library
         k_param_rc_13,
         k_param_rc_14,
+        k_param_rally,
+        k_param_poshold_brake_rate,
+        k_param_poshold_brake_angle_max,
+        k_param_pilot_accel_z,
+        k_param_serial0_baud,
+        k_param_serial1_baud,
+        k_param_serial2_baud,
+        k_param_land_repositioning,
+        k_param_sonar, // sonar object
+        k_param_ekfcheck_thresh,        // 54
+        k_param_terrain,
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -115,7 +126,8 @@ public:
         k_param_geofence_limit,         // deprecated - remove
         k_param_altitude_limit,         // deprecated - remove
         k_param_fence,
-        k_param_gps_glitch,             // 70
+        k_param_gps_glitch,
+        k_param_baro_glitch,            // 71
 
         //
         // 75: Singlecopter, CoaxCopter
@@ -158,10 +170,11 @@ public:
         k_param_gcs1,
         k_param_sysid_this_mav,
         k_param_sysid_my_gcs,
-        k_param_serial1_baud,
+        k_param_serial1_baud_old, // deprecated
         k_param_telem_delay,
         k_param_gcs2,
-        k_param_serial2_baud,
+        k_param_serial2_baud_old, // deprecated
+        k_param_serial2_protocol,
 
         //
         // 140: Sensor parameters
@@ -174,13 +187,13 @@ public:
         k_param_pack_capacity,  // deprecated - can be deleted
         k_param_compass_enabled,
         k_param_compass,
-        k_param_sonar_enabled,
+        k_param_sonar_enabled_old, // deprecated
         k_param_frame_orientation,
         k_param_optflow_enabled,
         k_param_fs_batt_voltage,
         k_param_ch7_option,
         k_param_auto_slew_rate,     // deprecated - can be deleted
-        k_param_sonar_type,
+        k_param_sonar_type_old,     // deprecated
         k_param_super_simple = 155,
         k_param_axis_enabled = 157, // deprecated - remove with next eeprom number change
         k_param_copter_leds_mode,   // deprecated - remove with next eeprom number change
@@ -304,17 +317,15 @@ public:
     //
     AP_Int16        sysid_this_mav;
     AP_Int16        sysid_my_gcs;
-    AP_Int8         serial1_baud;
+    AP_Int16        serial0_baud;
+    AP_Int16        serial1_baud;
 #if MAVLINK_COMM_NUM_BUFFERS > 2
-    AP_Int8         serial2_baud;
+    AP_Int16        serial2_baud;
+    AP_Int8         serial2_protocol;
 #endif
     AP_Int8         telem_delay;
 
     AP_Int16        rtl_altitude;
-    AP_Int8         sonar_enabled;
-    AP_Int8         sonar_type;       // 0 = XL, 1 = LV,
-                                      // 2 = XLL (XL with 10m range)
-                                      // 3 = HRLV
     AP_Float        sonar_gain;
 
     AP_Int8         failsafe_battery_enabled;   // battery failsafe enabled
@@ -334,13 +345,16 @@ public:
     AP_Float        rssi_range;                 // allows to set max voltage for rssi pin such as 5.0, 3.3 etc. 
     AP_Int8         wp_yaw_behavior;            // controls how the autopilot controls yaw during missions
     AP_Int8         rc_feel_rp;                 // controls vehicle response to user input with 0 being extremely soft and 100 begin extremely crisp
+
+    AP_Int16        poshold_brake_rate;         // PosHold flight mode's rotation rate during braking in deg/sec
+    AP_Int16        poshold_brake_angle_max;    // PosHold flight mode's max lean angle during braking in centi-degrees
     
     // Waypoints
     //
     AP_Int32        rtl_loiter_time;
     AP_Int16        land_speed;
     AP_Int16        pilot_velocity_z_max;        // maximum vertical velocity the pilot may request
-
+    AP_Int16        pilot_accel_z;               // vertical acceleration the pilot may request
 
     // Throttle
     //
@@ -372,6 +386,9 @@ public:
     AP_Int8         ch7_option;
     AP_Int8         ch8_option;
     AP_Int8         arming_check;
+
+    AP_Int8         land_repositioning;
+    AP_Float        ekfcheck_thresh;
 
 #if FRAME_CONFIG ==     HELI_FRAME
     // Heli
@@ -419,9 +436,15 @@ public:
     AP_Int8                 acro_trainer;
 
     // PI/D controllers
+#if FRAME_CONFIG == HELI_FRAME
+    AC_HELI_PID             pid_rate_roll;
+    AC_HELI_PID             pid_rate_pitch;
+    AC_HELI_PID             pid_rate_yaw;
+#else
     AC_PID                  pid_rate_roll;
     AC_PID                  pid_rate_pitch;
     AC_PID                  pid_rate_yaw;
+#endif
     AC_PID                  pid_loiter_rate_lat;
     AC_PID                  pid_loiter_rate_lon;
 

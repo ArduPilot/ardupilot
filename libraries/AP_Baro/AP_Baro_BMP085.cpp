@@ -85,7 +85,7 @@ bool AP_Baro_BMP085::init()
     if (!i2c_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER))
         return false;
 
-    hal.gpio->pinMode(BMP085_EOC, GPIO_INPUT);// End Of Conversion (PC7) input
+    hal.gpio->pinMode(BMP085_EOC, HAL_GPIO_INPUT);// End Of Conversion (PC7) input
 
     // We read the calibration data registers
     if (hal.i2c->readRegisters(BMP085_ADDRESS, 0xAA, 22, buff) != 0) {
@@ -291,8 +291,8 @@ void AP_Baro_BMP085::Calculate()
 
     _count++;
     if (_count == 254) {
-        _temp_sum *= 0.5;
-        _press_sum *= 0.5;
+        _temp_sum *= 0.5f;
+        _press_sum *= 0.5f;
         _count /= 2;
     }
 }

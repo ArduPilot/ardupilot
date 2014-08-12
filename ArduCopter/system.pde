@@ -89,10 +89,10 @@ static void init_ardupilot()
     //
 #if HIL_MODE != HIL_MODE_DISABLED
     // we need more memory for HIL, as we get a much higher packet rate
-    hal.uartA->begin(SERIAL0_BAUD, 256, 256);
+    hal.uartA->begin(map_baudrate(g.serial0_baud), 256, 256);
 #else
     // use a bit less for non-HIL operation
-    hal.uartA->begin(SERIAL0_BAUD, 512, 128);
+    hal.uartA->begin(map_baudrate(g.serial0_baud), 512, 128);
 #endif
 
     // GPS serial port.
@@ -131,11 +131,6 @@ static void init_ardupilot()
 
     BoardConfig.init();
 
-    // FIX: this needs to be the inverse motors mask
-    ServoRelayEvents.set_channel_mask(0xFFF0);
-
-    relay.init();
-
     bool enable_external_leds = true;
 
     // init EPM cargo gripper
@@ -151,20 +146,6 @@ static void init_ardupilot()
     // initialise battery monitor
     battery.init();
     
-#if CONFIG_SONAR == ENABLED
- #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
-    sonar_analog_source = new AP_ADC_AnalogSource(
-            &adc, CONFIG_SONAR_SOURCE_ADC_CHANNEL, 0.25);
- #elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
-    sonar_analog_source = hal.analogin->channel(
-            CONFIG_SONAR_SOURCE_ANALOG_PIN);
- #else
-  #warning "Invalid CONFIG_SONAR_SOURCE"
- #endif
-    sonar = new AP_RangeFinder_MaxsonarXL(sonar_analog_source,
-            &sonar_mode_filter);
-#endif
-
     rssi_analog_source      = hal.analogin->channel(g.rssi_pin);
 
     barometer.init();
@@ -186,13 +167,15 @@ static void init_ardupilot()
     // we have a 2nd serial port for telemetry on all boards except
     // APM2. We actually do have one on APM2 but it isn't necessary as
     // a MUX is used
-    hal.uartC->begin(map_baudrate(g.serial1_baud, SERIAL1_BAUD), 128, 128);
-    gcs[1].init(hal.uartC);
+    gcs[1].setup_uart(hal.uartC, map_baudrate(g.serial1_baud), 128, 128);
 #endif
+
 #if MAVLINK_COMM_NUM_BUFFERS > 2
-    if (hal.uartD != NULL) {
-        hal.uartD->begin(map_baudrate(g.serial2_baud, SERIAL2_BAUD), 128, 128);
-        gcs[2].init(hal.uartD);
+    if (g.serial2_protocol == SERIAL2_FRSKY_DPORT || 
+        g.serial2_protocol == SERIAL2_FRSKY_SPORT) {
+        frsky_telemetry.init(hal.uartD, g.serial2_protocol);
+    } else {
+        gcs[2].setup_uart(hal.uartD, map_baudrate(g.serial2_baud), 128, 128);
     }
 #endif
 
@@ -215,6 +198,11 @@ static void init_ardupilot()
     init_rc_in();               // sets up rc channels from radio
     init_rc_out();              // sets up motors and output to escs
 
+    // initialise which outputs Servo and Relay events can use
+    ServoRelayEvents.set_channel_mask(~motors.get_motor_mask());
+
+    relay.init();
+
     /*
      *  setup the 'main loop is dead' check. Note that this relies on
      *  the RC library being initialised.
@@ -223,7 +211,7 @@ static void init_ardupilot()
 
  #if CONFIG_ADC == ENABLED
     // begin filtering the ADC Gyros
-    adc.Init();           // APM ADC library initialization
+    apm1_adc.Init();           // APM ADC library initialization
  #endif // CONFIG_ADC
 
     // Do GPS init
@@ -296,6 +284,15 @@ static void init_ardupilot()
     Log_Write_Startup();
 #endif
 
+    // we don't want writes to the serial port to cause us to pause
+    // mid-flight, so set the serial ports non-blocking once we are
+    // ready to fly
+    hal.uartA->set_blocking_writes(false);
+    hal.uartC->set_blocking_writes(false);
+    if (hal.uartD != NULL) {
+        hal.uartD->set_blocking_writes(false);
+    }
+
     cliSerial->print_P(PSTR("\nReady to FLY "));
 }
 
@@ -309,6 +306,7 @@ static void startup_ground(bool force_gyro_cal)
 
     // initialise ahrs (may push imu calibration into the mpu6000 if using that device).
     ahrs.init();
+    ahrs.set_vehicle_class(AHRS_VEHICLE_COPTER);
 
     // Warm up and read Gyro offsets
     // -----------------------------
@@ -328,8 +326,9 @@ static void startup_ground(bool force_gyro_cal)
 // returns true if the GPS is ok and home position is set
 static bool GPS_ok()
 {
-    if (ap.home_is_set && gps.status() == AP_GPS::GPS_OK_FIX_3D && 
-        !gps_glitch.glitching() && !failsafe.gps) {
+    if (ap.home_is_set && gps.status() >= AP_GPS::GPS_OK_FIX_3D && 
+        !gps_glitch.glitching() && !failsafe.gps &&
+        !ekf_check_state.bad_compass && !failsafe.ekf) {
         return true;
     }else{
         return false;
@@ -367,26 +366,6 @@ static void update_auto_armed()
     }
 }
 
-/*
- *  map from a 8 bit EEPROM baud rate to a real baud rate
- */
-static uint32_t map_baudrate(int8_t rate, uint32_t default_baud)
-{
-    switch (rate) {
-    case 1:    return 1200;
-    case 2:    return 2400;
-    case 4:    return 4800;
-    case 9:    return 9600;
-    case 19:   return 19200;
-    case 38:   return 38400;
-    case 57:   return 57600;
-    case 111:  return 111100;
-    case 115:  return 115200;
-    }
-    //cliSerial->println_P(PSTR("Invalid baudrate"));
-    return default_baud;
-}
-
 static void check_usb_mux(void)
 {
     bool usb_check = hal.gpio->usb_connected();
@@ -403,10 +382,20 @@ static void check_usb_mux(void)
     // SERIAL0_BAUD, but when connected as a TTL serial port we run it
     // at SERIAL1_BAUD.
     if (ap.usb_connected) {
-        hal.uartA->begin(SERIAL0_BAUD);
+        hal.uartA->begin(map_baudrate(g.serial0_baud));
     } else {
-        hal.uartA->begin(map_baudrate(g.serial1_baud, SERIAL1_BAUD));
+        hal.uartA->begin(map_baudrate(g.serial1_baud));
     }
 #endif
 }
 
+/*
+  send FrSky telemetry. Should be called at 5Hz by scheduler
+ */
+static void telemetry_send(void)
+{
+#if FRSKY_TELEM_ENABLED == ENABLED
+    frsky_telemetry.send_frames((uint8_t)control_mode, 
+                                (AP_Frsky_Telem::FrSkyProtocol)g.serial2_protocol.get());
+#endif
+}

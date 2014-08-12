@@ -95,12 +95,19 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     AP_GROUPINFO("GYR2OFFS",    7, AP_InertialSensor, _gyro_offset[1],   0),
 #endif
 
+#if INS_MAX_INSTANCES > 2
+    AP_GROUPINFO("ACC3SCAL",    8, AP_InertialSensor, _accel_scale[2],   0),
+    AP_GROUPINFO("ACC3OFFS",    9, AP_InertialSensor, _accel_offset[2],  0),
+    AP_GROUPINFO("GYR3OFFS",   10, AP_InertialSensor, _gyro_offset[2],   0),
+#endif
+
     AP_GROUPEND
 };
 
 AP_InertialSensor::AP_InertialSensor() :
     _accel(),
-    _gyro()
+    _gyro(),
+    _board_orientation(ROTATION_NONE)
 {
     AP_Param::setup_object_defaults(this, var_info);        
 }
@@ -412,7 +419,10 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
                 PSTR("Place vehicle %S and press any key.\n"), msg);
 
         // wait for user input
-        interact->blocking_read();
+        if (!interact->blocking_read()) {
+            //No need to use interact->printf_P for an error, blocking_read does this when it fails
+            goto failed;
+        }
 
         // clear out any existing samples from ins
         update();
@@ -484,7 +494,14 @@ failed:
 /// @note this should not be called while flying because it reads from the eeprom which can be slow
 bool AP_InertialSensor::calibrated()
 {
-    return _accel_offset[0].load();
+    // check each accelerometer has offsets saved
+    for (uint8_t i=0; i<get_accel_count(); i++) {
+        if (!_accel_offset[i].load()) {
+            return false;
+        }
+    }
+    // if we got this far the accelerometers must have been calibrated
+    return true;
 }
 
 // _calibrate_model - perform low level accel calibration

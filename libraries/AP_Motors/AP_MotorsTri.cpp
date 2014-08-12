@@ -80,6 +80,14 @@ void AP_MotorsTri::output_min()
     hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_CH_TRI_YAW]), _rc_yaw.radio_trim);
 }
 
+// get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
+//  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
+uint16_t AP_MotorsTri::get_motor_mask()
+{
+    // tri copter uses channels 1,2,4 and 7
+    return (1U << 0 | 1U << 1 | 1U << 3 | 1U << AP_MOTORS_CH_TRI_YAW);
+}
+
 // output_armed - sends commands to the motors
 void AP_MotorsTri::output_armed()
 {
@@ -185,27 +193,36 @@ void AP_MotorsTri::output_disarmed()
     output_min();
 }
 
-// output_test - spin each motor for a moment to allow the user to confirm the motor order and spin direction
-void AP_MotorsTri::output_test()
+// output_test - spin a motor at the pwm value specified
+//  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
+//  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
+void AP_MotorsTri::output_test(uint8_t motor_seq, int16_t pwm)
 {
-    // Send minimum values to all motors
-    output_min();
+    // exit immediately if not armed
+    if (!_flags.armed) {
+        return;
+    }
 
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _rc_throttle.radio_min);
-    hal.scheduler->delay(4000);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _rc_throttle.radio_min + _min_throttle);
-    hal.scheduler->delay(300);
-
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _rc_throttle.radio_min);
-    hal.scheduler->delay(2000);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _rc_throttle.radio_min + _min_throttle);
-    hal.scheduler->delay(300);
-
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _rc_throttle.radio_min);
-    hal.scheduler->delay(2000);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _rc_throttle.radio_min + _min_throttle);
-    hal.scheduler->delay(300);
-
-    // Send minimum values to all motors
-    output_min();
+    // output to motors and servos
+    switch (motor_seq) {
+        case 1:
+            // front right motor
+            hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), pwm);
+            break;
+        case 2:
+            // back motor
+            hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), pwm);
+            break;
+        case 3:
+            // back servo
+            hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_7]), pwm);
+            break;
+        case 4:
+            // front left motor
+            hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), pwm);
+            break;
+        default:
+            // do nothing
+            break;
+    }
 }

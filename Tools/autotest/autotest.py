@@ -87,9 +87,9 @@ def convert_gpx():
     return True
 
 
-def test_prerequesites():
+def test_prerequisites():
     '''check we have the right directories and tools to run tests'''
-    print("Testing prerequesites")
+    print("Testing prerequisites")
     util.mkdir_p(util.reltopdir('../buildlogs'))
     return True
 
@@ -120,7 +120,7 @@ opts, args = parser.parse_args()
 import  arducopter, arduplane, apmrover2
 
 steps = [
-    'prerequesites',
+    'prerequisites',
     'build.All',
     'build.Binaries',
     'build.Examples',
@@ -165,8 +165,8 @@ def skip_step(step):
 
 def run_step(step):
     '''run one step'''
-    if step == "prerequesites":
-        return test_prerequesites()
+    if step == "prerequisites":
+        return test_prerequisites()
 
     if step == 'build.ArduPlane':
         return util.build_SIL('ArduPlane')

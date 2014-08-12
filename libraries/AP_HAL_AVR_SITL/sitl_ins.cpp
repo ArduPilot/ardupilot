@@ -23,6 +23,7 @@
 #include <AP_Math.h>
 #include "../AP_ADC/AP_ADC.h"
 #include <SITL_State.h>
+#include <fenv.h>
 
 
 using namespace AVR_SITL;
@@ -38,6 +39,9 @@ uint16_t SITL_State::_airspeed_sensor(float airspeed)
 
 	airspeed_pressure = (airspeed*airspeed) / airspeed_ratio;
 	airspeed_raw = airspeed_pressure + airspeed_offset;
+        if (airspeed_raw/4 > 0xFFFF) {
+            return 0xFFFF;
+        }
 	return airspeed_raw/4;
 }
 
@@ -59,26 +63,26 @@ float SITL_State::_gyro_drift(void)
 uint16_t SITL_State::_ground_sonar(float altitude)
 {
 	static float home_alt = -1;
-	// TODO Find the current sonar object and load these params from it
-	// rather than assuming XL type
-	float scaler = AP_RANGEFINDER_MAXSONARXL_SCALER;
 
-	if (home_alt == -1)
+	if (home_alt == -1 && altitude > 0)
 		home_alt = altitude;
 
 	altitude = altitude - home_alt;
 
+        // adjust for apparent altitude with roll
+        altitude *= cos(radians(_sitl->state.rollDeg)) * cos(radians(_sitl->state.pitchDeg));
+
 	altitude += _sitl->sonar_noise * _rand_float();
 
-	if (_sitl->sonar_glitch >= (_rand_float() + 1.0f)/2.0f)
-		altitude = AP_RANGEFINDER_MAXSONARXL_MAX_DISTANCE / 100.0f;
+	// Altitude in in m, scaler in meters/volt
+	float voltage = altitude / _sitl->sonar_scale;
+        voltage = constrain_float(voltage, 0, 5.0f);
 
-	altitude = constrain_float(altitude,
-		AP_RANGEFINDER_MAXSONARXL_MIN_DISTANCE / 100.0f,
-		AP_RANGEFINDER_MAXSONARXL_MAX_DISTANCE / 100.0f);
+	if (_sitl->sonar_glitch >= (_rand_float() + 1.0f)/2.0f) {
+            voltage = 5.0f;
+        }
 
-	// Altitude in in m, scaler relative to cm
-	return (uint16_t)(altitude * 100.0f / scaler);
+        return 1023*(voltage / 5.0f);
 }
 
 /*
@@ -120,6 +124,12 @@ void SITL_State::_update_ins(float roll, 	float pitch, 	float yaw,		// Relative 
 		return;
 	}
 
+        if (_sitl->float_exception) {
+            feenableexcept(FE_INVALID | FE_OVERFLOW);
+        } else {
+            feclearexcept(FE_INVALID | FE_OVERFLOW);
+        }
+
 	SITL::convert_body_frame(roll, pitch,
 				 rollRate, pitchRate, yawRate,
 				 &p, &q, &r);
@@ -134,9 +144,11 @@ void SITL_State::_update_ins(float roll, 	float pitch, 	float yaw,		// Relative 
 		accel_noise += _sitl->accel_noise;
 		gyro_noise += ToRad(_sitl->gyro_noise);
 	}
-	float xAccel1 = xAccel + accel_noise * _rand_float();
-	float yAccel1 = yAccel + accel_noise * _rand_float();
-	float zAccel1 = zAccel + accel_noise * _rand_float();
+	// get accel bias (add only to first accelerometer)
+	Vector3f accel_bias = _sitl->accel_bias.get();
+	float xAccel1 = xAccel + accel_noise * _rand_float() + accel_bias.x;
+	float yAccel1 = yAccel + accel_noise * _rand_float() + accel_bias.y;
+	float zAccel1 = zAccel + accel_noise * _rand_float() + accel_bias.z;
 
 	float xAccel2 = xAccel + accel_noise * _rand_float();
 	float yAccel2 = yAccel + accel_noise * _rand_float();

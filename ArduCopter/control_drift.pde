@@ -44,7 +44,8 @@ static void drift_run()
 
     // if not armed or landed and throttle at zero, set throttle to zero and exit immediately
     if(!motors.armed() || (ap.land_complete && g.rc_3.control_in <= 0)) {
-        attitude_control.init_targets();
+        attitude_control.relax_bf_rate_controller();
+        attitude_control.set_yaw_target_to_current_heading();
         attitude_control.set_throttle_out(0, false);
         return;
     }
@@ -56,7 +57,7 @@ static void drift_run()
     pilot_throttle_scaled = get_pilot_desired_throttle(g.rc_3.control_in);
 
     // Grab inertial velocity
-    Vector3f vel = inertial_nav.get_velocity();
+    const Vector3f& vel = inertial_nav.get_velocity();
 
     // rotate roll, pitch input from north facing to vehicle's perspective
     float roll_vel =  vel.y * ahrs.cos_yaw() - vel.x * ahrs.sin_yaw(); // body roll vel
@@ -65,7 +66,7 @@ static void drift_run()
     float pitch_vel2 = min(fabs(pitch_vel), 800);
 
     // simple gain scheduling for yaw input
-    target_yaw_rate = (float)(target_roll/2) * (1.0 - (pitch_vel2 / 2400.0));
+    target_yaw_rate = (float)(target_roll/2.0f) * (1.0f - (pitch_vel2 / 2400.0f)) * g.acro_yaw_p;
 
     roll_vel = constrain_float(roll_vel, -322, 322);
     pitch_vel = constrain_float(pitch_vel, -322, 322);

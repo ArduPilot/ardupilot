@@ -16,6 +16,7 @@
 #include <AP_ADC.h>             // ArduPilot Mega Analog to Digital Converter Library
 #include <AP_ADC_AnalogSource.h>
 #include <AP_Baro.h>            // ArduPilot Mega Barometer Library
+#include <AP_Baro_Glitch.h>     // Baro glitch protection library
 #include <Filter.h>
 #include <AP_Compass.h>         // ArduPilot Mega Magnetometer Library
 #include <AP_Declination.h>
@@ -28,6 +29,7 @@
 #include <AP_InertialNav.h>     // Inertial Navigation library
 #include <GCS_MAVLink.h>
 #include <AP_Mission.h>
+#include <AP_Terrain.h>
 #include <AP_Notify.h>
 #include <AP_Vehicle.h>
 #include <DataFlash.h>
@@ -57,12 +59,13 @@ AP_Baro_BMP085 baro;
 // GPS declaration
 AP_GPS gps;
 GPS_Glitch gps_glitch(gps);
+Baro_Glitch baro_glitch(baro);
 
 AP_Compass_HMC5843 compass;
 AP_AHRS_DCM ahrs(ins, baro, gps);
 
 // Inertial Nav declaration
-AP_InertialNav inertial_nav(ahrs, baro, gps_glitch);
+AP_InertialNav inertial_nav(ahrs, baro, gps_glitch, baro_glitch);
 
 // fake PIDs
 AC_P   p_angle_roll, p_angle_pitch, p_angle_yaw;
@@ -80,7 +83,7 @@ AP_MotorsQuad motors(rc_roll, rc_pitch, rc_throttle, rc_yaw);
 int16_t motor_roll, motor_pitch, motor_yaw, motor_throttle;
 
 // Attitude Control
-AC_AttitudeControl ac_control(ahrs, ins, aparm, motors, p_angle_roll, p_angle_pitch, p_angle_yaw, pid_rate_roll, pid_rate_pitch, pid_rate_yaw);
+AC_AttitudeControl ac_control(ahrs, aparm, motors, p_angle_roll, p_angle_pitch, p_angle_yaw, pid_rate_roll, pid_rate_pitch, pid_rate_yaw);
 
 /// Position Control
 AC_PosControl pos_control(ahrs, inertial_nav, motors, ac_control, p_alt_pos, pid_alt_rate, pid_alt_accel, p_pos_xy, pid_rate_lat, pid_rate_lon);

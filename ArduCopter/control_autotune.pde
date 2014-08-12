@@ -192,8 +192,13 @@ static bool autotune_init(bool ignore_checks)
         return false;
     }
 
+    // initialize vertical speeds and leash lengths
+    pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+    pos_control.set_accel_z(g.pilot_accel_z);
+
     // initialise altitude target to stopping point
     pos_control.set_target_to_stopping_point_z();
+
     return true;
 }
 
@@ -208,8 +213,10 @@ static void autotune_run()
     // if not auto armed set throttle to zero and exit immediately
     // this should not actually be possible because of the autotune_init() checks
     if(!ap.auto_armed) {
-        attitude_control.init_targets();
+        attitude_control.relax_bf_rate_controller();
+        attitude_control.set_yaw_target_to_current_heading();
         attitude_control.set_throttle_out(0, false);
+        pos_control.set_alt_target_to_current_alt();
         return;
     }
 
@@ -235,9 +242,11 @@ static void autotune_run()
 
     // reset target lean angles and heading while landed
     if (ap.land_complete) {
-        attitude_control.init_targets();
-        // move throttle to minimum to keep us on the ground
-        attitude_control.set_throttle_out(0, false);
+        attitude_control.relax_bf_rate_controller();
+        attitude_control.set_yaw_target_to_current_heading();
+        // move throttle to between minimum and non-takeoff-throttle to keep us on the ground
+        attitude_control.set_throttle_out(get_throttle_pre_takeoff(g.rc_3.control_in), false);
+        pos_control.set_alt_target_to_current_alt();
     }else{
         // check if pilot is overriding the controls
         if (target_roll != 0 || target_pitch != 0 || target_yaw_rate != 0.0f || target_climb_rate != 0) {

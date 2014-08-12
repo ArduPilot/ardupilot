@@ -4,6 +4,9 @@
 static uint16_t land_detector;
 static bool land_with_gps;
 
+static uint32_t land_start_time;
+static bool land_pause;
+
 // land_init - initialise land controller
 static bool land_init(bool ignore_checks)
 {
@@ -13,11 +16,20 @@ static bool land_init(bool ignore_checks)
         // set target to stopping point
         Vector3f stopping_point;
         wp_nav.get_loiter_stopping_point_xy(stopping_point);
-        wp_nav.set_loiter_target(stopping_point);
+        wp_nav.init_loiter_target(stopping_point);
     }
+
+    // initialize vertical speeds and leash lengths
+    pos_control.set_speed_z(wp_nav.get_speed_down(), wp_nav.get_speed_up());
+    pos_control.set_accel_z(wp_nav.get_accel_z());
 
     // initialise altitude target to stopping point
     pos_control.set_target_to_stopping_point_z();
+
+    land_start_time = millis();
+
+    land_pause = false;
+
     return true;
 }
 
@@ -42,7 +54,8 @@ static void land_gps_run()
 
     // if not auto armed or landed set throttle to zero and exit immediately
     if(!ap.auto_armed || ap.land_complete) {
-        attitude_control.init_targets();
+        attitude_control.relax_bf_rate_controller();
+        attitude_control.set_yaw_target_to_current_heading();
         attitude_control.set_throttle_out(0, false);
         wp_nav.init_loiter_target();
 
@@ -62,12 +75,14 @@ static void land_gps_run()
 
     // process pilot inputs
     if (!failsafe.radio) {
-        // apply SIMPLE mode transform to pilot inputs
-        update_simple_mode();
+        if (g.land_repositioning) {
+            // apply SIMPLE mode transform to pilot inputs
+            update_simple_mode();
 
-        // process pilot's roll and pitch input
-        roll_control = g.rc_1.control_in;
-        pitch_control = g.rc_2.control_in;
+            // process pilot's roll and pitch input
+            roll_control = g.rc_1.control_in;
+            pitch_control = g.rc_2.control_in;
+        }
 
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
@@ -82,8 +97,17 @@ static void land_gps_run()
     // call attitude controller
     attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
 
+    //pause 4 seconds before beginning land descent
+    float cmb_rate;
+    if(land_pause && millis()-land_start_time < 4000) {
+        cmb_rate = 0;
+    } else {
+        land_pause = false;
+        cmb_rate = get_throttle_land();
+    }
+
     // update altitude target and call position controller
-    pos_control.set_alt_target_from_climb_rate(get_throttle_land(), G_Dt);
+    pos_control.set_alt_target_from_climb_rate(cmb_rate, G_Dt);
     pos_control.update_z_controller();
 }
 
@@ -97,7 +121,8 @@ static void land_nogps_run()
 
     // if not auto armed or landed set throttle to zero and exit immediately
     if(!ap.auto_armed || ap.land_complete) {
-        attitude_control.init_targets();
+        attitude_control.relax_bf_rate_controller();
+        attitude_control.set_yaw_target_to_current_heading();
         attitude_control.set_throttle_out(0, false);
 #if LAND_REQUIRE_MIN_THROTTLE_TO_DISARM == ENABLED
         // disarm when the landing detector says we've landed and throttle is at minimum
@@ -115,11 +140,13 @@ static void land_nogps_run()
 
     // process pilot inputs
     if (!failsafe.radio) {
-        // apply SIMPLE mode transform to pilot inputs
-        update_simple_mode();
+        if (g.land_repositioning) {
+            // apply SIMPLE mode transform to pilot inputs
+            update_simple_mode();
 
-        // get pilot desired lean angles
-        get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, target_roll, target_pitch);
+            // get pilot desired lean angles
+            get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, target_roll, target_pitch);
+        }
 
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
@@ -128,8 +155,17 @@ static void land_nogps_run()
     // call attitude controller
     attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 
+    //pause 4 seconds before beginning land descent
+    float cmb_rate;
+    if(land_pause && millis()-land_start_time < LAND_WITH_DELAY_MS) {
+        cmb_rate = 0;
+    } else {
+        land_pause = false;
+        cmb_rate = get_throttle_land();
+    }
+
     // call position controller
-    pos_control.set_alt_target_from_climb_rate(get_throttle_land(), G_Dt);
+    pos_control.set_alt_target_from_climb_rate(cmb_rate, G_Dt);
     pos_control.update_z_controller();
 }
 
@@ -138,8 +174,13 @@ static void land_nogps_run()
 //      should be called at 100hz or higher
 static float get_throttle_land()
 {
+#if CONFIG_SONAR == ENABLED
+    bool sonar_ok = sonar_enabled && sonar.healthy();
+#else
+    bool sonar_ok = false;
+#endif
     // if we are above 10m and the sonar does not sense anything perform regular alt hold descent
-    if (current_loc.alt >= LAND_START_ALT && !(g.sonar_enabled && sonar_alt_health >= SONAR_ALT_HEALTH_MAX)) {
+    if (current_loc.alt >= LAND_START_ALT && !(sonar_ok && sonar_alt_health >= SONAR_ALT_HEALTH_MAX)) {
         return pos_control.get_speed_down();
     }else{
         return -abs(g.land_speed);
@@ -151,7 +192,7 @@ static float get_throttle_land()
 static bool update_land_detector()
 {
     // detect whether we have landed by watching for low climb rate and minimum throttle
-    if (abs(climb_rate) < 20 && motors.limit.throttle_lower) {
+    if (abs(climb_rate) < 40 && motors.limit.throttle_lower) {
         if (!ap.land_complete) {
             // run throttle controller if accel based throttle controller is enabled and active (active means it has been given a target)
             if( land_detector < LAND_DETECTOR_TRIGGER) {
@@ -161,7 +202,7 @@ static bool update_land_detector()
                 land_detector = 0;
             }
         }
-    }else{
+    } else if ((motors.get_throttle_out() > get_non_takeoff_throttle()) || failsafe.radio) {
         // we've sensed movement up or down so reset land_detector
         land_detector = 0;
         if(ap.land_complete) {
@@ -171,4 +212,19 @@ static bool update_land_detector()
 
     // return current state of landing
     return ap.land_complete;
+}
+
+// land_do_not_use_GPS - forces land-mode to not use the GPS but instead rely on pilot input for roll and pitch
+//  called during GPS failsafe to ensure that if we were already in LAND mode that we do not use the GPS
+//  has no effect if we are not already in LAND mode
+static void land_do_not_use_GPS()
+{
+    land_with_gps = false;
+}
+
+// set_mode_land_with_pause - sets mode to LAND and triggers 4 second delay before descent starts
+static void set_mode_land_with_pause()
+{
+    set_mode(LAND);
+    land_pause = true;
 }

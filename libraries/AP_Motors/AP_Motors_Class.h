@@ -38,6 +38,7 @@
 #define AP_MOTORS_X_FRAME           1
 #define AP_MOTORS_V_FRAME           2
 #define AP_MOTORS_H_FRAME           3   // same as X frame but motors spin in opposite direction
+#define AP_MOTORS_VTAIL_FRAME       4   // Lynxmotion Hunter VTail 400/500
 #define AP_MOTORS_NEW_PLUS_FRAME    10  // NEW frames are same as original 4 but with motor orders changed to be clockwise from the front
 #define AP_MOTORS_NEW_X_FRAME       11
 #define AP_MOTORS_NEW_V_FRAME       12
@@ -101,14 +102,19 @@ public:
     void                set_yaw(int16_t yaw_in) { _rc_yaw.servo_out = yaw_in; };                        // range -4500 ~ 4500
     void                set_throttle(int16_t throttle_in) { _rc_throttle.servo_out = throttle_in; };    // range 0 ~ 1000
 
+    // get_throttle_out - returns throttle sent to motors in the range 0 ~ 1000
+    int16_t             get_throttle_out() const { return _rc_throttle.servo_out; }
+
     // output - sends commands to the motors
     void                output();
 
     // output_min - sends minimum values out to the motors
     virtual void        output_min() = 0;
 
-    // output_test - spin each motor for a moment to allow the user to confirm the motor order and spin direction
-    virtual void        output_test() = 0;
+    // output_test - spin a motor at the pwm value specified
+    //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
+    //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
+    virtual void        output_test(uint8_t motor_seq, int16_t pwm) = 0;
 
     // throttle_pass_through - passes pilot's throttle input directly to all motors - dangerous but used for initialising ESCs
     virtual void        throttle_pass_through();
@@ -123,6 +129,10 @@ public:
     // slow_start - set to true to slew motors from current speed to maximum
     // Note: this must be set immediately before a step up in throttle
     void                slow_start(bool true_false);
+
+    // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
+    //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
+    virtual uint16_t    get_motor_mask() = 0;
 
     // structure for holding motor limit flags
     struct AP_Motors_limit {

@@ -132,9 +132,14 @@ void ToshibaLED::update_colours(void)
         return;
     }
 
-    // failsafe patterns for radio and battery - single flash yellow
-    // failsafe pattern for gps - flashing blue and yellow
-    if (AP_Notify::flags.failsafe_radio || AP_Notify::flags.failsafe_battery || AP_Notify::flags.failsafe_gps || AP_Notify::flags.gps_glitching) {
+    // radio and battery failsafe patter: flash yellow
+    // gps failsafe pattern : flashing yellow and blue
+    // baro glitching pattern : flashing yellow and purple
+    // ekf_bad pattern : flashing yellow and red
+    if (AP_Notify::flags.failsafe_radio || AP_Notify::flags.failsafe_battery ||
+            AP_Notify::flags.failsafe_gps || AP_Notify::flags.gps_glitching ||
+            AP_Notify::flags.baro_glitching ||
+            AP_Notify::flags.ekf_bad) {
         switch(step) {
             case 0:
             case 1:
@@ -151,14 +156,27 @@ void ToshibaLED::update_colours(void)
             case 7:
             case 8:
             case 9:
-                // all off of radio or battery, blue on for gps
-                _red_des = TOSHIBA_LED_OFF;
                 if (AP_Notify::flags.failsafe_gps || AP_Notify::flags.gps_glitching) {
+                    // blue on for gps failsafe or glitching
+                    _red_des = TOSHIBA_LED_OFF;
                     _blue_des = brightness;
-                }else{
+                    _green_des = TOSHIBA_LED_OFF;
+                } else if (AP_Notify::flags.baro_glitching) {
+                    // purple on if baro glitching
+                    _red_des = brightness;
+                    _blue_des = brightness;
+                    _green_des = TOSHIBA_LED_OFF;
+                } else if (AP_Notify::flags.ekf_bad) {
+                    // red on if ekf bad
+                    _red_des = brightness;
                     _blue_des = TOSHIBA_LED_OFF;
+                    _green_des = TOSHIBA_LED_OFF;
+                }else{
+                    // all off for radio or battery failsafe
+                    _red_des = TOSHIBA_LED_OFF;
+                    _blue_des = TOSHIBA_LED_OFF;
+                    _green_des = TOSHIBA_LED_OFF;
                 }
-                _green_des = TOSHIBA_LED_OFF;
                 break;
         }
         // exit so no other status modify this pattern
@@ -209,9 +227,25 @@ void ToshibaLED::update_colours(void)
             // flashing blue if disarmed with no gps lock
             switch(step) {
                 case 0:
+                    if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D_DGPS) {
+                        _green_des = brightness;
+                    }
+                    break;
                 case 1:
+                    if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D_DGPS) {
+                        _green_des = TOSHIBA_LED_OFF;
+                    }
+                    break;
                 case 2:
+                    if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D_DGPS) {
+                        _green_des = brightness;
+                    }
+                    break;
                 case 3:
+                    if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D_DGPS) {
+                        _green_des = TOSHIBA_LED_OFF;
+                    }
+                    break;
                 case 4:
                     _red_des = TOSHIBA_LED_OFF;
                     if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D) {
@@ -225,9 +259,27 @@ void ToshibaLED::update_colours(void)
                     }
                     break;
                 case 5:
+                    if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D_DGPS) {
+                        _green_des = TOSHIBA_LED_OFF;
+                    }
+                    break;
+
                 case 6:
+                    if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D_DGPS) {
+                        _green_des = brightness;
+                    }
+                    break;
+
                 case 7:
+                    if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D_DGPS) {
+                        _green_des = TOSHIBA_LED_OFF;
+                    }
+                    break;
                 case 8:
+                    if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D_DGPS) {
+                        _green_des = brightness;
+                    }
+                    break;
                 case 9:
                     // all off
                     _red_des = TOSHIBA_LED_OFF;

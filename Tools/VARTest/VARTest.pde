@@ -33,8 +33,12 @@
 #include <AP_Airspeed.h>
 #include <AP_Vehicle.h>
 #include <AP_Mission.h>
+#include <AP_Rally.h>
+#include <AP_Terrain.h>
+#include <AP_BattMonitor.h>
 #include <AP_SpdHgtControl.h>
 #include <memcheck.h>
+#include <AP_RCMapper.h>
 
 #include <APM_OBC.h>
 #include <APM_Control.h>
@@ -132,8 +136,7 @@ void setup() {
 	ofs.x += 1.1;
 	ofs.y += 1.2;
 	ofs.z += 1.3;
-	compass.set_offsets(ofs);
-	compass.save_offsets();
+	compass.set_and_save_offsets(0, ofs);
 	cliSerial->printf_P(PSTR("Compass: %f %f %f\n"),
 					ofs.x, ofs.y, ofs.z);
 

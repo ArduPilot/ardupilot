@@ -302,7 +302,8 @@ static void geofence_check(bool altitude_check_only)
             geofence_state->fence_triggered = false;
             gcs_send_text_P(SEVERITY_LOW,PSTR("geo-fence OK"));
  #if FENCE_TRIGGERED_PIN > 0
-            digitalWrite(FENCE_TRIGGERED_PIN, LOW);
+            hal.gpio->pinMode(FENCE_TRIGGERED_PIN, HAL_GPIO_OUTPUT);
+            hal.gpio->write(FENCE_TRIGGERED_PIN, 0);
  #endif
             gcs_send_message(MSG_FENCE_STATUS);
         }
@@ -325,7 +326,8 @@ static void geofence_check(bool altitude_check_only)
     geofence_state->breach_type = breach_type;
 
  #if FENCE_TRIGGERED_PIN > 0
-    digitalWrite(FENCE_TRIGGERED_PIN, HIGH);
+    hal.gpio->pinMode(FENCE_TRIGGERED_PIN, HAL_GPIO_OUTPUT);
+    hal.gpio->write(FENCE_TRIGGERED_PIN, 1);
  #endif
 
     gcs_send_text_P(SEVERITY_LOW,PSTR("geo-fence triggered"));
@@ -339,7 +341,7 @@ static void geofence_check(bool altitude_check_only)
     case FENCE_ACTION_GUIDED:
     case FENCE_ACTION_GUIDED_THR_PASS:
         if (g.fence_ret_rally != 0) { //return to a rally point
-            guided_WP_loc = rally_find_best_location(current_loc, home);
+            guided_WP_loc = rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude());
 
         } else { //return to fence return point, not a rally point
             if (g.fence_retalt > 0) {
@@ -360,6 +362,8 @@ static void geofence_check(bool altitude_check_only)
         geofence_state->guided_lat = guided_WP_loc.lat;
         geofence_state->guided_lng = guided_WP_loc.lng;
         geofence_state->old_switch_position = oldSwitchPosition;
+
+        setup_terrain_target_alt(guided_WP_loc);
 
         set_guided_WP();
 

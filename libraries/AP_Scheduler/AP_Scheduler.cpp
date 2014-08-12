@@ -26,6 +26,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+int8_t AP_Scheduler::current_task = -1;
+
 const AP_Param::GroupInfo AP_Scheduler::var_info[] PROGMEM = {
     // @Param: DEBUG
     // @DisplayName: Scheduler debug level
@@ -83,7 +85,9 @@ void AP_Scheduler::run(uint16_t time_available)
                 // run it
                 _task_time_started = now;
                 task_fn_t func = (task_fn_t)pgm_read_pointer(&_tasks[i].function);
+                current_task = i;
                 func();
+                current_task = -1;
                 
                 // record the tick counter when we ran. This drives
                 // when we next run the event

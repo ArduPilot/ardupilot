@@ -21,6 +21,7 @@
 #include <AP_Baro.h>
 #include <GCS_MAVLink.h>
 #include <AP_Mission.h>
+#include <AP_Terrain.h>
 #include <Filter.h>
 #include <SITL.h>
 #include <AP_Buffer.h>
@@ -64,7 +65,7 @@ void setup(void)
 
 #ifdef APM2_HARDWARE
     // we need to stop the barometer from holding the SPI bus
-    hal.gpio->pinMode(40, GPIO_OUTPUT);
+    hal.gpio->pinMode(40, HAL_HAL_GPIO_OUTPUT);
     hal.gpio->write(40, HIGH);
 #endif
 

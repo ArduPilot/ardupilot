@@ -80,6 +80,14 @@ public:
         k_param_BoardConfig,
         k_param_gps,
         k_param_scan_speed,
+        k_param_proxy_mode,
+        k_param_servo_type,
+        k_param_onoff_yaw_rate,
+        k_param_onoff_pitch_rate,
+        k_param_onoff_yaw_mintime,
+        k_param_onoff_pitch_mintime,
+        k_param_yaw_trim,
+        k_param_pitch_trim,
 
         k_param_channel_yaw = 200,
         k_param_channel_pitch,
@@ -116,6 +124,14 @@ public:
     AP_Float start_longitude;
 
     AP_Float startup_delay;
+    AP_Int8  proxy_mode;
+    AP_Int8  servo_type;
+    AP_Float onoff_yaw_rate;
+    AP_Float onoff_pitch_rate;
+    AP_Float onoff_yaw_mintime;
+    AP_Float onoff_pitch_mintime;
+    AP_Float yaw_trim;
+    AP_Float pitch_trim;
 
     // Waypoints
     //

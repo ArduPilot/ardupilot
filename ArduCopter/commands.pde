@@ -8,7 +8,6 @@ static void init_home()
 
     // copter uses 0 home altitude
     Location loc = gps.location();
-    loc.alt = 0;
 
     ahrs.set_home(loc);
 
@@ -23,7 +22,7 @@ static void init_home()
     }
 
     // update navigation scalers.  used to offset the shrinking longitude as we go towards the poles
-    scaleLongDown = longitude_scale(home);
+    scaleLongDown = longitude_scale(loc);
     scaleLongUp   = 1.0f/scaleLongDown;
 }
 

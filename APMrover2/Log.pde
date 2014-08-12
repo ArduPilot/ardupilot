@@ -202,37 +202,6 @@ static void Log_Write_Cmd(const AP_Mission::Mission_Command &cmd)
     DataFlash.Log_Write_MavCmd(mission.num_commands(),mav_cmd);
 }
 
-struct PACKED log_Camera {
-    LOG_PACKET_HEADER;
-    uint32_t time_ms;
-    uint32_t gps_time;
-    uint16_t gps_week;
-    int32_t  latitude;
-    int32_t  longitude;
-    int16_t  roll;
-    int16_t  pitch;
-    uint16_t yaw;
-};
-
-// Write a Camera packet. Total length : 26 bytes
-static void Log_Write_Camera()
-{
-#if CAMERA == ENABLED
-    struct log_Camera pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_CAMERA_MSG),
-        time_ms     : millis(),
-        gps_time    : gps.time_week_ms(),
-        gps_week    : gps.time_week(),
-        latitude    : current_loc.lat,
-        longitude   : current_loc.lng,
-        roll        : (int16_t)ahrs.roll_sensor,
-        pitch       : (int16_t)ahrs.pitch_sensor,
-        yaw         : (uint16_t)ahrs.yaw_sensor
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
-#endif
-}
-
 struct PACKED log_Steering {
     LOG_PACKET_HEADER;
     uint32_t time_ms;
@@ -399,8 +368,8 @@ static void Log_Write_Sonar()
         LOG_PACKET_HEADER_INIT(LOG_SONAR_MSG),
         time_ms         : millis(),
         lateral_accel   : lateral_acceleration,
-        sonar1_distance : (uint16_t)sonar.distance_cm(),
-        sonar2_distance : (uint16_t)sonar2.distance_cm(),
+        sonar1_distance : (uint16_t)sonar.distance_cm(0),
+        sonar2_distance : (uint16_t)sonar.distance_cm(1),
         detected_count  : obstacle.detected_count,
         turn_angle      : (int8_t)obstacle.turn_angle,
         turn_time       : turn_time,
@@ -492,6 +461,27 @@ static void Log_Write_Compass()
         DataFlash.WriteBlock(&pkt2, sizeof(pkt2));
     }
 #endif
+#if COMPASS_MAX_INSTANCES > 2
+    if (compass.get_count() > 2) {
+        const Vector3f &mag3_offsets = compass.get_offsets(2);
+        const Vector3f &mag3_motor_offsets = compass.get_motor_offsets(2);
+        const Vector3f &mag3 = compass.get_field(2);
+        struct log_Compass pkt3 = {
+            LOG_PACKET_HEADER_INIT(LOG_COMPASS3_MSG),
+            time_ms         : millis(),
+            mag_x           : (int16_t)mag3.x,
+            mag_y           : (int16_t)mag3.y,
+            mag_z           : (int16_t)mag3.z,
+            offset_x        : (int16_t)mag3_offsets.x,
+            offset_y        : (int16_t)mag3_offsets.y,
+            offset_z        : (int16_t)mag3_offsets.z,
+            motor_offset_x  : (int16_t)mag3_motor_offsets.x,
+            motor_offset_y  : (int16_t)mag3_motor_offsets.y,
+            motor_offset_z  : (int16_t)mag3_motor_offsets.z
+        };
+        DataFlash.WriteBlock(&pkt3, sizeof(pkt3));
+    }
+#endif
 }
 
 
@@ -512,8 +502,6 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "ATT", "IccC",        "TimeMS,Roll,Pitch,Yaw" },
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
       "PM",  "IIHIhhhBH", "TimeMS,LTime,MLC,gDt,GDx,GDy,GDz,I2CErr,INSErr" },
-    { LOG_CAMERA_MSG, sizeof(log_Camera),                 
-      "CAM", "IIHLLeccC",   "TimeMS,GPSTime,GPSWeek,Lat,Lng,Alt,Roll,Pitch,Yaw" },
     { LOG_STARTUP_MSG, sizeof(log_Startup),         
       "STRT", "IBH",        "TimeMS,SType,CTot" },
     { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     

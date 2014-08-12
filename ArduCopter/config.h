@@ -53,65 +53,54 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// FLIGHT CONTROLLER HARDWARE DEFAULT SETTINGS
-//
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
- # define CONFIG_IMU_TYPE   CONFIG_IMU_MPU6000
- # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
- # define MAGNETOMETER ENABLED
- # define MAIN_LOOP_RATE    100
- # ifdef APM2_BETA_HARDWARE
-  #  define CONFIG_BARO     AP_BARO_BMP085
- # else // APM2 Production Hardware (default)
-  #  define CONFIG_BARO          AP_BARO_MS5611
-  #  define CONFIG_MS5611_SERIAL AP_BARO_MS5611_SPI
- # endif
-#elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
- # define CONFIG_IMU_TYPE   CONFIG_IMU_SITL
- # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
- # define MAGNETOMETER ENABLED
- # define OPTFLOW DISABLED
- # define MAIN_LOOP_RATE    100
-#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
- # define CONFIG_IMU_TYPE   CONFIG_IMU_PX4
- # define CONFIG_BARO       AP_BARO_PX4
- # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
- # define MAGNETOMETER ENABLED
- # define OPTFLOW DISABLED
- # define MAIN_LOOP_RATE    400
-#elif CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
- # define CONFIG_IMU_TYPE CONFIG_IMU_FLYMAPLE
- # define CONFIG_BARO AP_BARO_BMP085
- # define CONFIG_COMPASS  AP_COMPASS_HMC5843
- # define CONFIG_ADC        DISABLED
- # define MAGNETOMETER ENABLED
- # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
- # define OPTFLOW DISABLED
- # define MAIN_LOOP_RATE    400
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
- # define CONFIG_IMU_TYPE CONFIG_IMU_L3G4200D
- # define CONFIG_BARO AP_BARO_BMP085
- # define CONFIG_COMPASS  AP_COMPASS_HMC5843
- # define CONFIG_ADC        DISABLED
- # define MAGNETOMETER ENABLED
- # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
- # define OPTFLOW DISABLED
- # define MAIN_LOOP_RATE    400
-#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
- # define CONFIG_IMU_TYPE   CONFIG_IMU_VRBRAIN
- # define CONFIG_BARO       AP_BARO_VRBRAIN
- # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
- # define MAGNETOMETER ENABLED
- # define OPTFLOW DISABLED
- # define MAIN_LOOP_RATE    400
+// sensor types
+
+#define CONFIG_INS_TYPE HAL_INS_DEFAULT
+#define CONFIG_BARO     HAL_BARO_DEFAULT
+#define CONFIG_COMPASS  HAL_COMPASS_DEFAULT
+
+#ifdef HAL_SERIAL0_BAUD_DEFAULT
+# define SERIAL0_BAUD HAL_SERIAL0_BAUD_DEFAULT
 #endif
 
-#if MAIN_LOOP_RATE == 400
- # define MAIN_LOOP_SECONDS 0.0025
- # define MAIN_LOOP_MICROS  2500
-#else
+//////////////////////////////////////////////////////////////////////////////
+// HIL_MODE                                 OPTIONAL
+
+#ifndef HIL_MODE
+ #define HIL_MODE        HIL_MODE_DISABLED
+#endif
+
+#if HIL_MODE != HIL_MODE_DISABLED       // we are in HIL mode
+ #undef CONFIG_BARO
+ #define CONFIG_BARO HAL_BARO_HIL
+ #undef CONFIG_INS_TYPE
+ #define CONFIG_INS_TYPE HAL_INS_HIL
+ #undef  CONFIG_COMPASS
+ #define CONFIG_COMPASS HAL_COMPASS_HIL
+#endif
+
+#define MAGNETOMETER ENABLED
+
+#if HAL_CPU_CLASS < HAL_CPU_CLASS_75
+ # define PARACHUTE DISABLED
+ # define AC_RALLY DISABLED
+#endif
+
+#if HAL_CPU_CLASS < HAL_CPU_CLASS_75 || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+ // low power CPUs (APM1, APM2 and SITL)
+ # define MAIN_LOOP_RATE    100
  # define MAIN_LOOP_SECONDS 0.01
  # define MAIN_LOOP_MICROS  10000
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+ // Linux boards
+ # define MAIN_LOOP_RATE    200
+ # define MAIN_LOOP_SECONDS 0.005
+ # define MAIN_LOOP_MICROS  5000
+#else
+ // high power CPUs (Flymaple, PX4, Pixhawk, VRBrain)
+ # define MAIN_LOOP_RATE    400
+ # define MAIN_LOOP_SECONDS 0.0025
+ # define MAIN_LOOP_MICROS  2500
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -146,25 +135,11 @@
   # define RATE_YAW_I                   0.015f
 #endif
 
-
-// optical flow doesn't work in SITL yet
-#ifdef DESKTOP_BUILD
-# define OPTFLOW DISABLED
-#endif
-
-
-//////////////////////////////////////////////////////////////////////////////
-// IMU Selection
-//
-#ifndef CONFIG_IMU_TYPE
- # define CONFIG_IMU_TYPE CONFIG_IMU_OILPAN
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // ADC Enable - used to eliminate for systems which don't have ADC.
 //
 #ifndef CONFIG_ADC
- # if CONFIG_IMU_TYPE == CONFIG_IMU_OILPAN
+ # if CONFIG_INS_TYPE == HAL_INS_OILPAN || CONFIG_HAL_BOARD == HAL_BOARD_APM1
   #   define CONFIG_ADC ENABLED
  # else
   #   define CONFIG_ADC DISABLED
@@ -203,30 +178,6 @@
 //////////////////////////////////////////////////////////////////////////////
 // Sonar
 //
-
-#ifndef CONFIG_SONAR_SOURCE
- # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ADC
-#endif
-
-#if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC && CONFIG_ADC == DISABLED
- # warning Cannot use ADC for CONFIG_SONAR_SOURCE, becaude CONFIG_ADC is DISABLED
- # warning Defaulting CONFIG_SONAR_SOURCE to ANALOG_PIN
- # undef CONFIG_SONAR_SOURCE
- # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
-#endif
-
-#if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
- # ifndef CONFIG_SONAR_SOURCE_ADC_CHANNEL
-  #  define CONFIG_SONAR_SOURCE_ADC_CHANNEL 7
- # endif
-#elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
- # ifndef CONFIG_SONAR_SOURCE_ANALOG_PIN
-  #  define CONFIG_SONAR_SOURCE_ANALOG_PIN 0
- # endif
-#else
- # warning Invalid value for CONFIG_SONAR_SOURCE, disabling sonar
- # define CONFIG_SONAR DISABLED
-#endif
 
 #ifndef CONFIG_SONAR
  # define CONFIG_SONAR ENABLED
@@ -328,6 +279,17 @@
 #ifndef FS_GCS_TIMEOUT_MS
  # define FS_GCS_TIMEOUT_MS             5000    // gcs failsafe triggers after 5 seconds with no GCS heartbeat
 #endif
+
+// Radio failsafe while using RC_override
+#ifndef FS_RADIO_RC_OVERRIDE_TIMEOUT_MS
+ # define FS_RADIO_RC_OVERRIDE_TIMEOUT_MS  2000    // RC Radio failsafe triggers after 2 seconds while using RC_override from ground station
+#endif
+
+// Radio failsafe
+#ifndef FS_RADIO_TIMEOUT_MS
+ #define FS_RADIO_TIMEOUT_MS            500     // RC Radio Failsafe triggers after 500 miliseconds with No RC Input
+#endif
+
 // possible values for FS_GCS parameter
 #define FS_GCS_DISABLED                     0
 #define FS_GCS_ENABLED_ALWAYS_RTL           1
@@ -336,6 +298,12 @@
 // pre-arm check max velocity
 #ifndef PREARM_MAX_VELOCITY_CMS
  # define PREARM_MAX_VELOCITY_CMS           50.0f   // vehicle must be travelling under 50cm/s before arming
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+//  EKF Checker
+#ifndef EKFCHECK_THRESHOLD_DEFAULT
+ # define EKFCHECK_THRESHOLD_DEFAULT    0.6f    // EKF checker's default compass and velocity variance above which the EKF's horizontal position will be considered bad
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -369,7 +337,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //  OPTICAL_FLOW
 #ifndef OPTFLOW                         // sets global enabled/disabled flag for optflow (as seen in CLI)
- # define OPTFLOW                       ENABLED
+ # define OPTFLOW                       DISABLED
 #endif
 // optical flow based loiter PI values
 #ifndef OPTFLOW_ROLL_P
@@ -416,6 +384,12 @@
 // Parachute release
 #ifndef PARACHUTE
  # define PARACHUTE ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Nav-Guided - allows external nav computer to control vehicle
+#ifndef NAV_GUIDED
+ # define NAV_GUIDED DISABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -466,6 +440,12 @@
 #endif
 #ifndef LAND_REQUIRE_MIN_THROTTLE_TO_DISARM // require pilot to reduce throttle to minimum before vehicle will disarm
  # define LAND_REQUIRE_MIN_THROTTLE_TO_DISARM ENABLED
+#endif
+#ifndef LAND_REPOSITION_DEFAULT
+ # define LAND_REPOSITION_DEFAULT   0   // by default the pilot cannot override roll/pitch during landing
+#endif
+#ifndef LAND_WITH_DELAY_MS
+ # define LAND_WITH_DELAY_MS        4000    // default delay (in milliseconds) when a land-with-delay is triggered during a failsafe event
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -572,6 +552,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // Rate controller gains
 //
+
 #ifndef RATE_ROLL_P
  # define RATE_ROLL_P        		0.150f
 #endif
@@ -582,7 +563,7 @@
  # define RATE_ROLL_D        		0.004f
 #endif
 #ifndef RATE_ROLL_IMAX
- # define RATE_ROLL_IMAX         	500
+ # define RATE_ROLL_IMAX         	1000
 #endif
 
 #ifndef RATE_PITCH_P
@@ -608,7 +589,7 @@
  # define RATE_YAW_D              	0.000f
 #endif
 #ifndef RATE_YAW_IMAX
- # define RATE_YAW_IMAX            	800
+ # define RATE_YAW_IMAX            	1000
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -631,7 +612,20 @@
  # define LOITER_RATE_D          	0.0f
 #endif
 #ifndef LOITER_RATE_IMAX
- # define LOITER_RATE_IMAX       	400             // maximum acceleration from I term build-up in cm/s/s
+ # define LOITER_RATE_IMAX          1000        // maximum acceleration from I term build-up in cm/s/s
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// PosHold parameter defaults
+//
+#ifndef POSHOLD_ENABLED
+ # define POSHOLD_ENABLED               ENABLED // PosHold flight mode enabled by default
+#endif
+#ifndef POSHOLD_BRAKE_RATE_DEFAULT
+ # define POSHOLD_BRAKE_RATE_DEFAULT    8       // default POSHOLD_BRAKE_RATE param value.  Rotation rate during braking in deg/sec
+#endif
+#ifndef POSHOLD_BRAKE_ANGLE_DEFAULT
+ # define POSHOLD_BRAKE_ANGLE_DEFAULT   3000    // default POSHOLD_BRAKE_ANGLE param value.  Max lean angle during braking in centi-degrees
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -665,9 +659,12 @@
  # define THROTTLE_RATE_P       6.0f
 #endif
 
-// default maximum vertical velocity the pilot may request
+// default maximum vertical velocity and acceleration the pilot may request
 #ifndef PILOT_VELZ_MAX
  # define PILOT_VELZ_MAX    250     // maximum vertical velocity in cm/s
+#endif
+#ifndef PILOT_ACCEL_Z_DEFAULT
+ # define PILOT_ACCEL_Z_DEFAULT 250 // vertical acceleration in cm/s/s while altitude is under pilot control
 #endif
 
 // max distance in cm above or below current location that will be used for the alt target when transitioning to alt-hold mode
@@ -692,7 +689,6 @@
 #ifndef THROTTLE_ACCEL_IMAX
  # define THROTTLE_ACCEL_IMAX 500
 #endif
-
 
 //////////////////////////////////////////////////////////////////////////////
 // Dataflash logging control
@@ -738,6 +734,9 @@
  #define AC_FENCE ENABLED
 #endif
 
+#ifndef AC_RALLY
+ #define AC_RALLY   ENABLED
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Developer Items
@@ -746,6 +745,11 @@
 // use this to completely disable the CLI
 #ifndef CLI_ENABLED
   #  define CLI_ENABLED           ENABLED
+#endif
+
+//use this to completely disable FRSKY TELEM
+#ifndef FRSKY_TELEM_ENABLED
+  #  define FRSKY_TELEM_ENABLED          ENABLED
 #endif
 
 /*

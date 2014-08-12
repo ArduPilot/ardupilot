@@ -7,22 +7,24 @@
 #define AC_ATTITUDECONTROL_HELI_H
 
 #include <AC_AttitudeControl.h>
+#include <AC_HELI_PID.h>
+#include <Filter.h>
 
 #define AC_ATTITUDE_HELI_ROLL_FF                    0.0f
 #define AC_ATTITUDE_HELI_PITCH_FF                   0.0f
 #define AC_ATTITUDE_HELI_YAW_FF                     0.0f
 #define AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE  0.02f
+#define AC_ATTITUDE_HELI_RATE_FF_FILTER             5.0f
 
 class AC_AttitudeControl_Heli : public AC_AttitudeControl {
 public:
     AC_AttitudeControl_Heli( AP_AHRS &ahrs,
-                        AP_InertialSensor& ins,
                         const AP_Vehicle::MultiCopter &aparm,
                         AP_MotorsHeli& motors,
                         AC_P& p_angle_roll, AC_P& p_angle_pitch, AC_P& p_angle_yaw,
-                        AC_PID& pid_rate_roll, AC_PID& pid_rate_pitch, AC_PID& pid_rate_yaw
+                        AC_HELI_PID& pid_rate_roll, AC_HELI_PID& pid_rate_pitch, AC_HELI_PID& pid_rate_yaw
                         ) :
-        AC_AttitudeControl(ahrs, ins, aparm, motors,
+        AC_AttitudeControl(ahrs, aparm, motors,
                            p_angle_roll, p_angle_pitch, p_angle_yaw,
                            pid_rate_roll, pid_rate_pitch, pid_rate_yaw)
 		{
@@ -35,6 +37,8 @@ public:
 
 	// use_leaky_i - controls whether we use leaky i term for body-frame to motor output stage
 	void use_leaky_i(bool leaky_i) {  _flags_heli.leaky_i = leaky_i; }
+    
+    void update_feedforward_filter_rates(float time_step);
 
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -63,11 +67,14 @@ private:
 
     // get_angle_boost - calculate total body frame throttle required to produce the given earth frame throttle
     virtual int16_t get_angle_boost(int16_t throttle_pwm);
+    
+    // LPF filters to act on Rate Feedforward terms to linearize output.
+    // Due to complicated aerodynamic effects, feedforwards acting too fast can lead
+    // to jerks on rate change requests.
+    LowPassFilterInt32 pitch_feedforward_filter;
+    LowPassFilterInt32 roll_feedforward_filter;
+    LowPassFilterInt32 yaw_feedforward_filter;
 
-    // parameters
-    AP_Float _heli_roll_ff;     // body-frame roll rate to motor output feed forward
-    AP_Float _heli_pitch_ff;    // body-frame pitch rate to motor output feed forward
-    AP_Float _heli_yaw_ff;      // body-frame yaw rate to motor output feed forward
 };
 
 #endif //AC_ATTITUDECONTROL_HELI_H
