@@ -2,50 +2,50 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_YUNEEC
 
 #include "GPIO.h"
-#include <libopencm3/stm32/rcc.h>
-#include <libopencm3/stm32/gpio.h>
 #include <utility/pinmap_typedef.h>
+
+#include <stm32f37x.h>
+#include <stm32f37x_rcc.h>
+#include <stm32f37x_gpio.h>
+
 
 using namespace YUNEEC;
 
-void setPinMode(const uint32_t port, const uint16_t bit, const uint8_t output)
+void setPinMode(GPIO_TypeDef* port, uint16_t bit, uint8_t output)
 {
-	enum rcc_periph_clken clken;
-	switch(port){
-	case GPIOA:
-		clken = RCC_GPIOA;
-		break;
-	case GPIOB:
-		clken = RCC_GPIOB;
-		break;
-	case GPIOC:
-		clken = RCC_GPIOC;
-		break;
-	case GPIOD:
-		clken = RCC_GPIOD;
-		break;
-	case GPIOE:
-		clken = RCC_GPIOE;
-		break;
-	case GPIOF:
-		clken = RCC_GPIOF;
-		break;
-	default:
-		return;
-		break;
-	}
+	GPIO_InitTypeDef GPIO_InitStructure;
+	uint32_t clken;
 
-	rcc_periph_clock_enable(clken);
+	if(port == GPIOA)
+		clken = RCC_AHBPeriph_GPIOA;
+	else if(port == GPIOB)
+		clken = RCC_AHBPeriph_GPIOB;
+	else if(port == GPIOC)
+		clken = RCC_AHBPeriph_GPIOC;
+	else if(port == GPIOD)
+		clken = RCC_AHBPeriph_GPIOD;
+	else if(port == GPIOE)
+		clken = RCC_AHBPeriph_GPIOE;
+	else if(port == GPIOF)
+		clken = RCC_AHBPeriph_GPIOF;
+	else
+		return;
+
+	RCC_AHBPeriphClockCmd(clken, ENABLE);
 
 	if(output == HAL_GPIO_INPUT){
-		gpio_mode_setup(port, GPIO_MODE_INPUT, GPIO_PUPD_NONE, bit);
-		return;
+		GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
 	}
 	else{
-		gpio_mode_setup(port, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, bit);
-		gpio_set_output_options(port, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, bit);
-		return;
+		GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
 	}
+
+	GPIO_InitStructure.GPIO_Pin = bit;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+
+	GPIO_Init(port, &GPIO_InitStructure);
 }
 
 YUNEECGPIO::YUNEECGPIO()
@@ -58,7 +58,7 @@ void YUNEECGPIO::pinMode(uint8_t pin, uint8_t output)
 {
 	if(!have_this_pin(pin)) return;
 
-	uint32_t port = get_port(pin);
+	GPIO_TypeDef* port = get_port(pin);
 	uint16_t bit = get_bit(pin);
 
 	setPinMode(port, bit, output);
@@ -73,42 +73,45 @@ uint8_t YUNEECGPIO::read(uint8_t pin)
 {
 	if(!have_this_pin(pin)) return 0;
 
-	uint32_t port = get_port(pin);
+	GPIO_TypeDef* port = get_port(pin);
 	uint16_t bit = get_bit(pin);
 
-    return (gpio_port_read(port) & bit) ? 1 : 0;
+    return (port->IDR & bit) ? 1 : 0;
 }
 
 void YUNEECGPIO::write(uint8_t pin, uint8_t value)
 {
 	if(!have_this_pin(pin)) return;
 
-	uint32_t port = get_port(pin);
+	GPIO_TypeDef* port = get_port(pin);
 	uint16_t bit = get_bit(pin);
 
-	if(value == 0)
-		gpio_clear(port, bit);
-	else
-		gpio_set(port, bit);
+//	if(value == 0)
+//		GPIO_ResetBits(port, bit);
+//	else
+//		GPIO_SetBits(port, bit);
 
-	return;
+	if(value == 0)
+		port->BRR = bit;
+	else
+		port->BSRR = bit;
 }
 
 void YUNEECGPIO::toggle(uint8_t pin)
 {
 	if(!have_this_pin(pin)) return;
 
-	uint32_t port = get_port(pin);
+	GPIO_TypeDef* port = get_port(pin);
 	uint16_t bit = get_bit(pin);
 
-    gpio_toggle(port, bit);
+	port->ODR ^= bit;
 }
 
 /* Alternative interface: */
 AP_HAL::DigitalSource* YUNEECGPIO::channel(uint16_t n) {
 	if(!have_this_pin(n)) return NULL;
 
-	uint32_t port = get_port(n);
+	GPIO_TypeDef* port = get_port(n);
 	uint16_t bit = get_bit(n);
 
 	return new YUNEECDigitalSource(port, bit);
@@ -131,18 +134,18 @@ void YUNEECDigitalSource::mode(uint8_t output)
 }
 
 uint8_t YUNEECDigitalSource::read() {
-    return (gpio_port_read(_port) & _bit) ? 1 : 0;
+    return (_port->IDR & _bit) ? 1 : 0;
 }
 
 void YUNEECDigitalSource::write(uint8_t value) {
 	if(value == 0)
-		gpio_clear(_port, _bit);
+		_port->BRR = _bit;
 	else
-		gpio_set(_port, _bit);
+		_port->BSRR = _bit;
 }
 
 void YUNEECDigitalSource::toggle() {
-    gpio_toggle(_port, _bit);
+	_port->ODR ^= _bit;
 }
 
 #endif

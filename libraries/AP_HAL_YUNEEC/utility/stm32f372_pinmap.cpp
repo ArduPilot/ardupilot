@@ -1,6 +1,6 @@
 #include "pinmap_typedef.h"
 
-#include <libopencm3/stm32/gpio.h>
+#include <stm32f37x.h>
 
 enum HAVE_PINS {NONE = 0, HAVE = 1};
 
@@ -23,7 +23,7 @@ uint8_t have_this_pin(uint8_t pin)
 		return PIN_MAP[pin];
 }
 
-uint32_t get_port(uint8_t pin)
+GPIO_TypeDef * get_port(uint8_t pin)
 {
 	if(!have_this_pin(pin)) return 0;
 

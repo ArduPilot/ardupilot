@@ -9,55 +9,40 @@ TOOLCHAIN   := ARM
 MCU 		:= STM32F372CC
 FAMILY 		:= cortex-m4
 F_CPU 		:= 72000000L
-LIBNAME		:= opencm3_stm32f3
+LIBNAME		:= stm32f37x
+TypeOfMCU	:= STM32F37X
 
-# Put the 'libopencm3' within the same folder with 'ardupilot'
-OPENCM3_DIR = $(SKETCHBOOK)/../libopencm3
-LDSCRIPT 	= $(SKETCHBOOK)/libraries/AP_HAL_YUNEEC/utility/ld/$(MCU).ld
+# Put the 'libs' within the same folder with 'ardupilot'
+LIBDIR 		= $(SKETCHBOOK)/../libs
+STMLIBDIR	= $(LIBDIR)/STM32_USB-FS-Device_Lib_V4.0.0/Libraries
+LDSCRIPT 	= $(LIBDIR)/STM32F373VC_FLASH.ld
+STARTUP 	= $(LIBDIR)/startup_stm32f37x.s
 
 ###############################################################################
 # Source files
 
-LDSCRIPT	?= $(SKETCH).ld
-
-ifeq ($(strip $(OPENCM3_DIR)),)
-# user has not specified the library path, so we try to detect it
-
-# where we search for the library
-LIBPATHS := ./libopencm3 ../../../../libopencm3 ../../../../../libopencm3
-
-OPENCM3_DIR := $(wildcard $(LIBPATHS:=/locm3.sublime-project))
-OPENCM3_DIR := $(firstword $(dir $(OPENCM3_DIR)))
-
-ifeq ($(strip $(OPENCM3_DIR)),)
-$(warning Cannot find libopencm3 library in the standard search paths.)
-$(error Please specify it through OPENCM3_DIR variable!)
-endif
-endif
-
-ifeq ($(V),1)
-$(info Using $(OPENCM3_DIR) path to library)
-endif
-
-OPENCM3_INCLUDE_DIR	= $(OPENCM3_DIR)/include
-OPENCM3_LIB_DIR		= $(OPENCM3_DIR)/lib
-OPENCM3_SCRIPT_DIR	= $(OPENCM3_DIR)/scripts
+COREINCLUDES  = -I$(STMLIBDIR)/CMSIS/Include
+COREINCLUDES += -I$(STMLIBDIR)/CMSIS/Device/ST/STM32F37x/Include
+COREINCLUDES += -I$(STMLIBDIR)/CMSIS/Device/ST/STM32F37x/Source/Templates
+COREINCLUDES += -I$(STMLIBDIR)/STM32F37x_StdPeriph_Driver/inc
+COREINCLUDES += -I$(STMLIBDIR)/STM32_USB-FS-Device_Driver/inc
 
 ###############################################################################
 # Tool options
 
 include $(MK_DIR)/find_tools.mk
 
-DEFINES         =   -DF_CPU=$(F_CPU) -DSTM32F3
+DEFINES         =   -DF_CPU=$(F_CPU) -D$(TypeOfMCU) -DVECT_TAB_FLASH
 DEFINES        +=   -DSKETCH=\"$(SKETCH)\" -DAPM_BUILD_DIRECTORY=APM_BUILD_$(SKETCH)
 DEFINES        +=   $(EXTRAFLAGS) # from user config.mk
 DEFINES        +=   -DCONFIG_HAL_BOARD=$(HAL_BOARD)
 WARNFLAGS       =   -Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align -Wno-psabi 
-WARNFLAGS      +=   -Wwrite-strings -Wformat=2 #-Wundef -Wredundant-decls
-WARNFLAGSCXX    =   -Wno-reorder -Wredundant-decls # -Weffc++
+WARNFLAGS      +=   -Wwrite-strings -Wformat=2
+WARNFLAGSCXX    =   -Wno-reorder -Wredundant-decls
 WARNFLAGSC      =   -Wimplicit-function-declaration  -Wmissing-prototypes -Wstrict-prototypes
 
 DEPFLAGS        =   -MD -MT $@
+DEPFLAGS		=	-include $(LIBDIR)/stm32f37x_conf.h
 
 CXXOPTS         =   -ffunction-sections -fdata-sections -fno-exceptions -fsigned-char -fno-rtti -fno-common
 COPTS           =   -ffunction-sections -fdata-sections -fsigned-char -fno-common
@@ -68,26 +53,26 @@ NATIVE_CPUFLAGS     = -D_GNU_SOURCE
 NATIVE_CPULDFLAGS   = -g
 NATIVE_OPTFLAGS     = -O0 -g
 
-ARM_CPUFLAGS        = -mthumb -mcpu=$(FAMILY) -mfloat-abi=hard -mfpu=fpv4-sp-d16
-ARM_CPULDFLAGS      = -L$(OPENCM3_LIB_DIR) -T$(LDSCRIPT)
-ARM_OPTFLAGS        = -Os -g
+ARM_CPUFLAGS        = -mlittle-endian -mthumb -mcpu=$(FAMILY) -march=armv7e-m -mfloat-abi=hard -mfpu=fpv4-sp-d16
+ARM_CPULDFLAGS      = -L$(LIBDIR) -T$(LDSCRIPT)
+ARM_OPTFLAGS        = -g -Os
 
-CPUFLAGS= $($(TOOLCHAIN)_CPUFLAGS)
-CPULDFLAGS= $($(TOOLCHAIN)_CPULDFLAGS)
-OPTFLAGS= $($(TOOLCHAIN)_OPTFLAGS)
+CPUFLAGS			= $($(TOOLCHAIN)_CPUFLAGS)
+CPULDFLAGS			= $($(TOOLCHAIN)_CPULDFLAGS)
+OPTFLAGS			= $($(TOOLCHAIN)_OPTFLAGS)
 
-CXXFLAGS        =   $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS) -Wl,--gc-sections  
+CXXFLAGS       +=   $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS) $(COREINCLUDES)
 CXXFLAGS       +=   $(WARNFLAGS) $(WARNFLAGSCXX) $(DEPFLAGS) $(CXXOPTS)
-CFLAGS          =   $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS) -Wl,--gc-sections  
+CFLAGS         +=   $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS) $(COREINCLUDES)
 CFLAGS         +=   $(WARNFLAGS) $(WARNFLAGSC) $(DEPFLAGS) $(COPTS)
-ASFLAGS         =   $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS) $(DEPFLAGS)
-ASFLAGS        +=   $(ASOPTS)
-LDFLAGS         =   $(CPUFLAGS) $(CPULDFLAGS) $(OPTFLAGS) $(WARNFLAGS)
-LDFLAGS        +=   --static -nostartfiles -Wl,-Map=$(SKETCHMAP) -Wl,--gc-sections  
+ASFLAGS        +=   $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS)  $(COREINCLUDES)
+ASFLAGS        +=   $(ASOPTS) $(DEPFLAGS)
+LDFLAGS        +=   $(CPUFLAGS) $(DEFINES) $(CPULDFLAGS) $(OPTFLAGS) $(COREINCLUDES)
+LDFLAGS        +=	-Wl,--gc-sections -Wl,-Map=$(SKETCHMAP)
 
-LDLIBS		    += -lm 
-LDLIBS		    += -l$(LIBNAME)
-LDLIBS			+= -Wl,--start-group -lc -lgcc -lnosys -Wl,--end-group
+LDLIBS		   +=	-lm -lstdc++
+LDLIBS		   +=	-l$(LIBNAME)
+LDLIBS		   +=	-Wl,--start-group -lc -lgcc -lnosys -Wl,--end-group
 
 ifeq ($(VERBOSE),)
 v = @
@@ -95,10 +80,8 @@ else
 v =
 endif
 
-COREOBJS = $(OPENCM3_LIB_DIR)/lib$(LIBNAME).a
-COREINCLUDES = -I$(OPENCM3_INCLUDE_DIR)
-
 # Library object files
+#COREOBJS		:=	$(STMLIBDIR)/CMSIS/Device/ST/STM32F37x/Source/Templates/*.o $(STMLIBDIR)/STM32F37x_StdPeriph_Driver/src/*.o #$(STMLIBDIR)/STM32_USB-FS-Device_Driver/src/*.o
 LIBOBJS			:=	$(SKETCHLIBOBJS)
 
 ################################################################################
@@ -128,10 +111,10 @@ ALLDEPS			=	$(ALLOBJS:%.o=%.d)
 ################################################################################
 # Targets
 
-all: $(SKETCHELF) $(SKETCHEEP) $(SKETCHHEX) $(SKETCHBIN)
-
-print-%:
-	echo "$*=$($*)"
+all: lib $(SKETCHELF) $(SKETCHEEP) $(SKETCHHEX) $(SKETCHBIN) 
+	
+lib:
+	$(MAKE) -C $(LIBDIR)
 
 ################################################################################
 # Rules
@@ -140,9 +123,10 @@ print-%:
 -include $(ALLDEPS)
 
 # Link the final object
-$(SKETCHELF):	$(SKETCHOBJS) $(LIBOBJS) $(LDSCRIPT) $(COREOBJS)
+$(SKETCHELF):	$(SKETCHOBJS) $(LIBOBJS)
 	$(RULEHDR)
-	$(v)$(LD) $(LDFLAGS) $(SKETCHOBJS) $(LIBOBJS) $(LDLIBS) -o $@
+	$(v)$(LD) $(LDFLAGS) $^ -o $@ $(STARTUP) -L$(STMLIBDIR) $(LDLIBS)
+	$(v)$(SIZE) $(SKETCHELF)
 
 # Create the hex file
 $(SKETCHHEX):	$(SKETCHELF)
@@ -152,7 +136,7 @@ $(SKETCHHEX):	$(SKETCHELF)
 # Create the bin file
 $(SKETCHBIN):	$(SKETCHELF)
 	$(RULEHDR)
-	$(v)$(OBJCOPY) -v -O binary $< $@
+	$(v)$(OBJCOPY) -O binary $< $@
 
 # Create the eep file
 $(SKETCHEEP):	$(SKETCHELF)

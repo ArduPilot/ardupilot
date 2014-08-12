@@ -6,6 +6,7 @@
 #define __AP_HAL_YUNEEC_GPIO_H__
 
 #include <AP_HAL_YUNEEC.h>
+#include <stm32f37x.h>
 
 class YUNEEC::YUNEECGPIO : public AP_HAL::GPIO {
 public:
@@ -31,14 +32,14 @@ public:
 
 class YUNEEC::YUNEECDigitalSource : public AP_HAL::DigitalSource {
 public:
-    YUNEECDigitalSource(uint32_t port, uint16_t bit) : _port(port), _bit(bit) {}
+    YUNEECDigitalSource(GPIO_TypeDef* port, uint16_t bit) : _port(port), _bit(bit) {}
     void    mode(uint8_t output);
     uint8_t read();
     void    write(uint8_t value); 
     void    toggle();
 
 private:
-    uint32_t _port;
+    GPIO_TypeDef* _port;
     uint16_t _bit;
 };
 
