@@ -1064,6 +1064,11 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/AP_Motors/AP_MotorsCoax.cpp
     GOBJECT(motors, "MOT_",           AP_MotorsCoax),
 
+#elif FRAME_CONFIG == PX4MIX
+    // @Group: MIX_
+    // @Path: ../libraries/AP_Motors/AP_MotorsPX4.cpp
+    GOBJECT(motors, "MIX_",           AP_MotorsPX4),
+
 #else
     // @Group: MOT_
     // @Path: ../libraries/AP_Motors/AP_Motors_Class.cpp
