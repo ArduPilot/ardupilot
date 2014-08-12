@@ -546,6 +546,9 @@ static struct {
 
     // turn angle for next leg of mission
     float next_turn_angle;
+
+    // filtered sink rate for landing
+    float land_sink_rate;
 } auto_state = {
     takeoff_complete : true,
     land_complete : false,
@@ -556,7 +559,8 @@ static struct {
     takeoff_pitch_cd : 0,
     highest_airspeed : 0,
     initial_pitch_cd : 0,
-    next_turn_angle  : 90.0f
+    next_turn_angle  : 90.0f,
+    land_sink_rate   : 0
 };
 
 // true if we are in an auto-throttle mode, which means
@@ -1200,6 +1204,7 @@ static void handle_auto_mode(void)
         // are for takeoff and landing
         steer_state.hold_course_cd = -1;
         auto_state.land_complete = false;
+        auto_state.land_sink_rate = 0;
         calc_nav_roll();
         calc_nav_pitch();
         calc_throttle();

@@ -32,6 +32,7 @@ start_command(const AP_Mission::Mission_Command& cmd)
     if (AP_Mission::is_nav_cmd(cmd)) {
         // set land_complete to false to stop us zeroing the throttle
         auto_state.land_complete = false;
+        auto_state.land_sink_rate = 0;
 
         // set takeoff_complete to true so we don't add extra evevator
         // except in a takeoff
@@ -367,73 +368,6 @@ static bool verify_takeoff()
     } else {
         return false;
     }
-}
-
-/*
-  update navigation for landing
- */
-static bool verify_land()
-{
-    // we don't 'verify' landing in the sense that it never completes,
-    // so we don't verify command completion. Instead we use this to
-    // adjust final landing parameters
-
-    float height = height_above_target();
-
-    // calculate the sink rate. 
-    float sink_rate, ground_speed;
-    Vector3f vel;
-    if (ahrs.get_velocity_NED(vel)) {
-        sink_rate = vel.z;
-        ground_speed = pythagorous2(vel.x, vel.y);
-    } else {
-        sink_rate = gps.velocity().z;
-        ground_speed = gps.ground_speed();
-    }
-    
-    /* Set land_complete (which starts the flare) under 3 conditions:
-       1) we are within LAND_FLARE_ALT meters of the landing altitude
-       2) we are within LAND_FLARE_SEC of the landing point
-          horizontally
-       3) we are within LAND_FLARE_SEC of the landing point vertically
-    */
-    if (wp_distance <= g.land_flare_sec * ground_speed || 
-        height <= g.land_flare_alt ||
-        height <= -sink_rate * g.land_flare_sec) {
-
-        if (!auto_state.land_complete) {
-            gcs_send_text_fmt(PSTR("Flare %.1fm sink=%.2f speed=%.1f"), height, sink_rate, ground_speed);
-        }
-        auto_state.land_complete = true;
-
-        if (gps.ground_speed() < 3) {
-            // reload any airspeed or groundspeed parameters that may have
-            // been set for landing. We don't do this till ground
-            // speed drops below 3.0 m/s as otherwise we will change
-            // target speeds too early.
-            g.airspeed_cruise_cm.load();
-            g.min_gndspeed_cm.load();
-            aparm.throttle_cruise.load();
-        }
-    }
-
-    /*
-      when landing we keep the L1 navigation waypoint 200m ahead. This
-      prevents sudden turns if we overshoot the landing point
-     */
-    struct Location land_WP_loc = next_WP_loc;
-	int32_t land_bearing_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
-    location_update(land_WP_loc,
-                    land_bearing_cd*0.01f, 
-                    get_distance(prev_WP_loc, current_loc) + 200);
-    nav_controller->update_waypoint(prev_WP_loc, land_WP_loc);
-
-    /*
-      we always return false as a landing mission item never
-      completes - we stay on this waypoint unless the GCS commands us
-      to change mission item or reset the mission
-     */
-    return false;
 }
 
 /*
