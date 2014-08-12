@@ -12,8 +12,8 @@
 
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
- 
-    -- Coded by Victor Mayoral Vilches --    
+
+    -- Coded by Victor Mayoral Vilches --
 */
 
 #include <AP_HAL.h>
@@ -45,7 +45,7 @@ extern const AP_HAL::HAL& hal;
 
 // MPU6000 & MPU9250 registers
 // not sure if present in MPU9250
-// #define MPUREG_PRODUCT_ID                               0x0C    // Product ID Register 
+// #define MPUREG_PRODUCT_ID                               0x0C    // Product ID Register
 #define MPUREG_XG_OFFS_USRH                     0x13    // X axis gyro offset (high byte)
 #define MPUREG_XG_OFFS_USRL                     0x14    // X axis gyro offset (low byte)
 #define MPUREG_YG_OFFS_USRH                     0x15    // Y axis gyro offset (high byte)
@@ -78,7 +78,7 @@ extern const AP_HAL::HAL& hal;
 #define MPUREG_FIFO_EN                                  0x23
 #define MPUREG_INT_PIN_CFG                              0x37
 #       define BIT_INT_RD_CLEAR                                 0x10    // clear the interrupt when any read occurs
-#       define BIT_LATCH_INT_EN                                 0x20    // latch data ready pin 
+#       define BIT_LATCH_INT_EN                                 0x20    // latch data ready pin
 #define MPUREG_INT_ENABLE                               0x38
 // bit definitions for MPUREG_INT_ENABLE
 #       define BIT_RAW_RDY_EN                                   0x01
@@ -190,7 +190,7 @@ const float AP_InertialSensor_MPU9250::_gyro_scale = (0.0174532f / 16.4f);
  *  variants however
  */
 
-AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250() : 
+AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250() :
 	AP_InertialSensor(),
     _drdy_pin(NULL),
     _initialised(false),
@@ -205,8 +205,11 @@ uint16_t AP_InertialSensor_MPU9250::_init_sensor( Sample_rate sample_rate )
 
     _spi = hal.spi->device(AP_HAL::SPIDevice_MPU9250);
     _spi_sem = _spi->get_semaphore();
+
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLE
     _drdy_pin = hal.gpio->channel(BBB_P8_7);
     _drdy_pin->mode(HAL_GPIO_INPUT);
+#endif
 
     hal.scheduler->suspend_timer_procs();
 
@@ -236,12 +239,12 @@ uint16_t AP_InertialSensor_MPU9250::_init_sensor( Sample_rate sample_rate )
             _spi_sem->give();
         }
         if (tries++ > 5) {
-            hal.scheduler->panic(PSTR("PANIC: failed to boot MPU9250 5 times")); 
+            hal.scheduler->panic(PSTR("PANIC: failed to boot MPU9250 5 times"));
         }
     } while (1);
 
     hal.scheduler->resume_timer_procs();
-    
+
 
     /* read the first lot of data.
      * _read_data_transaction requires the spi semaphore to be taken by
@@ -359,10 +362,10 @@ void AP_InertialSensor_MPU9250::_poll_data(void)
               code grabbing the latest sample.
             */
             return;
-        }   
+        }
         if (_data_ready()) {
             _last_sample_time_micros = hal.scheduler->micros();
-            _read_data_transaction(); 
+            _read_data_transaction();
         }
         _spi_sem->give();
     } else {
@@ -370,7 +373,7 @@ void AP_InertialSensor_MPU9250::_poll_data(void)
         if (_spi_sem->take(10)) {
             if (_data_ready()) {
                 _last_sample_time_micros = hal.scheduler->micros();
-                _read_data_transaction(); 
+                _read_data_transaction();
             }
             _spi_sem->give();
         } else {
@@ -389,7 +392,7 @@ void AP_InertialSensor_MPU9250::_read_data_transaction() {
         uint8_t int_status;
         uint8_t v[14];
     } rx, tx = { cmd : MPUREG_INT_STATUS | 0x80, };
-    
+
     _spi->transaction((const uint8_t *)&tx, (uint8_t *)&rx, sizeof(rx));
 
     if (_drdy_pin) {
@@ -642,4 +645,3 @@ float AP_InertialSensor_MPU9250::get_delta_time() const
 }
 
 #endif // CONFIG_HAL_BOARD
-
