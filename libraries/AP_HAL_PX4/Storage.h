@@ -7,7 +7,7 @@
 #include "AP_HAL_PX4_Namespace.h"
 #include <systemlib/perf_counter.h>
 
-#define PX4_STORAGE_SIZE 4096
+#define PX4_STORAGE_SIZE HAL_STORAGE_SIZE
 #define PX4_STORAGE_MAX_WRITE 512
 #define PX4_STORAGE_LINE_SHIFT 9
 #define PX4_STORAGE_LINE_SIZE (1<<PX4_STORAGE_LINE_SHIFT)
