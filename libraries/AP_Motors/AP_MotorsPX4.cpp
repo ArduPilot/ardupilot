@@ -29,11 +29,12 @@
 #include <stdio.h>
 #include <unistd.h>
 
-
 #define FRAME_CONFIG_COUNT 5
 #define FRAME_NAME_MAXLEN  20
 
-#define MIXER_DIR_PREFIX "/etc/mixers"
+#define MIXER_DIR_PREFIX    "/etc/mixers"
+#define MIXER_DEV_PWM       "/dev/pwm_output"
+#define MIXER_DEV_UAVCAN    "/dev/uavcan/esc"
 
 extern const AP_HAL::HAL& hal;
 
@@ -69,6 +70,12 @@ void AP_MotorsPX4::Init()
     // load mixer config
     // @TODO: handle errors
     load_mixer();
+
+    _limits_sub = orb_subscribe(ORB_ID(multirotor_motor_limits));
+    if (_limits_sub == -1) {
+       // @TODO: handle errors
+       printf("Unable to subscribe to multirotor_motor_limits");
+    }
 }
 
 
@@ -110,10 +117,10 @@ bool AP_MotorsPX4::load_mixer()
     const char* mixer_device;
     switch (_output_device) {
         case AP_MOTORS_PX4_PWM_OUTPUT:
-            mixer_device = "/dev/pwm_output";
+            mixer_device = MIXER_DEV_PWM;
             break;
         case AP_MOTORS_PX4_UAVCAN_OUTPUT:
-            mixer_device = "/dev/uavcan/esc";
+            mixer_device = MIXER_DEV_UAVCAN;
             break;
         default:
             return false;
@@ -125,23 +132,19 @@ bool AP_MotorsPX4::load_mixer()
     char buf[890];     // TODO: buffer handling and size correct? Size chosen to prevent frame size warning.
 
     if ((devfd = open(mixer_device, 0)) < 0) {
-        printf("open\n");
         goto failed;
     }
 
     if (ioctl(devfd, MIXERIOCRESET, 0)) {
-        printf("ioctl\n");
         goto failed;
     }
 
     if (load_mixer_file(mixer_name, &buf[0], sizeof(buf)) < 0) {
-        printf("load\n");
         goto failed;
     }
 
     ret = ioctl(devfd, MIXERIOCLOADBUF, (unsigned long)buf);
     if (ret < 0) {
-        printf("ioctl2\n");
         goto failed;
     }
 
@@ -191,6 +194,8 @@ void AP_MotorsPX4::publish_armed() {
 
 void AP_MotorsPX4::publish_controls()
 {
+    _actuators.timestamp = hrt_absolute_time();
+
     // publish raw input values for use by uavcan mixer
     if (_actuators_0_pub > 0) {
         /* publish the attitude setpoint */
@@ -201,6 +206,22 @@ void AP_MotorsPX4::publish_controls()
     }
 }
 
+
+bool AP_MotorsPX4::update_limits()
+{
+	bool limits_updated = orb_check(_limits_sub, &limits_updated) == 0 && limits_updated;
+
+	if (limits_updated) {
+		if (orb_copy(ORB_ID(multirotor_motor_limits), _limits_sub, &limit) != OK) {
+            printf("orb_copy failed\n");
+        }
+    }
+    else {  
+//        memset(&limit, 0, sizeof(limit));
+    }
+
+    return limits_updated;
+}
 
 
 // output_min - sends minimum values out to the motors
@@ -227,13 +248,11 @@ void AP_MotorsPX4::output_min()
 void AP_MotorsPX4::output_armed()
 {
     // initialize limits flag
-    limit.roll_pitch = false;
-    limit.yaw = false;
-    limit.throttle_lower = false;
-    limit.throttle_upper = false;
+    update_limits();
 
     // Throttle is 0 to 1000 only
-    // To-Do: we should not really be limiting this here because we don't "own" this _rc_throttle object
+    // @TODO: we should not really be limiting this here because we don't "own" this _rc_throttle object
+    // copied from AP_MotorsMatrix - no idea if this is important here
     if (_rc_throttle.servo_out < 0) {
         _rc_throttle.servo_out = 0;
         limit.throttle_lower = true;
@@ -243,18 +262,16 @@ void AP_MotorsPX4::output_armed()
         limit.throttle_upper = true;
     }
 
-    // prepare actuators struct
-    _actuators.timestamp = hrt_absolute_time();
-
     if (_rc_throttle.servo_out == 0) {
-        // MOT_SPIN_ARMED
+        // MOT_SPINARMED
         if (_spin_when_armed_ramped < 0) {
              _spin_when_armed_ramped = 0;
         }
         if (_spin_when_armed_ramped > _min_throttle) {
             _spin_when_armed_ramped = _min_throttle;
         }
-
+        
+        // center all controls, spin motors slowly
         _actuators.control[0] = 0.;
         _actuators.control[1] = 0.;
         _actuators.control[2] = 0.;
@@ -272,7 +289,10 @@ void AP_MotorsPX4::output_armed()
         _actuators.control[1] = _rc_pitch.servo_out / 4500.;    // pitch,       [-1..1]
         _actuators.control[2] = _rc_yaw.servo_out / 4500.;      // yaw,         [-1..1]
         _actuators.control[3] = _rc_throttle.servo_out / 1000.; // throttle,    [0..1]
+//    	printf("x0:%d  x1:%d  x2:%d  x3:%d\n", _rc_roll.servo_out, _rc_pitch.servo_out, _rc_yaw.servo_out, _rc_throttle.servo_out);
     }
+
+//    printf("rp:%d y:%d tl:%d tu:%d\n", limit.roll_pitch, limit.yaw, limit.throttle_lower, limit.throttle_upper);
 
     publish_armed();
     publish_controls();
@@ -290,5 +310,5 @@ void AP_MotorsPX4::output_disarmed()
 //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
 void AP_MotorsPX4::output_test(uint8_t motor_seq, int16_t pwm)
 {
-  // unfortuantely currently not possible as we are not the one who can control a single motor
+    // @TODO: define interface for motor testing - not possible yet
 }

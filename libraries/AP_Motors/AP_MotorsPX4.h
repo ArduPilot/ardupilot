@@ -13,6 +13,7 @@
 
 #include <uORB/topics/actuator_controls.h>
 #include <uORB/topics/actuator_armed.h>
+#include <uORB/topics/multirotor_motor_limits.h>
 
 #include <systemlib/mixer/mixer.h>
 
@@ -63,6 +64,9 @@ protected:
     // publish control state
     void publish_controls();
 
+    // check for limit updates
+    bool update_limits();
+
     // load mixer configuration
     bool load_mixer();
 
@@ -73,6 +77,8 @@ protected:
     // PX4 ORB-related structs
     orb_advert_t        _actuators_0_pub;               /**< actuator control group 0 setpoint */
     orb_advert_t        _armed_pub;
+    multirotor_motor_limits_s _new_limits;
+    int                 _limits_sub;
 
     struct actuator_controls_s _actuators;             /**< actuator control inputs */
     struct actuator_armed_s _armed;
