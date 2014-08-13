@@ -434,7 +434,7 @@ static float height_above_target(void)
     }
 #endif
 
-    return adjusted_altitude_cm()*0.01f - target_alt;
+    return (adjusted_altitude_cm()*0.01f - ahrs.get_home().alt*0.01f) - target_alt;
 }
 
 /*
