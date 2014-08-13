@@ -17,6 +17,7 @@
 #include <AP_Common.h>
 #include <AP_Progmem.h>
 #include <AP_Param.h>
+#include <StorageManager.h>
 #include <AP_Math.h>
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
@@ -61,8 +62,6 @@
 #include "LogReader.h"
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
-
-AP_Param param_loader(var_info, 4096);
 
 static Parameters g;
 
