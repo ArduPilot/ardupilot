@@ -217,7 +217,13 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
 };
 
 AP_Mount::AP_Mount(const struct Location *current_loc, const AP_AHRS &ahrs, uint8_t id) :
-    _ahrs(ahrs)
+    _ahrs(ahrs),
+    _roll_control_angle(0.0f),
+    _tilt_control_angle(0.0f),
+    _pan_control_angle(0.0f),
+    _roll_angle(0.0f),
+    _tilt_angle(0.0f),
+    _pan_angle(0.0f)
 {
 	AP_Param::setup_object_defaults(this, var_info);
     _current_loc = current_loc;
