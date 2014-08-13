@@ -14,6 +14,7 @@
 #define AP_BATT_MONITOR_VOLTAGE_ONLY        3
 #define AP_BATT_MONITOR_VOLTAGE_AND_CURRENT 4
 
+
 // setup default mag orientation for each board type
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
  # define AP_BATT_VOLT_PIN                  0       // Battery voltage on A0
@@ -88,19 +89,37 @@
  # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0
 #endif
 
+// Pins for AttoPilot sensor modules for APM 2
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+  # define AP_ATTO_VOLT_PIN 1
+  # define AP_ATTO_CURR_PIN 2
+#else
+  # define AP_ATTO_VOLT_PIN AP_BATT_VOLT_PIN
+  # define AP_ATTO_CURR_PIN AP_BATT_CURR_PIN
+#endif
+
 // Other values normally set directly by mission planner
-// # define AP_BATT_VOLTDIVIDER_DEFAULT 15.70   // Volt divider for AttoPilot 50V/90A sensor
-// # define AP_BATT_VOLTDIVIDER_DEFAULT 4.127   // Volt divider for AttoPilot 13.6V/45A sensor
-// # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT 27.32  // Amp/Volt for AttoPilot 50V/90A sensor
-// # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT 13.66  // Amp/Volt for AttoPilot 13.6V/45A sensor
+# define AP_BATT_VOLTDIVIDER_ATTO180        15.70         // Volt divider for AttoPilot 50V/180A sensor
+# define AP_BATT_VOLTDIVIDER_ATTO90         15.70         // Volt divider for AttoPilot 50V/90A sensor
+# define AP_BATT_VOLTDIVIDER_ATTO45         4.127         // Volt divider for AttoPilot 13.6V/45A sensor
+# define AP_BATT_CURR_AMP_PERVOLT_ATTO180   54.64         // Amp/Volt for AttoPilot 50V/180A sensor
+# define AP_BATT_CURR_AMP_PERVOLT_ATTO90    27.32         // Amp/Volt for AttoPilot 50V/90A sensor
+# define AP_BATT_CURR_AMP_PERVOLT_ATTO45    13.66         // Amp/Volt for AttoPilot 13.6V/45A sensor
 
 #define AP_BATT_CAPACITY_DEFAULT            3300
-#define AP_BATT_LOW_VOLT_TIMEOUT_MS         10000   // low voltage of 10 seconds will cause battery_exhausted to return true
+#define AP_BATT_LOW_VOLT_TIMEOUT_MS         10000         // low voltage of 10 seconds will cause battery_exhausted to return true
 
 class AP_BattMonitor
 {
 public:
+  enum BATT_SENSOR_TYPE {
+    ATTO45  = 0,
+    ATTO90  = 1,
+    ATTO180 = 2,
+    STD     = 99
+  };
 
+public:
     /// Constructor
     AP_BattMonitor();
 
@@ -114,8 +133,17 @@ public:
     int8_t monitoring() const { return _monitoring; }
 
     /// monitoring - returns whether we are monitoring voltage only or voltage and current
-    void set_monitoring(uint8_t mon) { _monitoring.set(mon); }
+    void set_monitoring(const uint8_t mon) { _monitoring.set(mon); }
 
+    /// set battery monitor type/board (also sets proper pins if using Atto boards)
+    void set_sensor( const int type );
+    
+    /// define the pins reading from
+    void set_pins( const int voltPin, const int currPin );
+    
+    /// set battery capacity
+    void set_capacity( const int cap_mAh );
+    
     /// Battery voltage.  Initialized to 0
     float voltage() const { return _voltage; }
 
@@ -137,7 +165,6 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
-
     /// parameters
     AP_Int8     _monitoring;                /// 0=disabled, 3=voltage only, 4=voltage and current
     AP_Int8     _volt_pin;                  /// board pin used to measure battery voltage
