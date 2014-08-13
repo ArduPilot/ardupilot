@@ -68,20 +68,20 @@ extern const AP_HAL::HAL &hal;
 // static member variables for AP_Param.
 //
 
-// max EEPROM write size. This is usually less than the physical
-// size as only part of the EEPROM is reserved for parameters
-uint16_t AP_Param::_eeprom_size;
-
 // number of rows in the _var_info[] table
 uint8_t AP_Param::_num_vars;
 
 // storage and naming information about all types that can be saved
 const AP_Param::Info *AP_Param::_var_info;
 
+// storage object
+StorageAccess AP_Param::_storage(StorageManager::StorageParam);
+
+
 // write to EEPROM
 void AP_Param::eeprom_write_check(const void *ptr, uint16_t ofs, uint8_t size)
 {
-    hal.storage->write_block(ofs, ptr, size);
+    _storage.write_block(ofs, ptr, size);
 }
 
 // write a sentinal value at the given offset
@@ -219,7 +219,7 @@ bool AP_Param::setup(void)
     serialDebug("setup %u vars", (unsigned)_num_vars);
 
     // check the header
-    hal.storage->read_block(&hdr, 0, sizeof(hdr));
+    _storage.read_block(&hdr, 0, sizeof(hdr));
     if (hdr.magic[0] != k_EEPROM_magic0 ||
         hdr.magic[1] != k_EEPROM_magic1 ||
         hdr.revision != k_EEPROM_revision) {
@@ -460,8 +460,8 @@ bool AP_Param::scan(const AP_Param::Param_header *target, uint16_t *pofs)
 {
     struct Param_header phdr;
     uint16_t ofs = sizeof(AP_Param::EEPROM_header);
-    while (ofs < _eeprom_size) {
-        hal.storage->read_block(&phdr, ofs, sizeof(phdr));
+    while (ofs < _storage.size()) {
+        _storage.read_block(&phdr, ofs, sizeof(phdr));
         if (phdr.type == target->type &&
             phdr.key == target->key &&
             phdr.group_element == target->group_element) {
@@ -714,7 +714,7 @@ bool AP_Param::save(bool force_save)
         }
     }
 
-    if (ofs+type_size((enum ap_var_type)phdr.type)+2*sizeof(phdr) >= _eeprom_size) {
+    if (ofs+type_size((enum ap_var_type)phdr.type)+2*sizeof(phdr) >= _storage.size()) {
         // we are out of room for saving variables
         hal.console->println_P(PSTR("EEPROM full"));
         return false;
@@ -777,7 +777,7 @@ bool AP_Param::load(void)
     }
 
     // found it
-    hal.storage->read_block(ap, ofs+sizeof(phdr), type_size((enum ap_var_type)phdr.type));
+    _storage.read_block(ap, ofs+sizeof(phdr), type_size((enum ap_var_type)phdr.type));
     return true;
 }
 
@@ -860,8 +860,8 @@ bool AP_Param::load_all(void)
     struct Param_header phdr;
     uint16_t ofs = sizeof(AP_Param::EEPROM_header);
 
-    while (ofs < _eeprom_size) {
-        hal.storage->read_block(&phdr, ofs, sizeof(phdr));
+    while (ofs < _storage.size()) {
+        _storage.read_block(&phdr, ofs, sizeof(phdr));
         // note that this is an || not an && for robustness
         // against power off while adding a variable
         if (phdr.type == _sentinal_type ||
@@ -876,7 +876,7 @@ bool AP_Param::load_all(void)
 
         info = find_by_header(phdr, &ptr);
         if (info != NULL) {
-            hal.storage->read_block(ptr, ofs+sizeof(phdr), type_size((enum ap_var_type)phdr.type));
+            _storage.read_block(ptr, ofs+sizeof(phdr), type_size((enum ap_var_type)phdr.type));
         }
 
         ofs += type_size((enum ap_var_type)phdr.type) + sizeof(phdr);
@@ -1103,7 +1103,7 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info)
 
     // load the old value from EEPROM
     uint8_t old_value[type_size((enum ap_var_type)header.type)];
-    hal.storage->read_block(old_value, pofs+sizeof(header), sizeof(old_value));
+    _storage.read_block(old_value, pofs+sizeof(header), sizeof(old_value));
     const AP_Param *ap = (const AP_Param *)&old_value[0];
 
     // find the new variable in the variable structures
