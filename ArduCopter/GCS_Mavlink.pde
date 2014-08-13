@@ -182,8 +182,14 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
         break;
     }
 
-    // default to all healthy except compass, gps and receiver which we set individually
-    control_sensors_health = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_3D_MAG & ~MAV_SYS_STATUS_SENSOR_GPS & ~MAV_SYS_STATUS_SENSOR_RC_RECEIVER);
+    // default to all healthy except baro, compass, gps and receiver which we set individually
+    control_sensors_health = control_sensors_present & ~(MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE |
+                                                         MAV_SYS_STATUS_SENSOR_3D_MAG |
+                                                         MAV_SYS_STATUS_SENSOR_GPS |
+                                                         MAV_SYS_STATUS_SENSOR_RC_RECEIVER);
+    if (barometer.healthy) {
+        control_sensors_health |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
+    }
     if (g.compass_enabled && compass.healthy(0) && ahrs.use_compass()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_MAG;
     }
