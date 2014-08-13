@@ -95,6 +95,45 @@ AP_BattMonitor::init()
     }
 }
 
+void AP_BattMonitor::set_capacity(const int iCap) {
+  _pack_capacity = iCap;
+}
+
+void AP_BattMonitor::set_pins(const int iVolt, const int iCur) {
+  _volt_pin = iVolt;
+  _curr_pin = iCur;
+}
+
+void AP_BattMonitor::set_sensor(const int t) {
+  switch (t) {
+    case ATTO45:
+      _volt_multiplier   = AP_BATT_VOLTDIVIDER_ATTO45;
+      _curr_amp_per_volt = AP_BATT_CURR_AMP_PERVOLT_ATTO45;
+      set_pins(AP_ATTO_VOLT_PIN, AP_ATTO_CURR_PIN);
+      set_monitoring(AP_BATT_MONITOR_VOLTAGE_AND_CURRENT);
+    break;
+    case ATTO90:
+      _volt_multiplier   = AP_BATT_VOLTDIVIDER_ATTO90;
+      _curr_amp_per_volt = AP_BATT_CURR_AMP_PERVOLT_ATTO90;
+      set_pins(AP_ATTO_VOLT_PIN, AP_ATTO_CURR_PIN);
+      set_monitoring(AP_BATT_MONITOR_VOLTAGE_AND_CURRENT);
+    break;
+    case ATTO180:
+      _volt_multiplier   = AP_BATT_VOLTDIVIDER_ATTO180;
+      _curr_amp_per_volt = AP_BATT_CURR_AMP_PERVOLT_ATTO180;
+      set_pins(AP_ATTO_VOLT_PIN, AP_ATTO_CURR_PIN);
+      set_monitoring(AP_BATT_MONITOR_VOLTAGE_AND_CURRENT);
+    break;
+    case STD:
+    default:
+      _volt_multiplier   = AP_BATT_VOLTDIVIDER_DEFAULT;
+      _curr_amp_per_volt = AP_BATT_CURR_AMP_PERVOLT_DEFAULT;
+      set_pins(AP_BATT_VOLT_PIN, AP_BATT_CURR_PIN);
+      set_monitoring(AP_BATT_MONITOR_DISABLED);
+    break;
+  }
+}
+
 // read - read the voltage and current
 void
 AP_BattMonitor::read()
