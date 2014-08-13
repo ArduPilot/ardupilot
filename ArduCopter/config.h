@@ -492,6 +492,10 @@
  #define ACRO_BALANCE_PITCH         1.0f
 #endif
 
+#ifndef ACRO_EXPO_DEFAULT
+ #define ACRO_EXPO_DEFAULT          0.3f
+#endif
+
 // Stabilize (angle controller) gains
 #ifndef STABILIZE_ROLL_P
  # define STABILIZE_ROLL_P          4.5f
