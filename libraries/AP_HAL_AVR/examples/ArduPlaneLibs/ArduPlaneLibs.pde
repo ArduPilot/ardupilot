@@ -29,6 +29,7 @@
 #include <AP_Vehicle.h>
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
 #include <AP_Mission.h>
+#include <StorageManager.h>
 #include <AP_Terrain.h>
 #include <AP_Mount.h>           // Camera/Antenna mount
 #include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
