@@ -23,6 +23,7 @@
 #include <SITL.h>
 #include <Filter.h>
 #include <AP_Param.h>
+#include <StorageManager.h>
 #include <AP_Progmem.h>
 #include <AP_Math.h>
 #include <AP_AHRS.h>
