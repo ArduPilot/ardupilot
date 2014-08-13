@@ -16,6 +16,7 @@
 #include <DataFlash.h>
 #include <AP_InertialSensor.h>
 #include <AP_Mission.h>
+#include <StorageManager.h>
 #include <AP_Terrain.h>
 #include <AP_ADC.h>
 #include <AP_ADC_AnalogSource.h>

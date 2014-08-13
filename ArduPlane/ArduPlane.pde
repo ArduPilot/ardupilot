@@ -36,6 +36,7 @@
 #include <AP_Progmem.h>
 #include <AP_Menu.h>
 #include <AP_Param.h>
+#include <StorageManager.h>
 #include <AP_GPS.h>         // ArduPilot GPS library
 #include <AP_Baro.h>        // ArduPilot barometer library
 #include <AP_Compass.h>     // ArduPilot Mega Magnetometer Library
@@ -317,7 +318,7 @@ static AP_Camera camera(&relay);
 #endif
 
 //Rally Ponints
-AP_Rally rally(ahrs, MAX_RALLYPOINTS, RALLY_START_BYTE);
+AP_Rally rally(ahrs);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Global variables
@@ -545,6 +546,9 @@ static struct {
 
     // turn angle for next leg of mission
     float next_turn_angle;
+
+    // filtered sink rate for landing
+    float land_sink_rate;
 } auto_state = {
     takeoff_complete : true,
     land_complete : false,
@@ -555,7 +559,8 @@ static struct {
     takeoff_pitch_cd : 0,
     highest_airspeed : 0,
     initial_pitch_cd : 0,
-    next_turn_angle  : 90.0f
+    next_turn_angle  : 90.0f,
+    land_sink_rate   : 0
 };
 
 // true if we are in an auto-throttle mode, which means
@@ -589,8 +594,7 @@ static bool start_command_callback(const AP_Mission::Mission_Command &cmd);
 AP_Mission mission(ahrs, 
                    &start_command_callback, 
                    &verify_command_callback, 
-                   &exit_mission_callback, 
-                   MISSION_START_BYTE, MISSION_END_BYTE);
+                   &exit_mission_callback);
 
 ////////////////////////////////////////////////////////////////////////////////
 // terrain handling
@@ -792,7 +796,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
 };
 
 // setup the var_info table
-AP_Param param_loader(var_info, MISSION_START_BYTE);
+AP_Param param_loader(var_info);
 
 void setup() {
     cliSerial = hal.console;
@@ -1170,16 +1174,16 @@ static void handle_auto_mode(void)
 
     case MAV_CMD_NAV_LAND:
         calc_nav_roll();
+        calc_nav_pitch();
         
         if (auto_state.land_complete) {
             // during final approach constrain roll to the range
             // allowed for level flight
             nav_roll_cd = constrain_int32(nav_roll_cd, -g.level_roll_limit*100UL, g.level_roll_limit*100UL);
             
-            // hold pitch constant in final approach
-            nav_pitch_cd = g.land_pitch_cd;
+            // hold pitch above the specified land pitch in final approach
+            nav_pitch_cd = constrain_int32(nav_pitch_cd, g.land_pitch_cd, nav_pitch_cd);
         } else {
-            calc_nav_pitch();
             if (!airspeed.use()) {
                 // when not under airspeed control, don't allow
                 // down pitch in landing
@@ -1200,6 +1204,7 @@ static void handle_auto_mode(void)
         // are for takeoff and landing
         steer_state.hold_course_cd = -1;
         auto_state.land_complete = false;
+        auto_state.land_sink_rate = 0;
         calc_nav_roll();
         calc_nav_pitch();
         calc_throttle();

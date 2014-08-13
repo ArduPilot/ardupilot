@@ -14,7 +14,7 @@ export LANG=C
 # Locate the sketch sources based on the initial Makefile's path
 #
 SRCROOT			:=	$(realpath $(dir $(firstword $(MAKEFILE_LIST))))
-ifneq ($(findstring CYGWIN, $(SYSTYPE)),) 
+ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
   # Workaround a $(realpath ) bug on cygwin
   ifeq ($(SRCROOT),)
     SRCROOT	:=	$(shell cygpath -m ${CURDIR})
@@ -48,7 +48,7 @@ else
     $(warning WARNING: sketchbook directory $(SKETCHBOOK) contains no libraries)
   endif
 endif
-ifneq ($(findstring CYGWIN, $(SYSTYPE)),) 
+ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
     # Convert cygwin path into a windows normal path
     SKETCHBOOK	:= $(shell cygpath ${SKETCHBOOK})
 endif
@@ -132,6 +132,7 @@ endif
 
 ifneq ($(findstring sitl, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_AVR_SITL
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_NONE
 endif
 
 ifneq ($(findstring linux, $(MAKECMDGOALS)),)
@@ -149,24 +150,34 @@ HAL_BOARD = HAL_BOARD_LINUX
 HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_PXF
 endif
 
+ifneq ($(findstring navio, $(MAKECMDGOALS)),)
+HAL_BOARD = HAL_BOARD_LINUX
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_NAVIO
+endif
+
 ifneq ($(findstring vrbrain, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_VRBRAIN
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_NONE
 endif
 
 ifneq ($(findstring vrubrain, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_VRBRAIN
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_NONE
 endif
 
 ifneq ($(findstring vrhero, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_VRBRAIN
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_NONE
 endif
 
 ifneq ($(findstring apm1, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_APM1
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_AVR_APM1
 endif
 
 ifneq ($(findstring apm2, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_APM2
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_AVR_APM2
 endif
 
 ifneq ($(findstring flymaple, $(MAKECMDGOALS)),)
@@ -177,6 +188,7 @@ endif
 ifeq ($(HAL_BOARD),)
 #$(warning No HAL_BOARD in config.mk - defaulting to HAL_BOARD_APM2)
 HAL_BOARD = HAL_BOARD_APM2
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_AVR_APM2
 endif
 
 HARDWARE		?=	arduino
@@ -189,4 +201,3 @@ BOARD = mega
 endif
 
 endif
-

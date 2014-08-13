@@ -18,6 +18,7 @@ START_ANTENNA_TRACKER=0
 WIPE_EEPROM=0
 REVERSE_THROTTLE=0
 NO_REBUILD=0
+START_HIL=0
 TRACKER_ARGS=""
 
 usage()
@@ -43,6 +44,7 @@ Options:
                      for copters can choose +, X, quad or octa
                      for planes can choose elevon or vtail
     -j NUM_PROC      number of processors to use during build (default 1)
+    -H               start HIL
 
 mavproxy_options:
     --map            start with a map
@@ -59,7 +61,7 @@ EOF
 
 
 # parse options. Thanks to http://wiki.bash-hackers.org/howto/getopts_tutorial
-while getopts ":I:VgGcj:TA:t:L:v:hwf:RN" opt; do
+while getopts ":I:VgGcj:TA:t:L:v:hwf:RNH" opt; do
   case $opt in
     v)
       VEHICLE=$OPTARG
@@ -71,6 +73,10 @@ while getopts ":I:VgGcj:TA:t:L:v:hwf:RN" opt; do
       USE_VALGRIND=1
       ;;
     N)
+      NO_REBUILD=1
+      ;;
+    H)
+      START_HIL=1
       NO_REBUILD=1
       ;;
     T)
@@ -273,6 +279,7 @@ case $VEHICLE in
         ;;
 esac
 
+if [ $START_HIL == 0 ]; then
 if [ $USE_VALGRIND == 1 ]; then
     echo "Using valgrind"
     $autotest/run_in_terminal_window.sh "ardupilot (valgrind)" valgrind $cmd || exit 1
@@ -286,6 +293,7 @@ elif [ $USE_GDB == 1 ]; then
 else
     $autotest/run_in_terminal_window.sh "ardupilot" $cmd || exit 1
 fi
+fi
 
 trap kill_tasks SIGINT
 
@@ -298,7 +306,11 @@ $autotest/run_in_terminal_window.sh "Simulator" $RUNSIM || {
 sleep 2
 
 # mavproxy.py --master tcp:127.0.0.1:5760 --sitl 127.0.0.1:5501 --out 127.0.0.1:14550 --out 127.0.0.1:14551 
-options="--master $MAVLINK_PORT --sitl $SIMOUT_PORT --out 127.0.0.1:14550 --out 127.0.0.1:14551"
+options=""
+if [ $START_HIL == 0 ]; then
+options="--master $MAVLINK_PORT --sitl $SIMOUT_PORT"
+fi
+options="$options --out 127.0.0.1:14550 --out 127.0.0.1:14551"
 extra_cmd1=""
 if [ $WIPE_EEPROM == 1 ]; then
     extra_cmd="param forceload $autotest/$PARMS; $EXTRA_PARM; param fetch"
@@ -306,6 +318,9 @@ fi
 if [ $START_ANTENNA_TRACKER == 1 ]; then
     options="$options --load-module=tracker"
     extra_cmd="$extra_cmd module load map; tracker set port $TRACKER_UARTA; tracker start;"
+fi
+if [ $START_HIL == 1 ]; then
+    options="$options --load-module=HIL"
 fi
 mavproxy.py $options --cmd="$extra_cmd" $*
 kill_tasks

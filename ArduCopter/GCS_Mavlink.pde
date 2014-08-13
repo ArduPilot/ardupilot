@@ -1329,7 +1329,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
         
         if (packet.idx >= rally.get_rally_total() || 
-            packet.idx >= MAX_RALLYPOINTS) {
+            packet.idx >= rally.get_rally_max()) {
             send_text_P(SEVERITY_LOW,PSTR("bad rally point message ID"));
             break;
         }
