@@ -18,59 +18,11 @@ void SITLEEPROMStorage::_eeprom_open(void)
 	}
 }
 
-uint8_t SITLEEPROMStorage::read_byte(uint16_t loc) 
-{
-	uint8_t value;
-	assert(loc < HAL_STORAGE_SIZE);
-	_eeprom_open();
-	assert(pread(_eeprom_fd, &value, 1, loc) == 1);
-	return value;
-}
-
-uint16_t SITLEEPROMStorage::read_word(uint16_t loc) 
-{
-	uint16_t value;
-	assert(loc < HAL_STORAGE_SIZE);
-	_eeprom_open();
-	assert(pread(_eeprom_fd, &value, 2, loc) == 2);
-	return value;
-}
-
-uint32_t SITLEEPROMStorage::read_dword(uint16_t loc) 
-{
-	uint32_t value;
-	assert(loc < HAL_STORAGE_SIZE);
-	_eeprom_open();
-	assert(pread(_eeprom_fd, &value, 4, loc) == 4);
-	return value;
-}
-
 void SITLEEPROMStorage::read_block(void *dst, uint16_t src, size_t n) 
 {
 	assert(src < HAL_STORAGE_SIZE && src + n < HAL_STORAGE_SIZE);
 	_eeprom_open();
 	assert(pread(_eeprom_fd, dst, n, src) == (ssize_t)n);
-}
-
-void SITLEEPROMStorage::write_byte(uint16_t loc, uint8_t value) 
-{
-	assert(loc < HAL_STORAGE_SIZE);
-	_eeprom_open();
-	assert(pwrite(_eeprom_fd, &value, 1, loc) == 1);
-}
-
-void SITLEEPROMStorage::write_word(uint16_t loc, uint16_t value) 
-{
-	assert(loc < HAL_STORAGE_SIZE);
-	_eeprom_open();
-	assert(pwrite(_eeprom_fd, &value, 2, loc) == 2);
-}
-
-void SITLEEPROMStorage::write_dword(uint16_t loc, uint32_t value) 
-{
-	assert(loc < HAL_STORAGE_SIZE);
-	_eeprom_open();
-	assert(pwrite(_eeprom_fd, &value, 4, loc) == 4);
 }
 
 void SITLEEPROMStorage::write_block(uint16_t dst, const void *src, size_t n) 
