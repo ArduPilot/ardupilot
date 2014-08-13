@@ -16,6 +16,7 @@
 #include <AP_HAL_Empty.h>
 #include <AP_Math.h>
 #include <AP_Param.h>
+#include <StorageManager.h>
 #include <AP_ADC.h>
 #include <AP_InertialSensor.h>
 #include <AP_Notify.h>
