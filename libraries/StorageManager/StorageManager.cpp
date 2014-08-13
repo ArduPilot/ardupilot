@@ -32,20 +32,23 @@ extern const AP_HAL::HAL& hal;
 
 /*
   layout for fixed wing and rovers
+  On APM2 this gives 167 waypoints, 10 rally points and 20 fence points
+  On PX4v1 this gives 309 waypoints, 30 rally points and 52 fence points
+  On Pixhawk this gives 724 waypoints, 50 rally points and 84 fence points
  */
 const StorageManager::StorageArea StorageManager::layout_default[STORAGE_NUM_AREAS] PROGMEM = {
     { StorageParam,   0,     1280}, // 0x500 parameter bytes
     { StorageMission, 1280,  2506},
     { StorageRally,   3786,   150}, // 10 rally points
     { StorageFence,   3936,   160}, // 20 fence points
-#if HAL_STORAGE_SIZE > 4096
+#if STORAGE_NUM_AREAS >= 8
     { StorageParam,   4096,  1280},
     { StorageRally,   5376,   300},
     { StorageFence,   5676,   256},
     { StorageMission, 5932,  2132}, // leave 4 byte gap for PX4
                                     // sentinal and expansion
 #endif
-#if HAL_STORAGE_SIZE > 8192
+#if STORAGE_NUM_AREAS >= 12
     { StorageParam,    8192,  1280},
     { StorageRally,    9472,   300},
     { StorageFence,    9772,   256},
@@ -55,21 +58,24 @@ const StorageManager::StorageArea StorageManager::layout_default[STORAGE_NUM_ARE
 
 
 /*
-  layout for copter
+  layout for copter. 
+  On APM2 this gives 161 waypoints, 6 fence points and 6 rally points
+  On PX4v1 this gives 303 waypoints, 26 rally points and 38 fence points
+  On Pixhawk this gives 718 waypoints, 46 rally points and 70 fence points
  */
 const StorageManager::StorageArea StorageManager::layout_copter[STORAGE_NUM_AREAS] PROGMEM = {
     { StorageParam,   0,     1536}, // 0x600 param bytes
     { StorageMission, 1536,  2422},
     { StorageRally,   3958,    90}, // 6 rally points
     { StorageFence,   4048,    48}, // 6 fence points
-#if HAL_STORAGE_SIZE > 4096
+#if STORAGE_NUM_AREAS >= 8
     { StorageParam,   4096,  1280},
     { StorageRally,   5376,   300},
     { StorageFence,   5676,   256},
     { StorageMission, 5932,  2132}, // leave 128 byte gap for
                                     // expansion and PX4 sentinal
 #endif
-#if HAL_STORAGE_SIZE > 8192
+#if STORAGE_NUM_AREAS >= 12
     { StorageParam,    8192,  1280},
     { StorageRally,    9472,   300},
     { StorageFence,    9772,   256},
