@@ -84,6 +84,7 @@ void AP_BoardLED::update(void)
 
             default:
                 save_trim_counter = -1;
+                break;
         }
         return;
     }
