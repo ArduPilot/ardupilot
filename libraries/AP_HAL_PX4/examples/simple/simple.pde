@@ -21,6 +21,7 @@
 #include <DataFlash.h>
 #include <GCS_MAVLink.h>
 #include <AP_Mission.h>
+#include <StorageManager.h>
 #include <AP_Terrain.h>
 #include <AP_Param.h>
 #include <AP_Baro.h>
