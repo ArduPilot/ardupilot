@@ -43,6 +43,7 @@
 #include <AP_Baro.h>
 #include <GCS_MAVLink.h>
 #include <AP_Mission.h>
+#include <StorageManager.h>
 #include <AP_Terrain.h>
 #include <AP_GPS.h>
 #include <AP_InertialSensor.h>
