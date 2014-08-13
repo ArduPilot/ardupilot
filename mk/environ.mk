@@ -182,7 +182,6 @@ endif
 
 ifneq ($(findstring flymaple, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_FLYMAPLE
-HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_NONE
 endif
 
 # default to APM2
