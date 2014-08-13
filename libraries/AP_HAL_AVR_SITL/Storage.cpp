@@ -20,7 +20,7 @@ void SITLEEPROMStorage::_eeprom_open(void)
 
 void SITLEEPROMStorage::read_block(void *dst, uint16_t src, size_t n) 
 {
-	assert(src < HAL_STORAGE_SIZE && src + n < HAL_STORAGE_SIZE);
+	assert(src < HAL_STORAGE_SIZE && src + n <= HAL_STORAGE_SIZE);
 	_eeprom_open();
 	assert(pread(_eeprom_fd, dst, n, src) == (ssize_t)n);
 }
