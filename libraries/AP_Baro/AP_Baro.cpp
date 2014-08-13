@@ -132,7 +132,7 @@ void AP_Baro::update_calibration()
 
 // return altitude difference in meters between current pressure and a
 // given base_pressure in Pascal
-float AP_Baro::get_altitude_difference(float base_pressure, float pressure)
+float AP_Baro::get_altitude_difference(float base_pressure, float pressure) const
 {
     float ret;
 #if HAL_CPU_CLASS <= HAL_CPU_CLASS_16

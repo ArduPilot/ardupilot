@@ -43,7 +43,7 @@ public:
 
     // get altitude difference in meters relative given a base
     // pressure in Pascal
-    float        get_altitude_difference(float base_pressure, float pressure);
+    float get_altitude_difference(float base_pressure, float pressure) const;
 
     // get scale factor required to convert equivalent to true airspeed
     float        get_EAS2TAS(void);
