@@ -65,7 +65,7 @@ void Baro_Glitch::check_alt()
     bool all_ok;                    // true if the new baro alt passes sanity checks
 
     // exit immediately if baro is unhealthy
-    if (!_baro.healthy) {
+    if (!_baro.healthy()) {
         _flags.glitching = true;
         return;
     }
