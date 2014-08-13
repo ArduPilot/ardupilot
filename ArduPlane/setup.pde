@@ -448,11 +448,8 @@ print_divider(void)
 
 static void zero_eeprom(void)
 {
-    uint8_t b = 0;
     cliSerial->printf_P(PSTR("\nErasing EEPROM\n"));
-    for (uint16_t i = 0; i < HAL_STORAGE_SIZE_AVAILABLE; i++) {
-        hal.storage->write_byte(i, b);
-    }
+    StorageManager::erase();
     cliSerial->printf_P(PSTR("done\n"));
 }
 

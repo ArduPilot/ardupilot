@@ -36,6 +36,7 @@
 #include <AP_Progmem.h>
 #include <AP_Menu.h>
 #include <AP_Param.h>
+#include <StorageManager.h>
 #include <AP_GPS.h>         // ArduPilot GPS library
 #include <AP_Baro.h>        // ArduPilot barometer library
 #include <AP_Compass.h>     // ArduPilot Mega Magnetometer Library
@@ -317,7 +318,7 @@ static AP_Camera camera(&relay);
 #endif
 
 //Rally Ponints
-AP_Rally rally(ahrs, MAX_RALLYPOINTS, RALLY_START_BYTE);
+AP_Rally rally(ahrs);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Global variables
@@ -589,8 +590,7 @@ static bool start_command_callback(const AP_Mission::Mission_Command &cmd);
 AP_Mission mission(ahrs, 
                    &start_command_callback, 
                    &verify_command_callback, 
-                   &exit_mission_callback, 
-                   MISSION_START_BYTE, MISSION_END_BYTE);
+                   &exit_mission_callback);
 
 ////////////////////////////////////////////////////////////////////////////////
 // terrain handling
@@ -792,7 +792,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
 };
 
 // setup the var_info table
-AP_Param param_loader(var_info, MISSION_START_BYTE);
+AP_Param param_loader(var_info);
 
 void setup() {
     cliSerial = hal.console;
