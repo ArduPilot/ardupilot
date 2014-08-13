@@ -10,11 +10,16 @@
 class AP_Baro
 {
 public:
-    bool                    healthy;
-
     AP_Baro() {
+        // initialise flags
+        _flags.healthy = false;
+        _flags.alt_ok = false;
+
 		AP_Param::setup_object_defaults(this, var_info);
     }
+
+    // healthy - returns true if sensor and derived altitude are good
+    bool healthy() const { return _flags.healthy && _flags.alt_ok; }
 
     virtual bool            init()=0;
     virtual uint8_t         read() = 0;
@@ -76,6 +81,12 @@ public:
     static const struct AP_Param::GroupInfo        var_info[];
 
 protected:
+
+    struct Baro_flags {
+        uint8_t healthy :1;             // true if sensor is healthy
+        uint8_t alt_ok  :1;             // true if calculated altitude is ok
+    } _flags;
+
     uint32_t                            _last_update; // in ms
     uint8_t                             _pressure_samples;
 
