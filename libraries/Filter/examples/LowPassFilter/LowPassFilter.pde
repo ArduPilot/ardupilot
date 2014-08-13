@@ -8,6 +8,7 @@
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
 #include <AP_Param.h>
+#include <StorageManager.h>
 #include <AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
 #include <Filter.h>                     // Filter library
 #include <LowPassFilter.h>      // LowPassFilter class (inherits from Filter class)
