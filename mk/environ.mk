@@ -132,6 +132,7 @@ endif
 
 ifneq ($(findstring sitl, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_AVR_SITL
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_NONE
 endif
 
 ifneq ($(findstring linux, $(MAKECMDGOALS)),)
@@ -156,32 +157,39 @@ endif
 
 ifneq ($(findstring vrbrain, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_VRBRAIN
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_NONE
 endif
 
 ifneq ($(findstring vrubrain, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_VRBRAIN
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_NONE
 endif
 
 ifneq ($(findstring vrhero, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_VRBRAIN
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_NONE
 endif
 
 ifneq ($(findstring apm1, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_APM1
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_AVR_APM1
 endif
 
 ifneq ($(findstring apm2, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_APM2
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_AVR_APM2
 endif
 
 ifneq ($(findstring flymaple, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_FLYMAPLE
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_NONE
 endif
 
 # default to APM2
 ifeq ($(HAL_BOARD),)
 #$(warning No HAL_BOARD in config.mk - defaulting to HAL_BOARD_APM2)
 HAL_BOARD = HAL_BOARD_APM2
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_AVR_APM2
 endif
 
 HARDWARE		?=	arduino
