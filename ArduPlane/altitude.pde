@@ -37,7 +37,9 @@ static void adjust_altitude_target()
         Location loc = next_WP_loc;
         float flare_distance = gps.ground_speed() * g.land_flare_sec;
         loc.alt += g.land_flare_alt*100;
-        if (flare_distance >= wp_distance || flare_distance >= wp_totalDistance) {
+        if (flare_distance >= wp_distance || 
+            flare_distance >= wp_totalDistance || 
+            location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
             set_target_altitude_location(loc);
         } else {
             set_target_altitude_proportion(next_WP_loc, 
@@ -49,7 +51,8 @@ static void adjust_altitude_target()
         // once we reach a loiter target then lock to the final
         // altitude target
         set_target_altitude_location(next_WP_loc);
-    } else if (target_altitude.offset_cm != 0) {
+    } else if (target_altitude.offset_cm != 0 && 
+               !location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
         // control climb/descent rate
         set_target_altitude_proportion(next_WP_loc, (float)(wp_distance-30) / (float)(wp_totalDistance-30));
 
