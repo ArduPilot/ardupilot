@@ -86,15 +86,10 @@ void YUNEECGPIO::write(uint8_t pin, uint8_t value)
 	GPIO_TypeDef* port = get_port(pin);
 	uint16_t bit = get_bit(pin);
 
-//	if(value == 0)
-//		GPIO_ResetBits(port, bit);
-//	else
-//		GPIO_SetBits(port, bit);
-
 	if(value == 0)
-		port->BRR = bit;
+		GPIO_ResetBits(port, bit);
 	else
-		port->BSRR = bit;
+		GPIO_SetBits(port, bit);
 }
 
 void YUNEECGPIO::toggle(uint8_t pin)
@@ -139,9 +134,9 @@ uint8_t YUNEECDigitalSource::read() {
 
 void YUNEECDigitalSource::write(uint8_t value) {
 	if(value == 0)
-		_port->BRR = _bit;
+		GPIO_ResetBits(_port, _bit);
 	else
-		_port->BSRR = _bit;
+		GPIO_SetBits(_port, _bit);
 }
 
 void YUNEECDigitalSource::toggle() {

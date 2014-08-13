@@ -13,9 +13,9 @@ LIBNAME		:= stm32f37x
 TypeOfMCU	:= STM32F37X
 
 # Put the 'libs' within the same folder with 'ardupilot'
-LIBDIR 		= $(SKETCHBOOK)/../libs
+LIBDIR 		= $(SKETCHBOOK)/../libraries
 STMLIBDIR	= $(LIBDIR)/STM32_USB-FS-Device_Lib_V4.0.0/Libraries
-LDSCRIPT 	= $(LIBDIR)/STM32F373VC_FLASH.ld
+LDSCRIPT 	= $(LIBDIR)/STM32F3_FLASH.ld
 STARTUP 	= $(LIBDIR)/startup_stm32f37x.s
 
 ###############################################################################
@@ -44,8 +44,8 @@ WARNFLAGSC      =   -Wimplicit-function-declaration  -Wmissing-prototypes -Wstri
 DEPFLAGS        =   -MD -MT $@
 DEPFLAGS		=	-include $(LIBDIR)/stm32f37x_conf.h
 
-CXXOPTS         =   -ffunction-sections -fdata-sections -fno-exceptions -fsigned-char -fno-rtti -fno-common
-COPTS           =   -ffunction-sections -fdata-sections -fsigned-char -fno-common
+CXXOPTS         =   -ffunction-sections -fdata-sections -fno-exceptions -fsigned-char -fno-rtti -fno-common -Wl,--gc-sections
+COPTS           =   -ffunction-sections -fdata-sections -fsigned-char -fno-common  -Wl,--gc-sections
 ASOPTS          =   -x assembler-with-cpp
 LISTOPTS        =   -adhlns=$(@:.o=.lst)
 
@@ -68,11 +68,11 @@ CFLAGS         +=   $(WARNFLAGS) $(WARNFLAGSC) $(DEPFLAGS) $(COPTS)
 ASFLAGS        +=   $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS)  $(COREINCLUDES)
 ASFLAGS        +=   $(ASOPTS) $(DEPFLAGS)
 LDFLAGS        +=   $(CPUFLAGS) $(DEFINES) $(CPULDFLAGS) $(OPTFLAGS) $(COREINCLUDES)
-LDFLAGS        +=	-Wl,--gc-sections -Wl,-Map=$(SKETCHMAP)
+LDFLAGS        +=	-Wl,--gc-sections -Wl,-Map=$(SKETCHMAP) -Wl,--no-whole-archive
 
-LDLIBS		   +=	-lm -lstdc++
+LDLIBS		   +=	-lm 
 LDLIBS		   +=	-l$(LIBNAME)
-LDLIBS		   +=	-Wl,--start-group -lc -lgcc -lnosys -Wl,--end-group
+LDLIBS		   +=	-Wl,--start-group -lc -lgcc -lstdc++ -lnosys -Wl,--end-group
 
 ifeq ($(VERBOSE),)
 v = @
