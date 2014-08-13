@@ -9,7 +9,7 @@ extern const AP_HAL::HAL& hal;
 // Public Methods //////////////////////////////////////////////////////////////
 bool AP_Baro_HIL::init()
 {
-    healthy = false;
+    _flags.healthy = false;
     return true;
 }
 
@@ -41,7 +41,7 @@ void AP_Baro_HIL::setHIL(float pressure, float temperature)
         _pressure_sum = pressure;
         _temperature_sum = temperature;
         _last_update = hal.scheduler->millis();
-        healthy = true;
+        _flags.healthy = true;
     }
 }
 
