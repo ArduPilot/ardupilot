@@ -108,6 +108,7 @@ public:
         _roll_scaler(1),
         _pitch_scaler(1),
         _collective_scalar(1),
+        _collective_scalar_manual(1),
         _collective_out(0),
         _collective_mid_pwm(0),
         _rotor_desired(0),
