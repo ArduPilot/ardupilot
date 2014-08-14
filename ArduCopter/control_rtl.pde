@@ -86,8 +86,10 @@ static void rtl_climb_start()
     wp_nav.get_wp_stopping_point_xy(destination);
 
 #if AC_RALLY == ENABLED
-    // rally_point.alt will be max of RTL_ALT and the height of the nearest rally point (if there is one)
-    Location rally_point = rally.calc_best_rally_or_home_location(current_loc, get_RTL_alt());
+    // rally_point.alt will be the altitude of the nearest rally point or the RTL_ALT. uses absolute altitudes
+    Location rally_point = rally.calc_best_rally_or_home_location(current_loc, get_RTL_alt()+ahrs.get_home().alt);
+    rally_point.alt -= ahrs.get_home().alt; // convert to altitude above home
+    rally_point.alt = max(rally_point.alt, current_loc.alt);    // ensure we do not descend before reaching home
     destination.z = rally_point.alt;
 #else
     destination.z = get_RTL_alt();
@@ -109,7 +111,11 @@ static void rtl_return_start()
 
     // set target to above home/rally point
 #if AC_RALLY == ENABLED
-    Vector3f destination = pv_location_to_vector(rally.calc_best_rally_or_home_location(current_loc, get_RTL_alt()));
+    // rally_point will be the nearest rally point or home.  uses absolute altitudes
+    Location rally_point = rally.calc_best_rally_or_home_location(current_loc, get_RTL_alt()+ahrs.get_home().alt);
+    rally_point.alt -= ahrs.get_home().alt; // convert to altitude above home
+    rally_point.alt = max(rally_point.alt, current_loc.alt);    // ensure we do not descend before reaching home
+    Vector3f destination = pv_location_to_vector(rally_point);
 #else
     Vector3f destination = Vector3f(0,0,get_RTL_alt());
 #endif
