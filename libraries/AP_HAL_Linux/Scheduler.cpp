@@ -4,6 +4,7 @@
 
 #include "Scheduler.h"
 #include "Storage.h"
+#include "RCInput.h"
 #include "UARTDriver.h"
 #include <sys/time.h>
 #include <poll.h>
@@ -17,8 +18,9 @@ using namespace Linux;
 
 extern const AP_HAL::HAL& hal;
 
-#define APM_LINUX_TIMER_PRIORITY    13
-#define APM_LINUX_UART_PRIORITY     12
+#define APM_LINUX_TIMER_PRIORITY    14
+#define APM_LINUX_UART_PRIORITY     13
+#define APM_LINUX_RCIN_PRIORITY     12
 #define APM_LINUX_MAIN_PRIORITY     11
 #define APM_LINUX_IO_PRIORITY       10
 
@@ -66,7 +68,15 @@ void LinuxScheduler::init(void* machtnichts)
     pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
 
     pthread_create(&_uart_thread_ctx, &thread_attr, (pthread_startroutine_t)&Linux::LinuxScheduler::_uart_thread, this);
-    
+
+    // the RCIN thread runs at a lower medium priority    
+    pthread_attr_init(&thread_attr);
+    param.sched_priority = APM_LINUX_RCIN_PRIORITY;
+    (void)pthread_attr_setschedparam(&thread_attr, &param);
+    pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
+
+    pthread_create(&_rcin_thread_ctx, &thread_attr, (pthread_startroutine_t)&Linux::LinuxScheduler::_rcin_thread, this);
+  
     // the IO thread runs at lower priority
     pthread_attr_init(&thread_attr);
     param.sched_priority = APM_LINUX_IO_PRIORITY;
@@ -252,6 +262,20 @@ void LinuxScheduler::_run_io(void)
     }
 
     _in_io_proc = false;
+}
+
+void *LinuxScheduler::_rcin_thread(void)
+{
+    _setup_realtime(32768);
+    while (system_initializing()) {
+        poll(NULL, 0, 1);        
+    }
+    while (true) {
+        _microsleep(10000);
+
+        ((LinuxRCInput *)hal.rcin)->_timer_tick();
+    }
+    return NULL;
 }
 
 void *LinuxScheduler::_uart_thread(void)

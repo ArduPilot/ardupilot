@@ -85,6 +85,7 @@ void HAL_Linux::init(int argc,char* const argv[]) const
     scheduler->init(NULL);
     gpio->init();
     rcout->init(NULL);
+    rcin->init(NULL);
     uartA->begin(115200);
     i2c->begin();
     spi->init(NULL);
