@@ -16,6 +16,7 @@
 #include <DataFlash.h>
 #include <AP_InertialSensor.h>
 #include <AP_Mission.h>
+#include <StorageManager.h>
 #include <AP_Terrain.h>
 #include <AP_ADC.h>
 #include <AP_ADC_AnalogSource.h>
@@ -76,7 +77,8 @@ void loop()
         timer = hal.scheduler->micros();
         barometer.read();
         uint32_t read_time = hal.scheduler->micros() - timer;
-        if (!barometer.healthy) {
+        float alt = barometer.get_altitude();
+        if (!barometer.healthy()) {
             hal.console->println("not healthy");
             return;
         }
@@ -85,7 +87,7 @@ void loop()
         hal.console->print(" Temperature:");
         hal.console->print(barometer.get_temperature());
         hal.console->print(" Altitude:");
-        hal.console->print(barometer.get_altitude());
+        hal.console->print(alt);
         hal.console->printf(" climb=%.2f t=%u samples=%u",
                       barometer.get_climb_rate(),
                       (unsigned)read_time,

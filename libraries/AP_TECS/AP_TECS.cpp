@@ -1,4 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include "AP_TECS.h"
 #include <AP_HAL.h>
@@ -117,7 +117,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
     // @User: User
     AP_GROUPINFO("LAND_ARSPD", 12, AP_TECS, _landAirspeed, -1),
 
-    // @Param; LAND_THR
+    // @Param: LAND_THR
     // @DisplayName: Cruise throttle during landing approach (percentage)
     // @Description: Use this parameter instead of LAND_ASPD if your platform does not have an airspeed sensor.  It is the cruise throttle during landing approach.  If it is negative if TECS_LAND_ASPD is in use then this value is not used during landing.
     // @Range: -1 to 100
@@ -148,6 +148,14 @@ const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
 	// @Increment: 1
 	// @User: Advanced
     AP_GROUPINFO("PITCH_MIN", 16, AP_TECS, _pitch_min, 0),
+
+    // @Param: LAND_SINK
+    // @DisplayName: Sink rate for final landing stage
+    // @Description: The sink rate in meters/second for the final stage of landing.
+	// @Range: 0.0 to 2.0
+	// @Increment: 0.1
+	// @User: Advanced
+    AP_GROUPINFO("LAND_SINK", 17, AP_TECS, _land_sink, 0.25f),
 
     AP_GROUPEND
 };
@@ -353,6 +361,12 @@ void AP_TECS::_update_height_demand(void)
 	_hgt_dem_adj = 0.05f * _hgt_dem + 0.95f * _hgt_dem_adj_last;
     _hgt_rate_dem = (_hgt_dem_adj - _hgt_dem_adj_last) / 0.1f;
 	_hgt_dem_adj_last = _hgt_dem_adj;
+
+    // in final landing stage force height rate demand to the
+    // configured sink rate
+	if (_flight_stage == FLIGHT_LAND_FINAL) {
+        _hgt_rate_dem = - _land_sink;
+	}
 }
 
 void AP_TECS::_detect_underspeed(void) 

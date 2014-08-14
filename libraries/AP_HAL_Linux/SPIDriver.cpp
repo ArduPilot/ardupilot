@@ -23,13 +23,18 @@ extern const AP_HAL::HAL& hal;
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLE
 LinuxSPIDeviceDriver LinuxSPIDeviceManager::_device[LINUX_SPI_DEVICE_NUM_DEVICES] = {
     // different SPI tables per board subtype
-    LinuxSPIDeviceDriver(0, AP_HAL::SPIDevice_LSM9DS0_AM, SPI_MODE_3, 8, BBB_P9_17,  10*MHZ,10*MHZ),
-    LinuxSPIDeviceDriver(0, AP_HAL::SPIDevice_LSM9DS0_G,  SPI_MODE_3, 8, BBB_P8_9,   10*MHZ,10*MHZ),
-    LinuxSPIDeviceDriver(1, AP_HAL::SPIDevice_MS5611,     SPI_MODE_3, 8, BBB_P9_42,  6*MHZ, 6*MHZ),
-    LinuxSPIDeviceDriver(1, AP_HAL::SPIDevice_MPU6000,    SPI_MODE_3, 8, BBB_P9_28,  500*1000, 20*MHZ),
+    LinuxSPIDeviceDriver(1, AP_HAL::SPIDevice_LSM9DS0_AM, SPI_MODE_3, 8, BBB_P9_17,  10*MHZ,10*MHZ),
+    LinuxSPIDeviceDriver(1, AP_HAL::SPIDevice_LSM9DS0_G,  SPI_MODE_3, 8, BBB_P8_9,   10*MHZ,10*MHZ),
+    LinuxSPIDeviceDriver(2, AP_HAL::SPIDevice_MS5611,     SPI_MODE_3, 8, BBB_P9_42,  6*MHZ, 6*MHZ),
+    LinuxSPIDeviceDriver(2, AP_HAL::SPIDevice_MPU6000,    SPI_MODE_3, 8, BBB_P9_28,  500*1000, 20*MHZ),
     /* MPU9250 is restricted to 1MHz for non-data and interrupt registers */
-    LinuxSPIDeviceDriver(1, AP_HAL::SPIDevice_MPU9250,    SPI_MODE_3, 8, BBB_P9_23,  1*MHZ, 20*MHZ),
-    LinuxSPIDeviceDriver(1, AP_HAL::SPIDevice_Dataflash,  SPI_MODE_3, 8, BBB_P8_12,  6*MHZ, 6*MHZ),
+    LinuxSPIDeviceDriver(2, AP_HAL::SPIDevice_MPU9250,    SPI_MODE_3, 8, BBB_P9_23,  1*MHZ, 20*MHZ),
+    LinuxSPIDeviceDriver(2, AP_HAL::SPIDevice_Dataflash,  SPI_MODE_3, 8, BBB_P8_12,  6*MHZ, 6*MHZ),
+};
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
+LinuxSPIDeviceDriver LinuxSPIDeviceManager::_device[LINUX_SPI_DEVICE_NUM_DEVICES] = {
+    /* MPU9250 is restricted to 1MHz for non-data and interrupt registers */
+    LinuxSPIDeviceDriver(0, AP_HAL::SPIDevice_MPU9250, SPI_MODE_3, 8, RPI_GPIO_7,  1*MHZ, 16*MHZ),
 };
 #else
 // empty device table
@@ -44,12 +49,12 @@ LinuxSPIDeviceDriver::LinuxSPIDeviceDriver(uint8_t bus, enum AP_HAL::SPIDevice t
     _bus(bus),
     _type(type),
     _mode(mode),
-    _bitsPerWord(bitsPerWord),    
+    _bitsPerWord(bitsPerWord),
     _lowspeed(lowspeed),
     _highspeed(highspeed),
     _speed(highspeed),
     _cs_pin(cs_pin)
-{    
+{
 }
 
 void LinuxSPIDeviceDriver::init()
@@ -108,7 +113,7 @@ void LinuxSPIDeviceManager::init(void *)
 {
     char path[] = "/dev/spidevN.0";
     for (uint8_t i=0; i<LINUX_SPI_NUM_BUSES; i++) {
-        path[11] = '1' + i;
+        path[11] = '0' + i;
         _fd[i] = open(path, O_RDWR);
         if (_fd[i] == -1) {
             hal.scheduler->panic("SPIDriver: unable to open SPI bus");
@@ -192,7 +197,7 @@ void LinuxSPIDeviceManager::transaction(LinuxSPIDeviceDriver &driver, const uint
         // keep valgrind happy
         memset(rx, 0, len);
     }
- 
+
     ioctl(_fd[driver._bus], SPI_IOC_MESSAGE(1), &spi);
     cs_release(driver._type);
 }

@@ -4,7 +4,11 @@
 #include <AP_HAL.h>
 const extern AP_HAL::HAL& hal;
 
-AP_InertialSensor_HIL::AP_InertialSensor_HIL() : AP_InertialSensor() {
+AP_InertialSensor_HIL::AP_InertialSensor_HIL() :
+    AP_InertialSensor(),
+    _sample_period_usec(0),
+    _last_sample_usec(0)
+{
     _accel[0] = Vector3f(0, 0, -GRAVITY_MSS);
 }
 

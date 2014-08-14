@@ -28,11 +28,31 @@ static void adjust_altitude_target()
         control_mode == CRUISE) {
         return;
     }
-    if (nav_controller->reached_loiter_target() || (wp_distance <= 30) || (wp_totalDistance<=30)) {
+    if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
+        // in land final TECS uses TECS_LAND_SINK as a target sink
+        // rate, and ignores the target altitude
+        set_target_altitude_location(next_WP_loc);
+    } else if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
+        // in land approach use a linear glide slope to the flare point
+        Location loc = next_WP_loc;
+        float flare_distance = gps.ground_speed() * g.land_flare_sec;
+        loc.alt += g.land_flare_alt*100;
+        if (flare_distance >= wp_distance || 
+            flare_distance >= wp_totalDistance || 
+            location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
+            set_target_altitude_location(loc);
+        } else {
+            set_target_altitude_proportion(next_WP_loc, 
+                                           (wp_distance-flare_distance) / (wp_totalDistance-flare_distance));
+        }
+        // stay within the range of the start and end locations in altitude
+        constrain_target_altitude_location(next_WP_loc, prev_WP_loc);
+    } else if (nav_controller->reached_loiter_target() || (wp_distance <= 30) || (wp_totalDistance<=30)) {
         // once we reach a loiter target then lock to the final
         // altitude target
         set_target_altitude_location(next_WP_loc);
-    } else if (target_altitude.offset_cm != 0) {
+    } else if (target_altitude.offset_cm != 0 && 
+               !location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
         // control climb/descent rate
         set_target_altitude_proportion(next_WP_loc, (float)(wp_distance-30) / (float)(wp_totalDistance-30));
 
@@ -396,6 +416,28 @@ static void setup_terrain_target_alt(Location &loc)
 static int32_t adjusted_altitude_cm(void)
 {
     return current_loc.alt - (g.alt_offset*100);
+}
+
+/*
+  return the height in meters above the next_WP_loc altitude
+ */
+static float height_above_target(void)
+{
+    float target_alt = next_WP_loc.alt*0.01;
+    if (!next_WP_loc.flags.relative_alt) {
+        target_alt -= ahrs.get_home().alt*0.01;
+    }
+
+#if AP_TERRAIN_AVAILABLE
+    // also record the terrain altitude if possible
+    float terrain_altitude;
+    if (next_WP_loc.flags.terrain_alt && 
+        terrain.height_above_terrain(terrain_altitude, true)) {
+        return terrain_altitude - target_alt;
+    }
+#endif
+
+    return (adjusted_altitude_cm()*0.01f - ahrs.get_home().alt*0.01f) - target_alt;
 }
 
 /*

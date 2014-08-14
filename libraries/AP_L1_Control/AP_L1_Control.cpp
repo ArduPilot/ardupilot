@@ -169,6 +169,9 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 	// if too small
 	if (AB.length() < 1.0e-6f) {
 		AB = location_diff(_current_loc, next_WP);
+        if (AB.length() < 1.0e-6f) {
+            AB = Vector2f(cosf(_ahrs.yaw), sinf(_ahrs.yaw));
+        }
 	}
 	AB.normalize();
 
