@@ -10,7 +10,14 @@
 class AP_Baro
 {
 public:
-    AP_Baro() {
+    AP_Baro() :
+        _last_update(0),
+        _pressure_samples(0),
+        _altitude(0.0f),
+        _last_altitude_EAS2TAS(0.0f),
+        _EAS2TAS(0.0f),
+        _last_altitude_t(0)
+    {
         // initialise flags
         _flags.healthy = false;
         _flags.alt_ok = false;
