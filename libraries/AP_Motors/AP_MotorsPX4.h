@@ -14,6 +14,7 @@
 #include <uORB/topics/actuator_controls.h>
 #include <uORB/topics/actuator_armed.h>
 #include <uORB/topics/multirotor_motor_limits.h>
+#include <uORB/topics/test_motor.h>
 
 #include <systemlib/mixer/mixer.h>
 
@@ -74,14 +75,18 @@ protected:
     virtual void        output_armed();
     virtual void        output_disarmed();
 
-    // PX4 ORB-related structs
+    // published ORB topics
     orb_advert_t        _actuators_0_pub;               /**< actuator control group 0 setpoint */
     orb_advert_t        _armed_pub;
-    multirotor_motor_limits_s _new_limits;
-    int                 _limits_sub;
+	orb_advert_t        _test_motor_pub;
 
     struct actuator_controls_s _actuators;             /**< actuator control inputs */
     struct actuator_armed_s _armed;
+	struct test_motor_s _test_motor;
+
+    // subscribed ORB topics
+    int                 _limits_sub;
+    struct multirotor_motor_limits_s _new_limits;
 
 private:
     bool                _old_armed;

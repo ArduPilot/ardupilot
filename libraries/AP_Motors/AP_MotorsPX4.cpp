@@ -310,5 +310,17 @@ void AP_MotorsPX4::output_disarmed()
 //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
 void AP_MotorsPX4::output_test(uint8_t motor_seq, int16_t pwm)
 {
-    // @TODO: define interface for motor testing - not possible yet
+    float power = (pwm - 1000.f)/1000.f;
+
+	_test_motor.motor_number = motor_seq-1;
+	_test_motor.timestamp = hrt_absolute_time();
+	_test_motor.value = power;
+	
+    if (_test_motor_pub > 0) {
+   	    /* publish armed state */
+        orb_publish(ORB_ID(test_motor), _test_motor_pub, &_test_motor);
+    } else {
+        /* advertise and publish */
+        _test_motor_pub = orb_advertise(ORB_ID(test_motor), &_test_motor);
+    }
 }
