@@ -28,7 +28,7 @@ static inline u32 read_PIEP_COUNT(void)
 }
 
 uint32_t read_pin(void){
-    return ((__R31&(1<<15)) != 0)    ;
+    return ((__R31&(1<<15)) != 0);
 }
 
 void main()
@@ -64,7 +64,7 @@ void main()
         uint32_t delta_time_us = now - last_time_us;
         last_time_us = now;
 
-        add_to_ring_buffer(v, delta_time_us);
+        add_to_ring_buffer(last_pin_value, delta_time_us);
         last_pin_value = v;
      }
 }
