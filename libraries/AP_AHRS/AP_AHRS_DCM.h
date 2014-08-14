@@ -27,8 +27,30 @@ public:
     // Constructors
     AP_AHRS_DCM(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps) :
     AP_AHRS(ins, baro, gps),
-        _last_declination(0),
-        _mag_earth(1,0)
+        _omega_I_sum_time(0.0f),
+        _renorm_val_sum(0.0f),
+        _renorm_val_count(0),
+        _error_rp_sum(0.0f),
+        _error_rp_count(0),
+        _error_rp_last(0.0f),
+        _error_yaw_sum(0.0f),
+        _error_yaw_count(0),
+        _error_yaw_last(0.0f),
+        _gps_last_update(0),
+        _ra_deltat(0.0f),
+        _ra_sum_start(0),
+        _last_declination(0.0f),
+        _mag_earth(1,0),
+        _have_gps_lock(false),
+        _last_lat(0),
+        _last_lng(0),
+        _position_offset_north(0.0f),
+        _position_offset_east(0.0f),
+        _have_position(false),
+        _last_wind_time(0),
+        _last_airspeed(0.0f),
+        _last_consistent_heading(0),
+        _last_failure_ms(0)
     {
         _dcm_matrix.identity();
 

@@ -60,7 +60,7 @@ test_baro(uint8_t argc, const Menu::arg *argv)
         delay(100);
         alt = read_barometer();
 
-        if (!barometer.healthy) {
+        if (!barometer.healthy()) {
             cliSerial->println_P(PSTR("not healthy"));
         } else {
             cliSerial->printf_P(PSTR("Alt: %0.2fm, Raw: %f Temperature: %.1f\n"),

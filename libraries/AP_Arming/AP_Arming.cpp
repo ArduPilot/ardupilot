@@ -77,7 +77,7 @@ bool AP_Arming::barometer_checks(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_BARO)) {
-        if (! barometer.healthy) {
+        if (! barometer.healthy()) {
             if (report) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Baro not healthy!"));
             }

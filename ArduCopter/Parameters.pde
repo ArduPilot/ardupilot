@@ -586,6 +586,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(acro_trainer,   "ACRO_TRAINER",     ACRO_TRAINER_LIMITED),
 
+    // @Param: ACRO_EXPO
+    // @DisplayName: Acro Expo
+    // @Description: Acro roll/pitch Expo to allow faster rotation when stick at edges
+    // @Values: 0:Disabled,0.2:Low,0.3:Medium,0.4:High
+    // @User: Advanced
+    GSCALAR(acro_expo,  "ACRO_EXPO",    ACRO_EXPO_DEFAULT),
+
     // PID controller
     //---------------
 

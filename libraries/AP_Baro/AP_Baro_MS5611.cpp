@@ -340,12 +340,12 @@ bool AP_Baro_MS5611::init()
         if (hal.scheduler->millis() - tstart > 1000) {
             hal.scheduler->panic(PSTR("PANIC: AP_Baro_MS5611 took more than "
                         "1000ms to initialize"));
-            healthy = false;
+            _flags.healthy = false;
             return false;
         }
     }
 
-    healthy = true;
+    _flags.healthy = true;
     return true;
 }
 

@@ -199,6 +199,10 @@
  # define THR_SURFACE_TRACKING_VELZ_MAX 150 // max vertical speed change while surface tracking with sonar
 #endif
 
+#ifndef SONAR_TIMEOUT_MS
+ # define SONAR_TIMEOUT_MS  1000            // desired sonar alt will reset to current sonar alt after this many milliseconds without a good sonar alt
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // Channel 7 and 8 default options
 //
@@ -490,6 +494,10 @@
 
 #ifndef ACRO_BALANCE_PITCH
  #define ACRO_BALANCE_PITCH         1.0f
+#endif
+
+#ifndef ACRO_EXPO_DEFAULT
+ #define ACRO_EXPO_DEFAULT          0.3f
 #endif
 
 // Stabilize (angle controller) gains

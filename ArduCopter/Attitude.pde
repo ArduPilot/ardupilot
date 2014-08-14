@@ -234,7 +234,7 @@ static float get_throttle_surface_tracking(int16_t target_rate, float current_al
     uint32_t now = millis();
 
     // reset target altitude if this controller has just been engaged
-    if( now - last_call_ms > 200 ) {
+    if (now - last_call_ms > SONAR_TIMEOUT_MS) {
         target_sonar_alt = sonar_alt + current_alt_target - current_loc.alt;
     }
     last_call_ms = now;
