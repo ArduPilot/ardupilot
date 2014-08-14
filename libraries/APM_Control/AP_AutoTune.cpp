@@ -150,8 +150,10 @@ void AP_AutoTune::start(void)
  */
 void AP_AutoTune::stop(void)
 {
-    running = false;
-    save_gains(restore);
+    if (running) {
+        running = false;
+        save_gains(restore);
+    }
 }
 
 
