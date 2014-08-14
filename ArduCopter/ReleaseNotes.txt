@@ -1,5 +1,21 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.2-rc5 15-Aug-2014
+Changes from 3.2-rc4 
+1) Pixhawk's max num waypoints increased to 718
+2) Smoother take-off in AltHold, Loiter, PosHold (including removing initial 20cm jump when taking off)
+3) ACRO mode roll, pitch, yaw EXPO added for faster rotation when sticks are at extremes (see ACRO_EXPO parameter)
+4) ch7/ch8 relay option replaces ch6 option (ch6 is reserved for tuning not switching things on/off)
+5) Safety Items:
+    a) Baro glitch check relaxed to 5m distance, 15m/s/s max acceleration
+    b) EKF/INav check relaxed to 80cm/s/s acceleration correct (default remains as 0.6 but this now means 80cm/s/s)
+    c) When GPS or Baro glitch clears, the inertial nav velocities are *not* reset reducing chance of sudden vehicle lean
+    d) Baro altitude calculation checked for divide-by-zero and infinity
+6) Bug Fixes:
+    a) AltHold jump bug fixed (altitude target reset when landed)
+    b) Rally point bug fix so it does not climb excessively before flying to rally point
+    c) body-frame rate controller z-axis bug fix (fast rotation in z-axis would cause wobble in roll, pitch) 
+------------------------------------------------------------------
 ArduCopter 3.2-rc4 01-Aug-2014
 Changes from 3.2-rc3
 1) Pre-takeoff throttle feedback in AltHold, Loiter, PosHold
