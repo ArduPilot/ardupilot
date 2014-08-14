@@ -65,6 +65,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Units: seconds
     // @Increment: 0.1
     // @Range: 0 20
+    // @User: Standard
     GSCALAR(yaw_slew_time,          "YAW_SLEW_TIME",    2),
 
     // @Param: PITCH_SLEW_TIME
@@ -73,6 +74,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Units: seconds
     // @Increment: 0.1
     // @Range: 0 20
+    // @User: Standard
     GSCALAR(pitch_slew_time,        "PITCH_SLEW_TIME",  2),
 
     // @Param: SCAN_SPEED
@@ -81,6 +83,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Units: degrees/second
     // @Increment: 1
     // @Range: 0 100
+    // @User: Standard
     GSCALAR(scan_speed,             "SCAN_SPEED",      5),
 
     // @Param: MIN_REVERSE_TIME
@@ -89,6 +92,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Units: seconds
     // @Increment: 1
     // @Range: 0 20
+    // @User: Standard
     GSCALAR(min_reverse_time,       "MIN_REVERSE_TIME",  1),
 
     // @Param: START_LATITUDE
@@ -97,6 +101,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Units: degrees
     // @Increment: 0.000001
     // @Range: -90 90
+    // @User: Standard
     GSCALAR(start_latitude,         "START_LATITUDE",   0),
 
     // @Param: START_LONGITUDE
@@ -105,6 +110,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Units: degrees
     // @Increment: 0.000001
     // @Range: -180 180
+    // @User: Standard
     GSCALAR(start_longitude,        "START_LONGITUDE",  0),
 
     // @Param: STARTUP_DELAY
@@ -113,6 +119,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Units: seconds
     // @Increment: 0.1
     // @Range: 0 10
+    // @User: Standard
     GSCALAR(startup_delay,          "STARTUP_DELAY",   0),
 
     // @Param: PROXY_MODE
@@ -121,12 +128,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Units: boolean
     // @Increment: 1
     // @Range: 0 1
+    // @User: Standard
     GSCALAR(proxy_mode,          "PROXY_MODE",   0),
 
     // @Param: SERVO_TYPE
     // @DisplayName: Type of servo system being used
     // @Description: This allows selection of position servos or on/off servos
     // @Values: Position:0,OnOff:1
+    // @User: Standard
     GSCALAR(servo_type,          "SERVO_TYPE",   SERVO_TYPE_POSITION),
 
     // @Param: ONOFF_YAW_RATE
@@ -135,6 +144,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Units: degrees/second
     // @Increment: 0.1
     // @Range: 0 50
+    // @User: Standard
     GSCALAR(onoff_yaw_rate,      "ONOFF_YAW_RATE", 9.0f),
 
     // @Param: ONOFF_PITCH_RATE
@@ -143,6 +153,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Units: degrees/second
     // @Increment: 0.1
     // @Range: 0 50
+    // @User: Standard
     GSCALAR(onoff_pitch_rate,      "ONOFF_PITCH_RATE", 1.0f),
 
     // @Param: ONOFF_YAW_MINT
@@ -151,6 +162,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Units: seconds
     // @Increment: 0.01
     // @Range: 0 2
+    // @User: Standard
     GSCALAR(onoff_yaw_mintime,     "ONOFF_YAW_MINT", 0.1f),
 
     // @Param: ONOFF_PITCH_MINT
@@ -159,6 +171,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Units: seconds
     // @Increment: 0.01
     // @Range: 0 2
+    // @User: Standard
     GSCALAR(onoff_pitch_mintime,   "ONOFF_PITCH_MINT", 0.1f),
 
     // @Param: YAW_TRIM
@@ -167,6 +180,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Units: degrees
     // @Increment: 0.1
     // @Range: -10 10
+    // @User: Standard
     GSCALAR(yaw_trim,              "YAW_TRIM", 0),
 
     // @Param: PITCH_TRIM
@@ -175,6 +189,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Units: degrees
     // @Increment: 0.1
     // @Range: -10 10
+    // @User: Standard
     GSCALAR(pitch_trim,              "PITCH_TRIM", 0),
 
     // barometer ground calibration. The GND_ prefix is chosen for
