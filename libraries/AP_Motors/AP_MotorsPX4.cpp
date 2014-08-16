@@ -209,7 +209,6 @@ void AP_MotorsPX4::publish_controls()
         /* advertise and publish */
         _actuators_0_pub = orb_advertise(ORB_ID(actuator_controls_0), &_actuators);
     }
-    printf("pc");
 }
 
 
@@ -295,11 +294,7 @@ void AP_MotorsPX4::output_armed()
         _actuators.control[1] = _rc_pitch.servo_out / 4500.;    // pitch,       [-1..1]
         _actuators.control[2] = _rc_yaw.servo_out / 4500.;      // yaw,         [-1..1]
         _actuators.control[3] = _rc_throttle.servo_out / 1000.; // throttle,    [0..1]
-//    	printf("x0:%d  x1:%d  x2:%d  x3:%d\n", _rc_roll.servo_out, _rc_pitch.servo_out, _rc_yaw.servo_out, _rc_throttle.servo_out);
     }
-
-//    printf("rp:%d y:%d tl:%d tu:%d\n", limit.roll_pitch, limit.yaw, limit.throttle_lower, limit.throttle_upper);
-
     publish_armed();
     publish_controls();
 }
@@ -328,5 +323,23 @@ void AP_MotorsPX4::output_test(uint8_t motor_seq, int16_t pwm)
     } else {
         /* advertise and publish */
         _test_motor_pub = orb_advertise(ORB_ID(test_motor), &_test_motor);
+    }
+}
+
+
+// throttle_pass_through - passes pilot's throttle input directly to all motors - dangerous but used for initialising ESCs
+void AP_MotorsPX4::throttle_pass_through()
+{
+    if (armed()) {
+        // send the pilot's input directly to each enabled motor
+        for (int16_t i=0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
+            _actuators.control[0] = 0.;
+            _actuators.control[1] = 0.;
+            _actuators.control[2] = 0.;
+            _actuators.control[3] = (_rc_throttle.radio_in-1000) / 1000.;
+            _actuators.timestamp = hrt_absolute_time();
+            publish_armed();
+            publish_controls(); // not really useful, but keeps PX4IO happy (prevents FMU_FAIL flag / flashing amber LED)            }
+        }
     }
 }

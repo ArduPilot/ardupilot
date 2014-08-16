@@ -55,6 +55,9 @@ public:
     // get_motor_mask - returns a bitmask of which outputs are being used for motors
     virtual uint16_t    get_motor_mask();
 
+    // throttle_pass_through - passes pilot's throttle input directly to all motors - dangerous but used for initialising ESCs
+    virtual void        throttle_pass_through();
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
