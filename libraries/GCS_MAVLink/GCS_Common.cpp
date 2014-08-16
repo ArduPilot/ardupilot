@@ -981,7 +981,7 @@ void GCS_MAVLINK::send_system_time(AP_GPS &gps)
 /*
   send RC_CHANNELS_RAW, and RC_CHANNELS messages
  */
-void GCS_MAVLINK::send_radio_in(const RCMapper &rcmap, uint8_t receiver_rssi)
+void GCS_MAVLINK::send_radio_in(uint8_t receiver_rssi)
 {
     uint32_t now = hal.scheduler->millis();
 
@@ -993,10 +993,10 @@ void GCS_MAVLINK::send_radio_in(const RCMapper &rcmap, uint8_t receiver_rssi)
         chan,
         now,
         0, // port
-        values[rcmap.roll()-1],
-        values[rcmap.pitch()-1],
-        values[rcmap.throttle()-1],
-        values[rcmap.yaw()-1],
+        values[0],
+        values[1],
+        values[2],
+        values[3],
         values[4],
         values[5],
         values[6],
