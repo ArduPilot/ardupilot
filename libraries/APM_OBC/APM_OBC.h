@@ -62,7 +62,7 @@ public:
             _saved_wp = 0;
         }
 
-    void check(enum control_mode control_mode, uint32_t last_heartbeat_ms);
+    void check(enum control_mode control_mode, uint32_t last_heartbeat_ms, bool geofence_breached);
 
     // called in servo output code to set servos to crash position if needed
     void check_crash_plane(void);

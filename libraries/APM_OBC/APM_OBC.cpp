@@ -102,19 +102,16 @@ const AP_Param::GroupInfo APM_OBC::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
-// access to geofence state
-extern bool geofence_breached(void);
-
 // check for Failsafe conditions. This is called at 10Hz by the main
 // ArduPlane code
 void
-APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms)
+APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms, bool geofence_breached)
 {    
     if (!_enable) {
         return;
     }
     // we always check for fence breach
-    if (geofence_breached() || check_altlimit()) {
+    if (geofence_breached || check_altlimit()) {
         if (!_terminate) {
             GCS_MAVLINK::send_statustext_all(PSTR("Fence TERMINATE"));
             _terminate.set(1);
