@@ -29,7 +29,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#define FRAME_CONFIG_COUNT 5
+#define FRAME_CONFIG_COUNT 20
 #define FRAME_NAME_MAXLEN  20
 
 #define MIXER_DIR_PREFIX    "/etc/mixers"
@@ -43,7 +43,7 @@ const AP_Param::GroupInfo AP_MotorsPX4::var_info[] PROGMEM = {
     // @DisplayName: Frame layout
     // @Description: Frame layout. A suitable mixer configuration file is chosen by this parameter, together with orientation configured by FRAME.
     // @User: Advanced
-    // @Values: 0:Quad,1:Hexa,2:Octo,3:Hexa-coax,4:Octo-coax
+    // @Values: 0:Quad,1:Hexa,2:Octo,3:Hexa-coax,4:Octo-coax,16:custom0,17:custom1,18:custom2,19:custom3
     AP_GROUPINFO("LAYOUT", 0, AP_MotorsPX4, _frame_layout, AP_MOTORS_FRAME_LAYOUT),
 
     // @Param: OUTDEV
@@ -83,11 +83,16 @@ void AP_MotorsPX4::Init()
 bool AP_MotorsPX4::load_mixer()
 {
     char mixer_names[FRAME_CONFIG_COUNT][FRAME_NAME_MAXLEN] = {
-        "quad",
-        "hex",
-        "octo",
-        "hexa_cox",
-        "octo_cox",
+        "quad",         // LAYOUT = 0
+        "hex",          // LAYOUT = 1
+        "octo",         // LAYOUT = 2
+        "hexa_cox",     // LAYOUT = 3
+        "octo_cox",     // LAYOUT = 4
+        "", "", "", "", "", "", "", "", "", "", "",
+        "custom0",      // LAYOUT = 16
+        "custom1",      // LAYOUT = 17
+        "custom2",      // LAYOUT = 18
+        "custom3",      // LAYOUT = 19
     };
 
     // mixer config file name depending on configuration
@@ -204,6 +209,7 @@ void AP_MotorsPX4::publish_controls()
         /* advertise and publish */
         _actuators_0_pub = orb_advertise(ORB_ID(actuator_controls_0), &_actuators);
     }
+    printf("pc");
 }
 
 
