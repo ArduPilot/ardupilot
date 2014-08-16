@@ -318,9 +318,9 @@ bool AP_AHRS_NavEKF::initialised(void) const
 };
 
 // write optical flow data to EKF
-void  AP_AHRS_NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, float &rawSonarRange, uint32_t &msecFlowMeas)
+void  AP_AHRS_NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, float &rawSonarRange, uint32_t &msecFlowMeas)
 {
-    EKF.writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawSonarRange, msecFlowMeas);
+    EKF.writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, rawSonarRange, msecFlowMeas);
 }
 #endif // AP_AHRS_NAVEKF_AVAILABLE
 
