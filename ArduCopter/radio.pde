@@ -95,24 +95,27 @@ void output_min()
     motors.output_min();
 }
 
+#define in_ch(i) RC_Channel::rc_channel(i-1)
+
 static void read_radio()
 {
     static uint32_t last_update = 0;
     if (hal.rcin->new_input()) {
         last_update = millis();
         ap.new_radio_frame = true;
-        uint16_t periods[8];
-        hal.rcin->read(periods,8);
-        g.rc_1.set_pwm(periods[rcmap.roll()-1]);
-        g.rc_2.set_pwm(periods[rcmap.pitch()-1]);
 
-        set_throttle_and_failsafe(periods[rcmap.throttle()-1]);
+        RC_Channel::set_pwm_all();
 
-        g.rc_4.set_pwm(periods[rcmap.yaw()-1]);
-        g.rc_5.set_pwm(periods[4]);
-        g.rc_6.set_pwm(periods[5]);
-        g.rc_7.set_pwm(periods[6]);
-        g.rc_8.set_pwm(periods[7]);
+        g.rc_1.set_pwm(in_ch(rcmap.roll())->read());
+        g.rc_2.set_pwm(in_ch(rcmap.pitch())->read());
+
+        set_throttle_and_failsafe(in_ch(rcmap.throttle())->read());
+
+        g.rc_4.set_pwm(in_ch(rcmap.yaw())->read());
+        g.rc_5.set_pwm(in_ch(5)->read());
+        g.rc_6.set_pwm(in_ch(6)->read());
+        g.rc_7.set_pwm(in_ch(7)->read());
+        g.rc_8.set_pwm(in_ch(8)->read());
 
         // flag we must have an rc receiver attached
         if (!failsafe.rc_override_active) {
