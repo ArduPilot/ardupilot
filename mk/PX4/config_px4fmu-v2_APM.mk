@@ -52,6 +52,7 @@ MODULES		+= systemcmds/tests
 MODULES		+= systemcmds/nshterm
 MODULES		+= systemcmds/auth
 MODULES         += systemcmds/mtd
+MODULES         += systemcmds/motor_test
 
 #
 # Library modules
