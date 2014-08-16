@@ -1206,9 +1206,13 @@ static void update_optical_flow(void)
     if (optflow.last_update() != last_of_update) {
         last_of_update = optflow.last_update();
         uint8_t quality = optflow.quality();
-        Vector2f raw = optflow.velocity();
+        Vector2f rawFlowRates = optflow.velocity();
+        Vector2i temp = optflow.raw();
+        Vector2f rawGyroRates;
+        rawGyroRates.x = 0.001f * float(temp.x);
+        rawGyroRates.y = 0.001f * float(temp.y);
         float ground_distance_m = optflow.ground_distance_m();
-        ahrs.writeOptFlowMeas(quality, raw, ground_distance_m, last_of_update);
+        ahrs.writeOptFlowMeas(quality, rawFlowRates, rawGyroRates, ground_distance_m, last_of_update);
          if (g.log_bitmask & MASK_LOG_OPTFLOW) {
             Log_Write_Optflow();
         }
