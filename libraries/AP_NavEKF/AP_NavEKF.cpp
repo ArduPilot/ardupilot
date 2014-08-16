@@ -3904,21 +3904,23 @@ void NavEKF::readAirSpdData()
 // this needs to be called externally.
 void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, float &rawSonarRange, uint32_t &msecFlowMeas)
 {
-    // The raw measurements need to be optical flow rates in radians/second, however they are currently output by the sensor as pixels over an internal sampling period
-    // A modified PX4flow firmware has been used which effectivly sets the range used to calculate the velocity internally within the px4flow sensor to unity
-    // so that the velocity outputs are in radians/sec
-    // This filter uses a different definition of optical flow rates to the sensor with a positive optical flow rate produced by a negative sensor rotation about that axis,
-    // hence the need to swap axes and signs.
+    // The raw measurements need to be optical flow rates in radians/second averaged across the time since the last update
+    // The PX4Flow sensor outputs flow rates with the following axis and sign conventions:
+    // A positive X rate is produced by a positive velocity over ground in the X direction
+    // A positive Y rate is produced by a positive velocity over ground in the Y direction
+    // This filter uses a different definition of optical flow rates to the sensor with a positive optical flow rate produced by a
+    // negative rotation about that axis. For example a positive rotation of the flight vehicle about its X (roll) axis would produce a negative X flow rate
     flowMeaTime_ms = msecFlowMeas;
     if (rawFlowQuality > 150){
         flowQuality = rawFlowQuality;
         // recall vehicle states at mid sample time for flow observations allowing for delays
         RecallStates(statesAtFlowTime, flowMeaTime_ms - _msecFLowDelay - flowTimeDeltaAvg_ms/2);
-        // recall angular rates averaged across flow observation period allowing for average 5 msec intersample delay
+        // recall angular rates averaged across flow observation period allowing for processing, transmission and intersample delays
         RecallOmega(omegaAcrossFlowTime, flowMeaTime_ms - flowTimeDeltaAvg_ms - _msecFLowDelay, flowMeaTime_ms - _msecFLowDelay);
-        // Try using flow sensor internal rates for motion compensation. These need to be de-biased
+        // calculate bias errors on flow sensor gyro rates
         flowGyroBias.x = 0.999f * flowGyroBias.x + 0.001f * (rawGyroRates.x - omegaAcrossFlowTime.x);
         flowGyroBias.y = 0.999f * flowGyroBias.y + 0.001f * (rawGyroRates.y - omegaAcrossFlowTime.y);
+        // correct flow sensor rates for bias
         omegaAcrossFlowTime.x = rawGyroRates.x - flowGyroBias.x;
         omegaAcrossFlowTime.y = rawGyroRates.y - flowGyroBias.y;
         // calculate rotation matrices at mid sample time for flow observations
@@ -3926,6 +3928,7 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
         q.rotation_matrix(Tbn_flow);
         Tnb_flow = Tbn_flow.transposed();
         // write uncorrected flow rate measurements that will be used by the focal length scale factor estimator
+        // note correction for different axis and sign conventions used by the px4flow sensor
         flowRadXY[0] = + rawFlowRates.y; // raw (non motion compensated) optical flow angular rate about the X axis (rad/sec)
         flowRadXY[1] = - rawFlowRates.x; // raw (non motion compensated) optical flow angular rate about the Y axis (rad/sec)
         // write flow rate measurements corrected for focal length scale factor errors and body rates
