@@ -157,9 +157,10 @@ public:
     // write the raw optical flow measurements
     // rawFlowQuality is a measured of quality between 0 and 255, with 255 being the best quality
     // rawFlowRates is the flow rate in radians per second. A positive ground relative velocity along the X axis produces positive raw X value, and similarly for the Y axis
+    // rawGyroRates are the sensor phsyical rotation rates measured by the internal gyro
     // rawSonarRange is the  range in metres measured by the px4flow sensor
     // msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
-    void  writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, float &rawSonarRange, uint32_t &msecFlowMeas);
+    void  writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, float &rawSonarRange, uint32_t &msecFlowMeas);
 
     // return data for debugging optical flow fusion
     void getFlowDebug(float &scaleFactor, float &obsX, float &obsY, float &innovX, float &innovY, float &gndPos, uint8_t &quality) const;
@@ -579,6 +580,7 @@ private:
     float auxFlowTestRatio[2];      // sum of squares of optical flow innovations divided by fail threshold used by aux filter
     float R_LOS;                    // variance of optical flow rate measurements (rad/sec)^2
     float auxRngTestRatio;          // square of range finder innovations divided by fail threshold used by main filter where >1.0 is a fail
+    Vector2f flowGyroBias;          // bias error of optical flow sensor gyro output
 
     // states held by optical flow fusion across time steps
     // optical flow X,Y motion compensated rate measurements are fused across two time steps

@@ -3525,8 +3525,8 @@ void NavEKF::getFlowDebug(float &scaleFactor, float &obsX, float &obsY, float &i
     scaleFactor = flowStates[0];
     obsX = flowRadXY[0];
     obsY = flowRadXY[1];
-    innovX = innovOptFlow[0];
-    innovY = innovOptFlow[1];
+    innovX = omegaAcrossFlowTime.x;//innovOptFlow[0];
+    innovY = omegaAcrossFlowTime.y;//innovOptFlow[1];
     gndPos = flowStates[1];
     quality = flowQuality;
 }
@@ -3902,7 +3902,7 @@ void NavEKF::readAirSpdData()
 
 // write the raw optical flow measurements
 // this needs to be called externally.
-void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, float &rawSonarRange, uint32_t &msecFlowMeas)
+void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, float &rawSonarRange, uint32_t &msecFlowMeas)
 {
     // The raw measurements need to be optical flow rates in radians/second, however they are currently output by the sensor as pixels over an internal sampling period
     // A modified PX4flow firmware has been used which effectivly sets the range used to calculate the velocity internally within the px4flow sensor to unity
@@ -3916,6 +3916,11 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, f
         RecallStates(statesAtFlowTime, flowMeaTime_ms - _msecFLowDelay - flowTimeDeltaAvg_ms/2);
         // recall angular rates averaged across flow observation period allowing for average 5 msec intersample delay
         RecallOmega(omegaAcrossFlowTime, flowMeaTime_ms - flowTimeDeltaAvg_ms - _msecFLowDelay, flowMeaTime_ms - _msecFLowDelay);
+        // Try using flow sensor internal rates for motion compensation. These need to be de-biased
+        flowGyroBias.x = 0.999f * flowGyroBias.x + 0.001f * (rawGyroRates.x - omegaAcrossFlowTime.x);
+        flowGyroBias.y = 0.999f * flowGyroBias.y + 0.001f * (rawGyroRates.y - omegaAcrossFlowTime.y);
+        omegaAcrossFlowTime.x = rawGyroRates.x - flowGyroBias.x;
+        omegaAcrossFlowTime.y = rawGyroRates.y - flowGyroBias.y;
         // calculate rotation matrices at mid sample time for flow observations
         Quaternion q(statesAtFlowTime.quat[0],statesAtFlowTime.quat[1],statesAtFlowTime.quat[2],statesAtFlowTime.quat[3]);
         q.rotation_matrix(Tbn_flow);
@@ -4184,6 +4189,8 @@ void NavEKF::ZeroVariables()
     fuseRngData = false;
     inhibitGndState = true;
     prevFlowFusionTime_ms = imuSampleTime_ms; // time the last flow measurement was fused
+    flowGyroBias.x = 0;
+    flowGyroBias.y = 0;
 }
 
 // return true if we should use the airspeed sensor
