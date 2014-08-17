@@ -975,7 +975,7 @@ static void obc_fs_check(void)
 {
 #if OBC_FAILSAFE == ENABLED
     // perform OBC failsafe checks
-    obc.check(OBC_MODE(control_mode), failsafe.last_heartbeat_ms, geofence_breached());
+    obc.check(OBC_MODE(control_mode), failsafe.last_heartbeat_ms, geofence_breached(), failsafe.last_valid_rc_ms);
 #endif
 }
 
