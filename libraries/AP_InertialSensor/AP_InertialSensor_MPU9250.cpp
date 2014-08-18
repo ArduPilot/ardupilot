@@ -294,6 +294,12 @@ bool AP_InertialSensor_MPU9250::update( void )
     _accel[0].rotate(ROTATION_ROLL_180_YAW_90);
     _gyro[0].rotate(ROTATION_ROLL_180_YAW_90);
 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
+    // PXF has an additional YAW 180
+    _accel[0].rotate(ROTATION_YAW_180);
+    _gyro[0].rotate(ROTATION_YAW_180);
+#endif
+
     Vector3f accel_scale = _accel_scale[0].get();
     _accel[0].x *= accel_scale.x;
     _accel[0].y *= accel_scale.y;
