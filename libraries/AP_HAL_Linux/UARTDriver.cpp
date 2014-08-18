@@ -193,7 +193,7 @@ void LinuxUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         if (_writebuf != NULL) {
             free(_writebuf);
         }
-        _writebuf = (uint8_t *)malloc(_writebuf_size+16);
+        _writebuf = (uint8_t *)malloc(_writebuf_size);
         _writebuf_head = 0;
         _writebuf_tail = 0;
     }
@@ -565,7 +565,7 @@ void LinuxUARTDriver::_timer_tick(void)
             // split into two writes
             uint16_t n1 = _writebuf_size - _writebuf_head;
             int ret = _write_fd(&_writebuf[_writebuf_head], n1);
-            if (ret == n1 && n != n1) {
+            if (ret == n1 && n > n1) {
                 _write_fd(&_writebuf[_writebuf_head], n - n1);                
             }
         }
@@ -583,7 +583,7 @@ void LinuxUARTDriver::_timer_tick(void)
             uint16_t n1 = _readbuf_size - _readbuf_tail;
             assert(_readbuf_tail+n1 <= _readbuf_size);
             int ret = _read_fd(&_readbuf[_readbuf_tail], n1);
-            if (ret == n1 && n != n1) {
+            if (ret == n1 && n > n1) {
                 assert(_readbuf_tail+(n-n1) <= _readbuf_size);
                 _read_fd(&_readbuf[_readbuf_tail], n - n1);                
             }
