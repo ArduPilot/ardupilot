@@ -158,24 +158,6 @@ extern const AP_HAL::HAL& hal;
 #define BITS_DLPF_CFG_2100HZ_NOLPF              0x07
 #define BITS_DLPF_CFG_MASK                              0x07
 
-
-// // TODO Remove
-// // Product ID Description for MPU6000
-// // high 4 bits  low 4 bits
-// // Product Name	Product Revision
-// #define MPU6000ES_REV_C4                        0x14    // 0001			0100
-// #define MPU6000ES_REV_C5                        0x15    // 0001			0101
-// #define MPU6000ES_REV_D6                        0x16    // 0001			0110
-// #define MPU6000ES_REV_D7                        0x17    // 0001			0111
-// #define MPU6000ES_REV_D8                        0x18    // 0001			1000
-// #define MPU6000_REV_C4                          0x54    // 0101			0100
-// #define MPU6000_REV_C5                          0x55    // 0101			0101
-// #define MPU6000_REV_D6                          0x56    // 0101			0110
-// #define MPU6000_REV_D7                          0x57    // 0101			0111
-// #define MPU6000_REV_D8                          0x58    // 0101			1000
-// #define MPU6000_REV_D9                          0x59    // 0101			1001
-
-
 /*
  *  PS-MPU-9250A-00.pdf, page 8, lists LSB sensitivity of
  *  gyro as 16.4 LSB/DPS at scale factor of +/- 2000dps (FS_SEL==3)
@@ -566,20 +548,6 @@ bool AP_InertialSensor_MPU9250::_hardware_init(Sample_rate sample_rate)
 
     _register_write(MPUREG_GYRO_CONFIG, BITS_GYRO_FS_2000DPS);  // Gyro scale 2000º/s
     hal.scheduler->delay(1);
-
-    // // read the product ID rev c has 1/2 the sensitivity of rev d
-    // _mpu6000_product_id = _register_read(MPUREG_PRODUCT_ID);
-    // //Serial.printf("Product_ID= 0x%x\n", (unsigned) _mpu6000_product_id);
-
-    // if ((_mpu6000_product_id == MPU6000ES_REV_C4) || (_mpu6000_product_id == MPU6000ES_REV_C5) ||
-    //     (_mpu6000_product_id == MPU6000_REV_C4)   || (_mpu6000_product_id == MPU6000_REV_C5)) {
-    //     // Accel scale 8g (4096 LSB/g)
-    //     // Rev C has different scaling than rev D
-    //     _register_write(MPUREG_ACCEL_CONFIG,1<<3);
-    // } else {
-    //     // Accel scale 8g (4096 LSB/g)
-    //     _register_write(MPUREG_ACCEL_CONFIG,2<<3);
-    // }
 
     // RM-MPU-9250A-00.pdf, pg. 15, select accel full scale 8g
     _register_write(MPUREG_ACCEL_CONFIG,2<<3);
