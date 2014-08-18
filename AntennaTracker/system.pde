@@ -71,6 +71,7 @@ static void init_tracker()
     init_barometer();
 
     hal.uartA->set_blocking_writes(false);
+    hal.uartB->set_blocking_writes(false);
     hal.uartC->set_blocking_writes(false);
 
     // setup antenna control PWM channels
