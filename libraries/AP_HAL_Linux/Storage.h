@@ -1,10 +1,18 @@
 #ifndef __AP_HAL_LINUX_STORAGE_H__
 #define __AP_HAL_LINUX_STORAGE_H__
 
-#if HAL_STORAGE == USE_FRAM
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLE || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
+#define LINUX_STORAGE_USE_FRAM 1
+#else
+#define LINUX_STORAGE_USE_FRAM 0
+#endif
+
+
+#if LINUX_STORAGE_USE_FRAM
 #include "Storage_FRAM.h"
 #else
 #include "Storage_FS.h"
 #endif
 
-#endif
+#endif // __AP_HAL_LINUX_STORAGE_H__
+
