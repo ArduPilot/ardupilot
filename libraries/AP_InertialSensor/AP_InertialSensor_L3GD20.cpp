@@ -177,7 +177,7 @@ uint16_t AP_InertialSensor_L3GD20::_init_sensor( Sample_rate sample_rate )
         // TODO: we should probably accept multiple chip
         // revisions. This is the one on the PXF
         hal.console->printf("L3GD20: unexpected WHOAMI 0x%x\n", (unsigned)whoami);
-        hal.scheduler->panic("L3GD20: bad WHOAMI");
+        hal.scheduler->panic(PSTR("L3GD20: bad WHOAMI"));
     }
 
     uint8_t tries = 0;

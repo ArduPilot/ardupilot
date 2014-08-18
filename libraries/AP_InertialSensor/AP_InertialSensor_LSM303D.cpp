@@ -217,7 +217,7 @@ uint16_t AP_InertialSensor_LSM303D::_init_sensor( Sample_rate sample_rate )
         // TODO: we should probably accept multiple chip
         // revisions. This is the one on the PXF
         hal.console->printf("LSM303D: unexpected WHOAMI 0x%x\n", (unsigned)whoami);
-        hal.scheduler->panic("LSM303D: bad WHOAMI");
+        hal.scheduler->panic(PSTR("LSM303D: bad WHOAMI"));
     }
 
     uint8_t tries = 0;
@@ -338,6 +338,8 @@ bool AP_InertialSensor_LSM303D::_data_ready()
     if (_drdy_pin_m && _drdy_pin_x) {
         return (_drdy_pin_m->read() && _drdy_pin_x->read()) != 0;
     }
+    // TODO: read status register
+    return false;
 }
 
 /**
