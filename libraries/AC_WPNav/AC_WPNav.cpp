@@ -195,9 +195,17 @@ void AC_WPNav::set_loiter_velocity(float velocity_cms)
 /// set_pilot_desired_acceleration - sets pilot desired acceleration from roll and pitch stick input
 void AC_WPNav::set_pilot_desired_acceleration(float control_roll, float control_pitch)
 {
-    // convert pilot input to desired acceleration in cm/s/s
-    _pilot_accel_fwd_cms = -control_pitch * _loiter_accel_cms / 4500.0f;
-    _pilot_accel_rgt_cms = control_roll * _loiter_accel_cms / 4500.0f;
+    float roll_unit = control_roll / (float) 4500.0;
+    float pitch_unit = control_pitch / (float) 4500.0;
+    float length = sqrt(roll_unit * roll_unit + pitch_unit * pitch_unit);
+    if (length > 1.0) {
+        roll_unit = roll_unit / length;
+        pitch_unit = pitch_unit / length;
+    }
+
+   // convert pilot input to desired acceleration in cm/s/s
+    _pilot_accel_fwd_cms = -pitch_unit * _loiter_accel_cms;
+    _pilot_accel_rgt_cms = roll_unit * _loiter_accel_cms;
 }
 
 /// get_loiter_stopping_point_xy - returns vector to stopping point based on a horizontal position and velocity
