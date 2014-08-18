@@ -3,7 +3,7 @@
 #define __AP_HAL_LINUX_RCOUTPUT_H__
 
 #include <AP_HAL_Linux.h>
-#define PRUSS_SHAREDRAM_BASE     0x4a310000
+#define RCOUT_PRUSS_SHAREDRAM_BASE     0x4a310000
 #define MAX_PWMS                 12
 #define PWM_CMD_MAGIC            0xf00fbaaf
 #define PWM_REPLY_MAGIC          0xbaaff00f
