@@ -18,13 +18,15 @@
 
 using namespace Linux;
 LinuxRCInput::LinuxRCInput() :
-new_rc_input(false)
+    new_rc_input(false),
+    _channel_counter(-1)
 {}
 
 void LinuxRCInput::init(void* machtnichts)
 {
     int mem_fd = open("/dev/mem", O_RDWR|O_SYNC);
-    ring_buffer = (volatile struct ring_buffer*) mmap(0, 0x1000, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, PRUSS_SHAREDRAM_BASE);
+    ring_buffer = (volatile struct ring_buffer*) mmap(0, 0x1000, PROT_READ|PROT_WRITE, 
+                                                      MAP_SHARED, mem_fd, RCIN_PRUSS_SHAREDRAM_BASE);
     close(mem_fd);
     ring_buffer->ring_head = 0;
 }
@@ -95,28 +97,63 @@ void LinuxRCInput::clear_overrides()
     }
 }
 
+
+/*
+  process a pulse of the given width
+ */
+void LinuxRCInput::_process_pulse(uint16_t width_usec)
+{
+    if (width_usec >= 4000) {
+        // a long pulse indicates the end of a frame. Reset the
+        // channel counter so next pulse is channel 0
+        if (_channel_counter != -1) {
+            new_rc_input = true;
+            _num_channels = _channel_counter;
+        }
+        _channel_counter = 0;
+        return;
+    }
+    if (_channel_counter == -1) {
+        // we are not synchronised
+        return;
+    }
+
+    // take a reading for the current channel
+    _pulse_capt[_channel_counter] = width_usec;
+
+    // move to next channel
+    _channel_counter++;
+
+    // if we have reached the maximum supported channels then
+    // mark as unsynchronised, so we wait for a wide pulse
+    if (_channel_counter >= LINUX_RC_INPUT_NUM_CHANNELS) {
+        new_rc_input = true;
+        _channel_counter = -1;
+        _num_channels = _channel_counter;
+    }
+}
+
+/*
+  called at 1kHz to check for new pulse capture data from the PRU
+ */
 void LinuxRCInput::_timer_tick()
 {
-    uint8_t channel_ctr;
-    uint16_t s1_time, s2_time;
-    //scan for the latest start pulse
-    while(ring_buffer->buffer[ring_buffer->ring_head].delta_t < 8000){
-        ring_buffer->ring_head = (ring_buffer->ring_head + 1) % NUM_RING_ENTRIES;
+    while (ring_buffer->ring_head != ring_buffer->ring_tail) {
+        if (ring_buffer->ring_tail >= NUM_RING_ENTRIES) {
+            // invalid ring_tail from PRU - ignore RC input
+            return;
+        }
+        if (ring_buffer->buffer[ring_buffer->ring_head].pin_value == 1) {
+            // remember the time we spent in the low state
+            _s0_time = ring_buffer->buffer[ring_buffer->ring_head].delta_t;
+        } else {
+            // the pulse value is the sum of the time spent in the low
+            // and high states
+            _process_pulse(ring_buffer->buffer[ring_buffer->ring_head].delta_t + _s0_time);
+        }
+        // move to the next ring buffer entry
+        ring_buffer->ring_head = (ring_buffer->ring_head + 1) % NUM_RING_ENTRIES;        
     }
-    for(channel_ctr = 0; channel_ctr < LINUX_RC_INPUT_NUM_CHANNELS; channel_ctr++){
-        ring_buffer->ring_head = (ring_buffer->ring_head + 2) % NUM_RING_ENTRIES;
-        //wait until we receive two pulse_width(State1 & State2) values inside buffer
-        while(ring_buffer->ring_head <= (ring_buffer->ring_tail));
-        s1_time = (uint32_t)ring_buffer->buffer[ring_buffer->ring_head - 1].delta_t;
-        s2_time = (uint32_t)ring_buffer->buffer[ring_buffer->ring_head].delta_t;
-        _pulse_capt[channel_ctr] = s1_time + s2_time;
-        if(_pulse_capt[channel_ctr] > RC_INPUT_MAX_PULSEWIDTH){
-            _pulse_capt[channel_ctr] = RC_INPUT_MAX_PULSEWIDTH;
-        }
-        else if(_pulse_capt[channel_ctr] < RC_INPUT_MIN_PULSEWIDTH){
-            _pulse_capt[channel_ctr] = RC_INPUT_MIN_PULSEWIDTH;
-        }
-    }    
 }
 
 #endif // CONFIG_HAL_BOARD
