@@ -24,6 +24,7 @@
 #include "AP_MotorsPX4.h"
 
 #include <drivers/drv_hrt.h>
+#include <drivers/drv_pwm_output.h>
 
 #include <fcntl.h>
 #include <stdio.h>
@@ -35,6 +36,9 @@
 #define MIXER_DIR_PREFIX    "/etc/mixers"
 #define MIXER_DEV_PWM       "/dev/pwm_output"
 #define MIXER_DEV_UAVCAN    "/dev/uavcan/esc"
+
+#define PWM_CHANNELS        8
+#define PWM_IDLE            1000
 
 extern const AP_HAL::HAL& hal;
 
@@ -70,6 +74,7 @@ void AP_MotorsPX4::Init()
     // load mixer config
     // @TODO: handle errors
     load_mixer();
+    setup_pwm();
 
     _limits_sub = orb_subscribe(ORB_ID(multirotor_motor_limits));
     if (_limits_sub == -1) {
@@ -160,6 +165,28 @@ failed:
     printf("Failed to load mixer %s into %s\n", mixer_name, mixer_device);
     close(devfd);
     return false;
+}
+
+
+bool AP_MotorsPX4::setup_pwm() 
+{
+    // in default configuration, the PX4IO stops to output any value if FMU is disarmed
+    // some ESCs refuse to start with anything but idle, so we output idle in disarmed
+    
+    int fd = open(MIXER_DEV_PWM, 0);
+    if (fd < 0) 
+        return false;
+
+    struct pwm_output_values pwm_values = {.values = {0}, .channel_count = PWM_CHANNELS};
+
+    for (unsigned i = 0; i < PWM_CHANNELS; i++) {
+        pwm_values.values[i] = PWM_IDLE;
+    }
+
+    int ret = ioctl(fd, PWM_SERVO_SET_DISARMED_PWM, (long unsigned int)&pwm_values);
+    return (ret == OK);
+
+    // we do not touch the default min and max values (1.000...2.000ms) currently
 }
 
 

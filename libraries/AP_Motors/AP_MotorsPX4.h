@@ -74,6 +74,9 @@ protected:
     // load mixer configuration
     bool load_mixer();
 
+    // setup PWM configuration
+    bool setup_pwm();
+
     // output - sends commands to the motors
     virtual void        output_armed();
     virtual void        output_disarmed();
