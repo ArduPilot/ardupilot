@@ -36,7 +36,8 @@ private:
         uint32_t periodhi[MAX_PWMS][2];
         uint32_t hilo_read[MAX_PWMS][2];
         uint32_t enmask_read;
-    }*sharedMem_cmd;
+    };
+    volatile struct pwm_cmd *sharedMem_cmd;
 
 };
 

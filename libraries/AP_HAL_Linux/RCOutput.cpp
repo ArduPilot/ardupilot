@@ -37,14 +37,19 @@ void LinuxRCOutput::init(void* machtnicht)
     sharedMem_cmd = (struct pwm_cmd *) mmap(0, 0x1000, PROT_READ|PROT_WRITE, 
                                             MAP_SHARED, mem_fd, RCOUT_PRUSS_SHAREDRAM_BASE);
     close(mem_fd);
+
+    // all outputs default to 50Hz, the top level vehicle code
+    // overrides this when necessary
+    set_freq(0xFFFFFFFF, 50);
 }
 
 void LinuxRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)            //LSB corresponds to CHAN_1
 {
     uint8_t i;
     unsigned long tick=TICK_PER_S/(unsigned long)freq_hz;
-    for(i=0;i<12;i++){
-        if(chmask&(1<<i)){
+
+    for (i=0;i<PWM_CHAN_COUNT;i++) {
+        if (chmask & (1U<<i)) {
             sharedMem_cmd->periodhi[chan_pru_map[i]][0]=tick;
         }
     }
