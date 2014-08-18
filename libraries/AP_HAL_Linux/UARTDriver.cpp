@@ -166,7 +166,9 @@ void LinuxUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         tcgetattr(_rd_fd, &t);
         cfsetspeed(&t, b);
         // disable LF -> CR/LF
-        t.c_oflag &= ~ONLCR;
+        t.c_iflag &= ~(BRKINT | ICRNL | IMAXBEL);
+        t.c_oflag &= ~(OPOST | ONLCR);
+        t.c_lflag &= ~(ISIG | ICANON | IEXTEN | ECHO | ECHOE | ECHOK | ECHOCTL | ECHOKE);
         tcsetattr(_rd_fd, TCSANOW, &t);
     }
 
