@@ -59,6 +59,11 @@ static void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int
         // expo variables
         float rp_in, rp_in3, rp_out;
 
+        // range check expo
+        if (g.acro_expo > 1.0f) {
+            g.acro_expo = 1.0f;
+        }
+
         // roll expo
         rp_in = float(roll_in)/ROLL_PITCH_INPUT_MAX;
         rp_in3 = rp_in*rp_in*rp_in;
