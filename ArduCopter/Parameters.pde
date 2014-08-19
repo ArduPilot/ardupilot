@@ -589,7 +589,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: ACRO_EXPO
     // @DisplayName: Acro Expo
     // @Description: Acro roll/pitch Expo to allow faster rotation when stick at edges
-    // @Values: 0:Disabled,0.2:Low,0.3:Medium,0.4:High
+    // @Values: 0:Disabled,0.1:Very Low,0.2:Low,0.3:Medium,0.4:High,0.5:Very High
     // @User: Advanced
     GSCALAR(acro_expo,  "ACRO_EXPO",    ACRO_EXPO_DEFAULT),
 
