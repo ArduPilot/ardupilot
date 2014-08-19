@@ -9,6 +9,9 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+#include <AP_HAL_Empty.h>
+#include <AP_HAL_Empty_Private.h>
+
 using namespace Linux;
 
 // 3 serial ports on Linux for now
@@ -22,12 +25,24 @@ static LinuxSPIDeviceManager spiDeviceManager;
 static LinuxAnalogIn analogIn;
 static LinuxStorage storageDriver;
 static LinuxGPIO gpioDriver;
+
+/*
+  use the PRU based RCInput driver on ERLE and PXF
+ */
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLE
 static LinuxRCInput_PRU rcinDriver;
 #else
 static LinuxRCInput rcinDriver;
 #endif
-static LinuxRCOutput rcoutDriver;
+
+/*
+  use the PRU based RCOutput driver on ERLE and PXF
+ */
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLE
+static LinuxRCOutput_PRU rcoutDriver;
+#else
+static Empty::EmptyRCOutput rcoutDriver;
+#endif
 static LinuxScheduler schedulerInstance;
 static LinuxUtil utilInstance;
 

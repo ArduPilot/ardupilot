@@ -19,7 +19,7 @@ namespace Linux {
     class LinuxDigitalSource;
     class LinuxRCInput;
     class LinuxRCInput_PRU;
-    class LinuxRCOutput;
+    class LinuxRCOutput_PRU;
     class LinuxSemaphore;
     class LinuxScheduler;
     class LinuxUtil;
