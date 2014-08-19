@@ -12,12 +12,19 @@
 #include <AP_Progmem.h>
 
 #include <AP_HAL.h>
-#include <AP_HAL_FLYMAPLE.h>
+#include <AP_HAL_YUNEEC.h>
+#include <utility/pinmap_typedef.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+AP_HAL::DigitalSource *blue_led;
 
 void setup(void)
 {
+    blue_led = hal.gpio->channel(PE9);
+    blue_led->mode(HAL_GPIO_OUTPUT);
+    blue_led->write(0);
+
+
     hal.uartA->begin(115200);
     
     //
@@ -44,9 +51,13 @@ void loop(void)
     //
     // Perform a simple loopback operation.
     //
+
     c = hal.uartA->read();
-    if (-1 != c)
-        hal.uartA->write(c);
+    if (-1 != c){
+         hal.uartA->write(c);
+         blue_led->toggle();
+    }
+
 }
 
 AP_HAL_MAIN();

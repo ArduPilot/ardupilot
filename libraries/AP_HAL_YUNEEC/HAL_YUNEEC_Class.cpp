@@ -7,9 +7,14 @@
 
 using namespace YUNEEC;
 
-static YUNEECUARTDriver uartADriver;
-static YUNEECUARTDriver uartBDriver;
-static YUNEECUARTDriver uartCDriver;
+YUNEECUARTDriverHandler(USART1, 0);
+YUNEECUARTDriverHandler(USART2, 1);
+YUNEECUARTDriverHandler(USART3, 2);
+
+static YUNEECUARTDriverInstance(USART1, 0);
+static YUNEECUARTDriverInstance(USART2, 1);
+static YUNEECUARTDriverInstance(USART3, 2);
+
 static YUNEECSemaphore  i2cSemaphore;
 static YUNEECI2CDriver  i2cDriver(&i2cSemaphore);
 static YUNEECSPIDeviceManager spiDeviceManager;
@@ -23,16 +28,16 @@ static YUNEECUtil utilInstance;
 
 HAL_YUNEEC::HAL_YUNEEC() :
     AP_HAL::HAL(
-        &uartADriver,
-        &uartBDriver,
-        &uartCDriver,
+        &USART1Driver,
+        &USART2Driver,
+        &USART3Driver,
         NULL,            /* no uartD */
         NULL,            /* no uartE */
         &i2cDriver,
         &spiDeviceManager,
         &analogIn,
         &storageDriver,
-        &uartADriver,
+        &USART1Driver,
         &gpioDriver,
         &rcinDriver,
         &rcoutDriver,

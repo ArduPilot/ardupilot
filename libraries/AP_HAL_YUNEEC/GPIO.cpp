@@ -1,3 +1,7 @@
+/*
+  YUNEEC port by Maelok
+ */
+
 #include <AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_YUNEEC
 
