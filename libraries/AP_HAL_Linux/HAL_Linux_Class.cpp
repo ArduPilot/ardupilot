@@ -22,7 +22,11 @@ static LinuxSPIDeviceManager spiDeviceManager;
 static LinuxAnalogIn analogIn;
 static LinuxStorage storageDriver;
 static LinuxGPIO gpioDriver;
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLE
+static LinuxRCInput_PRU rcinDriver;
+#else
 static LinuxRCInput rcinDriver;
+#endif
 static LinuxRCOutput rcoutDriver;
 static LinuxScheduler schedulerInstance;
 static LinuxUtil utilInstance;

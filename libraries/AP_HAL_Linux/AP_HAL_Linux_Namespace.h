@@ -18,6 +18,7 @@ namespace Linux {
     class LinuxGPIO;
     class LinuxDigitalSource;
     class LinuxRCInput;
+    class LinuxRCInput_PRU;
     class LinuxRCOutput;
     class LinuxSemaphore;
     class LinuxScheduler;

@@ -17,6 +17,7 @@
 #include "RCInput.h"
 
 using namespace Linux;
+
 LinuxRCInput::LinuxRCInput() :
     new_rc_input(false),
     _channel_counter(-1)
@@ -24,11 +25,6 @@ LinuxRCInput::LinuxRCInput() :
 
 void LinuxRCInput::init(void* machtnichts)
 {
-    int mem_fd = open("/dev/mem", O_RDWR|O_SYNC);
-    ring_buffer = (volatile struct ring_buffer*) mmap(0, 0x1000, PROT_READ|PROT_WRITE, 
-                                                      MAP_SHARED, mem_fd, RCIN_PRUSS_SHAREDRAM_BASE);
-    close(mem_fd);
-    ring_buffer->ring_head = 0;
 }
 
 bool LinuxRCInput::new_input() 
@@ -101,7 +97,7 @@ void LinuxRCInput::clear_overrides()
 /*
   process a pulse of the given width
  */
-void LinuxRCInput::_process_pulse(uint16_t width_usec)
+void LinuxRCInput::_process_ppmsum_pulse(uint16_t width_usec)
 {
     if (width_usec >= 4000) {
         // a long pulse indicates the end of a frame. Reset the
@@ -130,29 +126,6 @@ void LinuxRCInput::_process_pulse(uint16_t width_usec)
         new_rc_input = true;
         _channel_counter = -1;
         _num_channels = _channel_counter;
-    }
-}
-
-/*
-  called at 1kHz to check for new pulse capture data from the PRU
- */
-void LinuxRCInput::_timer_tick()
-{
-    while (ring_buffer->ring_head != ring_buffer->ring_tail) {
-        if (ring_buffer->ring_tail >= NUM_RING_ENTRIES) {
-            // invalid ring_tail from PRU - ignore RC input
-            return;
-        }
-        if (ring_buffer->buffer[ring_buffer->ring_head].pin_value == 1) {
-            // remember the time we spent in the low state
-            _s0_time = ring_buffer->buffer[ring_buffer->ring_head].delta_t;
-        } else {
-            // the pulse value is the sum of the time spent in the low
-            // and high states
-            _process_pulse(ring_buffer->buffer[ring_buffer->ring_head].delta_t + _s0_time);
-        }
-        // move to the next ring buffer entry
-        ring_buffer->ring_head = (ring_buffer->ring_head + 1) % NUM_RING_ENTRIES;        
     }
 }
 
