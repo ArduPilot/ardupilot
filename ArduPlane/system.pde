@@ -266,6 +266,7 @@ static void startup_ground(void)
     // mid-flight, so set the serial ports non-blocking once we are
     // ready to fly
     hal.uartA->set_blocking_writes(false);
+    hal.uartB->set_blocking_writes(false);
     hal.uartC->set_blocking_writes(false);
     if (hal.uartD != NULL) {
         hal.uartD->set_blocking_writes(false);

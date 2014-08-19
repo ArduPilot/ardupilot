@@ -170,16 +170,6 @@
 #define WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL    2   // auto pilot will face next waypoint except when doing RTL at which time it will stay in it's last
 #define WP_YAW_BEHAVIOR_LOOK_AHEAD                    3   // auto pilot will look ahead during missions and rtl (primarily meant for traditional helicotpers)
 
-
-// Waypoint options
-#define WP_OPTION_ALT_CHANGE                    2
-#define WP_OPTION_YAW                           4
-#define WP_OPTION_ALT_REQUIRED                  8
-#define WP_OPTION_RELATIVE                      16
-//#define WP_OPTION_					32
-//#define WP_OPTION_					64
-#define WP_OPTION_NEXT_CMD                      128
-
 // Auto modes
 enum AutoMode {
     Auto_TakeOff,
@@ -329,8 +319,8 @@ enum FlipState {
 #define ERROR_SUBSYSTEM_FLIP                13
 #define ERROR_SUBSYSTEM_AUTOTUNE            14
 #define ERROR_SUBSYSTEM_PARACHUTE           15
-#define ERROR_SUBSYSTEM_EKF_CHECK           16
-#define ERROR_SUBSYSTEM_FAILSAFE_EKF        17
+#define ERROR_SUBSYSTEM_EKFINAV_CHECK       16
+#define ERROR_SUBSYSTEM_FAILSAFE_EKFINAV    17
 #define ERROR_SUBSYSTEM_BARO                18
 // general error codes
 #define ERROR_CODE_ERROR_RESOLVED           0
@@ -356,8 +346,8 @@ enum FlipState {
 // parachute failed to deploy because of low altitude
 #define ERROR_CODE_PARACHUTE_TOO_LOW        2
 // EKF check definitions
-#define ERROR_CODE_EKF_CHECK_BAD_VARIANCE   2
-#define ERROR_CODE_EKF_CHECK_BAD_VARIANCE_CLEARED    0
+#define ERROR_CODE_EKFINAV_CHECK_BAD_VARIANCE       2
+#define ERROR_CODE_EKFINAV_CHECK_VARIANCE_CLEARED   0
 // Baro specific error codes
 #define ERROR_CODE_BARO_GLITCH              2
 

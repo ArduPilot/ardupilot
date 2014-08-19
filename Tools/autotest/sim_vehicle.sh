@@ -230,7 +230,7 @@ TRACKER_HOME=$(cat $autotest/locations.txt | grep -i "^$TRACKER_LOCATION=" | cut
 
 
 if [ $START_ANTENNA_TRACKER == 1 ]; then
-    pushd $autotest/../AntennaTracker
+    pushd $autotest/../../AntennaTracker
     if [ $CLEAN_BUILD == 1 ]; then
         make clean
     fi

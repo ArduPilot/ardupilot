@@ -25,7 +25,7 @@ LinuxSPIDeviceDriver LinuxSPIDeviceManager::_device[LINUX_SPI_DEVICE_NUM_DEVICES
     // different SPI tables per board subtype
     LinuxSPIDeviceDriver(1, AP_HAL::SPIDevice_LSM9DS0_AM, SPI_MODE_3, 8, BBB_P9_17,  10*MHZ,10*MHZ),
     LinuxSPIDeviceDriver(1, AP_HAL::SPIDevice_LSM9DS0_G,  SPI_MODE_3, 8, BBB_P8_9,   10*MHZ,10*MHZ),
-    LinuxSPIDeviceDriver(2, AP_HAL::SPIDevice_MS5611,     SPI_MODE_3, 8, BBB_P9_42,  6*MHZ, 6*MHZ),
+    LinuxSPIDeviceDriver(2, AP_HAL::SPIDevice_MS5611,     SPI_MODE_3, 8, BBB_P9_42,  10*MHZ,10*MHZ),
     LinuxSPIDeviceDriver(2, AP_HAL::SPIDevice_MPU6000,    SPI_MODE_3, 8, BBB_P9_28,  500*1000, 20*MHZ),
     /* MPU9250 is restricted to 1MHz for non-data and interrupt registers */
     LinuxSPIDeviceDriver(2, AP_HAL::SPIDevice_MPU9250,    SPI_MODE_3, 8, BBB_P9_23,  1*MHZ, 20*MHZ),
@@ -42,8 +42,8 @@ LinuxSPIDeviceDriver LinuxSPIDeviceManager::_device[0];
 #endif
 
 // have a separate semaphore per bus
-LinuxSemaphore LinuxSPIDeviceManager::_semaphore[LINUX_SPI_NUM_BUSES];
-int LinuxSPIDeviceManager::_fd[LINUX_SPI_NUM_BUSES];
+LinuxSemaphore LinuxSPIDeviceManager::_semaphore[LINUX_SPI_MAX_BUSES];
+int LinuxSPIDeviceManager::_fd[LINUX_SPI_MAX_BUSES];
 
 LinuxSPIDeviceDriver::LinuxSPIDeviceDriver(uint8_t bus, enum AP_HAL::SPIDevice type, uint8_t mode, uint8_t bitsPerWord, uint8_t cs_pin, uint32_t lowspeed, uint32_t highspeed):
     _bus(bus),
@@ -111,15 +111,23 @@ void LinuxSPIDeviceDriver::transfer(const uint8_t *data, uint16_t len)
 
 void LinuxSPIDeviceManager::init(void *)
 {
-    char path[] = "/dev/spidevN.0";
-    for (uint8_t i=0; i<LINUX_SPI_NUM_BUSES; i++) {
-        path[11] = '0' + i;
-        _fd[i] = open(path, O_RDWR);
-        if (_fd[i] == -1) {
-            hal.scheduler->panic("SPIDriver: unable to open SPI bus");
-        }
+    for (uint8_t i=0; i<LINUX_SPI_MAX_BUSES; i++) {
+        _fd[i] = -1;
     }
     for (uint8_t i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
+        if (_device[i]._bus >= LINUX_SPI_MAX_BUSES) {
+            hal.scheduler->panic("SPIDriver: invalid bus number");
+        }
+        if (_fd[_device[i]._bus] == -1) {
+            char path[] = "/dev/spidevN.0";
+            path[11] = '0' + _device[i]._bus;
+            _fd[_device[i]._bus] = open(path, O_RDWR);            
+            if (_fd[_device[i]._bus] == -1) {
+                hal.scheduler->panic("SPIDriver: unable to open SPI bus");
+            }
+            printf("Opened %s\n", path);
+            fflush(stdout);
+        }
         _device[i].init();
     }
 }

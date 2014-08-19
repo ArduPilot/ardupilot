@@ -35,9 +35,18 @@ for b in all apm2 sitl apm2-hil linux; do
 done
 popd
 
+echo "Testing AntennaTracker build"
+pushd AntennaTracker
+for b in apm2 sitl; do
+    pwd
+    make clean
+    make $b -j4
+done
+popd
+
 echo "Testing build of examples"
 
-examples="Tools/VARTest Tools/CPUInfo Tools/AntennaTracker"
+examples="Tools/VARTest Tools/CPUInfo"
 for d in $examples; do
     pushd $d
     make clean

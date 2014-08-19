@@ -4,8 +4,8 @@
 
 #include "Scheduler.h"
 #include "Storage.h"
+#include "RCInput.h"
 #include "UARTDriver.h"
-#include <unistd.h>
 #include <sys/time.h>
 #include <poll.h>
 #include <unistd.h>
@@ -18,8 +18,9 @@ using namespace Linux;
 
 extern const AP_HAL::HAL& hal;
 
-#define APM_LINUX_TIMER_PRIORITY    13
-#define APM_LINUX_UART_PRIORITY     12
+#define APM_LINUX_TIMER_PRIORITY    14
+#define APM_LINUX_UART_PRIORITY     13
+#define APM_LINUX_RCIN_PRIORITY     12
 #define APM_LINUX_MAIN_PRIORITY     11
 #define APM_LINUX_IO_PRIORITY       10
 
@@ -67,7 +68,15 @@ void LinuxScheduler::init(void* machtnichts)
     pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
 
     pthread_create(&_uart_thread_ctx, &thread_attr, (pthread_startroutine_t)&Linux::LinuxScheduler::_uart_thread, this);
-    
+
+    // the RCIN thread runs at a lower medium priority    
+    pthread_attr_init(&thread_attr);
+    param.sched_priority = APM_LINUX_RCIN_PRIORITY;
+    (void)pthread_attr_setschedparam(&thread_attr, &param);
+    pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
+
+    pthread_create(&_rcin_thread_ctx, &thread_attr, (pthread_startroutine_t)&Linux::LinuxScheduler::_rcin_thread, this);
+  
     // the IO thread runs at lower priority
     pthread_attr_init(&thread_attr);
     param.sched_priority = APM_LINUX_IO_PRIORITY;
@@ -181,7 +190,7 @@ void LinuxScheduler::suspend_timer_procs()
 {
     _timer_suspended = true;
     while (_in_timer_proc) {
-        usleep(1);
+        delay_microseconds(20);
     }
 }
 
@@ -226,12 +235,22 @@ void *LinuxScheduler::_timer_thread(void)
     while (system_initializing()) {
         poll(NULL, 0, 1);        
     }
+    /*
+      this aims to run at an average of 1kHz, so that it can be used
+      to drive 1kHz processes without drift
+     */
+    uint32_t next_run_usec = micros() + 1000;
     while (true) {
-        _microsleep(1000);
-
+        uint32_t dt = next_run_usec - micros();
+        if (dt > 2000) {
+            // we've lost sync - restart
+            next_run_usec = micros();
+        } else {
+            _microsleep(dt);
+        }
+        next_run_usec += 1000;
         // run registered timers
         _run_timers(true);
-
     }
     return NULL;
 }
@@ -253,6 +272,20 @@ void LinuxScheduler::_run_io(void)
     }
 
     _in_io_proc = false;
+}
+
+void *LinuxScheduler::_rcin_thread(void)
+{
+    _setup_realtime(32768);
+    while (system_initializing()) {
+        poll(NULL, 0, 1);        
+    }
+    while (true) {
+        _microsleep(10000);
+
+        ((LinuxRCInput *)hal.rcin)->_timer_tick();
+    }
+    return NULL;
 }
 
 void *LinuxScheduler::_uart_thread(void)

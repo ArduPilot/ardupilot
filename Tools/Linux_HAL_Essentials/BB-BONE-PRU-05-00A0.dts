@@ -20,7 +20,7 @@
 		/* the pin header uses */
        	//	"P9.27",	/* pru0: pr1_pru0_pru_r30_5 */
 
-	//	"P8.11",	/* pru0: pr1_pru0_pru_r30_15 */
+		"P8.15",	/* pru0: pr1_pru0_pru_r30_15 */
 	//	"P8.12",	/* pru0: pr1_pru0_pru_r30_14 */
 	//	"P9.25",	/* pru0: pr1_pru0_pru_r30_7 */
 	//	"P9.41",	/* pru0: pr1_pru0_pru_r30_6 */
@@ -70,7 +70,7 @@
 			pru_pru_pins: pinmux_pru_pru_pins {
 				pinctrl-single,pins = <
 				//	0x1a4 0x25	/* mcasp0_fsr.pr1_pru0_pru_r30_5, MODE5 | OUTPUT | PRU */
-				//	0x034 0x26	/* gpmc_ad13.pr1_pru0_pru_r30_15, MODE6 | OUTPUT | PRU */
+					0x03c 0x26	/* gpmc_ad13.pr1_pru0_pru_r30_15, MODE6 | OUTPUT | PRU */
 				//	0x030 0x26	/* gpmc_ad12.pr1_pru0_pru_r30_14, MODE6 | OUTPUT | PRU */
 				//	0x1ac 0x25	/* mcasp0_ahclkx.pr1_pru0_pru_r30_7, MODE5 | OUTPUT | PRU */
 				//	0x1a8 0x25	/* mcasp0_axr1.pr1_pru0_pru_r30_6, MODE5 | OUTPUT | PRU */
@@ -251,7 +251,7 @@
 					pdbg  = <0x22400>;
 
 					firmware-elf;
-					firmware = "testpru0";
+					firmware = "rcinpru0";
 
 					/* sysevents signaling ring activity (host, pru)*/
 					vring-sysev = <24 25>;

@@ -1,5 +1,7 @@
 #include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#include "Storage.h"
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && !LINUX_STORAGE_USE_FRAM
 
 #include <assert.h>
 #include <sys/types.h>
@@ -9,7 +11,6 @@
 #include <errno.h>
 #include <stdio.h>
 
-#include "Storage.h"
 using namespace Linux;
 
 /*

@@ -4,10 +4,12 @@
 
 #include <AP_HAL_Linux.h>
 
+#define LINUX_RC_INPUT_NUM_CHANNELS 16
+
 class Linux::LinuxRCInput : public AP_HAL::RCInput {
 public:
     LinuxRCInput();
-    void init(void* machtnichts);
+    virtual void init(void* machtnichts);
     bool new_input();
     uint8_t num_channels();
     uint16_t read(uint8_t ch);
@@ -17,11 +19,26 @@ public:
     bool set_override(uint8_t channel, int16_t override);
     void clear_overrides();
 
+    // default empty _timer_tick, this is overridden by board
+    // specific implementations
+    virtual void _timer_tick() {}
+
+ protected:
+    void _process_ppmsum_pulse(uint16_t width_usec);
+
  private:
-    bool new_rc_input;
+    volatile bool new_rc_input;
+    
+    uint16_t _pulse_capt[LINUX_RC_INPUT_NUM_CHANNELS];
+    uint8_t  _num_channels;
+
+    // the channel we will receive input from next, or -1 when not synchronised
+    int8_t _channel_counter;
 
     /* override state */
-    uint16_t _override[8];
+    uint16_t _override[LINUX_RC_INPUT_NUM_CHANNELS];
 };
+
+#include "RCInput_PRU.h"
 
 #endif // __AP_HAL_LINUX_RCINPUT_H__
