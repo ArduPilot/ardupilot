@@ -76,14 +76,24 @@ void PX4Scheduler::init(void *unused)
 	pthread_create(&_io_thread_ctx, &thread_attr, (pthread_startroutine_t)&PX4::PX4Scheduler::_io_thread, this);
 }
 
+uint64_t PX4Scheduler::micros64() 
+{
+    return hrt_absolute_time() - _sketch_start_time;
+}
+
+uint64_t PX4Scheduler::millis64() 
+{
+    return micros64() / 1000;
+}
+
 uint32_t PX4Scheduler::micros() 
 {
-    return (uint32_t)(hrt_absolute_time() - _sketch_start_time);
+    return micros64() & 0xFFFFFFFF;
 }
 
 uint32_t PX4Scheduler::millis() 
 {
-    return hrt_absolute_time() / 1000;
+    return millis64() & 0xFFFFFFFF;
 }
 
 /**
@@ -106,9 +116,9 @@ void PX4Scheduler::delay_microseconds(uint16_t usec)
         perf_end(_perf_delay);
         return;
     }
-	uint32_t start = micros();
-    uint32_t dt;
-	while ((dt=(micros() - start)) < usec) {
+	uint64_t start = micros();
+    uint64_t dt;
+	while ((dt=(micros64() - start)) < usec) {
 		up_udelay(usec - dt);
 	}
     perf_end(_perf_delay);
