@@ -20,7 +20,7 @@ AP_HAL::DigitalSource *blue_led;
 
 void setup(void)
 {
-    blue_led = hal.gpio->channel(PE9);
+    blue_led = hal.gpio->channel(PC13);
     blue_led->mode(HAL_GPIO_OUTPUT);
     blue_led->write(0);
 
