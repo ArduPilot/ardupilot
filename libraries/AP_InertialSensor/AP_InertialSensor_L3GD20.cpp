@@ -286,6 +286,8 @@ bool AP_InertialSensor_L3GD20::_data_ready()
     if (_drdy_pin) {
         return _drdy_pin->read() != 0;
     }
+    // TODO: read status register
+    return false;
 }
 
 /**
