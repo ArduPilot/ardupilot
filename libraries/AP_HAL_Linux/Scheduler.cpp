@@ -100,9 +100,9 @@ void LinuxScheduler::delay(uint16_t ms)
         stopped_clock_usec += 1000UL*ms;
         return;
     }
-    uint32_t start = millis();
+    uint64_t start = millis64();
     
-    while ((millis() - start) < ms) {
+    while ((millis64() - start) < ms) {
         // this yields the CPU to other apps
         _microsleep(1000);
         if (_min_delay_cb_ms <= ms) {
@@ -113,7 +113,7 @@ void LinuxScheduler::delay(uint16_t ms)
     }
 }
 
-uint32_t LinuxScheduler::millis() 
+uint64_t LinuxScheduler::millis64() 
 {
     if (stopped_clock_usec) {
         return stopped_clock_usec/1000;
@@ -125,7 +125,7 @@ uint32_t LinuxScheduler::millis()
                    (_sketch_start_time.tv_nsec*1.0e-9)));
 }
 
-uint32_t LinuxScheduler::micros() 
+uint64_t LinuxScheduler::micros64() 
 {
     if (stopped_clock_usec) {
         return stopped_clock_usec;
@@ -135,6 +135,16 @@ uint32_t LinuxScheduler::micros()
     return 1.0e6*((ts.tv_sec + (ts.tv_nsec*1.0e-9)) - 
                   (_sketch_start_time.tv_sec +
                    (_sketch_start_time.tv_nsec*1.0e-9)));
+}
+
+uint32_t LinuxScheduler::millis() 
+{
+    return millis64() & 0xFFFFFFFF;
+}
+
+uint32_t LinuxScheduler::micros() 
+{
+    return micros64() & 0xFFFFFFFF;
 }
 
 void LinuxScheduler::delay_microseconds(uint16_t us)
@@ -239,12 +249,12 @@ void *LinuxScheduler::_timer_thread(void)
       this aims to run at an average of 1kHz, so that it can be used
       to drive 1kHz processes without drift
      */
-    uint32_t next_run_usec = micros() + 1000;
+    uint64_t next_run_usec = micros64() + 1000;
     while (true) {
-        uint32_t dt = next_run_usec - micros();
+        uint64_t dt = next_run_usec - micros64();
         if (dt > 2000) {
             // we've lost sync - restart
-            next_run_usec = micros();
+            next_run_usec = micros64();
         } else {
             _microsleep(dt);
         }
