@@ -46,7 +46,7 @@ uint8_t AP_Baro_PX4::read(void)
     _accumulate();
 
     // consider the baro healthy if we got a reading in the last 0.2s
-    _flags.healthy = (hrt_absolute_time() - _last_timestamp < 200000);
+    _flags.healthy = (hal.scheduler->micros64() - _last_timestamp < 200000);
     if (!_flags.healthy || _sum_count == 0) {
         return _flags.healthy;
     }
