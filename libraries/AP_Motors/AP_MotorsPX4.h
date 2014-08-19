@@ -33,7 +33,7 @@ public:
     AP_MotorsPX4( RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_throttle, RC_Channel& rc_yaw, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
         AP_Motors(rc_roll, rc_pitch, rc_throttle, rc_yaw, speed_hz), _actuators_0_pub(-1), _armed_pub(-1), _old_armed(false)
     {
-		AP_Param::setup_object_defaults(this, var_info);
+        AP_Param::setup_object_defaults(this, var_info);
         _armed = {};
         _actuators = {};
     };
@@ -58,24 +58,27 @@ public:
     // throttle_pass_through - passes pilot's throttle input directly to all motors - dangerous but used for initialising ESCs
     virtual void        throttle_pass_through();
 
+    // set update rate to motors - a value in hertz
+    virtual void        set_update_rate( uint16_t speed_hz );
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
     // publish armed state if changed
-    void publish_armed();
+    void                publish_armed();
 
     // publish control state
-    void publish_controls();
+    void                publish_controls();
 
     // check for limit updates
-    bool update_limits();
+    bool                update_limits();
 
     // load mixer configuration
-    bool load_mixer();
+    bool                load_mixer();
 
-    // setup PWM configuration
-    bool setup_pwm();
+    // setup output configuration
+    bool                setup_output();
 
     // output - sends commands to the motors
     virtual void        output_armed();
@@ -84,15 +87,15 @@ protected:
     // published ORB topics
     orb_advert_t        _actuators_0_pub;               /**< actuator control group 0 setpoint */
     orb_advert_t        _armed_pub;
-	orb_advert_t        _test_motor_pub;
+    orb_advert_t        _test_motor_pub;
 
-    struct actuator_controls_s _actuators;             /**< actuator control inputs */
-    struct actuator_armed_s _armed;
-	struct test_motor_s _test_motor;
+    struct              actuator_controls_s _actuators;             /**< actuator control inputs */
+    struct              actuator_armed_s _armed;
+    struct              test_motor_s _test_motor;
 
     // subscribed ORB topics
     int                 _limits_sub;
-    struct multirotor_motor_limits_s _new_limits;
+    struct              multirotor_motor_limits_s _new_limits;
 
 private:
     bool                _old_armed;

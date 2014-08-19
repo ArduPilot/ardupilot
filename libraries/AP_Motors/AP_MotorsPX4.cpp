@@ -58,6 +58,13 @@ const AP_Param::GroupInfo AP_MotorsPX4::var_info[] PROGMEM = {
     // @Increment: 1
     AP_GROUPINFO("OUTDEV", 1, AP_MotorsPX4, _output_device, AP_MOTORS_OUTPUT_DEVICE),
 
+    // @Param: SPIN_ARMED
+    // @DisplayName: Motors always spin when armed
+    // @Description: Controls whether motors always spin when armed (must be below THR_MIN)
+    // @Values: 0:Do Not Spin,70:VerySlow,100:Slow,130:Medium,150:Fast
+    // @User: Standard
+    AP_GROUPINFO("SPIN_ARMED", 5, AP_MotorsPX4, _spin_when_armed, AP_MOTORS_SPIN_WHEN_ARMED),
+
     AP_GROUPEND
 };
 
@@ -74,7 +81,7 @@ void AP_MotorsPX4::Init()
     // load mixer config
     // @TODO: handle errors
     load_mixer();
-    setup_pwm();
+    setup_output();
 
     _limits_sub = orb_subscribe(ORB_ID(multirotor_motor_limits));
     if (_limits_sub == -1) {
@@ -168,28 +175,6 @@ failed:
 }
 
 
-bool AP_MotorsPX4::setup_pwm() 
-{
-    // in default configuration, the PX4IO stops to output any value if FMU is disarmed
-    // some ESCs refuse to start with anything but idle, so we output idle in disarmed
-    
-    int fd = open(MIXER_DEV_PWM, 0);
-    if (fd < 0) 
-        return false;
-
-    struct pwm_output_values pwm_values = {.values = {0}, .channel_count = PWM_CHANNELS};
-
-    for (unsigned i = 0; i < PWM_CHANNELS; i++) {
-        pwm_values.values[i] = PWM_IDLE;
-    }
-
-    int ret = ioctl(fd, PWM_SERVO_SET_DISARMED_PWM, (long unsigned int)&pwm_values);
-    return (ret == OK);
-
-    // we do not touch the default min and max values (1.000...2.000ms) currently
-}
-
-
 // enable - starts allowing signals to be sent to motors
 void AP_MotorsPX4::enable()
 {
@@ -224,6 +209,7 @@ void AP_MotorsPX4::publish_armed() {
     }
 }
 
+
 void AP_MotorsPX4::publish_controls()
 {
     _actuators.timestamp = hrt_absolute_time();
@@ -241,10 +227,10 @@ void AP_MotorsPX4::publish_controls()
 
 bool AP_MotorsPX4::update_limits()
 {
-	bool limits_updated = orb_check(_limits_sub, &limits_updated) == 0 && limits_updated;
+    bool limits_updated = orb_check(_limits_sub, &limits_updated) == 0 && limits_updated;
 
-	if (limits_updated) {
-		if (orb_copy(ORB_ID(multirotor_motor_limits), _limits_sub, &limit) != OK) {
+    if (limits_updated) {
+        if (orb_copy(ORB_ID(multirotor_motor_limits), _limits_sub, &limit) != OK) {
             printf("orb_copy failed\n");
         }
     }
@@ -295,19 +281,13 @@ void AP_MotorsPX4::output_armed()
     }
 
     if (_rc_throttle.servo_out == 0) {
-        // MOT_SPINARMED
-        if (_spin_when_armed_ramped < 0) {
-             _spin_when_armed_ramped = 0;
-        }
-        if (_spin_when_armed_ramped > _min_throttle) {
-            _spin_when_armed_ramped = _min_throttle;
-        }
-        
-        // center all controls, spin motors slowly
+        // MIX_SPIN_ARMED, center all controls, spin motors slowly
         _actuators.control[0] = 0.;
         _actuators.control[1] = 0.;
         _actuators.control[2] = 0.;
-        _actuators.control[3] = _spin_when_armed_ramped / 1000.;
+
+        // no ramp - some ESCs have trouble to startup motors if ramped slowly to low values, espcially on higher input voltage)
+        _actuators.control[3] = _spin_when_armed / 1000.;
 
         // Every thing is limited
         limit.roll_pitch = true;
@@ -340,10 +320,10 @@ void AP_MotorsPX4::output_test(uint8_t motor_seq, int16_t pwm)
 {
     float power = (pwm - 1000.f)/1000.f;
 
-	_test_motor.motor_number = motor_seq-1;
-	_test_motor.timestamp = hrt_absolute_time();
-	_test_motor.value = power;
-	
+    _test_motor.motor_number = motor_seq-1;
+    _test_motor.timestamp = hrt_absolute_time();
+    _test_motor.value = power;
+
     if (_test_motor_pub > 0) {
    	    /* publish armed state */
         orb_publish(ORB_ID(test_motor), _test_motor_pub, &_test_motor);
@@ -363,10 +343,52 @@ void AP_MotorsPX4::throttle_pass_through()
             _actuators.control[0] = 0.;
             _actuators.control[1] = 0.;
             _actuators.control[2] = 0.;
-            _actuators.control[3] = (_rc_throttle.radio_in-1000) / 1000.;
+            _actuators.control[3] = (_rc_throttle.radio_in - _rc_throttle.radio_min) / float(_rc_throttle.radio_max - _rc_throttle.radio_min);
             _actuators.timestamp = hrt_absolute_time();
             publish_armed();
             publish_controls(); // not really useful, but keeps PX4IO happy (prevents FMU_FAIL flag / flashing amber LED)            }
         }
     }
+}
+
+
+// set update rate to motors - a value in hertz
+void AP_MotorsPX4::set_update_rate( uint16_t speed_hz )
+{
+    AP_Motors::set_update_rate(speed_hz);
+    setup_output();
+}
+
+
+bool AP_MotorsPX4::setup_output() 
+{
+   if (_output_device == AP_MOTORS_PX4_PWM_OUTPUT) {
+        // open PWM device
+        int fd = open(MIXER_DEV_PWM, 0);
+        if (fd < 0) 
+            return false;
+
+        // set update rate
+        int mask = (1<<PWM_CHANNELS)-1;
+        int ret = ioctl(fd, PWM_SERVO_SET_UPDATE_RATE, _speed_hz);
+        if (ret != OK) 
+            return false;
+
+        ret = ioctl(fd, PWM_SERVO_SET_SELECT_UPDATE_RATE, mask);
+        if (ret != OK)
+            return false;
+
+        // set failsafe value to 1000, as some ESCs get confused by values lower than the calibrated range
+        struct pwm_output_values fs_values = {.values = {1000}, .channel_count = PWM_CHANNELS};
+        ret = ioctl(fd, PWM_SERVO_SET_FAILSAFE_PWM, (long unsigned int)&fs_values);
+        if (ret != OK)
+            return false;
+
+        // no min-max setup here, stay with PX4 default of 1000..2000us 
+    }
+    else if (_output_device == AP_MOTORS_PX4_UAVCAN_OUTPUT) {
+        // currently nothing to set here (update rate is fixed, calibration not needed)
+    }
+
+    return true;
 }
