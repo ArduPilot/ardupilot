@@ -32,7 +32,6 @@ public:
 
 private:
     uint16_t             _init_sensor( Sample_rate sample_rate );
-    AP_HAL::DigitalSource *_drdy_pin;
 
     void                 _read_data_transaction();
     bool                 _data_ready();

@@ -174,7 +174,6 @@ extern const AP_HAL::HAL& hal;
 
 AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250() :
 	AP_InertialSensor(),
-    _drdy_pin(NULL),
     _initialised(false),
     _mpu9250_product_id(AP_PRODUCT_ID_PIXHAWK_FIRE_CAPE),
     _last_filter_hz(-1),
@@ -198,11 +197,6 @@ uint16_t AP_InertialSensor_MPU9250::_init_sensor( Sample_rate sample_rate )
     _spi = hal.spi->device(AP_HAL::SPIDevice_MPU9250);
     _spi_sem = _spi->get_semaphore();
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLE
-    _drdy_pin = hal.gpio->channel(BBB_P8_7);
-    _drdy_pin->mode(HAL_GPIO_INPUT);
-#endif
-
     hal.scheduler->suspend_timer_procs();
 
     uint8_t whoami = _register_read(MPUREG_WHOAMI);
@@ -221,7 +215,8 @@ uint16_t AP_InertialSensor_MPU9250::_init_sensor( Sample_rate sample_rate )
             if (!_spi_sem->take(100)) {
                 hal.scheduler->panic(PSTR("MPU9250: Unable to get semaphore"));
             }
-            if (_data_ready()) {
+            uint8_t status = _register_read(MPUREG_INT_STATUS);
+            if ((status & BIT_RAW_RDY_INT) != 0) {
                 _spi_sem->give();
                 break;
             } else {
@@ -345,22 +340,6 @@ bool AP_InertialSensor_MPU9250::update( void )
 /*================ HARDWARE FUNCTIONS ==================== */
 
 /**
- * Return true if the MPU9250 has new data available for reading.
- *
- * We use the data ready pin if it is available.  Otherwise, read the
- * status register.
- */
-bool AP_InertialSensor_MPU9250::_data_ready()
-{
-    if (_drdy_pin) {
-        return _drdy_pin->read() != 0;
-    }
-    uint8_t status = _register_read(MPUREG_INT_STATUS);
-    return (status & BIT_RAW_RDY_INT) != 0;
-}
-
-
-/**
  * Timer process to poll for new data from the MPU9250.
  */
 void AP_InertialSensor_MPU9250::_poll_data(void)
@@ -374,9 +353,7 @@ void AP_InertialSensor_MPU9250::_poll_data(void)
         */
         return;
     }
-    if (_data_ready()) {
-        _read_data_transaction();
-    }
+    _read_data_transaction();
     _spi_sem->give();
 }
 
@@ -394,13 +371,6 @@ void AP_InertialSensor_MPU9250::_read_data_transaction()
     } rx, tx = { cmd : MPUREG_INT_STATUS | 0x80, };
 
     _spi->transaction((const uint8_t *)&tx, (uint8_t *)&rx, sizeof(rx));
-
-    if (_drdy_pin) {
-        if (_drdy_pin->read() != 0) {
-            // data ready should have gone low after a read
-            printf("MPU9250: DRDY didn't go low\n");
-        }
-    }
 
 #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx] << 8) | v[2*idx+1]))
 
