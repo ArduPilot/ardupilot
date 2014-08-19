@@ -1,9 +1,9 @@
 
-#ifndef __AP_HAL_LINUX_RCOUTPUT_H__
-#define __AP_HAL_LINUX_RCOUTPUT_H__
+#ifndef __AP_HAL_LINUX_RCOUTPUT_PRU_H__
+#define __AP_HAL_LINUX_RCOUTPUT_PRU_H__
 
 #include <AP_HAL_Linux.h>
-#define PRUSS_SHAREDRAM_BASE     0x4a310000
+#define RCOUT_PRUSS_SHAREDRAM_BASE     0x4a310000
 #define MAX_PWMS                 12
 #define PWM_CMD_MAGIC            0xf00fbaaf
 #define PWM_REPLY_MAGIC          0xbaaff00f
@@ -17,7 +17,7 @@
 #define PWM_CMD_CLR	         5	/* clr a pwm output explicitly */
 #define PWM_CMD_TEST	         6	/* various crap */
 
-class Linux::LinuxRCOutput : public AP_HAL::RCOutput {
+class Linux::LinuxRCOutput_PRU : public AP_HAL::RCOutput {
     void     init(void* machtnichts);
     void     set_freq(uint32_t chmask, uint16_t freq_hz);
     uint16_t get_freq(uint8_t ch);
@@ -36,8 +36,9 @@ private:
         uint32_t periodhi[MAX_PWMS][2];
         uint32_t hilo_read[MAX_PWMS][2];
         uint32_t enmask_read;
-    }*sharedMem_cmd;
+    };
+    volatile struct pwm_cmd *sharedMem_cmd;
 
 };
 
-#endif // __AP_HAL_LINUX_RCOUTPUT_H__
+#endif // __AP_HAL_LINUX_RCOUTPUT_PRU_H__

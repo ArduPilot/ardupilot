@@ -76,10 +76,18 @@ void ekf_check()
                 ekf_check_state.fail_count_compass = EKF_CHECK_ITERATIONS_MAX;
                 ekf_check_state.bad_compass = true;
                 // log an error in the dataflash
-                Log_Write_Error(ERROR_SUBSYSTEM_EKF_CHECK, ERROR_CODE_EKF_CHECK_BAD_VARIANCE);
+                Log_Write_Error(ERROR_SUBSYSTEM_EKFINAV_CHECK, ERROR_CODE_EKFINAV_CHECK_BAD_VARIANCE);
                 // send message to gcs
                 if ((hal.scheduler->millis() - ekf_check_state.last_warn_time) > EKF_CHECK_WARNING_TIME) {
-                    gcs_send_text_P(SEVERITY_HIGH,PSTR("EKF variance"));
+#if AP_AHRS_NAVEKF_AVAILABLE
+                    if (ahrs.have_inertial_nav()) {
+                        gcs_send_text_P(SEVERITY_HIGH,PSTR("EKF variance"));
+                    } else {
+                        gcs_send_text_P(SEVERITY_HIGH,PSTR("INAV variance"));
+                    }
+#else
+                    gcs_send_text_P(SEVERITY_HIGH,PSTR("INAV variance"));
+#endif
                     ekf_check_state.last_warn_time = hal.scheduler->millis();
                 }
                 failsafe_ekf_event();
@@ -94,7 +102,7 @@ void ekf_check()
             if (ekf_check_state.fail_count_compass == 0) {
                 ekf_check_state.bad_compass = false;
                 // log recovery in the dataflash
-                Log_Write_Error(ERROR_SUBSYSTEM_EKF_CHECK, ERROR_CODE_EKF_CHECK_BAD_VARIANCE_CLEARED);
+                Log_Write_Error(ERROR_SUBSYSTEM_EKFINAV_CHECK, ERROR_CODE_EKFINAV_CHECK_VARIANCE_CLEARED);
                 // clear failsafe
                 failsafe_ekf_off_event();
             }
@@ -126,7 +134,7 @@ static void failsafe_ekf_event()
 
     // EKF failsafe event has occurred
     failsafe.ekf = true;
-    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_EKF, ERROR_CODE_FAILSAFE_OCCURRED);
+    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_EKFINAV, ERROR_CODE_FAILSAFE_OCCURRED);
 
     // take action based on flight mode
     if (mode_requires_GPS(control_mode)) {
@@ -149,5 +157,5 @@ static void failsafe_ekf_off_event(void)
 
     // clear flag and log recovery
     failsafe.ekf = false;
-    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_EKF, ERROR_CODE_FAILSAFE_RESOLVED);
+    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_EKFINAV, ERROR_CODE_FAILSAFE_RESOLVED);
 }

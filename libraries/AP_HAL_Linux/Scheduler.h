@@ -68,10 +68,12 @@ private:
 
     pthread_t _timer_thread_ctx;
     pthread_t _io_thread_ctx;
+    pthread_t _rcin_thread_ctx;
     pthread_t _uart_thread_ctx;
 
     void *_timer_thread(void);
     void *_io_thread(void);
+    void *_rcin_thread(void);
     void *_uart_thread(void);
 
     void _run_timers(bool called_from_timer_thread);

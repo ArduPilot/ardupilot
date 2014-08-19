@@ -97,26 +97,52 @@ const AP_Param::GroupInfo APM_OBC::var_info[] PROGMEM = {
     // @DisplayName: Enable Advanced Failsafe
     // @Description: This enables the advanced failsafe system. If this is set to zero (disable) then all the other AFS options have no effect
     // @User: Advanced
-    AP_GROUPINFO("ENABLE",       11, APM_OBC, _enable,    0),
+    AP_GROUPINFO("ENABLE",       11, APM_OBC, _enable,          0),
+
+    // @Param: RC_FAIL_MS
+    // @DisplayName: RC failure time
+    // @Description: This is the time in milliseconds in manual mode that failsafe termination will activate if RC input is lost. For the OBC rules this should be 1500. Use 0 to disable.
+    // @User: Advanced
+    AP_GROUPINFO("RC_FAIL_MS",   12, APM_OBC, _rc_fail_time,    0),
+
+    // @Param: MAX_GPS_LOSS
+    // @DisplayName: Maximum number of GPS loss events
+    // @Description: Maximum number of GPS loss events before the aircraft stops returning to mission on GPS recovery. Use zero to allow for any number of GPS loss events.
+    // @User: Advanced
+    AP_GROUPINFO("MAX_GPS_LOSS", 13, APM_OBC, _max_gps_loss, 0),
+
+    // @Param: MAX_COM_LOSS
+    // @DisplayName: Maximum number of comms loss events
+    // @Description: Maximum number of comms loss events before the aircraft stops returning to mission on comms recovery. Use zero to allow for any number of comms loss events.
+    // @User: Advanced
+    AP_GROUPINFO("MAX_COM_LOSS", 14, APM_OBC, _max_comms_loss, 0),
 
     AP_GROUPEND
 };
 
-// access to geofence state
-extern bool geofence_breached(void);
-
 // check for Failsafe conditions. This is called at 10Hz by the main
 // ArduPlane code
 void
-APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms)
+APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms, bool geofence_breached, uint32_t last_valid_rc_ms)
 {    
     if (!_enable) {
         return;
     }
     // we always check for fence breach
-    if (geofence_breached() || check_altlimit()) {
+    if (geofence_breached || check_altlimit()) {
         if (!_terminate) {
             GCS_MAVLINK::send_statustext_all(PSTR("Fence TERMINATE"));
+            _terminate.set(1);
+        }
+    }
+
+    // check for RC failure in manual mode
+    if (_state != STATE_PREFLIGHT && 
+        (mode == OBC_MANUAL || mode == OBC_FBW) && 
+        _rc_fail_time != 0 && 
+        (hal.scheduler->millis() - last_valid_rc_ms) > (unsigned)_rc_fail_time.get()) {
+        if (!_terminate) {
+            GCS_MAVLINK::send_statustext_all(PSTR("RC failure terminate"));
             _terminate.set(1);
         }
     }
@@ -152,6 +178,11 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms)
                 _saved_wp = mission.get_current_nav_cmd().index;
                 mission.set_current_cmd(_wp_comms_hold);
             }
+            // if two events happen within 30s we consider it to be part of the same event
+            if (now - _last_comms_loss_ms > 30*1000UL) {
+                _comms_loss_count++;
+                _last_comms_loss_ms = now;
+            }
             break;
         }
         if (!gps_lock_ok) {
@@ -160,6 +191,11 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms)
             if (_wp_gps_loss) {
                 _saved_wp = mission.get_current_nav_cmd().index;
                 mission.set_current_cmd(_wp_gps_loss);
+            }
+            // if two events happen within 30s we consider it to be part of the same event
+            if (now - _last_gps_loss_ms > 30*1000UL) {
+                _gps_loss_count++;
+                _last_gps_loss_ms = now;
             }
             break;
         }
@@ -176,7 +212,10 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms)
         } else if (gcs_link_ok) {
             _state = STATE_AUTO;
             GCS_MAVLINK::send_statustext_all(PSTR("GCS OK"));
-            if (_saved_wp != 0) {
+            // we only return to the mission if we have not exceeded AFS_MAX_COM_LOSS
+            if (_saved_wp != 0 && 
+                (_max_comms_loss <= 0 || 
+                 _comms_loss_count <= _max_comms_loss)) {
                 mission.set_current_cmd(_saved_wp);            
                 _saved_wp = 0;
             }
@@ -194,7 +233,10 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms)
         } else if (gps_lock_ok) {
             GCS_MAVLINK::send_statustext_all(PSTR("GPS OK"));
             _state = STATE_AUTO;
-            if (_saved_wp != 0) {
+            // we only return to the mission if we have not exceeded AFS_MAX_GPS_LOSS
+            if (_saved_wp != 0 &&
+                (_max_gps_loss <= 0 || 
+                 _gps_loss_count <= _max_gps_loss)) {
                 mission.set_current_cmd(_saved_wp);            
                 _saved_wp = 0;
             }
@@ -266,7 +308,7 @@ void APM_OBC::setup_failsafe(void)
     const RC_Channel *ch_throttle = RC_Channel::rc_channel(rcmap.throttle()-1);
 
     // setup primary channel output values
-    hal.rcout->set_failsafe_pwm(1U<<(rcmap.roll()-1),     ch_roll->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MAX));
+    hal.rcout->set_failsafe_pwm(1U<<(rcmap.roll()-1),     ch_roll->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MIN));
     hal.rcout->set_failsafe_pwm(1U<<(rcmap.pitch()-1),    ch_pitch->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MAX));
     hal.rcout->set_failsafe_pwm(1U<<(rcmap.yaw()-1),      ch_yaw->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MAX));
     hal.rcout->set_failsafe_pwm(1U<<(rcmap.throttle()-1), ch_throttle->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MIN));
@@ -274,7 +316,7 @@ void APM_OBC::setup_failsafe(void)
     // and all aux channels
     RC_Channel_aux::set_servo_failsafe(RC_Channel_aux::k_flap_auto, RC_Channel::RC_CHANNEL_LIMIT_MAX);
     RC_Channel_aux::set_servo_failsafe(RC_Channel_aux::k_flap, RC_Channel::RC_CHANNEL_LIMIT_MAX);
-    RC_Channel_aux::set_servo_failsafe(RC_Channel_aux::k_aileron, RC_Channel::RC_CHANNEL_LIMIT_MAX);
+    RC_Channel_aux::set_servo_failsafe(RC_Channel_aux::k_aileron, RC_Channel::RC_CHANNEL_LIMIT_MIN);
     RC_Channel_aux::set_servo_failsafe(RC_Channel_aux::k_rudder, RC_Channel::RC_CHANNEL_LIMIT_MAX);
     RC_Channel_aux::set_servo_failsafe(RC_Channel_aux::k_elevator, RC_Channel::RC_CHANNEL_LIMIT_MAX);
     RC_Channel_aux::set_servo_failsafe(RC_Channel_aux::k_elevator_with_input, RC_Channel::RC_CHANNEL_LIMIT_MAX);
@@ -310,7 +352,7 @@ void APM_OBC::check_crash_plane(void)
     RC_Channel *ch_yaw      = RC_Channel::rc_channel(rcmap.yaw()-1);
     RC_Channel *ch_throttle = RC_Channel::rc_channel(rcmap.throttle()-1);
 
-    ch_roll->radio_out     = ch_roll->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MAX);
+    ch_roll->radio_out     = ch_roll->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MIN);
     ch_pitch->radio_out    = ch_pitch->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MAX);
     ch_yaw->radio_out      = ch_yaw->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MAX);
     ch_throttle->radio_out = ch_throttle->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MIN);
@@ -318,7 +360,7 @@ void APM_OBC::check_crash_plane(void)
     // and all aux channels
     RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_flap_auto, RC_Channel::RC_CHANNEL_LIMIT_MAX);
     RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_flap, RC_Channel::RC_CHANNEL_LIMIT_MAX);
-    RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_aileron, RC_Channel::RC_CHANNEL_LIMIT_MAX);
+    RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_aileron, RC_Channel::RC_CHANNEL_LIMIT_MIN);
     RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_rudder, RC_Channel::RC_CHANNEL_LIMIT_MAX);
     RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_elevator, RC_Channel::RC_CHANNEL_LIMIT_MAX);
     RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_elevator_with_input, RC_Channel::RC_CHANNEL_LIMIT_MAX);

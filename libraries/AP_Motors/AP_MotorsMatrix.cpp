@@ -385,17 +385,21 @@ void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitc
     }
 }
 
-// add_motor using just position and prop direction
+// add_motor using just position and prop direction - assumes that for each motor, roll and pitch factors are equal
 void AP_MotorsMatrix::add_motor(int8_t motor_num, float angle_degrees, float yaw_factor, uint8_t testing_order)
 {
-    // call raw motor set-up method
+    add_motor(motor_num, angle_degrees, angle_degrees, yaw_factor, testing_order);
+}
+
+// add_motor using position and prop direction. Roll and Pitch factors can differ (for asymmetrical frames)
+void AP_MotorsMatrix::add_motor(int8_t motor_num, float roll_factor_in_degrees, float pitch_factor_in_degrees, float yaw_factor, uint8_t testing_order)
+{
     add_motor_raw(
         motor_num,
-        cosf(radians(angle_degrees + 90)),               // roll factor
-        cosf(radians(angle_degrees)),                    // pitch factor
-        yaw_factor,                                      // yaw factor
+        cosf(radians(roll_factor_in_degrees + 90)),
+        cosf(radians(pitch_factor_in_degrees)),
+        yaw_factor,
         testing_order);
-
 }
 
 // remove_motor - disabled motor and clears all roll, pitch, throttle factors for this motor

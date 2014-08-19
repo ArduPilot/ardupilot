@@ -312,6 +312,7 @@ for build in stable beta latest; do
     build_arduplane $build
     build_arducopter $build
     build_rover $build
+    build_antennatracker $build
 done
 
 rm -rf $TMPDIR

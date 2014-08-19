@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V3.2-rc5"
+#define THISFIRMWARE "ArduCopter V3.3-dev"
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1089,9 +1089,7 @@ static void update_batt_compass(void)
     if(g.compass_enabled) {
         // update compass with throttle value - used for compassmot
         compass.set_throttle((float)g.rc_3.servo_out/1000.0f);
-        if (compass.read()) {
-            compass.learn_offsets();
-        }
+        compass.read();
         // log compass information
         if (g.log_bitmask & MASK_LOG_COMPASS) {
             Log_Write_Compass();

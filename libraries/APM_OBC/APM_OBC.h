@@ -52,7 +52,9 @@ public:
         mission(_mission),
         baro(_baro),
         gps(_gps),
-        rcmap(_rcmap)
+        rcmap(_rcmap),
+        _gps_loss_count(0),
+        _comms_loss_count(0)
         {
             AP_Param::setup_object_defaults(this, var_info);
             
@@ -62,7 +64,7 @@ public:
             _saved_wp = 0;
         }
 
-    void check(enum control_mode control_mode, uint32_t last_heartbeat_ms);
+    void check(enum control_mode control_mode, uint32_t last_heartbeat_ms, bool geofence_breached, uint32_t last_valid_rc_ms);
 
     // called in servo output code to set servos to crash position if needed
     void check_crash_plane(void);
@@ -93,11 +95,26 @@ private:
     AP_Float _qnh_pressure;
     AP_Int32 _amsl_limit;
     AP_Int32 _amsl_margin_gps;
+    AP_Int16 _rc_fail_time;
+    AP_Int8  _max_gps_loss;
+    AP_Int8  _max_comms_loss;
 
     bool _heartbeat_pin_value;
 
     // saved waypoint for resuming mission
     uint8_t _saved_wp;
+    
+    // number of times we've lost GPS
+    uint8_t _gps_loss_count;
+
+    // number of times we've lost data link
+    uint8_t _comms_loss_count;
+
+    // last comms loss time
+    uint32_t _last_comms_loss_ms;
+
+    // last GPS loss time
+    uint32_t _last_gps_loss_ms;
 
     // have the failsafe values been setup?
     bool _failsafe_setup:1;
@@ -109,6 +126,6 @@ private:
 };
 
 // map from ArduPlane control_mode to APM_OBC::control_mode
-#define OBC_MODE(control_mode) ((control_mode==AUTO?APM_OBC::OBC_AUTO:control_mode==MANUAL?APM_OBC::OBC_MANUAL:APM_OBC::OBC_FBW))
+#define OBC_MODE(control_mode) (auto_throttle_mode?APM_OBC::OBC_AUTO:(control_mode==MANUAL?APM_OBC::OBC_MANUAL:APM_OBC::OBC_FBW))
 
 #endif // APM_OBC_H

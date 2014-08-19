@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduPlane V3.1.0-beta2"
+#define THISFIRMWARE "ArduPlane V3.1.0-beta3"
 /*
    Lead developer: Andrew Tridgell
  
@@ -975,7 +975,7 @@ static void obc_fs_check(void)
 {
 #if OBC_FAILSAFE == ENABLED
     // perform OBC failsafe checks
-    obc.check(OBC_MODE(control_mode), failsafe.last_heartbeat_ms);
+    obc.check(OBC_MODE(control_mode), failsafe.last_heartbeat_ms, geofence_breached(), failsafe.last_valid_rc_ms);
 #endif
 }
 
@@ -1029,7 +1029,7 @@ static void one_second_loop()
 static void log_perf_info()
 {
     if (scheduler.debug() != 0) {
-        hal.console->printf_P(PSTR("G_Dt_max=%lu\n"), (unsigned long)G_Dt_max);
+        gcs_send_text_fmt(PSTR("G_Dt_max=%lu\n"), (unsigned long)G_Dt_max);
     }
     if (should_log(MASK_LOG_PM))
         Log_Write_Performance();
