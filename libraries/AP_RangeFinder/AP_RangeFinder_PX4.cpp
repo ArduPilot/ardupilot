@@ -122,7 +122,7 @@ void AP_RangeFinder_PX4::update(void)
     }
 
     // consider the range finder healthy if we got a reading in the last 0.2s
-    state.healthy = (hrt_absolute_time() - _last_timestamp < 200000);
+    state.healthy = (hal.scheduler->micros64() - _last_timestamp < 200000);
 
     if (count != 0) {
         state.distance_cm = sum / count * 100.0f;
