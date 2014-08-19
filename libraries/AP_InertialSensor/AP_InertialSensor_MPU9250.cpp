@@ -257,7 +257,7 @@ uint16_t AP_InertialSensor_MPU9250::_init_sensor( Sample_rate sample_rate )
  */
 bool AP_InertialSensor_MPU9250::_sample_available()
 {
-    uint32_t tnow = hal.scheduler->micros();
+    uint64_t tnow = hal.scheduler->micros64();
     while (tnow - _last_sample_usec > _sample_time_usec) {
         _have_sample_available = true;
         _last_sample_usec += _sample_time_usec;
@@ -273,10 +273,10 @@ bool AP_InertialSensor_MPU9250::wait_for_sample(uint16_t timeout_ms)
     if (_sample_available()) {
         return true;
     }
-    uint32_t start = hal.scheduler->millis();
-    while ((hal.scheduler->millis() - start) < timeout_ms) {
-        uint32_t tnow = hal.scheduler->micros();
-        uint32_t tdelay = (_last_sample_usec + _sample_time_usec) - tnow;
+    uint64_t start = hal.scheduler->millis64();
+    while ((hal.scheduler->millis64() - start) < timeout_ms) {
+        uint64_t tnow = hal.scheduler->micros64();
+        uint64_t tdelay = (_last_sample_usec + _sample_time_usec) - tnow;
         if (tdelay < 100000) {
             hal.scheduler->delay_microseconds(tdelay);
         }

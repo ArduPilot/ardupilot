@@ -45,7 +45,7 @@ private:
     AP_HAL::Semaphore *_spi_sem;
 
     uint32_t _sample_time_usec;
-    uint32_t _last_sample_usec;
+    uint64_t _last_sample_usec;
 
     // ensure we can't initialise twice
     bool                 _initialised;
