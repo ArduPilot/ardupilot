@@ -76,14 +76,24 @@ void VRBRAINScheduler::init(void *unused)
 	pthread_create(&_io_thread_ctx, &thread_attr, (pthread_startroutine_t)&VRBRAIN::VRBRAINScheduler::_io_thread, this);
 }
 
-uint32_t VRBRAINScheduler::micros()
+uint64_t VRBRAINScheduler::micros64() 
 {
-    return (uint32_t)(hrt_absolute_time() - _sketch_start_time);
+    return hrt_absolute_time() - _sketch_start_time;
 }
 
-uint32_t VRBRAINScheduler::millis()
+uint64_t VRBRAINScheduler::millis64() 
 {
-    return hrt_absolute_time() / 1000;
+    return micros64() / 1000;
+}
+
+uint32_t VRBRAINScheduler::micros() 
+{
+    return micros64() & 0xFFFFFFFF;
+}
+
+uint32_t VRBRAINScheduler::millis() 
+{
+    return millis64() & 0xFFFFFFFF;
 }
 
 /**
