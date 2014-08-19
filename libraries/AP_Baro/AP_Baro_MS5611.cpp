@@ -355,16 +355,14 @@ bool AP_Baro_MS5611::init()
 // temperature does not change so quickly...
 void AP_Baro_MS5611::_update(void)
 {
-    uint32_t tnow = hal.scheduler->micros();
     // Throttle read rate to 100hz maximum.
-    if (tnow - _timer < 10000) {
+    if (hal.scheduler->micros() - _timer < 10000) {
         return;
     }
 
     if (!_serial->sem_take_nonblocking()) {
         return;
     }
-    _timer = tnow;
 
     if (_state == 0) {
         // On state 0 we read temp
@@ -408,6 +406,7 @@ void AP_Baro_MS5611::_update(void)
         }
     }
 
+    _timer = hal.scheduler->micros();
     _serial->sem_give();
 }
 
