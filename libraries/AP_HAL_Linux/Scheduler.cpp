@@ -235,12 +235,22 @@ void *LinuxScheduler::_timer_thread(void)
     while (system_initializing()) {
         poll(NULL, 0, 1);        
     }
+    /*
+      this aims to run at an average of 1kHz, so that it can be used
+      to drive 1kHz processes without drift
+     */
+    uint32_t next_run_usec = micros() + 1000;
     while (true) {
-        _microsleep(1000);
-
+        uint32_t dt = next_run_usec - micros();
+        if (dt > 2000) {
+            // we've lost sync - restart
+            next_run_usec = micros();
+        } else {
+            _microsleep(dt);
+        }
+        next_run_usec += 1000;
         // run registered timers
         _run_timers(true);
-
     }
     return NULL;
 }
