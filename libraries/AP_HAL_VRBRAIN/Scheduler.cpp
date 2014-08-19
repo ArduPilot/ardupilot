@@ -38,8 +38,6 @@ VRBRAINScheduler::VRBRAINScheduler() :
 
 void VRBRAINScheduler::init(void *unused)
 {
-    _sketch_start_time = hrt_absolute_time();
-
     _main_task_pid = getpid();
 
     // setup the timer thread - this will call tasks at 1kHz
@@ -78,7 +76,7 @@ void VRBRAINScheduler::init(void *unused)
 
 uint64_t VRBRAINScheduler::micros64() 
 {
-    return hrt_absolute_time() - _sketch_start_time;
+    return hrt_absolute_time();
 }
 
 uint64_t VRBRAINScheduler::millis64() 
@@ -116,9 +114,9 @@ void VRBRAINScheduler::delay_microseconds(uint16_t usec)
         perf_end(_perf_delay);
         return;
     }
-	uint32_t start = micros();
-    uint32_t dt;
-	while ((dt=(micros() - start)) < usec) {
+	uint64_t start = micros64();
+    uint64_t dt;
+	while ((dt=(micros64() - start)) < usec) {
 		up_udelay(usec - dt);
 	}
     perf_end(_perf_delay);
@@ -131,9 +129,9 @@ void VRBRAINScheduler::delay(uint16_t ms)
         return;
     }
     perf_begin(_perf_delay);
-	uint64_t start = hrt_absolute_time();
+	uint64_t start = micros64();
     
-    while ((hrt_absolute_time() - start)/1000 < ms && 
+    while ((micros64() - start)/1000 < ms && 
            !_vrbrain_thread_should_exit) {
         delay_microseconds_semaphore(1000);
         if (_min_delay_cb_ms <= ms) {

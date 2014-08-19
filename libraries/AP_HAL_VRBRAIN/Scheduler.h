@@ -53,7 +53,6 @@ private:
     uint16_t _min_delay_cb_ms;
     AP_HAL::Proc _failsafe;
     volatile bool _timer_pending;
-    uint64_t _sketch_start_time;
 
     volatile bool _timer_suspended;
 
