@@ -190,7 +190,7 @@ void LinuxScheduler::suspend_timer_procs()
 {
     _timer_suspended = true;
     while (_in_timer_proc) {
-        usleep(1);
+        delay_microseconds(20);
     }
 }
 
