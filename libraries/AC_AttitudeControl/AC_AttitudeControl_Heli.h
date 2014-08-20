@@ -22,17 +22,18 @@ public:
                         const AP_Vehicle::MultiCopter &aparm,
                         AP_MotorsHeli& motors,
                         AC_P& p_angle_roll, AC_P& p_angle_pitch, AC_P& p_angle_yaw,
-                        AC_HELI_PID& pid_rate_roll, AC_HELI_PID& pid_rate_pitch, AC_HELI_PID& pid_rate_yaw,
-                        RC_Channel& rc_roll, RC_Channel& rc_pitch
+                        AC_HELI_PID& pid_rate_roll, AC_HELI_PID& pid_rate_pitch, AC_HELI_PID& pid_rate_yaw
                         ) :
         AC_AttitudeControl(ahrs, aparm, motors,
                            p_angle_roll, p_angle_pitch, p_angle_yaw,
                            pid_rate_roll, pid_rate_pitch, pid_rate_yaw),
-        _rc_roll(rc_roll),
-        _rc_pitch(rc_pitch)
+        _passthrough_roll(0), _passthrough_pitch(0)
 		{
             AP_Param::setup_object_defaults(this, var_info);
 		}
+
+    // passthrough_bf_roll_pitch_rate_yaw - roll and pitch are passed through directly, body-frame rate target for yaw
+    void passthrough_bf_roll_pitch_rate_yaw(float roll_passthrough, float pitch_passthrough, float yaw_rate_bf);
 
 	// rate_controller_run - run lowest level body-frame rate controller and send outputs to the motors
 	// should be called at 100hz or more
@@ -57,12 +58,8 @@ private:
         uint8_t limit_pitch         :   1;  // 1 if we have requested larger pitch angle than swash can physically move
         uint8_t limit_yaw           :   1;  // 1 if we have requested larger yaw angle than tail servo can physically move
         uint8_t leaky_i             :   1;  // 1 if we should use leaky i term for body-frame rate to motor stage
-        uint8_t flybar_passthrough  :   1;  // 1 if we should pass through pilots input directly to swash-plate
+        uint8_t flybar_passthrough  :   1;  // 1 if we should pass through pilots roll & pitch input directly to swash-plate
     } _flags_heli;
-    
-    // references to external libraries
-    RC_Channel& _rc_roll;
-    RC_Channel& _rc_pitch;
 
     //
     // body-frame rate controller
@@ -79,8 +76,6 @@ private:
     // get_angle_boost - calculate total body frame throttle required to produce the given earth frame throttle
     virtual int16_t get_angle_boost(int16_t throttle_pwm);
     
-    // roll and pitch inputs are sent directly to motor outputs (servos) direct flybar control.
-    void passthrough_to_motor_roll_pitch();
     
     // LPF filters to act on Rate Feedforward terms to linearize output.
     // Due to complicated aerodynamic effects, feedforwards acting too fast can lead
@@ -89,6 +84,9 @@ private:
     LowPassFilterInt32 roll_feedforward_filter;
     LowPassFilterInt32 yaw_feedforward_filter;
 
+    // pass through for roll and pitch
+    int16_t _passthrough_roll;
+    int16_t _passthrough_pitch;
 };
 
 #endif //AC_ATTITUDECONTROL_HELI_H
