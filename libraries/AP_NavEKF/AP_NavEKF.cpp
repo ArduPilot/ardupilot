@@ -2589,7 +2589,7 @@ void NavEKF::OpticalFlowEKF()
             Popt[0][0] = max(nextPopt[0][0],0.0f);
             Popt[1][1] = max(nextPopt[1][1],0.0f);
             Popt[0][1] = 0.5f * (nextPopt[0][1] + nextPopt[1][0]);
-            Popt[1][0] = 0.5f * (nextPopt[0][1] + nextPopt[1][0]);
+            Popt[1][0] = Popt[0][1];
         }
     }
 
@@ -2603,10 +2603,20 @@ void NavEKF::OpticalFlowEKF()
         float q1; // quaternion at optical flow measurement time
         float q2; // quaternion at optical flow measurement time
         float q3; // quaternion at optical flow measurement time
+        float HP[2];
+        float SH_OPT[6];
+        float SK_OPT[3];
+        float K_OPT[2][2];
+        float H_OPT[2][2];
+        float nextPopt[2][2];
+        float SH015;
+        float SH025;
+        float SH014;
+        float SH024;
 
         // propagate scale factor state noise
         if (!fScaleInhibit) {
-            Popt[0][0] += 1e-9f;
+            Popt[0][0] += 1e-8f;
         } else {
             Popt[0][0] = 0.0f;
         }
@@ -2639,18 +2649,19 @@ void NavEKF::OpticalFlowEKF()
         auxFlowObsInnov[1] = losPred[1] - flowRadXY[1];
 
         // calculate Kalman gains
-        float SH_OPT[6];
         SH_OPT[0] = sq(q0) - sq(q1) - sq(q2) + sq(q3);
         SH_OPT[1] = vel.x*(sq(q0) + sq(q1) - sq(q2) - sq(q3)) + vel.y*(2*q0*q3 + 2*q1*q2) - vel.z*(2*q0*q2 - 2*q1*q3);
         SH_OPT[2] = vel.y*(sq(q0) - sq(q1) + sq(q2) - sq(q3)) - vel.x*(2*q0*q3 - 2*q1*q2) + vel.z*(2*q0*q1 + 2*q2*q3);
         SH_OPT[3] = statesAtFlowTime.position[2] - flowStates[1];
-        SH_OPT[4] = 1/sq(SH_OPT[3]);
-        SH_OPT[5] = 1/SH_OPT[3];
-        float SK_OPT[3];
-        SK_OPT[0] = 1.0f/(R_LOS + SH_OPT[0]*SH_OPT[1]*SH_OPT[5]*(Popt[0][0]*SH_OPT[0]*SH_OPT[1]*SH_OPT[5] + Popt[1][0]*flowStates[0]*SH_OPT[0]*SH_OPT[1]*SH_OPT[4]) + flowStates[0]*SH_OPT[0]*SH_OPT[1]*SH_OPT[4]*(Popt[0][1]*SH_OPT[0]*SH_OPT[1]*SH_OPT[5] + Popt[1][1]*flowStates[0]*SH_OPT[0]*SH_OPT[1]*SH_OPT[4]));
-        SK_OPT[1] = 1.0f/(R_LOS + SH_OPT[0]*SH_OPT[2]*SH_OPT[5]*(Popt[0][0]*SH_OPT[0]*SH_OPT[2]*SH_OPT[5] + Popt[1][0]*flowStates[0]*SH_OPT[0]*SH_OPT[2]*SH_OPT[4]) + flowStates[0]*SH_OPT[0]*SH_OPT[2]*SH_OPT[4]*(Popt[0][1]*SH_OPT[0]*SH_OPT[2]*SH_OPT[5] + Popt[1][1]*flowStates[0]*SH_OPT[0]*SH_OPT[2]*SH_OPT[4]));
+        SH_OPT[4] = 1.0f/sq(SH_OPT[3]);
+        SH_OPT[5] = 1.0f/SH_OPT[3];
+        SH015 = SH_OPT[0]*SH_OPT[1]*SH_OPT[5];
+        SH025 = SH_OPT[0]*SH_OPT[2]*SH_OPT[5];
+        SH014 = SH_OPT[0]*SH_OPT[1]*SH_OPT[4];
+        SH024 = SH_OPT[0]*SH_OPT[2]*SH_OPT[4];
+        SK_OPT[0] = 1.0f/(R_LOS + SH015*(Popt[0][0]*SH015 + Popt[1][0]*flowStates[0]*SH014) + flowStates[0]*SH014*(Popt[0][1]*SH015 + Popt[1][1]*flowStates[0]*SH014));
+        SK_OPT[1] = 1.0f/(R_LOS + SH025*(Popt[0][0]*SH025 + Popt[1][0]*flowStates[0]*SH024) + flowStates[0]*SH024*(Popt[0][1]*SH025 + Popt[1][1]*flowStates[0]*SH024));
         SK_OPT[2] = SH_OPT[0];
-        float K_OPT[2][2];
         if (!fScaleInhibit) {
             K_OPT[0][0] = -SK_OPT[1]*(Popt[0][0]*SH_OPT[2]*SH_OPT[5]*SK_OPT[2] + Popt[0][1]*flowStates[0]*SH_OPT[2]*SH_OPT[4]*SK_OPT[2]);
             K_OPT[0][1] =  SK_OPT[0]*(Popt[0][0]*SH_OPT[1]*SH_OPT[5]*SK_OPT[2] + Popt[0][1]*flowStates[0]*SH_OPT[1]*SH_OPT[4]*SK_OPT[2]);
@@ -2666,6 +2677,11 @@ void NavEKF::OpticalFlowEKF()
             K_OPT[1][1] = 0.0f;
         }
 
+        // calculate observations jacobians
+        H_OPT[0][0] = -SH025;
+        H_OPT[0][1] = -flowStates[0]*SH024;
+        H_OPT[1][0] =  SH015;
+        H_OPT[1][1] =  flowStates[0]*SH014;
 
         // calculate innovation variances
         auxFlowObsInnovVar[0] = 1.0f/SK_OPT[1];
@@ -2687,23 +2703,23 @@ void NavEKF::OpticalFlowEKF()
                 flowStates[1] = max(flowStates[1], statesAtFlowTime.position[2] + 0.5f);
 
                 // correct the covariance matrix
-                float nextPopt[2][2];
-                if (obsIndex == 0) {
-                    nextPopt[0][0] = - Popt[0][0]*(SH_OPT[0]*SH_OPT[2]*SH_OPT[5]*SK_OPT[1]*(Popt[0][0]*SH_OPT[2]*SH_OPT[5]*SK_OPT[2] + Popt[0][1]*flowStates[0]*SH_OPT[2]*SH_OPT[4]*SK_OPT[2]) - 1) - Popt[1][0]*flowStates[0]*SH_OPT[0]*SH_OPT[2]*SH_OPT[4]*SK_OPT[1]*(Popt[0][0]*SH_OPT[2]*SH_OPT[5]*SK_OPT[2] + Popt[0][1]*flowStates[0]*SH_OPT[2]*SH_OPT[4]*SK_OPT[2]);
-                    nextPopt[0][1] = - Popt[0][1]*(SH_OPT[0]*SH_OPT[2]*SH_OPT[5]*SK_OPT[1]*(Popt[0][0]*SH_OPT[2]*SH_OPT[5]*SK_OPT[2] + Popt[0][1]*flowStates[0]*SH_OPT[2]*SH_OPT[4]*SK_OPT[2]) - 1) - Popt[1][1]*flowStates[0]*SH_OPT[0]*SH_OPT[2]*SH_OPT[4]*SK_OPT[1]*(Popt[0][0]*SH_OPT[2]*SH_OPT[5]*SK_OPT[2] + Popt[0][1]*flowStates[0]*SH_OPT[2]*SH_OPT[4]*SK_OPT[2]);
-                    nextPopt[1][0] = - Popt[1][0]*(flowStates[0]*SH_OPT[0]*SH_OPT[2]*SH_OPT[4]*SK_OPT[1]*(Popt[1][0]*SH_OPT[2]*SH_OPT[5]*SK_OPT[2] + Popt[1][1]*flowStates[0]*SH_OPT[2]*SH_OPT[4]*SK_OPT[2]) - 1) - Popt[0][0]*SH_OPT[0]*SH_OPT[2]*SH_OPT[5]*SK_OPT[1]*(Popt[1][0]*SH_OPT[2]*SH_OPT[5]*SK_OPT[2] + Popt[1][1]*flowStates[0]*SH_OPT[2]*SH_OPT[4]*SK_OPT[2]);
-                    nextPopt[1][1] = - Popt[1][1]*(flowStates[0]*SH_OPT[0]*SH_OPT[2]*SH_OPT[4]*SK_OPT[1]*(Popt[1][0]*SH_OPT[2]*SH_OPT[5]*SK_OPT[2] + Popt[1][1]*flowStates[0]*SH_OPT[2]*SH_OPT[4]*SK_OPT[2]) - 1) - Popt[0][1]*SH_OPT[0]*SH_OPT[2]*SH_OPT[5]*SK_OPT[1]*(Popt[1][0]*SH_OPT[2]*SH_OPT[5]*SK_OPT[2] + Popt[1][1]*flowStates[0]*SH_OPT[2]*SH_OPT[4]*SK_OPT[2]);
-                } else if (obsIndex == 1) {
-                    nextPopt[0][0] = - Popt[0][0]*(SH_OPT[0]*SH_OPT[1]*SH_OPT[5]*SK_OPT[0]*(Popt[0][0]*SH_OPT[1]*SH_OPT[5]*SK_OPT[2] + Popt[0][1]*flowStates[0]*SH_OPT[1]*SH_OPT[4]*SK_OPT[2]) - 1) - Popt[1][0]*flowStates[0]*SH_OPT[0]*SH_OPT[1]*SH_OPT[4]*SK_OPT[0]*(Popt[0][0]*SH_OPT[1]*SH_OPT[5]*SK_OPT[2] + Popt[0][1]*flowStates[0]*SH_OPT[1]*SH_OPT[4]*SK_OPT[2]);
-                    nextPopt[0][1] = - Popt[0][1]*(SH_OPT[0]*SH_OPT[1]*SH_OPT[5]*SK_OPT[0]*(Popt[0][0]*SH_OPT[1]*SH_OPT[5]*SK_OPT[2] + Popt[0][1]*flowStates[0]*SH_OPT[1]*SH_OPT[4]*SK_OPT[2]) - 1) - Popt[1][1]*flowStates[0]*SH_OPT[0]*SH_OPT[1]*SH_OPT[4]*SK_OPT[0]*(Popt[0][0]*SH_OPT[1]*SH_OPT[5]*SK_OPT[2] + Popt[0][1]*flowStates[0]*SH_OPT[1]*SH_OPT[4]*SK_OPT[2]);
-                    nextPopt[1][0] = - Popt[1][0]*(flowStates[0]*SH_OPT[0]*SH_OPT[1]*SH_OPT[4]*SK_OPT[0]*(Popt[1][0]*SH_OPT[1]*SH_OPT[5]*SK_OPT[2] + Popt[1][1]*flowStates[0]*SH_OPT[1]*SH_OPT[4]*SK_OPT[2]) - 1) - Popt[0][0]*SH_OPT[0]*SH_OPT[1]*SH_OPT[5]*SK_OPT[0]*(Popt[1][0]*SH_OPT[1]*SH_OPT[5]*SK_OPT[2] + Popt[1][1]*flowStates[0]*SH_OPT[1]*SH_OPT[4]*SK_OPT[2]);
-                    nextPopt[1][1] = - Popt[1][1]*(flowStates[0]*SH_OPT[0]*SH_OPT[1]*SH_OPT[4]*SK_OPT[0]*(Popt[1][0]*SH_OPT[1]*SH_OPT[5]*SK_OPT[2] + Popt[1][1]*flowStates[0]*SH_OPT[1]*SH_OPT[4]*SK_OPT[2]) - 1) - Popt[0][1]*SH_OPT[0]*SH_OPT[1]*SH_OPT[5]*SK_OPT[0]*(Popt[1][0]*SH_OPT[1]*SH_OPT[5]*SK_OPT[2] + Popt[1][1]*flowStates[0]*SH_OPT[1]*SH_OPT[4]*SK_OPT[2]);
+                for (uint8_t i = 0; i < 2 ; i++) {
+                    HP[i] = 0.0f;
+                    for (uint8_t j = 0; j < 2 ; j++) {
+                        HP[i] += H_OPT[obsIndex][j] * P[j][i];
+                    }
                 }
+                for (uint8_t i = 0; i < 2 ; i++) {
+                    for (uint8_t j = 0; j < 2 ; j++) {
+                        nextPopt[i][j] = P[i][j] - K_OPT[i][obsIndex] * HP[j];
+                    }
+                }
+
                 // prevent the state variances from becoming negative and maintain symmetry
                 Popt[0][0] = max(nextPopt[0][0],0.0f);
                 Popt[1][1] = max(nextPopt[1][1],0.0f);
                 Popt[0][1] = 0.5f * (nextPopt[0][1] + nextPopt[1][0]);
-                Popt[1][0] = 0.5f * (nextPopt[0][1] + nextPopt[1][0]);
+                Popt[1][0] = Popt[0][1];
             }
         }
     }
