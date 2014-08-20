@@ -39,13 +39,14 @@ static void heli_acro_run()
     if (!motors.has_flybar()){
         // convert the input to the desired body frame rate
         get_pilot_desired_angle_rates(g.rc_1.control_in, g.rc_2.control_in, g.rc_4.control_in, target_roll, target_pitch, target_yaw);
+        // run attitude controller
+        attitude_control.rate_bf_roll_pitch_yaw(target_roll, target_pitch, target_yaw);
     }else{
         // flybar helis only need yaw rate control
         get_pilot_desired_yaw_rate(g.rc_4.control_in, target_yaw);
+        // run attitude controller
+        attitude_control.passthrough_bf_roll_pitch_rate_yaw(g.rc_1.control_in, g.rc_2.control_in, target_yaw);
     }
-
-    // run attitude controller
-    attitude_control.rate_bf_roll_pitch_yaw(target_roll, target_pitch, target_yaw);
 
     // output pilot's throttle without angle boost
     attitude_control.set_throttle_out(g.rc_3.control_in, false);
