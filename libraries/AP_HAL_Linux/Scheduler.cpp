@@ -198,19 +198,14 @@ void LinuxScheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t per
 
 void LinuxScheduler::suspend_timer_procs()
 {
-    _timer_suspended = true;
-    while (_in_timer_proc) {
-        delay_microseconds(20);
+    if (!_timer_semaphore.take(0)) {
+        printf("Failed to take timer semaphore\n");
     }
 }
 
 void LinuxScheduler::resume_timer_procs()
 {
-    _timer_suspended = false;
-    if (_timer_event_missed == true) {
-        _run_timers(false);
-        _timer_event_missed = false;
-    }
+    _timer_semaphore.give();
 }
 
 void LinuxScheduler::_run_timers(bool called_from_timer_thread)
@@ -220,16 +215,16 @@ void LinuxScheduler::_run_timers(bool called_from_timer_thread)
     }
     _in_timer_proc = true;
 
-    if (!_timer_suspended) {
-        // now call the timer based drivers
-        for (int i = 0; i < _num_timer_procs; i++) {
-            if (_timer_proc[i] != NULL) {
-                _timer_proc[i]();
-            }
-        }
-    } else if (called_from_timer_thread) {
-        _timer_event_missed = true;
+    if (!_timer_semaphore.take(0)) {
+        printf("Failed to take timer semaphore in _run_timers\n");
     }
+    // now call the timer based drivers
+    for (int i = 0; i < _num_timer_procs; i++) {
+        if (_timer_proc[i] != NULL) {
+            _timer_proc[i]();
+        }
+    }
+    _timer_semaphore.give();
 
     // and the failsafe, if one is setup
     if (_failsafe != NULL) {
@@ -272,12 +267,10 @@ void LinuxScheduler::_run_io(void)
     }
     _in_io_proc = true;
 
-    if (!_timer_suspended) {
-        // now call the IO based drivers
-        for (int i = 0; i < _num_io_procs; i++) {
-            if (_io_proc[i] != NULL) {
-                _io_proc[i]();
-            }
+    // now call the IO based drivers
+    for (int i = 0; i < _num_io_procs; i++) {
+        if (_io_proc[i] != NULL) {
+            _io_proc[i]();
         }
     }
 
