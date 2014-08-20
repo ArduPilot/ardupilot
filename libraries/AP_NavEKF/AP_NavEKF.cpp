@@ -3911,7 +3911,7 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
     // This filter uses a different definition of optical flow rates to the sensor with a positive optical flow rate produced by a
     // negative rotation about that axis. For example a positive rotation of the flight vehicle about its X (roll) axis would produce a negative X flow rate
     flowMeaTime_ms = msecFlowMeas;
-    if (rawFlowQuality > 150){
+    if (rawFlowQuality > 100){
         flowQuality = rawFlowQuality;
         // recall vehicle states at mid sample time for flow observations allowing for delays
         RecallStates(statesAtFlowTime, flowMeaTime_ms - _msecFLowDelay - flowTimeDeltaAvg_ms/2);
