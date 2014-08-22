@@ -3,8 +3,6 @@
 #include "AC_AttitudeControl.h"
 #include <AP_HAL.h>
 
-extern const AP_HAL::HAL& hal;
-
 // table of user settable parameters
 const AP_Param::GroupInfo AC_AttitudeControl::var_info[] PROGMEM = {
 
@@ -674,7 +672,6 @@ void AC_AttitudeControl::accel_limiting(bool enable_limits)
         _accel_rp_max = 0.0f;
         _accel_y_max = 0.0f;
     }
-    hal.console->printf_P(PSTR("AccLim:%d"),(int)enable_limits);
 }
 
 //
