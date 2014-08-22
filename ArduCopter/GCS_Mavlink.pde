@@ -897,6 +897,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:         // MAV ID: 21
     {
+        gcs_send_text_P(SEVERITY_LOW, PSTR("Firmware: " FIRMWARE_STRING));
         handle_param_request_list(msg);
         break;
     }
