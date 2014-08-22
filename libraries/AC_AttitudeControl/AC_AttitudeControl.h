@@ -116,11 +116,12 @@ public:
     //
     // earth-frame <-> body-frame conversion functions
     //
-    // frame_conversion_ef_to_bf - converts earth frame rate targets to body frame rate targets
+    // frame_conversion_ef_to_bf - converts earth frame angles or rates to body frame
     void frame_conversion_ef_to_bf(const Vector3f& ef_vector, Vector3f &bf_vector);
 
-    // frame_conversion_bf_to_ef - converts body frame rate targets to earth frame rate targets
-    void frame_conversion_bf_to_ef(const Vector3f& bf_vector, Vector3f &ef_vector);
+    // frame_conversion_bf_to_ef - converts body frame angles or rates to earth frame
+    //  returns false if conversion fails due to gimbal lock
+    bool frame_conversion_bf_to_ef(const Vector3f& bf_vector, Vector3f &ef_vector);
 
     //
     // public accessor functions
