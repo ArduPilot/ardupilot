@@ -91,10 +91,11 @@ void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw(float roll_pass
 
     // update our earth-frame angle targets
     Vector3f angle_ef_error;
-    frame_conversion_bf_to_ef(_angle_bf_error, angle_ef_error);
-    _angle_ef_target.x = wrap_180_cd_float(angle_ef_error.x + _ahrs.roll_sensor);
-    _angle_ef_target.y = wrap_180_cd_float(angle_ef_error.y + _ahrs.pitch_sensor);
-    _angle_ef_target.z = wrap_360_cd_float(angle_ef_error.z + _ahrs.yaw_sensor);
+    if (frame_conversion_bf_to_ef(_angle_bf_error, angle_ef_error)) {
+        _angle_ef_target.x = wrap_180_cd_float(angle_ef_error.x + _ahrs.roll_sensor);
+        _angle_ef_target.y = wrap_180_cd_float(angle_ef_error.y + _ahrs.pitch_sensor);
+        _angle_ef_target.z = wrap_360_cd_float(angle_ef_error.z + _ahrs.yaw_sensor);
+    }
 
     // handle flipping over pitch axis
     if (_angle_ef_target.y > 9000.0f) {
