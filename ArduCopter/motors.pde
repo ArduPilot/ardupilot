@@ -223,7 +223,7 @@ static void pre_arm_checks(bool display_failure)
 
     // succeed if pre arm checks are disabled
     if(g.arming_check == ARMING_CHECK_NONE) {
-        set_pre_arm_check(true);
+        set_pre_arm_check(ARM_OK);
         set_pre_arm_rc_check(true);
         return;
     }
@@ -231,6 +231,7 @@ static void pre_arm_checks(bool display_failure)
     // pre-arm rc checks a prerequisite
     pre_arm_rc_checks();
     if(!ap.pre_arm_rc_check) {
+        set_pre_arm_check(ARM_RC_NOT_CAL);
         if (display_failure) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: RC not calibrated"));
         }
@@ -241,6 +242,7 @@ static void pre_arm_checks(bool display_failure)
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_BARO)) {
         // barometer health check
         if(!barometer.healthy()) {
+            set_pre_arm_check(ARM_BARO_NOT_HEALTHY);
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Baro not healthy"));
             }
@@ -248,6 +250,7 @@ static void pre_arm_checks(bool display_failure)
         }
         // check Baro & inav alt are within 1m
         if(fabs(inertial_nav.get_altitude() - baro_alt) > 100) {
+            set_pre_arm_check(ARM_ALT_DISPARITY);
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Alt disparity"));
             }
@@ -259,6 +262,7 @@ static void pre_arm_checks(bool display_failure)
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_COMPASS)) {
         // check the primary compass is healthy
         if(!compass.healthy(0)) {
+            set_pre_arm_check(ARM_COMPASS_NOT_HEALTHY);
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not healthy"));
             }
@@ -267,6 +271,7 @@ static void pre_arm_checks(bool display_failure)
 
         // check compass learning is on or offsets have been set
         if(!compass.learn_offsets_enabled() && !compass.configured()) {
+            set_pre_arm_check(ARM_COMPASS_NOT_CALIBRATED);
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not calibrated"));
             }
@@ -276,6 +281,7 @@ static void pre_arm_checks(bool display_failure)
         // check for unreasonable compass offsets
         Vector3f offsets = compass.get_offsets();
         if(offsets.length() > 500) {
+            set_pre_arm_check(ARM_COMPASS_OFFSET_HIGH);
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass offsets too high"));
             }
@@ -285,6 +291,7 @@ static void pre_arm_checks(bool display_failure)
         // check for unreasonable mag field length
         float mag_field = compass.get_field().length();
         if (mag_field > COMPASS_MAGFIELD_EXPECTED*1.65 || mag_field < COMPASS_MAGFIELD_EXPECTED*0.35) {
+            set_pre_arm_check(ARM_CHECK_MAG_FIELD);
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check mag field"));
             }
@@ -311,6 +318,7 @@ static void pre_arm_checks(bool display_failure)
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) {
         // check accelerometers have been calibrated
         if(!ins.calibrated()) {
+            set_pre_arm_check(ARM_INS_NOT_CALIBRATED);
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: INS not calibrated"));
             }
@@ -319,6 +327,7 @@ static void pre_arm_checks(bool display_failure)
 
         // check accels and gyros are healthy
         if(!ins.healthy()) {
+            set_pre_arm_check(ARM_INS_NOT_HEALTHY);
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: INS not healthy"));
             }
@@ -330,6 +339,7 @@ static void pre_arm_checks(bool display_failure)
     // check board voltage
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_VOLTAGE)) {
         if(hal.analogin->board_voltage() < BOARD_VOLTAGE_MIN || hal.analogin->board_voltage() > BOARD_VOLTAGE_MAX) {
+            set_pre_arm_check(ARM_BOARD_VOLTAGE);
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check Board Voltage"));
             }
@@ -344,6 +354,7 @@ static void pre_arm_checks(bool display_failure)
 
         // ensure ch7 and ch8 have different functions
         if ((g.ch7_option != 0 || g.ch8_option != 0) && g.ch7_option == g.ch8_option) {
+            set_pre_arm_check(ARM_CH7_CH8_SAME);
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Ch7&Ch8 Opt cannot be same"));
             }
@@ -354,6 +365,7 @@ static void pre_arm_checks(bool display_failure)
         if (g.failsafe_throttle) {
             // check throttle min is above throttle failsafe trigger and that the trigger is above ppm encoder's loss-of-signal value of 900
             if (g.rc_3.radio_min <= g.failsafe_throttle_value+10 || g.failsafe_throttle_value < 910) {
+                set_pre_arm_check(ARM_FS_THR_VALUE);
                 if (display_failure) {
                     gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check FS_THR_VALUE"));
                 }
@@ -362,7 +374,8 @@ static void pre_arm_checks(bool display_failure)
         }
 
         // lean angle parameter check
-    if (aparm.angle_max < 1000 || aparm.angle_max > 8000) {
+        if (aparm.angle_max < 1000 || aparm.angle_max > 8000) {
+            set_pre_arm_check(ARM_ANGLE_MAX);
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check ANGLE_MAX"));
             }
@@ -371,6 +384,7 @@ static void pre_arm_checks(bool display_failure)
 
         // acro balance parameter check
         if ((g.acro_balance_roll > g.p_stabilize_roll.kP()) || (g.acro_balance_pitch > g.p_stabilize_pitch.kP())) {
+            set_pre_arm_check(ARM_ACRO_BAL);
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: ACRO_BAL_ROLL/PITCH"));
             }
@@ -379,7 +393,7 @@ static void pre_arm_checks(bool display_failure)
     }
 
     // if we've gotten this far then pre arm checks have completed
-    set_pre_arm_check(true);
+    set_pre_arm_check(ARM_OK);
 }
 
 // perform pre_arm_rc_checks checks and set ap.pre_arm_rc_check flag
@@ -422,6 +436,7 @@ static bool pre_arm_gps_checks(bool display_failure)
 
     // check GPS is not glitching
     if (gps_glitch.glitching()) {
+        set_pre_arm_check(ARM_GPS_GLITCH);
         if (display_failure) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: GPS Glitch"));
         }
@@ -430,6 +445,7 @@ static bool pre_arm_gps_checks(bool display_failure)
 
     // ensure GPS is ok
     if (!GPS_ok()) {
+        set_pre_arm_check(ARM_GPS_NO_3D);
         if (display_failure) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Need 3D Fix"));
         }
@@ -438,6 +454,7 @@ static bool pre_arm_gps_checks(bool display_failure)
 
     // check speed is below 50cm/s
     if (speed_cms == 0 || speed_cms > PREARM_MAX_VELOCITY_CMS) {
+        set_pre_arm_check(ARM_GPS_VELOCITY);
         if (display_failure) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Bad Velocity"));
         }
@@ -446,6 +463,7 @@ static bool pre_arm_gps_checks(bool display_failure)
 
     // warn about hdop separately - to prevent user confusion with no gps lock
     if (gps.get_hdop() > g.gps_hdop_good) {
+        set_pre_arm_check(ARM_GPS_HDOP_HIGH);
         if (display_failure) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: High GPS HDOP"));
         }
@@ -468,6 +486,7 @@ static bool arm_checks(bool display_failure)
     // check Baro & inav alt are within 1m
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_BARO)) {
         if(fabs(inertial_nav.get_altitude() - baro_alt) > 100) {
+            set_pre_arm_check(ARM_ALT_DISPARITY);
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Alt disparity"));
             }
@@ -486,6 +505,7 @@ static bool arm_checks(bool display_failure)
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_PARAMETERS)) {
         // check throttle is above failsafe throttle
         if (g.failsafe_throttle != FS_THR_DISABLED && g.rc_3.radio_in < g.failsafe_throttle_value) {
+            set_pre_arm_check(ARM_THR_BELOW_FS);
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Thr below FS"));
             }
@@ -496,6 +516,7 @@ static bool arm_checks(bool display_failure)
     // check lean angle
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) {
         if (labs(ahrs.roll_sensor) > aparm.angle_max || labs(ahrs.pitch_sensor) > aparm.angle_max) {
+            set_pre_arm_check(ARM_LEANING);
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Leaning"));
             }
@@ -505,6 +526,7 @@ static bool arm_checks(bool display_failure)
 
     // check if safety switch has been pushed
     if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
+        set_pre_arm_check(ARM_SAFETY_SWITCH);
         if (display_failure) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Safety Switch"));
         }

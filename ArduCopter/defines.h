@@ -364,6 +364,31 @@ enum FlipState {
 #define ARMING_CHECK_RC                     0x40
 #define ARMING_CHECK_VOLTAGE                0x80
 
+// Arming check status
+#define ARM_OK                             0x00
+#define ARM_RC_NOT_CAL                     0x01
+#define ARM_BARO_NOT_HEALTHY               0x02
+#define ARM_ALT_DISPARITY                  0x03
+#define ARM_COMPASS_NOT_HEALTHY            0x04
+#define ARM_COMPASS_NOT_CALIBRATED         0x05
+#define ARM_COMPASS_OFFSET_HIGH            0x06
+#define ARM_CHECK_MAG_FIELD                0x07
+#define ARM_INS_NOT_CALIBRATED             0x08
+#define ARM_INS_NOT_HEALTHY                0x09
+#define ARM_BOARD_VOLTAGE                  0x10
+#define ARM_CH7_CH8_SAME                   0x11
+#define ARM_FS_THR_VALUE                   0x12
+#define ARM_ANGLE_MAX                      0x13
+#define ARM_ACRO_BAL                       0x14
+#define ARM_GPS_GLITCH                     0x15
+#define ARM_GPS_NO_3D                      0x16
+#define ARM_GPS_VELOCITY                   0x17
+#define ARM_GPS_HDOP_HIGH                  0x18
+#define ARM_THR_BELOW_FS                   0x19
+#define ARM_LEANING                        0x20
+#define ARM_SAFETY_SWITCH                  0x21
+
+
 // Radio failsafe definitions (FS_THR parameter)
 #define FS_THR_DISABLED                    0
 #define FS_THR_ENABLED_ALWAYS_RTL          1
