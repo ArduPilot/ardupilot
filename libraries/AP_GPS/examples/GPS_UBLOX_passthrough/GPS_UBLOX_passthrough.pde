@@ -34,6 +34,7 @@
 #include <AP_Math.h>
 #include <AP_Notify.h>
 #include <AP_NavEKF.h>
+#include <AP_Rally.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
