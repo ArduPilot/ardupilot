@@ -306,6 +306,13 @@ static void set_mode(enum FlightMode mode)
         autotune_restore();
     }
 
+    // zero initial pitch and highest airspeed on mode change
+    auto_state.highest_airspeed = 0;
+    auto_state.initial_pitch_cd = ahrs.pitch_sensor;
+
+    // disable taildrag takeoff on mode change
+    auto_state.fbwa_tdrag_takeoff_mode = false;
+
     switch(control_mode)
     {
     case INITIALISING:
@@ -351,8 +358,6 @@ static void set_mode(enum FlightMode mode)
     case AUTO:
         auto_throttle_mode = true;
         next_WP_loc = prev_WP_loc = current_loc;
-        auto_state.highest_airspeed = 0;
-        auto_state.initial_pitch_cd = ahrs.pitch_sensor;
         // start or resume the mission, based on MIS_AUTORESET
         mission.start_or_resume();
         break;

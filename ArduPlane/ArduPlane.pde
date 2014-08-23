@@ -531,6 +531,9 @@ static struct {
     // should we use cross-tracking for this waypoint?
     bool no_crosstrack:1;
 
+    // in FBWA taildragger takeoff mode
+    bool fbwa_tdrag_takeoff_mode:1;
+
     // Altitude threshold to complete a takeoff command in autonomous modes.  Centimeters
     int32_t takeoff_altitude_cm;
 
@@ -555,6 +558,7 @@ static struct {
     inverted_flight  : false,
     next_wp_no_crosstrack : true,
     no_crosstrack : true,
+    fbwa_tdrag_takeoff_mode : false,
     takeoff_altitude_cm : 0,
     takeoff_pitch_cd : 0,
     highest_airspeed : 0,
@@ -1308,6 +1312,16 @@ static void update_flight_mode(void)
             nav_roll_cd = 0;
             nav_pitch_cd = 0;
             channel_throttle->servo_out = 0;
+        }
+        if (g.fbwa_tdrag_chan > 0) {
+            // check for the user enabling FBWA taildrag takeoff mode
+            bool tdrag_mode = (hal.rcin->read(g.fbwa_tdrag_chan-1) > 1700);
+            if (tdrag_mode && !auto_state.fbwa_tdrag_takeoff_mode) {
+                if (auto_state.highest_airspeed < g.takeoff_tdrag_speed1) {
+                    auto_state.fbwa_tdrag_takeoff_mode = true;
+                    gcs_send_text_P(SEVERITY_LOW, PSTR("FBWA tdrag mode\n"));
+                }
+            }
         }
         break;
     }
