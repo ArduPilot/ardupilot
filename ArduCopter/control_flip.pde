@@ -141,7 +141,9 @@ static void flip_run()
         // between 45deg ~ -90deg request 400deg/sec roll
         attitude_control.rate_bf_roll_pitch_yaw(FLIP_ROTATION_RATE * flip_roll_dir, 0.0, 0.0);
         // decrease throttle
-        throttle_out -= FLIP_THR_DEC;
+        if (throttle_out >= g.throttle_min) {
+            throttle_out = max(throttle_out - FLIP_THR_DEC, g.throttle_min);
+        }
 
         // beyond -90deg move on to recovery
         if ((flip_angle < 4500) && (flip_angle > -9000)) {
@@ -153,7 +155,9 @@ static void flip_run()
         // between 45deg ~ -90deg request 400deg/sec pitch
         attitude_control.rate_bf_roll_pitch_yaw(0.0, FLIP_ROTATION_RATE * flip_pitch_dir, 0.0);
         // decrease throttle
-        throttle_out -= FLIP_THR_DEC;
+        if (throttle_out >= g.throttle_min) {
+            throttle_out = max(throttle_out - FLIP_THR_DEC, g.throttle_min);
+        }
 
         // check roll for inversion
         if ((labs(ahrs.roll_sensor) > 9000) && (flip_angle > 4500)) {
@@ -165,7 +169,9 @@ static void flip_run()
         // between 45deg ~ -90deg request 400deg/sec pitch
         attitude_control.rate_bf_roll_pitch_yaw(0.0, FLIP_ROTATION_RATE * flip_pitch_dir, 0.0);
         // decrease throttle
-        throttle_out -= FLIP_THR_DEC;
+        if (throttle_out >= g.throttle_min) {
+            throttle_out = max(throttle_out - FLIP_THR_DEC, g.throttle_min);
+        }
 
         // check roll for inversion
         if ((labs(ahrs.roll_sensor) < 9000) && (flip_angle > -4500)) {
