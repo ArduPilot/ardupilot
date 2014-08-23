@@ -110,11 +110,11 @@ void set_land_complete(bool b)
 
 // ---------------------------------------------
 
-void set_pre_arm_check(bool b)
+void set_pre_arm_check(uint8_t status)
 {
-    if(ap.pre_arm_check != b) {
-        ap.pre_arm_check = b;
-        AP_Notify::flags.pre_arm_check = b;
+    if(ap.pre_arm_check != status) {
+        ap.pre_arm_check = status;
+        AP_Notify::flags.pre_arm_check = (status == ARM_OK);
     }
 }
 
