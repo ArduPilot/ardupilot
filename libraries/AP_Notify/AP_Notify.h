@@ -24,6 +24,7 @@
 #include <ToshibaLED_I2C.h>
 #include <ToshibaLED_PX4.h>
 #include <ToneAlarm_PX4.h>
+#include <ToneAlarm_Linux.h>
 #include <ExternalLED.h>
 #include <Buzzer.h>
 
@@ -67,6 +68,9 @@ private:
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     ToshibaLED_PX4 toshibaled;
     ToneAlarm_PX4 tonealarm;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+    ToshibaLED_I2C toshibaled;
+    ToneAlarm_Linux tonealarm;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2 
     ExternalLED externalled;
     Buzzer buzzer;
@@ -79,4 +83,4 @@ private:
 #endif
 };
 
-#endif	// __AP_NOTIFY_H__
+#endif    // __AP_NOTIFY_H__
