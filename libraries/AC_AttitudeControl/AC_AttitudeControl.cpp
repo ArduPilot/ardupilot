@@ -387,12 +387,12 @@ void AC_AttitudeControl::rate_bf_roll_pitch_yaw(float roll_rate_bf, float pitch_
         }
         if (_angle_ef_target.y > 9000.0f) {
             _angle_ef_target.x = wrap_180_cd_float(_angle_ef_target.x + 18000.0f);
-            _angle_ef_target.y = wrap_180_cd_float(18000.0f - _angle_ef_target.x);
+            _angle_ef_target.y = wrap_180_cd_float(18000.0f - _angle_ef_target.y);
             _angle_ef_target.z = wrap_360_cd_float(_angle_ef_target.z + 18000.0f);
         }
         if (_angle_ef_target.y < -9000.0f) {
             _angle_ef_target.x = wrap_180_cd_float(_angle_ef_target.x + 18000.0f);
-            _angle_ef_target.y = wrap_180_cd_float(-18000.0f - _angle_ef_target.x);
+            _angle_ef_target.y = wrap_180_cd_float(-18000.0f - _angle_ef_target.y);
             _angle_ef_target.z = wrap_360_cd_float(_angle_ef_target.z + 18000.0f);
         }
     }
