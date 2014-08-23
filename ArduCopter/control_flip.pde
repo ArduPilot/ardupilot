@@ -90,24 +90,6 @@ static bool flip_init(bool ignore_checks)
     return true;
 }
 
-// flip_abandon - pilot request to abandon flip
-static void flip_stop()
-{
-    // exit immediatley if not in flip mode
-    if (control_mode != FLIP) {
-        return;
-    }
-
-    // return to original flip mode
-    if (!set_mode(flip_orig_control_mode)) {
-        // this should never happen but just in case
-        set_mode(STABILIZE);
-    }
-
-    // log completion
-    Log_Write_Event(DATA_FLIP_END);
-}
-
 // flip_run - runs the flip controller
 // should be called at 100hz or more
 static void flip_run()
