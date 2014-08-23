@@ -58,6 +58,14 @@ public:
        return commandline arguments, if available
      */
     virtual void commandline_arguments(uint8_t &argc, char * const *&argv) { argc = 0; }
+    
+    /*
+        ToneAlarm Driver
+    */
+    virtual uint8_t toneAlarm_init() { return -1;}
+    virtual void toneAlarm_set_tune(uint8_t tune) {}
+    virtual void _toneAlarm_timer_tick() {}
+    
 };
 
 #endif // __AP_HAL_UTIL_H__
