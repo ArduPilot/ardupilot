@@ -39,6 +39,7 @@ namespace YUNEEC {
     class YUNEECSemaphore;
     class YUNEECScheduler;
     class YUNEECUtil;
+    class YUNEECTimer;
 }
 
 #endif // __AP_HAL_YUNEEC_NAMESPACE_H__

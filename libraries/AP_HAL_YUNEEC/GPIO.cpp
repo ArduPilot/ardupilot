@@ -45,7 +45,7 @@ void setPinMode(GPIO_TypeDef* port, uint16_t bit, uint8_t output)
 	}
 
 	GPIO_InitStructure.GPIO_Pin = bit;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 

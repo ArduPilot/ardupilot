@@ -13,6 +13,7 @@
 #include <stm32f37x_usart.h>
 #include <stm32f37x_gpio.h>
 #include <stm32f37x_rcc.h>
+#include <stm32f37x_misc.h>
 
 using namespace YUNEEC;
 
@@ -270,10 +271,12 @@ void YUNEECUARTDriver::_configPort(const struct USART_Info &usart_info)
 	USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
 	USART_Init(usart_info.usart, &USART_InitStructure);
 
+	/* Configure two bits for preemption priority */
+	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 	/* Enable the USART Interrupt */
 	NVIC_InitStructure.NVIC_IRQChannel = usart_info.usartIRQn;
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStructure);
 }
