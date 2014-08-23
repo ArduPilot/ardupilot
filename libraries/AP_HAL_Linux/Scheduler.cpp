@@ -6,6 +6,7 @@
 #include "Storage.h"
 #include "RCInput.h"
 #include "UARTDriver.h"
+#include "Util.h"
 #include <sys/time.h>
 #include <poll.h>
 #include <unistd.h>
@@ -18,11 +19,12 @@ using namespace Linux;
 
 extern const AP_HAL::HAL& hal;
 
-#define APM_LINUX_TIMER_PRIORITY    14
-#define APM_LINUX_UART_PRIORITY     13
-#define APM_LINUX_RCIN_PRIORITY     12
-#define APM_LINUX_MAIN_PRIORITY     11
-#define APM_LINUX_IO_PRIORITY       10
+#define APM_LINUX_TIMER_PRIORITY        15
+#define APM_LINUX_UART_PRIORITY         14
+#define APM_LINUX_RCIN_PRIORITY         13
+#define APM_LINUX_MAIN_PRIORITY         12
+#define APM_LINUX_TONEALARM_PRIORITY    11
+#define APM_LINUX_IO_PRIORITY           10
 
 LinuxScheduler::LinuxScheduler()
 {}
@@ -76,7 +78,15 @@ void LinuxScheduler::init(void* machtnichts)
     pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
 
     pthread_create(&_rcin_thread_ctx, &thread_attr, (pthread_startroutine_t)&Linux::LinuxScheduler::_rcin_thread, this);
-  
+    
+    // the Tone Alarm thread runs at highest priority
+    param.sched_priority = APM_LINUX_TONEALARM_PRIORITY;
+    pthread_attr_init(&thread_attr);
+    (void)pthread_attr_setschedparam(&thread_attr, &param);
+    pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
+
+    pthread_create(&_tonealarm_thread_ctx, &thread_attr, (pthread_startroutine_t)&Linux::LinuxScheduler::_tonealarm_thread, this);
+    
     // the IO thread runs at lower priority
     pthread_attr_init(&thread_attr);
     param.sched_priority = APM_LINUX_IO_PRIORITY;
@@ -304,6 +314,21 @@ void *LinuxScheduler::_uart_thread(void)
         ((LinuxUARTDriver *)hal.uartA)->_timer_tick();
         ((LinuxUARTDriver *)hal.uartB)->_timer_tick();
         ((LinuxUARTDriver *)hal.uartC)->_timer_tick();
+    }
+    return NULL;
+}
+
+void *LinuxScheduler::_tonealarm_thread(void)
+{
+    _setup_realtime(32768);
+    while (system_initializing()) {
+        poll(NULL, 0, 1);        
+    }
+    while (true) {
+        _microsleep(20000);
+
+        // process tone command
+        ((LinuxUtil *)hal.util)->_toneAlarm_timer_tick();
     }
     return NULL;
 }
