@@ -15,16 +15,16 @@ static YUNEECUARTDriverInstance(USART1, 0);
 static YUNEECUARTDriverInstance(USART2, 1);
 static YUNEECUARTDriverInstance(USART3, 2);
 
-static YUNEECSemaphore  i2cSemaphore;
-static YUNEECI2CDriver  i2cDriver(&i2cSemaphore);
-static YUNEECSPIDeviceManager spiDeviceManager;
-static YUNEECAnalogIn analogIn;
-static YUNEECStorage storageDriver;
-static YUNEECGPIO gpioDriver;
-static YUNEECRCInput rcinDriver;
-static YUNEECRCOutput rcoutDriver;
-static YUNEECScheduler schedulerInstance;
-static YUNEECUtil utilInstance;
+static YUNEECSemaphore  		i2cSemaphore;
+static YUNEECI2CDriver  		i2cDriver(&i2cSemaphore);
+static YUNEECSPIDeviceManager 	spiDeviceManager;
+static YUNEECAnalogIn 			analogIn;
+static YUNEECStorage 			storageDriver;
+static YUNEECGPIO 				gpioDriver;
+static YUNEECRCInput 			rcinDriver;
+static YUNEECRCOutput 			rcoutDriver;
+static YUNEECScheduler 			schedulerInstance;
+static YUNEECUtil 				utilInstance;
 
 HAL_YUNEEC::HAL_YUNEEC() :
     AP_HAL::HAL(
