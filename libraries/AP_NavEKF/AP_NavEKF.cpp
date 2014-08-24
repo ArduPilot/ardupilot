@@ -38,9 +38,9 @@
 #define ABIAS_PNOISE_DEFAULT    0.0001f
 #define MAGE_PNOISE_DEFAULT     0.0003f
 #define MAGB_PNOISE_DEFAULT     0.0003f
-#define VEL_GATE_DEFAULT        2
+#define VEL_GATE_DEFAULT        6
 #define POS_GATE_DEFAULT        10
-#define HGT_GATE_DEFAULT        5
+#define HGT_GATE_DEFAULT        10
 #define MAG_GATE_DEFAULT        3
 #define MAG_CAL_DEFAULT         1
 #define GLITCH_ACCEL_DEFAULT    150
@@ -59,9 +59,9 @@
 #define ABIAS_PNOISE_DEFAULT    0.0002f
 #define MAGE_PNOISE_DEFAULT     0.0003f
 #define MAGB_PNOISE_DEFAULT     0.0003f
-#define VEL_GATE_DEFAULT        2
+#define VEL_GATE_DEFAULT        6
 #define POS_GATE_DEFAULT        10
-#define HGT_GATE_DEFAULT        5
+#define HGT_GATE_DEFAULT        10
 #define MAG_GATE_DEFAULT        3
 #define MAG_CAL_DEFAULT         1
 #define GLITCH_ACCEL_DEFAULT    150
@@ -80,9 +80,9 @@
 #define ABIAS_PNOISE_DEFAULT    0.0002f
 #define MAGE_PNOISE_DEFAULT     0.0003f
 #define MAGB_PNOISE_DEFAULT     0.0003f
-#define VEL_GATE_DEFAULT        2
+#define VEL_GATE_DEFAULT        6
 #define POS_GATE_DEFAULT        10
-#define HGT_GATE_DEFAULT        10
+#define HGT_GATE_DEFAULT        20
 #define MAG_GATE_DEFAULT        3
 #define MAG_CAL_DEFAULT         0
 #define GLITCH_ACCEL_DEFAULT    150
@@ -346,6 +346,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     _gyroBiasNoiseScaler    = 2.0f;     // scale factor applied to gyro bias state process noise when on ground
     _msecGpsAvg             = 200;      // average number of msec between GPS measurements
     _msecHgtAvg             = 100;      // average number of msec between height measurements
+    _msecMagAvg             = 100;      // average number of msec between magnetometer measurements
     _msecBetaAvg            = 100;      // average number of msec between synthetic sideslip measurements
     dtVelPos                = 0.02;     // number of seconds between position and velocity corrections. This should be a multiple of the imu update interval.
     // Misc initial conditions
@@ -353,7 +354,6 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     mag_state.q0 = 1;
     mag_state.DCM.identity();
     IMU1_weighting = 0.5f;
-    lastDivergeTime_ms = 0;
     memset(&faultStatus, 0, sizeof(faultStatus));
 }
 
@@ -411,6 +411,8 @@ void NavEKF::ResetPosition(void)
         states[7] = gpsPosNE.x + gpsPosGlitchOffsetNE.x;
         states[8] = gpsPosNE.y + gpsPosGlitchOffsetNE.y;
     }
+    // reset the glitch ofset correction states
+    gpsPosGlitchOffsetNE.zero();
 }
 
 // resets velocity states to last GPS measurement or to zero if in static mode
@@ -464,7 +466,15 @@ void NavEKF::InitialiseFilterDynamic(void)
     ZeroVariables();
 
     // get initial time deltat between IMU measurements (sec)
-    dtIMU = _ahrs->get_ins().get_delta_time();
+    dtIMU = constrain_float(_ahrs->get_ins().get_delta_time(),0.001f,1.0f);
+
+    // set number of updates over which gps and baro measurements are applied to the velocity and position states
+    gpsUpdateCountMaxInv = (dtIMU * 1000.0f)/float(_msecGpsAvg);
+    gpsUpdateCountMax = uint8_t(1.0f/gpsUpdateCountMaxInv);
+    hgtUpdateCountMaxInv = (dtIMU * 1000.0f)/float(_msecHgtAvg);
+    hgtUpdateCountMax = uint8_t(1.0f/hgtUpdateCountMaxInv);
+    magUpdateCountMaxInv = (dtIMU * 1000.0f)/float(_msecMagAvg);
+    magUpdateCountMax = uint8_t(1.0f/magUpdateCountMaxInv);
 
     // calculate initial orientation and earth magnetic field states
     Quaternion initQuat;
@@ -500,6 +510,17 @@ void NavEKF::InitialiseFilterBootstrap(void)
 {
     // set re-used variables to zero
     ZeroVariables();
+
+    // get initial time deltat between IMU measurements (sec)
+    dtIMU = constrain_float(_ahrs->get_ins().get_delta_time(),0.001f,1.0f);
+
+    // set number of updates over which gps and baro measurements are applied to the velocity and position states
+    gpsUpdateCountMaxInv = (dtIMU * 1000.0f)/float(_msecGpsAvg);
+    gpsUpdateCountMax = uint8_t(1.0f/gpsUpdateCountMaxInv);
+    hgtUpdateCountMaxInv = (dtIMU * 1000.0f)/float(_msecHgtAvg);
+    hgtUpdateCountMax = uint8_t(1.0f/hgtUpdateCountMaxInv);
+    magUpdateCountMaxInv = (dtIMU * 1000.0f)/float(_msecMagAvg);
+    magUpdateCountMax = uint8_t(1.0f/magUpdateCountMaxInv);
 
     // acceleration vector in XYZ body axes measured by the IMU (m/s^2)
     Vector3f initAccVec;
@@ -651,17 +672,6 @@ void NavEKF::UpdateFilter()
 // select fusion of velocity, position and height measurements
 void NavEKF::SelectVelPosFusion()
 {
-    // calculate ratio of VelPos fusion to state prediction steps
-    uint8_t velPosFuseStepRatio = floor(dtVelPos/dtIMU + 0.5f);
-
-    // calculate the scale factor to be applied to GPS measurement variance to account for
-    // the fact we repeat fusion of the same measurement to provide a smoother output
-    gpsVarScaler = _msecGpsAvg/(1000.0f*dtVelPos);
-
-    // calculate the scale factor to be applied to height measurement variance to account for
-    // the fact we repeat fusion of the same measurement to provide a smoother output
-    hgtVarScaler = _msecHgtAvg/(1000.0f*dtVelPos);
-
     // check for new data, specify which measurements should be used and check data for freshness
     if (!staticMode) {
 
@@ -672,36 +682,38 @@ void NavEKF::SelectVelPosFusion()
         if (newDataGps) {
             // reset data arrived flag
             newDataGps = false;
+            // reset state updates and counter used to spread fusion updates across several frames to reduce 10Hz pulsing
+            memset(&gpsIncrStateDelta[0], 0, sizeof(gpsIncrStateDelta));
+            gpsUpdateCount = 0;
             // enable fusion
             fuseVelData = true;
             fusePosData = true;
-            // reset the counter used to schedule updates so that we always fuse data on the frame GPS data arrives
-            skipCounter = velPosFuseStepRatio;
             // If a long time since last GPS update, then reset position and velocity and reset stored state history
-
             uint32_t gpsRetryTimeout = useAirspeed() ? _gpsRetryTimeUseTAS : _gpsRetryTimeNoTAS;
             if (imuSampleTime_ms - secondLastFixTime_ms > gpsRetryTimeout) {
                 ResetPosition();
                 ResetVelocity();
                 StoreStatesReset();
             }
-        } else if (imuSampleTime_ms - lastFixTime_ms > (uint32_t)(_msecGpsAvg + 40)) {
-            // Timeout fusion of GPS data if stale. Needed because we repeatedly fuse the same
-            // measurement until the next one arrives to provide a smoother output
+        } else {
             fuseVelData = false;
             fusePosData = false;
         }
+
+        // check for and read new height data
+        readHgtData();
 
         // command fusion of height data
         if (newDataHgt)
         {
             // reset data arrived flag
             newDataHgt = false;
+            // reset state updates and counter used to spread fusion updates across several frames to reduce 10Hz pulsing
+            memset(&hgtIncrStateDelta[0], 0, sizeof(hgtIncrStateDelta));
+            hgtUpdateCount = 0;
             // enable fusion
             fuseHgtData = true;
-        } else if (imuSampleTime_ms - lastHgtTime_ms > (uint32_t)(_msecHgtAvg + 40)) {
-            // timeout fusion of height data if stale. Needed because we repeatedly fuse the same
-            // measurement until the next one arrives to provide a smoother output
+        } else {
             fuseHgtData = false;
         }
 
@@ -718,22 +730,24 @@ void NavEKF::SelectVelPosFusion()
         fuseHgtData = true;
     }
 
-    // check for and read new height data
-    readHgtData();
-
-    // perform fusion as commanded, and in accordance with specified time intervals
+    // perform fusion
     if (fuseVelData || fusePosData || fuseHgtData) {
-        // skip fusion as required to maintain ~dtVelPos time interval between corrections
-        if (skipCounter >= velPosFuseStepRatio) {
             FuseVelPosNED();
-            // reset counter used to skip update frames
-            skipCounter = 1;
-        } else {
-            // increment counter used to skip update frames
-            skipCounter += 1;
-        }
     }
 
+    // Fuse corrections to quaternion, position and velocity states across several time steps to reduce 5 and 10Hz pulsing in the output
+    if (gpsUpdateCount < gpsUpdateCountMax) {
+        gpsUpdateCount ++;
+        for (uint8_t i = 0; i <= 9; i++) {
+            states[i] += gpsIncrStateDelta[i];
+        }
+    }
+    if (hgtUpdateCount < hgtUpdateCountMax) {
+        hgtUpdateCount ++;
+        for (uint8_t i = 0; i <= 9; i++) {
+            states[i] += hgtIncrStateDelta[i];
+        }
+    }
 }
 
 // select fusion of magnetometer data
@@ -762,8 +776,10 @@ void NavEKF::SelectMagFusion()
         bool dataReady = statesInitialised && use_compass() && newDataMag;
         if (dataReady)
         {
-            MAGmsecPrev = imuSampleTime_ms;
             fuseMagData = true;
+            // reset state updates and counter used to spread fusion updates across several frames to reduce 10Hz pulsing
+            memset(&magIncrStateDelta[0], 0, sizeof(magIncrStateDelta));
+            magUpdateCount = 0;
         }
         else
         {
@@ -772,6 +788,15 @@ void NavEKF::SelectMagFusion()
 
         // call the function that performs fusion of magnetometer data
         FuseMagnetometer();
+
+        // Fuse corrections to quaternion, position and velocity states across several time steps to reduce 10Hz pulsing in the output
+        if (magUpdateCount < magUpdateCountMax) {
+            magUpdateCount ++;
+            for (uint8_t i = 0; i <= 9; i++) {
+                states[i] += magIncrStateDelta[i];
+            }
+        }
+
     }
 }
 
@@ -1644,20 +1669,20 @@ void NavEKF::FuseVelPosNED()
         posErr = _gpsPosVarAccScale * accNavMag;
 
         // estimate the GPS Velocity, GPS horiz position and height measurement variances.
-        R_OBS[0] = gpsVarScaler*(sq(constrain_float(_gpsHorizVelNoise, 0.05f, 5.0f)) + sq(NEvelErr));
+        R_OBS[0] = sq(constrain_float(_gpsHorizVelNoise, 0.05f, 5.0f)) + sq(NEvelErr);
         R_OBS[1] = R_OBS[0];
-        R_OBS[2] = gpsVarScaler*(sq(constrain_float(_gpsVertVelNoise, 0.05f, 5.0f)) + sq(DvelErr));
-        R_OBS[3] = gpsVarScaler*(sq(constrain_float(_gpsHorizPosNoise, 0.1f, 10.0f)) + sq(posErr));
+        R_OBS[2] = sq(constrain_float(_gpsVertVelNoise, 0.05f, 5.0f)) + sq(DvelErr);
+        R_OBS[3] = sq(constrain_float(_gpsHorizPosNoise, 0.1f, 10.0f)) + sq(posErr);
         R_OBS[4] = R_OBS[3];
-        R_OBS[5] = hgtVarScaler*sq(constrain_float(_baroAltNoise, 0.1f, 10.0f));
+        R_OBS[5] = sq(constrain_float(_baroAltNoise, 0.1f, 10.0f));
 
         // if vertical GPS velocity data is being used, check to see if the GPS vertical velocity and barometer
         // innovations have the same sign and are outside limits. If so, then it is likely aliasing is affecting
         // the accelerometers and we should disable the GPS and barometer innovation consistency checks.
         bool badIMUdata = false;
-            if (_fusionModeGPS == 0 && fuseVelData && fuseHgtData) {
+        if (_fusionModeGPS == 0 && fuseVelData && (imuSampleTime_ms - lastHgtTime_ms) <  (2 * _msecHgtAvg)) {
             // calculate innovations for height and vertical GPS vel measurements
-            float hgtErr  = statesAtVelTime.position.z - observation[5];
+            float hgtErr  = statesAtHgtTime.position.z - observation[5];
             float velDErr = statesAtVelTime.velocity.z - observation[2];
             // check if they are the same sign and both more than 3-sigma out of bounds
             if ((hgtErr*velDErr > 0.0f) && (sq(hgtErr) > 9.0f * (P[9][9] + R_OBS[5])) && (sq(velDErr) > 9.0f * (P[6][6] + R_OBS[2]))) {
@@ -1893,9 +1918,21 @@ void NavEKF::FuseVelPosNED()
                     }
                 }
 
-                // calculate state corrections and re-normalise the quaternions for blended IMU data predicted states
+                // calculate state corrections and re-normalise the quaternions for states predicted using the blended IMU data
+                // attitude, velocity and position corrections are spread across multiple prediction cycles between now
+                // and the anticipated time for the next measurement.
+                // Don't spread quaternion corrections if total angle change across predicted interval is going to exceed 0.1 rad
+                bool highRates = ((gpsUpdateCountMax * correctedDelAng.length()) > 0.1f);
                 for (uint8_t i = 0; i<=21; i++) {
-                    states[i] = states[i] - Kfusion[i] * innovVelPos[obsIndex];
+                    if ((i <= 3 && highRates) || i >= 10 || staticMode) {
+                        states[i] = states[i] - Kfusion[i] * innovVelPos[obsIndex];
+                    } else {
+                        if (obsIndex == 5) {
+                            hgtIncrStateDelta[i] -= Kfusion[i] * innovVelPos[obsIndex] * hgtUpdateCountMaxInv;
+                        } else {
+                            gpsIncrStateDelta[i] -= Kfusion[i] * innovVelPos[obsIndex] * gpsUpdateCountMaxInv;
+                        }
+                    }
                 }
                 state.quat.normalize();
 
@@ -1916,7 +1953,7 @@ void NavEKF::FuseVelPosNED()
         }
     }
 
-    // force the covariance matrix to me symmetrical and limit the variances to prevent ill-condiioning.
+    // force the covariance matrix to be symmetrical and limit the variances to prevent ill-condiioning.
     ForceSymmetry();
     ConstrainVariances();
 
@@ -2239,13 +2276,24 @@ void NavEKF::FuseMagnetometer()
         // Don't fuse unless all componenets pass. The exception is if the bad health has timed out and we are not a fly forward vehicle
         // In this case we might as well try using the magnetometer, but with a reduced weighting
         if (magHealth || ((magTestRatio[obsIndex] < 1.0f) && !assume_zero_sideslip() && magTimeout)) {
-            // correct the state vector
+            // Attitude, velocity and position corrections are averaged across multiple prediction cycles between now and the anticipated time for the next measurement.
+            // Don't do averaging of quaternion state corrections if total angle change across predicted interval is going to exceed 0.1 rad
+            bool highRates = ((magUpdateCountMax * correctedDelAng.length()) > 0.1f);
+            // Calculate the number of averaging frames left to go. This is required becasue magnetometer fusion is applied across three consecutive prediction cycles
+            // There is no point averaging if the number of cycles left is less than 2
+            float minorFramesToGo = float(magUpdateCountMax) - float(magUpdateCount);
+            // correct the state vector or store corrections to be applied incrementally
             for (uint8_t j= 0; j<=21; j++) {
                 // If we are forced to use a bad compass, we reduce the weighting by a factor of 4
                 if (!magHealth) {
                     Kfusion[j] *= 0.25f;
                 }
-                states[j] = states[j] - Kfusion[j] * innovMag[obsIndex];
+                if ((j <= 3 && highRates) || j >= 10 || staticMode || minorFramesToGo < 1.5f ) {
+                    states[j] = states[j] - Kfusion[j] * innovMag[obsIndex];
+                } else {
+                    // scale the correction based on the number of averaging frames left to go
+                    magIncrStateDelta[j] -= Kfusion[j] * innovMag[obsIndex] * (magUpdateCountMaxInv * float(magUpdateCountMax) / minorFramesToGo);
+                }
             }
             // normalise the quaternion states
             state.quat.normalize();
@@ -3356,6 +3404,10 @@ void NavEKF::ZeroVariables()
     memset(&processNoise[0], 0, sizeof(processNoise));
     memset(&storedStates[0], 0, sizeof(storedStates));
     memset(&statetimeStamp[0], 0, sizeof(statetimeStamp));
+    memset(&gpsIncrStateDelta[0], 0, sizeof(gpsIncrStateDelta));
+    memset(&hgtIncrStateDelta[0], 0, sizeof(hgtIncrStateDelta));
+    memset(&magIncrStateDelta[0], 0, sizeof(magIncrStateDelta));
+    gpsPosGlitchOffsetNE.zero();
 }
 
 // return true if we should use the airspeed sensor
