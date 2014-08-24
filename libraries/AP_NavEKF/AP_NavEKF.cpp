@@ -428,6 +428,8 @@ void NavEKF::ResetPosition(void)
         storedStates[i].position[0] = state.position[0];
         storedStates[i].position[1] = state.position[1];
     }
+    // reset the glitch ofset correction states
+    gpsPosGlitchOffsetNE.zero();
 }
 
 // resets velocity states to last GPS measurement or to zero if in static mode
