@@ -390,6 +390,7 @@ static void set_mode(enum FlightMode mode)
     rollController.reset_I();
     pitchController.reset_I();
     yawController.reset_I();    
+    steerController.reset_I();    
 }
 
 // exit_mode - perform any cleanup required when leaving a flight mode
