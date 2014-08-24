@@ -364,6 +364,11 @@ static void stabilize()
         rollController.reset_I();
         pitchController.reset_I();
         yawController.reset_I();
+
+        // if moving very slowly also zero the steering integrator
+        if (gps.ground_speed() < 1) {
+            steerController.reset_I();            
+        }
     }
 }
 
