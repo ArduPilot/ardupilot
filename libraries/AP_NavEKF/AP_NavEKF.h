@@ -135,6 +135,10 @@ public:
     // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
     void  getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
 
+    // should we use the compass? This is public so it can be used for
+    // reporting via ahrs.use_compass()
+    bool use_compass(void) const;
+
     /*
     return the filter fault status as a bitmasked integer
      0 = filter divergence detected via gyro bias growth
@@ -510,9 +514,6 @@ private:
     perf_counter_t  _perf_FuseSideslip;
 #endif
     
-    // should we use the compass?
-    bool use_compass(void) const;
-
     // should we assume zero sideslip?
     bool assume_zero_sideslip(void) const;
 };
