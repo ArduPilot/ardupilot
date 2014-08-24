@@ -166,6 +166,9 @@ bool AP_AHRS_NavEKF::airspeed_estimate(float *airspeed_ret) const
 // true if compass is being used
 bool AP_AHRS_NavEKF::use_compass(void)
 {
+    if (using_EKF()) {
+        return EKF.use_compass();
+    }
     return AP_AHRS_DCM::use_compass();
 }
 
