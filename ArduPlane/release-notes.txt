@@ -1,7 +1,14 @@
-Release 3.1.0, August XXth 2014
+Release 3.1.0, August 26th 2014
 -------------------------------
 
-DRAFT DRAFT
+The ardupilot development team is proud to announce the release of
+version 3.1.0 of APM:Plane. This is a major release with a lot of new
+features and bug fixes.
+
+The biggest change in this release is the addition of automatic
+terrain following. Terrain following allows the autopilot to guide the
+aircraft over varying terrain at a constant height above the ground
+using an on-board terrain database.
 
 Changes in this release:
 
@@ -9,31 +16,114 @@ Changes in this release:
     http://plane.ardupilot.com/wiki/common-terrain-following/
 
   - added support for higher baudrates on telemetry ports, to make it
-    easier to use high rate telemetry to companion boards
+    easier to use high rate telemetry to companion boards. Rates of up
+    to 1.5MBit are now supported to companion boards.
 
   - added new takeoff code, including new parameters:
       TKOFF_TDRAG_ELEV, TKOFF_TDRAG_SPD1, TKOFF_ROTATE_SPD,
-      TKOFF_THR_SLEW and TKOFF_THR_MAX
+      TKOFF_THR_SLEW and TKOFF_THR_MAX. 
+    This gives fine grained control of auto takeoff for tail dragger aircraft.
 
   - overhauled glide slope code to fix glide slope handling in many
-    situations. This should make transitions between different
-    altitudes much smoother
+    situations. This makes transitions between different altitudes
+    much smoother.
 
-  - prevent early waypoint completion for straight ahead waypoints
+  - prevent early waypoint completion for straight ahead
+    waypoints. This makes for more accurate servo release at specific
+    locations, for applications such as dropping water bottles.
 
   - added MAV_CMD_DO_INVERTED_FLIGHT command in missions, to change
-    from normal to inverted flight in AUTO
+    from normal to inverted flight in AUTO (thanks to Philip Rowse for
+    testing of this feature).
 
   - new Rangefinder code with support for a wider range of rangefinder
-    types
+    types including a range of Lidars (thanks to Allyson Kreft)
 
   - added support for FrSky telemetry via SERIAL2_PROTOCOL parameter
+    (thanks to Matthias Badaire)
 
   - added new STAB_PITCH_DOWN parameter to improve low throttle
-    behaviour in FBWA mode
+    behaviour in FBWA mode, making a stall less likely in FBWA mode
+    (thanks to Jack Pittar for the idea).
 
   - added GLIDE_SLOPE_MIN parameter for better handling of small
-    altitude deviations in AUTO
+    altitude deviations in AUTO. This makes for more accurate altitude
+    tracking in AUTO.
+
+  - added support for Linux based autopilots, initially with the PXF
+    BeagleBoneBlack cape and the Erle robotics board. Support for more
+    boards is expected in future releases. Thanks to Victor, Sid and
+    Anuj for their great work on the Linux port. See
+    http://diydrones.com/profiles/blogs/first-flight-of-ardupilot-on-linux
+    for details.
+
+  - prevent cross-tracking on some waypoint types, such as when
+    initially entering AUTO or when the user commands a change of
+    target waypoint.
+
+  - fixed servo demo on startup (thanks to Klrill-ka)
+
+  - added AFS (Advanced Failsafe) support on 32 bit boards by
+    default. See
+    http://plane.ardupilot.com/wiki/advanced-failsafe-configuration/
+
+  - added support for monitoring voltage of a 2nd battery via BATTERY2
+    MAVLink message
+
+  - added airspeed sensor support in HIL
+
+  - fixed HIL on APM2. HIL should now work again on all boards.
+
+  - added StorageManager library, which expands available FRAM storage
+    on Pixhawk to 16 kByte. This allows for 724 waypoints, 50 rally
+    points and 84 fence points on Pixhawk.
+
+  - improved steering on landing, so the plane is actively steered
+    right through the landing.
+
+  - improved reporting of magnetometer and barometer errors to the GCS
+
+  - added FBWA_TDRAG_CHAN parameter, for easier FBWA takeoffs of tail
+    draggers, and better testing of steering tuning for auto takeoff.
+
+  - fixed failsafe pass through with no RC input (thanks to Klrill-ka)
+
+  - fixed a bug in automatic flow control detection for serial ports
+    in Pixhawk
+
+  - fixed use of FMU servo pins as digital inputs on Pixhawk
+
+  - imported latest updates for VRBrain boards (thanks to Emile
+    Castelnuovo and Luca Micheletti)
+
+  - updates to the Piksi GPS support (thanks to Niels Joubert)
+
+  - improved gyro estimate in DCM (thanks to Jon Challinger)
+
+  - improved position projection in DCM in wind (thanks to Przemek
+    Lekston)
+
+  - several updates to AP_NavEKF for more robust handling of errors
+    (thanks to Paul Riseborough)
+
+  - improved simulation of rangefinders in SITL
+
+  - lots of small code cleanups thanks to Daniel Frenzel
+
+  - initial support for NavIO board from Mikhail Avkhimenia
+
+  - fixed logging of RCOU for up to 12 channels (thanks to Emile
+    Castelnuovo)
+
+  - code cleanups from Silvia Nunezrivero
+
+  - improved parameter download speed on radio links with no flow
+    control
+
+Many thanks to everyone who contributed to this release, especially
+our beta testers Marco, Paul, Philip and Iam.
+
+Happy flying!
 
 
 Release 3.0.3, May 19th 2014
