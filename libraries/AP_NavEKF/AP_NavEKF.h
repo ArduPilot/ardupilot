@@ -53,9 +53,11 @@ public:
     typedef VectorN<ftype,14> Vector14;
     typedef VectorN<ftype,15> Vector15;
     typedef VectorN<ftype,22> Vector22;
+    typedef VectorN<ftype,31> Vector31;
+    typedef VectorN<ftype,34> Vector34;
     typedef VectorN<VectorN<ftype,3>,3> Matrix3;
     typedef VectorN<VectorN<ftype,22>,22> Matrix22;
-    typedef VectorN<VectorN<ftype,50>,22> Matrix22_50;
+    typedef VectorN<VectorN<ftype,34>,22> Matrix34_50;
 #else
     typedef ftype Vector2[2];
     typedef ftype Vector3[3];
@@ -67,9 +69,10 @@ public:
     typedef ftype Vector15[15];
     typedef ftype Vector22[22];
     typedef ftype Vector31[31];
+    typedef ftype Vector34[34];
     typedef ftype Matrix3[3][3];
     typedef ftype Matrix22[22][22];
-    typedef ftype Matrix31_50[31][50];
+    typedef ftype Matrix34_50[34][50];
 #endif
 
     // Constructor
@@ -151,6 +154,16 @@ public:
     // reporting via ahrs.use_compass()
     bool use_compass(void) const;
 
+    // write the raw optical flow measurements
+    // rawFlowQuality is a measured of quality between 0 and 255, with 255 being the best quality
+    // rawFlowRates is the flow rate in radians per second. A positive ground relative velocity along the X axis produces positive raw X value, and similarly for the Y axis
+    // rawSonarRange is the  range in metres measured by the px4flow sensor
+    // msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
+    void  writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, float &rawSonarRange, uint32_t &msecFlowMeas);
+
+    // return data for debugging optical flow fusion
+    void getFlowDebug(float &scaleFactor, float &obsX, float &obsY, float &innovX, float &innovY, float &gndPos, uint8_t &quality) const;
+
     /*
     return the filter fault status as a bitmasked integer
      0 = unassigned
@@ -171,10 +184,10 @@ private:
     const AP_AHRS *_ahrs;
     AP_Baro &_baro;
 
-    // the states are available in two forms, either as a Vector27, or
+    // the states are available in two forms, either as a Vector34, or
     // broken down as individual elements. Both are equivalent (same
     // memory)
-    Vector31 states;
+    Vector34 states;
     struct state_elements {
         Quaternion  quat;           // 0..3
         Vector3f    velocity;       // 4..6
@@ -189,6 +202,7 @@ private:
         float       posD1;          // 26
         Vector3f    vel2;           // 27 .. 29
         float       posD2;          // 30
+        Vector3f    omega;          // 31 .. 33
     } &state;
 
     // update the quaternion, velocity and position states using IMU measurements
@@ -312,6 +326,31 @@ private:
     // this allows large GPS position jumps to be accomodated gradually
     void decayGpsOffset(void);
 
+    // Check for filter divergence
+    void checkDivergence(void);
+
+    // Calculate weighting that is applied to IMU1 accel data to blend data from IMU's 1 and 2
+    void calcIMU_Weighting(float K1, float K2);
+
+    // return true if we should use the optical flow sensor
+    bool useOptFlow(void) const;
+
+    // return true if we should use the range finder sensor
+    bool useRngFinder(void) const;
+
+    // determine when to perform fusion of optical flow measurements
+    void SelectFlowFusion();
+
+    // recall omega (angular rate vector) average from time specified by msec to current time
+    // this is useful for motion compensation of optical flow measurements
+    void RecallOmega(Vector3f &omegaAvg, uint32_t msecStart, uint32_t msecEnd);
+
+    // Estimate optical flow focal length scale factor and terrain offset using a 2-state EKF
+    void OpticalFlowEKF();
+
+    // fuse optical flow measurements into the main filter
+    void FuseOptFlow();
+
     // EKF Mavlink Tuneable Parameters
     AP_Float _gpsHorizVelNoise;     // GPS horizontal velocity measurement noise : m/s
     AP_Float _gpsVertVelNoise;      // GPS vertical velocity measurement noise : m/s
@@ -338,6 +377,11 @@ private:
     AP_Int8  _magCal;               // Sets activation condition for in-flight magnetometer calibration
     AP_Int16 _gpsGlitchAccelMax;    // Maximum allowed discrepancy between inertial and GPS Horizontal acceleration before GPS data is ignored : cm/s^2
     AP_Int8 _gpsGlitchRadiusMax;    // Maximum allowed discrepancy between inertial and GPS Horizontal position before GPS glitch is declared : m
+    AP_Int8 _gndGradientSigma;      // RMS terrain gradient percentage assumed by the terrain height estimation.
+    AP_Float _flowNoise;            // optical flow rate measurement noise
+    AP_Int8  _flowInnovGate;        // Number of standard deviations applied to optical flow innovation consistency check
+    AP_Int8  _msecFLowDelay;        // effective average delay of optical flow measurements rel to IMU (msec)
+    AP_Int8  _rngInnovGate;         // Number of standard deviations applied to range finder innovation consistency check
     AP_Int8 _fallback;              // EKF-to-DCM fallback strictness. 0 = trust EKF more, 1 = fallback more conservatively.
 
     // Tuning parameters
@@ -357,7 +401,8 @@ private:
     uint16_t _msecGpsAvg;           // average number of msec between GPS measurements
     uint16_t _msecHgtAvg;           // average number of msec between height measurements
     uint16_t _msecMagAvg;           // average number of msec between magnetometer measurements
-    uint16_t _msecBetaAvg;          // maximum number of msec between synthetic sideslip measurements
+    uint16_t _msecBetaAvg;          // Average number of msec between synthetic sideslip measurements
+    uint16_t _msecBetaMax;          // maximum number of msec between synthetic sideslip measurements
     float dtVelPos;                 // average of msec between position and velocity corrections
 
     // Variables
@@ -432,7 +477,9 @@ private:
     uint32_t TASmsecPrev;           // time stamp of last TAS fusion step
     uint32_t BETAmsecPrev;          // time stamp of last synthetic sideslip fusion step
     const uint32_t TASmsecMax;      // maximum allowed interval between TAS fusion steps
-    const bool fuseMeNow;           // boolean to force fusion whenever data arrives
+    uint32_t MAGmsecPrev;           // time stamp of last compass fusion step
+    uint32_t HGTmsecPrev;           // time stamp of last height measurement fusion step
+    bool inhibitLoadLeveling;       // boolean that turns off delay of fusion to level processor loading
     bool staticMode;                // boolean to force position and velocity measurements to zero for pre-arm or bench testing
     bool prevStaticMode;            // value of static mode from last update
     uint32_t lastMagUpdate;         // last time compass was updated
@@ -495,6 +542,62 @@ private:
     uint8_t magUpdateCountMax;      // limit on the number of minor state corrections using Magnetometer data
     float magUpdateCountMaxInv;     // floating point inverse of magFilterCountMax
 
+    // variables added for optical flow fusion
+    float dtIMUinv;                 // inverse of IMU time step
+    bool newDataFlow;               // true when new optical flow data has arrived
+    bool flowFusePerformed;         // true when optical flow fusion has been perfomred in that time step
+    state_elements statesAtFlowTime;// States at the middle of the optical flow sample period
+    bool fuseOptFlowData;           // this boolean causes the last optical flow measurement to be fused
+    float auxFlowObsInnov[2];       // optical flow observation innovations from 2-state focal length scale factor and terrain offset estimator
+    float auxFlowObsInnovVar[2];    // innovation variance for optical flow observations from 2-state focal length scale factor and terrain offset estimator
+    float flowRadXYcomp[2];         // motion compensated optical flow angular rates(rad/sec)
+    float flowRadXY[2];             // raw (non motion compensated) optical flow angular rates (rad/sec)
+    uint32_t flowMeaTime_ms;        // time stamp from latest flow measurement (msec)
+    uint8_t flowQuality;            // unsigned integer representing quality of optical flow data. 255 is maximum quality.
+    float DCM33FlowMin;             // If Tbn(3,3) is less than this number, optical flow measurements will not be fused as tilt is too high.
+    float fScaleFactorPnoise;       // Process noise added to focal length scale factor state variance at each time step
+    Vector3f omegaAcrossFlowTime;   // body angular rates averaged across the optical flow sample period
+    Matrix3f Tnb_flow;              // transformation matrix from nav to body axes at the middle of the optical flow sample period
+    Matrix3f Tbn_flow;              // transformation matrix from body to nav axes at the middle of the optical flow sample period
+    float varInnovOptFlow[2];       // optical flow innovations variances (rad/sec)^2
+    float innovOptFlow[2];          // optical flow LOS innovations (rad/sec)
+    uint8_t flowTimeDeltaAvg_ms;    // average interval between optical flow measurements (msec)
+    float Popt[2][2];               // state covariance matrix
+    float flowStates[2];            // flow states [scale factor, terrain position]
+    float prevPosN;                 // north position at last measurement
+    float prevPosE;                 // east position at last measurement
+    state_elements statesAtRngTime; // States at the range finder measurement time
+    bool fuseRngData;               // true when fusion of range data is demanded
+    float varInnovRng;              // range finder observation innovation variance (m^2)
+    float innovRng;                 // range finder observation innovation (m)
+    float rngMea;                   // range finder measurement (m)
+    bool inhibitGndState;           // true when the terrain position state is to remain constant
+    uint32_t prevFlowFusionTime_ms; // time the last flow measurement was fused
+    uint32_t flowIntervalMax_ms;    // maximum allowable time between flow fusion events
+    bool fScaleInhibit;             // true when the focal length scale factor is to remain constant
+    float flowTestRatio[2];         // square of optical flow innovations divided by fail threshold used by main filter where >1.0 is a fail
+    float auxFlowTestRatio[2];      // sum of squares of optical flow innovations divided by fail threshold used by aux filter
+    float R_LOS;                    // variance of optical flow rate measurements (rad/sec)^2
+    float auxRngTestRatio;          // square of range finder innovations divided by fail threshold used by main filter where >1.0 is a fail
+
+    // states held by optical flow fusion across time steps
+    // optical flow X,Y motion compensated rate measurements are fused across two time steps
+    // to level computational load as this can be an expensive operation
+    struct {
+        uint8_t obsIndex;
+        ftype SH_LOS[5];
+        ftype SK_LOS[9];
+        ftype q0;
+        ftype q1;
+        ftype q2;
+        ftype q3;
+        ftype vn;
+        ftype ve;
+        ftype vd;
+        ftype pd;
+        ftype losPred[2];
+    } flow_state;
+
     struct {
         bool bad_xmag:1;
         bool bad_ymag:1;
@@ -533,6 +636,8 @@ private:
     perf_counter_t  _perf_FuseMagnetometer;
     perf_counter_t  _perf_FuseAirspeed;
     perf_counter_t  _perf_FuseSideslip;
+    perf_counter_t  _perf_OpticalFlowEKF;
+    perf_counter_t  _perf_FuseOptFlow;
 #endif
     
     // should we assume zero sideslip?
