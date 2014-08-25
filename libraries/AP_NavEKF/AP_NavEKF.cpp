@@ -608,6 +608,9 @@ void NavEKF::UpdateFilter()
         ResetPosition();
         ResetHeight();
         StoreStatesReset();
+        // clear the magnetometer failed status as the failure may have been
+        // caused by external field disturbances associated with pre-flight activities
+        magFailed = false;
         calcQuatAndFieldStates(_ahrs->roll, _ahrs->pitch);
         prevStaticMode = staticMode;
     }
