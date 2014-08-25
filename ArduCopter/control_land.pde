@@ -188,13 +188,13 @@ static float get_throttle_land()
 }
 
 // update_land_detector - checks if we have landed and updates the ap.land_complete flag
-// returns true if we have landed
-static bool update_land_detector()
+// called at 50hz
+static void update_land_detector()
 {
     // detect whether we have landed by watching for low climb rate and minimum throttle
     if (abs(climb_rate) < 40 && motors.limit.throttle_lower) {
         if (!ap.land_complete) {
-            // run throttle controller if accel based throttle controller is enabled and active (active means it has been given a target)
+            // increase counter until we hit the trigger then set land complete flag
             if( land_detector < LAND_DETECTOR_TRIGGER) {
                 land_detector++;
             }else{
@@ -202,16 +202,14 @@ static bool update_land_detector()
                 land_detector = 0;
             }
         }
-    } else if ((motors.get_throttle_out() > get_non_takeoff_throttle()) || failsafe.radio) {
+    } else {
         // we've sensed movement up or down so reset land_detector
         land_detector = 0;
-        if(ap.land_complete) {
+        // if throttle output is high then clear landing flag
+        if (motors.get_throttle_out() > get_non_takeoff_throttle()) {
             set_land_complete(false);
         }
     }
-
-    // return current state of landing
-    return ap.land_complete;
 }
 
 // land_do_not_use_GPS - forces land-mode to not use the GPS but instead rely on pilot input for roll and pitch
