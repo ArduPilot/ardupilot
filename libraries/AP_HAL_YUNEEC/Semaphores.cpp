@@ -8,7 +8,7 @@
 
 using namespace YUNEEC;
 
-YUNEECSemaphore::YUNEECSemaphore() : _taken(false) {}
+extern const AP_HAL::HAL& hal;
 
 bool YUNEECSemaphore::give() {
     if (_taken) {

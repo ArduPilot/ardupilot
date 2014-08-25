@@ -51,6 +51,7 @@ void HAL_YUNEEC::init(int argc,char* const argv[]) const {
      * Scheduler should likely come first. */
     scheduler->init(NULL);
     uartA->begin(115200);
+    rcout->init(NULL);
 }
 
 const HAL_YUNEEC AP_HAL_YUNEEC;

@@ -4,6 +4,17 @@
 
 #include <AP_HAL_YUNEEC.h>
 
+#define CH_1 	0
+#define CH_2 	1
+#define CH_3 	2
+#define CH_4 	3
+#define CH_5 	4
+#define CH_6 	5
+#define CH_7 	6
+#define CH_8 	7
+
+#define	_BV(_N)		(1<<_N)
+
 class YUNEEC::YUNEECRCOutput : public AP_HAL::RCOutput {
     void     init(void* machtnichts);
     void     set_freq(uint32_t chmask, uint16_t freq_hz);
