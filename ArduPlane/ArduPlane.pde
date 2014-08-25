@@ -796,7 +796,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
 #if FRSKY_TELEM_ENABLED == ENABLED
     { telemetry_send,        10,    100 },	
 #endif
-
+    { terrain_update,         5,    500 },
 };
 
 // setup the var_info table
@@ -1023,7 +1023,6 @@ static void one_second_loop()
     AP_Notify::flags.armed = arming.is_armed() || arming.arming_required() == AP_Arming::NO;
 
 #if AP_TERRAIN_AVAILABLE
-    terrain.update();
     if (should_log(MASK_LOG_GPS)) {
         terrain.log_terrain_data(DataFlash);
     }
@@ -1046,6 +1045,13 @@ static void compass_save()
     if (g.compass_enabled) {
         compass.save_offsets();
     }
+}
+
+static void terrain_update(void)
+{
+#if AP_TERRAIN_AVAILABLE
+    terrain.update();
+#endif
 }
 
 /*
