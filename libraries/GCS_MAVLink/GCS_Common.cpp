@@ -129,6 +129,12 @@ GCS_MAVLINK::queued_param_send()
     }
     count = bytes_allowed / (MAVLINK_MSG_ID_PARAM_VALUE_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES);
 
+    // when we don't have flow control we really need to keep the
+    // param download very slow, or it tends to stall
+    if (!have_flow_control() && count > 5) {
+        count = 5;
+    }
+
     while (_queued_parameter != NULL && count--) {
         AP_Param      *vp;
         float value;
