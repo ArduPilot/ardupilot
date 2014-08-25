@@ -23,7 +23,15 @@ static LinuxSemaphore  i2cSemaphore;
 static LinuxI2CDriver  i2cDriver(&i2cSemaphore, "/dev/i2c-1");
 static LinuxSPIDeviceManager spiDeviceManager;
 static LinuxAnalogIn analogIn;
+
+/*
+  select between FRAM and FS
+ */
+#if LINUX_STORAGE_USE_FRAM == 1
+static LinuxStorage_FRAM storageDriver;
+#else
 static LinuxStorage storageDriver;
+#endif
 
 /*
   use the BBB gpio driver on ERLE and PXF

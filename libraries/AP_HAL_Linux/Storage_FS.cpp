@@ -1,8 +1,6 @@
 #include <AP_HAL.h>
 #include "Storage.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && !LINUX_STORAGE_USE_FRAM
-
 #include <assert.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -169,5 +167,3 @@ void LinuxStorage::_timer_tick(void)
 		}
 	}
 }
-
-#endif // CONFIG_HAL_BOARD
