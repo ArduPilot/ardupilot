@@ -213,6 +213,24 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     AP_GROUPINFO("JSTICK_SPD",  16, AP_Mount, _joystick_speed, 0),
 #endif
 
+    // @Param: LEAD_RLL
+    // @DisplayName: Roll stabilization lead time
+    // @Description: Causes the servo angle output to lead the current angle of the vehicle by some amount of time based on current angular rate, compensating for servo delay. Increase until the servo is responsive but doesn't overshoot. Does nothing with pan stabilization enabled.
+    // @Units: Seconds
+    // @Range: 0.0 0.2
+    // @Increment: .005
+    // @User: Standard
+    AP_GROUPINFO("LEAD_RLL", 17, AP_Mount, _roll_stb_lead, 0.0f),
+
+    // @Param: LEAD_PTCH
+    // @DisplayName: Pitch stabilization lead time
+    // @Description: Causes the servo angle output to lead the current angle of the vehicle by some amount of time based on current angular rate. Increase until the servo is responsive but doesn't overshoot. Does nothing with pan stabilization enabled.
+    // @Units: Seconds
+    // @Range: 0.0 0.2
+    // @Increment: .005
+    // @User: Standard
+    AP_GROUPINFO("LEAD_PTCH", 18, AP_Mount, _pitch_stb_lead, 0.0f),
+
     AP_GROUPEND
 };
 
@@ -621,6 +639,21 @@ AP_Mount::stabilize()
         }
         if (_stab_tilt) {
             _tilt_angle -= degrees(_ahrs.pitch);
+        }
+
+        // Add lead filter.
+        const Vector3f &gyro = _ahrs.get_gyro();
+
+        if (_stab_roll && _roll_stb_lead != 0.0f && fabsf(_ahrs.pitch) < M_PI/3.0f) {
+            // Compute rate of change of euler roll angle
+            float roll_rate = gyro.x + (_ahrs.sin_pitch() / _ahrs.cos_pitch()) * (gyro.y * _ahrs.sin_roll() + gyro.z * _ahrs.cos_roll());
+            _roll_angle -= degrees(roll_rate) * _roll_stb_lead;
+        }
+
+        if (_stab_tilt && _pitch_stb_lead != 0.0f) {
+            // Compute rate of change of euler pitch angle
+            float pitch_rate = _ahrs.cos_pitch() * gyro.y - _ahrs.sin_roll() * gyro.z;
+            _tilt_angle -= degrees(pitch_rate) * _pitch_stb_lead;
         }
     }
 #endif

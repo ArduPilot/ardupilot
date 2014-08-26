@@ -129,6 +129,9 @@ private:
     AP_Vector3f                     _retract_angles; ///< retracted position for mount, vector.x = roll vector.y = tilt, vector.z=pan
     AP_Vector3f                     _neutral_angles; ///< neutral position for mount, vector.x = roll vector.y = tilt, vector.z=pan
     AP_Vector3f                     _control_angles; ///< GCS controlled position for mount, vector.x = roll vector.y = tilt, vector.z=pan
+
+    AP_Float _roll_stb_lead;
+    AP_Float _pitch_stb_lead;
 };
 
 #endif // __AP_MOUNT_H__
