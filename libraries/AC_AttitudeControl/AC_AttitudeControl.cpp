@@ -3,8 +3,6 @@
 #include "AC_AttitudeControl.h"
 #include <AP_HAL.h>
 
-extern const AP_HAL::HAL& hal;
-
 // table of user settable parameters
 const AP_Param::GroupInfo AC_AttitudeControl::var_info[] PROGMEM = {
 
@@ -382,18 +380,19 @@ void AC_AttitudeControl::rate_bf_roll_pitch_yaw(float roll_rate_bf, float pitch_
     } else {
         _acro_angle_switch = 4500;
         integrate_bf_rate_error_to_angle_errors();
-        frame_conversion_bf_to_ef(_angle_bf_error, angle_ef_error);
-        _angle_ef_target.x = wrap_180_cd_float(angle_ef_error.x + _ahrs.roll_sensor);
-        _angle_ef_target.y = wrap_180_cd_float(angle_ef_error.y + _ahrs.pitch_sensor);
-        _angle_ef_target.z = wrap_360_cd_float(angle_ef_error.z + _ahrs.yaw_sensor);
+        if (frame_conversion_bf_to_ef(_angle_bf_error, angle_ef_error)) {
+            _angle_ef_target.x = wrap_180_cd_float(angle_ef_error.x + _ahrs.roll_sensor);
+            _angle_ef_target.y = wrap_180_cd_float(angle_ef_error.y + _ahrs.pitch_sensor);
+            _angle_ef_target.z = wrap_360_cd_float(angle_ef_error.z + _ahrs.yaw_sensor);
+        }
         if (_angle_ef_target.y > 9000.0f) {
             _angle_ef_target.x = wrap_180_cd_float(_angle_ef_target.x + 18000.0f);
-            _angle_ef_target.y = wrap_180_cd_float(18000.0f - _angle_ef_target.x);
+            _angle_ef_target.y = wrap_180_cd_float(18000.0f - _angle_ef_target.y);
             _angle_ef_target.z = wrap_360_cd_float(_angle_ef_target.z + 18000.0f);
         }
         if (_angle_ef_target.y < -9000.0f) {
             _angle_ef_target.x = wrap_180_cd_float(_angle_ef_target.x + 18000.0f);
-            _angle_ef_target.y = wrap_180_cd_float(-18000.0f - _angle_ef_target.x);
+            _angle_ef_target.y = wrap_180_cd_float(-18000.0f - _angle_ef_target.y);
             _angle_ef_target.z = wrap_360_cd_float(_angle_ef_target.z + 18000.0f);
         }
     }
@@ -432,12 +431,17 @@ void AC_AttitudeControl::frame_conversion_ef_to_bf(const Vector3f& ef_vector, Ve
 }
 
 // frame_conversion_bf_to_ef - converts body frame vector to earth frame vector
-void AC_AttitudeControl::frame_conversion_bf_to_ef(const Vector3f& bf_vector, Vector3f& ef_vector)
+bool AC_AttitudeControl::frame_conversion_bf_to_ef(const Vector3f& bf_vector, Vector3f& ef_vector)
 {
-    // convert earth frame rates to body frame rates
+    // avoid divide by zero
+    if (_ahrs.cos_pitch() == 0.0f) {
+        return false;
+    }
+    // convert earth frame angle or rates to body frame
     ef_vector.x = bf_vector.x + _ahrs.sin_roll() * (_ahrs.sin_pitch()/_ahrs.cos_pitch()) * bf_vector.y + _ahrs.cos_roll() * (_ahrs.sin_pitch()/_ahrs.cos_pitch()) * bf_vector.z;
     ef_vector.y = _ahrs.cos_roll()  * bf_vector.y - _ahrs.sin_roll() * bf_vector.z;
     ef_vector.z = (_ahrs.sin_roll() / _ahrs.cos_pitch()) * bf_vector.y + (_ahrs.cos_roll() / _ahrs.cos_pitch()) * bf_vector.z;
+    return true;
 }
 
 //
@@ -668,7 +672,6 @@ void AC_AttitudeControl::accel_limiting(bool enable_limits)
         _accel_rp_max = 0.0f;
         _accel_y_max = 0.0f;
     }
-    hal.console->printf_P(PSTR("AccLim:%d"),(int)enable_limits);
 }
 
 //

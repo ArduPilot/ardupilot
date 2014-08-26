@@ -276,8 +276,7 @@ static void NOINLINE send_location(mavlink_channel_t chan)
 
 static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
 {
-    Vector3f targets;
-    get_angle_targets_for_reporting(targets);
+    const Vector3f &targets = attitude_control.angle_ef_targets();
     mavlink_msg_nav_controller_output_send(
         chan,
         targets.x / 1.0e2f,
@@ -897,6 +896,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:         // MAV ID: 21
     {
+        // mark the firmware version in the tlog
+        send_text_P(SEVERITY_LOW, PSTR(FIRMWARE_STRING));
+
+#if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
+        send_text_P(SEVERITY_LOW, PSTR("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION));
+#endif
         handle_param_request_list(msg);
         break;
     }

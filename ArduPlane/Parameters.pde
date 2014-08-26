@@ -206,6 +206,12 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: User
     GSCALAR(takeoff_throttle_slewrate, "TKOFF_THR_SLEW",  0),
 
+    // @Param: FBWA_TDRAG_CHAN
+    // @DisplayName: FBWA taildragger channel
+    // @Description: This is a RC input channel which when it goes above 1700 enables FBWA taildragger takeoff mode. It should be assigned to a momentary switch. Once this feature is enabled it will stay enabled until the aircraft goes above TKOFF_TDRAG_SPD1 airspeed, changes mode, or the pitch goes above the initial pitch when this is engaged or goes below 0 pitch. When enabled the elevator will be forced to TKOFF_TDRAG_ELEV. This option allows for easier takeoffs on taildraggers in FBWA mode, and also makes it easier to test auto-takeoff steering handling in FBWA. Setting it to 0 disables this option.
+    // @User: Standard
+    GSCALAR(fbwa_tdrag_chan,          "FBWA_TDRAG_CHAN",  0),
+
     // @Param: LEVEL_ROLL_LIMIT
     // @DisplayName: Level flight roll limit
     // @Description: This controls the maximum bank angle in degrees during flight modes where level flight is desired, such as in the final stages of landing, and during auto takeoff. This should be a small angle (such as 5 degrees) to prevent a wing hitting the runway during takeoff or landing. Setting this to zero will completely disable heading hold on auto takeoff and final landing approach.

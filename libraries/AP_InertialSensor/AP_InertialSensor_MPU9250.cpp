@@ -177,6 +177,7 @@ AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250() :
     _initialised(false),
     _mpu9250_product_id(AP_PRODUCT_ID_PIXHAWK_FIRE_CAPE),
     _last_filter_hz(-1),
+    _shared_data_idx(0),
     _accel_filter_x(1000, 15),
     _accel_filter_y(1000, 15),
     _accel_filter_z(1000, 15),
@@ -197,6 +198,8 @@ uint16_t AP_InertialSensor_MPU9250::_init_sensor( Sample_rate sample_rate )
     _spi = hal.spi->device(AP_HAL::SPIDevice_MPU9250);
     _spi_sem = _spi->get_semaphore();
 
+    // we need to suspend timers to prevent other SPI drivers grabbing
+    // the bus while we do the long initialisation
     hal.scheduler->suspend_timer_procs();
 
     uint8_t whoami = _register_read(MPUREG_WHOAMI);
@@ -232,7 +235,6 @@ uint16_t AP_InertialSensor_MPU9250::_init_sensor( Sample_rate sample_rate )
 
     hal.scheduler->resume_timer_procs();
 
-
     /* read the first lot of data.
      * _read_data_transaction requires the spi semaphore to be taken by
      * its caller. */
@@ -257,7 +259,7 @@ uint16_t AP_InertialSensor_MPU9250::_init_sensor( Sample_rate sample_rate )
  */
 bool AP_InertialSensor_MPU9250::_sample_available()
 {
-    uint32_t tnow = hal.scheduler->micros();
+    uint64_t tnow = hal.scheduler->micros64();
     while (tnow - _last_sample_usec > _sample_time_usec) {
         _have_sample_available = true;
         _last_sample_usec += _sample_time_usec;
@@ -273,10 +275,10 @@ bool AP_InertialSensor_MPU9250::wait_for_sample(uint16_t timeout_ms)
     if (_sample_available()) {
         return true;
     }
-    uint32_t start = hal.scheduler->millis();
-    while ((hal.scheduler->millis() - start) < timeout_ms) {
-        uint32_t tnow = hal.scheduler->micros();
-        uint32_t tdelay = (_last_sample_usec + _sample_time_usec) - tnow;
+    uint64_t start = hal.scheduler->millis64();
+    while ((hal.scheduler->millis64() - start) < timeout_ms) {
+        uint64_t tnow = hal.scheduler->micros64();
+        uint64_t tdelay = (_last_sample_usec + _sample_time_usec) - tnow;
         if (tdelay < 100000) {
             hal.scheduler->delay_microseconds(tdelay);
         }
@@ -298,11 +300,10 @@ bool AP_InertialSensor_MPU9250::update( void )
 
     _previous_accel[0] = _accel[0];
 
-    // disable timer procs for mininum time
-    hal.scheduler->suspend_timer_procs();
-    _gyro[0]  = _gyro_filtered;
-    _accel[0] = _accel_filtered;
-    hal.scheduler->resume_timer_procs();
+    // pull the data from the timer shared data buffer
+    uint8_t idx = _shared_data_idx;
+    _gyro[0]  = _shared_data[idx]._gyro_filtered;
+    _accel[0] = _shared_data[idx]._accel_filtered;
 
     _gyro[0].rotate(_board_orientation);
     _gyro[0] *= GYRO_SCALE;
@@ -374,13 +375,18 @@ void AP_InertialSensor_MPU9250::_read_data_transaction()
 
 #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx] << 8) | v[2*idx+1]))
 
-    _accel_filtered = Vector3f(_accel_filter_x.apply(int16_val(rx.v, 1)), 
-                               _accel_filter_y.apply(int16_val(rx.v, 0)), 
-                               _accel_filter_z.apply(-int16_val(rx.v, 2)));
+    Vector3f _accel_filtered = Vector3f(_accel_filter_x.apply(int16_val(rx.v, 1)), 
+                                        _accel_filter_y.apply(int16_val(rx.v, 0)), 
+                                        _accel_filter_z.apply(-int16_val(rx.v, 2)));
 
-    _gyro_filtered = Vector3f(_gyro_filter_x.apply(int16_val(rx.v, 5)), 
-                              _gyro_filter_y.apply(int16_val(rx.v, 4)), 
-                              _gyro_filter_z.apply(-int16_val(rx.v, 6)));
+    Vector3f _gyro_filtered = Vector3f(_gyro_filter_x.apply(int16_val(rx.v, 5)), 
+                                       _gyro_filter_y.apply(int16_val(rx.v, 4)), 
+                                       _gyro_filter_z.apply(-int16_val(rx.v, 6)));
+    // update the shared buffer
+    uint8_t idx = _shared_data_idx ^ 1;
+    _shared_data[idx]._accel_filtered = _accel_filtered;
+    _shared_data[idx]._gyro_filtered = _gyro_filtered;
+    _shared_data_idx = idx;
 }
 
 /*

@@ -652,7 +652,6 @@ radio_input_switch(void)
 
 static void zero_eeprom(void)
 {
-	uint8_t b = 0;
 	cliSerial->printf_P(PSTR("\nErasing EEPROM\n"));
     StorageManager::erase();
 	cliSerial->printf_P(PSTR("done\n"));

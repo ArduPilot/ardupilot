@@ -127,22 +127,28 @@ static void takeoff_calc_pitch(void)
 }
 
 /*
-  return a tail hold percentage during initial takeoff for a tail dragger
+  return a tail hold percentage during initial takeoff for a tail
+  dragger
+
+  This can be used either in auto-takeoff or in FBWA mode with
+  FBWA_TDRAG_CHAN enabled
  */
 static int8_t takeoff_tail_hold(void)
 {
-    if (control_mode != AUTO || auto_state.takeoff_complete) {
+    bool in_takeoff = ((control_mode == AUTO && !auto_state.takeoff_complete) ||
+                       (control_mode == FLY_BY_WIRE_A && auto_state.fbwa_tdrag_takeoff_mode));
+    if (!in_takeoff) {
         // not in takeoff
         return 0;
     }
     if (g.takeoff_tdrag_elevator == 0) {
         // no takeoff elevator set
-        return 0;
+        goto return_zero;
     }
     if (auto_state.highest_airspeed >= g.takeoff_tdrag_speed1) {
         // we've passed speed1. We now raise the tail and aim for
         // level pitch. Return 0 meaning no fixed elevator setting
-        return 0;
+        goto return_zero;
     }
     if (ahrs.pitch_sensor > auto_state.initial_pitch_cd + 1000) {
         // the pitch has gone up by more then 10 degrees over the
@@ -150,10 +156,17 @@ static int8_t takeoff_tail_hold(void)
         // early liftoff, perhaps due to a bad setting of
         // g.takeoff_tdrag_speed1. Go to level flight to prevent a
         // stall
-        return 0;
+        goto return_zero;
     }
     // we are holding the tail down
     return g.takeoff_tdrag_elevator;
+
+return_zero:
+    if (auto_state.fbwa_tdrag_takeoff_mode) {
+        gcs_send_text_P(SEVERITY_LOW, PSTR("FBWA tdrag off"));
+        auto_state.fbwa_tdrag_takeoff_mode = false;
+    }
+    return 0;
 }
 
 /*

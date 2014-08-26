@@ -212,12 +212,12 @@ void AP_InertialSensor_VRBRAIN::_get_sample(void)
             _last_gyro_timestamp[i] = gyro_report.timestamp;
         }
     }
-    _last_get_sample_timestamp = hrt_absolute_time();
+    _last_get_sample_timestamp = hal.scheduler->micros64();
 }
 
 bool AP_InertialSensor_VRBRAIN::_sample_available(void)
 {
-    uint64_t tnow = hrt_absolute_time();
+    uint64_t tnow = hal.scheduler->micros64();
     while (tnow - _last_sample_timestamp > _sample_time_usec) {
         _have_sample_available = true;
         _last_sample_timestamp += _sample_time_usec;
@@ -232,7 +232,7 @@ bool AP_InertialSensor_VRBRAIN::wait_for_sample(uint16_t timeout_ms)
     }
     uint32_t start = hal.scheduler->millis();
     while ((hal.scheduler->millis() - start) < timeout_ms) {
-        uint64_t tnow = hrt_absolute_time();
+        uint64_t tnow = hal.scheduler->micros64();
         // we spin for the last timing_lag microseconds. Before that
         // we yield the CPU to allow IO to happen
         const uint16_t timing_lag = 400;

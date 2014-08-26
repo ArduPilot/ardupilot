@@ -45,7 +45,7 @@ private:
     AP_HAL::Semaphore *_spi_sem;
 
     uint32_t _sample_time_usec;
-    uint32_t _last_sample_usec;
+    uint64_t _last_sample_usec;
 
     // ensure we can't initialise twice
     bool                 _initialised;
@@ -57,9 +57,15 @@ private:
     // change the filter frequency
     void _set_filter(uint8_t filter_hz);
 
-    // output of accel/gyro filters
-    Vector3f _accel_filtered;
-    Vector3f _gyro_filtered;
+    // This structure is used to pass data from the timer which reads
+    // the sensor to the main thread. The _shared_data_idx is used to
+    // prevent race conditions by ensuring the data is fully updated
+    // before being used by the consumer
+    struct {
+        Vector3f _accel_filtered;
+        Vector3f _gyro_filtered;
+    } _shared_data[2];
+    volatile uint8_t _shared_data_idx;
 
     // Low Pass filters for gyro and accel 
     LowPassFilter2p _accel_filter_x;

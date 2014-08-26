@@ -61,6 +61,65 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
+// passthrough_bf_roll_pitch_rate_yaw - passthrough the pilots roll and pitch inputs directly to swashplate for flybar acro mode
+void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw(float roll_passthrough, float pitch_passthrough, float yaw_rate_bf)
+{
+    // store roll and pitch passthroughs
+    _passthrough_roll = roll_passthrough;
+    _passthrough_pitch = pitch_passthrough;
+
+    // set rate controller to use pass through
+    _flags_heli.flybar_passthrough = true;
+
+    // set bf rate targets to current body frame rates (i.e. relax and be ready for vehicle to switch out of acro)
+    _rate_bf_desired.x = _ahrs.get_gyro().x * AC_ATTITUDE_CONTROL_DEGX100;
+    _rate_bf_desired.y = _ahrs.get_gyro().y * AC_ATTITUDE_CONTROL_DEGX100;
+
+    // accel limit desired yaw rate
+    if (_accel_y_max > 0.0f) {
+        float rate_change_limit = _accel_y_max * _dt;
+        float rate_change = yaw_rate_bf - _rate_bf_desired.z;
+        rate_change = constrain_float(rate_change, -rate_change_limit, rate_change_limit);
+        _rate_bf_desired.z += rate_change;
+    } else {
+        _rate_bf_desired.z = yaw_rate_bf;
+    }
+
+    integrate_bf_rate_error_to_angle_errors();
+    _angle_bf_error.x = 0;
+    _angle_bf_error.y = 0;
+
+    // update our earth-frame angle targets
+    Vector3f angle_ef_error;
+    if (frame_conversion_bf_to_ef(_angle_bf_error, angle_ef_error)) {
+        _angle_ef_target.x = wrap_180_cd_float(angle_ef_error.x + _ahrs.roll_sensor);
+        _angle_ef_target.y = wrap_180_cd_float(angle_ef_error.y + _ahrs.pitch_sensor);
+        _angle_ef_target.z = wrap_360_cd_float(angle_ef_error.z + _ahrs.yaw_sensor);
+    }
+
+    // handle flipping over pitch axis
+    if (_angle_ef_target.y > 9000.0f) {
+        _angle_ef_target.x = wrap_180_cd_float(_angle_ef_target.x + 18000.0f);
+        _angle_ef_target.y = wrap_180_cd_float(18000.0f - _angle_ef_target.x);
+        _angle_ef_target.z = wrap_360_cd_float(_angle_ef_target.z + 18000.0f);
+    }
+    if (_angle_ef_target.y < -9000.0f) {
+        _angle_ef_target.x = wrap_180_cd_float(_angle_ef_target.x + 18000.0f);
+        _angle_ef_target.y = wrap_180_cd_float(-18000.0f - _angle_ef_target.x);
+        _angle_ef_target.z = wrap_360_cd_float(_angle_ef_target.z + 18000.0f);
+    }
+
+    // convert body-frame angle errors to body-frame rate targets
+    update_rate_bf_targets();
+
+    // set body-frame roll/pitch rate target to current desired rates which are the vehicle's actual rates
+    _rate_bf_target.x = _rate_bf_desired.x;
+    _rate_bf_target.y = _rate_bf_desired.y;
+
+    // add desired target to yaw
+    _rate_bf_target.z += _rate_bf_desired.z;
+}
+
 //
 // rate controller (body-frame) methods
 //
@@ -70,8 +129,13 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] PROGMEM = {
 void AC_AttitudeControl_Heli::rate_controller_run()
 {	
     // call rate controllers and send output to motors object
-    // To-Do: should the outputs from get_rate_roll, pitch, yaw be int16_t which is the input to the motors library?
-    rate_bf_to_motor_roll_pitch(_rate_bf_target.x, _rate_bf_target.y);
+    // if using a flybar passthrough roll and pitch directly to motors
+    if (_flags_heli.flybar_passthrough) {
+        _motors.set_roll(_passthrough_roll);
+        _motors.set_pitch(_passthrough_pitch);
+    } else {
+        rate_bf_to_motor_roll_pitch(_rate_bf_target.x, _rate_bf_target.y);
+    }
     _motors.set_yaw(rate_bf_to_motor_yaw(_rate_bf_target.z));
 }
 
