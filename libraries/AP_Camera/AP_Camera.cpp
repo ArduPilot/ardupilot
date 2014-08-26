@@ -77,6 +77,7 @@ AP_Camera::relay_pic()
 void
 AP_Camera::trigger_pic()
 {
+    _image_index++;
     switch (_trigger_type)
     {
     case AP_CAMERA_TRIGGER_TYPE_SERVO:
@@ -177,7 +178,7 @@ void AP_Camera::send_feedback(mavlink_channel_t chan, AP_GPS &gps, const AP_AHRS
 
     mavlink_msg_camera_feedback_send(chan, 
         gps.time_epoch_usec(),
-        0, 0, 0,
+        0, 0, _image_index,
         current_loc.lat, current_loc.lng,
         altitude/100.0, altitude_rel/100.0,
         ahrs.roll_sensor/100.0, ahrs.pitch_sensor/100.0, ahrs.yaw_sensor/100.0,

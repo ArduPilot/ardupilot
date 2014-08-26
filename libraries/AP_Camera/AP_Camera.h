@@ -68,8 +68,9 @@ private:
     void            servo_pic();        // Servo operated camera
     void            relay_pic();        // basic relay activation
 
-    AP_Float        _trigg_dist;     // distance between trigger points (meters)
+    AP_Float        _trigg_dist;        // distance between trigger points (meters)
     struct Location _last_location;
+    uint16_t        _image_index;       // number of pictures taken since boot
 
 };
 
