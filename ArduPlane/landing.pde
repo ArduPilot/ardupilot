@@ -16,6 +16,9 @@ static bool verify_land()
 
     float height = height_above_target();
 
+    // use rangefinder to correct if possible
+    height -= rangefinder_correction();
+
     // calculate the sink rate.
     float sink_rate;
     Vector3f vel;
