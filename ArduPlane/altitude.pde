@@ -42,7 +42,7 @@ static void adjust_altitude_target()
             location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
             set_target_altitude_location(loc);
         } else {
-            set_target_altitude_proportion(next_WP_loc, 
+            set_target_altitude_proportion(loc, 
                                            (wp_distance-flare_distance) / (wp_totalDistance-flare_distance));
         }
         // stay within the range of the start and end locations in altitude
@@ -223,12 +223,19 @@ static int32_t relative_target_altitude_cm(void)
         // add lookahead adjustment the target altitude
         target_altitude.lookahead = lookahead_adjustment();
         relative_home_height += target_altitude.lookahead;
+
+        // correct for rangefinder data
+        relative_home_height += rangefinder_correction();
+
         // we are following terrain, and have terrain data for the
         // current location. Use it.
         return relative_home_height*100;
     }
 #endif
-    return target_altitude.amsl_cm - home.alt + (int32_t(g.alt_offset)*100);
+    int32_t relative_alt = target_altitude.amsl_cm - home.alt;
+    relative_alt += int32_t(g.alt_offset)*100;
+    relative_alt += rangefinder_correction() * 100;
+    return relative_alt;
 }
 
 /*
@@ -496,4 +503,40 @@ static float lookahead_adjustment(void)
 #else
     return 0;
 #endif
+}
+
+
+/*
+  correct target altitude using rangefinder data. Returns offset in
+  meters to correct target altitude. A positive number means we need
+  to ask the speed/height controller to fly higher
+ */
+static float rangefinder_correction(void)
+{
+    if (!rangefinder_state.in_range) {
+        return 0;
+    }
+
+    // for now we only support the rangefinder for landing 
+    bool using_rangefinder = (g.rangefinder_landing &&
+                              control_mode == AUTO && 
+                              (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
+                               flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL));
+    if (!using_rangefinder) {
+        return false;
+    }
+
+    // base correction is the difference between baro altitude and
+    // rangefinder estimate
+    float correction = relative_altitude() - rangefinder_state.height_estimate;
+
+#if AP_TERRAIN_AVAILABLE
+    // if we are terrain following then correction is based on terrain data
+    float terrain_altitude;
+    if (g.terrain_follow && terrain.height_above_terrain(terrain_altitude, true)) {
+        correction = terrain_altitude - rangefinder_state.height_estimate;
+    }
+#endif    
+
+    return correction;
 }
