@@ -149,7 +149,9 @@ void PX4RCOutput::enable_ch(uint8_t ch)
         _init_alt_channels();
     }
     _enabled_channels |= (1U<<ch);
-    _period[ch] = 0;
+    if (_period[ch] == PWM_IGNORE_THIS_CHANNEL) {
+        _period[ch] = 0;
+    }
 }
 
 void PX4RCOutput::disable_ch(uint8_t ch)
