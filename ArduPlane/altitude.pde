@@ -513,7 +513,8 @@ static float lookahead_adjustment(void)
  */
 static float rangefinder_correction(void)
 {
-    if (!rangefinder_state.in_range) {
+    if (hal.scheduler->millis() - rangefinder_state.last_correction_time_ms > 5000) {
+        // we haven't had any rangefinder data for 5s - don't use it
         return 0;
     }
 
@@ -523,20 +524,61 @@ static float rangefinder_correction(void)
                               (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
                                flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL));
     if (!using_rangefinder) {
-        return false;
+        return 0;
     }
 
-    // base correction is the difference between baro altitude and
-    // rangefinder estimate
-    float correction = relative_altitude() - rangefinder_state.height_estimate;
+    return rangefinder_state.correction;
+}
+
+
+/*
+  update the offset between rangefinder height and terrain height
+ */
+static void rangefinder_height_update(void)
+{
+    uint16_t distance_cm = rangefinder.distance_cm();
+    int16_t max_distance_cm = rangefinder.max_distance_cm();
+    if (rangefinder.healthy() && distance_cm < max_distance_cm) {
+        // correct the range for attitude (multiply by DCM.c.z, which
+        // is cos(roll)*cos(pitch))
+        float corrected_range = distance_cm * 0.01f * ahrs.get_dcm_matrix().c.z;
+        if (rangefinder_state.in_range_count == 0) {
+            // we've just come back into range, start with this value
+            rangefinder_state.height_estimate = corrected_range;
+        } else {
+            // low pass filter to reduce noise. This runs at 50Hz, so
+            // converges fast. We don't want too much filtering
+            // though, as it would introduce lag which would delay flaring
+            rangefinder_state.height_estimate = 0.75f * rangefinder_state.height_estimate + 0.25f * corrected_range;
+        }
+        // we consider ourselves to be fully in range when we have 10
+        // good samples (0.2s)
+        if (rangefinder_state.in_range_count < 10) {
+            rangefinder_state.in_range_count++;
+        } else {
+            rangefinder_state.in_range = true;
+        }
+    } else {
+        rangefinder_state.in_range_count = 0;
+        rangefinder_state.in_range = false;
+    }
+
+    if (rangefinder_state.in_range) {
+        // base correction is the difference between baro altitude and
+        // rangefinder estimate
+        float correction = relative_altitude() - rangefinder_state.height_estimate;
 
 #if AP_TERRAIN_AVAILABLE
-    // if we are terrain following then correction is based on terrain data
-    float terrain_altitude;
-    if (g.terrain_follow && terrain.height_above_terrain(terrain_altitude, true)) {
-        correction = terrain_altitude - rangefinder_state.height_estimate;
-    }
+        // if we are terrain following then correction is based on terrain data
+        float terrain_altitude;
+        if ((target_altitude.terrain_following || g.terrain_follow) && 
+            terrain.height_above_terrain(terrain_altitude, true)) {
+            correction = terrain_altitude - rangefinder_state.height_estimate;
+        }
 #endif    
 
-    return correction;
+        // remember the last correction
+        rangefinder_state.correction = correction;
+        rangefinder_state.last_correction_time_ms = hal.scheduler->millis();    
+    }
 }
