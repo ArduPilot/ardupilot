@@ -49,6 +49,12 @@ void PX4RCOutput::init(void* unused)
         hal.console->printf("RCOutput: failed to open /dev/px4fmu");
         return;
     }
+
+    // ensure not to write zeros to disabled channels
+    _enabled_channels = 0;
+    for (int i=0; i < PX4_NUM_OUTPUT_CHANNELS; i++) {
+        _period[i] = PWM_IGNORE_THIS_CHANNEL;
+    }
 }
 
 
@@ -133,18 +139,27 @@ uint16_t PX4RCOutput::get_freq(uint8_t ch)
 
 void PX4RCOutput::enable_ch(uint8_t ch)
 {
-    if (ch >= 8 && !(_enabled_channels & (1U<<ch))) {
+    if (ch >= PX4_NUM_OUTPUT_CHANNELS) {
+        return;
+    }
+    else if (ch >= 8 && !(_enabled_channels & (1U<<ch))) {
         // this is the first enable of an auxillary channel - setup
         // aux channels now. This delayed setup makes it possible to
         // use BRD_PWM_COUNT to setup the number of PWM channels.
         _init_alt_channels();
     }
     _enabled_channels |= (1U<<ch);
+    _period[ch] = 0;
 }
 
 void PX4RCOutput::disable_ch(uint8_t ch)
 {
+    if (ch >= PX4_NUM_OUTPUT_CHANNELS) {
+        return;
+    }
+
     _enabled_channels &= ~(1U<<ch);
+    _period[ch] = PWM_IGNORE_THIS_CHANNEL;
 }
 
 void PX4RCOutput::set_safety_pwm(uint32_t chmask, uint16_t period_us)
