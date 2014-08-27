@@ -526,19 +526,12 @@ static void rangefinder_height_update(void)
 {
     uint16_t distance_cm = rangefinder.distance_cm();
     int16_t max_distance_cm = rangefinder.max_distance_cm();
-    if (rangefinder.healthy() && distance_cm < max_distance_cm) {
+    float height_estimate = 0;
+    if (rangefinder.healthy() && distance_cm < max_distance_cm && home_is_set) {
         // correct the range for attitude (multiply by DCM.c.z, which
         // is cos(roll)*cos(pitch))
-        float corrected_range = distance_cm * 0.01f * ahrs.get_dcm_matrix().c.z;
-        if (rangefinder_state.in_range_count == 0) {
-            // we've just come back into range, start with this value
-            rangefinder_state.height_estimate = corrected_range;
-        } else {
-            // low pass filter to reduce noise. This runs at 50Hz, so
-            // converges fast. We don't want too much filtering
-            // though, as it would introduce lag which would delay flaring
-            rangefinder_state.height_estimate = 0.75f * rangefinder_state.height_estimate + 0.25f * corrected_range;
-        }
+        height_estimate = distance_cm * 0.01f * ahrs.get_dcm_matrix().c.z;
+
         // we consider ourselves to be fully in range when we have 10
         // good samples (0.2s)
         if (rangefinder_state.in_range_count < 10) {
@@ -554,19 +547,24 @@ static void rangefinder_height_update(void)
     if (rangefinder_state.in_range) {
         // base correction is the difference between baro altitude and
         // rangefinder estimate
-        float correction = relative_altitude() - rangefinder_state.height_estimate;
+        float correction = relative_altitude() - height_estimate;
 
 #if AP_TERRAIN_AVAILABLE
         // if we are terrain following then correction is based on terrain data
         float terrain_altitude;
         if ((target_altitude.terrain_following || g.terrain_follow) && 
             terrain.height_above_terrain(terrain_altitude, true)) {
-            correction = terrain_altitude - rangefinder_state.height_estimate;
+            correction = terrain_altitude - height_estimate;
         }
 #endif    
 
-        // remember the last correction
-        rangefinder_state.correction = correction;
+        // remember the last correction. Use a low pass filter unless
+        // the old data is more than 5 seconds old
+        if (hal.scheduler->millis() - rangefinder_state.last_correction_time_ms > 5000) {
+            rangefinder_state.correction = correction;
+        } else {
+            rangefinder_state.correction = 0.8f*rangefinder_state.correction + 0.2f*correction;
+        }
         rangefinder_state.last_correction_time_ms = hal.scheduler->millis();    
     }
 }
