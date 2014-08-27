@@ -37,12 +37,13 @@ static bool verify_land()
        1) we are within LAND_FLARE_ALT meters of the landing altitude
        2) we are within LAND_FLARE_SEC of the landing point vertically
           by the calculated sink rate
-       3) we have gone past the landing point (to prevent us keeping
-          throttle on after landing if we've had positive baro drift)
+       3) we have gone past the landing point and don't have
+          rangefinder data (to prevent us keeping throttle on 
+          after landing if we've had positive baro drift)
     */
     if (height <= g.land_flare_alt ||
         height <= -auto_state.land_sink_rate * g.land_flare_sec ||
-        location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
+        (!rangefinder_state.in_range && location_passed_point(current_loc, prev_WP_loc, next_WP_loc))) {
 
         if (!auto_state.land_complete) {
             gcs_send_text_fmt(PSTR("Flare %.1fm sink=%.2f speed=%.1f"), 
@@ -80,3 +81,37 @@ static bool verify_land()
     return false;
 }
 
+
+/*
+  a special glide slope calculation for the landing approach
+
+  During the land approach use a linear glide slope to a point
+  projected through the landing point. We don't use the landing point
+  itself as that leads to discontinuities close to the landing point,
+  which can lead to erratic pitch control
+ */
+static void setup_landing_glide_slope(void)
+{
+        Location loc = next_WP_loc;
+
+        // project a poiunt 500 meters past the landing point, passing
+        // through the landing point
+        const float land_projection = 500;        
+        int32_t land_bearing_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
+        float land_slope = ((next_WP_loc.alt - prev_WP_loc.alt)*0.01f) / (float)wp_totalDistance;
+        location_update(loc, land_bearing_cd*0.01f, land_projection);
+        loc.alt += land_slope * land_projection * 100;
+
+        // setup the offset_cm for set_target_altitude_proportion()
+        target_altitude.offset_cm = loc.alt - prev_WP_loc.alt;
+
+        // calculate the proportion we are to the target
+        float land_distance = get_distance(current_loc, loc);
+        float land_total_distance = get_distance(prev_WP_loc, loc);
+
+        // now setup the glide slope for landing
+        set_target_altitude_proportion(loc, land_distance / land_total_distance);
+
+        // stay within the range of the start and end locations in altitude
+        constrain_target_altitude_location(loc, prev_WP_loc);
+}
