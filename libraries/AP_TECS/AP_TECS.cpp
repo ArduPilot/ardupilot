@@ -187,7 +187,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
 void AP_TECS::update_50hz(float hgt_afe)
 { 
 	// Implement third order complementary filter for height and height rate
-	// estimted height rate = _integ2_state
+	// estimted height rate = _climb_rate
 	// estimated height above field elevation  = _integ3_state
     // Reference Paper : 
 	// Optimising the Gains of the Baro-Inertial Vertical Channel
@@ -199,7 +199,7 @@ void AP_TECS::update_50hz(float hgt_afe)
 	float DT = max((now - _update_50hz_last_usec),0)*1.0e-6f;
 	if (DT > 1.0) {
 	    _integ3_state = hgt_afe;
-		_integ2_state = 0.0f;
+		_climb_rate = 0.0f;
 		_integ1_state = 0.0f;
 		DT            = 0.02f; // when first starting TECS, use a
 							   // small time constant
@@ -209,7 +209,7 @@ void AP_TECS::update_50hz(float hgt_afe)
 	// USe inertial nav verical velocity and height if available
 	Vector3f posned, velned;
 	if (_ahrs.get_velocity_NED(velned) && _ahrs.get_relative_position_NED(posned)) {
-		_integ2_state   = - velned.z;
+		_climb_rate   = - velned.z;
 		_integ3_state   = - posned.z;
 	} else {
 		// Get height acceleration
@@ -221,8 +221,8 @@ void AP_TECS::update_50hz(float hgt_afe)
 		float integ1_input = hgt_err * omega2 * _hgtCompFiltOmega;
 		_integ1_state = _integ1_state + integ1_input * DT;
 		float integ2_input = _integ1_state + hgt_ddot_mea + hgt_err * omega2 * 3.0f;
-		_integ2_state = _integ2_state + integ2_input * DT;
-		float integ3_input = _integ2_state + hgt_err * _hgtCompFiltOmega * 3.0f;
+		_climb_rate = _climb_rate + integ2_input * DT;
+		float integ3_input = _climb_rate + hgt_err * _hgtCompFiltOmega * 3.0f;
 		// If more than 1 second has elapsed since last update then reset the integrator state
 		// to the measured height
 		if (DT > 1.0) {
@@ -367,14 +367,24 @@ void AP_TECS::_update_height_demand(void)
 
 	// Apply first order lag to height demand
 	_hgt_dem_adj = 0.05f * _hgt_dem + 0.95f * _hgt_dem_adj_last;
-    _hgt_rate_dem = (_hgt_dem_adj - _hgt_dem_adj_last) / 0.1f;
 	_hgt_dem_adj_last = _hgt_dem_adj;
 
     // in final landing stage force height rate demand to the
     // configured sink rate
 	if (_flight_stage == FLIGHT_LAND_FINAL) {
-        _hgt_rate_dem = - _land_sink;
-	}
+        if (_flare_counter == 0) {
+            _hgt_rate_dem = _climb_rate;
+        }
+        if (_flare_counter < 5) {
+            _hgt_rate_dem = _hgt_rate_dem * 0.8f - 0.2f * _land_sink;
+            _flare_counter++;
+        } else {
+            _hgt_rate_dem = - _land_sink;
+        }
+	} else {
+        _hgt_rate_dem = (_hgt_dem_adj - _hgt_dem_adj_last) / 0.1f;
+        _flare_counter = 0;
+    }
 }
 
 void AP_TECS::_detect_underspeed(void) 
@@ -407,7 +417,7 @@ void AP_TECS::_update_energies(void)
     _SKE_est = 0.5f * _integ5_state * _integ5_state;
 
     // Calculate specific energy rate
-    _SPEdot = _integ2_state * GRAVITY_MSS;
+    _SPEdot = _climb_rate * GRAVITY_MSS;
     _SKEdot = _integ5_state * _vel_dot;
 
 }
@@ -629,6 +639,8 @@ void AP_TECS::_update_pitch(void)
     // Constrain pitch demand
     _pitch_dem = constrain_float(_pitch_dem_unc, _PITCHminf, _PITCHmaxf);
 
+    _pitch_dem = constrain_float(_pitch_dem_unc, _PITCHminf, _PITCHmaxf);
+
     // Rate limit the pitch demand to comply with specified vertical
     // acceleration limit
     float ptchRateIncr = _DT * _vertAccLim / _integ5_state;
@@ -766,7 +778,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 	log_tuning.hgt_dem  = _hgt_dem_adj;
 	log_tuning.hgt      = _integ3_state;
 	log_tuning.dhgt_dem = _hgt_rate_dem;
-	log_tuning.dhgt     = _integ2_state;
+	log_tuning.dhgt     = _climb_rate;
 	log_tuning.spd_dem  = _TAS_dem_adj;
 	log_tuning.spd      = _integ5_state;
 	log_tuning.dspd     = _vel_dot;
