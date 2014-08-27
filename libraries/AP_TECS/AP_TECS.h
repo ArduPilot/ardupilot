@@ -138,7 +138,7 @@ private:
 	float _integ1_state;
 	
 	// Integrator state 2 - height rate
-	float _integ2_state;
+	float _climb_rate;
 
 	// Integrator state 3 - height
 	float _integ3_state;
@@ -239,6 +239,9 @@ private:
 
 	// Time since last update of main TECS loop (seconds)
 	float _DT;
+
+	// counter for demanded sink rate on land final
+	uint8_t _flare_counter;
 
     // Update the airspeed internal state using a second order complementary filter
     void _update_speed(void);
