@@ -183,6 +183,12 @@ void AP_Mission::update()
         if (_cmd_verify_fn(_nav_cmd)) {
             // market _nav_cmd as complete (it will be started on the next iteration)
             _flags.nav_cmd_loaded = false;
+            // immediately advance to the next mission command
+            if (!advance_current_nav_cmd()) {
+                // failure to advance nav command means mission has completed
+                complete();
+                return;
+            }
         }
     }
 
