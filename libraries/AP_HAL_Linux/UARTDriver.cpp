@@ -100,27 +100,11 @@ void LinuxUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
             }   
             case DEVICE_SERIAL:            
             {
-                uint8_t retries = 0;
-                while (retries < 5) {
-                    _rd_fd = open(device_path, O_RDWR);
-                    if (_rd_fd != -1) {
-                        break;
-                    }
-                    // sleep a bit and retry. There seems to be a NuttX bug
-                    // that can cause ttyACM0 to not be available immediately,
-                    // but a small delay can fix it
-                    hal.scheduler->delay(100);
-                    retries++;
-                }
+                _rd_fd = open(device_path, O_RDWR);
                 _wr_fd = _rd_fd;
                 if (_rd_fd == -1) {
                     fprintf(stdout, "Failed to open UART device %s - %s\n",
                             device_path, strerror(errno));
-                    return;
-                }
-                if (retries != 0) {
-                    fprintf(stdout, "WARNING: took %u retries to open UART %s\n", 
-                            (unsigned)retries, device_path);
                     return;
                 }
 
