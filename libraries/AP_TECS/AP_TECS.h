@@ -114,6 +114,7 @@ private:
     AP_Float _minSinkRate;
     AP_Float _maxSinkRate;
     AP_Float _timeConst;
+    AP_Float _landTimeConst;
     AP_Float _ptchDamp;
     AP_Float _thrDamp;
     AP_Float _integGain;
@@ -274,6 +275,9 @@ private:
 
     // declares a 5point average filter using floats
 	AverageFilterFloat_Size5 _vdot_filter;
+
+	// current time constant
+	float timeConstant(void);
 };
 
 #define TECS_LOG_FORMAT(msg) { msg, sizeof(AP_TECS::log_TECS_Tuning),	\
