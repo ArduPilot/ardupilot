@@ -721,6 +721,10 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 	} else {
 		_PITCHminf = max(_pitch_min, aparm.pitch_limit_min_cd * 0.01f);
 	}
+    if (flight_stage == FLIGHT_LAND_FINAL) {
+        // in flare use min pitch from LAND_PITCH_CD
+		_PITCHminf = max(_PITCHminf, aparm.land_pitch_cd * 0.01f);        
+    }
 	// convert to radians
 	_PITCHmaxf = radians(_PITCHmaxf);
 	_PITCHminf = radians(_PITCHminf);
