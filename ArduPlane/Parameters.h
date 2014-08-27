@@ -424,7 +424,6 @@ public:
     AP_Int8 reset_mission_chan;
     AP_Int32 airspeed_cruise_cm;
     AP_Int32 RTL_altitude_cm;
-    AP_Int16 land_pitch_cd;
     AP_Float land_flare_alt;
     AP_Float land_flare_sec;
     AP_Int32 min_gndspeed_cm;

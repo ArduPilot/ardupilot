@@ -226,7 +226,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Description: Used in autoland for planes without airspeed sensors in hundredths of a degree
     // @Units: centi-Degrees
     // @User: Advanced
-    GSCALAR(land_pitch_cd,          "LAND_PITCH_CD",  0),
+    ASCALAR(land_pitch_cd,          "LAND_PITCH_CD",  0),
 
     // @Param: LAND_FLARE_ALT
     // @DisplayName: Landing flare altitude
