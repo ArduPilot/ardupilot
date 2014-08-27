@@ -157,6 +157,14 @@ const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
 	// @User: Advanced
     AP_GROUPINFO("LAND_SINK", 17, AP_TECS, _land_sink, 0.25f),
 
+    // @Param: TECS_LAND_TCONST
+    // @DisplayName: Land controller time constant (sec)
+    // @Description: This is the time constant of the TECS control algorithm when in final landing stage of flight. It should be smaller than TECS_TIME_CONST to allow for faster flare
+	// @Range: 1.0-5.0
+	// @Increment: 0.2
+	// @User: Advanced
+    AP_GROUPINFO("LAND_TCONST", 18, AP_TECS, _landTimeConst, 2.0f),
+
     AP_GROUPEND
 };
 
@@ -404,6 +412,18 @@ void AP_TECS::_update_energies(void)
 
 }
 
+/*
+  current time constant. It is lower in landing to try to give a precise approach
+ */
+float AP_TECS::timeConstant(void)
+{
+    if (_flight_stage==FLIGHT_LAND_FINAL ||
+        _flight_stage==FLIGHT_LAND_APPROACH) {
+        return _landTimeConst;
+    }
+    return _timeConst;
+}
+
 void AP_TECS::_update_throttle(void)
 {
     // Calculate limits to be applied to potential energy error to prevent over or underspeed occurring due to large height errors
@@ -429,7 +449,7 @@ void AP_TECS::_update_throttle(void)
     else
     {
 		// Calculate gain scaler from specific energy error to throttle
-		float K_STE2Thr = 1 / (_timeConst * (_STEdot_max - _STEdot_min));
+		float K_STE2Thr = 1 / (timeConstant() * (_STEdot_max - _STEdot_min));
 
         // Calculate feed-forward throttle
         float ff_throttle = 0;
@@ -595,8 +615,8 @@ void AP_TECS::_update_pitch(void)
     // During climbout/takeoff, bias the demanded pitch angle so that zero speed error produces a pitch angle 
     // demand equal to the minimum value (which is )set by the mission plan during this mode). Otherwise the
     // integrator has to catch up before the nose can be raised to reduce speed during climbout.
-	float gainInv = (_integ5_state * _timeConst * GRAVITY_MSS);
-    float temp = SEB_error + SEBdot_error * _ptchDamp + SEBdot_dem * _timeConst;
+	float gainInv = (_integ5_state * timeConstant() * GRAVITY_MSS);
+    float temp = SEB_error + SEBdot_error * _ptchDamp + SEBdot_dem * timeConstant();
     if (_flight_stage == AP_TECS::FLIGHT_TAKEOFF)
     {
     	temp += _PITCHminf * gainInv;
