@@ -33,20 +33,7 @@ static void adjust_altitude_target()
         // rate, and ignores the target altitude
         set_target_altitude_location(next_WP_loc);
     } else if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
-        // in land approach use a linear glide slope to the flare point
-        Location loc = next_WP_loc;
-        float flare_distance = gps.ground_speed() * g.land_flare_sec;
-        loc.alt += g.land_flare_alt*100;
-        if (flare_distance >= wp_distance || 
-            flare_distance >= wp_totalDistance || 
-            location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
-            set_target_altitude_location(loc);
-        } else {
-            set_target_altitude_proportion(loc, 
-                                           (wp_distance-flare_distance) / (wp_totalDistance-flare_distance));
-        }
-        // stay within the range of the start and end locations in altitude
-        constrain_target_altitude_location(next_WP_loc, prev_WP_loc);
+        setup_landing_glide_slope();
     } else if (nav_controller->reached_loiter_target() || (wp_distance <= 30) || (wp_totalDistance<=30)) {
         // once we reach a loiter target then lock to the final
         // altitude target
@@ -329,6 +316,7 @@ static void reset_offset_altitude(void)
 {
     target_altitude.offset_cm = 0;
 }
+
 
 /*
   reset the altitude offset used for glide slopes, based on difference
