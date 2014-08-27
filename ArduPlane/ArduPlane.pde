@@ -306,7 +306,6 @@ static RangeFinder rangefinder;
 
 static struct {
     bool in_range;
-    float height_estimate;
     float correction;
     uint32_t last_correction_time_ms;
     uint8_t in_range_count;
