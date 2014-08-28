@@ -28,8 +28,11 @@
 class AP_Airspeed_I2C : public AP_Airspeed_Backend 
 {
 public:
+    AP_Airspeed_I2C(const AP_Float &scale) : 
+    AP_Airspeed_Backend(scale)
+    {}
     // probe and initialise the sensor
-    bool init(void);
+    bool init();
 
     // return the current differential_pressure in Pascal
     bool get_differential_pressure(float &pressure);
