@@ -5,7 +5,8 @@
 #include <AP_Progmem.h>
 
 #include <AP_HAL.h>
-#include <AP_HAL_FLYMAPLE.h>
+#include <AP_HAL_YUNEEC.h>
+#include <utility/pinmap_typedef.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
@@ -39,7 +40,7 @@ void loop (void) {
     static int ctr = 0;
     uint16_t channels[8];
 
-    hal.gpio->write(13, 1);
+    hal.gpio->write(PC13, 0);
 
     /* Cycle between using the individual read method
      * and the multi read method*/
@@ -50,14 +51,14 @@ void loop (void) {
         if (ctr > 1000)  ctr = 0;
     }
 
-    hal.gpio->write(13, 0);
+    hal.gpio->write(PC13, 1);
     hal.scheduler->delay(50);
     ctr++;
 }
 
 void setup (void) {
-    hal.gpio->pinMode(13, HAL_GPIO_OUTPUT);
-    hal.gpio->write(13, 0);
+    hal.gpio->pinMode(PC13, HAL_GPIO_OUTPUT);
+    hal.gpio->write(PC13, 1);
 }
 
 AP_HAL_MAIN();

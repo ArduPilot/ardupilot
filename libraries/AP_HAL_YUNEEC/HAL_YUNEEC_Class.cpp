@@ -52,6 +52,7 @@ void HAL_YUNEEC::init(int argc,char* const argv[]) const {
     scheduler->init(NULL);
     uartA->begin(115200);
     rcout->init(NULL);
+    analogin->init(NULL);
 }
 
 const HAL_YUNEEC AP_HAL_YUNEEC;

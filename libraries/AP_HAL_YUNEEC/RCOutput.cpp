@@ -115,8 +115,6 @@ void YUNEECRCOutput::init(void* machtnichts) {
 	TIM_Cmd(TIM16, ENABLE);
 	TIM_Cmd(TIM17, ENABLE);
 	TIM_Cmd(TIM19, ENABLE);
-
-
 }
 
 void YUNEECRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz) {

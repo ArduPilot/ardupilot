@@ -16,8 +16,8 @@ extern const AP_HAL::HAL& hal;
 
 extern "C"
 {
-	static voidFuncPtr timer_callback = NULL;
-	static voidFuncPtr timer_failsafe = NULL;
+	static voidFuncPtr timer6_callback = NULL;
+	static voidFuncPtr systick_failsafe = NULL;
 	static volatile uint32_t timer_micros_counter = 0;
 	static volatile uint32_t timer_millis_counter = 0;
 
@@ -26,13 +26,13 @@ extern "C"
 	    timer_millis_counter += 1;
 
 		if(hal.scheduler->in_timerprocess())
-			if (timer_failsafe != NULL)
-				timer_failsafe();
+			if (systick_failsafe != NULL)
+				systick_failsafe();
 	}
 
 	void TIM6_DAC1_IRQHandler(void) {
-	    if(timer_callback)
-	    	timer_callback();
+	    if(timer6_callback)
+	    	timer6_callback();
 
 		TIM6->SR &= (uint16_t)~TIM_IT_Update;
 	}
@@ -101,8 +101,8 @@ void YUNEECTimer::delay_microseconds(uint16_t us)
 }
 
 void YUNEECTimer::attachInterrupt(voidFuncPtr callback, voidFuncPtr failsafe) {
-	timer_callback = callback;
-	timer_failsafe = failsafe;
+	timer6_callback = callback;
+	systick_failsafe = failsafe;
 }
 
 #endif

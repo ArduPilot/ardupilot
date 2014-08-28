@@ -37,12 +37,10 @@ void setPinMode(GPIO_TypeDef* port, uint16_t bit, uint8_t output)
 
 	RCC_AHBPeriphClockCmd(clken, ENABLE);
 
-	if(output == HAL_GPIO_INPUT){
-		GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
-	}
-	else{
+	if (output == HAL_GPIO_INPUT)
+		GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AN;
+	else
 		GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
-	}
 
 	GPIO_InitStructure.GPIO_Pin = bit;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;

@@ -21,6 +21,8 @@ GPIO_TypeDef * get_port(uint8_t pin);
 
 uint16_t get_bit(uint8_t pin);
 
+uint8_t get_adc_channel(uint8_t pin);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

@@ -12,32 +12,33 @@
 #include <AP_Progmem.h>
 
 #include <AP_HAL.h>
-#include <AP_HAL_FLYMAPLE.h>
+#include <AP_HAL_YUNEEC.h>
+#include <utility/pinmap_typedef.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 // Expects pin 15 to be connected to board VCC 3.3V
-static AP_HAL::AnalogSource *vcc_pin;  // GPIO pin 15
-static AP_HAL::AnalogSource *batt_pin; // GPIO pin 20
+static AP_HAL::AnalogSource *current_pin;  // PB0
+static AP_HAL::AnalogSource *vbat_pin; // PC5
 
 void setup(void)
 {
     hal.console->println("AnalogIn test starts");
-    vcc_pin      = hal.analogin->channel(ANALOG_INPUT_BOARD_VCC);
-    batt_pin = hal.analogin->channel(20);
+    vbat_pin = hal.analogin->channel(PC5);
+    current_pin = hal.analogin->channel(PB0);
 }
 
 void loop(void)
 {
-    float vcc  = vcc_pin->voltage_average();
-    float batt = batt_pin->voltage_average();
+    float bat_vol  = vbat_pin->voltage_average();
+    float bat_cur = current_pin->voltage_average();
+    float vcc = vbat_pin->voltage_average_ratiometric();
+    float cur = current_pin->voltage_average_ratiometric();
 
-// Flymaple board pin 20 is connected to the external battery supply
-// via a 24k/5.1k voltage divider. The schematic claims the divider is 25k/5k, 
-// but the actual installed resistors are not so.
-    batt *= 5.70588; // (24000+5100)/5100
-    hal.console->printf("Vcc pin 15:       %f\n", vcc);
-    hal.console->printf("VIN (via pin 20): %f\n", batt);
+    hal.console->printf("Pin PC5: %f V\n", vcc);
+    hal.console->printf("Pin PB0: %f V\n", cur);
+    hal.console->printf("Battary voltage: %f V\n", bat_vol);
+    hal.console->printf("Battary current: %f A\n", bat_cur);
     hal.scheduler->delay(1000);
 }
 
