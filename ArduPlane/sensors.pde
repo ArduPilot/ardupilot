@@ -8,18 +8,22 @@ static void init_barometer(void)
     gcs_send_text_P(SEVERITY_LOW, PSTR("barometer calibration complete"));
 }
 
-static void init_sonar(void)
+static void init_rangefinder(void)
 {
-    sonar.init();
+    rangefinder.init();
 }
 
-// read the sonars
-static void read_sonars(void)
+/*
+  read the rangefinder and update height estimate
+ */
+static void read_rangefinder(void)
 {
-    sonar.update();
+    rangefinder.update();
 
     if (should_log(MASK_LOG_SONAR))
         Log_Write_Sonar();
+
+    rangefinder_height_update();
 }
 
 /*

@@ -6,12 +6,14 @@
 #include "Semaphores.h"
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLE
-#define LINUX_SPI_NUM_BUSES 2
 #define LINUX_SPI_DEVICE_NUM_DEVICES 6
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
+#define LINUX_SPI_DEVICE_NUM_DEVICES 1
 #else
-#define LINUX_SPI_NUM_BUSES 0
 #define LINUX_SPI_DEVICE_NUM_DEVICES 0
 #endif
+
+#define LINUX_SPI_MAX_BUSES 3
 
 class Linux::LinuxSPIDeviceDriver : public AP_HAL::SPIDeviceDriver {
 public:
@@ -52,8 +54,8 @@ public:
 
 private:
     static LinuxSPIDeviceDriver _device[LINUX_SPI_DEVICE_NUM_DEVICES];
-    static LinuxSemaphore _semaphore[LINUX_SPI_NUM_BUSES];
-    static int _fd[LINUX_SPI_NUM_BUSES];
+    static LinuxSemaphore _semaphore[LINUX_SPI_MAX_BUSES];
+    static int _fd[LINUX_SPI_MAX_BUSES];
 };
 
 #endif // __AP_HAL_LINUX_SPIDRIVER_H__

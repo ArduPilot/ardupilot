@@ -94,7 +94,7 @@ bool AP_Compass_PX4::read(void)
 
     // consider the compass healthy if we got a reading in the last 0.2s
     for (uint8_t i=0; i<_num_instances; i++) {
-        _healthy[i] = (hrt_absolute_time() - _last_timestamp[i] < 200000);
+        _healthy[i] = (hal.scheduler->micros64() - _last_timestamp[i] < 200000);
     }
 
     for (uint8_t i=0; i<_num_instances; i++) {

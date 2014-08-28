@@ -1,5 +1,8 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+// mission storage
+static const StorageAccess wp_storage(StorageManager::StorageMission);
+
 static void init_tracker()
 {
     hal.uartA->begin(SERIAL0_BAUD, 128, SERIAL_BUFSIZE);
@@ -68,6 +71,7 @@ static void init_tracker()
     init_barometer();
 
     hal.uartA->set_blocking_writes(false);
+    hal.uartB->set_blocking_writes(false);
     hal.uartC->set_blocking_writes(false);
 
     // setup antenna control PWM channels
@@ -130,8 +134,6 @@ static void update_notify()
 */
 static bool get_home_eeprom(struct Location &loc)
 {
-    uint16_t mem;
-
     // Find out proper location in memory by using the start_byte position + the index
     // --------------------------------------------------------------------------------
     if (g.command_total.get() == 0) {
@@ -139,35 +141,20 @@ static bool get_home_eeprom(struct Location &loc)
     }
 
     // read WP position
-    mem = WP_START_BYTE;
-    loc.options = hal.storage->read_byte(mem);
-    mem++;
-    
-    loc.alt = hal.storage->read_dword(mem);
-    mem += 4;
-    
-    loc.lat = hal.storage->read_dword(mem);
-    mem += 4;
-    
-    loc.lng = hal.storage->read_dword(mem);
+    loc.options = wp_storage.read_byte(0);
+    loc.alt = wp_storage.read_uint32(1);
+    loc.lat = wp_storage.read_uint32(5);
+    loc.lng = wp_storage.read_uint32(9);
 
     return true;
 }
 
 static void set_home_eeprom(struct Location temp)
 {
-    uint16_t mem = WP_START_BYTE;
-
-    hal.storage->write_byte(mem, temp.options);
-    mem++;
-
-    hal.storage->write_dword(mem, temp.alt);
-    mem += 4;
-
-    hal.storage->write_dword(mem, temp.lat);
-    mem += 4;
-
-    hal.storage->write_dword(mem, temp.lng);
+    wp_storage.write_byte(0, temp.options);
+    wp_storage.write_uint32(1, temp.alt);
+    wp_storage.write_uint32(5, temp.lat);
+    wp_storage.write_uint32(9, temp.lng);
 
     // Now have a home location in EEPROM
     g.command_total.set_and_save(1); // At most 1 entry for HOME

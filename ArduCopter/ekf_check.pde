@@ -34,8 +34,9 @@ static struct {
 // should be called at 10hz
 void ekf_check()
 {
-    // return immediately if motors are not armed, ekf check is disabled, no inertial-nav position yet or usb is connected
-    if (!motors.armed() || g.ekfcheck_thresh == 0.0f || !inertial_nav.position_ok() || ap.usb_connected) {
+#if AP_AHRS_NAVEKF_AVAILABLE
+    // return immediately if motors are not armed, ekf check is disabled, not using ekf or usb is connected
+    if (!motors.armed() || g.ekfcheck_thresh == 0.0f || !ahrs.have_inertial_nav() || ap.usb_connected) {
         ekf_check_state.fail_count_compass = 0;
         ekf_check_state.bad_compass = 0;
         AP_Notify::flags.ekf_bad = ekf_check_state.bad_compass;
@@ -43,26 +44,14 @@ void ekf_check()
         return;
     }
 
-    // variances
-    float compass_variance = 0;
-    float vel_variance = 9.0;   // default set high to enable failsafe trigger if not using EKF
-
-#if AP_AHRS_NAVEKF_AVAILABLE
-    if (ahrs.have_inertial_nav()) {
-        // use EKF to get variance
-        float posVar, hgtVar, tasVar;
-        Vector3f magVar;
-        Vector2f offset;
-        ahrs.get_NavEKF().getVariances(vel_variance, posVar, hgtVar, magVar, tasVar, offset);
-        compass_variance = magVar.length();
-    } else {
-        // use complementary filter's acceleration corrections multiplied by conversion factor to make them general in the same range as the EKF's variances
-        compass_variance = safe_sqrt(inertial_nav.accel_correction_hbf.x * inertial_nav.accel_correction_hbf.x + inertial_nav.accel_correction_hbf.y * inertial_nav.accel_correction_hbf.y) * EKF_CHECK_COMPASS_INAV_CONVERSION;
-    }
-#else
-    // use complementary filter's acceleration corrections multiplied by conversion factor to make them general in the same range as the EKF's variances
-    compass_variance = safe_sqrt(inertial_nav.accel_correction_hbf.x * inertial_nav.accel_correction_hbf.x + inertial_nav.accel_correction_hbf.y * inertial_nav.accel_correction_hbf.y) * EKF_CHECK_COMPASS_INAV_CONVERSION;
-#endif
+    // use EKF to get variance
+    float posVar, hgtVar, tasVar;
+    Vector3f magVar;
+    Vector2f offset;
+    float compass_variance;
+    float vel_variance;
+    ahrs.get_NavEKF().getVariances(vel_variance, posVar, hgtVar, magVar, tasVar, offset);
+    compass_variance = magVar.length();
 
     // compare compass and velocity variance vs threshold
     if (compass_variance >= g.ekfcheck_thresh && vel_variance > g.ekfcheck_thresh) {
@@ -76,7 +65,7 @@ void ekf_check()
                 ekf_check_state.fail_count_compass = EKF_CHECK_ITERATIONS_MAX;
                 ekf_check_state.bad_compass = true;
                 // log an error in the dataflash
-                Log_Write_Error(ERROR_SUBSYSTEM_EKF_CHECK, ERROR_CODE_EKF_CHECK_BAD_VARIANCE);
+                Log_Write_Error(ERROR_SUBSYSTEM_EKFINAV_CHECK, ERROR_CODE_EKFINAV_CHECK_BAD_VARIANCE);
                 // send message to gcs
                 if ((hal.scheduler->millis() - ekf_check_state.last_warn_time) > EKF_CHECK_WARNING_TIME) {
                     gcs_send_text_P(SEVERITY_HIGH,PSTR("EKF variance"));
@@ -94,7 +83,7 @@ void ekf_check()
             if (ekf_check_state.fail_count_compass == 0) {
                 ekf_check_state.bad_compass = false;
                 // log recovery in the dataflash
-                Log_Write_Error(ERROR_SUBSYSTEM_EKF_CHECK, ERROR_CODE_EKF_CHECK_BAD_VARIANCE_CLEARED);
+                Log_Write_Error(ERROR_SUBSYSTEM_EKFINAV_CHECK, ERROR_CODE_EKFINAV_CHECK_VARIANCE_CLEARED);
                 // clear failsafe
                 failsafe_ekf_off_event();
             }
@@ -104,13 +93,15 @@ void ekf_check()
     // set AP_Notify flags
     AP_Notify::flags.ekf_bad = ekf_check_state.bad_compass;
 
-    // To-Do: add check for althold when vibrations are high
     // To-Do: add ekf variances to extended status
-    // To-Do: add counter measures to try and recover from bad EKF
-    // To-Do: add check into GPS position_ok() to return false if ekf xy not healthy?
-    // To-Do: ensure it compiles for AVR
+#else
+    // if no EKF available then never trigger failure
+    ekf_check_state.bad_compass = 0;
+    failsafe.ekf = false;
+#endif
 }
 
+#if AP_AHRS_NAVEKF_AVAILABLE
 // failsafe_ekf_event - perform ekf failsafe
 static void failsafe_ekf_event()
 {
@@ -126,7 +117,7 @@ static void failsafe_ekf_event()
 
     // EKF failsafe event has occurred
     failsafe.ekf = true;
-    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_EKF, ERROR_CODE_FAILSAFE_OCCURRED);
+    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_EKFINAV, ERROR_CODE_FAILSAFE_OCCURRED);
 
     // take action based on flight mode
     if (mode_requires_GPS(control_mode)) {
@@ -149,5 +140,6 @@ static void failsafe_ekf_off_event(void)
 
     // clear flag and log recovery
     failsafe.ekf = false;
-    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_EKF, ERROR_CODE_FAILSAFE_RESOLVED);
+    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_EKFINAV, ERROR_CODE_FAILSAFE_RESOLVED);
 }
+#endif

@@ -7,6 +7,9 @@
 #include <AP_HAL.h>
 extern const AP_HAL::HAL& hal;
 
+// storage object
+StorageAccess AP_Rally::_storage(StorageManager::StorageRally);
+
 // ArduCopter/defines.h sets this, and this definition will be moved into ArduPlane/defines.h when that is patched to use the lib
 #ifdef APM_BUILD_DIRECTORY
   #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
@@ -41,10 +44,8 @@ const AP_Param::GroupInfo AP_Rally::var_info[] PROGMEM = {
 };
 
 // constructor
-AP_Rally::AP_Rally(AP_AHRS &ahrs, uint16_t max_rally_points, uint16_t rally_start_byte) 
+AP_Rally::AP_Rally(AP_AHRS &ahrs) 
     : _ahrs(ahrs)
-    , _max_rally_points(max_rally_points)
-    , _rally_start_byte(rally_start_byte)
     , _last_change_time_ms(0xFFFFFFFF)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -57,7 +58,7 @@ bool AP_Rally::get_rally_point_with_index(uint8_t i, RallyLocation &ret) const
         return false;
     }
 
-    hal.storage->read_block(&ret, _rally_start_byte + (i * sizeof(RallyLocation)), sizeof(RallyLocation));
+    _storage.read_block(&ret, i * sizeof(RallyLocation), sizeof(RallyLocation));
 
     if (ret.lat == 0 && ret.lng == 0) {
         return false; // sanity check
@@ -73,11 +74,11 @@ bool AP_Rally::set_rally_point_with_index(uint8_t i, const RallyLocation &rallyL
         return false;
     }
 
-    if (i >= (uint8_t) _max_rally_points) {
+    if (i >= get_rally_max()) {
         return false;
     }
 
-    hal.storage->write_block(_rally_start_byte + (i * sizeof(RallyLocation)), &rallyLoc, sizeof(RallyLocation));
+    _storage.write_block(i * sizeof(RallyLocation), &rallyLoc, sizeof(RallyLocation));
 
     _last_change_time_ms = hal.scheduler->millis();
 

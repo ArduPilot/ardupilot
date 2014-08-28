@@ -49,39 +49,45 @@ void AP_MotorsQuad::setup_motors()
         add_motor(AP_MOTORS_MOT_2, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3);
         add_motor(AP_MOTORS_MOT_3,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4);
         add_motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2);
+    }else if(_flags.frame_orientation == AP_MOTORS_VTAIL_FRAME) {
+        /*
+            Tested with: Lynxmotion Hunter Vtail 400
+            - inverted rear outward blowing motors (at a 40 degree angle)
+            - should also work with non-inverted rear outward blowing motors
+            - no roll in rear motors
+            - no yaw in front motors
+            - should fly like some mix between a tricopter and X Quadcopter
 
-    } else if (_flags.frame_orientation == AP_MOTORS_VTAIL_FRAME) {
-        /* Lynxmotion Hunter Vtail 400/500
+            Roll control comes only from the front motors, Yaw control only from the rear motors.
+            Roll & Pitch factor is measured by the angle away from the top of the forward axis to each arm.
 
-           Roll control comes only from the front motors, Yaw control only from the rear motors
-           roll factor is measured by the angle perpendicular to that of the prop arm to the roll axis (x)
-           pitch factor is measured by the angle perpendicular to the prop arm to the pitch axis (y)
+            Note: if we want the front motors to help with yaw,
+                motors 1's yaw factor should be changed to sin(radians(40)).  Where "40" is the vtail angle
+                motors 3's yaw factor should be changed to -sin(radians(40))
+        */
 
-           assumptions:
-                                20      20
-            \      /          3_____________1
-             \    /                  |
-              \  /                   |
-           40  \/  40            20  |  20
-              Tail                  / \
-                                   2   4
+        add_motor(AP_MOTORS_MOT_1, 60, 60, 0, 1);
+        add_motor(AP_MOTORS_MOT_2, 0, -160, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 3);
+        add_motor(AP_MOTORS_MOT_3, -60, -60, 0, 4);
+        add_motor(AP_MOTORS_MOT_4, 0, 160, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2);
+    } else if (_flags.frame_orientation == AP_MOTORS_ATAIL_FRAME) {
+        /*
+            The A-Shaped VTail is the exact same as a V-Shaped VTail, with one difference:
+            - The Yaw factors are reversed, because the rear motors are facing different directions
 
-           All angles measured from their closest axis
+            With V-Shaped VTails, the props make a V-Shape when spinning, but with
+            A-Shaped VTails, the props make an A-Shape when spinning.
+            - Rear thrust on a V-Shaped V-Tail Quad is outward
+            - Rear thrust on an A-Shaped V-Tail Quad is inward
 
-           Note: if we want the front motors to help with yaw,
-                 motors 1's yaw factor should be changed to sin(radians(40)).  Where "40" is the vtail angle
-                 motors 3's yaw factor should be changed to -sin(radians(40))
-         */
-
-      // front right: 70 degrees right of roll axis, 20 degrees up of pitch axis, no yaw
-      add_motor_raw(AP_MOTORS_MOT_1, cosf(radians(160)), cosf(radians(-70)), 0, 1);
-      // back left: no roll, 70 degrees down of pitch axis, full yaw
-      add_motor_raw(AP_MOTORS_MOT_2, 0, cosf(radians(160)), AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3);
-      // front left: 70 degrees left of roll axis, 20 degrees up of pitch axis, no yaw
-      add_motor_raw(AP_MOTORS_MOT_3, cosf(radians(20)), cosf(radians(70)), 0, 4);
-      // back right: no roll, 70 degrees down of pitch axis, full yaw
-      add_motor_raw(AP_MOTORS_MOT_4, 0, cosf(radians(-160)), AP_MOTORS_MATRIX_YAW_FACTOR_CW, 2);
-
+            Still functions the same as the V-Shaped VTail mixing below:
+            - Yaw control is entirely in the rear motors
+            - Roll is is entirely in the front motors
+        */
+        add_motor(AP_MOTORS_MOT_1, 60, 60, 0, 1);
+        add_motor(AP_MOTORS_MOT_2, 0, -160, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3);
+        add_motor(AP_MOTORS_MOT_3, -60, -60, 0, 4);
+        add_motor(AP_MOTORS_MOT_4, 0, 160, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 2);
     }else{
         // X frame set-up
         add_motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1);

@@ -88,7 +88,7 @@ void AP_Baro_MS5611_SPI::init()
         hal.scheduler->panic(PSTR("PANIC: AP_Baro_MS5611 did not get "
                     "valid SPI semaphroe!"));
         return; /* never reached */
-        
+
     }
 
     // now that we have initialised, we set the SPI bus speed to high
@@ -157,8 +157,12 @@ void AP_Baro_MS5611_SPI::sem_give()
 
 // I2C Device //////////////////////////////////////////////////////////////////
 #if MS5611_WITH_I2C
-/** I2C address of the MS5611 on the PX4 board. */
-#define MS5611_ADDR 0x76
+
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
+#define MS5611_ADDR 0x77
+#else
+#define MS5611_ADDR 0x76 /** I2C address of the MS5611 on the PX4 board. */
+#endif
 
 void AP_Baro_MS5611_I2C::init()
 {
@@ -336,12 +340,12 @@ bool AP_Baro_MS5611::init()
         if (hal.scheduler->millis() - tstart > 1000) {
             hal.scheduler->panic(PSTR("PANIC: AP_Baro_MS5611 took more than "
                         "1000ms to initialize"));
-            healthy = false;
+            _flags.healthy = false;
             return false;
         }
     }
 
-    healthy = true;
+    _flags.healthy = true;
     return true;
 }
 
@@ -351,16 +355,14 @@ bool AP_Baro_MS5611::init()
 // temperature does not change so quickly...
 void AP_Baro_MS5611::_update(void)
 {
-    uint32_t tnow = hal.scheduler->micros();
     // Throttle read rate to 100hz maximum.
-    if (tnow - _timer < 10000) {
+    if (hal.scheduler->micros() - _timer < 10000) {
         return;
     }
 
     if (!_serial->sem_take_nonblocking()) {
         return;
     }
-    _timer = tnow;
 
     if (_state == 0) {
         // On state 0 we read temp
@@ -404,6 +406,7 @@ void AP_Baro_MS5611::_update(void)
         }
     }
 
+    _timer = hal.scheduler->micros();
     _serial->sem_give();
 }
 
@@ -488,4 +491,3 @@ float AP_Baro_MS5611::get_temperature()
     // temperature in degrees C units
     return Temp;
 }
-

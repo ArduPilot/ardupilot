@@ -70,52 +70,64 @@ double SITLScheduler::_cyg_sec()
 }
 #endif
 
-uint32_t SITLScheduler::_micros() 
+uint64_t SITLScheduler::_micros64() 
 {
 #ifdef __CYGWIN__
-	return (uint32_t)(_cyg_sec() * 1.0e6);
+	return (uint64_t)(_cyg_sec() * 1.0e6);
 #else   
 	struct timeval tp;
 	gettimeofday(&tp,NULL);
-	return 1.0e6*((tp.tv_sec + (tp.tv_usec*1.0e-6)) - 
-		      (_sketch_start_time.tv_sec +
-		       (_sketch_start_time.tv_usec*1.0e-6)));
+	uint64_t ret = 1.0e6*((tp.tv_sec + (tp.tv_usec*1.0e-6)) - 
+                          (_sketch_start_time.tv_sec +
+                           (_sketch_start_time.tv_usec*1.0e-6)));
+    return ret;
 #endif
+}
+
+uint64_t SITLScheduler::micros64() 
+{
+    return _micros64();
 }
 
 uint32_t SITLScheduler::micros() 
 {
-    return _micros();
+    return micros64() & 0xFFFFFFFF;
+}
+
+uint64_t SITLScheduler::millis64() 
+{
+#ifdef __CYGWIN__
+	// 1000 ms in a second
+	return (uint64_t)(_cyg_sec() * 1000);
+#else
+	struct timeval tp;
+	gettimeofday(&tp,NULL);
+	uint64_t ret = 1.0e3*((tp.tv_sec + (tp.tv_usec*1.0e-6)) - 
+                          (_sketch_start_time.tv_sec +
+                           (_sketch_start_time.tv_usec*1.0e-6)));
+    return ret;
+#endif
 }
 
 uint32_t SITLScheduler::millis() 
 {
-#ifdef __CYGWIN__
-	// 1000 ms in a second
-	return (uint32_t)(_cyg_sec() * 1000);
-#else
-	struct timeval tp;
-	gettimeofday(&tp,NULL);
-	return 1.0e3*((tp.tv_sec + (tp.tv_usec*1.0e-6)) - 
-		      (_sketch_start_time.tv_sec +
-		       (_sketch_start_time.tv_usec*1.0e-6)));
-#endif
+    return millis64() & 0xFFFFFFFF;
 }
 
 void SITLScheduler::delay_microseconds(uint16_t usec) 
 {
-	uint32_t start = micros();
-	while (micros() - start < usec) {
-		usleep(usec - (micros() - start));
+	uint64_t start = micros64();
+	while (micros64() - start < usec) {
+		usleep(usec - (micros64() - start));
 	}
 }
 
 void SITLScheduler::delay(uint16_t ms)
 {
-	uint32_t start = micros();
+	uint64_t start = micros64();
     
     while (ms > 0) {
-        while ((micros() - start) >= 1000) {
+        while ((micros64() - start) >= 1000) {
             ms--;
             if (ms == 0) break;
             start += 1000;

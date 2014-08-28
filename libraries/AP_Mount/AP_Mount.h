@@ -46,7 +46,7 @@ public:
     enum MAV_MOUNT_MODE     get_mode() const { return (enum MAV_MOUNT_MODE)_mount_mode.get(); }
 
     // set_mode_to_default - restores the mode to it's default held in the MNT_MODE parameter
-    //      this operation requires 2ms on an APM2, 0.7ms on a Pixhawk/PX4
+    //      this operation requires 230us on an APM2, 60us on a Pixhawk/PX4
     void                    set_mode_to_default() { _mount_mode.load(); }
 
     // MAVLink methods

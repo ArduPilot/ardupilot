@@ -37,8 +37,14 @@ void failsafe_check(void)
     }
 
     if (in_failsafe && tnow - last_timestamp > 20000) {
-        // pass RC inputs to outputs every 20ms
         last_timestamp = tnow;
+
+        if (hal.rcin->num_channels() == 0) {
+            // we don't have any RC input to pass through
+            return;
+        }
+
+        // pass RC inputs to outputs every 20ms
         hal.rcin->clear_overrides();
         channel_roll->radio_out     = channel_roll->read();
         channel_pitch->radio_out    = channel_pitch->read();

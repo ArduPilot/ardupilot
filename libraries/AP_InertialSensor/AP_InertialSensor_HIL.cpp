@@ -4,7 +4,11 @@
 #include <AP_HAL.h>
 const extern AP_HAL::HAL& hal;
 
-AP_InertialSensor_HIL::AP_InertialSensor_HIL() : AP_InertialSensor() {
+AP_InertialSensor_HIL::AP_InertialSensor_HIL() :
+    AP_InertialSensor(),
+    _sample_period_usec(0),
+    _last_sample_usec(0)
+{
     _accel[0] = Vector3f(0, 0, -GRAVITY_MSS);
 }
 
@@ -59,7 +63,7 @@ bool AP_InertialSensor_HIL::wait_for_sample(uint16_t timeout_ms)
     if (_sample_available()) {
         return true;
     }
-    uint32_t start = hal.scheduler->micros();
+    uint32_t start = hal.scheduler->millis();
     while ((hal.scheduler->millis() - start) < timeout_ms) {
         uint32_t tnow = hal.scheduler->micros();
         uint32_t tdelay = (_last_sample_usec + _sample_period_usec) - tnow;

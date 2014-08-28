@@ -385,6 +385,9 @@ private:
     // next mission command to check
     uint16_t next_mission_index;
 
+    // next mission position to check
+    uint8_t next_mission_pos;
+
     // last time the mission changed
     uint32_t last_mission_change_ms;
 

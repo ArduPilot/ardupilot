@@ -42,7 +42,10 @@ const AP_Param::GroupInfo GPS_Glitch::var_info[] PROGMEM = {
 
 // constuctor
 GPS_Glitch::GPS_Glitch(const AP_GPS &gps) :
-    _gps(gps)
+    _gps(gps),
+    _last_good_update(0),
+    _last_good_lat(0),
+    _last_good_lon(0)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }

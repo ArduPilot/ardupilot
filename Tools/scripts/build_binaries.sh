@@ -264,10 +264,55 @@ build_rover() {
     popd
 }
 
+# build antenna tracker binaries
+build_antennatracker() {
+    tag="$1"
+    echo "Building AntennaTracker $tag binaries from $(pwd)"
+    pushd AntennaTracker
+    for b in apm2; do
+	echo "Building AntennaTracker $b binaries"
+        checkout AntennaTracker $tag $b || continue
+	ddir=$binaries/AntennaTracker/$hdate/$b
+	skip_build $tag $ddir && continue
+	make clean || continue
+	make $b -j4 || {
+            echo "Failed build of AntennaTracker $b $tag"
+            error_count=$((error_count+1))
+            continue
+        }
+	copyit $TMPDIR/AntennaTracker.build/AntennaTracker.hex $ddir $tag
+	touch $binaries/AntennaTracker/$tag
+    done
+    test -n "$PX4_ROOT" && {
+	echo "Building AntennaTracker PX4 binaries"
+	ddir=$binaries/AntennaTracker/$hdate/PX4
+        checkout AntennaTracker $tag PX4 || {
+            checkout AntennaTracker "latest" ""
+            popd
+            return
+        }
+	skip_build $tag $ddir || {
+	    make px4-clean &&
+	    make px4 || {
+                echo "Failed build of AntennaTracker PX4 $tag"
+                error_count=$((error_count+1))
+                checkout AntennaTracker "latest" ""
+                popd
+                return
+            }
+	    copyit AntennaTracker-v1.px4 $binaries/AntennaTracker/$hdate/PX4 $tag &&
+	    copyit AntennaTracker-v2.px4 $binaries/AntennaTracker/$hdate/PX4 $tag 
+	}
+    }
+    checkout AntennaTracker "latest" ""
+    popd
+}
+
 for build in stable beta latest; do
     build_arduplane $build
     build_arducopter $build
     build_rover $build
+    build_antennatracker $build
 done
 
 rm -rf $TMPDIR

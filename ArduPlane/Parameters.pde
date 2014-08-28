@@ -206,6 +206,12 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: User
     GSCALAR(takeoff_throttle_slewrate, "TKOFF_THR_SLEW",  0),
 
+    // @Param: FBWA_TDRAG_CHAN
+    // @DisplayName: FBWA taildragger channel
+    // @Description: This is a RC input channel which when it goes above 1700 enables FBWA taildragger takeoff mode. It should be assigned to a momentary switch. Once this feature is enabled it will stay enabled until the aircraft goes above TKOFF_TDRAG_SPD1 airspeed, changes mode, or the pitch goes above the initial pitch when this is engaged or goes below 0 pitch. When enabled the elevator will be forced to TKOFF_TDRAG_ELEV. This option allows for easier takeoffs on taildraggers in FBWA mode, and also makes it easier to test auto-takeoff steering handling in FBWA. Setting it to 0 disables this option.
+    // @User: Standard
+    GSCALAR(fbwa_tdrag_chan,          "FBWA_TDRAG_CHAN",  0),
+
     // @Param: LEVEL_ROLL_LIMIT
     // @DisplayName: Level flight roll limit
     // @Description: This controls the maximum bank angle in degrees during flight modes where level flight is desired, such as in the final stages of landing, and during auto takeoff. This should be a small angle (such as 5 degrees) to prevent a wing hitting the runway during takeoff or landing. Setting this to zero will completely disable heading hold on auto takeoff and final landing approach.
@@ -220,7 +226,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Description: Used in autoland for planes without airspeed sensors in hundredths of a degree
     // @Units: centi-Degrees
     // @User: Advanced
-    GSCALAR(land_pitch_cd,          "LAND_PITCH_CD",  0),
+    ASCALAR(land_pitch_cd,          "LAND_PITCH_CD",  0),
 
     // @Param: LAND_FLARE_ALT
     // @DisplayName: Landing flare altitude
@@ -910,7 +916,14 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Group: RNGFND
     // @Path: ../libraries/AP_RangeFinder/RangeFinder.cpp
-    GOBJECT(sonar,                  "RNGFND", RangeFinder),
+    GOBJECT(rangefinder,            "RNGFND", RangeFinder),
+
+    // @Param: RNGFND_LANDING
+    // @DisplayName: Enable rangefinder for landing
+    // @Description: This enables the use of a rangefinder for automatic landing. The rangefinder will be used both on the landing approach and for final flare
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    GSCALAR(rangefinder_landing,    "RNGFND_LANDING",   0),
 
 #if AP_TERRAIN_AVAILABLE
     // @Group: TERRAIN_

@@ -126,12 +126,6 @@ enum mode {
 
 #define SPEEDFILT 400			// centimeters/second; the speed below which a groundstart will be triggered
 
-
-// EEPROM addresses
-// parameters get the first 1KiB of EEPROM, remainder is for mission commands
-#define MISSION_START_BYTE  0x500
-#define MISSION_END_BYTE    HAL_STORAGE_SIZE_AVAILABLE
-
 // convert a boolean (0 or 1) to a sign for multiplying (0 maps to 1, 1 maps to -1)
 #define BOOL_TO_SIGN(bvalue) ((bvalue)?-1:1)
 

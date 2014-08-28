@@ -256,9 +256,6 @@ private:
     bool            _new_speed:1;
     bool            need_rate_update:1;
 
-    // have we written the logging headers to DataFlash?
-    static bool     logging_started;
-
     uint8_t         _disable_counter;
 
     // Buffer parse & GPS state update

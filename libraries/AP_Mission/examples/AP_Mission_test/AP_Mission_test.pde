@@ -10,11 +10,18 @@
 #include <AP_Param.h>
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
+#include <AP_HAL_AVR_SITL.h>
+#include <AP_HAL_PX4.h>
+#include <AP_HAL_Empty.h>
+#include <SITL.h>
+#include <AP_Rally.h>
 #include <GCS_MAVLink.h>
 #include <AP_Notify.h>
 #include <AP_Vehicle.h>
 #include <DataFlash.h>
 #include <AP_Mission.h>
+#include <AP_NavEKF.h>
+#include <StorageManager.h>
 #include <AP_Terrain.h>
 #include <AP_GPS.h>             // ArduPilot GPS library
 #include <AP_GPS_Glitch.h>      // GPS glitch protection library
@@ -30,30 +37,10 @@
 #include <AP_Buffer.h>          // ArduPilot general purpose FIFO buffer
 #include <GCS_MAVLink.h>
 
-// storage locations equivalent to ArduCopter
-// fence points are stored at the end of the EEPROM
-#define MAX_FENCEPOINTS 6
-#define FENCE_WP_SIZE sizeof(Vector2l)
-#define FENCE_START_BYTE (HAL_STORAGE_SIZE_AVAILABLE-(MAX_FENCEPOINTS*FENCE_WP_SIZE))
-
-// parameters get the first 1536 bytes of EEPROM, mission commands are stored between these params and the fence points
-#define MISSION_START_BYTE   0x500
-#define MISSION_END_BYTE     (FENCE_START_BYTE-1)
-
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
-// INS and Baro declaration
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-
-AP_InertialSensor_MPU6000 ins;
-AP_Baro_MS5611 baro(&AP_Baro_MS5611::spi);
-
-#else
-
-AP_ADC_ADS7844 adc;
-AP_InertialSensor_Oilpan ins(&adc);
-AP_Baro_BMP085 baro;
-#endif
+AP_InertialSensor_HIL ins;
+AP_Baro_HIL baro;
 
 // GPS declaration
 static AP_GPS  gps;
@@ -116,7 +103,7 @@ void mission_complete(void)
 }
 
 // declaration
-AP_Mission mission(ahrs, &start_cmd, &verify_cmd, &mission_complete, MISSION_START_BYTE, MISSION_END_BYTE);
+AP_Mission mission(ahrs, &start_cmd, &verify_cmd, &mission_complete);
 
 // setup
 void setup(void)
@@ -126,8 +113,6 @@ void setup(void)
     // display basic info about command sizes
     hal.console->printf_P(PSTR("Max Num Commands: %d\n"),(int)mission.num_commands_max());
     hal.console->printf_P(PSTR("Command size: %d bytes\n"),(int)AP_MISSION_EEPROM_COMMAND_SIZE);
-    hal.console->printf_P(PSTR("Command start in Eeprom: 0x%x\n"),(int)MISSION_START_BYTE);
-    hal.console->printf_P(PSTR("Command end in Eeprom: 0x%x\n"),(int)MISSION_END_BYTE);
 }
 
 // loop

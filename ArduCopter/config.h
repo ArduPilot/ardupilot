@@ -86,16 +86,11 @@
  # define AC_RALLY DISABLED
 #endif
 
-#if HAL_CPU_CLASS < HAL_CPU_CLASS_75 || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+#if HAL_CPU_CLASS < HAL_CPU_CLASS_75 || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
  // low power CPUs (APM1, APM2 and SITL)
  # define MAIN_LOOP_RATE    100
  # define MAIN_LOOP_SECONDS 0.01
  # define MAIN_LOOP_MICROS  10000
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
- // Linux boards
- # define MAIN_LOOP_RATE    200
- # define MAIN_LOOP_SECONDS 0.005
- # define MAIN_LOOP_MICROS  5000
 #else
  // high power CPUs (Flymaple, PX4, Pixhawk, VRBrain)
  # define MAIN_LOOP_RATE    400
@@ -197,6 +192,10 @@
 
 #ifndef THR_SURFACE_TRACKING_VELZ_MAX
  # define THR_SURFACE_TRACKING_VELZ_MAX 150 // max vertical speed change while surface tracking with sonar
+#endif
+
+#ifndef SONAR_TIMEOUT_MS
+ # define SONAR_TIMEOUT_MS  1000            // desired sonar alt will reset to current sonar alt after this many milliseconds without a good sonar alt
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -333,6 +332,11 @@
   # define COMPASS_OFFSETS_MAX          500
  #endif
 #endif
+
+// arming check's maximum acceptable vector difference between internal and external compass after vectors are normalized to field length of 1.0
+#ifndef COMPASS_ACCEPTABLE_VECTOR_DIFF
+  #define COMPASS_ACCEPTABLE_VECTOR_DIFF    0.75    // pre arm compass check will fail if internal vs external compass direction differ by more than 45 degrees
+ #endif
 
 //////////////////////////////////////////////////////////////////////////////
 //  OPTICAL_FLOW
@@ -490,6 +494,10 @@
 
 #ifndef ACRO_BALANCE_PITCH
  #define ACRO_BALANCE_PITCH         1.0f
+#endif
+
+#ifndef ACRO_EXPO_DEFAULT
+ #define ACRO_EXPO_DEFAULT          0.3f
 #endif
 
 // Stabilize (angle controller) gains

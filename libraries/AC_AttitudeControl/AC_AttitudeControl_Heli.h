@@ -26,10 +26,14 @@ public:
                         ) :
         AC_AttitudeControl(ahrs, aparm, motors,
                            p_angle_roll, p_angle_pitch, p_angle_yaw,
-                           pid_rate_roll, pid_rate_pitch, pid_rate_yaw)
+                           pid_rate_roll, pid_rate_pitch, pid_rate_yaw),
+        _passthrough_roll(0), _passthrough_pitch(0)
 		{
             AP_Param::setup_object_defaults(this, var_info);
 		}
+
+    // passthrough_bf_roll_pitch_rate_yaw - roll and pitch are passed through directly, body-frame rate target for yaw
+    void passthrough_bf_roll_pitch_rate_yaw(float roll_passthrough, float pitch_passthrough, float yaw_rate_bf);
 
 	// rate_controller_run - run lowest level body-frame rate controller and send outputs to the motors
 	// should be called at 100hz or more
@@ -37,6 +41,9 @@ public:
 
 	// use_leaky_i - controls whether we use leaky i term for body-frame to motor output stage
 	void use_leaky_i(bool leaky_i) {  _flags_heli.leaky_i = leaky_i; }
+    
+    // use_flybar_passthrough - controls whether we pass-through control inputs to swash-plate
+	void use_flybar_passthrough(bool passthrough) {  _flags_heli.flybar_passthrough = passthrough; }
     
     void update_feedforward_filter_rates(float time_step);
 
@@ -47,10 +54,11 @@ private:
 
     // To-Do: move these limits flags into the heli motors class
     struct AttControlHeliFlags {
-        uint8_t limit_roll      :   1;  // 1 if we have requested larger roll angle than swash can physically move
-        uint8_t limit_pitch     :   1;  // 1 if we have requested larger pitch angle than swash can physically move
-        uint8_t limit_yaw       :   1;  // 1 if we have requested larger yaw angle than tail servo can physically move
-        uint8_t leaky_i         :   1;  // 1 if we should use leaky i term for body-frame rate to motor stage
+        uint8_t limit_roll          :   1;  // 1 if we have requested larger roll angle than swash can physically move
+        uint8_t limit_pitch         :   1;  // 1 if we have requested larger pitch angle than swash can physically move
+        uint8_t limit_yaw           :   1;  // 1 if we have requested larger yaw angle than tail servo can physically move
+        uint8_t leaky_i             :   1;  // 1 if we should use leaky i term for body-frame rate to motor stage
+        uint8_t flybar_passthrough  :   1;  // 1 if we should pass through pilots roll & pitch input directly to swash-plate
     } _flags_heli;
 
     //
@@ -68,6 +76,7 @@ private:
     // get_angle_boost - calculate total body frame throttle required to produce the given earth frame throttle
     virtual int16_t get_angle_boost(int16_t throttle_pwm);
     
+    
     // LPF filters to act on Rate Feedforward terms to linearize output.
     // Due to complicated aerodynamic effects, feedforwards acting too fast can lead
     // to jerks on rate change requests.
@@ -75,6 +84,9 @@ private:
     LowPassFilterInt32 roll_feedforward_filter;
     LowPassFilterInt32 yaw_feedforward_filter;
 
+    // pass through for roll and pitch
+    int16_t _passthrough_roll;
+    int16_t _passthrough_pitch;
 };
 
 #endif //AC_ATTITUDECONTROL_HELI_H

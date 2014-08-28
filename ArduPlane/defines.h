@@ -177,19 +177,6 @@ enum log_messages {
                                         // which a groundstart will be
                                         // triggered
 
-// fence points are stored at the end of the EEPROM
-#define MAX_FENCEPOINTS 20
-#define FENCE_WP_SIZE sizeof(Vector2l)
-#define FENCE_START_BYTE (HAL_STORAGE_SIZE_AVAILABLE-(MAX_FENCEPOINTS*FENCE_WP_SIZE))
-
-// rally points shoehorned between fence points and waypoints
-#define MAX_RALLYPOINTS 10
-#define RALLY_START_BYTE (FENCE_START_BYTE-(MAX_RALLYPOINTS*AC_RALLY_WP_SIZE))
-
-// parameters get the first 1280 bytes of EEPROM, mission commands are stored between these params and the rally points
-#define MISSION_START_BYTE  0x500
-#define MISSION_END_BYTE    (RALLY_START_BYTE-1)
-
 // convert a boolean (0 or 1) to a sign for multiplying (0 maps to 1, 1 maps
 // to -1)
 #define BOOL_TO_SIGN(bvalue) ((bvalue) ? -1 : 1)

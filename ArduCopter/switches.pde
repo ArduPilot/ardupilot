@@ -165,8 +165,6 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             // flip if switch is on, positive throttle and we're actually flying
             if(ch_flag == AUX_SWITCH_HIGH) {
                 set_mode(FLIP);
-            }else{
-                flip_stop();
             }
             break;
 

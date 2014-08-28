@@ -117,8 +117,9 @@ public:
         k_param_serial2_baud,
         k_param_land_repositioning,
         k_param_sonar, // sonar object
-        k_param_ekfcheck_thresh,        // 54
+        k_param_ekfcheck_thresh,
         k_param_terrain,
+        k_param_acro_expo,              // 56
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -434,6 +435,7 @@ public:
     AP_Float                acro_balance_roll;
     AP_Float                acro_balance_pitch;
     AP_Int8                 acro_trainer;
+    AP_Float                acro_expo;
 
     // PI/D controllers
 #if FRAME_CONFIG == HELI_FRAME

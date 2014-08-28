@@ -20,13 +20,14 @@
 #include <AP_Common.h>
 #include <AP_Param.h>
 #include <AP_AHRS.h>
+#include <../StorageManager/StorageManager.h>
 
-#define AC_RALLY_WP_SIZE        15  // eeprom size of rally points
+#define AP_RALLY_WP_SIZE        15  // eeprom size of rally points
 
 struct PACKED RallyLocation {
     int32_t lat;        //Latitude * 10^7
     int32_t lng;        //Longitude * 10^7
-    int16_t alt;        //transit altitude (and loiter altitude) in meters;
+    int16_t alt;        //transit altitude (and loiter altitude) in meters (absolute);
     int16_t break_alt;  //when autolanding, break out of loiter at this alt (meters)
     uint16_t land_dir;   //when the time comes to auto-land, try to land in this direction (centidegrees)
     uint8_t flags;      //bit 0 = seek favorable winds when choosing a landing poi
@@ -39,12 +40,13 @@ struct PACKED RallyLocation {
 class AP_Rally {
 
 public:
-    AP_Rally(AP_AHRS &ahrs, uint16_t max_rally_points, uint16_t rally_start_byte);
+    AP_Rally(AP_AHRS &ahrs);
 
     // data handling
     bool get_rally_point_with_index(uint8_t i, RallyLocation &ret) const;
     bool set_rally_point_with_index(uint8_t i, const RallyLocation &rallyLoc);
     uint8_t get_rally_total() const { return _rally_point_total_count; }
+    uint8_t get_rally_max(void) const { return _storage.size() / AP_RALLY_WP_SIZE; }
 
     float get_rally_limit_km() const { return _rally_limit_km; }
     
@@ -61,10 +63,10 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+    static StorageAccess _storage;
+
     // internal variables
     const AP_AHRS& _ahrs; // used only for home position
-    uint16_t _max_rally_points;
-    const uint16_t _rally_start_byte;
 
     // parameters
     AP_Int8  _rally_point_total_count;

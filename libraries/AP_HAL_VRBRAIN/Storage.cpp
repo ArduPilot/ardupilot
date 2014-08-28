@@ -184,37 +184,6 @@ void VRBRAINStorage::_mark_dirty(uint16_t loc, uint16_t length)
 	}
 }
 
-uint8_t VRBRAINStorage::read_byte(uint16_t loc)
-{
-	if (loc >= sizeof(_buffer)) {
-		return 0;
-	}
-	_storage_open();
-	return _buffer[loc];
-}
-
-uint16_t VRBRAINStorage::read_word(uint16_t loc)
-{
-	uint16_t value;
-	if (loc >= sizeof(_buffer)-(sizeof(value)-1)) {
-		return 0;
-	}
-	_storage_open();
-	memcpy(&value, &_buffer[loc], sizeof(value));
-	return value;
-}
-
-uint32_t VRBRAINStorage::read_dword(uint16_t loc)
-{
-	uint32_t value;
-	if (loc >= sizeof(_buffer)-(sizeof(value)-1)) {
-		return 0;
-	}
-	_storage_open();
-	memcpy(&value, &_buffer[loc], sizeof(value));
-	return value;
-}
-
 void VRBRAINStorage::read_block(void *dst, uint16_t loc, size_t n)
 {
 	if (loc >= sizeof(_buffer)-(n-1)) {
@@ -222,42 +191,6 @@ void VRBRAINStorage::read_block(void *dst, uint16_t loc, size_t n)
 	}
 	_storage_open();
 	memcpy(dst, &_buffer[loc], n);
-}
-
-void VRBRAINStorage::write_byte(uint16_t loc, uint8_t value)
-{
-	if (loc >= sizeof(_buffer)) {
-		return;
-	}
-	if (_buffer[loc] != value) {
-		_storage_open();
-		_buffer[loc] = value;
-		_mark_dirty(loc, sizeof(value));
-	}
-}
-
-void VRBRAINStorage::write_word(uint16_t loc, uint16_t value)
-{
-	if (loc >= sizeof(_buffer)-(sizeof(value)-1)) {
-		return;
-	}
-	if (memcmp(&value, &_buffer[loc], sizeof(value)) != 0) {
-		_storage_open();
-		memcpy(&_buffer[loc], &value, sizeof(value));
-		_mark_dirty(loc, sizeof(value));
-	}
-}
-
-void VRBRAINStorage::write_dword(uint16_t loc, uint32_t value)
-{
-	if (loc >= sizeof(_buffer)-(sizeof(value)-1)) {
-		return;
-	}
-	if (memcmp(&value, &_buffer[loc], sizeof(value)) != 0) {
-		_storage_open();
-		memcpy(&_buffer[loc], &value, sizeof(value));
-		_mark_dirty(loc, sizeof(value));
-	}
 }
 
 void VRBRAINStorage::write_block(uint16_t loc, const void *src, size_t n)

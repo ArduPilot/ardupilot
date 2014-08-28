@@ -28,11 +28,18 @@ static void adjust_altitude_target()
         control_mode == CRUISE) {
         return;
     }
-    if (nav_controller->reached_loiter_target() || (wp_distance <= 30) || (wp_totalDistance<=30)) {
+    if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
+        // in land final TECS uses TECS_LAND_SINK as a target sink
+        // rate, and ignores the target altitude
+        set_target_altitude_location(next_WP_loc);
+    } else if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
+        setup_landing_glide_slope();
+    } else if (nav_controller->reached_loiter_target() || (wp_distance <= 30) || (wp_totalDistance<=30)) {
         // once we reach a loiter target then lock to the final
         // altitude target
         set_target_altitude_location(next_WP_loc);
-    } else if (target_altitude.offset_cm != 0) {
+    } else if (target_altitude.offset_cm != 0 && 
+               !location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
         // control climb/descent rate
         set_target_altitude_proportion(next_WP_loc, (float)(wp_distance-30) / (float)(wp_totalDistance-30));
 
@@ -203,12 +210,19 @@ static int32_t relative_target_altitude_cm(void)
         // add lookahead adjustment the target altitude
         target_altitude.lookahead = lookahead_adjustment();
         relative_home_height += target_altitude.lookahead;
+
+        // correct for rangefinder data
+        relative_home_height += rangefinder_correction();
+
         // we are following terrain, and have terrain data for the
         // current location. Use it.
         return relative_home_height*100;
     }
 #endif
-    return target_altitude.amsl_cm - home.alt + (int32_t(g.alt_offset)*100);
+    int32_t relative_alt = target_altitude.amsl_cm - home.alt;
+    relative_alt += int32_t(g.alt_offset)*100;
+    relative_alt += rangefinder_correction() * 100;
+    return relative_alt;
 }
 
 /*
@@ -302,6 +316,7 @@ static void reset_offset_altitude(void)
 {
     target_altitude.offset_cm = 0;
 }
+
 
 /*
   reset the altitude offset used for glide slopes, based on difference
@@ -399,6 +414,28 @@ static int32_t adjusted_altitude_cm(void)
 }
 
 /*
+  return the height in meters above the next_WP_loc altitude
+ */
+static float height_above_target(void)
+{
+    float target_alt = next_WP_loc.alt*0.01;
+    if (!next_WP_loc.flags.relative_alt) {
+        target_alt -= ahrs.get_home().alt*0.01;
+    }
+
+#if AP_TERRAIN_AVAILABLE
+    // also record the terrain altitude if possible
+    float terrain_altitude;
+    if (next_WP_loc.flags.terrain_alt && 
+        terrain.height_above_terrain(terrain_altitude, true)) {
+        return terrain_altitude - target_alt;
+    }
+#endif
+
+    return (adjusted_altitude_cm()*0.01f - ahrs.get_home().alt*0.01f) - target_alt;
+}
+
+/*
   work out target altitude adjustment from terrain lookahead
  */
 static float lookahead_adjustment(void)
@@ -454,4 +491,80 @@ static float lookahead_adjustment(void)
 #else
     return 0;
 #endif
+}
+
+
+/*
+  correct target altitude using rangefinder data. Returns offset in
+  meters to correct target altitude. A positive number means we need
+  to ask the speed/height controller to fly higher
+ */
+static float rangefinder_correction(void)
+{
+    if (hal.scheduler->millis() - rangefinder_state.last_correction_time_ms > 5000) {
+        // we haven't had any rangefinder data for 5s - don't use it
+        return 0;
+    }
+
+    // for now we only support the rangefinder for landing 
+    bool using_rangefinder = (g.rangefinder_landing &&
+                              control_mode == AUTO && 
+                              (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
+                               flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL));
+    if (!using_rangefinder) {
+        return 0;
+    }
+
+    return rangefinder_state.correction;
+}
+
+
+/*
+  update the offset between rangefinder height and terrain height
+ */
+static void rangefinder_height_update(void)
+{
+    uint16_t distance_cm = rangefinder.distance_cm();
+    int16_t max_distance_cm = rangefinder.max_distance_cm();
+    float height_estimate = 0;
+    if (rangefinder.healthy() && distance_cm < max_distance_cm && home_is_set) {
+        // correct the range for attitude (multiply by DCM.c.z, which
+        // is cos(roll)*cos(pitch))
+        height_estimate = distance_cm * 0.01f * ahrs.get_dcm_matrix().c.z;
+
+        // we consider ourselves to be fully in range when we have 10
+        // good samples (0.2s)
+        if (rangefinder_state.in_range_count < 10) {
+            rangefinder_state.in_range_count++;
+        } else {
+            rangefinder_state.in_range = true;
+        }
+    } else {
+        rangefinder_state.in_range_count = 0;
+        rangefinder_state.in_range = false;
+    }
+
+    if (rangefinder_state.in_range) {
+        // base correction is the difference between baro altitude and
+        // rangefinder estimate
+        float correction = relative_altitude() - height_estimate;
+
+#if AP_TERRAIN_AVAILABLE
+        // if we are terrain following then correction is based on terrain data
+        float terrain_altitude;
+        if ((target_altitude.terrain_following || g.terrain_follow) && 
+            terrain.height_above_terrain(terrain_altitude, true)) {
+            correction = terrain_altitude - height_estimate;
+        }
+#endif    
+
+        // remember the last correction. Use a low pass filter unless
+        // the old data is more than 5 seconds old
+        if (hal.scheduler->millis() - rangefinder_state.last_correction_time_ms > 5000) {
+            rangefinder_state.correction = correction;
+        } else {
+            rangefinder_state.correction = 0.8f*rangefinder_state.correction + 0.2f*correction;
+        }
+        rangefinder_state.last_correction_time_ms = hal.scheduler->millis();    
+    }
 }

@@ -115,13 +115,15 @@ public:
         k_param_takeoff_rotate_speed,
         k_param_takeoff_throttle_slewrate,
         k_param_takeoff_throttle_max,
-        k_param_sonar,
+        k_param_rangefinder,
         k_param_terrain,
         k_param_terrain_follow,
         k_param_stab_pitch_down_cd_old, // deprecated
         k_param_glide_slope_threshold,
         k_param_stab_pitch_down,
         k_param_terrain_lookahead,
+        k_param_fbwa_tdrag_chan,
+        k_param_rangefinder_landing,
 
         // 100: Arming parameters
         k_param_arming = 100,
@@ -169,7 +171,7 @@ public:
         k_param_curr_amp_per_volt,  // unused
         k_param_input_voltage, // deprecated, can be deleted
         k_param_pack_capacity,      // unused
-        k_param_sonar_enabled,
+        k_param_sonar_enabled_old,  // unused
         k_param_ahrs,  // AHRS group
         k_param_barometer,   // barometer ground calibration
         k_param_airspeed,  // AP_Airspeed parameters
@@ -422,7 +424,6 @@ public:
     AP_Int8 reset_mission_chan;
     AP_Int32 airspeed_cruise_cm;
     AP_Int32 RTL_altitude_cm;
-    AP_Int16 land_pitch_cd;
     AP_Float land_flare_alt;
     AP_Float land_flare_sec;
     AP_Int32 min_gndspeed_cm;
@@ -457,6 +458,8 @@ public:
     AP_Int16 terrain_lookahead;
 #endif
     AP_Int16 glide_slope_threshold;
+    AP_Int8 fbwa_tdrag_chan;
+    AP_Int8 rangefinder_landing;
 
     // RC channels
     RC_Channel rc_1;

@@ -381,7 +381,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: FRAME
     // @DisplayName: Frame Orientation (+, X or V)
     // @Description: Controls motor mixing for multicopters.  Not used for Tri or Traditional Helicopters.
-    // @Values: 0:Plus, 1:X, 2:V, 3:H, 4:V-Tail, 10:Y6B (New)
+    // @Values: 0:Plus, 1:X, 2:V, 3:H, 4:V-Tail, 5:A-Tail, 10:Y6B (New)
     // @User: Standard
     GSCALAR(frame_orientation, "FRAME",             AP_MOTORS_X_FRAME),
 
@@ -585,6 +585,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Values: 0:Disabled,1:Leveling,2:Leveling and Limited
     // @User: Advanced
     GSCALAR(acro_trainer,   "ACRO_TRAINER",     ACRO_TRAINER_LIMITED),
+
+    // @Param: ACRO_EXPO
+    // @DisplayName: Acro Expo
+    // @Description: Acro roll/pitch Expo to allow faster rotation when stick at edges
+    // @Values: 0:Disabled,0.1:Very Low,0.2:Low,0.3:Medium,0.4:High,0.5:Very High
+    // @User: Advanced
+    GSCALAR(acro_expo,  "ACRO_EXPO",    ACRO_EXPO_DEFAULT),
 
     // PID controller
     //---------------
@@ -986,7 +993,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Group: BRD_
     // @Path: ../libraries/AP_BoardConfig/AP_BoardConfig.cpp
-    GOBJECT(BoardConfig,            "BRD_",       AP_BoardConfig),    
+    GOBJECT(BoardConfig,            "BRD_",       AP_BoardConfig),
 
 #if SPRAYER == ENABLED
     // @Group: SPRAY_
@@ -1124,7 +1131,7 @@ const AP_Param::ConversionInfo conversion_table[] PROGMEM = {
 static void load_parameters(void)
 {
     if (!AP_Param::check_var_info()) {
-        cliSerial->printf_P(PSTR("Bad var table\n"));        
+        cliSerial->printf_P(PSTR("Bad var table\n"));
         hal.scheduler->panic(PSTR("Bad var table"));
     }
 

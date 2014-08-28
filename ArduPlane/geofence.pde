@@ -35,27 +35,34 @@ static struct GeofenceState {
     int32_t guided_lat;
     int32_t guided_lng;
     /* point 0 is the return point */
-    Vector2l boundary[MAX_FENCEPOINTS];
+    Vector2l *boundary;
 } *geofence_state;
 
+
+static const StorageAccess fence_storage(StorageManager::StorageFence);
+
+/*
+  maximum number of fencepoints
+ */
+static uint8_t max_fencepoints(void)
+{
+    return min(255, fence_storage.size() / sizeof(Vector2l));
+}
 
 /*
  *  fence boundaries fetch/store
  */
 static Vector2l get_fence_point_with_index(unsigned i)
 {
-    uint16_t mem;
     Vector2l ret;
 
-    if (i > (unsigned)g.fence_total) {
+    if (i > (unsigned)g.fence_total || i >= max_fencepoints()) {
         return Vector2l(0,0);
     }
 
     // read fence point
-    mem = FENCE_START_BYTE + (i * FENCE_WP_SIZE);
-    ret.x = hal.storage->read_dword(mem);
-    mem += sizeof(uint32_t);
-    ret.y = hal.storage->read_dword(mem);
+    ret.x = fence_storage.read_uint32(i * sizeof(Vector2l));
+    ret.y = fence_storage.read_uint32(i * sizeof(Vector2l) + 4);
 
     return ret;
 }
@@ -63,18 +70,13 @@ static Vector2l get_fence_point_with_index(unsigned i)
 // save a fence point
 static void set_fence_point_with_index(Vector2l &point, unsigned i)
 {
-    uint16_t mem;
-
-    if (i >= (unsigned)g.fence_total.get()) {
+    if (i >= (unsigned)g.fence_total.get() || i >= max_fencepoints()) {
         // not allowed
         return;
     }
 
-    mem = FENCE_START_BYTE + (i * FENCE_WP_SIZE);
-
-    hal.storage->write_dword(mem, point.x);
-    mem += sizeof(uint32_t);
-    hal.storage->write_dword(mem, point.y);
+    fence_storage.write_uint32(i * sizeof(Vector2l), point.x);
+    fence_storage.write_uint32(i * sizeof(Vector2l)+4, point.y);
 
     if (geofence_state != NULL) {
         geofence_state->boundary_uptodate = false;
@@ -98,6 +100,14 @@ static void geofence_load(void)
             // not much we can do here except disable it
             goto failed;
         }
+
+        geofence_state->boundary = (Vector2l *)calloc(sizeof(Vector2l), max_fencepoints());
+        if (geofence_state->boundary == NULL) {
+            free(geofence_state);
+            geofence_state = NULL;
+            goto failed;
+        }
+        
         geofence_state->old_switch_position = 254;
     }
 
@@ -414,8 +424,10 @@ static void geofence_send_status(mavlink_channel_t chan)
     }
 }
 
-// public function for use in failsafe modules
-bool geofence_breached(void)
+/*
+  return true if geofence has been breached
+ */
+static bool geofence_breached(void)
 {
     return geofence_state ? geofence_state->fence_triggered : false;
 }

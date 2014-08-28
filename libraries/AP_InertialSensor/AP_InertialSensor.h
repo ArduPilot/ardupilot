@@ -164,6 +164,9 @@ public:
         }
     }
 
+    // get_filter - return filter in hz
+    virtual uint8_t get_filter() const { return _mpu6000_filter.get(); }
+
     virtual uint16_t error_count(void) const { return 0; }
     virtual bool healthy(void) const { return get_gyro_health() && get_accel_health(); }
 
@@ -232,5 +235,6 @@ protected:
 #include "AP_InertialSensor_L3G4200D.h"
 #include "AP_InertialSensor_MPU9150.h"
 #include "AP_InertialSensor_MPU9250.h"
+#include "AP_InertialSensor_L3GD20.h"
 
 #endif // __AP_INERTIAL_SENSOR_H__

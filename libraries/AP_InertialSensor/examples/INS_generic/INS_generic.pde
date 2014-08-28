@@ -16,6 +16,7 @@
 #include <AP_HAL_Empty.h>
 #include <AP_Math.h>
 #include <AP_Param.h>
+#include <StorageManager.h>
 #include <AP_ADC.h>
 #include <AP_InertialSensor.h>
 #include <AP_Notify.h>
@@ -25,6 +26,7 @@
 #include <DataFlash.h>
 #include <GCS_MAVLink.h>
 #include <AP_Mission.h>
+#include <StorageManager.h>
 #include <AP_Terrain.h>
 #include <AP_AHRS.h>
 #include <AP_Airspeed.h>
@@ -53,6 +55,8 @@ AP_InertialSensor_Flymaple ins;
 AP_InertialSensor_L3G4200D ins;
 #elif CONFIG_INS_TYPE == HAL_INS_MPU9250
 AP_InertialSensor_MPU9250 ins;
+#elif CONFIG_INS_TYPE == HAL_INS_L3GD20
+AP_InertialSensor_L3GD20 ins;
 #else
   #error Unrecognised CONFIG_INS_TYPE setting.
 #endif // CONFIG_INS_TYPE

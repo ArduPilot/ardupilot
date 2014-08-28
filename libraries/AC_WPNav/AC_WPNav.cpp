@@ -97,16 +97,17 @@ AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosContro
     _loiter_accel_cms(WPNAV_LOITER_ACCEL),
     _wp_last_update(0),
     _wp_step(0),
-    _track_length(0.0),
-    _track_desired(0.0),
-    _track_accel(0.0),
-    _track_speed(0.0),
-    _track_leash_length(0.0),
-    _slow_down_dist(0.0),
-    _spline_time(0.0),
-    _spline_time_scale(0.0),
-    _spline_vel_scaler(0.0),
-    _yaw(0.0)
+    _track_length(0.0f),
+    _track_desired(0.0f),
+    _limited_speed_xy_cms(0.0f),
+    _track_accel(0.0f),
+    _track_speed(0.0f),
+    _track_leash_length(0.0f),
+    _slow_down_dist(0.0f),
+    _spline_time(0.0f),
+    _spline_time_scale(0.0f),
+    _spline_vel_scaler(0.0f),
+    _yaw(0.0f)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }

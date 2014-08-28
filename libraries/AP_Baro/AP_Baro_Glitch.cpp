@@ -61,11 +61,11 @@ void Baro_Glitch::check_alt()
     float sane_dt;                  // time since last sane baro reading
     float accel_based_distance;     // movement based on max acceleration
     int32_t alt_projected;          // altitude estimate projected from previous iteration
-    float distance_cm;              // distance from baro alt to current alt estimate in cm
+    int32_t distance_cm;            // distance from baro alt to current alt estimate in cm
     bool all_ok;                    // true if the new baro alt passes sanity checks
 
     // exit immediately if baro is unhealthy
-    if (!_baro.healthy) {
+    if (!_baro.healthy()) {
         _flags.glitching = true;
         return;
     }
@@ -88,6 +88,14 @@ void Baro_Glitch::check_alt()
 
     // calculate distance from recent baro alt to current estimate
     int32_t baro_alt = _baro.get_altitude() * 100.0f;
+
+    // baro may have become unhealthy when calculating altitude
+    if (!_baro.healthy()) {
+        _flags.glitching = true;
+        return;
+    }
+
+    // calculte distance from projected distance
     distance_cm = labs(alt_projected - baro_alt);
 
     // all ok if within a given hardcoded radius
