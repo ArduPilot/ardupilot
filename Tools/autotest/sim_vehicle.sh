@@ -183,6 +183,9 @@ case $FRAME in
         EXTRA_PARM="param set VTAIL_OUTPUT 4;"
         EXTRA_SIM="--vtail"
 	;;
+    skid)
+        EXTRA_SIM="--skid-steering"
+	;;
     obc)
         BUILD_TARGET="sitl-obc"
 	;;
