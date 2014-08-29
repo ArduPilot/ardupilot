@@ -287,6 +287,11 @@ static void auto_land_run()
         return;
     }
 
+    // init loiter targets when maybe landed
+    if(land_maybe_complete()) {
+        wp_nav.loiter_soften_for_landing();
+    }
+
     // process pilot's input
     if (!failsafe.radio) {
         if (g.land_repositioning) {
