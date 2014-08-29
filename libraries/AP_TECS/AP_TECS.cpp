@@ -375,7 +375,8 @@ void AP_TECS::_update_height_demand(void)
         if (_flare_counter == 0) {
             _hgt_rate_dem = _climb_rate;
         }
-        if (_flare_counter < 5) {
+        // bring it in over 1s to prevent overshoot
+        if (_flare_counter < 10) {
             _hgt_rate_dem = _hgt_rate_dem * 0.8f - 0.2f * _land_sink;
             _flare_counter++;
         } else {
