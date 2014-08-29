@@ -183,6 +183,11 @@ static void poshold_run()
         }
     }
 
+    // relax loiter target if we might be landed
+    if(land_maybe_complete()) {
+        wp_nav.loiter_soften_for_landing();
+    }
+
     // if landed initialise loiter targets, set throttle to zero and exit
     if (ap.land_complete) {
         wp_nav.init_loiter_target();

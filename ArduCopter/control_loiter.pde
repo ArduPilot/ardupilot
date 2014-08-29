@@ -68,6 +68,11 @@ static void loiter_run()
         wp_nav.clear_pilot_desired_acceleration();
     }
 
+    // relax loiter target if we might be landed
+    if (land_maybe_complete()) {
+        wp_nav.loiter_soften_for_landing();
+    }
+
     // when landed reset targets and output zero throttle
     if (ap.land_complete) {
         wp_nav.init_loiter_target();

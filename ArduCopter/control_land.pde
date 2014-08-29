@@ -73,6 +73,11 @@ static void land_gps_run()
         return;
     }
 
+    // relax loiter target if we might be landed
+    if(land_maybe_complete()) {
+        wp_nav.loiter_soften_for_landing();
+    }
+
     // process pilot inputs
     if (!failsafe.radio) {
         if (g.land_repositioning) {
@@ -185,6 +190,11 @@ static float get_throttle_land()
     }else{
         return -abs(g.land_speed);
     }
+}
+
+static bool land_maybe_complete()
+{
+    return (ap.land_complete || land_detector > LAND_DETECTOR_MAYBE_TRIGGER);
 }
 
 // update_land_detector - checks if we have landed and updates the ap.land_complete flag
