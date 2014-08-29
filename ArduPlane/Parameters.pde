@@ -425,7 +425,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: THR_MIN
     // @DisplayName: Minimum Throttle
-    // @Description: The minimum throttle setting to which the autopilot will apply.
+    // @Description: The minimum throttle setting (as a percentage) which the autopilot will apply. For the final stage of an automatic landing this is always zero.
     // @Units: Percent
     // @Range: 0 100
     // @Increment: 1
@@ -434,7 +434,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: THR_MAX
     // @DisplayName: Maximum Throttle
-    // @Description: The maximum throttle setting as a percentage which the autopilot will apply.
+    // @Description: The maximum throttle setting (as a percentage) which the autopilot will apply.
     // @Units: Percent
     // @Range: 0 100
     // @Increment: 1
