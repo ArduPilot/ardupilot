@@ -843,6 +843,25 @@ static void set_servos(void)
         } else {
             auto_flap_percent = g.flap_1_percent;
         }
+
+        /*
+          special flap levels for takeoff and landing. This works
+          better than speed based flaps as it leads to less
+          possibility of oscillation
+         */
+        if (control_mode == AUTO) {
+            switch (flight_stage) {
+            case AP_SpdHgtControl::FLIGHT_TAKEOFF:
+                auto_flap_percent = g.takeoff_flap_percent;
+                break;
+            case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
+            case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
+                auto_flap_percent = g.land_flap_percent;
+                break;
+            default:
+                break;
+            }
+        }
     }
 
     // manual flap input overrides auto flap input
