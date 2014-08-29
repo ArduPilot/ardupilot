@@ -9,6 +9,7 @@
 // Functions called from the setup menu
 static int8_t   setup_factory           (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_show              (uint8_t argc, const Menu::arg *argv);
+static int8_t   setup_set               (uint8_t argc, const Menu::arg *argv);
 #ifdef WITH_ESC_CALIB
 static int8_t   esc_calib               (uint8_t argc, const Menu::arg *argv);
 #endif
@@ -19,6 +20,7 @@ const struct Menu::command setup_menu_commands[] PROGMEM = {
     // =======          ===============
     {"reset",                       setup_factory},
     {"show",                        setup_show},
+    {"set",                         setup_set},
 #ifdef WITH_ESC_CALIB
     {"esc_calib",                   esc_calib},
 #endif
@@ -64,6 +66,65 @@ setup_factory(uint8_t argc, const Menu::arg *argv)
     }
     // note, cannot actually return here
     return(0);
+}
+
+//Set a parameter to a specified value. It will cast the value to the current type of the
+//parameter and make sure it fits in case of INT8 and INT16
+static int8_t setup_set(uint8_t argc, const Menu::arg *argv)
+{
+    int8_t value_int8;
+    int16_t value_int16;
+
+    AP_Param *param;
+    enum ap_var_type p_type;
+
+    if(argc!=3)
+    {
+        cliSerial->printf_P(PSTR("Invalid command. Usage: set <name> <value>\n"));
+        return 0;
+    }
+
+    param = AP_Param::find(argv[1].str, &p_type);
+    if(!param)
+    {
+        cliSerial->printf_P(PSTR("Param not found: %s\n"), argv[1].str);
+        return 0;
+    }
+
+    switch(p_type)
+    {
+        case AP_PARAM_INT8:
+            value_int8 = (int8_t)(argv[2].i);
+            if(argv[2].i!=value_int8)
+            {
+                cliSerial->printf_P(PSTR("Value out of range for type INT8\n"));
+                return 0;
+            }
+            ((AP_Int8*)param)->set_and_save(value_int8);
+            break;
+        case AP_PARAM_INT16:
+            value_int16 = (int16_t)(argv[2].i);
+            if(argv[2].i!=value_int16)
+            {
+                cliSerial->printf_P(PSTR("Value out of range for type INT16\n"));
+                return 0;
+            }
+            ((AP_Int16*)param)->set_and_save(value_int16);
+            break;
+
+        //int32 and float don't need bounds checking, just use the value provoded by Menu::arg
+        case AP_PARAM_INT32:
+            ((AP_Int32*)param)->set_and_save(argv[2].i);
+            break;
+        case AP_PARAM_FLOAT:
+            ((AP_Float*)param)->set_and_save(argv[2].f);
+            break;
+        default:
+            cliSerial->printf_P(PSTR("Cannot set parameter of type %d.\n"), p_type);
+            break;
+    }
+
+    return 0;
 }
 
 // Print the current configuration.
