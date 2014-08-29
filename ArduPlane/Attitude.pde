@@ -878,11 +878,15 @@ static void set_servos(void)
         if (control_mode == AUTO) {
             switch (flight_stage) {
             case AP_SpdHgtControl::FLIGHT_TAKEOFF:
-                auto_flap_percent = g.takeoff_flap_percent;
+                if (g.takeoff_flap_percent != 0) {
+                    auto_flap_percent = g.takeoff_flap_percent;
+                }
                 break;
             case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
             case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
-                auto_flap_percent = g.land_flap_percent;
+                if (g.land_flap_percent != 0) {
+                    auto_flap_percent = g.land_flap_percent;
+                }
                 break;
             default:
                 break;
