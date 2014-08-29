@@ -126,6 +126,7 @@ public:
         k_param_rangefinder_landing,
         k_param_land_flap_percent,
         k_param_takeoff_flap_percent,
+        k_param_flap_slewrate,
 
         // 100: Arming parameters
         k_param_arming = 100,
@@ -464,6 +465,7 @@ public:
     AP_Int16 glide_slope_threshold;
     AP_Int8 fbwa_tdrag_chan;
     AP_Int8 rangefinder_landing;
+    AP_Int8 flap_slewrate;
 
     // RC channels
     RC_Channel rc_1;

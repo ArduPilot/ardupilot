@@ -459,6 +459,15 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     ASCALAR(throttle_slewrate,      "THR_SLEWRATE",   100),
 
+    // @Param: FLAP_SLEWRATE
+    // @DisplayName: Flap slew rate
+    // @Description: maximum percentage change in flap output per second. A setting of 25 means to not change the flap by more than 25% of the full flap range in one second. A value of 0 means no rate limiting.
+    // @Units: Percent
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Advanced
+    GSCALAR(flap_slewrate,          "FLAP_SLEWRATE",   75),
+
     // @Param: THR_SUPP_MAN
     // @DisplayName: Throttle suppress manual passthru
     // @Description: When throttle is supressed in auto mode it is normally forced to zero. If you enable this option, then while suppressed it will be manual throttle. This is useful on petrol engines to hold the idle throttle manually while waiting for takeoff
