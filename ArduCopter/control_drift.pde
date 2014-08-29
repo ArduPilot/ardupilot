@@ -84,6 +84,16 @@ static void drift_run()
         breaker = 0.0;
     }
 
+    // call attitude controller
+    attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+
+    // output pilot's throttle with angle boost
+    attitude_control.set_throttle_out(get_throttle_assist(vel.z, pilot_throttle_scaled), true);
+}
+
+// get_throttle_assist - return throttle output (range 0 ~ 1000) based on pilot input and z-axis velocity
+int16_t get_throttle_assist(float velz, int16_t pilot_throttle_scaled)
+{
     // throttle assist - adjusts throttle to slow the vehicle's vertical velocity
     //      Only active when pilot's throttle is between 213 ~ 787
     //      Assistance is strongest when throttle is at mid, drops linearly to no assistance at 213 and 787
@@ -92,7 +102,7 @@ static void drift_run()
         pilot_throttle_scaled > DRIFT_THR_MIN && pilot_throttle_scaled < DRIFT_THR_MAX) {
         // calculate throttle assist gain
         thr_assist = 1.2 - ((float)abs(pilot_throttle_scaled - 500) / 240.0f);
-        thr_assist = constrain_float(thr_assist, 0.0f, 1.0f) * -DRIFT_THR_ASSIST_GAIN * vel.z;
+        thr_assist = constrain_float(thr_assist, 0.0f, 1.0f) * -DRIFT_THR_ASSIST_GAIN * velz;
 
         // ensure throttle assist never adjusts the throttle by more than 300 pwm
         thr_assist = constrain_float(thr_assist, -DRIFT_THR_ASSIST_MAX, DRIFT_THR_ASSIST_MAX);
@@ -100,10 +110,6 @@ static void drift_run()
         // ensure throttle assist never pushes throttle below throttle_min or above throttle_max
         thr_assist = constrain_float(thr_assist, g.throttle_min - pilot_throttle_scaled, g.throttle_max - pilot_throttle_scaled);
     }
-
-    // call attitude controller
-    attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
-
-    // output pilot's throttle with angle boost
-    attitude_control.set_throttle_out(pilot_throttle_scaled + thr_assist, true);
+    
+    return pilot_throttle_scaled + thr_assist;
 }
