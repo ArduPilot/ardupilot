@@ -214,6 +214,10 @@ static void stabilize_yaw(float speed_scaler)
         // are below the GROUND_STEER_ALT
         steering_control.ground_steering = (channel_roll->control_in == 0 && 
                                             fabsf(relative_altitude()) < g.ground_steer_alt);
+        if (control_mode == AUTO && flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
+            // don't use ground steering on landing approach
+            steering_control.ground_steering = false;
+        }
     }
 
 
