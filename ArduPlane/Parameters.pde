@@ -206,6 +206,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: User
     GSCALAR(takeoff_throttle_slewrate, "TKOFF_THR_SLEW",  0),
 
+    // @Param: TKOFF_FLAP_PCNT
+    // @DisplayName: Takeoff flap percentage
+    // @Description: The amount of flaps (as a percentage) to apply in automatic takeoff
+    // @Range: 0 100
+    // @Units: Percent
+    // @User: Advanced
+    GSCALAR(takeoff_flap_percent,     "TKOFF_FLAP_PCNT", 0),
+
     // @Param: FBWA_TDRAG_CHAN
     // @DisplayName: FBWA taildragger channel
     // @Description: This is a RC input channel which when it goes above 1700 enables FBWA taildragger takeoff mode. It should be assigned to a momentary switch. Once this feature is enabled it will stay enabled until the aircraft goes above TKOFF_TDRAG_SPD1 airspeed, changes mode, or the pitch goes above the initial pitch when this is engaged or goes below 0 pitch. When enabled the elevator will be forced to TKOFF_TDRAG_ELEV. This option allows for easier takeoffs on taildraggers in FBWA mode, and also makes it easier to test auto-takeoff steering handling in FBWA. Setting it to 0 disables this option.
@@ -848,6 +856,14 @@ const AP_Param::Info var_info[] PROGMEM = {
 	// @Increment: 1
     // @User: Advanced
     GSCALAR(flap_2_speed,           "FLAP_2_SPEED",   FLAP_2_SPEED),
+
+    // @Param: LAND_FLAP_PERCNT
+    // @DisplayName: Landing flap percentage
+    // @Description: The amount of flaps (as a percentage) to apply in the landing approach and flare of an automatic landing
+    // @Range: 0 100
+    // @Units: Percent
+    // @User: Advanced
+    GSCALAR(land_flap_percent,     "LAND_FLAP_PERCNT", 0),
 
     // @Param: RSSI_PIN
     // @DisplayName: Receiver RSSI sensing pin
