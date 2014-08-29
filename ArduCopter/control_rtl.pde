@@ -349,6 +349,11 @@ static void rtl_land_run()
         return;
     }
 
+    // relax loiter target if we might be landed
+    if(land_maybe_complete()) {
+        wp_nav.loiter_soften_for_landing();
+    }
+
     // process pilot's input
     if (!failsafe.radio) {
         if (g.land_repositioning) {
