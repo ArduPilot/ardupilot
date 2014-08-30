@@ -9,6 +9,7 @@ else
 endif
 
 include $(MK_DIR)/environ.mk
+include $(MK_DIR)/util.mk
 
 # short-circuit build for the configure target
 ifeq ($(MAKECMDGOALS),configure)
