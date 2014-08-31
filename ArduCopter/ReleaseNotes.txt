@@ -16,7 +16,7 @@ Changes from 3.2-rc5
     c) resolve false "compass not calibrated" warnings on Pixhawk/PX4 caused by missing device id initialisation 
 ------------------------------------------------------------------
 ArduCopter 3.2-rc5 15-Aug-2014
-Changes from 3.2-rc4 
+Changes from 3.2-rc4
 1) Pixhawk's max num waypoints increased to 718
 2) Smoother take-off in AltHold, Loiter, PosHold (including removing initial 20cm jump when taking off)
 3) ACRO mode roll, pitch, yaw EXPO added for faster rotation when sticks are at extremes (see ACRO_EXPO parameter)
