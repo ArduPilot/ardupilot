@@ -12,7 +12,8 @@ Changes from 3.2-rc5
     b) pre-arm check of internal vs external compass direction (must be within 45deg of each other)
 7) Bug Fixes:
     a) resolve NaN in angle targets when vehicle hits gimbal lock in ACRO mode
-    b) resolve GPS driver buffer overflow that could lead to missed GPS messages on Pixhawk/PX4 boards 
+    b) resolve GPS driver buffer overflow that could lead to missed GPS messages on Pixhawk/PX4 boards
+    c) resolve false "compass not calibrated" warnings on Pixhawk/PX4 caused by missing device id initialisation 
 ------------------------------------------------------------------
 ArduCopter 3.2-rc5 15-Aug-2014
 Changes from 3.2-rc4 
