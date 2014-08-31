@@ -29,6 +29,9 @@
  * To improve the accuracy, baro and gps readings are used:
  *      An error value is calculated as the difference between the sensor's measurement and the last position estimation.
  *   	This value is weighted with a gain factor and incorporated into the new estimation
+ *
+ * Special thanks to Tony Lambregts (FAA) for advice which contributed to the development of this filter.
+ *
  */
 class AP_InertialNav
 {
