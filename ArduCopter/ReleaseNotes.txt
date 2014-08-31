@@ -1,5 +1,18 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.2-rc6 31-Aug-2014
+Changes from 3.2-rc5 
+1) Spline twitch when passing through a waypoint largely resolved
+2) THR_DZ param added to allow user configuration of throttle deadzone during AltHold, Loiter, PosHold
+3) Landing check made more strict (climb rate must be -40~40cm/s for 1 full second)
+4) LAND_REPOSITION param default set to 1
+5) TradHeli with flybar passes through pilot inputs directly to swash when in ACRO mode
+6) Safety Items:
+    a) EKF check disabled when using inertial nav (caused too many false positives)
+    b) pre-arm check of internal vs external compass direction (must be within 45deg of each other)
+7) Bug Fixes:
+    a) bug fix to resolve NaN in angle targets when vehicle hits gimbal lock in ACRO mode
+------------------------------------------------------------------
 ArduCopter 3.2-rc5 15-Aug-2014
 Changes from 3.2-rc4 
 1) Pixhawk's max num waypoints increased to 718
