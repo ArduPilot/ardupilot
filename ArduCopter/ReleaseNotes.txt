@@ -11,7 +11,8 @@ Changes from 3.2-rc5
     a) EKF check disabled when using inertial nav (caused too many false positives)
     b) pre-arm check of internal vs external compass direction (must be within 45deg of each other)
 7) Bug Fixes:
-    a) bug fix to resolve NaN in angle targets when vehicle hits gimbal lock in ACRO mode
+    a) resolve NaN in angle targets when vehicle hits gimbal lock in ACRO mode
+    b) resolve GPS driver buffer overflow that could lead to missed GPS messages on Pixhawk/PX4 boards 
 ------------------------------------------------------------------
 ArduCopter 3.2-rc5 15-Aug-2014
 Changes from 3.2-rc4 
