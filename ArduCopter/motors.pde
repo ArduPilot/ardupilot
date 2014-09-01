@@ -338,10 +338,18 @@ static void pre_arm_checks(bool display_failure)
             return;
         }
 
-        // check accels and gyros are healthy
-        if(!ins.healthy()) {
+        // check accels are healthy
+        if(!ins.get_accel_health_all()) {
             if (display_failure) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: INS not healthy"));
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Accels not healthy"));
+            }
+            return;
+        }
+
+        // check gyros are healthy
+        if(!ins.get_gyro_health_all()) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Gyros not healthy"));
             }
             return;
         }
