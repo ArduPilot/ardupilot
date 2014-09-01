@@ -31,7 +31,7 @@ Airspeed_Calibration::Airspeed_Calibration(const AP_Vehicle::FixedWing &parms) :
  */
 void Airspeed_Calibration::init(float initial_ratio)
 {
-    state.z = 1.0 / sqrtf(initial_ratio);
+    state.z = 1.0f / sqrtf(initial_ratio);
 }
 
 /*
@@ -54,7 +54,7 @@ float Airspeed_Calibration::update(float airspeed, const Vector3f &vg)
     // No state prediction required because states are assumed to be time
     // invariant plus process noise
     // Ignore vertical wind component
-    float TAS_pred = state.z * sqrtf(sq(vg.x - state.x) + sq(vg.y - state.y) + sq(vg.z));
+    float TAS_pred = state.z * pythagorous3(vg.x - state.x, vg.y - state.y, vg.z);
     float TAS_mea  = airspeed;
     
     // Calculate the observation Jacobian H_TAS
@@ -63,7 +63,7 @@ float Airspeed_Calibration::update(float airspeed, const Vector3f &vg)
         // avoid division by a small number
         return state.z;
     }
-    float SH2 = 1/sqrt(SH1);
+    float SH2 = 1/sqrtf(SH1);
 
     // observation Jacobian
     Vector3f H_TAS(
@@ -125,7 +125,7 @@ void AP_Airspeed::update_calibration(const Vector3f &vground)
     // very useful both for testing and to force a reasonable value. 
     float ratio = constrain_float(_ratio, 1.0f, 4.0f);
 
-    _calibration.state.z = 1.0 / sqrtf(ratio);
+    _calibration.state.z = 1.0f / sqrtf(ratio);
 
     // calculate true airspeed, assuming a airspeed ratio of 1.0
     float dpress = get_differential_pressure();

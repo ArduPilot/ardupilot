@@ -30,6 +30,13 @@
 #define MAVLINK_COMM_NUM_BUFFERS 3
 #endif
 
+/*
+  The MAVLink protocol code generator does its own alignment, so
+  alignment cast warnings can be ignored
+ */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-align"
+
 #include "include/mavlink/v1.0/ardupilotmega/version.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
@@ -88,84 +95,20 @@ void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len);
 /// @param chan		Channel to receive on
 /// @returns		Byte read
 ///
-static inline uint8_t comm_receive_ch(mavlink_channel_t chan)
-{
-    uint8_t data = 0;
-
-    switch(chan) {
-	case MAVLINK_COMM_0:
-		data = mavlink_comm_0_port->read();
-		break;
-	case MAVLINK_COMM_1:
-		data = mavlink_comm_1_port->read();
-		break;
-#if MAVLINK_COMM_NUM_BUFFERS > 2
-	case MAVLINK_COMM_2:
-		data = mavlink_comm_2_port->read();
-		break;
-#endif
-	default:
-		break;
-	}
-    return data;
-}
+uint8_t comm_receive_ch(mavlink_channel_t chan);
 
 /// Check for available data on the nominated MAVLink channel
 ///
 /// @param chan		Channel to check
 /// @returns		Number of bytes available
-static inline uint16_t comm_get_available(mavlink_channel_t chan)
-{
-    int16_t bytes = 0;
-    switch(chan) {
-	case MAVLINK_COMM_0:
-		bytes = mavlink_comm_0_port->available();
-		break;
-	case MAVLINK_COMM_1:
-		bytes = mavlink_comm_1_port->available();
-		break;
-#if MAVLINK_COMM_NUM_BUFFERS > 2
-	case MAVLINK_COMM_2:
-		bytes = mavlink_comm_2_port->available();
-		break;
-#endif
-	default:
-		break;
-	}
-	if (bytes == -1) {
-		return 0;
-	}
-    return (uint16_t)bytes;
-}
+uint16_t comm_get_available(mavlink_channel_t chan);
 
 
 /// Check for available transmit space on the nominated MAVLink channel
 ///
 /// @param chan		Channel to check
 /// @returns		Number of bytes available
-static inline uint16_t comm_get_txspace(mavlink_channel_t chan)
-{
-	int16_t ret = 0;
-    switch(chan) {
-	case MAVLINK_COMM_0:
-		ret = mavlink_comm_0_port->txspace();
-		break;
-	case MAVLINK_COMM_1:
-		ret = mavlink_comm_1_port->txspace();
-		break;
-#if MAVLINK_COMM_NUM_BUFFERS > 2
-	case MAVLINK_COMM_2:
-		ret = mavlink_comm_2_port->txspace();
-		break;
-#endif
-	default:
-		break;
-	}
-	if (ret < 0) {
-		ret = 0;
-	}
-    return (uint16_t)ret;
-}
+uint16_t comm_get_txspace(mavlink_channel_t chan);
 
 #ifdef HAVE_CRC_ACCUMULATE
 // use the AVR C library implementation. This is a bit over twice as
@@ -201,5 +144,7 @@ enum gcs_severity {
     SEVERITY_CRITICAL,
     SEVERITY_USER_RESPONSE
 };
+
+#pragma GCC diagnostic pop
 
 #endif // GCS_MAVLink_h

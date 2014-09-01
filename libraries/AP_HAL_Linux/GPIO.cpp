@@ -3,42 +3,121 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
 #include "GPIO.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <poll.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
 
 using namespace Linux;
 
+static const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 LinuxGPIO::LinuxGPIO()
 {}
 
 void LinuxGPIO::init()
-{}
+{
+#if LINUX_GPIO_NUM_BANKS == 4
+    int mem_fd;
+    // Enable all GPIO banks
+    // Without this, access to deactivated banks (i.e. those with no clock source set up) will (logically) fail with SIGBUS
+    // Idea taken from https://groups.google.com/forum/#!msg/beagleboard/OYFp4EXawiI/Mq6s3sg14HoJ
+
+    uint8_t bank_enable[3] = { 5, 65, 105 };
+    int export_fd = open("/sys/class/gpio/export", O_WRONLY);
+    if (export_fd == -1) {
+        hal.scheduler->panic("unable to open /sys/class/gpio/export");
+    }
+    for (uint8_t i=0; i<3; i++) {
+        dprintf(export_fd, "%u\n", (unsigned)bank_enable[i]);
+    }
+    close(export_fd);
+
+
+    /* open /dev/mem */
+    if ((mem_fd = open("/dev/mem", O_RDWR|O_SYNC) ) < 0) {
+            printf("can't open /dev/mem \n");
+            exit (-1);
+    }
+
+    /* mmap GPIO */
+    off_t offsets[LINUX_GPIO_NUM_BANKS] = { GPIO0_BASE, GPIO1_BASE, GPIO2_BASE, GPIO3_BASE };
+    for (uint8_t i=0; i<LINUX_GPIO_NUM_BANKS; i++) {
+        gpio_bank[i].base = (volatile unsigned *)mmap(0, GPIO_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, offsets[i]);
+        if ((char *)gpio_bank[i].base == MAP_FAILED) {
+            hal.scheduler->panic("unable to map GPIO bank");
+        }
+        gpio_bank[i].oe = gpio_bank[i].base + GPIO_OE;
+        gpio_bank[i].in = gpio_bank[i].base + GPIO_IN;
+        gpio_bank[i].out = gpio_bank[i].base + GPIO_OUT;
+    }
+
+    close(mem_fd);
+#endif // LINUX_GPIO_NUM_BANKS
+}
 
 void LinuxGPIO::pinMode(uint8_t pin, uint8_t output)
-{}
+{
+    uint8_t bank = pin/32;
+    uint8_t bankpin = pin & 0x1F;
+    if (bank >= LINUX_GPIO_NUM_BANKS) {
+        return;
+    }
+    if (output == HAL_GPIO_INPUT) {
+        *gpio_bank[bank].oe |= (1U<<bankpin);
+    } else {
+        *gpio_bank[bank].oe &= ~(1U<<bankpin);
+    }
+}
 
 int8_t LinuxGPIO::analogPinToDigitalPin(uint8_t pin)
 {
-	return -1;
+    return -1;
 }
 
 
 uint8_t LinuxGPIO::read(uint8_t pin) {
-    return 0;
+
+    uint8_t bank = pin/32;
+    uint8_t bankpin = pin & 0x1F;
+    if (bank >= LINUX_GPIO_NUM_BANKS) {
+        return 0;
+    }
+    return *gpio_bank[bank].in & (1U<<bankpin) ? HIGH : LOW;
+
 }
 
 void LinuxGPIO::write(uint8_t pin, uint8_t value)
-{}
+{
+    uint8_t bank = pin/32;
+    uint8_t bankpin = pin & 0x1F;
+    if (bank >= LINUX_GPIO_NUM_BANKS) {
+        return;
+    }
+    if (value == LOW) {
+        *gpio_bank[bank].out &= ~(1U<<bankpin);
+    } else {
+        *gpio_bank[bank].out |= 1U<<bankpin;
+    }
+}
 
 void LinuxGPIO::toggle(uint8_t pin)
-{}
+{
+    write(pin, !read(pin));
+}
 
 /* Alternative interface: */
 AP_HAL::DigitalSource* LinuxGPIO::channel(uint16_t n) {
-    return new LinuxDigitalSource(0);
+    return new LinuxDigitalSource(n);
 }
 
 /* Interrupt interface: */
-bool LinuxGPIO::attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p,
-        uint8_t mode) {
+bool LinuxGPIO::attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p, uint8_t mode)
+{
     return true;
 }
 
@@ -49,21 +128,28 @@ bool LinuxGPIO::usb_connected(void)
 
 LinuxDigitalSource::LinuxDigitalSource(uint8_t v) :
     _v(v)
-{}
+{
+
+}
 
 void LinuxDigitalSource::mode(uint8_t output)
-{}
-
-uint8_t LinuxDigitalSource::read() {
-    return _v;
+{
+    hal.gpio->pinMode(_v, output);
 }
 
-void LinuxDigitalSource::write(uint8_t value) {
-    _v = value;
+uint8_t LinuxDigitalSource::read()
+{
+    return hal.gpio->read(_v);
 }
 
-void LinuxDigitalSource::toggle() {
-    _v = !_v;
+void LinuxDigitalSource::write(uint8_t value)
+{
+    return hal.gpio->write(_v,value);
+}
+
+void LinuxDigitalSource::toggle()
+{
+    write(!read());
 }
 
 #endif // CONFIG_HAL_BOARD

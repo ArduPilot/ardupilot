@@ -65,7 +65,7 @@ void Matrix3<T>::to_euler(float *roll, float *pitch, float *yaw) const
 template <typename T>
 void Matrix3<T>::rotate(const Vector3<T> &g)
 {
-    Matrix3f temp_matrix;
+    Matrix3<T> temp_matrix;
     temp_matrix.a.x = a.y * g.z - a.z * g.y;
     temp_matrix.a.y = a.z * g.x - a.x * g.z;
     temp_matrix.a.z = a.x * g.y - a.y * g.x;
@@ -84,7 +84,7 @@ void Matrix3<T>::rotate(const Vector3<T> &g)
 template <typename T>
 void Matrix3<T>::rotateXY(const Vector3<T> &g)
 {
-    Matrix3f temp_matrix;
+    Matrix3<T> temp_matrix;
     temp_matrix.a.x = -a.z * g.y;
     temp_matrix.a.y = a.z * g.x;
     temp_matrix.a.z = a.x * g.y - a.y * g.x;
@@ -103,7 +103,7 @@ void Matrix3<T>::rotateXY(const Vector3<T> &g)
 template <typename T>
 void Matrix3<T>::rotateXYinv(const Vector3<T> &g)
 {
-    Matrix3f temp_matrix;
+    Matrix3<T> temp_matrix;
     temp_matrix.a.x =   a.z * g.y;
     temp_matrix.a.y = - a.z * g.x;
     temp_matrix.a.z = - a.x * g.y + a.y * g.x;
@@ -188,3 +188,17 @@ template Vector3<float> Matrix3<float>::mul_transpose(const Vector3<float> &v) c
 template Matrix3<float> Matrix3<float>::operator *(const Matrix3<float> &m) const;
 template Matrix3<float> Matrix3<float>::transposed(void) const;
 template Vector2<float> Matrix3<float>::mulXY(const Vector3<float> &v) const;
+
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+template void Matrix3<double>::zero(void);
+template void Matrix3<double>::rotate(const Vector3<double> &g);
+template void Matrix3<double>::rotateXY(const Vector3<double> &g);
+template void Matrix3<double>::rotateXYinv(const Vector3<double> &g);
+template void Matrix3<double>::from_euler(float roll, float pitch, float yaw);
+template void Matrix3<double>::to_euler(float *roll, float *pitch, float *yaw) const;
+template Vector3<double> Matrix3<double>::operator *(const Vector3<double> &v) const;
+template Vector3<double> Matrix3<double>::mul_transpose(const Vector3<double> &v) const;
+template Matrix3<double> Matrix3<double>::operator *(const Matrix3<double> &m) const;
+template Matrix3<double> Matrix3<double>::transposed(void) const;
+template Vector2<double> Matrix3<double>::mulXY(const Vector3<double> &v) const;
+#endif

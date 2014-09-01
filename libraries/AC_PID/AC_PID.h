@@ -12,12 +12,12 @@
 #include <math.h>               // for fabs()
 
 // Examples for _filter:
-// f_cut = 10 Hz -> _filter = 15.9155e-3
-// f_cut = 15 Hz -> _filter = 10.6103e-3
-// f_cut = 20 Hz -> _filter =  7.9577e-3
-// f_cut = 25 Hz -> _filter =  6.3662e-3
-// f_cut = 30 Hz -> _filter =  5.3052e-3
-#define AC_PID_D_TERM_FILTER 0.00795770f    // 20hz filter on D term
+// f_cut = 10 Hz -> _alpha = 0.385869
+// f_cut = 15 Hz -> _alpha = 0.485194
+// f_cut = 20 Hz -> _alpha = 0.556864
+// f_cut = 25 Hz -> _alpha = 0.611015
+// f_cut = 30 Hz -> _alpha = 0.653373
+#define AC_PID_D_TERM_FILTER 0.556864f    // Default 100Hz Filter Rate with 20Hz Cutoff Frequency
 
 /// @class	AC_PID
 /// @brief	Object managing one PID control
@@ -38,7 +38,11 @@ public:
         const float &   initial_p = 0.0,
         const float &   initial_i = 0.0,
         const float &   initial_d = 0.0,
-        const int16_t & initial_imax = 0.0)
+        const int16_t & initial_imax = 0.0):
+        _integrator(0),
+        _last_input(0),
+        _last_derivative(0),
+        _d_lpf_alpha(AC_PID_D_TERM_FILTER)
     {
 		AP_Param::setup_object_defaults(this, var_info);
 
@@ -69,7 +73,6 @@ public:
     float       get_p(float error) const;
     float       get_i(float error, float dt);
     float       get_d(float error, float dt);
-    float       get_leaky_i(float error, float dt, float leak_rate);
 
     /// Reset the PID integrator
     ///
@@ -82,6 +85,9 @@ public:
     /// Save gain properties
     ///
     void        save_gains();
+    
+    /// Sets filter Alpha for D-term LPF
+    void        set_d_lpf_alpha(int16_t cutoff_frequency, float time_step);
 
     /// @name	parameter accessors
     //@{
@@ -108,7 +114,7 @@ public:
 
     static const struct AP_Param::GroupInfo        var_info[];
 
-private:
+protected:
     AP_Float        _kp;
     AP_Float        _ki;
     AP_Float        _kd;
@@ -117,6 +123,7 @@ private:
     float           _integrator;                                ///< integrator value
     float           _last_input;                                ///< last input for derivative
     float           _last_derivative;                           ///< last derivative for low-pass filter
+    float           _d_lpf_alpha;                               ///< alpha used in D-term LPF
 };
 
 #endif // __AC_PID_H__

@@ -22,10 +22,6 @@
 #define AUTO_YAW_LOOK_AHEAD             4       // point in the direction the copter is moving
 #define AUTO_YAW_RESETTOARMEDYAW        5       // point towards heading at time motors were armed
 
-// sonar - for use with CONFIG_SONAR_SOURCE
-#define SONAR_SOURCE_ADC 1
-#define SONAR_SOURCE_ANALOG_PIN 2
-
 // Ch6, Ch7 and Ch8 aux switch control
 #define AUX_SWITCH_PWM_TRIGGER_HIGH 1800   // pwm value above which the ch7 or ch8 option will be invoked
 #define AUX_SWITCH_PWM_TRIGGER_LOW  1200   // pwm value below which the ch7 or ch8 option will be disabled
@@ -53,6 +49,14 @@
 #define AUX_SWITCH_LAND             18      // change to LAND flight mode
 #define AUX_SWITCH_EPM              19      // Operate the EPM cargo gripper low=off, middle=neutral, high=on
 #define AUX_SWITCH_EKF              20      // Enable NavEKF
+#define AUX_SWITCH_PARACHUTE_ENABLE 21      // Parachute enable/disable
+#define AUX_SWITCH_PARACHUTE_RELEASE 22     // Parachute release
+#define AUX_SWITCH_PARACHUTE_3POS   23      // Parachute disable, enable, release with 3 position switch
+#define AUX_SWITCH_MISSIONRESET     24      // Reset auto mission to start from first command
+#define AUX_SWITCH_ATTCON_FEEDFWD   25      // enable/disable the roll and pitch rate feed forward
+#define AUX_SWITCH_ATTCON_ACCEL_LIM 26      // enable/disable the roll, pitch and yaw accel limiting
+#define AUX_SWITCH_RETRACT_MOUNT    27      // Retract Mount
+#define AUX_SWITCH_RELAY            28      // Relay pin on/off (only supports first relay)
 
 // values used by the ap.ch7_opt and ap.ch8_opt flags
 #define AUX_SWITCH_LOW              0       // indicates auxiliar switch is in the low position (pwm <1200)
@@ -77,17 +81,6 @@
 #define ToRad(x) radians(x)	// *pi/180
 #define ToDeg(x) degrees(x)	// *180/pi
 
-// GPS type codes - use the names, not the numbers
-#define GPS_PROTOCOL_NONE       -1
-#define GPS_PROTOCOL_NMEA       0
-#define GPS_PROTOCOL_SIRF       1
-#define GPS_PROTOCOL_UBLOX      2
-#define GPS_PROTOCOL_IMU        3
-#define GPS_PROTOCOL_MTK        4
-#define GPS_PROTOCOL_HIL        5
-#define GPS_PROTOCOL_MTK19      6
-#define GPS_PROTOCOL_AUTO       7
-
 // HIL enumerations
 #define HIL_MODE_DISABLED               0
 #define HIL_MODE_SENSORS                1
@@ -108,7 +101,8 @@
 #define SPORT 13                        // earth frame rate control
 #define FLIP        14                  // flip the vehicle on the roll axis
 #define AUTOTUNE    15                  // autotune the vehicle's roll and pitch gains
-#define NUM_MODES   16
+#define POSHOLD     16                  // position hold with manual override
+#define NUM_MODES   17
 
 
 // CH_6 Tuning
@@ -133,14 +127,14 @@
 #define CH6_WP_SPEED                    10  // maximum speed to next way point (0 to 10m/s)
 #define CH6_ACRO_RP_KP                  25  // acro controller's P term.  converts pilot input to a desired roll, pitch or yaw rate
 #define CH6_ACRO_YAW_KP                 40  // acro controller's P term.  converts pilot input to a desired roll, pitch or yaw rate
-#define CH6_RELAY                       9   // switch relay on if ch6 high, off if low
+#define CH6_RELAY                       9   // deprecated -- remove
 #define CH6_HELI_EXTERNAL_GYRO          13  // TradHeli specific external tail gyro gain
 #define CH6_OPTFLOW_KP                  17  // optical flow loiter controller's P term (position error to tilt angle)
 #define CH6_OPTFLOW_KI                  18  // optical flow loiter controller's I term (position error to tilt angle)
 #define CH6_OPTFLOW_KD                  19  // optical flow loiter controller's D term (position error to tilt angle)
 #define CH6_AHRS_YAW_KP                 30  // ahrs's compass effect on yaw angle (0 = very low, 1 = very high)
 #define CH6_AHRS_KP                     31  // accelerometer effect on roll/pitch angle (0=low)
-#define CH6_INAV_TC                     32  // inertial navigation baro/accel and gps/accel time constant (1.5 = strong baro/gps correction on accel estimatehas very strong does not correct accel estimate, 7 = very weak correction)
+#define CH6_INAV_TC                     32  // deprecated -- remove
 #define CH6_DECLINATION                 38  // compass declination in radians
 #define CH6_CIRCLE_RATE                 39  // circle turn rate in degrees (hard coded to about 45 degrees in either direction)
 #define CH6_SONAR_GAIN                  41  // sonar gain
@@ -148,6 +142,15 @@
 #define CH6_EKF_HORIZONTAL_POS          43  // EKF's gps vs accel (higher rely on accels more, gps impact is reduced).  Range should be 1.0 ~ 3.0?  1.5 is default
 #define CH6_EKF_ACCEL_NOISE             44  // EKF's accel noise (lower means trust accels more, gps & baro less).  Range should be 0.02 ~ 0.5  0.5 is default (but very robust at that level)
 #define CH6_RC_FEEL_RP                  45  // roll-pitch input smoothing
+#define CH6_RATE_PITCH_KP               46  // body frame pitch rate controller's P term
+#define CH6_RATE_PITCH_KI               47  // body frame pitch rate controller's I term
+#define CH6_RATE_PITCH_KD               48  // body frame pitch rate controller's D term
+#define CH6_RATE_ROLL_KP                49  // body frame roll rate controller's P term
+#define CH6_RATE_ROLL_KI                50  // body frame roll rate controller's I term
+#define CH6_RATE_ROLL_KD                51  // body frame roll rate controller's D term
+#define CH6_RATE_PITCH_FF               52  // body frame pitch rate controller FF term
+#define CH6_RATE_ROLL_FF                53  // body frame roll rate controller FF term
+#define CH6_RATE_YAW_FF                 54  // body frame yaw rate controller FF term
 
 // Acro Trainer types
 #define ACRO_TRAINER_DISABLED   0
@@ -167,23 +170,23 @@
 #define WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL    2   // auto pilot will face next waypoint except when doing RTL at which time it will stay in it's last
 #define WP_YAW_BEHAVIOR_LOOK_AHEAD                    3   // auto pilot will look ahead during missions and rtl (primarily meant for traditional helicotpers)
 
-
-// Waypoint options
-#define WP_OPTION_ALT_CHANGE                    2
-#define WP_OPTION_YAW                           4
-#define WP_OPTION_ALT_REQUIRED                  8
-#define WP_OPTION_RELATIVE                      16
-//#define WP_OPTION_					32
-//#define WP_OPTION_					64
-#define WP_OPTION_NEXT_CMD                      128
-
 // Auto modes
 enum AutoMode {
     Auto_TakeOff,
     Auto_WP,
     Auto_Land,
     Auto_RTL,
-    Auto_Circle
+    Auto_CircleMoveToEdge,
+    Auto_Circle,
+    Auto_Spline,
+    Auto_NavGuided
+};
+
+// Guided modes
+enum GuidedMode {
+    Guided_TakeOff,
+    Guided_WP,
+    Guided_Velocity
 };
 
 // RTL states
@@ -199,6 +202,8 @@ enum RTLState {
 enum FlipState {
     Flip_Start,
     Flip_Roll,
+    Flip_Pitch_A,
+    Flip_Pitch_B,
     Flip_Recover,
     Flip_Abandon
 };
@@ -222,7 +227,7 @@ enum FlipState {
 #define LOG_PID_MSG                     0x0E    // deprecated
 #define LOG_COMPASS_MSG                 0x0F
 #define LOG_INAV_MSG                    0x11    // deprecated
-#define LOG_CAMERA_MSG                  0x12
+#define LOG_CAMERA_MSG_DEPRECATED       0x12    // deprecated
 #define LOG_ERROR_MSG                   0x13
 #define LOG_DATA_INT16_MSG              0x14
 #define LOG_DATA_UINT16_MSG             0x15
@@ -232,6 +237,7 @@ enum FlipState {
 #define LOG_AUTOTUNE_MSG                0x19
 #define LOG_AUTOTUNEDETAILS_MSG         0x1A
 #define LOG_COMPASS2_MSG                0x1B
+#define LOG_COMPASS3_MSG                0x1C
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
 #define MASK_LOG_ATTITUDE_MED           (1<<1)
@@ -289,35 +295,15 @@ enum FlipState {
 #define DATA_EPM_ON                     46
 #define DATA_EPM_OFF                    47
 #define DATA_EPM_NEUTRAL                48
+#define DATA_PARACHUTE_DISABLED         49
+#define DATA_PARACHUTE_ENABLED          50
+#define DATA_PARACHUTE_RELEASED         51
 
 // Centi-degrees to radians
 #define DEGX100 5729.57795f
 
-// fence points are stored at the end of the EEPROM
-#define MAX_FENCEPOINTS 6
-#define FENCE_WP_SIZE sizeof(Vector2l)
-#define FENCE_START_BYTE (HAL_STORAGE_SIZE_AVAILABLE-(MAX_FENCEPOINTS*FENCE_WP_SIZE))
-
-// parameters get the first 1536 bytes of EEPROM, mission commands are stored between these params and the fence points
-#define MISSION_START_BYTE   0x600
-#define MISSION_END_BYTE     (FENCE_START_BYTE-1)
-
 // mark a function as not to be inlined
 #define NOINLINE __attribute__((noinline))
-
-// IMU selection
-#define CONFIG_IMU_OILPAN  1
-#define CONFIG_IMU_MPU6000 2
-#define CONFIG_IMU_SITL    3
-#define CONFIG_IMU_PX4     4
-#define CONFIG_IMU_FLYMAPLE 5
-
-#define AP_BARO_BMP085    1
-#define AP_BARO_MS5611    2
-#define AP_BARO_PX4       3
-
-#define AP_BARO_MS5611_SPI 1
-#define AP_BARO_MS5611_I2C 2
 
 // Error message sub systems and error codes
 #define ERROR_SUBSYSTEM_MAIN                1
@@ -334,6 +320,10 @@ enum FlipState {
 #define ERROR_SUBSYSTEM_CRASH_CHECK         12
 #define ERROR_SUBSYSTEM_FLIP                13
 #define ERROR_SUBSYSTEM_AUTOTUNE            14
+#define ERROR_SUBSYSTEM_PARACHUTE           15
+#define ERROR_SUBSYSTEM_EKFINAV_CHECK       16
+#define ERROR_SUBSYSTEM_FAILSAFE_EKFINAV    17
+#define ERROR_SUBSYSTEM_BARO                18
 // general error codes
 #define ERROR_CODE_ERROR_RESOLVED           0
 #define ERROR_CODE_FAILED_TO_INITIALISE     1
@@ -350,10 +340,18 @@ enum FlipState {
 #define ERROR_CODE_MAIN_INS_DELAY           1
 // subsystem specific error codes -- crash checker
 #define ERROR_CODE_CRASH_CHECK_CRASH        1
+#define ERROR_CODE_CRASH_CHECK_LOSS_OF_CONTROL 2
 // subsystem specific error codes -- flip
 #define ERROR_CODE_FLIP_ABANDONED           2
 // subsystem specific error codes -- autotune
 #define ERROR_CODE_AUTOTUNE_BAD_GAINS       2
+// parachute failed to deploy because of low altitude
+#define ERROR_CODE_PARACHUTE_TOO_LOW        2
+// EKF check definitions
+#define ERROR_CODE_EKFINAV_CHECK_BAD_VARIANCE       2
+#define ERROR_CODE_EKFINAV_CHECK_VARIANCE_CLEARED   0
+// Baro specific error codes
+#define ERROR_CODE_BARO_GLITCH              2
 
 // Arming Check Enable/Disable bits
 #define ARMING_CHECK_NONE                   0x00
@@ -382,5 +380,12 @@ enum FlipState {
 #define FS_GPS_LAND                         1       // switch to LAND mode on GPS Failsafe
 #define FS_GPS_ALTHOLD                      2       // switch to ALTHOLD mode on GPS failsafe
 #define FS_GPS_LAND_EVEN_STABILIZE          3       // switch to LAND mode on GPS failsafe even if in a manual flight mode like Stabilize
+
+
+enum Serial2Protocol {
+    SERIAL2_MAVLINK     = 1,
+    SERIAL2_FRSKY_DPORT = 2,
+    SERIAL2_FRSKY_SPORT = 3 // not supported yet
+};
 
 #endif // _DEFINES_H

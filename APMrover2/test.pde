@@ -16,7 +16,7 @@ static int8_t	test_sonar(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_mag(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_modeswitch(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_logging(uint8_t argc, 		const Menu::arg *argv);
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 static int8_t   test_shell(uint8_t argc,              const Menu::arg *argv);
 #endif
 
@@ -43,7 +43,7 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"sonartest",	test_sonar},
 	{"compass",		test_mag},
 	{"logging",		test_logging},
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     {"shell", 				test_shell},
 #endif
 };
@@ -307,27 +307,30 @@ test_logging(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_gps(uint8_t argc, const Menu::arg *argv)
 {
-	print_hit_enter();
-	delay(1000);
+    print_hit_enter();
+    delay(1000);
 
-	while(1){
-		delay(100);
+    uint32_t last_message_time_ms = 0;
+    while(1) {
+        delay(100);
 
-		g_gps->update();
+        gps.update();
 
-		if (g_gps->new_data){
-			cliSerial->printf_P(PSTR("Lat: %ld, Lon %ld, Alt: %ldm, #sats: %d\n"),
-					g_gps->latitude,
-					g_gps->longitude,
-					g_gps->altitude_cm/100,
-					g_gps->num_sats);
-		}else{
-			cliSerial->printf_P(PSTR("."));
-		}
-		if(cliSerial->available() > 0){
-			return (0);
-		}
-	}
+        if (gps.last_message_time_ms() != last_message_time_ms) {
+            last_message_time_ms = gps.last_message_time_ms();
+            const Location &loc = gps.location();
+            cliSerial->printf_P(PSTR("Lat: %ld, Lon %ld, Alt: %ldm, #sats: %d\n"),
+                                (long)loc.lat,
+                                (long)loc.lng,
+                                (long)loc.alt/100,
+                                (int)gps.num_sats());
+        } else {
+            cliSerial->printf_P(PSTR("."));
+        }
+        if(cliSerial->available() > 0) {
+            return (0);
+        }
+    }
 }
 
 static int8_t
@@ -452,7 +455,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_sonar(uint8_t argc, const Menu::arg *argv)
 {
-    if (!sonar.enabled()) {
+    if (!sonar.healthy()) {
         cliSerial->println_P(PSTR("WARNING: Sonar is not enabled"));
     }
 
@@ -471,8 +474,8 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
         delay(20);
         uint32_t now = millis();
 
-        float dist_cm = sonar.distance_cm();
-        float voltage = sonar.voltage();
+        float dist_cm = sonar.distance_cm(0);
+        float voltage = sonar.voltage_mv(0);
         if (sonar_dist_cm_min == 0.0f) {
             sonar_dist_cm_min = dist_cm;
             voltage_min = voltage;
@@ -482,8 +485,8 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
         voltage_min = min(voltage_min, voltage);
         voltage_max = max(voltage_max, voltage);
 
-        dist_cm = sonar2.distance_cm();
-        voltage = sonar2.voltage();
+        dist_cm = sonar.distance_cm(1);
+        voltage = sonar.voltage_mv(1);
         if (sonar2_dist_cm_min == 0.0f) {
             sonar2_dist_cm_min = dist_cm;
             voltage2_min = voltage;
@@ -516,7 +519,7 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
     return (0);
 }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 /*
  *  run a debug shell
  */

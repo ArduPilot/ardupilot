@@ -67,13 +67,34 @@ int32_t AP_L1_Control::bearing_error_cd(void) const
 
 int32_t AP_L1_Control::target_bearing_cd(void) const
 {
-	return _target_bearing_cd;
+	return wrap_180_cd(_target_bearing_cd);
 }
 
+/*
+  this is the turn distance assuming a 90 degree turn
+ */
 float AP_L1_Control::turn_distance(float wp_radius) const
 {
     wp_radius *= sq(_ahrs.get_EAS2TAS());
 	return min(wp_radius, _L1_dist);
+}
+
+/*
+  this approximates the turn distance for a given turn angle. If the
+  turn_angle is > 90 then a 90 degree turn distance is used, otherwise
+  the turn distance is reduced linearly. 
+  This function allows straight ahead mission legs to avoid thinking
+  they have reached the waypoint early, which makes things like camera
+  trigger and ball drop at exact positions under mission control much easier
+ */
+float AP_L1_Control::turn_distance(float wp_radius, float turn_angle) const
+{
+    float distance_90 = turn_distance(wp_radius);
+    turn_angle = fabsf(turn_angle);
+    if (turn_angle >= 90) {
+        return distance_90;
+    }
+    return distance_90 * turn_angle / 90.0f;
 }
 
 bool AP_L1_Control::reached_loiter_target(void)
@@ -148,6 +169,9 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 	// if too small
 	if (AB.length() < 1.0e-6f) {
 		AB = location_diff(_current_loc, next_WP);
+        if (AB.length() < 1.0e-6f) {
+            AB = Vector2f(cosf(_ahrs.yaw), sinf(_ahrs.yaw));
+        }
 	}
 	AB.normalize();
 
@@ -239,9 +263,21 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 
 	//Calculate the NE position of the aircraft relative to WP A
     Vector2f A_air = location_diff(center_WP, _current_loc);
-	
-    //Calculate the unit vector from WP A to aircraft
-    Vector2f A_air_unit = A_air.normalized();
+
+    // Calculate the unit vector from WP A to aircraft
+    // protect against being on the waypoint and having zero velocity
+    // if too close to the waypoint, use the velocity vector
+    // if the velocity vector is too small, use the heading vector
+    Vector2f A_air_unit;
+    if (A_air.length() > 0.1) {
+        A_air_unit = A_air.normalized();
+    } else {
+        if (_groundspeed_vector.length() < 0.1f) {
+            A_air_unit = Vector2f(cosf(_ahrs.yaw), sinf(_ahrs.yaw));
+        } else {
+            A_air_unit = _groundspeed_vector.normalized();
+        }
+    }
 
 	//Calculate Nu to capture center_WP
 	float xtrackVelCap = A_air_unit % _groundspeed_vector; // Velocity across line - perpendicular to radial inbound to WP

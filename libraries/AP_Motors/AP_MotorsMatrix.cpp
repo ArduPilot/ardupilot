@@ -105,6 +105,19 @@ void AP_MotorsMatrix::output_min()
     }
 }
 
+// get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
+//  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
+uint16_t AP_MotorsMatrix::get_motor_mask()
+{
+    uint16_t mask = 0;
+    for (uint8_t i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+        if (motor_enabled[i]) {
+            mask |= 1U << i;
+        }
+    }
+    return mask;
+}
+
 // output_armed - sends commands to the motors
 // includes new scaling stability patch
 void AP_MotorsMatrix::output_armed()
@@ -250,7 +263,7 @@ void AP_MotorsMatrix::output_armed()
         thr_adj = _rc_throttle.radio_out - out_best_thr_pwm;
 
         // calc upper and lower limits of thr_adj
-        int16_t thr_adj_max = out_max_pwm-(out_best_thr_pwm+rpy_high);
+        int16_t thr_adj_max = max(out_max_pwm-(out_best_thr_pwm+rpy_high),0);
 
         // if we are increasing the throttle (situation #2 above)..
         if (thr_adj > 0) {
@@ -329,43 +342,23 @@ void AP_MotorsMatrix::output_disarmed()
     output_min();
 }
 
-// output_test - spin each motor for a moment to allow the user to confirm the motor order and spin direction
-void AP_MotorsMatrix::output_test()
+// output_test - spin a motor at the pwm value specified
+//  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
+//  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
+void AP_MotorsMatrix::output_test(uint8_t motor_seq, int16_t pwm)
 {
-    uint8_t min_order, max_order;
-    uint8_t i,j;
-
-    // find min and max orders
-    min_order = _test_order[0];
-    max_order = _test_order[0];
-    for(i=1; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
-        if( _test_order[i] < min_order )
-            min_order = _test_order[i];
-        if( _test_order[i] > max_order )
-            max_order = _test_order[i];
+    // exit immediately if not armed
+    if (!_flags.armed) {
+        return;
     }
-
-    // shut down all motors
-    output_min();
-
-    // first delay is longer
-    hal.scheduler->delay(4000);
 
     // loop through all the possible orders spinning any motors that match that description
-    for( i=min_order; i<=max_order; i++ ) {
-        for( j=0; j<AP_MOTORS_MAX_NUM_MOTORS; j++ ) {
-            if( motor_enabled[j] && _test_order[j] == i ) {
-                // turn on this motor and wait 1/3rd of a second
-                hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[j]), _rc_throttle.radio_min + _min_throttle);
-                hal.scheduler->delay(300);
-                hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[j]), _rc_throttle.radio_min);
-                hal.scheduler->delay(2000);
-            }
+    for (uint8_t i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+        if (motor_enabled[i] && _test_order[i] == motor_seq) {
+            // turn on this motor
+            hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[i]), pwm);
         }
     }
-
-    // shut down all motors
-    output_min();
 }
 
 // add_motor
@@ -392,17 +385,21 @@ void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitc
     }
 }
 
-// add_motor using just position and prop direction
+// add_motor using just position and prop direction - assumes that for each motor, roll and pitch factors are equal
 void AP_MotorsMatrix::add_motor(int8_t motor_num, float angle_degrees, float yaw_factor, uint8_t testing_order)
 {
-    // call raw motor set-up method
+    add_motor(motor_num, angle_degrees, angle_degrees, yaw_factor, testing_order);
+}
+
+// add_motor using position and prop direction. Roll and Pitch factors can differ (for asymmetrical frames)
+void AP_MotorsMatrix::add_motor(int8_t motor_num, float roll_factor_in_degrees, float pitch_factor_in_degrees, float yaw_factor, uint8_t testing_order)
+{
     add_motor_raw(
         motor_num,
-        cosf(radians(angle_degrees + 90)),               // roll factor
-        cosf(radians(angle_degrees)),                    // pitch factor
-        yaw_factor,                                      // yaw factor
+        cosf(radians(roll_factor_in_degrees + 90)),
+        cosf(radians(pitch_factor_in_degrees)),
+        yaw_factor,
         testing_order);
-
 }
 
 // remove_motor - disabled motor and clears all roll, pitch, throttle factors for this motor

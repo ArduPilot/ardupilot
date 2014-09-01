@@ -14,7 +14,7 @@ public:
     AP_InertialSensor_UserInteract_MAVLink(mavlink_channel_t chan) :
         _chan(chan) {}
 
-    uint8_t blocking_read();
+    bool blocking_read();
     void _printf_P(const prog_char *, ...);
 private:
     mavlink_channel_t _chan;

@@ -23,27 +23,19 @@
 #ifndef AP_GPS_MTK19_h
 #define AP_GPS_MTK19_h
 
-#include "GPS.h"
-#include <AP_Common.h>
+#include <AP_GPS.h>
 #include "AP_GPS_MTK_Common.h"
 
 #define MTK_GPS_REVISION_V16  16
 #define MTK_GPS_REVISION_V19  19
 
-
-class AP_GPS_MTK19 : public GPS {
+class AP_GPS_MTK19 : public AP_GPS_Backend {
 public:
-    AP_GPS_MTK19() :
-		GPS(),
-		_step(0),
-		_payload_counter(0),
-		_mtk_revision(0),
-        _fix_counter(0)
-		{}
+    AP_GPS_MTK19(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
-    virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting, DataFlash_Class *DataFlash);
-    virtual bool        read(void);
-    static bool 		_detect(uint8_t );
+    bool        read(void);
+
+    static bool _detect(struct MTK19_detect_state &state, uint8_t data);
 
 private:
     struct PACKED diyd_mtk_msg {

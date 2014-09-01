@@ -28,7 +28,7 @@ public:
 
         // Misc
         //
-        k_param_log_bitmask = 10,
+        k_param_log_bitmask_old = 10, // unused
         k_param_num_resets,
         k_param_reset_switch_chan,
         k_param_initial_mode,
@@ -44,6 +44,17 @@ public:
         k_param_battery_volt_pin,
         k_param_battery_curr_pin,
 
+        // braking
+        k_param_braking_percent = 30,
+        k_param_braking_speederr,
+
+        // misc2
+        k_param_log_bitmask = 40,
+        k_param_gps,
+        k_param_serial0_baud,
+        k_param_serial1_baud,
+        k_param_serial2_baud,
+
 
         // 110: Telemetry control
         //
@@ -51,12 +62,13 @@ public:
         k_param_gcs1,       // stream rates for uartC
         k_param_sysid_this_mav,
         k_param_sysid_my_gcs,
-        k_param_serial0_baud,
-        k_param_serial1_baud,
+        k_param_serial0_baud_old,
+        k_param_serial1_baud_old,
         k_param_telem_delay,
         k_param_skip_gyro_cal,
         k_param_gcs2,       // stream rates for uartD
-        k_param_serial2_baud,
+        k_param_serial2_baud_old,
+        k_param_serial2_protocol,
 
         //
         // 130: Sensor parameters
@@ -118,12 +130,13 @@ public:
 
         // obstacle control
         k_param_sonar_enabled = 190, // deprecated, can be removed
-        k_param_sonar, // sonar object
+        k_param_sonar_old, // unused
         k_param_sonar_trigger_cm,
         k_param_sonar_turn_angle,
         k_param_sonar_turn_time,
-        k_param_sonar2, // sonar2 object
+        k_param_sonar2_old, // unused
         k_param_sonar_debounce,
+        k_param_sonar, // sonar object
         
         //
         // 210: driving modes
@@ -181,7 +194,7 @@ public:
 
     // Misc
     //
-    AP_Int16    log_bitmask;
+    AP_Int32    log_bitmask;
     AP_Int16    num_resets;
     AP_Int8	    reset_switch_chan;
     AP_Int8     initial_mode;
@@ -189,14 +202,19 @@ public:
     // IO pins
     AP_Int8     rssi_pin;
 
+    // braking
+    AP_Int8     braking_percent;
+    AP_Float    braking_speederr;
+
 	// Telemetry control
 	//
 	AP_Int16    sysid_this_mav;
 	AP_Int16    sysid_my_gcs;
-    AP_Int8	    serial0_baud;
-    AP_Int8	    serial1_baud;
+    AP_Int16    serial0_baud;
+    AP_Int16    serial1_baud;
 #if MAVLINK_COMM_NUM_BUFFERS > 2
-    AP_Int8	    serial2_baud;
+    AP_Int16    serial2_baud;
+    AP_Int8     serial2_protocol;
 #endif
     AP_Int8     telem_delay;
     AP_Int8     skip_gyro_cal;
@@ -224,14 +242,14 @@ public:
     RC_Channel_aux	rc_6;
     RC_Channel_aux	rc_7;
     RC_Channel_aux	rc_8;
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     RC_Channel_aux rc_9;
 #endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     RC_Channel_aux rc_10;
     RC_Channel_aux rc_11;
 #endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     RC_Channel_aux rc_12;
     RC_Channel_aux rc_13;
     RC_Channel_aux rc_14;
@@ -289,14 +307,14 @@ public:
         rc_6(CH_6),
         rc_7(CH_7),
         rc_8(CH_8),
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
         rc_9                                    (CH_9),
 #endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
         rc_10                                   (CH_10),
         rc_11                                   (CH_11),
 #endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
         rc_12                                   (CH_12),
         rc_13                                   (CH_13),
         rc_14                                   (CH_14),

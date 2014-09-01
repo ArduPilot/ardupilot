@@ -47,17 +47,6 @@ enum gcs_failsafe {
 #define T6 1000000
 #define T7 10000000
 
-// GPS type codes - use the names, not the numbers
-#define GPS_PROTOCOL_NONE       -1
-#define GPS_PROTOCOL_NMEA       0
-#define GPS_PROTOCOL_SIRF       1
-#define GPS_PROTOCOL_UBLOX      2
-#define GPS_PROTOCOL_IMU        3
-#define GPS_PROTOCOL_MTK        4
-#define GPS_PROTOCOL_HIL        5
-#define GPS_PROTOCOL_MTK19      6
-#define GPS_PROTOCOL_AUTO       7
-
 // HIL enumerations. Note that HIL_MODE_ATTITUDE and HIL_MODE_SENSORS
 // are now the same thing, and are sensors based. The old define is
 // kept to allow old APM_Config.h headers to keep working
@@ -73,6 +62,7 @@ enum FlightMode {
     FLY_BY_WIRE_A = 5,
     FLY_BY_WIRE_B = 6,
     CRUISE        = 7,
+    AUTOTUNE      = 8,
     AUTO          = 10,
     RTL           = 11,
     LOITER        = 12,
@@ -95,6 +85,15 @@ enum ChannelMixing {
     MIXING_DNDN     = 4
 };
 
+/*
+ * The cause for the most recent fence enable
+ */
+typedef enum GeofenceEnableReason {
+    NOT_ENABLED = 0,     //The fence is not enabled
+    PWM_TOGGLED,         //Fence enabled/disabled by PWM signal
+    AUTO_TOGGLED,        //Fence auto enabled/disabled at takeoff.
+    GCS_TOGGLED          //Fence enabled/disabled by the GCS via Mavlink
+} GeofenceEnableReason;
 
 //repeating events
 #define NO_REPEAT 0
@@ -118,7 +117,7 @@ enum log_messages {
     LOG_STARTUP_MSG,
     TYPE_AIRSTART_MSG,
     TYPE_GROUNDSTART_MSG,
-    LOG_CAMERA_MSG,
+    LOG_CAMERA_MSG_DEPRECATED,
     LOG_ATTITUDE_MSG,
     LOG_MODE_MSG,
     LOG_COMPASS_MSG,
@@ -127,7 +126,8 @@ enum log_messages {
     LOG_SONAR_MSG,
     LOG_COMPASS2_MSG,
     LOG_ARM_DISARM_MSG,
-    LOG_AIRSPEED_MSG
+    LOG_AIRSPEED_MSG,
+    LOG_COMPASS3_MSG
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
@@ -177,45 +177,12 @@ enum log_messages {
                                         // which a groundstart will be
                                         // triggered
 
-// fence points are stored at the end of the EEPROM
-#define MAX_FENCEPOINTS 20
-#define FENCE_WP_SIZE sizeof(Vector2l)
-#define FENCE_START_BYTE (HAL_STORAGE_SIZE_AVAILABLE-(MAX_FENCEPOINTS*FENCE_WP_SIZE))
-
-// rally points shoehorned between fence points and waypoints
-#define MAX_RALLYPOINTS 10
-#define RALLY_WP_SIZE 15
-#define RALLY_START_BYTE (FENCE_START_BYTE-(MAX_RALLYPOINTS*RALLY_WP_SIZE))
-
-// parameters get the first 1280 bytes of EEPROM, mission commands are stored between these params and the rally points
-#define MISSION_START_BYTE  0x500
-#define MISSION_END_BYTE    (RALLY_START_BYTE-1)
-
 // convert a boolean (0 or 1) to a sign for multiplying (0 maps to 1, 1 maps
 // to -1)
 #define BOOL_TO_SIGN(bvalue) ((bvalue) ? -1 : 1)
 
 // mark a function as not to be inlined
 #define NOINLINE __attribute__((noinline))
-
-// InertialSensor driver types
-#define CONFIG_INS_OILPAN  1
-#define CONFIG_INS_MPU6000 2
-#define CONFIG_INS_HIL     3
-#define CONFIG_INS_PX4     4
-#define CONFIG_INS_FLYMAPLE 5
-#define CONFIG_INS_L3G4200D 6
-
-// barometer driver types
-#define AP_BARO_BMP085   1
-#define AP_BARO_MS5611   2
-#define AP_BARO_PX4      3
-#define AP_BARO_HIL      4
-
-// compass driver types
-#define AP_COMPASS_HMC5843   1
-#define AP_COMPASS_PX4       2
-#define AP_COMPASS_HIL       3
 
 // altitude control algorithms
 enum {
@@ -229,6 +196,12 @@ enum {
 enum {
     ATT_CONTROL_PID = 0,
     ATT_CONTROL_APMCONTROL = 1
+};
+
+enum Serial2Protocol {
+    SERIAL2_MAVLINK     = 1,
+    SERIAL2_FRSKY_DPORT = 2,
+    SERIAL2_FRSKY_SPORT = 3 // not supported yet
 };
 
 #endif // _DEFINES_H

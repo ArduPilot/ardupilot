@@ -69,7 +69,9 @@ bool volatile AP_Baro_MS5611::_updated;
 
 AP_Baro_MS5611_Serial* AP_Baro_MS5611::_serial = NULL;
 AP_Baro_MS5611_SPI AP_Baro_MS5611::spi;
+#if MS5611_WITH_I2C
 AP_Baro_MS5611_I2C AP_Baro_MS5611::i2c;
+#endif
 
 // SPI Device //////////////////////////////////////////////////////////////////
 
@@ -86,7 +88,7 @@ void AP_Baro_MS5611_SPI::init()
         hal.scheduler->panic(PSTR("PANIC: AP_Baro_MS5611 did not get "
                     "valid SPI semaphroe!"));
         return; /* never reached */
-        
+
     }
 
     // now that we have initialised, we set the SPI bus speed to high
@@ -154,9 +156,13 @@ void AP_Baro_MS5611_SPI::sem_give()
 }
 
 // I2C Device //////////////////////////////////////////////////////////////////
+#if MS5611_WITH_I2C
 
-/** I2C address of the MS5611 on the PX4 board. */
-#define MS5611_ADDR 0x76
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
+#define MS5611_ADDR 0x77
+#else
+#define MS5611_ADDR 0x76 /** I2C address of the MS5611 on the PX4 board. */
+#endif
 
 void AP_Baro_MS5611_I2C::init()
 {
@@ -225,8 +231,58 @@ void AP_Baro_MS5611_I2C::sem_give()
 {
     _i2c_sem->give();
 }
+#endif // MS5611_WITH_I2C
 
 // Public Methods //////////////////////////////////////////////////////////////
+
+#if CONFIG_HAL_BOARD != HAL_BOARD_APM2
+/**
+ * MS5611 crc4 method based on PX4Firmware code
+ */
+bool AP_Baro_MS5611::check_crc(void)
+{
+    int16_t cnt;
+    uint16_t n_rem;
+    uint16_t crc_read;
+    uint8_t n_bit;
+    uint16_t n_prom[8] = { _serial->read_16bits(CMD_MS5611_PROM_Setup),
+                           C1, C2, C3, C4, C5, C6,
+                           _serial->read_16bits(CMD_MS5611_PROM_CRC) };
+    n_rem = 0x00;
+
+    /* save the read crc */
+    crc_read = n_prom[7];
+
+    /* remove CRC byte */
+    n_prom[7] = (0xFF00 & (n_prom[7]));
+
+    for (cnt = 0; cnt < 16; cnt++) {
+        /* uneven bytes */
+        if (cnt & 1) {
+            n_rem ^= (uint8_t)((n_prom[cnt >> 1]) & 0x00FF);
+
+        } else {
+            n_rem ^= (uint8_t)(n_prom[cnt >> 1] >> 8);
+        }
+
+        for (n_bit = 8; n_bit > 0; n_bit--) {
+            if (n_rem & 0x8000) {
+                n_rem = (n_rem << 1) ^ 0x3000;
+
+            } else {
+                n_rem = (n_rem << 1);
+            }
+        }
+    }
+
+    /* final 4 bit remainder is CRC value */
+    n_rem = (0x000F & (n_rem >> 12));
+    n_prom[7] = crc_read;
+
+    /* return true if CRCs match */
+    return (0x000F & crc_read) == (n_rem ^ 0x00);
+}
+#endif
 
 // SPI should be initialized externally
 bool AP_Baro_MS5611::init()
@@ -255,6 +311,12 @@ bool AP_Baro_MS5611::init()
     C5 = _serial->read_16bits(CMD_MS5611_PROM_C5);
     C6 = _serial->read_16bits(CMD_MS5611_PROM_C6);
 
+    // if not on APM2 then check CRC
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+    if (!check_crc()) {
+        hal.scheduler->panic("Bad CRC on MS5611");
+    }
+#endif
 
     //Send a command to read Temp first
     _serial->write(CMD_CONVERT_D2_OSR4096);
@@ -278,12 +340,12 @@ bool AP_Baro_MS5611::init()
         if (hal.scheduler->millis() - tstart > 1000) {
             hal.scheduler->panic(PSTR("PANIC: AP_Baro_MS5611 took more than "
                         "1000ms to initialize"));
-            healthy = false;
+            _flags.healthy = false;
             return false;
         }
     }
 
-    healthy = true;
+    _flags.healthy = true;
     return true;
 }
 
@@ -293,42 +355,49 @@ bool AP_Baro_MS5611::init()
 // temperature does not change so quickly...
 void AP_Baro_MS5611::_update(void)
 {
-    uint32_t tnow = hal.scheduler->micros();
     // Throttle read rate to 100hz maximum.
-    if (tnow - _timer < 10000) {
+    if (hal.scheduler->micros() - _timer < 10000) {
         return;
     }
 
     if (!_serial->sem_take_nonblocking()) {
         return;
     }
-    _timer = tnow;
 
     if (_state == 0) {
-        _s_D2 += _serial->read_adc();// On state 0 we read temp
-        _d2_count++;
-        if (_d2_count == 32) {
-            // we have summed 32 values. This only happens
-            // when we stop reading the barometer for a long time
-            // (more than 1.2 seconds)
-            _s_D2 >>= 1;
-            _d2_count = 16;
+        // On state 0 we read temp
+        uint32_t d2 = _serial->read_adc();
+        if (d2 != 0) {
+            _s_D2 += d2;
+            _d2_count++;
+            if (_d2_count == 32) {
+                // we have summed 32 values. This only happens
+                // when we stop reading the barometer for a long time
+                // (more than 1.2 seconds)
+                _s_D2 >>= 1;
+                _d2_count = 16;
+            }
         }
         _state++;
         _serial->write(CMD_CONVERT_D1_OSR4096);      // Command to read pressure
     } else {
-        _s_D1 += _serial->read_adc();
-        _d1_count++;
-        if (_d1_count == 128) {
-            // we have summed 128 values. This only happens
-            // when we stop reading the barometer for a long time
-            // (more than 1.2 seconds)
-            _s_D1 >>= 1;
-            _d1_count = 64;
+        uint32_t d1 = _serial->read_adc();;
+        if (d1 != 0) {
+            // occasional zero values have been seen on the PXF
+            // board. These may be SPI errors, but safest to ignore
+            _s_D1 += d1;
+            _d1_count++;
+            if (_d1_count == 128) {
+                // we have summed 128 values. This only happens
+                // when we stop reading the barometer for a long time
+                // (more than 1.2 seconds)
+                _s_D1 >>= 1;
+                _d1_count = 64;
+            }
+            // Now a new reading exists
+            _updated = true;
         }
         _state++;
-        // Now a new reading exists
-        _updated = true;
         if (_state == 5) {
             _serial->write(CMD_CONVERT_D2_OSR4096); // Command to read temperature
             _state = 0;
@@ -337,6 +406,7 @@ void AP_Baro_MS5611::_update(void)
         }
     }
 
+    _timer = hal.scheduler->micros();
     _serial->sem_give();
 }
 
@@ -421,4 +491,3 @@ float AP_Baro_MS5611::get_temperature()
     // temperature in degrees C units
     return Temp;
 }
-

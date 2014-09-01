@@ -18,8 +18,17 @@ endif
 	@echo  \# uncomment and fill in the path to Arduino if installed in an exotic location >> $(SKETCHBOOK)/config.mk
 	@echo  \# ARDUINO = /path/to/Arduino  >> $(SKETCHBOOK)/config.mk
 	@echo  >> $(SKETCHBOOK)/config.mk
+######################## PX4 ####################################	
 	@echo \# PX4Firmware tree: fill in the path to PX4Firmware repository from github.com/diydrones: >> $(SKETCHBOOK)/config.mk
 	@echo PX4_ROOT=../PX4Firmware >> $(SKETCHBOOK)/config.mk
 	@echo  >> $(SKETCHBOOK)/config.mk
 	@echo \# PX4NuttX tree: fill in the path to PX4NuttX repository from github.com/diydrones: >> $(SKETCHBOOK)/config.mk
 	@echo NUTTX_SRC=../PX4NuttX/nuttx >> $(SKETCHBOOK)/config.mk
+###################### VRBRAIN ##################################	
+	@echo \# VRBRAIN Firmware tree: >> $(SKETCHBOOK)/config.mk
+	@echo VRBRAIN_ROOT=../VRNuttX >> $(SKETCHBOOK)/config.mk
+	@echo  >> $(SKETCHBOOK)/config.mk
+	@echo \# VRBRAIN NuttX tree: >> $(SKETCHBOOK)/config.mk
+	@echo VRBRAIN_NUTTX_SRC=../VRNuttX/NuttX/nuttx >> $(SKETCHBOOK)/config.mk
+	@echo  >> $(SKETCHBOOK)/config.mk
+	

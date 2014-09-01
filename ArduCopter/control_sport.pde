@@ -7,6 +7,13 @@
 // sport_init - initialise sport controller
 static bool sport_init(bool ignore_checks)
 {
+    // initialize vertical speed and accelerationj
+    pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+    pos_control.set_accel_z(g.pilot_accel_z);
+
+    // initialise altitude target to stopping point
+    pos_control.set_target_to_stopping_point_z();
+
     return true;
 }
 
@@ -19,8 +26,10 @@ static void sport_run()
 
     // if not armed or throttle at zero, set throttle to zero and exit immediately
     if(!motors.armed() || g.rc_3.control_in <= 0) {
-        attitude_control.init_targets();
+        attitude_control.relax_bf_rate_controller();
+        attitude_control.set_yaw_target_to_current_heading();
         attitude_control.set_throttle_out(0, false);
+        pos_control.set_alt_target_to_current_alt();
         return;
     }
 
@@ -32,15 +41,14 @@ static void sport_run()
     // calculate rate requests
     target_roll_rate = g.rc_1.control_in * g.acro_rp_p;
     target_pitch_rate = g.rc_2.control_in * g.acro_rp_p;
-    
+
     int32_t roll_angle = wrap_180_cd(ahrs.roll_sensor);
-    target_roll_rate = -constrain_int32(roll_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_roll;
+    target_roll_rate -= constrain_int32(roll_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_roll;
 
     // Calculate trainer mode earth frame rate command for pitch
     int32_t pitch_angle = wrap_180_cd(ahrs.pitch_sensor);
-    target_pitch_rate = -constrain_int32(pitch_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_pitch;
+    target_pitch_rate -= constrain_int32(pitch_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_pitch;
 
-    
     if (roll_angle > aparm.angle_max){
         target_roll_rate -=  g.acro_rp_p*(roll_angle-aparm.angle_max);
     }else if (roll_angle < -aparm.angle_max) {
@@ -69,10 +77,13 @@ static void sport_run()
 
     // reset target lean angles and heading while landed
     if (ap.land_complete) {
-        attitude_control.init_targets();
-        // move throttle to minimum to keep us on the ground
-        attitude_control.set_throttle_out(0, false);
+        attitude_control.relax_bf_rate_controller();
+        attitude_control.set_yaw_target_to_current_heading();
+        // move throttle to between minimum and non-takeoff-throttle to keep us on the ground
+        attitude_control.set_throttle_out(get_throttle_pre_takeoff(g.rc_3.control_in), false);
+        pos_control.set_alt_target_to_current_alt();
     }else{
+
         // call attitude controller
         attitude_control.rate_ef_roll_pitch_yaw(target_roll_rate, target_pitch_rate, target_yaw_rate);
 

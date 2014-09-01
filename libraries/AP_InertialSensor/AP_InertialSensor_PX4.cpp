@@ -22,17 +22,27 @@ uint16_t AP_InertialSensor_PX4::_init_sensor( Sample_rate sample_rate )
     // assumes max 2 instances
     _accel_fd[0] = open(ACCEL_DEVICE_PATH, O_RDONLY);
     _accel_fd[1] = open(ACCEL_DEVICE_PATH "1", O_RDONLY);
+    _accel_fd[2] = open(ACCEL_DEVICE_PATH "2", O_RDONLY);
     _gyro_fd[0] = open(GYRO_DEVICE_PATH, O_RDONLY);
     _gyro_fd[1] = open(GYRO_DEVICE_PATH "1", O_RDONLY);
+    _gyro_fd[2] = open(GYRO_DEVICE_PATH "2", O_RDONLY);
 
-	if (_accel_fd[0] < 0) {
+    _num_accel_instances = 0;
+    _num_gyro_instances = 0;
+    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+        if (_accel_fd[i] >= 0) {
+            _num_accel_instances = i+1;
+        }
+        if (_gyro_fd[i] >= 0) {
+            _num_gyro_instances = i+1;
+        }
+    }    
+	if (_num_accel_instances == 0) {
         hal.scheduler->panic("Unable to open accel device " ACCEL_DEVICE_PATH);
     }
-	if (_gyro_fd[0] < 0) {
+	if (_num_gyro_instances == 0) {
         hal.scheduler->panic("Unable to open gyro device " GYRO_DEVICE_PATH);
     }
-    _num_accel_instances = _accel_fd[1] >= 0?2:1;
-    _num_gyro_instances  = _gyro_fd[1]  >= 0?2:1;
 
     switch (sample_rate) {
     case RATE_50HZ:
@@ -202,12 +212,12 @@ void AP_InertialSensor_PX4::_get_sample(void)
             _last_gyro_timestamp[i] = gyro_report.timestamp;
         }
     }
-    _last_get_sample_timestamp = hrt_absolute_time();
+    _last_get_sample_timestamp = hal.scheduler->micros64();
 }
 
 bool AP_InertialSensor_PX4::_sample_available(void)
 {
-    uint64_t tnow = hrt_absolute_time();
+    uint64_t tnow = hal.scheduler->micros64();
     while (tnow - _last_sample_timestamp > _sample_time_usec) {
         _have_sample_available = true;
         _last_sample_timestamp += _sample_time_usec;
@@ -220,9 +230,9 @@ bool AP_InertialSensor_PX4::wait_for_sample(uint16_t timeout_ms)
     if (_sample_available()) {
         return true;
     }
-    uint32_t start = hal.scheduler->millis();
-    while ((hal.scheduler->millis() - start) < timeout_ms) {
-        uint64_t tnow = hrt_absolute_time();
+    uint64_t start = hal.scheduler->millis64();
+    while ((hal.scheduler->millis64() - start) < timeout_ms) {
+        uint64_t tnow = hal.scheduler->micros64();
         // we spin for the last timing_lag microseconds. Before that
         // we yield the CPU to allow IO to happen
         const uint16_t timing_lag = 400;

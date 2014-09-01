@@ -10,7 +10,21 @@
 class AP_Baro_BMP085 : public AP_Baro
 {
 public:
-    AP_Baro_BMP085() {
+    AP_Baro_BMP085() :
+        RawPress(0),
+        RawTemp(0),
+        _temp_sum(0.0f),
+        _press_sum(0.0f),
+        _count(0),
+        Temp(0.0f),
+        Press(0.0f),
+        _last_press_read_command_time(0),
+        _last_temp_read_command_time(0),
+        BMP085_State(0),
+        ac1(0), ac2(0), ac3(0), b1(0), b2(0), mb(0), mc(0), md(0),
+        ac4(0), ac5(0), ac6(0),
+        _retry_time(0)
+    {
         _pressure_samples = 1;
     };       // Constructor
 

@@ -30,16 +30,16 @@ void loop (void) {
 }
 
 void setup (void) {
-    hal.gpio->pinMode(13, GPIO_OUTPUT);
+    hal.gpio->pinMode(13, HAL_GPIO_OUTPUT);
     hal.gpio->write(13, 0);
 
     a_led = hal.gpio->channel(27);
     b_led = hal.gpio->channel(26);
     c_led = hal.gpio->channel(25);
 
-    a_led->mode(GPIO_OUTPUT);
-    b_led->mode(GPIO_OUTPUT);
-    c_led->mode(GPIO_OUTPUT);
+    a_led->mode(HAL_GPIO_OUTPUT);
+    b_led->mode(HAL_GPIO_OUTPUT);
+    c_led->mode(HAL_GPIO_OUTPUT);
 
     a_led->write(0);
     b_led->write(0);

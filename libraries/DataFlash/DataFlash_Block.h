@@ -31,6 +31,7 @@ public:
     int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data);
     uint16_t get_num_logs(void);
     uint16_t start_new_log(void);
+#ifndef DATAFLASH_NO_CLI
     void LogReadProcess(uint16_t log_num,
                         uint16_t start_page, uint16_t end_page, 
                         void (*print_mode)(AP_HAL::BetterStream *port, uint8_t mode),
@@ -38,6 +39,7 @@ public:
     void DumpPageInfo(AP_HAL::BetterStream *port);
     void ShowDeviceInfo(AP_HAL::BetterStream *port);
     void ListAvailableLogs(AP_HAL::BetterStream *port);
+#endif
 
 private:
     struct PageHeader {

@@ -66,8 +66,6 @@ def wait_altitude(mav, alt_min, alt_max, timeout=30):
         climb_rate =  m.alt - previous_alt
         previous_alt = m.alt
         print("Wait Altitude: Cur:%u, min_alt:%u, climb_rate: %u" % (m.alt, alt_min , climb_rate))
-        if abs(climb_rate) > 0:
-            tstart = time.time();
         if m.alt >= alt_min and m.alt <= alt_max:
             print("Altitude OK")
             return True
@@ -243,7 +241,7 @@ def sim_location(mav):
     m = mav.recv_match(type='SIMSTATE', blocking=True)
     return mavutil.location(m.lat*1.0e-7, m.lng*1.0e-7, 0, math.degrees(m.yaw))
 
-def log_download(mavproxy, mav, filename, timeout=180):
+def log_download(mavproxy, mav, filename, timeout=360):
     '''download latest log'''
     mavproxy.send("log list\n")
     mavproxy.expect("numLogs")

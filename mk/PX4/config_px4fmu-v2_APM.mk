@@ -27,6 +27,7 @@ MODULES		+= drivers/mpu6000
 MODULES		+= drivers/hmc5883
 MODULES		+= drivers/ms5611
 MODULES		+= drivers/mb12xx
+MODULES		+= drivers/ll40ls
 MODULES		+= drivers/gps
 MODULES		+= drivers/hil
 #MODULES	+= drivers/hott_telemetry
@@ -35,9 +36,7 @@ MODULES		+= drivers/blinkm
 MODULES		+= drivers/airspeed
 MODULES		+= drivers/ets_airspeed
 MODULES		+= drivers/meas_airspeed
-
-# mkblctrl does not compile on FMUv2 yet
-# MODULES		+= drivers/mkblctrl
+MODULES		+= drivers/mkblctrl
 
 #
 # System commands
@@ -63,7 +62,7 @@ MODULES		+= modules/uORB
 MODULES		+= lib/mathlib/math/filter
 MODULES	        += modules/libtomfastmath
 MODULES         += modules/libtomcrypt
-
+MODULES		+= lib/conversion
 
 #
 # Transitional support - add commands from the NuttX export archive.

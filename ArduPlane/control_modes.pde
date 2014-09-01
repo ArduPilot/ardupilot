@@ -79,3 +79,35 @@ static void reset_control_switch()
     read_control_switch();
 }
 
+/*
+  called when entering autotune
+ */
+static void autotune_start(void)
+{
+    rollController.autotune_start();
+    pitchController.autotune_start();
+}
+
+/*
+  called when exiting autotune
+ */
+static void autotune_restore(void)
+{
+    rollController.autotune_restore();
+    pitchController.autotune_restore();
+}
+
+/*
+  are we flying inverted?
+ */
+static bool fly_inverted(void)
+{
+    if (g.inverted_flight_ch != 0 && inverted_flight) {
+        // controlled with INVERTED_FLIGHT_CH
+        return true;
+    }
+    if (control_mode == AUTO && auto_state.inverted_flight) {
+        return true;
+    }
+    return false;
+}

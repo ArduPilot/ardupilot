@@ -76,6 +76,11 @@ void PX4GPIO::pinMode(uint8_t pin, uint8_t output)
 
 int8_t PX4GPIO::analogPinToDigitalPin(uint8_t pin)
 {
+    switch (pin) {
+    case PX4_GPIO_FMU_SERVO_PIN(0) ... PX4_GPIO_FMU_SERVO_PIN(5):
+        // the only pins that can be mapped are the FMU servo rail pins */
+        return pin;
+    }
     return -1;
 }
 

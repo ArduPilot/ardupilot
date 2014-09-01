@@ -127,10 +127,12 @@ RC_Channel::set_reverse(bool reverse)
 }
 
 bool
-RC_Channel::get_reverse(void)
+RC_Channel::get_reverse(void) const
 {
-    if (_reverse==-1) return 1;
-    else return 0;
+    if (_reverse == -1) {
+        return true;
+    }
+    return false;
 }
 
 void
@@ -157,6 +159,19 @@ RC_Channel::set_pwm(int16_t pwm)
     } else {
         //RC_CHANNEL_TYPE_ANGLE, RC_CHANNEL_TYPE_ANGLE_RAW
         control_in = pwm_to_angle();
+    }
+}
+
+/*
+  call read() and set_pwm() on all channels
+ */
+void
+RC_Channel::set_pwm_all(void)
+{
+    for (uint8_t i=0; i<RC_MAX_CHANNELS; i++) {
+        if (rc_ch[i] != NULL) {
+            rc_ch[i]->set_pwm(rc_ch[i]->read());
+        }
     }
 }
 
@@ -325,6 +340,9 @@ RC_Channel::pwm_to_range()
 int16_t
 RC_Channel::range_to_pwm()
 {
+    if (_high_out == _low_out) {
+        return radio_trim;
+    }
     return ((long)(servo_out - _low_out) * (long)(radio_max - radio_min)) / (long)(_high_out - _low_out);
 }
 
@@ -385,6 +403,27 @@ void RC_Channel::output_trim() const
     hal.rcout->write(_ch_out, radio_trim);
 }
 
+void RC_Channel::output_trim_all()
+{
+    for (uint8_t i=0; i<RC_MAX_CHANNELS; i++) {
+        if (rc_ch[i] != NULL) {
+            rc_ch[i]->output_trim();
+        }
+    }
+}
+
+/*
+  setup the failsafe value to the trim value for all channels
+ */
+void RC_Channel::setup_failsafe_trim_all()
+{
+    for (uint8_t i=0; i<RC_MAX_CHANNELS; i++) {
+        if (rc_ch[i] != NULL) {
+            hal.rcout->set_failsafe_pwm(1U<<i, rc_ch[i]->radio_trim);
+        }
+    }
+}
+
 void
 RC_Channel::input()
 {
@@ -415,4 +454,19 @@ RC_Channel *RC_Channel::rc_channel(uint8_t i)
         return NULL;
     }
     return rc_ch[i];
+}
+
+// return a limit PWM value
+uint16_t RC_Channel::get_limit_pwm(LimitValue limit) const
+{
+    switch (limit) {
+    case RC_CHANNEL_LIMIT_TRIM:
+        return radio_trim;
+    case RC_CHANNEL_LIMIT_MAX:
+        return get_reverse() ? radio_min : radio_max;
+    case RC_CHANNEL_LIMIT_MIN:
+        return get_reverse() ? radio_max : radio_min;
+    }
+    // invalid limit value, return trim
+    return radio_trim;
 }

@@ -56,7 +56,7 @@ void loop (void) {
 }
 
 void setup (void) {
-    hal.gpio->pinMode(13, GPIO_OUTPUT);
+    hal.gpio->pinMode(13, HAL_GPIO_OUTPUT);
     hal.gpio->write(13, 0);
 }
 

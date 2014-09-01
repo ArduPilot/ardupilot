@@ -40,7 +40,8 @@ void SITL_State::_update_compass(float rollDeg, float pitchDeg, float yawDeg)
 	}
 	_compass->setHIL(radians(rollDeg), radians(pitchDeg), radians(yawDeg));
 	Vector3f noise = _rand_vec3f() * _sitl->mag_noise;
-        _compass->set_field(_compass->get_field() + noise);
+    Vector3f motor = _sitl->mag_mot.get() * _current;
+    _compass->setHIL(_compass->getHIL() + noise+motor);
 }
 
 #endif

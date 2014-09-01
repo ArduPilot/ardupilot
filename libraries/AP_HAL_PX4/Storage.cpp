@@ -154,8 +154,14 @@ void PX4Storage::_storage_open(void)
 	if (fd == -1) {
             hal.scheduler->panic("Failed to open " MTD_PARAMS_FILE);
 	}
-	if (read(fd, _buffer, sizeof(_buffer)) != sizeof(_buffer)) {
-            hal.scheduler->panic("Failed to read " MTD_PARAMS_FILE);
+        const uint16_t chunk_size = 128;
+        for (uint16_t ofs=0; ofs<sizeof(_buffer); ofs += chunk_size) {
+            ssize_t ret = read(fd, &_buffer[ofs], chunk_size);
+            if (ret != chunk_size) {
+                ::printf("storage read of %u bytes at %u to %p failed - got %d errno=%d\n",
+                         (unsigned)sizeof(_buffer), (unsigned)ofs, &_buffer[ofs], (int)ret, (int)errno);
+                hal.scheduler->panic("Failed to read " MTD_PARAMS_FILE);
+            }
 	}
 	close(fd);
 	_initialised = true;
@@ -178,37 +184,6 @@ void PX4Storage::_mark_dirty(uint16_t loc, uint16_t length)
 	}
 }
 
-uint8_t PX4Storage::read_byte(uint16_t loc) 
-{
-	if (loc >= sizeof(_buffer)) {
-		return 0;
-	}
-	_storage_open();
-	return _buffer[loc];
-}
-
-uint16_t PX4Storage::read_word(uint16_t loc) 
-{
-	uint16_t value;
-	if (loc >= sizeof(_buffer)-(sizeof(value)-1)) {
-		return 0;
-	}
-	_storage_open();
-	memcpy(&value, &_buffer[loc], sizeof(value));
-	return value;
-}
-
-uint32_t PX4Storage::read_dword(uint16_t loc) 
-{
-	uint32_t value;
-	if (loc >= sizeof(_buffer)-(sizeof(value)-1)) {
-		return 0;
-	}
-	_storage_open();
-	memcpy(&value, &_buffer[loc], sizeof(value));
-	return value;
-}
-
 void PX4Storage::read_block(void *dst, uint16_t loc, size_t n) 
 {
 	if (loc >= sizeof(_buffer)-(n-1)) {
@@ -216,42 +191,6 @@ void PX4Storage::read_block(void *dst, uint16_t loc, size_t n)
 	}
 	_storage_open();
 	memcpy(dst, &_buffer[loc], n);
-}
-
-void PX4Storage::write_byte(uint16_t loc, uint8_t value) 
-{
-	if (loc >= sizeof(_buffer)) {
-		return;
-	}
-	if (_buffer[loc] != value) {
-		_storage_open();
-		_buffer[loc] = value;
-		_mark_dirty(loc, sizeof(value));
-	}
-}
-
-void PX4Storage::write_word(uint16_t loc, uint16_t value) 
-{
-	if (loc >= sizeof(_buffer)-(sizeof(value)-1)) {
-		return;
-	}
-	if (memcmp(&value, &_buffer[loc], sizeof(value)) != 0) {
-		_storage_open();
-		memcpy(&_buffer[loc], &value, sizeof(value));
-		_mark_dirty(loc, sizeof(value));
-	}
-}
-
-void PX4Storage::write_dword(uint16_t loc, uint32_t value) 
-{
-	if (loc >= sizeof(_buffer)-(sizeof(value)-1)) {
-		return;
-	}
-	if (memcmp(&value, &_buffer[loc], sizeof(value)) != 0) {
-		_storage_open();
-		memcpy(&_buffer[loc], &value, sizeof(value));
-		_mark_dirty(loc, sizeof(value));
-	}
 }
 
 void PX4Storage::write_block(uint16_t loc, const void *src, size_t n) 

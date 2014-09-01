@@ -25,12 +25,17 @@ void AP_Notify::init(bool enable_external_leds)
     AP_Notify::flags.external_leds = enable_external_leds;
 
     boardled.init();
-    toshibaled.init();
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    toshibaled.init();
     tonealarm.init();
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
+    externalled.init();
+    buzzer.init();
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+    toshibaled.init();
     externalled.init();
     buzzer.init();
 #endif
@@ -40,12 +45,17 @@ void AP_Notify::init(bool enable_external_leds)
 void AP_Notify::update(void)
 {
     boardled.update();
-    toshibaled.update();
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    toshibaled.update();
     tonealarm.update();
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
+    externalled.update();
+    buzzer.update();
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+    toshibaled.update();
     externalled.update();
     buzzer.update();
 #endif

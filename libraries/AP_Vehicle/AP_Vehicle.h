@@ -36,6 +36,8 @@ public:
         AP_Int16 airspeed_max;
         AP_Int16 pitch_limit_max_cd;
         AP_Int16 pitch_limit_min_cd;        
+        AP_Int8  autotune_level;
+        AP_Int16 land_pitch_cd;
     };
 
     /*

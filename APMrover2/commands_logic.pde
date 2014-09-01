@@ -26,6 +26,9 @@ start_command(const AP_Mission::Mission_Command& cmd)
 
     gcs_send_text_fmt(PSTR("Executing command ID #%i"),cmd.id);
 
+    // remember the course of our next navigation leg
+    next_navigation_leg_cd = mission.get_next_ground_course_cd(0);
+
 	switch(cmd.id){
 		case MAV_CMD_NAV_WAYPOINT:	// Navigate to Waypoint
 			do_nav_wp(cmd);
@@ -93,12 +96,17 @@ start_command(const AP_Mission::Mission_Command& cmd)
 		// system to control the vehicle attitude and the attitude of various
 		// devices such as cameras.
 		//    |Region of interest mode. (see MAV_ROI enum)| Waypoint index/ target ID. (see MAV_ROI enum)| ROI index (allows a vehicle to manage multiple cameras etc.)| Empty| x the location of the fixed ROI (see MAV_FRAME)| y| z|
-		case MAV_CMD_DO_SET_ROI:
-#if 0
-            // not supported yet
-			camera_mount.set_roi_cmd(&cmd.content.location);
-#endif
-			break;
+        case MAV_CMD_DO_SET_ROI:
+            if (cmd.content.location.alt == 0 && cmd.content.location.lat == 0 && cmd.content.location.lng == 0) {
+                // switch off the camera tracking if enabled
+                if (camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
+                    camera_mount.set_mode_to_default();
+                }
+            } else {
+                // send the command to the camera mount
+                camera_mount.set_roi_cmd(&cmd.content.location);
+            }
+            break;
 
 		case MAV_CMD_DO_MOUNT_CONFIGURE:	// Mission command to configure a camera mount |Mount operation mode (see MAV_CONFIGURE_MOUNT_MODE enum)| stabilize roll? (1 = yes, 0 = no)| stabilize pitch? (1 = yes, 0 = no)| stabilize yaw? (1 = yes, 0 = no)| Empty| Empty| Empty|
 			camera_mount.configure_cmd();
@@ -158,6 +166,10 @@ static bool verify_command(const AP_Mission::Mission_Command& cmd)
             break;
 
         default:
+            if (cmd.id > MAV_CMD_CONDITION_LAST) {
+                // this is a command that doesn't require verify
+                return true;
+            }
             gcs_send_text_P(SEVERITY_HIGH,PSTR("verify_conditon: Unsupported command"));
             return true;
             break;
@@ -286,7 +298,7 @@ static void do_set_home(const AP_Mission::Mission_Command& cmd)
 	if(cmd.p1 == 1 && have_position) {
 		init_home();
 	} else {
-        ahrs.set_home(cmd.content.location.lat, cmd.content.location.lng, cmd.content.location.alt);
+        ahrs.set_home(cmd.content.location);
 		home_is_set = true;
 	}
 }
@@ -297,7 +309,7 @@ static void do_take_picture()
 #if CAMERA == ENABLED
     camera.trigger_pic();
     if (should_log(MASK_LOG_CAMERA)) {
-        Log_Write_Camera();
+        DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
     }
 #endif
 }

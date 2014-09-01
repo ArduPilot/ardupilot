@@ -101,6 +101,40 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
 #if COMPASS_MAX_INSTANCES > 1
     AP_GROUPINFO("OFS2",    10, Compass, _offset[1], 0),
     AP_GROUPINFO("MOT2",    11, Compass, _motor_compensation[1], 0),
+
+    // @Param: PRIMARY
+    // @DisplayName: Choose primary compass
+    // @Description: If more than one compass is available this selects which compass is the primary. Normally 0=External, 1=Internal. If no External compass is attached this parameter is ignored
+    // @Values: 0:FirstCompass,1:SecondCompass
+    // @User: Advanced
+    AP_GROUPINFO("PRIMARY", 12, Compass, _primary, 0),
+#endif
+
+#if COMPASS_MAX_INSTANCES > 2
+    AP_GROUPINFO("OFS3",    13, Compass, _offset[2], 0),
+    AP_GROUPINFO("MOT3",    14, Compass, _motor_compensation[2], 0),
+#endif
+
+#if COMPASS_MAX_INSTANCES > 1
+    // @Param: DEV_ID
+    // @DisplayName: Compass device id
+    // @Description: Compass device id.  Automatically detected, do not set manually
+    // @User: Advanced
+    AP_GROUPINFO("DEV_ID",  15, Compass, _dev_id[0], COMPASS_EXPECTED_DEV_ID),
+
+    // @Param: DEV_ID2
+    // @DisplayName: Compass2 device id
+    // @Description: Second compass's device id.  Automatically detected, do not set manually
+    // @User: Advanced
+    AP_GROUPINFO("DEV_ID2", 16, Compass, _dev_id[1], COMPASS_EXPECTED_DEV_ID2),
+#endif
+
+#if COMPASS_MAX_INSTANCES > 2
+    // @Param: DEV_ID3
+    // @DisplayName: Compass3 device id
+    // @Description: Third compass's device id.  Automatically detected, do not set manually
+    // @User: Advanced
+    AP_GROUPINFO("DEV_ID3", 17, Compass, _dev_id[2], COMPASS_EXPECTED_DEV_ID3),
 #endif
 
     AP_GROUPEND
@@ -112,9 +146,19 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
 //
 Compass::Compass(void) :
     product_id(AP_COMPASS_TYPE_UNKNOWN),
-    _null_init_done(false)
+    last_update(0),
+    _null_init_done(false),
+    _thr_or_curr(0.0f),
+    _board_orientation(ROTATION_NONE)
 {
     AP_Param::setup_object_defaults(this, var_info);
+
+#if COMPASS_MAX_INSTANCES > 1
+    // default device ids to zero.  init() method will overwrite with the actual device ids
+    for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+        _dev_id[i] = 0;
+    }
+#endif
 }
 
 // Default init method, just returns success.
@@ -126,21 +170,34 @@ Compass::init()
 }
 
 void
-Compass::set_offsets(const Vector3f &offsets)
+Compass::set_and_save_offsets(uint8_t i, const Vector3f &offsets)
 {
-    _offset[0].set(offsets);
-}
-
-void
-Compass::save_offsets()
-{
-    for (uint8_t k=0; k<COMPASS_MAX_INSTANCES; k++) {
-        _offset[k].save();
+    // sanity check compass instance provided
+    if (i < COMPASS_MAX_INSTANCES) {
+        _offset[i].set(offsets);
+        save_offsets(i);
     }
 }
 
 void
-Compass::set_motor_compensation(const Vector3f &motor_comp_factor, uint8_t i)
+Compass::save_offsets(uint8_t i)
+{
+    _offset[i].save();  // save offsets
+#if COMPASS_MAX_INSTANCES > 1
+    _dev_id[i].save();  // save device id corresponding to these offsets
+#endif
+}
+
+void
+Compass::save_offsets(void)
+{
+    for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+        save_offsets(i);
+    }
+}
+
+void
+Compass::set_motor_compensation(uint8_t i, const Vector3f &motor_comp_factor)
 {
     _motor_compensation[i].set(motor_comp_factor);
 }
@@ -217,4 +274,47 @@ Compass::calculate_heading(const Matrix3f &dcm_matrix) const
     return heading;
 }
 
+/// Returns True if the compasses have been configured (i.e. offsets saved)
+///
+/// @returns                    True if compass has been configured
+///
+bool Compass::configured(uint8_t i)
+{
+    // exit immediately if instance is beyond the number of compasses we have available
+    if (i > get_count()) {
+        return false;
+    }
 
+    // exit immediately if all offsets are zero
+    if (get_offsets(i).length() == 0.0f) {
+        return false;
+    }
+
+#if COMPASS_MAX_INSTANCES > 1
+    // backup detected dev_id
+    int32_t dev_id_orig = _dev_id[i];
+
+    // load dev_id from eeprom
+    _dev_id[i].load();
+
+    // if different then the device has not been configured
+    if (_dev_id[i] != dev_id_orig) {
+        // restore device id
+        _dev_id[i] = dev_id_orig;
+        // return failure
+        return false;
+    }
+#endif
+
+    // if we got here then it must be configured
+    return true;
+}
+
+bool Compass::configured(void)
+{
+    bool all_configured = true;
+    for(uint8_t i=0; i<get_count(); i++) {
+        all_configured = all_configured && configured(i);
+    }
+    return all_configured;
+}

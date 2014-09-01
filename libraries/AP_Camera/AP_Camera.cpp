@@ -6,8 +6,6 @@
 #include <RC_Channel.h>
 #include <AP_HAL.h>
 
-extern const AP_HAL::HAL& hal;
-
 // ------------------------------
 #define CAM_DEBUG DISABLED
 

@@ -23,24 +23,17 @@
 
 #include <AP_HAL.h>
 #include <AP_Common.h>
-#include "GPS.h"
+#include <AP_GPS.h>
 
 #define SIRF_SET_BINARY "$PSRF100,0,38400,8,1,0*3C"
 
-class AP_GPS_SIRF : public GPS {
+class AP_GPS_SIRF : public AP_GPS_Backend {
 public:
-	AP_GPS_SIRF() : 
-		GPS(),
-		_step(0),
-		_gather(false),
-		_payload_length(0),
-		_payload_counter(0),
-		_msg_id(0)
-		{}
+	AP_GPS_SIRF(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
-    virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting, DataFlash_Class *DataFlash);
-    virtual bool        read();
-	static bool         _detect(uint8_t data);
+    bool read();
+
+	static bool _detect(struct SIRF_detect_state &state, uint8_t data);
 
 private:
     struct PACKED sirf_geonav {
@@ -109,6 +102,8 @@ private:
 
     bool        _parse_gps(void);
     void        _accumulate(uint8_t val);
+
+    static const uint8_t _initialisation_blob[];
 };
 
 #endif // AP_GPS_SIRF_h

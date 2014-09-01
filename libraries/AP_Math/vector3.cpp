@@ -373,3 +373,26 @@ template bool Vector3<float>::operator !=(const Vector3<float> &v) const;
 template bool Vector3<float>::is_nan(void) const;
 template bool Vector3<float>::is_inf(void) const;
 template float Vector3<float>::angle(const Vector3<float> &v) const;
+
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+template void Vector3<double>::rotate(enum Rotation);
+template float Vector3<double>::length(void) const;
+template Vector3<double> Vector3<double>::operator %(const Vector3<double> &v) const;
+template double Vector3<double>::operator *(const Vector3<double> &v) const;
+template Vector3<double> Vector3<double>::operator *(const Matrix3<double> &m) const;
+template Matrix3<double> Vector3<double>::mul_rowcol(const Vector3<double> &v) const;
+template Vector3<double> &Vector3<double>::operator *=(const double num);
+template Vector3<double> &Vector3<double>::operator /=(const double num);
+template Vector3<double> &Vector3<double>::operator -=(const Vector3<double> &v);
+template Vector3<double> &Vector3<double>::operator +=(const Vector3<double> &v);
+template Vector3<double> Vector3<double>::operator /(const double num) const;
+template Vector3<double> Vector3<double>::operator *(const double num) const;
+template Vector3<double> Vector3<double>::operator +(const Vector3<double> &v) const;
+template Vector3<double> Vector3<double>::operator -(const Vector3<double> &v) const;
+template Vector3<double> Vector3<double>::operator -(void) const;
+template bool Vector3<double>::operator ==(const Vector3<double> &v) const;
+template bool Vector3<double>::operator !=(const Vector3<double> &v) const;
+template bool Vector3<double>::is_nan(void) const;
+template bool Vector3<double>::is_inf(void) const;
+template float Vector3<double>::angle(const Vector3<double> &v) const;
+#endif

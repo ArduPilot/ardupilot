@@ -23,6 +23,7 @@
 #include <SITL.h>
 #include <Filter.h>
 #include <AP_Param.h>
+#include <StorageManager.h>
 #include <AP_Progmem.h>
 #include <AP_Math.h>
 #include <AP_AHRS.h>
@@ -30,6 +31,9 @@
 #include <AP_Airspeed.h>
 #include <AP_Vehicle.h>
 #include <AP_Mission.h>
+#include <AP_Terrain.h>
+#include <AP_BattMonitor.h>
+#include <AP_Rally.h>
 #include <AP_ADC_AnalogSource.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
@@ -121,6 +125,7 @@ static void show_timings(void)
 	TIMEIT("acos()", v_out = acosf(v_f * 0.2), 20);
 	TIMEIT("asin()", v_out = asinf(v_f * 0.2), 20);
 	TIMEIT("atan2()", v_out = atan2f(v_f * 0.2, v_f * 0.3), 20);
+	TIMEIT("fast_atan2()", v_out = fast_atan2(v_f * 0.2, v_f * 0.3), 20);
 	TIMEIT("sqrt()",v_out = sqrtf(v_f), 20);
 
 	TIMEIT("iadd8", v_out_8 += v_8, 100);

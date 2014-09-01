@@ -21,17 +21,24 @@ public:
     /// Constructor
     AC_Circle(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosControl& pos_control);
 
-    /// set_circle_center in cm from home
-    void set_center(const Vector3f& position);
+    /// init - initialise circle controller setting center specifically
+    ///     caller should set the position controller's x,y and z speeds and accelerations before calling this
+    void init(const Vector3f& center);
 
-    /// init_center in cm from home using stopping point and projecting out based on the copter's heading
-    void init_center();
+    /// init - initialise circle controller setting center using stopping point and projecting out based on the copter's heading
+    ///     caller should set the position controller's x,y and z speeds and accelerations before calling this
+    void init();
+
+    /// set_circle_center in cm from home
+    void set_center(const Vector3f& center) { _center = center; }
 
     /// get_circle_center in cm from home
     const Vector3f& get_center() const { return _center; }
 
+    /// get_radius - returns radius of circle in cm
+    float get_radius() { return _radius; }
     /// set_radius - sets circle radius in cm
-    void set_radius(float radius_cm) { _radius = radius_cm; };
+    void set_radius(float radius_cm) { _radius = radius_cm; }
 
     /// set_circle_rate - set circle rate in degrees per second
     void set_rate(float deg_per_sec) { _rate = deg_per_sec; }
@@ -43,9 +50,16 @@ public:
     void update();
 
     /// get desired roll, pitch which should be fed into stabilize controllers
-    int32_t get_roll() const { return _pos_control.get_roll(); };
-    int32_t get_pitch() const { return _pos_control.get_pitch(); };
-    int32_t get_yaw() const { return _yaw; };
+    int32_t get_roll() const { return _pos_control.get_roll(); }
+    int32_t get_pitch() const { return _pos_control.get_pitch(); }
+    int32_t get_yaw() const { return _yaw; }
+
+    // get_closest_point_on_circle - returns closest point on the circle
+    //  circle's center should already have been set
+    //  closest point on the circle will be placed in result
+    //  result's altitude (i.e. z) will be set to the circle_center's altitude
+    //  if vehicle is at the center of the circle, the edge directly behind vehicle will be returned
+    void get_closest_point_on_circle(Vector3f &result);
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -55,6 +69,11 @@ private:
     //      this should be called whenever the radius or rate are changed
     //      initialises the yaw and current position around the circle
     void calc_velocities();
+
+    // init_start_angle - sets the starting angle around the circle and initialises the angle_total
+    //  if use_heading is true the vehicle's heading will be used to init the angle causing minimum yaw movement
+    //  if use_heading is false the vehicle's position from the center will be used to initialise the angle
+    void init_start_angle(bool use_heading);
 
     // flags structure
     struct circle_flags {

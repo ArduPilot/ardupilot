@@ -36,6 +36,8 @@
 #define BOARD_PWM_COUNT_DEFAULT 4
 #define BOARD_SER1_RTSCTS_DEFAULT 2
 #endif
+#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+
 #endif
 
 extern const AP_HAL::HAL& hal;
@@ -66,6 +68,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] PROGMEM = {
     // @Description: Disabling this option will disable the use of the safety switch on PX4 for arming. Use of the safety switch is highly recommended, so you should leave this option set to 1 except in unusual circumstances.
     // @Values: 0:Disabled,1:Enabled
     AP_GROUPINFO("SAFETYENABLE",   3, AP_BoardConfig, _safety_enable, 1),
+#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #endif
 
     AP_GROUPEND
@@ -100,5 +103,8 @@ void AP_BoardConfig::init()
     if (_safety_enable.get() == 0) {
         hal.rcout->force_safety_off();
     }
+#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+    /* configure the VRBRAIN driver for the right number of PWMs */
+
 #endif    
 }

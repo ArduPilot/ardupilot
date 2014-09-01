@@ -49,7 +49,45 @@ void AP_MotorsQuad::setup_motors()
         add_motor(AP_MOTORS_MOT_2, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3);
         add_motor(AP_MOTORS_MOT_3,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4);
         add_motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2);
+    }else if(_flags.frame_orientation == AP_MOTORS_VTAIL_FRAME) {
+        /*
+            Tested with: Lynxmotion Hunter Vtail 400
+            - inverted rear outward blowing motors (at a 40 degree angle)
+            - should also work with non-inverted rear outward blowing motors
+            - no roll in rear motors
+            - no yaw in front motors
+            - should fly like some mix between a tricopter and X Quadcopter
 
+            Roll control comes only from the front motors, Yaw control only from the rear motors.
+            Roll & Pitch factor is measured by the angle away from the top of the forward axis to each arm.
+
+            Note: if we want the front motors to help with yaw,
+                motors 1's yaw factor should be changed to sin(radians(40)).  Where "40" is the vtail angle
+                motors 3's yaw factor should be changed to -sin(radians(40))
+        */
+
+        add_motor(AP_MOTORS_MOT_1, 60, 60, 0, 1);
+        add_motor(AP_MOTORS_MOT_2, 0, -160, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 3);
+        add_motor(AP_MOTORS_MOT_3, -60, -60, 0, 4);
+        add_motor(AP_MOTORS_MOT_4, 0, 160, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2);
+    } else if (_flags.frame_orientation == AP_MOTORS_ATAIL_FRAME) {
+        /*
+            The A-Shaped VTail is the exact same as a V-Shaped VTail, with one difference:
+            - The Yaw factors are reversed, because the rear motors are facing different directions
+
+            With V-Shaped VTails, the props make a V-Shape when spinning, but with
+            A-Shaped VTails, the props make an A-Shape when spinning.
+            - Rear thrust on a V-Shaped V-Tail Quad is outward
+            - Rear thrust on an A-Shaped V-Tail Quad is inward
+
+            Still functions the same as the V-Shaped VTail mixing below:
+            - Yaw control is entirely in the rear motors
+            - Roll is is entirely in the front motors
+        */
+        add_motor(AP_MOTORS_MOT_1, 60, 60, 0, 1);
+        add_motor(AP_MOTORS_MOT_2, 0, -160, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3);
+        add_motor(AP_MOTORS_MOT_3, -60, -60, 0, 4);
+        add_motor(AP_MOTORS_MOT_4, 0, 160, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 2);
     }else{
         // X frame set-up
         add_motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1);

@@ -126,7 +126,6 @@ void AP_PerfMon::DisplayResults()
     uint32_t sumOfTime = 0;
     uint32_t unExplainedTime;
     uint8_t order[PERFMON_MAX_FUNCTIONS];
-    bool blocking_writes;
 
     // record end time
     if( allEndTime == 0 ) {
@@ -159,7 +158,6 @@ void AP_PerfMon::DisplayResults()
     totalTime = allEndTime - allStartTime;
 
     // ensure serial is blocking
-    //blocking_writes = hal.console->get_blocking_writes();
     hal.console->set_blocking_writes(true);
 
     // print table of results

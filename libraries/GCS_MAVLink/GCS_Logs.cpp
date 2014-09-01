@@ -162,8 +162,8 @@ void GCS_MAVLINK::handle_log_send(DataFlash_Class &dataflash)
  */
 void GCS_MAVLINK::handle_log_send_listing(DataFlash_Class &dataflash)
 {
-    int16_t payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
-    if (payload_space < MAVLINK_MSG_ID_LOG_ENTRY_LEN) {
+    uint16_t txspace = comm_get_txspace(chan);
+    if (txspace < MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_LOG_ENTRY_LEN) {
         // no space
         return;
     }
@@ -192,8 +192,8 @@ void GCS_MAVLINK::handle_log_send_listing(DataFlash_Class &dataflash)
  */
 bool GCS_MAVLINK::handle_log_send_data(DataFlash_Class &dataflash)
 {
-    int16_t payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
-    if (payload_space < MAVLINK_MSG_ID_LOG_DATA_LEN) {
+    uint16_t txspace = comm_get_txspace(chan);
+    if (txspace < MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_LOG_DATA_LEN) {
         // no space
         return false;
     }

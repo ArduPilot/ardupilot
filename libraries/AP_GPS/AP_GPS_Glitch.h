@@ -22,7 +22,7 @@ class GPS_Glitch
 {
 public:
     // constructor
-	GPS_Glitch(GPS*& gps);
+	GPS_Glitch(const AP_GPS &gps);
 
     // check_position - checks latest gps position against last know position, velocity and maximum acceleration and updates glitching flag
     void    check_position();
@@ -45,7 +45,7 @@ public:
 private:
 
     /// external dependencies
-    GPS*&       _gps;               // pointer to gps
+    const AP_GPS &_gps;               // reference to gps
 
     /// structure for holding flags
     struct GPS_Glitch_flags {

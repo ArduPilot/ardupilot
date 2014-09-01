@@ -49,7 +49,6 @@
 # define CONFIG_IMU_TYPE   CONFIG_IMU_MPU6000
 # define CONFIG_PUSHBUTTON DISABLED
 # define CONFIG_RELAY      DISABLED
-# define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
 # define CONFIG_PITOT_SOURCE PITOT_SOURCE_ANALOG_PIN
 # define MAGNETOMETER ENABLED
 # define CONFIG_BARO     AP_BARO_MS5611
@@ -145,21 +144,6 @@
 
 #ifndef HIL_MODE
 #define HIL_MODE	HIL_MODE_DISABLED
-#endif
-
-#if HIL_MODE != HIL_MODE_DISABLED	// we are in HIL mode
- # undef GPS_PROTOCOL
- # define GPS_PROTOCOL GPS_PROTOCOL_NONE
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// GPS_PROTOCOL
-//
-// Note that this test must follow the HIL_PROTOCOL block as the HIL
-// setup may override the GPS configuration.
-//
-#ifndef GPS_PROTOCOL
-# define GPS_PROTOCOL GPS_PROTOCOL_AUTO
 #endif
 
 #ifndef MAV_SYSTEM_ID
