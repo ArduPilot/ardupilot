@@ -294,6 +294,30 @@ AP_InertialSensor::init_gyro()
     _save_parameters();
 }
 
+// get_gyro_health_all - return true if all gyros are healthy
+bool AP_InertialSensor::get_gyro_health_all(void) const
+{
+    for (uint8_t i=0; i<get_gyro_count(); i++) {
+        if (!get_gyro_health(i)) {
+            return false;
+        }
+    }
+    // return true if we have at least one gyro
+    return (get_gyro_count() > 0);
+}
+
+// get_accel_health_all - return true if all accels are healthy
+bool AP_InertialSensor::get_accel_health_all(void) const
+{
+    for (uint8_t i=0; i<get_accel_count(); i++) {
+        if (!get_accel_health(i)) {
+            return false;
+        }
+    }
+    // return true if we have at least one accel
+    return (get_accel_count() > 0);
+}
+
 void
 AP_InertialSensor::_init_accel()
 {

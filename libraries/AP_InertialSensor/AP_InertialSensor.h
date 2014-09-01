@@ -118,10 +118,12 @@ public:
     // multi-device interface
     virtual bool get_gyro_health(uint8_t instance) const { return true; }
     bool get_gyro_health(void) const { return get_gyro_health(_get_primary_gyro()); }
+    bool get_gyro_health_all(void) const;
     virtual uint8_t get_gyro_count(void) const { return 1; };
 
     virtual bool get_accel_health(uint8_t instance) const { return true; }
     bool get_accel_health(void) const { return get_accel_health(get_primary_accel()); }
+    bool get_accel_health_all(void) const;
     virtual uint8_t get_accel_count(void) const { return 1; };
 
     // get accel offsets in m/s/s
