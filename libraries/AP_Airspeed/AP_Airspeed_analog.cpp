@@ -53,7 +53,7 @@ bool AP_Airspeed_Analog::get_differential_pressure(float &pressure)
         return false;
     }
     _source->set_pin(_pin);
-    pressure = _source->voltage_average_ratiometric() * VOLTS_TO_PASCAL;
+    pressure = _source->voltage_average_ratiometric() * _scale;
     return true;
 }
 

@@ -28,7 +28,10 @@
 class AP_Airspeed_PX4 : public AP_Airspeed_Backend {
 public:
     // constructor
-    AP_Airspeed_PX4() : _fd(-1) {}
+    AP_Airspeed_PX4(const AP_Float &scale) : 
+        AP_Airspeed_Backend(scale),
+        _fd(-1) 
+    {}
 
     // probe and initialise the sensor
     bool init(void);
@@ -43,6 +46,7 @@ private:
     int _fd;
     uint64_t _last_timestamp;
     float _temperature;
+    float _sensor_scale_active;
 };
 
 #endif // __AP_AIRSPEED_PX4_H__
