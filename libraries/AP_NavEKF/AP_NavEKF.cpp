@@ -929,7 +929,13 @@ void NavEKF::SelectFlowFusion()
         // cheap and can be perfomred on the same prediction cycle with subsequent fusion steps
         flowFusePerformed = false;
     }
-
+    // Apply corrections to quaternion, position and velocity states across several time steps to reduce 10Hz pulsing in the output
+    if (flowUpdateCount < flowUpdateCountMax) {
+        flowUpdateCount ++;
+        for (uint8_t i = 0; i <= 9; i++) {
+            states[i] += flowIncrStateDelta[i];
+        }
+    }
 }
 
 // select fusion of true airspeed measurements
@@ -2939,6 +2945,19 @@ void NavEKF::FuseOptFlow()
         for (uint8_t j = 0; j <= 21; j++)
         {
             states[j] = states[j] - Kfusion[j] * innovOptFlow[obsIndex];
+        }
+        // Attitude, velocity and position corrections are averaged across multiple prediction cycles between now and the anticipated time for the next measurement.
+        // Don't do averaging of quaternion state corrections if total angle change across predicted interval is going to exceed 0.1 rad
+        bool highRates = ((magUpdateCountMax * correctedDelAng.length()) > 0.1f);
+        // Calculate the number of averaging frames left to go. This is required becasue magnetometer fusion is applied across three consecutive prediction cycles
+        // There is no point averaging if the number of cycles left is less than 2
+        float minorFramesToGo = float(magUpdateCountMax) - float(magUpdateCount);
+        for (uint8_t i = 0; i<=21; i++) {
+            if ((i <= 3 && highRates) || i >= 10 || minorFramesToGo < 1.5f) {
+                states[i] = states[i] - Kfusion[i] * innovOptFlow[obsIndex];
+            } else {
+                    flowIncrStateDelta[i] -= Kfusion[i] * innovOptFlow[obsIndex] * (flowUpdateCountMaxInv * float(flowUpdateCountMax) / minorFramesToGo);
+            }
         }
         // normalise the quaternion states
         state.quat.normalize();
