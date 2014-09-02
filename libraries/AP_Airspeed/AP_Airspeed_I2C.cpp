@@ -69,7 +69,7 @@ void AP_Airspeed_I2C::_collect(void)
         return;
     }
 
-    uint8_t status = (data[0] & 0xC0) << 6;
+    uint8_t status = (data[0] & 0xC0) >> 6;
     if (status == 2) {
         return;
     } else if (status == 3) {
