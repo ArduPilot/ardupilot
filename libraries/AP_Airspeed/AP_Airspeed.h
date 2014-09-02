@@ -155,7 +155,7 @@ public:
 private:
     AP_Float        _offset;
     AP_Float        _ratio;
-    AP_Float	    _scale_analog;
+    AP_Float        _scale_analog;
     AP_Float        _scale_digital;
     AP_Int8         _use;
     AP_Int8         _enable;
