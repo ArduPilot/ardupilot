@@ -165,6 +165,9 @@ static int16_t get_pilot_desired_climb_rate(int16_t throttle_control)
     // ensure a reasonable throttle value
     throttle_control = constrain_int16(throttle_control,0,1000);
 
+    // ensure a reasonable deadzone
+    g.throttle_deadzone = constrain_int16(g.throttle_deadzone, 0, 400);
+
     // check throttle is above, below or in the deadband
     if (throttle_control < THROTTLE_IN_DEADBAND_BOTTOM) {
         // below the deadband
