@@ -24,9 +24,14 @@
 
 #include <AP_Common.h>
 #include <AP_HAL.h>
+#include <AP_Param.h>
 
 class AP_Airspeed_Backend {
 public:
+    AP_Airspeed_Backend(const AP_Float &scale) : 
+        _scale(scale)
+    {};	
+
     // probe and initialise the sensor
     virtual bool init(void) = 0;
 
@@ -35,6 +40,9 @@ public:
 
     // return the current temperature in degrees C, if available
     virtual bool get_temperature(float &temperature) = 0;
+
+    // sensor scaling
+    const AP_Float &_scale;
 };
 
 #endif // __AP_AIRSPEED_BACKEND_H__

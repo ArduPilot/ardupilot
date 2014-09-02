@@ -115,16 +115,22 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("TUBE_ORDER",  6, AP_Airspeed, _tube_order, 2),
 
+    // @Param: SCALE_ANA
+    // @DisplayName: Pressure scaling for analog airspeed sensor
+    // @Description: Use this to change the sensor scaling for analog airspeed sensors. Units are Pa/V.
+    // @User: Advanced
+    // @Values: 819:3DR analog airspeed sensor
+    AP_GROUPINFO("SCALE_ANA", 7, AP_Airspeed, _scale_analog, 819),
+    
+    // @Param: SCALE_DIG
+    // @DisplayName: Pressure scaling for digital airspeed sensor
+    // @Description: Use this to change the sensor scaling for digital (I2C) airspeed sensors on address 0x28 (used by most MEAS and Honeywell sensors). Units are Pa/LSB. The ETS digital sensor outputs Pa directly and is not affected by this setting.
+    // @User: Advanced
+    // @Values: 1.052:PX4 digital airspeed sensor,0.038:Honeywell 1" H2O sensor.
+    AP_GROUPINFO("SCALE_DIG", 8, AP_Airspeed, _scale_digital, 1.052),
+
     AP_GROUPEND
 };
-
-
-/*
-  this scaling factor converts from the old system where we used a 
-  0 to 4095 raw ADC value for 0-5V to the new system which gets the
-  voltage in volts directly from the ADC driver
- */
-#define SCALING_OLD_CALIBRATION 819 // 4095/5
 
 void AP_Airspeed::init()
 {
