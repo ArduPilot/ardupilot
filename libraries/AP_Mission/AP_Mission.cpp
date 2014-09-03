@@ -471,7 +471,7 @@ bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP
           in the cmd structure. When we expand the mission structure
           we can do this properly
          */
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#if defined(APM_BUILD_DIRECTORY) && APM_BUILD_TYPE(APM_BUILD_ArduPlane)
         // acceptance radius in meters
         cmd.p1 = packet.param2;
 #else
