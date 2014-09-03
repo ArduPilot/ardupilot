@@ -299,6 +299,11 @@
  # define PREARM_MAX_VELOCITY_CMS           50.0f   // vehicle must be travelling under 50cm/s before arming
 #endif
 
+// arming check's maximum acceptable accelerometer vector difference (in m/s/s) between primary and backup accelerometers
+#ifndef PREARM_MAX_ACCEL_VECTOR_DIFF
+  #define PREARM_MAX_ACCEL_VECTOR_DIFF  1.0f    // pre arm accel check will fail if primary and backup accelerometer vectors differ by 1m/s/s
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 //  EKF Checker
 #ifndef EKFCHECK_THRESHOLD_DEFAULT
