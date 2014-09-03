@@ -59,6 +59,7 @@ public:
 #define APM_BUILD_ArduCopter     2
 #define APM_BUILD_ArduPlane      3
 #define APM_BUILD_AntennaTracker 4
+#define APM_BUILD_UNKNOWN        5
 
 /*
   using this macro catches cases where we try to check vehicle type on
@@ -66,6 +67,8 @@ public:
  */
 #ifdef APM_BUILD_DIRECTORY
 #define APM_BUILD_TYPE(type) ((type) == APM_BUILD_DIRECTORY)
+#else
+#define APM_BUILD_TYPE(type) ((type) == APM_BUILD_UNKNOWN)
 #endif
 
 #endif // AP_VEHICLE_H
