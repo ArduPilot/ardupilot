@@ -12,6 +12,8 @@ static void do_within_distance(const AP_Mission::Mission_Command& cmd);
 static void do_change_alt(const AP_Mission::Mission_Command& cmd);
 static void do_change_speed(const AP_Mission::Mission_Command& cmd);
 static void do_set_home(const AP_Mission::Mission_Command& cmd);
+static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
+
 
 /********************************************************************************/
 // Command Event Handlers
@@ -188,7 +190,7 @@ static bool verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
         return verify_land();
 
     case MAV_CMD_NAV_WAYPOINT:
-        return verify_nav_wp();
+        return verify_nav_wp(cmd);
 
     case MAV_CMD_NAV_LOITER_UNLIM:
         return verify_loiter_unlim();
@@ -374,7 +376,7 @@ static bool verify_takeoff()
   update navigation for normal mission waypoints. Return true when the
   waypoint is complete
  */
-static bool verify_nav_wp()
+static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
     steer_state.hold_course_cd = -1;
 
@@ -392,8 +394,14 @@ static bool verify_nav_wp()
         }
         return false;
     }
+
+    float acceptance_distance = nav_controller->turn_distance(g.waypoint_radius, auto_state.next_turn_angle);
+    if (cmd.p1 > 0) {
+        // allow user to override acceptance radius
+        acceptance_distance = cmd.p1;
+    }
     
-    if (wp_distance <= nav_controller->turn_distance(g.waypoint_radius, auto_state.next_turn_angle)) {
+    if (wp_distance <= acceptance_distance) {
         gcs_send_text_fmt(PSTR("Reached Waypoint #%i dist %um"),
                           (unsigned)mission.get_current_nav_cmd().index,
                           (unsigned)get_distance(current_loc, next_WP_loc));
