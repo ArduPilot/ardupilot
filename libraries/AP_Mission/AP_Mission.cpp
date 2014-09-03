@@ -725,7 +725,13 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
 
     case MAV_CMD_NAV_WAYPOINT:                          // MAV ID: 16
         copy_location = true;
-        packet.param1 = cmd.p1;                         // delay at waypoint in seconds
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+        // acceptance radius in meters
+        packet.param2 = cmd.p1;
+#else
+        // delay at waypoint in seconds
+        packet.param1 = cmd.p1;
+#endif
         break;
 
     case MAV_CMD_NAV_LOITER_UNLIM:                      // MAV ID: 17
