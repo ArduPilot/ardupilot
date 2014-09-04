@@ -86,6 +86,13 @@ private:
         uint32_t res3;
         uint32_t res4;
     };
+    struct PACKED ubx_cfg_sbas {
+        uint8_t mode;
+        uint8_t usage;
+        uint8_t maxSBAS;
+        uint8_t scanmode2;
+        uint32_t scanmode1;
+    };
 
     struct PACKED ubx_nav_posllh {
         uint32_t time;                                  // GPS msToW
@@ -197,6 +204,7 @@ private:
         ubx_mon_hw_60 mon_hw_60;
         ubx_mon_hw_68 mon_hw_68;
         ubx_mon_hw2 mon_hw2;
+        ubx_cfg_sbas sbas;
         uint8_t bytes[];
     } _buffer;
 
@@ -217,6 +225,7 @@ private:
         MSG_CFG_RATE = 0x08,
         MSG_CFG_SET_RATE = 0x01,
         MSG_CFG_NAV_SETTINGS = 0x24,
+        MSG_CFG_SBAS = 0x16,
         MSG_MON_HW = 0x09,
         MSG_MON_HW2 = 0x0B
     };
@@ -271,6 +280,7 @@ private:
     void 	    _configure_navigation_rate(uint16_t rate_ms);
     void        _configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate);
     void        _configure_gps(void);
+    void        _configure_sbas(bool enable);
     void        _update_checksum(uint8_t *data, uint8_t len, uint8_t &ck_a, uint8_t &ck_b);
     void        _send_message(uint8_t msg_class, uint8_t msg_id, void *msg, uint8_t size);
     void		send_next_rate_update(void);

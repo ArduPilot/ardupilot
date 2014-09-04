@@ -325,6 +325,21 @@ AP_GPS_UBLOX::_parse_gps(void)
         return false;
     }
 
+    if (_class == CLASS_CFG && _msg_id == MSG_CFG_SBAS && gps._sbas_mode != 2) {
+		Debug("Got SBAS settings %u %u %u 0x%x 0x%x\n", 
+              (unsigned)_buffer.sbas.mode,
+              (unsigned)_buffer.sbas.usage,
+              (unsigned)_buffer.sbas.maxSBAS,
+              (unsigned)_buffer.sbas.scanmode2,
+              (unsigned)_buffer.sbas.scanmode1);
+        if (_buffer.sbas.mode != gps._sbas_mode) {
+            _buffer.sbas.mode = gps._sbas_mode;
+            _send_message(CLASS_CFG, MSG_CFG_SBAS,
+                          &_buffer.sbas,
+                          sizeof(_buffer.sbas));
+        }
+    }
+
 #if UBLOX_HW_LOGGING
     if (_class == CLASS_MON) {
         if (_msg_id == MSG_MON_HW) {
@@ -458,6 +473,11 @@ AP_GPS_UBLOX::_parse_gps(void)
             _last_5hz_time = hal.scheduler->millis();
         }
 
+		if (_fix_count == 50 && gps._sbas_mode != 2) {
+			// ask for SBAS settings every 20 seconds
+			Debug("Asking for SBAS setting\n");
+			_send_message(CLASS_CFG, MSG_CFG_SBAS, NULL, 0);
+		}
 		if (_fix_count == 100) {
 			// ask for nav settings every 20 seconds
 			Debug("Asking for engine setting\n");
