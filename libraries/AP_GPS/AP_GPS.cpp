@@ -71,6 +71,14 @@ const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("SBAS_MODE", 5, AP_GPS, _sbas_mode, 2),
 
+    // @Param: MIN_ELEV
+    // @DisplayName: Minimum elevation
+    // @Description: This sets the minimum elevation of satellites above the horizon for them to be used for navigation. Setting this to -100 leaves the minimum elevation set to the GPS modules default.
+    // @Range: -100 90
+    // @Units: Degrees
+    // @User: Advanced
+    AP_GROUPINFO("MIN_ELEV", 6, AP_GPS, _min_elevation, -100),
+
     AP_GROUPEND
 };
 
