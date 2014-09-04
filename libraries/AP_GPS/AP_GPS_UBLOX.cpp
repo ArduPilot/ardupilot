@@ -309,7 +309,11 @@ AP_GPS_UBLOX::_parse_gps(void)
     }
 
     if (_class == CLASS_CFG && _msg_id == MSG_CFG_NAV_SETTINGS) {
-		Debug("Got engine settings %u\n", (unsigned)_buffer.nav_settings.dynModel);
+		Debug("Got settings %u min_elev %d drLimit %u\n", 
+              (unsigned)_buffer.nav_settings.dynModel,
+              (int)_buffer.nav_settings.minElev,
+              (unsigned)_buffer.nav_settings.drLimit);
+        _buffer.nav_settings.mask = 0;
         if (gps._navfilter != AP_GPS::GPS_ENGINE_NONE &&
             _buffer.nav_settings.dynModel != gps._navfilter) {
             // we've received the current nav settings, change the engine
@@ -317,7 +321,15 @@ AP_GPS_UBLOX::_parse_gps(void)
             Debug("Changing engine setting from %u to %u\n",
                   (unsigned)_buffer.nav_settings.dynModel, (unsigned)gps._navfilter);
             _buffer.nav_settings.dynModel = gps._navfilter;
-            _buffer.nav_settings.mask = 1; // only change dynamic model
+            _buffer.nav_settings.mask |= 1;
+        }
+        if (gps._min_elevation != -100 &&
+            _buffer.nav_settings.minElev != gps._min_elevation) {
+            Debug("Changing min elevation to %d\n", (int)gps._min_elevation);
+            _buffer.nav_settings.minElev = gps._min_elevation;
+            _buffer.nav_settings.mask |= 2;
+        }
+        if (_buffer.nav_settings.mask != 0) {
             _send_message(CLASS_CFG, MSG_CFG_NAV_SETTINGS,
                           &_buffer.nav_settings,
                           sizeof(_buffer.nav_settings));
