@@ -1,5 +1,13 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.2-rc7 04-Sep-2014
+Changes from 3.2-rc6
+1) Safety Items:
+    a) Landing check made more strict (climb rate requirement reduced to 30cm/s, overall throttle < 25%, rotation < 20deg/sec)
+    b) pre-arm check that accels are consistent (Pixhawk only, must be within 1m/sec/sec of each other)
+    c) pre-arm check that gyros are consistent (Pixhawk only, must be within 20deg/sec of each other)
+    d) report health of all accels and gyros (not just primary) to ground station 
+------------------------------------------------------------------
 ArduCopter 3.2-rc6 31-Aug-2014
 Changes from 3.2-rc5 
 1) Spline twitch when passing through a waypoint largely resolved
