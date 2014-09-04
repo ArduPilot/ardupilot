@@ -9,7 +9,7 @@ Changes from 3.2-rc6
     d) report health of all accels and gyros (not just primary) to ground station 
 ------------------------------------------------------------------
 ArduCopter 3.2-rc6 31-Aug-2014
-Changes from 3.2-rc5 
+Changes from 3.2-rc5
 1) Spline twitch when passing through a waypoint largely resolved
 2) THR_DZ param added to allow user configuration of throttle deadzone during AltHold, Loiter, PosHold
 3) Landing check made more strict (climb rate must be -40~40cm/s for 1 full second)
