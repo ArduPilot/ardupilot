@@ -293,6 +293,7 @@ public:
     AP_Int8 _auto_switch;
     AP_Int8 _min_dgps;
 #endif
+    AP_Int8 _sbas_mode;
     
     // handle sending of initialisation strings to the GPS
     void send_blob_start(uint8_t instance, const prog_char *_blob, uint16_t size);
