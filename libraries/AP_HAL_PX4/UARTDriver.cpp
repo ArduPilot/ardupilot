@@ -41,6 +41,8 @@ extern const AP_HAL::HAL& hal;
 
 void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS) 
 {
+    sem_init (&_semaphore, 0 ,1);
+
     if (strcmp(_devpath, "/dev/null") == 0) {
         // leave uninitialised
         return;
@@ -198,6 +200,9 @@ void PX4UARTDriver::try_initialise(void)
 
 void PX4UARTDriver::end() 
 {
+    sem_wait (&_semaphore);
+    sem_destroy (&_semaphore);
+
     _initialised = false;
     while (_in_timer) hal.scheduler->delay(1);
     if (_fd != -1) {
@@ -285,6 +290,10 @@ int16_t PX4UARTDriver::read()
     if (BUF_EMPTY(_readbuf)) {
         return -1;
     }
+    Semaphore sem(_semaphore);
+    if (sem.try_wait ()){
+        return -1;
+    }
     c = _readbuf[_readbuf_head];
     BUF_ADVANCEHEAD(_readbuf, 1);
 	return c;
@@ -299,8 +308,8 @@ size_t PX4UARTDriver::write(uint8_t c)
         try_initialise();
         return 0;
     }
-    if (hal.scheduler->in_timerprocess()) {
-        // not allowed from timers
+    Semaphore sem(_semaphore);
+    if (sem.try_wait ()){
         return 0;
     }
     uint16_t _head;
@@ -325,8 +334,9 @@ size_t PX4UARTDriver::write(const uint8_t *buffer, size_t size)
         try_initialise();
 		return 0;
 	}
-    if (hal.scheduler->in_timerprocess()) {
-        // not allowed from timers
+
+     Semaphore sem(_semaphore);
+     if (sem.try_wait ()){
         return 0;
     }
 
