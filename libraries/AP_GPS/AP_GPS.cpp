@@ -64,6 +64,13 @@ const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
     AP_GROUPINFO("MIN_DGPS", 4, AP_GPS, _min_dgps, 100),
 #endif
 
+    // @Param: SBAS_MODE
+    // @DisplayName: SBAS Mode
+    // @Description: This sets the SBAS (satellite based augmentation system) mode if available on this GPS. If set to 2 then the SBAS mode is not changed in the GPS. Otherwise the GPS will be reconfigured to enable/disable SBAS. Disabling SBAS may be worthwhile in some parts of the world where an SBAS signal is available but the baseline is too long to be useful.
+    // @Values: 0:Disabled,1:Enabled,2:NoChange
+    // @User: Advanced
+    AP_GROUPINFO("SBAS_MODE", 5, AP_GPS, _sbas_mode, 2),
+
     AP_GROUPEND
 };
 
