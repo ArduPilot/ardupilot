@@ -369,7 +369,7 @@ bool NavEKF::healthy(void) const
     if (state.velocity.is_nan()) {
         return false;
     }
-    if (filterDiverged || (hal.scheduler->millis() - lastDivergeTime_ms < 10000)) {
+    if (filterDiverged || (imuSampleTime_ms - lastDivergeTime_ms < 10000)) {
         return false;
     }
     // If measurements have failed innovation consistency checks for long enough to time-out
@@ -680,12 +680,12 @@ void NavEKF::SelectVelPosFusion()
             // If a long time since last GPS update, then reset position and velocity and reset stored state history
 
             uint32_t gpsRetryTimeout = useAirspeed() ? _gpsRetryTimeUseTAS : _gpsRetryTimeNoTAS;
-            if (hal.scheduler->millis() - secondLastFixTime_ms > gpsRetryTimeout) {
+            if (imuSampleTime_ms - secondLastFixTime_ms > gpsRetryTimeout) {
                 ResetPosition();
                 ResetVelocity();
                 StoreStatesReset();
             }
-        } else if (hal.scheduler->millis() - lastFixTime_ms > (uint32_t)(_msecGpsAvg + 40)) {
+        } else if (imuSampleTime_ms - lastFixTime_ms > (uint32_t)(_msecGpsAvg + 40)) {
             // Timeout fusion of GPS data if stale. Needed because we repeatedly fuse the same
             // measurement until the next one arrives to provide a smoother output
             fuseVelData = false;
@@ -699,7 +699,7 @@ void NavEKF::SelectVelPosFusion()
             newDataHgt = false;
             // enable fusion
             fuseHgtData = true;
-        } else if (hal.scheduler->millis() - lastHgtTime_ms > (uint32_t)(_msecHgtAvg + 40)) {
+        } else if (imuSampleTime_ms - lastHgtTime_ms > (uint32_t)(_msecHgtAvg + 40)) {
             // timeout fusion of height data if stale. Needed because we repeatedly fuse the same
             // measurement until the next one arrives to provide a smoother output
             fuseHgtData = false;
@@ -746,9 +746,9 @@ void NavEKF::SelectMagFusion()
         // If we are using the compass and the magnetometer has been unhealthy for too long we declare a timeout
         // If we have a vehicle that can fly without a compass (a vehicle that doesn't have significant sideslip) then the compass is permanently failed and will not be used until the filter is reset
         if (magHealth) {
-            lastHealthyMagTime_ms = hal.scheduler->millis();
+            lastHealthyMagTime_ms = imuSampleTime_ms;
         } else {
-            if ((hal.scheduler->millis() - lastHealthyMagTime_ms) > _magFailTimeLimit_ms && use_compass()) {
+            if ((imuSampleTime_ms - lastHealthyMagTime_ms) > _magFailTimeLimit_ms && use_compass()) {
                 magTimeout = true;
                 if (assume_zero_sideslip()) {
                     magFailed = true;
@@ -762,7 +762,7 @@ void NavEKF::SelectMagFusion()
         bool dataReady = statesInitialised && use_compass() && newDataMag;
         if (dataReady)
         {
-            MAGmsecPrev = IMUmsec;
+            MAGmsecPrev = imuSampleTime_ms;
             fuseMagData = true;
         }
         else
@@ -785,7 +785,7 @@ void NavEKF::SelectTasFusion()
     tasDataWaiting = (statesInitialised && !inhibitWindStates && (tasDataWaiting || newDataTas));
 
     // if we have waited too long, set a timeout flag which will force fusion to occur
-    bool timeout = ((IMUmsec - TASmsecPrev) >= TASmsecMax);
+    bool timeout = ((imuSampleTime_ms - TASmsecPrev) >= TASmsecMax);
 
     // we don't fuse airspeed measurements if magnetometer fusion has been performed in the same frame, unless timed out or the fuseMeNow option is selected
     // this helps to spreasthe load associated with fusion of different measurements across multiple frames
@@ -793,7 +793,7 @@ void NavEKF::SelectTasFusion()
     if (tasDataWaiting && (!magFusePerformed || timeout || fuseMeNow))
     {
         FuseAirspeed();
-        TASmsecPrev = IMUmsec;
+        TASmsecPrev = imuSampleTime_ms;
         tasDataWaiting = false;
     }
 }
@@ -808,9 +808,9 @@ void NavEKF::SelectBetaFusion()
     // we are a fly forward vehicle type AND NOT using a full range of sensors with healthy position
     // AND NOT on the ground AND enough time has lapsed since our last fusion
     // AND (we have not fused magnetometer data on this time step OR the immediate fusion flag is set)
-    if (assume_zero_sideslip() && !(use_compass() && useAirspeed() && posHealth) && !inhibitWindStates  && ((IMUmsec - BETAmsecPrev) >= _msecBetaAvg) && (!magFusePerformed || fuseMeNow)) {
+    if (assume_zero_sideslip() && !(use_compass() && useAirspeed() && posHealth) && !inhibitWindStates  && ((imuSampleTime_ms - BETAmsecPrev) >= _msecBetaAvg) && (!magFusePerformed || fuseMeNow)) {
         FuseSideslip();
-        BETAmsecPrev = IMUmsec;
+        BETAmsecPrev = imuSampleTime_ms;
     }
 }
 
@@ -1679,15 +1679,15 @@ void NavEKF::FuseVelPosNED()
             // calculate max valid position innovation squared based on a maximum horizontal inertial nav accel error and GPS noise parameter
             // max inertial nav error is scaled with horizontal g to allow for increased errors when manoeuvring
             float accelScale =  (1.0f + 0.1f * accNavMagHoriz);
-            float maxPosInnov2 = sq(_gpsPosInnovGate * _gpsHorizPosNoise + 0.005f * accelScale * float(_gpsGlitchAccelMax) * sq(0.001f * float(hal.scheduler->millis() - posFailTime)));
+            float maxPosInnov2 = sq(_gpsPosInnovGate * _gpsHorizPosNoise + 0.005f * accelScale * float(_gpsGlitchAccelMax) * sq(0.001f * float(imuSampleTime_ms - posFailTime)));
             posTestRatio = (sq(posInnov[0]) + sq(posInnov[1])) / maxPosInnov2;
             posHealth = ((posTestRatio < 1.0f) || badIMUdata);
             // declare a timeout condition if we have been too long without data
-            posTimeout = ((hal.scheduler->millis() - posFailTime) > gpsRetryTime);
+            posTimeout = ((imuSampleTime_ms - posFailTime) > gpsRetryTime);
             // use position data if healthy, timed out, or in static mode
             if (posHealth || posTimeout || staticMode) {
                 posHealth = true;
-                posFailTime = hal.scheduler->millis();
+                posFailTime = imuSampleTime_ms;
                 // if timed out or outside the specified glitch radius, increment the offset applied to GPS data to compensate for large GPS position jumps
                 if (posTimeout || (maxPosInnov2 > sq(float(_gpsGlitchRadiusMax)))) {
                     gpsPosGlitchOffsetNE.x += posInnov[0];
@@ -1748,11 +1748,11 @@ void NavEKF::FuseVelPosNED()
             // fail if the ratio is greater than 1
             velHealth = ((velTestRatio < 1.0f)  || badIMUdata);
             // declare a timeout if we have not fused velocity data for too long
-            velTimeout = (hal.scheduler->millis() - velFailTime) > gpsRetryTime;
+            velTimeout = (imuSampleTime_ms - velFailTime) > gpsRetryTime;
             // if data is healthy  or in static mode we fuse it
             if (velHealth || staticMode) {
                 velHealth = true;
-                velFailTime = hal.scheduler->millis();
+                velFailTime = imuSampleTime_ms;
             } else if (velTimeout && !posHealth) {
                 // if data is not healthy and timed out and position is unhealthy we reset the velocity, but do not fuse data on this time step
                 ResetVelocity();
@@ -1777,11 +1777,11 @@ void NavEKF::FuseVelPosNED()
             hgtTestRatio = sq(hgtInnov) / (sq(_hgtInnovGate) * varInnovVelPos[5]);
             // fail if the ratio is > 1, but don't fail if bad IMU data
             hgtHealth = ((hgtTestRatio < 1.0f) || badIMUdata);
-            hgtTimeout = (hal.scheduler->millis() - hgtFailTime) > hgtRetryTime;
+            hgtTimeout = (imuSampleTime_ms - hgtFailTime) > hgtRetryTime;
             // Fuse height data if healthy or timed out or in static mode
             if (hgtHealth || hgtTimeout || staticMode) {
                 hgtHealth = true;
-                hgtFailTime = hal.scheduler->millis();
+                hgtFailTime = imuSampleTime_ms;
                 // if timed out, reset the height, but do not fuse data on this time step
                 if (hgtTimeout) {
                     ResetHeight();
@@ -2681,8 +2681,8 @@ void NavEKF::zeroCols(Matrix22 &covMat, uint8_t first, uint8_t last)
 void NavEKF::StoreStates()
 {
     // Don't need to store states more often than every 10 msec
-    if (hal.scheduler->millis() - lastStateStoreTime_ms >= 10) {
-        lastStateStoreTime_ms = hal.scheduler->millis();
+    if (imuSampleTime_ms - lastStateStoreTime_ms >= 10) {
+        lastStateStoreTime_ms = imuSampleTime_ms;
         if (storeIndex > 49) {
             storeIndex = 0;
         }
@@ -2701,7 +2701,7 @@ void NavEKF::StoreStatesReset()
     // store current state vector in first column
     storeIndex = 0;
     storedStates[storeIndex] = state;
-    statetimeStamp[storeIndex] = hal.scheduler->millis();
+    statetimeStamp[storeIndex] = imuSampleTime_ms;
     storeIndex = storeIndex + 1;
 }
 
@@ -2925,7 +2925,7 @@ void NavEKF::ForceSymmetry()
                 // set the filter status as diverged and re-initialise the filter
                 filterDiverged = true;
                 faultStatus.diverged = true;
-                lastDivergeTime_ms = hal.scheduler->millis();
+                lastDivergeTime_ms = imuSampleTime_ms;
                 InitialiseFilterDynamic();
                 return;
             }
@@ -2996,8 +2996,8 @@ void NavEKF::readIMUData()
     Vector3f accel1;    // acceleration vector in XYZ body axes measured by IMU1 (m/s^2)
     Vector3f accel2;    // acceleration vector in XYZ body axes measured by IMU2 (m/s^2)
 
-    // get the time the IMU data was read
-    IMUmsec = hal.scheduler->millis();
+    // the imu sample time is sued as a common time reference throughout the filter
+    imuSampleTime_ms = hal.scheduler->millis();
 
     // limit IMU delta time to prevent numerical problems elsewhere
     dtIMU = constrain_float(_ahrs->get_ins().get_delta_time(), 0.001f, 1.0f);
@@ -3051,8 +3051,8 @@ void NavEKF::readGpsData()
 
         // get state vectors that were stored at the time that is closest to when the the GPS measurement
         // time after accounting for measurement delays
-        RecallStates(statesAtVelTime, (IMUmsec - constrain_int16(_msecVelDelay, 0, 500)));
-        RecallStates(statesAtPosTime, (IMUmsec - constrain_int16(_msecPosDelay, 0, 500)));
+        RecallStates(statesAtVelTime, (imuSampleTime_ms - constrain_int16(_msecVelDelay, 0, 500)));
+        RecallStates(statesAtPosTime, (imuSampleTime_ms - constrain_int16(_msecPosDelay, 0, 500)));
 
         // read the NED velocity from the GPS
         velNED = _ahrs->get_gps().velocity();
@@ -3082,14 +3082,14 @@ void NavEKF::readHgtData()
         lastHgtMeasTime = _baro.get_last_update();
 
         // time stamp used to check for timeout
-        lastHgtTime_ms = hal.scheduler->millis();
+        lastHgtTime_ms = imuSampleTime_ms;
 
         // get measurement and set flag to let other functions know new data has arrived
         hgtMea = _baro.get_altitude();
         newDataHgt = true;
 
         // get states that wer stored at the time closest to the measurement time, taking measurement delay into account
-        RecallStates(statesAtHgtTime, (IMUmsec - _msecHgtDelay));
+        RecallStates(statesAtHgtTime, (imuSampleTime_ms - _msecHgtDelay));
     } else {
         newDataHgt = false;
     }
@@ -3109,7 +3109,7 @@ void NavEKF::readMagData()
         magData = _ahrs->get_compass()->get_field() * 0.001f + magBias;
 
         // get states stored at time closest to measurement time after allowance for measurement delay
-        RecallStates(statesAtMagMeasTime, (IMUmsec - _msecMagDelay));
+        RecallStates(statesAtMagMeasTime, (imuSampleTime_ms - _msecMagDelay));
 
         // let other processes know that new compass data has arrived
         newDataMag = true;
@@ -3131,7 +3131,7 @@ void NavEKF::readAirSpdData()
         VtasMeas = aspeed->get_airspeed() * aspeed->get_EAS2TAS();
         lastAirspeedUpdate = aspeed->last_update_ms();
         newDataTas = true;
-        RecallStates(statesAtVtasMeasTime, (IMUmsec - _msecTasDelay));
+        RecallStates(statesAtVtasMeasTime, (imuSampleTime_ms - _msecTasDelay));
     } else {
         newDataTas = false;
     }
@@ -3311,29 +3311,30 @@ void  NavEKF::getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f
 // zero stored variables - this needs to be called before a full filter initialisation
 void NavEKF::ZeroVariables()
 {
+    // initialise time stamps
+    imuSampleTime_ms = hal.scheduler->millis();
+    lastHealthyMagTime_ms = imuSampleTime_ms;
+    lastDivergeTime_ms = imuSampleTime_ms;
+    TASmsecPrev = imuSampleTime_ms;
+    BETAmsecPrev = imuSampleTime_ms;
+    lastMagUpdate = imuSampleTime_ms;
+    lastHgtMeasTime = imuSampleTime_ms;
+    lastHgtTime_ms = imuSampleTime_ms;
+    velFailTime = imuSampleTime_ms;
+    posFailTime = imuSampleTime_ms;
+    hgtFailTime = imuSampleTime_ms;
+    lastStateStoreTime_ms = imuSampleTime_ms;
+    lastFixTime_ms = imuSampleTime_ms;
+    secondLastFixTime_ms = imuSampleTime_ms;
+    lastDecayTime_ms = imuSampleTime_ms;
+
     velTimeout = false;
     posTimeout = false;
     hgtTimeout = false;
     filterDiverged = false;
     magTimeout = false;
     magFailed = false;
-    lastHealthyMagTime_ms = hal.scheduler->millis();
-    lastStateStoreTime_ms = 0;
-    lastFixTime_ms = 0;
-    secondLastFixTime_ms = 0;
-    lastMagUpdate = 0;
-    lastAirspeedUpdate = 0;
-    velFailTime = 0;
-    posFailTime = 0;
-    hgtFailTime = 0;
     storeIndex = 0;
-    TASmsecPrev = 0;
-    BETAmsecPrev = 0;
-    MAGmsecPrev = 0;
-    HGTmsecPrev = 0;
-    lastMagUpdate = 0;
-    lastAirspeedUpdate = 0;
-    lastHgtMeasTime = 0;
     dtIMU = 0;
     dt = 0;
     hgtMea = 0;
@@ -3385,8 +3386,8 @@ bool NavEKF::use_compass(void) const
 // apply glitch offset to GPS measurements
 void NavEKF::decayGpsOffset()
 {
-    float lapsedTime = 0.001f*float(hal.scheduler->millis() - lastDecayTime_ms);
-    lastDecayTime_ms = hal.scheduler->millis();
+    float lapsedTime = 0.001f*float(imuSampleTime_ms - lastDecayTime_ms);
+    lastDecayTime_ms = imuSampleTime_ms;
     float offsetRadius = pythagorous2(gpsPosGlitchOffsetNE.x, gpsPosGlitchOffsetNE.y);
     // decay radius if larger than velocity of 1.0 multiplied by lapsed time (plus a margin to prevent divide by zero)
     if (offsetRadius > (lapsedTime + 0.1f)) {
@@ -3422,11 +3423,11 @@ void NavEKF::checkDivergence()
     }
     bool divergenceDetected = (scaledDeltaGyrBiasLgth > 1.0f);
     lastGyroBias = state.gyro_bias;
-    if (hal.scheduler->millis() - lastDivergeTime_ms > 10000) {
+    if (imuSampleTime_ms - lastDivergeTime_ms > 10000) {
         if (divergenceDetected) {
             filterDiverged = true;
             faultStatus.diverged = true;
-            lastDivergeTime_ms = hal.scheduler->millis();
+            lastDivergeTime_ms = imuSampleTime_ms;
         } else {
             filterDiverged = false;
         }
