@@ -431,7 +431,7 @@ private:
     Vector3f velDotNED;             // rate of change of velocity in NED frame
     Vector3f velDotNEDfilt;         // low pass filtered velDotNED
     uint32_t lastAirspeedUpdate;    // last time airspeed was updated
-    uint32_t IMUmsec;               // time that the last IMU value was taken
+    uint32_t imuSampleTime_ms;      // time that the last IMU value was taken
     ftype gpsCourse;                // GPS ground course angle(rad) 
     ftype gpsGndSpd;                // GPS ground speed (m/s)
     bool newDataGps;                // true when new GPS data has arrived
