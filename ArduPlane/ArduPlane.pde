@@ -1329,7 +1329,7 @@ static void update_flight_mode(void)
             if (tdrag_mode && !auto_state.fbwa_tdrag_takeoff_mode) {
                 if (auto_state.highest_airspeed < g.takeoff_tdrag_speed1) {
                     auto_state.fbwa_tdrag_takeoff_mode = true;
-                    gcs_send_text_P(SEVERITY_LOW, PSTR("FBWA tdrag mode\n"));
+                    gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("FBWA tdrag mode\n"));
                 }
             }
         }
@@ -1446,9 +1446,9 @@ static void set_flight_stage(AP_SpdHgtControl::FlightStage fs)
 #if GEOFENCE_ENABLED == ENABLED 
         if (g.fence_autoenable == 1) {
             if (! geofence_set_enabled(false, AUTO_TOGGLED)) {
-                gcs_send_text_P(SEVERITY_HIGH, PSTR("Disable fence failed (autodisable)"));
+                gcs_send_text_P(MAV_SEVERITY_CRITICAL, PSTR("Disable fence failed (autodisable)"));
             } else {
-                gcs_send_text_P(SEVERITY_HIGH, PSTR("Fence disabled (autodisable)"));
+                gcs_send_text_P(MAV_SEVERITY_CRITICAL, PSTR("Fence disabled (autodisable)"));
             }
         }
 #endif

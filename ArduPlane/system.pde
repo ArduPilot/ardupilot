@@ -135,10 +135,10 @@ static void init_ardupilot()
 #if LOGGING_ENABLED == ENABLED
     DataFlash.Init(log_structure, sizeof(log_structure)/sizeof(log_structure[0]));
     if (!DataFlash.CardInserted()) {
-        gcs_send_text_P(SEVERITY_LOW, PSTR("No dataflash card inserted"));
+        gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("No dataflash card inserted"));
         g.log_bitmask.set(0);
     } else if (DataFlash.NeedErase()) {
-        gcs_send_text_P(SEVERITY_LOW, PSTR("ERASING LOGS"));
+        gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("ERASING LOGS"));
         do_erase_logs();
         for (uint8_t i=0; i<num_gcs; i++) {
             gcs[i].reset_cli_timeout();
@@ -222,10 +222,10 @@ static void startup_ground(void)
 {
     set_mode(INITIALISING);
 
-    gcs_send_text_P(SEVERITY_LOW,PSTR("<startup_ground> GROUND START"));
+    gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("<startup_ground> GROUND START"));
 
 #if (GROUND_START_DELAY > 0)
-    gcs_send_text_P(SEVERITY_LOW,PSTR("<startup_ground> With Delay"));
+    gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("<startup_ground> With Delay"));
     delay(GROUND_START_DELAY * 1000);
 #endif
 
@@ -272,7 +272,7 @@ static void startup_ground(void)
         hal.uartD->set_blocking_writes(false);
     }
 
-    gcs_send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to FLY."));
+    gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("\n\n Ready to FLY."));
 }
 
 static enum FlightMode get_previous_mode() {
@@ -466,7 +466,7 @@ static void startup_INS_ground(bool do_accel_init)
     while (barometer.get_last_update() == 0) {
         // the barometer begins updating when we get the first
         // HIL_STATE message
-        gcs_send_text_P(SEVERITY_LOW, PSTR("Waiting for first HIL_STATE message"));
+        gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Waiting for first HIL_STATE message"));
         delay(1000);
     }
 #endif
@@ -479,7 +479,7 @@ static void startup_INS_ground(bool do_accel_init)
     }
 
     if (style == AP_InertialSensor::COLD_START) {
-        gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Beginning INS calibration; do not move plane"));
+        gcs_send_text_P(MAV_SEVERITY_ALERT, PSTR("Beginning INS calibration; do not move plane"));
         mavlink_delay(100);
     }
 
@@ -504,7 +504,7 @@ static void startup_INS_ground(bool do_accel_init)
         // --------------------------
         zero_airspeed();
     } else {
-        gcs_send_text_P(SEVERITY_LOW,PSTR("NO airspeed"));
+        gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("NO airspeed"));
     }
 }
 

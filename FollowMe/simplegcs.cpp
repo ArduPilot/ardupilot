@@ -76,7 +76,7 @@ bool simplegcs_try_send_statustext(mavlink_channel_t chan, const char *text, int
     lock = 1;
     mavlink_msg_statustext_send(
             chan,
-            1, /* SEVERITY_LOW */
+            4, /* MAV_SEVERITY_WARNING */
             statustext);
     lock = 0;
     return true;

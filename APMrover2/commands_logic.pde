@@ -170,7 +170,7 @@ static bool verify_command(const AP_Mission::Mission_Command& cmd)
                 // this is a command that doesn't require verify
                 return true;
             }
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("verify_conditon: Unsupported command"));
+            gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("verify_conditon: Unsupported command"));
             return true;
             break;
 	}
@@ -219,7 +219,7 @@ static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 static bool verify_RTL()
 {
 	if (wp_distance <= g.waypoint_radius) {
-		gcs_send_text_P(SEVERITY_LOW,PSTR("Reached home"));
+		gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("Reached home"));
                 rtl_complete = true;
 		return true;
 	}

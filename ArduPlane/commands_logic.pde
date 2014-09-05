@@ -238,9 +238,9 @@ static bool verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     default:
         // error message
         if (AP_Mission::is_nav_cmd(cmd)) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("verify_nav: Invalid or no current Nav cmd"));
+            gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("verify_nav: Invalid or no current Nav cmd"));
         }else{
-        gcs_send_text_P(SEVERITY_HIGH,PSTR("verify_conditon: Invalid or no current Condition cmd"));
+        gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("verify_conditon: Invalid or no current Condition cmd"));
     }
         // return true so that we do not get stuck at this command
         return true;
@@ -356,9 +356,9 @@ static bool verify_takeoff()
 #if GEOFENCE_ENABLED == ENABLED
         if (g.fence_autoenable == 1) {
             if (! geofence_set_enabled(true, AUTO_TOGGLED)) {
-                gcs_send_text_P(SEVERITY_HIGH, PSTR("Enable fence failed (cannot autoenable"));
+                gcs_send_text_P(MAV_SEVERITY_CRITICAL, PSTR("Enable fence failed (cannot autoenable"));
             } else {
-                gcs_send_text_P(SEVERITY_HIGH, PSTR("Fence enabled. (autoenabled)"));
+                gcs_send_text_P(MAV_SEVERITY_CRITICAL, PSTR("Fence enabled. (autoenabled)"));
             }
         }
 #endif
@@ -434,7 +434,7 @@ static bool verify_loiter_time()
             loiter.start_time_ms = millis();
         }
     } else if ((millis() - loiter.start_time_ms) > loiter.time_max_ms) {
-        gcs_send_text_P(SEVERITY_LOW,PSTR("verify_nav: LOITER time complete"));
+        gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("verify_nav: LOITER time complete"));
         return true;
     }
     return false;
@@ -445,7 +445,7 @@ static bool verify_loiter_turns()
     update_loiter();
     if (loiter.sum_cd > loiter.total_cd) {
         loiter.total_cd = 0;
-        gcs_send_text_P(SEVERITY_LOW,PSTR("verify_nav: LOITER orbits complete"));
+        gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("verify_nav: LOITER orbits complete"));
         // clear the command queue;
         return true;
     }
@@ -457,7 +457,7 @@ static bool verify_RTL()
     update_loiter();
 	if (wp_distance <= (uint32_t)max(g.waypoint_radius,0) || 
         nav_controller->reached_loiter_target()) {
-			gcs_send_text_P(SEVERITY_LOW,PSTR("Reached home"));
+			gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("Reached home"));
 			return true;
     } else {
         return false;

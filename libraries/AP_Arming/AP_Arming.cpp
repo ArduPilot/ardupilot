@@ -79,7 +79,7 @@ bool AP_Arming::barometer_checks(bool report)
         (checks_to_perform & ARMING_CHECK_BARO)) {
         if (! barometer.healthy()) {
             if (report) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Baro not healthy!"));
+                gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("PreArm: Baro not healthy!"));
             }
             return false;
         }
@@ -95,14 +95,14 @@ bool AP_Arming::compass_checks(bool report)
 
         if (!_compass.healthy()) {
             if (report) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not healthy!"));
+                gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("PreArm: Compass not healthy!"));
             }
             return false;
         }
         // check compass learning is on or offsets have been set
         if (!_compass.learn_offsets_enabled() && !_compass.configured()) {
             if (report) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not calibrated"));
+                gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("PreArm: Compass not calibrated"));
             }
             return false;
         }
@@ -124,7 +124,7 @@ bool AP_Arming::gps_checks(bool report)
             AP_Notify::flags.gps_glitching ||
             AP_Notify::flags.failsafe_gps) {
             if (report) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Bad GPS Pos"));
+                gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("PreArm: Bad GPS Pos"));
             }
             return false;
         }      
@@ -140,7 +140,7 @@ bool AP_Arming::battery_checks(bool report)
 
         if (AP_Notify::flags.failsafe_battery) {
             if (report) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Battery failsafe on."));
+                gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("PreArm: Battery failsafe on."));
             }
             return false;
         }
@@ -154,7 +154,7 @@ bool AP_Arming::hardware_safety_check(bool report)
     // check if safety switch has been pushed
     if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
         if (report) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Hardware Safety Switch"));
+            gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("PreArm: Hardware Safety Switch"));
         }
         return false;
     }
@@ -169,7 +169,7 @@ bool AP_Arming::manual_transmitter_checks(bool report)
 
         if (AP_Notify::flags.failsafe_radio) {
             if (report) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Radio failsafe on."));
+                gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("PreArm: Radio failsafe on."));
             }
             return false;
         }
@@ -223,7 +223,7 @@ bool AP_Arming::arm(uint8_t method)
     if (checks_to_perform == ARMING_CHECK_NONE) {
         armed = true;
         arming_method = NONE;
-        gcs_send_text_P(SEVERITY_HIGH,PSTR("Throttle armed!"));
+        gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("Throttle armed!"));
         return true;
     }
 
@@ -231,7 +231,7 @@ bool AP_Arming::arm(uint8_t method)
         armed = true;
         arming_method = method;
 
-        gcs_send_text_P(SEVERITY_HIGH,PSTR("Throttle armed!"));
+        gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("Throttle armed!"));
 
         //TODO: Log motor arming to the dataflash
         //Can't do this from this class until there is a unified logging library
@@ -252,7 +252,7 @@ bool AP_Arming::disarm()
     }
     armed = false;
 
-    gcs_send_text_P(SEVERITY_HIGH,PSTR("Throttle disarmed!"));
+    gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("Throttle disarmed!"));
 
     //TODO: Log motor disarming to the dataflash
     //Can't do this from this class until there is a unified logging library.
