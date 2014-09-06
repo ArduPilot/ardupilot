@@ -150,6 +150,8 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         }
         _initialised = true;
     }
+    _uart_owner_pid = getpid();
+
 }
 
 void PX4UARTDriver::set_flow_control(enum flow_control flow_control)
@@ -275,6 +277,9 @@ int16_t PX4UARTDriver::txspace()
 int16_t PX4UARTDriver::read() 
 { 
 	uint8_t c;
+    if (_uart_owner_pid != getpid()){
+        return -1;
+    }
     if (!_initialised) {
         try_initialise();
         return -1;
@@ -295,12 +300,11 @@ int16_t PX4UARTDriver::read()
  */
 size_t PX4UARTDriver::write(uint8_t c) 
 { 
-    if (!_initialised) {
-        try_initialise();
+    if (_uart_owner_pid != getpid()){
         return 0;
     }
-    if (hal.scheduler->in_timerprocess()) {
-        // not allowed from timers
+    if (!_initialised) {
+        try_initialise();
         return 0;
     }
     uint16_t _head;
@@ -321,14 +325,13 @@ size_t PX4UARTDriver::write(uint8_t c)
  */
 size_t PX4UARTDriver::write(const uint8_t *buffer, size_t size)
 {
+    if (_uart_owner_pid != getpid()){
+        return 0;
+    }
 	if (!_initialised) {
         try_initialise();
 		return 0;
 	}
-    if (hal.scheduler->in_timerprocess()) {
-        // not allowed from timers
-        return 0;
-    }
 
     if (!_nonblocking_writes) {
         /*
