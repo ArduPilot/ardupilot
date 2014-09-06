@@ -440,9 +440,19 @@ void NavEKF::ResetVelocity(void)
     } else if (_ahrs->get_gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
         // read the GPS
         readGpsData();
-        // Set vertical GPS velocity to 0 if mode > 0 (assume 0 if no VZ measurement)
-        if (_fusionModeGPS >= 1) {
-            velNED[2] = 0.0f;
+        // reset horizontal velocity states
+        if (_fusionModeGPS <= 1) {
+            states[4]  = velNED[0]; // north velocity from blended accel data
+            states[5]  = velNED[1]; // east velocity from blended accel data
+            states[23] = velNED[0]; // north velocity from IMU1 accel data
+            states[24] = velNED[1]; // east velocity from IMU1 accel data
+            states[27] = velNED[0]; // north velocity from IMU2 accel data
+            states[28] = velNED[1]; // east velocity from IMU2 accel data
+            // over write stored horizontal velocity states to prevent subsequent GPS measurements from being rejected
+            for (uint8_t i=0; i<=49; i++){
+                storedStates[i].velocity[0] = velNED[0];
+                storedStates[i].velocity[1] = velNED[1];
+            }
         }
         // reset filter velocity states
         state.velocity = velNED;
