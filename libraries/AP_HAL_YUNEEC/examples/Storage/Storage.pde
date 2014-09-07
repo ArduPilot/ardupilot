@@ -5,7 +5,7 @@
 #include <AP_Progmem.h>
 
 #include <AP_HAL.h>
-#include <AP_HAL_FLYMAPLE.h>
+#include <AP_HAL_YUNEEC.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
@@ -44,16 +44,16 @@ void test_readback() {
 }
 
 void setup (void) {
-    hal.scheduler->delay(5000);
+    hal.scheduler->delay(3000);
     hal.console->printf_P(PSTR("Starting AP_HAL_FLYMAPLE::Storage test\r\n"));
-
-    hal.console->printf("test %d\n", i);
-    test_readback(); // Test what was left from the last run, possibly after power off
     test_erase();
     test_write();
     test_readback();
 }
 
-void loop (void) { }
+void loop (void) {
+    test_readback();
+    hal.scheduler->delay(3000);
+}
 
 AP_HAL_MAIN();

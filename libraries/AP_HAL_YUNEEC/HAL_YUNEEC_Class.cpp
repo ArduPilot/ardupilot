@@ -57,6 +57,7 @@ void HAL_YUNEEC::init(int argc,char* const argv[]) const {
     analogin->init(NULL);
     i2c->begin();
     i2c->setTimeout(100);
+    storage->init(NULL);
 }
 
 const HAL_YUNEEC AP_HAL_YUNEEC;

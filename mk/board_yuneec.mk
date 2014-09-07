@@ -34,7 +34,7 @@ COREINCLUDES += -I$(LIBDIR)/STM32F37x_I2C_CPAL_Driver/inc
 
 include $(MK_DIR)/find_tools.mk
 
-DEFINES         =   -DF_CPU=$(F_CPU) -DHSE_VALUE=$(HSE_VALUE) -D$(TypeOfMCU) -DVECT_TAB_FLASH 
+DEFINES         =   -DF_CPU=$(F_CPU) -DHSE_VALUE=$(HSE_VALUE) -D$(TypeOfMCU) -DVECT_TAB_FLASH
 DEFINES        +=   -DSKETCH=\"$(SKETCH)\" -DAPM_BUILD_DIRECTORY=APM_BUILD_$(SKETCH)
 DEFINES        +=   $(EXTRAFLAGS) # from user config.mk
 DEFINES        +=   -DCONFIG_HAL_BOARD=$(HAL_BOARD)
