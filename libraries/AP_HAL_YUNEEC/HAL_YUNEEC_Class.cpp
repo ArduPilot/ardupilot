@@ -5,6 +5,8 @@
 #include "HAL_YUNEEC_Class.h"
 #include "AP_HAL_YUNEEC_Private.h"
 
+#include <stm32f37x_i2c_cpal.h>
+
 using namespace YUNEEC;
 
 YUNEECUARTDriverHandler(USART1, 0);
@@ -16,7 +18,7 @@ static YUNEECUARTDriverInstance(USART2, 1);
 static YUNEECUARTDriverInstance(USART3, 2);
 
 static YUNEECSemaphore  		i2cSemaphore;
-static YUNEECI2CDriver  		i2cDriver(&i2cSemaphore);
+static YUNEECI2CDriver  		i2cDriver(&i2cSemaphore, &I2C1_DevStructure);
 static YUNEECSPIDeviceManager 	spiDeviceManager;
 static YUNEECAnalogIn 			analogIn;
 static YUNEECStorage 			storageDriver;
@@ -53,6 +55,8 @@ void HAL_YUNEEC::init(int argc,char* const argv[]) const {
     uartA->begin(115200);
     rcout->init(NULL);
     analogin->init(NULL);
+    i2c->begin();
+    i2c->setTimeout(100);
 }
 
 const HAL_YUNEEC AP_HAL_YUNEEC;

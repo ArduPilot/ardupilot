@@ -4,9 +4,13 @@
 
 #include <AP_HAL_YUNEEC.h>
 
+#include <stm32f37x_i2c_cpal.h>
+
 class YUNEEC::YUNEECI2CDriver : public AP_HAL::I2CDriver {
 public:
-    YUNEECI2CDriver(AP_HAL::Semaphore* semaphore) : _semaphore(semaphore) {}
+    YUNEECI2CDriver(AP_HAL::Semaphore* semaphore, CPAL_InitTypeDef *I2C_DevStructure) :
+    	_semaphore(semaphore), _I2C_DevStructure(I2C_DevStructure),
+    	_lockup_count(0), _ignore_errors(false), _timeout(0) {}
     void begin();
     void end();
     void setTimeout(uint16_t ms);
@@ -36,6 +40,12 @@ public:
 
 private:
     AP_HAL::Semaphore* _semaphore;
+    uint8_t _lockup_count;
+    bool _ignore_errors;
+    uint32_t _timeout;
+
+    CPAL_InitTypeDef* _I2C_DevStructure;
+    CPAL_TransferTypeDef  _sRxStructure, _sTxStructure;
 };
 
 #endif // __AP_HAL_YUNEEC_I2CDRIVER_H__

@@ -10,7 +10,7 @@
 #include <AP_Progmem.h>
 
 #include <AP_HAL.h>
-#include <AP_HAL_FLYMAPLE.h>
+#include <AP_HAL_YUNEEC.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 

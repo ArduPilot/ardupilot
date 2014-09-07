@@ -51,10 +51,10 @@ void individualwrite(AP_HAL::RCOutput* out, uint16_t* channels) {
     }
 }
 
-void loop (void) {
-    static int ctr = 0;
-    uint16_t channels[8] = {900, 1100, 1300, 1500, 1700, 1900, 2100, 2200};
+static uint16_t channels[8] = {1100, 1100, 1300, 1500, 1700, 1900, 2100, 2200};
 
+void loop (void) {
+//    static int ctr = 0;
     hal.gpio->write(PC13, 0);
 
     /* Cycle between using the individual read method
@@ -65,17 +65,24 @@ void loop (void) {
 //        individualread(hal.rcin, channels);
 //        if (ctr > 1000)  ctr = 0;
 //    }
+    channels[0] += 50;
+	if(channels[0] >= 1700)
+		channels[0] = 1100;
 
-    /* Cycle between individual output and multichannel output */
-    if (ctr % 500 < 250) {
-        multiwrite(hal.rcout, channels);
-    } else {
-        individualwrite(hal.rcout, channels);
-    }
+    multiwrite(hal.rcout, channels);
+
+    hal.scheduler->delay(2000);
+
+//    /* Cycle between individual output and multichannel output */
+//    if (ctr % 500 < 250) {
+//        multiwrite(hal.rcout, channels);
+//    } else {
+//        individualwrite(hal.rcout, channels);
+//    }
 
     hal.gpio->write(PC13, 1);
-    hal.scheduler->delay(500);
-    ctr++;
+//    hal.scheduler->delay(1000);
+//    ctr++;
 }
 
 void setup (void) {
@@ -85,6 +92,9 @@ void setup (void) {
     for (uint8_t i=0; i<8; i++) {
         hal.rcout->enable_ch(i);
     }
+
+    channels[0] = 1100;
+    multiwrite(hal.rcout, channels);
 
     /* Bottom 4 channels at 400hz (like on a quad) */
     hal.rcout->set_freq(0x0000000F, 400);

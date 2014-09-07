@@ -421,4 +421,3 @@ float AP_Baro_MS5611::get_temperature()
     // temperature in degrees C units
     return Temp;
 }
-
