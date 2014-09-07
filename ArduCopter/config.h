@@ -680,7 +680,21 @@
 
 // RATE control
 #ifndef THROTTLE_RATE_P
- # define THROTTLE_RATE_P       6.0f
+ # define THROTTLE_RATE_P       5.0f
+#endif
+
+// Throttle Accel control
+#ifndef THROTTLE_ACCEL_P
+ # define THROTTLE_ACCEL_P      0.50f
+#endif
+#ifndef THROTTLE_ACCEL_I
+ # define THROTTLE_ACCEL_I      1.00f
+#endif
+#ifndef THROTTLE_ACCEL_D
+ # define THROTTLE_ACCEL_D      0.0f
+#endif
+#ifndef THROTTLE_ACCEL_IMAX
+ # define THROTTLE_ACCEL_IMAX   500
 #endif
 
 // default maximum vertical velocity and acceleration the pilot may request
@@ -698,20 +712,6 @@
 // the acceleration used to define the distance-velocity curve
 #ifndef ALT_HOLD_ACCEL_MAX
  # define ALT_HOLD_ACCEL_MAX 250    // if you change this you must also update the duplicate declaration in AC_WPNav.h
-#endif
-
-// Throttle Accel control
-#ifndef THROTTLE_ACCEL_P
- # define THROTTLE_ACCEL_P  0.75f
-#endif
-#ifndef THROTTLE_ACCEL_I
- # define THROTTLE_ACCEL_I  1.50f
-#endif
-#ifndef THROTTLE_ACCEL_D
- # define THROTTLE_ACCEL_D 0.0f
-#endif
-#ifndef THROTTLE_ACCEL_IMAX
- # define THROTTLE_ACCEL_IMAX 500
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
