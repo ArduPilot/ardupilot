@@ -47,6 +47,9 @@ void loop() {
     } else { 
         hal.console->printf_P(PSTR("i2c error: status %d\r\n"), (int)stat);
     }
+
+
+    hal.scheduler->delay(500);
 }
 
 AP_HAL_MAIN();
