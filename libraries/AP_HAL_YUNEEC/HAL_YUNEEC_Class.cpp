@@ -31,8 +31,8 @@ static YUNEECUtil 				utilInstance;
 HAL_YUNEEC::HAL_YUNEEC() :
     AP_HAL::HAL(
         &USART1Driver,
-        &USART2Driver,
         &USART3Driver,
+        &USART2Driver,
         NULL,            /* no uartD */
         NULL,            /* no uartE */
         &i2cDriver,
