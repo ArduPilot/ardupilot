@@ -481,10 +481,14 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         break;
 
     case MSG_EXTENDED_STATUS1:
-        CHECK_PAYLOAD_SIZE(SYS_STATUS);
-        send_extended_status1(chan);
-        CHECK_PAYLOAD_SIZE(POWER_STATUS);
-        gcs[chan-MAVLINK_COMM_0].send_power_status();
+        // send extended status only once vehicle has been initialised
+        // to avoid unnecessary errors being reported to user
+        if (ap.initialised) {
+            CHECK_PAYLOAD_SIZE(SYS_STATUS);
+            send_extended_status1(chan);
+            CHECK_PAYLOAD_SIZE(POWER_STATUS);
+            gcs[chan-MAVLINK_COMM_0].send_power_status();
+        }
         break;
 
     case MSG_EXTENDED_STATUS2:
