@@ -11,10 +11,6 @@
  # define EKF_CHECK_ITERATIONS_MAX          10      // 1 second (ie. 10 iterations at 10hz) of bad variances signals a failure
 #endif
 
-#ifndef EKF_CHECK_COMPASS_INAV_CONVERSION
- # define EKF_CHECK_COMPASS_INAV_CONVERSION 0.0075f // converts the inertial nav's acceleration corrections to a form that is comparable to the ekf variance
-#endif
-
 #ifndef EKF_CHECK_WARNING_TIME
  # define EKF_CHECK_WARNING_TIME            (30*1000)   // warning text messages are sent to ground no more than every 30 seconds
 #endif
