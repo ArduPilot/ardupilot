@@ -278,7 +278,7 @@ AP_Mount::update_mount_type()
     mount_axis_mask = 0;
     
     if (have_pan)
-        mount_axis_mask |= MASK_PAN;
+        mount_axis_mask |= MASK_YAW;
     if (have_tilt)
         mount_axis_mask |= MASK_TILT;
     if (have_roll)
