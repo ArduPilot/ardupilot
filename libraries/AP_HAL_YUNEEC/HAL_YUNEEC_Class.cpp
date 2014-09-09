@@ -18,7 +18,9 @@ static YUNEECUARTDriverInstance(USART2, 1);
 static YUNEECUARTDriverInstance(USART3, 2);
 
 static YUNEECSemaphore  		i2cSemaphore;
+static YUNEECSemaphore  		i2c2Semaphore;
 static YUNEECI2CDriver  		i2cDriver(&i2cSemaphore, &I2C1_DevStructure);
+static YUNEECI2CDriver  		i2c2Driver(&i2c2Semaphore, &I2C2_DevStructure);
 static YUNEECSPIDeviceManager 	spiDeviceManager;
 static YUNEECAnalogIn 			analogIn;
 static YUNEECStorage 			storageDriver;
@@ -36,6 +38,7 @@ HAL_YUNEEC::HAL_YUNEEC() :
         NULL,            /* no uartD */
         NULL,            /* no uartE */
         &i2cDriver,
+        &i2c2Driver,
         &spiDeviceManager,
         &analogIn,
         &storageDriver,
@@ -57,6 +60,8 @@ void HAL_YUNEEC::init(int argc,char* const argv[]) const {
     analogin->init(NULL);
     i2c->begin();
     i2c->setTimeout(100);
+    i2c2->begin();
+    i2c2->setTimeout(100);
     storage->init(NULL);
 }
 
