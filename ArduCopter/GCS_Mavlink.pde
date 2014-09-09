@@ -224,9 +224,10 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
     case AP_Terrain::TerrainStatusDisabled:
         break;
     case AP_Terrain::TerrainStatusUnhealthy:
-        control_sensors_present |= MAV_SYS_STATUS_TERRAIN;
-        control_sensors_enabled |= MAV_SYS_STATUS_TERRAIN;
-        break;
+        // To-Do: restore unhealthy terrain status reporting once terrain is used in copter
+        //control_sensors_present |= MAV_SYS_STATUS_TERRAIN;
+        //control_sensors_enabled |= MAV_SYS_STATUS_TERRAIN;
+        //break;
     case AP_Terrain::TerrainStatusOK:
         control_sensors_present |= MAV_SYS_STATUS_TERRAIN;
         control_sensors_enabled |= MAV_SYS_STATUS_TERRAIN;
