@@ -451,7 +451,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: LAND_REPOSITION
     // @DisplayName: Land repositioning
     // @Description: Enables user input during LAND mode, the landing phase of RTL, and auto mode landings.
-    // @Values: 0:No repositiong, 1:Repositioning
+    // @Values: 0:No repositioning, 1:Repositioning
     // @User: Advanced
     GSCALAR(land_repositioning, "LAND_REPOSITION",     LAND_REPOSITION_DEFAULT),
 
