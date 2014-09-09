@@ -10,7 +10,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] PROGMEM = {
     // @DisplayName: Angle Rate Roll-Pitch max
     // @Description: maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
     // @Units: Centi-Degrees/Sec
-    // @Range: 90000 250000
+    // @Range: 9000 36000
     // @Increment: 500
     // @User: Advanced
     AP_GROUPINFO("RATE_RP_MAX", 0, AC_AttitudeControl_Heli, _angle_rate_rp_max, AC_ATTITUDE_CONTROL_RATE_RP_MAX_DEFAULT),
@@ -19,7 +19,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] PROGMEM = {
     // @DisplayName: Angle Rate Yaw max
     // @Description: maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
     // @Units: Centi-Degrees/Sec
-    // @Range: 90000 250000
+    // @Range: 4500 18000
     // @Increment: 500
     // @User: Advanced
     AP_GROUPINFO("RATE_Y_MAX",  1, AC_AttitudeControl_Heli, _angle_rate_y_max, AC_ATTITUDE_CONTROL_RATE_Y_MAX_DEFAULT),
@@ -37,8 +37,9 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] PROGMEM = {
     // @DisplayName: Acceleration Max for Roll/Pitch
     // @Description: Maximum acceleration in roll/pitch axis
     // @Units: Centi-Degrees/Sec/Sec
-    // @Range: 20000 100000
-    // @Increment: 100
+    // @Range: 0 180000
+    // @Increment: 1000
+    // @Values: 0:Disabled, 72000:Slow, 108000:Medium, 162000:Fast
     // @User: Advanced
     AP_GROUPINFO("ACCEL_RP_MAX", 3, AC_AttitudeControl_Heli, _accel_rp_max, AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT),
 
@@ -46,8 +47,9 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] PROGMEM = {
     // @DisplayName: Acceleration Max for Yaw
     // @Description: Maximum acceleration in yaw axis
     // @Units: Centi-Degrees/Sec/Sec
-    // @Range: 20000 100000
-    // @Increment: 100
+    // @Range: 0 72000
+    // @Values: 0:Disabled, 18000:Slow, 36000:Medium, 54000:Fast
+    // @Increment: 1000
     // @User: Advanced
     AP_GROUPINFO("ACCEL_Y_MAX",  4, AC_AttitudeControl_Heli, _accel_y_max, AC_ATTITUDE_CONTROL_ACCEL_Y_MAX_DEFAULT),
 
