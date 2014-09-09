@@ -67,7 +67,7 @@ private:
 
     // write buffer
     uint8_t *_writebuf;
-    const uint16_t _writebuf_size;
+    uint16_t _writebuf_size;
     const uint16_t _writebuf_chunk;
     volatile uint16_t _writebuf_head;
     volatile uint16_t _writebuf_tail;
