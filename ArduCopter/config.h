@@ -312,7 +312,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //  EKF Checker
 #ifndef EKFCHECK_THRESHOLD_DEFAULT
- # define EKFCHECK_THRESHOLD_DEFAULT    0.6f    // EKF checker's default compass and velocity variance above which the EKF's horizontal position will be considered bad
+ # define EKFCHECK_THRESHOLD_DEFAULT    0.8f    // EKF checker's default compass and velocity variance above which the EKF's horizontal position will be considered bad
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
