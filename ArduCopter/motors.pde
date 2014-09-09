@@ -531,6 +531,16 @@ static bool arm_checks(bool display_failure)
         return true;
     }
 
+    // check throttle is down
+    if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_RC)) {
+        if (g.rc_3.control_in > 0) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Thr too high"));
+            }
+            return false;
+        }
+    }
+
     // check Baro & inav alt are within 1m
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_BARO)) {
         if(fabs(inertial_nav.get_altitude() - baro_alt) > 100) {
