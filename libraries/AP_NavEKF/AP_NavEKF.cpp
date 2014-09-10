@@ -3557,13 +3557,13 @@ bool NavEKF::getLLH(struct Location &loc) const
 }
 
 // return data for debugging optical flow fusion
-void NavEKF::getFlowDebug(float &scaleFactor, float &obsX, float &obsY, float &innovX, float &innovY, float &gndPos, uint8_t &quality) const
+void NavEKF::getFlowDebug(float &scaleFactor, float &gndPos, float &flowX, float &flowY, float &omegaX, float &omegaY, uint8_t &quality) const
 {
     scaleFactor = flowStates[0];
-    obsX = flowRadXY[0];
-    obsY = flowRadXY[1];
-    innovX = omegaAcrossFlowTime.x;//innovOptFlow[0];
-    innovY = omegaAcrossFlowTime.y;//innovOptFlow[1];
+    flowX = flowRadXY[0];
+    flowY = flowRadXY[1];
+    omegaX = omegaAcrossFlowTime.x;;
+    omegaY = omegaAcrossFlowTime.y;;
     gndPos = flowStates[1];
     quality = flowQuality;
 }
