@@ -1188,7 +1188,7 @@ static void one_hz_loop()
 #endif
 }
 
-// called at 100hz but data from sensor only arrives at 20 Hz
+// called at 100hz but data from sensor only arrives at 10 Hz
 #if OPTFLOW == ENABLED
 static void update_optical_flow(void)
 {
@@ -1205,14 +1205,15 @@ static void update_optical_flow(void)
     // write to log and send to EKF if new data has arrived
     if (optflow.last_update() != last_of_update) {
         last_of_update = optflow.last_update();
-        uint8_t quality = optflow.quality();
+        uint8_t flowQuality = optflow.quality();
         Vector2f rawFlowRates = optflow.velocity();
         Vector2i temp = optflow.raw();
         Vector2f rawGyroRates;
         rawGyroRates.x = 0.001f * float(temp.x);
         rawGyroRates.y = 0.001f * float(temp.y);
-        float ground_distance_m = optflow.ground_distance_m();
-        ahrs.writeOptFlowMeas(quality, rawFlowRates, rawGyroRates, ground_distance_m, last_of_update);
+        // Use range from a separate range finder if available, not the PX4Flows built in sensor which is ineffective
+        float ground_distance_m = 0.01f*float(sonar_alt);
+        ahrs.writeOptFlowMeas(flowQuality, rawFlowRates, rawGyroRates, last_of_update, sonar_alt_health, ground_distance_m);
          if (g.log_bitmask & MASK_LOG_OPTFLOW) {
             Log_Write_Optflow();
         }
