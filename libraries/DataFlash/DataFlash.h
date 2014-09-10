@@ -350,10 +350,10 @@ struct PACKED log_EKF4 {
 struct PACKED log_EKF5 {
     LOG_PACKET_HEADER;
     uint32_t time_ms;
-    float obsX;
-    float obsY;
-    float innovX;
-    float innovY;
+    float flowX;
+    float flowY;
+    float omegaX;
+    float omegaY;
     float gndPos;
     uint8_t scaler;
     uint8_t quality;
@@ -528,7 +528,7 @@ struct PACKED log_Esc {
     { LOG_ESC8_MSG, sizeof(log_Esc), \
       "ESC8",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
     { LOG_EKF5_MSG, sizeof(log_EKF5), \
-      "EKF5","IfffffBB","TimeMS,FX,FY,IFX,IFY,GP,SF,Q" }
+      "EKF5","IfffffBB","TimeMS,flowX,flowY,omegaX,omegaY,gndPos,fScaler,flowQual" }
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 #define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_EXTRA_STRUCTURES
