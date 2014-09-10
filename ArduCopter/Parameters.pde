@@ -608,7 +608,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: RATE_RLL_P
     // @DisplayName: Roll axis rate controller P gain
     // @Description: Roll axis rate controller P gain.  Converts the difference between desired roll rate and actual roll rate into a motor speed output
-    // @Range: 0.08 0.20
+    // @Range: 0.08 0.25
     // @Increment: 0.005
     // @User: Standard
 
@@ -642,7 +642,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: RATE_PIT_P
     // @DisplayName: Pitch axis rate controller P gain
     // @Description: Pitch axis rate controller P gain.  Converts the difference between desired pitch rate and actual pitch rate into a motor speed output
-    // @Range: 0.08 0.20
+    // @Range: 0.08 0.25
     // @Increment: 0.005
     // @User: Standard
 
@@ -676,14 +676,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: RATE_YAW_P
     // @DisplayName: Yaw axis rate controller P gain
     // @Description: Yaw axis rate controller P gain.  Converts the difference between desired yaw rate and actual yaw rate into a motor speed output
-    // @Range: 0.150 0.250
+    // @Range: 0.150 0.50
     // @Increment: 0.005
     // @User: Standard
 
     // @Param: RATE_YAW_I
     // @DisplayName: Yaw axis rate controller I gain
     // @Description: Yaw axis rate controller I gain.  Corrects long-term difference in desired yaw rate vs actual yaw rate
-    // @Range: 0.010 0.020
+    // @Range: 0.010 0.05
     // @Increment: 0.01
     // @User: Standard
 
