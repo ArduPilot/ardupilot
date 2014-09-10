@@ -223,6 +223,10 @@
  # define SONAR_TIMEOUT_MS  1000            // desired sonar alt will reset to current sonar alt after this many milliseconds without a good sonar alt
 #endif
 
+#ifndef SONAR_TILT_CORRECTION               // by disable tilt correction for use of range finder data by EKF
+ # define SONAR_TILT_CORRECTION DISABLED
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // Channel 7 and 8 default options
 //
