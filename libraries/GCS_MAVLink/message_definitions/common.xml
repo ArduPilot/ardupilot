@@ -2449,11 +2449,11 @@
          </message>
         <message id="147" name="BATTERY_STATUS">
             <description>Battery information</description>
-            <field type="uint8_t" name="id">Battery ID</field>
-            <field type="uint8_t" name="function" enum="MAV_BATTERY_FUNCTION">Function of the battery</field>
-            <field type="uint8_t" name="type" enum="MAV_BATTERY_TYPE">Type (chemistry) of the battery</field>
-            <field type="int16_t" name="temperature">Temperature of the battery in centi-degrees celsius. INT16_MAX for unknown temperature.</field>
-            <field type="uint16_t[10]" name="voltages">Battery voltage of cells, in millivolts (1 = 1 millivolt)</field>
+            <field type="uint8_t" name="battery_id">Battery ID</field>
+            <field type="uint8_t" name="battery_function" enum="MAV_BATTERY_FUNCTION">Function of the battery</field>
+            <field type="uint8_t" name="battery_type" enum="MAV_BATTERY_TYPE">Type (chemistry) of the battery</field>
+            <field type="int16_t" name="battery_temperature">Temperature of the battery in centi-degrees celsius. INT16_MAX for unknown temperature.</field>
+            <field type="uint16_t[10]" name="cell_voltages">Battery voltage of cells, in millivolts (1 = 1 millivolt)</field>
             <field type="int16_t" name="current_battery">Battery current, in 10*milliamperes (1 = 10 milliampere), -1: autopilot does not measure the current</field>
             <field type="int32_t" name="current_consumed">Consumed charge, in milliampere hours (1 = 1 mAh), -1: autopilot does not provide mAh consumption estimate</field>
             <field type="int32_t" name="energy_consumed">Consumed energy, in 100*Joules (intergrated U*I*dt)  (1 = 100 Joule), -1: autopilot does not provide energy consumption estimate</field>
