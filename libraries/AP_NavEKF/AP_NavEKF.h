@@ -160,7 +160,7 @@ public:
     // rawGyroRates are the sensor phsyical rotation rates measured by the internal gyro
     // rawSonarRange is the  range in metres measured by the px4flow sensor
     // msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
-    void  writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, float &rawSonarRange, uint32_t &msecFlowMeas);
+    void  writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, uint8_t &rangeHealth, float &rawSonarRange);
 
     // return data for debugging optical flow fusion
     void getFlowDebug(float &scaleFactor, float &obsX, float &obsY, float &innovX, float &innovY, float &gndPos, uint8_t &quality) const;
@@ -347,7 +347,7 @@ private:
     void RecallOmega(Vector3f &omegaAvg, uint32_t msecStart, uint32_t msecEnd);
 
     // Estimate optical flow focal length scale factor and terrain offset using a 2-state EKF
-    void OpticalFlowEKF();
+    void RunAuxiliaryEKF();
 
     // fuse optical flow measurements into the main filter
     void FuseOptFlow();
@@ -585,6 +585,7 @@ private:
     uint8_t flowUpdateCount;        // count of the number of minor state corrections using optical flow data
     uint8_t flowUpdateCountMax;     // limit on the number of minor state corrections using optical flow data
     float flowUpdateCountMaxInv;    // floating point inverse of flowUpdateCountMax
+    bool newDataRng;                // true when new valid range finder data has arrived.
 
     // states held by optical flow fusion across time steps
     // optical flow X,Y motion compensated rate measurements are fused across two time steps

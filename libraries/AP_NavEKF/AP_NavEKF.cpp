@@ -921,13 +921,15 @@ void NavEKF::SelectFlowFusion()
         // indicate that flow fusion has been performed. This is used for load spreading.
         flowFusePerformed = true;
     } else if (flow_state.obsIndex == 2) {
-        // Estimate the focal length scale factor (runs a two state EKF)
-        OpticalFlowEKF();
+        // Estimate the focal length scale factor and terrain offset (runs a two state EKF)
+        RunAuxiliaryEKF();
         // increment the index so that no further flow fusion is performed using this measurement
         flow_state.obsIndex = 3;
         // clear the flag indicating that flow fusion has been performed. The 2-state fusion is relatively computationally
         // cheap and can be perfomred on the same prediction cycle with subsequent fusion steps
         flowFusePerformed = false;
+        // reset the flag to indicate that no new range finder data is available for fusion
+        newDataRng = false;
     }
     // Apply corrections to quaternion, position and velocity states across several time steps to reduce 10Hz pulsing in the output
     if (flowUpdateCount < flowUpdateCountMax) {
@@ -2503,7 +2505,7 @@ void NavEKF::FuseMagnetometer()
 Estimation of optical flow sensor focal length scale factor and terrain offset using a two state EKF
 This fiter requires optical flow rates that are not motion compensated
 */
-void NavEKF::OpticalFlowEKF()
+void NavEKF::RunAuxiliaryEKF()
 {
     // start performance timer
     perf_begin(_perf_OpticalFlowEKF);
@@ -3937,7 +3939,7 @@ void NavEKF::readAirSpdData()
 
 // write the raw optical flow measurements
 // this needs to be called externally.
-void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, float &rawSonarRange, uint32_t &msecFlowMeas)
+void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, uint8_t &rangeHealth, float &rawSonarRange)
 {
     // The raw measurements need to be optical flow rates in radians/second averaged across the time since the last update
     // The PX4Flow sensor outputs flow rates with the following axis and sign conventions:
@@ -3973,6 +3975,13 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
         newDataFlow = true;
     } else {
         newDataFlow = false;
+    }
+    // Use range finder if 3 or more consecutive good samples. This reduces likelihood of using bad data.
+    if (rangeHealth >= 3) {
+        rngMea = rawSonarRange;
+        newDataRng = true;
+    } else {
+        newDataRng = false;
     }
 }
 
@@ -4216,6 +4225,7 @@ void NavEKF::ZeroVariables()
     gpsPosGlitchOffsetNE.zero();
     // optical flow variables
     newDataFlow = false;
+    newDataRng  = false;
     flowFusePerformed = false;
     fuseOptFlowData = false;
     flowMeaTime_ms = imuSampleTime_ms;
