@@ -1,5 +1,17 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.2-rc8 11-Sep-2014
+Changes from 3.2-rc7
+1) EKF reduced ripple to resolve copter motor pulsing
+2) Default Param changes:
+    a) AltHold Rate P reduced from 6 to 5
+    b) AltHold Accel P reduced from 0.75 to 0.5, I from 1.5 to 1.0
+    c) EKF check threshold increased from 0.6 to 0.8 to reduce false positives
+3) sensor health flags sent to GCS only after initialisation to remove false alerts 
+4) suppress bad terrain data alerts
+5) Bug Fix:
+    a)PX4 dataflash RAM useage reduced to 8k so it works again  
+------------------------------------------------------------------
 ArduCopter 3.2-rc7 04-Sep-2014
 Changes from 3.2-rc6
 1) Safety Items:
