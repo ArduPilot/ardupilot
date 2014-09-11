@@ -90,10 +90,10 @@ void LinuxStorage::_storage_open(void)
 void LinuxStorage::_mark_dirty(uint16_t loc, uint16_t length)
 {
     uint16_t end = loc + length;
-    while (loc < end) {
-        uint8_t line = (loc >> LINUX_STORAGE_LINE_SHIFT);
-        _dirty_mask |= 1 << line;
-        loc += LINUX_STORAGE_LINE_SIZE;
+    for (uint8_t line=loc>>LINUX_STORAGE_LINE_SHIFT;
+         line <= end>>LINUX_STORAGE_LINE_SHIFT;
+         line++) {
+        _dirty_mask |= 1U << line;
     }
 }
 
