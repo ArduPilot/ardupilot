@@ -177,11 +177,11 @@ void VRBRAINStorage::_storage_open(void)
 void VRBRAINStorage::_mark_dirty(uint16_t loc, uint16_t length)
 {
 	uint16_t end = loc + length;
-	while (loc < end) {
-		uint8_t line = (loc >> VRBRAIN_STORAGE_LINE_SHIFT);
-		_dirty_mask |= 1 << line;
-		loc += VRBRAIN_STORAGE_LINE_SIZE;
-	}
+        for (uint8_t line=loc>>VRBRAIN_STORAGE_LINE_SHIFT;
+             line <= end>>VRBRAIN_STORAGE_LINE_SHIFT;
+             line++) {
+            _dirty_mask |= 1U << line;
+        }
 }
 
 void VRBRAINStorage::read_block(void *dst, uint16_t loc, size_t n)
