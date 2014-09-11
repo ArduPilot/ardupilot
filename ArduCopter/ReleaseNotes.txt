@@ -1,5 +1,9 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.2-rc9 11-Sep-2014
+Changes from 3.2-rc8
+1) FRAM bug fix that could stop Mission or Parameter changes from being saved (Pixhawk, VRBrain only)
+------------------------------------------------------------------
 ArduCopter 3.2-rc8 11-Sep-2014
 Changes from 3.2-rc7
 1) EKF reduced ripple to resolve copter motor pulsing
