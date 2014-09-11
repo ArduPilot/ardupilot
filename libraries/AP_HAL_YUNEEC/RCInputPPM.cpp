@@ -8,9 +8,9 @@ using namespace YUNEEC;
 extern const AP_HAL::HAL& hal;
 
 /* private variables to communicate with input capture isr */
-volatile uint16_t YUNEECRCInput::_pulse_capt[YUNEEC_RC_INPUT_NUM_CHANNELS] = {0};
-volatile uint8_t  YUNEECRCInput::_valid_channels = 0;
-volatile bool YUNEECRCInput::_new_input = false;
+volatile uint16_t YUNEECRCInputPPM::_pulse_capt[YUNEEC_RC_INPUT_NUM_CHANNELS] = {0};
+volatile uint8_t  YUNEECRCInputPPM::_valid_channels = 0;
+volatile bool YUNEECRCInputPPM::_new_input = false;
 
 extern "C"
 {
@@ -33,7 +33,8 @@ extern "C"
 		}
 	}
 }
-void YUNEECRCInput::init(void* machtnichts) {
+
+void YUNEECRCInputPPM::init(void* machtnichts) {
 	GPIO_InitTypeDef GPIO_InitStructure;
 	NVIC_InitTypeDef NVIC_InitStructure;
 	TIM_ICInitTypeDef TIM_ICInitStructure;
@@ -94,11 +95,11 @@ void YUNEECRCInput::init(void* machtnichts) {
 	TIM_ITConfig(TIM3, TIM_IT_CC4, ENABLE);
 }
 
-bool YUNEECRCInput::new_input() {
+bool YUNEECRCInputPPM::new_input() {
     return _new_input;
 }
 
-uint8_t YUNEECRCInput::num_channels() {
+uint8_t YUNEECRCInputPPM::num_channels() {
     return _valid_channels;
 }
 
@@ -109,7 +110,7 @@ static inline uint16_t constrain_pulse(uint16_t p) {
     return p;
 }
 
-uint16_t YUNEECRCInput::read(uint8_t ch) {
+uint16_t YUNEECRCInputPPM::read(uint8_t ch) {
     if (ch >= YUNEEC_RC_INPUT_NUM_CHANNELS) return 0;
 
     NVIC_DisableIRQ(TIM3_IRQn);
@@ -124,7 +125,7 @@ uint16_t YUNEECRCInput::read(uint8_t ch) {
     return (over == 0) ? pulse : over;
 }
 
-uint8_t YUNEECRCInput::read(uint16_t* periods, uint8_t len) {
+uint8_t YUNEECRCInputPPM::read(uint16_t* periods, uint8_t len) {
     /* constrain len */
     if (len > YUNEEC_RC_INPUT_NUM_CHANNELS)
     	len = YUNEEC_RC_INPUT_NUM_CHANNELS;
@@ -148,7 +149,7 @@ uint8_t YUNEECRCInput::read(uint16_t* periods, uint8_t len) {
     return _valid_channels;
 }
 
-bool YUNEECRCInput::set_overrides(int16_t *overrides, uint8_t len) {
+bool YUNEECRCInputPPM::set_overrides(int16_t *overrides, uint8_t len) {
     bool res = false;
     for (int i = 0; i < len; i++) {
         res |= set_override(i, overrides[i]);
@@ -156,7 +157,7 @@ bool YUNEECRCInput::set_overrides(int16_t *overrides, uint8_t len) {
     return res;
 }
 
-bool YUNEECRCInput::set_override(uint8_t channel, int16_t override) {
+bool YUNEECRCInputPPM::set_override(uint8_t channel, int16_t override) {
     if (override < 0) return false; /* -1: no change. */
     if (channel < YUNEEC_RC_INPUT_NUM_CHANNELS) {
         _override[channel] = override;
@@ -168,13 +169,13 @@ bool YUNEECRCInput::set_override(uint8_t channel, int16_t override) {
     return false;
 }
 
-void YUNEECRCInput::clear_overrides() {
+void YUNEECRCInputPPM::clear_overrides() {
     for (int i = 0; i < YUNEEC_RC_INPUT_NUM_CHANNELS; i++) {
         _override[i] = 0;
     }
 }
 
-void YUNEECRCInput::_timer_capt_cb(void) {
+void YUNEECRCInputPPM::_timer_capt_cb(void) {
 	uint16_t current_count = TIM3->CCR4;
 	static uint16_t previous_count;
 	static uint8_t  channel_ctr;
@@ -206,7 +207,7 @@ void YUNEECRCInput::_timer_capt_cb(void) {
 	previous_count = current_count;
 }
 
-void YUNEECRCInput::_attachInterrupt(voidFuncPtr callback) {
+void YUNEECRCInputPPM::_attachInterrupt(voidFuncPtr callback) {
 	if (callback != NULL)
 		timer3_callback = callback;
 }

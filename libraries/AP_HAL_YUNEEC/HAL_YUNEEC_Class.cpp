@@ -25,16 +25,16 @@ static YUNEECSPIDeviceManager 	spiDeviceManager;
 static YUNEECAnalogIn 			analogIn;
 static YUNEECStorage 			storageDriver;
 static YUNEECGPIO 				gpioDriver;
-static YUNEECRCInput 			rcinDriver;
+static YUNEECRCInputDSM 		rcinDriver;
 static YUNEECRCOutput 			rcoutDriver;
 static YUNEECScheduler 			schedulerInstance;
 static YUNEECUtil 				utilInstance;
 
 HAL_YUNEEC::HAL_YUNEEC() :
     AP_HAL::HAL(
-        &USART1Driver,
-        &USART3Driver,
         &USART2Driver,
+        &USART3Driver,
+        &USART1Driver,
         NULL,            /* no uartD */
         NULL,            /* no uartE */
         &i2cDriver,
@@ -42,7 +42,7 @@ HAL_YUNEEC::HAL_YUNEEC() :
         &spiDeviceManager,
         &analogIn,
         &storageDriver,
-        &USART1Driver,
+        &USART2Driver,
         &gpioDriver,
         &rcinDriver,
         &rcoutDriver,
@@ -57,6 +57,7 @@ void HAL_YUNEEC::init(int argc,char* const argv[]) const {
     scheduler->init(NULL);
     uartA->begin(115200);
     rcout->init(NULL);
+    rcin->init(NULL);
     analogin->init(NULL);
     i2c->begin();
     i2c->setTimeout(100);

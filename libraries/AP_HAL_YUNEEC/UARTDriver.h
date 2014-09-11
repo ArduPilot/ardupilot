@@ -55,7 +55,7 @@ private:
 		const uint8_t 	rx_pinSource;
 		const uint8_t 	tx_pinSource;
 		uint32_t		baudrate;
-	} _usart_info;
+	} usart_info;
 
     // Instance Variables
     bool 				_initialized;

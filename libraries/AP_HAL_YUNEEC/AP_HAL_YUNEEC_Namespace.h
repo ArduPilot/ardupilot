@@ -19,11 +19,6 @@
 #ifndef __AP_HAL_YUNEEC_NAMESPACE_H__
 #define __AP_HAL_YUNEEC_NAMESPACE_H__
 
-/* While not strictly required, names inside the YUNEEC namespace are prefixed
- * AP_HAL_YUNEEC_NS for clarity. (Some of our users aren't familiar with all of the
- * C++ namespace rules.)
- */
-
 namespace YUNEEC {
     class YUNEECUARTDriver;
     class YUNEECI2CDriver;
@@ -34,7 +29,8 @@ namespace YUNEEC {
     class YUNEECStorage;
     class YUNEECGPIO;
     class YUNEECDigitalSource;
-    class YUNEECRCInput;
+    class YUNEECRCInputPPM;
+    class YUNEECRCInputDSM;
     class YUNEECRCOutput;
     class YUNEECSemaphore;
     class YUNEECScheduler;
