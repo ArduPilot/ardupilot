@@ -18,6 +18,7 @@
 #include <uORB/topics/system_power.h>
 #include <GCS_MAVLink.h>
 #include <errno.h>
+#include <AP_Vehicle.h>
 
 #define ANLOGIN_DEBUGGING 0
 
@@ -57,6 +58,11 @@ static const struct {
     { 10, 3.3f/4096 },
     { 11, 3.3f/4096 },
 #elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    {  1, 3.3f/4096 },
+    {  2, 3.3f/4096 },
+    {  3, 3.3f/4096 },
+#endif
     { 10, 3.3f/4096 },
 #elif defined(CONFIG_ARCH_BOARD_VRHERO_V10)
     { 10, 3.3f/4096 },
