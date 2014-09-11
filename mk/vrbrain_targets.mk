@@ -30,7 +30,7 @@ endif
 
 
 
-
+RC_INPUTS_TYPE :=
 
 # we have different config files for vrbrain_v40, vrbrain_v45, vrbrain_v50, vrbrain_v51, vrubrain_v51 and vrhero_v10
 VRBRAIN_MK_DIR=$(SRCROOT)/$(MK_DIR)/VRBRAIN
@@ -40,6 +40,10 @@ VRBRAIN_VB50_CONFIG_FILE=config_vrbrain-v50_APM.mk
 VRBRAIN_VB51_CONFIG_FILE=config_vrbrain-v51_APM.mk
 VRBRAIN_VU51_CONFIG_FILE=config_vrubrain-v51_APM.mk
 VRBRAIN_VH10_CONFIG_FILE=config_vrhero-v10_APM.mk
+
+ifneq ($(findstring PWM, $(RC_INPUTS_TYPE)),)
+EXTRAFLAGS += "-DCONFIG_RC_INPUTS=RC_INPUT_PWM "
+endif
 
 SKETCHFLAGS=$(SKETCHLIBINCLUDES) -I$(PWD) -DARDUPILOT_BUILD -DTESTS_MATHLIB_DISABLE -DCONFIG_HAL_BOARD=HAL_BOARD_VRBRAIN -DSKETCHNAME="\\\"$(SKETCH)\\\"" -DSKETCH_MAIN=ArduPilot_main -DAPM_BUILD_DIRECTORY=APM_BUILD_$(SKETCH)
 
