@@ -182,16 +182,6 @@ static void init_arm_motors()
     // set hover throttle
     motors.set_mid_throttle(g.throttle_mid);
 
-    // Cancel arming if throttle is raised too high so that copter does not suddenly take off
-    read_radio();
-    if (g.rc_3.control_in > g.throttle_cruise && g.throttle_cruise > 100) {
-        motors.output_min();
-        failsafe_enable();
-        AP_Notify::flags.armed = false;
-        AP_Notify::flags.arming_failed = false;
-        return;
-    }
-
 #if SPRAYER == ENABLED
     // turn off sprayer's test if on
     sprayer.test_pump(false);
