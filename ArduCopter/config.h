@@ -694,7 +694,7 @@
  # define THROTTLE_ACCEL_D      0.0f
 #endif
 #ifndef THROTTLE_ACCEL_IMAX
- # define THROTTLE_ACCEL_IMAX   500
+ # define THROTTLE_ACCEL_IMAX   800
 #endif
 
 // default maximum vertical velocity and acceleration the pilot may request
