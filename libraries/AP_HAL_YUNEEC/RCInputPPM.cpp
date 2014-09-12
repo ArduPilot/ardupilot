@@ -17,14 +17,14 @@ extern "C"
 	static voidFuncPtr timer3_callback = NULL;
 
 	void TIM3_IRQHandler(void){
-		if (TIM_GetITStatus(TIM3, TIM_IT_CC4) == SET)
+		if ((TIM3->SR & TIM_IT_CC4) == SET)
 		{
 			/* Clear TIM2 Capture compare interrupt pending bit */
-			TIM_ClearITPendingBit(TIM3, TIM_IT_CC4);
+			TIM3->SR &= (uint16_t)~TIM_IT_CC4;
 
-		    if (TIM_GetFlagStatus(TIM3, TIM_FLAG_CC4OF) == SET)
+		    if ((TIM3->SR & TIM_FLAG_CC4OF) == SET)
 		    {
-		    	TIM_ClearFlag(TIM3, TIM_FLAG_CC4OF);
+		    	TIM3->SR &= ~TIM_FLAG_CC4OF;
 				return;
 		    }
 
@@ -86,13 +86,13 @@ void YUNEECRCInputPPM::init(void* machtnichts) {
 
 	TIM_ICInit(TIM3, &TIM_ICInitStructure);
 
-	/* TIM enable counter */
-	TIM_Cmd(TIM3, ENABLE);
+    /* Enable the TIM Counter */
+    TIM3->CR1 |= TIM_CR1_CEN;
 
 	_attachInterrupt(_timer_capt_cb);
 
 	/* Enable the CC4 Interrupt Request */
-	TIM_ITConfig(TIM3, TIM_IT_CC4, ENABLE);
+	TIM3->DIER |= TIM_IT_CC4;
 }
 
 bool YUNEECRCInputPPM::new_input() {

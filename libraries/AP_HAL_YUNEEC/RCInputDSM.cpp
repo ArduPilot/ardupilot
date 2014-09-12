@@ -365,11 +365,11 @@ void YUNEECRCInputDSM::_timer12_config() {
 	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
 	TIM_TimeBaseInit(TIM12, &TIM_TimeBaseStructure);
 
-	/* TIM enable counter */
-	TIM_Cmd(TIM12, ENABLE);
+    /* Enable the TIM Counter */
+    TIM12->CR1 |= TIM_CR1_CEN;
 
 	/* Enable the CC4 Interrupt Request */
-	TIM_ITConfig(TIM12, TIM_IT_Update, ENABLE);
+    TIM12->DIER |= TIM_IT_Update;
 }
 
 void YUNEECRCInputDSM::_attachInterrupt(voidFuncPtr callback) {

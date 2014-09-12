@@ -7,6 +7,11 @@
 
 #include <AP_HAL_YUNEEC.h>
 
+
+#define USART_IT_RXNE_INT_EN	(uint32_t)(1 << 5)
+#define USART_IT_TXE_INT_EN		(uint32_t)(1 << 7)
+
+
 class YUNEEC::YUNEECUARTDriver : public AP_HAL::UARTDriver {
 public:
     YUNEECUARTDriver(
@@ -55,7 +60,7 @@ private:
 		const uint8_t 	rx_pinSource;
 		const uint8_t 	tx_pinSource;
 		uint32_t		baudrate;
-	} usart_info;
+	} _usart_info;
 
     // Instance Variables
     bool 				_initialized;
@@ -133,7 +138,7 @@ extern "C" {																														\
 				} else {                                                        													\
 					/* there are no more bytes to send, disable the interrupt */ 													\
 					if (__YUNEECUARTDriver__txBuffer[portNum].head == __YUNEECUARTDriver__txBuffer[portNum].tail) 					\
-						USART_ITConfig(USARTx, USART_IT_TXE, DISABLE);                           									\
+						USARTx->CR1 &= ~USART_IT_TXE_INT_EN;                           												\
 				}  																													\
 			}																														\
 	}																																\

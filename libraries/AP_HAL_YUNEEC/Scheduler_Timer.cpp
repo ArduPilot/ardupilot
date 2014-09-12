@@ -55,8 +55,9 @@ void YUNEECTimer::init() {
 	TIM_TimeBaseStructure.TIM_Period = 0;
 	TIM_TimeBaseInit(TIM7, &TIM_TimeBaseStructure);
 
-	TIM_ARRPreloadConfig(TIM6, DISABLE);
-	TIM_ARRPreloadConfig(TIM7, DISABLE);
+    /* Reset the ARR Preload Bit */
+    TIM6->CR1 &= (uint16_t)~((uint16_t)TIM_CR1_ARPE);
+    TIM7->CR1 &= (uint16_t)~((uint16_t)TIM_CR1_ARPE);
 
 	// Configure two bits for preemption priority
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
@@ -69,12 +70,12 @@ void YUNEECTimer::init() {
 	NVIC_Init(&NVIC_InitStructure);
 
 	// TIM Interrupts enable
-	TIM_ITConfig(TIM6, TIM_IT_Update, ENABLE);
-	TIM_ITConfig(TIM7, TIM_IT_Update, DISABLE);
+    TIM6->DIER |= TIM_IT_Update;
+    TIM7->DIER &= (uint16_t)~TIM_IT_Update;
 
 	// TIM6 enable counter
-	TIM_Cmd(TIM6, ENABLE);
-	TIM_Cmd(TIM7, ENABLE);
+    TIM6->CR1 |= TIM_CR1_CEN;
+    TIM7->CR1 |= TIM_CR1_CEN;
 
 	/* Configure the SysTick Handler Priority: Preemption priority and sub-priority */
 	SysTick_Config(SystemCoreClock / 1000);
