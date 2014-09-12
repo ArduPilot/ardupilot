@@ -331,6 +331,7 @@ enum FlipState {
 #define CONFIG_IMU_PX4     4
 #define CONFIG_IMU_FLYMAPLE 5
 #define CONFIG_IMU_VRBRAIN 6
+#define CONFIG_IMU_MPU6050 7
 
 #define AP_BARO_BMP085    1
 #define AP_BARO_MS5611    2

@@ -64,7 +64,7 @@ extern const AP_HAL::HAL& hal;
 #elif defined(CONFIG_ARCH_BOARD_VRHERO_V10)
  #define ARSPD_DEFAULT_PIN 0
 #elif CONFIG_HAL_BOARD == HAL_BOARD_YUNEEC
- #define ARSPD_DEFAULT_PIN 16
+ #define ARSPD_DEFAULT_PIN 0
 #endif
 #else
  #define ARSPD_DEFAULT_PIN 0

@@ -22,7 +22,7 @@
 // ADXL345 Accelerometer http://www.analog.com/static/imported-files/data_sheets/ADXL345.pdf
 
 #include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE || CONFIG_HAL_BOARD == HAL_BOARD_YUNEEC
+#if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
 
 #include "AP_InertialSensor_Flymaple.h"
 

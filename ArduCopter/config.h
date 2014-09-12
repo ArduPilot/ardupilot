@@ -96,12 +96,14 @@
  # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
  # define MAGNETOMETER ENABLED
 #elif CONFIG_HAL_BOARD == HAL_BOARD_YUNEEC
- # define CONFIG_IMU_TYPE CONFIG_IMU_FLYMAPLE
- # define CONFIG_BARO AP_BARO_BMP085
- # define CONFIG_COMPASS  AP_COMPASS_HMC5843
- # define CONFIG_ADC        DISABLED
- # define MAGNETOMETER ENABLED
- # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
+ # define PARACHUTE 			DISABLED
+ # define CAMERA				DISABLED
+ # define MOUNT					DISABLED
+ # define CONFIG_IMU_TYPE 		CONFIG_IMU_MPU6050
+ # define CONFIG_BARO          	AP_BARO_MS5611
+ # define CONFIG_MS5611_SERIAL 	AP_BARO_MS5611_I2C
+ # define MAGNETOMETER 			ENABLED
+ # define CONFIG_SONAR_SOURCE 	SONAR_SOURCE_ANALOG_PIN
 #endif
 
 #if HAL_CPU_CLASS < HAL_CPU_CLASS_75 || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
@@ -110,7 +112,7 @@
  # define MAIN_LOOP_SECONDS 0.01
  # define MAIN_LOOP_MICROS  10000
 #else
- // high power CPUs (Flymaple, PX4, Pixhawk, VRBrain)
+ // high power CPUs (Flymaple, PX4, Pixhawk, VRBrain, YUNEEC)
  # define MAIN_LOOP_RATE    400
  # define MAIN_LOOP_SECONDS 0.0025
  # define MAIN_LOOP_MICROS  2500
@@ -302,7 +304,7 @@
 #endif
 
 #ifndef BOARD_VOLTAGE_MIN
- # define BOARD_VOLTAGE_MIN             4.3f        // min board voltage in volts for pre-arm checks
+ # define BOARD_VOLTAGE_MIN             2.8f        // min board voltage in volts for pre-arm checks
 #endif
 
 #ifndef BOARD_VOLTAGE_MAX
