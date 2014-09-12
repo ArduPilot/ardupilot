@@ -808,7 +808,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: THR_ACCEL_IMAX
     // @DisplayName: Throttle acceleration controller I gain maximum
     // @Description: Throttle acceleration controller I gain maximum.  Constrains the maximum pwm that the I term will generate
-    // @Range: 0 500
+    // @Range: 0 1000
     // @Units: Percent*10
     // @User: Standard
 
