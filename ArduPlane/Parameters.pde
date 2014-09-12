@@ -286,7 +286,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: WP_RADIUS
     // @DisplayName: Waypoint Radius
-    // @Description: Defines the distance from a waypoint that when crossed indicates the waypoint has been completed. To avoid the aircraft looping around the waypoint in case it misses by more than the WP_RADIUS an additional check is made to see if the aircraft has crossed a "finish line" passing through the waypoint and perpendicular to the flight path from the previous waypoint. If that finish line is crossed then the waypoint is considered complete.
+    // @Description: Defines the maximum distance from a waypoint that when crossed indicates the waypoint may be complete. To avoid the aircraft looping around the waypoint in case it misses by more than the WP_RADIUS an additional check is made to see if the aircraft has crossed a "finish line" passing through the waypoint and perpendicular to the flight path from the previous waypoint. If that finish line is crossed then the waypoint is considered complete. Note that the navigation controller may decide to turn later than WP_RADIUS before a waypoint, based on how sharp the turn is and the speed of the aircraft. It is safe to set WP_RADIUS much larger than the usual turn radius of your aircaft and the navigation controller will work out when to turn. If you set WP_RADIUS too small then you will tend to overshoot the turns.
     // @Units: Meters
     // @Range: 1 32767
     // @Increment: 1
