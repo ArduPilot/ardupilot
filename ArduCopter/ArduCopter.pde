@@ -89,12 +89,12 @@
 #include <AP_Param.h>
 // AP_HAL
 #include <AP_HAL.h>
-#include <AP_HAL_AVR.h>
-#include <AP_HAL_AVR_SITL.h>
-#include <AP_HAL_PX4.h>
-#include <AP_HAL_VRBRAIN.h>
-#include <AP_HAL_FLYMAPLE.h>
-#include <AP_HAL_Linux.h>
+//#include <AP_HAL_AVR.h>
+//#include <AP_HAL_AVR_SITL.h>
+//#include <AP_HAL_PX4.h>
+//#include <AP_HAL_VRBRAIN.h>
+//#include <AP_HAL_FLYMAPLE.h>
+//#include <AP_HAL_Linux.h>
 #include <AP_HAL_YUNEEC.h>
 #include <AP_HAL_Empty.h>
 
@@ -129,7 +129,7 @@
 #include <AP_Buffer.h>          // APM FIFO Buffer
 #include <AP_Relay.h>           // APM relay
 #include <AP_ServoRelayEvents.h>
-#include <AP_Camera.h>          // Photo or video camera
+//#include <AP_Camera.h>          // Photo or video camera
 #include <AP_Mount.h>           // Camera/Antenna mount
 #include <AP_Airspeed.h>        // needed for AHRS build
 #include <AP_Vehicle.h>         // needed for AHRS build
@@ -315,7 +315,7 @@ static AP_Compass_HMC5843 compass;
 #elif HIL_MODE != HIL_MODE_DISABLED
 // sensor emulators
 static AP_ADC_HIL              adc;
-static AP_Baro_HIL      barometer;
+static AP_Baro_HIL      	   barometer;
 static AP_Compass_HIL          compass;
 static AP_InertialSensor_HIL   ins;
 

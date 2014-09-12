@@ -78,7 +78,7 @@ void YUNEECTimer::init() {
 
 	/* Configure the SysTick Handler Priority: Preemption priority and sub-priority */
 	SysTick_Config(SystemCoreClock / 1000);
-	NVIC_SetPriority(SysTick_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 0, 0));
+	NVIC_SetPriority(SysTick_IRQn, 0x0);
 }
 
 uint32_t YUNEECTimer::micros() {
