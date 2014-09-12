@@ -458,7 +458,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: EKF_CHECK_THRESH
     // @DisplayName: EKF and InertialNav check compass and velocity variance threshold
     // @Description: Allows setting the maximum acceptable compass and velocity variance (0 to disable check)
-    // @Values: 0:Disabled, 0.6:Default, 1.0:Relaxed
+    // @Values: 0:Disabled, 0.8:Default, 1.0:Relaxed
     // @User: Advanced
     GSCALAR(ekfcheck_thresh, "EKF_CHECK_THRESH",    EKFCHECK_THRESHOLD_DEFAULT),
 
