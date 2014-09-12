@@ -34,11 +34,18 @@ RC_INPUTS_TYPE :=
 
 # we have different config files for vrbrain_v40, vrbrain_v45, vrbrain_v50, vrbrain_v51, vrubrain_v51 and vrhero_v10
 VRBRAIN_MK_DIR=$(SRCROOT)/$(MK_DIR)/VRBRAIN
+
 VRBRAIN_VB40_CONFIG_FILE=config_vrbrain-v40_APM.mk
 VRBRAIN_VB45_CONFIG_FILE=config_vrbrain-v45_APM.mk
+
 VRBRAIN_VB50_CONFIG_FILE=config_vrbrain-v50_APM.mk
 VRBRAIN_VB51_CONFIG_FILE=config_vrbrain-v51_APM.mk
+
+VRBRAIN_VB51PRO_CONFIG_FILE=config_vrbrain-v51Pro_APM.mk
+
 VRBRAIN_VU51_CONFIG_FILE=config_vrubrain-v51_APM.mk
+
+
 VRBRAIN_VH10_CONFIG_FILE=config_vrhero-v10_APM.mk
 
 ifneq ($(findstring PWM, $(RC_INPUTS_TYPE)),)
@@ -104,6 +111,20 @@ vrbrain-v50: $(BUILDROOT)/make.flags $(VRBRAIN_ROOT)/Archives/vrbrain-v50.export
 	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v50_APM.bin $(SKETCH)-vrbrain-v50.bin
 	$(v) echo "VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrbrain-v50.vrx"
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 vrbrain-v51: $(BUILDROOT)/make.flags $(VRBRAIN_ROOT)/Archives/vrbrain-v51.export $(SKETCHCPP) module_mk
 	$(RULEHDR)
 	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB51_CONFIG_FILE)
@@ -117,6 +138,48 @@ vrbrain-v51: $(BUILDROOT)/make.flags $(VRBRAIN_ROOT)/Archives/vrbrain-v51.export
 	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v51_APM.hex $(SKETCH)-vrbrain-v51.hex
 	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v51_APM.bin $(SKETCH)-vrbrain-v51.bin
 	$(v) echo "VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrbrain-v51.vrx"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+vrbrain-v51Pro: $(BUILDROOT)/make.flags $(VRBRAIN_ROOT)/Archives/vrbrain-v51Pro.export $(SKETCHCPP) module_mk
+	$(RULEHDR)
+	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB51PRO_CONFIG_FILE)
+	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_VB51PRO_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
+	$(v) $(VRBRAIN_MAKE) vrbrain-v51Pro_APM
+	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB51PRO_CONFIG_FILE)
+	$(v) rm -f $(SKETCH)-vrbrain-v51Pro.vrx
+	$(v) rm -f $(SKETCH)-vrbrain-v51Pro.hex
+	$(v) rm -f $(SKETCH)-vrbrain-v51Pro.bin
+	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v51Pro_APM.vrx $(SKETCH)-vrbrain-v51Pro.vrx
+	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v51Pro_APM.hex $(SKETCH)-vrbrain-v51Pro.hex
+	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v51Pro_APM.bin $(SKETCH)-vrbrain-v51Pro.bin
+	$(v) echo "VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrbrain-v51Pro.vrx"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 vrubrain-v51: $(BUILDROOT)/make.flags $(VRBRAIN_ROOT)/Archives/vrubrain-v51.export $(SKETCHCPP) module_mk
 	$(RULEHDR)
@@ -132,6 +195,20 @@ vrubrain-v51: $(BUILDROOT)/make.flags $(VRBRAIN_ROOT)/Archives/vrubrain-v51.expo
 	$(v) cp $(VRBRAIN_ROOT)/Images/vrubrain-v51_APM.bin $(SKETCH)-vrubrain-v51.bin
 	$(v) echo "MICRO VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrubrain-v51.vrx"
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 vrhero-v10: $(BUILDROOT)/make.flags $(VRBRAIN_ROOT)/Archives/vrhero-v10.export $(SKETCHCPP) module_mk
 	$(RULEHDR)
 	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VH10_CONFIG_FILE)
@@ -146,10 +223,15 @@ vrhero-v10: $(BUILDROOT)/make.flags $(VRBRAIN_ROOT)/Archives/vrhero-v10.export $
 	$(v) cp $(VRBRAIN_ROOT)/Images/vrhero-v10_APM.bin $(SKETCH)-vrhero-v10.bin
 	$(v) echo "VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrhero-v10.vrx"
 
-#vrbrain: vrbrain-v40 vrbrain-v45 vrbrain-v50 vrbrain-v51 vrubrain-v51 vrhero-v10
-vrbrain: vrbrain-v45 vrbrain-v51 vrubrain-v51
+vrbrainStd: vrbrain-v45 vrbrain-v51 vrubrain-v51
 
-vrbrain-clean: clean vrbrain-build-clean vrbrain-archives-clean
+vrbrainPro: vrbrain-v51Pro
+
+
+vrbrain: vrbrainStd vrbrainPro
+
+#vrbrain-clean: clean vrbrain-build-clean vrbrain-archives-clean
+vrbrain-clean: clean vrbrain-build-clean
 
 vrbrain-build-clean:
 	$(v) /bin/rm -rf $(VRBRAIN_ROOT)/makefiles/build $(VRBRAIN_ROOT)/Build
@@ -165,6 +247,10 @@ vrbrain-v45-upload: vrbrain-v45
 	$(RULEHDR)
 	$(v) $(VRBRAIN_MAKE) vrbrain-v45_APM upload
 
+
+
+
+
 vrbrain-v50-upload: vrbrain-v50
 	$(RULEHDR)
 	$(v) $(VRBRAIN_MAKE) vrbrain-v50_APM upload
@@ -173,9 +259,25 @@ vrbrain-v51-upload: vrbrain-v51
 	$(RULEHDR)
 	$(v) $(VRBRAIN_MAKE) vrbrain-v51_APM upload
 
+
+
+
+
+vrbrain-v51Pro-upload: vrbrain-v51Pro
+	$(RULEHDR)
+	$(v) $(VRBRAIN_MAKE) vrbrain-v51Pro_APM upload
+
+
+
+
+
 vrubrain-v51-upload: vrubrain-v51
 	$(RULEHDR)
 	$(v) $(VRBRAIN_MAKE) vrubrain-v51_APM upload
+
+
+
+
 
 vrhero-v10-upload: vrhero-v10
 	$(RULEHDR)
@@ -192,14 +294,29 @@ $(VRBRAIN_ROOT)/Archives/vrbrain-v40.export:
 $(VRBRAIN_ROOT)/Archives/vrbrain-v45.export:
 	$(v) $(VRBRAIN_MAKE_ARCHIVES)
 
+
+
+
 $(VRBRAIN_ROOT)/Archives/vrbrain-v50.export:
 	$(v) $(VRBRAIN_MAKE_ARCHIVES)
 
 $(VRBRAIN_ROOT)/Archives/vrbrain-v51.export:
 	$(v) $(VRBRAIN_MAKE_ARCHIVES)
 
+
+
+
+$(VRBRAIN_ROOT)/Archives/vrbrain-v51Pro.export:
+	$(v) $(VRBRAIN_MAKE_ARCHIVES)
+
+
+
+
 $(VRBRAIN_ROOT)/Archives/vrubrain-v51.export:
 	$(v) $(VRBRAIN_MAKE_ARCHIVES)
+
+
+
 
 $(VRBRAIN_ROOT)/Archives/vrhero-v10.export:
 	$(v) $(VRBRAIN_MAKE_ARCHIVES)
