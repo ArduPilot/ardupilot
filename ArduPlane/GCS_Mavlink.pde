@@ -1156,6 +1156,19 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
         }
 
+        // set the safety switch position
+        if (packet.base_mode & MAV_MODE_FLAG_DECODE_POSITION_SAFETY) {
+            if (packet.custom_mode == 0) {
+                // turn safety off (pwm outputs flow to the motors)
+                hal.rcout->force_safety_off();
+            } else if (packet.custom_mode == 1) {
+                // turn safety on (no pwm outputs to the motors)
+                hal.rcout->force_safety_on();
+            }
+            break;
+        }
+
+        // check if we are setting the flight mode
         if (!(packet.base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED)) {
             // we ignore base_mode as there is no sane way to map
             // from that bitmap to a APM flight mode. We rely on
