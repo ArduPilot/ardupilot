@@ -898,6 +898,20 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
         }
 
+        // set the safety switch position
+        if (packet.base_mode & MAV_MODE_FLAG_DECODE_POSITION_SAFETY) {
+            if (packet.custom_mode == 0) {
+                // turn safety off (pwm outputs flow to the motors)
+                hal.rcout->force_safety_off();
+                result = MAV_RESULT_ACCEPTED;
+            } else if (packet.custom_mode == 1) {
+                // turn safety on (no pwm outputs to the motors)
+                if (hal.rcout->force_safety_on()) {
+                    result = MAV_RESULT_ACCEPTED;
+                }
+            }
+        }
+
         // send ACK or NAK
         mavlink_msg_command_ack_send_buf(msg, chan, MAVLINK_MSG_ID_SET_MODE, result);
         break;
