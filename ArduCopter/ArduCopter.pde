@@ -823,6 +823,9 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
 #if FRSKY_TELEM_ENABLED == ENABLED
     { telemetry_send,       80,     10 },	
 #endif
+#if EPM_ENABLED == ENABLED
+    { epm_update,           40,     10 },
+#endif
 #ifdef USERHOOK_FASTLOOP
     { userhook_FastLoop,     4,     10 },
 #endif
@@ -887,6 +890,9 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { read_receiver_rssi,   10,      50 },
 #if FRSKY_TELEM_ENABLED == ENABLED
     { telemetry_send,       20,     100 },	
+#endif
+#if EPM_ENABLED == ENABLED
+    { epm_update,           10,      20 },
 #endif
 #ifdef USERHOOK_FASTLOOP
     { userhook_FastLoop,     1,    100  },
