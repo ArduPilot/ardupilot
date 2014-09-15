@@ -292,8 +292,8 @@ enum FlipState {
 #define DATA_ACRO_TRAINER_DISABLED      43
 #define DATA_ACRO_TRAINER_LEVELING      44
 #define DATA_ACRO_TRAINER_LIMITED       45
-#define DATA_EPM_ON                     46
-#define DATA_EPM_OFF                    47
+#define DATA_EPM_GRAB                   46
+#define DATA_EPM_RELEASE                47
 #define DATA_EPM_NEUTRAL                48
 #define DATA_PARACHUTE_DISABLED         49
 #define DATA_PARACHUTE_ENABLED          50
