@@ -6,7 +6,6 @@
 #define __AP_HAL_YUNEEC_GPIO_H__
 
 #include <AP_HAL_YUNEEC.h>
-#include <stm32f37x.h>
 
 class YUNEEC::YUNEECGPIO : public AP_HAL::GPIO {
 public:

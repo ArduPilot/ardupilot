@@ -20,10 +20,13 @@ extern I2C_TypeDef* CPAL_I2C_DEVICE[];
 
 void YUNEECI2CDriver::begin() {
 	/* Set SYSCLK as I2C clock source */
-	if (_I2C_DevStructure->CPAL_Dev == CPAL_I2C1)
-		RCC_I2CCLKConfig(RCC_I2C1CLK_HSI);
-	else
-		RCC_I2CCLKConfig(RCC_I2C2CLK_HSI);
+	if (_I2C_DevStructure->CPAL_Dev == CPAL_I2C1) {
+	    RCC->CFGR3 &= ~RCC_CFGR3_I2C1SW;
+	    RCC->CFGR3 |= RCC_I2C1CLK_HSI;
+	} else {
+	    RCC->CFGR3 &= ~RCC_CFGR3_I2C2SW;
+	    RCC->CFGR3 |= RCC_I2C2CLK_HSI;
+	}
 
 	/* Configure the device structure */
 	CPAL_I2C_StructInit(_I2C_DevStructure);      /* Set all fields to default values */

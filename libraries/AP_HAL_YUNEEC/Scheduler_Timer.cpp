@@ -43,7 +43,7 @@ void YUNEECTimer::init() {
 	TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
 
 	// TIM6 clock enable
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM6 | RCC_APB1Periph_TIM7, ENABLE);
+    RCC->APB1ENR |= (RCC_APB1Periph_TIM6 | RCC_APB1Periph_TIM7);
 
 	// Time base configuration
 	TIM_TimeBaseStructure.TIM_Period = 1000 - 1;

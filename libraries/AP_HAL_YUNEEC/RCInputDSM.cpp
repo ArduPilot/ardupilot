@@ -347,7 +347,7 @@ void YUNEECRCInputDSM::_timer12_config() {
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
 
 	/* TIM12 clock enable */
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM12, ENABLE);
+    RCC->APB1ENR |= RCC_APB1Periph_TIM12;
 
 	/* Configure two bits for preemption priority */
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);

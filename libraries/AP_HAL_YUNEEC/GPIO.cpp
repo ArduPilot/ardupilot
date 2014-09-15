@@ -12,11 +12,9 @@
 #include <stm32f37x_rcc.h>
 #include <stm32f37x_gpio.h>
 
-
 using namespace YUNEEC;
 
-void setPinMode(GPIO_TypeDef* port, uint16_t bit, uint8_t output)
-{
+void setPinMode(GPIO_TypeDef* port, uint16_t bit, uint8_t output) {
 	GPIO_InitTypeDef GPIO_InitStructure;
 	uint32_t clken;
 
@@ -35,7 +33,7 @@ void setPinMode(GPIO_TypeDef* port, uint16_t bit, uint8_t output)
 	else
 		return;
 
-	RCC_AHBPeriphClockCmd(clken, ENABLE);
+    RCC->AHBENR |= clken;
 
 	if (output == HAL_GPIO_INPUT)
 		GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AN;
@@ -49,7 +47,6 @@ void setPinMode(GPIO_TypeDef* port, uint16_t bit, uint8_t output)
 
 	GPIO_Init(port, &GPIO_InitStructure);
 }
-
 YUNEECGPIO::YUNEECGPIO()
 {}
 

@@ -23,7 +23,7 @@ void YUNEECRCOutput::init(void* machtnichts) {
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM16 | RCC_APB2Periph_TIM17 | RCC_APB2Periph_TIM19, ENABLE);
 
 	/* GPIOs clock enable */
-	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA | RCC_AHBPeriph_GPIOB | RCC_AHBPeriph_GPIOC, ENABLE);
+    RCC->AHBENR |= (RCC_AHBPeriph_GPIOA | RCC_AHBPeriph_GPIOB | RCC_AHBPeriph_GPIOC);
 
 	/* GPIOs Configuration */
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
@@ -109,24 +109,24 @@ void YUNEECRCOutput::init(void* machtnichts) {
 	TIM_BDTRConfig(TIM17, &TIM_BDTRInitStructure);
 
 	/* Main Output Enable */
-	TIM_CtrlPWMOutputs(TIM16, ENABLE);
-	TIM_CtrlPWMOutputs(TIM17, ENABLE);
+	TIM16->BDTR |= TIM_BDTR_MOE;
+	TIM17->BDTR |= TIM_BDTR_MOE;
 
 	/* TIM enable counter */
-	TIM_Cmd(TIM2, ENABLE);
-	TIM_Cmd(TIM5, ENABLE);
-	TIM_Cmd(TIM16, ENABLE);
-	TIM_Cmd(TIM17, ENABLE);
-	TIM_Cmd(TIM19, ENABLE);
+    TIM2->CR1 |= TIM_CR1_CEN;
+    TIM5->CR1 |= TIM_CR1_CEN;
+    TIM16->CR1 |= TIM_CR1_CEN;
+    TIM17->CR1 |= TIM_CR1_CEN;
+    TIM19->CR1 |= TIM_CR1_CEN;
 /*
  * Default use SERVO rail, we have 5v servo rail and max number of channels is 6
  */
 #else
 	/* TIMs clock enable */
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3 | RCC_APB1Periph_TIM12, ENABLE);
+    RCC->APB1ENR |= (RCC_APB1Periph_TIM3 | RCC_APB1Periph_TIM12);
 
 	/* GPIOs clock enable */
-	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB | RCC_AHBPeriph_GPIOC, ENABLE);
+    RCC->AHBENR |= (RCC_AHBPeriph_GPIOB | RCC_AHBPeriph_GPIOC);
 
 	/* GPIOs Configuration */
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
@@ -183,8 +183,8 @@ void YUNEECRCOutput::init(void* machtnichts) {
 	TIM_OC2PreloadConfig(TIM12, TIM_OCPreload_Enable);
 
 	/* TIM enable counter */
-	TIM_Cmd(TIM3, ENABLE);
-	TIM_Cmd(TIM12, ENABLE);
+    TIM3->CR1 |= TIM_CR1_CEN;
+    TIM12->CR1 |= TIM_CR1_CEN;
 #endif
 }
 
@@ -192,31 +192,31 @@ void YUNEECRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz) {
 	uint32_t period = 1000000 / freq_hz - 1;
 #ifdef USE_ESC_RAIL
     if ((chmask & ( _BV(CH_1) | _BV(CH_5))) != 0) {
-    	TIM_SetAutoreload(TIM2, period);
+    	TIM2->ARR = period;
     }
 
     if ((chmask & ( _BV(CH_2) | _BV(CH_3) | _BV(CH_4))) != 0) {
-    	TIM_SetAutoreload(TIM19, period);
+		TIM19->ARR = period;
     }
 
     if ((chmask & ( _BV(CH_6))) != 0) {
-    	TIM_SetAutoreload(TIM16, period);
+		TIM16->ARR = period;
     }
 
     if ((chmask & ( _BV(CH_7))) != 0) {
-    	TIM_SetAutoreload(TIM17, period);
+		TIM17->ARR = period;
     }
 
     if ((chmask & ( _BV(CH_8))) != 0) {
-    	TIM_SetAutoreload(TIM5, period);
+		TIM5->ARR = period;
     }
 #else
     if ((chmask & ( _BV(CH_1) | _BV(CH_2))) != 0) {
-    	TIM_SetAutoreload(TIM12, period);
+		TIM12->ARR = period;
     }
 
     if ((chmask & ( _BV(CH_3) | _BV(CH_4) | _BV(CH_5) | _BV(CH_6))) != 0) {
-    	TIM_SetAutoreload(TIM3, period);
+		TIM3->ARR = period;
     }
 #endif
 }

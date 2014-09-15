@@ -6,6 +6,7 @@
 #include <stm32f37x.h>
 #include <stm32f37x_adc.h>
 #include <stm32f37x_rcc.h>
+#include <stm32f37x_dma.h>
 
 using namespace YUNEEC;
 
@@ -212,13 +213,16 @@ void YUNEECAnalogSource::_init_adc1(void) {
 	TIM_OCInitTypeDef  		TIM_OCInitStructure;
 
 	// TIM4 clock enable
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM4, ENABLE);
+    RCC->APB1ENR |= RCC_APB1Periph_TIM4;
 	// DMA1 clock enable
-	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1 , ENABLE);
+    RCC->AHBENR |= RCC_AHBPeriph_DMA1;
 	// ADCCLK = PCLK2/4
-	RCC_ADCCLKConfig(RCC_PCLK2_Div4);
+    /* Clear ADCPRE[1:0] bits */
+    RCC->CFGR &= ~RCC_CFGR_ADCPRE;
+    /* Set ADCPRE[1:0] bits according to RCC_PCLK2 value */
+    RCC->CFGR |= RCC_PCLK2_Div4;
 	// ADC1 Periph clock enable
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
+    RCC->APB2ENR |= RCC_APB2Periph_ADC1;
 
 	// Time base configuration: 20ms per interrupt
 	TIM_TimeBaseStructure.TIM_Period 		= 20000 - 1;
@@ -236,7 +240,20 @@ void YUNEECAnalogSource::_init_adc1(void) {
 	TIM_OC4PreloadConfig(TIM4, TIM_OCPreload_Enable);
 
 	// DMA1 Channel1 Config
-	DMA_DeInit(DMA1_Channel1);
+	// Reset DMA1
+	/* Disable the selected DMA1_Channel1 */
+	DMA1_Channel1->CCR &= (uint16_t)(~DMA_CCR_EN);
+	/* Reset DMAy Channelx control register */
+	DMA1_Channel1->CCR  = 0;
+	/* Reset DMAy Channelx remaining bytes register */
+	DMA1_Channel1->CNDTR = 0;
+	/* Reset DMAy Channelx peripheral address register */
+	DMA1_Channel1->CPAR  = 0;
+	/* Reset DMAy Channelx memory address register */
+	DMA1_Channel1->CMAR = 0;
+	/* Reset interrupt pending bits for DMA1 Channel1 */
+	DMA1->IFCR |= ((uint32_t)(DMA_ISR_GIF1 | DMA_ISR_TCIF1 | DMA_ISR_HTIF1 | DMA_ISR_TEIF1));
+
 	DMA_InitStructure.DMA_PeripheralBaseAddr 	= (uint32_t)ADC1_DR_Address;
 	DMA_InitStructure.DMA_MemoryBaseAddr 		= (uint32_t)_ADCConvData_Tab;
 	DMA_InitStructure.DMA_DIR 					= DMA_DIR_PeripheralSRC;
@@ -250,9 +267,9 @@ void YUNEECAnalogSource::_init_adc1(void) {
 	DMA_InitStructure.DMA_M2M 					= DMA_M2M_Disable;
 	DMA_Init(DMA1_Channel1, &DMA_InitStructure);
 	// DMA1 Channel1 enable
-	DMA_Cmd(DMA1_Channel1, ENABLE);
+	DMA1_Channel1->CCR |= DMA_CCR_EN;
 	// DMA1 Channel1 interrupt enable
-	DMA_ITConfig(DMA1_Channel1, DMA_IT_TC, ENABLE);
+    DMA1_Channel1->CCR |= DMA_IT_TC;
 
 	// Configure two bits for preemption priority
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
@@ -264,12 +281,13 @@ void YUNEECAnalogSource::_init_adc1(void) {
 	NVIC_Init(&NVIC_InitStructure);
 
 	// ADC1 DeInit
-	ADC_DeInit(ADC1);
+	/* Enable ADC1 reset state */
+    RCC->APB2RSTR |= RCC_APB2Periph_ADC1;
+	/* Release ADC1 from reset state */
+    RCC->APB2RSTR &= ~RCC_APB2Periph_ADC1;
 	// Enable ADC_DMA
-	ADC_DMACmd(ADC1, ENABLE);
+    ADC1->CR2 |= ADC_CR2_DMA;
 	// Initialize ADC structure
-	ADC_StructInit(&ADC_InitStructure);
-	// Configure the ADC1
 	ADC_InitStructure.ADC_ScanConvMode 			= ENABLE;
 	ADC_InitStructure.ADC_ContinuousConvMode 	= DISABLE;
 	ADC_InitStructure.ADC_ExternalTrigConv 		= ADC_ExternalTrigConv_T4_CC4;
@@ -278,19 +296,21 @@ void YUNEECAnalogSource::_init_adc1(void) {
 	ADC_Init(ADC1, &ADC_InitStructure);
 
 	// Enable ADC1
-	ADC_Cmd(ADC1, ENABLE);
+	ADC1->CR2 |= ADC_CR2_ADON;
+
 	// ADC1 reset calibration register
-	ADC_ResetCalibration(ADC1);
-	while(ADC_GetResetCalibrationStatus(ADC1));
+	ADC1->CR2 |= ADC_CR2_RSTCAL;
+	while(ADC1->CR2 & ADC_CR2_RSTCAL);
 	// ADC1 calibration start
-	ADC_StartCalibration(ADC1);
-	while(ADC_GetCalibrationStatus(ADC1));
+	ADC1->CR2 |= ADC_CR2_CAL;
+	while(ADC1->CR2 & ADC_CR2_RSTCAL);
 	// Enable Conversion on Trigger event
-	ADC_ExternalTrigConvCmd(ADC1, ENABLE);
+	ADC1->CR2 |= ADC_CR2_EXTTRIG;
+
 	// Enable ADC1
-	ADC_Cmd(ADC1, ENABLE);
+	ADC1->CR2 |= ADC_CR2_ADON;
 	// Enable Timer to start trigger event
-	TIM_Cmd(TIM4, ENABLE);
+	TIM4->CR1 |= TIM_CR1_CEN;
 }
 
 

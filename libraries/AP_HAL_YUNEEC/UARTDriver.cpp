@@ -235,15 +235,22 @@ void YUNEECUARTDriver::_configPort(const struct USART_Info &usart_info)
 
 	/* Reset register of USART  */
 	USART_DeInit(usart_info.usart);
+	if (usart_info.usart == USART1)	{
+	    RCC->APB1RSTR |= usart_info.usartClk;
+	    RCC->APB1RSTR &= ~usart_info.usartClk;
+	} else {
+	    RCC->APB2RSTR |= usart_info.usartClk;
+	    RCC->APB2RSTR &= ~usart_info.usartClk;
+	}
 
 	/* Enable GPIO clock */
-	RCC_AHBPeriphClockCmd(usart_info.portClk, ENABLE);
+    RCC->AHBENR |= usart_info.portClk;
 
 	/* Enable USART clock */
 	if(usart_info.usart == USART1)
-		RCC_APB2PeriphClockCmd(usart_info.usartClk, ENABLE);
+	    RCC->APB2ENR |= usart_info.usartClk;
 	else
-		RCC_APB1PeriphClockCmd(usart_info.usartClk, ENABLE);
+	    RCC->APB1ENR |= usart_info.usartClk;
 
 	/* Connect PXx to USARTx_Tx */
 	GPIO_PinAFConfig(usart_info.port, usart_info.tx_pinSource, GPIO_AF_7);

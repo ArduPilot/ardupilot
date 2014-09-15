@@ -41,10 +41,10 @@ void YUNEECRCInputPPM::init(void* machtnichts) {
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
 
 	/* TIM3 clock enable */
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
+    RCC->APB1ENR |= RCC_APB1Periph_TIM3;
 
 	/* GPIOB clock enable */
-	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
+    RCC->AHBENR |= RCC_AHBPeriph_GPIOB;
 
 	/* TIM3 channel 4 pin (PB1) configuration */
 	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_1;
