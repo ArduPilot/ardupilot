@@ -7,8 +7,8 @@
  *      Author: Andreas Jochum
  */
 
+#include <AP_EPM.h>
 #include <AP_HAL.h>
-#include "AP_EPM.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -23,7 +23,8 @@ const AP_Param::GroupInfo AP_EPM::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
-AP_EPM::AP_EPM(void)
+AP_EPM::AP_EPM(void) :
+        _last_grab_or_release(0)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -31,54 +32,63 @@ AP_EPM::AP_EPM(void)
 void AP_EPM::init() 
 {
     // return immediately if not enabled
-    if (!_enabled || !EPM_SUPPORTED) {
+    if (!_enabled) {
         return;
     }
 
-    hal.gpio->pinMode(EPM_PIN_1, HAL_GPIO_OUTPUT);
-    hal.gpio->pinMode(EPM_PIN_2, HAL_GPIO_OUTPUT);
-
+    // initialise the EPM to the neutral position
     neutral();
 }
 
-bool AP_EPM::enabled()
-{
-     if (!EPM_SUPPORTED) {
-        return false;
-     }
-
-     return _enabled;
-}
-
-void AP_EPM::on() 
+// grab - move the epm pwm output to the grab position
+void AP_EPM::grab()
 {
     // return immediately if not enabled
-    if (!_enabled || !EPM_SUPPORTED) {
+    if (!_enabled) {
         return;
     }
 
-    hal.gpio->write(EPM_PIN_1, 1);
-    hal.gpio->write(EPM_PIN_2, 0);
+    // capture time
+    _last_grab_or_release = hal.scheduler->millis();
+
+    // move the servo to the release position
+    RC_Channel_aux::set_radio(RC_Channel_aux::k_epm, EPM_GRAB_PWM);
 }
 
-void AP_EPM::off() 
+// release - move the epm pwm output to the release position
+void AP_EPM::release()
 {
     // return immediately if not enabled
-    if (!_enabled || !EPM_SUPPORTED) {
+    if (!_enabled) {
         return;
     }
 
-    hal.gpio->write(EPM_PIN_1, 0);
-    hal.gpio->write(EPM_PIN_2, 1);
+    // capture time
+    _last_grab_or_release = hal.scheduler->millis();
+
+    // move the servo to the release position
+    RC_Channel_aux::set_radio(RC_Channel_aux::k_epm, EPM_RELEASE_PWM);
 }
 
+// neutral - return the epm pwm output to the neutral position
 void AP_EPM::neutral() 
 {
     // return immediately if not enabled
-    if (!_enabled || !EPM_SUPPORTED) {
+    if (!_enabled) {
         return;
     }
 
-    hal.gpio->write(EPM_PIN_1, 0);
-    hal.gpio->write(EPM_PIN_2, 0);
+    // move the servo to the off position
+    RC_Channel_aux::set_radio(RC_Channel_aux::k_epm, EPM_NEUTRAL_PWM);
 }
+
+// update - moves the pwm back to neutral after the timeout has passed
+// should be called at at least 10hz
+void AP_EPM::update()
+{
+    // move EPM PWM output back to neutral 2 seconds after the last grab or release
+    if ((_last_grab_or_release != 0) && (hal.scheduler->millis() - _last_grab_or_release > EPM_RETURN_TO_NEUTRAL_MS)) {
+        neutral();
+    }
+}
+
