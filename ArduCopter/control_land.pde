@@ -227,3 +227,8 @@ static void set_mode_land_with_pause()
     set_mode(LAND);
     land_pause = true;
 }
+
+// landing_with_GPS - returns true if vehicle is landing using GPS
+static bool landing_with_GPS() {
+    return (control_mode == LAND && land_with_gps);
+}
