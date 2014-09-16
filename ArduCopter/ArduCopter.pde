@@ -1112,7 +1112,7 @@ static void ten_hz_logging_loop()
     if (g.log_bitmask & MASK_LOG_RCOUT) {
         DataFlash.Log_Write_RCOUT();
     }
-    if ((g.log_bitmask & MASK_LOG_NTUN) && mode_requires_GPS(control_mode)) {
+    if ((g.log_bitmask & MASK_LOG_NTUN) && (mode_requires_GPS(control_mode) || landing_with_GPS())) {
         Log_Write_Nav_Tuning();
     }
 }
