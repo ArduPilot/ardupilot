@@ -193,18 +193,7 @@ static void control_failsafe(uint16_t pwm)
     if(g.throttle_fs_enabled == 0)
         return;
 
-    // Check for failsafe condition based on loss of GCS control
-    if (failsafe.rc_override_active) {
-        if (millis() - failsafe.last_heartbeat_ms > g.short_fs_timeout*1000) {
-            failsafe.ch3_failsafe = true;
-            AP_Notify::flags.failsafe_radio = true;
-        } else {
-            failsafe.ch3_failsafe = false;
-            AP_Notify::flags.failsafe_radio = false;
-        }
-
-        //Check for failsafe and debounce funky reads
-    } else if (g.throttle_fs_enabled) {
+    if (g.throttle_fs_enabled) {
         if (rc_failsafe_active()) {
             // we detect a failsafe from radio
             // throttle has dropped below the mark

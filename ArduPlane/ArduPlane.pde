@@ -374,8 +374,6 @@ static struct {
 // Failsafe
 ////////////////////////////////////////////////////////////////////////////////
 static struct {
-    // A flag if GCS joystick control is in use
-    uint8_t rc_override_active:1;
 
     // Used to track if the value on channel 3 (throtttle) has fallen below the failsafe threshold
     // RC receiver should be set up to output a low throttle value when signal is lost
