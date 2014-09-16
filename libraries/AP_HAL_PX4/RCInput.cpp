@@ -105,9 +105,10 @@ void PX4RCInput::_timer_tick(void)
 	perf_begin(_perf_rcin);
 
 	// check for status and channel values and update them consistently
-	bool rc_updated = orb_check(_rc_sub, &rc_updated) == 0 && rc_updated;
-	if (rc_updated) {
-		// double-buffer rc input to avoid overwriting last valid channel values with zeros from PX4IO
+	bool rc_updated = false;
+	int res = orb_check(_rc_sub, &rc_updated);
+	if (res == OK && rc_updated) {
+		// double-buffer rc input to avoid overwriting last valid channel values with 
 		// rely on the vehicle code timeout while checking for the last valid input
 		if (orb_copy(ORB_ID(input_rc), _rc_sub, &_new_rcin) == OK) {
 			pthread_mutex_lock(&rcin_mutex);
