@@ -132,6 +132,9 @@ static void init_arm_motors()
     // disable inertial nav errors temporarily
     inertial_nav.ignore_next_error();
 
+    // reset battery failsafe
+    set_failsafe_battery(false);
+
     // notify that arming will occur (we do this early to give plenty of warning)
     AP_Notify::flags.armed = true;
     // call update_notify a few times to ensure the message gets out
