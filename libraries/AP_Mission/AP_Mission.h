@@ -121,6 +121,12 @@ public:
         float meters;           // distance
     };
 
+    // gripper command structure
+    struct PACKED Gripper_Command {
+        uint8_t num;            // gripper number
+        uint8_t action;         // action (0 = release, 1 = grab)
+    };
+
     union PACKED Content {
         // Nav_Guided_Command
         Nav_Guided_Command nav_guided;
@@ -157,6 +163,9 @@ public:
 
         // cam trigg distance
         Cam_Trigg_Distance cam_trigg_dist;
+
+        // do-gripper
+        Gripper_Command gripper;
 
         // location
         Location location;      // Waypoint location
