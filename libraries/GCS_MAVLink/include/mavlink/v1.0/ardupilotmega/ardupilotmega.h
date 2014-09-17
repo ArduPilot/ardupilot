@@ -2,11 +2,11 @@
  *	@brief MAVLink comm protocol generated from ardupilotmega.xml
  *	@see http://qgroundcontrol.org/mavlink/
  */
-#ifndef ARDUPILOTMEGA_H
-#define ARDUPILOTMEGA_H
+#ifndef MAVLINK_ARDUPILOTMEGA_H
+#define MAVLINK_ARDUPILOTMEGA_H
 
 #ifndef MAVLINK_H
-    #error Wrong include order: ARDUPILOTMEGA.H MUST NOT BE DIRECTLY USED. Include mavlink.h from the same directory instead or set ALL AND EVERY defines from MAVLINK.H manually accordingly, including the #define MAVLINK_H call.
+    #error Wrong include order: MAVLINK_ARDUPILOTMEGA.H MUST NOT BE DIRECTLY USED. Include mavlink.h from the same directory instead or set ALL AND EVERY defines from MAVLINK.H manually accordingly, including the #define MAVLINK_H call.
 #endif
 
 #ifdef __cplusplus
@@ -242,4 +242,4 @@ typedef enum CAMERA_FEEDBACK_FLAGS
 #ifdef __cplusplus
 }
 #endif // __cplusplus
-#endif // ARDUPILOTMEGA_H
+#endif // MAVLINK_ARDUPILOTMEGA_H

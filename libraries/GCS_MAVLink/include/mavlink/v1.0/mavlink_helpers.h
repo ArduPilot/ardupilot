@@ -16,7 +16,7 @@
 #ifndef MAVLINK_GET_CHANNEL_STATUS
 MAVLINK_HELPER mavlink_status_t* mavlink_get_channel_status(uint8_t chan)
 {
-#if MAVLINK_EXTERNAL_RX_STATUS
+#ifdef MAVLINK_EXTERNAL_RX_STATUS
 	// No m_mavlink_status array defined in function,
 	// has to be defined externally
 #else
@@ -33,7 +33,7 @@ MAVLINK_HELPER mavlink_status_t* mavlink_get_channel_status(uint8_t chan)
 MAVLINK_HELPER mavlink_message_t* mavlink_get_channel_buffer(uint8_t chan)
 {
 	
-#if MAVLINK_EXTERNAL_RX_BUFFER
+#ifdef MAVLINK_EXTERNAL_RX_BUFFER
 	// No m_mavlink_buffer array defined in function,
 	// has to be defined externally
 #else
@@ -263,7 +263,7 @@ MAVLINK_HELPER uint8_t mavlink_parse_char(uint8_t chan, uint8_t c, mavlink_messa
  and out). Only use if the channel will only contain messages types listed in
  the headers.
 */
-#if MAVLINK_CHECK_MESSAGE_LENGTH
+#ifdef MAVLINK_CHECK_MESSAGE_LENGTH
 #ifndef MAVLINK_MESSAGE_LENGTH
 	static const uint8_t mavlink_message_lengths[256] = MAVLINK_MESSAGE_LENGTHS;
 #define MAVLINK_MESSAGE_LENGTH(msgid) mavlink_message_lengths[msgid]
@@ -332,7 +332,7 @@ MAVLINK_HELPER uint8_t mavlink_parse_char(uint8_t chan, uint8_t c, mavlink_messa
 		break;
 
 	case MAVLINK_PARSE_STATE_GOT_COMPID:
-#if MAVLINK_CHECK_MESSAGE_LENGTH
+#ifdef MAVLINK_CHECK_MESSAGE_LENGTH
 	        if (rxmsg->len != MAVLINK_MESSAGE_LENGTH(c))
 		{
 			status->parse_error++;
