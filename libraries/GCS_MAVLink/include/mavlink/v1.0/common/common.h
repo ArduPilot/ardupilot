@@ -349,6 +349,18 @@ typedef enum MAV_ROI
 } MAV_ROI;
 #endif
 
+/** @brief  */
+#ifndef HAVE_ENUM_PARACHUTE_ACTION
+#define HAVE_ENUM_PARACHUTE_ACTION
+typedef enum PARACHUTE_ACTION
+{
+	PARACHUTE_DISABLE=0, /* Disable parachute release | */
+	PARACHUTE_ENABLE=1, /* Enable parachute release | */
+	PARACHUTE_RELEASE=2, /* Release parachute | */
+	PARACHUTE_ACTION_ENUM_END=3, /*  | */
+} PARACHUTE_ACTION;
+#endif
+
 /** @brief ACK / NACK / ERROR values as a result of MAV_CMDs and for mission item transmission. */
 #ifndef HAVE_ENUM_MAV_CMD_ACK
 #define HAVE_ENUM_MAV_CMD_ACK
