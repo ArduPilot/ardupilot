@@ -274,6 +274,7 @@ uint16_t DataFlash_Block::find_last_page_of_log(uint16_t log_number)
 
 #define PGM_UINT8(addr) pgm_read_byte((const prog_char *)addr)
 
+#ifndef DATAFLASH_NO_CLI
 /*
   read and print a log entry using the format strings from the given structure
  */
@@ -556,6 +557,7 @@ void DataFlash_Block::ListAvailableLogs(AP_HAL::BetterStream *port)
     }
     port->println();
 }
+#endif // DATAFLASH_NO_CLI
 
 // This function starts a new log file in the DataFlash, and writes
 // the format of supported messages in the log, plus all parameters
@@ -747,7 +749,11 @@ void DataFlash_Class::Log_Write_RCOUT(void)
         chan5         : hal.rcout->read(4),
         chan6         : hal.rcout->read(5),
         chan7         : hal.rcout->read(6),
-        chan8         : hal.rcout->read(7)
+        chan8         : hal.rcout->read(7),
+        chan9         : hal.rcout->read(8),
+        chan10        : hal.rcout->read(9),
+        chan11        : hal.rcout->read(10),
+        chan12        : hal.rcout->read(11)
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
@@ -785,6 +791,7 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
     if (ins.get_gyro_count() < 2 && ins.get_accel_count() < 2) {
         return;
     }
+#if INS_MAX_INSTANCES > 1
     const Vector3f &gyro2 = ins.get_gyro(1);
     const Vector3f &accel2 = ins.get_accel(1);
     struct log_IMU pkt2 = {
@@ -798,6 +805,23 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
         accel_z : accel2.z
     };
     WriteBlock(&pkt2, sizeof(pkt2));
+    if (ins.get_gyro_count() < 3 && ins.get_accel_count() < 3) {
+        return;
+    }
+    const Vector3f &gyro3 = ins.get_gyro(2);
+    const Vector3f &accel3 = ins.get_accel(2);
+    struct log_IMU pkt3 = {
+        LOG_PACKET_HEADER_INIT(LOG_IMU3_MSG),
+        timestamp : tstamp,
+        gyro_x  : gyro3.x,
+        gyro_y  : gyro3.y,
+        gyro_z  : gyro3.z,
+        accel_x : accel3.x,
+        accel_y : accel3.y,
+        accel_z : accel3.z
+    };
+    WriteBlock(&pkt3, sizeof(pkt3));
+#endif
 }
 
 // Write a text message to the log
@@ -945,7 +969,10 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
 	Vector3f magVar;
 	float tasVar;
     Vector2f offset;
+    uint8_t faultStatus;
+    float deltaGyroBias;
     ahrs.get_NavEKF().getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
+    ahrs.get_NavEKF().getFilterFaults(faultStatus, deltaGyroBias);
     struct log_EKF4 pkt4 = {
         LOG_PACKET_HEADER_INIT(LOG_EKF4_MSG),
         time_ms : hal.scheduler->millis(),
@@ -957,7 +984,9 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
         sqrtvarMZ : (int16_t)(100*magVar.z),
         sqrtvarVT : (int16_t)(100*tasVar),
         offsetNorth : (int8_t)(offset.x),
-        offsetEast : (int8_t)(offset.y)
+        offsetEast : (int8_t)(offset.y),
+        faults : (uint8_t)(faultStatus),
+        divergeRate : (uint8_t)(100*deltaGyroBias)
     };
     WriteBlock(&pkt4, sizeof(pkt4));
 }
@@ -999,3 +1028,29 @@ void DataFlash_Class::Log_Write_Radio(const mavlink_radio_t &packet)
     WriteBlock(&pkt, sizeof(pkt)); 
 }
 
+// Write a Camera packet
+void DataFlash_Class::Log_Write_Camera(const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc)
+{
+    int32_t altitude, altitude_rel;
+    if (current_loc.flags.relative_alt) {
+        altitude = current_loc.alt+ahrs.get_home().alt;
+        altitude_rel = current_loc.alt;
+    } else {
+        altitude = current_loc.alt;
+        altitude_rel = current_loc.alt - ahrs.get_home().alt;
+    }
+
+    struct log_Camera pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_CAMERA_MSG),
+        gps_time    : gps.time_week_ms(),
+        gps_week    : gps.time_week(),
+        latitude    : current_loc.lat,
+        longitude   : current_loc.lng,
+        altitude    : altitude,
+        altitude_rel: altitude_rel,
+        roll        : (int16_t)ahrs.roll_sensor,
+        pitch       : (int16_t)ahrs.pitch_sensor,
+        yaw         : (uint16_t)ahrs.yaw_sensor
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}

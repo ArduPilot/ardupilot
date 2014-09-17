@@ -7,8 +7,7 @@
 // acro_init - initialise acro controller
 static bool acro_init(bool ignore_checks)
 {
-    // clear stabilized rate errors
-    attitude_control.init_targets();
+    // always successfully enter acro
     return true;
 }
 
@@ -21,7 +20,8 @@ static void acro_run()
 
     // if motors not running reset angle targets
     if(!motors.armed() || g.rc_3.control_in <= 0) {
-        attitude_control.init_targets();
+        attitude_control.relax_bf_rate_controller();
+        attitude_control.set_yaw_target_to_current_heading();
         attitude_control.set_throttle_out(0, false);
         return;
     }
@@ -44,16 +44,41 @@ static void acro_run()
 // returns desired angle rates in centi-degrees-per-second
 static void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16_t yaw_in, float &roll_out, float &pitch_out, float &yaw_out)
 {
-
-    // Calculate trainer mode earth frame rate command for roll
     float rate_limit;
     Vector3f rate_ef_level, rate_bf_level, rate_bf_request;
 
-    // calculate rate requests
-    rate_bf_request.x = roll_in * g.acro_rp_p;
-    rate_bf_request.y = pitch_in * g.acro_rp_p;
+    // range check the input
+    roll_in = constrain_int16(roll_in, -ROLL_PITCH_INPUT_MAX, ROLL_PITCH_INPUT_MAX);
+    pitch_in = constrain_int16(pitch_in, -ROLL_PITCH_INPUT_MAX, ROLL_PITCH_INPUT_MAX);
+    
+    // calculate roll, pitch rate requests
+    if (g.acro_expo <= 0) {
+        rate_bf_request.x = roll_in * g.acro_rp_p;
+        rate_bf_request.y = pitch_in * g.acro_rp_p;
+    } else {
+        // expo variables
+        float rp_in, rp_in3, rp_out;
+
+        // range check expo
+        if (g.acro_expo > 1.0f) {
+            g.acro_expo = 1.0f;
+        }
+
+        // roll expo
+        rp_in = float(roll_in)/ROLL_PITCH_INPUT_MAX;
+        rp_in3 = rp_in*rp_in*rp_in;
+        rp_out = (g.acro_expo * rp_in3) + ((1 - g.acro_expo) * rp_in);
+        rate_bf_request.x = ROLL_PITCH_INPUT_MAX * rp_out * g.acro_rp_p;
+
+        // pitch expo
+        rp_in = float(pitch_in)/ROLL_PITCH_INPUT_MAX;
+        rp_in3 = rp_in*rp_in*rp_in;
+        rp_out = (g.acro_expo * rp_in3) + ((1 - g.acro_expo) * rp_in);
+        rate_bf_request.y = ROLL_PITCH_INPUT_MAX * rp_out * g.acro_rp_p;
+    }
+
+    // calculate yaw rate request
     rate_bf_request.z = yaw_in * g.acro_yaw_p;
-    // todo: add acceleration slew
 
     // calculate earth frame rate corrections to pull the copter back to level while in ACRO mode
 
@@ -72,15 +97,15 @@ static void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int
         // Calculate angle limiting earth frame rate commands
         if (g.acro_trainer == ACRO_TRAINER_LIMITED) {
             if (roll_angle > aparm.angle_max){
-                rate_ef_level.x -=  g.acro_rp_p*(roll_angle-aparm.angle_max);
+                rate_ef_level.x -=  g.acro_balance_roll*(roll_angle-aparm.angle_max);
             }else if (roll_angle < -aparm.angle_max) {
-                rate_ef_level.x -=  g.acro_rp_p*(roll_angle+aparm.angle_max);
+                rate_ef_level.x -=  g.acro_balance_roll*(roll_angle+aparm.angle_max);
             }
 
             if (pitch_angle > aparm.angle_max){
-                rate_ef_level.y -=  g.acro_rp_p*(pitch_angle-aparm.angle_max);
+                rate_ef_level.y -=  g.acro_balance_pitch*(pitch_angle-aparm.angle_max);
             }else if (pitch_angle < -aparm.angle_max) {
-                rate_ef_level.y -=  g.acro_rp_p*(pitch_angle+aparm.angle_max);
+                rate_ef_level.y -=  g.acro_balance_pitch*(pitch_angle+aparm.angle_max);
             }
         }
 

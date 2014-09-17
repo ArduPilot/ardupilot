@@ -70,6 +70,9 @@ public:
 
 	static const struct AP_Param::GroupInfo var_info[];
 
+    // current running task, or -1 if none. Used to debug stuck tasks
+    static int8_t current_task;
+
 private:
 	// used to enable scheduler debugging
 	AP_Int8 _debug;

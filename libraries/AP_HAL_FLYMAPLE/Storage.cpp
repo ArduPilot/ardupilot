@@ -89,20 +89,6 @@ uint8_t FLYMAPLEStorage::read_byte(uint16_t loc){
 	return data & 0xff; // Even lower byte
 }
 
-uint16_t FLYMAPLEStorage::read_word(uint16_t loc){
-//hal.console->printf("read_word %d\n", loc);
-    uint16_t value;
-    read_block(&value, loc, sizeof(value));
-    return value;
-}
-
-uint32_t FLYMAPLEStorage::read_dword(uint16_t loc){
-//hal.console->printf("read_dword %d\n", loc);
-    uint32_t value;
-    read_block(&value, loc, sizeof(value));
-    return value;
-}
-
 void FLYMAPLEStorage::read_block(void* dst, uint16_t src, size_t n) {
 //    hal.console->printf("read_block %d %d\n", src, n);
     // Treat as a block of bytes
@@ -130,18 +116,6 @@ void FLYMAPLEStorage::write_byte(uint16_t loc, uint8_t value)
     else
 	data = (data & 0xff00) | value; // Even, lower byte
     eeprom[eeprom_index].write(eeprom_offset >> 1, data);
-}
-
-void FLYMAPLEStorage::write_word(uint16_t loc, uint16_t value)
-{
-//    hal.console->printf("write_word %d, %d\n", loc, value);
-    write_block(loc, &value, sizeof(value));
-}
-
-void FLYMAPLEStorage::write_dword(uint16_t loc, uint32_t value)
-{
-//    hal.console->printf("write_dword %d, %d\n", loc, value);
-    write_block(loc, &value, sizeof(value));
 }
 
 void FLYMAPLEStorage::write_block(uint16_t loc, const void* src, size_t n)

@@ -127,10 +127,12 @@ RC_Channel::set_reverse(bool reverse)
 }
 
 bool
-RC_Channel::get_reverse(void)
+RC_Channel::get_reverse(void) const
 {
-    if (_reverse==-1) return 1;
-    else return 0;
+    if (_reverse == -1) {
+        return true;
+    }
+    return false;
 }
 
 void
@@ -410,6 +412,18 @@ void RC_Channel::output_trim_all()
     }
 }
 
+/*
+  setup the failsafe value to the trim value for all channels
+ */
+void RC_Channel::setup_failsafe_trim_all()
+{
+    for (uint8_t i=0; i<RC_MAX_CHANNELS; i++) {
+        if (rc_ch[i] != NULL) {
+            hal.rcout->set_failsafe_pwm(1U<<i, rc_ch[i]->radio_trim);
+        }
+    }
+}
+
 void
 RC_Channel::input()
 {
@@ -440,4 +454,19 @@ RC_Channel *RC_Channel::rc_channel(uint8_t i)
         return NULL;
     }
     return rc_ch[i];
+}
+
+// return a limit PWM value
+uint16_t RC_Channel::get_limit_pwm(LimitValue limit) const
+{
+    switch (limit) {
+    case RC_CHANNEL_LIMIT_TRIM:
+        return radio_trim;
+    case RC_CHANNEL_LIMIT_MAX:
+        return get_reverse() ? radio_min : radio_max;
+    case RC_CHANNEL_LIMIT_MIN:
+        return get_reverse() ? radio_max : radio_min;
+    }
+    // invalid limit value, return trim
+    return radio_trim;
 }

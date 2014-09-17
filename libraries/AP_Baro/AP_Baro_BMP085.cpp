@@ -85,11 +85,11 @@ bool AP_Baro_BMP085::init()
     if (!i2c_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER))
         return false;
 
-    hal.gpio->pinMode(BMP085_EOC, GPIO_INPUT);// End Of Conversion (PC7) input
+    hal.gpio->pinMode(BMP085_EOC, HAL_GPIO_INPUT);// End Of Conversion (PC7) input
 
     // We read the calibration data registers
     if (hal.i2c->readRegisters(BMP085_ADDRESS, 0xAA, 22, buff) != 0) {
-        healthy = false;
+        _flags.healthy = false;
         i2c_sem->give();
         return false;
     }
@@ -117,7 +117,7 @@ bool AP_Baro_BMP085::init()
     // init raw temo
     RawTemp = 0;
 
-    healthy = true;
+    _flags.healthy = true;
     i2c_sem->give();
     return true;
 }
@@ -195,7 +195,7 @@ void AP_Baro_BMP085::Command_ReadPress()
             0x34+(OVERSAMPLING << 6));
     _last_press_read_command_time = hal.scheduler->millis();
     if (res != 0) {
-        healthy = false;
+        _flags.healthy = false;
     }
 }
 
@@ -204,14 +204,14 @@ void AP_Baro_BMP085::ReadPress()
 {
     uint8_t buf[3];
 
-    if (!healthy && hal.scheduler->millis() < _retry_time) {
+    if (!_flags.healthy && hal.scheduler->millis() < _retry_time) {
         return;
     }
 
     if (hal.i2c->readRegisters(BMP085_ADDRESS, 0xF6, 3, buf) != 0) {
         _retry_time = hal.scheduler->millis() + 1000;
         hal.i2c->setHighSpeed(false);
-        healthy = false;
+        _flags.healthy = false;
         return;
     }
 
@@ -224,7 +224,7 @@ void AP_Baro_BMP085::ReadPress()
 void AP_Baro_BMP085::Command_ReadTemp()
 {
     if (hal.i2c->writeRegister(BMP085_ADDRESS, 0xF4, 0x2E) != 0) {
-        healthy = false;
+        _flags.healthy = false;
     }
     _last_temp_read_command_time = hal.scheduler->millis();
 }
@@ -235,14 +235,14 @@ void AP_Baro_BMP085::ReadTemp()
     uint8_t buf[2];
     int32_t _temp_sensor;
 
-    if (!healthy && hal.scheduler->millis() < _retry_time) {
+    if (!_flags.healthy && hal.scheduler->millis() < _retry_time) {
         return;
     }
 
     if (hal.i2c->readRegisters(BMP085_ADDRESS, 0xF6, 2, buf) != 0) {
         _retry_time = hal.scheduler->millis() + 1000;
         hal.i2c->setHighSpeed(false);
-        healthy = false;
+        _flags.healthy = false;
         return;
     }
     _temp_sensor = buf[0];
@@ -291,8 +291,8 @@ void AP_Baro_BMP085::Calculate()
 
     _count++;
     if (_count == 254) {
-        _temp_sum *= 0.5;
-        _press_sum *= 0.5;
+        _temp_sum *= 0.5f;
+        _press_sum *= 0.5f;
         _count /= 2;
     }
 }

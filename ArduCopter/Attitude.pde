@@ -100,8 +100,8 @@ static void update_thr_cruise()
     if (throttle > g.throttle_min && abs(climb_rate) < 60 && labs(ahrs.roll_sensor) < 500 && labs(ahrs.pitch_sensor) < 500) {
         throttle_avg = throttle_avg * 0.99f + (float)throttle * 0.01f;
         g.throttle_cruise = throttle_avg;
-    // update position controller
-    pos_control.set_throttle_hover(throttle_avg);
+        // update position controller
+        pos_control.set_throttle_hover(throttle_avg);
     }
 }
 
@@ -151,8 +151,8 @@ static int16_t get_pilot_desired_throttle(int16_t throttle_control)
 // get_pilot_desired_climb_rate - transform pilot's throttle input to
 // climb rate in cm/s.  we use radio_in instead of control_in to get the full range
 // without any deadzone at the bottom
-#define THROTTLE_IN_DEADBAND_TOP (THROTTLE_IN_MIDDLE+THROTTLE_IN_DEADBAND)  // top of the deadband
-#define THROTTLE_IN_DEADBAND_BOTTOM (THROTTLE_IN_MIDDLE-THROTTLE_IN_DEADBAND)  // bottom of the deadband
+#define THROTTLE_IN_DEADBAND_TOP (THROTTLE_IN_MIDDLE+g.throttle_deadzone)  // top of the deadband
+#define THROTTLE_IN_DEADBAND_BOTTOM (THROTTLE_IN_MIDDLE-g.throttle_deadzone)  // bottom of the deadband
 static int16_t get_pilot_desired_climb_rate(int16_t throttle_control)
 {
     int16_t desired_rate = 0;
@@ -165,13 +165,16 @@ static int16_t get_pilot_desired_climb_rate(int16_t throttle_control)
     // ensure a reasonable throttle value
     throttle_control = constrain_int16(throttle_control,0,1000);
 
+    // ensure a reasonable deadzone
+    g.throttle_deadzone = constrain_int16(g.throttle_deadzone, 0, 400);
+
     // check throttle is above, below or in the deadband
     if (throttle_control < THROTTLE_IN_DEADBAND_BOTTOM) {
         // below the deadband
-        desired_rate = (int32_t)g.pilot_velocity_z_max * (throttle_control-THROTTLE_IN_DEADBAND_BOTTOM) / (THROTTLE_IN_MIDDLE - THROTTLE_IN_DEADBAND);
+        desired_rate = (int32_t)g.pilot_velocity_z_max * (throttle_control-THROTTLE_IN_DEADBAND_BOTTOM) / (THROTTLE_IN_MIDDLE - g.throttle_deadzone);
     }else if (throttle_control > THROTTLE_IN_DEADBAND_TOP) {
         // above the deadband
-        desired_rate = (int32_t)g.pilot_velocity_z_max * (throttle_control-THROTTLE_IN_DEADBAND_TOP) / (THROTTLE_IN_MIDDLE - THROTTLE_IN_DEADBAND);
+        desired_rate = (int32_t)g.pilot_velocity_z_max * (throttle_control-THROTTLE_IN_DEADBAND_TOP) / (THROTTLE_IN_MIDDLE - g.throttle_deadzone);
     }else{
         // must be in the deadband
         desired_rate = 0;
@@ -181,6 +184,46 @@ static int16_t get_pilot_desired_climb_rate(int16_t throttle_control)
     desired_climb_rate = desired_rate;
 
     return desired_rate;
+}
+
+// get_non_takeoff_throttle - a throttle somewhere between min and mid throttle which should not lead to a takeoff
+static int16_t get_non_takeoff_throttle()
+{
+    return (g.throttle_mid / 2.0f);
+}
+
+// get_throttle_pre_takeoff - convert pilot's input throttle to a throttle output before take-off
+// used only for althold, loiter, hybrid flight modes
+// returns throttle output 0 to 1000
+static int16_t get_throttle_pre_takeoff(int16_t throttle_control)
+{
+    int16_t throttle_out;
+
+    // exit immediately if throttle_control is zero
+    if (throttle_control <= 0) {
+        return 0;
+    }
+
+    // sanity check throttle input
+    throttle_control = constrain_int16(throttle_control,0,1000);
+
+    // sanity check throttle_mid
+    g.throttle_mid = constrain_int16(g.throttle_mid,300,700);
+
+    // sanity check throttle_min vs throttle_mid
+    if (g.throttle_min > get_non_takeoff_throttle()) {
+        return g.throttle_min;
+    }
+
+    // check throttle is below top of deadband
+    if (throttle_control < THROTTLE_IN_DEADBAND_TOP) {
+        throttle_out = g.throttle_min + ((float)(throttle_control-g.throttle_min))*((float)(get_non_takeoff_throttle() - g.throttle_min))/((float)(THROTTLE_IN_DEADBAND_TOP-g.throttle_min));
+    }else{
+        // must be in the deadband
+        throttle_out = get_non_takeoff_throttle();
+    }
+
+    return throttle_out;
 }
 
 // get_throttle_surface_tracking - hold copter at the desired distance above the ground
@@ -194,7 +237,7 @@ static float get_throttle_surface_tracking(int16_t target_rate, float current_al
     uint32_t now = millis();
 
     // reset target altitude if this controller has just been engaged
-    if( now - last_call_ms > 200 ) {
+    if (now - last_call_ms > SONAR_TIMEOUT_MS) {
         target_sonar_alt = sonar_alt + current_alt_target - current_loc.alt;
     }
     last_call_ms = now;
@@ -208,8 +251,8 @@ static float get_throttle_surface_tracking(int16_t target_rate, float current_al
     // Note: the 750cm limit is perhaps too wide but is consistent with the regular althold limits and helps ensure a smooth transition
     target_sonar_alt = constrain_float(target_sonar_alt,sonar_alt-pos_control.get_leash_down_z(),sonar_alt+pos_control.get_leash_up_z());
 
-    // calc desired velocity correction from target sonar alt vs actual sonar alt
-    distance_error = target_sonar_alt-sonar_alt;
+    // calc desired velocity correction from target sonar alt vs actual sonar alt (remove the error already passed to Altitude controller to avoid oscillations)
+    distance_error = (target_sonar_alt - sonar_alt) - (current_alt_target - current_loc.alt);
     velocity_correction = distance_error * g.sonar_gain;
     velocity_correction = constrain_float(velocity_correction, -THR_SURFACE_TRACKING_VELZ_MAX, THR_SURFACE_TRACKING_VELZ_MAX);
 

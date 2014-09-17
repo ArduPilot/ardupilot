@@ -235,37 +235,6 @@ static void Log_Write_Cmd(const AP_Mission::Mission_Command &cmd)
     DataFlash.Log_Write_MavCmd(mission.num_commands(),mav_cmd);
 }
 
-struct PACKED log_Camera {
-    LOG_PACKET_HEADER;
-    uint32_t gps_time;
-    uint16_t gps_week;
-    int32_t  latitude;
-    int32_t  longitude;
-    int32_t  altitude;
-    int16_t  roll;
-    int16_t  pitch;
-    uint16_t yaw;
-};
-
-// Write a Camera packet. Total length : 26 bytes
-static void Log_Write_Camera()
-{
-#if CAMERA == ENABLED
-    struct log_Camera pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_CAMERA_MSG),
-        gps_time    : gps.time_week_ms(),
-        gps_week    : gps.time_week(),
-        latitude    : current_loc.lat,
-        longitude   : current_loc.lng,
-        altitude    : current_loc.alt,
-        roll        : (int16_t)ahrs.roll_sensor,
-        pitch       : (int16_t)ahrs.pitch_sensor,
-        yaw         : (uint16_t)ahrs.yaw_sensor
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
-#endif
-}
-
 struct PACKED log_Startup {
     LOG_PACKET_HEADER;
     uint8_t startup_type;
@@ -331,8 +300,8 @@ struct PACKED log_Nav_Tuning {
     uint32_t time_ms;
     uint16_t yaw;
     uint32_t wp_distance;
-    uint16_t target_bearing_cd;
-    uint16_t nav_bearing_cd;
+    int16_t target_bearing_cd;
+    int16_t nav_bearing_cd;
     int16_t altitude_error_cm;
     int16_t airspeed_cm;
     float   altitude;
@@ -347,8 +316,8 @@ static void Log_Write_Nav_Tuning()
         time_ms             : hal.scheduler->millis(),
         yaw                 : (uint16_t)ahrs.yaw_sensor,
         wp_distance         : wp_distance,
-        target_bearing_cd   : (uint16_t)nav_controller->target_bearing_cd(),
-        nav_bearing_cd      : (uint16_t)nav_controller->nav_bearing_cd(),
+        target_bearing_cd   : (int16_t)nav_controller->target_bearing_cd(),
+        nav_bearing_cd      : (int16_t)nav_controller->nav_bearing_cd(),
         altitude_error_cm   : (int16_t)altitude_error_cm,
         airspeed_cm         : (int16_t)airspeed.get_airspeed_cm(),
         altitude            : barometer.get_altitude(),
@@ -384,6 +353,8 @@ struct PACKED log_Sonar {
     float baro_alt;
     float groundspeed;
     uint8_t throttle;
+    uint8_t count;
+    float correction;
 };
 
 // Write a sonar packet
@@ -392,11 +363,13 @@ static void Log_Write_Sonar()
     struct log_Sonar pkt = {
         LOG_PACKET_HEADER_INIT(LOG_SONAR_MSG),
         timestamp   : hal.scheduler->millis(),
-        distance    : sonar.distance_cm(),
-        voltage     : sonar.voltage(),
+        distance    : (float)rangefinder.distance_cm(),
+        voltage     : rangefinder.voltage_mv()*0.001f,
         baro_alt    : barometer.get_altitude(),
         groundspeed : gps.ground_speed(),
-        throttle    : (uint8_t)(100 * channel_throttle->norm_output())
+        throttle    : (uint8_t)(100 * channel_throttle->norm_output()),
+        count       : rangefinder_state.in_range_count,
+        correction  : rangefinder_state.correction
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -424,8 +397,8 @@ static void Log_Write_Current()
         LOG_PACKET_HEADER_INIT(LOG_CURRENT_MSG),
         time_ms                 : hal.scheduler->millis(),
         throttle_in             : channel_throttle->control_in,
-        battery_voltage         : (int16_t)(battery.voltage() * 100.0),
-        current_amps            : (int16_t)(battery.current_amps() * 100.0),
+        battery_voltage         : (int16_t)(battery.voltage() * 100.0f),
+        current_amps            : (int16_t)(battery.current_amps() * 100.0f),
         board_voltage           : (uint16_t)(hal.analogin->board_voltage()*1000),
         current_total           : battery.current_total_mah()
     };
@@ -459,8 +432,8 @@ struct PACKED log_Compass {
 // Write a Compass packet. Total length : 15 bytes
 static void Log_Write_Compass()
 {
-    const Vector3f &mag_offsets = compass.get_offsets();
-    const Vector3f &mag = compass.get_field();
+    const Vector3f &mag_offsets = compass.get_offsets(0);
+    const Vector3f &mag = compass.get_field(0);
     struct log_Compass pkt = {
         LOG_PACKET_HEADER_INIT(LOG_COMPASS_MSG),
         time_ms         : hal.scheduler->millis(),
@@ -487,6 +460,23 @@ static void Log_Write_Compass()
             offset_z        : (int16_t)mag2_offsets.z
         };
         DataFlash.WriteBlock(&pkt2, sizeof(pkt2));
+    }
+#endif
+#if COMPASS_MAX_INSTANCES > 2
+    if (compass.get_count() > 2) {
+        const Vector3f &mag3_offsets = compass.get_offsets(2);
+        const Vector3f &mag3 = compass.get_field(2);
+        struct log_Compass pkt3 = {
+            LOG_PACKET_HEADER_INIT(LOG_COMPASS3_MSG),
+            time_ms         : hal.scheduler->millis(),
+            mag_x           : (int16_t)mag3.x,
+            mag_y           : (int16_t)mag3.y,
+            mag_z           : (int16_t)mag3.z,
+            offset_x        : (int16_t)mag3_offsets.x,
+            offset_y        : (int16_t)mag3_offsets.y,
+            offset_z        : (int16_t)mag3_offsets.z
+        };
+        DataFlash.WriteBlock(&pkt3, sizeof(pkt3));
     }
 #endif
 }
@@ -543,16 +533,14 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "ATT", "IccCCC",        "TimeMS,Roll,Pitch,Yaw,ErrorRP,ErrorYaw" },
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
       "PM",  "IHIhhhBH", "LTime,MLC,gDt,GDx,GDy,GDz,I2CErr,INSErr" },
-    { LOG_CAMERA_MSG, sizeof(log_Camera),                 
-      "CAM", "IHLLeccC",   "GPSTime,GPSWeek,Lat,Lng,Alt,Roll,Pitch,Yaw" },
     { LOG_STARTUP_MSG, sizeof(log_Startup),         
       "STRT", "BH",         "SType,CTot" },
     { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     
       "CTUN", "Icccchhf",    "TimeMS,NavRoll,Roll,NavPitch,Pitch,ThrOut,RdrOut,AccY" },
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),         
-      "NTUN", "ICICCccfI",   "TimeMS,Yaw,WpDist,TargBrg,NavBrg,AltErr,Arspd,Alt,GSpdCM" },
+      "NTUN", "ICIccccfI",   "TimeMS,Yaw,WpDist,TargBrg,NavBrg,AltErr,Arspd,Alt,GSpdCM" },
     { LOG_SONAR_MSG, sizeof(log_Sonar),             
-      "SONR", "IffffB",   "TimeMS,DistCM,Volt,BaroAlt,GSpd,Thr" },
+      "SONR", "IffffBBf",   "TimeMS,DistCM,Volt,BaroAlt,GSpd,Thr,Cnt,Corr" },
     { LOG_MODE_MSG, sizeof(log_Mode),             
       "MODE", "IMB",         "TimeMS,Mode,ModeNum" },
     { LOG_CURRENT_MSG, sizeof(log_Current),             
@@ -565,6 +553,8 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "ARM", "IHB", "TimeMS,ArmState,ArmChecks" },
     { LOG_AIRSPEED_MSG, sizeof(log_AIRSPEED),
       "ARSP",  "Iffc",     "TimeMS,Airspeed,DiffPress,Temp" },
+    { LOG_ATRP_MSG, sizeof(AP_AutoTune::log_ATRP),
+      "ATRP", "IBBcfff",  "TimeMS,Type,State,Servo,Demanded,Achieved,P" },
     TECS_LOG_FORMAT(LOG_TECS_MSG)
 };
 
@@ -609,7 +599,6 @@ static void Log_Write_Performance() {}
 static void Log_Write_Cmd(const AP_Mission::Mission_Command &cmd) {}
 static void Log_Write_Attitude() {}
 static void Log_Write_Control_Tuning() {}
-static void Log_Write_Camera() {}
 static void Log_Write_Mode(uint8_t mode) {}
 static void Log_Write_Compass() {}
 static void Log_Write_GPS(uint8_t instance) {}

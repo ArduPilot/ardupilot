@@ -38,7 +38,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: RSSI_PIN
     // @DisplayName: Receiver RSSI sensing pin
     // @Description: This selects an analog pin for the receiver RSSI voltage. It assumes the voltage is 5V for max rssi, 0V for minimum
-    // @Values: -1:Disabled, 0:A0, 1:A1, 13:A13
+    // @Values: -1:Disabled, 0:APM2 A0, 1:APM2 A1, 2:APM2 A2, 13:APM2 A13, 103:Pixhawk SBUS
     // @User: Standard
     GSCALAR(rssi_pin,            "RSSI_PIN",         -1),
 
@@ -58,26 +58,37 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: SERIAL0_BAUD
     // @DisplayName: USB Console Baud Rate
-    // @Description: The baud rate used on the USB console
-    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200
+    // @Description: The baud rate used on the USB console. The APM2 can support all baudrates up to 115, and also can support 500. The PX4 can support rates of up to 1500. If you setup a rate you cannot support on APM2 and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
+    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,500:500000,921:921600,1500:1500000
     // @User: Standard
-	GSCALAR(serial0_baud,           "SERIAL0_BAUD",     115),
+    GSCALAR(serial0_baud,           "SERIAL0_BAUD",   SERIAL0_BAUD/1000),
 
     // @Param: SERIAL1_BAUD
     // @DisplayName: Telemetry Baud Rate
-    // @Description: The baud rate used on the first telemetry port
-    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200
+    // @Description: The baud rate used on the first telemetry port. The APM2 can support all baudrates up to 115, and also can support 500. The PX4 can support rates of up to 1500. If you setup a rate you cannot support on APM2 and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
+    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,500:500000,921:921600,1500:1500000
     // @User: Standard
-	GSCALAR(serial1_baud,           "SERIAL1_BAUD",     57),
+    GSCALAR(serial1_baud,           "SERIAL1_BAUD",   SERIAL1_BAUD/1000),
 
 #if MAVLINK_COMM_NUM_BUFFERS > 2
     // @Param: SERIAL2_BAUD
     // @DisplayName: Telemetry Baud Rate
-    // @Description: The baud rate used on the second telemetry port (where available)
-    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200
+    // @Description: The baud rate used on the second telemetry port. The APM2 can support all baudrates up to 115, and also can support 500. The PX4 can support rates of up to 1500. If you setup a rate you cannot support on APM2 and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
+    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,500:500000,921:921600,1500:1500000
     // @User: Standard
-	GSCALAR(serial2_baud,           "SERIAL2_BAUD",     57),
-#endif
+    GSCALAR(serial2_baud,           "SERIAL2_BAUD",   SERIAL2_BAUD/1000),
+
+#if FRSKY_TELEM_ENABLED == ENABLED
+    // @Param: SERIAL2_PROTOCOL
+    // @DisplayName: SERIAL2 protocol selection
+    // @Description: Control what protocol telemetry 2 port should be used for
+    // @Values: 1:GCS Mavlink,2:Frsky D-PORT
+    // @User: Standard
+    GSCALAR(serial2_protocol,        "SERIAL2_PROTOCOL", SERIAL2_MAVLINK),
+#endif // FRSKY_TELEM_ENABLED
+
+#endif // MAVLINK_COMM_NUM_BUFFERS
+
 
     // @Param: TELEM_DELAY
     // @DisplayName: Telemetry startup delay 
@@ -270,12 +281,12 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: THR_SLEWRATE
     // @DisplayName: Throttle slew rate
-    // @Description: maximum percentage change in throttle per second. A setting of 10 means to not change the throttle by more than 10% of the full throttle range in one second. A value of zero means no limit.
+    // @Description: maximum percentage change in throttle per second. A setting of 10 means to not change the throttle by more than 10% of the full throttle range in one second. A value of zero means no limit. A value of 100 means the throttle can change over its full range in one second. Note that for some NiMH powered rovers setting a lower value like 40 or 50 may be worthwhile as the sudden current demand on the battery of a big rise in throttle may cause a brownout.
     // @Units: Percent
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
-	GSCALAR(throttle_slewrate,      "THR_SLEWRATE",     0),
+	GSCALAR(throttle_slewrate,      "THR_SLEWRATE",     100),
 
     // @Param: SKID_STEER_OUT
     // @DisplayName: Skid steering output
@@ -327,40 +338,40 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
 	GSCALAR(fs_gcs_enabled, "FS_GCS_ENABLE",   0),
 
-	// @Param: SONAR_TRIGGER_CM
-	// @DisplayName: Sonar trigger distance
-	// @Description: The distance from an obstacle in centimeters at which the sonar triggers a turn to avoid the obstacle
+	// @Param: RNGFND_TRIGGR_CM
+	// @DisplayName: Rangefinder trigger distance
+	// @Description: The distance from an obstacle in centimeters at which the rangefinder triggers a turn to avoid the obstacle
 	// @Units: centimeters
     // @Range: 0 1000
     // @Increment: 1
 	// @User: Standard
-	GSCALAR(sonar_trigger_cm,   "SONAR_TRIGGER_CM",    100),
+	GSCALAR(sonar_trigger_cm,   "RNGFND_TRIGGR_CM",    100),
 
-	// @Param: SONAR_TURN_ANGLE
-	// @DisplayName: Sonar trigger angle
-	// @Description: The course deviation in degrees to apply while avoiding an obstacle detected with the sonar. A positive number means to turn right, and a negative angle means to turn left.
+	// @Param: RNGFND_TURN_ANGL
+	// @DisplayName: Rangefinder trigger angle
+	// @Description: The course deviation in degrees to apply while avoiding an obstacle detected with the rangefinder. A positive number means to turn right, and a negative angle means to turn left.
 	// @Units: centimeters
     // @Range: -45 45
     // @Increment: 1
 	// @User: Standard
-	GSCALAR(sonar_turn_angle,   "SONAR_TURN_ANGLE",    45),
+	GSCALAR(sonar_turn_angle,   "RNGFND_TURN_ANGL",    45),
 
-	// @Param: SONAR_TURN_TIME
-	// @DisplayName: Sonar turn time
-	// @Description: The amount of time in seconds to apply the SONAR_TURN_ANGLE after detecting an obstacle.
+	// @Param: RNGFND_TURN_TIME
+	// @DisplayName: Rangefinder turn time
+	// @Description: The amount of time in seconds to apply the RNGFND_TURN_ANGL after detecting an obstacle.
 	// @Units: seconds
     // @Range: 0 100
     // @Increment: 0.1
 	// @User: Standard
-	GSCALAR(sonar_turn_time,    "SONAR_TURN_TIME",     1.0f),
+	GSCALAR(sonar_turn_time,    "RNGFND_TURN_TIME",     1.0f),
 
-	// @Param: SONAR_DEBOUNCE
-	// @DisplayName: Sonar debounce count
-	// @Description: The number of 50Hz sonar hits needed to trigger an obstacle avoidance event. If you get a lot of false sonar events then raise this number, but if you make it too large then it will cause lag in detecting obstacles, which could cause you go hit the obstacle.
+	// @Param: RNGFND_DEBOUNCE
+	// @DisplayName: Rangefinder debounce count
+	// @Description: The number of 50Hz rangefinder hits needed to trigger an obstacle avoidance event. If you get a lot of false sonar events then raise this number, but if you make it too large then it will cause lag in detecting obstacles, which could cause you go hit the obstacle.
     // @Range: 1 100
     // @Increment: 1
 	// @User: Standard
-	GSCALAR(sonar_debounce,   "SONAR_DEBOUNCE",    2),
+	GSCALAR(sonar_debounce,   "RNGFND_DEBOUNCE",    2),
 
     // @Param: LEARN_CH
     // @DisplayName: Learning channel
@@ -482,13 +493,9 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/AP_L1_Control/AP_L1_Control.cpp
     GOBJECT(L1_controller,         "NAVL1_",   AP_L1_Control),
 
-    // @Group: SONAR_
-    // @Path: ../libraries/AP_RangeFinder/AP_RangeFinder_analog.cpp
-    GOBJECT(sonar,                  "SONAR_", AP_RangeFinder_analog),
-
-    // @Group: SONAR2_
-    // @Path: ../libraries/AP_RangeFinder/AP_RangeFinder_analog.cpp
-    GOBJECT(sonar2,                 "SONAR2_", AP_RangeFinder_analog),
+    // @Group: RNGFND
+    // @Path: ../libraries/AP_RangeFinder/RangeFinder.cpp
+    GOBJECT(sonar,                 "RNGFND", RangeFinder),
 
     // @Group: INS_
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp

@@ -31,6 +31,9 @@
 #include <AP_Vehicle.h>
 #include <AP_ADC_AnalogSource.h>
 #include <AP_Mission.h>
+#include <StorageManager.h>
+#include <AP_Terrain.h>
+#include <AP_NavEKF.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
@@ -53,7 +56,8 @@ void setup()
 
     // motor initialisation
     motors.set_update_rate(490);
-    motors.set_frame_orientation(AP_MOTORS_X_FRAME);
+    // motors.set_frame_orientation(AP_MOTORS_X_FRAME);
+    motors.set_frame_orientation(AP_MOTORS_PLUS_FRAME);
     motors.set_min_throttle(130);
     motors.set_mid_throttle(500);
     motors.Init();      // initialise motors
@@ -109,7 +113,13 @@ void motor_order_test()
 {
     hal.console->println("testing motor order");
     motors.armed(true);
-    motors.output_test();
+    for (int8_t i=1; i <= AP_MOTORS_MAX_NUM_MOTORS; i++) {
+        hal.console->printf_P(PSTR("Motor %d\n"),(int)i);
+        motors.output_test(i, 1150);
+        hal.scheduler->delay(300);
+        motors.output_test(i, 1000);
+        hal.scheduler->delay(2000);
+    }
     motors.armed(false);
     hal.console->println("finished test.");
 

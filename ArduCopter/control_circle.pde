@@ -9,7 +9,16 @@ static bool circle_init(bool ignore_checks)
 {
     if ((GPS_ok() && inertial_nav.position_ok()) || ignore_checks) {
         circle_pilot_yaw_override = false;
+
+        // initialize speeds and accelerations
+        pos_control.set_speed_xy(wp_nav.get_speed_xy());
+        pos_control.set_accel_xy(wp_nav.get_wp_acceleration());
+        pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+        pos_control.set_accel_z(g.pilot_accel_z);
+
+        // initialise circle controller including setting the circle center based on vehicle speed
         circle_nav.init();
+
         return true;
     }else{
         return false;
@@ -26,8 +35,10 @@ static void circle_run()
     // if not auto armed set throttle to zero and exit immediately
     if(!ap.auto_armed || ap.land_complete) {
         // To-Do: add some initialisation of position controllers
-        attitude_control.init_targets();
+        attitude_control.relax_bf_rate_controller();
+        attitude_control.set_yaw_target_to_current_heading();
         attitude_control.set_throttle_out(0, false);
+        pos_control.set_alt_target_to_current_alt();
         return;
     }
 

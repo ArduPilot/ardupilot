@@ -30,18 +30,12 @@ void VRBRAINRCOutput::init(void* unused)
         hal.console->printf("RCOutput: Unable to setup IO arming OK\n");
     }
     _rate_mask = 0;
-    _alt_fd = -1;    
+
     _servo_count = 0;
-    _alt_servo_count = 0;
+
 
     if (ioctl(_pwm_fd, PWM_SERVO_GET_COUNT, (unsigned long)&_servo_count) != 0) {
         hal.console->printf("RCOutput: Unable to get servo count\n");        
-        return;
-    }
-
-    _alt_fd = open("/dev/vroutput", O_RDWR);
-    if (_alt_fd == -1) {
-        hal.console->printf("RCOutput: failed to open /dev/vroutput");
         return;
     }
 }
@@ -49,20 +43,7 @@ void VRBRAINRCOutput::init(void* unused)
 
 void VRBRAINRCOutput::_init_alt_channels(void)
 {
-    if (_alt_fd == -1) {
-        return;
-    }
-    if (ioctl(_alt_fd, PWM_SERVO_ARM, 0) != 0) {
-        hal.console->printf("RCOutput: Unable to setup alt IO arming\n");
-        return;
-    }
-    if (ioctl(_alt_fd, PWM_SERVO_SET_ARM_OK, 0) != 0) {
-        hal.console->printf("RCOutput: Unable to setup alt IO arming OK\n");
-        return;
-    }
-    if (ioctl(_alt_fd, PWM_SERVO_GET_COUNT, (unsigned long)&_alt_servo_count) != 0) {
-        hal.console->printf("RCOutput: Unable to get servo count\n");        
-    }
+
 }
 
 void VRBRAINRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
@@ -90,7 +71,6 @@ void VRBRAINRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
      */
     if (freq_hz > 50) {
         // we are setting high rates on the given channels
-#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V4) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V5) || defined(CONFIG_ARCH_BOARD_VRHERO_V1)
         _rate_mask |= chmask & 0xFF;
         if (_rate_mask & 0x07) {
             _rate_mask |= 0x07;
@@ -101,21 +81,8 @@ void VRBRAINRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
         if (_rate_mask & 0xC0) {
             _rate_mask |= 0xC0;
         }
-#else
-        _rate_mask |= chmask & 0xFF;
-        if (_rate_mask & 0x3) {
-            _rate_mask |= 0x3;
-        }
-        if (_rate_mask & 0xc) {
-            _rate_mask |= 0xc;
-        }
-        if (_rate_mask & 0xF0) {
-            _rate_mask |= 0xF0;
-        }
-#endif
     } else {
         // we are setting low rates on the given channels
-#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V4) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V5) || defined(CONFIG_ARCH_BOARD_VRHERO_V1)
         if (chmask & 0x07) {
             _rate_mask &= ~0x07;
         }
@@ -125,17 +92,6 @@ void VRBRAINRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
         if (chmask & 0xC0) {
             _rate_mask &= ~0xC0;
         }
-#else
-        if (chmask & 0x3) {
-            _rate_mask &= ~0x3;
-        }
-        if (chmask & 0xc) {
-            _rate_mask &= ~0xc;
-        }
-        if (chmask & 0xf0) {
-            _rate_mask &= ~0xf0;
-        }
-#endif
     }
 
     if (ioctl(_pwm_fd, PWM_SERVO_SET_SELECT_UPDATE_RATE, _rate_mask) != 0) {
@@ -153,12 +109,6 @@ uint16_t VRBRAINRCOutput::get_freq(uint8_t ch)
 
 void VRBRAINRCOutput::enable_ch(uint8_t ch)
 {
-    if (ch >= 8 && !(_enabled_channels & (1U<<ch))) {
-        // this is the first enable of an auxillary channel - setup
-        // aux channels now. This delayed setup makes it possible to
-        // use BRD_PWM_COUNT to setup the number of PWM channels.
-        _init_alt_channels();
-    }
     _enabled_channels |= (1U<<ch);
 }
 
@@ -183,6 +133,22 @@ void VRBRAINRCOutput::set_safety_pwm(uint32_t chmask, uint16_t period_us)
     }
 }
 
+void VRBRAINRCOutput::set_failsafe_pwm(uint32_t chmask, uint16_t period_us)
+{
+    struct pwm_output_values pwm_values;
+    memset(&pwm_values, 0, sizeof(pwm_values));
+    for (uint8_t i=0; i<_servo_count; i++) {
+        if ((1UL<<i) & chmask) {
+            pwm_values.values[i] = period_us;
+        }
+        pwm_values.channel_count++;
+    }
+    int ret = ioctl(_pwm_fd, PWM_SERVO_SET_FAILSAFE_PWM, (long unsigned int)&pwm_values);
+    if (ret != OK) {
+        hal.console->printf("Failed to setup failsafe PWM for 0x%08x to %u\n", (unsigned)chmask, period_us);
+    }
+}
+
 void VRBRAINRCOutput::force_safety_off(void)
 {
     int ret = ioctl(_pwm_fd, PWM_SERVO_SET_FORCE_SAFETY_OFF, 0);
@@ -193,7 +159,7 @@ void VRBRAINRCOutput::force_safety_off(void)
 
 void VRBRAINRCOutput::write(uint8_t ch, uint16_t period_us)
 {
-    if (ch >= _servo_count + _alt_servo_count) {
+    if (ch >= _servo_count) {
         return;
     }
     if (!(_enabled_channels & (1U<<ch))) {
@@ -206,6 +172,7 @@ void VRBRAINRCOutput::write(uint8_t ch, uint16_t period_us)
     if (period_us != _period[ch]) {
         _period[ch] = period_us;
         _need_update = true;
+        up_pwm_servo_set(ch, period_us);
     }
 }
 
@@ -244,19 +211,7 @@ void VRBRAINRCOutput::_timer_tick(void)
     if (_need_update && _pwm_fd != -1) {
         _need_update = false;
         perf_begin(_perf_rcout);
-        if (_max_channel <= _servo_count) {
-            ::write(_pwm_fd, _period, _max_channel*sizeof(_period[0]));
-        } else {
-            // we're using both sets of outputs
-            ::write(_pwm_fd, _period, _servo_count*sizeof(_period[0]));
-            if (_alt_fd != -1 && _alt_servo_count > 0) {
-                uint8_t n = _max_channel - _servo_count;
-                if (n > _alt_servo_count) {
-                    n = _alt_servo_count;
-                }
-                ::write(_alt_fd, &_period[_servo_count], n*sizeof(_period[0]));
-            }
-        }
+        ::write(_pwm_fd, _period, _max_channel*sizeof(_period[0]));
         perf_end(_perf_rcout);
         _last_output = now;
     }

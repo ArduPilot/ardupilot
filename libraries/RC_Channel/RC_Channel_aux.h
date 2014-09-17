@@ -67,6 +67,7 @@ public:
         k_flaperon2             = 25,            ///< flaperon, right wing
         k_steering              = 26,            ///< ground steering, used to separate from rudder
         k_parachute_release     = 27,            ///< parachute release
+        k_epm                   = 28,            ///< epm gripper
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 
@@ -98,6 +99,12 @@ public:
 
 	// set servo_out
 	static void set_servo_out(Aux_servo_function_t function, int16_t value);
+
+	// setup failsafe for an auxillary channel function
+	static void set_servo_failsafe(Aux_servo_function_t function, RC_Channel::LimitValue limit);
+
+	// set servo to a LimitValue
+	static void set_servo_limit(Aux_servo_function_t function, RC_Channel::LimitValue limit);
 
 	// return true if a function is assigned to a channel
 	static bool function_assigned(Aux_servo_function_t function);

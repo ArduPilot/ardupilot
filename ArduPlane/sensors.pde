@@ -8,25 +8,22 @@ static void init_barometer(void)
     gcs_send_text_P(SEVERITY_LOW, PSTR("barometer calibration complete"));
 }
 
-static void init_sonar(void)
+static void init_rangefinder(void)
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-    sonar.Init(&apm1_adc);
-#else
-    sonar.Init(NULL);
-#endif
+    rangefinder.init();
 }
 
-// read the sonars
-static void read_sonars(void)
+/*
+  read the rangefinder and update height estimate
+ */
+static void read_rangefinder(void)
 {
-    if (!sonar.enabled()) {
-        // this makes it possible to disable sonar at runtime
-        return;
-    }
+    rangefinder.update();
 
     if (should_log(MASK_LOG_SONAR))
         Log_Write_Sonar();
+
+    rangefinder_height_update();
 }
 
 /*
@@ -54,6 +51,7 @@ static void zero_airspeed(void)
 static void read_battery(void)
 {
     battery.read();
+    compass.set_current(battery.current_amps());
 
     if (!usb_connected && battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah)) {
         low_battery_event();
@@ -73,15 +71,5 @@ void read_receiver_rssi(void)
         float ret = rssi_analog_source->voltage_average() * 255 / g.rssi_range;
         receiver_rssi = constrain_int16(ret, 0, 255);
     }
-}
-
-/*
-  return current_loc.alt adjusted for ALT_OFFSET
-  This is useful during long flights to account for barometer changes
-  from the GCS, or to adjust the flying height of a long mission
- */
-static int32_t adjusted_altitude_cm(void)
-{
-    return current_loc.alt - (g.alt_offset*100);
 }
 

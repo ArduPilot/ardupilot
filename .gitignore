@@ -3,11 +3,14 @@
 *.d
 *.dll
 *.elf
+*.hex
+*.dfu
 *.exe
 *.lst
 *.o
 *.obj
 *.px4
+*.vrx
 *.pyc
 *.tlog
 *.tlog.raw
@@ -48,14 +51,17 @@
 /Tools/autotest/jsbsim/fgout.xml
 /Tools/autotest/jsbsim/rascal_test.xml
 ArduCopter/Debug/
+ArduCopter/terrain/*.DAT
 ArduCopter/test.ArduCopter/
 ArduCopter/test/*
+ArduPlane/terrain/*.DAT
 ArduPlane/test.ArduPlane/
 APMrover2/test.APMrover2/
 build
 Build.ArduCopter/*
 Build.ArduPlane/*
 Build.APMrover2/*
+Build.AntennaTracker/*
 cmake_install.cmake
 CMakeCache.txt
 CMakeFiles
@@ -71,3 +77,4 @@ serialsent.raw
 status.txt
 tags
 test.ArduCopter/*
+Thumbs.db

@@ -109,7 +109,7 @@ static void calc_throttle(float target_speed)
     
     if (control_mode >= AUTO && wp_distance <= g.speed_turn_dist) {
         // in auto-modes we reduce speed when approaching waypoints
-        float reduction2 = 1.0 - speed_turn_reduction*((g.speed_turn_dist - wp_distance)/g.speed_turn_dist);
+        float reduction2 = 1.0 - speed_turn_reduction;
         if (reduction2 < reduction) {
             reduction = reduction2;
         }

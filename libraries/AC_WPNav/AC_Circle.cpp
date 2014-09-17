@@ -35,20 +35,28 @@ AC_Circle::AC_Circle(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosCont
     _ahrs(ahrs),
     _pos_control(pos_control),
     _last_update(0),
-    _angle(0)
+    _yaw(0.0f),
+    _angle(0.0f),
+    _angle_total(0.0f),
+    _angular_vel(0.0f),
+    _angular_vel_max(0.0f),
+    _angular_accel(0.0f)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
 
 /// init - initialise circle controller setting center specifically
+///     caller should set the position controller's x,y and z speeds and accelerations before calling this
 void AC_Circle::init(const Vector3f& center)
 {
     _center = center;
 
-	// To-Do: set target position, angle, etc so that copter begins circle from closest point to stopping point
-	_pos_control.set_pos_target(_inav.get_position());
+    // initialise position controller (sets target roll angle, pitch angle and I terms based on vehicle current lean angles)
+    _pos_control.init_xy_controller();
 
-	// To-Do: set _pos_control speed and accel
+    // set initial position target to reasonable stopping point
+    _pos_control.set_target_to_stopping_point_xy();
+    _pos_control.set_target_to_stopping_point_z();
 
     // calculate velocities
     calc_velocities();
@@ -58,21 +66,23 @@ void AC_Circle::init(const Vector3f& center)
 }
 
 /// init - initialise circle controller setting center using stopping point and projecting out based on the copter's heading
+///     caller should set the position controller's x,y and z speeds and accelerations before calling this
 void AC_Circle::init()
 {
-    Vector3f stopping_point;
+    // initialise position controller (sets target roll angle, pitch angle and I terms based on vehicle current lean angles)
+    _pos_control.init_xy_controller();
 
-    // get reasonable stopping point
-    _pos_control.get_stopping_point_xy(stopping_point);
-    _pos_control.get_stopping_point_z(stopping_point);
+    // set initial position target to reasonable stopping point
+    _pos_control.set_target_to_stopping_point_xy();
+    _pos_control.set_target_to_stopping_point_z();
+
+    // get stopping point
+    const Vector3f& stopping_point = _pos_control.get_pos_target();
 
     // set circle center to circle_radius ahead of stopping point
     _center.x = stopping_point.x + _radius * _ahrs.cos_yaw();
     _center.y = stopping_point.y + _radius * _ahrs.sin_yaw();
     _center.z = stopping_point.z;
-
-    // update pos_control target to stopping point
-    _pos_control.set_pos_target(stopping_point);
 
     // calculate velocities
     calc_velocities();
@@ -118,7 +128,7 @@ void AC_Circle::update()
         _angle_total += angle_change;
 
         // if the circle_radius is zero we are doing panorama so no need to update loiter target
-        if (_radius != 0.0) {
+        if (_radius != 0.0f) {
             // calculate target position
             Vector3f target;
             target.x = _center.x + _radius * cosf(-_angle);
@@ -149,7 +159,7 @@ void AC_Circle::update()
     }
 
     // run loiter's position to velocity step
-    _pos_control.update_pos_controller(false);
+    _pos_control.update_xy_controller(false);
 }
 
 // get_closest_point_on_circle - returns closest point on the circle
@@ -243,7 +253,7 @@ void AC_Circle::init_start_angle(bool use_heading)
             _angle = wrap_PI(_ahrs.yaw-PI);
         } else {
             // get bearing from circle center to vehicle in radians
-            float bearing_rad = ToRad(90) + atan2f(-(curr_pos.x-_center.x), curr_pos.y-_center.y);
+            float bearing_rad = ToRad(90) + fast_atan2(-(curr_pos.x-_center.x), curr_pos.y-_center.y);
             _angle = wrap_PI(bearing_rad);
         }
     }

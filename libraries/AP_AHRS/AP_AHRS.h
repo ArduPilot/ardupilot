@@ -33,12 +33,29 @@
 
 #define AP_AHRS_TRIM_LIMIT 10.0f        // maximum trim angle in degrees
 
+enum AHRS_VehicleClass {
+    AHRS_VEHICLE_UNKNOWN,
+    AHRS_VEHICLE_GROUND,
+    AHRS_VEHICLE_COPTER,
+    AHRS_VEHICLE_FIXED_WING,
+};
+
+
 class AP_AHRS
 {
 public:
     // Constructor
     AP_AHRS(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps) :
+        roll(0.0f),
+        pitch(0.0f),
+        yaw(0.0f),
+        roll_sensor(0),
+        pitch_sensor(0),
+        yaw_sensor(0),
+        _vehicle_class(AHRS_VEHICLE_UNKNOWN),
         _compass(NULL),
+        _airspeed(NULL),
+        _compass_last_update(0),
         _ins(ins),
         _baro(baro),
         _gps(gps),
@@ -73,6 +90,9 @@ public:
         _home.lat        = 0;
     }
 
+    // empty virtual destructor
+    virtual ~AP_AHRS() {}
+
     // init sets up INS board orientation
     virtual void init() {
         set_orientation();
@@ -85,6 +105,14 @@ public:
 
     bool get_fly_forward(void) const {
         return _flags.fly_forward;
+    }
+
+    AHRS_VehicleClass get_vehicle_class(void) const {
+        return _vehicle_class;
+    }
+
+    void set_vehicle_class(AHRS_VehicleClass vclass) {
+        _vehicle_class = vclass;
     }
 
     void set_wind_estimation(bool b) {
@@ -146,7 +174,7 @@ public:
     int32_t yaw_sensor;
 
     // return a smoothed and corrected gyro vector
-    virtual const Vector3f get_gyro(void) const = 0;
+    virtual const Vector3f &get_gyro(void) const = 0;
 
     // return the current estimate of the gyro drift
     virtual const Vector3f &get_gyro_drift(void) const = 0;
@@ -307,7 +335,12 @@ public:
     // return the active accelerometer instance
     uint8_t get_active_accel_instance(void) const { return _active_accel_instance; }
 
+    // is the AHRS subsystem healthy?
+    virtual bool healthy(void) = 0;
+
 protected:
+    AHRS_VehicleClass _vehicle_class;
+
     // settable parameters
     AP_Float beta;
     AP_Int8 _gps_use;

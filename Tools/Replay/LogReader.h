@@ -1,9 +1,9 @@
 
 enum log_messages {
     // plane specific messages
-    LOG_PLANE_ATTITUDE_MSG = 10,
-    LOG_PLANE_COMPASS_MSG  = 12,
-    LOG_PLANE_AIRSPEED_MSG  = 18,
+    LOG_PLANE_ATTITUDE_MSG = 9,
+    LOG_PLANE_COMPASS_MSG  = 11,
+    LOG_PLANE_AIRSPEED_MSG  = 17,
 
     // copter specific messages
     LOG_COPTER_ATTITUDE_MSG = 1,
@@ -19,7 +19,7 @@ enum log_messages {
 class LogReader 
 {
 public:
-    LogReader(AP_InertialSensor &_ins, AP_Baro_HIL &_baro, AP_Compass_HIL &_compass, AP_GPS &_gps, AP_Airspeed &_airspeed);
+    LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro_HIL &_baro, AP_Compass_HIL &_compass, AP_GPS &_gps, AP_Airspeed &_airspeed);
     bool open_log(const char *logfile);
     bool update(uint8_t &type);
     bool wait_type(uint8_t type);
@@ -40,6 +40,7 @@ public:
 
 private:
     int fd;
+    AP_AHRS &ahrs;
     AP_InertialSensor &ins;
     AP_Baro_HIL &baro;
     AP_Compass_HIL &compass;
@@ -51,8 +52,9 @@ private:
 
     uint32_t ground_alt_cm;
 
+#define LOGREADER_MAX_FORMATS 100
     uint8_t num_formats;
-    struct log_Format formats[100];
+    struct log_Format formats[LOGREADER_MAX_FORMATS];
 
     Vector3f attitude;
     Vector3f sim_attitude;

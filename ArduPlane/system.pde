@@ -95,7 +95,7 @@ static void init_ardupilot()
     set_control_channels();
 
     // reset the uartA baud rate after parameter load
-    hal.uartA->begin(map_baudrate(g.serial0_baud, SERIAL0_BAUD));
+    hal.uartA->begin(map_baudrate(g.serial0_baud));
 
     // keep a record of how many resets have happened. This can be
     // used to detect in-flight resets
@@ -104,8 +104,11 @@ static void init_ardupilot()
     // init baro before we start the GCS, so that the CLI baro test works
     barometer.init();
 
-    // initialise sonar
-    init_sonar();
+    // initialise rangefinder
+    init_rangefinder();
+
+    // initialise battery monitoring
+    battery.init();
 
     // init the GCS
     gcs[0].init(hal.uartA);
@@ -116,15 +119,14 @@ static void init_ardupilot()
     check_usb_mux();
 
     // we have a 2nd serial port for telemetry
-    hal.uartC->begin(map_baudrate(g.serial1_baud, SERIAL1_BAUD),
-                     128, SERIAL1_BUFSIZE);
-    gcs[1].init(hal.uartC);
+    gcs[1].setup_uart(hal.uartC, map_baudrate(g.serial1_baud), 128, SERIAL1_BUFSIZE);
 
 #if MAVLINK_COMM_NUM_BUFFERS > 2
-    if (hal.uartD != NULL) {
-        hal.uartD->begin(map_baudrate(g.serial2_baud, SERIAL2_BAUD),
-                         128, SERIAL2_BUFSIZE);        
-        gcs[2].init(hal.uartD);
+    if (g.serial2_protocol == SERIAL2_FRSKY_DPORT || 
+        g.serial2_protocol == SERIAL2_FRSKY_SPORT) {
+        frsky_telemetry.init(hal.uartD, g.serial2_protocol);
+    } else {
+        gcs[2].setup_uart(hal.uartD, map_baudrate(g.serial2_baud), 128, SERIAL2_BUFSIZE);
     }
 #endif
 
@@ -180,8 +182,8 @@ static void init_ardupilot()
     relay.init();
 
 #if FENCE_TRIGGERED_PIN > 0
-    hal.gpio->pinMode(FENCE_TRIGGERED_PIN, OUTPUT);
-    digitalWrite(FENCE_TRIGGERED_PIN, LOW);
+    hal.gpio->pinMode(FENCE_TRIGGERED_PIN, HAL_GPIO_OUTPUT);
+    hal.gpio->write(FENCE_TRIGGERED_PIN, 0);
 #endif
 
     /*
@@ -264,6 +266,7 @@ static void startup_ground(void)
     // mid-flight, so set the serial ports non-blocking once we are
     // ready to fly
     hal.uartA->set_blocking_writes(false);
+    hal.uartB->set_blocking_writes(false);
     hal.uartC->set_blocking_writes(false);
     if (hal.uartD != NULL) {
         hal.uartD->set_blocking_writes(false);
@@ -288,6 +291,12 @@ static void set_mode(enum FlightMode mode)
     // perform any cleanup required for prev flight mode
     exit_mode(control_mode);
 
+    // cancel inverted flight
+    auto_state.inverted_flight = false;
+
+    // don't cross-track when starting a mission
+    auto_state.next_wp_no_crosstrack = true;
+
     // set mode
     previous_mode = control_mode;
     control_mode = mode;
@@ -296,6 +305,13 @@ static void set_mode(enum FlightMode mode)
         // restore last gains
         autotune_restore();
     }
+
+    // zero initial pitch and highest airspeed on mode change
+    auto_state.highest_airspeed = 0;
+    auto_state.initial_pitch_cd = ahrs.pitch_sensor;
+
+    // disable taildrag takeoff on mode change
+    auto_state.fbwa_tdrag_takeoff_mode = false;
 
     switch(control_mode)
     {
@@ -325,12 +341,12 @@ static void set_mode(enum FlightMode mode)
         auto_throttle_mode = true;
         cruise_state.locked_heading = false;
         cruise_state.lock_timer_ms = 0;
-        target_altitude_cm = current_loc.alt;
+        set_target_altitude_current();
         break;
 
     case FLY_BY_WIRE_B:
         auto_throttle_mode = true;
-        target_altitude_cm = current_loc.alt;
+        set_target_altitude_current();
         break;
 
     case CIRCLE:
@@ -341,13 +357,9 @@ static void set_mode(enum FlightMode mode)
 
     case AUTO:
         auto_throttle_mode = true;
-        prev_WP_loc = current_loc;
-        // start the mission. Note that we use resume(), not start(),
-        // as the correct behaviour for plane when entering auto is to
-        // continue the mission. If the pilot wants to restart the
-        // mission they need to either use RST_MISSION_CH or change
-        // waypoint number to 0
-        mission.resume();
+        next_WP_loc = prev_WP_loc = current_loc;
+        // start or resume the mission, based on MIS_AUTORESET
+        mission.start_or_resume();
         break;
 
     case RTL:
@@ -378,6 +390,7 @@ static void set_mode(enum FlightMode mode)
     rollController.reset_I();
     pitchController.reset_I();
     yawController.reset_I();    
+    steerController.reset_I();    
 }
 
 // exit_mode - perform any cleanup required when leaving a flight mode
@@ -450,8 +463,8 @@ static void check_short_failsafe()
 static void startup_INS_ground(bool do_accel_init)
 {
 #if HIL_MODE != HIL_MODE_DISABLED
-    while (!barometer.healthy) {
-        // the barometer becomes healthy when we get the first
+    while (barometer.get_last_update() == 0) {
+        // the barometer begins updating when we get the first
         // HIL_STATE message
         gcs_send_text_P(SEVERITY_LOW, PSTR("Waiting for first HIL_STATE message"));
         delay(1000);
@@ -472,6 +485,7 @@ static void startup_INS_ground(bool do_accel_init)
 
     ahrs.init();
     ahrs.set_fly_forward(true);
+    ahrs.set_vehicle_class(AHRS_VEHICLE_FIXED_WING);
     ahrs.set_wind_estimation(true);
 
     ins.init(style, ins_sample_rate);
@@ -508,27 +522,6 @@ static void resetPerfData(void) {
 }
 
 
-/*
- *  map from a 8 bit EEPROM baud rate to a real baud rate
- */
-static uint32_t map_baudrate(int8_t rate, uint32_t default_baud)
-{
-    switch (rate) {
-    case 1:    return 1200;
-    case 2:    return 2400;
-    case 4:    return 4800;
-    case 9:    return 9600;
-    case 19:   return 19200;
-    case 38:   return 38400;
-    case 57:   return 57600;
-    case 111:  return 111100;
-    case 115:  return 115200;
-    }
-    cliSerial->println_P(PSTR("Invalid baudrate"));
-    return default_baud;
-}
-
-
 static void check_usb_mux(void)
 {
     bool usb_check = hal.gpio->usb_connected();
@@ -547,7 +540,7 @@ static void check_usb_mux(void)
     if (usb_connected) {
         hal.uartA->begin(SERIAL0_BAUD);
     } else {
-        hal.uartA->begin(map_baudrate(g.serial1_baud, SERIAL1_BAUD));
+        hal.uartA->begin(map_baudrate(g.serial1_baud));
     }
 #endif
 }
@@ -642,4 +635,26 @@ static bool should_log(uint32_t mask)
         in_mavlink_delay = false;
     }
     return ret;
+}
+
+/*
+  send FrSky telemetry. Should be called at 5Hz by scheduler
+ */
+static void telemetry_send(void)
+{
+#if FRSKY_TELEM_ENABLED == ENABLED
+    frsky_telemetry.send_frames((uint8_t)control_mode, 
+                                (AP_Frsky_Telem::FrSkyProtocol)g.serial2_protocol.get());
+#endif
+}
+
+
+/*
+  return throttle percentage from 0 to 100
+ */
+static uint8_t throttle_percentage(void)
+{
+    // to get the real throttle we need to use norm_output() which
+    // returns a number from -1 to 1.
+    return constrain_int16(50*(channel_throttle->norm_output()+1), 0, 100);
 }

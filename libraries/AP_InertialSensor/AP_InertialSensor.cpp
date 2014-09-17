@@ -95,12 +95,19 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     AP_GROUPINFO("GYR2OFFS",    7, AP_InertialSensor, _gyro_offset[1],   0),
 #endif
 
+#if INS_MAX_INSTANCES > 2
+    AP_GROUPINFO("ACC3SCAL",    8, AP_InertialSensor, _accel_scale[2],   0),
+    AP_GROUPINFO("ACC3OFFS",    9, AP_InertialSensor, _accel_offset[2],  0),
+    AP_GROUPINFO("GYR3OFFS",   10, AP_InertialSensor, _gyro_offset[2],   0),
+#endif
+
     AP_GROUPEND
 };
 
 AP_InertialSensor::AP_InertialSensor() :
     _accel(),
-    _gyro()
+    _gyro(),
+    _board_orientation(ROTATION_NONE)
 {
     AP_Param::setup_object_defaults(this, var_info);        
 }
@@ -124,15 +131,158 @@ AP_InertialSensor::init( Start_style style,
     }
 }
 
-// save parameters to eeprom
-void AP_InertialSensor::_save_parameters()
+void
+AP_InertialSensor::init_accel()
 {
-    _product_id.save();
-    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-        _accel_scale[i].save();
-        _accel_offset[i].save();
-        _gyro_offset[i].save();
+    _init_accel();
+
+    // save calibration
+    _save_parameters();
+}
+
+#if !defined( __AVR_ATmega1280__ )
+// calibrate_accel - perform accelerometer calibration including providing user
+// instructions and feedback Gauss-Newton accel calibration routines borrowed
+// from Rolfe Schmidt blog post describing the method:
+// http://chionophilous.wordpress.com/2011/10/24/accelerometer-calibration-iv-1-implementing-gauss-newton-on-an-atmega/
+// original sketch available at
+// http://rolfeschmidt.com/mathtools/skimetrics/adxl_gn_calibration.pde
+bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact,
+                                        float &trim_roll,
+                                        float &trim_pitch)
+{
+    uint8_t num_accels = min(get_accel_count(), INS_MAX_INSTANCES);
+    Vector3f samples[INS_MAX_INSTANCES][6];
+    Vector3f new_offsets[INS_MAX_INSTANCES];
+    Vector3f new_scaling[INS_MAX_INSTANCES];
+    Vector3f orig_offset[INS_MAX_INSTANCES];
+    Vector3f orig_scale[INS_MAX_INSTANCES];
+    uint8_t num_ok = 0;
+
+    for (uint8_t k=0; k<num_accels; k++) {
+        // backup original offsets and scaling
+        orig_offset[k] = _accel_offset[k].get();
+        orig_scale[k]  = _accel_scale[k].get();
+
+        // clear accelerometer offsets and scaling
+        _accel_offset[k] = Vector3f(0,0,0);
+        _accel_scale[k] = Vector3f(1,1,1);
     }
+
+    // capture data from 6 positions
+    for (uint8_t i=0; i<6; i++) {
+        const prog_char_t *msg;
+
+        // display message to user
+        switch ( i ) {
+            case 0:
+                msg = PSTR("level");
+                break;
+            case 1:
+                msg = PSTR("on its LEFT side");
+                break;
+            case 2:
+                msg = PSTR("on its RIGHT side");
+                break;
+            case 3:
+                msg = PSTR("nose DOWN");
+                break;
+            case 4:
+                msg = PSTR("nose UP");
+                break;
+            default:    // default added to avoid compiler warning
+            case 5:
+                msg = PSTR("on its BACK");
+                break;
+        }
+        interact->printf_P(
+                PSTR("Place vehicle %S and press any key.\n"), msg);
+
+        // wait for user input
+        if (!interact->blocking_read()) {
+            //No need to use interact->printf_P for an error, blocking_read does this when it fails
+            goto failed;
+        }
+
+        // clear out any existing samples from ins
+        update();
+
+        // average 32 samples
+        for (uint8_t k=0; k<num_accels; k++) {
+            samples[k][i] = Vector3f();
+        }
+        uint8_t num_samples = 0;
+        while (num_samples < 32) {
+            if (!wait_for_sample(1000)) {
+                interact->printf_P(PSTR("Failed to get INS sample\n"));
+                goto failed;
+            }
+            // read samples from ins
+            update();
+            // capture sample
+            for (uint8_t k=0; k<num_accels; k++) {
+                samples[k][i] += get_accel(k);
+            }
+            hal.scheduler->delay(10);
+            num_samples++;
+        }
+        for (uint8_t k=0; k<num_accels; k++) {
+            samples[k][i] /= num_samples;
+        }
+    }
+
+    // run the calibration routine
+    for (uint8_t k=0; k<num_accels; k++) {
+        bool success = _calibrate_accel(samples[k], new_offsets[k], new_scaling[k]);
+
+        interact->printf_P(PSTR("Offsets[%u]: %.2f %.2f %.2f\n"),
+                           (unsigned)k,
+                           new_offsets[k].x, new_offsets[k].y, new_offsets[k].z);
+        interact->printf_P(PSTR("Scaling[%u]: %.2f %.2f %.2f\n"),
+                           (unsigned)k,
+                           new_scaling[k].x, new_scaling[k].y, new_scaling[k].z);
+        if (success) num_ok++;
+    }
+
+    if (num_ok == num_accels) {
+        interact->printf_P(PSTR("Calibration successful\n"));
+
+        for (uint8_t k=0; k<num_accels; k++) {
+            // set and save calibration
+            _accel_offset[k].set(new_offsets[k]);
+            _accel_scale[k].set(new_scaling[k]);
+        }
+        _save_parameters();
+
+        // calculate the trims as well from primary accels and pass back to caller
+        _calculate_trim(samples[0][0], trim_roll, trim_pitch);
+
+        return true;
+    }
+
+failed:
+    interact->printf_P(PSTR("Calibration FAILED\n"));
+    // restore original scaling and offsets
+    for (uint8_t k=0; k<num_accels; k++) {
+        _accel_offset[k].set(orig_offset[k]);
+        _accel_scale[k].set(orig_scale[k]);
+    }
+    return false;
+}
+#endif
+
+/// calibrated - returns true if the accelerometers have been calibrated
+/// @note this should not be called while flying because it reads from the eeprom which can be slow
+bool AP_InertialSensor::calibrated()
+{
+    // check each accelerometer has offsets saved
+    for (uint8_t i=0; i<get_accel_count(); i++) {
+        if (!_accel_offset[i].load()) {
+            return false;
+        }
+    }
+    // if we got this far the accelerometers must have been calibrated
+    return true;
 }
 
 void
@@ -144,113 +294,28 @@ AP_InertialSensor::init_gyro()
     _save_parameters();
 }
 
-void
-AP_InertialSensor::_init_gyro()
+// get_gyro_health_all - return true if all gyros are healthy
+bool AP_InertialSensor::get_gyro_health_all(void) const
 {
-    uint8_t num_gyros = min(get_gyro_count(), INS_MAX_INSTANCES);
-    Vector3f last_average[INS_MAX_INSTANCES], best_avg[INS_MAX_INSTANCES];
-    float best_diff[INS_MAX_INSTANCES];
-    bool converged[INS_MAX_INSTANCES];
-
-    // cold start
-    hal.console->print_P(PSTR("Init Gyro"));
-
-    // flash leds to tell user to keep the IMU still
-    AP_Notify::flags.initialising = true;
-
-    // remove existing gyro offsets
-    for (uint8_t k=0; k<num_gyros; k++) {
-        _gyro_offset[k] = Vector3f(0,0,0);
-        best_diff[k] = 0;
-        last_average[k].zero();
-        converged[k] = false;
-    }
-
-    for(int8_t c = 0; c < 5; c++) {
-        hal.scheduler->delay(5);
-        update();
-    }
-
-    // the strategy is to average 50 points over 0.5 seconds, then do it
-    // again and see if the 2nd average is within a small margin of
-    // the first
-
-    uint8_t num_converged = 0;
-
-    // we try to get a good calibration estimate for up to 10 seconds
-    // if the gyros are stable, we should get it in 1 second
-    for (int16_t j = 0; j <= 20 && num_converged < num_gyros; j++) {
-        Vector3f gyro_sum[INS_MAX_INSTANCES], gyro_avg[INS_MAX_INSTANCES], gyro_diff[INS_MAX_INSTANCES];
-        float diff_norm[INS_MAX_INSTANCES];
-        uint8_t i;
-
-        memset(diff_norm, 0, sizeof(diff_norm));
-
-        hal.console->print_P(PSTR("*"));
-
-        for (uint8_t k=0; k<num_gyros; k++) {
-            gyro_sum[k].zero();
-        }
-        for (i=0; i<50; i++) {
-            update();
-            for (uint8_t k=0; k<num_gyros; k++) {
-                gyro_sum[k] += get_gyro(k);
-            }
-            hal.scheduler->delay(5);
-        }
-        for (uint8_t k=0; k<num_gyros; k++) {
-            gyro_avg[k] = gyro_sum[k] / i;
-            gyro_diff[k] = last_average[k] - gyro_avg[k];
-            diff_norm[k] = gyro_diff[k].length();
-        }
-
-        for (uint8_t k=0; k<num_gyros; k++) {
-            if (converged[k]) continue;
-            if (j == 0) {
-                best_diff[k] = diff_norm[k];
-                best_avg[k] = gyro_avg[k];
-            } else if (gyro_diff[k].length() < ToRad(0.1f)) {
-                // we want the average to be within 0.1 bit, which is 0.04 degrees/s
-                last_average[k] = (gyro_avg[k] * 0.5f) + (last_average[k] * 0.5f);
-                _gyro_offset[k] = last_average[k];            
-                converged[k] = true;
-                num_converged++;
-            } else if (diff_norm[k] < best_diff[k]) {
-                best_diff[k] = diff_norm[k];
-                best_avg[k] = (gyro_avg[k] * 0.5f) + (last_average[k] * 0.5f);
-            }
-            last_average[k] = gyro_avg[k];
+    for (uint8_t i=0; i<get_gyro_count(); i++) {
+        if (!get_gyro_health(i)) {
+            return false;
         }
     }
-
-    // stop flashing leds
-    AP_Notify::flags.initialising = false;
-
-    if (num_converged == num_gyros) {
-        // all OK
-        return;
-    }
-
-    // we've kept the user waiting long enough - use the best pair we
-    // found so far
-    hal.console->println();
-    for (uint8_t k=0; k<num_gyros; k++) {
-        if (!converged[k]) {
-            hal.console->printf_P(PSTR("gyro[%u] did not converge: diff=%f dps\n"), 
-                                  (unsigned)k, ToDeg(best_diff[k]));
-            _gyro_offset[k] = best_avg[k];
-        }
-    }
+    // return true if we have at least one gyro
+    return (get_gyro_count() > 0);
 }
 
-
-void
-AP_InertialSensor::init_accel()
+// get_accel_health_all - return true if all accels are healthy
+bool AP_InertialSensor::get_accel_health_all(void) const
 {
-    _init_accel();
-
-    // save calibration
-    _save_parameters();
+    for (uint8_t i=0; i<get_accel_count(); i++) {
+        if (!get_accel_health(i)) {
+            return false;
+        }
+    }
+    // return true if we have at least one accel
+    return (get_accel_count() > 0);
 }
 
 void
@@ -353,140 +418,106 @@ AP_InertialSensor::_init_accel()
 
 }
 
-#if !defined( __AVR_ATmega1280__ )
-// calibrate_accel - perform accelerometer calibration including providing user
-// instructions and feedback Gauss-Newton accel calibration routines borrowed
-// from Rolfe Schmidt blog post describing the method:
-// http://chionophilous.wordpress.com/2011/10/24/accelerometer-calibration-iv-1-implementing-gauss-newton-on-an-atmega/
-// original sketch available at
-// http://rolfeschmidt.com/mathtools/skimetrics/adxl_gn_calibration.pde
-bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact,
-                                        float &trim_roll,
-                                        float &trim_pitch)
+void
+AP_InertialSensor::_init_gyro()
 {
-    uint8_t num_accels = min(get_accel_count(), INS_MAX_INSTANCES);
-    Vector3f samples[INS_MAX_INSTANCES][6];
-    Vector3f new_offsets[INS_MAX_INSTANCES];
-    Vector3f new_scaling[INS_MAX_INSTANCES];
-    Vector3f orig_offset[INS_MAX_INSTANCES];
-    Vector3f orig_scale[INS_MAX_INSTANCES];
-    uint8_t num_ok = 0;
+    uint8_t num_gyros = min(get_gyro_count(), INS_MAX_INSTANCES);
+    Vector3f last_average[INS_MAX_INSTANCES], best_avg[INS_MAX_INSTANCES];
+    float best_diff[INS_MAX_INSTANCES];
+    bool converged[INS_MAX_INSTANCES];
 
-    for (uint8_t k=0; k<num_accels; k++) {
-        // backup original offsets and scaling
-        orig_offset[k] = _accel_offset[k].get();
-        orig_scale[k]  = _accel_scale[k].get();
+    // cold start
+    hal.console->print_P(PSTR("Init Gyro"));
 
-        // clear accelerometer offsets and scaling
-        _accel_offset[k] = Vector3f(0,0,0);
-        _accel_scale[k] = Vector3f(1,1,1);
+    // flash leds to tell user to keep the IMU still
+    AP_Notify::flags.initialising = true;
+
+    // remove existing gyro offsets
+    for (uint8_t k=0; k<num_gyros; k++) {
+        _gyro_offset[k] = Vector3f(0,0,0);
+        best_diff[k] = 0;
+        last_average[k].zero();
+        converged[k] = false;
     }
 
-    // capture data from 6 positions
-    for (uint8_t i=0; i<6; i++) {
-        const prog_char_t *msg;
-
-        // display message to user
-        switch ( i ) {
-            case 0:
-                msg = PSTR("level");
-                break;
-            case 1:
-                msg = PSTR("on its LEFT side");
-                break;
-            case 2:
-                msg = PSTR("on its RIGHT side");
-                break;
-            case 3:
-                msg = PSTR("nose DOWN");
-                break;
-            case 4:
-                msg = PSTR("nose UP");
-                break;
-            default:    // default added to avoid compiler warning
-            case 5:
-                msg = PSTR("on its BACK");
-                break;
-        }
-        interact->printf_P(
-                PSTR("Place vehicle %S and press any key.\n"), msg);
-
-        // wait for user input
-        interact->blocking_read();
-
-        // clear out any existing samples from ins
+    for(int8_t c = 0; c < 5; c++) {
+        hal.scheduler->delay(5);
         update();
+    }
 
-        // average 32 samples
-        for (uint8_t k=0; k<num_accels; k++) {
-            samples[k][i] = Vector3f();
+    // the strategy is to average 50 points over 0.5 seconds, then do it
+    // again and see if the 2nd average is within a small margin of
+    // the first
+
+    uint8_t num_converged = 0;
+
+    // we try to get a good calibration estimate for up to 10 seconds
+    // if the gyros are stable, we should get it in 1 second
+    for (int16_t j = 0; j <= 20 && num_converged < num_gyros; j++) {
+        Vector3f gyro_sum[INS_MAX_INSTANCES], gyro_avg[INS_MAX_INSTANCES], gyro_diff[INS_MAX_INSTANCES];
+        float diff_norm[INS_MAX_INSTANCES];
+        uint8_t i;
+
+        memset(diff_norm, 0, sizeof(diff_norm));
+
+        hal.console->print_P(PSTR("*"));
+
+        for (uint8_t k=0; k<num_gyros; k++) {
+            gyro_sum[k].zero();
         }
-        uint8_t num_samples = 0;
-        while (num_samples < 32) {
-            if (!wait_for_sample(1000)) {
-                interact->printf_P(PSTR("Failed to get INS sample\n"));
-                goto failed;
-            }
-            // read samples from ins
+        for (i=0; i<50; i++) {
             update();
-            // capture sample
-            for (uint8_t k=0; k<num_accels; k++) {
-                samples[k][i] += get_accel(k);
+            for (uint8_t k=0; k<num_gyros; k++) {
+                gyro_sum[k] += get_gyro(k);
             }
-            hal.scheduler->delay(10);
-            num_samples++;
+            hal.scheduler->delay(5);
         }
-        for (uint8_t k=0; k<num_accels; k++) {
-            samples[k][i] /= num_samples;
+        for (uint8_t k=0; k<num_gyros; k++) {
+            gyro_avg[k] = gyro_sum[k] / i;
+            gyro_diff[k] = last_average[k] - gyro_avg[k];
+            diff_norm[k] = gyro_diff[k].length();
+        }
+
+        for (uint8_t k=0; k<num_gyros; k++) {
+            if (converged[k]) continue;
+            if (j == 0) {
+                best_diff[k] = diff_norm[k];
+                best_avg[k] = gyro_avg[k];
+            } else if (gyro_diff[k].length() < ToRad(0.1f)) {
+                // we want the average to be within 0.1 bit, which is 0.04 degrees/s
+                last_average[k] = (gyro_avg[k] * 0.5f) + (last_average[k] * 0.5f);
+                _gyro_offset[k] = last_average[k];
+                converged[k] = true;
+                num_converged++;
+            } else if (diff_norm[k] < best_diff[k]) {
+                best_diff[k] = diff_norm[k];
+                best_avg[k] = (gyro_avg[k] * 0.5f) + (last_average[k] * 0.5f);
+            }
+            last_average[k] = gyro_avg[k];
         }
     }
 
-    // run the calibration routine
-    for (uint8_t k=0; k<num_accels; k++) {
-        bool success = _calibrate_accel(samples[k], new_offsets[k], new_scaling[k]);
+    // stop flashing leds
+    AP_Notify::flags.initialising = false;
 
-        interact->printf_P(PSTR("Offsets[%u]: %.2f %.2f %.2f\n"),
-                           (unsigned)k,
-                           new_offsets[k].x, new_offsets[k].y, new_offsets[k].z);
-        interact->printf_P(PSTR("Scaling[%u]: %.2f %.2f %.2f\n"),
-                           (unsigned)k,
-                           new_scaling[k].x, new_scaling[k].y, new_scaling[k].z);
-        if (success) num_ok++;
+    if (num_converged == num_gyros) {
+        // all OK
+        return;
     }
 
-    if (num_ok == num_accels) {
-        interact->printf_P(PSTR("Calibration successful\n"));
-
-        for (uint8_t k=0; k<num_accels; k++) {
-            // set and save calibration
-            _accel_offset[k].set(new_offsets[k]);
-            _accel_scale[k].set(new_scaling[k]);
+    // we've kept the user waiting long enough - use the best pair we
+    // found so far
+    hal.console->println();
+    for (uint8_t k=0; k<num_gyros; k++) {
+        if (!converged[k]) {
+            hal.console->printf_P(PSTR("gyro[%u] did not converge: diff=%f dps\n"),
+                                  (unsigned)k, ToDeg(best_diff[k]));
+            _gyro_offset[k] = best_avg[k];
         }
-        _save_parameters();
-
-        // calculate the trims as well from primary accels and pass back to caller
-        _calculate_trim(samples[0][0], trim_roll, trim_pitch);
-
-        return true;
     }
-
-failed:
-    interact->printf_P(PSTR("Calibration FAILED\n"));
-    // restore original scaling and offsets
-    for (uint8_t k=0; k<num_accels; k++) {
-        _accel_offset[k].set(orig_offset[k]);
-        _accel_scale[k].set(orig_scale[k]);
-    }
-    return false;
 }
 
-/// calibrated - returns true if the accelerometers have been calibrated
-/// @note this should not be called while flying because it reads from the eeprom which can be slow
-bool AP_InertialSensor::calibrated()
-{
-    return _accel_offset[0].load();
-}
-
+#if !defined( __AVR_ATmega1280__ )
 // _calibrate_model - perform low level accel calibration
 // accel_sample are accelerometer samples collected in 6 different positions
 // accel_offsets are output from the calibration routine
@@ -662,3 +693,13 @@ void AP_InertialSensor::_calculate_trim(Vector3f accel_sample, float& trim_roll,
 
 #endif // __AVR_ATmega1280__
 
+// save parameters to eeprom
+void AP_InertialSensor::_save_parameters()
+{
+    _product_id.save();
+    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+        _accel_scale[i].save();
+        _accel_offset[i].save();
+        _gyro_offset[i].save();
+    }
+}

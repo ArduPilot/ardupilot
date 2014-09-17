@@ -28,7 +28,7 @@ private:
     AP_Int8 _safety_enable;
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    AP_Int8 _pwm_count;
+
 #endif
 };
 

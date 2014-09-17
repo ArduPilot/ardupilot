@@ -7,11 +7,12 @@
 // althold_init - initialise althold controller
 static bool althold_init(bool ignore_checks)
 {
-    // initialise altitude target to stopping point
-    pos_control.set_target_to_stopping_point_z();
-
     // initialize vertical speeds and leash lengths
     pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+    pos_control.set_accel_z(g.pilot_accel_z);
+
+    // initialise altitude target to stopping point
+    pos_control.set_target_to_stopping_point_z();
 
     return true;
 }
@@ -26,9 +27,10 @@ static void althold_run()
 
     // if not auto armed set throttle to zero and exit immediately
     if(!ap.auto_armed) {
-        // To-Do: reset altitude target if we're somehow not landed?
-        attitude_control.init_targets();
+        attitude_control.relax_bf_rate_controller();
+        attitude_control.set_yaw_target_to_current_heading();
         attitude_control.set_throttle_out(0, false);
+        pos_control.set_alt_target_to_current_alt();
         return;
     }
 
@@ -55,9 +57,11 @@ static void althold_run()
 
     // reset target lean angles and heading while landed
     if (ap.land_complete) {
-        attitude_control.init_targets();
-        // move throttle to minimum to keep us on the ground
-        attitude_control.set_throttle_out(0, false);
+        attitude_control.relax_bf_rate_controller();
+        attitude_control.set_yaw_target_to_current_heading();
+        // move throttle to between minimum and non-takeoff-throttle to keep us on the ground
+        attitude_control.set_throttle_out(get_throttle_pre_takeoff(g.rc_3.control_in), false);
+        pos_control.set_alt_target_to_current_alt();
     }else{
         // call attitude controller
         attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());

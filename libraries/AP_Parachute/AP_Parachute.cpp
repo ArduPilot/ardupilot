@@ -60,10 +60,8 @@ void AP_Parachute::enabled(bool on_off)
 {
     _enabled = on_off;
 
-    // if disabled clear release_time
-    if (_enabled <= 0) {
-        _release_time = 0;
-    }
+    // clear release_time
+    _release_time = 0;
 }
 
 /// release - release parachute

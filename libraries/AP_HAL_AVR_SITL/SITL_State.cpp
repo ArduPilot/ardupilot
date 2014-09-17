@@ -62,6 +62,7 @@ uint16_t SITL_State::sonar_pin_value;
 uint16_t SITL_State::airspeed_pin_value;
 uint16_t SITL_State::voltage_pin_value;
 uint16_t SITL_State::current_pin_value;
+float SITL_State::_current;
 
 AP_Baro_HIL *SITL_State::_barometer;
 AP_InertialSensor_HIL *SITL_State::_ins;
@@ -203,7 +204,9 @@ void SITL_State::_sitl_setup(void)
 	inet_pton(AF_INET, "127.0.0.1", &_rcout_addr.sin_addr);
 
 	_setup_timer();
+#ifndef HIL_MODE
 	_setup_fdm();
+#endif
 	fprintf(stdout, "Starting SITL input\n");
 
 	// find the barometer object if it exists
@@ -214,14 +217,17 @@ void SITL_State::_sitl_setup(void)
 
     if (_sitl != NULL) {
         // setup some initial values
+#ifndef HIL_MODE
         _update_barometer(_initial_height);
         _update_ins(0, 0, 0, 0, 0, 0, 0, 0, -9.8, 0, _initial_height);
         _update_compass(0, 0, 0);
         _update_gps(0, 0, 0, 0, 0, 0, false);
+#endif
     }
 }
 
 
+#ifndef HIL_MODE
 /*
   setup a SITL FDM listening UDP port
  */
@@ -256,6 +262,7 @@ void SITL_State::_setup_fdm(void)
 
 	AVR_SITL::SITLUARTDriver::_set_nonblocking(_sitl_fd);
 }
+#endif
 
 
 /*
@@ -300,15 +307,19 @@ void SITL_State::_timer_handler(int signum)
         new_rc_input = true;
     }
 
+#ifndef HIL_MODE
 	/* check for packet from flight sim */
 	_fdm_input();
 
 	// send RC output to flight sim
 	_simulator_output();
+#endif
 
 	if (_update_count == 0 && _sitl != NULL) {
+#ifndef HIL_MODE
 		_update_gps(0, 0, 0, 0, 0, 0, false);
 		_update_barometer(0);
+#endif
 		_scheduler->timer_event();
         _scheduler->sitl_end_atomic();
 		in_timer = false;
@@ -324,6 +335,7 @@ void SITL_State::_timer_handler(int signum)
 	last_update_count = _update_count;
 
     if (_sitl != NULL) {
+#ifndef HIL_MODE
         _update_gps(_sitl->state.latitude, _sitl->state.longitude,
                     _sitl->state.altitude,
                     _sitl->state.speedN, _sitl->state.speedE, _sitl->state.speedD,
@@ -334,6 +346,7 @@ void SITL_State::_timer_handler(int signum)
                     _sitl->state.airspeed, _sitl->state.altitude);
         _update_barometer(_sitl->state.altitude);
         _update_compass(_sitl->state.rollDeg, _sitl->state.pitchDeg, _sitl->state.yawDeg);
+#endif
     }
 
 	// trigger all APM timers. We do this last as it can re-enable
@@ -344,7 +357,7 @@ void SITL_State::_timer_handler(int signum)
 	in_timer = false;
 }
 
-
+#ifndef HIL_MODE
 /*
   check for a SITL FDM packet
  */
@@ -379,6 +392,13 @@ void SITL_State::_fdm_input(void)
 
         if (_sitl != NULL) {
             _sitl->state = d.fg_pkt;
+            // prevent bad inputs from SIM from corrupting our state
+            double *v = &_sitl->state.latitude;
+            for (uint8_t i=0; i<17; i++) {
+                if (isinf(v[i]) || isnan(v[i]) || fabsf(v[i]) > 1.0e10) {
+                    v[i] = 0;
+                }
+            }
         }
 		_update_count++;
 
@@ -404,6 +424,7 @@ void SITL_State::_fdm_input(void)
 	}
 
 }
+#endif
 
 /*
   apply servo rate filtering
@@ -521,10 +542,10 @@ void SITL_State::_simulator_output(void)
     // lose 0.7V at full throttle
     float voltage = _sitl->batt_voltage - 0.7f*throttle;
     // assume 50A at full throttle
-    float current = 50.0 * throttle;
+    _current = 50.0 * throttle;
     // assume 3DR power brick
     voltage_pin_value = ((voltage / 10.1) / 5.0) * 1024;
-    current_pin_value = ((current / 17.0) / 5.0) * 1024;
+    current_pin_value = ((_current / 17.0) / 5.0) * 1024;
 
 	// setup wind control
     float wind_speed = _sitl->wind_speed * 100;

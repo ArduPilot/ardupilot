@@ -24,7 +24,7 @@ static void arm_motors_check()
     }
 
     // allow arming/disarming in Loiter and AltHold if landed
-    if (ap.land_complete && (control_mode == LOITER || control_mode == ALT_HOLD)) {
+    if (ap.land_complete && (control_mode == LOITER || control_mode == ALT_HOLD || control_mode == POSHOLD || control_mode == AUTOTUNE)) {
         allow_arming = true;
     }
 
@@ -103,7 +103,9 @@ static void auto_disarm_check()
     }
 
     // allow auto disarm in manual flight modes or Loiter/AltHold if we're landed
-    if(manual_flight_mode(control_mode) || (ap.land_complete && (control_mode == LOITER || control_mode == ALT_HOLD))) {
+    if (manual_flight_mode(control_mode) || (ap.land_complete && (control_mode == ALT_HOLD || control_mode == LOITER || control_mode == OF_LOITER ||
+                                                                  control_mode == DRIFT || control_mode == SPORT || control_mode == AUTOTUNE ||
+                                                                  control_mode == POSHOLD))) {
         auto_disarming_counter++;
 
         if(auto_disarming_counter >= AUTO_DISARMING_DELAY) {
@@ -130,6 +132,13 @@ static void init_arm_motors()
     // disable inertial nav errors temporarily
     inertial_nav.ignore_next_error();
 
+    // notify that arming will occur (we do this early to give plenty of warning)
+    AP_Notify::flags.armed = true;
+    // call update_notify a few times to ensure the message gets out
+    for (uint8_t i=0; i<=10; i++) {
+        update_notify();
+    }
+
 #if LOGGING_ENABLED == ENABLED
     // start dataflash
     start_logging();
@@ -138,15 +147,6 @@ static void init_arm_motors()
 #if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
     gcs_send_text_P(SEVERITY_HIGH, PSTR("ARMING MOTORS"));
 #endif
-
-    // we don't want writes to the serial port to cause us to pause
-    // mid-flight, so set the serial ports non-blocking once we arm
-    // the motors
-    hal.uartA->set_blocking_writes(false);
-    hal.uartC->set_blocking_writes(false);
-    if (hal.uartD != NULL) {
-        hal.uartD->set_blocking_writes(false);
-    }
 
     // Remember Orientation
     // --------------------
@@ -169,6 +169,9 @@ static void init_arm_motors()
     // fast baro calibration to reset ground pressure
     init_barometer(false);
 
+    // reset inertial nav alt to zero
+    inertial_nav.set_altitude(0.0f);
+
     // go back to normal AHRS gains
     ahrs.set_fast_gains(false);
 
@@ -179,18 +182,13 @@ static void init_arm_motors()
     // set hover throttle
     motors.set_mid_throttle(g.throttle_mid);
 
-    // Cancel arming if throttle is raised too high so that copter does not suddenly take off
-    read_radio();
-    if (g.rc_3.control_in > g.throttle_cruise && g.throttle_cruise > 100) {
-        motors.output_min();
-        failsafe_enable();
-        return;
-    }
-
 #if SPRAYER == ENABLED
     // turn off sprayer's test if on
     sprayer.test_pump(false);
 #endif
+
+    // short delay to allow reading of rc inputs
+    delay(30);
 
     // enable output to motors
     output_min();
@@ -200,6 +198,9 @@ static void init_arm_motors()
 
     // log arming to dataflash
     Log_Write_Event(DATA_ARMED);
+
+    // log flight mode in case it was changed while vehicle was disarmed
+    Log_Write_Mode(control_mode);
 
     // reenable failsafe
     failsafe_enable();
@@ -232,7 +233,7 @@ static void pre_arm_checks(bool display_failure)
     // check Baro
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_BARO)) {
         // barometer health check
-        if(!barometer.healthy) {
+        if(!barometer.healthy()) {
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Baro not healthy"));
             }
@@ -249,7 +250,7 @@ static void pre_arm_checks(bool display_failure)
 
     // check Compass
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_COMPASS)) {
-        // check the compass is healthy
+        // check the primary compass is healthy
         if(!compass.healthy(0)) {
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not healthy"));
@@ -258,8 +259,7 @@ static void pre_arm_checks(bool display_failure)
         }
 
         // check compass learning is on or offsets have been set
-        Vector3f offsets = compass.get_offsets();
-        if(!compass._learn && offsets.length() == 0) {
+        if(!compass.configured()) {
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not calibrated"));
             }
@@ -267,6 +267,7 @@ static void pre_arm_checks(bool display_failure)
         }
 
         // check for unreasonable compass offsets
+        Vector3f offsets = compass.get_offsets();
         if(offsets.length() > 500) {
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass offsets too high"));
@@ -282,6 +283,27 @@ static void pre_arm_checks(bool display_failure)
             }
             return;
         }
+
+#if COMPASS_MAX_INSTANCES > 1
+        // check all compasses point in roughly same direction
+        if (compass.get_count() > 1) {
+            Vector3f prime_mag_vec = compass.get_field();
+            prime_mag_vec.normalize();
+            for(uint8_t i=0; i<compass.get_count(); i++) {
+                // get next compass
+                Vector3f mag_vec = compass.get_field(i);
+                mag_vec.normalize();
+                Vector3f vec_diff = mag_vec - prime_mag_vec;
+                if (vec_diff.length() > COMPASS_ACCEPTABLE_VECTOR_DIFF) {
+                    if (display_failure) {
+                        gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: compasses inconsistent"));
+                    }
+                    return;
+                }
+            }
+        }
+#endif
+
     }
 
     // check GPS
@@ -309,13 +331,55 @@ static void pre_arm_checks(bool display_failure)
             return;
         }
 
-        // check accels and gyros are healthy
-        if(!ins.healthy()) {
+        // check accels are healthy
+        if(!ins.get_accel_health_all()) {
             if (display_failure) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: INS not healthy"));
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Accels not healthy"));
             }
             return;
         }
+
+#if INS_MAX_INSTANCES > 1
+        // check all accelerometers point in roughly same direction
+        if (ins.get_accel_count() > 1) {
+            const Vector3f &prime_accel_vec = ins.get_accel();
+            for(uint8_t i=0; i<ins.get_accel_count(); i++) {
+                // get next accel vector
+                const Vector3f &accel_vec = ins.get_accel(i);
+                Vector3f vec_diff = accel_vec - prime_accel_vec;
+                if (vec_diff.length() > PREARM_MAX_ACCEL_VECTOR_DIFF) {
+                    if (display_failure) {
+                        gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Accels inconsistent"));
+                    }
+                    return;
+                }
+            }
+        }
+#endif
+
+        // check gyros are healthy
+        if(!ins.get_gyro_health_all()) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Gyros not healthy"));
+            }
+            return;
+        }
+
+#if INS_MAX_INSTANCES > 1
+        // check all gyros are consistent
+        if (ins.get_gyro_count() > 1) {
+            for(uint8_t i=0; i<ins.get_gyro_count(); i++) {
+                // get rotation rate difference between gyro #i and primary gyro
+                Vector3f vec_diff = ins.get_gyro(i) - ins.get_gyro();
+                if (vec_diff.length() > PREARM_MAX_GYRO_VECTOR_DIFF) {
+                    if (display_failure) {
+                        gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Gyros inconsistent"));
+                    }
+                    return;
+                }
+            }
+        }
+#endif
     }
 #if CONFIG_HAL_BOARD != HAL_BOARD_VRBRAIN
 #ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
@@ -457,6 +521,16 @@ static bool arm_checks(bool display_failure)
         return true;
     }
 
+    // check throttle is down
+    if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_RC)) {
+        if (g.rc_3.control_in > 0) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Thr too high"));
+            }
+            return false;
+        }
+    }
+
     // check Baro & inav alt are within 1m
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_BARO)) {
         if(fabs(inertial_nav.get_altitude() - baro_alt) > 100) {
@@ -524,7 +598,10 @@ static void init_disarm_motors()
     // disable inertial nav errors temporarily
     inertial_nav.ignore_next_error();
 
-    compass.save_offsets();
+    // save offsets if automatic offset learning is on
+    if (compass.learn_offsets_enabled()) {
+        compass.save_offsets();
+    }
 
     g.throttle_cruise.save();
 
@@ -535,7 +612,10 @@ static void init_disarm_motors()
 
     // we are not in the air
     set_land_complete(true);
-    
+
+    // reset the mission
+    mission.reset();
+
     // setup fast AHRS gains to get right attitude
     ahrs.set_fast_gains(true);
 
@@ -556,40 +636,14 @@ static void init_disarm_motors()
 static void
 set_servos_4()
 {
+    // check if we are performing the motor test
+    if (ap.motor_test) {
+        motor_test_output();
+    } else {
 #if FRAME_CONFIG == TRI_FRAME
-    // To-Do: implement improved stability patch for tri so that we do not need to limit throttle input to motors
-    g.rc_3.servo_out = min(g.rc_3.servo_out, 800);
+        // To-Do: implement improved stability patch for tri so that we do not need to limit throttle input to motors
+        g.rc_3.servo_out = min(g.rc_3.servo_out, 800);
 #endif
-    motors.output();
-}
-
-// servo_write - writes to a servo after checking the channel is not used for a motor
-static void servo_write(uint8_t ch, uint16_t pwm)
-{
-    bool servo_ok = false;
-
-    #if (FRAME_CONFIG == QUAD_FRAME || FRAME_CONFIG == COAX_FRAME)
-        // Quads can use RC5 and higher as servos
-        if (ch >= CH_5) servo_ok = true;
-    #elif (FRAME_CONFIG == TRI_FRAME || FRAME_CONFIG == SINGLE_FRAME)
-        // Tri's and Singles can use RC5, RC6, RC8 and higher
-        if (ch == CH_5 || ch == CH_6 || ch >= CH_8) servo_ok = true;
-    #elif (FRAME_CONFIG == HEXA_FRAME || FRAME_CONFIG == Y6_FRAME)
-        // Hexa and Y6 can use RC7 and higher
-        if (ch >= CH_7) servo_ok = true;
-    #elif (FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME)
-        // Octa and X8 can use RC9 and higher
-        if (ch >= CH_9) servo_ok = true;
-    #elif (FRAME_CONFIG == HELI_FRAME)
-        // Heli's can use RC5, RC6, RC7, not RC8, and higher
-        if (ch == CH_5 || ch == CH_6 || ch == CH_7 || ch >= CH_9) servo_ok = true;
-    #else
-        // throw compile error if frame type is unrecognise
-        #error Unrecognised frame type
-    #endif
-
-    if (servo_ok) {
-        hal.rcout->enable_ch(ch);
-        hal.rcout->write(ch, pwm);
+        motors.output();
     }
 }

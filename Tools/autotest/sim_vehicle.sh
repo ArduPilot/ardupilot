@@ -6,6 +6,7 @@ TRACKER_LOCATION="CMAC_PILOTSBOX"
 VEHICLE=""
 BUILD_TARGET="sitl"
 FRAME=""
+NUM_PROCS=1
 
 # check the instance number to allow for multiple copies of the sim running at once
 INSTANCE=0
@@ -15,6 +16,11 @@ USE_GDB_STOPPED=0
 CLEAN_BUILD=0
 START_ANTENNA_TRACKER=0
 WIPE_EEPROM=0
+REVERSE_THROTTLE=0
+NO_REBUILD=0
+START_HIL=0
+TRACKER_ARGS=""
+EXTERNAL_SIM=0
 
 usage()
 {
@@ -28,13 +34,19 @@ Options:
     -G               use gdb for debugging ardupilot
     -g               use gdb for debugging ardupilot, but don't auto-start
     -T               start an antenna tracker instance
+    -A               pass arguments to antenna tracker
     -t               set antenna tracker start location
     -L               select start location from Tools/autotest/locations.txt
     -c               do a make clean before building
+    -N               don't rebuild before starting ardupilot
     -w               wipe EEPROM and reload parameters
+    -R               reverse throttle in plane
     -f FRAME         set aircraft frame type
                      for copters can choose +, X, quad or octa
                      for planes can choose elevon or vtail
+    -j NUM_PROC      number of processors to use during build (default 1)
+    -H               start HIL
+    -e               use external simulator
 
 mavproxy_options:
     --map            start with a map
@@ -51,7 +63,7 @@ EOF
 
 
 # parse options. Thanks to http://wiki.bash-hackers.org/howto/getopts_tutorial
-while getopts ":I:VgGcTL:v:hwf:" opt; do
+while getopts ":I:VgGcj:TA:t:L:v:hwf:RNHe" opt; do
   case $opt in
     v)
       VEHICLE=$OPTARG
@@ -62,8 +74,21 @@ while getopts ":I:VgGcTL:v:hwf:" opt; do
     V)
       USE_VALGRIND=1
       ;;
+    N)
+      NO_REBUILD=1
+      ;;
+    H)
+      START_HIL=1
+      NO_REBUILD=1
+      ;;
     T)
       START_ANTENNA_TRACKER=1
+      ;;
+    A)
+      TRACKER_ARGS="$OPTARG"
+      ;;
+    R)
+      REVERSE_THROTTLE=1
       ;;
     G)
       USE_GDB=1
@@ -84,8 +109,14 @@ while getopts ":I:VgGcTL:v:hwf:" opt; do
     c)
       CLEAN_BUILD=1
       ;;
+    j)
+      NUM_PROCS=$OPTARG
+      ;;
     w)
       WIPE_EEPROM=1
+      ;;
+    e)
+      EXTERNAL_SIM=1
       ;;
     h)
       usage
@@ -157,6 +188,9 @@ case $FRAME in
         EXTRA_PARM="param set VTAIL_OUTPUT 4;"
         EXTRA_SIM="--vtail"
 	;;
+    skid)
+        EXTRA_SIM="--skid-steering"
+	;;
     obc)
         BUILD_TARGET="sitl-obc"
 	;;
@@ -170,6 +204,7 @@ case $FRAME in
 esac
 
 autotest=$(dirname $(readlink -e $0))
+if [ $NO_REBUILD == 0 ]; then
 pushd $autotest/../../$VEHICLE || {
     echo "Failed to change to vehicle directory for $VEHICLE"
     usage
@@ -178,11 +213,12 @@ pushd $autotest/../../$VEHICLE || {
 if [ $CLEAN_BUILD == 1 ]; then
     make clean
 fi
-make $BUILD_TARGET -j4 || {
+make $BUILD_TARGET -j$NUM_PROCS || {
     make clean
-    make $BUILD_TARGET -j4
+    make $BUILD_TARGET -j$NUM_PROCS
 }
 popd
+fi
 
 # get the location information
 SIMHOME=$(cat $autotest/locations.txt | grep -i "^$LOCATION=" | cut -d= -f2)
@@ -202,13 +238,13 @@ TRACKER_HOME=$(cat $autotest/locations.txt | grep -i "^$TRACKER_LOCATION=" | cut
 
 
 if [ $START_ANTENNA_TRACKER == 1 ]; then
-    pushd $autotest/../AntennaTracker
+    pushd $autotest/../../AntennaTracker
     if [ $CLEAN_BUILD == 1 ]; then
         make clean
     fi
-    make sitl -j4 || {
+    make sitl -j$NUM_PROCS || {
         make clean
-        make sitl -j4
+        make sitl -j$NUM_PROCS
     }
     TRACKER_INSTANCE=1
     TRACKIN_PORT="127.0.0.1:"$((5502+10*$TRACKER_INSTANCE))
@@ -216,7 +252,7 @@ if [ $START_ANTENNA_TRACKER == 1 ]; then
     TRACKER_UARTA="tcp:127.0.0.1:"$((5760+10*$TRACKER_INSTANCE))
     cmd="nice /tmp/AntennaTracker.build/AntennaTracker.elf -I1"
     $autotest/run_in_terminal_window.sh "AntennaTracker" $cmd || exit 1
-    $autotest/run_in_terminal_window.sh "pysim(Tracker)" nice $autotest/pysim/sim_tracker.py --home=$TRACKER_HOME --simin=$TRACKIN_PORT --simout=$TRACKOUT_PORT || exit 1
+    $autotest/run_in_terminal_window.sh "pysim(Tracker)" nice $autotest/pysim/sim_tracker.py --home=$TRACKER_HOME --simin=$TRACKIN_PORT --simout=$TRACKOUT_PORT $TRACKER_ARGS || exit 1
     popd
 fi
 
@@ -227,6 +263,9 @@ fi
 
 case $VEHICLE in
     ArduPlane)
+        [ "$REVERSE_THROTTLE" == 1 ] && {
+            EXTRA_SIM="$EXTRA_SIM --revthr"
+        }
         RUNSIM="nice $autotest/jsbsim/runsim.py --home=$SIMHOME --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT $EXTRA_SIM"
         PARMS="ArduPlane.parm"
         if [ $WIPE_EEPROM == 1 ]; then
@@ -234,7 +273,7 @@ case $VEHICLE in
         fi
         ;;
     ArduCopter)
-        RUNSIM="nice $autotest/pysim/sim_multicopter.py --home=$SIMHOME $EXTRA_SIM"
+        RUNSIM="nice $autotest/pysim/sim_multicopter.py --home=$SIMHOME --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT $EXTRA_SIM"
         PARMS="copter_params.parm"
         ;;
     APMrover2)
@@ -248,6 +287,7 @@ case $VEHICLE in
         ;;
 esac
 
+if [ $START_HIL == 0 ]; then
 if [ $USE_VALGRIND == 1 ]; then
     echo "Using valgrind"
     $autotest/run_in_terminal_window.sh "ardupilot (valgrind)" valgrind $cmd || exit 1
@@ -261,19 +301,28 @@ elif [ $USE_GDB == 1 ]; then
 else
     $autotest/run_in_terminal_window.sh "ardupilot" $cmd || exit 1
 fi
+fi
 
 trap kill_tasks SIGINT
 
 sleep 2
 rm -f $tfile
-$autotest/run_in_terminal_window.sh "Simulator" $RUNSIM || {
-    echo "Failed to start simulator: $RUNSIM"
-    exit 1
-}
-sleep 2
+if [ $EXTERNAL_SIM == 0 ]; then
+    $autotest/run_in_terminal_window.sh "Simulator" $RUNSIM || {
+        echo "Failed to start simulator: $RUNSIM"
+        exit 1
+    }
+    sleep 2
+else
+    echo "Using external simulator"
+fi
 
 # mavproxy.py --master tcp:127.0.0.1:5760 --sitl 127.0.0.1:5501 --out 127.0.0.1:14550 --out 127.0.0.1:14551 
-options="--master $MAVLINK_PORT --sitl $SIMOUT_PORT --out 127.0.0.1:14550 --out 127.0.0.1:14551"
+options=""
+if [ $START_HIL == 0 ]; then
+options="--master $MAVLINK_PORT --sitl $SIMOUT_PORT"
+fi
+options="$options --out 127.0.0.1:14550 --out 127.0.0.1:14551"
 extra_cmd1=""
 if [ $WIPE_EEPROM == 1 ]; then
     extra_cmd="param forceload $autotest/$PARMS; $EXTRA_PARM; param fetch"
@@ -281,6 +330,9 @@ fi
 if [ $START_ANTENNA_TRACKER == 1 ]; then
     options="$options --load-module=tracker"
     extra_cmd="$extra_cmd module load map; tracker set port $TRACKER_UARTA; tracker start;"
+fi
+if [ $START_HIL == 1 ]; then
+    options="$options --load-module=HIL"
 fi
 mavproxy.py $options --cmd="$extra_cmd" $*
 kill_tasks

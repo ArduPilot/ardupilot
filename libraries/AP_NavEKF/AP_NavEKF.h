@@ -135,6 +135,24 @@ public:
     // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
     void  getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
 
+    // should we use the compass? This is public so it can be used for
+    // reporting via ahrs.use_compass()
+    bool use_compass(void) const;
+
+    /*
+    return the filter fault status as a bitmasked integer
+     0 = filter divergence detected via gyro bias growth
+     1 = filter divergence detected by large covariances
+     2 = badly conditioned X magnetometer fusion
+     3 = badly conditioned Y magnetometer fusion
+     4 = badly conditioned Z magnetometer fusion
+     5 = badly conditioned airspeed fusion
+     6 = badly conditioned synthetic sideslip fusion
+     7 = unassigned
+    return normalised delta gyro bias length used for divergence test
+    */
+    void  getFilterFaults(uint8_t &faults, float &deltaGyroBias) const;
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -213,7 +231,7 @@ private:
     void calcEarthRateNED(Vector3f &omega, int32_t latitude) const;
 
     // calculate whether the flight vehicle is on the ground or flying from height, airspeed and GPS speed
-    void OnGroundCheck();
+    void SetFlightAndFusionModes();
 
     // initialise the covariance matrix
     void CovarianceInit();
@@ -282,6 +300,9 @@ private:
     // this allows large GPS position jumps to be accomodated gradually
     void decayGpsOffset(void);
 
+    // Check for filter divergence
+    void checkDivergence(void);
+
     // EKF Mavlink Tuneable Parameters
     AP_Float _gpsHorizVelNoise;     // GPS horizontal velocity measurement noise : m/s
     AP_Float _gpsVertVelNoise;      // GPS vertical velocity measurement noise : m/s
@@ -305,7 +326,7 @@ private:
     AP_Int8  _hgtInnovGate;         // Number of standard deviations applied to height innovation consistency check
     AP_Int8  _magInnovGate;         // Number of standard deviations applied to magnetometer innovation consistency check
     AP_Int8  _tasInnovGate;         // Number of standard deviations applied to true airspeed innovation consistency check
-    AP_Int8  _magCal;               // Forces magnetic field states to be always active to aid magnetometer calibration
+    AP_Int8  _magCal;               // Sets activation condition for in-flight magnetometer calibration
     AP_Int16 _gpsGlitchAccelMax;    // Maximum allowed discrepancy between inertial and GPS Horizontal acceleration before GPS data is ignored : cm/s^2
     AP_Int8 _gpsGlitchRadiusMax;    // Maximum allowed discrepancy between inertial and GPS Horizontal position before GPS glitch is declared : m
 
@@ -320,22 +341,28 @@ private:
     AP_Int16 _gpsRetryTimeNoTAS;    // GPS retry time following innovation consistency fail if no TAS measurements are used (msec)
     AP_Int16 _hgtRetryTimeMode0;    // height measurement retry time following innovation consistency fail if GPS fusion mode is = 0 (msec)
     AP_Int16 _hgtRetryTimeMode12;   // height measurement retry time following innovation consistency fail if GPS fusion mode is > 0 (msec)
+    uint32_t _magFailTimeLimit_ms;  // number of msec before a magnetometer failing innovation consistency checks is declared failed (msec)
+    uint32_t lastDivergeTime_ms;    // time in msec divergence of filter last detected
     float _gyroBiasNoiseScaler;     // scale factor applied to gyro bias state process variance when on ground
     float _magVarRateScale;         // scale factor applied to magnetometer variance due to angular rate
     uint16_t _msecGpsAvg;           // average number of msec between GPS measurements
     uint16_t _msecHgtAvg;           // average number of msec between height measurements
+    uint16_t _msecMagAvg;           // average number of msec between magnetometer measurements
     uint16_t _msecBetaAvg;          // maximum number of msec between synthetic sideslip measurements
     float dtVelPos;                 // average of msec between position and velocity corrections
 
     // Variables
-    uint8_t skipCounter;            // counter used to skip position and height corrections to achieve _skipRatio
     bool statesInitialised;         // boolean true when filter states have been initialised
-    bool velHealth;                 // boolean true if velocity measurements have failed innovation consistency check
-    bool posHealth;                 // boolean true if position measurements have failed innovation consistency check
-    bool hgtHealth;                 // boolean true if height measurements have failed innovation consistency check
+    bool velHealth;                 // boolean true if velocity measurements have passed innovation consistency check
+    bool posHealth;                 // boolean true if position measurements have passed innovation consistency check
+    bool hgtHealth;                 // boolean true if height measurements have passed innovation consistency check
+    bool magHealth;                 // boolean true if magnetometer has passed innovation consistency check
     bool velTimeout;                // boolean true if velocity measurements have failed innovation consistency check and timed out
-    bool posTimeout;            // boolean true if position measurements have failed innovation consistency check and timed out
+    bool posTimeout;                // boolean true if position measurements have failed innovation consistency check and timed out
     bool hgtTimeout;                // boolean true if height measurements have failed innovation consistency check and timed out
+    bool magTimeout;                // boolean true if magnetometer measurements have failed for too long and have timed out
+    bool filterDiverged;            // boolean true if the filter has diverged
+    bool magFailed;                 // boolean true if the magnetometer has failed
 
     Vector31 Kfusion;               // Kalman gain vector
     Matrix22 KH;                    // intermediate result used for covariance updates
@@ -350,6 +377,7 @@ private:
     Vector3f summedDelAng;          // corrected & summed delta angles about the xyz body axes (rad)
     Vector3f summedDelVel;          // corrected & summed delta velocities along the XYZ body axes (m/s)
 	Vector3f prevDelAng;            // previous delta angle use for INS coning error compensation
+    Vector3f lastGyroBias;          // previous gyro bias vector used by filter divergence check
     Matrix3f prevTnb;               // previous nav to body transformation used for INS earth rotation compensation
     ftype accNavMag;                // magnitude of navigation accel - used to adjust GPS obs variance (m/s^2)
     ftype accNavMagHoriz;           // magnitude of navigation accel in horizontal plane (m/s^2)
@@ -368,7 +396,7 @@ private:
     bool fusePosData;               // this boolean causes the posNE measurements to be fused
     bool fuseHgtData;               // this boolean causes the hgtMea measurements to be fused
     Vector3f velNED;                // North, East, Down velocity measurements (m/s)
-    Vector2 posNE;                  // North, East position measurements (m)
+    Vector2f gpsPosNE;              // North, East position measurements (m)
     ftype hgtMea;                   //  height measurement relative to reference point  (m)
     state_elements statesAtVelTime; // States at the effective time of velNED measurements
     state_elements statesAtPosTime; // States at the effective time of posNE measurements
@@ -394,8 +422,6 @@ private:
     uint32_t TASmsecPrev;           // time stamp of last TAS fusion step
     uint32_t BETAmsecPrev;          // time stamp of last synthetic sideslip fusion step
     const uint32_t TASmsecMax;      // maximum allowed interval between TAS fusion steps
-    uint32_t MAGmsecPrev;           // time stamp of last compass fusion step
-    uint32_t HGTmsecPrev;           // time stamp of last height measurement fusion step
     const bool fuseMeNow;           // boolean to force fusion whenever data arrives
     bool staticMode;                // boolean to force position and velocity measurements to zero for pre-arm or bench testing
     bool prevStaticMode;            // value of static mode from last update
@@ -403,18 +429,16 @@ private:
     Vector3f velDotNED;             // rate of change of velocity in NED frame
     Vector3f velDotNEDfilt;         // low pass filtered velDotNED
     uint32_t lastAirspeedUpdate;    // last time airspeed was updated
-    uint32_t IMUmsec;               // time that the last IMU value was taken
+    uint32_t imuSampleTime_ms;      // time that the last IMU value was taken
     ftype gpsCourse;                // GPS ground course angle(rad) 
     ftype gpsGndSpd;                // GPS ground speed (m/s)
     bool newDataGps;                // true when new GPS data has arrived
     bool newDataMag;                // true when new magnetometer data has arrived
-    float gpsVarScaler;             // scaler applied to gps measurement variance to allow for oversampling
     bool newDataTas;                // true when new airspeed data has arrived
     bool tasDataWaiting;            // true when new airspeed data is waiting to be fused
     bool newDataHgt;                // true when new height data has arrived
     uint32_t lastHgtMeasTime;       // time of last height measurement used to determine if new data has arrived
     uint32_t lastHgtTime_ms;        // time of last height update (msec) used to calculate timeout
-    float hgtVarScaler;             // scaler applied to height measurement variance to allow for oversampling
     uint32_t velFailTime;           // time stamp when GPS velocity measurement last failed covaraiance consistency check (msec)
     uint32_t posFailTime;           // time stamp when GPS position measurement last failed covaraiance consistency check (msec)
     uint32_t hgtFailTime;           // time stamp when height measurement last failed covaraiance consistency check (msec)
@@ -422,6 +446,7 @@ private:
     uint32_t lastStateStoreTime_ms; // time of last state vector storage
     uint32_t lastFixTime_ms;        // time of last GPS fix used to determine if new data has arrived
     uint32_t secondLastFixTime_ms;  // time of second last GPS fix used to determine how long since last update
+    uint32_t lastHealthyMagTime_ms; // time the magnetometer was last declared healthy
     Vector3f lastAngRate;           // angular rate from previous IMU sample used for trapezoidal integrator
     Vector3f lastAccel1;            // acceleration from previous IMU1 sample used for trapezoidal integrator
     Vector3f lastAccel2;            // acceleration from previous IMU2 sample used for trapezoidal integrator
@@ -433,14 +458,40 @@ private:
     Vector8 SPP;                    // intermediate variables used to calculate predicted covariance matrix
     float IMU1_weighting;           // Weighting applied to use of IMU1. Varies between 0 and 1.
     bool yawAligned;                // true when the yaw angle has been aligned
-    float posnOffsetNorth;          // offset applied to GPS data in the north direction to compensate for rapid changes in GPS solution
-    float posnOffsetEast;           // offset applied to GPS data in the north direction to compensate for rapid changes in GPS solution
+    Vector2f gpsPosGlitchOffsetNE;  // offset applied to GPS data in the NE direction to compensate for rapid changes in GPS solution
     uint32_t lastDecayTime_ms;      // time of last decay of GPS position offset
     float velTestRatio;             // sum of squares of GPS velocity innovation divided by fail threshold
     float posTestRatio;             // sum of squares of GPS position innovation divided by fail threshold
     float hgtTestRatio;             // sum of squares of baro height innovation divided by fail threshold
     Vector3f magTestRatio;          // sum of squares of magnetometer innovations divided by fail threshold
     float tasTestRatio;             // sum of squares of true airspeed innovation divided by fail threshold
+    bool inhibitWindStates;         // true when wind states and covariances are to remain constant
+    bool inhibitMagStates;          // true when magnetic field states and covariances are to remain constant
+
+    // Used by smoothing of state corrections
+    float gpsIncrStateDelta[10];    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next GPS measurement
+    float hgtIncrStateDelta[10];    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next height measurement
+    float magIncrStateDelta[10];    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next magnetometer measurement
+    uint8_t gpsUpdateCount;         // count of the number of minor state corrections using GPS data
+    uint8_t gpsUpdateCountMax;      // limit on the number of minor state corrections using GPS data
+    float gpsUpdateCountMaxInv;     // floating point inverse of gpsFilterCountMax
+    uint8_t hgtUpdateCount;         // count of the number of minor state corrections using Baro data
+    uint8_t hgtUpdateCountMax;      // limit on the number of minor state corrections using Baro data
+    float hgtUpdateCountMaxInv;     // floating point inverse of hgtFilterCountMax
+    uint8_t magUpdateCount;         // count of the number of minor state corrections using Magnetometer data
+    uint8_t magUpdateCountMax;      // limit on the number of minor state corrections using Magnetometer data
+    float magUpdateCountMaxInv;     // floating point inverse of magFilterCountMax
+
+    struct {
+        bool diverged:1;
+        bool large_covarience:1;
+        bool bad_xmag:1;
+        bool bad_ymag:1;
+        bool bad_zmag:1;
+        bool bad_airspeed:1;
+        bool bad_sideslip:1;
+    } faultStatus;
+    float scaledDeltaGyrBiasLgth;   // scaled delta gyro bias vector length used to test for filter divergence
 
     // states held by magnetomter fusion across time steps
     // magnetometer X,Y,Z measurements are fused across three time steps
@@ -474,11 +525,11 @@ private:
     perf_counter_t  _perf_FuseSideslip;
 #endif
     
-    // should we use the compass?
-    bool use_compass(void) const;
+    // should we assume zero sideslip?
+    bool assume_zero_sideslip(void) const;
 };
 
-#if CONFIG_HAL_BOARD != HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD != HAL_BOARD_PX4 && CONFIG_HAL_BOARD != HAL_BOARD_VRBRAIN
 #define perf_begin(x)
 #define perf_end(x)
 #endif

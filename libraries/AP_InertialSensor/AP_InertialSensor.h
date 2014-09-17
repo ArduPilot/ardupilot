@@ -12,7 +12,9 @@
    than 1 then redundent sensors may be available
  */
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
-#define INS_MAX_INSTANCES 2
+#define INS_MAX_INSTANCES 3
+#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#define INS_MAX_INSTANCES 3
 #else
 #define INS_MAX_INSTANCES 1
 #endif
@@ -32,6 +34,9 @@ class AP_InertialSensor
 {
 public:
     AP_InertialSensor();
+
+    // empty virtual destructor
+    virtual ~AP_InertialSensor() {}
 
     enum Start_style {
         COLD_START = 0,
@@ -113,10 +118,12 @@ public:
     // multi-device interface
     virtual bool get_gyro_health(uint8_t instance) const { return true; }
     bool get_gyro_health(void) const { return get_gyro_health(_get_primary_gyro()); }
+    bool get_gyro_health_all(void) const;
     virtual uint8_t get_gyro_count(void) const { return 1; };
 
     virtual bool get_accel_health(uint8_t instance) const { return true; }
     bool get_accel_health(void) const { return get_accel_health(get_primary_accel()); }
+    bool get_accel_health_all(void) const;
     virtual uint8_t get_accel_count(void) const { return 1; };
 
     // get accel offsets in m/s/s
@@ -158,6 +165,9 @@ public:
             _mpu6000_filter.set(filter_hz);
         }
     }
+
+    // get_filter - return filter in hz
+    virtual uint8_t get_filter() const { return _mpu6000_filter.get(); }
 
     virtual uint16_t error_count(void) const { return 0; }
     virtual bool healthy(void) const { return get_gyro_health() && get_accel_health(); }
@@ -225,5 +235,8 @@ protected:
 #include "AP_InertialSensor_UserInteract_MAVLink.h"
 #include "AP_InertialSensor_Flymaple.h"
 #include "AP_InertialSensor_L3G4200D.h"
+#include "AP_InertialSensor_MPU9150.h"
+#include "AP_InertialSensor_MPU9250.h"
+#include "AP_InertialSensor_L3GD20.h"
 
 #endif // __AP_INERTIAL_SENSOR_H__

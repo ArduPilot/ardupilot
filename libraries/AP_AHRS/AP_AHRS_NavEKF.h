@@ -34,7 +34,7 @@ class AP_AHRS_NavEKF : public AP_AHRS_DCM
 public:
     // Constructor
     AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps) :
-        AP_AHRS_DCM(ins, baro, gps),
+    AP_AHRS_DCM(ins, baro, gps),
         EKF(this, baro),
         ekf_started(false),
         startup_delay_ms(10000)
@@ -42,7 +42,7 @@ public:
         }
 
     // return the smoothed gyro vector corrected for drift
-    const Vector3f get_gyro(void) const;
+    const Vector3f &get_gyro(void) const;
     const Matrix3f &get_dcm_matrix(void) const;
 
     // return the current drift correction integrator value
@@ -92,6 +92,9 @@ public:
 
     void set_ekf_use(bool setting) { _ekf_use.set(setting); }
 
+    // is the AHRS subsystem healthy?
+    bool healthy(void);
+
 private:
     bool using_EKF(void) const;
 
@@ -99,6 +102,8 @@ private:
     bool ekf_started;
     Matrix3f _dcm_matrix;
     Vector3f _dcm_attitude;
+    Vector3f _gyro_bias;
+    Vector3f _gyro_estimate;
     const uint16_t startup_delay_ms;
     uint32_t start_time_ms;
 };

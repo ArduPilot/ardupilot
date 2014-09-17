@@ -58,6 +58,7 @@ AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UART
     _disable_counter(0),
     next_fix(AP_GPS::NO_FIX),
     rate_update_step(0),
+    _last_5hz_time(0),
     _last_hw_status(0)
 {
     // stop any config strings that are pending
@@ -246,53 +247,13 @@ AP_GPS_UBLOX::read(void)
 // Private Methods /////////////////////////////////////////////////////////////
 #if UBLOX_HW_LOGGING
 
-#define LOG_MSG_UBX1 200
-#define LOG_MSG_UBX2 201
-
-struct PACKED log_Ubx1 {
-    LOG_PACKET_HEADER;
-    uint32_t timestamp;
-    uint8_t  instance;
-    uint16_t noisePerMS;
-    uint8_t  jamInd;
-    uint8_t  aPower;
-};
-
-struct PACKED log_Ubx2 {
-    LOG_PACKET_HEADER;
-    uint32_t timestamp;
-    uint8_t  instance;
-    int8_t   ofsI;
-    uint8_t  magI;
-    int8_t   ofsQ;
-    uint8_t  magQ;
-};
-
-static const struct LogStructure ubx_log_structures[] PROGMEM = {
-    { LOG_MSG_UBX1, sizeof(log_Ubx1),
-      "UBX1", "IBHBB",  "TimeMS,Instance,noisePerMS,jamInd,aPower" },
-    { LOG_MSG_UBX2, sizeof(log_Ubx2),
-      "UBX2", "IBbBbB", "TimeMS,Instance,ofsI,magI,ofsQ,magQ" }
-};
-
-void AP_GPS_UBLOX::write_logging_headers(void)
-{
-    if (!logging_started) {
-        logging_started = true;
-        gps._DataFlash->AddLogFormats(ubx_log_structures, 2);
-    }
-}
-
 void AP_GPS_UBLOX::log_mon_hw(void)
 {
     if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
         return;
     }
-    // log mon_hw message
-    write_logging_headers();
-
     struct log_Ubx1 pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_MSG_UBX1),
+        LOG_PACKET_HEADER_INIT(LOG_UBX1_MSG),
         timestamp  : hal.scheduler->millis(),
         instance   : state.instance,
         noisePerMS : _buffer.mon_hw_60.noisePerMS,
@@ -312,11 +273,9 @@ void AP_GPS_UBLOX::log_mon_hw2(void)
     if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
         return;
     }
-    // log mon_hw message
-    write_logging_headers();
 
     struct log_Ubx2 pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_MSG_UBX2),
+        LOG_PACKET_HEADER_INIT(LOG_UBX2_MSG),
         timestamp : hal.scheduler->millis(),
         instance  : state.instance,
         ofsI      : _buffer.mon_hw2.ofsI,
@@ -350,7 +309,11 @@ AP_GPS_UBLOX::_parse_gps(void)
     }
 
     if (_class == CLASS_CFG && _msg_id == MSG_CFG_NAV_SETTINGS) {
-		Debug("Got engine settings %u\n", (unsigned)_buffer.nav_settings.dynModel);
+		Debug("Got settings %u min_elev %d drLimit %u\n", 
+              (unsigned)_buffer.nav_settings.dynModel,
+              (int)_buffer.nav_settings.minElev,
+              (unsigned)_buffer.nav_settings.drLimit);
+        _buffer.nav_settings.mask = 0;
         if (gps._navfilter != AP_GPS::GPS_ENGINE_NONE &&
             _buffer.nav_settings.dynModel != gps._navfilter) {
             // we've received the current nav settings, change the engine
@@ -358,12 +321,35 @@ AP_GPS_UBLOX::_parse_gps(void)
             Debug("Changing engine setting from %u to %u\n",
                   (unsigned)_buffer.nav_settings.dynModel, (unsigned)gps._navfilter);
             _buffer.nav_settings.dynModel = gps._navfilter;
-            _buffer.nav_settings.mask = 1; // only change dynamic model
+            _buffer.nav_settings.mask |= 1;
+        }
+        if (gps._min_elevation != -100 &&
+            _buffer.nav_settings.minElev != gps._min_elevation) {
+            Debug("Changing min elevation to %d\n", (int)gps._min_elevation);
+            _buffer.nav_settings.minElev = gps._min_elevation;
+            _buffer.nav_settings.mask |= 2;
+        }
+        if (_buffer.nav_settings.mask != 0) {
             _send_message(CLASS_CFG, MSG_CFG_NAV_SETTINGS,
                           &_buffer.nav_settings,
                           sizeof(_buffer.nav_settings));
         }
         return false;
+    }
+
+    if (_class == CLASS_CFG && _msg_id == MSG_CFG_SBAS && gps._sbas_mode != 2) {
+		Debug("Got SBAS settings %u %u %u 0x%x 0x%x\n", 
+              (unsigned)_buffer.sbas.mode,
+              (unsigned)_buffer.sbas.usage,
+              (unsigned)_buffer.sbas.maxSBAS,
+              (unsigned)_buffer.sbas.scanmode2,
+              (unsigned)_buffer.sbas.scanmode1);
+        if (_buffer.sbas.mode != gps._sbas_mode) {
+            _buffer.sbas.mode = gps._sbas_mode;
+            _send_message(CLASS_CFG, MSG_CFG_SBAS,
+                          &_buffer.sbas,
+                          sizeof(_buffer.sbas));
+        }
     }
 
 #if UBLOX_HW_LOGGING
@@ -391,6 +377,7 @@ AP_GPS_UBLOX::_parse_gps(void)
     switch (_msg_id) {
     case MSG_POSLLH:
         Debug("MSG_POSLLH next_fix=%u", next_fix);
+        _last_pos_time        = _buffer.posllh.time;
         state.location.lng    = _buffer.posllh.longitude;
         state.location.lat    = _buffer.posllh.latitude;
         state.location.alt    = _buffer.posllh.altitude_msl / 10;
@@ -466,6 +453,7 @@ AP_GPS_UBLOX::_parse_gps(void)
         break;
     case MSG_VELNED:
         Debug("MSG_VELNED");
+        _last_vel_time         = _buffer.velned.time;
         state.ground_speed     = _buffer.velned.speed_2d*0.01f;          // m/s
         state.ground_course_cd = _buffer.velned.heading_2d / 1000;       // Heading 2D deg * 100000 rescaled to deg * 100
         state.have_vertical_velocity = true;
@@ -485,7 +473,7 @@ AP_GPS_UBLOX::_parse_gps(void)
 
     // we only return true when we get new position and speed data
     // this ensures we don't use stale data
-    if (_new_position && _new_speed) {
+    if (_new_position && _new_speed && _last_vel_time == _last_pos_time) {
         _new_speed = _new_position = false;
 		_fix_count++;
         if ((hal.scheduler->millis() - _last_5hz_time) > 15000U && !need_rate_update) {
@@ -497,6 +485,11 @@ AP_GPS_UBLOX::_parse_gps(void)
             _last_5hz_time = hal.scheduler->millis();
         }
 
+		if (_fix_count == 50 && gps._sbas_mode != 2) {
+			// ask for SBAS settings every 20 seconds
+			Debug("Asking for SBAS setting\n");
+			_send_message(CLASS_CFG, MSG_CFG_SBAS, NULL, 0);
+		}
 		if (_fix_count == 100) {
 			// ask for nav settings every 20 seconds
 			Debug("Asking for engine setting\n");

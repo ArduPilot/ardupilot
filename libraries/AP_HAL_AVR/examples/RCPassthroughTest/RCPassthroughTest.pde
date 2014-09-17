@@ -2,6 +2,7 @@
 #include <AP_Common.h>
 #include <AP_Math.h>
 #include <AP_Param.h>
+#include <StorageManager.h>
 #include <AP_Progmem.h>
 
 #include <AP_HAL.h>
@@ -81,7 +82,7 @@ void loop (void) {
 }
 
 void setup (void) {
-    hal.gpio->pinMode(27, GPIO_OUTPUT);
+    hal.gpio->pinMode(27, HAL_GPIO_OUTPUT);
     hal.gpio->write(27, 0);
     for (uint8_t i=0; i<16; i++) {
         hal.rcout->enable_ch(i);

@@ -22,9 +22,11 @@ public:
     AC_Circle(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosControl& pos_control);
 
     /// init - initialise circle controller setting center specifically
+    ///     caller should set the position controller's x,y and z speeds and accelerations before calling this
     void init(const Vector3f& center);
 
     /// init - initialise circle controller setting center using stopping point and projecting out based on the copter's heading
+    ///     caller should set the position controller's x,y and z speeds and accelerations before calling this
     void init();
 
     /// set_circle_center in cm from home
