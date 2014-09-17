@@ -81,9 +81,11 @@
 
 #define MAGNETOMETER ENABLED
 
+// disable some features for APM1/APM2
 #if HAL_CPU_CLASS < HAL_CPU_CLASS_75
  # define PARACHUTE DISABLED
  # define AC_RALLY DISABLED
+ # define EPM_ENABLED DISABLED
 #endif
 
 #if HAL_CPU_CLASS < HAL_CPU_CLASS_75 || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
@@ -391,7 +393,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //	EPM cargo gripper
 #ifndef EPM_ENABLED
- # define EPM_ENABLED DISABLED
+ # define EPM_ENABLED ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
