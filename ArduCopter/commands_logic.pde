@@ -21,6 +21,9 @@ static void do_roi(const AP_Mission::Mission_Command& cmd);
 #if PARACHUTE == ENABLED
 static void do_parachute(const AP_Mission::Mission_Command& cmd);
 #endif
+#if EPM_ENABLED == ENABLED
+static void do_gripper(const AP_Mission::Mission_Command& cmd);
+#endif
 static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
 static bool verify_circle(const AP_Mission::Mission_Command& cmd);
 static bool verify_spline_wp(const AP_Mission::Mission_Command& cmd);
@@ -164,6 +167,12 @@ static bool start_command(const AP_Mission::Mission_Command& cmd)
 #if PARACHUTE == ENABLED
     case MAV_CMD_DO_PARACHUTE:                          // Mission command to configure or release parachute
         do_parachute(cmd);
+        break;
+#endif
+
+#if EPM_ENABLED == ENABLED
+    case MAV_CMD_DO_GRIPPER:                            // Mission command to control EPM gripper
+        do_gripper(cmd);
         break;
 #endif
 
@@ -536,6 +545,27 @@ static void do_parachute(const AP_Mission::Mission_Command& cmd)
             break;
         case PARACHUTE_RELEASE:
             parachute_release();
+            break;
+        default:
+            // do nothing
+            break;
+    }
+}
+#endif
+
+#if EPM_ENABLED == ENABLED
+// do_gripper - control EPM gripper
+static void do_gripper(const AP_Mission::Mission_Command& cmd)
+{
+    // Note: we ignore the gripper num parameter because we only support one gripper
+    switch (cmd.content.gripper.action) {
+        case GRIPPER_ACTION_RELEASE:
+            epm.release();
+            Log_Write_Event(DATA_EPM_RELEASE);
+            break;
+        case GRIPPER_ACTION_GRAB:
+            epm.grab();
+            Log_Write_Event(DATA_EPM_GRAB);
             break;
         default:
             // do nothing

@@ -1226,6 +1226,28 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             result = mavlink_motor_test_start(chan, (uint8_t)packet.param1, (uint8_t)packet.param2, (uint16_t)packet.param3, packet.param4);
             break;
 
+#if EPM_ENABLED == ENABLED
+        case MAV_CMD_DO_GRIPPER:
+            // param1 : gripper number (ignored)
+            // param2 : action (0=release, 1=grab). See GRIPPER_ACTIONS enum.
+            if(!epm.enabled()) {
+                result = MAV_RESULT_FAILED;
+            } else {
+                result = MAV_RESULT_ACCEPTED;
+                switch ((uint8_t)packet.param2) {
+                    case GRIPPER_ACTION_RELEASE:
+                        epm.release();
+                        break;
+                    case GRIPPER_ACTION_GRAB:
+                        epm.grab();
+                        break;
+                    default:
+                        result = MAV_RESULT_FAILED;
+                        break;
+                }
+            }
+            break;
+#endif
         default:
             result = MAV_RESULT_UNSUPPORTED;
             break;
