@@ -141,18 +141,6 @@ typedef enum RALLY_FLAGS
 #endif
 
 /** @brief  */
-#ifndef HAVE_ENUM_PARACHUTE_ACTION
-#define HAVE_ENUM_PARACHUTE_ACTION
-typedef enum PARACHUTE_ACTION
-{
-	PARACHUTE_DISABLE=0, /* Disable parachute release | */
-	PARACHUTE_ENABLE=1, /* Enable parachute release | */
-	PARACHUTE_RELEASE=2, /* Release parachute | */
-	PARACHUTE_ACTION_ENUM_END=3, /*  | */
-} PARACHUTE_ACTION;
-#endif
-
-/** @brief  */
 #ifndef HAVE_ENUM_MOTOR_TEST_THROTTLE_TYPE
 #define HAVE_ENUM_MOTOR_TEST_THROTTLE_TYPE
 typedef enum MOTOR_TEST_THROTTLE_TYPE
