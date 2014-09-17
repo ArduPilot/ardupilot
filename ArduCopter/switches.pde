@@ -313,10 +313,6 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                     epm.release();
                     Log_Write_Event(DATA_EPM_RELEASE);
                     break;
-                case AUX_SWITCH_MIDDLE:
-                    epm.neutral();
-                    Log_Write_Event(DATA_EPM_NEUTRAL);
-                    break;
                 case AUX_SWITCH_HIGH:
                     epm.grab();
                     Log_Write_Event(DATA_EPM_GRAB);
