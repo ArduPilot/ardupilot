@@ -151,9 +151,8 @@ public:
     void learn_offsets(void);
 
     /// return true if the compass should be used for yaw calculations
-    bool use_for_yaw(void) const {
-        return healthy() && _use_for_yaw;
-    }
+    bool use_for_yaw(uint8_t i) const;
+    bool use_for_yaw(void) const;
 
     /// Sets the local magnetic field declination.
     ///
@@ -253,7 +252,7 @@ protected:
     AP_Int8 _orientation;
     AP_Vector3f _offset[COMPASS_MAX_INSTANCES];
     AP_Float _declination;
-    AP_Int8 _use_for_yaw;                       ///<enable use for yaw calculation
+    AP_Int8 _use_for_yaw[COMPASS_MAX_INSTANCES];///<enable use for yaw calculation
     AP_Int8 _auto_declination;                  ///<enable automatic declination code
     AP_Int8 _external;                          ///<compass is external
 #if COMPASS_MAX_INSTANCES > 1
