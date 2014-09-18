@@ -158,11 +158,11 @@ void AP_Compass_VRBRAIN::accumulate(void)
 
 uint8_t AP_Compass_VRBRAIN::get_primary(void) const
 {
-    if (_primary < _num_instances && _healthy[_primary]) {
+    if (_primary < _num_instances && _healthy[_primary] && use_for_yaw(_primary)) {
         return _primary;
     }
     for (uint8_t i=0; i<_num_instances; i++) {
-        if (_healthy[i]) return i;
+        if (_healthy[i] && (use_for_yaw(i))) return i;
     }    
     return 0;
 }
