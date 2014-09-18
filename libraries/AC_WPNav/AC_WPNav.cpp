@@ -38,8 +38,8 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
     // @DisplayName: Waypoint Descent Speed Target
     // @Description: Defines the speed in cm/s which the aircraft will attempt to maintain while descending during a WP mission
     // @Units: cm/s
-    // @Range: 0 1000
-    // @Increment: 50
+    // @Range: 0 500
+    // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("SPEED_DN",    3, AC_WPNav, _wp_speed_down_cms, WPNAV_WP_SPEED_DOWN),
 
