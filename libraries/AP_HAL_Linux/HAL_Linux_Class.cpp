@@ -40,9 +40,15 @@ static LinuxRCInput rcinDriver;
  */
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLE
 static LinuxRCOutput_PRU rcoutDriver;
+/*
+  use the PCA9685 based RCOutput driver on Navio
+ */
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
+static LinuxRCOutput_Navio rcoutDriver;
 #else
 static Empty::EmptyRCOutput rcoutDriver;
 #endif
+
 static LinuxScheduler schedulerInstance;
 static LinuxUtil utilInstance;
 
