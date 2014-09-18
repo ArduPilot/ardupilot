@@ -20,6 +20,7 @@ namespace Linux {
     class LinuxRCInput;
     class LinuxRCInput_PRU;
     class LinuxRCOutput_PRU;
+    class LinuxRCOutput_Navio;
     class LinuxSemaphore;
     class LinuxScheduler;
     class LinuxUtil;
