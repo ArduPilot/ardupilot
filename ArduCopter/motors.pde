@@ -205,6 +205,9 @@ static void init_arm_motors()
     // log flight mode in case it was changed while vehicle was disarmed
     Log_Write_Mode(control_mode);
 
+    // reset battery failsafe
+    set_failsafe_battery(false);
+
     // reenable failsafe
     failsafe_enable();
 }
