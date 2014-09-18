@@ -45,7 +45,7 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @Description: Enable or disable the use of the compass (instead of the GPS) for determining heading
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO("USE",    4, Compass, _use_for_yaw, 1), // true if used for DCM yaw
+    AP_GROUPINFO("USE",    4, Compass, _use_for_yaw[0], 1), // true if used for DCM yaw
 
 #if !defined( __AVR_ATmega1280__ )
     // @Param: AUTODEC
@@ -301,6 +301,21 @@ Compass::set_initial_location(int32_t latitude, int32_t longitude)
                     (float)longitude / 10000000)));
     }
 #endif
+}
+
+/// return true if the compass should be used for yaw calculations
+bool
+Compass::use_for_yaw(void) const
+{
+    uint8_t prim = get_primary();
+    return healthy(prim) && use_for_yaw(prim);
+}
+
+/// return true if the specified compass can be used for yaw calculations
+bool
+Compass::use_for_yaw(uint8_t i) const
+{
+    return _use_for_yaw[i];
 }
 
 void
