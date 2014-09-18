@@ -24,7 +24,20 @@ static LinuxI2CDriver  i2cDriver(&i2cSemaphore, "/dev/i2c-1");
 static LinuxSPIDeviceManager spiDeviceManager;
 static LinuxAnalogIn analogIn;
 static LinuxStorage storageDriver;
-static LinuxGPIO gpioDriver;
+
+/*
+  use the BBB gpio driver on ERLE and PXF
+ */
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLE
+static LinuxGPIO_BBB gpioDriver;
+/*
+  use the RPI gpio driver on Navio
+ */
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
+static LinuxGPIO_RPI gpioDriver;
+#else
+static Empty::EmptyGPIO gpioDriver;
+#endif
 
 /*
   use the PRU based RCInput driver on ERLE and PXF
