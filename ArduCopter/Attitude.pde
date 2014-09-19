@@ -11,29 +11,20 @@ float get_smoothing_gain()
 // returns desired angle in centi-degrees
 static void get_pilot_desired_lean_angles(int16_t roll_in, int16_t pitch_in, int16_t &roll_out, int16_t &pitch_out)
 {
-    static float _scaler = 1.0;
-    static int16_t _angle_max = 0;
+    // apply circular limit to pitch and roll inputs
+    float total_out;
+    float vector_angle;
 
-    // range check the input
-    roll_in = constrain_int16(roll_in, -ROLL_PITCH_INPUT_MAX, ROLL_PITCH_INPUT_MAX);
-    pitch_in = constrain_int16(pitch_in, -ROLL_PITCH_INPUT_MAX, ROLL_PITCH_INPUT_MAX);
+    total_out = pythagorous2((float)pitch_in, (float)roll_in);
+    vector_angle = atan2((float)pitch_in, (float)roll_in);
 
-    // return filtered roll if no scaling required
-    if (aparm.angle_max == ROLL_PITCH_INPUT_MAX) {
+    if (total_out > ROLL_PITCH_INPUT_MAX) {
+        roll_out = (int16_t)((float)ROLL_PITCH_INPUT_MAX * cosf(vector_angle));
+        pitch_out = (int16_t)((float)ROLL_PITCH_INPUT_MAX * sinf(vector_angle));
+    } else {
         roll_out = roll_in;
         pitch_out = pitch_in;
-        return;
     }
-
-    // check if angle_max has been updated and redo scaler
-    if (aparm.angle_max != _angle_max) {
-        _angle_max = aparm.angle_max;
-        _scaler = (float)aparm.angle_max/(float)ROLL_PITCH_INPUT_MAX;
-    }
-
-    // convert pilot input to lean angle
-    roll_out = (int16_t)((float)roll_in * _scaler);
-    pitch_out = (int16_t)((float)pitch_in * _scaler);
 }
 
 // get_pilot_desired_heading - transform pilot's yaw input into a desired heading
