@@ -615,6 +615,7 @@ static void init_disarm_motors()
 
     // we are not in the air
     set_land_complete(true);
+    set_land_complete_maybe(true);
 
     // reset the mission
     mission.reset();

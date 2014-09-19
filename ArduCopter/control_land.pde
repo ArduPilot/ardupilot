@@ -1,7 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 // counter to verify landings
-static uint16_t land_detector;
+static uint16_t land_detector = LAND_DETECTOR_TRIGGER;  // we assume we are landed
 static bool land_with_gps;
 
 static uint32_t land_start_time;
@@ -192,9 +192,10 @@ static float get_throttle_land()
     }
 }
 
+// land_maybe_complete - return true if we may have landed (used to reset loiter targets during landing)
 static bool land_maybe_complete()
 {
-    return (ap.land_complete || land_detector > LAND_DETECTOR_MAYBE_TRIGGER);
+    return (ap.land_complete || ap.land_complete_maybe);
 }
 
 // update_land_detector - checks if we have landed and updates the ap.land_complete flag
@@ -210,7 +211,7 @@ static void update_land_detector()
                 land_detector++;
             }else{
                 set_land_complete(true);
-                land_detector = 0;
+                land_detector = LAND_DETECTOR_TRIGGER;
             }
         }
     } else {
@@ -221,6 +222,9 @@ static void update_land_detector()
             set_land_complete(false);
         }
     }
+
+    // set land maybe flag
+    set_land_complete_maybe(land_detector >= LAND_DETECTOR_MAYBE_TRIGGER);
 }
 
 // land_do_not_use_GPS - forces land-mode to not use the GPS but instead rely on pilot input for roll and pitch
