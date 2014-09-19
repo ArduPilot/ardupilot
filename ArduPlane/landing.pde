@@ -8,6 +8,8 @@
   update navigation for landing. Called when on landing approach or
   final flare
  */
+
+/*
 static bool verify_land()
 {
     // we don't 'verify' landing in the sense that it never completes,
@@ -42,14 +44,13 @@ static bool verify_land()
     // low pass the sink rate to take some of the noise out
     auto_state.land_sink_rate = 0.8f * auto_state.land_sink_rate + 0.2f*sink_rate;
     
-    /* Set land_complete (which starts the flare) under 3 conditions:
-       1) we are within LAND_FLARE_ALT meters of the landing altitude
-       2) we are within LAND_FLARE_SEC of the landing point vertically
-          by the calculated sink rate
-       3) we have gone past the landing point and don't have
-          rangefinder data (to prevent us keeping throttle on 
-          after landing if we've had positive baro drift)
-    */
+    // Set land_complete (which starts the flare) under 3 conditions:
+    //   1) we are within LAND_FLARE_ALT meters of the landing altitude
+    //   2) we are within LAND_FLARE_SEC of the landing point vertically
+    //      by the calculated sink rate
+    //   3) we have gone past the landing point and don't have
+    //      rangefinder data (to prevent us keeping throttle on 
+    //      after landing if we've had positive baro drift)    
     if (height <= g.land_flare_alt ||
         height <= -auto_state.land_sink_rate * g.land_flare_sec ||
         (!rangefinder_state.in_range && location_passed_point(current_loc, prev_WP_loc, next_WP_loc))) {
@@ -71,10 +72,8 @@ static bool verify_land()
         }
     }
 
-    /*
-      when landing we keep the L1 navigation waypoint 200m ahead. This
-      prevents sudden turns if we overshoot the landing point
-     */
+    //when landing we keep the L1 navigation waypoint 200m ahead. This
+    //  prevents sudden turns if we overshoot the landing point
     struct Location land_WP_loc = next_WP_loc;
 	int32_t land_bearing_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
     location_update(land_WP_loc,
@@ -82,15 +81,12 @@ static bool verify_land()
                     get_distance(prev_WP_loc, current_loc) + 200);
     nav_controller->update_waypoint(prev_WP_loc, land_WP_loc);
 
-    /*
-      we return false as a landing mission item never completes
-
-      we stay on this waypoint unless the GCS commands us to change
-      mission item or reset the mission, or a go-around is commanded
-     */
+    //we always return false as a landing mission item never
+    //  completes - we stay on this waypoint unless the GCS commands us
+    //  to change mission item or reset the mission
     return false;
 }
-
+*/
 
 /*
   a special glide slope calculation for the landing approach

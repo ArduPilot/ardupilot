@@ -404,13 +404,8 @@ static bool verify_takeoff()
     }
 }
 
-/*
-  update navigation for normal mission waypoints. Return true when the
-  waypoint is complete
- */
-static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd)
+static bool verify_land()
 {
-    steer_state.hold_course_cd = -1;
     // we don't 'verify' landing in the sense that it never completes,
     // so we don't verify command completion. Instead we use this to
     // adjust final landing parameters
@@ -451,14 +446,31 @@ static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd)
         }
     }
 
+    if (steer_state.hold_course_cd != -1) {
+        // recalc bearing error with hold_course;
+        nav_controller->update_heading_hold(steer_state.hold_course_cd);
+    } else {
+        // Always look 1km ahead for nav wp so we don't pass it.
+        // (Don't want nav controller do a 180 degree turn if we pass
+        // the indended landing location by a little)
+        nav_controller->update_waypoint(lander.get_break_point(),
+        lander.get_location_1km_beyond_land());
+    }
+    return false;
+}
+
+/*
+  update navigation for normal mission waypoints. Return true when the
+  waypoint is complete
+ */
+static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd)
+{
+    steer_state.hold_course_cd = -1;
+
     if (auto_state.no_crosstrack) {
         nav_controller->update_waypoint(current_loc, next_WP_loc);
     } else {
-        // Always look 1km ahead for nav wp so we don't pass it.
-        // (Don't want nav controller do a 180 degree turn if we pass 
-        //  the indended landing location by a little)
-        nav_controller->update_waypoint(lander.get_break_point(), 
-                                        lander.get_location_1km_beyond_land());
+        nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
     }
 
     // see if the user has specified a maximum distance to waypoint
