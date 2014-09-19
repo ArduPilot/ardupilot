@@ -12,16 +12,14 @@ float get_smoothing_gain()
 static void get_pilot_desired_lean_angles(int16_t roll_in, int16_t pitch_in, int16_t &roll_out, int16_t &pitch_out)
 {
     // apply circular limit to pitch and roll inputs
-    float total_out;
-    float vector_angle;
-
-    total_out = pythagorous2((float)pitch_in, (float)roll_in);
-    vector_angle = atan2((float)pitch_in, (float)roll_in);
+    float total_out = pythagorous2((float)pitch_in, (float)roll_in);
 
     if (total_out > ROLL_PITCH_INPUT_MAX) {
-        roll_out = (int16_t)((float)ROLL_PITCH_INPUT_MAX * cosf(vector_angle));
-        pitch_out = (int16_t)((float)ROLL_PITCH_INPUT_MAX * sinf(vector_angle));
-    } else {
+        float ratio = (float)ROLL_PITCH_INPUT_MAX / total_out;
+        roll_out = roll_in * ratio;
+        pitch_out = pitch_in * ratio;
+    }
+    else {
         roll_out = roll_in;
         pitch_out = pitch_in;
     }
