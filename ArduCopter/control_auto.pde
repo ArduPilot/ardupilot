@@ -287,8 +287,8 @@ static void auto_land_run()
         return;
     }
 
-    // init loiter targets when maybe landed
-    if(land_maybe_complete()) {
+    // relax loiter targets if we might be landed
+    if (land_complete_maybe()) {
         wp_nav.loiter_soften_for_landing();
     }
 
