@@ -74,7 +74,7 @@ static void land_gps_run()
     }
 
     // relax loiter target if we might be landed
-    if(land_maybe_complete()) {
+    if (land_complete_maybe()) {
         wp_nav.loiter_soften_for_landing();
     }
 
@@ -192,8 +192,8 @@ static float get_throttle_land()
     }
 }
 
-// land_maybe_complete - return true if we may have landed (used to reset loiter targets during landing)
-static bool land_maybe_complete()
+// land_complete_maybe - return true if we may have landed (used to reset loiter targets during landing)
+static bool land_complete_maybe()
 {
     return (ap.land_complete || ap.land_complete_maybe);
 }
