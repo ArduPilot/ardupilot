@@ -350,7 +350,7 @@ static void rtl_land_run()
     }
 
     // relax loiter target if we might be landed
-    if(land_maybe_complete()) {
+    if (land_complete_maybe()) {
         wp_nav.loiter_soften_for_landing();
     }
 
