@@ -522,34 +522,6 @@ static void print_enabled(bool b)
     cliSerial->print_P(PSTR("abled\n"));
 }
 
-
-static void
-init_esc()
-{
-    // reduce update rate to motors to 50Hz
-    motors.set_update_rate(50);
-
-    uint32_t last_print_ms = 0;
-    while(1) {
-        motors.armed(true);
-        motors.enable();
-        read_radio();
-        delay(10);
-        AP_Notify::flags.esc_calibration = true;
-        motors.throttle_pass_through();
-        
-        uint32_t now = hal.scheduler->millis();
-        if (now - last_print_ms > 1000) {
-            hal.console->printf_P(PSTR("ESC cal input: %u %u %u %u  output: %u %u %u %u\n"),
-                                  (unsigned)hal.rcin->read(0), (unsigned)hal.rcin->read(1), 
-                                  (unsigned)hal.rcin->read(2), (unsigned)hal.rcin->read(3),
-                                  (unsigned)hal.rcout->read(0), (unsigned)hal.rcout->read(1), 
-                                  (unsigned)hal.rcout->read(2), (unsigned)hal.rcout->read(3));
-            last_print_ms = now;
-        }
-    }
-}
-
 static void report_version()
 {
     cliSerial->printf_P(PSTR("FW Ver: %d\n"),(int)g.k_format_version);
