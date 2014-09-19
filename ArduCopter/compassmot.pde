@@ -147,7 +147,7 @@ static uint8_t mavlink_compassmot(mavlink_channel_t chan)
         read_radio();
         
         // pass through throttle to motors
-        motors.throttle_pass_through();
+        motors.throttle_pass_through(g.rc_3.radio_in);
         
         // read some compass values
         compass.read();
