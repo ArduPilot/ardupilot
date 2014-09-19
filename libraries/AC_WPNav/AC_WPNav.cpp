@@ -176,6 +176,16 @@ void AC_WPNav::init_loiter_target()
     _pilot_accel_rgt_cms = 0;
 }
 
+/// loiter_soften_for_landing - reduce response for landing
+void AC_WPNav::loiter_soften_for_landing()
+{
+    const Vector3f& curr_pos = _inav.get_position();
+
+    // set target position to current position
+    _pos_control.set_xy_target(curr_pos.x, curr_pos.y);
+    _pos_control.freeze_ff_xy();
+}
+
 /// set_loiter_velocity - allows main code to pass the maximum velocity for loiter
 void AC_WPNav::set_loiter_velocity(float velocity_cms)
 {
