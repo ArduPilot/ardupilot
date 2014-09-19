@@ -117,8 +117,9 @@ public:
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
     virtual void        output_test(uint8_t motor_seq, int16_t pwm) = 0;
 
-    // throttle_pass_through - passes pilot's throttle input directly to all motors - dangerous but used for initialising ESCs
-    virtual void        throttle_pass_through();
+    // throttle_pass_through - passes provided pwm directly to all motors - dangerous but used for initialising ESCs
+    //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
+    virtual void        throttle_pass_through(int16_t pwm);
 
 	// setup_throttle_curve - used to linearlise thrust output by motors
     //      returns true if curve is created successfully
