@@ -267,6 +267,7 @@ enum FlipState {
 #define DATA_DISARMED                   11
 #define DATA_AUTO_ARMED                 15
 #define DATA_TAKEOFF                    16
+#define DATA_LAND_COMPLETE_MAYBE        17
 #define DATA_LAND_COMPLETE              18
 #define DATA_NOT_LANDED                 28
 #define DATA_LOST_GPS                   19

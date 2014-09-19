@@ -322,6 +322,7 @@ static void startup_ground(bool force_gyro_cal)
 
     // set landed flag
     set_land_complete(true);
+    set_land_complete_maybe(true);
 }
 
 // returns true if the GPS is ok and home position is set
