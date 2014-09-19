@@ -10,7 +10,8 @@
 enum ESCCalibrationModes {
     ESCCAL_NONE = 0,
     ESCCAL_PASSTHROUGH_IF_THROTTLE_HIGH = 1,
-    ESCCAL_PASSTHROUGH_ALWAYS = 2
+    ESCCAL_PASSTHROUGH_ALWAYS = 2,
+    ESCCAL_AUTO = 3
 };
 
 // check if we should enter esc calibration mode
@@ -52,6 +53,10 @@ static void esc_calibration_startup_check()
             // pass through pilot throttle to escs
             esc_calibration_passthrough();
             break;
+        case ESCCAL_AUTO:
+            // perform automatic ESC calibration
+            esc_calibration_auto();
+            break;
         default:
             // do nothing
             break;
@@ -87,4 +92,48 @@ static void esc_calibration_passthrough()
         // pass through to motors
         motors.throttle_pass_through(g.rc_3.radio_in);
     }
+}
+
+// esc_calibration_auto - calibrate the ESCs automatically using a timer and no pilot input
+static void esc_calibration_auto()
+{
+    bool printed_msg = false;
+
+    // reduce update rate to motors to 50Hz
+    motors.set_update_rate(50);
+
+    // send message to GCS
+    gcs_send_text_P(SEVERITY_HIGH,PSTR("ESC Cal: auto calibration"));
+
+    // arm and enable motors
+    motors.armed(true);
+    motors.enable();
+
+    // flash LEDS
+    AP_Notify::flags.esc_calibration = true;
+
+    // raise throttle to maximum
+    delay(10);
+    motors.throttle_pass_through(g.rc_3.radio_max);
+
+    // wait for safety switch to be pressed
+    while (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
+        if (!printed_msg) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("ESC Cal: push safety switch"));
+            printed_msg = true;
+        }
+        delay(10);
+    }
+
+    // delay for 3 seconds
+    delay(3000);
+
+    // reduce throttle to minimum
+    motors.throttle_pass_through(g.rc_3.radio_min);
+
+    // clear esc parameter
+    g.esc_calibrate.set_and_save(ESCCAL_NONE);
+
+    // block until we restart
+    while(1) { delay(5); }
 }
