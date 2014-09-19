@@ -55,23 +55,9 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
     // @Increment: 1
     AP_GROUPINFO("SV3_POS", 3,      AP_MotorsHeli,  _servo3_pos,  AP_MOTORS_HELI_SERVO3_POS),
 
-    // @Param: ROL_MAX
-    // @DisplayName: Swash Roll Angle Max
-    // @Description: Maximum roll angle of the swash plate
-    // @Range: 0 18000
-    // @Units: Centi-Degrees
-    // @Increment: 100
-    // @User: Advanced
-    AP_GROUPINFO("ROL_MAX", 4,      AP_MotorsHeli,  _roll_max,    AP_MOTORS_HELI_SWASH_ROLL_MAX),
+    // 4 was ROL_MAX which has been replaced by CYC_MAX
 
-    // @Param: PIT_MAX
-    // @DisplayName: Swash Pitch Angle Max
-    // @Description: Maximum pitch angle of the swash plate
-    // @Range: 0 18000
-    // @Units: Centi-Degrees
-    // @Increment: 100
-    // @User: Advanced
-    AP_GROUPINFO("PIT_MAX", 5,      AP_MotorsHeli,  _pitch_max,   AP_MOTORS_HELI_SWASH_PITCH_MAX),
+    // 5 was PIT_MAX which has been replaced by CYC_MAX
 
     // @Param: COL_MIN
     // @DisplayName: Collective Pitch Minimum
@@ -205,6 +191,15 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("TAIL_SPEED", 24, AP_MotorsHeli,  _direct_drive_tailspeed, AP_MOTOR_HELI_DDTAIL_DEFAULT),
+
+    // @Param: CYC_MAX
+    // @DisplayName: Cyclic Pitch Angle Max
+    // @Description: Maximum pitch angle of the swash plate
+    // @Range: 0 18000
+    // @Units: Centi-Degrees
+    // @Increment: 100
+    // @User: Advanced
+    AP_GROUPINFO("CYC_MAX", 25,      AP_MotorsHeli,  _cyclic_max,   AP_MOTORS_HELI_SWASH_CYCLIC_MAX),
 
     AP_GROUPEND
 };
@@ -453,8 +448,8 @@ void AP_MotorsHeli::init_swash()
     _collective_mid_pwm = ((float)(_collective_mid-_collective_min))/((float)(_collective_max-_collective_min))*1000.0f;
 
     // determine roll, pitch and collective input scaling
-    _roll_scaler = (float)_roll_max/4500.0f;
-    _pitch_scaler = (float)_pitch_max/4500.0f;
+    _roll_scaler = (float)_cyclic_max/4500.0f;
+    _pitch_scaler = (float)_cyclic_max/4500.0f;
     _collective_scalar = ((float)(_collective_max-_collective_min))/1000.0f;
 
     // calculate factors based on swash type and servo position
@@ -545,29 +540,24 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
             init_swash();
         }
 
-        // rescale roll_out and pitch-out into the min and max ranges to provide linear motion
+        // rescale roll_out and pitch_out into the min and max ranges to provide linear motion
         // across the input range instead of stopping when the input hits the constrain value
-        // these calculations are based on an assumption of the user specified roll_max and pitch_max
+        // these calculations are based on an assumption of the user specified cyclic_max
         // coming into this equation at 4500 or less, and based on the original assumption of the
         // total _servo_x.servo_out range being -4500 to 4500.
-        roll_out = roll_out * _roll_scaler;
-        if (roll_out < -_roll_max) {
-            roll_out = -_roll_max;
-            limit.roll_pitch = true;
-        }
-        if (roll_out > _roll_max) {
-            roll_out = _roll_max;
-            limit.roll_pitch = true;
-        }
+        // The cyclic pitch limit will now be circular; the same for the entire rotor-head rotation ensuring
+        // that cyclic pitch will not exceed what is measured during setup.
 
-        // scale pitch and update limits
-        pitch_out = pitch_out * _pitch_scaler;
-        if (pitch_out < -_pitch_max) {
-            pitch_out = -_pitch_max;
-            limit.roll_pitch = true;
-        }
-        if (pitch_out > _pitch_max) {
-            pitch_out = _pitch_max;
+        float total_out;
+        float cyclic_angle;
+
+        total_out = pythagorous2(float (pitch_out), float (roll_out));
+        cyclic_angle = atan2(pitch_out, roll_out);
+
+        if (total_out > _cyclic_max) {
+                roll_out = _cyclic_max * cosf(cyclic_angle);
+                pitch_out = _cyclic_max * sinf(cyclic_angle);
+
             limit.roll_pitch = true;
         }
 

@@ -34,8 +34,7 @@
 #define AP_MOTORS_HELI_SWASH_H1                 1
 
 // default swash min and max angles and positions
-#define AP_MOTORS_HELI_SWASH_ROLL_MAX           2500
-#define AP_MOTORS_HELI_SWASH_PITCH_MAX          2500
+#define AP_MOTORS_HELI_SWASH_CYCLIC_MAX         2500
 #define AP_MOTORS_HELI_COLLECTIVE_MIN           1250
 #define AP_MOTORS_HELI_COLLECTIVE_MAX           1750
 #define AP_MOTORS_HELI_COLLECTIVE_MID           1500
@@ -262,8 +261,7 @@ private:
     AP_Int16        _servo1_pos;                // Angular location of swash servo #1
     AP_Int16        _servo2_pos;                // Angular location of swash servo #2
     AP_Int16        _servo3_pos;                // Angular location of swash servo #3
-    AP_Int16        _roll_max;                  // Maximum roll angle of the swash plate in centi-degrees
-    AP_Int16        _pitch_max;                 // Maximum pitch angle of the swash plate in centi-degrees
+    AP_Int16        _cyclic_max;                // Maximum cyclic angle of the swash plate in centi-degrees
     AP_Int16        _collective_min;            // Lowest possible servo position for the swashplate
     AP_Int16        _collective_max;            // Highest possible servo position for the swashplate
     AP_Int16        _collective_mid;            // Swash servo position corresponding to zero collective pitch (or zero lift for Assymetrical blades)
