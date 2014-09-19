@@ -551,8 +551,8 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
         float total_out;
         float cyclic_angle;
 
-        total_out = pythagorous2(float (pitch_out), float (roll_out));
-        cyclic_angle = atan2(pitch_out, roll_out);
+        total_out = pythagorous2((float)pitch_out, (float)roll_out);
+        cyclic_angle = atan2((float)pitch_out, (float)roll_out);
 
         if (total_out > _cyclic_max) {
                 roll_out = _cyclic_max * cosf(cyclic_angle);
