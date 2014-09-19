@@ -234,8 +234,8 @@ void AP_MotorsHeli_Single::calculate_scalars()
     _collective_range = 1000 - _collective_mid_pwm;
 
     // determine roll, pitch and collective input scaling
-    _roll_scaler = (float)_roll_max/4500.0f;
-    _pitch_scaler = (float)_pitch_max/4500.0f;
+    _roll_scaler = (float)_cyclic_max/4500.0f;
+    _pitch_scaler = (float)_cyclic_max/4500.0f;
     _collective_scalar = ((float)(_collective_max-_collective_min))/1000.0f;
 
     // calculate factors based on swash type and servo position
@@ -353,29 +353,18 @@ void AP_MotorsHeli_Single::move_actuators(int16_t roll_out, int16_t pitch_out, i
     limit.throttle_lower = false;
     limit.throttle_upper = false;
 
-    // rescale roll_out and pitch-out into the min and max ranges to provide linear motion
+    // rescale roll_out and pitch_out into the min and max ranges to provide linear motion
     // across the input range instead of stopping when the input hits the constrain value
-    // these calculations are based on an assumption of the user specified roll_max and pitch_max
+    // these calculations are based on an assumption of the user specified cyclic_max
     // coming into this equation at 4500 or less, and based on the original assumption of the
     // total _servo_x.servo_out range being -4500 to 4500.
-    roll_out = roll_out * _roll_scaler;
-    if (roll_out < -_roll_max) {
-        roll_out = -_roll_max;
-        limit.roll_pitch = true;
-    }
-    if (roll_out > _roll_max) {
-        roll_out = _roll_max;
-        limit.roll_pitch = true;
-    }
 
-    // scale pitch and update limits
-    pitch_out = pitch_out * _pitch_scaler;
-    if (pitch_out < -_pitch_max) {
-        pitch_out = -_pitch_max;
-        limit.roll_pitch = true;
-    }
-    if (pitch_out > _pitch_max) {
-        pitch_out = _pitch_max;
+    float total_out = pythagorous2((float)pitch_out, (float)roll_out);
+
+    if (total_out > _cyclic_max) {
+        float ratio = (float)_cyclic_max / total_out;
+        roll_out *= ratio;
+        pitch_out *= ratio;
         limit.roll_pitch = true;
     }
 

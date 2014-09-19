@@ -28,23 +28,9 @@ extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 
-    // @Param: ROL_MAX
-    // @DisplayName: Swash Roll Angle Max
-    // @Description: Maximum roll angle of the swash plate
-    // @Range: 0 18000
-    // @Units: Centi-Degrees
-    // @Increment: 100
-    // @User: Advanced
-    AP_GROUPINFO("ROL_MAX", 1, AP_MotorsHeli, _roll_max, AP_MOTORS_HELI_SWASH_ROLL_MAX),
+    // 1 was ROL_MAX which has been replaced by CYC_MAX
 
-    // @Param: PIT_MAX
-    // @DisplayName: Swash Pitch Angle Max
-    // @Description: Maximum pitch angle of the swash plate
-    // @Range: 0 18000
-    // @Units: Centi-Degrees
-    // @Increment: 100
-    // @User: Advanced
-    AP_GROUPINFO("PIT_MAX", 2, AP_MotorsHeli, _pitch_max, AP_MOTORS_HELI_SWASH_PITCH_MAX),
+    // 2 was PIT_MAX which has been replaced by CYC_MAX
 
     // @Param: COL_MIN
     // @DisplayName: Collective Pitch Minimum
@@ -152,6 +138,15 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("RSC_POWER_HIGH", 15, AP_MotorsHeli, _rsc_power_high, AP_MOTORS_HELI_RSC_POWER_HIGH_DEFAULT),
+
+    // @Param: CYC_MAX
+    // @DisplayName: Cyclic Pitch Angle Max
+    // @Description: Maximum pitch angle of the swash plate
+    // @Range: 0 18000
+    // @Units: Centi-Degrees
+    // @Increment: 100
+    // @User: Advanced
+    AP_GROUPINFO("CYC_MAX", 16, AP_MotorsHeli, _cyclic_max, AP_MOTORS_HELI_SWASH_CYCLIC_MAX),
 
     AP_GROUPEND
 };
