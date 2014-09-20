@@ -60,6 +60,13 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("RATE_FF_ENAB", 5, AC_AttitudeControl_Heli, _rate_bf_ff_enabled, AC_ATTITUDE_CONTROL_RATE_BF_FF_DEFAULT),
 
+    // @Param: PIRO_COMP_ENAB
+    // @DisplayName: Piro Comp Enable
+    // @Description: Controls whether Pirouette Compensation is enabled or disabled
+    // @Values: 0:Disabled, 1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("PIRO_COMP_ENAB", 6, AC_AttitudeControl_Heli, _user_piro_comp_enabled, 0),
+
     AP_GROUPEND
 };
 
@@ -204,6 +211,29 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
     
     roll_ff = roll_feedforward_filter.apply(((AC_HELI_PID&)_pid_rate_roll).get_ff(rate_roll_target_cds));
     pitch_ff = pitch_feedforward_filter.apply(((AC_HELI_PID&)_pid_rate_pitch).get_ff(rate_pitch_target_cds));
+
+	if ((_user_piro_comp_enabled == 1) && (_system_piro_comp_enabled == true)) {
+
+        int32_t         piro_roll_i, piro_pitch_i;            // used to hold i term while doing piro comp
+        Vector3f gyro_vector;
+        piro_roll_i  = roll_i;
+        piro_pitch_i = pitch_i;
+
+        gyro_vector = _ahrs.get_gyro();
+
+        Vector2f yawratevector;
+        yawratevector.x     = cosf(-gyro_vector.z * _dt);
+        yawratevector.y     = sinf(-gyro_vector.z * _dt);
+        yawratevector.normalize();
+        yawratevector.x = constrain_float(yawratevector.x, -1.0, 1.0);
+        yawratevector.y = constrain_float(yawratevector.y, -1.0, 1.0);
+
+        roll_i      = piro_roll_i * yawratevector.x - piro_pitch_i * yawratevector.y;
+        pitch_i     = piro_pitch_i * yawratevector.x + piro_roll_i * yawratevector.y;
+
+        _pid_rate_pitch.set_integrator(pitch_i);
+        _pid_rate_roll.set_integrator(roll_i);
+    }
 
     // add feed forward and final output
     roll_out = roll_pd + roll_i + roll_ff;
@@ -373,3 +403,7 @@ void AC_AttitudeControl_Heli::update_feedforward_filter_rates(float time_step)
     yaw_feedforward_filter.set_cutoff_frequency(time_step, AC_ATTITUDE_HELI_RATE_FF_FILTER);
 }
 
+void AC_AttitudeControl_Heli::set_piro_comp_enabled(bool enable)
+{
+    _system_piro_comp_enabled = enable;
+}
