@@ -50,7 +50,7 @@ static void set_next_WP(const struct Location &loc)
     // location as the previous waypoint, to prevent immediately
     // considering the waypoint complete
     if (location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
-        gcs_send_text_P(SEVERITY_LOW, PSTR("Resetting prev_WP"));
+        gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Resetting prev_WP"));
         prev_WP_loc = current_loc;
     }
 
@@ -98,7 +98,7 @@ static void set_guided_WP(void)
 // -------------------------------
 static void init_home()
 {
-    gcs_send_text_P(SEVERITY_LOW, PSTR("init home"));
+    gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("init home"));
 
     ahrs.set_home(gps.location());
     home_is_set = true;

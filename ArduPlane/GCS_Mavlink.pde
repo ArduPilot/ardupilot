@@ -940,7 +940,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         uint8_t result = MAV_RESULT_UNSUPPORTED;
 
         // do command
-        send_text_P(SEVERITY_LOW,PSTR("command received: "));
+        send_text_P(MAV_SEVERITY_WARNING,PSTR("command received: "));
 
         switch(packet.command) {
 
@@ -1197,10 +1197,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
     {
         // mark the firmware version in the tlog
-        send_text_P(SEVERITY_LOW, PSTR(FIRMWARE_STRING));
+        send_text_P(MAV_SEVERITY_WARNING, PSTR(FIRMWARE_STRING));
 
 #if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
-        send_text_P(SEVERITY_LOW, PSTR("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION));
+        send_text_P(MAV_SEVERITY_WARNING, PSTR("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION));
 #endif
         handle_param_request_list(msg);
         break;
@@ -1259,9 +1259,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         if (mavlink_check_target(packet.target_system, packet.target_component))
             break;
         if (g.fence_action != FENCE_ACTION_NONE) {
-            send_text_P(SEVERITY_LOW,PSTR("fencing must be disabled"));
+            send_text_P(MAV_SEVERITY_WARNING,PSTR("fencing must be disabled"));
         } else if (packet.count != g.fence_total) {
-            send_text_P(SEVERITY_LOW,PSTR("bad fence point"));
+            send_text_P(MAV_SEVERITY_WARNING,PSTR("bad fence point"));
         } else {
             Vector2l point;
             point.x = packet.lat*1.0e7f;
@@ -1278,7 +1278,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         if (mavlink_check_target(packet.target_system, packet.target_component))
             break;
         if (packet.idx >= g.fence_total) {
-            send_text_P(SEVERITY_LOW,PSTR("bad fence point"));
+            send_text_P(MAV_SEVERITY_WARNING,PSTR("bad fence point"));
         } else {
             Vector2l point = get_fence_point_with_index(packet.idx);
             mavlink_msg_fence_point_send_buf(msg, chan, msg->sysid, msg->compid, packet.idx, g.fence_total,
@@ -1297,12 +1297,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         
         if (packet.idx >= rally.get_rally_total() || 
             packet.idx >= rally.get_rally_max()) {
-            send_text_P(SEVERITY_LOW,PSTR("bad rally point message ID"));
+            send_text_P(MAV_SEVERITY_WARNING,PSTR("bad rally point message ID"));
             break;
         }
 
         if (packet.count != rally.get_rally_total()) {
-            send_text_P(SEVERITY_LOW,PSTR("bad rally point message count"));
+            send_text_P(MAV_SEVERITY_WARNING,PSTR("bad rally point message count"));
             break;
         }
 
@@ -1324,12 +1324,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         if (mavlink_check_target(packet.target_system, packet.target_component))
             break;
         if (packet.idx > rally.get_rally_total()) {
-            send_text_P(SEVERITY_LOW, PSTR("bad rally point index"));   
+            send_text_P(MAV_SEVERITY_WARNING, PSTR("bad rally point index"));
             break;
         }
         RallyLocation rally_point;
         if (!rally.get_rally_point_with_index(packet.idx, rally_point)) {
-            send_text_P(SEVERITY_LOW, PSTR("failed to set rally point"));   
+            send_text_P(MAV_SEVERITY_WARNING, PSTR("failed to set rally point"));
             break;
         }
 
@@ -1554,7 +1554,7 @@ static void mavlink_delay_cb()
     }
     if (tnow - last_5s > 5000) {
         last_5s = tnow;
-        gcs_send_text_P(SEVERITY_LOW, PSTR("Initialising APM..."));
+        gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Initialising APM..."));
     }
     check_usb_mux();
 
@@ -1601,7 +1601,7 @@ static void gcs_update(void)
     }
 }
 
-static void gcs_send_text_P(gcs_severity severity, const prog_char_t *str)
+static void gcs_send_text_P(int severity, const prog_char_t *str)
 {
     for (uint8_t i=0; i<num_gcs; i++) {
         if (gcs[i].initialised) {
@@ -1621,7 +1621,7 @@ static void gcs_send_text_P(gcs_severity severity, const prog_char_t *str)
 void gcs_send_text_fmt(const prog_char_t *fmt, ...)
 {
     va_list arg_list;
-    gcs[0].pending_status.severity = (uint8_t)SEVERITY_LOW;
+    gcs[0].pending_status.severity = (uint8_t)MAV_SEVERITY_WARNING;
     va_start(arg_list, fmt);
     hal.util->vsnprintf_P((char *)gcs[0].pending_status.text,
             sizeof(gcs[0].pending_status.text), fmt, arg_list);

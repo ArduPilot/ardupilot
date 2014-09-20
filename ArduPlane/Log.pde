@@ -95,9 +95,9 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 
 static void do_erase_logs(void)
 {
-    gcs_send_text_P(SEVERITY_LOW, PSTR("Erasing logs"));
+    gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Erasing logs"));
     DataFlash.EraseAll();
-    gcs_send_text_P(SEVERITY_LOW, PSTR("Log erase complete"));
+    gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Log erase complete"));
 }
 
 static int8_t

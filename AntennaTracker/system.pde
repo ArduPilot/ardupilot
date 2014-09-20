@@ -94,7 +94,7 @@ static void init_tracker()
         get_home_eeprom(current_loc);
     }
 
-    gcs_send_text_P(SEVERITY_LOW,PSTR("\nReady to track."));
+    gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("\nReady to track."));
     hal.scheduler->delay(1000); // Why????
 
     set_mode(AUTO); // tracking
@@ -113,7 +113,7 @@ static void init_tracker()
 // Requires that the tracker be physically 'level' and horizontal
 static void calibrate_ins()
 {
-    gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Beginning INS calibration; do not move tracker"));
+    gcs_send_text_P(MAV_SEVERITY_ALERT, PSTR("Beginning INS calibration; do not move tracker"));
     ahrs.init();
     ins.init(AP_InertialSensor::COLD_START, ins_sample_rate);
     ins.init_accel();

@@ -64,7 +64,7 @@ void ekf_check()
                 Log_Write_Error(ERROR_SUBSYSTEM_EKFINAV_CHECK, ERROR_CODE_EKFINAV_CHECK_BAD_VARIANCE);
                 // send message to gcs
                 if ((hal.scheduler->millis() - ekf_check_state.last_warn_time) > EKF_CHECK_WARNING_TIME) {
-                    gcs_send_text_P(SEVERITY_HIGH,PSTR("EKF variance"));
+                    gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("EKF variance"));
                     ekf_check_state.last_warn_time = hal.scheduler->millis();
                 }
                 failsafe_ekf_event();

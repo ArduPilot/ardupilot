@@ -163,7 +163,7 @@ static int8_t takeoff_tail_hold(void)
 
 return_zero:
     if (auto_state.fbwa_tdrag_takeoff_mode) {
-        gcs_send_text_P(SEVERITY_LOW, PSTR("FBWA tdrag off"));
+        gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("FBWA tdrag off"));
         auto_state.fbwa_tdrag_takeoff_mode = false;
     }
     return 0;

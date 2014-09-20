@@ -2,10 +2,10 @@
 
 static void init_barometer(void)
 {
-    gcs_send_text_P(SEVERITY_LOW, PSTR("Calibrating barometer"));    
+    gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Calibrating barometer"));
     barometer.calibrate();
 
-    gcs_send_text_P(SEVERITY_LOW, PSTR("barometer calibration complete"));
+    gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("barometer calibration complete"));
 }
 
 static void init_rangefinder(void)
@@ -43,7 +43,7 @@ static void read_airspeed(void)
 static void zero_airspeed(void)
 {
     airspeed.calibrate();
-    gcs_send_text_P(SEVERITY_LOW,PSTR("zero airspeed calibrated"));
+    gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("zero airspeed calibrated"));
 }
 
 // read_battery - reads battery voltage and current and invokes failsafe
