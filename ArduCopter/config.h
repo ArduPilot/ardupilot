@@ -298,7 +298,7 @@
 
 // pre-arm baro vs inertial nav max alt disparity
 #ifndef PREARM_MAX_ALT_DISPARITY_CM
- # define PREARM_MAX_ALT_DISPARITY_CM       100     // barometer and inertial nav altitude must be within this many centimeters
+ # define PREARM_MAX_ALT_DISPARITY_CM       200     // barometer and inertial nav altitude must be within this many centimeters
 #endif
 
 // pre-arm check max velocity
