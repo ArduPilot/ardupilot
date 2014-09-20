@@ -349,8 +349,7 @@ AP_GPS::update(void)
         update_instance(i);
     }
 
-    // update notify with gps status. We always base this on the first GPS
-    AP_Notify::flags.gps_status = state[0].status;
+    primary_instance=0;
 
 #if GPS_MAX_INSTANCES > 1
     // work out which GPS is the primary, and how many sensors we have
@@ -376,13 +375,15 @@ AP_GPS::update(void)
                 // position shift to the controllers.
                 primary_instance = i;
             }
-        } else {
-            primary_instance = 0;
         }
     }
 #else
     num_instances = 1;
 #endif // GPS_MAX_INSTANCES
+    
+    
+    // update notify with gps status. We always base this on the best GPS
+    AP_Notify::flags.gps_status = state[primary_instance].status;
 }
 
 /*
