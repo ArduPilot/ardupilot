@@ -19,10 +19,6 @@
  */
 
 // uncomment the lines below to save on flash space if compiling for the APM using Arduino IDE.  Top items save the most flash space
-#if (CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_APM1)
- # define CLI_ENABLED           DISABLED            // disable the CLI (command-line-interface) to save 21K of flash space
- # define FRSKY_TELEM_ENABLED           DISABLED            // disable the FRSKY TELEM
-#endif
 //#define LOGGING_ENABLED       DISABLED            // disable dataflash logging to save 11K of flash space
 //#define MOUNT                 DISABLED            // disable the camera gimbal to save 8K of flash space
 //#define AUTOTUNE_ENABLED      DISABLED            // disable the auto tune functionality to save 7k of flash
@@ -35,6 +31,7 @@
 //#define AC_RALLY              ENABLED             // disable rally points to save 2k of flash, and also frees rally point EEPROM for more mission commands
 //#define PARACHUTE             ENABLED             // enable parachute release at a cost of 1k of flash
 //#define EPM_ENABLED           ENABLED             // enable epm cargo gripper costs 500bytes of flash
+//#define CLI_ENABLED           ENABLED             // enable the CLI (command-line-interface) at a cost of 21K of flash space
 
 // features below are disabled by default on all boards
 //#define OPTFLOW               ENABLED             // enable optical flow sensor and OF_LOITER flight mode at a cost of 5K of flash space
