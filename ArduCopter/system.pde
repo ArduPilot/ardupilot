@@ -183,10 +183,10 @@ static void init_ardupilot()
 #if LOGGING_ENABLED == ENABLED
     DataFlash.Init(log_structure, sizeof(log_structure)/sizeof(log_structure[0]));
     if (!DataFlash.CardInserted()) {
-        gcs_send_text_P(SEVERITY_LOW, PSTR("No dataflash inserted"));
+        gcs_send_text_P(SEVERITY_HIGH, PSTR("No dataflash inserted"));
         g.log_bitmask.set(0);
     } else if (DataFlash.NeedErase()) {
-        gcs_send_text_P(SEVERITY_LOW, PSTR("ERASING LOGS"));
+        gcs_send_text_P(SEVERITY_HIGH, PSTR("ERASING LOGS"));
         do_erase_logs();
         gcs[0].reset_cli_timeout();
     }
