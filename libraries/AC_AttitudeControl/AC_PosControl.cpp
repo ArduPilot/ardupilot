@@ -84,6 +84,9 @@ void AC_PosControl::set_dt(float delta_sec)
 
     // update rate controller's d filter
     _pid_alt_accel.set_d_lpf_alpha(POSCONTROL_ACCEL_Z_DTERM_FILTER, _dt);
+
+    // update rate z-axis velocity error and accel error filters
+    _accel_error_filter.set_cutoff_frequency(_dt,POSCONTROL_ACCEL_ERROR_CUTOFF_FREQ);
 }
 
 /// set_speed_z - sets maximum climb and descent rates
@@ -365,11 +368,11 @@ void AC_PosControl::accel_to_throttle(float accel_target_z)
     if (_flags.reset_accel_to_throttle) {
         // Reset Filter
         _accel_error.z = 0;
+        _accel_error_filter.reset(0);
         _flags.reset_accel_to_throttle = false;
     } else {
         // calculate accel error and Filter with fc = 2 Hz
-        // To-Do: replace constant below with one that is adjusted for update rate
-        _accel_error.z = _accel_error.z + 0.11164f * (constrain_float(accel_target_z - z_accel_meas, -32000, 32000) - _accel_error.z);
+        _accel_error.z = _accel_error_filter.apply(constrain_float(accel_target_z - z_accel_meas, -32000, 32000));
     }
 
     // separately calculate p, i, d values for logging
