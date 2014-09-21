@@ -86,6 +86,7 @@ void AC_PosControl::set_dt(float delta_sec)
     _pid_alt_accel.set_d_lpf_alpha(POSCONTROL_ACCEL_Z_DTERM_FILTER, _dt);
 
     // update rate z-axis velocity error and accel error filters
+    _vel_error_filter.set_cutoff_frequency(_dt,POSCONTROL_VEL_ERROR_CUTOFF_FREQ);
     _accel_error_filter.set_cutoff_frequency(_dt,POSCONTROL_ACCEL_ERROR_CUTOFF_FREQ);
 }
 
@@ -337,10 +338,12 @@ void AC_PosControl::rate_to_accel_z()
     if (_flags.reset_rate_to_accel_z) {
         // Reset Filter
         _vel_error.z = 0;
+        _vel_error_filter.reset(0);
         desired_accel = 0;
         _flags.reset_rate_to_accel_z = false;
     } else {
-        _vel_error.z = (_vel_target.z - curr_vel.z);
+        // calculate rate error and filter with cut off frequency of 2 Hz
+        _vel_error.z = _vel_error_filter.apply(_vel_target.z - curr_vel.z);
     }
 
     // calculate p
