@@ -88,10 +88,10 @@ static void read_radio()
         set_throttle_and_failsafe(periods[rcmap.throttle()-1]);
 
         g.rc_4.set_pwm(periods[rcmap.yaw()-1]);
-        g.rc_5.set_pwm(periods[4]);
-        g.rc_6.set_pwm(periods[5]);
-        g.rc_7.set_pwm(periods[6]);
-        g.rc_8.set_pwm(periods[7]);
+        g.rc_5.set_pwm(periods[g.fltmode_ch-1]);
+        g.rc_6.set_pwm(periods[g.tune_ch-1]);
+        g.rc_7.set_pwm(periods[g.aux1_ch-1]);
+        g.rc_8.set_pwm(periods[g.aux2_ch-1]);
 
         // flag we must have an rc receiver attached
         if (!failsafe.rc_override_active) {

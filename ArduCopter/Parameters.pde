@@ -462,6 +462,51 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(ekfcheck_thresh, "EKF_CHECK_THRESH",    EKFCHECK_THRESHOLD_DEFAULT),
 
+    
+    // @Param: FLTMODE_CH
+    // @DisplayName: Flight Mode Channel/CH5
+    // @Description: Flight Mode channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Flight Mode is normally on channel 5, but you can move it to any channel with this parameter.
+    // @Range: 1 8
+    // @Increment: 1
+    // @User: Advanced
+    GSCALAR(fltmode_ch, "FLTMODE_CH", 5),
+
+    // @Param: TUNE_CH
+    // @DisplayName: Tune channel/CH6
+    // @Description: Tune channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Tune (also known as CH6) is normally on channel 6, but you can move it to any channel with this parameter.
+    // @Range: 1 8
+    // @Increment: 1
+    // @User: Advanced
+    GSCALAR(tune_ch, "TUNE_CH", 6),
+
+    // @Param: AUX1_CH
+    // @DisplayName: AUX1 channel/CH7 
+    // @Description: AUX1 channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Aux1 (also known as CH7) is normally on channel 7, but you can move it to any channel with this parameter.
+    // @Range: 1 8
+    // @Increment: 1
+    // @User: Advanced
+    GSCALAR(aux1_ch, "AUX1_CH", 7),
+
+    
+#if FRAME_CONFIG == HELI_FRAME
+    // @Param: ROTORSPEED_CH
+    // @DisplayName: CH_ROTORSPEED channel/CH8
+    // @Description: CH_ROTORSPEED channel number. This is useful when you have a RC transmitter that can't change the channel order easily. RotorSpeed (also known as CH8) is normally on channel 8, but you can move it to any channel with this parameter.
+    // @Range: 1 8
+    // @Increment: 1
+    // @User: Advanced
+    GSCALAR(aux2_ch, "ROTORSPEED_CH", 8),
+#else
+    // @Param: AUX2_CH
+    // @DisplayName: AUX2 channel/CH8
+    // @Description: AUX2 channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Aux2 (also known as CH8) is normally on channel 8, but you can move it to any channel with this parameter.
+    // @Range: 1 8
+    // @Increment: 1
+    // @User: Advanced
+    GSCALAR(aux2_ch, "AUX2_CH", 8),
+#endif
+    
+    
 #if FRAME_CONFIG ==     HELI_FRAME
     // @Group: HS1_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp
