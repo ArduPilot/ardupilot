@@ -53,10 +53,10 @@
 #define AUTOTUNE_PI_RATIO_FOR_TESTING      0.1f    // I is set 10x smaller than P during testing
 #define AUTOTUNE_RP_RATIO_FINAL            1.0f    // I is set 1x P after testing
 #define AUTOTUNE_RD_MIN                  0.002f    // minimum Rate D value
-#define AUTOTUNE_RD_MAX                  0.015f    // maximum Rate D value
+#define AUTOTUNE_RD_MAX                  0.020f    // maximum Rate D value
 #define AUTOTUNE_RP_MIN                   0.01f    // minimum Rate P value
-#define AUTOTUNE_RP_MAX                   0.25f    // maximum Rate P value
-#define AUTOTUNE_SP_MAX                   15.0f    // maximum Stab P value
+#define AUTOTUNE_RP_MAX                   0.35f    // maximum Rate P value
+#define AUTOTUNE_SP_MAX                   20.0f    // maximum Stab P value
 #define AUTOTUNE_SUCCESS_COUNT                4    // how many successful iterations we need to freeze at current gains
 
 // Auto Tune message ids for ground station
