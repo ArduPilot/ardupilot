@@ -364,6 +364,7 @@ private:
     bool filterDiverged;            // boolean true if the filter has diverged
     bool magFailed;                 // boolean true if the magnetometer has failed
 
+    float gpsNoiseScaler;           // Used to scale the  GPS measurement noise and consistency gates to compensate for operation with small satellite counts
     Vector31 Kfusion;               // Kalman gain vector
     Matrix22 KH;                    // intermediate result used for covariance updates
     Matrix22 KHP;                   // intermediate result used for covariance updates
