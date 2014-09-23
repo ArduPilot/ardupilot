@@ -93,6 +93,13 @@ static void read_radio()
         g.rc_7.set_pwm(periods[6]);
         g.rc_8.set_pwm(periods[7]);
 
+        // read channels 9 ~ 14
+        for (uint8_t i=8; i<RC_MAX_CHANNELS; i++) {
+            if (RC_Channel::rc_channel(i) != NULL) {
+                RC_Channel::rc_channel(i)->set_pwm(RC_Channel::rc_channel(i)->read());
+            }
+        }
+
         // flag we must have an rc receiver attached
         if (!failsafe.rc_override_active) {
             ap.rc_receiver_present = true;
