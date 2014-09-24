@@ -249,12 +249,12 @@ protected:
     bool _healthy[COMPASS_MAX_INSTANCES];
     Vector3f _field[COMPASS_MAX_INSTANCES];     ///< magnetic field strength
 
-    AP_Int8 _orientation;
+    AP_Int8 _orientation[COMPASS_MAX_INSTANCES];
     AP_Vector3f _offset[COMPASS_MAX_INSTANCES];
     AP_Float _declination;
     AP_Int8 _use_for_yaw[COMPASS_MAX_INSTANCES];///<enable use for yaw calculation
     AP_Int8 _auto_declination;                  ///<enable automatic declination code
-    AP_Int8 _external;                          ///<compass is external
+    AP_Int8 _external[COMPASS_MAX_INSTANCES];   ///<compass is external
 #if COMPASS_MAX_INSTANCES > 1
     AP_Int8 _primary;                           ///primary instance
     AP_Int32 _dev_id[COMPASS_MAX_INSTANCES];    // device id detected at init.  saved to eeprom when offsets are saved allowing ram & eeprom values to be compared as consistency check
