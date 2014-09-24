@@ -280,6 +280,11 @@ static struct {
 // should throttle be pass-thru in guided?
 static bool guided_throttle_passthru;
 
+// are we doing calibration? This is used to allow heartbeat to
+// external failsafe boards during baro and airspeed calibration
+static bool in_calibration;
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection
 ////////////////////////////////////////////////////////////////////////////////
