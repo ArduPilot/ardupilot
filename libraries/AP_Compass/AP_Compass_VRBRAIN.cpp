@@ -67,13 +67,16 @@ bool AP_Compass_VRBRAIN::init(void)
         }
 
         // remember if the compass is external
-        _is_external[i] = (ioctl(_mag_fd[i], MAGIOCGEXTERNAL, 0) > 0);
+        _external[i] = (ioctl(_mag_fd[i], MAGIOCGEXTERNAL, 0) > 0);
 #if defined(CONFIG_ARCH_BOARD_VRBRAIN_V45)
 		//deal with situations where user has cut internal mag on VRBRAIN 4.5 
 		//and uses only one external mag attached to the internal I2C bus
-		_is_external[i] = _external.load() ? _external.get() : _is_external[i];
+        bool external_tmp = _external[i];
+        if (!_external[i].load()) {
+            _external[i] = external_tmp;
+        }
 #endif
-        if (_is_external[i]) {
+        if (_external[i]) {
             hal.console->printf("Using external compass[%u]\n", (unsigned)i);
         }
         _count[0] = 0;
@@ -114,9 +117,9 @@ bool AP_Compass_VRBRAIN::read(void)
         // override any user setting of COMPASS_EXTERNAL 
         //_external.set(_is_external[0]);
 
-        if (_is_external[i]) {
+        if (_external[i]) {
             // add user selectable orientation
-            _sum[i].rotate((enum Rotation)_orientation.get());
+            _sum[i].rotate((enum Rotation)_orientation[i].get());
         } else {
             // add in board orientation from AHRS
             _sum[i].rotate(_board_orientation);
