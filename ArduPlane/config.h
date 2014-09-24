@@ -494,6 +494,12 @@
 #endif
 #endif
 
+#if OBC_FAILSAFE == ENABLED && HAL_CPU_CLASS < HAL_CPU_CLASS_75
+#define CLI_ENABLED DISABLED
+#endif
+
+
+
 #ifndef SERIAL_BUFSIZE
  # define SERIAL_BUFSIZE 512
 #endif
