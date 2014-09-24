@@ -1,6 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include <AP_HAL.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_YUNEEC
 #include "AP_InertialSensor_MPU6050.h"
 
 extern const AP_HAL::HAL& hal;
@@ -219,7 +220,7 @@ uint16_t AP_InertialSensor_MPU6050::_init_sensor( Sample_rate sample_rate )
     }
 
     // start the timer process to read samples
-    hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&AP_InertialSensor_MPU6050::_poll_data));
+//    hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&AP_InertialSensor_MPU6050::_poll_data));
 
 #if MPU6050_DEBUG
     _dump_registers();
@@ -347,32 +348,20 @@ void AP_InertialSensor_MPU6050::_read_data_transaction() {
         uint8_t v[14];
     } rxBuf;
     
-    hal.i2c2->readRegisters(MPU6050_ADDR, MPUREG_INT_STATUS, sizeof(rxBuf), (uint8_t *)&rxBuf);
-
-    /*
-      detect a bad I2C bus transaction by looking for all 14 bytes
-      zero, or the wrong INT_STATUS register value. This is used to
-      detect a too high I2C bus speed.
-     */
-    uint8_t i;
-    for (i=0; i<14; i++) {
-        if (rxBuf.v[i] != 0) break;
-    }
-    if (!(rxBuf.int_status & BIT_RAW_RDY_INT) || i == 14) {
-        // likely a bad i2c bus transaction
-        if (++_error_count > 4) {
-            hal.i2c2->setHighSpeed(false);
-        }
-    }
+    if (hal.i2c2->readRegisters(MPU6050_ADDR, MPUREG_INT_STATUS, sizeof(rxBuf), (uint8_t *)&rxBuf) == 0) {
 
 #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx] << 8) | v[2*idx+1]))
-    _accel_sum.x += int16_val(rxBuf.v, 1);
-    _accel_sum.y += int16_val(rxBuf.v, 0);
-    _accel_sum.z -= int16_val(rxBuf.v, 2);
-    _gyro_sum.x  += int16_val(rxBuf.v, 5);
-    _gyro_sum.y  += int16_val(rxBuf.v, 4);
-    _gyro_sum.z  -= int16_val(rxBuf.v, 6);
-    _sum_count++;
+		_accel_sum.x += int16_val(rxBuf.v, 1);
+		_accel_sum.y += int16_val(rxBuf.v, 0);
+		_accel_sum.z -= int16_val(rxBuf.v, 2);
+		_gyro_sum.x  += int16_val(rxBuf.v, 5);
+		_gyro_sum.y  += int16_val(rxBuf.v, 4);
+		_gyro_sum.z  -= int16_val(rxBuf.v, 6);
+		_sum_count++;
+
+		_error_count = 0;
+    } else
+    	_error_count++;
 
     if (_sum_count == 0) {
         // rollover - v unlikely
@@ -474,24 +463,28 @@ bool AP_InertialSensor_MPU6050::_hardware_init(Sample_rate sample_rate)
         // more important than update rate. Tests on an aerobatic plane
         // show that 10Hz is fine, and makes it very noise resistant
         default_filter = BITS_DLPF_CFG_10HZ;
-        _sample_shift = 2;
+        _sample_shift = 4;
         break;
     case RATE_100HZ:
         default_filter = BITS_DLPF_CFG_20HZ;
-        _sample_shift = 1;
+        _sample_shift = 3;
         break;
     case RATE_200HZ:
+        default_filter = BITS_DLPF_CFG_20HZ;
+        _sample_shift = 2;
+        break;
+    case RATE_400HZ:
     default:
         default_filter = BITS_DLPF_CFG_20HZ;
-        _sample_shift = 0;
+        _sample_shift = 1;
         break;
     }
 
     _set_filter_register(_mpu6000_filter, default_filter);
 
-    // set sample rate to 200Hz, and use _sample_divider to give
+    // set sample rate to 1000Hz, and use _sample_shift to give
     // the requested rate to the application
-    _register_write(MPUREG_SMPLRT_DIV, MPUREG_SMPLRT_200HZ);
+    _register_write(MPUREG_SMPLRT_DIV, MPUREG_SMPLRT_1000HZ);
     hal.scheduler->delay(1);
 
     _register_write(MPUREG_GYRO_CONFIG, BITS_GYRO_FS_2000DPS);  // Gyro scale 2000º/s
@@ -560,6 +553,7 @@ void AP_InertialSensor_MPU6050::_dump_registers(void)
 // get_delta_time returns the time period in seconds overwhich the sensor data was collected
 float AP_InertialSensor_MPU6050::get_delta_time() const
 {
-    // the sensor runs at 200Hz
-    return 0.005 * _num_samples;
+    // the sensor runs at 1000Hz
+    return 0.001f * _num_samples;
 }
+#endif

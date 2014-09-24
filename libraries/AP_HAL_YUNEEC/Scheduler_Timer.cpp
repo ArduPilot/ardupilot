@@ -20,14 +20,16 @@ extern "C"
 	static voidFuncPtr systick_failsafe = NULL;
 	static volatile uint32_t timer_micros_counter = 0;
 	static volatile uint32_t timer_millis_counter = 0;
+	static volatile uint16_t failsafe_delay = 0;
 
 	void SysTick_Handler(void) {
 	    timer_micros_counter += 1000;
 	    timer_millis_counter += 1;
 
-		if(hal.scheduler->in_timerprocess())
-			if (systick_failsafe != NULL)
-				systick_failsafe();
+		if (systick_failsafe != NULL) {
+			systick_failsafe();
+		}
+
 	}
 
 	void TIM6_DAC1_IRQHandler(void) {
@@ -56,16 +58,16 @@ void YUNEECTimer::init() {
 	TIM_TimeBaseInit(TIM7, &TIM_TimeBaseStructure);
 
     /* Reset the ARR Preload Bit */
-    TIM6->CR1 &= (uint16_t)~((uint16_t)TIM_CR1_ARPE);
-    TIM7->CR1 &= (uint16_t)~((uint16_t)TIM_CR1_ARPE);
+    TIM6->CR1 &= ~((uint16_t)TIM_CR1_ARPE);
+    TIM7->CR1 &= ~((uint16_t)TIM_CR1_ARPE);
 
 	// Configure two bits for preemption priority
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 
 	// Enable the TIM6 gloabal Interrupt
 	NVIC_InitStructure.NVIC_IRQChannel = TIM6_DAC1_IRQn;
-	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 3;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 3;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStructure);
 
@@ -79,7 +81,7 @@ void YUNEECTimer::init() {
 
 	/* Configure the SysTick Handler Priority: Preemption priority and sub-priority */
 	SysTick_Config(SystemCoreClock / 1000);
-	NVIC_SetPriority(SysTick_IRQn, 0x0);
+	NVIC_SetPriority(SysTick_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 0, 0));
 }
 
 uint32_t YUNEECTimer::micros() {

@@ -27,7 +27,6 @@ COREINCLUDES += -I$(STMLIBDIR)/CMSIS/Device/ST/STM32F37x/Include
 COREINCLUDES += -I$(STMLIBDIR)/CMSIS/Device/ST/STM32F37x/Source/Templates
 COREINCLUDES += -I$(STMLIBDIR)/STM32F37x_StdPeriph_Driver/inc
 COREINCLUDES += -I$(STMLIBDIR)/STM32_USB-FS-Device_Driver/inc
-COREINCLUDES += -I$(LIBDIR)/STM32F37x_I2C_CPAL_Driver/inc
 
 ###############################################################################
 # Tool options

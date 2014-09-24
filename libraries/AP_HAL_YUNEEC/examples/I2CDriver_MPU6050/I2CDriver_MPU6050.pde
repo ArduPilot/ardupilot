@@ -38,7 +38,7 @@ void setup(void)
     hal.console->println("AP_InertialSensor startup...");
 
     ins.init(AP_InertialSensor::COLD_START, 
-			 AP_InertialSensor::RATE_100HZ);
+			 AP_InertialSensor::RATE_400HZ);
 
     // display initial values
     display_offsets_and_scaling();

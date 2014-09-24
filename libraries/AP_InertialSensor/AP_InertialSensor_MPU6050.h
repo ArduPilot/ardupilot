@@ -3,8 +3,11 @@
 #ifndef __AP_INERTIAL_SENSOR_MPU6050_H__
 #define __AP_INERTIAL_SENSOR_MPU6050_H__
 
-#include <stdint.h>
 #include <AP_HAL.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_YUNEEC
+
+#include <stdint.h>
+
 #include <AP_Math.h>
 #include <AP_Progmem.h>
 #include "AP_InertialSensor.h"
@@ -81,4 +84,5 @@ public:
 #endif
 };
 
+#endif
 #endif // __AP_INERTIAL_SENSOR_MPU6050_H__

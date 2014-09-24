@@ -995,7 +995,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Group: BRD_
     // @Path: ../libraries/AP_BoardConfig/AP_BoardConfig.cpp
-    GOBJECT(BoardConfig,            "BRD_",       AP_BoardConfig),    
+//    GOBJECT(BoardConfig,            "BRD_",       AP_BoardConfig),
 
 #if SPRAYER == ENABLED
     // @Group: SPRAY_

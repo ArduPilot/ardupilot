@@ -6,10 +6,16 @@
 #include <stm32f37x.h>
 #include <stm32f37x_tim.h>
 #include <stm32f37x_misc.h>
+#include <utility/pinmap_typedef.h>
 
 using namespace YUNEEC;
 
 extern const AP_HAL::HAL& hal;
+
+#define PINPOS					(uint32_t)(DSM_UART_RX_BIT << 1)
+#define DSM_GPIO_MODE_OUT		(uint32_t)(GPIO_Mode_OUT << PINPOS)
+#define DSM_GPIO_MODE_AF		(uint32_t)(GPIO_Mode_AF << PINPOS)
+#define DSM_GPIO_MODER 			(uint32_t)(GPIO_MODER_MODER0 << PINPOS)
 
 /* private variables to communicate with input capture isr */
 volatile uint8_t YUNEECRCInputDSM::_dsm_frame[DSM_FRAME_SIZE] = {0};
@@ -21,29 +27,31 @@ volatile uint16_t YUNEECRCInputDSM::_periods[YUNEEC_RC_INPUT_NUM_CHANNELS] = {0}
 volatile uint8_t  YUNEECRCInputDSM::_valid_channels = 0;
 volatile bool YUNEECRCInputDSM::_new_input = false;
 AP_HAL::UARTDriver* YUNEECRCInputDSM::_dsm_uart = NULL;
+uint8_t YUNEECRCInputDSM::_pulses = DSM_CONFIG_INT_DSMx_11MS;
 
-extern "C"
-{
-	static voidFuncPtr timer12_callback = NULL;
-
-	void TIM12_IRQHandler(void) {
-		TIM12->SR &= ~TIM_IT_Update;
-
-		if(timer12_callback != NULL)
-			timer12_callback();
-	}
-}
+//extern "C"
+//{
+//	static voidFuncPtr timer12_callback = NULL;
+//
+//	void TIM12_IRQHandler(void) {
+//		TIM12->SR &= ~TIM_IT_Update;
+//
+//		if(timer12_callback != NULL)
+//			timer12_callback();
+//	}
+//}
 
 void YUNEECRCInputDSM::init(void* machtnichts) {
-	/* initiate uartA for dsm */
-	_dsm_init(hal.uartA);
-	/* we check the uart ring buffer every 2ms */
-	_timer12_config();
-	_attachInterrupt(_dsm_input);
+	/* initiate uartC for dsm */
+	_dsm_init(hal.uartC);
 
-	hal.console->printf_P(PSTR("DSM is in BINDING mode...\n"));
-	_dsm_bind(DSM_CONFIG_INT_DSMx_11MS);
-	hal.console->printf_P(PSTR("DSM BINDING successfully\n"));
+	/* we check the uart ring buffer every 2ms */
+//	_timer12_config();
+//	_attachInterrupt(_dsm_input);
+    hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC( &YUNEECRCInputDSM::_dsm_input));
+
+	/* now bind dsm receiver with remote */
+	_dsm_bind();
 }
 
 bool YUNEECRCInputDSM::new_input() {
@@ -141,50 +149,12 @@ void YUNEECRCInputDSM::_dsm_init(AP_HAL::UARTDriver* uartX) {
 }
 
 /**
- * Handle DSM satellite receiver bind mode handler
+ * Check if the configuration is correct
  */
-void YUNEECRCInputDSM::_dsm_bind(uint8_t pulses) {
-	/* Set UART RX pin to active output mode */
-	GPIO_InitTypeDef GPIO_InitStructure;
-
-	DSM_UART_PORT->BSRR = DSM_UART_RX_BIT;
-
-	GPIO_InitStructure.GPIO_Pin = DSM_UART_RX_BIT;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-	GPIO_Init(DSM_UART_PORT, &GPIO_InitStructure);
-
-	hal.scheduler->delay(50);
-	/*Pulse RX pin a number of times*/
-	for (uint8_t i = 0; i < pulses; i++) {
-		hal.scheduler->delay_microseconds(25);
-		DSM_UART_PORT->BRR = DSM_UART_RX_BIT;
-		hal.scheduler->delay_microseconds(25);
-		DSM_UART_PORT->BSRR = DSM_UART_RX_BIT;
-	}
-
-	/* Restore USART RX pin to receive mode */
-	GPIO_PinAFConfig(DSM_UART_PORT, USART2_RX_PINSOURCE, GPIO_AF_7);
-
-	/* Configure USART Rx as alternate function push-pull */
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
-	GPIO_Init(DSM_UART_PORT, &GPIO_InitStructure);
-
-	/* Wait for tx task complete */
-	while (_dsm_uart->tx_pending())
-		;
-
-	/* Flush rx buffer */
-	_dsm_uart->flush();
-
-	/* Confirm dsm receiver is configured correctly */
-	while (_new_input == false)
-		;
-
+bool YUNEECRCInputDSM::_dsm_check_binded(void) {
 	uint8_t dsm_config = 0;
-	switch (pulses) {
+
+	switch (_pulses) {
 	case DSM_CONFIG_INT_DSM2_22MS:
 		dsm_config = DSM2_1024_22MS;
 		_dsm_channel_shift = 10;
@@ -207,10 +177,9 @@ void YUNEECRCInputDSM::_dsm_bind(uint8_t pulses) {
 	}
 
 	/* DSM is configured incorrectly */
-	if ((_dsm_frame[1] & ~dsm_config) != 0) {
-		hal.scheduler->panic(PSTR("YUNEECRCInputDSM: DSM receiver is configured incorrectly"));
-		return; //never reach
-	}
+	if ((_dsm_frame[1] & ~dsm_config) != 0)
+		return false;
+
 
 	/* DSM is configured correctly */
 	if (_dsm_channel_shift == 10)
@@ -218,7 +187,64 @@ void YUNEECRCInputDSM::_dsm_bind(uint8_t pulses) {
 	else
 		_dsm_data_mask = 0x7ff;
 
-	return;
+	return true;
+}
+
+/**
+ * Set UART RX pin to active output mode
+ */
+void YUNEECRCInputDSM::_dsm_output_pulses(void) {
+	_dsm_uart->end();
+
+	/* Change gpio mode */
+	hal.gpio->pinMode(PA3, HAL_GPIO_OUTPUT);
+	/* Pulse RX pin a number of times */
+	for (uint8_t i = 0; i < _pulses; i++) {
+		hal.scheduler->delay_microseconds(25);
+		hal.gpio->write(PA3, 0);
+		hal.scheduler->delay_microseconds(25);
+		hal.gpio->write(PA3, 1);
+	}
+
+	_dsm_uart->begin(115200);
+}
+
+/**
+ * Handle DSM satellite receiver bind mode handler
+ */
+void YUNEECRCInputDSM::_dsm_bind(void) {
+	hal.console->printf_P(PSTR("DSM is in BINDING mode...\n"));
+
+	/* Wait for tx task complete */
+	while (_dsm_uart->tx_pending())
+		;
+
+	uint32_t start = hal.scheduler->millis();
+	/* Check if dsm receiver is already binded */
+	while (_new_input == false) {
+		uint32_t now = hal.scheduler->millis();
+		if (now - start > 500)
+			break;
+	}
+
+	if ((_new_input == true) && (_dsm_check_binded() == true)) {
+		hal.console->printf_P(PSTR("DSM BINDED already\n"));
+		return;
+	}
+
+	/* It is not binded, output pulses to configure dsm receiver */
+	_dsm_output_pulses();
+
+	/* Confirm dsm receiver is configured correctly */
+	while (_new_input == false)
+		;
+
+	if (_dsm_check_binded() == true) {
+		hal.console->printf_P(PSTR("DSM BINDING successfully\n"));
+		return;
+	}
+	else
+		hal.scheduler->panic(PSTR("YUNEECRCInputDSM: DSM receiver is configured incorrectly"));
 }
 
 /**
@@ -342,39 +368,39 @@ void YUNEECRCInputDSM::_dsm_input(void) {
 
 }
 
-void YUNEECRCInputDSM::_timer12_config() {
-	NVIC_InitTypeDef NVIC_InitStructure;
-	TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
-
-	/* TIM12 clock enable */
-    RCC->APB1ENR |= RCC_APB1Periph_TIM12;
-
-	/* Configure two bits for preemption priority */
-	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
-	/* Enable the TIM3 global Interrupt */
-	NVIC_InitStructure.NVIC_IRQChannel = TIM12_IRQn;
-	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
-	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-	NVIC_Init(&NVIC_InitStructure);
-
-	/* Time base configuration */
-	TIM_TimeBaseStructure.TIM_Period = 2000 - 1; // 2ms per interrupt
-	TIM_TimeBaseStructure.TIM_Prescaler = SystemCoreClock / 1000000 - 1; // 1 MHz
-	TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;
-	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
-	TIM_TimeBaseInit(TIM12, &TIM_TimeBaseStructure);
-
-    /* Enable the TIM Counter */
-    TIM12->CR1 |= TIM_CR1_CEN;
-
-	/* Enable the CC4 Interrupt Request */
-    TIM12->DIER |= TIM_IT_Update;
-}
-
-void YUNEECRCInputDSM::_attachInterrupt(voidFuncPtr callback) {
-	if (callback != NULL)
-		timer12_callback = callback;
-}
+//void YUNEECRCInputDSM::_timer12_config() {
+//	NVIC_InitTypeDef NVIC_InitStructure;
+//	TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
+//
+//	/* TIM12 clock enable */
+//    RCC->APB1ENR |= RCC_APB1Periph_TIM12;
+//
+//	/* Configure two bits for preemption priority */
+//	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+//	/* Enable the TIM3 global Interrupt */
+//	NVIC_InitStructure.NVIC_IRQChannel = TIM12_IRQn;
+//	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2;
+//	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+//	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+//	NVIC_Init(&NVIC_InitStructure);
+//
+//	/* Time base configuration */
+//	TIM_TimeBaseStructure.TIM_Period = 2000 - 1; // 2ms per interrupt
+//	TIM_TimeBaseStructure.TIM_Prescaler = SystemCoreClock / 1000000 - 1; // 1 MHz
+//	TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;
+//	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
+//	TIM_TimeBaseInit(TIM12, &TIM_TimeBaseStructure);
+//
+//	/* Enable the CC4 Interrupt Request */
+//    TIM12->DIER |= TIM_IT_Update;
+//
+//    /* Enable the TIM Counter */
+//    TIM12->CR1 |= TIM_CR1_CEN;
+//}
+//
+//void YUNEECRCInputDSM::_attachInterrupt(voidFuncPtr callback) {
+//	if (callback != NULL)
+//		timer12_callback = callback;
+//}
 
 #endif

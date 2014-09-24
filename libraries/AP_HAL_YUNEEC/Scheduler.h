@@ -4,7 +4,7 @@
 
 #include <AP_HAL_YUNEEC.h>
 
-#define YUNEEC_SCHEDULER_MAX_TIMER_PROCS 4
+#define YUNEEC_SCHEDULER_MAX_TIMER_PROCS 5
 
 typedef void (*voidFuncPtr)(void);
 
@@ -39,9 +39,6 @@ public:
 
     void     register_timer_failsafe(AP_HAL::Proc, uint32_t period_us);
 
-    void     begin_atomic();
-    void     end_atomic();
-
     bool     system_initializing();
     void     system_initialized();
 
@@ -61,7 +58,6 @@ private:
     static void _timer_isr_event();
     static void _run_timer_procs(bool called_from_isr);
 
-    static void _timer_failsafe_event();
     static AP_HAL::Proc _failsafe;
 
     static volatile bool _timer_suspended;

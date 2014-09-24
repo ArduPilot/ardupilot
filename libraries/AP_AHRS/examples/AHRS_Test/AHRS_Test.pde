@@ -30,6 +30,7 @@
 
 #include <AP_HAL_AVR.h>
 #include <AP_HAL_AVR_SITL.h>
+#include <AP_HAL_YUNEEC.h>
 #include <AP_HAL_Empty.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
@@ -42,6 +43,9 @@ AP_Baro_MS5611 baro(&AP_Baro_MS5611::spi);
 AP_ADC_ADS7844 adc;
 AP_InertialSensor_Oilpan ins( &adc );
 AP_Baro_BMP085 baro;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_YUNEEC
+AP_InertialSensor_MPU6050 ins;
+AP_Baro_MS5611 baro(&AP_Baro_MS5611::i2c);
 #else
 AP_InertialSensor_HIL ins;
 #endif
@@ -53,7 +57,7 @@ AP_GPS gps;
 // choose which AHRS system to use
 AP_AHRS_DCM  ahrs(ins, baro, gps);
 
-AP_Baro_HIL barometer;
+//AP_Baro_HIL barometer;
 
 
 #define HIGH 1
@@ -69,7 +73,7 @@ void setup(void)
 #endif
 
     ins.init(AP_InertialSensor::COLD_START, 
-			 AP_InertialSensor::RATE_100HZ);
+			 AP_InertialSensor::RATE_400HZ);
     ins.init_accel();
 
     ahrs.init();
@@ -85,6 +89,9 @@ void setup(void)
 
 void loop(void)
 {
+    Vector3f accel;
+    Vector3f gyro;
+    float length;
     static uint16_t counter;
     static uint32_t last_t, last_print, last_compass;
     uint32_t now = hal.scheduler->micros();
@@ -106,8 +113,13 @@ void loop(void)
 #endif
     }
 
+//    ins.update();
     ahrs.update();
     counter++;
+
+	accel = ins.get_accel();
+	gyro = ins.get_gyro();
+	length = accel.length();
 
     if (now - last_print >= 100000 /* 100ms : 10hz */) {
         Vector3f drift  = ahrs.get_gyro_drift();
@@ -124,6 +136,10 @@ void loop(void)
                         (1.0e6*counter)/(now-last_print));
         last_print = now;
         counter = 0;
+
+    	// display results
+    	hal.console->printf_P(PSTR("Accel X:%4.2f \t Y:%4.2f \t Z:%4.2f \t len:%4.2f \n Gyro X:%4.2f \t Y:%4.2f \t Z:%4.2f\n"),
+    						  accel.x, accel.y, accel.z, length, gyro.x, gyro.y, gyro.z);
     }
 }
 

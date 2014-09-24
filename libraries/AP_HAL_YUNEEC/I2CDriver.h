@@ -4,13 +4,14 @@
 
 #include <AP_HAL_YUNEEC.h>
 
-#include <stm32f37x_i2c_cpal.h>
-
 class YUNEEC::YUNEECI2CDriver : public AP_HAL::I2CDriver {
 public:
-    YUNEECI2CDriver(AP_HAL::Semaphore* semaphore, CPAL_InitTypeDef *I2C_DevStructure) :
-    	_semaphore(semaphore), _I2C_DevStructure(I2C_DevStructure),
-    	_lockup_count(0), _ignore_errors(false), _timeout(0) {}
+    YUNEECI2CDriver(I2C_TypeDef* i2c, GPIO_TypeDef* port,
+    				const uint32_t i2cClk,	const uint32_t portClk,
+					const uint16_t scl_bit, const uint16_t sda_bit,
+					const uint8_t scl_pinSource, const uint8_t sda_pinSource,
+					AP_HAL::Semaphore* semaphore);
+
     void begin();
     void end();
     void setTimeout(uint16_t ms);
@@ -39,13 +40,51 @@ public:
     AP_HAL::Semaphore* get_semaphore() { return _semaphore; }
 
 private:
+	// Specify info of I2C port
+	struct I2C_Info {
+		I2C_TypeDef* 	i2c;
+		GPIO_TypeDef*	port;
+		const uint32_t	i2cClk;
+		const uint32_t	portClk;
+		const uint16_t 	scl_bit;
+		const uint16_t 	sda_bit;
+		const uint8_t 	scl_pinSource;
+		const uint8_t 	sda_pinSource;
+	} _i2c_info;
+
     AP_HAL::Semaphore* _semaphore;
     uint8_t _lockup_count;
     bool _ignore_errors;
-    uint32_t _timeout;
+    uint16_t _timeout;
 
-    CPAL_InitTypeDef* _I2C_DevStructure;
-    CPAL_TransferTypeDef  _sRxStructure, _sTxStructure;
+    static void _i2c_bus_reset(struct I2C_Info &i2c_info);
+    static void _i2c_config(struct I2C_Info &i2c_info);
 };
+
+//----------------------------------------------------------------------------
+// I2C Instance
+//----------------------------------------------------------------------------
+#define I2C1_PORT				GPIOB
+#define I2C1_CLK				RCC_APB1Periph_I2C1
+#define I2C1_GPIOCLK			RCC_AHBPeriph_GPIOB
+#define I2C1_SCL_BIT			GPIO_Pin_6
+#define I2C1_SDA_BIT			GPIO_Pin_7
+#define I2C1_SCL_PINSOURCE 		GPIO_PinSource6
+#define I2C1_SDA_PINSOURCE 		GPIO_PinSource7
+
+#define I2C2_PORT				GPIOF
+#define I2C2_CLK				RCC_APB1Periph_I2C2
+#define I2C2_GPIOCLK			RCC_AHBPeriph_GPIOF
+#define I2C2_SCL_BIT			GPIO_Pin_6
+#define I2C2_SDA_BIT			GPIO_Pin_7
+#define I2C2_SCL_PINSOURCE 		GPIO_PinSource6
+#define I2C2_SDA_PINSOURCE 		GPIO_PinSource7
+
+#define YUNEECI2CDriverInstance(I2Cx, semaphore)                            	\
+YUNEECI2CDriver I2Cx##Driver((I2C_TypeDef*) I2Cx, (GPIO_TypeDef*) I2Cx##_PORT,	\
+							 I2Cx##_CLK, I2Cx##_GPIOCLK,						\
+							 I2Cx##_SCL_BIT, I2Cx##_SDA_BIT,					\
+							 I2Cx##_SCL_PINSOURCE, I2Cx##_SDA_PINSOURCE,		\
+							 semaphore)
 
 #endif // __AP_HAL_YUNEEC_I2CDRIVER_H__

@@ -24,6 +24,7 @@ void setup(void)
     blue_led->mode(HAL_GPIO_OUTPUT);
     blue_led->write(0);
 
+    hal.scheduler->delay(10);
 
     hal.uartA->begin(115200);
     

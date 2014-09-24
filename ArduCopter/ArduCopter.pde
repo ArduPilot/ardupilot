@@ -143,7 +143,7 @@
 #include <AP_RCMapper.h>        // RC input mapping library
 #include <AP_Notify.h>          // Notify library
 #include <AP_BattMonitor.h>     // Battery monitor library
-#include <AP_BoardConfig.h>     // board configuration library
+//#include <AP_BoardConfig.h>     // board configuration library
 #if SPRAYER == ENABLED
 #include <AC_Sprayer.h>         // crop sprayer library
 #endif
@@ -423,7 +423,7 @@ static uint8_t oldSwitchPosition;
 static RCMapper rcmap;
 
 // board specific config
-static AP_BoardConfig BoardConfig;
+//static AP_BoardConfig BoardConfig;
 
 // receiver RSSI
 static uint8_t receiver_rssi;
@@ -808,7 +808,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
 #if FRAME_CONFIG == HELI_FRAME
     { check_dynamic_flight,  8,     10 },
 #endif
-    { update_notify,         8,     10 },
+//    { update_notify,         8,     10 },
     { one_hz_loop,         400,     42 },
     { crash_check,          40,      2 },
     { gcs_check_input,	     8,    550 },
@@ -948,6 +948,7 @@ void loop()
     }
     uint32_t timer = micros();
 
+
     // check loop time
     perf_info_check_loop_time(timer - fast_loopTimer);
 
@@ -978,7 +979,6 @@ void loop()
 // Main loop - 100hz
 static void fast_loop()
 {
-
     // IMU DCM Algorithm
     // --------------------
     read_AHRS();
@@ -1370,7 +1370,6 @@ static void read_AHRS(void)
     // update hil before ahrs update
     gcs_check_input();
 #endif
-
     ahrs.update();
 }
 

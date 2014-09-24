@@ -13,11 +13,13 @@ void YUNEECRCOutput::init(void* machtnichts) {
 	GPIO_InitTypeDef GPIO_InitStructure;
 	TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
 	TIM_OCInitTypeDef  TIM_OCInitStructure;
-	TIM_BDTRInitTypeDef TIM_BDTRInitStructure;
+
 /*
  * If use ESC rail, we need power from ESC and max number of channels is 8
  */
 #ifdef USE_ESC_RAIL
+	TIM_BDTRInitTypeDef TIM_BDTRInitStructure;
+
 	/* TIMs clock enable */
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2 | RCC_APB1Periph_TIM5, ENABLE);
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM16 | RCC_APB2Periph_TIM17 | RCC_APB2Periph_TIM19, ENABLE);

@@ -40,8 +40,8 @@ private:
     volatile uint16_t _latest;
     float _last_average;
 
-    int8_t _pin_scaling_id;
-    static const uint8_t _num_pin_scaling;
+//    int8_t _pin_scaling_id;
+//    static const uint8_t _num_pin_scaling;
 
     static uint8_t _ADCChannels_Tab[YUNEEC_INPUT_MAX_CHANNELS];
     static uint8_t _num_adc_channels;
@@ -52,7 +52,7 @@ private:
 
     void new_sample(uint16_t);
 
-    float _pin_scaler();
+//    float _pin_scaler();
     static void _init_adc1(void);
     static void _update_adc1_config();
     void _register_adc_channel(uint8_t pin);
@@ -63,7 +63,7 @@ class YUNEEC::YUNEECAnalogIn : public AP_HAL::AnalogIn {
 public:
     void init(void* implspecific);
     AP_HAL::AnalogSource* channel(int16_t pin);
-    float board_voltage(void) { return 0;};
+    float board_voltage(void);
     // servo rail voltage in volts, or 0 if unknown
     float servorail_voltage(void) { return 0; }
     // power supply status flags, see MAV_POWER_STATUS

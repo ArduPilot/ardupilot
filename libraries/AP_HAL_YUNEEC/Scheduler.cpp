@@ -25,7 +25,7 @@ YUNEECScheduler::YUNEECScheduler() :
 void YUNEECScheduler::init(void* machtnichts) {
     // _timer: sets up timer hardware to implement millis & micros
     _timer.init();
-    _timer.attachInterrupt(_timer_isr_event, _timer_failsafe_event);
+    _timer.attachInterrupt(_timer_isr_event, _failsafe);
 }
 
 void YUNEECScheduler::delay(uint16_t ms) {
@@ -69,8 +69,10 @@ void YUNEECScheduler::register_timer_process(AP_HAL::MemberProc proc) {
     }
 
     if (_num_timer_procs < YUNEEC_SCHEDULER_MAX_TIMER_PROCS) {
+        __disable_irq();
         _timer_proc[_num_timer_procs] = proc;
         _num_timer_procs++;
+        __enable_irq();
     } else {
         hal.console->printf("Out of timer processes\n");
     }
@@ -137,7 +139,7 @@ void YUNEECScheduler::_run_timer_procs(bool called_from_isr) {
 
     if (!_timer_suspended) {
         // now call the timer based drivers
-        for (int i = 0; i < _num_timer_procs; i++) {
+        for (uint8_t i = 0; i < _num_timer_procs; i++) {
             if (_timer_proc[i] != NULL) {
                 _timer_proc[i]();
             }
@@ -146,17 +148,7 @@ void YUNEECScheduler::_run_timer_procs(bool called_from_isr) {
         _timer_event_missed = true;
     }
 
-    // and the failsafe, if one is setup
-    if (_failsafe != NULL) {
-        _failsafe();
-    }
-
     _in_timer_proc = false;
-}
-
-void YUNEECScheduler::_timer_failsafe_event() {
-	if(_failsafe != NULL)
-		_failsafe();
 }
 
 #endif

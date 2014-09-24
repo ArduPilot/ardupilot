@@ -5,7 +5,7 @@
 #include "HAL_YUNEEC_Class.h"
 #include "AP_HAL_YUNEEC_Private.h"
 
-#include <stm32f37x_i2c_cpal.h>
+#include <stm32f37x.h>
 
 using namespace YUNEEC;
 
@@ -17,10 +17,11 @@ static YUNEECUARTDriverInstance(USART1, 0);
 static YUNEECUARTDriverInstance(USART2, 1);
 static YUNEECUARTDriverInstance(USART3, 2);
 
-static YUNEECSemaphore  		i2cSemaphore;
+static YUNEECSemaphore  		i2c1Semaphore;
 static YUNEECSemaphore  		i2c2Semaphore;
-static YUNEECI2CDriver  		i2cDriver(&i2cSemaphore, &I2C1_DevStructure);
-static YUNEECI2CDriver  		i2c2Driver(&i2c2Semaphore, &I2C2_DevStructure);
+static YUNEECI2CDriverInstance(I2C1, &i2c1Semaphore);
+static YUNEECI2CDriverInstance(I2C2, &i2c2Semaphore);
+
 static YUNEECSPIDeviceManager 	spiDeviceManager;
 static YUNEECAnalogIn 			analogIn;
 static YUNEECStorage 			storageDriver;
@@ -32,17 +33,17 @@ static YUNEECUtil 				utilInstance;
 
 HAL_YUNEEC::HAL_YUNEEC() :
     AP_HAL::HAL(
-        &USART2Driver,
-        &USART3Driver,
         &USART1Driver,
+        &USART3Driver,
+        &USART2Driver,
         NULL,            /* no uartD */
         NULL,            /* no uartE */
-        &i2cDriver,
-        &i2c2Driver,
+        &I2C1Driver,
+        &I2C2Driver,
         &spiDeviceManager,
         &analogIn,
         &storageDriver,
-        &USART2Driver,
+        &USART1Driver,
         &gpioDriver,
         &rcinDriver,
         &rcoutDriver,
@@ -56,8 +57,8 @@ void HAL_YUNEEC::init(int argc,char* const argv[]) const {
      * Scheduler should likely come first. */
     scheduler->init(NULL);
     uartA->begin(115200);
-    rcout->init(NULL);
     rcin->init(NULL);
+    rcout->init(NULL);
     analogin->init(NULL);
     i2c->begin();
     i2c->setTimeout(100);

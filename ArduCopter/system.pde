@@ -129,7 +129,7 @@ static void init_ardupilot()
     // load parameters from EEPROM
     load_parameters();
 
-    BoardConfig.init();
+//    BoardConfig.init();
 
     // FIX: this needs to be the inverse motors mask
     ServoRelayEvents.set_channel_mask(0xFFF0);
@@ -146,7 +146,7 @@ static void init_ardupilot()
 
     // initialise notify system
     // disable external leds if epm is enabled because of pin conflict on the APM
-    notify.init(enable_external_leds);
+//    notify.init(enable_external_leds);
 
     // initialise battery monitor
     battery.init();
@@ -182,7 +182,7 @@ static void init_ardupilot()
     ap.usb_connected = true;
     check_usb_mux();
 
-#if CONFIG_HAL_BOARD != HAL_BOARD_APM2
+#if CONFIG_HAL_BOARD != HAL_BOARD_APM2 && CONFIG_HAL_BOARD != HAL_BOARD_YUNEEC
     // we have a 2nd serial port for telemetry on all boards except
     // APM2. We actually do have one on APM2 but it isn't necessary as
     // a MUX is used

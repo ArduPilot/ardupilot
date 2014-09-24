@@ -25,6 +25,8 @@
 #define HAVE_CRC_ACCUMULATE
 // only two telemetry ports on APM1/APM2
 #define MAVLINK_COMM_NUM_BUFFERS 2
+#elif CONFIG_HAL_BOARD == HAL_BOARD_YUNEEC
+#define MAVLINK_COMM_NUM_BUFFERS 2
 #else
 // allow three telemetry ports on other boards
 #define MAVLINK_COMM_NUM_BUFFERS 3

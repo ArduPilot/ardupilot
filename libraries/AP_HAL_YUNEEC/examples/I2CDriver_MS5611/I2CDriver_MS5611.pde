@@ -19,58 +19,11 @@ const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 AP_HAL::DigitalSource *led;
 static AP_Baro_MS5611 baro(&AP_Baro_MS5611::i2c);
-//static float baro_alt = 0;
-//static float pressure = 0;
-//static float temperture = 0;
-
-//static float read_barometer(void)
-//{
-//    barometer.read();
-//
-//    return barometer.get_altitude() * 100.0f;
-//}
-
-//static void init_barometer(bool full_calibration)
-//{
-//    hal.console->printf_P(PSTR("Initiating barometer\n"));
-//	barometer.init();
-//
-//    hal.console->printf_P(PSTR("Calibrating barometer\n"));
-//    if (full_calibration) {
-//        barometer.calibrate();
-//    }else{
-//        barometer.update_calibration();
-//    }
-//    hal.console->printf_P(PSTR("barometer calibration complete\n"));
-//}
-
-//void setup() {
-//    led = hal.gpio->channel(PC14);
-//    led->mode(HAL_GPIO_OUTPUT);
-//    led->write(0);
-//
-//    init_barometer(true);
-//	hal.console->printf_P(PSTR("Initiate MS5607 successfully\r\n"));
-//}
-//
-//void loop() {
-////	baro_alt = read_barometer();
-//
-//	pressure = barometer.get_pressure();
-//	temperture = barometer.get_temperature();
-//
-//	hal.console->printf_P(PSTR("Pressure = %f, Temperture = %f \n"), pressure, temperture);
-//	hal.scheduler->delay(500);
-//	led->write(1);
-//	hal.scheduler->delay(500);
-//	led->write(0);
-//}
-
 static uint32_t timer;
 
 void setup()
 {
-    hal.console->println("YUNEEC MS5607 Barometer library test");
+    hal.console->println("YUNEEC MS5611 Barometer library test");
 
     hal.scheduler->delay(1000);
 

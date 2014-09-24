@@ -7,11 +7,6 @@
 
 #include <AP_HAL_YUNEEC.h>
 
-
-#define USART_IT_RXNE_INT_EN	(uint32_t)(1 << 5)
-#define USART_IT_TXE_INT_EN		(uint32_t)(1 << 7)
-
-
 class YUNEEC::YUNEECUARTDriver : public AP_HAL::UARTDriver {
 public:
     YUNEECUARTDriver(
@@ -50,7 +45,7 @@ public:
 private:
 	// Specify info of USART port
 	struct USART_Info{
-		USART_TypeDef *	usart;
+		USART_TypeDef*	usart;
 		GPIO_TypeDef*	port;
 		IRQn_Type		usartIRQn;
 		const uint32_t	usartClk;
@@ -66,8 +61,8 @@ private:
     bool 				_initialized;
 	bool 				_open;
 	// ring buffers
-	Buffer	* const 	_rxBuffer;
-	Buffer	* const 	_txBuffer;
+	volatile Buffer	*const 	_rxBuffer;
+	volatile Buffer	*const 	_txBuffer;
 
 	// whether writes to the port should block waiting
 	// for enough space to appear
@@ -83,13 +78,13 @@ private:
 	// @param	size		The desired buffer size.
 	// @returns			True if the buffer was allocated successfully.
 	//
-	static bool _allocBuffer(Buffer *buffer, uint16_t size);
+	static bool _allocBuffer(volatile Buffer *buffer, uint16_t size);
 
 	// Frees the allocated buffer in a descriptor
 	//
 	// @param	buffer		The descriptor whose buffer should be freed.
 	//
-	static void _freeBuffer(Buffer *buffer);
+	static void _freeBuffer(volatile Buffer *buffer);
 
 	// default receive buffer size
 	static const uint16_t _default_rx_buffer_size = 256;
@@ -98,51 +93,54 @@ private:
 	static const uint16_t _default_tx_buffer_size = 256;
 
 	// maxium tx/rx buffer size
-	static const uint16_t _max_buffer_size = 256;
+	static const uint16_t _max_buffer_size = 512;
 };
 
-extern YUNEEC::YUNEECUARTDriver::Buffer __YUNEECUARTDriver__rxBuffer[];
-extern YUNEEC::YUNEECUARTDriver::Buffer __YUNEECUARTDriver__txBuffer[];
+extern volatile YUNEEC::YUNEECUARTDriver::Buffer __YUNEECUARTDriver__rxBuffer[];
+extern volatile YUNEEC::YUNEECUARTDriver::Buffer __YUNEECUARTDriver__txBuffer[];
 
 //----------------------------------------------------------------------------
 // USART Interrupt Handlers
 //----------------------------------------------------------------------------
+inline void UARTBufferUpdater(USART_TypeDef* usart, uint8_t portNum) {
+	uint8_t c;
+	uint8_t i;
 
-#define YUNEECUARTDriverHandler(USARTx, portNum) 																					\
-extern "C" {																														\
-	void USARTx##_IRQHandler(void)                                            		 												\
-	{                                                                       														\
-			uint8_t c;                                                     															\
-			uint8_t i;                                                    		 													\
-																																	\
-			if(USART_GetITStatus(USARTx, USART_IT_RXNE) != RESET) {																	\
-				/* read the byte as quickly as possible */                      													\
-				c = (uint8_t)(USARTx->RDR);                                 														\
-				/* work out where the head will go next */                      													\
-				i = (__YUNEECUARTDriver__rxBuffer[portNum].head + 1) & __YUNEECUARTDriver__rxBuffer[portNum].mask; 					\
-				/* decide whether we have space for another byte */            			 											\
-				if (i != __YUNEECUARTDriver__rxBuffer[portNum].tail) {                 		 										\
-					/* we do, move the head */                              														\
-					__YUNEECUARTDriver__rxBuffer[portNum].bytes[__YUNEECUARTDriver__rxBuffer[portNum].head] = c; 					\
-					__YUNEECUARTDriver__rxBuffer[portNum].head = i;                 												\
-				}                                                               													\
-			}																														\
-																																	\
-			if(USART_GetITStatus(USARTx, USART_IT_TXE) != RESET) {																	\
-				/* if there is another character to send */                     													\
-				if (__YUNEECUARTDriver__txBuffer[portNum].tail != __YUNEECUARTDriver__txBuffer[portNum].head) { 					\
-					USARTx->TDR = __YUNEECUARTDriver__txBuffer[portNum].bytes[__YUNEECUARTDriver__txBuffer[portNum].tail];			\
-					/* increment the tail */                                														\
-					__YUNEECUARTDriver__txBuffer[portNum].tail =                    												\
-								(__YUNEECUARTDriver__txBuffer[portNum].tail + 1) & __YUNEECUARTDriver__txBuffer[portNum].mask; 		\
-				} else {                                                        													\
-					/* there are no more bytes to send, disable the interrupt */ 													\
-					if (__YUNEECUARTDriver__txBuffer[portNum].head == __YUNEECUARTDriver__txBuffer[portNum].tail) 					\
-						USARTx->CR1 &= ~USART_IT_TXE_INT_EN;                           												\
-				}  																													\
-			}																														\
-	}																																\
-}																																	\
+	if((usart->CR1 & USART_FLAG_RXNE) && (usart->ISR & USART_FLAG_RXNE)) {
+		/* read the byte as quickly as possible */
+		c = (uint8_t)(usart->RDR & 0x0ff);
+		/* work out where the head will go next */
+		i = (__YUNEECUARTDriver__rxBuffer[portNum].head + 1) & __YUNEECUARTDriver__rxBuffer[portNum].mask;
+		/* decide whether we have space for another byte */
+		if (i != __YUNEECUARTDriver__rxBuffer[portNum].tail) {
+			/* we do, move the head */
+			__YUNEECUARTDriver__rxBuffer[portNum].bytes[__YUNEECUARTDriver__rxBuffer[portNum].head] = c;
+			__YUNEECUARTDriver__rxBuffer[portNum].head = i;
+		}
+	}
+
+	if((usart->CR1 & USART_FLAG_TXE) && (usart->ISR & USART_FLAG_TXE)) {
+		/* if there is another character to send */
+		if (__YUNEECUARTDriver__txBuffer[portNum].tail != __YUNEECUARTDriver__txBuffer[portNum].head) {
+			usart->TDR = (uint16_t)__YUNEECUARTDriver__txBuffer[portNum].bytes[__YUNEECUARTDriver__txBuffer[portNum].tail];
+			/* increment the tail */
+			__YUNEECUARTDriver__txBuffer[portNum].tail = (__YUNEECUARTDriver__txBuffer[portNum].tail + 1) & __YUNEECUARTDriver__txBuffer[portNum].mask;
+		} else {
+			/* there are no more bytes to send, disable the interrupt */
+			usart->CR1 &= ~USART_FLAG_TXE;
+		}
+	}
+}
+
+#define YUNEECUARTDriverHandler(USARTx, portNum) 			\
+extern "C" {									 			\
+	void USARTx##_IRQHandler(void)               			\
+	{														\
+		__disable_irq();									\
+		UARTBufferUpdater((USART_TypeDef* )USARTx, portNum);\
+		__enable_irq();										\
+	}											 			\
+}												 			\
 struct hack
 
 //----------------------------------------------------------------------------
@@ -172,14 +170,11 @@ struct hack
 #define RCC_USART3_CLK			RCC_APB1Periph_USART3
 #define RCC_USART3_GPIOCLK		RCC_AHBPeriph_GPIOB
 
-
-
-
-#define YUNEECUARTDriverInstance(USARTx, portNum)                              								\
-YUNEECUARTDriver USARTx##Driver(portNum, 																	\
-								USARTx, USARTx##_PORT, USARTx##_IRQn, 										\
-								RCC_##USARTx##_CLK, RCC_##USARTx##_GPIOCLK,									\
-								USARTx##_RX_BIT, USARTx##_TX_BIT,											\
-								USARTx##_RX_PINSOURCE, USARTx##_TX_PINSOURCE);								\
+#define YUNEECUARTDriverInstance(USARTx, portNum)                       	\
+YUNEECUARTDriver USARTx##Driver(portNum, 									\
+							USARTx, USARTx##_PORT, USARTx##_IRQn, 			\
+							RCC_##USARTx##_CLK, RCC_##USARTx##_GPIOCLK,		\
+							USARTx##_RX_BIT, USARTx##_TX_BIT,				\
+							USARTx##_RX_PINSOURCE, USARTx##_TX_PINSOURCE)
 
 #endif // __AP_HAL_YUNEEC_UARTDRIVER_H__

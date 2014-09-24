@@ -20,7 +20,7 @@ extern "C"
 {
 	static voidFuncPtr dma1_callback = NULL;
 	void DMA1_Channel1_IRQHandler(void) {
-		    DMA_ClearFlag(DMA1_FLAG_TC1);
+	    	DMA1->IFCR = DMA1_FLAG_TC1;
 
 		    if(dma1_callback != NULL)
 		    	dma1_callback();
@@ -31,15 +31,15 @@ extern "C"
   scaling table between ADC count and actual input voltage, to account
   for voltage dividers on the board.
  */
-static const struct {
-    uint8_t pin;
-    float scaling;
-} pin_scaling[] = {
-    { PC5,   9 * YUNEEC_VOLTAGE_SCALING }, 	// Battary voltage, 9:1 scaling
-    { PB0,  40 * YUNEEC_VOLTAGE_SCALING }	// Battary current, 20:1 scaling
-};
+//static const struct {
+//    uint8_t pin;
+//    float scaling;
+//} pin_scaling[] = {
+//    { PC5,   9 * YUNEEC_VOLTAGE_SCALING }, 	// Battary voltage, 9:1 scaling
+//    { PB0,  40 * YUNEEC_VOLTAGE_SCALING }		// Battary current, 20:1 scaling
+//};
 
-const uint8_t YUNEECAnalogSource::_num_pin_scaling = sizeof(pin_scaling) / sizeof(pin_scaling[0]);
+//const uint8_t YUNEECAnalogSource::_num_pin_scaling = sizeof(pin_scaling) / sizeof(pin_scaling[0]);
 volatile uint16_t YUNEECAnalogSource::_ADCConvData_Tab[YUNEEC_INPUT_MAX_CHANNELS] = {0};
 uint8_t YUNEECAnalogSource::_ADCChannels_Tab[YUNEEC_INPUT_MAX_CHANNELS] = {0};
 uint8_t YUNEECAnalogSource::_num_adc_channels = 0;
@@ -54,7 +54,7 @@ YUNEECAnalogSource::YUNEECAnalogSource(uint8_t pin) :
     _stop_pin_high(false),
     _settle_time_ms(0),
     _read_start_time_ms(0),
-    _pin_scaling_id(-1),
+//    _pin_scaling_id(-1),
     _channel_rank(-1)
 {
     set_pin(pin);
@@ -90,25 +90,25 @@ float YUNEECAnalogSource::read_latest() {
 /*
   return scaling from ADC count to Volts
  */
-float YUNEECAnalogSource::_pin_scaler(void) {
-	if (_pin_scaling_id != -1)
-		return pin_scaling[_pin_scaling_id].scaling;
-	else {
-        hal.console->println(PSTR("YUNEEC::YUNEECAnalogIn can't find pin scaling message, you need to check the pin_scaling[] definiton\r\n"));
-		return 0;
-	}
-
-}
+//float YUNEECAnalogSource::_pin_scaler(void) {
+//	if (_pin_scaling_id != -1)
+//		return pin_scaling[_pin_scaling_id].scaling;
+//	else {
+//        hal.console->println(PSTR("YUNEEC::YUNEECAnalogIn can't find pin scaling message, you need to check the pin_scaling[] definiton\r\n"));
+//		return 0;
+//	}
+//
+//}
 
 /*
   return voltage in Volts
  */
 float YUNEECAnalogSource::voltage_average(void) {
-    return _pin_scaler() * read_average();
+    return YUNEEC_VOLTAGE_SCALING * read_average();
 }
 
 float YUNEECAnalogSource::voltage_latest(void) {
-    return _pin_scaler() * read_latest();
+    return YUNEEC_VOLTAGE_SCALING * read_latest();
 }
 
 /*
@@ -157,10 +157,10 @@ uint16_t YUNEECAnalogSource::_get_conv_data(void) {
 // Register a adc channel for the given pin
 void YUNEECAnalogSource::_register_adc_channel(uint8_t pin) {
 	// Find the index in _pin_sacling[]
-    for(uint8_t i = 0; i < _num_pin_scaling; i++) {
-    	if(pin_scaling[i].pin == pin)
-    	    _pin_scaling_id = i;
-    }
+//    for(uint8_t i = 0; i < _num_pin_scaling; i++) {
+//    	if(pin_scaling[i].pin == pin)
+//    	    _pin_scaling_id = i;
+//    }
 
     // Add this pin into _ADCChannels_Tab[] for ADC1 configuration
     _ADCChannels_Tab[_num_adc_channels] = pin;
@@ -173,7 +173,7 @@ void YUNEECAnalogSource::_register_adc_channel(uint8_t pin) {
 
 // Unregister a adc channel for the given pin
 void YUNEECAnalogSource::_unregister_adc_channel() {
-	_pin_scaling_id = -1;
+//	_pin_scaling_id = -1;
 
 	for(uint8_t i = _channel_rank; i < _num_adc_channels - 1; i++)
 	    _ADCChannels_Tab[i] = _ADCChannels_Tab[i + 1];
@@ -224,8 +224,8 @@ void YUNEECAnalogSource::_init_adc1(void) {
 	// ADC1 Periph clock enable
     RCC->APB2ENR |= RCC_APB2Periph_ADC1;
 
-	// Time base configuration: 20ms per interrupt
-	TIM_TimeBaseStructure.TIM_Period 		= 20000 - 1;
+	// Time base configuration: 25ms per interrupt
+	TIM_TimeBaseStructure.TIM_Period 		= 25000 - 1;
 	TIM_TimeBaseStructure.TIM_Prescaler 	= SystemCoreClock / 1000000 - 1;
 	TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;
 	TIM_TimeBaseStructure.TIM_CounterMode 	= TIM_CounterMode_Up;
@@ -263,7 +263,7 @@ void YUNEECAnalogSource::_init_adc1(void) {
 	DMA_InitStructure.DMA_PeripheralDataSize 	= DMA_PeripheralDataSize_HalfWord;
 	DMA_InitStructure.DMA_MemoryDataSize 		= DMA_MemoryDataSize_HalfWord;
 	DMA_InitStructure.DMA_Mode 					= DMA_Mode_Circular;
-	DMA_InitStructure.DMA_Priority 				= DMA_Priority_High;
+	DMA_InitStructure.DMA_Priority 				= DMA_Priority_Low;
 	DMA_InitStructure.DMA_M2M 					= DMA_M2M_Disable;
 	DMA_Init(DMA1_Channel1, &DMA_InitStructure);
 	// DMA1 Channel1 enable
@@ -276,7 +276,7 @@ void YUNEECAnalogSource::_init_adc1(void) {
 	// Configure and enable ADC1 interrupt
 	NVIC_InitStructure.NVIC_IRQChannel 						= DMA1_Channel1_IRQn;
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority 	= 2;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority 			= 3;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority 			= 1;
 	NVIC_InitStructure.NVIC_IRQChannelCmd 					= ENABLE;
 	NVIC_Init(&NVIC_InitStructure);
 
@@ -362,6 +362,11 @@ AP_HAL::AnalogSource* YUNEECAnalogIn::channel(int16_t pin)
     YUNEECAnalogSource *ch = new YUNEECAnalogSource(pin);
     _channels[_num_channels++] = ch;
     return ch;
+}
+
+
+float YUNEECAnalogIn::board_voltage(void) {
+    return 3.3f;
 }
 
 /*
