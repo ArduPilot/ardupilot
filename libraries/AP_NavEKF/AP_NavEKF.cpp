@@ -3385,6 +3385,7 @@ void NavEKF::ZeroVariables()
     secondLastFixTime_ms = imuSampleTime_ms;
     lastDecayTime_ms = imuSampleTime_ms;
 
+    gpsNoiseScaler = 1.0f;
     velTimeout = false;
     posTimeout = false;
     hgtTimeout = false;
