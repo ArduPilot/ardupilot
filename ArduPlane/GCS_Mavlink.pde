@@ -984,10 +984,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 packet.param2 == 1) {
                 startup_INS_ground(true);
             } else if (packet.param3 == 1) {
+                in_calibration = true;
                 init_barometer();
                 if (airspeed.enabled()) {
                     zero_airspeed();
                 }
+                in_calibration = false;
             }
             if (packet.param4 == 1) {
                 trim_radio();
