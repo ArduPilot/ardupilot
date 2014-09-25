@@ -197,9 +197,9 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Receiver RSSI voltage range
     // @Description: Receiver RSSI voltage range
     // @Units: Volt
-    // @Values: 3.3:3.3V, 5.0:5V
+    // @Values: 3.3:3.3V, 5:5V
     // @User: Standard
-    GSCALAR(rssi_range,          "RSSI_RANGE",         5.0),
+    GSCALAR(rssi_range,          "RSSI_RANGE",         5.0f),
 
     // @Param: WP_YAW_BEHAVIOR
     // @DisplayName: Yaw behaviour during missions
