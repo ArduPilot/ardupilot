@@ -88,14 +88,15 @@ private:
     static AP_HAL::UARTDriver* _dsm_uart;
 
     /* private variables to communicate with input capture isr */
-    static volatile uint16_t _periods[YUNEEC_RC_INPUT_NUM_CHANNELS];
+    static volatile uint16_t _periods[DSM_RC_INPUT_CHANNELS];
     static volatile uint8_t  _valid_channels;
     static volatile bool  _new_input;
 
     /* override state */
-    uint16_t _override[YUNEEC_RC_INPUT_NUM_CHANNELS];
+    uint16_t _override[DSM_RC_INPUT_CHANNELS];
 
-
+    /* used by _dsm_input() */
+    static volatile uint32_t _last_time;
 //    static void _timer12_config(void);
 //    static void _attachInterrupt(voidFuncPtr callback);
     static void _dsm_init(AP_HAL::UARTDriver* uartX);

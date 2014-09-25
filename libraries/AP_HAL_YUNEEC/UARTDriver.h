@@ -130,6 +130,7 @@ inline void UARTBufferUpdater(USART_TypeDef* usart, uint8_t portNum) {
 			usart->CR1 &= ~USART_FLAG_TXE;
 		}
 	}
+
 }
 
 #define YUNEECUARTDriverHandler(USARTx, portNum) 			\

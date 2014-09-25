@@ -25,7 +25,7 @@ YUNEECScheduler::YUNEECScheduler() :
 void YUNEECScheduler::init(void* machtnichts) {
     // _timer: sets up timer hardware to implement millis & micros
     _timer.init();
-    _timer.attachInterrupt(_timer_isr_event, _failsafe);
+    _timer.attachInterrupt(_timer_isr_event, _timer_failsafe_event);
 }
 
 void YUNEECScheduler::delay(uint16_t ms) {
@@ -89,14 +89,20 @@ void YUNEECScheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t pe
 }
 
 void YUNEECScheduler::suspend_timer_procs() {
+	__disable_irq();
     _timer_suspended = true;
+    __enable_irq();
 }
 
 void YUNEECScheduler::resume_timer_procs() {
+	__disable_irq();
     _timer_suspended = false;
+    __enable_irq();
     if (_timer_event_missed == true) {
         _run_timer_procs(false);
+    	__disable_irq();
         _timer_event_missed = false;
+        __enable_irq();
     }
 }
 
@@ -132,6 +138,11 @@ void YUNEECScheduler::reboot(bool hold_in_bootloader) {
 
 void YUNEECScheduler::_timer_isr_event() {
     _run_timer_procs(true);
+}
+
+void YUNEECScheduler::_timer_failsafe_event() {
+    if (_failsafe != NULL)
+    	_failsafe();
 }
 
 void YUNEECScheduler::_run_timer_procs(bool called_from_isr) {

@@ -23,11 +23,12 @@ volatile uint32_t YUNEECRCInputDSM::_dsm_last_rx_time = 0;
 volatile uint8_t YUNEECRCInputDSM::_dsm_partial_frame_count = 0;
 uint16_t YUNEECRCInputDSM::_dsm_data_mask = 0;
 uint8_t YUNEECRCInputDSM::_dsm_channel_shift = 0;
-volatile uint16_t YUNEECRCInputDSM::_periods[YUNEEC_RC_INPUT_NUM_CHANNELS] = {0};
+volatile uint16_t YUNEECRCInputDSM::_periods[DSM_RC_INPUT_CHANNELS] = {0};
 volatile uint8_t  YUNEECRCInputDSM::_valid_channels = 0;
 volatile bool YUNEECRCInputDSM::_new_input = false;
 AP_HAL::UARTDriver* YUNEECRCInputDSM::_dsm_uart = NULL;
 uint8_t YUNEECRCInputDSM::_pulses = DSM_CONFIG_INT_DSMx_11MS;
+volatile uint32_t YUNEECRCInputDSM::_last_time = 0;
 
 //extern "C"
 //{
@@ -255,6 +256,12 @@ void YUNEECRCInputDSM::_dsm_input(void) {
 	uint32_t now;
 
 	now = hal.scheduler->millis();
+
+	/* We check input dsm data every 3ms to reduce scheduler timer load */
+	if (now - _last_time < 3)
+		return;
+
+	_last_time = now;
 
 	if ((now - _dsm_last_rx_time) > 5) {
 		if (_dsm_partial_frame_count > 0)

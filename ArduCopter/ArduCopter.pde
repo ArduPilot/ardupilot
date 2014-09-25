@@ -863,7 +863,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
 #if FRAME_CONFIG == HELI_FRAME
     { check_dynamic_flight,  2,     100 },
 #endif
-    { update_notify,         2,     100 },
+//    { update_notify,         2,     100 },
     { one_hz_loop,         100,     420 },
     { crash_check,          10,      20 },
     { gcs_check_input,	     2,     550 },
@@ -947,7 +947,6 @@ void loop()
         return;
     }
     uint32_t timer = micros();
-
 
     // check loop time
     perf_info_check_loop_time(timer - fast_loopTimer);

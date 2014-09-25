@@ -220,7 +220,7 @@ uint16_t AP_InertialSensor_MPU6050::_init_sensor( Sample_rate sample_rate )
     }
 
     // start the timer process to read samples
-//    hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&AP_InertialSensor_MPU6050::_poll_data));
+    hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&AP_InertialSensor_MPU6050::_poll_data));
 
 #if MPU6050_DEBUG
     _dump_registers();
@@ -248,7 +248,7 @@ bool AP_InertialSensor_MPU6050::wait_for_sample(uint16_t timeout_ms)
 bool AP_InertialSensor_MPU6050::update( void )
 {
     // wait for at least 1 sample
-    if (!wait_for_sample(1000)) {
+    if (!wait_for_sample(100)) {
         return false;
     }
 
@@ -525,7 +525,7 @@ float AP_InertialSensor_MPU6050::get_gyro_drift_rate(void)
 // return true if a sample is available
 bool AP_InertialSensor_MPU6050::_sample_available()
 {
-    _poll_data();
+//    _poll_data();
     return (_sum_count >> _sample_shift) > 0;
 }
 

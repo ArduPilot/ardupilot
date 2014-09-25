@@ -4,14 +4,13 @@
 
 #include <AP_HAL_YUNEEC.h>
 
-#define YUNEEC_SCHEDULER_MAX_TIMER_PROCS 5
+#define YUNEEC_SCHEDULER_MAX_TIMER_PROCS 4
 
 typedef void (*voidFuncPtr)(void);
 
 /* Class for managing the AVR Timers: */
 class YUNEEC::YUNEECTimer {
 public:
-
     static void     init();
     static uint32_t millis();
     static uint32_t micros();
@@ -56,6 +55,7 @@ private:
     /* _timer_isr_event() and _run_timer_procs are static so they can be
      * called from an interrupt. */
     static void _timer_isr_event();
+    static void _timer_failsafe_event();
     static void _run_timer_procs(bool called_from_isr);
 
     static AP_HAL::Proc _failsafe;
