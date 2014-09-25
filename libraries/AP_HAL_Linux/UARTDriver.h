@@ -25,18 +25,22 @@ public:
     size_t write(uint8_t c);
     size_t write(const uint8_t *buffer, size_t size);
 
-    void set_device_path(const char *path);
+    void set_device_path(char *path);
 
     void _timer_tick(void);
 
 private:
-    const char *device_path;
+    char *device_path;
     int _rd_fd;
     int _wr_fd;
     bool _nonblocking_writes;
     bool _console;
     volatile bool _initialised;
     volatile bool _in_timer;
+    uint16_t _base_port;
+    char *_ip;
+    char *_flag;
+    bool _connected; // true if a client has connected         
 
     // we use in-task ring buffers to reduce the system call cost
     // of ::read() and ::write() in the main loop
@@ -55,7 +59,9 @@ private:
 
     int _write_fd(const uint8_t *buf, uint16_t n);
     int _read_fd(uint8_t *buf, uint16_t n);
-    uint64_t _last_write_time;
+    void _tcp_start_connection(bool wait_for_connection);
+    int _parseDevicePath(char* arg);
+    uint64_t _last_write_time;    
 };
 
 #endif // __AP_HAL_LINUX_UARTDRIVER_H__

@@ -39,6 +39,9 @@ public:
         const float &   initial_i = 0.0,
         const float &   initial_d = 0.0,
         const int16_t & initial_imax = 0.0):
+        _integrator(0),
+        _last_input(0),
+        _last_derivative(0),
         _d_lpf_alpha(AC_PID_D_TERM_FILTER)
     {
 		AP_Param::setup_object_defaults(this, var_info);

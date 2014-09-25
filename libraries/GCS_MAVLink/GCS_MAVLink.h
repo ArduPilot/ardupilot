@@ -30,6 +30,13 @@
 #define MAVLINK_COMM_NUM_BUFFERS 3
 #endif
 
+/*
+  The MAVLink protocol code generator does its own alignment, so
+  alignment cast warnings can be ignored
+ */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-align"
+
 #include "include/mavlink/v1.0/ardupilotmega/version.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
@@ -137,5 +144,7 @@ enum gcs_severity {
     SEVERITY_CRITICAL,
     SEVERITY_USER_RESPONSE
 };
+
+#pragma GCC diagnostic pop
 
 #endif // GCS_MAVLink_h

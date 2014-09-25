@@ -13,7 +13,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] PROGMEM = {
 
     // @Param: VOLT_PIN
     // @DisplayName: Battery Voltage sensing pin
-    // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13. For the 3DR power brick on APM2.5 it should be set to 13. On the PX4 it should be set to 100. On the Pixhawk powered from the PM connector it should be set to 2.
+    // @Description: Setting this to 0 ~ 13 will enable battery voltage sensing on pins A0 ~ A13. For the 3DR power brick on APM2.5 it should be set to 13. On the PX4 it should be set to 100. On the Pixhawk powered from the PM connector it should be set to 2.
     // @Values: -1:Disabled, 0:A0, 1:A1, 2:Pixhawk, 13:A13, 100:PX4
     // @User: Standard
     AP_GROUPINFO("VOLT_PIN", 1, AP_BattMonitor, _volt_pin, AP_BATT_VOLT_PIN),
@@ -53,6 +53,18 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("CAPACITY", 6, AP_BattMonitor, _pack_capacity, AP_BATT_CAPACITY_DEFAULT),
 
+    // @Param: VOLT2_PIN
+    // @DisplayName: 2nd Battery Voltage sensing pin
+    // @Description: This sets the pin for sensing the voltage on a 2nd battery. Set to -1 to disable sensing of a second battery
+    // @User: Standard
+    AP_GROUPINFO("VOLT2_PIN", 7, AP_BattMonitor, _volt2_pin, -1),
+
+    // @Param: VOLT2_MULT
+    // @DisplayName: 2nd battery voltage multiplier
+    // @Description: Used to convert the voltage of the VOLT2_PIN to the actual battery's voltage (pin_voltage * VOLT_MULT).
+    // @User: Advanced
+    AP_GROUPINFO("VOLT2_MULT", 8, AP_BattMonitor, _volt2_multiplier, 1),
+
     AP_GROUPEND
 };
 
@@ -62,6 +74,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] PROGMEM = {
 //
 AP_BattMonitor::AP_BattMonitor(void) :
     _voltage(0),
+    _voltage2(0),
     _current_amps(0),
     _current_total_mah(0),
     _last_time_micros(0)
@@ -75,6 +88,11 @@ AP_BattMonitor::init()
 {
     _volt_pin_analog_source = hal.analogin->channel(_volt_pin);
     _curr_pin_analog_source = hal.analogin->channel(_curr_pin);
+    if (_volt2_pin != -1) {
+        _volt2_pin_analog_source = hal.analogin->channel(_volt2_pin);
+    } else {
+        _volt2_pin_analog_source = NULL;
+    }
 }
 
 // read - read the voltage and current
@@ -90,6 +108,9 @@ AP_BattMonitor::read()
         // this copes with changing the pin at runtime
         _volt_pin_analog_source->set_pin(_volt_pin);
         _voltage = _volt_pin_analog_source->voltage_average() * _volt_multiplier;
+        if (_volt2_pin_analog_source != NULL) {
+            _voltage2 = _volt2_pin_analog_source->voltage_average() * _volt2_multiplier;
+        }
     }
 
     // read current
@@ -143,5 +164,15 @@ bool AP_BattMonitor::exhausted(float low_voltage, float min_capacity_mah)
     }
 
     // if we've gotten this far battery is ok
+    return false;
+}
+
+/// 2nd Battery voltage, if available. return false otherwise
+bool AP_BattMonitor::voltage2(float &v) const
+{
+    if (_volt2_pin_analog_source != NULL) {
+        v = _voltage2;
+        return true;
+    }
     return false;
 }

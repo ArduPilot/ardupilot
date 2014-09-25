@@ -21,6 +21,9 @@ static void do_roi(const AP_Mission::Mission_Command& cmd);
 #if PARACHUTE == ENABLED
 static void do_parachute(const AP_Mission::Mission_Command& cmd);
 #endif
+#if EPM_ENABLED == ENABLED
+static void do_gripper(const AP_Mission::Mission_Command& cmd);
+#endif
 static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
 static bool verify_circle(const AP_Mission::Mission_Command& cmd);
 static bool verify_spline_wp(const AP_Mission::Mission_Command& cmd);
@@ -75,9 +78,11 @@ static bool start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
 #if NAV_GUIDED == ENABLED
-    case MAV_CMD_NAV_GUIDED:                    // 90  accept navigation commands from external nav computer
+#ifdef MAV_CMD_NAV_GUIDED
+    case MAV_CMD_NAV_GUIDED:             // 90  accept navigation commands from external nav computer
         do_nav_guided(cmd);
         break;
+#endif
 #endif
 
     //
@@ -165,6 +170,12 @@ static bool start_command(const AP_Mission::Mission_Command& cmd)
         break;
 #endif
 
+#if EPM_ENABLED == ENABLED
+    case MAV_CMD_DO_GRIPPER:                            // Mission command to control EPM gripper
+        do_gripper(cmd);
+        break;
+#endif
+
     default:
         // do nothing with unrecognized MAVLink messages
         break;
@@ -221,9 +232,11 @@ static bool verify_command(const AP_Mission::Mission_Command& cmd)
         break;
 
 #if NAV_GUIDED == ENABLED
+#ifdef MAV_CMD_NAV_GUIDED
     case MAV_CMD_NAV_GUIDED:
         return verify_nav_guided(cmd);
         break;
+#endif
 #endif
 
     ///
@@ -532,6 +545,27 @@ static void do_parachute(const AP_Mission::Mission_Command& cmd)
             break;
         case PARACHUTE_RELEASE:
             parachute_release();
+            break;
+        default:
+            // do nothing
+            break;
+    }
+}
+#endif
+
+#if EPM_ENABLED == ENABLED
+// do_gripper - control EPM gripper
+static void do_gripper(const AP_Mission::Mission_Command& cmd)
+{
+    // Note: we ignore the gripper num parameter because we only support one gripper
+    switch (cmd.content.gripper.action) {
+        case GRIPPER_ACTION_RELEASE:
+            epm.release();
+            Log_Write_Event(DATA_EPM_RELEASE);
+            break;
+        case GRIPPER_ACTION_GRAB:
+            epm.grab();
+            Log_Write_Event(DATA_EPM_GRAB);
             break;
         default:
             // do nothing
@@ -852,6 +886,7 @@ static bool do_guided(const AP_Mission::Mission_Command& cmd)
             return true;
             break;
 
+#ifdef MAV_CMD_NAV_VELOCITY
         case MAV_CMD_NAV_VELOCITY:
             // set target velocity
             pos_or_vel.x = cmd.content.nav_velocity.x * 100.0f;
@@ -860,6 +895,7 @@ static bool do_guided(const AP_Mission::Mission_Command& cmd)
             guided_set_velocity(pos_or_vel);
             return true;
             break;
+#endif
 
         case MAV_CMD_CONDITION_YAW:
             do_yaw(cmd);

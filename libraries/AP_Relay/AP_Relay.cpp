@@ -21,7 +21,7 @@
 #define RELAY_PIN 54
 #endif
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-#define RELAY_PIN -1
+#define RELAY_PIN 33
 #else
 // no relay for this board
 #define RELAY_PIN -1
@@ -56,6 +56,13 @@ const AP_Param::GroupInfo AP_Relay::var_info[] PROGMEM = {
     // @Values: -1:Disabled,13:APM2 A9 pin,47:APM1 relay,50:Pixhawk FMU AUX1,51:Pixhawk FMU AUX2,52:Pixhawk FMU AUX3,53:Pixhawk FMU AUX4,54:Pixhawk FMU AUX5,55:Pixhawk FMU AUX6,111:PX4 FMU Relay1,112:PX4 FMU Relay2,113:PX4IO Relay1,114:PX4IO Relay2,115:PX4IO ACC1,116:PX4IO ACC2
     AP_GROUPINFO("PIN4",  3, AP_Relay, _pin[3], -1),
 
+    // @Param: DEFAULT
+    // @DisplayName: Default relay state
+    // @Description: The state of the relay on boot. 
+    // @User: Standard
+    // @Values: 0:Off,1:On,2:NoChange
+    AP_GROUPINFO("DEFAULT",  4, AP_Relay, _default, 0),
+
     AP_GROUPEND
 };
 
@@ -72,7 +79,16 @@ void AP_Relay::init()
 {
     for (uint8_t i=0; i<AP_RELAY_NUM_RELAYS; i++) {
         if (_pin[i].get() != -1) {
-            off(i);
+            switch (_default) {
+            case 0:
+                off(i);
+                break;
+            case 1:
+                on(i);
+                break;
+            default:
+                break;
+            }
         }
     }
 }

@@ -274,6 +274,7 @@ uint16_t DataFlash_Block::find_last_page_of_log(uint16_t log_number)
 
 #define PGM_UINT8(addr) pgm_read_byte((const prog_char *)addr)
 
+#ifndef DATAFLASH_NO_CLI
 /*
   read and print a log entry using the format strings from the given structure
  */
@@ -556,6 +557,7 @@ void DataFlash_Block::ListAvailableLogs(AP_HAL::BetterStream *port)
     }
     port->println();
 }
+#endif // DATAFLASH_NO_CLI
 
 // This function starts a new log file in the DataFlash, and writes
 // the format of supported messages in the log, plus all parameters
@@ -747,7 +749,11 @@ void DataFlash_Class::Log_Write_RCOUT(void)
         chan5         : hal.rcout->read(4),
         chan6         : hal.rcout->read(5),
         chan7         : hal.rcout->read(6),
-        chan8         : hal.rcout->read(7)
+        chan8         : hal.rcout->read(7),
+        chan9         : hal.rcout->read(8),
+        chan10        : hal.rcout->read(9),
+        chan11        : hal.rcout->read(10),
+        chan12        : hal.rcout->read(11)
     };
     WriteBlock(&pkt, sizeof(pkt));
 }

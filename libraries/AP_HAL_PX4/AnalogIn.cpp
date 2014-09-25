@@ -69,13 +69,13 @@ using namespace PX4;
 
 PX4AnalogSource::PX4AnalogSource(int16_t pin, float initial_value) :
 	_pin(pin),
+    _stop_pin(-1),
+    _settle_time_ms(0),
     _value(initial_value),
     _value_ratiometric(initial_value),
     _latest_value(initial_value),
     _sum_count(0),
     _sum_value(0),
-    _stop_pin(-1),
-    _settle_time_ms(0),
     _sum_ratiometric(0)
 {
 #ifdef PX4_ANALOG_VCC_5V_PIN
@@ -192,10 +192,10 @@ void PX4AnalogSource::_add_value(float v, float vcc5V)
 
 
 PX4AnalogIn::PX4AnalogIn() :
+    _current_stop_pin_i(0),
 	_board_voltage(0),
     _servorail_voltage(0),
-    _power_flags(0),
-    _current_stop_pin_i(0)
+    _power_flags(0)
 {}
 
 void PX4AnalogIn::init(void* machtnichts)
@@ -359,8 +359,13 @@ void PX4AnalogIn::_timer_tick(void)
             if (system_power.servo_valid)   flags |= MAV_POWER_STATUS_SERVO_VALID;
             if (system_power.periph_5V_OC)  flags |= MAV_POWER_STATUS_PERIPH_OVERCURRENT;
             if (system_power.hipower_5V_OC) flags |= MAV_POWER_STATUS_PERIPH_HIPOWER_OVERCURRENT;
-            if (_power_flags != 0 && _power_flags != flags) {
-                // the power status has changed since boot
+            if (_power_flags != 0 && 
+                _power_flags != flags && 
+                hal.scheduler->millis() > 5000) {
+                // the power status has changed since boot, and more
+                // than 5s after power on. The 5 second threshold is
+                // for users who have multiple switches, and they
+                // don't switch both at the same time.
                 flags |= MAV_POWER_STATUS_CHANGED;
             }
             _power_flags = flags;

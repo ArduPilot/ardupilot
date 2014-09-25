@@ -326,7 +326,7 @@ setup_compass(uint8_t argc, const Menu::arg *argv)
         g.compass_enabled = false;
 
     } else if (!strcmp_P(argv[1].str, PSTR("reset"))) {
-        compass.set_offsets(0,0,0);
+        compass.set_and_save_offsets(0,0,0,0);
 
     } else {
         cliSerial->printf_P(PSTR("\nOptions:[on,off,reset]\n"));
@@ -448,11 +448,8 @@ print_divider(void)
 
 static void zero_eeprom(void)
 {
-    uint8_t b = 0;
     cliSerial->printf_P(PSTR("\nErasing EEPROM\n"));
-    for (uint16_t i = 0; i < HAL_STORAGE_SIZE_AVAILABLE; i++) {
-        hal.storage->write_byte(i, b);
-    }
+    StorageManager::erase();
     cliSerial->printf_P(PSTR("done\n"));
 }
 

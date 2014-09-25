@@ -72,7 +72,9 @@ parser.add_option("--simin",  dest="simin",   help="SIM input (IP:port)",       
 parser.add_option("--simout", dest="simout",  help="SIM output (IP:port)",      default="127.0.0.1:5501")
 parser.add_option("--home", dest="home",  type='string', default=None, help="home lat,lng,alt,hdg (required)")
 parser.add_option("--rate", dest="rate", type='int', help="SIM update rate", default=100)
-parser.add_option("--rate-controlled", action='store_true', default=False, help="Use rate controlled servos")
+parser.add_option("--onoff", action='store_true', default=False, help="Use onoff servo system")
+parser.add_option("--yawrate", type='float', default=9.0, help="yaw rate of servos (degrees/s)")
+parser.add_option("--pitchrate", type='float', default=1.0, help="pitch rate of servos (degrees/s)")
 
 (opts, args) = parser.parse_args()
 
@@ -97,7 +99,7 @@ sim_out.connect(sim_out_address)
 sim_out.setblocking(0)
 
 # create the antenna tracker  model
-a = Tracker(rate_controlled=opts.rate_controlled)
+a = Tracker(onoff=opts.onoff, yawrate=opts.yawrate, pitchrate=opts.pitchrate)
 
 # initial controls state
 state = ControlState()

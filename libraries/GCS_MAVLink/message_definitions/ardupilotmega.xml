@@ -13,32 +13,22 @@
 
           <!-- ardupilot specific MAV_CMD_* commands -->
           <enum name="MAV_CMD">
-            <entry name="MAV_CMD_NAV_GUIDED" value="90">
-              <description>Pass control to an external controller.</description>
-              <param index="1">Timeout in seconds.  The maximum amount of time that the external controller will be allowed to control the vehicle.  0 means no timeout</param>
-              <param index="2">Altitude min. If vehicle moves below this altitude the command will be aborted and the mission will continue.  0 for no lower alt limit</param>
-              <param index="3">Altitude max. If vehicle moves above this altitude the command will be aborted and the mission will continue.  0 for no upper alt limit</param>
-              <param index="4">Horizontal move limit. If vehicle moves more than this distance from it's location at the moment the command was begun, the command will be aborted and the mission will continue.  0 for no horizontal movement limit</param>
-              <param index="5">Empty</param>
-              <param index="6">Empty</param>
-              <param index="7">Empty</param>
-            </entry>
-           <entry name="MAV_CMD_NAV_VELOCITY" value="91">
-                <description>Navigate at the specified velocity</description>
-                <param index="1">coordinate_frame - see MAV_FRAME enum</param>
-                <param index="2">Empty</param>
-                <param index="3">Empty</param>
-                <param index="4">Empty</param>
-                <param index="5">x velocity</param>
-                <param index="6">y velocity</param>
-                <param index="7">z velocity</param>
-           </entry>
             <entry name="MAV_CMD_DO_MOTOR_TEST" value="209">
               <description>Mission command to perform motor test</description>
               <param index="1">motor sequence number (a number from 1 to max number of motors on the vehicle)</param>
               <param index="2">throttle type (0=throttle percentage, 1=PWM, 2=pilot throttle channel pass-through. See MOTOR_TEST_THROTTLE_TYPE enum)</param>
               <param index="3">throttle</param>
               <param index="4">timeout (in seconds)</param>
+              <param index="5">Empty</param>
+              <param index="6">Empty</param>
+              <param index="7">Empty</param>
+            </entry>
+            <entry name="MAV_CMD_DO_GRIPPER" value="211">
+              <description>Mission command to operate EPM gripper</description>
+              <param index="1">gripper number (a number from 1 to max number of grippers on the vehicle)</param>
+              <param index="2">gripper action (0=release, 1=grab. See GRIPPER_ACTIONS enum)</param>
+              <param index="3">Empty</param>
+              <param index="4">Empty</param>
               <param index="5">Empty</param>
               <param index="6">Empty</param>
               <param index="7">Empty</param>
@@ -95,15 +85,26 @@
       </entry>
     </enum>
 
+    <!-- gripper action enum -->
+    <enum name="GRIPPER_ACTIONS">
+      <description>Gripper actions.</description>
+      <entry name="GRIPPER_ACTION_RELEASE" value="0">
+        <description>gripper release of cargo</description>
+      </entry>
+      <entry name="GRIPPER_ACTION_GRAB" value="1">
+        <description>gripper grabs onto cargo</description>
+      </entry>
+    </enum>
+
     <!-- Camera event types -->
     <enum name="CAMERA_STATUS_TYPES">
-        <entry name="HEARTBEAT"  value="0"><description>Camera heartbeat, announce camera component ID at 1hz</description></entry>
-        <entry name="TRIGGER"    value="1"><description>Camera image triggered</description></entry>
-        <entry name="DISCONNECT" value="2"><description>Camera connection lost</description></entry>
-        <entry name="ERROR"      value="3"><description>Camera unknown error</description></entry>
-        <entry name="LOWBATT"    value="4"><description>Camera battery low. Parameter p1 shows reported voltage</description></entry>
-        <entry name="LOWSTORE"   value="5"><description>Camera storage low. Parameter p1 shows reported shots remaining</description></entry>
-        <entry name="LOWSTOREV"  value="6"><description>Camera storage low. Parameter p1 shows reported video minutes remaining</description></entry>
+        <entry name="CAMERA_STATUS_TYPE_HEARTBEAT"  value="0"><description>Camera heartbeat, announce camera component ID at 1hz</description></entry>
+        <entry name="CAMERA_STATUS_TYPE_TRIGGER"    value="1"><description>Camera image triggered</description></entry>
+        <entry name="CAMERA_STATUS_TYPE_DISCONNECT" value="2"><description>Camera connection lost</description></entry>
+        <entry name="CAMERA_STATUS_TYPE_ERROR"      value="3"><description>Camera unknown error</description></entry>
+        <entry name="CAMERA_STATUS_TYPE_LOWBATT"    value="4"><description>Camera battery low. Parameter p1 shows reported voltage</description></entry>
+        <entry name="CAMERA_STATUS_TYPE_LOWSTORE"   value="5"><description>Camera storage low. Parameter p1 shows reported shots remaining</description></entry>
+        <entry name="CAMERA_STATUS_TYPE_LOWSTOREV"  value="6"><description>Camera storage low. Parameter p1 shows reported video minutes remaining</description></entry>
     </enum>
 
     <!-- camera feedback flags, a little bit of future-proofing -->
@@ -135,7 +136,7 @@
           </message>
 
           <message id="151" name="SET_MAG_OFFSETS">
-               <description>set the magnetometer offsets</description>
+               <description>Deprecated. Use MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS instead. Set the magnetometer offsets</description>
                <field type="uint8_t" name="target_system">System ID</field>
                <field type="uint8_t" name="target_component">Component ID</field>
                <field type="int16_t" name="mag_ofs_x">magnetometer X offset</field>
@@ -456,6 +457,12 @@
         <field name="yaw"       type="float"   >Camera Yaw (earth frame, degrees, 0-360, true)</field>   <!-- initially only supporting fixed cameras, in future we'll need feedback messages from the gimbal so we can include that offset here -->
         <field name="foc_len"   type="float"   >Focal Length (mm)</field> <!-- per-image to support zooms. Zero means fixed focal length or unknown. Should be true mm, not scaled to 35mm film equivalent -->
         <field name="flags"     type="uint8_t" >See CAMERA_FEEDBACK_FLAGS enum for definition of the bitmask</field> <!-- future proofing -->
+    </message>
+
+    <message name="BATTERY2" id="181">
+      <description>2nd Battery status</description>
+      <field type="uint16_t" name="voltage">voltage in millivolts</field>
+      <field type="int16_t" name="current_battery">Battery current, in 10*milliamperes (1 = 10 milliampere), -1: autopilot does not measure the current</field>
     </message>
 
      </messages>

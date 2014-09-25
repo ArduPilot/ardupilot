@@ -6,6 +6,7 @@ class TestDupeLogData(Test):
 	'''test for duplicated data in log, which has been happening on PX4/Pixhawk'''
 
 	def __init__(self):
+		Test.__init__(self)
 		self.name = "Dupe Log Data"
 		
 	def __matchSample(self, sample, sampleStartIndex, logdata):

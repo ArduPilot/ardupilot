@@ -41,13 +41,15 @@ public:
     float voltage_latest();
     float voltage_average_ratiometric();
 
-    // stop pins not implemented on VRBRAIN yet
-    void set_stop_pin(uint8_t p) {}
-    void set_settle_time(uint16_t settle_time_ms) {}
+    // implement stop pins
+    void set_stop_pin(uint8_t p);
+    void set_settle_time(uint16_t settle_time_ms) { _settle_time_ms = settle_time_ms; }
 
 private:
     // what pin it is attached to
     int16_t _pin;
+    int16_t _stop_pin;
+    uint16_t _settle_time_ms;
 
     // what value it has
     float _value;
@@ -78,9 +80,16 @@ private:
     uint64_t _battery_timestamp;
     uint64_t _servorail_timestamp;
     VRBRAIN::VRBRAINAnalogSource* _channels[VRBRAIN_ANALOG_MAX_CHANNELS];
+
+    // what pin is currently held low to stop a sonar from reading
+    uint8_t _current_stop_pin_i;
+    uint32_t _stop_pin_change_time;
+
     uint32_t _last_run;
     float _board_voltage;
     float _servorail_voltage;
     uint16_t _power_flags;
+
+    void next_stop_pin(void);
 };
 #endif // __AP_HAL_VRBRAIN_ANALOGIN_H__

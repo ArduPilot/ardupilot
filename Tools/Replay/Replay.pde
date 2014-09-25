@@ -17,6 +17,7 @@
 #include <AP_Common.h>
 #include <AP_Progmem.h>
 #include <AP_Param.h>
+#include <StorageManager.h>
 #include <AP_Math.h>
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
@@ -39,10 +40,14 @@
 #include <SITL.h>
 #include <AP_Compass.h>
 #include <AP_Baro.h>
+#include <AP_Baro_Glitch.h>
 #include <AP_InertialSensor.h>
 #include <AP_InertialNav.h>
 #include <AP_NavEKF.h>
 #include <AP_Mission.h>
+#include <AP_Rally.h>
+#include <AP_BattMonitor.h>
+#include <AP_Terrain.h>
 #include <Parameters.h>
 #include <stdio.h>
 #include <getopt.h>
@@ -58,8 +63,6 @@
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
-AP_Param param_loader(var_info, 4096);
-
 static Parameters g;
 
 static AP_InertialSensor_HIL ins;
@@ -68,7 +71,8 @@ static AP_GPS gps;
 static AP_Compass_HIL compass;
 static AP_AHRS_NavEKF ahrs(ins, barometer, gps);
 static GPS_Glitch gps_glitch(gps);
-static AP_InertialNav inertial_nav(ahrs, barometer, gps_glitch);
+static Baro_Glitch baro_glitch(barometer);
+static AP_InertialNav inertial_nav(ahrs, barometer, gps_glitch, baro_glitch);
 static AP_Vehicle::FixedWing aparm;
 static AP_Airspeed airspeed(aparm);
 

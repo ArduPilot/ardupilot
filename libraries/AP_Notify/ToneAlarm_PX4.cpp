@@ -112,12 +112,30 @@ void ToneAlarm_PX4::update()
         }
     }
 
+    // check baro glitch
+    if (flags.baro_glitching != AP_Notify::flags.baro_glitching) {
+        flags.baro_glitching = AP_Notify::flags.baro_glitching;
+        if (flags.baro_glitching) {
+            // gps glitch warning tune
+            play_tune(TONE_BARO_WARNING_TUNE);
+        }
+    }
+
     // check parachute release
     if (flags.parachute_release != AP_Notify::flags.parachute_release) {
         flags.parachute_release = AP_Notify::flags.parachute_release;
         if (flags.parachute_release) {
             // parachute release warning tune
             play_tune(TONE_PARACHUTE_RELEASE_TUNE);
+        }
+    }
+
+    // check ekf has gone bad
+    if (flags.ekf_bad != AP_Notify::flags.ekf_bad) {
+        flags.ekf_bad = AP_Notify::flags.ekf_bad;
+        if (flags.ekf_bad) {
+            // ekf warning tune
+            play_tune(TONE_EKF_WARNING_TUNE);
         }
     }
 }

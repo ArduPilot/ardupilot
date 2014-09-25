@@ -12,6 +12,7 @@
 #include <GCS_MAVLink.h>
 #include <DataFlash.h>
 #include <AP_Mission.h>
+#include "../AP_BattMonitor/AP_BattMonitor.h"
 #include <stdint.h>
 
 //  GCS Message ID's
@@ -46,6 +47,8 @@ enum ap_message {
     MSG_HWSTATUS,
     MSG_WIND,
     MSG_RANGEFINDER,
+    MSG_TERRAIN,
+    MSG_BATTERY2,
     MSG_RETRY_DEFERRED // this must be last
 };
 
@@ -190,6 +193,22 @@ public:
     bool send_gps_raw(AP_GPS &gps);
     void send_system_time(AP_GPS &gps);
     void send_radio_in(uint8_t receiver_rssi);
+    void send_raw_imu(const AP_InertialSensor &ins, const Compass &compass);
+    void send_scaled_pressure(AP_Baro &barometer);
+    void send_sensor_offsets(const AP_InertialSensor &ins, const Compass &compass, AP_Baro &barometer);
+    void send_ahrs(AP_AHRS &ahrs);
+    void send_battery2(const AP_BattMonitor &battery);
+
+    // return a bitmap of active channels. Used by libraries to loop
+    // over active channels to send to all active channels    
+    static uint8_t active_channel_mask(void) { return mavlink_active; }
+
+    /*
+      send a statustext message to all active MAVLink
+      connections. This function is static so it can be called from
+      any library
+    */
+    static void send_statustext_all(const prog_char_t *msg);
 
 private:
     void        handleMessage(mavlink_message_t * msg);
@@ -289,7 +308,8 @@ private:
     uint8_t next_deferred_message;
     uint8_t num_deferred_messages;
 
-    static bool mavlink_active;
+    // bitmask of what mavlink channels are active
+    static uint8_t mavlink_active;
 
     // vehicle specific message send function
     bool try_send_message(enum ap_message id);

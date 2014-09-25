@@ -69,6 +69,9 @@ public:
     /// init_loiter_target - initialize's loiter position and feed-forward velocity from current pos and velocity
     void init_loiter_target();
 
+    /// loiter_soften_for_landing - reduce response for landing
+    void loiter_soften_for_landing();
+
     /// set_loiter_velocity - allows main code to pass the maximum velocity for loiter
     void set_loiter_velocity(float velocity_cms);
 

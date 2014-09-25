@@ -323,18 +323,7 @@ bool DataFlash_APM2::BlockRead(uint8_t BufferNum, uint16_t IntPageAdr, void *pBu
     return true;
 }
 
-uint8_t DataFlash_APM2::BufferRead (uint8_t BufferNum, uint16_t IntPageAdr)
-{
-    uint8_t tmp;
-    if (!BlockRead(BufferNum, IntPageAdr, &tmp, 1)) {
-        return 0;
-    }
-    return tmp;
-}
-
-
 // *** END OF INTERNAL FUNCTIONS ***
-
 void DataFlash_APM2::PageErase (uint16_t PageAdr)
 {
     if (!_sem_take(1))

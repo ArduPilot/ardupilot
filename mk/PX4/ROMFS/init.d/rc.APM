@@ -318,6 +318,17 @@ then
     echo "Found MEAS airspeed sensor"
 fi
 
+# optional Range Finder sensor
+if ll40ls start
+then
+    echo "Found ll40ls sensor"
+fi
+
+if mb12xx start
+then
+    echo "Found mb12xx sensor"
+fi
+
 echo "Trying PX4IO board"
 
 if mtd start /fs/mtd

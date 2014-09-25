@@ -9,6 +9,7 @@
 #include <AP_HAL_AVR.h>
 #include <AP_Math.h>
 #include <AP_Param.h>
+#include <StorageManager.h>
 #include <AC_PID.h>
 #include <AC_HELI_PID.h>
 

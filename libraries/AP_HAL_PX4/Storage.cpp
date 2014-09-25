@@ -176,43 +176,12 @@ void PX4Storage::_storage_open(void)
  */
 void PX4Storage::_mark_dirty(uint16_t loc, uint16_t length)
 {
-	uint16_t end = loc + length;
-	while (loc < end) {
-		uint8_t line = (loc >> PX4_STORAGE_LINE_SHIFT);
-		_dirty_mask |= 1 << line;
-		loc += PX4_STORAGE_LINE_SIZE;
-	}
-}
-
-uint8_t PX4Storage::read_byte(uint16_t loc) 
-{
-	if (loc >= sizeof(_buffer)) {
-		return 0;
-	}
-	_storage_open();
-	return _buffer[loc];
-}
-
-uint16_t PX4Storage::read_word(uint16_t loc) 
-{
-	uint16_t value;
-	if (loc >= sizeof(_buffer)-(sizeof(value)-1)) {
-		return 0;
-	}
-	_storage_open();
-	memcpy(&value, &_buffer[loc], sizeof(value));
-	return value;
-}
-
-uint32_t PX4Storage::read_dword(uint16_t loc) 
-{
-	uint32_t value;
-	if (loc >= sizeof(_buffer)-(sizeof(value)-1)) {
-		return 0;
-	}
-	_storage_open();
-	memcpy(&value, &_buffer[loc], sizeof(value));
-	return value;
+    uint16_t end = loc + length;
+    for (uint8_t line=loc>>PX4_STORAGE_LINE_SHIFT;
+         line <= end>>PX4_STORAGE_LINE_SHIFT;
+         line++) {
+        _dirty_mask |= 1U << line;
+    }
 }
 
 void PX4Storage::read_block(void *dst, uint16_t loc, size_t n) 
@@ -222,42 +191,6 @@ void PX4Storage::read_block(void *dst, uint16_t loc, size_t n)
 	}
 	_storage_open();
 	memcpy(dst, &_buffer[loc], n);
-}
-
-void PX4Storage::write_byte(uint16_t loc, uint8_t value) 
-{
-	if (loc >= sizeof(_buffer)) {
-		return;
-	}
-	if (_buffer[loc] != value) {
-		_storage_open();
-		_buffer[loc] = value;
-		_mark_dirty(loc, sizeof(value));
-	}
-}
-
-void PX4Storage::write_word(uint16_t loc, uint16_t value) 
-{
-	if (loc >= sizeof(_buffer)-(sizeof(value)-1)) {
-		return;
-	}
-	if (memcmp(&value, &_buffer[loc], sizeof(value)) != 0) {
-		_storage_open();
-		memcpy(&_buffer[loc], &value, sizeof(value));
-		_mark_dirty(loc, sizeof(value));
-	}
-}
-
-void PX4Storage::write_dword(uint16_t loc, uint32_t value) 
-{
-	if (loc >= sizeof(_buffer)-(sizeof(value)-1)) {
-		return;
-	}
-	if (memcmp(&value, &_buffer[loc], sizeof(value)) != 0) {
-		_storage_open();
-		memcpy(&_buffer[loc], &value, sizeof(value));
-		_mark_dirty(loc, sizeof(value));
-	}
 }
 
 void PX4Storage::write_block(uint16_t loc, const void *src, size_t n) 

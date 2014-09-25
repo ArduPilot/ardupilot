@@ -44,16 +44,10 @@ static void stabilize_run()
     // get pilot's desired throttle
     pilot_throttle_scaled = get_pilot_desired_throttle(g.rc_3.control_in);
 
-    // reset target lean angles and heading while landed
-    if (ap.land_complete) {
-        attitude_control.relax_bf_rate_controller();
-        attitude_control.set_yaw_target_to_current_heading();
-    }else{
-        // call attitude controller
-        attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+    // call attitude controller
+    attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 
-        // body-frame rate controller is run directly from 100hz loop
-    }
+    // body-frame rate controller is run directly from 100hz loop
 
     // output pilot's throttle
     attitude_control.set_throttle_out(pilot_throttle_scaled, true);

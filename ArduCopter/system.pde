@@ -131,40 +131,18 @@ static void init_ardupilot()
 
     BoardConfig.init();
 
-    // FIX: this needs to be the inverse motors mask
-    ServoRelayEvents.set_channel_mask(0xFFF0);
-
-    relay.init();
-
-    bool enable_external_leds = true;
-
     // init EPM cargo gripper
 #if EPM_ENABLED == ENABLED
     epm.init();
-    enable_external_leds = !epm.enabled();
 #endif
 
     // initialise notify system
     // disable external leds if epm is enabled because of pin conflict on the APM
-    notify.init(enable_external_leds);
+    notify.init(true);
 
     // initialise battery monitor
     battery.init();
     
-#if CONFIG_SONAR == ENABLED
- #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
-    sonar_analog_source = new AP_ADC_AnalogSource(
-            &adc, CONFIG_SONAR_SOURCE_ADC_CHANNEL, 0.25);
- #elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
-    sonar_analog_source = hal.analogin->channel(
-            CONFIG_SONAR_SOURCE_ANALOG_PIN);
- #else
-  #warning "Invalid CONFIG_SONAR_SOURCE"
- #endif
-    sonar = new AP_RangeFinder_MaxsonarXL(sonar_analog_source,
-            &sonar_mode_filter);
-#endif
-
     rssi_analog_source      = hal.analogin->channel(g.rssi_pin);
 
     barometer.init();
@@ -188,8 +166,14 @@ static void init_ardupilot()
     // a MUX is used
     gcs[1].setup_uart(hal.uartC, map_baudrate(g.serial1_baud), 128, 128);
 #endif
+
 #if MAVLINK_COMM_NUM_BUFFERS > 2
-    gcs[2].setup_uart(hal.uartD, map_baudrate(g.serial2_baud), 128, 128);
+    if (g.serial2_protocol == SERIAL2_FRSKY_DPORT || 
+        g.serial2_protocol == SERIAL2_FRSKY_SPORT) {
+        frsky_telemetry.init(hal.uartD, g.serial2_protocol);
+    } else {
+        gcs[2].setup_uart(hal.uartD, map_baudrate(g.serial2_baud), 128, 128);
+    }
 #endif
 
     // identify ourselves correctly with the ground station
@@ -199,10 +183,10 @@ static void init_ardupilot()
 #if LOGGING_ENABLED == ENABLED
     DataFlash.Init(log_structure, sizeof(log_structure)/sizeof(log_structure[0]));
     if (!DataFlash.CardInserted()) {
-        gcs_send_text_P(SEVERITY_LOW, PSTR("No dataflash inserted"));
+        gcs_send_text_P(SEVERITY_HIGH, PSTR("No dataflash inserted"));
         g.log_bitmask.set(0);
     } else if (DataFlash.NeedErase()) {
-        gcs_send_text_P(SEVERITY_LOW, PSTR("ERASING LOGS"));
+        gcs_send_text_P(SEVERITY_HIGH, PSTR("ERASING LOGS"));
         do_erase_logs();
         gcs[0].reset_cli_timeout();
     }
@@ -210,6 +194,11 @@ static void init_ardupilot()
 
     init_rc_in();               // sets up rc channels from radio
     init_rc_out();              // sets up motors and output to escs
+
+    // initialise which outputs Servo and Relay events can use
+    ServoRelayEvents.set_channel_mask(~motors.get_motor_mask());
+
+    relay.init();
 
     /*
      *  setup the 'main loop is dead' check. Note that this relies on
@@ -219,7 +208,7 @@ static void init_ardupilot()
 
  #if CONFIG_ADC == ENABLED
     // begin filtering the ADC Gyros
-    adc.Init();           // APM ADC library initialization
+    apm1_adc.Init();           // APM ADC library initialization
  #endif // CONFIG_ADC
 
     // Do GPS init
@@ -256,8 +245,8 @@ static void init_ardupilot()
 #endif // CLI_ENABLED
 
 #if HIL_MODE != HIL_MODE_DISABLED
-    while (!barometer.healthy) {
-        // the barometer becomes healthy when we get the first
+    while (barometer.get_last_update() == 0) {
+        // the barometer begins updating when we get the first
         // HIL_STATE message
         gcs_send_text_P(SEVERITY_LOW, PSTR("Waiting for first HIL_STATE message"));
         delay(1000);
@@ -290,9 +279,26 @@ static void init_ardupilot()
 
 #if LOGGING_ENABLED == ENABLED
     Log_Write_Startup();
+  #ifdef LOG_FROM_STARTUP
+    // start dataflash
+    start_logging();
+  #endif
 #endif
 
+    // we don't want writes to the serial port to cause us to pause
+    // mid-flight, so set the serial ports non-blocking once we are
+    // ready to fly
+    hal.uartA->set_blocking_writes(false);
+    hal.uartB->set_blocking_writes(false);
+    hal.uartC->set_blocking_writes(false);
+    if (hal.uartD != NULL) {
+        hal.uartD->set_blocking_writes(false);
+    }
+
     cliSerial->print_P(PSTR("\nReady to FLY "));
+
+    // flag that initialisation has completed
+    ap.initialised = true;
 }
 
 
@@ -320,13 +326,15 @@ static void startup_ground(bool force_gyro_cal)
 
     // set landed flag
     set_land_complete(true);
+    set_land_complete_maybe(true);
 }
 
 // returns true if the GPS is ok and home position is set
 static bool GPS_ok()
 {
     if (ap.home_is_set && gps.status() >= AP_GPS::GPS_OK_FIX_3D && 
-        !gps_glitch.glitching() && !failsafe.gps) {
+        !gps_glitch.glitching() && !failsafe.gps &&
+        !ekf_check_state.bad_compass && !failsafe.ekf) {
         return true;
     }else{
         return false;
@@ -387,3 +395,13 @@ static void check_usb_mux(void)
 #endif
 }
 
+/*
+  send FrSky telemetry. Should be called at 5Hz by scheduler
+ */
+static void telemetry_send(void)
+{
+#if FRSKY_TELEM_ENABLED == ENABLED
+    frsky_telemetry.send_frames((uint8_t)control_mode, 
+                                (AP_Frsky_Telem::FrSkyProtocol)g.serial2_protocol.get());
+#endif
+}

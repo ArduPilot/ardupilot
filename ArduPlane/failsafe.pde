@@ -37,8 +37,22 @@ void failsafe_check(void)
     }
 
     if (in_failsafe && tnow - last_timestamp > 20000) {
-        // pass RC inputs to outputs every 20ms
         last_timestamp = tnow;
+
+#if OBC_FAILSAFE == ENABLED
+        if (in_calibration) {
+            // tell the failsafe system that we are calibrating
+            // sensors, so don't trigger failsafe
+            obc.heartbeat();
+        }
+#endif
+
+        if (hal.rcin->num_channels() == 0) {
+            // we don't have any RC input to pass through
+            return;
+        }
+
+        // pass RC inputs to outputs every 20ms
         hal.rcin->clear_overrides();
         channel_roll->radio_out     = channel_roll->read();
         channel_pitch->radio_out    = channel_pitch->read();
@@ -67,8 +81,8 @@ void failsafe_check(void)
 
         if (!demoing_servos) {
             channel_roll->output();
+            channel_pitch->output();
         }
-        channel_pitch->output();
         channel_throttle->output();
         channel_rudder->output();
 

@@ -116,8 +116,11 @@ public:
     /// monitoring - returns whether we are monitoring voltage only or voltage and current
     void set_monitoring(uint8_t mon) { _monitoring.set(mon); }
 
-    /// Battery voltage.  Initialized to 99 to prevent low voltage events at startup
+    /// Battery voltage.  Initialized to 0
     float voltage() const { return _voltage; }
+
+    /// 2nd Battery voltage, if available. return false otherwise
+    bool voltage2(float &voltage) const;
 
     /// Battery pack instantaneous currrent draw in amperes
     float current_amps() const { return _current_amps; }
@@ -144,8 +147,13 @@ protected:
     AP_Float    _curr_amp_offset;           /// offset voltage that is subtracted from current pin before conversion to amps
     AP_Int32    _pack_capacity;             /// battery pack capacity less reserve in mAh
 
+    // 2nd battery monitoring
+    AP_Int8     _volt2_pin;                 /// board pin used to measure 2nd battery voltage
+    AP_Float    _volt2_multiplier;          /// voltage on volt2 pin multiplier
+
     /// internal variables
     float       _voltage;                   /// last read voltage
+    float       _voltage2;                  /// last read voltage 2nd battery
     float       _current_amps;              /// last read current drawn
     float       _current_total_mah;         /// total current drawn since startup (Amp-hours)
     uint32_t    _last_time_micros;          /// time when current was last read
@@ -153,6 +161,6 @@ protected:
 
     AP_HAL::AnalogSource *_volt_pin_analog_source;
     AP_HAL::AnalogSource *_curr_pin_analog_source;
-
+    AP_HAL::AnalogSource *_volt2_pin_analog_source;
 };
 #endif  // AP_BATTMONITOR_H

@@ -15,25 +15,37 @@ static void failsafe_radio_on_event()
     switch(control_mode) {
         case STABILIZE:
         case ACRO:
-        case SPORT:
-            // if throttle is zero disarm motors
-            if (g.rc_3.control_in == 0) {
+            // if throttle is zero OR vehicle is landed disarm motors
+            if (g.rc_3.control_in == 0 || ap.land_complete) {
                 init_disarm_motors();
+
+            // if failsafe_throttle is FS_THR_ENABLED_ALWAYS_LAND then land immediately
             }else if(g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
-                // if failsafe_throttle is 3 (i.e. FS_THR_ENABLED_ALWAYS_LAND) land immediately
                 set_mode_land_with_pause();
+
+            // if far from home then RTL
             }else if(home_distance > wp_nav.get_wp_radius()) {
                 if (!set_mode(RTL)) {
                     set_mode_land_with_pause();
                 }
+
+            // We have no GPS or are very close to home so we will land
             }else{
-                // We have no GPS or are very close to home so we will land
                 set_mode_land_with_pause();
             }
             break;
+
         case AUTO:
-            // failsafe_throttle is 1 do RTL, 2 means continue with the mission
-            if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_RTL) {
+            // if mission has not started AND vehicle is landed, disarm motors
+            if (!ap.auto_armed && ap.land_complete) {
+                init_disarm_motors();
+
+            // if failsafe_throttle is FS_THR_ENABLED_ALWAYS_LAND then land immediately
+            } else if(g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
+                set_mode_land_with_pause();
+
+            // if failsafe_throttle is FS_THR_ENABLED_ALWAYS_RTL do RTL
+            } else if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_RTL) {
                 if(home_distance > wp_nav.get_wp_radius()) {
                     if (!set_mode(RTL)) {
                         set_mode_land_with_pause();
@@ -42,41 +54,30 @@ static void failsafe_radio_on_event()
                     // We are very close to home so we will land
                     set_mode_land_with_pause();
                 }
-            }else if(g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
-                // if failsafe_throttle is 3 (i.e. FS_THR_ENABLED_ALWAYS_LAND) land immediately
-            	set_mode_land_with_pause();
             }
-            // if failsafe_throttle is 2 (i.e. FS_THR_ENABLED_CONTINUE_MISSION) no need to do anything
+            // failsafe_throttle must be FS_THR_ENABLED_CONTINUE_MISSION so no need to do anything
             break;
-        case LOITER:
-        case ALT_HOLD:
-        case HYBRID:
-            // if landed with throttle at zero disarm, otherwise do the regular thing
-            if (g.rc_3.control_in == 0 && ap.land_complete) {
-                init_disarm_motors();
-            }else if(g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
-                // if failsafe_throttle is 3 (i.e. FS_THR_ENABLED_ALWAYS_LAND) land immediately
-                set_mode_land_with_pause();
-            }else if(home_distance > wp_nav.get_wp_radius()) {
-                if (!set_mode(RTL)) {
-                    set_mode_land_with_pause();
-                }
-            }else{
-                // We have no GPS or are very close to home so we will land
-                set_mode_land_with_pause();
-            }
-            break;
+
         case LAND:
             // continue to land if battery failsafe is also active otherwise fall through to default handling
             if (g.failsafe_battery_enabled == FS_BATT_LAND && failsafe.battery) {
                 break;
             }
+            // no break
         default:
-            if(g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
-                // if failsafe_throttle is 3 (i.e. FS_THR_ENABLED_ALWAYS_LAND) land immediately
+            // used for AltHold, Guided, Loiter, RTL, Circle, OF_Loiter, Drift, Sport, Flip, Autotune, PosHold
+            // if landed disarm
+            if (ap.land_complete) {
+                init_disarm_motors();
+
+            // if failsafe_throttle is FS_THR_ENABLED_ALWAYS_LAND then land immediately
+            } else if(g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
                 set_mode_land_with_pause();
+
+            // if far from home then RTL
             }else if(home_distance > wp_nav.get_wp_radius()) {
                 if (!set_mode(RTL)){
+                    // if RTL fails because of no GPS, then LAND
                     set_mode_land_with_pause();
                 }
             }else{
@@ -113,9 +114,8 @@ static void failsafe_battery_event(void)
         switch(control_mode) {
             case STABILIZE:
             case ACRO:
-            case SPORT:
-                // if throttle is zero disarm motors
-                if (g.rc_3.control_in == 0) {
+                // if throttle is zero OR vehicle is landed disarm motors
+                if (g.rc_3.control_in == 0 || ap.land_complete) {
                     init_disarm_motors();
                 }else{
                     // set mode to RTL or LAND
@@ -129,30 +129,31 @@ static void failsafe_battery_event(void)
                 }
                 break;
             case AUTO:
+                // if mission has not started AND vehicle is landed, disarm motors
+                if (!ap.auto_armed && ap.land_complete) {
+                    init_disarm_motors();
+
                 // set mode to RTL or LAND
-                if (home_distance > wp_nav.get_wp_radius()) {
+                } else if (home_distance > wp_nav.get_wp_radius()) {
                     if (!set_mode(RTL)) {
                         set_mode_land_with_pause();
                     }
-                }else{
+                } else {
                     set_mode_land_with_pause();
                 }
                 break;
-            case LOITER:
-            case ALT_HOLD:
-            case HYBRID:
-                // if landed with throttle at zero disarm, otherwise fall through to default handling
-                if (g.rc_3.control_in == 0 && ap.land_complete) {
-                    init_disarm_motors();
-                    break;
-                }
             default:
+                // used for AltHold, Guided, Loiter, RTL, Circle, OF_Loiter, Drift, Sport, Flip, Autotune, PosHold
+                // if landed disarm
+                if (ap.land_complete) {
+                    init_disarm_motors();
+
                 // set mode to RTL or LAND
-                if (g.failsafe_battery_enabled == FS_BATT_RTL && home_distance > wp_nav.get_wp_radius()) {
+                } else if (g.failsafe_battery_enabled == FS_BATT_RTL && home_distance > wp_nav.get_wp_radius()) {
                     if (!set_mode(RTL)) {
                         set_mode_land_with_pause();
                     }
-                }else{
+                } else {
                     set_mode_land_with_pause();
                 }
                 break;
@@ -163,7 +164,7 @@ static void failsafe_battery_event(void)
     set_failsafe_battery(true);
 
     // warn the ground station and log to dataflash
-    gcs_send_text_P(SEVERITY_LOW,PSTR("Low Battery!"));
+    gcs_send_text_P(SEVERITY_HIGH,PSTR("Low Battery!"));
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_BATT, ERROR_CODE_FAILSAFE_OCCURRED);
 
 }
@@ -204,7 +205,7 @@ static void failsafe_gps_check()
     // GPS failsafe event has occured
     // update state, warn the ground station and log to dataflash
     set_failsafe_gps(true);
-    gcs_send_text_P(SEVERITY_LOW,PSTR("Lost GPS!"));
+    gcs_send_text_P(SEVERITY_HIGH,PSTR("Lost GPS!"));
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_GPS, ERROR_CODE_FAILSAFE_OCCURRED);
 
     // take action based on flight mode and FS_GPS_ENABLED parameter

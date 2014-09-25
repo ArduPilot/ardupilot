@@ -7,6 +7,7 @@ class TestBrownout(Test):
 	'''test for a log that has been truncated in flight'''
 
 	def __init__(self):
+		Test.__init__(self)
 		self.name = "Brownout"
 
 	def run(self, logdata, verbose):

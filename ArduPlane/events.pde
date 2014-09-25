@@ -87,6 +87,9 @@ static void failsafe_long_on_event(enum failsafe_state fstype)
     default:
         break;
     }
+    if (fstype == FAILSAFE_GCS) {
+        gcs_send_text_P(SEVERITY_HIGH, PSTR("No GCS heartbeat."));
+    }
     gcs_send_text_fmt(PSTR("flight mode = %u"), (unsigned)control_mode);
 }
 
