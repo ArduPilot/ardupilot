@@ -1,5 +1,34 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.2-rc10 24-Sep-2014
+Changes from 3.2-rc9
+1) two-stage land-detector to reduce motor run-up when landing in Loiter, PosHold, RTL, Auto
+2) Allow passthrough from input to output of channels 9 ~ 14 (thanks Emile!)
+3) Add 4hz filter to vertical velocity error during AltHold
+4) Safety Feature:
+    a) increase Alt Disparity pre-arm check threshold to 2m (was 1m)
+    b) reset battery failsafe after disarming/arming (thanks AndKe!)
+    c) EKF only apply centrifugal corrections when GPS has at least 6 satellites (Pixhawk with EKF enabled only)
+5) Bug fixes:
+    a) to default compass devid to zero when no compass connected
+    b) reduce motor run-up while landing in RTL
+------------------------------------------------------------------
+ArduCopter 3.2-rc9 11-Sep-2014
+Changes from 3.2-rc8
+1) FRAM bug fix that could stop Mission or Parameter changes from being saved (Pixhawk, VRBrain only)
+------------------------------------------------------------------
+ArduCopter 3.2-rc8 11-Sep-2014
+Changes from 3.2-rc7
+1) EKF reduced ripple to resolve copter motor pulsing
+2) Default Param changes:
+    a) AltHold Rate P reduced from 6 to 5
+    b) AltHold Accel P reduced from 0.75 to 0.5, I from 1.5 to 1.0
+    c) EKF check threshold increased from 0.6 to 0.8 to reduce false positives
+3) sensor health flags sent to GCS only after initialisation to remove false alerts 
+4) suppress bad terrain data alerts
+5) Bug Fix:
+    a)PX4 dataflash RAM useage reduced to 8k so it works again  
+------------------------------------------------------------------
 ArduCopter 3.2-rc7 04-Sep-2014
 Changes from 3.2-rc6
 1) Safety Items:

@@ -117,14 +117,15 @@ void AP_Motors::set_mid_throttle(uint16_t mid_throttle)
     _hover_out = _rc_throttle.radio_min + (float)(_rc_throttle.radio_max - _rc_throttle.radio_min) * mid_throttle / 1000.0f;
 }
 
-// throttle_pass_through - passes pilot's throttle input directly to all motors - dangerous but used for initialising ESCs
-void AP_Motors::throttle_pass_through()
+// throttle_pass_through - passes provided pwm directly to all motors - dangerous but used for initialising ESCs
+//  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
+void AP_Motors::throttle_pass_through(int16_t pwm)
 {
     if (armed()) {
         // send the pilot's input directly to each enabled motor
         for (int16_t i=0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {
-                hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[i]), _rc_throttle.radio_in);
+                hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[i]), pwm);
             }
         }
     }

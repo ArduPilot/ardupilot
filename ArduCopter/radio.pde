@@ -56,29 +56,8 @@ static void init_rc_out()
     // we want the input to be scaled correctly
     g.rc_3.set_range_out(0,1000);
 
-    // full throttle means to enter ESC calibration
-    if(g.rc_3.control_in >= (g.throttle_max - 50) || (g.esc_calibrate == 2)) {
-        if(g.esc_calibrate == 0) {
-            // we will enter esc_calibrate mode on next reboot
-            g.esc_calibrate.set_and_save(1);
-            // display message on console
-            cliSerial->printf_P(PSTR("Entering ESC Calibration: please restart APM.\n"));
-            // turn on esc calibration notification
-            AP_Notify::flags.esc_calibration = true;
-            // block until we restart
-            while(1) { delay(5); }
-        }else{
-            cliSerial->printf_P(PSTR("ESC Calibration active: passing throttle through to ESCs.\n"));
-            // clear esc flag
-            g.esc_calibrate.set_and_save(0);
-            // pass through user throttle to escs
-            init_esc();
-        }
-    }else{
-        // did we abort the calibration?
-        if(g.esc_calibrate == 1)
-            g.esc_calibrate.set_and_save(0);
-    }
+    // check if we should enter esc calibration mode
+    esc_calibration_startup_check();
 
     // enable output to motors
     pre_arm_rc_checks();
@@ -113,6 +92,13 @@ static void read_radio()
         g.rc_6.set_pwm(periods[5]);
         g.rc_7.set_pwm(periods[6]);
         g.rc_8.set_pwm(periods[7]);
+
+        // read channels 9 ~ 14
+        for (uint8_t i=8; i<RC_MAX_CHANNELS; i++) {
+            if (RC_Channel::rc_channel(i) != NULL) {
+                RC_Channel::rc_channel(i)->set_pwm(RC_Channel::rc_channel(i)->read());
+            }
+        }
 
         // flag we must have an rc receiver attached
         if (!failsafe.rc_override_active) {

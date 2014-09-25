@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduPlane V3.1.1-beta"
+#define THISFIRMWARE "ArduPlane V3.1.1"
 /*
    Lead developer: Andrew Tridgell
  
@@ -279,6 +279,11 @@ static struct {
 
 // should throttle be pass-thru in guided?
 static bool guided_throttle_passthru;
+
+// are we doing calibration? This is used to allow heartbeat to
+// external failsafe boards during baro and airspeed calibration
+static bool in_calibration;
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection

@@ -7,7 +7,7 @@ typedef struct __mavlink_global_position_int_t
  uint32_t time_boot_ms; ///< Timestamp (milliseconds since system boot)
  int32_t lat; ///< Latitude, expressed as * 1E7
  int32_t lon; ///< Longitude, expressed as * 1E7
- int32_t alt; ///< Altitude in meters, expressed as * 1000 (millimeters), above MSL
+ int32_t alt; ///< Altitude in meters, expressed as * 1000 (millimeters), WGS84 (not AMSL)
  int32_t relative_alt; ///< Altitude above ground in meters, expressed as * 1000 (millimeters)
  int16_t vx; ///< Ground X Speed (Latitude), expressed as m/s * 100
  int16_t vy; ///< Ground Y Speed (Longitude), expressed as m/s * 100
@@ -48,7 +48,7 @@ typedef struct __mavlink_global_position_int_t
  * @param time_boot_ms Timestamp (milliseconds since system boot)
  * @param lat Latitude, expressed as * 1E7
  * @param lon Longitude, expressed as * 1E7
- * @param alt Altitude in meters, expressed as * 1000 (millimeters), above MSL
+ * @param alt Altitude in meters, expressed as * 1000 (millimeters), WGS84 (not AMSL)
  * @param relative_alt Altitude above ground in meters, expressed as * 1000 (millimeters)
  * @param vx Ground X Speed (Latitude), expressed as m/s * 100
  * @param vy Ground Y Speed (Longitude), expressed as m/s * 100
@@ -104,7 +104,7 @@ static inline uint16_t mavlink_msg_global_position_int_pack(uint8_t system_id, u
  * @param time_boot_ms Timestamp (milliseconds since system boot)
  * @param lat Latitude, expressed as * 1E7
  * @param lon Longitude, expressed as * 1E7
- * @param alt Altitude in meters, expressed as * 1000 (millimeters), above MSL
+ * @param alt Altitude in meters, expressed as * 1000 (millimeters), WGS84 (not AMSL)
  * @param relative_alt Altitude above ground in meters, expressed as * 1000 (millimeters)
  * @param vx Ground X Speed (Latitude), expressed as m/s * 100
  * @param vy Ground Y Speed (Longitude), expressed as m/s * 100
@@ -186,7 +186,7 @@ static inline uint16_t mavlink_msg_global_position_int_encode_chan(uint8_t syste
  * @param time_boot_ms Timestamp (milliseconds since system boot)
  * @param lat Latitude, expressed as * 1E7
  * @param lon Longitude, expressed as * 1E7
- * @param alt Altitude in meters, expressed as * 1000 (millimeters), above MSL
+ * @param alt Altitude in meters, expressed as * 1000 (millimeters), WGS84 (not AMSL)
  * @param relative_alt Altitude above ground in meters, expressed as * 1000 (millimeters)
  * @param vx Ground X Speed (Latitude), expressed as m/s * 100
  * @param vy Ground Y Speed (Longitude), expressed as m/s * 100
@@ -320,7 +320,7 @@ static inline int32_t mavlink_msg_global_position_int_get_lon(const mavlink_mess
 /**
  * @brief Get field alt from global_position_int message
  *
- * @return Altitude in meters, expressed as * 1000 (millimeters), above MSL
+ * @return Altitude in meters, expressed as * 1000 (millimeters), WGS84 (not AMSL)
  */
 static inline int32_t mavlink_msg_global_position_int_get_alt(const mavlink_message_t* msg)
 {

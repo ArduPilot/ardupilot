@@ -19,10 +19,6 @@
  */
 
 // uncomment the lines below to save on flash space if compiling for the APM using Arduino IDE.  Top items save the most flash space
-#if (CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_APM1)
- # define CLI_ENABLED           DISABLED            // disable the CLI (command-line-interface) to save 21K of flash space
- # define FRSKY_TELEM_ENABLED           DISABLED            // disable the FRSKY TELEM
-#endif
 //#define LOGGING_ENABLED       DISABLED            // disable dataflash logging to save 11K of flash space
 //#define MOUNT                 DISABLED            // disable the camera gimbal to save 8K of flash space
 //#define AUTOTUNE_ENABLED      DISABLED            // disable the auto tune functionality to save 7k of flash
@@ -34,16 +30,18 @@
 // features below are disabled by default on APM (but enabled on Pixhawk)
 //#define AC_RALLY              ENABLED             // disable rally points to save 2k of flash, and also frees rally point EEPROM for more mission commands
 //#define PARACHUTE             ENABLED             // enable parachute release at a cost of 1k of flash
+//#define EPM_ENABLED           ENABLED             // enable epm cargo gripper costs 500bytes of flash
+//#define CLI_ENABLED           ENABLED             // enable the CLI (command-line-interface) at a cost of 21K of flash space
 
 // features below are disabled by default on all boards
 //#define OPTFLOW               ENABLED             // enable optical flow sensor and OF_LOITER flight mode at a cost of 5K of flash space
 //#define SPRAYER               ENABLED             // enable the crop sprayer feature (two ESC controlled pumps the speed of which depends upon the vehicle's horizontal velocity)
-//#define EPM_ENABLED           ENABLED             // enable epm cargo gripper costs 500bytes of flash
 //#define NAV_GUIDED            ENABLED             // enable external navigation computer to control vehicle through MAV_CMD_NAV_GUIDED mission commands
 
 // other settings
 //#define THROTTLE_IN_DEADBAND   100                // redefine size of throttle deadband in pwm (0 ~ 1000)
 //#define LAND_REQUIRE_MIN_THROTTLE_TO_DISARM   DISABLED    // when set to DISABLED vehicle will disarm after landing (in LAND mode or RTL) even if pilot has not put throttle to zero
+//#define LOG_FROM_STARTUP                          // start logging as soon as the board starts up instead of waiting for the vehicle to be armed
 
 //#define HIL_MODE              HIL_MODE_SENSORS    // build for hardware-in-the-loop simulation
 

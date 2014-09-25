@@ -267,6 +267,7 @@ enum FlipState {
 #define DATA_DISARMED                   11
 #define DATA_AUTO_ARMED                 15
 #define DATA_TAKEOFF                    16
+#define DATA_LAND_COMPLETE_MAYBE        17
 #define DATA_LAND_COMPLETE              18
 #define DATA_NOT_LANDED                 28
 #define DATA_LOST_GPS                   19
@@ -292,9 +293,9 @@ enum FlipState {
 #define DATA_ACRO_TRAINER_DISABLED      43
 #define DATA_ACRO_TRAINER_LEVELING      44
 #define DATA_ACRO_TRAINER_LIMITED       45
-#define DATA_EPM_ON                     46
-#define DATA_EPM_OFF                    47
-#define DATA_EPM_NEUTRAL                48
+#define DATA_EPM_GRAB                   46
+#define DATA_EPM_RELEASE                47
+#define DATA_EPM_NEUTRAL                48  // deprecated
 #define DATA_PARACHUTE_DISABLED         49
 #define DATA_PARACHUTE_ENABLED          50
 #define DATA_PARACHUTE_RELEASED         51

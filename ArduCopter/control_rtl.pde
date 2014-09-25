@@ -325,13 +325,33 @@ static void rtl_land_run()
     int16_t roll_control = 0, pitch_control = 0;
     float target_yaw_rate = 0;
     // if not auto armed set throttle to zero and exit immediately
-    if(!ap.auto_armed || !inertial_nav.position_ok()) {
+    if(!ap.auto_armed || ap.land_complete) {
         attitude_control.relax_bf_rate_controller();
         attitude_control.set_yaw_target_to_current_heading();
         attitude_control.set_throttle_out(0, false);
         // set target to current position
         wp_nav.init_loiter_target();
+
+#if LAND_REQUIRE_MIN_THROTTLE_TO_DISARM == ENABLED
+        // disarm when the landing detector says we've landed and throttle is at minimum
+        if (ap.land_complete && (g.rc_3.control_in == 0 || failsafe.radio)) {
+            init_disarm_motors();
+        }
+#else
+        // disarm when the landing detector says we've landed
+        if (ap.land_complete) {
+            init_disarm_motors();
+        }
+#endif
+
+        // check if we've completed this stage of RTL
+        rtl_state_complete = ap.land_complete;
         return;
+    }
+
+    // relax loiter target if we might be landed
+    if (land_complete_maybe()) {
+        wp_nav.loiter_soften_for_landing();
     }
 
     // process pilot's input
@@ -365,18 +385,6 @@ static void rtl_land_run()
 
     // check if we've completed this stage of RTL
     rtl_state_complete = ap.land_complete;
-
-#if LAND_REQUIRE_MIN_THROTTLE_TO_DISARM == ENABLED
-    // disarm when the landing detector says we've landed and throttle is at minimum
-    if (ap.land_complete && (g.rc_3.control_in == 0 || failsafe.radio)) {
-        init_disarm_motors();
-    }
-#else
-    // disarm when the landing detector says we've landed
-    if (ap.land_complete) {
-        init_disarm_motors();
-    }
-#endif
 }
 
 // get_RTL_alt - return altitude which vehicle should return home at

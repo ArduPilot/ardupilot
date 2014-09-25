@@ -133,3 +133,11 @@ void read_receiver_rssi(void)
         receiver_rssi = constrain_int16(ret, 0, 255);
     }
 }
+
+#if EPM_ENABLED == ENABLED
+// epm update - moves epm pwm output back to neutral after grab or release is completed
+void epm_update()
+{
+    epm.update();
+}
+#endif

@@ -131,17 +131,14 @@ static void init_ardupilot()
 
     BoardConfig.init();
 
-    bool enable_external_leds = true;
-
     // init EPM cargo gripper
 #if EPM_ENABLED == ENABLED
     epm.init();
-    enable_external_leds = !epm.enabled();
 #endif
 
     // initialise notify system
     // disable external leds if epm is enabled because of pin conflict on the APM
-    notify.init(enable_external_leds);
+    notify.init(true);
 
     // initialise battery monitor
     battery.init();
@@ -186,10 +183,10 @@ static void init_ardupilot()
 #if LOGGING_ENABLED == ENABLED
     DataFlash.Init(log_structure, sizeof(log_structure)/sizeof(log_structure[0]));
     if (!DataFlash.CardInserted()) {
-        gcs_send_text_P(SEVERITY_LOW, PSTR("No dataflash inserted"));
+        gcs_send_text_P(SEVERITY_HIGH, PSTR("No dataflash inserted"));
         g.log_bitmask.set(0);
     } else if (DataFlash.NeedErase()) {
-        gcs_send_text_P(SEVERITY_LOW, PSTR("ERASING LOGS"));
+        gcs_send_text_P(SEVERITY_HIGH, PSTR("ERASING LOGS"));
         do_erase_logs();
         gcs[0].reset_cli_timeout();
     }
@@ -282,6 +279,10 @@ static void init_ardupilot()
 
 #if LOGGING_ENABLED == ENABLED
     Log_Write_Startup();
+  #ifdef LOG_FROM_STARTUP
+    // start dataflash
+    start_logging();
+  #endif
 #endif
 
     // we don't want writes to the serial port to cause us to pause
@@ -295,6 +296,9 @@ static void init_ardupilot()
     }
 
     cliSerial->print_P(PSTR("\nReady to FLY "));
+
+    // flag that initialisation has completed
+    ap.initialised = true;
 }
 
 
@@ -322,6 +326,7 @@ static void startup_ground(bool force_gyro_cal)
 
     // set landed flag
     set_land_complete(true);
+    set_land_complete_maybe(true);
 }
 
 // returns true if the GPS is ok and home position is set

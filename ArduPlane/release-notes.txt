@@ -1,3 +1,53 @@
+Release 3.1.1, September 12th 2014
+----------------------------------
+
+The ardupilot development team is proud to announce the release of
+version 3.1.1 of APM:Plane. This is primarily a bugfix release with a
+small number of new features.
+
+The main bug fixed in this release is a bug that could affect saving
+parameters and mission items in the FRAM/eeprom storage of
+PX4v1/Pixhawk/VRBrain. The bug has been in the code since January 2013
+and did not cause problems very often (which is why it hasn't been
+noticed till now), but when it does happen it causes changes to
+parameters or mission items not to be saved on a reboot.
+
+Other changes in this release:
+
+  - support for using a Lidar for landing for terrain altitude (see
+    the RNGFND_LANDING parameter)
+
+  - improvements in the landing approach code, especially the glide
+    slope calculation
+
+  - added LAND_FLAP_PERCENT and TKOFF_FLAP_PCNT parameters, to control
+    the amount of flaps to use on takeoff and landing
+
+  - the default WP_RADIUS has been raised from 30 to 90. Note that the
+    L1 controller may choose to turn after the WP_RADIUS is
+    reached. The WP_RADIUS only controls the earliest point at which
+    the turn can happen, so a larger WP_RADIUS usually leads to better
+    flight paths, especially for faster aircraft.
+
+  - send gyro and accel status separately to the GCS (thanks to Randy)
+
+  - support setting the acceptance radius in mission waypoints (in
+    parameter 2), which allows for better control of waypoints where
+    actions such as servo release will happen
+
+  - fixed GPS time offset in HIL
+
+  - added RELAY_DEFAULT parameter, allowing control of relay state on
+    boot
+
+  - fixed sdcard logging on PX4v1
+
+  - added GPS_SBAS_MODE and GPS_MIN_ELEV parameters for better control
+    of the use of SBAS and the GPS elevation mask for advanced users
+
+Happy flying!
+
+
 Release 3.1.0, August 26th 2014
 -------------------------------
 
