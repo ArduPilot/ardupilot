@@ -809,7 +809,7 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
 
     case MAV_CMD_CONDITION_CHANGE_ALT:                  // MAV ID: 113
         copy_alt = true;                                // only altitude is used
-        packet.param1 = cmd.content.location.alt / 100.0f;  // climb/descent rate converted from cm/s to m/s.  To-Do: store in proper climb_rate structure
+        packet.param1 = cmd.content.location.lat / 100.0f;  // climb/descent rate converted from cm/s to m/s.  To-Do: store in proper climb_rate structure
         break;
 
     case MAV_CMD_CONDITION_DISTANCE:                    // MAV ID: 114
