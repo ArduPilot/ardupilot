@@ -851,16 +851,16 @@ void autotune_update_gcs(uint8_t message_id)
 {
     switch (message_id) {
         case AUTOTUNE_MESSAGE_STARTED:
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("AutoTune: Started"));
+            gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("AutoTune: Started"));
             break;
         case AUTOTUNE_MESSAGE_STOPPED:
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("AutoTune: Stopped"));
+            gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("AutoTune: Stopped"));
             break;
         case AUTOTUNE_MESSAGE_SUCCESS:
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("AutoTune: Success"));
+            gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("AutoTune: Success"));
             break;
         case AUTOTUNE_MESSAGE_FAILED:
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("AutoTune: Failed"));
+            gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("AutoTune: Failed"));
             break;
     }
 }

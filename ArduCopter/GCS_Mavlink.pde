@@ -926,10 +926,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:         // MAV ID: 21
     {
         // mark the firmware version in the tlog
-        send_text_P(SEVERITY_LOW, PSTR(FIRMWARE_STRING));
+        send_text_P(MAV_SEVERITY_WARNING, PSTR(FIRMWARE_STRING));
 
 #if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
-        send_text_P(SEVERITY_LOW, PSTR("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION));
+        send_text_P(MAV_SEVERITY_WARNING, PSTR("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION));
 #endif
         handle_param_request_list(msg);
         break;
@@ -1415,12 +1415,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         
         if (packet.idx >= rally.get_rally_total() || 
             packet.idx >= rally.get_rally_max()) {
-            send_text_P(SEVERITY_LOW,PSTR("bad rally point message ID"));
+            send_text_P(MAV_SEVERITY_WARNING,PSTR("bad rally point message ID"));
             break;
         }
 
         if (packet.count != rally.get_rally_total()) {
-            send_text_P(SEVERITY_LOW,PSTR("bad rally point message count"));
+            send_text_P(MAV_SEVERITY_WARNING,PSTR("bad rally point message count"));
             break;
         }
 
@@ -1433,7 +1433,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         rally_point.flags = packet.flags;
 
         if (!rally.set_rally_point_with_index(packet.idx, rally_point)) {
-            send_text_P(SEVERITY_HIGH, PSTR("error setting rally point"));
+            send_text_P(MAV_SEVERITY_CRITICAL, PSTR("error setting rally point"));
         }
 
         break;
@@ -1441,29 +1441,29 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     //send a rally point to the GCS
     case MAVLINK_MSG_ID_RALLY_FETCH_POINT: {
-        //send_text_P(SEVERITY_HIGH, PSTR("## getting rally point in GCS_Mavlink.pde 1")); // #### TEMP
+        //send_text_P(MAV_SEVERITY_CRITICAL, PSTR("## getting rally point in GCS_Mavlink.pde 1")); // #### TEMP
 
         mavlink_rally_fetch_point_t packet;
         mavlink_msg_rally_fetch_point_decode(msg, &packet);
         if (mavlink_check_target(packet.target_system, packet.target_component))
             break;
 
-        //send_text_P(SEVERITY_HIGH, PSTR("## getting rally point in GCS_Mavlink.pde 2")); // #### TEMP
+        //send_text_P(MAV_SEVERITY_CRITICAL, PSTR("## getting rally point in GCS_Mavlink.pde 2")); // #### TEMP
 
         if (packet.idx > rally.get_rally_total()) {
-            send_text_P(SEVERITY_LOW, PSTR("bad rally point index"));   
+            send_text_P(MAV_SEVERITY_WARNING, PSTR("bad rally point index"));
             break;
         }
 
-        //send_text_P(SEVERITY_HIGH, PSTR("## getting rally point in GCS_Mavlink.pde 3")); // #### TEMP
+        //send_text_P(MAV_SEVERITY_CRITICAL, PSTR("## getting rally point in GCS_Mavlink.pde 3")); // #### TEMP
 
         RallyLocation rally_point;
         if (!rally.get_rally_point_with_index(packet.idx, rally_point)) {
-           send_text_P(SEVERITY_LOW, PSTR("failed to set rally point"));   
+           send_text_P(MAV_SEVERITY_WARNING, PSTR("failed to set rally point"));
            break;
         }
 
-        //send_text_P(SEVERITY_HIGH, PSTR("## getting rally point in GCS_Mavlink.pde 4")); // #### TEMP
+        //send_text_P(MAV_SEVERITY_CRITICAL, PSTR("## getting rally point in GCS_Mavlink.pde 4")); // #### TEMP
 
         mavlink_msg_rally_point_send_buf(msg,
                                          chan, msg->sysid, msg->compid, packet.idx, 
@@ -1471,7 +1471,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                                          rally_point.alt, rally_point.break_alt, rally_point.land_dir, 
                                          rally_point.flags);
 
-        //send_text_P(SEVERITY_HIGH, PSTR("## getting rally point in GCS_Mavlink.pde 5")); // #### TEMP
+        //send_text_P(MAV_SEVERITY_CRITICAL, PSTR("## getting rally point in GCS_Mavlink.pde 5")); // #### TEMP
 
         break;
     }  
@@ -1510,7 +1510,7 @@ static void mavlink_delay_cb()
     }
     if (tnow - last_5s > 5000) {
         last_5s = tnow;
-        gcs_send_text_P(SEVERITY_LOW, PSTR("Initialising APM..."));
+        gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Initialising APM..."));
     }
     check_usb_mux();
 
@@ -1557,7 +1557,7 @@ static void gcs_check_input(void)
     }
 }
 
-static void gcs_send_text_P(gcs_severity severity, const prog_char_t *str)
+static void gcs_send_text_P(MAV_SEVERITY severity, const prog_char_t *str)
 {
     for (uint8_t i=0; i<num_gcs; i++) {
         if (gcs[i].initialised) {
@@ -1574,7 +1574,7 @@ static void gcs_send_text_P(gcs_severity severity, const prog_char_t *str)
 void gcs_send_text_fmt(const prog_char_t *fmt, ...)
 {
     va_list arg_list;
-    gcs[0].pending_status.severity = (uint8_t)SEVERITY_LOW;
+    gcs[0].pending_status.severity = (uint8_t)MAV_SEVERITY_WARNING;
     va_start(arg_list, fmt);
     hal.util->vsnprintf_P((char *)gcs[0].pending_status.text,
             sizeof(gcs[0].pending_status.text), fmt, arg_list);
