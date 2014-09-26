@@ -475,7 +475,7 @@ void set_auto_yaw_mode(uint8_t yaw_mode)
 }
 
 // set_auto_yaw_look_at_heading - sets the yaw look at heading for auto mode 
-static void set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, uint8_t relative_angle)
+static void set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, int8_t direction, uint8_t relative_angle)
 {
     // get current yaw target
     int32_t curr_yaw_target = attitude_control.angle_ef_targets().z;
@@ -486,7 +486,10 @@ static void set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, u
         yaw_look_at_heading = wrap_360_cd(angle_deg * 100);
     } else {
         // relative angle
-        yaw_look_at_heading = wrap_360_cd(angle_deg * 100);
+        if (direction < 0) {
+            angle_deg = -angle_deg;
+        }
+        yaw_look_at_heading = wrap_360_cd((angle_deg*100+curr_yaw_target));
     }
 
     // get turn speed
