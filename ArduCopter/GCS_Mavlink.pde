@@ -891,6 +891,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         mavlink_set_mode_t packet;
         mavlink_msg_set_mode_decode(msg, &packet);
 
+        // exit immediately if this command is not meant for this vehicle
+        if (mavlink_check_target(packet.target_system, 0)) {
+            break;
+        }
+
         // only accept custom modes because there is no easy mapping from Mavlink flight modes to AC flight modes
         if (packet.base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED) {
             if (set_mode(packet.custom_mode)) {
