@@ -444,6 +444,7 @@ void GCS_MAVLINK::handle_request_data_stream(mavlink_message_t *msg, bool save)
     mavlink_request_data_stream_t packet;
     mavlink_msg_request_data_stream_decode(msg, &packet);
 
+    // exit immediately if this command is not meant for this vehicle
     if (mavlink_check_target(packet.target_system, packet.target_component))
         return;
 
@@ -507,6 +508,8 @@ void GCS_MAVLINK::handle_param_request_list(mavlink_message_t *msg)
 {
     mavlink_param_request_list_t packet;
     mavlink_msg_param_request_list_decode(msg, &packet);
+
+    // exit immediately if this command is not meant for this vehicle
     if (mavlink_check_target(packet.target_system,packet.target_component)) {
         return;
     }
@@ -529,6 +532,8 @@ void GCS_MAVLINK::handle_param_request_read(mavlink_message_t *msg)
 {
     mavlink_param_request_read_t packet;
     mavlink_msg_param_request_read_decode(msg, &packet);
+
+    // exit immediately if this command is not meant for this vehicle
     if (mavlink_check_target(packet.target_system,packet.target_component)) {
         return;
     }
@@ -571,6 +576,7 @@ void GCS_MAVLINK::handle_param_set(mavlink_message_t *msg, DataFlash_Class *Data
     mavlink_param_set_t packet;
     mavlink_msg_param_set_decode(msg, &packet);
 
+    // exit immediately if this command is not meant for this vehicle
     if (mavlink_check_target(packet.target_system, packet.target_component)) {
         return;
     }
@@ -712,6 +718,8 @@ void GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
     struct AP_Mission::Mission_Command cmd = {};
 
     mavlink_msg_mission_item_decode(msg, &packet);
+
+    // exit immediately if this command is not meant for this vehicle
     if (mavlink_check_target(packet.target_system,packet.target_component)) {
         return;
     }
