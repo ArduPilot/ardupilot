@@ -1148,6 +1148,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         mavlink_set_mode_t packet;
         mavlink_msg_set_mode_decode(msg, &packet);
 
+        // exit immediately if this command is not meant for this vehicle
+        if (mavlink_check_target(packet.target_system, 0)) {
+            break;
+        }
+
         if (!(packet.base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED)) {
             // we ignore base_mode as there is no sane way to map
             // from that bitmap to a APM flight mode. We rely on
@@ -1359,6 +1364,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         int16_t v[8];
         mavlink_msg_rc_channels_override_decode(msg, &packet);
 
+        // exit immediately if this command is not meant for this vehicle
         if (mavlink_check_target(packet.target_system,packet.target_component))
             break;
 
