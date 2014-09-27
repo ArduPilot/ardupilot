@@ -319,6 +319,8 @@ private:
 
     void handle_log_request_list(mavlink_message_t *msg, DataFlash_Class &dataflash);
     void handle_log_request_data(mavlink_message_t *msg, DataFlash_Class &dataflash);
+    void handle_log_request_erase(mavlink_message_t *msg, DataFlash_Class &dataflash);
+    void handle_log_request_end(mavlink_message_t *msg, DataFlash_Class &dataflash);
     void handle_log_message(mavlink_message_t *msg, DataFlash_Class &dataflash);
     void handle_log_send(DataFlash_Class &dataflash);
     void handle_log_send_listing(DataFlash_Class &dataflash);
