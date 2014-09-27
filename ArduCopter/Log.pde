@@ -710,7 +710,8 @@ static const struct LogStructure log_structure[] PROGMEM = {
 static void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page)
 {
     cliSerial->printf_P(PSTR("\n" FIRMWARE_STRING
-                             "\nFree RAM: %u\n"),
+                             "\nFree RAM: %u\n"
+                             "\nFrame: " FRAME_CONFIG_STRING "\n"),
                         (unsigned) hal.util->available_memory());
 
     cliSerial->println_P(PSTR(HAL_BOARD_NAME));
@@ -741,6 +742,7 @@ static void start_logging()
             if (hal.util->get_system_id(sysid)) {
                 DataFlash.Log_Write_Message(sysid);
             }
+            DataFlash.Log_Write_Message_P(PSTR("Frame: " FRAME_CONFIG_STRING));
 
             // log the flight mode
             Log_Write_Mode(control_mode);
