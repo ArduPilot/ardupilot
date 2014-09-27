@@ -714,7 +714,8 @@ static void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page)
  #endif
 
     cliSerial->printf_P(PSTR("\n" FIRMWARE_STRING
-                             "\nFree RAM: %u\n"),
+                             "\nFree RAM: %u\n"
+                             "\nFRAME: " FRAME_CONFIG_STRING "\n"),
                         (unsigned) hal.util->available_memory());
 
     cliSerial->println_P(PSTR(HAL_BOARD_NAME));
@@ -735,6 +736,7 @@ static void start_logging()
             DataFlash.StartNewLog();
             in_mavlink_delay = false;
             DataFlash.Log_Write_Message_P(PSTR(FIRMWARE_STRING));
+            DataFlash.Log_Write_Message_P(PSTR("FRAME: " FRAME_CONFIG_STRING));
 
 #if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
             DataFlash.Log_Write_Message_P(PSTR("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION));
