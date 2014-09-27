@@ -90,14 +90,126 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     AP_GROUPINFO("MPU6K_FILTER", 4, AP_InertialSensor, _mpu6000_filter,  0),
 
 #if INS_MAX_INSTANCES > 1
+    // @Param: ACC2SCAL_X
+    // @DisplayName: Accelerometer2 scaling of X axis
+    // @Description: Accelerometer2 scaling of X axis.  Calculated during acceleration calibration routine
+    // @Range: 0.8 1.2
+    // @User: Advanced
+
+    // @Param: ACC2SCAL_Y
+    // @DisplayName: Accelerometer2 scaling of Y axis
+    // @Description: Accelerometer2 scaling of Y axis  Calculated during acceleration calibration routine
+    // @Range: 0.8 1.2
+    // @User: Advanced
+
+    // @Param: ACC2SCAL_Z
+    // @DisplayName: Accelerometer2 scaling of Z axis
+    // @Description: Accelerometer2 scaling of Z axis  Calculated during acceleration calibration routine
+    // @Range: 0.8 1.2
+    // @User: Advanced
     AP_GROUPINFO("ACC2SCAL",    5, AP_InertialSensor, _accel_scale[1],   0),
+
+    // @Param: ACC2OFFS_X
+    // @DisplayName: Accelerometer2 offsets of X axis
+    // @Description: Accelerometer2 offsets of X axis. This is setup using the acceleration calibration or level operations
+    // @Units: m/s/s
+    // @Range: -300 300
+    // @User: Advanced
+
+    // @Param: ACC2OFFS_Y
+    // @DisplayName: Accelerometer2 offsets of Y axis
+    // @Description: Accelerometer2 offsets of Y axis. This is setup using the acceleration calibration or level operations
+    // @Units: m/s/s
+    // @Range: -300 300
+    // @User: Advanced
+
+    // @Param: ACC2OFFS_Z
+    // @DisplayName: Accelerometer2 offsets of Z axis
+    // @Description: Accelerometer2 offsets of Z axis. This is setup using the acceleration calibration or level operations
+    // @Units: m/s/s
+    // @Range: -300 300
+    // @User: Advanced
     AP_GROUPINFO("ACC2OFFS",    6, AP_InertialSensor, _accel_offset[1],  0),
+
+    // @Param: GYR2OFFS_X
+    // @DisplayName: Gyro2 offsets of X axis
+    // @Description: Gyro2 sensor offsets of X axis. This is setup on each boot during gyro calibrations
+    // @Units: rad/s
+    // @User: Advanced
+
+    // @Param: GYR2OFFS_Y
+    // @DisplayName: Gyro2 offsets of Y axis
+    // @Description: Gyro2 sensor offsets of Y axis. This is setup on each boot during gyro calibrations
+    // @Units: rad/s
+    // @User: Advanced
+
+    // @Param: GYR2OFFS_Z
+    // @DisplayName: Gyro2 offsets of Z axis
+    // @Description: Gyro2 sensor offsets of Z axis. This is setup on each boot during gyro calibrations
+    // @Units: rad/s
+    // @User: Advanced
     AP_GROUPINFO("GYR2OFFS",    7, AP_InertialSensor, _gyro_offset[1],   0),
 #endif
 
 #if INS_MAX_INSTANCES > 2
+    // @Param: ACC3SCAL_X
+    // @DisplayName: Accelerometer3 scaling of X axis
+    // @Description: Accelerometer3 scaling of X axis.  Calculated during acceleration calibration routine
+    // @Range: 0.8 1.2
+    // @User: Advanced
+
+    // @Param: ACC3SCAL_Y
+    // @DisplayName: Accelerometer3 scaling of Y axis
+    // @Description: Accelerometer3 scaling of Y axis  Calculated during acceleration calibration routine
+    // @Range: 0.8 1.2
+    // @User: Advanced
+
+    // @Param: ACC3SCAL_Z
+    // @DisplayName: Accelerometer3 scaling of Z axis
+    // @Description: Accelerometer3 scaling of Z axis  Calculated during acceleration calibration routine
+    // @Range: 0.8 1.2
+    // @User: Advanced
     AP_GROUPINFO("ACC3SCAL",    8, AP_InertialSensor, _accel_scale[2],   0),
+
+    // @Param: ACC3OFFS_X
+    // @DisplayName: Accelerometer3 offsets of X axis
+    // @Description: Accelerometer3 offsets of X axis. This is setup using the acceleration calibration or level operations
+    // @Units: m/s/s
+    // @Range: -300 300
+    // @User: Advanced
+
+    // @Param: ACC3OFFS_Y
+    // @DisplayName: Accelerometer3 offsets of Y axis
+    // @Description: Accelerometer3 offsets of Y axis. This is setup using the acceleration calibration or level operations
+    // @Units: m/s/s
+    // @Range: -300 300
+    // @User: Advanced
+
+    // @Param: ACC3OFFS_Z
+    // @DisplayName: Accelerometer3 offsets of Z axis
+    // @Description: Accelerometer3 offsets of Z axis. This is setup using the acceleration calibration or level operations
+    // @Units: m/s/s
+    // @Range: -300 300
+    // @User: Advanced
     AP_GROUPINFO("ACC3OFFS",    9, AP_InertialSensor, _accel_offset[2],  0),
+
+    // @Param: GYR3OFFS_X
+    // @DisplayName: Gyro3 offsets of X axis
+    // @Description: Gyro3 sensor offsets of X axis. This is setup on each boot during gyro calibrations
+    // @Units: rad/s
+    // @User: Advanced
+
+    // @Param: GYR3OFFS_Y
+    // @DisplayName: Gyro3 offsets of Y axis
+    // @Description: Gyro3 sensor offsets of Y axis. This is setup on each boot during gyro calibrations
+    // @Units: rad/s
+    // @User: Advanced
+
+    // @Param: GYR3OFFS_Z
+    // @DisplayName: Gyro3 offsets of Z axis
+    // @Description: Gyro3 sensor offsets of Z axis. This is setup on each boot during gyro calibrations
+    // @Units: rad/s
+    // @User: Advanced
     AP_GROUPINFO("GYR3OFFS",   10, AP_InertialSensor, _gyro_offset[2],   0),
 #endif
 
