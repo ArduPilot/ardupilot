@@ -99,7 +99,45 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     AP_GROUPINFO("EXTERNAL", 9, Compass, _external, 0),
 
 #if COMPASS_MAX_INSTANCES > 1
+    // @Param: OFS2_X
+    // @DisplayName: Compass2 offsets on the X axis
+    // @Description: Offset to be added to compass2's x-axis values to compensate for metal in the frame
+    // @Range: -400 400
+    // @Increment: 1
+
+    // @Param: OFS2_Y
+    // @DisplayName: Compass2 offsets on the Y axis
+    // @Description: Offset to be added to compass2's y-axis values to compensate for metal in the frame
+    // @Range: -400 400
+    // @Increment: 1
+
+    // @Param: OFS2_Z
+    // @DisplayName: Compass2 offsets on the Z axis
+    // @Description: Offset to be added to compass2's z-axis values to compensate for metal in the frame
+    // @Range: -400 400
+    // @Increment: 1
     AP_GROUPINFO("OFS2",    10, Compass, _offset[1], 0),
+
+    // @Param: MOT2_X
+    // @DisplayName: Motor interference compensation to compass2 for body frame X axis
+    // @Description: Multiplied by the current throttle and added to compass2's x-axis values to compensate for motor interference
+    // @Range: -1000 1000
+    // @Units: Offset per Amp or at Full Throttle
+    // @Increment: 1
+
+    // @Param: MOT2_Y
+    // @DisplayName: Motor interference compensation to compass2 for body frame Y axis
+    // @Description: Multiplied by the current throttle and added to compass2's y-axis values to compensate for motor interference
+    // @Range: -1000 1000
+    // @Units: Offset per Amp or at Full Throttle
+    // @Increment: 1
+
+    // @Param: MOT2_Z
+    // @DisplayName: Motor interference compensation to compass2 for body frame Z axis
+    // @Description: Multiplied by the current throttle and added to compass2's z-axis values to compensate for motor interference
+    // @Range: -1000 1000
+    // @Units: Offset per Amp or at Full Throttle
+    // @Increment: 1
     AP_GROUPINFO("MOT2",    11, Compass, _motor_compensation[1], 0),
 
     // @Param: PRIMARY
@@ -111,7 +149,45 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
 #endif
 
 #if COMPASS_MAX_INSTANCES > 2
+    // @Param: OFS3_X
+    // @DisplayName: Compass3 offsets on the X axis
+    // @Description: Offset to be added to compass3's x-axis values to compensate for metal in the frame
+    // @Range: -400 400
+    // @Increment: 1
+
+    // @Param: OFS3_Y
+    // @DisplayName: Compass3 offsets on the Y axis
+    // @Description: Offset to be added to compass3's y-axis values to compensate for metal in the frame
+    // @Range: -400 400
+    // @Increment: 1
+
+    // @Param: OFS3_Z
+    // @DisplayName: Compass3 offsets on the Z axis
+    // @Description: Offset to be added to compass3's z-axis values to compensate for metal in the frame
+    // @Range: -400 400
+    // @Increment: 1
     AP_GROUPINFO("OFS3",    13, Compass, _offset[2], 0),
+
+    // @Param: MOT3_X
+    // @DisplayName: Motor interference compensation to compass3 for body frame X axis
+    // @Description: Multiplied by the current throttle and added to compass3's x-axis values to compensate for motor interference
+    // @Range: -1000 1000
+    // @Units: Offset per Amp or at Full Throttle
+    // @Increment: 1
+
+    // @Param: MOT3_Y
+    // @DisplayName: Motor interference compensation to compass3 for body frame Y axis
+    // @Description: Multiplied by the current throttle and added to compass3's y-axis values to compensate for motor interference
+    // @Range: -1000 1000
+    // @Units: Offset per Amp or at Full Throttle
+    // @Increment: 1
+
+    // @Param: MOT3_Z
+    // @DisplayName: Motor interference compensation to compass3 for body frame Z axis
+    // @Description: Multiplied by the current throttle and added to compass3's z-axis values to compensate for motor interference
+    // @Range: -1000 1000
+    // @Units: Offset per Amp or at Full Throttle
+    // @Increment: 1
     AP_GROUPINFO("MOT3",    14, Compass, _motor_compensation[2], 0),
 #endif
 
