@@ -709,10 +709,6 @@ static const struct LogStructure log_structure[] PROGMEM = {
 // Read the DataFlash log memory
 static void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page)
 {
- #ifdef AIRFRAME_NAME
-    cliSerial->printf_P(PSTR((AIRFRAME_NAME)));
- #endif
-
     cliSerial->printf_P(PSTR("\n" FIRMWARE_STRING
                              "\nFree RAM: %u\n"),
                         (unsigned) hal.util->available_memory());
