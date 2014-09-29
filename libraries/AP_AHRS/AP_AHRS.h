@@ -338,6 +338,9 @@ public:
     // is the AHRS subsystem healthy?
     virtual bool healthy(void) = 0;
 
+    // is the EKF waiting to start?
+    virtual bool ekfNotStarted(void) = 0;
+
 protected:
     AHRS_VehicleClass _vehicle_class;
 

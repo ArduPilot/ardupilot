@@ -266,5 +266,10 @@ bool AP_AHRS_NavEKF::healthy(void)
     return AP_AHRS_DCM::healthy();    
 }
 
+bool AP_AHRS_NavEKF::ekfNotStarted(void)
+{
+    return !ekf_started;
+}
+
 #endif // AP_AHRS_NAVEKF_AVAILABLE
 

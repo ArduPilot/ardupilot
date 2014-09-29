@@ -106,6 +106,9 @@ public:
     // is the AHRS subsystem healthy?
     bool healthy(void);
 
+    // is the EKF waiting to start?
+    bool ekfNotStarted(void);
+
 private:
     float _ki;
     float _ki_yaw;
