@@ -937,3 +937,8 @@ bool AP_AHRS_DCM::healthy(void)
     // consider ourselves healthy if there have been no failures for 5 seconds
     return (_last_failure_ms == 0 || hal.scheduler->millis() - _last_failure_ms > 5000);
 }
+
+bool AP_AHRS_DCM::ekfNotStarted(void)
+{
+    return false;
+}
