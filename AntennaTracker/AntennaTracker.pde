@@ -257,7 +257,7 @@ void setup()
     // load the default values of variables listed in var_info[]
     AP_Param::setup_sketch_defaults();
 
-    // arduplane does not use arming nor pre-arm checks
+    // antenna tracker does not use pre-arm checks or battery failsafe
     AP_Notify::flags.pre_arm_check = true;
     AP_Notify::flags.failsafe_battery = false;
 
@@ -301,7 +301,7 @@ static void one_second_loop()
     static uint8_t counter;
     counter++;
 
-    if (counter >= 60) {                                               
+    if (counter >= 60) {
         if(g.compass_enabled) {
             compass.save_offsets();
         }
