@@ -212,6 +212,22 @@ static void set_mode(enum ControlMode mode)
     }
 }
 
+/*
+  set_mode() wrapper for MAVLink SET_MODE
+ */
+static bool mavlink_set_mode(uint8_t mode)
+{
+    switch (mode) {
+    case AUTO:
+    case MANUAL:
+    case SCAN:
+    case STOP:
+        set_mode((enum ControlMode)mode);
+        return true;
+    }
+    return false;
+}
+
 static void check_usb_mux(void)
 {
     bool usb_check = hal.gpio->usb_connected();

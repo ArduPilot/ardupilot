@@ -854,30 +854,7 @@ mission_failed:
 
     case MAVLINK_MSG_ID_SET_MODE:
     {
-        // decode
-        mavlink_set_mode_t packet;
-        mavlink_msg_set_mode_decode(msg, &packet);
-        if (g.proxy_mode == true && proxy_vehicle.initialised) {
-            // Also proxy it to the remote
-            if (comm_get_txspace(proxy_vehicle.chan) > ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) 
-                _mavlink_resend_uart(proxy_vehicle.chan, msg);
-        }
-
-        if (!(packet.base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED)) {
-            // we ignore base_mode as there is no sane way to map
-            // from that bitmap to a APM flight mode. We rely on
-            // custom_mode instead.
-            break;
-        }
-        switch (packet.custom_mode) {
-        case MANUAL:
-        case STOP:
-        case SCAN:
-        case AUTO:
-            set_mode((enum ControlMode)packet.custom_mode);
-            break;
-        }
-
+        handle_set_mode(msg, mavlink_set_mode);
         break;
     }
 
