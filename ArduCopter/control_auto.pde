@@ -102,13 +102,14 @@ static void auto_takeoff_run()
 {
     // if not auto armed set throttle to zero and exit immediately
     if(!ap.auto_armed) {
+        // initialise wpnav targets
+        wp_nav.shift_wp_origin_to_current_pos();
         // reset attitude control targets
         attitude_control.relax_bf_rate_controller();
         attitude_control.set_yaw_target_to_current_heading();
         attitude_control.set_throttle_out(0, false);
         // tell motors to do a slow start
         motors.slow_start(true);
-        // To-Do: re-initialise wpnav targets
         return;
     }
 
