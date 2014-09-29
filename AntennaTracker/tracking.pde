@@ -6,7 +6,8 @@
 static struct {
     Location location;      // lat, long in degrees * 10^7; alt in meters * 100
     int32_t  relative_alt;  // meters * 100
-    uint32_t last_update_us;
+    uint32_t last_update_us;    // last position update in micxroseconds
+    uint32_t last_update_ms;    // last position update in milliseconds
     float heading;          // degrees
     float ground_speed;     // m/s
 } vehicle;
@@ -392,6 +393,7 @@ static void tracking_update_position(const mavlink_global_position_int_t &msg)
     vehicle.heading      = msg.hdg * 0.01f;
     vehicle.ground_speed = pythagorous2(msg.vx, msg.vy) * 0.01f;
     vehicle.last_update_us = hal.scheduler->micros();    
+    vehicle.last_update_ms = hal.scheduler->millis();
 }
 
 
@@ -429,4 +431,16 @@ static void tracking_manual_control(const mavlink_manual_control_t &msg)
     nav_status.manual_control_yaw   = (msg.x != 0x7FFF);
     nav_status.manual_control_pitch = (msg.y != 0x7FFF);
     // z, r and buttons are not used
+}
+
+/**
+   update_armed_disarmed - set armed LED if we have received a position update within the last 5 seconds
+ */
+static void update_armed_disarmed()
+{
+    if (vehicle.last_update_ms != 0 && (hal.scheduler->millis() - vehicle.last_update_ms) < TRACKING_TIMEOUT_MS) {
+        AP_Notify::flags.armed = true;
+    } else {
+        AP_Notify::flags.armed = false;
+    }
 }
