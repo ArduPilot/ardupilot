@@ -258,7 +258,6 @@ void setup()
     AP_Param::setup_sketch_defaults();
 
     // arduplane does not use arming nor pre-arm checks
-    AP_Notify::flags.armed = true;
     AP_Notify::flags.pre_arm_check = true;
     AP_Notify::flags.failsafe_battery = false;
 
@@ -295,6 +294,9 @@ static void one_second_loop()
 
     // sync MAVLink system ID
     mavlink_system.sysid = g.sysid_this_mav;
+
+    // updated armed/disarmed status LEDs
+    update_armed_disarmed();
 
     static uint8_t counter;
     counter++;
