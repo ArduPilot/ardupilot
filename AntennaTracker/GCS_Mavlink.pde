@@ -434,42 +434,42 @@ GCS_MAVLINK::data_stream_send(void)
 
 void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 {
+    // in proxy mode all messages from the vehicle are proxied to GCS
     if (g.proxy_mode == true && chan == proxy_vehicle.chan) {
-            // From the remote vehicle.
-            // All messages from the remote are proxied to GCS
-            // We also eavesdrop on MAVLINK_MSG_ID_GLOBAL_POSITION_INT and MAVLINK_MSG_ID_SCALED_PRESSUREs
 
-            switch (msg->msgid)
+        // We also eavesdrop on MAVLINK_MSG_ID_GLOBAL_POSITION_INT and MAVLINK_MSG_ID_SCALED_PRESSUREs
+        switch (msg->msgid) {
+            case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
             {
-                case MAVLINK_MSG_ID_GLOBAL_POSITION_INT: 
-                {
-                    // decode
-                    mavlink_global_position_int_t packet;
-                    mavlink_msg_global_position_int_decode(msg, &packet);
-                    tracking_update_position(packet);
-                    break;
-                }
-                
-                case MAVLINK_MSG_ID_SCALED_PRESSURE: 
-                {
-                    // decode
-                    mavlink_scaled_pressure_t packet;
-                    mavlink_msg_scaled_pressure_decode(msg, &packet);
-                    tracking_update_pressure(packet);
-                    break;
+                // decode
+                mavlink_global_position_int_t packet;
+                mavlink_msg_global_position_int_decode(msg, &packet);
+                tracking_update_position(packet);
+                break;
+            }
+
+            case MAVLINK_MSG_ID_SCALED_PRESSURE:
+            {
+                // decode
+                mavlink_scaled_pressure_t packet;
+                mavlink_msg_scaled_pressure_decode(msg, &packet);
+                tracking_update_pressure(packet);
+                break;
+            }
+        }
+
+        // Proxy to all the GCS stations
+        for (uint8_t i=0; i<num_gcs; i++) {
+            if (gcs[i].initialised) {
+                mavlink_channel_t out_chan = (mavlink_channel_t)i;
+                // only forward if it would fit in the transmit buffer
+                if (comm_get_txspace(out_chan) > ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
+                    _mavlink_resend_uart(out_chan, msg);
                 }
             }
-            // Proxy to all the GCS stations
-            for (uint8_t i=0; i<num_gcs; i++) {
-                if (gcs[i].initialised) {
-                    mavlink_channel_t out_chan = (mavlink_channel_t)i;
-                    // only forward if it would fit in the transmit buffer
-                    if (comm_get_txspace(out_chan) > ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
-                        _mavlink_resend_uart(out_chan, msg);
-                    }
-                }
-            }
-        // no further processing of messages from vehicle
+        }
+
+        // no further processing of this messages
         return;
     }
 
