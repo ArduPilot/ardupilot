@@ -825,11 +825,6 @@ mission_failed:
         // decode
         mavlink_global_position_int_t packet;
         mavlink_msg_global_position_int_decode(msg, &packet);
-        if (g.proxy_mode == true && proxy_vehicle.initialised) {
-            // Also proxy it to the remote
-            if (comm_get_txspace(proxy_vehicle.chan) > ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) 
-                _mavlink_resend_uart(proxy_vehicle.chan, msg);
-        }
         tracking_update_position(packet);
         break;
     }
@@ -839,11 +834,6 @@ mission_failed:
         // decode
         mavlink_scaled_pressure_t packet;
         mavlink_msg_scaled_pressure_decode(msg, &packet);
-        if (g.proxy_mode == true && proxy_vehicle.initialised) {
-            // Also proxy it to the remote
-            if (comm_get_txspace(proxy_vehicle.chan) > ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) 
-                _mavlink_resend_uart(proxy_vehicle.chan, msg);
-        }
         tracking_update_pressure(packet);
         break;
     }
