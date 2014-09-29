@@ -434,10 +434,7 @@ GCS_MAVLINK::data_stream_send(void)
 
 void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 {
-    if (g.proxy_mode == true)
-    {
-        if (chan == proxy_vehicle.chan)
-        {
+    if (g.proxy_mode == true && chan == proxy_vehicle.chan) {
             // From the remote vehicle.
             // All messages from the remote are proxied to GCS
             // We also eavesdrop on MAVLINK_MSG_ID_GLOBAL_POSITION_INT and MAVLINK_MSG_ID_SCALED_PRESSUREs
@@ -472,9 +469,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     }
                 }
             }
-        }
-        // Else its from the GCS, and it might be for the remote and.or it might be for the tracker
-        // So we fall through to the below
+        // no further processing of messages from vehicle
+        return;
     }
 
 
