@@ -6,7 +6,7 @@
 # Specify the MCU info for libopencm3
 
 TOOLCHAIN   := ARM
-MCU 		:= STM32F372RC
+MCU 		:= STM32F373RC
 FAMILY 		:= cortex-m4
 F_CPU 		:= 72000000L
 HSE_VALUE	:= 16000000L

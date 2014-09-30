@@ -129,7 +129,7 @@
 #include <AP_Buffer.h>          // APM FIFO Buffer
 #include <AP_Relay.h>           // APM relay
 #include <AP_ServoRelayEvents.h>
-//#include <AP_Camera.h>          // Photo or video camera
+#include <AP_Camera.h>          // Photo or video camera
 #include <AP_Mount.h>           // Camera/Antenna mount
 #include <AP_Airspeed.h>        // needed for AHRS build
 #include <AP_Vehicle.h>         // needed for AHRS build
@@ -143,7 +143,7 @@
 #include <AP_RCMapper.h>        // RC input mapping library
 #include <AP_Notify.h>          // Notify library
 #include <AP_BattMonitor.h>     // Battery monitor library
-//#include <AP_BoardConfig.h>     // board configuration library
+#include <AP_BoardConfig.h>     // board configuration library
 #if SPRAYER == ENABLED
 #include <AC_Sprayer.h>         // crop sprayer library
 #endif
@@ -195,7 +195,7 @@ static Parameters g;
 static AP_Scheduler scheduler;
 
 // AP_Notify instance
-//static AP_Notify notify;
+static AP_Notify notify;
 
 // used to detect MAVLink acks from GCS to stop compassmot
 static uint8_t command_ack_counter;
@@ -863,7 +863,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
 #if FRAME_CONFIG == HELI_FRAME
     { check_dynamic_flight,  2,     100 },
 #endif
-//    { update_notify,         2,     100 },
+    { update_notify,         2,     100 },
     { one_hz_loop,         100,     420 },
     { crash_check,          10,      20 },
     { gcs_check_input,	     2,     550 },

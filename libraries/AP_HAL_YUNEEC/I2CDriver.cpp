@@ -33,7 +33,7 @@ extern const AP_HAL::HAL& hal;
 
 #define __I2C_TIMEOUT(cmd, start, timeout, isTimeout)		do {\
 																if (timeout > 0) {\
-																	isTimeout = (hal.scheduler->millis() - start >= timeout)?true:false;\
+																	isTimeout = ((hal.scheduler->millis() - start) >= timeout)?true:false;\
 																	if (isTimeout == true)\
 																		goto error;\
 																}\

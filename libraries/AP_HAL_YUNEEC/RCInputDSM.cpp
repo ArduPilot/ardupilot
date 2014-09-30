@@ -12,6 +12,8 @@ using namespace YUNEEC;
 
 extern const AP_HAL::HAL& hal;
 
+#define DSM_BIND_TIME			200 //ms
+
 #define PINPOS					(uint32_t)(DSM_UART_RX_BIT << 1)
 #define DSM_GPIO_MODE_OUT		(uint32_t)(GPIO_Mode_OUT << PINPOS)
 #define DSM_GPIO_MODE_AF		(uint32_t)(GPIO_Mode_AF << PINPOS)
@@ -224,8 +226,9 @@ void YUNEECRCInputDSM::_dsm_bind(void) {
 	/* Check if dsm receiver is already binded */
 	while (_new_input == false) {
 		uint32_t now = hal.scheduler->millis();
-		if (now - start > 500)
+		if (now - start > DSM_BIND_TIME)
 			break;
+		hal.scheduler->delay(1);
 	}
 
 	if ((_new_input == true) && (_dsm_check_binded() == true)) {

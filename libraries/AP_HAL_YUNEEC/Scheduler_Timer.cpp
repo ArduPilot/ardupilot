@@ -28,11 +28,10 @@ extern "C"
 		timer_micros_counter += 1000;
 		timer_millis_counter += 1;
 
-		GPIOC->BSRR |= GPIO_Pin_13;
 		if (timer14_failsafe != NULL) {
 			timer14_failsafe();
 		}
-		GPIOC->BRR |= GPIO_Pin_13;
+
 		TIM14->SR &= (uint16_t)~TIM_IT_Update;
 	}
 
