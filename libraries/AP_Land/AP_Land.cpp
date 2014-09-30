@@ -79,11 +79,6 @@ void AP_Land::preland_init() {
 }
 
 bool AP_Land::abort_landing(const uint16_t recovery_alt) {
-    //if we're not landing there's no need to abort landing
-    if (_preland_started != true && _tecs.get_flight_stage() != AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
-        return false;
-    }
-
     //if we have already flared it's too late to abort.
     if (_tecs.get_flight_stage() == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
         return false;
