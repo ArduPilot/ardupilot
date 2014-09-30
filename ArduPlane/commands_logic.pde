@@ -413,7 +413,7 @@ static bool verify_land()
     // Set land_complete if we are within 2 seconds distance or within
     // 3 meters altitude of the landing point
     if ( ! lander.aborting_landing() && 
-        (wp_distance <= (g.land_flare_sec * gps.ground_speed()) ||
+        ((g.land_flare_sec != 0.f && wp_distance <= (g.land_flare_sec * gps.ground_speed())) ||
          adjusted_altitude_cm() <= (next_WP_loc.alt + g.land_flare_alt*100))) {
 
         if (lander.get_land_wings_level() == 1 
