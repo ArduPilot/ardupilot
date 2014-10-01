@@ -1,19 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 /**
-   state of the vehicle we are tracking
- */
-static struct {
-    bool location_valid;    // true if we have a valid location for the vehicle
-    Location location;      // lat, long in degrees * 10^7; alt in meters * 100
-    Location location_estimate; // lat, long in degrees * 10^7; alt in meters * 100
-    uint32_t last_update_us;    // last position update in micxroseconds
-    uint32_t last_update_ms;    // last position update in milliseconds
-    float heading;          // last known direction vehicle is moving
-    float ground_speed;     // vehicle's last known ground speed in m/s
-} vehicle;
-
-/**
   update_vehicle_position_estimate - updates estimate of vehicle positions
   should be called at 50hz
  */
