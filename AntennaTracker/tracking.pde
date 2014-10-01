@@ -4,7 +4,9 @@
    state of the vehicle we are tracking
  */
 static struct {
+    bool location_valid;    // true if we have a valid location for the vehicle
     Location location;      // lat, long in degrees * 10^7; alt in meters * 100
+    Location location_estimate; // lat, long in degrees * 10^7; alt in meters * 100
     uint32_t last_update_us;    // last position update in micxroseconds
     uint32_t last_update_ms;    // last position update in milliseconds
     float heading;          // last known direction vehicle is moving
@@ -330,16 +332,35 @@ static void update_scan(void)
     update_auto();
 }
 
+/**
+  update_vehicle_position_estimate - updates estimate of vehicle positions
+  should be called at 50hz
+ */
+static void update_vehicle_pos_estimate()
+{
+    // calculate time since last actual position update
+    float dt = (hal.scheduler->micros() - vehicle.last_update_us) * 1.0e-6f;
+
+    // if less than 5 seconds since last position update estimate the position
+    if (dt < TRACKING_TIMEOUT_SEC) {
+        // project the vehicle position to take account of lost radio packets
+        vehicle.location_estimate = vehicle.location;
+        location_update(vehicle.location_estimate, vehicle.heading, vehicle.ground_speed * dt);
+        // set valid_location flag
+        vehicle.location_valid = true;
+    } else {
+        // vehicle has been lost, set lost flag
+        vehicle.location_valid = false;
+    }
+}
 
 /**
   main antenna tracking code, called at 50Hz
  */
 static void update_tracking(void)
 {
-    // project the vehicle position to take account of lost radio packets
-    Location vpos = vehicle.location;
-    float dt = (hal.scheduler->micros() - vehicle.last_update_us) * 1.0e-6f;
-    location_update(vpos, vehicle.heading, vehicle.ground_speed * dt);
+    // update vehicle position estimate
+    update_vehicle_pos_estimate();
 
     // update our position if we have at least a 2D fix
     // REVISIT: what if we lose lock during a mission and the antenna is moving?
@@ -348,8 +369,8 @@ static void update_tracking(void)
     }
 
     // calculate the bearing to the vehicle
-    float bearing  = get_bearing_cd(current_loc, vehicle.location) * 0.01f;
-    float distance = get_distance(current_loc, vehicle.location);
+    float bearing  = get_bearing_cd(current_loc, vehicle.location_estimate) * 0.01f;
+    float distance = get_distance(current_loc, vehicle.location_estimate);
     float pitch    = degrees(atan2f(nav_status.altitude_difference, distance));
 
     // update nav_status for NAV_CONTROLLER_OUTPUT
