@@ -3099,7 +3099,7 @@ void NavEKF::readGpsData()
             gpsNoiseScaler = 1.0f;
         } else if (_ahrs->get_gps().num_sats() == 5) {
             gpsNoiseScaler = 1.4f;
-        } else if (_ahrs->get_gps().num_sats() <= 4) {
+        } else { // <= 4 satellites
             gpsNoiseScaler = 2.0f;
         }
 
