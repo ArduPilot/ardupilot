@@ -222,6 +222,19 @@ static struct   Location current_loc;
 // There are multiple states defined such as MANUAL, FBW-A, AUTO
 static enum ControlMode control_mode  = INITIALISING;
 
+////////////////////////////////////////////////////////////////////////////////
+// Vehicle state
+////////////////////////////////////////////////////////////////////////////////
+static struct {
+    bool location_valid;    // true if we have a valid location for the vehicle
+    Location location;      // lat, long in degrees * 10^7; alt in meters * 100
+    Location location_estimate; // lat, long in degrees * 10^7; alt in meters * 100
+    uint32_t last_update_us;    // last position update in micxroseconds
+    uint32_t last_update_ms;    // last position update in milliseconds
+    float heading;          // last known direction vehicle is moving
+    float ground_speed;     // vehicle's last known ground speed in m/s
+} vehicle;
+
 /*
   scheduler table - all regular tasks apart from the fast_loop()
   should be listed here, along with how often they should be called
