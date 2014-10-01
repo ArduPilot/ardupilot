@@ -407,12 +407,17 @@ void NavEKF::ResetPosition(void)
 
         // read the GPS
         readGpsData();
-        // write to state vector
-        states[7] = gpsPosNE.x + gpsPosGlitchOffsetNE.x;
-        states[8] = gpsPosNE.y + gpsPosGlitchOffsetNE.y;
+        // write to state vector and compensate for GPS latency
+        states[7] = gpsPosNE.x + gpsPosGlitchOffsetNE.x + 0.001f*velNED.x*float(_msecPosDelay);
+        states[8] = gpsPosNE.y + gpsPosGlitchOffsetNE.y + 0.001f*velNED.y*float(_msecPosDelay);
     }
     // reset the glitch ofset correction states
     gpsPosGlitchOffsetNE.zero();
+    // stored horizontal position states to prevent subsequent GPS measurements from being rejected
+    for (uint8_t i=0; i<=49; i++){
+        storedStates[i].position[0] = state.position[0];
+        storedStates[i].position[1] = state.position[1];
+    }
 }
 
 // resets velocity states to last GPS measurement or to zero if in static mode
@@ -425,20 +430,25 @@ void NavEKF::ResetVelocity(void)
     } else if (_ahrs->get_gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
         // read the GPS
         readGpsData();
-        // reset horizontal velocity states
-        if (_fusionModeGPS <= 1) {
-            states[4]  = velNED[0]; // north velocity from blended accel data
-            states[5]  = velNED[1]; // east velocity from blended accel data
-            states[23] = velNED[0]; // north velocity from IMU1 accel data
-            states[24] = velNED[1]; // east velocity from IMU1 accel data
-            states[27] = velNED[0]; // north velocity from IMU2 accel data
-            states[28] = velNED[1]; // east velocity from IMU2 accel data
+        // Set vertical GPS velocity to 0 if mode > 0 (assume 0 if no VZ measurement)
+        if (_fusionModeGPS >= 1) {
+            velNED[2] = 0.0f;
         }
-        // reset vertical velocity states
-        if (_fusionModeGPS <= 0) {
-            states[6]  = velNED[2]; // down velocity from blended accel data
-            states[25] = velNED[2]; // down velocity from IMU1 accel data
-            states[29] = velNED[2]; // down velocity from IMU2 accel data
+        // reset filter velocity states
+        states[4]  = velNED[0]; // north velocity from blended accel data
+        states[5]  = velNED[1]; // east velocity from blended accel data
+        states[23] = velNED[0]; // north velocity from IMU1 accel data
+        states[24] = velNED[1]; // east velocity from IMU1 accel data
+        states[27] = velNED[0]; // north velocity from IMU2 accel data
+        states[28] = velNED[1]; // east velocity from IMU2 accel data
+        states[6]  = velNED[2]; // down velocity from blended accel data
+        states[25] = velNED[2]; // down velocity from IMU1 accel data
+        states[29] = velNED[2]; // down velocity from IMU2 accel data
+        // reset stored velocity states to prevent subsequent GPS measurements from being rejected
+        for (uint8_t i=0; i<=49; i++){
+            storedStates[i].velocity[0] = velNED[0];
+            storedStates[i].velocity[1] = velNED[1];
+            storedStates[i].velocity[2] = velNED[2];
         }
     }
 }
@@ -452,6 +462,10 @@ void NavEKF::ResetHeight(void)
     states[9]   = -hgtMea; // down position from blended accel data
     state.posD1 = -hgtMea; // down position from IMU1 accel data
     state.posD2 = -hgtMea; // down position from IMU2 accel data
+    // reset stored vertical position states to prevent subsequent GPS measurements from being rejected
+    for (uint8_t i=0; i<=49; i++){
+        storedStates[i].position[2] = -hgtMea;
+    }
 }
 
 // this function is used to initialise the filter whilst moving, using the AHRS DCM solution
@@ -1703,7 +1717,7 @@ void NavEKF::FuseVelPosNED()
             // apply an innovation consistency threshold test, but don't fail if bad IMU data
             // calculate max valid position innovation squared based on a maximum horizontal inertial nav accel error and GPS noise parameter
             // max inertial nav error is scaled with horizontal g to allow for increased errors when manoeuvring
-            float accelScale =  (1.0f + 0.1f * accNavMagHoriz);
+            float accelScale =  (1.0f + 0.1f * accNavMag);
             float maxPosInnov2 = sq(_gpsPosInnovGate * _gpsHorizPosNoise + 0.005f * accelScale * float(_gpsGlitchAccelMax) * sq(0.001f * float(imuSampleTime_ms - posFailTime)));
             posTestRatio = (sq(posInnov[0]) + sq(posInnov[1])) / maxPosInnov2;
             posHealth = ((posTestRatio < 1.0f) || badIMUdata);
@@ -1749,7 +1763,7 @@ void NavEKF::FuseVelPosNED()
                 velInnov2[i] = statesAtVelTime.vel2[i] - observation[i]; // IMU2
                 // calculate innovation variance
                 varInnovVelPos[i] = P[stateIndex][stateIndex] + R_OBS[i];
-                // calculate error weightings for singloe IMU velocity states using
+                // calculate error weightings for single IMU velocity states using
                 // observation error to normalise
                 float R_hgt;
                 if (i == 2) {
@@ -1842,12 +1856,15 @@ void NavEKF::FuseVelPosNED()
             if (fuseData[obsIndex]) {
                 stateIndex = 4 + obsIndex;
                 // calculate the measurement innovation, using states from a different time coordinate if fusing height data
+                // adjust scaling on GPS measurement noise variances if not enough satellites
                 if (obsIndex <= 2)
                 {
                     innovVelPos[obsIndex] = statesAtVelTime.velocity[obsIndex] - observation[obsIndex];
+                    R_OBS[obsIndex] *= sq(gpsNoiseScaler);
                 }
                 else if (obsIndex == 3 || obsIndex == 4) {
                     innovVelPos[obsIndex] = statesAtPosTime.position[obsIndex-3] - observation[obsIndex];
+                    R_OBS[obsIndex] *= sq(gpsNoiseScaler);
                 } else {
                     innovVelPos[obsIndex] = statesAtHgtTime.position[obsIndex-3] - observation[obsIndex];
                 }
@@ -3105,6 +3122,15 @@ void NavEKF::readGpsData()
         // read the NED velocity from the GPS
         velNED = _ahrs->get_gps().velocity();
 
+        // check if we have enough GPS satellites and increase the gps noise scaler if we don't
+        if (_ahrs->get_gps().num_sats() >= 6) {
+            gpsNoiseScaler = 1.0f;
+        } else if (_ahrs->get_gps().num_sats() == 5) {
+            gpsNoiseScaler = 1.4f;
+        } else if (_ahrs->get_gps().num_sats() <= 4) {
+            gpsNoiseScaler = 2.0f;
+        }
+
         // Check if GPS can output vertical velocity and set GPS fusion mode accordingly
         if (!_ahrs->get_gps().have_vertical_velocity()) {
             // vertical velocity should not be fused
@@ -3376,6 +3402,7 @@ void NavEKF::ZeroVariables()
     secondLastFixTime_ms = imuSampleTime_ms;
     lastDecayTime_ms = imuSampleTime_ms;
 
+    gpsNoiseScaler = 1.0f;
     velTimeout = false;
     posTimeout = false;
     hgtTimeout = false;
