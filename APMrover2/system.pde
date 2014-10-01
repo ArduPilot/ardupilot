@@ -326,6 +326,24 @@ static void set_mode(enum mode mode)
 }
 
 /*
+  set_mode() wrapper for MAVLink SET_MODE
+ */
+static bool mavlink_set_mode(uint8_t mode)
+{
+    switch (mode) {
+    case MANUAL:
+    case HOLD:
+    case LEARNING:
+    case STEERING:
+    case AUTO:
+    case RTL:
+        set_mode((enum mode)mode);
+        return true;
+    }
+    return false;
+}
+
+/*
   called to set/unset a failsafe event. 
  */
 static void failsafe_trigger(uint8_t failsafe_type, bool on)
