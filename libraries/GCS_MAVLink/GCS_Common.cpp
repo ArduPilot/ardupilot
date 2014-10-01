@@ -1176,3 +1176,40 @@ void GCS_MAVLINK::send_battery2(const AP_BattMonitor &battery)
         mavlink_msg_battery2_send(chan, voltage*1000, -1);
     }
 }
+
+/*
+  handle a SET_MODE MAVLink message
+ */
+void GCS_MAVLINK::handle_set_mode(mavlink_message_t* msg, bool (*set_mode)(uint8_t mode))
+{
+    uint8_t result = MAV_RESULT_FAILED;
+    mavlink_set_mode_t packet;
+    mavlink_msg_set_mode_decode(msg, &packet);
+
+    // exit immediately if this command is not meant for this vehicle
+    if (mavlink_check_target(packet.target_system, 0)) {
+        return;
+    }
+
+    // only accept custom modes because there is no easy mapping from Mavlink flight modes to AC flight modes
+    if (packet.base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED) {
+        if (set_mode(packet.custom_mode)) {
+            result = MAV_RESULT_ACCEPTED;
+        }
+    } else if (packet.base_mode == MAV_MODE_FLAG_DECODE_POSITION_SAFETY) {
+        // set the safety switch position. Must be in a command by itself
+        if (packet.custom_mode == 0) {
+            // turn safety off (pwm outputs flow to the motors)
+            hal.rcout->force_safety_off();
+            result = MAV_RESULT_ACCEPTED;
+        } else if (packet.custom_mode == 1) {
+            // turn safety on (no pwm outputs to the motors)
+            if (hal.rcout->force_safety_on()) {
+                result = MAV_RESULT_ACCEPTED;
+            }
+        }
+    }
+
+    // send ACK or NAK
+    mavlink_msg_command_ack_send_buf(msg, chan, MAVLINK_MSG_ID_SET_MODE, result);
+}
