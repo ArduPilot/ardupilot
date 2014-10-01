@@ -130,8 +130,8 @@ void GCS_MAVLINK::handle_log_request_data(mavlink_message_t *msg, DataFlash_Clas
  */
 void GCS_MAVLINK::handle_log_request_erase(mavlink_message_t *msg, DataFlash_Class &dataflash)
 {
-    mavlink_log_request_data_t packet;
-    mavlink_msg_log_request_data_decode(msg, &packet);
+    mavlink_log_erase_t packet;
+    mavlink_msg_log_erase_decode(msg, &packet);
     if (mavlink_check_target(packet.target_system, packet.target_component))
         return;
 
@@ -143,8 +143,8 @@ void GCS_MAVLINK::handle_log_request_erase(mavlink_message_t *msg, DataFlash_Cla
  */
 void GCS_MAVLINK::handle_log_request_end(mavlink_message_t *msg, DataFlash_Class &dataflash)
 {
-    mavlink_log_request_data_t packet;
-    mavlink_msg_log_request_data_decode(msg, &packet);
+    mavlink_log_request_end_t packet;
+    mavlink_msg_log_request_end_decode(msg, &packet);
     if (mavlink_check_target(packet.target_system, packet.target_component))
         return;
     _log_sending = false;
