@@ -61,6 +61,9 @@
 #ifndef TRACKING_TIMEOUT_MS
  # define TRACKING_TIMEOUT_MS               5000    // consider we've lost track of vehicle after 5 seconds with no position update.  Used to update armed/disarmed status leds
 #endif
+#ifndef TRACKING_TIMEOUT_SEC
+ # define TRACKING_TIMEOUT_SEC              5.0f    // consider we've lost track of vehicle after 5 seconds with no position update.
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Developer Items
