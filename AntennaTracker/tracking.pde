@@ -5,7 +5,6 @@
  */
 static struct {
     Location location;      // lat, long in degrees * 10^7; alt in meters * 100
-    int32_t  relative_alt;  // meters * 100
     uint32_t last_update_us;    // last position update in micxroseconds
     uint32_t last_update_ms;    // last position update in milliseconds
     float heading;          // last known direction vehicle is moving
@@ -389,7 +388,6 @@ static void tracking_update_position(const mavlink_global_position_int_t &msg)
     vehicle.location.lat = msg.lat;
     vehicle.location.lng = msg.lon;
     vehicle.location.alt = msg.alt/10;
-    vehicle.relative_alt = msg.relative_alt/10;
     vehicle.heading      = msg.hdg * 0.01f;
     vehicle.ground_speed = pythagorous2(msg.vx, msg.vy) * 0.01f;
     vehicle.last_update_us = hal.scheduler->micros();    
