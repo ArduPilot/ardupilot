@@ -104,16 +104,16 @@ static AP_Notify notify;
 
 // tracking status for MAVLink
 static struct {
-    float bearing;
-    float distance;
-    float pitch;
-    float altitude_difference;
-    float altitude_offset;
-    bool manual_control_yaw:1;
-    bool manual_control_pitch:1;
-    bool need_altitude_calibration:1;
-    bool scan_reverse_pitch:1;
-    bool scan_reverse_yaw:1;
+    float bearing;                  // bearing to vehicle in centi-degrees
+    float distance;                 // distance to vehicle in meters
+    float pitch;                    // pitch to vehicle in degrees (positive means vehicle is above tracker, negative means below)
+    float altitude_difference;      // altitude difference between tracker and vehicle in meters.  positive value means vehicle is above tracker
+    float altitude_offset;          // offset in meters which is added to tracker altitude to align altitude measurements with vehicle's barometer
+    bool manual_control_yaw         : 1;// true if tracker yaw is under manual control
+    bool manual_control_pitch       : 1;// true if tracker pitch is manually controlled
+    bool need_altitude_calibration  : 1;// true if tracker altitude has not been determined (true after startup)
+    bool scan_reverse_pitch         : 1;// controls direction of pitch movement in SCAN mode
+    bool scan_reverse_yaw           : 1;// controls direction of yaw movement in SCAN mode
 } nav_status;
 
 static uint32_t start_time_ms;
