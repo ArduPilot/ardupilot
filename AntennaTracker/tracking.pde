@@ -355,6 +355,33 @@ static void update_vehicle_pos_estimate()
 }
 
 /**
+  update_bearing_and_distance - updates bearing and distance to the vehicle
+  should be called at 50hz
+ */
+static void update_bearing_and_distance()
+{
+    // exit immediately if we do not have a valid vehicle position
+    if (!vehicle.location_valid) {
+        return;
+    }
+
+    // calculate bearing to vehicle
+    // To-Do: remove need for check of control_mode
+    if (control_mode != SCAN && !nav_status.manual_control_yaw) {
+        nav_status.bearing  = get_bearing_cd(current_loc, vehicle.location_estimate) * 0.01f;
+    }
+
+    // calculate distance to vehicle
+    nav_status.distance = get_distance(current_loc, vehicle.location_estimate);
+
+    // calculate pitch to vehicle
+    // To-Do: remove need for check of control_mode
+    if (control_mode != SCAN && !nav_status.manual_control_pitch) {
+        nav_status.pitch    = degrees(atan2f(nav_status.altitude_difference, nav_status.distance));
+    }
+}
+
+/**
   main antenna tracking code, called at 50Hz
  */
 static void update_tracking(void)
@@ -368,19 +395,8 @@ static void update_tracking(void)
         current_loc = gps.location();
     }
 
-    // calculate the bearing to the vehicle
-    float bearing  = get_bearing_cd(current_loc, vehicle.location_estimate) * 0.01f;
-    float distance = get_distance(current_loc, vehicle.location_estimate);
-    float pitch    = degrees(atan2f(nav_status.altitude_difference, distance));
-
-    // update nav_status for NAV_CONTROLLER_OUTPUT
-    if (control_mode != SCAN && !nav_status.manual_control_yaw) {
-        nav_status.bearing = bearing;
-    }
-    if (control_mode != SCAN && !nav_status.manual_control_pitch) {
-        nav_status.pitch = pitch;
-    }
-    nav_status.distance = distance;
+    // update bearing and distance to vehicle
+    update_bearing_and_distance();
 
     switch (control_mode) {
     case AUTO:
