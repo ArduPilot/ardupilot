@@ -89,6 +89,12 @@ static void update_tracking(void)
     // update bearing and distance to vehicle
     update_bearing_and_distance();
 
+    // do not perform any servo updates until startup delay has passed
+    if (g.startup_delay > 0 &&
+        hal.scheduler->millis() - start_time_ms < g.startup_delay*1000) {
+        return;
+    }
+
     switch (control_mode) {
     case AUTO:
         update_auto();
