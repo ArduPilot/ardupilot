@@ -1147,51 +1147,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_SET_MODE:
     {
-        // decode
-        mavlink_set_mode_t packet;
-        mavlink_msg_set_mode_decode(msg, &packet);
-
-        // exit immediately if this command is not meant for this vehicle
-        if (mavlink_check_target(packet.target_system, 0)) {
-            break;
-        }
-
-        // set the safety switch position
-        if (packet.base_mode & MAV_MODE_FLAG_DECODE_POSITION_SAFETY) {
-            if (packet.custom_mode == 0) {
-                // turn safety off (pwm outputs flow to the motors)
-                hal.rcout->force_safety_off();
-            } else if (packet.custom_mode == 1) {
-                // turn safety on (no pwm outputs to the motors)
-                hal.rcout->force_safety_on();
-            }
-            break;
-        }
-
-        // check if we are setting the flight mode
-        if (!(packet.base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED)) {
-            // we ignore base_mode as there is no sane way to map
-            // from that bitmap to a APM flight mode. We rely on
-            // custom_mode instead.
-            break;
-        }
-        switch (packet.custom_mode) {
-        case MANUAL:
-        case CIRCLE:
-        case STABILIZE:
-        case TRAINING:
-        case ACRO:
-        case FLY_BY_WIRE_A:
-        case AUTOTUNE:
-        case FLY_BY_WIRE_B:
-        case CRUISE:
-        case AUTO:
-        case RTL:
-        case LOITER:
-            set_mode((enum FlightMode)packet.custom_mode);
-            break;
-        }
-
+        handle_set_mode(msg, mavlink_set_mode);
         break;
     }
 
