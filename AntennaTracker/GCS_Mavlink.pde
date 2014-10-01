@@ -810,10 +810,13 @@ mission_failed:
         mavlink_manual_control_t packet;
         mavlink_msg_manual_control_decode(msg, &packet);
 
-        if (g.proxy_mode == true && proxy_vehicle.initialised) {
-            // Also proxy it to the remote
-            if (comm_get_txspace(proxy_vehicle.chan) > ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) 
-                _mavlink_resend_uart(proxy_vehicle.chan, msg);
+        // if the packet is not for us, send onto the vehicle
+        if (mavlink_check_target(packet.target,0)) {
+            if (g.proxy_mode == true && proxy_vehicle.initialised) {
+                if (comm_get_txspace(proxy_vehicle.chan) > ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES)
+                    _mavlink_resend_uart(proxy_vehicle.chan, msg);
+            }
+            break;
         }
         if(msg->sysid != g.sysid_my_gcs) break;                         // Only accept control from our gcs
         tracking_manual_control(packet);
