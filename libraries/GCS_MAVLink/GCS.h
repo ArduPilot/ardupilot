@@ -342,6 +342,7 @@ private:
     void handle_radio_status(mavlink_message_t *msg, DataFlash_Class &dataflash, bool log_radio);
     void handle_serial_control(mavlink_message_t *msg, AP_GPS &gps);
     void lock_channel(mavlink_channel_t chan, bool lock);
+    void handle_set_mode(mavlink_message_t* msg, bool (*set_mode)(uint8_t mode));
 
     // return true if this channel has hardware flow control
     bool have_flow_control(void);
