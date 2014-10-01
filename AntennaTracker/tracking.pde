@@ -272,66 +272,6 @@ static void update_yaw_servo(float yaw)
     channel_yaw.output();
 }
 
-
-/*
-  control servos for AUTO mode
- */
-static void update_auto(void)
-{    
-    if (g.startup_delay > 0 && 
-        hal.scheduler->millis() - start_time_ms < g.startup_delay*1000) {
-        return;
-    }
-    float yaw = wrap_180_cd((nav_status.bearing+g.yaw_trim)*100) * 0.01f;
-    float pitch = constrain_float(nav_status.pitch+g.pitch_trim, -90, 90);
-    update_pitch_servo(pitch);
-    update_yaw_servo(yaw);
-}
-
-
-/*
-  control servos for MANUAL mode
- */
-static void update_manual(void)
-{
-    channel_yaw.radio_out = channel_yaw.radio_in;
-    channel_pitch.radio_out = channel_pitch.radio_in;
-    channel_yaw.output();
-    channel_pitch.output();
-}
-
-/*
-  control servos for SCAN mode
- */
-static void update_scan(void)
-{    
-    if (!nav_status.manual_control_yaw) {
-        float yaw_delta = g.scan_speed * 0.02f;
-        nav_status.bearing   += yaw_delta   * (nav_status.scan_reverse_yaw?-1:1);
-        if (nav_status.bearing < 0 && nav_status.scan_reverse_yaw) {
-            nav_status.scan_reverse_yaw = false;
-        }
-        if (nav_status.bearing > 360 && !nav_status.scan_reverse_yaw) {
-            nav_status.scan_reverse_yaw = true;
-        }
-        nav_status.bearing = constrain_float(nav_status.bearing, 0, 360);
-    }
-
-    if (!nav_status.manual_control_pitch) {
-        float pitch_delta = g.scan_speed * 0.02f;
-        nav_status.pitch += pitch_delta * (nav_status.scan_reverse_pitch?-1:1);
-        if (nav_status.pitch < -90 && nav_status.scan_reverse_pitch) {
-            nav_status.scan_reverse_pitch = false;
-        }
-        if (nav_status.pitch > 90 && !nav_status.scan_reverse_pitch) {
-            nav_status.scan_reverse_pitch = true;
-        }
-        nav_status.pitch = constrain_float(nav_status.pitch, -90, 90);
-    }
-
-    update_auto();
-}
-
 /**
   update_vehicle_position_estimate - updates estimate of vehicle positions
   should be called at 50hz
