@@ -8,8 +8,8 @@ static struct {
     int32_t  relative_alt;  // meters * 100
     uint32_t last_update_us;    // last position update in micxroseconds
     uint32_t last_update_ms;    // last position update in milliseconds
-    float heading;          // degrees
-    float ground_speed;     // m/s
+    float heading;          // last known direction vehicle is moving
+    float ground_speed;     // vehicle's last known ground speed in m/s
 } vehicle;
 
 /**
