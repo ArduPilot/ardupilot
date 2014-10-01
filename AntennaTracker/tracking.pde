@@ -295,6 +295,19 @@ static void update_vehicle_pos_estimate()
 }
 
 /**
+  update_tracker_position - updates antenna tracker position from GPS location
+  should be called at 50hz
+ */
+static void update_tracker_position()
+{
+    // update our position if we have at least a 2D fix
+    // REVISIT: what if we lose lock during a mission and the antenna is moving?
+    if (gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
+        current_loc = gps.location();
+    }
+}
+
+/**
   update_bearing_and_distance - updates bearing and distance to the vehicle
   should be called at 50hz
  */
@@ -329,11 +342,8 @@ static void update_tracking(void)
     // update vehicle position estimate
     update_vehicle_pos_estimate();
 
-    // update our position if we have at least a 2D fix
-    // REVISIT: what if we lose lock during a mission and the antenna is moving?
-    if (gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
-        current_loc = gps.location();
-    }
+    // update antenna tracker position from GPS
+    update_tracker_position();
 
     // update bearing and distance to vehicle
     update_bearing_and_distance();
