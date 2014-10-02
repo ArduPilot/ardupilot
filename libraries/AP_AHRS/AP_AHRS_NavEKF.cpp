@@ -266,10 +266,12 @@ bool AP_AHRS_NavEKF::healthy(void)
     return AP_AHRS_DCM::healthy();    
 }
 
-bool AP_AHRS_NavEKF::ekfNotStarted(void)
+// true if the AHRS has completed initialisation
+bool AP_AHRS_NavEKF::initialised(void) const
 {
-    return !ekf_started;
-}
+    // initialisation complete 10sec after ekf has started
+    return (ekf_started && (hal.scheduler->millis() - start_time_ms > AP_AHRS_NAVEKF_SETTLE_TIME_MS));
+};
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE
 
