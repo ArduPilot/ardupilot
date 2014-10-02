@@ -28,6 +28,7 @@
 #include <AP_NavEKF.h>
 
 #define AP_AHRS_NAVEKF_AVAILABLE 1
+#define AP_AHRS_NAVEKF_SETTLE_TIME_MS 20000     // time in milliseconds the ekf needs to settle after being started
 
 class AP_AHRS_NavEKF : public AP_AHRS_DCM
 {
@@ -95,8 +96,8 @@ public:
     // is the AHRS subsystem healthy?
     bool healthy(void);
 
-    // is the EKF waiting to start?
-    bool ekfNotStarted(void);
+    // true if the AHRS has completed initialisation
+    bool initialised(void) const;
 
 private:
     bool using_EKF(void) const;
