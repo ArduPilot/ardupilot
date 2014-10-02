@@ -411,8 +411,6 @@ void NavEKF::ResetPosition(void)
         state.position.x = gpsPosNE.x + gpsPosGlitchOffsetNE.x + 0.001f*velNED.x*float(_msecPosDelay);
         state.position.y = gpsPosNE.y + gpsPosGlitchOffsetNE.y + 0.001f*velNED.y*float(_msecPosDelay);
     }
-    // reset the glitch ofset correction states
-    gpsPosGlitchOffsetNE.zero();
     // stored horizontal position states to prevent subsequent GPS measurements from being rejected
     for (uint8_t i=0; i<=49; i++){
         storedStates[i].position[0] = state.position[0];
