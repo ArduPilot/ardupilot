@@ -215,7 +215,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
                                                          MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE);
     control_sensors_health |= MAV_SYS_STATUS_GEOFENCE;
 
-    if (!ahrs.healthy()) {
+    if (ahrs.initialised() && !ahrs.healthy()) {
         // AHRS subsystem is unhealthy
         control_sensors_health &= ~MAV_SYS_STATUS_AHRS;
     }
