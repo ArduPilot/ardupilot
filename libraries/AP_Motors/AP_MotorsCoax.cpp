@@ -152,7 +152,14 @@ void AP_MotorsCoax::output_armed()
     int16_t motor_out[4];
 
     // Throttle is 0 to 1000 only
-    _rc_throttle.servo_out = constrain_int16(_rc_throttle.servo_out, 0, _max_throttle);
+    if (_rc_throttle.servo_out <= 0) {
+        _rc_throttle.servo_out = 0;
+        limit.throttle_lower = true;
+    }
+    if (_rc_throttle.servo_out >= _max_throttle) {
+        _rc_throttle.servo_out = _max_throttle;
+        limit.throttle_upper = true;
+    }
 
     // capture desired throttle and yaw from receiver
     _rc_throttle.calc_pwm();
@@ -170,6 +177,11 @@ void AP_MotorsCoax::output_armed()
         motor_out[AP_MOTORS_MOT_3] = _rc_throttle.radio_min + _spin_when_armed;
         motor_out[AP_MOTORS_MOT_4] = _rc_throttle.radio_min + _spin_when_armed;
     }else{
+
+        // check if throttle is below limit
+        if (_rc_throttle.servo_out <= _min_throttle) {  // perhaps being at min throttle itself is not a problem, only being under is
+            limit.throttle_lower = true;
+        }
 
         // motors
         motor_out[AP_MOTORS_MOT_3] = _rev_yaw*_rc_yaw.pwm_out + _rc_throttle.radio_out;
