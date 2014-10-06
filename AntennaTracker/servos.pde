@@ -163,6 +163,7 @@ static void update_yaw_position_servo(float yaw)
 {
     int32_t ahrs_yaw_cd = wrap_180_cd(ahrs.yaw_sensor);
     int32_t yaw_cd   = wrap_180_cd(yaw*100);
+    int32_t yaw_limit_cd = g.yaw_range*100/2;
     const int16_t margin = 500; // 5 degrees slop
 
     // Antenna as Ballerina. Use with antenna that do not have continuously rotating servos, ie at some point in rotation
@@ -238,6 +239,10 @@ static void update_yaw_position_servo(float yaw)
 
     slew_dir = new_slew_dir;
 
+    // initialise limit flags
+    servo_limit.yaw_lower = false;
+    servo_limit.yaw_upper = false;
+
     int16_t new_servo_out;
     if (slew_dir != 0) {
         new_servo_out = slew_dir * 18000;
@@ -248,18 +253,32 @@ static void update_yaw_position_servo(float yaw)
         new_servo_out = constrain_float(channel_yaw.servo_out - servo_change, -18000, 18000);
     }
 
-    // add slew rate limit
+    // rate limit yaw servo
     if (g.yaw_slew_time > 0.02f) {
-        uint16_t max_change = 0.02f * 100.0f * g.yaw_range / g.yaw_slew_time;
+        uint16_t max_change = 0.02f * yaw_limit_cd / g.yaw_slew_time;
         if (max_change < 1) {
             max_change = 1;
         }
-        new_servo_out = constrain_float(new_servo_out,
-                                        channel_yaw.servo_out - max_change,
-                                        channel_yaw.servo_out + max_change);
+        if (new_servo_out <= channel_yaw.servo_out - max_change) {
+            new_servo_out = channel_yaw.servo_out - max_change;
+            servo_limit.yaw_lower = true;
+        }
+        if (new_servo_out >= channel_yaw.servo_out + max_change) {
+            new_servo_out = channel_yaw.servo_out + max_change;
+            servo_limit.yaw_upper = true;
+        }
     }
-
     channel_yaw.servo_out = new_servo_out;
+
+    // position limit pitch servo
+    if (channel_yaw.servo_out <= -yaw_limit_cd) {
+        channel_yaw.servo_out = -yaw_limit_cd;
+        servo_limit.yaw_lower = true;
+    }
+    if (channel_yaw.servo_out >= yaw_limit_cd) {
+        channel_yaw.servo_out = yaw_limit_cd;
+        servo_limit.yaw_upper = true;
+    }
 }
 
 
