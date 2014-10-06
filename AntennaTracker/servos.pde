@@ -14,7 +14,8 @@ static void update_pitch_position_servo(float pitch)
     // pitch argument is -90 to 90, where 0 is horizontal
     // servo_out is in 100ths of a degree
     float ahrs_pitch = ahrs.pitch_sensor*0.01f;
-    int32_t angle_err = (ahrs_pitch - pitch) * 100.0;
+    int32_t angle_err = -(ahrs_pitch - pitch) * 100.0;
+    int32_t pitch_limit_cd = g.pitch_range*100/2;
     // Need to configure your servo so that increasing servo_out causes increase in pitch/elevation (ie pointing higher into the sky,
     // above the horizon. On my antenna tracker this requires the pitch/elevation servo to be reversed
     // param set RC2_REV -1
@@ -31,20 +32,40 @@ static void update_pitch_position_servo(float pitch)
     // PITCH2SRV_I      0.020000
     // PITCH2SRV_D      0.000000
     // PITCH2SRV_IMAX   4000.000000
-    int32_t new_servo_out = channel_pitch.servo_out - g.pidPitch2Srv.get_pid(angle_err);
-    channel_pitch.servo_out = constrain_float(new_servo_out, -9000, 9000);
 
-    // add slew rate limit
+    // calculate new servo position
+    int32_t new_servo_out = channel_pitch.servo_out + g.pidPitch2Srv.get_pid(angle_err);
+
+    // initialise limit flags
+    servo_limit.pitch_lower = false;
+    servo_limit.pitch_upper = false;
+
+    // rate limit pitch servo
     if (g.pitch_slew_time > 0.02f) {
-        uint16_t max_change = 0.02f * 18000 / g.pitch_slew_time;
+        uint16_t max_change = 0.02f * (pitch_limit_cd) / g.pitch_slew_time;
         if (max_change < 1) {
             max_change = 1;
         }
-        new_servo_out = constrain_float(new_servo_out,
-                                        channel_pitch.servo_out - max_change,
-                                        channel_pitch.servo_out + max_change);
+        if (new_servo_out <= channel_pitch.servo_out - max_change) {
+            new_servo_out = channel_pitch.servo_out - max_change;
+            servo_limit.pitch_lower = true;
+        }
+        if (new_servo_out >= channel_pitch.servo_out + max_change) {
+            new_servo_out = channel_pitch.servo_out + max_change;
+            servo_limit.pitch_upper = true;
+        }
     }
     channel_pitch.servo_out = new_servo_out;
+
+    // position limit pitch servo
+    if (channel_pitch.servo_out <= -pitch_limit_cd) {
+        channel_pitch.servo_out = -pitch_limit_cd;
+        servo_limit.pitch_lower = true;
+    }
+    if (channel_pitch.servo_out >= pitch_limit_cd) {
+        channel_pitch.servo_out = pitch_limit_cd;
+        servo_limit.pitch_upper = true;
+    }
 }
 
 
@@ -91,6 +112,8 @@ static void update_pitch_servo(float pitch)
         update_pitch_position_servo(pitch);
         break;
     }
+
+    // convert servo_out to radio_out and send to servo
     channel_pitch.calc_pwm();
     channel_pitch.output();
 }
@@ -158,7 +181,10 @@ static void update_yaw_position_servo(float yaw)
     static uint32_t slew_start_ms;
     int8_t new_slew_dir = slew_dir;
 
+    // get earth frame z-axis rotation rate in radians
     Vector3f earth_rotation = ahrs.get_gyro() * ahrs.get_dcm_matrix();
+
+
     bool making_progress;
     if (slew_dir != 0) {
         making_progress = (-slew_dir * earth_rotation.z >= 0);
@@ -207,7 +233,7 @@ static void update_yaw_position_servo(float yaw)
 
     // add slew rate limit
     if (g.yaw_slew_time > 0.02f) {
-        uint16_t max_change = 0.02f * 36000.0f / g.yaw_slew_time;
+        uint16_t max_change = 0.02f * 100.0f * g.yaw_range / g.yaw_slew_time;
         if (max_change < 1) {
             max_change = 1;
         }
@@ -261,6 +287,8 @@ static void update_yaw_servo(float yaw)
         update_yaw_position_servo(yaw);
         break;
     }
+
+    // convert servo_out to radio_out and send to servo
     channel_yaw.calc_pwm();
     channel_yaw.output();
 }

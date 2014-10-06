@@ -237,6 +237,16 @@ static struct {
     bool scan_reverse_yaw           : 1;// controls direction of yaw movement in SCAN mode
 } nav_status;
 
+////////////////////////////////////////////////////////////////////////////////
+// Servo state
+////////////////////////////////////////////////////////////////////////////////
+static struct {
+    bool yaw_lower      : 1;    // true if yaw servo has been limited from moving to a lower position (i.e. position or rate limited)
+    bool yaw_upper      : 1;    // true if yaw servo has been limited from moving to a higher position (i.e. position or rate limited)
+    bool pitch_lower    : 1;    // true if pitch servo has been limited from moving to a lower position (i.e. position or rate limited)
+    bool pitch_upper    : 1;    // true if pitch servo has been limited from moving to a higher position (i.e. position or rate limited)
+} servo_limit;
+
 /*
   scheduler table - all regular tasks apart from the fast_loop()
   should be listed here, along with how often they should be called
