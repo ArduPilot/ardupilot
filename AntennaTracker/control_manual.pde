@@ -10,8 +10,11 @@
  */
 static void update_manual(void)
 {
-    channel_yaw.radio_out = channel_yaw.radio_in;
-    channel_pitch.radio_out = channel_pitch.radio_in;
+    // copy yaw and pitch input to output
+    channel_yaw.radio_out = constrain_int16(channel_yaw.radio_in, channel_yaw.radio_min, channel_yaw.radio_max);
+    channel_pitch.radio_out = constrain_int16(channel_pitch.radio_in, channel_pitch.radio_min, channel_pitch.radio_max);
+
+    // send output to servos
     channel_yaw.output();
     channel_pitch.output();
 }
