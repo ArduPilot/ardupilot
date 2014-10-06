@@ -14,7 +14,7 @@ static void update_pitch_position_servo(float pitch)
     // pitch argument is -90 to 90, where 0 is horizontal
     // servo_out is in 100ths of a degree
     float ahrs_pitch = ahrs.pitch_sensor*0.01f;
-    int32_t err = (ahrs_pitch - pitch) * 100.0;
+    int32_t angle_err = (ahrs_pitch - pitch) * 100.0;
     // Need to configure your servo so that increasing servo_out causes increase in pitch/elevation (ie pointing higher into the sky,
     // above the horizon. On my antenna tracker this requires the pitch/elevation servo to be reversed
     // param set RC2_REV -1
@@ -31,7 +31,7 @@ static void update_pitch_position_servo(float pitch)
     // PITCH2SRV_I      0.020000
     // PITCH2SRV_D      0.000000
     // PITCH2SRV_IMAX   4000.000000
-    int32_t new_servo_out = channel_pitch.servo_out - g.pidPitch2Srv.get_pid(err);
+    int32_t new_servo_out = channel_pitch.servo_out - g.pidPitch2Srv.get_pid(angle_err);
     channel_pitch.servo_out = constrain_float(new_servo_out, -9000, 9000);
 
     // add slew rate limit
@@ -145,7 +145,7 @@ static void update_yaw_position_servo(float yaw)
     // param set RC1_MIN 680
     // According to the specs at https://www.servocity.com/html/hs-645mg_ultra_torque.html,
     // that should be 600 through 2400, but the azimuth gearing in my antenna pointer is not exactly 2:1
-    int32_t err = wrap_180_cd(ahrs_yaw_cd - yaw_cd);
+    int32_t angle_err = wrap_180_cd(ahrs_yaw_cd - yaw_cd);
 
     /*
       a positive error means that we need to rotate counter-clockwise
@@ -163,10 +163,12 @@ static void update_yaw_position_servo(float yaw)
     if (slew_dir != 0) {
         making_progress = (-slew_dir * earth_rotation.z >= 0);
     } else {
-        making_progress = (err * earth_rotation.z >= 0);
+        making_progress = (angle_err * earth_rotation.z >= 0);
     }
+
+    // handle hitting servo limits
     if (abs(channel_yaw.servo_out) == 18000 &&
-        abs(err) > margin &&
+        abs(angle_err) > margin &&
         making_progress &&
         hal.scheduler->millis() - slew_start_ms > g.min_reverse_time*1000) {
         // we are at the limit of the servo and are not moving in the
@@ -179,14 +181,14 @@ static void update_yaw_position_servo(float yaw)
       stop slewing and revert to normal control when normal control
       should move us in the right direction
      */
-    if (slew_dir * err < -margin) {
+    if (slew_dir * angle_err < -margin) {
         new_slew_dir = 0;
     }
 
     if (new_slew_dir != slew_dir) {
         gcs_send_text_fmt(PSTR("SLEW: %d/%d err=%ld servo=%ld ez=%.3f"),
                           (int)slew_dir, (int)new_slew_dir,
-                          (long)err,
+                          (long)angle_err,
                           (long)channel_yaw.servo_out,
                           degrees(ahrs.get_gyro().z));
     }
@@ -198,7 +200,7 @@ static void update_yaw_position_servo(float yaw)
         new_servo_out = slew_dir * 18000;
         g.pidYaw2Srv.reset_I();
     } else {
-        float servo_change = g.pidYaw2Srv.get_pid(err);
+        float servo_change = g.pidYaw2Srv.get_pid(angle_err);
         servo_change = constrain_float(servo_change, -18000, 18000);
         new_servo_out = constrain_float(channel_yaw.servo_out - servo_change, -18000, 18000);
     }
