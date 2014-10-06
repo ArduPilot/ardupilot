@@ -56,6 +56,16 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// yaw and pitch axis angle range defaults
+//
+#ifndef YAW_RANGE_DEFAULT
+ # define YAW_RANGE_DEFAULT 360
+#endif
+#ifndef PITCH_RANGE_DEFAULT
+ # define PITCH_RANGE_DEFAULT 180
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // Tracking definitions
 //
 #ifndef TRACKING_TIMEOUT_MS
