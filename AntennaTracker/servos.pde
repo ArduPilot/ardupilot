@@ -4,6 +4,23 @@
  * servos.pde - code to move pitch and yaw servos to attain a target heading or pitch
  */
 
+// init_servos - initialises the servos
+static void init_servos()
+{
+    // setup antenna control PWM channels
+    channel_yaw.set_angle(g.yaw_range * 100/2);        // yaw range is +/- (YAW_RANGE parameter/2) converted to centi-degrees
+    channel_pitch.set_angle(g.pitch_range * 100/2);    // pitch range is +/- (PITCH_RANGE parameter/2) converted to centi-degrees
+
+    // move servos to mid position
+    channel_yaw.output_trim();
+    channel_pitch.output_trim();
+
+    // initialise output to servos
+    channel_yaw.calc_pwm();
+    channel_pitch.calc_pwm();
+}
+
+
 /**
    update the pitch (elevation) servo. The aim is to drive the boards ahrs pitch to the
    requested pitch, so the board (and therefore the antenna) will be pointing at the target
