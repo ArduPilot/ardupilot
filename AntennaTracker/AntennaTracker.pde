@@ -182,8 +182,8 @@ SITL sitl;
 /**
    antenna control channels
  */
-static RC_Channel channel_yaw(CH_1);
-static RC_Channel channel_pitch(CH_2);
+static RC_Channel channel_yaw(CH_YAW);
+static RC_Channel channel_pitch(CH_PITCH);
 
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection
@@ -255,6 +255,7 @@ static struct {
  */
 static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { update_ahrs,            1,   1000 },
+    { read_radio,             1,    200 },
     { update_tracking,        1,   1000 },
     { update_GPS,             5,   4000 },
     { update_compass,         5,   1500 },
