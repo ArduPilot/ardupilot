@@ -173,12 +173,6 @@ static void update_yaw_position_servo(float yaw)
     // (as when the antenna is mounted on a moving, turning vehicle)
     // When the servo is being forced beyond its limits, it rapidly slews to the 'other side' then normal tracking takes over.
     //
-    // Caution: this whole system is compromised by the fact that the ahrs_yaw reported by the compass system lags
-    // the actual yaw by about 5 seconds, and also periodically realigns itself with about a 30 second period,
-    // which makes it very hard to be completely sure exactly where the antenna is _really_ pointing
-    // especially during the high speed slew. This can cause odd pointing artifacts from time to time. The best strategy is to
-    // position and point the mount so the aircraft does not 'go behind' the antenna (if possible)
-    //
     // With my antenna mount, large pwm output drives the antenna anticlockise, so need:
     // param set RC1_REV -1
     // to reverse the servo. Yours may be different
