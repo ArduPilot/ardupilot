@@ -42,6 +42,7 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
         break;
 
     case SCAN:
+    case SERVO_TEST:
     case AUTO:
         base_mode |= MAV_MODE_FLAG_GUIDED_ENABLED |
             MAV_MODE_FLAG_STABILIZE_ENABLED;
@@ -572,7 +573,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     result = MAV_RESULT_UNSUPPORTED;
                 }
             break;
-            
+
             case MAV_CMD_DO_SET_MODE:
                 switch ((uint16_t)packet.param1) {
                     case MAV_MODE_MANUAL_ARMED:
@@ -589,6 +590,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
                     default:
                         result = MAV_RESULT_UNSUPPORTED;
+                }
+                break;
+
+            case MAV_CMD_DO_SET_SERVO:
+                if (servo_test_set_servo(packet.param1, packet.param2)) {
+                    result = MAV_RESULT_ACCEPTED;
                 }
                 break;
 

@@ -100,6 +100,7 @@ static void update_tracking(void)
         update_scan();
         break;
 
+    case SERVO_TEST:
     case STOP:
     case INITIALISING:
         break;

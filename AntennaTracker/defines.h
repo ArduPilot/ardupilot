@@ -19,6 +19,7 @@ enum ControlMode {
     MANUAL=0,
     STOP=1,
     SCAN=2,
+    SERVO_TEST=3,
     AUTO=10,
     INITIALISING=16
 };
