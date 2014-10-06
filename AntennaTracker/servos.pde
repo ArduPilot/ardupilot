@@ -20,6 +20,27 @@ static void init_servos()
     channel_pitch.calc_pwm();
 }
 
+/**
+   update the pitch (elevation) servo. The aim is to drive the boards ahrs pitch to the
+   requested pitch, so the board (and therefore the antenna) will be pointing at the target
+ */
+static void update_pitch_servo(float pitch)
+{
+    switch ((enum ServoType)g.servo_type.get()) {
+    case SERVO_TYPE_ONOFF:
+        update_pitch_onoff_servo(pitch);
+        break;
+
+    case SERVO_TYPE_POSITION:
+    default:
+        update_pitch_position_servo(pitch);
+        break;
+    }
+
+    // convert servo_out to radio_out and send to servo
+    channel_pitch.calc_pwm();
+    channel_pitch.output();
+}
 
 /**
    update the pitch (elevation) servo. The aim is to drive the boards ahrs pitch to the
@@ -112,29 +133,26 @@ static void update_pitch_onoff_servo(float pitch)
     }
 }
 
-
 /**
-   update the pitch (elevation) servo. The aim is to drive the boards ahrs pitch to the
-   requested pitch, so the board (and therefore the antenna) will be pointing at the target
+   update the yaw (azimuth) servo.
  */
-static void update_pitch_servo(float pitch)
+static void update_yaw_servo(float yaw)
 {
     switch ((enum ServoType)g.servo_type.get()) {
     case SERVO_TYPE_ONOFF:
-        update_pitch_onoff_servo(pitch);
+        update_yaw_onoff_servo(yaw);
         break;
 
     case SERVO_TYPE_POSITION:
     default:
-        update_pitch_position_servo(pitch);
+        update_yaw_position_servo(yaw);
         break;
     }
 
     // convert servo_out to radio_out and send to servo
-    channel_pitch.calc_pwm();
-    channel_pitch.output();
+    channel_yaw.calc_pwm();
+    channel_yaw.output();
 }
-
 
 /**
    update the yaw (azimuth) servo. The aim is to drive the boards ahrs
@@ -275,25 +293,4 @@ static void update_yaw_onoff_servo(float yaw)
         // move clockwise
         channel_yaw.servo_out = 18000;
     }
-}
-
-/**
-   update the yaw (azimuth) servo.
- */
-static void update_yaw_servo(float yaw)
-{
-    switch ((enum ServoType)g.servo_type.get()) {
-    case SERVO_TYPE_ONOFF:
-        update_yaw_onoff_servo(yaw);
-        break;
-
-    case SERVO_TYPE_POSITION:
-    default:
-        update_yaw_position_servo(yaw);
-        break;
-    }
-
-    // convert servo_out to radio_out and send to servo
-    channel_yaw.calc_pwm();
-    channel_yaw.output();
 }
