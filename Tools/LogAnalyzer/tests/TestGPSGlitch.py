@@ -6,6 +6,7 @@ class TestGPSGlitch(Test):
 	'''test for GPS glitch reporting or bad GPS data (satellite count, hdop)'''
 
 	def __init__(self):
+		Test.__init__(self)
 		self.name = "GPS"
 
 	def run(self, logdata, verbose):

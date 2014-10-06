@@ -8,6 +8,15 @@ extern const AP_HAL::HAL& hal;
 // MPU6000 accelerometer scaling
 #define MPU6000_ACCEL_SCALE_1G    (GRAVITY_MSS / 4096.0f)
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+#define MPU6000_DRDY_PIN 70
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLE || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
+#include "../AP_HAL_Linux/GPIO.h"
+#define MPU6000_DRDY_PIN BBB_P8_14
+#endif
+#endif
+
 // MPU 6000 registers
 #define MPUREG_XG_OFFS_TC                               0x00
 #define MPUREG_YG_OFFS_TC                               0x01
@@ -167,8 +176,15 @@ const float AP_InertialSensor_MPU6000::_gyro_scale = (0.0174532f / 16.4f);
 AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000() : 
 	AP_InertialSensor(),
     _drdy_pin(NULL),
+    _spi(NULL),
+    _spi_sem(NULL),
+    _num_samples(0),
+    _last_sample_time_micros(0),
     _initialised(false),
-    _mpu6000_product_id(AP_PRODUCT_ID_NONE)
+    _mpu6000_product_id(AP_PRODUCT_ID_NONE),
+    _sample_shift(0),
+    _last_filter_hz(0),
+    _error_count(0)
 {
 }
 
@@ -180,10 +196,10 @@ uint16_t AP_InertialSensor_MPU6000::_init_sensor( Sample_rate sample_rate )
     _spi = hal.spi->device(AP_HAL::SPIDevice_MPU6000);
     _spi_sem = _spi->get_semaphore();
 
-    /* Pin 70 defined especially to hook
-       up PE6 to the hal.gpio abstraction.
-       (It is not a valid pin under Arduino.) */
-    _drdy_pin = hal.gpio->channel(70);
+#ifdef MPU6000_DRDY_PIN
+    _drdy_pin = hal.gpio->channel(MPU6000_DRDY_PIN);
+    _drdy_pin->mode(HAL_GPIO_INPUT);
+#endif
 
     hal.scheduler->suspend_timer_procs();
 
@@ -414,6 +430,22 @@ void AP_InertialSensor_MPU6000::_register_write(uint8_t reg, uint8_t val)
 }
 
 /*
+  useful when debugging SPI bus errors
+ */
+void AP_InertialSensor_MPU6000::_register_write_check(uint8_t reg, uint8_t val)
+{
+    uint8_t readed;
+    _register_write(reg, val);
+    readed = _register_read(reg);
+    if (readed != val){
+	hal.console->printf_P(PSTR("Values doesn't match; written: %02x; read: %02x "), val, readed);
+    }
+#if MPU6000_DEBUG
+    hal.console->printf_P(PSTR("Values written: %02x; readed: %02x "), val, readed);
+#endif
+}
+
+/*
   set the DLPF filter frequency. Assumes caller has taken semaphore
  */
 void AP_InertialSensor_MPU6000::_set_filter_register(uint8_t filter_hz, uint8_t default_filter)
@@ -440,7 +472,6 @@ void AP_InertialSensor_MPU6000::_set_filter_register(uint8_t filter_hz, uint8_t 
 
     if (filter != 0) {
         _last_filter_hz = filter_hz;
-
         _register_write(MPUREG_CONFIG, filter);
     }
 }

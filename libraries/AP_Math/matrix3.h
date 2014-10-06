@@ -56,7 +56,7 @@ public:
     }
 
     // setting ctor
-    Matrix3<T>(const Vector3<T> a0, const Vector3<T> b0, const Vector3<T> c0) : a(a0), b(b0), c(c0) {
+    Matrix3<T>(const Vector3<T> &a0, const Vector3<T> &b0, const Vector3<T> &c0) : a(a0), b(b0), c(c0) {
     }
 
     // setting ctor
@@ -64,7 +64,7 @@ public:
     }
 
     // function call operator
-    void operator        () (const Vector3<T> a0, const Vector3<T> b0, const Vector3<T> c0)
+    void operator        () (const Vector3<T> &a0, const Vector3<T> &b0, const Vector3<T> &c0)
     {
         a = a0; b = b0; c = c0;
     }

@@ -3,6 +3,7 @@
 #define __AP_HAL_LINUX_SCHEDULER_H__
 
 #include <AP_HAL_Linux.h>
+#include "Semaphores.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <sys/time.h>
@@ -17,6 +18,8 @@ public:
     void     delay(uint16_t ms);
     uint32_t millis();
     uint32_t micros();
+    uint64_t millis64();
+    uint64_t micros64();
     void     delay_microseconds(uint16_t us);
     void     register_delay_callback(AP_HAL::Proc,
                 uint16_t min_time_ms);
@@ -54,8 +57,6 @@ private:
     bool _initialized;
     volatile bool _timer_pending;
 
-    volatile bool _timer_suspended;
-
     AP_HAL::MemberProc _timer_proc[LINUX_SCHEDULER_MAX_TIMER_PROCS];
     uint8_t _num_timer_procs;
     volatile bool _in_timer_proc;
@@ -68,10 +69,12 @@ private:
 
     pthread_t _timer_thread_ctx;
     pthread_t _io_thread_ctx;
+    pthread_t _rcin_thread_ctx;
     pthread_t _uart_thread_ctx;
 
     void *_timer_thread(void);
     void *_io_thread(void);
+    void *_rcin_thread(void);
     void *_uart_thread(void);
 
     void _run_timers(bool called_from_timer_thread);
@@ -79,6 +82,8 @@ private:
     void _setup_realtime(uint32_t size);
 
     uint64_t stopped_clock_usec;
+
+    LinuxSemaphore _timer_semaphore;
 };
 
 #endif // CONFIG_HAL_BOARD

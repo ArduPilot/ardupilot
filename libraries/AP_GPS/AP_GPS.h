@@ -24,6 +24,7 @@
 #include <AP_Param.h>
 #include <AP_Math.h>
 #include <GCS_MAVLink.h>
+#include <AP_Vehicle.h>
 #include "GPS_detect_state.h"
 
 /**
@@ -40,6 +41,15 @@
 #define GPS_RTK_AVAILABLE 1
 #else
 #define GPS_RTK_AVAILABLE 0
+#endif
+
+/**
+ * save flash by skipping NMEA and SIRF support on ArduCopter on APM1/2 or any frame type on AVR1280 CPUs
+ */
+#if HAL_CPU_CLASS < HAL_CPU_CLASS_75 && defined(APM_BUILD_DIRECTORY)
+  #if (APM_BUILD_TYPE(APM_BUILD_ArduCopter) || defined(__AVR_ATmega1280__))
+    #define GPS_SKIP_SIRF_NMEA
+  #endif
 #endif
 
 class DataFlash_Class;
@@ -268,7 +278,7 @@ public:
 
     // set position for HIL
     void setHIL(uint8_t instance, GPS_Status status, uint64_t time_epoch_ms, 
-                Location &location, Vector3f &velocity, uint8_t num_sats,
+                const Location &location, const Vector3f &velocity, uint8_t num_sats,
                 uint16_t hdop, bool _have_vertical_velocity);
 
     static const struct AP_Param::GroupInfo var_info[];
@@ -283,6 +293,8 @@ public:
     AP_Int8 _auto_switch;
     AP_Int8 _min_dgps;
 #endif
+    AP_Int8 _sbas_mode;
+    AP_Int8 _min_elevation;
     
     // handle sending of initialisation strings to the GPS
     void send_blob_start(uint8_t instance, const prog_char *_blob, uint16_t size);

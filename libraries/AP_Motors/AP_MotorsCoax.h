@@ -50,6 +50,11 @@ public:
     // output_min - sends minimum values out to the motors
     virtual void        output_min();
 
+    // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
+    //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
+    //  for coax copter, output channels 1 to 4 are used
+    virtual uint16_t    get_motor_mask() { return 0x000F; }
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 

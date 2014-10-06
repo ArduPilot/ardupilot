@@ -61,6 +61,9 @@ public:
 	// return current target airspeed
 	virtual float get_target_airspeed(void) const = 0;
 
+	// return maximum climb rate
+	virtual float get_max_climbrate(void) const = 0;
+
 	// add new controllers to this enum. Users can then
 	// select which controller to use by setting the
 	// SPDHGT_CONTROLLER parameter

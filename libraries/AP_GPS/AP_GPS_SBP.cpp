@@ -891,7 +891,7 @@ AP_GPS_SBP::logging_log_baseline_ecef(struct sbp_baseline_ecef_t* b)
     float x = b->x / 1000.0;
     float y = b->y / 1000.0;
     float z = b->z / 1000.0;
-    int32_t len = (int32_t) (safe_sqrt(x*x+y*y+z*z) * 1000.0);
+    int32_t len = (int32_t) (safe_sqrt(x*x+y*y+z*z) * 1000.0f);
 
     struct log_SbpBaseline pkt = {
         LOG_PACKET_HEADER_INIT(LOG_MSG_SBPBASELINE),

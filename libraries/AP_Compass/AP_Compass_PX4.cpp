@@ -30,6 +30,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include <drivers/drv_device.h>
 #include <drivers/drv_mag.h>
 #include <drivers/drv_hrt.h>
 #include <stdio.h>
@@ -58,6 +59,9 @@ bool AP_Compass_PX4::init(void)
 	}
 
     for (uint8_t i=0; i<_num_instances; i++) {
+        // get device id
+        _dev_id[i] = ioctl(_mag_fd[i], DEVIOCGDEVICEID, 0);
+
         // average over up to 20 samples
         if (ioctl(_mag_fd[i], SENSORIOCSQUEUEDEPTH, 20) != 0) {
             hal.console->printf("Failed to setup compass queue\n");
@@ -90,7 +94,7 @@ bool AP_Compass_PX4::read(void)
 
     // consider the compass healthy if we got a reading in the last 0.2s
     for (uint8_t i=0; i<_num_instances; i++) {
-        _healthy[i] = (hrt_absolute_time() - _last_timestamp[i] < 200000);
+        _healthy[i] = (hal.scheduler->micros64() - _last_timestamp[i] < 200000);
     }
 
     for (uint8_t i=0; i<_num_instances; i++) {
@@ -131,9 +135,9 @@ bool AP_Compass_PX4::read(void)
         _count[i] = 0;
     }
 
-    last_update = _last_timestamp[_get_primary()];
+    last_update = _last_timestamp[get_primary()];
     
-    return _healthy[_get_primary()];
+    return _healthy[get_primary()];
 }
 
 void AP_Compass_PX4::accumulate(void)
@@ -149,7 +153,7 @@ void AP_Compass_PX4::accumulate(void)
     }
 }
 
-uint8_t AP_Compass_PX4::_get_primary(void) const
+uint8_t AP_Compass_PX4::get_primary(void) const
 {
     if (_primary < _num_instances && _healthy[_primary]) {
         return _primary;

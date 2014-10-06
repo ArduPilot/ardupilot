@@ -35,24 +35,24 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // @Param: RETRACT_X
     // @DisplayName: Mount roll angle when in retracted position
     // @Description: Mount roll angle when in retracted position
-    // @Units: Centi-Degrees
-    // @Range: -18000 17999
+    // @Units: Degrees
+    // @Range: -180.00 179.99
     // @Increment: 1
     // @User: Standard
 
     // @Param: RETRACT_Y
     // @DisplayName: Mount tilt/pitch angle when in retracted position
     // @Description: Mount tilt/pitch angle when in retracted position
-    // @Units: Centi-Degrees
-    // @Range: -18000 17999
+    // @Units: Degrees
+    // @Range: -180.00 179.99
     // @Increment: 1
     // @User: Standard
 
     // @Param: RETRACT_Z
     // @DisplayName: Mount yaw/pan angle when in retracted position
     // @Description: Mount yaw/pan angle when in retracted position
-    // @Units: Centi-Degrees
-    // @Range: -18000 17999
+    // @Units: Degrees
+    // @Range: -180.00 179.99
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("RETRACT",    1, AP_Mount, _retract_angles, 0),
@@ -61,24 +61,24 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // @Param: NEUTRAL_X
     // @DisplayName: Mount roll angle when in neutral position
     // @Description: Mount roll angle when in neutral position
-    // @Units: Centi-Degrees
-    // @Range: -18000 17999
+    // @Units: Degrees
+    // @Range: -180.00 179.99
     // @Increment: 1
     // @User: Standard
 
     // @Param: NEUTRAL_Y
     // @DisplayName: Mount tilt/pitch angle when in neutral position
     // @Description: Mount tilt/pitch angle when in neutral position
-    // @Units: Centi-Degrees
-    // @Range: -18000 17999
+    // @Units: Degrees
+    // @Range: -180.00 179.99
     // @Increment: 1
     // @User: Standard
 
     // @Param: NEUTRAL_Z
     // @DisplayName: Mount pan/yaw angle when in neutral position
     // @Description: Mount pan/yaw angle when in neutral position
-    // @Units: Centi-Degrees
-    // @Range: -18000 17999
+    // @Units: Degrees
+    // @Range: -180.00 179.99
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("NEUTRAL",    2, AP_Mount, _neutral_angles, 0),
@@ -86,22 +86,22 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // @Param: CONTROL_X
     // @DisplayName: Mount roll angle command from groundstation
     // @Description: Mount roll angle when in MavLink or RC control operation mode
-    // @Units: Centi-Degrees
-    // @Range: -18000 17999
+    // @Units: Degrees
+    // @Range: -180.00 179.99
     // @Increment: 1
 
     // @Param: CONTROL_Y
     // @DisplayName: Mount tilt/pitch angle command from groundstation
     // @Description: Mount tilt/pitch angle when in MavLink or RC control operation mode
-    // @Units: Centi-Degrees
-    // @Range: -18000 17999
+    // @Units: Degrees
+    // @Range: -180.00 179.99
     // @Increment: 1
 
     // @Param: CONTROL_Z
     // @DisplayName: Mount pan/yaw angle command from groundstation
     // @Description: Mount pan/yaw angle when in MavLink or RC control operation mode
-    // @Units: Centi-Degrees
-    // @Range: -18000 17999
+    // @Units: Degrees
+    // @Range: -180.00 179.99
     // @Increment: 1
     AP_GROUPINFO("CONTROL",    3, AP_Mount, _control_angles, 0),
 
@@ -217,7 +217,13 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
 };
 
 AP_Mount::AP_Mount(const struct Location *current_loc, const AP_AHRS &ahrs, uint8_t id) :
-    _ahrs(ahrs)
+    _ahrs(ahrs),
+    _roll_control_angle(0.0f),
+    _tilt_control_angle(0.0f),
+    _pan_control_angle(0.0f),
+    _roll_angle(0.0f),
+    _tilt_angle(0.0f),
+    _pan_angle(0.0f)
 {
 	AP_Param::setup_object_defaults(this, var_info);
     _current_loc = current_loc;

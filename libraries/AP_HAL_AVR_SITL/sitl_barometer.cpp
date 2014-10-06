@@ -53,6 +53,9 @@ void SITL_State::_update_barometer(float altitude)
 	sim_alt += _sitl->baro_drift * now / 1000;
 	sim_alt += _sitl->baro_noise * _rand_float();
 
+	// add baro glitch
+	sim_alt += _sitl->baro_glitch;
+
 	_barometer->setHIL(sim_alt);
 }
 

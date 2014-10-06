@@ -138,7 +138,12 @@ static void init_ardupilot()
     gcs[1].setup_uart(hal.uartC, map_baudrate(g.serial1_baud), 128, 128);
 
 #if MAVLINK_COMM_NUM_BUFFERS > 2
-    gcs[2].setup_uart(hal.uartD, map_baudrate(g.serial2_baud), 128, 128);
+    if (g.serial2_protocol == SERIAL2_FRSKY_DPORT || 
+        g.serial2_protocol == SERIAL2_FRSKY_SPORT) {
+        frsky_telemetry.init(hal.uartD, g.serial2_protocol);
+    } else {
+        gcs[2].setup_uart(hal.uartD, map_baudrate(g.serial2_baud), 128, 128);
+    }
 #endif
 
 	mavlink_system.sysid = g.sysid_this_mav;
@@ -162,7 +167,7 @@ static void init_ardupilot()
     hal.scheduler->register_delay_callback(mavlink_delay_cb, 5);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-    adc.Init();      // APM ADC library initialization
+    apm1_adc.Init();      // APM ADC library initialization
 #endif
 
 	if (g.compass_enabled==true) {
@@ -257,6 +262,7 @@ static void startup_ground(void)
     mission.init();
 
     hal.uartA->set_blocking_writes(false);
+    hal.uartB->set_blocking_writes(false);
     hal.uartC->set_blocking_writes(false);
 
 	gcs_send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to drive."));
@@ -510,4 +516,15 @@ static bool should_log(uint32_t mask)
         in_mavlink_delay = false;
     }
     return ret;
+}
+
+/*
+  send FrSky telemetry. Should be called at 5Hz by scheduler
+ */
+static void telemetry_send(void)
+{
+#if FRSKY_TELEM_ENABLED == ENABLED
+    frsky_telemetry.send_frames((uint8_t)control_mode, 
+                                (AP_Frsky_Telem::FrSkyProtocol)g.serial2_protocol.get());
+#endif
 }

@@ -49,6 +49,9 @@ public:
     // add_motor using just position and yaw_factor (or prop direction)
     void                add_motor(int8_t motor_num, float angle_degrees, float yaw_factor, uint8_t testing_order);
 
+    // add_motor using separate roll and pitch factors (for asymmetrical frames) and prop direction
+    void                add_motor(int8_t motor_num, float roll_factor_in_degrees, float pitch_factor_in_degrees, float yaw_factor, uint8_t testing_order);
+
     // remove_motor
     void                remove_motor(int8_t motor_num);
 
@@ -59,6 +62,10 @@ public:
     virtual void        setup_motors() {
         remove_all_motors();
     };
+
+    // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
+    //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
+    virtual uint16_t    get_motor_mask();
 
 protected:
     // output - sends commands to the motors

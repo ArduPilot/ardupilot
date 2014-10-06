@@ -105,9 +105,20 @@ void DataFlash_File::Init(const struct LogStructure *structure, uint8_t num_type
     if (_writebuf != NULL) {
         free(_writebuf);
     }
-    _writebuf = (uint8_t *)malloc(_writebuf_size);
+
+    /*
+      if we can't allocate the full writebuf then try reducing it
+      until we can allocate it
+     */
+    while (_writebuf == NULL && _writebuf_size >= _writebuf_chunk) {
+        _writebuf = (uint8_t *)malloc(_writebuf_size);
+        if (_writebuf == NULL) {
+            _writebuf_size /= 2;
+        }
+    }
     if (_writebuf == NULL) {
-        return;
+        hal.console->printf("Out of memory for logging\n");
+        return;        
     }
     _writebuf_head = _writebuf_tail = 0;
     _initialised = true;

@@ -21,7 +21,7 @@
 #define POSCONTROL_STOPPING_DIST_Z_MAX          200.0f  // max stopping distance vertically   
                                                         // should be 1.5 times larger than POSCONTROL_ACCELERATION.
                                                         // max acceleration = max lean angle * 980 * pi / 180.  i.e. 23deg * 980 * 3.141 / 180 = 393 cm/s/s
-#define POSCONTROL_TAKEOFF_JUMP_CM               20.0f  // during take-off altitude target is set to current altitude + this value
+#define POSCONTROL_TAKEOFF_JUMP_CM                0.0f  // during take-off altitude target is set to current altitude + this value
 
 #define POSCONTROL_SPEED                        500.0f  // default horizontal speed in cm/s
 #define POSCONTROL_SPEED_DOWN                  -150.0f  // default descent rate in cm/s
@@ -39,6 +39,9 @@
 #define POSCONTROL_ACCEL_Z_DTERM_FILTER         20      // Z axis accel controller's D term filter (in hz)
 
 #define POSCONTROL_VEL_UPDATE_TIME              0.020f  // 50hz update rate on high speed CPUs (Pixhawk, Flymaple)
+
+#define POSCONTROL_VEL_ERROR_CUTOFF_FREQ        4.0     // 4hz low-pass filter on velocity error
+#define POSCONTROL_ACCEL_ERROR_CUTOFF_FREQ      2.0     // 2hz low-pass filter on accel error
 
 class AC_PosControl
 {
@@ -107,6 +110,9 @@ public:
     ///     actual position target will be moved no faster than the speed_down and speed_up
     ///     target will also be stopped if the motors hit their limits or leash length is exceeded
     void set_alt_target_from_climb_rate(float climb_rate_cms, float dt);
+
+    /// set_alt_target_to_current_alt - set altitude target to current altitude
+    void set_alt_target_to_current_alt() { _pos_target.z = _inav.get_altitude(); }
 
     /// get_alt_target, get_desired_alt - get desired altitude (in cm above home) from loiter or wp controller which should be fed into throttle controller
     /// To-Do: remove one of the two functions below
@@ -364,6 +370,8 @@ private:
     float       _distance_to_target;    // distance to position target - for reporting only
     uint8_t     _xy_step;               // used to decide which portion of horizontal position controller to run during this iteration
     float       _dt_xy;                 // time difference in seconds between horizontal position updates
+    LowPassFilterFloat _vel_error_filter;   // low-pass-filter on z-axis velocity error
+    LowPassFilterFloat _accel_error_filter; // low-pass-filter on z-axis accelerometer error
 
     // velocity controller internal variables
     uint8_t     _vel_xyz_step;          // used to decide which portion of velocity controller to run during this iteration

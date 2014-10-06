@@ -98,7 +98,7 @@ public:
         k_param_ground_steer_dps,
         k_param_rally_limit_km_old, //unused anymore -- just holding this index
         k_param_hil_err_limit,
-        k_param_sonar,
+        k_param_sonar_old, // unused
         k_param_log_bitmask,
         k_param_BoardConfig,
         k_param_rssi_range,
@@ -115,6 +115,18 @@ public:
         k_param_takeoff_rotate_speed,
         k_param_takeoff_throttle_slewrate,
         k_param_takeoff_throttle_max,
+        k_param_rangefinder,
+        k_param_terrain,
+        k_param_terrain_follow,
+        k_param_stab_pitch_down_cd_old, // deprecated
+        k_param_glide_slope_threshold,
+        k_param_stab_pitch_down,
+        k_param_terrain_lookahead,
+        k_param_fbwa_tdrag_chan,
+        k_param_rangefinder_landing,
+        k_param_land_flap_percent,
+        k_param_takeoff_flap_percent,
+        k_param_flap_slewrate,
 
         // 100: Arming parameters
         k_param_arming = 100,
@@ -135,6 +147,7 @@ public:
         k_param_serial0_baud_old,   // deprecated
         k_param_gcs2,               // stream rates for uartD
         k_param_serial2_baud_old,   // deprecated
+        k_param_serial2_protocol,
 
         // 120: Fly-by-wire control
         //
@@ -161,7 +174,7 @@ public:
         k_param_curr_amp_per_volt,  // unused
         k_param_input_voltage, // deprecated, can be deleted
         k_param_pack_capacity,      // unused
-        k_param_sonar_enabled,
+        k_param_sonar_enabled_old,  // unused
         k_param_ahrs,  // AHRS group
         k_param_barometer,   // barometer ground calibration
         k_param_airspeed,  // AP_Airspeed parameters
@@ -305,6 +318,7 @@ public:
     AP_Int16 serial1_baud;
 #if MAVLINK_COMM_NUM_BUFFERS > 2
     AP_Int16 serial2_baud;
+    AP_Int8  serial2_protocol;
 #endif
     AP_Int8 telem_delay;
 
@@ -319,6 +333,7 @@ public:
     AP_Float kff_throttle_to_pitch;
     AP_Float ground_steer_alt;
     AP_Int16 ground_steer_dps;
+    AP_Float stab_pitch_down;
 
     // speed used for speed scaling
     AP_Float scaling_speed;
@@ -412,7 +427,6 @@ public:
     AP_Int8 reset_mission_chan;
     AP_Int32 airspeed_cruise_cm;
     AP_Int32 RTL_altitude_cm;
-    AP_Int16 land_pitch_cd;
     AP_Float land_flare_alt;
     AP_Float land_flare_sec;
     AP_Int32 min_gndspeed_cm;
@@ -427,6 +441,8 @@ public:
     AP_Int8 flap_1_speed;
     AP_Int8 flap_2_percent;
     AP_Int8 flap_2_speed;
+    AP_Int8 land_flap_percent;
+    AP_Int8 takeoff_flap_percent;
     AP_Int8 rssi_pin;
     AP_Float rssi_range;             // allows to set max voltage for rssi pin such as 5.0, 3.3 etc.     
     AP_Int8 inverted_flight_ch;             // 0=disabled, 1-8 is channel for inverted flight trigger
@@ -442,6 +458,14 @@ public:
     AP_Int8 level_roll_limit;
     AP_Int8 flapin_channel;
     AP_Int8 flaperon_output;
+#if AP_TERRAIN_AVAILABLE
+    AP_Int8 terrain_follow;
+    AP_Int16 terrain_lookahead;
+#endif
+    AP_Int16 glide_slope_threshold;
+    AP_Int8 fbwa_tdrag_chan;
+    AP_Int8 rangefinder_landing;
+    AP_Int8 flap_slewrate;
 
     // RC channels
     RC_Channel rc_1;

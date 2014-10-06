@@ -28,7 +28,7 @@ private:
     bool            _sample_available();
     uint16_t        _init_sensor( Sample_rate sample_rate );
     uint32_t         _sample_period_usec;
-    uint32_t        _last_update_usec;
+    uint32_t        _last_sample_usec;
     uint32_t        _last_accel_usec[INS_MAX_INSTANCES];
     uint32_t        _last_gyro_usec[INS_MAX_INSTANCES];
 };

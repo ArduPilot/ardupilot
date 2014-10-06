@@ -9,6 +9,9 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+#include <AP_HAL_Empty.h>
+#include <AP_HAL_Empty_Private.h>
+
 using namespace Linux;
 
 // 3 serial ports on Linux for now
@@ -22,8 +25,24 @@ static LinuxSPIDeviceManager spiDeviceManager;
 static LinuxAnalogIn analogIn;
 static LinuxStorage storageDriver;
 static LinuxGPIO gpioDriver;
+
+/*
+  use the PRU based RCInput driver on ERLE and PXF
+ */
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLE
+static LinuxRCInput_PRU rcinDriver;
+#else
 static LinuxRCInput rcinDriver;
-static LinuxRCOutput rcoutDriver;
+#endif
+
+/*
+  use the PRU based RCOutput driver on ERLE and PXF
+ */
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLE
+static LinuxRCOutput_PRU rcoutDriver;
+#else
+static Empty::EmptyRCOutput rcoutDriver;
+#endif
 static LinuxScheduler schedulerInstance;
 static LinuxUtil utilInstance;
 
@@ -46,6 +65,16 @@ HAL_Linux::HAL_Linux() :
         &utilInstance)
 {}
 
+void _usage(void)
+{
+    printf("Usage: -A uartAPath -B uartBPath -C uartCPath\n");
+    printf("Options:\n");
+    printf("\t-serial:          -A /dev/ttyO4\n");
+    printf("\t                  -B /dev/ttyS1\n");    
+    printf("\t-tcp:             -C tcp:192.168.2.15:1243:wait\n");
+    printf("\t                  -A tcp:11.0.0.2:5678\n");    
+}
+
 void HAL_Linux::init(int argc,char* const argv[]) const 
 {
     int opt;
@@ -64,7 +93,7 @@ void HAL_Linux::init(int argc,char* const argv[]) const
             uartCDriver.set_device_path(optarg);
             break;
         case 'h':
-            printf("Usage: -A uartAPath -B uartBPath -C uartCPath\n");
+            _usage();
             exit(0);
         default:
             printf("Unknown option '%c'\n", (char)opt);
@@ -73,6 +102,9 @@ void HAL_Linux::init(int argc,char* const argv[]) const
     }
 
     scheduler->init(NULL);
+    gpio->init();
+    rcout->init(NULL);
+    rcin->init(NULL);
     uartA->begin(115200);
     i2c->begin();
     spi->init(NULL);

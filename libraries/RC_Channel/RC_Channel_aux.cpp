@@ -292,6 +292,11 @@ RC_Channel_aux::set_servo_limit(RC_Channel_aux::Aux_servo_function_t function, R
         if (ch && ch->function.get() == function) {
             uint16_t pwm = ch->get_limit_pwm(limit);
             ch->radio_out = pwm;
+            if (ch->function.get() == k_manual) {
+                // in order for output_ch() to work for k_manual we
+                // also have to override radio_in
+                ch->radio_in = pwm;
+            }
         }
     }
 }

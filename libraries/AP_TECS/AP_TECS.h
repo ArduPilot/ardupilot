@@ -69,6 +69,9 @@ public:
 	// return current target airspeed
 	float get_target_airspeed(void) const { return _TAS_dem / _ahrs.get_EAS2TAS(); }
 
+	// return maximum climb rate
+	float get_max_climbrate(void) const { return _maxClimbRate; }
+
 	// this supports the TECS_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -111,6 +114,7 @@ private:
     AP_Float _minSinkRate;
     AP_Float _maxSinkRate;
     AP_Float _timeConst;
+    AP_Float _landTimeConst;
     AP_Float _ptchDamp;
     AP_Float _thrDamp;
     AP_Float _integGain;
@@ -120,6 +124,9 @@ private:
 	AP_Float _spdWeightLand;
     AP_Float _landThrottle;
     AP_Float _landAirspeed;
+    AP_Float _land_sink;
+	AP_Int8  _pitch_max;
+	AP_Int8  _pitch_min;
 	
 	// throttle demand in the range from 0.0 to 1.0
     float _throttle_dem;
@@ -131,7 +138,7 @@ private:
 	float _integ1_state;
 	
 	// Integrator state 2 - height rate
-	float _integ2_state;
+	float _climb_rate;
 
 	// Integrator state 3 - height
 	float _integ3_state;
@@ -233,6 +240,9 @@ private:
 	// Time since last update of main TECS loop (seconds)
 	float _DT;
 
+	// counter for demanded sink rate on land final
+	uint8_t _flare_counter;
+
     // Update the airspeed internal state using a second order complementary filter
     void _update_speed(void);
 
@@ -268,6 +278,9 @@ private:
 
     // declares a 5point average filter using floats
 	AverageFilterFloat_Size5 _vdot_filter;
+
+	// current time constant
+	float timeConstant(void);
 };
 
 #define TECS_LOG_FORMAT(msg) { msg, sizeof(AP_TECS::log_TECS_Tuning),	\

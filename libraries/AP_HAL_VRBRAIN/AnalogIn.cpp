@@ -72,6 +72,8 @@ using namespace VRBRAIN;
 
 VRBRAINAnalogSource::VRBRAINAnalogSource(int16_t pin, float initial_value) :
 	_pin(pin),
+    _stop_pin(-1),
+    _settle_time_ms(0),
     _value(initial_value),
     _value_ratiometric(initial_value),
     _latest_value(initial_value),
@@ -79,6 +81,11 @@ VRBRAINAnalogSource::VRBRAINAnalogSource(int16_t pin, float initial_value) :
     _sum_value(0),
     _sum_ratiometric(0)
 {
+}
+
+void VRBRAINAnalogSource::set_stop_pin(uint8_t p)
+{ 
+    _stop_pin = p; 
 }
 
 float VRBRAINAnalogSource::read_average()
@@ -183,9 +190,10 @@ void VRBRAINAnalogSource::_add_value(float v, float vcc5V)
 
 
 VRBRAINAnalogIn::VRBRAINAnalogIn() :
+    _current_stop_pin_i(0),
 	_board_voltage(0),
     _servorail_voltage(0),
-    _power_flags(0)    
+    _power_flags(0)
 {}
 
 void VRBRAINAnalogIn::init(void* machtnichts)
@@ -197,6 +205,40 @@ void VRBRAINAnalogIn::init(void* machtnichts)
     _battery_handle   = orb_subscribe(ORB_ID(battery_status));
     _servorail_handle = orb_subscribe(ORB_ID(servorail_status));
     _system_power_handle = orb_subscribe(ORB_ID(system_power));
+}
+
+
+/*
+  move to the next stop pin
+ */
+void VRBRAINAnalogIn::next_stop_pin(void)
+{
+    // find the next stop pin. We start one past the current stop pin
+    // and wrap completely, so we do the right thing is there is only
+    // one stop pin
+    for (uint8_t i=1; i <= VRBRAIN_ANALOG_MAX_CHANNELS; i++) {
+        uint8_t idx = (_current_stop_pin_i + i) % VRBRAIN_ANALOG_MAX_CHANNELS;
+        VRBRAIN::VRBRAINAnalogSource *c = _channels[idx];
+        if (c && c->_stop_pin != -1) {
+            // found another stop pin
+            _stop_pin_change_time = hal.scheduler->millis();
+            _current_stop_pin_i = idx;
+
+            // set that pin high
+            hal.gpio->pinMode(c->_stop_pin, 1);
+            hal.gpio->write(c->_stop_pin, 1);
+
+            // set all others low
+            for (uint8_t j=0; j<VRBRAIN_ANALOG_MAX_CHANNELS; j++) {
+                VRBRAIN::VRBRAINAnalogSource *c2 = _channels[j];
+                if (c2 && c2->_stop_pin != -1 && j != idx) {
+                    hal.gpio->pinMode(c2->_stop_pin, 1);
+                    hal.gpio->write(c2->_stop_pin, 0);
+                }
+            }
+            break;
+        }
+    }
 }
 
 /*
@@ -214,6 +256,12 @@ void VRBRAINAnalogIn::_timer_tick(void)
 
     struct adc_msg_s buf_adc[VRBRAIN_ANALOG_MAX_CHANNELS];
 
+    // cope with initial setup of stop pin
+    if (_channels[_current_stop_pin_i] == NULL ||
+        _channels[_current_stop_pin_i]->_stop_pin == -1) {
+        next_stop_pin();
+    }
+
     /* read all channels available */
     int ret = read(_adc_fd, &buf_adc, sizeof(buf_adc));
     if (ret > 0) {
@@ -225,7 +273,16 @@ void VRBRAINAnalogIn::_timer_tick(void)
             for (uint8_t j=0; j<VRBRAIN_ANALOG_MAX_CHANNELS; j++) {
                 VRBRAIN::VRBRAINAnalogSource *c = _channels[j];
                 if (c != NULL && buf_adc[i].am_channel == c->_pin) {
-                    c->_add_value(buf_adc[i].am_data, _board_voltage);
+                    // add a value if either there is no stop pin, or
+                    // the stop pin has been settling for enough time
+                    if (c->_stop_pin == -1 || 
+                        (_current_stop_pin_i == j &&
+                         hal.scheduler->millis() - _stop_pin_change_time > c->_settle_time_ms)) {
+                        c->_add_value(buf_adc[i].am_data, _board_voltage);
+                        if (c->_stop_pin != -1 && _current_stop_pin_i == j) {
+                            next_stop_pin();
+                        }
+                    }
                 }
             }
         }

@@ -52,6 +52,10 @@ public:
     // output_min - sends minimum values out to the motors
     virtual void        output_min();
 
+    // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
+    //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
+    virtual uint16_t    get_motor_mask();
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 

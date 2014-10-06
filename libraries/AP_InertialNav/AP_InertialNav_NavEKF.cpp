@@ -3,8 +3,6 @@
 #include <AP_HAL.h>
 #include "AP_InertialNav.h"
 
-extern const AP_HAL::HAL& hal;
-
 #if AP_AHRS_NAVEKF_AVAILABLE
 
 /*

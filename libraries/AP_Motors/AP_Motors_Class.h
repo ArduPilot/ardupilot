@@ -39,6 +39,7 @@
 #define AP_MOTORS_V_FRAME           2
 #define AP_MOTORS_H_FRAME           3   // same as X frame but motors spin in opposite direction
 #define AP_MOTORS_VTAIL_FRAME       4   // Lynxmotion Hunter VTail 400/500
+#define AP_MOTORS_ATAIL_FRAME       5   // A-Shaped VTail Quads
 #define AP_MOTORS_NEW_PLUS_FRAME    10  // NEW frames are same as original 4 but with motor orders changed to be clockwise from the front
 #define AP_MOTORS_NEW_X_FRAME       11
 #define AP_MOTORS_NEW_V_FRAME       12
@@ -102,6 +103,9 @@ public:
     void                set_yaw(int16_t yaw_in) { _rc_yaw.servo_out = yaw_in; };                        // range -4500 ~ 4500
     void                set_throttle(int16_t throttle_in) { _rc_throttle.servo_out = throttle_in; };    // range 0 ~ 1000
 
+    // get_throttle_out - returns throttle sent to motors in the range 0 ~ 1000
+    int16_t             get_throttle_out() const { return _rc_throttle.servo_out; }
+
     // output - sends commands to the motors
     void                output();
 
@@ -113,8 +117,9 @@ public:
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
     virtual void        output_test(uint8_t motor_seq, int16_t pwm) = 0;
 
-    // throttle_pass_through - passes pilot's throttle input directly to all motors - dangerous but used for initialising ESCs
-    virtual void        throttle_pass_through();
+    // throttle_pass_through - passes provided pwm directly to all motors - dangerous but used for initialising ESCs
+    //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
+    virtual void        throttle_pass_through(int16_t pwm);
 
 	// setup_throttle_curve - used to linearlise thrust output by motors
     //      returns true if curve is created successfully
@@ -126,6 +131,10 @@ public:
     // slow_start - set to true to slew motors from current speed to maximum
     // Note: this must be set immediately before a step up in throttle
     void                slow_start(bool true_false);
+
+    // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
+    //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
+    virtual uint16_t    get_motor_mask() = 0;
 
     // structure for holding motor limit flags
     struct AP_Motors_limit {
@@ -163,7 +172,7 @@ protected:
     AP_Int8             _throttle_curve_enabled;        // enable throttle curve
     AP_Int8             _throttle_curve_mid;    // throttle which produces 1/2 the maximum thrust.  expressed as a percentage (i.e. 0 ~ 100 ) of the full throttle range
     AP_Int8             _throttle_curve_max;    // throttle which produces the maximum thrust.  expressed as a percentage (i.e. 0 ~ 100 ) of the full throttle range
-    AP_Int16            _spin_when_armed;       // used to control whether the motors always spin when armed.  pwm value above radio_min 
+    AP_Int16            _spin_when_armed;       // used to control whether the motors always spin when armed.  pwm value above radio_min
 
     // internal variables
     RC_Channel&         _rc_roll;               // roll input in from users is held in servo_out

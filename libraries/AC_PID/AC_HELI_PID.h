@@ -51,6 +51,10 @@ public:
     
     /// get_leaky_i - replacement for get_i but output is leaded at leak_rate
     float       get_leaky_i(float error, float dt, float leak_rate);
+    
+    // accessors
+    float       ff() const { return _ff.get(); }
+    void        ff(const float v) { _ff.set(v); }
 
     static const struct AP_Param::GroupInfo        var_info[];
     

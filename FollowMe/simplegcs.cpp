@@ -65,8 +65,8 @@ void simplegcs_send_heartbeat(mavlink_channel_t chan) {
 
 bool simplegcs_try_send_statustext(mavlink_channel_t chan, const char *text, int len) {
 
-    int payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
-    if (payload_space < MAVLINK_MSG_ID_STATUSTEXT_LEN) return false;
+    uint16_t txspace = comm_get_txspace(chan);
+    if (payload_space < MAVLINK_MSG_ID_STATUSTEXT_LEN+MAVLINK_NUM_NON_PAYLOAD_BYTES) return false;
 
     char statustext[50] = { 0 };
     if (len < 50) {

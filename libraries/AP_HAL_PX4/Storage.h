@@ -7,7 +7,7 @@
 #include "AP_HAL_PX4_Namespace.h"
 #include <systemlib/perf_counter.h>
 
-#define PX4_STORAGE_SIZE 4096
+#define PX4_STORAGE_SIZE HAL_STORAGE_SIZE
 #define PX4_STORAGE_MAX_WRITE 512
 #define PX4_STORAGE_LINE_SHIFT 9
 #define PX4_STORAGE_LINE_SIZE (1<<PX4_STORAGE_LINE_SHIFT)
@@ -18,14 +18,7 @@ public:
     PX4Storage();
 
     void init(void* machtnichts) {}
-    uint8_t  read_byte(uint16_t loc);
-    uint16_t read_word(uint16_t loc);
-    uint32_t read_dword(uint16_t loc);
-    void     read_block(void *dst, uint16_t src, size_t n);
-
-    void write_byte(uint16_t loc, uint8_t value);
-    void write_word(uint16_t loc, uint16_t value);
-    void write_dword(uint16_t loc, uint32_t value);
+    void read_block(void *dst, uint16_t src, size_t n);
     void write_block(uint16_t dst, const void* src, size_t n);
 
     void _timer_tick(void);

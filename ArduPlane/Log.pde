@@ -353,6 +353,8 @@ struct PACKED log_Sonar {
     float baro_alt;
     float groundspeed;
     uint8_t throttle;
+    uint8_t count;
+    float correction;
 };
 
 // Write a sonar packet
@@ -361,11 +363,13 @@ static void Log_Write_Sonar()
     struct log_Sonar pkt = {
         LOG_PACKET_HEADER_INIT(LOG_SONAR_MSG),
         timestamp   : hal.scheduler->millis(),
-        distance    : sonar.distance_cm(),
-        voltage     : sonar.voltage(),
+        distance    : (float)rangefinder.distance_cm(),
+        voltage     : rangefinder.voltage_mv()*0.001f,
         baro_alt    : barometer.get_altitude(),
         groundspeed : gps.ground_speed(),
-        throttle    : (uint8_t)(100 * channel_throttle->norm_output())
+        throttle    : (uint8_t)(100 * channel_throttle->norm_output()),
+        count       : rangefinder_state.in_range_count,
+        correction  : rangefinder_state.correction
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -393,8 +397,8 @@ static void Log_Write_Current()
         LOG_PACKET_HEADER_INIT(LOG_CURRENT_MSG),
         time_ms                 : hal.scheduler->millis(),
         throttle_in             : channel_throttle->control_in,
-        battery_voltage         : (int16_t)(battery.voltage() * 100.0),
-        current_amps            : (int16_t)(battery.current_amps() * 100.0),
+        battery_voltage         : (int16_t)(battery.voltage() * 100.0f),
+        current_amps            : (int16_t)(battery.current_amps() * 100.0f),
         board_voltage           : (uint16_t)(hal.analogin->board_voltage()*1000),
         current_total           : battery.current_total_mah()
     };
@@ -428,8 +432,8 @@ struct PACKED log_Compass {
 // Write a Compass packet. Total length : 15 bytes
 static void Log_Write_Compass()
 {
-    const Vector3f &mag_offsets = compass.get_offsets();
-    const Vector3f &mag = compass.get_field();
+    const Vector3f &mag_offsets = compass.get_offsets(0);
+    const Vector3f &mag = compass.get_field(0);
     struct log_Compass pkt = {
         LOG_PACKET_HEADER_INIT(LOG_COMPASS_MSG),
         time_ms         : hal.scheduler->millis(),
@@ -536,7 +540,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),         
       "NTUN", "ICIccccfI",   "TimeMS,Yaw,WpDist,TargBrg,NavBrg,AltErr,Arspd,Alt,GSpdCM" },
     { LOG_SONAR_MSG, sizeof(log_Sonar),             
-      "SONR", "IffffB",   "TimeMS,DistCM,Volt,BaroAlt,GSpd,Thr" },
+      "SONR", "IffffBBf",   "TimeMS,DistCM,Volt,BaroAlt,GSpd,Thr,Cnt,Corr" },
     { LOG_MODE_MSG, sizeof(log_Mode),             
       "MODE", "IMB",         "TimeMS,Mode,ModeNum" },
     { LOG_CURRENT_MSG, sizeof(log_Current),             

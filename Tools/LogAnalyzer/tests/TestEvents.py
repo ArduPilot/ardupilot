@@ -7,6 +7,7 @@ class TestEvents(Test):
 	# TODO: need to check for vehicle-specific codes
 
 	def __init__(self):
+		Test.__init__(self)
 		self.name = "Event/Failsafe"
 
 	def run(self, logdata, verbose):
