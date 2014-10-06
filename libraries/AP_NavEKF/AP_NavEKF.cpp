@@ -828,16 +828,20 @@ void NavEKF::SelectTasFusion()
 }
 
 // select fusion of synthetic sideslip measurements
+// synthetic sidelip fusion only works for fixed wing aircraft and relies on the average sideslip being close to zero
+// it requires a stable wind for best results and should not be used for aerobatic flight with manoeuvres that induce large sidslip angles (eg knife-edge, spins, etc)
 void NavEKF::SelectBetaFusion()
 {
-    // Determine if synthetic sidelsip data should be fused
-    // synthetic sidelip fusion only works for fixed wing aircraft and relies on the average sideslip being close to zero
-    // it requires a stable wind estimate for best results and should not be used for aerobatic flight
-    // we fuse synthetic sideslip measurements if:
-    // we are a fly forward vehicle type AND NOT using a full range of sensors with healthy position
-    // AND NOT on the ground AND enough time has lapsed since our last fusion
-    // AND (we have not fused magnetometer data on this time step OR the immediate fusion flag is set)
-    if (assume_zero_sideslip() && !(use_compass() && useAirspeed() && posHealth) && !inhibitWindStates  && ((imuSampleTime_ms - BETAmsecPrev) >= _msecBetaAvg) && (!magFusePerformed || fuseMeNow)) {
+    // set to true if fusion is locked out due to magnetometer fusion on the same time step (done for load levelling)
+    bool f_lockedOut = (magFusePerformed && !fuseMeNow);
+    // set true when the fusion time interval has triggered
+    bool f_timeTrigger = ((imuSampleTime_ms - BETAmsecPrev) >= _msecBetaAvg);
+    // set true when use of synthetic sideslip fusion is necessary because we have limited sensor data or are dead reckoning position
+    bool f_required = !(use_compass() && useAirspeed() && posHealth);
+    // set true when sideslip fusion is feasible (requires zero sideslip assumption to be valid and use of wind states)
+    bool f_feasible = (assume_zero_sideslip() && !inhibitWindStates);
+    // use synthetic sideslip fusion if feasible, required, enough time has lapsed since the last fusion and it is not locked out
+    if (f_feasible && f_required && f_timeTrigger && !f_lockedOut) {
         FuseSideslip();
         BETAmsecPrev = imuSampleTime_ms;
     }
