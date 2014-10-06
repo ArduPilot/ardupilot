@@ -25,6 +25,8 @@ StorageAccess AP_Rally::_storage(StorageManager::StorageRally);
 #define RALLY_LIMIT_KM_DEFAULT 1.0
 #endif
 
+#define RALLY_LIMIT_KM_DEFAULT 1.0
+
 const AP_Param::GroupInfo AP_Rally::var_info[] PROGMEM = {
     // @Param: TOTAL
     // @DisplayName: Rally Total

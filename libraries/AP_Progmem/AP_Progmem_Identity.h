@@ -10,7 +10,11 @@ typedef char prog_char;
 
 #define PSTR(s) s
 #undef PROGMEM
+#if	CONFIG_HAL_BOARD == HAL_BOARD_YUNEEC
+#define PROGMEM
+#else
 #define PROGMEM __attribute__(())
+#endif
 
 static inline int strcasecmp_P(const char *str1, const prog_char_t *pstr)
 {
