@@ -514,7 +514,7 @@ static struct {
     int32_t hold_course_cd;
 
     // locked_course and locked_course_cd are used in stabilize mode 
-    // when ground steering is active
+    // when ground steering is active, and for steering in auto-takeoff
     bool locked_course;
     float locked_course_err;
 } steer_state = {
@@ -564,6 +564,9 @@ static struct {
 
     // filtered sink rate for landing
     float land_sink_rate;
+
+    // time when we first pass min GPS speed on takeoff
+    uint32_t takeoff_speed_time_ms;
 } auto_state = {
     takeoff_complete : true,
     land_complete : false,
@@ -576,7 +579,8 @@ static struct {
     highest_airspeed : 0,
     initial_pitch_cd : 0,
     next_turn_angle  : 90.0f,
-    land_sink_rate   : 0
+    land_sink_rate   : 0,
+    takeoff_speed_time_ms : 0
 };
 
 // true if we are in an auto-throttle mode, which means
@@ -887,6 +891,12 @@ static void ahrs_update()
     // calculate a scaled roll limit based on current pitch
     roll_limit_cd = g.roll_limit_cd * cosf(ahrs.pitch);
     pitch_limit_min_cd = aparm.pitch_limit_min_cd * fabsf(cosf(ahrs.roll));
+
+    // updated the summed gyro used for ground steering and
+    // auto-takeoff. Dot product of DCM.c with gyro vector gives earth
+    // frame yaw rate
+    steer_state.locked_course_err += ahrs.get_yaw_rate_earth() * G_Dt;
+    steer_state.locked_course_err = wrap_PI(steer_state.locked_course_err);
 }
 
 /*
