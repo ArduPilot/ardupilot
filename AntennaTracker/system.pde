@@ -74,15 +74,8 @@ static void init_tracker()
     hal.uartB->set_blocking_writes(false);
     hal.uartC->set_blocking_writes(false);
 
-    // setup antenna control PWM channels
-    channel_yaw.set_angle(18000); // Yaw is expected to drive antenna azimuth -180-0-180
-    channel_pitch.set_angle(9000); // Pitch is expected to drive elevation -90-0-90
-
-    channel_yaw.output_trim();
-    channel_pitch.output_trim();
-
-    channel_yaw.calc_pwm();
-    channel_pitch.calc_pwm();
+    // initialise servos
+    init_servos();
 
     // use given start positions - useful for indoor testing, and
     // while waiting for GPS lock
