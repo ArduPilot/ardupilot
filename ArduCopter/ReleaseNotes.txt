@@ -1,5 +1,16 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.2-rc11 06-Oct-2014
+Changes from 3.2-rc10
+1) reduce lean on take-off in Auto by resetting horizontal position targets 
+2) TradHeli landing check ignores overall throttle output
+3) reduce AHRS bad messages by delaying 20sec after init to allow EKF to settle (Pixhawk only)
+4) Bug fixes:
+    a) fix THR_MIN scaling issue that could cause landing-detector to fail to detect landing when ch3 min~max > 1000 pwm
+    b) fix Mediatek GPS configuration so update rate is set correctly to 5hz
+    c) fix to Condition-Yaw mission command to support relative angles
+    d) EKF bug fixes when recovering from GPS glitches (affects only Pixhawks using EKF)
+------------------------------------------------------------------
 ArduCopter 3.2-rc10 24-Sep-2014
 Changes from 3.2-rc9
 1) two-stage land-detector to reduce motor run-up when landing in Loiter, PosHold, RTL, Auto
