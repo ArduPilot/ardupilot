@@ -24,7 +24,7 @@ public:
     virtual void _timer_tick() {}
 
  protected:
-    void _process_ppmsum_pulse(uint16_t width_usec);
+    void _process_rc_pulse(uint16_t width_s0, uint16_t width_s1);
 
  private:
     volatile bool new_rc_input;
@@ -35,8 +35,17 @@ public:
     // the channel we will receive input from next, or -1 when not synchronised
     int8_t _channel_counter;
 
+    void _process_ppmsum_pulse(uint16_t width);
+    void _process_sbus_pulse(uint16_t width_s0, uint16_t width_s1);
+
     /* override state */
     uint16_t _override[LINUX_RC_INPUT_NUM_CHANNELS];
+
+    // state of SBUS bit decoder
+    struct {
+	uint16_t bytes[25]; // including start bit, parity and stop bits
+	uint16_t bit_ofs;
+    } sbus_state;
 };
 
 #include "RCInput_PRU.h"

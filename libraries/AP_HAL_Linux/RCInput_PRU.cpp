@@ -49,7 +49,7 @@ void LinuxRCInput_PRU::_timer_tick()
         } else {
             // the pulse value is the sum of the time spent in the low
             // and high states
-            _process_ppmsum_pulse(ring_buffer->buffer[ring_buffer->ring_head].delta_t + _s0_time);
+            _process_rc_pulse(_s0_time, ring_buffer->buffer[ring_buffer->ring_head].delta_t);
         }
         // move to the next ring buffer entry
         ring_buffer->ring_head = (ring_buffer->ring_head + 1) % NUM_RING_ENTRIES;        
