@@ -23,6 +23,7 @@
 
 #include <AP_HAL_AVR.h>
 #include <AP_HAL_AVR_SITL.h>
+#include <AP_HAL_YUNEEC.h>
 #include <AP_HAL_Empty.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
@@ -47,6 +48,7 @@ void setup()
 
     print_radio_values();
 
+    hal.scheduler->delay(1500);
     // set type of output, symmetrical angles or a number range;
     // XXX BROKEN
     rc_1.set_angle(4500);

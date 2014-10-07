@@ -27,6 +27,11 @@ linux: HAL_BOARD = HAL_BOARD_LINUX
 linux: TOOLCHAIN = NATIVE
 linux: all
 
+<<<<<<< HEAD
+yuneec: HAL_BOARD = HAL_BOARD_YUNEEC
+yuneec: TOOLCHAIN = ARM
+yuneec: all
+=======
 erle: HAL_BOARD = HAL_BOARD_LINUX
 erle: TOOLCHAIN = BBONE
 erle: all
@@ -38,6 +43,7 @@ pxf: all
 navio: HAL_BOARD = HAL_BOARD_LINUX
 navio: TOOLCHAIN = RPI
 navio: all
+>>>>>>> origin/master
 
 empty: HAL_BOARD = HAL_BOARD_EMPTY
 empty: TOOLCHAIN = AVR
@@ -52,7 +58,8 @@ empty: all
 
 # cope with copter and hil targets
 FRAMES = quad tri hexa y6 octa octa-quad heli single obc
-BOARDS = apm1 apm2 apm2beta apm1-1280 px4 px4-v1 px4-v2 sitl flymaple linux vrbrain vrbrain-v40 vrbrain-v45 vrbrainv-50 vrbrain-v51 vrubrain-v51 vrhero-v10 erle pxf navio
+BOARDS = apm1 apm2 apm2beta apm1-1280 px4 px4-v1 px4-v2 sitl flymaple yuneec linux vrbrain vrbrain-v40 vrbrain-v45 vrbrainv-50 vrbrain-v51 vrubrain-v51 vrhero-v10 erle pxf navio
+
 
 define frame_template
 $(1)-$(2) : EXTRAFLAGS += "-DFRAME_CONFIG=$(shell echo $(2) | tr a-z A-Z | sed s/-/_/g)_FRAME "

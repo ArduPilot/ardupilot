@@ -228,6 +228,7 @@ protected:
 
 #include "AP_InertialSensor_Oilpan.h"
 #include "AP_InertialSensor_MPU6000.h"
+#include "AP_InertialSensor_MPU6050.h"
 #include "AP_InertialSensor_HIL.h"
 #include "AP_InertialSensor_PX4.h"
 #include "AP_InertialSensor_VRBRAIN.h"

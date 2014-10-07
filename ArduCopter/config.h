@@ -96,7 +96,7 @@
  # define MAIN_LOOP_SECONDS 0.01
  # define MAIN_LOOP_MICROS  10000
 #else
- // high power CPUs (Flymaple, PX4, Pixhawk, VRBrain)
+ // high power CPUs (Flymaple, PX4, Pixhawk, VRBrain, YUNEEC)
  # define MAIN_LOOP_RATE    400
  # define MAIN_LOOP_SECONDS 0.0025
  # define MAIN_LOOP_MICROS  2500
@@ -186,6 +186,7 @@
  # define LED_ON           LOW
  # define LED_OFF          HIGH
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#elif CONFIG_HAL_BOARD == HAL_BOARD_YUNEEC
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -282,7 +283,7 @@
 #endif
 
 #ifndef BOARD_VOLTAGE_MIN
- # define BOARD_VOLTAGE_MIN             4.3f        // min board voltage in volts for pre-arm checks
+ # define BOARD_VOLTAGE_MIN             2.8f        // min board voltage in volts for pre-arm checks
 #endif
 
 #ifndef BOARD_VOLTAGE_MAX
