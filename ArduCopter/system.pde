@@ -352,7 +352,7 @@ static void update_auto_armed()
             return;
         }
         // if in stabilize or acro flight mode and throttle is zero, auto-armed should become false
-        if(manual_flight_mode(control_mode) && g.rc_3.control_in == 0 && !failsafe.radio) {
+        if(manual_flight_mode(control_mode) && ap.throttle_zero && !failsafe.radio) {
             set_auto_armed(false);
         }
     }else{
@@ -360,12 +360,12 @@ static void update_auto_armed()
         
 #if FRAME_CONFIG == HELI_FRAME
         // for tradheli if motors are armed and throttle is above zero and the motor is started, auto_armed should be true
-        if(motors.armed() && g.rc_3.control_in != 0 && motors.motor_runup_complete()) {
+        if(motors.armed() && !ap.throttle_zero && motors.motor_runup_complete()) {
             set_auto_armed(true);
         }
 #else
         // if motors are armed and throttle is above zero auto_armed should be true
-        if(motors.armed() && g.rc_3.control_in != 0) {
+        if(motors.armed() && !ap.throttle_zero) {
             set_auto_armed(true);
         }
 #endif // HELI_FRAME
