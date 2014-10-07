@@ -1,56 +1,52 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define CONTROL_SWITCH_COUNTER  20  // 20 iterations at 100hz (i.e. 2/10th of a second) at a new switch position will cause flight mode change
+#define CONTROL_SWITCH_DEBOUNCE_TIME_MS  200
+#define CONTROL_SWITCH_COUNTER 20 // 20 iterations at 100hz (i.e. 2/10th of a second) at a new switch position will cause flight mode change
 static void read_control_switch()
 {
-    static uint8_t switch_counter = 0;
+    uint32_t tnow_ms = millis();
 
-    uint8_t switchPosition = readSwitch();
+    int8_t switch_position;
+    if      (g.rc_5.radio_in < 1231) switch_position = 0;
+    else if (g.rc_5.radio_in < 1361) switch_position = 1;
+    else if (g.rc_5.radio_in < 1491) switch_position = 2;
+    else if (g.rc_5.radio_in < 1621) switch_position = 3;
+    else if (g.rc_5.radio_in < 1750) switch_position = 4;
+    else switch_position = 5;
 
-    // has switch moved?
-    // ignore flight mode changes if in failsafe
-    if (oldSwitchPosition != switchPosition && !failsafe.radio && failsafe.radio_counter == 0) {
-        switch_counter++;
-        if(switch_counter >= CONTROL_SWITCH_COUNTER) {
-            oldSwitchPosition       = switchPosition;
-            switch_counter          = 0;
+    if(control_switch_state.last_switch_position != switch_position) {
+        control_switch_state.last_edge_time_ms = tnow_ms;
+    }
 
-            // set flight mode and simple mode setting
-            if (set_mode(flight_modes[switchPosition])) {
+    bool control_switch_changed = control_switch_state.debounced_switch_position != switch_position;
+    bool sufficient_time_elapsed = tnow_ms - control_switch_state.last_edge_time_ms > CONTROL_SWITCH_DEBOUNCE_TIME_MS;
+    bool failsafe_disengaged = !failsafe.radio && failsafe.radio_counter == 0;
 
-                if(g.ch7_option != AUX_SWITCH_SIMPLE_MODE && g.ch8_option != AUX_SWITCH_SIMPLE_MODE && g.ch7_option != AUX_SWITCH_SUPERSIMPLE_MODE && g.ch8_option != AUX_SWITCH_SUPERSIMPLE_MODE) {
-                    // set Simple mode using stored paramters from Mission planner
-                    // rather than by the control switch
-                    if (BIT_IS_SET(g.super_simple, switchPosition)) {
-                        set_simple_mode(2);
-                    }else{
-                        set_simple_mode(BIT_IS_SET(g.simple_modes, switchPosition));
-                    }
+    if (control_switch_changed && sufficient_time_elapsed && failsafe_disengaged) {
+        // set the debounced switch position
+        control_switch_state.debounced_switch_position = switch_position;
+
+        // set flight mode and simple mode setting
+        if (set_mode(flight_modes[switch_position])) {
+
+            if(g.ch7_option != AUX_SWITCH_SIMPLE_MODE && g.ch8_option != AUX_SWITCH_SIMPLE_MODE && g.ch7_option != AUX_SWITCH_SUPERSIMPLE_MODE && g.ch8_option != AUX_SWITCH_SUPERSIMPLE_MODE) {
+                // set Simple mode using stored paramters from Mission planner
+                // rather than by the control switch
+                if (BIT_IS_SET(g.super_simple, switch_position)) {
+                    set_simple_mode(2);
+                }else{
+                    set_simple_mode(BIT_IS_SET(g.simple_modes, switch_position));
                 }
             }
-
         }
-    }else{
-        // reset switch_counter if there's been no change
-        // we don't want 10 intermittant blips causing a flight mode change
-        switch_counter = 0;
     }
-}
 
-static uint8_t readSwitch(void){
-    int16_t pulsewidth = g.rc_5.radio_in;   // default for Arducopter
-
-    if (pulsewidth < 1231) return 0;
-    if (pulsewidth < 1361) return 1;
-    if (pulsewidth < 1491) return 2;
-    if (pulsewidth < 1621) return 3;
-    if (pulsewidth < 1750) return 4;        // Software Manual
-    return 5;                               // Hardware Manual
+    control_switch_state.last_switch_position = switch_position;
 }
 
 static void reset_control_switch()
 {
-    oldSwitchPosition = -1;
+    control_switch_state.last_switch_position = control_switch_state.debounced_switch_position = -1;
     read_control_switch();
 }
 

@@ -392,7 +392,13 @@ static union {
 static int8_t control_mode = STABILIZE;
 // Used to maintain the state of the previous control switch position
 // This is set to -1 when we need to re-read the switch
-static uint8_t oldSwitchPosition;
+
+static struct {
+    int8_t debounced_switch_position;
+    int8_t last_switch_position;
+    uint32_t last_edge_time_ms;
+} control_switch_state;
+
 static RCMapper rcmap;
 
 // board specific config
