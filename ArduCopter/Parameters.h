@@ -71,7 +71,7 @@ public:
         k_param_epm,
 
         // BoardConfig object
-        k_param_BoardConfig,
+//        k_param_BoardConfig,
 
         // GPS object
         k_param_gps,

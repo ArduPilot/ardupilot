@@ -27,11 +27,6 @@ linux: HAL_BOARD = HAL_BOARD_LINUX
 linux: TOOLCHAIN = NATIVE
 linux: all
 
-<<<<<<< HEAD
-yuneec: HAL_BOARD = HAL_BOARD_YUNEEC
-yuneec: TOOLCHAIN = ARM
-yuneec: all
-=======
 erle: HAL_BOARD = HAL_BOARD_LINUX
 erle: TOOLCHAIN = BBONE
 erle: all
@@ -43,11 +38,14 @@ pxf: all
 navio: HAL_BOARD = HAL_BOARD_LINUX
 navio: TOOLCHAIN = RPI
 navio: all
->>>>>>> origin/master
 
 empty: HAL_BOARD = HAL_BOARD_EMPTY
 empty: TOOLCHAIN = AVR
 empty: all
+
+yuneec: HAL_BOARD = HAL_BOARD_YUNEEC
+yuneec: TOOLCHAIN = ARM
+yuneec: all
 
 # cope with HIL targets
 %-hil: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_SENSORS "
