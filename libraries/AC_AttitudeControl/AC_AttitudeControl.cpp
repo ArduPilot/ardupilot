@@ -115,29 +115,17 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw_smooth(float roll_angle
 
     if (_accel_rp_max > 0.0f) {
 
-    	// calculate earth-frame feed forward roll rate using linear response when close to the target, sqrt response when we're further away
-    	angle_to_target = roll_angle_ef - _angle_ef_target.x;
-    	if (angle_to_target > linear_angle) {
-    		rate_ef_desired = safe_sqrt(2.0f*_accel_rp_max*((float)fabs(angle_to_target)-(linear_angle/2.0f)));
-    	} else if (angle_to_target < -linear_angle) {
-    		rate_ef_desired = -safe_sqrt(2.0f*_accel_rp_max*((float)fabs(angle_to_target)-(linear_angle/2.0f)));
-    	} else {
-    		rate_ef_desired = smoothing_gain*angle_to_target;
-    	}
+        // calculate earth-frame feed forward roll rate using linear response when close to the target, sqrt response when we're further away
+        rate_ef_desired = sqrt_controller(roll_angle_ef-_angle_ef_target.x, smoothing_gain, _accel_rp_max);
+
     	_rate_ef_desired.x = constrain_float(rate_ef_desired, _rate_ef_desired.x-rate_change_limit, _rate_ef_desired.x+rate_change_limit);
 
     	// update earth-frame roll angle target using desired roll rate
         update_ef_roll_angle_and_error(_rate_ef_desired.x, angle_ef_error, AC_ATTITUDE_RATE_STAB_ROLL_OVERSHOOT_ANGLE_MAX);
 
-    	// calculate earth-frame feed forward pitch rate using linear response when close to the target, sqrt response when we're further away
-    	angle_to_target = pitch_angle_ef - _angle_ef_target.y;
-    	if (angle_to_target > linear_angle) {
-    		rate_ef_desired = safe_sqrt(2.0f*_accel_rp_max*((float)fabs(angle_to_target)-(linear_angle/2.0f)));
-    	} else if (angle_to_target < -linear_angle) {
-    		rate_ef_desired = -safe_sqrt(2.0f*_accel_rp_max*((float)fabs(angle_to_target)-(linear_angle/2.0f)));
-    	} else {
-    		rate_ef_desired = smoothing_gain*angle_to_target;
-    	}
+        // calculate earth-frame feed forward pitch rate using linear response when close to the target, sqrt response when we're further away
+        rate_ef_desired = sqrt_controller(pitch_angle_ef-_angle_ef_target.y, smoothing_gain, _accel_rp_max);
+
     	_rate_ef_desired.y = constrain_float(rate_ef_desired, _rate_ef_desired.y-rate_change_limit, _rate_ef_desired.y+rate_change_limit);
 
     	// update earth-frame pitch angle target using desired pitch rate
