@@ -634,7 +634,7 @@
  # define RATE_PITCH_D       		0.004f
 #endif
 #ifndef RATE_PITCH_IMAX
- # define RATE_PITCH_IMAX        	500
+ # define RATE_PITCH_IMAX        	1000
 #endif
 
 #ifndef RATE_YAW_P
