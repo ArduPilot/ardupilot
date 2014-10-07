@@ -297,6 +297,9 @@ static void set_mode(enum FlightMode mode)
     // don't cross-track when starting a mission
     auto_state.next_wp_no_crosstrack = true;
 
+    // zero locked course
+    steer_state.locked_course_err = 0;
+
     // set mode
     previous_mode = control_mode;
     control_mode = mode;
@@ -391,6 +394,30 @@ static void set_mode(enum FlightMode mode)
     pitchController.reset_I();
     yawController.reset_I();    
     steerController.reset_I();    
+}
+
+/*
+  set_mode() wrapper for MAVLink SET_MODE
+ */
+static bool mavlink_set_mode(uint8_t mode)
+{
+    switch (mode) {
+    case MANUAL:
+    case CIRCLE:
+    case STABILIZE:
+    case TRAINING:
+    case ACRO:
+    case FLY_BY_WIRE_A:
+    case AUTOTUNE:
+    case FLY_BY_WIRE_B:
+    case CRUISE:
+    case AUTO:
+    case RTL:
+    case LOITER:
+        set_mode((enum FlightMode)mode);
+        return true;
+    }
+    return false;
 }
 
 // exit_mode - perform any cleanup required when leaving a flight mode

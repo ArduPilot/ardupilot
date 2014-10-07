@@ -192,6 +192,24 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(pitch_trim,              "PITCH_TRIM", 0),
 
+    // @Param: YAW_RANGE
+    // @DisplayName: Yaw Angle Range
+    // @Description: Yaw axis total range of motion in degrees
+    // @Units: degrees
+    // @Increment: 0.1
+    // @Range: 0 360
+    // @User: Standard
+    GSCALAR(yaw_range,              "YAW_RANGE", YAW_RANGE_DEFAULT),
+
+    // @Param: PITCH_RANGE
+    // @DisplayName: Pitch Range
+    // @Description: Pitch axis total range of motion in degrees
+    // @Units: degrees
+    // @Increment: 0.1
+    // @Range: 0 180
+    // @User: Standard
+    GSCALAR(pitch_range,            "PITCH_RANGE", PITCH_RANGE_DEFAULT),
+
     // barometer ground calibration. The GND_ prefix is chosen for
     // compatibility with previous releases of ArduPlane
     // @Group: GND_

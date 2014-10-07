@@ -166,7 +166,14 @@ void AP_MotorsSingle::output_armed()
     int16_t motor_out;  // main motor output
 
     // Throttle is 0 to 1000 only
-    _rc_throttle.servo_out = constrain_int16(_rc_throttle.servo_out, 0, _max_throttle);
+    if (_rc_throttle.servo_out <= 0) {
+            _rc_throttle.servo_out = 0;
+            limit.throttle_lower = true;
+        }
+    if (_rc_throttle.servo_out >= _max_throttle) {
+        _rc_throttle.servo_out = _max_throttle;
+        limit.throttle_upper = true;
+    }
 
     // capture desired throttle from receiver
     _rc_throttle.calc_pwm();
@@ -180,9 +187,15 @@ void AP_MotorsSingle::output_armed()
         if (_spin_when_armed > _min_throttle) {
             _spin_when_armed = _min_throttle;
         }
-        
+
+        // throttle is limited
         motor_out = _rc_throttle.radio_min + _spin_when_armed;
     }else{
+        // check if throttle is at or below limit
+        if (_rc_throttle.servo_out <= _min_throttle) {
+            limit.throttle_lower = true;
+        }
+
 		//motor
         motor_out = _rc_throttle.radio_out;
 

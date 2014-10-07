@@ -204,7 +204,10 @@ static void update_land_detector()
 {
     // detect whether we have landed by watching for low climb rate, motors hitting their lower limit, overall low throttle and low rotation rate
     if ((abs(climb_rate) < LAND_DETECTOR_CLIMBRATE_MAX) && motors.limit.throttle_lower &&
-        (motors.get_throttle_out() < get_non_takeoff_throttle()) && (ahrs.get_gyro().length() < LAND_DETECTOR_ROTATION_MAX)) {
+#if FRAME_CONFIG != HELI_FRAME
+        (motors.get_throttle_out() < get_non_takeoff_throttle()) &&
+#endif
+        (ahrs.get_gyro().length() < LAND_DETECTOR_ROTATION_MAX)) {
         if (!ap.land_complete) {
             // increase counter until we hit the trigger then set land complete flag
             if( land_detector < LAND_DETECTOR_TRIGGER) {

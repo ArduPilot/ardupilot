@@ -812,6 +812,7 @@ static void do_yaw(const AP_Mission::Mission_Command& cmd)
 	set_auto_yaw_look_at_heading(
 		cmd.content.yaw.angle_deg,
 		cmd.content.yaw.turn_rate_dps,
+		cmd.content.yaw.direction,
 		cmd.content.yaw.relative_angle);
 }
 

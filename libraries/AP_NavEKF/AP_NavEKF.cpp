@@ -401,18 +401,21 @@ bool NavEKF::PositionDrifting(void) const
 void NavEKF::ResetPosition(void)
 {
     if (staticMode) {
-        states[7] = 0;
-        states[8] = 0;
+        state.position.x = 0;
+        state.position.y = 0;
     } else if (_ahrs->get_gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
 
         // read the GPS
         readGpsData();
-        // write to state vector
-        states[7] = gpsPosNE.x + gpsPosGlitchOffsetNE.x;
-        states[8] = gpsPosNE.y + gpsPosGlitchOffsetNE.y;
+        // write to state vector and compensate for GPS latency
+        state.position.x = gpsPosNE.x + gpsPosGlitchOffsetNE.x + 0.001f*velNED.x*float(_msecPosDelay);
+        state.position.y = gpsPosNE.y + gpsPosGlitchOffsetNE.y + 0.001f*velNED.y*float(_msecPosDelay);
     }
-    // reset the glitch ofset correction states
-    gpsPosGlitchOffsetNE.zero();
+    // stored horizontal position states to prevent subsequent GPS measurements from being rejected
+    for (uint8_t i=0; i<=49; i++){
+        storedStates[i].position[0] = state.position[0];
+        storedStates[i].position[1] = state.position[1];
+    }
 }
 
 // resets velocity states to last GPS measurement or to zero if in static mode
@@ -425,20 +428,17 @@ void NavEKF::ResetVelocity(void)
     } else if (_ahrs->get_gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
         // read the GPS
         readGpsData();
-        // reset horizontal velocity states
-        if (_fusionModeGPS <= 1) {
-            states[4]  = velNED[0]; // north velocity from blended accel data
-            states[5]  = velNED[1]; // east velocity from blended accel data
-            states[23] = velNED[0]; // north velocity from IMU1 accel data
-            states[24] = velNED[1]; // east velocity from IMU1 accel data
-            states[27] = velNED[0]; // north velocity from IMU2 accel data
-            states[28] = velNED[1]; // east velocity from IMU2 accel data
+        // Set vertical GPS velocity to 0 if mode > 0 (assume 0 if no VZ measurement)
+        if (_fusionModeGPS >= 1) {
+            velNED[2] = 0.0f;
         }
-        // reset vertical velocity states
-        if (_fusionModeGPS <= 0) {
-            states[6]  = velNED[2]; // down velocity from blended accel data
-            states[25] = velNED[2]; // down velocity from IMU1 accel data
-            states[29] = velNED[2]; // down velocity from IMU2 accel data
+        // reset filter velocity states
+        state.velocity = velNED;
+        state.vel1 = velNED;
+        state.vel2 = velNED;
+        // reset stored velocity states to prevent subsequent GPS measurements from being rejected
+        for (uint8_t i=0; i<=49; i++){
+            storedStates[i].velocity = velNED;
         }
     }
 }
@@ -449,9 +449,13 @@ void NavEKF::ResetHeight(void)
     // read the altimeter
     readHgtData();
     // write to the state vector
-    states[9]   = -hgtMea; // down position from blended accel data
+    state.position.z = -hgtMea; // down position from blended accel data
     state.posD1 = -hgtMea; // down position from IMU1 accel data
     state.posD2 = -hgtMea; // down position from IMU2 accel data
+    // reset stored vertical position states to prevent subsequent GPS measurements from being rejected
+    for (uint8_t i=0; i<=49; i++){
+        storedStates[i].position.z = -hgtMea;
+    }
 }
 
 // this function is used to initialise the filter whilst moving, using the AHRS DCM solution
@@ -477,11 +481,9 @@ void NavEKF::InitialiseFilterDynamic(void)
     magUpdateCountMax = uint8_t(1.0f/magUpdateCountMaxInv);
 
     // calculate initial orientation and earth magnetic field states
-    Quaternion initQuat;
-    initQuat = calcQuatAndFieldStates(_ahrs->roll, _ahrs->pitch);
+    state.quat = calcQuatAndFieldStates(_ahrs->roll, _ahrs->pitch);
 
     // write to state vector
-    state.quat = initQuat;
     state.gyro_bias.zero();
     state.accel_zbias1 = 0;
     state.accel_zbias2 = 0;
@@ -898,9 +900,8 @@ void NavEKF::UpdateStrapdownEquationsNED()
     state.quat = qUpdated;
 
     // calculate the body to nav cosine matrix
-    Quaternion q(states[0],states[1],states[2],states[3]);
     Matrix3f Tbn_temp;
-    q.rotation_matrix(Tbn_temp);
+    state.quat.rotation_matrix(Tbn_temp);
     prevTnb = Tbn_temp.transposed();
 
     // transform body delta velocities to delta velocities in the nav frame
@@ -976,7 +977,7 @@ void NavEKF::CovariancePrediction()
     // this allows for wind gradient effects.
     // filter height rate using a 10 second time constant filter
     float alpha = 0.1f * dt;
-    hgtRate = hgtRate * (1.0f - alpha) - states[6] * alpha;
+    hgtRate = hgtRate * (1.0f - alpha) - state.velocity.z * alpha;
 
     // use filtered height rate to increase wind process noise when climbing or descending
     // this allows for wind gradient effects.
@@ -1016,14 +1017,14 @@ void NavEKF::CovariancePrediction()
     dax = summedDelAng.x;
     day = summedDelAng.y;
     daz = summedDelAng.z;
-    q0 = states[0];
-    q1 = states[1];
-    q2 = states[2];
-    q3 = states[3];
-    dax_b = states[10];
-    day_b = states[11];
-    daz_b = states[12];
-    dvz_b = IMU1_weighting * states[13] + (1.0f - IMU1_weighting) * states[22];
+    q0 = state.quat[0];
+    q1 = state.quat[1];
+    q2 = state.quat[2];
+    q3 = state.quat[3];
+    dax_b = state.gyro_bias.x;
+    day_b = state.gyro_bias.y;
+    daz_b = state.gyro_bias.z;
+    dvz_b = IMU1_weighting * state.accel_zbias1 + (1.0f - IMU1_weighting) * state.accel_zbias2;
     _gyrNoise = constrain_float(_gyrNoise, 1e-3f, 5e-2f);
     daxCov = sq(dt*_gyrNoise);
     dayCov = sq(dt*_gyrNoise);
@@ -1703,7 +1704,7 @@ void NavEKF::FuseVelPosNED()
             // apply an innovation consistency threshold test, but don't fail if bad IMU data
             // calculate max valid position innovation squared based on a maximum horizontal inertial nav accel error and GPS noise parameter
             // max inertial nav error is scaled with horizontal g to allow for increased errors when manoeuvring
-            float accelScale =  (1.0f + 0.1f * accNavMagHoriz);
+            float accelScale =  (1.0f + 0.1f * accNavMag);
             float maxPosInnov2 = sq(_gpsPosInnovGate * _gpsHorizPosNoise + 0.005f * accelScale * float(_gpsGlitchAccelMax) * sq(0.001f * float(imuSampleTime_ms - posFailTime)));
             posTestRatio = (sq(posInnov[0]) + sq(posInnov[1])) / maxPosInnov2;
             posHealth = ((posTestRatio < 1.0f) || badIMUdata);
@@ -1749,7 +1750,7 @@ void NavEKF::FuseVelPosNED()
                 velInnov2[i] = statesAtVelTime.vel2[i] - observation[i]; // IMU2
                 // calculate innovation variance
                 varInnovVelPos[i] = P[stateIndex][stateIndex] + R_OBS[i];
-                // calculate error weightings for singloe IMU velocity states using
+                // calculate error weightings for single IMU velocity states using
                 // observation error to normalise
                 float R_hgt;
                 if (i == 2) {
@@ -1842,12 +1843,15 @@ void NavEKF::FuseVelPosNED()
             if (fuseData[obsIndex]) {
                 stateIndex = 4 + obsIndex;
                 // calculate the measurement innovation, using states from a different time coordinate if fusing height data
+                // adjust scaling on GPS measurement noise variances if not enough satellites
                 if (obsIndex <= 2)
                 {
                     innovVelPos[obsIndex] = statesAtVelTime.velocity[obsIndex] - observation[obsIndex];
+                    R_OBS[obsIndex] *= sq(gpsNoiseScaler);
                 }
                 else if (obsIndex == 3 || obsIndex == 4) {
                     innovVelPos[obsIndex] = statesAtPosTime.position[obsIndex-3] - observation[obsIndex];
+                    R_OBS[obsIndex] *= sq(gpsNoiseScaler);
                 } else {
                     innovVelPos[obsIndex] = statesAtHgtTime.position[obsIndex-3] - observation[obsIndex];
                 }
@@ -1900,8 +1904,8 @@ void NavEKF::FuseVelPosNED()
                     float hgtInnov2 = statesAtHgtTime.posD2 - observation[obsIndex];
                     // Correct single IMU prediction states using height measurement, limiting rate of change of bias to 0.02 m/s3
                     float correctionLimit = 0.02f * dtIMU *dtVelPos;
-                    states[13] = states[13] - constrain_float(Kfusion[13] * hgtInnov1, -correctionLimit, correctionLimit); // IMU1 Z accel bias
-                    states[22] = states[22] - constrain_float(Kfusion[22] * hgtInnov2, -correctionLimit, correctionLimit); // IMU2 Z accel bias
+                    state.accel_zbias1 -= constrain_float(Kfusion[13] * hgtInnov1, -correctionLimit, correctionLimit); // IMU1 Z accel bias
+                    state.accel_zbias2 -= constrain_float(Kfusion[22] * hgtInnov2, -correctionLimit, correctionLimit); // IMU2 Z accel bias
                     for (uint8_t i = 23; i<=26; i++) {
                         states[i] = states[i] - Kfusion[i] * hgtInnov1; // IMU1 velNED,posD
                     }
@@ -2458,11 +2462,8 @@ void NavEKF::FuseAirspeed()
                 states[j] = states[j] - Kfusion[j] * innovVtas;
             }
 
-            Quaternion q(states[0], states[1], states[2], states[3]);
-            q.normalize();
-            for (uint8_t i = 0; i<=3; i++) {
-                states[i] = q[i];
-            }
+            state.quat.normalize();
+
             // correct the covariance P = (I - K*H)*P
             // take advantage of the empty columns in H to reduce the number of operations
             for (uint8_t i = 0; i<=21; i++)
@@ -2536,15 +2537,15 @@ void NavEKF::FuseSideslip()
     float innovBeta;
 
     // copy required states to local variable names
-    q0 = states[0];
-    q1 = states[1];
-    q2 = states[2];
-    q3 = states[3];
-    vn = states[4];
-    ve = states[5];
-    vd = states[6];
-    vwn = states[14];
-    vwe = states[15];
+    q0 = state.quat[0];
+    q1 = state.quat[1];
+    q2 = state.quat[2];
+    q3 = state.quat[3];
+    vn = state.velocity.x;
+    ve = state.velocity.y;
+    vd = state.velocity.z;
+    vwn = state.wind_vel.x;
+    vwe = state.wind_vel.y;
 
     // calculate predicted wind relative velocity in NED
     vel_rel_wind.x = vn - vwn;
@@ -2652,11 +2653,8 @@ void NavEKF::FuseSideslip()
             states[j] = states[j] - Kfusion[j] * innovBeta;
         }
 
-        Quaternion q(states[0], states[1], states[2], states[3]);
-        q.normalize();
-        for (uint8_t i = 0; i<=3; i++) {
-            states[i] = q[i];
-        }
+        state.quat.normalize();
+
         // correct the covariance P = (I - K*H)*P
         // take advantage of the empty columns in H to reduce the
         // number of operations
@@ -2788,26 +2786,21 @@ void NavEKF::quat2Tbn(Matrix3f &Tbn, const Quaternion &quat) const
 // return the Euler roll, pitch and yaw angle in radians
 void NavEKF::getEulerAngles(Vector3f &euler) const
 {
-    Quaternion q(states[0], states[1], states[2], states[3]);
-    q.to_euler(&euler.x, &euler.y, &euler.z);
+    state.quat.to_euler(&euler.x, &euler.y, &euler.z);
     euler = euler - _ahrs->get_trim();
 }
 
 // return NED velocity in m/s
 void NavEKF::getVelNED(Vector3f &vel) const
 {
-    vel.x = states[4];
-    vel.y = states[5];
-    vel.z = states[6];
+    vel = state.velocity;
 }
 
 // return the last calculated NED position relative to the reference point (m).
 // return false if no position is available
 bool NavEKF::getPosNED(Vector3f &pos) const
 {
-    pos.x = states[7];
-    pos.y = states[8];
-    pos.z = states[9];
+    pos = state.position;
     return true;
 }
 
@@ -2818,9 +2811,7 @@ void NavEKF::getGyroBias(Vector3f &gyroBias) const
         gyroBias.zero();
         return;
     }
-    gyroBias.x = states[10] / dtIMU;
-    gyroBias.y = states[11] / dtIMU;
-    gyroBias.z = states[12] / dtIMU;
+    gyroBias = state.gyro_bias / dtIMU;
 }
 
 // return weighting of first IMU in blending function and the individual Z-accel bias estimates in m/s^2
@@ -2831,33 +2822,29 @@ void NavEKF::getAccelBias(Vector3f &accelBias) const
         accelBias.y = 0;
         accelBias.z = 0;
     } else {
-        accelBias.y = states[22] / dtIMU;
-        accelBias.z = states[13] / dtIMU;
+        accelBias.y = state.accel_zbias2 / dtIMU;
+        accelBias.z = state.accel_zbias1 / dtIMU;
     }
 }
 
 // return the NED wind speed estimates in m/s (positive is air moving in the direction of the axis)
 void NavEKF::getWind(Vector3f &wind) const
 {
-    wind.x = states[14];
-    wind.y = states[15];
+    wind.x = state.wind_vel.x;
+    wind.y = state.wind_vel.y;
     wind.z = 0.0f; // currently don't estimate this
 }
 
 // return earth magnetic field estimates in measurement units / 1000
 void NavEKF::getMagNED(Vector3f &magNED) const
 {
-    magNED.x = states[16]*1000.0f;
-    magNED.y = states[17]*1000.0f;
-    magNED.z = states[18]*1000.0f;
+    magNED = state.earth_magfield * 1000.0f;
 }
 
 // return body magnetic field estimates in measurement units / 1000
 void NavEKF::getMagXYZ(Vector3f &magXYZ) const
 {
-    magXYZ.x = states[19]*1000.0f;
-    magXYZ.y = states[20]*1000.0f;
-    magXYZ.z = states[21]*1000.0f;
+    magXYZ = state.body_magfield*1000.0f;
 }
 
 // return the last calculated latitude, longitude and height
@@ -2865,10 +2852,10 @@ bool NavEKF::getLLH(struct Location &loc) const
 {
     loc.lat = _ahrs->get_home().lat;
     loc.lng = _ahrs->get_home().lng;
-    loc.alt = _ahrs->get_home().alt - states[9]*100;
+    loc.alt = _ahrs->get_home().alt - state.position.z*100;
     loc.flags.relative_alt = 0;
     loc.flags.terrain_alt = 0;
-    location_offset(loc, states[7], states[8]);
+    location_offset(loc, state.position.x, state.position.y);
     return true;
 }
 
@@ -3105,6 +3092,15 @@ void NavEKF::readGpsData()
         // read the NED velocity from the GPS
         velNED = _ahrs->get_gps().velocity();
 
+        // check if we have enough GPS satellites and increase the gps noise scaler if we don't
+        if (_ahrs->get_gps().num_sats() >= 6) {
+            gpsNoiseScaler = 1.0f;
+        } else if (_ahrs->get_gps().num_sats() == 5) {
+            gpsNoiseScaler = 1.4f;
+        } else { // <= 4 satellites
+            gpsNoiseScaler = 2.0f;
+        }
+
         // Check if GPS can output vertical velocity and set GPS fusion mode accordingly
         if (!_ahrs->get_gps().have_vertical_velocity()) {
             // vertical velocity should not be fused
@@ -3255,24 +3251,20 @@ void NavEKF::alignYawGPS()
         float newYaw;
         float yawErr;
         // get quaternion from existing filter states and calculate roll, pitch and yaw angles
-        Quaternion initQuat;
-        Quaternion newQuat;
-        for (uint8_t i=0; i<=3; i++) initQuat[i] = states[i];
-        initQuat.to_euler(&roll, &pitch, &oldYaw);
+        state.quat.to_euler(&roll, &pitch, &oldYaw);
         // calculate yaw angle from GPS velocity
         newYaw = atan2f(velNED[1],velNED[0]);
         // modify yaw angle using GPS ground course if more than 45 degrees away or if not previously aligned
         yawErr = fabsf(newYaw - oldYaw);
         if (((yawErr > 0.7854f) && (yawErr < 5.4978f)) || !yawAligned) {
             // calculate new filter quaternion states from Euler angles
-            newQuat.from_euler(roll, pitch, newYaw);
-            for (uint8_t i=0; i<=3; i++) states[i] = newQuat[i];
+            state.quat.from_euler(roll, pitch, newYaw);
             // the yaw angle is now aligned so update its status
             yawAligned =  true;
             // set the velocity states
             if (_fusionModeGPS < 2) {
-                states[4] = velNED[0];
-                states[5] = velNED[1];
+                state.velocity.x = velNED.x;
+                state.velocity.y = velNED.y;
             }
             // reinitialise the quaternion, velocity and position covariances
             // zero the matrix entries
@@ -3303,12 +3295,12 @@ void NavEKF::alignYawGPS()
 // representative of typical launch wind
 void NavEKF::setWindVelStates()
 {
-    float gndSpd = sqrtf(sq(states[4]) + sq(states[5]));
+    float gndSpd = pythagorous2(state.velocity.x, state.velocity.y);
     if (gndSpd > 4.0f) {
         // set the wind states to be the reciprocal of the velocity and scale
         float scaleFactor = STARTUP_WIND_SPEED / gndSpd;
-        states[14] = - states[4] * scaleFactor;
-        states[15] = - states[5] * scaleFactor;
+        state.wind_vel.x = - state.velocity.x * scaleFactor;
+        state.wind_vel.y = - state.velocity.y * scaleFactor;
         // reinitialise the wind state covariances
         zeroRows(P,14,15);
         zeroCols(P,14,15);
@@ -3321,8 +3313,7 @@ void NavEKF::setWindVelStates()
 void NavEKF::getRotationBodyToNED(Matrix3f &mat) const
 {
     Vector3f trim = _ahrs->get_trim();
-    Quaternion q(states[0], states[1], states[2], states[3]);
-    q.rotation_matrix(mat);
+    state.quat.rotation_matrix(mat);
     mat.rotateXYinv(trim);
 }
 
@@ -3376,6 +3367,7 @@ void NavEKF::ZeroVariables()
     secondLastFixTime_ms = imuSampleTime_ms;
     lastDecayTime_ms = imuSampleTime_ms;
 
+    gpsNoiseScaler = 1.0f;
     velTimeout = false;
     posTimeout = false;
     hgtTimeout = false;
