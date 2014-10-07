@@ -25,7 +25,7 @@ void crash_check()
 #endif
 
     // return immediately if motors are not armed or pilot's throttle is above zero
-    if (!motors.armed() || (g.rc_3.control_in != 0 && !failsafe.radio)) {
+    if (!motors.armed() || (!ap.throttle_zero && !failsafe.radio)) {
         inverted_count = 0;
         return;
     }
