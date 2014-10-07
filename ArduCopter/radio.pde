@@ -74,11 +74,15 @@ void output_min()
     motors.output_min();
 }
 
+#define THROTTLE_ZERO_DEBOUNCE_TIME_MS 400
 static void read_radio()
 {
-    static uint32_t last_update = 0;
+    static uint32_t last_update_ms = 0;
+    static uint32_t last_nonzero_throttle_ms = 0;
+    uint32_t tnow_ms = millis();
+
     if (hal.rcin->new_input()) {
-        last_update = millis();
+        last_update_ms = tnow_ms;
         ap.new_radio_frame = true;
         uint16_t periods[8];
         hal.rcin->read(periods,8);
@@ -92,6 +96,13 @@ static void read_radio()
         g.rc_6.set_pwm(periods[5]);
         g.rc_7.set_pwm(periods[6]);
         g.rc_8.set_pwm(periods[7]);
+
+        if (g.rc_3.control_in != 0) {
+            last_nonzero_throttle_ms = tnow_ms;
+            ap.throttle_zero = false;
+        } else if (tnow_ms - last_nonzero_throttle_ms > THROTTLE_ZERO_DEBOUNCE_TIME_MS) {
+            ap.throttle_zero = true;
+        }
 
         // read channels 9 ~ 14
         for (uint8_t i=8; i<RC_MAX_CHANNELS; i++) {
@@ -108,7 +119,7 @@ static void read_radio()
         // update output on any aux channels, for manual passthru
         RC_Channel_aux::output_ch_all();
     }else{
-        uint32_t elapsed = millis() - last_update;
+        uint32_t elapsed = tnow_ms - last_update_ms;
         // turn on throttle failsafe if no update from the RC Radio for 500ms or 2000ms if we are using RC_OVERRIDE
         if (((!failsafe.rc_override_active && (elapsed >= FS_RADIO_TIMEOUT_MS)) || (failsafe.rc_override_active && (elapsed >= FS_RADIO_RC_OVERRIDE_TIMEOUT_MS))) &&
             (g.failsafe_throttle && motors.armed() && !failsafe.radio)) {
