@@ -145,7 +145,7 @@
 #include <AP_RCMapper.h>        // RC input mapping library
 #include <AP_Notify.h>          // Notify library
 #include <AP_BattMonitor.h>     // Battery monitor library
-#include <AP_BoardConfig.h>     // board configuration library
+//#include <AP_BoardConfig.h>     // board configuration library
 #include <AP_Frsky_Telem.h>
 #if SPRAYER == ENABLED
 #include <AC_Sprayer.h>         // crop sprayer library
@@ -256,37 +256,6 @@ static GPS_Glitch gps_glitch(gps);
 // flight modes convenience array
 static AP_Int8 *flight_modes = &g.flight_mode1;
 
-#if HIL_MODE == HIL_MODE_DISABLED
-
- #if CONFIG_ADC == ENABLED
-static AP_ADC_ADS7844 adc;
- #endif
-
- #if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000
-static AP_InertialSensor_MPU6000 ins;
-#elif CONFIG_IMU_TYPE == CONFIG_IMU_OILPAN
-static AP_InertialSensor_Oilpan ins(&adc);
-#elif CONFIG_IMU_TYPE == CONFIG_IMU_SITL
-static AP_InertialSensor_HIL ins;
-#elif CONFIG_IMU_TYPE == CONFIG_IMU_PX4
-static AP_InertialSensor_PX4 ins;
-#elif CONFIG_IMU_TYPE == CONFIG_IMU_VRBRAIN
-static AP_InertialSensor_VRBRAIN ins;
-#elif CONFIG_IMU_TYPE == CONFIG_IMU_FLYMAPLE
-AP_InertialSensor_Flymaple ins;
-#elif CONFIG_IMU_TYPE == CONFIG_IMU_L3G4200D
-AP_InertialSensor_L3G4200D ins;
-#elif CONFIG_IMU_TYPE == CONFIG_IMU_MPU6050
-static AP_InertialSensor_MPU6050 ins;
-#endif
-
- #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
- // When building for SITL we use the HIL barometer and compass drivers
-static AP_Baro_HIL barometer;
-static AP_Compass_HIL compass;
-static SITL sitl;
- #else
-// Otherwise, instantiate a real barometer and compass driver
 #if CONFIG_BARO == HAL_BARO_BMP085
 static AP_Baro_BMP085 barometer;
 #elif CONFIG_BARO == HAL_BARO_PX4
@@ -336,6 +305,8 @@ AP_InertialSensor_Flymaple ins;
 AP_InertialSensor_L3G4200D ins;
 #elif CONFIG_INS_TYPE == HAL_INS_MPU9250
 AP_InertialSensor_MPU9250 ins;
+#elif CONFIG_INS_TYPE == HAL_INS_YUNEEC
+AP_InertialSensor_MPU6050 ins;
 #else
   #error Unrecognised CONFIG_INS_TYPE setting.
 #endif // CONFIG_INS_TYPE
@@ -839,7 +810,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
 #endif
 //    { update_notify,         8,     10 },
     { one_hz_loop,         400,     42 },
-    { ekf_check,            40,      2 },
+//    { ekf_check,            40,      2 },
     { crash_check,          40,      2 },
     { gcs_check_input,	     8,    550 },
     { gcs_send_heartbeat,  400,    150 },
