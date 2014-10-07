@@ -247,7 +247,6 @@ void AC_PosControl::calc_leash_length_z()
 void AC_PosControl::pos_to_rate_z()
 {
     float curr_alt = _inav.get_altitude();
-    float linear_distance;  // half the distance we swap between linear and sqrt and the distance we offset sqrt.
 
     // clear position limit flags
     _limit.pos_up = false;
@@ -274,19 +273,8 @@ void AC_PosControl::pos_to_rate_z()
         _limit.pos_down = true;
     }
 
-    // check kP to avoid division by zero
-    if (_p_alt_pos.kP() != 0.0f) {
-        linear_distance = _accel_z_cms/(2.0f*_p_alt_pos.kP()*_p_alt_pos.kP());
-        if (_pos_error.z > 2*linear_distance ) {
-            _vel_target.z = safe_sqrt(2.0f*_accel_z_cms*(_pos_error.z-linear_distance));
-        }else if (_pos_error.z < -2.0f*linear_distance) {
-            _vel_target.z = -safe_sqrt(2.0f*_accel_z_cms*(-_pos_error.z-linear_distance));
-        }else{
-            _vel_target.z = _p_alt_pos.get_p(_pos_error.z);
-        }
-    }else{
-        _vel_target.z = 0;
-    }
+    // calculate _vel_target.z using from _pos_error.z using sqrt controller
+    _vel_target.z = sqrt_controller(_pos_error.z, _p_alt_pos.kP(), _accel_z_cms);
 
     // call rate based throttle controller which will update accel based throttle controller targets
     rate_to_accel_z();
