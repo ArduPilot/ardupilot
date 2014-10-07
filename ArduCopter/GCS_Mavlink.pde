@@ -213,7 +213,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_3D_ACCEL;
     }
 
-    if (!ahrs.healthy()) {
+    if (ahrs.initialised() && !ahrs.healthy()) {
         // AHRS subsystem is unhealthy
         control_sensors_health &= ~MAV_SYS_STATUS_AHRS;
     }
@@ -887,33 +887,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_SET_MODE:       // MAV ID: 11
     {
-        // decode
-        mavlink_set_mode_t packet;
-        mavlink_msg_set_mode_decode(msg, &packet);
-
-        // only accept custom modes because there is no easy mapping from Mavlink flight modes to AC flight modes
-        if (packet.base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED) {
-            if (set_mode(packet.custom_mode)) {
-                result = MAV_RESULT_ACCEPTED;
-            }
-        }
-
-        // set the safety switch position
-        if (packet.base_mode & MAV_MODE_FLAG_DECODE_POSITION_SAFETY) {
-            if (packet.custom_mode == 0) {
-                // turn safety off (pwm outputs flow to the motors)
-                hal.rcout->force_safety_off();
-                result = MAV_RESULT_ACCEPTED;
-            } else if (packet.custom_mode == 1) {
-                // turn safety on (no pwm outputs to the motors)
-                if (hal.rcout->force_safety_on()) {
-                    result = MAV_RESULT_ACCEPTED;
-                }
-            }
-        }
-
-        // send ACK or NAK
-        mavlink_msg_command_ack_send_buf(msg, chan, MAVLINK_MSG_ID_SET_MODE, result);
+        handle_set_mode(msg, set_mode);
         break;
     }
 
@@ -931,6 +905,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 #if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
         send_text_P(SEVERITY_LOW, PSTR("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION));
 #endif
+        send_text_P(SEVERITY_LOW, PSTR("Frame: " FRAME_CONFIG_STRING));
         handle_param_request_list(msg);
         break;
     }
@@ -1078,12 +1053,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         case MAV_CMD_CONDITION_YAW:
             // param1 : target angle [0-360]
             // param2 : speed during change [deg per second]
-            // param3 : direction (not supported)
+            // param3 : direction (-1:ccw, +1:cw)
             // param4 : relative offset (1) or absolute angle (0)
             if ((packet.param1 >= 0.0f)   &&
             	(packet.param1 <= 360.0f) &&
             	((packet.param4 == 0) || (packet.param4 == 1))) {
-            	set_auto_yaw_look_at_heading(packet.param1, packet.param2, (uint8_t)packet.param4);
+            	set_auto_yaw_look_at_heading(packet.param1, packet.param2, (int8_t)packet.param3, (uint8_t)packet.param4);
                 result = MAV_RESULT_ACCEPTED;
             } else {
                 result = MAV_RESULT_FAILED;

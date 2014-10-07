@@ -58,8 +58,8 @@ void AP_AHRS_NavEKF::update(void)
     _dcm_attitude(roll, pitch, yaw);
 
     if (!ekf_started) {
-        // if we have a GPS lock we can start the EKF
-        if (get_gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
+        // if we have a GPS lock and more than 6 satellites, we can start the EKF
+        if (get_gps().status() >= AP_GPS::GPS_OK_FIX_3D && get_gps().num_sats() >= _gps_minsats) {
             if (start_time_ms == 0) {
                 start_time_ms = hal.scheduler->millis();
             }
@@ -265,6 +265,13 @@ bool AP_AHRS_NavEKF::healthy(void)
     }
     return AP_AHRS_DCM::healthy();    
 }
+
+// true if the AHRS has completed initialisation
+bool AP_AHRS_NavEKF::initialised(void) const
+{
+    // initialisation complete 10sec after ekf has started
+    return (ekf_started && (hal.scheduler->millis() - start_time_ms > AP_AHRS_NAVEKF_SETTLE_TIME_MS));
+};
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE
 

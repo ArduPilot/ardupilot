@@ -69,8 +69,8 @@ bool AP_Compass_PX4::init(void)
         }
 
         // remember if the compass is external
-        _is_external[i] = (ioctl(_mag_fd[i], MAGIOCGEXTERNAL, 0) > 0);
-        if (_is_external[i]) {
+        _external[i] = (ioctl(_mag_fd[i], MAGIOCGEXTERNAL, 0) > 0);
+        if (_external[i]) {
             hal.console->printf("Using external compass[%u]\n", (unsigned)i);
         }
         _count[0] = 0;
@@ -108,12 +108,9 @@ bool AP_Compass_PX4::read(void)
         // a noop on most boards
         _sum[i].rotate(MAG_BOARD_ORIENTATION);
 
-        // override any user setting of COMPASS_EXTERNAL 
-        _external.set(_is_external[0]);
-
-        if (_is_external[i]) {
+        if (_external[i]) {
             // add user selectable orientation
-            _sum[i].rotate((enum Rotation)_orientation.get());
+            _sum[i].rotate((enum Rotation)_orientation[i].get());
         } else {
             // add in board orientation from AHRS
             _sum[i].rotate(_board_orientation);
@@ -155,11 +152,11 @@ void AP_Compass_PX4::accumulate(void)
 
 uint8_t AP_Compass_PX4::get_primary(void) const
 {
-    if (_primary < _num_instances && _healthy[_primary]) {
+    if (_primary < _num_instances && _healthy[_primary] && use_for_yaw(_primary)) {
         return _primary;
     }
     for (uint8_t i=0; i<_num_instances; i++) {
-        if (_healthy[i]) return i;
+        if (_healthy[i] && (use_for_yaw(i))) return i;
     }    
     return 0;
 }

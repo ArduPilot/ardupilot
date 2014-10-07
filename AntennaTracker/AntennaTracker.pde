@@ -102,20 +102,6 @@ static AP_Scheduler scheduler;
 // notification object for LEDs, buzzers etc
 static AP_Notify notify;
 
-// tracking status for MAVLink
-static struct {
-    float bearing;
-    float distance;
-    float pitch;
-    float altitude_difference;
-    float altitude_offset;
-    bool manual_control_yaw:1;
-    bool manual_control_pitch:1;
-    bool need_altitude_calibration:1;
-    bool scan_reverse_pitch:1;
-    bool scan_reverse_yaw:1;
-} nav_status;
-
 static uint32_t start_time_ms;
 
 static bool usb_connected;
@@ -196,8 +182,8 @@ SITL sitl;
 /**
    antenna control channels
  */
-static RC_Channel channel_yaw(CH_1);
-static RC_Channel channel_pitch(CH_2);
+static RC_Channel channel_yaw(CH_YAW);
+static RC_Channel channel_pitch(CH_PITCH);
 
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection
@@ -222,6 +208,45 @@ static struct   Location current_loc;
 // There are multiple states defined such as MANUAL, FBW-A, AUTO
 static enum ControlMode control_mode  = INITIALISING;
 
+////////////////////////////////////////////////////////////////////////////////
+// Vehicle state
+////////////////////////////////////////////////////////////////////////////////
+static struct {
+    bool location_valid;    // true if we have a valid location for the vehicle
+    Location location;      // lat, long in degrees * 10^7; alt in meters * 100
+    Location location_estimate; // lat, long in degrees * 10^7; alt in meters * 100
+    uint32_t last_update_us;    // last position update in micxroseconds
+    uint32_t last_update_ms;    // last position update in milliseconds
+    float heading;          // last known direction vehicle is moving
+    float ground_speed;     // vehicle's last known ground speed in m/s
+} vehicle;
+
+////////////////////////////////////////////////////////////////////////////////
+// Navigation controller state
+////////////////////////////////////////////////////////////////////////////////
+static struct {
+    float bearing;                  // bearing to vehicle in centi-degrees
+    float distance;                 // distance to vehicle in meters
+    float pitch;                    // pitch to vehicle in degrees (positive means vehicle is above tracker, negative means below)
+    float altitude_difference;      // altitude difference between tracker and vehicle in meters.  positive value means vehicle is above tracker
+    float altitude_offset;          // offset in meters which is added to tracker altitude to align altitude measurements with vehicle's barometer
+    bool manual_control_yaw         : 1;// true if tracker yaw is under manual control
+    bool manual_control_pitch       : 1;// true if tracker pitch is manually controlled
+    bool need_altitude_calibration  : 1;// true if tracker altitude has not been determined (true after startup)
+    bool scan_reverse_pitch         : 1;// controls direction of pitch movement in SCAN mode
+    bool scan_reverse_yaw           : 1;// controls direction of yaw movement in SCAN mode
+} nav_status;
+
+////////////////////////////////////////////////////////////////////////////////
+// Servo state
+////////////////////////////////////////////////////////////////////////////////
+static struct {
+    bool yaw_lower      : 1;    // true if yaw servo has been limited from moving to a lower position (i.e. position or rate limited)
+    bool yaw_upper      : 1;    // true if yaw servo has been limited from moving to a higher position (i.e. position or rate limited)
+    bool pitch_lower    : 1;    // true if pitch servo has been limited from moving to a lower position (i.e. position or rate limited)
+    bool pitch_upper    : 1;    // true if pitch servo has been limited from moving to a higher position (i.e. position or rate limited)
+} servo_limit;
+
 /*
   scheduler table - all regular tasks apart from the fast_loop()
   should be listed here, along with how often they should be called
@@ -230,6 +255,7 @@ static enum ControlMode control_mode  = INITIALISING;
  */
 static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { update_ahrs,            1,   1000 },
+    { read_radio,             1,    200 },
     { update_tracking,        1,   1000 },
     { update_GPS,             5,   4000 },
     { update_compass,         5,   1500 },
@@ -257,8 +283,7 @@ void setup()
     // load the default values of variables listed in var_info[]
     AP_Param::setup_sketch_defaults();
 
-    // arduplane does not use arming nor pre-arm checks
-    AP_Notify::flags.armed = true;
+    // antenna tracker does not use pre-arm checks or battery failsafe
     AP_Notify::flags.pre_arm_check = true;
     AP_Notify::flags.failsafe_battery = false;
 
@@ -296,10 +321,13 @@ static void one_second_loop()
     // sync MAVLink system ID
     mavlink_system.sysid = g.sysid_this_mav;
 
+    // updated armed/disarmed status LEDs
+    update_armed_disarmed();
+
     static uint8_t counter;
     counter++;
 
-    if (counter >= 60) {                                               
+    if (counter >= 60) {
         if(g.compass_enabled) {
             compass.save_offsets();
         }

@@ -88,6 +88,8 @@ public:
         k_param_onoff_pitch_mintime,
         k_param_yaw_trim,
         k_param_pitch_trim,
+        k_param_yaw_range,
+        k_param_pitch_range,            // 136
 
         k_param_channel_yaw = 200,
         k_param_channel_pitch,
@@ -132,6 +134,8 @@ public:
     AP_Float onoff_pitch_mintime;
     AP_Float yaw_trim;
     AP_Float pitch_trim;
+    AP_Int16 yaw_range;             // yaw axis total range of motion in degrees
+    AP_Int16 pitch_range;           // pitch axis total range of motion in degrees
 
     // Waypoints
     //

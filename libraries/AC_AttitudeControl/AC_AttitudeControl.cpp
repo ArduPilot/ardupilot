@@ -689,10 +689,6 @@ void AC_AttitudeControl::set_throttle_out(int16_t throttle_out, bool apply_angle
         // clear angle_boost for logging purposes
         _angle_boost = 0;
     }
-
-    // update compass with throttle value
-    // To-Do: find another method to grab the throttle out and feed to the compass.  Could be done completely outside this class
-    //compass.set_throttle((float)g.rc_3.servo_out/1000.0f);
 }
 
 // get_angle_boost - returns a throttle including compensation for roll/pitch angle

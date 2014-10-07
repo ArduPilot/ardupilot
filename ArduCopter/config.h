@@ -109,6 +109,28 @@
  # define FRAME_CONFIG   QUAD_FRAME
 #endif
 
+#if FRAME_CONFIG == QUAD_FRAME
+ # define FRAME_CONFIG_STRING "QUAD"
+#elif FRAME_CONFIG == TRI_FRAME
+ # define FRAME_CONFIG_STRING "TRI"
+#elif FRAME_CONFIG == HEXA_FRAME
+ # define FRAME_CONFIG_STRING "HEXA"
+#elif FRAME_CONFIG == Y6_FRAME
+ # define FRAME_CONFIG_STRING "Y6"
+#elif FRAME_CONFIG == OCTA_FRAME
+ # define FRAME_CONFIG_STRING "OCTA"
+#elif FRAME_CONFIG == OCTA_QUAD_FRAME
+ # define FRAME_CONFIG_STRING "OCTA_QUAD"
+#elif FRAME_CONFIG == HELI_FRAME
+ # define FRAME_CONFIG_STRING "HELI"
+#elif FRAME_CONFIG == SINGLE_FRAME
+ # define FRAME_CONFIG_STRING "SINGLE"
+#elif FRAME_CONFIG == COAX_FRAME
+ # define FRAME_CONFIG_STRING "COAX"
+#else
+ # define FRAME_CONFIG_STRING "UNKNOWN"
+#endif
+
 /////////////////////////////////////////////////////////////////////////////////
 // TradHeli defaults
 #if FRAME_CONFIG == HELI_FRAME
