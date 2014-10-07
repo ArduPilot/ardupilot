@@ -88,6 +88,11 @@
  # define FRSKY_TELEM_ENABLED   DISABLED
 #endif
 
+// disable sonar on APM1 and TradHeli/APM2
+#if (CONFIG_HAL_BOARD == HAL_BOARD_APM1 || (CONFIG_HAL_BOARD == HAL_BOARD_APM2 && FRAME_CONFIG == HELI_FRAME))
+ # define CONFIG_SONAR          DISABLED
+#endif
+
 #if HAL_CPU_CLASS < HAL_CPU_CLASS_75 || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
  // low power CPUs (APM1, APM2 and SITL)
  # define MAIN_LOOP_RATE    100
