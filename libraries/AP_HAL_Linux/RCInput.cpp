@@ -16,6 +16,9 @@
 
 #include "RCInput.h"
 #include "sbus.h"
+#include "dsm.h"
+
+extern const AP_HAL::HAL& hal;
 
 using namespace Linux;
 
@@ -219,16 +222,100 @@ reset:
     memset(&sbus_state, 0, sizeof(sbus_state));        
 }
 
+void LinuxRCInput::_process_dsm_pulse(uint16_t width_s0, uint16_t width_s1)
+{
+    // convert to bit widths, allowing for up to 1usec error, assuming 115200 bps
+    uint16_t bits_s0 = ((width_s0+4)*(uint32_t)115200) / 1000000;
+    uint16_t bits_s1 = ((width_s1+4)*(uint32_t)115200) / 1000000;
+    uint8_t bit_ofs, byte_ofs;
+    uint16_t nbits;
+
+    if (bits_s0 == 0 || bits_s1 == 0) {
+        // invalid data
+        goto reset;
+    }
+
+    byte_ofs = dsm_state.bit_ofs/10;
+    bit_ofs = dsm_state.bit_ofs%10;
+
+    // pull in the high bits
+    nbits = bits_s0;
+    if (nbits+bit_ofs > 10) {
+        nbits = 10 - bit_ofs;
+    }
+    dsm_state.bytes[byte_ofs] |= ((1U<<nbits)-1) << bit_ofs;
+    dsm_state.bit_ofs += nbits;
+    bit_ofs += nbits;
+
+    if (bits_s0 - nbits > 10) {
+        if (dsm_state.bit_ofs == 16*10) {
+            // we have a full frame
+            uint8_t bytes[16];
+            uint8_t i;
+            for (i=0; i<16; i++) {
+                // get raw data
+                uint16_t v = dsm_state.bytes[i];
+                
+                // check start bit
+                if ((v & 1) != 0) {
+                    goto reset;
+                }
+                // check stop bits
+                if ((v & 0x200) != 0x200) {
+                    goto reset;
+                }
+                bytes[i] = ((v>>1) & 0xFF);
+            }
+            uint16_t values[8];
+            uint16_t num_values=0;
+            if (dsm_decode(hal.scheduler->micros64(), bytes, values, &num_values, 8)) {
+                for (i=0; i<num_values; i++) {
+                    _pulse_capt[i] = values[i];
+                }
+                _num_channels = num_values;                
+            }
+        }
+        memset(&dsm_state, 0, sizeof(dsm_state));
+    }
+
+    byte_ofs = dsm_state.bit_ofs/10;
+    bit_ofs = dsm_state.bit_ofs%10;
+
+    if (bits_s1+bit_ofs > 10) {
+        // invalid data
+        goto reset;
+    }
+
+    // pull in the low bits
+    dsm_state.bit_ofs += bits_s1;
+    return;
+reset:
+    memset(&dsm_state, 0, sizeof(dsm_state));        
+}
+
 /*
   process a RC input pulse of the given width
  */
 void LinuxRCInput::_process_rc_pulse(uint16_t width_s0, uint16_t width_s1)
 {
+#if 0
+    // useful for debugging
+    static FILE *rclog;
+    if (rclog == NULL) {
+        rclog = fopen("/tmp/rcin.log", "w");
+    }
+    if (rclog) {
+        fprintf(rclog, "%u %u\n", (unsigned)width_s0, (unsigned)width_s1);
+    }
+#endif
     // treat as PPM-sum
     _process_ppmsum_pulse(width_s0 + width_s1);
 
     // treat as SBUS
     _process_sbus_pulse(width_s0, width_s1);
+
+    // treat as DSM
+    _process_dsm_pulse(width_s0, width_s1);
 }
 
 #endif // CONFIG_HAL_BOARD
