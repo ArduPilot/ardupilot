@@ -1100,6 +1100,10 @@ static void update_batt_compass(void)
         if (g.log_bitmask & MASK_LOG_COMPASS) {
             Log_Write_Compass();
         }
+        // log battery info to the dataflash
+        if (g.log_bitmask & MASK_LOG_CURRENT) {
+            Log_Write_Current();
+        }
     }
 
     // record throttle output
