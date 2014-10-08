@@ -38,6 +38,9 @@ static void init_rc_in()
 
     // set default dead zones
     default_dead_zones();
+
+    // initialise throttle_zero flag
+    ap.throttle_zero = true;
 }
 
  // init_rc_out -- initialise motors and check if pilot wants to perform ESC calibration
@@ -74,11 +77,9 @@ void output_min()
     motors.output_min();
 }
 
-#define THROTTLE_ZERO_DEBOUNCE_TIME_MS 400
 static void read_radio()
 {
     static uint32_t last_update_ms = 0;
-    static uint32_t last_nonzero_throttle_ms = 0;
     uint32_t tnow_ms = millis();
 
     if (hal.rcin->new_input()) {
@@ -90,19 +91,13 @@ static void read_radio()
         g.rc_2.set_pwm(periods[rcmap.pitch()-1]);
 
         set_throttle_and_failsafe(periods[rcmap.throttle()-1]);
+        set_throttle_zero_flag(g.rc_3.control_in);
 
         g.rc_4.set_pwm(periods[rcmap.yaw()-1]);
         g.rc_5.set_pwm(periods[4]);
         g.rc_6.set_pwm(periods[5]);
         g.rc_7.set_pwm(periods[6]);
         g.rc_8.set_pwm(periods[7]);
-
-        if (g.rc_3.control_in != 0) {
-            last_nonzero_throttle_ms = tnow_ms;
-            ap.throttle_zero = false;
-        } else if (tnow_ms - last_nonzero_throttle_ms > THROTTLE_ZERO_DEBOUNCE_TIME_MS) {
-            ap.throttle_zero = true;
-        }
 
         // read channels 9 ~ 14
         for (uint8_t i=8; i<RC_MAX_CHANNELS; i++) {
@@ -168,6 +163,22 @@ static void set_throttle_and_failsafe(uint16_t throttle_pwm)
         }
         // pass through throttle
         g.rc_3.set_pwm(throttle_pwm);
+    }
+}
+
+#define THROTTLE_ZERO_DEBOUNCE_TIME_MS 400
+// set_throttle_zero_flag - set throttle_zero flag from debounced throttle control_in
+static void set_throttle_zero_flag(int16_t throttle_control)
+{
+    static uint32_t last_nonzero_throttle_ms = 0;
+    uint32_t tnow_ms = millis();
+
+    // if non-zero throttle immediately set as non-zero
+    if (throttle_control > 0) {
+        last_nonzero_throttle_ms = tnow_ms;
+        ap.throttle_zero = false;
+    } else if (tnow_ms - last_nonzero_throttle_ms > THROTTLE_ZERO_DEBOUNCE_TIME_MS) {
+        ap.throttle_zero = true;
     }
 }
 
