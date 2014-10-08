@@ -418,6 +418,17 @@ bool AP_InertialSensor::get_gyro_health_all(void) const
     return (get_gyro_count() > 0);
 }
 
+// gyro_calibration_ok_all - returns true if all gyros were calibrated successfully
+bool AP_InertialSensor::gyro_calibrated_ok_all() const
+{
+    for (uint8_t i=0; i<get_gyro_count(); i++) {
+        if (!gyro_calibrated_ok(i)) {
+            return false;
+        }
+    }
+    return (get_gyro_count() > 0);
+}
+
 // get_accel_health_all - return true if all accels are healthy
 bool AP_InertialSensor::get_accel_health_all(void) const
 {
@@ -550,6 +561,7 @@ AP_InertialSensor::_init_gyro()
         best_diff[k] = 0;
         last_average[k].zero();
         converged[k] = false;
+        _gyro_cal_ok[k] = true; // default calibration ok flag to true
     }
 
     for(int8_t c = 0; c < 5; c++) {
@@ -625,6 +637,8 @@ AP_InertialSensor::_init_gyro()
             hal.console->printf_P(PSTR("gyro[%u] did not converge: diff=%f dps\n"),
                                   (unsigned)k, ToDeg(best_diff[k]));
             _gyro_offset[k] = best_avg[k];
+            // flag calibration as failed for this gyro
+            _gyro_cal_ok[k] = false;
         }
     }
 }
