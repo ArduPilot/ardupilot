@@ -28,12 +28,9 @@ public:
 
  private:
     volatile bool new_rc_input;
-    
-    uint16_t _pulse_capt[LINUX_RC_INPUT_NUM_CHANNELS];
-    uint8_t  _num_channels;
 
-    // the channel we will receive input from next, or -1 when not synchronised
-    int8_t _channel_counter;
+    uint16_t _pwm_values[LINUX_RC_INPUT_NUM_CHANNELS];    
+    uint8_t  _num_channels;
 
     void _process_ppmsum_pulse(uint16_t width);
     void _process_sbus_pulse(uint16_t width_s0, uint16_t width_s1);
@@ -41,6 +38,12 @@ public:
 
     /* override state */
     uint16_t _override[LINUX_RC_INPUT_NUM_CHANNELS];
+
+    // state of ppm decoder
+    struct {
+        int8_t _channel_counter;
+        uint16_t _pulse_capt[LINUX_RC_INPUT_NUM_CHANNELS];
+    } ppm_state;
 
     // state of SBUS bit decoder
     struct {
