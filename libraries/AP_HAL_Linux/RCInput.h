@@ -37,6 +37,7 @@ public:
 
     void _process_ppmsum_pulse(uint16_t width);
     void _process_sbus_pulse(uint16_t width_s0, uint16_t width_s1);
+    void _process_dsm_pulse(uint16_t width_s0, uint16_t width_s1);
 
     /* override state */
     uint16_t _override[LINUX_RC_INPUT_NUM_CHANNELS];
@@ -46,6 +47,12 @@ public:
 	uint16_t bytes[25]; // including start bit, parity and stop bits
 	uint16_t bit_ofs;
     } sbus_state;
+
+    // state of DSM decoder
+    struct {
+        uint16_t bytes[16]; // including start bit and stop bit
+        uint16_t bit_ofs;
+    } dsm_state;
 };
 
 #include "RCInput_PRU.h"
