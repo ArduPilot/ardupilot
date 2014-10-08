@@ -368,6 +368,14 @@ static void pre_arm_checks(bool display_failure)
             return;
         }
 
+        // check gyros calibrated successfully
+        if(!ins.gyro_calibrated_ok_all()) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Gyro cal failed"));
+            }
+            return;
+        }
+
 #if INS_MAX_INSTANCES > 1
         // check all gyros are consistent
         if (ins.get_gyro_count() > 1) {
