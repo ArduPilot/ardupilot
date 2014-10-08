@@ -120,6 +120,8 @@ public:
     bool get_gyro_health(void) const { return get_gyro_health(_get_primary_gyro()); }
     bool get_gyro_health_all(void) const;
     virtual uint8_t get_gyro_count(void) const { return 1; };
+    bool gyro_calibrated_ok(uint8_t instance) const { return _gyro_cal_ok[instance]; }
+    bool gyro_calibrated_ok_all() const;
 
     virtual bool get_accel_health(uint8_t instance) const { return true; }
     bool get_accel_health(void) const { return get_accel_health(get_primary_accel()); }
@@ -224,6 +226,9 @@ protected:
 
     // board orientation from AHRS
     enum Rotation			_board_orientation;
+
+    // calibrated_ok flags
+    bool                    _gyro_cal_ok[INS_MAX_INSTANCES];
 };
 
 #include "AP_InertialSensor_Oilpan.h"
