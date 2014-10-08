@@ -14,6 +14,7 @@
 #include <sys/stat.h>
 #include <stdint.h>
 
+#include "GPIO.h"
 #include "RCInput.h"
 
 extern const AP_HAL::HAL& hal;
@@ -31,6 +32,10 @@ void LinuxRCInput_PRU::init(void*)
     close(mem_fd);
     ring_buffer->ring_head = 0;
     _s0_time = 0;
+
+    // enable the spektrum RC input power
+    hal.gpio->pinMode(BBB_P8_17, HAL_GPIO_OUTPUT);
+    hal.gpio->write(BBB_P8_17, 1);
 }
 
 /*
