@@ -495,13 +495,13 @@ void PX4UARTDriver::_timer_tick(void)
     uint16_t _tail;
     n = BUF_AVAILABLE(_writebuf);
     if (n > 0) {
+        uint16_t n1 = _writebuf_size - _writebuf_head;
         perf_begin(_perf_uart);
-        if (_tail > _writebuf_head) {
+        if (n1 >= n) {
             // do as a single write
             _write_fd(&_writebuf[_writebuf_head], n);
         } else {
             // split into two writes
-            uint16_t n1 = _writebuf_size - _writebuf_head;
             int ret = _write_fd(&_writebuf[_writebuf_head], n1);
             if (ret == n1 && n > n1) {
                 _write_fd(&_writebuf[_writebuf_head], n - n1);                
@@ -514,13 +514,13 @@ void PX4UARTDriver::_timer_tick(void)
     uint16_t _head;
     n = BUF_SPACE(_readbuf);
     if (n > 0) {
+        uint16_t n1 = _readbuf_size - _readbuf_tail;
         perf_begin(_perf_uart);
-        if (_readbuf_tail < _head) {
+        if (n1 >= n) {
             // one read will do
             assert(_readbuf_tail+n <= _readbuf_size);
             _read_fd(&_readbuf[_readbuf_tail], n);
         } else {
-            uint16_t n1 = _readbuf_size - _readbuf_tail;
             assert(_readbuf_tail+n1 <= _readbuf_size);
             int ret = _read_fd(&_readbuf[_readbuf_tail], n1);
             if (ret == n1 && n > n1) {
