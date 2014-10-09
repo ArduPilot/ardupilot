@@ -648,12 +648,12 @@ void LinuxUARTDriver::_timer_tick(void)
     uint16_t _head;
     n = BUF_SPACE(_readbuf);
     if (n > 0) {
-        if (_readbuf_tail < _head) {
+        uint16_t n1 = _readbuf_size - _readbuf_tail;
+        if (n1 >= n) {
             // one read will do
             assert(_readbuf_tail+n <= _readbuf_size);
             _read_fd(&_readbuf[_readbuf_tail], n);
         } else {
-            uint16_t n1 = _readbuf_size - _readbuf_tail;
             assert(_readbuf_tail+n1 <= _readbuf_size);
             int ret = _read_fd(&_readbuf[_readbuf_tail], n1);
             if (ret == n1 && n > n1) {
