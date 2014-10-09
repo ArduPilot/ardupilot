@@ -206,14 +206,22 @@ void RangeFinder::update(void)
  */
 void RangeFinder::detect_instance(uint8_t instance)
 {
-    if (_type[instance] == RangeFinder_TYPE_PLI2C) {
+    uint8_t type = _type[instance];
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    if (type == RangeFinder_TYPE_PLI2C || 
+        type == RangeFinder_TYPE_MBI2C) {
+        // I2C sensor types are handled by the PX4Firmware code
+        type = RangeFinder_TYPE_PX4;
+    }
+#endif
+    if (type == RangeFinder_TYPE_PLI2C) {
         if (AP_RangeFinder_PulsedLightLRF::detect(*this, instance)) {
             state[instance].instance = instance;
             drivers[instance] = new AP_RangeFinder_PulsedLightLRF(*this, instance, state[instance]);
             return;
         }
     } 
-    if (_type[instance] == RangeFinder_TYPE_MBI2C) {
+    if (type == RangeFinder_TYPE_MBI2C) {
         if (AP_RangeFinder_MaxsonarI2CXL::detect(*this, instance)) {
             state[instance].instance = instance;
             drivers[instance] = new AP_RangeFinder_MaxsonarI2CXL(*this, instance, state[instance]);
@@ -221,7 +229,7 @@ void RangeFinder::detect_instance(uint8_t instance)
         }
     }
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    if (_type[instance] == RangeFinder_TYPE_PX4) {
+    if (type == RangeFinder_TYPE_PX4) {
         if (AP_RangeFinder_PX4::detect(*this, instance)) {
             state[instance].instance = instance;
             drivers[instance] = new AP_RangeFinder_PX4(*this, instance, state[instance]);
@@ -229,7 +237,7 @@ void RangeFinder::detect_instance(uint8_t instance)
         }
     }
 #endif
-    if (_type[instance] == RangeFinder_TYPE_ANALOG) {
+    if (type == RangeFinder_TYPE_ANALOG) {
         // note that analog must be the last to be checked, as it will
         // always come back as present if the pin is valid
         if (AP_RangeFinder_analog::detect(*this, instance)) {
