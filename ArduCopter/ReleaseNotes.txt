@@ -1,5 +1,11 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.2-rc12 10-Oct-2014
+Changes from 3.2-rc11
+1) disable sonar on APM1 and TradHeli (APM1 & APM2) to allow code to fit 
+2) Add pre-arm and health check that gyro calibration succeeded 
+3) Bug fix to EKF reporting invalid position and velocity when switched on in flight with Ch7/Ch8 switch 
+------------------------------------------------------------------
 ArduCopter 3.2-rc11 06-Oct-2014
 Changes from 3.2-rc10
 1) reduce lean on take-off in Auto by resetting horizontal position targets 
