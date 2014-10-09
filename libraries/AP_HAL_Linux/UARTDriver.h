@@ -29,6 +29,8 @@ public:
 
     void _timer_tick(void);
 
+    enum flow_control get_flow_control(void) { return _flow_control; }
+
 private:
     char *device_path;
     int _rd_fd;
@@ -47,6 +49,7 @@ private:
     // of ::read() and ::write() in the main loop
     uint8_t *_readbuf;
     uint16_t _readbuf_size;
+    enum flow_control _flow_control;
 
     // _head is where the next available data is. _tail is where new
     // data is put
