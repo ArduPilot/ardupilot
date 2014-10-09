@@ -31,7 +31,8 @@ LinuxUARTDriver::LinuxUARTDriver(bool default_console) :
     device_path(NULL),
     _rd_fd(-1),
     _wr_fd(-1),
-    _packetise(false)
+    _packetise(false),
+    _flow_control(FLOW_CONTROL_DISABLE)
 {
     if (default_console) {
         _rd_fd = 0;
@@ -83,15 +84,17 @@ void LinuxUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
             }
             
             if (!_connected) {
-                printf("LinuxUARTDriver TCP connection not stablished\n");
+                ::printf("LinuxUARTDriver TCP connection not stablished\n");
                 exit(1);
             }
+            _flow_control = FLOW_CONTROL_ENABLE;
             break;
         }   
 
         case DEVICE_UDP:
         {
             _udp_start_connection();
+            _flow_control = FLOW_CONTROL_ENABLE;
             break;
         }   
 
@@ -100,20 +103,23 @@ void LinuxUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
             _rd_fd = open(device_path, O_RDWR);
             _wr_fd = _rd_fd;
             if (_rd_fd == -1) {
-                fprintf(stdout, "Failed to open UART device %s - %s\n",
-                        device_path, strerror(errno));
+                ::fprintf(stdout, "Failed to open UART device %s - %s\n",
+                          device_path, strerror(errno));
                 return;
             }
             
             // always run the file descriptor non-blocking, and deal with
             // blocking IO in the higher level calls
             fcntl(_rd_fd, F_SETFL, fcntl(_rd_fd, F_GETFL, 0) | O_NONBLOCK);
+
+            // TODO: add proper flow control support
+            _flow_control = FLOW_CONTROL_DISABLE;
             break;
         }
         default:
         {
             // Notify that the option is not valid and select standart input and output
-            printf("LinuxUARTDriver parsing failed, using default\n");
+            ::printf("LinuxUARTDriver parsing failed, using default\n");
 
             _rd_fd = 0;
             _wr_fd = 1;
@@ -267,42 +273,42 @@ void LinuxUARTDriver::_tcp_start_connection(bool wait_for_connection)
 
         listen_fd = socket(AF_INET, SOCK_STREAM, 0);
         if (listen_fd == -1) {
-            printf("socket failed - %s\n", strerror(errno));
+            ::printf("socket failed - %s\n", strerror(errno));
             exit(1);
         }
 
         /* we want to be able to re-use ports quickly */
         setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
 
-        printf("bind port %u for %u\n", 
-                (unsigned)ntohs(sockaddr.sin_port),
-                (unsigned)portNumber);
+        ::printf("bind port %u for %u\n", 
+                 (unsigned)ntohs(sockaddr.sin_port),
+                 (unsigned)portNumber);
 
         ret = bind(listen_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
         if (ret == -1) {
-            printf("bind failed on port %u - %s\n",
-                        (unsigned)ntohs(sockaddr.sin_port),
-                        strerror(errno));
+            ::printf("bind failed on port %u - %s\n",
+                     (unsigned)ntohs(sockaddr.sin_port),
+                     strerror(errno));
             exit(1);
         }
 
         ret = listen(listen_fd, 5);
         if (ret == -1) {
-            printf("listen failed - %s\n", strerror(errno));
+            ::printf("listen failed - %s\n", strerror(errno));
             exit(1);
         }
 
-        printf("Serial port %u on TCP port %u\n", portNumber, 
-                _base_port + portNumber);
+        ::printf("Serial port %u on TCP port %u\n", portNumber, 
+                 _base_port + portNumber);
         fflush(stdout);
     }
 
     if (wait_for_connection) {
-        printf("Waiting for connection ....\n");
-        fflush(stdout);
+        ::printf("Waiting for connection ....\n");
+        ::fflush(stdout);
         net_fd = accept(listen_fd, NULL, NULL);
         if (net_fd == -1) {
-            printf("accept() error - %s", strerror(errno));
+            ::printf("accept() error - %s", strerror(errno));
             exit(1);
         }
         setsockopt(net_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
@@ -338,15 +344,15 @@ void LinuxUARTDriver::_udp_start_connection(void)
 
     _rd_fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (_rd_fd == -1) {
-        printf("socket failed - %s\n", strerror(errno));
+        ::printf("socket failed - %s\n", strerror(errno));
         exit(1);
     }
         
     ret = connect(_rd_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
     if (ret == -1) {
-        printf("connect failed to %s:%u - %s\n",
-               _ip, (unsigned)_base_port,
-               strerror(errno));
+        ::printf("connect failed to %s:%u - %s\n",
+                 _ip, (unsigned)_base_port,
+                 strerror(errno));
         exit(1);
     }
 
@@ -598,26 +604,42 @@ void LinuxUARTDriver::_timer_tick(void)
         if (n < 8) {
             n = 0;
         } else {
+            // the length of the packet is the 2nd byte, and mavlink
+            // packets have a 6 byte header plus 2 byte checksum,
+            // giving len+8 bytes
             uint16_t ofs = (_writebuf_head + 1) % _writebuf_size;
             uint8_t len = _writebuf[ofs];
             if (n < len+8) {
+                // we don't have a full packet yet
                 n = 0;
             } else if (n > len+8) {
+                // send just 1 packet at a time (so MAVLink packets
+                // are aligned on UDP boundaries)
                 n = len+8;
             }
         }        
     }
 
     if (n > 0) {
-        if (_tail > _writebuf_head) {
+        uint16_t n1 = _writebuf_size - _writebuf_head;
+        if (n1 >= n) {
             // do as a single write
             _write_fd(&_writebuf[_writebuf_head], n);
         } else {
             // split into two writes
-            uint16_t n1 = _writebuf_size - _writebuf_head;
-            int ret = _write_fd(&_writebuf[_writebuf_head], n1);
-            if (ret == n1 && n > n1) {
-                _write_fd(&_writebuf[_writebuf_head], n - n1);                
+            if (_packetise) {
+                // keep as a single UDP packet
+                uint8_t tmpbuf[n];
+                memcpy(tmpbuf, &_writebuf[_writebuf_head], n1);
+                if (n > n1) {
+                    memcpy(&tmpbuf[n1], &_writebuf[0], n-n1);
+                }
+                _write_fd(tmpbuf, n);
+            } else {
+                int ret = _write_fd(&_writebuf[_writebuf_head], n1);
+                if (ret == n1 && n > n1) {
+                    _write_fd(&_writebuf[_writebuf_head], n - n1);                
+                }
             }
         }
     }
