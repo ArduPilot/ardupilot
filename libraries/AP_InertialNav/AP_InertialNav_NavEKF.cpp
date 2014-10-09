@@ -30,7 +30,7 @@ void AP_InertialNav_NavEKF::update(float dt)
 
     _haveabspos = _ahrs.get_position(_abspos);
 
-    _ahrs.get_velocity_NED(_velocity_cm);
+    _ahrs_ekf.get_NavEKF().getVelNED(_velocity_cm);
     _velocity_cm *= 100; // convert to cm/s
 
     // InertialNav is NEU
