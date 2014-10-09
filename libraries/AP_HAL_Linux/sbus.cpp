@@ -38,6 +38,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "sbus.h"
 
 
 #define SBUS_FRAME_SIZE		25

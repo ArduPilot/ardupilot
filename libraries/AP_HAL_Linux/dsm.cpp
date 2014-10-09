@@ -38,6 +38,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "dsm.h"
 
 #define DSM_FRAME_SIZE		16		/**<DSM frame size in bytes*/
 #define DSM_FRAME_CHANNELS	7		/**<Max supported DSM channels*/
