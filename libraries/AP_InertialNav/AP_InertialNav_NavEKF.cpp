@@ -25,7 +25,7 @@ void AP_InertialNav_NavEKF::init()
 void AP_InertialNav_NavEKF::update(float dt)
 {
     AP_InertialNav::update(dt);
-    _ahrs.get_relative_position_NED(_relpos_cm);
+    _ahrs_ekf.get_NavEKF().getPosNED(_relpos_cm);
     _relpos_cm *= 100; // convert to cm
 
     _haveabspos = _ahrs.get_position(_abspos);
