@@ -5,6 +5,8 @@
 #define AUTO_TRIM_DELAY         100 // called at 10hz so 10 seconds
 #define AUTO_DISARMING_DELAY    15  // called at 1hz so 15 seconds
 
+static uint8_t auto_disarming_counter;
+
 // arm_motors_check - checks for pilot input to arm or disarm the copter
 // called at 10hz
 static void arm_motors_check()
@@ -68,6 +70,8 @@ static void arm_motors_check()
         // arm the motors and configure for flight
         if (arming_counter == AUTO_TRIM_DELAY && motors.armed() && control_mode == STABILIZE) {
             auto_trim_counter = 250;
+            // ensure auto-disarm doesn't trigger immediately
+            auto_disarming_counter = 0;
         }
 
     // full left
@@ -94,8 +98,6 @@ static void arm_motors_check()
 // called at 1hz
 static void auto_disarm_check()
 {
-    static uint8_t auto_disarming_counter;
-
     // exit immediately if we are already disarmed or throttle is not zero
     if (!motors.armed() || g.rc_3.control_in > 0) {
         auto_disarming_counter = 0;
