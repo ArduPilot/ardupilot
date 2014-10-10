@@ -99,7 +99,7 @@ static void arm_motors_check()
 static void auto_disarm_check()
 {
     // exit immediately if we are already disarmed or throttle is not zero
-    if (!motors.armed() || g.rc_3.control_in > 0) {
+    if (!motors.armed() || !ap.throttle_zero) {
         auto_disarming_counter = 0;
         return;
     }
