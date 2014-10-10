@@ -1146,14 +1146,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             if (packet.param1 == 1.0f) {
                 // run pre_arm_checks and arm_checks and display failures
                 pre_arm_checks(true);
-                if(ap.pre_arm_check && arm_checks(true)) {
+                if(ap.pre_arm_check && arm_checks(true, true)) {
                     init_arm_motors();
                     result = MAV_RESULT_ACCEPTED;
                 }else{
                     AP_Notify::flags.arming_failed = true;  // init_arm_motors function will reset flag back to false
                     result = MAV_RESULT_UNSUPPORTED;
                 }
-            } else if (packet.param1 == 0.0f)  {
+            } else if (packet.param1 == 0.0f && (manual_flight_mode(control_mode) || ap.land_complete))  {
                 init_disarm_motors();
                 result = MAV_RESULT_ACCEPTED;
             } else {
