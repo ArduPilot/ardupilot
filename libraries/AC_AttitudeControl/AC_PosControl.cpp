@@ -472,7 +472,7 @@ void AC_PosControl::get_stopping_point_xy(Vector3f &stopping_point) const
     float vel_total = pythagorous2(curr_vel.x, curr_vel.y);
 
     // avoid divide by zero by using current position if the velocity is below 10cm/s, kP is very low or acceleration is zero
-    if (kP <= 0.0f || _accel_cms <= 0.0f) {
+    if (kP <= 0.0f || _accel_cms <= 0.0f || vel_total == 0.0f) {
         stopping_point.x = curr_pos.x;
         stopping_point.y = curr_pos.y;
         return;
