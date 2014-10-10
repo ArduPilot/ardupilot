@@ -267,6 +267,13 @@ static bool manual_flight_mode(uint8_t mode) {
     return false;
 }
 
+static bool mode_allows_arming(uint8_t mode) {
+    if (manual_flight_mode(mode) || mode == LOITER || mode == ALT_HOLD || mode == POSHOLD || mode == AUTOTUNE || mode == GUIDED) {
+        return true;
+    }
+    return false;
+}
+
 //
 // print_flight_mode - prints flight mode to serial port.
 //
