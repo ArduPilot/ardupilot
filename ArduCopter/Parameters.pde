@@ -359,6 +359,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(log_bitmask,    "LOG_BITMASK",          DEFAULT_LOG_BITMASK),
 
+    // @Param: LOG_DISARMED
+    // @DisplayName: Log while disarmed
+    // @Description: Switch for logging while disarmed.
+    // @Values: 0:Log only while armed,1:Log always
+    // @User: Standard
+    GSCALAR(log_disarmed,    "LOG_DISARMED",          0),
+
     // @Param: ESC
     // @DisplayName: ESC Calibration
     // @Description: Controls whether ArduCopter will enter ESC calibration on the next restart.  Do not adjust this parameter manually.
