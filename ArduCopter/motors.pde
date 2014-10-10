@@ -105,9 +105,7 @@ static void auto_disarm_check()
     }
 
     // allow auto disarm in manual flight modes or Loiter/AltHold if we're landed
-    if (manual_flight_mode(control_mode) || (ap.land_complete && (control_mode == ALT_HOLD || control_mode == LOITER || control_mode == OF_LOITER ||
-                                                                  control_mode == DRIFT || control_mode == SPORT || control_mode == AUTOTUNE ||
-                                                                  control_mode == POSHOLD))) {
+    if (manual_flight_mode(control_mode) || ap.land_complete) {
         auto_disarming_counter++;
 
         if(auto_disarming_counter >= AUTO_DISARMING_DELAY) {
