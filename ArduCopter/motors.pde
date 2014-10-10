@@ -144,10 +144,7 @@ static void init_arm_motors()
         update_notify();
     }
 
-#if LOGGING_ENABLED == ENABLED
-    // start dataflash
-    start_logging();
-#endif
+    start_or_stop_logging();
 
 #if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
     gcs_send_text_P(SEVERITY_HIGH, PSTR("ARMING MOTORS"));
@@ -637,7 +634,7 @@ static void init_disarm_motors()
     Log_Write_Event(DATA_DISARMED);
 
     // suspend logging
-    DataFlash.EnableWrites(false);
+    start_or_stop_logging();
 
     // disable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(false);

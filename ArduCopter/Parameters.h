@@ -121,6 +121,7 @@ public:
         k_param_terrain,
         k_param_acro_expo,
         k_param_throttle_deadzone,      // 57
+        k_param_log_disarmed,
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -381,6 +382,7 @@ public:
     // Misc
     //
     AP_Int16        log_bitmask;
+    AP_Int8         log_disarmed;
     AP_Int8         esc_calibrate;
     AP_Int8         radio_tuning;
     AP_Int16        radio_tuning_high;

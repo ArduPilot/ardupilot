@@ -752,6 +752,20 @@ static void start_logging()
     }
 }
 
+static void suspend_logging()
+{
+    DataFlash.EnableWrites(false);
+}
+
+static void start_or_stop_logging()
+{
+    if (g.log_disarmed) {
+        start_logging();
+    } else if (!motors.armed()) {
+        suspend_logging();
+    }
+}
+
 #else // LOGGING_ENABLED
 
 static void Log_Write_Startup() {}
@@ -780,5 +794,5 @@ static void Log_Write_Baro(void) {}
 static int8_t process_logs(uint8_t argc, const Menu::arg *argv) {
     return 0;
 }
-
+static void start_or_stop_logging() {}
 #endif // LOGGING_DISABLED
