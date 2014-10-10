@@ -144,11 +144,6 @@ static void init_arm_motors()
         update_notify();
     }
 
-#if LOGGING_ENABLED == ENABLED
-    // start dataflash
-    start_logging();
-#endif
-
 #if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
     gcs_send_text_P(SEVERITY_HIGH, PSTR("ARMING MOTORS"));
 #endif
@@ -529,6 +524,11 @@ static bool pre_arm_gps_checks(bool display_failure)
 // always called just before arming.  Return true if ok to arm
 static bool arm_checks(bool display_failure)
 {
+#if LOGGING_ENABLED == ENABLED
+    // start dataflash
+    start_logging();
+#endif
+
     // succeed if arming checks are disabled
     if (g.arming_check == ARMING_CHECK_NONE) {
         return true;
