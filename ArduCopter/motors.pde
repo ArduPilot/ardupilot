@@ -504,10 +504,10 @@ static bool pre_arm_gps_checks(bool display_failure)
 
 // arm_checks - perform final checks before arming
 // always called just before arming.  Return true if ok to arm
-static bool arm_checks(bool display_failure, bool request_from_gcs)
+static bool arm_checks(bool display_failure, bool arming_from_gcs)
 {
     // always check if the current mode allows arming
-    if (!mode_allows_arming(control_mode) || (!request_from_gcs && control_mode == GUIDED)) {
+    if (!mode_allows_arming(control_mode, arming_from_gcs)) {
         if (display_failure) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Mode not armable"));
         }
