@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "AntennaTracker V0.1"
+#define THISFIRMWARE "AntennaTracker V0.2"
 /*
    Lead developers: Matthew Ridley and Andrew Tridgell
  
