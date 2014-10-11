@@ -82,6 +82,11 @@ static void update_tracking(void)
         return;
     }
 
+    // do not perform updates if safety switch is disarmed (i.e. servos can't be moved)
+    if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
+        return;
+    }
+
     switch (control_mode) {
     case AUTO:
         update_auto();
