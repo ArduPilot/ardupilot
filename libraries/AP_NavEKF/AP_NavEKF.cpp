@@ -702,23 +702,6 @@ void NavEKF::SelectVelPosFusion()
             fusePosData = false;
         }
 
-        // check for and read new height data
-        readHgtData();
-
-        // command fusion of height data
-        if (newDataHgt)
-        {
-            // reset data arrived flag
-            newDataHgt = false;
-            // reset state updates and counter used to spread fusion updates across several frames to reduce 10Hz pulsing
-            memset(&hgtIncrStateDelta[0], 0, sizeof(hgtIncrStateDelta));
-            hgtUpdateCount = 0;
-            // enable fusion
-            fuseHgtData = true;
-        } else {
-            fuseHgtData = false;
-        }
-
     } else {
         // in static mode use synthetic position measurements set to zero
         // only fuse synthetic measurements when rate of change of velocity is less than 0.5g to reduce attitude errors due to launch acceleration
@@ -729,7 +712,23 @@ void NavEKF::SelectVelPosFusion()
             fusePosData = false;
         }
         fuseVelData = false;
+    }
+
+    // check for and read new height data
+    readHgtData();
+
+    // command fusion of height data
+    if (newDataHgt)
+    {
+        // reset data arrived flag
+        newDataHgt = false;
+        // reset state updates and counter used to spread fusion updates across several frames to reduce 10Hz pulsing
+        memset(&hgtIncrStateDelta[0], 0, sizeof(hgtIncrStateDelta));
+        hgtUpdateCount = 0;
+        // enable fusion
         fuseHgtData = true;
+    } else {
+        fuseHgtData = false;
     }
 
     // perform fusion
