@@ -863,12 +863,12 @@ void NavEKF::UpdateStrapdownEquationsNED()
     // use weighted average of both IMU units for delta velocities
     correctedDelVel12 = correctedDelVel1 * IMU1_weighting + correctedDelVel2 * (1.0f - IMU1_weighting);
 
-    // save current measurements
-    prevDelAng = correctedDelAng;
-
     // apply corrections for earths rotation rate and coning errors
     // % * - and + operators have been overloaded
     correctedDelAng   = correctedDelAng - prevTnb * earthRateNED*dtIMU + (prevDelAng % correctedDelAng) * 8.333333e-2f;
+
+    // save current measurements
+    prevDelAng = correctedDelAng;
 
     // convert the rotation vector to its equivalent quaternion
     rotationMag = correctedDelAng.length();
