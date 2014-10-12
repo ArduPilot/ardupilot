@@ -640,7 +640,7 @@ void GCS_MAVLINK::handle_param_set(mavlink_message_t *msg, DataFlash_Class *Data
 
 
 void
-GCS_MAVLINK::send_text(gcs_severity severity, const char *str)
+GCS_MAVLINK::send_text(int severity, const char *str)
 {
     if (severity != SEVERITY_LOW && 
         comm_get_txspace(chan) >= 
@@ -657,7 +657,7 @@ GCS_MAVLINK::send_text(gcs_severity severity, const char *str)
 }
 
 void
-GCS_MAVLINK::send_text_P(gcs_severity severity, const prog_char_t *str)
+GCS_MAVLINK::send_text_P(int severity, const prog_char_t *str)
 {
     mavlink_statustext_t m;
     uint8_t i;

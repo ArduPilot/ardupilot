@@ -55,7 +55,7 @@ void crash_check()
             // log an error in the dataflash
             Log_Write_Error(ERROR_SUBSYSTEM_CRASH_CHECK, ERROR_CODE_CRASH_CHECK_CRASH);
             // send message to gcs
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("Crash: Disarming"));
+            gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("Crash: Disarming"));
             // disarm motors
             init_disarm_motors();
         }
@@ -157,7 +157,7 @@ void parachute_check()
 static void parachute_release()
 {
     // send message to gcs and dataflash
-    gcs_send_text_P(SEVERITY_HIGH,PSTR("Parachute: Released!"));
+    gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("Parachute: Released!"));
     Log_Write_Event(DATA_PARACHUTE_RELEASED);
 
     // disarm motors
@@ -179,7 +179,7 @@ static void parachute_manual_release()
     // do not release if we are landed or below the minimum altitude above home
     if (ap.land_complete || (parachute.alt_min() != 0 && (baro_alt < (uint32_t)parachute.alt_min() * 100))) {
         // warn user of reason for failure
-        gcs_send_text_P(SEVERITY_HIGH,PSTR("Parachute: Too Low"));
+        gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("Parachute: Too Low"));
         // log an error in the dataflash
         Log_Write_Error(ERROR_SUBSYSTEM_PARACHUTE, ERROR_CODE_PARACHUTE_TOO_LOW);
         return;
