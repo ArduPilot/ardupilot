@@ -12,8 +12,9 @@ If you are reading this page, you are possibly interested in contributing to our
 
 * Make sure your bug is not a support issue. Support issues should go to [the APM forums](http://ardupilot.com/forum/). Support issues with logs attached should generally go to the "Log files, Tuning, and Analysis of Log files" section. If you're not sure you have a bug, you should seek support first.
 * Search for your bug, make sure it is not already reported. If it is already reported, make a comment on that issue.
-* Write a clear summary. Be specific about what component of the software you are writing about, and follow the convention: "Copter: blah blah blah"
-* Write a clear description, with **particularly clear steps** to reproduce the problem. Include logs that display the bug. 
+* Only report one bug per issue report.
+* Write a clear and concise summary. Be specific about what component of the software you are writing about, and follow the convention: "Copter: blah blah blah"
+* Write a clear and concise description, with **particularly clear steps** to reproduce the problem. Include logs that display the bug. **Try to report only facts in your issue report, keeping your assumptions out of it.** 
 * The majority of issues open now are good or acceptable by these guidelines. Please refer to them for examples.
 
 # Submitting patches
