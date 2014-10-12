@@ -21,6 +21,8 @@
 static bool auto_init(bool ignore_checks)
 {
     if ((GPS_ok() && inertial_nav.position_ok() && mission.num_commands() > 1) || ignore_checks) {
+        auto_mode = Auto_Loiter;
+
         // stop ROI from carrying over from previous runs of the mission
         // To-Do: reset the yaw as part of auto_wp_start when the previous command was not a wp command to remove the need for this special ROI check
         if (auto_yaw_mode == AUTO_YAW_ROI) {
@@ -79,6 +81,10 @@ static void auto_run()
         auto_nav_guided_run();
         break;
 #endif
+
+    case Auto_Loiter:
+        auto_loiter_run();
+        break;
     }
 }
 
@@ -414,6 +420,44 @@ void auto_nav_guided_run()
     guided_run();
 }
 #endif  // NAV_GUIDED
+
+bool auto_loiter_start()
+{
+    if (!GPS_ok()) {
+        return false;
+    }
+    auto_mode = Auto_Loiter;
+
+    Vector3f origin = inertial_nav.get_position();
+
+    Vector3f stopping_point;
+    pos_control.get_stopping_point_xy(stopping_point);
+    pos_control.get_stopping_point_z(stopping_point);
+
+    wp_nav.set_wp_origin_and_destination(origin, stopping_point);
+
+    set_auto_yaw_mode(AUTO_YAW_HOLD);
+
+    return true;
+}
+
+void auto_loiter_run() {
+    if(!ap.auto_armed || ap.land_complete) {
+        attitude_control.relax_bf_rate_controller();
+        attitude_control.set_yaw_target_to_current_heading();
+        attitude_control.set_throttle_out(0, false);
+        return;
+    }
+
+    float target_yaw_rate = 0;
+    if(!failsafe.radio) {
+        target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
+    }
+
+    wp_nav.update_wpnav();
+    pos_control.update_z_controller();
+    attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
+}
 
 // get_default_auto_yaw_mode - returns auto_yaw_mode based on WP_YAW_BEHAVIOR parameter
 // set rtl parameter to true if this is during an RTL
