@@ -88,6 +88,7 @@
  # define EPM_ENABLED DISABLED
  # define CLI_ENABLED           DISABLED
  # define FRSKY_TELEM_ENABLED   DISABLED
+ # define NAV_GUIDED            DISABLED
 #endif
 
 #if HAL_CPU_CLASS < HAL_CPU_CLASS_75 || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
@@ -434,7 +435,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // Nav-Guided - allows external nav computer to control vehicle
 #ifndef NAV_GUIDED
- # define NAV_GUIDED DISABLED
+ # define NAV_GUIDED    ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
