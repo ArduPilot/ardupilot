@@ -39,6 +39,9 @@ private:
     int _fd;
     uint64_t _last_timestamp;
 
+    int16_t _last_max_distance_cm;
+    int16_t _last_min_distance_cm;
+
     // we need to keep track of how many PX4 drivers have been loaded
     // so we can open the right device filename
     static uint8_t num_px4_instances;
