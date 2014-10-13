@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduPlane V3.2.1alpha"
+#define THISFIRMWARE "ArduPlane ekfOptFlow-wip"
 /*
    Lead developer: Andrew Tridgell
  
@@ -84,6 +84,8 @@
 #include <AP_ServoRelayEvents.h>
 
 #include <AP_Rally.h>
+
+#include <AP_OpticalFlow.h>     // Optical Flow library
 
 // Pre-AP_HAL compatibility
 #include "compat.h"
@@ -310,6 +312,15 @@ static AP_ServoRelayEvents ServoRelayEvents(relay);
 #if CAMERA == ENABLED
 static AP_Camera camera(&relay);
 #endif
+
+////////////////////////////////////////////////////////////////////////////////
+// Optical flow sensor
+////////////////////////////////////////////////////////////////////////////////
+ #if OPTFLOW == ENABLED
+#if  CONFIG_HAL_BOARD == HAL_BOARD_PX4
+static AP_OpticalFlow_PX4 optflow(ahrs);
+#endif
+ #endif
 
 //Rally Ponints
 AP_Rally rally(ahrs);
@@ -799,6 +810,9 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { barometer_accumulate,   1,    900 },
     { update_notify,          1,    300 },
     { read_rangefinder,       1,    500 },
+    #if OPTFLOW == ENABLED
+        { update_optical_flow,   1,     500 },
+    #endif
     { one_second_loop,       50,   1000 },
     { check_long_failsafe,   15,   1000 },
     { read_receiver_rssi,     5,   1000 },
@@ -1548,5 +1562,36 @@ static void update_flight_stage(void)
     // tell AHRS the airspeed to true airspeed ratio
     airspeed.set_EAS2TAS(barometer.get_EAS2TAS());
 }
+
+// called at 100hz but data from sensor only arrives at 10 Hz
+#if OPTFLOW == ENABLED
+static void update_optical_flow(void)
+{
+    static uint32_t last_of_update = 0;
+
+    // exit immediately if not enabled
+    if (!optflow.enabled()) {
+        return;
+    }
+
+    // read from sensor
+    optflow.update();
+
+    // write to log and send to EKF if new data has arrived
+    if (optflow.last_update() != last_of_update) {
+        last_of_update = optflow.last_update();
+        uint8_t flowQuality = optflow.quality();
+        Vector2f rawFlowRates = optflow.velocity();
+        Vector2i temp = optflow.raw();
+        Vector2f rawGyroRates;
+        rawGyroRates.x = 0.001f * float(temp.x);
+        rawGyroRates.y = 0.001f * float(temp.y);
+        // Use range from a separate range finder, not the PX4Flows built in sensor which is ineffective
+        float ground_distance_m = 0.01f*float(rangefinder.distance_cm());
+        ahrs.writeOptFlowMeas(flowQuality, rawFlowRates, rawGyroRates, last_of_update, rangefinder_state.in_range_count, ground_distance_m);
+    }
+}
+#endif  // OPTFLOW == ENABLED
+
 
 AP_HAL_MAIN();

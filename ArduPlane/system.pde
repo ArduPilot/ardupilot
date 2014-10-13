@@ -218,6 +218,11 @@ static void init_ardupilot()
     // set the correct flight mode
     // ---------------------------
     reset_control_switch();
+
+#if OPTFLOW == ENABLED
+    // initialise sensor
+    optflow.init();
+#endif
 }
 
 //********************************************************************************
