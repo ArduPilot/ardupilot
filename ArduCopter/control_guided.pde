@@ -8,8 +8,6 @@
  # define GUIDED_LOOK_AT_TARGET_MIN_DISTANCE_CM     500     // point nose at target if it is more than 5m away
 #endif
 
-static bool guided_pilot_yaw_override_yaw = false;
-
 // guided_init - initialise guided controller
 static bool guided_init(bool ignore_checks)
 {
@@ -58,7 +56,6 @@ void guided_pos_control_start()
     stopping_point.z = inertial_nav.get_altitude();
     wp_nav.get_wp_stopping_point_xy(stopping_point);
     wp_nav.set_wp_destination(stopping_point);
-    guided_pilot_yaw_override_yaw = false;
 
     // initialise yaw
     set_auto_yaw_mode(get_default_auto_yaw_mode(false));
