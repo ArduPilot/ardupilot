@@ -751,16 +751,6 @@ AP_Terrain terrain(ahrs, mission, rally);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
-// Nav Guided - allows external computer to control the vehicle during missions
-////////////////////////////////////////////////////////////////////////////////
-#if NAV_GUIDED == ENABLED
-static struct {
-    uint32_t start_time;        // system time in milliseconds that control was handed to the external computer
-    Vector3f start_position;    // vehicle position when control was ahnded to the external computer
-} nav_guided;
-#endif
-
-////////////////////////////////////////////////////////////////////////////////
 // function definitions to keep compiler from complaining about undeclared functions
 ////////////////////////////////////////////////////////////////////////////////
 static void pre_arm_checks(bool display_failure);
