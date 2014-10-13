@@ -2786,7 +2786,7 @@ void NavEKF::quat2Tbn(Matrix3f &Tbn, const Quaternion &quat) const
 // return the Euler roll, pitch and yaw angle in radians
 void NavEKF::getEulerAngles(Vector3f &euler) const
 {
-    state.quat.to_euler(&euler.x, &euler.y, &euler.z);
+    state.quat.to_euler(euler.x, euler.y, euler.z);
     euler = euler - _ahrs->get_trim();
 }
 
@@ -3251,7 +3251,7 @@ void NavEKF::alignYawGPS()
         float newYaw;
         float yawErr;
         // get quaternion from existing filter states and calculate roll, pitch and yaw angles
-        state.quat.to_euler(&roll, &pitch, &oldYaw);
+        state.quat.to_euler(roll, pitch, oldYaw);
         // calculate yaw angle from GPS velocity
         newYaw = atan2f(velNED[1],velNED[0]);
         // modify yaw angle using GPS ground course if more than 45 degrees away or if not previously aligned
