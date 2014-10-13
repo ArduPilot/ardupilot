@@ -30,6 +30,9 @@ static bool auto_init(bool ignore_checks)
         // initialise waypoint and spline controller
         wp_nav.wp_and_spline_init();
 
+        // clear guided limits
+        guided_limit_clear();
+
         // start/resume the mission (based on MIS_RESTART parameter)
         mission.start_or_resume();
         return true;
@@ -398,6 +401,9 @@ void auto_nav_guided_start()
 
     // call regular guided flight mode initialisation
     guided_init(true);
+
+    // initialise guided start time and position as reference for limit checking
+    guided_limit_init_time_and_pos();
 }
 
 // auto_nav_guided_run - allows control by external navigation controller
