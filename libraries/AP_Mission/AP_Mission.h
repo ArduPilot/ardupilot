@@ -43,21 +43,6 @@
 class AP_Mission {
 
 public:
-
-    // nav guided command
-    struct PACKED Nav_Guided_Command {
-        float alt_min;          // min alt below which the command will be aborted.  0 for no lower alt limit
-        float alt_max;          // max alt above which the command will be aborted.  0 for no upper alt limit
-        float horiz_max;        // max horizontal distance the vehicle can move before the command will be aborted.  0 for no horizontal limit
-    };
-
-    // nav velocity command
-    struct PACKED Nav_Velocity_Command {
-        float x;                // lat (i.e. north) velocity in m/s
-        float y;                // lon (i.e. east) velocity in m/s
-        float z;                // vertical velocity in m/s
-    };
-
     // jump command structure
     struct PACKED Jump_Command {
         uint16_t target;        // target command id
@@ -127,13 +112,15 @@ public:
         uint8_t action;         // action (0 = release, 1 = grab)
     };
 
+    // nav guided command
+    struct PACKED Guided_Limits_Command {
+        // max time is held in p1 field
+        float alt_min;          // min alt below which the command will be aborted.  0 for no lower alt limit
+        float alt_max;          // max alt above which the command will be aborted.  0 for no upper alt limit
+        float horiz_max;        // max horizontal distance the vehicle can move before the command will be aborted.  0 for no horizontal limit
+    };
+
     union PACKED Content {
-        // Nav_Guided_Command
-        Nav_Guided_Command nav_guided;
-
-        // Nav_Velocity_Command
-        Nav_Velocity_Command nav_velocity;
-
         // jump structure
         Jump_Command jump;
 
@@ -166,6 +153,9 @@ public:
 
         // do-gripper
         Gripper_Command gripper;
+
+        // do-guided-limits
+        Guided_Limits_Command guided_limits;
 
         // location
         Location location;      // Waypoint location
