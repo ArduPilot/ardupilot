@@ -144,8 +144,8 @@ public:
 
     /*
     return the filter fault status as a bitmasked integer
-     0 = filter divergence detected via gyro bias growth
-     1 = filter divergence detected by large covariances
+     0 = unassigned
+     1 = unassigned
      2 = badly conditioned X magnetometer fusion
      3 = badly conditioned Y magnetometer fusion
      4 = badly conditioned Z magnetometer fusion
@@ -154,7 +154,7 @@ public:
      7 = unassigned
     return normalised delta gyro bias length used for divergence test
     */
-    void  getFilterFaults(uint8_t &faults, float &deltaGyroBias) const;
+    void  getFilterFaults(uint8_t &faults) const;
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -303,9 +303,6 @@ private:
     // this allows large GPS position jumps to be accomodated gradually
     void decayGpsOffset(void);
 
-    // Check for filter divergence
-    void checkDivergence(void);
-
     // EKF Mavlink Tuneable Parameters
     AP_Float _gpsHorizVelNoise;     // GPS horizontal velocity measurement noise : m/s
     AP_Float _gpsVertVelNoise;      // GPS vertical velocity measurement noise : m/s
@@ -364,7 +361,6 @@ private:
     bool posTimeout;                // boolean true if position measurements have failed innovation consistency check and timed out
     bool hgtTimeout;                // boolean true if height measurements have failed innovation consistency check and timed out
     bool magTimeout;                // boolean true if magnetometer measurements have failed for too long and have timed out
-    bool filterDiverged;            // boolean true if the filter has diverged
     bool magFailed;                 // boolean true if the magnetometer has failed
 
     float gpsNoiseScaler;           // Used to scale the  GPS measurement noise and consistency gates to compensate for operation with small satellite counts
@@ -487,15 +483,12 @@ private:
     float magUpdateCountMaxInv;     // floating point inverse of magFilterCountMax
 
     struct {
-        bool diverged:1;
-        bool large_covarience:1;
         bool bad_xmag:1;
         bool bad_ymag:1;
         bool bad_zmag:1;
         bool bad_airspeed:1;
         bool bad_sideslip:1;
     } faultStatus;
-    float scaledDeltaGyrBiasLgth;   // scaled delta gyro bias vector length used to test for filter divergence
 
     // states held by magnetomter fusion across time steps
     // magnetometer X,Y,Z measurements are fused across three time steps

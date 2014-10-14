@@ -95,9 +95,6 @@ extern const AP_HAL::HAL& hal;
 
 #define earthRate 0.000072921f // earth rotation rate (rad/sec)
 
-// maximum value for any element in the covariance matrix
-#define EKF_COVARIENCE_MAX 1.0e8f
-
 // when the wind estimation first starts with no airspeed sensor,
 // assume 3m/s to start
 #define STARTUP_WIND_SPEED 3.0f
@@ -372,9 +369,6 @@ bool NavEKF::healthy(void) const
     if (state.velocity.is_nan()) {
         return false;
     }
-    if (filterDiverged || (imuSampleTime_ms - lastDivergeTime_ms < 10000)) {
-        return false;
-    }
     // If measurements have failed innovation consistency checks for long enough to time-out
     // and force fusion then the nav solution can be conidered to be unhealthy
     // This will only be set as a transient
@@ -595,13 +589,6 @@ void NavEKF::UpdateFilter()
 
     // read IMU data and convert to delta angles and velocities
     readIMUData();
-
-    // detect if filter has diverged and do a dynamic reset using the DCM solution
-    checkDivergence();
-    if (filterDiverged) {
-        InitialiseFilterDynamic();
-        return;
-    }
 
     // detect if the filter update has been delayed for too long
     if (dtIMU > 0.2f) {
@@ -2973,15 +2960,6 @@ void NavEKF::ForceSymmetry()
     {
         for (uint8_t j=0; j<=i-1; j++)
         {
-            if (fabsf(P[i][j]) > EKF_COVARIENCE_MAX ||
-                fabsf(P[j][i]) > EKF_COVARIENCE_MAX) {
-                // set the filter status as diverged and re-initialise the filter
-                filterDiverged = true;
-                faultStatus.diverged = true;
-                lastDivergeTime_ms = imuSampleTime_ms;
-                InitialiseFilterDynamic();
-                return;
-            }
             float temp = 0.5f*(P[i][j] + P[j][i]);
             P[i][j] = temp;
             P[j][i] = temp;
@@ -3389,7 +3367,6 @@ void NavEKF::ZeroVariables()
     velTimeout = false;
     posTimeout = false;
     hgtTimeout = false;
-    filterDiverged = false;
     magTimeout = false;
     magFailed = false;
     storeIndex = 0;
@@ -3471,36 +3448,10 @@ bool NavEKF::assume_zero_sideslip(void) const
     return _ahrs->get_fly_forward() && _ahrs->get_vehicle_class() != AHRS_VEHICLE_GROUND;
 }
 
-// Check for filter divergence
-void NavEKF::checkDivergence()
-{
-    // If filter is diverging, then fail for 10 seconds
-    // delay checking to allow bias estimate to settle after reset
-    // filter divergence is detected by looking for rapid changes in gyro bias
-    Vector3f tempVec = state.gyro_bias - lastGyroBias;
-    float tempLength = tempVec.length();
-    if (tempLength != 0.0f) {
-        float temp = constrain_float((P[10][10] + P[11][11] + P[12][12]),1e-12f,1e-8f);
-        scaledDeltaGyrBiasLgth = (5e-8f / temp) * tempVec.length() / dtIMU;
-    }
-    bool divergenceDetected = (scaledDeltaGyrBiasLgth > 1.0f);
-    lastGyroBias = state.gyro_bias;
-    if (imuSampleTime_ms - lastDivergeTime_ms > 10000) {
-        if (divergenceDetected) {
-            filterDiverged = true;
-            faultStatus.diverged = true;
-            lastDivergeTime_ms = imuSampleTime_ms;
-        } else {
-            filterDiverged = false;
-        }
-    }
-
-}
-
 /*
 return the filter fault status as a bitmasked integer
- 0 = filter divergence detected via gyro bias growth
- 1 = filter divergence detected by large covariances
+ 0 = unassigned
+ 1 = unassigned
  2 = badly conditioned X magnetometer fusion
  3 = badly conditioned Y magnetometer fusion
  4 = badly conditioned Z magnetometer fusion
@@ -3509,16 +3460,13 @@ return the filter fault status as a bitmasked integer
  7 = unassigned
 return normalised delta gyro bias length used for divergence test
 */
-void  NavEKF::getFilterFaults(uint8_t &faults, float &deltaGyroBias) const
+void  NavEKF::getFilterFaults(uint8_t &faults) const
 {
-    faults = (faultStatus.diverged<<0 |
-              faultStatus.large_covarience<<1 |
-              faultStatus.bad_xmag<<2 |
+    faults = (faultStatus.bad_xmag<<2 |
               faultStatus.bad_ymag<<3 |
               faultStatus.bad_zmag<<4 |
               faultStatus.bad_airspeed<<5 |
               faultStatus.bad_sideslip<<6);
-    deltaGyroBias = scaledDeltaGyrBiasLgth;
 }
 
 
