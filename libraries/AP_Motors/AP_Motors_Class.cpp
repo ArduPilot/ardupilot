@@ -48,6 +48,7 @@ const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
     // @DisplayName: Thrust Curve mid-point percentage
     // @Description: Set the pwm position that produces half the maximum thrust of the motors
     // @User: Advanced
+    // @Units: percent
     // @Range: 20 80
     // @Increment: 1
     AP_GROUPINFO("TCRV_MIDPCT", 2, AP_Motors, _throttle_curve_mid, THROTTLE_CURVE_MID_THRUST),
@@ -56,6 +57,7 @@ const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
     // @DisplayName: Thrust Curve max thrust percentage
     // @Description: Set to the lowest pwm position that produces the maximum thrust of the motors.  Most motors produce maximum thrust below the maximum pwm value that they accept.
     // @User: Advanced
+    // @Units: percent
     // @Range: 50 100
     // @Increment: 1
     AP_GROUPINFO("TCRV_MAXPCT", 3, AP_Motors, _throttle_curve_max, THROTTLE_CURVE_MAX_THRUST),
