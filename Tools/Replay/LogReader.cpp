@@ -144,7 +144,7 @@ void LogReader::process_plane(uint8_t type, uint8_t *data, uint16_t length)
         memcpy(&msg, data, sizeof(msg));
         wait_timestamp(msg.time_ms);
         compass.setHIL(Vector3f(msg.mag_x - msg.offset_x, msg.mag_y - msg.offset_y, msg.mag_z - msg.offset_z));
-        compass.set_and_save_offsets(0, msg.offset_x, msg.offset_y, msg.offset_z);
+        compass.set_offsets(0, Vector3f(msg.offset_x, msg.offset_y, msg.offset_z));
         break;
     }
 
@@ -186,7 +186,7 @@ void LogReader::process_rover(uint8_t type, uint8_t *data, uint16_t length)
         memcpy(&msg, data, sizeof(msg));
         wait_timestamp(msg.time_ms);
         compass.setHIL(Vector3f(msg.mag_x - msg.offset_x, msg.mag_y - msg.offset_y, msg.mag_z - msg.offset_z));
-        compass.set_and_save_offsets(0, msg.offset_x, msg.offset_y, msg.offset_z);
+        compass.set_offsets(0, Vector3f(msg.offset_x, msg.offset_y, msg.offset_z));
         break;
     }
 
@@ -216,7 +216,7 @@ void LogReader::process_copter(uint8_t type, uint8_t *data, uint16_t length)
         memcpy(&msg, data, sizeof(msg));
         wait_timestamp(msg.time_ms);
         compass.setHIL(Vector3f(msg.mag_x - msg.offset_x, msg.mag_y - msg.offset_y, msg.mag_z - msg.offset_z));
-        compass.set_and_save_offsets(0, msg.offset_x, msg.offset_y, msg.offset_z);
+        compass.set_offsets(0, Vector3f(msg.offset_x, msg.offset_y, msg.offset_z));
         break;
     }
 
@@ -250,6 +250,10 @@ void LogReader::process_copter(uint8_t type, uint8_t *data, uint16_t length)
 
 bool LogReader::set_parameter(const char *name, float value)
 {
+    if (strcmp(name, "GPS_TYPE") == 0) {
+        // ignore this one
+        return true;
+    }
     enum ap_var_type var_type;
     AP_Param *vp = AP_Param::find(name, &var_type);
     if (vp == NULL) {
@@ -470,6 +474,18 @@ bool LogReader::update(uint8_t &type)
         break;        
     }
         
+    case LOG_AHR2_MSG: {
+        struct log_AHRS msg;
+        if(sizeof(msg) != f.length) {
+            printf("Bad AHR2 length %u should be %u\n", (unsigned)f.length, (unsigned)sizeof(msg));
+            exit(1);
+        }
+        memcpy(&msg, data, sizeof(msg));
+        wait_timestamp(msg.time_ms);
+        ahr2_attitude = Vector3f(msg.roll*0.01f, msg.pitch*0.01f, msg.yaw*0.01f);
+        break;
+    }
+
 
     default:
         if (vehicle == VEHICLE_PLANE) {
