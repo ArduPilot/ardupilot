@@ -35,6 +35,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: SYSID_SW_TYPE
     // @DisplayName: Software Type
     // @Description: This is used by the ground station to recognise the software type (eg ArduPlane vs ArduCopter)
+    // @Values: 0:ArduPlane,4:AntennaTracker,10:Copter,20:Rover
     // @User: Advanced
     GSCALAR(software_type,  "SYSID_SW_TYPE",   Parameters::k_software_type),
 
@@ -418,6 +419,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: ANGLE_MAX
     // @DisplayName: Angle Max
     // @Description: Maximum lean angle in all flight modes
+    // @Units: Centi-degrees
     // @Range 1000 8000
     // @User: Advanced
     ASCALAR(angle_max, "ANGLE_MAX",                 DEFAULT_ANGLE_MAX),
@@ -435,6 +437,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: PHLD_BRAKE_RATE
     // @DisplayName: PosHold braking rate
     // @Description: PosHold flight mode's rotation rate during braking in deg/sec
+    // @Units: deg/sec
     // @Range: 4 12
     // @User: Advanced
     GSCALAR(poshold_brake_rate, "PHLD_BRAKE_RATE",  POSHOLD_BRAKE_RATE_DEFAULT),
@@ -574,7 +577,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: ACRO_BAL_ROLL
     // @DisplayName: Acro Balance Roll
-    // @Description: rate at which roll angle returns to level in acro mode
+    // @Description: rate at which roll angle returns to level in acro mode.  A higher value causes the vehicle to return to level faster.
     // @Range: 0 3
     // @Increment: 0.1
     // @User: Advanced
@@ -582,7 +585,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: ACRO_BAL_PITCH
     // @DisplayName: Acro Balance Pitch
-    // @Description: rate at which pitch angle returns to level in acro mode
+    // @Description: rate at which pitch angle returns to level in acro mode.  A higher value causes the vehicle to return to level faster.
     // @Range: 0 3
     // @Increment: 0.1
     // @User: Advanced
