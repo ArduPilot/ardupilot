@@ -1294,8 +1294,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
         }
 
-        // exit if vehicle is not in guided mode
-        if (control_mode != GUIDED) {
+        // exit if vehicle is not in Guided mode or Auto-Guided mode
+        if ((control_mode != GUIDED) && !(control_mode == AUTO && auto_mode == Auto_NavGuided)) {
             break;
         }
 
@@ -1316,8 +1316,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
         }
 
-        // exit if vehicle is not in guided mode
-        if (control_mode != GUIDED) {
+        // exit if vehicle is not in Guided mode or Auto-Guided mode
+        if ((control_mode != GUIDED) && !(control_mode == AUTO && auto_mode == Auto_NavGuided)) {
             break;
         }
 
