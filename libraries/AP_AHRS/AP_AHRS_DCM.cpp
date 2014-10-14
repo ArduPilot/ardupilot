@@ -143,7 +143,7 @@ AP_AHRS_DCM::check_matrix(void)
 {
     if (_dcm_matrix.is_nan()) {
         //Serial.printf("ERROR: DCM matrix NAN\n");
-        reset(true);
+        AP_AHRS_DCM::reset(true);
         return;
     }
     // some DCM matrix values can lead to an out of range error in
@@ -161,7 +161,7 @@ AP_AHRS_DCM::check_matrix(void)
             // in real trouble. All we can do is reset
             //Serial.printf("ERROR: DCM matrix error. _dcm_matrix.c.x=%f\n",
             //	   _dcm_matrix.c.x);
-            reset(true);
+            AP_AHRS_DCM::reset(true);
         }
     }
 }
@@ -242,7 +242,7 @@ AP_AHRS_DCM::normalize(void)
         // Our solution is blowing up and we will force back
         // to last euler angles
         _last_failure_ms = hal.scheduler->millis();
-        reset(true);
+        AP_AHRS_DCM::reset(true);
     }
 }
 
@@ -362,7 +362,7 @@ AP_AHRS_DCM::drift_correction_yaw(void)
     float yaw_error;
     float yaw_deltat;
 
-    if (use_compass()) {
+    if (AP_AHRS_DCM::use_compass()) {
         /*
           we are using compass for yaw
          */
@@ -684,7 +684,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     // reduce the impact of the gps/accelerometers on yaw when we are
     // flat, but still allow for yaw correction using the
     // accelerometers at high roll angles as long as we have a GPS
-    if (use_compass()) {
+    if (AP_AHRS_DCM::use_compass()) {
         if (have_gps() && gps_gain == 1.0f) {
             error[besti].z *= sinf(fabsf(roll));
         } else {
