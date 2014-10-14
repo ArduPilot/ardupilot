@@ -381,7 +381,7 @@ void loop()
             NavEKF.getMagXYZ(magXYZ);
             NavEKF.getInnovations(velInnov, posInnov, magInnov, tasInnov);
             NavEKF.getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
-            NavEKF.getFilterFaults(faultStatus,deltaGyroBias);
+            NavEKF.getFilterFaults(faultStatus);
             NavEKF.getPosNED(ekf_relpos);
             Vector3f inav_pos = inertial_nav.get_position() * 0.01f;
             float temp = degrees(ekf_euler.z);
