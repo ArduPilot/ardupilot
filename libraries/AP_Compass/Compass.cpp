@@ -290,6 +290,15 @@ Compass::init()
 }
 
 void
+Compass::set_offsets(uint8_t i, const Vector3f &offsets)
+{
+    // sanity check compass instance provided
+    if (i < COMPASS_MAX_INSTANCES) {
+        _offset[i].set(offsets);
+    }
+}
+
+void
 Compass::set_and_save_offsets(uint8_t i, const Vector3f &offsets)
 {
     // sanity check compass instance provided

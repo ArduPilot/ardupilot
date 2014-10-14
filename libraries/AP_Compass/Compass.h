@@ -87,6 +87,13 @@ public:
     ///
     float calculate_heading(const Matrix3f &dcm_matrix) const;
 
+    /// Sets offset x/y/z values.
+    ///
+    /// @param  i                   compass instance
+    /// @param  offsets             Offsets to the raw mag_ values.
+    ///
+    void set_offsets(uint8_t i, const Vector3f &offsets);
+
     /// Sets and saves the compass offset x/y/z values.
     ///
     /// @param  i                   compass instance
