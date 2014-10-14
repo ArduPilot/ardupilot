@@ -219,18 +219,52 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
 AP_InertialSensor::AP_InertialSensor() :
     _accel(),
     _gyro(),
-    _board_orientation(ROTATION_NONE)
+    _board_orientation(ROTATION_NONE),
+    _gyro_count(0),
+    _accel_count(0)
 {
     AP_Param::setup_object_defaults(this, var_info);        
+    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+        _backends[i] = NULL;
+    }
+}
+
+
+/*
+  register a new gyro instance
+ */
+uint8_t AP_InertialSensor::register_gyro(void)
+{
+    if (_gyro_count == INS_MAX_INSTANCES) {
+        hal.scheduler->panic(PSTR("Too many gyros"));
+    }
+    return _gyro_count++;
+}
+
+/*
+  register a new accel instance
+ */
+uint8_t AP_InertialSensor::register_accel(void)
+{
+    if (_accel_count == INS_MAX_INSTANCES) {
+        hal.scheduler->panic(PSTR("Too many accels"));
+    }
+    return _accel_count++;
 }
 
 void
 AP_InertialSensor::init( Start_style style,
                          Sample_rate sample_rate)
 {
-    _product_id = _init_sensor(sample_rate);
+    if (_gyro_count == 0 && _accel_count == 0) {
+        // detect available backends. Only called once
+        _detect_backends(sample_rate);
+    }
 
-    // check scaling
+    _product_id = 0; // FIX
+
+    // initialise accel scale if need be. This is needed as we can't
+    // give non-zero default values for vectors in AP_Param
     for (uint8_t i=0; i<get_accel_count(); i++) {
         if (_accel_scale[i].get().is_zero()) {
             _accel_scale[i].set(Vector3f(1,1,1));
@@ -240,6 +274,37 @@ AP_InertialSensor::init( Start_style style,
     if (WARM_START != style) {
         // do cold-start calibration for gyro only
         _init_gyro();
+    }
+
+    switch (sample_rate) {
+    case RATE_50HZ:
+        _delta_time = 1.0f/50;
+        break;
+    case RATE_100HZ:
+        _delta_time = 1.0f/100;
+        break;
+    case RATE_200HZ:
+        _delta_time = 1.0f/200;
+        break;
+    case RATE_400HZ:
+    default:
+        _delta_time = 1.0f/400;
+        break;
+    }
+}
+
+
+/*
+  detect available backends for this board
+ */
+void 
+AP_InertialSensor::_detect_backends(Sample_rate sample_rate)
+{
+    _backends[0] = AP_InertialSensor_MPU6000::detect(*this, sample_rate, _gyro[_gyro_count], _accel[_accel_count]);
+    if (_backends[0] == NULL ||
+        _gyro_count == 0 ||
+        _accel_count == 0) {
+        hal.scheduler->panic(PSTR("No INS backends available"));
     }
 }
 
@@ -325,10 +390,7 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
         }
         uint8_t num_samples = 0;
         while (num_samples < 32) {
-            if (!wait_for_sample(1000)) {
-                interact->printf_P(PSTR("Failed to get INS sample\n"));
-                goto failed;
-            }
+            wait_for_sample();
             // read samples from ins
             update();
             // capture sample
@@ -827,5 +889,37 @@ void AP_InertialSensor::_save_parameters()
         _accel_scale[i].save();
         _accel_offset[i].save();
         _gyro_offset[i].save();
+    }
+}
+
+
+/*
+  update gyro and accel values from backends
+ */
+void AP_InertialSensor::update(void)
+{
+    for (int8_t i=INS_MAX_INSTANCES-1; i>=0; i--) {
+        if (_backends[i] != NULL) {
+            _backends[i]->update();
+        }
+    }    
+}
+
+/*
+  wait for a sample to be available
+ */
+void AP_InertialSensor::wait_for_sample(void)
+{
+    bool gyro_available = false;
+    bool accel_available = false;
+
+    while (!gyro_available || !accel_available) {
+        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+            if (_backends[i] != NULL) {
+                gyro_available |= _backends[i]->gyro_sample_available();
+                accel_available |= _backends[i]->gyro_sample_available();
+            }
+        }
+        hal.scheduler->delay_microseconds(100);
     }
 }

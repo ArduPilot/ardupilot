@@ -1,5 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#if NOT_YET
 #include "AP_InertialSensor_HIL.h"
 #include <AP_HAL.h>
 const extern AP_HAL::HAL& hal;
@@ -128,3 +129,4 @@ uint8_t AP_InertialSensor_HIL::get_accel_count(void) const
     return 1;
 }
 
+#endif
