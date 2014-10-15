@@ -171,6 +171,12 @@ void AP_OpticalFlow_ADNS3080::update(void)
 {
     uint8_t motion_reg;
     int16_t  raw_dx, raw_dy;    // raw sensor change in x and y position (i.e. unrotated)
+
+    // return immediately if not healthy
+    if (!_flags.healthy) {
+        return;
+    }
+
     _surface_quality = read_register(ADNS3080_SQUAL);
     hal.scheduler->delay_microseconds(50);
 
