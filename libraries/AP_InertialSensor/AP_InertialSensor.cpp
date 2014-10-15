@@ -310,7 +310,7 @@ AP_InertialSensor::_detect_backends(Sample_rate sample_rate)
     _backends[0] = AP_InertialSensor_HIL::detect(*this, sample_rate);
 #elif HAL_INS_DEFAULT == HAL_INS_MPU6000
     _backends[0] = AP_InertialSensor_MPU6000::detect(*this, sample_rate);
-#elif HAL_INS_DEFAULT == HAL_INS_PX4
+#elif HAL_INS_DEFAULT == HAL_INS_PX4 || HAL_INS_DEFAULT == HAL_INS_VRBRAIN
     _backends[0] = AP_InertialSensor_PX4::detect(*this, sample_rate);
 #elif HAL_INS_DEFAULT == HAL_INS_OILPAN
     _backends[0] = AP_InertialSensor_Oilpan::detect(*this, sample_rate);
