@@ -24,7 +24,7 @@ void AVREEPROMStorage::write_block(uint16_t dst, const void *src, size_t n)
             eeprom_write_byte((uint8_t*)dst, *p);
         }
         dst++;
-        *p++;
+        p++;
     }
 }
 
