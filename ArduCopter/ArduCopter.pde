@@ -287,29 +287,11 @@ static AP_Compass_HIL compass;
  #error Unrecognized CONFIG_COMPASS setting
 #endif
 
-#if CONFIG_INS_TYPE == HAL_INS_OILPAN || CONFIG_HAL_BOARD == HAL_BOARD_APM1
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 AP_ADC_ADS7844 apm1_adc;
 #endif
 
-#if CONFIG_INS_TYPE == HAL_INS_MPU6000
-AP_InertialSensor_MPU6000 ins;
-#elif CONFIG_INS_TYPE == HAL_INS_PX4
-AP_InertialSensor_PX4 ins;
-#elif CONFIG_INS_TYPE == HAL_INS_VRBRAIN
-AP_InertialSensor_VRBRAIN ins;
-#elif CONFIG_INS_TYPE == HAL_INS_HIL
-AP_InertialSensor_HIL ins;
-#elif CONFIG_INS_TYPE == HAL_INS_OILPAN
-AP_InertialSensor_Oilpan ins( &apm1_adc );
-#elif CONFIG_INS_TYPE == HAL_INS_FLYMAPLE
-AP_InertialSensor_Flymaple ins;
-#elif CONFIG_INS_TYPE == HAL_INS_L3G4200D
-AP_InertialSensor_L3G4200D ins;
-#elif CONFIG_INS_TYPE == HAL_INS_MPU9250
-AP_InertialSensor_MPU9250 ins;
-#else
-  #error Unrecognised CONFIG_INS_TYPE setting.
-#endif // CONFIG_INS_TYPE
+AP_InertialSensor ins;
 
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
@@ -969,10 +951,8 @@ static void perf_update(void)
 void loop()
 {
     // wait for an INS sample
-    if (!ins.wait_for_sample(1000)) {
-        Log_Write_Error(ERROR_SUBSYSTEM_MAIN, ERROR_CODE_MAIN_INS_DELAY);
-        return;
-    }
+    ins.wait_for_sample();
+
     uint32_t timer = micros();
 
     // check loop time

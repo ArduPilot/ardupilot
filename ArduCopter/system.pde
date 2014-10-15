@@ -249,6 +249,9 @@ static void init_ardupilot()
         gcs_send_text_P(SEVERITY_LOW, PSTR("Waiting for first HIL_STATE message"));
         delay(1000);
     }
+
+    // set INS to HIL mode
+    ins.set_hil_mode();
 #endif
 
     // read Baro pressure at ground
