@@ -21,7 +21,6 @@
 
 #include "AP_InertialSensor_MPU9250.h"
 #include "../AP_HAL_Linux/GPIO.h"
-#include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -172,10 +171,8 @@ extern const AP_HAL::HAL& hal;
  *  variants however
  */
 
-AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250() :
-	AP_InertialSensor(),
-    _initialised(false),
-    _mpu9250_product_id(AP_PRODUCT_ID_PIXHAWK_FIRE_CAPE),
+AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250(AP_InertialSensor &imu) :
+	AP_InertialSensor_Backend(imu),
     _last_filter_hz(-1),
     _shared_data_idx(0),
     _accel_filter_x(1000, 15),
@@ -183,18 +180,35 @@ AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250() :
     _accel_filter_z(1000, 15),
     _gyro_filter_x(1000, 15),
     _gyro_filter_y(1000, 15),
-    _gyro_filter_z(1000, 15)
+    _gyro_filter_z(1000, 15),
+    _have_sample_available(false)
 {
+}
+
+
+/*
+  detect the sensor
+ */
+AP_InertialSensor_Backend *AP_InertialSensor_MPU9250::detect(AP_InertialSensor &_imu, 
+                                                             AP_InertialSensor::Sample_rate sample_rate)
+{
+    AP_InertialSensor_MPU9250 *sensor = new AP_InertialSensor_MPU9250(_imu);
+    if (sensor == NULL) {
+        return NULL;
+    }
+    if (!sensor->_init_sensor(sample_rate)) {
+        delete sensor;
+        return NULL;
+    }
+
+    return sensor;
 }
 
 /*
   initialise the sensor
  */
-uint16_t AP_InertialSensor_MPU9250::_init_sensor( Sample_rate sample_rate )
+bool AP_InertialSensor_MPU9250::_init_sensor(AP_InertialSensor::Sample_rate sample_rate)
 {
-    if (_initialised) return _mpu9250_product_id;
-    _initialised = true;
-
     _spi = hal.spi->device(AP_HAL::SPIDevice_MPU9250);
     _spi_sem = _spi->get_semaphore();
 
@@ -207,7 +221,7 @@ uint16_t AP_InertialSensor_MPU9250::_init_sensor( Sample_rate sample_rate )
         // TODO: we should probably accept multiple chip
         // revisions. This is the one on the PXF
         hal.console->printf("MPU9250: unexpected WHOAMI 0x%x\n", (unsigned)whoami);
-        hal.scheduler->panic("MPU9250: bad WHOAMI");
+        return false;
     }
 
     uint8_t tries = 0;
@@ -216,33 +230,25 @@ uint16_t AP_InertialSensor_MPU9250::_init_sensor( Sample_rate sample_rate )
         if (success) {
             hal.scheduler->delay(10);
             if (!_spi_sem->take(100)) {
-                hal.scheduler->panic(PSTR("MPU9250: Unable to get semaphore"));
+                hal.console->printf("MPU9250: Unable to get semaphore");
+                return false;
             }
             uint8_t status = _register_read(MPUREG_INT_STATUS);
             if ((status & BIT_RAW_RDY_INT) != 0) {
                 _spi_sem->give();
                 break;
-            } else {
-                hal.console->println_P(
-                        PSTR("MPU9250 startup failed: no data ready"));
             }
             _spi_sem->give();
         }
         if (tries++ > 5) {
-            hal.scheduler->panic(PSTR("PANIC: failed to boot MPU9250 5 times"));
+            return false;
         }
     } while (1);
 
     hal.scheduler->resume_timer_procs();
 
-    /* read the first lot of data.
-     * _read_data_transaction requires the spi semaphore to be taken by
-     * its caller. */
-    hal.scheduler->delay(10);
-    if (_spi_sem->take(100)) {
-        _read_data_transaction();
-        _spi_sem->give();
-    }
+    _gyro_instance = _imu.register_gyro();
+    _accel_instance = _imu.register_accel();
 
     // start the timer process to read samples
     hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&AP_InertialSensor_MPU9250::_poll_data));
@@ -250,43 +256,7 @@ uint16_t AP_InertialSensor_MPU9250::_init_sensor( Sample_rate sample_rate )
 #if MPU9250_DEBUG
     _dump_registers();
 #endif
-    return _mpu9250_product_id;
-}
-
-/*
-  determine if a sample is available. We are using a time based
-  strategy, to avoid time sync issues with the sensor
- */
-bool AP_InertialSensor_MPU9250::_sample_available()
-{
-    uint64_t tnow = hal.scheduler->micros64();
-    while (tnow - _last_sample_usec > _sample_time_usec) {
-        _have_sample_available = true;
-        _last_sample_usec += _sample_time_usec;
-    }
-    return _have_sample_available;
-}
-
-/*
-  wait for at least one sample to be available from the sensor
- */
-bool AP_InertialSensor_MPU9250::wait_for_sample(uint16_t timeout_ms)
-{
-    if (_sample_available()) {
-        return true;
-    }
-    uint64_t start = hal.scheduler->millis64();
-    while ((hal.scheduler->millis64() - start) < timeout_ms) {
-        uint64_t tnow = hal.scheduler->micros64();
-        uint64_t tdelay = (_last_sample_usec + _sample_time_usec) - tnow;
-        if (tdelay < 100000) {
-            hal.scheduler->delay_microseconds(tdelay);
-        }
-        if (_sample_available()) {
-            return true;
-        }
-    }
-    return false;
+    return true;
 }
 
 /*
@@ -294,46 +264,35 @@ bool AP_InertialSensor_MPU9250::wait_for_sample(uint16_t timeout_ms)
  */
 bool AP_InertialSensor_MPU9250::update( void )
 {
-    if (!wait_for_sample(1000)) {
-        return false;
-    }
-
-    _previous_accel[0] = _accel[0];
+    uint32_t now = hal.scheduler->micros();
 
     // pull the data from the timer shared data buffer
     uint8_t idx = _shared_data_idx;
-    _gyro[0]  = _shared_data[idx]._gyro_filtered;
-    _accel[0] = _shared_data[idx]._accel_filtered;
+    Vector3f gyro = _shared_data[idx]._gyro_filtered;
+    Vector3f accel = _shared_data[idx]._accel_filtered;
 
-    _gyro[0].rotate(_board_orientation);
-    _gyro[0] *= GYRO_SCALE;
-    _gyro[0] -= _gyro_offset[0];
+    _have_sample_available = false;
 
-    _accel[0].rotate(_board_orientation);
-    _accel[0] *= MPU9250_ACCEL_SCALE_1G;
+    accel *= MPU9250_ACCEL_SCALE_1G;
+    gyro *= GYRO_SCALE;
 
     // rotate for bbone default
-    _accel[0].rotate(ROTATION_ROLL_180_YAW_90);
-    _gyro[0].rotate(ROTATION_ROLL_180_YAW_90);
+    accel.rotate(ROTATION_ROLL_180_YAW_90);
+    gyro.rotate(ROTATION_ROLL_180_YAW_90);
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
     // PXF has an additional YAW 180
-    _accel[0].rotate(ROTATION_YAW_180);
-    _gyro[0].rotate(ROTATION_YAW_180);
+    accel.rotate(ROTATION_YAW_180);
+    gyro.rotate(ROTATION_YAW_180);
 #endif
 
-    Vector3f accel_scale = _accel_scale[0].get();
-    _accel[0].x *= accel_scale.x;
-    _accel[0].y *= accel_scale.y;
-    _accel[0].z *= accel_scale.z;
-    _accel[0] -= _accel_offset[0];
+    _rotate_and_offset_gyro(_gyro_instance, gyro, now);
+    _rotate_and_offset_accel(_accel_instance, accel, now);
 
-    if (_last_filter_hz != _mpu6000_filter) {
-        _set_filter(_mpu6000_filter);
-        _last_filter_hz = _mpu6000_filter;
+    if (_last_filter_hz != _imu.get_filter()) {
+        _set_filter(_imu.get_filter());
+        _last_filter_hz = _imu.get_filter();
     }
-
-    _have_sample_available = false;
 
     return true;
 }
@@ -387,6 +346,8 @@ void AP_InertialSensor_MPU9250::_read_data_transaction()
     _shared_data[idx]._accel_filtered = _accel_filtered;
     _shared_data[idx]._gyro_filtered = _gyro_filtered;
     _shared_data_idx = idx;
+
+    _have_sample_available = true;
 }
 
 /*
@@ -440,10 +401,11 @@ void AP_InertialSensor_MPU9250::_set_filter(uint8_t filter_hz)
 /*
   initialise the sensor configuration registers
  */
-bool AP_InertialSensor_MPU9250::_hardware_init(Sample_rate sample_rate)
+bool AP_InertialSensor_MPU9250::_hardware_init(AP_InertialSensor::Sample_rate sample_rate)
 {
     if (!_spi_sem->take(100)) {
-        hal.scheduler->panic(PSTR("MPU9250: Unable to get semaphore"));
+        hal.console->printf("MPU9250: Unable to get semaphore");
+        return false;
     }
 
     // initially run the bus at low speed
@@ -484,23 +446,24 @@ bool AP_InertialSensor_MPU9250::_hardware_init(Sample_rate sample_rate)
     // to minimise the effects of aliasing we choose a filter
     // that is less than half of the sample rate
     switch (sample_rate) {
-    case RATE_50HZ:
+    case AP_InertialSensor::RATE_50HZ:
         _default_filter_hz = 15;
         _sample_time_usec = 20000;
         break;
-    case RATE_100HZ:
+    case AP_InertialSensor::RATE_100HZ:
         _default_filter_hz = 30;
         _sample_time_usec = 10000;
         break;
-    case RATE_200HZ:
+    case AP_InertialSensor::RATE_200HZ:
         _default_filter_hz = 30;
         _sample_time_usec = 5000;
         break;
-    case RATE_400HZ:
-    default:
+    case AP_InertialSensor::RATE_400HZ:
         _default_filter_hz = 30;
         _sample_time_usec = 2500;
         break;
+    default:
+        return false;
     }
 
     // used a fixed filter of 42Hz on the sensor, then filter using
@@ -531,14 +494,6 @@ bool AP_InertialSensor_MPU9250::_hardware_init(Sample_rate sample_rate)
     return true;
 }
 
-// return the MPUXk gyro drift rate in radian/s/s
-// note that this is much better than the oilpan gyros
-float AP_InertialSensor_MPU9250::get_gyro_drift_rate(void)
-{
-    // 0.5 degrees/second/minute
-    return ToRad(0.5/60);
-}
-
 #if MPU9250_DEBUG
 // dump all config registers - used for debug
 void AP_InertialSensor_MPU9250::_dump_registers(void)
@@ -555,13 +510,5 @@ void AP_InertialSensor_MPU9250::_dump_registers(void)
 }
 #endif
 
-
-// get_delta_time returns the time period in seconds overwhich the
-// sensor data was collected. We just use a constant time, to decouple
-// the 9250 timing from the main scheduler
-float AP_InertialSensor_MPU9250::get_delta_time() const
-{
-    return _sample_time_usec * 1.0e-6f;    
-}
 
 #endif // CONFIG_HAL_BOARD
