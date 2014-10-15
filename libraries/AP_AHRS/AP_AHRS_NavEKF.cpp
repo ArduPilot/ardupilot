@@ -52,6 +52,16 @@ const Vector3f &AP_AHRS_NavEKF::get_gyro_drift(void) const
 
 void AP_AHRS_NavEKF::update(void)
 {
+    // we need to restore the old DCM attitude values as these are
+    // used internally in DCM to calculate error values for gyro drift
+    // correction
+    roll = _dcm_attitude.x;
+    pitch = _dcm_attitude.y;
+    yaw = _dcm_attitude.z;
+    roll_sensor = degrees(roll)*100;
+    pitch_sensor = degrees(pitch)*100;
+    yaw_sensor = degrees(yaw)*100;
+
     AP_AHRS_DCM::update();
 
     // keep DCM attitude available for get_secondary_attitude()
