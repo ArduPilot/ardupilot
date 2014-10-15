@@ -43,6 +43,8 @@ bool AP_InertialSensor_HIL::_init_sensor(AP_InertialSensor::Sample_rate sample_r
     case AP_InertialSensor::RATE_400HZ:
         _sample_period_usec = 2500;
         break;
+    default:
+        return false;
     }
 
     // grab the used instances
@@ -54,10 +56,13 @@ bool AP_InertialSensor_HIL::_init_sensor(AP_InertialSensor::Sample_rate sample_r
 
 bool AP_InertialSensor_HIL::update(void) 
 {
+    // the data is stored directly in the frontend, so update()
+    // doesn't need to do anything
     return true;
 }
 
 bool AP_InertialSensor_HIL::_sample_available()
 {
+    // just use the timing based wait_for_sample() in the frontend
     return true;
 }
