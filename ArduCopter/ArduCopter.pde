@@ -788,7 +788,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { throttle_loop,         8,     45 },
     { update_GPS,            8,     90 },
 #if OPTFLOW == ENABLED
-    { update_optical_flow,   8,     20 },
+    { update_optflow,        8,     20 },
 #endif
     { update_batt_compass,  40,     72 },
     { read_aux_switches,    40,      5 },
@@ -862,7 +862,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { throttle_loop,         2,     450 },
     { update_GPS,            2,     900 },
 #if OPTFLOW == ENABLED
-    { update_optical_flow,   2,     100 },
+    { update_optflow,        2,     100 },
 #endif
     { update_batt_compass,  10,     720 },
     { read_aux_switches,    10,      50 },
@@ -1202,30 +1202,6 @@ static void one_hz_loop()
     terrain.update();
 #endif
 }
-
-// called at 100hz but data from sensor only arrives at 20 Hz
-#if OPTFLOW == ENABLED
-static void update_optical_flow(void)
-{
-    static uint32_t last_of_update = 0;
-
-    // exit immediately if not enabled
-    if (!optflow.enabled()) {
-        return;
-    }
-
-    // read from sensor
-    optflow.update();
-
-    // write to log if new data has arrived
-    if (optflow.last_update() != last_of_update) {
-        last_of_update = optflow.last_update();
-        if (g.log_bitmask & MASK_LOG_OPTFLOW) {
-            Log_Write_Optflow();
-        }
-    }
-}
-#endif  // OPTFLOW == ENABLED
 
 // called at 50hz
 static void update_GPS(void)

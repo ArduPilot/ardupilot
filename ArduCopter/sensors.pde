@@ -107,6 +107,30 @@ static void init_optflow()
 #endif      // OPTFLOW == ENABLED
 }
 
+// called at 100hz but data from sensor only arrives at 20 Hz
+#if OPTFLOW == ENABLED
+static void update_optflow(void)
+{
+    static uint32_t last_of_update = 0;
+
+    // exit immediately if not enabled
+    if (!optflow.enabled()) {
+        return;
+    }
+
+    // read from sensor
+    optflow.update();
+
+    // write to log if new data has arrived
+    if (optflow.last_update() != last_of_update) {
+        last_of_update = optflow.last_update();
+        if (g.log_bitmask & MASK_LOG_OPTFLOW) {
+            Log_Write_Optflow();
+        }
+    }
+}
+#endif  // OPTFLOW == ENABLED
+
 // read_battery - check battery voltage and current and invoke failsafe if necessary
 // called at 10hz
 static void read_battery(void)
