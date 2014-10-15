@@ -221,10 +221,11 @@ AP_InertialSensor::AP_InertialSensor() :
     _gyro(),
     _board_orientation(ROTATION_NONE),
     _gyro_count(0),
-    _accel_count(0)
+    _accel_count(0),
+    _hil_mode(false)
 {
     AP_Param::setup_object_defaults(this, var_info);        
-    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+    for (uint8_t i=0; i<INS_MAX_BACKENDS; i++) {
         _backends[i] = NULL;
     }
 }
@@ -291,7 +292,11 @@ AP_InertialSensor::init( Start_style style,
         _sample_period_usec = 2500;
         break;
     }
-    _delta_time = 1.0e-6f * _sample_period_usec;
+
+    // establish the baseline time between samples
+    _base_delta_time = 1.0e-6f * _sample_period_usec;
+    _delta_time = 0;
+    _have_sample = false;
 }
 
 
@@ -307,6 +312,10 @@ AP_InertialSensor::_detect_backends(Sample_rate sample_rate)
     _backends[0] = AP_InertialSensor_MPU6000::detect(*this, sample_rate);
 #elif HAL_INS_DEFAULT == HAL_INS_PX4
     _backends[0] = AP_InertialSensor_PX4::detect(*this, sample_rate);
+#elif HAL_INS_DEFAULT == HAL_INS_OILPAN
+    _backends[0] = AP_InertialSensor_Oilpan::detect(*this, sample_rate);
+#elif HAL_INS_DEFAULT == HAL_INS_MPU9250
+    _backends[0] = AP_InertialSensor_MPU9250::detect(*this, sample_rate);
 #else
     #error Unrecognised HAL_INS_TYPE setting
 #endif
@@ -907,51 +916,110 @@ void AP_InertialSensor::_save_parameters()
  */
 void AP_InertialSensor::update(void)
 {
-    for (int8_t i=INS_MAX_INSTANCES-1; i>=0; i--) {
-        if (_backends[i] != NULL) {
-            _backends[i]->update();
-        }
-    }    
+    // during initialisation update() may be called without
+    // wait_for_sample(), and a wait is implied
+    wait_for_sample();
+
+    if (!_hil_mode) {
+        for (int8_t i=0; i<INS_MAX_BACKENDS; i++) {
+            if (_backends[i] != NULL) {
+                _backends[i]->update();
+            }
+        }    
+    }
+
+    _have_sample = false;
 }
 
 /*
-  wait for a sample to be available. This waits for at least one new
-  accel and one new gyro sample. It is up to the backend to define
-  what a new sample means. Some backends are based on the sensor
-  providing a sample, some are based on time.
+  wait for a sample to be available. This is the function that
+  determines the timing of the main loop in ardupilot. 
+
+  Ideally this function would return at exactly the rate given by the
+  sample_rate argument given to AP_InertialSensor::init(). 
+
+  The key output of this function is _delta_time, which is the time
+  over which the gyro and accel integration will happen for this
+  sample. We want that to be a constant time if possible, but if
+  delays occur we need to cope with them. The long term sum of
+  _delta_time should be exactly equal to the wall clock elapsed time
  */
 void AP_InertialSensor::wait_for_sample(void)
 {
-    bool have_sample = false;
+    if (_have_sample) {
+        // the user has called wait_for_sample() again without
+        // consuming the sample with update()
+        return;
+    }
 
-    // wait the right amount of time for a sample to be due
     uint32_t now = hal.scheduler->micros();
+
+    if (_last_sample_usec == 0 && _delta_time <= 0) {
+        // this is the first call to wait_for_sample()
+        _last_sample_usec = now;
+        _delta_time = _base_delta_time;
+    }
+
+    // see how many samples worth of time have elapsed
+    uint16_t sample_count = 0;
     while (now - _last_sample_usec > _sample_period_usec) {
         _last_sample_usec += _sample_period_usec;
-        have_sample = true;
-    }
-    if (!have_sample) {
-        uint32_t sample_due = _last_sample_usec + _sample_period_usec;
-        uint32_t wait_usec = sample_due - now;
-        hal.scheduler->delay_microseconds(wait_usec);
-        _last_sample_usec += _sample_period_usec;
+        sample_count++;
+        if (sample_count == 1000) {
+            // we've gone a very long time between samples, and gyro
+            // integration times beyond this don't really make
+            // sense. Just reset the timing
+            _last_sample_usec = now;
+            _delta_time = sample_count * _base_delta_time;
+            goto check_sample;
+        }
     }
 
-    // but also wait for at least one backend to have a sample of both
-    // accel and gyro
-    bool gyro_available = false;
-    bool accel_available = false;
-    while (!gyro_available || !accel_available) {
-        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_backends[i] != NULL) {
-                gyro_available |= _backends[i]->gyro_sample_available();
-                accel_available |= _backends[i]->accel_sample_available();
+    if (sample_count == 0) {
+        // this is the normal case, and it means we took less than
+        // _sample_period_usec to process the last sample. We're
+        // on-time. So we can just sleep for the right number of
+        // microseconds to get us to the next sample.
+        _last_sample_usec += _sample_period_usec;
+        uint32_t wait_usec = _last_sample_usec - now;
+        if (wait_usec > 100 && wait_usec <= _sample_period_usec) {
+            // only delay if the time to wait is significant.
+            hal.scheduler->delay_microseconds(wait_usec);
+        }
+
+        // we set the _delta_time to the base time, ignoring small
+        // timing fluctuations. 
+        _delta_time = _base_delta_time;
+    } else {
+        // we have had some sort of delay and have missed our time
+        // slot. We want to run this sample immediately, and need to
+        // adjust _delta_time to reflect the delay we've had
+        _delta_time = _base_delta_time*sample_count + 1.0e-6f*(now - _last_sample_usec);
+
+        // reset the time base to the current time
+        _last_sample_usec = now;
+    }
+
+check_sample:
+    if (!_hil_mode) {
+        // but also wait for at least one backend to have a sample of both
+        // accel and gyro. This normally completes immediately.
+        bool gyro_available = false;
+        bool accel_available = false;
+        while (!gyro_available || !accel_available) {
+            for (uint8_t i=0; i<INS_MAX_BACKENDS; i++) {
+                if (_backends[i] != NULL) {
+                    gyro_available |= _backends[i]->gyro_sample_available();
+                    accel_available |= _backends[i]->accel_sample_available();
+                }
+            }
+            if (!gyro_available || !accel_available) {
+                hal.scheduler->delay_microseconds(100);
             }
         }
-        if (!gyro_available || !accel_available) {
-            hal.scheduler->delay_microseconds(100);
-        }
     }
+
+    _have_sample = true;
 }
 
 /*

@@ -13,9 +13,12 @@
  */
 #if HAL_CPU_CLASS > HAL_CPU_CLASS_16
 #define INS_MAX_INSTANCES 3
+#define INS_MAX_BACKENDS  6
 #else
 #define INS_MAX_INSTANCES 1
+#define INS_MAX_BACKENDS  1
 #endif
+
 
 #include <stdint.h>
 #include <AP_HAL.h>
@@ -180,6 +183,9 @@ public:
 
     uint8_t get_primary_accel(void) const { return 0; }
 
+    // enable HIL mode
+    void set_hil_mode(void) { _hil_mode = true; }
+
 private:
 
     // load backend drivers
@@ -206,7 +212,7 @@ private:
     void  _save_parameters();
 
     // backend objects
-    AP_InertialSensor_Backend *_backends[INS_MAX_INSTANCES];
+    AP_InertialSensor_Backend *_backends[INS_MAX_BACKENDS];
 
     // number of gyros and accel drivers. Note that most backends
     // provide both accel and gyro data, so will increment both
@@ -245,7 +251,17 @@ private:
     uint8_t _primary_gyro;
     uint8_t _primary_accel;
 
-    // time between samples
+    // has wait_for_sample() found a sample?
+    bool _have_sample:1;
+
+    // are we in HIL mode?
+    bool _hil_mode:1;
+
+    // the delta time in seconds between samples when there are no
+    // delays
+    float _base_delta_time;
+
+    // the delta time in seconds for the last sample
     float _delta_time;
 
     // last time a wait_for_sample() returned a sample
@@ -258,6 +274,8 @@ private:
 #include "AP_InertialSensor_Backend.h"
 #include "AP_InertialSensor_MPU6000.h"
 #include "AP_InertialSensor_PX4.h"
+#include "AP_InertialSensor_Oilpan.h"
+#include "AP_InertialSensor_MPU9250.h"
 #include "AP_InertialSensor_HIL.h"
 #include "AP_InertialSensor_UserInteract_Stream.h"
 #include "AP_InertialSensor_UserInteract_MAVLink.h"

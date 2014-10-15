@@ -31,7 +31,8 @@ public:
 
     /* 
      * Update the sensor data. Called by the frontend to transfer
-     * accumulated sensor readings to the frontend structure
+     * accumulated sensor readings to the frontend structure via the
+     * _rotate_and_offset_gyro() and _rotate_and_offset_accel() functions
      */
     virtual bool update() = 0;
 
@@ -48,7 +49,8 @@ public:
     virtual bool gyro_sample_available() = 0;
 
 protected:
-    AP_InertialSensor &_imu;      ///< access to frontend
+    // access to frontend
+    AP_InertialSensor &_imu;
 
     // rotate gyro vector and offset
     void _rotate_and_offset_gyro(uint8_t instance, const Vector3f &gyro, uint32_t now);
@@ -56,9 +58,9 @@ protected:
     // rotate accel vector, scale and offset
     void _rotate_and_offset_accel(uint8_t instance, const Vector3f &accel, uint32_t now);
 
-    // note that each backend is also expected to have a detect()
+    // note that each backend is also expected to have a static detect()
     // function which instantiates an instance of the backend sensor
-    // driver. 
+    // driver if the sensor is available
 };
 
 #endif // __AP_INERTIALSENSOR_BACKEND_H__
