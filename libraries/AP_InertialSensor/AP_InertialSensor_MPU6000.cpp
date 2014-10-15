@@ -507,10 +507,11 @@ bool AP_InertialSensor_MPU6000::_hardware_init(AP_InertialSensor::Sample_rate sa
         _sample_count = 2;
         break;
     case AP_InertialSensor::RATE_200HZ:
-    default:
         default_filter = BITS_DLPF_CFG_20HZ;
         _sample_count = 1;
         break;
+    default:
+        return false;
     }
 
     _set_filter_register(_imu.get_filter(), default_filter);
