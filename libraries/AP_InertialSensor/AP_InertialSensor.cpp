@@ -300,7 +300,13 @@ AP_InertialSensor::init( Start_style style,
 void 
 AP_InertialSensor::_detect_backends(Sample_rate sample_rate)
 {
+#if HAL_INS_DEFAULT == HAL_INS_HIL
+    _backends[0] = AP_InertialSensor_HIL::detect(*this, sample_rate, _gyro[_gyro_count], _accel[_accel_count]);
+#elif HAL_INS_DEFAULT == HAL_INS_MPU6000
     _backends[0] = AP_InertialSensor_MPU6000::detect(*this, sample_rate, _gyro[_gyro_count], _accel[_accel_count]);
+#else
+    #error Unrecognised HAL_INS_TYPE setting
+#endif
     if (_backends[0] == NULL ||
         _gyro_count == 0 ||
         _accel_count == 0) {
@@ -917,9 +923,27 @@ void AP_InertialSensor::wait_for_sample(void)
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
             if (_backends[i] != NULL) {
                 gyro_available |= _backends[i]->gyro_sample_available();
-                accel_available |= _backends[i]->gyro_sample_available();
+                accel_available |= _backends[i]->accel_sample_available();
             }
         }
-        hal.scheduler->delay_microseconds(100);
+        hal.scheduler->delay(1);
     }
 }
+
+/*
+  support for setting accel and gyro vectors, for use by HIL
+ */
+void AP_InertialSensor::set_accel(uint8_t instance, const Vector3f &accel)
+{
+    if (instance < INS_MAX_INSTANCES) {
+        _accel[instance] = accel;
+    }
+}
+
+void AP_InertialSensor::set_gyro(uint8_t instance, const Vector3f &gyro)
+{
+    if (instance < INS_MAX_INSTANCES) {
+        _gyro[instance] = gyro;
+    }
+}
+

@@ -1,36 +1,32 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#ifndef __AP_INERTIAL_SENSOR_STUB_H__
-#define __AP_INERTIAL_SENSOR_STUB_H__
+#ifndef __AP_INERTIALSENSOR_HIL_H__
+#define __AP_INERTIALSENSOR_HIL_H__
 
-#include <AP_Progmem.h>
 #include "AP_InertialSensor.h"
 
-class AP_InertialSensor_HIL : public AP_InertialSensor
+class AP_InertialSensor_HIL : public AP_InertialSensor_Backend
 {
 public:
+    AP_InertialSensor_HIL(AP_InertialSensor &imu, Vector3f &gyro, Vector3f &accel);
 
-    AP_InertialSensor_HIL();
+    /* update accel and gyro state */
+    bool update();
 
-    /* Concrete implementation of AP_InertialSensor functions: */
-    bool            update();
-    float	        get_delta_time() const;
-    float           get_gyro_drift_rate();
-    bool            wait_for_sample(uint16_t timeout_ms);
-    void            set_accel(uint8_t instance, const Vector3f &accel);
-    void            set_gyro(uint8_t instance, const Vector3f &gyro);
-    bool            get_gyro_health(uint8_t instance) const;
-    bool            get_accel_health(uint8_t instance) const;
-    uint8_t         get_gyro_count(void) const;
-    uint8_t         get_accel_count(void) const;
+    bool gyro_sample_available(void) { return _sample_available(); }
+    bool accel_sample_available(void) { return _sample_available(); }
+
+    // detect the sensor
+    static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu,
+                                             AP_InertialSensor::Sample_rate sample_rate,
+                                             Vector3f &gyro,
+                                             Vector3f &accel);
 
 private:
-    bool            _sample_available();
-    uint16_t        _init_sensor( Sample_rate sample_rate );
-    uint32_t         _sample_period_usec;
-    uint32_t        _last_sample_usec;
-    uint32_t        _last_accel_usec[INS_MAX_INSTANCES];
-    uint32_t        _last_gyro_usec[INS_MAX_INSTANCES];
+    bool _init_sensor(AP_InertialSensor::Sample_rate sample_rate);
+    bool _sample_available(void);
+    uint32_t _sample_period_usec;
+    uint32_t _last_sample_usec;
 };
 
-#endif // __AP_INERTIAL_SENSOR_STUB_H__
+#endif // __AP_INERTIALSENSOR_HIL_H__

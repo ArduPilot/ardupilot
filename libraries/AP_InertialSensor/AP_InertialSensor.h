@@ -251,6 +251,7 @@ private:
 
 #include "AP_InertialSensor_Backend.h"
 #include "AP_InertialSensor_MPU6000.h"
+#include "AP_InertialSensor_HIL.h"
 #include "AP_InertialSensor_UserInteract_Stream.h"
 #include "AP_InertialSensor_UserInteract_MAVLink.h"
 
