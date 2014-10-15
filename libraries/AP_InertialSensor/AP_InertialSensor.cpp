@@ -217,11 +217,11 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
 };
 
 AP_InertialSensor::AP_InertialSensor() :
+    _gyro_count(0),
+    _accel_count(0),
     _accel(),
     _gyro(),
     _board_orientation(ROTATION_NONE),
-    _gyro_count(0),
-    _accel_count(0),
     _hil_mode(false)
 {
     AP_Param::setup_object_defaults(this, var_info);        
