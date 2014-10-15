@@ -247,3 +247,15 @@ void AP_AHRS::update_trig(void)
     _sin_pitch = -temp.c.x;
     _sin_roll = temp.c.y / _cos_pitch;
 }
+
+/*
+  update the centi-degree values
+ */
+void AP_AHRS::update_cd_values(void)
+{
+    roll_sensor  = degrees(roll) * 100;
+    pitch_sensor = degrees(pitch) * 100;
+    yaw_sensor   = degrees(yaw) * 100;
+    if (yaw_sensor < 0)
+        yaw_sensor += 36000;
+}
