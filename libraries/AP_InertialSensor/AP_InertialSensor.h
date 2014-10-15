@@ -247,10 +247,17 @@ private:
 
     // time between samples
     float _delta_time;
+
+    // last time a wait_for_sample() returned a sample
+    uint32_t _last_sample_usec;
+    
+    // time between samples in microseconds
+    uint32_t _sample_period_usec;
 };
 
 #include "AP_InertialSensor_Backend.h"
 #include "AP_InertialSensor_MPU6000.h"
+#include "AP_InertialSensor_PX4.h"
 #include "AP_InertialSensor_HIL.h"
 #include "AP_InertialSensor_UserInteract_Stream.h"
 #include "AP_InertialSensor_UserInteract_MAVLink.h"

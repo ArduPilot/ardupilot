@@ -15,7 +15,7 @@
 class AP_InertialSensor_MPU6000 : public AP_InertialSensor_Backend
 {
 public:
-    AP_InertialSensor_MPU6000(AP_InertialSensor &imu, Vector3f &gyro, Vector3f &accel);
+    AP_InertialSensor_MPU6000(AP_InertialSensor &imu);
 
     /* update accel and gyro state */
     bool update();
@@ -25,9 +25,8 @@ public:
 
     // detect the sensor
     static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu,
-                                             AP_InertialSensor::Sample_rate sample_rate,
-                                             Vector3f &gyro,
-                                             Vector3f &accel);
+                                             AP_InertialSensor::Sample_rate sample_rate);
+
 private:
 #if MPU6000_DEBUG
     void _dump_registers(void);

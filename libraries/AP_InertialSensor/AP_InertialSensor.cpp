@@ -278,19 +278,20 @@ AP_InertialSensor::init( Start_style style,
 
     switch (sample_rate) {
     case RATE_50HZ:
-        _delta_time = 1.0f/50;
+        _sample_period_usec = 20000;
         break;
     case RATE_100HZ:
-        _delta_time = 1.0f/100;
+        _sample_period_usec = 10000;
         break;
     case RATE_200HZ:
-        _delta_time = 1.0f/200;
+        _sample_period_usec = 5000;
         break;
     case RATE_400HZ:
     default:
-        _delta_time = 1.0f/400;
+        _sample_period_usec = 2500;
         break;
     }
+    _delta_time = 1.0e-6f * _sample_period_usec;
 }
 
 
@@ -301,9 +302,11 @@ void
 AP_InertialSensor::_detect_backends(Sample_rate sample_rate)
 {
 #if HAL_INS_DEFAULT == HAL_INS_HIL
-    _backends[0] = AP_InertialSensor_HIL::detect(*this, sample_rate, _gyro[_gyro_count], _accel[_accel_count]);
+    _backends[0] = AP_InertialSensor_HIL::detect(*this, sample_rate);
 #elif HAL_INS_DEFAULT == HAL_INS_MPU6000
-    _backends[0] = AP_InertialSensor_MPU6000::detect(*this, sample_rate, _gyro[_gyro_count], _accel[_accel_count]);
+    _backends[0] = AP_InertialSensor_MPU6000::detect(*this, sample_rate);
+#elif HAL_INS_DEFAULT == HAL_INS_PX4
+    _backends[0] = AP_InertialSensor_PX4::detect(*this, sample_rate);
 #else
     #error Unrecognised HAL_INS_TYPE setting
 #endif
@@ -912,13 +915,32 @@ void AP_InertialSensor::update(void)
 }
 
 /*
-  wait for a sample to be available
+  wait for a sample to be available. This waits for at least one new
+  accel and one new gyro sample. It is up to the backend to define
+  what a new sample means. Some backends are based on the sensor
+  providing a sample, some are based on time.
  */
 void AP_InertialSensor::wait_for_sample(void)
 {
+    bool have_sample = false;
+
+    // wait the right amount of time for a sample to be due
+    uint32_t now = hal.scheduler->micros();
+    while (now - _last_sample_usec > _sample_period_usec) {
+        _last_sample_usec += _sample_period_usec;
+        have_sample = true;
+    }
+    if (!have_sample) {
+        uint32_t sample_due = _last_sample_usec + _sample_period_usec;
+        uint32_t wait_usec = sample_due - now;
+        hal.scheduler->delay_microseconds(wait_usec);
+        _last_sample_usec += _sample_period_usec;
+    }
+
+    // but also wait for at least one backend to have a sample of both
+    // accel and gyro
     bool gyro_available = false;
     bool accel_available = false;
-
     while (!gyro_available || !accel_available) {
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
             if (_backends[i] != NULL) {
@@ -926,7 +948,9 @@ void AP_InertialSensor::wait_for_sample(void)
                 accel_available |= _backends[i]->accel_sample_available();
             }
         }
-        hal.scheduler->delay(1);
+        if (!gyro_available || !accel_available) {
+            hal.scheduler->delay_microseconds(100);
+        }
     }
 }
 

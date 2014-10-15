@@ -173,10 +173,8 @@ const float AP_InertialSensor_MPU6000::_gyro_scale = (0.0174532f / 16.4f);
  *  variants however
  */
 
-AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu, 
-                                                     Vector3f &gyro, 
-                                                     Vector3f &accel) : 
-    AP_InertialSensor_Backend(imu, gyro, accel),
+AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu) :
+    AP_InertialSensor_Backend(imu),
     _drdy_pin(NULL),
     _spi(NULL),
     _spi_sem(NULL),
@@ -193,11 +191,9 @@ AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu,
   detect the sensor
  */
 AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::detect(AP_InertialSensor &_imu, 
-                                                             AP_InertialSensor::Sample_rate sample_rate,
-                                                             Vector3f &gyro, 
-                                                             Vector3f &accel)
+                                                             AP_InertialSensor::Sample_rate sample_rate)
 {
-    AP_InertialSensor_MPU6000 *sensor = new AP_InertialSensor_MPU6000(_imu, gyro, accel);
+    AP_InertialSensor_MPU6000 *sensor = new AP_InertialSensor_MPU6000(_imu);
     if (sensor == NULL) {
         return NULL;
     }
@@ -276,21 +272,22 @@ bool AP_InertialSensor_MPU6000::update( void )
     // we have a full set of samples
     uint16_t num_samples;
     uint32_t now = hal.scheduler->micros();
+    Vector3f accel, gyro;
 
     hal.scheduler->suspend_timer_procs();
-    _gyro(_gyro_sum.x, _gyro_sum.y, _gyro_sum.z);
-    _accel(_accel_sum.x, _accel_sum.y, _accel_sum.z);
+    gyro(_gyro_sum.x, _gyro_sum.y, _gyro_sum.z);
+    accel(_accel_sum.x, _accel_sum.y, _accel_sum.z);
     num_samples = _sum_count;
     _accel_sum.zero();
     _gyro_sum.zero();
     _sum_count = 0;
     hal.scheduler->resume_timer_procs();
 
-    _gyro *= _gyro_scale / num_samples;
-    _rotate_and_offset_gyro(_gyro_instance, now);
+    gyro *= _gyro_scale / num_samples;
+    _rotate_and_offset_gyro(_gyro_instance, gyro, now);
 
-    _accel *= MPU6000_ACCEL_SCALE_1G / num_samples;
-    _rotate_and_offset_accel(_accel_instance, now);
+    accel *= MPU6000_ACCEL_SCALE_1G / num_samples;
+    _rotate_and_offset_accel(_accel_instance, accel, now);
 
     if (_last_filter_hz != _imu.get_filter()) {
         if (_spi_sem->take(10)) {

@@ -23,7 +23,7 @@
 class AP_InertialSensor_Backend
 {
 public:
-    AP_InertialSensor_Backend(AP_InertialSensor &imu, Vector3f &gyro, Vector3f &accel);
+    AP_InertialSensor_Backend(AP_InertialSensor &imu);
 
     // we declare a virtual destructor so that drivers can
     // override with a custom destructor if need be.
@@ -50,15 +50,11 @@ public:
 protected:
     AP_InertialSensor &_imu;      ///< access to frontend
 
-    // references to instance vectors
-    Vector3f &_gyro;
-    Vector3f &_accel;
-
     // rotate gyro vector and offset
-    void _rotate_and_offset_gyro(uint8_t instance, uint32_t now);
+    void _rotate_and_offset_gyro(uint8_t instance, const Vector3f &gyro, uint32_t now);
 
     // rotate accel vector, scale and offset
-    void _rotate_and_offset_accel(uint8_t instance, uint32_t now);
+    void _rotate_and_offset_accel(uint8_t instance, const Vector3f &accel, uint32_t now);
 
     // note that each backend is also expected to have a detect()
     // function which instantiates an instance of the backend sensor

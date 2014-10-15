@@ -5,10 +5,9 @@
 
 const extern AP_HAL::HAL& hal;
 
-AP_InertialSensor_HIL::AP_InertialSensor_HIL(AP_InertialSensor &imu, Vector3f &gyro, Vector3f &accel) :
-    AP_InertialSensor_Backend(imu, gyro, accel),
-    _sample_period_usec(0),
-    _last_sample_usec(0)
+AP_InertialSensor_HIL::AP_InertialSensor_HIL(AP_InertialSensor &imu) :
+    AP_InertialSensor_Backend(imu),
+    _sample_period_usec(0)
 {
 }
 
@@ -16,11 +15,9 @@ AP_InertialSensor_HIL::AP_InertialSensor_HIL(AP_InertialSensor &imu, Vector3f &g
   detect the sensor
  */
 AP_InertialSensor_Backend *AP_InertialSensor_HIL::detect(AP_InertialSensor &_imu, 
-                                                         AP_InertialSensor::Sample_rate sample_rate,
-                                                         Vector3f &gyro, 
-                                                         Vector3f &accel)
+                                                         AP_InertialSensor::Sample_rate sample_rate)
 {
-    AP_InertialSensor_HIL *sensor = new AP_InertialSensor_HIL(_imu, gyro, accel);
+    AP_InertialSensor_HIL *sensor = new AP_InertialSensor_HIL(_imu);
     if (sensor == NULL) {
         return NULL;
     }
@@ -57,15 +54,10 @@ bool AP_InertialSensor_HIL::_init_sensor(AP_InertialSensor::Sample_rate sample_r
 
 bool AP_InertialSensor_HIL::update(void) 
 {
-    uint32_t now = hal.scheduler->micros();
-    while (now - _last_sample_usec > _sample_period_usec) {
-        _last_sample_usec += _sample_period_usec;
-    }
     return true;
 }
 
 bool AP_InertialSensor_HIL::_sample_available()
 {
-    return (hal.scheduler->micros() - _last_sample_usec > _sample_period_usec);
+    return true;
 }
-
