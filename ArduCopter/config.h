@@ -89,6 +89,7 @@
  # define CLI_ENABLED           DISABLED
  # define FRSKY_TELEM_ENABLED   DISABLED
  # define NAV_GUIDED            DISABLED
+ # define OPTFLOW               DISABLED
 #endif
 
 #if HAL_CPU_CLASS < HAL_CPU_CLASS_75 || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
@@ -382,8 +383,8 @@
 
 //////////////////////////////////////////////////////////////////////////////
 //  OPTICAL_FLOW
-#ifndef OPTFLOW                         // sets global enabled/disabled flag for optflow (as seen in CLI)
- # define OPTFLOW                       DISABLED
+#ifndef OPTFLOW
+ # define OPTFLOW       ENABLED
 #endif
 // optical flow based loiter PI values
 #ifndef OPTFLOW_ROLL_P
