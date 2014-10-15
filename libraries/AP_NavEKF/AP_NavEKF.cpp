@@ -526,7 +526,7 @@ void NavEKF::ResetHeight(void)
     for (uint8_t i=0; i<=49; i++){
         storedStates[i].position.z = -hgtMea;
     }
-    flowStates[1] = states[9] + 0.5f;
+    flowStates[1] = states[9] + 0.1f;
 }
 
 // this function is used to initialise the filter whilst moving, using the AHRS DCM solution
@@ -920,9 +920,18 @@ void NavEKF::SelectFlowFusion()
         flow_state.obsIndex = 2;
         // indicate that flow fusion has been performed. This is used for load spreading.
         flowFusePerformed = true;
-    } else if (flow_state.obsIndex == 2) {
+    } else if (flow_state.obsIndex == 2 || newDataRng) {
+        // enable fusion of range data if available and permitted
+        if(newDataRng && useRngFinder()) {
+            fuseRngData = true;
+        } else {
+            fuseRngData = false;
+        }
+        // the fact that we have got this far means we do have optical flow data
+        fuseOptFlowData = true;
         // Estimate the focal length scale factor and terrain offset (runs a two state EKF)
         RunAuxiliaryEKF();
+        // turn of fusion permissions
         // increment the index so that no further flow fusion is performed using this measurement
         flow_state.obsIndex = 3;
         // clear the flag indicating that flow fusion has been performed. The 2-state fusion is relatively computationally
@@ -2565,7 +2574,7 @@ void NavEKF::RunAuxiliaryEKF()
         varInnovRng = 1.0f/SK_RNG[1];
 
         // constrain terrain height to be below the vehicle
-        flowStates[1] = max(flowStates[1], statesAtRngTime.position[2] + 0.5f);
+        flowStates[1] = max(flowStates[1], statesAtRngTime.position[2] + 0.1f);
 
         // estimate range to centre of image
         range = (flowStates[1] - statesAtRngTime.position[2]) * SK_RNG[2];
@@ -2585,7 +2594,7 @@ void NavEKF::RunAuxiliaryEKF()
             }
             // constrain the states
             flowStates[0] = constrain_float(flowStates[0], 0.1f, 10.0f);
-            flowStates[1] = max(flowStates[1], statesAtRngTime.position[2] + 0.5f);
+            flowStates[1] = max(flowStates[1], statesAtRngTime.position[2] + 0.1f);
 
             // correct the covariance matrix
             float nextPopt[2][2];
@@ -2639,7 +2648,7 @@ void NavEKF::RunAuxiliaryEKF()
         vel.z          = statesAtFlowTime.velocity[2];
 
         // constrain terrain height to be below the vehicle
-        flowStates[1] = max(flowStates[1], statesAtFlowTime.position[2] + 0.5f);
+        flowStates[1] = max(flowStates[1], statesAtFlowTime.position[2] + 0.1f);
 
         // estimate range to centre of image
         range = (flowStates[1] - statesAtFlowTime.position[2]) / Tnb_flow.c.z;
@@ -2708,7 +2717,7 @@ void NavEKF::RunAuxiliaryEKF()
                 }
                 // constrain the states
                 flowStates[0] = constrain_float(flowStates[0], 0.1f, 10.0f);
-                flowStates[1] = max(flowStates[1], statesAtFlowTime.position[2] + 0.5f);
+                flowStates[1] = max(flowStates[1], statesAtFlowTime.position[2] + 0.1f);
 
                 // correct the covariance matrix
                 for (uint8_t i = 0; i < 2 ; i++) {
@@ -2773,12 +2782,12 @@ void NavEKF::FuseOptFlow()
     velNED_local.z = vd;
 
     // constrain terrain to be below vehicle
-    flowStates[1] = max(flowStates[1], pd + 0.5f);
+    flowStates[1] = max(flowStates[1], pd + 0.1f);
     float heightAboveGndEst = flowStates[1] - pd;
     // Calculate observation jacobians and Kalman gains
     if (obsIndex == 0) {
         // calculate range from ground plain to centre of sensor fov assuming flat earth
-        float range = constrain_float((heightAboveGndEst/Tnb_flow.c.z),0.5f,1000.0f);
+        float range = constrain_float((heightAboveGndEst/Tnb_flow.c.z),0.1f,1000.0f);
 
         // calculate relative velocity in sensor frame
         relVelSensor = Tnb_flow*velNED_local;
@@ -3713,6 +3722,12 @@ void NavEKF::CovarianceInit()
     P[19][19] = 0.0f;
     P[20][20] = P[19][19];
     P[21][21] = P[19][19];
+
+    // optical flow focal length scale factor
+    Popt[0][0] = 0.0f;
+    // ground height
+    Popt[0][0] = 0.25f;
+
 }
 
 // force symmetry on the covariance matrix to prevent ill-conditioning
@@ -4254,7 +4269,7 @@ bool NavEKF::useAirspeed(void) const
 bool NavEKF::useRngFinder(void) const
 {
     // TO-DO add code to set this based in setting of optical flow use parameter and presence of sensor
-    return false;
+    return true;
 }
 
 // return true if we should use the optical flow sensor
