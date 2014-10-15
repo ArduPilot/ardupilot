@@ -92,6 +92,11 @@
  # define OPTFLOW               DISABLED
 #endif
 
+// disable some features for SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+ # define OPTFLOW               DISABLED
+#endif
+
 #if HAL_CPU_CLASS < HAL_CPU_CLASS_75 || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
  // low power CPUs (APM1, APM2 and SITL)
  # define MAIN_LOOP_RATE    100
