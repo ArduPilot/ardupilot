@@ -58,9 +58,7 @@ void AP_AHRS_NavEKF::update(void)
     roll = _dcm_attitude.x;
     pitch = _dcm_attitude.y;
     yaw = _dcm_attitude.z;
-    roll_sensor = degrees(roll)*100;
-    pitch_sensor = degrees(pitch)*100;
-    yaw_sensor = degrees(yaw)*100;
+    update_cd_values();
 
     AP_AHRS_DCM::update();
 
@@ -88,11 +86,8 @@ void AP_AHRS_NavEKF::update(void)
             roll  = eulers.x;
             pitch = eulers.y;
             yaw   = eulers.z;
-            roll_sensor  = degrees(roll) * 100;
-            pitch_sensor = degrees(pitch) * 100;
-            yaw_sensor   = degrees(yaw) * 100;
-            if (yaw_sensor < 0)
-                yaw_sensor += 36000;
+
+            update_cd_values();
             update_trig();
 
             // keep _gyro_bias for get_gyro_drift()

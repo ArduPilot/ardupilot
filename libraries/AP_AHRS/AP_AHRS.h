@@ -370,6 +370,9 @@ protected:
     //      should be called after _dcm_matrix is updated
     void update_trig(void);
 
+    // update roll_sensor, pitch_sensor and yaw_sensor
+    void update_cd_values(void);
+
     // pointer to compass object, if available
     Compass         * _compass;
 
