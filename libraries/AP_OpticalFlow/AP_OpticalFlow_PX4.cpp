@@ -19,9 +19,10 @@
  *
  */
 
+#include <AP_HAL.h>
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 
-#include <AP_HAL.h>
 #include "AP_OpticalFlow_PX4.h"
 
 #include <sys/types.h>
@@ -31,8 +32,6 @@
 
 #include <drivers/drv_px4flow.h>
 #include <uORB/topics/optical_flow.h>
-#include <stdio.h>
-#include <errno.h>
 
 extern const AP_HAL::HAL& hal;
 
