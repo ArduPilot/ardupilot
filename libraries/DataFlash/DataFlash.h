@@ -357,6 +357,7 @@ struct PACKED log_EKF5 {
     float gndPos;
     uint8_t scaler;
     uint8_t quality;
+    uint16_t range;
 };
 
 struct PACKED log_Cmd {
@@ -528,7 +529,7 @@ struct PACKED log_Esc {
     { LOG_ESC8_MSG, sizeof(log_Esc), \
       "ESC8",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
     { LOG_EKF5_MSG, sizeof(log_EKF5), \
-      "EKF5","IfffffBB","TimeMS,flowX,flowY,omegaX,omegaY,gndPos,fScaler,flowQual" }
+      "EKF5","IfffffBBc","TimeMS,flowX,flowY,omegaX,omegaY,gndPos,fScaler,flowQual,rng" }
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 #define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_EXTRA_STRUCTURES
