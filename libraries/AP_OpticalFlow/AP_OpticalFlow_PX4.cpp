@@ -54,6 +54,11 @@ void AP_OpticalFlow_PX4::init(void)
 // update - read latest values from sensor and fill in x,y and totals.
 void AP_OpticalFlow_PX4::update(void)
 {
+    // return immediately if not healthy
+    if (!_flags.healthy) {
+        return;
+    }
+
     struct optical_flow_s report;
     while (::read(_fd, &report, sizeof(optical_flow_s)) == sizeof(optical_flow_s) && report.timestamp != _last_timestamp) {
         _device_id = report.sensor_id;
