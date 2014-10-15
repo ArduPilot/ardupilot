@@ -30,6 +30,7 @@
 #include <unistd.h>
 
 #include <drivers/drv_px4flow.h>
+#include <uORB/topics/optical_flow.h>
 #include <stdio.h>
 #include <errno.h>
 
@@ -54,8 +55,8 @@ void AP_OpticalFlow_PX4::init(void)
 // update - read latest values from sensor and fill in x,y and totals.
 void AP_OpticalFlow_PX4::update(void)
 {
-    struct px4flow_report report;
-    while (::read(_fd, &report, sizeof(px4flow_report)) == sizeof(px4flow_report) && report.timestamp != _last_timestamp) {
+    struct optical_flow_s report;
+    while (::read(_fd, &report, sizeof(optical_flow_s)) == sizeof(optical_flow_s) && report.timestamp != _last_timestamp) {
         _device_id = report.sensor_id;
         _surface_quality = report.quality;
         _raw.x = report.flow_raw_x;
@@ -65,8 +66,6 @@ void AP_OpticalFlow_PX4::update(void)
         _last_timestamp = report.timestamp;
         _last_update = hal.scheduler->millis();
     }
-
-    // To-Do: add support for PX4Flow's sonar by retrieving ground_distance_m from report
 }
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4
