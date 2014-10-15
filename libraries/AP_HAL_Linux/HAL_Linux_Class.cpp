@@ -54,6 +54,8 @@ static Empty::EmptyGPIO gpioDriver;
 static LinuxRCInput_PRU rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
 static LinuxRCInput_Navio rcinDriver;
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ZYNQ
+static LinuxRCInput_ZYNQ rcinDriver;
 #else
 static LinuxRCInput rcinDriver;
 #endif
@@ -68,6 +70,8 @@ static LinuxRCOutput_PRU rcoutDriver;
  */
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
 static LinuxRCOutput_Navio rcoutDriver;
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ZYNQ
+static LinuxRCOutput_ZYNQ rcoutDriver;
 #else
 static Empty::EmptyRCOutput rcoutDriver;
 #endif
