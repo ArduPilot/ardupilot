@@ -258,9 +258,12 @@ void
 AP_InertialSensor::init( Start_style style,
                          Sample_rate sample_rate)
 {
+    // remember the sample rate
+    _sample_rate = sample_rate;
+
     if (_gyro_count == 0 && _accel_count == 0) {
         // detect available backends. Only called once
-        _detect_backends(sample_rate);
+        _detect_backends();
     }
 
     _product_id = 0; // FIX
@@ -303,12 +306,12 @@ AP_InertialSensor::init( Start_style style,
 /*
   try to load a backend
  */
-void AP_InertialSensor::_add_backend(AP_InertialSensor_Backend *(detect)(AP_InertialSensor &, Sample_rate), Sample_rate sample_rate)
+void AP_InertialSensor::_add_backend(AP_InertialSensor_Backend *(detect)(AP_InertialSensor &))
 {
     if (_backend_count == INS_MAX_BACKENDS) {
         hal.scheduler->panic(PSTR("Too many INS backends"));
     }
-    _backends[_backend_count] = detect(*this, sample_rate);
+    _backends[_backend_count] = detect(*this);
     if (_backends[_backend_count] != NULL) {
         _backend_count++;
     }
@@ -319,20 +322,20 @@ void AP_InertialSensor::_add_backend(AP_InertialSensor_Backend *(detect)(AP_Iner
   detect available backends for this board
  */
 void 
-AP_InertialSensor::_detect_backends(Sample_rate sample_rate)
+AP_InertialSensor::_detect_backends(void)
 {
 #if HAL_INS_DEFAULT == HAL_INS_HIL
-    _add_backend(AP_InertialSensor_HIL::detect, sample_rate);
+    _add_backend(AP_InertialSensor_HIL::detect);
 #elif HAL_INS_DEFAULT == HAL_INS_MPU6000
-    _add_backend(AP_InertialSensor_MPU6000::detect, sample_rate);
+    _add_backend(AP_InertialSensor_MPU6000::detect);
 #elif HAL_INS_DEFAULT == HAL_INS_PX4 || HAL_INS_DEFAULT == HAL_INS_VRBRAIN
-    _add_backend(AP_InertialSensor_PX4::detect, sample_rate);
+    _add_backend(AP_InertialSensor_PX4::detect);
 #elif HAL_INS_DEFAULT == HAL_INS_OILPAN
-    _add_backend(AP_InertialSensor_Oilpan::detect, sample_rate);
+    _add_backend(AP_InertialSensor_Oilpan::detect);
 #elif HAL_INS_DEFAULT == HAL_INS_MPU9250
-    _add_backend(AP_InertialSensor_MPU9250::detect, sample_rate);
+    _add_backend(AP_InertialSensor_MPU9250::detect);
 #elif HAL_INS_DEFAULT == HAL_INS_FLYMAPLE
-    _add_backend(AP_InertialSensor_Flymaple::detect, sample_rate);
+    _add_backend(AP_InertialSensor_Flymaple::detect);
 #else
     #error Unrecognised HAL_INS_TYPE setting
 #endif
@@ -340,7 +343,7 @@ AP_InertialSensor::_detect_backends(Sample_rate sample_rate)
 #if 0 // disabled due to broken hardware on some PXF capes
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
     // the PXF also has a MPU6000
-    _add_backend(AP_InertialSensor_MPU6000::detect, sample_rate);
+    _add_backend(AP_InertialSensor_MPU6000::detect);
 #endif
 #endif
 

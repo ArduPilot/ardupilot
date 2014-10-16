@@ -24,11 +24,10 @@ public:
     bool accel_sample_available(void) { return _have_sample_available; }
 
     // detect the sensor
-    static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu,
-                                             AP_InertialSensor::Sample_rate sample_rate);
+    static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu);
 
 private:
-    bool            _init_sensor(AP_InertialSensor::Sample_rate sample_rate);
+    bool            _init_sensor();
     void             _accumulate(void);
     Vector3f        _accel_filtered;
     Vector3f        _gyro_filtered;

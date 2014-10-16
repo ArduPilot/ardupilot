@@ -23,14 +23,13 @@ public:
     bool update();
 
     // detect the sensor
-    static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu,
-                                             AP_InertialSensor::Sample_rate sample_rate);
+    static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu);
 
     bool gyro_sample_available(void);
     bool accel_sample_available(void);
 
 private:
-    bool _init_sensor(AP_InertialSensor::Sample_rate sample_rate);
+    bool     _init_sensor(void);
     void     _get_sample(void);
     bool     _sample_available(void);
     Vector3f _accel_in[INS_MAX_INSTANCES];
@@ -41,7 +40,6 @@ private:
     uint64_t _last_gyro_update_timestamp[INS_MAX_INSTANCES];
     uint64_t _last_get_sample_timestamp;
     uint64_t _last_sample_timestamp;
-    uint32_t _sample_time_usec;
 
     // support for updating filter at runtime
     uint8_t _last_filter_hz;

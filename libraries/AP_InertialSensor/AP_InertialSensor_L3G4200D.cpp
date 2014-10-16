@@ -123,25 +123,9 @@ AP_InertialSensor_L3G4200D::AP_InertialSensor_L3G4200D(AP_InertialSensor &imu) :
     _gyro_filter_z(800, 10)
 {}
 
-bool AP_InertialSensor_L3G4200D::_init_sensor(AP_InertialSensor::Sample_rate sample_rate) 
+bool AP_InertialSensor_L3G4200D::_init_sensor(void) 
 {
-
-    switch (sample_rate) {
-    case AP_InertialSensor::RATE_50HZ:
-        _default_filter_hz = 10;
-        break;
-    case AP_InertialSensor::RATE_100HZ:
-        _default_filter_hz = 20;
-        break;
-    case AP_InertialSensor::RATE_200HZ:
-        _default_filter_hz = 30;
-        break;
-    case AP_InertialSensor::RATE_400HZ:
-        _default_filter_hz = 30;
-        break;
-    default:
-        return false;
-    }
+    _default_filter_hz = _default_filter();
 
     // get pointer to i2c bus semaphore
     AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();

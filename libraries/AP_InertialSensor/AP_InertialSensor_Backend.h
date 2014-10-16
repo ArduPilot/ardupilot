@@ -70,6 +70,9 @@ protected:
     // backend should fill in its product ID from AP_PRODUCT_ID_*
     int16_t _product_id;
 
+    // return the default filter frequency in Hz for the sample rate
+    uint8_t _default_filter(void) const;
+
     // note that each backend is also expected to have a static detect()
     // function which instantiates an instance of the backend sensor
     // driver if the sensor is available

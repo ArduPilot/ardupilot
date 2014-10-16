@@ -190,14 +190,13 @@ AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu) :
 /*
   detect the sensor
  */
-AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::detect(AP_InertialSensor &_imu, 
-                                                             AP_InertialSensor::Sample_rate sample_rate)
+AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::detect(AP_InertialSensor &_imu)
 {
     AP_InertialSensor_MPU6000 *sensor = new AP_InertialSensor_MPU6000(_imu);
     if (sensor == NULL) {
         return NULL;
     }
-    if (!sensor->_init_sensor(sample_rate)) {
+    if (!sensor->_init_sensor()) {
         delete sensor;
         return NULL;
     }
@@ -208,7 +207,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::detect(AP_InertialSensor &
 /*
   initialise the sensor
  */
-bool AP_InertialSensor_MPU6000::_init_sensor(AP_InertialSensor::Sample_rate sample_rate)
+bool AP_InertialSensor_MPU6000::_init_sensor(void)
 {
     _spi = hal.spi->device(AP_HAL::SPIDevice_MPU6000);
     _spi_sem = _spi->get_semaphore();
@@ -222,7 +221,7 @@ bool AP_InertialSensor_MPU6000::_init_sensor(AP_InertialSensor::Sample_rate samp
 
     uint8_t tries = 0;
     do {
-        bool success = _hardware_init(sample_rate);
+        bool success = _hardware_init();
         if (success) {
             hal.scheduler->delay(5+2);
             if (!_spi_sem->take(100)) {
@@ -446,7 +445,7 @@ void AP_InertialSensor_MPU6000::_set_filter_register(uint8_t filter_hz, uint8_t 
 }
 
 
-bool AP_InertialSensor_MPU6000::_hardware_init(AP_InertialSensor::Sample_rate sample_rate)
+bool AP_InertialSensor_MPU6000::_hardware_init(void)
 {
     if (!_spi_sem->take(100)) {
         hal.scheduler->panic(PSTR("MPU6000: Unable to get semaphore"));
@@ -493,7 +492,7 @@ bool AP_InertialSensor_MPU6000::_hardware_init(AP_InertialSensor::Sample_rate sa
     // sample rate and filtering
     // to minimise the effects of aliasing we choose a filter
     // that is less than half of the sample rate
-    switch (sample_rate) {
+    switch (_imu.get_sample_rate()) {
     case AP_InertialSensor::RATE_50HZ:
         // this is used for plane and rover, where noise resistance is
         // more important than update rate. Tests on an aerobatic plane

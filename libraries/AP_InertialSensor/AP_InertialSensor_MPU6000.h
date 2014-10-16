@@ -24,8 +24,7 @@ public:
     bool accel_sample_available(void) { return _sum_count >= _sample_count; }
 
     // detect the sensor
-    static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu,
-                                             AP_InertialSensor::Sample_rate sample_rate);
+    static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu);
 
 private:
 #if MPU6000_DEBUG
@@ -38,7 +37,7 @@ private:
 
     AP_HAL::DigitalSource *_drdy_pin;
 
-    bool                 _init_sensor(AP_InertialSensor::Sample_rate sample_rate);
+    bool                 _init_sensor(void);
     bool                 _sample_available();
     void                 _read_data_transaction();
     bool                 _data_ready();
@@ -46,7 +45,7 @@ private:
     uint8_t              _register_read( uint8_t reg );
     void                 _register_write( uint8_t reg, uint8_t val );
     void                 _register_write_check(uint8_t reg, uint8_t val);
-    bool                 _hardware_init(AP_InertialSensor::Sample_rate sample_rate);
+    bool                 _hardware_init(void);
 
     AP_HAL::SPIDeviceDriver *_spi;
     AP_HAL::Semaphore *_spi_sem;

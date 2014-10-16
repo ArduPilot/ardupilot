@@ -340,14 +340,13 @@ AP_InertialSensor_MPU9150::AP_InertialSensor_MPU9150(AP_InertialSensor &imu) :
 /*
   detect the sensor
  */
-AP_InertialSensor_Backend *AP_InertialSensor_MPU9150::detect(AP_InertialSensor &_imu, 
-                                                             AP_InertialSensor::Sample_rate sample_rate)
+AP_InertialSensor_Backend *AP_InertialSensor_MPU9150::detect(AP_InertialSensor &_imu)
 {
     AP_InertialSensor_MPU9150 *sensor = new AP_InertialSensor_MPU9150(_imu);
     if (sensor == NULL) {
         return NULL;
     }
-    if (!sensor->_init_sensor(sample_rate)) {
+    if (!sensor->_init_sensor()) {
         delete sensor;
         return NULL;
     }
@@ -371,31 +370,14 @@ void AP_InertialSensor_MPU9150::_set_filter_frequency(uint8_t filter_hz)
 }
 
 /**
- *  @brief      Init method
- *  @param[in] Sample_rate  The sample rate, check the struct def.
- *  @return     AP_PRODUCT_ID_PIXHAWK_FIRE_CAPE if successful.
+ *  Init method
  */
-bool AP_InertialSensor_MPU9150::_init_sensor(AP_InertialSensor::Sample_rate sample_rate) 
+bool AP_InertialSensor_MPU9150::_init_sensor(void) 
 {
     // Sensors pushed to the FIFO.
     uint8_t sensors;
 
-    switch (sample_rate) {
-    case AP_InertialSensor::RATE_50HZ:
-        _default_filter_hz = 10;
-        break;
-    case AP_InertialSensor::RATE_100HZ:
-        _default_filter_hz = 20;
-        break;
-    case AP_InertialSensor::RATE_200HZ:
-        _default_filter_hz = 20;
-        break;
-    case AP_InertialSensor::RATE_400HZ:
-        _default_filter_hz = 20;
-        break;
-    default:
-        return false;
-    }
+    _default_filter_hz = _default_filter();
 
     // get pointer to i2c bus semaphore
     AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();

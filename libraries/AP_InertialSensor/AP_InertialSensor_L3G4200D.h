@@ -23,14 +23,13 @@ public:
     bool accel_sample_available(void) { return _have_accel_sample; }
 
     // detect the sensor
-    static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu,
-                                             AP_InertialSensor::Sample_rate sample_rate);
+    static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu);
 
     // return product ID
     int16_t product_id(void) const { return AP_PRODUCT_ID_L3G4200D; }
 
 private:
-    bool            _init_sensor(AP_InertialSensor::Sample_rate sample_rate);
+    bool            _init_sensor(void);
     void            _accumulate(void);
     Vector3f        _accel_filtered;
     Vector3f        _gyro_filtered;

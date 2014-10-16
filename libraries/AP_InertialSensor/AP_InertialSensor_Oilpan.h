@@ -18,10 +18,10 @@ public:
     bool accel_sample_available(void) { return _sample_available(); }
 
     // detect the sensor
-    static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu,
-                                             AP_InertialSensor::Sample_rate sample_rate);
+    static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu);
+
 private:
-    bool                        _init_sensor(AP_InertialSensor::Sample_rate sample_rate);
+    bool                        _init_sensor(void);
     bool            			_sample_available() const;
     static const uint8_t        _sensors[6];
     static const int8_t         _sensor_signs[6];

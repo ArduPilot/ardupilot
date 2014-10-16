@@ -13,17 +13,14 @@ public:
     /* update accel and gyro state */
     bool update();
 
-    bool gyro_sample_available(void) { return _sample_available(); }
-    bool accel_sample_available(void) { return _sample_available(); }
+    bool gyro_sample_available(void) { return true; }
+    bool accel_sample_available(void) { return true; }
 
     // detect the sensor
-    static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu,
-                                             AP_InertialSensor::Sample_rate sample_rate);
+    static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu);
 
 private:
-    bool _init_sensor(AP_InertialSensor::Sample_rate sample_rate);
-    bool _sample_available(void);
-    uint32_t _sample_period_usec;
+    bool _init_sensor(void);
 };
 
 #endif // __AP_INERTIALSENSOR_HIL_H__

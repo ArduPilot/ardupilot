@@ -178,6 +178,9 @@ public:
     // get_filter - return filter in hz
     uint8_t get_filter() const { return _mpu6000_filter.get(); }
 
+    // return the selected sample rate
+    Sample_rate get_sample_rate(void) const { return _sample_rate; }
+
     uint16_t error_count(void) const { return 0; }
     bool healthy(void) const { return get_gyro_health() && get_accel_health(); }
 
@@ -189,8 +192,8 @@ public:
 private:
 
     // load backend drivers
-    void _add_backend(AP_InertialSensor_Backend *(detect)(AP_InertialSensor &, Sample_rate), Sample_rate sample_rate);
-    void _detect_backends(Sample_rate sample_rate);
+    void _add_backend(AP_InertialSensor_Backend *(detect)(AP_InertialSensor &));
+    void _detect_backends(void);
 
     // accel and gyro initialisation
     void _init_accel();
@@ -222,6 +225,9 @@ private:
     uint8_t _accel_count;
     uint8_t _backend_count;
 
+    // the selected sample rate
+    Sample_rate _sample_rate;
+    
     // Most recent accelerometer reading
     Vector3f _accel[INS_MAX_INSTANCES];
 

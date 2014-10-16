@@ -189,14 +189,13 @@ AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250(AP_InertialSensor &imu) :
 /*
   detect the sensor
  */
-AP_InertialSensor_Backend *AP_InertialSensor_MPU9250::detect(AP_InertialSensor &_imu, 
-                                                             AP_InertialSensor::Sample_rate sample_rate)
+AP_InertialSensor_Backend *AP_InertialSensor_MPU9250::detect(AP_InertialSensor &_imu)
 {
     AP_InertialSensor_MPU9250 *sensor = new AP_InertialSensor_MPU9250(_imu);
     if (sensor == NULL) {
         return NULL;
     }
-    if (!sensor->_init_sensor(sample_rate)) {
+    if (!sensor->_init_sensor()) {
         delete sensor;
         return NULL;
     }
@@ -207,7 +206,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU9250::detect(AP_InertialSensor &
 /*
   initialise the sensor
  */
-bool AP_InertialSensor_MPU9250::_init_sensor(AP_InertialSensor::Sample_rate sample_rate)
+bool AP_InertialSensor_MPU9250::_init_sensor(void)
 {
     _spi = hal.spi->device(AP_HAL::SPIDevice_MPU9250);
     _spi_sem = _spi->get_semaphore();
@@ -226,7 +225,7 @@ bool AP_InertialSensor_MPU9250::_init_sensor(AP_InertialSensor::Sample_rate samp
 
     uint8_t tries = 0;
     do {
-        bool success = _hardware_init(sample_rate);
+        bool success = _hardware_init();
         if (success) {
             hal.scheduler->delay(10);
             if (!_spi_sem->take(100)) {
@@ -401,7 +400,7 @@ void AP_InertialSensor_MPU9250::_set_filter(uint8_t filter_hz)
 /*
   initialise the sensor configuration registers
  */
-bool AP_InertialSensor_MPU9250::_hardware_init(AP_InertialSensor::Sample_rate sample_rate)
+bool AP_InertialSensor_MPU9250::_hardware_init(void)
 {
     if (!_spi_sem->take(100)) {
         hal.console->printf("MPU9250: Unable to get semaphore");
@@ -442,29 +441,7 @@ bool AP_InertialSensor_MPU9250::_hardware_init(AP_InertialSensor::Sample_rate sa
     // Disable I2C bus (recommended on datasheet)
     _register_write(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
 
-    // sample rate and filtering
-    // to minimise the effects of aliasing we choose a filter
-    // that is less than half of the sample rate
-    switch (sample_rate) {
-    case AP_InertialSensor::RATE_50HZ:
-        _default_filter_hz = 15;
-        _sample_time_usec = 20000;
-        break;
-    case AP_InertialSensor::RATE_100HZ:
-        _default_filter_hz = 30;
-        _sample_time_usec = 10000;
-        break;
-    case AP_InertialSensor::RATE_200HZ:
-        _default_filter_hz = 30;
-        _sample_time_usec = 5000;
-        break;
-    case AP_InertialSensor::RATE_400HZ:
-        _default_filter_hz = 30;
-        _sample_time_usec = 2500;
-        break;
-    default:
-        return false;
-    }
+    _default_filter_hz = _default_filter();
 
     // used a fixed filter of 42Hz on the sensor, then filter using
     // the 2-pole software filter

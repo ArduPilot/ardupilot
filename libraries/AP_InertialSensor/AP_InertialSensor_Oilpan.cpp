@@ -49,14 +49,13 @@ AP_InertialSensor_Oilpan::AP_InertialSensor_Oilpan(AP_InertialSensor &imu) :
 /*
   detect the sensor
  */
-AP_InertialSensor_Backend *AP_InertialSensor_Oilpan::detect(AP_InertialSensor &_imu, 
-                                                            AP_InertialSensor::Sample_rate sample_rate)
+AP_InertialSensor_Backend *AP_InertialSensor_Oilpan::detect(AP_InertialSensor &_imu)
 {
     AP_InertialSensor_Oilpan *sensor = new AP_InertialSensor_Oilpan(_imu);
     if (sensor == NULL) {
         return NULL;
     }
-    if (!sensor->_init_sensor(sample_rate)) {
+    if (!sensor->_init_sensor()) {
         delete sensor;
         return NULL;
     }
@@ -64,11 +63,11 @@ AP_InertialSensor_Backend *AP_InertialSensor_Oilpan::detect(AP_InertialSensor &_
     return sensor;
 }
 
-bool AP_InertialSensor_Oilpan::_init_sensor(AP_InertialSensor::Sample_rate sample_rate)
+bool AP_InertialSensor_Oilpan::_init_sensor(void)
 {
     apm1_adc.Init();
 
-    switch (sample_rate) {
+    switch (_imu.get_sample_rate()) {
     case AP_InertialSensor::RATE_50HZ:
         _sample_threshold = 20;
         break;

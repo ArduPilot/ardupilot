@@ -20,29 +20,27 @@ const extern AP_HAL::HAL& hal;
 
 AP_InertialSensor_PX4::AP_InertialSensor_PX4(AP_InertialSensor &imu) :
     AP_InertialSensor_Backend(imu),
-    _last_get_sample_timestamp(0),
-    _sample_time_usec(0)
+    _last_get_sample_timestamp(0)
 {
 }
 
 /*
   detect the sensor
  */
-AP_InertialSensor_Backend *AP_InertialSensor_PX4::detect(AP_InertialSensor &_imu, 
-                                                         AP_InertialSensor::Sample_rate sample_rate)
+AP_InertialSensor_Backend *AP_InertialSensor_PX4::detect(AP_InertialSensor &_imu)
 {
     AP_InertialSensor_PX4 *sensor = new AP_InertialSensor_PX4(_imu);
     if (sensor == NULL) {
         return NULL;
     }
-    if (!sensor->_init_sensor(sample_rate)) {
+    if (!sensor->_init_sensor()) {
         delete sensor;
         return NULL;
     }
     return sensor;
 }
 
-bool AP_InertialSensor_PX4::_init_sensor(AP_InertialSensor::Sample_rate sample_rate) 
+bool AP_InertialSensor_PX4::_init_sensor(void) 
 {
     // assumes max 3 instances
     _accel_fd[0] = open(ACCEL_DEVICE_PATH, O_RDONLY);
@@ -71,27 +69,7 @@ bool AP_InertialSensor_PX4::_init_sensor(AP_InertialSensor::Sample_rate sample_r
         return false;
     }
 
-    switch (sample_rate) {
-    case AP_InertialSensor::RATE_50HZ:
-        _default_filter_hz = 15;
-        _sample_time_usec = 20000;
-        break;
-    case AP_InertialSensor::RATE_100HZ:
-        _default_filter_hz = 30;
-        _sample_time_usec = 10000;
-        break;
-    case AP_InertialSensor::RATE_200HZ:
-        _default_filter_hz = 30;
-        _sample_time_usec = 5000;
-        break;
-    case AP_InertialSensor::RATE_400HZ:
-        _default_filter_hz = 30;
-        _sample_time_usec = 2500;
-        break;
-    default:
-        return false;
-    }
-
+    _default_filter_hz = _default_filter();
     _set_filter_frequency(_imu.get_filter());
 
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)

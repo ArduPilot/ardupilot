@@ -80,40 +80,22 @@ AP_InertialSensor_Flymaple::AP_InertialSensor_Flymaple(AP_InertialSensor &imu) :
 /*
   detect the sensor
  */
-AP_InertialSensor_Backend *AP_InertialSensor_Flymaple::detect(AP_InertialSensor &_imu, 
-                                                              AP_InertialSensor::Sample_rate sample_rate)
+AP_InertialSensor_Backend *AP_InertialSensor_Flymaple::detect(AP_InertialSensor &_imu)
 {
     AP_InertialSensor_Flymaple *sensor = new AP_InertialSensor_Flymaple(_imu);
     if (sensor == NULL) {
         return NULL;
     }
-    if (!sensor->_init_sensor(sample_rate)) {
+    if (!sensor->_init_sensor()) {
         delete sensor;
         return NULL;
     }
     return sensor;
 }
 
-bool AP_InertialSensor_Flymaple::_init_sensor(AP_InertialSensor::Sample_rate sample_rate) 
+bool AP_InertialSensor_Flymaple::_init_sensor(void) 
 {
-    // Sensors are raw sampled at 800Hz.
-    // Here we figure the divider to get the rate that update should be called
-    switch (sample_rate) {
-    case AP_InertialSensor::RATE_50HZ:
-        _default_filter_hz = 10;
-        break;
-    case AP_InertialSensor::RATE_100HZ:
-        _default_filter_hz = 20;
-        break;
-    case AP_InertialSensor::RATE_200HZ:
-        _default_filter_hz = 20;
-        break;
-    case AP_InertialSensor::RATE_400HZ:
-        _default_filter_hz = 30;
-        break;
-    default:
-        return false;
-    }
+    _default_filter_hz = _default_filter();
 
     // get pointer to i2c bus semaphore
     AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();

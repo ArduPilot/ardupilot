@@ -27,24 +27,21 @@ public:
     bool accel_sample_available(void) { return _have_sample_available; }
 
     // detect the sensor
-    static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu,
-                                             AP_InertialSensor::Sample_rate sample_rate);
+    static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu);
 
 private:
-    bool                 _init_sensor(AP_InertialSensor::Sample_rate sample_rate);
+    bool                 _init_sensor(void);
 
     void                 _read_data_transaction();
     bool                 _data_ready();
     void                 _poll_data(void);
     uint8_t              _register_read( uint8_t reg );
     void                 _register_write( uint8_t reg, uint8_t val );
-    bool                 _hardware_init(AP_InertialSensor::Sample_rate sample_rate);
+    bool                 _hardware_init(void);
     bool                 _sample_available();
 
     AP_HAL::SPIDeviceDriver *_spi;
     AP_HAL::Semaphore *_spi_sem;
-
-    uint32_t _sample_time_usec;
 
     // support for updating filter at runtime
     int16_t _last_filter_hz;

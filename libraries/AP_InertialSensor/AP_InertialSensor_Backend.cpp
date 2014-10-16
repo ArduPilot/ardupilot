@@ -35,3 +35,26 @@ void AP_InertialSensor_Backend::_rotate_and_offset_accel(uint8_t instance, const
     _imu._accel[instance] -= _imu._accel_offset[instance];
     _imu._accel_healthy[instance] = true;
 }
+
+/*
+  return the default filter frequency in Hz for the sample rate
+  
+  This uses the sample_rate as a proxy for what type of vehicle it is
+  (ie. plane and rover run at 50Hz). Copters need a bit more filter
+  bandwidth
+ */
+uint8_t AP_InertialSensor_Backend::_default_filter(void) const
+{
+    switch (_imu.get_sample_rate()) {
+    case AP_InertialSensor::RATE_50HZ:
+        // on Rover and plane use a lower filter rate
+        return 15;
+    case AP_InertialSensor::RATE_100HZ:
+        return 30;
+    case AP_InertialSensor::RATE_200HZ:
+        return 30;
+    case AP_InertialSensor::RATE_400HZ:
+        return 30;
+    }
+    return 30;
+}
