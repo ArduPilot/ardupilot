@@ -65,7 +65,7 @@ const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 static Parameters g;
 
-static AP_InertialSensor_HIL ins;
+static AP_InertialSensor ins;
 static AP_Baro_HIL barometer;
 static AP_GPS gps;
 static AP_Compass_HIL compass;
@@ -207,6 +207,8 @@ void setup()
     barometer.read();
     compass.init();
     inertial_nav.init();
+    ins.set_hil_mode();
+
     switch (update_rate) {
     case 0:
     case 50:
