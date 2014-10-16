@@ -74,11 +74,11 @@ static void auto_run()
         auto_spline_run();
         break;
 
-#if NAV_GUIDED == ENABLED
     case Auto_NavGuided:
+#if NAV_GUIDED == ENABLED
         auto_nav_guided_run();
-        break;
 #endif
+        break;
     }
 }
 
