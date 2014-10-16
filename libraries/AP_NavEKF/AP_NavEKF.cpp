@@ -2535,7 +2535,9 @@ void NavEKF::RunAuxiliaryEKF()
             return;
         }
         distanceTravelledSq = min(distanceTravelledSq, 100.0f);
-        Popt[1][1] += (distanceTravelledSq * sq(0.01f*float(_gndGradientSigma)));
+        float timeLapsed = min(0.001f * (imuSampleTime_ms - timeAtLastAuxEKF_ms), 1.0f);
+        Popt[1][1] += (distanceTravelledSq * sq(0.01f*float(_gndGradientSigma))) + sq(1.0f * timeLapsed);
+        timeAtLastAuxEKF_ms = imuSampleTime_ms;
     }
 
     // fuse range finder data
@@ -4202,7 +4204,7 @@ void NavEKF::ZeroVariables()
     lastFixTime_ms = imuSampleTime_ms;
     secondLastFixTime_ms = imuSampleTime_ms;
     lastDecayTime_ms = imuSampleTime_ms;
-    airborneDetectTime_ms = imuSampleTime_ms;
+    timeAtLastAuxEKF_ms = imuSampleTime_ms;
 
     gpsNoiseScaler = 1.0f;
     velTimeout = false;
