@@ -12,6 +12,18 @@
 // enable debug to see a register dump on startup
 #define MPU6000_DEBUG 0
 
+// on fast CPUs we sample at 1kHz and use a software filter
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+#define MPU6000_FAST_SAMPLING 1
+#else
+#define MPU6000_FAST_SAMPLING 0
+#endif
+
+#if MPU6000_FAST_SAMPLING
+#include <Filter.h>
+#include <LowPassFilter2p.h>
+#endif
+
 class AP_InertialSensor_MPU6000 : public AP_InertialSensor_Backend
 {
 public:
@@ -52,21 +64,34 @@ private:
 
     static const float          _gyro_scale;
 
-    // how many hardware samples before we report a sample to the caller
-    uint8_t _sample_count;
-
     // support for updating filter at runtime
     uint8_t _last_filter_hz;
 
-    void _set_filter_register(uint8_t filter_hz, uint8_t default_filter);
+    void _set_filter_register(uint8_t filter_hz);
 
     // count of bus errors
     uint16_t _error_count;
 
+    // how many hardware samples before we report a sample to the caller
+    uint8_t _sample_count;
+
+#if MPU6000_FAST_SAMPLING
+    Vector3f _accel_filtered;
+    Vector3f _gyro_filtered;
+
+    // Low Pass filters for gyro and accel 
+    LowPassFilter2p _accel_filter_x;
+    LowPassFilter2p _accel_filter_y;
+    LowPassFilter2p _accel_filter_z;
+    LowPassFilter2p _gyro_filter_x;
+    LowPassFilter2p _gyro_filter_y;
+    LowPassFilter2p _gyro_filter_z;
+#else
     // accumulation in timer - must be read with timer disabled
     // the sum of the values since last read
     Vector3l _accel_sum;
     Vector3l _gyro_sum;
+#endif
     volatile uint16_t _sum_count;
 };
 

@@ -178,13 +178,22 @@ AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu) :
     _drdy_pin(NULL),
     _spi(NULL),
     _spi_sem(NULL),
-    _sample_count(0),
     _last_filter_hz(0),
     _error_count(0),
+#if MPU6000_FAST_SAMPLING
+    _accel_filter_x(1000, 15),
+    _accel_filter_y(1000, 15),
+    _accel_filter_z(1000, 15),
+    _gyro_filter_x(1000, 15),
+    _gyro_filter_y(1000, 15),
+    _gyro_filter_z(1000, 15),    
+#else
+    _sample_count(0),
+    _accel_sum(),
+    _gyro_sum(),
+#endif
     _sum_count(0)
 {
-    _accel_sum.zero();
-    _gyro_sum.zero();
 }
 
 /*
@@ -263,21 +272,29 @@ bool AP_InertialSensor_MPU6000::_init_sensor(void)
  */
 bool AP_InertialSensor_MPU6000::update( void )
 {    
+#if !MPU6000_FAST_SAMPLING
     if (_sum_count < _sample_count) {
         // we don't have enough samples yet
         return false;
     }
+#endif
 
     // we have a full set of samples
     uint16_t num_samples;
     Vector3f accel, gyro;
 
     hal.scheduler->suspend_timer_procs();
+#if MPU6000_FAST_SAMPLING
+    gyro = _gyro_filtered;
+    accel = _accel_filtered;
+    num_samples = 1;
+#else
     gyro(_gyro_sum.x, _gyro_sum.y, _gyro_sum.z);
     accel(_accel_sum.x, _accel_sum.y, _accel_sum.z);
     num_samples = _sum_count;
     _accel_sum.zero();
     _gyro_sum.zero();
+#endif
     _sum_count = 0;
     hal.scheduler->resume_timer_procs();
 
@@ -290,7 +307,7 @@ bool AP_InertialSensor_MPU6000::update( void )
     if (_last_filter_hz != _imu.get_filter()) {
         if (_spi_sem->take(10)) {
             _spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_LOW);
-            _set_filter_register(_imu.get_filter(), 0);
+            _set_filter_register(_imu.get_filter());
             _spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_HIGH);
             _spi_sem->give();
         }
@@ -358,19 +375,31 @@ void AP_InertialSensor_MPU6000::_read_data_transaction() {
     }
 
 #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx] << 8) | v[2*idx+1]))
+#if MPU6000_FAST_SAMPLING
+    _accel_filtered = Vector3f(_accel_filter_x.apply(int16_val(rx.v, 1)), 
+                               _accel_filter_y.apply(int16_val(rx.v, 0)), 
+                               _accel_filter_z.apply(-int16_val(rx.v, 2)));
+
+    _gyro_filtered = Vector3f(_gyro_filter_x.apply(int16_val(rx.v, 5)), 
+                              _gyro_filter_y.apply(int16_val(rx.v, 4)), 
+                              _gyro_filter_z.apply(-int16_val(rx.v, 6)));
+#else
     _accel_sum.x += int16_val(rx.v, 1);
     _accel_sum.y += int16_val(rx.v, 0);
     _accel_sum.z -= int16_val(rx.v, 2);
     _gyro_sum.x  += int16_val(rx.v, 5);
     _gyro_sum.y  += int16_val(rx.v, 4);
     _gyro_sum.z  -= int16_val(rx.v, 6);
+#endif
     _sum_count++;
 
+#if !MPU6000_FAST_SAMPLING
     if (_sum_count == 0) {
         // rollover - v unlikely
         _accel_sum.zero();
         _gyro_sum.zero();
     }
+#endif
 }
 
 uint8_t AP_InertialSensor_MPU6000::_register_read( uint8_t reg )
@@ -416,32 +445,26 @@ void AP_InertialSensor_MPU6000::_register_write_check(uint8_t reg, uint8_t val)
 /*
   set the DLPF filter frequency. Assumes caller has taken semaphore
  */
-void AP_InertialSensor_MPU6000::_set_filter_register(uint8_t filter_hz, uint8_t default_filter)
+void AP_InertialSensor_MPU6000::_set_filter_register(uint8_t filter_hz)
 {
-    uint8_t filter = default_filter;
+    if (filter_hz == 0) {
+        filter_hz = _default_filter();
+    }
+    uint8_t filter;
     // choose filtering frequency
-    switch (filter_hz) {
-    case 5:
+    if (filter_hz <= 5) {
         filter = BITS_DLPF_CFG_5HZ;
-        break;
-    case 10:
+    } else if (filter_hz <= 10) {
         filter = BITS_DLPF_CFG_10HZ;
-        break;
-    case 20:
+    } else if (filter_hz <= 20) {
         filter = BITS_DLPF_CFG_20HZ;
-        break;
-    case 42:
+    } else if (filter_hz <= 42) {
         filter = BITS_DLPF_CFG_42HZ;
-        break;
-    case 98:
+    } else {
         filter = BITS_DLPF_CFG_98HZ;
-        break;
     }
-
-    if (filter != 0) {
-        _last_filter_hz = filter_hz;
-        _register_write(MPUREG_CONFIG, filter);
-    }
+    _last_filter_hz = filter_hz;
+    _register_write(MPUREG_CONFIG, filter);
 }
 
 
@@ -487,8 +510,9 @@ bool AP_InertialSensor_MPU6000::_hardware_init(void)
     _register_write(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
     hal.scheduler->delay(1);
 
-    uint8_t default_filter;
-
+#if MPU6000_FAST_SAMPLING
+    _sample_count = 1;
+#else
     // sample rate and filtering
     // to minimise the effects of aliasing we choose a filter
     // that is less than half of the sample rate
@@ -497,26 +521,29 @@ bool AP_InertialSensor_MPU6000::_hardware_init(void)
         // this is used for plane and rover, where noise resistance is
         // more important than update rate. Tests on an aerobatic plane
         // show that 10Hz is fine, and makes it very noise resistant
-        default_filter = BITS_DLPF_CFG_10HZ;
         _sample_count = 4;
         break;
     case AP_InertialSensor::RATE_100HZ:
-        default_filter = BITS_DLPF_CFG_20HZ;
         _sample_count = 2;
         break;
     case AP_InertialSensor::RATE_200HZ:
-        default_filter = BITS_DLPF_CFG_20HZ;
         _sample_count = 1;
         break;
     default:
         return false;
     }
+#endif
 
-    _set_filter_register(_imu.get_filter(), default_filter);
+    _set_filter_register(_imu.get_filter());
 
+#if MPU6000_FAST_SAMPLING
+    // set sample rate to 1000Hz and apply a software filter
+    _register_write(MPUREG_SMPLRT_DIV, MPUREG_SMPLRT_1000HZ);
+#else
     // set sample rate to 200Hz, and use _sample_divider to give
     // the requested rate to the application
     _register_write(MPUREG_SMPLRT_DIV, MPUREG_SMPLRT_200HZ);
+#endif
     hal.scheduler->delay(1);
 
     _register_write(MPUREG_GYRO_CONFIG, BITS_GYRO_FS_2000DPS);  // Gyro scale 2000º/s
