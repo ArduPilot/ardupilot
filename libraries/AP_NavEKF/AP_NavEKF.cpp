@@ -2536,7 +2536,7 @@ void NavEKF::RunAuxiliaryEKF()
         }
         distanceTravelledSq = min(distanceTravelledSq, 100.0f);
         float timeLapsed = min(0.001f * (imuSampleTime_ms - timeAtLastAuxEKF_ms), 1.0f);
-        Popt[1][1] += (distanceTravelledSq * sq(0.01f*float(_gndGradientSigma))) + sq(1.0f * timeLapsed);
+        Popt[1][1] += (distanceTravelledSq * sq(0.01f*float(_gndGradientSigma))) + sq(2.0f * timeLapsed);
         timeAtLastAuxEKF_ms = imuSampleTime_ms;
     }
 
@@ -3676,8 +3676,8 @@ void NavEKF::SetFlightAndFusionModes()
     } else {
         inhibitGndState = false;
     }
-    // Don't update focal length offset state if there is no range finder or flying at low velocity
-    if (!useRngFinder() || !highGndSpdStage2) {
+    // Don't update focal length offset state if there is no range finder
+    if (!useRngFinder()) {
         fScaleInhibit = true;
     } else {
         fScaleInhibit = false;
