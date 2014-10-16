@@ -316,6 +316,8 @@ AP_InertialSensor::_detect_backends(Sample_rate sample_rate)
     _backends[0] = AP_InertialSensor_Oilpan::detect(*this, sample_rate);
 #elif HAL_INS_DEFAULT == HAL_INS_MPU9250
     _backends[0] = AP_InertialSensor_MPU9250::detect(*this, sample_rate);
+#elif HAL_INS_DEFAULT == HAL_INS_FLYMAPLE
+    _backends[0] = AP_InertialSensor_Flymaple::detect(*this, sample_rate);
 #else
     #error Unrecognised HAL_INS_TYPE setting
 #endif
