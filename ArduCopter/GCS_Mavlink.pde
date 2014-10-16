@@ -49,7 +49,7 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     if (failsafe.radio || failsafe.battery || failsafe.gps || failsafe.gcs || failsafe.ekf)  {
         system_status = MAV_STATE_CRITICAL;
     }
-    
+
     // work out the base_mode. This value is not very useful
     // for APM, but we calculate it as best we can so a generic
     // MAVLink enabled ground station can work out something about
@@ -265,7 +265,7 @@ static void NOINLINE send_location(mavlink_channel_t chan)
     // allows us to correctly calculate velocities and extrapolate
     // positions.
     // If we don't have a GPS fix then we are dead reckoning, and will
-    // use the current boot time as the fix time.    
+    // use the current boot time as the fix time.
     if (gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
         fix_time = gps.last_fix_time_ms();
     } else {
@@ -734,7 +734,7 @@ bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
 
     // send at a much lower rate while handling waypoints and
     // parameter sends
-    if ((stream_num != STREAM_PARAMS) && 
+    if ((stream_num != STREAM_PARAMS) &&
         (waypoint_receiving || _queued_parameter != NULL)) {
         rate *= 0.25;
     }
@@ -1440,8 +1440,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         mavlink_msg_rally_point_decode(msg, &packet);
         if (mavlink_check_target(packet.target_system, packet.target_component))
             break;
-        
-        if (packet.idx >= rally.get_rally_total() || 
+
+        if (packet.idx >= rally.get_rally_total() ||
             packet.idx >= rally.get_rally_max()) {
             send_text_P(SEVERITY_LOW,PSTR("bad rally point message ID"));
             break;
@@ -1479,7 +1479,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         //send_text_P(SEVERITY_HIGH, PSTR("## getting rally point in GCS_Mavlink.pde 2")); // #### TEMP
 
         if (packet.idx > rally.get_rally_total()) {
-            send_text_P(SEVERITY_LOW, PSTR("bad rally point index"));   
+            send_text_P(SEVERITY_LOW, PSTR("bad rally point index"));
             break;
         }
 
@@ -1487,22 +1487,22 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         RallyLocation rally_point;
         if (!rally.get_rally_point_with_index(packet.idx, rally_point)) {
-           send_text_P(SEVERITY_LOW, PSTR("failed to set rally point"));   
+           send_text_P(SEVERITY_LOW, PSTR("failed to set rally point"));
            break;
         }
 
         //send_text_P(SEVERITY_HIGH, PSTR("## getting rally point in GCS_Mavlink.pde 4")); // #### TEMP
 
         mavlink_msg_rally_point_send_buf(msg,
-                                         chan, msg->sysid, msg->compid, packet.idx, 
-                                         rally.get_rally_total(), rally_point.lat, rally_point.lng, 
-                                         rally_point.alt, rally_point.break_alt, rally_point.land_dir, 
+                                         chan, msg->sysid, msg->compid, packet.idx,
+                                         rally.get_rally_total(), rally_point.lat, rally_point.lng,
+                                         rally_point.alt, rally_point.break_alt, rally_point.land_dir,
                                          rally_point.flags);
 
         //send_text_P(SEVERITY_HIGH, PSTR("## getting rally point in GCS_Mavlink.pde 5")); // #### TEMP
 
         break;
-    }  
+    }
 #endif // AC_RALLY == ENABLED
 
 
