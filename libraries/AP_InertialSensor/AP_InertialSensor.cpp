@@ -219,6 +219,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
 AP_InertialSensor::AP_InertialSensor() :
     _gyro_count(0),
     _accel_count(0),
+    _backend_count(0),
     _accel(),
     _gyro(),
     _board_orientation(ROTATION_NONE),
@@ -299,6 +300,20 @@ AP_InertialSensor::init( Start_style style,
     _have_sample = false;
 }
 
+/*
+  try to load a backend
+ */
+void AP_InertialSensor::_add_backend(AP_InertialSensor_Backend *(detect)(AP_InertialSensor &, Sample_rate), Sample_rate sample_rate)
+{
+    if (_backend_count == INS_MAX_BACKENDS) {
+        hal.scheduler->panic(PSTR("Too many INS backends"));
+    }
+    _backends[_backend_count] = detect(*this, sample_rate);
+    if (_backends[_backend_count] != NULL) {
+        _backend_count++;
+    }
+}
+
 
 /*
   detect available backends for this board
@@ -307,21 +322,29 @@ void
 AP_InertialSensor::_detect_backends(Sample_rate sample_rate)
 {
 #if HAL_INS_DEFAULT == HAL_INS_HIL
-    _backends[0] = AP_InertialSensor_HIL::detect(*this, sample_rate);
+    _add_backend(AP_InertialSensor_HIL::detect, sample_rate);
 #elif HAL_INS_DEFAULT == HAL_INS_MPU6000
-    _backends[0] = AP_InertialSensor_MPU6000::detect(*this, sample_rate);
+    _add_backend(AP_InertialSensor_MPU6000::detect, sample_rate);
 #elif HAL_INS_DEFAULT == HAL_INS_PX4 || HAL_INS_DEFAULT == HAL_INS_VRBRAIN
-    _backends[0] = AP_InertialSensor_PX4::detect(*this, sample_rate);
+    _add_backend(AP_InertialSensor_PX4::detect, sample_rate);
 #elif HAL_INS_DEFAULT == HAL_INS_OILPAN
-    _backends[0] = AP_InertialSensor_Oilpan::detect(*this, sample_rate);
+    _add_backend(AP_InertialSensor_Oilpan::detect, sample_rate);
 #elif HAL_INS_DEFAULT == HAL_INS_MPU9250
-    _backends[0] = AP_InertialSensor_MPU9250::detect(*this, sample_rate);
+    _add_backend(AP_InertialSensor_MPU9250::detect, sample_rate);
 #elif HAL_INS_DEFAULT == HAL_INS_FLYMAPLE
-    _backends[0] = AP_InertialSensor_Flymaple::detect(*this, sample_rate);
+    _add_backend(AP_InertialSensor_Flymaple::detect, sample_rate);
 #else
     #error Unrecognised HAL_INS_TYPE setting
 #endif
-    if (_backends[0] == NULL ||
+
+#if 0 // disabled due to broken hardware on some PXF capes
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
+    // the PXF also has a MPU6000
+    _add_backend(AP_InertialSensor_MPU6000::detect, sample_rate);
+#endif
+#endif
+
+    if (_backend_count == 0 ||
         _gyro_count == 0 ||
         _accel_count == 0) {
         hal.scheduler->panic(PSTR("No INS backends available"));
@@ -933,10 +956,8 @@ void AP_InertialSensor::update(void)
             _gyro_healthy[i] = false;
             _accel_healthy[i] = false;
         }
-        for (int8_t i=0; i<INS_MAX_BACKENDS; i++) {
-            if (_backends[i] != NULL) {
-                _backends[i]->update();
-            }
+        for (uint8_t i=0; i<_backend_count; i++) {
+            _backends[i]->update();
         }
         // set primary to first healthy accel and gyro
         for (int8_t i=0; i<INS_MAX_INSTANCES; i++) {
@@ -1032,11 +1053,9 @@ check_sample:
         bool gyro_available = false;
         bool accel_available = false;
         while (!gyro_available || !accel_available) {
-            for (uint8_t i=0; i<INS_MAX_BACKENDS; i++) {
-                if (_backends[i] != NULL) {
-                    gyro_available |= _backends[i]->gyro_sample_available();
-                    accel_available |= _backends[i]->accel_sample_available();
-                }
+            for (uint8_t i=0; i<_backend_count; i++) {
+                gyro_available |= _backends[i]->gyro_sample_available();
+                accel_available |= _backends[i]->accel_sample_available();
             }
             if (!gyro_available || !accel_available) {
                 hal.scheduler->delay_microseconds(100);

@@ -189,6 +189,7 @@ public:
 private:
 
     // load backend drivers
+    void _add_backend(AP_InertialSensor_Backend *(detect)(AP_InertialSensor &, Sample_rate), Sample_rate sample_rate);
     void _detect_backends(Sample_rate sample_rate);
 
     // accel and gyro initialisation
@@ -219,6 +220,7 @@ private:
     // counters on initialisation
     uint8_t _gyro_count;
     uint8_t _accel_count;
+    uint8_t _backend_count;
 
     // Most recent accelerometer reading
     Vector3f _accel[INS_MAX_INSTANCES];
