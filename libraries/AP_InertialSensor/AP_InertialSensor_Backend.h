@@ -48,6 +48,11 @@ public:
      */
     virtual bool gyro_sample_available() = 0;
 
+    /*
+      return the product ID
+     */
+    int16_t product_id(void) const { return _product_id; }
+
 protected:
     // access to frontend
     AP_InertialSensor &_imu;
@@ -57,6 +62,9 @@ protected:
 
     // rotate accel vector, scale and offset
     void _rotate_and_offset_accel(uint8_t instance, const Vector3f &accel, uint32_t now);
+
+    // backend should fill in its product ID from AP_PRODUCT_ID_*
+    int16_t _product_id;
 
     // note that each backend is also expected to have a static detect()
     // function which instantiates an instance of the backend sensor

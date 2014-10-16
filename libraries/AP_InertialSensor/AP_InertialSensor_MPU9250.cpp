@@ -250,6 +250,8 @@ bool AP_InertialSensor_MPU9250::_init_sensor(AP_InertialSensor::Sample_rate samp
     _gyro_instance = _imu.register_gyro();
     _accel_instance = _imu.register_accel();
 
+    _product_id = AP_PRODUCT_ID_MPU9250;
+
     // start the timer process to read samples
     hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&AP_InertialSensor_MPU9250::_poll_data));
 

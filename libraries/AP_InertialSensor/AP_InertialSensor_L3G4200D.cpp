@@ -238,6 +238,8 @@ bool AP_InertialSensor_L3G4200D::_init_sensor(AP_InertialSensor::Sample_rate sam
     _gyro_instance = _imu.register_gyro();
     _accel_instance = _imu.register_accel();
 
+    _product_id = AP_PRODUCT_ID_L3G4200D;
+
     return true;
 }
 

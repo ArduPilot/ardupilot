@@ -5,7 +5,8 @@
 #include "AP_InertialSensor_Backend.h"
 
 AP_InertialSensor_Backend::AP_InertialSensor_Backend(AP_InertialSensor &imu) :
-    _imu(imu)
+    _imu(imu),
+    _product_id(AP_PRODUCT_ID_NONE)
 {}
 
 /*

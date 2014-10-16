@@ -172,6 +172,8 @@ bool AP_InertialSensor_Flymaple::_init_sensor(AP_InertialSensor::Sample_rate sam
     _gyro_instance = _imu.register_gyro();
     _accel_instance = _imu.register_accel();
 
+    _product_id = AP_PRODUCT_ID_FLYMAPLE;
+
     return true;
 }
 

@@ -51,6 +51,8 @@ bool AP_InertialSensor_HIL::_init_sensor(AP_InertialSensor::Sample_rate sample_r
     _imu.register_gyro();
     _imu.register_accel();
 
+    _product_id = AP_PRODUCT_ID_NONE;
+
     return true;
 }
 

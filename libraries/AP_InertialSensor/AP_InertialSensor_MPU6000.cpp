@@ -525,13 +525,13 @@ bool AP_InertialSensor_MPU6000::_hardware_init(AP_InertialSensor::Sample_rate sa
     hal.scheduler->delay(1);
 
     // read the product ID rev c has 1/2 the sensitivity of rev d
-    uint8_t product_id = _register_read(MPUREG_PRODUCT_ID);
+    _product_id = _register_read(MPUREG_PRODUCT_ID);
     //Serial.printf("Product_ID= 0x%x\n", (unsigned) _mpu6000_product_id);
 
-    if ((product_id == MPU6000ES_REV_C4) || 
-        (product_id == MPU6000ES_REV_C5) ||
-        (product_id == MPU6000_REV_C4)   || 
-        (product_id == MPU6000_REV_C5)) {
+    if ((_product_id == MPU6000ES_REV_C4) || 
+        (_product_id == MPU6000ES_REV_C5) ||
+        (_product_id == MPU6000_REV_C4)   || 
+        (_product_id == MPU6000_REV_C5)) {
         // Accel scale 8g (4096 LSB/g)
         // Rev C has different scaling than rev D
         _register_write(MPUREG_ACCEL_CONFIG,1<<3);

@@ -326,6 +326,9 @@ AP_InertialSensor::_detect_backends(Sample_rate sample_rate)
         _accel_count == 0) {
         hal.scheduler->panic(PSTR("No INS backends available"));
     }
+
+    // set the product ID to the ID of the first backend
+    _product_id.set(_backends[0]->product_id());
 }
 
 void

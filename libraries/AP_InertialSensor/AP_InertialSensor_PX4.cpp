@@ -94,6 +94,12 @@ bool AP_InertialSensor_PX4::_init_sensor(AP_InertialSensor::Sample_rate sample_r
 
     _set_filter_frequency(_imu.get_filter());
 
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+    _product_id = AP_PRODUCT_ID_PX4_V2;
+#else
+    _product_id = AP_PRODUCT_ID_PX4;
+#endif
+
     return true;
 }
 
