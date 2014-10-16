@@ -3674,8 +3674,8 @@ void NavEKF::SetFlightAndFusionModes()
     } else {
         inhibitGndState = false;
     }
-    // Don't update focal length offset state if there is no range finder
-    if (!useRngFinder()) {
+    // Don't update focal length offset state if there is no range finder or flying at low velocity
+    if (!useRngFinder() || !highGndSpdStage2) {
         fScaleInhibit = true;
     } else {
         fScaleInhibit = false;
