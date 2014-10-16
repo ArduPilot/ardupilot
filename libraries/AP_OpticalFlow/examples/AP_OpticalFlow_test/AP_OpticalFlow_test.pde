@@ -10,12 +10,37 @@
 #include <AP_Math.h>
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
-
+#include <AP_HAL_AVR_SITL.h>
+#include <AP_AHRS.h>
+#include <AP_Compass.h>
+#include <AP_Declination.h>
+#include <AP_Airspeed.h>
+#include <GCS_MAVLink.h>
+#include <AP_Vehicle.h>
+#include <AP_Notify.h>
+#include <DataFlash.h>
+#include <AP_GPS.h>
+#include <AP_GPS_Glitch.h>      // GPS glitch protection library
+#include <AP_InertialSensor.h>
+#include <AP_ADC.h>
+#include <AP_ADC_AnalogSource.h>
+#include <Filter.h>
+#include <AP_Baro.h>
 #include <AP_OpticalFlow.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
-AP_OpticalFlow_ADNS3080 optflow;
+AP_InertialSensor_HIL ins;
+AP_Baro_HIL baro;
+
+// GPS declaration
+static AP_GPS  gps;
+GPS_Glitch gps_glitch(gps);
+
+AP_Compass_HMC5843 compass;
+AP_AHRS_DCM ahrs(ins, baro, gps);
+
+AP_OpticalFlow_ADNS3080 optflow(ahrs);
 
 void setup()
 {
@@ -100,10 +125,9 @@ void display_motion()
     hal.scheduler->delay(1000);
 
     while (!hal.console->available()) {
-        optflow.update_position(0,0,0,1,100);
-
+        const Vector2i &raw_vel = optflow.raw();
         // x,y,squal
-        hal.console->printf_P(PSTR("x_cm/dx:%d/%d\ty_cm/dy:%d/%d\tsqual:%d\n"),(int)optflow.x_cm,(int)optflow.dx,(int)optflow.y_cm,(int)optflow.dy,(int)optflow.surface_quality);
+        hal.console->printf_P(PSTR("raw x:%d\ty:%d\tsqual:%d\n"),(int)raw_vel.x,(int)raw_vel.y,(int)optflow.quality());
         first_time = false;
 
         // short delay
