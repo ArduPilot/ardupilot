@@ -15,7 +15,11 @@
  */
 
 /*
-  IMU driver backend class
+  IMU driver backend class. Each supported gyro/accel sensor type
+  needs to have an object derived from this class.
+
+  Note that drivers can implement just gyros or just accels, and can
+  also provide multiple gyro/accel instances.
  */
 #ifndef __AP_INERTIALSENSOR_BACKEND_H__
 #define __AP_INERTIALSENSOR_BACKEND_H__
