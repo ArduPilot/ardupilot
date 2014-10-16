@@ -266,8 +266,6 @@ bool AP_InertialSensor_MPU9250::_init_sensor(AP_InertialSensor::Sample_rate samp
  */
 bool AP_InertialSensor_MPU9250::update( void )
 {
-    uint32_t now = hal.scheduler->micros();
-
     // pull the data from the timer shared data buffer
     uint8_t idx = _shared_data_idx;
     Vector3f gyro = _shared_data[idx]._gyro_filtered;
@@ -288,8 +286,8 @@ bool AP_InertialSensor_MPU9250::update( void )
     gyro.rotate(ROTATION_YAW_180);
 #endif
 
-    _rotate_and_offset_gyro(_gyro_instance, gyro, now);
-    _rotate_and_offset_accel(_accel_instance, accel, now);
+    _rotate_and_offset_gyro(_gyro_instance, gyro);
+    _rotate_and_offset_accel(_accel_instance, accel);
 
     if (_last_filter_hz != _imu.get_filter()) {
         _set_filter(_imu.get_filter());

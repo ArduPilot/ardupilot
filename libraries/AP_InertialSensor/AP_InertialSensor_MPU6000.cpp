@@ -271,7 +271,6 @@ bool AP_InertialSensor_MPU6000::update( void )
 
     // we have a full set of samples
     uint16_t num_samples;
-    uint32_t now = hal.scheduler->micros();
     Vector3f accel, gyro;
 
     hal.scheduler->suspend_timer_procs();
@@ -284,10 +283,10 @@ bool AP_InertialSensor_MPU6000::update( void )
     hal.scheduler->resume_timer_procs();
 
     gyro *= _gyro_scale / num_samples;
-    _rotate_and_offset_gyro(_gyro_instance, gyro, now);
+    _rotate_and_offset_gyro(_gyro_instance, gyro);
 
     accel *= MPU6000_ACCEL_SCALE_1G / num_samples;
-    _rotate_and_offset_accel(_accel_instance, accel, now);
+    _rotate_and_offset_accel(_accel_instance, accel);
 
     if (_last_filter_hz != _imu.get_filter()) {
         if (_spi_sem->take(10)) {

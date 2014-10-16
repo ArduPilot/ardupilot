@@ -265,7 +265,6 @@ void AP_InertialSensor_L3G4200D::_set_filter_frequency(uint8_t filter_hz)
 bool AP_InertialSensor_L3G4200D::update(void) 
 {
     Vector3f accel, gyro;
-    uint32_t now = hal.scheduler->micros();
 
     hal.scheduler->suspend_timer_procs();
     accel = _accel_filtered;
@@ -276,11 +275,11 @@ bool AP_InertialSensor_L3G4200D::update(void)
 
     // Adjust for chip scaling to get m/s/s
     accel *= ADXL345_ACCELEROMETER_SCALE_M_S;
-    _rotate_and_offset_accel(_accel_instance, accel, now);
+    _rotate_and_offset_accel(_accel_instance, accel);
 
     // Adjust for chip scaling to get radians/sec
     gyro *= L3G4200D_GYRO_SCALE_R_S;
-    _rotate_and_offset_gyro(_gyro_instance, gyro, now);
+    _rotate_and_offset_gyro(_gyro_instance, gyro);
 
     if (_last_filter_hz != _imu.get_filter()) {
         _set_filter_frequency(_imu.get_filter());

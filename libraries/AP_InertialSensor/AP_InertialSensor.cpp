@@ -926,11 +926,31 @@ void AP_InertialSensor::update(void)
     wait_for_sample();
 
     if (!_hil_mode) {
+        for (int8_t i=0; i<INS_MAX_INSTANCES; i++) {
+            // mark sensors unhealthy and let update() in each backend
+            // mark them healthy via _rotate_and_offset_gyro() and
+            // _rotate_and_offset_accel() 
+            _gyro_healthy[i] = false;
+            _accel_healthy[i] = false;
+        }
         for (int8_t i=0; i<INS_MAX_BACKENDS; i++) {
             if (_backends[i] != NULL) {
                 _backends[i]->update();
             }
-        }    
+        }
+        // set primary to first healthy accel and gyro
+        for (int8_t i=0; i<INS_MAX_INSTANCES; i++) {
+            if (_gyro_healthy[i]) {
+                _primary_gyro = i;
+                break;
+            }
+        }
+        for (int8_t i=0; i<INS_MAX_INSTANCES; i++) {
+            if (_accel_healthy[i]) {
+                _primary_accel = i;
+                break;
+            }
+        }
     }
 
     _have_sample = false;

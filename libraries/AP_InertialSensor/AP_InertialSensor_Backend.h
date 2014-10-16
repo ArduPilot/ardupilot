@@ -58,10 +58,10 @@ protected:
     AP_InertialSensor &_imu;
 
     // rotate gyro vector and offset
-    void _rotate_and_offset_gyro(uint8_t instance, const Vector3f &gyro, uint32_t now);
+    void _rotate_and_offset_gyro(uint8_t instance, const Vector3f &gyro);
 
     // rotate accel vector, scale and offset
-    void _rotate_and_offset_accel(uint8_t instance, const Vector3f &accel, uint32_t now);
+    void _rotate_and_offset_accel(uint8_t instance, const Vector3f &accel);
 
     // backend should fill in its product ID from AP_PRODUCT_ID_*
     int16_t _product_id;

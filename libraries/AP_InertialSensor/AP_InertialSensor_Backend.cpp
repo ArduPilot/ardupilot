@@ -12,18 +12,18 @@ AP_InertialSensor_Backend::AP_InertialSensor_Backend(AP_InertialSensor &imu) :
 /*
   rotate gyro vector and add the gyro offset
  */
-void AP_InertialSensor_Backend::_rotate_and_offset_gyro(uint8_t instance, const Vector3f &gyro, uint32_t now)
+void AP_InertialSensor_Backend::_rotate_and_offset_gyro(uint8_t instance, const Vector3f &gyro)
 {
     _imu._gyro[instance] = gyro;
     _imu._gyro[instance].rotate(_imu._board_orientation);
     _imu._gyro[instance] -= _imu._gyro_offset[instance];
-    _imu._last_gyro_sample_time_usec[instance] = now;
+    _imu._gyro_healthy[instance] = true;
 }
 
 /*
   rotate accel vector, scale and add the accel offset
  */
-void AP_InertialSensor_Backend::_rotate_and_offset_accel(uint8_t instance, const Vector3f &accel, uint32_t now)
+void AP_InertialSensor_Backend::_rotate_and_offset_accel(uint8_t instance, const Vector3f &accel)
 {
     _imu._accel[instance] = accel;
     _imu._accel[instance].rotate(_imu._board_orientation);
@@ -33,5 +33,5 @@ void AP_InertialSensor_Backend::_rotate_and_offset_accel(uint8_t instance, const
     _imu._accel[instance].y *= accel_scale.y;
     _imu._accel[instance].z *= accel_scale.z;
     _imu._accel[instance] -= _imu._accel_offset[instance];
-    _imu._last_accel_sample_time_usec[instance] = now;
+    _imu._accel_healthy[instance] = true;
 }

@@ -97,7 +97,6 @@ bool AP_InertialSensor_Oilpan::_init_sensor(AP_InertialSensor::Sample_rate sampl
 bool AP_InertialSensor_Oilpan::update()
 {
     float adc_values[6];
-    uint32_t now = hal.scheduler->micros();
 
     apm1_adc.Ch6(_sensors, adc_values);
 
@@ -106,14 +105,14 @@ bool AP_InertialSensor_Oilpan::update()
     v(_sensor_signs[0] * ( adc_values[0] - OILPAN_RAW_GYRO_OFFSET ) * _gyro_gain_x,
       _sensor_signs[1] * ( adc_values[1] - OILPAN_RAW_GYRO_OFFSET ) * _gyro_gain_y,
       _sensor_signs[2] * ( adc_values[2] - OILPAN_RAW_GYRO_OFFSET ) * _gyro_gain_z);
-    _rotate_and_offset_gyro(_gyro_instance, v, now);
+    _rotate_and_offset_gyro(_gyro_instance, v);
 
     // copy accels to frontend
     v(_sensor_signs[3] * (adc_values[3] - OILPAN_RAW_ACCEL_OFFSET),
       _sensor_signs[4] * (adc_values[4] - OILPAN_RAW_ACCEL_OFFSET),
       _sensor_signs[5] * (adc_values[5] - OILPAN_RAW_ACCEL_OFFSET));
     v *= OILPAN_ACCEL_SCALE_1G;
-    _rotate_and_offset_accel(_accel_instance, v, now);
+    _rotate_and_offset_accel(_accel_instance, v);
 
     return true;
 }

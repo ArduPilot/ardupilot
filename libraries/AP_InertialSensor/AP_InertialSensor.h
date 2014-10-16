@@ -125,14 +125,14 @@ public:
     void               set_accel(uint8_t instance, const Vector3f &accel);
 
     // multi-device interface
-    bool get_gyro_health(uint8_t instance) const { return true; }
+    bool get_gyro_health(uint8_t instance) const { return _gyro_healthy[instance]; }
     bool get_gyro_health(void) const { return get_gyro_health(_primary_gyro); }
     bool get_gyro_health_all(void) const;
     uint8_t get_gyro_count(void) const { return _gyro_count; }
     bool gyro_calibrated_ok(uint8_t instance) const { return _gyro_cal_ok[instance]; }
     bool gyro_calibrated_ok_all() const;
 
-    bool get_accel_health(uint8_t instance) const { return true; }
+    bool get_accel_health(uint8_t instance) const { return _accel_healthy[instance]; }
     bool get_accel_health(void) const { return get_accel_health(_primary_accel); }
     bool get_accel_health_all(void) const;
     uint8_t get_accel_count(void) const { return _accel_count; };
@@ -226,10 +226,6 @@ private:
     // Most recent gyro reading
     Vector3f _gyro[INS_MAX_INSTANCES];
 
-    // timestamp of latest gyro and accel readings
-    uint32_t _last_gyro_sample_time_usec[INS_MAX_INSTANCES];
-    uint32_t _last_accel_sample_time_usec[INS_MAX_INSTANCES];
-
     // product id
     AP_Int16 _product_id;
 
@@ -269,6 +265,10 @@ private:
     
     // time between samples in microseconds
     uint32_t _sample_period_usec;
+
+    // health of gyros and accels
+    bool _gyro_healthy[INS_MAX_INSTANCES];
+    bool _accel_healthy[INS_MAX_INSTANCES];
 };
 
 #include "AP_InertialSensor_Backend.h"
