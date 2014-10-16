@@ -3996,6 +3996,7 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
     }
     // Use range finder if 3 or more consecutive good samples. This reduces likelihood of using bad data.
     if (rangeHealth >= 3) {
+        statesAtRngTime = statesAtFlowTime;
         rngMea = rawSonarRange;
         newDataRng = true;
     } else {
