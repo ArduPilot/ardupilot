@@ -89,13 +89,8 @@
  # define CLI_ENABLED           DISABLED
  # define FRSKY_TELEM_ENABLED   DISABLED
  # define NAV_GUIDED            DISABLED
- # define OPTFLOW               DISABLED
 #endif
 
-// disable some features for SITL
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
- # define OPTFLOW               DISABLED
-#endif
 
 #if HAL_CPU_CLASS < HAL_CPU_CLASS_75 || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
  // low power CPUs (APM1, APM2 and SITL)
@@ -392,7 +387,11 @@
 //////////////////////////////////////////////////////////////////////////////
 //  OPTICAL_FLOW
 #ifndef OPTFLOW
- # define OPTFLOW       ENABLED
+ #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+  # define OPTFLOW       ENABLED
+ #else
+  # define OPTFLOW       DISABLED
+ #endif
 #endif
 // optical flow based loiter PI values
 #ifndef OPTFLOW_ROLL_P
