@@ -19,6 +19,10 @@
     Please check the following links for datasheets and documentation:
      - http://www.invensense.com/mems/gyro/documents/PS-MPU-9150A-00v4_3.pdf
      - http://www.invensense.com/mems/gyro/documents/RM-MPU-9150A-00v4_2.pdf
+
+     Note that this is an experimental driver. It is not used by any
+     actively maintained board and should be considered untested and
+     unmaintained 
 */
 
 #include <AP_HAL.h>
@@ -320,19 +324,34 @@ static struct gyro_state_s st = {
 /**
  *  @brief      Constructor
  */
-AP_InertialSensor_MPU9150::AP_InertialSensor_MPU9150() :
-    AP_InertialSensor(),
+AP_InertialSensor_MPU9150::AP_InertialSensor_MPU9150(AP_InertialSensor &imu) :
+    AP_InertialSensor_Backend(imu),
+    _have_sample_available(false),
     _accel_filter_x(800, 10),
     _accel_filter_y(800, 10),
     _accel_filter_z(800, 10),
     _gyro_filter_x(800, 10),
     _gyro_filter_y(800, 10),
-    _gyro_filter_z(800, 10)    
-    // _mag_filter_x(800, 10),    
-    // _mag_filter_y(800, 10),    
-    // _mag_filter_z(800, 10)    
+    _gyro_filter_z(800, 10)
 {
+}
 
+
+/*
+  detect the sensor
+ */
+AP_InertialSensor_Backend *AP_InertialSensor_MPU9150::detect(AP_InertialSensor &_imu, 
+                                                             AP_InertialSensor::Sample_rate sample_rate)
+{
+    AP_InertialSensor_MPU9150 *sensor = new AP_InertialSensor_MPU9150(_imu);
+    if (sensor == NULL) {
+        return NULL;
+    }
+    if (!sensor->_init_sensor(sample_rate)) {
+        delete sensor;
+        return NULL;
+    }
+    return sensor;
 }
 
 /*
@@ -356,29 +375,26 @@ void AP_InertialSensor_MPU9150::_set_filter_frequency(uint8_t filter_hz)
  *  @param[in] Sample_rate  The sample rate, check the struct def.
  *  @return     AP_PRODUCT_ID_PIXHAWK_FIRE_CAPE if successful.
  */
-uint16_t AP_InertialSensor_MPU9150::_init_sensor( Sample_rate sample_rate ) 
+bool AP_InertialSensor_MPU9150::_init_sensor(AP_InertialSensor::Sample_rate sample_rate) 
 {
     // Sensors pushed to the FIFO.
     uint8_t sensors;
 
     switch (sample_rate) {
-    case RATE_50HZ:
+    case AP_InertialSensor::RATE_50HZ:
         _default_filter_hz = 10;
-        _sample_period_usec = (1000*1000) / 50;
         break;
-    case RATE_100HZ:
+    case AP_InertialSensor::RATE_100HZ:
         _default_filter_hz = 20;
-        _sample_period_usec = (1000*1000) / 100;
         break;
-    case RATE_200HZ:
+    case AP_InertialSensor::RATE_200HZ:
         _default_filter_hz = 20;
-        _sample_period_usec = 5000;
         break;
-    case RATE_400HZ:
+    case AP_InertialSensor::RATE_400HZ:
+        _default_filter_hz = 20;
+        break;
     default:
-        _default_filter_hz = 20;
-        _sample_period_usec = 2500;
-        break;
+        return false;
     }
 
     // get pointer to i2c bus semaphore
@@ -386,7 +402,7 @@ uint16_t AP_InertialSensor_MPU9150::_init_sensor( Sample_rate sample_rate )
 
     // take i2c bus sempahore
     if (!i2c_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)){
-        return -1;
+        return false;
     }        
 
     // Init the sensor
@@ -405,8 +421,8 @@ uint16_t AP_InertialSensor_MPU9150::_init_sensor( Sample_rate sample_rate )
     //  This registers are not documented in the register map.
     uint8_t buff[6];
     if (hal.i2c->readRegisters(st.hw->addr, st.reg->accel_offs, 6, buff) != 0) {
-        hal.scheduler->panic(PSTR("AP_InertialSensor_MPU9150: couldn't read the registers to determine revision"));
-        goto failed;          
+        hal.console->printf("AP_InertialSensor_MPU9150: couldn't read the registers to determine revision");
+        goto failed;
     }    
     uint8_t rev;
     rev = ((buff[5] & 0x01) << 2) | ((buff[3] & 0x01) << 1) |
@@ -432,28 +448,28 @@ uint16_t AP_InertialSensor_MPU9150::_init_sensor( Sample_rate sample_rate )
 
     // Set gyro full-scale range [250, 500, 1000, 2000]
     if (mpu_set_gyro_fsr(2000)){
-        hal.scheduler->panic(PSTR("AP_InertialSensor_MPU9150: mpu_set_gyro_fsr.\n"));
+        hal.console->printf("AP_InertialSensor_MPU9150: mpu_set_gyro_fsr.\n");
         goto failed;
     }
     // Set the accel full-scale range
     if (mpu_set_accel_fsr(2)){
-        hal.scheduler->panic(PSTR("AP_InertialSensor_MPU9150: mpu_set_accel_fsr.\n"));
+        hal.console->printf("AP_InertialSensor_MPU9150: mpu_set_accel_fsr.\n");
         goto failed;    
     }
     // Set digital low pass filter (using _default_filter_hz, 20 for 100 Hz of sample rate)
     if (mpu_set_lpf(_default_filter_hz)){
-        hal.scheduler->panic(PSTR("AP_InertialSensor_MPU9150: mpu_set_lpf.\n"));
+        hal.console->printf("AP_InertialSensor_MPU9150: mpu_set_lpf.\n");
         goto failed;    
     }
     // Set sampling rate (value must be between 4Hz and 1KHz)
     if (mpu_set_sample_rate(800)){
-        hal.scheduler->panic(PSTR("AP_InertialSensor_MPU9150: mpu_set_sample_rate.\n"));
+        hal.console->printf("AP_InertialSensor_MPU9150: mpu_set_sample_rate.\n");
         goto failed;    
     }
     // Select which sensors are pushed to FIFO.
     sensors = INV_XYZ_ACCEL| INV_XYZ_GYRO;
     if (mpu_configure_fifo(sensors)){
-        hal.scheduler->panic(PSTR("AP_InertialSensor_MPU9150: mpu_configure_fifo.\n"));
+        hal.console->printf("AP_InertialSensor_MPU9150: mpu_configure_fifo.\n");
         goto failed;    
     }
 
@@ -467,18 +483,23 @@ uint16_t AP_InertialSensor_MPU9150::_init_sensor( Sample_rate sample_rate )
     mpu_set_sensors(sensors);
 
     // Set the filter frecuency (_mpu6000_filter configured to the default value, check AP_InertialSensor.cpp)
-    _set_filter_frequency(_mpu6000_filter);
+    _set_filter_frequency(_imu.get_filter());
 
     // give back i2c semaphore
     i2c_sem->give();
+
+    _gyro_instance = _imu.register_gyro();
+    _accel_instance = _imu.register_accel();
+
     // start the timer process to read samples    
     hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&AP_InertialSensor_MPU9150::_accumulate));
-    return AP_PRODUCT_ID_PIXHAWK_FIRE_CAPE;
 
-    failed:
-        // give back i2c semaphore
-        i2c_sem->give();
-        return -1;
+    return true;
+
+failed:
+    // give back i2c semaphore
+    i2c_sem->give();
+    return false;
 }
 
 /**
@@ -1017,9 +1038,9 @@ int16_t AP_InertialSensor_MPU9150::mpu_read_fifo(int16_t *gyro, int16_t *accel, 
  *  @brief      Accumulate values from accels and gyros. 
  *
  *     This method is called periodically by the scheduler.
- *
  */
-void AP_InertialSensor_MPU9150::_accumulate(void){
+void AP_InertialSensor_MPU9150::_accumulate(void)
+{
     // get pointer to i2c bus semaphore
     AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
 
@@ -1094,101 +1115,36 @@ void AP_InertialSensor_MPU9150::_accumulate(void){
             _gyro_filter_y.apply(gyro_y), 
             _gyro_filter_z.apply(gyro_z));
 
-        _gyro_samples_available++;
+        _have_sample_available = true;
     }
 
     // give back i2c semaphore
     i2c_sem->give();
 }
 
-bool AP_InertialSensor_MPU9150::_sample_available(void)
-{
-    uint64_t tnow =  hal.scheduler->micros();
-    while (tnow - _last_sample_timestamp > _sample_period_usec) {
-        _have_sample_available = true;
-        _last_sample_timestamp += _sample_period_usec;
-    }
-    return _have_sample_available;    
-}
-
-bool AP_InertialSensor_MPU9150::wait_for_sample(uint16_t timeout_ms)
-{
-    if (_sample_available()) {
-        return true;
-    }
-    uint32_t start = hal.scheduler->millis();
-    while ((hal.scheduler->millis() - start) < timeout_ms) {
-        uint64_t tnow = hal.scheduler->micros(); 
-        // we spin for the last timing_lag microseconds. Before that
-        // we yield the CPU to allow IO to happen
-        const uint16_t timing_lag = 400;
-        if (_last_sample_timestamp + _sample_period_usec > tnow+timing_lag) {
-            hal.scheduler->delay_microseconds(_last_sample_timestamp + _sample_period_usec - (tnow+timing_lag));
-        }
-        if (_sample_available()) {
-            return true;
-        }
-    }
-    return false;
-}
-
 bool AP_InertialSensor_MPU9150::update(void) 
 {
-    if (!wait_for_sample(1000)) {
-        return false;
-    }
-    Vector3f accel_scale = _accel_scale[0].get();
+    Vector3f accel, gyro;
+    uint32_t now = hal.scheduler->micros();
 
-    _previous_accel[0] = _accel[0];
-
-    // hal.scheduler->suspend_timer_procs();
-    _accel[0] = _accel_filtered;
-    _gyro[0] = _gyro_filtered;
-    // hal.scheduler->resume_timer_procs();
-
-    // add offsets and rotation
-    _accel[0].rotate(_board_orientation);
-
-    // Adjust for chip scaling to get m/s/s
-    ////////////////////////////////////////////////
-    _accel[0] *= MPU9150_ACCEL_SCALE_2G/_gyro_samples_available;
-
-    // Now the calibration scale factor
-    _accel[0].x *= accel_scale.x;
-    _accel[0].y *= accel_scale.y;
-    _accel[0].z *= accel_scale.z;
-    _accel[0]   -= _accel_offset[0];
-
-    _gyro[0].rotate(_board_orientation);
-
-    // Adjust for chip scaling to get radians/sec
-    _gyro[0] *= MPU9150_GYRO_SCALE_2000 / _gyro_samples_available;
-    _gyro[0] -= _gyro_offset[0];
-    ////////////////////////////////////////////////
-
-    _gyro_samples_available = 0;
-
-    if (_last_filter_hz != _mpu6000_filter) {
-        _set_filter_frequency(_mpu6000_filter);
-        _last_filter_hz = _mpu6000_filter;
-    }
-
+    hal.scheduler->suspend_timer_procs();
+    accel = _accel_filtered;
+    gyro = _gyro_filtered;
     _have_sample_available = false;
+    hal.scheduler->resume_timer_procs();
+
+    accel *= MPU9150_ACCEL_SCALE_2G;
+    _rotate_and_offset_accel(_accel_instance, accel, now);
+
+    gyro *= MPU9150_GYRO_SCALE_2000;
+    _rotate_and_offset_gyro(_gyro_instance, gyro, now);
+
+    if (_last_filter_hz != _imu.get_filter()) {
+        _set_filter_frequency(_imu.get_filter());
+        _last_filter_hz = _imu.get_filter();
+    }
 
     return true;
-}
-
-// TODO review to make sure it matches
-float AP_InertialSensor_MPU9150::get_gyro_drift_rate(void) 
-{
-    // 0.5 degrees/second/minute (a guess)
-    return ToRad(0.5/60);
-}
-
-// TODO review to make sure it matches
-float AP_InertialSensor_MPU9150::get_delta_time(void) const
-{
-    return _sample_period_usec * 1.0e-6f;
 }
 
 
