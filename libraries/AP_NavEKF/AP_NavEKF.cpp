@@ -1057,6 +1057,15 @@ void NavEKF::UpdateStrapdownEquationsNED()
     // * and + operators have been overloaded
     // blended IMU calc
     delVelNav  = Tbn_temp*correctedDelVel12 + gravityNED*dtIMU;
+    // used to hold constant velocity if aiding is unavailable
+    if (holdVelocity) {
+        delVelNav.x = 0.0f;
+        delVelNav.y = 0.0f;
+        delVelNav1.x = 0.0f;
+        delVelNav1.y = 0.0f;
+        delVelNav2.x = 0.0f;
+        delVelNav2.y = 0.0f;
+    }
     // single IMU calcs
     delVelNav1 = Tbn_temp*correctedDelVel1 + gravityNED*dtIMU;
     delVelNav2 = Tbn_temp*correctedDelVel2 + gravityNED*dtIMU;
@@ -3990,8 +3999,10 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
     if (rawFlowQuality > 100){
         // set flag that will trigger observations
         newDataFlow = true;
+        holdVelocity = false;
     } else {
         newDataFlow = false;
+        holdVelocity = true;
     }
     // Use range finder if 3 or more consecutive good samples. This reduces likelihood of using bad data.
     if (rangeHealth >= 3) {
@@ -4257,6 +4268,7 @@ void NavEKF::ZeroVariables()
     prevFlowFusionTime_ms = imuSampleTime_ms; // time the last flow measurement was fused
     flowGyroBias.x = 0;
     flowGyroBias.y = 0;
+    holdVelocity = false;
 }
 
 // return true if we should use the airspeed sensor

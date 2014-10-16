@@ -587,6 +587,7 @@ private:
     uint8_t flowUpdateCountMax;     // limit on the number of minor state corrections using optical flow data
     float flowUpdateCountMaxInv;    // floating point inverse of flowUpdateCountMax
     bool newDataRng;                // true when new valid range finder data has arrived.
+    bool holdVelocity;              // true wehn holding velocity in optical flow mode when no flow measurements are available
 
     // states held by optical flow fusion across time steps
     // optical flow X,Y motion compensated rate measurements are fused across two time steps
