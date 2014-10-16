@@ -120,8 +120,9 @@ public:
         k_param_ekfcheck_thresh,
         k_param_terrain,
         k_param_acro_expo,
-        k_param_throttle_deadzone,      // 57
-        k_param_optflow,                // 54 - optflow object
+        k_param_throttle_deadzone,
+        k_param_optflow,
+        k_param_dcmcheck_thresh,        // 59
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -392,6 +393,7 @@ public:
 
     AP_Int8         land_repositioning;
     AP_Float        ekfcheck_thresh;
+    AP_Float        dcmcheck_thresh;
 
 #if FRAME_CONFIG ==     HELI_FRAME
     // Heli

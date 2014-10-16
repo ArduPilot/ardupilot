@@ -348,9 +348,12 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-//  EKF Checker
+//  EKF & DCM Checker
 #ifndef EKFCHECK_THRESHOLD_DEFAULT
  # define EKFCHECK_THRESHOLD_DEFAULT    0.8f    // EKF checker's default compass and velocity variance above which the EKF's horizontal position will be considered bad
+#endif
+#ifndef DCMCHECK_THRESHOLD_DEFAULT
+ # define DCMCHECK_THRESHOLD_DEFAULT    0.8f    // DCM checker's default yaw error threshold above which we will abandon horizontal position hold.  The units are sin(angle) so 0.8 = about 60degrees of error
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
