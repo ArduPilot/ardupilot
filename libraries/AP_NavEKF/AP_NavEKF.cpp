@@ -231,7 +231,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
 
     // @Param: GPS_TYPE
     // @DisplayName: GPS velocity mode control
-    // @Description: This parameter controls use of GPS velocity measurements : 0 = use 3D velocity, 1 = use 2D velocity, 2 = use no velocity
+    // @Description: This parameter controls use of GPS velocity measurements : 0 = use 3D velocity, 1 = use 2D velocity, 2 = use no velocity, 3 = use no GPS
     // @Range: 0 3
     // @Increment: 1
     // @User: Advanced
@@ -776,7 +776,7 @@ void NavEKF::SelectVelPosFusion()
         readGpsData();
 
         // command fusion of GPS data and reset states as required
-        if (newDataGps) {
+        if (newDataGps && (_fusionModeGPS < 3)) {
             // reset data arrived flag
             newDataGps = false;
             // reset state updates and counter used to spread fusion updates across several frames to reduce 10Hz pulsing
