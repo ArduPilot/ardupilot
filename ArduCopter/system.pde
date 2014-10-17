@@ -277,10 +277,6 @@ static void init_ardupilot()
 
 #if LOGGING_ENABLED == ENABLED
     Log_Write_Startup();
-  #ifdef LOG_FROM_STARTUP
-    // start dataflash
-    start_logging();
-  #endif
 #endif
 
     // we don't want writes to the serial port to cause us to pause
