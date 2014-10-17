@@ -3922,8 +3922,7 @@ void NavEKF::readMagData()
         // store time of last measurement update
         lastMagUpdate = _ahrs->get_compass()->last_update;
 
-        // Read compass data
-        // We scale compass data to improve numerical conditioning
+        // read compass data and scale to improve numerical conditioning
         magData = _ahrs->get_compass()->get_field() * 0.001f;
 
         // get states stored at time closest to measurement time after allowance for measurement delay
@@ -4054,7 +4053,7 @@ Quaternion NavEKF::calcQuatAndFieldStates(float roll, float pitch)
         // calculate initial Tbn matrix and rotate Mag measurements into NED
         // to set initial NED magnetic field states
         initQuat.rotation_matrix(Tbn);
-        initMagNED = Tbn* magData;
+        initMagNED = Tbn * magData;
 
         // write to earth magnetic field state vector
         state.earth_magfield = initMagNED;
