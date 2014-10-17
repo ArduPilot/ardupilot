@@ -127,6 +127,7 @@ public:
         k_param_land_flap_percent,
         k_param_takeoff_flap_percent,
         k_param_flap_slewrate,
+        k_param_rtl_autoland,
 
         // 100: Arming parameters
         k_param_arming = 100,
@@ -325,6 +326,8 @@ public:
 #if HIL_MODE != HIL_MODE_DISABLED
     AP_Float hil_err_limit;
 #endif
+
+    AP_Int8  rtl_autoland;
 
     // Feed-forward gains
     //
