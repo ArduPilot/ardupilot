@@ -47,6 +47,9 @@ void AP_InertialNav::update(float dt)
     // check if new baro readings have arrived and use them to correct vertical accelerometer offsets.
     check_baro();
 
+    // check if home has moved and update
+    check_home();
+
     // check if new gps readings have arrived and use them to correct position estimates
     check_gps();
 
@@ -125,6 +128,44 @@ void AP_InertialNav::update(float dt)
 bool AP_InertialNav::position_ok() const
 {
     return _xy_enabled;
+}
+
+void AP_InertialNav::check_home() {
+    if (!_xy_enabled) {
+        return;
+    }
+
+    int32_t lat_offset = _ahrs.get_home().lat - _last_home_lat;
+    int32_t lng_offset = _ahrs.get_home().lng - _last_home_lng;
+
+    if (lat_offset != 0) {
+        float x_offset_cm = lat_offset * LATLON_TO_CM;
+
+        _position_base.x -= x_offset_cm;
+        _position.x -= x_offset_cm;
+
+        for (uint8_t i = 0; i < _hist_position_estimate_x.size(); i++) {
+            float &x = _hist_position_estimate_x.peek_mutable(i);
+            x -= x_offset_cm;
+        }
+
+        _lon_to_cm_scaling = longitude_scale(_ahrs.get_home()) * LATLON_TO_CM;
+    }
+
+    if (lng_offset != 0) {
+        float y_offset_cm = lng_offset * _lon_to_cm_scaling;
+
+        _position_base.y -= y_offset_cm;
+        _position.y -= y_offset_cm;
+
+        for (uint8_t i = 0; i < _hist_position_estimate_y.size(); i++) {
+            float &y = _hist_position_estimate_y.peek_mutable(i);
+            y -= y_offset_cm;
+        }
+    }
+
+    _last_home_lat = _ahrs.get_home().lat;
+    _last_home_lng = _ahrs.get_home().lng;
 }
 
 // check_gps - check if new gps readings have arrived and use them to correct position estimates
@@ -243,6 +284,8 @@ void AP_InertialNav::setup_home_position(void)
     _position_correction.y = 0.0f;
     _position.x = 0.0f;
     _position.y = 0.0f;
+    _last_home_lat = _ahrs.get_home().lat;
+    _last_home_lng = _ahrs.get_home().lng;
 
     // clear historic estimates
     _hist_position_estimate_x.clear();
