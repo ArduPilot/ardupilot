@@ -15,9 +15,9 @@ ASSUME_YES=false
 
 # GNU Tools for ARM Embedded Processors
 # (see https://launchpad.net/gcc-arm-embedded/)
-ARM_ROOT="gcc-arm-none-eabi-4_8-2013q4"
-ARM_TARBALL="$ARM_ROOT-20131204-linux.tar.bz2"
-ARM_TARBALL_URL="https://launchpad.net/gcc-arm-embedded/4.8/4.8-2013-q4-major/+download/$ARM_TARBALL"
+ARM_ROOT="gcc-arm-none-eabi-4_7-2014q2"
+ARM_TARBALL="$ARM_ROOT-20140408-linux.tar.bz2"
+ARM_TARBALL_URL="http://firmware.diydrones.com/Tools/PX4-tools/$ARM_TARBALL"
 
 # Ardupilot Tools
 ARDUPILOT_TOOLS="ardupilot/Tools/autotest"
