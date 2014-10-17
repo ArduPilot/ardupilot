@@ -206,6 +206,9 @@ static AP_Notify notify;
 // used to detect MAVLink acks from GCS to stop compassmot
 static uint8_t command_ack_counter;
 
+// has a log download started?
+static bool in_log_download;
+
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
 ////////////////////////////////////////////////////////////////////////////////
@@ -951,7 +954,7 @@ static void barometer_accumulate(void)
 
 static void perf_update(void)
 {
-    if (g.log_bitmask & MASK_LOG_PM)
+    if (should_log(MASK_LOG_PM))
         Log_Write_Performance();
     if (scheduler.debug()) {
         cliSerial->printf_P(PSTR("PERF: %u/%u %lu\n"),
@@ -1089,7 +1092,7 @@ static void update_batt_compass(void)
         compass.set_throttle((float)g.rc_3.servo_out/1000.0f);
         compass.read();
         // log compass information
-        if (g.log_bitmask & MASK_LOG_COMPASS) {
+        if (should_log(MASK_LOG_COMPASS)) {
             Log_Write_Compass();
         }
     }
@@ -1102,16 +1105,16 @@ static void update_batt_compass(void)
 // should be run at 10hz
 static void ten_hz_logging_loop()
 {
-    if (g.log_bitmask & MASK_LOG_ATTITUDE_MED) {
+    if (should_log(MASK_LOG_ATTITUDE_MED)) {
         Log_Write_Attitude();
     }
-    if (g.log_bitmask & MASK_LOG_RCIN) {
+    if (should_log(MASK_LOG_RCIN)) {
         DataFlash.Log_Write_RCIN();
     }
-    if (g.log_bitmask & MASK_LOG_RCOUT) {
+    if (should_log(MASK_LOG_RCOUT)) {
         DataFlash.Log_Write_RCOUT();
     }
-    if ((g.log_bitmask & MASK_LOG_NTUN) && (mode_requires_GPS(control_mode) || landing_with_GPS())) {
+    if (should_log(MASK_LOG_NTUN) && (mode_requires_GPS(control_mode) || landing_with_GPS())) {
         Log_Write_Nav_Tuning();
     }
 }
@@ -1126,11 +1129,11 @@ static void fifty_hz_logging_loop()
 #endif
 
 #if HIL_MODE == HIL_MODE_DISABLED
-    if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST) {
+    if (should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
     }
 
-    if (g.log_bitmask & MASK_LOG_IMU) {
+    if (should_log(MASK_LOG_IMU)) {
         DataFlash.Log_Write_IMU(ins);
     }
 #endif
@@ -1160,7 +1163,7 @@ static void three_hz_loop()
 // one_hz_loop - runs at 1Hz
 static void one_hz_loop()
 {
-    if (g.log_bitmask != 0) {
+    if (should_log(MASK_LOG_ANY)) {
         Log_Write_Data(DATA_AP_STATE, ap.value);
     }
 
@@ -1219,7 +1222,7 @@ static void update_GPS(void)
             last_gps_reading[i] = gps.last_message_time_ms(i);
 
             // log GPS message
-            if (g.log_bitmask & MASK_LOG_GPS) {
+            if (should_log(MASK_LOG_GPS)) {
                 DataFlash.Log_Write_GPS(gps, i, current_loc.alt);
             }
 
@@ -1305,7 +1308,7 @@ init_simple_bearing()
     super_simple_sin_yaw = simple_sin_yaw;
 
     // log the simple bearing to dataflash
-    if (g.log_bitmask != 0) {
+    if (should_log(MASK_LOG_ANY)) {
         Log_Write_Data(DATA_INIT_SIMPLE_BEARING, ahrs.yaw_sensor);
     }
 }
@@ -1376,7 +1379,7 @@ static void update_altitude()
     sonar_alt           = read_sonar();
 
     // write altitude info to dataflash logs
-    if (g.log_bitmask & MASK_LOG_CTUN) {
+    if (should_log(MASK_LOG_CTUN)) {
         Log_Write_Control_Tuning();
     }
 }
