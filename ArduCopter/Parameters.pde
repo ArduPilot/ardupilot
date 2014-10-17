@@ -1117,7 +1117,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
 #if OPTFLOW == ENABLED
     // @Group: FLOW
-    // @Path: ../libraries/AP_OpticalFlow/OptFlow.cpp
+    // @Path: ../libraries/AP_OpticalFlow/OpticalFlow.cpp
     GOBJECT(optflow,   "FLOW", OpticalFlow),
 #endif
 
