@@ -914,6 +914,15 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(hil_err_limit,         "HIL_ERR_LIMIT",   5),
 #endif
 
+    // @Param: RTL_AUTOLAND
+    // @DisplayName: RTL auto land
+    // @Description: Automatically begin landing sequence after arriving at RTL
+    // @Units: boolean
+    // @Range: 0 1
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(rtl_autoland,         "RTL_AUTOLAND",   0),
+
     // barometer ground calibration. The GND_ prefix is chosen for
     // compatibility with previous releases of ArduPlane
     // @Group: GND_
