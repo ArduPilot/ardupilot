@@ -22,7 +22,7 @@ static void init_barometer(bool full_calibration)
 static int32_t read_barometer(void)
 {
     barometer.read();
-    if (g.log_bitmask & MASK_LOG_IMU) {
+    if (should_log(MASK_LOG_IMU)) {
         Log_Write_Baro();
     }
     int32_t balt = barometer.get_altitude() * 100.0f;
@@ -124,7 +124,7 @@ static void update_optflow(void)
     // write to log if new data has arrived
     if (optflow.last_update() != last_of_update) {
         last_of_update = optflow.last_update();
-        if (g.log_bitmask & MASK_LOG_OPTFLOW) {
+        if (should_log(MASK_LOG_OPTFLOW)) {
             Log_Write_Optflow();
         }
     }
@@ -149,7 +149,7 @@ static void read_battery(void)
     }
 
     // log battery info to the dataflash
-    if (g.log_bitmask & MASK_LOG_CURRENT) {
+    if (should_log(MASK_LOG_CURRENT)) {
         Log_Write_Current();
     }
 }
