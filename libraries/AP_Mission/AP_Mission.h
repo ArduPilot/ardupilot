@@ -320,6 +320,10 @@ public:
     // return the last time the mission changed in milliseconds
     uint32_t last_change_time_ms(void) const { return _last_change_time_ms; }
 
+    // find the nearest landing sequence starting point (DO_LAND_START) and
+    // switch to that mission item.
+    bool jump_to_landing_sequence();
+
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 

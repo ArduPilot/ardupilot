@@ -589,6 +589,10 @@ bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP
         cmd.content.repeat_servo.cycle_time = packet.param4;   // time in seconds
         break;
 
+    case MAV_CMD_DO_LAND_START:                         // MAV ID: 189
+        copy_location = true;
+        break;
+
     case MAV_CMD_DO_SET_ROI:                            // MAV ID: 201
         copy_location = true;
         cmd.p1 = packet.param1;                         // 0 = no roi, 1 = next waypoint, 2 = waypoint number, 3 = fixed location, 4 = given target (not supported)
@@ -848,6 +852,10 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
         packet.param2 = cmd.content.repeat_servo.pwm;           // PWM
         packet.param3 = cmd.content.repeat_servo.repeat_count;  // count
         packet.param4 = cmd.content.repeat_servo.cycle_time;    // time in milliseconds converted to seconds
+        break;
+
+    case MAV_CMD_DO_LAND_START:                         // MAV ID: 189
+        copy_location = true;
         break;
 
     case MAV_CMD_DO_SET_ROI:                            // MAV ID: 201
@@ -1230,5 +1238,40 @@ uint16_t AP_Mission::num_commands_max(void) const
 {
     // -4 to remove space for eeprom version number
     return (_storage.size() - 4) / AP_MISSION_EEPROM_COMMAND_SIZE;
+}
+
+// find the nearest landing sequence starting point (DO_LAND_START) and
+// switch to that mission item.
+bool AP_Mission::jump_to_landing_sequence() {
+    struct Location current_loc;
+
+    if (! ((AP_AHRS&) _ahrs).get_position(current_loc)) {
+        return false;
+    }
+
+    int16_t landing_start_index = -1;
+    float min_distance = 999999999.9;
+    int tmp_distance;
+    Mission_Command tmp = {0};
+
+    // Go through mission looking for nearest landing start command
+    for(uint16_t i = 0; i < num_commands(); i++) {
+        read_cmd_from_storage(i, tmp);
+        if(tmp.id == MAV_CMD_DO_LAND_START) {
+            read_cmd_from_storage(i, tmp);
+            tmp_distance = get_distance(tmp.content.location, current_loc);
+            if(tmp_distance < min_distance) {
+                min_distance = tmp_distance;
+
+                landing_start_index = i+1; // go to the NEXT mission item, otherwise you will keep restarting preland_init
+            }           
+        }
+    }
+
+    if (landing_start_index == -1) {
+        return false;
+    }
+
+    return set_current_cmd(landing_start_index);
 }
 
