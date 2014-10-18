@@ -286,7 +286,7 @@ static void pre_arm_checks(bool display_failure)
     // check GPS
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_GPS)) {
         // check gps is ok if required - note this same check is repeated again in arm_checks
-        if ((mode_requires_GPS(control_mode) || g.failsafe_gps_enabled == FS_GPS_LAND_EVEN_STABILIZE) && !pre_arm_gps_checks(display_failure)) {
+        if ((mode_requires_GPS(control_mode) || g.failsafe_gps_enabled == FS_GPS_LAND_EVEN_STABILIZE || !ap.home_is_set) && !pre_arm_gps_checks(display_failure)) {
             return;
         }
 
@@ -489,6 +489,14 @@ static bool pre_arm_gps_checks(bool display_failure)
     if (gps.get_hdop() > g.gps_hdop_good) {
         if (display_failure) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: High GPS HDOP"));
+        }
+        return false;
+    }
+
+    // check that home is set
+    if(!ap.home_is_set) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Acquiring home position"));
         }
         return false;
     }
