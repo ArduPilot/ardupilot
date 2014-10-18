@@ -297,6 +297,9 @@ static void set_mode(enum FlightMode mode)
     // don't cross-track when starting a mission
     auto_state.next_wp_no_crosstrack = true;
 
+    // reset landing check
+    auto_state.checked_for_autoland = false;
+
     // zero locked course
     steer_state.locked_course_err = 0;
 

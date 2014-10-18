@@ -546,6 +546,9 @@ static struct {
     // in FBWA taildragger takeoff mode
     bool fbwa_tdrag_takeoff_mode:1;
 
+    // have we checked for an auto-land?
+    bool checked_for_autoland:1;
+
     // Altitude threshold to complete a takeoff command in autonomous modes.  Centimeters
     int32_t takeoff_altitude_cm;
 
@@ -574,6 +577,7 @@ static struct {
     next_wp_no_crosstrack : true,
     no_crosstrack : true,
     fbwa_tdrag_takeoff_mode : false,
+    checked_for_autoland : false,
     takeoff_altitude_cm : 0,
     takeoff_pitch_cd : 0,
     highest_airspeed : 0,
@@ -1421,12 +1425,18 @@ static void update_navigation()
             
     case RTL:
         if (g.rtl_autoland && 
+            !auto_state.checked_for_autoland &&
             nav_controller->reached_loiter_target() && 
             labs(altitude_error_cm) < 1000) {
-            if (mission.jump_to_landing_sequence()) {
-                gcs_send_text_P(PSTR("Starting auto landing"));
+            // we've reached the RTL point, see if we have a landing sequence
+            if (!auto_state.checked_for_autoland &&
+                mission.jump_to_landing_sequence()) {
+                gcs_send_text_P(SEVERITY_LOW, PSTR("Starting auto landing"));
                 set_mode(AUTO);
             }
+            // prevent running the expensive jump_to_landing_sequence
+            // on every loop
+            auto_state.checked_for_autoland = true;
         }
         // fall through to LOITER
 
