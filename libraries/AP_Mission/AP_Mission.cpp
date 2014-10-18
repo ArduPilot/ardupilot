@@ -1245,7 +1245,7 @@ uint16_t AP_Mission::num_commands_max(void) const
 bool AP_Mission::jump_to_landing_sequence() {
     struct Location current_loc;
 
-    if (! ((AP_AHRS&) _ahrs).get_position(current_loc)) {
+    if (!_ahrs.get_position(current_loc)) {
         return false;
     }
 
