@@ -56,7 +56,7 @@ public:
     void reset_attitude(const float &roll, const float &pitch, const float &yaw);
 
     // dead-reckoning support
-    bool get_position(struct Location &loc);
+    bool get_position(struct Location &loc) const;
 
     // status reporting of estimated error
     float           get_error_rp(void);

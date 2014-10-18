@@ -872,7 +872,7 @@ float AP_AHRS_DCM::get_error_yaw(void)
 
 // return our current position estimate using
 // dead-reckoning or GPS
-bool AP_AHRS_DCM::get_position(struct Location &loc)
+bool AP_AHRS_DCM::get_position(struct Location &loc) const
 {
     loc.lat = _last_lat;
     loc.lng = _last_lng;

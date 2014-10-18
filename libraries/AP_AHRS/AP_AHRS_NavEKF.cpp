@@ -129,7 +129,7 @@ void AP_AHRS_NavEKF::reset_attitude(const float &_roll, const float &_pitch, con
 }
 
 // dead-reckoning support
-bool AP_AHRS_NavEKF::get_position(struct Location &loc)
+bool AP_AHRS_NavEKF::get_position(struct Location &loc) const
 {
     if (using_EKF() && EKF.getLLH(loc)) {
         return true;

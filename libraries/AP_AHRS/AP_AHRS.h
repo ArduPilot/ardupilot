@@ -202,7 +202,7 @@ public:
 
     // get our current position estimate. Return true if a position is available,
     // otherwise false. This call fills in lat, lng and alt
-    virtual bool get_position(struct Location &loc) = 0;
+    virtual bool get_position(struct Location &loc) const = 0;
 
     // return a wind estimation vector, in m/s
     virtual Vector3f wind_estimate(void) = 0;

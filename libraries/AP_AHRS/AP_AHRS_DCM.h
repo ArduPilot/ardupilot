@@ -83,7 +83,7 @@ public:
     void reset_attitude(const float &roll, const float &pitch, const float &yaw);
 
     // dead-reckoning support
-    virtual bool get_position(struct Location &loc);
+    virtual bool get_position(struct Location &loc) const;
 
     // status reporting
     float           get_error_rp(void);
