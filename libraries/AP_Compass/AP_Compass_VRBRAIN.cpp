@@ -124,18 +124,9 @@ bool AP_Compass_VRBRAIN::read(void)
             // add in board orientation from AHRS
             _sum[i].rotate(_board_orientation);
         }
-
-        _sum[i] += _offset[i].get();
-
-        // apply motor compensation
-        if (_motor_comp_type != AP_COMPASS_MOT_COMP_DISABLED && _thr_or_curr != 0.0f) {
-            _motor_offset[i] = _motor_compensation[i].get() * _thr_or_curr;
-            _sum[i] += _motor_offset[i];
-        } else {
-            _motor_offset[i].zero();
-        }
     
         _field[i] = _sum[i];
+        apply_corrections(_field[i],i);
     
         _sum[i].zero();
         _count[i] = 0;
