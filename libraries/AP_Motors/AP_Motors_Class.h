@@ -61,10 +61,16 @@
 #define AP_MOTOR_THROTTLE_LIMIT     0x04
 #define AP_MOTOR_ANY_LIMIT          0xFF
 
-// slow start increments - throttle increase per (100hz) iteration.  i.e. 5 = full speed in 2 seconds
-#define AP_MOTOR_SLOW_START_INCREMENT           10      // max throttle ramp speed (i.e. motors can reach full throttle in 2 seconds)
-#define AP_MOTOR_SLOW_START_LOW_END_INCREMENT   2       // min throttle ramp speed (i.e. motors will speed up from zero to _spin_when_armed speed in about 1 second)
-
+// To-Do: replace this hard coded counter with a timer
+#if HAL_CPU_CLASS < HAL_CPU_CLASS_75 || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+ // slow start increments - throttle increase per (100hz) iteration.  i.e. 5 = full speed in 2 seconds
+ #define AP_MOTOR_SLOW_START_INCREMENT           10      // max throttle ramp speed (i.e. motors can reach full throttle in 1 second)
+ #define AP_MOTOR_SLOW_START_LOW_END_INCREMENT   2       // min throttle ramp speed (i.e. motors will speed up from zero to _spin_when_armed speed in about 1 second)
+#else
+ // slow start increments - throttle increase per (400hz) iteration.  i.e. 1 = full speed in 2.5 seconds
+ #define AP_MOTOR_SLOW_START_INCREMENT           3       // max throttle ramp speed (i.e. motors can reach full throttle in 0.8 seconds)
+ #define AP_MOTOR_SLOW_START_LOW_END_INCREMENT   1       // min throttle ramp speed (i.e. motors will speed up from zero to _spin_when_armed speed in about 0.3 second)
+#endif
 /// @class      AP_Motors
 class AP_Motors {
 public:
