@@ -114,6 +114,13 @@
                <entry value="18" name="MAV_TYPE_ONBOARD_CONTROLLER">
                     <description>Onboard companion controller</description>
                </entry>
+               <entry value="19" name="MAV_TYPE_VTOL_DUOROTOR">
+                    <description>Two-rotor VTOL using control surfaces in vertical operation in addition. Tailsitter.</description>
+               </entry>
+               <entry value="20" name="MAV_TYPE_VTOL_QUADROTOR">
+                    <description>Quad-rotor VTOL using a V-shaped quad config in vertical operation. Tailsitter.</description>
+               </entry>
+               <!-- Entries up to 25 reserved for other VTOL airframes -->
           </enum>
           <!-- WARNING: MAV_ACTION Enum is no longer supported - has been removed. Please use MAV_CMD -->
           <enum name="MAV_MODE_FLAG">
