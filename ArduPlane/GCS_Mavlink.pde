@@ -1111,13 +1111,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         case MAV_CMD_DO_LAND_START:
             result = MAV_RESULT_FAILED;
-            //no reason to AUTO land in MANUAL mode.
-            if (control_mode == MANUAL) {
-                break;
-            }
 
-            //attempt to switch to next DO_LAND_START command in the mission
+            // attempt to switch to next DO_LAND_START command in the mission
             if (mission.jump_to_landing_sequence()) {
+                set_mode(AUTO);
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
