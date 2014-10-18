@@ -1242,7 +1242,8 @@ uint16_t AP_Mission::num_commands_max(void) const
 
 // find the nearest landing sequence starting point (DO_LAND_START) and
 // switch to that mission item.
-bool AP_Mission::jump_to_landing_sequence() {
+bool AP_Mission::jump_to_landing_sequence() 
+{
     struct Location current_loc;
 
     if (!_ahrs.get_position(current_loc)) {
@@ -1250,20 +1251,19 @@ bool AP_Mission::jump_to_landing_sequence() {
     }
 
     int16_t landing_start_index = -1;
-    float min_distance = 999999999.9;
-    int tmp_distance;
-    Mission_Command tmp = {0};
+    float min_distance = -1;
 
     // Go through mission looking for nearest landing start command
-    for(uint16_t i = 0; i < num_commands(); i++) {
-        read_cmd_from_storage(i, tmp);
-        if(tmp.id == MAV_CMD_DO_LAND_START) {
-            read_cmd_from_storage(i, tmp);
-            tmp_distance = get_distance(tmp.content.location, current_loc);
-            if(tmp_distance < min_distance) {
+    for (uint16_t i = 0; i < num_commands(); i++) {
+        Mission_Command tmp;
+        if (!read_cmd_from_storage(i, tmp)) {
+            continue;
+        }
+        if (tmp.id == MAV_CMD_DO_LAND_START) {
+            float tmp_distance = get_distance(tmp.content.location, current_loc);
+            if (min_distance < 0 || tmp_distance < min_distance) {
                 min_distance = tmp_distance;
-
-                landing_start_index = i+1; // go to the NEXT mission item, otherwise you will keep restarting preland_init
+                landing_start_index = i;
             }           
         }
     }
