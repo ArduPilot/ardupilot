@@ -470,6 +470,8 @@ struct PACKED log_Attitude {
     int16_t  pitch;
     uint16_t control_yaw;
     uint16_t yaw;
+    uint16_t error_rp;
+    uint16_t error_yaw;
 };
 
 // Write an attitude packet
@@ -484,7 +486,9 @@ static void Log_Write_Attitude()
         control_pitch   : (int16_t)targets.y,
         pitch           : (int16_t)ahrs.pitch_sensor,
         control_yaw     : (uint16_t)targets.z,
-        yaw             : (uint16_t)ahrs.yaw_sensor
+        yaw             : (uint16_t)ahrs.yaw_sensor,
+        error_rp        : (uint16_t)(ahrs.get_error_rp() * 100),
+        error_yaw       : (uint16_t)(ahrs.get_error_yaw() * 100)
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 
@@ -690,7 +694,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
       "PM",  "HHIhBHB",    "NLon,NLoop,MaxT,PMT,I2CErr,INSErr,INAVErr" },
     { LOG_ATTITUDE_MSG, sizeof(log_Attitude),       
-      "ATT", "IccccCC",      "TimeMS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw" },
+      "ATT", "IccccCCCC",    "TimeMS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw" },
     { LOG_MODE_MSG, sizeof(log_Mode),
       "MODE", "Mh",          "Mode,ThrCrs" },
     { LOG_STARTUP_MSG, sizeof(log_Startup),         
