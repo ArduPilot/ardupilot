@@ -1419,8 +1419,18 @@ static void update_navigation()
         update_commands();
         break;
             
-    case LOITER:
     case RTL:
+        if (g.rtl_autoland && 
+            nav_controller->reached_loiter_target() && 
+            labs(altitude_error_cm) < 1000) {
+            if (mission.jump_to_landing_sequence()) {
+                gcs_send_text_P(PSTR("Starting auto landing"));
+                set_mode(AUTO);
+            }
+        }
+        // fall through to LOITER
+
+    case LOITER:
     case GUIDED:
         // allow loiter direction to be changed in flight
         if (g.loiter_radius < 0) {
@@ -1429,13 +1439,6 @@ static void update_navigation()
             loiter.direction = 1;
         }
         update_loiter();
-        
-        if (g.rtl_autoland && control_mode == RTL && get_distance(current_loc, next_WP_loc) < fabs(g.loiter_radius) + 20.0f && fabs(current_loc.alt - next_WP_loc.alt) < 10.0f) {
-            if (mission.jump_to_landing_sequence()) {
-                set_mode(AUTO);
-            }
-        }
-
         break;
 
     case CRUISE:
