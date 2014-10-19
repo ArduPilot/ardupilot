@@ -463,16 +463,23 @@ bool Compass::configured(void)
     return all_configured;
 }
 
+/*
+  apply offset and motor compensation corrections
+ */
 void Compass::apply_corrections(Vector3f &mag, uint8_t i)
 {
     const Vector3f &offsets = _offset[i].get();
     const Vector3f &mot = _motor_compensation[i].get();
-    
+
+    /*
+      note that _motor_offset[] is kept even if compensation is not
+      being applied so it can be logged correctly
+     */
     mag += offsets;
     if(_motor_comp_type != AP_COMPASS_MOT_COMP_DISABLED && _thr_or_curr != 0.0f) {
         _motor_offset[i] = mot * _thr_or_curr;
         mag += _motor_offset[i];
-    }else{
+    } else {
         _motor_offset[i].zero();
     }
 }
