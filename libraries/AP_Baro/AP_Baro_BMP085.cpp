@@ -1,4 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+#if 0
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -169,7 +170,6 @@ uint8_t AP_Baro_BMP085::read()
     Temp = 0.1f * _temp_sum / _count;
     Press = _press_sum / _count;
 
-    _pressure_samples = _count;
     _count = 0;
     _temp_sum = 0;
     _press_sum = 0;
@@ -297,3 +297,4 @@ void AP_Baro_BMP085::Calculate()
     }
 }
 
+#endif

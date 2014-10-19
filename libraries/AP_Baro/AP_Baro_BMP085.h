@@ -25,7 +25,6 @@ public:
         ac4(0), ac5(0), ac6(0),
         _retry_time(0)
     {
-        _pressure_samples = 1;
     };       // Constructor
 
 
