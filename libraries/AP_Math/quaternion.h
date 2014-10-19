@@ -68,13 +68,13 @@ public:
 
     void from_axis_angle(Vector3f v);
 
-    void from_axis_angle(Vector3f axis, float theta);
+    void from_axis_angle(const Vector3f &axis, float theta);
 
-    void rotate(Vector3f v);
+    void rotate(const Vector3f &v);
 
     void from_axis_angle_fast(Vector3f v);
 
-    void from_axis_angle_fast(Vector3f axis, float theta);
+    void from_axis_angle_fast(const Vector3f &axis, float theta);
 
     void rotate_fast(const Vector3f &v);
 
@@ -104,7 +104,7 @@ public:
         return _v[i];
     }
 
-    Quaternion operator*(Quaternion v);
-    Quaternion &operator*=(Quaternion v);
+    Quaternion operator*(const Quaternion &v);
+    Quaternion &operator*=(const Quaternion &v);
 };
 #endif // QUATERNION_H
