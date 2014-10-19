@@ -298,8 +298,9 @@ AP_InertialSensor::init( Start_style style,
     }
 
     // establish the baseline time between samples
-    _base_delta_time = 1.0e-6f * _sample_period_usec;
     _delta_time = 0;
+    _next_sample_usec = 0;
+    _last_sample_usec = 0;
     _have_sample = false;
 }
 
@@ -1003,55 +1004,34 @@ void AP_InertialSensor::wait_for_sample(void)
 
     uint32_t now = hal.scheduler->micros();
 
-    if (_last_sample_usec == 0 && _delta_time <= 0) {
+    if (_next_sample_usec == 0 && _delta_time <= 0) {
         // this is the first call to wait_for_sample()
-        _last_sample_usec = now;
-        _delta_time = _base_delta_time;
+        _last_sample_usec = now - _sample_period_usec;
+        _next_sample_usec = now + _sample_period_usec;
+        goto check_sample;
     }
 
-    // see how many samples worth of time have elapsed
-    uint16_t sample_count = 0;
-    while (now - _last_sample_usec > _sample_period_usec) {
-        _last_sample_usec += _sample_period_usec;
-        sample_count++;
-        if (sample_count == 1000) {
-            // we've gone a very long time between samples, and gyro
-            // integration times beyond this don't really make
-            // sense. Just reset the timing
-            _last_sample_usec = now;
-            _delta_time = sample_count * _base_delta_time;
-            goto check_sample;
-        }
-    }
-
-    if (sample_count == 0) {
-        // this is the normal case, and it means we took less than
-        // _sample_period_usec to process the last sample. We're
-        // on-time. So we can just sleep for the right number of
-        // microseconds to get us to the next sample.
-        _last_sample_usec += _sample_period_usec;
-        uint32_t wait_usec = _last_sample_usec - now;
-        if (wait_usec > 100 && wait_usec <= _sample_period_usec) {
-            // only delay if the time to wait is significant.
+    // see how long it is till the next sample is due
+    if (_next_sample_usec - now <=_sample_period_usec) {
+        // we're ahead on time, schedule next sample at expected period
+        uint32_t wait_usec = _next_sample_usec - now;
+        if (wait_usec > 200) {
             hal.scheduler->delay_microseconds(wait_usec);
         }
-
-        // we set the _delta_time to the base time, ignoring small
-        // timing fluctuations. 
-        _delta_time = _base_delta_time;
+        _next_sample_usec += _sample_period_usec;
+    } else if (now - _next_sample_usec < _sample_period_usec/8) {
+        // we've overshot, but only by a small amount, keep on
+        // schedule with no delay
+        _next_sample_usec += _sample_period_usec;
     } else {
-        // we have had some sort of delay and have missed our time
-        // slot. We want to run this sample immediately, and need to
-        // adjust _delta_time to reflect the delay we've had
-        _delta_time = _base_delta_time*sample_count + 1.0e-6f*(now - _last_sample_usec);
-
-        // reset the time base to the current time
-        _last_sample_usec = now;
+        // we've overshot by a larger amount, re-zero scheduling with
+        // no delay
+        _next_sample_usec = now + _sample_period_usec;
     }
 
 check_sample:
     if (!_hil_mode) {
-        // but also wait for at least one backend to have a sample of both
+        // we also wait for at least one backend to have a sample of both
         // accel and gyro. This normally completes immediately.
         bool gyro_available = false;
         bool accel_available = false;
@@ -1065,6 +1045,28 @@ check_sample:
             }
         }
     }
+
+    now = hal.scheduler->micros();
+    _delta_time = (now - _last_sample_usec) * 1.0e-6f;
+    _last_sample_usec = now;
+
+#if 0
+    {
+        static uint64_t delta_time_sum;
+        static uint16_t counter;
+        if (delta_time_sum == 0) {
+            delta_time_sum = _sample_period_usec;
+        }
+        delta_time_sum += _delta_time * 1.0e6f;
+        if (counter++ == 400) {
+            counter = 0;
+            hal.console->printf("now=%lu _delta_time_sum=%lu diff=%ld\n",
+                                (unsigned long)now, 
+                                (unsigned long)delta_time_sum,
+                                (long)(now - delta_time_sum));
+        }
+    }
+#endif
 
     _have_sample = true;
 }

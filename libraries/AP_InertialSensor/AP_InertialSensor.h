@@ -261,15 +261,14 @@ private:
     // are we in HIL mode?
     bool _hil_mode:1;
 
-    // the delta time in seconds between samples when there are no
-    // delays
-    float _base_delta_time;
-
     // the delta time in seconds for the last sample
     float _delta_time;
 
     // last time a wait_for_sample() returned a sample
     uint32_t _last_sample_usec;
+
+    // target time for next wait_for_sample() return
+    uint32_t _next_sample_usec;
     
     // time between samples in microseconds
     uint32_t _sample_period_usec;
