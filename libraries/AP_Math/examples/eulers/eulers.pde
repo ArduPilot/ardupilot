@@ -33,6 +33,7 @@
 #include <AP_Airspeed.h>
 #include <AP_Vehicle.h>
 #include <AP_ADC_AnalogSource.h>
+#include <AP_Rally.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
@@ -132,7 +133,7 @@ static void test_quaternion(float roll, float pitch, float yaw)
     float roll2, pitch2, yaw2;
 
     q.from_euler(roll, pitch, yaw);
-    q.to_euler(&roll2, &pitch2, &yaw2);
+    q.to_euler(roll2, pitch2, yaw2);
     check_result("test_quaternion1", roll, pitch, yaw, roll2, pitch2, yaw2);
 
     m.from_euler(roll, pitch, yaw);
@@ -141,7 +142,7 @@ static void test_quaternion(float roll, float pitch, float yaw)
 
     m.from_euler(roll, pitch, yaw);
     q.from_rotation_matrix(m);
-    q.to_euler(&roll2, &pitch2, &yaw2);
+    q.to_euler(roll2, pitch2, yaw2);
     check_result("test_quaternion3", roll, pitch, yaw, roll2, pitch2, yaw2);
 
     q.rotation_matrix(m);
@@ -192,7 +193,7 @@ static void test_conversion(float roll, float pitch, float yaw)
     float roll3, pitch3, yaw3;
 
     q.from_euler(roll, pitch, yaw);
-    q.to_euler(&roll2, &pitch2, &yaw2);
+    q.to_euler(roll2, pitch2, yaw2);
     check_result("test_conversion1", roll, pitch, yaw, roll2, pitch2, yaw2);
 
     q.rotation_matrix(m);
