@@ -385,7 +385,7 @@ void loop()
             float temp = degrees(ekf_euler.z);
 
             if (temp < 0.0f) temp = temp + 360.0f;
-            fprintf(plotf, "%.3f %.1f %.1f %.1f %.2f %.1f %.1f %.1f %.2f %.2f %.2f %.1f %.1f %.1f %.1f %.1f %.1f %.2f %.2f %.2f %.2f %.2f %.2f\n",
+            fprintf(plotf, "%.3f %.1f %.1f %.1f %.2f %.1f %.1f %.1f %.2f %.2f %.2f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.2f %.2f %.2f %.2f %.2f %.2f\n",
                     hal.scheduler->millis() * 0.001f,
                     LogReader.get_sim_attitude().x,
                     LogReader.get_sim_attitude().y,
