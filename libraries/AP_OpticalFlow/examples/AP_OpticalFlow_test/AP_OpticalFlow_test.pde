@@ -27,6 +27,8 @@
 #include <Filter.h>
 #include <AP_Baro.h>
 #include <AP_OpticalFlow.h>
+#include <AP_Mission.h>
+#include <AP_Terrain.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
