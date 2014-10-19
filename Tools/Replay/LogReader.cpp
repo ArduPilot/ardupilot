@@ -93,6 +93,8 @@ struct PACKED log_Copter_Attitude {
     int16_t pitch;
     uint16_t control_yaw;
     uint16_t yaw;
+    uint16_t error_rp;
+    uint16_t error_yaw;
 };
 
 struct PACKED log_Copter_Nav_Tuning {
@@ -223,7 +225,7 @@ void LogReader::process_copter(uint8_t type, uint8_t *data, uint16_t length)
     case LOG_COPTER_ATTITUDE_MSG: {
         struct log_Copter_Attitude msg;
         if(sizeof(msg) != length) {
-            printf("Bad ATTITUDE length\n");
+            printf("Bad ATTITUDE length %u should be %u\n", length, sizeof(msg));
             exit(1);
         }
         memcpy(&msg, data, sizeof(msg));
