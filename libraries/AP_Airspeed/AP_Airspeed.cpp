@@ -240,5 +240,8 @@ void AP_Airspeed::setHIL(float airspeed, float diff_pressure, float temperature)
     _raw_airspeed = airspeed;
     _airspeed = airspeed;
     _last_pressure = diff_pressure;
-    _last_update_ms         = hal.scheduler->millis();    
+    _last_update_ms = hal.scheduler->millis();    
+    _hil_pressure = diff_pressure;
+    _hil_set = true;
+    _healthy = true;
 }
