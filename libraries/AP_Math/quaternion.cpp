@@ -125,7 +125,7 @@ void Quaternion::from_axis_angle(Vector3f v) {
     from_axis_angle(v,theta);
 }
 
-void Quaternion::from_axis_angle(Vector3f axis, float theta) {
+void Quaternion::from_axis_angle(const Vector3f &axis, float theta) {
     if(theta == 0.0f) {
         q1 = 1.0f;
         q2=q3=q4=0.0f;
@@ -138,7 +138,7 @@ void Quaternion::from_axis_angle(Vector3f axis, float theta) {
     q4 = axis.z * st2;
 }
 
-void Quaternion::rotate(Vector3f v) {
+void Quaternion::rotate(const Vector3f &v) {
     Quaternion r;
     r.from_axis_angle(v);
     (*this) *= r;
@@ -163,7 +163,7 @@ void Quaternion::from_axis_angle_fast(Vector3f v) {
     from_axis_angle_fast(v,theta);
 }
 
-void Quaternion::from_axis_angle_fast(Vector3f axis, float theta) {
+void Quaternion::from_axis_angle_fast(const Vector3f &axis, float theta) {
     float t2 = theta/2.0f;
     float sqt2 = sq(t2);
     float st2 = t2-sqt2*t2/6.0f;
@@ -232,17 +232,17 @@ void Quaternion::normalize(void)
     }    
 }
 
-Quaternion Quaternion::operator*(Quaternion v) {
+Quaternion Quaternion::operator*(const Quaternion &v) {
     Quaternion ret;
     float &w1 = q1;
     float &x1 = q2;
     float &y1 = q3;
     float &z1 = q4;
 
-    float &w2 = v.q1;
-    float &x2 = v.q2;
-    float &y2 = v.q3;
-    float &z2 = v.q4;
+    float w2 = v.q1;
+    float x2 = v.q2;
+    float y2 = v.q3;
+    float z2 = v.q4;
 
     ret.q1 = w1*w2 - x1*x2 - y1*y2 - z1*z2;
     ret.q2 = w1*x2 + x1*w2 + y1*z2 - z1*y2;
@@ -252,16 +252,16 @@ Quaternion Quaternion::operator*(Quaternion v) {
     return ret;
 }
 
-Quaternion &Quaternion::operator*=(Quaternion v) {
-    float w1 = q1;
-    float x1 = q2;
-    float y1 = q3;
-    float z1 = q4;
+Quaternion &Quaternion::operator*=(const Quaternion &v) {
+    float &w1 = q1;
+    float &x1 = q2;
+    float &y1 = q3;
+    float &z1 = q4;
 
-    float &w2 = v.q1;
-    float &x2 = v.q2;
-    float &y2 = v.q3;
-    float &z2 = v.q4;
+    float w2 = v.q1;
+    float x2 = v.q2;
+    float y2 = v.q3;
+    float z2 = v.q4;
 
     q1 = w1*w2 - x1*x2 - y1*y2 - z1*z2;
     q2 = w1*x2 + x1*w2 + y1*z2 - z1*y2;
