@@ -26,10 +26,11 @@ public:
     /// @param item
     void push_back( const T &item );
 
-    /// pop_front - removes an element from the begin of the buffer (i.e. the oldest element)
-    /// and returns it.  If the buffer is empty, 0 is returned
-    /// @return
-    T pop_front();
+    /// pop_front - removes an element from the beginning of the
+    /// buffer (i.e. the oldest element) and returns it in ret.
+    /// @param ret : the removed element, if exists
+    /// @return : true if successful, false if not
+    bool pop_front(T &ret);
 
     /// peek - returns a reference to an element of the buffer
     /// if position isn't valid (i.e. >= size()) 0 is returned
@@ -105,19 +106,15 @@ void AP_Buffer<T,SIZE>::push_back( const T &item )
 }
 
 template <class T, uint8_t SIZE>
-T AP_Buffer<T,SIZE>::pop_front()
+bool AP_Buffer<T,SIZE>::pop_front(T &ret)
 {
-	T result;
-
-	// get next value in buffer
-    result = _buff[_head];
-
     if(_num_items == 0) {
-        // return whatever is at _head
-        // don't return zero because it is a scalar value
-        // don't return T() because PX4 compiler does not support it
-        return result;
+        // buffer is empty
+        return false;
     }
+
+    // get next value in buffer
+    ret = _buff[_head];
 
     // increment to next point
     _head++;
@@ -127,8 +124,8 @@ T AP_Buffer<T,SIZE>::pop_front()
     // reduce number of items
     _num_items--;
 
-    // return item
-    return result;
+    // success
+    return true;
 }
 
 template <class T, uint8_t SIZE>
