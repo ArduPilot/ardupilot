@@ -115,7 +115,7 @@ void AP_Frsky_Telem::frsky_send_frame1(uint8_t mode)
     frsky_send_data(FRSKY_ID_BARO_ALT_BP, baro_alt_meters);
     frsky_send_data(FRSKY_ID_BARO_ALT_AP, baro_alt_cm);
   
-    frsky_send_data(FRSKY_ID_FUEL, roundf(_battery.capacity_remaining_pct()));
+    frsky_send_data(FRSKY_ID_FUEL, gps.get_hdop());
  
     frsky_send_data(FRSKY_ID_VFAS, roundf(_battery.voltage() * 10.0f));
     frsky_send_data(FRSKY_ID_CURRENT, (battery_amps < 0) ? 0 : roundf(battery_amps * 10.0f));
