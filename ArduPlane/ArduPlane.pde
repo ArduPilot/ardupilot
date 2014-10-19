@@ -1429,6 +1429,13 @@ static void update_navigation()
             loiter.direction = 1;
         }
         update_loiter();
+        
+        if (g.rtl_autoland && control_mode == RTL && get_distance(current_loc, next_WP_loc) < fabs(g.loiter_radius) + 20.0f && fabs(current_loc.alt - next_WP_loc.alt) < 10.0f) {
+            if (mission.jump_to_landing_sequence()) {
+                set_mode(AUTO);
+            }
+        }
+
         break;
 
     case CRUISE:

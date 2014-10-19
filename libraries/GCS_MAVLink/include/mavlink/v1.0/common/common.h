@@ -1,6 +1,6 @@
 /** @file
  *	@brief MAVLink comm protocol generated from common.xml
- *	@see http://qgroundcontrol.org/mavlink/
+ *	@see http://mavlink.org
  */
 #ifndef MAVLINK_COMMON_H
 #define MAVLINK_COMMON_H
@@ -84,7 +84,9 @@ typedef enum MAV_TYPE
 	MAV_TYPE_FLAPPING_WING=16, /* Flapping wing | */
 	MAV_TYPE_KITE=17, /* Flapping wing | */
 	MAV_TYPE_ONBOARD_CONTROLLER=18, /* Onboard companion controller | */
-	MAV_TYPE_ENUM_END=19, /*  | */
+	MAV_TYPE_VTOL_DUOROTOR=19, /* Two-rotor VTOL using control surfaces in vertical operation in addition. Tailsitter. | */
+	MAV_TYPE_VTOL_QUADROTOR=20, /* Quad-rotor VTOL using a V-shaped quad config in vertical operation. Tailsitter. | */
+	MAV_TYPE_ENUM_END=21, /*  | */
 } MAV_TYPE;
 #endif
 
@@ -347,18 +349,6 @@ typedef enum MAV_ROI
 	MAV_ROI_TARGET=4, /* Point toward of given id. | */
 	MAV_ROI_ENUM_END=5, /*  | */
 } MAV_ROI;
-#endif
-
-/** @brief  */
-#ifndef HAVE_ENUM_PARACHUTE_ACTION
-#define HAVE_ENUM_PARACHUTE_ACTION
-typedef enum PARACHUTE_ACTION
-{
-	PARACHUTE_DISABLE=0, /* Disable parachute release | */
-	PARACHUTE_ENABLE=1, /* Enable parachute release | */
-	PARACHUTE_RELEASE=2, /* Release parachute | */
-	PARACHUTE_ACTION_ENUM_END=3, /*  | */
-} PARACHUTE_ACTION;
 #endif
 
 /** @brief ACK / NACK / ERROR values as a result of MAV_CMDs and for mission item transmission. */
