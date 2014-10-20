@@ -421,8 +421,11 @@ void auto_nav_guided_run()
 }
 #endif  // NAV_GUIDED
 
+// auto_loiter_start - initialises loitering in auto mode
+//  returns success/failure because this can be called by exit_mission
 bool auto_loiter_start()
 {
+    // return failure if GPS is bad
     if (!GPS_ok()) {
         return false;
     }
@@ -430,18 +433,25 @@ bool auto_loiter_start()
 
     Vector3f origin = inertial_nav.get_position();
 
+    // calculate stopping point
     Vector3f stopping_point;
     pos_control.get_stopping_point_xy(stopping_point);
     pos_control.get_stopping_point_z(stopping_point);
 
+    // initialise waypoint controller target to stopping point
     wp_nav.set_wp_origin_and_destination(origin, stopping_point);
 
+    // hold yaw at current heading
     set_auto_yaw_mode(AUTO_YAW_HOLD);
 
     return true;
 }
 
-void auto_loiter_run() {
+// auto_loiter_run - loiter in AUTO flight mode
+//      called by auto_run at 100hz or more
+void auto_loiter_run()
+{
+    // if not auto armed set throttle to zero and exit immediately
     if(!ap.auto_armed || ap.land_complete) {
         attitude_control.relax_bf_rate_controller();
         attitude_control.set_yaw_target_to_current_heading();
@@ -449,11 +459,13 @@ void auto_loiter_run() {
         return;
     }
 
+    // accept pilot input of yaw
     float target_yaw_rate = 0;
     if(!failsafe.radio) {
         target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
     }
 
+    // run waypoint and z-axis postion controller
     wp_nav.update_wpnav();
     pos_control.update_z_controller();
     attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
