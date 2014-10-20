@@ -130,40 +130,50 @@ bool AP_InertialNav::position_ok() const
     return _xy_enabled;
 }
 
+// check_home - checks if the home position has moved and offsets everything so it still lines up
 void AP_InertialNav::check_home() {
     if (!_xy_enabled) {
         return;
     }
 
+    // get position move in lat, lon coordinates
     int32_t lat_offset = _ahrs.get_home().lat - _last_home_lat;
     int32_t lng_offset = _ahrs.get_home().lng - _last_home_lng;
 
     if (lat_offset != 0) {
+        // calculate the position move in cm
         float x_offset_cm = lat_offset * LATLON_TO_CM;
 
+        // move position
         _position_base.x -= x_offset_cm;
         _position.x -= x_offset_cm;
 
+        // update historic positions
         for (uint8_t i = 0; i < _hist_position_estimate_x.size(); i++) {
             float &x = _hist_position_estimate_x.peek_mutable(i);
             x -= x_offset_cm;
         }
 
+        // update lon scaling
         _lon_to_cm_scaling = longitude_scale(_ahrs.get_home()) * LATLON_TO_CM;
     }
 
     if (lng_offset != 0) {
+        // calculate the position move in cm
         float y_offset_cm = lng_offset * _lon_to_cm_scaling;
 
+        // move position
         _position_base.y -= y_offset_cm;
         _position.y -= y_offset_cm;
 
+        // update historic positions
         for (uint8_t i = 0; i < _hist_position_estimate_y.size(); i++) {
             float &y = _hist_position_estimate_y.peek_mutable(i);
             y -= y_offset_cm;
         }
     }
 
+    // store updated lat, lon position
     _last_home_lat = _ahrs.get_home().lat;
     _last_home_lng = _ahrs.get_home().lng;
 }
