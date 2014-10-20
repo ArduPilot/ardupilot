@@ -214,6 +214,11 @@ protected:
     void        correct_with_gps(uint32_t now, int32_t lon, int32_t lat);
 
     /**
+     * check_home - checks if the home position has moved and offsets everything so it still lines up
+     */
+    void check_home();
+
+    /**
      * check_gps - checks if new gps readings have arrived and calls correct_with_gps to
      * calculate the horizontal position error
      * @see correct_with_gps(int32_t lon, int32_t lat, float dt);
@@ -296,6 +301,9 @@ protected:
     GPS_Glitch&             _glitch_detector;           // GPS Glitch detector
     Baro_Glitch&            _baro_glitch;               // Baro glitch detector
     uint8_t                 _error_count;               // number of missed GPS updates
+
+    int32_t                 _last_home_lat;
+    int32_t                 _last_home_lng;
 
 };
 

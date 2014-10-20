@@ -154,4 +154,17 @@ T& AP_Buffer<T,SIZE>::peek_mutable(uint8_t position)
     return _buff[j];
 }
 
+template <class T, uint8_t SIZE>
+T& AP_Buffer<T,SIZE>::peek_mutable(uint8_t position)
+{
+    uint8_t j = _head + position;
+
+    // wrap around if necessary
+    if( j >= SIZE )
+        j -= SIZE;
+
+    // return desired value
+    return _buff[j];
+}
+
 #endif  // __AP_BUFFER_H__

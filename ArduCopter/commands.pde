@@ -2,16 +2,24 @@
 
 // run this at setup on the ground
 // -------------------------------
+
 static void init_home()
 {
-    set_home_is_set(true);
+    Location loc;
 
-    // copter uses 0 home altitude
-    Location loc = gps.location();
-
-    ahrs.set_home(loc);
-
-    inertial_nav.setup_home_position();
+    if(!ap.home_is_set) {
+        ::printf("2\n");
+        loc = gps.location();
+        set_home_is_set(true);
+        ahrs.set_home(loc);
+        inertial_nav.setup_home_position();
+    } else {
+        ::printf("1\n");
+        loc.lat = current_loc.lat;
+        loc.lng = current_loc.lng;
+        loc.alt = 0.0f;
+        ahrs.set_home(loc);
+    }
 
     // log new home position which mission library will pull from ahrs
     if (should_log(MASK_LOG_CMD)) {
@@ -25,6 +33,3 @@ static void init_home()
     scaleLongDown = longitude_scale(loc);
     scaleLongUp   = 1.0f/scaleLongDown;
 }
-
-
-
