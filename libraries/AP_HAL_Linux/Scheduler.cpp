@@ -384,7 +384,7 @@ void LinuxScheduler::system_initialized()
 
 void LinuxScheduler::reboot(bool hold_in_bootloader) 
 {
-    for(;;);
+    exit(1);
 }
 
 void LinuxScheduler::stop_clock(uint64_t time_usec)
