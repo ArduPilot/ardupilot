@@ -281,7 +281,7 @@ static void exit_mission()
     // if we are not on the ground switch to loiter or land
     if(!ap.land_complete) {
         // try to enter loiter but if that fails land
-        if (!set_mode(LOITER)) {
+        if(!auto_loiter_start()) {
             set_mode(LAND);
         }
     }else{
