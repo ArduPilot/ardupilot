@@ -1474,20 +1474,38 @@ static void update_navigation()
  */
 static void set_flight_stage(AP_SpdHgtControl::FlightStage fs) 
 {
+    //if flight_stage is already set to fs, then there is nothing to do:
+    if (flight_stage == fs) {
+        return;
+    }
+
+#if GEOFENCE_ENABLED == ENABLED
     //if just now entering land flight stage
     if (fs == AP_SpdHgtControl::FLIGHT_LAND_APPROACH &&
         flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
 
-#if GEOFENCE_ENABLED == ENABLED 
         if (g.fence_autoenable == 1) {
             if (! geofence_set_enabled(false, AUTO_TOGGLED)) {
-                gcs_send_text_P(SEVERITY_HIGH, PSTR("Disable fence failed (autodisable)"));
+                gcs_send_text_P(SEVERITY_HIGH, PSTR("Disable fence failed (auto disable)"));
             } else {
-                gcs_send_text_P(SEVERITY_HIGH, PSTR("Fence disabled (autodisable)"));
+                gcs_send_text_P(SEVERITY_HIGH, PSTR("Fence disabled (auto disable)"));
             }
         }
-#endif
+    } else if ((flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
+        flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) &&
+        fs != AP_SpdHgtControl::FLIGHT_LAND_APPROACH &&
+        fs != AP_SpdHgtControl::FLIGHT_LAND_FINAL) { 
+        //if we just left landing stage then, 
+        //see if the fence needs to be turned back on:
+        if (fs != AP_SpdHgtControl::FLIGHT_TAKEOFF && g.fence_autoenable == 1) {
+            if (! geofence_set_enabled(true, AUTO_TOGGLED)) {
+                gcs_send_text_P(SEVERITY_HIGH, PSTR("Enable fence failed (auto enable)"));
+            } else {
+                gcs_send_text_P(SEVERITY_HIGH, PSTR("Enable fence (auto enable)"));
+            }
+        }
     }
+#endif //GEOFENCE_ENABLE == ENABLED
     
     flight_stage = fs;
 }
