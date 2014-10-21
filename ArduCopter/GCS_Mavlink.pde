@@ -579,12 +579,12 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         gcs[chan-MAVLINK_COMM_0].queued_waypoint_send();
         break;
 
-#if CONFIG_SONAR == ENABLED
     case MSG_RANGEFINDER:
+#if CONFIG_SONAR == ENABLED
         CHECK_PAYLOAD_SIZE(RANGEFINDER);
         send_rangefinder(chan);
-        break;
 #endif
+        break;
 
     case MSG_TERRAIN:
 #if AP_TERRAIN_AVAILABLE
@@ -598,12 +598,12 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         send_statustext(chan);
         break;
 
-#if AC_FENCE == ENABLED
     case MSG_LIMITS_STATUS:
+#if AC_FENCE == ENABLED
         CHECK_PAYLOAD_SIZE(LIMITS_STATUS);
         send_limits_status(chan);
-        break;
 #endif
+        break;
 
     case MSG_AHRS:
         CHECK_PAYLOAD_SIZE(AHRS);
@@ -632,6 +632,9 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         break;
 
     case MSG_RETRY_DEFERRED:
+        break; // just here to prevent a warning
+
+    case MSG_BATTERY2:
         break; // just here to prevent a warning
     }
 
