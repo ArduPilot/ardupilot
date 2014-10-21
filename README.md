@@ -89,11 +89,9 @@ few minutes in Linux, OS X, or Windows.
 
  2. [Install vagrant](http://docs.vagrantup.com/v2/installation/).
 
- 4. In the `ardupilot` directory, run `vagrant up` from the command
- line.  This will create a new Ubuntu Linux VM.
-
- 5. Run `vagrant ssh -c "ardupilot/Tools/scripts/install-prereqs-ubuntu.sh -y"`.
- This will install all the prerequisites for doing ardupilot development.
+ 3. In the `ardupilot` directory, run `vagrant up` from the command
+ line.  This will create a new Ubuntu Linux VM, and install all the
+ dependencies required for ardupilot development.
 
 You can now run `vagrant ssh` to log in to the development
 environment.  The `~/ardupilot` directory in the VM is actually the
