@@ -548,6 +548,7 @@ void AC_PosControl::update_xy_controller(bool use_desired_velocity)
     uint32_t now = hal.scheduler->millis();
     if ((now - _last_update_xy_ms) >= POSCONTROL_ACTIVE_TIMEOUT_MS) {
         init_xy_controller();
+        now = _last_update_xy_ms;
     }
 
     // check if xy leash needs to be recalculated
