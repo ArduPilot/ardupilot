@@ -552,6 +552,10 @@ static struct {
 
     // time when we first pass min GPS speed on takeoff
     uint32_t takeoff_speed_time_ms;
+
+    // denotes if a go-around has been commanded for landing
+    bool commanded_go_around;
+
 } auto_state = {
     takeoff_complete : true,
     land_complete : false,
@@ -566,7 +570,8 @@ static struct {
     initial_pitch_cd : 0,
     next_turn_angle  : 90.0f,
     land_sink_rate   : 0,
-    takeoff_speed_time_ms : 0
+    takeoff_speed_time_ms : 0,
+    commanded_go_around : false
 };
 
 // true if we are in an auto-throttle mode, which means

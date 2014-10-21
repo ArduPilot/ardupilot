@@ -300,6 +300,9 @@ static void set_mode(enum FlightMode mode)
     // reset landing check
     auto_state.checked_for_autoland = false;
 
+    // reset go around command
+    auto_state.commanded_go_around = false;
+
     // zero locked course
     steer_state.locked_course_err = 0;
 

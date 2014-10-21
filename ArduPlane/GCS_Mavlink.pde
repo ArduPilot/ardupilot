@@ -1118,6 +1118,32 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             } 
             break;
 
+        case MAV_CMD_DO_GO_AROUND:
+            result = MAV_RESULT_FAILED;
+
+            //Not allowing go around at FLIGHT_LAND_FINAL stage on purpose --
+            //if plane is close to the ground a go around coudld be dangerous.
+            if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
+                //Just tell the autopilot we're done landing so it will 
+                //proceed to the next mission item.  If there is no next mission
+                //item the plane will head to home point and loiter.
+                auto_state.commanded_go_around = true;
+               
+                result = MAV_RESULT_ACCEPTED;
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("Go around command accepted."));           
+            } else {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("Rejected go around command."));
+            }
+
+            //Log go around attempt to dataflash
+            if (should_log(MASK_LOG_CMD)) {
+                mavlink_mission_item_t go_around_miss_item;
+                go_around_miss_item.command = MAV_CMD_DO_GO_AROUND;
+                DataFlash.Log_Write_MavCmd(1, go_around_miss_item);
+            }
+
+            break;
+
         case MAV_CMD_DO_FENCE_ENABLE:
             result = MAV_RESULT_ACCEPTED;
             
