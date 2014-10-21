@@ -442,6 +442,11 @@ AP_AHRS_DCM::drift_correction_yaw(void)
     // integration at higher rates
     float spin_rate = _omega.length();
 
+    // sanity check _kp_yaw
+    if (_kp_yaw < AP_AHRS_YAW_P_MIN) {
+        _kp_yaw = AP_AHRS_YAW_P_MIN;
+    }
+
     // update the proportional control to drag the
     // yaw back to the right value. We use a gain
     // that depends on the spin rate. See the fastRotations.pdf
@@ -714,6 +719,11 @@ AP_AHRS_DCM::drift_correction(float deltat)
 
     // base the P gain on the spin rate
     float spin_rate = _omega.length();
+
+    // sanity check _kp value
+    if (_kp < AP_AHRS_RP_P_MIN) {
+        _kp = AP_AHRS_RP_P_MIN;
+    }
 
     // we now want to calculate _omega_P and _omega_I. The
     // _omega_P value is what drags us quickly to the
