@@ -251,6 +251,7 @@ struct PACKED log_BARO {
     float   altitude;
     float   pressure;
     int16_t temperature;
+    float   climbrate;
 };
 
 struct PACKED log_AHRS {
@@ -431,7 +432,7 @@ struct PACKED log_Ubx2 {
     { LOG_RCOUT_MSG, sizeof(log_RCOUT), \
       "RCOU",  "Ihhhhhhhh",     "TimeMS,Chan1,Chan2,Chan3,Chan4,Chan5,Chan6,Chan7,Chan8" }, \
     { LOG_BARO_MSG, sizeof(log_BARO), \
-      "BARO",  "Iffc",     "TimeMS,Alt,Press,Temp" }, \
+      "BARO",  "Iffcf", "TimeMS,Alt,Press,Temp,CRt" }, \
     { LOG_POWR_MSG, sizeof(log_POWR), \
       "POWR","ICCH","TimeMS,Vcc,VServo,Flags" },  \
     { LOG_CMD_MSG, sizeof(log_Cmd), \
