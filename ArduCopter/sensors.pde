@@ -19,13 +19,14 @@ static void init_barometer(bool full_calibration)
 }
 
 // return barometric altitude in centimeters
-static int32_t read_barometer(void)
+static void read_barometer(void)
 {
     barometer.read();
     if (should_log(MASK_LOG_IMU)) {
         Log_Write_Baro();
     }
-    int32_t balt = barometer.get_altitude() * 100.0f;
+    baro_alt = barometer.get_altitude() * 100.0f;
+    baro_climbrate = barometer.get_climb_rate() * 100.0f;
 
     // run glitch protection and update AP_Notify if home has been initialised
     baro_glitch.check_alt();
@@ -38,9 +39,6 @@ static int32_t read_barometer(void)
         }
         AP_Notify::flags.baro_glitching = report_baro_glitch;
     }
-
-    // return altitude
-    return balt;
 }
 
 // return sonar altitude in centimeters
