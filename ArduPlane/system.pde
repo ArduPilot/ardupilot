@@ -545,9 +545,11 @@ static void update_notify()
     notify.update();
 }
 
-static void resetPerfData(void) {
+static void resetPerfData(void) 
+{
     mainLoop_count                  = 0;
     G_Dt_max                        = 0;
+    G_Dt_min                        = 0;
     perf_mon_timer                  = millis();
 }
 

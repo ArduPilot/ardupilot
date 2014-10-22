@@ -734,8 +734,9 @@ static float G_Dt                                               = 0.02f;
 ////////////////////////////////////////////////////////////////////////////////
 // Timer used to accrue data and trigger recording of the performanc monitoring log message
 static uint32_t perf_mon_timer;
-// The maximum main loop execution time recorded in the current performance monitoring interval
+// The maximum and minimum main loop execution time recorded in the current performance monitoring interval
 static uint32_t G_Dt_max = 0;
+static uint32_t G_Dt_min = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 // System Timers
@@ -852,8 +853,13 @@ void loop()
     G_Dt                = delta_us_fast_loop * 1.0e-6f;
     fast_loopTimer_us   = timer;
 
-    if (delta_us_fast_loop > G_Dt_max)
+    if (delta_us_fast_loop > G_Dt_max) {
         G_Dt_max = delta_us_fast_loop;
+    }
+
+    if (delta_us_fast_loop < G_Dt_min || G_Dt_min == 0) {
+        G_Dt_min = delta_us_fast_loop;
+    }
 
     mainLoop_count++;
 
@@ -1058,11 +1064,14 @@ static void one_second_loop()
 static void log_perf_info()
 {
     if (scheduler.debug() != 0) {
-        gcs_send_text_fmt(PSTR("G_Dt_max=%lu\n"), (unsigned long)G_Dt_max);
+        gcs_send_text_fmt(PSTR("G_Dt_max=%lu G_Dt_min=%lu\n"), 
+                          (unsigned long)G_Dt_max, 
+                          (unsigned long)G_Dt_min);
     }
     if (should_log(MASK_LOG_PM))
         Log_Write_Performance();
     G_Dt_max = 0;
+    G_Dt_min = 0;
     resetPerfData();
 }
 
