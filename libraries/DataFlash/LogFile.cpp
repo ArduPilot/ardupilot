@@ -767,6 +767,7 @@ void DataFlash_Class::Log_Write_Baro(AP_Baro &baro)
         altitude      : baro.get_altitude(),
         pressure	  : baro.get_pressure(),
         temperature   : (int16_t)(baro.get_temperature() * 100),
+        climbrate     : baro.get_climb_rate()
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
