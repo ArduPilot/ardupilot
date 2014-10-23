@@ -15,7 +15,7 @@
 
 #include <AP_Param.h>
 
-#define AP_RELAY_NUM_RELAYS 4
+#define AP_RELAY_NUM_RELAYS 2
 
 /// @class	AP_Relay
 /// @brief	Class to manage the APM relay
