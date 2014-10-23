@@ -546,18 +546,6 @@ void AP_Mount::set_roi_cmd(const struct Location *target_loc)
 #endif
 }
 
-/// Set mount configuration, triggered by mission script commands
-void AP_Mount::configure_cmd()
-{
-    // TODO get the information out of the mission command and use it
-}
-
-/// Control the mount (depends on the previously set mount configuration), triggered by mission script commands
-void AP_Mount::control_cmd()
-{
-    // TODO get the information out of the mission command and use it
-}
-
 /// returns the angle (degrees*100) that the RC_Channel input is receiving
 int32_t
 AP_Mount::angle_input(RC_Channel* rc, int16_t angle_min, int16_t angle_max)
