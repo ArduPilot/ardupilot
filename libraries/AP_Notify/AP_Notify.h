@@ -38,12 +38,12 @@ public:
         uint16_t baro_glitching     : 1;    // 1 if baro altitude is not good
         uint16_t armed              : 1;    // 0 = disarmed, 1 = armed
         uint16_t pre_arm_check      : 1;    // 0 = failing checks, 1 = passed
+        uint16_t arming_failed       : 1;
         uint16_t save_trim          : 1;    // 1 if gathering trim data
         uint16_t esc_calibration    : 1;    // 1 if calibrating escs
         uint16_t failsafe_radio     : 1;    // 1 if radio failsafe
         uint16_t failsafe_battery   : 1;    // 1 if battery failsafe
         uint16_t failsafe_gps       : 1;    // 1 if gps failsafe
-        uint16_t arming_failed      : 1;    // 1 if copter failed to arm after user input
         uint16_t parachute_release  : 1;    // 1 if parachute is being released
         uint16_t ekf_bad            : 1;    // 1 if ekf is reporting problems
 
@@ -51,9 +51,19 @@ public:
         uint16_t external_leds      : 1;    // 1 if external LEDs are enabled (normally only used for copter)
     };
 
+    struct notify_events_type {
+        uint8_t user_mode_change : 1;
+        uint8_t autotune_complete : 1;
+        uint8_t autotune_failed : 1;
+        uint8_t mission_complete : 1;
+        uint8_t waypoint_complete : 1;
+        uint8_t user_mode_change_failed : 1;
+    };
+
     // the notify flags are static to allow direct class access
     // without declaring the object
     static struct notify_type flags;
+    static struct notify_events_type events;
 
     // initialisation
     void init(bool enable_external_leds);

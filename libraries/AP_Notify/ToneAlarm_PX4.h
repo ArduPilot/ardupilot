@@ -20,6 +20,9 @@
 
 #include "ToneAlarm_PX4.h"
 
+// wait 2 seconds before assuming a tone is done and continuing the continuous tone
+#define AP_NOTIFY_PX4_MAX_TONE_LENGTH_MS 2000
+
 class ToneAlarm_PX4
 {
 public:
@@ -31,21 +34,37 @@ public:
 
 private:
     /// play_tune - play one of the pre-defined tunes
-    bool play_tune(const uint8_t tune_number);
+    void play_tone(const uint8_t tone_index);
+
+    void play_string(const char *str);
+
+    void stop_cont_tone();
+    void check_cont_tone();
 
     int _tonealarm_fd;      // file descriptor for the tone alarm
 
     /// tonealarm_type - bitmask of states we track
     struct tonealarm_type {
-        uint8_t armed              : 1;    // 0 = disarmed, 1 = armed
-        uint8_t failsafe_battery   : 1;    // 1 if battery failsafe
-        uint8_t gps_glitching      : 1;    // 1 if gps position is not good
-        uint8_t failsafe_gps       : 1;    // 1 if gps failsafe
-        uint8_t baro_glitching     : 1;    // 1 if baro alt is glitching
-        uint8_t arming_failed      : 1;    // 0 = failing checks, 1 = passed
-        uint8_t parachute_release  : 1;    // 1 if parachute is being released
-        uint8_t ekf_bad            : 1;    // 1 if ekf position has gone bad
+        uint8_t armed                 : 1;    // 0 = disarmed, 1 = armed
+        uint8_t failsafe_battery      : 1;    // 1 if battery failsafe
+        uint8_t failsafe_gps          : 1;    // 1 if gps failsafe
+        uint8_t arming_failed         : 1;    // 0 = failing checks, 1 = passed
+        uint8_t parachute_release     : 1;    // 1 if parachute is being released
+        uint8_t pre_arm_check         : 1;
+        uint8_t failsafe_radio        : 1;
+        uint8_t user_mode_initialized : 1;
     } flags;
+
+    int8_t _cont_tone_playing;
+    int8_t _tone_playing;
+    uint32_t _tone_beginning_ms;
+
+    struct Tone {
+        const char *str;
+        const uint8_t continuous : 1;
+    };
+
+    const static Tone _tones[];
 };
 
 #endif // __TONE_ALARM_PX4_H__

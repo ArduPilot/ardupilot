@@ -18,6 +18,7 @@
 
 // static flags, to allow for direct class update from device drivers
 struct AP_Notify::notify_type AP_Notify::flags;
+struct AP_Notify::notify_events_type AP_Notify::events;
 
 // initialisation
 void AP_Notify::init(bool enable_external_leds)
@@ -59,4 +60,7 @@ void AP_Notify::update(void)
     externalled.update();
     buzzer.update();
 #endif
+
+    //reset the events
+    memset(&AP_Notify::events, 0, sizeof(AP_Notify::events));
 }
