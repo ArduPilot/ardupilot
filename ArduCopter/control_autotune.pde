@@ -653,6 +653,7 @@ static void autotune_attitude_control()
                 if (autotune_state.axis == AUTOTUNE_AXIS_ROLL) {
                     tune_roll_sp = tune_roll_sp * AUTOTUNE_SP_BACKOFF;
                     autotune_state.axis = AUTOTUNE_AXIS_PITCH;
+                    AP_Notify::events.autotune_next_axis = 1;
                 }else{
                     tune_pitch_sp = tune_pitch_sp * AUTOTUNE_SP_BACKOFF;
                     tune_roll_sp = min(tune_roll_sp, tune_pitch_sp);
@@ -662,6 +663,9 @@ static void autotune_attitude_control()
                     autotune_state.mode = AUTOTUNE_MODE_SUCCESS;
                     autotune_update_gcs(AUTOTUNE_MESSAGE_SUCCESS);
                     Log_Write_Event(DATA_AUTOTUNE_SUCCESS);
+
+                    // play a tone
+                    AP_Notify::events.autotune_complete = 1;
                 }
             }
         }
@@ -685,6 +689,9 @@ static void autotune_failed()
     attitude_control.limit_angle_to_rate_request(true);
     // log failure
     Log_Write_Event(DATA_AUTOTUNE_FAILED);
+
+    // play a tone
+    AP_Notify::events.autotune_failed = 1;
 }
 
 // autotune_backup_gains_and_initialise - store current gains as originals
