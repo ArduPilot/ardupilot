@@ -658,6 +658,9 @@ static void autotune_attitude_control()
                     autotune_state.mode = AUTOTUNE_MODE_SUCCESS;
                     autotune_update_gcs(AUTOTUNE_MESSAGE_SUCCESS);
                     Log_Write_Event(DATA_AUTOTUNE_SUCCESS);
+
+                    // play a tone
+                    AP_Notify::events.autotune_complete = 1;
                 }
             }
         }
@@ -681,6 +684,9 @@ static void autotune_failed()
     attitude_control.limit_angle_to_rate_request(true);
     // log failure
     Log_Write_Event(DATA_AUTOTUNE_FAILED);
+
+    // play a tone
+    AP_Notify::events.autotune_failed = 1;
 }
 
 // autotune_backup_gains_and_initialise - store current gains as originals
