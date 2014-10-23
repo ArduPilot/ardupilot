@@ -1,5 +1,21 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.2-rc13 23-Oct-2014
+Changes from 3.2-rc12
+1) DCM check triggers LAND if yaw disagrees with GPS by > 60deg (configure with DCM_CHECK_THRESH param) and in Loiter, PosHold, Auto, etc 
+2) Safety features:
+    a) landing detector checks baro climbrate between -1.5 ~ +1.5 m/s
+    b) sanity check AHRS_RP_P and AHRS_YAW_P are never less than 0.05
+    c) check set-mode requests from GCS are for this vehicle
+3) Bug fixes:
+    a) fix ch6 tuning of wp-speed (was getting stuck at zero)
+    b) parachute servo set to off position on startup
+    c) Auto Takeoff timing bug fix that could cause severe lean on takeoff
+    d) timer fix for "slow start" of motors on Pixhawk (timer was incorrectly based on 100hz APM2 main loop speed)
+4) reduced number of relays from 4 to 2 (saves memory and flash required on APM boards)
+5) reduced number of range finders from 2 to 1 (saves memory and flash on APM boards)
+6) allow logging from startup when LOG_BITMASK set to "All+DisarmedLogging" 
+------------------------------------------------------------------
 ArduCopter 3.2-rc12 10-Oct-2014
 Changes from 3.2-rc11
 1) disable sonar on APM1 and TradHeli (APM1 & APM2) to allow code to fit 
