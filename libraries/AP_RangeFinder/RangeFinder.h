@@ -22,7 +22,7 @@
 #include <AP_Param.h>
 
 // Maximum number of range finder instances available on this platform
-#define RANGEFINDER_MAX_INSTANCES 2
+#define RANGEFINDER_MAX_INSTANCES 1
 
 class AP_RangeFinder_Backend; 
  
