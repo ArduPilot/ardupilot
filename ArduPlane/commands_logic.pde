@@ -307,6 +307,7 @@ static void do_nav_wp(const AP_Mission::Mission_Command& cmd)
 
 static void do_land(const AP_Mission::Mission_Command& cmd)
 {
+    auto_state.commanded_go_around = false;
     set_next_WP(cmd.content.location);
 }
 
