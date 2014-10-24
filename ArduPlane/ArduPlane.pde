@@ -531,6 +531,9 @@ static struct {
     // have we checked for an auto-land?
     bool checked_for_autoland:1;
 
+    // denotes if a go-around has been commanded for landing
+    bool commanded_go_around:1;
+
     // Altitude threshold to complete a takeoff command in autonomous modes.  Centimeters
     int32_t takeoff_altitude_cm;
 
@@ -552,10 +555,6 @@ static struct {
 
     // time when we first pass min GPS speed on takeoff
     uint32_t takeoff_speed_time_ms;
-
-    // denotes if a go-around has been commanded for landing
-    bool commanded_go_around;
-
 } auto_state = {
     takeoff_complete : true,
     land_complete : false,
@@ -564,14 +563,14 @@ static struct {
     no_crosstrack : true,
     fbwa_tdrag_takeoff_mode : false,
     checked_for_autoland : false,
+    commanded_go_around : false,
     takeoff_altitude_cm : 0,
     takeoff_pitch_cd : 0,
     highest_airspeed : 0,
     initial_pitch_cd : 0,
     next_turn_angle  : 90.0f,
     land_sink_rate   : 0,
-    takeoff_speed_time_ms : 0,
-    commanded_go_around : false
+    takeoff_speed_time_ms : 0
 };
 
 // true if we are in an auto-throttle mode, which means
