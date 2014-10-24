@@ -125,10 +125,9 @@ static bool jump_to_landing_sequence(void)
 {
     uint16_t land_idx = mission.get_landing_sequence_start();
     if (land_idx != 0) {
-        
-        set_mode(AUTO);
-
         if (mission.set_current_cmd(land_idx)) {
+            set_mode(AUTO);
+
             //if the mission has ended it has to be restarted
             if (mission.state() == AP_Mission::MISSION_STOPPED) {
                 mission.resume();
