@@ -115,3 +115,26 @@ static void setup_landing_glide_slope(void)
         // stay within the range of the start and end locations in altitude
         constrain_target_altitude_location(loc, prev_WP_loc);
 }
+
+/* find the nearest landing sequence starting point (DO_LAND_START) and
+ * switch to that mission item.  Returns false if no DO_LAND_START available.*/
+static bool jump_to_landing_sequence(void) {
+    uint16_t land_idx = mission.get_landing_sequence_start();
+    if (land_idx != 0) {
+        
+        set_mode(AUTO);
+
+        if (mission.set_current_cmd(land_idx)) {
+            //if the mission has ended it has to be restarted
+            if (mission.state() == AP_Mission::MISSION_STOPPED) {
+                mission.resume();
+            }
+
+            gcs_send_text_P(SEVERITY_LOW, PSTR("Landing sequence begun."));
+            return true;
+        }            
+    }
+
+    gcs_send_text_P(SEVERITY_HIGH, PSTR("Unable to start landing sequence."));
+    return false;
+}
