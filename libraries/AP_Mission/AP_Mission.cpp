@@ -1241,16 +1241,17 @@ uint16_t AP_Mission::num_commands_max(void) const
 }
 
 // find the nearest landing sequence starting point (DO_LAND_START) and
-// switch to that mission item.
-bool AP_Mission::jump_to_landing_sequence() 
+// return its index.  Returns 0 if no appropriate DO_LAND_START point can
+// be found.
+uint16_t AP_Mission::get_landing_sequence_start() 
 {
     struct Location current_loc;
 
     if (!_ahrs.get_position(current_loc)) {
-        return false;
+        return 0;
     }
 
-    int16_t landing_start_index = -1;
+    uint16_t landing_start_index = 0;
     float min_distance = -1;
 
     // Go through mission looking for nearest landing start command
@@ -1268,10 +1269,6 @@ bool AP_Mission::jump_to_landing_sequence()
         }
     }
 
-    if (landing_start_index == -1) {
-        return false;
-    }
-
-    return set_current_cmd(landing_start_index);
+    return landing_start_index;
 }
 
