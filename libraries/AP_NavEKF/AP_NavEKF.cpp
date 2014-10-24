@@ -3689,8 +3689,9 @@ void NavEKF::SetFlightAndFusionModes()
     } else {
         inhibitGndState = false;
     }
-    // Don't update focal length offset state if there is no range finder or GPS, or we are flying slowly
-    if (!useRngFinder() || _fusionModeGPS == 3 || gndSpdSq < 5.0f) {
+    // Don't update focal length offset state if there is no range finder or GPS, or we are not flying fas enough to generate a useful LOS rate
+    float losRateSq = (sq(state.velocity.x) + sq(state.velocity.y)) / sq(flowStates[1] - state.position[2]);
+    if (!useRngFinder() || _fusionModeGPS == 3 || losRateSq < 0.09f || gndSpdSq < 9.0f) {
         fScaleInhibit = true;
     } else {
         fScaleInhibit = false;
