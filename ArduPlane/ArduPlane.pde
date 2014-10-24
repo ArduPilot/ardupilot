@@ -1423,9 +1423,8 @@ static void update_navigation()
             nav_controller->reached_loiter_target() && 
             labs(altitude_error_cm) < 1000) {
             // we've reached the RTL point, see if we have a landing sequence
-            if (!auto_state.checked_for_autoland) {
-                jump_to_landing_sequence();
-            }
+            jump_to_landing_sequence();
+
             // prevent running the expensive jump_to_landing_sequence
             // on every loop
             auto_state.checked_for_autoland = true;
