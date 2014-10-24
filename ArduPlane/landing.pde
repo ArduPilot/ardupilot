@@ -83,9 +83,10 @@ static bool verify_land()
     nav_controller->update_waypoint(prev_WP_loc, land_WP_loc);
 
     /*
-      we always return false as a landing mission item never
-      completes - we stay on this waypoint unless the GCS commands us
-      to change mission item or reset the mission
+      we return false as a landing mission item never completes
+
+      we stay on this waypoint unless the GCS commands us to change
+      mission item or reset the mission, or a go-around is commanded
      */
     return false;
 }
