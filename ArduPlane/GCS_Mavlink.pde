@@ -1134,14 +1134,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             } else {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("Rejected go around command."));
             }
-
-            //Log go around attempt to dataflash
-            if (should_log(MASK_LOG_CMD)) {
-                mavlink_mission_item_t go_around_miss_item;
-                go_around_miss_item.command = MAV_CMD_DO_GO_AROUND;
-                DataFlash.Log_Write_MavCmd(1, go_around_miss_item);
-            }
-
             break;
 
         case MAV_CMD_DO_FENCE_ENABLE:
