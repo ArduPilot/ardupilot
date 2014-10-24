@@ -792,6 +792,10 @@ void NavEKF::SelectVelPosFusion()
                 ResetVelocity();
                 StoreStatesReset();
             }
+        } else if(imuSampleTime_ms - lastFlowMeasTime_ms > 1000) {
+            // use GPS velocities if flow sensor fails
+            fuseVelData = true;
+            fusePosData = false;
         } else {
             fuseVelData = false;
             fusePosData = false;
@@ -4012,6 +4016,8 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
     } else {
         newDataRng = false;
     }
+    // Store time of optical flow measurement.
+    lastFlowMeasTime_ms = imuSampleTime_ms;
 }
 
 // calculate the NED earth spin vector in rad/sec
@@ -4216,6 +4222,7 @@ void NavEKF::ZeroVariables()
     secondLastFixTime_ms = imuSampleTime_ms;
     lastDecayTime_ms = imuSampleTime_ms;
     timeAtLastAuxEKF_ms = imuSampleTime_ms;
+    lastFlowMeasTime_ms = imuSampleTime_ms;
 
     gpsNoiseScaler = 1.0f;
     velTimeout = false;
