@@ -116,9 +116,13 @@ static void setup_landing_glide_slope(void)
         constrain_target_altitude_location(loc, prev_WP_loc);
 }
 
-/* find the nearest landing sequence starting point (DO_LAND_START) and
- * switch to that mission item.  Returns false if no DO_LAND_START available.*/
-static bool jump_to_landing_sequence(void) {
+/* 
+   find the nearest landing sequence starting point (DO_LAND_START) and
+   switch to that mission item.  Returns false if no DO_LAND_START
+   available.
+ */
+static bool jump_to_landing_sequence(void) 
+{
     uint16_t land_idx = mission.get_landing_sequence_start();
     if (land_idx != 0) {
         
