@@ -115,9 +115,10 @@ static float    orig_pitch_rp = 0, orig_pitch_ri, orig_pitch_rd, orig_pitch_sp; 
 static float    tune_roll_rp, tune_roll_rd, tune_roll_sp;                   // currently being tuned parameter values
 static float    tune_pitch_rp, tune_pitch_rd, tune_pitch_sp;                // currently being tuned parameter values
 
-// autotune_start - should be called when the ch7/ch8 switch is switched ON
-static void autotune_start()
+// autotune_init - should be called when autotune mode is selected
+static bool autotune_init(bool ignore_checks)
 {
+    bool success=true;
     switch (autotune_state.mode) {
         case AUTOTUNE_MODE_FAILED:
             // autotune has been run but failed so reset state to uninitialised
@@ -125,8 +126,7 @@ static void autotune_start()
             // no break to allow fall through to restart the tuning
         case AUTOTUNE_MODE_UNINITIALISED:
             // autotune has never been run
-            // switch into the AUTOTUNE flight mode
-            if (set_mode(AUTOTUNE)) {
+            if (success=autotune_start(false)) {
                 // so store current gains as original gains
                 autotune_backup_gains_and_initialise();
                 // advance mode to tuning
@@ -138,8 +138,7 @@ static void autotune_start()
 
         case AUTOTUNE_MODE_TUNING:
             // we are restarting tuning after the user must have switched ch7/ch8 off so we restart tuning where we left off
-            // set_mode to AUTOTUNE
-            if (set_mode(AUTOTUNE)) {
+            if (success=autotune_start(false)) {
                 // reset gains to tuning-start gains (i.e. low I term)
                 autotune_load_intra_test_gains();
                 // write dataflash log even and send message to ground station
@@ -155,6 +154,7 @@ static void autotune_start()
             Log_Write_Event(DATA_AUTOTUNE_PILOT_TESTING);
             break;
     }
+    return success;
 }
 
 // autotune_stop - should be called when the ch7/ch8 switch is switched OFF
@@ -174,8 +174,8 @@ static void autotune_stop()
     // we expect the caller will change the flight mode back to the flight mode indicated by the flight mode switch
 }
 
-// autotune_init - initialise autotune flight mode
-static bool autotune_init(bool ignore_checks)
+// autotune_start - initialise autotune flight mode
+static bool autotune_start(bool ignore_checks)
 {
     // only allow flip from Stabilize or AltHold flight modes
     if (control_mode != STABILIZE && control_mode != ALT_HOLD) {
