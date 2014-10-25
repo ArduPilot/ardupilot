@@ -224,8 +224,14 @@ void LogReader::process_copter(uint8_t type, uint8_t *data, uint16_t length)
 
     case LOG_COPTER_ATTITUDE_MSG: {
         struct log_Copter_Attitude msg;
-        if(sizeof(msg) != length) {
-            printf("Bad ATTITUDE length %u should be %u\n", length, sizeof(msg));
+        if (sizeof(msg) == length+sizeof(uint16_t)*2) {
+            // old style, without errors
+            memset(&msg, 0, sizeof(msg));
+            memcpy(&msg, data, length);
+        } else if (sizeof(msg) == length) {
+            memcpy(&msg, data, sizeof(msg));
+        } else {
+            printf("Bad ATTITUDE length %u should be %u\n", (unsigned)length, (unsigned)sizeof(msg));
             exit(1);
         }
         memcpy(&msg, data, sizeof(msg));
@@ -455,11 +461,17 @@ bool LogReader::update(uint8_t &type)
 
     case LOG_BARO_MSG: {
         struct log_BARO msg;
-        if(sizeof(msg) != f.length) {
-            printf("Bad LOG_BARO length\n");
+        if (sizeof(msg) == f.length+sizeof(float)) {
+            // old style, without climbrate
+            memset(&msg, 0, sizeof(msg));
+            memcpy(&msg, data, f.length);
+        } else if (sizeof(msg) == f.length) {
+            memcpy(&msg, data, sizeof(msg));
+        } else {
+            printf("Bad LOG_BARO length %u expected %u\n",
+                   (unsigned)f.length, (unsigned)sizeof(msg));
             exit(1);
         }
-        memcpy(&msg, data, sizeof(msg));
         wait_timestamp(msg.timestamp);
         baro.setHIL(msg.pressure, msg.temperature*0.01f);
         break;
