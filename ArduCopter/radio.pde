@@ -108,7 +108,7 @@ static void read_radio()
 
         // flag we must have an rc receiver attached
         if (!failsafe.rc_override_active) {
-            ap.rc_receiver_present = true;
+            set_rc_receiver_present(true);
         }
 
         // update output on any aux channels, for manual passthru

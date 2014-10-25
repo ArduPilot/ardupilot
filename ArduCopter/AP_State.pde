@@ -44,6 +44,13 @@ void set_simple_mode(uint8_t b)
 }
 
 // ---------------------------------------------
+static void set_rc_receiver_present(bool b) {
+    if (ap.rc_receiver_present != b) {
+        AP_Notify::events.rc_contact_made = ap.rc_receiver_present = b;
+    }
+}
+
+// ---------------------------------------------
 static void set_failsafe_radio(bool b)
 {
     // only act on changes
