@@ -171,15 +171,17 @@ void ToneAlarm_PX4::update()
         flags.user_mode_initialized = 1;
     }
 
-    // notify the user when arming fails
-    if (flags.arming_failed != AP_Notify::flags.arming_failed) {
-        flags.arming_failed = AP_Notify::flags.arming_failed;
-        if (flags.arming_failed) {
-            play_tone(AP_NOTIFY_PX4_TONE_QUIET_NEG_FEEDBACK);
+    // notify the user when RC contact is first gained
+    if (AP_Notify::events.rc_contact_made) {
+        if (AP_Notify::flags.armed) {
+            // possible if flying via GCS when RC is turned on
+            play_tone(AP_NOTIFY_PX4_TONE_LOUD_POS_FEEDBACK);
+        } else {
+            play_tone(AP_NOTIFY_PX4_TONE_QUIET_POS_FEEDBACK);
         }
     }
 
-    // notify the user when RC contact is lost
+    // notify the user when RC contact is lost or regained
     if (flags.failsafe_radio != AP_Notify::flags.failsafe_radio) {
         flags.failsafe_radio = AP_Notify::flags.failsafe_radio;
         if (flags.failsafe_radio) {
@@ -194,6 +196,14 @@ void ToneAlarm_PX4::update()
             } else {
                 play_tone(AP_NOTIFY_PX4_TONE_QUIET_POS_FEEDBACK);
             }
+        }
+    }
+
+    // notify the user when arming fails
+    if (flags.arming_failed != AP_Notify::flags.arming_failed) {
+        flags.arming_failed = AP_Notify::flags.arming_failed;
+        if (flags.arming_failed) {
+            play_tone(AP_NOTIFY_PX4_TONE_QUIET_NEG_FEEDBACK);
         }
     }
 

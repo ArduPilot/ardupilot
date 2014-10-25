@@ -58,6 +58,7 @@ public:
         uint8_t mission_complete : 1;
         uint8_t waypoint_complete : 1;
         uint8_t user_mode_change_failed : 1;
+        uint8_t rc_contact_made : 1;
     };
 
     // the notify flags are static to allow direct class access
