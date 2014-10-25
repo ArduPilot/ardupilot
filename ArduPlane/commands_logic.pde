@@ -513,7 +513,14 @@ static bool verify_continue_and_change_alt()
     if (abs(adjusted_altitude_cm() - next_WP_loc.alt) <= 500) {
         return true;
     }
-    
+   
+    //Is the next_WP less than 200 m away?
+    if (get_distance(prev_WP_loc, next_WP_loc) < 200.f) {
+        //push another 300 m down the line
+        int32_t next_wp_bearing_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
+        location_update(next_WP_loc, next_wp_bearing_cd * 0.01f, 300.f);
+    }
+
     //keep flying the same course
     nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
 
