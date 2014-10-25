@@ -238,8 +238,14 @@ void AP_AHRS::update_trig(void)
     _cos_yaw = constrain_float(yaw_vector.x, -1.0, 1.0);
 
     // cos_roll, cos_pitch
-    _cos_pitch = safe_sqrt(1 - (temp.c.x * temp.c.x));
-    _cos_roll = temp.c.z / _cos_pitch;
+    float cx2 = temp.c.x * temp.c.x;
+    if (cx2 >= 1.0f) {
+        _cos_pitch = 0;
+        _cos_roll = 1.0f;
+    } else {
+        _cos_pitch = safe_sqrt(1 - cx2);
+        _cos_roll = temp.c.z / _cos_pitch;
+    }
     _cos_pitch = constrain_float(_cos_pitch, 0, 1.0);
     _cos_roll = constrain_float(_cos_roll, -1.0, 1.0); // this relies on constrain_float() of infinity doing the right thing,which it does do in avr-libc
 
