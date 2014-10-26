@@ -285,6 +285,24 @@ void AP_GPS_UBLOX::log_mon_hw2(void)
     };
     gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));    
 }
+
+void AP_GPS_UBLOX::log_acc(void)
+{
+    if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
+        return;
+    }
+
+    struct log_Ubx3 pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_UBX3_MSG),
+        timestamp : hal.scheduler->millis(),
+        instance  : state.instance,
+        hAcc : _hAcc,
+        vAcc : _vAcc,
+        sAcc : _sAcc,
+        pAcc : _pAcc,
+    };
+    gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
+}
 #endif // UBLOX_HW_LOGGING
 
 void AP_GPS_UBLOX::unexpected_message(void)
@@ -388,6 +406,8 @@ AP_GPS_UBLOX::_parse_gps(void)
         state.location.lat = -353632610L;
         state.location.alt = 58400;
 #endif
+        _hAcc = _buffer.posllh.horizontal_accuracy;
+        _vAcc = _buffer.posllh.vertical_accuracy;
         break;
     case MSG_STATUS:
         Debug("MSG_STATUS fix_status=%u fix_type=%u",
@@ -450,6 +470,9 @@ AP_GPS_UBLOX::_parse_gps(void)
         state.time_week_ms = hal.scheduler->millis() + 3*60*60*1000 + 37000;
         state.last_gps_time_ms = hal.scheduler->millis();
 #endif
+        _pAcc = _buffer.solution.position_accuracy_3d;
+        _sAcc = _buffer.solution.speed_accuracy;
+        _last_sol_time = _buffer.solution.time;
         break;
     case MSG_VELNED:
         Debug("MSG_VELNED");
@@ -475,6 +498,7 @@ AP_GPS_UBLOX::_parse_gps(void)
     // this ensures we don't use stale data
     if (_new_position && _new_speed && _last_vel_time == _last_pos_time) {
         _new_speed = _new_position = false;
+        _ubx3_sent = false;
 		_fix_count++;
         if ((hal.scheduler->millis() - _last_5hz_time) > 15000U && !need_rate_update) {
             // the GPS is running slow. It possibly browned out and
@@ -498,6 +522,12 @@ AP_GPS_UBLOX::_parse_gps(void)
 		}
         return true;
     }
+#if UBLOX_HW_LOGGING
+    if(!_ubx3_sent && _last_pos_time == _last_sol_time) {
+        _ubx3_sent = true;
+        log_acc();
+    }
+#endif // UBLOX_HW_LOGGING
     return false;
 }
 
