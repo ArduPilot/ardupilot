@@ -111,6 +111,14 @@ void AP_AHRS_NavEKF::update(void)
     }
 }
 
+const Vector3f &AP_AHRS_NavEKF::get_accel_ef(void) const {
+    if(ekf_started && _ekf_use && EKF.attHealthy()) {
+        return _dcm_matrix * _ins.get_accel();
+    }
+    return AP_AHRS_DCM::get_accel_ef();
+}
+
+
 void AP_AHRS_NavEKF::reset(bool recover_eulers)
 {
     AP_AHRS_DCM::reset(recover_eulers);
