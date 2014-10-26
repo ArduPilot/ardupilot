@@ -383,6 +383,18 @@ bool NavEKF::healthy(void) const
     return true;
 }
 
+bool NavEKF::attHealthy(void) const
+{
+    if (!statesInitialised) {
+        return false;
+    }
+    if (state.quat.is_nan()) {
+        return false;
+    }
+
+    return true;
+}
+
 // return true if filter is dead-reckoning height
 bool NavEKF::HeightDrifting(void) const
 {
