@@ -776,15 +776,26 @@ void NavEKF::SelectVelPosFusion()
         readGpsData();
 
         // command fusion of GPS data and reset states as required
-        if (newDataGps && (_fusionModeGPS < 3)) {
+        if (newDataGps) {
             // reset data arrived flag
             newDataGps = false;
             // reset state updates and counter used to spread fusion updates across several frames to reduce 10Hz pulsing
             memset(&gpsIncrStateDelta[0], 0, sizeof(gpsIncrStateDelta));
             gpsUpdateCount = 0;
-            // enable fusion
-            fuseVelData = true;
-            fusePosData = true;
+            // select which of velocity and position measurements will be fused
+            if (_fusionModeGPS < 3) {
+                // use both if GPS is primary sensor
+                fuseVelData = true;
+                fusePosData = true;
+            } else if (imuSampleTime_ms - lastFlowMeasTime_ms > 1000) {
+                // only use velocity if GPS is secondary sensor and optical flow sensing has failed
+                fuseVelData = true;
+                fusePosData = false;
+            } else {
+                // don't use GPS measurements if GPS is a secondary sensor and flow sensing is available
+                fuseVelData = false;
+                fusePosData = false;
+            }
             // If a long time since last GPS update, then reset position and velocity and reset stored state history
             uint32_t gpsRetryTimeout = useAirspeed() ? _gpsRetryTimeUseTAS : _gpsRetryTimeNoTAS;
             if (imuSampleTime_ms - secondLastFixTime_ms > gpsRetryTimeout) {
@@ -792,10 +803,6 @@ void NavEKF::SelectVelPosFusion()
                 ResetVelocity();
                 StoreStatesReset();
             }
-        } else if(imuSampleTime_ms - lastFlowMeasTime_ms > 1000) {
-            // use GPS velocities if flow sensor fails
-            fuseVelData = true;
-            fusePosData = false;
         } else {
             fuseVelData = false;
             fusePosData = false;
