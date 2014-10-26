@@ -316,11 +316,9 @@ static AP_Camera camera(&relay);
 ////////////////////////////////////////////////////////////////////////////////
 // Optical flow sensor
 ////////////////////////////////////////////////////////////////////////////////
- #if OPTFLOW == ENABLED
 #if  CONFIG_HAL_BOARD == HAL_BOARD_PX4
 static AP_OpticalFlow_PX4 optflow(ahrs);
 #endif
- #endif
 
 //Rally Ponints
 AP_Rally rally(ahrs);
@@ -810,9 +808,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { barometer_accumulate,   1,    900 },
     { update_notify,          1,    300 },
     { read_rangefinder,       1,    500 },
-    #if OPTFLOW == ENABLED
-        { update_optical_flow,   1,     500 },
-    #endif
+    { update_optical_flow,    1,    500 },
     { one_second_loop,       50,   1000 },
     { check_long_failsafe,   15,   1000 },
     { read_receiver_rssi,     5,   1000 },
@@ -1564,19 +1560,12 @@ static void update_flight_stage(void)
 }
 
 // called at 100hz but data from sensor only arrives at 10 Hz
-#if OPTFLOW == ENABLED
 static void update_optical_flow(void)
 {
     static uint32_t last_of_update = 0;
 
-    // exit immediately if not enabled
-    if (!optflow.enabled()) {
-        return;
-    }
-
     // read from sensor
     optflow.update();
-
     // write to log and send to EKF if new data has arrived
     if (optflow.last_update() != last_of_update) {
         last_of_update = optflow.last_update();
@@ -1591,7 +1580,5 @@ static void update_optical_flow(void)
         ahrs.writeOptFlowMeas(flowQuality, rawFlowRates, rawGyroRates, last_of_update, rangefinder_state.in_range_count, ground_distance_m);
     }
 }
-#endif  // OPTFLOW == ENABLED
-
 
 AP_HAL_MAIN();
