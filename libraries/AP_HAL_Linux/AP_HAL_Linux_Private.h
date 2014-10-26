@@ -13,6 +13,7 @@
 #include "Storage.h"
 #include "GPIO.h"
 #include "RCInput.h"
+#include "RCInput_Navio.h"
 #include "RCOutput_PRU.h"
 #include "RCOutput_Navio.h"
 #include "Semaphores.h"
