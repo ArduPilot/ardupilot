@@ -1,6 +1,8 @@
 #include <AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLE
+    
 #include <stdio.h>
 #include <sys/time.h>
 #include <stdio.h>
@@ -61,4 +63,4 @@ void LinuxRCInput_PRU::_timer_tick()
     }
 }
 
-#endif // CONFIG_HAL_BOARD
+#endif // CONFIG_HAL_BOARD_SUBTYPE

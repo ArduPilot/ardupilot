@@ -20,6 +20,7 @@ namespace Linux {
     class LinuxDigitalSource;
     class LinuxRCInput;
     class LinuxRCInput_PRU;
+    class LinuxRCInput_Navio;
     class LinuxRCOutput_PRU;
     class LinuxRCOutput_Navio;
     class LinuxSemaphore;
