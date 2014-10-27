@@ -249,6 +249,11 @@ void LinuxRCInput::_process_dsm_pulse(uint16_t width_s0, uint16_t width_s1)
 
     byte_ofs = dsm_state.bit_ofs/10;
     bit_ofs = dsm_state.bit_ofs%10;
+    
+    if(byte_ofs > 15) {
+        // invalid data
+        goto reset;
+    }
 
     // pull in the high bits
     nbits = bits_s0;
