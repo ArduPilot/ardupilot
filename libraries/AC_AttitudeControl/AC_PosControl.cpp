@@ -274,7 +274,7 @@ void AC_PosControl::pos_to_rate_z()
     }
 
     // calculate _vel_target.z using from _pos_error.z using sqrt controller
-    _vel_target.z = sqrt_controller(_pos_error.z, _p_alt_pos.kP(), _accel_z_cms);
+    _vel_target.z = AC_AttitudeControl::sqrt_controller(_pos_error.z, _p_alt_pos.kP(), _accel_z_cms);
 
     // call rate based throttle controller which will update accel based throttle controller targets
     rate_to_accel_z();
