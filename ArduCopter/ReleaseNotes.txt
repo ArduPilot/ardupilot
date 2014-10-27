@@ -1,5 +1,9 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.2-rc14 27-Oct-2014
+Changes from 3.2-rc13
+1) Bug fix to DCM-check to require one continuous second of bad heading before triggering LAND
+------------------------------------------------------------------
 ArduCopter 3.2-rc13 23-Oct-2014
 Changes from 3.2-rc12
 1) DCM check triggers LAND if yaw disagrees with GPS by > 60deg (configure with DCM_CHECK_THRESH param) and in Loiter, PosHold, Auto, etc 
