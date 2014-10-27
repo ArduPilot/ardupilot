@@ -86,6 +86,8 @@ float           fast_atan(float v);
 //      origin source: https://gist.github.com/volkansalma/2972237/raw/
 float           fast_atan2(float y, float x);
 
+float sqrt_controller(float error, float p, float second_ord_lim);
+
 #if ROTATION_COMBINATION_SUPPORT
 // find a rotation that is the combination of two other
 // rotations. This is used to allow us to add an overall board
