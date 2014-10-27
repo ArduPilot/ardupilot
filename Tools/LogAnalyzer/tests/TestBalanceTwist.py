@@ -31,7 +31,7 @@ class TestBalanceTwist(Test):
         ch = zip(*ch)
         num_channels = 0
         for i in range(len(ch)):
-            ch[i] = filter(lambda x: x != 0, ch[i])
+            ch[i] = filter(lambda x: (x>0 and x<3000), ch[i])
             if num_channels < len(ch[i]):
                 num_channels = len(ch[i])
 
