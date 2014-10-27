@@ -81,12 +81,12 @@ void ekf_dcm_check()
             }
         }
     } else {
-        // if compass is flagged as bad
-        if (ekf_check_state.bad_compass) {
-            // reduce counter
+        // reduce counter
+        if (ekf_check_state.fail_count_compass > 0) {
             ekf_check_state.fail_count_compass--;
-            // if counter reaches zero then clear flag
-            if (ekf_check_state.fail_count_compass == 0) {
+
+            // if compass is flagged as bad and the counter reaches zero then clear flag
+            if (ekf_check_state.bad_compass && ekf_check_state.fail_count_compass == 0) {
                 ekf_check_state.bad_compass = false;
                 // log recovery in the dataflash
                 Log_Write_Error(ERROR_SUBSYSTEM_EKFINAV_CHECK, ERROR_CODE_EKFINAV_CHECK_VARIANCE_CLEARED);
