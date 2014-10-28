@@ -3,6 +3,8 @@
 // Function that will read the radio data, limit servos and trigger a failsafe
 // ----------------------------------------------------------------------------
 
+#define THR_DEAD_ZONE 30
+
 static void default_dead_zones()
 {
     g.rc_1.set_default_dead_zone(30);
@@ -12,7 +14,7 @@ static void default_dead_zones()
     g.rc_4.set_default_dead_zone(15);
     g.rc_8.set_default_dead_zone(10);
 #else
-    g.rc_3.set_default_dead_zone(30);
+    g.rc_3.set_default_dead_zone(THR_DEAD_ZONE);
     g.rc_4.set_default_dead_zone(40);
 #endif
     g.rc_6.set_default_dead_zone(0);
@@ -23,7 +25,7 @@ static void init_rc_in()
     // set rc channel ranges
     g.rc_1.set_angle(ROLL_PITCH_INPUT_MAX);
     g.rc_2.set_angle(ROLL_PITCH_INPUT_MAX);
-    g.rc_3.set_range(g.throttle_min, g.throttle_max);
+    g.rc_3.set_range(THR_DEAD_ZONE/2, g.throttle_max);
     g.rc_4.set_angle(4500);
 
     g.rc_1.set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
