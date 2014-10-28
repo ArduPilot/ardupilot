@@ -787,8 +787,8 @@ void NavEKF::SelectVelPosFusion()
                 // use both if GPS is primary sensor
                 fuseVelData = true;
                 fusePosData = true;
-            } else if (imuSampleTime_ms - lastFlowMeasTime_ms > 1000) {
-                // only use velocity if GPS is secondary sensor and optical flow sensing has failed
+            } else if (forceUseGPS) {
+                // we use GPS velocity data to constrain drift when optical flow measurements have failed
                 fuseVelData = true;
                 fusePosData = false;
             } else {
@@ -2539,6 +2539,21 @@ void NavEKF::RunAuxiliaryEKF()
     // start performance timer
     perf_begin(_perf_OpticalFlowEKF);
 
+    // calculate a predicted LOS rate squared
+    float losRateSq = (sq(state.velocity.x) + sq(state.velocity.y)) / sq(flowStates[1] - state.position[2]);
+    // don't update terrain offset state if there is no range finder and not generating enough LOS rate, or without GPS, as it is poorly observable
+    if ((losRateSq < 0.01f || _fusionModeGPS == 3) && !fuseRngData) {
+        inhibitGndState = true;
+    } else {
+        inhibitGndState = false;
+    }
+    // Don't update focal length offset if there is no range finder or not using GPS, or we are not flying fast enough to generate a useful LOS rate
+    if (!fuseRngData || _fusionModeGPS == 3 || losRateSq < 0.1f || gpsGndSpd < 5.0f) {
+        fScaleInhibit = true;
+    } else {
+        fScaleInhibit = false;
+    }
+
     // propagate ground position state noise each time this is called using the difference in position since the last observations and an RMS gradient assumption
     // limit distance to prevent intialisation afer bad gps causing bad numerical conditioning
     if (!inhibitGndState) {
@@ -3690,19 +3705,6 @@ void NavEKF::SetFlightAndFusionModes()
     bool magCalDenied = (!use_compass() || staticMode || (_magCal == 2));
     // inhibit the magnetic field calibration if not requested or denied
     inhibitMagStates = (!magCalRequested || magCalDenied);
-    // don't update terrain offset state if there is no range finder and flying at low velocity, or without GPS, as it is poorly observable
-    if ((!highGndSpdStage2 || (imuSampleTime_ms - lastFixTime_ms) > 1000) && !useRngFinder()) {
-        inhibitGndState = true;
-    } else {
-        inhibitGndState = false;
-    }
-    // Don't update focal length offset state if there is no range finder or GPS, or we are not flying fas enough to generate a useful LOS rate
-    float losRateSq = (sq(state.velocity.x) + sq(state.velocity.y)) / sq(flowStates[1] - state.position[2]);
-    if (!useRngFinder() || _fusionModeGPS == 3 || losRateSq < 0.09f || gndSpdSq < 9.0f) {
-        fScaleInhibit = true;
-    } else {
-        fScaleInhibit = false;
-    }
 }
 
 // initialise the covariance matrix
@@ -3985,7 +3987,6 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
     // A positive Y rate is produced by a positive velocity over ground in the Y direction
     // This filter uses a different definition of optical flow rates to the sensor with a positive optical flow rate produced by a
     // negative rotation about that axis. For example a positive rotation of the flight vehicle about its X (roll) axis would produce a negative X flow rate
-    flowMeaTime_ms = msecFlowMeas;
     flowQuality = rawFlowQuality;
     // recall vehicle states at mid sample time for flow observations allowing for delays
     RecallStates(statesAtFlowTime, flowMeaTime_ms - _msecFLowDelay - flowTimeDeltaAvg_ms/2);
@@ -4012,20 +4013,32 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
         // set flag that will trigger observations
         newDataFlow = true;
         holdVelocity = false;
+        flowMeaTime_ms = msecFlowMeas;
     } else {
         newDataFlow = false;
-        holdVelocity = true;
     }
     // Use range finder if 3 or more consecutive good samples. This reduces likelihood of using bad data.
     if (rangeHealth >= 3) {
         statesAtRngTime = statesAtFlowTime;
         rngMea = rawSonarRange;
         newDataRng = true;
+        rngMeaTime_ms = msecFlowMeas;
     } else {
         newDataRng = false;
     }
-    // Store time of optical flow measurement.
-    lastFlowMeasTime_ms = imuSampleTime_ms;
+    // if we don't have flow measurements we use GPS velocity if available or else
+    // dead reckon using current velocity vector
+    if (imuSampleTime_ms - flowMeaTime_ms > 1000) {
+        forceUseGPS  = true;
+        if (imuSampleTime_ms - lastFixTime_ms > 1000) {
+            holdVelocity = true;
+        } else {
+            holdVelocity = false;
+        }
+    } else {
+        forceUseGPS  = false;
+        holdVelocity = false;
+    }
 }
 
 // calculate the NED earth spin vector in rad/sec
@@ -4230,7 +4243,9 @@ void NavEKF::ZeroVariables()
     secondLastFixTime_ms = imuSampleTime_ms;
     lastDecayTime_ms = imuSampleTime_ms;
     timeAtLastAuxEKF_ms = imuSampleTime_ms;
-    lastFlowMeasTime_ms = imuSampleTime_ms;
+    flowMeaTime_ms = imuSampleTime_ms;
+    prevFlowFusionTime_ms = imuSampleTime_ms;
+    rngMeaTime_ms = imuSampleTime_ms;
 
     gpsNoiseScaler = 1.0f;
     velTimeout = false;
@@ -4272,7 +4287,6 @@ void NavEKF::ZeroVariables()
     newDataRng  = false;
     flowFusePerformed = false;
     fuseOptFlowData = false;
-    flowMeaTime_ms = imuSampleTime_ms;
     memset(&Popt[0][0], 0, sizeof(Popt));
     flowStates[0] = 1.0f;
     flowStates[1] = 0.0f;
@@ -4280,10 +4294,10 @@ void NavEKF::ZeroVariables()
     prevPosE = gpsPosNE.y;
     fuseRngData = false;
     inhibitGndState = true;
-    prevFlowFusionTime_ms = imuSampleTime_ms; // time the last flow measurement was fused
     flowGyroBias.x = 0;
     flowGyroBias.y = 0;
     holdVelocity = false;
+    forceUseGPS = false;
 }
 
 // return true if we should use the airspeed sensor

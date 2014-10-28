@@ -556,6 +556,7 @@ private:
     float flowRadXY[2];             // raw (non motion compensated) optical flow angular rates (rad/sec)
     uint32_t flowMeaTime_ms;        // time stamp from latest flow measurement (msec)
     uint8_t flowQuality;            // unsigned integer representing quality of optical flow data. 255 is maximum quality.
+    uint32_t rngMeaTime_ms;         // time stamp from latest range measurement (msec)
     float DCM33FlowMin;             // If Tbn(3,3) is less than this number, optical flow measurements will not be fused as tilt is too high.
     float fScaleFactorPnoise;       // Process noise added to focal length scale factor state variance at each time step
     Vector3f omegaAcrossFlowTime;   // body angular rates averaged across the optical flow sample period
@@ -587,8 +588,8 @@ private:
     uint8_t flowUpdateCountMax;     // limit on the number of minor state corrections using optical flow data
     float flowUpdateCountMaxInv;    // floating point inverse of flowUpdateCountMax
     bool newDataRng;                // true when new valid range finder data has arrived.
-    bool holdVelocity;              // true wehn holding velocity in optical flow mode when no flow measurements are available
-    uint32_t lastFlowMeasTime_ms;    // time of last optical flow measurement
+    bool holdVelocity;              // true when holding velocity in optical flow mode when no flow measurements are available
+    bool forceUseGPS;               // true when lack of optical flow data forces us to use GPS
 
     // states held by optical flow fusion across time steps
     // optical flow X,Y motion compensated rate measurements are fused across two time steps
