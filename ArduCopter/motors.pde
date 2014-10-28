@@ -634,7 +634,9 @@ static void init_disarm_motors()
     Log_Write_Event(DATA_DISARMED);
 
     // suspend logging
-    DataFlash.EnableWrites(false);
+    if (!(g.log_bitmask & MASK_LOG_WHEN_DISARMED)) {
+        DataFlash.EnableWrites(false);
+    }
 
     // disable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(false);
