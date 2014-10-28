@@ -75,6 +75,10 @@ public:
         return _omega_I;
     }
 
+    // reset the current gyro drift estimate
+    //  should be called if gyro offsets are recalculated
+    void reset_gyro_drift(void);
+
     // Methods
     void            update(void);
     void            reset(bool recover_eulers = false);

@@ -184,6 +184,10 @@ public:
     // return the current estimate of the gyro drift
     virtual const Vector3f &get_gyro_drift(void) const = 0;
 
+    // reset the current gyro drift estimate
+    //  should be called if gyro offsets are recalculated
+    virtual void reset_gyro_drift(void) = 0;
+
     // reset the current attitude, used on new IMU calibration
     virtual void reset(bool recover_eulers=false) = 0;
 
