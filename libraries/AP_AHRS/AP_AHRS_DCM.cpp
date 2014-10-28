@@ -36,6 +36,15 @@ extern const AP_HAL::HAL& hal;
 // http://gentlenav.googlecode.com/files/fastRotations.pdf
 #define SPIN_RATE_LIMIT 20
 
+// reset the current gyro drift estimate
+//  should be called if gyro offsets are recalculated
+void
+AP_AHRS_DCM::reset_gyro_drift(void)
+{
+    _omega_I.zero();
+    _omega_I_sum.zero();
+    _omega_I_sum_time = 0;
+}
 
 // run a full DCM update round
 void

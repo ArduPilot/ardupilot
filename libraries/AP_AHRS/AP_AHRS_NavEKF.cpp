@@ -50,6 +50,16 @@ const Vector3f &AP_AHRS_NavEKF::get_gyro_drift(void) const
     return _gyro_bias;
 }
 
+// reset the current gyro drift estimate
+//  should be called if gyro offsets are recalculated
+void AP_AHRS_NavEKF::reset_gyro_drift(void)
+{
+    // update DCM
+    AP_AHRS_DCM::reset_gyro_drift();
+
+    // To-Do: add call to do the same on EKF
+}
+
 void AP_AHRS_NavEKF::update(void)
 {
     // we need to restore the old DCM attitude values as these are

@@ -49,6 +49,10 @@ public:
     // return the current drift correction integrator value
     const Vector3f &get_gyro_drift(void) const;
 
+    // reset the current gyro drift estimate
+    //  should be called if gyro offsets are recalculated
+    void reset_gyro_drift(void);
+
     void            update(void);
     void            reset(bool recover_eulers = false);
 
