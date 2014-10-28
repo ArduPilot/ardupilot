@@ -318,6 +318,11 @@ static void startup_ground(bool force_gyro_cal)
     report_ins();
  #endif
 
+    // reset ahrs gyro bias
+    if (force_gyro_cal) {
+        ahrs.reset_gyro_drift();
+    }
+
     // setup fast AHRS gains to get right attitude
     ahrs.set_fast_gains(true);
 

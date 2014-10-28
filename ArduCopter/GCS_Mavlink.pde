@@ -1106,6 +1106,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             if (packet.param1 == 1) {
                 // gyro offset calibration
                 ins.init_gyro();
+                // reset ahrs gyro bias
+                ahrs.reset_gyro_drift();
                 result = MAV_RESULT_ACCEPTED;
             }
             if (packet.param3 == 1) {
