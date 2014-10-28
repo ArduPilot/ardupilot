@@ -289,6 +289,7 @@ private:
     void write_logging_headers(void);
     void log_mon_hw(void);
     void log_mon_hw2(void);
+    void log_accuracy(void);
 };
 
 #endif // __AP_GPS_UBLOX_H__

@@ -287,6 +287,21 @@ void AP_GPS_UBLOX::log_mon_hw2(void)
     };
     gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
 }
+
+void AP_GPS_UBLOX::log_accuracy(void) {
+    if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
+        return;
+    }
+    struct log_Ubx3 pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_UBX3_MSG),
+        timestamp  : hal.scheduler->millis(),
+        instance   : state.instance,
+        hAcc     : state.horizontal_accuracy,
+        vAcc     : state.vertical_accuracy,
+        sAcc     : state.speed_accuracy
+    };
+    gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
+}
 #endif // UBLOX_HW_LOGGING
 
 void AP_GPS_UBLOX::unexpected_message(void)
@@ -390,6 +405,10 @@ AP_GPS_UBLOX::_parse_gps(void)
         state.location.lat = -353632610L;
         state.location.alt = 58400;
 #endif
+        state.horizontal_accuracy = _buffer.posllh.horizontal_accuracy*1.0e-3f;
+        state.vertical_accuracy = _buffer.posllh.vertical_accuracy*1.0e-3f;
+        state.have_horizontal_accuracy = true;
+        state.have_vertical_accuracy = true;
         break;
     case MSG_STATUS:
         Debug("MSG_STATUS fix_status=%u fix_type=%u",
@@ -462,6 +481,8 @@ AP_GPS_UBLOX::_parse_gps(void)
         state.velocity.x = _buffer.velned.ned_north * 0.01f;
         state.velocity.y = _buffer.velned.ned_east * 0.01f;
         state.velocity.z = _buffer.velned.ned_down * 0.01f;
+        state.have_speed_accuracy = true;
+        state.speed_accuracy = _buffer.velned.speed_accuracy*0.01f;
         _new_speed = true;
         break;
     default:
@@ -498,6 +519,11 @@ AP_GPS_UBLOX::_parse_gps(void)
 			_send_message(CLASS_CFG, MSG_CFG_NAV_SETTINGS, NULL, 0);
             _fix_count = 0;
 		}
+
+#if UBLOX_HW_LOGGING
+        log_accuracy();
+#endif //UBLOX_HW_LOGGING
+
         return true;
     }
     return false;
