@@ -135,7 +135,13 @@ public:
         uint16_t hdop;                      ///< horizontal dilution of precision in cm
         uint8_t num_sats;                   ///< Number of visible satelites        
         Vector3f velocity;                  ///< 3D velocitiy in m/s, in NED format
+        float speed_accuracy;
+        float horizontal_accuracy;
+        float vertical_accuracy;
         bool have_vertical_velocity:1;      ///< does this GPS give vertical velocity?
+        bool have_speed_accuracy:1;
+        bool have_horizontal_accuracy:1;
+        bool have_vertical_accuracy:1;
         uint32_t last_gps_time_ms;          ///< the system time we got the last GPS timestamp, milliseconds
     };
 
@@ -178,6 +184,42 @@ public:
     }
     const Location &location() const {
         return location(primary_instance);
+    }
+
+    bool speed_accuracy(uint8_t instance, float &sacc) const {
+        if(_GPS_STATE(instance).have_speed_accuracy) {
+            sacc = _GPS_STATE(instance).speed_accuracy;
+            return true;
+        }
+        return false;
+    }
+
+    bool speed_accuracy(float &sacc) const {
+        return speed_accuracy(primary_instance, sacc);
+    }
+
+    bool horizontal_accuracy(uint8_t instance, float &hacc) const {
+        if(_GPS_STATE(instance).have_horizontal_accuracy) {
+            hacc = _GPS_STATE(instance).horizontal_accuracy;
+            return true;
+        }
+        return false;
+    }
+
+    bool horizontal_accuracy(float &hacc) const {
+        return horizontal_accuracy(primary_instance, hacc);
+    }
+
+    bool vertical_accuracy(uint8_t instance, float &vacc) const {
+        if(_GPS_STATE(instance).have_vertical_accuracy) {
+            vacc = _GPS_STATE(instance).vertical_accuracy;
+            return true;
+        }
+        return false;
+    }
+
+    bool vertical_accuracy(float &vacc) const {
+        return vertical_accuracy(primary_instance, vacc);
     }
 
     // 3D velocity in NED format
