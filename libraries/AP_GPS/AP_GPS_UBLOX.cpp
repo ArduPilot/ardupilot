@@ -258,14 +258,16 @@ void AP_GPS_UBLOX::log_mon_hw(void)
         instance   : state.instance,
         noisePerMS : _buffer.mon_hw_60.noisePerMS,
         jamInd     : _buffer.mon_hw_60.jamInd,
-        aPower     : _buffer.mon_hw_60.aPower
+        aPower     : _buffer.mon_hw_60.aPower,
+        agcCnt     : _buffer.mon_hw_60.agcCnt,
     };
     if (_payload_length == 68) {
         pkt.noisePerMS = _buffer.mon_hw_68.noisePerMS;
         pkt.jamInd     = _buffer.mon_hw_68.jamInd;
         pkt.aPower     = _buffer.mon_hw_68.aPower;
+        pkt.agcCnt     = _buffer.mon_hw_68.agcCnt;
     }
-    gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));    
+    gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
 }
 
 void AP_GPS_UBLOX::log_mon_hw2(void)
@@ -283,7 +285,7 @@ void AP_GPS_UBLOX::log_mon_hw2(void)
         ofsQ      : _buffer.mon_hw2.ofsQ,
         magQ      : _buffer.mon_hw2.magQ,
     };
-    gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));    
+    gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
 }
 #endif // UBLOX_HW_LOGGING
 

@@ -407,6 +407,7 @@ struct PACKED log_Ubx1 {
     uint16_t noisePerMS;
     uint8_t  jamInd;
     uint8_t  aPower;
+    uint16_t agcCnt;
 };
 
 struct PACKED log_Ubx2 {
@@ -469,7 +470,7 @@ struct PACKED log_Ubx2 {
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
       "TERR","IBLLHffHH","TimeMS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded" }, \
     { LOG_UBX1_MSG, sizeof(log_Ubx1), \
-      "UBX1", "IBHBB",  "TimeMS,Instance,noisePerMS,jamInd,aPower" }, \
+      "UBX1", "IBHBBH",  "TimeMS,Instance,noisePerMS,jamInd,aPower,agcCnt" }, \
     { LOG_UBX2_MSG, sizeof(log_Ubx2), \
       "UBX2", "IBbBbB", "TimeMS,Instance,ofsI,magI,ofsQ,magQ" }
 
