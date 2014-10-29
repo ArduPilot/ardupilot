@@ -82,6 +82,21 @@ else
 #    sh /etc/init.d/rc.error
 fi
 
+echo "[APMNS] Starting HMC5883 Internal"
+if hmc5883 -I start
+then
+    echo "[APMNS] HMC5883 Internal started OK"
+    if hmc5883 -I calibrate
+    then
+      echo "[APMNS] HMC5883 Internal calibrate OK"
+    else 
+      echo "[APMNS] HMC5883 Internal calibrate failed"
+    fi
+else
+    echo "[APMNS] HMC5883 Internal start failed"
+#    sh /etc/init.d/rc.error
+fi
+
 echo "[APMNS] Starting HMC5983 External EXP"
 if hmc5983 -X start
 then

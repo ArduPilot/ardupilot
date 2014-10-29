@@ -71,7 +71,7 @@ AP_Param param_loader(var_info);
 static Parameters g;
 
 static AP_GPS gps;
-AP_InertialSensor_MPU6000 ins;
+AP_InertialSensor ins;
 AP_Baro_HIL      barometer;
 AP_AHRS_DCM  ahrs(ins, barometer, gps);
 

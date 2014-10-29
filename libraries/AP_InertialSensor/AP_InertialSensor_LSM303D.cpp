@@ -1,5 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#if NOT_YET
+
 /****************************************************************************
  *
  *	 Coded by Víctor Mayoral Vilches <v.mayoralv@gmail.com> using 
@@ -826,3 +828,4 @@ float AP_InertialSensor_LSM303D::get_delta_time() const
     // the sensor runs at 200Hz
     return 0.005 * _num_samples;
 }
+#endif

@@ -160,7 +160,7 @@ def fly_square(mavproxy, mav, side=50, timeout=120):
     save_wp(mavproxy, mav)
 
     # switch back to stabilize mode
-    mavproxy.send('rc 3 1400\n')
+    mavproxy.send('rc 3 1380\n')
     mavproxy.send('switch 6\n')
     wait_mode(mav, 'STABILIZE')
 

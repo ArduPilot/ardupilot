@@ -353,6 +353,8 @@ struct PACKED log_Sonar {
     float baro_alt;
     float groundspeed;
     uint8_t throttle;
+    uint8_t count;
+    float correction;
 };
 
 // Write a sonar packet
@@ -361,11 +363,13 @@ static void Log_Write_Sonar()
     struct log_Sonar pkt = {
         LOG_PACKET_HEADER_INIT(LOG_SONAR_MSG),
         timestamp   : hal.scheduler->millis(),
-        distance    : (float)sonar.distance_cm(),
-        voltage     : sonar.voltage_mv()*0.001f,
+        distance    : (float)rangefinder.distance_cm(),
+        voltage     : rangefinder.voltage_mv()*0.001f,
         baro_alt    : barometer.get_altitude(),
         groundspeed : gps.ground_speed(),
-        throttle    : (uint8_t)(100 * channel_throttle->norm_output())
+        throttle    : (uint8_t)(100 * channel_throttle->norm_output()),
+        count       : rangefinder_state.in_range_count,
+        correction  : rangefinder_state.correction
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -536,7 +540,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),         
       "NTUN", "ICIccccfI",   "TimeMS,Yaw,WpDist,TargBrg,NavBrg,AltErr,Arspd,Alt,GSpdCM" },
     { LOG_SONAR_MSG, sizeof(log_Sonar),             
-      "SONR", "IffffB",   "TimeMS,DistCM,Volt,BaroAlt,GSpd,Thr" },
+      "SONR", "IffffBBf",   "TimeMS,DistCM,Volt,BaroAlt,GSpd,Thr,Cnt,Corr" },
     { LOG_MODE_MSG, sizeof(log_Mode),             
       "MODE", "IMB",         "TimeMS,Mode,ModeNum" },
     { LOG_CURRENT_MSG, sizeof(log_Current),             

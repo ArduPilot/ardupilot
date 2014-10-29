@@ -3,6 +3,7 @@ enum log_messages {
     // plane specific messages
     LOG_PLANE_ATTITUDE_MSG = 9,
     LOG_PLANE_COMPASS_MSG  = 11,
+    LOG_PLANE_COMPASS2_MSG  = 15,
     LOG_PLANE_AIRSPEED_MSG  = 17,
 
     // copter specific messages
@@ -25,6 +26,7 @@ public:
     bool wait_type(uint8_t type);
 
     const Vector3f &get_attitude(void) const { return attitude; }
+    const Vector3f &get_ahr2_attitude(void) const { return ahr2_attitude; }
     const Vector3f &get_inavpos(void) const { return inavpos; }
     const Vector3f &get_sim_attitude(void) const { return sim_attitude; }
     const float &get_relalt(void) const { return rel_altitude; }
@@ -57,6 +59,7 @@ private:
     struct log_Format formats[LOGREADER_MAX_FORMATS];
 
     Vector3f attitude;
+    Vector3f ahr2_attitude;
     Vector3f sim_attitude;
     Vector3f inavpos;
     float rel_altitude;

@@ -14,6 +14,7 @@
 #include <sys/stat.h>
 #include <stdint.h>
 
+#include "GPIO.h"
 #include "RCInput.h"
 
 extern const AP_HAL::HAL& hal;
@@ -31,6 +32,10 @@ void LinuxRCInput_PRU::init(void*)
     close(mem_fd);
     ring_buffer->ring_head = 0;
     _s0_time = 0;
+
+    // enable the spektrum RC input power
+    hal.gpio->pinMode(BBB_P8_17, HAL_GPIO_OUTPUT);
+    hal.gpio->write(BBB_P8_17, 1);
 }
 
 /*
@@ -49,7 +54,7 @@ void LinuxRCInput_PRU::_timer_tick()
         } else {
             // the pulse value is the sum of the time spent in the low
             // and high states
-            _process_ppmsum_pulse(ring_buffer->buffer[ring_buffer->ring_head].delta_t + _s0_time);
+            _process_rc_pulse(_s0_time, ring_buffer->buffer[ring_buffer->ring_head].delta_t);
         }
         // move to the next ring buffer entry
         ring_buffer->ring_head = (ring_buffer->ring_head + 1) % NUM_RING_ENTRIES;        

@@ -1,0 +1,87 @@
+Release 2.46, August 26th 2014
+------------------------------
+
+The ardupilot development team is proud to announce the release of
+version 2.46 of APM:Rover. This is a major release with a lot of new
+features and bug fixes.
+
+This release is based on a lot of development and testing that
+happened prior to the AVC competition where APM based vehicles
+performed very well.
+
+Full changes list for this release:
+
+  - added support for higher baudrates on telemetry ports, to make it
+    easier to use high rate telemetry to companion boards. Rates of up
+    to 1.5MBit are now supported to companion boards.
+
+  - new Rangefinder code with support for a wider range of rangefinder
+    types including a range of Lidars (thanks to Allyson Kreft)
+
+  - added logging of power status on Pixhawk
+
+  - added PIVOT_TURN_ANGLE parameter for pivot based turns on skid
+    steering rovers
+
+  - lots of improvements to the EKF support for Rover, thanks to Paul
+    Riseborough and testing from Tom Coyle. Using the EKF can greatly
+    improve navigation accuracy for fast rovers. Enable with
+    AHRS_EKF_USE=1. 
+
+  - improved support for dual GPS on Pixhawk. Using a 2nd GPS can
+    greatly improve performance when in an area with an obstructed
+    view of the sky
+
+  - support for up to 14 RC channels on Pihxawk
+
+  - added BRAKING_PERCENT and BRAKING_SPEEDERR parameters for better
+    breaking support when cornering
+
+  - added support for FrSky telemetry via SERIAL2_PROTOCOL parameter
+    (thanks to Matthias Badaire)
+
+  - added support for Linux based autopilots, initially with the PXF
+    BeagleBoneBlack cape and the Erle robotics board. Support for more
+    boards is expected in future releases. Thanks to Victor, Sid and
+    Anuj for their great work on the Linux port. 
+
+  - added StorageManager library, which expands available FRAM storage
+    on Pixhawk to 16 kByte. This allows for 724 waypoints, 50 rally
+    points and 84 fence points on Pixhawk.
+
+  - improved reporting of magnetometer and barometer errors to the GCS
+
+  - fixed a bug in automatic flow control detection for serial ports
+    in Pixhawk
+
+  - fixed use of FMU servo pins as digital inputs on Pixhawk
+
+  - imported latest updates for VRBrain boards (thanks to Emile
+    Castelnuovo and Luca Micheletti)
+
+  - updates to the Piksi GPS support (thanks to Niels Joubert)
+
+  - improved gyro estimate in DCM (thanks to Jon Challinger)
+
+  - improved position projection in DCM in wind (thanks to Przemek
+    Lekston)
+
+  - several updates to AP_NavEKF for more robust handling of errors
+    (thanks to Paul Riseborough)
+
+  - lots of small code cleanups thanks to Daniel Frenzel
+
+  - initial support for NavIO board from Mikhail Avkhimenia
+
+  - fixed logging of RCOU for up to 12 channels (thanks to Emile
+    Castelnuovo)
+
+  - code cleanups from Silvia Nunezrivero
+
+  - improved parameter download speed on radio links with no flow
+    control
+
+Many thanks to everyone who contributed to this release, especially
+Tom Coyle and Linus Penzlien for their excellent testing and feedback.
+
+Happy driving!

@@ -64,6 +64,21 @@ const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
     AP_GROUPINFO("MIN_DGPS", 4, AP_GPS, _min_dgps, 100),
 #endif
 
+    // @Param: SBAS_MODE
+    // @DisplayName: SBAS Mode
+    // @Description: This sets the SBAS (satellite based augmentation system) mode if available on this GPS. If set to 2 then the SBAS mode is not changed in the GPS. Otherwise the GPS will be reconfigured to enable/disable SBAS. Disabling SBAS may be worthwhile in some parts of the world where an SBAS signal is available but the baseline is too long to be useful.
+    // @Values: 0:Disabled,1:Enabled,2:NoChange
+    // @User: Advanced
+    AP_GROUPINFO("SBAS_MODE", 5, AP_GPS, _sbas_mode, 2),
+
+    // @Param: MIN_ELEV
+    // @DisplayName: Minimum elevation
+    // @Description: This sets the minimum elevation of satellites above the horizon for them to be used for navigation. Setting this to -100 leaves the minimum elevation set to the GPS modules default.
+    // @Range: -100 90
+    // @Units: Degrees
+    // @User: Advanced
+    AP_GROUPINFO("MIN_ELEV", 6, AP_GPS, _min_elevation, -100),
+
     AP_GROUPEND
 };
 
@@ -72,8 +87,8 @@ void AP_GPS::init(DataFlash_Class *dataflash)
 {
     _DataFlash = dataflash;
     hal.uartB->begin(38400UL, 256, 16);
-#if GPS_MAX_INSTANCES > 1
     primary_instance = 0;
+#if GPS_MAX_INSTANCES > 1
     if (hal.uartE != NULL) {
         hal.uartE->begin(38400UL, 256, 16);        
     }
@@ -334,9 +349,6 @@ AP_GPS::update(void)
         update_instance(i);
     }
 
-    // update notify with gps status. We always base this on the first GPS
-    AP_Notify::flags.gps_status = state[0].status;
-
 #if GPS_MAX_INSTANCES > 1
     // work out which GPS is the primary, and how many sensors we have
     for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
@@ -368,6 +380,8 @@ AP_GPS::update(void)
 #else
     num_instances = 1;
 #endif // GPS_MAX_INSTANCES
+	// update notify with gps status. We always base this on the primary_instance
+    AP_Notify::flags.gps_status = state[primary_instance].status;
 }
 
 /*
@@ -393,8 +407,9 @@ AP_GPS::setHIL(uint8_t instance, GPS_Status _status, uint64_t time_epoch_ms,
     istate.num_sats = _num_sats;
     istate.have_vertical_velocity = _have_vertical_velocity;
     istate.last_gps_time_ms = tnow;
-    istate.time_week     = time_epoch_ms / (86400*7*(uint64_t)1000);
-    istate.time_week_ms  = time_epoch_ms - istate.time_week*(86400*7*(uint64_t)1000);
+    uint64_t gps_time_ms = time_epoch_ms - (17000ULL*86400ULL + 52*10*7000ULL*86400ULL - 15000ULL);
+    istate.time_week     = gps_time_ms / (86400*7*(uint64_t)1000);
+    istate.time_week_ms  = gps_time_ms - istate.time_week*(86400*7*(uint64_t)1000);
     timing[instance].last_message_time_ms = tnow;
     timing[instance].last_fix_time_ms = tnow;
     _type[instance].set(GPS_TYPE_HIL);

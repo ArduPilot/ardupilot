@@ -162,6 +162,9 @@ public:
     // lean_angle_max - maximum lean angle of the copter in centi-degrees
     int16_t lean_angle_max() const { return _aparm.angle_max; }
 
+    // sqrt_controller - response based on the sqrt of the error instead of the more common linear response
+    static float sqrt_controller(float error, float p, float second_ord_lim);
+
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 

@@ -103,73 +103,59 @@ void AC_AttitudeControl::relax_bf_rate_controller()
 void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw_smooth(float roll_angle_ef, float pitch_angle_ef, float yaw_rate_ef, float smoothing_gain)
 {
     Vector3f angle_ef_error;    // earth frame angle errors
-    float rate_change_limit;
 
     // sanity check smoothing gain
     smoothing_gain = constrain_float(smoothing_gain,1.0f,50.0f);
 
-    float linear_angle = _accel_rp_max/(smoothing_gain*smoothing_gain);
-    rate_change_limit = _accel_rp_max * _dt;
-    float rate_ef_desired;
-    float angle_to_target;
-
     if (_accel_rp_max > 0.0f) {
+        float rate_ef_desired;
+        float rate_change_limit = _accel_rp_max * _dt;
 
-    	// calculate earth-frame feed forward roll rate using linear response when close to the target, sqrt response when we're further away
-    	angle_to_target = roll_angle_ef - _angle_ef_target.x;
-    	if (angle_to_target > linear_angle) {
-    		rate_ef_desired = safe_sqrt(2.0f*_accel_rp_max*((float)fabs(angle_to_target)-(linear_angle/2.0f)));
-    	} else if (angle_to_target < -linear_angle) {
-    		rate_ef_desired = -safe_sqrt(2.0f*_accel_rp_max*((float)fabs(angle_to_target)-(linear_angle/2.0f)));
-    	} else {
-    		rate_ef_desired = smoothing_gain*angle_to_target;
-    	}
-    	_rate_ef_desired.x = constrain_float(rate_ef_desired, _rate_ef_desired.x-rate_change_limit, _rate_ef_desired.x+rate_change_limit);
+        // calculate earth-frame feed forward roll rate using linear response when close to the target, sqrt response when we're further away
+        rate_ef_desired = sqrt_controller(roll_angle_ef-_angle_ef_target.x, smoothing_gain, _accel_rp_max);
 
-    	// update earth-frame roll angle target using desired roll rate
+        // apply acceleration limit to feed forward roll rate
+        _rate_ef_desired.x = constrain_float(rate_ef_desired, _rate_ef_desired.x-rate_change_limit, _rate_ef_desired.x+rate_change_limit);
+
+        // update earth-frame roll angle target using desired roll rate
         update_ef_roll_angle_and_error(_rate_ef_desired.x, angle_ef_error, AC_ATTITUDE_RATE_STAB_ROLL_OVERSHOOT_ANGLE_MAX);
 
-    	// calculate earth-frame feed forward pitch rate using linear response when close to the target, sqrt response when we're further away
-    	angle_to_target = pitch_angle_ef - _angle_ef_target.y;
-    	if (angle_to_target > linear_angle) {
-    		rate_ef_desired = safe_sqrt(2.0f*_accel_rp_max*((float)fabs(angle_to_target)-(linear_angle/2.0f)));
-    	} else if (angle_to_target < -linear_angle) {
-    		rate_ef_desired = -safe_sqrt(2.0f*_accel_rp_max*((float)fabs(angle_to_target)-(linear_angle/2.0f)));
-    	} else {
-    		rate_ef_desired = smoothing_gain*angle_to_target;
-    	}
-    	_rate_ef_desired.y = constrain_float(rate_ef_desired, _rate_ef_desired.y-rate_change_limit, _rate_ef_desired.y+rate_change_limit);
+        // calculate earth-frame feed forward pitch rate using linear response when close to the target, sqrt response when we're further away
+        rate_ef_desired = sqrt_controller(pitch_angle_ef-_angle_ef_target.y, smoothing_gain, _accel_rp_max);
 
-    	// update earth-frame pitch angle target using desired pitch rate
+        // apply acceleration limit to feed forward pitch rate
+        _rate_ef_desired.y = constrain_float(rate_ef_desired, _rate_ef_desired.y-rate_change_limit, _rate_ef_desired.y+rate_change_limit);
+
+        // update earth-frame pitch angle target using desired pitch rate
         update_ef_pitch_angle_and_error(_rate_ef_desired.y, angle_ef_error, AC_ATTITUDE_RATE_STAB_PITCH_OVERSHOOT_ANGLE_MAX);
     } else {
         // target roll and pitch to desired input roll and pitch
-    	_angle_ef_target.x = roll_angle_ef;
+        _angle_ef_target.x = roll_angle_ef;
         angle_ef_error.x = wrap_180_cd_float(_angle_ef_target.x - _ahrs.roll_sensor);
 
-    	_angle_ef_target.y = pitch_angle_ef;
+        _angle_ef_target.y = pitch_angle_ef;
         angle_ef_error.y = wrap_180_cd_float(_angle_ef_target.y - _ahrs.pitch_sensor);
 
         // set roll and pitch feed forward to zero
-    	_rate_ef_desired.x = 0;
-    	_rate_ef_desired.y = 0;
+        _rate_ef_desired.x = 0;
+        _rate_ef_desired.y = 0;
     }
     // constrain earth-frame angle targets
     _angle_ef_target.x = constrain_float(_angle_ef_target.x, -_aparm.angle_max, _aparm.angle_max);
     _angle_ef_target.y = constrain_float(_angle_ef_target.y, -_aparm.angle_max, _aparm.angle_max);
 
     if (_accel_y_max > 0.0f) {
-    	// set earth-frame feed forward rate for yaw
-        rate_change_limit = _accel_y_max * _dt;
+        // set earth-frame feed forward rate for yaw
+        float rate_change_limit = _accel_y_max * _dt;
 
-        float rate_change = yaw_rate_ef - _rate_ef_desired.z;
-        rate_change = constrain_float(rate_change, -rate_change_limit, rate_change_limit);
-        _rate_ef_desired.z += rate_change;
+        // update yaw rate target with accele
+        _rate_ef_desired.z += constrain_float(yaw_rate_ef - _rate_ef_desired.z, -rate_change_limit, rate_change_limit);
+
         // calculate yaw target angle and angle error
         update_ef_yaw_angle_and_error(_rate_ef_desired.z, angle_ef_error, AC_ATTITUDE_RATE_STAB_YAW_OVERSHOOT_ANGLE_MAX);
     } else {
         // set yaw feed forward to zero
-    	_rate_ef_desired.z = yaw_rate_ef;
+        _rate_ef_desired.z = yaw_rate_ef;
         // calculate yaw target angle and angle error
         update_ef_yaw_angle_and_error(_rate_ef_desired.z, angle_ef_error, AC_ATTITUDE_RATE_STAB_YAW_OVERSHOOT_ANGLE_MAX);
     }
@@ -689,10 +675,6 @@ void AC_AttitudeControl::set_throttle_out(int16_t throttle_out, bool apply_angle
         // clear angle_boost for logging purposes
         _angle_boost = 0;
     }
-
-    // update compass with throttle value
-    // To-Do: find another method to grab the throttle out and feed to the compass.  Could be done completely outside this class
-    //compass.set_throttle((float)g.rc_3.servo_out/1000.0f);
 }
 
 // get_angle_boost - returns a throttle including compensation for roll/pitch angle
@@ -715,4 +697,22 @@ int16_t AC_AttitudeControl::get_angle_boost(int16_t throttle_pwm)
     _angle_boost = throttle_out - throttle_pwm;
 
     return throttle_out;
+}
+
+// sqrt_controller - response based on the sqrt of the error instead of the more common linear response
+float AC_AttitudeControl::sqrt_controller(float error, float p, float second_ord_lim)
+{
+    if (second_ord_lim == 0.0f || p == 0.0f) {
+        return error*p;
+    }
+
+    float linear_dist = second_ord_lim/sq(p);
+
+    if (error > linear_dist) {
+        return safe_sqrt(2.0f*second_ord_lim*(error-(linear_dist/2.0f)));
+    } else if (error < -linear_dist) {
+        return -safe_sqrt(2.0f*second_ord_lim*(-error-(linear_dist/2.0f)));
+    } else {
+        return error*p;
+    }
 }

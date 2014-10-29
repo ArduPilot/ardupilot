@@ -65,7 +65,7 @@ const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 static Parameters g;
 
-static AP_InertialSensor_HIL ins;
+static AP_InertialSensor ins;
 static AP_Baro_HIL barometer;
 static AP_GPS gps;
 static AP_Compass_HIL compass;
@@ -103,6 +103,8 @@ static struct {
     float value;
 } user_parameters[100];
 
+// setup the var_info table
+AP_Param param_loader(var_info);
 
 static void usage(void)
 {
@@ -205,6 +207,8 @@ void setup()
     barometer.read();
     compass.init();
     inertial_nav.init();
+    ins.set_hil_mode();
+
     switch (update_rate) {
     case 0:
     case 50:
@@ -228,7 +232,7 @@ void setup()
     ekf3f = fopen("EKF3.dat", "w");
     ekf4f = fopen("EKF4.dat", "w");
 
-    fprintf(plotf, "time SIM.Roll SIM.Pitch SIM.Yaw BAR.Alt FLIGHT.Roll FLIGHT.Pitch FLIGHT.Yaw FLIGHT.dN FLIGHT.dE FLIGHT.Alt DCM.Roll DCM.Pitch DCM.Yaw EKF.Roll EKF.Pitch EKF.Yaw INAV.dN INAV.dE INAV.Alt EKF.dN EKF.dE EKF.Alt\n");
+    fprintf(plotf, "time SIM.Roll SIM.Pitch SIM.Yaw BAR.Alt FLIGHT.Roll FLIGHT.Pitch FLIGHT.Yaw FLIGHT.dN FLIGHT.dE FLIGHT.Alt AHR2.Roll AHR2.Pitch AHR2.Yaw DCM.Roll DCM.Pitch DCM.Yaw EKF.Roll EKF.Pitch EKF.Yaw INAV.dN INAV.dE INAV.Alt EKF.dN EKF.dE EKF.Alt\n");
     fprintf(plotf2, "time E1 E2 E3 VN VE VD PN PE PD GX GY GZ WN WE MN ME MD MX MY MZ E1ref E2ref E3ref\n");
     fprintf(ekf1f, "timestamp TimeMS Roll Pitch Yaw VN VE VD PN PE PD GX GY GZ\n");
     fprintf(ekf2f, "timestamp TimeMS AX AY AZ VWN VWE MN ME MD MX MY MZ\n");
@@ -383,7 +387,7 @@ void loop()
             float temp = degrees(ekf_euler.z);
 
             if (temp < 0.0f) temp = temp + 360.0f;
-            fprintf(plotf, "%.3f %.1f %.1f %.1f %.2f %.1f %.1f %.1f %.2f %.2f %.2f %.1f %.1f %.1f %.1f %.1f %.1f %.2f %.2f %.2f %.2f %.2f %.2f\n",
+            fprintf(plotf, "%.3f %.1f %.1f %.1f %.2f %.1f %.1f %.1f %.2f %.2f %.2f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.2f %.2f %.2f %.2f %.2f %.2f\n",
                     hal.scheduler->millis() * 0.001f,
                     LogReader.get_sim_attitude().x,
                     LogReader.get_sim_attitude().y,
@@ -391,10 +395,13 @@ void loop()
                     barometer.get_altitude(),
                     LogReader.get_attitude().x,
                     LogReader.get_attitude().y,
-                    LogReader.get_attitude().z,
+                    wrap_180_cd(LogReader.get_attitude().z*100)*0.01f,
                     LogReader.get_inavpos().x,
                     LogReader.get_inavpos().y,
                     LogReader.get_relalt(),
+                    LogReader.get_ahr2_attitude().x,
+                    LogReader.get_ahr2_attitude().y,
+                    wrap_180_cd(LogReader.get_ahr2_attitude().z*100)*0.01f,
                     degrees(DCM_attitude.x),
                     degrees(DCM_attitude.y),
                     degrees(DCM_attitude.z),

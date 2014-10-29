@@ -34,12 +34,14 @@ const AP_Param::GroupInfo AP_Baro::var_info[] PROGMEM = {
     // @Param: ABS_PRESS
     // @DisplayName: Absolute Pressure
     // @Description: calibrated ground pressure in Pascals
+    // @Units: pascals
     // @Increment: 1
     AP_GROUPINFO("ABS_PRESS", 2, AP_Baro, _ground_pressure, 0),
 
     // @Param: TEMP
     // @DisplayName: ground temperature
     // @Description: calibrated ground temperature in degrees Celsius
+    // @Units: degrees celsius
     // @Increment: 1
     AP_GROUPINFO("TEMP", 3, AP_Baro, _ground_temperature, 0),
 
