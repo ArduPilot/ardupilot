@@ -804,8 +804,17 @@ void NavEKF::SelectVelPosFusion()
                 StoreStatesReset();
             }
         } else {
-            fuseVelData = false;
-            fusePosData = false;
+            if (!holdVelocity) {
+                fuseVelData = false;
+                fusePosData = false;
+            } else {
+                fuseVelData = true;
+                fusePosData = false;
+                statesAtVelTime = state;
+                velNED.x = heldVelNE.x;
+                velNED.y = heldVelNE.y;
+                velNED.z = 0.0f;
+            }
         }
 
     } else {
@@ -902,6 +911,24 @@ void NavEKF::SelectMagFusion()
 // select fusion of optical flow measurements
 void NavEKF::SelectFlowFusion()
 {
+    // if we don't have flow measurements we use GPS velocity if available or else
+    // dead reckon using current velocity vector
+    if (imuSampleTime_ms - flowMeaTime_ms > 1000) {
+        forceUseGPS  = true;
+        if (imuSampleTime_ms - lastFixTime_ms > 1000) {
+            holdVelocity = true;
+        } else {
+            holdVelocity = false;
+        }
+    } else {
+        forceUseGPS  = false;
+        holdVelocity = false;
+    }
+    if (holdVelocity && !lastHoldVelocity) {
+        heldVelNE.x = state.velocity.x;
+        heldVelNE.y = state.velocity.y;
+    }
+    lastHoldVelocity = holdVelocity;
     // Apply tilt check
     bool tiltOK = (Tnb_flow.c.z > DCM33FlowMin);
     // if we have waited too long, set a timeout flag which will force fusion to occur regardless of load spreading
@@ -1068,15 +1095,6 @@ void NavEKF::UpdateStrapdownEquationsNED()
     // * and + operators have been overloaded
     // blended IMU calc
     delVelNav  = Tbn_temp*correctedDelVel12 + gravityNED*dtIMU;
-    // used to hold constant velocity if aiding is unavailable
-    if (holdVelocity) {
-        delVelNav.x = 0.0f;
-        delVelNav.y = 0.0f;
-        delVelNav1.x = 0.0f;
-        delVelNav1.y = 0.0f;
-        delVelNav2.x = 0.0f;
-        delVelNav2.y = 0.0f;
-    }
     // single IMU calcs
     delVelNav1 = Tbn_temp*correctedDelVel1 + gravityNED*dtIMU;
     delVelNav2 = Tbn_temp*correctedDelVel2 + gravityNED*dtIMU;
@@ -4025,19 +4043,6 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
         rngMeaTime_ms = msecFlowMeas;
     } else {
         newDataRng = false;
-    }
-    // if we don't have flow measurements we use GPS velocity if available or else
-    // dead reckon using current velocity vector
-    if (imuSampleTime_ms - flowMeaTime_ms > 1000) {
-        forceUseGPS  = true;
-        if (imuSampleTime_ms - lastFixTime_ms > 1000) {
-            holdVelocity = true;
-        } else {
-            holdVelocity = false;
-        }
-    } else {
-        forceUseGPS  = false;
-        holdVelocity = false;
     }
 }
 
