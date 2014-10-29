@@ -105,6 +105,9 @@ public:
     // return body axis gyro bias estimates in rad/sec
     void getGyroBias(Vector3f &gyroBias) const;
 
+    // reset body axis gyro bias estimates
+    void resetGyroBias(void);
+
     // return weighting of first IMU in blending function and the individual Z-accel bias estimates in m/s^2
     void getAccelBias(Vector3f &accelBias) const;
 
