@@ -367,7 +367,6 @@ void loop()
             float tasVar;
             Vector2f offset;
             uint8_t faultStatus;
-            float deltaGyroBias;
 
             const Matrix3f &dcm_matrix = ((AP_AHRS_DCM)ahrs).get_dcm_matrix();
             dcm_matrix.to_euler(&DCM_attitude.x, &DCM_attitude.y, &DCM_attitude.z);
@@ -537,7 +536,6 @@ void loop()
             int16_t sqrtvarVT = (int16_t)(constrain_float(100*tasVar,INT16_MIN,INT16_MAX));
             int16_t offsetNorth = (int8_t)(constrain_float(offset.x,INT16_MIN,INT16_MAX));
             int16_t offsetEast = (int8_t)(constrain_float(offset.y,INT16_MIN,INT16_MAX));
-            uint8_t divergeRate = (uint8_t)(100*deltaGyroBias);
 
             // print EKF4 data packet
             fprintf(ekf4f, "%.3f %d %d %d %d %d %d %d %d %d %d %d %d\n",
@@ -552,8 +550,7 @@ void loop()
                     sqrtvarVT,
                     offsetNorth,
                     offsetEast,
-                    faultStatus,
-                    divergeRate);
+                    faultStatus);
         }
     }
 }
