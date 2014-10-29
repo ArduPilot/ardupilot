@@ -57,7 +57,8 @@ void AP_AHRS_NavEKF::reset_gyro_drift(void)
     // update DCM
     AP_AHRS_DCM::reset_gyro_drift();
 
-    // To-Do: add call to do the same on EKF
+    // reset the EKF gyro bias states
+    EKF.resetGyroBias();
 }
 
 void AP_AHRS_NavEKF::update(void)
