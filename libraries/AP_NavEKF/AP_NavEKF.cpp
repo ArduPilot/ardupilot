@@ -102,6 +102,9 @@ extern const AP_HAL::HAL& hal;
 // assume 3m/s to start
 #define STARTUP_WIND_SPEED 3.0f
 
+// initial gyro bias uncertainty (deg/sec)
+#define INIT_GYRO_BIAS_UNCERTAINTY 0.1f
+
 // Define tuning parameters
 const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
 
@@ -2819,7 +2822,7 @@ void NavEKF::resetGyroBias(void)
     state.gyro_bias.zero();
     zeroRows(P,10,12);
     zeroCols(P,10,12);
-    P[10][10] = sq(radians(0.1f * dtIMU));
+    P[10][10] = sq(radians(INIT_GYRO_BIAS_UNCERTAINTY * dtIMU));
     P[11][11] = P[10][10];
     P[12][12] = P[10][10];
 
@@ -2941,7 +2944,7 @@ void NavEKF::CovarianceInit()
     P[8][8]   = P[7][7];
     P[9][9]   = sq(5.0f);
     // delta angle biases
-    P[10][10] = sq(radians(0.1f * dtIMU));
+    P[10][10] = sq(radians(INIT_GYRO_BIAS_UNCERTAINTY * dtIMU));
     P[11][11] = P[10][10];
     P[12][12] = P[10][10];
     // Z delta velocity bias
