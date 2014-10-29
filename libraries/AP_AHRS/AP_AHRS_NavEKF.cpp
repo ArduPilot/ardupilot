@@ -77,15 +77,13 @@ void AP_AHRS_NavEKF::update(void)
     _dcm_attitude(roll, pitch, yaw);
 
     if (!ekf_started) {
-        // if we have a GPS lock and more than 6 satellites, we can start the EKF
-        if (get_gps().status() >= AP_GPS::GPS_OK_FIX_3D && get_gps().num_sats() >= _gps_minsats) {
-            if (start_time_ms == 0) {
-                start_time_ms = hal.scheduler->millis();
-            }
-            if (hal.scheduler->millis() - start_time_ms > startup_delay_ms) {
-                ekf_started = true;
-                EKF.InitialiseFilterDynamic();
-            }
+        // wait 10 seconds
+        if (start_time_ms == 0) {
+            start_time_ms = hal.scheduler->millis();
+        }
+        if (hal.scheduler->millis() - start_time_ms > startup_delay_ms) {
+            ekf_started = true;
+            EKF.InitialiseFilterDynamic();
         }
     }
     if (ekf_started) {
