@@ -419,6 +419,15 @@ struct PACKED log_Ubx2 {
     uint8_t  magQ;
 };
 
+struct PACKED log_Ubx3 {
+    LOG_PACKET_HEADER;
+    uint32_t timestamp;
+    uint8_t  instance;
+    float hAcc;
+    float vAcc;
+    float sAcc;
+};
+
 // messages for all boards
 #define LOG_BASE_STRUCTURES \
     { LOG_FORMAT_MSG, sizeof(log_Format), \
@@ -471,7 +480,9 @@ struct PACKED log_Ubx2 {
     { LOG_UBX1_MSG, sizeof(log_Ubx1), \
       "UBX1", "IBHBBH",  "TimeMS,Instance,noisePerMS,jamInd,aPower,agcCnt" }, \
     { LOG_UBX2_MSG, sizeof(log_Ubx2), \
-      "UBX2", "IBbBbB", "TimeMS,Instance,ofsI,magI,ofsQ,magQ" }
+      "UBX2", "IBbBbB", "TimeMS,Instance,ofsI,magI,ofsQ,magQ" }, \
+    { LOG_UBX3_MSG, sizeof(log_Ubx3), \
+      "UBX3", "IBfff", "TimeMS,Instance,hAcc,vAcc,sAcc" }
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 #define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_EXTRA_STRUCTURES
@@ -507,6 +518,7 @@ struct PACKED log_Ubx2 {
 #define LOG_TERRAIN_MSG   150
 #define LOG_UBX1_MSG      151
 #define LOG_UBX2_MSG      152
+#define LOG_UBX3_MSG      153
 
 // message types 200 to 210 reversed for GPS driver use
 // message types 211 to 220 reversed for autotune use
