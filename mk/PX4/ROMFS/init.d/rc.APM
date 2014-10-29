@@ -109,6 +109,8 @@ then
 fi
 
 
+echo "Trying PX4IO board"
+
 # try the px4io start twice. Some FMUv2 board don't
 # come up the first time
 set HAVE_PX4IO false
@@ -333,8 +335,6 @@ if mb12xx start
 then
     echo "Found mb12xx sensor"
 fi
-
-echo "Trying PX4IO board"
 
 if mtd start /fs/mtd
 then
