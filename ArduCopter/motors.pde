@@ -205,8 +205,7 @@ static bool init_arm_motors()
         motors.output_min();
         failsafe_enable();
         AP_Notify::flags.armed = false;
-        AP_Notify::flags.arming_failed = false;
-        return;
+        return false;
     }
 
 #if SPRAYER == ENABLED
