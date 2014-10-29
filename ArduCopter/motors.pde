@@ -34,7 +34,11 @@ static void arm_motors_check()
             // run pre-arm-checks and display failures
             pre_arm_checks(true);
             if(ap.pre_arm_check && arm_checks(true,false)) {
-                init_arm_motors();
+                if (!init_arm_motors()) {
+                    // reset arming counter if arming fail
+                    arming_counter = 0;
+                    AP_Notify::flags.arming_failed = true;
+                }
             }else{
                 // reset arming counter if pre-arm checks fail
                 arming_counter = 0;
@@ -97,7 +101,8 @@ static void auto_disarm_check()
 }
 
 // init_arm_motors - performs arming process including initialisation of barometer and gyros
-static void init_arm_motors()
+//  returns false in the unlikely case that arming fails (because of a gyro calibration failure)
+static bool init_arm_motors()
 {
 	// arming marker
     // Flag used to track if we have armed the motors the first time.
@@ -139,8 +144,14 @@ static void init_arm_motors()
     }
 
     if(did_ground_start == false) {
-        did_ground_start = true;
         startup_ground(true);
+        // final check that gyros calibrated successfully
+        if (((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) && !ins.gyro_calibrated_ok_all()) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Gyro cal failed"));
+            AP_Notify::flags.armed = false;
+            return false;
+        }
+        did_ground_start = true;
     }
 
     // fast baro calibration to reset ground pressure
@@ -181,6 +192,9 @@ static void init_arm_motors()
 
     // reenable failsafe
     failsafe_enable();
+
+    // return success
+    return true;
 }
 
 // perform pre-arm checks and set ap.pre_arm_check flag
