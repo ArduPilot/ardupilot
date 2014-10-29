@@ -1159,8 +1159,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 // run pre_arm_checks and arm_checks and display failures
                 pre_arm_checks(true);
                 if(ap.pre_arm_check && arm_checks(true)) {
-                    init_arm_motors();
+                    if (init_arm_motors()) {
                     result = MAV_RESULT_ACCEPTED;
+                    } else {
+                        AP_Notify::flags.arming_failed = true;  // init_arm_motors function will reset flag back to false
+                        result = MAV_RESULT_UNSUPPORTED;
+                    }
                 }else{
                     AP_Notify::flags.arming_failed = true;  // init_arm_motors function will reset flag back to false
                     result = MAV_RESULT_UNSUPPORTED;
