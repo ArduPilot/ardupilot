@@ -3349,7 +3349,6 @@ void NavEKF::ZeroVariables()
     // initialise time stamps
     imuSampleTime_ms = hal.scheduler->millis();
     lastHealthyMagTime_ms = imuSampleTime_ms;
-    lastDivergeTime_ms = imuSampleTime_ms;
     TASmsecPrev = imuSampleTime_ms;
     BETAmsecPrev = imuSampleTime_ms;
     lastMagUpdate = imuSampleTime_ms;
