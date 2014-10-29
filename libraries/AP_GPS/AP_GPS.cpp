@@ -378,6 +378,7 @@ AP_GPS::update(void)
         }
     }
 #else
+	primary_instance=0;
     num_instances = 1;
 #endif // GPS_MAX_INSTANCES
 	// update notify with gps status. We always base this on the primary_instance
