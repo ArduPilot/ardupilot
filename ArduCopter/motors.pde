@@ -149,6 +149,7 @@ static bool init_arm_motors()
         if (((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) && !ins.gyro_calibrated_ok_all()) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Gyro cal failed"));
             AP_Notify::flags.armed = false;
+            failsafe_enable();
             return false;
         }
         did_ground_start = true;
