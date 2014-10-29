@@ -2813,6 +2813,18 @@ void NavEKF::getGyroBias(Vector3f &gyroBias) const
     gyroBias = state.gyro_bias / dtIMU;
 }
 
+// reset the body axis gyro bias states to zero and re-initialise the corresponding covariances
+void NavEKF::resetGyroBias(void)
+{
+    state.gyro_bias.zero();
+    zeroRows(P,10,12);
+    zeroCols(P,10,12);
+    P[10][10] = sq(radians(0.1f * dtIMU));
+    P[11][11] = P[10][10];
+    P[12][12] = P[10][10];
+
+}
+
 // return weighting of first IMU in blending function and the individual Z-accel bias estimates in m/s^2
 void NavEKF::getAccelBias(Vector3f &accelBias) const
 {
