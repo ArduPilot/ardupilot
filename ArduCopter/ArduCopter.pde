@@ -648,7 +648,7 @@ AC_AttitudeControl attitude_control(ahrs, aparm, motors, g.p_stabilize_roll, g.p
 AC_PosControl pos_control(ahrs, inertial_nav, motors, attitude_control,
                         g.p_alt_hold, g.p_throttle_rate, g.pid_throttle_accel,
                         g.p_loiter_pos, g.pid_loiter_rate_lat, g.pid_loiter_rate_lon);
-static AC_WPNav wp_nav(inertial_nav, ahrs, pos_control);
+static AC_WPNav wp_nav(inertial_nav, ahrs, pos_control, attitude_control);
 static AC_Circle circle_nav(inertial_nav, ahrs, pos_control);
 
 ////////////////////////////////////////////////////////////////////////////////
