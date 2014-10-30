@@ -138,7 +138,19 @@ shift $((OPTIND-1))
 kill_tasks() 
 {
     [ "$INSTANCE" -eq "0" ] && {
-        killall -q JSBSim lt-JSBSim ArduPlane.elf ArduCopter.elf APMrover2.elf AntennaTracker.elf
+        #Cygwin doesn't have killall, so use taskkill instead
+        if [ "$(expr substr $(uname -s) 1 6)" == "CYGWIN" ]; then
+            winkill="taskkill /F /IM "
+            $winkill JSBSim.exe
+            $winkill lt-JSBSim.exe
+            $winkill ArduPlane.elf
+            $winkill ArduCopter.elf
+            $winkill APMrover2.elf
+            $winkill AntennaTracker.elf
+            $winkill xterm.exe
+        else
+            killall -q JSBSim lt-JSBSim ArduPlane.elf ArduCopter.elf APMrover2.elf AntennaTracker.elf
+        fi
         pkill -f runsim.py
         pkill -f sim_tracker.py
         pkill -f sim_rover.py
@@ -202,6 +214,12 @@ case $FRAME in
         exit 1
         ;;
 esac
+
+#start Cygwin/X GUI backend if needed
+if [ "$(expr substr $(uname -s) 1 6)" == "CYGWIN" ]; then
+    run.exe -p /usr/X11R6/bin XWin -multiwindow -clipboard -silent-dup-error
+    export DISPLAY=:0.0
+fi
 
 autotest=$(dirname $(readlink -e $0))
 if [ $NO_REBUILD == 0 ]; then

@@ -128,11 +128,13 @@ void SITL_State::_update_ins(float roll, 	float pitch, 	float yaw,		// Relative 
 		return;
 	}
 
+#ifndef CYGWIN
         if (_sitl->float_exception) {
             feenableexcept(FE_INVALID | FE_OVERFLOW);
         } else {
             feclearexcept(FE_INVALID | FE_OVERFLOW);
         }
+#endif
 
 	SITL::convert_body_frame(roll, pitch,
 				 rollRate, pitchRate, yawRate,
