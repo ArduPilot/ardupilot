@@ -14,9 +14,10 @@ class AP_InertialNav_NavEKF : public AP_InertialNav
 {
 public:
     // Constructor
-    AP_InertialNav_NavEKF(AP_AHRS &ahrs, AP_Baro &baro, GPS_Glitch& gps_glitch, Baro_Glitch& baro_glitch) :
+    AP_InertialNav_NavEKF(AP_AHRS_NavEKF &ahrs, AP_Baro &baro, GPS_Glitch& gps_glitch, Baro_Glitch& baro_glitch) :
         AP_InertialNav(ahrs, baro, gps_glitch, baro_glitch),
-        _haveabspos(false)
+        _haveabspos(false),
+        _ahrs_ekf(ahrs)
         {
         }
 
@@ -113,6 +114,7 @@ private:
     Vector3f _velocity_cm; // NEU
     struct Location _abspos;
     bool _haveabspos;
+    AP_AHRS_NavEKF &_ahrs_ekf;
 };
 
 #endif // __AP_INERTIALNAV_NAVEKF_H__

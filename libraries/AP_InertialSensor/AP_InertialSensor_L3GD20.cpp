@@ -36,6 +36,8 @@
  ****************************************************************************/
 
 #include <AP_HAL.h>
+#if NOT_YET
+
 #include "AP_InertialSensor_L3GD20.h"
 
 extern const AP_HAL::HAL& hal;
@@ -630,3 +632,4 @@ float AP_InertialSensor_L3GD20::get_delta_time() const
     // the sensor runs at 200Hz
     return 0.005 * _num_samples;
 }
+#endif

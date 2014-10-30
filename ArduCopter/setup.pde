@@ -9,6 +9,7 @@
 // Functions called from the setup menu
 static int8_t   setup_factory           (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_show              (uint8_t argc, const Menu::arg *argv);
+static int8_t   setup_set               (uint8_t argc, const Menu::arg *argv);
 #ifdef WITH_ESC_CALIB
 static int8_t   esc_calib               (uint8_t argc, const Menu::arg *argv);
 #endif
@@ -19,6 +20,7 @@ const struct Menu::command setup_menu_commands[] PROGMEM = {
     // =======          ===============
     {"reset",                       setup_factory},
     {"show",                        setup_show},
+    {"set",                         setup_set},
 #ifdef WITH_ESC_CALIB
     {"esc_calib",                   esc_calib},
 #endif
@@ -64,6 +66,65 @@ setup_factory(uint8_t argc, const Menu::arg *argv)
     }
     // note, cannot actually return here
     return(0);
+}
+
+//Set a parameter to a specified value. It will cast the value to the current type of the
+//parameter and make sure it fits in case of INT8 and INT16
+static int8_t setup_set(uint8_t argc, const Menu::arg *argv)
+{
+    int8_t value_int8;
+    int16_t value_int16;
+
+    AP_Param *param;
+    enum ap_var_type p_type;
+
+    if(argc!=3)
+    {
+        cliSerial->printf_P(PSTR("Invalid command. Usage: set <name> <value>\n"));
+        return 0;
+    }
+
+    param = AP_Param::find(argv[1].str, &p_type);
+    if(!param)
+    {
+        cliSerial->printf_P(PSTR("Param not found: %s\n"), argv[1].str);
+        return 0;
+    }
+
+    switch(p_type)
+    {
+        case AP_PARAM_INT8:
+            value_int8 = (int8_t)(argv[2].i);
+            if(argv[2].i!=value_int8)
+            {
+                cliSerial->printf_P(PSTR("Value out of range for type INT8\n"));
+                return 0;
+            }
+            ((AP_Int8*)param)->set_and_save(value_int8);
+            break;
+        case AP_PARAM_INT16:
+            value_int16 = (int16_t)(argv[2].i);
+            if(argv[2].i!=value_int16)
+            {
+                cliSerial->printf_P(PSTR("Value out of range for type INT16\n"));
+                return 0;
+            }
+            ((AP_Int16*)param)->set_and_save(value_int16);
+            break;
+
+        //int32 and float don't need bounds checking, just use the value provoded by Menu::arg
+        case AP_PARAM_INT32:
+            ((AP_Int32*)param)->set_and_save(argv[2].i);
+            break;
+        case AP_PARAM_FLOAT:
+            ((AP_Float*)param)->set_and_save(argv[2].f);
+            break;
+        default:
+            cliSerial->printf_P(PSTR("Cannot set parameter of type %d.\n"), p_type);
+            break;
+    }
+
+    return 0;
 }
 
 // Print the current configuration.
@@ -325,7 +386,7 @@ void report_optflow()
     cliSerial->printf_P(PSTR("OptFlow\n"));
     print_divider();
 
-    print_enabled(g.optflow_enabled);
+    print_enabled(optflow.enabled());
 
     print_blanks(2);
  #endif     // OPTFLOW == ENABLED
@@ -459,34 +520,6 @@ static void print_enabled(bool b)
     else
         cliSerial->print_P(PSTR("dis"));
     cliSerial->print_P(PSTR("abled\n"));
-}
-
-
-static void
-init_esc()
-{
-    // reduce update rate to motors to 50Hz
-    motors.set_update_rate(50);
-
-    uint32_t last_print_ms = 0;
-    while(1) {
-        motors.armed(true);
-        motors.enable();
-        read_radio();
-        delay(10);
-        AP_Notify::flags.esc_calibration = true;
-        motors.throttle_pass_through();
-        
-        uint32_t now = hal.scheduler->millis();
-        if (now - last_print_ms > 1000) {
-            hal.console->printf_P(PSTR("ESC cal input: %u %u %u %u  output: %u %u %u %u\n"),
-                                  (unsigned)hal.rcin->read(0), (unsigned)hal.rcin->read(1), 
-                                  (unsigned)hal.rcin->read(2), (unsigned)hal.rcin->read(3),
-                                  (unsigned)hal.rcout->read(0), (unsigned)hal.rcout->read(1), 
-                                  (unsigned)hal.rcout->read(2), (unsigned)hal.rcout->read(3));
-            last_print_ms = now;
-        }
-    }
 }
 
 static void report_version()

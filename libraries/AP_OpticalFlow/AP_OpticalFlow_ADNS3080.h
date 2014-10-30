@@ -2,6 +2,7 @@
 #define __AP_OPTICALFLOW_ADNS3080_H__
 
 #include <AP_HAL.h>
+#include <AP_AHRS.h>
 #include "AP_OpticalFlow.h"
 
 // timer process runs at 1khz.  50 iterations = 20hz
@@ -65,12 +66,14 @@
 // Extended Configuration bits
 #define ADNS3080_SERIALNPU_OFF  0x02
 
-class AP_OpticalFlow_ADNS3080 : public AP_OpticalFlow
+class AP_OpticalFlow_ADNS3080 : public OpticalFlow
 {
 public:
 
     // constructor
-    AP_OpticalFlow_ADNS3080();
+    AP_OpticalFlow_ADNS3080(const AP_AHRS& ahrs) : OpticalFlow(ahrs)
+    {
+    }
 
     // initialise the sensor
     void    init();
@@ -103,6 +106,12 @@ private:
 
     // SPI device
     AP_HAL::SPIDeviceDriver *_spi;
+
+    float conv_factor;              // multiply this number by altitude and pixel change to get horizontal move (in same units as altitude)
+    float radians_to_pixels;
+    float _last_roll;
+    float _last_pitch;
+    float _last_altitude;
 };
 
 #endif

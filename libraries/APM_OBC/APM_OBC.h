@@ -64,7 +64,12 @@ public:
             _saved_wp = 0;
         }
 
+    // check that everything is OK
     void check(enum control_mode control_mode, uint32_t last_heartbeat_ms, bool geofence_breached, uint32_t last_valid_rc_ms);
+
+    // generate heartbeat msgs, so external failsafe boards are happy
+    // during sensor calibration
+    void heartbeat(void);
 
     // called in servo output code to set servos to crash position if needed
     void check_crash_plane(void);

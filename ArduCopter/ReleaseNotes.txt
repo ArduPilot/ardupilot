@@ -1,7 +1,102 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.2-rc14 30-Oct-2014
+Changes from 3.2-rc13
+1) Safety Features:
+    a) fail to arm if second gyro calibration fails (can be disabled with ARMING_CHECK)
+2) Bug fixes:
+    a) DCM-check to require one continuous second of bad heading before triggering LAND
+    b) I2C bug that could lead to Pixhawk freezing up if I2C bus is noisy
+    c) reset DCM and EKF gyro bias estimates after gyro calibration (DCM heading could drift after takeoff due to sudden change in gyro values)
+    d) use primary GPS for LED status (instead of always using first GPS)  
+------------------------------------------------------------------
+ArduCopter 3.2-rc13 23-Oct-2014
+Changes from 3.2-rc12
+1) DCM check triggers LAND if yaw disagrees with GPS by > 60deg (configure with DCM_CHECK_THRESH param) and in Loiter, PosHold, Auto, etc 
+2) Safety features:
+    a) landing detector checks baro climbrate between -1.5 ~ +1.5 m/s
+    b) sanity check AHRS_RP_P and AHRS_YAW_P are never less than 0.05
+    c) check set-mode requests from GCS are for this vehicle
+3) Bug fixes:
+    a) fix ch6 tuning of wp-speed (was getting stuck at zero)
+    b) parachute servo set to off position on startup
+    c) Auto Takeoff timing bug fix that could cause severe lean on takeoff
+    d) timer fix for "slow start" of motors on Pixhawk (timer was incorrectly based on 100hz APM2 main loop speed)
+4) reduced number of relays from 4 to 2 (saves memory and flash required on APM boards)
+5) reduced number of range finders from 2 to 1 (saves memory and flash on APM boards)
+6) allow logging from startup when LOG_BITMASK set to "All+DisarmedLogging" 
+------------------------------------------------------------------
+ArduCopter 3.2-rc12 10-Oct-2014
+Changes from 3.2-rc11
+1) disable sonar on APM1 and TradHeli (APM1 & APM2) to allow code to fit 
+2) Add pre-arm and health check that gyro calibration succeeded 
+3) Bug fix to EKF reporting invalid position and velocity when switched on in flight with Ch7/Ch8 switch 
+------------------------------------------------------------------
+ArduCopter 3.2-rc11 06-Oct-2014
+Changes from 3.2-rc10
+1) reduce lean on take-off in Auto by resetting horizontal position targets 
+2) TradHeli landing check ignores overall throttle output
+3) reduce AHRS bad messages by delaying 20sec after init to allow EKF to settle (Pixhawk only)
+4) Bug fixes:
+    a) fix THR_MIN scaling issue that could cause landing-detector to fail to detect landing when ch3 min~max > 1000 pwm
+    b) fix Mediatek GPS configuration so update rate is set correctly to 5hz
+    c) fix to Condition-Yaw mission command to support relative angles
+    d) EKF bug fixes when recovering from GPS glitches (affects only Pixhawks using EKF)
+------------------------------------------------------------------
+ArduCopter 3.2-rc10 24-Sep-2014
+Changes from 3.2-rc9
+1) two-stage land-detector to reduce motor run-up when landing in Loiter, PosHold, RTL, Auto
+2) Allow passthrough from input to output of channels 9 ~ 14 (thanks Emile!)
+3) Add 4hz filter to vertical velocity error during AltHold
+4) Safety Feature:
+    a) increase Alt Disparity pre-arm check threshold to 2m (was 1m)
+    b) reset battery failsafe after disarming/arming (thanks AndKe!)
+    c) EKF only apply centrifugal corrections when GPS has at least 6 satellites (Pixhawk with EKF enabled only)
+5) Bug fixes:
+    a) to default compass devid to zero when no compass connected
+    b) reduce motor run-up while landing in RTL
+------------------------------------------------------------------
+ArduCopter 3.2-rc9 11-Sep-2014
+Changes from 3.2-rc8
+1) FRAM bug fix that could stop Mission or Parameter changes from being saved (Pixhawk, VRBrain only)
+------------------------------------------------------------------
+ArduCopter 3.2-rc8 11-Sep-2014
+Changes from 3.2-rc7
+1) EKF reduced ripple to resolve copter motor pulsing
+2) Default Param changes:
+    a) AltHold Rate P reduced from 6 to 5
+    b) AltHold Accel P reduced from 0.75 to 0.5, I from 1.5 to 1.0
+    c) EKF check threshold increased from 0.6 to 0.8 to reduce false positives
+3) sensor health flags sent to GCS only after initialisation to remove false alerts 
+4) suppress bad terrain data alerts
+5) Bug Fix:
+    a)PX4 dataflash RAM useage reduced to 8k so it works again  
+------------------------------------------------------------------
+ArduCopter 3.2-rc7 04-Sep-2014
+Changes from 3.2-rc6
+1) Safety Items:
+    a) Landing check made more strict (climb rate requirement reduced to 30cm/s, overall throttle < 25%, rotation < 20deg/sec)
+    b) pre-arm check that accels are consistent (Pixhawk only, must be within 1m/sec/sec of each other)
+    c) pre-arm check that gyros are consistent (Pixhawk only, must be within 20deg/sec of each other)
+    d) report health of all accels and gyros (not just primary) to ground station 
+------------------------------------------------------------------
+ArduCopter 3.2-rc6 31-Aug-2014
+Changes from 3.2-rc5
+1) Spline twitch when passing through a waypoint largely resolved
+2) THR_DZ param added to allow user configuration of throttle deadzone during AltHold, Loiter, PosHold
+3) Landing check made more strict (climb rate must be -40~40cm/s for 1 full second)
+4) LAND_REPOSITION param default set to 1
+5) TradHeli with flybar passes through pilot inputs directly to swash when in ACRO mode
+6) Safety Items:
+    a) EKF check disabled when using inertial nav (caused too many false positives)
+    b) pre-arm check of internal vs external compass direction (must be within 45deg of each other)
+7) Bug Fixes:
+    a) resolve NaN in angle targets when vehicle hits gimbal lock in ACRO mode
+    b) resolve GPS driver buffer overflow that could lead to missed GPS messages on Pixhawk/PX4 boards
+    c) resolve false "compass not calibrated" warnings on Pixhawk/PX4 caused by missing device id initialisation 
+------------------------------------------------------------------
 ArduCopter 3.2-rc5 15-Aug-2014
-Changes from 3.2-rc4 
+Changes from 3.2-rc4
 1) Pixhawk's max num waypoints increased to 718
 2) Smoother take-off in AltHold, Loiter, PosHold (including removing initial 20cm jump when taking off)
 3) ACRO mode roll, pitch, yaw EXPO added for faster rotation when sticks are at extremes (see ACRO_EXPO parameter)

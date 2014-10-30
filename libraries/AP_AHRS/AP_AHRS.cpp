@@ -238,12 +238,30 @@ void AP_AHRS::update_trig(void)
     _cos_yaw = constrain_float(yaw_vector.x, -1.0, 1.0);
 
     // cos_roll, cos_pitch
-    _cos_pitch = safe_sqrt(1 - (temp.c.x * temp.c.x));
-    _cos_roll = temp.c.z / _cos_pitch;
+    float cx2 = temp.c.x * temp.c.x;
+    if (cx2 >= 1.0f) {
+        _cos_pitch = 0;
+        _cos_roll = 1.0f;
+    } else {
+        _cos_pitch = safe_sqrt(1 - cx2);
+        _cos_roll = temp.c.z / _cos_pitch;
+    }
     _cos_pitch = constrain_float(_cos_pitch, 0, 1.0);
     _cos_roll = constrain_float(_cos_roll, -1.0, 1.0); // this relies on constrain_float() of infinity doing the right thing,which it does do in avr-libc
 
     // sin_roll, sin_pitch
     _sin_pitch = -temp.c.x;
     _sin_roll = temp.c.y / _cos_pitch;
+}
+
+/*
+  update the centi-degree values
+ */
+void AP_AHRS::update_cd_values(void)
+{
+    roll_sensor  = degrees(roll) * 100;
+    pitch_sensor = degrees(pitch) * 100;
+    yaw_sensor   = degrees(yaw) * 100;
+    if (yaw_sensor < 0)
+        yaw_sensor += 36000;
 }

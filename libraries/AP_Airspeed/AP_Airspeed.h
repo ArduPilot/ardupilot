@@ -138,7 +138,7 @@ public:
     // return health status of sensor
     bool healthy(void) const { return _healthy; }
 
-    void setHIL(float pressure) { _hil_set=true; _hil_pressure=pressure; };
+    void setHIL(float pressure) { _healthy=_hil_set=true; _hil_pressure=pressure; };
 
     // return time in ms of last update
     uint32_t last_update_ms(void) const { return _last_update_ms; }

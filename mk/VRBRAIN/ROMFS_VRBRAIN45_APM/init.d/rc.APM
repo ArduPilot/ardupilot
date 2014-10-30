@@ -76,20 +76,7 @@ else
     sh /etc/init.d/rc.error
 fi
 
-echo "[APM] Starting HMC5883 Internal"
-if hmc5883 -I start
-then
-    echo "[APM] HMC5883 onboard started OK"
-    if hmc5883 calibrate
-    then
-      echo "[APM] HMC5883 onboard calibrate OK"
-    else 
-      echo "[APM] HMC5883 onboard calibrate failed"
-    fi
-else
-    echo "[APM] HMC5883 onboard start failed"
-#    sh /etc/init.d/rc.error
-fi
+
 
 echo "[APM] Starting HMC5883 External GPS"
 if hmc5883 -X start
@@ -106,6 +93,20 @@ else
 #    sh /etc/init.d/rc.error
 fi
 
+echo "[APM] Starting HMC5883 Internal"
+if hmc5883 -I start
+then
+    echo "[APM] HMC5883 onboard started OK"
+    if hmc5883 -I calibrate
+    then
+      echo "[APM] HMC5883 onboard calibrate OK"
+    else 
+      echo "[APM] HMC5883 onboard calibrate failed"
+    fi
+else
+    echo "[APM] HMC5883 onboard start failed"
+#    sh /etc/init.d/rc.error
+fi
 echo "[APM] Starting MPU6000 Internal"
 if mpu6000 -I start
 then

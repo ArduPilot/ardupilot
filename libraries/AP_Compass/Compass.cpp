@@ -45,7 +45,7 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @Description: Enable or disable the use of the compass (instead of the GPS) for determining heading
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO("USE",    4, Compass, _use_for_yaw, 1), // true if used for DCM yaw
+    AP_GROUPINFO("USE",    4, Compass, _use_for_yaw[0], 1), // true if used for DCM yaw
 
 #if !defined( __AVR_ATmega1280__ )
     // @Param: AUTODEC
@@ -89,17 +89,55 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @DisplayName: Compass orientation
     // @Description: The orientation of the compass relative to the autopilot board. This will default to the right value for each board type, but can be changed if you have an external compass. See the documentation for your external compass for the right value. The correct orientation should give the X axis forward, the Y axis to the right and the Z axis down. So if your aircraft is pointing west it should show a positive value for the Y axis, and a value close to zero for the X axis. On a PX4 or Pixhawk with an external compass the correct value is zero if the compass is correctly oriented. NOTE: This orientation is combined with any AHRS_ORIENTATION setting.
     // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Roll180Yaw45,10:Roll180Yaw90,11:Roll180Yaw135,12:Pitch180,13:Roll180Yaw225,14:Roll180Yaw270,15:Roll180Yaw315,16:Roll90,17:Roll90Yaw45,18:Roll90Yaw90,19:Roll90Yaw135,20:Roll270,21:Roll270Yaw45,22:Roll270Yaw90,23:Roll270Yaw136,24:Pitch90,25:Pitch270,26:Pitch180Yaw90,27:Pitch180Yaw270,28:Roll90Pitch90,29:Roll180Pitch90,30:Roll270Pitch90,31:Roll90Pitch180,32:Roll270Pitch180,33:Roll90Pitch270,34:Roll180Pitch270,35:Roll270Pitch270,36:Roll90Pitch180Yaw90,37:Roll90Yaw270
-    AP_GROUPINFO("ORIENT", 8, Compass, _orientation, ROTATION_NONE),
+    AP_GROUPINFO("ORIENT", 8, Compass, _orientation[0], ROTATION_NONE),
 
     // @Param: EXTERNAL
     // @DisplayName: Compass is attached via an external cable
     // @Description: Configure compass so it is attached externally. This is auto-detected on PX4 and Pixhawk, but must be set correctly on an APM2. Set to 1 if the compass is externally connected. When externally connected the COMPASS_ORIENT option operates independently of the AHRS_ORIENTATION board orientation option
     // @Values: 0:Internal,1:External
     // @User: Advanced
-    AP_GROUPINFO("EXTERNAL", 9, Compass, _external, 0),
+    AP_GROUPINFO("EXTERNAL", 9, Compass, _external[0], 0),
 
 #if COMPASS_MAX_INSTANCES > 1
+    // @Param: OFS2_X
+    // @DisplayName: Compass2 offsets on the X axis
+    // @Description: Offset to be added to compass2's x-axis values to compensate for metal in the frame
+    // @Range: -400 400
+    // @Increment: 1
+
+    // @Param: OFS2_Y
+    // @DisplayName: Compass2 offsets on the Y axis
+    // @Description: Offset to be added to compass2's y-axis values to compensate for metal in the frame
+    // @Range: -400 400
+    // @Increment: 1
+
+    // @Param: OFS2_Z
+    // @DisplayName: Compass2 offsets on the Z axis
+    // @Description: Offset to be added to compass2's z-axis values to compensate for metal in the frame
+    // @Range: -400 400
+    // @Increment: 1
     AP_GROUPINFO("OFS2",    10, Compass, _offset[1], 0),
+
+    // @Param: MOT2_X
+    // @DisplayName: Motor interference compensation to compass2 for body frame X axis
+    // @Description: Multiplied by the current throttle and added to compass2's x-axis values to compensate for motor interference
+    // @Range: -1000 1000
+    // @Units: Offset per Amp or at Full Throttle
+    // @Increment: 1
+
+    // @Param: MOT2_Y
+    // @DisplayName: Motor interference compensation to compass2 for body frame Y axis
+    // @Description: Multiplied by the current throttle and added to compass2's y-axis values to compensate for motor interference
+    // @Range: -1000 1000
+    // @Units: Offset per Amp or at Full Throttle
+    // @Increment: 1
+
+    // @Param: MOT2_Z
+    // @DisplayName: Motor interference compensation to compass2 for body frame Z axis
+    // @Description: Multiplied by the current throttle and added to compass2's z-axis values to compensate for motor interference
+    // @Range: -1000 1000
+    // @Units: Offset per Amp or at Full Throttle
+    // @Increment: 1
     AP_GROUPINFO("MOT2",    11, Compass, _motor_compensation[1], 0),
 
     // @Param: PRIMARY
@@ -111,7 +149,45 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
 #endif
 
 #if COMPASS_MAX_INSTANCES > 2
+    // @Param: OFS3_X
+    // @DisplayName: Compass3 offsets on the X axis
+    // @Description: Offset to be added to compass3's x-axis values to compensate for metal in the frame
+    // @Range: -400 400
+    // @Increment: 1
+
+    // @Param: OFS3_Y
+    // @DisplayName: Compass3 offsets on the Y axis
+    // @Description: Offset to be added to compass3's y-axis values to compensate for metal in the frame
+    // @Range: -400 400
+    // @Increment: 1
+
+    // @Param: OFS3_Z
+    // @DisplayName: Compass3 offsets on the Z axis
+    // @Description: Offset to be added to compass3's z-axis values to compensate for metal in the frame
+    // @Range: -400 400
+    // @Increment: 1
     AP_GROUPINFO("OFS3",    13, Compass, _offset[2], 0),
+
+    // @Param: MOT3_X
+    // @DisplayName: Motor interference compensation to compass3 for body frame X axis
+    // @Description: Multiplied by the current throttle and added to compass3's x-axis values to compensate for motor interference
+    // @Range: -1000 1000
+    // @Units: Offset per Amp or at Full Throttle
+    // @Increment: 1
+
+    // @Param: MOT3_Y
+    // @DisplayName: Motor interference compensation to compass3 for body frame Y axis
+    // @Description: Multiplied by the current throttle and added to compass3's y-axis values to compensate for motor interference
+    // @Range: -1000 1000
+    // @Units: Offset per Amp or at Full Throttle
+    // @Increment: 1
+
+    // @Param: MOT3_Z
+    // @DisplayName: Motor interference compensation to compass3 for body frame Z axis
+    // @Description: Multiplied by the current throttle and added to compass3's z-axis values to compensate for motor interference
+    // @Range: -1000 1000
+    // @Units: Offset per Amp or at Full Throttle
+    // @Increment: 1
     AP_GROUPINFO("MOT3",    14, Compass, _motor_compensation[2], 0),
 #endif
 
@@ -120,13 +196,13 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @DisplayName: Compass device id
     // @Description: Compass device id.  Automatically detected, do not set manually
     // @User: Advanced
-    AP_GROUPINFO("DEV_ID",  15, Compass, _dev_id[0], COMPASS_EXPECTED_DEV_ID),
+    AP_GROUPINFO("DEV_ID",  15, Compass, _dev_id[0], 0),
 
     // @Param: DEV_ID2
     // @DisplayName: Compass2 device id
     // @Description: Second compass's device id.  Automatically detected, do not set manually
     // @User: Advanced
-    AP_GROUPINFO("DEV_ID2", 16, Compass, _dev_id[1], COMPASS_EXPECTED_DEV_ID2),
+    AP_GROUPINFO("DEV_ID2", 16, Compass, _dev_id[1], 0),
 #endif
 
 #if COMPASS_MAX_INSTANCES > 2
@@ -134,7 +210,51 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @DisplayName: Compass3 device id
     // @Description: Third compass's device id.  Automatically detected, do not set manually
     // @User: Advanced
-    AP_GROUPINFO("DEV_ID3", 17, Compass, _dev_id[2], COMPASS_EXPECTED_DEV_ID3),
+    AP_GROUPINFO("DEV_ID3", 17, Compass, _dev_id[2], 0),
+#endif
+
+#if COMPASS_MAX_INSTANCES > 1
+    // @Param: USE2
+    // @DisplayName: Compass2 used for yaw
+    // @Description: Enable or disable the second compass for determining heading.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("USE2",    18, Compass, _use_for_yaw[1], 1),
+
+    // @Param: ORIENT2
+    // @DisplayName: Compass2 orientation
+    // @Description: The orientation of the second compass relative to the frame (if external) or autopilot board (if internal).
+    // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Roll180Yaw45,10:Roll180Yaw90,11:Roll180Yaw135,12:Pitch180,13:Roll180Yaw225,14:Roll180Yaw270,15:Roll180Yaw315,16:Roll90,17:Roll90Yaw45,18:Roll90Yaw90,19:Roll90Yaw135,20:Roll270,21:Roll270Yaw45,22:Roll270Yaw90,23:Roll270Yaw136,24:Pitch90,25:Pitch270,26:Pitch180Yaw90,27:Pitch180Yaw270,28:Roll90Pitch90,29:Roll180Pitch90,30:Roll270Pitch90,31:Roll90Pitch180,32:Roll270Pitch180,33:Roll90Pitch270,34:Roll180Pitch270,35:Roll270Pitch270,36:Roll90Pitch180Yaw90,37:Roll90Yaw270
+    AP_GROUPINFO("ORIENT2", 19, Compass, _orientation[1], ROTATION_NONE),
+
+    // @Param: EXTERNAL2
+    // @DisplayName: Compass2 is attached via an external cable
+    // @Description: Configure second compass so it is attached externally. This is auto-detected on PX4 and Pixhawk.
+    // @Values: 0:Internal,1:External
+    // @User: Advanced
+    AP_GROUPINFO("EXTERNAL2",20, Compass, _external[1], 0),
+#endif
+
+#if COMPASS_MAX_INSTANCES > 2
+    // @Param: USE3
+    // @DisplayName: Compass3 used for yaw
+    // @Description: Enable or disable the third compass for determining heading.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("USE3",    21, Compass, _use_for_yaw[2], 1),
+
+    // @Param: ORIENT3
+    // @DisplayName: Compass3 orientation
+    // @Description: The orientation of the third compass relative to the frame (if external) or autopilot board (if internal).
+    // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Roll180Yaw45,10:Roll180Yaw90,11:Roll180Yaw135,12:Pitch180,13:Roll180Yaw225,14:Roll180Yaw270,15:Roll180Yaw315,16:Roll90,17:Roll90Yaw45,18:Roll90Yaw90,19:Roll90Yaw135,20:Roll270,21:Roll270Yaw45,22:Roll270Yaw90,23:Roll270Yaw136,24:Pitch90,25:Pitch270,26:Pitch180Yaw90,27:Pitch180Yaw270,28:Roll90Pitch90,29:Roll180Pitch90,30:Roll270Pitch90,31:Roll90Pitch180,32:Roll270Pitch180,33:Roll90Pitch270,34:Roll180Pitch270,35:Roll270Pitch270,36:Roll90Pitch180Yaw90,37:Roll90Yaw270
+    AP_GROUPINFO("ORIENT3", 22, Compass, _orientation[2], ROTATION_NONE),
+
+    // @Param: EXTERNAL3
+    // @DisplayName: Compass3 is attached via an external cable
+    // @Description: Configure third compass so it is attached externally. This is auto-detected on PX4 and Pixhawk.
+    // @Values: 0:Internal,1:External
+    // @User: Advanced
+    AP_GROUPINFO("EXTERNAL3",23, Compass, _external[2], 0),
 #endif
 
     AP_GROUPEND
@@ -167,6 +287,15 @@ bool
 Compass::init()
 {
     return true;
+}
+
+void
+Compass::set_offsets(uint8_t i, const Vector3f &offsets)
+{
+    // sanity check compass instance provided
+    if (i < COMPASS_MAX_INSTANCES) {
+        _offset[i].set(offsets);
+    }
 }
 
 void
@@ -225,6 +354,21 @@ Compass::set_initial_location(int32_t latitude, int32_t longitude)
                     (float)longitude / 10000000)));
     }
 #endif
+}
+
+/// return true if the compass should be used for yaw calculations
+bool
+Compass::use_for_yaw(void) const
+{
+    uint8_t prim = get_primary();
+    return healthy(prim) && use_for_yaw(prim);
+}
+
+/// return true if the specified compass can be used for yaw calculations
+bool
+Compass::use_for_yaw(uint8_t i) const
+{
+    return _use_for_yaw[i];
 }
 
 void
@@ -317,4 +461,25 @@ bool Compass::configured(void)
         all_configured = all_configured && configured(i);
     }
     return all_configured;
+}
+
+/*
+  apply offset and motor compensation corrections
+ */
+void Compass::apply_corrections(Vector3f &mag, uint8_t i)
+{
+    const Vector3f &offsets = _offset[i].get();
+    const Vector3f &mot = _motor_compensation[i].get();
+
+    /*
+      note that _motor_offset[] is kept even if compensation is not
+      being applied so it can be logged correctly
+     */
+    mag += offsets;
+    if(_motor_comp_type != AP_COMPASS_MOT_COMP_DISABLED && _thr_or_curr != 0.0f) {
+        _motor_offset[i] = mot * _thr_or_curr;
+        mag += _motor_offset[i];
+    } else {
+        _motor_offset[i].zero();
+    }
 }

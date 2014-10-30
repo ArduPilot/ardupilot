@@ -349,7 +349,7 @@ test_ins(uint8_t argc, const Menu::arg *argv)
     uint8_t medium_loopCounter = 0;
 
 	while(1){
-        ins.wait_for_sample(1000);
+        ins.wait_for_sample();
 
         ahrs.update();
 
@@ -409,7 +409,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
     uint8_t medium_loopCounter = 0;
 
     while(1) {
-        ins.wait_for_sample(1000);
+        ins.wait_for_sample();
         ahrs.update();
 
         medium_loopCounter++;

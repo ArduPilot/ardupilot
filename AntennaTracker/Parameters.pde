@@ -125,16 +125,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: PROXY_MODE
     // @DisplayName: Also act as a MAVLink proxy for a vehicle
     // @Description: If true, the tracker will act as a MAVlink proxy for a remote vehicle, and will eavesdrop vehicle position reports. 
-    // @Units: boolean
-    // @Increment: 1
-    // @Range: 0 1
+    // @Values: 0:Off,1:On
     // @User: Standard
     GSCALAR(proxy_mode,          "PROXY_MODE",   0),
 
     // @Param: SERVO_TYPE
     // @DisplayName: Type of servo system being used
     // @Description: This allows selection of position servos or on/off servos
-    // @Values: Position:0,OnOff:1
+    // @Values: 0:Position,1:OnOff
     // @User: Standard
     GSCALAR(servo_type,          "SERVO_TYPE",   SERVO_TYPE_POSITION),
 
@@ -191,6 +189,24 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: -10 10
     // @User: Standard
     GSCALAR(pitch_trim,              "PITCH_TRIM", 0),
+
+    // @Param: YAW_RANGE
+    // @DisplayName: Yaw Angle Range
+    // @Description: Yaw axis total range of motion in degrees
+    // @Units: degrees
+    // @Increment: 0.1
+    // @Range: 0 360
+    // @User: Standard
+    GSCALAR(yaw_range,              "YAW_RANGE", YAW_RANGE_DEFAULT),
+
+    // @Param: PITCH_RANGE
+    // @DisplayName: Pitch Range
+    // @Description: Pitch axis total range of motion in degrees
+    // @Units: degrees
+    // @Increment: 0.1
+    // @Range: 0 180
+    // @User: Standard
+    GSCALAR(pitch_range,            "PITCH_RANGE", PITCH_RANGE_DEFAULT),
 
     // barometer ground calibration. The GND_ prefix is chosen for
     // compatibility with previous releases of ArduPlane

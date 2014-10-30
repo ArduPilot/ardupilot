@@ -114,9 +114,9 @@ float AP_L1_Control::crosstrack_error(void) const
  */
 void AP_L1_Control::_prevent_indecision(float &Nu)
 {
-    const float Nu_limit = 0.9f*M_PI;
-    if (fabs(Nu) > Nu_limit &&
-        fabs(_last_Nu) > Nu_limit &&
+    const float Nu_limit = 0.9f*M_PI_F;
+    if (fabsf(Nu) > Nu_limit &&
+        fabsf(_last_Nu) > Nu_limit &&
         fabsf(wrap_180_cd(_target_bearing_cd - _ahrs.yaw_sensor)) > 12000 &&
         Nu * _last_Nu < 0.0f) {
         // we are moving away from the target waypoint and pointing
@@ -269,7 +269,7 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
     // if too close to the waypoint, use the velocity vector
     // if the velocity vector is too small, use the heading vector
     Vector2f A_air_unit;
-    if (A_air.length() > 0.1) {
+    if (A_air.length() > 0.1f) {
         A_air_unit = A_air.normalized();
     } else {
         if (_groundspeed_vector.length() < 0.1f) {

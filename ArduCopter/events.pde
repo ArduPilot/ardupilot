@@ -16,7 +16,7 @@ static void failsafe_radio_on_event()
         case STABILIZE:
         case ACRO:
             // if throttle is zero OR vehicle is landed disarm motors
-            if (g.rc_3.control_in == 0 || ap.land_complete) {
+            if (ap.throttle_zero || ap.land_complete) {
                 init_disarm_motors();
 
             // if failsafe_throttle is FS_THR_ENABLED_ALWAYS_LAND then land immediately
@@ -115,7 +115,7 @@ static void failsafe_battery_event(void)
             case STABILIZE:
             case ACRO:
                 // if throttle is zero OR vehicle is landed disarm motors
-                if (g.rc_3.control_in == 0 || ap.land_complete) {
+                if (ap.throttle_zero || ap.land_complete) {
                     init_disarm_motors();
                 }else{
                     // set mode to RTL or LAND
@@ -164,7 +164,7 @@ static void failsafe_battery_event(void)
     set_failsafe_battery(true);
 
     // warn the ground station and log to dataflash
-    gcs_send_text_P(SEVERITY_LOW,PSTR("Low Battery!"));
+    gcs_send_text_P(SEVERITY_HIGH,PSTR("Low Battery!"));
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_BATT, ERROR_CODE_FAILSAFE_OCCURRED);
 
 }
@@ -205,7 +205,7 @@ static void failsafe_gps_check()
     // GPS failsafe event has occured
     // update state, warn the ground station and log to dataflash
     set_failsafe_gps(true);
-    gcs_send_text_P(SEVERITY_LOW,PSTR("Lost GPS!"));
+    gcs_send_text_P(SEVERITY_HIGH,PSTR("Lost GPS!"));
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_GPS, ERROR_CODE_FAILSAFE_OCCURRED);
 
     // take action based on flight mode and FS_GPS_ENABLED parameter
@@ -274,7 +274,7 @@ static void failsafe_gcs_check()
         case ACRO:
         case SPORT:
             // if throttle is zero disarm motors
-            if (g.rc_3.control_in == 0) {
+            if (ap.throttle_zero) {
                 init_disarm_motors();
             }else if(home_distance > wp_nav.get_wp_radius()) {
                 if (!set_mode(RTL)) {

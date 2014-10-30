@@ -14,7 +14,19 @@ static bool verify_land()
     // so we don't verify command completion. Instead we use this to
     // adjust final landing parameters
 
+    // If a go around has been commanded, we are done landing.  This will send
+    // the mission to the next mission item, which presumably is a mission
+    // segment with operations to perform when a landing is called off.
+    // If there are no commands after the land waypoint mission item then
+    // the plane will proceed to loiter about its home point.
+    if (auto_state.commanded_go_around) {
+        return true;
+    }
+
     float height = height_above_target();
+
+    // use rangefinder to correct if possible
+    height -= rangefinder_correction();
 
     // calculate the sink rate.
     float sink_rate;
@@ -30,13 +42,17 @@ static bool verify_land()
     // low pass the sink rate to take some of the noise out
     auto_state.land_sink_rate = 0.8f * auto_state.land_sink_rate + 0.2f*sink_rate;
     
-    /* Set land_complete (which starts the flare) under 2 conditions:
+    /* Set land_complete (which starts the flare) under 3 conditions:
        1) we are within LAND_FLARE_ALT meters of the landing altitude
        2) we are within LAND_FLARE_SEC of the landing point vertically
           by the calculated sink rate
+       3) we have gone past the landing point and don't have
+          rangefinder data (to prevent us keeping throttle on 
+          after landing if we've had positive baro drift)
     */
     if (height <= g.land_flare_alt ||
-        height <= -auto_state.land_sink_rate * g.land_flare_sec) {
+        height <= -auto_state.land_sink_rate * g.land_flare_sec ||
+        (!rangefinder_state.in_range && location_passed_point(current_loc, prev_WP_loc, next_WP_loc))) {
 
         if (!auto_state.land_complete) {
             gcs_send_text_fmt(PSTR("Flare %.1fm sink=%.2f speed=%.1f"), 
@@ -67,10 +83,71 @@ static bool verify_land()
     nav_controller->update_waypoint(prev_WP_loc, land_WP_loc);
 
     /*
-      we always return false as a landing mission item never
-      completes - we stay on this waypoint unless the GCS commands us
-      to change mission item or reset the mission
+      we return false as a landing mission item never completes
+
+      we stay on this waypoint unless the GCS commands us to change
+      mission item or reset the mission, or a go-around is commanded
      */
     return false;
 }
 
+
+/*
+  a special glide slope calculation for the landing approach
+
+  During the land approach use a linear glide slope to a point
+  projected through the landing point. We don't use the landing point
+  itself as that leads to discontinuities close to the landing point,
+  which can lead to erratic pitch control
+ */
+static void setup_landing_glide_slope(void)
+{
+        Location loc = next_WP_loc;
+
+        // project a poiunt 500 meters past the landing point, passing
+        // through the landing point
+        const float land_projection = 500;        
+        int32_t land_bearing_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
+        float land_slope = ((next_WP_loc.alt - prev_WP_loc.alt)*0.01f) / (float)wp_totalDistance;
+        location_update(loc, land_bearing_cd*0.01f, land_projection);
+        loc.alt += land_slope * land_projection * 100;
+
+        // setup the offset_cm for set_target_altitude_proportion()
+        target_altitude.offset_cm = loc.alt - prev_WP_loc.alt;
+
+        // calculate the proportion we are to the target
+        float land_distance = get_distance(current_loc, loc);
+        float land_total_distance = get_distance(prev_WP_loc, loc);
+
+        // now setup the glide slope for landing
+        set_target_altitude_proportion(loc, land_distance / land_total_distance);
+
+        // stay within the range of the start and end locations in altitude
+        constrain_target_altitude_location(loc, prev_WP_loc);
+}
+
+/* 
+   find the nearest landing sequence starting point (DO_LAND_START) and
+   switch to that mission item.  Returns false if no DO_LAND_START
+   available.
+ */
+static bool jump_to_landing_sequence(void) 
+{
+    uint16_t land_idx = mission.get_landing_sequence_start();
+    if (land_idx != 0) {
+        if (mission.set_current_cmd(land_idx)) {
+            set_mode(AUTO);
+
+            //if the mission has ended it has to be restarted
+            if (mission.state() == AP_Mission::MISSION_STOPPED) {
+                mission.resume();
+            }
+
+            gcs_send_text_P(SEVERITY_LOW, PSTR("Landing sequence begun."));
+            return true;
+        }            
+    }
+
+    gcs_send_text_P(SEVERITY_HIGH, PSTR("Unable to start landing sequence."));
+    return false;
+}

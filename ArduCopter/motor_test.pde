@@ -96,9 +96,6 @@ static bool mavlink_motor_test_check(mavlink_channel_t chan)
 //  returns MAV_RESULT_ACCEPTED on success, MAV_RESULT_FAILED on failure
 static uint8_t mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type, uint16_t throttle_value, float timeout_sec)
 {
-    // debug
-    cliSerial->printf_P(PSTR("\nMotTest Seq:%d TT:%d Thr:%d TimOut:%4.2f"),(int)motor_seq, (int)throttle_type, (int)throttle_value, (float)timeout_sec);
-
     // if test has not started try to start it
     if (!ap.motor_test) {
         // perform checks that it is ok to start test
