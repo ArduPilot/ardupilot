@@ -2819,16 +2819,20 @@ void NavEKF::resetGyroBias(void)
 
 }
 
-// return weighting of first IMU in blending function and the individual Z-accel bias estimates in m/s^2
-void NavEKF::getAccelBias(Vector3f &accelBias) const
+// return weighting of first IMU in blending function
+void NavEKF::getIMU1Weighting(float &ret) const
 {
-    accelBias.x = IMU1_weighting;
+    ret = IMU1_weighting;
+}
+
+// return the individual Z-accel bias estimates in m/s^2
+void NavEKF::getAccelZBias(float &zbias1, float &zbias2) const {
     if (dtIMU == 0) {
-        accelBias.y = 0;
-        accelBias.z = 0;
+        zbias1 = 0;
+        zbias2 = 0;
     } else {
-        accelBias.y = state.accel_zbias2 / dtIMU;
-        accelBias.z = state.accel_zbias1 / dtIMU;
+        zbias1 = state.accel_zbias1 / dtIMU;
+        zbias2 = state.accel_zbias2 / dtIMU;
     }
 }
 
