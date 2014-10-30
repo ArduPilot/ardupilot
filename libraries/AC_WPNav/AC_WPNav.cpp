@@ -86,10 +86,11 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
 // Note that the Vector/Matrix constructors already implicitly zero
 // their values.
 //
-AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosControl& pos_control) :
+AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control) :
     _inav(inav),
     _ahrs(ahrs),
     _pos_control(pos_control),
+    _attitude_control(attitude_control),
     _loiter_last_update(0),
     _loiter_step(0),
     _pilot_accel_fwd_cms(0),
@@ -395,7 +396,7 @@ void AC_WPNav::set_wp_origin_and_destination(const Vector3f& origin, const Vecto
         _yaw = get_bearing_cd(_origin, _destination);
     } else {
         // set target yaw to current heading.  Alternatively we could pull this from the attitude controller if we had access to it
-        _yaw = _ahrs.yaw_sensor;
+        _yaw = _attitude_control.angle_ef_targets().z;
     }
 
     // initialise intermediate point to the origin
@@ -785,7 +786,7 @@ void AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
     }
 
     // initialise yaw heading to current heading
-    _yaw = _ahrs.yaw_sensor;
+    _yaw = _attitude_control.angle_ef_targets().z;
 
     // store origin and destination locations
     _origin = origin;
