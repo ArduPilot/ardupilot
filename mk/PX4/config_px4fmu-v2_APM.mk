@@ -57,6 +57,7 @@ ifneq ($(wildcard systemcmds/auth),)
 MODULES		+= systemcmds/auth
 endif
 MODULES         += systemcmds/mtd
+MODULES         += systemcmds/motor_test
 
 #
 # Library modules
