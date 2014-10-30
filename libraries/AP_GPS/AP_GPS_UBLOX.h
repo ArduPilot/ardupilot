@@ -258,6 +258,7 @@ private:
 
     uint32_t        _last_vel_time;
     uint32_t        _last_pos_time;
+    uint32_t        _last_sol_time;
 
     // do we have new position information?
     bool            _new_position:1;
@@ -277,6 +278,13 @@ private:
     uint32_t _last_5hz_time;
     uint32_t _last_hw_status;
 
+    // accuracies for logging
+    bool _ubx3_sent;
+    uint32_t _pAcc;
+    uint32_t _sAcc;
+    uint32_t _hAcc;
+    uint32_t _vAcc;
+
     void 	    _configure_navigation_rate(uint16_t rate_ms);
     void        _configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate);
     void        _configure_gps(void);
@@ -289,6 +297,7 @@ private:
     void write_logging_headers(void);
     void log_mon_hw(void);
     void log_mon_hw2(void);
+    void log_acc(void);
 };
 
 #endif // __AP_GPS_UBLOX_H__
