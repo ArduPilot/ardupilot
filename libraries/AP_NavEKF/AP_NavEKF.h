@@ -364,7 +364,7 @@ private:
     bool posTimeout;                // boolean true if position measurements have failed innovation consistency check and timed out
     bool hgtTimeout;                // boolean true if height measurements have failed innovation consistency check and timed out
     bool magTimeout;                // boolean true if magnetometer measurements have failed for too long and have timed out
-    bool magFailed;                 // boolean true if the magnetometer has failed
+    bool badMag;                    // boolean true if the magnetometer is declared to be producing bad data
 
     float gpsNoiseScaler;           // Used to scale the  GPS measurement noise and consistency gates to compensate for operation with small satellite counts
     Vector31 Kfusion;               // Kalman gain vector
@@ -393,6 +393,8 @@ private:
     ftype hgtRate;                  // state for rate of change of height filter
     bool onGround;                  // boolean true when the flight vehicle is on the ground (not flying)
     bool prevOnGround;              // value of onGround from previous update
+    bool manoeuvring;               // boolean true when the flight vehicle is performing horizontal changes in velocity
+    uint32_t airborneDetectTime_ms; // last time flight movement was detected
     Vector6 innovVelPos;            // innovation output for a group of measurements
     Vector6 varInnovVelPos;         // innovation variance output for a group of measurements
     bool fuseVelData;               // this boolean causes the velNED measurements to be fused
@@ -414,7 +416,6 @@ private:
     bool fuseVtasData;              // boolean true when airspeed data is to be fused
     float VtasMeas;                 // true airspeed measurement (m/s)
     state_elements statesAtVtasMeasTime;  // filter states at the effective measurement time
-    Vector3f magBias;               // magnetometer bias vector in XYZ body axes
     const ftype covTimeStepMax;     // maximum time allowed between covariance predictions
     const ftype covDelAngMax;       // maximum delta angle between covariance predictions
     bool covPredStep;               // boolean set to true when a covariance prediction step has been performed
