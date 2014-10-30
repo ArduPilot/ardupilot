@@ -500,7 +500,7 @@ static void startup_INS_ground(bool do_accel_init)
         // the barometer begins updating when we get the first
         // HIL_STATE message
         gcs_send_text_P(SEVERITY_LOW, PSTR("Waiting for first HIL_STATE message"));
-        delay(1000);
+        hal.scheduler->delay(1000);
     }
     
     // set INS to HIL mode
