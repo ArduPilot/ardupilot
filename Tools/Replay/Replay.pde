@@ -350,7 +350,9 @@ void loop()
             Vector3f velNED;
             Vector3f posNED;
             Vector3f gyroBias;
-            Vector3f accelBias;
+            float accelWeighting;
+            float accelZBias1;
+            float accelZBias2;
             Vector3f windVel;
             Vector3f magNED;
             Vector3f magXYZ;
@@ -374,7 +376,8 @@ void loop()
             NavEKF.getVelNED(velNED);
             NavEKF.getPosNED(posNED);
             NavEKF.getGyroBias(gyroBias);
-            NavEKF.getAccelBias(accelBias);
+            NavEKF.getIMU1Weighting(accelWeighting);
+            NavEKF.getAccelZBias(accelZBias1, accelZBias2);
             NavEKF.getWind(windVel);
             NavEKF.getMagNED(magNED);
             NavEKF.getMagXYZ(magXYZ);
@@ -471,9 +474,9 @@ void loop()
                     gyrZ);
 
             // define messages for EKF2 data packet
-            int8_t  accX  = (int8_t)(100*accelBias.x);
-            int8_t  accY  = (int8_t)(100*accelBias.y);
-            int8_t  accZ  = (int8_t)(100*accelBias.z);
+            int8_t  accWeight  = (int8_t)(100*accelWeighting);
+            int8_t  acc1  = (int8_t)(100*accelZBias1);
+            int8_t  acc2  = (int8_t)(100*accelZBias2);
             int16_t windN = (int16_t)(100*windVel.x);
             int16_t windE = (int16_t)(100*windVel.y);
             int16_t magN  = (int16_t)(magNED.x);
@@ -487,9 +490,9 @@ void loop()
             fprintf(ekf2f, "%.3f %d %d %d %d %d %d %d %d %d %d %d %d\n",
                     hal.scheduler->millis() * 0.001f,
                     hal.scheduler->millis(),
-                    accX, 
-                    accY, 
-                    accZ, 
+                    accWeight, 
+                    acc1, 
+                    acc2, 
                     windN, 
                     windE, 
                     magN, 
