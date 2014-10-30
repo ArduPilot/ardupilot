@@ -108,8 +108,11 @@ public:
     // reset body axis gyro bias estimates
     void resetGyroBias(void);
 
-    // return weighting of first IMU in blending function and the individual Z-accel bias estimates in m/s^2
-    void getAccelBias(Vector3f &accelBias) const;
+    // return weighting of first IMU in blending function
+    void getIMU1Weighting(float &ret) const;
+
+    // return the individual Z-accel bias estimates in m/s^2
+    void getAccelZBias(float &zbias1, float &zbias2) const;
 
     // return the NED wind speed estimates in m/s (positive is air moving in the direction of the axis)
     void getWind(Vector3f &wind) const;
