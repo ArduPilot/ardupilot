@@ -167,7 +167,11 @@ public:
     }
 
     // accelerometer values in the earth frame in m/s/s
-    const Vector3f &get_accel_ef(void) const { return _accel_ef[_ins.get_primary_accel()]; }
+    virtual const Vector3f &get_accel_ef(uint8_t i) const { return _accel_ef[i]; }
+    virtual const Vector3f &get_accel_ef(void) const { return get_accel_ef(_ins.get_primary_accel()); }
+
+    // blended accelerometer values in the earth frame in m/s/s
+    virtual const Vector3f &get_accel_ef_blended(void) const { return _accel_ef_blended; }
 
     // get yaw rate in earth frame in radians/sec
     float get_yaw_rate_earth(void) const { return get_gyro() * get_dcm_matrix().c; }
@@ -410,6 +414,7 @@ protected:
 
     // accelerometer values in the earth frame in m/s/s
     Vector3f        _accel_ef[INS_MAX_INSTANCES];
+    Vector3f        _accel_ef_blended;
 
 	// Declare filter states for HPF and LPF used by complementary
 	// filter in AP_AHRS::groundspeed_vector
