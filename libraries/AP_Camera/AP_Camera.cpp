@@ -180,8 +180,8 @@ void AP_Camera::send_feedback(mavlink_channel_t chan, AP_GPS &gps, const AP_AHRS
         gps.time_epoch_usec(),
         0, 0, _image_index,
         current_loc.lat, current_loc.lng,
-        altitude/100.0, altitude_rel/100.0,
-        ahrs.roll_sensor/100.0, ahrs.pitch_sensor/100.0, ahrs.yaw_sensor/100.0,
+        altitude/100.0f, altitude_rel/100.0f,
+        ahrs.roll_sensor/100.0f, ahrs.pitch_sensor/100.0f, ahrs.yaw_sensor/100.0f,
         0.0,0);
 }
 
