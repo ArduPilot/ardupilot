@@ -87,6 +87,12 @@ public:
     // EKF has a better ground speed vector estimate
     Vector2f groundspeed_vector(void);
 
+    const Vector3f &get_accel_ef(uint8_t i) const;
+    const Vector3f &get_accel_ef() const { return get_accel_ef(_ins.get_primary_accel()); };
+
+    // blended accelerometer values in the earth frame in m/s/s
+    const Vector3f &get_accel_ef_blended(void) const;
+
     // set home location
     void set_home(const Location &loc);
 
@@ -112,6 +118,8 @@ private:
     Vector3f _dcm_attitude;
     Vector3f _gyro_bias;
     Vector3f _gyro_estimate;
+    Vector3f _accel_ef_ekf[INS_MAX_INSTANCES];
+    Vector3f _accel_ef_ekf_blended;
     const uint16_t startup_delay_ms;
     uint32_t start_time_ms;
 };
