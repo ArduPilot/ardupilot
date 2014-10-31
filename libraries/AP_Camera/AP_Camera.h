@@ -31,7 +31,8 @@ public:
     /// Constructor
     ///
     AP_Camera(AP_Relay *obj_relay) :
-        _trigger_counter(0)             // count of number of cycles shutter has been held open
+        _trigger_counter(0),    // count of number of cycles shutter has been held open
+        _image_index(0)
     {
 		AP_Param::setup_object_defaults(this, var_info);
         _apm_relay = obj_relay;
