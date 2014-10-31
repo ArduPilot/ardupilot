@@ -63,10 +63,17 @@ void AP_OpticalFlow_PX4::update(void)
     while (::read(_fd, &report, sizeof(optical_flow_s)) == sizeof(optical_flow_s) && report.timestamp != _last_timestamp) {
         _device_id = report.sensor_id;
         _surface_quality = report.quality;
-        _flowRate.x = report.pixel_flow_x_integral / (report.integration_timespan / 1e6f); // rad/sec measured optically about the X sensor axis
-        _flowRate.y = report.pixel_flow_y_integral / (report.integration_timespan / 1e6f); // rad/sec measured optically about the Y sensor axis
-        _bodyRate.x = report.gyro_x_rate_integral / (report.integration_timespan / 1e6f); // rad/sec measured inertially about the X sensor axis
-        _bodyRate.y = report.gyro_y_rate_integral / (report.integration_timespan / 1e6f); // rad/sec measured inertially about the Y sensor axis
+        if (report.integration_timespan > 0) {
+            _flowRate.x = report.pixel_flow_x_integral / (report.integration_timespan / 1e6f); // rad/sec measured optically about the X sensor axis
+            _flowRate.y = report.pixel_flow_y_integral / (report.integration_timespan / 1e6f); // rad/sec measured optically about the Y sensor axis
+            _bodyRate.x = report.gyro_x_rate_integral / (report.integration_timespan / 1e6f); // rad/sec measured inertially about the X sensor axis
+            _bodyRate.y = report.gyro_y_rate_integral / (report.integration_timespan / 1e6f); // rad/sec measured inertially about the Y sensor axis
+        } else {
+            _flowRate.x = 0.0f;
+            _flowRate.y = 0.0f;
+            _bodyRate.x = 0.0f;
+            _bodyRate.y = 0.0f;
+        }
         _last_timestamp = report.timestamp;
         _last_update = hal.scheduler->millis();
     }
