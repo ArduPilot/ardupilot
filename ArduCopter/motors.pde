@@ -147,7 +147,7 @@ static bool init_arm_motors()
         startup_ground(true);
         // final check that gyros calibrated successfully
         if (((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) && !ins.gyro_calibrated_ok_all()) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Gyro cal failed"));
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Gyro calibration failed"));
             AP_Notify::flags.armed = false;
             failsafe_enable();
             return false;
@@ -227,14 +227,14 @@ static void pre_arm_checks(bool display_failure)
         // barometer health check
         if(!barometer.healthy()) {
             if (display_failure) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Baro not healthy"));
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Barometer not healthy"));
             }
             return;
         }
         // check Baro & inav alt are within 1m
         if(fabs(inertial_nav.get_altitude() - baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
             if (display_failure) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Alt disparity"));
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Altitude disparity"));
             }
             return;
         }
@@ -288,7 +288,7 @@ static void pre_arm_checks(bool display_failure)
                 Vector3f vec_diff = mag_vec - prime_mag_vec;
                 if (vec_diff.length() > COMPASS_ACCEPTABLE_VECTOR_DIFF) {
                     if (display_failure) {
-                        gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: compasses inconsistent"));
+                        gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: inconsistent compasses"));
                     }
                     return;
                 }
@@ -326,7 +326,7 @@ static void pre_arm_checks(bool display_failure)
         // check accels are healthy
         if(!ins.get_accel_health_all()) {
             if (display_failure) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Accels not healthy"));
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Accelerometers not healthy"));
             }
             return;
         }
@@ -341,7 +341,7 @@ static void pre_arm_checks(bool display_failure)
                 Vector3f vec_diff = accel_vec - prime_accel_vec;
                 if (vec_diff.length() > PREARM_MAX_ACCEL_VECTOR_DIFF) {
                     if (display_failure) {
-                        gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Accels inconsistent"));
+                        gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: inconsistent Accelerometers"));
                     }
                     return;
                 }
@@ -360,7 +360,7 @@ static void pre_arm_checks(bool display_failure)
         // check gyros calibrated successfully
         if(!ins.gyro_calibrated_ok_all()) {
             if (display_failure) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Gyro cal failed"));
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Gyro calibration failed"));
             }
             return;
         }
@@ -373,7 +373,7 @@ static void pre_arm_checks(bool display_failure)
                 Vector3f vec_diff = ins.get_gyro(i) - ins.get_gyro();
                 if (vec_diff.length() > PREARM_MAX_GYRO_VECTOR_DIFF) {
                     if (display_failure) {
-                        gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Gyros inconsistent"));
+                        gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: inconsistent Gyros"));
                     }
                     return;
                 }
@@ -401,7 +401,7 @@ static void pre_arm_checks(bool display_failure)
         // ensure ch7 and ch8 have different functions
         if ((g.ch7_option != 0 || g.ch8_option != 0) && g.ch7_option == g.ch8_option) {
             if (display_failure) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Ch7&Ch8 Opt cannot be same"));
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Ch7&Ch8 Option cannot be same"));
             }
             return;
         }
@@ -550,7 +550,7 @@ static bool arm_checks(bool display_failure, bool arming_from_gcs)
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_RC)) {
         if (g.rc_3.control_in > 0) {
             if (display_failure) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Thr too high"));
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Throttle too high"));
             }
             return false;
         }
@@ -560,7 +560,7 @@ static bool arm_checks(bool display_failure, bool arming_from_gcs)
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_BARO)) {
         if(fabs(inertial_nav.get_altitude() - baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
             if (display_failure) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Alt disparity"));
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Altitude disparity"));
             }
             return false;
         }
@@ -578,7 +578,7 @@ static bool arm_checks(bool display_failure, bool arming_from_gcs)
         // check throttle is above failsafe throttle
         if (g.failsafe_throttle != FS_THR_DISABLED && g.rc_3.radio_in < g.failsafe_throttle_value) {
             if (display_failure) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Thr below FS"));
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Throttle below Failsafe"));
             }
             return false;
         }
