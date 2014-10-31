@@ -1,46 +1,43 @@
-# ArduPilot Project
+#ArduPilot Project#
 
-The ArduPilot project is made up of:
-    ArduCopter (aka APM:Copter)
-    ArduPlane (aka APM:Plane)
-    ArduRover (aka APMrover2)
-    Antenna Tracker
+### The ArduPilot project is made up of: ###
+>>ArduCopter (or APM:Copter) : [code](https://github.com/diydrones/ardupilot/tree/master/ArduCopter), [wiki](http://copter.ardupilot.com)
 
-#### Wiki / User Manuals ###
-    Copter: http://copter.ardupilot.com/ 
-    Plane:  http://plane.ardupilot.com/
-    Rover:  http://rover.ardupilot.com/
-    AntennaTracker: http://copter.ardupilot.com/wiki/common-antennatracker-introduction/
+>>ArduPlane (or APM:Plane) : [code](https://github.com/diydrones/ardupilot/tree/master/ArduPlane), [wiki](http://plane.ardupilot.com)
 
-#### User Support & Discussion Forums ###
-    APM Forum: http://ardupilot.com/forum/index.php
-    Community Site: http://diydrones.com/
+>>ArduRover (or APMrover2) : [code](https://github.com/diydrones/ardupilot/tree/master/APMrover2), [wiki](http://rover.ardupilot.com)
 
-#### Developer Information ###
-    Github repository: https://github.com/diydrones/ardupilot
-    Main developer wiki: http://dev.ardupilot.com/
-    Developer email group: drones-discuss@googlegroups.com
+>>Antenna Tracker : [code](https://github.com/diydrones/ardupilot/tree/master/AntennaTracker), [wiki](http://copter.ardupilot.com/wiki/common-antennatracker-introduction)
 
-#### Contributors ###
-    Github statistics: https://github.com/diydrones/ardupilot/graphs/contributors
+### User Support & Discussion Forums ###
+>>APM Forum: [http://ardupilot.com/forum/index.php](http://ardupilot.com/forum/index.php)
 
-#### How To Get Involved ####
-    The ArduPilot project is open source and we encourage participation and code contributions:
-         http://dev.ardupilot.com/wiki/guidelines-for-contributors-to-the-apm-codebase/
+>>Community Site: [http://diydrones.com](http://diydrones.com)
 
-    We have an active group of Beta Testers especially for ArduCopter to help us find bugs:
-         http://dev.ardupilot.com/wiki/release-procedures/
+### Developer Information ###
+>>Github repository: [https://github.com/diydrones/ardupilot](https://github.com/diydrones/ardupilot)
 
-    Desired Enhancements and Bugs can be posted to the issues list: https://github.com/diydrones/ardupilot/issues
+>>Main developer wiki: [http://dev.ardupilot.com](http://dev.ardupilot.com)
 
-    Helping other users with log analysis on diydrones and the APM forums is always appreciated:
-         www.diydrones.com
-         http://ardupilot.com/forum/index.php
+>>Developer email group: drones-discuss@googlegroups.com
 
-    There is a group of wiki editors as well in case documentation is your thing: ardu-wiki-editors@googlegroups.com
+### Contributors ###
+>>[Github statistics](https://github.com/diydrones/ardupilot/graphs/contributors)
 
-    Developer discussions occur on drones-discuss@google-groups.com
+### How To Get Involved ###
+>>The ArduPilot project is open source and we encourage participation and code contributions: [guidelines for contributors to the ardupilot codebase](http://dev.ardupilot.com/wiki/guidelines-for-contributors-to-the-apm-codebase)
 
-#### License ####
-    Wiki overview of license: http://dev.ardupilot.com/wiki/license-gplv3/
-    https://github.com/diydrones/ardupilot/blob/master/COPYING.txt
+>>We have an active group of Beta Testers especially for ArduCopter to help us find bugs: [release procedures](http://dev.ardupilot.com/wiki/release-procedures)
+
+>>Desired Enhancements and Bugs can be posted to the [issues list](https://github.com/diydrones/ardupilot/issues).
+
+>>Helping other users with log analysis on [diydrones.com](http://www.diydrones.com) and the [APM forums ](http://ardupilot.com/forum/index.php) is always appreciated:
+
+>>There is a group of wiki editors as well in case documentation is your thing: ardu-wiki-editors@googlegroups.com
+
+>>Developer discussions occur on drones-discuss@google-groups.com
+
+### License ###
+>>[Overview of license](http://dev.ardupilot.com/wiki/license-gplv3)
+
+>>[Full Text](https://github.com/diydrones/ardupilot/blob/master/COPYING.txt)
