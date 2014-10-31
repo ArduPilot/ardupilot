@@ -353,7 +353,7 @@ void AC_PosControl::accel_to_throttle(float accel_target_z)
     int32_t p,i,d;              // used to capture pid values for logging
 
     // Calculate Earth Frame Z acceleration
-    z_accel_meas = -(_ahrs.get_accel_ef().z + GRAVITY_MSS) * 100.0f;
+    z_accel_meas = -(_ahrs.get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f;
 
     // reset target altitude if this controller has just been engaged
     if (_flags.reset_accel_to_throttle) {
