@@ -102,6 +102,9 @@ public:
     // return NED velocity in m/s
     void getVelNED(Vector3f &vel) const;
 
+    // This returns the specific forces in the NED frame
+    void getAccelNED(Vector3f &accelNED) const;
+
     // return body axis gyro bias estimates in rad/sec
     void getGyroBias(Vector3f &gyroBias) const;
 
