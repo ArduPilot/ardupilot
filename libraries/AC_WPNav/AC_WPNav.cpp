@@ -368,7 +368,7 @@ void AC_WPNav::set_wp_destination(const Vector3f& destination)
     set_wp_origin_and_destination(origin, destination);
 }
 
-/// set_origin_and_destination - set origin and destination using lat/lon coordinates
+/// set_origin_and_destination - set origin and destination waypoints using position vectors (distance from home in cm)
 void AC_WPNav::set_wp_origin_and_destination(const Vector3f& origin, const Vector3f& destination)
 {
     // store origin and destination locations
