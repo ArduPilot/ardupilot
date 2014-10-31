@@ -35,7 +35,7 @@ static void esc_calibration_startup_check()
                 // we will enter esc_calibrate mode on next reboot
                 g.esc_calibrate.set_and_save(ESCCAL_PASSTHROUGH_IF_THROTTLE_HIGH);
                 // send message to gcs
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("ESC Cal: restart board"));
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("ESC Calibration: restart board"));
                 // turn on esc calibration notification
                 AP_Notify::flags.esc_calibration = true;
                 // block until we restart
@@ -75,7 +75,7 @@ static void esc_calibration_passthrough()
     motors.set_update_rate(50);
 
     // send message to GCS
-    gcs_send_text_P(SEVERITY_HIGH,PSTR("ESC Cal: passing pilot thr to ESCs"));
+    gcs_send_text_P(SEVERITY_HIGH,PSTR("ESC Calibration: passing pilot throttle to ESCs"));
 
     while(1) {
         // arm motors
@@ -103,7 +103,7 @@ static void esc_calibration_auto()
     motors.set_update_rate(50);
 
     // send message to GCS
-    gcs_send_text_P(SEVERITY_HIGH,PSTR("ESC Cal: auto calibration"));
+    gcs_send_text_P(SEVERITY_HIGH,PSTR("ESC Calibration: auto calibration"));
 
     // arm and enable motors
     motors.armed(true);
@@ -119,7 +119,7 @@ static void esc_calibration_auto()
     // wait for safety switch to be pressed
     while (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
         if (!printed_msg) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("ESC Cal: push safety switch"));
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("ESC Calibration: push safety switch"));
             printed_msg = true;
         }
         delay(10);
