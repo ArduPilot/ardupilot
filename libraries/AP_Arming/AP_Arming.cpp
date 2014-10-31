@@ -79,7 +79,7 @@ bool AP_Arming::barometer_checks(bool report)
         (checks_to_perform & ARMING_CHECK_BARO)) {
         if (! barometer.healthy()) {
             if (report) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Baro not healthy!"));
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Barometer not healthy!"));
             }
             return false;
         }
@@ -124,7 +124,7 @@ bool AP_Arming::gps_checks(bool report)
             AP_Notify::flags.gps_glitching ||
             AP_Notify::flags.failsafe_gps) {
             if (report) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Bad GPS Pos"));
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Bad GPS Position"));
             }
             return false;
         }      
@@ -169,7 +169,7 @@ bool AP_Arming::manual_transmitter_checks(bool report)
 
         if (AP_Notify::flags.failsafe_radio) {
             if (report) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Radio failsafe on."));
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Radio failsafe on"));
             }
             return false;
         }
