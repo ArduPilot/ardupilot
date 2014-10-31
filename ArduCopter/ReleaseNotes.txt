@@ -1,6 +1,6 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
-ArduCopter 3.2-rc14 30-Oct-2014
+ArduCopter 3.2-rc14 31-Oct-2014
 Changes from 3.2-rc13
 1) Safety Features:
     a) fail to arm if second gyro calibration fails (can be disabled with ARMING_CHECK)
@@ -8,7 +8,7 @@ Changes from 3.2-rc13
     a) DCM-check to require one continuous second of bad heading before triggering LAND
     b) I2C bug that could lead to Pixhawk freezing up if I2C bus is noisy
     c) reset DCM and EKF gyro bias estimates after gyro calibration (DCM heading could drift after takeoff due to sudden change in gyro values)
-    d) use primary GPS for LED status (instead of always using first GPS)  
+    d) use primary GPS for LED status (instead of always using first GPS)
 ------------------------------------------------------------------
 ArduCopter 3.2-rc13 23-Oct-2014
 Changes from 3.2-rc12
