@@ -2786,6 +2786,12 @@ void NavEKF::getEulerAngles(Vector3f &euler) const
     euler = euler - _ahrs->get_trim();
 }
 
+// This returns the specific forces in the NED frame
+void NavEKF::getAccelNED(Vector3f &accelNED) const {
+    accelNED = velDotNED;
+    accelNED.z -= GRAVITY_MSS;
+}
+
 // return NED velocity in m/s
 void NavEKF::getVelNED(Vector3f &vel) const
 {
