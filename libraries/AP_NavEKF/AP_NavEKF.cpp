@@ -4022,8 +4022,8 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
     Tnb_flow = Tbn_flow.transposed();
     // write uncorrected flow rate measurements that will be used by the focal length scale factor estimator
     // note correction for different axis and sign conventions used by the px4flow sensor
-    flowRadXY[0] = + rawFlowRates.y; // raw (non motion compensated) optical flow angular rate about the X axis (rad/sec)
-    flowRadXY[1] = - rawFlowRates.x; // raw (non motion compensated) optical flow angular rate about the Y axis (rad/sec)
+    flowRadXY[0] = - rawFlowRates.x; // raw (non motion compensated) optical flow angular rate about the X axis (rad/sec)
+    flowRadXY[1] = - rawFlowRates.y; // raw (non motion compensated) optical flow angular rate about the Y axis (rad/sec)
     // write flow rate measurements corrected for focal length scale factor errors and body rates
     flowRadXYcomp[0] = flowStates[0]*flowRadXY[0] + omegaAcrossFlowTime.x;
     flowRadXYcomp[1] = flowStates[0]*flowRadXY[1] + omegaAcrossFlowTime.y;
