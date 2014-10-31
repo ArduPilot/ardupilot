@@ -56,7 +56,7 @@ public:
     virtual uint16_t    get_motor_mask();
 
     // throttle_pass_through - passes pilot's throttle input directly to all motors - dangerous but used for initialising ESCs
-    virtual void        throttle_pass_through();
+    virtual void        throttle_pass_through(int16_t pwm);
 
     // set update rate to motors - a value in hertz
     virtual void        set_update_rate( uint16_t speed_hz );

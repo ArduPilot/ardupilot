@@ -335,7 +335,7 @@ void AP_MotorsPX4::output_test(uint8_t motor_seq, int16_t pwm)
 
 
 // throttle_pass_through - passes pilot's throttle input directly to all motors - dangerous but used for initialising ESCs
-void AP_MotorsPX4::throttle_pass_through()
+void AP_MotorsPX4::throttle_pass_through(int16_t pwm)
 {
     if (armed()) {
         // send the pilot's input directly to each enabled motor
@@ -343,7 +343,7 @@ void AP_MotorsPX4::throttle_pass_through()
             _actuators.control[0] = 0.;
             _actuators.control[1] = 0.;
             _actuators.control[2] = 0.;
-            _actuators.control[3] = (_rc_throttle.radio_in - _rc_throttle.radio_min) / float(_rc_throttle.radio_max - _rc_throttle.radio_min);
+            _actuators.control[3] = (pwm - _rc_throttle.radio_min) / float(_rc_throttle.radio_max - _rc_throttle.radio_min);
             _actuators.timestamp = hrt_absolute_time();
             publish_armed();
             publish_controls(); // not really useful, but keeps PX4IO happy (prevents FMU_FAIL flag / flashing amber LED)            }
