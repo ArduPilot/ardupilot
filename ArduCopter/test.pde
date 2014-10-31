@@ -205,10 +205,10 @@ test_optflow(uint8_t argc, const Menu::arg *argv)
         while(1) {
             delay(200);
             optflow.update();
-            const Vector2i& raw = optflow.raw();
-            cliSerial->printf_P(PSTR("dx:%d\t dy:%d\t squal:%d\n"),
-                            (int)raw.x,
-                            (int)raw.y,
+            const Vector2f& flowRate = optflow.flowRate();
+            cliSerial->printf_P(PSTR("flowX : %7.4f\t flowY : %7.4f\t flow qual : %d\n"),
+                            flowRate.x,
+                            flowRate.y,
                             (int)optflow.quality());
 
             if(cliSerial->available() > 0) {
