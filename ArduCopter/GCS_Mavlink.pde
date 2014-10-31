@@ -597,8 +597,8 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 #if CAMERA == ENABLED
         CHECK_PAYLOAD_SIZE(CAMERA_FEEDBACK);
         camera.send_feedback(chan, gps, ahrs, current_loc);
+#endif
         break;
-#endif        
 
     case MSG_STATUSTEXT:
         CHECK_PAYLOAD_SIZE(STATUSTEXT);
