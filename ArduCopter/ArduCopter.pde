@@ -315,9 +315,7 @@ AP_Mission mission(ahrs, &start_command, &verify_command, &exit_mission);
 // Optical flow sensor
 ////////////////////////////////////////////////////////////////////////////////
  #if OPTFLOW == ENABLED
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
-static AP_OpticalFlow_ADNS3080 optflow(ahrs);
-#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 static AP_OpticalFlow_PX4 optflow(ahrs);
 #endif
  #endif
