@@ -1,11 +1,12 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #define CONTROL_SWITCH_DEBOUNCE_TIME_MS  200
-#define CONTROL_SWITCH_COUNTER 20 // 20 iterations at 100hz (i.e. 2/10th of a second) at a new switch position will cause flight mode change
+
 static void read_control_switch()
 {
     uint32_t tnow_ms = millis();
 
+    // calculate position of flight mode switch
     int8_t switch_position;
     if      (g.rc_5.radio_in < 1231) switch_position = 0;
     else if (g.rc_5.radio_in < 1361) switch_position = 1;
@@ -14,10 +15,12 @@ static void read_control_switch()
     else if (g.rc_5.radio_in < 1750) switch_position = 4;
     else switch_position = 5;
 
+    // store time that switch last moved
     if(control_switch_state.last_switch_position != switch_position) {
         control_switch_state.last_edge_time_ms = tnow_ms;
     }
 
+    // debounce switch
     bool control_switch_changed = control_switch_state.debounced_switch_position != switch_position;
     bool sufficient_time_elapsed = tnow_ms - control_switch_state.last_edge_time_ms > CONTROL_SWITCH_DEBOUNCE_TIME_MS;
     bool failsafe_disengaged = !failsafe.radio && failsafe.radio_counter == 0;

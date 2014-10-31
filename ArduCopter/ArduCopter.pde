@@ -390,13 +390,11 @@ static union {
 // This is the state of the flight control system
 // There are multiple states defined such as STABILIZE, ACRO,
 static int8_t control_mode = STABILIZE;
-// Used to maintain the state of the previous control switch position
-// This is set to -1 when we need to re-read the switch
-
+// Structure used to detect changes in the flight mode control switch
 static struct {
-    int8_t debounced_switch_position;
-    int8_t last_switch_position;
-    uint32_t last_edge_time_ms;
+    int8_t debounced_switch_position;   // currently used switch position
+    int8_t last_switch_position;        // switch position in previous iteration
+    uint32_t last_edge_time_ms;         // system time that switch position was last changed
 } control_switch_state;
 
 static RCMapper rcmap;
