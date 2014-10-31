@@ -775,7 +775,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { throttle_loop,         8,     45 },
     { update_GPS,            8,     90 },
 #if OPTFLOW == ENABLED
-    { update_optflow,       40,     20 },
+    { update_optical_flow,  40,     20 },
 #endif
     { update_batt_compass,  40,     72 },
     { read_aux_switches,    40,      5 },
@@ -1206,11 +1206,11 @@ static void update_optical_flow(void)
     if (optflow.last_update() != last_of_update) {
         last_of_update = optflow.last_update();
         uint8_t flowQuality = optflow.quality();
-        Vector2f rawFlowRates = optflow.flowRate();
-        Vector2f rawGyroRates = optflow.bodyRate();
+        Vector2f flowRate = optflow.flowRate();
+        Vector2f bodyRate = optflow.bodyRate();
         // Use range from a separate range finder if available, not the PX4Flows built in sensor which is ineffective
         float ground_distance_m = 0.01f*float(sonar_alt);
-        ahrs.writeOptFlowMeas(flowQuality, rawFlowRates, rawGyroRates, last_of_update, sonar_alt_health, ground_distance_m);
+        ahrs.writeOptFlowMeas(flowQuality, flowRate, bodyRate, last_of_update, sonar_alt_health, ground_distance_m);
          if (g.log_bitmask & MASK_LOG_OPTFLOW) {
             Log_Write_Optflow();
         }
