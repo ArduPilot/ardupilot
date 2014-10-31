@@ -548,8 +548,8 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
         // The cyclic pitch limit will now be circular; the same for the entire rotor-head rotation ensuring
         // that cyclic pitch will not exceed what is measured during setup.
 
-        float total_out;
-        float cyclic_angle;
+        float total_out = pythagorous2((float)pitch_out, (float)roll_out);
+        float cyclic_angle = atan2((float)pitch_out, (float)roll_out);
 
         if (total_out > _cyclic_max) {
             float ratio = (float)_cyclic_max / total_out;

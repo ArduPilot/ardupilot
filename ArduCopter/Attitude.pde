@@ -19,11 +19,8 @@ static void get_pilot_desired_lean_angles(int16_t roll_in, int16_t pitch_in, int
 
     if (total_out > ROLL_PITCH_INPUT_MAX) {
         float ratio = (float)ROLL_PITCH_INPUT_MAX / total_out;
-        roll_out = roll_in * ratio;
-        pitch_out = pitch_in * ratio;
-    } else {
-        roll_out = roll_in;
-        pitch_out = pitch_in;
+        roll_in *= ratio;
+        pitch_in *= ratio;
     }
 
     // return filtered roll if no scaling required
