@@ -1206,11 +1206,8 @@ static void update_optical_flow(void)
     if (optflow.last_update() != last_of_update) {
         last_of_update = optflow.last_update();
         uint8_t flowQuality = optflow.quality();
-        Vector2f rawFlowRates = optflow.velocity();
-        Vector2i temp = optflow.raw();
-        Vector2f rawGyroRates;
-        rawGyroRates.x = 0.001f * float(temp.x);
-        rawGyroRates.y = 0.001f * float(temp.y);
+        Vector2f rawFlowRates = optflow.flowRate();
+        Vector2f rawGyroRates = optflow.bodyRate();
         // Use range from a separate range finder if available, not the PX4Flows built in sensor which is ineffective
         float ground_distance_m = 0.01f*float(sonar_alt);
         ahrs.writeOptFlowMeas(flowQuality, rawFlowRates, rawGyroRates, last_of_update, sonar_alt_health, ground_distance_m);
