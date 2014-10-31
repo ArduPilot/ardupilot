@@ -4007,9 +4007,9 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
     // negative rotation about that axis. For example a positive rotation of the flight vehicle about its X (roll) axis would produce a negative X flow rate
     flowQuality = rawFlowQuality;
     // recall vehicle states at mid sample time for flow observations allowing for delays
-    RecallStates(statesAtFlowTime, flowMeaTime_ms - _msecFLowDelay - flowTimeDeltaAvg_ms/2);
+    RecallStates(statesAtFlowTime, imuSampleTime_ms - _msecFLowDelay - flowTimeDeltaAvg_ms/2);
     // recall angular rates averaged across flow observation period allowing for processing, transmission and intersample delays
-    RecallOmega(omegaAcrossFlowTime, flowMeaTime_ms - flowTimeDeltaAvg_ms - _msecFLowDelay, flowMeaTime_ms - _msecFLowDelay);
+    RecallOmega(omegaAcrossFlowTime, imuSampleTime_ms - flowTimeDeltaAvg_ms - _msecFLowDelay, flowMeaTime_ms - _msecFLowDelay);
     // calculate bias errors on flow sensor gyro rates
     flowGyroBias.x = 0.999f * flowGyroBias.x + 0.001f * (rawGyroRates.x - omegaAcrossFlowTime.x);
     flowGyroBias.y = 0.999f * flowGyroBias.y + 0.001f * (rawGyroRates.y - omegaAcrossFlowTime.y);
@@ -4031,7 +4031,7 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
         // set flag that will trigger observations
         newDataFlow = true;
         holdVelocity = false;
-        flowMeaTime_ms = msecFlowMeas;
+        flowMeaTime_ms = imuSampleTime_ms;
     } else {
         newDataFlow = false;
     }
@@ -4040,7 +4040,7 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
         statesAtRngTime = statesAtFlowTime;
         rngMea = rawSonarRange;
         newDataRng = true;
-        rngMeaTime_ms = msecFlowMeas;
+        rngMeaTime_ms = imuSampleTime_ms;
     } else {
         newDataRng = false;
     }
