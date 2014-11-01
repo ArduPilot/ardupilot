@@ -4376,24 +4376,44 @@ bool NavEKF::assume_zero_sideslip(void) const
 
 /*
 return the filter fault status as a bitmasked integer
- 0 = unassigned
- 1 = unassigned
+ 0 = quaternions are NaN
+ 1 = velocities are NaN
  2 = badly conditioned X magnetometer fusion
  3 = badly conditioned Y magnetometer fusion
- 4 = badly conditioned Z magnetometer fusion
- 5 = badly conditioned airspeed fusion
- 6 = badly conditioned synthetic sideslip fusion
- 7 = unassigned
-return normalised delta gyro bias length used for divergence test
+ 5 = badly conditioned Z magnetometer fusion
+ 6 = badly conditioned airspeed fusion
+ 7 = badly conditioned synthetic sideslip fusion
+ 7 = filter is not initialised
 */
 void  NavEKF::getFilterFaults(uint8_t &faults) const
 {
-    faults = (faultStatus.bad_xmag<<2 |
+    faults = (state.quat.is_nan()<<0 |
+              state.velocity.is_nan()<<1 |
+              faultStatus.bad_xmag<<2 |
               faultStatus.bad_ymag<<3 |
               faultStatus.bad_zmag<<4 |
               faultStatus.bad_airspeed<<5 |
-              faultStatus.bad_sideslip<<6);
+              faultStatus.bad_sideslip<<6 |
+              !statesInitialised<<7);
 }
 
+/*
+return filter timeout status as a bitmasked integer
+ 0 = position measurement timeout
+ 1 = velocity measurement timeout
+ 2 = height measurement timeout
+ 3 = magnetometer measurement timeout
+ 5 = unassigned
+ 6 = unassigned
+ 7 = unassigned
+ 7 = unassigned
+*/
+void  NavEKF::getFilterTimeouts(uint8_t &timeouts) const
+{
+    timeouts = (posTimeout<<0 |
+                velTimeout<<1 |
+                hgtTimeout<<2 |
+                magTimeout<<3);
+}
 
 #endif // HAL_CPU_CLASS

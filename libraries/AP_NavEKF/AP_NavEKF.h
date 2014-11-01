@@ -167,17 +167,29 @@ public:
 
     /*
     return the filter fault status as a bitmasked integer
-     0 = unassigned
-     1 = unassigned
+     0 = quaternions are NaN
+     1 = velocities are NaN
      2 = badly conditioned X magnetometer fusion
      3 = badly conditioned Y magnetometer fusion
-     4 = badly conditioned Z magnetometer fusion
-     5 = badly conditioned airspeed fusion
-     6 = badly conditioned synthetic sideslip fusion
-     7 = unassigned
-    return normalised delta gyro bias length used for divergence test
+     5 = badly conditioned Z magnetometer fusion
+     6 = badly conditioned airspeed fusion
+     7 = badly conditioned synthetic sideslip fusion
+     7 = filter is not initialised
     */
     void  getFilterFaults(uint8_t &faults) const;
+
+    /*
+    return filter timeout status as a bitmasked integer
+     0 = position measurement timeout
+     1 = velocity measurement timeout
+     2 = height measurement timeout
+     3 = magnetometer measurement timeout
+     5 = unassigned
+     6 = unassigned
+     7 = unassigned
+     7 = unassigned
+    */
+    void  getFilterTimeouts(uint8_t &timeouts) const;
 
     static const struct AP_Param::GroupInfo var_info[];
 
