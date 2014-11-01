@@ -2877,23 +2877,48 @@ void NavEKF::SetFlightAndFusionModes()
     // if we are a fly forward type vehicle, then in-air mode can be determined through a combination of speed and height criteria
     if (assume_zero_sideslip()) {
         // Evaluate a numerical score that defines the likelihood we are in the air
-        uint8_t highAirSpd = 0;
-        uint8_t heightVarying = 0;
-        uint8_t highGndSpdStage1 = 0;
-        uint8_t highGndSpdStage2 = 0;
-        uint8_t highGndSpdStage3 = 0;
-        uint8_t largeHgt = 0;
-        uint8_t accelerating = 0;
         const AP_Airspeed *airspeed = _ahrs->get_airspeed();
-        if (airspeed && airspeed->use() && airspeed->get_airspeed() * airspeed->get_EAS2TAS() > 8.0f) highAirSpd = 1;
         float gndSpdSq = sq(velNED[0]) + sq(velNED[1]);
-        if (fabsf(_baro.get_climb_rate()) > 0.5f) heightVarying = 1; // this will trigger during change in baro height
-        if (gndSpdSq > 9.0f) highGndSpdStage1 = 1; // trigger at 3 m/s GPS velocity
-        if (gndSpdSq > 36.0f) highGndSpdStage2 = 1; // trigger at 6 m/s GPS velocity
-        if (gndSpdSq > 81.0f) highGndSpdStage3 = 1; // trigger at 9 m/s GPS velocity
-        if (fabsf(hgtMea) > 15.0f) largeHgt = 1; // trigger if more than 15m away from initial height
-        if (accNavMag > 0.5f) accelerating = 1; // this will trigger due to air turbulence during flight
-        uint8_t inAirSum = highAirSpd + highGndSpdStage1 + highGndSpdStage2 + highGndSpdStage3 + largeHgt + heightVarying + accelerating;
+        uint8_t inAirSum = 0;
+        bool highGndSpdStage2 = false;
+
+        // trigger at 8 m/s airspeed
+        if (airspeed && airspeed->use() && airspeed->get_airspeed() * airspeed->get_EAS2TAS() > 8.0f) {
+            inAirSum++;
+        }
+
+        // this will trigger during change in baro height
+        if (fabsf(_baro.get_climb_rate()) > 0.5f) {
+
+            inAirSum++;
+        }
+
+        // trigger at 3 m/s GPS velocity
+        if (gndSpdSq > 9.0f) {
+            inAirSum++;
+        }
+
+        // trigger at 6 m/s GPS velocity
+        if (gndSpdSq > 36.0f) {
+            highGndSpdStage2 = true;
+            inAirSum++;
+        }
+
+        // trigger at 9 m/s GPS velocity
+        if (gndSpdSq > 81.0f) {
+            inAirSum++;
+        }
+
+        // trigger if more than 15m away from initial height
+        if (fabsf(hgtMea) > 15.0f) {
+            inAirSum++;
+        }
+
+        // this will trigger due to air turbulence during flight
+        if (accNavMag > 0.5f) {
+            inAirSum++;
+        }
+
         // if we on-ground then 4 or more out of 7 criteria are required to transition to the
         // in-air mode and we also need enough GPS velocity to be able to calculate a reliable ground track heading
         if (onGround && (inAirSum >= 4) && highGndSpdStage2) {
