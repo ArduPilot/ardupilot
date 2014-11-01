@@ -345,6 +345,7 @@ struct PACKED log_EKF4 {
     int8_t  offsetEast;
     uint8_t faults;
     uint8_t staticmode;
+    uint8_t timeouts;
 };
 
 struct PACKED log_EKF5 {
@@ -503,7 +504,7 @@ struct PACKED log_Esc {
     { LOG_EKF3_MSG, sizeof(log_EKF3), \
       "EKF3","Icccccchhhc","TimeMS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IVT" }, \
     { LOG_EKF4_MSG, sizeof(log_EKF4), \
-      "EKF4","IcccccccbbBB","TimeMS,SV,SP,SH,SMX,SMY,SMZ,SVT,OFN,EFE,FS,StaticMode" }, \
+      "EKF4","IcccccccbbBBB","TimeMS,SV,SP,SH,SMX,SMY,SMZ,SVT,OFN,EFE,FS,StaticMode,TS" }, \
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
       "TERR","IBLLHffHH","TimeMS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded" }, \
     { LOG_UBX1_MSG, sizeof(log_Ubx1), \

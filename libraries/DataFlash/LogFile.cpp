@@ -974,8 +974,10 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
 	float tasVar;
     Vector2f offset;
     uint8_t faultStatus;
+    uint8_t timeoutStatus;
     ahrs.get_NavEKF().getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
     ahrs.get_NavEKF().getFilterFaults(faultStatus);
+    ahrs.get_NavEKF().getFilterTimeouts(timeoutStatus);
     struct log_EKF4 pkt4 = {
         LOG_PACKET_HEADER_INIT(LOG_EKF4_MSG),
         time_ms : hal.scheduler->millis(),
@@ -989,7 +991,8 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
         offsetNorth : (int8_t)(offset.x),
         offsetEast : (int8_t)(offset.y),
         faults : (uint8_t)(faultStatus),
-        staticmode : (uint8_t)(ahrs.get_NavEKF().getStaticMode())
+        staticmode : (uint8_t)(ahrs.get_NavEKF().getStaticMode()),
+        timeouts : (uint8_t)(timeoutStatus)
     };
     WriteBlock(&pkt4, sizeof(pkt4));
 
