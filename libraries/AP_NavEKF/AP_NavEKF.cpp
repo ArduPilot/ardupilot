@@ -301,6 +301,13 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("GLITCH_RAD",    24, NavEKF, _gpsGlitchRadiusMax, GLITCH_RADIUS_DEFAULT),
 
+    // @Param: FALLBACK
+    // @DisplayName: Fallback strictness
+    // @Description: This parameter controls the conditions necessary to trigger a fallback to DCM and INAV. A value of 1 will cause fallbacks to occur on loss of GPS and other conditions. A value of 0 will trust the EKF more.
+    // @Values: 0:Trust EKF more, 1:Trust DCM more
+    // @User: Advanced
+    AP_GROUPINFO("FALLBACK",    31, NavEKF, _fallback, 1),
+
     AP_GROUPEND
 };
 
@@ -372,7 +379,7 @@ bool NavEKF::healthy(void) const
     // If measurements have failed innovation consistency checks for long enough to time-out
     // and force fusion then the nav solution can be conidered to be unhealthy
     // This will only be set as a transient
-    if (posTimeout || velTimeout || hgtTimeout) {
+    if (_fallback && (posTimeout || velTimeout || hgtTimeout)) {
         return false;
     }
 
