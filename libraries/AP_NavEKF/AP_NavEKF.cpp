@@ -929,7 +929,7 @@ void NavEKF::SelectFlowFusion()
     // check if fusion should be delayed to spread load. Setting fuseMeNow to true disables this load spreading feature.
     bool delayFusion = ((covPredStep || magFusePerformed) && !(timeout || inhibitLoadLeveling));
     // if the filter is initialised, we have data to fuse and the vehicle is not excessively tilted, then perform optical flow fusion
-    if (useOptFlow() && newDataFlow && tiltOK && !delayFusion)
+    if (useOptFlow() && newDataFlow && tiltOK && !delayFusion && !staticMode)
     {
         // Set the flow noise used by the fusion processes
         R_LOS = sq(max(_flowNoise, 0.05f));
