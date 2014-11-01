@@ -770,7 +770,7 @@ void NavEKF::UpdateFilter()
 void NavEKF::SelectVelPosFusion()
 {
     // check for new data, specify which measurements should be used and check data for freshness
-    if (!staticMode) {
+    if (!staticMode && !velHoldMode) {
 
         // check for and read new GPS data
         readGpsData();
@@ -784,40 +784,25 @@ void NavEKF::SelectVelPosFusion()
             gpsUpdateCount = 0;
             // select which of velocity and position measurements will be fused
             if (_fusionModeGPS < 3) {
-                // use both if GPS is primary sensor
+                // use both if GPS use is enabled
                 fuseVelData = true;
                 fusePosData = true;
-            } else if (forceUseGPS) {
-                // we use GPS velocity data to constrain drift when optical flow measurements have failed
-                fuseVelData = true;
-                fusePosData = false;
+                // If a long time since last GPS update, then reset position and velocity and reset stored state history
+                uint32_t gpsRetryTimeout = useAirspeed() ? _gpsRetryTimeUseTAS : _gpsRetryTimeNoTAS;
+                if (imuSampleTime_ms - secondLastFixTime_ms > gpsRetryTimeout) {
+                    ResetPosition();
+                    ResetVelocity();
+                    StoreStatesReset();
+                }
             } else {
-                // don't use GPS measurements if GPS is a secondary sensor and flow sensing is available
                 fuseVelData = false;
                 fusePosData = false;
-            }
-            // If a long time since last GPS update, then reset position and velocity and reset stored state history
-            uint32_t gpsRetryTimeout = useAirspeed() ? _gpsRetryTimeUseTAS : _gpsRetryTimeNoTAS;
-            if (imuSampleTime_ms - secondLastFixTime_ms > gpsRetryTimeout) {
-                ResetPosition();
-                ResetVelocity();
-                StoreStatesReset();
             }
         } else {
-            if (!holdVelocity) {
-                fuseVelData = false;
-                fusePosData = false;
-            } else {
-                fuseVelData = true;
-                fusePosData = false;
-                statesAtVelTime = state;
-                velNED.x = heldVelNE.x;
-                velNED.y = heldVelNE.y;
-                velNED.z = 0.0f;
-            }
+            fuseVelData = false;
+            fusePosData = false;
         }
-
-    } else {
+    } else if (staticMode ) {
         // in static mode use synthetic position measurements set to zero
         // only fuse synthetic measurements when rate of change of velocity is less than 0.5g to reduce attitude errors due to launch acceleration
         // do not use velocity fusion to reduce the effect of movement on attitude
@@ -827,6 +812,18 @@ void NavEKF::SelectVelPosFusion()
             fusePosData = false;
         }
         fuseVelData = false;
+    } else if (velHoldMode) {
+        // In velocity hold mode we fuse the last valid velocity vector
+        // We do not fuse when manoeuvring to avoid corrupting the attitude
+        if (accNavMag < 4.9f) {
+            fuseVelData = true;
+        } else {
+            fuseVelData = false;
+        }
+        fusePosData = false;
+    } else {
+        fuseVelData = false;
+        fusePosData = false;
     }
 
     // check for and read new height data
@@ -911,24 +908,17 @@ void NavEKF::SelectMagFusion()
 // select fusion of optical flow measurements
 void NavEKF::SelectFlowFusion()
 {
-    // if we don't have flow measurements we use GPS velocity if available or else
-    // dead reckon using current velocity vector
-    if (imuSampleTime_ms - flowMeaTime_ms > 1000) {
-        forceUseGPS  = true;
-        if (imuSampleTime_ms - lastFixTime_ms > 1000) {
-            holdVelocity = true;
-        } else {
-            holdVelocity = false;
-        }
+    // if we don't have flow measurements and are not using GPS, dead reckon using current velocity vector unless we are in static mode
+    if (imuSampleTime_ms - flowMeaTime_ms > 200 && !staticMode && _fusionModeGPS > 2) {
+        velHoldMode = true;
     } else {
-        forceUseGPS  = false;
-        holdVelocity = false;
+        velHoldMode = false;
     }
-    if (holdVelocity && !lastHoldVelocity) {
+    if (velHoldMode && !lastHoldVelocity) {
         heldVelNE.x = state.velocity.x;
         heldVelNE.y = state.velocity.y;
     }
-    lastHoldVelocity = holdVelocity;
+    lastHoldVelocity = velHoldMode;
     // Apply tilt check
     bool tiltOK = (Tnb_flow.c.z > DCM33FlowMin);
     // if we have waited too long, set a timeout flag which will force fusion to occur regardless of load spreading
@@ -1828,13 +1818,15 @@ void NavEKF::FuseVelPosNED()
     // associated with sequential fusion
     if (fuseVelData || fusePosData || fuseHgtData) {
 
-        // if static mode is active use the current states to calculate the predicted
+        // if static mode or velocity hold is active use the current states to calculate the predicted
         // measurement rather than use states from a previous time. We need to do this
         // because there may be no stored states due to lack of real measurements.
         // in static mode, only position and height fusion is used
         if (staticMode) {
             statesAtPosTime = state;
             statesAtHgtTime = state;
+        } else if (velHoldMode) {
+            statesAtVelTime = state;
         }
 
         // set the GPS data timeout depending on whether airspeed data is present
@@ -1843,12 +1835,17 @@ void NavEKF::FuseVelPosNED()
         else gpsRetryTime = _gpsRetryTimeNoTAS;
 
         // form the observation vector and zero velocity and horizontal position observations if in static mode
-        if (!staticMode) {
+        // If in velocity hold mode, hold the last known horizontal velocity vector
+        if (!staticMode && !velHoldMode) {
             for (uint8_t i=0; i<=2; i++) observation[i] = velNED[i];
             observation[3] = gpsPosNE.x + gpsPosGlitchOffsetNE.x;
             observation[4] = gpsPosNE.y + gpsPosGlitchOffsetNE.y;
-        } else {
+        } else if (staticMode){
             for (uint8_t i=0; i<=4; i++) observation[i] = 0.0f;
+        } else if (velHoldMode) {
+            observation[0] = heldVelNE.x;
+            observation[1] = heldVelNE.y;
+            for (uint8_t i=2; i<=4; i++) observation[i] = 0.0f;
         }
         observation[5] = -hgtMea;
 
@@ -1924,7 +1921,7 @@ void NavEKF::FuseVelPosNED()
         if (fuseVelData) {
             // test velocity measurements
             uint8_t imax = 2;
-            if (_fusionModeGPS == 1) {
+            if (_fusionModeGPS == 1 || velHoldMode) {
                 imax = 1;
             }
             float K1 = 0; // innovation to error ratio for IMU1
@@ -1966,7 +1963,7 @@ void NavEKF::FuseVelPosNED()
             // declare a timeout if we have not fused velocity data for too long
             velTimeout = (imuSampleTime_ms - velFailTime) > gpsRetryTime;
             // if data is healthy  or in static mode we fuse it
-            if (velHealth || staticMode) {
+            if (velHealth || staticMode || velHoldMode) {
                 velHealth = true;
                 velFailTime = imuSampleTime_ms;
             } else if (velTimeout && !posHealth) {
@@ -2026,6 +2023,10 @@ void NavEKF::FuseVelPosNED()
         }
         if ((fuseHgtData && hgtHealth) || staticMode) {
             fuseData[5] = true;
+        }
+        if (velHoldMode) {
+            fuseData[0] = true;
+            fuseData[1] = true;
         }
 
         // fuse measurements sequentially
@@ -2118,7 +2119,7 @@ void NavEKF::FuseVelPosNED()
                 // Don't spread quaternion corrections if total angle change across predicted interval is going to exceed 0.1 rad
                 bool highRates = ((gpsUpdateCountMax * correctedDelAng.length()) > 0.1f);
                 for (uint8_t i = 0; i<=21; i++) {
-                    if ((i <= 3 && highRates) || i >= 10 || staticMode) {
+                    if ((i <= 3 && highRates) || i >= 10 || staticMode || velHoldMode) {
                         states[i] = states[i] - Kfusion[i] * innovVelPos[obsIndex];
                     } else {
                         if (obsIndex == 5) {
@@ -4030,7 +4031,7 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
     if (rawFlowQuality > 100){
         // set flag that will trigger observations
         newDataFlow = true;
-        holdVelocity = false;
+        velHoldMode = false;
         flowMeaTime_ms = imuSampleTime_ms;
     } else {
         newDataFlow = false;
@@ -4301,8 +4302,8 @@ void NavEKF::ZeroVariables()
     inhibitGndState = true;
     flowGyroBias.x = 0;
     flowGyroBias.y = 0;
-    holdVelocity = false;
-    forceUseGPS = false;
+    velHoldMode = false;
+    heldVelNE.zero();
 }
 
 // return true if we should use the airspeed sensor

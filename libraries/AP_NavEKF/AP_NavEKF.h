@@ -588,9 +588,8 @@ private:
     uint8_t flowUpdateCountMax;     // limit on the number of minor state corrections using optical flow data
     float flowUpdateCountMaxInv;    // floating point inverse of flowUpdateCountMax
     bool newDataRng;                // true when new valid range finder data has arrived.
-    bool holdVelocity;              // true when holding velocity in optical flow mode when no flow measurements are available
+    bool velHoldMode;              // true when holding velocity in optical flow mode when no flow measurements are available
     bool lastHoldVelocity;          // last value of holdVelocity
-    bool forceUseGPS;               // true when lack of optical flow data forces us to use GPS
     Vector2f heldVelNE;             // velocity held when no aiding is available
 
     // states held by optical flow fusion across time steps
