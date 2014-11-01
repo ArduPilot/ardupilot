@@ -2648,7 +2648,7 @@ void NavEKF::RunAuxiliaryEKF()
                 flowStates[i] -= K_RNG[i] * innovRng;
             }
             // constrain the states
-            flowStates[0] = constrain_float(flowStates[0], 0.1f, 10.0f);
+            flowStates[0] = constrain_float(flowStates[0], 0.8f, 1.25f);
             flowStates[1] = max(flowStates[1], statesAtRngTime.position[2] + 0.1f);
 
             // correct the covariance matrix
@@ -2771,7 +2771,7 @@ void NavEKF::RunAuxiliaryEKF()
                     flowStates[i] -= K_OPT[i][obsIndex] * auxFlowObsInnov[obsIndex];
                 }
                 // constrain the states
-                flowStates[0] = constrain_float(flowStates[0], 0.1f, 10.0f);
+                flowStates[0] = constrain_float(flowStates[0], 0.8f, 1.25f);
                 flowStates[1] = max(flowStates[1], statesAtFlowTime.position[2] + 0.1f);
 
                 // correct the covariance matrix
