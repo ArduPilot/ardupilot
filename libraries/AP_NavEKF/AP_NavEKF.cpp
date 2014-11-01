@@ -511,6 +511,7 @@ void NavEKF::ResetVelocity(void)
             storedStates[i].velocity = velNED;
         }
     }
+
 }
 
 // reset the vertical position state using the last height measurement
@@ -725,6 +726,8 @@ void NavEKF::UpdateFilter()
             state.quat = calcQuatAndFieldStates(_ahrs->roll, _ahrs->pitch);
             firstArmPosD = state.position.z;
         }
+        calcQuatAndFieldStates(_ahrs->roll, _ahrs->pitch);
+        heldVelNE.zero();
         prevStaticMode = staticMode;
     } else if (!staticMode && !finalMagYawInit && firstArmPosD - state.position.z > 1.5f && !assume_zero_sideslip()) {
         // Do a final yaw and earth mag field initialisation when the vehicle has gained 1.5m of altitude after arming if it is a non-fly forward vehicle (vertical takeoff)
