@@ -3011,6 +3011,8 @@ void NavEKF::FuseOptFlow()
 
     // Check the innovation for consistency and don't fuse if out of bounds
     if (flowTestRatio[obsIndex] < 1.0f) {
+        // Reset the timer for velocity fusion timeout. This prevents a velocity timeout from being declared if we have to momentarily go into velocity hold mode.
+        velFailTime = imuSampleTime_ms;
         // correct the state vector
         for (uint8_t j = 0; j <= 21; j++)
         {
