@@ -10,6 +10,14 @@ const AP_Param::GroupInfo OpticalFlow::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("_ENABLE", 0,  OpticalFlow,    _enabled,   0),
 
+    // @Param: SCALER
+    // @DisplayName: Optical flow scale factor
+    // @Description: This sets the percentage scale factor correction applied to the flow sensor optical rates. It can be used to correct for variations in effective focal length.
+    // @Range: -20 +20
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("_SCALER", 1,  OpticalFlow,    _scaler,   0),
+
     AP_GROUPEND
 };
 

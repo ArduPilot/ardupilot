@@ -79,6 +79,7 @@ protected:
 
     // parameters
     AP_Int8  _enabled;              // enabled/disabled flag
+    AP_Int8  _scaler;               // flow angular rate correction percentage
 
     // internal variables
     uint8_t _device_id;             // device id
