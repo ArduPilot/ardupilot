@@ -1188,7 +1188,7 @@ static void one_hz_loop()
 #endif
 }
 
-// called at 100hz but data from sensor only arrives at 10 Hz
+// called at 10hz
 #if OPTFLOW == ENABLED
 static void update_optical_flow(void)
 {
