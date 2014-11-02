@@ -80,6 +80,10 @@
  #ifndef FRSKY_TELEM_ENABLED
  # define FRSKY_TELEM_ENABLED DISABLED
  #endif
+#ifndef OPTFLOW
+# define OPTFLOW DISABLED
+#endif
+
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -132,6 +136,18 @@
  # define FRSKY_TELEM_ENABLED DISABLED
 #else
  # define FRSKY_TELEM_ENABLED ENABLED
+#endif
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Optical flow sensor support
+//
+
+#ifndef OPTFLOW
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
+ # define OPTFLOW DISABLED
+#else
+ # define OPTFLOW ENABLED
 #endif
 #endif
 
