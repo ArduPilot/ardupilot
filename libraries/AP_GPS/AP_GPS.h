@@ -91,7 +91,8 @@ public:
         GPS_TYPE_NMEA  = 5,
         GPS_TYPE_SIRF  = 6,
         GPS_TYPE_HIL   = 7,
-        GPS_TYPE_SBP   = 8
+        GPS_TYPE_SBP   = 8,
+        GPS_TYPE_PX4   = 9
     };
 
     /// GPS status codes
@@ -413,5 +414,6 @@ private:
 #include <AP_GPS_NMEA.h>
 #include <AP_GPS_SIRF.h>
 #include <AP_GPS_SBP.h>
+#include <AP_GPS_PX4.h>
 
 #endif // __AP_GPS_H__

@@ -146,7 +146,13 @@ AP_GPS::detect_instance(uint8_t instance)
     AP_HAL::UARTDriver *port = instance==0?hal.uartB:hal.uartE;
     struct detect_state *dstate = &detect_state[instance];
 
-    if (port == NULL) {
+    if (_type[instance] == GPS_TYPE_PX4) {
+        // check for explicitely chosen PX4 GPS beforehand
+        // it is not possible to autodetect it, nor does it require a real UART
+        hal.console->print_P(PSTR(" PX4 "));
+        new_gps = new AP_GPS_PX4(*this, state[instance], port);
+    }
+    else if (port == NULL) {
         // UART not available
         return;
     }
