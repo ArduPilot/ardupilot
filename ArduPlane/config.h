@@ -80,10 +80,6 @@
  #ifndef FRSKY_TELEM_ENABLED
  # define FRSKY_TELEM_ENABLED DISABLED
  #endif
-#ifndef OPTFLOW
-# define OPTFLOW DISABLED
-#endif
-
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -144,10 +140,10 @@
 //
 
 #ifndef OPTFLOW
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
- # define OPTFLOW DISABLED
-#else
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
  # define OPTFLOW ENABLED
+#else
+ # define OPTFLOW DISABLED
 #endif
 #endif
 

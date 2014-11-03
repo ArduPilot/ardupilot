@@ -220,7 +220,10 @@ static void init_ardupilot()
     reset_control_switch();
 
     // initialise sensor
+#if OPTFLOW == ENABLED
     optflow.init();
+#endif
+
 }
 
 //********************************************************************************
