@@ -1003,7 +1003,7 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
     float augFlowInnovX, augFlowInnovY;
     float rngInnov;
     float range;
-    ahrs.get_NavEKF().getFlowDebug(fscale, gndPos, flowInnovX, flowInnovY, flowInnovY, augFlowInnovY, rngInnov, range);
+    ahrs.get_NavEKF().getFlowDebug(fscale, gndPos, flowInnovX, flowInnovY, augFlowInnovX, augFlowInnovY, rngInnov, range);
     struct log_EKF5 pkt5 = {
         LOG_PACKET_HEADER_INIT(LOG_EKF5_MSG),
         time_ms : hal.scheduler->millis(),
