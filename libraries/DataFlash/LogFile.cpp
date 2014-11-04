@@ -1009,7 +1009,7 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
         time_ms : hal.scheduler->millis(),
         FIX : (int16_t)(1000*flowInnovX),
         FIY : (int16_t)(1000*flowInnovY),
-        AFIX : (int16_t)(1000*flowInnovY),
+        AFIX : (int16_t)(1000*augFlowInnovX),
         AFIY : (int16_t)(1000*augFlowInnovY),
         gndPos : (int16_t)(100*gndPos),
         scaler: (uint8_t)(100*fscale),
