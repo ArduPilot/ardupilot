@@ -77,6 +77,7 @@ AP_Camera::relay_pic()
 void
 AP_Camera::trigger_pic()
 {
+    _camera_flags = 4;
     _image_index++;
     switch (_trigger_type)
     {
@@ -94,6 +95,7 @@ AP_Camera::trigger_pic()
 void
 AP_Camera::trigger_pic_cleanup()
 {
+    _camera_flags = -1;
     if (_trigger_counter) {
         _trigger_counter--;
     } else {
