@@ -107,6 +107,8 @@ private:
     float                           _pan_angle;  ///< degrees
 
     // EEPROM parameters
+    AP_Int8                         _drive_mode; ///< (0 = standard, 1 = super simple)
+
     AP_Int8                         _stab_roll; ///< (1 = yes, 0 = no)
     AP_Int8                         _stab_tilt; ///< (1 = yes, 0 = no)
     AP_Int8                         _stab_pan;  ///< (1 = yes, 0 = no)
