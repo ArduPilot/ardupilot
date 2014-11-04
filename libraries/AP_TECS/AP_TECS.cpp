@@ -455,7 +455,7 @@ void AP_TECS::_update_throttle(void)
     // If underspeed condition is set, then demand full throttle
     if (_underspeed)
     {
-        _throttle_dem_unc = 1.0f;
+        _throttle_dem = 1.0f;
     }
     else
     {
