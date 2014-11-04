@@ -23,6 +23,16 @@
               <param index="6">Empty</param>
               <param index="7">Empty</param>
             </entry>
+            <entry name="MAV_CMD_DO_GRIPPER" value="211">
+              <description>Mission command to operate EPM gripper</description>
+              <param index="1">gripper number (a number from 1 to max number of grippers on the vehicle)</param>
+              <param index="2">gripper action (0=release, 1=grab. See GRIPPER_ACTIONS enum)</param>
+              <param index="3">Empty</param>
+              <param index="4">Empty</param>
+              <param index="5">Empty</param>
+              <param index="6">Empty</param>
+              <param index="7">Empty</param>
+            </entry>
           </enum>
 	  
 	  	<!--  AP_Limits Enums -->
@@ -72,6 +82,17 @@
       </entry>
       <entry name="MOTOR_TEST_THROTTLE_PILOT" value="2">
         <description>throttle pass-through from pilot's transmitter</description>
+      </entry>
+    </enum>
+
+    <!-- gripper action enum -->
+    <enum name="GRIPPER_ACTIONS">
+      <description>Gripper actions.</description>
+      <entry name="GRIPPER_ACTION_RELEASE" value="0">
+        <description>gripper release of cargo</description>
+      </entry>
+      <entry name="GRIPPER_ACTION_GRAB" value="1">
+        <description>gripper grabs onto cargo</description>
       </entry>
     </enum>
 

@@ -65,7 +65,7 @@ void LinuxSPIDeviceDriver::init()
         hal.scheduler->panic("Unable to instantiate cs pin");
     }
     _cs->mode(HAL_GPIO_OUTPUT);
-    _cs->write(HIGH);       // do not hold the SPI bus initially
+    _cs->write(1);       // do not hold the SPI bus initially
 }
 
 AP_HAL::Semaphore* LinuxSPIDeviceDriver::get_semaphore()

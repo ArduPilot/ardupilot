@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export PATH=$HOME/.local/bin:/usr/local/bin:$HOME/prefix/bin:$HOME/APM/px4/gcc-arm-none-eabi-4_6-2012q2/bin:$PATH
+export PATH=$HOME/.local/bin:/usr/local/bin:$HOME/prefix/bin:$HOME/APM/px4/gcc-arm-none-eabi-4_7-2014q2/bin:$PATH
 export PYTHONUNBUFFERED=1
 export PYTHONPATH=$HOME/APM
 
@@ -150,7 +150,7 @@ for d in ArduPlane ArduCopter APMrover2; do
 done
 
 mkdir -p "buildlogs/history/$hdate"
-(cd buildlogs && cp -f *.txt *.flashlog *.tlog *.km[lz] *.gpx *.html *.png "history/$hdate/")
+(cd buildlogs && cp -f *.txt *.flashlog *.tlog *.km[lz] *.gpx *.html *.png *.bin "history/$hdate/")
 echo $githash > "buildlogs/history/$hdate/githash.txt"
 
 (cd APM && Tools/scripts/build_parameters.sh)

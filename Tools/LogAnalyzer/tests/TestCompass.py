@@ -15,42 +15,46 @@ class TestCompass(Test):
         self.result = TestResult()
         self.result.status = TestResult.StatusType.GOOD
 
-        try:
-            # test that compass offset parameters are within recommended range (+/- 150)
-            maxOffset = 150
-            if logdata.hardwareType == "PX4":
-                maxOffset = 250 # Pixhawks have their offsets scaled larger
-            compassOfsX = logdata.parameters["COMPASS_OFS_X"]
-            compassOfsY = logdata.parameters["COMPASS_OFS_Y"]
-            compassOfsZ = logdata.parameters["COMPASS_OFS_Z"]
-            if abs(compassOfsX) > maxOffset or abs(compassOfsY) > maxOffset or abs(compassOfsZ) > maxOffset:
-                self.result.status = TestResult.StatusType.FAIL
-                self.result.statusMessage = "Large compass off params (X:%.2f, Y:%.2f, Z:%.2f)\n" % (compassOfsX,compassOfsY,compassOfsZ)
+        def vec_len(x):
+            return sqrt(x[0]**2+x[1]**2+x[2]**2)
 
-            # check for excessive compass offsets using MAG data if present (it can change during flight is compass learn is on)
+        def FAIL():
+            self.result.status = TestResult.StatusType.FAIL
+
+        def WARN():
+            if self.result.status != TestResult.StatusType.FAIL:
+                self.result.status = TestResult.StatusType.WARN
+
+        try:
+            warnOffset = 300
+            failOffset = 500
+            param_offsets = (
+                logdata.parameters["COMPASS_OFS_X"],
+                logdata.parameters["COMPASS_OFS_Y"],
+                logdata.parameters["COMPASS_OFS_Z"]
+                )
+
+            if vec_len(param_offsets) > failOffset:
+                FAIL()
+                self.result.statusMessage = "FAIL: Large compass offset params (X:%.2f, Y:%.2f, Z:%.2f)\n" % (param_offsets[0],param_offsets[1],param_offsets[2])
+            elif vec_len(param_offsets) > warnOffset:
+                WARN()
+                self.result.statusMessage = "WARN: Large compass offset params (X:%.2f, Y:%.2f, Z:%.2f)\n" % (param_offsets[0],param_offsets[1],param_offsets[2])
+
             if "MAG" in logdata.channels:
-                errMsg = ""
-                if logdata.channels["MAG"]["OfsX"].max() >  maxOffset:
-                    errMsg  = errMsg + "\nX: %.2f" % logdata.channels["MAG"]["OfsX"].max()
-                    err = True
-                if logdata.channels["MAG"]["OfsX"].min() < -maxOffset:
-                    errMsg = errMsg + "\nX: %.2f" % logdata.channels["MAG"]["OfsX"].min()
-                    err = True
-                if logdata.channels["MAG"]["OfsY"].max() >  maxOffset:
-                    errMsg = errMsg + "\nY: %.2f" % logdata.channels["MAG"]["OfsY"].max()
-                    err = True
-                if logdata.channels["MAG"]["OfsY"].min() < -maxOffset:
-                    errMsg = errMsg + "\nY: %.2f" % logdata.channels["MAG"]["OfsY"].min()
-                    err = True
-                if logdata.channels["MAG"]["OfsZ"].max() >  maxOffset:
-                    errMsg = errMsg + "\nZ: %.2f" % logdata.channels["MAG"]["OfsZ"].max()
-                    err = True
-                if logdata.channels["MAG"]["OfsZ"].min() < -maxOffset:
-                    errMsg = errMsg + "\nZ: %.2f" % logdata.channels["MAG"]["OfsZ"].min()
-                    err = True
-                if errMsg:
-                    self.result.status = TestResult.StatusType.FAIL
-                    self.result.statusMessage = self.result.statusMessage + "Large compass offset in MAG data:" + errMsg + "\n"
+                max_log_offsets = zip(
+                    map(lambda x: x[1],logdata.channels["MAG"]["OfsX"].listData),
+                    map(lambda x: x[1],logdata.channels["MAG"]["OfsY"].listData),
+                    map(lambda x: x[1],logdata.channels["MAG"]["OfsZ"].listData)
+                    )
+                max_log_offsets = reduce(lambda x,y: x if vec_len(x) > vec_len(y) else y, max_log_offsets)
+
+                if vec_len(max_log_offsets) > failOffset:
+                    FAIL()
+                    self.result.statusMessage += "FAIL: Large compass offset in MAG data (X:%.2f, Y:%.2f, Z:%.2f)\n" % (max_log_offsets[0],max_log_offsets[1],max_log_offsets[2])
+                elif vec_len(max_log_offsets) > warnOffset:
+                    WARN()
+                    self.result.statusMessage += "WARN: Large compass offset in MAG data (X:%.2f, Y:%.2f, Z:%.2f)\n" % (max_log_offsets[0],max_log_offsets[1],max_log_offsets[2])
 
             # check for mag field length change, and length outside of recommended range
             if "MAG" in logdata.channels:
@@ -84,11 +88,10 @@ class TestCompass(Test):
                     index += 1
                 percentDiff = (maxMagField-minMagField) / minMagField
                 if percentDiff > percentDiffThresholdFAIL:
-                    self.result.status = TestResult.StatusType.FAIL
+                    FAIL()
                     self.result.statusMessage = self.result.statusMessage + "Large change in mag_field (%.2f%%)\n" % (percentDiff*100)
                 elif percentDiff > percentDiffThresholdWARN:
-                    if self.result.status != TestResult.StatusType.FAIL:
-                        self.result.status = TestResult.StatusType.WARN
+                    WARN()
                     self.result.statusMessage = self.result.statusMessage + "Moderate change in mag_field (%.2f%%)\n" % (percentDiff*100)
                 else:
                     self.result.statusMessage = self.result.statusMessage + "mag_field interference within limits (%.2f%%)\n" % (percentDiff*100)
@@ -97,8 +100,7 @@ class TestCompass(Test):
                 if maxMagField > maxMagFieldThreshold:
                     self.result.statusMessage = self.result.statusMessage + "Max mag field length (%.2f) > recommended (%.2f)\n" % (maxMagField,maxMagFieldThreshold)
                 if zerosFound:
-                    if self.result.status != TestResult.StatusType.FAIL:
-                        self.result.status = TestResult.StatusType.WARN
+                    WARN()
                     self.result.statusMessage = self.result.statusMessage + "All zeros found in MAG X/Y/Z log data\n"
                 if verbose:
                     self.result.statusMessage = self.result.statusMessage + "Min mag_field of %.2f on line %d\n" % (minMagField,minMagFieldLine)

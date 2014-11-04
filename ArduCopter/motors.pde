@@ -5,42 +5,19 @@
 #define AUTO_TRIM_DELAY         100 // called at 10hz so 10 seconds
 #define AUTO_DISARMING_DELAY    15  // called at 1hz so 15 seconds
 
+static uint8_t auto_disarming_counter;
+
 // arm_motors_check - checks for pilot input to arm or disarm the copter
 // called at 10hz
 static void arm_motors_check()
 {
     static int16_t arming_counter;
-    bool allow_arming = false;
 
     // ensure throttle is down
     if (g.rc_3.control_in > 0) {
         arming_counter = 0;
         return;
     }
-
-    // allow arming/disarming in fully manual flight modes ACRO, STABILIZE, SPORT and DRIFT
-    if (manual_flight_mode(control_mode)) {
-        allow_arming = true;
-    }
-
-    // allow arming/disarming in Loiter and AltHold if landed
-    if (ap.land_complete && (control_mode == LOITER || control_mode == ALT_HOLD || control_mode == POSHOLD || control_mode == AUTOTUNE)) {
-        allow_arming = true;
-    }
-
-    // kick out other flight modes
-    if (!allow_arming) {
-        arming_counter = 0;
-        return;
-    }
-
-    #if FRAME_CONFIG == HELI_FRAME
-    // heli specific arming check
-    if (!motors.allow_arming()){
-        arming_counter = 0;
-        return;
-    }
-    #endif  // HELI_FRAME
 
     int16_t tmp = g.rc_4.control_in;
 
@@ -56,8 +33,12 @@ static void arm_motors_check()
         if (arming_counter == ARM_DELAY && !motors.armed()) {
             // run pre-arm-checks and display failures
             pre_arm_checks(true);
-            if(ap.pre_arm_check && arm_checks(true)) {
-                init_arm_motors();
+            if(ap.pre_arm_check && arm_checks(true,false)) {
+                if (!init_arm_motors()) {
+                    // reset arming counter if arming fail
+                    arming_counter = 0;
+                    AP_Notify::flags.arming_failed = true;
+                }
             }else{
                 // reset arming counter if pre-arm checks fail
                 arming_counter = 0;
@@ -68,10 +49,16 @@ static void arm_motors_check()
         // arm the motors and configure for flight
         if (arming_counter == AUTO_TRIM_DELAY && motors.armed() && control_mode == STABILIZE) {
             auto_trim_counter = 250;
+            // ensure auto-disarm doesn't trigger immediately
+            auto_disarming_counter = 0;
         }
 
     // full left
     }else if (tmp < -4000) {
+        if (!manual_flight_mode(control_mode) && !ap.land_complete) {
+            arming_counter = 0;
+            return;
+        }
 
         // increase the counter to a maximum of 1 beyond the disarm delay
         if( arming_counter <= DISARM_DELAY ) {
@@ -94,18 +81,14 @@ static void arm_motors_check()
 // called at 1hz
 static void auto_disarm_check()
 {
-    static uint8_t auto_disarming_counter;
-
     // exit immediately if we are already disarmed or throttle is not zero
-    if (!motors.armed() || g.rc_3.control_in > 0) {
+    if (!motors.armed() || !ap.throttle_zero) {
         auto_disarming_counter = 0;
         return;
     }
 
     // allow auto disarm in manual flight modes or Loiter/AltHold if we're landed
-    if (manual_flight_mode(control_mode) || (ap.land_complete && (control_mode == ALT_HOLD || control_mode == LOITER || control_mode == OF_LOITER ||
-                                                                  control_mode == DRIFT || control_mode == SPORT || control_mode == AUTOTUNE ||
-                                                                  control_mode == POSHOLD))) {
+    if (manual_flight_mode(control_mode) || ap.land_complete) {
         auto_disarming_counter++;
 
         if(auto_disarming_counter >= AUTO_DISARMING_DELAY) {
@@ -118,7 +101,8 @@ static void auto_disarm_check()
 }
 
 // init_arm_motors - performs arming process including initialisation of barometer and gyros
-static void init_arm_motors()
+//  returns false in the unlikely case that arming fails (because of a gyro calibration failure)
+static bool init_arm_motors()
 {
 	// arming marker
     // Flag used to track if we have armed the motors the first time.
@@ -132,17 +116,15 @@ static void init_arm_motors()
     // disable inertial nav errors temporarily
     inertial_nav.ignore_next_error();
 
+    // reset battery failsafe
+    set_failsafe_battery(false);
+
     // notify that arming will occur (we do this early to give plenty of warning)
     AP_Notify::flags.armed = true;
     // call update_notify a few times to ensure the message gets out
     for (uint8_t i=0; i<=10; i++) {
         update_notify();
     }
-
-#if LOGGING_ENABLED == ENABLED
-    // start dataflash
-    start_logging();
-#endif
 
 #if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
     gcs_send_text_P(SEVERITY_HIGH, PSTR("ARMING MOTORS"));
@@ -162,8 +144,15 @@ static void init_arm_motors()
     }
 
     if(did_ground_start == false) {
-        did_ground_start = true;
         startup_ground(true);
+        // final check that gyros calibrated successfully
+        if (((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) && !ins.gyro_calibrated_ok_all()) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Gyro cal failed"));
+            AP_Notify::flags.armed = false;
+            failsafe_enable();
+            return false;
+        }
+        did_ground_start = true;
     }
 
     // fast baro calibration to reset ground pressure
@@ -181,16 +170,6 @@ static void init_arm_motors()
 
     // set hover throttle
     motors.set_mid_throttle(g.throttle_mid);
-
-    // Cancel arming if throttle is raised too high so that copter does not suddenly take off
-    read_radio();
-    if (g.rc_3.control_in > g.throttle_cruise && g.throttle_cruise > 100) {
-        motors.output_min();
-        failsafe_enable();
-        AP_Notify::flags.armed = false;
-        AP_Notify::flags.arming_failed = false;
-        return;
-    }
 
 #if SPRAYER == ENABLED
     // turn off sprayer's test if on
@@ -214,6 +193,9 @@ static void init_arm_motors()
 
     // reenable failsafe
     failsafe_enable();
+
+    // return success
+    return true;
 }
 
 // perform pre-arm checks and set ap.pre_arm_check flag
@@ -250,7 +232,7 @@ static void pre_arm_checks(bool display_failure)
             return;
         }
         // check Baro & inav alt are within 1m
-        if(fabs(inertial_nav.get_altitude() - baro_alt) > 100) {
+        if(fabs(inertial_nav.get_altitude() - baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Alt disparity"));
             }
@@ -278,7 +260,7 @@ static void pre_arm_checks(bool display_failure)
 
         // check for unreasonable compass offsets
         Vector3f offsets = compass.get_offsets();
-        if(offsets.length() > 500) {
+        if(offsets.length() > COMPASS_OFFSETS_MAX) {
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass offsets too high"));
             }
@@ -375,6 +357,14 @@ static void pre_arm_checks(bool display_failure)
             return;
         }
 
+        // check gyros calibrated successfully
+        if(!ins.gyro_calibrated_ok_all()) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Gyro cal failed"));
+            }
+            return;
+        }
+
 #if INS_MAX_INSTANCES > 1
         // check all gyros are consistent
         if (ins.get_gyro_count() > 1) {
@@ -428,7 +418,7 @@ static void pre_arm_checks(bool display_failure)
         }
 
         // lean angle parameter check
-    if (aparm.angle_max < 1000 || aparm.angle_max > 8000) {
+        if (aparm.angle_max < 1000 || aparm.angle_max > 8000) {
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check ANGLE_MAX"));
             }
@@ -523,9 +513,34 @@ static bool pre_arm_gps_checks(bool display_failure)
 }
 
 // arm_checks - perform final checks before arming
-// always called just before arming.  Return true if ok to arm
-static bool arm_checks(bool display_failure)
+//  always called just before arming.  Return true if ok to arm
+//  has side-effect that logging is started
+static bool arm_checks(bool display_failure, bool arming_from_gcs)
 {
+#if LOGGING_ENABLED == ENABLED
+    // start dataflash
+    start_logging();
+#endif
+
+    // always check if the current mode allows arming
+    if (!mode_allows_arming(control_mode, arming_from_gcs)) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Mode not armable"));
+        }
+        return false;
+    }
+
+    // always check if rotor is spinning on heli
+    #if FRAME_CONFIG == HELI_FRAME
+    // heli specific arming check
+    if (!motors.allow_arming()){
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Rotor not spinning"));
+        }
+        return false;
+    }
+    #endif  // HELI_FRAME
+
     // succeed if arming checks are disabled
     if (g.arming_check == ARMING_CHECK_NONE) {
         return true;
@@ -543,7 +558,7 @@ static bool arm_checks(bool display_failure)
 
     // check Baro & inav alt are within 1m
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_BARO)) {
-        if(fabs(inertial_nav.get_altitude() - baro_alt) > 100) {
+        if(fabs(inertial_nav.get_altitude() - baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Alt disparity"));
             }
@@ -622,6 +637,7 @@ static void init_disarm_motors()
 
     // we are not in the air
     set_land_complete(true);
+    set_land_complete_maybe(true);
 
     // reset the mission
     mission.reset();
@@ -633,7 +649,9 @@ static void init_disarm_motors()
     Log_Write_Event(DATA_DISARMED);
 
     // suspend logging
-    DataFlash.EnableWrites(false);
+    if (!(g.log_bitmask & MASK_LOG_WHEN_DISARMED)) {
+        DataFlash.EnableWrites(false);
+    }
 
     // disable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(false);

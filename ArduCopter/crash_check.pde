@@ -25,7 +25,7 @@ void crash_check()
 #endif
 
     // return immediately if motors are not armed or pilot's throttle is above zero
-    if (!motors.armed() || (g.rc_3.control_in != 0 && !failsafe.radio)) {
+    if (!motors.armed() || (!ap.throttle_zero && !failsafe.radio)) {
         inverted_count = 0;
         return;
     }
@@ -110,7 +110,7 @@ void parachute_check()
     }
 
     // ensure the first control_loss event is from above the min altitude
-    if (control_loss_count == 0 && parachute.alt_min() != 0 && (baro_alt < (uint32_t)parachute.alt_min() * 100)) {
+    if (control_loss_count == 0 && parachute.alt_min() != 0 && (baro_alt < (int32_t)parachute.alt_min() * 100)) {
         return;
     }
 
@@ -177,7 +177,7 @@ static void parachute_manual_release()
     }
 
     // do not release if we are landed or below the minimum altitude above home
-    if (ap.land_complete || (parachute.alt_min() != 0 && (baro_alt < (uint32_t)parachute.alt_min() * 100))) {
+    if (ap.land_complete || (parachute.alt_min() != 0 && (baro_alt < (int32_t)parachute.alt_min() * 100))) {
         // warn user of reason for failure
         gcs_send_text_P(SEVERITY_HIGH,PSTR("Parachute: Too Low"));
         // log an error in the dataflash

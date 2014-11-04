@@ -1,7 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 // counter to verify landings
-static uint16_t land_detector;
+static uint16_t land_detector = LAND_DETECTOR_TRIGGER;  // we assume we are landed
 static bool land_with_gps;
 
 static uint32_t land_start_time;
@@ -61,7 +61,7 @@ static void land_gps_run()
 
 #if LAND_REQUIRE_MIN_THROTTLE_TO_DISARM == ENABLED
         // disarm when the landing detector says we've landed and throttle is at minimum
-        if (ap.land_complete && (g.rc_3.control_in == 0 || failsafe.radio)) {
+        if (ap.land_complete && (ap.throttle_zero || failsafe.radio)) {
             init_disarm_motors();
         }
 #else
@@ -71,6 +71,11 @@ static void land_gps_run()
         }
 #endif
         return;
+    }
+
+    // relax loiter target if we might be landed
+    if (land_complete_maybe()) {
+        wp_nav.loiter_soften_for_landing();
     }
 
     // process pilot inputs
@@ -126,7 +131,7 @@ static void land_nogps_run()
         attitude_control.set_throttle_out(0, false);
 #if LAND_REQUIRE_MIN_THROTTLE_TO_DISARM == ENABLED
         // disarm when the landing detector says we've landed and throttle is at minimum
-        if (ap.land_complete && (g.rc_3.control_in == 0 || failsafe.radio)) {
+        if (ap.land_complete && (ap.throttle_zero || failsafe.radio)) {
             init_disarm_motors();
         }
 #else
@@ -187,20 +192,31 @@ static float get_throttle_land()
     }
 }
 
+// land_complete_maybe - return true if we may have landed (used to reset loiter targets during landing)
+static bool land_complete_maybe()
+{
+    return (ap.land_complete || ap.land_complete_maybe);
+}
+
 // update_land_detector - checks if we have landed and updates the ap.land_complete flag
 // called at 50hz
 static void update_land_detector()
 {
     // detect whether we have landed by watching for low climb rate, motors hitting their lower limit, overall low throttle and low rotation rate
-    if ((abs(climb_rate) < LAND_DETECTOR_CLIMBRATE_MAX) && motors.limit.throttle_lower &&
-        (motors.get_throttle_out() < get_non_takeoff_throttle()) && (ahrs.get_gyro().length() < LAND_DETECTOR_ROTATION_MAX)) {
+    if ((abs(climb_rate) < LAND_DETECTOR_CLIMBRATE_MAX) &&
+        (abs(baro_climbrate) < LAND_DETECTOR_BARO_CLIMBRATE_MAX) &&
+        motors.limit.throttle_lower &&
+#if FRAME_CONFIG != HELI_FRAME
+        (motors.get_throttle_out() < get_non_takeoff_throttle()) &&
+#endif
+        (ahrs.get_gyro().length() < LAND_DETECTOR_ROTATION_MAX)) {
         if (!ap.land_complete) {
             // increase counter until we hit the trigger then set land complete flag
             if( land_detector < LAND_DETECTOR_TRIGGER) {
                 land_detector++;
             }else{
                 set_land_complete(true);
-                land_detector = 0;
+                land_detector = LAND_DETECTOR_TRIGGER;
             }
         }
     } else {
@@ -211,6 +227,9 @@ static void update_land_detector()
             set_land_complete(false);
         }
     }
+
+    // set land maybe flag
+    set_land_complete_maybe(land_detector >= LAND_DETECTOR_MAYBE_TRIGGER);
 }
 
 // land_do_not_use_GPS - forces land-mode to not use the GPS but instead rely on pilot input for roll and pitch
@@ -226,4 +245,9 @@ static void set_mode_land_with_pause()
 {
     set_mode(LAND);
     land_pause = true;
+}
+
+// landing_with_GPS - returns true if vehicle is landing using GPS
+static bool landing_with_GPS() {
+    return (control_mode == LAND && land_with_gps);
 }

@@ -203,7 +203,7 @@ void AP_Terrain::seek_offset(void)
 
     uint32_t file_offset = (east_blocks * block.grid_idx_x + 
                             block.grid_idx_y) * sizeof(union grid_io_block);
-    if (::lseek(fd, file_offset, SEEK_SET) != file_offset) {
+    if (::lseek(fd, file_offset, SEEK_SET) != (off_t)file_offset) {
 #if TERRAIN_DEBUG
         hal.console->printf("Seek %lu failed - %s\n",
                             (unsigned long)file_offset, strerror(errno));

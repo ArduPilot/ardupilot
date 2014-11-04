@@ -67,13 +67,16 @@ bool AP_Compass_VRBRAIN::init(void)
         }
 
         // remember if the compass is external
-        _is_external[i] = (ioctl(_mag_fd[i], MAGIOCGEXTERNAL, 0) > 0);
+        _external[i] = (ioctl(_mag_fd[i], MAGIOCGEXTERNAL, 0) > 0);
 #if defined(CONFIG_ARCH_BOARD_VRBRAIN_V45)
 		//deal with situations where user has cut internal mag on VRBRAIN 4.5 
 		//and uses only one external mag attached to the internal I2C bus
-		_is_external[i] = _external.load() ? _external.get() : _is_external[i];
+        bool external_tmp = _external[i];
+        if (!_external[i].load()) {
+            _external[i] = external_tmp;
+        }
 #endif
-        if (_is_external[i]) {
+        if (_external[i]) {
             hal.console->printf("Using external compass[%u]\n", (unsigned)i);
         }
         _count[0] = 0;
@@ -114,25 +117,16 @@ bool AP_Compass_VRBRAIN::read(void)
         // override any user setting of COMPASS_EXTERNAL 
         //_external.set(_is_external[0]);
 
-        if (_is_external[i]) {
+        if (_external[i]) {
             // add user selectable orientation
-            _sum[i].rotate((enum Rotation)_orientation.get());
+            _sum[i].rotate((enum Rotation)_orientation[i].get());
         } else {
             // add in board orientation from AHRS
             _sum[i].rotate(_board_orientation);
         }
-
-        _sum[i] += _offset[i].get();
-
-        // apply motor compensation
-        if (_motor_comp_type != AP_COMPASS_MOT_COMP_DISABLED && _thr_or_curr != 0.0f) {
-            _motor_offset[i] = _motor_compensation[i].get() * _thr_or_curr;
-            _sum[i] += _motor_offset[i];
-        } else {
-            _motor_offset[i].zero();
-        }
     
         _field[i] = _sum[i];
+        apply_corrections(_field[i],i);
     
         _sum[i].zero();
         _count[i] = 0;
@@ -158,11 +152,11 @@ void AP_Compass_VRBRAIN::accumulate(void)
 
 uint8_t AP_Compass_VRBRAIN::get_primary(void) const
 {
-    if (_primary < _num_instances && _healthy[_primary]) {
+    if (_primary < _num_instances && _healthy[_primary] && use_for_yaw(_primary)) {
         return _primary;
     }
     for (uint8_t i=0; i<_num_instances; i++) {
-        if (_healthy[i]) return i;
+        if (_healthy[i] && (use_for_yaw(i))) return i;
     }    
     return 0;
 }

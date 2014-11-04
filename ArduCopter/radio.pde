@@ -38,6 +38,9 @@ static void init_rc_in()
 
     // set default dead zones
     default_dead_zones();
+
+    // initialise throttle_zero flag
+    ap.throttle_zero = true;
 }
 
  // init_rc_out -- initialise motors and check if pilot wants to perform ESC calibration
@@ -56,29 +59,8 @@ static void init_rc_out()
     // we want the input to be scaled correctly
     g.rc_3.set_range_out(0,1000);
 
-    // full throttle means to enter ESC calibration
-    if(g.rc_3.control_in >= (g.throttle_max - 50) || (g.esc_calibrate == 2)) {
-        if(g.esc_calibrate == 0) {
-            // we will enter esc_calibrate mode on next reboot
-            g.esc_calibrate.set_and_save(1);
-            // display message on console
-            cliSerial->printf_P(PSTR("Entering ESC Calibration: please restart APM.\n"));
-            // turn on esc calibration notification
-            AP_Notify::flags.esc_calibration = true;
-            // block until we restart
-            while(1) { delay(5); }
-        }else{
-            cliSerial->printf_P(PSTR("ESC Calibration active: passing throttle through to ESCs.\n"));
-            // clear esc flag
-            g.esc_calibrate.set_and_save(0);
-            // pass through user throttle to escs
-            init_esc();
-        }
-    }else{
-        // did we abort the calibration?
-        if(g.esc_calibrate == 1)
-            g.esc_calibrate.set_and_save(0);
-    }
+    // check if we should enter esc calibration mode
+    esc_calibration_startup_check();
 
     // enable output to motors
     pre_arm_rc_checks();
@@ -97,9 +79,11 @@ void output_min()
 
 static void read_radio()
 {
-    static uint32_t last_update = 0;
+    static uint32_t last_update_ms = 0;
+    uint32_t tnow_ms = millis();
+
     if (hal.rcin->new_input()) {
-        last_update = millis();
+        last_update_ms = tnow_ms;
         ap.new_radio_frame = true;
         uint16_t periods[8];
         hal.rcin->read(periods,8);
@@ -107,12 +91,20 @@ static void read_radio()
         g.rc_2.set_pwm(periods[rcmap.pitch()-1]);
 
         set_throttle_and_failsafe(periods[rcmap.throttle()-1]);
+        set_throttle_zero_flag(g.rc_3.control_in);
 
         g.rc_4.set_pwm(periods[rcmap.yaw()-1]);
         g.rc_5.set_pwm(periods[4]);
         g.rc_6.set_pwm(periods[5]);
         g.rc_7.set_pwm(periods[6]);
         g.rc_8.set_pwm(periods[7]);
+
+        // read channels 9 ~ 14
+        for (uint8_t i=8; i<RC_MAX_CHANNELS; i++) {
+            if (RC_Channel::rc_channel(i) != NULL) {
+                RC_Channel::rc_channel(i)->set_pwm(RC_Channel::rc_channel(i)->read());
+            }
+        }
 
         // flag we must have an rc receiver attached
         if (!failsafe.rc_override_active) {
@@ -122,7 +114,7 @@ static void read_radio()
         // update output on any aux channels, for manual passthru
         RC_Channel_aux::output_ch_all();
     }else{
-        uint32_t elapsed = millis() - last_update;
+        uint32_t elapsed = tnow_ms - last_update_ms;
         // turn on throttle failsafe if no update from the RC Radio for 500ms or 2000ms if we are using RC_OVERRIDE
         if (((!failsafe.rc_override_active && (elapsed >= FS_RADIO_TIMEOUT_MS)) || (failsafe.rc_override_active && (elapsed >= FS_RADIO_RC_OVERRIDE_TIMEOUT_MS))) &&
             (g.failsafe_throttle && motors.armed() && !failsafe.radio)) {
@@ -171,6 +163,22 @@ static void set_throttle_and_failsafe(uint16_t throttle_pwm)
         }
         // pass through throttle
         g.rc_3.set_pwm(throttle_pwm);
+    }
+}
+
+#define THROTTLE_ZERO_DEBOUNCE_TIME_MS 400
+// set_throttle_zero_flag - set throttle_zero flag from debounced throttle control_in
+static void set_throttle_zero_flag(int16_t throttle_control)
+{
+    static uint32_t last_nonzero_throttle_ms = 0;
+    uint32_t tnow_ms = millis();
+
+    // if non-zero throttle immediately set as non-zero
+    if (throttle_control > 0) {
+        last_nonzero_throttle_ms = tnow_ms;
+        ap.throttle_zero = false;
+    } else if (tnow_ms - last_nonzero_throttle_ms > THROTTLE_ZERO_DEBOUNCE_TIME_MS) {
+        ap.throttle_zero = true;
     }
 }
 

@@ -444,6 +444,7 @@ void GCS_MAVLINK::handle_request_data_stream(mavlink_message_t *msg, bool save)
     mavlink_request_data_stream_t packet;
     mavlink_msg_request_data_stream_decode(msg, &packet);
 
+    // exit immediately if this command is not meant for this vehicle
     if (mavlink_check_target(packet.target_system, packet.target_component))
         return;
 
@@ -507,6 +508,8 @@ void GCS_MAVLINK::handle_param_request_list(mavlink_message_t *msg)
 {
     mavlink_param_request_list_t packet;
     mavlink_msg_param_request_list_decode(msg, &packet);
+
+    // exit immediately if this command is not meant for this vehicle
     if (mavlink_check_target(packet.target_system,packet.target_component)) {
         return;
     }
@@ -529,6 +532,8 @@ void GCS_MAVLINK::handle_param_request_read(mavlink_message_t *msg)
 {
     mavlink_param_request_read_t packet;
     mavlink_msg_param_request_read_decode(msg, &packet);
+
+    // exit immediately if this command is not meant for this vehicle
     if (mavlink_check_target(packet.target_system,packet.target_component)) {
         return;
     }
@@ -571,6 +576,7 @@ void GCS_MAVLINK::handle_param_set(mavlink_message_t *msg, DataFlash_Class *Data
     mavlink_param_set_t packet;
     mavlink_msg_param_set_decode(msg, &packet);
 
+    // exit immediately if this command is not meant for this vehicle
     if (mavlink_check_target(packet.target_system, packet.target_component)) {
         return;
     }
@@ -712,6 +718,8 @@ void GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
     struct AP_Mission::Mission_Command cmd = {};
 
     mavlink_msg_mission_item_decode(msg, &packet);
+
+    // exit immediately if this command is not meant for this vehicle
     if (mavlink_check_target(packet.target_system,packet.target_component)) {
         return;
     }
@@ -1167,4 +1175,41 @@ void GCS_MAVLINK::send_battery2(const AP_BattMonitor &battery)
     if (battery.voltage2(voltage)) {
         mavlink_msg_battery2_send(chan, voltage*1000, -1);
     }
+}
+
+/*
+  handle a SET_MODE MAVLink message
+ */
+void GCS_MAVLINK::handle_set_mode(mavlink_message_t* msg, bool (*set_mode)(uint8_t mode))
+{
+    uint8_t result = MAV_RESULT_FAILED;
+    mavlink_set_mode_t packet;
+    mavlink_msg_set_mode_decode(msg, &packet);
+
+    // exit immediately if this command is not meant for this vehicle
+    if (mavlink_check_target(packet.target_system, 0)) {
+        return;
+    }
+
+    // only accept custom modes because there is no easy mapping from Mavlink flight modes to AC flight modes
+    if (packet.base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED) {
+        if (set_mode(packet.custom_mode)) {
+            result = MAV_RESULT_ACCEPTED;
+        }
+    } else if (packet.base_mode == MAV_MODE_FLAG_DECODE_POSITION_SAFETY) {
+        // set the safety switch position. Must be in a command by itself
+        if (packet.custom_mode == 0) {
+            // turn safety off (pwm outputs flow to the motors)
+            hal.rcout->force_safety_off();
+            result = MAV_RESULT_ACCEPTED;
+        } else if (packet.custom_mode == 1) {
+            // turn safety on (no pwm outputs to the motors)
+            if (hal.rcout->force_safety_on()) {
+                result = MAV_RESULT_ACCEPTED;
+            }
+        }
+    }
+
+    // send ACK or NAK
+    mavlink_msg_command_ack_send_buf(msg, chan, MAVLINK_MSG_ID_SET_MODE, result);
 }

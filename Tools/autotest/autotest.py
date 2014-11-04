@@ -56,6 +56,20 @@ def build_binaries():
         return False
     return True
 
+def build_devrelease():
+    '''run the build_devrelease.sh script'''
+    print("Running build_devrelease.sh")
+    import shutil
+    # copy the script as it changes git branch, which can change the script while running
+    orig=util.reltopdir('Tools/scripts/build_devrelease.sh')
+    copy=util.reltopdir('./build_devrelease.sh')
+    shutil.copyfile(orig, copy)
+    shutil.copymode(orig, copy)
+    if util.run_cmd(copy, dir=util.reltopdir('.')) != 0:
+        print("Failed build_devrelease.sh")
+        return False
+    return True
+
 def build_examples():
     '''run the build_examples.sh script'''
     print("Running build_examples.sh")
@@ -123,6 +137,7 @@ steps = [
     'prerequisites',
     'build.All',
     'build.Binaries',
+    'build.DevRelease',
     'build.Examples',
     'build.Parameters',
 
@@ -212,6 +227,9 @@ def run_step(step):
 
     if step == 'build.Binaries':
         return build_binaries()
+
+    if step == 'build.DevRelease':
+        return build_devrelease()
 
     if step == 'build.Examples':
         return build_examples()

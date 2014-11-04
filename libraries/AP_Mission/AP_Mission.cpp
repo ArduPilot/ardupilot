@@ -517,23 +517,9 @@ bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP
         cmd.p1 = packet.param1;                         // delay at waypoint in seconds
         break;
 
-#ifdef MAV_CMD_NAV_GUIDED
-    case MAV_CMD_NAV_GUIDED:                     // MAV ID: 90
-        cmd.p1 = packet.param1;                         // max time in seconds the external controller will be allowed to control the vehicle
-        cmd.content.nav_guided.alt_min = packet.param2; // min alt below which the command will be aborted.  0 for no lower alt limit
-        cmd.content.nav_guided.alt_max = packet.param3; // max alt above which the command will be aborted.  0 for no upper alt limit
-        cmd.content.nav_guided.horiz_max = packet.param4;   // max horizontal distance the vehicle can move before the command will be aborted.  0 for no horizontal limit
+    case MAV_CMD_NAV_GUIDED_ENABLE:                     // MAV ID: 92
+        cmd.p1 = packet.param1;                         // on/off. >0.5 means "on", hand-over control to external controller
         break;
-#endif
-
-#ifdef MAV_CMD_NAV_VELOCITY
-    case MAV_CMD_NAV_VELOCITY:                          // MAV ID: 91
-        cmd.p1 = packet.param1;                         // frame - unused
-        cmd.content.nav_velocity.x = packet.x;          // lat (i.e. north) velocity in m/s
-        cmd.content.nav_velocity.y = packet.y;          // lon (i.e. east) velocity in m/s
-        cmd.content.nav_velocity.z = packet.z;          // vertical (i.e. up) velocity in m/s
-        break;
-#endif
 
     case MAV_CMD_CONDITION_DELAY:                       // MAV ID: 112
         cmd.content.delay.seconds = packet.param1;      // delay in seconds
@@ -603,6 +589,10 @@ bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP
         cmd.content.repeat_servo.cycle_time = packet.param4;   // time in seconds
         break;
 
+    case MAV_CMD_DO_LAND_START:                         // MAV ID: 189
+        copy_location = true;
+        break;
+
     case MAV_CMD_DO_SET_ROI:                            // MAV ID: 201
         copy_location = true;
         cmd.p1 = packet.param1;                         // 0 = no roi, 1 = next waypoint, 2 = waypoint number, 3 = fixed location, 4 = given target (not supported)
@@ -623,6 +613,18 @@ bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP
 
     case MAV_CMD_DO_INVERTED_FLIGHT:                    // MAV ID: 210
         cmd.p1 = packet.param1;                         // normal=0 inverted=1
+        break;
+
+    case MAV_CMD_DO_GRIPPER:                            // MAV ID: 211
+        cmd.content.gripper.num = packet.param1;        // gripper number
+        cmd.content.gripper.action = packet.param2;     // action 0=release, 1=grab.  See GRIPPER_ACTION enum
+        break;
+
+    case MAV_CMD_DO_GUIDED_LIMITS:                      // MAV ID: 222
+        cmd.p1 = packet.param1;                         // max time in seconds the external controller will be allowed to control the vehicle
+        cmd.content.guided_limits.alt_min = packet.param2;  // min alt below which the command will be aborted.  0 for no lower alt limit
+        cmd.content.guided_limits.alt_max = packet.param3;  // max alt above which the command will be aborted.  0 for no upper alt limit
+        cmd.content.guided_limits.horiz_max = packet.param4;// max horizontal distance the vehicle can move before the command will be aborted.  0 for no horizontal limit
         break;
 
     default:
@@ -780,23 +782,9 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
         packet.param1 = cmd.p1;                         // delay at waypoint in seconds
         break;
 
-#ifdef MAV_CMD_NAV_GUIDED
-    case MAV_CMD_NAV_GUIDED:                     // MAV ID: 90
-        packet.param1 = cmd.p1;                         // max time in seconds the external controller will be allowed to control the vehicle
-        packet.param2 = cmd.content.nav_guided.alt_min; // min alt below which the command will be aborted.  0 for no lower alt limit
-        packet.param3 = cmd.content.nav_guided.alt_max; // max alt above which the command will be aborted.  0 for no upper alt limit
-        packet.param4 = cmd.content.nav_guided.horiz_max;   // max horizontal distance the vehicle can move before the command will be aborted.  0 for no horizontal limit
+    case MAV_CMD_NAV_GUIDED_ENABLE:                     // MAV ID: 92
+        packet.param1 = cmd.p1;                         // on/off. >0.5 means "on", hand-over control to external controller
         break;
-#endif
-
-#ifdef MAV_CMD_NAV_VELOCITY
-    case MAV_CMD_NAV_VELOCITY:                          // MAV ID: 91
-        packet.param1 = cmd.p1;                         // frame - unused
-        packet.x = cmd.content.nav_velocity.x;          // lat (i.e. north) velocity in m/s
-        packet.y = cmd.content.nav_velocity.y;          // lon (i.e. east) velocity in m/s
-        packet.z = cmd.content.nav_velocity.z;          // vertical (i.e. up) velocity in m/s
-        break;
-#endif
 
     case MAV_CMD_CONDITION_DELAY:                       // MAV ID: 112
         packet.param1 = cmd.content.delay.seconds;      // delay in seconds
@@ -804,7 +792,7 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
 
     case MAV_CMD_CONDITION_CHANGE_ALT:                  // MAV ID: 113
         copy_alt = true;                                // only altitude is used
-        packet.param1 = cmd.content.location.alt / 100.0f;  // climb/descent rate converted from cm/s to m/s.  To-Do: store in proper climb_rate structure
+        packet.param1 = cmd.content.location.lat / 100.0f;  // climb/descent rate converted from cm/s to m/s.  To-Do: store in proper climb_rate structure
         break;
 
     case MAV_CMD_CONDITION_DISTANCE:                    // MAV ID: 114
@@ -866,6 +854,10 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
         packet.param4 = cmd.content.repeat_servo.cycle_time;    // time in milliseconds converted to seconds
         break;
 
+    case MAV_CMD_DO_LAND_START:                         // MAV ID: 189
+        copy_location = true;
+        break;
+
     case MAV_CMD_DO_SET_ROI:                            // MAV ID: 201
         copy_location = true;
         packet.param1 = cmd.p1;                         // 0 = no roi, 1 = next waypoint, 2 = waypoint number, 3 = fixed location, 4 = given target (not supported)
@@ -886,6 +878,18 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
 
     case MAV_CMD_DO_INVERTED_FLIGHT:                    // MAV ID: 210
         packet.param1 = cmd.p1;                         // normal=0 inverted=1
+        break;
+
+    case MAV_CMD_DO_GRIPPER:                            // MAV ID: 211
+        packet.param1 = cmd.content.gripper.num;        // gripper number
+        packet.param2 = cmd.content.gripper.action;     // action 0=release, 1=grab.  See GRIPPER_ACTION enum
+        break;
+
+    case MAV_CMD_DO_GUIDED_LIMITS:                      // MAV ID: 222
+        packet.param1 = cmd.p1;                         // max time in seconds the external controller will be allowed to control the vehicle
+        packet.param2 = cmd.content.guided_limits.alt_min;  // min alt below which the command will be aborted.  0 for no lower alt limit
+        packet.param3 = cmd.content.guided_limits.alt_max;  // max alt above which the command will be aborted.  0 for no upper alt limit
+        packet.param4 = cmd.content.guided_limits.horiz_max;// max horizontal distance the vehicle can move before the command will be aborted.  0 for no horizontal limit
         break;
 
     default:
@@ -1234,5 +1238,37 @@ uint16_t AP_Mission::num_commands_max(void) const
 {
     // -4 to remove space for eeprom version number
     return (_storage.size() - 4) / AP_MISSION_EEPROM_COMMAND_SIZE;
+}
+
+// find the nearest landing sequence starting point (DO_LAND_START) and
+// return its index.  Returns 0 if no appropriate DO_LAND_START point can
+// be found.
+uint16_t AP_Mission::get_landing_sequence_start() 
+{
+    struct Location current_loc;
+
+    if (!_ahrs.get_position(current_loc)) {
+        return 0;
+    }
+
+    uint16_t landing_start_index = 0;
+    float min_distance = -1;
+
+    // Go through mission looking for nearest landing start command
+    for (uint16_t i = 0; i < num_commands(); i++) {
+        Mission_Command tmp;
+        if (!read_cmd_from_storage(i, tmp)) {
+            continue;
+        }
+        if (tmp.id == MAV_CMD_DO_LAND_START) {
+            float tmp_distance = get_distance(tmp.content.location, current_loc);
+            if (min_distance < 0 || tmp_distance < min_distance) {
+                min_distance = tmp_distance;
+                landing_start_index = i;
+            }           
+        }
+    }
+
+    return landing_start_index;
 }
 

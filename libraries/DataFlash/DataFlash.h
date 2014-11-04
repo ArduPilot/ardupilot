@@ -255,6 +255,7 @@ struct PACKED log_BARO {
     float   altitude;
     float   pressure;
     int16_t temperature;
+    float   climbrate;
 };
 
 struct PACKED log_AHRS {
@@ -296,9 +297,9 @@ struct PACKED log_EKF1 {
 struct PACKED log_EKF2 {
     LOG_PACKET_HEADER;
     uint32_t time_ms;
-    int8_t accX;
-    int8_t accY;
-    int8_t accZ;
+    int8_t Ratio;
+    int8_t AZ1bias;
+    int8_t AZ2bias;
     int16_t windN;
     int16_t windE;
     int16_t magN;
@@ -337,7 +338,6 @@ struct PACKED log_EKF4 {
     int8_t  offsetNorth;
     int8_t  offsetEast;
     uint8_t faults;
-    uint8_t divergeRate;
 };
 
 struct PACKED log_Cmd {
@@ -406,6 +406,7 @@ struct PACKED log_Ubx1 {
     uint16_t noisePerMS;
     uint8_t  jamInd;
     uint8_t  aPower;
+    uint16_t agcCnt;
 };
 
 struct PACKED log_Ubx2 {
@@ -435,7 +436,7 @@ struct PACKED log_Ubx2 {
     { LOG_RCOUT_MSG, sizeof(log_RCOUT), \
       "RCOU",  "Ihhhhhhhhhhhh",     "TimeMS,Ch1,Ch2,Ch3,Ch4,Ch5,Ch6,Ch7,Ch8,Ch9,Ch10,Ch11,Ch12" }, \
     { LOG_BARO_MSG, sizeof(log_BARO), \
-      "BARO",  "Iffc",     "TimeMS,Alt,Press,Temp" }, \
+      "BARO",  "Iffcf", "TimeMS,Alt,Press,Temp,CRt" }, \
     { LOG_POWR_MSG, sizeof(log_POWR), \
       "POWR","ICCH","TimeMS,Vcc,VServo,Flags" },  \
     { LOG_CMD_MSG, sizeof(log_Cmd), \
@@ -460,15 +461,15 @@ struct PACKED log_Ubx2 {
     { LOG_EKF1_MSG, sizeof(log_EKF1), \
       "EKF1","IccCffffffccc","TimeMS,Roll,Pitch,Yaw,VN,VE,VD,PN,PE,PD,GX,GY,GZ" }, \
     { LOG_EKF2_MSG, sizeof(log_EKF2), \
-      "EKF2","Ibbbcchhhhhh","TimeMS,AX,AY,AZ,VWN,VWE,MN,ME,MD,MX,MY,MZ" }, \
+      "EKF2","Ibbbcchhhhhh","TimeMS,Ratio,AZ1bias,AZ2bias,VWN,VWE,MN,ME,MD,MX,MY,MZ" }, \
     { LOG_EKF3_MSG, sizeof(log_EKF3), \
       "EKF3","Icccccchhhc","TimeMS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IVT" }, \
     { LOG_EKF4_MSG, sizeof(log_EKF4), \
-      "EKF4","IcccccccbbBB","TimeMS,SV,SP,SH,SMX,SMY,SMZ,SVT,OFN,EFE,FS,DS" }, \
+      "EKF4","IcccccccbbB","TimeMS,SV,SP,SH,SMX,SMY,SMZ,SVT,OFN,EFE,FS" }, \
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
       "TERR","IBLLHffHH","TimeMS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded" }, \
     { LOG_UBX1_MSG, sizeof(log_Ubx1), \
-      "UBX1", "IBHBB",  "TimeMS,Instance,noisePerMS,jamInd,aPower" }, \
+      "UBX1", "IBHBBH",  "TimeMS,Instance,noisePerMS,jamInd,aPower,agcCnt" }, \
     { LOG_UBX2_MSG, sizeof(log_Ubx2), \
       "UBX2", "IBbBbB", "TimeMS,Instance,ofsI,magI,ofsQ,magQ" }
 

@@ -201,7 +201,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Takeoff throttle slew rate
     // @Description: This parameter sets the slew rate for the throttle during auto takeoff. When this is zero the THR_SLEWRATE parameter is used during takeoff. For rolling takeoffs it can be a good idea to set a lower slewrate for takeoff to give a slower acceleration which can improve ground steering control. The value is a percentage throttle change per second, so a value of 20 means to advance the throttle over 5 seconds on takeoff. Values below 20 are not recommended as they may cause the plane to try to climb out with too little throttle.
     // @Units: percent
-    // @Range: 0 100
+    // @Range: 0 127
     // @Increment: 1
     // @User: User
     GSCALAR(takeoff_throttle_slewrate, "TKOFF_THR_SLEW",  0),
@@ -286,7 +286,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: WP_RADIUS
     // @DisplayName: Waypoint Radius
-    // @Description: Defines the distance from a waypoint that when crossed indicates the waypoint has been completed. To avoid the aircraft looping around the waypoint in case it misses by more than the WP_RADIUS an additional check is made to see if the aircraft has crossed a "finish line" passing through the waypoint and perpendicular to the flight path from the previous waypoint. If that finish line is crossed then the waypoint is considered complete.
+    // @Description: Defines the maximum distance from a waypoint that when crossed indicates the waypoint may be complete. To avoid the aircraft looping around the waypoint in case it misses by more than the WP_RADIUS an additional check is made to see if the aircraft has crossed a "finish line" passing through the waypoint and perpendicular to the flight path from the previous waypoint. If that finish line is crossed then the waypoint is considered complete. Note that the navigation controller may decide to turn later than WP_RADIUS before a waypoint, based on how sharp the turn is and the speed of the aircraft. It is safe to set WP_RADIUS much larger than the usual turn radius of your aircaft and the navigation controller will work out when to turn. If you set WP_RADIUS too small then you will tend to overshoot the turns.
     // @Units: Meters
     // @Range: 1 32767
     // @Increment: 1
@@ -360,7 +360,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: FENCE_AUTOENABLE
     // @DisplayName: Fence automatic enable
-    // @Description: When set to 1, gefence automatically enables after an auto takeoff and automatically disables at the beginning of an auto landing.  When on the ground before takeoff the fence is disabled.
+    // @Description: When set to 1, gefence automatically enables after an auto takeoff and automatically disables at the beginning of an auto landing.  When on the ground before takeoff the fence is disabled. It is highly recommended to not use this option for line of sight flying and use a fence enable channel instead.
     // @Values: 0:NoAutoEnable,1:AutoEnable
     // @User: Standard
     GSCALAR(fence_autoenable,       "FENCE_AUTOENABLE", 0),
@@ -454,7 +454,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Throttle slew rate
     // @Description: maximum percentage change in throttle per second. A setting of 10 means to not change the throttle by more than 10% of the full throttle range in one second.
     // @Units: Percent
-    // @Range: 0 100
+    // @Range: 0 127
     // @Increment: 1
     // @User: Standard
     ASCALAR(throttle_slewrate,      "THR_SLEWRATE",   100),
@@ -913,6 +913,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(hil_err_limit,         "HIL_ERR_LIMIT",   5),
 #endif
+
+    // @Param: RTL_AUTOLAND
+    // @DisplayName: RTL auto land
+    // @Description: Automatically begin landing sequence after arriving at RTL location. This requires the addition of a DO_LAND_START mission item, which acts as a marker for the start of a landing sequence. The closest landing sequence will be chosen to the current location. 
+    // @Values: 0:Disable,1:Enable
+    // @User: Standard
+    GSCALAR(rtl_autoland,         "RTL_AUTOLAND",   0),
 
     // barometer ground calibration. The GND_ prefix is chosen for
     // compatibility with previous releases of ArduPlane

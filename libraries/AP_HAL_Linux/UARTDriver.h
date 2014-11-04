@@ -29,6 +29,8 @@ public:
 
     void _timer_tick(void);
 
+    enum flow_control get_flow_control(void) { return _flow_control; }
+
 private:
     char *device_path;
     int _rd_fd;
@@ -41,11 +43,13 @@ private:
     char *_ip;
     char *_flag;
     bool _connected; // true if a client has connected         
+    bool _packetise; // true if writes should try to be on mavlink boundaries
 
     // we use in-task ring buffers to reduce the system call cost
     // of ::read() and ::write() in the main loop
     uint8_t *_readbuf;
     uint16_t _readbuf_size;
+    enum flow_control _flow_control;
 
     // _head is where the next available data is. _tail is where new
     // data is put
@@ -60,7 +64,16 @@ private:
     int _write_fd(const uint8_t *buf, uint16_t n);
     int _read_fd(uint8_t *buf, uint16_t n);
     void _tcp_start_connection(bool wait_for_connection);
-    int _parseDevicePath(char* arg);
+    void _udp_start_connection(void);
+
+    enum device_type {
+        DEVICE_TCP,
+        DEVICE_UDP,
+        DEVICE_SERIAL,
+        DEVICE_UNKNOWN
+    };
+
+    enum device_type _parseDevicePath(const char *arg);
     uint64_t _last_write_time;    
 };
 

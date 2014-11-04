@@ -7,6 +7,7 @@
 #include <AP_Math.h>
 #include <AP_InertialNav.h>     // Inertial Navigation library
 #include <AC_PosControl.h>      // Position control library
+#include <AC_AttitudeControl.h> // Attitude control library
 
 // loiter maximum velocities and accelerations
 #define WPNAV_ACCELERATION              100.0f      // defines the default velocity vs distant curve.  maximum acceleration in cm/s/s that position controller asks for from acceleration controller
@@ -56,7 +57,7 @@ public:
     };
 
     /// Constructor
-    AC_WPNav(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosControl& pos_control);
+    AC_WPNav(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control);
 
     ///
     /// loiter controller
@@ -68,6 +69,9 @@ public:
 
     /// init_loiter_target - initialize's loiter position and feed-forward velocity from current pos and velocity
     void init_loiter_target();
+
+    /// loiter_soften_for_landing - reduce response for landing
+    void loiter_soften_for_landing();
 
     /// set_loiter_velocity - allows main code to pass the maximum velocity for loiter
     void set_loiter_velocity(float velocity_cms);
@@ -131,6 +135,11 @@ public:
 
     /// set_wp_origin_and_destination - set origin and destination waypoints using position vectors (distance from home in cm)
     void set_wp_origin_and_destination(const Vector3f& origin, const Vector3f& destination);
+
+    /// shift_wp_origin_to_current_pos - shifts the origin and destination so the origin starts at the current position
+    ///     used to reset the position just before takeoff
+    ///     relies on set_wp_destination or set_wp_origin_and_destination having been called first
+    void shift_wp_origin_to_current_pos();
 
     /// get_wp_stopping_point_xy - calculates stopping point based on current position, velocity, waypoint acceleration
     ///		results placed in stopping_position vector
@@ -260,6 +269,7 @@ protected:
     const AP_InertialNav&   _inav;
     const AP_AHRS&          _ahrs;
     AC_PosControl&          _pos_control;
+    const AC_AttitudeControl& _attitude_control;
 
     // parameters
     AP_Float    _loiter_speed_cms;      // maximum horizontal speed in cm/s while in loiter

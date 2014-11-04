@@ -86,6 +86,12 @@ LowPassFilter<T>::LowPassFilter() :
 template <class T>
 void LowPassFilter<T>::set_cutoff_frequency(float time_step, float cutoff_freq)
 {
+    // avoid divide by zero and allow removing filtering
+    if (cutoff_freq <= 0.0f) {
+        _alpha = 1.0f;
+        return;
+    }
+
     // calculate alpha
     float rc = 1/(2*PI*cutoff_freq);
     _alpha = time_step / (time_step + rc);
@@ -94,6 +100,12 @@ void LowPassFilter<T>::set_cutoff_frequency(float time_step, float cutoff_freq)
 template <class T>
 void LowPassFilter<T>::set_time_constant(float time_step, float time_constant)
 {
+    // avoid divide by zero
+    if (time_constant + time_step <= 0.0f) {
+        _alpha = 1.0f;
+        return;
+    }
+
     // calculate alpha
     _alpha = time_step / (time_constant + time_step);
 }

@@ -143,11 +143,15 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION; // attitude stabilisation
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_YAW_POSITION; // yaw position
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL; // X/Y position control
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS; // motor control
         break;
 
     case INITIALISING:
         break;
+    }
+
+    // set motors outputs as enabled if safety switch is not disarmed (i.e. either NONE or ARMED)
+    if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS;
     }
 
     // default to all healthy except compass and gps which we set individually
@@ -158,14 +162,14 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
     if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_GPS;
     }
-    if (!ins.get_gyro_health_all()) {
+    if (!ins.get_gyro_health_all() || (!g.skip_gyro_cal && !ins.gyro_calibrated_ok_all())) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_3D_GYRO;
     }
     if (!ins.get_accel_health_all()) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_3D_ACCEL;
     }
 
-    if (!ahrs.healthy()) {
+    if (ahrs.initialised() && !ahrs.healthy()) {
         // AHRS subsystem is unhealthy
         control_sensors_health &= ~MAV_SYS_STATUS_AHRS;
     }
@@ -914,29 +918,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_SET_MODE:
 		{
-            // decode
-            mavlink_set_mode_t packet;
-            mavlink_msg_set_mode_decode(msg, &packet);
-
-            if (!(packet.base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED)) {
-                // we ignore base_mode as there is no sane way to map
-                // from that bitmap to a APM flight mode. We rely on
-                // custom_mode instead.
-                break;
-            }
-            switch (packet.custom_mode) {
-            case MANUAL:
-            case HOLD:
-            case LEARNING:
-            case STEERING:
-            case AUTO:
-            case RTL:
-                set_mode((enum mode)packet.custom_mode);
-                break;
-            }
-
+            handle_set_mode(msg, mavlink_set_mode);
             break;
-		}
+        }
 
     case MAVLINK_MSG_ID_MISSION_REQUEST_LIST:
         {
@@ -1025,6 +1009,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         int16_t v[8];
         mavlink_msg_rc_channels_override_decode(msg, &packet);
 
+        // exit immediately if this command is not meant for this vehicle
         if (mavlink_check_target(packet.target_system,packet.target_component))
             break;
 

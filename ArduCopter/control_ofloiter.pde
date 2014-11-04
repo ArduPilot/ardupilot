@@ -6,10 +6,14 @@
 
 #if OPTFLOW == ENABLED
 
+#define OPTFLOW_ALT_MAX_CM  1500        // maximum altitude above home that optical flow sensor will be used
+#define OPTFLOW_TIMEOUT_MS  200         // timeout in milliseconds after which we will give up on optical flow readings and return control to the pilot
+#define OPTFLOW_RP_RATE_LIM (2000/MAIN_LOOP_RATE)   // limit in centi-degrees/sec on rate of change of roll-pitch target.  Equal to 20deg/sec
+
 // ofloiter_init - initialise ofloiter controller
 static bool ofloiter_init(bool ignore_checks)
 {
-    if (g.optflow_enabled || ignore_checks) {
+    if (optflow.enabled() || ignore_checks) {
 
         // initialize vertical speed and acceleration
         pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
@@ -17,6 +21,11 @@ static bool ofloiter_init(bool ignore_checks)
 
         // initialise altitude target to stopping point
         pos_control.set_target_to_stopping_point_z();
+
+        // initialise of_roll, pitch to current attitude
+        of_roll = ahrs.roll_sensor;
+        of_pitch = ahrs.pitch_sensor;
+        reset_optflow_I();
 
         return true;
     }else{
@@ -29,6 +38,7 @@ static bool ofloiter_init(bool ignore_checks)
 static void ofloiter_run()
 {
     int16_t target_roll, target_pitch;
+    float final_roll, final_pitch;
     float target_yaw_rate = 0;
     float target_climb_rate = 0;
 
@@ -38,6 +48,8 @@ static void ofloiter_run()
         attitude_control.set_yaw_target_to_current_heading();
         attitude_control.set_throttle_out(0, false);
         pos_control.set_alt_target_to_current_alt();
+        of_roll = ahrs.roll_sensor;
+        of_pitch = ahrs.pitch_sensor;
         reset_optflow_I();
         return;
     }
@@ -72,14 +84,14 @@ static void ofloiter_run()
         // move throttle to between minimum and non-takeoff-throttle to keep us on the ground
         attitude_control.set_throttle_out(get_throttle_pre_takeoff(g.rc_3.control_in), false);
         pos_control.set_alt_target_to_current_alt();
-        reset_optflow_I();
+        of_roll = ahrs.roll_sensor;
+        of_pitch = ahrs.pitch_sensor;
     }else{
         // mix in user control with optical flow
-        target_roll = get_of_roll(target_roll);
-        target_pitch = get_of_pitch(target_pitch);
+        get_of_roll_pitch(target_roll, target_pitch, final_roll, final_pitch);
 
         // call attitude controller
-        attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+        attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(final_roll, final_pitch, target_yaw_rate, get_smoothing_gain());
 
         // run altitude controller
         if (sonar_alt_health >= SONAR_ALT_HEALTH_MAX) {
@@ -93,81 +105,57 @@ static void ofloiter_run()
     }
 }
 
-
 // calculate modified roll/pitch depending upon optical flow calculated position
-static int32_t get_of_roll(int32_t input_roll)
+static void get_of_roll_pitch(int16_t input_roll, int16_t input_pitch, float &roll_out, float &pitch_out)
 {
-    static float tot_x_cm = 0;      // total distance from target
-    static uint32_t last_of_roll_update = 0;
-    int32_t new_roll = 0;
-    int32_t p,i,d;
+    static uint32_t last_of_update = 0;
+    float dt;
+    Vector2f vel;
+
+    // To-Do: pass input_roll, input_pitch through to roll_out, pitch_out if input is non-zero or previous iteration was non-zero
 
     // check if new optflow data available
-    if( optflow.last_update != last_of_roll_update) {
-        last_of_roll_update = optflow.last_update;
+    if (optflow.last_update() != last_of_update) {
 
-        // add new distance moved
-        tot_x_cm += optflow.x_cm;
-
-        // only stop roll if caller isn't modifying roll
-        if( input_roll == 0 && current_loc.alt < 1500) {
-            p = g.pid_optflow_roll.get_p(-tot_x_cm);
-            i = g.pid_optflow_roll.get_i(-tot_x_cm,1.0f);              // we could use the last update time to calculate the time change
-            d = g.pid_optflow_roll.get_d(-tot_x_cm,1.0f);
-            new_roll = p+i+d;
-        }else{
+        // calculate dt and sanity check
+        dt = (optflow.last_update() - last_of_update) / 1000.0f;
+        if (dt > 0.2f) {
+            dt = 0.0f;
             g.pid_optflow_roll.reset_I();
-            tot_x_cm = 0;
-            p = 0;              // for logging
-            i = 0;
-            d = 0;
-        }
-        // limit amount of change and maximum angle
-        of_roll = constrain_int32(new_roll, (of_roll-20), (of_roll+20));
-    }
-
-    // limit max angle
-    of_roll = constrain_int32(of_roll, -1000, 1000);
-
-    return input_roll+of_roll;
-}
-
-static int32_t get_of_pitch(int32_t input_pitch)
-{
-    static float tot_y_cm = 0;  // total distance from target
-    static uint32_t last_of_pitch_update = 0;
-    int32_t new_pitch = 0;
-    int32_t p,i,d;
-
-    // check if new optflow data available
-    if( optflow.last_update != last_of_pitch_update ) {
-        last_of_pitch_update = optflow.last_update;
-
-        // add new distance moved
-        tot_y_cm += optflow.y_cm;
-
-        // only stop roll if caller isn't modifying pitch
-        if( input_pitch == 0 && current_loc.alt < 1500 ) {
-            p = g.pid_optflow_pitch.get_p(tot_y_cm);
-            i = g.pid_optflow_pitch.get_i(tot_y_cm, 1.0f);              // we could use the last update time to calculate the time change
-            d = g.pid_optflow_pitch.get_d(tot_y_cm, 1.0f);
-            new_pitch = p + i + d;
-        }else{
-            tot_y_cm = 0;
             g.pid_optflow_pitch.reset_I();
-            p = 0;              // for logging
-            i = 0;
-            d = 0;
         }
+        last_of_update = optflow.last_update();
 
-        // limit amount of change
-        of_pitch = constrain_int32(new_pitch, (of_pitch-20), (of_pitch+20));
+        // get latest velocity from sensor
+        vel = optflow.velocity();
     }
 
-    // limit max angle
-    of_pitch = constrain_int32(of_pitch, -1000, 1000);
+    // calculate time since last update
+    uint32_t time_since_update_ms = millis() - last_of_update;
 
-    return input_pitch+of_pitch;
+    // use pilot roll input if input is non-zero, altitude above 15m or optical flow sensor has timed out
+    if (input_roll != 0 || current_loc.alt > OPTFLOW_ALT_MAX_CM || time_since_update_ms > OPTFLOW_TIMEOUT_MS) {
+        roll_out = input_roll;
+    } else {
+        // run velocity through pid controller
+        roll_out = g.pid_optflow_roll.get_pid(-vel.x, dt);
+
+        // limit amount of change and maximum angle
+        // To-Do: replace reliance on of_roll, of_pitch within this function
+        roll_out = constrain_float(roll_out, (of_roll-OPTFLOW_RP_RATE_LIM), (of_roll+OPTFLOW_RP_RATE_LIM));
+    }
+
+    // use pilot pitch input if input is non-zero, altitude above 15m or optical flow sensor has timed out
+    if (input_pitch != 0 || current_loc.alt > OPTFLOW_ALT_MAX_CM || time_since_update_ms > OPTFLOW_TIMEOUT_MS) {
+        pitch_out = input_pitch;
+    } else {
+        // run velocity through pid controller
+        pitch_out = g.pid_optflow_pitch.get_pid(vel.y, dt);
+
+        // limit amount of change and maximum angle
+        // To-Do: replace reliance on of_roll, of_pitch within this function
+        pitch_out = constrain_float(pitch_out, (of_pitch-OPTFLOW_RP_RATE_LIM), (of_pitch+OPTFLOW_RP_RATE_LIM));
+    }
 }
 
 // reset_optflow_I - reset optflow position hold I terms
@@ -175,8 +163,6 @@ static void reset_optflow_I(void)
 {
     g.pid_optflow_roll.reset_I();
     g.pid_optflow_pitch.reset_I();
-    of_roll = 0;
-    of_pitch = 0;
 }
 
 #endif // OPTFLOW == ENABLED

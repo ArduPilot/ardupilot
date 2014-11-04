@@ -45,15 +45,11 @@ const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 static AP_Vehicle::MultiCopter aparm;
 
 // INS and Baro declaration
+AP_InertialSensor ins;
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-
-AP_InertialSensor_MPU6000 ins;
 AP_Baro_MS5611 baro(&AP_Baro_MS5611::spi);
-
 #else
-
-AP_ADC_ADS7844 adc;
-AP_InertialSensor_Oilpan ins(&adc);
+AP_ADC_ADS7844 apm1_adc;
 AP_Baro_BMP085 baro;
 #endif
 

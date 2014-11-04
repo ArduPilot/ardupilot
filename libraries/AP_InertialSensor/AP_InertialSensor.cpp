@@ -90,14 +90,126 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     AP_GROUPINFO("MPU6K_FILTER", 4, AP_InertialSensor, _mpu6000_filter,  0),
 
 #if INS_MAX_INSTANCES > 1
+    // @Param: ACC2SCAL_X
+    // @DisplayName: Accelerometer2 scaling of X axis
+    // @Description: Accelerometer2 scaling of X axis.  Calculated during acceleration calibration routine
+    // @Range: 0.8 1.2
+    // @User: Advanced
+
+    // @Param: ACC2SCAL_Y
+    // @DisplayName: Accelerometer2 scaling of Y axis
+    // @Description: Accelerometer2 scaling of Y axis  Calculated during acceleration calibration routine
+    // @Range: 0.8 1.2
+    // @User: Advanced
+
+    // @Param: ACC2SCAL_Z
+    // @DisplayName: Accelerometer2 scaling of Z axis
+    // @Description: Accelerometer2 scaling of Z axis  Calculated during acceleration calibration routine
+    // @Range: 0.8 1.2
+    // @User: Advanced
     AP_GROUPINFO("ACC2SCAL",    5, AP_InertialSensor, _accel_scale[1],   0),
+
+    // @Param: ACC2OFFS_X
+    // @DisplayName: Accelerometer2 offsets of X axis
+    // @Description: Accelerometer2 offsets of X axis. This is setup using the acceleration calibration or level operations
+    // @Units: m/s/s
+    // @Range: -300 300
+    // @User: Advanced
+
+    // @Param: ACC2OFFS_Y
+    // @DisplayName: Accelerometer2 offsets of Y axis
+    // @Description: Accelerometer2 offsets of Y axis. This is setup using the acceleration calibration or level operations
+    // @Units: m/s/s
+    // @Range: -300 300
+    // @User: Advanced
+
+    // @Param: ACC2OFFS_Z
+    // @DisplayName: Accelerometer2 offsets of Z axis
+    // @Description: Accelerometer2 offsets of Z axis. This is setup using the acceleration calibration or level operations
+    // @Units: m/s/s
+    // @Range: -300 300
+    // @User: Advanced
     AP_GROUPINFO("ACC2OFFS",    6, AP_InertialSensor, _accel_offset[1],  0),
+
+    // @Param: GYR2OFFS_X
+    // @DisplayName: Gyro2 offsets of X axis
+    // @Description: Gyro2 sensor offsets of X axis. This is setup on each boot during gyro calibrations
+    // @Units: rad/s
+    // @User: Advanced
+
+    // @Param: GYR2OFFS_Y
+    // @DisplayName: Gyro2 offsets of Y axis
+    // @Description: Gyro2 sensor offsets of Y axis. This is setup on each boot during gyro calibrations
+    // @Units: rad/s
+    // @User: Advanced
+
+    // @Param: GYR2OFFS_Z
+    // @DisplayName: Gyro2 offsets of Z axis
+    // @Description: Gyro2 sensor offsets of Z axis. This is setup on each boot during gyro calibrations
+    // @Units: rad/s
+    // @User: Advanced
     AP_GROUPINFO("GYR2OFFS",    7, AP_InertialSensor, _gyro_offset[1],   0),
 #endif
 
 #if INS_MAX_INSTANCES > 2
+    // @Param: ACC3SCAL_X
+    // @DisplayName: Accelerometer3 scaling of X axis
+    // @Description: Accelerometer3 scaling of X axis.  Calculated during acceleration calibration routine
+    // @Range: 0.8 1.2
+    // @User: Advanced
+
+    // @Param: ACC3SCAL_Y
+    // @DisplayName: Accelerometer3 scaling of Y axis
+    // @Description: Accelerometer3 scaling of Y axis  Calculated during acceleration calibration routine
+    // @Range: 0.8 1.2
+    // @User: Advanced
+
+    // @Param: ACC3SCAL_Z
+    // @DisplayName: Accelerometer3 scaling of Z axis
+    // @Description: Accelerometer3 scaling of Z axis  Calculated during acceleration calibration routine
+    // @Range: 0.8 1.2
+    // @User: Advanced
     AP_GROUPINFO("ACC3SCAL",    8, AP_InertialSensor, _accel_scale[2],   0),
+
+    // @Param: ACC3OFFS_X
+    // @DisplayName: Accelerometer3 offsets of X axis
+    // @Description: Accelerometer3 offsets of X axis. This is setup using the acceleration calibration or level operations
+    // @Units: m/s/s
+    // @Range: -300 300
+    // @User: Advanced
+
+    // @Param: ACC3OFFS_Y
+    // @DisplayName: Accelerometer3 offsets of Y axis
+    // @Description: Accelerometer3 offsets of Y axis. This is setup using the acceleration calibration or level operations
+    // @Units: m/s/s
+    // @Range: -300 300
+    // @User: Advanced
+
+    // @Param: ACC3OFFS_Z
+    // @DisplayName: Accelerometer3 offsets of Z axis
+    // @Description: Accelerometer3 offsets of Z axis. This is setup using the acceleration calibration or level operations
+    // @Units: m/s/s
+    // @Range: -300 300
+    // @User: Advanced
     AP_GROUPINFO("ACC3OFFS",    9, AP_InertialSensor, _accel_offset[2],  0),
+
+    // @Param: GYR3OFFS_X
+    // @DisplayName: Gyro3 offsets of X axis
+    // @Description: Gyro3 sensor offsets of X axis. This is setup on each boot during gyro calibrations
+    // @Units: rad/s
+    // @User: Advanced
+
+    // @Param: GYR3OFFS_Y
+    // @DisplayName: Gyro3 offsets of Y axis
+    // @Description: Gyro3 sensor offsets of Y axis. This is setup on each boot during gyro calibrations
+    // @Units: rad/s
+    // @User: Advanced
+
+    // @Param: GYR3OFFS_Z
+    // @DisplayName: Gyro3 offsets of Z axis
+    // @Description: Gyro3 sensor offsets of Z axis. This is setup on each boot during gyro calibrations
+    // @Units: rad/s
+    // @User: Advanced
     AP_GROUPINFO("GYR3OFFS",   10, AP_InertialSensor, _gyro_offset[2],   0),
 #endif
 
@@ -105,20 +217,59 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
 };
 
 AP_InertialSensor::AP_InertialSensor() :
+    _gyro_count(0),
+    _accel_count(0),
+    _backend_count(0),
     _accel(),
     _gyro(),
-    _board_orientation(ROTATION_NONE)
+    _board_orientation(ROTATION_NONE),
+    _hil_mode(false)
 {
     AP_Param::setup_object_defaults(this, var_info);        
+    for (uint8_t i=0; i<INS_MAX_BACKENDS; i++) {
+        _backends[i] = NULL;
+    }
+}
+
+
+/*
+  register a new gyro instance
+ */
+uint8_t AP_InertialSensor::register_gyro(void)
+{
+    if (_gyro_count == INS_MAX_INSTANCES) {
+        hal.scheduler->panic(PSTR("Too many gyros"));
+    }
+    return _gyro_count++;
+}
+
+/*
+  register a new accel instance
+ */
+uint8_t AP_InertialSensor::register_accel(void)
+{
+    if (_accel_count == INS_MAX_INSTANCES) {
+        hal.scheduler->panic(PSTR("Too many accels"));
+    }
+    return _accel_count++;
 }
 
 void
 AP_InertialSensor::init( Start_style style,
                          Sample_rate sample_rate)
 {
-    _product_id = _init_sensor(sample_rate);
+    // remember the sample rate
+    _sample_rate = sample_rate;
 
-    // check scaling
+    if (_gyro_count == 0 && _accel_count == 0) {
+        // detect available backends. Only called once
+        _detect_backends();
+    }
+
+    _product_id = 0; // FIX
+
+    // initialise accel scale if need be. This is needed as we can't
+    // give non-zero default values for vectors in AP_Param
     for (uint8_t i=0; i<get_accel_count(); i++) {
         if (_accel_scale[i].get().is_zero()) {
             _accel_scale[i].set(Vector3f(1,1,1));
@@ -129,6 +280,82 @@ AP_InertialSensor::init( Start_style style,
         // do cold-start calibration for gyro only
         _init_gyro();
     }
+
+    switch (sample_rate) {
+    case RATE_50HZ:
+        _sample_period_usec = 20000;
+        break;
+    case RATE_100HZ:
+        _sample_period_usec = 10000;
+        break;
+    case RATE_200HZ:
+        _sample_period_usec = 5000;
+        break;
+    case RATE_400HZ:
+    default:
+        _sample_period_usec = 2500;
+        break;
+    }
+
+    // establish the baseline time between samples
+    _delta_time = 0;
+    _next_sample_usec = 0;
+    _last_sample_usec = 0;
+    _have_sample = false;
+}
+
+/*
+  try to load a backend
+ */
+void AP_InertialSensor::_add_backend(AP_InertialSensor_Backend *(detect)(AP_InertialSensor &))
+{
+    if (_backend_count == INS_MAX_BACKENDS) {
+        hal.scheduler->panic(PSTR("Too many INS backends"));
+    }
+    _backends[_backend_count] = detect(*this);
+    if (_backends[_backend_count] != NULL) {
+        _backend_count++;
+    }
+}
+
+
+/*
+  detect available backends for this board
+ */
+void 
+AP_InertialSensor::_detect_backends(void)
+{
+#if HAL_INS_DEFAULT == HAL_INS_HIL
+    _add_backend(AP_InertialSensor_HIL::detect);
+#elif HAL_INS_DEFAULT == HAL_INS_MPU6000
+    _add_backend(AP_InertialSensor_MPU6000::detect);
+#elif HAL_INS_DEFAULT == HAL_INS_PX4 || HAL_INS_DEFAULT == HAL_INS_VRBRAIN
+    _add_backend(AP_InertialSensor_PX4::detect);
+#elif HAL_INS_DEFAULT == HAL_INS_OILPAN
+    _add_backend(AP_InertialSensor_Oilpan::detect);
+#elif HAL_INS_DEFAULT == HAL_INS_MPU9250
+    _add_backend(AP_InertialSensor_MPU9250::detect);
+#elif HAL_INS_DEFAULT == HAL_INS_FLYMAPLE
+    _add_backend(AP_InertialSensor_Flymaple::detect);
+#else
+    #error Unrecognised HAL_INS_TYPE setting
+#endif
+
+#if 0 // disabled due to broken hardware on some PXF capes
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
+    // the PXF also has a MPU6000
+    _add_backend(AP_InertialSensor_MPU6000::detect);
+#endif
+#endif
+
+    if (_backend_count == 0 ||
+        _gyro_count == 0 ||
+        _accel_count == 0) {
+        hal.scheduler->panic(PSTR("No INS backends available"));
+    }
+
+    // set the product ID to the ID of the first backend
+    _product_id.set(_backends[0]->product_id());
 }
 
 void
@@ -213,10 +440,7 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
         }
         uint8_t num_samples = 0;
         while (num_samples < 32) {
-            if (!wait_for_sample(1000)) {
-                interact->printf_P(PSTR("Failed to get INS sample\n"));
-                goto failed;
-            }
+            wait_for_sample();
             // read samples from ins
             update();
             // capture sample
@@ -303,6 +527,17 @@ bool AP_InertialSensor::get_gyro_health_all(void) const
         }
     }
     // return true if we have at least one gyro
+    return (get_gyro_count() > 0);
+}
+
+// gyro_calibration_ok_all - returns true if all gyros were calibrated successfully
+bool AP_InertialSensor::gyro_calibrated_ok_all() const
+{
+    for (uint8_t i=0; i<get_gyro_count(); i++) {
+        if (!gyro_calibrated_ok(i)) {
+            return false;
+        }
+    }
     return (get_gyro_count() > 0);
 }
 
@@ -438,6 +673,7 @@ AP_InertialSensor::_init_gyro()
         best_diff[k] = 0;
         last_average[k].zero();
         converged[k] = false;
+        _gyro_cal_ok[k] = true; // default calibration ok flag to true
     }
 
     for(int8_t c = 0; c < 5; c++) {
@@ -513,6 +749,8 @@ AP_InertialSensor::_init_gyro()
             hal.console->printf_P(PSTR("gyro[%u] did not converge: diff=%f dps\n"),
                                   (unsigned)k, ToDeg(best_diff[k]));
             _gyro_offset[k] = best_avg[k];
+            // flag calibration as failed for this gyro
+            _gyro_cal_ok[k] = false;
         }
     }
 }
@@ -703,3 +941,152 @@ void AP_InertialSensor::_save_parameters()
         _gyro_offset[i].save();
     }
 }
+
+
+/*
+  update gyro and accel values from backends
+ */
+void AP_InertialSensor::update(void)
+{
+    // during initialisation update() may be called without
+    // wait_for_sample(), and a wait is implied
+    wait_for_sample();
+
+    if (!_hil_mode) {
+        for (int8_t i=0; i<INS_MAX_INSTANCES; i++) {
+            // mark sensors unhealthy and let update() in each backend
+            // mark them healthy via _rotate_and_offset_gyro() and
+            // _rotate_and_offset_accel() 
+            _gyro_healthy[i] = false;
+            _accel_healthy[i] = false;
+        }
+        for (uint8_t i=0; i<_backend_count; i++) {
+            _backends[i]->update();
+        }
+        // set primary to first healthy accel and gyro
+        for (int8_t i=0; i<INS_MAX_INSTANCES; i++) {
+            if (_gyro_healthy[i]) {
+                _primary_gyro = i;
+                break;
+            }
+        }
+        for (int8_t i=0; i<INS_MAX_INSTANCES; i++) {
+            if (_accel_healthy[i]) {
+                _primary_accel = i;
+                break;
+            }
+        }
+    }
+
+    _have_sample = false;
+}
+
+/*
+  wait for a sample to be available. This is the function that
+  determines the timing of the main loop in ardupilot. 
+
+  Ideally this function would return at exactly the rate given by the
+  sample_rate argument given to AP_InertialSensor::init(). 
+
+  The key output of this function is _delta_time, which is the time
+  over which the gyro and accel integration will happen for this
+  sample. We want that to be a constant time if possible, but if
+  delays occur we need to cope with them. The long term sum of
+  _delta_time should be exactly equal to the wall clock elapsed time
+ */
+void AP_InertialSensor::wait_for_sample(void)
+{
+    if (_have_sample) {
+        // the user has called wait_for_sample() again without
+        // consuming the sample with update()
+        return;
+    }
+
+    uint32_t now = hal.scheduler->micros();
+
+    if (_next_sample_usec == 0 && _delta_time <= 0) {
+        // this is the first call to wait_for_sample()
+        _last_sample_usec = now - _sample_period_usec;
+        _next_sample_usec = now + _sample_period_usec;
+        goto check_sample;
+    }
+
+    // see how long it is till the next sample is due
+    if (_next_sample_usec - now <=_sample_period_usec) {
+        // we're ahead on time, schedule next sample at expected period
+        uint32_t wait_usec = _next_sample_usec - now;
+        if (wait_usec > 200) {
+            hal.scheduler->delay_microseconds(wait_usec);
+        }
+        _next_sample_usec += _sample_period_usec;
+    } else if (now - _next_sample_usec < _sample_period_usec/8) {
+        // we've overshot, but only by a small amount, keep on
+        // schedule with no delay
+        _next_sample_usec += _sample_period_usec;
+    } else {
+        // we've overshot by a larger amount, re-zero scheduling with
+        // no delay
+        _next_sample_usec = now + _sample_period_usec;
+    }
+
+check_sample:
+    if (!_hil_mode) {
+        // we also wait for at least one backend to have a sample of both
+        // accel and gyro. This normally completes immediately.
+        bool gyro_available = false;
+        bool accel_available = false;
+        while (!gyro_available || !accel_available) {
+            for (uint8_t i=0; i<_backend_count; i++) {
+                gyro_available |= _backends[i]->gyro_sample_available();
+                accel_available |= _backends[i]->accel_sample_available();
+            }
+            if (!gyro_available || !accel_available) {
+                hal.scheduler->delay_microseconds(100);
+            }
+        }
+    }
+
+    now = hal.scheduler->micros();
+    _delta_time = (now - _last_sample_usec) * 1.0e-6f;
+    _last_sample_usec = now;
+
+#if 0
+    {
+        static uint64_t delta_time_sum;
+        static uint16_t counter;
+        if (delta_time_sum == 0) {
+            delta_time_sum = _sample_period_usec;
+        }
+        delta_time_sum += _delta_time * 1.0e6f;
+        if (counter++ == 400) {
+            counter = 0;
+            hal.console->printf("now=%lu _delta_time_sum=%lu diff=%ld\n",
+                                (unsigned long)now, 
+                                (unsigned long)delta_time_sum,
+                                (long)(now - delta_time_sum));
+        }
+    }
+#endif
+
+    _have_sample = true;
+}
+
+/*
+  support for setting accel and gyro vectors, for use by HIL
+ */
+void AP_InertialSensor::set_accel(uint8_t instance, const Vector3f &accel)
+{
+    if (instance < INS_MAX_INSTANCES) {
+        _accel[instance] = accel;
+        _accel_healthy[instance] = true;
+    }
+}
+
+void AP_InertialSensor::set_gyro(uint8_t instance, const Vector3f &gyro)
+{
+    if (instance < INS_MAX_INSTANCES) {
+        _gyro[instance] = gyro;
+        _gyro_healthy[instance] = true;
+    }
+}
+

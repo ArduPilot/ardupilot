@@ -174,6 +174,12 @@ void PX4RCOutput::set_failsafe_pwm(uint32_t chmask, uint16_t period_us)
     }
 }
 
+bool PX4RCOutput::force_safety_on(void)
+{
+    int ret = ioctl(_pwm_fd, PWM_SERVO_SET_FORCE_SAFETY_ON, 0);
+    return (ret == OK);
+}
+
 void PX4RCOutput::force_safety_off(void)
 {
     int ret = ioctl(_pwm_fd, PWM_SERVO_SET_FORCE_SAFETY_OFF, 0);

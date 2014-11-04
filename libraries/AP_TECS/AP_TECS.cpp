@@ -197,7 +197,7 @@ void AP_TECS::update_50hz(float hgt_afe)
     // Calculate time in seconds since last update
     uint32_t now = hal.scheduler->micros();
 	float DT = max((now - _update_50hz_last_usec),0)*1.0e-6f;
-	if (DT > 1.0) {
+	if (DT > 1.0f) {
 	    _integ3_state = hgt_afe;
 		_climb_rate = 0.0f;
 		_integ1_state = 0.0f;
@@ -225,7 +225,7 @@ void AP_TECS::update_50hz(float hgt_afe)
 		float integ3_input = _climb_rate + hgt_err * _hgtCompFiltOmega * 3.0f;
 		// If more than 1 second has elapsed since last update then reset the integrator state
 		// to the measured height
-		if (DT > 1.0) {
+		if (DT > 1.0f) {
 		    _integ3_state = hgt_afe;
 		} else {
 			_integ3_state = _integ3_state + integ3_input*DT;
@@ -264,7 +264,7 @@ void AP_TECS::_update_speed(void)
     }
 
     // Reset states of time since last update is too large
-    if (DT > 1.0) {
+    if (DT > 1.0f) {
         _integ5_state = (_EAS * EAS2TAS);
         _integ4_state = 0.0f;
 		DT            = 0.1f; // when first starting TECS, use a
@@ -284,8 +284,8 @@ void AP_TECS::_update_speed(void)
     float aspdErr = (_EAS * EAS2TAS) - _integ5_state;
     float integ4_input = aspdErr * _spdCompFiltOmega * _spdCompFiltOmega;
     // Prevent state from winding up
-    if (_integ5_state < 3.1){
-        integ4_input = max(integ4_input , 0.0);
+    if (_integ5_state < 3.1f){
+        integ4_input = max(integ4_input , 0.0f);
     }
     _integ4_state = _integ4_state + integ4_input * DT;
     float integ5_input = _integ4_state + _vel_dot + aspdErr * _spdCompFiltOmega * 1.4142f;
@@ -535,11 +535,11 @@ void AP_TECS::_update_throttle_option(int16_t throttle_nudge)
 	{
 		_throttle_dem = _THRmaxf;
 	}
-	else if (_pitch_dem > 0.0 && _PITCHmaxf > 0.0)
+	else if (_pitch_dem > 0.0f && _PITCHmaxf > 0.0f)
 	{
 		_throttle_dem = nomThr + (_THRmaxf - nomThr) * _pitch_dem / _PITCHmaxf;
 	}
-	else if (_pitch_dem < 0.0 && _PITCHminf < 0.0)
+	else if (_pitch_dem < 0.0f && _PITCHminf < 0.0f)
 	{
 		_throttle_dem = nomThr + (_THRminf - nomThr) * _pitch_dem / _PITCHminf;
 	}
@@ -660,7 +660,7 @@ void AP_TECS::_update_pitch(void)
 void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe) 
 {
 	// Initialise states and variables if DT > 1 second or in climbout
-	if (_DT > 1.0)
+	if (_DT > 1.0f)
 	{
 		_integ6_state      = 0.0f;
 		_integ7_state      = 0.0f;

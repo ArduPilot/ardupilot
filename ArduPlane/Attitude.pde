@@ -446,7 +446,8 @@ static void calc_nav_yaw_course(void)
 static void calc_nav_yaw_ground(void)
 {
     if (gps.ground_speed() < 1 && 
-        channel_throttle->control_in == 0) {
+        channel_throttle->control_in == 0 &&
+        flight_stage != AP_SpdHgtControl::FLIGHT_TAKEOFF) {
         // manual rudder control while still
         steer_state.locked_course = false;
         steer_state.locked_course_err = 0;
@@ -455,20 +456,24 @@ static void calc_nav_yaw_ground(void)
     }
 
     float steer_rate = (channel_rudder->control_in/4500.0f) * g.ground_steer_dps;
+    if (flight_stage == AP_SpdHgtControl::FLIGHT_TAKEOFF) {
+        steer_rate = 0;
+    }
     if (steer_rate != 0) {
         // pilot is giving rudder input
         steer_state.locked_course = false;        
     } else if (!steer_state.locked_course) {
         // pilot has released the rudder stick or we are still - lock the course
         steer_state.locked_course = true;
-        steer_state.locked_course_err = 0;
+        if (flight_stage != AP_SpdHgtControl::FLIGHT_TAKEOFF) {
+            steer_state.locked_course_err = 0;
+        }
     }
     if (!steer_state.locked_course) {
         // use a rate controller at the pilot specified rate
         steering_control.steering = steerController.get_steering_out_rate(steer_rate);
     } else {
         // use a error controller on the summed error
-        steer_state.locked_course_err += ahrs.get_gyro().z * G_Dt;
         int32_t yaw_error_cd = -ToDeg(steer_state.locked_course_err)*100;
         steering_control.steering = steerController.get_steering_out_angle_error(yaw_error_cd);
     }
@@ -588,11 +593,6 @@ static bool suppress_throttle(void)
         auto_takeoff_check()) {
         // we're in auto takeoff 
         throttle_suppressed = false;
-        if (steer_state.hold_course_cd != -1) {
-            // update takeoff course hold, if already initialised
-            steer_state.hold_course_cd = ahrs.yaw_sensor;
-            gcs_send_text_fmt(PSTR("Holding course %ld"), steer_state.hold_course_cd);
-        }
         return false;
     }
     

@@ -109,6 +109,8 @@ then
 fi
 
 
+echo "Trying PX4IO board"
+
 # try the px4io start twice. Some FMUv2 board don't
 # come up the first time
 set HAVE_PX4IO false
@@ -319,17 +321,20 @@ then
 fi
 
 # optional Range Finder sensor
-if ll40ls start
+if ll40ls -X start
 then
-    echo "Found ll40ls sensor"
+    echo "Found external ll40ls sensor"
+fi
+
+if ll40ls -I start
+then
+    echo "Found internal ll40ls sensor"
 fi
 
 if mb12xx start
 then
     echo "Found mb12xx sensor"
 fi
-
-echo "Trying PX4IO board"
 
 if mtd start /fs/mtd
 then

@@ -6,7 +6,7 @@
 static void throttle_slew_limit(int16_t last_throttle)
 {
     // if slew limit rate is set to zero then do not slew limit
-    if (g.throttle_slewrate) {                   
+    if (g.throttle_slewrate && last_throttle != 0) {                   
         // limit throttle change by the given percentage per second
         float temp = g.throttle_slewrate * G_Dt * 0.01f * fabsf(channel_throttle->radio_max - channel_throttle->radio_min);
         // allow a minimum change of 1 PWM per cycle
@@ -143,7 +143,7 @@ static void calc_throttle(float target_speed)
         float brake_gain = constrain_float(((-groundspeed_error)-g.braking_speederr)/g.braking_speederr, 0, 1);
         int16_t braking_throttle = g.throttle_max * (g.braking_percent * 0.01f) * brake_gain;
         channel_throttle->servo_out = constrain_int16(-braking_throttle, -g.throttle_max, -g.throttle_min);
-        
+
         // temporarily set us in reverse to allow the PWM setting to
         // go negative
         set_reverse(true);
@@ -208,13 +208,12 @@ static void calc_nav_steer()
 *****************************************/
 static void set_servos(void)
 {
-    int16_t last_throttle = channel_throttle->radio_out;
+    static int16_t last_throttle;
 
     // support a separate steering channel
     RC_Channel_aux::set_servo_out(RC_Channel_aux::k_steering, channel_steer->pwm_to_angle_dz(0));
 
-	if ((control_mode == MANUAL || control_mode == LEARNING) &&
-        (g.skid_steer_out == g.skid_steer_in)) {
+	if (control_mode == MANUAL || control_mode == LEARNING) {
         // do a direct pass through of radio values
         channel_steer->radio_out       = channel_steer->read();
         channel_throttle->radio_out    = channel_throttle->read();
@@ -244,25 +243,28 @@ static void set_servos(void)
 
         // limit throttle movement speed
         throttle_slew_limit(last_throttle);
+    }
 
-        if (g.skid_steer_out) {
-            // convert the two radio_out values to skid steering values
-            /*
-              mixing rule:
-              steering = motor1 - motor2
-              throttle = 0.5*(motor1 + motor2)
-              motor1 = throttle + 0.5*steering
-              motor2 = throttle - 0.5*steering
-            */          
-            float steering_scaled = channel_steer->norm_output();
-            float throttle_scaled = channel_throttle->norm_output();
-            float motor1 = throttle_scaled + 0.5*steering_scaled;
-            float motor2 = throttle_scaled - 0.5*steering_scaled;
-            channel_steer->servo_out = 4500*motor1;
-            channel_throttle->servo_out = 100*motor2;
-            channel_steer->calc_pwm();
-            channel_throttle->calc_pwm();
-        }
+    // record last throttle before we apply skid steering
+    last_throttle = channel_throttle->radio_out;
+
+    if (g.skid_steer_out) {
+        // convert the two radio_out values to skid steering values
+        /*
+          mixing rule:
+          steering = motor1 - motor2
+          throttle = 0.5*(motor1 + motor2)
+          motor1 = throttle + 0.5*steering
+          motor2 = throttle - 0.5*steering
+        */          
+        float steering_scaled = channel_steer->norm_output();
+        float throttle_scaled = channel_throttle->norm_output();
+        float motor1 = throttle_scaled + 0.5*steering_scaled;
+        float motor2 = throttle_scaled - 0.5*steering_scaled;
+        channel_steer->servo_out = 4500*motor1;
+        channel_throttle->servo_out = 100*motor2;
+        channel_steer->calc_pwm();
+        channel_throttle->calc_pwm();
     }
 
 

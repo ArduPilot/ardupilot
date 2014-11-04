@@ -75,6 +75,10 @@ public:
         return _omega_I;
     }
 
+    // reset the current gyro drift estimate
+    //  should be called if gyro offsets are recalculated
+    void reset_gyro_drift(void);
+
     // Methods
     void            update(void);
     void            reset(bool recover_eulers = false);
@@ -83,7 +87,7 @@ public:
     void reset_attitude(const float &roll, const float &pitch, const float &yaw);
 
     // dead-reckoning support
-    virtual bool get_position(struct Location &loc);
+    virtual bool get_position(struct Location &loc) const;
 
     // status reporting
     float           get_error_rp(void);

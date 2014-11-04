@@ -49,6 +49,7 @@ enum ap_message {
     MSG_RANGEFINDER,
     MSG_TERRAIN,
     MSG_BATTERY2,
+    MSG_CAMERA_FEEDBACK,
     MSG_RETRY_DEFERRED // this must be last
 };
 
@@ -319,6 +320,8 @@ private:
 
     void handle_log_request_list(mavlink_message_t *msg, DataFlash_Class &dataflash);
     void handle_log_request_data(mavlink_message_t *msg, DataFlash_Class &dataflash);
+    void handle_log_request_erase(mavlink_message_t *msg, DataFlash_Class &dataflash);
+    void handle_log_request_end(mavlink_message_t *msg, DataFlash_Class &dataflash);
     void handle_log_message(mavlink_message_t *msg, DataFlash_Class &dataflash);
     void handle_log_send(DataFlash_Class &dataflash);
     void handle_log_send_listing(DataFlash_Class &dataflash);
@@ -340,6 +343,7 @@ private:
     void handle_radio_status(mavlink_message_t *msg, DataFlash_Class &dataflash, bool log_radio);
     void handle_serial_control(mavlink_message_t *msg, AP_GPS &gps);
     void lock_channel(mavlink_channel_t chan, bool lock);
+    void handle_set_mode(mavlink_message_t* msg, bool (*set_mode)(uint8_t mode));
 
     // return true if this channel has hardware flow control
     bool have_flow_control(void);

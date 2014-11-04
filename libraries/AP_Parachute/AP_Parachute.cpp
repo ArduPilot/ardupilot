@@ -83,7 +83,7 @@ void AP_Parachute::release()
 void AP_Parachute::update()
 {
     // exit immediately if not enabled or parachute not to be released
-    if (_enabled <= 0 || _release_time == 0) {
+    if (_enabled <= 0) {
         return;
     }
 
@@ -91,7 +91,7 @@ void AP_Parachute::update()
     uint32_t time_diff = hal.scheduler->millis() - _release_time;
 
     // check if we should release parachute
-    if (!_released) {
+    if ((_release_time != 0) && !_released) {
         if (time_diff >= AP_PARACHUTE_RELEASE_DELAY_MS) {
             if (_release_type == AP_PARACHUTE_TRIGGER_TYPE_SERVO) {
                 // move servo
@@ -102,7 +102,7 @@ void AP_Parachute::update()
             }
             _released = true;
         }
-    }else if (time_diff >= AP_PARACHUTE_RELEASE_DELAY_MS + AP_PARACHUTE_RELEASE_DURATION_MS) {
+    }else if ((_release_time == 0) || time_diff >= AP_PARACHUTE_RELEASE_DELAY_MS + AP_PARACHUTE_RELEASE_DURATION_MS) {
         if (_release_type == AP_PARACHUTE_TRIGGER_TYPE_SERVO) {
             // move servo back to off position
             RC_Channel_aux::set_radio(RC_Channel_aux::k_parachute_release, _servo_off_pwm);

@@ -37,16 +37,13 @@
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
+AP_InertialSensor ins;
+
 // INS and Baro declaration
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-
-AP_InertialSensor_MPU6000 ins;
 AP_Baro_MS5611 baro(&AP_Baro_MS5611::spi);
-
 #else
-
 AP_ADC_ADS7844 adc;
-AP_InertialSensor_Oilpan ins(&adc);
 AP_Baro_BMP085 baro;
 #endif
 

@@ -87,8 +87,8 @@ void AP_GPS::init(DataFlash_Class *dataflash)
 {
     _DataFlash = dataflash;
     hal.uartB->begin(38400UL, 256, 16);
-#if GPS_MAX_INSTANCES > 1
     primary_instance = 0;
+#if GPS_MAX_INSTANCES > 1
     if (hal.uartE != NULL) {
         hal.uartE->begin(38400UL, 256, 16);        
     }
@@ -349,9 +349,6 @@ AP_GPS::update(void)
         update_instance(i);
     }
 
-    // update notify with gps status. We always base this on the first GPS
-    AP_Notify::flags.gps_status = state[0].status;
-
 #if GPS_MAX_INSTANCES > 1
     // work out which GPS is the primary, and how many sensors we have
     for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
@@ -383,6 +380,8 @@ AP_GPS::update(void)
 #else
     num_instances = 1;
 #endif // GPS_MAX_INSTANCES
+	// update notify with gps status. We always base this on the primary_instance
+    AP_Notify::flags.gps_status = state[primary_instance].status;
 }
 
 /*

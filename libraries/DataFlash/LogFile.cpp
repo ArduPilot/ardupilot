@@ -767,6 +767,7 @@ void DataFlash_Class::Log_Write_Baro(AP_Baro &baro)
         altitude      : baro.get_altitude(),
         pressure	  : baro.get_pressure(),
         temperature   : (int16_t)(baro.get_temperature() * 100),
+        climbrate     : baro.get_climb_rate()
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
@@ -899,36 +900,38 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
     struct log_EKF1 pkt = {
         LOG_PACKET_HEADER_INIT(LOG_EKF1_MSG),
         time_ms : hal.scheduler->millis(),
-        roll    : (int16_t)(100*degrees(euler.x)), // roll angle (centi-deg)
-        pitch   : (int16_t)(100*degrees(euler.y)), // pitch angle (centi-deg)
-        yaw     : (uint16_t)wrap_360_cd(100*degrees(euler.z)), // yaw angle (centi-deg)
+        roll    : (int16_t)(100*degrees(euler.x)), // roll angle (centi-deg, displayed as deg due to format string)
+        pitch   : (int16_t)(100*degrees(euler.y)), // pitch angle (centi-deg, displayed as deg due to format string)
+        yaw     : (uint16_t)wrap_360_cd(100*degrees(euler.z)), // yaw angle (centi-deg, displayed as deg due to format string)
         velN    : (float)(velNED.x), // velocity North (m/s)
         velE    : (float)(velNED.y), // velocity East (m/s)
         velD    : (float)(velNED.z), // velocity Down (m/s)
         posN    : (float)(posNED.x), // metres North
         posE    : (float)(posNED.y), // metres East
         posD    : (float)(posNED.z), // metres Down
-        gyrX    : (int8_t)(60*degrees(gyroBias.x)), // deg/min
-        gyrY    : (int8_t)(60*degrees(gyroBias.y)), // deg/min
-        gyrZ    : (int8_t)(60*degrees(gyroBias.z))  // deg/min
+        gyrX    : (int16_t)(100*degrees(gyroBias.x)), // cd/sec, displayed as deg/sec due to format string
+        gyrY    : (int16_t)(100*degrees(gyroBias.y)), // cd/sec, displayed as deg/sec due to format string
+        gyrZ    : (int16_t)(100*degrees(gyroBias.z)) // cd/sec, displayed as deg/sec due to format string
     };
     WriteBlock(&pkt, sizeof(pkt));
 
 	// Write second EKF packet
-    Vector3f accelBias;
+    float ratio;
+    float az1bias, az2bias;
     Vector3f wind;
     Vector3f magNED;
     Vector3f magXYZ;
-    ahrs.get_NavEKF().getAccelBias(accelBias);
+    ahrs.get_NavEKF().getIMU1Weighting(ratio);
+    ahrs.get_NavEKF().getAccelZBias(az1bias, az2bias);
     ahrs.get_NavEKF().getWind(wind);
     ahrs.get_NavEKF().getMagNED(magNED);
     ahrs.get_NavEKF().getMagXYZ(magXYZ);
     struct log_EKF2 pkt2 = {
         LOG_PACKET_HEADER_INIT(LOG_EKF2_MSG),
         time_ms : hal.scheduler->millis(),
-        accX    : (int8_t)(100*accelBias.x),
-        accY    : (int8_t)(100*accelBias.y),
-        accZ    : (int8_t)(100*accelBias.z),
+        Ratio   : (int8_t)(100*ratio),
+        AZ1bias : (int8_t)(100*az2bias),
+        AZ2bias : (int8_t)(100*az2bias),
         windN   : (int16_t)(100*wind.x),
         windE   : (int16_t)(100*wind.y),
         magN    : (int16_t)(magNED.x),
@@ -970,9 +973,8 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
 	float tasVar;
     Vector2f offset;
     uint8_t faultStatus;
-    float deltaGyroBias;
     ahrs.get_NavEKF().getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
-    ahrs.get_NavEKF().getFilterFaults(faultStatus, deltaGyroBias);
+    ahrs.get_NavEKF().getFilterFaults(faultStatus);
     struct log_EKF4 pkt4 = {
         LOG_PACKET_HEADER_INIT(LOG_EKF4_MSG),
         time_ms : hal.scheduler->millis(),
@@ -985,8 +987,7 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
         sqrtvarVT : (int16_t)(100*tasVar),
         offsetNorth : (int8_t)(offset.x),
         offsetEast : (int8_t)(offset.y),
-        faults : (uint8_t)(faultStatus),
-        divergeRate : (uint8_t)(100*deltaGyroBias)
+        faults : (uint8_t)(faultStatus)
     };
     WriteBlock(&pkt4, sizeof(pkt4));
 }

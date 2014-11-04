@@ -81,7 +81,7 @@ public:
 
         // Misc
         //
-        k_param_log_bitmask = 20,
+        k_param_log_bitmask_old = 20,           // Deprecated
         k_param_log_last_filenumber,            // *** Deprecated - remove
                                                 // with next eeprom number
                                                 // change
@@ -120,7 +120,10 @@ public:
         k_param_ekfcheck_thresh,
         k_param_terrain,
         k_param_acro_expo,
-        k_param_throttle_deadzone,      // 57
+        k_param_throttle_deadzone,
+        k_param_optflow,
+        k_param_dcmcheck_thresh,        // 59
+        k_param_log_bitmask,
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -191,7 +194,7 @@ public:
         k_param_compass,
         k_param_sonar_enabled_old, // deprecated
         k_param_frame_orientation,
-        k_param_optflow_enabled,
+        k_param_optflow_enabled,    // deprecated
         k_param_fs_batt_voltage,
         k_param_ch7_option,
         k_param_auto_slew_rate,     // deprecated - can be deleted
@@ -339,7 +342,6 @@ public:
     AP_Int16        gps_hdop_good;              // GPS Hdop value at or below this value represent a good position
 
     AP_Int8         compass_enabled;
-    AP_Int8         optflow_enabled;
     AP_Int8         super_simple;
     AP_Int16        rtl_alt_final;
 
@@ -380,7 +382,7 @@ public:
 
     // Misc
     //
-    AP_Int16        log_bitmask;
+    AP_Int32        log_bitmask;
     AP_Int8         esc_calibrate;
     AP_Int8         radio_tuning;
     AP_Int16        radio_tuning_high;
@@ -392,6 +394,7 @@ public:
 
     AP_Int8         land_repositioning;
     AP_Float        ekfcheck_thresh;
+    AP_Float        dcmcheck_thresh;
 
 #if FRAME_CONFIG ==     HELI_FRAME
     // Heli
