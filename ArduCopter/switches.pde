@@ -344,8 +344,6 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             switch(ch_flag) {
                 case AUX_SWITCH_LOW:
                 case AUX_SWITCH_MIDDLE:
-                    // stop the autotune and return to original gains
-                    autotune_stop();
                     // restore flight mode based on flight mode switch position
                     if (control_mode == AUTOTUNE) {
                         reset_control_switch();
@@ -353,7 +351,7 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                     break;
                 case AUX_SWITCH_HIGH:
                     // start an autotuning session
-                    autotune_start();
+                    set_mode(AUTOTUNE);
                     break;
             }
             break;
