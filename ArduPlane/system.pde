@@ -87,6 +87,12 @@ static void init_ardupilot()
     //
     load_parameters();
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    // this must be before BoardConfig.init() so if
+    // BRD_SAFETYENABLE==0 then we don't have safety off yet
+    setup_failsafe_mixing();
+#endif
+
     BoardConfig.init();
 
     // allow servo set on all channels except first 4
