@@ -2,6 +2,7 @@
 #ifndef __AP_HAL_LINUX_GPIO_RPI_H__
 #define __AP_HAL_LINUX_GPIO_RPI_H__
 
+#include <stdint.h>
 #include <AP_HAL_Linux.h>
 
 #define LOW                 0
@@ -48,7 +49,7 @@ class Linux::LinuxGPIO_RPI : public AP_HAL::GPIO {
 private:
     int  mem_fd;
     void *gpio_map;
-    volatile unsigned *gpio;
+    volatile uint32_t *gpio;
 
 public:
     LinuxGPIO_RPI();
