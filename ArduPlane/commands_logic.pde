@@ -265,7 +265,7 @@ static void do_RTL(void)
     auto_state.next_wp_no_crosstrack = true;
     auto_state.no_crosstrack = true;
     prev_WP_loc = current_loc;
-    next_WP_loc = rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude());
+    next_WP_loc = rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude(), true);
     setup_terrain_target_alt(next_WP_loc);
     set_target_altitude_location(next_WP_loc);
 
@@ -402,6 +402,61 @@ static bool verify_takeoff()
     } else {
         return false;
     }
+}
+
+static bool verify_land()
+{
+    // we don't 'verify' landing in the sense that it never completes,
+    // so we don't verify command completion. Instead we use this to
+    // adjust final landing parameters
+
+    // Set land_complete if we are within 2 seconds distance or within
+    // 3 meters altitude of the landing point
+    if ( ! lander.aborting_landing() && 
+        ((g.land_flare_sec != 0.f && wp_distance <= (g.land_flare_sec * gps.ground_speed())) ||
+         adjusted_altitude_cm() <= (next_WP_loc.alt + g.land_flare_alt*100))) {
+
+        if (lander.get_land_wings_level() == 1 
+                && steer_state.hold_course_cd == -1) {
+            // we have just reached the threshold of to flare for landing.
+            // We now don't want to do any radical
+            // turns, as rolling could put the wings into the runway.
+            // To prevent further turns we set steer_state.hold_course_cd to the
+            // current heading. Previously we set this to
+            // crosstrack_bearing, but the xtrack bearing can easily
+            // be quite large at this point, and that could induce a
+            // sudden large roll correction which is very nasty at
+            // this point in the landing.
+            steer_state.hold_course_cd = ahrs.yaw_sensor;
+            gcs_send_text_fmt(PSTR("Land Complete - Hold wings level %ld"), steer_state.hold_course_cd);
+        } else if (lander.get_land_wings_level() == 0 && !auto_state.land_complete) {
+            gcs_send_text_fmt(PSTR("Land Complete"));
+        }
+        
+        auto_state.land_complete = true;
+
+        if (gps.ground_speed() < 3) {
+            // reload any airspeed or groundspeed parameters that may have
+            // been set for landing. We don't do this till ground
+            // speed drops below 3.0 m/s as otherwise we will change
+            // target speeds too early.
+            g.airspeed_cruise_cm.load();
+            g.min_gndspeed_cm.load();
+            aparm.throttle_cruise.load();
+        }
+    }
+
+    if (steer_state.hold_course_cd != -1) {
+        // recalc bearing error with hold_course;
+        nav_controller->update_heading_hold(steer_state.hold_course_cd);
+    } else {
+        // Always look 1km ahead for nav wp so we don't pass it.
+        // (Don't want nav controller do a 180 degree turn if we pass
+        // the indended landing location by a little)
+        nav_controller->update_waypoint(lander.get_break_point(),
+        lander.get_location_1km_beyond_land());
+    }
+    return false;
 }
 
 /*

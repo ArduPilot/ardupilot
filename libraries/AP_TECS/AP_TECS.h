@@ -71,6 +71,8 @@ public:
 
 	// return maximum climb rate
 	float get_max_climbrate(void) const { return _maxClimbRate; }
+    // return current flight stage
+    FlightStage get_flight_stage(void) const { return _flight_stage; } 
 
 	// this supports the TECS_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];

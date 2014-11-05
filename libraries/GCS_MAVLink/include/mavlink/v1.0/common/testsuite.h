@@ -396,6 +396,61 @@ static void mavlink_test_set_mode(uint8_t system_id, uint8_t component_id, mavli
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 }
 
+static void mavlink_test_global_pos_att_ned_cov(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
+{
+	mavlink_message_t msg;
+        uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
+        uint16_t i;
+	mavlink_global_pos_att_ned_cov_t packet_in = {
+		963497464,963497672,963497880,963498088,963498296,{ 157.0, 158.0, 159.0, 160.0 },269.0,297.0,325.0,{ 353.0, 354.0, 355.0, 356.0, 357.0, 358.0, 359.0, 360.0, 361.0, 362.0, 363.0, 364.0, 365.0, 366.0, 367.0, 368.0, 369.0, 370.0, 371.0, 372.0, 373.0, 374.0, 375.0, 376.0, 377.0, 378.0, 379.0, 380.0, 381.0, 382.0, 383.0, 384.0, 385.0, 386.0, 387.0, 388.0, 389.0, 390.0, 391.0, 392.0, 393.0, 394.0, 395.0, 396.0, 397.0 },29091,29195,29299
+    };
+	mavlink_global_pos_att_ned_cov_t packet1, packet2;
+        memset(&packet1, 0, sizeof(packet1));
+        	packet1.time_boot_ms = packet_in.time_boot_ms;
+        	packet1.lat = packet_in.lat;
+        	packet1.lon = packet_in.lon;
+        	packet1.alt = packet_in.alt;
+        	packet1.relative_alt = packet_in.relative_alt;
+        	packet1.rollspeed = packet_in.rollspeed;
+        	packet1.pitchspeed = packet_in.pitchspeed;
+        	packet1.yawspeed = packet_in.yawspeed;
+        	packet1.vx = packet_in.vx;
+        	packet1.vy = packet_in.vy;
+        	packet1.vz = packet_in.vz;
+        
+        	mav_array_memcpy(packet1.quat, packet_in.quat, sizeof(float)*4);
+        	mav_array_memcpy(packet1.covariance, packet_in.covariance, sizeof(float)*45);
+        
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_global_pos_att_ned_cov_encode(system_id, component_id, &msg, &packet1);
+	mavlink_msg_global_pos_att_ned_cov_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_global_pos_att_ned_cov_pack(system_id, component_id, &msg , packet1.time_boot_ms , packet1.lat , packet1.lon , packet1.alt , packet1.relative_alt , packet1.vx , packet1.vy , packet1.vz , packet1.quat , packet1.rollspeed , packet1.pitchspeed , packet1.yawspeed , packet1.covariance );
+	mavlink_msg_global_pos_att_ned_cov_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_global_pos_att_ned_cov_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.time_boot_ms , packet1.lat , packet1.lon , packet1.alt , packet1.relative_alt , packet1.vx , packet1.vy , packet1.vz , packet1.quat , packet1.rollspeed , packet1.pitchspeed , packet1.yawspeed , packet1.covariance );
+	mavlink_msg_global_pos_att_ned_cov_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+        mavlink_msg_to_send_buffer(buffer, &msg);
+        for (i=0; i<mavlink_msg_get_send_buffer_length(&msg); i++) {
+        	comm_send_ch(MAVLINK_COMM_0, buffer[i]);
+        }
+	mavlink_msg_global_pos_att_ned_cov_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+        
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_global_pos_att_ned_cov_send(MAVLINK_COMM_1 , packet1.time_boot_ms , packet1.lat , packet1.lon , packet1.alt , packet1.relative_alt , packet1.vx , packet1.vy , packet1.vz , packet1.quat , packet1.rollspeed , packet1.pitchspeed , packet1.yawspeed , packet1.covariance );
+	mavlink_msg_global_pos_att_ned_cov_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+}
+
 static void mavlink_test_param_request_read(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
 {
 	mavlink_message_t msg;
@@ -5343,6 +5398,7 @@ static void mavlink_test_common(uint8_t system_id, uint8_t component_id, mavlink
 	mavlink_test_change_operator_control_ack(system_id, component_id, last_msg);
 	mavlink_test_auth_key(system_id, component_id, last_msg);
 	mavlink_test_set_mode(system_id, component_id, last_msg);
+	mavlink_test_global_pos_att_ned_cov(system_id, component_id, last_msg);
 	mavlink_test_param_request_read(system_id, component_id, last_msg);
 	mavlink_test_param_request_list(system_id, component_id, last_msg);
 	mavlink_test_param_value(system_id, component_id, last_msg);

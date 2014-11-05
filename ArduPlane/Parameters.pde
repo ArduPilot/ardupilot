@@ -246,7 +246,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: LAND_FLARE_SEC
     // @DisplayName: Landing flare time
-    // @Description: Time before landing point at which to lock heading and flare to the LAND_PITCH_CD pitch
+    // @Description: Time before landing point at which to lock heading and flare to the LAND_PITCH_CD pitch.  Set to 0.0 to disable flaring based on distance to landing waypoint (e.g., to only based flare on altitude).
     // @Units: seconds
     // @Increment: 0.1
     // @User: Advanced
@@ -1136,6 +1136,10 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Group: RALLY_
     // @Path: ../libraries/AP_Rally/AP_Rally.cpp
     GOBJECT(rally,  "RALLY_",       AP_Rally),
+
+    // @Group: LAND_
+    // @Path: ../libraries/AP_Land/AP_Land.cpp
+    GOBJECT(lander,   "LAND_",        AP_Land),
 
     AP_VAREND
 };
