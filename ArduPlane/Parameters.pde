@@ -881,13 +881,21 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(rssi_pin,            "RSSI_PIN",         -1),
 
-    // @Param: RSSI_RANGE
-    // @DisplayName: Receiver RSSI voltage range
-    // @Description: Receiver RSSI voltage range
+    // @Param: RSSI_MAX_RANGE
+    // @DisplayName: Receiver RSSI MAX voltage range
+    // @Description: Receiver RSSI MAX voltage range
     // @Units: Volt
     // @Values: 3.3:3.3V, 5.0:5V
     // @User: Standard
-    GSCALAR(rssi_range,          "RSSI_RANGE",         5.0),
+    GSCALAR(rssi_max_range,          "RSSI_MAX_RANGE",         5.0),
+    
+    // @Param: RSSI_MIN_RANGE
+    // @DisplayName: Receiver RSSI MIN voltage range
+    // @Description: Receiver RSSI MIN voltage range
+    // @Units: Volt
+    // @Values: 0.5:0.5V, 1.2:1.2V
+    // @User: Standard
+    GSCALAR(rssi_min_range,          "RSSI_MIN_RANGE",         0.0),    
 
     // @Param: INVERTEDFLT_CH
     // @DisplayName: Inverted flight channel
