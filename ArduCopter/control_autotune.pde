@@ -118,7 +118,8 @@ static float    tune_pitch_rp, tune_pitch_rd, tune_pitch_sp;                // c
 // autotune_init - should be called when autotune mode is selected
 static bool autotune_init(bool ignore_checks)
 {
-    bool success=true;
+    bool success = true;
+
     switch (autotune_state.mode) {
         case AUTOTUNE_MODE_FAILED:
             // autotune has been run but failed so reset state to uninitialised
@@ -126,7 +127,8 @@ static bool autotune_init(bool ignore_checks)
             // no break to allow fall through to restart the tuning
         case AUTOTUNE_MODE_UNINITIALISED:
             // autotune has never been run
-            if (success=autotune_start(false)) {
+            success = autotune_start(false);
+            if (success) {
                 // so store current gains as original gains
                 autotune_backup_gains_and_initialise();
                 // advance mode to tuning
@@ -138,7 +140,8 @@ static bool autotune_init(bool ignore_checks)
 
         case AUTOTUNE_MODE_TUNING:
             // we are restarting tuning after the user must have switched ch7/ch8 off so we restart tuning where we left off
-            if (success=autotune_start(false)) {
+            success = autotune_start(false);
+            if (success) {
                 // reset gains to tuning-start gains (i.e. low I term)
                 autotune_load_intra_test_gains();
                 // write dataflash log even and send message to ground station
@@ -154,6 +157,7 @@ static bool autotune_init(bool ignore_checks)
             Log_Write_Event(DATA_AUTOTUNE_PILOT_TESTING);
             break;
     }
+
     return success;
 }
 
