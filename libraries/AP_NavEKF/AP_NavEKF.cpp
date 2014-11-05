@@ -397,6 +397,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     _msecMagAvg             = 100;      // average number of msec between magnetometer measurements
     _msecBetaAvg            = 100;      // average number of msec between synthetic sideslip measurements
     _msecBetaMax            = 200;      // maximum number of msec between synthetic sideslip measurements
+    _msecFlowAvg            = 100;      // average number of msec between optical flow measurements
     dtVelPos                = 0.02;     // number of seconds between position and velocity corrections. This should be a multiple of the imu update interval.
 
     // Misc initial conditions
@@ -545,7 +546,7 @@ void NavEKF::InitialiseFilterDynamic(void)
     dtIMU = constrain_float(_ahrs->get_ins().get_delta_time(),0.001f,1.0f);
     dtIMUinv = 1.0f / dtIMU;
 
-    // If we have a high rate update step of >100 Hz, then there may not enough time to all the fusion steps at once, so load levelling is used
+    // If we have a high rate update step of >100 Hz, then there may not be enough time to do all the fusion steps at once, so load levelling is used
     if (dtIMU < 0.009f) {
         inhibitLoadLeveling = false;
     } else {
@@ -558,6 +559,8 @@ void NavEKF::InitialiseFilterDynamic(void)
     hgtUpdateCountMax = uint8_t(1.0f/hgtUpdateCountMaxInv);
     magUpdateCountMaxInv = (dtIMU * 1000.0f)/float(_msecMagAvg);
     magUpdateCountMax = uint8_t(1.0f/magUpdateCountMaxInv);
+    flowUpdateCountMaxInv = (dtIMU * 1000.0f)/float(_msecFlowAvg);
+    flowUpdateCountMax = uint8_t(1.0f/flowUpdateCountMaxInv);
 
     // calculate initial orientation and earth magnetic field states
     state.quat = calcQuatAndFieldStates(_ahrs->roll, _ahrs->pitch);
@@ -931,6 +934,9 @@ void NavEKF::SelectFlowFusion()
     // if the filter is initialised, we have data to fuse and the vehicle is not excessively tilted, then perform optical flow fusion
     if (useOptFlow() && newDataFlow && tiltOK && !delayFusion && !staticMode)
     {
+        // reset state updates and counter used to spread fusion updates across several frames to reduce 10Hz pulsing
+        memset(&flowIncrStateDelta[0], 0, sizeof(flowIncrStateDelta));
+        flowUpdateCount = 0;
         // Set the flow noise used by the fusion processes
         R_LOS = sq(max(_flowNoise, 0.05f));
         // Fuse the optical flow X axis data into the main filter
@@ -944,6 +950,7 @@ void NavEKF::SelectFlowFusion()
         flowFusePerformed = true;
         // update the time stamp
         prevFlowFusionTime_ms = imuSampleTime_ms;
+
     } else if (flow_state.obsIndex == 1 && !delayFusion){
         // Fuse the optical flow Y axis data into the main filter
         FuseOptFlow();
@@ -3020,10 +3027,10 @@ void NavEKF::FuseOptFlow()
         }
         // Attitude, velocity and position corrections are averaged across multiple prediction cycles between now and the anticipated time for the next measurement.
         // Don't do averaging of quaternion state corrections if total angle change across predicted interval is going to exceed 0.1 rad
-        bool highRates = ((magUpdateCountMax * correctedDelAng.length()) > 0.1f);
-        // Calculate the number of averaging frames left to go. This is required becasue magnetometer fusion is applied across three consecutive prediction cycles
+        bool highRates = ((flowUpdateCountMax * correctedDelAng.length()) > 0.1f);
+        // Calculate the number of averaging frames left to go. This is required because flow fusion is applied across two consecutive prediction cycles
         // There is no point averaging if the number of cycles left is less than 2
-        float minorFramesToGo = float(magUpdateCountMax) - float(magUpdateCount);
+        float minorFramesToGo = float(flowUpdateCountMax) - float(flowUpdateCount);
         for (uint8_t i = 0; i<=21; i++) {
             if ((i <= 3 && highRates) || i >= 10 || minorFramesToGo < 1.5f) {
                 states[i] = states[i] - Kfusion[i] * innovOptFlow[obsIndex];
@@ -4292,6 +4299,7 @@ void NavEKF::ZeroVariables()
     memset(&gpsIncrStateDelta[0], 0, sizeof(gpsIncrStateDelta));
     memset(&hgtIncrStateDelta[0], 0, sizeof(hgtIncrStateDelta));
     memset(&magIncrStateDelta[0], 0, sizeof(magIncrStateDelta));
+    memset(&flowIncrStateDelta[0], 0, sizeof(flowIncrStateDelta));
     gpsPosGlitchOffsetNE.zero();
     // optical flow variables
     newDataFlow = false;

@@ -545,7 +545,7 @@ private:
     // Used by smoothing of state corrections
     float gpsIncrStateDelta[10];    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next GPS measurement
     float hgtIncrStateDelta[10];    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next height measurement
-    float flowIncrStateDelta[10];   // vector of corrections to attitude, velocity and position to be applied over the period between the current and next magnetometer measurement
+    float magIncrStateDelta[10];    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next magnetometer measurement
     uint8_t gpsUpdateCount;         // count of the number of minor state corrections using GPS data
     uint8_t gpsUpdateCountMax;      // limit on the number of minor state corrections using GPS data
     float gpsUpdateCountMaxInv;     // floating point inverse of gpsFilterCountMax
@@ -595,14 +595,15 @@ private:
     float R_LOS;                    // variance of optical flow rate measurements (rad/sec)^2
     float auxRngTestRatio;          // square of range finder innovations divided by fail threshold used by main filter where >1.0 is a fail
     Vector2f flowGyroBias;          // bias error of optical flow sensor gyro output
-    float magIncrStateDelta[10];    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next magnetometer measurement
     uint8_t flowUpdateCount;        // count of the number of minor state corrections using optical flow data
     uint8_t flowUpdateCountMax;     // limit on the number of minor state corrections using optical flow data
     float flowUpdateCountMaxInv;    // floating point inverse of flowUpdateCountMax
+    float flowIncrStateDelta[10];   // vector of corrections to attitude, velocity and position to be applied over the period between the current and next magnetometer measurement
     bool newDataRng;                // true when new valid range finder data has arrived.
-    bool velHoldMode;              // true when holding velocity in optical flow mode when no flow measurements are available
+    bool velHoldMode;               // true when holding velocity in optical flow mode when no flow measurements are available
     bool lastHoldVelocity;          // last value of holdVelocity
     Vector2f heldVelNE;             // velocity held when no aiding is available
+    uint16_t _msecFlowAvg;          // average number of msec between synthetic sideslip measurements
 
     // states held by optical flow fusion across time steps
     // optical flow X,Y motion compensated rate measurements are fused across two time steps
