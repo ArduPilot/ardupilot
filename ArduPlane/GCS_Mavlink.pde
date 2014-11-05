@@ -1117,7 +1117,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 result = MAV_RESULT_ACCEPTED;
             } 
             break;
-
+/*
         case MAV_CMD_DO_GO_AROUND:
             result = MAV_RESULT_FAILED;
 
@@ -1135,6 +1135,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("Rejected go around command."));
             }
             break;
+*/
 
         case MAV_CMD_DO_FENCE_ENABLE:
             result = MAV_RESULT_ACCEPTED;
