@@ -4,6 +4,7 @@
 
 #include <AP_HAL_PX4.h>
 #include <systemlib/perf_counter.h>
+#include <uORB/topics/actuator_outputs.h>
 
 #define PX4_NUM_OUTPUT_CHANNELS 16
 
@@ -39,6 +40,8 @@ private:
     unsigned _alt_servo_count;
     uint32_t _rate_mask;
     uint16_t _enabled_channels;
+    int _pwm_sub;
+    actuator_outputs_s _outputs;
 
     void _init_alt_channels(void);
 };
