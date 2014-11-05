@@ -531,12 +531,7 @@ def fly_gps_glitch_auto_test(mavproxy, mav, timeout=30, max_distance=100):
         print("glitch %d %.7f %.7f" % (i,glitch_lat[i],glitch_lon[i]))
 
     # Fly mission #1
-    print("# Upload copter_glitch_mission")
-    if not upload_mission_from_file(mavproxy, mav, os.path.join(testdir, "copter_glitch_mission.txt")):
-        print("upload copter_glitch_mission.txt failed")
-        return False
-
-    # this grabs our mission count
+    print("# Load copter_glitch_mission")
     if not load_mission_from_file(mavproxy, mav, os.path.join(testdir, "copter_glitch_mission.txt")):
         print("load copter_glitch_mission failed")
         return False
@@ -755,12 +750,7 @@ def fly_circle(mavproxy, mav, maxaltchange=10, holdtime=36):
 def fly_auto_test(mavproxy, mav):
 
     # Fly mission #1
-    print("# Upload copter_glitch_mission")
-    if not upload_mission_from_file(mavproxy, mav, os.path.join(testdir, "copter_mission.txt")):
-        print("upload copter_mission.txt failed")
-        return False
-
-    # this grabs our mission count
+    print("# Load copter_mission")
     if not load_mission_from_file(mavproxy, mav, os.path.join(testdir, "copter_mission.txt")):
         print("load copter_mission failed")
         return False
@@ -794,14 +784,9 @@ def fly_auto_test(mavproxy, mav):
 def fly_avc_test(mavproxy, mav):
         
     # upload mission from file
-    print("# Upload copter_glitch_mission")
-    if not upload_mission_from_file(mavproxy, mav, os.path.join(testdir, "copter_AVC2013_mission.txt")):
-        print("upload copter_mission.txt failed")
-        return False
-
-    # get number of commands in mission
+    print("# Load copter_AVC2013_mission")
     if not load_mission_from_file(mavproxy, mav, os.path.join(testdir, "copter_AVC2013_mission.txt")):
-        print("load copter_mission failed")
+        print("load copter_AVC2013_mission failed")
         return False
 
     # load the waypoint count
@@ -847,8 +832,10 @@ def fly_mission(mavproxy, mav, height_accuracy=-1, target_altitude=None):
     mavproxy.send('wp set 1\n')
     mavproxy.send('switch 4\n') # auto mode
     wait_mode(mav, 'AUTO')
-    #wait_altitude(mav, 30, 40)
-    ret = wait_waypoint(mav, 0, num_wp, timeout=500, mode='AUTO')
+    ret = wait_waypoint(mav, 0, num_wp-1, timeout=500, mode='AUTO')
+    expect_msg = "Reached Command #%u" % (num_wp-1)
+    if (ret):
+        mavproxy.expect(expect_msg)
     print("test: MISSION COMPLETE: passed=%s" % ret)
     # wait here until ready
     mavproxy.send('switch 5\n') # loiter mode
@@ -856,21 +843,17 @@ def fly_mission(mavproxy, mav, height_accuracy=-1, target_altitude=None):
     return ret
 
 def load_mission_from_file(mavproxy, mav, filename):
-    '''load a mission from a file'''
-    global num_wp
-    wploader = mavwp.MAVWPLoader()
-    wploader.load(filename)
-    num_wp = wploader.count()
-    print("loaded mission with %u waypoints" % num_wp)
-    return True
-
-def upload_mission_from_file(mavproxy, mav, filename):
-    '''Upload a mission from a file to APM'''
+    '''Load a mission from a file to flight controller'''
     global num_wp
     mavproxy.send('wp load %s\n' % filename)
     mavproxy.expect('flight plan received')
     mavproxy.send('wp list\n')
     mavproxy.expect('Requesting [0-9]+ waypoints')
+
+    # update num_wp
+    wploader = mavwp.MAVWPLoader()
+    wploader.load(filename)
+    num_wp = wploader.count()
     return True
 
 def save_mission_to_file(mavproxy, mav, filename):
@@ -1017,7 +1000,7 @@ def fly_ArduCopter(viewerip=None, map=False):
         # fly the stored mission
         print("# Fly CH7 saved mission")
         if not fly_mission(mavproxy, mav,height_accuracy = 0.5, target_altitude=10):
-            failed_test_msg = "fly_mission failed"
+            failed_test_msg = "fly ch7_mission failed"
             print(failed_test_msg)
             failed = True
 
