@@ -63,7 +63,7 @@ static void read_control_switch()
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     if (g.override_channel > 0) {
         // if the user has configured an override channel then check it
-        bool override = (hal.rcin->read(g.override_channel-1) > PX4IO_OVERRIDE_PWM);
+        bool override = (hal.rcin->read(g.override_channel-1) >= PX4IO_OVERRIDE_PWM);
         if (override && !px4io_override_enabled) {
             if (setup_failsafe_mixing()) {
                 px4io_override_enabled = true;
