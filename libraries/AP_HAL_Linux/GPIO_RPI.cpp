@@ -62,7 +62,8 @@ int8_t LinuxGPIO_RPI::analogPinToDigitalPin(uint8_t pin)
 
 uint8_t LinuxGPIO_RPI::read(uint8_t pin)
 {
-    return GPIO_GET(pin);
+    uint32_t value = GPIO_GET(pin);
+    return value ? 1: 0;
 }
 
 void LinuxGPIO_RPI::write(uint8_t pin, uint8_t value)
