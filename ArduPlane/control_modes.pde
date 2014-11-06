@@ -59,6 +59,43 @@ static void read_control_switch()
         // fly upside down when that channel goes above INVERTED_FLIGHT_PWM
         inverted_flight = (control_mode != MANUAL && hal.rcin->read(g.inverted_flight_ch-1) > INVERTED_FLIGHT_PWM);
     }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    if (g.override_channel > 0) {
+        // if the user has configured an override channel then check it
+        bool override = (hal.rcin->read(g.override_channel-1) > PX4IO_OVERRIDE_PWM);
+        if (override && !px4io_override_enabled) {
+            if (setup_failsafe_mixing()) {
+                px4io_override_enabled = true;
+                // disable output channels to force PX4IO override
+                for (uint8_t i=0; i<16; i++) {
+                    hal.rcout->disable_ch(i);
+                }
+                gcs_send_text_P(SEVERITY_LOW, PSTR("PX4IO Override enabled"));
+            } else {
+                // we'll try again next loop. The PX4IO code sometimes
+                // rejects a mixer, probably due to it being busy in
+                // some way?
+                gcs_send_text_P(SEVERITY_LOW, PSTR("PX4IO Override enable failed"));
+            }
+        } else if (!override && px4io_override_enabled) {
+            px4io_override_enabled = false;
+            // re-enable output channels
+            for (uint8_t i=0; i<8; i++) {
+                hal.rcout->enable_ch(i);
+            }
+            RC_Channel_aux::enable_aux_servos();
+            gcs_send_text_P(SEVERITY_LOW, PSTR("PX4IO Override disabled"));
+        }
+        if (px4io_override_enabled && 
+            hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_ARMED) {
+            // we force safety off, so that if this override is used
+            // with a in-flight reboot it gives a way for the pilot to
+            // re-arm and take manual control
+            hal.rcout->force_safety_off();
+        }
+    }
+#endif // CONFIG_HAL_BOARD
 }
 
 static uint8_t readSwitch(void)
