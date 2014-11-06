@@ -243,6 +243,11 @@ void PX4RCOutput::_timer_tick(void)
 {
     uint32_t now = hal.scheduler->micros();
 
+    if ((_enabled_channels & ((1U<<_servo_count)-1)) == 0) {
+        // no channels enabled
+        goto update_pwm;
+    }
+
     // always send at least at 20Hz, otherwise the IO board may think
     // we are dead
     if (now - _last_output > 50000) {
