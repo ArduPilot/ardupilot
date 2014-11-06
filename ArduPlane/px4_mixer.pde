@@ -35,11 +35,23 @@ static bool create_mixer_file(const char *filename)
     /*
       this is the equivalent of channel_output_mixer()
      */
-    const uint16_t mix_max = 10000 * g.mixing_gain;
     const int8_t mixmul[5][2] = { { 0, 0 }, { 1, 1 }, { 1, -1 }, { -1, 1 }, { -1, -1 }};
+    // these are the internal clipping limits. Use scale_max1 when
+    // clipping to user specified min/max is wanted. Use scale_max2
+    // when no clipping is wanted (simulated by setting a very large
+    // clipping value)
+    const float scale_max1 = 10000;
+    const float scale_max2 = 1000000;
+    // range for mixers
+    const uint16_t mix_max = scale_max1 * g.mixing_gain;
+    // scaling factors used by PX4IO between pwm and internal values,
+    // as configured in setup_failsafe_mixing() below
+    const float pwm_min = 900;
+    const float pwm_max = 2100;
+    const float pwm_scale = 2*scale_max1/(pwm_max - pwm_min);
 
     for (uint8_t i=0; i<8; i++) {
-        int16_t c1, c2, mix=0;
+        int32_t c1, c2, mix=0;
         bool rev = false;
         RC_Channel_aux::Aux_servo_function_t function = RC_Channel_aux::channel_function(i);
         if (i == rcmap.pitch()-1 && g.vtail_output > MIXING_DISABLED && g.vtail_output <= MIXING_DNDN) {
@@ -54,13 +66,15 @@ static bool create_mixer_file(const char *filename)
             c2 = i;
             rev = true;
             mix = mix_max*mixmul[g.vtail_output][1];
-        } else if (i == rcmap.roll()-1 && g.elevon_output > MIXING_DISABLED && g.elevon_output <= MIXING_DNDN) {
+        } else if (i == rcmap.roll()-1 && g.elevon_output > MIXING_DISABLED && 
+                   g.elevon_output <= MIXING_DNDN && g.vtail_output == 0) {
             // first channel of ELEVON mix
             c1 = i;
             c2 = rcmap.pitch()-1;
             rev = true;
             mix = mix_max*mixmul[g.elevon_output][1];
-        } else if (i == rcmap.pitch()-1 && g.elevon_output > MIXING_DISABLED && g.elevon_output <= MIXING_DNDN) {
+        } else if (i == rcmap.pitch()-1 && g.elevon_output > MIXING_DISABLED && 
+                   g.elevon_output <= MIXING_DNDN && g.vtail_output == 0) {
             // second channel of ELEVON mix
             c1 = i;
             c2 = rcmap.roll()-1;
@@ -97,27 +111,55 @@ static bool create_mixer_file(const char *filename)
         if (mix == 0) {
             // pass thru channel, possibly with reversal. We also
             // adjust the gain based on the range of input and output
-            // channels. We don't yet adjust the offset based on trim
-            // positions.
+            // channels and adjust for trims
             const RC_Channel *chan1 = RC_Channel::rc_channel(i);
             const RC_Channel *chan2 = RC_Channel::rc_channel(c1);
-            int8_t rev = (chan1->get_reverse() == chan2->get_reverse())?1:-1;
-            float gain = 1.0;
-            if (chan1->radio_max > chan1->radio_min) {
-                gain = (chan2->radio_max - chan2->radio_min) / (chan1->radio_max - chan1->radio_min);
+            // if the input and output channels are the same then we
+            // apply clipping. This allows for direct pass-thru
+            int32_t limit = (c1==i?scale_max2:scale_max1);
+            int32_t in_scale_low = scale_max1*(chan2->radio_trim - pwm_min)/(float)(chan2->radio_trim - chan2->radio_min);
+            int32_t in_scale_high = scale_max1*(pwm_max - chan2->radio_trim)/(float)(chan2->radio_max - chan2->radio_trim);
+            if (chan1->get_reverse() != chan2->get_reverse()) {
+                in_scale_low = -in_scale_low;
+                in_scale_high = -in_scale_high;
             }
             dprintf(mix_fd, "M: 1\n");
-            dprintf(mix_fd, "O:   %d %d      0 -10000  10000\n", (int)(rev*10000*gain), (int)(rev*10000*gain));
-            dprintf(mix_fd, "S: 0 %u 10000 10000    0 -10000  10000\n\n", c1);
+            dprintf(mix_fd, "O: %d %d %d %d %d\n",
+                    (int)(pwm_scale*(chan1->radio_trim - chan1->radio_min)),
+                    (int)(pwm_scale*(chan1->radio_max - chan1->radio_trim)),
+                    (int)(pwm_scale*(chan1->radio_trim - 1500)),
+                    (int)-scale_max2, (int)scale_max2);
+            dprintf(mix_fd, "S: 0 %u %d %d %d %d %d\n\n", c1,
+                    in_scale_low,
+                    in_scale_high,
+                    0,
+                    -limit, limit);
         } else {
-            // mix of two input channels to give an output channel
+            const RC_Channel *chan1 = RC_Channel::rc_channel(c1);
+            const RC_Channel *chan2 = RC_Channel::rc_channel(c2);
+            // mix of two input channels to give an output channel. To
+            // make the mixer match the behaviour of APM we need to
+            // scale and offset the input channels to undo the affects
+            // of the PX4IO input processing
             dprintf(mix_fd, "M: 2\n");
-            dprintf(mix_fd, "O:   %d  %d      0 -10000  10000\n", mix, mix);
-            dprintf(mix_fd, "S: 0 %u  10000  10000    0 -10000  10000\n", c1);
+            dprintf(mix_fd, "O: %d %d 0 %d %d\n", mix, mix, (int)-scale_max1, (int)scale_max1);
+            int32_t in_scale_low = pwm_scale*(chan1->radio_trim - pwm_min);
+            int32_t in_scale_high = pwm_scale*(pwm_max - chan1->radio_trim);
+            int32_t offset = pwm_scale*(chan1->radio_trim - 1500);
+            dprintf(mix_fd, "S: 0 %u %d %d %d %d %d\n", 
+                    c1, in_scale_low, in_scale_high, offset,
+                    (int)-scale_max2, (int)scale_max2);
+            in_scale_low = pwm_scale*(chan2->radio_trim - pwm_min);
+            in_scale_high = pwm_scale*(pwm_max - chan2->radio_trim);
+            offset = pwm_scale*(chan2->radio_trim - 1500);
             if (rev) {
-                dprintf(mix_fd, "S: 0 %u  10000  10000   0 -10000  10000\n\n", c2);
+                dprintf(mix_fd, "S: 0 %u %d %d %d %d %d\n\n", 
+                        c2, in_scale_low, in_scale_high, offset,
+                        (int)-scale_max2, (int)scale_max2);
             } else {
-                dprintf(mix_fd, "S: 0 %u -10000 -10000   0 -10000  10000\n\n", c2);
+                dprintf(mix_fd, "S: 0 %u %d %d %d %d %d\n\n", 
+                        c2, -in_scale_low, -in_scale_high, -offset,
+                        (int)-scale_max2, (int)scale_max2);
             }
         }
     }    
@@ -188,10 +230,17 @@ static bool setup_failsafe_mixing(void)
             continue;
         }
         struct pwm_output_rc_config config;
+        /*
+          we use a min/max of 900/2100 to allow for pass-thru of
+          larger values than the RC min/max range. This mimics the APM
+          behaviour of pass-thru in manual, which allows for dual-rate
+          transmitter setups in manual mode to go beyond the ranges
+          used in stabilised modes
+         */
         config.channel = i;
         config.rc_min = 900;
         config.rc_max = 2100;
-        config.rc_trim = 1500;
+        config.rc_trim = ch->radio_trim;
         config.rc_dz = 0; // zero for the purposes of manual takeover
         config.rc_assignment = i;
         // we set reverse as false, as users of ArduPilot will have
