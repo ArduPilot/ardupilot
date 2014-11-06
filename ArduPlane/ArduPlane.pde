@@ -809,7 +809,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { update_notify,          1,    300 },
     { read_rangefinder,       1,    500 },
 #if OPTFLOW == ENABLED
-    { update_optical_flow,    5,    500 },
+    { update_optical_flow,    1,    500 },
 #endif
     { one_second_loop,       50,   1000 },
     { check_long_failsafe,   15,   1000 },
@@ -1562,7 +1562,8 @@ static void update_flight_stage(void)
 }
 
 #if OPTFLOW == ENABLED
-// called at 10hz
+// called at 50hz, however optical flow sesnor driver is gathering data asynchronously
+// at 10Hz, so there will be up to 20msec of intersampling delay
 static void update_optical_flow(void)
 {
     static uint32_t last_of_update = 0;
