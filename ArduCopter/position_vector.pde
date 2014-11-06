@@ -16,21 +16,20 @@ Vector3f pv_location_to_vector(const Location& loc)
 }
 
 // pv_location_to_vector_with_default - convert lat/lon coordinates to a position vector,
-// defaulting to the current position if the provided lat/lon are zero and the current
-// altitude if the provided altitude is zero.
-Vector3f pv_location_to_vector_with_default(const Location& loc, const Vector3f& default_)
+//     defaults to the default_posvec's lat/lon and alt if the provided lat/lon or alt are zero
+Vector3f pv_location_to_vector_with_default(const Location& loc, const Vector3f& default_posvec)
 {
     Vector3f pos = pv_location_to_vector(loc);
 
     // set target altitude to default if not provided
     if (loc.alt == 0) {
-        pos.z = default_.z;
+        pos.z = default_posvec.z;
     }
 
     // set target position to default if not provided
     if (loc.lat == 0 && loc.lng == 0) {
-        pos.x = default_.x;
-        pos.y = default_.y;
+        pos.x = default_posvec.x;
+        pos.y = default_posvec.y;
     }
 
     return pos;
