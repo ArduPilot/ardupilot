@@ -193,7 +193,7 @@ static bool setup_failsafe_mixing(void)
     }
 
     enum AP_HAL::Util::safety_state old_state = hal.util->safety_switch_state();
-    struct pwm_output_values pwm_values = {.values = {0}, .channel_count = 8};
+    struct pwm_output_values pwm_values = {.values = {0}, .channel_count = PWM_OUTPUT_MAX_CHANNELS};
 
     int px4io_fd = open("/dev/px4io", 0);
     if (px4io_fd == -1) {
@@ -223,8 +223,10 @@ static bool setup_failsafe_mixing(void)
         goto failed;        
     }
 
-    // setup RC config for each channel based on user specified mix/max/trim
-    for (uint8_t i=0; i<RC_MAX_CHANNELS; i++) {
+    // setup RC config for each channel based on user specified
+    // mix/max/trim. We only do the first 8 channels due to 
+    // a RC config limitation in px4io.c limiting to PX4IO_RC_MAPPED_CONTROL_CHANNELS
+    for (uint8_t i=0; i<8; i++) {
         RC_Channel *ch = RC_Channel::rc_channel(i);
         if (ch == NULL) {
             continue;
