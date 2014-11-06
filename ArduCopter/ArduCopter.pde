@@ -775,7 +775,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { throttle_loop,         8,     45 },
     { update_GPS,            8,     90 },
 #if OPTFLOW == ENABLED
-    { update_optical_flow,  40,     20 },
+    { update_optical_flow,   4,     20 },
 #endif
     { update_batt_compass,  40,     72 },
     { read_aux_switches,    40,      5 },
@@ -1188,7 +1188,7 @@ static void one_hz_loop()
 #endif
 }
 
-// called at 10hz
+// called at 100hz
 #if OPTFLOW == ENABLED
 static void update_optical_flow(void)
 {
