@@ -121,6 +121,9 @@ public:
     // prevent a channel from being used for auxillary functions
     static void disable_aux_channel(uint8_t channel);
 
+    // return the current function for a channel
+    static Aux_servo_function_t channel_function(uint8_t channel);
+
 private:
     static uint32_t _function_mask;
     static RC_Channel_aux *_aux_channels[RC_AUX_MAX_CHANNELS];

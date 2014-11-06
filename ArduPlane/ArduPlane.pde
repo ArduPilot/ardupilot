@@ -350,10 +350,8 @@ static uint8_t oldSwitchPosition = 254;
 // This is used to enable the inverted flight feature
 static bool inverted_flight     = false;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 // This is used to enable the PX4IO override for testing
-static bool px4io_override_enabled     = false;
-#endif
+static bool px4io_override_enabled = false;
 
 static struct {
     // These are trim values used for elevon control
