@@ -64,11 +64,11 @@ static void read_battery(void)
 void read_receiver_rssi(void)
 {
     // avoid divide by zero
-    if (g.rssi_range <= 0) {
+    if (g.rssi_max_range <= 0) {
         receiver_rssi = 0;
     }else{
         rssi_analog_source->set_pin(g.rssi_pin);
-        float ret = rssi_analog_source->voltage_average() * 255 / g.rssi_range;
+        float ret = ((rssi_analog_source->voltage_average() - g.rssi_min_range) * 255) / (g.rssi_max_range - g.rssi_min_range);
         receiver_rssi = constrain_int16(ret, 0, 255);
     }
 }
