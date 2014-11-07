@@ -65,10 +65,11 @@ void AP_OpticalFlow_PX4::update(void)
         _surface_quality = report.quality;
         if (report.integration_timespan > 0) {
             float flowScaleFactor = 0.01f * float(100 + _flowScaler);
-            _flowRate.x = flowScaleFactor * report.pixel_flow_x_integral / (report.integration_timespan / 1e6f); // rad/sec measured optically about the X sensor axis
-            _flowRate.y = flowScaleFactor * report.pixel_flow_y_integral / (report.integration_timespan / 1e6f); // rad/sec measured optically about the Y sensor axis
-            _bodyRate.x = report.gyro_x_rate_integral / (report.integration_timespan / 1e6f); // rad/sec measured inertially about the X sensor axis
-            _bodyRate.y = report.gyro_y_rate_integral / (report.integration_timespan / 1e6f); // rad/sec measured inertially about the Y sensor axis
+            float integralToRate = 1e6f / float(report.integration_timespan);
+            _flowRate.x = flowScaleFactor * integralToRate * float(report.pixel_flow_x_integral); // rad/sec measured optically about the X sensor axis
+            _flowRate.y = flowScaleFactor * integralToRate * float(report.pixel_flow_y_integral); // rad/sec measured optically about the Y sensor axis
+            _bodyRate.x = integralToRate * float(report.gyro_x_rate_integral); // rad/sec measured inertially about the X sensor axis
+            _bodyRate.y = integralToRate * float(report.gyro_y_rate_integral); // rad/sec measured inertially about the Y sensor axis
         } else {
             _flowRate.x = 0.0f;
             _flowRate.y = 0.0f;
