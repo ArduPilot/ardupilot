@@ -1,6 +1,6 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
-ArduCopter 3.2-rc14 31-Oct-2014
+ArduCopter 3.2 07-Nov2014 / 3.2-rc14 31-Oct-2014
 Changes from 3.2-rc13
 1) Safety Features:
     a) fail to arm if second gyro calibration fails (can be disabled with ARMING_CHECK)
