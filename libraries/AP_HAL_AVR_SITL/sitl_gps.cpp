@@ -227,8 +227,8 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d)
 	pos.latitude  = d->latitude * 1.0e7;
 	pos.altitude_ellipsoid = d->altitude*1000.0;
 	pos.altitude_msl = d->altitude*1000.0;
-	pos.horizontal_accuracy = 5;
-	pos.vertical_accuracy = 10;
+	pos.horizontal_accuracy = 1500;
+	pos.vertical_accuracy = 2000;
 
 	status.time = time_week_ms;
 	status.fix_type = d->have_lock?3:0;
@@ -248,7 +248,7 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d)
 	if (velned.heading_2d < 0.0) {
 		velned.heading_2d += 360.0 * 100000.0;
 	}
-	velned.speed_accuracy = 2;
+	velned.speed_accuracy = 40;
 	velned.heading_accuracy = 4;
 
 	memset(&sol, 0, sizeof(sol));
