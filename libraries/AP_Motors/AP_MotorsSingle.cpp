@@ -67,21 +67,21 @@ const AP_Param::GroupInfo AP_MotorsSingle::var_info[] PROGMEM = {
     AP_GROUPINFO("REV_ROLL", 6, AP_MotorsSingle, _rev_roll, AP_MOTORS_SING_POSITIVE),
 
     // @Param: REV_PITCH
-    // @DisplayName: Reverse roll feedback 
+    // @DisplayName: Reverse pitch feedback 
     // @Description: Ensure the feedback is negative
     // @Values: -1:Opposite direction,1:Same direction
     AP_GROUPINFO("REV_PITCH", 7, AP_MotorsSingle, _rev_pitch, AP_MOTORS_SING_POSITIVE),
 
-	// @Param: REV_ROLL
-    // @DisplayName: Reverse roll feedback 
+	// @Param: REV_YAW
+    // @DisplayName: Reverse yaw feedback 
     // @Description: Ensure the feedback is negative
     // @Values: -1:Opposite direction,1:Same direction
     AP_GROUPINFO("REV_YAW", 8, AP_MotorsSingle, _rev_yaw, AP_MOTORS_SING_POSITIVE),
 
 	// @Param: SV_SPEED
     // @DisplayName: Servo speed 
-    // @Description: Servo update speed
-    // @Values: -1:Opposite direction,1:Same direction
+    // @Description: Servo update speed in hz
+    // @Values: 50, 125, 250
     AP_GROUPINFO("SV_SPEED", 9, AP_MotorsSingle, _servo_speed, AP_MOTORS_SINGLE_SPEED_DIGITAL_SERVOS),
 
     AP_GROUPEND
