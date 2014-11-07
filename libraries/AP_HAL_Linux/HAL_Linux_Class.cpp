@@ -16,7 +16,11 @@ using namespace Linux;
 
 // 3 serial ports on Linux for now
 static LinuxUARTDriver uartADriver(true);
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
+static LinuxSPIUARTDriver uartBDriver;
+#else
 static LinuxUARTDriver uartBDriver(false);
+#endif
 static LinuxUARTDriver uartCDriver(false);
 
 static LinuxSemaphore  i2cSemaphore;
