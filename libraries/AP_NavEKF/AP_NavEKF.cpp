@@ -400,7 +400,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     _msecMagAvg             = 100;      // average number of msec between magnetometer measurements
     _msecBetaAvg            = 100;      // average number of msec between synthetic sideslip measurements
     _msecBetaMax            = 200;      // maximum number of msec between synthetic sideslip measurements
-    _msecFlowAvg            = 50;      // average number of msec between optical flow measurements
+    _msecFlowAvg            = 100;      // average number of msec between optical flow measurements
     dtVelPos                = 0.02;     // number of seconds between position and velocity corrections. This should be a multiple of the imu update interval.
 
     // Misc initial conditions
