@@ -1562,8 +1562,7 @@ static void update_flight_stage(void)
 }
 
 #if OPTFLOW == ENABLED
-// called at 50hz, however optical flow sesnor driver is gathering data asynchronously
-// at 10Hz, so there will be up to 20msec of intersampling delay
+// called at 50hz
 static void update_optical_flow(void)
 {
     static uint32_t last_of_update = 0;
