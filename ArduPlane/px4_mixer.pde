@@ -269,6 +269,9 @@ static bool setup_failsafe_mixing(void)
     ioctl(px4io_fd, PWM_SERVO_SET_MAX_PWM, (long unsigned int)&pwm_values);
     ioctl(px4io_fd, PWM_SERVO_SET_OVERRIDE_OK, 0);
 
+    // setup for immediate manual control if FMU dies
+    ioctl(px4io_fd, PWM_SERVO_SET_OVERRIDE_IMMEDIATE, 1);
+
     ret = true;
 
 failed:
