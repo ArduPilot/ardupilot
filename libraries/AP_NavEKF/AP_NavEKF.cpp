@@ -45,6 +45,7 @@
 #define MAG_CAL_DEFAULT         1
 #define GLITCH_ACCEL_DEFAULT    150
 #define GLITCH_RADIUS_DEFAULT   15
+#define FLOW_MEAS_DELAY         10
 
 #elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
 // rover defaults
@@ -66,6 +67,7 @@
 #define MAG_CAL_DEFAULT         1
 #define GLITCH_ACCEL_DEFAULT    150
 #define GLITCH_RADIUS_DEFAULT   15
+#define FLOW_MEAS_DELAY         25
 
 #else
 // generic defaults (and for plane)
@@ -87,6 +89,7 @@
 #define MAG_CAL_DEFAULT         0
 #define GLITCH_ACCEL_DEFAULT    150
 #define GLITCH_RADIUS_DEFAULT   15
+#define FLOW_MEAS_DELAY         25
 
 #endif // APM_BUILD_DIRECTORY
 
@@ -331,7 +334,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Range: 0 - 500
     // @Increment: 10
     // @User: advanced
-    AP_GROUPINFO("FLOW_DELAY",    28, NavEKF, _msecFLowDelay, 10),
+    AP_GROUPINFO("FLOW_DELAY",    28, NavEKF, _msecFLowDelay, FLOW_MEAS_DELAY),
 
     // @Param: RNG_GATE
     // @DisplayName: Range finder measurement gate size
