@@ -7,6 +7,7 @@
 #include "RCInput.h"
 #include "UARTDriver.h"
 #include "Util.h"
+#include "SPIUARTDriver.h"
 #include <sys/time.h>
 #include <poll.h>
 #include <unistd.h>

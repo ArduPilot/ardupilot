@@ -9,6 +9,7 @@
 
 namespace Linux {
     class LinuxUARTDriver;
+    class LinuxSPIUARTDriver;
     class LinuxI2CDriver;
     class LinuxSPIDeviceManager;
     class LinuxSPIDeviceDriver;
