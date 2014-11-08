@@ -114,20 +114,32 @@ static bool create_mixer_file(const char *filename)
             // channels and adjust for trims
             const RC_Channel *chan1 = RC_Channel::rc_channel(i);
             const RC_Channel *chan2 = RC_Channel::rc_channel(c1);
+            int16_t chan1_trim = (i==rcmap.throttle()-1?1500:chan1->radio_trim);
+            int16_t chan2_trim = (c1==rcmap.throttle()-1?1500:chan2->radio_trim);
             // if the input and output channels are the same then we
             // apply clipping. This allows for direct pass-thru
             int32_t limit = (c1==i?scale_max2:scale_max1);
-            int32_t in_scale_low = scale_max1*(chan2->radio_trim - pwm_min)/(float)(chan2->radio_trim - chan2->radio_min);
-            int32_t in_scale_high = scale_max1*(pwm_max - chan2->radio_trim)/(float)(chan2->radio_max - chan2->radio_trim);
+            int32_t in_scale_low;
+            if (chan2_trim <= chan2->radio_min) {
+                in_scale_low = scale_max1;
+            } else {
+                in_scale_low = scale_max1*(chan2_trim - pwm_min)/(float)(chan2_trim - chan2->radio_min);
+            }
+            int32_t in_scale_high;
+            if (chan2->radio_max <= chan2_trim) {
+                in_scale_high = scale_max1;
+            } else {
+                in_scale_high = scale_max1*(pwm_max - chan2_trim)/(float)(chan2->radio_max - chan2_trim);
+            }
             if (chan1->get_reverse() != chan2->get_reverse()) {
                 in_scale_low = -in_scale_low;
                 in_scale_high = -in_scale_high;
             }
             dprintf(mix_fd, "M: 1\n");
             dprintf(mix_fd, "O: %d %d %d %d %d\n",
-                    (int)(pwm_scale*(chan1->radio_trim - chan1->radio_min)),
-                    (int)(pwm_scale*(chan1->radio_max - chan1->radio_trim)),
-                    (int)(pwm_scale*(chan1->radio_trim - 1500)),
+                    (int)(pwm_scale*(chan1_trim - chan1->radio_min)),
+                    (int)(pwm_scale*(chan1->radio_max - chan1_trim)),
+                    (int)(pwm_scale*(chan1_trim - 1500)),
                     (int)-scale_max2, (int)scale_max2);
             dprintf(mix_fd, "S: 0 %u %d %d %d %d %d\n\n", c1,
                     in_scale_low,
@@ -137,21 +149,23 @@ static bool create_mixer_file(const char *filename)
         } else {
             const RC_Channel *chan1 = RC_Channel::rc_channel(c1);
             const RC_Channel *chan2 = RC_Channel::rc_channel(c2);
+            int16_t chan1_trim = (c1==rcmap.throttle()-1?1500:chan1->radio_trim);
+            int16_t chan2_trim = (c2==rcmap.throttle()-1?1500:chan2->radio_trim);
             // mix of two input channels to give an output channel. To
             // make the mixer match the behaviour of APM we need to
             // scale and offset the input channels to undo the affects
             // of the PX4IO input processing
             dprintf(mix_fd, "M: 2\n");
             dprintf(mix_fd, "O: %d %d 0 %d %d\n", mix, mix, (int)-scale_max1, (int)scale_max1);
-            int32_t in_scale_low = pwm_scale*(chan1->radio_trim - pwm_min);
-            int32_t in_scale_high = pwm_scale*(pwm_max - chan1->radio_trim);
-            int32_t offset = pwm_scale*(chan1->radio_trim - 1500);
+            int32_t in_scale_low = pwm_scale*(chan1_trim - pwm_min);
+            int32_t in_scale_high = pwm_scale*(pwm_max - chan1_trim);
+            int32_t offset = pwm_scale*(chan1_trim - 1500);
             dprintf(mix_fd, "S: 0 %u %d %d %d %d %d\n", 
                     c1, in_scale_low, in_scale_high, offset,
                     (int)-scale_max2, (int)scale_max2);
-            in_scale_low = pwm_scale*(chan2->radio_trim - pwm_min);
-            in_scale_high = pwm_scale*(pwm_max - chan2->radio_trim);
-            offset = pwm_scale*(chan2->radio_trim - 1500);
+            in_scale_low = pwm_scale*(chan2_trim - pwm_min);
+            in_scale_high = pwm_scale*(pwm_max - chan2_trim);
+            offset = pwm_scale*(chan2_trim - 1500);
             if (rev) {
                 dprintf(mix_fd, "S: 0 %u %d %d %d %d %d\n\n", 
                         c2, in_scale_low, in_scale_high, offset,
@@ -201,6 +215,18 @@ static bool setup_failsafe_mixing(void)
         return false;
     }
 
+    char buf[2048];
+    if (load_mixer_file(filename, &buf[0], sizeof(buf)) != 0) {
+        hal.console->printf("Unable to load %s\n", filename);
+        goto failed;
+    }
+
+    if (old_state == AP_HAL::Util::SAFETY_ARMED) {
+        // make sure the throttle has a non-zero failsafe value before we
+        // disable safety. This prevents sending zero PWM during switch over
+        hal.rcout->set_safety_pwm(1UL<<(rcmap.throttle()-1), channel_throttle->radio_min);
+    }
+
     // we need to force safety on to allow us to load a mixer
     hal.rcout->force_safety_on();
 
@@ -208,12 +234,6 @@ static bool setup_failsafe_mixing(void)
      * but is good practice */
     if (ioctl(px4io_fd, MIXERIOCRESET, 0) != 0) {
         hal.console->printf("Unable to reset mixer\n");
-        goto failed;
-    }
-
-    char buf[2048];
-    if (load_mixer_file(filename, &buf[0], sizeof(buf)) != 0) {
-        hal.console->printf("Unable to load %s\n", filename);
         goto failed;
     }
 
@@ -242,7 +262,13 @@ static bool setup_failsafe_mixing(void)
         config.channel = i;
         config.rc_min = 900;
         config.rc_max = 2100;
-        config.rc_trim = ch->radio_trim;
+        if (rcmap.throttle()-1 == i) {
+            // throttle uses a trim of 1500, so we don't get division
+            // by small numbers near RC3_MIN
+            config.rc_trim = 1500;
+        } else {
+            config.rc_trim = ch->radio_trim;
+        }
         config.rc_dz = 0; // zero for the purposes of manual takeover
         config.rc_assignment = i;
         // we set reverse as false, as users of ArduPilot will have
@@ -255,7 +281,9 @@ static bool setup_failsafe_mixing(void)
         } else {
             config.rc_reverse = false;
         }
-        ioctl(px4io_fd, PWM_SERVO_SET_RC_CONFIG, (unsigned long)&config);
+        if (ioctl(px4io_fd, PWM_SERVO_SET_RC_CONFIG, (unsigned long)&config) != 0) {
+            hal.console->printf("SET_RC_CONFIG failed\n");
+        }
     }
 
     for (uint8_t i = 0; i < pwm_values.channel_count; i++) {
