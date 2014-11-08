@@ -127,7 +127,7 @@ public:
      */
     void commandline_arguments(uint8_t &argc, char * const *&argv);
 
-    uint8_t toneAlarm_init();
+    int8_t toneAlarm_init();
     void toneAlarm_set_tune(uint8_t tune);
     
     void _toneAlarm_timer_tick();

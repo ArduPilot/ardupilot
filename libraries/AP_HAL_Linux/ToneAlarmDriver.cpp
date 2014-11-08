@@ -57,7 +57,7 @@ void LinuxUtil::toneAlarm()
     
     tune_num = -1;                    //initialy no tune to play
 }
-uint8_t LinuxUtil::toneAlarm_init()
+int8_t LinuxUtil::toneAlarm_init()
 {
     tune_num = 0;                    //play startup tune
     if((period_fd == -1) || (duty_fd == -1) || (run_fd == -1)){
