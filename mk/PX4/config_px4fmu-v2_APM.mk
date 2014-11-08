@@ -51,6 +51,7 @@ MODULES		+= systemcmds/reboot
 MODULES		+= systemcmds/top
 MODULES		+= systemcmds/tests
 MODULES		+= systemcmds/nshterm
+MODULES		+= systemcmds/motor_test
 # the conditional allows for building with upstream master
 # which doesn't have auth
 ifneq ($(wildcard systemcmds/auth),)  
