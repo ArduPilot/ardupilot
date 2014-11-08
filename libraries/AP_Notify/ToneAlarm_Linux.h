@@ -23,6 +23,9 @@
 class ToneAlarm_Linux
 {
 public:
+    ToneAlarm_Linux():
+    err(-1)
+    {}
     /// init - initialised the tone alarm
     bool init(void);
 
@@ -31,18 +34,18 @@ public:
 
 private:
     /// play_tune - play one of the pre-defined tunes
-    bool play_tune(const uint8_t tune_number);
+    bool play_tune(uint8_t tune_number);
 
     int err;
 
     /// tonealarm_type - bitmask of states we track
     struct tonealarm_type {
-        uint8_t armed              : 1;    // 0 = disarmed, 1 = armed
-        uint8_t failsafe_battery   : 1;    // 1 if battery failsafe
-        uint8_t gps_glitching      : 1;    // 1 if gps position is not good
-        uint8_t failsafe_gps       : 1;    // 1 if gps failsafe
-        uint8_t arming_failed      : 1;    // 0 = failing checks, 1 = passed
-        uint8_t parachute_release  : 1;    // 1 if parachute is being released
+        bool armed              : true;    // false = disarmed, true = armed
+        bool failsafe_battery   : true;    // true if battery failsafe
+        bool gps_glitching      : true;    // true if gps position is not good
+        bool failsafe_gps       : true;    // true if gps failsafe
+        bool arming_failed      : true;    // false = failing checks, true = passed
+        bool parachute_release  : true;    // true if parachute is being released
     } flags;
 };
 

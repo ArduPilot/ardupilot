@@ -50,7 +50,7 @@ bool ToneAlarm_Linux::init()
 }
 
 // play_tune - play one of the pre-defined tunes
-bool ToneAlarm_Linux::play_tune(const uint8_t tune_number)
+bool ToneAlarm_Linux::play_tune(uint8_t tune_number)
 {
     hal.util->toneAlarm_set_tune(tune_number);
     return true;
