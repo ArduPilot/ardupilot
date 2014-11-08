@@ -55,7 +55,7 @@ void AP_Notify::update(void)
     tonealarm.update();
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    toshibaled.init();
+    toshibaled.update();
     tonealarm.update();
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
