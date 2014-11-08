@@ -823,6 +823,13 @@ void AC_PosControl::rate_to_accel_xy(float dt)
 ///    converts desired accelerations provided in lat/lon frame to roll/pitch angles
 void AC_PosControl::accel_to_lean_angles()
 {
+    // catch if we've just been started
+    uint32_t now = hal.scheduler->millis();
+    if ((now - _last_update_xy_ms) >= POSCONTROL_ACTIVE_TIMEOUT_MS) {
+        now = _last_update_xy_ms;
+    }
+    float dt_xy = (now - _last_update_xy_ms) * 0.001f;
+
     float accel_right, accel_forward;
     float lean_angle_max = _attitude_control.lean_angle_max();
 
@@ -835,6 +842,35 @@ void AC_PosControl::accel_to_lean_angles()
     // update angle targets that will be passed to stabilize controller
     _roll_target = constrain_float(fast_atan(accel_right*_ahrs.cos_pitch()/(GRAVITY_MSS * 100))*(18000/M_PI), -lean_angle_max, lean_angle_max);
     _pitch_target = constrain_float(fast_atan(-accel_forward/(GRAVITY_MSS * 100))*(18000/M_PI),-lean_angle_max, lean_angle_max);
+
+    // apply a rate limit of 100 deg/sec - required due to optical flow sensor saturation and impulse noise effects
+    static float lastRollDem = 0.0f;
+    static float lastPitchDem = 0.0f;
+    float maxDeltaAngle = dt_xy * 10000.0f;
+    if (_roll_target - lastRollDem > maxDeltaAngle) {
+        _roll_target = lastRollDem + maxDeltaAngle;
+    } else if (_roll_target - lastRollDem < -maxDeltaAngle) {
+        _roll_target = lastRollDem - maxDeltaAngle;
+    }
+    lastRollDem = _roll_target;
+    if (_pitch_target - lastPitchDem > maxDeltaAngle) {
+        _pitch_target = lastPitchDem + maxDeltaAngle;
+    } else if (_pitch_target - lastPitchDem < -maxDeltaAngle) {
+        _pitch_target = lastPitchDem - maxDeltaAngle;
+    }
+    lastPitchDem = _pitch_target;
+
+    // 5Hz lowpass filter on angles - required due to optical flow  noise
+    float freq_cut = 5.0f;
+    float alpha = constrain_float(dt_xy/(dt_xy + 1.0f/(2.0f*(float)M_PI*freq_cut)),0.0f,1.0f);
+    static float roll_target_filtered = 0.0f;
+    static float pitch_target_filtered = 0.0f;
+
+    roll_target_filtered  += alpha * ( _roll_target -  roll_target_filtered);
+    pitch_target_filtered += alpha * (_pitch_target - pitch_target_filtered);
+    _roll_target  = roll_target_filtered;
+    _pitch_target = pitch_target_filtered;
+
 }
 
 // get_lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
