@@ -238,7 +238,7 @@ int8_t LinuxStorage_FRAM::_write_enable(bool enable)
 
 int8_t LinuxStorage_FRAM::_register_read( uint16_t addr, uint8_t opcode )
 {
-    uint8_t tx[4] = {opcode, addr >> 8U, addr, 0};
+    uint8_t tx[4] = {opcode, (uint8_t)((addr >> 8U)), (uint8_t)(addr & 0xFF), 0};
     uint8_t rx[4];
     
     if(transaction(tx, rx, 4) == -1){
