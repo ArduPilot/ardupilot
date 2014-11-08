@@ -209,25 +209,6 @@ protected:
     // get_angle_boost - calculate total body frame throttle required to produce the given earth frame throttle
     virtual int16_t get_angle_boost(int16_t throttle_pwm);
 
-    //
-    // logging
-    //
-
-    // log data on internal state of the controller. Called at 10Hz
-    void log_data(DataFlash_Class &dataflash, uint8_t msgid);
-
-    // dataflash logging packet
-    struct PACKED log_Attitude {
-        LOG_PACKET_HEADER;
-        int16_t roll_in;
-        int16_t roll;
-        int16_t pitch_in;
-        int16_t pitch;
-        int16_t yaw_in;
-        uint16_t yaw;
-        uint16_t nav_yaw;
-    } log_ACAttControl;
-
     // references to external libraries
     const AP_AHRS&      _ahrs;
     const AP_Vehicle::MultiCopter &_aparm;
