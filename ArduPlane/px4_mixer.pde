@@ -193,7 +193,7 @@ static bool setup_failsafe_mixing(void)
     }
 
     enum AP_HAL::Util::safety_state old_state = hal.util->safety_switch_state();
-    struct pwm_output_values pwm_values = {.values = {0}, .channel_count = PWM_OUTPUT_MAX_CHANNELS};
+    struct pwm_output_values pwm_values = {.values = {0}, .channel_count = 8};
 
     int px4io_fd = open("/dev/px4io", 0);
     if (px4io_fd == -1) {
