@@ -51,7 +51,11 @@ void failsafe_check()
         // main loop ran. That means we're in trouble and should
         // disarm the motors.
         in_failsafe = true;
-
+        // reduce motors to minimum (we do not immediately disarm because we want to log the failure)
+        if (motors.armed()) {
+            motors.output_min();
+        }
+        // log an error
         Log_Write_Error(ERROR_SUBSYSTEM_CPU,ERROR_CODE_FAILSAFE_OCCURRED);
     }
 
