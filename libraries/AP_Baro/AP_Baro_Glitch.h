@@ -36,6 +36,10 @@ public:
     // glitching - returns true if we are experiencing a glitch
     bool    glitching() const { return _flags.glitching; }
 
+    // reset - resets glitch detection to start from current baro alt
+    //      should be called after barometer altitude is reset during arming
+    void    reset() { _flags.initialised = false; }
+
     // last_good_update - returns system time of the last good update
     uint32_t last_good_update() const { return _last_good_update; }
 
