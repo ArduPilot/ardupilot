@@ -839,15 +839,15 @@ void loop()
 
     delta_us_fast_loop  = timer - fast_loopTimer_us;
     G_Dt                = delta_us_fast_loop * 1.0e-6f;
-    fast_loopTimer_us   = timer;
 
-    if (delta_us_fast_loop > G_Dt_max) {
+    if (delta_us_fast_loop > G_Dt_max && fast_loopTimer_us != 0) {
         G_Dt_max = delta_us_fast_loop;
     }
 
     if (delta_us_fast_loop < G_Dt_min || G_Dt_min == 0) {
         G_Dt_min = delta_us_fast_loop;
     }
+    fast_loopTimer_us   = timer;
 
     mainLoop_count++;
 
