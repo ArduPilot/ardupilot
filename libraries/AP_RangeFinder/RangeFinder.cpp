@@ -72,12 +72,12 @@ const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
     // @Description: Digital pin that enables/disables rangefinder measurement for an analog rangefinder. A value of -1 means no pin. If this is set, then the pin is set to 1 to enable the rangefinder and set to 0 to disable it. This can be used to ensure that multiple sonar rangefinders don't interfere with each other.
     AP_GROUPINFO("_STOP_PIN", 7, RangeFinder, _stop_pin[0], -1),
 
-    // @Param: _SETTLE_MS
+    // @Param: _SETTLE
     // @DisplayName: Rangefinder settle time
     // @Description: The time in milliseconds that the rangefinder reading takes to settle. This is only used when a STOP_PIN is specified. It determines how long we have to wait for the rangefinder to give a reading after we set the STOP_PIN high. For a sonar rangefinder with a range of around 7m this would need to be around 50 milliseconds to allow for the sonar pulse to travel to the target and back again.
     // @Units: milliseconds
     // @Increment: 1
-    AP_GROUPINFO("_SETTLE_MS", 8, RangeFinder, _settle_time_ms[0], 0),
+    AP_GROUPINFO("_SETTLE", 8, RangeFinder, _settle_time_ms[0], 0),
 
     // @Param: _RMETRIC
     // @DisplayName: Ratiometric
@@ -138,12 +138,12 @@ const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
     // @Description: Digital pin that enables/disables rangefinder measurement for an analog rangefinder. A value of -1 means no pin. If this is set, then the pin is set to 1 to enable the rangefinder and set to 0 to disable it. This can be used to ensure that multiple sonar rangefinders don't interfere with each other.
     AP_GROUPINFO("2_STOP_PIN", 19, RangeFinder, _stop_pin[1], -1),
 
-    // @Param: 2_SETTLE_MS
+    // @Param: 2_SETTLE
     // @DisplayName: Sonar settle time
     // @Description: The time in milliseconds that the rangefinder reading takes to settle. This is only used when a STOP_PIN is specified. It determines how long we have to wait for the rangefinder to give a reading after we set the STOP_PIN high. For a sonar rangefinder with a range of around 7m this would need to be around 50 milliseconds to allow for the sonar pulse to travel to the target and back again.
     // @Units: milliseconds
     // @Increment: 1
-    AP_GROUPINFO("2_SETTLE_MS", 20, RangeFinder, _settle_time_ms[1], 0),
+    AP_GROUPINFO("2_SETTLE", 20, RangeFinder, _settle_time_ms[1], 0),
 
     // @Param: 2_RMETRIC
     // @DisplayName: Ratiometric
