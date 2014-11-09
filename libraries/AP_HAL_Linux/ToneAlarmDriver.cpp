@@ -74,22 +74,15 @@ void LinuxUtil::stop()
 
 void LinuxUtil::play(int tone,int duration)
 {
-
-    char buf[10];
     if(tune_num != prev_tune_num){
         tune_changed = true;
         return;
     }
     if(tone != 0){
-        write(run_fd,"0",sizeof(char));
-    
-        sprintf(buf,"%u",1000000000/tone);    
-        write(period_fd,buf,sizeof(buf));
-        
-        sprintf(buf,"%u",500000000/tone);
-        write(duty_fd,buf,sizeof(buf));
-        
-        write(run_fd,"1",sizeof(char));
+        dprintf(run_fd,"0");
+        dprintf(period_fd,"%u",1000000000/tone);    
+        dprintf(duty_fd,"%u",500000000/tone);
+        dprintf(run_fd,"1");
     }
     hal.scheduler->delay(duration);
 }
