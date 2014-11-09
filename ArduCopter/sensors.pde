@@ -8,6 +8,8 @@ static void init_barometer(bool full_calibration)
     }else{
         barometer.update_calibration();
     }
+    // reset glitch protection to use new baro alt
+    baro_glitch.reset();
     gcs_send_text_P(SEVERITY_LOW, PSTR("barometer calibration complete"));
 }
 
