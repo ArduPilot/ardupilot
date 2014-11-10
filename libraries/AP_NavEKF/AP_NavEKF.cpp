@@ -2779,7 +2779,7 @@ void NavEKF::RunAuxiliaryEKF()
             // calculate the innovation consistency test ratio
             auxFlowTestRatio[obsIndex] = sq(auxFlowObsInnov[obsIndex]) / (sq(_flowInnovGate) * auxFlowObsInnovVar[obsIndex]);
 
-            if (auxFlowTestRatio[obsIndex] < 1.0f) {
+            if ((auxFlowTestRatio[obsIndex] < 1.0f) && (flowRadXY[obsIndex] < 2.0f)) {
                 // correct the state
                 for (uint8_t i = 0; i < 2 ; i++) {
                     flowStates[i] -= K_OPT[i][obsIndex] * auxFlowObsInnov[obsIndex];
@@ -4027,8 +4027,8 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
     // recall angular rates averaged across flow observation period allowing for processing, transmission and intersample delays
     RecallOmega(omegaAcrossFlowTime, imuSampleTime_ms - flowTimeDeltaAvg_ms - _msecFLowDelay, flowMeaTime_ms - _msecFLowDelay);
     // calculate bias errors on flow sensor gyro rates
-    flowGyroBias.x = 0.999f * flowGyroBias.x + 0.001f * (rawGyroRates.x - omegaAcrossFlowTime.x);
-    flowGyroBias.y = 0.999f * flowGyroBias.y + 0.001f * (rawGyroRates.y - omegaAcrossFlowTime.y);
+    flowGyroBias.x = 0.99f * flowGyroBias.x + 0.01f * (rawGyroRates.x - omegaAcrossFlowTime.x);
+    flowGyroBias.y = 0.99f * flowGyroBias.y + 0.01f * (rawGyroRates.y - omegaAcrossFlowTime.y);
     // correct flow sensor rates for bias
     omegaAcrossFlowTime.x = rawGyroRates.x - flowGyroBias.x;
     omegaAcrossFlowTime.y = rawGyroRates.y - flowGyroBias.y;
