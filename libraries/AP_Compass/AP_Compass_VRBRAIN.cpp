@@ -111,9 +111,10 @@ bool AP_Compass_VRBRAIN::read(void)
         // a noop on most boards
         _sum[i].rotate(MAG_BOARD_ORIENTATION);
 
+#if !defined(CONFIG_ARCH_BOARD_VRBRAIN_V45)
         // override any user setting of COMPASS_EXTERNAL 
-        //_external.set(_is_external[0]);
-
+        _external.set(_is_external[0]);
+#endif
         if (_is_external[i]) {
             // add user selectable orientation
             _sum[i].rotate((enum Rotation)_orientation.get());
