@@ -344,6 +344,14 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @User: advanced
     AP_GROUPINFO("RNG_GATE",    29, NavEKF, _rngInnovGate, 5),
 
+    // @Param: MAX_FLOW
+    // @DisplayName: Maximum valid optical flow rate
+    // @Description: This parameter sets the magnitude maximum optical flow rate in rad/sec that will be accepted by the filter
+    // @Range: 1.0 - 4.0
+    // @Increment: 0.1
+    // @User: advanced
+    AP_GROUPINFO("MAX_FLOW",    30, NavEKF, _maxFlowRate, 2.5f),
+
     // @Param: FALLBACK
     // @DisplayName: Fallback strictness
     // @Description: This parameter controls the conditions necessary to trigger a fallback to DCM and INAV. A value of 1 will cause fallbacks to occur on loss of GPS and other conditions. A value of 0 will trust the EKF more.
@@ -2779,7 +2787,7 @@ void NavEKF::RunAuxiliaryEKF()
             // calculate the innovation consistency test ratio
             auxFlowTestRatio[obsIndex] = sq(auxFlowObsInnov[obsIndex]) / (sq(_flowInnovGate) * auxFlowObsInnovVar[obsIndex]);
 
-            if ((auxFlowTestRatio[obsIndex] < 1.0f) && (flowRadXY[obsIndex] < 2.0f)) {
+            if ((auxFlowTestRatio[obsIndex] < 1.0f) && (flowRadXY[obsIndex] < _maxFlowRate)) {
                 // correct the state
                 for (uint8_t i = 0; i < 2 ; i++) {
                     flowStates[i] -= K_OPT[i][obsIndex] * auxFlowObsInnov[obsIndex];
@@ -3020,7 +3028,7 @@ void NavEKF::FuseOptFlow()
     flowTestRatio[obsIndex] = sq(innovOptFlow[obsIndex]) / (sq(_flowInnovGate) * varInnovOptFlow[obsIndex]);
 
     // Check the innovation for consistency and don't fuse if out of bounds or flow is too fast to be reliable
-    if ((flowTestRatio[obsIndex]) < 1.0f && (flowRadXY[obsIndex] < 2.0f)) {
+    if ((flowTestRatio[obsIndex]) < 1.0f && (flowRadXY[obsIndex] < _maxFlowRate)) {
         // Reset the timer for velocity fusion timeout. This prevents a velocity timeout from being declared if we have to momentarily go into velocity hold mode.
         velFailTime = imuSampleTime_ms;
         // correct the state vector

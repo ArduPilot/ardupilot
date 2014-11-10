@@ -395,6 +395,7 @@ private:
     AP_Int8  _flowInnovGate;        // Number of standard deviations applied to optical flow innovation consistency check
     AP_Int8  _msecFLowDelay;        // effective average delay of optical flow measurements rel to IMU (msec)
     AP_Int8  _rngInnovGate;         // Number of standard deviations applied to range finder innovation consistency check
+    AP_Float _maxFlowRate;          // Maximum flow rate magnitude that will be accepted by the filter
     AP_Int8 _fallback;              // EKF-to-DCM fallback strictness. 0 = trust EKF more, 1 = fallback more conservatively.
 
     // Tuning parameters
