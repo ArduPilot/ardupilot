@@ -64,6 +64,7 @@
 #define HAL_INS_VRBRAIN  7
 #define HAL_INS_MPU9250  8
 #define HAL_INS_L3GD20   9   
+#define HAL_INS_MPU9255  10
 
 // barometer driver types
 #define HAL_BARO_BMP085     1
