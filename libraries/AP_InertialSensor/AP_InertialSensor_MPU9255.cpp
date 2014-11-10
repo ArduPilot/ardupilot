@@ -251,7 +251,7 @@ bool AP_InertialSensor_MPU9255::_init_sensor(void)
     _gyro_instance = _imu.register_gyro();
     _accel_instance = _imu.register_accel();
 
-    _product_id = AP_PRODUCT_ID_MPU9255;
+    _product_id = AP_PRODUCT_ID_PIXHAWK_FIRE_CAPE;
 
     // start the timer process to read samples
     hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&AP_InertialSensor_MPU9255::_poll_data));
