@@ -3019,8 +3019,8 @@ void NavEKF::FuseOptFlow()
     // calculate the innovation consistency test ratio
     flowTestRatio[obsIndex] = sq(innovOptFlow[obsIndex]) / (sq(_flowInnovGate) * varInnovOptFlow[obsIndex]);
 
-    // Check the innovation for consistency and don't fuse if out of bounds
-    if (flowTestRatio[obsIndex] < 1.0f) {
+    // Check the innovation for consistency and don't fuse if out of bounds or flow is too fast to be reliable
+    if ((flowTestRatio[obsIndex]) < 1.0f && (flowRadXY[obsIndex] < 2.0f)) {
         // Reset the timer for velocity fusion timeout. This prevents a velocity timeout from being declared if we have to momentarily go into velocity hold mode.
         velFailTime = imuSampleTime_ms;
         // correct the state vector
