@@ -15,10 +15,10 @@ static void get_pilot_desired_lean_angles(int16_t roll_in, int16_t pitch_in, int
     static int16_t _angle_max = 0;
 
     // apply circular limit to pitch and roll inputs
-    float total_out = pythagorous2((float)pitch_in, (float)roll_in);
+    float total_in = pythagorous2((float)pitch_in, (float)roll_in);
 
-    if (total_out > ROLL_PITCH_INPUT_MAX) {
-        float ratio = (float)ROLL_PITCH_INPUT_MAX / total_out;
+    if (total_in > ROLL_PITCH_INPUT_MAX) {
+        float ratio = (float)ROLL_PITCH_INPUT_MAX / total_in;
         roll_in *= ratio;
         pitch_in *= ratio;
     }
