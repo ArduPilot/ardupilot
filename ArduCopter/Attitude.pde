@@ -14,9 +14,14 @@ static void get_pilot_desired_lean_angles(int16_t roll_in, int16_t pitch_in, int
     static float _scaler = 1.0;
     static int16_t _angle_max = 0;
 
-    // range check the input
-    roll_in = constrain_int16(roll_in, -ROLL_PITCH_INPUT_MAX, ROLL_PITCH_INPUT_MAX);
-    pitch_in = constrain_int16(pitch_in, -ROLL_PITCH_INPUT_MAX, ROLL_PITCH_INPUT_MAX);
+    // apply circular limit to pitch and roll inputs
+    float total_out = pythagorous2((float)pitch_in, (float)roll_in);
+
+    if (total_out > ROLL_PITCH_INPUT_MAX) {
+        float ratio = (float)ROLL_PITCH_INPUT_MAX / total_out;
+        roll_in *= ratio;
+        pitch_in *= ratio;
+    }
 
     // return filtered roll if no scaling required
     if (aparm.angle_max == ROLL_PITCH_INPUT_MAX) {
