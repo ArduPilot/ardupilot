@@ -643,6 +643,13 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 #endif
         break;
 
+    case MSG_CAMERA_FEEDBACK:
+#if CAMERA == ENABLED
+        CHECK_PAYLOAD_SIZE(CAMERA_FEEDBACK);
+        camera.send_feedback(chan, gps, ahrs, current_loc);
+#endif
+        break;
+
     case MSG_BATTERY2:
         CHECK_PAYLOAD_SIZE(BATTERY2);
         gcs[chan-MAVLINK_COMM_0].send_battery2(battery);
