@@ -79,7 +79,8 @@ protected:
 
     // parameters
     AP_Int8  _enabled;              // enabled/disabled flag
-    AP_Int8  _flowScaler;           // flow angular rate correction percentage
+    AP_Int16 _flowScalerX;          // X axis flow scale factor correction - parts per thousand
+    AP_Int16 _flowScalerY;          // Y axis flow scale factor correction - parts per thousand
 
     // internal variables
     uint8_t _device_id;             // device id
