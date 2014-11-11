@@ -48,7 +48,7 @@ private:
     void                 _register_write_check(uint8_t reg, uint8_t val);
     bool                 _hardware_init(Sample_rate sample_rate);
     void                 disable_i2c(void);
-    uint8_t              set_samplerate(uint8_t frequency);
+    uint8_t              set_samplerate(uint16_t frequency);
     uint8_t              set_range(uint8_t max_dps);
 
     AP_HAL::SPIDeviceDriver *_spi;
