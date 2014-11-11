@@ -155,10 +155,6 @@ AP_Camera::control_msg(mavlink_message_t* msg)
      *  packet.zoom_pos
      *  packet.zoom_step
      */
-    if (packet.shot)
-    {
-        trigger_pic();
-    }
 }
 
 

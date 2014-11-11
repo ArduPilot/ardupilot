@@ -1420,11 +1420,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
 #if CAMERA == ENABLED
     case MAVLINK_MSG_ID_DIGICAM_CONFIGURE:      // MAV ID: 202
-        camera.configure_msg(msg);
         break;
 
     case MAVLINK_MSG_ID_DIGICAM_CONTROL:
-        camera.control_msg(msg);
+        do_take_picture();
         break;
 #endif // CAMERA == ENABLED
 
