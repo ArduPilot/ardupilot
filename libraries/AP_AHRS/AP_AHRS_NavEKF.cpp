@@ -320,5 +320,11 @@ void  AP_AHRS_NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlo
 {
     EKF.writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, rangeHealth, rawSonarRange);
 }
+
+// inhibit GPS useage
+uint8_t AP_AHRS_NavEKF::setInhibitGPS(void)
+{
+    return EKF.setInhibitGPS();;
+}
 #endif // AP_AHRS_NAVEKF_AVAILABLE
 

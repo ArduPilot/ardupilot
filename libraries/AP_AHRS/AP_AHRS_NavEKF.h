@@ -104,6 +104,9 @@ public:
     // write optical flow measurements to EKF
     void writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, uint8_t &rangeHealth, float &rawSonarRange);
 
+    // inibit GPS useage
+    uint8_t setInhibitGPS(void);
+
     void set_ekf_use(bool setting) { _ekf_use.set(setting); }
 
     // is the AHRS subsystem healthy?
