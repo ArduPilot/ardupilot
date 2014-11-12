@@ -242,7 +242,7 @@ void AP_TECS::update_50hz(float hgt_afe)
 
 }
 
-void AP_TECS::_update_speed(void)
+void AP_TECS::_update_speed(float load_factor)
 {
     // Calculate time in seconds since last update
     uint32_t now = hal.scheduler->micros();
@@ -254,7 +254,10 @@ void AP_TECS::_update_speed(void)
     float EAS2TAS = _ahrs.get_EAS2TAS();
     _TAS_dem  = _EAS_dem * EAS2TAS;
 	_TASmax   = aparm.airspeed_max * EAS2TAS;
-	_TASmin   = aparm.airspeed_min * EAS2TAS;
+	_TASmin   = aparm.airspeed_min * EAS2TAS * load_factor;
+    if (_TASmax < _TASmin) {
+        _TASmax = _TASmin;
+    }
     if (_landAirspeed >= 0 && _ahrs.airspeed_sensor_enabled() &&
            (_flight_stage == FLIGHT_LAND_APPROACH || _flight_stage== FLIGHT_LAND_FINAL)) {
 		_TAS_dem = _landAirspeed * EAS2TAS;
@@ -307,7 +310,7 @@ void AP_TECS::_update_speed_demand(void)
 		_TAS_dem     = _TASmin;
 	}
 	
-    // Constrain speed demand
+    // Constrain speed demand, taking into account the load factor
     _TAS_dem = constrain_float(_TAS_dem, _TASmin, _TASmax);
 
     // calculate velocity rate limits based on physical performance limits
@@ -708,7 +711,8 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 									enum FlightStage flight_stage,
 									int32_t ptchMinCO_cd, 
 									int16_t throttle_nudge,
-									float hgt_afe) 
+									float hgt_afe,
+                                    float load_factor) 
 {
     // Calculate time in seconds since last update
     uint32_t now = hal.scheduler->micros();
@@ -716,7 +720,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 	_update_pitch_throttle_last_usec = now;	
 
     // Update the speed estimate using a 2nd order complementary filter
-    _update_speed();
+    _update_speed(load_factor);
 
 	// Convert inputs
     _hgt_dem = hgt_dem_cm * 0.01f;
