@@ -21,39 +21,27 @@ NOTE_C6, NOTE_CS6, NOTE_D6, NOTE_DS6, NOTE_E6, NOTE_F6, NOTE_FS6, NOTE_G6, NOTE_
 NOTE_C7, NOTE_CS7, NOTE_D7, NOTE_DS7, NOTE_E7, NOTE_F7, NOTE_FS7, NOTE_G7, NOTE_GS7, NOTE_A7, NOTE_AS7, NOTE_B7
 };
 
+//List of RTTTL tones 
+const char* LinuxUtil::tune[TONE_NUMBER_OF_TUNES] = { 
+                                "Startup:d=8,o=6,b=240:a,d7,c7,a,d7,c7,a,d7,16d7,16c7,16d7,16c7,16d7,16c7,16d7,16c7",
+                                "Error:d=4,o=6,b=200:8a,8a,8a,p,a,a,a,p",
+                                "notify_pos:d=4,o=6,b=200:8e,8e,a",
+                                "notify_neut:d=4,o=6,b=200:8e,e",
+                                "notify_neg:d=4,o=6,b=200:8e,8c,8e,8c,8e,8c",
+                                "arming_warn:d=1,o=4,b=75:g",
+                                "batt_war_slow:d=4,o=6,b=100:8a",
+                                "batt_war_fast:d=4,o=6,b=255:8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a",
+                                "GPS_war:d=4,o=6,b=255:a,a,a,1f#",
+                                "Arm_fail:d=4,o=4,b=255:b,a,p",
+                                "para_rel:d=16,o=6,b=255:a,g,a,g,a,g,a,g"};
+//Tune Repeat true: play rtttl tune in loop, false: play only once
+bool LinuxUtil::tune_repeat[TONE_NUMBER_OF_TUNES] = {false,true,false,false,false,false,true,true,false,false,false};
+
 void LinuxUtil::toneAlarm()
 {
-    tune[TONE_STARTUP_TUNE] = "Startup:d=8,o=6,b=240:a,d7,c7,a,d7,c7,a,d7,16d7,16c7,16d7,16c7,16d7,16c7,16d7,16c7";
-    tune[TONE_ERROR_TUNE] = "Error:d=4,o=6,b=200:8a,8a,8a,p,a,a,a,p";
-    tune[TONE_NOTIFY_POSITIVE_TUNE] = "notify_pos:d=4,o=6,b=200:8e,8e,a";
-    tune[TONE_NOTIFY_NEUTRAL_TUNE] = "notify_neut:d=4,o=6,b=200:8e,e";
-    tune[TONE_NOTIFY_NEGATIVE_TUNE] = "notify_neg:d=4,o=6,b=200:8e,8c,8e,8c,8e,8c";
-    tune[TONE_ARMING_WARNING_TUNE] = "arming_warn:d=1,o=4,b=75:g";
-    tune[TONE_BATTERY_WARNING_SLOW_TUNE] = "batt_war_slow:d=4,o=6,b=100:8a";
-    tune[TONE_BATTERY_WARNING_FAST_TUNE] = "batt_war_fast:d=4,o=6,b=255:8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a";
-    tune[TONE_GPS_WARNING_TUNE] = "GPS_war:d=4,o=6,b=255:a,a,a,1f#";
-    tune[TONE_ARMING_FAILURE_TUNE] = "Arm_fail:d=4,o=4,b=255:b,a,p";
-    tune[TONE_PARACHUTE_RELEASE_TUNE] = "para_rel:d=16,o=6,b=255:a,g,a,g,a,g,a,g";
-    
-    tune_repeat[TONE_STARTUP_TUNE] = false;
-    tune_repeat[TONE_ERROR_TUNE] = true;
-    tune_repeat[TONE_NOTIFY_POSITIVE_TUNE] = false; 
-    tune_repeat[TONE_NOTIFY_NEUTRAL_TUNE] = false;
-    tune_repeat[TONE_NOTIFY_NEGATIVE_TUNE] = false;
-    tune_repeat[TONE_ARMING_WARNING_TUNE] = false;
-    tune_repeat[TONE_BATTERY_WARNING_SLOW_TUNE] = true;
-    tune_repeat[TONE_BATTERY_WARNING_FAST_TUNE] = true;
-    tune_repeat[TONE_GPS_WARNING_TUNE] = false;
-    tune_repeat[TONE_ARMING_FAILURE_TUNE] = false;
-    tune_repeat[TONE_PARACHUTE_RELEASE_TUNE] = false;
-    
-    char str[]="/sys/devices/ocp.3/pwm_test_P8_36.12/period";
-    char str1[]="/sys/devices/ocp.3/pwm_test_P8_36.12/duty";
-    char str2[]="/sys/devices/ocp.3/pwm_test_P8_36.12/run";
-    
-    period_fd = open(str,O_WRONLY);
-    duty_fd = open(str1,O_WRONLY);
-    run_fd = open(str2,O_WRONLY);
+    period_fd = open("/sys/devices/ocp.3/pwm_test_P8_36.12/period",O_WRONLY);
+    duty_fd = open("/sys/devices/ocp.3/pwm_test_P8_36.12/duty",O_WRONLY);
+    run_fd = open("/sys/devices/ocp.3/pwm_test_P8_36.12/run",O_WRONLY);
     
     tune_num = -1;                    //initialy no tune to play
 }

@@ -138,14 +138,14 @@ public:
     void play(int tone,int duration);
     void play_tune();
 
-    const char *tune[TONE_NUMBER_OF_TUNES];
-    bool tune_repeat[TONE_NUMBER_OF_TUNES];
+    static const char *tune[TONE_NUMBER_OF_TUNES];
+    static bool tune_repeat[TONE_NUMBER_OF_TUNES];
     bool tune_changed;
-    uint32_t prev_tune_num;
+    int32_t prev_tune_num;
     int32_t period_fd;
     int32_t duty_fd;
     int32_t run_fd;
-    uint8_t tune_num;
+    int8_t tune_num;
     
     int saved_argc;
     char* const *saved_argv;
