@@ -37,12 +37,22 @@ static void read_airspeed(void)
             Log_Write_Airspeed();
         }
         calc_airspeed_errors();
+
+        // supply a new temperature to the barometer from the digital
+        // airspeed sensor if we can
+        float temperature;
+        if (airspeed.get_temperature(temperature)) {
+            barometer.set_external_temperature(temperature);
+        }
     }
 }
 
 static void zero_airspeed(void)
 {
     airspeed.calibrate();
+    read_airspeed();
+    // update barometric calibration with new airspeed supplied temperature
+    barometer.update_calibration();
     gcs_send_text_P(SEVERITY_LOW,PSTR("zero airspeed calibrated"));
 }
 
