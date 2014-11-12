@@ -156,9 +156,10 @@ public:
 
     // write the raw optical flow measurements
     // rawFlowQuality is a measured of quality between 0 and 255, with 255 being the best quality
-    // rawFlowRates is the flow rate in radians per second. A positive ground relative velocity along the X axis produces positive raw X value, and similarly for the Y axis
-    // rawGyroRates are the sensor phsyical rotation rates measured by the internal gyro
-    // rawSonarRange is the  range in metres measured by the px4flow sensor
+    // rawFlowRates are the optical flow rates in rad/sec about the X and Y sensor axes.
+    // rawGyroRates are the sensor rotation rates in rad/sec measured by the sensors internal gyro
+    // The sign convention is that a RH physical rotation of the sensor about an axis produces both a positive flow and gyro rate
+    // rawSonarRange is the range in metres measured by the range finder
     // msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
     void  writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, uint8_t &rangeHealth, float &rawSonarRange);
 
