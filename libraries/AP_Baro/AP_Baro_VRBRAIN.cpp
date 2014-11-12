@@ -79,7 +79,7 @@ float AP_Baro_VRBRAIN::get_pressure() {
     return _pressure;
 }
 
-float AP_Baro_VRBRAIN::get_temperature() {
+float AP_Baro_VRBRAIN::get_temperature() const {
     return _temperature;
 }
 

@@ -35,7 +35,7 @@ public:
     virtual float           get_pressure() = 0;
 
     // temperature in degrees C
-    virtual float           get_temperature() = 0;
+    virtual float           get_temperature() const = 0;
 
     // accumulate a reading - overridden in some drivers
     virtual void            accumulate(void) {}

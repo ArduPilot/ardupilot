@@ -34,7 +34,7 @@ public:
     uint8_t         read();
     void 			accumulate(void);
     float           get_pressure();
-    float           get_temperature();
+    float           get_temperature() const;
 
 private:
     int32_t         RawPress;

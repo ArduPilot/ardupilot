@@ -94,6 +94,6 @@ float AP_Baro_HIL::get_pressure() {
     return Press;
 }
 
-float AP_Baro_HIL::get_temperature() {
+float AP_Baro_HIL::get_temperature() const {
     return Temp;
 }

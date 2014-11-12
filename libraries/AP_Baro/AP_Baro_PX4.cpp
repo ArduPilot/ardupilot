@@ -79,7 +79,7 @@ float AP_Baro_PX4::get_pressure() {
     return _pressure;
 }
 
-float AP_Baro_PX4::get_temperature() {
+float AP_Baro_PX4::get_temperature() const {
     return _temperature;
 }
 
