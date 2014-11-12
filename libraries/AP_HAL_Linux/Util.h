@@ -135,17 +135,26 @@ public:
     private:
     void toneAlarm(void);
     void stop();
-    void play(int tone,int duration);
+    bool play();
     void play_tune();
-
+    bool set_note();
+	bool init_tune();
     static const char *tune[TONE_NUMBER_OF_TUNES];
     static bool tune_repeat[TONE_NUMBER_OF_TUNES];
     bool tune_changed;
+	uint8_t default_oct;
+	uint8_t default_dur;
+	uint16_t bpm;
+    uint16_t wholenote;
+    uint16_t cur_note;
+    uint16_t duration;
     int32_t prev_tune_num;
+	uint32_t prev_time;
     int32_t period_fd;
     int32_t duty_fd;
     int32_t run_fd;
     int8_t tune_num;
+    uint8_t tune_pos;
     
     int saved_argc;
     char* const *saved_argv;
