@@ -76,7 +76,7 @@ void AP_Baro::calibrate()
                         "for more than 500ms in AP_Baro::calibrate [1]\r\n"));
             }
             ground_pressure         = get_pressure();
-            ground_temperature      = get_temperature();
+            ground_temperature      = get_calibration_temperature();
             hal.scheduler->delay(20);
         }
     }
@@ -93,7 +93,7 @@ void AP_Baro::calibrate()
             }
         } while (!_flags.healthy);
         ground_pressure     = get_pressure();
-        ground_temperature  = get_temperature();
+        ground_temperature  = get_calibration_temperature();
 
         hal.scheduler->delay(100);
     }
@@ -111,7 +111,7 @@ void AP_Baro::calibrate()
         } while (!_flags.healthy);
         ground_pressure = (ground_pressure * 0.8f) + (get_pressure() * 0.2f);
         ground_temperature = (ground_temperature * 0.8f) + 
-            (get_temperature() * 0.2f);
+            (get_calibration_temperature() * 0.2f);
 
         hal.scheduler->delay(100);
     }
@@ -129,7 +129,13 @@ void AP_Baro::update_calibration()
 {
     float pressure = get_pressure();
     _ground_pressure.set(pressure);
-    _ground_temperature.set(get_temperature());
+    float last_temperature = _ground_temperature;
+    _ground_temperature.set(get_calibration_temperature());
+    if (fabsf(last_temperature - _ground_temperature) > 3) {
+        // reset _EAS2TAS to force it to recalculate. This happens
+        // when a digital airspeed sensor comes online
+        _EAS2TAS = 0;
+    }
 }
 
 // return altitude difference in meters between current pressure and a
@@ -215,3 +221,33 @@ float AP_Baro::get_climb_rate(void)
     return _climb_rate_filter.slope() * 1.0e3f;
 }
 
+
+/*
+  set external temperature to be used for calibration (degrees C)
+ */
+void AP_Baro::set_external_temperature(float temperature)
+{
+    _external_temperature = temperature;
+    _last_external_temperature_ms = hal.scheduler->millis();
+}
+
+/*
+  get the temperature in degrees C to be used for calibration purposes
+ */
+float AP_Baro::get_calibration_temperature(void) const
+{
+    // if we have a recent external temperature then use it
+    if (_last_external_temperature_ms != 0 && hal.scheduler->millis() - _last_external_temperature_ms < 10000) {
+        return _external_temperature;
+    }
+    // if we don't have an external temperature then use the minimum
+    // of the barometer temperature and 25 degrees C. The reason for
+    // not just using the baro temperature is it tends to read high,
+    // often 30 degrees above the actual temperature. That means the
+    // EAS2TAS tends to be off by quite a large margin
+    float ret = get_temperature();
+    if (ret > 25) {
+        ret = 25;
+    }
+    return ret;    
+}
