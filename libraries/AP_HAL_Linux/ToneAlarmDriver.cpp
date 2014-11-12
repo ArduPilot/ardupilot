@@ -61,6 +61,7 @@ int8_t LinuxUtil::toneAlarm_init()
 {
     tune_num = 0;                    //play startup tune
     if((period_fd == -1) || (duty_fd == -1) || (run_fd == -1)){
+        hal.console->printf("ToneAlarm: Error!! please check if PWM overlays are loaded correctly");
         return -1;
     }
     return 0;
@@ -68,7 +69,6 @@ int8_t LinuxUtil::toneAlarm_init()
 
 void LinuxUtil::stop()
 {
-
     write(run_fd,"0",sizeof(char));
 }
 
