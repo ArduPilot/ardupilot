@@ -114,6 +114,11 @@ public:
     // reset body axis gyro bias estimates
     void resetGyroBias(void);
 
+    // Commands the EKF to not use GPS. It returns true if the command has been accepted.
+    // This command must be sent prior to arming as it will only be actioned when the filter is in static mode
+    // This command is forgotten by the EKF each time it goes back into static mode (eg the vehicle disarms)
+    uint8_t setInhibitGPS(void);
+
     // return weighting of first IMU in blending function
     void getIMU1Weighting(float &ret) const;
 
@@ -604,6 +609,9 @@ private:
     bool lastHoldVelocity;          // last value of holdVelocity
     Vector2f heldVelNE;             // velocity held when no aiding is available
     uint16_t _msecFlowAvg;          // average number of msec between synthetic sideslip measurements
+    uint8_t gpsInhibitMode;         // 1 when GPS useage is being inhibited and only attitude and height data is available
+                                    // 2 when GPS useage is being inhibited and attitude, height, velocity and relative position is available
+                                    // 0 when GPS is being used
 
     // states held by optical flow fusion across time steps
     // optical flow X,Y motion compensated rate measurements are fused across two time steps

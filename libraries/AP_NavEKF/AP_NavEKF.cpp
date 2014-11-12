@@ -721,7 +721,7 @@ void NavEKF::UpdateFilter()
     SetFlightAndFusionModes();
 
     // define rules used to set staticMode
-    // staticMode enables ground operation without GPS by fusing zeros for position and height measurements
+    // staticMode enables attitude only estimates without GPS by fusing zeros for position
     if (static_mode_demanded()) {
         staticMode = true;
     } else {
@@ -742,6 +742,13 @@ void NavEKF::UpdateFilter()
         }
         calcQuatAndFieldStates(_ahrs->roll, _ahrs->pitch);
         heldVelNE.zero();
+        // When entering static mode (dis-arming), clear the GPS inhibit mode
+        // when leaving static mode (arming) set to true if EKF user parameter is set to not use GPS
+        if (!prevStaticMode) {
+            gpsInhibitMode = 0;
+        } else if (prevStaticMode && _fusionModeGPS == 3) {
+            gpsInhibitMode = 2;
+        }
         prevStaticMode = staticMode;
     } else if (!staticMode && !finalMagYawInit && firstArmPosD - state.position.z > 1.5f && !assume_zero_sideslip()) {
         // Do a final yaw and earth mag field initialisation when the vehicle has gained 1.5m of altitude after arming if it is a non-fly forward vehicle (vertical takeoff)
@@ -800,7 +807,7 @@ void NavEKF::SelectVelPosFusion()
             memset(&gpsIncrStateDelta[0], 0, sizeof(gpsIncrStateDelta));
             gpsUpdateCount = 0;
             // select which of velocity and position measurements will be fused
-            if (_fusionModeGPS < 3) {
+            if (gpsInhibitMode == 0) {
                 // use both if GPS use is enabled
                 fuseVelData = true;
                 fusePosData = true;
@@ -926,7 +933,7 @@ void NavEKF::SelectMagFusion()
 void NavEKF::SelectFlowFusion()
 {
     // if we don't have flow measurements and are not using GPS, dead reckon using current velocity vector unless we are in static mode
-    if (imuSampleTime_ms - flowMeaTime_ms > 200 && !staticMode && _fusionModeGPS > 2) {
+    if (imuSampleTime_ms - flowMeaTime_ms > 200 && !staticMode && gpsInhibitMode == 2) {
         velHoldMode = true;
     } else {
         velHoldMode = false;
@@ -2029,16 +2036,16 @@ void NavEKF::FuseVelPosNED()
         }
 
         // set range for sequential fusion of velocity and position measurements depending on which data is available and its health
-        if (fuseVelData && _fusionModeGPS == 0 && velHealth && !staticMode) {
+        if (fuseVelData && _fusionModeGPS == 0 && velHealth && !staticMode && gpsInhibitMode == 0) {
             fuseData[0] = true;
             fuseData[1] = true;
             fuseData[2] = true;
         }
-        if (fuseVelData && _fusionModeGPS == 1 && velHealth && !staticMode) {
+        if (fuseVelData && _fusionModeGPS == 1 && velHealth && !staticMode && gpsInhibitMode == 0) {
             fuseData[0] = true;
             fuseData[1] = true;
         }
-        if ((fusePosData && _fusionModeGPS <= 2 && posHealth) || staticMode) {
+        if ((fusePosData && posHealth && gpsInhibitMode == 0) || staticMode) {
             fuseData[3] = true;
             fuseData[4] = true;
         }
@@ -2582,13 +2589,13 @@ void NavEKF::RunAuxiliaryEKF()
     // calculate a predicted LOS rate squared
     float losRateSq = (sq(state.velocity.x) + sq(state.velocity.y)) / sq(flowStates[1] - state.position[2]);
     // don't update terrain offset state if there is no range finder and not generating enough LOS rate, or without GPS, as it is poorly observable
-    if ((losRateSq < 0.01f || _fusionModeGPS == 3) && !fuseRngData) {
+    if ((losRateSq < 0.01f || gpsInhibitMode == 2) && !fuseRngData) {
         inhibitGndState = true;
     } else {
         inhibitGndState = false;
     }
     // Don't update focal length offset if there is no range finder or not using GPS, or we are not flying fast enough to generate a useful LOS rate
-    if (!fuseRngData || _fusionModeGPS == 3 || losRateSq < 0.01f) {
+    if (!fuseRngData || gpsInhibitMode == 2 || losRateSq < 0.01f) {
         fScaleInhibit = true;
     } else {
         fScaleInhibit = false;
@@ -3595,6 +3602,26 @@ void NavEKF::resetGyroBias(void)
 
 }
 
+// Commands the EKF to not use GPS. It returns true if the command has been accepted.
+// This command must be sent prior to arming as it will only be actioned when the filter is in static mode
+// This command is forgotten by the EKF each time it goes back into static mode (eg the vehicle disarms)
+uint8_t NavEKF::setInhibitGPS(void)
+{
+    // Ignore request if not in in static mode (when armed)
+    if(!staticMode) {
+        return 0;
+    }
+    // If we have received flow sensor data in the last second then indicate that we can do relative position
+    // otherwise indicate we can provide attitude and height only
+    if ((imuSampleTime_ms - flowMeaTime_ms) < 1000) {
+        gpsInhibitMode = 2;
+        return 2;
+    } else {
+        gpsInhibitMode = 1;
+        return 1;
+    }
+}
+
 // return weighting of first IMU in blending function
 void NavEKF::getIMU1Weighting(float &ret) const
 {
@@ -4328,6 +4355,7 @@ void NavEKF::ZeroVariables()
     flowGyroBias.y = 0;
     velHoldMode = false;
     heldVelNE.zero();
+    gpsInhibitMode = 0;
 }
 
 // return true if we should use the airspeed sensor
@@ -4354,11 +4382,11 @@ bool NavEKF::useOptFlow(void) const
 }
 
 // return true if the vehicle code has requested use of static mode
-// in static mode, position and height are constrained to zero, allowing an attitude
-// reference to be initialised and maintained when on the ground and without GPS lock
+// in static mode, zero postion measurements are fused, allowing an attitude
+// reference to be initialised and maintained without GPS lock
 bool NavEKF::static_mode_demanded(void) const
 {
-    return !_ahrs->get_armed() || !_ahrs->get_correct_centrifugal();
+    return !_ahrs->get_armed() || !_ahrs->get_correct_centrifugal() || gpsInhibitMode == 1;
 }
 
 // return true if we should use the compass
