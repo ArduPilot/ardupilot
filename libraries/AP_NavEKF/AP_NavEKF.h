@@ -502,8 +502,6 @@ private:
     Vector3f velDotNEDfilt;         // low pass filtered velDotNED
     uint32_t lastAirspeedUpdate;    // last time airspeed was updated
     uint32_t imuSampleTime_ms;      // time that the last IMU value was taken
-    ftype gpsCourse;                // GPS ground course angle(rad) 
-    ftype gpsGndSpd;                // GPS ground speed (m/s)
     bool newDataGps;                // true when new GPS data has arrived
     bool newDataMag;                // true when new magnetometer data has arrived
     bool newDataTas;                // true when new airspeed data has arrived

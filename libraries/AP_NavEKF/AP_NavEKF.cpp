@@ -2588,7 +2588,7 @@ void NavEKF::RunAuxiliaryEKF()
         inhibitGndState = false;
     }
     // Don't update focal length offset if there is no range finder or not using GPS, or we are not flying fast enough to generate a useful LOS rate
-    if (!fuseRngData || _fusionModeGPS == 3 || losRateSq < 0.1f || gpsGndSpd < 5.0f) {
+    if (!fuseRngData || _fusionModeGPS == 3 || losRateSq < 0.01f) {
         fScaleInhibit = true;
     } else {
         fScaleInhibit = false;
