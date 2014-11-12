@@ -32,7 +32,7 @@
   @default y 5
   @values  y None 1/60 1/100 1/200 1/400 1/640
 @param     t Target Tv (sec)
-  @default t 6
+  @default t 7
   @values  t 1/100 1/200 1/400 1/640 1/800 1/1000 1/1250 1/1600 1/2000
 @param     x Tv Max (sec)
   @default x 4
@@ -50,10 +50,10 @@
   @default p 0
   @values  p 80 100 200 400 800 1250 1600
 @param     q ISO Max1
-  @default q 2
+  @default q 1
   @values  q 100 200 400 800 1250 1600
 @param     r ISO Max2
-  @default r 5
+  @default r 3
   @values  r 100 200 400 800 1250 1600
 @param     n Allow use of ND filter?
   @default n 0
