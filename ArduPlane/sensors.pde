@@ -45,6 +45,12 @@ static void read_airspeed(void)
             barometer.set_external_temperature(temperature);
         }
     }
+
+    // update smoothed airspeed estimate
+    float aspeed;
+    if (ahrs.airspeed_estimate(&aspeed)) {
+        smoothed_airspeed = smoothed_airspeed * 0.8f + aspeed * 0.2f;
+    }
 }
 
 static void zero_airspeed(void)

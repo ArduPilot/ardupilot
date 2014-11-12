@@ -481,6 +481,9 @@ static void calc_nav_yaw_ground(void)
 }
 
 
+/*
+  calculate a new nav_pitch_cd from the speed height controller
+ */
 static void calc_nav_pitch()
 {
     // Calculate the Pitch of the plane
@@ -490,9 +493,13 @@ static void calc_nav_pitch()
 }
 
 
+/*
+  calculate a new nav_roll_cd from the navigation controller
+ */
 static void calc_nav_roll()
 {
     nav_roll_cd = nav_controller->nav_roll_cd();
+    update_load_factor();
     nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
 }
 
@@ -1001,4 +1008,39 @@ static void adjust_nav_pitch_throttle(void)
         float p = (aparm.throttle_cruise - throttle) / (float)aparm.throttle_cruise;
         nav_pitch_cd -= g.stab_pitch_down * 100.0f * p;
     }
+}
+
+
+/*
+  calculate a new aerodynamic_load_factor and limit nav_roll_cd to
+  ensure that the load factor does not take us below the sustainable
+  airspeed
+ */
+static void update_load_factor(void)
+{
+    float demanded_roll = fabsf(nav_roll_cd*0.01f);
+    if (demanded_roll > 85) {
+        // limit to 85 degrees to prevent numerical errors
+        demanded_roll = 85;
+    }
+    aerodynamic_load_factor = 1.0f / safe_sqrt(cos(radians(demanded_roll)));
+
+    float max_load_factor = smoothed_airspeed / aparm.airspeed_min;
+    if (max_load_factor <= 1) {
+        // our airspeed is below the minimum airspeed. Limit roll to
+        // 25 degrees
+        nav_roll_cd = constrain_int32(nav_roll_cd, -2500, 2500);
+    } else if (max_load_factor < aerodynamic_load_factor) {
+        // the demanded nav_roll would take us past the aerodymamic
+        // load limit. Limit our roll to a bank angle that will keep
+        // the load within what the airframe can handle. We always
+        // allow at least 25 degrees of roll however, to ensure the
+        // aircraft can be maneuvered with a bad airspeed estimate. At
+        // 25 degrees the load factor is 1.1 (10%)
+        int32_t roll_limit = degrees(acosf(sq(1.0f / max_load_factor)))*100;
+        if (roll_limit < 2500) {
+            roll_limit = 2500;
+        }
+        nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit, roll_limit);
+    }    
 }
