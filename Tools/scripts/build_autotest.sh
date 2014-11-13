@@ -150,7 +150,7 @@ for d in ArduPlane ArduCopter APMrover2; do
 done
 
 mkdir -p "buildlogs/history/$hdate"
-(cd buildlogs && cp -f *.txt *.flashlog *.tlog *.km[lz] *.gpx *.html *.png *.bin "history/$hdate/")
+(cd buildlogs && cp -f *.txt *.flashlog *.tlog *.km[lz] *.gpx *.html *.png *.bin *.BIN *.elf "history/$hdate/")
 echo $githash > "buildlogs/history/$hdate/githash.txt"
 
 (cd APM && Tools/scripts/build_parameters.sh)
@@ -158,6 +158,9 @@ echo $githash > "buildlogs/history/$hdate/githash.txt"
 (cd APM && Tools/scripts/build_docs.sh)
 
 killall -9 JSBSim || /bin/true
+
+# raise core limit
+ulimit -c 10000000
 
 timelimit 7500 APM/Tools/autotest/autotest.py --timeout=7000 > buildlogs/autotest-output.txt 2>&1
 

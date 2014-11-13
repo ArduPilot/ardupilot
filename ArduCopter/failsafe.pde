@@ -39,15 +39,24 @@ void failsafe_check()
         // the main loop is running, all is OK
         failsafe_last_mainLoop_count = mainLoop_count;
         failsafe_last_timestamp = tnow;
-        in_failsafe = false;
+        if (in_failsafe) {
+            in_failsafe = false;
+            Log_Write_Error(ERROR_SUBSYSTEM_CPU,ERROR_CODE_FAILSAFE_RESOLVED);
+        }
         return;
     }
 
-    if (failsafe_enabled && tnow - failsafe_last_timestamp > 2000000) {
+    if (!in_failsafe && failsafe_enabled && tnow - failsafe_last_timestamp > 2000000) {
         // motors are running but we have gone 2 second since the
         // main loop ran. That means we're in trouble and should
         // disarm the motors.
         in_failsafe = true;
+        // reduce motors to minimum (we do not immediately disarm because we want to log the failure)
+        if (motors.armed()) {
+            motors.output_min();
+        }
+        // log an error
+        Log_Write_Error(ERROR_SUBSYSTEM_CPU,ERROR_CODE_FAILSAFE_OCCURRED);
     }
 
     if (failsafe_enabled && in_failsafe && tnow - failsafe_last_timestamp > 1000000) {

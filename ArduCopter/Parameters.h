@@ -102,7 +102,7 @@ public:
         k_param_battery,
         k_param_fs_batt_mah,
         k_param_angle_rate_max,         // remove
-        k_param_rssi_range,
+        k_param_rssi_range_max, // renamed (before was rssi_range)
         k_param_rc_feel_rp,
         k_param_NavEKF,                 // Extended Kalman Filter Inertial Navigation Group
         k_param_mission,                // mission library
@@ -124,7 +124,8 @@ public:
         k_param_optflow,
         k_param_dcmcheck_thresh,        // 59
         k_param_log_bitmask,
-
+        k_param_rssi_range_min, // new
+        
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
         k_param_gpslock_limit,          // deprecated - remove
@@ -346,7 +347,8 @@ public:
     AP_Int16        rtl_alt_final;
 
     AP_Int8         rssi_pin;
-    AP_Float        rssi_range;                 // allows to set max voltage for rssi pin such as 5.0, 3.3 etc. 
+    AP_Float rssi_range_min;             // allows to set max voltage for rssi pin such as 5.0, 3.3 etc.  
+    AP_Float rssi_range_max;             // allows to set min voltage for rssi pin such as 0.5, 1.2 etc. 
     AP_Int8         wp_yaw_behavior;            // controls how the autopilot controls yaw during missions
     AP_Int8         rc_feel_rp;                 // controls vehicle response to user input with 0 being extremely soft and 100 begin extremely crisp
 

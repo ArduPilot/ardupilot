@@ -455,12 +455,15 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_sonar(uint8_t argc, const Menu::arg *argv)
 {
+    init_sonar();
+    delay(20);
+    sonar.update();
+
     if (!sonar.healthy()) {
         cliSerial->println_P(PSTR("WARNING: Sonar is not enabled"));
     }
 
     print_hit_enter();
-    init_sonar();
     
     float sonar_dist_cm_min = 0.0f;
     float sonar_dist_cm_max = 0.0f;
@@ -472,8 +475,9 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
 
 	while (true) {
         delay(20);
+        sonar.update();
         uint32_t now = millis();
-
+    
         float dist_cm = sonar.distance_cm(0);
         float voltage = sonar.voltage_mv(0);
         if (sonar_dist_cm_min == 0.0f) {

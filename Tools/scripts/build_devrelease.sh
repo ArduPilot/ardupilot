@@ -19,6 +19,7 @@ build_devrelease() {
     BUILD_DIR="$4"
     RELEASE_DIR="$5"
     RELEASE_FILE="$6"
+    shift 6
 
     export TMPDIR=$PWD/build.tmp.$$
     echo $TMDIR
@@ -45,27 +46,38 @@ build_devrelease() {
 
     mkdir -p "$DEVBUILD/$RELEASE_DIR" || return 1
 
-    # check if we should skip this build because we have already
-    # built this version
-    oldversion=$(cat "$DEVBUILD/$RELEASE_DIR/git-version.txt" | head -1)
-    newversion=$(git log -1 | head -1)
-    [ "$oldversion" = "$newversion" ] && {
-        echo "Skipping build - version match $newversion"
-        return 0
-    }
-
     pushd "$BUILD_DIR" || return 1
-    make configure || return 1
-    make px4-clean || return 1
-    make clean || return 1
-    make "$BUILD_TARGET" || return 1
-    /bin/cp "$RELEASE_FILE" "$DEVBUILD/$RELEASE_DIR" || return 1
-    git log -1 > "$DEVBUILD/$RELEASE_DIR/git-version.txt" || return 1
-    [ -f APM_Config.h ] && {
-        version=$(grep 'define.THISFIRMWARE' *.pde 2> /dev/null | cut -d'"' -f2)
-        echo >> "$DEVBUILD/$RELEASE_DIR/git-version.txt"
-        echo "APMVERSION: $version" >> "$DEVBUILD/$RELEASE_DIR/git-version.txt"
-    }
+    for frame in $*; do
+        if [ -z $frame ]; then
+            SUBDIR="$DEVBUILD/$RELEASE_DIR"
+            make_target="$BUILD_TARGET"
+        else
+            SUBDIR="$DEVBUILD/$RELEASE_DIR/$frame"
+            make_target="$BUILD_TARGET-$frame"
+        fi
+
+        # check if we should skip this build because we have already
+        # built this version
+        oldversion=$(cat "$SUBDIR/git-version.txt" | head -1)
+        newversion=$(git log -1 | head -1)
+        [ "$oldversion" = "$newversion" ] && {
+            echo "Skipping build of $frame - version match $newversion"
+            continue
+        }
+
+        mkdir -p $SUBDIR || return 1
+        make configure || return 1
+        make px4-clean || return 1
+        make clean || return 1
+        make "$make_target" || return 1
+        /bin/cp "$RELEASE_FILE" "$SUBDIR" || return 1
+        git log -1 > "$SUBDIR/git-version.txt" || return 1
+        [ -f APM_Config.h ] && {
+            version=$(grep 'define.THISFIRMWARE' *.pde 2> /dev/null | cut -d'"' -f2)
+            echo >> "$SUBDIR/git-version.txt"
+            echo "APMVERSION: $version" >> "$SUBDIR/git-version.txt"
+        }
+    done
     git checkout master || return 1
     popd
 
@@ -73,7 +85,8 @@ build_devrelease() {
 }
 
 # list all developer releases here
-build_devrelease git://github.com/jschall/ardupilot devbuild-jon-copter px4-v2 ArduCopter devbuild-jon-copter ArduCopter-v2.px4 || error_count=$((error_count+1))
+COPTER_FRAMES="quad tri hexa y6 octa octa-quad heli"
+build_devrelease git://github.com/jschall/ardupilot devbuild-jon-copter px4-v2 ArduCopter devbuild-jon-copter ArduCopter-v2.px4 $COPTER_FRAMES || error_count=$((error_count+1))
 
 git checkout master || error_count=$((error_count+1))
 

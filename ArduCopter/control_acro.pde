@@ -47,9 +47,14 @@ static void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int
     float rate_limit;
     Vector3f rate_ef_level, rate_bf_level, rate_bf_request;
 
-    // range check the input
-    roll_in = constrain_int16(roll_in, -ROLL_PITCH_INPUT_MAX, ROLL_PITCH_INPUT_MAX);
-    pitch_in = constrain_int16(pitch_in, -ROLL_PITCH_INPUT_MAX, ROLL_PITCH_INPUT_MAX);
+    // apply circular limit to pitch and roll inputs
+    float total_in = pythagorous2((float)pitch_in, (float)roll_in);
+
+    if (total_in > ROLL_PITCH_INPUT_MAX) {
+        float ratio = (float)ROLL_PITCH_INPUT_MAX / total_in;
+        roll_in *= ratio;
+        pitch_in *= ratio;
+    }
     
     // calculate roll, pitch rate requests
     if (g.acro_expo <= 0) {
