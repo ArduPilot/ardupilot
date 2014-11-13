@@ -254,7 +254,14 @@ void AP_TECS::_update_speed(float load_factor)
     float EAS2TAS = _ahrs.get_EAS2TAS();
     _TAS_dem  = _EAS_dem * EAS2TAS;
 	_TASmax   = aparm.airspeed_max * EAS2TAS;
-	_TASmin   = aparm.airspeed_min * EAS2TAS * load_factor;
+	_TASmin   = aparm.airspeed_min * EAS2TAS;
+
+    if (aparm.stall_prevention) {
+        // when stall prevention is active we raise the mimimum
+        // airspeed based on aerodynamic load factor
+        _TASmin *= load_factor;
+    }
+
     if (_TASmax < _TASmin) {
         _TASmax = _TASmin;
     }
