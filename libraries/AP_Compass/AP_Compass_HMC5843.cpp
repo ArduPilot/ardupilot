@@ -180,6 +180,7 @@ AP_Compass_HMC5843::init()
     uint16_t expected_yz = 715;
     float gain_multiple = 1.0;
 
+    hal.scheduler->suspend_timer_procs();
     hal.scheduler->delay(10);
 
     _i2c_sem = hal.i2c->get_semaphore();
@@ -193,6 +194,7 @@ AP_Compass_HMC5843::init()
         !read_register(ConfigRegA, &_base_config)) {
         _healthy[0] = false;
         _i2c_sem->give();
+        hal.scheduler->resume_timer_procs();
         return false;
     }
     if ( _base_config == (SampleAveraging_8<<5 | DataOutputRate_75HZ<<2 | NormalOperation)) {
@@ -212,6 +214,7 @@ AP_Compass_HMC5843::init()
     } else {
         // not behaving like either supported compass type
         _i2c_sem->give();
+        hal.scheduler->resume_timer_procs();
         return false;
     }
 
@@ -298,10 +301,12 @@ AP_Compass_HMC5843::init()
     // leave test mode
     if (!re_initialise()) {
         _i2c_sem->give();
+        hal.scheduler->resume_timer_procs();
         return false;
     }
 
     _i2c_sem->give();
+    hal.scheduler->resume_timer_procs();
     _initialised = true;
 
 	// perform an initial read
