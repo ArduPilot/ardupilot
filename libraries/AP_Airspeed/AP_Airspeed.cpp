@@ -208,6 +208,9 @@ void AP_Airspeed::read(void)
     }
     airspeed_pressure = get_pressure() - _offset;
 
+    // remember raw pressure for logging
+    _raw_pressure     = airspeed_pressure;
+
     /*
       we support different pitot tube setups so used can choose if
       they want to be able to detect pressure on the static port

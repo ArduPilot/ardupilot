@@ -44,6 +44,7 @@ public:
         _raw_airspeed(0.0f),
         _airspeed(0.0f),
         _last_pressure(0.0f),
+        _raw_pressure(0.0f),
         _EAS2TAS(1.0f),
         _healthy(false),
         _hil_set(false),
@@ -116,7 +117,17 @@ public:
     // return the differential pressure in Pascal for the last
     // airspeed reading. Used by the calibration code
     float get_differential_pressure(void) const {
-        return max(_last_pressure, 0);
+        return _last_pressure;
+    }
+
+    // return the current offset
+    float get_offset(void) const {
+        return _offset;
+    }
+
+    // return the current raw pressure
+    float get_raw_pressure(void) const {
+        return _raw_pressure;
     }
 
     // set the apparent to true airspeed ratio
@@ -162,6 +173,7 @@ private:
     float           _raw_airspeed;
     float           _airspeed;
     float			_last_pressure;
+    float			_raw_pressure;
     float           _EAS2TAS;
     bool		    _healthy:1;
     bool		    _hil_set:1;
