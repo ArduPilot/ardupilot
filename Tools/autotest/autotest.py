@@ -180,6 +180,10 @@ def skip_step(step):
 
 def run_step(step):
     '''run one step'''
+
+    # remove old logs
+    util.run_cmd(util.reltopdir('/bin/rm -rf logs'), dir=util.reltopdir('.'))
+
     if step == "prerequisites":
         return test_prerequisites()
 
@@ -314,14 +318,18 @@ def write_fullresults():
     results.addfile('ArduPlane code size', 'ArduPlane.sizes.txt')
     results.addfile('ArduPlane stack sizes', 'ArduPlane.framesizes.txt')
     results.addfile('ArduPlane defaults', 'ArduPlane-defaults.parm')
+    results.addglob("ArduPlane log", 'ArduPlane-*.BIN')
     results.addfile('ArduCopter build log', 'ArduCopter.txt')
     results.addfile('ArduCopter code size', 'ArduCopter.sizes.txt')
     results.addfile('ArduCopter stack sizes', 'ArduCopter.framesizes.txt')
     results.addfile('ArduCopter defaults', 'ArduCopter-defaults.parm')
+    results.addglob("ArduCopter log", 'ArduCopter-*.BIN')
+    results.addglob("CopterAVC log", 'CopterAVC-*.BIN')
     results.addfile('APMrover2 build log', 'APMrover2.txt')
     results.addfile('APMrover2 code size', 'APMrover2.sizes.txt')
     results.addfile('APMrover2 stack sizes', 'APMrover2.framesizes.txt')
     results.addfile('APMrover2 defaults', 'APMrover2-defaults.parm')
+    results.addglob("APMrover2 log", 'APMrover2-*.BIN')
     results.addglob('APM:Libraries documentation', 'docs/libraries/index.html')
     results.addglob('APM:Plane documentation', 'docs/ArduPlane/index.html')
     results.addglob('APM:Copter documentation', 'docs/ArduCopter/index.html')
@@ -332,6 +340,22 @@ def write_fullresults():
 
 
 results = TestResults()
+
+def check_logs(step):
+    '''check for log files from a step'''
+    print("check step: ", step)
+    if step.startswith('fly.'):
+        vehicle = step[4:]
+    elif step.startswith('drive.'):
+        vehicle = step[6:]
+    else:
+        return
+    logs = glob.glob(util.reltopdir("logs/*.BIN"))
+    for log in logs:
+        bname = os.path.basename(log)
+        newname = util.reltopdir("../buildlogs/%s-%s" % (vehicle, bname))
+        print("Renaming %s to %s" % (log, newname))
+        os.rename(log, newname)
 
 def run_tests(steps):
     '''run a list of steps'''
@@ -359,9 +383,11 @@ def run_tests(steps):
             print(">>>> FAILED STEP: %s at %s (%s)" % (step, time.asctime(), msg))
             traceback.print_exc(file=sys.stdout)
             results.add(step, '<span class="failed-text">FAILED</span>', time.time() - t1)
+            check_logs(step)
             continue
         results.add(step, '<span class="passed-text">PASSED</span>', time.time() - t1)
         print(">>>> PASSED STEP: %s at %s" % (step, time.asctime()))
+        check_logs(step)
     if not passed:
         print("FAILED %u tests: %s" % (len(failed), failed))
 
