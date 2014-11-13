@@ -59,5 +59,6 @@ public:
 };
 
 #include "RCInput_PRU.h"
+#include "RCInput_ZYNQ.h"
 
 #endif // __AP_HAL_LINUX_RCINPUT_H__

@@ -23,8 +23,10 @@ namespace Linux {
     class LinuxRCInput;
     class LinuxRCInput_PRU;
     class LinuxRCInput_Navio;
+    class LinuxRCInput_ZYNQ;
     class LinuxRCOutput_PRU;
     class LinuxRCOutput_Navio;
+    class LinuxRCOutput_ZYNQ;
     class LinuxSemaphore;
     class LinuxScheduler;
     class LinuxUtil;
