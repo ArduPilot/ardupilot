@@ -14,6 +14,9 @@
 #include <AP_AHRS.h>
 #include <stdint.h>
 
+#include <uORB/topics/esc_status.h>
+
+
 #if HAL_CPU_CLASS < HAL_CPU_CLASS_75 && defined(APM_BUILD_DIRECTORY)
   #if (APM_BUILD_TYPE(APM_BUILD_ArduCopter) || defined(__AVR_ATmega1280__))
     #define DATAFLASH_NO_CLI
@@ -71,6 +74,7 @@ public:
     void Log_Write_Message(const char *message);
     void Log_Write_Message_P(const prog_char_t *message);
     void Log_Write_Camera(const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);
+    void Log_Write_ESC(void);
 
     bool logging_started(void) const { return log_write_started; }
 
@@ -429,6 +433,22 @@ struct PACKED log_Ubx3 {
     float sAcc;
 };
 
+struct PACKED log_Esc {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;     
+    uint8_t escs_present;
+
+    int16_t esc0_rpm;
+    int16_t esc0_voltage;
+    int16_t esc0_current;
+    int16_t esc0_temperature;
+
+    int16_t esc1_rpm;
+    int16_t esc1_voltage;
+    int16_t esc1_current;
+    int16_t esc1_temperature;
+};
+
 // messages for all boards
 #define LOG_BASE_STRUCTURES \
     { LOG_FORMAT_MSG, sizeof(log_Format), \
@@ -483,7 +503,15 @@ struct PACKED log_Ubx3 {
     { LOG_UBX2_MSG, sizeof(log_Ubx2), \
       "UBX2", "IBbBbB", "TimeMS,Instance,ofsI,magI,ofsQ,magQ" }, \
     { LOG_UBX3_MSG, sizeof(log_Ubx3), \
-      "UBX3", "IBfff", "TimeMS,Instance,hAcc,vAcc,sAcc" }
+      "UBX3", "IBfff", "TimeMS,Instance,hAcc,vAcc,sAcc" }, \
+    { LOG_ESC1_MSG, sizeof(log_Esc), \
+      "ESC1",  "IBcccccccc", "TimeMS,ESCs,RPM0,Volt0,Curr0,Temp0,RPM1,Volt1,Curr1,Temp1" }, \
+    { LOG_ESC2_MSG, sizeof(log_Esc), \
+      "ESC2",  "IBcccccccc", "TimeMS,ESCs,RPM2,Volt2,Curr2,Temp2,RPM3,Volt3,Curr3,Temp3" }, \
+    { LOG_ESC3_MSG, sizeof(log_Esc), \
+      "ESC3",  "IBcccccccc", "TimeMS,ESCs,RPM6,Volt6,Curr6,Temp6,RPM7,Volt7,Curr7,Temp7" }, \
+    { LOG_ESC4_MSG, sizeof(log_Esc), \
+      "ESC4",  "IBcccccccc", "TimeMS,ESCs,RPM6,Volt6,Curr6,Temp6,RPM7,Volt7,Curr7,Temp7" }
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 #define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_EXTRA_STRUCTURES
@@ -520,6 +548,10 @@ struct PACKED log_Ubx3 {
 #define LOG_UBX1_MSG      151
 #define LOG_UBX2_MSG      152
 #define LOG_UBX3_MSG      153
+#define LOG_ESC1_MSG      154
+#define LOG_ESC2_MSG      155
+#define LOG_ESC3_MSG      156
+#define LOG_ESC4_MSG      157
 
 // message types 200 to 210 reversed for GPS driver use
 // message types 211 to 220 reversed for autotune use

@@ -1056,3 +1056,57 @@ void DataFlash_Class::Log_Write_Camera(const AP_AHRS &ahrs, const AP_GPS &gps, c
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
+
+// Write a Camera packet
+void DataFlash_Class::Log_Write_ESC(void)
+{
+    static struct esc_status_s esc_status;
+    static int _esc_status_sub = -1;
+
+    if (_esc_status_sub < 0) {
+        // subscribe to ORB topic on first call
+        _esc_status_sub = orb_subscribe(ORB_ID(esc_status));  
+    } 
+
+    // check for new ESC status data
+    bool esc_updated = false;
+    orb_check(_esc_status_sub, &esc_updated);
+    if (esc_updated && (OK == orb_copy(ORB_ID(esc_status), _esc_status_sub, &esc_status))) {
+        for (int msg_index = 0; msg_index < (esc_status.esc_count+1)/2; msg_index++) {
+            int first_esc_index = msg_index*2;
+            bool both = first_esc_index+1 < esc_status.esc_count;
+
+            struct log_Esc pkt = {
+                LOG_PACKET_HEADER_INIT(static_cast<uint8_t>(LOG_ESC1_MSG + msg_index)),
+                time_ms      : hal.scheduler->millis(),
+                escs_present : static_cast<uint8_t>(both ? 2 : 1),
+                esc0_rpm     : 0,
+                esc0_voltage : 0,
+                esc0_current : 0,
+                esc0_temperature:0,
+                esc1_rpm     : 0,
+                esc1_voltage : 0,
+                esc1_current : 0,
+                esc1_temperature:0,
+            };
+
+            int16_t values[4] = {};
+            values[0] = static_cast<int16_t>(esc_status.esc[first_esc_index].esc_rpm/10); // should allow for +-320 kRPM
+            values[1] = static_cast<int16_t>(esc_status.esc[first_esc_index].esc_voltage*100.f + .5f); // maintain compat to CURR msg
+            values[2] = static_cast<int16_t>(esc_status.esc[first_esc_index].esc_current*100.f + .5f); // maintain compat to CURR msg
+            values[3] = static_cast<int16_t>(esc_status.esc[first_esc_index].esc_temperature*100.f + .5f); // enough for logging self-desoldering FETs
+            memcpy(&pkt.esc0_rpm, values, sizeof(values));
+
+            if (both) {
+                // only iff even number of ESCs present, otherwise this part stays at 0.
+                values[0] = static_cast<int16_t>(esc_status.esc[first_esc_index+1].esc_rpm/10); // should allow for +-320 kRPM
+                values[1] = static_cast<int16_t>(esc_status.esc[first_esc_index+1].esc_voltage*100.f + .5f); // maintain compat to CURR msg
+                values[2] = static_cast<int16_t>(esc_status.esc[first_esc_index+1].esc_current*100.f + .5f); // maintain compat to CURR msg
+                values[3] = static_cast<int16_t>(esc_status.esc[first_esc_index+1].esc_temperature*100.f + .5f); // enough for logging self-desoldering FETs
+                memcpy(&pkt.esc1_rpm, values, sizeof(values));
+            }
+
+            WriteBlock(&pkt, sizeof(pkt));
+        }
+    }
+}
