@@ -27,7 +27,7 @@ def get_default_params(atype):
         mavproxy = util.start_MAVProxy_SIL(atype)
         idx = mavproxy.expect('Saved [0-9]+ parameters to (\S+)')
     parmfile = mavproxy.match.group(1)
-    dest = util.reltopdir('../buildlogs/%s-defaults.parm' % atype)
+    dest = 'buildlogs/%s-defaults.parm' % atype
     shutil.copy(parmfile, dest)
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
@@ -90,7 +90,7 @@ def build_parameters():
 def convert_gpx():
     '''convert any tlog files to GPX and KML'''
     import glob
-    mavlog = glob.glob(util.reltopdir("../buildlogs/*.tlog"))
+    mavlog = glob.glob("buildlogs/*.tlog")
     for m in mavlog:
         util.run_cmd(util.reltopdir("../mavlink/pymavlink/tools/mavtogpx.py") + " --nofixcheck " + m)
         gpx = m + '.gpx'
@@ -104,7 +104,7 @@ def convert_gpx():
 def test_prerequisites():
     '''check we have the right directories and tools to run tests'''
     print("Testing prerequisites")
-    util.mkdir_p(util.reltopdir('../buildlogs'))
+    util.mkdir_p('buildlogs')
     return True
 
 def alarm_handler(signum, frame):
@@ -182,7 +182,7 @@ def run_step(step):
     '''run one step'''
 
     # remove old logs
-    util.run_cmd(util.reltopdir('/bin/rm -rf logs'), dir=util.reltopdir('.'))
+    util.run_cmd('/bin/rm -f logs/*.BIN logs/LASTLOG.TXT')
 
     if step == "prerequisites":
         return test_prerequisites()
@@ -283,13 +283,13 @@ class TestResults(object):
     def addglob(self, name, pattern):
         '''add a set of files'''
         import glob
-        for f in glob.glob(util.reltopdir('../buildlogs/%s' % pattern)):
+        for f in glob.glob('buildlogs/%s' % pattern):
             self.addfile(name, os.path.basename(f))
 
     def addglobimage(self, name, pattern):
         '''add a set of images'''
         import glob
-        for f in glob.glob(util.reltopdir('../buildlogs/%s' % pattern)):
+        for f in glob.glob('buildlogs/%s' % pattern):
             self.addimage(name, os.path.basename(f))
 
 
@@ -300,11 +300,11 @@ def write_webresults(results):
     t = mavtemplate.MAVTemplate()
     for h in glob.glob(util.reltopdir('Tools/autotest/web/*.html')):
         html = util.loadfile(h)
-        f = open(util.reltopdir("../buildlogs/%s" % os.path.basename(h)), mode='w')
+        f = open("buildlogs/%s" % os.path.basename(h), mode='w')
         t.write(f, html, results)
         f.close()
     for f in glob.glob(util.reltopdir('Tools/autotest/web/*.png')):
-        shutil.copy(f, util.reltopdir('../buildlogs/%s' % os.path.basename(f)))
+        shutil.copy(f, 'buildlogs/%s' % os.path.basename(f))
 
 def write_fullresults():
     '''write out full results set'''
@@ -357,19 +357,19 @@ def check_logs(step):
         vehicle = step[6:]
     else:
         return
-    logs = glob.glob(util.reltopdir("logs/*.BIN"))
+    logs = glob.glob("logs/*.BIN")
     for log in logs:
         bname = os.path.basename(log)
-        newname = util.reltopdir("../buildlogs/%s-%s" % (vehicle, bname))
+        newname = "buildlogs/%s-%s" % (vehicle, bname)
         print("Renaming %s to %s" % (log, newname))
         os.rename(log, newname)
 
-    corefile = util.reltopdir("core")
+    corefile = "core"
     if os.path.exists(corefile):
-        newname = util.reltopdir("../buildlogs/%s.core" % vehicle)
+        newname = "buildlogs/%s.core" % vehicle
         print("Renaming %s to %s" % (corefile, newname))
         os.rename(corefile, newname)
-        util.run_cmd(util.reltopdir('/bin/cp A*/A*.elf ../buildlogs'), dir=util.reltopdir('.'))
+        util.run_cmd('/bin/cp A*/A*.elf ../buildlogs', dir=util.reltopdir('.'))
         
 def run_tests(steps):
     '''run a list of steps'''
@@ -412,9 +412,9 @@ def run_tests(steps):
     return passed
 
 
-util.mkdir_p(util.reltopdir('../buildlogs'))
+util.mkdir_p('buildlogs')
 
-lck = util.lock_file(util.reltopdir('../buildlogs/autotest.lck'))
+lck = util.lock_file('buildlogs/autotest.lck')
 if lck is None:
     print("autotest is locked - exiting")
     sys.exit(0)
