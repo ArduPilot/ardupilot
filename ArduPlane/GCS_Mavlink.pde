@@ -997,7 +997,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 in_calibration = true;
                 init_barometer();
                 if (airspeed.enabled()) {
-                    zero_airspeed();
+                    zero_airspeed(false);
                 }
                 in_calibration = false;
             }

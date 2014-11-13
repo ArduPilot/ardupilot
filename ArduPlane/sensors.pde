@@ -53,9 +53,9 @@ static void read_airspeed(void)
     }
 }
 
-static void zero_airspeed(void)
+static void zero_airspeed(bool in_startup)
 {
-    airspeed.calibrate();
+    airspeed.calibrate(in_startup);
     read_airspeed();
     // update barometric calibration with new airspeed supplied temperature
     barometer.update_calibration();
