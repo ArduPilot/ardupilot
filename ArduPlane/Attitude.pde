@@ -813,12 +813,16 @@ static void set_servos(void)
 #else
         // convert 0 to 100% into PWM
         uint8_t min_throttle = aparm.throttle_min.get();
+        uint8_t max_throttle = aparm.throttle_max.get();
         if (control_mode == AUTO && flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
             min_throttle = 0;
         }
+        if (control_mode == AUTO && flight_stage == AP_SpdHgtControl::FLIGHT_TAKEOFF) {
+            max_throttle = takeoff_throttle();
+        }
         channel_throttle->servo_out = constrain_int16(channel_throttle->servo_out, 
                                                       min_throttle,
-                                                      aparm.throttle_max.get());
+                                                      max_throttle);
 
         if (suppress_throttle()) {
             // throttle is suppressed in auto mode
