@@ -319,17 +319,24 @@ def write_fullresults():
     results.addfile('ArduPlane stack sizes', 'ArduPlane.framesizes.txt')
     results.addfile('ArduPlane defaults', 'ArduPlane-defaults.parm')
     results.addglob("ArduPlane log", 'ArduPlane-*.BIN')
+    results.addglob("ArduPlane core", 'ArduPlane.core')
+    results.addglob("ArduPlane ELF", 'ArduPlane.elf')
     results.addfile('ArduCopter build log', 'ArduCopter.txt')
     results.addfile('ArduCopter code size', 'ArduCopter.sizes.txt')
     results.addfile('ArduCopter stack sizes', 'ArduCopter.framesizes.txt')
     results.addfile('ArduCopter defaults', 'ArduCopter-defaults.parm')
     results.addglob("ArduCopter log", 'ArduCopter-*.BIN')
+    results.addglob("ArduCopter core", 'ArduCopter.core')
+    results.addglob("ArduCopter elf", 'ArduCopter.elf')
     results.addglob("CopterAVC log", 'CopterAVC-*.BIN')
+    results.addglob("CopterAVC core", 'CopterAVC.core')
     results.addfile('APMrover2 build log', 'APMrover2.txt')
     results.addfile('APMrover2 code size', 'APMrover2.sizes.txt')
     results.addfile('APMrover2 stack sizes', 'APMrover2.framesizes.txt')
     results.addfile('APMrover2 defaults', 'APMrover2-defaults.parm')
     results.addglob("APMrover2 log", 'APMrover2-*.BIN')
+    results.addglob("APMrover2 core", 'APMrover2.core')
+    results.addglob("APMrover2 ELF", 'APMrover2.elf')
     results.addglob('APM:Libraries documentation', 'docs/libraries/index.html')
     results.addglob('APM:Plane documentation', 'docs/ArduPlane/index.html')
     results.addglob('APM:Copter documentation', 'docs/ArduCopter/index.html')
@@ -357,6 +364,13 @@ def check_logs(step):
         print("Renaming %s to %s" % (log, newname))
         os.rename(log, newname)
 
+    corefile = util.reltopdir("core")
+    if os.path.exists(corefile):
+        newname = util.reltopdir("../buildlogs/%s.core" % vehicle)
+        print("Renaming %s to %s" % (corefile, newname))
+        os.rename(corefile, newname)
+        util.run_cmd(util.reltopdir('/bin/cp A*/A*.elf ../buildlogs'), dir=util.reltopdir('.'))
+        
 def run_tests(steps):
     '''run a list of steps'''
     global results
