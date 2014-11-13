@@ -57,6 +57,14 @@ extern const AP_HAL::HAL& hal;
 #define DataOutputRate_30HZ   0x05
 #define DataOutputRate_75HZ   0x06
 
+#define HMC_DEBUGGING 1
+#if HMC_DEBUGGING
+#include <cstdio>
+ # define Debug(fmt, args ...)  do {fprintf(stderr,"%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
+#else
+ # define Debug(fmt, args ...)
+#endif
+
 // read_register - read a register value
 bool AP_Compass_HMC5843::read_register(uint8_t address, uint8_t *value)
 {
@@ -108,6 +116,10 @@ bool AP_Compass_HMC5843::read_raw()
     _mag_x = -rx;
     _mag_y =  ry;
     _mag_z = -rz;
+
+#if 0
+	Debug("%d %d %d", _mag_x, _mag_y, _mag_z);
+#endif
 
     return true;
 }
@@ -180,6 +192,7 @@ AP_Compass_HMC5843::init()
     uint16_t expected_yz = 715;
     float gain_multiple = 1.0;
 
+    hal.scheduler->suspend_timer_procs();
     hal.scheduler->delay(10);
 
     _i2c_sem = hal.i2c->get_semaphore();
@@ -313,6 +326,7 @@ AP_Compass_HMC5843::init()
                           calibration[0], calibration[1], calibration[2]);
 #endif
 
+    hal.scheduler->resume_timer_procs();
     return success;
 }
 
