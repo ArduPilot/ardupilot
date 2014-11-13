@@ -65,7 +65,7 @@ void setup()
     AP_Param::set_object_value(&airspeed, airspeed.var_info, "_PIN", 65);
 
     airspeed.init();
-    airspeed.calibrate();
+    airspeed.calibrate(false);
 }
 
 void loop(void)

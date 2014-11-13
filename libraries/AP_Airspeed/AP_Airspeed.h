@@ -64,7 +64,7 @@ public:
 
     // calibrate the airspeed. This must be called on startup if the
     // altitude/climb_rate/acceleration interfaces are ever used
-    void            calibrate();
+    void            calibrate(bool in_startup);
 
     // return the current airspeed in m/s
     float           get_airspeed(void) const {
@@ -170,6 +170,7 @@ private:
     AP_Int8         _pin;
     AP_Int8         _autocal;
     AP_Int8         _tube_order;
+    AP_Int8         _skip_cal;
     float           _raw_airspeed;
     float           _airspeed;
     float			_last_pressure;
