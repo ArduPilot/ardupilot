@@ -325,7 +325,9 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     prevStaticMode(true),       // staticMode from previous filter update
     yawAligned(false),          // set true when heading or yaw angle has been aligned
     inhibitWindStates(true),    // inhibit wind state updates on startup
-    inhibitMagStates(true)      // inhibit magnetometer state updates on startup
+    inhibitMagStates(true),     // inhibit magnetometer state updates on startup
+    onGround(true),             // initialise assuming we are on ground
+    manoeuvring(false)          // initialise assuming we are not maneouvring
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     ,_perf_UpdateFilter(perf_alloc(PC_ELAPSED, "EKF_UpdateFilter")),
@@ -495,7 +497,7 @@ void NavEKF::InitialiseFilterDynamic(void)
     ResetVelocity();
     ResetPosition();
     ResetHeight();
-    state.body_magfield  = magBias;
+    state.body_magfield.zero();
 
     // set to true now that states have be initialised
     statesInitialised = true;
@@ -568,7 +570,7 @@ void NavEKF::InitialiseFilterBootstrap(void)
     state.accel_zbias1 = 0;
     state.accel_zbias2 = 0;
     state.wind_vel.zero();
-    state.body_magfield = magBias;
+    state.body_magfield.zero();
 
     // set to true now we have intialised the states
     statesInitialised = true;
@@ -628,9 +630,6 @@ void NavEKF::UpdateFilter()
         ResetPosition();
         ResetHeight();
         StoreStatesReset();
-        // clear the magnetometer failed status as the failure may have been
-        // caused by external field disturbances associated with pre-flight activities
-        magFailed = false;
         calcQuatAndFieldStates(_ahrs->roll, _ahrs->pitch);
         prevStaticMode = staticMode;
     }
@@ -751,51 +750,42 @@ void NavEKF::SelectVelPosFusion()
 // select fusion of magnetometer data
 void NavEKF::SelectMagFusion()
 {
-    if(!magFailed) {
-        // check for and read new magnetometer measurements
-        readMagData();
+    // check for and read new magnetometer measurements
+    readMagData();
 
-        // If we are using the compass and the magnetometer has been unhealthy for too long we declare a timeout
-        // If we have a vehicle that can fly without a compass (a vehicle that doesn't have significant sideslip) then the compass is permanently failed and will not be used until the filter is reset
-        if (magHealth) {
-            lastHealthyMagTime_ms = imuSampleTime_ms;
-        } else {
-            if ((imuSampleTime_ms - lastHealthyMagTime_ms) > _magFailTimeLimit_ms && use_compass()) {
-                magTimeout = true;
-                if (assume_zero_sideslip()) {
-                    magFailed = true;
-                }
-            } else {
-                magTimeout = false;
-            }
-        }
-
-        // determine if conditions are right to start a new fusion cycle
-        bool dataReady = statesInitialised && use_compass() && newDataMag;
-        if (dataReady)
-        {
-            fuseMagData = true;
-            // reset state updates and counter used to spread fusion updates across several frames to reduce 10Hz pulsing
-            memset(&magIncrStateDelta[0], 0, sizeof(magIncrStateDelta));
-            magUpdateCount = 0;
-        }
-        else
-        {
-            fuseMagData = false;
-        }
-
-        // call the function that performs fusion of magnetometer data
-        FuseMagnetometer();
-
-        // Fuse corrections to quaternion, position and velocity states across several time steps to reduce 10Hz pulsing in the output
-        if (magUpdateCount < magUpdateCountMax) {
-            magUpdateCount ++;
-            for (uint8_t i = 0; i <= 9; i++) {
-                states[i] += magIncrStateDelta[i];
-            }
-        }
-
+    // If we are using the compass and the magnetometer has been unhealthy for too long we declare a timeout
+    if (magHealth) {
+        magTimeout = false;
+        lastHealthyMagTime_ms = imuSampleTime_ms;
+    } else if ((imuSampleTime_ms - lastHealthyMagTime_ms) > _magFailTimeLimit_ms && use_compass()) {
+        magTimeout = true;
     }
+
+    // determine if conditions are right to start a new fusion cycle
+    bool dataReady = statesInitialised && use_compass() && newDataMag;
+    if (dataReady)
+    {
+        fuseMagData = true;
+        // reset state updates and counter used to spread fusion updates across several frames to reduce 10Hz pulsing
+        memset(&magIncrStateDelta[0], 0, sizeof(magIncrStateDelta));
+        magUpdateCount = 0;
+    }
+    else
+    {
+        fuseMagData = false;
+    }
+
+    // call the function that performs fusion of magnetometer data
+    FuseMagnetometer();
+
+    // Fuse corrections to quaternion, position and velocity states across several time steps to reduce 10Hz pulsing in the output
+    if (magUpdateCount < magUpdateCountMax) {
+        magUpdateCount ++;
+        for (uint8_t i = 0; i <= 9; i++) {
+            states[i] += magIncrStateDelta[i];
+        }
+    }
+
 }
 
 // select fusion of true airspeed measurements
@@ -2878,38 +2868,80 @@ bool NavEKF::getLLH(struct Location &loc) const
 // calculate whether the flight vehicle is on the ground or flying from height, airspeed and GPS speed
 void NavEKF::SetFlightAndFusionModes()
 {
-    const AP_Airspeed *airspeed = _ahrs->get_airspeed();
-    uint8_t highAirSpd = (airspeed && airspeed->use() && airspeed->get_airspeed() * airspeed->get_EAS2TAS() > 8.0f);
-    float gndSpdSq = sq(velNED[0]) + sq(velNED[1]);
-    uint8_t highGndSpdStage1 = (uint8_t)(gndSpdSq > 9.0f);
-    uint8_t highGndSpdStage2 = (uint8_t)(gndSpdSq > 36.0f);
-    uint8_t highGndSpdStage3 = (uint8_t)(gndSpdSq > 81.0f);
-    uint8_t largeHgt = (uint8_t)(fabsf(hgtMea) > 15.0f);
-    uint8_t inAirSum = highAirSpd + highGndSpdStage1 + highGndSpdStage2 + highGndSpdStage3 + largeHgt;
-    // if magnetometer calibration mode 1 is selected, use a manoeuvre threshold test
-    // otherwise use a height and velocity test
-    if ((_magCal == 1)  && (accNavMagHoriz > 0.5f) && !static_mode_demanded() && use_compass()) {
-        onGround = false;
+    // determine if the vehicle is manoevring
+    if (accNavMagHoriz > 0.5f){
+        manoeuvring = true;
     } else {
-        // detect on-ground to in-air transition
-        // if we are already on the ground then 3 or more out of 5 criteria are required
-        // if we are in the air then only 2 or more are required
-        // this prevents rapid tansitions
-        if ((onGround && (inAirSum >= 3)) || (!onGround && (inAirSum >= 2))) {
+        manoeuvring = false;
+    }
+    // if we are a fly forward type vehicle, then in-air mode can be determined through a combination of speed and height criteria
+    if (assume_zero_sideslip()) {
+        // Evaluate a numerical score that defines the likelihood we are in the air
+        const AP_Airspeed *airspeed = _ahrs->get_airspeed();
+        float gndSpdSq = sq(velNED[0]) + sq(velNED[1]);
+        uint8_t inAirSum = 0;
+        bool highGndSpdStage2 = false;
+
+        // trigger at 8 m/s airspeed
+        if (airspeed && airspeed->use() && airspeed->get_airspeed() * airspeed->get_EAS2TAS() > 8.0f) {
+            inAirSum++;
+        }
+
+        // this will trigger during change in baro height
+        if (fabsf(_baro.get_climb_rate()) > 0.5f) {
+
+            inAirSum++;
+        }
+
+        // trigger at 3 m/s GPS velocity
+        if (gndSpdSq > 9.0f) {
+            inAirSum++;
+        }
+
+        // trigger at 6 m/s GPS velocity
+        if (gndSpdSq > 36.0f) {
+            highGndSpdStage2 = true;
+            inAirSum++;
+        }
+
+        // trigger at 9 m/s GPS velocity
+        if (gndSpdSq > 81.0f) {
+            inAirSum++;
+        }
+
+        // trigger if more than 15m away from initial height
+        if (fabsf(hgtMea) > 15.0f) {
+            inAirSum++;
+        }
+
+        // this will trigger due to air turbulence during flight
+        if (accNavMag > 0.5f) {
+            inAirSum++;
+        }
+
+        // if we on-ground then 4 or more out of 7 criteria are required to transition to the
+        // in-air mode and we also need enough GPS velocity to be able to calculate a reliable ground track heading
+        if (onGround && (inAirSum >= 4) && highGndSpdStage2) {
             onGround = false;
-        } else {
+        }
+        // if is possible we are in flight, set the time this condition was last detected
+        if (inAirSum >= 1) {
+            airborneDetectTime_ms = imuSampleTime_ms;
+        }
+        // after 5 seconds of not detecting a possible flight condition, we transition to on-ground mode
+        if(!onGround && ((imuSampleTime_ms - airborneDetectTime_ms) > 5000)) {
             onGround = true;
         }
-        // force a yaw alignment if exiting onGround without a compass or if compass is timed out and we are a fly forward vehicle
-        if (!onGround && prevOnGround && (!use_compass() || (magTimeout && assume_zero_sideslip()))) {
+        // perform a yaw alignment check against GPS if exiting on-ground mode
+        // this is done to protect against unrecoverable heading alignment errors due to compass faults
+        if (!onGround && prevOnGround) {
             alignYawGPS();
         }
-        // If we are flying a fly-forward type vehicle without an airspeed sensor and exiting onGround
-        // we set the wind velocity to the reciprocal of the velocity vector and scale states so that the
-        // wind speed is equal to the 6m/s. This prevents gains being too high at the start
-        // of flight if launching into a headwind until the first turn when the EKF can form a  wind speed
-        // estimate
-        if (!onGround && prevOnGround && !useAirspeed() && assume_zero_sideslip()) {
+        // If we aren't using an airspeed sensor we set the wind velocity to the reciprocal
+        // of the velocity vector and scale states so that the wind speed is equal to 3m/s. This helps prevent gains
+        // being too high at the start of flight if launching into a headwind until the first turn when the EKF can form
+        // a wind speed estimate and also corrects bad initial wind estimates due to heading errors
+        if (!onGround && prevOnGround && !useAirspeed()) {
             setWindVelStates();
         }
     }
@@ -2917,8 +2949,12 @@ void NavEKF::SetFlightAndFusionModes()
     prevOnGround = onGround;
     // If we are on ground, or in static mode, or don't have the right vehicle and sensing to estimate wind, inhibit wind states
     inhibitWindStates = ((!useAirspeed() && !assume_zero_sideslip()) || onGround || staticMode);
-    // If magnetometer calibration mode is turned off by the user or we are on ground or in static mode, then inhibit magnetometer states
-    inhibitMagStates  = ((_magCal == 2) || !use_compass() || onGround || staticMode);
+    // request mag calibration for both in-air and manoeuvre threshold options
+    bool magCalRequested = ((_magCal == 0) && !onGround) || ((_magCal == 1) && manoeuvring);
+    // deny mag calibration request if we aren't using the compass, are in the pre-arm static mode or it has been inhibited by the user
+    bool magCalDenied = (!use_compass() || staticMode || (_magCal == 2));
+    // inhibit the magnetic field calibration if not requested or denied
+    inhibitMagStates = (!magCalRequested || magCalDenied);
 }
 
 // initialise the covariance matrix
@@ -3153,11 +3189,9 @@ void NavEKF::readMagData()
         // store time of last measurement update
         lastMagUpdate = _ahrs->get_compass()->last_update;
 
-        // read compass data and assign to bias and uncorrected measurement
-        // body fixed magnetic bias is opposite sign to APM compass offsets
-        // we scale compass data to improve numerical conditioning
-        magBias = -_ahrs->get_compass()->get_offsets() * 0.001f;
-        magData = _ahrs->get_compass()->get_field() * 0.001f + magBias;
+        // Read compass data
+        // We scale compass data to improve numerical conditioning
+        magData = _ahrs->get_compass()->get_field() * 0.001f;
 
         // get states stored at time closest to measurement time after allowance for measurement delay
         RecallStates(statesAtMagMeasTime, (imuSampleTime_ms - _msecMagDelay));
@@ -3199,7 +3233,7 @@ void NavEKF::calcEarthRateNED(Vector3f &omega, int32_t latitude) const
 
 // initialise the earth magnetic field states using declination, suppled roll/pitch
 // and magnetometer measurements and return initial attitude quaternion
-// if no magnetometer data, do not update amgentic field states and assume zero yaw angle
+// if no magnetometer data, do not update magnetic field states and assume zero yaw angle
 Quaternion NavEKF::calcQuatAndFieldStates(float roll, float pitch)
 {
     // declare local variables required to calculate initial orientation and magnetic field
@@ -3216,7 +3250,7 @@ Quaternion NavEKF::calcQuatAndFieldStates(float roll, float pitch)
         readMagData();
 
         // rotate the magnetic field into NED axes
-        initMagNED = Tbn*(magData - magBias);
+        initMagNED = Tbn * magData;
 
         // calculate heading of mag field rel to body heading
         float magHeading = atan2f(initMagNED.y, initMagNED.x);
@@ -3225,19 +3259,27 @@ Quaternion NavEKF::calcQuatAndFieldStates(float roll, float pitch)
         float magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
 
         // calculate yaw angle rel to true north
-        yaw = magDecAng - magHeading;
-        yawAligned = true;
-
-        // calculate initial filter quaternion states
-        initQuat.from_euler(roll, pitch, yaw);
+        if (!badMag) {
+            // if mag healthy use declination and mag measurements to calculate yaw
+            yaw = magDecAng - magHeading;
+            yawAligned = true;
+            // calculate initial filter quaternion states
+            initQuat.from_euler(roll, pitch, yaw);
+        } else {
+            // if mag failed keep current yaw
+            initQuat = state.quat;
+        }
 
         // calculate initial Tbn matrix and rotate Mag measurements into NED
         // to set initial NED magnetic field states
         initQuat.rotation_matrix(Tbn);
-        initMagNED = Tbn * (magData - magBias);
+        initMagNED = Tbn* magData;
 
         // write to earth magnetic field state vector
         state.earth_magfield = initMagNED;
+
+        // clear bad magnetometer status
+        badMag = false;
     } else {
         initQuat.from_euler(roll, pitch, 0.0f);
         yawAligned = false;
@@ -3247,11 +3289,11 @@ Quaternion NavEKF::calcQuatAndFieldStates(float roll, float pitch)
     return initQuat;
 }
 
-// this function is used to do a forced alignment of the yaw angle to aligwith the horizontal velocity
-// vector from GPS. It is used to align the yaw angle after launch or takeoff without a magnetometer.
+// this function is used to do a forced alignment of the yaw angle to align with the horizontal velocity
+// vector from GPS. It is used to align the yaw angle after launch or takeoff.
 void NavEKF::alignYawGPS()
 {
-    if ((sq(velNED[0]) + sq(velNED[1])) > 16.0f) {
+    if ((sq(velNED[0]) + sq(velNED[1])) > 25.0f) {
         float roll;
         float pitch;
         float oldYaw;
@@ -3259,21 +3301,26 @@ void NavEKF::alignYawGPS()
         float yawErr;
         // get quaternion from existing filter states and calculate roll, pitch and yaw angles
         state.quat.to_euler(roll, pitch, oldYaw);
+        // calculate course yaw angle
+        oldYaw = atan2f(state.velocity.y,state.velocity.x);
         // calculate yaw angle from GPS velocity
         newYaw = atan2f(velNED[1],velNED[0]);
-        // modify yaw angle using GPS ground course if more than 45 degrees away or if not previously aligned
-        yawErr = fabsf(newYaw - oldYaw);
-        if (((yawErr > 0.7854f) && (yawErr < 5.4978f)) || !yawAligned) {
+        // estimate the yaw error
+        yawErr = wrap_PI(newYaw - oldYaw);
+        // If the inertial course angle disagrees with the GPS by more than 45 degrees, we declare the compass as bad
+        badMag = (fabsf(yawErr) > 0.7854f);
+        // correct yaw angle using GPS ground course compass failed or if not previously aligned
+        if (badMag || !yawAligned) {
+            // correct the yaw angle
+            newYaw = oldYaw + yawErr;
             // calculate new filter quaternion states from Euler angles
             state.quat.from_euler(roll, pitch, newYaw);
             // the yaw angle is now aligned so update its status
             yawAligned =  true;
-            // set the velocity states
-            if (_fusionModeGPS < 2) {
-                state.velocity.x = velNED.x;
-                state.velocity.y = velNED.y;
-            }
-            // reinitialise the quaternion, velocity and position covariances
+            // reset the position and velocity states
+            ResetPosition();
+            ResetVelocity();
+            // reset the covariance for the quaternion, velocity and position states
             // zero the matrix entries
             zeroRows(P,0,9);
             zeroCols(P,0,9);
@@ -3290,6 +3337,10 @@ void NavEKF::alignYawGPS()
             P[7][7]   = 400.0f;
             P[8][8]   = P[7][7];
             P[9][9]   = sq(5.0f);
+        }
+        // Update magnetic field states if the magnetometer is bad
+        if (badMag) {
+            calcQuatAndFieldStates(_ahrs->roll, _ahrs->pitch);
         }
     }
 }
@@ -3372,13 +3423,14 @@ void NavEKF::ZeroVariables()
     lastFixTime_ms = imuSampleTime_ms;
     secondLastFixTime_ms = imuSampleTime_ms;
     lastDecayTime_ms = imuSampleTime_ms;
+    airborneDetectTime_ms = imuSampleTime_ms;
 
     gpsNoiseScaler = 1.0f;
     velTimeout = false;
     posTimeout = false;
     hgtTimeout = false;
     magTimeout = false;
-    magFailed = false;
+    badMag = false;
     storeIndex = 0;
     dtIMU = 0;
     dt = 0;
@@ -3427,7 +3479,7 @@ bool NavEKF::static_mode_demanded(void) const
 // return true if we should use the compass
 bool NavEKF::use_compass(void) const
 {
-    return _ahrs->get_compass() && _ahrs->get_compass()->use_for_yaw() && !magFailed;
+    return _ahrs->get_compass() && _ahrs->get_compass()->use_for_yaw();
 }
 
 // decay GPS horizontal position offset to close to zero at a rate of 1 m/s
