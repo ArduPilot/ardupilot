@@ -373,20 +373,27 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(fence_ret_rally,        "FENCE_RET_RALLY",  0),     
 #endif
 
+    // @Param: STALL_PREVENTION
+    // @DisplayName: Enable stall prevention
+    // @Description: This controls the use of stall prevention techniques, including roll limits at low speed and raising the minimum airspeed in turns. The limits are based on the aerodynamic load factor of a banked turn. This option relies on the correct ARSPD_FBW_MIN value being set correctly. Note that if you don't have an airspeed sensor then stall prevention will use an airspeed estimate based on the ground speed plus a wind estimate taken from the response of the autopilot banked turns. That synthetic airspeed estimate may be inaccurate, so you should not assume that stall prevention with no airspeed sensor will be effective.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    ASCALAR(stall_prevention, "STALL_PREVENTION",  1),
+
     // @Param: ARSPD_FBW_MIN
-    // @DisplayName: Fly By Wire Minimum Airspeed
-    // @Description: Airspeed corresponding to minimum throttle in auto throttle modes (FBWB, CRUISE, AUTO, GUIDED, LOITER, CIRCLE and RTL). This is a calibrated (apparent) airspeed.
+    // @DisplayName: Minimum Airspeed
+    // @Description: This is the minimum airspeed you want to fly at in modes where the autopilot controls the airspeed. This should be set to a value around 20% higher than the level flight stall speed for the airframe. This value is also used in the STALL_PREVENTION code.
     // @Units: m/s
-    // @Range: 5 50
+    // @Range: 5 100
     // @Increment: 1
     // @User: Standard
     ASCALAR(airspeed_min, "ARSPD_FBW_MIN",  AIRSPEED_FBW_MIN),
 
     // @Param: ARSPD_FBW_MAX
-    // @DisplayName: Fly By Wire Maximum Airspeed
-    // @Description: Airspeed corresponding to maximum throttle in auto throttle modes (FBWB, CRUISE, AUTO, GUIDED, LOITER, CIRCLE and RTL). This is a calibrated (apparent) airspeed.
+    // @DisplayName: Maximum Airspeed
+    // @Description: This is the maximum airspeed that you want to allow for your airframe in auto-throttle modes. You should ensure that this value is sufficiently above the ARSPD_FBW_MIN value to allow for a sufficient flight envelope to accurately control altitude using airspeed. A value at least 50% above ARSPD_FBW_MIN is recommended.
     // @Units: m/s
-    // @Range: 5 50
+    // @Range: 5 100
     // @Increment: 1
     // @User: Standard
     ASCALAR(airspeed_max, "ARSPD_FBW_MAX",  AIRSPEED_FBW_MAX),

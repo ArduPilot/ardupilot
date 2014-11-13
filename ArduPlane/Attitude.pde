@@ -1029,6 +1029,15 @@ static void update_load_factor(void)
     }
     aerodynamic_load_factor = 1.0f / safe_sqrt(cos(radians(demanded_roll)));
 
+    if (!aparm.stall_prevention) {
+        // stall prevention is disabled
+        return;
+    }
+    if (fly_inverted()) {
+        // no roll limits when inverted
+        return;
+    }
+
     float max_load_factor = smoothed_airspeed / aparm.airspeed_min;
     if (max_load_factor <= 1) {
         // our airspeed is below the minimum airspeed. Limit roll to
