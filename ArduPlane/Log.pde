@@ -512,6 +512,8 @@ struct PACKED log_AIRSPEED {
     float   airspeed;
     float   diffpressure;
     int16_t temperature;
+    float   rawpressure;
+    float   offset;
 };
 
 // Write a AIRSPEED packet
@@ -526,7 +528,9 @@ static void Log_Write_Airspeed(void)
         timestamp     : hal.scheduler->millis(),
         airspeed      : airspeed.get_raw_airspeed(),
         diffpressure  : airspeed.get_differential_pressure(),
-        temperature   : (int16_t)(temperature * 100.0f)
+        temperature   : (int16_t)(temperature * 100.0f),
+        rawpressure   : airspeed.get_raw_pressure(),
+        offset        : airspeed.get_offset()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -556,7 +560,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm),
       "ARM", "IHB", "TimeMS,ArmState,ArmChecks" },
     { LOG_AIRSPEED_MSG, sizeof(log_AIRSPEED),
-      "ARSP",  "Iffc",     "TimeMS,Airspeed,DiffPress,Temp" },
+      "ARSP",  "Iffcff",   "TimeMS,Airspeed,DiffPress,Temp,RawPress,Offset" },
     { LOG_ATRP_MSG, sizeof(AP_AutoTune::log_ATRP),
       "ATRP", "IBBcfff",  "TimeMS,Type,State,Servo,Demanded,Achieved,P" },
     TECS_LOG_FORMAT(LOG_TECS_MSG)
