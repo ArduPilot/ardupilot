@@ -345,6 +345,13 @@ else
     sh /etc/init.d/rc.error           
 fi
 
+if uavcan start 1
+then
+    echo "started uavcan OK"
+else
+    echo "failed to start uavcan"
+fi
+
 if mtd readtest /fs/mtd
 then
     echo "mtd readtest OK"

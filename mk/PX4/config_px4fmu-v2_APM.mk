@@ -74,6 +74,10 @@ MODULES         += modules/libtomcrypt
 endif
 MODULES		+= lib/conversion
 
+MODULES		+= modules/uavcan
+MODULES		+= lib/mathlib
+LIBRARIES	+= lib/mathlib/CMSIS
+
 #
 # Transitional support - add commands from the NuttX export archive.
 #
