@@ -450,8 +450,8 @@ public:
     AP_Int8 land_flap_percent;
     AP_Int8 takeoff_flap_percent;
     AP_Int8 rssi_pin;
-    AP_Float rssi_range_min;             // allows to set max voltage for rssi pin such as 5.0, 3.3 etc.  
-    AP_Float rssi_range_max;             // allows to set min voltage for rssi pin such as 0.5, 1.2 etc.     
+    AP_Float rssi_range_min;             // allows to set min voltage for rssi pin such as 0.5, 1.2 etc.  
+    AP_Float rssi_range_max;             // allows to set max voltage for rssi pin such as 5.0, 3.3 etc.     
     AP_Int8 inverted_flight_ch;             // 0=disabled, 1-8 is channel for inverted flight trigger
     AP_Int8 stick_mixing;
     AP_Float takeoff_throttle_min_speed;
