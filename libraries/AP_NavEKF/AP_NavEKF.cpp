@@ -4465,4 +4465,27 @@ void  NavEKF::getFilterTimeouts(uint8_t &timeouts) const
                 magTimeout<<3);
 }
 
+/*
+return filter function status as a bitmasked integer
+ 0 = attitude estimate valid
+ 1 = horizontal velocity estimate valid
+ 2 = vertical velocity estimate valid
+ 3 = relative horizontal position estimate valid
+ 4 = absolute horizontal position estimate valid
+ 5 = vertical position estimate valid
+ 6 = terrain height estimate valid
+ 7 = unassigned
+*/
+void  NavEKF::getFilterStatus(uint8_t &status) const
+{
+    // add code to set bits using private filter data here
+    status = (!state.quat.is_nan()<<0 |
+              !(velTimeout && posTimeout)<<1 |
+              !((velTimeout && hgtTimeout) || (hgtTimeout && _fusionModeGPS > 0))<<2 |
+              (gpsInhibitMode == 2 && (imuSampleTime_ms - flowMeaTime_ms) < 1000)<<3 |
+              !posTimeout<<4 |
+              !hgtTimeout<<5 |
+              !inhibitGndState<<6);
+}
+
 #endif // HAL_CPU_CLASS

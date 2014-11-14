@@ -197,6 +197,19 @@ public:
     */
     void  getFilterTimeouts(uint8_t &timeouts) const;
 
+    /*
+    return filter function status as a bitmasked integer
+     0 = attitude estimate valid
+     1 = horizontal velocity estimate valid
+     2 = vertical velocity estimate valid
+     3 = relative horizontal position estimate valid
+     4 = absolute horizontal position estimate valid
+     5 = vertical position estimate valid
+     6 = terrain height estimate valid
+     7 = unassigned
+    */
+    void  getFilterStatus(uint8_t &status) const;
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -546,6 +559,7 @@ private:
     float firstArmPosD;             // vertical position at the first arming (transition from sttatic mode) after start up
     bool firstArmComplete;          // true when first transition out of static mode has been performed after start up
     bool finalMagYawInit;           // true when the final post takeoff initialisation of earth field and yaw angle has been performed
+    bool flowTimeout;               // true when optical flow measurements have time out
 
     // Used by smoothing of state corrections
     float gpsIncrStateDelta[10];    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next GPS measurement
