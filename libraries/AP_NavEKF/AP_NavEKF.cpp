@@ -969,14 +969,14 @@ void NavEKF::SelectFlowFusion()
         // update the time stamp
         prevFlowFusionTime_ms = imuSampleTime_ms;
 
-    } else if (flow_state.obsIndex == 1 && !delayFusion){
+    } else if (flow_state.obsIndex == 1 && !delayFusion && !staticMode){
         // Fuse the optical flow Y axis data into the main filter
         FuseOptFlow();
         // increment the index to fuse the X and Y data using the 2-state EKF on the next prediction cycle
         flow_state.obsIndex = 2;
         // indicate that flow fusion has been performed. This is used for load spreading.
         flowFusePerformed = true;
-    } else if (flow_state.obsIndex == 2 || newDataRng) {
+    } else if ((flow_state.obsIndex == 2 || newDataRng) && !staticMode) {
         // enable fusion of range data if available and permitted
         if(newDataRng && useRngFinder()) {
             fuseRngData = true;
@@ -2595,7 +2595,7 @@ void NavEKF::RunAuxiliaryEKF()
         inhibitGndState = false;
     }
     // Don't update focal length offset if there is no range finder or not using GPS, or we are not flying fast enough to generate a useful LOS rate
-    if (!fuseRngData || gpsInhibitMode == 2 || losRateSq < 0.01f) {
+    if (!fuseRngData || gpsInhibitMode == 2 || losRateSq < 0.01f || (flowStates[1] - state.position[2]) < 3.0f) {
         fScaleInhibit = true;
     } else {
         fScaleInhibit = false;
