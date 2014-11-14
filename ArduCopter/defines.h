@@ -187,7 +187,8 @@ enum AutoMode {
 enum GuidedMode {
     Guided_TakeOff,
     Guided_WP,
-    Guided_Velocity
+    Guided_Velocity,
+    Guided_Spline
 };
 
 // RTL states
