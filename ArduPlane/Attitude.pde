@@ -683,8 +683,7 @@ static void flaperon_update(int8_t flap_percent)
     /*
       flaperons are implemented as a mixer between aileron and a
       percentage of flaps. Flap input can come from a manual channel
-      or from auto flaps. Note that negative manual flap percentages
-      are allowed, which give spoilerons
+      or from auto flaps.
      */
 
     // first map the amount of aileron roll to a 1000..2000 value
