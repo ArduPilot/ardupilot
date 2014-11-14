@@ -101,7 +101,7 @@ public:
         k_param_sonar_old, // unused
         k_param_log_bitmask,
         k_param_BoardConfig,
-        k_param_rssi_range,
+        k_param_rssi_range_max, // renamed (before was rssi_range)
         k_param_flapin_channel,
         k_param_flaperon_output,
         k_param_gps,
@@ -130,7 +130,8 @@ public:
         k_param_rtl_autoland,
         k_param_override_channel,
         k_param_stall_prevention,
-
+        k_param_rssi_range_min, // new, realocate with next k_format_version update
+        
         // 100: Arming parameters
         k_param_arming = 100,
 
@@ -449,7 +450,8 @@ public:
     AP_Int8 land_flap_percent;
     AP_Int8 takeoff_flap_percent;
     AP_Int8 rssi_pin;
-    AP_Float rssi_range;             // allows to set max voltage for rssi pin such as 5.0, 3.3 etc.     
+    AP_Float rssi_range_min;             // allows to set max voltage for rssi pin such as 5.0, 3.3 etc.  
+    AP_Float rssi_range_max;             // allows to set min voltage for rssi pin such as 0.5, 1.2 etc.     
     AP_Int8 inverted_flight_ch;             // 0=disabled, 1-8 is channel for inverted flight trigger
     AP_Int8 stick_mixing;
     AP_Float takeoff_throttle_min_speed;
