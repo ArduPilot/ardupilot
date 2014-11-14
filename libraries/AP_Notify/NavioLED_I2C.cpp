@@ -1,5 +1,5 @@
 /*
-  ToshibaLED I2C driver
+  NavioLED I2C driver
 */
 /*
    This program is free software: you can redistribute it and/or modify
@@ -17,18 +17,14 @@
  */
 
 #include <AP_HAL.h>
-#include "ToshibaLED.h"
-#include "ToshibaLED_I2C.h"
+#include "NavioLED_I2C.h"
+
+#define PCA9685_ADDRESS 0x40
+#define PCA9685_PWM 0x6
 
 extern const AP_HAL::HAL& hal;
 
-#define TOSHIBA_LED_ADDRESS 0x55    // default I2C bus address
-#define TOSHIBA_LED_PWM0    0x01    // pwm0 register
-#define TOSHIBA_LED_PWM1    0x02    // pwm1 register
-#define TOSHIBA_LED_PWM2    0x03    // pwm2 register
-#define TOSHIBA_LED_ENABLE  0x04    // enable register
-
-bool ToshibaLED_I2C::hw_init()
+bool NavioLED_I2C::hw_init()
 {
     // get pointer to i2c bus semaphore
     AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
@@ -42,11 +38,7 @@ bool ToshibaLED_I2C::hw_init()
     hal.i2c->ignore_errors(true);
 
     // enable the led
-    bool ret = (hal.i2c->writeRegister(TOSHIBA_LED_ADDRESS, TOSHIBA_LED_ENABLE, 0x03) == 0);
-
-    // update the red, green and blue values to zero
-    uint8_t val[3] = { _led_off, _led_off, _led_off };
-    ret &= (hal.i2c->writeRegisters(TOSHIBA_LED_ADDRESS, TOSHIBA_LED_PWM0, 3, val) == 0);
+    bool ret = true;
 
     // re-enable recording of i2c lockup errors
     hal.i2c->ignore_errors(false);
@@ -58,7 +50,7 @@ bool ToshibaLED_I2C::hw_init()
 }
 
 // set_rgb - set color as a combination of red, green and blue values
-bool ToshibaLED_I2C::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
+bool NavioLED_I2C::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 {
     // get pointer to i2c bus semaphore
     AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
@@ -68,9 +60,27 @@ bool ToshibaLED_I2C::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
         return false;
     }
 
-    // update the red value
-    uint8_t val[3] = { (uint8_t)(blue>>4), (uint8_t)(green>>4), (uint8_t)(red>>4) };
-    bool success = (hal.i2c->writeRegisters(TOSHIBA_LED_ADDRESS, TOSHIBA_LED_PWM0, 3, val) == 0);
+    uint16_t red_adjusted = red * 0x10;
+    uint16_t green_adjusted = green * 0x10;
+    uint16_t blue_adjusted = blue * 0x10;
+
+    uint8_t blue_channel_lsb = blue_adjusted & 0xFF;
+    uint8_t blue_channel_msb = blue_adjusted >> 8;
+
+    uint8_t green_channel_lsb = green_adjusted & 0xFF;
+    uint8_t green_channel_msb = green_adjusted >> 8;
+
+    uint8_t red_channel_lsb = red_adjusted & 0xFF;
+    uint8_t red_channel_msb = red_adjusted >> 8;
+
+
+    uint8_t transaction[] = {0x00, 0x00, blue_channel_lsb, blue_channel_msb,
+                   0x00, 0x00, green_channel_lsb, green_channel_msb,
+                   0x00, 0x00, red_channel_lsb, red_channel_msb
+    };
+
+
+    bool success = (hal.i2c->writeRegisters(PCA9685_ADDRESS, PCA9685_PWM, sizeof(transaction), transaction) == 0);
 
     // give back i2c semaphore
     i2c_sem->give();

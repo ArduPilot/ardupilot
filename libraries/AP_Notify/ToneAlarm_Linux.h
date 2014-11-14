@@ -20,7 +20,9 @@
 
 #include "ToneAlarm_Linux.h"
 
-class ToneAlarm_Linux
+#include "NotifyDevice.h"
+
+class ToneAlarm_Linux: public NotifyDevice
 {
 public:
     ToneAlarm_Linux():

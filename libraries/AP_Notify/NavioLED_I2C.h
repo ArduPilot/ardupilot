@@ -1,8 +1,6 @@
 /*
-   ToshibaLED driver
-*/
+   NavioLED I2C driver
 
-/*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
@@ -16,16 +14,16 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#ifndef __NAVIO_LED_I2C_H__
+#define __NAVIO_LED_I2C_H__
 
-#include "ToshibaLED.h"
+#include "NavioLED.h"
 
-#define TOSHIBA_LED_BRIGHT  0xFF    // full brightness
-#define TOSHIBA_LED_MEDIUM  0x80    // medium brightness
-#define TOSHIBA_LED_DIM     0x11    // dim
-#define TOSHIBA_LED_OFF     0x00    // off
-
-ToshibaLED::ToshibaLED(): 
-    RGBLed(TOSHIBA_LED_OFF, TOSHIBA_LED_BRIGHT, TOSHIBA_LED_MEDIUM, TOSHIBA_LED_DIM)
+class NavioLED_I2C : public NavioLED
 {
+protected:
+    virtual bool hw_init(void);
+    virtual bool hw_set_rgb(uint8_t r, uint8_t g, uint8_t b);
+};
 
-}
+#endif // __TOSHIBA_LED_I2C_H__

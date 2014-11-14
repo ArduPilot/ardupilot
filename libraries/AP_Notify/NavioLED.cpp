@@ -1,5 +1,5 @@
 /*
-   ToshibaLED driver
+   NavioLED driver
 */
 
 /*
@@ -13,19 +13,17 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+*/
 
-#include "ToshibaLED.h"
+#include "NavioLED.h"
 
-#define TOSHIBA_LED_BRIGHT  0xFF    // full brightness
-#define TOSHIBA_LED_MEDIUM  0x80    // medium brightness
-#define TOSHIBA_LED_DIM     0x11    // dim
-#define TOSHIBA_LED_OFF     0x00    // off
+#define NAVIO_LED_BRIGHT 0x0    // full brightness
+#define NAVIO_LED_MEDIUM 0x7F    // medium brightness
+#define NAVIO_LED_DIM    0x4F    // dim brightness
+#define NAVIO_LED_OFF    0xFF    // off
 
-ToshibaLED::ToshibaLED(): 
-    RGBLed(TOSHIBA_LED_OFF, TOSHIBA_LED_BRIGHT, TOSHIBA_LED_MEDIUM, TOSHIBA_LED_DIM)
+NavioLED::NavioLED() : 
+    RGBLed(NAVIO_LED_OFF, NAVIO_LED_BRIGHT, NAVIO_LED_MEDIUM, NAVIO_LED_DIM)
 {
 
 }

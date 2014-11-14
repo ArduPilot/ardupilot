@@ -20,11 +20,11 @@
 
 extern const AP_HAL::HAL& hal;
 
-void ExternalLED::init(void)
+bool ExternalLED::init(void)
 {
     // return immediately if disabled
     if (!AP_Notify::flags.external_leds) {
-        return;
+        return false;
     }
 
     // setup the main LEDs as outputs
@@ -38,6 +38,7 @@ void ExternalLED::init(void)
     hal.gpio->write(EXTERNAL_LED_GPS, HAL_GPIO_LED_OFF);
     hal.gpio->write(EXTERNAL_LED_MOTOR1, HAL_GPIO_LED_OFF);
     hal.gpio->write(EXTERNAL_LED_MOTOR2, HAL_GPIO_LED_OFF);
+    return true;
 }
 
 /*
