@@ -215,9 +215,9 @@
 	    <description>Message with some status from APM to GCS about camera or antenna mount</description>
 	    <field name="target_system" type="uint8_t">System ID</field>
 	    <field name="target_component" type="uint8_t">Component ID</field>
-	    <field name="pointing_a" type="int32_t">pitch(deg*100) or lat, depending on mount mode</field>
-	    <field name="pointing_b" type="int32_t">roll(deg*100) or lon depending on mount mode</field>
-	    <field name="pointing_c" type="int32_t">yaw(deg*100) or alt (in cm) depending on mount mode</field>
+	    <field name="pointing_a" type="int32_t">pitch(deg*100)</field>
+	    <field name="pointing_b" type="int32_t">roll(deg*100)</field>
+	    <field name="pointing_c" type="int32_t">yaw(deg*100)</field>
 	  </message>
 
 	  <!-- geo-fence messages -->
