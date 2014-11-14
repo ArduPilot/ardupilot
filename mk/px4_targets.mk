@@ -17,9 +17,19 @@ ifeq ($(NUTTX_SRC),)
 NUTTX_SRC := $(shell cd $(PX4_ROOT)/../PX4NuttX/nuttx && pwd)/
 endif
 
+# default to UAVCAN above the PX4Firmware tree
+ifeq ($(UAVCAN_SRC),)
+UAVCAN_SRC := $(shell cd $(PX4_ROOT)/../PX4UAVCAN && pwd)/
+endif
+
 # cope with relative paths for NUTTX_SRC
 ifeq ($(wildcard $(NUTTX_SRC)/configs),)
 NUTTX_SRC := $(shell cd $(SKETCHBOOK)/$(NUTTX_SRC) && pwd)/
+endif
+
+# cope with relative paths for UAVCAN_SRC
+ifeq ($(wildcard $(UAVCAN_SRC)/tools),)
+UAVCAN_SRC := $(shell cd $(SKETCHBOOK)/$(UAVCAN_SRC) && pwd)/
 endif
 
 ifeq ($(wildcard $(NUTTX_SRC)configs),)
@@ -44,7 +54,7 @@ WARNFLAGS = -Wno-psabi -Wno-packed -Wno-error=double-promotion -Wno-error=unused
 # avoid PX4 submodules
 export GIT_SUBMODULES_ARE_EVIL = 1
 
-PX4_MAKE = $(v) GIT_SUBMODULES_ARE_EVIL=1 make -C $(SKETCHBOOK) -f $(PX4_ROOT)/Makefile EXTRADEFINES="$(SKETCHFLAGS) $(WARNFLAGS) "'$(EXTRAFLAGS)' APM_MODULE_DIR=$(SKETCHBOOK) SKETCHBOOK=$(SKETCHBOOK) PX4_ROOT=$(PX4_ROOT) NUTTX_SRC=$(NUTTX_SRC) MAXOPTIMIZATION="-Os" 
+PX4_MAKE = $(v) GIT_SUBMODULES_ARE_EVIL=1 make -C $(SKETCHBOOK) -f $(PX4_ROOT)/Makefile EXTRADEFINES="$(SKETCHFLAGS) $(WARNFLAGS) "'$(EXTRAFLAGS)' APM_MODULE_DIR=$(SKETCHBOOK) SKETCHBOOK=$(SKETCHBOOK) PX4_ROOT=$(PX4_ROOT) NUTTX_SRC=$(NUTTX_SRC) UAVCAN_DIR=$(UAVCAN_SRC) MAXOPTIMIZATION="-Os" 
 PX4_MAKE_ARCHIVES = make -C $(PX4_ROOT) NUTTX_SRC=$(NUTTX_SRC) archives MAXOPTIMIZATION="-Os" 
 
 .PHONY: module_mk
