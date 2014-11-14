@@ -636,6 +636,13 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         gcs[chan-MAVLINK_COMM_0].send_ahrs2(ahrs);
         break;
 
+    case MSG_MOUNT_STATUS:
+#if MOUNT == ENABLED
+        CHECK_PAYLOAD_SIZE(MOUNT_STATUS);    
+        camera_mount.status_msg(chan);
+#endif // MOUNT == ENABLED
+        break;
+
     case MSG_HWSTATUS:
         CHECK_PAYLOAD_SIZE(HWSTATUS);
         send_hwstatus(chan);
@@ -898,6 +905,7 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_WIND);
         send_message(MSG_RANGEFINDER);
         send_message(MSG_SYSTEM_TIME);
+        send_message(MSG_MOUNT_STATUS);
 #if AP_TERRAIN_AVAILABLE
         send_message(MSG_TERRAIN);
 #endif
@@ -1488,12 +1496,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_MOUNT_CONTROL:
     {
         camera_mount.control_msg(msg);
-        break;
-    }
-
-    case MAVLINK_MSG_ID_MOUNT_STATUS:
-    {
-        camera_mount.status_msg(msg, chan);
         break;
     }
 #endif // MOUNT == ENABLED
