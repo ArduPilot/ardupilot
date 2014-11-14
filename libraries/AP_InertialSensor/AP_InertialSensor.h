@@ -293,6 +293,7 @@ private:
 #include "AP_InertialSensor_Backend.h"
 #include "AP_InertialSensor_MPU6000.h"
 #include "AP_InertialSensor_PX4.h"
+#include "AP_InertialSensor_VRBRAIN.h"
 #include "AP_InertialSensor_Oilpan.h"
 #include "AP_InertialSensor_MPU9250.h"
 #include "AP_InertialSensor_L3G4200D.h"
