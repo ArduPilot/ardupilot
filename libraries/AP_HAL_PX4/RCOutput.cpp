@@ -142,7 +142,7 @@ void PX4RCOutput::enable_ch(uint8_t ch)
     if (ch >= PX4_NUM_OUTPUT_CHANNELS) {
         return;
     }
-    else if (ch >= 8 && !(_enabled_channels & (1U<<ch))) {
+    if (ch >= 8 && !(_enabled_channels & (1U<<ch))) {
         // this is the first enable of an auxillary channel - setup
         // aux channels now. This delayed setup makes it possible to
         // use BRD_PWM_COUNT to setup the number of PWM channels.
