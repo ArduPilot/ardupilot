@@ -1,6 +1,7 @@
 /*
-   ToshibaLED driver
-*/
+ *  AP_Notify Library. 
+ * based upon a prototype library by David "Buzz" Bussenschutt.
+ */
 
 /*
    This program is free software: you can redistribute it and/or modify
@@ -17,15 +18,20 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ToshibaLED.h"
+#ifndef __LED_H__
+#define __LED_H__
 
-#define TOSHIBA_LED_BRIGHT  0xFF    // full brightness
-#define TOSHIBA_LED_MEDIUM  0x80    // medium brightness
-#define TOSHIBA_LED_DIM     0x11    // dim
-#define TOSHIBA_LED_OFF     0x00    // off
+#include <AP_HAL.h>
+#include "NotifyDevice.h"
 
-ToshibaLED::ToshibaLED(): 
-    RGBLed(TOSHIBA_LED_OFF, TOSHIBA_LED_BRIGHT, TOSHIBA_LED_MEDIUM, TOSHIBA_LED_DIM)
-{
+class Led: public NotifyDevice {
+public:
+    virtual ~Led() {}
+    // init - initialised the LED
+    virtual bool init(void) = 0;
+    // update - updates led according to timed_updated.  Should be
+    // called at 50Hz
+    virtual void update() = 0;
+};
 
-}
+#endif //__LED_H__

@@ -19,52 +19,53 @@
 // static flags, to allow for direct class update from device drivers
 struct AP_Notify::notify_type AP_Notify::flags;
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    AP_BoardLED boardled;
+    ToshibaLED_PX4 toshibaled;
+    ToneAlarm_PX4 tonealarm;
+    NotifyDevice *AP_Notify::_devices[CONFIG_NOTIFY_DEVICES_COUNT] = {&boardled, &toshibaled, &tonealarm};
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2 
+    AP_BoardLED boardled;
+    ExternalLED externalled;
+    Buzzer buzzer;
+    NotifyDevice *AP_Notify::_devices[CONFIG_NOTIFY_DEVICES_COUNT] = {&boardled, &externalled, &buzzer};
+#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+    Buzzer buzzer;
+    AP_BoardLED boardled;
+    ToshibaLED_I2C toshibaled;
+    ExternalLED externalled;
+    NotifyDevice *AP_Notify::_devices[CONFIG_NOTIFY_DEVICES_COUNT] = {&boardled, &toshibaled, &externalled, &buzzer};
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+    #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
+        AP_BoardLED boardled;
+        NavioLED_I2C navioled;
+        NotifyDevice *AP_Notify::_devices[CONFIG_NOTIFY_DEVICES_COUNT] = {&boardled, &navioled};
+    #else
+        AP_BoardLED boardled;
+        ToshibaLED_I2C toshibaled;
+        ToneAlarm_Linux tonealarm;
+        NotifyDevice *AP_Notify::_devices[CONFIG_NOTIFY_DEVICES_COUNT] = {&boardled, &toshibaled, &tonealarm};
+    #endif
+#else
+    AP_BoardLED boardled;
+    ToshibaLED_I2C toshibaled;
+    NotifyDevice *AP_Notify::_devices[CONFIG_NOTIFY_DEVICES_COUNT] = {&boardled, &toshibaled};
+#endif
+
 // initialisation
 void AP_Notify::init(bool enable_external_leds)
 {
     AP_Notify::flags.external_leds = enable_external_leds;
 
-    boardled.init();
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    toshibaled.init();
-    tonealarm.init();
-#endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    toshibaled.init();
-    tonealarm.init();
-#endif    
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
-    externalled.init();
-    buzzer.init();
-#endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    toshibaled.init();
-    externalled.init();
-    buzzer.init();
-#endif
+    for (int i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
+        _devices[i]->init();
+    }
 }
 
 // main update function, called at 50Hz
 void AP_Notify::update(void)
 {
-    boardled.update();
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    toshibaled.update();
-    tonealarm.update();
-#endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    toshibaled.update();
-    tonealarm.update();
-#endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
-    externalled.update();
-    buzzer.update();
-#endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    toshibaled.update();
-    externalled.update();
-    buzzer.update();
-#endif
+    for (int i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
+        _devices[i]->update();
+    }
 }

@@ -21,41 +21,11 @@
 #ifndef __TOSHIBA_LED_H__
 #define __TOSHIBA_LED_H__
 
-#include <AP_HAL.h>
+#include "RGBLed.h"
 
-#define TOSHIBA_LED_BRIGHT  0xFF    // full brightness
-#define TOSHIBA_LED_MEDIUM  0x80    // medium brightness
-#define TOSHIBA_LED_DIM     0x11    // dim
-#define TOSHIBA_LED_OFF     0x00    // off
-
-class ToshibaLED {
+class ToshibaLED: public RGBLed {
 public:
-
-    // init - initialised the LED
-    void init(void);
-
-    // healthy - returns true if the LED is operating properly
-    bool healthy() { return _healthy; }
-
-    // set_rgb - set color as a combination of red, green and blue levels from 0 ~ 15
-    void set_rgb(uint8_t red, uint8_t green, uint8_t blue);
-
-    // update - updates led according to timed_updated.  Should be
-    // called at 50Hz
-    void update();
-
-protected:
-    // methods implemented in hardware specific classes
-    virtual bool hw_init(void) = 0;
-    virtual bool hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue) = 0;
-
-    // meta-data common to all hw devices
-    uint8_t counter;
-    uint8_t step;
-    bool _healthy;                               // true if the LED is operating properly
-    uint8_t _red_des, _green_des, _blue_des;     // color requested by timed update
-    uint8_t _red_curr, _green_curr, _blue_curr;  // current colours displayed by the led
-    void update_colours();
+    ToshibaLED();
 };
 
 #endif // __TOSHIBA_LED_H__
