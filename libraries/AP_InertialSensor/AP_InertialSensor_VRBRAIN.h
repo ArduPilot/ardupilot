@@ -1,10 +1,10 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#ifndef __AP_INERTIAL_SENSOR_PX4_H__
-#define __AP_INERTIAL_SENSOR_PX4_H__
+#ifndef __AP_INERTIAL_SENSOR_VRBRAIN_H__
+#define __AP_INERTIAL_SENSOR_VRBRAIN_H__
 
 #include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 
 #include <AP_Progmem.h>
 #include "AP_InertialSensor.h"
@@ -13,11 +13,11 @@
 #include <uORB/uORB.h>
 #include <uORB/topics/sensor_combined.h>
 
-class AP_InertialSensor_PX4 : public AP_InertialSensor_Backend
+class AP_InertialSensor_VRBRAIN : public AP_InertialSensor_Backend
 {
 public:
 
-    AP_InertialSensor_PX4(AP_InertialSensor &imu);
+    AP_InertialSensor_VRBRAIN(AP_InertialSensor &imu);
 
     /* update accel and gyro state */
     bool update();
@@ -60,4 +60,4 @@ private:
     uint8_t _gyro_instance[INS_MAX_INSTANCES];
 };
 #endif // CONFIG_HAL_BOARD
-#endif // __AP_INERTIAL_SENSOR_PX4_H__
+#endif // __AP_INERTIAL_SENSOR_VRBRAIN_H__
