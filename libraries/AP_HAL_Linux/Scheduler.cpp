@@ -325,7 +325,7 @@ void *LinuxScheduler::_tonealarm_thread(void)
         poll(NULL, 0, 1);        
     }
     while (true) {
-        _microsleep(5000);
+        _microsleep(10000);
 
         // process tone command
         ((LinuxUtil *)hal.util)->_toneAlarm_timer_tick();

@@ -62,7 +62,7 @@ public:
     /*
         ToneAlarm Driver
     */
-    virtual int8_t toneAlarm_init() { return -1;}
+    virtual bool toneAlarm_init() { return false;}
     virtual void toneAlarm_set_tune(uint8_t tune) {}
     virtual void _toneAlarm_timer_tick() {}
     

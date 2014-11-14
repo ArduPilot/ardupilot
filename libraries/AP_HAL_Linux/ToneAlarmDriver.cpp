@@ -2,7 +2,7 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
-#include "Util.h"
+#include "ToneAlarmDriver.h"
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -14,7 +14,6 @@
 using namespace Linux;
 
 extern const AP_HAL::HAL& hal;
-static int state;
 static uint16_t notes[] = { 0,
 NOTE_C4, NOTE_CS4, NOTE_D4, NOTE_DS4, NOTE_E4, NOTE_F4, NOTE_FS4, NOTE_G4, NOTE_GS4, NOTE_A4, NOTE_AS4, NOTE_B4,
 NOTE_C5, NOTE_CS5, NOTE_D5, NOTE_DS5, NOTE_E5, NOTE_F5, NOTE_FS5, NOTE_G5, NOTE_GS5, NOTE_A5, NOTE_AS5, NOTE_B5,
@@ -23,7 +22,7 @@ NOTE_C7, NOTE_CS7, NOTE_D7, NOTE_DS7, NOTE_E7, NOTE_F7, NOTE_FS7, NOTE_G7, NOTE_
 };
 
 //List of RTTTL tones 
-const char* LinuxUtil::tune[TONE_NUMBER_OF_TUNES] = { 
+const char* ToneAlarm::tune[TONE_NUMBER_OF_TUNES] = { 
                                 "Startup:d=8,o=6,b=480:a,d7,c7,a,d7,c7,a,d7,16d7,16c7,16d7,16c7,16d7,16c7,16d7,16c7",
                                 "Error:d=4,o=6,b=400:8a,8a,8a,p,a,a,a,p",
                                 "notify_pos:d=4,o=6,b=400:8e,8e,a",
@@ -36,9 +35,9 @@ const char* LinuxUtil::tune[TONE_NUMBER_OF_TUNES] = {
                                 "Arm_fail:d=4,o=4,b=512:b,a,p",
                                 "para_rel:d=16,o=6,b=512:a,g,a,g,a,g,a,g"};
 //Tune Repeat true: play rtttl tune in loop, false: play only once
-bool LinuxUtil::tune_repeat[TONE_NUMBER_OF_TUNES] = {false,true,false,false,false,false,true,true,false,false,false};
+bool ToneAlarm::tune_repeat[TONE_NUMBER_OF_TUNES] = {false,true,false,false,false,false,true,true,false,false,false};
 
-void LinuxUtil::toneAlarm()
+ToneAlarm::ToneAlarm()
 {
     period_fd = open("/sys/devices/ocp.3/pwm_test_P8_36.12/period",O_WRONLY);
     duty_fd = open("/sys/devices/ocp.3/pwm_test_P8_36.12/duty",O_WRONLY);
@@ -47,22 +46,33 @@ void LinuxUtil::toneAlarm()
     tune_num = -1;                    //initialy no tune to play
     tune_pos = 0;
 }
-int8_t LinuxUtil::toneAlarm_init()
+
+bool ToneAlarm::init()
 {
     tune_num = 0;                    //play startup tune
     if((period_fd == -1) || (duty_fd == -1) || (run_fd == -1)){
         hal.console->printf("ToneAlarm: Error!! please check if PWM overlays are loaded correctly");
-        return -1;
+        return false;
     }
-    return 0;
+    return true;
 }
 
-void LinuxUtil::stop()
+void ToneAlarm::set_tune(uint8_t tone)
 {
-    write(run_fd,"0",sizeof(char));
+    tune_num = tone;
 }
 
-bool LinuxUtil::play()
+bool ToneAlarm::is_tune_comp()
+{
+    return tune_comp;
+}
+
+void ToneAlarm::stop()
+{
+    dprintf(run_fd,"0");
+}
+
+bool ToneAlarm::play()
 {
     uint16_t cur_time = hal.scheduler->millis();
     if(tune_num != prev_tune_num){
@@ -79,13 +89,13 @@ bool LinuxUtil::play()
     }
     if((cur_time - prev_time) > duration){
         stop();
-        if(tune[tune_num][tune_pos] == NULL){
+        if(tune[tune_num][tune_pos] == '\0'){
             if(!tune_repeat[tune_num]){
                 tune_num = -1;
             }
 
             tune_pos = 0;
-            state = 0;
+            tune_comp = true;
             return false;
         }
         return true;
@@ -93,11 +103,7 @@ bool LinuxUtil::play()
     return false;
 }
 
-void LinuxUtil::toneAlarm_set_tune(uint8_t tone)
-{
-    tune_num = tone;
-}
-bool LinuxUtil::set_note(){
+bool ToneAlarm::set_note(){
     // first, get note duration, if available
     uint16_t scale,note,num =0;
     duration = 0;
@@ -186,7 +192,7 @@ bool LinuxUtil::set_note(){
     
 }
 
-bool LinuxUtil::init_tune(){
+bool ToneAlarm::init_tune(){
 
     uint16_t num;
     default_dur = 4;
@@ -197,8 +203,9 @@ bool LinuxUtil::init_tune(){
         return false;
     }
     
+    tune_comp = false;
     while(tune[tune_num][tune_pos] != ':'){
-        if(tune[tune_num][tune_pos] == NULL){
+        if(tune[tune_num][tune_pos] == '\0'){
             return false;
         }
         tune_pos++;
@@ -248,17 +255,5 @@ bool LinuxUtil::init_tune(){
     return true;
 }
 
-void LinuxUtil::_toneAlarm_timer_tick(){
-    if(state == 0){
-        state = state + init_tune();
-    }else if(state == 1){
-        state = state + set_note();
-    }
-    if(state == 2){
-        state = state + play();
-    }else if(state == 3){
-        state = 1;
-    }
-    
-}
+
 #endif
