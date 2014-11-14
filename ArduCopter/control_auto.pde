@@ -324,7 +324,7 @@ static void auto_land_run()
     wp_nav.update_loiter();
 
     // call z-axis position controller
-    pos_control.set_alt_target_from_climb_rate(get_throttle_land(), G_Dt);
+    pos_control.set_alt_target_from_climb_rate(get_throttle_land(), G_Dt, true);
     pos_control.update_z_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot
