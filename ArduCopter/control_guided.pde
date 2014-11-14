@@ -50,7 +50,7 @@ static void guided_takeoff_start(float final_alt)
 }
 
 // initialise guided mode's position controller
-void guided_pos_control_start()
+static void guided_pos_control_start()
 {
     // set to position control mode
     guided_mode = Guided_WP;
@@ -71,7 +71,7 @@ void guided_pos_control_start()
 }
 
 // initialise guided mode's velocity controller
-void guided_vel_control_start()
+static void guided_vel_control_start()
 {
     // set guided_mode to velocity controller
     guided_mode = Guided_Velocity;
