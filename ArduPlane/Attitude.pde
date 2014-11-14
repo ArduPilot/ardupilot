@@ -683,19 +683,30 @@ static void flaperon_update(int8_t flap_percent)
     /*
       flaperons are implemented as a mixer between aileron and a
       percentage of flaps. Flap input can come from a manual channel
-      or from auto flaps. Note that negative manual flap percentates
+      or from auto flaps. Note that negative manual flap percentages
       are allowed, which give spoilerons
      */
-    ch1 = channel_roll->radio_out;
 
-    // 1500 is used here as the neutral value for the output
-    // mixer. User can still trim the flaps on the input side using
-    // the TRIM of the flap input channel. The *5 is to take a
-    // percentage to a value from -500 to 500 for the mixer
+    // first map the amount of aileron roll to a 1000..2000 value
+    ch1 = (channel_roll->pwm_to_angle_dz(0) / 9) + 1500;
+
+    // now map flap percentage to a 1000..2000 value
     ch2 = 1500 - flap_percent * 5;
+
+    // run the mixer
     channel_output_mixer(g.flaperon_output, ch1, ch2);
-    RC_Channel_aux::set_radio(RC_Channel_aux::k_flaperon1, ch1);
-    RC_Channel_aux::set_radio(RC_Channel_aux::k_flaperon2, ch2);
+
+    // the mixer gives us a value from 900 to 2100 for each channel We
+    // now need to map that onto a -4500 to 4500 angle. We use a ratio
+    // of 9 so that for a MIXING_GAIN of 1.0 we get pass-thru of
+    // ailerons with no flaps
+    ch1 = (ch1 - 1500) * 9;
+    ch2 = (ch2 - 1500) * 9;
+
+    // and now let the trims and ranges of the flaperon output
+    // channels take effect to map this to PWM values
+    RC_Channel_aux::set_servo_out(RC_Channel_aux::k_flaperon1, ch1);
+    RC_Channel_aux::set_servo_out(RC_Channel_aux::k_flaperon2, ch2);
 }
 
 /*****************************************
