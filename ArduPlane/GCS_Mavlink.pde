@@ -265,6 +265,16 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
     }
 #endif
 
+    if (rangefinder.num_sensors() > 0) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
+        if (g.rangefinder_landing) {
+            control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
+        }
+        if (rangefinder.healthy()) {
+            control_sensors_health |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;            
+        }
+    }
+
     mavlink_msg_sys_status_send(
         chan,
         control_sensors_present,
