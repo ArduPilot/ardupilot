@@ -23,6 +23,7 @@
 
 #include <AP_HAL.h>
 #include <AP_GPS.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 #include <modules/uORB/topics/vehicle_gps_position.h>
 
 class AP_GPS_PX4 : public AP_GPS_Backend {
@@ -35,5 +36,6 @@ private:
     int                           _gps_sub;
     struct vehicle_gps_position_s _gps_pos;
 };
+#endif // CONFIG_HAL_BOARD
+#endif // AP_GPS_PX4_H
 
-#endif // AP_GPS_SIRF_h

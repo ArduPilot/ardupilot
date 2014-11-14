@@ -22,7 +22,10 @@
 //
 //  Code by Holger Steinhaus
 
+#include <AP_HAL.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 #include "AP_GPS_PX4.h"
+
 #include <uORB/uORB.h>
 
 #include <math.h>
@@ -76,3 +79,4 @@ AP_GPS_PX4::read(void)
 
     return updated;
 }
+#endif
