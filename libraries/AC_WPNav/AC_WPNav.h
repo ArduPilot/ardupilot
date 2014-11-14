@@ -197,6 +197,9 @@ public:
     ///     next_destination should be set to the next segment's destination if the seg_end_type is SEGMENT_END_STRAIGHT or SEGMENT_END_SPLINE
     void set_spline_origin_and_destination(const Vector3f& origin, const Vector3f& destination, bool stopped_at_start, spline_segment_end_type seg_end_type, const Vector3f& next_destination);
 
+    // set_spline_dest_and_vel - accepts a destination position and velocity, sets origin to current position and velocity
+    void set_spline_dest_and_vel(const Vector3f& dest_pos, const Vector3f& dest_vel);
+
     /// reached_spline_destination - true when we have come within RADIUS cm of the waypoint
     bool reached_spline_destination() const { return _flags.reached_destination; }
 
