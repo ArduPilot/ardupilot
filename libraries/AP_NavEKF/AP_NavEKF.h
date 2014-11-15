@@ -119,6 +119,9 @@ public:
     // This command is forgotten by the EKF each time it goes back into static mode (eg the vehicle disarms)
     uint8_t setInhibitGPS(void);
 
+    // return the horizontal speed limit in m/s set by optical flow limitations
+    float getSpeedLimit(void) const;
+
     // return weighting of first IMU in blending function
     void getIMU1Weighting(float &ret) const;
 

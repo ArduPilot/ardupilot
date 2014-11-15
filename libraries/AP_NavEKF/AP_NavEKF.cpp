@@ -3622,6 +3622,17 @@ uint8_t NavEKF::setInhibitGPS(void)
     }
 }
 
+// return the horizontal speed limit in m/s set by optical flow limitations
+// allow 1.0 rad/sec margin for angular motion
+float NavEKF::getSpeedLimit(void) const
+{
+    if (useOptFlow()) {
+        return max((_maxFlowRate - 1.0f), 0.0f) * (flowStates[1] - state.position[2]);
+    } else {
+        return 400.0f; //return 80% of max filter speed
+    }
+}
+
 // return weighting of first IMU in blending function
 void NavEKF::getIMU1Weighting(float &ret) const
 {
