@@ -36,7 +36,7 @@ private:
     /// play_tune - play one of the pre-defined tunes
     bool play_tune(uint8_t tune_number);
 
-    int err;
+    bool err;
 
     /// tonealarm_type - bitmask of states we track
     struct tonealarm_type {
