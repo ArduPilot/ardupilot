@@ -879,7 +879,6 @@ void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
     wp_nav.set_desired_alt(cmd.content.location.alt);
 }
 
-
 void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 {
     uint8_t result = MAV_RESULT_FAILED;         // assume failure.  Each messages id is responsible for return ACK or NAK if required
@@ -1315,8 +1314,26 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
         }
 
-        // create 3-axis velocity vector and sent to guided controller
-        guided_set_velocity(Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
+        bool pos_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE;
+        bool vel_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_VEL_IGNORE;
+        bool acc_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE;
+
+        /*
+         * for future use:
+         * bool force           = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_FORCE;
+         * bool yaw_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE;
+         * bool yaw_rate_ignore = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE;
+         */
+
+        if (!pos_ignore && !vel_ignore && acc_ignore) {
+            guided_set_destination_spline(Vector3f(packet.x * 100.0f, packet.y * 100.0f, -packet.z * 100.0f), Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
+        } else if (pos_ignore && !vel_ignore && acc_ignore) {
+            guided_set_velocity(Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
+        } else if (!pos_ignore && vel_ignore && acc_ignore) {
+            guided_set_destination(Vector3f(packet.x * 100.0f, packet.y * 100.0f, -packet.z * 100.0f));
+        } else {
+            result = MAV_RESULT_FAILED;
+        }
 
         break;
     }
@@ -1337,8 +1354,50 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
         }
 
-        // create 3-axis velocity vector and sent to guided controller
-        guided_set_velocity(Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
+        bool pos_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE;
+        bool vel_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_VEL_IGNORE;
+        bool acc_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE;
+
+        /*
+         * for future use:
+         * bool force           = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_FORCE;
+         * bool yaw_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE;
+         * bool yaw_rate_ignore = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE;
+         */
+
+        Vector3f pos_ned;
+
+        if(!pos_ignore) {
+            Location loc;
+            loc.lat = packet.lat_int;
+            loc.lng = packet.lon_int;
+            loc.alt = packet.alt;
+            switch (packet.coordinate_frame) {
+                case MAV_FRAME_GLOBAL_INT:
+                    loc.flags.relative_alt = false;
+                    loc.flags.terrain_alt = false;
+                    break;
+                case MAV_FRAME_GLOBAL_RELATIVE_ALT_INT:
+                    loc.flags.relative_alt = true;
+                    loc.flags.terrain_alt = false;
+                    break;
+                case MAV_FRAME_GLOBAL_TERRAIN_ALT_INT:
+                    loc.flags.relative_alt = true;
+                    loc.flags.terrain_alt = true;
+                    break;
+            }
+            pos_ned = pv_location_to_vector(loc);
+        }
+
+        if (!pos_ignore && !vel_ignore && acc_ignore) {
+            guided_set_destination_spline(pos_ned, Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
+        } else if (pos_ignore && !vel_ignore && acc_ignore) {
+            guided_set_velocity(Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
+        } else if (!pos_ignore && vel_ignore && acc_ignore) {
+            guided_set_destination(pos_ned);
+        } else {
+            result = MAV_RESULT_FAILED;
+        }
 
         break;
     }
