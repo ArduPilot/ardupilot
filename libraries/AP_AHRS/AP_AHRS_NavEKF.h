@@ -107,6 +107,9 @@ public:
     // inibit GPS useage
     uint8_t setInhibitGPS(void);
 
+    // get speed limit
+    float getSpeedLimit(void);
+
     void set_ekf_use(bool setting) { _ekf_use.set(setting); }
 
     // is the AHRS subsystem healthy?

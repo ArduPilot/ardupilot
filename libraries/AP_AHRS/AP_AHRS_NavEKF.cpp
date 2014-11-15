@@ -324,7 +324,14 @@ void  AP_AHRS_NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlo
 // inhibit GPS useage
 uint8_t AP_AHRS_NavEKF::setInhibitGPS(void)
 {
-    return EKF.setInhibitGPS();;
+    return EKF.setInhibitGPS();
 }
+
+// get speed limit
+float AP_AHRS_NavEKF::getSpeedLimit(void)
+{
+    return EKF.getSpeedLimit();
+}
+
 #endif // AP_AHRS_NAVEKF_AVAILABLE
 
