@@ -933,7 +933,7 @@ void NavEKF::SelectMagFusion()
 void NavEKF::SelectFlowFusion()
 {
     // if we don't have flow measurements and are not using GPS, dead reckon using current velocity vector unless we are in static mode
-    if (imuSampleTime_ms - flowMeaTime_ms > 200 && !staticMode && gpsInhibitMode == 2) {
+    if (!useOptFlow() && !staticMode && gpsInhibitMode == 2) {
         velHoldMode = true;
     } else {
         velHoldMode = false;
@@ -969,14 +969,14 @@ void NavEKF::SelectFlowFusion()
         // update the time stamp
         prevFlowFusionTime_ms = imuSampleTime_ms;
 
-    } else if (flow_state.obsIndex == 1 && !delayFusion && !staticMode){
+    } else if (useOptFlow() && flow_state.obsIndex == 1 && !delayFusion && !staticMode){
         // Fuse the optical flow Y axis data into the main filter
         FuseOptFlow();
         // increment the index to fuse the X and Y data using the 2-state EKF on the next prediction cycle
         flow_state.obsIndex = 2;
         // indicate that flow fusion has been performed. This is used for load spreading.
         flowFusePerformed = true;
-    } else if ((flow_state.obsIndex == 2 || newDataRng) && !staticMode) {
+    } else if (((useOptFlow() && flow_state.obsIndex == 2) || newDataRng) && !staticMode) {
         // enable fusion of range data if available and permitted
         if(newDataRng && useRngFinder()) {
             fuseRngData = true;
@@ -3613,7 +3613,7 @@ uint8_t NavEKF::setInhibitGPS(void)
     }
     // If we have received flow sensor data in the last second then indicate that we can do relative position
     // otherwise indicate we can provide attitude and height only
-    if ((imuSampleTime_ms - flowMeaTime_ms) < 1000) {
+    if (useOptFlow()) {
         gpsInhibitMode = 2;
         return 2;
     } else {
@@ -3626,7 +3626,7 @@ uint8_t NavEKF::setInhibitGPS(void)
 // allow 1.0 rad/sec margin for angular motion
 float NavEKF::getSpeedLimit(void) const
 {
-    if (useOptFlow()) {
+    if (useOptFlow() || gpsInhibitMode == 2) {
         return max((_maxFlowRate - 1.0f), 0.0f) * (flowStates[1] - state.position[2]);
     } else {
         return 400.0f; //return 80% of max filter speed
@@ -4388,8 +4388,12 @@ bool NavEKF::useRngFinder(void) const
 // return true if we should use the optical flow sensor
 bool NavEKF::useOptFlow(void) const
 {
-    // TO-DO add code to set this based in setting of optical flow use parameter and presence of sensor
-    return true;
+    // only use sensor if data is fresh
+    if (imuSampleTime_ms - flowMeaTime_ms < 200) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 // return true if the vehicle code has requested use of static mode
@@ -4493,7 +4497,7 @@ void  NavEKF::getFilterStatus(uint8_t &status) const
     status = (!state.quat.is_nan()<<0 |
               !(velTimeout && posTimeout)<<1 |
               !((velTimeout && hgtTimeout) || (hgtTimeout && _fusionModeGPS > 0))<<2 |
-              (gpsInhibitMode == 2 && (imuSampleTime_ms - flowMeaTime_ms) < 1000)<<3 |
+              (gpsInhibitMode == 2 && useOptFlow())<<3 |
               !posTimeout<<4 |
               !hgtTimeout<<5 |
               !inhibitGndState<<6);
