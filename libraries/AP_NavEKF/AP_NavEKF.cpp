@@ -409,7 +409,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     _msecBetaAvg            = 100;      // average number of msec between synthetic sideslip measurements
     _msecBetaMax            = 200;      // maximum number of msec between synthetic sideslip measurements
     _msecFlowAvg            = 100;      // average number of msec between optical flow measurements
-    dtVelPos                = 0.02;     // number of seconds between position and velocity corrections. This should be a multiple of the imu update interval.
+    dtVelPos                = 0.2;      // number of seconds between position and velocity corrections. This should be a multiple of the imu update interval.
 
     // Misc initial conditions
     hgtRate = 0.0f;
@@ -2121,8 +2121,8 @@ void NavEKF::FuseVelPosNED()
                     // Calculate height measurement innovations using single IMU states
                     float hgtInnov1 = statesAtHgtTime.posD1 - observation[obsIndex];
                     float hgtInnov2 = statesAtHgtTime.posD2 - observation[obsIndex];
-                    // Correct single IMU prediction states using height measurement, limiting rate of change of bias to 0.02 m/s3
-                    float correctionLimit = 0.02f * dtIMU *dtVelPos;
+                    // Correct single IMU prediction states using height measurement, limiting rate of change of bias to 0.002 m/s3
+                    float correctionLimit = 0.002f * dtIMU * dtVelPos;
                     state.accel_zbias1 -= constrain_float(Kfusion[13] * hgtInnov1, -correctionLimit, correctionLimit); // IMU1 Z accel bias
                     state.accel_zbias2 -= constrain_float(Kfusion[22] * hgtInnov2, -correctionLimit, correctionLimit); // IMU2 Z accel bias
                     for (uint8_t i = 23; i<=26; i++) {
