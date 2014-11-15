@@ -371,9 +371,9 @@ test_ins(uint8_t argc, const Menu::arg *argv)
                             (uint16_t)ahrs.yaw_sensor / 100,
                             gyros.x, gyros.y, gyros.z,
                             accels.x, accels.y, accels.z);
-    }
-    if(cliSerial->available() > 0){
-        return (0);
+        if(cliSerial->available() > 0){
+            return (0);
+        }
     }
 }
 
