@@ -114,9 +114,12 @@ public:
     // reset body axis gyro bias estimates
     void resetGyroBias(void);
 
-    // Commands the EKF to not use GPS. It returns true if the command has been accepted.
+    // Commands the EKF to not use GPS.
     // This command must be sent prior to arming as it will only be actioned when the filter is in static mode
     // This command is forgotten by the EKF each time it goes back into static mode (eg the vehicle disarms)
+    // Returns 0 if command rejected
+    // Returns 1 if attitude, vertical velocity and vertical position will be provided
+    // Returns 2 if attitude, 3D-velocity, vertical position and relative horizontal position will be provided
     uint8_t setInhibitGPS(void);
 
     // return the horizontal speed limit in m/s set by optical flow limitations
