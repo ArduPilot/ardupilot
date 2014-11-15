@@ -38,7 +38,7 @@ bool ToneAlarm_Linux::init()
     // open the tone alarm device
     err = hal.util->toneAlarm_init();
     if (err == -1) {
-        hal.console->printf("Unable to open ToneAlarm sysfs");
+        hal.console->printf("AP_Notify: Failed to initialise ToneAlarm");
         return false;
     }
     
