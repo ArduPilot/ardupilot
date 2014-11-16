@@ -159,6 +159,10 @@ uint32_t LinuxScheduler::micros()
 
 void LinuxScheduler::delay_microseconds(uint16_t us)
 {
+    if (stopped_clock_usec) {
+        stopped_clock_usec += us;
+        return;
+    }
     _microsleep(us);
 }
 
