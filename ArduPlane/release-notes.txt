@@ -1,3 +1,38 @@
+Release 3.1.2beta2, November 16th 2014
+----------------------------------
+
+The ardupilot development team is proud to announce the release of
+version 3.1.2 of APM:Plane. This is a major release with a lot of 
+new features.
+
+ - allow GCS to enable/disable PX4 safety switch
+ - make auto-takeoff independent of compass errors
+ - report gyro unhealthy if calibration failed
+ - added support for MAV_CMD_DO_LAND_START
+ - added RTL_AUTOLAND parameter
+ - disable CLI by default in build
+ - new InertialSensor implementation
+ - added landing go around support
+ - enable PX4 failsafe RC override
+ - added OVERRIDE_CHAN parameter
+ - changed default AUTOTUNE level to 6
+ - changed default I value for roll/pitch controllers
+ - added CAMERA_FEEDBACK mavlink messages
+ - use airspeed temperature for baro calibration if possible
+ - added STALL_PREVENTION parameter 
+ - fixed handling of TKOFF_THR_MAX parameter
+ - added ARSPD_SKIP_CAL parameter
+ - fixed flaperon trim handling (WARNING: need to retrim flaperons)
+ - EKF robustness improvements, especially for MAG handling
+ - lots of HAL_Linux updates
+ - support wider range of I2C Lidars
+ - fixed fallback to DCM in AHRS
+ - fixed I2C crash bug in NuttX
+ - TECS prevent throttle undershoot after a climb
+ - AP_Mount: added lead filter to improve servo gimbals
+ - Zynq and NavIO updates
+
+
 Release 3.1.1, September 12th 2014
 ----------------------------------
 
