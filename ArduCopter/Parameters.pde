@@ -1031,12 +1031,6 @@ static void load_parameters(void)
         ahrs._kp_yaw.set_and_save(0.1);
     }
 
-    // setup different Compass learn setting for ArduCopter than the default
-    // but allow users to override in their config
-    if (!compass._learn.load()) {
-        compass._learn.set_and_save(0);
-    }
-
     if (!g.format_version.load() ||
         g.format_version != Parameters::k_format_version) {
 
