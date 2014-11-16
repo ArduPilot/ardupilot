@@ -120,6 +120,8 @@ static bool set_mode(uint8_t mode)
 // called at 100hz or more
 static void update_flight_mode()
 {
+    // Update EKF speed limit - used to limit speed when we are using optical flow
+    ekfGndSpdLimit = ahrs.getSpeedLimit();
     switch (control_mode) {
         case ACRO:
             #if FRAME_CONFIG == HELI_FRAME

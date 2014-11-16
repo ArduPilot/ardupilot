@@ -319,6 +319,8 @@ AP_Mission mission(ahrs, &start_command, &verify_command, &exit_mission);
 static AP_OpticalFlow_PX4 optflow(ahrs);
 #endif
  #endif
+// gnd speed limit required to observe optical flow sensor limits
+static float ekfGndSpdLimit;
 
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection
