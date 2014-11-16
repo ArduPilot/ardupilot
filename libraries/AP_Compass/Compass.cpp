@@ -269,9 +269,14 @@ Compass::Compass(void) :
     last_update(0),
     _null_init_done(false),
     _thr_or_curr(0.0f),
+    _backend_count(0),
+    _compass_count(0),
     _board_orientation(ROTATION_NONE)
 {
     AP_Param::setup_object_defaults(this, var_info);
+    for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
+        _backends[i] = NULL;
+    }    
 
 #if COMPASS_MAX_INSTANCES > 1
     // default device ids to zero.  init() method will overwrite with the actual device ids
@@ -281,12 +286,96 @@ Compass::Compass(void) :
 #endif
 }
 
-// Default init method, just returns success.
+// Default init method
 //
 bool
 Compass::init()
 {
+    if (_compass_count == 0) {
+        // detect available backends. Only called once
+        _detect_backends();
+    }
+
+    product_id = 0; // FIX
+
+    //TODO other initializations needed
+
     return true;
+}
+
+//  Register a new compass instance
+//
+uint8_t Compass::register_compass(void)
+{
+    if (_compass_count == COMPASS_MAX_INSTANCES) {
+        hal.scheduler->panic(PSTR("Too many compass instances"));
+    }
+    return _compass_count++;
+}
+
+/*
+  try to load a backend
+ */
+void 
+Compass::_add_backend(AP_Compass_Backend *(detect)(Compass &))
+{
+    if (_backend_count == COMPASS_MAX_BACKEND) {
+        hal.scheduler->panic(PSTR("Too many compass backends"));
+    }
+    _backends[_backend_count] = detect(*this);
+    if (_backends[_backend_count] != NULL) {
+        _backend_count++;
+    }
+}
+
+/*
+  detect available backends for this board
+ */
+void 
+Compass::_detect_backends(void)
+{
+
+// Values defined in AP_HAL/AP_HAL_Boards.h
+#if HAL_COMPASS_DEFAULT == HAL_COMPASS_HIL
+    _add_backend(AP_Compass_HIL::detect);
+#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_HMC5843
+    _add_backend(AP_Compass_HMC5843::detect);
+#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_PX4
+    _add_backend(AP_Compass_PX4::detect);
+#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_VRBRAIN
+    _add_backend(AP_Compass_VRBRAIN::detect);
+#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_AK8963_MPU9250
+    _add_backend(AP_Compass_AK8963_MPU9250::detect);
+#else
+    #error Unrecognised HAL_COMPASS_TYPE setting
+#endif
+
+    if (_backend_count == 0 ||
+        _compass_count == 0) {
+        hal.scheduler->panic(PSTR("No Compass backends available"));
+    }
+
+    // set the product ID to the ID of the first backend
+    product_id = _backends[0]->product_id;
+}
+
+void 
+Compass::accumulate(void)
+{    
+    for (uint8_t i=0; i< _backend_count; i++) {
+        // call accumulate on each of the backend
+        _backends[i]->accumulate();
+    }
+}
+
+bool 
+Compass::read(void)
+{
+   for (uint8_t i=0; i< _backend_count; i++) {
+        // call read on each of the backend. This call updates field[i]
+        _backends[i]->read();
+    }    
+    return _healthy[get_primary()];
 }
 
 void
@@ -482,4 +571,69 @@ void Compass::apply_corrections(Vector3f &mag, uint8_t i)
     } else {
         _motor_offset[i].zero();
     }
+}
+
+#define MAG_OFS_X 5.0
+#define MAG_OFS_Y 13.0
+#define MAG_OFS_Z -18.0
+
+// Update raw magnetometer values from HIL data
+//
+void Compass::setHIL(float roll, float pitch, float yaw)
+{
+    Matrix3f R;
+
+    // create a rotation matrix for the given attitude
+    R.from_euler(roll, pitch, yaw);
+
+    if (_last_declination != get_declination()) {
+        _setup_earth_field();
+        _last_declination = get_declination();
+    }
+
+    // convert the earth frame magnetic vector to body frame, and
+    // apply the offsets
+    _hil_mag = R.mul_transpose(_Bearth);
+    _hil_mag -= Vector3f(MAG_OFS_X, MAG_OFS_Y, MAG_OFS_Z);
+
+    // apply default board orientation for this compass type. This is
+    // a noop on most boards
+    _hil_mag.rotate(MAG_BOARD_ORIENTATION);
+
+    // add user selectable orientation
+    _hil_mag.rotate((enum Rotation)get_orientation().get());
+
+    if (!_external[0]) {
+        // and add in AHRS_ORIENTATION setting if not an external compass
+        _hil_mag.rotate(get_board_orientation());
+    }
+
+    _healthy[0] = true;
+}
+
+// Update raw magnetometer values from HIL mag vector
+//
+void Compass::setHIL(const Vector3f &mag)
+{
+    _hil_mag.x = mag.x;
+    _hil_mag.y = mag.y;
+    _hil_mag.z = mag.z;
+    _healthy[0] = true;
+}
+
+const Vector3f& Compass::getHIL() const {
+    return _hil_mag;
+}
+
+// setup _Bearth
+void Compass::_setup_earth_field(void)
+{
+    // assume a earth field strength of 400
+    _Bearth(400, 0, 0);
+    
+    // rotate _Bearth for inclination and declination. -66 degrees
+    // is the inclination in Canberra, Australia
+    Matrix3f R;
+    R.from_euler(0, ToRad(66), get_declination());
+    _Bearth = R * _Bearth;
 }

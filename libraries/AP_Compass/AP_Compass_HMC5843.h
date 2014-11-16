@@ -7,8 +7,9 @@
 #include "../AP_Math/AP_Math.h"
 
 #include "Compass.h"
+#include "AP_Compass_Backend.h"
 
-class AP_Compass_HMC5843 : public Compass
+class AP_Compass_HMC5843 : public AP_Compass_Backend
 {
 private:
     float               calibration[3];
@@ -30,12 +31,16 @@ private:
     uint8_t			    _accum_count;
     uint32_t            _last_accum_time;
 
+    uint8_t             _compass_instance;
+
 public:
-    AP_Compass_HMC5843() : Compass() {
-    }
+    AP_Compass_HMC5843(Compass &compass);
     bool        init(void);
     bool        read(void);
     void        accumulate(void);
+
+    // detect the sensor
+    static AP_Compass_Backend *detect(Compass &compass);
 
 };
 #endif

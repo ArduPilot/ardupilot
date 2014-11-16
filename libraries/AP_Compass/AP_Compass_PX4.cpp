@@ -41,6 +41,26 @@ extern const AP_HAL::HAL& hal;
 
 // Public Methods //////////////////////////////////////////////////////////////
 
+// constructor
+AP_Compass_PX4::AP_Compass_PX4(Compass &compass):
+    AP_Compass_Backend(compass),
+    _num_instances(0)
+{}
+
+// detect the sensor
+AP_Compass_Backend *AP_Compass_PX4::detect(Compass &compass)
+{
+    AP_Compass_PX4 *sensor = new AP_Compass_PX4(compass);
+    if (sensor == NULL) {
+        return NULL;
+    }
+    if (!sensor->init()) {
+        delete sensor;
+        return NULL;
+    }
+    return sensor;
+}
+
 bool AP_Compass_PX4::init(void)
 {
 	_mag_fd[0] = open(MAG_BASE_DEVICE_PATH"0", O_RDONLY);
@@ -60,7 +80,7 @@ bool AP_Compass_PX4::init(void)
 
     for (uint8_t i=0; i<_num_instances; i++) {
         // get device id
-        _dev_id[i] = ioctl(_mag_fd[i], DEVIOCGDEVICEID, 0);
+        _compass._dev_id[i] = ioctl(_mag_fd[i], DEVIOCGDEVICEID, 0);
 
         // average over up to 20 samples
         if (ioctl(_mag_fd[i], SENSORIOCSQUEUEDEPTH, 20) != 0) {
@@ -69,13 +89,13 @@ bool AP_Compass_PX4::init(void)
         }
 
         // remember if the compass is external
-        _external[i] = (ioctl(_mag_fd[i], MAGIOCGEXTERNAL, 0) > 0);
-        if (_external[i]) {
+        _compass._external[i] = (ioctl(_mag_fd[i], MAGIOCGEXTERNAL, 0) > 0);
+        if (_compass._external[i]) {
             hal.console->printf("Using external compass[%u]\n", (unsigned)i);
         }
         _count[0] = 0;
         _sum[i].zero();
-        _healthy[i] = false;
+        _compass._healthy[i] = false;
     }
 
     // give the driver a chance to run, and gather one sample
@@ -84,6 +104,8 @@ bool AP_Compass_PX4::init(void)
     if (_count[0] == 0) {
         hal.console->printf("Failed initial compass accumulate\n");        
     }
+
+    _compass.product_id = AP_COMPASS_TYPE_PX4;
     return true;
 }
 
@@ -94,7 +116,7 @@ bool AP_Compass_PX4::read(void)
 
     // consider the compass healthy if we got a reading in the last 0.2s
     for (uint8_t i=0; i<_num_instances; i++) {
-        _healthy[i] = (hal.scheduler->micros64() - _last_timestamp[i] < 200000);
+        _compass._healthy[i] = (hal.scheduler->micros64() - _last_timestamp[i] < 200000);
     }
 
     for (uint8_t i=0; i<_num_instances; i++) {
@@ -108,24 +130,24 @@ bool AP_Compass_PX4::read(void)
         // a noop on most boards
         _sum[i].rotate(MAG_BOARD_ORIENTATION);
 
-        if (_external[i]) {
+        if (_compass._external[i]) {
             // add user selectable orientation
-            _sum[i].rotate((enum Rotation)_orientation[i].get());
+            _sum[i].rotate((enum Rotation)_compass._orientation[i].get());
         } else {
             // add in board orientation from AHRS
-            _sum[i].rotate(_board_orientation);
+            _sum[i].rotate(_compass._board_orientation);
         }
         
-        _field[i] = _sum[i];
-        apply_corrections(_field[i],i);
+        _compass._field[i] = _sum[i];
+        _compass.apply_corrections(_compass._field[i],i);
     
         _sum[i].zero();
         _count[i] = 0;
     }
 
-    last_update = _last_timestamp[get_primary()];
+    _compass.last_update = _last_timestamp[get_primary()];
     
-    return _healthy[get_primary()];
+    return _compass._healthy[get_primary()];
 }
 
 void AP_Compass_PX4::accumulate(void)
@@ -143,11 +165,11 @@ void AP_Compass_PX4::accumulate(void)
 
 uint8_t AP_Compass_PX4::get_primary(void) const
 {
-    if (_primary < _num_instances && _healthy[_primary] && use_for_yaw(_primary)) {
-        return _primary;
+    if (_compass._primary < _num_instances && _compass._healthy[_compass._primary] && _compass.use_for_yaw(_compass._primary)) {
+        return _compass._primary;
     }
     for (uint8_t i=0; i<_num_instances; i++) {
-        if (_healthy[i] && (use_for_yaw(i))) return i;
+        if (_compass._healthy[i] && (_compass.use_for_yaw(i))) return i;
     }    
     return 0;
 }

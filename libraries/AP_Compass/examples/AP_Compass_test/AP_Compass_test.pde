@@ -41,19 +41,7 @@ const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 #define CONFIG_COMPASS HAL_COMPASS_DEFAULT
 
-#if CONFIG_COMPASS == HAL_COMPASS_PX4
-static AP_Compass_PX4 compass;
-#elif CONFIG_COMPASS == HAL_COMPASS_VRBRAIN
-static AP_Compass_VRBRAIN compass;
-#elif CONFIG_COMPASS == HAL_COMPASS_HMC5843
-static AP_Compass_HMC5843 compass;
-#elif CONFIG_COMPASS == HAL_COMPASS_HIL
-static AP_Compass_HIL compass;
-#elif CONFIG_COMPASS == HAL_COMPASS_AK8963
-static AP_Compass_AK8963_MPU9250 compass;
-#else
- #error Unrecognized CONFIG_COMPASS setting
-#endif
+static Compass compass;
 
 uint32_t timer;
 
