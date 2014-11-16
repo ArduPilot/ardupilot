@@ -533,40 +533,10 @@ void AP_Mount::control_msg(mavlink_message_t *msg)
     }
 }
 
-/// Return mount status information (depends on the previously set mount configuration)
-/// triggered by a MavLink packet.
-void AP_Mount::status_msg(mavlink_message_t *msg, mavlink_channel_t chan)
+/// Return mount status information
+void AP_Mount::status_msg(mavlink_channel_t chan)
 {
-    __mavlink_mount_status_t packet;
-    mavlink_msg_mount_status_decode(msg, &packet);
-    if (mavlink_check_target(packet.target_system, packet.target_component)) {
-        // not for us
-        return;
-    }
-
-    switch ((enum MAV_MOUNT_MODE)_mount_mode.get())
-    {
-    case MAV_MOUNT_MODE_RETRACT:                        // safe position (Roll,Pitch,Yaw) from EEPROM and stop stabilization
-    case MAV_MOUNT_MODE_NEUTRAL:                        // neutral position (Roll,Pitch,Yaw) from EEPROM
-    case MAV_MOUNT_MODE_MAVLINK_TARGETING:      // neutral position and start MAVLink Roll,Pitch,Yaw control with stabilization
-    case MAV_MOUNT_MODE_RC_TARGETING:                   // neutral position and start RC Roll,Pitch,Yaw control with stabilization
-        packet.pointing_b = _roll_angle*100;            // degrees*100
-        packet.pointing_a = _tilt_angle*100;            // degrees*100
-        packet.pointing_c = _pan_angle*100;             // degrees*100
-        break;
-#if MNT_GPSPOINT_OPTION == ENABLED
-    case MAV_MOUNT_MODE_GPS_POINT:             // neutral position and start to point to Lat,Lon,Alt
-        packet.pointing_a = _target_GPS_location.lat;   // latitude
-        packet.pointing_b = _target_GPS_location.lng;   // longitude
-        packet.pointing_c = _target_GPS_location.alt;   // altitude
-        break;
-#endif
-    case MAV_MOUNT_MODE_ENUM_END:
-        break;
-    }
-
-    mavlink_msg_mount_status_send_buf(msg, chan, packet.target_system, packet.target_component,
-                                  packet.pointing_a, packet.pointing_b, packet.pointing_c);
+    mavlink_msg_mount_status_send(chan,0,0, _tilt_angle*100, _roll_angle*100, _pan_angle*100);
 }
 
 /// Set mount point/region of interest, triggered by mission script commands
