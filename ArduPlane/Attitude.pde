@@ -686,8 +686,12 @@ static void flaperon_update(int8_t flap_percent)
       or from auto flaps.
      */
 
-    // first map the amount of aileron roll to a 1000..2000 value
-    ch1 = (channel_roll->pwm_to_angle_dz(0) / 9) + 1500;
+    // first map the amount of aileron roll to a 1000..2000 value. We
+    // center it on 1500 so that using trim on the roll channel will
+    // have an affect on the flaperon roll output. We also scale it
+    // for the roll min/max range, so that transmitters with a small
+    // range of outputs can command flaperons with full output range. 
+    ch1 = 1500 + ((channel_roll->radio_out - 1500) * 1000.0f / (channel_roll->radio_max - channel_roll->radio_min));
 
     // now map flap percentage to a 1000..2000 value
     ch2 = 1500 - flap_percent * 5;
