@@ -530,7 +530,7 @@ void AC_PosControl::init_xy_controller()
 }
 
 /// update_xy_controller - run the horizontal position controller - should be called at 100hz or higher
-void AC_PosControl::update_xy_controller(bool use_desired_velocity)
+void AC_PosControl::update_xy_controller(bool use_desired_velocity, float ekfNavVelGainScaler)
 {
     // catch if we've just been started
     uint32_t now = hal.scheduler->millis();
@@ -561,12 +561,12 @@ void AC_PosControl::update_xy_controller(bool use_desired_velocity)
             break;
         case 1:
             // run position controller's position error to desired velocity step
-            pos_to_rate_xy(use_desired_velocity,_dt_xy);
+            pos_to_rate_xy(use_desired_velocity,_dt_xy, ekfNavVelGainScaler);
             _xy_step++;
             break;
         case 2:
             // run position controller's velocity to acceleration step
-            rate_to_accel_xy(_dt_xy);
+            rate_to_accel_xy(_dt_xy, ekfNavVelGainScaler);
             _xy_step++;
             break;
         case 3:
@@ -612,7 +612,7 @@ void AC_PosControl::init_vel_controller_xyz()
 ///     velocity targets should we set using set_desired_velocity_xyz() method
 ///     callers should use get_roll() and get_pitch() methods and sent to the attitude controller
 ///     throttle targets will be sent directly to the motors
-void AC_PosControl::update_vel_controller_xyz()
+void AC_PosControl::update_vel_controller_xyz(float ekfNavVelGainScaler)
 {
     // capture time since last iteration
     uint32_t now = hal.scheduler->millis();
@@ -636,10 +636,10 @@ void AC_PosControl::update_vel_controller_xyz()
         desired_vel_to_pos(dt_xy);
 
         // run position controller's position error to desired velocity step
-        pos_to_rate_xy(true, dt_xy);
+        pos_to_rate_xy(true, dt_xy, ekfNavVelGainScaler);
 
         // run velocity to acceleration step
-        rate_to_accel_xy(dt_xy);
+        rate_to_accel_xy(dt_xy, ekfNavVelGainScaler);
 
         // run acceleration to lean angle step
         accel_to_lean_angles();
@@ -688,11 +688,11 @@ void AC_PosControl::desired_vel_to_pos(float nav_dt)
 ///     when use_desired_rate is set to true:
 ///         desired velocity (_vel_desired) is combined into final target velocity and
 ///         velocity due to position error is reduce to a maximum of 1m/s
-void AC_PosControl::pos_to_rate_xy(bool use_desired_rate, float dt)
+void AC_PosControl::pos_to_rate_xy(bool use_desired_rate, float dt, float ekfNavVelGainScaler)
 {
     Vector3f curr_pos = _inav.get_position();
     float linear_distance;      // the distance we swap between linear and sqrt velocity response
-    float kP = _p_pos_xy.kP();
+    float kP = ekfNavVelGainScaler * _p_pos_xy.kP(); // scale gains to compensate for noisy optical flow measurement in the EKF
 
     // avoid divide by zero
     if (kP <= 0.0f) {
@@ -755,7 +755,7 @@ void AC_PosControl::pos_to_rate_xy(bool use_desired_rate, float dt)
 
 /// rate_to_accel_xy - horizontal desired rate to desired acceleration
 ///    converts desired velocities in lat/lon directions to accelerations in lat/lon frame
-void AC_PosControl::rate_to_accel_xy(float dt)
+void AC_PosControl::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
 {
     const Vector3f &vel_curr = _inav.get_velocity();  // current velocity in cm/s
     float accel_total;                          // total acceleration in cm/s/s
@@ -802,9 +802,9 @@ void AC_PosControl::rate_to_accel_xy(float dt)
         lon_i = _pid_rate_lon.get_i(_vel_error.y, dt);
     }
 
-    // combine feed forward accel with PID output from velocity error
-    _accel_target.x = _accel_feedforward.x + _pid_rate_lat.get_p(_vel_error.x) + lat_i + _pid_rate_lat.get_d(_vel_error.x, dt);
-    _accel_target.y = _accel_feedforward.y + _pid_rate_lon.get_p(_vel_error.y) + lon_i + _pid_rate_lon.get_d(_vel_error.y, dt);
+    // combine feed forward accel with PID output from velocity error and scale PID output to compensate for optical flow measurement induced EKF noise
+    _accel_target.x = _accel_feedforward.x + (_pid_rate_lat.get_p(_vel_error.x) + lat_i + _pid_rate_lat.get_d(_vel_error.x, dt)) * ekfNavVelGainScaler;
+    _accel_target.y = _accel_feedforward.y + (_pid_rate_lon.get_p(_vel_error.y) + lon_i + _pid_rate_lon.get_d(_vel_error.y, dt)) * ekfNavVelGainScaler;
 
     // scale desired acceleration if it's beyond acceptable limit
     // To-Do: move this check down to the accel_to_lean_angle method?
