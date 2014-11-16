@@ -3622,14 +3622,18 @@ uint8_t NavEKF::setInhibitGPS(void)
     }
 }
 
-// return the horizontal speed limit in m/s set by optical flow limitations
-// allow 1.0 rad/sec margin for angular motion
-float NavEKF::getSpeedLimit(void) const
+// return the horizontal speed limit in m/s set by optical flow sensor limits
+// return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
+void NavEKF::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
 {
     if (useOptFlow() || gpsInhibitMode == 2) {
-        return max((_maxFlowRate - 1.0f), 0.0f) * (flowStates[1] - state.position[2]);
+        // allow 1.0 rad/sec margin for angular motion
+        ekfGndSpdLimit = max((_maxFlowRate - 1.0f), 0.0f) * (flowStates[1] - state.position[2]);
+        // use standard gains up to 5.0 metres height and reduce above that
+        ekfNavVelGainScaler = 5.0f / max((flowStates[1] - state.position[2]),5.0f);
     } else {
-        return 400.0f; //return 80% of max filter speed
+        ekfGndSpdLimit = 400.0f; //return 80% of max filter speed
+        ekfNavVelGainScaler = 1.0f;
     }
 }
 

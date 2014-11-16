@@ -122,8 +122,9 @@ public:
     // Returns 2 if attitude, 3D-velocity, vertical position and relative horizontal position will be provided
     uint8_t setInhibitGPS(void);
 
-    // return the horizontal speed limit in m/s set by optical flow limitations
-    float getSpeedLimit(void) const;
+    // return the horizontal speed limit in m/s set by optical flow sensor limits
+    // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
+    void getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const;
 
     // return weighting of first IMU in blending function
     void getIMU1Weighting(float &ret) const;
