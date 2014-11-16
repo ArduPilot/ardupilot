@@ -4072,28 +4072,29 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
     // This filter uses a different definition of optical flow rates to the sensor with a positive optical flow rate produced by a
     // negative rotation about that axis. For example a positive rotation of the flight vehicle about its X (roll) axis would produce a negative X flow rate
     flowQuality = rawFlowQuality;
-    // recall vehicle states at mid sample time for flow observations allowing for delays
-    RecallStates(statesAtFlowTime, imuSampleTime_ms - _msecFLowDelay - flowTimeDeltaAvg_ms/2);
     // recall angular rates averaged across flow observation period allowing for processing, transmission and intersample delays
-    RecallOmega(omegaAcrossFlowTime, imuSampleTime_ms - flowTimeDeltaAvg_ms - _msecFLowDelay, flowMeaTime_ms - _msecFLowDelay);
-    // calculate bias errors on flow sensor gyro rates
-    flowGyroBias.x = 0.99f * flowGyroBias.x + 0.01f * (rawGyroRates.x - omegaAcrossFlowTime.x);
-    flowGyroBias.y = 0.99f * flowGyroBias.y + 0.01f * (rawGyroRates.y - omegaAcrossFlowTime.y);
-    // correct flow sensor rates for bias
-    omegaAcrossFlowTime.x = rawGyroRates.x - flowGyroBias.x;
-    omegaAcrossFlowTime.y = rawGyroRates.y - flowGyroBias.y;
-    // calculate rotation matrices at mid sample time for flow observations
-    Quaternion q(statesAtFlowTime.quat[0],statesAtFlowTime.quat[1],statesAtFlowTime.quat[2],statesAtFlowTime.quat[3]);
-    q.rotation_matrix(Tbn_flow);
-    Tnb_flow = Tbn_flow.transposed();
-    // write uncorrected flow rate measurements that will be used by the focal length scale factor estimator
-    // note correction for different axis and sign conventions used by the px4flow sensor
-    flowRadXY[0] = - rawFlowRates.x; // raw (non motion compensated) optical flow angular rate about the X axis (rad/sec)
-    flowRadXY[1] = - rawFlowRates.y; // raw (non motion compensated) optical flow angular rate about the Y axis (rad/sec)
-    // write flow rate measurements corrected for focal length scale factor errors and body rates
-    flowRadXYcomp[0] = flowStates[0]*flowRadXY[0] + omegaAcrossFlowTime.x;
-    flowRadXYcomp[1] = flowStates[0]*flowRadXY[1] + omegaAcrossFlowTime.y;
-    if (rawFlowQuality > 100){
+    RecallOmega(omegaAcrossFlowTime, imuSampleTime_ms - flowTimeDeltaAvg_ms - _msecFLowDelay, imuSampleTime_ms - _msecFLowDelay);
+    // calculate bias errors on flow sensor gyro rates, but protect against spikes in data
+    flowGyroBias.x = 0.99f * flowGyroBias.x + 0.01f * constrain_float((rawGyroRates.x - omegaAcrossFlowTime.x),-0.1f,0.1f);
+    flowGyroBias.y = 0.99f * flowGyroBias.y + 0.01f * constrain_float((rawGyroRates.y - omegaAcrossFlowTime.y),-0.1f,0.1f);
+    // don't use data with a low quality indicator or extreme rates (helps catch corrupt sesnor data)
+    if (rawFlowQuality > 50 && rawFlowRates.length() < 4.2f && rawGyroRates.length() < 4.2f) {
+        // recall vehicle states at mid sample time for flow observations allowing for delays
+        RecallStates(statesAtFlowTime, imuSampleTime_ms - _msecFLowDelay - flowTimeDeltaAvg_ms/2);
+        // calculate rotation matrices at mid sample time for flow observations
+        Quaternion q(statesAtFlowTime.quat[0],statesAtFlowTime.quat[1],statesAtFlowTime.quat[2],statesAtFlowTime.quat[3]);
+        q.rotation_matrix(Tbn_flow);
+        Tnb_flow = Tbn_flow.transposed();
+        // correct flow sensor rates for bias
+        omegaAcrossFlowTime.x = rawGyroRates.x - flowGyroBias.x;
+        omegaAcrossFlowTime.y = rawGyroRates.y - flowGyroBias.y;
+        // write uncorrected flow rate measurements that will be used by the focal length scale factor estimator
+        // note correction for different axis and sign conventions used by the px4flow sensor
+        flowRadXY[0] = - rawFlowRates.x; // raw (non motion compensated) optical flow angular rate about the X axis (rad/sec)
+        flowRadXY[1] = - rawFlowRates.y; // raw (non motion compensated) optical flow angular rate about the Y axis (rad/sec)
+        // write flow rate measurements corrected for focal length scale factor errors and body rates
+        flowRadXYcomp[0] = flowStates[0]*flowRadXY[0] + omegaAcrossFlowTime.x;
+        flowRadXYcomp[1] = flowStates[0]*flowRadXY[1] + omegaAcrossFlowTime.y;
         // set flag that will trigger observations
         newDataFlow = true;
         velHoldMode = false;
