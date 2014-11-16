@@ -321,6 +321,8 @@ static AP_OpticalFlow_PX4 optflow(ahrs);
  #endif
 // gnd speed limit required to observe optical flow sensor limits
 static float ekfGndSpdLimit;
+// scale factor applied to velocity controller gain to prevent optical flow noise causing excessive angle demand noise
+static float ekfNavVelGainScaler;
 
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection
