@@ -24,6 +24,7 @@
 class HAL_AVR_SITL;
 
 class AVR_SITL::SITL_State {
+    friend class AVR_SITL::SITLScheduler;
 public:
     void init(int argc, char * const argv[]);
 

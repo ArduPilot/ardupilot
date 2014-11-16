@@ -23,9 +23,9 @@
 
 using namespace AVR_SITL;
 
-static SITLScheduler sitlScheduler;
 static SITLEEPROMStorage sitlEEPROMStorage;
 static SITL_State sitlState;
+static SITLScheduler sitlScheduler(&sitlState);
 static SITLRCInput  sitlRCInput(&sitlState);
 static SITLRCOutput sitlRCOutput(&sitlState);
 static SITLAnalogIn sitlAnalogIn(&sitlState);
