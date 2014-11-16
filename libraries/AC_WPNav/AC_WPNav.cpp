@@ -297,7 +297,7 @@ int32_t AC_WPNav::get_loiter_bearing_to_target() const
 }
 
 /// update_loiter - run the loiter controller - should be called at 100hz
-void AC_WPNav::update_loiter(float ekfGndSpdLimit)
+void AC_WPNav::update_loiter(float ekfGndSpdLimit, float ekfNavVelGainScaler)
 {
     // calculate dt
     uint32_t now = hal.scheduler->millis();
@@ -317,7 +317,7 @@ void AC_WPNav::update_loiter(float ekfGndSpdLimit)
         _pos_control.trigger_xy();
     }else{
         // run horizontal position controller
-        _pos_control.update_xy_controller(true);
+        _pos_control.update_xy_controller(true, ekfNavVelGainScaler);
     }
 }
 
@@ -627,7 +627,7 @@ void AC_WPNav::update_wpnav()
         _pos_control.freeze_ff_z();
     }else{
         // run horizontal position controller
-        _pos_control.update_xy_controller(false);
+        _pos_control.update_xy_controller(false, 1.0f);
 
         // check if leash lengths need updating
         check_wp_leash_length();
@@ -892,7 +892,7 @@ void AC_WPNav::update_spline()
         _pos_control.freeze_ff_z();
     }else{
         // run horizontal position controller
-        _pos_control.update_xy_controller(false);
+        _pos_control.update_xy_controller(false, 1.0f);
     }
 }
 

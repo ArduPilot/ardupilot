@@ -95,7 +95,7 @@ public:
     int32_t get_loiter_bearing_to_target() const;
 
     /// update_loiter - run the loiter controller - should be called at 10hz
-    void update_loiter(float ekfGndSpdLimit);
+    void update_loiter(float ekfGndSpdLimit, float ekfNavVelGainScaler);
 
     ///
     /// waypoint controller
