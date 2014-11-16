@@ -328,9 +328,9 @@ uint8_t AP_AHRS_NavEKF::setInhibitGPS(void)
 }
 
 // get speed limit
-float AP_AHRS_NavEKF::getSpeedLimit(void)
+void AP_AHRS_NavEKF::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler)
 {
-    return EKF.getSpeedLimit();
+    EKF.getEkfControlLimits(ekfGndSpdLimit,ekfNavVelGainScaler);
 }
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE
