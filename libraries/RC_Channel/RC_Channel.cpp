@@ -224,6 +224,28 @@ RC_Channel::calc_pwm(void)
     radio_out = constrain_int16(radio_out, radio_min.get(), radio_max.get());
 }
 
+
+/*
+  return the center stick position expressed as a control_in value
+  used for thr_mid in copter
+ */
+int16_t
+RC_Channel::get_control_mid() {
+    if (_type == RC_CHANNEL_TYPE_RANGE) {
+        int16_t r_in = (radio_min.get()+radio_max.get())/2;
+
+        if (_reverse == -1) {
+            r_in = radio_max.get() - (r_in - radio_min.get());
+        }
+
+        int16_t radio_trim_low  = radio_min + _dead_zone;
+
+        return (_low + ((int32_t)(_high - _low) * (int32_t)(r_in - radio_trim_low)) / (int32_t)(radio_max - radio_trim_low));
+    } else {
+        return 0;
+    }
+}
+
 // ------------------------------------------
 
 void
