@@ -930,7 +930,7 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
         LOG_PACKET_HEADER_INIT(LOG_EKF2_MSG),
         time_ms : hal.scheduler->millis(),
         Ratio   : (int8_t)(100*ratio),
-        AZ1bias : (int8_t)(100*az2bias),
+        AZ1bias : (int8_t)(100*az1bias),
         AZ2bias : (int8_t)(100*az2bias),
         windN   : (int16_t)(100*wind.x),
         windE   : (int16_t)(100*wind.y),
