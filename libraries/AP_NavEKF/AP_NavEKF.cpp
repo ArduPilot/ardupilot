@@ -3630,7 +3630,7 @@ void NavEKF::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScal
         // allow 1.0 rad/sec margin for angular motion
         ekfGndSpdLimit = max((_maxFlowRate - 1.0f), 0.0f) * max((flowStates[1] - state.position[2]), 0.1f);
         // use standard gains up to 5.0 metres height and reduce above that
-        ekfNavVelGainScaler = 5.0f / max((flowStates[1] - state.position[2]),5.0f);
+        ekfNavVelGainScaler = 3.0f / max((flowStates[1] - state.position[2]),3.0f);
     } else {
         ekfGndSpdLimit = 400.0f; //return 80% of max filter speed
         ekfNavVelGainScaler = 1.0f;
