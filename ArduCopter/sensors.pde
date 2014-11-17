@@ -109,6 +109,45 @@ static void init_optflow()
 #endif      // OPTFLOW == ENABLED
 }
 
+// initialize the irlock sensor
+static void init_irlock()
+{
+#if IRLOCK == ENABLED
+	if (!irlock.enabled())
+		return;
+
+	irlock.init();
+	if (!irlock.healthy()) {
+		cliSerial->print_P(PSTR("Failed to initialize IRLock\n"));
+		Log_Write_Error(ERROR_SUBSYSTEM_IRLOCK, ERROR_CODE_FAILED_TO_INITIALISE);
+	}
+#endif
+}
+
+// update the irlock sensor
+#if IRLOCK == ENABLED
+static void update_irlock(void)
+{
+	static uint32_t last_of_update = 0;
+
+	if (!irlock.enabled())
+		return;
+
+	irlock.update();
+
+	if (irlock.last_update() != last_of_update) {
+		last_of_update = irlock.last_update();
+		irlock_block frame[IRLOCK_MAX_BLOCKS_PER_FRAME];
+		irlock.get_current_frame(frame);
+		cliSerial->print_P(PSTR("IRLOCK FRAME >>>>>>>>>>>>>>>>>>>>>\n"));
+		for (int i = 0; i < irlock.num_blocks(); ++i) {
+			cliSerial->printf_P(PSTR("sig# %u at position (x=%u, y=%u) with (w=%u, h=%u)\n"),
+					frame[i].signature, frame[i].center_x, frame[i].center_y, frame[i].width, frame[i].height);
+		}
+	}
+}
+#endif
+
 // called at 100hz but data from sensor only arrives at 20 Hz
 #if OPTFLOW == ENABLED
 static void update_optflow(void)

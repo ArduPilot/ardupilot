@@ -227,6 +227,9 @@ static void init_ardupilot()
     // initialise inertial nav
     inertial_nav.init();
 
+    // initialize the irlock sensor
+    init_irlock();
+
 #ifdef USERHOOK_INIT
     USERHOOK_INIT
 #endif

@@ -20,6 +20,7 @@ MODULES		+= drivers/led
 MODULES		+= drivers/px4fmu
 MODULES		+= drivers/px4io
 MODULES		+= drivers/px4flow
+MODULES     += drivers/irlock
 MODULES		+= drivers/boards/px4fmu-v2
 MODULES		+= drivers/rgbled
 MODULES		+= drivers/lsm303d

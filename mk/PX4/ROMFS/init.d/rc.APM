@@ -336,6 +336,11 @@ then
     echo "Found mb12xx sensor"
 fi
 
+if irlock start
+then
+    echo "Found irlock sensor"
+fi
+
 if mtd start /fs/mtd
 then
     echo "started mtd driver OK"

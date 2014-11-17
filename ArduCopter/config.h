@@ -414,6 +414,16 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// IR LOCK SENSOR
+#ifndef IRLOCK
+ #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+  #define IRLOCK		ENABLED
+ #else
+  #define IRLOCK		DISABLED
+ #endif
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 //  Auto Tuning
 #ifndef AUTOTUNE_ENABLED
  # define AUTOTUNE_ENABLED  ENABLED

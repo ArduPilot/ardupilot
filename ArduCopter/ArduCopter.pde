@@ -126,6 +126,7 @@
 #include <AP_Motors.h>          // AP Motors library
 #include <AP_RangeFinder.h>     // Range finder library
 #include <AP_OpticalFlow.h>     // Optical Flow library
+#include <AP_IRLock.h>			// IR-Lock Sensor library
 #include <Filter.h>             // Filter library
 #include <AP_Buffer.h>          // APM FIFO Buffer
 #include <AP_Relay.h>           // APM relay
@@ -321,6 +322,17 @@ static AP_OpticalFlow_ADNS3080 optflow(ahrs);
 static AP_OpticalFlow_PX4 optflow(ahrs);
 #endif
  #endif
+
+////////////////////////////////////////////////////////////////////////////////
+// IRLOCK SENSOR
+////////////////////////////////////////////////////////////////////////////////
+#if IRLOCK == ENABLED
+ #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+static AP_IRLock_PX4 irlock(ahrs);
+ #else
+#error Unrecognized IRLOCK setting
+ #endif
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection
@@ -778,6 +790,9 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { update_GPS,            8,     90 },
 #if OPTFLOW == ENABLED
     { update_optflow,        8,     20 },
+#endif
+#if IRLOCK == ENABLED
+    { update_irlock,         8,     20 },
 #endif
     { update_batt_compass,  40,     72 },
     { read_aux_switches,    40,      5 },
