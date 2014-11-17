@@ -46,6 +46,10 @@ void LinuxRCOutput_Navio::set_freq(uint32_t chmask, uint16_t freq_hz)
     uint8_t prescale = round(24576000.f / 4096.f / freq_hz)  - 1;
     hal.i2c->writeRegister(PCA9685_ADDRESS, PCA9685_RA_PRE_SCALE, prescale);
     
+    // Reset all channels
+    uint8_t data[4] = {0x00, 0x00, 0x00, 0x00};
+    hal.i2c->writeRegisters(PCA9685_ADDRESS, PCA9685_RA_ALL_LED_ON_L, 4, data);
+    
     // Enable external clocking
     hal.i2c->writeRegister(PCA9685_ADDRESS, PCA9685_RA_MODE1, 
                             PCA9685_MODE1_SLEEP_BIT | PCA9685_MODE1_EXTCLK_BIT); 
@@ -90,10 +94,10 @@ void LinuxRCOutput_Navio::write(uint8_t ch, uint16_t period_us)
     else
         length = round((period_us * 4096) / (1000000.f / _frequency)) - 1;
         
-    uint8_t data[4] = {0x00, 0x00, length & 0xFF, length >> 8};
+    uint8_t data[2] = {length & 0xFF, length >> 8};
     uint8_t status = hal.i2c->writeRegisters(PCA9685_ADDRESS, 
-                                             PCA9685_RA_LED0_ON_L + 4 * (ch + 3), 
-                                             4, 
+                                             PCA9685_RA_LED0_OFF_L + 4 * (ch + 3), 
+                                             2, 
                                              data);
                                              
     _i2c_sem->give();                                         
