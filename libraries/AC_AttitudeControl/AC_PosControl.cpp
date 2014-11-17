@@ -571,7 +571,7 @@ void AC_PosControl::update_xy_controller(bool use_desired_velocity, float ekfNav
             break;
         case 3:
             // run position controller's acceleration to lean angle step
-            accel_to_lean_angles();
+            accel_to_lean_angles(ekfNavVelGainScaler);
             _xy_step++;
             break;
     }
@@ -642,7 +642,7 @@ void AC_PosControl::update_vel_controller_xyz(float ekfNavVelGainScaler)
         rate_to_accel_xy(dt_xy, ekfNavVelGainScaler);
 
         // run acceleration to lean angle step
-        accel_to_lean_angles();
+        accel_to_lean_angles(ekfNavVelGainScaler);
     }
 
     // update altitude target
@@ -821,7 +821,7 @@ void AC_PosControl::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
 
 /// accel_to_lean_angles - horizontal desired acceleration to lean angles
 ///    converts desired accelerations provided in lat/lon frame to roll/pitch angles
-void AC_PosControl::accel_to_lean_angles()
+void AC_PosControl::accel_to_lean_angles(float ekfNavVelGainScaler)
 {
     // catch if we've just been started
     uint32_t now = hal.scheduler->millis();
@@ -861,7 +861,7 @@ void AC_PosControl::accel_to_lean_angles()
     lastPitchDem = _pitch_target;
 
     // 5Hz lowpass filter on angles - required due to optical flow  noise
-    float freq_cut = 5.0f;
+    float freq_cut = 5.0f * ekfNavVelGainScaler;
     float alpha = constrain_float(dt_xy/(dt_xy + 1.0f/(2.0f*(float)M_PI*freq_cut)),0.0f,1.0f);
     static float roll_target_filtered = 0.0f;
     static float pitch_target_filtered = 0.0f;
