@@ -276,9 +276,9 @@ RC_Channel::pwm_to_angle_dz(uint16_t dead_zone)
         return 0;
 
     if(radio_in > radio_trim_high) {
-        return _reverse * ((long)_high * (long)(radio_in - radio_trim_high)) / (long)(radio_max  - radio_trim_high);
+        return _reverse * ((int32_t)_high * (int32_t)(radio_in - radio_trim_high)) / (int32_t)(radio_max  - radio_trim_high);
     }else if(radio_in < radio_trim_low) {
-        return _reverse * ((long)_high * (long)(radio_in - radio_trim_low)) / (long)(radio_trim_low - radio_min);
+        return _reverse * ((int32_t)_high * (int32_t)(radio_in - radio_trim_low)) / (int32_t)(radio_trim_low - radio_min);
     }else
         return 0;
 }
@@ -298,9 +298,9 @@ int16_t
 RC_Channel::angle_to_pwm()
 {
     if((servo_out * _reverse) > 0)
-        return _reverse * ((long)servo_out * (long)(radio_max - radio_trim)) / (long)_high;
+        return _reverse * ((int32_t)servo_out * (int32_t)(radio_max - radio_trim)) / (int32_t)_high;
     else
-        return _reverse * ((long)servo_out * (long)(radio_trim - radio_min)) / (long)_high;
+        return _reverse * ((int32_t)servo_out * (int32_t)(radio_trim - radio_min)) / (int32_t)_high;
 }
 
 /*
@@ -319,7 +319,7 @@ RC_Channel::pwm_to_range_dz(uint16_t dead_zone)
     int16_t radio_trim_low  = radio_min + dead_zone;
 
     if (r_in > radio_trim_low)
-        return (_low + ((long)(_high - _low) * (long)(r_in - radio_trim_low)) / (long)(radio_max - radio_trim_low));
+        return (_low + ((int32_t)(_high - _low) * (int32_t)(r_in - radio_trim_low)) / (int32_t)(radio_max - radio_trim_low));
     else if (dead_zone > 0)
         return 0;
     else
@@ -343,7 +343,7 @@ RC_Channel::range_to_pwm()
     if (_high_out == _low_out) {
         return radio_trim;
     }
-    return ((long)(servo_out - _low_out) * (long)(radio_max - radio_min)) / (long)(_high_out - _low_out);
+    return ((int32_t)(servo_out - _low_out) * (int32_t)(radio_max - radio_min)) / (int32_t)(_high_out - _low_out);
 }
 
 // ------------------------------------------
