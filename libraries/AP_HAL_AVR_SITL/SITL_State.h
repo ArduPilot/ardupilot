@@ -18,7 +18,7 @@
 
 #include "../AP_Baro/AP_Baro.h"
 #include "../AP_InertialSensor/AP_InertialSensor.h"
-#include "../AP_Compass/AP_Compass.h"
+#include "../AP_Compass/Compass.h"
 #include "../AP_OpticalFlow/AP_OpticalFlow.h"
 #include "../AP_Terrain/AP_Terrain.h"
 #include "../SITL/SITL.h"
@@ -128,7 +128,7 @@ private:
     static AP_Baro *_barometer;
     static AP_InertialSensor *_ins;
     static SITLScheduler *_scheduler;
-    static AP_Compass_HIL *_compass;
+    static Compass *_compass;
     static OpticalFlow *_optical_flow;
     static AP_Terrain *_terrain;
 
