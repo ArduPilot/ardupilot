@@ -20,8 +20,8 @@
 
 // uncomment the lines below to save on flash space if compiling for the APM using Arduino IDE.  Top items save the most flash space
 //#define LOGGING_ENABLED       DISABLED            // disable dataflash logging to save 11K of flash space
-//#define MOUNT                 DISABLED            // disable the camera gimbal to save 8K of flash space
-//#define AUTOTUNE_ENABLED      DISABLED            // disable the auto tune functionality to save 7k of flash
+#define MOUNT                 DISABLED            // disable the camera gimbal to save 8K of flash space
+#define AUTOTUNE_ENABLED      DISABLED            // disable the auto tune functionality to save 7k of flash
 //#define AC_FENCE              DISABLED            // disable fence to save 2k of flash
 //#define CAMERA                DISABLED            // disable camera trigger to save 1k of flash
 //#define CONFIG_SONAR          DISABLED            // disable sonar to save 1k of flash
