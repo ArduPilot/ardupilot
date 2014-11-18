@@ -140,7 +140,7 @@ static int16_t get_pilot_desired_throttle(int16_t throttle_control)
         throttle_out = g.throttle_min + ((float)(throttle_control-g.throttle_min))*((float)(g.throttle_mid - g.throttle_min))/((float)(mid_stick-g.throttle_min));
     }else if(throttle_control > mid_stick) {
         // above the deadband
-        throttle_out = g.throttle_mid + ((float)(throttle_control-mid_stick))*(float)(1000-g.throttle_mid)/mid_stick;
+        throttle_out = g.throttle_mid + ((float)(throttle_control-mid_stick)) * (float)(1000-g.throttle_mid) / (float)(1000-mid_stick);
     }else{
         // must be in the deadband
         throttle_out = g.throttle_mid;
@@ -164,7 +164,6 @@ static int16_t get_pilot_desired_climb_rate(int16_t throttle_control)
     int16_t mid_stick = g.rc_3.get_control_mid();
     int16_t deadband_top = mid_stick + g.throttle_deadzone;
     int16_t deadband_bottom = mid_stick - g.throttle_deadzone;
-
 
     // ensure a reasonable throttle value
     throttle_control = constrain_int16(throttle_control,g.throttle_min,1000);
@@ -208,6 +207,7 @@ static int16_t get_throttle_pre_takeoff(int16_t throttle_control)
         return 0;
     }
 
+    // calculate mid stick and deadband
     int16_t mid_stick = g.rc_3.get_control_mid();
     int16_t deadband_top = mid_stick + g.throttle_deadzone;
 
