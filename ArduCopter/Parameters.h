@@ -122,8 +122,9 @@ public:
         k_param_acro_expo,
         k_param_throttle_deadzone,
         k_param_optflow,
-        k_param_dcmcheck_thresh,        // 59
+        k_param_dcmcheck_thresh,
         k_param_log_bitmask,
+        k_param_pidvoltscale, //61
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -353,6 +354,10 @@ public:
     AP_Int16        poshold_brake_rate;         // PosHold flight mode's rotation rate during braking in deg/sec
     AP_Int16        poshold_brake_angle_max;    // PosHold flight mode's max lean angle during braking in centi-degrees
     
+    AP_Int16        hybrid_brake_rate;          // hybrid flight mode's rotation rate during braking in deg/sec
+    AP_Int16        hybrid_brake_angle_max;     // hybrid flight mode's max lean angle during braking in centi-degrees
+    AP_Int8         pidvoltscale;
+
     // Waypoints
     //
     AP_Int32        rtl_loiter_time;

@@ -52,7 +52,8 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     _distance_to_target(0.0f),
     _xy_step(0),
     _dt_xy(0.0f),
-    _vel_xyz_step(0)
+    _vel_xyz_step(0),
+    _pid_scaler(1.0f)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -366,8 +367,10 @@ void AC_PosControl::accel_to_throttle(float accel_target_z)
         _accel_error.z = _accel_error_filter.apply(constrain_float(accel_target_z - z_accel_meas, -32000, 32000));
     }
 
+    float acc_z_error = _accel_error.z * _pid_scaler;
+
     // separately calculate p, i, d values for logging
-    p = _pid_alt_accel.get_p(_accel_error.z);
+    p = _pid_alt_accel.get_p(acc_z_error);
 
     // get i term
     i = _pid_alt_accel.get_integrator();
@@ -375,11 +378,11 @@ void AC_PosControl::accel_to_throttle(float accel_target_z)
     // update i term as long as we haven't breached the limits or the I term will certainly reduce
     // To-Do: should this be replaced with limits check from attitude_controller?
     if ((!_motors.limit.throttle_lower && !_motors.limit.throttle_upper) || (i>0&&_accel_error.z<0) || (i<0&&_accel_error.z>0)) {
-        i = _pid_alt_accel.get_i(_accel_error.z, _dt);
+        i = _pid_alt_accel.get_i(acc_z_error, _dt);
     }
 
     // get d term
-    d = _pid_alt_accel.get_d(_accel_error.z, _dt);
+    d = _pid_alt_accel.get_d(acc_z_error, _dt);
 
     // send throttle to attitude controller with angle boost
     _attitude_control.set_throttle_out((int16_t)p+i+d+_throttle_hover, true);

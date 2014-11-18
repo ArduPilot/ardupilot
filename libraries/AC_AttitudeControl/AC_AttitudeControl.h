@@ -62,7 +62,8 @@ public:
         _pid_rate_yaw(pid_rate_yaw),
         _dt(AC_ATTITUDE_100HZ_DT),
         _angle_boost(0),
-        _acro_angle_switch(0)
+        _acro_angle_switch(0),
+        _pid_scaler(1.0f)
 		{
 			AP_Param::setup_object_defaults(this, var_info);
 
@@ -85,6 +86,8 @@ public:
 
     // set_yaw_target_to_current_heading - sets yaw target to current heading
     void set_yaw_target_to_current_heading() { _angle_ef_target.z = _ahrs.yaw_sensor; }
+
+    void set_pid_scaler(float pid_scaler) { _pid_scaler = pid_scaler; }
 
     //
     // methods to be called by upper controllers to request and implement a desired attitude
@@ -238,6 +241,7 @@ protected:
     Vector3f            _rate_bf_desired;       // body-frame feed forward rates
     int16_t             _angle_boost;           // used only for logging
     int16_t             _acro_angle_switch;           // used only for logging
+    float               _pid_scaler;
 };
 
 #define AC_ATTITUDE_CONTROL_LOG_FORMAT(msg) { msg, sizeof(AC_AttitudeControl::log_Attitude),	\

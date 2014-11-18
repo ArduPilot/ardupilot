@@ -549,13 +549,13 @@ float AC_AttitudeControl::rate_bf_to_motor_roll(float rate_target_cds)
     float p,i,d;            // used to capture pid values for logging
     float current_rate;     // this iteration's rate
     float rate_error;       // simply target_rate - current_rate
-
+    
     // get current rate
     // To-Do: make getting gyro rates more efficient?
     current_rate = (_ahrs.get_gyro().x * AC_ATTITUDE_CONTROL_DEGX100);
 
     // calculate error and call pid controller
-    rate_error = rate_target_cds - current_rate;
+    rate_error = (rate_target_cds - current_rate)*_pid_scaler;
     p = _pid_rate_roll.get_p(rate_error);
 
     // get i term
@@ -587,7 +587,7 @@ float AC_AttitudeControl::rate_bf_to_motor_pitch(float rate_target_cds)
     current_rate = (_ahrs.get_gyro().y * AC_ATTITUDE_CONTROL_DEGX100);
 
     // calculate error and call pid controller
-    rate_error = rate_target_cds - current_rate;
+    rate_error = (rate_target_cds - current_rate) *_pid_scaler;
     p = _pid_rate_pitch.get_p(rate_error);
 
     // get i term
@@ -619,7 +619,7 @@ float AC_AttitudeControl::rate_bf_to_motor_yaw(float rate_target_cds)
     current_rate = (_ahrs.get_gyro().z * AC_ATTITUDE_CONTROL_DEGX100);
 
     // calculate error and call pid controller
-    rate_error  = rate_target_cds - current_rate;
+    rate_error  = (rate_target_cds - current_rate) * _pid_scaler;
     p = _pid_rate_yaw.get_p(rate_error);
 
     // separately calculate p, i, d values for logging
