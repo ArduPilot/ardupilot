@@ -12,6 +12,10 @@ ifeq ($(wildcard $(PX4_ROOT)/nuttx-configs),)
 $(error ERROR: PX4_ROOT not set correctly - no nuttx-configs directory found)
 endif
 
+ifneq ($(wildcard $(SKETCHBOOK)/../uavcan),)
+UAVCAN_DIR=$(shell cd $(SKETCHBOOK)/../uavcan && pwd)/
+endif
+
 # default to PX4NuttX above the PX4Firmware tree
 ifeq ($(NUTTX_SRC),)
 NUTTX_SRC := $(shell cd $(PX4_ROOT)/../PX4NuttX/nuttx && pwd)/
@@ -31,6 +35,9 @@ PX4_GIT_VERSION   := $(shell cd $(PX4_ROOT) && git rev-parse HEAD | cut -c1-8)
 
 EXTRAFLAGS += -DNUTTX_GIT_VERSION="\"$(NUTTX_GIT_VERSION)\""
 EXTRAFLAGS += -DPX4_GIT_VERSION="\"$(PX4_GIT_VERSION)\""
+ifneq ($(wildcard $(SKETCHBOOK)/../uavcan),)
+EXTRAFLAGS += -DUAVCAN=1
+endif
 
 # we have different config files for V1 and V2
 PX4_V1_CONFIG_FILE=$(MK_DIR)/PX4/config_px4fmu-v1_APM.mk
@@ -43,7 +50,7 @@ WARNFLAGS = -Wno-psabi -Wno-packed -Wno-error=double-promotion -Wno-error=unused
 # avoid PX4 submodules
 export GIT_SUBMODULES_ARE_EVIL = 1
 
-PX4_MAKE = $(v) GIT_SUBMODULES_ARE_EVIL=1 make -C $(SKETCHBOOK) -f $(PX4_ROOT)/Makefile EXTRADEFINES="$(SKETCHFLAGS) $(WARNFLAGS) "'$(EXTRAFLAGS)' APM_MODULE_DIR=$(SKETCHBOOK) SKETCHBOOK=$(SKETCHBOOK) PX4_ROOT=$(PX4_ROOT) NUTTX_SRC=$(NUTTX_SRC) MAXOPTIMIZATION="-Os" 
+PX4_MAKE = $(v) GIT_SUBMODULES_ARE_EVIL=1 make -C $(SKETCHBOOK) -f $(PX4_ROOT)/Makefile EXTRADEFINES="$(SKETCHFLAGS) $(WARNFLAGS) "'$(EXTRAFLAGS)' APM_MODULE_DIR=$(SKETCHBOOK) SKETCHBOOK=$(SKETCHBOOK) PX4_ROOT=$(PX4_ROOT) NUTTX_SRC=$(NUTTX_SRC) MAXOPTIMIZATION="-Os" UAVCAN_DIR=$(UAVCAN_DIR)
 PX4_MAKE_ARCHIVES = make -C $(PX4_ROOT) NUTTX_SRC=$(NUTTX_SRC) archives MAXOPTIMIZATION="-Os" 
 
 .PHONY: module_mk

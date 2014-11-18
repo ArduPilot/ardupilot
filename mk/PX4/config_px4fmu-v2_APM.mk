@@ -74,6 +74,12 @@ MODULES         += modules/libtomcrypt
 endif
 MODULES		+= lib/conversion
 
+ifneq ($(wildcard $(SKETCHBOOK)/../uavcan),)  
+MODULES         += modules/uavcan
+MODULES         += lib/mathlib
+LIBRARIES       += lib/mathlib/CMSIS
+endif
+
 #
 # Transitional support - add commands from the NuttX export archive.
 #
