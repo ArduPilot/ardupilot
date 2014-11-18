@@ -1379,16 +1379,20 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             Location loc;
             loc.lat = packet.lat_int;
             loc.lng = packet.lon_int;
-            loc.alt = packet.alt;
+            loc.alt = packet.alt*100;
             switch (packet.coordinate_frame) {
+                default:
+                case MAV_FRAME_GLOBAL:
                 case MAV_FRAME_GLOBAL_INT:
                     loc.flags.relative_alt = false;
                     loc.flags.terrain_alt = false;
                     break;
+                case MAV_FRAME_GLOBAL_RELATIVE_ALT:
                 case MAV_FRAME_GLOBAL_RELATIVE_ALT_INT:
                     loc.flags.relative_alt = true;
                     loc.flags.terrain_alt = false;
                     break;
+                case MAV_FRAME_GLOBAL_TERRAIN_ALT:
                 case MAV_FRAME_GLOBAL_TERRAIN_ALT_INT:
                     loc.flags.relative_alt = true;
                     loc.flags.terrain_alt = true;
