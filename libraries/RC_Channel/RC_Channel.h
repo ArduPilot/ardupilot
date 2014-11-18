@@ -62,7 +62,7 @@ public:
     uint8_t     get_ch_out(void) const { return _ch_out; };
 
     // get the center stick position expressed as a control_in value
-    int16_t     get_control_mid();
+    int16_t     get_control_mid() const;
 
     // read input from APM_RC - create a control_in value
     void        set_pwm(int16_t pwm);

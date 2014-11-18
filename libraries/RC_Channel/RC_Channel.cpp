@@ -230,7 +230,7 @@ RC_Channel::calc_pwm(void)
   used for thr_mid in copter
  */
 int16_t
-RC_Channel::get_control_mid() {
+RC_Channel::get_control_mid() const {
     if (_type == RC_CHANNEL_TYPE_RANGE) {
         int16_t r_in = (radio_min.get()+radio_max.get())/2;
 
