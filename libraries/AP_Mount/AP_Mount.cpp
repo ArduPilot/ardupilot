@@ -511,6 +511,12 @@ void AP_Mount::control_msg(mavlink_message_t *msg)
         _roll_angle  = vec.x;
         _tilt_angle = vec.y;
         _pan_angle   = vec.z;
+        // also reset control angles, in radians. This allows a
+        // MOUNT_CONTROL message to be used to reset the mount to zero
+        // offset when in joystick speed relative mode
+        _roll_control_angle = radians(_roll_angle);
+        _tilt_control_angle = radians(_tilt_angle);
+        _pan_control_angle = radians(_pan_angle);
     }
     break;
 
