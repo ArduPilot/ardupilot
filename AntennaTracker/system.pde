@@ -60,7 +60,6 @@ static void init_tracker()
     gps.init(NULL);
 
     mavlink_system.compid = 4;
-    mavlink_system.type = MAV_TYPE_ANTENNA_TRACKER;
 
     ahrs.init();
     ahrs.set_fly_forward(false);
