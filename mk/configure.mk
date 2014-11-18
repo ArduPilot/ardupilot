@@ -24,6 +24,10 @@ endif
 	@echo  >> $(SKETCHBOOK)/config.mk
 	@echo \# PX4NuttX tree: fill in the path to PX4NuttX repository from github.com/diydrones: >> $(SKETCHBOOK)/config.mk
 	@echo NUTTX_SRC=../PX4NuttX/nuttx >> $(SKETCHBOOK)/config.mk
+	@echo  >> $(SKETCHBOOK)/config.mk
+	@echo \# UAVCAN tree: fill in the path to UAVCAN repository from github.com/diydrones: >> $(SKETCHBOOK)/config.mk
+	@echo UAVCAN_SRC=../uavcan >> $(SKETCHBOOK)/config.mk
+	@echo  >> $(SKETCHBOOK)/config.mk
 ###################### VRBRAIN ##################################	
 	@echo \# VRBRAIN Firmware tree: >> $(SKETCHBOOK)/config.mk
 	@echo VRBRAIN_ROOT=../VRNuttX >> $(SKETCHBOOK)/config.mk
