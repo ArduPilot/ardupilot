@@ -102,7 +102,19 @@ public:
 
     int16_t                                         pwm_to_angle_dz(uint16_t dead_zone);
     int16_t                                         pwm_to_angle();
+
+    /*
+      return a normalised input for a channel, in range -1 to 1,
+      centered around the channel trim. Ignore deadzone.
+     */
     float                                           norm_input();
+
+    /*
+      return a normalised input for a channel, in range -1 to 1,
+      centered around the channel trim. Take into account the deadzone
+    */
+    float                                           norm_input_dz();
+
     uint8_t                                         percent_input();
     float                                           norm_output();
     int16_t                                         angle_to_pwm();

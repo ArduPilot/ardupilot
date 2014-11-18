@@ -359,6 +359,22 @@ RC_Channel::norm_input()
     return constrain_float(ret, -1.0f, 1.0f);
 }
 
+float
+RC_Channel::norm_input_dz()
+{
+    int16_t dz_min = radio_trim - _dead_zone;
+    int16_t dz_max = radio_trim + _dead_zone;
+    float ret;
+    if (radio_in < dz_min && dz_min > radio_min) {
+        ret = _reverse * (float)(radio_in - dz_min) / (float)(dz_min - radio_min);
+    } else if (radio_in > dz_max && radio_max > dz_max) {
+        ret = _reverse * (float)(radio_in - dz_max) / (float)(radio_max  - dz_max);
+    } else {
+        ret = 0;
+    }
+    return constrain_float(ret, -1.0f, 1.0f);
+}
+
 /*
   get percentage input from 0 to 100. This ignores the trim value.
  */
