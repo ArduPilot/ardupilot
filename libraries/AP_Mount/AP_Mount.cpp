@@ -384,17 +384,17 @@ void AP_Mount::update_mount_position()
         if (_joystick_speed) {                  // for spring loaded joysticks
             // allow pilot speed position input to come directly from an RC_Channel
             if (_roll_rc_in && rc_ch(_roll_rc_in)) {
-                _roll_control_angle += rc_ch(_roll_rc_in)->norm_input() * 0.0001f * _joystick_speed;
+                _roll_control_angle += rc_ch(_roll_rc_in)->norm_input_dz() * 0.0001f * _joystick_speed;
                 if (_roll_control_angle < radians(_roll_angle_min*0.01f)) _roll_control_angle = radians(_roll_angle_min*0.01f);
                 if (_roll_control_angle > radians(_roll_angle_max*0.01f)) _roll_control_angle = radians(_roll_angle_max*0.01f);
             }
             if (_tilt_rc_in && (rc_ch(_tilt_rc_in))) {
-                _tilt_control_angle += rc_ch(_tilt_rc_in)->norm_input() * 0.0001f * _joystick_speed;
+                _tilt_control_angle += rc_ch(_tilt_rc_in)->norm_input_dz() * 0.0001f * _joystick_speed;
                 if (_tilt_control_angle < radians(_tilt_angle_min*0.01f)) _tilt_control_angle = radians(_tilt_angle_min*0.01f);
                 if (_tilt_control_angle > radians(_tilt_angle_max*0.01f)) _tilt_control_angle = radians(_tilt_angle_max*0.01f);
             }
             if (_pan_rc_in && (rc_ch(_pan_rc_in))) {
-                _pan_control_angle += rc_ch(_pan_rc_in)->norm_input() * 0.0001f * _joystick_speed;
+                _pan_control_angle += rc_ch(_pan_rc_in)->norm_input_dz() * 0.0001f * _joystick_speed;
                 if (_pan_control_angle < radians(_pan_angle_min*0.01f)) _pan_control_angle = radians(_pan_angle_min*0.01f);
                 if (_pan_control_angle > radians(_pan_angle_max*0.01f)) _pan_control_angle = radians(_pan_angle_max*0.01f);
             }
