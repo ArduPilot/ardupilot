@@ -9,7 +9,7 @@ public:
     LinuxUARTDriver(bool default_console);
     /* Linux implementations of UARTDriver virtual methods */
     void begin(uint32_t b);
-    virtual void begin(uint32_t b, uint16_t rxS, uint16_t txS);
+    void begin(uint32_t b, uint16_t rxS, uint16_t txS);
     void end();
     void flush();
     bool is_initialized();
@@ -32,7 +32,6 @@ public:
     enum flow_control get_flow_control(void) { return _flow_control; }
 
 private:
-    char *device_path;
     int _rd_fd;
     int _wr_fd;
     bool _nonblocking_writes;
@@ -59,6 +58,7 @@ private:
     uint64_t _last_write_time;    
 
 protected:
+    char *device_path;
     volatile bool _initialised;
     // we use in-task ring buffers to reduce the system call cost
     // of ::read() and ::write() in the main loop

@@ -317,7 +317,7 @@ void *LinuxScheduler::_uart_thread(void)
 
         // process any pending serial bytes
         ((LinuxUARTDriver *)hal.uartA)->_timer_tick();
-        ((LinuxSPIUARTDriver *)hal.uartB)->_timer_tick();
+        ((LinuxUARTDriver *)hal.uartB)->_timer_tick();
         ((LinuxUARTDriver *)hal.uartC)->_timer_tick();
     }
     return NULL;

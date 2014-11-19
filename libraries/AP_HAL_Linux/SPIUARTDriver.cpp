@@ -25,7 +25,8 @@ LinuxSPIUARTDriver::LinuxSPIUARTDriver() :
     _spi(NULL),
     _spi_sem(NULL),
     _last_update_timestamp(0),
-    _buffer(NULL)
+    _buffer(NULL),
+    _external(false)
 {
     _readbuf = NULL;
     _writebuf = NULL;
@@ -43,55 +44,67 @@ void LinuxSPIUARTDriver::sem_give()
 
 void LinuxSPIUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
-    if (rxS < 1024) {
-        rxS = 2048;
-    }
-    if (txS < 1024) {
-        txS = 2048;
-    }
-
-    /*
-      allocate the read buffer
-    */
-    if (rxS != 0 && rxS != _readbuf_size) {
-        _readbuf_size = rxS;
-        if (_readbuf != NULL) {
-            free(_readbuf);
+    if (device_path != NULL) {
+        LinuxUARTDriver::begin(b,rxS,txS);
+        if ( is_initialized()) {
+            _external = true;
+            return;
         }
-        _readbuf = (uint8_t *)malloc(_readbuf_size);
-        _readbuf_head = 0;
-        _readbuf_tail = 0;
     }
 
-    /*
-      allocate the write buffer
-    */
-    if (txS != 0 && txS != _writebuf_size) {
-        _writebuf_size = txS;
-        if (_writebuf != NULL) {
-            free(_writebuf);
-        }
-        _writebuf = (uint8_t *)malloc(_writebuf_size);
-        _writebuf_head = 0;
-        _writebuf_tail = 0;
-    }
+   if (rxS < 1024) {
+       rxS = 2048;
+   }
+   if (txS < 1024) {
+       txS = 2048;
+   }
 
-    _buffer = new uint8_t[rxS];
+   /*
+     allocate the read buffer
+   */
+   if (rxS != 0 && rxS != _readbuf_size) {
+       _readbuf_size = rxS;
+       if (_readbuf != NULL) {
+           free(_readbuf);
+       }
+       _readbuf = (uint8_t *)malloc(_readbuf_size);
+       _readbuf_head = 0;
+       _readbuf_tail = 0;
+   }
 
-    _spi = hal.spi->device(AP_HAL::SPIDevice_Ublox);
+   /*
+     allocate the write buffer
+   */
+   if (txS != 0 && txS != _writebuf_size) {
+       _writebuf_size = txS;
+       if (_writebuf != NULL) {
+           free(_writebuf);
+       }
+       _writebuf = (uint8_t *)malloc(_writebuf_size);
+       _writebuf_head = 0;
+       _writebuf_tail = 0;
+   }
 
-    if (_spi == NULL) {
-        hal.scheduler->panic("Cannot get SPIDevice_MPU9250");
-    }
+   _buffer = new uint8_t[rxS];
 
-    _spi_sem = _spi->get_semaphore();
+   _spi = hal.spi->device(AP_HAL::SPIDevice_Ublox);
 
-    _spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_HIGH);
-    _initialised = true;
+   if (_spi == NULL) {
+       hal.scheduler->panic("Cannot get SPIDevice_MPU9250");
+   }
+
+   _spi_sem = _spi->get_semaphore();
+
+   _spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_HIGH);
+   _initialised = true;
 }
 
 int LinuxSPIUARTDriver::_write_fd(const uint8_t *buf, uint16_t size)
 {
+    if (_external) {
+        return LinuxUARTDriver::_write_fd(buf,size);
+    } 
+
     if (!sem_take_nonblocking()) {
         return 0;
     }
@@ -114,6 +127,7 @@ int LinuxSPIUARTDriver::_write_fd(const uint8_t *buf, uint16_t size)
     space = BUF_SPACE(_readbuf);
 
     if (space == 0) {
+        sem_give();
         return ret;
     }
 
@@ -126,6 +140,7 @@ int LinuxSPIUARTDriver::_write_fd(const uint8_t *buf, uint16_t size)
         assert(_readbuf_tail+size <= _readbuf_size);
         memcpy(&_readbuf[_readbuf_tail], buffer, size);
         BUF_ADVANCETAIL(_readbuf, size);
+        sem_give();
         return ret;
     }
 
@@ -146,15 +161,21 @@ int LinuxSPIUARTDriver::_write_fd(const uint8_t *buf, uint16_t size)
     sem_give();
 
     return ret;
+    
 }
 
+static const uint8_t ff_stub[3000] = {0xff};
 int LinuxSPIUARTDriver::_read_fd(uint8_t *buf, uint16_t n)
 {
+    if (_external) {
+        return LinuxUARTDriver::_read_fd(buf, n);
+    }
+
     if (!sem_take_nonblocking()) {
         return 0;
     }
 
-    _spi->transaction(NULL, buf, n);
+    _spi->transaction(ff_stub, buf, n);
 
     BUF_ADVANCETAIL(_readbuf, n);
 
@@ -164,6 +185,10 @@ int LinuxSPIUARTDriver::_read_fd(uint8_t *buf, uint16_t n)
 
 void LinuxSPIUARTDriver::_timer_tick(void)
 {
+    if (_external) {
+        LinuxUARTDriver::_timer_tick();
+        return;
+    }
     /* lower the update rate */
     if (hal.scheduler->micros() - _last_update_timestamp < 50000) {
         return;
