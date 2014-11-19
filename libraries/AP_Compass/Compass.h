@@ -292,6 +292,10 @@ public:
     AP_Int8     _external[COMPASS_MAX_INSTANCES];   ///<compass is external
     bool        _healthy[COMPASS_MAX_INSTANCES];
     Vector3f    _field[COMPASS_MAX_INSTANCES];     ///< magnetic field strength
+    // board orientation from AHRS
+    enum Rotation _board_orientation;
+    AP_Int8     _orientation[COMPASS_MAX_INSTANCES];
+    AP_Vector3f _offset[COMPASS_MAX_INSTANCES];
 
 protected:
     // backend objects
@@ -300,8 +304,6 @@ protected:
     uint8_t     _compass_count;
     uint8_t     _backend_count;
 
-    AP_Int8     _orientation[COMPASS_MAX_INSTANCES];
-    AP_Vector3f _offset[COMPASS_MAX_INSTANCES];
     AP_Float    _declination;
     AP_Int8     _use_for_yaw[COMPASS_MAX_INSTANCES];///<enable use for yaw calculation
     AP_Int8     _auto_declination;                  ///<enable automatic declination code
@@ -323,8 +325,6 @@ protected:
     Vector3f    _motor_offset[COMPASS_MAX_INSTANCES]; // latest compensation added to compass
     float       _thr_or_curr;                   // throttle expressed as a percentage from 0 ~ 1.0 or current expressed in amps
 
-    // board orientation from AHRS
-    enum Rotation _board_orientation;
 
     // HIL variables
     Vector3f    _Bearth;
@@ -336,4 +336,5 @@ protected:
 #include "AP_Compass_Backend.h"
 #include "AP_Compass_HMC5843.h"
 #include "AP_Compass_HIL.h"
+#include "AP_Compass_AK8963.h"
 #endif

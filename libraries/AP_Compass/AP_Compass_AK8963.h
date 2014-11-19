@@ -7,6 +7,7 @@
 #include "../AP_Math/AP_Math.h"
 
 #include "Compass.h"
+#include "AP_Compass_Backend.h"
 
 class AK8963_Backend
 {
@@ -29,7 +30,7 @@ class AK8963_Backend
         }
 };
 
-class AP_Compass_AK8963 : public Compass
+class AP_Compass_AK8963 : public AP_Compass_Backend
 {
 private:
     typedef enum 
@@ -70,11 +71,12 @@ protected:
     float               _mag_x;
     float               _mag_y;
     float               _mag_z;
+    uint8_t             _compass_instance;
 
-    AK8963_Backend      *_backend;
+    AK8963_Backend      *_backend;  // Not to be confused with Compass (frontend) "_backends" attribute.
 
 public:
-    AP_Compass_AK8963();
+    AP_Compass_AK8963(Compass &compass);
 
     virtual bool        init(void);
     virtual bool        read(void);
@@ -100,8 +102,12 @@ class AK8963_MPU9250_SPI_Backend: public AK8963_Backend
 class AP_Compass_AK8963_MPU9250: public AP_Compass_AK8963
 {
     public:
-        AP_Compass_AK8963_MPU9250();
+        AP_Compass_AK8963_MPU9250(Compass &compass);
         bool init();
+
+    // detect the sensor
+    static AP_Compass_Backend *detect(Compass &compass);
+
     private:
         bool       _backend_init();
         void       _backend_reset();
