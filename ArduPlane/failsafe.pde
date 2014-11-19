@@ -69,8 +69,6 @@ void failsafe_check(void)
         RC_Channel_aux::set_servo_out(RC_Channel_aux::k_elevator, pitch);
         RC_Channel_aux::set_servo_out(RC_Channel_aux::k_rudder, rudder);
         RC_Channel_aux::set_servo_out(RC_Channel_aux::k_steering, rudder);
-        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_flaperon1, roll);
-        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_flaperon2, roll);
 
         if (g.vtail_output != MIXING_DISABLED) {
             channel_output_mixer(g.vtail_output, channel_pitch->radio_out, channel_rudder->radio_out);
