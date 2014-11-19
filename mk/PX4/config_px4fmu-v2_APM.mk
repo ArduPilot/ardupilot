@@ -57,7 +57,9 @@ ifneq ($(wildcard systemcmds/auth),)
 MODULES		+= systemcmds/auth
 endif
 MODULES         += systemcmds/mtd
+ifneq ($(wildcard systemcmds/reflect),)  
 MODULES         += systemcmds/reflect
+endif
 
 #
 # Library modules
