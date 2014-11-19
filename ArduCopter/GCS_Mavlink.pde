@@ -1381,12 +1381,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             loc.lng = packet.lon_int;
             loc.alt = packet.alt*100;
             switch (packet.coordinate_frame) {
-                default:
-                case MAV_FRAME_GLOBAL:
-                case MAV_FRAME_GLOBAL_INT:
-                    loc.flags.relative_alt = false;
-                    loc.flags.terrain_alt = false;
-                    break;
                 case MAV_FRAME_GLOBAL_RELATIVE_ALT:
                 case MAV_FRAME_GLOBAL_RELATIVE_ALT_INT:
                     loc.flags.relative_alt = true;
@@ -1396,6 +1390,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 case MAV_FRAME_GLOBAL_TERRAIN_ALT_INT:
                     loc.flags.relative_alt = true;
                     loc.flags.terrain_alt = true;
+                    break;
+                case MAV_FRAME_GLOBAL:
+                case MAV_FRAME_GLOBAL_INT:
+                default:
+                    loc.flags.relative_alt = false;
+                    loc.flags.terrain_alt = false;
                     break;
             }
             pos_ned = pv_location_to_vector(loc);
