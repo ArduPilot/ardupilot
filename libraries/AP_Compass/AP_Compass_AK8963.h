@@ -12,6 +12,7 @@
 class AK8963_Backend
 {
     public:
+        virtual ~AK8963_Backend() {}
         virtual void read(uint8_t address, uint8_t *buf, uint32_t count) = 0;
         virtual void write(uint8_t address, const uint8_t *buf, uint32_t count) = 0;
         virtual bool sem_take_nonblocking() = 0;
@@ -44,7 +45,6 @@ private:
     virtual void        _register_read(uint8_t address, uint8_t count, uint8_t *value) = 0;
     virtual void        _register_write(uint8_t address, uint8_t value) = 0;
     virtual void        _backend_reset() = 0;
-    virtual bool        _read_raw() = 0;
     virtual uint8_t     _read_id() = 0;
     virtual void        _dump_registers() {}
 
@@ -74,6 +74,7 @@ protected:
     uint8_t             _compass_instance;
 
     AK8963_Backend      *_backend;  // Not to be confused with Compass (frontend) "_backends" attribute.
+    virtual bool        re_initialise(void) {return false;}
 
 public:
     AP_Compass_AK8963(Compass &compass);
@@ -93,6 +94,7 @@ class AK8963_MPU9250_SPI_Backend: public AK8963_Backend
         bool sem_take_nonblocking();
         bool sem_take_blocking();
         bool sem_give();
+        ~AK8963_MPU9250_SPI_Backend() {}
 
     private:
         AP_HAL::SPIDeviceDriver *_spi;
@@ -103,6 +105,7 @@ class AP_Compass_AK8963_MPU9250: public AP_Compass_AK8963
 {
     public:
         AP_Compass_AK8963_MPU9250(Compass &compass);
+        ~AP_Compass_AK8963_MPU9250() {}
         bool init();
 
     // detect the sensor

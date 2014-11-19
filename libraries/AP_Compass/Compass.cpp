@@ -344,6 +344,8 @@ Compass::_detect_backends(void)
     _add_backend(AP_Compass_PX4::detect);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_VRBRAIN
     _add_backend(AP_Compass_VRBRAIN::detect);
+#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_AK8963_MPU9250
+    _add_backend(AP_Compass_AK8963_MPU9250::detect);
 #else
     #error Unrecognised HAL_COMPASS_TYPE setting
 #endif
