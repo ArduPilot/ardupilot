@@ -53,12 +53,15 @@ MODULES		+= systemcmds/tests
 MODULES		+= systemcmds/nshterm
 # the conditional allows for building with upstream master
 # which doesn't have auth
-ifneq ($(wildcard systemcmds/auth),)  
+ifneq ($(wildcard $(PX4_ROOT)/src/systemcmds/auth),)  
 MODULES		+= systemcmds/auth
 endif
 MODULES         += systemcmds/mtd
-ifneq ($(wildcard systemcmds/reflect),)  
+ifneq ($(wildcard $(PX4_ROOT)/src/systemcmds/reflect),)  
 MODULES         += systemcmds/reflect
+endif
+ifneq ($(wildcard $(PX4_ROOT)/src/systemcmds/motor_test),)  
+MODULES         += systemcmds/motor_test
 endif
 
 #
@@ -70,7 +73,7 @@ MODULES		+= modules/uORB
 MODULES		+= lib/mathlib/math/filter
 # the conditional allows for building with upstream master
 # which doesn't have libtomcrypt and libtomfastmath
-ifneq ($(wildcard modules/libtomfastmath),)  
+ifneq ($(wildcard $(PX4_ROOT)/src/modules/libtomfastmath),)  
 MODULES	        += modules/libtomfastmath
 MODULES         += modules/libtomcrypt
 endif
