@@ -67,6 +67,11 @@ static void init_rc_out()
     if (ap.pre_arm_rc_check) {
         output_min();
     }
+
+    // setup correct scaling for ESCs like the UAVCAN PX4ESC which
+    // take a proportion of speed. Note: this assumes rc_3 is
+    // throttle and should really use rcmap.
+    hal.rcout->set_esc_scaling(g.rc_3.radio_min, g.rc_3.radio_max);
 }
 
 // output_min - enable and output lowest possible value to motors
