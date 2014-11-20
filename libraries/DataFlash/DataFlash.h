@@ -436,17 +436,10 @@ struct PACKED log_Ubx3 {
 struct PACKED log_Esc {
     LOG_PACKET_HEADER;
     uint32_t time_ms;     
-    uint8_t escs_present;
-
-    int16_t esc0_rpm;
-    int16_t esc0_voltage;
-    int16_t esc0_current;
-    int16_t esc0_temperature;
-
-    int16_t esc1_rpm;
-    int16_t esc1_voltage;
-    int16_t esc1_current;
-    int16_t esc1_temperature;
+    int16_t rpm;
+    int16_t voltage;
+    int16_t current;
+    int16_t temperature;
 };
 
 // messages for all boards
@@ -505,13 +498,21 @@ struct PACKED log_Esc {
     { LOG_UBX3_MSG, sizeof(log_Ubx3), \
       "UBX3", "IBfff", "TimeMS,Instance,hAcc,vAcc,sAcc" }, \
     { LOG_ESC1_MSG, sizeof(log_Esc), \
-      "ESC1",  "IBcccccccc", "TimeMS,ESCs,RPM0,Volt0,Curr0,Temp0,RPM1,Volt1,Curr1,Temp1" }, \
+      "ESC1",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
     { LOG_ESC2_MSG, sizeof(log_Esc), \
-      "ESC2",  "IBcccccccc", "TimeMS,ESCs,RPM2,Volt2,Curr2,Temp2,RPM3,Volt3,Curr3,Temp3" }, \
+      "ESC2",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
     { LOG_ESC3_MSG, sizeof(log_Esc), \
-      "ESC3",  "IBcccccccc", "TimeMS,ESCs,RPM6,Volt6,Curr6,Temp6,RPM7,Volt7,Curr7,Temp7" }, \
+      "ESC3",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
     { LOG_ESC4_MSG, sizeof(log_Esc), \
-      "ESC4",  "IBcccccccc", "TimeMS,ESCs,RPM6,Volt6,Curr6,Temp6,RPM7,Volt7,Curr7,Temp7" }
+      "ESC4",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
+    { LOG_ESC5_MSG, sizeof(log_Esc), \
+      "ESC5",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
+    { LOG_ESC6_MSG, sizeof(log_Esc), \
+      "ESC6",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
+    { LOG_ESC7_MSG, sizeof(log_Esc), \
+      "ESC7",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
+    { LOG_ESC8_MSG, sizeof(log_Esc), \
+      "ESC8",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 #define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_EXTRA_STRUCTURES
@@ -552,6 +553,10 @@ struct PACKED log_Esc {
 #define LOG_ESC2_MSG      155
 #define LOG_ESC3_MSG      156
 #define LOG_ESC4_MSG      157
+#define LOG_ESC5_MSG      158
+#define LOG_ESC6_MSG      159
+#define LOG_ESC7_MSG      160
+#define LOG_ESC8_MSG      161
 
 // message types 200 to 210 reversed for GPS driver use
 // message types 211 to 220 reversed for autotune use
