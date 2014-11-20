@@ -22,6 +22,10 @@ static void set_control_channels(void)
     if (!arming.is_armed() && arming.arming_required() == AP_Arming::YES_MIN_PWM) {
         hal.rcout->set_safety_pwm(1UL<<(rcmap.throttle()-1), channel_throttle->radio_min);
     }
+
+    // setup correct scaling for ESCs like the UAVCAN PX4ESC which
+    // take a proportion of speed
+    hal.rcout->set_esc_scaling(channel_throttle->radio_min, channel_throttle->radio_max);
 }
 
 /*
