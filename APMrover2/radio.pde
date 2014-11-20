@@ -12,6 +12,10 @@ static void set_control_channels(void)
 	// set rc channel ranges
 	channel_steer->set_angle(SERVO_MAX);
 	channel_throttle->set_angle(100);
+
+    // setup correct scaling for ESCs like the UAVCAN PX4ESC which
+    // take a proportion of speed. 
+    hal.rcout->set_esc_scaling(channel_throttle->radio_min, channel_throttle->radio_max);
 }
 
 static void init_rc_in()
