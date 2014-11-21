@@ -14,7 +14,9 @@
 #include <AP_AHRS.h>
 #include <stdint.h>
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 #include <uORB/topics/esc_status.h>
+#endif
 
 
 #if HAL_CPU_CLASS < HAL_CPU_CLASS_75 && defined(APM_BUILD_DIRECTORY)

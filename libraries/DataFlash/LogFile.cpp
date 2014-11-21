@@ -1061,6 +1061,7 @@ void DataFlash_Class::Log_Write_Camera(const AP_AHRS &ahrs, const AP_GPS &gps, c
 // Write ESC status messages
 void DataFlash_Class::Log_Write_ESC(void)
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     static int _esc_status_sub = -1;
     struct esc_status_s esc_status;
 
@@ -1095,4 +1096,5 @@ void DataFlash_Class::Log_Write_ESC(void)
             }
         }
     }
+#endif // CONFIG_HAL_BOARD
 }
