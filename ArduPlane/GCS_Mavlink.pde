@@ -1025,6 +1025,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             else if (packet.param5 == 1) {
                 float trim_roll, trim_pitch;
                 AP_InertialSensor_UserInteract_MAVLink interact(chan);
+                if (g.skip_gyro_cal) {
+                    // start with gyro calibration, otherwise if the user
+                    // has SKIP_GYRO_CAL=1 they don't get to do it
+                    ins.init_gyro();
+                }
                 if(ins.calibrate_accel(&interact, trim_roll, trim_pitch)) {
                     // reset ahrs's trim to suggested values from calibration routine
                     ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
