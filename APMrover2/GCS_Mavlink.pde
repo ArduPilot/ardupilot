@@ -829,15 +829,17 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 break;
 
             case MAV_CMD_PREFLIGHT_CALIBRATION:
-                if (packet.param1 == 1 ||
-                    packet.param2 == 1 ||
-                    packet.param3 == 1) {
+                if ((packet.param1 == 1 ||
+                     packet.param2 == 1) &&
+                    packet.param3 == 0) {
                     startup_INS_ground(true);
-                }
-                if (packet.param4 == 1) {
+                    result = MAV_RESULT_ACCEPTED;
+                } else if (packet.param4 == 1) {
                     trim_radio();
+                    result = MAV_RESULT_ACCEPTED;
+                } else {
+                    send_text_P(SEVERITY_LOW, PSTR("Unsupported preflight calibration"));
                 }
-                result = MAV_RESULT_ACCEPTED;
                 break;
 
             case MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS:
