@@ -1008,22 +1008,21 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_PREFLIGHT_CALIBRATION:
-            if (packet.param1 == 1 ||
-                packet.param2 == 1) {
-                startup_INS_ground(true);
-            } else if (packet.param3 == 1) {
+            if (packet.param3 == 1) {
                 in_calibration = true;
                 init_barometer();
                 if (airspeed.enabled()) {
                     zero_airspeed(false);
                 }
                 in_calibration = false;
-            }
-            if (packet.param4 == 1) {
+            } else if (packet.param1 == 1 ||
+                       packet.param2 == 1) {
+                startup_INS_ground(true);
+            } else if (packet.param4 == 1) {
                 trim_radio();
-            }
+            } 
 #if !defined( __AVR_ATmega1280__ )
-            if (packet.param5 == 1) {
+            else if (packet.param5 == 1) {
                 float trim_roll, trim_pitch;
                 AP_InertialSensor_UserInteract_MAVLink interact(chan);
                 if(ins.calibrate_accel(&interact, trim_roll, trim_pitch)) {
@@ -1032,6 +1031,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 }
             }
 #endif
+            else {
+                    send_text_P(SEVERITY_LOW, PSTR("Unsupported preflight calibration"));
+            }
             result = MAV_RESULT_ACCEPTED;
             break;
 
