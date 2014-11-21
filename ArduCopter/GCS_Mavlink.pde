@@ -1123,26 +1123,24 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 // reset ahrs gyro bias
                 ahrs.reset_gyro_drift();
                 result = MAV_RESULT_ACCEPTED;
-            }
-            if (packet.param3 == 1) {
-                init_barometer(false);                      // fast barometer calibration
+            } else if (packet.param3 == 1) {
+                // fast barometer calibration
+                init_barometer(false);
                 result = MAV_RESULT_ACCEPTED;
-            }
-            if (packet.param4 == 1) {
+            } else if (packet.param4 == 1) {
                 trim_radio();
                 result = MAV_RESULT_ACCEPTED;
-            }
-            if (packet.param5 == 1) {
+            } else if (packet.param5 == 1) {
+                // 3d accel calibration
                 float trim_roll, trim_pitch;
                 // this blocks
                 AP_InertialSensor_UserInteract_MAVLink interact(chan);
                 if(ins.calibrate_accel(&interact, trim_roll, trim_pitch)) {
                     // reset ahrs's trim to suggested values from calibration routine
                     ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
+                    result = MAV_RESULT_ACCEPTED;
                 }
-                result = MAV_RESULT_ACCEPTED;
-            }
-            if (packet.param6 == 1) {
+            } else if (packet.param6 == 1) {
                 // compassmot calibration
                 result = mavlink_compassmot(chan);
             }
