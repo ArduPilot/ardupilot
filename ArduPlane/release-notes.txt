@@ -31,6 +31,7 @@ new features.
  - TECS prevent throttle undershoot after a climb
  - AP_Mount: added lead filter to improve servo gimbals
  - Zynq and NavIO updates
+ - fixed preflight calibration to prevent losing 3D accel cal
 
 
 Release 3.1.1, September 12th 2014
