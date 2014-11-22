@@ -378,6 +378,12 @@ bool NavEKF::healthy(void) const
     if (state.velocity.is_nan()) {
         return false;
     }
+    if (_fallback && velTestRatio > 1 && posTestRatio > 1 && hgtTestRatio > 1) {
+        // all three metrics being above 1 means the filter is
+        // extremely unhealthy.
+        return false;
+    }
+
     // If measurements have failed innovation consistency checks for long enough to time-out
     // and force fusion then the nav solution can be conidered to be unhealthy
     // This will only be set as a transient
