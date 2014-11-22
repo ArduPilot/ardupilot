@@ -164,7 +164,7 @@ void LogReader::process_plane(uint8_t type, uint8_t *data, uint16_t length)
 
     case LOG_PLANE_AIRSPEED_MSG: {
         struct log_AIRSPEED msg;
-        if(sizeof(msg) != length) {
+        if (sizeof(msg) != length && length != sizeof(msg)+8) {
             printf("Bad AIRSPEED length\n");
             exit(1);
         }
