@@ -141,6 +141,9 @@ public:
     // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
     void  getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
 
+    // return StaticMode state
+    bool getStaticMode(void) const { return staticMode; }
+
     // should we use the compass? This is public so it can be used for
     // reporting via ahrs.use_compass()
     bool use_compass(void) const;
