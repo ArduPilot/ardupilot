@@ -987,7 +987,8 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
         sqrtvarVT : (int16_t)(100*tasVar),
         offsetNorth : (int8_t)(offset.x),
         offsetEast : (int8_t)(offset.y),
-        faults : (uint8_t)(faultStatus)
+        faults : (uint8_t)(faultStatus),
+        staticmode : (uint8_t)(ahrs.get_NavEKF().getStaticMode())
     };
     WriteBlock(&pkt4, sizeof(pkt4));
 }
