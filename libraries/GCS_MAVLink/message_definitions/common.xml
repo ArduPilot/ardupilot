@@ -580,14 +580,14 @@
                     <param index="7">Altitude</param>
                 </entry>
                <entry value="30" name="MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT">
-                   <description>Continue on the current course and climb/descend to specified altitude.  When the altitude is reached, the intended behavior is to continue to the next command (i.e., don't proceed to the next command until the desired altitude is reached.</description>
+                   <description>Continue on the current course and climb/descend to specified altitude.  When the altitude is reached continue to the next command (i.e., don't proceed to the next command until the desired altitude is reached.</description>
                     <param index="1">Empty</param>
                     <param index="2">Empty</param>
                     <param index="3">Empty</param>
                     <param index="4">Empty</param>
                     <param index="5">Empty</param>
                     <param index="6">Empty</param>
-                    <param index="7">Desired altitude.</param>
+                    <param index="7">Desired altitude in meters</param>
                </entry>
                <entry value="80" name="MAV_CMD_NAV_ROI">
                     <description>Sets the region of interest (ROI) for a sensor set or the vehicle itself. This can then be used by the vehicles control system to control the vehicle attitude and the attitude of various sensors such as cameras.</description>
