@@ -163,6 +163,24 @@ RC_Channel_aux::set_radio(RC_Channel_aux::Aux_servo_function_t function, int16_t
 }
 
 /*
+  set radio_out for all channels matching the given function type, allow radio_trim to center servo
+ */
+void
+RC_Channel_aux::set_radio_trimmed(RC_Channel_aux::Aux_servo_function_t function, int16_t value)
+{
+    if (!function_assigned(function)) {
+        return;
+    }
+    for (uint8_t i = 0; i < RC_AUX_MAX_CHANNELS; i++) {
+        if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
+        	int16_t value2 = value - 1500 + _aux_channels[i]->radio_trim;
+			_aux_channels[i]->radio_out = constrain_int16(value2,_aux_channels[i]->radio_min,_aux_channels[i]->radio_max);
+            _aux_channels[i]->output();
+		}
+    }
+}
+
+/*
   set and save the trim value to radio_in for all channels matching
   the given function type
  */
