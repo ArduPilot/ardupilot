@@ -222,12 +222,12 @@ void Vector3<T>::rotate(enum Rotation rotation)
         return;
     }
     case ROTATION_YAW_293_PITCH_68_ROLL_180: {
-        float tmp = x;
+        float tmpx = x;
         float tmpy = y;
         float tmpz = z;
-        x = 0.1430389f * tmp -0.9184465f * tmpy -0.3687762f * tmpz;
-        y = -0.3321327f * tmp -0.3955452f * tmpy +0.8562895f * tmpz;
-        z = -0.9323238f * tmp -0.00000003f * tmpy -0.3616245f * tmpz;
+        x = 0.1430389f * tmpx -0.9184465f * tmpy -0.3687762f * tmpz;
+        y = -0.3321327f * tmpx -0.3955452f * tmpy +0.8562895f * tmpz;
+        z = -0.9323238f * tmpx -0.00000003f * tmpy -0.3616245f * tmpz;
         return;
     }
     }
