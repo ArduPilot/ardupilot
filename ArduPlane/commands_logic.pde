@@ -81,6 +81,7 @@ start_command(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT:
         do_continue_and_change_alt(cmd);
+        break;
 
     // Conditional commands
 
