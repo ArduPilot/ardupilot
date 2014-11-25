@@ -136,6 +136,16 @@ start_command(const AP_Mission::Mission_Command& cmd)
         auto_state.commanded_go_around = false;
         break;
 
+    case MAV_CMD_DO_FENCE_ENABLE:
+#if GEOFENCE_ENABLED == ENABLED
+        if (!geofence_set_enabled((bool) cmd.p1, AUTO_TOGGLED)) {
+            gcs_send_text_fmt(PSTR("Unable to set fence enabled state to %u"), cmd.p1);
+        } else {
+            gcs_send_text_fmt(PSTR("Set fence enabled state to %u"), cmd.p1);
+        }    
+#endif
+        break;
+
 #if CAMERA == ENABLED
     case MAV_CMD_DO_CONTROL_VIDEO:                      // Control on-board camera capturing. |Camera ID (-1 for all)| Transmission: 0: disabled, 1: enabled compressed, 2: enabled raw| Transmission mode: 0: video stream, >0: single images every n seconds (decimal)| Recording: 0: disabled, 1: enabled compressed, 2: enabled raw| Empty| Empty| Empty|
         break;
@@ -249,6 +259,7 @@ static bool verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_DO_MOUNT_CONTROL:
     case MAV_CMD_DO_INVERTED_FLIGHT:
     case MAV_CMD_DO_LAND_START:
+    case MAV_CMD_DO_FENCE_ENABLE:
         return true;
 
     default:
