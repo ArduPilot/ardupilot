@@ -8,11 +8,12 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <errno.h>
 #include <sys/ioctl.h>
 #include <linux/spi/spidev.h>
 #include "GPIO.h"
 
-#define SPI_DEBUGGING 1
+#define SPI_DEBUGGING 0
 
 using namespace Linux;
 
@@ -54,7 +55,8 @@ LinuxSPIDeviceDriver::LinuxSPIDeviceDriver(uint16_t bus, uint16_t subdev, enum A
     _lowspeed(lowspeed),
     _highspeed(highspeed),
     _speed(highspeed),
-    _cs_pin(cs_pin)
+    _cs_pin(cs_pin),
+    _cs(NULL)
 {
 }
 
@@ -121,14 +123,17 @@ void LinuxSPIDeviceManager::init(void *)
             hal.scheduler->panic("SPIDriver: invalid bus number");
         }
         char path[255];
-        sprintf(path,"/dev/spidev%i.%i",
-            _device[i]._bus + LINUX_SPIDEV_BUS_OFFSET, _device[i]._subdev);
+        snprintf(path, sizeof(path), "/dev/spidev%u.%u",
+                 _device[i]._bus + LINUX_SPIDEV_BUS_OFFSET, _device[i]._subdev);
         _device[i]._fd = open(path, O_RDWR);
         if (_device[i]._fd == -1) {
+            printf("Unable to open %s - %s\n", path, strerror(errno));
             hal.scheduler->panic("SPIDriver: unable to open SPI bus");
         }
+#if SPI_DEBUGGING
         printf("Opened %s\n", path);
         fflush(stdout);
+#endif
         _device[i].init();
     }
 }
