@@ -1097,6 +1097,7 @@ static void ten_hz_logging_loop()
     }
     if (should_log(MASK_LOG_RCOUT)) {
         DataFlash.Log_Write_RCOUT();
+        DataFlash.Log_Write_ESC();
     }
     if (should_log(MASK_LOG_NTUN) && (mode_requires_GPS(control_mode) || landing_with_GPS())) {
         Log_Write_Nav_Tuning();
