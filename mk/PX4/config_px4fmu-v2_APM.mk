@@ -51,11 +51,6 @@ MODULES		+= systemcmds/reboot
 MODULES		+= systemcmds/top
 MODULES		+= systemcmds/tests
 MODULES		+= systemcmds/nshterm
-# the conditional allows for building with upstream master
-# which doesn't have auth
-ifneq ($(wildcard $(PX4_ROOT)/src/systemcmds/auth),)  
-MODULES		+= systemcmds/auth
-endif
 MODULES         += systemcmds/mtd
 ifneq ($(wildcard $(PX4_ROOT)/src/systemcmds/reflect),)  
 MODULES         += systemcmds/reflect
@@ -71,12 +66,16 @@ MODULES		+= modules/systemlib
 MODULES		+= modules/systemlib/mixer
 MODULES		+= modules/uORB
 MODULES		+= lib/mathlib/math/filter
-# the conditional allows for building with upstream master
-# which doesn't have libtomcrypt and libtomfastmath
-ifneq ($(wildcard $(PX4_ROOT)/src/modules/libtomfastmath),)  
-MODULES	        += modules/libtomfastmath
-MODULES         += modules/libtomcrypt
-endif
+
+# Note: auth disabled to keep us under 1MB flash because of STM32 bug
+#ifneq ($(wildcard $(PX4_ROOT)/src/systemcmds/auth),)  
+#MODULES		+= systemcmds/auth
+#endif
+#ifneq ($(wildcard $(PX4_ROOT)/src/modules/libtomfastmath),)  
+#MODULES	        += modules/libtomfastmath
+#MODULES         += modules/libtomcrypt
+#endif
+
 MODULES		+= lib/conversion
 
 ifneq ($(wildcard $(SKETCHBOOK)/../uavcan),)  
