@@ -47,6 +47,7 @@ class Linux::LinuxRCOutput_Navio : public AP_HAL::RCOutput {
 private:
     void reset();
     AP_HAL::Semaphore *_i2c_sem;
+    AP_HAL::DigitalSource *enable_pin;
     uint16_t _frequency;    
 };
 
