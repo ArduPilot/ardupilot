@@ -1,3 +1,46 @@
+Release 2.47, November 15th 2014
+--------------------------------
+
+The ardupilot development team is proud to announce the release of 
+version 2.47 of APM:Rover. This is a minor bug fix release.  The most 
+important change in this release is the fixing of the skid steering 
+support but there have been a number of fixes in other areas as well.
+
+Full changes list for this release:
+
+  - add support for controlling safety switch on Pixhawk from ground station
+
+  - prevent reports of failed AHRS during initialisation
+
+  - fixed skid steering that was broken in the last release
+
+  - report gyro unhealthy if gyro calibration failed
+
+  - fixed dual sonar support in CLI sonar test
+
+  - fixed Nuttx crash on Pixhawk with bad I2C cables
+
+  - added GPS_SBAS_MODE parameter - turns on/off satellite based augemtation system for GPS
+
+  - added GPS_MIN_ELEV parameter - specifiy the elevation mask for GPS satellites
+
+  - added RELAY_DEFAULT parameter to control default of relay on startup
+
+  - fixed bug in FRAM storage on Pixhawk that could cause parameters changes not to be saved
+
+  - better handling of compass errors in the EKF (Extended Kalman Filter)
+
+  - improved support for linux based autopilots
+
+  - added support for PulsedLight LIDAR as a range finder
+
+Many thanks to everyone who contributed to this release, especially
+Tom Coyle and Linus Penzlien for their excellent testing and feedback.
+
+Happy driving!
+
+
+
 Release 2.46, August 26th 2014
 ------------------------------
 

@@ -1,3 +1,160 @@
+Release 3.2.0, November 25th 2014
+---------------------------------
+
+The ardupilot development team is proud to announce the release of
+version 3.2.0 of APM:Plane. This is a major release with a lot of 
+new features.
+
+The changes span a lot of different areas of the code, but arguably
+the most important changes are:
+
+  - automatic stall prevention code
+  - PX4IO based RC override code on FMU failure
+  - I2C crash bugfix
+  - new autoland code from Michael Day
+  - compass independent auto takeoff
+
+I'll go into each of these changes in a bit more detail.
+
+Automatic Stall Prevention
+--------------------------
+
+The automatic stall prevention code is code that uses the aerodynamic
+load factor (calculated from demanded bank angle) to adjust both the
+maximum roll angle and the minimum airspeed. You can enable/disable
+this code with the STALL_PREVENTION parameter which defaults to
+enabled. 
+
+When in stabilised manual throttle modes this option has the effect of
+limiting how much bank angle you can demand when close to the
+configured minimum airspeed (from ARSPD_FBW_MIN). That means when in
+FBWA mode if you try to turn hard while close to ARSPD_FBW_MIN it will
+limit the bank angle to an amount that will keep the speed above
+ARSPD_FBW_MIN times the aerodynamic load factor. It will always allow
+you at bank at least 25 degrees however, to ensure you keep some
+maneuverability if the airspeed estimate is incorrect.
+
+When in auto-throttle modes (such as AUTO, RTL, CRUISE etc) it will
+additionally raise the minimum airspeed in proportion to the
+aerodynamic load factor. That means if a mission demands a sharp turn
+at low speed then initially the turn will be less sharp, and the TECS
+controller will add power to bring the airspeed up to a level that can
+handle the demanded turn. After the turn is complete the minimum
+airspeed will drop back to the normal level.
+
+This change won't completely eliminate stalls of course, but it should
+make them less likely if you properly configure ARSPD_FBW_MIN for your
+aircraft.
+
+PX4IO based RC override code
+----------------------------
+
+This releases adds support for PX4IO based RC override. This is a
+safety feature where the stm32 IO co-processor on the PX4 and Pixhawk
+will give the pilot manual control if the main ArduPilot
+micro-controller fails (or the autopilot code crashes). This is
+particularly useful when testing new code that may not be stable.
+
+As part of this new RC override support we also have a new
+OVERRIDE_CHAN parameter, which allows you to specify a RC input
+channel which can be used to test the RC override support. See the
+documentation on OVERRIDE_CHAN for details.
+
+I2C bugfix
+----------
+
+This release fixes another I2C bug in NuttX which could cause the
+Pixhawk to lock up under high I2C load with noise on I2C cables. This
+bug has caused at least two aircraft to crash, so it is an important
+fix. I hope this will be the last I2C crash bug we find in NuttX! An
+audit of the code was done to try to confirm that no more bugs of this
+type are present.
+
+New Autoland code
+-----------------
+
+This release incorporates some new autoland capabilities contributed
+by Michael Day. The key new feature is the ability to trigger an
+automatic landing when a RTL completes, which for the first time
+allows a user to setup their aircraft to land using only transmitter
+control. 
+
+The way it works is there is a new parameter RTL_AUTOLAND. If that is
+set to 1 and the aircraft reaches its target location in an RTL it
+will look for DO_LAND_START mission item in the mission. If that is
+found then the aircraft will switch to AUTO starting at that section
+of the mission. The user sets up their land mission commands starting
+with a DO_LAND_START mission item.
+
+There is more to do in this autoland support. We have been discussing
+more advanced go-around capabilities and also better path planning for
+landing. The code in this release is an important first step though,
+and will be a good basis for future work.
+
+Compass independent takeoff code
+--------------------------------
+
+The auto-takeoff code has been changed to make it more independent of
+compass settings, allowing for reliable takeoff down a runway with
+poor compass offsets. The new takeoff code uses the gyroscope as the
+primary heading control for the first part of the takeoff, until the
+aircraft gains enough speed for a GPS heading to be reliable.
+
+Many thanks to all the contributors, especially:
+
+  - Paul and Jon for EKF and TECS updates
+  - Bret and Grant for stall prevention testing
+  - Michael for all his autoland work
+  - all the work on NavIO, PXF and Zynq by John, Victor, George and Siddarth
+  - The PX4 team for all the PX4 updates
+
+More complete list of changes:
+
+ - allow GCS to enable/disable PX4 safety switch
+ - make auto-takeoff independent of compass errors
+ - report gyro unhealthy if calibration failed
+ - added support for MAV_CMD_DO_LAND_START
+ - added RTL_AUTOLAND parameter
+ - disable CLI by default in build
+ - new InertialSensor implementation
+ - added landing go around support
+ - enable PX4 failsafe RC override
+ - added OVERRIDE_CHAN parameter
+ - changed default AUTOTUNE level to 6
+ - changed default I value for roll/pitch controllers
+ - added CAMERA_FEEDBACK mavlink messages
+ - use airspeed temperature for baro calibration if possible
+ - added STALL_PREVENTION parameter 
+ - fixed handling of TKOFF_THR_MAX parameter
+ - added ARSPD_SKIP_CAL parameter
+ - fixed flaperon trim handling (WARNING: may need to retrim flaperons)
+ - EKF robustness improvements, especially for MAG handling
+ - lots of HAL_Linux updates
+ - support wider range of I2C Lidars
+ - fixed fallback to DCM in AHRS
+ - fixed I2C crash bug in NuttX
+ - TECS prevent throttle undershoot after a climb
+ - AP_Mount: added lead filter to improve servo gimbals
+ - Zynq and NavIO updates
+ - fixed preflight calibration to prevent losing 3D accel cal
+ - perform a gyro calibration when doing 3D accel cal
+ - added DO_CONTINUE_AND_CHANGE_ALT mission command
+ - added support for DO_FENCE_ENABLE mission command
+ - allow gyro calibration to take up to 30 seconds
+ - improved health checks in the EKF for DCM fallback
+
+Note: If you use flaperons you may need to re-trim them before you
+fly due to the change in flaperon trim handling.
+
+I hope that everyone enjoys flying this new APM:Plane release as much
+as we enjoyed producing it! It is a major milestone in the development
+of the fixed wing code for APM, and I think puts us in a great
+position for future development.
+
+Happy flying!
+
+
+
 Release 3.1.1, September 12th 2014
 ----------------------------------
 
@@ -629,5 +786,5 @@ as we enjoyed producing it! It is a major milestone in the development
 of the fixed wing code for APM, and I think puts us in a great
 position for future development.
 
-Happy flying!
 
+Happy flying!

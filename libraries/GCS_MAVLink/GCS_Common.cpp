@@ -1152,17 +1152,11 @@ void GCS_MAVLINK::send_statustext_all(const prog_char_t *msg)
         if ((1U<<i) & mavlink_active) {
             mavlink_channel_t chan = (mavlink_channel_t)i;
             if (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_STATUSTEXT_LEN) {
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
                 char msg2[50];
                 strncpy_P(msg2, msg, sizeof(msg2));
                 mavlink_msg_statustext_send(chan,
                                             SEVERITY_HIGH,
                                             msg2);
-#else
-                mavlink_msg_statustext_send(chan,
-                                            SEVERITY_HIGH,
-                                            msg);
-#endif
             }
         }
     }

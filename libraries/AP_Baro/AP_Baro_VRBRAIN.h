@@ -11,7 +11,7 @@ public:
     bool init();
     uint8_t read();
     float get_pressure();
-    float get_temperature();
+    float get_temperature() const;
 
 private:
     float _temperature;

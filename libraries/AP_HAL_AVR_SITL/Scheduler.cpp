@@ -7,6 +7,7 @@
 #include "Scheduler.h"
 #include <sys/time.h>
 #include <unistd.h>
+#include <fenv.h>
 
 #ifdef __CYGWIN__
 #include <stdio.h> 
@@ -43,7 +44,8 @@ double SITLScheduler::_cyg_freq = 0;
 long SITLScheduler::_cyg_start = 0;
 #endif
 
-SITLScheduler::SITLScheduler()
+SITLScheduler::SITLScheduler(SITL_State *sitlState) :
+    _sitlState(sitlState)
 {}
 
 void SITLScheduler::init(void *unused) 
@@ -206,6 +208,11 @@ void SITLScheduler::system_initialized() {
     if (_initialized) {
         panic(
             PSTR("PANIC: scheduler system initialized called more than once"));
+    }
+    if (_sitlState->_sitl->float_exception) {
+        feenableexcept(FE_INVALID | FE_OVERFLOW | FE_DIVBYZERO);
+    } else {
+        feclearexcept(FE_INVALID | FE_OVERFLOW | FE_DIVBYZERO);
     }
     _initialized = true;
 }

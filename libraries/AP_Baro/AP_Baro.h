@@ -16,7 +16,8 @@ public:
         _altitude(0.0f),
         _last_altitude_EAS2TAS(0.0f),
         _EAS2TAS(0.0f),
-        _last_altitude_t(0)
+        _last_altitude_t(0),
+        _last_external_temperature_ms(0)
     {
         // initialise flags
         _flags.healthy = false;
@@ -35,7 +36,7 @@ public:
     virtual float           get_pressure() = 0;
 
     // temperature in degrees C
-    virtual float           get_temperature() = 0;
+    virtual float           get_temperature() const = 0;
 
     // accumulate a reading - overridden in some drivers
     virtual void            accumulate(void) {}
@@ -82,6 +83,11 @@ public:
         return _ground_pressure.get();
     }
 
+    // set the temperature to be used for altitude calibration. This
+    // allows an external temperature source (such as a digital
+    // airspeed sensor) to be used as the temperature source
+    void set_external_temperature(float temperature);
+
     // get last time sample was taken (in ms)
     uint32_t        get_last_update() const { return _last_update; };
 
@@ -98,12 +104,18 @@ protected:
     uint8_t                             _pressure_samples;
 
 private:
+    // get the temperature to be used for altitude calibration
+    float                               get_calibration_temperature(void) const;
+
+
     AP_Float                            _ground_temperature;
     AP_Float                            _ground_pressure;
     AP_Int8                             _alt_offset;
     float                               _altitude;
     float                               _last_altitude_EAS2TAS;
     float                               _EAS2TAS;
+    float                               _external_temperature;
+    uint32_t                            _last_external_temperature_ms;
     uint32_t                            _last_altitude_t;
     DerivativeFilterFloat_Size7         _climb_rate_filter;
 };

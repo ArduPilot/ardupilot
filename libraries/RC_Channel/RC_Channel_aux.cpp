@@ -94,8 +94,6 @@ void RC_Channel_aux::update_aux_servo_function(void)
 		switch (function) {
 		case RC_Channel_aux::k_flap:
 		case RC_Channel_aux::k_flap_auto:
-		case RC_Channel_aux::k_flaperon1:
-		case RC_Channel_aux::k_flaperon2:
 		case RC_Channel_aux::k_egg_drop:
 			_aux_channels[i]->set_range(0,100);
 			break;
@@ -107,6 +105,8 @@ void RC_Channel_aux::update_aux_servo_function(void)
 		case RC_Channel_aux::k_dspoiler2:
 		case RC_Channel_aux::k_rudder:
 		case RC_Channel_aux::k_steering:
+		case RC_Channel_aux::k_flaperon1:
+		case RC_Channel_aux::k_flaperon2:
 		    _aux_channels[i]->set_angle(4500);
 			break;
 		default:
@@ -157,6 +157,24 @@ RC_Channel_aux::set_radio(RC_Channel_aux::Aux_servo_function_t function, int16_t
     for (uint8_t i = 0; i < RC_AUX_MAX_CHANNELS; i++) {
         if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
 			_aux_channels[i]->radio_out = constrain_int16(value,_aux_channels[i]->radio_min,_aux_channels[i]->radio_max);
+            _aux_channels[i]->output();
+		}
+    }
+}
+
+/*
+  set radio_out for all channels matching the given function type, allow radio_trim to center servo
+ */
+void
+RC_Channel_aux::set_radio_trimmed(RC_Channel_aux::Aux_servo_function_t function, int16_t value)
+{
+    if (!function_assigned(function)) {
+        return;
+    }
+    for (uint8_t i = 0; i < RC_AUX_MAX_CHANNELS; i++) {
+        if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
+        	int16_t value2 = value - 1500 + _aux_channels[i]->radio_trim;
+			_aux_channels[i]->radio_out = constrain_int16(value2,_aux_channels[i]->radio_min,_aux_channels[i]->radio_max);
             _aux_channels[i]->output();
 		}
     }

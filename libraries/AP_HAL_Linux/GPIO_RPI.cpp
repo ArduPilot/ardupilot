@@ -22,29 +22,27 @@ LinuxGPIO_RPI::LinuxGPIO_RPI()
 void LinuxGPIO_RPI::init()
 {
     // open /dev/mem
-   if ((mem_fd = open("/dev/mem", O_RDWR|O_SYNC) ) < 0) {
-      printf("can't open /dev/mem \n");
-      exit(-1);
-   }
+    if ((mem_fd = open("/dev/mem", O_RDWR|O_SYNC) ) < 0) {
+        hal.scheduler->panic("Can't open /dev/mem");
+    }
 
-   // mmap GPIO
-   gpio_map = mmap(
-      NULL,                 // Any adddress in our space will do
-      BLOCK_SIZE,           // Map length
-      PROT_READ|PROT_WRITE, // Enable reading & writting to mapped memory
-      MAP_SHARED,           // Shared with other processes
-      mem_fd,               // File to map
-      GPIO_BASE             // Offset to GPIO peripheral
-   );
+    // mmap GPIO
+    gpio_map = mmap(
+        NULL,                 // Any adddress in our space will do
+        BLOCK_SIZE,           // Map length
+        PROT_READ|PROT_WRITE, // Enable reading & writting to mapped memory
+        MAP_SHARED,           // Shared with other processes
+        mem_fd,               // File to map
+        GPIO_BASE             // Offset to GPIO peripheral
+    );
 
-   close(mem_fd); // No need to keep mem_fd open after mmap
+    close(mem_fd); // No need to keep mem_fd open after mmap
 
-   if (gpio_map == MAP_FAILED) {
-      printf("mmap error %d\n", (int)gpio_map); // errno also set!
-      exit(-1);
-   }
+    if (gpio_map == MAP_FAILED) {
+        hal.scheduler->panic("Can't open /dev/mem");
+    }
 
-   gpio = (volatile unsigned *)gpio_map; // Always use volatile pointer!
+    gpio = (volatile uint32_t *)gpio_map; // Always use volatile pointer!
 }
 
 void LinuxGPIO_RPI::pinMode(uint8_t pin, uint8_t output)
@@ -64,7 +62,8 @@ int8_t LinuxGPIO_RPI::analogPinToDigitalPin(uint8_t pin)
 
 uint8_t LinuxGPIO_RPI::read(uint8_t pin)
 {
-    return GPIO_GET(pin);
+    uint32_t value = GPIO_GET(pin);
+    return value ? 1: 0;
 }
 
 void LinuxGPIO_RPI::write(uint8_t pin, uint8_t value)

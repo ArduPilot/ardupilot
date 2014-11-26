@@ -224,6 +224,28 @@ RC_Channel::calc_pwm(void)
     radio_out = constrain_int16(radio_out, radio_min.get(), radio_max.get());
 }
 
+
+/*
+  return the center stick position expressed as a control_in value
+  used for thr_mid in copter
+ */
+int16_t
+RC_Channel::get_control_mid() const {
+    if (_type == RC_CHANNEL_TYPE_RANGE) {
+        int16_t r_in = (radio_min.get()+radio_max.get())/2;
+
+        if (_reverse == -1) {
+            r_in = radio_max.get() - (r_in - radio_min.get());
+        }
+
+        int16_t radio_trim_low  = radio_min + _dead_zone;
+
+        return (_low + ((int32_t)(_high - _low) * (int32_t)(r_in - radio_trim_low)) / (int32_t)(radio_max - radio_trim_low));
+    } else {
+        return 0;
+    }
+}
+
 // ------------------------------------------
 
 void
@@ -276,9 +298,9 @@ RC_Channel::pwm_to_angle_dz(uint16_t dead_zone)
         return 0;
 
     if(radio_in > radio_trim_high) {
-        return _reverse * ((long)_high * (long)(radio_in - radio_trim_high)) / (long)(radio_max  - radio_trim_high);
+        return _reverse * ((int32_t)_high * (int32_t)(radio_in - radio_trim_high)) / (int32_t)(radio_max  - radio_trim_high);
     }else if(radio_in < radio_trim_low) {
-        return _reverse * ((long)_high * (long)(radio_in - radio_trim_low)) / (long)(radio_trim_low - radio_min);
+        return _reverse * ((int32_t)_high * (int32_t)(radio_in - radio_trim_low)) / (int32_t)(radio_trim_low - radio_min);
     }else
         return 0;
 }
@@ -298,9 +320,9 @@ int16_t
 RC_Channel::angle_to_pwm()
 {
     if((servo_out * _reverse) > 0)
-        return _reverse * ((long)servo_out * (long)(radio_max - radio_trim)) / (long)_high;
+        return _reverse * ((int32_t)servo_out * (int32_t)(radio_max - radio_trim)) / (int32_t)_high;
     else
-        return _reverse * ((long)servo_out * (long)(radio_trim - radio_min)) / (long)_high;
+        return _reverse * ((int32_t)servo_out * (int32_t)(radio_trim - radio_min)) / (int32_t)_high;
 }
 
 /*
@@ -319,7 +341,7 @@ RC_Channel::pwm_to_range_dz(uint16_t dead_zone)
     int16_t radio_trim_low  = radio_min + dead_zone;
 
     if (r_in > radio_trim_low)
-        return (_low + ((long)(_high - _low) * (long)(r_in - radio_trim_low)) / (long)(radio_max - radio_trim_low));
+        return (_low + ((int32_t)(_high - _low) * (int32_t)(r_in - radio_trim_low)) / (int32_t)(radio_max - radio_trim_low));
     else if (dead_zone > 0)
         return 0;
     else
@@ -343,7 +365,7 @@ RC_Channel::range_to_pwm()
     if (_high_out == _low_out) {
         return radio_trim;
     }
-    return ((long)(servo_out - _low_out) * (long)(radio_max - radio_min)) / (long)(_high_out - _low_out);
+    return ((int32_t)(servo_out - _low_out) * (int32_t)(radio_max - radio_min)) / (int32_t)(_high_out - _low_out);
 }
 
 // ------------------------------------------
@@ -356,6 +378,22 @@ RC_Channel::norm_input()
         ret = _reverse * (float)(radio_in - radio_trim) / (float)(radio_trim - radio_min);
     else
         ret = _reverse * (float)(radio_in - radio_trim) / (float)(radio_max  - radio_trim);
+    return constrain_float(ret, -1.0f, 1.0f);
+}
+
+float
+RC_Channel::norm_input_dz()
+{
+    int16_t dz_min = radio_trim - _dead_zone;
+    int16_t dz_max = radio_trim + _dead_zone;
+    float ret;
+    if (radio_in < dz_min && dz_min > radio_min) {
+        ret = _reverse * (float)(radio_in - dz_min) / (float)(dz_min - radio_min);
+    } else if (radio_in > dz_max && radio_max > dz_max) {
+        ret = _reverse * (float)(radio_in - dz_max) / (float)(radio_max  - dz_max);
+    } else {
+        ret = 0;
+    }
     return constrain_float(ret, -1.0f, 1.0f);
 }
 

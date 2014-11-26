@@ -181,7 +181,7 @@ float AP_Baro_BMP085::get_pressure() {
     return Press;
 }
 
-float AP_Baro_BMP085::get_temperature() {
+float AP_Baro_BMP085::get_temperature() const {
     return Temp;
 }
 

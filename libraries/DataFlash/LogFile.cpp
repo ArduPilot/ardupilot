@@ -756,6 +756,7 @@ void DataFlash_Class::Log_Write_RCOUT(void)
         chan12        : hal.rcout->read(11)
     };
     WriteBlock(&pkt, sizeof(pkt));
+    Log_Write_ESC();
 }
 
 // Write a BARO packet
@@ -930,7 +931,7 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
         LOG_PACKET_HEADER_INIT(LOG_EKF2_MSG),
         time_ms : hal.scheduler->millis(),
         Ratio   : (int8_t)(100*ratio),
-        AZ1bias : (int8_t)(100*az2bias),
+        AZ1bias : (int8_t)(100*az1bias),
         AZ2bias : (int8_t)(100*az2bias),
         windN   : (int16_t)(100*wind.x),
         windE   : (int16_t)(100*wind.y),
@@ -987,7 +988,8 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
         sqrtvarVT : (int16_t)(100*tasVar),
         offsetNorth : (int8_t)(offset.x),
         offsetEast : (int8_t)(offset.y),
-        faults : (uint8_t)(faultStatus)
+        faults : (uint8_t)(faultStatus),
+        staticmode : (uint8_t)(ahrs.get_NavEKF().getStaticMode())
     };
     WriteBlock(&pkt4, sizeof(pkt4));
 }
@@ -1054,4 +1056,45 @@ void DataFlash_Class::Log_Write_Camera(const AP_AHRS &ahrs, const AP_GPS &gps, c
         yaw         : (uint16_t)ahrs.yaw_sensor
     };
     WriteBlock(&pkt, sizeof(pkt));
+}
+
+// Write ESC status messages
+void DataFlash_Class::Log_Write_ESC(void)
+{
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    static int _esc_status_sub = -1;
+    struct esc_status_s esc_status;
+
+    if (_esc_status_sub == -1) {
+        // subscribe to ORB topic on first call
+        _esc_status_sub = orb_subscribe(ORB_ID(esc_status));  
+    } 
+
+    // check for new ESC status data
+    bool esc_updated = false;
+    orb_check(_esc_status_sub, &esc_updated);
+    if (esc_updated && (OK == orb_copy(ORB_ID(esc_status), _esc_status_sub, &esc_status))) {
+        if (esc_status.esc_count > 8) {
+            esc_status.esc_count = 8;
+        }
+        uint32_t time_ms = hal.scheduler->millis();
+        for (uint8_t i = 0; i < esc_status.esc_count; i++) {
+            // skip logging ESCs with a esc_address of zero, and this
+            // are probably not populated. The Pixhawk itself should
+            // be address zero
+            if (esc_status.esc[i].esc_address != 0) {
+                struct log_Esc pkt = {
+                    LOG_PACKET_HEADER_INIT((uint8_t)(LOG_ESC1_MSG + i)),
+                    time_ms     : time_ms,
+                    rpm         : (int16_t)(esc_status.esc[i].esc_rpm/10),
+                    voltage     : (int16_t)(esc_status.esc[i].esc_voltage*100.f + .5f),
+                    current     : (int16_t)(esc_status.esc[i].esc_current*100.f + .5f),
+                    temperature : (int16_t)(esc_status.esc[i].esc_temperature*100.f + .5f)
+                };
+
+                WriteBlock(&pkt, sizeof(pkt));
+            }
+        }
+    }
+#endif // CONFIG_HAL_BOARD
 }

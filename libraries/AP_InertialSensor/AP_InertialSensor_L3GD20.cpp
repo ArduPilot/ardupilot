@@ -453,7 +453,7 @@ void AP_InertialSensor_L3GD20::disable_i2c(void)
 	hal.scheduler->panic(PSTR("L3GD20: Unable to disable I2C"));
 }
 
-uint8_t AP_InertialSensor_L3GD20::set_samplerate(uint8_t frequency)
+uint8_t AP_InertialSensor_L3GD20::set_samplerate(uint16_t frequency)
 {
 	uint8_t bits = REG1_POWER_NORMAL | REG1_Z_ENABLE | REG1_Y_ENABLE | REG1_X_ENABLE;
 	if (frequency == 0)

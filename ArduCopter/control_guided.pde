@@ -50,7 +50,7 @@ static void guided_takeoff_start(float final_alt)
 }
 
 // initialise guided mode's position controller
-void guided_pos_control_start()
+static void guided_pos_control_start()
 {
     // set to position control mode
     guided_mode = Guided_WP;
@@ -71,7 +71,7 @@ void guided_pos_control_start()
 }
 
 // initialise guided mode's velocity controller
-void guided_vel_control_start()
+static void guided_vel_control_start()
 {
     // set guided_mode to velocity controller
     guided_mode = Guided_Velocity;
@@ -82,6 +82,27 @@ void guided_vel_control_start()
 
     // initialise velocity controller
     pos_control.init_vel_controller_xyz();
+}
+
+// initialise guided mode's spline controller
+static void guided_spline_control_start()
+{
+    // set guided_mode to velocity controller
+    guided_mode = Guided_Spline;
+
+    // initialise waypoint and spline controller
+    wp_nav.wp_and_spline_init();
+
+    // initialise wpnav to stopping point at current altitude
+    // To-Do: set to current location if disarmed?
+    // To-Do: set to stopping point altitude?
+    Vector3f stopping_point;
+    stopping_point.z = inertial_nav.get_altitude();
+    wp_nav.get_wp_stopping_point_xy(stopping_point);
+    wp_nav.set_wp_destination(stopping_point);
+
+    // initialise yaw
+    set_auto_yaw_mode(get_default_auto_yaw_mode(false));
 }
 
 // guided_set_destination - sets guided mode's target destination
@@ -105,6 +126,16 @@ static void guided_set_velocity(const Vector3f& velocity)
 
     // set position controller velocity target
     pos_control.set_desired_velocity(velocity);
+}
+
+// set guided mode spline target
+static void guided_set_destination_spline(const Vector3f& destination, const Vector3f& velocity) {
+    // check we are in velocity control mode
+    if (guided_mode != Guided_Spline) {
+        guided_spline_control_start();
+    }
+
+    wp_nav.set_spline_dest_and_vel(destination, velocity);
 }
 
 // guided_run - runs the guided controller
@@ -137,6 +168,12 @@ static void guided_run()
     case Guided_Velocity:
         // run velocity controller
         guided_vel_control_run();
+        break;
+
+    case Guided_Spline:
+        // run spline controller
+        guided_spline_control_run();
+        break;
     }
  }
 
@@ -228,6 +265,37 @@ static void guided_vel_control_run()
     }else{
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
         attitude_control.angle_ef_roll_pitch_yaw(pos_control.get_roll(), pos_control.get_pitch(), get_auto_heading(), true);
+    }
+}
+
+
+// guided_spline_control_run - runs the guided spline controller
+// called from guided_run
+static void guided_spline_control_run()
+{
+    // process pilot's yaw input
+    float target_yaw_rate = 0;
+    if (!failsafe.radio) {
+        // get pilot's desired yaw rate
+        target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
+        if (target_yaw_rate != 0) {
+            set_auto_yaw_mode(AUTO_YAW_HOLD);
+        }
+    }
+
+    // run waypoint controller
+    wp_nav.update_spline();
+
+    // call z-axis position controller (wpnav should have already updated it's alt target)
+    pos_control.update_z_controller();
+
+    // call attitude controller
+    if (auto_yaw_mode == AUTO_YAW_HOLD) {
+        // roll & pitch from waypoint controller, yaw rate from pilot
+        attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
+    }else{
+        // roll, pitch from waypoint controller, yaw heading from auto_heading()
+        attitude_control.angle_ef_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(), true);
     }
 }
 

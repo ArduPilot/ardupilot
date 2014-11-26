@@ -27,7 +27,7 @@ def get_default_params(atype):
         mavproxy = util.start_MAVProxy_SIL(atype)
         idx = mavproxy.expect('Saved [0-9]+ parameters to (\S+)')
     parmfile = mavproxy.match.group(1)
-    dest = util.reltopdir('../buildlogs/%s-defaults.parm' % atype)
+    dest = 'buildlogs/%s-defaults.parm' % atype
     shutil.copy(parmfile, dest)
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
@@ -90,7 +90,7 @@ def build_parameters():
 def convert_gpx():
     '''convert any tlog files to GPX and KML'''
     import glob
-    mavlog = glob.glob(util.reltopdir("../buildlogs/*.tlog"))
+    mavlog = glob.glob("buildlogs/*.tlog")
     for m in mavlog:
         util.run_cmd(util.reltopdir("../mavlink/pymavlink/tools/mavtogpx.py") + " --nofixcheck " + m)
         gpx = m + '.gpx'
@@ -104,7 +104,7 @@ def convert_gpx():
 def test_prerequisites():
     '''check we have the right directories and tools to run tests'''
     print("Testing prerequisites")
-    util.mkdir_p(util.reltopdir('../buildlogs'))
+    util.mkdir_p('buildlogs')
     return True
 
 def alarm_handler(signum, frame):
@@ -180,6 +180,10 @@ def skip_step(step):
 
 def run_step(step):
     '''run one step'''
+
+    # remove old logs
+    util.run_cmd('/bin/rm -f logs/*.BIN logs/LASTLOG.TXT')
+
     if step == "prerequisites":
         return test_prerequisites()
 
@@ -279,13 +283,13 @@ class TestResults(object):
     def addglob(self, name, pattern):
         '''add a set of files'''
         import glob
-        for f in glob.glob(util.reltopdir('../buildlogs/%s' % pattern)):
+        for f in glob.glob('buildlogs/%s' % pattern):
             self.addfile(name, os.path.basename(f))
 
     def addglobimage(self, name, pattern):
         '''add a set of images'''
         import glob
-        for f in glob.glob(util.reltopdir('../buildlogs/%s' % pattern)):
+        for f in glob.glob('buildlogs/%s' % pattern):
             self.addimage(name, os.path.basename(f))
 
 
@@ -296,11 +300,11 @@ def write_webresults(results):
     t = mavtemplate.MAVTemplate()
     for h in glob.glob(util.reltopdir('Tools/autotest/web/*.html')):
         html = util.loadfile(h)
-        f = open(util.reltopdir("../buildlogs/%s" % os.path.basename(h)), mode='w')
+        f = open("buildlogs/%s" % os.path.basename(h), mode='w')
         t.write(f, html, results)
         f.close()
     for f in glob.glob(util.reltopdir('Tools/autotest/web/*.png')):
-        shutil.copy(f, util.reltopdir('../buildlogs/%s' % os.path.basename(f)))
+        shutil.copy(f, 'buildlogs/%s' % os.path.basename(f))
 
 def write_fullresults():
     '''write out full results set'''
@@ -314,14 +318,25 @@ def write_fullresults():
     results.addfile('ArduPlane code size', 'ArduPlane.sizes.txt')
     results.addfile('ArduPlane stack sizes', 'ArduPlane.framesizes.txt')
     results.addfile('ArduPlane defaults', 'ArduPlane-defaults.parm')
+    results.addglob("ArduPlane log", 'ArduPlane-*.BIN')
+    results.addglob("ArduPlane core", 'ArduPlane.core')
+    results.addglob("ArduPlane ELF", 'ArduPlane.elf')
     results.addfile('ArduCopter build log', 'ArduCopter.txt')
     results.addfile('ArduCopter code size', 'ArduCopter.sizes.txt')
     results.addfile('ArduCopter stack sizes', 'ArduCopter.framesizes.txt')
     results.addfile('ArduCopter defaults', 'ArduCopter-defaults.parm')
+    results.addglob("ArduCopter log", 'ArduCopter-*.BIN')
+    results.addglob("ArduCopter core", 'ArduCopter.core')
+    results.addglob("ArduCopter elf", 'ArduCopter.elf')
+    results.addglob("CopterAVC log", 'CopterAVC-*.BIN')
+    results.addglob("CopterAVC core", 'CopterAVC.core')
     results.addfile('APMrover2 build log', 'APMrover2.txt')
     results.addfile('APMrover2 code size', 'APMrover2.sizes.txt')
     results.addfile('APMrover2 stack sizes', 'APMrover2.framesizes.txt')
     results.addfile('APMrover2 defaults', 'APMrover2-defaults.parm')
+    results.addglob("APMrover2 log", 'APMrover2-*.BIN')
+    results.addglob("APMrover2 core", 'APMrover2.core')
+    results.addglob("APMrover2 ELF", 'APMrover2.elf')
     results.addglob('APM:Libraries documentation', 'docs/libraries/index.html')
     results.addglob('APM:Plane documentation', 'docs/ArduPlane/index.html')
     results.addglob('APM:Copter documentation', 'docs/ArduCopter/index.html')
@@ -333,6 +348,29 @@ def write_fullresults():
 
 results = TestResults()
 
+def check_logs(step):
+    '''check for log files from a step'''
+    print("check step: ", step)
+    if step.startswith('fly.'):
+        vehicle = step[4:]
+    elif step.startswith('drive.'):
+        vehicle = step[6:]
+    else:
+        return
+    logs = glob.glob("logs/*.BIN")
+    for log in logs:
+        bname = os.path.basename(log)
+        newname = "buildlogs/%s-%s" % (vehicle, bname)
+        print("Renaming %s to %s" % (log, newname))
+        os.rename(log, newname)
+
+    corefile = "core"
+    if os.path.exists(corefile):
+        newname = "buildlogs/%s.core" % vehicle
+        print("Renaming %s to %s" % (corefile, newname))
+        os.rename(corefile, newname)
+        util.run_cmd('/bin/cp A*/A*.elf ../buildlogs', dir=util.reltopdir('.'))
+        
 def run_tests(steps):
     '''run a list of steps'''
     global results
@@ -359,9 +397,11 @@ def run_tests(steps):
             print(">>>> FAILED STEP: %s at %s (%s)" % (step, time.asctime(), msg))
             traceback.print_exc(file=sys.stdout)
             results.add(step, '<span class="failed-text">FAILED</span>', time.time() - t1)
+            check_logs(step)
             continue
         results.add(step, '<span class="passed-text">PASSED</span>', time.time() - t1)
         print(">>>> PASSED STEP: %s at %s" % (step, time.asctime()))
+        check_logs(step)
     if not passed:
         print("FAILED %u tests: %s" % (len(failed), failed))
 
@@ -372,9 +412,9 @@ def run_tests(steps):
     return passed
 
 
-util.mkdir_p(util.reltopdir('../buildlogs'))
+util.mkdir_p('buildlogs')
 
-lck = util.lock_file(util.reltopdir('../buildlogs/autotest.lck'))
+lck = util.lock_file('buildlogs/autotest.lck')
 if lck is None:
     print("autotest is locked - exiting")
     sys.exit(0)

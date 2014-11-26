@@ -23,7 +23,9 @@ void SITLRCOutput::disable_ch(uint8_t ch)
 
 void SITLRCOutput::write(uint8_t ch, uint16_t period_us)
 {
+    if (ch < 11) {
 	_sitlState->pwm_output[ch] = period_us;
+    }
 }
 
 void SITLRCOutput::write(uint8_t ch, uint16_t* period_us, uint8_t len)
@@ -31,8 +33,12 @@ void SITLRCOutput::write(uint8_t ch, uint16_t* period_us, uint8_t len)
 	memcpy(_sitlState->pwm_output+ch, period_us, len*sizeof(uint16_t));
 }
 
-uint16_t SITLRCOutput::read(uint8_t ch) {
+uint16_t SITLRCOutput::read(uint8_t ch) 
+{
+    if (ch < 11) {
 	return _sitlState->pwm_output[ch];
+    }
+    return 0;
 }
 
 void SITLRCOutput::read(uint16_t* period_us, uint8_t len)

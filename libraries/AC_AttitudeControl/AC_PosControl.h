@@ -109,7 +109,8 @@ public:
     ///     should be called continuously (with dt set to be the expected time between calls)
     ///     actual position target will be moved no faster than the speed_down and speed_up
     ///     target will also be stopped if the motors hit their limits or leash length is exceeded
-    void set_alt_target_from_climb_rate(float climb_rate_cms, float dt);
+    ///     set force_descend to true during landing to allow target to move low enough to slow the motors
+    void set_alt_target_from_climb_rate(float climb_rate_cms, float dt, bool force_descend = false);
 
     /// set_alt_target_to_current_alt - set altitude target to current altitude
     void set_alt_target_to_current_alt() { _pos_target.z = _inav.get_altitude(); }

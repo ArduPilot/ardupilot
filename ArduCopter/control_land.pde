@@ -112,7 +112,7 @@ static void land_gps_run()
     }
 
     // update altitude target and call position controller
-    pos_control.set_alt_target_from_climb_rate(cmb_rate, G_Dt);
+    pos_control.set_alt_target_from_climb_rate(cmb_rate, G_Dt, true);
     pos_control.update_z_controller();
 }
 
@@ -170,7 +170,7 @@ static void land_nogps_run()
     }
 
     // call position controller
-    pos_control.set_alt_target_from_climb_rate(cmb_rate, G_Dt);
+    pos_control.set_alt_target_from_climb_rate(cmb_rate, G_Dt, true);
     pos_control.update_z_controller();
 }
 

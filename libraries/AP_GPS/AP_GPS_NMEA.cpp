@@ -94,6 +94,7 @@ const char AP_GPS_NMEA::_gpvtg_string[] PROGMEM = "GPVTG";
 // Convenience macros //////////////////////////////////////////////////////////
 //
 #define DIGIT_TO_VAL(_x)        (_x - '0')
+#define hexdigit(x) ((x)>9?'A'+(x):'0'+(x))
 
 AP_GPS_NMEA::AP_GPS_NMEA(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
     AP_GPS_Backend(_gps, _state, _port),
@@ -105,6 +106,8 @@ AP_GPS_NMEA::AP_GPS_NMEA(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDr
     _gps_data_good(false)
 {
     gps.send_blob_start(state.instance, _initialisation_blob, sizeof(_initialisation_blob));
+    // this guarantees that _term is always nul terminated
+    memset(_term, 0, sizeof(_term));
 }
 
 bool AP_GPS_NMEA::read(void)
@@ -179,9 +182,9 @@ uint32_t AP_GPS_NMEA::_parse_decimal_100()
         ++p;
     if (*p == '.') {
         if (isdigit(p[1])) {
-            ret += 10 * (p[1] - '0');
+            ret += 10 * DIGIT_TO_VAL(p[1]);
             if (isdigit(p[2]))
-                ret += p[2] - '0';
+                ret += DIGIT_TO_VAL(p[2]);
         }
     }
     return ret;
@@ -198,19 +201,19 @@ uint32_t AP_GPS_NMEA::_parse_degrees()
     int32_t ret = 0;
 
     // scan for decimal point or end of field
-    for (p = _term; isdigit(*p); p++)
+    for (p = _term; *p && isdigit(*p); p++)
         ;
     q = _term;
 
     // convert degrees
-    while ((p - q) > 2) {
+    while ((p - q) > 2 && *q) {
         if (deg)
             deg *= 10;
         deg += DIGIT_TO_VAL(*q++);
     }
 
     // convert minutes
-    while (p > q) {
+    while (p > q && *q) {
         if (min)
             min *= 10;
         min += DIGIT_TO_VAL(*q++);
@@ -220,8 +223,9 @@ uint32_t AP_GPS_NMEA::_parse_degrees()
     if (*p == '.') {
         q = p + 1;
         float frac_scale = 0.1f;
-        while (isdigit(*q)) {
-            frac_min += (*q++ - '0') * frac_scale;
+        while (*q && isdigit(*q)) {
+            frac_min += DIGIT_TO_VAL(*q) * frac_scale;
+            q++;
             frac_scale *= 0.1f;
         }
     }
@@ -372,8 +376,6 @@ bool AP_GPS_NMEA::_term_complete()
 
     return false;
 }
-
-#define hexdigit(x) ((x)>9?'A'+(x):'0'+(x))
 
 /*
   detect a NMEA GPS. Adds one byte, and returns true if the stream

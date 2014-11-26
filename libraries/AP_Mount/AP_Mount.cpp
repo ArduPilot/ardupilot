@@ -9,6 +9,13 @@
 #define ENABLED                 1
 #define DISABLED                0
 
+#define MASK_TILT           (1<<0)
+#define MASK_ROLL           (1<<1)
+#define MASK_YAW            (1<<2)
+#define MASK_RETRACT        (1<<3)
+
+
+
 #if defined( __AVR_ATmega1280__ )
  # define MNT_JSTICK_SPD_OPTION DISABLED // Allow RC joystick to control the speed of the mount movements instead of the position of the mount
  # define MNT_RETRACT_OPTION    DISABLED // Use a servo to retract the mount inside the fuselage (i.e. for landings)
@@ -276,21 +283,31 @@ void
 AP_Mount::update_mount_type()
 {
 	bool have_roll, have_tilt, have_pan;
+
 	have_roll = RC_Channel_aux::function_assigned(RC_Channel_aux::k_mount_roll) ||
 		RC_Channel_aux::function_assigned(RC_Channel_aux::k_mount2_roll);
+
 	have_tilt = RC_Channel_aux::function_assigned(RC_Channel_aux::k_mount_tilt) ||
 		RC_Channel_aux::function_assigned(RC_Channel_aux::k_mount2_tilt);
+
 	have_pan = RC_Channel_aux::function_assigned(RC_Channel_aux::k_mount_pan) ||
 		RC_Channel_aux::function_assigned(RC_Channel_aux::k_mount2_pan);
-    if (have_pan && have_tilt && !have_roll) {
+    
+    mount_axis_mask = 0;
+    
+    if (have_pan)
+        mount_axis_mask |= MASK_YAW;
+    if (have_tilt)
+        mount_axis_mask |= MASK_TILT;
+    if (have_roll)
+        mount_axis_mask |= MASK_ROLL;
+    
+    if (have_pan && have_tilt && !have_roll)
         _mount_type = k_pan_tilt;
-    }
-    if (!have_pan && have_tilt && have_roll) {
+    if (!have_pan && have_tilt && have_roll)
         _mount_type = k_tilt_roll;
-    }
-    if (have_pan && have_tilt && have_roll) {
+    if (have_pan && have_tilt && have_roll)
         _mount_type = k_pan_tilt_roll;
-    }
 }
 
 /// sets the servo angles for retraction, note angles are in degrees
@@ -367,17 +384,17 @@ void AP_Mount::update_mount_position()
         if (_joystick_speed) {                  // for spring loaded joysticks
             // allow pilot speed position input to come directly from an RC_Channel
             if (_roll_rc_in && rc_ch(_roll_rc_in)) {
-                _roll_control_angle += rc_ch(_roll_rc_in)->norm_input() * 0.0001f * _joystick_speed;
+                _roll_control_angle += rc_ch(_roll_rc_in)->norm_input_dz() * 0.0001f * _joystick_speed;
                 if (_roll_control_angle < radians(_roll_angle_min*0.01f)) _roll_control_angle = radians(_roll_angle_min*0.01f);
                 if (_roll_control_angle > radians(_roll_angle_max*0.01f)) _roll_control_angle = radians(_roll_angle_max*0.01f);
             }
             if (_tilt_rc_in && (rc_ch(_tilt_rc_in))) {
-                _tilt_control_angle += rc_ch(_tilt_rc_in)->norm_input() * 0.0001f * _joystick_speed;
+                _tilt_control_angle += rc_ch(_tilt_rc_in)->norm_input_dz() * 0.0001f * _joystick_speed;
                 if (_tilt_control_angle < radians(_tilt_angle_min*0.01f)) _tilt_control_angle = radians(_tilt_angle_min*0.01f);
                 if (_tilt_control_angle > radians(_tilt_angle_max*0.01f)) _tilt_control_angle = radians(_tilt_angle_max*0.01f);
             }
             if (_pan_rc_in && (rc_ch(_pan_rc_in))) {
-                _pan_control_angle += rc_ch(_pan_rc_in)->norm_input() * 0.0001f * _joystick_speed;
+                _pan_control_angle += rc_ch(_pan_rc_in)->norm_input_dz() * 0.0001f * _joystick_speed;
                 if (_pan_control_angle < radians(_pan_angle_min*0.01f)) _pan_control_angle = radians(_pan_angle_min*0.01f);
                 if (_pan_control_angle > radians(_pan_angle_max*0.01f)) _pan_control_angle = radians(_pan_angle_max*0.01f);
             }
@@ -494,6 +511,12 @@ void AP_Mount::control_msg(mavlink_message_t *msg)
         _roll_angle  = vec.x;
         _tilt_angle = vec.y;
         _pan_angle   = vec.z;
+        // also reset control angles, in radians. This allows a
+        // MOUNT_CONTROL message to be used to reset the mount to zero
+        // offset when in joystick speed relative mode
+        _roll_control_angle = radians(_roll_angle);
+        _tilt_control_angle = radians(_tilt_angle);
+        _pan_control_angle = radians(_pan_angle);
     }
     break;
 
@@ -516,40 +539,10 @@ void AP_Mount::control_msg(mavlink_message_t *msg)
     }
 }
 
-/// Return mount status information (depends on the previously set mount configuration)
-/// triggered by a MavLink packet.
-void AP_Mount::status_msg(mavlink_message_t *msg, mavlink_channel_t chan)
+/// Return mount status information
+void AP_Mount::status_msg(mavlink_channel_t chan)
 {
-    __mavlink_mount_status_t packet;
-    mavlink_msg_mount_status_decode(msg, &packet);
-    if (mavlink_check_target(packet.target_system, packet.target_component)) {
-        // not for us
-        return;
-    }
-
-    switch ((enum MAV_MOUNT_MODE)_mount_mode.get())
-    {
-    case MAV_MOUNT_MODE_RETRACT:                        // safe position (Roll,Pitch,Yaw) from EEPROM and stop stabilization
-    case MAV_MOUNT_MODE_NEUTRAL:                        // neutral position (Roll,Pitch,Yaw) from EEPROM
-    case MAV_MOUNT_MODE_MAVLINK_TARGETING:      // neutral position and start MAVLink Roll,Pitch,Yaw control with stabilization
-    case MAV_MOUNT_MODE_RC_TARGETING:                   // neutral position and start RC Roll,Pitch,Yaw control with stabilization
-        packet.pointing_b = _roll_angle*100;            // degrees*100
-        packet.pointing_a = _tilt_angle*100;            // degrees*100
-        packet.pointing_c = _pan_angle*100;             // degrees*100
-        break;
-#if MNT_GPSPOINT_OPTION == ENABLED
-    case MAV_MOUNT_MODE_GPS_POINT:             // neutral position and start to point to Lat,Lon,Alt
-        packet.pointing_a = _target_GPS_location.lat;   // latitude
-        packet.pointing_b = _target_GPS_location.lng;   // longitude
-        packet.pointing_c = _target_GPS_location.alt;   // altitude
-        break;
-#endif
-    case MAV_MOUNT_MODE_ENUM_END:
-        break;
-    }
-
-    mavlink_msg_mount_status_send_buf(msg, chan, packet.target_system, packet.target_component,
-                                  packet.pointing_a, packet.pointing_b, packet.pointing_c);
+    mavlink_msg_mount_status_send(chan,0,0, _tilt_angle*100, _roll_angle*100, _pan_angle*100);
 }
 
 /// Set mount point/region of interest, triggered by mission script commands
@@ -598,8 +591,18 @@ AP_Mount::calc_GPS_target_angle(const struct Location *target)
     float GPS_vector_z = (target->alt-_current_loc->alt);                 // baro altitude(IN CM) should be adjusted to known home elevation before take off (Set altimeter).
     float target_distance = 100.0f*pythagorous2(GPS_vector_x, GPS_vector_y);      // Careful , centimeters here locally. Baro/alt is in cm, lat/lon is in meters.
     _roll_control_angle  = 0;
-    _tilt_control_angle  = atan2f(GPS_vector_z, target_distance);
-    _pan_control_angle   = atan2f(GPS_vector_x, GPS_vector_y);
+    
+    if (mount_axis_mask & MASK_TILT) {
+        _tilt_control_angle = atan2f(GPS_vector_z, target_distance);
+    } else {
+        _tilt_control_angle = 0;
+    }
+        
+    if (mount_axis_mask & MASK_YAW) {
+        _pan_control_angle = atan2f(GPS_vector_x, GPS_vector_y);
+    } else {
+        _pan_control_angle = 0;
+    }
 }
 
 /// Stabilizes mount relative to the Earth's frame

@@ -802,6 +802,55 @@ void AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
     _flags.new_wp_destination = true;   // flag new waypoint so we can freeze the pos controller's feed forward and smooth the transition
 }
 
+void AC_WPNav::set_spline_dest_and_vel(const Vector3f& dest_pos, const Vector3f& dest_vel)
+{
+    // check _wp_accel_cms is reasonable to avoid divide by zero
+    if (_wp_accel_cms <= 0) {
+        _wp_accel_cms.set_and_save(WPNAV_ACCELERATION);
+    }
+
+    _spline_time = 0.0f;
+
+    _origin = _inav.get_position();
+    _destination = dest_pos;
+    _spline_origin_vel = _inav.get_velocity();
+    _spline_destination_vel = dest_vel;
+
+    if(_spline_origin_vel.length() < 100.0f) {
+        _spline_origin_vel = (_destination - _origin) * 0.1f;
+    }
+
+    _spline_vel_scaler = _spline_origin_vel.length();
+
+    _flags.fast_waypoint = _spline_destination_vel.length() > 0.0f;
+
+    float vel_len = (_spline_origin_vel + _spline_destination_vel).length();
+    float pos_len = (_destination - _origin).length() * 4.0f;
+
+    if (vel_len > pos_len) {
+        // if total start+stop velocity is more than twice position difference
+        // use a scaled down start and stop velocityscale the  start and stop velocities down
+        float vel_scaling = pos_len / vel_len;
+        // update spline calculator
+        update_spline_solution(_origin, _destination, _spline_origin_vel * vel_scaling, _spline_destination_vel * vel_scaling);
+    }else{
+        // update spline calculator
+        update_spline_solution(_origin, _destination, _spline_origin_vel, _spline_destination_vel);
+    }
+
+    // initialise yaw heading to current heading
+    _yaw = _attitude_control.angle_ef_targets().z;
+
+    // calculate slow down distance
+    calc_slow_down_distance(_wp_speed_cms, _wp_accel_cms);
+
+    // initialise intermediate point to the origin
+    _pos_control.set_pos_target(_origin);
+    _flags.reached_destination = false;
+    _flags.segment_type = SEGMENT_SPLINE;
+    _flags.new_wp_destination = true;   // flag new waypoint so we can freeze the pos controller's feed forward and smooth the transition
+}
+
 /// update_spline - update spline controller
 void AC_WPNav::update_spline()
 {

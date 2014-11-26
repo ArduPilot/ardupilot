@@ -115,6 +115,13 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("TUBE_ORDER",  6, AP_Airspeed, _tube_order, 2),
 
+    // @Param: SKIP_CAL
+    // @DisplayName: Skip airspeed calibration on startup
+    // @Description: This parameter allows you to skip airspeed offset calibration on startup, instead using the offset from the last calibration. This may be desirable if the offset variance between flights for your sensor is low and you want to avoid having to cover the pitot tube on each boot.
+    // @Values: 0:Disable,1:Enable
+    // @User: Advanced
+    AP_GROUPINFO("SKIP_CAL",  7, AP_Airspeed, _skip_cal, 0),
+
     AP_GROUPEND
 };
 
@@ -170,11 +177,14 @@ bool AP_Airspeed::get_temperature(float &temperature)
 
 // calibrate the airspeed. This must be called at least once before
 // the get_airspeed() interface can be used
-void AP_Airspeed::calibrate()
+void AP_Airspeed::calibrate(bool in_startup)
 {
     float sum = 0;
     uint8_t count = 0;
     if (!_enable) {
+        return;
+    }
+    if (in_startup && _skip_cal) {
         return;
     }
     // discard first reading
@@ -207,6 +217,9 @@ void AP_Airspeed::read(void)
         return;
     }
     airspeed_pressure = get_pressure() - _offset;
+
+    // remember raw pressure for logging
+    _raw_pressure     = airspeed_pressure;
 
     /*
       we support different pitot tube setups so used can choose if

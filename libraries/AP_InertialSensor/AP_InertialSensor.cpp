@@ -687,9 +687,9 @@ AP_InertialSensor::_init_gyro()
 
     uint8_t num_converged = 0;
 
-    // we try to get a good calibration estimate for up to 10 seconds
+    // we try to get a good calibration estimate for up to 30 seconds
     // if the gyros are stable, we should get it in 1 second
-    for (int16_t j = 0; j <= 20 && num_converged < num_gyros; j++) {
+    for (int16_t j = 0; j <= 30*4 && num_converged < num_gyros; j++) {
         Vector3f gyro_sum[INS_MAX_INSTANCES], gyro_avg[INS_MAX_INSTANCES], gyro_diff[INS_MAX_INSTANCES];
         float diff_norm[INS_MAX_INSTANCES];
         uint8_t i;

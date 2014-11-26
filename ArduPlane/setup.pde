@@ -183,7 +183,7 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
     uint8_t i;
 
     for(i = 0; i < 100; i++) {
-        delay(20);
+        hal.scheduler->delay(20);
         read_radio();
     }
 
@@ -191,7 +191,7 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
     if(channel_roll->radio_in < 500) {
         while(1) {
             cliSerial->printf_P(PSTR("\nNo radio; Check connectors."));
-            delay(1000);
+            hal.scheduler->delay(1000);
             // stop here
         }
     }
@@ -225,7 +225,7 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
     cliSerial->printf_P(PSTR("\nMove all controls to each extreme. Hit Enter to save: \n"));
     while(1) {
 
-        delay(20);
+        hal.scheduler->delay(20);
         // Filters radio input - adjust filters in the radio.pde file
         // ----------------------------------------------------------
         read_radio();

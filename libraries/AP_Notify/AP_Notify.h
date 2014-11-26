@@ -25,8 +25,25 @@
 #include <ToshibaLED_PX4.h>
 #include <ToneAlarm_PX4.h>
 #include <ToneAlarm_Linux.h>
+#include <NavioLED_I2C.h>
 #include <ExternalLED.h>
 #include <Buzzer.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    #define CONFIG_NOTIFY_DEVICES_COUNT 3
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2 
+    #define CONFIG_NOTIFY_DEVICES_COUNT 3
+#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+    #define CONFIG_NOTIFY_DEVICES_COUNT 4
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+    #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
+        #define CONFIG_NOTIFY_DEVICES_COUNT 2
+    #else
+        #define CONFIG_NOTIFY_DEVICES_COUNT 3
+    #endif
+#else
+    #define CONFIG_NOTIFY_DEVICES_COUNT 2
+#endif
 
 class AP_Notify
 {
@@ -63,24 +80,7 @@ public:
     void update(void);
 
 private:
-    // individual drivers
-    AP_BoardLED boardled;
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    ToshibaLED_PX4 toshibaled;
-    ToneAlarm_PX4 tonealarm;
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    ToshibaLED_I2C toshibaled;
-    ToneAlarm_Linux tonealarm;
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2 
-    ExternalLED externalled;
-    Buzzer buzzer;
-#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    ToshibaLED_I2C toshibaled;
-    ExternalLED externalled;
-    Buzzer buzzer;
-#else
-    ToshibaLED_I2C toshibaled;
-#endif
+    static NotifyDevice* _devices[CONFIG_NOTIFY_DEVICES_COUNT];
 };
 
 #endif    // __AP_NOTIFY_H__

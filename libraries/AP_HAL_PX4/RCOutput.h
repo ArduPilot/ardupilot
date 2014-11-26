@@ -5,6 +5,7 @@
 #include <AP_HAL_PX4.h>
 #include <systemlib/perf_counter.h>
 #include <uORB/topics/actuator_outputs.h>
+#include <uORB/topics/actuator_armed.h>
 
 #define PX4_NUM_OUTPUT_CHANNELS 16
 
@@ -24,6 +25,10 @@ public:
     void     set_failsafe_pwm(uint32_t chmask, uint16_t period_us);
     bool     force_safety_on(void);
     void     force_safety_off(void);
+    void     set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm) {
+        _esc_pwm_min = min_pwm;
+        _esc_pwm_max = max_pwm;
+    }
 
     void _timer_tick(void);
 
@@ -42,8 +47,16 @@ private:
     uint16_t _enabled_channels;
     int _pwm_sub;
     actuator_outputs_s _outputs;
+    actuator_armed_s _armed;
+
+    int _actuator_direct_pub = -1;
+    int _actuator_armed_pub = -1;
+    uint16_t _esc_pwm_min = 1000;
+    uint16_t _esc_pwm_max = 2000;
 
     void _init_alt_channels(void);
+    void _publish_actuators(void);
+    void _arm_actuators(bool arm);
 };
 
 #endif // __AP_HAL_PX4_RCOUTPUT_H__

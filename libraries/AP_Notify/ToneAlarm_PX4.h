@@ -18,9 +18,9 @@
 #ifndef __TONE_ALARM_PX4_H__
 #define __TONE_ALARM_PX4_H__
 
-#include "ToneAlarm_PX4.h"
+#include "NotifyDevice.h"
 
-class ToneAlarm_PX4
+class ToneAlarm_PX4: public NotifyDevice
 {
 public:
     /// init - initialised the tone alarm

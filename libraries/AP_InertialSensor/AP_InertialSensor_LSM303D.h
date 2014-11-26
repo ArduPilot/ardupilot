@@ -63,10 +63,10 @@ private:
     bool                 _hardware_init(Sample_rate sample_rate);
     void                 disable_i2c(void);
     uint8_t              accel_set_range(uint8_t max_g);
-    uint8_t              accel_set_samplerate(uint8_t frequency);
+    uint8_t              accel_set_samplerate(uint16_t frequency);
     uint8_t              accel_set_onchip_lowpass_filter_bandwidth(uint8_t bandwidth);
     uint8_t              mag_set_range(uint8_t max_ga);
-    uint8_t              mag_set_samplerate(uint8_t frequency);
+    uint8_t              mag_set_samplerate(uint16_t frequency);
 
     AP_HAL::SPIDeviceDriver *_spi;
     AP_HAL::Semaphore *_spi_sem;

@@ -481,6 +481,9 @@ static void calc_nav_yaw_ground(void)
 }
 
 
+/*
+  calculate a new nav_pitch_cd from the speed height controller
+ */
 static void calc_nav_pitch()
 {
     // Calculate the Pitch of the plane
@@ -490,9 +493,13 @@ static void calc_nav_pitch()
 }
 
 
+/*
+  calculate a new nav_roll_cd from the navigation controller
+ */
 static void calc_nav_roll()
 {
     nav_roll_cd = nav_controller->nav_roll_cd();
+    update_load_factor();
     nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
 }
 
@@ -676,20 +683,21 @@ static void flaperon_update(int8_t flap_percent)
     /*
       flaperons are implemented as a mixer between aileron and a
       percentage of flaps. Flap input can come from a manual channel
-      or from auto flaps. Note that negative manual flap percentates
-      are allowed, which give spoilerons
-     */
-    ch1 = channel_roll->radio_out;
+      or from auto flaps.
 
-    // 1500 is used here as the neutral value for the output
-    // mixer. User can still trim the flaps on the input side using
-    // the TRIM of the flap input channel. The *5 is to take a
-    // percentage to a value from -500 to 500 for the mixer
+      Use k_flaperon1 and k_flaperon2 channel trims to center servos.
+      Then adjust aileron trim for level flight (note that aileron trim is affected
+      by mixing gain). flapin_channel's trim is not used.
+     */
+     
+    ch1 = channel_roll->radio_out;
+    // The *5 is to take a percentage to a value from -500 to 500 for the mixer
     ch2 = 1500 - flap_percent * 5;
     channel_output_mixer(g.flaperon_output, ch1, ch2);
-    RC_Channel_aux::set_radio(RC_Channel_aux::k_flaperon1, ch1);
-    RC_Channel_aux::set_radio(RC_Channel_aux::k_flaperon2, ch2);
+    RC_Channel_aux::set_radio_trimmed(RC_Channel_aux::k_flaperon1, ch1);
+    RC_Channel_aux::set_radio_trimmed(RC_Channel_aux::k_flaperon2, ch2);
 }
+
 
 /*****************************************
 * Set the flight control servos based on the current calculated values
@@ -806,12 +814,16 @@ static void set_servos(void)
 #else
         // convert 0 to 100% into PWM
         uint8_t min_throttle = aparm.throttle_min.get();
+        uint8_t max_throttle = aparm.throttle_max.get();
         if (control_mode == AUTO && flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
             min_throttle = 0;
         }
+        if (control_mode == AUTO && flight_stage == AP_SpdHgtControl::FLIGHT_TAKEOFF) {
+            max_throttle = takeoff_throttle();
+        }
         channel_throttle->servo_out = constrain_int16(channel_throttle->servo_out, 
                                                       min_throttle,
-                                                      aparm.throttle_max.get());
+                                                      max_throttle);
 
         if (suppress_throttle()) {
             // throttle is suppressed in auto mode
@@ -1001,4 +1013,48 @@ static void adjust_nav_pitch_throttle(void)
         float p = (aparm.throttle_cruise - throttle) / (float)aparm.throttle_cruise;
         nav_pitch_cd -= g.stab_pitch_down * 100.0f * p;
     }
+}
+
+
+/*
+  calculate a new aerodynamic_load_factor and limit nav_roll_cd to
+  ensure that the load factor does not take us below the sustainable
+  airspeed
+ */
+static void update_load_factor(void)
+{
+    float demanded_roll = fabsf(nav_roll_cd*0.01f);
+    if (demanded_roll > 85) {
+        // limit to 85 degrees to prevent numerical errors
+        demanded_roll = 85;
+    }
+    aerodynamic_load_factor = 1.0f / safe_sqrt(cos(radians(demanded_roll)));
+
+    if (!aparm.stall_prevention) {
+        // stall prevention is disabled
+        return;
+    }
+    if (fly_inverted()) {
+        // no roll limits when inverted
+        return;
+    }
+
+    float max_load_factor = smoothed_airspeed / aparm.airspeed_min;
+    if (max_load_factor <= 1) {
+        // our airspeed is below the minimum airspeed. Limit roll to
+        // 25 degrees
+        nav_roll_cd = constrain_int32(nav_roll_cd, -2500, 2500);
+    } else if (max_load_factor < aerodynamic_load_factor) {
+        // the demanded nav_roll would take us past the aerodymamic
+        // load limit. Limit our roll to a bank angle that will keep
+        // the load within what the airframe can handle. We always
+        // allow at least 25 degrees of roll however, to ensure the
+        // aircraft can be maneuvered with a bad airspeed estimate. At
+        // 25 degrees the load factor is 1.1 (10%)
+        int32_t roll_limit = degrees(acosf(sq(1.0f / max_load_factor)))*100;
+        if (roll_limit < 2500) {
+            roll_limit = 2500;
+        }
+        nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit, roll_limit);
+    }    
 }

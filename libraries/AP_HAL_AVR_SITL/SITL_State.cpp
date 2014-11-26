@@ -79,8 +79,8 @@ bool SITL_State::new_rc_input;
 // catch floating point exceptions
 void SITL_State::_sig_fpe(int signum)
 {
-	fprintf(stderr, "ERROR: Floating point exception\n");
-	exit(1);
+	fprintf(stderr, "ERROR: Floating point exception - aborting\n");
+    abort();
 }
 
 void SITL_State::_usage(void)

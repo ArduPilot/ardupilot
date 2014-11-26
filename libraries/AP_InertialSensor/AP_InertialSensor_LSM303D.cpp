@@ -585,7 +585,7 @@ uint8_t AP_InertialSensor_LSM303D::accel_set_range(uint8_t max_g)
     return 0;
 }
 
-uint8_t AP_InertialSensor_LSM303D::accel_set_samplerate(uint8_t frequency)
+uint8_t AP_InertialSensor_LSM303D::accel_set_samplerate(uint16_t frequency)
 {
     uint8_t setbits = 0;
     uint8_t clearbits = REG1_RATE_BITS_A;
@@ -692,7 +692,7 @@ uint8_t AP_InertialSensor_LSM303D::mag_set_range(uint8_t max_ga)
     return 0;
 }
 
-uint8_t AP_InertialSensor_LSM303D::mag_set_samplerate(uint8_t frequency)
+uint8_t AP_InertialSensor_LSM303D::mag_set_samplerate(uint16_t frequency)
 {
     uint8_t setbits = 0;
     uint8_t clearbits = REG5_RATE_BITS_M;

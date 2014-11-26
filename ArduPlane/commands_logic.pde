@@ -12,6 +12,7 @@ static void do_within_distance(const AP_Mission::Mission_Command& cmd);
 static void do_change_alt(const AP_Mission::Mission_Command& cmd);
 static void do_change_speed(const AP_Mission::Mission_Command& cmd);
 static void do_set_home(const AP_Mission::Mission_Command& cmd);
+static void do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd);
 static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
 
 
@@ -78,6 +79,10 @@ start_command(const AP_Mission::Mission_Command& cmd)
         set_mode(RTL);
         break;
 
+    case MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT:
+        do_continue_and_change_alt(cmd);
+        break;
+
     // Conditional commands
 
     case MAV_CMD_CONDITION_DELAY:
@@ -130,6 +135,16 @@ start_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_LAND_START:
         //ensure go around hasn't been set
         auto_state.commanded_go_around = false;
+        break;
+
+    case MAV_CMD_DO_FENCE_ENABLE:
+#if GEOFENCE_ENABLED == ENABLED
+        if (!geofence_set_enabled((bool) cmd.p1, AUTO_TOGGLED)) {
+            gcs_send_text_fmt(PSTR("Unable to set fence enabled state to %u"), cmd.p1);
+        } else {
+            gcs_send_text_fmt(PSTR("Set fence enabled state to %u"), cmd.p1);
+        }    
+#endif
         break;
 
 #if CAMERA == ENABLED
@@ -212,6 +227,9 @@ static bool verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
         return verify_RTL();
 
+    case MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT:
+        return verify_continue_and_change_alt();
+
     // Conditional commands
 
     case MAV_CMD_CONDITION_DELAY:
@@ -242,6 +260,7 @@ static bool verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_DO_MOUNT_CONTROL:
     case MAV_CMD_DO_INVERTED_FLIGHT:
     case MAV_CMD_DO_LAND_START:
+    case MAV_CMD_DO_FENCE_ENABLE:
         return true;
 
     default:
@@ -340,6 +359,11 @@ static void do_loiter_time(const AP_Mission::Mission_Command& cmd)
     loiter.start_time_ms = 0;
     loiter.time_max_ms = cmd.p1 * (uint32_t)1000;     // units are seconds
     loiter_set_direction_wp(cmd);
+}
+
+static void do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd)
+{
+    next_WP_loc.alt = cmd.content.location.alt + home.alt;
 }
 
 /********************************************************************************/
@@ -496,6 +520,25 @@ static bool verify_RTL()
 	}
 }
 
+static bool verify_continue_and_change_alt()
+{
+    if (abs(adjusted_altitude_cm() - next_WP_loc.alt) <= 500) {
+        return true;
+    }
+   
+    // Is the next_WP less than 200 m away?
+    if (get_distance(current_loc, next_WP_loc) < 200.f) {
+        //push another 300 m down the line
+        int32_t next_wp_bearing_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
+        location_update(next_WP_loc, next_wp_bearing_cd * 0.01f, 300.f);
+    }
+
+    //keep flying the same course
+    nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
+
+    return false;
+}
+
 /********************************************************************************/
 //  Condition (May) commands
 /********************************************************************************/
@@ -613,6 +656,7 @@ static void do_take_picture()
 {
 #if CAMERA == ENABLED
     camera.trigger_pic();
+    gcs_send_message(MSG_CAMERA_FEEDBACK);
     if (should_log(MASK_LOG_CAMERA)) {
         DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
     }

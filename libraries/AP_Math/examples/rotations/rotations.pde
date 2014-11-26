@@ -32,15 +32,15 @@
 #include <AP_Airspeed.h>
 #include <AP_Vehicle.h>
 #include <AP_ADC_AnalogSource.h>
+#include <AP_Rally.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 static void print_vector(Vector3f &v)
 {
-    hal.console->printf("[%.2f %.2f %.2f]\n",
+    hal.console->printf("[%.4f %.4f %.4f]\n",
                         v.x, v.y, v.z);
 }
-
 
 // test rotation method accuracy
 static void test_rotation_accuracy(void)
@@ -94,10 +94,16 @@ static void test_euler(enum Rotation rotation, float roll, float pitch, float ya
 
     diff = (v2 - v1);
     if (diff.length() > accuracy) {
-        hal.console->printf("euler test %u incorrect\n", (unsigned)rotation);
-        print_vector(v);
+        hal.console->printf("euler test %u failed : yaw:%d roll:%d pitch:%d\n",
+        (unsigned)rotation,
+        (int)yaw,
+        (int)roll,
+        (int)pitch);
+        hal.console->printf("fast rotated: ");
         print_vector(v1);
+        hal.console->printf("slow rotated: ");
         print_vector(v2);
+        hal.console->printf("\n");
     }
 }
 
@@ -141,7 +147,8 @@ static void test_eulers(void)
     test_euler(ROTATION_ROLL_180_PITCH_270,180,270,   0);    
     test_euler(ROTATION_ROLL_270_PITCH_270,270,270,   0);    
     test_euler(ROTATION_ROLL_90_PITCH_180_YAW_90, 90, 180,  90);    
-    test_euler(ROTATION_ROLL_90_YAW_270,   90,   0, 270);    
+    test_euler(ROTATION_ROLL_90_YAW_270,   90,   0, 270);
+    test_euler(ROTATION_YAW_293_PITCH_68_ROLL_180,180,68.8,293.3);
 }
 
 static bool have_rotation(const Matrix3f &m)

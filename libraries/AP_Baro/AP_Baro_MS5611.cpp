@@ -486,7 +486,7 @@ float AP_Baro_MS5611::get_pressure()
     return Press;
 }
 
-float AP_Baro_MS5611::get_temperature()
+float AP_Baro_MS5611::get_temperature() const
 {
     // temperature in degrees C units
     return Temp;

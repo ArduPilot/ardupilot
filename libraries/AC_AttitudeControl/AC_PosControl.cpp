@@ -137,11 +137,11 @@ void AC_PosControl::set_alt_target_with_slew(float alt_cm, float dt)
 ///     should be called continuously (with dt set to be the expected time between calls)
 ///     actual position target will be moved no faster than the speed_down and speed_up
 ///     target will also be stopped if the motors hit their limits or leash length is exceeded
-void AC_PosControl::set_alt_target_from_climb_rate(float climb_rate_cms, float dt)
+void AC_PosControl::set_alt_target_from_climb_rate(float climb_rate_cms, float dt, bool force_descend)
 {
     // adjust desired alt if motors have not hit their limits
     // To-Do: add check of _limit.pos_up and _limit.pos_down?
-    if ((climb_rate_cms<0 && !_motors.limit.throttle_lower) || (climb_rate_cms>0 && !_motors.limit.throttle_upper)) {
+    if ((climb_rate_cms<0 && (!_motors.limit.throttle_lower || force_descend)) || (climb_rate_cms>0 && !_motors.limit.throttle_upper)) {
         _pos_target.z += climb_rate_cms * dt;
     }
 }

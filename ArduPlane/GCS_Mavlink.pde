@@ -265,6 +265,16 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
     }
 #endif
 
+    if (rangefinder.num_sensors() > 0) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
+        if (g.rangefinder_landing) {
+            control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
+        }
+        if (rangefinder.healthy()) {
+            control_sensors_health |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;            
+        }
+    }
+
     mavlink_msg_sys_status_send(
         chan,
         control_sensors_present,
@@ -643,6 +653,13 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 #endif
         break;
 
+    case MSG_CAMERA_FEEDBACK:
+#if CAMERA == ENABLED
+        CHECK_PAYLOAD_SIZE(CAMERA_FEEDBACK);
+        camera.send_feedback(chan, gps, ahrs, current_loc);
+#endif
+        break;
+
     case MSG_BATTERY2:
         CHECK_PAYLOAD_SIZE(BATTERY2);
         gcs[chan-MAVLINK_COMM_0].send_battery2(battery);
@@ -651,6 +668,13 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     case MSG_WIND:
         CHECK_PAYLOAD_SIZE(WIND);
         send_wind(chan);
+        break;
+
+    case MSG_MOUNT_STATUS:
+#if MOUNT == ENABLED
+        CHECK_PAYLOAD_SIZE(MOUNT_STATUS);
+        camera_mount.status_msg(chan);
+#endif // MOUNT == ENABLED
         break;
 
     case MSG_RETRY_DEFERRED:
@@ -885,6 +909,7 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_TERRAIN);
 #endif
         send_message(MSG_BATTERY2);
+        send_message(MSG_MOUNT_STATUS);
     }
 }
 
@@ -983,30 +1008,37 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_PREFLIGHT_CALIBRATION:
-            if (packet.param1 == 1 ||
-                packet.param2 == 1) {
-                startup_INS_ground(true);
-            } else if (packet.param3 == 1) {
+            if (packet.param3 == 1) {
                 in_calibration = true;
                 init_barometer();
                 if (airspeed.enabled()) {
-                    zero_airspeed();
+                    zero_airspeed(false);
                 }
                 in_calibration = false;
-            }
-            if (packet.param4 == 1) {
+            } else if (packet.param1 == 1 ||
+                       packet.param2 == 1) {
+                startup_INS_ground(true);
+            } else if (packet.param4 == 1) {
                 trim_radio();
-            }
+            } 
 #if !defined( __AVR_ATmega1280__ )
-            if (packet.param5 == 1) {
+            else if (packet.param5 == 1) {
                 float trim_roll, trim_pitch;
                 AP_InertialSensor_UserInteract_MAVLink interact(chan);
+                if (g.skip_gyro_cal) {
+                    // start with gyro calibration, otherwise if the user
+                    // has SKIP_GYRO_CAL=1 they don't get to do it
+                    ins.init_gyro();
+                }
                 if(ins.calibrate_accel(&interact, trim_roll, trim_pitch)) {
                     // reset ahrs's trim to suggested values from calibration routine
                     ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
                 }
             }
 #endif
+            else {
+                    send_text_P(SEVERITY_LOW, PSTR("Unsupported preflight calibration"));
+            }
             result = MAV_RESULT_ACCEPTED;
             break;
 
@@ -1451,13 +1483,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 #if CAMERA == ENABLED
     case MAVLINK_MSG_ID_DIGICAM_CONFIGURE:
     {
-        camera.configure_msg(msg);
         break;
     }
 
     case MAVLINK_MSG_ID_DIGICAM_CONTROL:
     {
-        camera.control_msg(msg);
+        do_take_picture();
         break;
     }
 #endif // CAMERA == ENABLED
@@ -1472,12 +1503,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_MOUNT_CONTROL:
     {
         camera_mount.control_msg(msg);
-        break;
-    }
-
-    case MAVLINK_MSG_ID_MOUNT_STATUS:
-    {
-        camera_mount.status_msg(msg, chan);
         break;
     }
 #endif // MOUNT == ENABLED

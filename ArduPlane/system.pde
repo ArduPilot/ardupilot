@@ -180,7 +180,6 @@ static void init_ardupilot()
 
     //mavlink_system.sysid = MAV_SYSTEM_ID;				// Using g.sysid_this_mav
     mavlink_system.compid = 1;          //MAV_COMP_ID_IMU;   // We do not check for comp id
-    mavlink_system.type = MAV_TYPE_FIXED_WING;
 
     init_rc_in();               // sets up rc channels from radio
     init_rc_out();              // sets up the timer libs
@@ -449,10 +448,7 @@ static void check_long_failsafe()
     // only act on changes
     // -------------------
     if(failsafe.state != FAILSAFE_LONG && failsafe.state != FAILSAFE_GCS) {
-        if (failsafe.rc_override_active && (tnow - failsafe.last_heartbeat_ms) > g.long_fs_timeout*1000) {
-            failsafe_long_on_event(FAILSAFE_LONG);
-        } else if (!failsafe.rc_override_active && 
-                   failsafe.state == FAILSAFE_SHORT && 
+        if (failsafe.state == FAILSAFE_SHORT &&
                    (tnow - failsafe.ch3_timer_ms) > g.long_fs_timeout*1000) {
             failsafe_long_on_event(FAILSAFE_LONG);
         } else if (g.gcs_heartbeat_fs_enabled != GCS_FAILSAFE_OFF && 
@@ -470,11 +466,6 @@ static void check_long_failsafe()
             (tnow - failsafe.last_heartbeat_ms) < g.short_fs_timeout*1000) {
             failsafe.state = FAILSAFE_NONE;
         } else if (failsafe.state == FAILSAFE_LONG && 
-                   failsafe.rc_override_active && 
-                   (tnow - failsafe.last_heartbeat_ms) < g.short_fs_timeout*1000) {
-            failsafe.state = FAILSAFE_NONE;
-        } else if (failsafe.state == FAILSAFE_LONG && 
-                   !failsafe.rc_override_active && 
                    !failsafe.ch3_failsafe) {
             failsafe.state = FAILSAFE_NONE;
         }
@@ -544,7 +535,7 @@ static void startup_INS_ground(bool do_accel_init)
     if (airspeed.enabled()) {
         // initialize airspeed sensor
         // --------------------------
-        zero_airspeed();
+        zero_airspeed(true);
     } else {
         gcs_send_text_P(SEVERITY_LOW,PSTR("NO airspeed"));
     }

@@ -50,6 +50,7 @@ enum ap_message {
     MSG_TERRAIN,
     MSG_BATTERY2,
     MSG_CAMERA_FEEDBACK,
+    MSG_MOUNT_STATUS,
     MSG_RETRY_DEFERRED // this must be last
 };
 

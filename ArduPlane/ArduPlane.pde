@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduPlane V3.1.2beta1"
+#define THISFIRMWARE "ArduPlane V3.2.0"
 /*
    Lead developer: Andrew Tridgell
  
@@ -374,8 +374,6 @@ static struct {
 // Failsafe
 ////////////////////////////////////////////////////////////////////////////////
 static struct {
-    // A flag if GCS joystick control is in use
-    uint8_t rc_override_active:1;
 
     // Used to track if the value on channel 3 (throtttle) has fallen below the failsafe threshold
     // RC receiver should be set up to output a low throttle value when signal is lost
@@ -597,6 +595,13 @@ static int32_t nav_roll_cd;
 
 // The instantaneous desired pitch angle.  Hundredths of a degree
 static int32_t nav_pitch_cd;
+
+// the aerodymamic load factor. This is calculated from the demanded
+// roll before the roll is clipped, using 1/sqrt(cos(nav_roll))
+static float aerodynamic_load_factor = 1.0f;
+
+// a smoothed airspeed estimate, used for limiting roll angle
+static float smoothed_airspeed;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Mission library
@@ -1324,6 +1329,7 @@ static void update_flight_mode(void)
         // set nav_roll and nav_pitch using sticks
         nav_roll_cd  = channel_roll->norm_input() * roll_limit_cd;
         nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
+        update_load_factor();
         float pitch_input = channel_pitch->norm_input();
         if (pitch_input > 0) {
             nav_pitch_cd = pitch_input * aparm.pitch_limit_max_cd;
@@ -1357,6 +1363,8 @@ static void update_flight_mode(void)
     case FLY_BY_WIRE_B:
         // Thanks to Yury MonZon for the altitude limit code!
         nav_roll_cd = channel_roll->norm_input() * roll_limit_cd;
+        nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
+        update_load_factor();
         update_fbwb_speed_height();
         break;
         
@@ -1374,6 +1382,8 @@ static void update_flight_mode(void)
         
         if (!cruise_state.locked_heading) {
             nav_roll_cd = channel_roll->norm_input() * roll_limit_cd;
+            nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
+            update_load_factor();
         } else {
             calc_nav_roll();
         }
@@ -1392,6 +1402,7 @@ static void update_flight_mode(void)
         // holding altitude at the altitude we set when we
         // switched into the mode
         nav_roll_cd  = roll_limit_cd / 3;
+        update_load_factor();
         calc_nav_pitch();
         calc_throttle();
         break;
@@ -1527,7 +1538,8 @@ static void update_flight_stage(void)
                                                  flight_stage,
                                                  auto_state.takeoff_pitch_cd,
                                                  throttle_nudge,
-                                                 relative_altitude());
+                                                 relative_altitude(),
+                                                 aerodynamic_load_factor);
         if (should_log(MASK_LOG_TECS)) {
             Log_Write_TECS_Tuning();
         }

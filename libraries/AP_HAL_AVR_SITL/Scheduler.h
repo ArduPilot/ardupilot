@@ -12,7 +12,7 @@
 /* Scheduler implementation: */
 class AVR_SITL::SITLScheduler : public AP_HAL::Scheduler {
 public:
-    SITLScheduler();
+    SITLScheduler(SITL_State *sitlState);
     /* AP_HAL::Scheduler methods */
 
     void     init(void *unused);
@@ -49,6 +49,7 @@ public:
     static void timer_event() { _run_timer_procs(true); _run_io_procs(true); }
 
 private:
+    SITL_State *_sitlState;
     uint8_t _nested_atomic_ctr;
     AP_HAL::Proc _delay_cb;
     uint16_t _min_delay_cb_ms;

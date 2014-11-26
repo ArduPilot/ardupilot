@@ -31,6 +31,12 @@ erle: HAL_BOARD = HAL_BOARD_LINUX
 erle: TOOLCHAIN = BBONE
 erle: all
 
+zynq: HAL_BOARD = HAL_BOARD_LINUX
+zynq: TOOLCHAIN = ZYNQ
+zynq: all
+zynq-hil: EXTRAFLAGS += "-DHILMODE=HIL_MODE_ATTITUDE -DHIL_MODE=HIL_MODE_SENSORS "
+zynq-hil : zynq
+
 pxf: HAL_BOARD = HAL_BOARD_LINUX
 pxf: TOOLCHAIN = BBONE
 pxf: all

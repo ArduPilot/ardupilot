@@ -18,6 +18,9 @@ bool SITLRCInput::new_input() {
 
 uint16_t SITLRCInput::read(uint8_t ch) {
     _sitlState->new_rc_input = false;
+    if (ch >= 8) {
+        return 0;
+    }
     return _override[ch]? _override[ch] : _sitlState->pwm_input[ch];
 }
 

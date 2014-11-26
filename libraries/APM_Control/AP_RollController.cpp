@@ -56,7 +56,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	// @Range: 0 1.0
 	// @Increment: 0.05
 	// @User: User
-	AP_GROUPINFO("I",        3, AP_RollController, gains.I,        0.0f),
+	AP_GROUPINFO("I",        3, AP_RollController, gains.I,        0.04f),
 
 	// @Param: RMAX
 	// @DisplayName: Maximum Roll Rate

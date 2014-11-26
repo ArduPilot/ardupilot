@@ -59,12 +59,16 @@ void failsafe_check(void)
         channel_throttle->radio_out = channel_throttle->read();
         channel_rudder->radio_out   = channel_rudder->read();
 
+        int16_t roll = channel_roll->pwm_to_angle_dz(0);
+        int16_t pitch = channel_pitch->pwm_to_angle_dz(0);
+        int16_t rudder = channel_rudder->pwm_to_angle_dz(0);
+
         // setup secondary output channels that don't have
         // corresponding input channels
-        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_aileron, channel_roll->radio_out);
-        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_elevator, channel_pitch->radio_out);
-        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_rudder, channel_rudder->radio_out);
-        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_steering, channel_rudder->radio_out);
+        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_aileron, roll);
+        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_elevator, pitch);
+        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_rudder, rudder);
+        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_steering, rudder);
 
         if (g.vtail_output != MIXING_DISABLED) {
             channel_output_mixer(g.vtail_output, channel_pitch->radio_out, channel_rudder->radio_out);

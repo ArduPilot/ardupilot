@@ -261,15 +261,6 @@ else
     fi
     if [ $HAVE_FMUV3 == true ]
     then
-        # internal MPU6000 is rotated ROLL_180_YAW_270 from standard
-        if mpu6000 -R 14 start
-        then
-               echo "Found MPU6000 internal"
-        else
-               echo "No MPU6000"
-               echo "No MPU6000" >> $logfile
-               sh /etc/init.d/rc.error
-        fi
         # external L3GD20 is rotated YAW_180 from standard
         if l3gd20 -X -R 4 start
         then
@@ -285,6 +276,19 @@ else
         else
                echo "No lsm303d"
                sh /etc/init.d/rc.error
+        fi
+        # internal MPU6000 is rotated ROLL_180_YAW_270 from standard
+        if mpu6000 -R 14 start
+        then
+               echo "Found MPU6000 internal"
+        else
+               echo "No MPU6000"
+               echo "No MPU6000" >> $logfile
+               sh /etc/init.d/rc.error
+        fi
+        if ms5611 -X start
+        then
+            echo "ms5611 external started OK"
         fi
     else
         if mpu6000 start
@@ -352,6 +356,16 @@ else
     echo "failed to read mtd"
     echo "failed to read mtd" >> $logfile
     sh /etc/init.d/rc.error           
+fi
+
+if [ -f /bin/uavcan ]
+then
+    if uavcan start 1
+    then
+        echo "started uavcan OK"
+    else
+        echo "failed to start uavcan"
+    fi
 fi
 
 if [ $BOARD == FMUv2 ]

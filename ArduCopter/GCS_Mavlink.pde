@@ -633,6 +633,13 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         send_hwstatus(chan);
         break;
 
+    case MSG_MOUNT_STATUS:
+#if MOUNT == ENABLED
+        CHECK_PAYLOAD_SIZE(MOUNT_STATUS);    
+        camera_mount.status_msg(chan);
+#endif // MOUNT == ENABLED
+        break;
+
     case MSG_FENCE_STATUS:
     case MSG_WIND:
         // unused
@@ -858,6 +865,7 @@ GCS_MAVLINK::data_stream_send(void)
 #if AP_TERRAIN_AVAILABLE
         send_message(MSG_TERRAIN);
 #endif
+        send_message(MSG_MOUNT_STATUS);
     }
 }
 
@@ -878,7 +886,6 @@ void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
     // similar to how do_change_alt works
     wp_nav.set_desired_alt(cmd.content.location.alt);
 }
-
 
 void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 {
@@ -1116,26 +1123,24 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 // reset ahrs gyro bias
                 ahrs.reset_gyro_drift();
                 result = MAV_RESULT_ACCEPTED;
-            }
-            if (packet.param3 == 1) {
-                init_barometer(false);                      // fast barometer calibration
+            } else if (packet.param3 == 1) {
+                // fast barometer calibration
+                init_barometer(false);
                 result = MAV_RESULT_ACCEPTED;
-            }
-            if (packet.param4 == 1) {
+            } else if (packet.param4 == 1) {
                 trim_radio();
                 result = MAV_RESULT_ACCEPTED;
-            }
-            if (packet.param5 == 1) {
+            } else if (packet.param5 == 1) {
+                // 3d accel calibration
                 float trim_roll, trim_pitch;
                 // this blocks
                 AP_InertialSensor_UserInteract_MAVLink interact(chan);
                 if(ins.calibrate_accel(&interact, trim_roll, trim_pitch)) {
                     // reset ahrs's trim to suggested values from calibration routine
                     ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
+                    result = MAV_RESULT_ACCEPTED;
                 }
-                result = MAV_RESULT_ACCEPTED;
-            }
-            if (packet.param6 == 1) {
+            } else if (packet.param6 == 1) {
                 // compassmot calibration
                 result = mavlink_compassmot(chan);
             }
@@ -1315,8 +1320,26 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
         }
 
-        // create 3-axis velocity vector and sent to guided controller
-        guided_set_velocity(Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
+        bool pos_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE;
+        bool vel_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_VEL_IGNORE;
+        bool acc_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE;
+
+        /*
+         * for future use:
+         * bool force           = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_FORCE;
+         * bool yaw_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE;
+         * bool yaw_rate_ignore = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE;
+         */
+
+        if (!pos_ignore && !vel_ignore && acc_ignore) {
+            guided_set_destination_spline(Vector3f(packet.x * 100.0f, packet.y * 100.0f, -packet.z * 100.0f), Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
+        } else if (pos_ignore && !vel_ignore && acc_ignore) {
+            guided_set_velocity(Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
+        } else if (!pos_ignore && vel_ignore && acc_ignore) {
+            guided_set_destination(Vector3f(packet.x * 100.0f, packet.y * 100.0f, -packet.z * 100.0f));
+        } else {
+            result = MAV_RESULT_FAILED;
+        }
 
         break;
     }
@@ -1337,8 +1360,54 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
         }
 
-        // create 3-axis velocity vector and sent to guided controller
-        guided_set_velocity(Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
+        bool pos_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE;
+        bool vel_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_VEL_IGNORE;
+        bool acc_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE;
+
+        /*
+         * for future use:
+         * bool force           = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_FORCE;
+         * bool yaw_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE;
+         * bool yaw_rate_ignore = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE;
+         */
+
+        Vector3f pos_ned;
+
+        if(!pos_ignore) {
+            Location loc;
+            loc.lat = packet.lat_int;
+            loc.lng = packet.lon_int;
+            loc.alt = packet.alt*100;
+            switch (packet.coordinate_frame) {
+                case MAV_FRAME_GLOBAL_RELATIVE_ALT:
+                case MAV_FRAME_GLOBAL_RELATIVE_ALT_INT:
+                    loc.flags.relative_alt = true;
+                    loc.flags.terrain_alt = false;
+                    break;
+                case MAV_FRAME_GLOBAL_TERRAIN_ALT:
+                case MAV_FRAME_GLOBAL_TERRAIN_ALT_INT:
+                    loc.flags.relative_alt = true;
+                    loc.flags.terrain_alt = true;
+                    break;
+                case MAV_FRAME_GLOBAL:
+                case MAV_FRAME_GLOBAL_INT:
+                default:
+                    loc.flags.relative_alt = false;
+                    loc.flags.terrain_alt = false;
+                    break;
+            }
+            pos_ned = pv_location_to_vector(loc);
+        }
+
+        if (!pos_ignore && !vel_ignore && acc_ignore) {
+            guided_set_destination_spline(pos_ned, Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
+        } else if (pos_ignore && !vel_ignore && acc_ignore) {
+            guided_set_velocity(Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
+        } else if (!pos_ignore && vel_ignore && acc_ignore) {
+            guided_set_destination(pos_ned);
+        } else {
+            result = MAV_RESULT_FAILED;
+        }
 
         break;
     }
@@ -1420,11 +1489,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
 #if CAMERA == ENABLED
     case MAVLINK_MSG_ID_DIGICAM_CONFIGURE:      // MAV ID: 202
-        camera.configure_msg(msg);
         break;
 
     case MAVLINK_MSG_ID_DIGICAM_CONTROL:
-        camera.control_msg(msg);
+        do_take_picture();
         break;
 #endif // CAMERA == ENABLED
 
@@ -1435,10 +1503,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_MOUNT_CONTROL:
         camera_mount.control_msg(msg);
-        break;
-
-    case MAVLINK_MSG_ID_MOUNT_STATUS:
-        camera_mount.status_msg(msg, chan);
         break;
 #endif // MOUNT == ENABLED
 

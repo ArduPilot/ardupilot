@@ -55,6 +55,9 @@
                <entry value="16" name="MAV_AUTOPILOT_AEROB">
                     <description>Aerob -- http://aerob.ru</description>
                </entry>
+               <entry value="17" name="MAV_AUTOPILOT_ASLUAV">
+                    <description>ASLUAV autopilot -- http://www.asl.ethz.ch</description>
+               </entry>
           </enum>
           <enum name="MAV_TYPE">
                <entry value="0" name="MAV_TYPE_GENERIC">
@@ -423,6 +426,12 @@
                <entry value="4" name="MAV_FRAME_LOCAL_ENU">
                     <description>Local coordinate frame, Z-down (x: east, y: north, z: up)</description>
                </entry>
+               <entry value="5" name="MAV_FRAME_GLOBAL_INT">
+                   <description>Global coordinate frame, WGS84 coordinate system. First value / x: latitude in degrees*1.0e-7, second value / y: longitude in degrees*1.0e-7, third value / z: positive altitude over mean sea level (MSL)</description>
+               </entry>
+                <entry value="6" name="MAV_FRAME_GLOBAL_RELATIVE_ALT_INT">
+                    <description>Global coordinate frame, WGS84 coordinate system, relative altitude over ground with respect to the home position. First value / x: latitude in degrees*10e-7, second value / y: longitude in degrees*10e-7, third value / z: positive altitude with 0 being at the altitude of the home location.</description>
+               </entry>
                <entry value="7" name="MAV_FRAME_LOCAL_OFFSET_NED">
                    <description>Offset to the current local frame. Anything expressed in this frame should be added to the current local frame position.</description>
                </entry>
@@ -434,6 +443,9 @@
                </entry>
                <entry value="10" name="MAV_FRAME_GLOBAL_TERRAIN_ALT">
                    <description>Global coordinate frame with above terrain level altitude. WGS84 coordinate system, relative altitude over terrain with respect to the waypoint coordinate. First value / x: latitude in degrees, second value / y: longitude in degrees, third value / z: positive altitude in meters with 0 being at ground level in terrain model.</description>
+               </entry>
+                <entry value="11" name="MAV_FRAME_GLOBAL_TERRAIN_ALT_INT">
+                   <description>Global coordinate frame with above terrain level altitude. WGS84 coordinate system, relative altitude over terrain with respect to the waypoint coordinate. First value / x: latitude in degrees*10e-7, second value / y: longitude in degrees*10e-7, third value / z: positive altitude in meters with 0 being at ground level in terrain model.</description>
                </entry>
           </enum>
           <enum name="MAVLINK_DATA_STREAM_TYPE">
@@ -566,6 +578,16 @@
                     <param index="5">Latitude</param>
                     <param index="6">Longitude</param>
                     <param index="7">Altitude</param>
+                </entry>
+               <entry value="30" name="MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT">
+                   <description>Continue on the current course and climb/descend to specified altitude.  When the altitude is reached continue to the next command (i.e., don't proceed to the next command until the desired altitude is reached.</description>
+                    <param index="1">Empty</param>
+                    <param index="2">Empty</param>
+                    <param index="3">Empty</param>
+                    <param index="4">Empty</param>
+                    <param index="5">Empty</param>
+                    <param index="6">Empty</param>
+                    <param index="7">Desired altitude in meters</param>
                </entry>
                <entry value="80" name="MAV_CMD_NAV_ROI">
                     <description>Sets the region of interest (ROI) for a sensor set or the vehicle itself. This can then be used by the vehicles control system to control the vehicle attitude and the attitude of various sensors such as cameras.</description>
@@ -1473,7 +1495,7 @@
           <!-- FIXME to be removed / merged with SYSTEM_TIME -->
           <message id="4" name="PING">
                <description>A ping message either requesting or responding to a ping. This allows to measure the system latencies, including serial port, radio modem and UDP connections.</description>
-               <field type="uint64_t" name="time_usec">Unix timestamp in microseconds</field>
+               <field type="uint64_t" name="time_usec">Unix timestamp in microseconds or since system boot if smaller than MAVLink epoch (1.1.2009)</field>
                <field type="uint32_t" name="seq">PING sequence</field>
                <field type="uint8_t" name="target_system">0: request ping from all receiving systems, if greater than 0: message is a ping response and number is the system id of the requesting system</field>
                <field type="uint8_t" name="target_component">0: request ping from all receiving components, if greater than 0: message is a ping response and number is the system id of the requesting system</field>
@@ -2181,14 +2203,20 @@
              <field type="float" name="temperature">Temperature in degrees celsius</field>
              <field type="uint16_t" name="fields_updated">Bitmask for fields that have updated since last message, bit 0 = xacc, bit 12: temperature</field>
          </message>
-         <message id="106" name="OMNIDIRECTIONAL_FLOW">
-             <description>Optical flow from an omnidirectional flow sensor (e.g. PX4FLOW with wide angle lens)</description>
+         <message id="106" name="OPTICAL_FLOW_RAD">
+             <description>Optical flow from an angular rate flow sensor (e.g. PX4FLOW or mouse sensor)</description>
              <field type="uint64_t" name="time_usec">Timestamp (microseconds, synced to UNIX time or since system boot)</field>
              <field type="uint8_t" name="sensor_id">Sensor ID</field>
-             <field type="int16_t[10]" name="left">Flow in deci pixels (1 = 0.1 pixel) on left hemisphere</field>
-             <field type="int16_t[10]" name="right">Flow in deci pixels (1 = 0.1 pixel) on right hemisphere</field>
-             <field type="uint8_t" name="quality">Optical flow quality / confidence. 0: bad, 255: maximum quality</field>
-             <field type="float" name="front_distance_m">Front distance in meters. Positive value (including zero): distance known. Negative value: Unknown distance</field>
+             <field type="uint32_t" name="integration_time_us">Integration time in microseconds. Divide integrated_x and integrated_y by the integration time to obtain average flow. The integration time also indicates the.</field>
+             <field type="float" name="integrated_x">Flow in radians around X axis (Sensor RH rotation about the X axis induces a positive flow. Sensor linear motion along the positive Y axis induces a negative flow.)</field>
+             <field type="float" name="integrated_y">Flow in radians around Y axis (Sensor RH rotation about the Y axis induces a positive flow. Sensor linear motion along the positive X axis induces a positive flow.)</field>
+             <field type="float" name="integrated_xgyro">RH rotation around X axis (rad)</field>
+             <field type="float" name="integrated_ygyro">RH rotation around Y axis (rad)</field>
+             <field type="float" name="integrated_zgyro">RH rotation around Z axis (rad)</field>
+             <field type="int16_t" name="temperature">Temperature * 100 in centi-degrees Celsius</field>
+             <field type="uint8_t" name="quality">Optical flow quality / confidence. 0: no valid flow, 255: maximum quality</field>
+             <field type="uint32_t" name="time_delta_distance_us">Time in microseconds since the distance was sampled.</field>
+             <field type="float" name="distance">Distance to the center of the flow field in meters. Positive value (including zero): distance known. Negative value: Unknown distance.</field>
          </message>
 
          <message id="107" name="HIL_SENSOR"> <description>The IMU readings in SI units in NED body frame</description>
@@ -2252,6 +2280,11 @@
             <field type="uint8_t" name="target_component">Component ID (0 for broadcast)</field>
             <field type="uint8_t[251]" name="payload">Variable length payload. The length is defined by the remaining message length when subtracting the header and other fields.  The entire content of this block is opaque unless you understand any the encoding message_type.  The particular encoding used can be extension specific and might not always be documented as part of the mavlink specification.</field>
         </message>
+        <message id="111" name="TIMESYNC">
+            <description>Time synchronization message.</description>
+            <field type="int64_t" name="tc1">Time sync timestamp 1</field>
+            <field type="int64_t" name="ts1">Time sync timestamp 2</field>
+        </message>
          <message id="113" name="HIL_GPS">
              <description>The global position, as returned by the Global Positioning System (GPS). This is
                  NOT the global position estimate of the sytem, but rather a RAW sensor value. See message GLOBAL_POSITION for the global position estimate. Coordinate frame is right-handed, Z-axis up (GPS frame).</description>
@@ -2270,15 +2303,19 @@
              <field type="uint8_t" name="satellites_visible">Number of satellites visible. If unknown, set to 255</field>
          </message>
          <message id="114" name="HIL_OPTICAL_FLOW">
-             <description>Simulated optical flow from a flow sensor (e.g. optical mouse sensor)</description>
-             <field type="uint64_t" name="time_usec">Timestamp (UNIX)</field>
+             <description>Simulated optical flow from a flow sensor (e.g. PX4FLOW or optical mouse sensor)</description>
+             <field type="uint64_t" name="time_usec">Timestamp (microseconds, synced to UNIX time or since system boot)</field>
              <field type="uint8_t" name="sensor_id">Sensor ID</field>
-             <field type="int16_t" name="flow_x">Flow in pixels in x-sensor direction</field>
-             <field type="int16_t" name="flow_y">Flow in pixels in y-sensor direction</field>
-             <field type="float" name="flow_comp_m_x">Flow in meters in x-sensor direction, angular-speed compensated</field>
-             <field type="float" name="flow_comp_m_y">Flow in meters in y-sensor direction, angular-speed compensated</field>
-             <field type="uint8_t" name="quality">Optical flow quality / confidence. 0: bad, 255: maximum quality</field>
-             <field type="float" name="ground_distance">Ground distance in meters. Positive value: distance known. Negative value: Unknown distance</field>
+             <field type="uint32_t" name="integration_time_us">Integration time in microseconds. Divide integrated_x and integrated_y by the integration time to obtain average flow. The integration time also indicates the.</field>
+             <field type="float" name="integrated_x">Flow in radians around X axis (Sensor RH rotation about the X axis induces a positive flow. Sensor linear motion along the positive Y axis induces a negative flow.)</field>
+             <field type="float" name="integrated_y">Flow in radians around Y axis (Sensor RH rotation about the Y axis induces a positive flow. Sensor linear motion along the positive X axis induces a positive flow.)</field>
+             <field type="float" name="integrated_xgyro">RH rotation around X axis (rad)</field>
+             <field type="float" name="integrated_ygyro">RH rotation around Y axis (rad)</field>
+             <field type="float" name="integrated_zgyro">RH rotation around Z axis (rad)</field>
+             <field type="int16_t" name="temperature">Temperature * 100 in centi-degrees Celsius</field>
+             <field type="uint8_t" name="quality">Optical flow quality / confidence. 0: no valid flow, 255: maximum quality</field>
+             <field type="uint32_t" name="time_delta_distance_us">Time in microseconds since the distance was sampled.</field>
+             <field type="float" name="distance">Distance to the center of the flow field in meters. Positive value (including zero): distance known. Negative value: Unknown distance.</field>
          </message>
          <message id="115" name="HIL_STATE_QUATERNION">
              <description>Sent from simulation to autopilot, avoids in contrast to HIL_STATE singularities. This packet is useful for high throughput applications such as hardware in the loop simulations.</description>

@@ -57,7 +57,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 	// @Range: 0 0.5
 	// @Increment: 0.05
 	// @User: User
-	AP_GROUPINFO("I",        3, AP_PitchController, gains.I,        0.0f),
+	AP_GROUPINFO("I",        3, AP_PitchController, gains.I,        0.04f),
 
 	// @Param: RMAX_UP
 	// @DisplayName: Pitch up max rate
