@@ -376,6 +376,12 @@ then
     fi
 fi
 
+# optional smbus battery monitor
+if batt_smbus start
+then
+    echo "Found batt_smbus"
+fi
+
 if [ $BOARD == FMUv2 ]
 then
   # the ramtron on FMUv2 is very fast and can handle trillions of
