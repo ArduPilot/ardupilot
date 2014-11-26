@@ -52,7 +52,15 @@ MODULES		+= systemcmds/reboot
 MODULES		+= systemcmds/top
 MODULES		+= systemcmds/tests
 MODULES		+= systemcmds/nshterm
-MODULES         += systemcmds/auth
+
+# Note: auth disabled to keep us under 1MB flash because of STM32 bug
+#ifneq ($(wildcard $(PX4_ROOT)/src/systemcmds/auth),)  
+#MODULES		+= systemcmds/auth
+#endif
+#ifneq ($(wildcard $(PX4_ROOT)/src/modules/libtomfastmath),)  
+#MODULES	        += modules/libtomfastmath
+#MODULES         += modules/libtomcrypt
+#endif
 
 #
 # Libraries
@@ -61,8 +69,6 @@ MODULES		+= modules/systemlib
 MODULES		+= modules/systemlib/mixer
 MODULES		+= modules/uORB
 MODULES		+= lib/mathlib/math/filter
-MODULES	        += modules/libtomfastmath
-MODULES         += modules/libtomcrypt
 MODULES		+= lib/conversion
 
 #
