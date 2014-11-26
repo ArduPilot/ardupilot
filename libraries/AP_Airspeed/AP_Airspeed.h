@@ -52,7 +52,8 @@ public:
         _calibration(parms),
         _last_saved_ratio(0.0f),
         _counter(0),
-        analog(_pin)
+        analog(_pin, _scale_analog),
+        digital(_scale_digital)
     {
 		AP_Param::setup_object_defaults(this, var_info);
     };
@@ -165,6 +166,8 @@ public:
 private:
     AP_Float        _offset;
     AP_Float        _ratio;
+    AP_Float        _scale_analog;
+    AP_Float        _scale_digital;
     AP_Int8         _use;
     AP_Int8         _enable;
     AP_Int8         _pin;

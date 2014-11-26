@@ -78,3 +78,4 @@ status.txt
 tags
 test.ArduCopter/*
 Thumbs.db
+libraries/GCS_MAVLink/include

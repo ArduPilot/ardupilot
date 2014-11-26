@@ -9,7 +9,8 @@
 class AP_Airspeed_Analog : public AP_Airspeed_Backend
 {
 public:
-    AP_Airspeed_Analog(const AP_Int8 &pin) : 
+    AP_Airspeed_Analog(const AP_Int8 &pin, const AP_Float &scale) : 
+        AP_Airspeed_Backend(scale),
         _source(NULL),
         _pin(pin),
         _last_pin(-1)
@@ -26,8 +27,8 @@ public:
 
 private:
     AP_HAL::AnalogSource *_source;
-    const AP_Int8 &_pin;
-    int8_t _last_pin;
+    const   AP_Int8 &_pin;
+    int8_t  _last_pin;
 };
 
 #endif // __AP_AIRSPEED_ANALOG_H__

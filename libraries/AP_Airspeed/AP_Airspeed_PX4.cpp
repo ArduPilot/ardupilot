@@ -42,6 +42,12 @@ bool AP_Airspeed_PX4::init()
         OK != ioctl(_fd, SENSORIOCSQUEUEDEPTH, 15)) {
         hal.console->println("Failed to setup airspeed driver rate and queue");
     }
+    // set scale as required.
+    struct airspeed_scale scale_struct;
+    scale_struct.offset_pa = 0;
+    scale_struct.scale = (float) _scale;
+    ioctl(_fd, AIRSPEEDIOCSSCALE, (unsigned long) (&scale_struct));
+    _sensor_scale_active = _scale;
     return true;
 }
 
@@ -51,6 +57,18 @@ bool AP_Airspeed_PX4::get_differential_pressure(float &pressure)
     if (_fd == -1) {
         return false;
     }
+    
+    // Check whether the scale that has been used for all these measurements is
+    // the scale that's been set by the user.
+    if (((float) _scale) != _sensor_scale_active) {
+        // Update the pressure sensor scaling.
+        struct airspeed_scale scale_struct;
+        scale_struct.offset_pa = 0.0;
+        scale_struct.scale = _scale;
+        ioctl(_fd, AIRSPEEDIOCSSCALE, (unsigned long) (&scale_struct));
+        _sensor_scale_active = _scale;
+        return false;
+    } 
 
     // read from the PX4 airspeed sensor
     float psum = 0;
