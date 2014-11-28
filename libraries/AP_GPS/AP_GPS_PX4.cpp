@@ -71,6 +71,12 @@ AP_GPS_PX4::read(void)
                 uint64_t gps_ms = epoch_ms - DELTA_POSIX_GPS_EPOCH + LEAP_MS_GPS_2014;
                 state.time_week = uint16_t(gps_ms / uint64_t(MS_PER_WEEK));
                 state.time_week_ms = uint32_t(gps_ms - uint64_t(state.time_week)*MS_PER_WEEK);
+
+                if (_gps_pos.time_gps_usec == 0) {
+                  // This is a work-around for https://github.com/PX4/Firmware/issues/1474
+                  // reject position reports with invalid time, as APM adjusts it's clock after the first lock has been aquired
+                  state.status = AP_GPS::NO_FIX;
+                }
             }
             if (_gps_pos.fix_type >= 3) {
                 state.have_vertical_velocity = _gps_pos.vel_ned_valid;
