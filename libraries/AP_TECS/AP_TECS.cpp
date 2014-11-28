@@ -160,7 +160,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
 	// @User: Advanced
     AP_GROUPINFO("LAND_SINK", 17, AP_TECS, _land_sink, 0.25f),
 
-    // @Param: TECS_LAND_TCONST
+    // @Param: LAND_TCONST
     // @DisplayName: Land controller time constant (sec)
     // @Description: This is the time constant of the TECS control algorithm when in final landing stage of flight. It should be smaller than TECS_TIME_CONST to allow for faster flare
 	// @Range: 1.0 5.0
