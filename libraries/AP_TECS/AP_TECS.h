@@ -186,6 +186,7 @@ private:
     float _hgt_dem_adj_last;
     float _hgt_rate_dem;
 	float _hgt_dem_prev;
+    float _initial_land_hgt;
 
     // Speed demand after application of rate limiting
     // This is the demand tracked by the TECS control loops

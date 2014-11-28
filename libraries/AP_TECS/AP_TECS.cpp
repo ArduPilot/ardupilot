@@ -383,10 +383,12 @@ void AP_TECS::_update_height_demand(void)
 	_hgt_dem_adj_last = _hgt_dem_adj;
 
     // in final landing stage force height rate demand to the
-    // configured sink rate
+    // configured sink rate and adjust the demanded height to
+    // be kinematically consistent with the height rate.
 	if (_flight_stage == FLIGHT_LAND_FINAL) {
         if (_flare_counter == 0) {
             _hgt_rate_dem = _climb_rate;
+            _land_hgt_dem = _hgt_dem_adj;
         }
         // bring it in over 1s to prevent overshoot
         if (_flare_counter < 10) {
@@ -395,7 +397,9 @@ void AP_TECS::_update_height_demand(void)
         } else {
             _hgt_rate_dem = - _land_sink;
         }
-	} else {
+        _land_hgt_dem += 0.1f * _hgt_rate_dem;
+        _hgt_dem_adj = _land_hgt_dem;
+    } else {
         _hgt_rate_dem = (_hgt_dem_adj - _hgt_dem_adj_last) / 0.1f;
         _flare_counter = 0;
     }
