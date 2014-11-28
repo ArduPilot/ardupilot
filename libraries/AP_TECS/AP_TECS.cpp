@@ -174,7 +174,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
     // @Range: 0.1 1.0
     // @Increment: 0.1
     // @User: Advanced
-    AP_GROUPINFO("LAND_DAMP", 19, AP_TECS, _landDamp, 0.0f),
+    AP_GROUPINFO("LAND_DAMP", 19, AP_TECS, _landDamp, 0.5f),
 
     AP_GROUPEND
 };
