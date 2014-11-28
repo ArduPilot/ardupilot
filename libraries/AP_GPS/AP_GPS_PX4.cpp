@@ -57,23 +57,30 @@ AP_GPS_PX4::read(void)
             state.num_sats = _gps_pos.satellites_used;
             state.hdop = uint16_t(_gps_pos.eph*100.0f + .5f);
 
-            state.location.lat = _gps_pos.lat;
-            state.location.lng = _gps_pos.lon;
-            state.location.alt = _gps_pos.alt/10;
+            if (_gps_pos.fix_type >= 2) {
+                state.location.lat = _gps_pos.lat;
+                state.location.lng = _gps_pos.lon;
+                state.location.alt = _gps_pos.alt/10;
 
-            state.ground_speed = _gps_pos.vel_m_s;
-            state.ground_course_cd = int32_t(double(_gps_pos.cog_rad) / M_PI * 18000. +.5);
-            state.have_vertical_velocity = _gps_pos.vel_ned_valid;
-            state.velocity.x = _gps_pos.vel_n_m_s;
-            state.velocity.y = _gps_pos.vel_e_m_s;
-            state.velocity.z = _gps_pos.vel_d_m_s;
+                state.ground_speed = _gps_pos.vel_m_s;
+                state.ground_course_cd = int32_t(double(_gps_pos.cog_rad) / M_PI * 18000. +.5);
 
-            // convert epoch timestamp back to gps epoch - evil hack until we get the genuine
-            // raw week information (or APM switches to Posix epoch ;-) )
-            uint64_t epoch_ms = uint64_t(_gps_pos.time_gps_usec/1000.+.5);
-            uint64_t gps_ms = epoch_ms - DELTA_POSIX_GPS_EPOCH + LEAP_MS_GPS_2014;
-            state.time_week = uint16_t(gps_ms / uint64_t(MS_PER_WEEK));
-            state.time_week_ms = uint32_t(gps_ms - uint64_t(state.time_week)*MS_PER_WEEK);
+                // convert epoch timestamp back to gps epoch - evil hack until we get the genuine
+                // raw week information (or APM switches to Posix epoch ;-) )
+                uint64_t epoch_ms = uint64_t(_gps_pos.time_gps_usec/1000.+.5);
+                uint64_t gps_ms = epoch_ms - DELTA_POSIX_GPS_EPOCH + LEAP_MS_GPS_2014;
+                state.time_week = uint16_t(gps_ms / uint64_t(MS_PER_WEEK));
+                state.time_week_ms = uint32_t(gps_ms - uint64_t(state.time_week)*MS_PER_WEEK);
+            }
+            if (_gps_pos.fix_type >= 3) {
+                state.have_vertical_velocity = _gps_pos.vel_ned_valid;
+                state.velocity.x = _gps_pos.vel_n_m_s;
+                state.velocity.y = _gps_pos.vel_e_m_s;
+                state.velocity.z = _gps_pos.vel_d_m_s;
+            }
+            else {
+                state.have_vertical_velocity = false;
+            }
         }
     }
 
