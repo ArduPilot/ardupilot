@@ -168,6 +168,14 @@ const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
 	// @User: Advanced
     AP_GROUPINFO("LAND_TCONST", 18, AP_TECS, _landTimeConst, 2.0f),
 
+    // @Param: LAND_DAMP
+    // @DisplayName: Controller sink rate to pitch gain during flare
+    // @Description: This is the sink rate gain for the pitch demand loop when in final landing stage of flight. It should be larger than TECS_PTCH_DAMP to allow for better sink rate control during flare.
+    // @Range: 0.1 1.0
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("LAND_DAMP", 19, AP_TECS, _landDamp, 0.0f),
+
     AP_GROUPEND
 };
 
@@ -647,11 +655,16 @@ void AP_TECS::_update_pitch(void)
     // During climbout/takeoff, bias the demanded pitch angle so that zero speed error produces a pitch angle 
     // demand equal to the minimum value (which is )set by the mission plan during this mode). Otherwise the
     // integrator has to catch up before the nose can be raised to reduce speed during climbout.
+    // During flare a different damping gain is used
 	float gainInv = (_integ5_state * timeConstant() * GRAVITY_MSS);
-    float temp = SEB_error + SEBdot_error * _ptchDamp + SEBdot_dem * timeConstant();
-    if (_flight_stage == AP_TECS::FLIGHT_TAKEOFF)
-    {
-    	temp += _PITCHminf * gainInv;
+    float temp = SEB_error + SEBdot_dem * timeConstant();
+    if (_flight_stage == AP_TECS::FLIGHT_LAND_FINAL) {
+        temp += SEBdot_error * _landDamp;
+    } else {
+        temp += SEBdot_error * _ptchDamp;
+    }
+    if (_flight_stage == AP_TECS::FLIGHT_TAKEOFF) {
+        temp += _PITCHminf * gainInv;
     }
     _integ7_state = constrain_float(_integ7_state, (gainInv * (_PITCHminf - 0.0783f)) - temp, (gainInv * (_PITCHmaxf + 0.0783f)) - temp);
 

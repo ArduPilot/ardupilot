@@ -117,6 +117,7 @@ private:
     AP_Float _timeConst;
     AP_Float _landTimeConst;
     AP_Float _ptchDamp;
+    AP_Float _landDamp;
     AP_Float _thrDamp;
     AP_Float _integGain;
     AP_Float _vertAccLim;
@@ -186,7 +187,7 @@ private:
     float _hgt_dem_adj_last;
     float _hgt_rate_dem;
 	float _hgt_dem_prev;
-    float _initial_land_hgt;
+    float _land_hgt_dem;
 
     // Speed demand after application of rate limiting
     // This is the demand tracked by the TECS control loops
