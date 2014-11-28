@@ -51,7 +51,7 @@ static bool verify_land()
           after landing if we've had positive baro drift)
     */
     if (height <= g.land_flare_alt ||
-        height <= -auto_state.land_sink_rate * g.land_flare_sec ||
+        height <= auto_state.land_sink_rate * g.land_flare_sec ||
         (!rangefinder_state.in_range && location_passed_point(current_loc, prev_WP_loc, next_WP_loc))) {
 
         if (!auto_state.land_complete) {
