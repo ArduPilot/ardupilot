@@ -3693,6 +3693,13 @@ bool NavEKF::getLLH(struct Location &loc) const
     return true;
 }
 
+// return the estimated height above ground level
+bool NavEKF::getHAGL(float &HAGL) const
+{
+    HAGL = flowStates[1] - state.position.z;
+    return !inhibitGndState;
+}
+
 // return data for debugging optical flow fusion
 void NavEKF::getFlowDebug(float &scaleFactor, float &gndPos, float &flowInnovX, float &flowInnovY, float &augFlowInnovX, float &augFlowInnovY, float &rngInnov, float &range) const
 {

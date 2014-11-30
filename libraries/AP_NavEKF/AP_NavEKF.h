@@ -144,6 +144,10 @@ public:
     // return the last calculated latitude, longitude and height
     bool getLLH(struct Location &loc) const;
 
+    // return estimated height above ground level
+    // return false if ground height is not being estimated.
+    bool getHAGL(float &HAGL) const;
+
     // return the Euler roll, pitch and yaw angle in radians
     void getEulerAngles(Vector3f &eulers) const;
 
