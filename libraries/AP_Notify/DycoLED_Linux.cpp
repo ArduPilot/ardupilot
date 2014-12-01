@@ -69,9 +69,10 @@ static led_pattern preset_pattern[14]={{{BLUE,RED},{100,100},{1.0,1.0},10,2},   
                                        {{BLUE,BLACK,BLUE,BLACK},{100,50,100,1000},{1.0,1.0,1.0,1.0},1,4}};  //NEUTRAL_STROBE
  
 
-void DycoLED::init()
+bool DycoLED::init()
 {
     hal.util->led_init(MAX_NUM_LEDS);
+	return true;
 }
 
 void DycoLED::set_preset_pattern(uint16_t led,uint8_t patt)

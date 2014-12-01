@@ -22,6 +22,7 @@
 #define __DYCO_LED_H__
 
 #include <AP_HAL.h>
+#include "NotifyDevice.h"
 #include "../AP_HAL_LINUX/DycoLEDDriver.h"
 
 #define MAX_NUM_LEDS    35
@@ -44,10 +45,11 @@
 #define NOTIFY_FAIL_STROBE              12
 #define NOTIFY_NEUTRAL_STROBE           13
 
-class DycoLED {
+class DycoLED: public NotifyDevice
+{
 public:
     // init - initialised the LED
-    void init();
+    bool init();
 
     // update - updates led according to timed_updated.  Should be
     // called at 50Hz
