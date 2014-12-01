@@ -22,6 +22,7 @@
 #define __DYCO_LED_H__
 
 #include <AP_HAL.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include "NotifyDevice.h"
 #include "../AP_HAL_LINUX/DycoLEDDriver.h"
 
@@ -66,4 +67,5 @@ struct led_pattern
     uint8_t res;
     uint8_t len;
 };
+#endif
 #endif // __TOSHIBA_LED_H__

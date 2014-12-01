@@ -47,6 +47,7 @@ of loop i.e. from BLUE to RED to GREEN. The loop will until
 another pattern or solid color is set.
 */
 #include <AP_HAL.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <AP_GPS.h>
 #include "DycoLED_Linux.h"
 #include "AP_Notify.h"
@@ -140,3 +141,4 @@ void DycoLED::update()
         }
     }
 }
+#endif
