@@ -20,6 +20,7 @@
 #include "Semaphores.h"
 #include "Scheduler.h"
 #include "ToneAlarmDriver.h"
+#include "DycoLEDDriver.h"
 #include "Util.h"
 
 #endif // __AP_HAL_LINUX_PRIVATE_H__
