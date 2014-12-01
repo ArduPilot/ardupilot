@@ -19,12 +19,13 @@ using namespace Linux;
 
 extern const AP_HAL::HAL& hal;
 
-#define APM_LINUX_TIMER_PRIORITY        15
-#define APM_LINUX_UART_PRIORITY         14
-#define APM_LINUX_RCIN_PRIORITY         13
-#define APM_LINUX_MAIN_PRIORITY         12
+#define APM_LINUX_TIMER_PRIORITY        16
+#define APM_LINUX_UART_PRIORITY         15
+#define APM_LINUX_RCIN_PRIORITY         14
+#define APM_LINUX_MAIN_PRIORITY         13
+#define APM_LINUX_IO_PRIORITY           12
 #define APM_LINUX_TONEALARM_PRIORITY    11
-#define APM_LINUX_IO_PRIORITY           10
+#define APM_LINUX_LED_PRIORITY          10
 
 LinuxScheduler::LinuxScheduler()
 {}
@@ -79,15 +80,23 @@ void LinuxScheduler::init(void* machtnichts)
 
     pthread_create(&_rcin_thread_ctx, &thread_attr, (pthread_startroutine_t)&Linux::LinuxScheduler::_rcin_thread, this);
     
-    // the Tone Alarm thread runs at highest priority
+    // the Tone Alarm thread runs at lower priority
     param.sched_priority = APM_LINUX_TONEALARM_PRIORITY;
     pthread_attr_init(&thread_attr);
     (void)pthread_attr_setschedparam(&thread_attr, &param);
     pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
 
-    pthread_create(&_tonealarm_thread_ctx, &thread_attr, (pthread_startroutine_t)&Linux::LinuxScheduler::_tonealarm_thread, this);
+    pthread_create(&_toneAlarm_thread_ctx, &thread_attr, (pthread_startroutine_t)&Linux::LinuxScheduler::_toneAlarm_thread, this);
+
+    // the LED thread runs at second lowest priority
+    param.sched_priority = APM_LINUX_LED_PRIORITY;
+    pthread_attr_init(&thread_attr);
+    (void)pthread_attr_setschedparam(&thread_attr, &param);
+    pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
+
+    pthread_create(&_led_thread_ctx, &thread_attr, (pthread_startroutine_t)&Linux::LinuxScheduler::_led_thread, this);
     
-    // the IO thread runs at lower priority
+    // the IO thread runs at lowest priority
     pthread_attr_init(&thread_attr);
     param.sched_priority = APM_LINUX_IO_PRIORITY;
     (void)pthread_attr_setschedparam(&thread_attr, &param);
@@ -322,21 +331,37 @@ void *LinuxScheduler::_uart_thread(void)
     return NULL;
 }
 
-void *LinuxScheduler::_tonealarm_thread(void)
+void *LinuxScheduler::_toneAlarm_thread(void)
 {
     _setup_realtime(32768);
     while (system_initializing()) {
         poll(NULL, 0, 1);        
     }
     while (true) {
-        _microsleep(10000);
+        _microsleep(1000);
 
-        // process tone command
         ((LinuxUtil *)hal.util)->_toneAlarm_timer_tick();
     }
     return NULL;
 }
 
+void *LinuxScheduler::_led_thread(void)
+{
+
+    struct timespec ts;
+    ts.tv_sec = 0;
+    ts.tv_nsec = CLK_PERIOD/2;
+    
+    _setup_realtime(32768);
+    while (system_initializing()) {
+        poll(NULL, 0, 1);        
+    }
+    while (true) {
+        while (nanosleep(&ts, &ts) == -1 && errno == EINTR) ;
+        ((LinuxUtil *)hal.util)->_led_timer_tick();
+    }
+    return NULL;
+}
 void *LinuxScheduler::_io_thread(void)
 {
     _setup_realtime(32768);
