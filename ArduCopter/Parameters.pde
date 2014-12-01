@@ -27,7 +27,7 @@
 
 const AP_Param::Info var_info[] PROGMEM = {
     // @Param: SYSID_SW_MREV
-    // @DisplayName: Eeprom format version number
+    // @DisplayName: EEEPROM格式版本号
     // @Description: This value is incremented when changes are made to the eeprom format
     // @User: Advanced
     GSCALAR(format_version, "SYSID_SW_MREV",   0),
