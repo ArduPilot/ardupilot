@@ -173,8 +173,7 @@ then
     then
         echo "Setting up sbus1 output
         px4io sbus1_out
-     fi
-fi
+    fi
 else
     echo "No PX4IO board found"
     echo "No PX4IO board found" >> $logfile
