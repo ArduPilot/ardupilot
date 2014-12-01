@@ -42,9 +42,9 @@ struct AP_Notify::notify_type AP_Notify::flags;
         NotifyDevice *AP_Notify::_devices[CONFIG_NOTIFY_DEVICES_COUNT] = {&boardled, &navioled};
     #else
         AP_BoardLED boardled;
-        ToshibaLED_I2C toshibaled;
+        DycoLED dycoled;
         ToneAlarm_Linux tonealarm;
-        NotifyDevice *AP_Notify::_devices[CONFIG_NOTIFY_DEVICES_COUNT] = {&boardled, &toshibaled, &tonealarm};
+        NotifyDevice *AP_Notify::_devices[CONFIG_NOTIFY_DEVICES_COUNT] = {&boardled, &dycoled, &tonealarm};
     #endif
 #else
     AP_BoardLED boardled;

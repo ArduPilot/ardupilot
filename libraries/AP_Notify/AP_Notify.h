@@ -25,6 +25,7 @@
 #include <ToshibaLED_PX4.h>
 #include <ToneAlarm_PX4.h>
 #include <ToneAlarm_Linux.h>
+#include <DycoLED_Linux.h>
 #include <NavioLED_I2C.h>
 #include <ExternalLED.h>
 #include <Buzzer.h>
