@@ -636,8 +636,17 @@ void NavEKF::UpdateFilter()
         ResetPosition();
         ResetHeight();
         StoreStatesReset();
-        calcQuatAndFieldStates(_ahrs->roll, _ahrs->pitch);
+        // only reset the magnetic field and heading on the first arm. This prevents in-flight learning being forgotten for vehicles that do multiple short flights and disarm in-between.
+        if (!staticMode && !firstArmComplete) {
+            firstArmComplete = true;
+            state.quat = calcQuatAndFieldStates(_ahrs->roll, _ahrs->pitch);
+            firstArmPosD = state.position.z;
+        }
         prevStaticMode = staticMode;
+    } else if (!staticMode && !finalMagYawInit && firstArmPosD - state.position.z > 1.5f && !assume_zero_sideslip()) {
+        // Do a final yaw and earth mag field initialisation when the vehicle has gained 1.5m of altitude after arming if it is a non-fly forward vehicle (vertical takeoff)
+        state.quat = calcQuatAndFieldStates(_ahrs->roll, _ahrs->pitch);
+        finalMagYawInit = true;
     }
 
     // run the strapdown INS equations every IMU update
@@ -3265,14 +3274,13 @@ Quaternion NavEKF::calcQuatAndFieldStates(float roll, float pitch)
         float magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
 
         // calculate yaw angle rel to true north
+        yaw = magDecAng - magHeading;
+        yawAligned = true;
+        // calculate initial filter quaternion states using yaw from magnetometer if mag heading healthy
+        // otherwise use existing heading
         if (!badMag) {
-            // if mag healthy use declination and mag measurements to calculate yaw
-            yaw = magDecAng - magHeading;
-            yawAligned = true;
-            // calculate initial filter quaternion states
             initQuat.from_euler(roll, pitch, yaw);
         } else {
-            // if mag failed keep current yaw
             initQuat = state.quat;
         }
 
@@ -3437,10 +3445,13 @@ void NavEKF::ZeroVariables()
     hgtTimeout = false;
     magTimeout = false;
     badMag = false;
+    firstArmComplete = false;
+    finalMagYawInit = false;
     storeIndex = 0;
     dtIMU = 0;
     dt = 0;
     hgtMea = 0;
+    firstArmPosD = 0.0f;
     storeIndex = 0;
     lastGyroBias.zero();
 	prevDelAng.zero();
