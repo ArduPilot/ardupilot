@@ -1,7 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
- *       Example of DataFlash library.
- *       Code by Jordi MuÒoz and Jose Julio. DIYDrones.com
+ * Example of DataFlash library.
+ * originally based on code by Jordi MuÒoz and Jose Julio
  */
 
 // Libraries
@@ -32,6 +32,9 @@
 #include <AP_Terrain.h>
 #include <AP_Notify.h>
 #include <AP_Vehicle.h>
+#include <AP_NavEKF.h>
+#include <AP_Rally.h>
+#include <AP_Scheduler.h>
 
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
