@@ -8,6 +8,13 @@
 #include <inttypes.h>
 #endif
 
+// Macro to define packed structures
+#ifdef __GNUC__
+  #define MAVPACKED( __Declaration__ ) __Declaration__ __attribute__((packed))
+#else
+  #define MAVPACKED( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop) )
+#endif
+
 #ifndef MAVLINK_MAX_PAYLOAD_LEN
 // it is possible to override this, but be careful!
 #define MAVLINK_MAX_PAYLOAD_LEN 255 ///< Maximum payload length
@@ -33,7 +40,6 @@
 
 #define MAVLINK_MAX_EXTENDED_PAYLOAD_LEN (MAVLINK_MAX_EXTENDED_PACKET_LEN - MAVLINK_EXTENDED_HEADER_LEN - MAVLINK_NUM_NON_PAYLOAD_BYTES)
 
-#pragma pack(push, 1)
 
 /**
  * Old-style 4 byte param union
@@ -44,6 +50,7 @@
  * and re-instanted on the receiving side using the
  * native type as well.
  */
+MAVPACKED(
 typedef struct param_union {
 	union {
 		float param_float;
@@ -56,7 +63,7 @@ typedef struct param_union {
 		uint8_t bytes[4];
 	};
 	uint8_t type;
-} mavlink_param_union_t;
+}) mavlink_param_union_t;
 
 
 /**
@@ -72,6 +79,7 @@ typedef struct param_union {
  * which should be the same as gcc on little-endian arm. When using shifts/masks the value will be treated as a 64 bit unsigned number,
  * and the bits pulled out using the shifts/masks.
 */
+MAVPACKED(
 typedef union {
     struct {
         uint8_t is_double:1;
@@ -89,17 +97,19 @@ typedef union {
         };
     };
     uint8_t data[8];
-} mavlink_param_union_double_t;
+}) mavlink_param_union_double_t;
 
 /**
  * This structure is required to make the mavlink_send_xxx convenience functions
  * work, as it tells the library what the current system and component ID are.
  */
+MAVPACKED(
 typedef struct __mavlink_system {
     uint8_t sysid;   ///< Used by the MAVLink message_xx_send() convenience function
     uint8_t compid;  ///< Used by the MAVLink message_xx_send() convenience function
-} mavlink_system_t;
+}) mavlink_system_t;
 
+MAVPACKED(
 typedef struct __mavlink_message {
 	uint16_t checksum; ///< sent at end of packet
 	uint8_t magic;   ///< protocol magic marker
@@ -109,14 +119,14 @@ typedef struct __mavlink_message {
 	uint8_t compid;  ///< ID of the message sender component
 	uint8_t msgid;   ///< ID of message in payload
 	uint64_t payload64[(MAVLINK_MAX_PAYLOAD_LEN+MAVLINK_NUM_CHECKSUM_BYTES+7)/8];
-} mavlink_message_t;
+}) mavlink_message_t;
 
+MAVPACKED(
 typedef struct __mavlink_extended_message {
        mavlink_message_t base_msg;
        int32_t extended_payload_len;   ///< Length of extended payload if any
        uint8_t extended_payload[MAVLINK_MAX_EXTENDED_PAYLOAD_LEN];
-} mavlink_extended_message_t;
-#pragma pack(pop)
+}) mavlink_extended_message_t;
 
 typedef enum {
 	MAVLINK_TYPE_CHAR     = 0,
