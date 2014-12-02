@@ -740,11 +740,13 @@ void AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
             // Note: previous segment will leave destination velocity parallel to position difference vector
             //       from previous segment's origin to this segment's destination)
             _spline_origin_vel = _spline_destination_vel;
+
             if (_spline_time > 1.0f && _spline_time < 1.1f) {    // To-Do: remove hard coded 1.1f
                 _spline_time -= 1.0f;
             }else{
                 _spline_time = 0.0f;
             }
+
             // Note: we leave _spline_vel_scaler as it was from end of previous segment
         }
     }
@@ -900,10 +902,34 @@ void AC_WPNav::update_spline_solution(const Vector3f& origin, const Vector3f& de
 void AC_WPNav::advance_spline_target_along_track(float dt)
 {
     if (!_flags.reached_destination) {
+        if (_spline_time >= 1.0f) {
+            // we will reach the next waypoint in the next step so set reached_destination flag
+            _flags.reached_destination = true;
+        }
+
         Vector3f target_pos, target_vel;
 
         // update target position and velocity from spline calculator
-        calc_spline_pos_vel(_spline_time, target_pos, target_vel);
+        calc_spline_pos_vel(constrain_float(_spline_time,0.0f,1.0f), target_pos, target_vel);
+
+        if(_spline_time >= 1.0f && _flags.fast_waypoint) {
+            // extrapolate a bit based on velocity and acceleration to avoid jerks
+
+            Vector3f accel_at_end = _hermite_spline_solution[2] * 2.0f + _hermite_spline_solution[3] * 6.0f;
+
+            float t_remaining = _spline_time-1.0f;
+
+            Vector3f pos_extrap = accel_at_end*sq(t_remaining)/2.0f + target_vel*t_remaining;
+
+            // allow up to 0.5*speed of overshoot: 2.5m at 5 m/s, 5m at 10m/s, etc.
+            float pos_extrap_len = pos_extrap.length();
+            float max_pos_extrap = _spline_vel_scaler * 0.5f;
+            if (pos_extrap_len > max_pos_extrap) {
+                pos_extrap = pos_extrap * max_pos_extrap / pos_extrap_len;
+            }
+
+            target_pos += pos_extrap;
+        }
 
         // update velocity
         float spline_dist_to_wp = (_destination - target_pos).length();
@@ -936,12 +962,6 @@ void AC_WPNav::advance_spline_target_along_track(float dt)
 
         // advance spline time to next step
         _spline_time += _spline_time_scale*dt;
-
-        // we will reach the next waypoint in the next step so set reached_destination flag
-        // To-Do: is this one step too early?
-        if (_spline_time >= 1.0f) {
-            _flags.reached_destination = true;
-        }
     }
 }
 
