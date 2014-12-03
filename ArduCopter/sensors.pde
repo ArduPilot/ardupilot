@@ -146,7 +146,7 @@ static void read_battery(void)
     battery.read();
 
     // update compass with current value
-    if (battery.monitoring() == AP_BATT_MONITOR_VOLTAGE_AND_CURRENT) {
+    if (battery.has_current()) {
         compass.set_current(battery.current_amps());
     }
 
