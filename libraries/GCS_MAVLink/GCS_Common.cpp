@@ -1118,9 +1118,8 @@ void GCS_MAVLINK::send_statustext_all(const prog_char_t *msg)
 // report battery2 state
 void GCS_MAVLINK::send_battery2(const AP_BattMonitor &battery)
 {
-    float voltage;
-    if (battery.voltage2(voltage)) {
-        mavlink_msg_battery2_send(chan, voltage*1000, -1);
+    if (battery.num_instances() > 1) {
+        mavlink_msg_battery2_send(chan, battery.voltage2()*1000, -1);
     }
 }
 
