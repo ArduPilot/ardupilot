@@ -131,6 +131,11 @@ public:
         k_param_override_channel,
         k_param_stall_prevention,
 
+        // 95: Channels input options
+        k_param_ch5_option = 95,
+        k_param_ch6_option,
+        k_param_ch7_option,
+        
         // 100: Arming parameters
         k_param_arming = 100,
 
@@ -408,6 +413,12 @@ public:
     AP_Int8 flight_mode5;
     AP_Int8 flight_mode6;
 
+    // Channels input options
+    //
+    AP_Int8 ch5_option;
+    AP_Int8 ch6_option;
+    AP_Int8 ch7_option;
+    
     // Navigational maneuvering limits
     //
     AP_Int16 roll_limit_cd;

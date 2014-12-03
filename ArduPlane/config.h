@@ -93,6 +93,21 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// Channel 5, 6 and 7 default options
+
+#ifndef CH5_OPTION
+ # define CH5_OPTION            AUX_SWITCH_DO_NOTHING
+#endif
+
+#ifndef CH6_OPTION
+ # define CH6_OPTION            AUX_SWITCH_DO_NOTHING
+#endif
+
+#ifndef CH7_OPTION
+ # define CH7_OPTION            AUX_SWITCH_DO_NOTHING
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // HIL_MODE                                 OPTIONAL
 
 #ifndef HIL_MODE

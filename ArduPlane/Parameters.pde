@@ -625,6 +625,27 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(flight_mode6,           "FLTMODE6",       FLIGHT_MODE_6),
 
+    // @Param: CH5_OPT
+    // @DisplayName: Channel 5 option
+    // @Description: Select which function if performed when CH5 is above 1800 pwm
+    // @Values: 0:Do Nothing, 9:Camera Trigger, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 27:Retract Mount, 28:Relay_1 On/Off, 29:Relay_2 On/Off, 30:Relay_3 On/Off, 31:Relay_4 On/Off,
+    // @User: Standard
+    GSCALAR(ch5_option,             "CH5_OPT",    CH5_OPTION),
+
+    // @Param: CH6_OPT
+    // @DisplayName: Channel 6 option
+    // @Description: Select which function if performed when CH6 is above 1800 pwm
+    // @Values: 0:Do Nothing, 9:Camera Trigger, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 27:Retract Mount, 28:Relay_1 On/Off, 29:Relay_2 On/Off, 30:Relay_3 On/Off, 31:Relay_4 On/Off,
+    // @User: Standard
+    GSCALAR(ch6_option,             "CH6_OPT",    CH6_OPTION),
+
+    // @Param: CH7_OPT
+    // @DisplayName: Channel 7 option
+    // @Description: Select which function if performed when CH7 is above 1800 pwm
+    // @Values: 0:Do Nothing, 9:Camera Trigger, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 27:Retract Mount, 28:Relay_1 On/Off, 29:Relay_2 On/Off, 30:Relay_3 On/Off, 31:Relay_4 On/Off,
+    // @User: Standard
+    GSCALAR(ch7_option,             "CH7_OPT",    CH7_OPTION),
+
     // @Param: LIM_ROLL_CD
     // @DisplayName: Maximum Bank Angle
     // @Description: The maximum commanded bank angle in either direction
