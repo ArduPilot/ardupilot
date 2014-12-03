@@ -364,6 +364,7 @@ static void do_loiter_time(const AP_Mission::Mission_Command& cmd)
 static void do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd)
 {
     next_WP_loc.alt = cmd.content.location.alt + home.alt;
+    reset_offset_altitude();
 }
 
 /********************************************************************************/
@@ -563,6 +564,7 @@ static void do_change_alt(const AP_Mission::Mission_Command& cmd)
     change_target_altitude(condition_rate/10);
     next_WP_loc.alt = condition_value;                                      // For future nav calculations
     reset_offset_altitude();
+    setup_glide_slope();
 }
 
 static void do_within_distance(const AP_Mission::Mission_Command& cmd)
