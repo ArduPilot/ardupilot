@@ -11,7 +11,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] PROGMEM = {
     // @Description: Controls enabling monitoring of the battery's voltage and current
     // @Values: 0:Disabled,3:Voltage Only,4:Voltage and Current
     // @User: Standard
-    AP_GROUPINFO("_MONITOR", 0, AP_BattMonitor, _monitoring[0], AP_BATT_MONITOR_DISABLED),
+    AP_GROUPINFO("_MONITOR", 0, AP_BattMonitor, _monitoring[0], BattMonitor_TYPE_NONE),
 
     // @Param: VOLT_PIN
     // @DisplayName: Battery Voltage sensing pin
@@ -64,7 +64,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] PROGMEM = {
     // @Description: Controls enabling monitoring of the battery's voltage and current
     // @Values: 0:Disabled,3:Voltage Only,4:Voltage and Current
     // @User: Standard
-    AP_GROUPINFO("2_MONITOR", 11, AP_BattMonitor, _monitoring[1], AP_BATT_MONITOR_DISABLED),
+    AP_GROUPINFO("2_MONITOR", 11, AP_BattMonitor, _monitoring[1], BattMonitor_TYPE_NONE),
 
     // @Param: 2_VOLT_PIN
     // @DisplayName: Battery Voltage sensing pin
@@ -182,7 +182,7 @@ bool AP_BattMonitor::has_current(uint8_t instance) const
     // check for analog voltage and current monitor or smbus monitor
     if (instance < AP_BATT_MONITOR_MAX_INSTANCES) {
         if (drivers[instance] != NULL) {
-            return (_monitoring[instance] == AP_BATT_MONITOR_VOLTAGE_AND_CURRENT || _monitoring[instance] == AP_BATT_MONITOR_SMBUS);
+            return (_monitoring[instance] == BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT || _monitoring[instance] == RangeFinder_TYPE_SMBUS);
         }
     }
 
