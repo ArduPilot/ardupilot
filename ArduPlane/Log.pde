@@ -431,8 +431,7 @@ struct PACKED log_Arm_Disarm {
 
 static void Log_Write_Current()
 {
-    float voltage2 = 0.0;
-    battery.voltage2(voltage2);
+    float voltage2 = battery.voltage2();
     struct log_Current pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CURRENT_MSG),
         time_ms                 : hal.scheduler->millis(),
