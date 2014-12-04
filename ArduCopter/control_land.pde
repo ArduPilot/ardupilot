@@ -122,7 +122,7 @@ static void land_gps_run()
 //      should be called at 100hz or more
 static void land_nogps_run()
 {
-    int16_t target_roll = 0, target_pitch = 0;
+    float target_roll = 0.0f, target_pitch = 0.0f;
     float target_yaw_rate = 0;
 
     // if not auto armed or landed set throttle to zero and exit immediately
