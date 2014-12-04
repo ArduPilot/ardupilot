@@ -38,7 +38,7 @@ static bool drift_init(bool ignore_checks)
 static void drift_run()
 {
     static float breaker = 0.0;
-    int16_t target_roll, target_pitch;
+    float target_roll, target_pitch;
     float target_yaw_rate;
     int16_t pilot_throttle_scaled;
 
