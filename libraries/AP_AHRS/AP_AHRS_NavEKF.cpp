@@ -118,8 +118,36 @@ void AP_AHRS_NavEKF::update(void)
                 _gyro_estimate /= healthy_count;
             }
             _gyro_estimate += _gyro_bias;
+
+            // update _accel_ef_ekf
+            for (uint8_t i=0; i<_ins.get_accel_count(); i++) {
+                if (_ins.get_accel_health(i)) {
+                    _accel_ef_ekf[i] = _dcm_matrix * _ins.get_accel(i);
+                }
+            }
+
+            // update _accel_ef_ekf_blended
+            EKF.getAccelNED(_accel_ef_ekf_blended);
         }
     }
+}
+
+// accelerometer values in the earth frame in m/s/s
+const Vector3f &AP_AHRS_NavEKF::get_accel_ef(uint8_t i) const
+{
+    if(!using_EKF()) {
+        return AP_AHRS_DCM::get_accel_ef(i);
+    }
+    return _accel_ef_ekf[i];
+}
+
+// blended accelerometer values in the earth frame in m/s/s
+const Vector3f &AP_AHRS_NavEKF::get_accel_ef_blended(void) const
+{
+    if(!using_EKF()) {
+        return AP_AHRS_DCM::get_accel_ef_blended();
+    }
+    return _accel_ef_ekf_blended;
 }
 
 void AP_AHRS_NavEKF::reset(bool recover_eulers)
