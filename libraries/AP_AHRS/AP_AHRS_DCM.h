@@ -50,8 +50,10 @@ public:
         _last_wind_time(0),
         _last_airspeed(0.0f),
         _last_consistent_heading(0),
-        _last_failure_ms(0),
-        _imu1_weight(0.5f)
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+        _imu1_weight(0.5f),
+#endif
+        _last_failure_ms(0)
     {
         _dcm_matrix.identity();
 
