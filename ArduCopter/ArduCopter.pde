@@ -784,7 +784,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { arm_motors_check,     40,      1 },
     { auto_trim,            40,     14 },
     { update_altitude,      40,    100 },
-    { run_nav_updates,      40,     80 },
+    { run_nav_updates,       4,     80 },
     { update_thr_cruise,    40,     10 },
     { three_hz_loop,       133,      9 },
     { compass_accumulate,    8,     42 },
