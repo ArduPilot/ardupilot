@@ -363,12 +363,18 @@ static struct {
     uint16_t ch1_temp;
     uint16_t ch2_temp;
 } elevon = {
-	trim1 : 1500,
+    trim1 : 1500,
     trim2 : 1500,
     ch1_temp : 1500,
     ch2_temp : 1500
 };
 
+//Aux channels flags
+static struct {
+        uint8_t CH5_flag            : 2; // 0,1   // ch5 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH6_flag            : 2; // 2,3   // ch6 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH7_flag            : 2; // 4,5   // ch7 aux switch : 0 is low or false, 1 is center or true, 2 is high        
+}aux;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Failsafe
@@ -771,6 +777,17 @@ static AP_Arming arming(ahrs, barometer, compass, home_is_set, gcs_send_text_P);
   scheduler table - all regular tasks are listed here, along with how
   often they should be called (in 20ms units) and the maximum time
   they are expected to take (in microseconds)
+  
+  1    = 50hz
+  2    = 25hz
+  4    = 12.5hz
+  10   = 5hz
+  20   = 2.5hz
+  33   = 1.5hz
+  50   = 1hz
+  100  = 0.5hz
+  1000 = 0.05hz
+  
  */
 static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { read_radio,             1,    700 }, // 0
@@ -792,7 +809,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { obc_fs_check,           5,   1000 },
     { gcs_update,             1,   1700 },
     { gcs_data_stream_send,   1,   3000 },
-    { update_events,		  1,   1500 }, // 20
+    { update_events,	      1,   1500 }, // 20
     { check_usb_mux,          5,    300 },
     { read_battery,           5,   1000 },
     { compass_accumulate,     1,   1500 },
@@ -812,6 +829,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { telemetry_send,        10,    100 },	
 #endif
     { terrain_update,         5,    500 },
+    { read_aux_switches,      5,   1000 },    
 };
 
 // setup the var_info table

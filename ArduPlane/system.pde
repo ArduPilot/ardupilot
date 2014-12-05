@@ -218,6 +218,10 @@ static void init_ardupilot()
     // set the correct flight mode
     // ---------------------------
     reset_control_switch();
+    
+    // initialise aux switches 
+    // ---------------------------  
+    init_aux_switches();    
 }
 
 //********************************************************************************
@@ -255,7 +259,7 @@ static void startup_ground(void)
     //save_EEPROM_groundstart();
 
     // initialise mission library
-    mission.init();
+    mission.init();     
 
     // Makes the servos wiggle - 3 times signals ready to fly
     // -----------------------
