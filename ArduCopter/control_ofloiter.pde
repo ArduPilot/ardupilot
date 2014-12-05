@@ -37,7 +37,7 @@ static bool ofloiter_init(bool ignore_checks)
 // should be called at 100hz or more
 static void ofloiter_run()
 {
-    int16_t target_roll, target_pitch;
+    float target_roll, target_pitch;
     float final_roll, final_pitch;
     float target_yaw_rate = 0;
     float target_climb_rate = 0;

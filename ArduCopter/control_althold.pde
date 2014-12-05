@@ -21,7 +21,7 @@ static bool althold_init(bool ignore_checks)
 // should be called at 100hz or more
 static void althold_run()
 {
-    int16_t target_roll, target_pitch;
+    float target_roll, target_pitch;
     float target_yaw_rate;
     int16_t target_climb_rate;
 

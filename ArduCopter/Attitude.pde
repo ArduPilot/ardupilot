@@ -9,36 +9,32 @@ float get_smoothing_gain()
 
 // get_pilot_desired_angle - transform pilot's roll or pitch input into a desired lean angle
 // returns desired angle in centi-degrees
-static void get_pilot_desired_lean_angles(int16_t roll_in, int16_t pitch_in, int16_t &roll_out, int16_t &pitch_out)
+static void get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out)
 {
-    static float _scaler = 1.0;
-    static int16_t _angle_max = 0;
+    float angle_max = constrain_float(aparm.angle_max,0,8000);
+    float scaler = (float)angle_max/(float)ROLL_PITCH_INPUT_MAX;
 
-    // apply circular limit to pitch and roll inputs
+    // scale roll_in, pitch_in to correct units
+    roll_in *= scaler;
+    pitch_in *= scaler;
+
+    // do circular limit
     float total_in = pythagorous2((float)pitch_in, (float)roll_in);
-
-    if (total_in > ROLL_PITCH_INPUT_MAX) {
-        float ratio = (float)ROLL_PITCH_INPUT_MAX / total_in;
+    if (total_in > angle_max) {
+        float ratio = angle_max / total_in;
         roll_in *= ratio;
         pitch_in *= ratio;
     }
 
-    // return filtered roll if no scaling required
-    if (aparm.angle_max == ROLL_PITCH_INPUT_MAX) {
-        roll_out = roll_in;
-        pitch_out = pitch_in;
-        return;
-    }
+    // do lateral tilt to euler roll conversion
+    // correct:
+    //roll_in = (18000/M_PI_F) * atanf(cosf(pitch_in*(M_PI_F/18000))*tanf(roll_in*(M_PI_F/18000)));
+    // optimized:
+    roll_in = cosf(pitch_in*(M_PI_F/18000)) * roll_in;
 
-    // check if angle_max has been updated and redo scaler
-    if (aparm.angle_max != _angle_max) {
-        _angle_max = aparm.angle_max;
-        _scaler = (float)aparm.angle_max/(float)ROLL_PITCH_INPUT_MAX;
-    }
-
-    // convert pilot input to lean angle
-    roll_out = (int16_t)((float)roll_in * _scaler);
-    pitch_out = (int16_t)((float)pitch_in * _scaler);
+    // return
+    roll_out = roll_in;
+    pitch_out = pitch_in;
 }
 
 // get_pilot_desired_heading - transform pilot's yaw input into a desired heading
