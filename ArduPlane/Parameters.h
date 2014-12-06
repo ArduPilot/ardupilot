@@ -130,6 +130,9 @@ public:
         k_param_rtl_autoland,
         k_param_override_channel,
         k_param_stall_prevention,
+#if OPTFLOW == ENABLED
+        k_param_optflow,
+#endif
 
         // 100: Arming parameters
         k_param_arming = 100,

@@ -315,12 +315,14 @@ AP_Mission mission(ahrs, &start_command, &verify_command, &exit_mission);
 // Optical flow sensor
 ////////////////////////////////////////////////////////////////////////////////
  #if OPTFLOW == ENABLED
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
-static AP_OpticalFlow_ADNS3080 optflow(ahrs);
-#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 static AP_OpticalFlow_PX4 optflow(ahrs);
 #endif
  #endif
+// gnd speed limit required to observe optical flow sensor limits
+static float ekfGndSpdLimit;
+// scale factor applied to velocity controller gain to prevent optical flow noise causing excessive angle demand noise
+static float ekfNavVelGainScaler;
 
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection
@@ -777,14 +779,14 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { throttle_loop,         8,     45 },
     { update_GPS,            8,     90 },
 #if OPTFLOW == ENABLED
-    { update_optflow,        8,     20 },
+    { update_optical_flow,   2,     20 },
 #endif
     { update_batt_compass,  40,     72 },
     { read_aux_switches,    40,      5 },
     { arm_motors_check,     40,      1 },
     { auto_trim,            40,     14 },
     { update_altitude,      40,    100 },
-    { run_nav_updates,      40,     80 },
+    { run_nav_updates,       8,     80 },
     { update_thr_cruise,    40,     10 },
     { three_hz_loop,       133,      9 },
     { compass_accumulate,    8,     42 },
@@ -851,14 +853,14 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { throttle_loop,         2,     450 },
     { update_GPS,            2,     900 },
 #if OPTFLOW == ENABLED
-    { update_optflow,        2,     100 },
+    { update_optical_flow,   1,     100 },
 #endif
     { update_batt_compass,  10,     720 },
     { read_aux_switches,    10,      50 },
     { arm_motors_check,     10,      10 },
     { auto_trim,            10,     140 },
     { update_altitude,      10,    1000 },
-    { run_nav_updates,      10,     800 },
+    { run_nav_updates,       4,     800 },
     { update_thr_cruise,     1,      50 },
     { three_hz_loop,        33,      90 },
     { compass_accumulate,    2,     420 },
@@ -1189,6 +1191,36 @@ static void one_hz_loop()
     terrain.update();
 #endif
 }
+
+// called at 200hz
+#if OPTFLOW == ENABLED
+static void update_optical_flow(void)
+{
+    static uint32_t last_of_update = 0;
+
+    // exit immediately if not enabled
+    if (!optflow.enabled()) {
+        return;
+    }
+
+    // read from sensor
+    optflow.update();
+
+    // write to log and send to EKF if new data has arrived
+    if (optflow.last_update() != last_of_update) {
+        last_of_update = optflow.last_update();
+        uint8_t flowQuality = optflow.quality();
+        Vector2f flowRate = optflow.flowRate();
+        Vector2f bodyRate = optflow.bodyRate();
+        // Use range from a separate range finder if available, not the PX4Flows built in sensor which is ineffective
+        float ground_distance_m = 0.01f*float(sonar_alt);
+        ahrs.writeOptFlowMeas(flowQuality, flowRate, bodyRate, last_of_update, sonar_alt_health, ground_distance_m);
+         if (g.log_bitmask & MASK_LOG_OPTFLOW) {
+            Log_Write_Optflow();
+        }
+    }
+}
+#endif  // OPTFLOW == ENABLED
 
 // called at 50hz
 static void update_GPS(void)

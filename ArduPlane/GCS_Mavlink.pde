@@ -945,6 +945,8 @@ void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
         next_WP_loc.alt += home.alt;
     }
     next_WP_loc.flags.relative_alt = false;
+    next_WP_loc.flags.terrain_alt = cmd.content.location.flags.terrain_alt;
+    reset_offset_altitude();
 }
 
 

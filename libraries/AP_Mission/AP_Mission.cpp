@@ -460,6 +460,7 @@ bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP
     // command's position in mission list and mavlink id
     cmd.index = packet.seq;
     cmd.id = packet.command;
+    cmd.content.location.options = 0;
 
     // command specific conversions from mavlink packet to mission command
     switch (cmd.id) {

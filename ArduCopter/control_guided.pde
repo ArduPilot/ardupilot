@@ -256,7 +256,7 @@ static void guided_vel_control_run()
     }
 
     // call velocity controller which includes z axis controller
-    pos_control.update_vel_controller_xyz();
+    pos_control.update_vel_controller_xyz(ekfNavVelGainScaler);
 
     // call attitude controller
     if (auto_yaw_mode == AUTO_YAW_HOLD) {

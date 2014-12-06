@@ -159,7 +159,7 @@ void AC_Circle::update()
     }
 
     // run loiter's position to velocity step
-    _pos_control.update_xy_controller(false);
+    _pos_control.update_xy_controller(false, 1.0f);
 }
 
 // get_closest_point_on_circle - returns closest point on the circle

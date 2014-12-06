@@ -353,7 +353,7 @@ void AC_PosControl::accel_to_throttle(float accel_target_z)
     int32_t p,i,d;              // used to capture pid values for logging
 
     // Calculate Earth Frame Z acceleration
-    z_accel_meas = -(_ahrs.get_accel_ef().z + GRAVITY_MSS) * 100.0f;
+    z_accel_meas = -(_ahrs.get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f;
 
     // reset target altitude if this controller has just been engaged
     if (_flags.reset_accel_to_throttle) {
@@ -530,7 +530,7 @@ void AC_PosControl::init_xy_controller()
 }
 
 /// update_xy_controller - run the horizontal position controller - should be called at 100hz or higher
-void AC_PosControl::update_xy_controller(bool use_desired_velocity)
+void AC_PosControl::update_xy_controller(bool use_desired_velocity, float ekfNavVelGainScaler)
 {
     // catch if we've just been started
     uint32_t now = hal.scheduler->millis();
@@ -561,17 +561,17 @@ void AC_PosControl::update_xy_controller(bool use_desired_velocity)
             break;
         case 1:
             // run position controller's position error to desired velocity step
-            pos_to_rate_xy(use_desired_velocity,_dt_xy);
+            pos_to_rate_xy(use_desired_velocity,_dt_xy, ekfNavVelGainScaler);
             _xy_step++;
             break;
         case 2:
             // run position controller's velocity to acceleration step
-            rate_to_accel_xy(_dt_xy);
+            rate_to_accel_xy(_dt_xy, ekfNavVelGainScaler);
             _xy_step++;
             break;
         case 3:
             // run position controller's acceleration to lean angle step
-            accel_to_lean_angles();
+            accel_to_lean_angles(ekfNavVelGainScaler);
             _xy_step++;
             break;
     }
@@ -612,7 +612,7 @@ void AC_PosControl::init_vel_controller_xyz()
 ///     velocity targets should we set using set_desired_velocity_xyz() method
 ///     callers should use get_roll() and get_pitch() methods and sent to the attitude controller
 ///     throttle targets will be sent directly to the motors
-void AC_PosControl::update_vel_controller_xyz()
+void AC_PosControl::update_vel_controller_xyz(float ekfNavVelGainScaler)
 {
     // capture time since last iteration
     uint32_t now = hal.scheduler->millis();
@@ -636,13 +636,13 @@ void AC_PosControl::update_vel_controller_xyz()
         desired_vel_to_pos(dt_xy);
 
         // run position controller's position error to desired velocity step
-        pos_to_rate_xy(true, dt_xy);
+        pos_to_rate_xy(true, dt_xy, ekfNavVelGainScaler);
 
         // run velocity to acceleration step
-        rate_to_accel_xy(dt_xy);
+        rate_to_accel_xy(dt_xy, ekfNavVelGainScaler);
 
         // run acceleration to lean angle step
-        accel_to_lean_angles();
+        accel_to_lean_angles(ekfNavVelGainScaler);
     }
 
     // update altitude target
@@ -688,11 +688,11 @@ void AC_PosControl::desired_vel_to_pos(float nav_dt)
 ///     when use_desired_rate is set to true:
 ///         desired velocity (_vel_desired) is combined into final target velocity and
 ///         velocity due to position error is reduce to a maximum of 1m/s
-void AC_PosControl::pos_to_rate_xy(bool use_desired_rate, float dt)
+void AC_PosControl::pos_to_rate_xy(bool use_desired_rate, float dt, float ekfNavVelGainScaler)
 {
     Vector3f curr_pos = _inav.get_position();
     float linear_distance;      // the distance we swap between linear and sqrt velocity response
-    float kP = _p_pos_xy.kP();
+    float kP = ekfNavVelGainScaler * _p_pos_xy.kP(); // scale gains to compensate for noisy optical flow measurement in the EKF
 
     // avoid divide by zero
     if (kP <= 0.0f) {
@@ -755,7 +755,7 @@ void AC_PosControl::pos_to_rate_xy(bool use_desired_rate, float dt)
 
 /// rate_to_accel_xy - horizontal desired rate to desired acceleration
 ///    converts desired velocities in lat/lon directions to accelerations in lat/lon frame
-void AC_PosControl::rate_to_accel_xy(float dt)
+void AC_PosControl::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
 {
     const Vector3f &vel_curr = _inav.get_velocity();  // current velocity in cm/s
     float accel_total;                          // total acceleration in cm/s/s
@@ -802,9 +802,9 @@ void AC_PosControl::rate_to_accel_xy(float dt)
         lon_i = _pid_rate_lon.get_i(_vel_error.y, dt);
     }
 
-    // combine feed forward accel with PID output from velocity error
-    _accel_target.x = _accel_feedforward.x + _pid_rate_lat.get_p(_vel_error.x) + lat_i + _pid_rate_lat.get_d(_vel_error.x, dt);
-    _accel_target.y = _accel_feedforward.y + _pid_rate_lon.get_p(_vel_error.y) + lon_i + _pid_rate_lon.get_d(_vel_error.y, dt);
+    // combine feed forward accel with PID output from velocity error and scale PID output to compensate for optical flow measurement induced EKF noise
+    _accel_target.x = _accel_feedforward.x + (_pid_rate_lat.get_p(_vel_error.x) + lat_i + _pid_rate_lat.get_d(_vel_error.x, dt)) * ekfNavVelGainScaler;
+    _accel_target.y = _accel_feedforward.y + (_pid_rate_lon.get_p(_vel_error.y) + lon_i + _pid_rate_lon.get_d(_vel_error.y, dt)) * ekfNavVelGainScaler;
 
     // scale desired acceleration if it's beyond acceptable limit
     // To-Do: move this check down to the accel_to_lean_angle method?
@@ -821,8 +821,15 @@ void AC_PosControl::rate_to_accel_xy(float dt)
 
 /// accel_to_lean_angles - horizontal desired acceleration to lean angles
 ///    converts desired accelerations provided in lat/lon frame to roll/pitch angles
-void AC_PosControl::accel_to_lean_angles()
+void AC_PosControl::accel_to_lean_angles(float ekfNavVelGainScaler)
 {
+    // catch if we've just been started
+    uint32_t now = hal.scheduler->millis();
+    if ((now - _last_update_xy_ms) >= POSCONTROL_ACTIVE_TIMEOUT_MS) {
+        now = _last_update_xy_ms;
+    }
+    float dt_xy = (now - _last_update_xy_ms) * 0.001f;
+
     float accel_right, accel_forward;
     float lean_angle_max = _attitude_control.lean_angle_max();
 
@@ -835,6 +842,35 @@ void AC_PosControl::accel_to_lean_angles()
     // update angle targets that will be passed to stabilize controller
     _roll_target = constrain_float(fast_atan(accel_right*_ahrs.cos_pitch()/(GRAVITY_MSS * 100))*(18000/M_PI), -lean_angle_max, lean_angle_max);
     _pitch_target = constrain_float(fast_atan(-accel_forward/(GRAVITY_MSS * 100))*(18000/M_PI),-lean_angle_max, lean_angle_max);
+
+    // apply a rate limit of 100 deg/sec - required due to optical flow sensor saturation and impulse noise effects
+    static float lastRollDem = 0.0f;
+    static float lastPitchDem = 0.0f;
+    float maxDeltaAngle = dt_xy * 10000.0f;
+    if (_roll_target - lastRollDem > maxDeltaAngle) {
+        _roll_target = lastRollDem + maxDeltaAngle;
+    } else if (_roll_target - lastRollDem < -maxDeltaAngle) {
+        _roll_target = lastRollDem - maxDeltaAngle;
+    }
+    lastRollDem = _roll_target;
+    if (_pitch_target - lastPitchDem > maxDeltaAngle) {
+        _pitch_target = lastPitchDem + maxDeltaAngle;
+    } else if (_pitch_target - lastPitchDem < -maxDeltaAngle) {
+        _pitch_target = lastPitchDem - maxDeltaAngle;
+    }
+    lastPitchDem = _pitch_target;
+
+    // 5Hz lowpass filter on angles - required due to optical flow  noise
+    float freq_cut = 5.0f * ekfNavVelGainScaler;
+    float alpha = constrain_float(dt_xy/(dt_xy + 1.0f/(2.0f*(float)M_PI*freq_cut)),0.0f,1.0f);
+    static float roll_target_filtered = 0.0f;
+    static float pitch_target_filtered = 0.0f;
+
+    roll_target_filtered  += alpha * ( _roll_target -  roll_target_filtered);
+    pitch_target_filtered += alpha * (_pitch_target - pitch_target_filtered);
+    _roll_target  = roll_target_filtered;
+    _pitch_target = pitch_target_filtered;
+
 }
 
 // get_lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s

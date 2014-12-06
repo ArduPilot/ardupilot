@@ -974,8 +974,10 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
 	float tasVar;
     Vector2f offset;
     uint8_t faultStatus;
+    uint8_t timeoutStatus;
     ahrs.get_NavEKF().getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
     ahrs.get_NavEKF().getFilterFaults(faultStatus);
+    ahrs.get_NavEKF().getFilterTimeouts(timeoutStatus);
     struct log_EKF4 pkt4 = {
         LOG_PACKET_HEADER_INIT(LOG_EKF4_MSG),
         time_ms : hal.scheduler->millis(),
@@ -989,9 +991,32 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
         offsetNorth : (int8_t)(offset.x),
         offsetEast : (int8_t)(offset.y),
         faults : (uint8_t)(faultStatus),
-        staticmode : (uint8_t)(ahrs.get_NavEKF().getStaticMode())
+        staticmode : (uint8_t)(ahrs.get_NavEKF().getStaticMode()),
+        timeouts : (uint8_t)(timeoutStatus)
     };
     WriteBlock(&pkt4, sizeof(pkt4));
+
+    // Write fifth EKF packet
+    float fscale;
+    float gndPos;
+    float flowInnovX, flowInnovY;
+    float augFlowInnovX, augFlowInnovY;
+    float rngInnov;
+    float range;
+    ahrs.get_NavEKF().getFlowDebug(fscale, gndPos, flowInnovX, flowInnovY, augFlowInnovX, augFlowInnovY, rngInnov, range);
+    struct log_EKF5 pkt5 = {
+        LOG_PACKET_HEADER_INIT(LOG_EKF5_MSG),
+        time_ms : hal.scheduler->millis(),
+        FIX : (int16_t)(1000*flowInnovX),
+        FIY : (int16_t)(1000*flowInnovY),
+        AFIX : (int16_t)(1000*augFlowInnovX),
+        AFIY : (int16_t)(1000*augFlowInnovY),
+        gndPos : (int16_t)(100*gndPos),
+        scaler: (uint8_t)(100*fscale),
+        RI : (int16_t)(100*rngInnov),
+        range : (uint16_t)(100*range)
+     };
+    WriteBlock(&pkt5, sizeof(pkt5));
 }
 #endif
 

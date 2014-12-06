@@ -83,7 +83,7 @@ static void loiter_run()
         pos_control.set_alt_target_to_current_alt();
     }else{
         // run loiter controller
-        wp_nav.update_loiter();
+        wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
         // call attitude controller
         attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);

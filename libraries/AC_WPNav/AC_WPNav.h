@@ -95,7 +95,7 @@ public:
     int32_t get_loiter_bearing_to_target() const;
 
     /// update_loiter - run the loiter controller - should be called at 10hz
-    void update_loiter();
+    void update_loiter(float ekfGndSpdLimit, float ekfNavVelGainScaler);
 
     ///
     /// waypoint controller
@@ -245,7 +245,7 @@ protected:
 
     /// calc_loiter_desired_velocity - updates desired velocity (i.e. feed forward) with pilot requested acceleration and fake wind resistance
     ///		updated velocity sent directly to position controller
-    void calc_loiter_desired_velocity(float nav_dt);
+    void calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit);
 
     /// get_bearing_cd - return bearing in centi-degrees between two positions
     float get_bearing_cd(const Vector3f &origin, const Vector3f &destination) const;
