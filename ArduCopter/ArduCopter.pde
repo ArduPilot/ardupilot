@@ -579,18 +579,6 @@ static float baro_climbrate;        // barometer climbrate in cm/s
 // Current location of the copter
 static struct   Location current_loc;
 
-
-////////////////////////////////////////////////////////////////////////////////
-// Navigation Roll/Pitch functions
-////////////////////////////////////////////////////////////////////////////////
-#if OPTFLOW == ENABLED
-// The Commanded ROll from the autopilot based on optical flow sensor.
-static int32_t of_roll;
-// The Commanded pitch from the autopilot based on optical flow sensor. negative Pitch means go forward.
-static int32_t of_pitch;
-#endif // OPTFLOW == ENABLED
-
-
 ////////////////////////////////////////////////////////////////////////////////
 // Throttle integrator
 ////////////////////////////////////////////////////////////////////////////////
@@ -1519,21 +1507,6 @@ static void tuning(){
         g.pid_rate_yaw.ff(tuning_value);
         break;        
 #endif
-
-    case CH6_OPTFLOW_KP:
-        g.pid_optflow_roll.kP(tuning_value);
-        g.pid_optflow_pitch.kP(tuning_value);
-        break;
-
-    case CH6_OPTFLOW_KI:
-        g.pid_optflow_roll.kI(tuning_value);
-        g.pid_optflow_pitch.kI(tuning_value);
-        break;
-
-    case CH6_OPTFLOW_KD:
-        g.pid_optflow_roll.kD(tuning_value);
-        g.pid_optflow_pitch.kD(tuning_value);
-        break;
 
     case CH6_AHRS_YAW_KP:
         ahrs._kp_yaw.set(tuning_value);

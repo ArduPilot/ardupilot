@@ -822,58 +822,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GGROUP(pid_throttle_accel,"THR_ACCEL_", AC_PID),
 
-    // @Param: OF_RLL_P
-    // @DisplayName: Optical Flow based loiter controller roll axis P gain
-    // @Description: Optical Flow based loiter controller roll axis P gain.  Converts the position error from the target point to a roll angle
-    // @Range: 2.000 3.000
-    // @User: Standard
-
-    // @Param: OF_RLL_I
-    // @DisplayName: Optical Flow based loiter controller roll axis I gain
-    // @Description: Optical Flow based loiter controller roll axis I gain.  Corrects long-term position error by more persistently rolling left or right
-    // @Range: 0.250 0.750
-    // @User: Standard
-
-    // @Param: OF_RLL_IMAX
-    // @DisplayName: Optical Flow based loiter controller roll axis I gain maximum
-    // @Description: Optical Flow based loiter controller roll axis I gain maximum.  Constrains the maximum roll angle that the I term will generate
-    // @Range: 0 4500
-    // @Units: Centi-Degrees
-    // @User: Standard
-
-    // @Param: OF_RLL_D
-    // @DisplayName: Optical Flow based loiter controller roll axis D gain
-    // @Description: Optical Flow based loiter controller roll axis D gain.  Compensates for short-term change in speed in the roll direction
-    // @Range: 0.100 0.140
-    // @User: Standard
-    GGROUP(pid_optflow_roll,  "OF_RLL_",   AC_PID),
-
-    // @Param: OF_PIT_P
-    // @DisplayName: Optical Flow based loiter controller pitch axis P gain
-    // @Description: Optical Flow based loiter controller pitch axis P gain.  Converts the position error from the target point to a pitch angle
-    // @Range: 2.000 3.000
-    // @User: Standard
-
-    // @Param: OF_PIT_I
-    // @DisplayName: Optical Flow based loiter controller pitch axis I gain
-    // @Description: Optical Flow based loiter controller pitch axis I gain.  Corrects long-term position error by more persistently pitching left or right
-    // @Range: 0.250 0.750
-    // @User: Standard
-
-    // @Param: OF_PIT_IMAX
-    // @DisplayName: Optical Flow based loiter controller pitch axis I gain maximum
-    // @Description: Optical Flow based loiter controller pitch axis I gain maximum.  Constrains the maximum pitch angle that the I term will generate
-    // @Range: 0 4500
-    // @Units: Centi-Degrees
-    // @User: Standard
-
-    // @Param: OF_PIT_D
-    // @DisplayName: Optical Flow based loiter controller pitch axis D gain
-    // @Description: Optical Flow based loiter controller pitch axis D gain.  Compensates for short-term change in speed in the pitch direction
-    // @Range: 0.100 0.140
-    // @User: Standard
-    GGROUP(pid_optflow_pitch, "OF_PIT_",   AC_PID),
-
     // P controllers
     //--------------
     // @Param: STB_RLL_P
