@@ -47,30 +47,30 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(sysid_this_mav, "SYSID_THISMAV",   MAV_SYSTEM_ID),
 
     // @Param: SYSID_MYGCS
-    // @DisplayName: My ground station number
-    // @Description: Allows restricting radio overrides to only come from my ground station
+    // @DisplayName: 我的地面站编号
+    // @Description: 允许限制无线电覆盖，只能来自于我的地面站
     // @Range: 1 255
     // @User: Advanced
     GSCALAR(sysid_my_gcs,   "SYSID_MYGCS",     255),
 
     // @Param: SERIAL0_BAUD
-    // @DisplayName: USB Console Baud Rate
-    // @Description: The baud rate used on the USB console. The APM2 can support all baudrates up to 115, and also can support 500. The PX4 can support rates of up to 1500. If you setup a rate you cannot support on APM2 and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
+    // @DisplayName: USB控制台波特率
+    // @Description: 在USB控制台上使用的波特率. APM2可以支持所有波特率高达115, 也可以支持500. PX4可以支持多达1500. 如果你设置一个速率不支持APM2然后不能连接到你的飞机应该从不同的模型加载固件. 这将重置所有默认值参数.
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,500:500000,921:921600,1500:1500000
     // @User: Standard
     GSCALAR(serial0_baud,           "SERIAL0_BAUD",   SERIAL0_BAUD/1000),
 
     // @Param: SERIAL1_BAUD
-    // @DisplayName: Telemetry Baud Rate
-    // @Description: The baud rate used on the first telemetry port. The APM2 can support all baudrates up to 115, and also can support 500. The PX4 can support rates of up to 1500. If you setup a rate you cannot support on APM2 and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
+    // @DisplayName: 遥测波特率
+    // @Description: 第一个遥测端口上使用的波特率. APM2可以支持所有波特率高达115, 也可以支持500. PX4可以支持多达1500. 如果你设置一个速率不支持APM2然后不能连接到你的飞机应该从不同的模型加载固件. 这将重置所有默认值参数.
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,500:500000,921:921600,1500:1500000
     // @User: Standard
     GSCALAR(serial1_baud,           "SERIAL1_BAUD",   SERIAL1_BAUD/1000),
 
 #if MAVLINK_COMM_NUM_BUFFERS > 2
     // @Param: SERIAL2_BAUD
-    // @DisplayName: Telemetry Baud Rate
-    // @Description: The baud rate used on the second telemetry port. The APM2 can support all baudrates up to 115, and also can support 500. The PX4 can support rates of up to 1500. If you setup a rate you cannot support on APM2 and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
+    // @DisplayName: 遥测波特率
+    // @Description: 在第二个遥测端口使用的波特率. APM2可以支持所有波特率高达115, 也可以支持500. PX4可以支持多达1500. 如果你设置一个速率不支持APM2然后不能连接到你的飞机应该从不同的模型加载固件. 这将重置所有默认值参数.
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,500:500000,921:921600,1500:1500000
     // @User: Standard
 
@@ -78,8 +78,8 @@ const AP_Param::Info var_info[] PROGMEM = {
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // @Param: SERIAL2_PROTOCOL
-    // @DisplayName: Serial2 protocol selection
-    // @Description: Control what protocol telemetry 2 port should be used for
+    // @DisplayName: 串口2协议选择
+    // @Description: 控制哪一种协议用于遥测2端口
     // @Values: 1:GCS Mavlink,2:Frsky D-PORT
     // @User: Standard
     GSCALAR(serial2_protocol,        "SERIAL2_PROTOCOL", SERIAL2_MAVLINK),
@@ -88,8 +88,8 @@ const AP_Param::Info var_info[] PROGMEM = {
 #endif // MAVLINK_COMM_NUM_BUFFERS
 
     // @Param: TELEM_DELAY
-    // @DisplayName: Telemetry startup delay
-    // @Description: The amount of time (in seconds) to delay radio telemetry to prevent an Xbee bricking on power up
+    // @DisplayName: 遥测的启动延迟
+    // @Description: 这个时间量 (以秒为单位)来推迟无线电遥测，防止Xbee上电的时候变砖
     // @User: Advanced
     // @Units: seconds
     // @Range: 0 10
@@ -97,8 +97,8 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(telem_delay,            "TELEM_DELAY",     0),
 
     // @Param: RTL_ALT
-    // @DisplayName: RTL Altitude
-    // @Description: The minimum altitude the model will move to before Returning to Launch.  Set to zero to return at current altitude.
+    // @DisplayName: RTL海拔高度
+    // @Description: 最低海拔高度飞机将移动并返回到之前的起飞点.设置为0则保持目前的高度返回.
     // @Units: Centimeters
     // @Range: 0 8000
     // @Increment: 1
@@ -106,74 +106,74 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(rtl_altitude,   "RTL_ALT",     RTL_ALT),
 
     // @Param: RNGFND_GAIN
-    // @DisplayName: Rangefinder gain
-    // @Description: Used to adjust the speed with which the target altitude is changed when objects are sensed below the copter
+    // @DisplayName: 测距仪增益
+    // @Description: 当检测目标在飞行器下方时用来改变和调节速度和目标高度
     // @Range: 0.01 2.0
     // @Increment: 0.01
     // @User: Standard
     GSCALAR(sonar_gain,     "RNGFND_GAIN",           SONAR_GAIN_DEFAULT),
 
     // @Param: FS_BATT_ENABLE
-    // @DisplayName: Battery Failsafe Enable
-    // @Description: Controls whether failsafe will be invoked when battery voltage or current runs low
-    // @Values: 0:Disabled,1:Land,2:RTL
+    // @DisplayName: 电池的故障保护启用
+    // @Description: 当电池电压或电流较低的运行时用于控制是否调用失控保护
+    // @Values: 0:禁用,1:降落,2:RTL返航
     // @User: Standard
     GSCALAR(failsafe_battery_enabled, "FS_BATT_ENABLE", FS_BATT_DISABLED),
 
     // @Param: FS_BATT_VOLTAGE
-    // @DisplayName: Failsafe battery voltage
-    // @Description: Battery voltage to trigger failsafe. Set to 0 to disable battery voltage failsafe. If the battery voltage drops below this voltage then the copter will RTL
+    // @DisplayName: 失控保护电池的电压
+    // @Description: 电池电压触发失控保护.设置为0禁用电池电压失控保护. 如果电池电压低于这个电压,那么这架飞机将RTL
     // @Units: Volts
     // @Increment: 0.1
     // @User: Standard
     GSCALAR(fs_batt_voltage,        "FS_BATT_VOLTAGE", FS_BATT_VOLTAGE_DEFAULT),
 
     // @Param: FS_BATT_MAH
-    // @DisplayName: Failsafe battery milliAmpHours
-    // @Description: Battery capacity remaining to trigger failsafe. Set to 0 to disable battery remaining failsafe. If the battery remaining drops below this level then the copter will RTL
+    // @DisplayName: 失控保护时的mah数
+    // @Description: 电池剩余容量引发失控保护. 设置为0来禁用电池剩余电量的失控保护. 如果电池余下电量低于此水平，那么该飞行器将RTL
     // @Units: mAh
     // @Increment: 50
     // @User: Standard
     GSCALAR(fs_batt_mah,            "FS_BATT_MAH", FS_BATT_MAH_DEFAULT),
 
     // @Param: FS_GPS_ENABLE
-    // @DisplayName: GPS Failsafe Enable
-    // @Description: Controls what action will be taken if GPS signal is lost for at least 5 seconds
-    // @Values: 0:Disabled,1:Land,2:AltHold,3:Land even from Stabilize
+    // @DisplayName: GPS失控保护启用
+    // @Description: 控制飞行器采取什么行动，如果GPS信号丢失超过5秒
+    // @Values: 0:禁用,1:降落,2:定高,3:Land even from Stabilize
     // @User: Standard
     GSCALAR(failsafe_gps_enabled, "FS_GPS_ENABLE", FS_GPS_LAND),
 
     // @Param: FS_GCS_ENABLE
-    // @DisplayName: Ground Station Failsafe Enable
-    // @Description: Controls whether failsafe will be invoked (and what action to take) when connection with Ground station is lost for at least 5 seconds. NB. The GCS Failsafe is only active when RC_OVERRIDE is being used to control the vehicle.
-    // @Values: 0:Disabled,1:Enabled always RTL,2:Enabled Continue with Mission in Auto Mode
+    // @DisplayName: 地面站失控保护启用
+    // @Description: 控制失控保护是否会被调用（以及采取什么样的行动）时，失去了至少5秒与地面站的连接. NB. GCS失控保护只有当RC_OVERRIDE被用来控制车辆。
+    // @Values: 0:禁用,1:始终启用RTL,2:启用在自动模式下继续执行任务
     // @User: Standard
     GSCALAR(failsafe_gcs, "FS_GCS_ENABLE", FS_GCS_ENABLED_ALWAYS_RTL),
 
     // @Param: GPS_HDOP_GOOD
     // @DisplayName: GPS Hdop Good
-    // @Description: GPS Hdop value at or below this value represent a good position.  Used for pre-arm checks
+    // @Description: GPS Hdop值等于或者低于这个值代表一个好的方位.用来解锁检查。
     // @Range: 100 900
     // @User: Advanced
     GSCALAR(gps_hdop_good, "GPS_HDOP_GOOD", GPS_HDOP_GOOD_DEFAULT),
 
     // @Param: MAG_ENABLE
-    // @DisplayName: Compass enable/disable
-    // @Description: Setting this to Enabled(1) will enable the compass. Setting this to Disabled(0) will disable the compass
-    // @Values: 0:Disabled,1:Enabled
+    // @DisplayName: 罗盘 启动/关闭
+    // @Description: 设置为（1）将启用罗盘。设置（0）将禁用罗盘。
+    // @Values: 0:禁用,1:启用
     // @User: Standard
     GSCALAR(compass_enabled,        "MAG_ENABLE",   MAGNETOMETER),
 
     // @Param: SUPER_SIMPLE
-    // @DisplayName: Super Simple Mode
-    // @Description: Bitmask to enable Super Simple mode for some flight modes. Setting this to Disabled(0) will disable Super Simple Mode
-    // @Values: 0:Disabled,1:Mode1,2:Mode2,3:Mode1+2,4:Mode3,5:Mode1+3,6:Mode2+3,7:Mode1+2+3,8:Mode4,9:Mode1+4,10:Mode2+4,11:Mode1+2+4,12:Mode3+4,13:Mode1+3+4,14:Mode2+3+4,15:Mode1+2+3+4,16:Mode5,17:Mode1+5,18:Mode2+5,19:Mode1+2+5,20:Mode3+5,21:Mode1+3+5,22:Mode2+3+5,23:Mode1+2+3+5,24:Mode4+5,25:Mode1+4+5,26:Mode2+4+5,27:Mode1+2+4+5,28:Mode3+4+5,29:Mode1+3+4+5,30:Mode2+3+4+5,31:Mode1+2+3+4+5,32:Mode6,33:Mode1+6,34:Mode2+6,35:Mode1+2+6,36:Mode3+6,37:Mode1+3+6,38:Mode2+3+6,39:Mode1+2+3+6,40:Mode4+6,41:Mode1+4+6,42:Mode2+4+6,43:Mode1+2+4+6,44:Mode3+4+6,45:Mode1+3+4+6,46:Mode2+3+4+6,47:Mode1+2+3+4+6,48:Mode5+6,49:Mode1+5+6,50:Mode2+5+6,51:Mode1+2+5+6,52:Mode3+5+6,53:Mode1+3+5+6,54:Mode2+3+5+6,55:Mode1+2+3+5+6,56:Mode4+5+6,57:Mode1+4+5+6,58:Mode2+4+5+6,59:Mode1+2+4+5+6,60:Mode3+4+5+6,61:Mode1+3+4+5+6,62:Mode2+3+4+5+6,63:Mode1+2+3+4+5+6
+    // @DisplayName: 超级简单模式
+    // @Description: 对于一些飞行模式选位代码来启用超级简单模式. 此设置为Disabled（0）将禁用超级简单模式
+    // @Values: 0:禁用,1:Mode1,2:Mode2,3:Mode1+2,4:Mode3,5:Mode1+3,6:Mode2+3,7:Mode1+2+3,8:Mode4,9:Mode1+4,10:Mode2+4,11:Mode1+2+4,12:Mode3+4,13:Mode1+3+4,14:Mode2+3+4,15:Mode1+2+3+4,16:Mode5,17:Mode1+5,18:Mode2+5,19:Mode1+2+5,20:Mode3+5,21:Mode1+3+5,22:Mode2+3+5,23:Mode1+2+3+5,24:Mode4+5,25:Mode1+4+5,26:Mode2+4+5,27:Mode1+2+4+5,28:Mode3+4+5,29:Mode1+3+4+5,30:Mode2+3+4+5,31:Mode1+2+3+4+5,32:Mode6,33:Mode1+6,34:Mode2+6,35:Mode1+2+6,36:Mode3+6,37:Mode1+3+6,38:Mode2+3+6,39:Mode1+2+3+6,40:Mode4+6,41:Mode1+4+6,42:Mode2+4+6,43:Mode1+2+4+6,44:Mode3+4+6,45:Mode1+3+4+6,46:Mode2+3+4+6,47:Mode1+2+3+4+6,48:Mode5+6,49:Mode1+5+6,50:Mode2+5+6,51:Mode1+2+5+6,52:Mode3+5+6,53:Mode1+3+5+6,54:Mode2+3+5+6,55:Mode1+2+3+5+6,56:Mode4+5+6,57:Mode1+4+5+6,58:Mode2+4+5+6,59:Mode1+2+4+5+6,60:Mode3+4+5+6,61:Mode1+3+4+5+6,62:Mode2+3+4+5+6,63:Mode1+2+3+4+5+6
     // @User: Standard
     GSCALAR(super_simple,   "SUPER_SIMPLE",     0),
 
     // @Param: RTL_ALT_FINAL
-    // @DisplayName: RTL Final Altitude
-    // @Description: This is the altitude the vehicle will move to as the final stage of Returning to Launch or after completing a mission.  Set to zero to land.
+    // @DisplayName: RTL最后海拔高度
+    // @Description: 这里的高度是指当飞行器完成任务移动并返回到起飞点的最后阶段的高度. 设置为0则降落。
     // @Units: Centimeters
     // @Range: -1 1000
     // @Increment: 1
@@ -181,30 +181,30 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(rtl_alt_final,  "RTL_ALT_FINAL", RTL_ALT_FINAL),
 
     // @Param: RSSI_PIN
-    // @DisplayName: Receiver RSSI sensing pin
-    // @Description: This selects an analog pin for the receiver RSSI voltage. It assumes the voltage is RSSI_RANGE for max rssi, 0V for minimum
-    // @Values: -1:Disabled, 0:APM2 A0, 1:APM2 A1, 2:APM2 A2, 13:APM2 A13, 103:Pixhawk SBUS
+    // @DisplayName: 接收机RSSI检测引脚
+    // @Description: 这将选择一个模拟引脚接收RSSI电压.它假定这个电压是RSSI_RANGE为最大RSSI, 0V最小
+    // @Values: -1:禁用, 0:APM2 A0, 1:APM2 A1, 2:APM2 A2, 13:APM2 A13, 103:Pixhawk SBUS
     // @User: Standard
     GSCALAR(rssi_pin,            "RSSI_PIN",         -1),
 
     // @Param: RSSI_RANGE
-    // @DisplayName: Receiver RSSI voltage range
-    // @Description: Receiver RSSI voltage range
+    // @DisplayName: 接收机RSSI电压范围
+    // @Description: 接收机RSSI电压范围
     // @Units: Volt
     // @Values: 3.3:3.3V, 5:5V
     // @User: Standard
     GSCALAR(rssi_range,          "RSSI_RANGE",         5.0f),
 
     // @Param: WP_YAW_BEHAVIOR
-    // @DisplayName: Yaw behaviour during missions
-    // @Description: Determines how the autopilot controls the yaw during missions and RTL
-    // @Values: 0:Never change yaw, 1:Face next waypoint, 2:Face next waypoint except RTL, 3:Face along GPS course
+    // @DisplayName: 在执行任务的yaw的行为
+    // @Description: 判断自动驾驶仪如何控制yaw的动作在执行任务和RTL时
+    // @Values: 0:机头不改变方向, 1:机头朝着下一个航点, 2:机头朝着下一个航点除了RTL, 3:机头沿着gps方向
     // @User: Standard
     GSCALAR(wp_yaw_behavior,  "WP_YAW_BEHAVIOR",    WP_YAW_BEHAVIOR_DEFAULT),
 
     // @Param: RTL_LOIT_TIME
-    // @DisplayName: RTL loiter time
-    // @Description: Time (in milliseconds) to loiter above home before begining final descent
+    // @DisplayName: RTL loiter 的时间
+    // @Description: 在开始最后下降前悬停在家的上方的时间(毫秒)
     // @Units: ms
     // @Range: 0 60000
     // @Increment: 1000
@@ -212,8 +212,8 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(rtl_loiter_time,      "RTL_LOIT_TIME",    RTL_LOITER_TIME),
 
     // @Param: LAND_SPEED
-    // @DisplayName: Land speed
-    // @Description: The descent speed for the final stage of landing in cm/s
+    // @DisplayName: 降落速度
+    // @Description: 着陆的最后阶段的下降速度cm/s
     // @Units: cm/s
     // @Range: 30 200
     // @Increment: 10
@@ -221,8 +221,8 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(land_speed,             "LAND_SPEED",   LAND_SPEED),
 
     // @Param: PILOT_VELZ_MAX
-    // @DisplayName: Pilot maximum vertical speed
-    // @Description: The maximum vertical velocity the pilot may request in cm/s
+    // @DisplayName: 驾驶仪最大垂直速度
+    // @Description: 驾驶仪可以要求的最大垂直速度以cm/s
     // @Units: Centimeters/Second
     // @Range: 50 500
     // @Increment: 10
@@ -230,8 +230,8 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(pilot_velocity_z_max,     "PILOT_VELZ_MAX",   PILOT_VELZ_MAX),
 
     // @Param: PILOT_ACCEL_Z
-    // @DisplayName: Pilot vertical acceleration
-    // @Description: The vertical acceleration used when pilot is controlling the altitude
+    // @DisplayName: 驾驶仪垂直加速度
+    // @Description: 当驾驶仪使用的垂直加速度控制高度
     // @Units: cm/s/s
     // @Range: 50 500
     // @Increment: 10
@@ -239,8 +239,8 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(pilot_accel_z,  "PILOT_ACCEL_Z",    PILOT_ACCEL_Z_DEFAULT),
 
     // @Param: THR_MIN
-    // @DisplayName: Throttle Minimum
-    // @Description: The minimum throttle that will be sent to the motors to keep them spinning
+    // @DisplayName: 最小油门
+    // @Description: 最小油门值将发送到电机以保持他们旋转
     // @Units: Percent*10
     // @Range: 0 300
     // @Increment: 1
@@ -248,8 +248,8 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(throttle_min,   "THR_MIN",          THR_MIN_DEFAULT),
 
     // @Param: THR_MAX
-    // @DisplayName: Throttle Maximum
-    // @Description: The maximum throttle that will be sent to the motors.  This should normally be left as 1000.
+    // @DisplayName: 最大油门
+    // @Description: 最大油门桨发送给电机.这通常应保留为1000。
     // @Units: Percent*10
     // @Range: 800 1000
     // @Increment: 1
@@ -257,15 +257,15 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(throttle_max,   "THR_MAX",          THR_MAX_DEFAULT),
 
     // @Param: FS_THR_ENABLE
-    // @DisplayName: Throttle Failsafe Enable
-    // @Description: The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel
-    // @Values: 0:Disabled,1:Enabled always RTL,2:Enabled Continue with Mission in Auto Mode,3:Enabled always LAND
+    // @DisplayName: 油门失控保护启动
+    // @Description: 这个油门失控保护允许你配置软件失控保护激活设置的油门输出通道上
+    // @Values: 0:禁用,1:启用总是RTL,2:启用自动模式继续任务,3:启用总是降落
     // @User: Standard
     GSCALAR(failsafe_throttle,  "FS_THR_ENABLE",   FS_THR_DISABLED),
 
     // @Param: FS_THR_VALUE
-    // @DisplayName: Throttle Failsafe Value
-    // @Description: The PWM level on channel 3 below which throttle sailsafe triggers
+    // @DisplayName: 油门失控保护的值
+    // @Description: 3通道上的PWM水平低于油门失控保护的值
     // @Range: 925 1100
     // @Units: pwm
     // @Increment: 1
@@ -273,16 +273,16 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(failsafe_throttle_value, "FS_THR_VALUE",      FS_THR_VALUE_DEFAULT),
 
     // @Param: TRIM_THROTTLE
-    // @DisplayName: Throttle Trim
-    // @Description: The autopilot's estimate of the throttle required to maintain a level hover.  Calculated automatically from the pilot's throttle input while in stabilize mode
+    // @DisplayName: 油门微调
+    // @Description: 自动驾驶仪估算的油门要求保持一个水平悬停. 自动计算自动驾驶仪的油门输入同时在自稳模式下
     // @Range: 0 1000
     // @Units: Percent*10
     // @User: Advanced
     GSCALAR(throttle_cruise,        "TRIM_THROTTLE",    THROTTLE_CRUISE),
 
     // @Param: THR_MID
-    // @DisplayName: Throttle Mid Position
-    // @Description: The throttle output (0 ~ 1000) when throttle stick is in mid position.  Used to scale the manual throttle so that the mid throttle stick position is close to the throttle required to hover
+    // @DisplayName: 油门中位点
+    // @Description: 油门输出（0〜1000），当油门处于中间位置.用于按比例手动油门，使中间油门位置接近悬停所需的油门
     // @User: Standard
     // @Range: 300 700
     // @Units: Percent*10
@@ -290,8 +290,8 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(throttle_mid,        "THR_MID",    THR_MID_DEFAULT),
 
     // @Param: THR_DZ
-    // @DisplayName: Throttle deadzone
-    // @Description: The deadzone above and below mid throttle.  Used in AltHold, Loiter, PosHold flight modes
+    // @DisplayName: 油门盲区
+    // @Description: 油门中位的上和下的死区. 用于AltHold, Loiter, PosHold 飞行模式
     // @User: Standard
     // @Range: 0 300
     // @Units: pwm
@@ -299,145 +299,145 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(throttle_deadzone,  "THR_DZ",    THR_DZ_DEFAULT),
 
     // @Param: FLTMODE1
-    // @DisplayName: Flight Mode 1
-    // @Description: Flight mode when Channel 5 pwm is <= 1230
-    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport,16:PosHold
+    // @DisplayName: 飞行模式 1
+    // @Description: 当5通道 pwm <= 1230时的飞行模式是
+    // @Values: 0:自稳Stabilize,1:特技Acro,2:定高AltHold,3:自动Auto,4:引导Guided,5:留待Loiter,6:返航RTL,7:绕圈Circle,9:降落Land,10:光流留待OF_Loiter,11:飘移Drift,13:运动Sport,16:定点PosHold
     // @User: Standard
     GSCALAR(flight_mode1, "FLTMODE1",               FLIGHT_MODE_1),
 
     // @Param: FLTMODE2
-    // @DisplayName: Flight Mode 2
-    // @Description: Flight mode when Channel 5 pwm is >1230, <= 1360
-    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport,16:PosHold
+    // @DisplayName: 飞行模式 2
+    // @Description: 当通道5 pwm >1230, <= 1360时的飞行模式是
+    // @Values: 0:自稳Stabilize,1:特技Acro,2:定高AltHold,3:自动Auto,4:引导Guided,5:留待Loiter,6:返航RTL,7:绕圈Circle,9:降落Land,10:光流留待OF_Loiter,11:飘移Drift,13:运动Sport,16:定点PosHold
     // @User: Standard
     GSCALAR(flight_mode2, "FLTMODE2",               FLIGHT_MODE_2),
 
     // @Param: FLTMODE3
-    // @DisplayName: Flight Mode 3
-    // @Description: Flight mode when Channel 5 pwm is >1360, <= 1490
-    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport,16:PosHold
+    // @DisplayName: 飞行模式 3
+    // @Description: 当5通道 5 pwm >1360, <= 1490时的飞行模式是
+    // @Values: 0:自稳Stabilize,1:特技Acro,2:定高AltHold,3:自动Auto,4:引导Guided,5:留待Loiter,6:返航RTL,7:绕圈Circle,9:降落Land,10:光流留待OF_Loiter,11:飘移Drift,13:运动Sport,16:定点PosHold
     // @User: Standard
     GSCALAR(flight_mode3, "FLTMODE3",               FLIGHT_MODE_3),
 
     // @Param: FLTMODE4
-    // @DisplayName: Flight Mode 4
-    // @Description: Flight mode when Channel 5 pwm is >1490, <= 1620
-    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport,16:PosHold
+    // @DisplayName: 飞行模式 4
+    // @Description: 当通道5 pwm >1490, <= 1620时的飞行模式是
+    // @Values: 0:自稳Stabilize,1:特技Acro,2:定高AltHold,3:自动Auto,4:引导Guided,5:留待Loiter,6:返航RTL,7:绕圈Circle,9:降落Land,10:光流留待OF_Loiter,11:飘移Drift,13:运动Sport,16:定点PosHold
     // @User: Standard
     GSCALAR(flight_mode4, "FLTMODE4",               FLIGHT_MODE_4),
 
     // @Param: FLTMODE5
-    // @DisplayName: Flight Mode 5
-    // @Description: Flight mode when Channel 5 pwm is >1620, <= 1749
-    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport,16:PosHold
+    // @DisplayName: 飞行模式 5
+    // @Description: 当通道5 pwm >1620, <= 1749时的飞行模式是
+    // @Values: 0:自稳Stabilize,1:特技Acro,2:定高AltHold,3:自动Auto,4:引导Guided,5:留待Loiter,6:返航RTL,7:绕圈Circle,9:降落Land,10:光流留待OF_Loiter,11:飘移Drift,13:运动Sport,16:定点PosHold
     // @User: Standard
     GSCALAR(flight_mode5, "FLTMODE5",               FLIGHT_MODE_5),
 
     // @Param: FLTMODE6
-    // @DisplayName: Flight Mode 6
-    // @Description: Flight mode when Channel 5 pwm is >=1750
-    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport,16:PosHold
+    // @DisplayName: 飞行模式 6
+    // @Description: 当通道5 pwm >=1750时的飞行模式是
+    // @Values: 0:自稳Stabilize,1:特技Acro,2:定高AltHold,3:自动Auto,4:引导Guided,5:留待Loiter,6:返航RTL,7:绕圈Circle,9:降落Land,10:光流留待OF_Loiter,11:飘移Drift,13:运动Sport,16:定点PosHold
     // @User: Standard
     GSCALAR(flight_mode6, "FLTMODE6",               FLIGHT_MODE_6),
 
     // @Param: SIMPLE
-    // @DisplayName: Simple mode bitmask
-    // @Description: Bitmask which holds which flight modes use simple heading mode (eg bit 0 = 1 means Flight Mode 0 uses simple mode)
+    // @DisplayName: 简单模式位映射
+    // @Description: 位映射持有这飞行模式使用简单的标题模式(如位0 = 1意味着飞行模式0使用简单的模式)
     // @User: Advanced
     GSCALAR(simple_modes, "SIMPLE",                 0),
 
     // @Param: LOG_BITMASK
-    // @DisplayName: Log bitmask
-    // @Description: 4 byte bitmap of log types to enable
-    // @Values: 830:Default,894:Default+RCIN,958:Default+IMU,1854:Default+Motors,-6146:NearlyAll-AC315,43006:NearlyAll,131070:All+DisarmedLogging,0:Disabled
+    // @DisplayName: 日志位映射
+    // @Description: 4字节位映射的日志类型启用
+    // @Values: 830:默认,894:Default+RCIN,958:Default+IMU,1854:Default+Motors,-6146:NearlyAll-AC315,43006:NearlyAll,131070:All+DisarmedLogging,0:禁用
     // @User: Standard
     GSCALAR(log_bitmask,    "LOG_BITMASK",          DEFAULT_LOG_BITMASK),
 
     // @Param: ESC
-    // @DisplayName: ESC Calibration
-    // @Description: Controls whether ArduCopter will enter ESC calibration on the next restart.  Do not adjust this parameter manually.
+    // @DisplayName: 电调校准
+    // @Description: 控制ArduCopter是否会在下一个重启时进入电调校准。不要手动调整该参数。
     // @User: Advanced
     // @Values: 0:Normal Start-up, 1:Start-up in ESC Calibration mode if throttle high, 2:Start-up in ESC Calibration mode regardless of throttle
     GSCALAR(esc_calibrate, "ESC",                   0),
 
     // @Param: TUNE
-    // @DisplayName: Channel 6 Tuning
-    // @Description: Controls which parameters (normally PID gains) are being tuned with transmitter's channel 6 knob
+    // @DisplayName: 通道6调参
+    // @Description: 控制哪些参数（通常PID收益）正在调整与发射器的频道6旋钮
     // @User: Standard
     // @Values: 0:None,1:Stab Roll/Pitch kP,4:Rate Roll/Pitch kP,5:Rate Roll/Pitch kI,21:Rate Roll/Pitch kD,3:Stab Yaw kP,6:Rate Yaw kP,26:Rate Yaw kD,14:Altitude Hold kP,7:Throttle Rate kP,34:Throttle Accel kP,35:Throttle Accel kI,36:Throttle Accel kD,42:Loiter Speed,12:Loiter Pos kP,22:Loiter Rate kP,28:Loiter Rate kI,23:Loiter Rate kD,10:WP Speed,25:Acro RollPitch kP,40:Acro Yaw kP,13:Heli Ext Gyro,17:OF Loiter kP,18:OF Loiter kI,19:OF Loiter kD,30:AHRS Yaw kP,31:AHRS kP,38:Declination,39:Circle Rate,41:RangeFinder Gain,46:Rate Pitch kP,47:Rate Pitch kI,48:Rate Pitch kD,49:Rate Roll kP,50:Rate Roll kI,51:Rate Roll kD,52:Rate Pitch FF,53:Rate Roll FF,54:Rate Yaw FF
     GSCALAR(radio_tuning, "TUNE",                   0),
 
     // @Param: TUNE_LOW
-    // @DisplayName: Tuning minimum
-    // @Description: The minimum value that will be applied to the parameter currently being tuned with the transmitter's channel 6 knob
+    // @DisplayName: 最小调参值
+    // @Description: 通道6旋钮的参数的最小值将被应用到当前被调整的发射器上
     // @User: Standard
     // @Range: 0 32767
     GSCALAR(radio_tuning_low, "TUNE_LOW",           0),
 
     // @Param: TUNE_HIGH
-    // @DisplayName: Tuning maximum
-    // @Description: The maximum value that will be applied to the parameter currently being tuned with the transmitter's channel 6 knob
+    // @DisplayName: 最大调参值
+    // @Description: 通道6旋钮的参数的最大值将被应用到当前被调整的发射器上
     // @User: Standard
     // @Range: 0 32767
     GSCALAR(radio_tuning_high, "TUNE_HIGH",         1000),
 
     // @Param: FRAME
-    // @DisplayName: Frame Orientation (+, X or V)
-    // @Description: Controls motor mixing for multicopters.  Not used for Tri or Traditional Helicopters.
+    // @DisplayName: 针脚方向 (+, X or V)
+    // @Description: 控制混合电机的多轴飞行器.不能用在三轴或传统直升机上
     // @Values: 0:Plus, 1:X, 2:V, 3:H, 4:V-Tail, 5:A-Tail, 10:Y6B (New)
     // @User: Standard
     GSCALAR(frame_orientation, "FRAME",             AP_MOTORS_X_FRAME),
 
     // @Param: CH7_OPT
-    // @DisplayName: Channel 7 option
-    // @Description: Select which function if performed when CH7 is above 1800 pwm
+    // @DisplayName: 第7通道选项
+    // @Description: 如果在CH7超过1800 PWM进行选择哪些功能
     // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 8:Multi Mode, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:EPM, 20:EKF, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off
     // @User: Standard
     GSCALAR(ch7_option, "CH7_OPT",                  CH7_OPTION),
 
     // @Param: CH8_OPT
-    // @DisplayName: Channel 8 option
-    // @Description: Select which function if performed when CH8 is above 1800 pwm
+    // @DisplayName: 第8通道选项
+    // @Description: 如果在CH8超过1800 PWM进行选择哪些功能
     // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 8:Multi Mode, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:EPM, 20:EKF, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off
     // @User: Standard
     GSCALAR(ch8_option, "CH8_OPT",                  CH8_OPTION),
 
     // @Param: ARMING_CHECK
-    // @DisplayName: Arming check
-    // @Description: Allows enabling or disabling of pre-arming checks of receiver, accelerometer, barometer, compass and GPS
-    // @Values: 0:Disabled, 1:Enabled, -3:Skip Baro, -5:Skip Compass, -9:Skip GPS, -17:Skip INS, -33:Skip Parameters, -65:Skip RC, 127:Skip Voltage
+    // @DisplayName: 解锁检查
+    // @Description: 可以启用或禁用的接收器，加速度计，气压计，罗盘和GPS预先解锁检查
+    // @Values: 0:禁用, 1:启用, -3:跳过气压, -5:跳过罗盘, -9:跳过gps, -17:跳过加速度计, -33:跳过参数, -65:跳过遥控器, 127:跳过电压
     // @User: Standard
     GSCALAR(arming_check, "ARMING_CHECK",           ARMING_CHECK_ALL),
 
     // @Param: ANGLE_MAX
-    // @DisplayName: Angle Max
-    // @Description: Maximum lean angle in all flight modes
+    // @DisplayName: 最大角度
+    // @Description: 在所有的飞行模式的最大倾斜角度
     // @Units: Centi-degrees
     // @Range 1000 8000
     // @User: Advanced
     ASCALAR(angle_max, "ANGLE_MAX",                 DEFAULT_ANGLE_MAX),
 
     // @Param: RC_FEEL_RP
-    // @DisplayName: RC Feel Roll/Pitch
-    // @Description: RC feel for roll/pitch which controls vehicle response to user input with 0 being extremely soft and 100 being crisp
+    // @DisplayName: roll/pitch的遥控感度 
+    // @Description: roll/pitch的遥控手感，用于控制载具对用户输入的反应，设为0变得极度柔和，100会变得极度干脆
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
-    // @Values: 0:Very Soft, 25:Soft, 50:Medium, 75:Crisp, 100:Very Crisp
+    // @Values: 0:很柔和, 25:柔和, 50:中等, 75:干脆, 100:很干脆
     GSCALAR(rc_feel_rp, "RC_FEEL_RP",  RC_FEEL_RP_VERY_CRISP),
 
 #if POSHOLD_ENABLED == ENABLED
     // @Param: PHLD_BRAKE_RATE
-    // @DisplayName: PosHold braking rate
-    // @Description: PosHold flight mode's rotation rate during braking in deg/sec
+    // @DisplayName: PosHold 刹车速率
+    // @Description: poshold飞行模式的旋转速度以多少度/秒制动
     // @Units: deg/sec
     // @Range: 4 12
     // @User: Advanced
     GSCALAR(poshold_brake_rate, "PHLD_BRAKE_RATE",  POSHOLD_BRAKE_RATE_DEFAULT),
 
     // @Param: PHLD_BRAKE_ANGLE
-    // @DisplayName: PosHold braking angle max
-    // @Description: PosHold flight mode's max lean angle during braking in centi-degrees
+    // @DisplayName: PosHold 刹车最大角度
+    // @Description: poshold飞行模式的最大倾斜角度，以多少角度制动
     // @Units: Centi-degrees
     // @Range: 2000 4500
     // @User: Advanced
@@ -445,23 +445,23 @@ const AP_Param::Info var_info[] PROGMEM = {
 #endif
 
     // @Param: LAND_REPOSITION
-    // @DisplayName: Land repositioning
-    // @Description: Enables user input during LAND mode, the landing phase of RTL, and auto mode landings.
-    // @Values: 0:No repositioning, 1:Repositioning
+    // @DisplayName: 降落重新定位
+    // @Description: 启用用户输入在LAND模式，RTL的着陆阶段和自动模式降落
+    // @Values: 0:不重新定位, 1:重新定位
     // @User: Advanced
     GSCALAR(land_repositioning, "LAND_REPOSITION",     LAND_REPOSITION_DEFAULT),
 
     // @Param: EKF_CHECK_THRESH
-    // @DisplayName: EKF check compass and velocity variance threshold
-    // @Description: Allows setting the maximum acceptable compass and velocity variance (0 to disable check)
-    // @Values: 0:Disabled, 0.8:Default, 1.0:Relaxed
+    // @DisplayName: EKF检查罗盘和速度变化的阈值
+    // @Description: 允许设置的最大可接受罗盘和速度变化（0禁用检查）
+    // @Values: 0:禁用, 0.8:默认, 1.0:舒适的
     // @User: Advanced
     GSCALAR(ekfcheck_thresh, "EKF_CHECK_THRESH",    EKFCHECK_THRESHOLD_DEFAULT),
 
     // @Param: DCM_CHECK_THRESH
-    // @DisplayName: DCM yaw error threshold
-    // @Description: Allows setting the maximum acceptable yaw error as a sin of the yaw error (0 to disable check)
-    // @Values: 0:Disabled, 0.8:Default, 0.98:Relaxed
+    // @DisplayName: DCM偏航误差阈值
+    // @Description: 允许设置可接受的最大偏航误差作为偏航误差（0禁用检查）
+    // @Values: 0:禁用, 0.8:默认, 0.98:舒适的
     // @User: Advanced
     GSCALAR(dcmcheck_thresh, "DCM_CHECK_THRESH",    DCMCHECK_THRESHOLD_DEFAULT),
 
