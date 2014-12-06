@@ -47,6 +47,11 @@ void AP_OpticalFlow_PX4::init(void)
         return;
     }
 
+    // change to 10Hz update
+    if (ioctl(_fd, SENSORIOCSPOLLRATE, 10) != 0) {
+        hal.console->printf("Unable to set flow rate to 10Hz\n");        
+    }
+
     // if we got this far, the sensor must be healthy
     _flags.healthy = true;
 }
