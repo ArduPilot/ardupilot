@@ -584,43 +584,43 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: FLTMODE1
     // @DisplayName: 飞行模式1
-    // @Values: 0:手动,1:绕圈,2:自稳,3:教练,4:特技,5:FBWA,6:FBWB,7:巡航,8:自动调参,10:自动任务,11:返回,12:定点,15:引导
+    // @Values: 0:手动Manual,1:绕圈CIRCLE,2:自稳STABILIZE,3:教练TRAINING,4:特技ACRO,5:电传A|FBWA,6:电传B|FBWB,7:巡航CRUISE,8:自动调参AUTOTUNE,10:自动Auto,11:返航RTL,12:留待Loiter,15:引导Guided
     // @User: Standard
-    // @Description: 位置1 的飞行模式(910 to 1230 and above 2049)
+    // @Description: Flight mode for switch position 1 (910 to 1230 and above 2049)
     GSCALAR(flight_mode1,           "FLTMODE1",       FLIGHT_MODE_1),
 
     // @Param: FLTMODE2
     // @DisplayName: 飞行模式2
-    // @Description: 位置2 的飞行模式 (1231 to 1360)
-    // @Values: 0:手动,1:绕圈,2:自稳,3:教练,4:特技,5:FBWA,6:FBWB,7:巡航,8:自动调参,10:自动任务,11:返回,12:定点,15:引导
+    // @Description: Flight mode for switch position 2 (1231 to 1360)
+    // @Values: 0:手动Manual,1:绕圈CIRCLE,2:自稳STABILIZE,3:教练TRAINING,4:特技ACRO,5:电传A|FBWA,6:电传B|FBWB,7:巡航CRUISE,8:自动调参AUTOTUNE,10:自动Auto,11:返航RTL,12:留待Loiter,15:引导Guided
     // @User: Standard
     GSCALAR(flight_mode2,           "FLTMODE2",       FLIGHT_MODE_2),
 
     // @Param: FLTMODE3
     // @DisplayName: 飞行模式3
-    // @Description: 位置3 的飞行模式 (1361 to 1490)
-    // @Values: 0:手动,1:绕圈,2:自稳,3:教练,4:特技,5:FBWA,6:FBWB,7:巡航,8:自动调参,10:自动任务,11:返回,12:定点,15:引导
+    // @Description: Flight mode for switch position 3 (1361 to 1490)
+    // @Values: 0:手动Manual,1:绕圈CIRCLE,2:自稳STABILIZE,3:教练TRAINING,4:特技ACRO,5:电传A|FBWA,6:电传B|FBWB,7:巡航CRUISE,8:自动调参AUTOTUNE,10:自动Auto,11:返航RTL,12:留待Loiter,15:引导Guided
     // @User: Standard
     GSCALAR(flight_mode3,           "FLTMODE3",       FLIGHT_MODE_3),
 
     // @Param: FLTMODE4
     // @DisplayName: 飞行模式4
-    // @Description:位置4 的飞行模式 (1491 to 1620)
-    // @Values: 0:手动,1:绕圈,2:自稳,3:教练,4:特技,5:FBWA,6:FBWB,7:巡航,8:自动调参,10:自动任务,11:返回,12:定点,15:引导
+    // @Description: Flight mode for switch position 4 (1491 to 1620)
+    // @Values: 0:手动Manual,1:绕圈CIRCLE,2:自稳STABILIZE,3:教练TRAINING,4:特技ACRO,5:电传A|FBWA,6:电传B|FBWB,7:巡航CRUISE,8:自动调参AUTOTUNE,10:自动Auto,11:返航RTL,12:留待Loiter,15:引导Guided
     // @User: Standard
     GSCALAR(flight_mode4,           "FLTMODE4",       FLIGHT_MODE_4),
 
     // @Param: FLTMODE5
     // @DisplayName: 飞行模式5
-    // @Description: 位置5 的飞行模式 (1621 to 1749)
-    // @Values: 0:手动,1:绕圈,2:自稳,3:教练,4:特技,5:FBWA,6:FBWB,7:巡航,8:自动调参,10:自动任务,11:返回,12:定点,15:引导
+    // @Description: Flight mode for switch position 5 (1621 to 1749)
+    // @Values: 0:手动Manual,1:绕圈CIRCLE,2:自稳STABILIZE,3:教练TRAINING,4:特技ACRO,5:电传A|FBWA,6:电传B|FBWB,7:巡航CRUISE,8:自动调参AUTOTUNE,10:自动Auto,11:返航RTL,12:留待Loiter,15:引导Guided
     // @User: Standard
     GSCALAR(flight_mode5,           "FLTMODE5",       FLIGHT_MODE_5),
 
     // @Param: FLTMODE6
     // @DisplayName: 飞行模式6
-    // @Description: 位置6 的飞行模式 (1750 to 2049)
-    // @Values: 0:手动,1:绕圈,2:自稳,3:教练,4:特技,5:FBWA,6:FBWB,7:巡航,8:自动调参,10:自动任务,11:返回,12:定点,15:引导
+    // @Description: Flight mode for switch position 6 (1750 to 2049)
+    // @Values: 0:手动Manual,1:绕圈CIRCLE,2:自稳STABILIZE,3:教练TRAINING,4:特技ACRO,5:电传A|FBWA,6:电传B|FBWB,7:巡航CRUISE,8:自动调参AUTOTUNE,10:自动Auto,11:返航RTL,12:留待Loiter,15:引导Guided
     // @User: Standard
     GSCALAR(flight_mode6,           "FLTMODE6",       FLIGHT_MODE_6),
 
