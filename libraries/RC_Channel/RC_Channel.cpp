@@ -37,8 +37,8 @@ RC_Channel *RC_Channel::rc_ch[RC_MAX_CHANNELS];
 
 const AP_Param::GroupInfo RC_Channel::var_info[] PROGMEM = {
     // @Param: MIN
-    // @DisplayName: RC min PWM
-    // @Description: RC minimum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
+    // @DisplayName: 遥控最小PWM
+    // @Description: 遥控最小PWM脉冲宽度。通常1000为下限，1500为中点，2000为上限。
     // @Units: pwm
     // @Range: 800 2200
     // @Increment: 1
@@ -46,8 +46,8 @@ const AP_Param::GroupInfo RC_Channel::var_info[] PROGMEM = {
     AP_GROUPINFO("MIN",  0, RC_Channel, radio_min, 1100),
 
     // @Param: TRIM
-    // @DisplayName: RC trim PWM
-    // @Description: RC trim (neutral) PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
+    // @DisplayName: 遥控微调PWM
+    // @Description: 遥控微调（中点）PWM脉冲宽度。通常1000为下限，1500为中点，2000为上限。
     // @Units: pwm
     // @Range: 800 2200
     // @Increment: 1
@@ -55,8 +55,8 @@ const AP_Param::GroupInfo RC_Channel::var_info[] PROGMEM = {
     AP_GROUPINFO("TRIM", 1, RC_Channel, radio_trim, 1500),
 
     // @Param: MAX
-    // @DisplayName: RC max PWM
-    // @Description: RC maximum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
+    // @DisplayName: 遥控最大PWM
+    // @Description: 遥控最大PWM脉冲宽度。通常1000为下限，1500为中点，2000为上限。
     // @Units: pwm
     // @Range: 800 2200
     // @Increment: 1
@@ -64,9 +64,9 @@ const AP_Param::GroupInfo RC_Channel::var_info[] PROGMEM = {
     AP_GROUPINFO("MAX",  2, RC_Channel, radio_max, 1900),
 
     // @Param: REV
-    // @DisplayName: RC reverse
-    // @Description: Reverse servo operation. Set to 1 for normal (forward) operation. Set to -1 to reverse this channel.
-    // @Values: -1:Reversed,1:Normal
+    // @DisplayName: 遥控反向
+    // @Description: 反转伺服操作。设为1则正常（向前）操作。设为-1反转这个通道。
+    // @Values: -1:反向,1:正常
     // @User: Advanced
     AP_GROUPINFO("REV",  3, RC_Channel, _reverse, 1),
 
@@ -76,8 +76,8 @@ const AP_Param::GroupInfo RC_Channel::var_info[] PROGMEM = {
     // incorrectly interpreted for the throttle on APM:Plane
 
     // @Param: DZ
-    // @DisplayName: RC dead-zone
-    // @Description: dead zone around trim.
+    // @DisplayName: 遥控死区
+    // @Description: 中点周围的死区。
     // @Units: pwm
     // @Range: 0 200
     // @User: Advanced
