@@ -5,7 +5,7 @@
  *
  */
 
-#define GSCALAR(v, name, def) { g.v.vtype, name, Parameters::k_param_ ## v, &g.v, {def_value : def} }
+#define GSCALAR(v, name, def) { g.v.vtype, name, Parameters::k_param_ ## v, &g.v, {def_value : def} } 
 #define ASCALAR(v, name, def) { aparm.v.vtype, name, Parameters::k_param_ ## v, &aparm.v, {def_value : def} }
 #define GGROUP(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &g.v, {group_info : class::var_info} }
 #define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &v, {group_info : class::var_info} }
@@ -13,58 +13,58 @@
 
 const AP_Param::Info var_info[] PROGMEM = {
     // @Param: FORMAT_VERSION
-    // @DisplayName: Eeprom format version number
-    // @Description: This value is incremented when changes are made to the eeprom format
+    // @DisplayName: 存储器格式化次数
+    // @Description: 每次更新存储器后会增加该数值。
     // @User: Advanced
     GSCALAR(format_version,         "FORMAT_VERSION", 0),
 
     // @Param: SYSID_SW_TYPE
-    // @DisplayName: Software Type
-    // @Description: This is used by the ground station to recognise the software type (eg ArduPlane vs ArduCopter)
+    // @DisplayName: 软件类型
+    // @Description: 地面站用来识别软件的种类 (例如：固定翼 或 多轴)
     // @User: Advanced
     GSCALAR(software_type,          "SYSID_SW_TYPE",  Parameters::k_software_type),
 
     // @Param: SYSID_THISMAV
-    // @DisplayName: MAVLink system ID
-    // @Description: The identifier of this device in the MAVLink protocol
+    // @DisplayName: MAVLink系统ID
+    // @Description: MAVLink协议中，当前设备的识别编号。
     // @Range: 1 255
     // @User: Advanced
     GSCALAR(sysid_this_mav,         "SYSID_THISMAV",  MAV_SYSTEM_ID),
 
     // @Param: SYSID_MYGCS
-    // @DisplayName: Ground station MAVLink system ID
-    // @Description: The identifier of the ground station in the MAVLink protocol. Don't change this unless you also modify the ground station to match.
+    // @DisplayName: 地面站MAVLink系统ID
+    // @Description: MAVLink协议中，地面站的识别编号。除非同时对地面站进行修改，否则不要更改。
     // @Range: 1 255
     // @User: Advanced
     GSCALAR(sysid_my_gcs,           "SYSID_MYGCS",    255),
 
     // @Param: SERIAL0_BAUD
-    // @DisplayName: USB Console Baud Rate
-    // @Description: The baud rate used on the USB console. The APM2 can support all baudrates up to 115, and also can support 500. The PX4 can support rates of up to 1500. If you setup a rate you cannot support on APM2 and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
+    // @DisplayName: USB端口波特率
+    // @Description: 这是USB接口的波特率设置。APM2可以支持最高到115, 也可以支持500。PX4能支持到1500。如果你在APM2上设置了一个不能支持的波特率，导致无法连接飞控，可以通过重新加载固件的方式恢复默认参数来连接，这将导致所有设置的参数恢复默认。
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,500:500000,921:921600,1500:1500000
     // @User: Standard
     GSCALAR(serial0_baud,           "SERIAL0_BAUD",   SERIAL0_BAUD/1000),
 
     // @Param: SERIAL1_BAUD
-    // @DisplayName: Telemetry Baud Rate
-    // @Description: The baud rate used on the first telemetry port. The APM2 can support all baudrates up to 115, and also can support 500. The PX4 can support rates of up to 1500. If you setup a rate you cannot support on APM2 and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
+    // @DisplayName: 第一数传接口波特率
+    // @Description: 通常这个设置作用于第一数传端口。APM2可以支持最高到115, 也可以支持500。PX4能支持到1500。如果你在APM2上设置了一个不能支持的波特率，导致无法连接飞控，可以通过重新加载固件的方式恢复默认参数来连接，这将导致所有设置的参数恢复默认。
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,500:500000,921:921600,1500:1500000
     // @User: Standard
     GSCALAR(serial1_baud,           "SERIAL1_BAUD",   SERIAL1_BAUD/1000),
 
 #if MAVLINK_COMM_NUM_BUFFERS > 2
     // @Param: SERIAL2_BAUD
-    // @DisplayName: Telemetry Baud Rate
-    // @Description: The baud rate used on the second telemetry port. The APM2 can support all baudrates up to 115, and also can support 500. The PX4 can support rates of up to 1500. If you setup a rate you cannot support on APM2 and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
+    // @DisplayName: 第二数传接口波特率
+    // @Description: 这个设置作用于第二数传端口。APM2可以支持最高到115, 也可以支持500。PX4能支持到1500。如果你在APM2上设置了一个不能支持的波特率，导致无法连接飞控，可以通过重新加载固件的方式恢复默认参数来连接，这将导致所有设置的参数恢复默认。
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,500:500000,921:921600,1500:1500000
     // @User: Standard
     GSCALAR(serial2_baud,           "SERIAL2_BAUD",   SERIAL2_BAUD/1000),
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // @Param: SERIAL2_PROTOCOL
-    // @DisplayName: SERIAL2 protocol selection
-    // @Description: Control what protocol telemetry 2 port should be used for
-    // @Values: 1:GCS Mavlink,2:Frsky D-PORT
+    // @DisplayName: 第二数传接口协议选择
+    // @Description: 该参数控制第二数传接口使用哪种协议。
+    // @Values: 1:地面站Mavlink,2:睿思凯D-PORT
     // @User: Standard
     GSCALAR(serial2_protocol,        "SERIAL2_PROTOCOL", SERIAL2_MAVLINK),
 #endif // FRSKY_TELEM_ENABLED
@@ -72,221 +72,221 @@ const AP_Param::Info var_info[] PROGMEM = {
 #endif // MAVLINK_COMM_NUM_BUFFERS
 
     // @Param: AUTOTUNE_LEVEL
-    // @DisplayName: Autotune level
-    // @Description: Level of agressiveness for autotune. When autotune is run a lower AUTOTUNE_LEVEL will result in a 'softer' tune, with less agressive gains. For most users a level of 6 is recommended.
+    // @DisplayName: 自动调参级别
+    // @Description: 自动调参时的动作激烈程度。 当自动调参运行于较低级别时，调参的程度会比较“软”，得到较平和的增益。推荐大多数使用者设置为6。
     // @Range: 1 10
     // @Increment: 1
     // @User: Standard
     ASCALAR(autotune_level, "AUTOTUNE_LEVEL",  6),
 
     // @Param: TELEM_DELAY
-    // @DisplayName: Telemetry startup delay 
-    // @Description: The amount of time (in seconds) to delay radio telemetry to prevent an Xbee bricking on power up
+    // @DisplayName: 数传启动延时 
+    // @Description: 延迟数传连接的时间（秒），用于解决Xbee上电后会延时反应。
     // @User: Standard
-    // @Units: seconds
+    // @Units: 秒
     // @Range: 0 10
     // @Increment: 1
     GSCALAR(telem_delay,            "TELEM_DELAY",     0),
 
     // @Param: KFF_RDDRMIX
-    // @DisplayName: Rudder Mix
-    // @Description: The amount of rudder mix to apply during aileron movement 0 = 0 %, 1 = 100%
+    // @DisplayName: 方向舵混控
+    // @Description: 方向舵配合副翼动作时的混控比例。0 = 0 %, 1 = 100%
     // @Range: 0 1
     // @Increment: 0.01
     // @User: Standard
     GSCALAR(kff_rudder_mix,         "KFF_RDDRMIX",    RUDDER_MIX),
 
     // @Param: KFF_THR2PTCH
-    // @DisplayName: Throttle to Pitch Mix
-    // @Description: Throttle to pitch feed-forward gain.
+    // @DisplayName: 油门到俯仰的混控
+    // @Description: 油门作用于俯仰的前馈增益。
     // @Range: 0 5
     // @Increment: 0.01
     // @User: Advanced
     GSCALAR(kff_throttle_to_pitch,  "KFF_THR2PTCH",   0),
 
     // @Param: STAB_PITCH_DOWN
-    // @DisplayName: Low throttle pitch down trim 
-    // @Description: This controls the amount of down pitch to add in FBWA and AUTOTUNE modes when at low throttle. No down trim is added when throttle is above TRIM_THROTTLE. Below TRIM_THROTTLE downtrim is added in proportion to the amount the throttle is below TRIM_THROTTLE. At zero throttle the full downpitch specified in this parameter is added. This parameter is meant to help keep airspeed up when flying in FBWA mode with low throttle, such as when on a landing approach, without relying on an airspeed sensor. A value of 2 degrees is good for many planes, although a higher value may be needed for high drag aircraft.
+    // @DisplayName: 低油门下降微调 
+    // @Description: 这个参数控制了，当在低油门杆量的时候，FBWA和AUTOTUNE模式飞行时的下降量。油门杆位置超过TRIM_THROTTLE参数的设定值时，飞机不会进行下降修正。低于TRIM_THROTTLE参数的设定值时，就会按照具体的油门杆位置，进行下降修正。0油门杆位置时，就会使用当前参数设定的量进行下降。这个参数的目的就是为了在FBWA模式小油门量飞行时，帮助飞机保持空速，比如在着陆进近时可以不用依赖空速计。2度的默认值，适合大部分飞机，更高的数值可能适合较大飞行阻力的飞机。
     // @Range: 0 15
     // @Increment: 0.1
-    // @Units: Degrees
+    // @Units: 度
     // @User: Advanced
     GSCALAR(stab_pitch_down, "STAB_PITCH_DOWN",   2.0f),
 
     // @Param: GLIDE_SLOPE_MIN
-    // @DisplayName: Glide slope threshold
-    // @Description: This controls the minimum altitude change for a waypoint before a glide slope will be used instead of an immediate altitude change. The default value is 15 meters, which helps to smooth out waypoint missions where small altitude changes happen near waypoints. If you don't want glide slopes to be used in missions then you can set this to zero, which will disable glide slope calculations. Otherwise you can set it to a minimum number of meters of altitude error to the destination waypoint before a glide slope will be used to change altitude.
+    // @DisplayName: 滑翔下降高度
+    // @Description: 设置最小的航点高度改变，可以进行滑翔，而不用直接下降高度。默认值为15米，这将帮助飞机在两个较近的航点间，平滑的进行高度调整。如果不想在此使用滑翔功能，设置0为禁用。
     // @Range: 0 1000
     // @Increment: 1
-    // @Units: meters
+    // @Units: 米
     // @User: Advanced
     GSCALAR(glide_slope_threshold, "GLIDE_SLOPE_MIN", 15),
 
     // @Param: STICK_MIXING
-    // @DisplayName: Stick Mixing
-    // @Description: When enabled, this adds user stick input to the control surfaces in auto modes, allowing the user to have some degree of flight control without changing modes.  There are two types of stick mixing available. If you set STICK_MIXING to 1 then it will use "fly by wire" mixing, which controls the roll and pitch in the same way that the FBWA mode does. This is the safest option if you usually fly ArduPlane in FBWA or FBWB mode. If you set STICK_MIXING to 2 then it will enable direct mixing mode, which is what the STABILIZE mode uses. That will allow for much more extreme maneuvers while in AUTO mode.
+    // @DisplayName: 摇杆混控
+    // @Description: 如果允许使用，将在自动飞行模式时，允许RC控制飞机而不用切换飞行模式。这里有两种模式可以设置，设置为1时，可以用FBW的模式来控制飞机，这和FBW-A的侧倾和俯仰控制一样。如果你常用FBW-A或FBW-B模式来飞行，这是个安全的选择。设置为2时，将使用自稳模式STABILIZE来飞行，可以让你在AUTO模式进行更激烈的操作。
     // @Values: 0:Disabled,1:FBWMixing,2:DirectMixing
     // @User: Advanced
     GSCALAR(stick_mixing,           "STICK_MIXING",   STICK_MIXING_FBW),
 
     // @Param: SKIP_GYRO_CAL
-    // @DisplayName: Skip gyro calibration
-    // @Description: When enabled this tells the APM to skip the normal gyroscope calibration at startup, and instead use the saved gyro calibration from the last flight. You should only enable this if you are careful to check that your aircraft has good attitude control before flying, as some boards may have significantly different gyro calibration between boots, especially if the temperature changes a lot. If gyro calibration is skipped then APM relies on using the gyro drift detection code to get the right gyro calibration in the few minutes after it boots. This option is mostly useful where the requirement to hold the plane still while it is booting is a significant problem.
-    // @Values: 0:Disabled,1:Enabled
+    // @DisplayName: 禁止陀螺仪启动自检
+    // @Description: 当允许这个选项时，APM将在启动时跳过陀螺仪校准，并使用上次飞行时保存的陀螺仪数据，如此一定要在飞行前确认高度等数据，因为一些板子可能在启动时的陀螺仪校准，会有明显的不同, 尤其是温度的变化带来的影响。而如果陀螺仪校准被跳过，APM将在启动的几分钟后，依赖陀螺仪的移动探测功能去收集正确的校准数据。这个功能在解决某些问题时非常有用。
+    // @Values: 0:禁用,1:允许
     // @User: Advanced
     GSCALAR(skip_gyro_cal,           "SKIP_GYRO_CAL",   0),
 
     // @Param: AUTO_FBW_STEER
-    // @DisplayName: Use FBWA steering in AUTO
-    // @Description: When enabled this option gives FBWA navigation and steering in AUTO mode. This can be used to allow manual stabilised piloting with waypoint logic for triggering payloads. With this enabled the pilot has the same control over the plane as in FBWA mode, and the normal AUTO navigation is completely disabled. This option is not recommended for normal use.
-    // @Values: 0:Disabled,1:Enabled
+    // @DisplayName: 在AUTO飞行模式里使用FBW-A的控制功能
+    // @Description: 允许这个选项后，会在Auto飞行模式里，允许使用与FBW-A相同的手动操控功能，而Auto模式的导航功能将被完全禁用，常规飞行时不建议使用此功能。
+    // @Values: 0:禁用,1:允许
     // @User: Advanced
     GSCALAR(auto_fbw_steer,          "AUTO_FBW_STEER",   0),
 
     // @Param: TKOFF_THR_MINSPD
-    // @DisplayName: Takeoff throttle min speed
-    // @Description: Minimum GPS ground speed in m/s used by the speed check that un-suppresses throttle in auto-takeoff. This can be be used for catapult launches where you want the motor to engage only after the plane leaves the catapult, but it is preferable to use the TKOFF_THR_MINACC and TKOFF_THR_DELAY parameters for catapult launches due to the errors associated with GPS measurements. For hand launches with a pusher prop it is strongly advised that this parameter be set to a value no less than 4 m/s to provide additional protection against premature motor start. Note that the GPS velocity will lag the real velocity by about 0.5 seconds. The ground speed check is delayed by the TKOFF_THR_DELAY parameter.
-    // @Units: m/s
+    // @DisplayName: 起飞时自动开启油门的最小速度
+    // @Description: 该参数用于控制自动起飞时，油门启动与否，所依据的最小GPS地面速度检测。这个参数用在弹射起飞时，希望飞机被弹射出去后，再启动并加速电机。但对于弹射起飞，最好配合 TKOFF_THR_MINACC 和 TKOFF_THR_DELAY 参数使用进行，以规避GPS误差而导致的意外。强烈建议螺旋桨飞机投掷起飞时，设置的数值不低于4米/秒，这可以避免电机过早启动。注意：GPS速率会滞后于实际0.5秒。同时地速检测也会被 TKOFF_THR_DELAY 参数所延迟。
+    // @Units: 米/秒
     // @Range: 0 30
     // @Increment: 0.1
     // @User: User
     GSCALAR(takeoff_throttle_min_speed,     "TKOFF_THR_MINSPD",  0),
 
     // @Param: TKOFF_THR_MINACC
-    // @DisplayName: Takeoff throttle min acceleration
-    // @Description: Minimum forward acceleration in m/s/s before arming the ground speed check in auto-takeoff. This is meant to be used for hand launches. Setting this value to 0 disables the acceleration test which means the ground speed check will always be armed which could allow GPS velocity jumps to start the engine. For hand launches and bungee launches this should be set to around 15.
-    // @Units: m/s/s
+    // @DisplayName: 起飞时自动开启油门的最小加速度
+    // @Description: 自动起飞模式下，油门启动需要的最小的向前地面加速度（米/秒/秒），这意味着要投掷起飞。设置为0将禁用加速度检测，油门将处于解锁状态，并允许GPS速率启动电机。投掷和弹射起飞应该设置在15米/秒附近。
+    // @Units: 米/秒/秒
     // @Range: 0 30
     // @Increment: 0.1
     // @User: User
     GSCALAR(takeoff_throttle_min_accel,     "TKOFF_THR_MINACC",  0),
 
     // @Param: TKOFF_THR_DELAY
-    // @DisplayName: Takeoff throttle delay
-    // @Description: This parameter sets the time delay (in 1/10ths of a second) that the ground speed check is delayed after the forward acceleration check controlled by TKOFF_THR_MINACC has passed. For hand launches with pusher propellers it is essential that this is set to a value of no less than 2 (0.2 seconds) to ensure that the aircraft is safely clear of the throwers arm before the motor can start. For bungee launches a larger value can be used (such as 30) to give time for the bungee to release from the aircraft before the motor is started.
-    // @Units: 0.1 seconds
+    // @DisplayName: 起飞油门延迟开启
+    // @Description: 当TKOFF_THR_MINACC参数设置的最小加速度达到后，再延迟多长时间（1/10秒）电机再启动。后推式螺旋桨飞机在投掷起飞时，这个值不能低于2（0.2秒）来确保螺旋桨离开投掷者的手臂范围后再启动。弹射起飞时，可以设置较大的数值（比如30）来给出足够的时间，等飞机离开弹射架后再启动电机。
+    // @Units: 0.1 秒
     // @Range: 0 127
     // @Increment: 1
     // @User: User
     GSCALAR(takeoff_throttle_delay,     "TKOFF_THR_DELAY",  2),
 
     // @Param: TKOFF_TDRAG_ELEV
-    // @DisplayName: Takeoff tail dragger elevator
-    // @Description: This parameter sets the amount of elevator to apply during the initial stage of a takeoff. It is used to hold the tail wheel of a taildragger on the ground during the initial takeoff stage to give maximum steering. This option should be conbined with the TKOFF_TDRAG_SPD1 option and the GROUND_STEER_ALT option along with tuning of the ground steering controller. A value of zero means to bypass the initial "tail hold" stage of takeoff. Set to zero for hand and catapult launch. For tail-draggers you should normally set this to 100, meaning full up elevator during the initial stage of takeoff. For most tricycle undercarriage aircraft a value of zero will work well, but for some tricycle aircraft a small negative value (say around -20 to -30) will apply down elevator which will hold the nose wheel firmly on the ground during initial acceleration. Only use a negative value if you find that the nosewheel doesn't grip well during takeoff. Too much down elevator on a tricycle undercarriage may cause instability in steering as the plane pivots around the nosewheel. Add down elevator 10 percent at a time.
-    // @Units: Percent
+    // @DisplayName: 后三点机型的起飞时升降舵设置
+    // @Description: 这个参数用来设置在最初的起飞阶段，升降舵面的应用比例。这个功能是用于在地面滑行时，保持住后三点飞机的尾轮（转向轮）,保持飞机在起飞时的方向稳定。这个参数应该结合 TKOFF_TDRAG_SPD1 和 GROUND_STEER_ALT 参数一起进行地面转向控制的调整。0值为忽略在起飞时的尾轮保持，并用在投掷和弹射起飞模式下。对于后三点飞机，通常设置为100，这将在起飞时使升降舵处于爬升满舵状态。0值适用于大多数前三点起落架，但是有一些前三点飞机需要在起飞时让升降舵向下，用来保持飞机在起飞加速时，前轮能保持对方向的控制（设置为-20到-30）。除非发现起飞离地前，前轮不能很好的接触地面，否则不要设置为负值。前三点飞机使用大幅度的升降舵向下时，会造成转向不灵，所以调试时，每次最多降低10%来测试。
+    // @Units: 百分比
     // @Range: -100 100
     // @Increment: 1
     // @User: User
     GSCALAR(takeoff_tdrag_elevator,     "TKOFF_TDRAG_ELEV",  0),
 
     // @Param: TKOFF_TDRAG_SPD1
-    // @DisplayName: Takeoff tail dragger speed1
-    // @Description: This parameter sets the airspeed at which to stop holding the tail down and transition to rudder control of steering on the ground. When TKOFF_TDRAG_SPD1 is reached the pitch of the aircraft will be held level until TKOFF_ROTATE_SPD is reached, at which point the takeoff pitch specified in the mission will be used to "rotate" the pitch for takeoff climb. Set TKOFF_TDRAG_SPD1 to zero to go straight to rotation. This should be set to zero for hand launch and catapult launch. It should also be set to zero for tricycle undercarriages. For tail dragger aircraft it should be set just below the stall speed.
-    // @Units: m/s
+    // @DisplayName: 后三点机型起飞离地前的地面速度1
+    // @Description: 这个参数设置在起飞离地前，达到什么速度后停止保持尾部向下，而转用方向舵控制地面转向。当这个参数值达到后，飞机将保持水平，直到速度达到TKOFF_ROTATE_SPD参数的设置，才会开始转向、爬升、飞向航点。设置为0时将直接进入转向，适合投掷和弹射起飞，前三点飞机也应设为0。后三点飞机的设置应稍低于失速速度。
+    // @Units: 米/秒
     // @Range: 0 30
     // @Increment: 0.1
     // @User: User
     GSCALAR(takeoff_tdrag_speed1,     "TKOFF_TDRAG_SPD1",  0),
 
     // @Param: TKOFF_ROTATE_SPD
-    // @DisplayName: Takeoff rotate speed
-    // @Description: This parameter sets the airspeed at which the aircraft will "rotate", setting climb pitch specified in the mission. If TKOFF_ROTATE_SPD is zero then the climb pitch will be used as soon as takeoff is started. For hand launch and catapult launches a TKOFF_ROTATE_SPD of zero should be set. For all ground launches TKOFF_ROTATE_SPD should be set above the stall speed, usually by about 10 to 30 percent
-    // @Units: m/s
+    // @DisplayName: 起飞后开始转向所需达到速度
+    // @Description: 起飞后达到什么速度开始转向。这个参数设定在任务中达到设定空速后，飞机开始转向并进行指定的爬升。如果这个参数为0，起飞后会立即进入爬升。手抛和弹射起飞应设置为0，所有地面起飞应设置为超过失速的速度，通常为10-30%。
+    // @Units: 米/秒
     // @Range: 0 30
     // @Increment: 0.1
     // @User: User
     GSCALAR(takeoff_rotate_speed,     "TKOFF_ROTATE_SPD",  0),
 
     // @Param: TKOFF_THR_SLEW
-    // @DisplayName: Takeoff throttle slew rate
-    // @Description: This parameter sets the slew rate for the throttle during auto takeoff. When this is zero the THR_SLEWRATE parameter is used during takeoff. For rolling takeoffs it can be a good idea to set a lower slewrate for takeoff to give a slower acceleration which can improve ground steering control. The value is a percentage throttle change per second, so a value of 20 means to advance the throttle over 5 seconds on takeoff. Values below 20 are not recommended as they may cause the plane to try to climb out with too little throttle.
-    // @Units: percent
+    // @DisplayName: 起飞油门增速
+    // @Description: 这个参数设置了自动起飞时，油门的增减速率。设置为0时，起飞将使用 THR_SLEWRATE 的设置数值。在侧倾旋转起飞时，最好设置为较低的油门增减速率，较慢的加速将增强地面转向的控制力。这个数值是百分比/秒，所以，20意味着5秒后才会达到起飞油门量。不推荐使用低于20的值，它会导致飞机在小油门量的时候就开始爬升。
+    // @Units: 百分比
     // @Range: 0 127
     // @Increment: 1
     // @User: User
     GSCALAR(takeoff_throttle_slewrate, "TKOFF_THR_SLEW",  0),
 
     // @Param: TKOFF_FLAP_PCNT
-    // @DisplayName: Takeoff flap percentage
-    // @Description: The amount of flaps (as a percentage) to apply in automatic takeoff
+    // @DisplayName: 起飞襟翼百分比
+    // @Description: 自动起飞时，襟翼打开的开度（百分比）。
     // @Range: 0 100
-    // @Units: Percent
+    // @Units: 百分比
     // @User: Advanced
     GSCALAR(takeoff_flap_percent,     "TKOFF_FLAP_PCNT", 0),
 
     // @Param: FBWA_TDRAG_CHAN
-    // @DisplayName: FBWA taildragger channel
-    // @Description: This is a RC input channel which when it goes above 1700 enables FBWA taildragger takeoff mode. It should be assigned to a momentary switch. Once this feature is enabled it will stay enabled until the aircraft goes above TKOFF_TDRAG_SPD1 airspeed, changes mode, or the pitch goes above the initial pitch when this is engaged or goes below 0 pitch. When enabled the elevator will be forced to TKOFF_TDRAG_ELEV. This option allows for easier takeoffs on taildraggers in FBWA mode, and also makes it easier to test auto-takeoff steering handling in FBWA. Setting it to 0 disables this option.
+    // @DisplayName: FBWA模式下的后三点起飞模式
+    // @Description: 选择一个RC通道进行设置，该通道PWM值超过1700以上的时候，在FBW-A模式中，启用后三点起落架的起飞模式。该通道应该被设置到RC遥控的某个两段开关上。起飞使用时，一旦这个功能被打开，将保持这个起飞模式，直到飞机空速超过TKOFF_TDRAG_SPD1 参数的设定值，除非中途改变飞行模式，或俯仰姿态有变化。同时，这个功能一旦打开，升降舵将强制进入TKOFF_TDRAG_ELEV的设定值。这些功能都是为了能让后三点式飞机在FBW-A模式中更容易的起飞，同时方便处理自动起飞和转向。0为禁用。
     // @User: Standard
     GSCALAR(fbwa_tdrag_chan,          "FBWA_TDRAG_CHAN",  0),
 
     // @Param: LEVEL_ROLL_LIMIT
-    // @DisplayName: Level flight roll limit
-    // @Description: This controls the maximum bank angle in degrees during flight modes where level flight is desired, such as in the final stages of landing, and during auto takeoff. This should be a small angle (such as 5 degrees) to prevent a wing hitting the runway during takeoff or landing. Setting this to zero will completely disable heading hold on auto takeoff and final landing approach.
-    // @Units: degrees
+    // @DisplayName: 水平飞行时侧倾度限制
+    // @Description: 平飞时允许机身进行侧倾调整的最大角度（例如5度）。比如在起飞着陆时，过大的允许角度，可能会使机翼擦碰到跑道。设置为0时，在自动起飞和着陆时将完全禁用方向保持。
+    // @Units: 度
     // @Range: 0 45
     // @Increment: 1
     // @User: User
     GSCALAR(level_roll_limit,              "LEVEL_ROLL_LIMIT",   5),
 
     // @Param: LAND_PITCH_CD
-    // @DisplayName: Landing Pitch
-    // @Description: Used in autoland for planes without airspeed sensors in hundredths of a degree
-    // @Units: centi-Degrees
+    // @DisplayName: 着陆俯仰角
+    // @Description: 在没有空速计的飞机自动着陆时，使用的俯仰分度（百分之一度）。
+    // @Units: 分度
     // @User: Advanced
     ASCALAR(land_pitch_cd,          "LAND_PITCH_CD",  0),
 
     // @Param: LAND_FLARE_ALT
-    // @DisplayName: Landing flare altitude
-    // @Description: Altitude in autoland at which to lock heading and flare to the LAND_PITCH_CD pitch
-    // @Units: meters
+    // @DisplayName: 着陆平飘高度
+    // @Description: 自动着陆时，在什么高度锁定机头方向并开始平飘到LAND_PITCH_CD设定的着陆俯仰角度
+    // @Units: 米
     // @Increment: 0.1
     // @User: Advanced
     GSCALAR(land_flare_alt,          "LAND_FLARE_ALT",  3.0),
 
     // @Param: LAND_FLARE_SEC
-    // @DisplayName: Landing flare time
-    // @Description: Time before landing point at which to lock heading and flare to the LAND_PITCH_CD pitch
-    // @Units: seconds
+    // @DisplayName: 着陆平飘时间
+    // @Description: 距着陆点还有有多长时间时，锁定方向和平飘到到LAND_PITCH_CD设定的俯仰角度。
+    // @Units: 秒
     // @Increment: 0.1
     // @User: Advanced
     GSCALAR(land_flare_sec,          "LAND_FLARE_SEC",  2.0),
 
 	// @Param: NAV_CONTROLLER
-	// @DisplayName: Navigation controller selection
-	// @Description: Which navigation controller to enable. Currently the only navigation controller available is L1. From time to time other experimental conrtrollers will be added which are selected using this parameter.
-	// @Values: 0:Default,1:L1Controller
+	// @DisplayName: N导航控制器选择
+	// @Description: 允许使用什么导航控制系统，当前只有一个L1可选，未来可能会有增加实验性的选项。
+	// @Values: 0:默认,1:L1控制器
 	// @User: Standard
 	GSCALAR(nav_controller,          "NAV_CONTROLLER",   AP_Navigation::CONTROLLER_L1),
 
     // @Param: ALT_MIX
-    // @DisplayName: GPS to Baro Mix
-    // @Description: The percent of mixing between GPS altitude and baro altitude. 0 = 100% gps, 1 = 100% baro. It is highly recommend that you not change this from the default of 1, as GPS altitude is notoriously unreliable. The only time I would recommend changing this is if you have a high altitude enabled GPS, and you are dropping a plane from a high altitude baloon many kilometers off the ground.
-    // @Units: Percent
+    // @DisplayName: GPS混合气压定高比例
+    // @Description: 混合GPS高度和气压高度的计算权重比例，0为绝对依据GPS，1为绝对用气压，强烈建议不要更改默认值1，也就要保持使用气压定高，因为GPS定高实在不可靠。当然，除非你有个高精度的GPS，并且是在几万米以上的高空用气球投放飞机。
+    // @Units: 百分比
     // @Range: 0 1
     // @Increment: 0.1
     // @User: Advanced
     GSCALAR(altitude_mix,           "ALT_MIX",        ALTITUDE_MIX),
 
     // @Param: ALT_CTRL_ALG
-    // @DisplayName: Altitude control algorithm
-    // @Description: This sets what algorithm will be used for altitude control. The default is zero, which selects the most appropriate algorithm for your airframe. Currently the default is to use TECS (total energy control system). From time to time we will add other experimental altitude control algorithms which will be seleted using this parameter.
-    // @Values: 0:Automatic
+    // @DisplayName: 高度控制算法
+    // @Description: 控制飞行高度用什么算法。默认的0会根据机身选择最合适的算法，当前这个默认的算法使用的是TECS（总体动力控制系统），未来会不定时的增加实验性的新算法。
+    // @Values: 0:自动
     // @User: Advanced
     GSCALAR(alt_control_algorithm, "ALT_CTRL_ALG",    ALT_CONTROL_DEFAULT),
 
     // @Param: ALT_OFFSET
-    // @DisplayName: Altitude offset
-    // @Description: This is added to the target altitude in automatic flight. It can be used to add a global altitude offset to a mission
-    // @Units: Meters
+    // @DisplayName: 高度偏移量
+    // @Description: 在执行自动飞行（Auto）任务时，添加目标高度。这里可以使用全球的海拔高度到任务里。
+    // @Units: 米
     // @Range: -32767 32767
     // @Increment: 1
     // @User: Advanced
     GSCALAR(alt_offset, "ALT_OFFSET",                 0),
 
     // @Param: WP_RADIUS
-    // @DisplayName: Waypoint Radius
-    // @Description: Defines the maximum distance from a waypoint that when crossed indicates the waypoint may be complete. To avoid the aircraft looping around the waypoint in case it misses by more than the WP_RADIUS an additional check is made to see if the aircraft has crossed a "finish line" passing through the waypoint and perpendicular to the flight path from the previous waypoint. If that finish line is crossed then the waypoint is considered complete. Note that the navigation controller may decide to turn later than WP_RADIUS before a waypoint, based on how sharp the turn is and the speed of the aircraft. It is safe to set WP_RADIUS much larger than the usual turn radius of your aircaft and the navigation controller will work out when to turn. If you set WP_RADIUS too small then you will tend to overshoot the turns.
+    // @DisplayName: 航点半径
+    // @Description: 定义距离航点的最大半径距离，并在此距离之内经过即可算为已经抵达航点。为了防止飞机在抵达当前航点时，因为航路垂直于上个航点，而错过了航点导致飞机会反复绕圈。这里设置的最大半径完成线，只要穿过就算作已经抵达航点。注意，在一个航点前，导航控制器可能会在这个定义的最大半径之后才控制转向，这决定于转向角度的大小和当前飞机速度。最好设置这个参数较大于飞机的正常转向半径，这样导航控制器才能确保工作正常。如果设置这个参数过小，就会造成转弯过度的现象。
     // @Units: Meters
     // @Range: 1 32767
     // @Increment: 1
@@ -294,18 +294,18 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(waypoint_radius,        "WP_RADIUS",      WP_RADIUS_DEFAULT),
 
     // @Param: WP_MAX_RADIUS
-    // @DisplayName: Waypoint Maximum Radius
-    // @Description: Sets the maximum distance to a waypoint for the waypoint to be considered complete. This overrides the "cross the finish line" logic that is normally used to consider a waypoint complete. For normal AUTO behaviour this parameter should be set to zero. Using a non-zero value is only recommended when it is critical that the aircraft does approach within the given radius, and should loop around until it has done so. This can cause the aircraft to loop forever if its turn radius is greater than the maximum radius set.
-    // @Units: Meters
+    // @DisplayName: 航点最大半径
+    // @Description: 设置一个距航点的最大距离来帮辅助确认抵达航点。这个参数优先于“跨越完成线”的逻辑去认为航点已经抵达，对于普通的自动控制，这个参数应该设为0。除非飞机只是接近定义的半径而反复绕圈试图抵达航点时，才建议修改此参数。 如果飞机的转弯半径大于这个设定值，还是会造成飞机反复绕圈。
+    // @Units: 米
     // @Range: 0 32767
     // @Increment: 1
     // @User: Standard
     GSCALAR(waypoint_max_radius,        "WP_MAX_RADIUS",      0),
 
     // @Param: WP_LOITER_RAD
-    // @DisplayName: Waypoint Loiter Radius
-    // @Description: Defines the distance from the waypoint center, the plane will maintain during a loiter. If you set this value to a negative number then the default loiter direction will be counter-clockwise instead of clockwise.
-    // @Units: Meters
+    // @DisplayName: 定点半径
+    // @Description: 定义飞机在进行定点飞行时，到定点中心的半径距离。如果设置为负值，将以该数值进行逆时针飞行。
+    // @Units: 米
     // @Range: -32767 32767
     // @Increment: 1
     // @User: Standard
@@ -313,339 +313,338 @@ const AP_Param::Info var_info[] PROGMEM = {
 
 #if GEOFENCE_ENABLED == ENABLED
     // @Param: FENCE_ACTION
-    // @DisplayName: Action on geofence breach
-    // @Description: What to do on fence breach. If this is set to 0 then no action is taken, and geofencing is disabled. If this is set to 1 then the plane will enter GUIDED mode, with the target waypoint as the fence return point. If this is set to 2 then the fence breach is reported to the ground station, but no other action is taken. If set to 3 then the plane enters guided mode but the pilot retains manual throttle control.
-    // @Values: 0:None,1:GuidedMode,2:ReportOnly,3:GuidedModeThrPass
+    // @DisplayName: 触发围栏后的动作
+    // @Description: 设置围栏触发后怎么办。 设置为0不会有任何动作；设置为1时触发GUIDED模式, 同时目标航点成为围栏返回点；设置为2时只报告，不做任何动作；3会进入GUIDED模式并保持手动油门控制。
+    // @Values: 0:不反应,1:Guided模式,2:只报告,3:手动油门的Guided模式
     // @User: Standard
     GSCALAR(fence_action,           "FENCE_ACTION",   0),
 
     // @Param: FENCE_TOTAL
-    // @DisplayName: Fence Total
-    // @Description: Number of geofence points currently loaded
+    // @DisplayName: 围栏数量
+    // @Description: 当前启用的围栏点数量。
     // @User: Advanced
     GSCALAR(fence_total,            "FENCE_TOTAL",    0),
 
     // @Param: FENCE_CHANNEL
-    // @DisplayName: Fence Channel
-    // @Description: RC Channel to use to enable geofence. PWM input above 1750 enables the geofence
+    // @DisplayName: 围栏遥控通道
+    // @Description: 开启围栏功能的RC遥控通道，PWM超过1750将开启围栏。
     // @User: Standard
     GSCALAR(fence_channel,          "FENCE_CHANNEL",  0),
 
     // @Param: FENCE_MINALT
-    // @DisplayName: Fence Minimum Altitude
-    // @Description: Minimum altitude allowed before geofence triggers
-    // @Units: meters
+    // @DisplayName: 围栏最小高度
+    // @Description: 触发围栏功能的最小高度限制。
+    // @Units: 米
     // @Range: 0 32767
     // @Increment: 1
     // @User: Standard
     GSCALAR(fence_minalt,           "FENCE_MINALT",   0),
 
     // @Param: FENCE_MAXALT
-    // @DisplayName: Fence Maximum Altitude
-    // @Description: Maximum altitude allowed before geofence triggers
-    // @Units: meters
+    // @DisplayName: 围栏最大高度
+    // @Description: 触发围栏功能的最大高度。
+    // @Units: 米
     // @Range: 0 32767
     // @Increment: 1
     // @User: Standard
     GSCALAR(fence_maxalt,           "FENCE_MAXALT",   0),
 
     // @Param: FENCE_RETALT
-    // @DisplayName: Fence Return Altitude
-    // @Description: Altitude the aircraft will transit to when a fence breach occurs.  If FENCE_RETALT is <= 0 then the midpoint between FENCE_MAXALT and FENCE_MINALT is used, unless FENCE_MAXALT < FENCE_MINALT.  If FENCE_MAXALT < FENCE_MINALT AND FENCE_RETALT is <= 0 then ALT_HOLD_RTL is the altitude used on a fence breach.
-    // @Units: meters
+    // @DisplayName: 围栏触发返回高度
+    // @Description: 定义围栏被触发后，飞机将返回到什么高度；0为回到围栏的最大高度和最小高度的中间点。
+    // @Units: 米
     // @Range: 0 32767
     // @Increment: 1
     // @User: Standard
     GSCALAR(fence_retalt,           "FENCE_RETALT",   0),
 
     // @Param: FENCE_AUTOENABLE
-    // @DisplayName: Fence automatic enable
-    // @Description: When set to 1, gefence automatically enables after an auto takeoff and automatically disables at the beginning of an auto landing.  When on the ground before takeoff the fence is disabled. It is highly recommended to not use this option for line of sight flying and use a fence enable channel instead.
-    // @Values: 0:NoAutoEnable,1:AutoEnable
+    // @DisplayName: 围栏自动开启
+    // @Description: 围栏自动开启功能，设置为1时，围栏在自动起飞时打开，并在开始自动降落时关闭。建议不要在目视飞行时使用，实在要用，就用通道开关（FENCE_CHANNEL）来控制围栏的启用与否。
+    // @Values: 0:禁止自动启用,1:自动开启
     // @User: Standard
     GSCALAR(fence_autoenable,       "FENCE_AUTOENABLE", 0),
 
     // @Param: FENCE_RET_RALLY
-    // @DisplayName: Fence Return to Rally
-    // @Description: When set to 1: on fence breach the plane will return to the nearest rally point rather than the fence return point.  If no rally points have been defined the plane will return to the home point.  
-    // @Values: 0:FenceReturnPoint,1:NearestRallyPoint
+    // @DisplayName: 围栏返回集结点
+    // @Description: 触发围栏后是否返回集结点，1为打开此功能；如果没有设置集结点，将会返回home point。
+    // @Values: 0:返回出发点,1:返回最近的集结点
     // @User: Standard
     GSCALAR(fence_ret_rally,        "FENCE_RET_RALLY",  0),     
 #endif
 
     // @Param: STALL_PREVENTION
-    // @DisplayName: Enable stall prevention
-    // @Description: This controls the use of stall prevention techniques, including roll limits at low speed and raising the minimum airspeed in turns. The limits are based on the aerodynamic load factor of a banked turn. This option relies on the correct ARSPD_FBW_MIN value being set correctly. Note that if you don't have an airspeed sensor then stall prevention will use an airspeed estimate based on the ground speed plus a wind estimate taken from the response of the autopilot banked turns. That synthetic airspeed estimate may be inaccurate, so you should not assume that stall prevention with no airspeed sensor will be effective.
-    // @Values: 0:Disabled,1:Enabled
+    // @DisplayName: 阻止失速
+    // @Description: 这个参数用来控制阻止失速的功能，功能包括限制低速下的侧倾角度和提高转弯时的最小空速，这些限制都是基于倾转时的空气动力因素，且这个参数依托于正确设置的 ARSPD_FBW_MIN 数值。注意，如果飞机没有空速计，阻止失速功能将使用基于地速和气流的评估空速，进行自动倾转响应。 这个合成的空速可能会不正确，所以在没有空速计的情况下，不能绝对认为这个功能事有效地。
+    // @Values: 0:禁用,1:允许
     // @User: Standard
     ASCALAR(stall_prevention, "STALL_PREVENTION",  1),
 
     // @Param: ARSPD_FBW_MIN
-    // @DisplayName: Minimum Airspeed
-    // @Description: This is the minimum airspeed you want to fly at in modes where the autopilot controls the airspeed. This should be set to a value around 20% higher than the level flight stall speed for the airframe. This value is also used in the STALL_PREVENTION code.
-    // @Units: m/s
+    // @DisplayName: 最小空速
+    // @Description: 在有自动油门控制的飞行模式中，所允许的最小空速。这个数值应设置为高于飞机失速速度的20%左右，同时这个参数也作用于STALL_PREVENTION参数。
+    // @Units: 米/秒
     // @Range: 5 100
     // @Increment: 1
     // @User: Standard
     ASCALAR(airspeed_min, "ARSPD_FBW_MIN",  AIRSPEED_FBW_MIN),
 
     // @Param: ARSPD_FBW_MAX
-    // @DisplayName: Maximum Airspeed
-    // @Description: This is the maximum airspeed that you want to allow for your airframe in auto-throttle modes. You should ensure that this value is sufficiently above the ARSPD_FBW_MIN value to allow for a sufficient flight envelope to accurately control altitude using airspeed. A value at least 50% above ARSPD_FBW_MIN is recommended.
-    // @Units: m/s
+    // @DisplayName: 最大空速
+    // @Description: 在所有自动油门控制的飞行模式中，所允许的最大空速。你应该确保这个数值足够高于ARSPD_FBW_MIN 的参数值，来保证足够的高度和空速控制能力，建议该值最少要超过 ARSPD_FBW_MIN数值50%以上。
+    // @Units: 米/秒
     // @Range: 5 100
     // @Increment: 1
     // @User: Standard
     ASCALAR(airspeed_max, "ARSPD_FBW_MAX",  AIRSPEED_FBW_MAX),
 
     // @Param: FBWB_ELEV_REV
-    // @DisplayName: Fly By Wire elevator reverse
-    // @Description: Reverse sense of elevator in FBWB and CRUISE modes. When set to 0 up elevator (pulling back on the stick) means to lower altitude. When set to 1, up elevator means to raise altitude.
-    // @Values: 0:Disabled,1:Enabled
+    // @DisplayName: FBW模式下升降舵反向
+    // @Description: 在FBWB和CRUISE模式中，升降舵反向。设置为0时，向后拉升降舵杆将会降低高度；设置为1时，向后拉升降舵杆为提升高度。
+    // @Values: 0:禁用,1:允许
     // @User: Standard
     GSCALAR(flybywire_elev_reverse, "FBWB_ELEV_REV",  0),
 
 #if AP_TERRAIN_AVAILABLE
     // @Param: TERRAIN_FOLLOW
-    // @DisplayName: Use terrain following
-    // @Description: This enables terrain following for CRUISE mode, FBWB mode, RTL and for rally points. To use this option you also need to set TERRAIN_ENABLE to 1, which enables terrain data fetching from the GCS, and you need to have a GCS that supports sending terrain data to the aircraft. When terrain following is enabled then CRUISE and FBWB mode will hold height above terrain rather than height above home. In RTL the return to launch altitude will be considered to be a height above the terrain. Rally point altitudes will be taken as height above the terrain. This option does not affect mission items, which have a per-waypoint flag for whether they are height above home or height above the terrain. To use terrain following missions you need a ground station which can set the waypoint type to be a terrain height waypoint when creating the mission.
-    // @Values: 0:Disabled,1:Enabled
+    // @DisplayName: 使用地形跟随
+    // @Description: 本参数允许CRUISE模式, FBWB模式, RTL和集结点等飞行模式使用地形跟随功能。使用这个功能需要设置 TERRAIN_ENABLE 为1，这将允许从地面站获得地形数据，且需要地面站支持发送地形数据到飞控。当允许使用地形跟随功能时，CRUISE和FBWB飞行模式将保持飞机在地形高度之上，而不是home点高度之上，这意味着有时飞行的高度可能还会低于出发点高度。 在返回（RTL)模式下，出发点的实际高度计算会基于地形高度之上。集结点的高度也会被设置到地形高度以上。飞行中，不管实际高度是高于home点，还是高于地形，都会预先在航点上有所标示，且不会影响具体的飞行任务。要使用地形跟随功能，在地面站规划航点时，需要将航点的种类改为地形高度航点。
+    // @Values: 0:禁用,1:允许
     // @User: Standard
     GSCALAR(terrain_follow, "TERRAIN_FOLLOW",  0),
 
     // @Param: TERRAIN_LOOKAHD
-    // @DisplayName: Terrain lookahead
-    // @Description: This controls how far ahead the terrain following code looks to ensure it stays above upcoming terrain. A value of zero means no lookahead, so the controller will track only the terrain directly below the aircraft. The lookahead will never extend beyond the next waypoint when in AUTO mode.
+    // @DisplayName: 地形预判
+    // @Description: 这里控制地形跟随提前计算多远的距离，来确保跟随在前方的地形的高度之上。0值为不预判，所以控制器将只跟踪飞机之下的地形。在AUTO模式下也不会对下一个航点进行预判。
     // @Range: 0 10000
-    // @Units: meters
+    // @Units: 米
     // @User: Standard
     GSCALAR(terrain_lookahead, "TERRAIN_LOOKAHD",  2000),
 #endif
 
     // @Param: FBWB_CLIMB_RATE
-    // @DisplayName: Fly By Wire B altitude change rate
-    // @Description: This sets the rate in m/s at which FBWB and CRUISE modes will change its target altitude for full elevator deflection. Note that the actual climb rate of the aircraft can be lower than this, depending on your airspeed and throttle control settings. If you have this parameter set to the default value of 2.0, then holding the elevator at maximum deflection for 10 seconds would change the target altitude by 20 meters.
+    // @DisplayName: FBW-B高度改变速率
+    // @Description: 在FBWB和CRUISE模式中，使用升降舵打满时，将会改变高度的速比。注意，飞机的实际爬升速率可以低于这个数值，这取决于空速和油门控制的设置。例如，设置为默认的2m/s，你满舵爬升10秒，将会爬升20米。
     // @Range: 1-10
 	// @Increment: 0.1
     // @User: Standard
     GSCALAR(flybywire_climb_rate, "FBWB_CLIMB_RATE",  2.0f),
 
     // @Param: THR_MIN
-    // @DisplayName: Minimum Throttle
-    // @Description: The minimum throttle setting (as a percentage) which the autopilot will apply. For the final stage of an automatic landing this is always zero.
-    // @Units: Percent
+    // @DisplayName: 最小油门设置
+    // @Description: 飞控控制的最小油门开启比例（百分比）。在最后阶段的自动降落应该设置为0。
+    // @Units: 百分比
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
     ASCALAR(throttle_min,           "THR_MIN",        THROTTLE_MIN),
 
     // @Param: THR_MAX
-    // @DisplayName: Maximum Throttle
-    // @Description: The maximum throttle setting (as a percentage) which the autopilot will apply.
-    // @Units: Percent
+    // @DisplayName: 最大油门设置
+    // @Description: 飞控控制的最大油门开启比例（百分比）。
+    // @Units: 百分比
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
     ASCALAR(throttle_max,           "THR_MAX",        THROTTLE_MAX),
 
     // @Param: TKOFF_THR_MAX
-    // @DisplayName: Maximum Throttle for takeoff
-    // @Description: The maximum throttle setting during automatic takeoff. If this is zero then THR_MAX is used for takeoff as well.
-    // @Units: Percent
+    // @DisplayName: 起飞最大油门量
+    // @Description: 自动起飞时设置的最大油门量。如果设为0，将应用 THR_MAX 参数（自动控制时的最大油门量） 设定的油门量。
+    // @Units: 百分比
     // @Range: 0 100
     // @Increment: 1
     // @User: Advanced
     GSCALAR(takeoff_throttle_max,   "TKOFF_THR_MAX",        0),
 
     // @Param: THR_SLEWRATE
-    // @DisplayName: Throttle slew rate
-    // @Description: maximum percentage change in throttle per second. A setting of 10 means to not change the throttle by more than 10% of the full throttle range in one second.
-    // @Units: Percent
+    // @DisplayName: 油门变化速率
+    // @Description: 每秒油门量变化的百分比。假如设为10，那么推油门时，油门的增加速度不会超过油门总量的10%/秒。
+    // @Units: 百分比
     // @Range: 0 127
     // @Increment: 1
     // @User: Standard
     ASCALAR(throttle_slewrate,      "THR_SLEWRATE",   100),
 
     // @Param: FLAP_SLEWRATE
-    // @DisplayName: Flap slew rate
-    // @Description: maximum percentage change in flap output per second. A setting of 25 means to not change the flap by more than 25% of the full flap range in one second. A value of 0 means no rate limiting.
-    // @Units: Percent
+    // @DisplayName: 襟翼变化速率Flap slew rate
+    // @Description: 襟翼输出的最大变化速率百分比/秒。比如，设定25，会让襟翼在一秒之内的动作速度，不超过襟翼总行程的25%。0值为不限定速率。
     // @Range: 0 100
     // @Increment: 1
     // @User: Advanced
     GSCALAR(flap_slewrate,          "FLAP_SLEWRATE",   75),
 
     // @Param: THR_SUPP_MAN
-    // @DisplayName: Throttle suppress manual passthru
-    // @Description: When throttle is supressed in auto mode it is normally forced to zero. If you enable this option, then while suppressed it will be manual throttle. This is useful on petrol engines to hold the idle throttle manually while waiting for takeoff
-	// @Values: 0:Disabled,1:Enabled
+    // @DisplayName: 手动油门直通自动油门
+    // @Description: 在自动飞行模式下，当飞控需要抑制油门时，通常会强制到0油门。如果允许这个选项，油门限制将被手动油门控制所取代。这在汽油发动机上很有用处，它能让你在起飞前一直手动控制保持怠速。
+	// @Values: 0:禁用,1:允许
     // @User: Advanced
     GSCALAR(throttle_suppress_manual,"THR_SUPP_MAN",   0),
 
     // @Param: THR_PASS_STAB
-    // @DisplayName: Throttle passthru in stabilize
-    // @Description: If this is set then when in STABILIZE, FBWA or ACRO modes the throttle is a direct passthru from the transmitter. This means the THR_MIN and THR_MAX settings are not used in these modes. This is useful for petrol engines where you setup a throttle cut switch that suppresses the throttle below the normal minimum.
-	// @Values: 0:Disabled,1:Enabled
+    // @DisplayName: 自稳模式中的油门直通
+    // @Description: 这个选项如果被允许使用，那么在 STABILIZE, FBWA 或 ACRO 飞行模式中，RC油门控制将直通到输出，不再受到最小油门量 THR_MIN 和最大油门量THR_MAX 的限制。这将对使用汽油发动机的风门开关设置非常有用，因为它抑制了油门低于最小时的影响。同时，对于比较短的跑道，可以让电动飞机用全油门快速升空，并在空中自动油门控制时，按照限定的最大油门量飞行，这在长时间处于爬升状态时，可以降低电调负载，节省电量。
+	// @Values: 0:禁用,1:允许
     // @User: Advanced
     GSCALAR(throttle_passthru_stabilize,"THR_PASS_STAB",   0),
 
     // @Param: THR_FAILSAFE
-    // @DisplayName: Throttle Failsafe Enable
-    // @Description: The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel
-    // @Values: 0:Disabled,1:Enabled
+    // @DisplayName: 油门失控保护
+    // @Description: 当油门通道出现问题时，是否使用失控保护功能。
+    // @Values: 0:禁用,1:允许
     // @User: Standard
     GSCALAR(throttle_fs_enabled,    "THR_FAILSAFE",   THROTTLE_FAILSAFE),
 
 
     // @Param: THR_FS_VALUE
-    // @DisplayName: Throttle Failsafe Value
-    // @Description: The PWM level on channel 3 below which throttle sailsafe triggers
+    // @DisplayName: 油门失控保护触发值
+    // @Description: 当油门通道PWM值低于多少时，触发失控保护功能。
     // @Range: 925 1100
     // @Increment: 1
     // @User: Standard
     GSCALAR(throttle_fs_value,      "THR_FS_VALUE",   THROTTLE_FS_VALUE),
 
     // @Param: TRIM_THROTTLE
-    // @DisplayName: Throttle cruise percentage
-    // @Description: The target percentage of throttle to apply for normal flight
-    // @Units: Percent
+    // @DisplayName: 巡航油门百分比
+    // @Description: 正常飞行时的目标油门百分比。
+    // @Units: 百分比
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
     ASCALAR(throttle_cruise,        "TRIM_THROTTLE",  THROTTLE_CRUISE),
 
     // @Param: THROTTLE_NUDGE
-    // @DisplayName: Throttle nudge enable
-    // @Description: When enabled, this uses the throttle input in auto-throttle modes to 'nudge' the throttle or airspeed to higher or lower values. When you have an airspeed sensor the nudge affects the target airspeed, so that throttle inputs above 50% will increase the target airspeed from TRIM_ARSPD_CM up to a maximum of ARSPD_FBW_MAX. When no airspeed sensor is enabled the throttle nudge will push up the target throttle for throttle inputs above 50%.
-    // @Values: 0:Disabled,1:Enabled
+    // @DisplayName: 油门助推
+    // @Description: 当允许这个选项时，在任何有自动油门的飞行模式中，油门摇杆的位置决定了持续增加或减少油门量的变化。如果使用了空速计，油门摇杆的位置超过50%时，飞控将持续增加空速直到达到ARSPD_FBW_MAX参数所设定的最大空速。如果没有空速计，油门摇杆推到什么位置，飞控就增加电机转速到什么位置。
+    // @Values: 0:禁用,1:允许
     // @User: Standard
     // @User: Standard
     GSCALAR(throttle_nudge,         "THROTTLE_NUDGE",  1),
 
     // @Param: FS_SHORT_ACTN
-    // @DisplayName: Short failsafe action
-    // @Description: The action to take on a short (FS_SHORT_TIMEOUT) failsafe event. A short failsafe even can be triggered either by loss of RC control (see THR_FS_VALUE) or by loss of GCS control (see FS_GCS_ENABL). A short failsafe event in stabilization and manual modes will cause an change to CIRCLE mode if FS_SHORT_ACTN is 0 or 1, and a change to FBWA mode if FS_SHORT_ACTN is 2. In all other modes (including AUTO and GUIDED mode) a short failsafe event will cause no mode change is FS_SHORT_ACTN is set to 0, will cause a change to CIRCLE mode if set to 1 and will change to FBWA mode if set to 2. Please see the documentation for FS_LONG_ACTN for the behaviour after FS_LONG_TIMEOUT seconds of failsafe.
-    // @Values: 0:Continue,1:Circle/ReturnToLaunch,2:Glide
+    // @DisplayName: 短时失控保护动作
+    // @Description: 在AUTO, GUIDED 或 LOITER模式下，短超时 FS_SHORT_TIMEOUT 参数设定的时间达到，并触发失控保护后的选项。短时失控保护可以被丢失遥控信号（参考THR_FS_VALUE参数）和丢失地面站控制（参考FS_GCS_ENABL参数）所触发。如果设置为1，在有自稳和手动的模式下，短时失控保护将的触发将切换飞行模式到CIRCLE模式；如果设置为2，将切换到FBWA模式。在所有其他模式下（包括ATUO和GUIDED模式），如果设置为0，短时失控保护的触发不会改变飞行模式；如果设为1，将改为CIRCLE模式；如果设为2，将改为FBWA模式。参考 FS_LONG_ACTN 和 FS_LONG_TIMEOUT参数所触发的动作。
+    // @Values: 0:继续任务,1:绕圈/返回出发点,2:滑行
     // @User: Standard
     GSCALAR(short_fs_action,        "FS_SHORT_ACTN",  SHORT_FAILSAFE_ACTION),
 
     // @Param: FS_SHORT_TIMEOUT
-    // @DisplayName: Short failsafe timeout
-    // @Description: The time in seconds that a failsafe condition has to persist before a short failsafe event will occor. This defaults to 1.5 seconds
-    // @Units: seconds
+    // @DisplayName: 短时失控保护超时
+    // @Description: 失控保护情况出现后，多长时间触发短时失控保护动作。默认为1.5秒。
+    // @Units: 秒
     // @Range: 1 100
     // @Increment: 0.5
     // @User: Standard
     GSCALAR(short_fs_timeout,        "FS_SHORT_TIMEOUT", 1.5f),
 
     // @Param: FS_LONG_ACTN
-    // @DisplayName: Long failsafe action
-    // @Description: The action to take on a long (FS_LONG_TIMEOUT seconds) failsafe event. If the aircraft was in a stabilization or manual mode when failsafe started and a long failsafe occurs then it will change to RTL mode if FS_LONG_ACTN is 0 or 1, and will change to FBWA if FS_LONG_ACTN is set to 2. If the aircraft was in an auto mode (such as AUTO or GUIDED) when the failsafe started then it will continue in the auto mode if FS_LONG_ACTN is set to 0, will change to RTL mode if FS_LONG_ACTN is set to 1 and will change to FBWA mode if FS_LONG_ACTN is set to 2. 
-    // @Values: 0:Continue,1:ReturnToLaunch,2:Glide
+    // @DisplayName: 长时失控保护动作
+    // @Description: 长时失控保护的时间达到后，会采取的动作。如果设置为0，不会触发任何动作。如果设为1，将触发回家（RTL）模式。如果设为2，将进入FBWA模式。
+    // @Values: 0:继续,1:返回,2:滑翔
     // @User: Standard
     GSCALAR(long_fs_action,         "FS_LONG_ACTN",   LONG_FAILSAFE_ACTION),
 
     // @Param: FS_LONG_TIMEOUT
-    // @DisplayName: Long failsafe timeout
-    // @Description: The time in seconds that a failsafe condition has to persist before a long failsafe event will occor. This defaults to 20 seconds
-    // @Units: seconds
+    // @DisplayName: 长时失控保护超时
+    // @Description: 失控保护情况出现后，多长时间触发长时失控保护动作。默认为20秒。
+    // @Units: 秒
     // @Range: 1 300
     // @Increment: 0.5
     // @User: Standard
     GSCALAR(long_fs_timeout,        "FS_LONG_TIMEOUT", 20),
 
     // @Param: FS_BATT_VOLTAGE
-    // @DisplayName: Failsafe battery voltage
-    // @Description: Battery voltage to trigger failsafe. Set to 0 to disable battery voltage failsafe. If the battery voltage drops below this voltage continuously for 10 seconds then the plane will switch to RTL mode
-    // @Units: Volts
+    // @DisplayName: 电压保护
+    // @Description: 触发失控保护的电压。设置为0为禁用此功能。如果填写了具体的数值，而电压一旦低于此数值超过10秒钟，飞控将进入返回（RTL）模式。
+    // @Units: 伏特
     // @Increment: 0.1
     // @User: Standard
     GSCALAR(fs_batt_voltage,        "FS_BATT_VOLTAGE", 0),
 
     // @Param: FS_BATT_MAH
-    // @DisplayName: Failsafe battery milliAmpHours
-    // @Description: Battery capacity remaining to trigger failsafe. Set to 0 to disable battery remaining failsafe. If the battery remaining drops below this level then the plane will switch to RTL mode immediately
-    // @Units: mAh
+    // @DisplayName: 电池电量保护（毫安时）
+    // @Description: 低于设定的电池容量，将会触发失控保护。设为0禁用此功能。如果电池剩余容量低于设置的数值，将会立即触发返回（RTL）模式。
+    // @Units: 毫安时
     // @Increment: 50
     // @User: Standard
     GSCALAR(fs_batt_mah,            "FS_BATT_MAH", 0),
 
     // @Param: FS_GCS_ENABL
-    // @DisplayName: GCS failsafe enable
-    // @Description: Enable ground control station telemetry failsafe. Failsafe will trigger after FS_LONG_TIMEOUT seconds of no MAVLink heartbeat messages. There are two possible enabled settings. Seeing FS_GCS_ENABL to 1 means that GCS failsafe will be triggered when the aircraft has not received a MAVLink HEARTBEAT message. Setting FS_GCS_ENABL to 2 means that GCS failsafe will be triggerded on either a loss of HEARTBEAT messages, or a RADIO_STATUS message from a MAVLink enabled 3DR radio indicating that the ground station is not receiving status updates from the aircraft, which is indicated by the RADIO_STATUS.remrssi field being zero (this may happen if you have a one way link due to asymmetric noise on the ground station and aircraft radios). WARNING: Enabling this option opens up the possibility of your plane going into failsafe mode and running the motor on the ground it it loses contact with your ground station. If this option is enabled on an electric plane then you should enable ARMING_REQUIRED. 
-    // @Values: 0:Disabled,1:Heartbeat,2:HeartbeatAndREMRSSI
+    // @DisplayName: 地面站失控保护
+    // @Description: 是否允许地面站数据传输的失控保护功能。如果FS_LONG_TIMEOUT参数设定的时间依然没有MAVLink心跳信号，将触发失控保护。这里有两种情况可以设置，设置为1时，如果飞控收不到MAVLink心跳信号，将触发失控保护。设置为2意味着不管是收不到飞控心跳信号，还是无法接收飞控的更新数据，都会触发失控保护。这个情况在 RADIO_STATUS里的remrssi项显示为0. (一般是由于在单向传输数据的地面站或飞控端的无线电噪音造成的）。警告：允许这个选项可能会在地面调试的时候，造成电机意外启动，所以应设置解锁要求ARMING_REQUIRED参数为允许。 
+    // @Values: 0:禁用,1:心跳包,2:心跳包和REMRSSI
     // @User: Standard
     GSCALAR(gcs_heartbeat_fs_enabled, "FS_GCS_ENABL", GCS_FAILSAFE_OFF),
 
     // @Param: FLTMODE_CH
-    // @DisplayName: Flightmode channel
-    // @Description: RC Channel to use for flight mode control
+    // @DisplayName: 飞行模式切换通道
+    // @Description: 飞行模式切换所使用的遥控通道。
     // @User: Advanced
     GSCALAR(flight_mode_channel,    "FLTMODE_CH",     FLIGHT_MODE_CHANNEL),
 
     // @Param: FLTMODE1
-    // @DisplayName: FlightMode1
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,15:Guided
+    // @DisplayName: 飞行模式1
+    // @Values: 0:手动,1:绕圈,2:自稳,3:教练,4:特技,5:FBWA,6:FBWB,7:巡航,8:自动调参,10:自动任务,11:返回,12:定点,15:引导
     // @User: Standard
-    // @Description: Flight mode for switch position 1 (910 to 1230 and above 2049)
+    // @Description: 位置1 的飞行模式(910 to 1230 and above 2049)
     GSCALAR(flight_mode1,           "FLTMODE1",       FLIGHT_MODE_1),
 
     // @Param: FLTMODE2
-    // @DisplayName: FlightMode2
-    // @Description: Flight mode for switch position 2 (1231 to 1360)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,15:Guided
+    // @DisplayName: 飞行模式2
+    // @Description: 位置2 的飞行模式 (1231 to 1360)
+    // @Values: 0:手动,1:绕圈,2:自稳,3:教练,4:特技,5:FBWA,6:FBWB,7:巡航,8:自动调参,10:自动任务,11:返回,12:定点,15:引导
     // @User: Standard
     GSCALAR(flight_mode2,           "FLTMODE2",       FLIGHT_MODE_2),
 
     // @Param: FLTMODE3
-    // @DisplayName: FlightMode3
-    // @Description: Flight mode for switch position 3 (1361 to 1490)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,15:Guided
+    // @DisplayName: 飞行模式3
+    // @Description: 位置3 的飞行模式 (1361 to 1490)
+    // @Values: 0:手动,1:绕圈,2:自稳,3:教练,4:特技,5:FBWA,6:FBWB,7:巡航,8:自动调参,10:自动任务,11:返回,12:定点,15:引导
     // @User: Standard
     GSCALAR(flight_mode3,           "FLTMODE3",       FLIGHT_MODE_3),
 
     // @Param: FLTMODE4
-    // @DisplayName: FlightMode4
-    // @Description: Flight mode for switch position 4 (1491 to 1620)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,15:Guided
+    // @DisplayName: 飞行模式4
+    // @Description:位置4 的飞行模式 (1491 to 1620)
+    // @Values: 0:手动,1:绕圈,2:自稳,3:教练,4:特技,5:FBWA,6:FBWB,7:巡航,8:自动调参,10:自动任务,11:返回,12:定点,15:引导
     // @User: Standard
     GSCALAR(flight_mode4,           "FLTMODE4",       FLIGHT_MODE_4),
 
     // @Param: FLTMODE5
-    // @DisplayName: FlightMode5
-    // @Description: Flight mode for switch position 5 (1621 to 1749)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,15:Guided
+    // @DisplayName: 飞行模式5
+    // @Description: 位置5 的飞行模式 (1621 to 1749)
+    // @Values: 0:手动,1:绕圈,2:自稳,3:教练,4:特技,5:FBWA,6:FBWB,7:巡航,8:自动调参,10:自动任务,11:返回,12:定点,15:引导
     // @User: Standard
     GSCALAR(flight_mode5,           "FLTMODE5",       FLIGHT_MODE_5),
 
     // @Param: FLTMODE6
-    // @DisplayName: FlightMode6
-    // @Description: Flight mode for switch position 6 (1750 to 2049)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,15:Guided
+    // @DisplayName: 飞行模式6
+    // @Description: 位置6 的飞行模式 (1750 to 2049)
+    // @Values: 0:手动,1:绕圈,2:自稳,3:教练,4:特技,5:FBWA,6:FBWB,7:巡航,8:自动调参,10:自动任务,11:返回,12:定点,15:引导
     // @User: Standard
     GSCALAR(flight_mode6,           "FLTMODE6",       FLIGHT_MODE_6),
 
     // @Param: LIM_ROLL_CD
-    // @DisplayName: Maximum Bank Angle
-    // @Description: The maximum commanded bank angle in either direction
-    // @Units: centi-Degrees
+    // @DisplayName: 最大侧倾角度警告
+    // @Description: 左右两个方向的侧倾度超过设定值后报警。
+    // @Units: 分度
     // @Range: 0 9000
     // @Increment: 1
     // @User: Standard
     GSCALAR(roll_limit_cd,          "LIM_ROLL_CD",    HEAD_MAX_CENTIDEGREE),
 
     // @Param: LIM_PITCH_MAX
-    // @DisplayName: Maximum Pitch Angle
-    // @Description: The maximum commanded pitch up angle
-    // @Units: centi-Degrees
+    // @DisplayName: 最大爬升角度警告
+    // @Description: 爬升角度超过设定值后报警。
+    // @Units: 分度
     // @Range: 0 9000
     // @Increment: 1
     // @User: Standard
     ASCALAR(pitch_limit_max_cd,     "LIM_PITCH_MAX",  PITCH_MAX_CENTIDEGREE),
 
     // @Param: LIM_PITCH_MIN
-    // @DisplayName: Minimum Pitch Angle
-    // @Description: The minimum commanded pitch down angle
+    // @DisplayName: 最小下降角度警告
+    // @Description: 下降角度超过设定值后报警。
     // @Units: centi-Degrees
     // @Range: -9000 0
     // @Increment: 1
@@ -653,231 +652,231 @@ const AP_Param::Info var_info[] PROGMEM = {
     ASCALAR(pitch_limit_min_cd,     "LIM_PITCH_MIN",  PITCH_MIN_CENTIDEGREE),
 
     // @Param: ACRO_ROLL_RATE
-    // @DisplayName: ACRO mode roll rate
-    // @Description: The maximum roll rate at full stick deflection in ACRO mode
-    // @Units: degrees/second
+    // @DisplayName: 特技模式的侧倾速率
+    // @Description: 在特技模式下，满打翻转舵时最大的侧倾速率。
+    // @Units: 度/秒
     // @Range: 10 500
     // @Increment: 1
     // @User: Standard
     GSCALAR(acro_roll_rate,          "ACRO_ROLL_RATE",    180),
 
     // @Param: ACRO_PITCH_RATE
-    // @DisplayName: ACRO mode pitch rate
-    // @Description: The maximum pitch rate at full stick deflection in ACRO mode
-    // @Units: degrees/second
+    // @DisplayName: 特技模式的俯仰速率
+    // @Description: 在特技模式下，满打升降舵时最大的升降速率。
+    // @Units: 度/秒
     // @Range: 10 500
     // @Increment: 1
     // @User: Standard
     GSCALAR(acro_pitch_rate,          "ACRO_PITCH_RATE",  180),
 
     // @Param: ACRO_LOCKING
-    // @DisplayName: ACRO mode attitude locking
-    // @Description: Enable attitude locking when sticks are released
-    // @Values: 0:Disabled,1:Enabled
+    // @DisplayName: 特技模式高度锁定
+    // @Description: 允许这个选项，在特技模式下松开遥控摇杆，将会锁定飞机的当前高度上。
+    // @Values: 0:禁用,1:允许
     // @User: Standard
     GSCALAR(acro_locking,             "ACRO_LOCKING",     0),
 
     // @Param: GROUND_STEER_ALT
-    // @DisplayName: Ground steer altitude
-    // @Description: Altitude at which to use the ground steering controller on the rudder. If non-zero then the STEER2SRV controller will be used to control the rudder for altitudes within this limit of the home altitude.
-    // @Units: Meters
+    // @DisplayName: 地面转向高度
+    // @Description: 设置在什么高度上，开始在方向舵上使用地面转向控制来修正方向。非0的数值，将会启用STEER2SRV控制器，在home的高度限定之内用转向舵控制。
+    // @Units: 米
     // @Range: -100 100
     // @Increment: 0.1
     // @User: Standard
     GSCALAR(ground_steer_alt,         "GROUND_STEER_ALT",   0),
 
     // @Param: GROUND_STEER_DPS
-    // @DisplayName: Ground steer rate
-    // @Description: Ground steering rate in degrees per second for full rudder stick deflection
-    // @Units: degrees/second
+    // @DisplayName: 地面转向速率
+    // @Description: 在RC上满方向舵杆时，应用在地面转向的舵面速率为多少度/秒。
+    // @Units: 度/秒
     // @Range: 10 360
     // @Increment: 1
     // @User: Advanced
     GSCALAR(ground_steer_dps,         "GROUND_STEER_DPS",  90),
 
     // @Param: TRIM_AUTO
-    // @DisplayName: Automatic trim adjustment
-    // @Description: Set RC trim PWM levels to current levels when switching away from manual mode. When this option is enabled and you change from MANUAL to any other mode then the APM will take the current position of the control sticks as the trim values for aileron, elevator and rudder. It will use those to set RC1_TRIM, RC2_TRIM and RC4_TRIM. This option is disabled by default as if a pilot is not aware of this option and changes from MANUAL to another mode while control inputs are not centered then the trim could be changed to a dangerously bad value. You can enable this option to assist with trimming your plane, by enabling it before takeoff then switching briefly to MANUAL in flight, and seeing how the plane reacts. You can then switch back to FBWA, trim the surfaces then again test MANUAL mode. Each time you switch from MANUAL the APM will take your control inputs as the new trim. After you have good trim on your aircraft you can disable TRIM_AUTO for future flights.
-    // @Values: 0:Disabled,1:Enabled
+    // @DisplayName: 自动中间位调整
+    // @Description: 是否允许从手动模式（manual）切换到其它飞行模式的时候，把当前副翼、升降舵和方向舵的RC遥控杆位置，定义为其它飞行模式对应的遥控杆中心点。它将使用当前各相关遥控杆的PWM值，作为RC1_TRIM, RC2_TRIM 和 RC4_TRIM 的值。默认为0是因为某些飞手不知道这个功能时，会导致误操作。启用这个选项后，用手动模式起飞，看看飞机有什么反应，然后切到FBW-A模式调整中间点，然后在手动模式中再次调整。每次切回手动模式的时候，APM都会设置输入端为中间点。全部设置好后，可以禁用此功能。
+    // @Values: 0:禁用,1:允许
     // @User: Standard
     GSCALAR(auto_trim,              "TRIM_AUTO",      AUTO_TRIM),
 
     // @Param: ELEVON_MIXING
-    // @DisplayName: Elevon mixing
-    // @Description: Enable elevon mixing  on both input and output. To enable just output mixing see the ELEVON_OUTPUT option.
-    // @Values: 0:Disabled,1:Enabled
+    // @DisplayName: 升降副翼混控
+    // @Description: 是否允许在升降副翼的输入和输出通道都使用混控。如果只想在输出通道使用升降副翼混控，到ELEVON_OUTPUT进行设置。
+    // @Values: 0:禁用,1:允许
     // @User: User
     GSCALAR(mix_mode,               "ELEVON_MIXING",  ELEVON_MIXING),
 
     // @Param: ELEVON_REVERSE
-    // @DisplayName: Elevon reverse
-    // @Description: Reverse elevon mixing
-    // @Values: 0:Disabled,1:Enabled
+    // @DisplayName: 升降副翼反向
+    // @Description: 反向升降副翼混控。
+    // @Values: 0:禁用,1:允许
     // @User: User
     GSCALAR(reverse_elevons,        "ELEVON_REVERSE", ELEVON_REVERSE),
 
 
     // @Param: ELEVON_CH1_REV
-    // @DisplayName: Elevon reverse
-    // @Description: Reverse elevon channel 1
-    // @Values: -1:Disabled,1:Enabled
+    // @DisplayName: 升降副翼1通道反向
+    // @Description: 反向升降副翼通道1。
+    // @Values: -1:禁用,1:允许
     // @User: User
     GSCALAR(reverse_ch1_elevon,     "ELEVON_CH1_REV", ELEVON_CH1_REVERSE),
 
     // @Param: ELEVON_CH2_REV
-    // @DisplayName: Elevon reverse
-    // @Description: Reverse elevon channel 2
-    // @Values: -1:Disabled,1:Enabled
+    // @DisplayName: 升降副翼2通道反向
+    // @Description: 反向升降副翼通道2.
+    // @Values: -1:禁用,1:允许
     // @User: User
     GSCALAR(reverse_ch2_elevon,     "ELEVON_CH2_REV", ELEVON_CH2_REVERSE),
 
     // @Param: VTAIL_OUTPUT
-    // @DisplayName: VTail output
-    // @Description: Enable VTail output in software. If enabled then the APM will provide software VTail mixing on the elevator and rudder channels. There are 4 different mixing modes available, which refer to the 4 ways the elevator can be mapped to the two VTail servos. Note that you must not use VTail output mixing with hardware pass-through of RC values, such as with channel 8 manual control on an APM1. So if you use an APM1 then set FLTMODE_CH to something other than 8 before you enable VTAIL_OUTPUT. Please also see the MIXING_GAIN parameter for the output gain of the mixer.
-    // @Values: 0:Disabled,1:UpUp,2:UpDown,3:DownUp,4:DownDown
+    // @DisplayName: V形尾翼输出设置
+    // @Description: V尾的控制模式。允许使用的话，APM将对升降和方向通道进行软件混合控制。这里有4种不同的混控模式，将会对V尾飞机尾部的2个舵机分别进行控制。注意：不能设置RC输入为线路直通。
+    // @Values: 0:禁用,1:上上,2:上下,3:下上,4:下下
     // @User: User
     GSCALAR(vtail_output,           "VTAIL_OUTPUT",  0),
 
     // @Param: ELEVON_OUTPUT
-    // @DisplayName: Elevon output
-    // @Description: Enable software elevon output mixer. If enabled then the APM will provide software elevon mixing on the aileron and elevator channels. There are 4 different mixing modes available, which refer to the 4 ways the elevator can be mapped to the two elevon servos. Note that you must not use elevon output mixing with hardware pass-through of RC values, such as with channel 8 manual control on an APM1. So if you use an APM1 then set FLTMODE_CH to something other than 8 before you enable ELEVON_OUTPUT. Please also see the MIXING_GAIN parameter for the output gain of the mixer.
-    // @Values: 0:Disabled,1:UpUp,2:UpDown,3:DownUp,4:DownDown
+    // @DisplayName: 升降副翼输出设置
+    // @Description: 使用软件进行升降副翼输出通道的混控。如果允许使用，APM将对副翼和升降舵通道进行软件混控。这里提供4种不同的混控模式，使升降舵集合进两个升降副翼系统。注意：这里不能使用RC遥控信号直通到混控输出端，比如通道8功能设置为手动（manual）。同时要对 MIXING_GAIN 进行混控增益选择。
+    // @Values: 0:禁用,1:上上,2:上下,3:下上,4:下下
     // @User: User
     GSCALAR(elevon_output,           "ELEVON_OUTPUT",  0),
 
     // @Param: MIXING_GAIN
-    // @DisplayName: Mixing Gain
-    // @Description: The gain for the Vtail and elevon output mixers. The default is 0.5, which ensures that the mixer doesn't saturate, allowing both input channels to go to extremes while retaining control over the output. Hardware mixers often have a 1.0 gain, which gives more servo throw, but can saturate. If you don't have enough throw on your servos with VTAIL_OUTPUT or ELEVON_OUTPUT enabled then you can raise the gain using MIXING_GAIN. The mixer allows outputs in the range 900 to 2100 microseconds.
+    // @DisplayName: 混控增益
+    // @Description: 对V尾和升降副翼的混控输出增益。默认为0.5，可以确保不让混控过载，并允许上述两种混控在输入通道达到极限，而输出通道还能保持控制。硬件混控经常设置为1.0的增益，让舵机反应更快, 但是会有过载。如果在V尾或升降副翼上的舵机没有足够的反应速度，就可以在此提高这个参数，这个混控允许的输出范围在900-2100微秒。
     // @Range: 0.5 1.2
     // @User: User
     GSCALAR(mixing_gain,            "MIXING_GAIN",    0.5f),
 
     // @Param: SYS_NUM_RESETS
-    // @DisplayName: Num Resets
-    // @Description: Number of APM board resets
+    // @DisplayName: 重置次数
+    // @Description: APM板的重置次数。
     // @User: Advanced
     GSCALAR(num_resets,             "SYS_NUM_RESETS", 0),
 
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
-    // @Description: Bitmap of what log types to enable in dataflash. This values is made up of the sum of each of the log types you want to be saved on dataflash. On a PX4 or Pixhawk the large storage size of a microSD card means it is usually best just to enable all log types by setting this to 65535. On APM2 the smaller 4 MByte dataflash means you need to be more selective in your logging or you may run out of log space while flying (in which case it will wrap and overwrite the start of the log). The individual bits are ATTITUDE_FAST=1, ATTITUDE_MEDIUM=2, GPS=4, PerformanceMonitoring=8, ControlTuning=16, NavigationTuning=32, Mode=64, IMU=128, Commands=256, Battery=512, Compass=1024, TECS=2048, Camera=4096, RCandServo=8192, Sonar=16384, Arming=32768, LogWhenDisarmed=65536
-    // @Values: 0:Disabled,5190:APM2-Default,65535:PX4/Pixhawk-Default
+    // @Description: 选择需要保存的Log文件种类，在APM2上，只有4MByte闪存，所以不要保存太多种类。各Log种类如下： ATTITUDE_FAST=1, ATTITUDE_MEDIUM=2, GPS=4, PerformanceMonitoring=8, ControlTuning=16, NavigationTuning=32, Mode=64, IMU=128, Commands=256, Battery=512, Compass=1024, TECS=2048, Camera=4096, RCandServo=8192, Sonar=16384, Arming=32768, LogWhenDisarmed=65536。将所需log功能的编号相加填入即可存储所需的数据。
+    // @Values: 0:禁用,5190:APM2-默认,65535:PX4/Pixhawk-默认
     // @User: Advanced
     GSCALAR(log_bitmask,            "LOG_BITMASK",    DEFAULT_LOG_BITMASK),
 
     // @Param: RST_SWITCH_CH
-    // @DisplayName: Reset Switch Channel
-    // @Description: RC channel to use to reset to last flight mode	after geofence takeover.
+    // @DisplayName: 重置飞行模式通道
+    // @Description: 设置一个RC通道，用来重新设定触发围栏前的最后一个飞行模式。
     // @User: Advanced
     GSCALAR(reset_switch_chan,      "RST_SWITCH_CH",  0),
 
     // @Param: RST_MISSION_CH
-    // @DisplayName: Reset Mission Channel
-    // @Description: RC channel to use to reset the mission to the first waypoint. When this channel goes above 1750 the mission is reset. Set RST_MISSION_CH to 0 to disable.
+    // @DisplayName: 重置任务通道
+    // @Description: 重置任务到第一航点的RC通道设定。当这个设定的通道PWM值超过1750，任务将被重置。0为禁用。
     // @User: Advanced
     GSCALAR(reset_mission_chan,      "RST_MISSION_CH",  0),
 
     // @Param: TRIM_ARSPD_CM
-    // @DisplayName: Target airspeed
-    // @Description: Airspeed in cm/s to aim for when airspeed is enabled in auto mode. This is a calibrated (apparent) airspeed.
+    // @DisplayName: 目标空速
+    // @Description: 在Auto模式下，当空速达到该设定值的时候，将开始对准目标点飞行。
     // @Units: cm/s
     // @User: User
     GSCALAR(airspeed_cruise_cm,     "TRIM_ARSPD_CM",  AIRSPEED_CRUISE_CM),
 
     // @Param: SCALING_SPEED
-    // @DisplayName: speed used for speed scaling calculations
-    // @Description: Airspeed in m/s to use when calculating surface speed scaling. Note that changing this value will affect all PID values
-    // @Units: m/s
+    // @DisplayName: 速度测量计算
+    // @Description: 空速达到多少米/秒时，进行线性速度计算。注意，更改该参数会影响所有的P、I、D参数。
+    // @Units: 米/秒
     // @User: Advanced
     GSCALAR(scaling_speed,        "SCALING_SPEED",    SCALING_SPEED),
 
     // @Param: MIN_GNDSPD_CM
-    // @DisplayName: Minimum ground speed
-    // @Description: Minimum ground speed in cm/s when under airspeed control
-    // @Units: cm/s
+    // @DisplayName: 最小地面速度
+    // @Description: 使用空速计控制飞机时，所允许的最小地面速度。
+    // @Units: 厘米/秒
     // @User: Advanced
     GSCALAR(min_gndspeed_cm,      "MIN_GNDSPD_CM",  MIN_GNDSPEED_CM),
 
     // @Param: TRIM_PITCH_CD
-    // @DisplayName: Pitch angle offset
-    // @Description: offset to add to pitch - used for in-flight pitch trimming. It is recommended that instead of using this parameter you level your plane correctly on the ground for good flight attitude.
-    // @Units: centi-Degrees
+    // @DisplayName: 俯仰角度偏移量
+    // @Description: 用来修正飞行中的俯仰中间点。建议在地面平置飞机进行调整。
+    // @Units: 分度
     // @User: Advanced
     GSCALAR(pitch_trim_cd,        "TRIM_PITCH_CD",  0),
 
     // @Param: ALT_HOLD_RTL
-    // @DisplayName: RTL altitude
-    // @Description: Return to launch target altitude. This is the altitude the plane will aim for and loiter at when returning home. If this is negative (usually -1) then the plane will use the current altitude at the time of entering RTL. Note that when transiting to a Rally Point the alitude of the Rally Point is used instead of ALT_HOLD_RTL.
-    // @Units: centimeters
+    // @DisplayName: 返回高度
+    // @Description: 返回到出发点的高度，这将是飞机在返回时瞄准的高度，也是回到到出发点并盘旋的高度，如果设为-1，飞机将使用当前高度进入RTL模式。注意，如果设定了集结点（rally point），那么集结点的预设高度，将会替换这个RTL模式的预设高度。
+    // @Units: 厘米
     // @User: User
     GSCALAR(RTL_altitude_cm,        "ALT_HOLD_RTL",   ALT_HOLD_HOME_CM),
 
     // @Param: ALT_HOLD_FBWCM
-    // @DisplayName: Minimum altitude for FBWB mode
-    // @Description: This is the minimum altitude in centimeters that FBWB and CRUISE modes will allow. If you attempt to descend below this altitude then the plane will level off. A value of zero means no limit.
-    // @Units: centimeters
+    // @DisplayName: FBWB模式下的最小飞行高度
+    // @Description: 在FBW-B和CRUISE飞行模式下，限制的最低飞行高度，如果飞机下降到这个设定值，飞控会自动修正，不使飞机低于这个预设的最小高度。0为不限制。
+    // @Units: 厘米
     // @User: User
     GSCALAR(FBWB_min_altitude_cm,   "ALT_HOLD_FBWCM", ALT_HOLD_FBW_CM),
 
     // @Param: MAG_ENABLE
-    // @DisplayName: Enable Compass
-    // @Description: Setting this to Enabled(1) will enable the compass. Setting this to Disabled(0) will disable the compass. Note that this is separate from COMPASS_USE. This will enable the low level senor, and will enable logging of magnetometer data. To use the compass for navigation you must also set COMPASS_USE to 1.
-    // @Values: 0:Disabled,1:Enabled
+    // @DisplayName: 允许使用罗盘
+    // @Description: 是否启用罗盘，注意：这个选项跟COMPASS_USE是不同的。这里启用的低感度的感应器，并且允许保存log文件，要使用罗盘进行导航，还必须设置 COMPASS_USE 为 1。
+    // @Values: 0:禁用,1:允许
     // @User: Standard
     GSCALAR(compass_enabled,        "MAG_ENABLE",     1),
 
     // @Param: FLAP_IN_CHANNEL
-    // @DisplayName: Flap input channel
-    // @Description: An RC input channel to use for flaps control. If this is set to a RC channel number then that channel will be used for manual flaps control. When enabled, the percentage of flaps is taken as the percentage travel from the TRIM value of the channel to the MIN value of the channel. A value above the TRIM values will give inverse flaps (spoilers). This option needs to be enabled in conjunction with a FUNCTION setting on an output channel to one of the flap functions. When a FLAP_IN_CHANNEL is combined with auto-flaps the higher of the two flap percentages is taken. You must also enable a FLAPERON_OUTPUT flaperon mixer setting if using flaperons.
+    // @DisplayName: 襟翼输入通道
+    // @Description: 使用哪个遥控通道来控制襟翼。如果设定了某个遥控通道来控制，这个通道的最小到中心位置的控制行程会决定襟翼开度的百分比，如果输入信号高于中心位置的信号值，将使襟翼反向打开，变成减速板的功能。本选项需要结合启用该输出通道FUNCTION设置里的一个襟翼功能。当该遥控通道与自动襟翼功能组合使用后，会有更多种类的襟翼开启比例。这里必须同时启用FLAPERON_OUTPUT里的襟副翼混控设定。
     // @User: User
     GSCALAR(flapin_channel,         "FLAP_IN_CHANNEL",  0),
 
     // @Param: FLAPERON_OUTPUT
-    // @DisplayName: Flaperon output
-    // @Description: Enable flaperon output in software. If enabled then the APM will provide software flaperon mixing on the FLAPERON1 and FLAPERON2 output channels specified using the FUNCTION on two auxillary channels. There are 4 different mixing modes available, which refer to the 4 ways the flap and aileron outputs can be mapped to the two flaperon servos. Note that you must not use flaperon output mixing with hardware pass-through of RC values, such as with channel 8 manual control on an APM1. So if you use an APM1 then set FLTMODE_CH to something other than 8 before you enable FLAPERON_OUTPUT. Please also see the MIXING_GAIN parameter for the output gain of the mixer. FLAPERON_OUTPUT cannot be combined with ELEVON_OUTPUT or ELEVON_MIXING.
-    // @Values: 0:Disabled,1:UpUp,2:UpDown,3:DownUp,4:DownDown
+    // @DisplayName: 襟副翼输出设置
+    // @Description: 是否允许软件控制襟副翼的输出。如果启用这个参数，APM将通过软件，给FLAPERON1和FLAPERON2这两个FUNCTION选项里的辅助选项，进行襟副翼混控调制。这里有4种不同的混控模式，对应到襟翼和副翼的混控伺服系统。注意：这里不能使用RC遥控信号直通到混控输出端，比如在APM1的通道8上使用手动控制。所以，如果你使用APM1，就要先设置飞行模式的控制通道到8以外的其他通道。同时要注意对混控的增益（MIXING_GAIN）调整到合适的大小。本参数不能与升降副翼（ELEVON_OUTPUT） 或 升降副翼增益（ELEVON_MIXING） 进行关联设置。
+    // @Values: 0:禁用,1:上上,2:上下,3:下上,4:下下
     // @User: User
     GSCALAR(flaperon_output,        "FLAPERON_OUTPUT",  0),
 
     // @Param: FLAP_1_PERCNT
-    // @DisplayName: Flap 1 percentage
-    // @Description: The percentage change in flap position when FLAP_1_SPEED is reached. Use zero to disable flaps
+    // @DisplayName: 襟翼1位置
+    // @Description: 当FLAP_1_SPEED参数的值被触发后，襟翼开启到什么位置（襟翼开启的百分比），0为禁止使用襟翼。
     // @Range: 0 100
-    // @Units: Percent
+    // @Units: 百分比
     // @User: Advanced
     GSCALAR(flap_1_percent,         "FLAP_1_PERCNT",  FLAP_1_PERCENT),
 
     // @Param: FLAP_1_SPEED
-    // @DisplayName: Flap 1 speed
-    // @Description: The speed in meters per second at which to engage FLAP_1_PERCENT of flaps. Note that FLAP_1_SPEED should be greater than or equal to FLAP_2_SPEED
+    // @DisplayName: 襟翼1开启速度
+    // @Description: 当目标空速触及这个数值时，触发FLAP_1_PERCNT定义的襟翼开度。注意，这个速度应该大于或等于FLAP_2_SPEED。
     // @Range: 0 100
 	// @Increment: 1
-    // @Units: m/s
+    // @Units: 米/秒
     // @User: Advanced
     GSCALAR(flap_1_speed,           "FLAP_1_SPEED",   FLAP_1_SPEED),
 
     // @Param: FLAP_2_PERCNT
-    // @DisplayName: Flap 2 percentage
-    // @Description: The percentage change in flap position when FLAP_2_SPEED is reached. Use zero to disable flaps
+    // @DisplayName: 襟翼2位置
+    // @Description: 当FLAP_2_SPEED参数的值被触发后，襟翼开启到什么位置（襟翼开启的百分比），0为禁止使用襟翼。
     // @Range: 0 100
-	// @Units: Percent
+	// @Units: 百分比
     // @User: Advanced
     GSCALAR(flap_2_percent,         "FLAP_2_PERCNT",  FLAP_2_PERCENT),
 
     // @Param: FLAP_2_SPEED
-    // @DisplayName: Flap 2 speed
-    // @Description: The speed in meters per second at which to engage FLAP_2_PERCENT of flaps. Note that FLAP_1_SPEED should be greater than or equal to FLAP_2_SPEED
+    // @DisplayName: 襟翼2开启速度
+    // @Description: 当目标空速触及这个数值时，触发FLAP_2_PERCNT定义的襟翼开度。注意，FLAP_1_SPEED应该大于或等于FLAP_2_SPEED。
     // @Range: 0 100
-	// @Units: m/s
+	// @Units: 米/秒
 	// @Increment: 1
     // @User: Advanced
     GSCALAR(flap_2_speed,           "FLAP_2_SPEED",   FLAP_2_SPEED),
 
     // @Param: LAND_FLAP_PERCNT
-    // @DisplayName: Landing flap percentage
-    // @Description: The amount of flaps (as a percentage) to apply in the landing approach and flare of an automatic landing
+    // @DisplayName: 着陆时襟翼开启程度
+    // @Description:在自动着陆进近和平飘时襟翼开启的百分比。
     // @Range: 0 100
-    // @Units: Percent
+    // @Units: 百分比
     // @User: Advanced
     GSCALAR(land_flap_percent,     "LAND_FLAP_PERCNT", 0),
 
@@ -890,24 +889,24 @@ const AP_Param::Info var_info[] PROGMEM = {
 #endif
 
     // @Param: RSSI_PIN
-    // @DisplayName: Receiver RSSI sensing pin
-    // @Description: This selects an analog pin for the receiver RSSI voltage. It assumes the voltage is 5V for max rssi, 0V for minimum
-    // @Values: -1:Disabled, 0:APM2 A0, 1:APM2 A1, 13:APM2 A13, 103:Pixhawk SBUS
+    // @DisplayName: RSSI信号感应针脚
+    // @Description: 选择那个辅助针脚用来接收RSSI电压。这里默认的最大rssi为5v电压，0为最小。
+    // @Values: -1:禁用, 0:APM2 A0, 1:APM2 A1, 13:APM2 A13, 103:Pixhawk SBUS
     // @User: Standard
     GSCALAR(rssi_pin,            "RSSI_PIN",         -1),
 
     // @Param: RSSI_RANGE
-    // @DisplayName: Receiver RSSI voltage range
-    // @Description: Receiver RSSI voltage range
-    // @Units: Volt
+    // @DisplayName: 定义接收RSSI的电压范围
+    // @Description: 定义接收RSSI的电压范围
+    // @Units: 伏特
     // @Values: 3.3:3.3V, 5.0:5V
     // @User: Standard
     GSCALAR(rssi_range,          "RSSI_RANGE",         5.0),
 
     // @Param: INVERTEDFLT_CH
-    // @DisplayName: Inverted flight channel
-    // @Description: A RC input channel number to enable inverted flight. If this is non-zero then the APM will monitor the correcponding RC input channel and will enable inverted flight when the channel goes above 1750.
-    // @Values: 0:Disabled,1:Channel1,2:Channel2,3:Channel3,4:Channel4,5:Channel5,6:Channel6,7:Channel7,8:Channel8
+    // @DisplayName: 倒飞遥控通道
+    // @Description: 设置某个RC输入通道控制倒飞。当设置为某个通道后，该通道PWM值一旦超过1750，APM会控制飞机反转进行倒飞。
+    // @Values: 0:禁用,1:通道1,2:通道2,3:通道3,4:通道4,5:通道5,6:通道6,7:通道7,8:通道8
     // @User: Standard
     GSCALAR(inverted_flight_ch,     "INVERTEDFLT_CH", 0),
 
@@ -930,9 +929,9 @@ const AP_Param::Info var_info[] PROGMEM = {
 #endif
 
     // @Param: RTL_AUTOLAND
-    // @DisplayName: RTL auto land
-    // @Description: Automatically begin landing sequence after arriving at RTL location. This requires the addition of a DO_LAND_START mission item, which acts as a marker for the start of a landing sequence. The closest landing sequence will be chosen to the current location. 
-    // @Values: 0:Disable,1:Enable
+    // @DisplayName: 返回并自动着陆
+    // @Description: 返回出发点后自动执行着陆动作序列，这需要用 DO_LAND_START 任务设置并激活为一个着陆序列。当前位置会算则最近的着陆序列。
+    // @Values: 0:禁用,1:允许
     // @User: Standard
     GSCALAR(rtl_autoland,         "RTL_AUTOLAND",   0),
 
@@ -966,9 +965,9 @@ const AP_Param::Info var_info[] PROGMEM = {
     GOBJECT(rangefinder,            "RNGFND", RangeFinder),
 
     // @Param: RNGFND_LANDING
-    // @DisplayName: Enable rangefinder for landing
-    // @Description: This enables the use of a rangefinder for automatic landing. The rangefinder will be used both on the landing approach and for final flare
-    // @Values: 0:Disabled,1:Enabled
+    // @DisplayName: 着陆时使用测距仪
+    // @Description: 允许这个参数将会在自动着陆时使用测距仪。测距仪将会在进近和最后平飘时都会被使用。
+    // @Values: 0:禁用,1:允许
     // @User: Standard
     GSCALAR(rangefinder_landing,    "RNGFND_LANDING",   0),
 
