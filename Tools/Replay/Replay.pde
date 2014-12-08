@@ -462,12 +462,12 @@ void loop()
             float       posN  = (float)(posNED.x); // metres North
             float       posE  = (float)(posNED.y); // metres East
             float       posD  = (float)(posNED.z); // metres Down
-            int16_t     gyrX  = (int16_t)(6000*degrees(gyroBias.x)); // centi-deg/min
-            int16_t     gyrY  = (int16_t)(6000*degrees(gyroBias.y)); // centi-deg/min
-            int16_t     gyrZ  = (int16_t)(6000*degrees(gyroBias.z)); // centi-deg/min
+            float       gyrX  = (float)(6000*degrees(gyroBias.x)); // centi-deg/min
+            float       gyrY  = (float)(6000*degrees(gyroBias.y)); // centi-deg/min
+            float       gyrZ  = (float)(6000*degrees(gyroBias.z)); // centi-deg/min
 
             // print EKF1 data packet
-            fprintf(ekf1f, "%.3f %u %d %d %u %.2f %.2f %.2f %.2f %.2f %.2f %d %d %d\n",
+            fprintf(ekf1f, "%.3f %u %d %d %u %.2f %.2f %.2f %.2f %.2f %.2f %.0f %.0f %.0f\n",
                     hal.scheduler->millis() * 0.001f,
                     hal.scheduler->millis(),
                     roll, 
