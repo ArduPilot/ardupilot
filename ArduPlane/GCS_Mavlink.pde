@@ -144,6 +144,11 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
     if (gps.status() > AP_GPS::NO_GPS) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_GPS;
     }
+#if OPTFLOW == ENABLED
+    if (optflow.enabled()) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
+    }
+#endif
     if (geofence_present()) {
         control_sensors_present |= MAV_SYS_STATUS_GEOFENCE;
     }
@@ -228,6 +233,11 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
     if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_GPS;
     }
+#if OPTFLOW == ENABLED
+    if (optflow.healthy()) {
+        control_sensors_health |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
+    }
+#endif
     if (!ins.get_gyro_health_all() || (!g.skip_gyro_cal && !ins.gyro_calibrated_ok_all())) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_3D_GYRO;
     }
