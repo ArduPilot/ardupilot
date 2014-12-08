@@ -18,7 +18,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-LogReader::LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro_HIL &_baro, AP_Compass_HIL &_compass, AP_GPS &_gps, AP_Airspeed &_airspeed) :
+LogReader::LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro_HIL &_baro, AP_Compass_HIL &_compass, AP_GPS &_gps, AP_Airspeed &_airspeed, DataFlash_Class &_dataflash) :
     vehicle(VEHICLE_UNKNOWN),
     fd(-1),
     ahrs(_ahrs),
@@ -27,6 +27,7 @@ LogReader::LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro_HIL &_baro
     compass(_compass),
     gps(_gps),
     airspeed(_airspeed),
+    dataflash(_dataflash),
     accel_mask(7),
     gyro_mask(7)
 {}
@@ -352,6 +353,7 @@ bool LogReader::update(uint8_t &type)
             ahrs.set_vehicle_class(AHRS_VEHICLE_GROUND);
             ahrs.set_fly_forward(true);
         }
+        dataflash.Log_Write_Message(msg.msg);
         break;
     }
 
@@ -369,6 +371,7 @@ bool LogReader::update(uint8_t &type)
         if (accel_mask & 1) {
             ins.set_accel(0, Vector3f(msg.accel_x, msg.accel_y, msg.accel_z));
         }
+        dataflash.Log_Write_IMU(ins);
         break;
     }
 
@@ -386,6 +389,7 @@ bool LogReader::update(uint8_t &type)
         if (accel_mask & 2) {
             ins.set_accel(1, Vector3f(msg.accel_x, msg.accel_y, msg.accel_z));
         }
+        dataflash.Log_Write_IMU(ins);
         break;
     }
 
@@ -403,6 +407,7 @@ bool LogReader::update(uint8_t &type)
         if (accel_mask & 4) {
             ins.set_accel(2, Vector3f(msg.accel_x, msg.accel_y, msg.accel_z));
         }
+        dataflash.Log_Write_IMU(ins);
         break;
     }
 
@@ -434,6 +439,7 @@ bool LogReader::update(uint8_t &type)
             ground_alt_cm = msg.altitude;
         }
         rel_altitude = msg.rel_altitude*0.01f;
+        dataflash.Log_Write_GPS(gps, 0, rel_altitude);
         break;
     }
 
@@ -464,6 +470,7 @@ bool LogReader::update(uint8_t &type)
         if (msg.status == 3 && ground_alt_cm == 0) {
             ground_alt_cm = msg.altitude;
         }
+        dataflash.Log_Write_GPS(gps, 1, rel_altitude);
         break;
     }
 
@@ -494,6 +501,7 @@ bool LogReader::update(uint8_t &type)
         }
         wait_timestamp(msg.timestamp);
         baro.setHIL(msg.pressure, msg.temperature*0.01f);
+        dataflash.Log_Write_Baro(baro);
         break;
     }
 

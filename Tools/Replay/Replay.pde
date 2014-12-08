@@ -75,6 +75,7 @@ static Baro_Glitch baro_glitch(barometer);
 static AP_InertialNav inertial_nav(ahrs, barometer, gps_glitch, baro_glitch);
 static AP_Vehicle::FixedWing aparm;
 static AP_Airspeed airspeed(aparm);
+static DataFlash_File dataflash("logs");
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 SITL sitl;
@@ -82,7 +83,7 @@ SITL sitl;
 
 static const NavEKF &NavEKF = ahrs.get_NavEKF();
 
-static LogReader LogReader(ahrs, ins, barometer, compass, gps, airspeed);
+static LogReader LogReader(ahrs, ins, barometer, compass, gps, airspeed, dataflash);
 
 static FILE *plotf;
 static FILE *plotf2;
@@ -102,6 +103,10 @@ static struct {
     char name[17];
     float value;
 } user_parameters[100];
+
+static const struct LogStructure log_structure[] PROGMEM = {
+    LOG_COMMON_STRUCTURES
+};
 
 // setup the var_info table
 AP_Param param_loader(var_info);
@@ -185,6 +190,9 @@ void setup()
         perror(filename);
         exit(1);
     }
+
+    dataflash.Init(log_structure, sizeof(log_structure)/sizeof(log_structure[0]));
+    dataflash.StartNewLog();
 
     LogReader.wait_type(LOG_GPS_MSG);
     LogReader.wait_type(LOG_IMU_MSG);
@@ -304,6 +312,8 @@ static void read_sensors(uint8_t type)
                 inertial_nav.update(ins.get_delta_time());
             }
             hal.scheduler->stop_clock(hal.scheduler->micros() + (i+1)*update_delta_usec);
+            dataflash.Log_Write_EKF(ahrs);
+            dataflash.Log_Write_AHRS2(ahrs);
             ins.set_gyro(0, ins.get_gyro());
             ins.set_accel(0, ins.get_accel());
         }
