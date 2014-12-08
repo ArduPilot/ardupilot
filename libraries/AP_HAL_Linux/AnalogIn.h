@@ -4,9 +4,11 @@
 
 #include <AP_HAL_Linux.h>
 
+#define ANALOG_IN_COUNT 8
+
 class Linux::LinuxAnalogSource : public AP_HAL::AnalogSource {
 public:
-    LinuxAnalogSource(float v);
+    LinuxAnalogSource(int16_t pin, float v);
     float read_average();
     float read_latest();
     void set_pin(uint8_t p);
@@ -16,7 +18,15 @@ public:
     float voltage_latest();
     float voltage_average_ratiometric() { return voltage_average(); }
 private:
-    float _v;
+    float       _value;
+    float       _latest;
+    float       _sum_value;
+    // float       _value_ratiometric;
+    uint8_t     _sum_count;
+    int16_t     _pin;
+    int32_t     pin_fd;    
+
+    static const char *analog_sources[ANALOG_IN_COUNT];
 };
 
 class Linux::LinuxAnalogIn : public AP_HAL::AnalogIn {
