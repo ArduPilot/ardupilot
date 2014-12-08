@@ -129,9 +129,23 @@ static void update_optical_flow(void)
         uint8_t flowQuality = optflow.quality();
         Vector2f flowRate = optflow.flowRate();
         Vector2f bodyRate = optflow.bodyRate();
-        // Use range from a separate range finder if available, not the PX4Flows built in sensor which is ineffective
-        float ground_distance_m = 0.01f*float(sonar_alt);
-        ahrs.writeOptFlowMeas(flowQuality, flowRate, bodyRate, last_of_update, sonar_alt_health, ground_distance_m);
+        float ground_distance_m;
+        // Use range from a separate range finder if available, otherwise the PX4Flows built in sensor is used
+        if (sonar_enabled && sonar.healthy()) {
+            ground_distance_m = 0.01f*float(sonar_alt);
+            flowSonarAltHealth = sonar_alt_health;
+        } else if (sonar_enabled){
+            ground_distance_m = optflow.sonar_range();
+            if (ground_distance_m > 0.3f && ground_distance_m < 3.0f) {
+                if (flowSonarAltHealth < 255) flowSonarAltHealth++;
+            } else {
+                flowSonarAltHealth = 0;
+            }
+        } else {
+            ground_distance_m = 0.0f;
+            flowSonarAltHealth = 0;
+        }
+        ahrs.writeOptFlowMeas(flowQuality, flowRate, bodyRate, last_of_update, flowSonarAltHealth, ground_distance_m);
          if (g.log_bitmask & MASK_LOG_OPTFLOW) {
             Log_Write_Optflow();
         }
