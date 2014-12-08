@@ -21,25 +21,6 @@
 #define AP_COMPASS_MOT_COMP_THROTTLE    0x01
 #define AP_COMPASS_MOT_COMP_CURRENT     0x02
 
-// setup default mag orientation for each board type
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-# define MAG_BOARD_ORIENTATION ROTATION_ROLL_180
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
-# define MAG_BOARD_ORIENTATION ROTATION_NONE
-#elif CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
-# define MAG_BOARD_ORIENTATION ROTATION_NONE
-#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
-# define MAG_BOARD_ORIENTATION ROTATION_NONE
-#elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
-# define MAG_BOARD_ORIENTATION ROTATION_NONE
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-# define MAG_BOARD_ORIENTATION ROTATION_NONE
-#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-# define MAG_BOARD_ORIENTATION ROTATION_NONE
-#else
-# error "You must define a default compass orientation for this board"
-#endif
-
 /**
    maximum number of compass instances available on this platform. If more
    than 1 then redundent sensors may be available
@@ -150,9 +131,6 @@ public:
         set_and_save_offsets(i, Vector3f(x, y, z));
     }
 
-    // learn offsets accessor
-    bool learn_offsets_enabled() const { return _learn; }
-
     /// Perform automatic offset updates
     ///
     void learn_offsets(void);
@@ -168,10 +146,17 @@ public:
     ///
     void set_declination(float radians, bool save_to_eeprom = true);
     float get_declination() const;
-
-    // set overall board orientation
-    void set_board_orientation(enum Rotation orientation) {
-        _board_orientation = orientation;
+    
+    /// sets the orientation of the compass
+    ///
+    /// @param  i             Index of the compass.
+    /// @param  orientation   Orientation of the compass module relative to the AHRS system.
+    ///
+    void set_orientation(uint8_t i, enum Rotation orientation) {
+        if(i >= get_count() ) {
+          return;
+        }
+        _orientation[i] = orientation;
     }
 
     /// Set the motor compensation type
@@ -239,7 +224,25 @@ public:
     ///
     bool configured(uint8_t i);
     bool configured(void);
-
+    
+    /// Returns True if the compasses is external
+    ///
+    /// @returns                    True if compass is external
+    ///
+    bool external(uint8_t i) const {
+      if(i >= get_count() ) {
+        return false;
+      }
+      return (bool)_external[i];
+    }
+    /// Returns True if the compasses is external
+    ///
+    /// @returns                    True if compass is external
+    ///
+    bool external(void) const {
+      return (bool)_external[get_primary()];
+    }
+    
     /// Returns the instance of the primary compass
     ///
     /// @returns                    the instance number of the primary compass
@@ -248,11 +251,24 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
-    // settable parameters
-    AP_Int8 _learn;                             ///<enable calibration learning
-
+    /// Returns the instance of the primary compass
+    ///
+    /// @param toggle                 Enable or disable auto offset learning
+    ///
+    void enable_learn_offsets(const bool &toggle = true) {
+        _learn.set_and_save((int8_t)toggle);
+    }
+    
+    /// Returns the instance of the primary compass
+    ///
+    /// @returns                    Returns whether auto offset learning is enabled or disabled
+    ///
+    bool learn_offsets_enabled(void) const { 
+        return (bool)_learn; 
+    }
+    
 protected:
-
+    AP_Int8 _learn;                             ///<enable calibration learning
     bool _healthy[COMPASS_MAX_INSTANCES];
     Vector3f _field[COMPASS_MAX_INSTANCES];     ///< magnetic field strength
 
@@ -279,9 +295,6 @@ protected:
     AP_Vector3f _motor_compensation[COMPASS_MAX_INSTANCES]; // factors multiplied by throttle and added to compass outputs
     Vector3f    _motor_offset[COMPASS_MAX_INSTANCES]; // latest compensation added to compass
     float       _thr_or_curr;                   // throttle expressed as a percentage from 0 ~ 1.0 or current expressed in amps
-
-    // board orientation from AHRS
-    enum Rotation _board_orientation;
     
     void apply_corrections(Vector3f &mag, uint8_t i);
 };

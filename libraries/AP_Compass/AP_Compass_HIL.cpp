@@ -82,17 +82,8 @@ void AP_Compass_HIL::setHIL(float roll, float pitch, float yaw)
     _hil_mag = R.mul_transpose(_Bearth);
     _hil_mag -= Vector3f(MAG_OFS_X, MAG_OFS_Y, MAG_OFS_Z);
 
-    // apply default board orientation for this compass type. This is
-    // a noop on most boards
-    _hil_mag.rotate(MAG_BOARD_ORIENTATION);
-
     // add user selectable orientation
     _hil_mag.rotate((enum Rotation)_orientation[0].get());
-
-    if (!_external[0]) {
-        // and add in AHRS_ORIENTATION setting if not an external compass
-        _hil_mag.rotate(_board_orientation);
-    }
 
     _healthy[0] = true;
 }

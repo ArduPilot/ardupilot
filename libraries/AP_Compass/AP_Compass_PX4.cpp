@@ -104,17 +104,8 @@ bool AP_Compass_PX4::read(void)
         _sum[i] /= _count[i];
         _sum[i] *= 1000;
 
-        // apply default board orientation for this compass type. This is
-        // a noop on most boards
-        _sum[i].rotate(MAG_BOARD_ORIENTATION);
-
-        if (_external[i]) {
-            // add user selectable orientation
-            _sum[i].rotate((enum Rotation)_orientation[i].get());
-        } else {
-            // add in board orientation from AHRS
-            _sum[i].rotate(_board_orientation);
-        }
+        // add user selectable orientation
+        _sum[i].rotate((enum Rotation)_orientation[i].get());
         
         _field[i] = _sum[i];
         apply_corrections(_field[i],i);
