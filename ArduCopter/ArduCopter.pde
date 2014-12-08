@@ -314,11 +314,10 @@ AP_Mission mission(ahrs, &start_command, &verify_command, &exit_mission);
 ////////////////////////////////////////////////////////////////////////////////
 // Optical flow sensor
 ////////////////////////////////////////////////////////////////////////////////
- #if OPTFLOW == ENABLED
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if OPTFLOW == ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_PX4
 static AP_OpticalFlow_PX4 optflow(ahrs);
 #endif
- #endif
+
 // gnd speed limit required to observe optical flow sensor limits
 static float ekfGndSpdLimit;
 // scale factor applied to velocity controller gain to prevent optical flow noise causing excessive angle demand noise
