@@ -51,6 +51,7 @@ enum ap_message {
     MSG_BATTERY2,
     MSG_CAMERA_FEEDBACK,
     MSG_MOUNT_STATUS,
+    MSG_OPTICAL_FLOW,
     MSG_RETRY_DEFERRED // this must be last
 };
 
