@@ -130,8 +130,10 @@ public:
         k_param_rtl_autoland,
         k_param_override_channel,
         k_param_stall_prevention,
-        k_param_rssi_range_min, // new, realocate with next k_format_version update
-        
+#if OPTFLOW == ENABLED
+        k_param_optflow,
+#endif
+	   k_param_rssi_range_min, // new, realocate with next k_format_version update
         // 100: Arming parameters
         k_param_arming = 100,
 
