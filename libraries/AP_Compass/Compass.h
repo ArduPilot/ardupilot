@@ -36,9 +36,6 @@
 class Compass
 {
 public:
-    int16_t product_id;                         /// product id
-    uint32_t last_update;               ///< micros() time of last update
-
     /// Constructor
     ///
     Compass();
@@ -147,7 +144,7 @@ public:
     void set_declination(float radians, bool save_to_eeprom = true);
     float get_declination() const;
     
-    /// sets the orientation of the compass
+    /// Sets the orientation of the compass
     ///
     /// @param  i             Index of the compass.
     /// @param  orientation   Orientation of the compass module relative to the AHRS system.
@@ -159,12 +156,12 @@ public:
         _orientation[i] = orientation;
     }
     
-    /// Adds an orientation of the compass
+    /// Rotates the field of measured by the compass, to compensate e.g. board orientations
     ///
     /// @param  i             Index of the compass.
     /// @param  orientation   Orientation of the compass module relative to the AHRS system.
     ///
-    void add_orientation(uint8_t i, enum Rotation orientation) {
+    void rotate(uint8_t i, enum Rotation orientation) {
         if(i >= get_count() ) {
           return;
         }
@@ -278,9 +275,28 @@ public:
     bool learn_offsets_enabled(void) const { 
         return (bool)_learn; 
     }
+
+    /// Returns the identifier of the compass
+    ///
+    /// @return                     identifier of the compass
+    ///
+    int16_t product_id(void) const {
+        return _product_id;
+    }
+    
+    /// Returns time of the last update
+    ///
+    /// @return                     time of the last update
+    ///
+    uint32_t last_update(void) const {
+        return _last_update;
+    }
     
 protected:
+    int16_t _product_id;                         /// product id
+    uint32_t _last_update;                       ///< micros() time of last update
     AP_Int8 _learn;                             ///<enable calibration learning
+    
     bool _healthy[COMPASS_MAX_INSTANCES];
     Vector3f _field[COMPASS_MAX_INSTANCES];     ///< magnetic field strength
 

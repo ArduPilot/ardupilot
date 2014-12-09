@@ -375,9 +375,10 @@ AP_AHRS_DCM::drift_correction_yaw(void)
         /*
           we are using compass for yaw
          */
-        if (_compass->last_update != _compass_last_update) {
-            yaw_deltat = (_compass->last_update - _compass_last_update) * 1.0e-6f;
-            _compass_last_update = _compass->last_update;
+        uint32_t compass_curr_update = _compass->last_update();
+        if (compass_curr_update != _compass_last_update) {
+            yaw_deltat = (compass_curr_update - _compass_last_update) * 1.0e-6f;
+            _compass_last_update = compass_curr_update;
             // we force an additional compass read()
             // here. This has the effect of throwing away
             // the first compass value, which can be bad

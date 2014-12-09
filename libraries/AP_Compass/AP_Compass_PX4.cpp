@@ -116,7 +116,7 @@ bool AP_Compass_PX4::read(void)
         _count[i] = 0;
     }
 
-    last_update = _last_timestamp[get_primary()];
+    _last_update = _last_timestamp[get_primary()];
     
     return _healthy[get_primary()];
 }

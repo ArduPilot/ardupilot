@@ -29,7 +29,7 @@ extern const AP_HAL::HAL& hal;
 // constructor
 AP_Compass_HIL::AP_Compass_HIL() : Compass() 
 {
-    product_id = AP_COMPASS_TYPE_HIL;
+    _product_id = AP_COMPASS_TYPE_HIL;
     _setup_earth_field();
 }
 
@@ -55,7 +55,7 @@ bool AP_Compass_HIL::read()
     apply_corrections(_field[0],0);
 
     // values set by setHIL function
-    last_update = hal.scheduler->micros();      // record time of update
+    _last_update = hal.scheduler->micros();      // record time of update
     return true;
 }
 

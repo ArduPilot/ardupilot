@@ -152,8 +152,8 @@ public:
           }
           _compass->set_orientation(i, (enum Rotation)_board_orientation.get() );
           #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-          _compass->add_orientation(i, ROTATION_ROLL_180);
-          #else 
+          _compass->rotate(i, ROTATION_ROLL_180);
+          #endif 
         }
     }
 
