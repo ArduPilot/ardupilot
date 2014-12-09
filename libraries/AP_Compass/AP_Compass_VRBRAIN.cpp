@@ -109,9 +109,11 @@ bool AP_Compass_VRBRAIN::read(void)
 
         _sum[i] /= _count[i];
         _sum[i] *= 1000;
-
-        // add user selectable orientation
-        _sum[i].rotate((enum Rotation)_orientation[i].get());
+        
+        if((enum Rotation)_orientation[0].get() != ROTATION_NONE) {
+            // add user selectable orientation
+            _sum[i].rotate((enum Rotation)_orientation[i].get());
+        }
     
         _field[i] = _sum[i];
         apply_corrections(_field[i],i);

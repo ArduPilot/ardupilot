@@ -363,9 +363,11 @@ bool AP_Compass_HMC5843::read()
     if (product_id == AP_COMPASS_TYPE_HMC5883L) {
         _field[0].rotate(ROTATION_YAW_90);
     }
-
+    
     // add user selectable orientation
-    _field[0].rotate((enum Rotation)_orientation[0].get());
+    if((enum Rotation)_orientation[0].get() != ROTATION_NONE) {
+        _field[0].rotate((enum Rotation)_orientation[0].get() );
+    }
 
     apply_corrections(_field[0],0);
 

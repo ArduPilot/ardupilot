@@ -158,7 +158,19 @@ public:
         }
         _orientation[i] = orientation;
     }
-
+    
+    /// Adds an orientation of the compass
+    ///
+    /// @param  i             Index of the compass.
+    /// @param  orientation   Orientation of the compass module relative to the AHRS system.
+    ///
+    void add_orientation(uint8_t i, enum Rotation orientation) {
+        if(i >= get_count() ) {
+          return;
+        }
+        _orientation[i] += orientation;
+    }
+    
     /// Set the motor compensation type
     ///
     /// @param  comp_type           0 = disabled, 1 = enabled use throttle, 2 = enabled use current

@@ -82,8 +82,10 @@ void AP_Compass_HIL::setHIL(float roll, float pitch, float yaw)
     _hil_mag = R.mul_transpose(_Bearth);
     _hil_mag -= Vector3f(MAG_OFS_X, MAG_OFS_Y, MAG_OFS_Z);
 
-    // add user selectable orientation
-    _hil_mag.rotate((enum Rotation)_orientation[0].get());
+    if((enum Rotation)_orientation[0].get() != ROTATION_NONE) {
+        // add user selectable orientation
+        _hil_mag.rotate((enum Rotation)_orientation[0].get());
+    }
 
     _healthy[0] = true;
 }

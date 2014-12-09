@@ -145,8 +145,15 @@ public:
             return;
         }
         // Set orientation of the AHRS only if the compass is not external
-        for(int i = 0; i < _compass->get_count() && !_compass->external(i); i++) {
+        for(int i = 0; i < _compass->get_count(); i++) {
+          // skip external compasses 
+          if(_compass->external(i) ) {
+            continue;
+          }
           _compass->set_orientation(i, (enum Rotation)_board_orientation.get() );
+          #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+          _compass->add_orientation(i, ROTATION_ROLL_180);
+          #else 
         }
     }
 
