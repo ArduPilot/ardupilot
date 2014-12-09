@@ -133,7 +133,8 @@ public:
 #if OPTFLOW == ENABLED
         k_param_optflow,
 #endif
-	   k_param_rssi_range_min, // new, realocate with next k_format_version update
+	   k_param_rssi_range_min, // new, relocate with next k_format_version update
+
         // 100: Arming parameters
         k_param_arming = 100,
 
