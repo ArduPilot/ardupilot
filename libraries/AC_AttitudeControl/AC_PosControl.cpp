@@ -795,47 +795,45 @@ void AC_PosControl::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
 ///    converts desired accelerations provided in lat/lon frame to roll/pitch angles
 void AC_PosControl::accel_to_lean_angles(float dt, float ekfNavVelGainScaler)
 {
+    float accel_north = _accel_target.x;
+    float accel_east = _accel_target.y;
     float accel_right, accel_forward;
     float lean_angle_max = _attitude_control.lean_angle_max();
 
-    // To-Do: add 1hz filter to accel_lat, accel_lon
-
-    // rotate accelerations into body forward-right frame
-    accel_forward = _accel_target.x*_ahrs.cos_yaw() + _accel_target.y*_ahrs.sin_yaw();
-    accel_right = -_accel_target.x*_ahrs.sin_yaw() + _accel_target.y*_ahrs.cos_yaw();
-
-    // update angle targets that will be passed to stabilize controller
-    _roll_target = constrain_float(fast_atan(accel_right*_ahrs.cos_pitch()/(GRAVITY_MSS * 100))*(18000/M_PI), -lean_angle_max, lean_angle_max);
-    _pitch_target = constrain_float(fast_atan(-accel_forward/(GRAVITY_MSS * 100))*(18000/M_PI),-lean_angle_max, lean_angle_max);
-
-    // apply a rate limit of 100 deg/sec - required due to optical flow sensor saturation and impulse noise effects
-    static float lastRollDem = 0.0f;
-    static float lastPitchDem = 0.0f;
-    float maxDeltaAngle = dt * 10000.0f;
-    if (_roll_target - lastRollDem > maxDeltaAngle) {
-        _roll_target = lastRollDem + maxDeltaAngle;
-    } else if (_roll_target - lastRollDem < -maxDeltaAngle) {
-        _roll_target = lastRollDem - maxDeltaAngle;
+    // apply jerk limit of 17 m/s^3 - equates to a worst case of about 100 deg/sec/sec
+    static float last_accel_north = 0.0f;
+    static float last_accel_east = 0.0f;
+    float max_delta_accel = dt * 1700.0f;
+    if (accel_north - last_accel_north > max_delta_accel) {
+        accel_north = last_accel_north + max_delta_accel;
+    } else if (accel_north - last_accel_north < -max_delta_accel) {
+        accel_north = last_accel_north - max_delta_accel;
     }
-    lastRollDem = _roll_target;
-    if (_pitch_target - lastPitchDem > maxDeltaAngle) {
-        _pitch_target = lastPitchDem + maxDeltaAngle;
-    } else if (_pitch_target - lastPitchDem < -maxDeltaAngle) {
-        _pitch_target = lastPitchDem - maxDeltaAngle;
-    }
-    lastPitchDem = _pitch_target;
+    last_accel_north = accel_north;
 
-    // 5Hz lowpass filter on angles - required due to optical flow  noise
+    if (accel_east - last_accel_east > max_delta_accel) {
+        accel_east = last_accel_east + max_delta_accel;
+    } else if (accel_east - last_accel_east < -max_delta_accel) {
+        accel_east = last_accel_east - max_delta_accel;
+    }
+    last_accel_east = accel_east;
+
+    // 5Hz lowpass filter on NE accel
     float freq_cut = 5.0f * ekfNavVelGainScaler;
     float alpha = constrain_float(dt/(dt + 1.0f/(2.0f*(float)M_PI*freq_cut)),0.0f,1.0f);
-    static float roll_target_filtered = 0.0f;
-    static float pitch_target_filtered = 0.0f;
+    static float accel_north_filtered = 0.0f;
+    static float accel_east_filtered = 0.0f;
+    accel_north_filtered += alpha * (accel_north - accel_north_filtered);
+    accel_east_filtered  += alpha * (accel_east - accel_east_filtered);
 
-    roll_target_filtered  += alpha * ( _roll_target -  roll_target_filtered);
-    pitch_target_filtered += alpha * (_pitch_target - pitch_target_filtered);
-    _roll_target  = roll_target_filtered;
-    _pitch_target = pitch_target_filtered;
+    // rotate accelerations into body forward-right frame
+    accel_forward = accel_north_filtered*_ahrs.cos_yaw() + accel_east_filtered*_ahrs.sin_yaw();
+    accel_right = -accel_north_filtered*_ahrs.sin_yaw() + accel_east_filtered*_ahrs.cos_yaw();
 
+    // update angle targets that will be passed to stabilize controller
+    _pitch_target = constrain_float(fast_atan(-accel_forward/(GRAVITY_MSS * 100))*(18000/M_PI),-lean_angle_max, lean_angle_max);
+    float cos_pitch_target = cosf(_pitch_target*(float)M_PI/18000);
+    _roll_target = constrain_float(fast_atan(accel_right*cos_pitch_target/(GRAVITY_MSS * 100))*(18000/M_PI), -lean_angle_max, lean_angle_max);
 }
 
 // get_lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
