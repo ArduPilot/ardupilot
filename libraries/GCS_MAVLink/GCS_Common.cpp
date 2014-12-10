@@ -853,7 +853,11 @@ GCS_MAVLINK::update(void (*run_cli)(AP_HAL::UARTDriver *))
             // we exclude radio packets to make it possible to use the
             // CLI over the radio
             if (msg.msgid != MAVLINK_MSG_ID_RADIO && msg.msgid != MAVLINK_MSG_ID_RADIO_STATUS) {
-                mavlink_active |= (1U<<chan);
+                mavlink_active |= (1U<<(chan-MAVLINK_COMM_0));
+            }
+            // if a snoop handler has been setup then use it
+            if (msg_snoop != NULL) {
+                msg_snoop(&msg);
             }
             if (!routing.check_and_forward(chan, &msg)) {
                 handleMessage(&msg);
@@ -1099,7 +1103,7 @@ void GCS_MAVLINK::send_statustext_all(const prog_char_t *msg)
 {
     for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
         if ((1U<<i) & mavlink_active) {
-            mavlink_channel_t chan = (mavlink_channel_t)i;
+            mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0+i);
             if (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_STATUSTEXT_LEN) {
                 char msg2[50];
                 strncpy_P(msg2, msg, sizeof(msg2));

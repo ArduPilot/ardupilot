@@ -158,6 +158,9 @@ public:
     void        data_stream_send(void);
     void        queued_param_send();
     void        queued_waypoint_send();
+    void        set_snoop(void (*_msg_snoop)(const mavlink_message_t* msg)) {
+        msg_snoop = _msg_snoop;
+    }
 
     static const struct AP_Param::GroupInfo        var_info[];
 
@@ -189,9 +192,6 @@ public:
 
     // last time we got a non-zero RSSI from RADIO_STATUS
     static uint32_t last_radio_status_remrssi_ms;
-
-    // mavlink routing object
-    static MAVLink_routing routing;
 
     // common send functions
     void send_meminfo(void);
@@ -317,6 +317,12 @@ private:
 
     // bitmask of what mavlink channels are active
     static uint8_t mavlink_active;
+
+    // mavlink routing object
+    static MAVLink_routing routing;
+
+    // a vehicle can optionally snoop on messages for other systems
+    static void (*msg_snoop)(const mavlink_message_t* msg);
 
     // vehicle specific message send function
     bool try_send_message(enum ap_message id);
