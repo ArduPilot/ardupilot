@@ -34,7 +34,7 @@ GCS_MAVLINK::GCS_MAVLINK() :
 void
 GCS_MAVLINK::init(AP_HAL::UARTDriver *port)
 {
-    GCS_Class::init(port);
+    _port = port;
     if (port == (AP_HAL::BetterStream*)hal.uartA) {
         mavlink_comm_0_port = port;
         chan = MAVLINK_COMM_0;
