@@ -109,20 +109,10 @@ bool AP_Compass_VRBRAIN::read(void)
 
         _sum[i] /= _count[i];
         _sum[i] *= 1000;
-
-        // apply default board orientation for this compass type. This is
-        // a noop on most boards
-        _sum[i].rotate(MAG_BOARD_ORIENTATION);
-
-        // override any user setting of COMPASS_EXTERNAL 
-        //_external.set(_is_external[0]);
-
-        if (_external[i]) {
+        
+        if((enum Rotation)_orientation[0].get() != ROTATION_NONE) {
             // add user selectable orientation
             _sum[i].rotate((enum Rotation)_orientation[i].get());
-        } else {
-            // add in board orientation from AHRS
-            _sum[i].rotate(_board_orientation);
         }
     
         _field[i] = _sum[i];
@@ -132,7 +122,7 @@ bool AP_Compass_VRBRAIN::read(void)
         _count[i] = 0;
     }
 
-    last_update = _last_timestamp[get_primary()];
+    _last_update = _last_timestamp[get_primary()];
     
     return _healthy[get_primary()];
 }

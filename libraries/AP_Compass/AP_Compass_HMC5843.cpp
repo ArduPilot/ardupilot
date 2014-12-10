@@ -93,7 +93,7 @@ bool AP_Compass_HMC5843::read_raw()
 
     int16_t rx, ry, rz;
     rx = (((int16_t)buff[0]) << 8) | buff[1];
-    if (product_id == AP_COMPASS_TYPE_HMC5883L) {
+    if (_product_id == AP_COMPASS_TYPE_HMC5883L) {
         rz = (((int16_t)buff[2]) << 8) | buff[3];
         ry = (((int16_t)buff[4]) << 8) | buff[5];
     } else {
@@ -199,7 +199,7 @@ AP_Compass_HMC5843::init()
     }
     if ( _base_config == (SampleAveraging_8<<5 | DataOutputRate_75HZ<<2 | NormalOperation)) {
         // a 5883L supports the sample averaging config
-        product_id = AP_COMPASS_TYPE_HMC5883L;
+        _product_id = AP_COMPASS_TYPE_HMC5883L;
         calibration_gain = 0x60;
         /*
           note that the HMC5883 datasheet gives the x and y expected
@@ -210,7 +210,7 @@ AP_Compass_HMC5843::init()
         expected_yz  = 713;
         gain_multiple = 660.0 / 1090;  // adjustment for runtime vs calibration gain
     } else if (_base_config == (NormalOperation | DataOutputRate_75HZ<<2)) {
-        product_id = AP_COMPASS_TYPE_HMC5843;
+        _product_id = AP_COMPASS_TYPE_HMC5843;
     } else {
         // not behaving like either supported compass type
         _i2c_sem->give();
@@ -357,23 +357,16 @@ bool AP_Compass_HMC5843::read()
 	_accum_count = 0;
 	_mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
 
-    last_update = hal.scheduler->micros(); // record time of update
+    _last_update = hal.scheduler->micros(); // record time of update
 
     // rotate to the desired orientation
-    if (product_id == AP_COMPASS_TYPE_HMC5883L) {
+    if (_product_id == AP_COMPASS_TYPE_HMC5883L) {
         _field[0].rotate(ROTATION_YAW_90);
     }
-
-    // apply default board orientation for this compass type. This is
-    // a noop on most boards
-    _field[0].rotate(MAG_BOARD_ORIENTATION);
-
+    
     // add user selectable orientation
-    _field[0].rotate((enum Rotation)_orientation[0].get());
-
-    if (!_external[0]) {
-        // and add in AHRS_ORIENTATION setting if not an external compass
-        _field[0].rotate(_board_orientation);
+    if((enum Rotation)_orientation[0].get() != ROTATION_NONE) {
+        _field[0].rotate((enum Rotation)_orientation[0].get() );
     }
 
     apply_corrections(_field[0],0);

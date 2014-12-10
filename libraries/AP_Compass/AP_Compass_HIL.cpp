@@ -29,7 +29,7 @@ extern const AP_HAL::HAL& hal;
 // constructor
 AP_Compass_HIL::AP_Compass_HIL() : Compass() 
 {
-    product_id = AP_COMPASS_TYPE_HIL;
+    _product_id = AP_COMPASS_TYPE_HIL;
     _setup_earth_field();
 }
 
@@ -55,7 +55,7 @@ bool AP_Compass_HIL::read()
     apply_corrections(_field[0],0);
 
     // values set by setHIL function
-    last_update = hal.scheduler->micros();      // record time of update
+    _last_update = hal.scheduler->micros();      // record time of update
     return true;
 }
 
@@ -82,16 +82,9 @@ void AP_Compass_HIL::setHIL(float roll, float pitch, float yaw)
     _hil_mag = R.mul_transpose(_Bearth);
     _hil_mag -= Vector3f(MAG_OFS_X, MAG_OFS_Y, MAG_OFS_Z);
 
-    // apply default board orientation for this compass type. This is
-    // a noop on most boards
-    _hil_mag.rotate(MAG_BOARD_ORIENTATION);
-
-    // add user selectable orientation
-    _hil_mag.rotate((enum Rotation)_orientation[0].get());
-
-    if (!_external[0]) {
-        // and add in AHRS_ORIENTATION setting if not an external compass
-        _hil_mag.rotate(_board_orientation);
+    if((enum Rotation)_orientation[0].get() != ROTATION_NONE) {
+        // add user selectable orientation
+        _hil_mag.rotate((enum Rotation)_orientation[0].get());
     }
 
     _healthy[0] = true;

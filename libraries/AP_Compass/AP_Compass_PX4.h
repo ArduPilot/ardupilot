@@ -9,7 +9,7 @@ class AP_Compass_PX4 : public Compass
 {
 public:
     AP_Compass_PX4() : Compass() {
-        product_id = AP_COMPASS_TYPE_PX4;
+        _product_id = AP_COMPASS_TYPE_PX4;
         _num_instances = 0;
     }
     bool        init(void);

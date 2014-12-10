@@ -9,7 +9,7 @@ class AP_Compass_VRBRAIN : public Compass
 {
 public:
     AP_Compass_VRBRAIN() : Compass() {
-        product_id = AP_COMPASS_TYPE_VRBRAIN;
+        _product_id = AP_COMPASS_TYPE_VRBRAIN;
         _num_instances = 0;
     }
     bool        init(void);

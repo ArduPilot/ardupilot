@@ -67,7 +67,7 @@ void setup() {
     compass.set_declination(ToRad(0.0)); // set local difference between magnetic north and true north
 
     hal.console->print("Compass auto-detected as: ");
-    switch( compass.product_id ) {
+    switch( compass.product_id() ) {
     case AP_COMPASS_TYPE_HIL:
         hal.console->println("HIL");
         break;
