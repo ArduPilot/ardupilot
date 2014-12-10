@@ -61,15 +61,6 @@ void GCS_MAVLINK::lock_channel(mavlink_channel_t _chan, bool lock)
     }
 }
 
-uint8_t mavlink_check_target(uint8_t sysid, uint8_t compid)
-{
-    if (sysid != mavlink_system.sysid)
-        return 1;
-    // Currently we are not checking for correct compid since APM is not passing mavlink info to any subsystem
-    // If it is addressed to our system ID we assume it is for us
-    return 0; // no error
-}
-
 // return a MAVLink variable type given a AP_Param type
 uint8_t mav_var_type(enum ap_var_type t)
 {
