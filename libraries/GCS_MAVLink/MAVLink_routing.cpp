@@ -92,7 +92,8 @@ void MAVLink_routing::learn_route(mavlink_channel_t in_channel, const mavlink_me
     uint8_t i;
     for (i=0; i<num_routes; i++) {
         if (routes[i].sysid == msg->sysid && 
-            routes[i].compid == msg->compid) {
+            routes[i].compid == msg->compid &&
+            routes[i].channel == in_channel) {
             break;
         }
     }
