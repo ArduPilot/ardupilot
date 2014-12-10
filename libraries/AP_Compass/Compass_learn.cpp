@@ -24,6 +24,14 @@
  *  noise, but still learn correctly (and slowly) in the face of lots of
  *  noise.
  */
+inline int16_t round_f(const float &fVal) {
+    return fVal >= 0 ? (int16_t)(fVal + 0.5) : (int16_t)(fVal - 0.5);
+}
+
+inline Vector3i round_f(const Vector3f &fVec) {
+    return Vector3i(round_f(fVec.x), round_f(fVec.y), round_f(fVec.z) );
+}
+
 void
 Compass::learn_offsets(void)
 {
@@ -41,12 +49,14 @@ Compass::learn_offsets(void)
     if (!_null_init_done) {
         // first time through
         _null_init_done = true;
-        for (uint8_t k=0; k<COMPASS_MAX_INSTANCES; k++) {
+        for (uint8_t k = 0; k < COMPASS_MAX_INSTANCES; k++) {
             const Vector3f &ofs = _offset[k].get();
-            for (uint8_t i=0; i<_mag_history_size; i++) {
+            for (uint8_t i = 0; i < _mag_history_size; i++) {
                 // fill the history buffer with the current mag vector,
                 // with the offset removed
-                _mag_history[k][i] = Vector3i((_field[k].x+0.5f) - ofs.x, (_field[k].y+0.5f) - ofs.y, (_field[k].z+0.5f) - ofs.z);
+                
+                Vector3f mag_field = _field[k] - ofs;
+                _mag_history[k][i] = round_f(mag_field);
             }
             _mag_history_index[k] = 0;
         }
@@ -90,9 +100,8 @@ Compass::learn_offsets(void)
         }
 
         // put the vector in the history
-        _mag_history[k][_mag_history_index[k]] = Vector3i((_field[k].x+0.5f) - ofs.x, 
-                                                          (_field[k].y+0.5f) - ofs.y, 
-                                                          (_field[k].z+0.5f) - ofs.z);
+        Vector3f mag_field = _field[k] - ofs;
+        _mag_history[k][_mag_history_index[k]] = round_f(mag_field);
         _mag_history_index[k] = (_mag_history_index[k] + 1) % _mag_history_size;
 
         // equation 6 of Bills paper
