@@ -43,6 +43,9 @@ mavlink_system_t mavlink_system = {7,1};
 // mask of serial ports disabled to allow for SERIAL_CONTROL
 static uint8_t mavlink_locked_mask;
 
+// routing table
+MAVLink_routing GCS_MAVLINK::routing;
+
 /*
   lock a channel, preventing use by MAVLink
  */

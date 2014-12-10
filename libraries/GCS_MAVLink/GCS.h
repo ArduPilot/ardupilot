@@ -14,6 +14,7 @@
 #include <AP_Mission.h>
 #include "../AP_BattMonitor/AP_BattMonitor.h"
 #include <stdint.h>
+#include <MAVLink_routing.h>
 
 //  GCS Message ID's
 /// NOTE: to ensure we never block on sending MAVLink messages
@@ -188,6 +189,9 @@ public:
 
     // last time we got a non-zero RSSI from RADIO_STATUS
     static uint32_t last_radio_status_remrssi_ms;
+
+    // mavlink routing object
+    static MAVLink_routing routing;
 
     // common send functions
     void send_meminfo(void);
