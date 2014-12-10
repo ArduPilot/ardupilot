@@ -51,23 +51,29 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
     }
 
     // extract the targets for this packet
-    int16_t target_system =-1;
-    int16_t target_component =-1;
+    int16_t target_system = -1;
+    int16_t target_component = -1;
     get_targets(msg, target_system, target_component);
 
-    // see if it is for us
-    if ((target_system == -1 || target_system == mavlink_system.sysid) &&
-        (target_component == -1 || target_component == mavlink_system.compid)) {
-        // it is for us
+    bool targetted = true;
+
+    if (target_system == -1 && target_component == -1) {
+        // it is not a targetted message. We need to both forward it
+        // and process it locally
+        targetted = false;
+    } else if ((target_system == -1 || target_system == mavlink_system.sysid) &&
+               (target_component == -1 || target_component == mavlink_system.compid)) {
+        // it is for us only
         return false;
     }
 
     // forward on any channels matching the targets
     for (uint8_t i=0; i<num_routes; i++) {
-        if (target_system == routes[i].sysid &&
-            target_component == routes[i].compid &&
-            in_channel != routes[i].channel) {
-            if (comm_get_txspace(routes[i].channel) >= ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
+        if (targetted == false ||
+            (target_system == routes[i].sysid &&
+             target_component == routes[i].compid)) {
+            if (in_channel != routes[i].channel &&
+                comm_get_txspace(routes[i].channel) >= ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
 #if ROUTING_DEBUG
                 ::printf("fwd msg %u from chan %u on chan %u sysid=%u compid=%u\n",
                          msg->msgid,
@@ -81,7 +87,7 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
         }
     }
 
-    return true;
+    return targetted;
 }
 
 /*
