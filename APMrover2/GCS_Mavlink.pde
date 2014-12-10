@@ -789,7 +789,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // decode
             mavlink_command_long_t packet;
             mavlink_msg_command_long_decode(msg, &packet);
-            if (mavlink_check_target(packet.target_system, packet.target_component)) break;
 
             uint8_t result = MAV_RESULT_UNSUPPORTED;
 
@@ -1018,10 +1017,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         mavlink_rc_channels_override_t packet;
         int16_t v[8];
         mavlink_msg_rc_channels_override_decode(msg, &packet);
-
-        // exit immediately if this command is not meant for this vehicle
-        if (mavlink_check_target(packet.target_system,packet.target_component))
-            break;
 
         v[0] = packet.chan1_raw;
         v[1] = packet.chan2_raw;
