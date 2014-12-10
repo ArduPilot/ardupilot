@@ -28,6 +28,9 @@ static void init_tracker()
     // init the GCS
     gcs[0].init(hal.uartA);
 
+    // set up snooping on other mavlink destinations
+    gcs[0].set_snoop(mavlink_snoop);
+
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
     hal.scheduler->register_delay_callback(mavlink_delay_cb, 5);
