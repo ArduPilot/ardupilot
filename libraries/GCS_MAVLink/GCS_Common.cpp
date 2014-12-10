@@ -908,7 +908,9 @@ GCS_MAVLINK::update(void (*run_cli)(AP_HAL::UARTDriver *))
             if (msg.msgid != MAVLINK_MSG_ID_RADIO && msg.msgid != MAVLINK_MSG_ID_RADIO_STATUS) {
                 mavlink_active |= (1U<<chan);
             }
-            handleMessage(&msg);
+            if (!routing.check_and_forward(chan, &msg)) {
+                handleMessage(&msg);
+            }
         }
     }
 
