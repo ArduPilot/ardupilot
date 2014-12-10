@@ -742,14 +742,6 @@ mission_failed:
         break;
 #endif
 
-    default:
-        // Proxy all other messages to the remote
-        if (g.proxy_mode && proxy_vehicle.initialised) {
-            if (comm_get_txspace(proxy_vehicle.chan) > ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) 
-                _mavlink_resend_uart(proxy_vehicle.chan, msg);
-        }
-        break;
-
     } // end switch
 } // end handle mavlink
 
@@ -819,10 +811,6 @@ static void gcs_update(void)
         if (gcs[i].initialised) {
             gcs[i].update(NULL);
         }
-    }
-    // Also check for messages from the remote if we are in proxy mode
-    if (g.proxy_mode == true && proxy_vehicle.initialised) {
-        proxy_vehicle.update(NULL);
     }
 }
 
