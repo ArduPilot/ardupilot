@@ -1138,19 +1138,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
 #endif
 
-    default:
-        // forward unknown messages to the other link if there is one
-        for (uint8_t i=0; i<num_gcs; i++) {
-            if (gcs[i].initialised && i != (uint8_t)chan) {
-                mavlink_channel_t out_chan = (mavlink_channel_t)i;
-                // only forward if it would fit in the transmit buffer
-            if (comm_get_txspace(out_chan) > ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
-                _mavlink_resend_uart(out_chan, msg);
-            }
-        }
-        }
-        break;
-
     } // end switch
 } // end handle mavlink
 
