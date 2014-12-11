@@ -115,8 +115,8 @@ private:
     float                               _last_altitude_EAS2TAS;
     float                               _EAS2TAS;
     float                               _external_temperature;
-    uint32_t                            _last_external_temperature_ms;
     uint32_t                            _last_altitude_t;
+    uint32_t                            _last_external_temperature_ms;
     DerivativeFilterFloat_Size7         _climb_rate_filter;
 };
 
