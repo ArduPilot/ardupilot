@@ -58,8 +58,6 @@ static void init_tracker()
     // GPS Initialization
     gps.init(NULL);
 
-    mavlink_system.compid = 4;
-
     ahrs.init();
     ahrs.set_fly_forward(false);
 
