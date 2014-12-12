@@ -120,13 +120,8 @@ AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosContro
 /// init_loiter_target in cm from home
 void AC_WPNav::init_loiter_target(const Vector3f& position, bool reset_I)
 {
-    // if reset_I is false we warn position controller not to reset I terms
-    if (!reset_I) {
-        _pos_control.keep_xy_I_terms();
-    }
-    
     // initialise position controller
-    _pos_control.init_xy_controller();
+    _pos_control.init_xy_controller(reset_I);
 
     // initialise pos controller speed and acceleration
     _pos_control.set_speed_xy(_loiter_speed_cms);
