@@ -65,7 +65,6 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
 #endif
     _flags.recalc_leash_xy = true;
     _flags.recalc_leash_z = true;
-    _flags.keep_xy_I_terms = false;
     _flags.reset_desired_vel_to_pos = true;
     _flags.reset_rate_to_accel_xy = true;
     _flags.reset_rate_to_accel_z = true;
@@ -501,7 +500,7 @@ bool AC_PosControl::is_active_xy() const
 ///     sets target roll angle, pitch angle and I terms based on vehicle current lean angles
 ///     should be called once whenever significant changes to the position target are made
 ///     this does not update the xy target
-void AC_PosControl::init_xy_controller()
+void AC_PosControl::init_xy_controller(bool reset_I)
 {
     // reset xy controller to first step
     _xy_step = 0;
@@ -511,14 +510,11 @@ void AC_PosControl::init_xy_controller()
     _pitch_target = _ahrs.pitch_sensor;
 
     // initialise I terms from lean angles
-    if (!_flags.keep_xy_I_terms) {
+    if (reset_I) {
         // reset last velocity if this controller has just been engaged or dt is zero
         lean_angles_to_accel(_accel_target.x, _accel_target.y);
         _pid_rate_lat.set_integrator(_accel_target.x);
         _pid_rate_lon.set_integrator(_accel_target.y);
-    } else {
-        // reset keep_xy_I_term flag in case it has been set
-        _flags.keep_xy_I_terms = false;
     }
 
     // flag reset required in rate to accel step
