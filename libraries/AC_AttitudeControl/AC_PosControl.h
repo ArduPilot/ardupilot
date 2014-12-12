@@ -152,7 +152,7 @@ public:
     ///     sets target roll angle, pitch angle and I terms based on vehicle current lean angles
     ///     should be called once whenever significant changes to the position target are made
     ///     this does not update the xy target
-    void init_xy_controller();
+    void init_xy_controller(bool reset_I = true);
 
     /// set_accel_xy - set horizontal acceleration in cm/s/s
     ///     leash length will be recalculated the next time update_xy_controller() is called
@@ -242,9 +242,6 @@ public:
     /// get_pos_xy_kP - returns xy position controller's kP gain
     float get_pos_xy_kP() const { return _p_pos_xy.kP(); }
 
-    /// keep_xy_I_terms - ensure xy position controller's PID's I terms are not cleared when the xy controller is next run.  Reset automatically back to zero in update_xy_controller.
-    void keep_xy_I_terms() { _flags.keep_xy_I_terms = true; }
-
     /// accessors for reporting
     const Vector3f& get_vel_target() const { return _vel_target; }
     const Vector3f& get_accel_target() const { return _accel_target; }
@@ -262,7 +259,6 @@ private:
             uint8_t recalc_leash_xy : 1;    // 1 if we should recalculate the xy axis leash length
             uint8_t force_recalc_xy : 1;    // 1 if we want the xy position controller to run at it's next possible time.  set by loiter and wp controllers after they have updated the target position.
             uint8_t slow_cpu        : 1;    // 1 if we are running on a slow_cpu machine.  xy position control is broken up into multiple steps
-            uint8_t keep_xy_I_terms : 1;    // 1 if we are to keep I terms when the position controller is next run.  Reset automatically back to zero in update_xy_controller.
             uint8_t reset_desired_vel_to_pos: 1;    // 1 if we should reset the rate_to_accel_xy step
             uint8_t reset_rate_to_accel_xy  : 1;    // 1 if we should reset the rate_to_accel_xy step
             uint8_t reset_rate_to_accel_z   : 1;    // 1 if we should reset the rate_to_accel_z step
