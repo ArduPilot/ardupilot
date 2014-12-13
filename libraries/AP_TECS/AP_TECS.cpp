@@ -388,7 +388,6 @@ void AP_TECS::_update_height_demand(void)
 
 	// Apply first order lag to height demand
 	_hgt_dem_adj = 0.05f * _hgt_dem + 0.95f * _hgt_dem_adj_last;
-	_hgt_dem_adj_last = _hgt_dem_adj;
 
     // in final landing stage force height rate demand to the
     // configured sink rate and adjust the demanded height to
@@ -411,6 +410,7 @@ void AP_TECS::_update_height_demand(void)
         _hgt_rate_dem = (_hgt_dem_adj - _hgt_dem_adj_last) / 0.1f;
         _flare_counter = 0;
     }
+    _hgt_dem_adj_last = _hgt_dem_adj;
 }
 
 void AP_TECS::_detect_underspeed(void) 
