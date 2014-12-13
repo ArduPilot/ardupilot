@@ -488,40 +488,30 @@ void NavEKF::ResetPosition(void)
     }
 }
 
-// resets velocity states to last GPS measurement or to zero if in static mode
+// Reset velocity states to last GPS measurement if available or to zero if in static mode
+// Do not reset vertical velocity using GPS as there is baro alt available to constrain drift
 void NavEKF::ResetVelocity(void)
 {
     if (staticMode) {
          state.velocity.zero();
          state.vel1.zero();
          state.vel2.zero();
-    } else if (_ahrs->get_gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
+    } else if (_ahrs->get_gps().status() >= AP_GPS::GPS_OK_FIX_3D && _fusionModeGPS <= 1) {
         // read the GPS
         readGpsData();
         // reset horizontal velocity states
-        if (_fusionModeGPS <= 1) {
-            states[4]  = velNED[0]; // north velocity from blended accel data
-            states[5]  = velNED[1]; // east velocity from blended accel data
-            states[23] = velNED[0]; // north velocity from IMU1 accel data
-            states[24] = velNED[1]; // east velocity from IMU1 accel data
-            states[27] = velNED[0]; // north velocity from IMU2 accel data
-            states[28] = velNED[1]; // east velocity from IMU2 accel data
-            // over write stored horizontal velocity states to prevent subsequent GPS measurements from being rejected
-            for (uint8_t i=0; i<=49; i++){
-                storedStates[i].velocity[0] = velNED[0];
-                storedStates[i].velocity[1] = velNED[1];
-            }
-        }
-        // reset filter velocity states
-        state.velocity = velNED;
-        state.vel1 = velNED;
-        state.vel2 = velNED;
-        // reset stored velocity states to prevent subsequent GPS measurements from being rejected
+        states[4]  = velNED[0]; // north velocity from blended accel data
+        states[5]  = velNED[1]; // east velocity from blended accel data
+        states[23] = velNED[0]; // north velocity from IMU1 accel data
+        states[24] = velNED[1]; // east velocity from IMU1 accel data
+        states[27] = velNED[0]; // north velocity from IMU2 accel data
+        states[28] = velNED[1]; // east velocity from IMU2 accel data
+        // over write stored horizontal velocity states to prevent subsequent GPS measurements from being rejected
         for (uint8_t i=0; i<=49; i++){
-            storedStates[i].velocity = velNED;
+            storedStates[i].velocity[0] = velNED[0];
+            storedStates[i].velocity[1] = velNED[1];
         }
     }
-
 }
 
 // reset the vertical position state using the last height measurement
