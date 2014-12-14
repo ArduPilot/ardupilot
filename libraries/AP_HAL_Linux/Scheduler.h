@@ -1,4 +1,3 @@
-
 #ifndef __AP_HAL_LINUX_SCHEDULER_H__
 #define __AP_HAL_LINUX_SCHEDULER_H__
 
@@ -71,13 +70,15 @@ private:
     pthread_t _io_thread_ctx;
     pthread_t _rcin_thread_ctx;
     pthread_t _uart_thread_ctx;
-    pthread_t _tonealarm_thread_ctx;
+    pthread_t _toneAlarm_thread_ctx;
+    pthread_t _led_thread_ctx;
 
     void *_timer_thread(void);
     void *_io_thread(void);
     void *_rcin_thread(void);
     void *_uart_thread(void);
-    void *_tonealarm_thread(void);
+    void *_toneAlarm_thread(void);
+    void *_led_thread(void);
 
     void _run_timers(bool called_from_timer_thread);
     void _run_io(void);

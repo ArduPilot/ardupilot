@@ -64,7 +64,18 @@ public:
     */
     virtual bool toneAlarm_init() { return false;}
     virtual void toneAlarm_set_tune(uint8_t tune) {}
-    virtual void _toneAlarm_timer_tick() {}
+    
+    /*
+        DycoLED Driver
+    */
+    virtual void led_init(uint8_t length){}
+    virtual void led_set_solid_color(uint8_t led_num, uint8_t color){}
+    virtual void led_set_pattern(uint16_t led_num,uint16_t color_series[],
+                                 float bright_series[],uint16_t time_series[],
+                                 uint8_t res, uint8_t step_cnt){}
+
+    virtual void _timer_tick() {}
+    
     
 };
 
