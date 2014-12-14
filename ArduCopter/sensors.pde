@@ -136,7 +136,7 @@ static void update_optical_flow(void)
             flowSonarAltHealth = sonar_alt_health;
         } else if (sonar_enabled){
             ground_distance_m = optflow.sonar_range();
-            if (ground_distance_m > 0.3f && ground_distance_m < 3.0f) {
+            if (ground_distance_m > 0.3f && ground_distance_m < 2.5f) {
                 if (flowSonarAltHealth < 255) flowSonarAltHealth++;
             } else {
                 flowSonarAltHealth = 0;
