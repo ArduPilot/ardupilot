@@ -129,9 +129,9 @@
 #define CH6_ACRO_YAW_KP                 40  // acro controller's P term.  converts pilot input to a desired roll, pitch or yaw rate
 #define CH6_RELAY                       9   // deprecated -- remove
 #define CH6_HELI_EXTERNAL_GYRO          13  // TradHeli specific external tail gyro gain
-#define CH6_OPTFLOW_KP                  17  // optical flow loiter controller's P term (position error to tilt angle)
-#define CH6_OPTFLOW_KI                  18  // optical flow loiter controller's I term (position error to tilt angle)
-#define CH6_OPTFLOW_KD                  19  // optical flow loiter controller's D term (position error to tilt angle)
+#define CH6_OPTFLOW_KP                  17  // deprecated -- remove
+#define CH6_OPTFLOW_KI                  18  // deprecated -- remove
+#define CH6_OPTFLOW_KD                  19  // deprecated -- remove
 #define CH6_AHRS_YAW_KP                 30  // ahrs's compass effect on yaw angle (0 = very low, 1 = very high)
 #define CH6_AHRS_KP                     31  // accelerometer effect on roll/pitch angle (0=low)
 #define CH6_INAV_TC                     32  // deprecated -- remove

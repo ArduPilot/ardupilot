@@ -460,10 +460,6 @@ void AP_Mount::configure_msg(mavlink_message_t* msg)
 {
     __mavlink_mount_configure_t packet;
     mavlink_msg_mount_configure_decode(msg, &packet);
-    if (mavlink_check_target(packet.target_system, packet.target_component)) {
-        // not for us
-        return;
-    }
     set_mode((enum MAV_MOUNT_MODE)packet.mount_mode);
     _stab_roll  = packet.stab_roll;
     _stab_tilt  = packet.stab_pitch;
@@ -476,10 +472,6 @@ void AP_Mount::control_msg(mavlink_message_t *msg)
 {
     __mavlink_mount_control_t packet;
     mavlink_msg_mount_control_decode(msg, &packet);
-    if (mavlink_check_target(packet.target_system, packet.target_component)) {
-        // not for us
-        return;
-    }
 
     switch ((enum MAV_MOUNT_MODE)_mount_mode.get())
     {

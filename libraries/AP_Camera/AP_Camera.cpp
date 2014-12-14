@@ -114,10 +114,6 @@ AP_Camera::configure_msg(mavlink_message_t* msg)
 {
     __mavlink_digicam_configure_t packet;
     mavlink_msg_digicam_configure_decode(msg, &packet);
-    if (mavlink_check_target(packet.target_system, packet.target_component)) {
-        // not for us
-        return;
-    }
     // This values may or not be used by APM
     // They are bypassed as "echo" to a external specialized board
     /*
@@ -139,10 +135,7 @@ AP_Camera::control_msg(mavlink_message_t* msg)
 {
     __mavlink_digicam_control_t packet;
     mavlink_msg_digicam_control_decode(msg, &packet);
-    if (mavlink_check_target(packet.target_system, packet.target_component)) {
-        // not for us
-        return;
-    }
+
     // This values may or not be used by APM (the shot is)
     // They are bypassed as "echo" to a external specialized board
     /*

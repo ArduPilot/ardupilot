@@ -65,7 +65,7 @@ static void failsafe_radio_on_event()
             }
             // no break
         default:
-            // used for AltHold, Guided, Loiter, RTL, Circle, OF_Loiter, Drift, Sport, Flip, Autotune, PosHold
+            // used for AltHold, Guided, Loiter, RTL, Circle, Drift, Sport, Flip, Autotune, PosHold
             // if landed disarm
             if (ap.land_complete) {
                 init_disarm_motors();
@@ -143,7 +143,7 @@ static void failsafe_battery_event(void)
                 }
                 break;
             default:
-                // used for AltHold, Guided, Loiter, RTL, Circle, OF_Loiter, Drift, Sport, Flip, Autotune, PosHold
+                // used for AltHold, Guided, Loiter, RTL, Circle, Drift, Sport, Flip, Autotune, PosHold
                 // if landed disarm
                 if (ap.land_complete) {
                     init_disarm_motors();

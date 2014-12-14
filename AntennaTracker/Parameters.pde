@@ -122,13 +122,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(startup_delay,          "STARTUP_DELAY",   0),
 
-    // @Param: PROXY_MODE
-    // @DisplayName: Also act as a MAVLink proxy for a vehicle
-    // @Description: If true, the tracker will act as a MAVlink proxy for a remote vehicle, and will eavesdrop vehicle position reports. 
-    // @Values: 0:Off,1:On
-    // @User: Standard
-    GSCALAR(proxy_mode,          "PROXY_MODE",   0),
-
     // @Param: SERVO_TYPE
     // @DisplayName: Type of servo system being used
     // @Description: This allows selection of position servos or on/off servos
