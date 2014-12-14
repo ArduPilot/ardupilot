@@ -368,6 +368,8 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     _ahrs(ahrs),
     _baro(baro),
     state(*reinterpret_cast<struct state_elements *>(&states)),
+    onGround(true),             // initialise assuming we are on ground
+    manoeuvring(false),         // initialise assuming we are not maneouvring
     covTimeStepMax(0.07f),      // maximum time (sec) between covariance prediction updates
     covDelAngMax(0.05f),        // maximum delta angle between covariance prediction updates
     TASmsecMax(200),            // maximum allowed interval between airspeed measurement updates
@@ -375,9 +377,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     prevStaticMode(true),       // staticMode from previous filter update
     yawAligned(false),          // set true when heading or yaw angle has been aligned
     inhibitWindStates(true),    // inhibit wind state updates on startup
-    inhibitMagStates(true),     // inhibit magnetometer state updates on startup
-    onGround(true),             // initialise assuming we are on ground
-    manoeuvring(false)          // initialise assuming we are not maneouvring
+    inhibitMagStates(true)      // inhibit magnetometer state updates on startup
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     ,_perf_UpdateFilter(perf_alloc(PC_ELAPSED, "EKF_UpdateFilter")),
@@ -486,8 +486,6 @@ void NavEKF::ResetPosition(void)
         storedStates[i].position[0] = state.position[0];
         storedStates[i].position[1] = state.position[1];
     }
-    // reset the glitch ofset correction states
-    gpsPosGlitchOffsetNE.zero();
 }
 
 // resets velocity states to last GPS measurement or to zero if in static mode

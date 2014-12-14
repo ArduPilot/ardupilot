@@ -276,10 +276,9 @@ void *LinuxScheduler::_timer_thread(void)
 
 void LinuxScheduler::_run_io(void)
 {
-    if (_in_io_proc) {
+    if (!_io_semaphore.take(0)) {
         return;
     }
-    _in_io_proc = true;
 
     // now call the IO based drivers
     for (int i = 0; i < _num_io_procs; i++) {
@@ -288,7 +287,7 @@ void LinuxScheduler::_run_io(void)
         }
     }
 
-    _in_io_proc = false;
+    _io_semaphore.give();
 }
 
 void *LinuxScheduler::_rcin_thread(void)
@@ -394,6 +393,7 @@ void LinuxScheduler::reboot(bool hold_in_bootloader)
 void LinuxScheduler::stop_clock(uint64_t time_usec)
 {
     stopped_clock_usec = time_usec;
+    _run_io();
 }
 
 #endif // CONFIG_HAL_BOARD

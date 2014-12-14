@@ -34,7 +34,7 @@ GCS_MAVLINK::GCS_MAVLINK() :
 void
 GCS_MAVLINK::init(AP_HAL::UARTDriver *port)
 {
-    GCS_Class::init(port);
+    _port = port;
     if (port == (AP_HAL::BetterStream*)hal.uartA) {
         mavlink_comm_0_port = port;
         chan = MAVLINK_COMM_0;
@@ -232,11 +232,6 @@ void GCS_MAVLINK::handle_mission_request_list(AP_Mission &mission, mavlink_messa
     mavlink_mission_request_list_t packet;
     mavlink_msg_mission_request_list_decode(msg, &packet);
 
-    // exit immediately if this command is not meant for this vehicle
-    if (mavlink_check_target(packet.target_system, packet.target_component)) {
-        return;
-    }
-
     // reply with number of commands in the mission.  The GCS will then request each command separately
     mavlink_msg_mission_count_send(chan,msg->sysid, msg->compid, mission.num_commands());
 
@@ -255,11 +250,6 @@ void GCS_MAVLINK::handle_mission_request(AP_Mission &mission, mavlink_message_t 
     // decode
     mavlink_mission_request_t packet;
     mavlink_msg_mission_request_decode(msg, &packet);
-
-    // exit immediately if this command is not meant for this vehicle
-    if (mavlink_check_target(packet.target_system, packet.target_component)) {
-        return;
-    }
 
     // retrieve mission from eeprom
     if (!mission.read_cmd_from_storage(packet.seq, cmd)) {
@@ -314,11 +304,6 @@ void GCS_MAVLINK::handle_mission_set_current(AP_Mission &mission, mavlink_messag
     mavlink_mission_set_current_t packet;
     mavlink_msg_mission_set_current_decode(msg, &packet);
 
-    // exit immediately if this command is not meant for this vehicle
-    if (mavlink_check_target(packet.target_system,packet.target_component)) {
-        return;
-    }
-
     // set current command
     if (mission.set_current_cmd(packet.seq)) {
         mavlink_msg_mission_current_send(chan, mission.get_current_nav_cmd().index);
@@ -333,11 +318,6 @@ void GCS_MAVLINK::handle_mission_count(AP_Mission &mission, mavlink_message_t *m
     // decode
     mavlink_mission_count_t packet;
     mavlink_msg_mission_count_decode(msg, &packet);
-
-    // exit immediately if this command is not meant for this vehicle
-    if (mavlink_check_target(packet.target_system,packet.target_component)) {
-        return;
-    }
 
     // start waypoint receiving
     if (packet.count > mission.num_commands_max()) {
@@ -366,11 +346,6 @@ void GCS_MAVLINK::handle_mission_clear_all(AP_Mission &mission, mavlink_message_
     mavlink_mission_clear_all_t packet;
     mavlink_msg_mission_clear_all_decode(msg, &packet);
 
-    // exit immediately if this command is not meant for this vehicle
-    if (mavlink_check_target(packet.target_system, packet.target_component)) {
-        return;
-    }
-
     // clear all waypoints
     if (mission.clear()) {
         // send ack
@@ -389,11 +364,6 @@ void GCS_MAVLINK::handle_mission_write_partial_list(AP_Mission &mission, mavlink
     // decode
     mavlink_mission_write_partial_list_t packet;
     mavlink_msg_mission_write_partial_list_decode(msg, &packet);
-
-    // exit immediately if this command is not meant for this vehicle
-    if (mavlink_check_target(packet.target_system,packet.target_component)) {
-        return;
-    }
 
     // start waypoint receiving
     if ((unsigned)packet.start_index > mission.num_commands() ||
@@ -443,10 +413,6 @@ void GCS_MAVLINK::handle_request_data_stream(mavlink_message_t *msg, bool save)
 {
     mavlink_request_data_stream_t packet;
     mavlink_msg_request_data_stream_decode(msg, &packet);
-
-    // exit immediately if this command is not meant for this vehicle
-    if (mavlink_check_target(packet.target_system, packet.target_component))
-        return;
 
     int16_t freq = 0;     // packet frequency
 
@@ -509,11 +475,6 @@ void GCS_MAVLINK::handle_param_request_list(mavlink_message_t *msg)
     mavlink_param_request_list_t packet;
     mavlink_msg_param_request_list_decode(msg, &packet);
 
-    // exit immediately if this command is not meant for this vehicle
-    if (mavlink_check_target(packet.target_system,packet.target_component)) {
-        return;
-    }
-
 #if CONFIG_HAL_BOARD != HAL_BOARD_APM1 && CONFIG_HAL_BOARD != HAL_BOARD_APM2
     // send system ID if we can
     char sysid[40];
@@ -533,10 +494,6 @@ void GCS_MAVLINK::handle_param_request_read(mavlink_message_t *msg)
     mavlink_param_request_read_t packet;
     mavlink_msg_param_request_read_decode(msg, &packet);
 
-    // exit immediately if this command is not meant for this vehicle
-    if (mavlink_check_target(packet.target_system,packet.target_component)) {
-        return;
-    }
     enum ap_var_type p_type;
     AP_Param *vp;
     char param_name[AP_MAX_NAME_SIZE+1];
@@ -575,11 +532,6 @@ void GCS_MAVLINK::handle_param_set(mavlink_message_t *msg, DataFlash_Class *Data
 
     mavlink_param_set_t packet;
     mavlink_msg_param_set_decode(msg, &packet);
-
-    // exit immediately if this command is not meant for this vehicle
-    if (mavlink_check_target(packet.target_system, packet.target_component)) {
-        return;
-    }
 
     // set parameter
     char key[AP_MAX_NAME_SIZE+1];
@@ -718,11 +670,6 @@ void GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
     struct AP_Mission::Mission_Command cmd = {};
 
     mavlink_msg_mission_item_decode(msg, &packet);
-
-    // exit immediately if this command is not meant for this vehicle
-    if (mavlink_check_target(packet.target_system,packet.target_component)) {
-        return;
-    }
 
     // convert mavlink packet to mission command
     if (!AP_Mission::mavlink_to_mission_cmd(packet, cmd)) {
@@ -906,9 +853,15 @@ GCS_MAVLINK::update(void (*run_cli)(AP_HAL::UARTDriver *))
             // we exclude radio packets to make it possible to use the
             // CLI over the radio
             if (msg.msgid != MAVLINK_MSG_ID_RADIO && msg.msgid != MAVLINK_MSG_ID_RADIO_STATUS) {
-                mavlink_active |= (1U<<chan);
+                mavlink_active |= (1U<<(chan-MAVLINK_COMM_0));
             }
-            handleMessage(&msg);
+            // if a snoop handler has been setup then use it
+            if (msg_snoop != NULL) {
+                msg_snoop(&msg);
+            }
+            if (!routing.check_and_forward(chan, &msg)) {
+                handleMessage(&msg);
+            }
         }
     }
 
@@ -1150,7 +1103,7 @@ void GCS_MAVLINK::send_statustext_all(const prog_char_t *msg)
 {
     for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
         if ((1U<<i) & mavlink_active) {
-            mavlink_channel_t chan = (mavlink_channel_t)i;
+            mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0+i);
             if (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_STATUSTEXT_LEN) {
                 char msg2[50];
                 strncpy_P(msg2, msg, sizeof(msg2));
@@ -1179,11 +1132,6 @@ void GCS_MAVLINK::handle_set_mode(mavlink_message_t* msg, bool (*set_mode)(uint8
     uint8_t result = MAV_RESULT_FAILED;
     mavlink_set_mode_t packet;
     mavlink_msg_set_mode_decode(msg, &packet);
-
-    // exit immediately if this command is not meant for this vehicle
-    if (mavlink_check_target(packet.target_system, 0)) {
-        return;
-    }
 
     // only accept custom modes because there is no easy mapping from Mavlink flight modes to AC flight modes
     if (packet.base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED) {

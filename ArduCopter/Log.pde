@@ -261,10 +261,10 @@ static void Log_Write_Optflow()
         LOG_PACKET_HEADER_INIT(LOG_OPTFLOW_MSG),
         time_ms         : hal.scheduler->millis(),
         surface_quality : optflow.quality(),
-        flow_x           : flowRate.x,
-        flow_y           : flowRate.y,
-        body_x           : bodyRate.x,
-        body_y           : bodyRate.y
+        flow_x          : flowRate.x,
+        flow_y          : flowRate.y,
+        body_x          : bodyRate.x,
+        body_y          : bodyRate.y
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
  #endif     // OPTFLOW == ENABLED

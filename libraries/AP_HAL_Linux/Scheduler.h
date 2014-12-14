@@ -86,6 +86,7 @@ private:
     uint64_t stopped_clock_usec;
 
     LinuxSemaphore _timer_semaphore;
+    LinuxSemaphore _io_semaphore;
 };
 
 #endif // CONFIG_HAL_BOARD
