@@ -500,16 +500,16 @@ void NavEKF::ResetVelocity(void)
         // read the GPS
         readGpsData();
         // reset horizontal velocity states
-        states[4]  = velNED[0]; // north velocity from blended accel data
-        states[5]  = velNED[1]; // east velocity from blended accel data
-        states[23] = velNED[0]; // north velocity from IMU1 accel data
-        states[24] = velNED[1]; // east velocity from IMU1 accel data
-        states[27] = velNED[0]; // north velocity from IMU2 accel data
-        states[28] = velNED[1]; // east velocity from IMU2 accel data
+        state.velocity.x  = velNED.x; // north velocity from blended accel data
+        state.velocity.y  = velNED.y; // east velocity from blended accel data
+        state.vel1.x      = velNED.x; // north velocity from IMU1 accel data
+        state.vel1.y      = velNED.y; // east velocity from IMU1 accel data
+        state.vel2.x      = velNED.x; // north velocity from IMU2 accel data
+        state.vel2.y      = velNED.y; // east velocity from IMU2 accel data
         // over write stored horizontal velocity states to prevent subsequent GPS measurements from being rejected
         for (uint8_t i=0; i<=49; i++){
-            storedStates[i].velocity[0] = velNED[0];
-            storedStates[i].velocity[1] = velNED[1];
+            storedStates[i].velocity.x = velNED.x;
+            storedStates[i].velocity.y = velNED.y;
         }
     }
 }
