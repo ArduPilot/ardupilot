@@ -48,8 +48,8 @@
 class AP_Notify
 {
 public:
-    /// notify_type - bitmask of notification types
-    struct notify_type {
+    /// notify_flags_type - bitmask of notification flags
+    struct notify_flags_type {
         uint16_t initialising       : 1;    // 1 if initialising and copter should not be moved
         uint16_t gps_status         : 3;    // 0 = no gps, 1 = no lock, 2 = 2d lock, 3 = 3d lock, 4 = dgps lock, 5 = rtk lock
         uint16_t gps_glitching      : 1;    // 1 if gps position is not good
@@ -84,7 +84,7 @@ public:
 
     // the notify flags are static to allow direct class access
     // without declaring the object
-    static struct notify_type flags;
+    static struct notify_flags_type flags;
     static struct notify_events_type events;
 
     // initialisation

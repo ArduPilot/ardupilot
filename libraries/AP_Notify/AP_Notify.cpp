@@ -17,7 +17,7 @@
 #include <AP_Notify.h>
 
 // static flags, to allow for direct class update from device drivers
-struct AP_Notify::notify_type AP_Notify::flags;
+struct AP_Notify::notify_flags_type AP_Notify::flags;
 struct AP_Notify::notify_events_type AP_Notify::events;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
