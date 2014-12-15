@@ -56,7 +56,7 @@ public:
         uint16_t baro_glitching     : 1;    // 1 if baro altitude is not good
         uint16_t armed              : 1;    // 0 = disarmed, 1 = armed
         uint16_t pre_arm_check      : 1;    // 0 = failing checks, 1 = passed
-        uint16_t arming_failed       : 1;
+        uint16_t arming_failed      : 1;    // 1 if copter failed to arm after user input
         uint16_t save_trim          : 1;    // 1 if gathering trim data
         uint16_t esc_calibration    : 1;    // 1 if calibrating escs
         uint16_t failsafe_radio     : 1;    // 1 if radio failsafe
@@ -69,15 +69,17 @@ public:
         uint16_t external_leds      : 1;    // 1 if external LEDs are enabled (normally only used for copter)
     };
 
+    /// notify_events_type - bitmask of active events.
+    //      Notify library is responsible for setting back to zero after notification has been completed
     struct notify_events_type {
-        uint8_t user_mode_change : 1;
-        uint8_t autotune_complete : 1;
-        uint8_t autotune_failed : 1;
-        uint8_t autotune_next_axis : 1;
-        uint8_t mission_complete : 1;
-        uint8_t waypoint_complete : 1;
-        uint8_t user_mode_change_failed : 1;
-        uint8_t failsafe_action_taken : 1;
+        uint8_t user_mode_change        : 1;    // 1 if user has initiated a flight mode change
+        uint8_t autotune_complete       : 1;    // 1 when autotune has successfully completed
+        uint8_t autotune_failed         : 1;    // 1 when autotune has failed
+        uint8_t autotune_next_axis      : 1;    // 1 when autotune has completed one axis and is moving onto the next
+        uint8_t mission_complete        : 1;    // 1 when the mission has completed successfully
+        uint8_t waypoint_complete       : 1;    // 1 as vehicle completes a waypoint
+        uint8_t user_mode_change_failed : 1;    // 1 when user initiated flight mode change fails
+        uint8_t failsafe_action_taken   : 1;    // unused
     };
 
     // the notify flags are static to allow direct class access
