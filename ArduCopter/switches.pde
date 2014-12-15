@@ -30,7 +30,10 @@ static void read_control_switch()
         if (set_mode(flight_modes[switch_position])) {
             // play a tone
             if (control_switch_state.debounced_switch_position != -1) {
-                AP_Notify::events.user_mode_change = 1;
+                // alert user to mode change failure (except if autopilot is just starting up)
+                if (ap.initialised) {
+                    AP_Notify::events.user_mode_change = 1;
+                }
             }
 
             if(g.ch7_option != AUX_SWITCH_SIMPLE_MODE && g.ch8_option != AUX_SWITCH_SIMPLE_MODE && g.ch7_option != AUX_SWITCH_SUPERSIMPLE_MODE && g.ch8_option != AUX_SWITCH_SUPERSIMPLE_MODE) {
