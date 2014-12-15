@@ -278,6 +278,8 @@ static bool verify_command(const AP_Mission::Mission_Command& cmd)
 // exit_mission - function that is called once the mission completes
 static void exit_mission()
 {
+    // play a tone
+    AP_Notify::events.mission_complete = 1;
     // if we are not on the ground switch to loiter or land
     if(!ap.land_complete) {
         // try to enter loiter but if that fails land
@@ -631,6 +633,9 @@ static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     if( !wp_nav.reached_wp_destination() ) {
         return false;
     }
+
+    // play a tone
+    AP_Notify::events.waypoint_complete = 1;
 
     // start timer if necessary
     if(loiter_time == 0) {
