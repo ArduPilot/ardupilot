@@ -74,7 +74,7 @@ bool ToneAlarm_PX4::init()
         return false;
     }
     
-    // set initial boot states. This prevents us issueing a arming
+    // set initial boot states. This prevents us issuing a arming
     // warning in plane and rover on every boot
     flags.armed = AP_Notify::flags.armed;
     flags.failsafe_battery = AP_Notify::flags.failsafe_battery;

@@ -36,9 +36,13 @@ private:
     /// play_tune - play one of the pre-defined tunes
     void play_tone(const uint8_t tone_index);
 
+    // play_string - play tone specified by the provided string of notes
     void play_string(const char *str);
 
+    // stop_cont_tone - stop playing the currently playing continuous tone
     void stop_cont_tone();
+
+    // check_cont_tone - check if we should begin playing a continuous tone
     void check_cont_tone();
 
     int _tonealarm_fd;      // file descriptor for the tone alarm
@@ -50,9 +54,9 @@ private:
         uint8_t failsafe_gps          : 1;    // 1 if gps failsafe
         uint8_t arming_failed         : 1;    // 0 = failing checks, 1 = passed
         uint8_t parachute_release     : 1;    // 1 if parachute is being released
-        uint8_t pre_arm_check         : 1;
-        uint8_t failsafe_radio        : 1;
-        uint8_t user_mode_initialized : 1;
+        uint8_t pre_arm_check         : 1;    // 0 = failing checks, 1 = passed
+        uint8_t failsafe_radio        : 1;    // 1 if radio failsafe
+        uint8_t user_mode_initialized : 1;    // 1 if the flight mode has changed or failed to be changed
     } flags;
 
     int8_t _cont_tone_playing;
