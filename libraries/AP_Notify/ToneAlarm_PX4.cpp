@@ -79,7 +79,6 @@ bool ToneAlarm_PX4::init()
     flags.armed = AP_Notify::flags.armed;
     flags.failsafe_battery = AP_Notify::flags.failsafe_battery;
     flags.pre_arm_check = 1;
-    flags.user_mode_initialized = 0;
     _cont_tone_playing = -1;
     return true;
 }
@@ -149,7 +148,7 @@ void ToneAlarm_PX4::update()
     }
 
     // notify the user when their mode change was successful
-    if (AP_Notify::events.user_mode_change && flags.user_mode_initialized) {
+    if (AP_Notify::events.user_mode_change) {
         if (AP_Notify::flags.armed) {
             play_tone(AP_NOTIFY_PX4_TONE_LOUD_NEU_FEEDBACK);
         } else {
@@ -158,17 +157,12 @@ void ToneAlarm_PX4::update()
     }
 
     // notify the user when their mode change failed
-    if (AP_Notify::events.user_mode_change_failed && flags.user_mode_initialized) {
+    if (AP_Notify::events.user_mode_change_failed) {
         if (AP_Notify::flags.armed) {
             play_tone(AP_NOTIFY_PX4_TONE_LOUD_NEG_FEEDBACK);
         } else {
             play_tone(AP_NOTIFY_PX4_TONE_QUIET_NEG_FEEDBACK);
         }
-    }
-
-    //set user_mode_initialized
-    if (AP_Notify::events.user_mode_change || AP_Notify::events.user_mode_change_failed) {
-        flags.user_mode_initialized = 1;
     }
 
     // failsafe initiated mode change

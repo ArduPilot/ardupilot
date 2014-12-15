@@ -56,7 +56,6 @@ private:
         uint8_t parachute_release     : 1;    // 1 if parachute is being released
         uint8_t pre_arm_check         : 1;    // 0 = failing checks, 1 = passed
         uint8_t failsafe_radio        : 1;    // 1 if radio failsafe
-        uint8_t user_mode_initialized : 1;    // 1 if the flight mode has changed or failed to be changed
     } flags;
 
     int8_t _cont_tone_playing;
