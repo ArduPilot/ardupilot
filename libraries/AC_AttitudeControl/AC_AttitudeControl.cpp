@@ -7,7 +7,7 @@
 const AP_Param::GroupInfo AC_AttitudeControl::var_info[] PROGMEM = {
 
     // @Param: RATE_RP_MAX
-    // @DisplayName: Angle Rate Roll-Pitch max
+    // @DisplayName: 最大Roll-Pitch角速率
     // @Description: maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
     // @Units: Centi-Degrees/Sec
     // @Range: 9000 36000
