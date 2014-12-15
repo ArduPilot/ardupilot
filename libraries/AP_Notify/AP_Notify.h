@@ -73,13 +73,13 @@ public:
     //      Notify library is responsible for setting back to zero after notification has been completed
     struct notify_events_type {
         uint8_t user_mode_change        : 1;    // 1 if user has initiated a flight mode change
+        uint8_t user_mode_change_failed : 1;    // 1 when user initiated flight mode change fails
+        uint8_t failsafe_mode_change    : 1;    // 1 when failsafe has triggered a flight mode change
         uint8_t autotune_complete       : 1;    // 1 when autotune has successfully completed
         uint8_t autotune_failed         : 1;    // 1 when autotune has failed
         uint8_t autotune_next_axis      : 1;    // 1 when autotune has completed one axis and is moving onto the next
         uint8_t mission_complete        : 1;    // 1 when the mission has completed successfully
         uint8_t waypoint_complete       : 1;    // 1 as vehicle completes a waypoint
-        uint8_t user_mode_change_failed : 1;    // 1 when user initiated flight mode change fails
-        uint8_t failsafe_mode_change    : 1;    // 1 when failsafe has triggered a flight mode change
     };
 
     // the notify flags are static to allow direct class access
