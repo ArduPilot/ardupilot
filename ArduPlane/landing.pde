@@ -104,13 +104,51 @@ static void setup_landing_glide_slope(void)
 {
         Location loc = next_WP_loc;
 
-        // project a poiunt 500 meters past the landing point, passing
+        // project a point 500 meters past the landing point, passing
         // through the landing point
         const float land_projection = 500;        
         int32_t land_bearing_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
-        float land_slope = ((next_WP_loc.alt - prev_WP_loc.alt)*0.01f) / (float)wp_totalDistance;
+        float total_distance = get_distance(prev_WP_loc, next_WP_loc);
+
+        // height we need to sink for this WP
+        float sink_height = (prev_WP_loc.alt - next_WP_loc.alt)*0.01f;
+
+        // current ground speed
+        float groundspeed = ahrs.groundspeed();
+        if (groundspeed < 0.5f) {
+            groundspeed = 0.5f;
+        }
+
+        // calculate time to lose the needed altitude
+        float sink_time = total_distance / groundspeed;
+        if (sink_time < 0.5f) {
+            sink_time = 0.5f;
+        }
+
+        // find the sink rate needed for the target location
+        float sink_rate = sink_height / sink_time;
+
+        // the height we aim for is the one to give us the right flare point
+        float aim_height = g.land_flare_sec * sink_rate;
+
+        // time before landing that we will flare
+        float flare_time = aim_height / SpdHgt_Controller->get_land_sinkrate();
+
+        // distance to flare is based on ground speed, adjusted as we
+        // get closer. This takes into account the wind
+        float flare_distance = groundspeed * flare_time;
+
+        // now calculate our aim point, which is before the landing
+        // point and above it
+        location_update(loc, land_bearing_cd*0.01f, -flare_distance);
+        loc.alt += aim_height*100;
+
+        // calculate slope to landing point
+        float land_slope = (sink_height - aim_height) / total_distance;
+
+        // calculate point along that slope 500m ahead
         location_update(loc, land_bearing_cd*0.01f, land_projection);
-        loc.alt += land_slope * land_projection * 100;
+        loc.alt -= land_slope * land_projection * 100;
 
         // setup the offset_cm for set_target_altitude_proportion()
         target_altitude.offset_cm = loc.alt - prev_WP_loc.alt;
