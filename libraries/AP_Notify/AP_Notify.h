@@ -79,7 +79,7 @@ public:
         uint8_t mission_complete        : 1;    // 1 when the mission has completed successfully
         uint8_t waypoint_complete       : 1;    // 1 as vehicle completes a waypoint
         uint8_t user_mode_change_failed : 1;    // 1 when user initiated flight mode change fails
-        uint8_t failsafe_action_taken   : 1;    // unused
+        uint8_t failsafe_mode_change    : 1;    // 1 when failsafe has triggered a flight mode change
     };
 
     // the notify flags are static to allow direct class access

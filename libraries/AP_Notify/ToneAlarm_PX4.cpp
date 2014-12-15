@@ -171,7 +171,8 @@ void ToneAlarm_PX4::update()
         flags.user_mode_initialized = 1;
     }
 
-    if(AP_Notify::events.failsafe_action_taken) {
+    // failsafe initiated mode change
+    if(AP_Notify::events.failsafe_mode_change) {
         play_tone(AP_NOTIFY_PX4_TONE_LOUD_ATTENTION_NEEDED);
     }
 
@@ -187,7 +188,7 @@ void ToneAlarm_PX4::update()
     if (flags.failsafe_radio != AP_Notify::flags.failsafe_radio) {
         flags.failsafe_radio = AP_Notify::flags.failsafe_radio;
         if (flags.failsafe_radio) {
-            // armed case handled by events.failsafe_action_taken
+            // armed case handled by events.failsafe_mode_change
             if (!AP_Notify::flags.armed) {
                 play_tone(AP_NOTIFY_PX4_TONE_QUIET_NEG_FEEDBACK);
             }
