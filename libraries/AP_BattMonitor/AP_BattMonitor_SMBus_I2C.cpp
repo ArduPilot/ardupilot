@@ -56,8 +56,6 @@ void AP_BattMonitor_SMBus_I2C::read()
 // returns true if read was succesful, false if failed
 bool AP_BattMonitor_SMBus_I2C::read_word(uint8_t reg, uint16_t& data) const
 {
-    uint8_t buff[2];    // buffer to hold results
-
     // get pointer to i2c bus semaphore
     AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
 
@@ -67,8 +65,17 @@ bool AP_BattMonitor_SMBus_I2C::read_word(uint8_t reg, uint16_t& data) const
         return false;
     }
 
-    // read two bytes
-    if (hal.i2c->readRegisters(BATTMONITOR_SMBUS_I2C_ADDR, reg, 2, buff) != 0) {
+    uint8_t buff[3];    // buffer to hold results
+
+    // read three bytes and place in last three bytes of buffer
+    if (hal.i2c->readRegisters(BATTMONITOR_SMBUS_I2C_ADDR, reg, 3, buff) != 0) {
+        i2c_sem->give();
+        return false;
+    }
+
+    // check PEC
+    uint8_t pec = get_PEC(BATTMONITOR_SMBUS_I2C_ADDR, reg, true, buff, 2);
+    if (pec != buff[2]) {
         i2c_sem->give();
         return false;
     }
@@ -86,7 +93,7 @@ bool AP_BattMonitor_SMBus_I2C::read_word(uint8_t reg, uint16_t& data) const
 // read_block - returns number of characters read if successful, zero if unsuccessful
 uint8_t AP_BattMonitor_SMBus_I2C::read_block(uint8_t reg, uint8_t* data, uint8_t max_len, bool append_zero) const
 {
-    uint8_t buff[max_len+1];    // buffer to hold results
+    uint8_t buff[max_len+2];    // buffer to hold results (2 extra byte returned holding length and PEC)
 
     // get pointer to i2c bus semaphore
     AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
@@ -98,7 +105,7 @@ uint8_t AP_BattMonitor_SMBus_I2C::read_block(uint8_t reg, uint8_t* data, uint8_t
     }
 
     // read bytes
-    if (hal.i2c->readRegisters(BATTMONITOR_SMBUS_I2C_ADDR, reg, max_len+1, buff) != 0) {
+    if (hal.i2c->readRegisters(BATTMONITOR_SMBUS_I2C_ADDR, reg, max_len+2, buff) != 0) {
         i2c_sem->give();
         return 0;
     }
@@ -114,7 +121,14 @@ uint8_t AP_BattMonitor_SMBus_I2C::read_block(uint8_t reg, uint8_t* data, uint8_t
         return 0;
     }
 
-    // copy data
+    // check PEC
+    uint8_t pec = get_PEC(BATTMONITOR_SMBUS_I2C_ADDR, reg, true, buff, bufflen+1);
+    if (pec != buff[bufflen+1]) {
+        i2c_sem->give();
+        return 0;
+    }
+
+    // copy data (excluding PEC)
     memcpy(data, &buff[1], bufflen);
 
     // optionally add zero to end
