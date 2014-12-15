@@ -143,7 +143,7 @@ AP_BattMonitor::init()
             _num_instances++;
 
         // check for SMBus
-        } else if (monitor_type == RangeFinder_TYPE_SMBUS) {
+        } else if (monitor_type == BattMonitor_TYPE_SMBUS) {
             state[instance].instance = instance;
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
             drivers[instance] = new AP_BattMonitor_SMBus_PX4(*this, instance, state[instance]);
@@ -182,7 +182,7 @@ bool AP_BattMonitor::has_current(uint8_t instance) const
     // check for analog voltage and current monitor or smbus monitor
     if (instance < AP_BATT_MONITOR_MAX_INSTANCES) {
         if (drivers[instance] != NULL) {
-            return (_monitoring[instance] == BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT || _monitoring[instance] == RangeFinder_TYPE_SMBUS);
+            return (_monitoring[instance] == BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT || _monitoring[instance] == BattMonitor_TYPE_SMBUS);
         }
     }
 
