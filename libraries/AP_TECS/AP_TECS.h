@@ -73,6 +73,9 @@ public:
 	// return maximum climb rate
 	float get_max_climbrate(void) const { return _maxClimbRate; }
 
+	// return landing sink rate
+	float get_land_sinkrate(void) const { return _land_sink; }
+
 	// this supports the TECS_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
