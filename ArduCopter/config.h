@@ -529,10 +529,6 @@
  # define MOUNT         ENABLED
 #endif
 
-#ifndef MOUNT2
- # define MOUNT2         DISABLED
-#endif
-
 
 //////////////////////////////////////////////////////////////////////////////
 // Flight mode definitions

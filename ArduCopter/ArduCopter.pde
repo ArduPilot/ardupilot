@@ -686,11 +686,6 @@ static AP_HAL::AnalogSource* rssi_analog_source;
 static AP_Mount camera_mount(&current_loc, ahrs, 0);
 #endif
 
-#if MOUNT2 == ENABLED
-// current_loc uses the baro/gps soloution for altitude rather than gps only.
-static AP_Mount camera_mount2(&current_loc, ahrs, 1);
-#endif
-
 ////////////////////////////////////////////////////////////////////////////////
 // AC_Fence library to reduce fly-aways
 ////////////////////////////////////////////////////////////////////////////////
@@ -1043,11 +1038,6 @@ static void update_mount()
     camera_mount.update_mount_position();
 #endif
 
-#if MOUNT2 == ENABLED
-    // update camera mount's position
-    camera_mount2.update_mount_position();
-#endif
-
 #if CAMERA == ENABLED
     camera.trigger_pic_cleanup();
 #endif
@@ -1166,10 +1156,6 @@ static void one_hz_loop()
 
 #if MOUNT == ENABLED
     camera_mount.update_mount_type();
-#endif
-
-#if MOUNT2 == ENABLED
-    camera_mount2.update_mount_type();
 #endif
 
     check_usb_mux();
