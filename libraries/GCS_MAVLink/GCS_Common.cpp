@@ -859,7 +859,7 @@ GCS_MAVLINK::update(void (*run_cli)(AP_HAL::UARTDriver *))
             if (msg_snoop != NULL) {
                 msg_snoop(&msg);
             }
-            if (!routing.check_and_forward(chan, &msg)) {
+            if (routing.check_and_forward(chan, &msg)) {
                 handleMessage(&msg);
             }
         }

@@ -10,9 +10,13 @@
 #include <AP_Common.h>
 #include <GCS_MAVLink.h>
 
-// 5 routes should be enough for now. This will need to increase as we
-// make more extensive use of MAVLink forwarding
+// 20 routes should be enough for now. This may need to increase as
+// we make more extensive use of MAVLink forwarding
+#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
+#define MAVLINK_MAX_ROUTES 20
+#else
 #define MAVLINK_MAX_ROUTES 5
+#endif
 
 /*
   object to handle MAVLink packet routing
@@ -27,8 +31,7 @@ public:
       automatically learns the route for the sender if it is not
       already known.
 
-      This returns true if the message matched a route and was
-      forwarded. 
+      This returns true if the message should be processed locally
     */
     bool check_and_forward(mavlink_channel_t in_channel, const mavlink_message_t* msg);
 

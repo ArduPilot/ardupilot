@@ -36,10 +36,9 @@ MAVLink_routing::MAVLink_routing(void) : num_routes(0) {}
   automatically learns the route for the sender if it is not
   already known.
   
-  This returns true if the message matched a route and was
-  forwarded. 
+  This returns true if the message should be processed locally
 
-  Theory of MAVLink routing   
+  Theory of MAVLink routing:
 
   When a flight controller receives a message it should process it
   locally if any of these conditions hold:
@@ -99,7 +98,7 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
     if (msg->msgid == MAVLINK_MSG_ID_HEARTBEAT) {
         // heartbeat needs special handling
         handle_heartbeat(in_channel, msg);
-        return false;
+        return true;
     }
 
     // extract the targets for this packet
@@ -116,7 +115,7 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
 
     if (process_locally && !broadcast_system && !broadcast_component) {
         // nothing more to do - it can only be for us
-        return false;
+        return true;
     }
 
     // forward on any channels matching the targets
@@ -146,7 +145,7 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
         process_locally = true;
     }
 
-    return !process_locally;
+    return process_locally;
 }
 
 /*
@@ -155,6 +154,11 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
 void MAVLink_routing::learn_route(mavlink_channel_t in_channel, const mavlink_message_t* msg)
 {
     uint8_t i;
+    if (msg->sysid == 0 || 
+        (msg->sysid == mavlink_system.sysid && 
+         msg->compid == mavlink_system.compid)) {
+        return;
+    }
     for (i=0; i<num_routes; i++) {
         if (routes[i].sysid == msg->sysid && 
             routes[i].compid == msg->compid &&
@@ -162,9 +166,7 @@ void MAVLink_routing::learn_route(mavlink_channel_t in_channel, const mavlink_me
             break;
         }
     }
-    if (i == num_routes && i<MAVLINK_MAX_ROUTES &&
-        (routes[i].sysid != mavlink_system.sysid ||
-         routes[i].compid != mavlink_system.compid)) {
+    if (i == num_routes && i<MAVLINK_MAX_ROUTES) {
         routes[i].sysid = msg->sysid;
         routes[i].compid = msg->compid;
         routes[i].channel = in_channel;
