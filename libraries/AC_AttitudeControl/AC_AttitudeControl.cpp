@@ -8,55 +8,55 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] PROGMEM = {
 
     // @Param: RATE_RP_MAX
     // @DisplayName: 最大Roll-Pitch角速率
-    // @Description: maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
-    // @Units: Centi-Degrees/Sec
+    // @Description: 角度控制器控制roll/pitch轴时可请求的最大旋转速率，用于自稳、留待、返航、自动飞行模式。
+    // @Units: 百分度/秒
     // @Range: 9000 36000
     // @Increment: 500
     // @User: Advanced
     AP_GROUPINFO("RATE_RP_MAX", 0, AC_AttitudeControl, _angle_rate_rp_max, AC_ATTITUDE_CONTROL_RATE_RP_MAX_DEFAULT),
 
     // @Param: RATE_Y_MAX
-    // @DisplayName: Angle Rate Yaw max
-    // @Description: maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
-    // @Units: Centi-Degrees/Sec
+    // @DisplayName: 最大Yaw角速率
+    // @Description: 角度控制器控制roll/pitch轴时可请求的最大旋转速率，用于自稳、留待、返航、自动飞行模式。
+    // @Units: 百分度/秒
     // @Range: 4500 18000
     // @Increment: 500
     // @User: Advanced
     AP_GROUPINFO("RATE_Y_MAX",  1, AC_AttitudeControl, _angle_rate_y_max, AC_ATTITUDE_CONTROL_RATE_Y_MAX_DEFAULT),
 
     // @Param: SLEW_YAW
-    // @DisplayName: Yaw target slew rate
-    // @Description: Maximum rate the yaw target can be updated in Loiter, RTL, Auto flight modes
-    // @Units: Centi-Degrees/Sec
+    // @DisplayName: 目标Yaw转换率Yaw target slew rate
+    // @Description: 在留待、返航、自动飞行模式，更新目标yaw的最大速率 
+    // @Units: 百分度/秒
     // @Range: 500 18000
     // @Increment: 100
     // @User: Advanced
     AP_GROUPINFO("SLEW_YAW",    2, AC_AttitudeControl, _slew_yaw, AC_ATTITUDE_CONTROL_SLEW_YAW_DEFAULT),
 
     // @Param: ACCEL_RP_MAX
-    // @DisplayName: Acceleration Max for Roll/Pitch
-    // @Description: Maximum acceleration in roll/pitch axis
-    // @Units: Centi-Degrees/Sec/Sec
+    // @DisplayName: Roll/Pitch轴最大加速度
+    // @Description:  roll/pitch轴最大加速度
+    // @Units: 百分度/秒/秒
     // @Range: 0 180000
     // @Increment: 1000
-    // @Values: 0:Disabled, 72000:Slow, 108000:Medium, 162000:Fast
+    // @Values: 0:禁止, 72000:慢, 108000:中, 162000:快
     // @User: Advanced
     AP_GROUPINFO("ACCEL_RP_MAX", 3, AC_AttitudeControl, _accel_rp_max, AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT),
 
     // @Param: ACCEL_Y_MAX
-    // @DisplayName: Acceleration Max for Yaw
-    // @Description: Maximum acceleration in yaw axis
-    // @Units: Centi-Degrees/Sec/Sec
+    // @DisplayName: Yaw最大加速度 
+    // @Description: yaw轴最大加速度
+    // @Units:百分度/秒/秒
     // @Range: 0 72000
-    // @Values: 0:Disabled, 18000:Slow, 36000:Medium, 54000:Fast
+    // @Values: 0:禁止, 18000:慢, 36000:中, 54000:快
     // @Increment: 1000
     // @User: Advanced
     AP_GROUPINFO("ACCEL_Y_MAX",  4, AC_AttitudeControl, _accel_y_max, AC_ATTITUDE_CONTROL_ACCEL_Y_MAX_DEFAULT),
 
     // @Param: RATE_FF_ENAB
-    // @DisplayName: Rate Feedforward Enable
-    // @Description: Controls whether body-frame rate feedfoward is enabled or disabled
-    // @Values: 0:Disabled, 1:Enabled
+    // @DisplayName: 开启速率前馈 
+    // @Description: 控制机体速率前馈开启或关闭
+    // @Values: 0:禁止,1:开启
     // @User: Advanced
     AP_GROUPINFO("RATE_FF_ENAB", 5, AC_AttitudeControl, _rate_bf_ff_enabled, AC_ATTITUDE_CONTROL_RATE_BF_FF_DEFAULT),
 
