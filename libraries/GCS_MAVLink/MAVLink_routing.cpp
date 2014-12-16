@@ -38,6 +38,58 @@ MAVLink_routing::MAVLink_routing(void) : num_routes(0) {}
   
   This returns true if the message matched a route and was
   forwarded. 
+
+  Theory of MAVLink routing   
+
+  When a flight controller receives a message it should process it
+  locally if any of these conditions hold:
+
+    1a) the message has no target_system field
+
+    1b) the message has a target_system of zero
+
+    1c) the message has the flight controllers target system and has no
+       target_component field
+
+    1d) the message has the flight controllers target system and has
+       the flight controllers target_component 
+
+    1e) the message has the flight controllers target system and the
+        flight controller has not seen any messages on any of its links
+        from a system that has the messages
+        target_system/target_component combination
+
+  When a flight controller receives a message it should forward it
+  onto another different link if any of these conditions hold for that
+  link: 
+
+    2a) the message has no target_system field
+
+    2b) the message has a target_system of zero
+
+    2c) the message does not have the flight controllers target_system
+        and the flight controller has seen a message from the messages
+        target_system on the link
+
+    2d) the message has the flight controllers target_system and has a
+        target_component field and the flight controllers has seen a
+        message from the target_system/target_component combination on
+        the link
+
+Note: This proposal assumes that ground stations will not send command
+packets to a non-broadcast destination (sysid/compid combination)
+until they have received at least one package from that destination
+over the link. This is essential to prevent a flight controller from
+acting on a message that is not meant for it. For example, a PARAM_SET
+cannot be sent to a specific sysid/compid combination until the GCS
+has seen a packet from that sysid/compid combination on the link. 
+
+The GCS must also reset what sysid/compid combinations it has seen on
+a link when it sees a SYSTEM_TIME message with a decrease in
+time_boot_ms from a particular sysid/compid. That is essential to
+detect a reset of the flight controller, which implies a reset of its
+routing table.
+
 */
 bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavlink_message_t* msg)
 {
@@ -55,39 +107,46 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
     int16_t target_component = -1;
     get_targets(msg, target_system, target_component);
 
-    bool targetted = true;
+    bool broadcast_system = (target_system == 0 || target_system == -1);
+    bool broadcast_component = (target_component == 0 || target_component == -1);
+    bool match_system = broadcast_system || (target_system == mavlink_system.sysid);
+    bool match_component = match_system && (broadcast_component || 
+                                            (target_component == mavlink_system.compid));
+    bool process_locally = match_system && match_component;
 
-    if (target_system == -1 && target_component == -1) {
-        // it is not a targetted message. We need to both forward it
-        // and process it locally
-        targetted = false;
-    } else if ((target_system == -1 || target_system == mavlink_system.sysid) &&
-               (target_component == -1 || target_component == mavlink_system.compid)) {
-        // it is for us only
+    if (process_locally && !broadcast_system && !broadcast_component) {
+        // nothing more to do - it can only be for us
         return false;
     }
 
     // forward on any channels matching the targets
+    bool forwarded = false;
     for (uint8_t i=0; i<num_routes; i++) {
-        if (targetted == false ||
-            (target_system == routes[i].sysid &&
-             target_component == routes[i].compid)) {
-            if (in_channel != routes[i].channel &&
-                comm_get_txspace(routes[i].channel) >= ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
+        if (broadcast_system || (target_system == routes[i].sysid &&
+                                 (broadcast_component || 
+                                  target_component == routes[i].compid))) {
+            if (in_channel != routes[i].channel) {
+                if (comm_get_txspace(routes[i].channel) >= 
+                    ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
 #if ROUTING_DEBUG
-                ::printf("fwd msg %u from chan %u on chan %u sysid=%u compid=%u\n",
-                         msg->msgid,
-                         (unsigned)in_channel,
-                         (unsigned)routes[i].channel,
-                         (unsigned)target_system,
-                         (unsigned)target_component);
+                    ::printf("fwd msg %u from chan %u on chan %u sysid=%u compid=%u\n",
+                             msg->msgid,
+                             (unsigned)in_channel,
+                             (unsigned)routes[i].channel,
+                             (unsigned)target_system,
+                             (unsigned)target_component);
 #endif
-                _mavlink_resend_uart(routes[i].channel, msg);
+                    _mavlink_resend_uart(routes[i].channel, msg);
+                }
+                forwarded = true;
             }
         }
     }
+    if (!forwarded && match_system) {
+        process_locally = true;
+    }
 
-    return targetted;
+    return !process_locally;
 }
 
 /*
