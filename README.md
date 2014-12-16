@@ -1,4 +1,3 @@
-这是基于APM，添加了OSD功能。代码分支为CopterOSD-3.2和PlanOSD-3.2。详情请访问http://playuav.com
 #ArduPilot Project#
 
 ### The ArduPilot project is made up of: ###
