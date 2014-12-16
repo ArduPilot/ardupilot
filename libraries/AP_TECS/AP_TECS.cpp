@@ -17,55 +17,55 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
 
     // @Param: CLMB_MAX
-    // @DisplayName: Maximum Climb Rate (metres/sec)
-    // @Description: This is the best climb rate that the aircraft can achieve with the throttle set to THR_MAX and the airspeed set to the default value. For electric aircraft make sure this number can be achieved towards the end of flight when the battery voltage has reduced. The setting of this parameter can be checked by commanding a positive altitude change of 100m in loiter, RTL or guided mode. If the throttle required to climb is close to THR_MAX and the aircraft is maintaining airspeed, then this parameter is set correctly. If the airspeed starts to reduce, then the parameter is set to high, and if the throttle demand require to climb and maintain speed is noticeably less than THR_MAX, then either CLMB_MAX should be increased or THR_MAX reduced.
+    // @DisplayName: 最大爬升速度（m/s）
+    // @Description: 这是飞行器在油门达到THR_MAX并且空速为default时能达到的最大爬升速度。对于电动飞行器请确认这个数值在飞行最后电池电压减小的情况下仍然能够被达到。这个数字的设置能够通过控制正向100m的高度变化在Loiter，RTL或者guided模式下来检查。如果需要的油门接近THR_MAX并且飞行器保持空速，那么这个参数就设置正确了。如果空速开始减小，那么参数就设置的太高，如果空速油门达到所需的爬升速度并且维持且显著地低于THR_MAX，那么CLMB_MAX应该被增加或者THR_MAX应该被减小。
 	// @Increment: 0.1
 	// @Range: 0.1 20.0
 	// @User: User
     AP_GROUPINFO("CLMB_MAX",    0, AP_TECS, _maxClimbRate, 5.0f),
 
     // @Param: SINK_MIN
-    // @DisplayName: Minimum Sink Rate (metres/sec)
-    // @Description: This is the sink rate of the aircraft with the throttle set to THR_MIN and the same airspeed as used to measure CLMB_MAX.
+    // @DisplayName: 最小下降速度（m/s）
+    // @Description: 这是飞行器在油门位于THR_MIN并且空速和用来测量CLMB_MAX的一样时的最小下降速度。
 	// @Increment: 0.1
 	// @Range: 0.1 10.0
 	// @User: User
     AP_GROUPINFO("SINK_MIN",    1, AP_TECS, _minSinkRate, 2.0f),
 
     // @Param: TIME_CONST
-    // @DisplayName: Controller time constant (sec)
-    // @Description: This is the time constant of the TECS control algorithm. Smaller values make it faster to respond, large values make it slower to respond.
+    // @DisplayName: 控制器时间常数（s）
+    // @Description: 这是TECS控制算法的时间常数。更小的值让它更快的相应，更大的值让更慢的相应。
 	// @Range: 3.0 10.0
 	// @Increment: 0.2
 	// @User: Advanced
     AP_GROUPINFO("TIME_CONST",  2, AP_TECS, _timeConst, 5.0f),
 
     // @Param: THR_DAMP
-    // @DisplayName: Controller throttle damping
-    // @Description: This is the damping gain for the throttle demand loop. Increase to add damping  to correct for oscillations in speed and height.
+    // @DisplayName: 控制器油门抑制
+    // @Description: 这是用于油门需求循环的抑制增益。增加会提高增益来校正速度和高度上的抖动。
 	// @Range: 0.1 1.0
 	// @Increment: 0.1
 	// @User: Advanced
     AP_GROUPINFO("THR_DAMP",    3, AP_TECS, _thrDamp, 0.5f),
 
     // @Param: INTEG_GAIN
-    // @DisplayName: Controller integrator
-    // @Description: This is the integrator gain on the control loop. Increase to increase the rate at which speed and height offsets are trimmed out
+    // @DisplayName: 控制器积分器
+    // @Description: 这是控制循环的积分增益。增加会增加速度和高度位移的剪切速度。
 	// @Range: 0.0 0.5
 	// @Increment: 0.02
 	// @User: Advanced
     AP_GROUPINFO("INTEG_GAIN", 4, AP_TECS, _integGain, 0.1f),
 
     // @Param: VERT_ACC
-    // @DisplayName: Vertical Acceleration Limit (metres/sec^2)
-    // @Description: This is the maximum vertical acceleration either up or down that the  controller will use to correct speed or height errors.
+    // @DisplayName: 垂直加速度限制（m/s^2)
+    // @Description: 这是上升或下降的最大垂直加速度，用于修正速度或高度误差。
 	// @Range: 1.0 10.0
 	// @Increment: 0.5
 	// @User: Advanced
     AP_GROUPINFO("VERT_ACC",  5, AP_TECS, _vertAccLim, 7.0f),
 
     // @Param: HGT_OMEGA
-    // @DisplayName: Height complementary filter frequency (radians/sec)
+    // @DisplayName: 高度辅助过滤器频率（rad/s)
     // @Description: This is the cross-over frequency of the complementary filter used to fuse vertical acceleration and baro alt to obtain an estimate of height rate and height.
 	// @Range: 1.0 5.0
 	// @Increment: 0.05
