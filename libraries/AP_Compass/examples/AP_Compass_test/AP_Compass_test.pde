@@ -18,6 +18,23 @@
 #include <AP_Math.h>    // ArduPilot Mega Vector/Matrix math Library
 #include <AP_Declination.h>
 #include <AP_Compass.h> // Compass Library
+#include <GCS_MAVLink.h>
+#include <AP_Scheduler.h>
+#include <DataFlash.h>
+#include <AP_GPS.h>
+#include <AP_Vehicle.h>
+#include <AP_InertialSensor.h>
+#include <Filter.h>
+#include <AP_Baro.h>
+#include <AP_AHRS.h>
+#include <AP_Airspeed.h>
+#include <AP_NavEKF.h>
+#include <AP_ADC.h>
+#include <AP_ADC_AnalogSource.h>
+#include <AP_Notify.h>
+#include <AP_Mission.h>
+#include <AP_Terrain.h>
+#include <AP_Rally.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 

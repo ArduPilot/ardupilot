@@ -314,13 +314,14 @@ AP_Mission mission(ahrs, &start_command, &verify_command, &exit_mission);
 ////////////////////////////////////////////////////////////////////////////////
 // Optical flow sensor
 ////////////////////////////////////////////////////////////////////////////////
- #if OPTFLOW == ENABLED
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
-static AP_OpticalFlow_ADNS3080 optflow(ahrs);
-#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if OPTFLOW == ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_PX4
 static AP_OpticalFlow_PX4 optflow(ahrs);
 #endif
- #endif
+
+// gnd speed limit required to observe optical flow sensor limits
+static float ekfGndSpdLimit;
+// scale factor applied to velocity controller gain to prevent optical flow noise causing excessive angle demand noise
+static float ekfNavVelGainScaler;
 
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection
@@ -577,18 +578,6 @@ static float baro_climbrate;        // barometer climbrate in cm/s
 // Current location of the copter
 static struct   Location current_loc;
 
-
-////////////////////////////////////////////////////////////////////////////////
-// Navigation Roll/Pitch functions
-////////////////////////////////////////////////////////////////////////////////
-#if OPTFLOW == ENABLED
-// The Commanded ROll from the autopilot based on optical flow sensor.
-static int32_t of_roll;
-// The Commanded pitch from the autopilot based on optical flow sensor. negative Pitch means go forward.
-static int32_t of_pitch;
-#endif // OPTFLOW == ENABLED
-
-
 ////////////////////////////////////////////////////////////////////////////////
 // Throttle integrator
 ////////////////////////////////////////////////////////////////////////////////
@@ -777,14 +766,14 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { throttle_loop,         8,     45 },
     { update_GPS,            8,     90 },
 #if OPTFLOW == ENABLED
-    { update_optflow,        8,     20 },
+    { update_optical_flow,   2,     20 },
 #endif
     { update_batt_compass,  40,     72 },
     { read_aux_switches,    40,      5 },
     { arm_motors_check,     40,      1 },
     { auto_trim,            40,     14 },
     { update_altitude,      40,    100 },
-    { run_nav_updates,      40,     80 },
+    { run_nav_updates,       8,     80 },
     { update_thr_cruise,    40,     10 },
     { three_hz_loop,       133,      9 },
     { compass_accumulate,    8,     42 },
@@ -851,14 +840,14 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { throttle_loop,         2,     450 },
     { update_GPS,            2,     900 },
 #if OPTFLOW == ENABLED
-    { update_optflow,        2,     100 },
+    { update_optical_flow,   1,     100 },
 #endif
     { update_batt_compass,  10,     720 },
     { read_aux_switches,    10,      50 },
     { arm_motors_check,     10,      10 },
     { auto_trim,            10,     140 },
     { update_altitude,      10,    1000 },
-    { run_nav_updates,      10,     800 },
+    { run_nav_updates,       4,     800 },
     { update_thr_cruise,     1,      50 },
     { three_hz_loop,        33,      90 },
     { compass_accumulate,    2,     420 },
@@ -1487,21 +1476,6 @@ static void tuning(){
         g.pid_rate_yaw.ff(tuning_value);
         break;        
 #endif
-
-    case CH6_OPTFLOW_KP:
-        g.pid_optflow_roll.kP(tuning_value);
-        g.pid_optflow_pitch.kP(tuning_value);
-        break;
-
-    case CH6_OPTFLOW_KI:
-        g.pid_optflow_roll.kI(tuning_value);
-        g.pid_optflow_pitch.kI(tuning_value);
-        break;
-
-    case CH6_OPTFLOW_KD:
-        g.pid_optflow_roll.kD(tuning_value);
-        g.pid_optflow_pitch.kD(tuning_value);
-        break;
 
     case CH6_AHRS_YAW_KP:
         ahrs._kp_yaw.set(tuning_value);

@@ -789,7 +789,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // decode
             mavlink_command_long_t packet;
             mavlink_msg_command_long_decode(msg, &packet);
-            if (mavlink_check_target(packet.target_system, packet.target_component)) break;
 
             uint8_t result = MAV_RESULT_UNSUPPORTED;
 
@@ -1019,10 +1018,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         int16_t v[8];
         mavlink_msg_rc_channels_override_decode(msg, &packet);
 
-        // exit immediately if this command is not meant for this vehicle
-        if (mavlink_check_target(packet.target_system,packet.target_component))
-            break;
-
         v[0] = packet.chan1_raw;
         v[1] = packet.chan2_raw;
         v[2] = packet.chan3_raw;
@@ -1142,19 +1137,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         handle_serial_control(msg, gps);
         break;
 #endif
-
-    default:
-        // forward unknown messages to the other link if there is one
-        for (uint8_t i=0; i<num_gcs; i++) {
-            if (gcs[i].initialised && i != (uint8_t)chan) {
-                mavlink_channel_t out_chan = (mavlink_channel_t)i;
-                // only forward if it would fit in the transmit buffer
-            if (comm_get_txspace(out_chan) > ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
-                _mavlink_resend_uart(out_chan, msg);
-            }
-        }
-        }
-        break;
 
     } // end switch
 } // end handle mavlink

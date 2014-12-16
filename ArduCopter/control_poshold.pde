@@ -441,7 +441,7 @@ static void poshold_run()
                     poshold_update_brake_angle_from_velocity(poshold.brake_pitch, -vel_fw);
 
                     // run loiter controller
-                    wp_nav.update_loiter();
+                    wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
                     // calculate final roll and pitch output by mixing loiter and brake controls
                     poshold.roll = poshold_mix_controls(brake_to_loiter_mix, poshold.brake_roll + poshold.wind_comp_roll, wp_nav.get_roll());
@@ -472,7 +472,7 @@ static void poshold_run()
 
                 case POSHOLD_LOITER:
                     // run loiter controller
-                    wp_nav.update_loiter();
+                    wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
                     // set roll angle based on loiter controller outputs
                     poshold.roll = wp_nav.get_roll();

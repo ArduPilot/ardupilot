@@ -43,6 +43,13 @@ mavlink_system_t mavlink_system = {7,1};
 // mask of serial ports disabled to allow for SERIAL_CONTROL
 static uint8_t mavlink_locked_mask;
 
+// routing table
+MAVLink_routing GCS_MAVLINK::routing;
+
+// snoop function for vehicle types that want to see messages for
+// other targets
+void (*GCS_MAVLINK::msg_snoop)(const mavlink_message_t* msg) = NULL;
+
 /*
   lock a channel, preventing use by MAVLink
  */
@@ -56,15 +63,6 @@ void GCS_MAVLINK::lock_channel(mavlink_channel_t _chan, bool lock)
     } else {
         mavlink_locked_mask &= ~(1U<<(unsigned)_chan);
     }
-}
-
-uint8_t mavlink_check_target(uint8_t sysid, uint8_t compid)
-{
-    if (sysid != mavlink_system.sysid)
-        return 1;
-    // Currently we are not checking for correct compid since APM is not passing mavlink info to any subsystem
-    // If it is addressed to our system ID we assume it is for us
-    return 0; // no error
 }
 
 // return a MAVLink variable type given a AP_Param type

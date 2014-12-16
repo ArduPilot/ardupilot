@@ -97,7 +97,7 @@ static void land_gps_run()
     wp_nav.set_pilot_desired_acceleration(roll_control, pitch_control);
 
     // run loiter controller
-    wp_nav.update_loiter();
+    wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
     // call attitude controller
     attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
@@ -241,10 +241,14 @@ static void land_do_not_use_GPS()
 }
 
 // set_mode_land_with_pause - sets mode to LAND and triggers 4 second delay before descent starts
+//  this is always called from a failsafe so we trigger notification to pilot
 static void set_mode_land_with_pause()
 {
     set_mode(LAND);
     land_pause = true;
+
+    // alert pilot to mode change
+    AP_Notify::events.failsafe_mode_change = 1;
 }
 
 // landing_with_GPS - returns true if vehicle is landing using GPS

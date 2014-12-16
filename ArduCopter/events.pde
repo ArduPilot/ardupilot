@@ -25,9 +25,8 @@ static void failsafe_radio_on_event()
 
             // if far from home then RTL
             }else if(home_distance > wp_nav.get_wp_radius()) {
-                if (!set_mode(RTL)) {
-                    set_mode_land_with_pause();
-                }
+                // switch to RTL or if that fails, LAND
+                set_mode_RTL_or_land_with_pause();
 
             // We have no GPS or are very close to home so we will land
             }else{
@@ -47,9 +46,8 @@ static void failsafe_radio_on_event()
             // if failsafe_throttle is FS_THR_ENABLED_ALWAYS_RTL do RTL
             } else if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_RTL) {
                 if(home_distance > wp_nav.get_wp_radius()) {
-                    if (!set_mode(RTL)) {
-                        set_mode_land_with_pause();
-                    }
+                    // switch to RTL or if that fails, LAND
+                    set_mode_RTL_or_land_with_pause();
                 }else{
                     // We are very close to home so we will land
                     set_mode_land_with_pause();
@@ -65,7 +63,7 @@ static void failsafe_radio_on_event()
             }
             // no break
         default:
-            // used for AltHold, Guided, Loiter, RTL, Circle, OF_Loiter, Drift, Sport, Flip, Autotune, PosHold
+            // used for AltHold, Guided, Loiter, RTL, Circle, Drift, Sport, Flip, Autotune, PosHold
             // if landed disarm
             if (ap.land_complete) {
                 init_disarm_motors();
@@ -76,10 +74,8 @@ static void failsafe_radio_on_event()
 
             // if far from home then RTL
             }else if(home_distance > wp_nav.get_wp_radius()) {
-                if (!set_mode(RTL)){
-                    // if RTL fails because of no GPS, then LAND
-                    set_mode_land_with_pause();
-                }
+                // switch to RTL or if that fails, LAND
+                set_mode_RTL_or_land_with_pause();
             }else{
                 // We have no GPS or are very close to home so we will land
                 set_mode_land_with_pause();
@@ -120,9 +116,8 @@ static void failsafe_battery_event(void)
                 }else{
                     // set mode to RTL or LAND
                     if (g.failsafe_battery_enabled == FS_BATT_RTL && home_distance > wp_nav.get_wp_radius()) {
-                        if (!set_mode(RTL)) {
-                            set_mode_land_with_pause();
-                        }
+                        // switch to RTL or if that fails, LAND
+                        set_mode_RTL_or_land_with_pause();
                     }else{
                         set_mode_land_with_pause();
                     }
@@ -135,24 +130,22 @@ static void failsafe_battery_event(void)
 
                 // set mode to RTL or LAND
                 } else if (home_distance > wp_nav.get_wp_radius()) {
-                    if (!set_mode(RTL)) {
-                        set_mode_land_with_pause();
-                    }
+                    // switch to RTL or if that fails, LAND
+                    set_mode_RTL_or_land_with_pause();
                 } else {
                     set_mode_land_with_pause();
                 }
                 break;
             default:
-                // used for AltHold, Guided, Loiter, RTL, Circle, OF_Loiter, Drift, Sport, Flip, Autotune, PosHold
+                // used for AltHold, Guided, Loiter, RTL, Circle, Drift, Sport, Flip, Autotune, PosHold
                 // if landed disarm
                 if (ap.land_complete) {
                     init_disarm_motors();
 
                 // set mode to RTL or LAND
                 } else if (g.failsafe_battery_enabled == FS_BATT_RTL && home_distance > wp_nav.get_wp_radius()) {
-                    if (!set_mode(RTL)) {
-                        set_mode_land_with_pause();
-                    }
+                    // switch to RTL or if that fails, LAND
+                    set_mode_RTL_or_land_with_pause();
                 } else {
                     set_mode_land_with_pause();
                 }
@@ -212,6 +205,8 @@ static void failsafe_gps_check()
     if (mode_requires_GPS(control_mode) || g.failsafe_gps_enabled == FS_GPS_LAND_EVEN_STABILIZE) {
         if (g.failsafe_gps_enabled == FS_GPS_ALTHOLD && !failsafe.radio) {
             set_mode(ALT_HOLD);
+            // alert pilot to mode change
+            AP_Notify::events.failsafe_mode_change = 1;
         }else{
             set_mode_land_with_pause();
         }
@@ -277,9 +272,8 @@ static void failsafe_gcs_check()
             if (ap.throttle_zero) {
                 init_disarm_motors();
             }else if(home_distance > wp_nav.get_wp_radius()) {
-                if (!set_mode(RTL)) {
-                    set_mode_land_with_pause();
-                }
+                // switch to RTL or if that fails, LAND
+                set_mode_RTL_or_land_with_pause();
             }else{
                 // We have no GPS or are very close to home so we will land
                 set_mode_land_with_pause();
@@ -289,9 +283,8 @@ static void failsafe_gcs_check()
             // if g.failsafe_gcs is 1 do RTL, 2 means continue with the mission
             if (g.failsafe_gcs == FS_GCS_ENABLED_ALWAYS_RTL) {
                 if (home_distance > wp_nav.get_wp_radius()) {
-                    if (!set_mode(RTL)) {
-                        set_mode_land_with_pause();
-                    }
+                    // switch to RTL or if that fails, LAND
+                    set_mode_RTL_or_land_with_pause();
                 }else{
                     // We are very close to home so we will land
                     set_mode_land_with_pause();
@@ -301,9 +294,8 @@ static void failsafe_gcs_check()
             break;
         default:
             if(home_distance > wp_nav.get_wp_radius()) {
-                if (!set_mode(RTL)) {
-                    set_mode_land_with_pause();
-                }
+                // switch to RTL or if that fails, LAND
+                set_mode_RTL_or_land_with_pause();
             }else{
                 // We have no GPS or are very close to home so we will land
                 set_mode_land_with_pause();
@@ -317,6 +309,20 @@ static void failsafe_gcs_off_event(void)
 {
     // log recovery of GCS in logs?
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_GCS, ERROR_CODE_FAILSAFE_RESOLVED);
+}
+
+// set_mode_RTL_or_land_with_pause - sets mode to RTL if possible or LAND with 4 second delay before descent starts
+//  this is always called from a failsafe so we trigger notification to pilot
+static void set_mode_RTL_or_land_with_pause()
+{
+    // attempt to switch to RTL, if this fails then switch to Land
+    if (!set_mode(RTL)) {
+        // set mode to land will trigger mode change notification to pilot
+        set_mode_land_with_pause();
+    } else {
+        // alert pilot to mode change
+        AP_Notify::events.failsafe_mode_change = 1;
+    }
 }
 
 static void update_events()

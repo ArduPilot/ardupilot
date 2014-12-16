@@ -14,6 +14,11 @@
 #include <AP_AHRS.h>
 #include <stdint.h>
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#include <uORB/topics/esc_status.h>
+#endif
+
+
 #if HAL_CPU_CLASS < HAL_CPU_CLASS_75 && defined(APM_BUILD_DIRECTORY)
   #if (APM_BUILD_TYPE(APM_BUILD_ArduCopter) || defined(__AVR_ATmega1280__))
     #define DATAFLASH_NO_CLI
@@ -71,6 +76,7 @@ public:
     void Log_Write_Message(const char *message);
     void Log_Write_Message_P(const prog_char_t *message);
     void Log_Write_Camera(const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);
+    void Log_Write_ESC(void);
 
     bool logging_started(void) const { return log_write_started; }
 
@@ -339,6 +345,20 @@ struct PACKED log_EKF4 {
     int8_t  offsetEast;
     uint8_t faults;
     uint8_t staticmode;
+    uint8_t timeouts;
+};
+
+struct PACKED log_EKF5 {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    int16_t FIX;
+    int16_t FIY;
+    int16_t AFIX;
+    int16_t AFIY;
+    int16_t gndPos;
+    uint8_t scaler;
+    int16_t RI;
+    uint16_t range;
 };
 
 struct PACKED log_Cmd {
@@ -429,6 +449,15 @@ struct PACKED log_Ubx3 {
     float sAcc;
 };
 
+struct PACKED log_Esc {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;     
+    int16_t rpm;
+    int16_t voltage;
+    int16_t current;
+    int16_t temperature;
+};
+
 // messages for all boards
 #define LOG_BASE_STRUCTURES \
     { LOG_FORMAT_MSG, sizeof(log_Format), \
@@ -475,7 +504,7 @@ struct PACKED log_Ubx3 {
     { LOG_EKF3_MSG, sizeof(log_EKF3), \
       "EKF3","Icccccchhhc","TimeMS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IVT" }, \
     { LOG_EKF4_MSG, sizeof(log_EKF4), \
-      "EKF4","IcccccccbbBB","TimeMS,SV,SP,SH,SMX,SMY,SMZ,SVT,OFN,EFE,FS,StaticMode" }, \
+      "EKF4","IcccccccbbBBB","TimeMS,SV,SP,SH,SMX,SMY,SMZ,SVT,OFN,EFE,FS,StaticMode,TS" }, \
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
       "TERR","IBLLHffHH","TimeMS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded" }, \
     { LOG_UBX1_MSG, sizeof(log_Ubx1), \
@@ -483,7 +512,25 @@ struct PACKED log_Ubx3 {
     { LOG_UBX2_MSG, sizeof(log_Ubx2), \
       "UBX2", "IBbBbB", "TimeMS,Instance,ofsI,magI,ofsQ,magQ" }, \
     { LOG_UBX3_MSG, sizeof(log_Ubx3), \
-      "UBX3", "IBfff", "TimeMS,Instance,hAcc,vAcc,sAcc" }
+      "UBX3", "IBfff", "TimeMS,Instance,hAcc,vAcc,sAcc" }, \
+    { LOG_ESC1_MSG, sizeof(log_Esc), \
+      "ESC1",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
+    { LOG_ESC2_MSG, sizeof(log_Esc), \
+      "ESC2",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
+    { LOG_ESC3_MSG, sizeof(log_Esc), \
+      "ESC3",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
+    { LOG_ESC4_MSG, sizeof(log_Esc), \
+      "ESC4",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
+    { LOG_ESC5_MSG, sizeof(log_Esc), \
+      "ESC5",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
+    { LOG_ESC6_MSG, sizeof(log_Esc), \
+      "ESC6",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
+    { LOG_ESC7_MSG, sizeof(log_Esc), \
+      "ESC7",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
+    { LOG_ESC8_MSG, sizeof(log_Esc), \
+      "ESC8",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
+    { LOG_EKF5_MSG, sizeof(log_EKF5), \
+      "EKF5","IhhhhcBcC","TimeMS,FIX,FIY,AFIX,AFIY,gndPos,fScaler,RI,rng" }
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 #define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_EXTRA_STRUCTURES
@@ -520,6 +567,15 @@ struct PACKED log_Ubx3 {
 #define LOG_UBX1_MSG      151
 #define LOG_UBX2_MSG      152
 #define LOG_UBX3_MSG      153
+#define LOG_ESC1_MSG      154
+#define LOG_ESC2_MSG      155
+#define LOG_ESC3_MSG      156
+#define LOG_ESC4_MSG      157
+#define LOG_ESC5_MSG      158
+#define LOG_ESC6_MSG      159
+#define LOG_ESC7_MSG      160
+#define LOG_ESC8_MSG      161
+#define LOG_EKF5_MSG      162
 
 // message types 200 to 210 reversed for GPS driver use
 // message types 211 to 220 reversed for autotune use

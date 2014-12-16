@@ -73,6 +73,9 @@ public:
 	// return maximum climb rate
 	float get_max_climbrate(void) const { return _maxClimbRate; }
 
+	// return landing sink rate
+	float get_land_sinkrate(void) const { return _land_sink; }
+
 	// this supports the TECS_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -117,6 +120,7 @@ private:
     AP_Float _timeConst;
     AP_Float _landTimeConst;
     AP_Float _ptchDamp;
+    AP_Float _landDamp;
     AP_Float _thrDamp;
     AP_Float _integGain;
     AP_Float _vertAccLim;
@@ -186,6 +190,7 @@ private:
     float _hgt_dem_adj_last;
     float _hgt_rate_dem;
 	float _hgt_dem_prev;
+    float _land_hgt_dem;
 
     // Speed demand after application of rate limiting
     // This is the demand tracked by the TECS control loops

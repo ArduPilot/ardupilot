@@ -117,7 +117,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
     // @Description: This controls whether the NavEKF Kalman filter is used for attitude and position estimation
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO("EKF_USE",  13, AP_AHRS, _ekf_use, 0),
+    AP_GROUPINFO("EKF_USE",  13, AP_AHRS, _ekf_use, AHRS_EKF_USE_DEFAULT),
 #endif
 
     AP_GROUPEND

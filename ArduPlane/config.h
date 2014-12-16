@@ -136,6 +136,18 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// Optical flow sensor support
+//
+
+#ifndef OPTFLOW
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+ # define OPTFLOW ENABLED
+#else
+ # define OPTFLOW DISABLED
+#endif
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 // RADIO CONFIGURATION
 //////////////////////////////////////////////////////////////////////////////
@@ -458,11 +470,13 @@
 #endif
 
 // use this to completely disable the CLI. We now default the CLI to
-// off as it really is no longer needed except for special developer
-// testing. This also allows us to keep supporting the APM2 for a bit
-// longer, as it saves us 20k of flash
+// off on smaller boards.
 #ifndef CLI_ENABLED
+#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
+ # define CLI_ENABLED ENABLED
+#else
  # define CLI_ENABLED DISABLE
+#endif
 #endif
 
 // use this to disable geo-fencing

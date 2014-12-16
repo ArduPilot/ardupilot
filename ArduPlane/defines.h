@@ -128,6 +128,9 @@ enum log_messages {
     LOG_ARM_DISARM_MSG,
     LOG_AIRSPEED_MSG,
     LOG_COMPASS3_MSG
+#if OPTFLOW == ENABLED
+    ,LOG_OPTFLOW_MSG
+#endif
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)

@@ -77,15 +77,13 @@ void AP_AHRS_NavEKF::update(void)
     _dcm_attitude(roll, pitch, yaw);
 
     if (!ekf_started) {
-        // if we have a GPS lock and more than 6 satellites, we can start the EKF
-        if (get_gps().status() >= AP_GPS::GPS_OK_FIX_3D && get_gps().num_sats() >= _gps_minsats) {
-            if (start_time_ms == 0) {
-                start_time_ms = hal.scheduler->millis();
-            }
-            if (hal.scheduler->millis() - start_time_ms > startup_delay_ms) {
-                ekf_started = true;
-                EKF.InitialiseFilterDynamic();
-            }
+        // wait 10 seconds
+        if (start_time_ms == 0) {
+            start_time_ms = hal.scheduler->millis();
+        }
+        if (hal.scheduler->millis() - start_time_ms > startup_delay_ms) {
+            ekf_started = true;
+            EKF.InitialiseFilterDynamic();
         }
     }
     if (ekf_started) {
@@ -118,8 +116,36 @@ void AP_AHRS_NavEKF::update(void)
                 _gyro_estimate /= healthy_count;
             }
             _gyro_estimate += _gyro_bias;
+
+            // update _accel_ef_ekf
+            for (uint8_t i=0; i<_ins.get_accel_count(); i++) {
+                if (_ins.get_accel_health(i)) {
+                    _accel_ef_ekf[i] = _dcm_matrix * _ins.get_accel(i);
+                }
+            }
+
+            // update _accel_ef_ekf_blended
+            EKF.getAccelNED(_accel_ef_ekf_blended);
         }
     }
+}
+
+// accelerometer values in the earth frame in m/s/s
+const Vector3f &AP_AHRS_NavEKF::get_accel_ef(uint8_t i) const
+{
+    if(!using_EKF()) {
+        return AP_AHRS_DCM::get_accel_ef(i);
+    }
+    return _accel_ef_ekf[i];
+}
+
+// blended accelerometer values in the earth frame in m/s/s
+const Vector3f &AP_AHRS_NavEKF::get_accel_ef_blended(void) const
+{
+    if(!using_EKF()) {
+        return AP_AHRS_DCM::get_accel_ef_blended();
+    }
+    return _accel_ef_ekf_blended;
 }
 
 void AP_AHRS_NavEKF::reset(bool recover_eulers)
@@ -288,6 +314,24 @@ bool AP_AHRS_NavEKF::initialised(void) const
     // initialisation complete 10sec after ekf has started
     return (ekf_started && (hal.scheduler->millis() - start_time_ms > AP_AHRS_NAVEKF_SETTLE_TIME_MS));
 };
+
+// write optical flow data to EKF
+void  AP_AHRS_NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, uint8_t &rangeHealth, float &rawSonarRange)
+{
+    EKF.writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, rangeHealth, rawSonarRange);
+}
+
+// inhibit GPS useage
+uint8_t AP_AHRS_NavEKF::setInhibitGPS(void)
+{
+    return EKF.setInhibitGPS();
+}
+
+// get speed limit
+void AP_AHRS_NavEKF::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler)
+{
+    EKF.getEkfControlLimits(ekfGndSpdLimit,ekfNavVelGainScaler);
+}
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE
 

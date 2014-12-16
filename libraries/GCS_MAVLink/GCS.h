@@ -14,6 +14,7 @@
 #include <AP_Mission.h>
 #include "../AP_BattMonitor/AP_BattMonitor.h"
 #include <stdint.h>
+#include <MAVLink_routing.h>
 
 //  GCS Message ID's
 /// NOTE: to ensure we never block on sending MAVLink messages
@@ -51,99 +52,16 @@ enum ap_message {
     MSG_BATTERY2,
     MSG_CAMERA_FEEDBACK,
     MSG_MOUNT_STATUS,
+    MSG_OPTICAL_FLOW,
     MSG_RETRY_DEFERRED // this must be last
 };
 
 
 ///
-/// @class	GCS
-/// @brief	Class describing the interface between the APM code
-///			proper and the GCS implementation.
-///
-/// GCS' are currently implemented inside the sketch and as such have
-/// access to all global state.  The sketch should not, however, call GCS
-/// internal functions - all calls to the GCS should be routed through
-/// this interface (or functions explicitly exposed by a subclass).
-///
-class GCS_Class
-{
-public:
-
-    /// Startup initialisation.
-    ///
-    /// This routine performs any one-off initialisation required before
-    /// GCS messages are exchanged.
-    ///
-    /// @note The stream is expected to be set up and configured for the
-    ///       correct bitrate before ::init is called.
-    ///
-    /// @note The stream is currently BetterStream so that we can use the _P
-    ///	      methods; this may change if Arduino adds them to Print.
-    ///
-    /// @param	port		The stream over which messages are exchanged.
-    ///
-    void        init(AP_HAL::UARTDriver *port) {
-        _port = port;
-    }
-
-    /// Update GCS state.
-    ///
-    /// This may involve checking for received bytes on the stream,
-    /// or sending additional periodic messages.
-    void        update(void) {
-    }
-
-    /// Send a message with a single numeric parameter.
-    ///
-    /// This may be a standalone message, or the GCS driver may
-    /// have its own way of locating additional parameters to send.
-    ///
-    /// @param	id			ID of the message to send.
-    /// @param	param		Explicit message parameter.
-    ///
-    void        send_message(enum ap_message id) {
-    }
-
-    /// Send a text message.
-    ///
-    /// @param	severity	A value describing the importance of the message.
-    /// @param	str			The text to be sent.
-    ///
-    void        send_text(gcs_severity severity, const char *str) {
-    }
-
-    /// Send a text message with a PSTR()
-    ///
-    /// @param	severity	A value describing the importance of the message.
-    /// @param	str			The text to be sent.
-    ///
-    void        send_text_P(gcs_severity severity, const prog_char_t *str) {
-    }
-
-    // send streams which match frequency range
-    void            data_stream_send(void);
-
-    // set to true if this GCS link is active
-    bool            initialised;
-
-protected:
-    /// The stream we are communicating over
-    AP_HAL::UARTDriver *      _port;
-};
-
-
-//
-// GCS class definitions.
-//
-// These are here so that we can declare the GCS object early in the sketch
-// and then reference it statically rather than via a pointer.
-//
-
-///
 /// @class	GCS_MAVLINK
-/// @brief	The mavlink protocol for qgroundcontrol
+/// @brief	MAVLink transport control class
 ///
-class GCS_MAVLINK : public GCS_Class
+class GCS_MAVLINK
 {
 public:
     GCS_MAVLINK();
@@ -156,8 +74,14 @@ public:
     void        data_stream_send(void);
     void        queued_param_send();
     void        queued_waypoint_send();
+    void        set_snoop(void (*_msg_snoop)(const mavlink_message_t* msg)) {
+        msg_snoop = _msg_snoop;
+    }
 
     static const struct AP_Param::GroupInfo        var_info[];
+
+    // set to true if this GCS link is active
+    bool            initialised;
 
     // NOTE! The streams enum below and the
     // set of AP_Int16 stream rates _must_ be
@@ -214,6 +138,9 @@ public:
 
 private:
     void        handleMessage(mavlink_message_t * msg);
+
+    /// The stream we are communicating over
+    AP_HAL::UARTDriver *_port;
 
     /// Perform queued sending operations
     ///
@@ -312,6 +239,12 @@ private:
 
     // bitmask of what mavlink channels are active
     static uint8_t mavlink_active;
+
+    // mavlink routing object
+    static MAVLink_routing routing;
+
+    // a vehicle can optionally snoop on messages for other systems
+    static void (*msg_snoop)(const mavlink_message_t* msg);
 
     // vehicle specific message send function
     bool try_send_message(enum ap_message id);

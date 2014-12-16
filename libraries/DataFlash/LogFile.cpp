@@ -756,6 +756,7 @@ void DataFlash_Class::Log_Write_RCOUT(void)
         chan12        : hal.rcout->read(11)
     };
     WriteBlock(&pkt, sizeof(pkt));
+    Log_Write_ESC();
 }
 
 // Write a BARO packet
@@ -973,8 +974,10 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
 	float tasVar;
     Vector2f offset;
     uint8_t faultStatus;
+    uint8_t timeoutStatus;
     ahrs.get_NavEKF().getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
     ahrs.get_NavEKF().getFilterFaults(faultStatus);
+    ahrs.get_NavEKF().getFilterTimeouts(timeoutStatus);
     struct log_EKF4 pkt4 = {
         LOG_PACKET_HEADER_INIT(LOG_EKF4_MSG),
         time_ms : hal.scheduler->millis(),
@@ -988,9 +991,32 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
         offsetNorth : (int8_t)(offset.x),
         offsetEast : (int8_t)(offset.y),
         faults : (uint8_t)(faultStatus),
-        staticmode : (uint8_t)(ahrs.get_NavEKF().getStaticMode())
+        staticmode : (uint8_t)(ahrs.get_NavEKF().getStaticMode()),
+        timeouts : (uint8_t)(timeoutStatus)
     };
     WriteBlock(&pkt4, sizeof(pkt4));
+
+    // Write fifth EKF packet
+    float fscale;
+    float gndPos;
+    float flowInnovX, flowInnovY;
+    float augFlowInnovX, augFlowInnovY;
+    float rngInnov;
+    float range;
+    ahrs.get_NavEKF().getFlowDebug(fscale, gndPos, flowInnovX, flowInnovY, augFlowInnovX, augFlowInnovY, rngInnov, range);
+    struct log_EKF5 pkt5 = {
+        LOG_PACKET_HEADER_INIT(LOG_EKF5_MSG),
+        time_ms : hal.scheduler->millis(),
+        FIX : (int16_t)(1000*flowInnovX),
+        FIY : (int16_t)(1000*flowInnovY),
+        AFIX : (int16_t)(1000*augFlowInnovX),
+        AFIY : (int16_t)(1000*augFlowInnovY),
+        gndPos : (int16_t)(100*gndPos),
+        scaler: (uint8_t)(100*fscale),
+        RI : (int16_t)(100*rngInnov),
+        range : (uint16_t)(100*range)
+     };
+    WriteBlock(&pkt5, sizeof(pkt5));
 }
 #endif
 
@@ -1055,4 +1081,45 @@ void DataFlash_Class::Log_Write_Camera(const AP_AHRS &ahrs, const AP_GPS &gps, c
         yaw         : (uint16_t)ahrs.yaw_sensor
     };
     WriteBlock(&pkt, sizeof(pkt));
+}
+
+// Write ESC status messages
+void DataFlash_Class::Log_Write_ESC(void)
+{
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    static int _esc_status_sub = -1;
+    struct esc_status_s esc_status;
+
+    if (_esc_status_sub == -1) {
+        // subscribe to ORB topic on first call
+        _esc_status_sub = orb_subscribe(ORB_ID(esc_status));  
+    } 
+
+    // check for new ESC status data
+    bool esc_updated = false;
+    orb_check(_esc_status_sub, &esc_updated);
+    if (esc_updated && (OK == orb_copy(ORB_ID(esc_status), _esc_status_sub, &esc_status))) {
+        if (esc_status.esc_count > 8) {
+            esc_status.esc_count = 8;
+        }
+        uint32_t time_ms = hal.scheduler->millis();
+        for (uint8_t i = 0; i < esc_status.esc_count; i++) {
+            // skip logging ESCs with a esc_address of zero, and this
+            // are probably not populated. The Pixhawk itself should
+            // be address zero
+            if (esc_status.esc[i].esc_address != 0) {
+                struct log_Esc pkt = {
+                    LOG_PACKET_HEADER_INIT((uint8_t)(LOG_ESC1_MSG + i)),
+                    time_ms     : time_ms,
+                    rpm         : (int16_t)(esc_status.esc[i].esc_rpm/10),
+                    voltage     : (int16_t)(esc_status.esc[i].esc_voltage*100.f + .5f),
+                    current     : (int16_t)(esc_status.esc[i].esc_current*100.f + .5f),
+                    temperature : (int16_t)(esc_status.esc[i].esc_temperature*100.f + .5f)
+                };
+
+                WriteBlock(&pkt, sizeof(pkt));
+            }
+        }
+    }
+#endif // CONFIG_HAL_BOARD
 }

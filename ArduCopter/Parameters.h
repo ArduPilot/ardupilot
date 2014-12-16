@@ -303,8 +303,8 @@ public:
         k_param_pid_nav_lon,        // 234 - remove
         k_param_p_alt_hold,
         k_param_p_throttle_rate,
-        k_param_pid_optflow_roll,
-        k_param_pid_optflow_pitch,
+        k_param_pid_optflow_roll,       // 237 - remove
+        k_param_pid_optflow_pitch,      // 238 - remove
         k_param_acro_balance_roll_old,  // 239 - remove
         k_param_acro_balance_pitch_old, // 240 - remove
         k_param_pid_throttle_accel,
@@ -457,8 +457,6 @@ public:
 
     AC_P                    p_throttle_rate;
     AC_PID                  pid_throttle_accel;
-    AC_PID                  pid_optflow_roll;
-    AC_PID                  pid_optflow_pitch;
 
     AC_P                    p_loiter_pos;
     AC_P                    p_stabilize_roll;
@@ -518,8 +516,6 @@ public:
 
         p_throttle_rate         (THROTTLE_RATE_P),
         pid_throttle_accel      (THROTTLE_ACCEL_P,      THROTTLE_ACCEL_I,       THROTTLE_ACCEL_D,       THROTTLE_ACCEL_IMAX),
-        pid_optflow_roll        (OPTFLOW_ROLL_P,        OPTFLOW_ROLL_I,         OPTFLOW_ROLL_D,         OPTFLOW_IMAX),
-        pid_optflow_pitch       (OPTFLOW_PITCH_P,       OPTFLOW_PITCH_I,        OPTFLOW_PITCH_D,        OPTFLOW_IMAX),
 
         // P controller	        initial P
         //----------------------------------------------------------------------

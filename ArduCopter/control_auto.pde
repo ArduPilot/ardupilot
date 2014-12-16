@@ -321,7 +321,7 @@ static void auto_land_run()
     wp_nav.set_pilot_desired_acceleration(roll_control, pitch_control);
 
     // run loiter controller
-    wp_nav.update_loiter();
+    wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
     // call z-axis position controller
     pos_control.set_alt_target_from_climb_rate(get_throttle_land(), G_Dt, true);

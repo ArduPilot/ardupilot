@@ -54,16 +54,13 @@ public:
     uint8_t quality() const { return _surface_quality; }
 
     // raw - returns the raw movement from the sensor
-    const Vector2i& raw() const { return _raw; }
+    const Vector2f& flowRate() const { return _flowRate; }
 
     // velocity - returns the velocity in m/s
-    const Vector2f& velocity() const { return _velocity; }
+    const Vector2f& bodyRate() const { return _bodyRate; }
 
     // device_id - returns device id
     uint8_t device_id() const { return _device_id; }
-
-    // return ground distance in meters (if available)
-    float ground_distance_m() const { return _ground_distance_m; }
 
     // last_update() - returns system time of last sensor update
     uint32_t last_update() const { return _last_update; }
@@ -82,13 +79,14 @@ protected:
 
     // parameters
     AP_Int8  _enabled;              // enabled/disabled flag
+    AP_Int16 _flowScalerX;          // X axis flow scale factor correction - parts per thousand
+    AP_Int16 _flowScalerY;          // Y axis flow scale factor correction - parts per thousand
 
     // internal variables
     uint8_t _device_id;             // device id
-    uint8_t  _surface_quality;      // image quality (below 15 you can't trust the dx,dy values returned)
-    Vector2i _raw;                  // raw x,y values from sensor
-    Vector2f _velocity;             // x, y velocity in m/s
-    float    _ground_distance_m;    // ground distance in m
+    uint8_t  _surface_quality;      // image quality (below TBD you can't trust the dx,dy values returned)
+    Vector2f _flowRate;             // optical flow angular rate in rad/sec measured about the X and Y body axis. A RH rotation about a sensor axis produces a positive rate.
+    Vector2f _bodyRate;             // body inertial angular rate in rad/sec measured about the X and Y body axis. A RH rotation about a sensor axis produces a positive rate.
     uint32_t _last_update;          // millis() time of last update
 };
 

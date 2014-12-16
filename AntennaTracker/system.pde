@@ -28,6 +28,9 @@ static void init_tracker()
     // init the GCS
     gcs[0].init(hal.uartA);
 
+    // set up snooping on other mavlink destinations
+    gcs[0].set_snoop(mavlink_snoop);
+
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
     hal.scheduler->register_delay_callback(mavlink_delay_cb, 5);
@@ -39,11 +42,7 @@ static void init_tracker()
 
     // we have a 2nd serial port for telemetry
     hal.uartC->begin(map_baudrate(g.serial1_baud), 128, SERIAL1_BUFSIZE);
-    if (g.proxy_mode == true) {
-        proxy_vehicle.setup_uart(hal.uartC, map_baudrate(g.serial1_baud), 128, SERIAL1_BUFSIZE);
-    } else {
-        gcs[1].setup_uart(hal.uartC, map_baudrate(g.serial1_baud), 128, SERIAL1_BUFSIZE);
-    }
+    gcs[1].setup_uart(hal.uartC, map_baudrate(g.serial1_baud), 128, SERIAL1_BUFSIZE);
 
     mavlink_system.sysid = g.sysid_this_mav;
 
@@ -58,8 +57,6 @@ static void init_tracker()
 
     // GPS Initialization
     gps.init(NULL);
-
-    mavlink_system.compid = 4;
 
     ahrs.init();
     ahrs.set_fly_forward(false);

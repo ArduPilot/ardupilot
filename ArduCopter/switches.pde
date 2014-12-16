@@ -26,11 +26,15 @@ static void read_control_switch()
     bool failsafe_disengaged = !failsafe.radio && failsafe.radio_counter == 0;
 
     if (control_switch_changed && sufficient_time_elapsed && failsafe_disengaged) {
-        // set the debounced switch position
-        control_switch_state.debounced_switch_position = switch_position;
-
         // set flight mode and simple mode setting
         if (set_mode(flight_modes[switch_position])) {
+            // play a tone
+            if (control_switch_state.debounced_switch_position != -1) {
+                // alert user to mode change failure (except if autopilot is just starting up)
+                if (ap.initialised) {
+                    AP_Notify::events.user_mode_change = 1;
+                }
+            }
 
             if(g.ch7_option != AUX_SWITCH_SIMPLE_MODE && g.ch8_option != AUX_SWITCH_SIMPLE_MODE && g.ch7_option != AUX_SWITCH_SUPERSIMPLE_MODE && g.ch8_option != AUX_SWITCH_SUPERSIMPLE_MODE) {
                 // set Simple mode using stored paramters from Mission planner
@@ -41,6 +45,13 @@ static void read_control_switch()
                     set_simple_mode(BIT_IS_SET(g.simple_modes, switch_position));
                 }
             }
+
+            // set the debounced switch position
+            control_switch_state.debounced_switch_position = switch_position;
+
+        } else if (control_switch_state.last_switch_position != -1) {
+            // alert user to mode change failure
+            AP_Notify::events.user_mode_change_failed = 1;
         }
     }
 

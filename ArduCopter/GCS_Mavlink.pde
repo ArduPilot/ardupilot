@@ -203,6 +203,11 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
     if (gps.status() > AP_GPS::NO_GPS && (!gps_glitch.glitching()||ap.usb_connected)) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_GPS;
     }
+#if OPTFLOW == ENABLED
+    if (optflow.healthy()) {
+        control_sensors_health |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
+    }
+#endif
     if (ap.rc_receiver_present && !failsafe.radio) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
     }
@@ -436,6 +441,32 @@ static void NOINLINE send_rangefinder(mavlink_channel_t chan)
 }
 #endif
 
+#if OPTFLOW == ENABLED
+static void NOINLINE send_opticalflow(mavlink_channel_t chan)
+{
+    // exit immediately if no optical flow sensor or not healthy
+    if (!optflow.healthy()) {
+        return;
+    }
+
+    // get rates from sensor
+    const Vector2f &flowRate = optflow.flowRate();
+    const Vector2f &bodyRate = optflow.bodyRate();
+
+    // populate and send message
+    mavlink_msg_optical_flow_send(
+        chan,
+        millis(),
+        0, // sensor id is zero
+        flowRate.x,
+        flowRate.y,
+        bodyRate.x,
+        bodyRate.y,
+        optflow.quality(),
+        0); // ground distance (in meters) set to zero
+}
+#endif // OPTFLOW == ENABLED
+
 static void NOINLINE send_statustext(mavlink_channel_t chan)
 {
     mavlink_statustext_t *s = &gcs[chan-MAVLINK_COMM_0].pending_status;
@@ -638,6 +669,13 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         CHECK_PAYLOAD_SIZE(MOUNT_STATUS);    
         camera_mount.status_msg(chan);
 #endif // MOUNT == ENABLED
+        break;
+
+    case MSG_OPTICAL_FLOW:
+#if OPTFLOW == ENABLED
+        CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
+        send_opticalflow(chan);
+#endif
         break;
 
     case MSG_FENCE_STATUS:
@@ -866,6 +904,7 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_TERRAIN);
 #endif
         send_message(MSG_MOUNT_STATUS);
+        send_message(MSG_OPTICAL_FLOW);
     }
 }
 
@@ -996,11 +1035,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         int16_t v[8];
         mavlink_msg_rc_channels_override_decode(msg, &packet);
 
-        // exit immediately if this command is not meant for this vehicle
-        if (mavlink_check_target(packet.target_system,packet.target_component)) {
-            break;
-        }
-
         v[0] = packet.chan1_raw;
         v[1] = packet.chan2_raw;
         v[2] = packet.chan3_raw;
@@ -1024,11 +1058,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         // decode packet
         mavlink_command_long_t packet;
         mavlink_msg_command_long_decode(msg, &packet);
-
-        // exit immediately if this command is not meant for this vehicle
-        if (mavlink_check_target(packet.target_system, packet.target_component)) {
-            break;
-        }
 
         switch(packet.command) {
 
@@ -1310,11 +1339,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         mavlink_set_position_target_local_ned_t packet;
         mavlink_msg_set_position_target_local_ned_decode(msg, &packet);
 
-        // exit immediately if this command is not meant for this vehicle
-        if (mavlink_check_target(packet.target_system, packet.target_component)) {
-            break;
-        }
-
         // exit if vehicle is not in Guided mode or Auto-Guided mode
         if ((control_mode != GUIDED) && !(control_mode == AUTO && auto_mode == Auto_NavGuided)) {
             break;
@@ -1349,11 +1373,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         // decode packet
         mavlink_set_position_target_global_int_t packet;
         mavlink_msg_set_position_target_global_int_decode(msg, &packet);
-
-        // exit immediately if this command is not meant for this vehicle
-        if (mavlink_check_target(packet.target_system, packet.target_component)) {
-            break;
-        }
 
         // exit if vehicle is not in Guided mode or Auto-Guided mode
         if ((control_mode != GUIDED) && !(control_mode == AUTO && auto_mode == Auto_NavGuided)) {
@@ -1518,8 +1537,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_RALLY_POINT: {
         mavlink_rally_point_t packet;
         mavlink_msg_rally_point_decode(msg, &packet);
-        if (mavlink_check_target(packet.target_system, packet.target_component))
-            break;
 
         if (packet.idx >= rally.get_rally_total() ||
             packet.idx >= rally.get_rally_max()) {
@@ -1553,8 +1570,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         mavlink_rally_fetch_point_t packet;
         mavlink_msg_rally_fetch_point_decode(msg, &packet);
-        if (mavlink_check_target(packet.target_system, packet.target_component))
-            break;
 
         //send_text_P(SEVERITY_HIGH, PSTR("## getting rally point in GCS_Mavlink.pde 2")); // #### TEMP
 

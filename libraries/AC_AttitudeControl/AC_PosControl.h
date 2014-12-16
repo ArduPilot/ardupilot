@@ -203,7 +203,7 @@ public:
 
     /// update_xy_controller - run the horizontal position controller - should be called at 100hz or higher
     ///     when use_desired_velocity is true the desired velocity (i.e. feed forward) is incorporated at the pos_to_rate step
-    void update_xy_controller(bool use_desired_velocity);
+    void update_xy_controller(bool use_desired_velocity, float ekfNavVelGainScaler);
 
     /// set_target_to_stopping_point_xy - sets horizontal target to reasonable stopping position in cm from home
     void set_target_to_stopping_point_xy();
@@ -230,7 +230,7 @@ public:
     ///     velocity targets should we set using set_desired_velocity_xyz() method
     ///     callers should use get_roll() and get_pitch() methods and sent to the attitude controller
     ///     throttle targets will be sent directly to the motors
-    void update_vel_controller_xyz();
+    void update_vel_controller_xyz(float ekfNavVelGainScaler);
 
     /// get desired roll, pitch which should be fed into stabilize controllers
     float get_roll() const { return _roll_target; }
@@ -309,15 +309,15 @@ private:
     ///     when use_desired_rate is set to true:
     ///         desired velocity (_vel_desired) is combined into final target velocity and
     ///         velocity due to position error is reduce to a maximum of 1m/s
-    void pos_to_rate_xy(bool use_desired_rate, float dt);
+    void pos_to_rate_xy(bool use_desired_rate, float dt, float ekfNavVelGainScaler);
 
     /// rate_to_accel_xy - horizontal desired rate to desired acceleration
     ///    converts desired velocities in lat/lon directions to accelerations in lat/lon frame
-    void rate_to_accel_xy(float dt);
+    void rate_to_accel_xy(float dt, float ekfNavVelGainScaler);
 
     /// accel_to_lean_angles - horizontal desired acceleration to lean angles
     ///    converts desired accelerations provided in lat/lon frame to roll/pitch angles
-    void accel_to_lean_angles();
+    void accel_to_lean_angles(float ekfNavVelGainScaler);
 
     /// calc_leash_length - calculates the horizontal leash length given a maximum speed, acceleration and position kP gain
     float calc_leash_length(float speed_cms, float accel_cms, float kP) const;
