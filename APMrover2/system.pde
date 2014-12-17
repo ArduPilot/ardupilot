@@ -189,9 +189,6 @@ static void init_ardupilot()
 	// Do GPS init
 	gps.init(&DataFlash);
 
-	//mavlink_system.sysid = MAV_SYSTEM_ID;				// Using g.sysid_this_mav
-	mavlink_system.compid = 1;	//MAV_COMP_ID_IMU;   // We do not check for comp id
-
     rc_override_active = hal.rcin->set_overrides(rc_override, 8);
 
 	init_rc_in();		// sets up rc channels from radio
