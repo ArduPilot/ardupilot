@@ -178,9 +178,6 @@ static void init_ardupilot()
     // GPS Initialization
     gps.init(&DataFlash);
 
-    //mavlink_system.sysid = MAV_SYSTEM_ID;				// Using g.sysid_this_mav
-    mavlink_system.compid = 1;          //MAV_COMP_ID_IMU;   // We do not check for comp id
-
     init_rc_in();               // sets up rc channels from radio
     init_rc_out();              // sets up the timer libs
 
