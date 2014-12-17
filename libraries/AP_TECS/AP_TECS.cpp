@@ -372,6 +372,7 @@ void AP_TECS::_update_height_demand(void)
 {
 	// Apply 2 point moving average to demanded height
 	// This is required because height demand is only updated at 5Hz
+	float hgt_dem_orig = _hgt_dem;
 	_hgt_dem = 0.5f * (_hgt_dem + _hgt_dem_in_old);
 	_hgt_dem_in_old = _hgt_dem;
 
@@ -410,7 +411,18 @@ void AP_TECS::_update_height_demand(void)
         _hgt_rate_dem = (_hgt_dem_adj - _hgt_dem_adj_last) / 0.1f;
         _flare_counter = 0;
     }
+
+    // for landing approach we will predict ahead by the time constant
+    // plus the lag produced by the first order filter. This avoids a
+    // lagged height demand while constantly descending which causes
+    // us to consistently be above the desired glide slope. This will
+    // be replaced with a better zero-lag filter in the future.
+    float new_hgt_dem = _hgt_dem_adj;
+	if (_flight_stage == FLIGHT_LAND_APPROACH || _flight_stage == FLIGHT_LAND_FINAL) {
+        new_hgt_dem += (_hgt_dem_adj - _hgt_dem_adj_last)*10.0f*(timeConstant()+1);
+    }
     _hgt_dem_adj_last = _hgt_dem_adj;
+    _hgt_dem_adj = new_hgt_dem;
 }
 
 void AP_TECS::_detect_underspeed(void) 
@@ -672,8 +684,6 @@ void AP_TECS::_update_pitch(void)
     _pitch_dem_unc = (temp + _integ7_state) / gainInv;
 
     // Constrain pitch demand
-    _pitch_dem = constrain_float(_pitch_dem_unc, _PITCHminf, _PITCHmaxf);
-
     _pitch_dem = constrain_float(_pitch_dem_unc, _PITCHminf, _PITCHmaxf);
 
     // Rate limit the pitch demand to comply with specified vertical
