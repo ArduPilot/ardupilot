@@ -11,7 +11,6 @@
 
 // first monitor is always the primary monitor
 #define AP_BATT_PRIMARY_INSTANCE            0
-
 #define AP_BATT_CAPACITY_DEFAULT            3300
 #define AP_BATT_LOW_VOLT_TIMEOUT_MS         10000   // low voltage of 10 seconds will cause battery_exhausted to return true
 

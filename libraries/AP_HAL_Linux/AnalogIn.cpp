@@ -35,6 +35,10 @@ LinuxAnalogSource::LinuxAnalogSource(int16_t pin, float initial_value) :
 {
  	char buf[100];
 
+    if (_pin < 0){
+        return;
+    }
+
 	if (_pin > ANALOG_IN_COUNT){
 		hal.scheduler->panic("Analog pin out of bounds\n");
 	}
