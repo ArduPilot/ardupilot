@@ -35,9 +35,9 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     _pid_rate_lat(pid_rate_lat),
     _pid_rate_lon(pid_rate_lon),
     _dt(POSCONTROL_DT_10HZ),
+    _dt_xy(POSCONTROL_DT_50HZ),
     _last_update_xy_ms(0),
     _last_update_z_ms(0),
-    _last_update_vel_xyz_ms(0),
     _speed_down_cms(POSCONTROL_SPEED_DOWN),
     _speed_up_cms(POSCONTROL_SPEED_UP),
     _speed_cms(POSCONTROL_SPEED),
@@ -49,10 +49,7 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     _roll_target(0.0f),
     _pitch_target(0.0f),
     _alt_max(0.0f),
-    _distance_to_target(0.0f),
-    _xy_step(0),
-    _dt_xy(0.0f),
-    _vel_xyz_step(0)
+    _distance_to_target(0.0f)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -502,9 +499,6 @@ bool AC_PosControl::is_active_xy() const
 ///     this does not update the xy target
 void AC_PosControl::init_xy_controller(bool reset_I)
 {
-    // reset xy controller to first step
-    _xy_step = 0;
-
     // set roll, pitch lean angle targets to current attitude
     _roll_target = _ahrs.roll_sensor;
     _pitch_target = _ahrs.pitch_sensor;
@@ -520,65 +514,46 @@ void AC_PosControl::init_xy_controller(bool reset_I)
     // flag reset required in rate to accel step
     _flags.reset_desired_vel_to_pos = true;
     _flags.reset_rate_to_accel_xy = true;
-
-    // update update time
-    _last_update_xy_ms = hal.scheduler->millis();
 }
 
 /// update_xy_controller - run the horizontal position controller - should be called at 100hz or higher
 void AC_PosControl::update_xy_controller(bool use_desired_velocity, float ekfNavVelGainScaler)
 {
-    // catch if we've just been started
+    // compute dt
     uint32_t now = hal.scheduler->millis();
-    if ((now - _last_update_xy_ms) >= POSCONTROL_ACTIVE_TIMEOUT_MS) {
-        init_xy_controller();
-        now = _last_update_xy_ms;
+    float dt = (now - _last_update_xy_ms) / 1000.0f;
+    _last_update_xy_ms = now;
+
+    // sanity check dt - expect to be called faster than ~5hz
+    if (dt > POSCONTROL_ACTIVE_TIMEOUT_MS) {
+        dt = 0.0f;
     }
 
     // check if xy leash needs to be recalculated
     calc_leash_length_xy();
 
-    // reset step back to 0 if loiter or waypoint parents have triggered an update and we completed the last full cycle
-    if (_flags.force_recalc_xy && _xy_step > 3) {
-        _flags.force_recalc_xy = false;
-        _xy_step = 0;
-    }
+    // translate any adjustments from pilot to loiter target
+    desired_vel_to_pos(dt);
 
-    // run loiter steps
-    switch (_xy_step) {
-        case 0:
-            // capture time since last iteration
-            _dt_xy = (now - _last_update_xy_ms) / 1000.0f;
-            _last_update_xy_ms = now;
+    // run position controller's position error to desired velocity step
+    pos_to_rate_xy(use_desired_velocity, dt, ekfNavVelGainScaler);
 
-            // translate any adjustments from pilot to loiter target
-            desired_vel_to_pos(_dt_xy);
-            _xy_step++;
-            break;
-        case 1:
-            // run position controller's position error to desired velocity step
-            pos_to_rate_xy(use_desired_velocity,_dt_xy, ekfNavVelGainScaler);
-            _xy_step++;
-            break;
-        case 2:
-            // run position controller's velocity to acceleration step
-            rate_to_accel_xy(_dt_xy, ekfNavVelGainScaler);
-            _xy_step++;
-            break;
-        case 3:
-            // run position controller's acceleration to lean angle step
-            accel_to_lean_angles(ekfNavVelGainScaler);
-            _xy_step++;
-            break;
-    }
+    // run position controller's velocity to acceleration step
+    rate_to_accel_xy(dt, ekfNavVelGainScaler);
+
+    // run position controller's acceleration to lean angle step
+    accel_to_lean_angles(dt, ekfNavVelGainScaler);
+}
+
+float AC_PosControl::time_since_last_xy_update() const
+{
+    uint32_t now = hal.scheduler->millis();
+    return (now - _last_update_xy_ms)*0.001f;
 }
 
 /// init_vel_controller_xyz - initialise the velocity controller - should be called once before the caller attempts to use the controller
 void AC_PosControl::init_vel_controller_xyz()
 {
-    // force the xy velocity controller to run immediately
-    _vel_xyz_step = 3;
-
     // set roll, pitch lean angle targets to current attitude
     _roll_target = _ahrs.roll_sensor;
     _pitch_target = _ahrs.pitch_sensor;
@@ -599,9 +574,6 @@ void AC_PosControl::init_vel_controller_xyz()
     // move current vehicle velocity into feed forward velocity
     const Vector3f& curr_vel = _inav.get_velocity();
     set_desired_velocity_xy(curr_vel.x, curr_vel.y);
-
-    // record update time
-    _last_update_vel_xyz_ms = hal.scheduler->millis();
 }
 
 /// update_velocity_controller_xyz - run the velocity controller - should be called at 100hz or higher
@@ -612,40 +584,36 @@ void AC_PosControl::update_vel_controller_xyz(float ekfNavVelGainScaler)
 {
     // capture time since last iteration
     uint32_t now = hal.scheduler->millis();
-    float dt_xy = (now - _last_update_vel_xyz_ms) / 1000.0f;
+    float dt = (now - _last_update_xy_ms) / 1000.0f;
+
+    // sanity check dt - expect to be called faster than ~5hz
+    if (dt >= POSCONTROL_ACTIVE_TIMEOUT_MS) {
+        dt = 0.0f;
+    }
 
     // check if xy leash needs to be recalculated
     calc_leash_length_xy();
 
-    // we will run the horizontal component every 4th iteration (i.e. 50hz on Pixhawk, 20hz on APM)
-    if (dt_xy >= POSCONTROL_VEL_UPDATE_TIME) {
+    // apply desired velocity request to position target
+    desired_vel_to_pos(dt);
 
-        // record update time
-        _last_update_vel_xyz_ms = now;
+    // run position controller's position error to desired velocity step
+    pos_to_rate_xy(true, dt, ekfNavVelGainScaler);
 
-        // sanity check dt
-        if (dt_xy >= POSCONTROL_ACTIVE_TIMEOUT_MS) {
-            dt_xy = 0.0f;
-        }
+    // run velocity to acceleration step
+    rate_to_accel_xy(dt, ekfNavVelGainScaler);
 
-        // apply desired velocity request to position target
-        desired_vel_to_pos(dt_xy);
-
-        // run position controller's position error to desired velocity step
-        pos_to_rate_xy(true, dt_xy, ekfNavVelGainScaler);
-
-        // run velocity to acceleration step
-        rate_to_accel_xy(dt_xy, ekfNavVelGainScaler);
-
-        // run acceleration to lean angle step
-        accel_to_lean_angles(ekfNavVelGainScaler);
-    }
+    // run acceleration to lean angle step
+    accel_to_lean_angles(dt, ekfNavVelGainScaler);
 
     // update altitude target
-    set_alt_target_from_climb_rate(_vel_desired.z, _dt);
+    set_alt_target_from_climb_rate(_vel_desired.z, dt);
 
     // run z-axis position controller
     update_z_controller();
+
+    // record update time
+    _last_update_xy_ms = now;
 }
 
 ///
@@ -817,15 +785,8 @@ void AC_PosControl::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
 
 /// accel_to_lean_angles - horizontal desired acceleration to lean angles
 ///    converts desired accelerations provided in lat/lon frame to roll/pitch angles
-void AC_PosControl::accel_to_lean_angles(float ekfNavVelGainScaler)
+void AC_PosControl::accel_to_lean_angles(float dt, float ekfNavVelGainScaler)
 {
-    // catch if we've just been started
-    uint32_t now = hal.scheduler->millis();
-    if ((now - _last_update_xy_ms) >= POSCONTROL_ACTIVE_TIMEOUT_MS) {
-        now = _last_update_xy_ms;
-    }
-    float dt_xy = (now - _last_update_xy_ms) * 0.001f;
-
     float accel_right, accel_forward;
     float lean_angle_max = _attitude_control.lean_angle_max();
 
@@ -842,7 +803,7 @@ void AC_PosControl::accel_to_lean_angles(float ekfNavVelGainScaler)
     // apply a rate limit of 100 deg/sec - required due to optical flow sensor saturation and impulse noise effects
     static float lastRollDem = 0.0f;
     static float lastPitchDem = 0.0f;
-    float maxDeltaAngle = dt_xy * 10000.0f;
+    float maxDeltaAngle = dt * 10000.0f;
     if (_roll_target - lastRollDem > maxDeltaAngle) {
         _roll_target = lastRollDem + maxDeltaAngle;
     } else if (_roll_target - lastRollDem < -maxDeltaAngle) {
@@ -858,7 +819,7 @@ void AC_PosControl::accel_to_lean_angles(float ekfNavVelGainScaler)
 
     // 5Hz lowpass filter on angles - required due to optical flow  noise
     float freq_cut = 5.0f * ekfNavVelGainScaler;
-    float alpha = constrain_float(dt_xy/(dt_xy + 1.0f/(2.0f*(float)M_PI*freq_cut)),0.0f,1.0f);
+    float alpha = constrain_float(dt/(dt + 1.0f/(2.0f*(float)M_PI*freq_cut)),0.0f,1.0f);
     static float roll_target_filtered = 0.0f;
     static float pitch_target_filtered = 0.0f;
 

@@ -33,12 +33,11 @@
 #define POSCONTROL_LEASH_LENGTH_MIN             100.0f  // minimum leash lengths in cm
 
 #define POSCONTROL_DT_10HZ                      0.10f   // time difference in seconds for 10hz update rate
+#define POSCONTROL_DT_50HZ                      0.02f   // time difference in seconds for 50hz update rate
 
 #define POSCONTROL_ACTIVE_TIMEOUT_MS            200     // position controller is considered active if it has been called within the past 200ms (0.2 seconds)
 
 #define POSCONTROL_ACCEL_Z_DTERM_FILTER         20      // Z axis accel controller's D term filter (in hz)
-
-#define POSCONTROL_VEL_UPDATE_TIME              0.020f  // 50hz update rate on high speed CPUs (Pixhawk, Flymaple)
 
 #define POSCONTROL_VEL_ERROR_CUTOFF_FREQ        4.0     // 4hz low-pass filter on velocity error
 #define POSCONTROL_ACCEL_ERROR_CUTOFF_FREQ      2.0     // 2hz low-pass filter on accel error
@@ -61,6 +60,9 @@ public:
     ///     updates z axis accel controller's D term filter
     void set_dt(float delta_sec);
     float get_dt() const { return _dt; }
+
+    void set_dt_xy(float dt_xy) { _dt_xy = dt_xy; }
+    float get_dt_xy() const { return _dt_xy; }
 
     ///
     /// z position controller
@@ -249,6 +251,8 @@ public:
     // lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
     void lean_angles_to_accel(float& accel_x_cmss, float& accel_y_cmss) const;
 
+    float time_since_last_xy_update() const;
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -313,7 +317,7 @@ private:
 
     /// accel_to_lean_angles - horizontal desired acceleration to lean angles
     ///    converts desired accelerations provided in lat/lon frame to roll/pitch angles
-    void accel_to_lean_angles(float ekfNavVelGainScaler);
+    void accel_to_lean_angles(float dt_xy, float ekfNavVelGainScaler);
 
     /// calc_leash_length - calculates the horizontal leash length given a maximum speed, acceleration and position kP gain
     float calc_leash_length(float speed_cms, float accel_cms, float kP) const;
@@ -337,9 +341,9 @@ private:
 
     // internal variables
     float       _dt;                    // time difference (in seconds) between calls from the main program
+    float       _dt_xy;                 // time difference (in seconds) between update_xy_controller and update_vel_controller_xyz calls
     uint32_t    _last_update_xy_ms;     // system time of last update_xy_controller call
     uint32_t    _last_update_z_ms;      // system time of last update_z_controller call
-    uint32_t    _last_update_vel_xyz_ms;// system time of last update_vel_controller_xyz call
     float       _speed_down_cms;        // max descent rate in cm/s
     float       _speed_up_cms;          // max climb rate in cm/s
     float       _speed_cms;             // max horizontal speed in cm/s
@@ -365,12 +369,7 @@ private:
     Vector3f    _accel_feedforward;     // feedforward acceleration in cm/s/s
     float       _alt_max;               // max altitude - should be updated from the main code with altitude limit from fence
     float       _distance_to_target;    // distance to position target - for reporting only
-    uint8_t     _xy_step;               // used to decide which portion of horizontal position controller to run during this iteration
-    float       _dt_xy;                 // time difference in seconds between horizontal position updates
     LowPassFilterFloat _vel_error_filter;   // low-pass-filter on z-axis velocity error
     LowPassFilterFloat _accel_error_filter; // low-pass-filter on z-axis accelerometer error
-
-    // velocity controller internal variables
-    uint8_t     _vel_xyz_step;          // used to decide which portion of velocity controller to run during this iteration
 };
 #endif	// AC_POSCONTROL_H
