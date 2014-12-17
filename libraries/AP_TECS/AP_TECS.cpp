@@ -66,15 +66,15 @@ const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
 
     // @Param: HGT_OMEGA
     // @DisplayName: 高度辅助过滤器频率（rad/s)
-    // @Description: This is the cross-over frequency of the complementary filter used to fuse vertical acceleration and baro alt to obtain an estimate of height rate and height.
+    // @Description: 这是辅助过滤器用来结合垂直加速度和气压计高度估算高度和垂直速度的交叉频率
 	// @Range: 1.0 5.0
 	// @Increment: 0.05
 	// @User: Advanced
     AP_GROUPINFO("HGT_OMEGA", 6, AP_TECS, _hgtCompFiltOmega, 3.0f),
 
     // @Param: SPD_OMEGA
-    // @DisplayName: Speed complementary filter frequency (radians/sec)
-    // @Description: This is the cross-over frequency of the complementary filter used to fuse longitudinal acceleration and airspeed to obtain a lower noise and lag estimate of airspeed.
+    // @DisplayName: 速度辅助过滤器频率（rad/s）
+    // @Description: 这是辅助过滤器用来结合纵向加速度和空速来获得更低的噪声和空速延迟的交叉频率
 	// @Range: 0.5 2.0
 	// @Increment: 0.05
 	// @User: Advanced
