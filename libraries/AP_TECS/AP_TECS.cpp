@@ -81,40 +81,40 @@ const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
     AP_GROUPINFO("SPD_OMEGA", 7, AP_TECS, _spdCompFiltOmega, 2.0f),
 
     // @Param: RLL2THR
-    // @DisplayName: Bank angle compensation gain
-    // @Description: Increasing this gain turn increases the amount of throttle that will be used to compensate for the additional drag created by turning. Ideally this should be set to approximately 10 x the extra sink rate in m/s created by a 45 degree bank turn. Increase this gain if the aircraft initially loses energy in turns and reduce if the aircraft initially gains energy in turns. Efficient high aspect-ratio aircraft (eg powered sailplanes) can use a lower value, whereas inefficient low aspect-ratio models (eg delta wings) can use a higher value.
+    // @DisplayName: 倾斜角度补偿增益
+    // @Description: 增大这个增益值会增大油门量以抵消转弯时的额外阻力。理想情况下这个应该设为45度角倾斜转弯时下降速度（m/s）的10倍。如果飞机一开始在转弯时缺乏能量，增加这个数值，如果能量过高，降低这个数值。高效的高长宽比的飞机（例如有动力的轻型滑翔机）可以使用更低的数值，而低效率低长宽比的飞机（例如三角翼）可以使用更高的数值。
 	// @Range: 5.0 30.0
 	// @Increment: 1.0
 	// @User: Advanced
     AP_GROUPINFO("RLL2THR",  8, AP_TECS, _rollComp, 10.0f),
  
     // @Param: SPDWEIGHT
-    // @DisplayName: Weighting applied to speed control
-    // @Description: This parameter adjusts the amount of weighting that the pitch control applies to speed vs height errors. Setting it to 0.0 will cause the pitch control to control height and ignore speed errors. This will normally improve height accuracy but give larger airspeed errors. Setting it to 2.0 will cause the pitch control loop to control speed and ignore height errors. This will normally reduce airsped errors, but give larger height errors.	A value of 1.0 gives a balanced response and is the default.
+    // @DisplayName: 速度控制比重
+    // @Description: 这个参数调节俯仰控制在速度和高度误差上的比重。设为0.0会导致俯仰控制控制高度而忽略速度误差。这会通常提高高度精度但是会造成更大的空速误差。设为2.0会导致俯仰控制控制速度而忽略高度误差。这通常会减少速度误差，但是会造成更大的高度误差。1.0附近的取值会给出平衡的响应并且这是默认值。
 	// @Range: 0.0 2.0
 	// @Increment: 0.1
 	// @User: Advanced
     AP_GROUPINFO("SPDWEIGHT", 9, AP_TECS, _spdWeight, 1.0f),
  
     // @Param: PTCH_DAMP
-    // @DisplayName: Controller pitch damping
-    // @Description: This is the damping gain for the pitch demand loop. Increase to add damping  to correct for oscillations in speed and height.
+    // @DisplayName: 控制器俯仰抑制
+    // @Description: 这是俯仰需求循环的抑制增益。增大会提高抑制来校正速度和高度上的抖动。
 	// @Range: 0.1 1.0
 	// @Increment: 0.1
 	// @User: Advanced
     AP_GROUPINFO("PTCH_DAMP", 10, AP_TECS, _ptchDamp, 0.0f),
 
     // @Param: SINK_MAX
-    // @DisplayName: Maximum Descent Rate (metres/sec)
-    // @Description: This sets the maximum descent rate that the controller will use.  If this value is too large, the aircraft will reach the pitch angle limit first and be unable to achieve the descent rate. This should be set to a value that can be achieved at the lower pitch angle limit.
+    // @DisplayName: 最大下降速度（m/s）
+    // @Description: 这个设置控制器使用的最大的下降速度。如果这个值过大，飞机会先达到俯仰角度限制而无法达到最大下降速度。这个值应该设为在最低俯仰角下飞机能够达到的最快下降速度。
 	// @Increment: 0.1
 	// @Range: 0.0 20.0
 	// @User: User
     AP_GROUPINFO("SINK_MAX",  11, AP_TECS, _maxSinkRate, 5.0f),
 
     // @Param: LAND_ARSPD
-    // @DisplayName: Airspeed during landing approach (m/s)
-    // @Description: When performing an autonomus landing, this value is used as the goal airspeed during approach.  Note that this parameter is not useful if your platform does not have an airspeed sensor (use TECS_LAND_THR instead).  If negative then this value is not used during landing.
+    // @DisplayName: 下降接近时空速（m/s）
+    // @Description: 当自动降落时，这个数值会被座位目标空速用于降落。注意如果你的平台没有空速传感器，那么这个参数无效（请换用TECS_LAND_THR）。如果数值是负值，降落期间这个数值将不会被使用。
     // @Range: -1 127
     // @Increment: 1
     // @User: User
