@@ -7,6 +7,7 @@
 #include <AP_Math.h>
 #include <AP_Baro.h>
 #include <AP_AHRS.h>
+#include <AP_BattMonitor.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -1127,6 +1128,21 @@ void DataFlash_Class::Log_Write_Attitude(AP_AHRS &ahrs, Vector3f targets)
         yaw             : (uint16_t)ahrs.yaw_sensor,
         error_rp        : (uint16_t)(ahrs.get_error_rp() * 100),
         error_yaw       : (uint16_t)(ahrs.get_error_yaw() * 100)
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}
+
+// Write an Current data packet
+void DataFlash_Class::Log_Write_Current(AP_BattMonitor battery, int16_t  throttle)
+{
+    struct log_Current pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_CURRENT_MSG),
+        time_ms             : hal.scheduler->millis(),
+        throttle        	: throttle,
+        battery_voltage     : (int16_t) (battery.voltage() * 100.0f),
+        current_amps        : (int16_t) (battery.current_amps() * 100.0f),
+        board_voltage       : (uint16_t)(hal.analogin->board_voltage()*1000),
+        current_total       : battery.current_total_mah()
     };
     WriteBlock(&pkt, sizeof(pkt));
 }

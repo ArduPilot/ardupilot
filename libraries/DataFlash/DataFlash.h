@@ -12,6 +12,7 @@
 #include <AP_InertialSensor.h>
 #include <AP_Baro.h>
 #include <AP_AHRS.h>
+#include <AP_BattMonitor.h>
 #include <stdint.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -78,6 +79,7 @@ public:
     void Log_Write_Camera(const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);
     void Log_Write_ESC(void);
 	void Log_Write_Attitude(AP_AHRS &ahrs, Vector3f targets);
+	void Log_Write_Current(AP_BattMonitor battery, int16_t  throttle);
 
     bool logging_started(void) const { return log_write_started; }
 
@@ -417,6 +419,16 @@ struct PACKED log_Attitude {
     uint16_t error_yaw;
 };
 
+struct PACKED log_Current {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    int16_t  throttle;
+    int16_t  battery_voltage;
+    int16_t  current_amps;
+    uint16_t board_voltage;
+    float    current_total;
+};
+
 /*
   terrain log structure
  */
@@ -501,7 +513,9 @@ struct PACKED log_Esc {
     { LOG_RADIO_MSG, sizeof(log_Radio), \
       "RAD", "IBBBBBHH", "TimeMS,RSSI,RemRSSI,TxBuf,Noise,RemNoise,RxErrors,Fixed" }, \
     { LOG_CAMERA_MSG, sizeof(log_Camera), \
-      "CAM", "IHLLeeccC","GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,Roll,Pitch,Yaw" }
+      "CAM", "IHLLeeccC","GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,Roll,Pitch,Yaw" }, \
+	{ LOG_CURRENT_MSG, sizeof(log_Current), \           
+      "CURR", "Ihhhhf","TimeMS,ThrOut,Volt,Curr,Vcc,CurrTot" }  
 
 // messages for more advanced boards
 #define LOG_EXTRA_STRUCTURES \
@@ -598,6 +612,7 @@ struct PACKED log_Esc {
 #define LOG_EKF5_MSG      162
 #define LOG_BAR2_MSG	  163
 #define LOG_ATTITUDE_MSG  164
+#define LOG_CURRENT_MSG   165
 
 // message types 200 to 210 reversed for GPS driver use
 // message types 211 to 220 reversed for autotune use
