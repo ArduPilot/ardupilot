@@ -207,31 +207,10 @@ static void Log_Write_AutoTuneDetails(int16_t angle_cd, float rate_cds)
 }
 #endif
 
-struct PACKED log_Current {
-    LOG_PACKET_HEADER;
-    uint32_t time_ms;
-    int16_t  throttle_out;
-    uint32_t throttle_integrator;
-    int16_t  battery_voltage;
-    int16_t  current_amps;
-    uint16_t board_voltage;
-    float    current_total;
-};
-
-// Write an Current data packet
+// Write a Current data packet
 static void Log_Write_Current()
 {
-    struct log_Current pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_CURRENT_MSG),
-        time_ms             : hal.scheduler->millis(),
-        throttle_out        : g.rc_3.servo_out,
-        throttle_integrator : throttle_integrator,
-        battery_voltage     : (int16_t) (battery.voltage() * 100.0f),
-        current_amps        : (int16_t) (battery.current_amps() * 100.0f),
-        board_voltage       : (uint16_t)(hal.analogin->board_voltage()*1000),
-        current_total       : battery.current_total_mah()
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    DataFlash.Log_Write_Current(battery, g.rc_3.servo_out);
 
     // also write power status
     DataFlash.Log_Write_Power();
@@ -651,8 +630,6 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_AUTOTUNEDETAILS_MSG, sizeof(log_AutoTuneDetails),
       "ATDE", "cf",          "Angle,Rate" },
 #endif
-    { LOG_CURRENT_MSG, sizeof(log_Current),             
-      "CURR", "IhIhhhf",     "TimeMS,ThrOut,ThrInt,Volt,Curr,Vcc,CurrTot" },
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),       
       "OF",   "IBffff",   "TimeMS,Qual,flowX,flowY,bodyX,bodyY" },
     { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),       
