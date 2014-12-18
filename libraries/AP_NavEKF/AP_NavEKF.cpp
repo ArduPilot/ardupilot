@@ -77,7 +77,7 @@
 #define ALT_NOISE_DEFAULT       0.5f
 #define MAG_NOISE_DEFAULT       0.05f
 #define GYRO_PNOISE_DEFAULT     0.015f
-#define ACC_PNOISE_DEFAULT      0.25f
+#define ACC_PNOISE_DEFAULT      0.5f
 #define GBIAS_PNOISE_DEFAULT    1E-06f
 #define ABIAS_PNOISE_DEFAULT    0.0002f
 #define MAGE_PNOISE_DEFAULT     0.0003f
@@ -396,8 +396,8 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     _msecHgtDelay           = 60;       // Height measurement delay (msec)
     _msecMagDelay           = 40;       // Magnetometer measurement delay (msec)
     _msecTasDelay           = 240;      // Airspeed measurement delay (msec)
-    _gpsRetryTimeUseTAS     = 20000;    // GPS retry time with airspeed measurements (msec)
-    _gpsRetryTimeNoTAS      = 10000;    // GPS retry time without airspeed measurements (msec)
+    _gpsRetryTimeUseTAS     = 15000;    // GPS retry time with airspeed measurements (msec)
+    _gpsRetryTimeNoTAS      = 10000;     // GPS retry time without airspeed measurements (msec)
     _hgtRetryTimeMode0      = 10000;    // Height retry time with vertical velocity measurement (msec)
     _hgtRetryTimeMode12     = 5000;     // Height retry time without vertical velocity measurement (msec)
     _magFailTimeLimit_ms    = 10000;    // number of msec before a magnetometer failing innovation consistency checks is declared failed (msec)
@@ -787,6 +787,8 @@ void NavEKF::SelectVelPosFusion()
         // check for and read new GPS data
         readGpsData();
 
+        // Set GPS time-out threshold depending on whether we have an airspeed sensor to constrain drift
+        uint32_t gpsRetryTimeout = useAirspeed() ? _gpsRetryTimeUseTAS : _gpsRetryTimeNoTAS;
         // command fusion of GPS data and reset states as required
         if (newDataGps) {
             // reset data arrived flag
@@ -800,7 +802,6 @@ void NavEKF::SelectVelPosFusion()
                 fuseVelData = true;
                 fusePosData = true;
                 // If a long time since last GPS update, then reset position and velocity and reset stored state history
-                uint32_t gpsRetryTimeout = useAirspeed() ? _gpsRetryTimeUseTAS : _gpsRetryTimeNoTAS;
                 if (imuSampleTime_ms - secondLastFixTime_ms > gpsRetryTimeout) {
                     ResetPosition();
                     ResetVelocity();
@@ -813,6 +814,13 @@ void NavEKF::SelectVelPosFusion()
         } else {
             fuseVelData = false;
             fusePosData = false;
+            // If we haven't received GPS data for a while and are not using optical flow, then declare the EKF position and velocity output as unhealthy
+            if ((imuSampleTime_ms - secondLastFixTime_ms > gpsRetryTimeout) && !(gpsInhibitMode == 2 && useOptFlow())) {
+                posHealth = false;
+                velHealth = false;
+                posTimeout = true;
+                velTimeout = true;
+            }
         }
     } else if (staticMode ) {
         // in static mode use synthetic position measurements set to zero
@@ -1768,11 +1776,11 @@ void NavEKF::CovariancePrediction()
         nextP[i][i] = nextP[i][i] + processNoise[i];
     }
 
-    // if the total position variance exceeds 1E6 (1000m), then stop covariance
+    // if the total position variance exceeds 1e4 (100m), then stop covariance
     // growth by setting the predicted to the previous values
     // This prevent an ill conditioned matrix from occurring for long periods
     // without GPS
-    if ((P[7][7] + P[8][8]) > 1e6f)
+    if ((P[7][7] + P[8][8]) > 1e4f)
     {
         for (uint8_t i=7; i<=8; i++)
         {
