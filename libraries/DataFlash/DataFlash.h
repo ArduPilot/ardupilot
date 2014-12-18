@@ -13,6 +13,7 @@
 #include <AP_Baro.h>
 #include <AP_AHRS.h>
 #include "../AP_Airspeed/AP_Airspeed.h"
+#include <AP_BattMonitor.h>
 #include <stdint.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -80,6 +81,7 @@ public:
     void Log_Write_ESC(void);
     void Log_Write_Airspeed(AP_Airspeed &airspeed);
     void Log_Write_Attitude(AP_AHRS &ahrs, Vector3f targets);
+	void Log_Write_Current(AP_BattMonitor battery, int16_t  throttle);
 
     bool logging_started(void) const { return log_write_started; }
 
@@ -419,6 +421,16 @@ struct PACKED log_Attitude {
     uint16_t error_yaw;
 };
 
+struct PACKED log_Current {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    int16_t  throttle;
+    int16_t  battery_voltage;
+    int16_t  current_amps;
+    uint16_t board_voltage;
+    float    current_total;
+};
+
 /*
   terrain log structure
  */
@@ -516,6 +528,8 @@ struct PACKED log_AIRSPEED {
       "CAM", "IHLLeeccC","GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,Roll,Pitch,Yaw" }, \
     { LOG_ARSP_MSG, sizeof(log_AIRSPEED), \
       "ARSP",  "Iffcff",   "TimeMS,Airspeed,DiffPress,Temp,RawPress,Offset" }
+	{ LOG_CURRENT_MSG, sizeof(log_Current), \           
+      "CURR", "Ihhhhf","TimeMS,ThrOut,Volt,Curr,Vcc,CurrTot" }  
 
 // messages for more advanced boards
 #define LOG_EXTRA_STRUCTURES \
@@ -613,6 +627,7 @@ struct PACKED log_AIRSPEED {
 #define LOG_BAR2_MSG	  163
 #define LOG_ARSP_MSG      164
 #define LOG_ATTITUDE_MSG  165
+#define LOG_CURRENT_MSG   165
 
 // message types 200 to 210 reversed for GPS driver use
 // message types 211 to 220 reversed for autotune use
