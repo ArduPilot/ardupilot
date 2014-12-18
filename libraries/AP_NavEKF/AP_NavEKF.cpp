@@ -396,8 +396,8 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     _msecHgtDelay           = 60;       // Height measurement delay (msec)
     _msecMagDelay           = 40;       // Magnetometer measurement delay (msec)
     _msecTasDelay           = 240;      // Airspeed measurement delay (msec)
-    _gpsRetryTimeUseTAS     = 15000;    // GPS retry time with airspeed measurements (msec)
-    _gpsRetryTimeNoTAS      = 10000;     // GPS retry time without airspeed measurements (msec)
+    _gpsRetryTimeUseTAS     = 10000;    // GPS retry time with airspeed measurements (msec)
+    _gpsRetryTimeNoTAS      = 10000;    // GPS retry time without airspeed measurements (msec)
     _hgtRetryTimeMode0      = 10000;    // Height retry time with vertical velocity measurement (msec)
     _hgtRetryTimeMode12     = 5000;     // Height retry time without vertical velocity measurement (msec)
     _magFailTimeLimit_ms    = 10000;    // number of msec before a magnetometer failing innovation consistency checks is declared failed (msec)
@@ -4364,7 +4364,6 @@ void NavEKF::ZeroVariables()
     memset(&hgtIncrStateDelta[0], 0, sizeof(hgtIncrStateDelta));
     memset(&magIncrStateDelta[0], 0, sizeof(magIncrStateDelta));
     memset(&flowIncrStateDelta[0], 0, sizeof(flowIncrStateDelta));
-    gpsPosGlitchOffsetNE.zero();
     // optical flow variables
     newDataFlow = false;
     newDataRng  = false;
@@ -4425,18 +4424,23 @@ bool NavEKF::use_compass(void) const
     return _ahrs->get_compass() && _ahrs->get_compass()->use_for_yaw();
 }
 
-// decay GPS horizontal position offset to close to zero at a rate of 1 m/s
+// decay GPS horizontal position offset to close to zero at a rate of 1 m/s for copters and 3 m/s for planes
 // limit radius to a maximum of 100m
-// apply glitch offset to GPS measurements
 void NavEKF::decayGpsOffset()
 {
+    float offsetDecaySpd;
+    if (assume_zero_sideslip()) {
+        offsetDecaySpd = 3.0f;
+    } else {
+        offsetDecaySpd = 1.0f;
+    }
     float lapsedTime = 0.001f*float(imuSampleTime_ms - lastDecayTime_ms);
     lastDecayTime_ms = imuSampleTime_ms;
     float offsetRadius = pythagorous2(gpsPosGlitchOffsetNE.x, gpsPosGlitchOffsetNE.y);
-    // decay radius if larger than velocity of 1.0 multiplied by lapsed time (plus a margin to prevent divide by zero)
-    if (offsetRadius > (lapsedTime + 0.1f)) {
+    // decay radius if larger than offset decay speed multiplied by lapsed time (plus a margin to prevent divide by zero)
+    if (offsetRadius > (offsetDecaySpd * lapsedTime + 0.1f)) {
         // calculate scale factor to be applied to both offset components
-        float scaleFactor = constrain_float((offsetRadius - lapsedTime), 0.0f, 100.0f) / offsetRadius;
+        float scaleFactor = constrain_float((offsetRadius - offsetDecaySpd * lapsedTime), 0.0f, 100.0f) / offsetRadius;
         gpsPosGlitchOffsetNE.x *= scaleFactor;
         gpsPosGlitchOffsetNE.y *= scaleFactor;
     }
