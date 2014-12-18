@@ -12,7 +12,6 @@
 #include <AP_InertialSensor.h>
 #include <AP_AHRS.h>
 #include <AP_Motors.h>
-#include <DataFlash.h>
 #include <AC_PID.h>
 #include <AC_P.h>
 
