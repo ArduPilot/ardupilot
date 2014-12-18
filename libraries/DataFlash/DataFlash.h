@@ -79,6 +79,7 @@ public:
     void Log_Write_Camera(const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);
     void Log_Write_ESC(void);
     void Log_Write_Airspeed(AP_Airspeed &airspeed);
+    void Log_Write_Attitude(AP_AHRS &ahrs, Vector3f targets);
 
     bool logging_started(void) const { return log_write_started; }
 
@@ -405,6 +406,19 @@ struct PACKED log_Camera {
     uint16_t yaw;
 };
 
+struct PACKED log_Attitude {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    int16_t  control_roll;
+    int16_t  roll;
+    int16_t  control_pitch;
+    int16_t  pitch;
+    uint16_t control_yaw;
+    uint16_t yaw;
+    uint16_t error_rp;
+    uint16_t error_yaw;
+};
+
 /*
   terrain log structure
  */
@@ -548,7 +562,9 @@ struct PACKED log_AIRSPEED {
     { LOG_ESC8_MSG, sizeof(log_Esc), \
       "ESC8",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
     { LOG_EKF5_MSG, sizeof(log_EKF5), \
-      "EKF5","IBhhhcccCC","TimeMS,normInnov,FIX,FIY,AFI,HAGL,offset,RI,meaRng,errHAGL" }
+      "EKF5","IBhhhcccCC","TimeMS,normInnov,FIX,FIY,AFI,HAGL,offset,RI,meaRng,errHAGL" }, \
+	{ LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
+	  "ATT", "IccccCCCC", "TimeMS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw" }
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 #define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_EXTRA_STRUCTURES
@@ -596,6 +612,7 @@ struct PACKED log_AIRSPEED {
 #define LOG_EKF5_MSG      162
 #define LOG_BAR2_MSG	  163
 #define LOG_ARSP_MSG      164
+#define LOG_ATTITUDE_MSG  165
 
 // message types 200 to 210 reversed for GPS driver use
 // message types 211 to 220 reversed for autotune use

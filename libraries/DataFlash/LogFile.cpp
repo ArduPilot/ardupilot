@@ -1113,6 +1113,24 @@ void DataFlash_Class::Log_Write_Camera(const AP_AHRS &ahrs, const AP_GPS &gps, c
     WriteBlock(&pkt, sizeof(pkt));
 }
 
+// Write an attitude packet
+void DataFlash_Class::Log_Write_Attitude(AP_AHRS &ahrs, Vector3f targets)
+{
+    struct log_Attitude pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_ATTITUDE_MSG),
+        time_ms         : hal.scheduler->millis(),
+        control_roll    : (int16_t)targets.x,
+        roll            : (int16_t)ahrs.roll_sensor,
+        control_pitch   : (int16_t)targets.y,
+        pitch           : (int16_t)ahrs.pitch_sensor,
+        control_yaw     : (uint16_t)targets.z,
+        yaw             : (uint16_t)ahrs.yaw_sensor,
+        error_rp        : (uint16_t)(ahrs.get_error_rp() * 100),
+        error_yaw       : (uint16_t)(ahrs.get_error_yaw() * 100)
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}
+
 // Write ESC status messages
 void DataFlash_Class::Log_Write_ESC(void)
 {
