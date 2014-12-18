@@ -459,36 +459,12 @@ static void Log_Write_Cmd(const AP_Mission::Mission_Command &cmd)
     DataFlash.Log_Write_MavCmd(mission.num_commands(),mav_cmd);
 }
 
-struct PACKED log_Attitude {
-    LOG_PACKET_HEADER;
-    uint32_t time_ms;
-    int16_t  control_roll;
-    int16_t  roll;
-    int16_t  control_pitch;
-    int16_t  pitch;
-    uint16_t control_yaw;
-    uint16_t yaw;
-    uint16_t error_rp;
-    uint16_t error_yaw;
-};
 
 // Write an attitude packet
 static void Log_Write_Attitude()
 {
-    const Vector3f &targets = attitude_control.angle_ef_targets();
-    struct log_Attitude pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_ATTITUDE_MSG),
-        time_ms         : hal.scheduler->millis(),
-        control_roll    : (int16_t)targets.x,
-        roll            : (int16_t)ahrs.roll_sensor,
-        control_pitch   : (int16_t)targets.y,
-        pitch           : (int16_t)ahrs.pitch_sensor,
-        control_yaw     : (uint16_t)targets.z,
-        yaw             : (uint16_t)ahrs.yaw_sensor,
-        error_rp        : (uint16_t)(ahrs.get_error_rp() * 100),
-        error_yaw       : (uint16_t)(ahrs.get_error_yaw() * 100)
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    Vector3f targets = attitude_control.angle_ef_targets();
+    DataFlash.Log_Write_Attitude(ahrs, targets);
 
 #if AP_AHRS_NAVEKF_AVAILABLE
  #if OPTFLOW == ENABLED
@@ -695,8 +671,6 @@ static const struct LogStructure log_structure[] PROGMEM = {
 #endif
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
       "PM",  "HHIhBHB",    "NLon,NLoop,MaxT,PMT,I2CErr,INSErr,INAVErr" },
-    { LOG_ATTITUDE_MSG, sizeof(log_Attitude),       
-      "ATT", "IccccCCCC",    "TimeMS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw" },
     { LOG_MODE_MSG, sizeof(log_Mode),
       "MODE", "Mh",          "Mode,ThrCrs" },
     { LOG_STARTUP_MSG, sizeof(log_Startup),         
