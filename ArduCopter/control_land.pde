@@ -102,7 +102,7 @@ static void land_gps_run()
     // call attitude controller
     attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
 
-    //pause 4 seconds before beginning land descent
+    // pause 4 seconds before beginning land descent
     float cmb_rate;
     if(land_pause && millis()-land_start_time < 4000) {
         cmb_rate = 0;
@@ -111,6 +111,7 @@ static void land_gps_run()
         cmb_rate = get_land_descent_speed();
     }
 
+    // record desired climb rate for logging
     desired_climb_rate = cmb_rate;
 
     // update altitude target and call position controller
@@ -162,7 +163,7 @@ static void land_nogps_run()
     // call attitude controller
     attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 
-    //pause 4 seconds before beginning land descent
+    // pause 4 seconds before beginning land descent
     float cmb_rate;
     if(land_pause && millis()-land_start_time < LAND_WITH_DELAY_MS) {
         cmb_rate = 0;
@@ -171,6 +172,7 @@ static void land_nogps_run()
         cmb_rate = get_land_descent_speed();
     }
 
+    // record desired climb rate for logging
     desired_climb_rate = cmb_rate;
 
     // call position controller

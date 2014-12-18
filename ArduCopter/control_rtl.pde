@@ -380,6 +380,7 @@ static void rtl_land_run()
     pos_control.set_alt_target_from_climb_rate(cmb_rate, G_Dt, true);
     pos_control.update_z_controller();
 
+    // record desired climb rate for logging
     desired_climb_rate = cmb_rate;
 
     // roll & pitch from waypoint controller, yaw rate from pilot
