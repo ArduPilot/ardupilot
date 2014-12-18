@@ -429,6 +429,7 @@ struct PACKED log_Current {
     int16_t  current_amps;
     uint16_t board_voltage;
     float    current_total;
+	int16_t  battery2_voltage;
 };
 
 /*
@@ -529,7 +530,7 @@ struct PACKED log_AIRSPEED {
     { LOG_ARSP_MSG, sizeof(log_AIRSPEED), \
       "ARSP",  "Iffcff",   "TimeMS,Airspeed,DiffPress,Temp,RawPress,Offset" }
 	{ LOG_CURRENT_MSG, sizeof(log_Current), \           
-      "CURR", "Ihhhhf","TimeMS,ThrOut,Volt,Curr,Vcc,CurrTot" }  
+      "CURR", "Ihhhhfh","TimeMS,Throttle,Volt,Curr,Vcc,CurrTot,Volt2" }  
 
 // messages for more advanced boards
 #define LOG_EXTRA_STRUCTURES \
