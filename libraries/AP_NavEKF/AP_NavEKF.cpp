@@ -400,6 +400,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     _gpsRetryTimeNoTAS      = 10000;    // GPS retry time without airspeed measurements (msec)
     _hgtRetryTimeMode0      = 10000;    // Height retry time with vertical velocity measurement (msec)
     _hgtRetryTimeMode12     = 5000;     // Height retry time without vertical velocity measurement (msec)
+    _tasRetryTime           = 5000;     // True airspeed timeout and retry interval (msec)
     _magFailTimeLimit_ms    = 10000;    // number of msec before a magnetometer failing innovation consistency checks is declared failed (msec)
     _magVarRateScale        = 0.05f;    // scale factor applied to magnetometer variance due to angular rate
     _gyroBiasNoiseScaler    = 2.0f;     // scale factor applied to gyro bias state process noise when on ground
@@ -442,29 +443,8 @@ bool NavEKF::healthy(void) const
         return false;
     }
 
-    // If measurements have failed innovation consistency checks for long enough to time-out
-    // and force fusion then the nav solution can be conidered to be unhealthy
-    // This will only be set as a transient
-    if (_fallback && (posTimeout || velTimeout || hgtTimeout)) {
-        return false;
-    }
-
     // all OK
     return true;
-}
-
-// return true if filter is dead-reckoning height
-bool NavEKF::HeightDrifting(void) const
-{
-    // Set to true if height measurements are failing the innovation consistency check
-    return !hgtHealth;
-}
-
-// return true if filter is dead-reckoning position
-bool NavEKF::PositionDrifting(void) const
-{
-    // Set to true if position measurements are failing the innovation consistency check
-    return !posHealth;
 }
 
 // resets position states to last GPS measurement or to zero if in static mode
@@ -789,6 +769,13 @@ void NavEKF::SelectVelPosFusion()
 
         // Set GPS time-out threshold depending on whether we have an airspeed sensor to constrain drift
         uint32_t gpsRetryTimeout = useAirspeed() ? _gpsRetryTimeUseTAS : _gpsRetryTimeNoTAS;
+
+        // If we haven't received GPS data for a while, then declare the position and velocity data as being timed out
+        if (imuSampleTime_ms - lastFixTime_ms > gpsRetryTimeout) {
+            posTimeout = true;
+            velTimeout = true;
+        }
+
         // command fusion of GPS data and reset states as required
         if (newDataGps) {
             // reset data arrived flag
@@ -814,13 +801,6 @@ void NavEKF::SelectVelPosFusion()
         } else {
             fuseVelData = false;
             fusePosData = false;
-            // If we haven't received GPS data for a while and are not using optical flow, then declare the EKF position and velocity output as unhealthy
-            if ((imuSampleTime_ms - secondLastFixTime_ms > gpsRetryTimeout) && !(gpsInhibitMode == 2 && useOptFlow())) {
-                posHealth = false;
-                velHealth = false;
-                posTimeout = true;
-                velTimeout = true;
-            }
         }
     } else if (staticMode ) {
         // in static mode use synthetic position measurements set to zero
@@ -848,6 +828,13 @@ void NavEKF::SelectVelPosFusion()
 
     // check for and read new height data
     readHgtData();
+
+    // If we haven't received height data for a while, then declare the height data as being timed out
+    // set timeout period based on whether we have vertical GPS velocity available to constrain drift
+    hgtRetryTime = (_fusionModeGPS == 0 && !velTimeout) ? _hgtRetryTimeMode0 : _hgtRetryTimeMode12;
+    if (imuSampleTime_ms - lastHgtMeasTime > hgtRetryTime) {
+        hgtTimeout = true;
+    }
 
     // command fusion of height data
     if (newDataHgt)
@@ -1006,6 +993,11 @@ void NavEKF::SelectTasFusion()
 {
     // get true airspeed measurement
     readAirSpdData();
+
+    // If we haven't received airspeed data for a while, then declare the airspeed data as being timed out
+    if (imuSampleTime_ms - lastAirspeedUpdate > _tasRetryTime) {
+        tasTimeout = true;
+    }
 
     // if the filter is initialised, wind states are not inhibited and we have data to fuse, then queue TAS fusion
     tasDataWaiting = (statesInitialised && !inhibitWindStates && (tasDataWaiting || newDataTas));
@@ -1891,7 +1883,6 @@ void NavEKF::FuseVelPosNED()
         // if vertical GPS velocity data is being used, check to see if the GPS vertical velocity and barometer
         // innovations have the same sign and are outside limits. If so, then it is likely aliasing is affecting
         // the accelerometers and we should disable the GPS and barometer innovation consistency checks.
-        bool badIMUdata = false;
         if (_fusionModeGPS == 0 && fuseVelData && (imuSampleTime_ms - lastHgtTime_ms) <  (2 * _msecHgtAvg)) {
             // calculate innovations for height and vertical GPS vel measurements
             float hgtErr  = statesAtHgtTime.position.z - observation[5];
@@ -2003,10 +1994,6 @@ void NavEKF::FuseVelPosNED()
 
         // test height measurements
         if (fuseHgtData) {
-            // set the height data timeout depending on whether vertical velocity data is being used
-            uint32_t hgtRetryTime;
-            if (_fusionModeGPS == 0) hgtRetryTime = _hgtRetryTimeMode0;
-            else hgtRetryTime = _hgtRetryTimeMode12;
             // calculate height innovations
             hgtInnov = statesAtHgtTime.position.z - observation[5];
             varInnovVelPos[5] = P[9][9] + R_OBS[5];
@@ -3120,6 +3107,9 @@ void NavEKF::FuseAirspeed()
     Vector22 H_TAS;
     float VtasPred;
 
+    // health is set bad until test passed
+    tasHealth = false;
+
     // copy required states to local variable names
     vn = statesAtVtasMeasTime.velocity.x;
     ve = statesAtVtasMeasTime.velocity.y;
@@ -3196,9 +3186,17 @@ void NavEKF::FuseAirspeed()
         // calculate the innovation consistency test ratio
         tasTestRatio = sq(innovVtas) / (sq(_tasInnovGate) * varInnovVtas);
 
-        // test the ratio before fusing data
-        if (tasTestRatio < 1.0f)
+        // fail if the ratio is > 1, but don't fail if bad IMU data
+        tasHealth = ((tasTestRatio < 1.0f) || badIMUdata);
+        tasTimeout = (imuSampleTime_ms - tasFailTime) > _tasRetryTime;
+
+        // test the ratio before fusing data, forcing fusion if airspeed and position are timed out as we have no choice but to try and use airspeed to constrain error growth
+        if (tasHealth || (tasTimeout && posTimeout))
         {
+
+            // restart the counter
+            tasFailTime = imuSampleTime_ms;
+
             // correct the state vector
             for (uint8_t j=0; j<=21; j++)
             {
@@ -4320,6 +4318,7 @@ void NavEKF::ZeroVariables()
     velFailTime = imuSampleTime_ms;
     posFailTime = imuSampleTime_ms;
     hgtFailTime = imuSampleTime_ms;
+    tasFailTime = imuSampleTime_ms;
     lastStateStoreTime_ms = imuSampleTime_ms;
     lastFixTime_ms = imuSampleTime_ms;
     secondLastFixTime_ms = imuSampleTime_ms;
@@ -4334,7 +4333,9 @@ void NavEKF::ZeroVariables()
     posTimeout = false;
     hgtTimeout = false;
     magTimeout = false;
+    tasTimeout = false;
     badMag = false;
+    badIMUdata = false;
     firstArmComplete = false;
     finalMagYawInit = false;
     storeIndex = 0;
@@ -4486,7 +4487,7 @@ return filter timeout status as a bitmasked integer
  1 = velocity measurement timeout
  2 = height measurement timeout
  3 = magnetometer measurement timeout
- 5 = unassigned
+ 5 = true airspeed measurement timeout
  6 = unassigned
  7 = unassigned
  7 = unassigned
@@ -4496,7 +4497,8 @@ void  NavEKF::getFilterTimeouts(uint8_t &timeouts) const
     timeouts = (posTimeout<<0 |
                 velTimeout<<1 |
                 hgtTimeout<<2 |
-                magTimeout<<3);
+                magTimeout<<3 |
+                tasTimeout<<4);
 }
 
 /*
@@ -4513,10 +4515,10 @@ return filter function status as a bitmasked integer
 void  NavEKF::getFilterStatus(uint8_t &status) const
 {
     // add code to set bits using private filter data here
-    status = (!state.quat.is_nan()<<0 |
-              !(velTimeout && posTimeout)<<1 |
+    status = (!state.quat.is_nan()<<0 | // we can implement a better way to detect invalid attitude, but it is tricky to do reliably
+              !(velTimeout && tasTimeout)<<1 |
               !((velTimeout && hgtTimeout) || (hgtTimeout && _fusionModeGPS > 0))<<2 |
-              (gpsInhibitMode == 2 && useOptFlow())<<3 |
+              ((gpsInhibitMode == 2 && useOptFlow()) || (!tasTimeout && assume_zero_sideslip()))<<3 |
               !posTimeout<<4 |
               !hgtTimeout<<5 |
               !inhibitGndState<<6);

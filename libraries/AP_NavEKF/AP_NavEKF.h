@@ -92,12 +92,6 @@ public:
     // Check basic filter health metrics and return a consolidated health status
     bool healthy(void) const;
 
-    // return true if filter is dead-reckoning height
-    bool HeightDrifting(void) const;
-
-    // return true if filter is dead-reckoning position
-    bool PositionDrifting(void) const;
-
     // return the last calculated NED position relative to the reference point (m).
     // return false if no position is available
     bool getPosNED(Vector3f &pos) const;
@@ -439,6 +433,7 @@ private:
     AP_Int16 _gpsRetryTimeNoTAS;    // GPS retry time following innovation consistency fail if no TAS measurements are used (msec)
     AP_Int16 _hgtRetryTimeMode0;    // height measurement retry time following innovation consistency fail if GPS fusion mode is = 0 (msec)
     AP_Int16 _hgtRetryTimeMode12;   // height measurement retry time following innovation consistency fail if GPS fusion mode is > 0 (msec)
+    AP_Int16 _tasRetryTime;         // true airspeed measurement retry time following innovation consistency fail (msec)
     uint32_t _magFailTimeLimit_ms;  // number of msec before a magnetometer failing innovation consistency checks is declared failed (msec)
     float _gyroBiasNoiseScaler;     // scale factor applied to gyro bias state process variance when on ground
     float _magVarRateScale;         // scale factor applied to magnetometer variance due to angular rate
@@ -455,11 +450,14 @@ private:
     bool posHealth;                 // boolean true if position measurements have passed innovation consistency check
     bool hgtHealth;                 // boolean true if height measurements have passed innovation consistency check
     bool magHealth;                 // boolean true if magnetometer has passed innovation consistency check
+    bool tasHealth;                 // boolean true if true airspeed has passed innovation consistency check
     bool velTimeout;                // boolean true if velocity measurements have failed innovation consistency check and timed out
     bool posTimeout;                // boolean true if position measurements have failed innovation consistency check and timed out
     bool hgtTimeout;                // boolean true if height measurements have failed innovation consistency check and timed out
     bool magTimeout;                // boolean true if magnetometer measurements have failed for too long and have timed out
+    bool tasTimeout;                // boolean true if true airspeed measurements have failed for too long and have timed out
     bool badMag;                    // boolean true if the magnetometer is declared to be producing bad data
+    bool badIMUdata;                // boolean true if the bad IMU data is detected
 
     float gpsNoiseScaler;           // Used to scale the  GPS measurement noise and consistency gates to compensate for operation with small satellite counts
     Vector31 Kfusion;               // Kalman gain vector
@@ -538,9 +536,11 @@ private:
     bool newDataHgt;                // true when new height data has arrived
     uint32_t lastHgtMeasTime;       // time of last height measurement used to determine if new data has arrived
     uint32_t lastHgtTime_ms;        // time of last height update (msec) used to calculate timeout
+    uint16_t hgtRetryTime;          // time allowed without use of height measurements before a height timeout is declared
     uint32_t velFailTime;           // time stamp when GPS velocity measurement last failed covaraiance consistency check (msec)
     uint32_t posFailTime;           // time stamp when GPS position measurement last failed covaraiance consistency check (msec)
     uint32_t hgtFailTime;           // time stamp when height measurement last failed covaraiance consistency check (msec)
+    uint32_t tasFailTime;           // time stamp when airspeed measurement last failed covaraiance consistency check (msec)
     uint8_t storeIndex;             // State vector storage index
     uint32_t lastStateStoreTime_ms; // time of last state vector storage
     uint32_t lastFixTime_ms;        // time of last GPS fix used to determine if new data has arrived
