@@ -4424,13 +4424,13 @@ bool NavEKF::use_compass(void) const
     return _ahrs->get_compass() && _ahrs->get_compass()->use_for_yaw();
 }
 
-// decay GPS horizontal position offset to close to zero at a rate of 1 m/s for copters and 3 m/s for planes
+// decay GPS horizontal position offset to close to zero at a rate of 1 m/s for copters and 5 m/s for planes
 // limit radius to a maximum of 100m
 void NavEKF::decayGpsOffset()
 {
     float offsetDecaySpd;
     if (assume_zero_sideslip()) {
-        offsetDecaySpd = 3.0f;
+        offsetDecaySpd = 5.0f;
     } else {
         offsetDecaySpd = 1.0f;
     }
