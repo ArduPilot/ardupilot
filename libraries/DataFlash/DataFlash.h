@@ -530,7 +530,9 @@ Format characters in the format string for binary log messages
     { LOG_ARSP_MSG, sizeof(log_AIRSPEED), \
       "ARSP",  "Iffcff",   "TimeMS,Airspeed,DiffPress,Temp,RawPress,Offset" }
 	{ LOG_CURRENT_MSG, sizeof(log_Current), \           
-      "CURR", "Ihhhhfh","TimeMS,Throttle,Volt,Curr,Vcc,CurrTot,Volt2" }  
+      "CURR", "Ihhhhfh","TimeMS,Throttle,Volt,Curr,Vcc,CurrTot,Volt2" },\
+	{ LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
+	  "ATT", "IccccCCCC", "TimeMS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw" }  
 
 // messages for more advanced boards
 #define LOG_EXTRA_STRUCTURES \
@@ -577,9 +579,7 @@ Format characters in the format string for binary log messages
     { LOG_ESC8_MSG, sizeof(log_Esc), \
       "ESC8",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
     { LOG_EKF5_MSG, sizeof(log_EKF5), \
-      "EKF5","IBhhhcccCC","TimeMS,normInnov,FIX,FIY,AFI,HAGL,offset,RI,meaRng,errHAGL" }, \
-	{ LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
-	  "ATT", "IccccCCCC", "TimeMS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw" }
+      "EKF5","IBhhhcccCC","TimeMS,normInnov,FIX,FIY,AFI,HAGL,offset,RI,meaRng,errHAGL" }
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 #define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_EXTRA_STRUCTURES
