@@ -3624,7 +3624,7 @@ uint8_t NavEKF::setInhibitGPS(void)
     if(!staticMode) {
         return 0;
     }
-    if (useOptFlow()) {
+    if (optFlowDataPresent()) {
         gpsInhibitMode = 2;
         return 2;
     } else {
