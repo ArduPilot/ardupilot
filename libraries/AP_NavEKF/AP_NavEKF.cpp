@@ -454,9 +454,6 @@ void NavEKF::ResetPosition(void)
         state.position.x = 0;
         state.position.y = 0;
     } else if (_ahrs->get_gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
-
-        // read the GPS
-        readGpsData();
         // write to state vector and compensate for GPS latency
         state.position.x = gpsPosNE.x + gpsPosGlitchOffsetNE.x + 0.001f*velNED.x*float(_msecPosDelay);
         state.position.y = gpsPosNE.y + gpsPosGlitchOffsetNE.y + 0.001f*velNED.y*float(_msecPosDelay);
@@ -479,17 +476,17 @@ void NavEKF::ResetVelocity(void)
     } else if (_ahrs->get_gps().status() >= AP_GPS::GPS_OK_FIX_3D && _fusionModeGPS <= 1) {
         // read the GPS
         readGpsData();
-        // reset horizontal velocity states
-        state.velocity.x  = velNED.x; // north velocity from blended accel data
-        state.velocity.y  = velNED.y; // east velocity from blended accel data
-        state.vel1.x      = velNED.x; // north velocity from IMU1 accel data
-        state.vel1.y      = velNED.y; // east velocity from IMU1 accel data
-        state.vel2.x      = velNED.x; // north velocity from IMU2 accel data
-        state.vel2.y      = velNED.y; // east velocity from IMU2 accel data
+        // reset horizontal velocity states, applying an offset to the GPS velocity to prevent the GPS position being rejected when the GPS position offset is being decayed to zero.
+        state.velocity.x  = velNED.x + gpsVelGlitchOffset.x; // north velocity from blended accel data
+        state.velocity.y  = velNED.y + gpsVelGlitchOffset.y; // east velocity from blended accel data
+        state.vel1.x      = velNED.x + gpsVelGlitchOffset.x; // north velocity from IMU1 accel data
+        state.vel1.y      = velNED.y + gpsVelGlitchOffset.y; // east velocity from IMU1 accel data
+        state.vel2.x      = velNED.x + gpsVelGlitchOffset.x; // north velocity from IMU2 accel data
+        state.vel2.y      = velNED.y + gpsVelGlitchOffset.y; // east velocity from IMU2 accel data
         // over write stored horizontal velocity states to prevent subsequent GPS measurements from being rejected
         for (uint8_t i=0; i<=49; i++){
-            storedStates[i].velocity.x = velNED.x;
-            storedStates[i].velocity.y = velNED.y;
+            storedStates[i].velocity.x = velNED.x + gpsVelGlitchOffset.x;
+            storedStates[i].velocity.y = velNED.y + gpsVelGlitchOffset.y;
         }
     }
 }
@@ -800,9 +797,13 @@ void NavEKF::SelectVelPosFusion()
                 fusePosData = true;
                 // If a long time since last GPS update, then reset position and velocity and reset stored state history
                 if (imuSampleTime_ms - secondLastFixTime_ms > gpsRetryTimeout) {
+                    // Apply an offset to the GPS position so that the position can be corrected gradually
+                    gpsPosGlitchOffsetNE.x = statesAtPosTime.position.x - gpsPosNE.x;
+                    gpsPosGlitchOffsetNE.y = statesAtPosTime.position.y - gpsPosNE.y;
+                    // limit the radius of the offset to 100m and decay the offset to zero radially
+                    decayGpsOffset();
                     ResetPosition();
                     ResetVelocity();
-                    StoreStatesReset();
                 }
             } else {
                 fuseVelData = false;
@@ -1865,7 +1866,9 @@ void NavEKF::FuseVelPosNED()
         // form the observation vector and zero velocity and horizontal position observations if in static mode
         // If in velocity hold mode, hold the last known horizontal velocity vector
         if (!staticMode && !velHoldMode) {
-            for (uint8_t i=0; i<=2; i++) observation[i] = velNED[i];
+            observation[0] = velNED.x + gpsVelGlitchOffset.x;
+            observation[1] = velNED.y + gpsVelGlitchOffset.y;
+            observation[2] = velNED.z;
             observation[3] = gpsPosNE.x + gpsPosGlitchOffsetNE.x;
             observation[4] = gpsPosNE.y + gpsPosGlitchOffsetNE.y;
         } else if (staticMode){
@@ -1996,7 +1999,6 @@ void NavEKF::FuseVelPosNED()
             } else if (velTimeout && !posHealth) {
                 // if data is not healthy and timed out and position is unhealthy we reset the velocity, but do not fuse data on this time step
                 ResetVelocity();
-                StoreStatesReset();
                 fuseVelData =  false;
             } else {
                 // if data is unhealthy and position is healthy, we do not fuse it
@@ -2021,7 +2023,6 @@ void NavEKF::FuseVelPosNED()
                 // if timed out, reset the height, but do not fuse data on this time step
                 if (hgtTimeout) {
                     ResetHeight();
-                    StoreStatesReset();
                     fuseHgtData = false;
                 }
             }
@@ -3129,8 +3130,8 @@ void NavEKF::FuseAirspeed()
     vwn = statesAtVtasMeasTime.wind_vel.x;
     vwe = statesAtVtasMeasTime.wind_vel.y;
 
-    // calculate the predicted airspeed
-    VtasPred = pythagorous3((ve - vwe) , (vn - vwn) , vd);
+    // calculate the predicted airspeed, compensating for bias in GPS velocity when we are pulling a glitch offset back in
+    VtasPred = pythagorous3((ve - gpsVelGlitchOffset.y - vwe) , (vn - gpsVelGlitchOffset.x - vwn) , vd);
     // perform fusion of True Airspeed measurement
     if (VtasPred > 1.0f)
     {
@@ -3300,9 +3301,9 @@ void NavEKF::FuseSideslip()
     vwn = state.wind_vel.x;
     vwe = state.wind_vel.y;
 
-    // calculate predicted wind relative velocity in NED
-    vel_rel_wind.x = vn - vwn;
-    vel_rel_wind.y = ve - vwe;
+    // calculate predicted wind relative velocity in NED, compensating for offset in velcity when we are pulling a GPS glitch offset back in
+    vel_rel_wind.x = vn - vwn - gpsVelGlitchOffset.x;
+    vel_rel_wind.y = ve - vwe - gpsVelGlitchOffset.y;
     vel_rel_wind.z = vd;
 
     // rotate into body axes
@@ -4015,7 +4016,7 @@ void NavEKF::readGpsData()
         // read latitutde and longitude from GPS and convert to NE position
         const struct Location &gpsloc = _ahrs->get_gps().location();
         gpsPosNE = location_diff(_ahrs->get_home(), gpsloc);
-        // decay and limit the position offset which is applied to NE position wherever it is used throughout code to allow GPS position jumps to be accommodated gradually
+        // calculate a position offset which is applied to NE position and velocity wherever it is used throughout code to allow GPS position jumps to be accommodated gradually
         decayGpsOffset();
     }
 }
@@ -4397,6 +4398,7 @@ void NavEKF::ZeroVariables()
     velHoldMode = false;
     heldVelNE.zero();
     gpsInhibitMode = 0;
+    gpsVelGlitchOffset.zero();
 }
 
 // return true if we should use the airspeed sensor
@@ -4454,10 +4456,15 @@ void NavEKF::decayGpsOffset()
     float offsetRadius = pythagorous2(gpsPosGlitchOffsetNE.x, gpsPosGlitchOffsetNE.y);
     // decay radius if larger than offset decay speed multiplied by lapsed time (plus a margin to prevent divide by zero)
     if (offsetRadius > (offsetDecaySpd * lapsedTime + 0.1f)) {
+        // Calculate the GPS velocity offset required. This is necessary to prevent the position measurement being rejected for inconsistency when the radius is being pulled back in.
+        gpsVelGlitchOffset = -gpsPosGlitchOffsetNE*offsetDecaySpd/offsetRadius;
         // calculate scale factor to be applied to both offset components
         float scaleFactor = constrain_float((offsetRadius - offsetDecaySpd * lapsedTime), 0.0f, 100.0f) / offsetRadius;
         gpsPosGlitchOffsetNE.x *= scaleFactor;
         gpsPosGlitchOffsetNE.y *= scaleFactor;
+    } else {
+        gpsVelGlitchOffset.zero();
+        gpsPosGlitchOffsetNE.zero();
     }
 }
 
