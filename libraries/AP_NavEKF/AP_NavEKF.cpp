@@ -4524,7 +4524,7 @@ return filter function status as a bitmasked integer
  4 = absolute horizontal position estimate valid
  5 = vertical position estimate valid
  6 = terrain height estimate valid
- 7 = unassigned
+ 7 = static mode
 */
 void  NavEKF::getFilterStatus(uint8_t &status) const
 {
@@ -4535,7 +4535,8 @@ void  NavEKF::getFilterStatus(uint8_t &status) const
               ((gpsInhibitMode == 2 && flowDataValid) || (!tasTimeout && assume_zero_sideslip()))<<3 |
               !posTimeout<<4 |
               !hgtTimeout<<5 |
-              !inhibitGndState<<6);
+              !inhibitGndState<<6 |
+              staticMode<<7);
 }
 
 #endif // HAL_CPU_CLASS
