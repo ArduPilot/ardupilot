@@ -8,6 +8,7 @@
 #include <AP_Baro.h>
 #include <AP_AHRS.h>
 #include <AP_BattMonitor.h>
+#include <AP_Compass.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -1145,6 +1146,40 @@ void DataFlash_Class::Log_Write_Current(AP_BattMonitor battery, int16_t  throttl
         board_voltage       : (uint16_t)(hal.analogin->board_voltage()*1000),
         current_total       : battery.current_total_mah(),
         battery2_voltage    : (int16_t)(voltage2 * 100.0f)
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}
+
+// Write a Compass packet
+void DataFlash_Class::Log_Write_Compass(const Compass &compass, uint8_t instance)
+{
+    uint8_t log_compass_num ;
+    switch (instance) {
+        case 0:
+            log_compass_num = LOG_COMPASS_MSG;
+            break;
+        case 1:
+            log_compass_num = LOG_COMPASS2_MSG;
+            break;
+        case 2:
+            log_compass_num = LOG_COMPASS3_MSG;
+            break;
+    }
+    const Vector3f &mag_field = compass.get_field(instance);
+    const Vector3f &mag_offsets = compass.get_offsets(instance);
+    const Vector3f &mag_motor_offsets = compass.get_motor_offsets(instance);   
+    struct log_Compass pkt = {
+        LOG_PACKET_HEADER_INIT(log_compass_num),
+        time_ms         : hal.scheduler->millis(),
+        mag_x           : (int16_t)mag_field.x,
+        mag_y           : (int16_t)mag_field.y,
+        mag_z           : (int16_t)mag_field.z,
+        offset_x        : (int16_t)mag_offsets.x,
+        offset_y        : (int16_t)mag_offsets.y,
+        offset_z        : (int16_t)mag_offsets.z,
+        motor_offset_x  : (int16_t)mag_motor_offsets.x,
+        motor_offset_y  : (int16_t)mag_motor_offsets.y,
+        motor_offset_z  : (int16_t)mag_motor_offsets.z
     };
     WriteBlock(&pkt, sizeof(pkt));
 }

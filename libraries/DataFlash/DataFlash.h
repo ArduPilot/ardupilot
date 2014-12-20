@@ -27,6 +27,8 @@
   #endif
 #endif
 
+class Compass;
+
 class DataFlash_Class
 {
 public:
@@ -82,6 +84,7 @@ public:
     void Log_Write_Airspeed(AP_Airspeed &airspeed);
     void Log_Write_Attitude(AP_AHRS &ahrs, Vector3f targets);
 	void Log_Write_Current(AP_BattMonitor battery, int16_t  throttle);
+    void Log_Write_Compass(const Compass &compass, uint8_t instance);
 
     bool logging_started(void) const { return log_write_started; }
 
@@ -412,6 +415,20 @@ struct PACKED log_Current {
 	int16_t  battery2_voltage;
 };
 
+struct PACKED log_Compass {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    int16_t  mag_x;
+    int16_t  mag_y;
+    int16_t  mag_z;
+    int16_t  offset_x;
+    int16_t  offset_y;
+    int16_t  offset_z;
+    int16_t  motor_offset_x;
+    int16_t  motor_offset_y;
+    int16_t  motor_offset_z;
+};
+
 /*
   terrain log structure
  */
@@ -532,7 +549,13 @@ Format characters in the format string for binary log messages
 	{ LOG_CURRENT_MSG, sizeof(log_Current), \           
       "CURR", "Ihhhhfh","TimeMS,Throttle,Volt,Curr,Vcc,CurrTot,Volt2" },\
 	{ LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
-	  "ATT", "IccccCCCC", "TimeMS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw" }  
+	  "ATT", "IccccCCCC", "TimeMS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw" },\
+    { LOG_COMPASS_MSG, sizeof(log_Compass), \             
+      "MAG", "Ihhhhhhhhh",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" },\
+    { LOG_COMPASS2_MSG, sizeof(log_Compass), \    
+      "MAG2","Ihhhhhhhhh",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" },\
+    { LOG_COMPASS3_MSG, sizeof(log_Compass), \            
+      "MAG3","Ihhhhhhhhh",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" }
 
 // messages for more advanced boards
 #define LOG_EXTRA_STRUCTURES \
@@ -629,6 +652,9 @@ Format characters in the format string for binary log messages
 #define LOG_ARSP_MSG      164
 #define LOG_ATTITUDE_MSG  165
 #define LOG_CURRENT_MSG   165
+#define LOG_COMPASS_MSG   166
+#define LOG_COMPASS2_MSG  167
+#define LOG_COMPASS3_MSG  168
 
 // message types 200 to 210 reversed for GPS driver use
 // message types 211 to 220 reversed for autotune use
