@@ -708,7 +708,7 @@ void NavEKF::UpdateFilter()
             state.quat = calcQuatAndFieldStates(_ahrs->roll, _ahrs->pitch);
             firstArmPosD = state.position.z;
         }
-        calcQuatAndFieldStates(_ahrs->roll, _ahrs->pitch);
+        // zero stored velocities used to do dead-reckoning
         heldVelNE.zero();
         // When entering static mode (dis-arming), clear the GPS inhibit mode
         // when leaving static mode (arming) set to true if EKF user parameter is set to not use GPS
