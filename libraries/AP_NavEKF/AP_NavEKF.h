@@ -369,8 +369,11 @@ private:
     // Calculate weighting that is applied to IMU1 accel data to blend data from IMU's 1 and 2
     void calcIMU_Weighting(float K1, float K2);
 
-    // return true if we should use the optical flow sensor
+    // return true if the optical flow sensor is producing valid data and can be used
     bool useOptFlow(void) const;
+
+    // return true if optical flow data is available
+    bool optFlowDataPresent(void) const;
 
     // return true if we should use the range finder sensor
     bool useRngFinder(void) const;
@@ -596,6 +599,7 @@ private:
     float auxFlowObsInnovVar[2];    // innovation variance for optical flow observations from 2-state focal length scale factor and terrain offset estimator
     float flowRadXYcomp[2];         // motion compensated optical flow angular rates(rad/sec)
     float flowRadXY[2];             // raw (non motion compensated) optical flow angular rates (rad/sec)
+    uint32_t flowValidMeaTime_ms;   // time stamp from latest valid flow measurement (msec)
     uint32_t flowMeaTime_ms;        // time stamp from latest flow measurement (msec)
     uint8_t flowQuality;            // unsigned integer representing quality of optical flow data. 255 is maximum quality.
     uint32_t rngMeaTime_ms;         // time stamp from latest range measurement (msec)
