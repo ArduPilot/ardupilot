@@ -4075,8 +4075,8 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
 {
     // The raw measurements need to be optical flow rates in radians/second averaged across the time since the last update
     // The PX4Flow sensor outputs flow rates with the following axis and sign conventions:
-    // A positive X rate is produced by a positive velocity over ground in the X direction
-    // A positive Y rate is produced by a positive velocity over ground in the Y direction
+    // A positive X rate is produced by a positive sensor rotation about the X axis
+    // A positive Y rate is produced by a positive sensor rotation about the Y axis
     // This filter uses a different definition of optical flow rates to the sensor with a positive optical flow rate produced by a
     // negative rotation about that axis. For example a positive rotation of the flight vehicle about its X (roll) axis would produce a negative X flow rate
     flowQuality = rawFlowQuality;
