@@ -4501,9 +4501,9 @@ return filter timeout status as a bitmasked integer
  1 = velocity measurement timeout
  2 = height measurement timeout
  3 = magnetometer measurement timeout
- 5 = true airspeed measurement timeout
+ 4 = true airspeed measurement timeout
+ 5 = unassigned
  6 = unassigned
- 7 = unassigned
  7 = unassigned
 */
 void  NavEKF::getFilterTimeouts(uint8_t &timeouts) const
