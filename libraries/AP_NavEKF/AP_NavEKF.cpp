@@ -710,12 +710,22 @@ void NavEKF::UpdateFilter()
         }
         // zero stored velocities used to do dead-reckoning
         heldVelNE.zero();
-        // When entering static mode (dis-arming), clear the GPS inhibit mode
-        // when leaving static mode (arming) set to true if EKF user parameter is set to not use GPS
+        // set various  useage modes based on the condition at arming. These are then held until the vehicle is disarmed.
         if (!prevStaticMode) {
-            gpsInhibitMode = 0;
-        } else if (prevStaticMode && _fusionModeGPS == 3) {
-            gpsInhibitMode = 2;
+            gpsInhibitMode = 0; // When entering static mode (dis-arming), clear any GPS mode inhibits
+
+        } else if (_fusionModeGPS == 3) { // GPS useage has been explicitly prohibited
+            if (optFlowDataPresent()) {
+                gpsInhibitMode = 2; // we have optical flow data and can estimate all vehicle states
+            } else {
+                gpsInhibitMode = 1; // we don't have optical flow data and will only be able to estimate orientation and height
+            }
+        } else { //GPS useage is allowed
+            if ((imuSampleTime_ms - lastFixTime_ms) < 500) {
+                gpsInhibitMode = 0; // we have GPS data and can estimate all vehicle states
+            } else {
+                gpsInhibitMode = 1; // we don't have have GPS data and will only be able to estimate orientation and height
+            }
         }
         prevStaticMode = staticMode;
     } else if (!staticMode && !finalMagYawInit && firstArmPosD - state.position.z > 1.5f && !assume_zero_sideslip()) {
@@ -4079,6 +4089,7 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
     // A positive Y rate is produced by a positive sensor rotation about the Y axis
     // This filter uses a different definition of optical flow rates to the sensor with a positive optical flow rate produced by a
     // negative rotation about that axis. For example a positive rotation of the flight vehicle about its X (roll) axis would produce a negative X flow rate
+    flowMeaTime_ms = imuSampleTime_ms;
     flowQuality = rawFlowQuality;
     // recall angular rates averaged across flow observation period allowing for processing, transmission and intersample delays
     RecallOmega(omegaAcrossFlowTime, imuSampleTime_ms - flowTimeDeltaAvg_ms - _msecFLowDelay, imuSampleTime_ms - _msecFLowDelay);
@@ -4106,7 +4117,7 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
         // set flag that will trigger observations
         newDataFlow = true;
         velHoldMode = false;
-        flowMeaTime_ms = imuSampleTime_ms;
+        flowValidMeaTime_ms = imuSampleTime_ms;
     } else {
         newDataFlow = false;
     }
@@ -4324,6 +4335,7 @@ void NavEKF::ZeroVariables()
     secondLastFixTime_ms = imuSampleTime_ms;
     lastDecayTime_ms = imuSampleTime_ms;
     timeAtLastAuxEKF_ms = imuSampleTime_ms;
+    flowValidMeaTime_ms = imuSampleTime_ms;
     flowMeaTime_ms = imuSampleTime_ms;
     prevFlowFusionTime_ms = imuSampleTime_ms;
     rngMeaTime_ms = imuSampleTime_ms;
@@ -4400,10 +4412,20 @@ bool NavEKF::useRngFinder(void) const
     return true;
 }
 
-// return true if we should use the optical flow sensor
+// return true if  the optical flow sensor is producing valid data and can be used
 bool NavEKF::useOptFlow(void) const
 {
     // only use sensor if data is fresh
+    if (imuSampleTime_ms - flowValidMeaTime_ms < 200) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+// return true if optical flow data is available
+bool NavEKF::optFlowDataPresent(void) const
+{
     if (imuSampleTime_ms - flowMeaTime_ms < 200) {
         return true;
     } else {
