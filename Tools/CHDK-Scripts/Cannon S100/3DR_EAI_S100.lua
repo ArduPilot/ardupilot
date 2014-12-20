@@ -1,7 +1,7 @@
 
 --[[
 
-  KAP UAV Exposure Control Script v3.1
+  KAP UAV Exposure Control Script v3.2
   -- Released under GPL by waterwingz and wayback/peabody
   http://chdk.wikia.com/wiki/KAP_%26_UAV_Exposure_Control_Script
   
@@ -11,6 +11,7 @@
   -Added an option to turn the GPS on and off
   -Added control of GPS settings in Main Loop
   -Changed USB OneShot mode to listen for 100ms command pulse from Pixhawk
+  -Adapted for S100 settings
 
 @title 3DR EAI 1.0 - Lets Map!
 @param     i Shot Interval (sec)
@@ -38,10 +39,10 @@
   @default x 4
   @values  x 1/1000 1/1250 1/1600 1/2000 1/3200 1/5000 1/10000
 @param     f Av Low(f-stop)
-  @default f 6
+  @default f 1
   @values  f 1.8 2.0 2.2 2.6 2.8 3.2 3.5 4.0 4.5 5.0 5.6 6.3 7.1 8.0
 @param     a Av Target (f-stop)
-  @default a 7
+  @default a 2
   @values  a 1.8 2.0 2.2 2.6 2.8 3.2 3.5 4.0 4.5 5.0 5.6 6.3 7.1 8.0
 @param     m Av Max (f-stop)
   @default m 13
