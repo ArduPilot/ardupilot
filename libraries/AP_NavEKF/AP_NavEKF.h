@@ -369,9 +369,6 @@ private:
     // Calculate weighting that is applied to IMU1 accel data to blend data from IMU's 1 and 2
     void calcIMU_Weighting(float K1, float K2);
 
-    // return true if the optical flow sensor is producing valid data and can be used
-    bool useOptFlow(void) const;
-
     // return true if optical flow data is available
     bool optFlowDataPresent(void) const;
 
@@ -592,7 +589,8 @@ private:
     // variables added for optical flow fusion
     float dtIMUinv;                 // inverse of IMU time step
     bool newDataFlow;               // true when new optical flow data has arrived
-    bool flowFusePerformed;         // true when optical flow fusion has been perfomred in that time step
+    bool flowFusePerformed;         // true when optical flow fusion has been performed in that time step
+    bool flowDataValid;             // true while optical flow data is still fresh
     state_elements statesAtFlowTime;// States at the middle of the optical flow sample period
     bool fuseOptFlowData;           // this boolean causes the last optical flow measurement to be fused
     float auxFlowObsInnov[2];       // optical flow observation innovations from 2-state focal length scale factor and terrain offset estimator

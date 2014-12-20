@@ -925,8 +925,10 @@ void NavEKF::SelectMagFusion()
 // select fusion of optical flow measurements
 void NavEKF::SelectFlowFusion()
 {
-    // if we don't have flow measurements and are not using GPS, dead reckon using current velocity vector unless we are in static mode
-    if (!useOptFlow() && !staticMode && gpsInhibitMode == 2) {
+    // Check if the optical flow data is still valid
+    flowDataValid = (imuSampleTime_ms - flowValidMeaTime_ms < 200);
+    // if we don't have valid flow measurements and are not using GPS, dead reckon using current velocity vector unless we are in static mode
+    if (!flowDataValid && !staticMode && gpsInhibitMode == 2) {
         velHoldMode = true;
     } else {
         velHoldMode = false;
@@ -943,7 +945,7 @@ void NavEKF::SelectFlowFusion()
     // check if fusion should be delayed to spread load. Setting fuseMeNow to true disables this load spreading feature.
     bool delayFusion = ((covPredStep || magFusePerformed) && !(timeout || inhibitLoadLeveling));
     // if the filter is initialised, we have data to fuse and the vehicle is not excessively tilted, then perform optical flow fusion
-    if (useOptFlow() && newDataFlow && tiltOK && !delayFusion && !staticMode)
+    if (flowDataValid && newDataFlow && tiltOK && !delayFusion && !staticMode)
     {
         // reset state updates and counter used to spread fusion updates across several frames to reduce 10Hz pulsing
         memset(&flowIncrStateDelta[0], 0, sizeof(flowIncrStateDelta));
@@ -962,14 +964,14 @@ void NavEKF::SelectFlowFusion()
         // update the time stamp
         prevFlowFusionTime_ms = imuSampleTime_ms;
 
-    } else if (useOptFlow() && flow_state.obsIndex == 1 && !delayFusion && !staticMode){
+    } else if (flowDataValid && flow_state.obsIndex == 1 && !delayFusion && !staticMode){
         // Fuse the optical flow Y axis data into the main filter
         FuseOptFlow();
         // increment the index to fuse the X and Y data using the 2-state EKF on the next prediction cycle
         flow_state.obsIndex = 2;
         // indicate that flow fusion has been performed. This is used for load spreading.
         flowFusePerformed = true;
-    } else if (((useOptFlow() && flow_state.obsIndex == 2) || newDataRng) && !staticMode) {
+    } else if (((flowDataValid && flow_state.obsIndex == 2) || newDataRng) && !staticMode) {
         // enable fusion of range data if available and permitted
         if(newDataRng && useRngFinder()) {
             fuseRngData = true;
@@ -3637,7 +3639,7 @@ uint8_t NavEKF::setInhibitGPS(void)
 // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
 void NavEKF::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
 {
-    if (useOptFlow() || gpsInhibitMode == 2) {
+    if (flowDataValid || gpsInhibitMode == 2) {
         // allow 1.0 rad/sec margin for angular motion
         ekfGndSpdLimit = max((_maxFlowRate - 1.0f), 0.0f) * max((flowStates[1] - state.position[2]), 0.1f);
         // use standard gains up to 5.0 metres height and reduce above that
@@ -4379,6 +4381,7 @@ void NavEKF::ZeroVariables()
     memset(&flowIncrStateDelta[0], 0, sizeof(flowIncrStateDelta));
     // optical flow variables
     newDataFlow = false;
+    flowDataValid = false;
     newDataRng  = false;
     flowFusePerformed = false;
     fuseOptFlowData = false;
@@ -4410,17 +4413,6 @@ bool NavEKF::useRngFinder(void) const
 {
     // TO-DO add code to set this based in setting of optical flow use parameter and presence of sensor
     return true;
-}
-
-// return true if  the optical flow sensor is producing valid data and can be used
-bool NavEKF::useOptFlow(void) const
-{
-    // only use sensor if data is fresh
-    if (imuSampleTime_ms - flowValidMeaTime_ms < 200) {
-        return true;
-    } else {
-        return false;
-    }
 }
 
 // return true if optical flow data is available
@@ -4540,7 +4532,7 @@ void  NavEKF::getFilterStatus(uint8_t &status) const
     status = (!state.quat.is_nan()<<0 | // we can implement a better way to detect invalid attitude, but it is tricky to do reliably
               !(velTimeout && tasTimeout)<<1 |
               !((velTimeout && hgtTimeout) || (hgtTimeout && _fusionModeGPS > 0))<<2 |
-              ((gpsInhibitMode == 2 && useOptFlow()) || (!tasTimeout && assume_zero_sideslip()))<<3 |
+              ((gpsInhibitMode == 2 && flowDataValid) || (!tasTimeout && assume_zero_sideslip()))<<3 |
               !posTimeout<<4 |
               !hgtTimeout<<5 |
               !inhibitGndState<<6);
