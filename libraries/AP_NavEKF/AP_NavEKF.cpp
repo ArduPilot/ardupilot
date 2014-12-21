@@ -549,10 +549,15 @@ void NavEKF::InitialiseFilterDynamic(void)
     state.accel_zbias1 = 0;
     state.accel_zbias2 = 0;
     state.wind_vel.zero();
+
+    // read the GPS and set the position and velocity states
+    readGpsData();
     ResetVelocity();
     ResetPosition();
+
+    // read the barometer and set the height state
+    readHgtData();
     ResetHeight();
-    state.body_magfield.zero();
 
     // set stored states to current state
     StoreStatesReset();
@@ -621,12 +626,6 @@ void NavEKF::InitialiseFilterBootstrap(void)
     Quaternion initQuat;
     initQuat = calcQuatAndFieldStates(roll, pitch);
 
-    // read the GPS
-    readGpsData();
-
-    // read the barometer
-    readHgtData();
-
     // check on ground status
     SetFlightAndFusionModes();
 
@@ -637,6 +636,15 @@ void NavEKF::InitialiseFilterBootstrap(void)
     state.accel_zbias2 = 0;
     state.wind_vel.zero();
     state.body_magfield.zero();
+
+    // read the GPS and set the position and velocity states
+    readGpsData();
+    ResetVelocity();
+    ResetPosition();
+
+    // read the barometer and set the height state
+    readHgtData();
+    ResetHeight();
 
     // set stored states to current state
     StoreStatesReset();
