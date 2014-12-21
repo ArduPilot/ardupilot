@@ -158,7 +158,7 @@ public:
     void  getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
 
     // return StaticMode state
-    bool getStaticMode(void) const { return staticMode; }
+    bool getStaticMode(void) const { return posHoldMode; }
 
     // should we use the compass? This is public so it can be used for
     // reporting via ahrs.use_compass()
@@ -354,10 +354,9 @@ private:
     // return true if we should use the airspeed sensor
     bool useAirspeed(void) const;
 
-    // return true if the vehicle code has requested use of static mode
-    // in static mode, position and height are constrained to zero, allowing an attitude
-    // reference to be initialised and maintained when on the ground and without GPS lock
-    bool static_mode_demanded(void) const;
+    // return true if the vehicle code has requested operation in a pre-armed state where GPS data isnt used to correct attitude
+    // this causes operation in a mode producing attitude and height only
+    bool vehicleNotArmed(void) const;
 
     // decay GPS horizontal position offset to close to zero at a rate of 1 m/s
     // this allows large GPS position jumps to be accomodated gradually
@@ -522,8 +521,8 @@ private:
     uint32_t MAGmsecPrev;           // time stamp of last compass fusion step
     uint32_t HGTmsecPrev;           // time stamp of last height measurement fusion step
     bool inhibitLoadLeveling;       // boolean that turns off delay of fusion to level processor loading
-    bool staticMode;                // boolean to force position and velocity measurements to zero for pre-arm or bench testing
-    bool prevStaticMode;            // value of static mode from last update
+    bool posHoldMode;               // boolean to force position measurements to zero for operation without GPS
+    bool prevPosHoldMode;           // value of static mode from last update
     uint32_t lastMagUpdate;         // last time compass was updated
     Vector3f velDotNED;             // rate of change of velocity in NED frame
     Vector3f velDotNEDfilt;         // low pass filtered velDotNED
