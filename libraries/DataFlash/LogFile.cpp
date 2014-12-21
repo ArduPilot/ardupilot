@@ -565,7 +565,10 @@ uint16_t DataFlash_Class::StartNewLog(void)
 {
     uint16_t ret;
     ret = start_new_log();
-
+    if (ret == 0xFFFF) {
+        // don't write out parameters if we fail to open the log
+        return ret;
+    }
     // write log formats so the log is self-describing
     for (uint8_t i=0; i<_num_types; i++) {
         Log_Write_Format(&_structures[i]);
