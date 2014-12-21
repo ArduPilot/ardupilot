@@ -4418,7 +4418,7 @@ bool NavEKF::useRngFinder(void) const
 // return true if optical flow data is available
 bool NavEKF::optFlowDataPresent(void) const
 {
-    if (imuSampleTime_ms - flowMeaTime_ms < 200) {
+    if (imuSampleTime_ms - flowMeaTime_ms < 5000) {
         return true;
     } else {
         return false;
