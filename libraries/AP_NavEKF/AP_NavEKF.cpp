@@ -456,7 +456,7 @@ void NavEKF::ResetPosition(void)
     if (posHoldMode || gpsInhibitMode != 0) {
         state.position.x = 0;
         state.position.y = 0;
-    } else if (_ahrs->get_gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
+    } else if (!gpsNotAvailable) {
         // write to state vector and compensate for GPS latency
         state.position.x = gpsPosNE.x + gpsPosGlitchOffsetNE.x + 0.001f*velNED.x*float(_msecPosDelay);
         state.position.y = gpsPosNE.y + gpsPosGlitchOffsetNE.y + 0.001f*velNED.y*float(_msecPosDelay);
@@ -476,9 +476,7 @@ void NavEKF::ResetVelocity(void)
          state.velocity.zero();
          state.vel1.zero();
          state.vel2.zero();
-    } else if (_ahrs->get_gps().status() >= AP_GPS::GPS_OK_FIX_3D && _fusionModeGPS <= 1) {
-        // read the GPS
-        readGpsData();
+    } else if (!gpsNotAvailable) {
         // reset horizontal velocity states, applying an offset to the GPS velocity to prevent the GPS position being rejected when the GPS position offset is being decayed to zero.
         state.velocity.x  = velNED.x + gpsVelGlitchOffset.x; // north velocity from blended accel data
         state.velocity.y  = velNED.y + gpsVelGlitchOffset.y; // east velocity from blended accel data
@@ -744,7 +742,7 @@ void NavEKF::UpdateFilter()
 
     // define rules used to set position hold mode
     // position hold enables attitude only estimates without GPS by fusing zeros for position
-    if ((vehicleArmed && gpsInhibitMode == 1) || !vehicleArmed) {
+    if (gpsInhibitMode == 1) {
         posHoldMode = true;
     } else {
         posHoldMode = false;
