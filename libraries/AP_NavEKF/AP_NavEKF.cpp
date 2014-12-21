@@ -441,6 +441,10 @@ bool NavEKF::healthy(void) const
         // extremely unhealthy.
         return false;
     }
+    // Give the filter 10 seconds to settle before use
+    if ((imuSampleTime_ms - ekfStartTime_ms) < 10000) {
+        return false;
+    }
 
     // all OK
     return true;
@@ -684,9 +688,9 @@ void NavEKF::UpdateFilter()
     // check if on ground
     SetFlightAndFusionModes();
 
-    // determine vehicle arm status
+    // determine vehicle arm status and don't allow filter to arm until it has been running for long enough to stabilise
     prevVehicleArmed = vehicleArmed;
-    vehicleArmed = getVehicleArmStatus();
+    vehicleArmed = (getVehicleArmStatus() && (imuSampleTime_ms - ekfStartTime_ms) > 10000);
 
     // check to see if arm status has changed and reset states if it has
     if (vehicleArmed != prevVehicleArmed) {
@@ -4353,6 +4357,7 @@ void NavEKF::ZeroVariables()
     flowMeaTime_ms = imuSampleTime_ms;
     prevFlowFusionTime_ms = imuSampleTime_ms;
     rngMeaTime_ms = imuSampleTime_ms;
+    ekfStartTime_ms = imuSampleTime_ms;
 
     gpsNoiseScaler = 1.0f;
     velTimeout = true;

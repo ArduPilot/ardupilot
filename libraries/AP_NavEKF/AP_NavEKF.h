@@ -541,6 +541,7 @@ private:
     uint32_t timeAtLastAuxEKF_ms;   // last time the auxilliary filter was run to fuse range or optical flow measurements
     uint32_t secondLastFixTime_ms;  // time of second last GPS fix used to determine how long since last update
     uint32_t lastHealthyMagTime_ms; // time the magnetometer was last declared healthy
+    uint32_t ekfStartTime_ms;       // time the EKF was started (msec)
     Vector3f lastAngRate;           // angular rate from previous IMU sample used for trapezoidal integrator
     Vector3f lastAccel1;            // acceleration from previous IMU1 sample used for trapezoidal integrator
     Vector3f lastAccel2;            // acceleration from previous IMU2 sample used for trapezoidal integrator
