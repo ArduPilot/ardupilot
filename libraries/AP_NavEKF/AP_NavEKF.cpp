@@ -1850,7 +1850,6 @@ void NavEKF::FuseVelPosNED()
         // because there may be no stored states due to lack of real measurements.
         if (posHoldMode) {
             statesAtPosTime = state;
-            statesAtHgtTime = state;
         } else if (velHoldMode) {
             statesAtVelTime = state;
         }
