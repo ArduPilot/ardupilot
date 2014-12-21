@@ -4355,11 +4355,11 @@ void NavEKF::ZeroVariables()
     rngMeaTime_ms = imuSampleTime_ms;
 
     gpsNoiseScaler = 1.0f;
-    velTimeout = false;
-    posTimeout = false;
-    hgtTimeout = false;
-    magTimeout = false;
-    tasTimeout = false;
+    velTimeout = true;
+    posTimeout = true;
+    hgtTimeout = true;
+    magTimeout = true;
+    tasTimeout = true;
     badMag = false;
     badIMUdata = false;
     firstArmComplete = false;
