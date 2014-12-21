@@ -716,7 +716,7 @@ void NavEKF::UpdateFilter()
         heldVelNE.zero();
         // set various  useage modes based on the condition at arming. These are then held until the vehicle is disarmed.
         if (!vehicleArmed) {
-            gpsInhibitMode = 0; // When dis-arming, clear any GPS mode inhibits
+            gpsInhibitMode = 1; // When dis-armed, we only estimate orientation & height
         } else if (_fusionModeGPS == 3) { // arming when GPS useage has been prohibited
             if (optFlowDataPresent()) {
                 gpsInhibitMode = 2; // we have optical flow data and can estimate all vehicle states
@@ -4421,10 +4421,11 @@ void NavEKF::ZeroVariables()
     flowGyroBias.y = 0;
     velHoldMode = false;
     heldVelNE.zero();
-    gpsInhibitMode = 0;
+    gpsInhibitMode = 1;
     gpsVelGlitchOffset.zero();
     vehicleArmed = false;
     prevVehicleArmed = false;
+    posHoldMode = true;
 }
 
 // return true if we should use the airspeed sensor
