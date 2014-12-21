@@ -133,6 +133,7 @@ const AP_Param::GroupInfo AP_MotorsHeliTandem::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("COL_MID", 15, AP_MotorsHeliTandem, _collective_mid, AP_MOTORS_HELI_TANDEM_COLLECTIVE_MID),
 
+
     // @Param: SV_MAN
     // @DisplayName: Manual Servo Mode
     // @Description: Pass radio inputs directly to servos for set-up. Do not set this manually!
@@ -212,6 +213,12 @@ const AP_Param::GroupInfo AP_MotorsHeliTandem::var_info[] PROGMEM = {
     // @Range: 0 1
     // @User: Standard
     AP_GROUPINFO("DCP_SCALER", 25, AP_MotorsHeliTandem, _dcp_scaler, AP_MOTORS_HELI_TANDEM_DCP_SCALER),
+
+    // @Param: DCP_YAW
+    // @DisplayName: Differential-Collective-Pitch Yaw Mixing
+    // @Description: Feed-forward compensation to automatically add yaw input when differential collective pitch is applied.
+    // @Range: -10 10
+    AP_GROUPINFO("DCP_YAW", 26, AP_MotorsHeliTandem, _dcp_yaw_effect, 0),
 
     AP_GROUPEND
 };
@@ -582,6 +589,7 @@ void AP_MotorsHeliTandem::calculate_roll_pitch_collective_factors()
 void AP_MotorsHeliTandem::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll_in, int16_t yaw_out)
 {
     int16_t coll_out_scaled;
+    int16_t yaw_compensation;
 
     // initialize limits flag
     limit.roll_pitch = false;
@@ -629,6 +637,14 @@ void AP_MotorsHeliTandem::move_swash(int16_t roll_out, int16_t pitch_out, int16_
             pitch_out = _pitch_max;
             limit.roll_pitch = true;
         }
+
+        // add differential collective pitch yaw compensation
+        if (_tandem_mode == AP_MOTORS_HELI_TANDEM_MODE_TRANSVERSE) {
+            yaw_compensation = _dcp_yaw_effect * roll_out;
+        } else { // AP_MOTORS_HELI_TANDEM_MODE_LONGITUDINAL
+            yaw_compensation = _dcp_yaw_effect * pitch_out;
+        }
+        yaw_out = yaw_out + yaw_compensation;
 
         // scale yaw and update limits
         yaw_out = yaw_out * _yaw_scaler;

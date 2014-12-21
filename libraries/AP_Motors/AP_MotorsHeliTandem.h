@@ -250,6 +250,7 @@ private:
     AP_Int16        _land_collective_min;       // Minimum collective when landed or landing
     AP_Int8         _tandem_mode;               // Which tandem mode the heli is
     AP_Float        _dcp_scaler;                // Scaling factor applied to the differential-collective-pitch  
+    AP_Int8         _dcp_yaw_effect;            // Feed-forward compensation to automatically add yaw input when differential collective pitch is applied.
 
     // internal variables
     float           _rollFactor[AP_MOTORS_HELI_TANDEM_NUM_SWASHPLATE_SERVOS];
