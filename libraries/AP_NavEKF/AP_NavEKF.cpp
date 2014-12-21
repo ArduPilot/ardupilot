@@ -453,7 +453,7 @@ bool NavEKF::healthy(void) const
 // resets position states to last GPS measurement or to zero if in position hold mode
 void NavEKF::ResetPosition(void)
 {
-    if (posHoldMode) {
+    if (posHoldMode || gpsInhibitMode != 0) {
         state.position.x = 0;
         state.position.y = 0;
     } else if (_ahrs->get_gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
@@ -472,7 +472,7 @@ void NavEKF::ResetPosition(void)
 // Do not reset vertical velocity using GPS as there is baro alt available to constrain drift
 void NavEKF::ResetVelocity(void)
 {
-    if (posHoldMode) {
+    if (posHoldMode || gpsInhibitMode != 0) {
          state.velocity.zero();
          state.vel1.zero();
          state.vel2.zero();
