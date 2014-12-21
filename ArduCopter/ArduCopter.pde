@@ -439,6 +439,8 @@ static struct {
  #define MOTOR_CLASS AP_MotorsOctaQuad
 #elif FRAME_CONFIG == HELI_FRAME
  #define MOTOR_CLASS AP_MotorsHeli
+#elif FRAME_CONFIG == HELI_TANDEM_FRAME
+ #define MOTOR_CLASS AP_MotorsHeliTandem
 #elif FRAME_CONFIG == SINGLE_FRAME
  #define MOTOR_CLASS AP_MotorsSingle
 #elif FRAME_CONFIG == COAX_FRAME
@@ -449,6 +451,8 @@ static struct {
 
 #if FRAME_CONFIG == HELI_FRAME  // helicopter constructor requires more arguments
 static MOTOR_CLASS motors(g.rc_1, g.rc_2, g.rc_3, g.rc_4, g.rc_7, g.rc_8, g.heli_servo_1, g.heli_servo_2, g.heli_servo_3, g.heli_servo_4);
+#elif FRAME_CONFIG == HELI_TANDEM_FRAME  // tandem helicopter constructor requires more arguments
+static MOTOR_CLASS motors(g.rc_1, g.rc_2, g.rc_3, g.rc_4, g.rc_8, g.heli_servo_1, g.heli_servo_2, g.heli_servo_3, g.heli_servo_4, g.heli_servo_5, g.heli_servo_6);
 #elif FRAME_CONFIG == TRI_FRAME  // tri constructor requires additional rc_7 argument to allow tail servo reversing
 static MOTOR_CLASS motors(g.rc_1, g.rc_2, g.rc_3, g.rc_4, g.rc_7);
 #elif FRAME_CONFIG == SINGLE_FRAME  // single constructor requires extra servos for flaps
@@ -631,7 +635,7 @@ static AP_InertialNav inertial_nav(ahrs, barometer, gps_glitch, baro_glitch);
 // Attitude, Position and Waypoint navigation objects
 // To-Do: move inertial nav up or other navigation variables down here
 ////////////////////////////////////////////////////////////////////////////////
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_TANDEM_FRAME
 AC_AttitudeControl_Heli attitude_control(ahrs, aparm, motors, g.p_stabilize_roll, g.p_stabilize_pitch, g.p_stabilize_yaw,
                         g.pid_rate_roll, g.pid_rate_pitch, g.pid_rate_yaw);
 #else
@@ -773,7 +777,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { three_hz_loop,       133,      9 },
     { compass_accumulate,    8,     42 },
     { barometer_accumulate,  8,     25 },
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_TANDEM_FRAME
     { check_dynamic_flight,  8,     10 },
 #endif
     { update_notify,         8,     10 },
@@ -847,7 +851,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { three_hz_loop,        33,      90 },
     { compass_accumulate,    2,     420 },
     { barometer_accumulate,  2,     250 },
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_TANDEM_FRAME
     { check_dynamic_flight,  2,     100 },
 #endif
     { update_notify,         2,     100 },
@@ -981,7 +985,7 @@ static void fast_loop()
     // run low level rate controllers that only require IMU data
     attitude_control.rate_controller_run();
     
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_TANDEM_FRAME
     update_heli_control_dynamics();
 #endif //HELI_FRAME
 
@@ -1020,7 +1024,7 @@ static void throttle_loop()
     // check auto_armed status
     update_auto_armed();
 
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_TANDEM_FRAME
     // update rotor speed
     heli_update_rotor_speed_targets();
 
@@ -1449,7 +1453,9 @@ static void tuning(){
     case CH6_HELI_EXTERNAL_GYRO:
         motors.ext_gyro_gain(g.rc_6.control_in);
         break;
+#endif
 
+#if FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_TANDEM_FRAME
     case CH6_RATE_PITCH_FF:
         g.pid_rate_pitch.ff(tuning_value);
         break;

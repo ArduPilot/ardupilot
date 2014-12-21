@@ -17,7 +17,7 @@ public:
     // The increment will prevent old parameters from being used incorrectly
     // by newer code.
     //
-    static const uint16_t        k_format_version = 120;
+    static const uint16_t        k_format_version = 122;
 
     // The parameter software_type is set up solely for ground station use
     // and identifies the software type (eg ArduPilotMega versus
@@ -149,6 +149,8 @@ public:
         k_param_heli_servo_2,
         k_param_heli_servo_3,
         k_param_heli_servo_4,
+        k_param_heli_servo_5,
+        k_param_heli_servo_6,
         k_param_heli_pitch_ff,      // remove
         k_param_heli_roll_ff,       // remove
         k_param_heli_yaw_ff,        // remove
@@ -156,9 +158,9 @@ public:
         k_param_heli_stab_col_max,  // 88
 
         //
-        // 90: Motors
+        // 95: Motors
         //
-        k_param_motors = 90,
+        k_param_motors = 95,
 
         //
         // 100: Inertial Nav
@@ -402,6 +404,15 @@ public:
     AP_Int16        heli_stab_col_min;                                          // min collective while pilot directly controls collective in stabilize mode
     AP_Int16        heli_stab_col_max;                                          // min collective while pilot directly controls collective in stabilize mode
 #endif
+
+#if FRAME_CONFIG ==     HELI_TANDEM_FRAME
+    // Heli
+    RC_Channel      heli_servo_1, heli_servo_2, heli_servo_3;                   // servos for first swash plate
+    RC_Channel      heli_servo_4, heli_servo_5, heli_servo_6;                   // servos for second swash plate
+    AP_Int16        heli_stab_col_min;                                          // min collective while pilot directly controls collective in stabilize mode
+    AP_Int16        heli_stab_col_max;                                          // min collective while pilot directly controls collective in stabilize mode
+#endif
+
 #if FRAME_CONFIG ==     SINGLE_FRAME
     // Single
     RC_Channel      single_servo_1, single_servo_2, single_servo_3, single_servo_4;     // servos for four flaps
@@ -443,7 +454,7 @@ public:
     AP_Float                acro_expo;
 
     // PI/D controllers
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_TANDEM_FRAME
     AC_HELI_PID             pid_rate_roll;
     AC_HELI_PID             pid_rate_pitch;
     AC_HELI_PID             pid_rate_yaw;
@@ -474,6 +485,16 @@ public:
         heli_servo_3        (CH_3),
         heli_servo_4        (CH_4),
 #endif
+
+#if FRAME_CONFIG ==     HELI_TANDEM_FRAME
+        heli_servo_1        (CH_1),
+        heli_servo_2        (CH_2),
+        heli_servo_3        (CH_3),
+        heli_servo_4        (CH_4),
+        heli_servo_5        (CH_5),
+        heli_servo_6        (CH_6),
+#endif
+        
 #if FRAME_CONFIG ==     SINGLE_FRAME
         single_servo_1        (CH_1),
         single_servo_2        (CH_2),

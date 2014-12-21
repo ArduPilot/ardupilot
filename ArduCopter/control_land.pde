@@ -212,7 +212,7 @@ static void update_land_detector()
     if ((abs(climb_rate) < LAND_DETECTOR_CLIMBRATE_MAX) &&
         (abs(baro_climbrate) < LAND_DETECTOR_BARO_CLIMBRATE_MAX) &&
         motors.limit.throttle_lower &&
-#if FRAME_CONFIG != HELI_FRAME
+#if FRAME_CONFIG != HELI_FRAME && FRAME_CONFIG != HELI_TANDEM_FRAME
         (motors.get_throttle_out() < get_non_takeoff_throttle()) &&
 #endif
         (ahrs.get_gyro().length() < LAND_DETECTOR_ROTATION_MAX)) {

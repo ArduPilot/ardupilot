@@ -4,7 +4,7 @@
 
 #include "heli.h"
 
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_TANDEM_FRAME
 
 #ifndef HELI_DYNAMIC_FLIGHT_SPEED_MIN
  #define HELI_DYNAMIC_FLIGHT_SPEED_MIN      500     // we are in "dynamic flight" when the speed is over 1m/s for 2 seconds
@@ -158,4 +158,4 @@ static void heli_update_rotor_speed_targets()
     }
 }
 
-#endif  // FRAME_CONFIG == HELI_FRAME
+#endif  // FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_TANDEM_FRAME
