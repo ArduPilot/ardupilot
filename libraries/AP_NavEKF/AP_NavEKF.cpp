@@ -4551,7 +4551,7 @@ void  NavEKF::getFilterStatus(uint8_t &status) const
               !(velTimeout && tasTimeout)<<1 |
               !((velTimeout && hgtTimeout) || (hgtTimeout && _fusionModeGPS > 0))<<2 |
               ((gpsInhibitMode == 2 && flowDataValid) || (!tasTimeout && assume_zero_sideslip()))<<3 |
-              !posTimeout<<4 |
+              !(posTimeout || gpsInhibitMode == 1)<<4 |
               !hgtTimeout<<5 |
               !inhibitGndState<<6 |
               posHoldMode<<7);
