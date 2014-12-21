@@ -374,7 +374,6 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     covDelAngMax(0.05f),        // maximum delta angle between covariance prediction updates
     TASmsecMax(200),            // maximum allowed interval between airspeed measurement updates
     posHoldMode(true),          // forces position fusion with zero values
-    prevPosHoldMode(true),      // posHoldMode from previous filter update
     yawAligned(false),          // set true when heading or yaw angle has been aligned
     inhibitWindStates(true),    // inhibit wind state updates on startup
     inhibitMagStates(true)      // inhibit magnetometer state updates on startup
@@ -685,22 +684,18 @@ void NavEKF::UpdateFilter()
     // check if on ground
     SetFlightAndFusionModes();
 
-    // define rules used to set position hold mode
-    // position hold enables attitude only estimates without GPS by fusing zeros for position
-    if (vehicleNotArmed() || (_fusionModeGPS == 3 && !optFlowDataPresent())) {
-        posHoldMode = true;
-    } else {
-        posHoldMode = false;
-    }
+    // determine vehicle arm status
+    prevVehicleArmed = vehicleArmed;
+    vehicleArmed = getVehicleArmStatus();
 
-    // check to see if position hold mode has changed and reset states if it has
-    if (prevPosHoldMode != posHoldMode) {
+    // check to see if arm status has changed and reset states if it has
+    if (vehicleArmed != prevVehicleArmed) {
         ResetVelocity();
         ResetPosition();
         ResetHeight();
         StoreStatesReset();
         // only reset the magnetic field and heading on the first arm. This prevents in-flight learning being forgotten for vehicles that do multiple short flights and disarm in-between.
-        if (!posHoldMode && !firstArmComplete) {
+        if (vehicleArmed && !firstArmComplete) {
             firstArmComplete = true;
             state.quat = calcQuatAndFieldStates(_ahrs->roll, _ahrs->pitch);
             firstArmPosD = state.position.z;
@@ -708,27 +703,39 @@ void NavEKF::UpdateFilter()
         // zero stored velocities used to do dead-reckoning
         heldVelNE.zero();
         // set various  useage modes based on the condition at arming. These are then held until the vehicle is disarmed.
-        if (!prevPosHoldMode) {
-            gpsInhibitMode = 0; // When entering potion hold mode (dis-arming), clear any GPS mode inhibits
-
-        } else if (_fusionModeGPS == 3) { // GPS useage has been explicitly prohibited
+        if (!vehicleArmed) {
+            gpsInhibitMode = 0; // When dis-arming, clear any GPS mode inhibits
+        } else if (_fusionModeGPS == 3) { // arming when GPS useage has been prohibited
             if (optFlowDataPresent()) {
                 gpsInhibitMode = 2; // we have optical flow data and can estimate all vehicle states
+                posTimeout = true;
+                velTimeout = true;
             } else {
                 gpsInhibitMode = 1; // we don't have optical flow data and will only be able to estimate orientation and height
+                posTimeout = true;
+                velTimeout = true;
             }
-        } else { //GPS useage is allowed
-            if ((imuSampleTime_ms - lastFixTime_ms) < 500) {
-                gpsInhibitMode = 0; // we have GPS data and can estimate all vehicle states
-            } else {
+        } else { // arming when GPS useage is allowed
+            if (gpsNotAvailable) {
                 gpsInhibitMode = 1; // we don't have have GPS data and will only be able to estimate orientation and height
+                posTimeout = true;
+                velTimeout = true;
+            } else {
+                gpsInhibitMode = 0; // we have GPS data and can estimate all vehicle states
             }
         }
-        prevPosHoldMode = posHoldMode;
-    } else if (!posHoldMode && !finalMagYawInit && firstArmPosD - state.position.z > 1.5f && !assume_zero_sideslip()) {
+    } else if (vehicleArmed && !finalMagYawInit && firstArmPosD - state.position.z > 1.5f && !assume_zero_sideslip()) {
         // Do a final yaw and earth mag field initialisation when the vehicle has gained 1.5m of altitude after arming if it is a non-fly forward vehicle (vertical takeoff)
         state.quat = calcQuatAndFieldStates(_ahrs->roll, _ahrs->pitch);
         finalMagYawInit = true;
+    }
+
+    // define rules used to set position hold mode
+    // position hold enables attitude only estimates without GPS by fusing zeros for position
+    if ((vehicleArmed && gpsInhibitMode == 1) || !vehicleArmed) {
+        posHoldMode = true;
+    } else {
+        posHoldMode = false;
     }
 
     // run the strapdown INS equations every IMU update
@@ -4017,6 +4024,12 @@ void NavEKF::readGpsData()
         // calculate a position offset which is applied to NE position and velocity wherever it is used throughout code to allow GPS position jumps to be accommodated gradually
         decayGpsOffset();
     }
+    // If too long since last fix time, we declare no GPS present
+    if (imuSampleTime_ms - lastFixTime_ms < 1000) {
+        gpsNotAvailable = false;
+    } else {
+        gpsNotAvailable = true;
+    }
 }
 
 // check for new altitude measurement data and update stored measurement if available
@@ -4397,6 +4410,8 @@ void NavEKF::ZeroVariables()
     heldVelNE.zero();
     gpsInhibitMode = 0;
     gpsVelGlitchOffset.zero();
+    vehicleArmed = false;
+    prevVehicleArmed = false;
 }
 
 // return true if we should use the airspeed sensor
@@ -4425,10 +4440,10 @@ bool NavEKF::optFlowDataPresent(void) const
     }
 }
 
-// return true if the vehicle is not armed or requesting a static vehicle assumption for correction of attitude errors
-bool NavEKF::vehicleNotArmed(void) const
+// return true if the vehicle is requesting the filter to be ready for flight
+bool NavEKF::getVehicleArmStatus(void) const
 {
-    return !_ahrs->get_armed() || !_ahrs->get_correct_centrifugal();
+    return _ahrs->get_armed() || _ahrs->get_correct_centrifugal();
 }
 
 // return true if we should use the compass

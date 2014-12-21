@@ -157,9 +157,6 @@ public:
     // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
     void  getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
 
-    // return StaticMode state
-    bool getStaticMode(void) const { return posHoldMode; }
-
     // should we use the compass? This is public so it can be used for
     // reporting via ahrs.use_compass()
     bool use_compass(void) const;
@@ -354,9 +351,8 @@ private:
     // return true if we should use the airspeed sensor
     bool useAirspeed(void) const;
 
-    // return true if the vehicle code has requested operation in a pre-armed state where GPS data isnt used to correct attitude
-    // this causes operation in a mode producing attitude and height only
-    bool vehicleNotArmed(void) const;
+    // return true if the vehicle code has requested the filter to be ready for flight
+    bool getVehicleArmStatus(void) const;
 
     // decay GPS horizontal position offset to close to zero at a rate of 1 m/s
     // this allows large GPS position jumps to be accomodated gradually
@@ -522,7 +518,6 @@ private:
     uint32_t HGTmsecPrev;           // time stamp of last height measurement fusion step
     bool inhibitLoadLeveling;       // boolean that turns off delay of fusion to level processor loading
     bool posHoldMode;               // boolean to force position measurements to zero for operation without GPS
-    bool prevPosHoldMode;           // value of static mode from last update
     uint32_t lastMagUpdate;         // last time compass was updated
     Vector3f velDotNED;             // rate of change of velocity in NED frame
     Vector3f velDotNEDfilt;         // low pass filtered velDotNED
@@ -571,6 +566,9 @@ private:
     bool finalMagYawInit;           // true when the final post takeoff initialisation of earth field and yaw angle has been performed
     bool flowTimeout;               // true when optical flow measurements have time out
     Vector2f gpsVelGlitchOffset;    // Offset applied to the GPS velocity when the gltch radius is being  decayed back to zero
+    bool gpsNotAvailable;           // bool true when valid GPS data is not available
+    bool vehicleArmed;              // true when the vehicle is disarmed
+    bool prevVehicleArmed;          // vehicleArmed from previous frame
 
     // Used by smoothing of state corrections
     float gpsIncrStateDelta[10];    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next GPS measurement
