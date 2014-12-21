@@ -2723,8 +2723,9 @@ void NavEKF::RunAuxiliaryEKF()
         q1             = statesAtFlowTime.quat[1];
         q2             = statesAtFlowTime.quat[2];
         q3             = statesAtFlowTime.quat[3];
-        vel.x          = statesAtFlowTime.velocity[0];
-        vel.y          = statesAtFlowTime.velocity[1];
+        // Correct velocities for GPS glitch recovery offset
+        vel.x          = statesAtFlowTime.velocity[0] - gpsVelGlitchOffset.x;
+        vel.y          = statesAtFlowTime.velocity[1] - gpsVelGlitchOffset.y;
         vel.z          = statesAtFlowTime.velocity[2];
 
         // constrain terrain height to be below the vehicle
@@ -2857,8 +2858,9 @@ void NavEKF::FuseOptFlow()
     ve       = statesAtFlowTime.velocity[1];
     vd       = statesAtFlowTime.velocity[2];
     pd       = statesAtFlowTime.position[2];
-    velNED_local.x = vn;
-    velNED_local.y = ve;
+    // Correct velocities for GPS glitch recovery offset
+    velNED_local.x = vn - gpsVelGlitchOffset.x;
+    velNED_local.y = ve - gpsVelGlitchOffset.y;
     velNED_local.z = vd;
 
     // constrain terrain to be below vehicle
