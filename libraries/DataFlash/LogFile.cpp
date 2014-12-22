@@ -1184,6 +1184,18 @@ void DataFlash_Class::Log_Write_Compass(const Compass &compass, uint8_t instance
     WriteBlock(&pkt, sizeof(pkt));
 }
 
+// Write a mode packet.
+void DataFlash_Class::Log_Write_Mode(uint8_t mode)
+{
+    struct log_Mode pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_MODE_MSG),
+        time_ms  : hal.scheduler->millis(),
+        mode     : mode,
+        mode_num : mode
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}
+
 // Write ESC status messages
 void DataFlash_Class::Log_Write_ESC(void)
 {

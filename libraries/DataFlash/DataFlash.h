@@ -85,6 +85,7 @@ public:
     void Log_Write_Attitude(AP_AHRS &ahrs, Vector3f targets);
 	void Log_Write_Current(AP_BattMonitor battery, int16_t  throttle);
     void Log_Write_Compass(const Compass &compass, uint8_t instance);
+    void Log_Write_Mode(uint8_t mode);
 
     bool logging_started(void) const { return log_write_started; }
 
@@ -429,6 +430,13 @@ struct PACKED log_Compass {
     int16_t  motor_offset_z;
 };
 
+struct PACKED log_Mode {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    uint8_t mode;
+    uint8_t mode_num;
+};
+
 /*
   terrain log structure
  */
@@ -555,7 +563,9 @@ Format characters in the format string for binary log messages
     { LOG_COMPASS2_MSG, sizeof(log_Compass), \    
       "MAG2","Ihhhhhhhhh",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" },\
     { LOG_COMPASS3_MSG, sizeof(log_Compass), \            
-      "MAG3","Ihhhhhhhhh",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" }
+      "MAG3","Ihhhhhhhhh",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" },\
+    { LOG_MODE_MSG, sizeof(log_Mode), \            
+      "MODE", "IMB",         "TimeMS,Mode,ModeNum" }
 
 // messages for more advanced boards
 #define LOG_EXTRA_STRUCTURES \
@@ -655,6 +665,7 @@ Format characters in the format string for binary log messages
 #define LOG_COMPASS_MSG   166
 #define LOG_COMPASS2_MSG  167
 #define LOG_COMPASS3_MSG  168
+#define LOG_MODE_MSG      169
 
 // message types 200 to 210 reversed for GPS driver use
 // message types 211 to 220 reversed for autotune use
