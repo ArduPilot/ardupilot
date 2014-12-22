@@ -189,7 +189,7 @@ static bool init_arm_motors()
     Log_Write_Event(DATA_ARMED);
 
     // log flight mode in case it was changed while vehicle was disarmed
-    Log_Write_Mode(control_mode);
+    DataFlash.Log_Write_Mode(control_mode);
 
     // reenable failsafe
     failsafe_enable();

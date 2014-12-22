@@ -99,7 +99,7 @@ static bool set_mode(uint8_t mode)
         // perform any cleanup required by previous flight mode
         exit_mode(control_mode, mode);
         control_mode = mode;
-        Log_Write_Mode(control_mode);
+        DataFlash.Log_Write_Mode(control_mode);
 
 #if AC_FENCE == ENABLED
         // pilot requested flight mode change during a fence breach indicates pilot is attempting to manually recover
