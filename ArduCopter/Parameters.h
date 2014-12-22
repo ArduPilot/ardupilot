@@ -17,7 +17,7 @@ public:
     // The increment will prevent old parameters from being used incorrectly
     // by newer code.
     //
-    static const uint16_t        k_format_version = 122;
+    static const uint16_t        k_format_version = 120;
 
     // The parameter software_type is set up solely for ground station use
     // and identifies the software type (eg ArduPilotMega versus
@@ -145,22 +145,22 @@ public:
         //
         // 80: Heli
         //
+        k_param_heli_servo_5, // 79
         k_param_heli_servo_1 = 80,
         k_param_heli_servo_2,
         k_param_heli_servo_3,
         k_param_heli_servo_4,
-        k_param_heli_servo_5,
-        k_param_heli_servo_6,
         k_param_heli_pitch_ff,      // remove
         k_param_heli_roll_ff,       // remove
         k_param_heli_yaw_ff,        // remove
         k_param_heli_stab_col_min,
         k_param_heli_stab_col_max,  // 88
+        k_param_heli_servo_6, // 89
 
         //
-        // 95: Motors
+        // 90: Motors
         //
-        k_param_motors = 95,
+        k_param_motors = 90,
 
         //
         // 100: Inertial Nav
