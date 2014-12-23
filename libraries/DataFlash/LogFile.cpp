@@ -1136,7 +1136,7 @@ void DataFlash_Class::Log_Write_Attitude(AP_AHRS &ahrs, Vector3f targets)
 // Write an Current data packet
 void DataFlash_Class::Log_Write_Current(AP_BattMonitor battery, int16_t  throttle)
 {
-	float voltage2 = 0.0;
+    float voltage2 = 0.0;
     battery.voltage2(voltage2);
     struct log_Current pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CURRENT_MSG),
@@ -1146,7 +1146,7 @@ void DataFlash_Class::Log_Write_Current(AP_BattMonitor battery, int16_t  throttl
         current_amps        : (int16_t) (battery.current_amps() * 100.0f),
         board_voltage       : (uint16_t)(hal.analogin->board_voltage()*1000),
         current_total       : battery.current_total_mah(),
-		battery2_voltage    : (int16_t)(voltage2 * 100.0f)
+        battery2_voltage    : (int16_t)(voltage2 * 100.0f)
     };
     WriteBlock(&pkt, sizeof(pkt));
 }

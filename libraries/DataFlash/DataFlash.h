@@ -80,8 +80,8 @@ public:
     void Log_Write_Message_P(const prog_char_t *message);
     void Log_Write_Camera(const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);
     void Log_Write_ESC(void);
-	void Log_Write_Attitude(AP_AHRS &ahrs, Vector3f targets);
-	void Log_Write_Current(AP_BattMonitor battery, int16_t  throttle);
+    void Log_Write_Attitude(AP_AHRS &ahrs, Vector3f targets);
+    void Log_Write_Current(AP_BattMonitor battery, int16_t  throttle);
     void Log_Write_Compass(const Compass &compass, uint8_t instance);
     void Log_Write_Mode(uint8_t mode);
 
@@ -411,7 +411,7 @@ struct PACKED log_Current {
     int16_t  current_amps;
     uint16_t board_voltage;
     float    current_total;
-	int16_t  battery2_voltage;
+    int16_t  battery2_voltage;
 };
 
 struct PACKED log_Compass {
@@ -540,10 +540,10 @@ Format characters in the format string for binary log messages
       "RAD", "IBBBBBHH", "TimeMS,RSSI,RemRSSI,TxBuf,Noise,RemNoise,RxErrors,Fixed" }, \
     { LOG_CAMERA_MSG, sizeof(log_Camera), \
       "CAM", "IHLLeeccC","GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,Roll,Pitch,Yaw" }, \
-	{ LOG_CURRENT_MSG, sizeof(log_Current), \           
+    { LOG_CURRENT_MSG, sizeof(log_Current), \           
       "CURR", "Ihhhhfh","TimeMS,Throttle,Volt,Curr,Vcc,CurrTot,Volt2" },\
-	{ LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
-	  "ATT", "IccccCCCC", "TimeMS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw" },\
+    { LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
+      "ATT", "IccccCCCC", "TimeMS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw" },\
     { LOG_COMPASS_MSG, sizeof(log_Compass), \             
       "MAG", "Ihhhhhhhhh",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" },\
     { LOG_COMPASS2_MSG, sizeof(log_Compass), \    
