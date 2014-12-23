@@ -20,11 +20,7 @@ class AC_AttitudeControl_Heli : public AC_AttitudeControl {
 public:
     AC_AttitudeControl_Heli( AP_AHRS &ahrs,
                         const AP_Vehicle::MultiCopter &aparm,
-#if FRAME_CONFIG == HELI_TANDEM_FRAME
-                        AP_MotorsHeliTandem& motors,
-#else
                         AP_MotorsHeli& motors,
-#endif
                         AC_P& p_angle_roll, AC_P& p_angle_pitch, AC_P& p_angle_yaw,
                         AC_HELI_PID& pid_rate_roll, AC_HELI_PID& pid_rate_pitch, AC_HELI_PID& pid_rate_yaw
                         ) :
