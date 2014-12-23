@@ -648,6 +648,7 @@ static AC_Circle circle_nav(inertial_nav, ahrs, pos_control);
 // Performance monitoring
 ////////////////////////////////////////////////////////////////////////////////
 static int16_t pmTest1;
+static uint8_t ekfStatus; // Bitmasked integer defining what EKF outpus are valid
 
 // System Timers
 // --------------
@@ -1326,6 +1327,8 @@ static void read_AHRS(void)
 #endif
 
     ahrs.update();
+    // check ekf soluton status
+    ahrs.get_NavEKF().getFilterStatus(ekfStatus);
 }
 
 // read baro and sonar altitude at 10hz

@@ -246,6 +246,51 @@ static bool mode_requires_GPS(uint8_t mode) {
     return false;
 }
 
+// returns true if flight mode is supported by current EKF output status
+static bool mode_has_required_ekf_data(uint8_t mode, uint8_t ekfStatus) {
+#define ATT (1<<0) // attitude estimate valid
+#define HVEL (1<<1) // horizontal velocity estimate valid
+#define VVEL (1<<1) // vertical velocity estimate valid
+#define RELHPOS (1<<1) // relative horizontal position estimate valid
+#define ABSHPOS (1<<1) // absolute horizontal position estimate valid
+#define VPOS (1<<1) // vertical position estimate valid
+
+    switch(mode) {
+        case AUTO:
+        return (ekfStatus & ATT + HVEL + VVEL + ABSHPOS + VPOS);
+        case GUIDED:
+        return (ekfStatus & ATT + HVEL + VVEL + ABSHPOS + VPOS);
+        case LOITER:
+        return (ekfStatus & ATT + HVEL + VVEL + RELHPOS + VPOS);
+        case RTL:
+        return (ekfStatus & ATT + HVEL + VVEL + ABSHPOS + VPOS);
+        case CIRCLE:
+        return (ekfStatus & ATT + HVEL + VVEL + ABSHPOS + VPOS);
+        case DRIFT:
+        return (ekfStatus & ATT + HVEL + VVEL + RELHPOS + VPOS);
+        case POSHOLD:
+        return (ekfStatus & ATT + HVEL + VVEL + ABSHPOS + VPOS);
+        case STABILIZE:
+        return (ekfStatus & ATT);
+        case ALT_HOLD:
+        return (ekfStatus & ATT + VVEL + VPOS);
+        case ACRO:
+        return true;
+        case SPORT:
+        return (ekfStatus & ATT + VVEL + VPOS);
+        case LAND:
+        return (ekfStatus & ATT + VVEL + VPOS);
+        case FLIP:
+        return (ekfStatus & ATT);
+        case AUTOTUNE:
+        return (ekfStatus & ATT);
+        default:
+        return false;
+    }
+
+    return false;
+}
+
 // manual_flight_mode - returns true if flight mode is completely manual (i.e. roll, pitch, yaw and throttle are controlled by pilot)
 static bool manual_flight_mode(uint8_t mode) {
     switch(mode) {
