@@ -4562,8 +4562,8 @@ void  NavEKF::getFilterStatus(uint8_t &status) const
     status = (!state.quat.is_nan()<<0 | // we can implement a better way to detect invalid attitude, but it is tricky to do reliably
               !(velTimeout && tasTimeout)<<1 |
               !((velTimeout && hgtTimeout) || (hgtTimeout && _fusionModeGPS > 0))<<2 |
-              ((gpsInhibitMode == 2 && flowDataValid) || (!tasTimeout && assume_zero_sideslip()))<<3 |
-              !(posTimeout || gpsInhibitMode == 1)<<4 |
+              ((gpsInhibitMode == 2 && flowDataValid) || (!tasTimeout && assume_zero_sideslip()) || (!posTimeout && gpsInhibitMode == 0))<<3 |
+              (!posTimeout && gpsInhibitMode == 0)<<4 |
               !hgtTimeout<<5 |
               !inhibitGndState<<6 |
               posHoldMode<<7);
