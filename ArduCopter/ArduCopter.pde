@@ -438,7 +438,7 @@ static struct {
 #elif FRAME_CONFIG == OCTA_QUAD_FRAME
  #define MOTOR_CLASS AP_MotorsOctaQuad
 #elif FRAME_CONFIG == HELI_FRAME
- #define MOTOR_CLASS AP_MotorsHeli
+ #define MOTOR_CLASS AP_MotorsHeliSingle
 #elif FRAME_CONFIG == HELI_TANDEM_FRAME
  #define MOTOR_CLASS AP_MotorsHeliTandem
 #elif FRAME_CONFIG == SINGLE_FRAME

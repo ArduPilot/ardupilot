@@ -12,8 +12,9 @@
 #include "AP_MotorsOcta.h"
 #include "AP_MotorsOctaQuad.h"
 #include "AP_MotorsHeli.h"
+#include "AP_MotorsHeliSingle.h"
+#include "AP_MotorsHeliTandem.h"
 #include "AP_MotorsSingle.h"
 #include "AP_MotorsCoax.h"
-#include "AP_MotorsHeliTandem.h"
 
 #endif // __AP_MOTORS_H__
