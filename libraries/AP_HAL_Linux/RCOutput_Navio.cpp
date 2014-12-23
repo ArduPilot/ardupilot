@@ -31,13 +31,13 @@ void LinuxRCOutput_Navio::init(void* machtnicht)
         return; // never reached
     }
 
+    // Set the initial frequency
+    set_freq(0, 50);
+    
     /* Enable PCA9685 PWM */
     enable_pin = hal.gpio->channel(PCA9685_OUTPUT_ENABLE);
     enable_pin->mode(HAL_GPIO_OUTPUT);
     enable_pin->write(0);
-
-    // Set the initial frequency
-    set_freq(0, 50);
 }
 
 void LinuxRCOutput_Navio::set_freq(uint32_t chmask, uint16_t freq_hz)
