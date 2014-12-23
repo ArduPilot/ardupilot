@@ -121,8 +121,8 @@ const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
     AP_GROUPINFO("LAND_ARSPD", 12, AP_TECS, _landAirspeed, -1),
 
     // @Param: LAND_THR
-    // @DisplayName: Cruise throttle during landing approach (percentage)
-    // @Description: Use this parameter instead of LAND_ASPD if your platform does not have an airspeed sensor.  It is the cruise throttle during landing approach.  If it is negative if TECS_LAND_ASPD is in use then this value is not used during landing.
+    // @DisplayName: 接近着陆时巡航油门（%）
+    // @Description: 使用这个参数而不是LAND_ASPD如果你的平台没有空速传感器。这是接近着陆时的巡航油门。如果这个值是负值并且TECS_LAND_ASPD在使用，那么这个值在接近着陆时不会被使用。
     // @Range: -1 to 100
     // @Increment: 0.1
     // @User: User
