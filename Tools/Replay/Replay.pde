@@ -312,7 +312,7 @@ static void read_sensors(uint8_t type)
                 inertial_nav.update(ins.get_delta_time());
             }
             hal.scheduler->stop_clock(hal.scheduler->micros() + (i+1)*update_delta_usec);
-            dataflash.Log_Write_EKF(ahrs);
+            dataflash.Log_Write_EKF(ahrs,optflow.enabled());
             dataflash.Log_Write_AHRS2(ahrs);
             ins.set_gyro(0, ins.get_gyro());
             ins.set_accel(0, ins.get_accel());
