@@ -79,6 +79,9 @@ public:
         // Parachute object
         k_param_parachute,	// 17
 
+        // Version Code identifier
+        k_param_versionCode, 
+
         // Misc
         //
         k_param_log_bitmask_old = 20,           // Deprecated
@@ -317,6 +320,7 @@ public:
 
     AP_Int16        format_version;
     AP_Int8         software_type;
+    AP_Int32        versionCode;
 
     // Telemetry control
     //
