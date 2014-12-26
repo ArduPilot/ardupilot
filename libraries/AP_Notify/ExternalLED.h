@@ -21,7 +21,7 @@
 #include <AP_Common.h>
 #include <AP_HAL.h>
 #include <AP_Param.h>
-#include "Led.h"
+#include "NotifyDevice.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
  #define EXTERNAL_LED_ARMED   61    // Armed LED - AN7
@@ -45,7 +45,7 @@
  #define EXTERNAL_LED_MOTOR2  0
 #endif
 
-class ExternalLED: public Led 
+class ExternalLED: public NotifyDevice
 {
 public:
     // constructor

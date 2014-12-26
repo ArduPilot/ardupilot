@@ -18,7 +18,7 @@
 
 #include <AP_HAL.h>
 #include <AP_GPS.h>
-#include "Led.h"
+#include "RGBLed.h"
 #include "AP_Notify.h"
 
 extern const AP_HAL::HAL& hal;
