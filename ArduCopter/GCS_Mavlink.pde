@@ -922,8 +922,6 @@ void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
     }
 
     // To-Do: update target altitude for loiter or waypoint controller depending upon nav mode
-    // similar to how do_change_alt works
-    wp_nav.set_desired_alt(cmd.content.location.alt);
 }
 
 void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
