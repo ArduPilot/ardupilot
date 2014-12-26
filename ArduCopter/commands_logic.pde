@@ -111,7 +111,7 @@ static bool start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_DO_SET_HOME:             // 179
-        do_set_home(cmd);
+        // unsupported as mission command
         break;
 
     case MAV_CMD_DO_SET_SERVO:
