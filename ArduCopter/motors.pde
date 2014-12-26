@@ -201,7 +201,13 @@ static bool init_arm_motors()
 // perform pre-arm checks and set ap.pre_arm_check flag
 static void pre_arm_checks(bool display_failure)
 {
+    // exit immediately if already armed
+    if (motors.armed()) {
+        return;
+    }
+
     // exit immediately if we've already successfully performed the pre-arm check
+    // run gps checks because results may change and affect LED colour
     if (ap.pre_arm_check) {
         pre_arm_gps_checks(display_failure);
         return;
