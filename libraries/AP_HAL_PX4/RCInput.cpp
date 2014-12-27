@@ -36,6 +36,14 @@ uint8_t PX4RCInput::num_channels()
     return n;
 }
 
+uint8_t PX4RCInput::rssi() 
+{
+    pthread_mutex_lock(&rcin_mutex);
+    uint8_t n = _rcin.rssi;
+    pthread_mutex_unlock(&rcin_mutex);
+    return n;
+}
+
 uint16_t PX4RCInput::read(uint8_t ch) 
 {
 	if (ch >= RC_INPUT_MAX_CHANNELS) {

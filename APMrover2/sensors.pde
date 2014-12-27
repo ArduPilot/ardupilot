@@ -23,9 +23,19 @@ static void read_battery(void)
 // RC_CHANNELS_SCALED message
 void read_receiver_rssi(void)
 {
-    rssi_analog_source->set_pin(g.rssi_pin);
-    float ret = rssi_analog_source->voltage_average() * 50;
-    receiver_rssi = constrain_int16(ret, 0, 255);
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    if (g.rssi_pin == -1) {
+        receiver_rssi = hal.rcin->rssi();
+    } else
+#endif
+    // avoid divide by zero
+    if (g.rssi_range <= 0) {
+        receiver_rssi = 0;
+    } else {
+        rssi_analog_source->set_pin(g.rssi_pin);
+        float ret = rssi_analog_source->voltage_average() * 255 / g.rssi_range;
+        receiver_rssi = constrain_int16(ret, 0, 255);
+    }
 }
 
 // read the sonars
