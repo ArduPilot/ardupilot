@@ -117,6 +117,15 @@ const AP_Param::GroupInfo AP_MotorsHeliTandem::var_info[] PROGMEM = {
     // @Range: -10 10
     AP_GROUPINFO("DCP_YAW", 11, AP_MotorsHeliTandem, _dcp_yaw_effect, 0),
 
+    // @Param: YAW_MAX
+    // @DisplayName: Swash Yaw Angle Max
+    // @Description: Maximum yaw angle of the swash plate
+    // @Range: 0 18000
+    // @Units: Centi-Degrees
+    // @Increment: 100
+    // @User: Advanced
+    AP_GROUPINFO("YAW_MAX", 12, AP_MotorsHeliTandem, _yaw_max, AP_MOTORS_HELI_TANDEM_SWASH_YAW_MAX),
+
     AP_GROUPEND
 };
 
@@ -213,7 +222,15 @@ uint16_t AP_MotorsHeliTandem::get_motor_mask()
 // protected methods
 //
 
- // init_servos
+// init_swash
+void AP_MotorsHeliTandem::init_swash()
+{
+    AP_MotorsHeli::init_swash();
+
+    _yaw_scaler = (float)_yaw_max/4500.0f;
+}
+
+// init_servos
 void AP_MotorsHeliTandem::init_servos()
 {
     init_swash_servo (_servo_1);
@@ -222,6 +239,14 @@ void AP_MotorsHeliTandem::init_servos()
     init_swash_servo (_servo_4);
     init_swash_servo (_servo_5);
     init_swash_servo (_servo_6);
+}
+
+// reset_swash
+void AP_MotorsHeliTandem::reset_swash()
+{
+    AP_MotorsHeli::reset_swash();
+
+    _yaw_scaler = 1.0f;
 }
 
 // reset_servos

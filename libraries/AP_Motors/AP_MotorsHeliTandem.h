@@ -23,6 +23,9 @@
 #define AP_MOTORS_HELI_TANDEM_SERVO5_POS                60
 #define AP_MOTORS_HELI_TANDEM_SERVO6_POS               180
 
+// default swash limits
+#define AP_MOTORS_HELI_TANDEM_SWASH_YAW_MAX            2500
+
 // tandem mode
 #define AP_MOTORS_HELI_TANDEM_MODE_LONGITUDINAL        0       // tandem mode (rotors front and aft)
 #define AP_MOTORS_HELI_TANDEM_MODE_TRANSVERSE          1       // transverse mode (rotors side by side)
@@ -89,9 +92,14 @@ public:
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 protected:
-
+    // init_swash
+    void init_swash ();
+    
     // init_servos
     void init_servos ();
+
+    // reset_swash
+    void reset_swash ();
 
     // reset_servos
     void reset_servos ();

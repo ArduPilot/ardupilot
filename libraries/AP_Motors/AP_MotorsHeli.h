@@ -162,7 +162,7 @@ protected:
     virtual void move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll_in, int16_t yaw_out) = 0;
 
     // reset_swash - free up swash for maximum movements. Used for set-up
-    void reset_swash();
+    virtual void reset_swash();
 
     // reset_servos - should be implemented to reset all the swash servos
     virtual void reset_servos() = 0;
@@ -171,7 +171,7 @@ protected:
     void reset_swash_servo (RC_Channel& servo);
 
     // init_swash - initialise the swash plate
-    void init_swash();
+    virtual void init_swash();
 
     // init_swash_servo - initializes a swash servo
     void init_swash_servo (RC_Channel& servo);
