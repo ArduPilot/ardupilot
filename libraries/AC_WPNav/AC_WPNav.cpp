@@ -653,7 +653,7 @@ void AC_WPNav::calculate_wp_leash_length()
 
     float speed_z;
     float leash_z;
-    if (_pos_delta_unit.z >= 0) {
+    if (_pos_delta_unit.z >= 0.0f) {
         speed_z = _wp_speed_up_cms;
         leash_z = _pos_control.get_leash_up_z();
     }else{
@@ -662,15 +662,15 @@ void AC_WPNav::calculate_wp_leash_length()
     }
 
     // calculate the maximum acceleration, maximum velocity, and leash length in the direction of travel
-    if(pos_delta_unit_z == 0 && pos_delta_unit_xy == 0){
+    if(pos_delta_unit_z == 0.0f && pos_delta_unit_xy == 0.0f){
         _track_accel = 0;
         _track_speed = 0;
         _track_leash_length = WPNAV_LEASH_LENGTH_MIN;
-    }else if(_pos_delta_unit.z == 0){
+    }else if(_pos_delta_unit.z == 0.0f){
         _track_accel = _wp_accel_cms/pos_delta_unit_xy;
         _track_speed = _wp_speed_cms/pos_delta_unit_xy;
         _track_leash_length = _pos_control.get_leash_xy()/pos_delta_unit_xy;
-    }else if(pos_delta_unit_xy == 0){
+    }else if(pos_delta_unit_xy == 0.0f){
         _track_accel = _wp_accel_z_cms/pos_delta_unit_z;
         _track_speed = speed_z/pos_delta_unit_z;
         _track_leash_length = leash_z/pos_delta_unit_z;
