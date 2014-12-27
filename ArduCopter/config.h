@@ -134,19 +134,7 @@
 
 /////////////////////////////////////////////////////////////////////////////////
 // TradHeli defaults
-#if FRAME_CONFIG == HELI_FRAME
-  # define RC_FAST_SPEED                        125
-  # define WP_YAW_BEHAVIOR_DEFAULT              WP_YAW_BEHAVIOR_LOOK_AHEAD
-  # define RATE_ROLL_D                          0
-  # define RATE_PITCH_D                         0
-  # define MPU6K_FILTER                         10
-  # define HELI_STAB_COLLECTIVE_MIN_DEFAULT     0
-  # define HELI_STAB_COLLECTIVE_MAX_DEFAULT     1000
-  # define THR_MIN_DEFAULT                      0
-  # define AUTOTUNE_ENABLED                     DISABLED
-#endif
-
-#if FRAME_CONFIG == HELI_TANDEM_FRAME
+#if FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_TANDEM_FRAME
   # define RC_FAST_SPEED                        125
   # define WP_YAW_BEHAVIOR_DEFAULT              WP_YAW_BEHAVIOR_LOOK_AHEAD
   # define RATE_ROLL_D                          0
