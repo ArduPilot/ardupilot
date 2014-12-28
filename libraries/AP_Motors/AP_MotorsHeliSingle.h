@@ -66,11 +66,6 @@ public:
         _delta_phase_angle(0)
     {
 		AP_Param::setup_object_defaults(this, var_info);
-
-        // initialise flags
-        _heliflags.swash_initialised = 0;
-        _heliflags.landing_collective = 0;
-        _heliflags.motor_runup_complete = 0;
     };
 
     // init

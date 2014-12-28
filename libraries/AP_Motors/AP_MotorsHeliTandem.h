@@ -59,11 +59,6 @@ public:
         _servo_6(swash_servo_6)
     {
 		AP_Param::setup_object_defaults(this, var_info);
-
-        // initialise flags
-        _heliflags.swash_initialised = 0;
-        _heliflags.landing_collective = 0;
-        _heliflags.motor_runup_complete = 0;
     };
 
     // set update rate to motors - a value in hertz

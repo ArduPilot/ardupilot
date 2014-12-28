@@ -25,6 +25,8 @@
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_MotorsHeliTandem::var_info[] PROGMEM = {
+    AP_NESTEDGROUPINFO(AP_MotorsHeli, 0),
+
     // @Param: SV1_POS
     // @DisplayName: Servo 1 Position
     // @Description: Angular location of swash servo #1

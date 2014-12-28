@@ -1004,7 +1004,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 #if FRAME_CONFIG == HELI_FRAME
     // @Group: H_
     // @Path: ../libraries/AP_Motors/AP_MotorsHeli.cpp
-    GOBJECT(motors, "H_",           AP_MotorsHeli),
+    GOBJECT(motors, "H_",           AP_MotorsHeliSingle),
 
 #elif FRAME_CONFIG == HELI_TANDEM_FRAME
     // @Group: H_
