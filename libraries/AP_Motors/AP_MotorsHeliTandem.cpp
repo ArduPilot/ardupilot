@@ -24,6 +24,9 @@
 
 extern const AP_HAL::HAL& hal;
 
+// these params include those from AP_MotorsHeli and the additional params are
+// offset by 100 in order not to collide w. the ones defined in AP_MotorsHeli
+// or in AP_MotorsHeliSingle
 const AP_Param::GroupInfo AP_MotorsHeliTandem::var_info[] PROGMEM = {
     AP_NESTEDGROUPINFO(AP_MotorsHeli, 0),
 
@@ -34,7 +37,7 @@ const AP_Param::GroupInfo AP_MotorsHeliTandem::var_info[] PROGMEM = {
     // @Units: Degrees
     // @User: Standard
     // @Increment: 1
-    AP_GROUPINFO("SV1_POS", 1, AP_MotorsHeliTandem, _servo1_pos, AP_MOTORS_HELI_TANDEM_SERVO1_POS),
+    AP_GROUPINFO("SV1_POS", 101, AP_MotorsHeliTandem, _servo1_pos, AP_MOTORS_HELI_TANDEM_SERVO1_POS),
 
     // @Param: SV2_POS
     // @DisplayName: Servo 2 Position
@@ -43,7 +46,7 @@ const AP_Param::GroupInfo AP_MotorsHeliTandem::var_info[] PROGMEM = {
     // @Units: Degrees
     // @User: Standard
     // @Increment: 1
-    AP_GROUPINFO("SV2_POS", 2, AP_MotorsHeliTandem, _servo2_pos,  AP_MOTORS_HELI_TANDEM_SERVO2_POS),
+    AP_GROUPINFO("SV2_POS", 102, AP_MotorsHeliTandem, _servo2_pos,  AP_MOTORS_HELI_TANDEM_SERVO2_POS),
 
     // @Param: SV3_POS
     // @DisplayName: Servo 3 Position
@@ -52,7 +55,7 @@ const AP_Param::GroupInfo AP_MotorsHeliTandem::var_info[] PROGMEM = {
     // @Units: Degrees
     // @User: Standard
     // @Increment: 1
-    AP_GROUPINFO("SV3_POS", 3, AP_MotorsHeliTandem, _servo3_pos,  AP_MOTORS_HELI_TANDEM_SERVO3_POS),
+    AP_GROUPINFO("SV3_POS", 103, AP_MotorsHeliTandem, _servo3_pos,  AP_MOTORS_HELI_TANDEM_SERVO3_POS),
 
     // @Param: SV4_POS
     // @DisplayName: Servo 4 Position
@@ -61,7 +64,7 @@ const AP_Param::GroupInfo AP_MotorsHeliTandem::var_info[] PROGMEM = {
     // @Units: Degrees
     // @User: Standard
     // @Increment: 1
-    AP_GROUPINFO("SV4_POS", 4, AP_MotorsHeliTandem,  _servo4_pos, AP_MOTORS_HELI_TANDEM_SERVO4_POS),
+    AP_GROUPINFO("SV4_POS", 104, AP_MotorsHeliTandem,  _servo4_pos, AP_MOTORS_HELI_TANDEM_SERVO4_POS),
 
     // @Param: SV5_POS
     // @DisplayName: Servo 5 Position
@@ -70,7 +73,7 @@ const AP_Param::GroupInfo AP_MotorsHeliTandem::var_info[] PROGMEM = {
     // @Units: Degrees
     // @User: Standard
     // @Increment: 1
-    AP_GROUPINFO("SV5_POS", 5, AP_MotorsHeliTandem, _servo5_pos, AP_MOTORS_HELI_TANDEM_SERVO5_POS),
+    AP_GROUPINFO("SV5_POS", 105, AP_MotorsHeliTandem, _servo5_pos, AP_MOTORS_HELI_TANDEM_SERVO5_POS),
 
     // @Param: SV6_POS
     // @DisplayName: Servo 6 Position
@@ -79,7 +82,7 @@ const AP_Param::GroupInfo AP_MotorsHeliTandem::var_info[] PROGMEM = {
     // @Units: Degrees
     // @User: Standard
     // @Increment: 1
-    AP_GROUPINFO("SV6_POS", 6, AP_MotorsHeliTandem, _servo6_pos, AP_MOTORS_HELI_TANDEM_SERVO6_POS),
+    AP_GROUPINFO("SV6_POS", 106, AP_MotorsHeliTandem, _servo6_pos, AP_MOTORS_HELI_TANDEM_SERVO6_POS),
 
     // @Param: PHANG1
     // @DisplayName: Swashplate 1 Phase Angle Compensation
@@ -88,7 +91,7 @@ const AP_Param::GroupInfo AP_MotorsHeliTandem::var_info[] PROGMEM = {
     // @Units: Degrees
     // @User: Advanced
     // @Increment: 1
-    AP_GROUPINFO("PHANG1", 7, AP_MotorsHeliTandem, _swash1_phase_angle,   0),
+    AP_GROUPINFO("PHANG1", 107, AP_MotorsHeliTandem, _swash1_phase_angle,   0),
 
     // @Param: PHANG2
     // @DisplayName: Swashplate 2 Phase Angle Compensation
@@ -97,27 +100,27 @@ const AP_Param::GroupInfo AP_MotorsHeliTandem::var_info[] PROGMEM = {
     // @Units: Degrees
     // @User: Advanced
     // @Increment: 1
-    AP_GROUPINFO("PHANG2", 8, AP_MotorsHeliTandem, _swash2_phase_angle,   0),
+    AP_GROUPINFO("PHANG2", 108, AP_MotorsHeliTandem, _swash2_phase_angle,   0),
 
     // @Param: TANDEM_MODE
     // @DisplayName: Tandem Mode
     // @Description: Sets the tandem mode of the heli, either as longitudinal or as transverse.
     // @Values: 0:Longitudinal, 1:Transverse
     // @User: Standard
-    AP_GROUPINFO("TANDEM_MODE", 9, AP_MotorsHeliTandem, _tandem_mode, AP_MOTORS_HELI_TANDEM_MODE_LONGITUDINAL),
+    AP_GROUPINFO("TANDEM_MODE", 109, AP_MotorsHeliTandem, _tandem_mode, AP_MOTORS_HELI_TANDEM_MODE_LONGITUDINAL),
 
     // @Param: DCP_SCALER
     // @DisplayName: Differential-Collective-Pitch Scaler
     // @Description: Scaling factor applied to the differential-collective-pitch 
     // @Range: 0 1
     // @User: Standard
-    AP_GROUPINFO("DCP_SCALER", 10, AP_MotorsHeliTandem, _dcp_scaler, AP_MOTORS_HELI_TANDEM_DCP_SCALER),
+    AP_GROUPINFO("DCP_SCALER", 110, AP_MotorsHeliTandem, _dcp_scaler, AP_MOTORS_HELI_TANDEM_DCP_SCALER),
 
     // @Param: DCP_YAW
     // @DisplayName: Differential-Collective-Pitch Yaw Mixing
     // @Description: Feed-forward compensation to automatically add yaw input when differential collective pitch is applied.
     // @Range: -10 10
-    AP_GROUPINFO("DCP_YAW", 11, AP_MotorsHeliTandem, _dcp_yaw_effect, 0),
+    AP_GROUPINFO("DCP_YAW", 111, AP_MotorsHeliTandem, _dcp_yaw_effect, 0),
 
     // @Param: YAW_MAX
     // @DisplayName: Swash Yaw Angle Max
@@ -126,7 +129,7 @@ const AP_Param::GroupInfo AP_MotorsHeliTandem::var_info[] PROGMEM = {
     // @Units: Centi-Degrees
     // @Increment: 100
     // @User: Advanced
-    AP_GROUPINFO("YAW_MAX", 12, AP_MotorsHeliTandem, _yaw_max, AP_MOTORS_HELI_TANDEM_SWASH_YAW_MAX),
+    AP_GROUPINFO("YAW_MAX", 112, AP_MotorsHeliTandem, _yaw_max, AP_MOTORS_HELI_TANDEM_SWASH_YAW_MAX),
 
     AP_GROUPEND
 };
