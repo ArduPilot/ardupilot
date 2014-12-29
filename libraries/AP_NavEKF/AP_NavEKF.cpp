@@ -700,10 +700,6 @@ void NavEKF::UpdateFilter()
 
     // check to see if arm status has changed and reset states if it has
     if (vehicleArmed != prevVehicleArmed) {
-        ResetVelocity();
-        ResetPosition();
-        ResetHeight();
-        StoreStatesReset();
         // only reset the magnetic field and heading on the first arm. This prevents in-flight learning being forgotten for vehicles that do multiple short flights and disarm in-between.
         if (vehicleArmed && !firstArmComplete) {
             firstArmComplete = true;
@@ -714,7 +710,9 @@ void NavEKF::UpdateFilter()
         heldVelNE.zero();
         // set various  useage modes based on the condition at arming. These are then held until the vehicle is disarmed.
         if (!vehicleArmed) {
-            gpsInhibitMode = 1; // When dis-armed, we only estimate orientation & height
+            gpsInhibitMode = 1; // When dis-armed, we only estimate orientation & height using the position hold mode
+            posHoldMode = true;
+            velHoldMode = false; // always clear velocity hold mode if position hold mode is active
         } else if (_fusionModeGPS == 3) { // arming when GPS useage has been prohibited
             if (optFlowDataPresent()) {
                 gpsInhibitMode = 2; // we have optical flow data and can estimate all vehicle states
@@ -734,6 +732,12 @@ void NavEKF::UpdateFilter()
                 gpsInhibitMode = 0; // we have GPS data and can estimate all vehicle states
             }
         }
+        // Reset filter positon, height and velocity states on arming or disarming
+        ResetVelocity();
+        ResetPosition();
+        ResetHeight();
+        StoreStatesReset();
+
     } else if (vehicleArmed && !finalMagYawInit && firstArmPosD - state.position.z > 1.5f && !assume_zero_sideslip()) {
         // Do a final yaw and earth mag field initialisation when the vehicle has gained 1.5m of altitude after arming if it is a non-fly forward vehicle (vertical takeoff)
         state.quat = calcQuatAndFieldStates(_ahrs->roll, _ahrs->pitch);
@@ -744,6 +748,7 @@ void NavEKF::UpdateFilter()
     // position hold enables attitude only estimates without GPS by fusing zeros for position
     if (gpsInhibitMode == 1) {
         posHoldMode = true;
+        velHoldMode = false; // always clear velocity hold mode if position hold mode is active
     } else {
         posHoldMode = false;
     }
@@ -798,6 +803,11 @@ void NavEKF::SelectVelPosFusion()
         if (imuSampleTime_ms - lastFixTime_ms > gpsRetryTimeout) {
             posTimeout = true;
             velTimeout = true;
+            //If this happens in flight and we don't have airspeed or sideslip assumption to constrain drift, then go into velocity hold mode and stay there until disarmed
+            if (vehicleArmed && !useAirspeed() && !assume_zero_sideslip()) {
+                velHoldMode = true;
+                posHoldMode = false; // always clear position hold mode if velocity hold mode is active
+            }
         }
 
         // command fusion of GPS data and reset states as required
@@ -948,8 +958,6 @@ void NavEKF::SelectFlowFusion()
     // if we don't have valid flow measurements and are not using GPS, dead reckon using current velocity vector unless we are in positon hold mode mode
     if (!flowDataValid && !posHoldMode && gpsInhibitMode == 2) {
         velHoldMode = true;
-    } else {
-        velHoldMode = false;
     }
     if (velHoldMode && !lastHoldVelocity) {
         heldVelNE.x = state.velocity.x;
@@ -2003,10 +2011,10 @@ void NavEKF::FuseVelPosNED()
             velTestRatio = innovVelSumSq / (varVelSum * sq(_gpsVelInnovGate));
             // fail if the ratio is greater than 1
             velHealth = ((velTestRatio < 1.0f)  || badIMUdata);
-            // declare a timeout if we have not fused velocity data for too long
-            velTimeout = (imuSampleTime_ms - velFailTime) > gpsRetryTime;
-            // if data is healthy  or in position hold mode we fuse it
-            if (velHealth || posHoldMode || velHoldMode) {
+            // declare a timeout if we have not fused velocity data for too long or in velocity hold mode
+            velTimeout = ((imuSampleTime_ms - velFailTime) > gpsRetryTime) || velHoldMode;
+            // if data is healthy  or in velocity hold mode we fuse it
+            if (velHealth || velHoldMode) {
                 velHealth = true;
                 velFailTime = imuSampleTime_ms;
             } else if (velTimeout && !posHealth) {
@@ -4140,6 +4148,7 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
         flowRadXYcomp[1] = flowStates[0]*flowRadXY[1] + omegaAcrossFlowTime.y;
         // set flag that will trigger observations
         newDataFlow = true;
+        // clear the velocity hold mode now we have good data
         velHoldMode = false;
         flowValidMeaTime_ms = imuSampleTime_ms;
     } else {
@@ -4554,16 +4563,16 @@ return filter function status as a bitmasked integer
  4 = absolute horizontal position estimate valid
  5 = vertical position estimate valid
  6 = terrain height estimate valid
- 7 = positon hold mode
+ 7 = position hold mode
 */
 void  NavEKF::getFilterStatus(uint8_t &status) const
 {
     // add code to set bits using private filter data here
     status = (!state.quat.is_nan()<<0 | // we can implement a better way to detect invalid attitude, but it is tricky to do reliably
-              !(velTimeout && tasTimeout)<<1 |
+              (!(velTimeout && posTimeout && tasTimeout) && !velHoldMode && !posHoldMode)<<1 |
               !((velTimeout && hgtTimeout) || (hgtTimeout && _fusionModeGPS > 0))<<2 |
-              ((gpsInhibitMode == 2 && flowDataValid) || (!tasTimeout && assume_zero_sideslip()) || (!posTimeout && gpsInhibitMode == 0))<<3 |
-              (!posTimeout && gpsInhibitMode == 0)<<4 |
+              ((gpsInhibitMode == 2 && flowDataValid) || (!tasTimeout && assume_zero_sideslip()) || (!posTimeout && gpsInhibitMode == 0) && !velHoldMode && !posHoldMode)<<3 |
+              ((!posTimeout && gpsInhibitMode == 0) && !velHoldMode && !posHoldMode)<<4 |
               !hgtTimeout<<5 |
               !inhibitGndState<<6 |
               posHoldMode<<7);
