@@ -217,6 +217,7 @@ struct PACKED log_IMU {
     uint32_t timestamp;
     float gyro_x, gyro_y, gyro_z;
     float accel_x, accel_y, accel_z;
+    uint32_t gyro_error, accel_error;
 };
 
 struct PACKED log_RCIN {
@@ -467,7 +468,7 @@ struct PACKED log_Esc {
     { LOG_GPS_MSG, sizeof(log_GPS), \
       "GPS",  "BIHBcLLeeEefI", "Status,TimeMS,Week,NSats,HDop,Lat,Lng,RelAlt,Alt,Spd,GCrs,VZ,T" }, \
     { LOG_IMU_MSG, sizeof(log_IMU), \
-      "IMU",  "Iffffff",     "TimeMS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ" }, \
+      "IMU",  "IffffffII",     "TimeMS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA" }, \
     { LOG_MESSAGE_MSG, sizeof(log_Message), \
       "MSG",  "Z",     "Message"}, \
     { LOG_RCIN_MSG, sizeof(log_RCIN), \
@@ -490,9 +491,9 @@ struct PACKED log_Esc {
     { LOG_GPS2_MSG, sizeof(log_GPS2), \
       "GPS2",  "BIHBcLLeEefIBI", "Status,TimeMS,Week,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,T,DSc,DAg" }, \
     { LOG_IMU2_MSG, sizeof(log_IMU), \
-      "IMU2",  "Iffffff",     "TimeMS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ" }, \
+      "IMU2",  "IffffffII",     "TimeMS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA" }, \
     { LOG_IMU3_MSG, sizeof(log_IMU), \
-      "IMU3",  "Iffffff",     "TimeMS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ" }, \
+      "IMU3",  "IffffffII",     "TimeMS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA" }, \
     { LOG_AHR2_MSG, sizeof(log_AHRS), \
       "AHR2","IccCfLL","TimeMS,Roll,Pitch,Yaw,Alt,Lat,Lng" }, \
     { LOG_SIMSTATE_MSG, sizeof(log_AHRS), \
