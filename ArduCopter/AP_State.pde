@@ -140,3 +140,10 @@ void set_pre_arm_rc_check(bool b)
     }
 }
 
+// ---------------------------------------------
+
+// set land complete maybe flag
+void set_throttle_disengaged(bool b)
+{
+    ap.throttle_disengaged = b;
+}

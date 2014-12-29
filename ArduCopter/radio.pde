@@ -185,6 +185,12 @@ static void set_throttle_zero_flag(int16_t throttle_control)
     } else if (tnow_ms - last_nonzero_throttle_ms > THROTTLE_ZERO_DEBOUNCE_TIME_MS) {
         ap.throttle_zero = true;
     }
+    
+    // check if we should enable throttle
+    // if throttle is low, make sure it is engaged
+    if(ap.throttle_disengaged && ap.throttle_zero){
+        set_throttle_disengaged(false);
+    }
 }
 
 static void trim_radio()
