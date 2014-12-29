@@ -520,7 +520,7 @@ private:
     uint32_t MAGmsecPrev;           // time stamp of last compass fusion step
     uint32_t HGTmsecPrev;           // time stamp of last height measurement fusion step
     bool inhibitLoadLeveling;       // boolean that turns off delay of fusion to level processor loading
-    bool posHoldMode;               // boolean to force position measurements to zero for operation without GPS
+    bool constPosMode;              // true when fusing a constant position to maintain attitude reference for planned operation without GPS or optical flow data
     uint32_t lastMagUpdate;         // last time compass was updated
     Vector3f velDotNED;             // rate of change of velocity in NED frame
     Vector3f velDotNEDfilt;         // low pass filtered velDotNED
@@ -634,8 +634,8 @@ private:
     float flowUpdateCountMaxInv;    // floating point inverse of flowUpdateCountMax
     float flowIncrStateDelta[10];   // vector of corrections to attitude, velocity and position to be applied over the period between the current and next magnetometer measurement
     bool newDataRng;                // true when new valid range finder data has arrived.
-    bool velHoldMode;               // true when holding velocity in optical flow mode when no flow measurements are available
-    bool lastHoldVelocity;          // last value of holdVelocity
+    bool constVelMode;              // true when fusing a constant velocity to maintain attitude reference when either optical flow or GPS measurements are lost after arming
+    bool lastConstVelMode;          // last value of holdVelocity
     Vector2f heldVelNE;             // velocity held when no aiding is available
     uint16_t _msecFlowAvg;          // average number of msec between synthetic sideslip measurements
     uint8_t gpsInhibitMode;         // 1 when GPS useage is being inhibited and only attitude and height data is available

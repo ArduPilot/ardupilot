@@ -373,7 +373,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     covTimeStepMax(0.07f),      // maximum time (sec) between covariance prediction updates
     covDelAngMax(0.05f),        // maximum delta angle between covariance prediction updates
     TASmsecMax(200),            // maximum allowed interval between airspeed measurement updates
-    posHoldMode(true),          // forces position fusion with zero values
+    constPosMode(true),          // forces position fusion with zero values
     yawAligned(false),          // set true when heading or yaw angle has been aligned
     inhibitWindStates(true),    // inhibit wind state updates on startup
     inhibitMagStates(true)      // inhibit magnetometer state updates on startup
@@ -450,10 +450,10 @@ bool NavEKF::healthy(void) const
     return true;
 }
 
-// resets position states to last GPS measurement or to zero if in position hold mode
+// resets position states to last GPS measurement or to zero if in constant position mode
 void NavEKF::ResetPosition(void)
 {
-    if (posHoldMode || gpsInhibitMode != 0) {
+    if (constPosMode || gpsInhibitMode != 0) {
         state.position.x = 0;
         state.position.y = 0;
     } else if (!gpsNotAvailable) {
@@ -468,11 +468,11 @@ void NavEKF::ResetPosition(void)
     }
 }
 
-// Reset velocity states to last GPS measurement if available or to zero if in position hold mode
+// Reset velocity states to last GPS measurement if available or to zero if in constant position mode
 // Do not reset vertical velocity using GPS as there is baro alt available to constrain drift
 void NavEKF::ResetVelocity(void)
 {
-    if (posHoldMode || gpsInhibitMode != 0) {
+    if (constPosMode || gpsInhibitMode != 0) {
          state.velocity.zero();
          state.vel1.zero();
          state.vel2.zero();
@@ -735,7 +735,7 @@ void NavEKF::UpdateFilter()
 void NavEKF::SelectVelPosFusion()
 {
     // check for new data, specify which measurements should be used and check data for freshness
-    if (!posHoldMode && !velHoldMode) {
+    if (!constPosMode && !constVelMode) {
 
         // check for and read new GPS data
         readGpsData();
@@ -747,10 +747,10 @@ void NavEKF::SelectVelPosFusion()
         if (imuSampleTime_ms - lastFixTime_ms > gpsRetryTimeout) {
             posTimeout = true;
             velTimeout = true;
-            //If this happens in flight and we don't have airspeed or sideslip assumption to constrain drift, then go into velocity hold mode and stay there until disarmed
+            //If this happens in flight and we don't have airspeed or sideslip assumption to constrain drift, then go into constant velocity mode and stay there until disarmed
             if (vehicleArmed && !useAirspeed() && !assume_zero_sideslip()) {
-                velHoldMode = true;
-                posHoldMode = false; // always clear position hold mode if velocity hold mode is active
+                constVelMode = true;
+                constPosMode = false; // always clear constant position mode if constant velocity mode is active
             }
         }
 
@@ -784,8 +784,8 @@ void NavEKF::SelectVelPosFusion()
             fuseVelData = false;
             fusePosData = false;
         }
-    } else if (posHoldMode ) {
-        // in position hold mode use synthetic position measurements set to zero
+    } else if (constPosMode ) {
+        // in constant position mode use synthetic position measurements set to zero
         // only fuse synthetic measurements when rate of change of velocity is less than 0.5g to reduce attitude errors due to launch acceleration
         // do not use velocity fusion to reduce the effect of movement on attitude
         if (accNavMag < 4.9f) {
@@ -794,8 +794,8 @@ void NavEKF::SelectVelPosFusion()
             fusePosData = false;
         }
         fuseVelData = false;
-    } else if (velHoldMode) {
-        // In velocity hold mode we fuse the last valid velocity vector
+    } else if (constVelMode) {
+        // In constant velocity mode we fuse the last valid velocity vector
         // We do not fuse when manoeuvring to avoid corrupting the attitude
         if (accNavMag < 4.9f) {
             fuseVelData = true;
@@ -900,14 +900,14 @@ void NavEKF::SelectFlowFusion()
     // Check if the optical flow data is still valid
     flowDataValid = (imuSampleTime_ms - flowValidMeaTime_ms < 200);
     // if we don't have valid flow measurements and are not using GPS, dead reckon using current velocity vector unless we are in positon hold mode mode
-    if (!flowDataValid && !posHoldMode && gpsInhibitMode == 2) {
-        velHoldMode = true;
+    if (!flowDataValid && !constPosMode && gpsInhibitMode == 2) {
+        constVelMode = true;
     }
-    if (velHoldMode && !lastHoldVelocity) {
+    if (constVelMode && !lastConstVelMode) {
         heldVelNE.x = state.velocity.x;
         heldVelNE.y = state.velocity.y;
     }
-    lastHoldVelocity = velHoldMode;
+    lastConstVelMode = constVelMode;
     // Apply tilt check
     bool tiltOK = (Tnb_flow.c.z > DCM33FlowMin);
     // if we have waited too long, set a timeout flag which will force fusion to occur regardless of load spreading
@@ -915,7 +915,7 @@ void NavEKF::SelectFlowFusion()
     // check if fusion should be delayed to spread load. Setting fuseMeNow to true disables this load spreading feature.
     bool delayFusion = ((covPredStep || magFusePerformed) && !(timeout || inhibitLoadLeveling));
     // if the filter is initialised, we have data to fuse and the vehicle is not excessively tilted, then perform optical flow fusion
-    if (flowDataValid && newDataFlow && tiltOK && !delayFusion && !posHoldMode)
+    if (flowDataValid && newDataFlow && tiltOK && !delayFusion && !constPosMode)
     {
         // reset state updates and counter used to spread fusion updates across several frames to reduce 10Hz pulsing
         memset(&flowIncrStateDelta[0], 0, sizeof(flowIncrStateDelta));
@@ -934,14 +934,14 @@ void NavEKF::SelectFlowFusion()
         // update the time stamp
         prevFlowFusionTime_ms = imuSampleTime_ms;
 
-    } else if (flowDataValid && flow_state.obsIndex == 1 && !delayFusion && !posHoldMode){
+    } else if (flowDataValid && flow_state.obsIndex == 1 && !delayFusion && !constPosMode){
         // Fuse the optical flow Y axis data into the main filter
         FuseOptFlow();
         // increment the index to fuse the X and Y data using the 2-state EKF on the next prediction cycle
         flow_state.obsIndex = 2;
         // indicate that flow fusion has been performed. This is used for load spreading.
         flowFusePerformed = true;
-    } else if (((flowDataValid && flow_state.obsIndex == 2) || newDataRng) && !posHoldMode) {
+    } else if (((flowDataValid && flow_state.obsIndex == 2) || newDataRng) && !constPosMode) {
         // enable fusion of range data if available and permitted
         if(newDataRng && useRngFinder()) {
             fuseRngData = true;
@@ -1814,12 +1814,12 @@ void NavEKF::FuseVelPosNED()
     // associated with sequential fusion
     if (fuseVelData || fusePosData || fuseHgtData) {
 
-        // if position hold mode or velocity hold is active use the current states to calculate the predicted
+        // if constant position or constant velocity mode use the current states to calculate the predicted
         // measurement rather than use states from a previous time. We need to do this
         // because there may be no stored states due to lack of real measurements.
-        if (posHoldMode) {
+        if (constPosMode) {
             statesAtPosTime = state;
-        } else if (velHoldMode) {
+        } else if (constVelMode) {
             statesAtVelTime = state;
         }
 
@@ -1828,17 +1828,17 @@ void NavEKF::FuseVelPosNED()
         if (useAirspeed()) gpsRetryTime = _gpsRetryTimeUseTAS;
         else gpsRetryTime = _gpsRetryTimeNoTAS;
 
-        // form the observation vector and zero velocity and horizontal position observations if in position hold mode
-        // If in velocity hold mode, hold the last known horizontal velocity vector
-        if (!posHoldMode && !velHoldMode) {
+        // form the observation vector and zero velocity and horizontal position observations if in constant position mode
+        // If in constant velocity mode, hold the last known horizontal velocity vector
+        if (!constPosMode && !constVelMode) {
             observation[0] = velNED.x + gpsVelGlitchOffset.x;
             observation[1] = velNED.y + gpsVelGlitchOffset.y;
             observation[2] = velNED.z;
             observation[3] = gpsPosNE.x + gpsPosGlitchOffsetNE.x;
             observation[4] = gpsPosNE.y + gpsPosGlitchOffsetNE.y;
-        } else if (posHoldMode){
+        } else if (constPosMode){
             for (uint8_t i=0; i<=4; i++) observation[i] = 0.0f;
-        } else if (velHoldMode) {
+        } else if (constVelMode) {
             observation[0] = heldVelNE.x;
             observation[1] = heldVelNE.y;
             for (uint8_t i=2; i<=4; i++) observation[i] = 0.0f;
@@ -1892,8 +1892,8 @@ void NavEKF::FuseVelPosNED()
             posHealth = ((posTestRatio < 1.0f) || badIMUdata);
             // declare a timeout condition if we have been too long without data
             posTimeout = ((imuSampleTime_ms - posFailTime) > gpsRetryTime);
-            // use position data if healthy, timed out, or in position hold mode
-            if (posHealth || posTimeout || posHoldMode) {
+            // use position data if healthy, timed out, or in constant position mode
+            if (posHealth || posTimeout || constPosMode) {
                 posHealth = true;
                 posFailTime = imuSampleTime_ms;
                 // if timed out or outside the specified glitch radius, increment the offset applied to GPS data to compensate for large GPS position jumps
@@ -1916,7 +1916,7 @@ void NavEKF::FuseVelPosNED()
         if (fuseVelData) {
             // test velocity measurements
             uint8_t imax = 2;
-            if (_fusionModeGPS == 1 || velHoldMode) {
+            if (_fusionModeGPS == 1 || constVelMode) {
                 imax = 1;
             }
             float K1 = 0; // innovation to error ratio for IMU1
@@ -1955,10 +1955,10 @@ void NavEKF::FuseVelPosNED()
             velTestRatio = innovVelSumSq / (varVelSum * sq(_gpsVelInnovGate));
             // fail if the ratio is greater than 1
             velHealth = ((velTestRatio < 1.0f)  || badIMUdata);
-            // declare a timeout if we have not fused velocity data for too long or in velocity hold mode
-            velTimeout = ((imuSampleTime_ms - velFailTime) > gpsRetryTime) || velHoldMode;
-            // if data is healthy  or in velocity hold mode we fuse it
-            if (velHealth || velHoldMode) {
+            // declare a timeout if we have not fused velocity data for too long or in constant velocity mode
+            velTimeout = ((imuSampleTime_ms - velFailTime) > gpsRetryTime) || constVelMode;
+            // if data is healthy  or in constant velocity mode we fuse it
+            if (velHealth || constVelMode) {
                 velHealth = true;
                 velFailTime = imuSampleTime_ms;
             } else if (velTimeout && !posHealth) {
@@ -1981,8 +1981,8 @@ void NavEKF::FuseVelPosNED()
             // fail if the ratio is > 1, but don't fail if bad IMU data
             hgtHealth = ((hgtTestRatio < 1.0f) || badIMUdata);
             hgtTimeout = (imuSampleTime_ms - hgtFailTime) > hgtRetryTime;
-            // Fuse height data if healthy or timed out or in position hold mode
-            if (hgtHealth || hgtTimeout || posHoldMode) {
+            // Fuse height data if healthy or timed out or in constant position mode
+            if (hgtHealth || hgtTimeout || constPosMode) {
                 hgtHealth = true;
                 hgtFailTime = imuSampleTime_ms;
                 // if timed out, reset the height, but do not fuse data on this time step
@@ -1997,23 +1997,23 @@ void NavEKF::FuseVelPosNED()
         }
 
         // set range for sequential fusion of velocity and position measurements depending on which data is available and its health
-        if (fuseVelData && _fusionModeGPS == 0 && velHealth && !posHoldMode && gpsInhibitMode == 0) {
+        if (fuseVelData && _fusionModeGPS == 0 && velHealth && !constPosMode && gpsInhibitMode == 0) {
             fuseData[0] = true;
             fuseData[1] = true;
             fuseData[2] = true;
         }
-        if (fuseVelData && _fusionModeGPS == 1 && velHealth && !posHoldMode && gpsInhibitMode == 0) {
+        if (fuseVelData && _fusionModeGPS == 1 && velHealth && !constPosMode && gpsInhibitMode == 0) {
             fuseData[0] = true;
             fuseData[1] = true;
         }
-        if ((fusePosData && posHealth && gpsInhibitMode == 0) || posHoldMode) {
+        if ((fusePosData && posHealth && gpsInhibitMode == 0) || constPosMode) {
             fuseData[3] = true;
             fuseData[4] = true;
         }
-        if ((fuseHgtData && hgtHealth) || posHoldMode) {
+        if ((fuseHgtData && hgtHealth) || constPosMode) {
             fuseData[5] = true;
         }
-        if (velHoldMode) {
+        if (constVelMode) {
             fuseData[0] = true;
             fuseData[1] = true;
         }
@@ -2108,7 +2108,7 @@ void NavEKF::FuseVelPosNED()
                 // Don't spread quaternion corrections if total angle change across predicted interval is going to exceed 0.1 rad
                 bool highRates = ((gpsUpdateCountMax * correctedDelAng.length()) > 0.1f);
                 for (uint8_t i = 0; i<=21; i++) {
-                    if ((i <= 3 && highRates) || i >= 10 || posHoldMode || velHoldMode) {
+                    if ((i <= 3 && highRates) || i >= 10 || constPosMode || constVelMode) {
                         states[i] = states[i] - Kfusion[i] * innovVelPos[obsIndex];
                     } else {
                         if (obsIndex == 5) {
@@ -2472,7 +2472,7 @@ void NavEKF::FuseMagnetometer()
                 if (!magHealth) {
                     Kfusion[j] *= 0.25f;
                 }
-                if ((j <= 3 && highRates) || j >= 10 || posHoldMode || minorFramesToGo < 1.5f ) {
+                if ((j <= 3 && highRates) || j >= 10 || constPosMode || minorFramesToGo < 1.5f ) {
                     states[j] = states[j] - Kfusion[j] * innovMag[obsIndex];
                 } else {
                     // scale the correction based on the number of averaging frames left to go
@@ -2999,7 +2999,7 @@ void NavEKF::FuseOptFlow()
 
     // Check the innovation for consistency and don't fuse if out of bounds or flow is too fast to be reliable
     if ((flowTestRatio[obsIndex]) < 1.0f && (flowRadXY[obsIndex] < _maxFlowRate)) {
-        // Reset the timer for velocity fusion timeout. This prevents a velocity timeout from being declared if we have to momentarily go into velocity hold mode.
+        // Reset the timer for velocity fusion timeout. This prevents a velocity timeout from being declared if we have to momentarily go into constant velocity mode.
         velFailTime = imuSampleTime_ms;
         // correct the state vector
         for (uint8_t j = 0; j <= 21; j++)
@@ -3584,14 +3584,14 @@ void NavEKF::resetGyroBias(void)
 }
 
 // Commands the EKF to not use GPS.
-// This command must be sent prior to arming as it will only be actioned when the filter is in position hold mode
-// This command is forgotten by the EKF each time it goes back into position hold mode (eg the vehicle disarms)
+// This command must be sent prior to arming as it will only be actioned when the filter is in constant position mode
+// This command is forgotten by the EKF each time it goes back into constant position mode (eg the vehicle disarms)
 // Returns 0 if command rejected
 // Returns 1 if attitude, vertical velocity and vertical position will be provided
 // Returns 2 if attitude, 3D-velocity, vertical position and relative horizontal position will be provided
 uint8_t NavEKF::setInhibitGPS(void)
 {
-    if(!posHoldMode) {
+    if(!constPosMode) {
         return 0;
     }
     if (optFlowDataPresent()) {
@@ -3769,12 +3769,12 @@ void NavEKF::SetFlightAndFusionModes()
     }
     // store current on-ground status for next time
     prevOnGround = onGround;
-    // If we are on ground, or in position hold mode, or don't have the right vehicle and sensing to estimate wind, inhibit wind states
-    inhibitWindStates = ((!useAirspeed() && !assume_zero_sideslip()) || onGround || posHoldMode);
+    // If we are on ground, or in constant position mode, or don't have the right vehicle and sensing to estimate wind, inhibit wind states
+    inhibitWindStates = ((!useAirspeed() && !assume_zero_sideslip()) || onGround || constPosMode);
     // request mag calibration for both in-air and manoeuvre threshold options
     bool magCalRequested = ((_magCal == 0) && !onGround) || ((_magCal == 1) && manoeuvring);
-    // deny mag calibration request if we aren't using the compass, are in the pre-arm position hold mode or it has been inhibited by the user
-    bool magCalDenied = (!use_compass() || posHoldMode || (_magCal == 2));
+    // deny mag calibration request if we aren't using the compass, are in the pre-arm constant position mode or it has been inhibited by the user
+    bool magCalDenied = (!use_compass() || constPosMode || (_magCal == 2));
     // inhibit the magnetic field calibration if not requested or denied
     inhibitMagStates = (!magCalRequested || magCalDenied);
 }
@@ -4092,8 +4092,8 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
         flowRadXYcomp[1] = flowStates[0]*flowRadXY[1] + omegaAcrossFlowTime.y;
         // set flag that will trigger observations
         newDataFlow = true;
-        // clear the velocity hold mode now we have good data
-        velHoldMode = false;
+        // clear the constant velocity mode now we have good data
+        constVelMode = false;
         flowValidMeaTime_ms = imuSampleTime_ms;
     } else {
         newDataFlow = false;
@@ -4215,11 +4215,11 @@ void NavEKF::alignYawGPS()
             P[1][1]   = 0.25f*sq(radians(1.0f));
             P[2][2]   = 0.25f*sq(radians(1.0f));
             P[3][3]   = 0.25f*sq(radians(1.0f));
-            // velocities - we could have a big error coming out of position hold mode due to GPS lag
+            // velocities - we could have a big error coming out of constant position mode due to GPS lag
             P[4][4]   = 400.0f;
             P[5][5]   = P[4][4];
             P[6][6]   = sq(0.7f);
-            // positions - we could have a big error coming out of position hold mode due to GPS lag
+            // positions - we could have a big error coming out of constant position mode due to GPS lag
             P[7][7]   = 400.0f;
             P[8][8]   = P[7][7];
             P[9][9]   = sq(5.0f);
@@ -4370,13 +4370,13 @@ void NavEKF::ZeroVariables()
     inhibitGndState = true;
     flowGyroBias.x = 0;
     flowGyroBias.y = 0;
-    velHoldMode = false;
+    constVelMode = false;
     heldVelNE.zero();
     gpsInhibitMode = 1;
     gpsVelGlitchOffset.zero();
     vehicleArmed = false;
     prevVehicleArmed = false;
-    posHoldMode = true;
+    constPosMode = true;
 }
 
 // return true if we should use the airspeed sensor
@@ -4507,19 +4507,19 @@ return filter function status as a bitmasked integer
  4 = absolute horizontal position estimate valid
  5 = vertical position estimate valid
  6 = terrain height estimate valid
- 7 = position hold mode
+ 7 = constant position mode
 */
 void  NavEKF::getFilterStatus(uint8_t &status) const
 {
     // add code to set bits using private filter data here
     status = (!state.quat.is_nan()<<0 | // we can implement a better way to detect invalid attitude, but it is tricky to do reliably
-              (!(velTimeout && posTimeout && tasTimeout) && !velHoldMode && !posHoldMode)<<1 |
+              (!(velTimeout && posTimeout && tasTimeout) && !constVelMode && !constPosMode)<<1 |
               !((velTimeout && hgtTimeout) || (hgtTimeout && _fusionModeGPS > 0))<<2 |
-              ((gpsInhibitMode == 2 && flowDataValid) || (!tasTimeout && assume_zero_sideslip()) || (!posTimeout && gpsInhibitMode == 0) && !velHoldMode && !posHoldMode)<<3 |
-              ((!posTimeout && gpsInhibitMode == 0) && !velHoldMode && !posHoldMode)<<4 |
+              ((gpsInhibitMode == 2 && flowDataValid) || (!tasTimeout && assume_zero_sideslip()) || (!posTimeout && gpsInhibitMode == 0) && !constVelMode && !constPosMode)<<3 |
+              ((!posTimeout && gpsInhibitMode == 0) && !constVelMode && !constPosMode)<<4 |
               !hgtTimeout<<5 |
               !inhibitGndState<<6 |
-              posHoldMode<<7);
+              constPosMode<<7);
 }
 
 // Check arm status and perform required checks and mode changes
@@ -4541,9 +4541,9 @@ void NavEKF::performArmingChecks()
         heldVelNE.zero();
         // set various  useage modes based on the condition at arming. These are then held until the vehicle is disarmed.
         if (!vehicleArmed) {
-            gpsInhibitMode = 1; // When dis-armed, we only estimate orientation & height using the position hold mode
-            posHoldMode = true;
-            velHoldMode = false; // always clear velocity hold mode if position hold mode is active
+            gpsInhibitMode = 1; // When dis-armed, we only estimate orientation & height using the constant position mode
+            constPosMode = true;
+            constVelMode = false; // always clear constant velocity mode if constant position mode is active
         } else if (_fusionModeGPS == 3) { // arming when GPS useage has been prohibited
             if (optFlowDataPresent()) {
                 gpsInhibitMode = 2; // we have optical flow data and can estimate all vehicle states
@@ -4575,12 +4575,12 @@ void NavEKF::performArmingChecks()
         finalMagYawInit = true;
     }
 
-    // set position hold mode if gps is inhibited and we are not trying to use optical flow data
+    // set constant position mode if gps is inhibited and we are not trying to use optical flow data
     if (gpsInhibitMode == 1) {
-        posHoldMode = true;
-        velHoldMode = false; // always clear velocity hold mode if position hold mode is active
+        constPosMode = true;
+        constVelMode = false; // always clear constant velocity mode if constant position mode is active
     } else {
-        posHoldMode = false;
+        constPosMode = false;
     }
 
 }
