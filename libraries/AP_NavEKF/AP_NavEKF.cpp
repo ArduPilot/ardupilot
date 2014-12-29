@@ -796,6 +796,12 @@ void NavEKF::SelectVelPosFusion()
         fuseVelData = false;
     } else if (constVelMode) {
         // In constant velocity mode we fuse the last valid velocity vector
+        // Reset the stored velocity vector when we enter the mode
+        if (constVelMode && !lastConstVelMode) {
+            heldVelNE.x = state.velocity.x;
+            heldVelNE.y = state.velocity.y;
+        }
+        lastConstVelMode = constVelMode;
         // We do not fuse when manoeuvring to avoid corrupting the attitude
         if (accNavMag < 4.9f) {
             fuseVelData = true;
@@ -899,15 +905,10 @@ void NavEKF::SelectFlowFusion()
 {
     // Check if the optical flow data is still valid
     flowDataValid = (imuSampleTime_ms - flowValidMeaTime_ms < 200);
-    // if we don't have valid flow measurements and are not using GPS, dead reckon using current velocity vector unless we are in positon hold mode mode
+    // if we don't have valid flow measurements and are not using GPS, dead reckon using current velocity vector unless we are in positon hold mode
     if (!flowDataValid && !constPosMode && gpsInhibitMode == 2) {
         constVelMode = true;
     }
-    if (constVelMode && !lastConstVelMode) {
-        heldVelNE.x = state.velocity.x;
-        heldVelNE.y = state.velocity.y;
-    }
-    lastConstVelMode = constVelMode;
     // Apply tilt check
     bool tiltOK = (Tnb_flow.c.z > DCM33FlowMin);
     // if we have waited too long, set a timeout flag which will force fusion to occur regardless of load spreading
@@ -4094,6 +4095,7 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
         newDataFlow = true;
         // clear the constant velocity mode now we have good data
         constVelMode = false;
+        lastConstVelMode = false;
         flowValidMeaTime_ms = imuSampleTime_ms;
     } else {
         newDataFlow = false;
@@ -4371,6 +4373,7 @@ void NavEKF::ZeroVariables()
     flowGyroBias.x = 0;
     flowGyroBias.y = 0;
     constVelMode = false;
+    lastConstVelMode = false;
     heldVelNE.zero();
     gpsInhibitMode = 1;
     gpsVelGlitchOffset.zero();
@@ -4544,6 +4547,7 @@ void NavEKF::performArmingChecks()
             gpsInhibitMode = 1; // When dis-armed, we only estimate orientation & height using the constant position mode
             constPosMode = true;
             constVelMode = false; // always clear constant velocity mode if constant position mode is active
+            lastConstVelMode = false;
         } else if (_fusionModeGPS == 3) { // arming when GPS useage has been prohibited
             if (optFlowDataPresent()) {
                 gpsInhibitMode = 2; // we have optical flow data and can estimate all vehicle states
@@ -4579,6 +4583,7 @@ void NavEKF::performArmingChecks()
     if (gpsInhibitMode == 1) {
         constPosMode = true;
         constVelMode = false; // always clear constant velocity mode if constant position mode is active
+        lastConstVelMode = false;
     } else {
         constPosMode = false;
     }
