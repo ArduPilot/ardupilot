@@ -129,48 +129,48 @@ const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
     AP_GROUPINFO("LAND_THR", 13, AP_TECS, _landThrottle, -1),
 
     // @Param: LAND_SPDWGT
-    // @DisplayName: Weighting applied to speed control during landing.
-    // @Description: Same as SPDWEIGHT parameter, with the exception that this parameter is applied during landing flight stages.  A value closer to 2 will result in the plane ignoring height error during landing and our experience has been that the plane will therefore keep the nose up -- sometimes good for a glider landing (with the side effect that you will likely glide a ways past the landing point).  A value closer to 0 results in the plane ignoring speed error -- use caution when lowering the value below 1 -- ignoring speed could result in a stall.
+    // @DisplayName: 着陆期间速度控制器比重
+    // @Description: 和SPDWEIGHT参数一样，但是这个参数应用于着陆飞行阶段。2左右的数值会使飞机在着陆期间忽略高度误差并且我们的经验是飞机会保持机头向上--有时有益于滑翔机着陆（负面效应是你可能滑过着陆点）。0左右的数值会使飞机忽略速度误差--小心使用低于1的数值--忽略速度可能导致空中停车。
 	// @Range: 0.0 2.0
 	// @Increment: 0.1
 	// @User: Advanced
     AP_GROUPINFO("LAND_SPDWGT", 14, AP_TECS, _spdWeightLand, 1.0f),
 
     // @Param: PITCH_MAX
-    // @DisplayName: Maximum pitch in auto flight
-    // @Description: This controls maximum pitch up in automatic throttle modes. If this is set to zero then LIM_PITCH_MAX is used instead. The purpose of this parameter is to allow the use of a smaller pitch range when in automatic flight than what is used in FBWA mode.
+    // @DisplayName: 自动飞行中的最大俯仰角
+    // @Description: 这个参数控制自动油门模式中的最大俯仰角。如果这个值被设为0，那么LIM_PITCH_MAX将会被使用。这个参数的目的是允许在自动飞行模式中使用一个相比FBWA模式中更小的俯仰角。
 	// @Range: 0 45
 	// @Increment: 1
 	// @User: Advanced
     AP_GROUPINFO("PITCH_MAX", 15, AP_TECS, _pitch_max, 0),
 
     // @Param: PITCH_MIN
-    // @DisplayName: Minimum pitch in auto flight
-    // @Description: This controls minimum pitch in automatic throttle modes. If this is set to zero then LIM_PITCH_MIN is used instead. The purpose of this parameter is to allow the use of a smaller pitch range when in automatic flight than what is used in FBWA mode. Note that TECS_PITCH_MIN should be a negative number.
+    // @DisplayName: 最小俯仰角
+    // @Description: 这个值控制自动油门模式中的最小俯仰角。如果这个值被设为0，那么LIM_PITCH_MIN将被使用。 这个参数的目的是允许在自动飞行模式中使用比FBWA模式中更小的俯仰角。注意TECS_PITCH_MIN应该为负值。
 	// @Range: -45 0
 	// @Increment: 1
 	// @User: Advanced
     AP_GROUPINFO("PITCH_MIN", 16, AP_TECS, _pitch_min, 0),
 
     // @Param: LAND_SINK
-    // @DisplayName: Sink rate for final landing stage
-    // @Description: The sink rate in meters/second for the final stage of landing.
+    // @DisplayName: 最终着陆阶段下降速度
+    // @Description: 最终着陆阶段的下降速度，m/s。
 	// @Range: 0.0 2.0
 	// @Increment: 0.1
 	// @User: Advanced
     AP_GROUPINFO("LAND_SINK", 17, AP_TECS, _land_sink, 0.25f),
 
     // @Param: LAND_TCONST
-    // @DisplayName: Land controller time constant (sec)
-    // @Description: This is the time constant of the TECS control algorithm when in final landing stage of flight. It should be smaller than TECS_TIME_CONST to allow for faster flare
+    // @DisplayName: 着陆控制器时间常数（秒）
+    // @Description: 这是TECS控制算法在最终着陆阶段使用的时间常数。这个参数应该比TECS_TIME_CONST更小以允许更快的爆闪
 	// @Range: 1.0 5.0
 	// @Increment: 0.2
 	// @User: Advanced
     AP_GROUPINFO("LAND_TCONST", 18, AP_TECS, _landTimeConst, 2.0f),
 
     // @Param: LAND_DAMP
-    // @DisplayName: Controller sink rate to pitch gain during flare
-    // @Description: This is the sink rate gain for the pitch demand loop when in final landing stage of flight. It should be larger than TECS_PTCH_DAMP to allow for better sink rate control during flare.
+    // @DisplayName: 爆闪期间控制器下降速度到俯仰增益（Controller sink rate during flare)
+    // @Description: 这是最终飞行着陆阶段的俯仰需求循环的下降速度增益。它应该大于TECS_PTCH_DAMP以允许更好的下降速度控制在爆闪期间。（ to allow for better sink rate control during flare.）
     // @Range: 0.1 1.0
     // @Increment: 0.1
     // @User: Advanced
