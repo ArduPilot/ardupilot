@@ -229,6 +229,10 @@ AP_InertialSensor::AP_InertialSensor() :
     for (uint8_t i=0; i<INS_MAX_BACKENDS; i++) {
         _backends[i] = NULL;
     }
+    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+        _accel_error_count[i] = 0;
+        _gyro_error_count[i] = 0;
+    }
 }
 
 
@@ -953,7 +957,7 @@ void AP_InertialSensor::update(void)
     wait_for_sample();
 
     if (!_hil_mode) {
-        for (int8_t i=0; i<INS_MAX_INSTANCES; i++) {
+        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
             // mark sensors unhealthy and let update() in each backend
             // mark them healthy via _rotate_and_offset_gyro() and
             // _rotate_and_offset_accel() 
@@ -963,14 +967,35 @@ void AP_InertialSensor::update(void)
         for (uint8_t i=0; i<_backend_count; i++) {
             _backends[i]->update();
         }
+
+        // adjust health status if a sensor has a non-zero error count
+        // but another sensor doesn't. 
+        bool have_zero_accel_error_count = false;
+        bool have_zero_gyro_error_count = false;
+        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+            if (_accel_healthy[i] && _accel_error_count[i] == 0) {
+                have_zero_accel_error_count = true;
+            }
+            if (_gyro_healthy[i] && _gyro_error_count[i] == 0) {
+                have_zero_gyro_error_count = true;
+            }
+        }
         // set primary to first healthy accel and gyro
-        for (int8_t i=0; i<INS_MAX_INSTANCES; i++) {
+        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+            if (_gyro_healthy[i] && _gyro_error_count[i] != 0 && have_zero_gyro_error_count) {
+                // we prefer not to use a gyro that has had errors
+                _gyro_healthy[i] = false;
+            }
             if (_gyro_healthy[i]) {
                 _primary_gyro = i;
                 break;
             }
         }
-        for (int8_t i=0; i<INS_MAX_INSTANCES; i++) {
+        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+            if (_accel_healthy[i] && _accel_error_count[i] != 0 && have_zero_accel_error_count) {
+                // we prefer not to use a accel that has had errors
+                _accel_healthy[i] = false;
+            }
             if (_accel_healthy[i]) {
                 _primary_accel = i;
                 break;

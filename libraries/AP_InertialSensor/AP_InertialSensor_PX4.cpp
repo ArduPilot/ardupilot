@@ -139,6 +139,7 @@ void AP_InertialSensor_PX4::_get_sample(void)
                accel_report.timestamp != _last_accel_timestamp[i]) {        
             _accel_in[i] = Vector3f(accel_report.x, accel_report.y, accel_report.z);
             _last_accel_timestamp[i] = accel_report.timestamp;
+            _set_accel_error_count(_accel_instance[i], accel_report.error_count);
         }
     }
     for (uint8_t i=0; i<_num_gyro_instances; i++) {
@@ -148,6 +149,7 @@ void AP_InertialSensor_PX4::_get_sample(void)
                gyro_report.timestamp != _last_gyro_timestamp[i]) {        
             _gyro_in[i] = Vector3f(gyro_report.x, gyro_report.y, gyro_report.z);
             _last_gyro_timestamp[i] = gyro_report.timestamp;
+            _set_gyro_error_count(_gyro_instance[i], gyro_report.error_count);
         }
     }
     _last_get_sample_timestamp = hal.scheduler->micros64();
