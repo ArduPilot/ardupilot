@@ -694,64 +694,8 @@ void NavEKF::UpdateFilter()
     // check if on ground
     SetFlightAndFusionModes();
 
-    // determine vehicle arm status and don't allow filter to arm until it has been running for long enough to stabilise
-    prevVehicleArmed = vehicleArmed;
-    vehicleArmed = (getVehicleArmStatus() && (imuSampleTime_ms - ekfStartTime_ms) > 10000);
-
-    // check to see if arm status has changed and reset states if it has
-    if (vehicleArmed != prevVehicleArmed) {
-        // only reset the magnetic field and heading on the first arm. This prevents in-flight learning being forgotten for vehicles that do multiple short flights and disarm in-between.
-        if (vehicleArmed && !firstArmComplete) {
-            firstArmComplete = true;
-            state.quat = calcQuatAndFieldStates(_ahrs->roll, _ahrs->pitch);
-            firstArmPosD = state.position.z;
-        }
-        // zero stored velocities used to do dead-reckoning
-        heldVelNE.zero();
-        // set various  useage modes based on the condition at arming. These are then held until the vehicle is disarmed.
-        if (!vehicleArmed) {
-            gpsInhibitMode = 1; // When dis-armed, we only estimate orientation & height using the position hold mode
-            posHoldMode = true;
-            velHoldMode = false; // always clear velocity hold mode if position hold mode is active
-        } else if (_fusionModeGPS == 3) { // arming when GPS useage has been prohibited
-            if (optFlowDataPresent()) {
-                gpsInhibitMode = 2; // we have optical flow data and can estimate all vehicle states
-                posTimeout = true;
-                velTimeout = true;
-            } else {
-                gpsInhibitMode = 1; // we don't have optical flow data and will only be able to estimate orientation and height
-                posTimeout = true;
-                velTimeout = true;
-            }
-        } else { // arming when GPS useage is allowed
-            if (gpsNotAvailable) {
-                gpsInhibitMode = 1; // we don't have have GPS data and will only be able to estimate orientation and height
-                posTimeout = true;
-                velTimeout = true;
-            } else {
-                gpsInhibitMode = 0; // we have GPS data and can estimate all vehicle states
-            }
-        }
-        // Reset filter positon, height and velocity states on arming or disarming
-        ResetVelocity();
-        ResetPosition();
-        ResetHeight();
-        StoreStatesReset();
-
-    } else if (vehicleArmed && !finalMagYawInit && firstArmPosD - state.position.z > 1.5f && !assume_zero_sideslip()) {
-        // Do a final yaw and earth mag field initialisation when the vehicle has gained 1.5m of altitude after arming if it is a non-fly forward vehicle (vertical takeoff)
-        state.quat = calcQuatAndFieldStates(_ahrs->roll, _ahrs->pitch);
-        finalMagYawInit = true;
-    }
-
-    // define rules used to set position hold mode
-    // position hold enables attitude only estimates without GPS by fusing zeros for position
-    if (gpsInhibitMode == 1) {
-        posHoldMode = true;
-        velHoldMode = false; // always clear velocity hold mode if position hold mode is active
-    } else {
-        posHoldMode = false;
-    }
+    // Check arm status and perform required checks and mode changes
+    performArmingChecks();
 
     // run the strapdown INS equations every IMU update
     UpdateStrapdownEquationsNED();
@@ -4576,6 +4520,69 @@ void  NavEKF::getFilterStatus(uint8_t &status) const
               !hgtTimeout<<5 |
               !inhibitGndState<<6 |
               posHoldMode<<7);
+}
+
+// Check arm status and perform required checks and mode changes
+void NavEKF::performArmingChecks()
+{
+    // determine vehicle arm status and don't allow filter to arm until it has been running for long enough to stabilise
+    prevVehicleArmed = vehicleArmed;
+    vehicleArmed = (getVehicleArmStatus() && (imuSampleTime_ms - ekfStartTime_ms) > 10000);
+
+    // check to see if arm status has changed and reset states if it has
+    if (vehicleArmed != prevVehicleArmed) {
+        // only reset the magnetic field and heading on the first arm. This prevents in-flight learning being forgotten for vehicles that do multiple short flights and disarm in-between.
+        if (vehicleArmed && !firstArmComplete) {
+            firstArmComplete = true;
+            state.quat = calcQuatAndFieldStates(_ahrs->roll, _ahrs->pitch);
+            firstArmPosD = state.position.z;
+        }
+        // zero stored velocities used to do dead-reckoning
+        heldVelNE.zero();
+        // set various  useage modes based on the condition at arming. These are then held until the vehicle is disarmed.
+        if (!vehicleArmed) {
+            gpsInhibitMode = 1; // When dis-armed, we only estimate orientation & height using the position hold mode
+            posHoldMode = true;
+            velHoldMode = false; // always clear velocity hold mode if position hold mode is active
+        } else if (_fusionModeGPS == 3) { // arming when GPS useage has been prohibited
+            if (optFlowDataPresent()) {
+                gpsInhibitMode = 2; // we have optical flow data and can estimate all vehicle states
+                posTimeout = true;
+                velTimeout = true;
+            } else {
+                gpsInhibitMode = 1; // we don't have optical flow data and will only be able to estimate orientation and height
+                posTimeout = true;
+                velTimeout = true;
+            }
+        } else { // arming when GPS useage is allowed
+            if (gpsNotAvailable) {
+                gpsInhibitMode = 1; // we don't have have GPS data and will only be able to estimate orientation and height
+                posTimeout = true;
+                velTimeout = true;
+            } else {
+                gpsInhibitMode = 0; // we have GPS data and can estimate all vehicle states
+            }
+        }
+        // Reset filter positon, height and velocity states on arming or disarming
+        ResetVelocity();
+        ResetPosition();
+        ResetHeight();
+        StoreStatesReset();
+
+    } else if (vehicleArmed && !finalMagYawInit && firstArmPosD - state.position.z > 1.5f && !assume_zero_sideslip()) {
+        // Do a final yaw and earth mag field initialisation when the vehicle has gained 1.5m of altitude after arming if it is a non-fly forward vehicle (vertical takeoff)
+        state.quat = calcQuatAndFieldStates(_ahrs->roll, _ahrs->pitch);
+        finalMagYawInit = true;
+    }
+
+    // set position hold mode if gps is inhibited and we are not trying to use optical flow data
+    if (gpsInhibitMode == 1) {
+        posHoldMode = true;
+        velHoldMode = false; // always clear velocity hold mode if position hold mode is active
+    } else {
+        posHoldMode = false;
+    }
+
 }
 
 #endif // HAL_CPU_CLASS
