@@ -383,6 +383,9 @@ private:
     // fuse optical flow measurements into the main filter
     void FuseOptFlow();
 
+    // Check arm status and perform required checks and mode changes
+    void performArmingChecks();
+
     // EKF Mavlink Tuneable Parameters
     AP_Float _gpsHorizVelNoise;     // GPS horizontal velocity measurement noise : m/s
     AP_Float _gpsVertVelNoise;      // GPS vertical velocity measurement noise : m/s
