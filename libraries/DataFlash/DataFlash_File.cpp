@@ -55,7 +55,11 @@ DataFlash_File::DataFlash_File(const char *log_directory) :
     _writebuf_chunk(512),
 #elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V51)
     _writebuf_chunk(512),
+#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V52)
+    _writebuf_chunk(512),
 #elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
+    _writebuf_chunk(512),
+#elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
     _writebuf_chunk(512),
 #elif defined(CONFIG_ARCH_BOARD_VRHERO_V10)
     _writebuf_chunk(512),
