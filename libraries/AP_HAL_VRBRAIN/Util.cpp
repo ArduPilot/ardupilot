@@ -114,8 +114,12 @@ bool VRBRAINUtil::get_system_id(char buf[40])
     const char *board_type = "VRBRAINv50";
 #elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V51)
     const char *board_type = "VRBRAINv51";
+#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V52)
+    const char *board_type = "VRBRAINv52";
 #elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
     const char *board_type = "VRUBRAINv51";
+#elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
+    const char *board_type = "VRUBRAINv52";
 #elif defined(CONFIG_ARCH_BOARD_VRHERO_V10)
     const char *board_type = "VRHEROv10";
 #endif

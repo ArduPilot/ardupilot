@@ -262,8 +262,8 @@ void *VRBRAINScheduler::_timer_thread(void)
 
         if (vrbrain_ran_overtime && millis() - last_ran_overtime > 2000) {
             last_ran_overtime = millis();
-            printf("Overtime in task %d\n", (int)AP_Scheduler::current_task);
-            hal.console->printf("Overtime in task %d\n", (int)AP_Scheduler::current_task);
+//            printf("Overtime in task %d\n", (int)AP_Scheduler::current_task);
+//            hal.console->printf("Overtime in task %d\n", (int)AP_Scheduler::current_task);
         }
     }
     return NULL;

@@ -57,12 +57,16 @@ static const struct {
     {  0, 3.3f/4096 },
     { 10, 3.3f/4096 },
     { 11, 3.3f/4096 },
+#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V52)
+    {  0, 3.3f/4096 },
+    { 10, 3.3f/4096 },
+    { 11, 3.3f/4096 },
 #elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    { 10, 3.3f/4096 },
+#elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
     {  1, 3.3f/4096 },
     {  2, 3.3f/4096 },
     {  3, 3.3f/4096 },
-#endif
     { 10, 3.3f/4096 },
 #elif defined(CONFIG_ARCH_BOARD_VRHERO_V10)
     { 10, 3.3f/4096 },
