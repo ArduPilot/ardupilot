@@ -1,7 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 
 #include "AP_InertialSensor_PX4.h"
 
@@ -72,12 +72,15 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
     _default_filter_hz = _default_filter();
     _set_filter_frequency(_imu.get_filter());
 
+#if  CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+    _product_id = AP_PRODUCT_ID_VRBRAIN;
+#else
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
     _product_id = AP_PRODUCT_ID_PX4_V2;
 #else
     _product_id = AP_PRODUCT_ID_PX4;
 #endif
-
+#endif
     return true;
 }
 
