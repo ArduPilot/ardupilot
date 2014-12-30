@@ -113,13 +113,6 @@ build_arduplane() {
     test -n "$VRBRAIN_ROOT" && {
 	echo "Building ArduPlane VRBRAIN binaries"
 	ddir=$binaries/Plane/$hdate/VRX
-        checkout Plane $tag || {
-            echo "Failed checkout of ArduPlane VRBRAIN $tag"
-            error_count=$((error_count+1))
-            checkout Plane "latest"
-            popd
-            return
-        }
 	skip_build $tag $ddir || {
 	    make vrbrain-clean &&
 	    make vrbrain || {
@@ -173,8 +166,6 @@ build_arduplane() {
 	    copyit ArduPlane-vrubrain-v52P.hex $ddir $tag
 	}
     }
-    checkout Plane "latest"
-    popd
 }
 
 # build copter binaries
@@ -183,14 +174,7 @@ build_arducopter() {
     echo "Building ArduCopter $tag binaries from $(pwd)"
     pushd ArduCopter
     frames="quad tri hexa y6 octa octa-quad heli"
-    test -n "$VRBRAIN_ROOT" && {
-        checkout Copter $tag || {
-            echo "Failed checkout of ArduCopter VRBRAIN $tag"
-            error_count=$((error_count+1))
-            checkout Copter "latest"
-            popd
-            return
-        }
+    test -n "$VRBRAIN_ROOT"
 	make vrbrain-clean || return
 	for f in $frames quad-hil heli-hil; do
 	    echo "Building ArduCopter VRBRAIN-$f binaries"
@@ -246,9 +230,6 @@ build_arducopter() {
 	    copyit ArduCopter-vrubrain-v52P.hex $ddir $tag
 	done
     }
-    checkout Copter "latest"
-    popd
-}
 
 # build rover binaries
 build_rover() {
@@ -258,18 +239,11 @@ build_rover() {
     test -n "$VRBRAIN_ROOT" && {
 	echo "Building APMrover2 VRBRAIN binaries"
 	ddir=$binaries/Rover/$hdate/VRX
-        checkout Rover $tag || {
-            checkout Rover "latest"
-            popd
-            return
-        }
 	skip_build $tag $ddir || {
 	    make vrbrain-clean &&
 	    make vrbrain || {
                 echo "Failed build of APMrover2 VRBRAIN $tag"
                 error_count=$((error_count+1))
-                checkout Rover "latest"
-                popd
                 return
             }
 	    copyit APMrover2-vrbrain-v45.vrx $ddir $tag && 
@@ -316,11 +290,9 @@ build_rover() {
 	    copyit APMrover2-vrubrain-v52P.hex $ddir $tag
 	}
     }
-    checkout Rover "latest"
-    popd
 }
 
-for build in stable beta latest; do
+for build in latest; do
     build_arduplane $build
     build_arducopter $build
     build_rover $build
