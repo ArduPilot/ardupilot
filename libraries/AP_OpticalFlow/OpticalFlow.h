@@ -65,6 +65,9 @@ public:
     // last_update() - returns system time of last sensor update
     uint32_t last_update() const { return _last_update; }
 
+    // sonar_range() - returns range in m measured by flow sensors sonar, where < 0.3 indicates no valid measurement
+    const float sonar_range() const { return _gnd_distance; }
+
     // parameter var info table
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -88,6 +91,7 @@ protected:
     Vector2f _flowRate;             // optical flow angular rate in rad/sec measured about the X and Y body axis. A RH rotation about a sensor axis produces a positive rate.
     Vector2f _bodyRate;             // body inertial angular rate in rad/sec measured about the X and Y body axis. A RH rotation about a sensor axis produces a positive rate.
     uint32_t _last_update;          // millis() time of last update
+    float _gnd_distance;         // sonar distance to ground in cm
 };
 
 #endif

@@ -68,6 +68,7 @@ void AP_OpticalFlow_PX4::update(void)
     while (::read(_fd, &report, sizeof(optical_flow_s)) == sizeof(optical_flow_s) && report.timestamp != _last_timestamp) {
         _device_id = report.sensor_id;
         _surface_quality = report.quality;
+        _gnd_distance = report.ground_distance_m;
         if (report.integration_timespan > 0) {
             float flowScaleFactorX = 1.0f + 0.001f * float(_flowScalerX);
             float flowScaleFactorY = 1.0f + 0.001f * float(_flowScalerY);
