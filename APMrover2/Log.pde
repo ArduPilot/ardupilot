@@ -319,7 +319,7 @@ static void Log_Write_Attitude()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 #if AP_AHRS_NAVEKF_AVAILABLE
-    DataFlash.Log_Write_EKF(ahrs);
+    DataFlash.Log_Write_EKF(ahrs,optflow.enabled()) {);
     DataFlash.Log_Write_AHRS2(ahrs);
 #endif
 }

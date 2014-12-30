@@ -69,7 +69,7 @@ public:
     void Log_Write_Power(void);
     void Log_Write_AHRS2(AP_AHRS &ahrs);
 #if AP_AHRS_NAVEKF_AVAILABLE
-    void Log_Write_EKF(AP_AHRS_NavEKF &ahrs);
+    void Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
 #endif
     void Log_Write_MavCmd(uint16_t cmd_total, const mavlink_mission_item_t& mav_cmd);
     void Log_Write_Radio(const mavlink_radio_t &packet);
@@ -345,8 +345,8 @@ struct PACKED log_EKF4 {
     int8_t  offsetNorth;
     int8_t  offsetEast;
     uint8_t faults;
-    uint8_t staticmode;
     uint8_t timeouts;
+    uint8_t solution;
 };
 
 struct PACKED log_EKF5 {
@@ -505,7 +505,7 @@ struct PACKED log_Esc {
     { LOG_EKF3_MSG, sizeof(log_EKF3), \
       "EKF3","Icccccchhhc","TimeMS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IVT" }, \
     { LOG_EKF4_MSG, sizeof(log_EKF4), \
-      "EKF4","IcccccccbbBBB","TimeMS,SV,SP,SH,SMX,SMY,SMZ,SVT,OFN,EFE,FS,StaticMode,TS" }, \
+      "EKF4","IcccccccbbBBB","TimeMS,SV,SP,SH,SMX,SMY,SMZ,SVT,OFN,EFE,FS,TS,SS" }, \
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
       "TERR","IBLLHffHH","TimeMS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded" }, \
     { LOG_UBX1_MSG, sizeof(log_Ubx1), \

@@ -92,12 +92,6 @@ public:
     // Check basic filter health metrics and return a consolidated health status
     bool healthy(void) const;
 
-    // return true if filter is dead-reckoning height
-    bool HeightDrifting(void) const;
-
-    // return true if filter is dead-reckoning position
-    bool PositionDrifting(void) const;
-
     // return the last calculated NED position relative to the reference point (m).
     // return false if no position is available
     bool getPosNED(Vector3f &pos) const;
@@ -162,9 +156,6 @@ public:
 
     // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
     void  getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
-
-    // return StaticMode state
-    bool getStaticMode(void) const { return staticMode; }
 
     // should we use the compass? This is public so it can be used for
     // reporting via ahrs.use_compass()
@@ -360,10 +351,8 @@ private:
     // return true if we should use the airspeed sensor
     bool useAirspeed(void) const;
 
-    // return true if the vehicle code has requested use of static mode
-    // in static mode, position and height are constrained to zero, allowing an attitude
-    // reference to be initialised and maintained when on the ground and without GPS lock
-    bool static_mode_demanded(void) const;
+    // return true if the vehicle code has requested the filter to be ready for flight
+    bool getVehicleArmStatus(void) const;
 
     // decay GPS horizontal position offset to close to zero at a rate of 1 m/s
     // this allows large GPS position jumps to be accomodated gradually
@@ -375,8 +364,8 @@ private:
     // Calculate weighting that is applied to IMU1 accel data to blend data from IMU's 1 and 2
     void calcIMU_Weighting(float K1, float K2);
 
-    // return true if we should use the optical flow sensor
-    bool useOptFlow(void) const;
+    // return true if optical flow data is available
+    bool optFlowDataPresent(void) const;
 
     // return true if we should use the range finder sensor
     bool useRngFinder(void) const;
@@ -393,6 +382,9 @@ private:
 
     // fuse optical flow measurements into the main filter
     void FuseOptFlow();
+
+    // Check arm status and perform required checks and mode changes
+    void performArmingChecks();
 
     // EKF Mavlink Tuneable Parameters
     AP_Float _gpsHorizVelNoise;     // GPS horizontal velocity measurement noise : m/s
@@ -439,6 +431,7 @@ private:
     AP_Int16 _gpsRetryTimeNoTAS;    // GPS retry time following innovation consistency fail if no TAS measurements are used (msec)
     AP_Int16 _hgtRetryTimeMode0;    // height measurement retry time following innovation consistency fail if GPS fusion mode is = 0 (msec)
     AP_Int16 _hgtRetryTimeMode12;   // height measurement retry time following innovation consistency fail if GPS fusion mode is > 0 (msec)
+    AP_Int16 _tasRetryTime;         // true airspeed measurement retry time following innovation consistency fail (msec)
     uint32_t _magFailTimeLimit_ms;  // number of msec before a magnetometer failing innovation consistency checks is declared failed (msec)
     float _gyroBiasNoiseScaler;     // scale factor applied to gyro bias state process variance when on ground
     float _magVarRateScale;         // scale factor applied to magnetometer variance due to angular rate
@@ -455,11 +448,14 @@ private:
     bool posHealth;                 // boolean true if position measurements have passed innovation consistency check
     bool hgtHealth;                 // boolean true if height measurements have passed innovation consistency check
     bool magHealth;                 // boolean true if magnetometer has passed innovation consistency check
+    bool tasHealth;                 // boolean true if true airspeed has passed innovation consistency check
     bool velTimeout;                // boolean true if velocity measurements have failed innovation consistency check and timed out
     bool posTimeout;                // boolean true if position measurements have failed innovation consistency check and timed out
     bool hgtTimeout;                // boolean true if height measurements have failed innovation consistency check and timed out
     bool magTimeout;                // boolean true if magnetometer measurements have failed for too long and have timed out
+    bool tasTimeout;                // boolean true if true airspeed measurements have failed for too long and have timed out
     bool badMag;                    // boolean true if the magnetometer is declared to be producing bad data
+    bool badIMUdata;                // boolean true if the bad IMU data is detected
 
     float gpsNoiseScaler;           // Used to scale the  GPS measurement noise and consistency gates to compensate for operation with small satellite counts
     Vector31 Kfusion;               // Kalman gain vector
@@ -524,8 +520,7 @@ private:
     uint32_t MAGmsecPrev;           // time stamp of last compass fusion step
     uint32_t HGTmsecPrev;           // time stamp of last height measurement fusion step
     bool inhibitLoadLeveling;       // boolean that turns off delay of fusion to level processor loading
-    bool staticMode;                // boolean to force position and velocity measurements to zero for pre-arm or bench testing
-    bool prevStaticMode;            // value of static mode from last update
+    bool constPosMode;              // true when fusing a constant position to maintain attitude reference for planned operation without GPS or optical flow data
     uint32_t lastMagUpdate;         // last time compass was updated
     Vector3f velDotNED;             // rate of change of velocity in NED frame
     Vector3f velDotNEDfilt;         // low pass filtered velDotNED
@@ -538,15 +533,18 @@ private:
     bool newDataHgt;                // true when new height data has arrived
     uint32_t lastHgtMeasTime;       // time of last height measurement used to determine if new data has arrived
     uint32_t lastHgtTime_ms;        // time of last height update (msec) used to calculate timeout
+    uint16_t hgtRetryTime;          // time allowed without use of height measurements before a height timeout is declared
     uint32_t velFailTime;           // time stamp when GPS velocity measurement last failed covaraiance consistency check (msec)
     uint32_t posFailTime;           // time stamp when GPS position measurement last failed covaraiance consistency check (msec)
     uint32_t hgtFailTime;           // time stamp when height measurement last failed covaraiance consistency check (msec)
+    uint32_t tasFailTime;           // time stamp when airspeed measurement last failed covaraiance consistency check (msec)
     uint8_t storeIndex;             // State vector storage index
     uint32_t lastStateStoreTime_ms; // time of last state vector storage
     uint32_t lastFixTime_ms;        // time of last GPS fix used to determine if new data has arrived
     uint32_t timeAtLastAuxEKF_ms;   // last time the auxilliary filter was run to fuse range or optical flow measurements
     uint32_t secondLastFixTime_ms;  // time of second last GPS fix used to determine how long since last update
     uint32_t lastHealthyMagTime_ms; // time the magnetometer was last declared healthy
+    uint32_t ekfStartTime_ms;       // time the EKF was started (msec)
     Vector3f lastAngRate;           // angular rate from previous IMU sample used for trapezoidal integrator
     Vector3f lastAccel1;            // acceleration from previous IMU1 sample used for trapezoidal integrator
     Vector3f lastAccel2;            // acceleration from previous IMU2 sample used for trapezoidal integrator
@@ -571,6 +569,10 @@ private:
     bool firstArmComplete;          // true when first transition out of static mode has been performed after start up
     bool finalMagYawInit;           // true when the final post takeoff initialisation of earth field and yaw angle has been performed
     bool flowTimeout;               // true when optical flow measurements have time out
+    Vector2f gpsVelGlitchOffset;    // Offset applied to the GPS velocity when the gltch radius is being  decayed back to zero
+    bool gpsNotAvailable;           // bool true when valid GPS data is not available
+    bool vehicleArmed;              // true when the vehicle is disarmed
+    bool prevVehicleArmed;          // vehicleArmed from previous frame
 
     // Used by smoothing of state corrections
     float gpsIncrStateDelta[10];    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next GPS measurement
@@ -589,13 +591,15 @@ private:
     // variables added for optical flow fusion
     float dtIMUinv;                 // inverse of IMU time step
     bool newDataFlow;               // true when new optical flow data has arrived
-    bool flowFusePerformed;         // true when optical flow fusion has been perfomred in that time step
+    bool flowFusePerformed;         // true when optical flow fusion has been performed in that time step
+    bool flowDataValid;             // true while optical flow data is still fresh
     state_elements statesAtFlowTime;// States at the middle of the optical flow sample period
     bool fuseOptFlowData;           // this boolean causes the last optical flow measurement to be fused
     float auxFlowObsInnov[2];       // optical flow observation innovations from 2-state focal length scale factor and terrain offset estimator
     float auxFlowObsInnovVar[2];    // innovation variance for optical flow observations from 2-state focal length scale factor and terrain offset estimator
     float flowRadXYcomp[2];         // motion compensated optical flow angular rates(rad/sec)
     float flowRadXY[2];             // raw (non motion compensated) optical flow angular rates (rad/sec)
+    uint32_t flowValidMeaTime_ms;   // time stamp from latest valid flow measurement (msec)
     uint32_t flowMeaTime_ms;        // time stamp from latest flow measurement (msec)
     uint8_t flowQuality;            // unsigned integer representing quality of optical flow data. 255 is maximum quality.
     uint32_t rngMeaTime_ms;         // time stamp from latest range measurement (msec)
@@ -630,8 +634,8 @@ private:
     float flowUpdateCountMaxInv;    // floating point inverse of flowUpdateCountMax
     float flowIncrStateDelta[10];   // vector of corrections to attitude, velocity and position to be applied over the period between the current and next magnetometer measurement
     bool newDataRng;                // true when new valid range finder data has arrived.
-    bool velHoldMode;               // true when holding velocity in optical flow mode when no flow measurements are available
-    bool lastHoldVelocity;          // last value of holdVelocity
+    bool constVelMode;              // true when fusing a constant velocity to maintain attitude reference when either optical flow or GPS measurements are lost after arming
+    bool lastConstVelMode;          // last value of holdVelocity
     Vector2f heldVelNE;             // velocity held when no aiding is available
     uint16_t _msecFlowAvg;          // average number of msec between synthetic sideslip measurements
     uint8_t gpsInhibitMode;         // 1 when GPS useage is being inhibited and only attitude and height data is available
