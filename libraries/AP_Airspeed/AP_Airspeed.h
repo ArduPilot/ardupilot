@@ -188,7 +188,7 @@ private:
     float get_pressure(void);
 
     AP_Airspeed_Analog analog;
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     AP_Airspeed_PX4    digital;
 #else
     AP_Airspeed_I2C    digital;
