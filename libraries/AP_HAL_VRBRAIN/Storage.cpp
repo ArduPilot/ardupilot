@@ -176,12 +176,12 @@ void VRBRAINStorage::_storage_open(void)
  */
 void VRBRAINStorage::_mark_dirty(uint16_t loc, uint16_t length)
 {
-	uint16_t end = loc + length;
-        for (uint8_t line=loc>>VRBRAIN_STORAGE_LINE_SHIFT;
-             line <= end>>VRBRAIN_STORAGE_LINE_SHIFT;
-             line++) {
-            _dirty_mask |= 1U << line;
-        }
+    uint16_t end = loc + length;
+    for (uint8_t line=loc>>VRBRAIN_STORAGE_LINE_SHIFT;
+         line <= end>>VRBRAIN_STORAGE_LINE_SHIFT;
+         line++) {
+        _dirty_mask |= 1U << line;
+    }
 }
 
 void VRBRAINStorage::read_block(void *dst, uint16_t loc, size_t n)
@@ -260,13 +260,6 @@ void VRBRAINStorage::_timer_tick(void)
 			close(_fd);
 			_fd = -1;
 			perf_count(_perf_errors);
-		}
-		if (_dirty_mask == 0) {
-			if (fsync(_fd) != 0) {
-				close(_fd);
-				_fd = -1;
-				perf_count(_perf_errors);
-			}
 		}
 	}
 	perf_end(_perf_storage);
