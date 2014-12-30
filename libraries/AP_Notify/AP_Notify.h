@@ -28,6 +28,7 @@
 #include <NavioLED_I2C.h>
 #include <ExternalLED.h>
 #include <Buzzer.h>
+#include <VRBoard_LED.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     #define CONFIG_NOTIFY_DEVICES_COUNT 3
