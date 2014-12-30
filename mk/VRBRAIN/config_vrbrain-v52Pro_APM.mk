@@ -1,11 +1,11 @@
 #
-# Makefile for the VRBRAIN 5.1 APM configuration
+# Makefile for the VRBRAIN 5.2 APM configuration
 #
 
 #
 # Use the configuration's ROMFS.
 #
-ROMFS_ROOT	 = $(SKETCHBOOK)/mk/VRBRAIN/ROMFS_VRBRAIN51_APM
+ROMFS_ROOT	 = $(SKETCHBOOK)/mk/VRBRAIN/ROMFS_VRBRAIN52_APM
 
 MODULES		+= $(APM_MODULE_DIR)
 
@@ -20,7 +20,7 @@ MODULES		+= drivers/led
 MODULES		+= drivers/buzzer
 
 
-MODULES		+= drivers/boards/vrbrain-v51
+MODULES		+= drivers/boards/vrbrain-v52Pro
 MODULES		+= drivers/vrbrain/vroutput
 MODULES		+= drivers/vrbrain/vrinput/controls
 MODULES		+= drivers/vrbrain/vrinput

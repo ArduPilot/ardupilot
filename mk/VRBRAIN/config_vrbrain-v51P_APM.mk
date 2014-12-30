@@ -20,7 +20,7 @@ MODULES		+= drivers/led
 MODULES		+= drivers/buzzer
 
 
-MODULES		+= drivers/boards/vrbrain-v51
+MODULES		+= drivers/boards/vrbrain-v51P
 MODULES		+= drivers/vrbrain/vroutput
 MODULES		+= drivers/vrbrain/vrinput/controls
 MODULES		+= drivers/vrbrain/vrinput
