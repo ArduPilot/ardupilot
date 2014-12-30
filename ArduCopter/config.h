@@ -394,28 +394,6 @@
   # define OPTFLOW       DISABLED
  #endif
 #endif
-// optical flow based loiter PI values
-#ifndef OPTFLOW_ROLL_P
- #define OPTFLOW_ROLL_P 2.5f
-#endif
-#ifndef OPTFLOW_ROLL_I
- #define OPTFLOW_ROLL_I 0.5f
-#endif
-#ifndef OPTFLOW_ROLL_D
- #define OPTFLOW_ROLL_D 0.12f
-#endif
-#ifndef OPTFLOW_PITCH_P
- #define OPTFLOW_PITCH_P 2.5f
-#endif
-#ifndef OPTFLOW_PITCH_I
- #define OPTFLOW_PITCH_I 0.5f
-#endif
-#ifndef OPTFLOW_PITCH_D
- #define OPTFLOW_PITCH_D 0.12f
-#endif
-#ifndef OPTFLOW_IMAX
- #define OPTFLOW_IMAX 100
-#endif
 
 //////////////////////////////////////////////////////////////////////////////
 //  Auto Tuning
