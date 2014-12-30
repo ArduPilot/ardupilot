@@ -4,7 +4,7 @@
 #define __AP_INERTIAL_SENSOR_PX4_H__
 
 #include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 
 #include <AP_Progmem.h>
 #include "AP_InertialSensor.h"
