@@ -909,6 +909,11 @@ void NavEKF::SelectFlowFusion()
     // if we don't have valid flow measurements and are not using GPS, dead reckon using current velocity vector unless we are in positon hold mode
     if (!flowDataValid && !constPosMode && PV_AidingMode == RELATIVE) {
         constVelMode = true;
+        constPosMode = false; // always clear constant position mode if constant velocity mode is active
+    } else if (flowDataValid) {
+        // clear the constant velocity mode now we have good data
+        constVelMode = false;
+        lastConstVelMode = false;
     }
     // Apply tilt check
     bool tiltOK = (Tnb_flow.c.z > DCM33FlowMin);
@@ -4094,9 +4099,6 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
         flowRadXYcomp[1] = flowStates[0]*flowRadXY[1] + omegaAcrossFlowTime.y;
         // set flag that will trigger observations
         newDataFlow = true;
-        // clear the constant velocity mode now we have good data
-        constVelMode = false;
-        lastConstVelMode = false;
         flowValidMeaTime_ms = imuSampleTime_ms;
     } else {
         newDataFlow = false;
