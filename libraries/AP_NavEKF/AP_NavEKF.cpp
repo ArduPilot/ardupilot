@@ -751,6 +751,7 @@ void NavEKF::SelectVelPosFusion()
             if (vehicleArmed && !useAirspeed() && !assume_zero_sideslip()) {
                 constVelMode = true;
                 constPosMode = false; // always clear constant position mode if constant velocity mode is active
+                PV_AidingMode = NONE;
             }
         }
 
