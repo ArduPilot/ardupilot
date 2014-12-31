@@ -33,12 +33,11 @@
 #define POSCONTROL_LEASH_LENGTH_MIN             100.0f  // minimum leash lengths in cm
 
 #define POSCONTROL_DT_10HZ                      0.10f   // time difference in seconds for 10hz update rate
+#define POSCONTROL_DT_50HZ                      0.02f   // time difference in seconds for 50hz update rate
 
 #define POSCONTROL_ACTIVE_TIMEOUT_MS            200     // position controller is considered active if it has been called within the past 200ms (0.2 seconds)
 
 #define POSCONTROL_ACCEL_Z_DTERM_FILTER         20      // Z axis accel controller's D term filter (in hz)
-
-#define POSCONTROL_VEL_UPDATE_TIME              0.020f  // 50hz update rate on high speed CPUs (Pixhawk, Flymaple)
 
 #define POSCONTROL_VEL_ERROR_CUTOFF_FREQ        4.0     // 4hz low-pass filter on velocity error
 #define POSCONTROL_ACCEL_ERROR_CUTOFF_FREQ      2.0     // 2hz low-pass filter on accel error
@@ -61,6 +60,9 @@ public:
     ///     updates z axis accel controller's D term filter
     void set_dt(float delta_sec);
     float get_dt() const { return _dt; }
+
+    void set_dt_xy(float dt_xy) { _dt_xy = dt_xy; }
+    float get_dt_xy() const { return _dt_xy; }
 
     ///
     /// z position controller
@@ -152,7 +154,7 @@ public:
     ///     sets target roll angle, pitch angle and I terms based on vehicle current lean angles
     ///     should be called once whenever significant changes to the position target are made
     ///     this does not update the xy target
-    void init_xy_controller();
+    void init_xy_controller(bool reset_I = true);
 
     /// set_accel_xy - set horizontal acceleration in cm/s/s
     ///     leash length will be recalculated the next time update_xy_controller() is called
@@ -242,15 +244,14 @@ public:
     /// get_pos_xy_kP - returns xy position controller's kP gain
     float get_pos_xy_kP() const { return _p_pos_xy.kP(); }
 
-    /// keep_xy_I_terms - ensure xy position controller's PID's I terms are not cleared when the xy controller is next run.  Reset automatically back to zero in update_xy_controller.
-    void keep_xy_I_terms() { _flags.keep_xy_I_terms = true; }
-
     /// accessors for reporting
     const Vector3f& get_vel_target() const { return _vel_target; }
     const Vector3f& get_accel_target() const { return _accel_target; }
 
     // lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
     void lean_angles_to_accel(float& accel_x_cmss, float& accel_y_cmss) const;
+
+    float time_since_last_xy_update() const;
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -262,7 +263,6 @@ private:
             uint8_t recalc_leash_xy : 1;    // 1 if we should recalculate the xy axis leash length
             uint8_t force_recalc_xy : 1;    // 1 if we want the xy position controller to run at it's next possible time.  set by loiter and wp controllers after they have updated the target position.
             uint8_t slow_cpu        : 1;    // 1 if we are running on a slow_cpu machine.  xy position control is broken up into multiple steps
-            uint8_t keep_xy_I_terms : 1;    // 1 if we are to keep I terms when the position controller is next run.  Reset automatically back to zero in update_xy_controller.
             uint8_t reset_desired_vel_to_pos: 1;    // 1 if we should reset the rate_to_accel_xy step
             uint8_t reset_rate_to_accel_xy  : 1;    // 1 if we should reset the rate_to_accel_xy step
             uint8_t reset_rate_to_accel_z   : 1;    // 1 if we should reset the rate_to_accel_z step
@@ -317,7 +317,7 @@ private:
 
     /// accel_to_lean_angles - horizontal desired acceleration to lean angles
     ///    converts desired accelerations provided in lat/lon frame to roll/pitch angles
-    void accel_to_lean_angles(float ekfNavVelGainScaler);
+    void accel_to_lean_angles(float dt_xy, float ekfNavVelGainScaler);
 
     /// calc_leash_length - calculates the horizontal leash length given a maximum speed, acceleration and position kP gain
     float calc_leash_length(float speed_cms, float accel_cms, float kP) const;
@@ -341,9 +341,9 @@ private:
 
     // internal variables
     float       _dt;                    // time difference (in seconds) between calls from the main program
+    float       _dt_xy;                 // time difference (in seconds) between update_xy_controller and update_vel_controller_xyz calls
     uint32_t    _last_update_xy_ms;     // system time of last update_xy_controller call
     uint32_t    _last_update_z_ms;      // system time of last update_z_controller call
-    uint32_t    _last_update_vel_xyz_ms;// system time of last update_vel_controller_xyz call
     float       _speed_down_cms;        // max descent rate in cm/s
     float       _speed_up_cms;          // max climb rate in cm/s
     float       _speed_cms;             // max horizontal speed in cm/s
@@ -369,12 +369,7 @@ private:
     Vector3f    _accel_feedforward;     // feedforward acceleration in cm/s/s
     float       _alt_max;               // max altitude - should be updated from the main code with altitude limit from fence
     float       _distance_to_target;    // distance to position target - for reporting only
-    uint8_t     _xy_step;               // used to decide which portion of horizontal position controller to run during this iteration
-    float       _dt_xy;                 // time difference in seconds between horizontal position updates
     LowPassFilterFloat _vel_error_filter;   // low-pass-filter on z-axis velocity error
     LowPassFilterFloat _accel_error_filter; // low-pass-filter on z-axis accelerometer error
-
-    // velocity controller internal variables
-    uint8_t     _vel_xyz_step;          // used to decide which portion of velocity controller to run during this iteration
 };
 #endif	// AC_POSCONTROL_H
