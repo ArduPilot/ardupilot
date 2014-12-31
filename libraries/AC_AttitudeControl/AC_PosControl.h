@@ -61,6 +61,7 @@ public:
     void set_dt(float delta_sec);
     float get_dt() const { return _dt; }
 
+    /// set_dt_xy - sets time delta in seconds for horizontal controller (i.e. 50hz = 0.02)
     void set_dt_xy(float dt_xy) { _dt_xy = dt_xy; }
     float get_dt_xy() const { return _dt_xy; }
 
@@ -251,6 +252,7 @@ public:
     // lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
     void lean_angles_to_accel(float& accel_x_cmss, float& accel_y_cmss) const;
 
+    // time_since_last_xy_update - returns time in seconds since the horizontal position controller was last run
     float time_since_last_xy_update() const;
 
     static const struct AP_Param::GroupInfo var_info[];
