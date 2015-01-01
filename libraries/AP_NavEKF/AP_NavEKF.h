@@ -638,9 +638,11 @@ private:
     bool lastConstVelMode;          // last value of holdVelocity
     Vector2f heldVelNE;             // velocity held when no aiding is available
     uint16_t _msecFlowAvg;          // average number of msec between synthetic sideslip measurements
-    uint8_t gpsInhibitMode;         // 1 when GPS useage is being inhibited and only attitude and height data is available
-                                    // 2 when GPS useage is being inhibited and attitude, height, velocity and relative position is available
-                                    // 0 when GPS is being used
+    uint8_t PV_AidingMode;          // Defines the preferred mode for aiding of velocity and position estimates from the INS
+    enum {ABSOLUTE=0,               // GPS aiding is being used (optical flow may also be used) so position estimates are absolute.
+          NONE=1,                   // no aiding is being used so only attitude and height estimates are available. Either constVelMode or constPosMode must be used to constrain tilt drift.
+          RELATIVE=2                // only optical flow aiding is being used so position estimates will be relative
+         };
 
     // states held by optical flow fusion across time steps
     // optical flow X,Y motion compensated rate measurements are fused across two time steps
