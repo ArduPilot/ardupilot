@@ -1116,7 +1116,10 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info)
     AP_Param *ap2;
     ap2 = find_P((const prog_char_t *)&info->new_name[0], &ptype);
     if (ap2 == NULL) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat"
         hal.console->printf_P(PSTR("Unknown conversion '%S'\n"), info->new_name);
+#pragma GCC diagnostic pop
         return;
     }
 
@@ -1146,7 +1149,10 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info)
         }
     } else {
         // can't do vector<->scalar conversion, or different vector types
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat"
         hal.console->printf_P(PSTR("Bad conversion type '%S'\n"), info->new_name);
+#pragma GCC diagnostic pop
     }
 }
 
