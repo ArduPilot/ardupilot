@@ -337,7 +337,7 @@ private:
     Quaternion calcQuatAndFieldStates(float roll, float pitch);
 
     // zero stored variables
-    void ZeroVariables();
+    void InitialiseVariables();
 
     // reset the horizontal position states uing the last GPS measurement
     void ResetPosition(void);
@@ -421,26 +421,34 @@ private:
     AP_Int8 _fallback;              // EKF-to-DCM fallback strictness. 0 = trust EKF more, 1 = fallback more conservatively.
 
     // Tuning parameters
-    AP_Float _gpsNEVelVarAccScale;  // scale factor applied to NE velocity measurement variance due to Vdot
-    AP_Float _gpsDVelVarAccScale;   // scale factor applied to D velocity measurement variance due to Vdot
-    AP_Float _gpsPosVarAccScale;    // scale factor applied to position measurement variance due to Vdot
-    AP_Int16 _msecHgtDelay;         // effective average delay of height measurements rel to (msec)
-    AP_Int16 _msecMagDelay;         // effective average delay of magnetometer measurements rel to IMU (msec)
-    AP_Int16 _msecTasDelay;         // effective average delay of airspeed measurements rel to IMU (msec)
-    AP_Int16 _gpsRetryTimeUseTAS;   // GPS retry time following innovation consistency fail if TAS measurements are used (msec)
-    AP_Int16 _gpsRetryTimeNoTAS;    // GPS retry time following innovation consistency fail if no TAS measurements are used (msec)
-    AP_Int16 _hgtRetryTimeMode0;    // height measurement retry time following innovation consistency fail if GPS fusion mode is = 0 (msec)
-    AP_Int16 _hgtRetryTimeMode12;   // height measurement retry time following innovation consistency fail if GPS fusion mode is > 0 (msec)
-    AP_Int16 _tasRetryTime;         // true airspeed measurement retry time following innovation consistency fail (msec)
-    uint32_t _magFailTimeLimit_ms;  // number of msec before a magnetometer failing innovation consistency checks is declared failed (msec)
-    float _gyroBiasNoiseScaler;     // scale factor applied to gyro bias state process variance when on ground
-    float _magVarRateScale;         // scale factor applied to magnetometer variance due to angular rate
-    uint16_t _msecGpsAvg;           // average number of msec between GPS measurements
-    uint16_t _msecHgtAvg;           // average number of msec between height measurements
-    uint16_t _msecMagAvg;           // average number of msec between magnetometer measurements
-    uint16_t _msecBetaAvg;          // Average number of msec between synthetic sideslip measurements
-    uint16_t _msecBetaMax;          // maximum number of msec between synthetic sideslip measurements
-    float dtVelPos;                 // average of msec between position and velocity corrections
+    const float gpsNEVelVarAccScale;    // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
+    const float gpsDVelVarAccScale;     // Scale factor applied to vertical velocity measurement variance due to manoeuvre acceleration
+    const float gpsPosVarAccScale;      // Scale factor applied to horizontal position measurement variance due to manoeuvre acceleration
+    const float msecHgtDelay;           // Height measurement delay (msec)
+    const uint16_t msecMagDelay;        // Magnetometer measurement delay (msec)
+    const uint16_t msecTasDelay;        // Airspeed measurement delay (msec)
+    const uint16_t gpsRetryTimeUseTAS;  // GPS retry time with airspeed measurements (msec)
+    const uint16_t gpsRetryTimeNoTAS;   // GPS retry time without airspeed measurements (msec)
+    const uint16_t hgtRetryTimeMode0;   // Height retry time with vertical velocity measurement (msec)
+    const uint16_t hgtRetryTimeMode12;  // Height retry time without vertical velocity measurement (msec)
+    const uint16_t tasRetryTime;        // True airspeed timeout and retry interval (msec)
+    const uint32_t magFailTimeLimit_ms; // number of msec before a magnetometer failing innovation consistency checks is declared failed (msec)
+    const float magVarRateScale;        // scale factor applied to magnetometer variance due to angular rate
+    const float gyroBiasNoiseScaler;    // scale factor applied to gyro bias state process noise when on ground
+    const uint16_t msecGpsAvg;          // average number of msec between GPS measurements
+    const uint16_t msecHgtAvg;          // average number of msec between height measurements
+    const uint16_t msecMagAvg;          // average number of msec between magnetometer measurements
+    const uint16_t msecBetaAvg;         // average number of msec between synthetic sideslip measurements
+    const uint16_t msecBetaMax;         // maximum number of msec between synthetic sideslip measurements
+    const uint16_t msecFlowAvg;         // average number of msec between optical flow measurements
+    const float dtVelPos;               // number of seconds between position and velocity corrections. This should be a multiple of the imu update interval.
+    const float covTimeStepMax;         // maximum time (sec) between covariance prediction updates
+    const float covDelAngMax;           // maximum delta angle between covariance prediction updates
+    const uint32_t TASmsecMax;          // maximum allowed interval between airspeed measurement updates
+    const float DCM33FlowMin;           // If Tbn(3,3) is less than this number, optical flow measurements will not be fused as tilt is too high.
+    const float fScaleFactorPnoise;     // Process noise added to focal length scale factor state variance at each time step
+    const uint8_t flowTimeDeltaAvg_ms;  // average interval between optical flow measurements (msec)
+    const uint32_t flowIntervalMax_ms;  // maximum allowable time between flow fusion events
 
     // Variables
     bool statesInitialised;         // boolean true when filter states have been initialised
@@ -507,8 +515,6 @@ private:
     bool fuseVtasData;              // boolean true when airspeed data is to be fused
     float VtasMeas;                 // true airspeed measurement (m/s)
     state_elements statesAtVtasMeasTime;  // filter states at the effective measurement time
-    const ftype covTimeStepMax;     // maximum time allowed between covariance predictions
-    const ftype covDelAngMax;       // maximum delta angle between covariance predictions
     bool covPredStep;               // boolean set to true when a covariance prediction step has been performed
     bool magFusePerformed;          // boolean set to true when magnetometer fusion has been perfomred in that time step
     bool magFuseRequired;           // boolean set to true when magnetometer fusion will be perfomred in the next time step
@@ -516,7 +522,6 @@ private:
     bool tasFuseStep;               // boolean set to true when airspeed fusion is being performed
     uint32_t TASmsecPrev;           // time stamp of last TAS fusion step
     uint32_t BETAmsecPrev;          // time stamp of last synthetic sideslip fusion step
-    const uint32_t TASmsecMax;      // maximum allowed interval between TAS fusion steps
     uint32_t MAGmsecPrev;           // time stamp of last compass fusion step
     uint32_t HGTmsecPrev;           // time stamp of last height measurement fusion step
     bool inhibitLoadLeveling;       // boolean that turns off delay of fusion to level processor loading
@@ -603,14 +608,11 @@ private:
     uint32_t flowMeaTime_ms;        // time stamp from latest flow measurement (msec)
     uint8_t flowQuality;            // unsigned integer representing quality of optical flow data. 255 is maximum quality.
     uint32_t rngMeaTime_ms;         // time stamp from latest range measurement (msec)
-    float DCM33FlowMin;             // If Tbn(3,3) is less than this number, optical flow measurements will not be fused as tilt is too high.
-    float fScaleFactorPnoise;       // Process noise added to focal length scale factor state variance at each time step
     Vector3f omegaAcrossFlowTime;   // body angular rates averaged across the optical flow sample period
     Matrix3f Tnb_flow;              // transformation matrix from nav to body axes at the middle of the optical flow sample period
     Matrix3f Tbn_flow;              // transformation matrix from body to nav axes at the middle of the optical flow sample period
     float varInnovOptFlow[2];       // optical flow innovations variances (rad/sec)^2
     float innovOptFlow[2];          // optical flow LOS innovations (rad/sec)
-    uint8_t flowTimeDeltaAvg_ms;    // average interval between optical flow measurements (msec)
     float Popt[2][2];               // state covariance matrix
     float flowStates[2];            // flow states [scale factor, terrain position]
     float prevPosN;                 // north position at last measurement
@@ -622,7 +624,6 @@ private:
     float rngMea;                   // range finder measurement (m)
     bool inhibitGndState;           // true when the terrain position state is to remain constant
     uint32_t prevFlowFusionTime_ms; // time the last flow measurement was fused
-    uint32_t flowIntervalMax_ms;    // maximum allowable time between flow fusion events
     bool fScaleInhibit;             // true when the focal length scale factor is to remain constant
     float flowTestRatio[2];         // square of optical flow innovations divided by fail threshold used by main filter where >1.0 is a fail
     float auxFlowTestRatio[2];      // sum of squares of optical flow innovations divided by fail threshold used by aux filter
@@ -637,7 +638,6 @@ private:
     bool constVelMode;              // true when fusing a constant velocity to maintain attitude reference when either optical flow or GPS measurements are lost after arming
     bool lastConstVelMode;          // last value of holdVelocity
     Vector2f heldVelNE;             // velocity held when no aiding is available
-    uint16_t _msecFlowAvg;          // average number of msec between synthetic sideslip measurements
     uint8_t PV_AidingMode;          // Defines the preferred mode for aiding of velocity and position estimates from the INS
     enum {ABSOLUTE=0,               // GPS aiding is being used (optical flow may also be used) so position estimates are absolute.
           NONE=1,                   // no aiding is being used so only attitude and height estimates are available. Either constVelMode or constPosMode must be used to constrain tilt drift.
