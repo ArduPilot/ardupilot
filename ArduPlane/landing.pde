@@ -154,11 +154,10 @@ static void setup_landing_glide_slope(void)
         target_altitude.offset_cm = loc.alt - prev_WP_loc.alt;
 
         // calculate the proportion we are to the target
-        float land_distance = get_distance(current_loc, loc);
-        float land_total_distance = get_distance(prev_WP_loc, loc);
+        float land_proportion = location_path_proportion(current_loc, prev_WP_loc, loc);
 
         // now setup the glide slope for landing
-        set_target_altitude_proportion(loc, land_distance / land_total_distance);
+        set_target_altitude_proportion(loc, 1.0f - land_proportion);
 
         // stay within the range of the start and end locations in altitude
         constrain_target_altitude_location(loc, prev_WP_loc);

@@ -334,7 +334,7 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
         nav_pitch_cd * 0.01,
         nav_controller->nav_bearing_cd() * 0.01f,
         nav_controller->target_bearing_cd() * 0.01f,
-        wp_distance,
+        auto_state.wp_distance,
         altitude_error_cm * 0.01,
         airspeed_error_cm,
         nav_controller->crosstrack_error());

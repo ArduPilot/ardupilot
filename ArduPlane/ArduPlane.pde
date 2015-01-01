@@ -565,6 +565,12 @@ static struct {
 
     // time when we first pass min GPS speed on takeoff
     uint32_t takeoff_speed_time_ms;
+
+    // distance to next waypoint
+    float wp_distance;
+
+    // proportion to next waypoint
+    float wp_proportion;
 } auto_state = {
     takeoff_complete : true,
     land_complete : false,
@@ -635,15 +641,6 @@ AP_Terrain terrain(ahrs, mission, rally);
 #if OBC_FAILSAFE == ENABLED
 APM_OBC obc(mission, barometer, gps, rcmap);
 #endif
-
-////////////////////////////////////////////////////////////////////////////////
-// Waypoint distances
-////////////////////////////////////////////////////////////////////////////////
-// Distance between plane and next waypoint.  Meters
-static uint32_t wp_distance;
-
-// Distance between previous and next waypoint.  Meters
-static uint32_t wp_totalDistance;
 
 /*
   meta data to support counting the number of circles in a loiter
