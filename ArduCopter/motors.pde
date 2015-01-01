@@ -14,7 +14,7 @@ static void arm_motors_check()
     static int16_t arming_counter;
 
     // ensure throttle is down
-    if (g.rc_3.control_in > 0) {
+    if (g.rc_3.control_in > 0 && !ap.throttle_disengaged) {
         arming_counter = 0;
         return;
     }
@@ -578,6 +578,18 @@ static bool arm_checks(bool display_failure, bool arming_from_gcs)
     if (g.arming_check == ARMING_CHECK_NONE) {
         return true;
     }
+
+    // check throttle is down
+    if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_RC)) {
+        if (g.rc_3.control_in > 0 && !manual_flight_mode(control_mode)) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Throttle too high"));
+            }
+            return false;
+        }
+    }
+ 
+    // check Baro & inav alt are within 1m
 
         // check Baro & inav alt are within 1m
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_BARO)) {

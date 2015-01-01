@@ -251,6 +251,7 @@ static bool manual_flight_mode(uint8_t mode) {
     switch(mode) {
         case ACRO:
         case STABILIZE:
+        case DRIFT:
             return true;
         default:
             return false;
