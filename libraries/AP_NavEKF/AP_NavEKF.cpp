@@ -362,21 +362,39 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
-
 // constructor
 NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     _ahrs(ahrs),
     _baro(baro),
     state(*reinterpret_cast<struct state_elements *>(&states)),
-    onGround(true),             // initialise assuming we are on ground
-    manoeuvring(false),         // initialise assuming we are not maneouvring
-    covTimeStepMax(0.07f),      // maximum time (sec) between covariance prediction updates
-    covDelAngMax(0.05f),        // maximum delta angle between covariance prediction updates
-    TASmsecMax(200),            // maximum allowed interval between airspeed measurement updates
-    constPosMode(true),          // forces position fusion with zero values
-    yawAligned(false),          // set true when heading or yaw angle has been aligned
-    inhibitWindStates(true),    // inhibit wind state updates on startup
-    inhibitMagStates(true)      // inhibit magnetometer state updates on startup
+    gpsNEVelVarAccScale(0.05f),     // Scale factor applied to horizontal velocity measurement variance due to manoeuvre acceleration
+    gpsDVelVarAccScale(0.07f),      // Scale factor applied to vertical velocity measurement variance due to manoeuvre acceleration
+    gpsPosVarAccScale(0.05f),       // Scale factor applied to horizontal position measurement variance due to manoeuvre acceleration
+    msecHgtDelay(60),               // Height measurement delay (msec)
+    msecMagDelay(40),               // Magnetometer measurement delay (msec)
+    msecTasDelay(240),              // Airspeed measurement delay (msec)
+    gpsRetryTimeUseTAS(10000),      // GPS retry time with airspeed measurements (msec)
+    gpsRetryTimeNoTAS(10000),       // GPS retry time without airspeed measurements (msec)
+    hgtRetryTimeMode0(10000),       // Height retry time with vertical velocity measurement (msec)
+    hgtRetryTimeMode12(5000),       // Height retry time without vertical velocity measurement (msec)
+    tasRetryTime(5000),             // True airspeed timeout and retry interval (msec)
+    magFailTimeLimit_ms(10000),     // number of msec before a magnetometer failing innovation consistency checks is declared failed (msec)
+    magVarRateScale(0.05f),         // scale factor applied to magnetometer variance due to angular rate
+    gyroBiasNoiseScaler(2.0f),      // scale factor applied to gyro bias state process noise when on ground
+    msecGpsAvg(200),                // average number of msec between GPS measurements
+    msecHgtAvg(100),                // average number of msec between height measurements
+    msecMagAvg(100),                // average number of msec between magnetometer measurements
+    msecBetaAvg(100),               // average number of msec between synthetic sideslip measurements
+    msecBetaMax(200),               // maximum number of msec between synthetic sideslip measurements
+    msecFlowAvg(100),               // average number of msec between optical flow measurements
+    dtVelPos(0.2f),                 // number of seconds between position and velocity corrections. This should be a multiple of the imu update interval.
+    covTimeStepMax(0.07f),          // maximum time (sec) between covariance prediction updates
+    covDelAngMax(0.05f),            // maximum delta angle between covariance prediction updates
+    TASmsecMax(200),                // maximum allowed interval between airspeed measurement updates
+    DCM33FlowMin(0.71f),            // If Tbn(3,3) is less than this number, optical flow measurements will not be fused as tilt is too high.
+    fScaleFactorPnoise(1e-10f),     // Process noise added to focal length scale factor state variance at each time step
+    flowTimeDeltaAvg_ms(100),       // average interval between optical flow measurements (msec)
+    flowIntervalMax_ms(200)         // maximum allowable time between flow fusion events
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     ,_perf_UpdateFilter(perf_alloc(PC_ELAPSED, "EKF_UpdateFilter")),
@@ -388,40 +406,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
 #endif
 {
     AP_Param::setup_object_defaults(this, var_info);
-    // Tuning parameters
-    _gpsNEVelVarAccScale    = 0.05f;    // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
-    _gpsDVelVarAccScale     = 0.07f;    // Scale factor applied to vertical velocity measurement variance due to manoeuvre acceleration
-    _gpsPosVarAccScale      = 0.05f;    // Scale factor applied to horizontal position measurement variance due to manoeuvre acceleration
-    _msecHgtDelay           = 60;       // Height measurement delay (msec)
-    _msecMagDelay           = 40;       // Magnetometer measurement delay (msec)
-    _msecTasDelay           = 240;      // Airspeed measurement delay (msec)
-    _gpsRetryTimeUseTAS     = 10000;    // GPS retry time with airspeed measurements (msec)
-    _gpsRetryTimeNoTAS      = 10000;    // GPS retry time without airspeed measurements (msec)
-    _hgtRetryTimeMode0      = 10000;    // Height retry time with vertical velocity measurement (msec)
-    _hgtRetryTimeMode12     = 5000;     // Height retry time without vertical velocity measurement (msec)
-    _tasRetryTime           = 5000;     // True airspeed timeout and retry interval (msec)
-    _magFailTimeLimit_ms    = 10000;    // number of msec before a magnetometer failing innovation consistency checks is declared failed (msec)
-    _magVarRateScale        = 0.05f;    // scale factor applied to magnetometer variance due to angular rate
-    _gyroBiasNoiseScaler    = 2.0f;     // scale factor applied to gyro bias state process noise when on ground
-    _msecGpsAvg             = 200;      // average number of msec between GPS measurements
-    _msecHgtAvg             = 100;      // average number of msec between height measurements
-    _msecMagAvg             = 100;      // average number of msec between magnetometer measurements
-    _msecBetaAvg            = 100;      // average number of msec between synthetic sideslip measurements
-    _msecBetaMax            = 200;      // maximum number of msec between synthetic sideslip measurements
-    _msecFlowAvg            = 100;      // average number of msec between optical flow measurements
-    dtVelPos                = 0.2;      // number of seconds between position and velocity corrections. This should be a multiple of the imu update interval.
 
-    // Misc initial conditions
-    hgtRate = 0.0f;
-    mag_state.q0 = 1;
-    mag_state.DCM.identity();
-    IMU1_weighting = 0.5f;
-    memset(&faultStatus, 0, sizeof(faultStatus));
-    // variables added for optical flow fusion
-    DCM33FlowMin = 0.71f;           // If Tbn(3,3) is less than this number, optical flow measurements will not be fused as tilt is too high.
-    fScaleFactorPnoise = 1e-10f;    // Process noise added to focal length scale factor state variance at each time step
-    flowTimeDeltaAvg_ms = 100;      // average interval between optical flow measurements (msec)
-    flowIntervalMax_ms = 200;       // maximum allowable time between flow fusion events
 }
 
 // Check basic filter health metrics and return a consolidated health status
@@ -453,7 +438,7 @@ bool NavEKF::healthy(void) const
 // resets position states to last GPS measurement or to zero if in constant position mode
 void NavEKF::ResetPosition(void)
 {
-    if (constPosMode || gpsInhibitMode != 0) {
+    if (constPosMode || (PV_AidingMode != ABSOLUTE)) {
         state.position.x = 0;
         state.position.y = 0;
     } else if (!gpsNotAvailable) {
@@ -468,11 +453,11 @@ void NavEKF::ResetPosition(void)
     }
 }
 
-// Reset velocity states to last GPS measurement if available or to zero if in constant position mode
+// Reset velocity states to last GPS measurement if available or to zero if in constant position mode or if PV aiding is not absolute
 // Do not reset vertical velocity using GPS as there is baro alt available to constrain drift
 void NavEKF::ResetVelocity(void)
 {
-    if (constPosMode || gpsInhibitMode != 0) {
+    if (constPosMode || PV_AidingMode != ABSOLUTE) {
          state.velocity.zero();
          state.vel1.zero();
          state.vel2.zero();
@@ -517,7 +502,7 @@ void NavEKF::InitialiseFilterDynamic(void)
     statesInitialised = false;
 
     // Set re-used variables to zero
-    ZeroVariables();
+    InitialiseVariables();
 
     // get initial time deltat between IMU measurements (sec)
     dtIMU = constrain_float(_ahrs->get_ins().get_delta_time(),0.001f,1.0f);
@@ -530,13 +515,13 @@ void NavEKF::InitialiseFilterDynamic(void)
         inhibitLoadLeveling = true;
     }
     // set number of updates over which gps and baro measurements are applied to the velocity and position states
-    gpsUpdateCountMaxInv = (dtIMU * 1000.0f)/float(_msecGpsAvg);
+    gpsUpdateCountMaxInv = (dtIMU * 1000.0f)/float(msecGpsAvg);
     gpsUpdateCountMax = uint8_t(1.0f/gpsUpdateCountMaxInv);
-    hgtUpdateCountMaxInv = (dtIMU * 1000.0f)/float(_msecHgtAvg);
+    hgtUpdateCountMaxInv = (dtIMU * 1000.0f)/float(msecHgtAvg);
     hgtUpdateCountMax = uint8_t(1.0f/hgtUpdateCountMaxInv);
-    magUpdateCountMaxInv = (dtIMU * 1000.0f)/float(_msecMagAvg);
+    magUpdateCountMaxInv = (dtIMU * 1000.0f)/float(msecMagAvg);
     magUpdateCountMax = uint8_t(1.0f/magUpdateCountMaxInv);
-    flowUpdateCountMaxInv = (dtIMU * 1000.0f)/float(_msecFlowAvg);
+    flowUpdateCountMaxInv = (dtIMU * 1000.0f)/float(msecFlowAvg);
     flowUpdateCountMax = uint8_t(1.0f/flowUpdateCountMaxInv);
 
     // calculate initial orientation and earth magnetic field states
@@ -578,7 +563,7 @@ void NavEKF::InitialiseFilterDynamic(void)
 void NavEKF::InitialiseFilterBootstrap(void)
 {
     // set re-used variables to zero
-    ZeroVariables();
+    InitialiseVariables();
 
     // get initial time deltat between IMU measurements (sec)
     dtIMU = constrain_float(_ahrs->get_ins().get_delta_time(),0.001f,1.0f);
@@ -592,11 +577,11 @@ void NavEKF::InitialiseFilterBootstrap(void)
     }
 
     // set number of updates over which gps and baro measurements are applied to the velocity and position states
-    gpsUpdateCountMaxInv = (dtIMU * 1000.0f)/float(_msecGpsAvg);
+    gpsUpdateCountMaxInv = (dtIMU * 1000.0f)/float(msecGpsAvg);
     gpsUpdateCountMax = uint8_t(1.0f/gpsUpdateCountMaxInv);
-    hgtUpdateCountMaxInv = (dtIMU * 1000.0f)/float(_msecHgtAvg);
+    hgtUpdateCountMaxInv = (dtIMU * 1000.0f)/float(msecHgtAvg);
     hgtUpdateCountMax = uint8_t(1.0f/hgtUpdateCountMaxInv);
-    magUpdateCountMaxInv = (dtIMU * 1000.0f)/float(_msecMagAvg);
+    magUpdateCountMaxInv = (dtIMU * 1000.0f)/float(msecMagAvg);
     magUpdateCountMax = uint8_t(1.0f/magUpdateCountMaxInv);
 
     // acceleration vector in XYZ body axes measured by the IMU (m/s^2)
@@ -741,7 +726,7 @@ void NavEKF::SelectVelPosFusion()
         readGpsData();
 
         // Set GPS time-out threshold depending on whether we have an airspeed sensor to constrain drift
-        uint32_t gpsRetryTimeout = useAirspeed() ? _gpsRetryTimeUseTAS : _gpsRetryTimeNoTAS;
+        uint16_t gpsRetryTimeout = useAirspeed() ? gpsRetryTimeUseTAS : gpsRetryTimeNoTAS;
 
         // If we haven't received GPS data for a while, then declare the position and velocity data as being timed out
         if (imuSampleTime_ms - lastFixTime_ms > gpsRetryTimeout) {
@@ -751,6 +736,7 @@ void NavEKF::SelectVelPosFusion()
             if (vehicleArmed && !useAirspeed() && !assume_zero_sideslip()) {
                 constVelMode = true;
                 constPosMode = false; // always clear constant position mode if constant velocity mode is active
+                PV_AidingMode = NONE;
             }
         }
 
@@ -762,7 +748,7 @@ void NavEKF::SelectVelPosFusion()
             memset(&gpsIncrStateDelta[0], 0, sizeof(gpsIncrStateDelta));
             gpsUpdateCount = 0;
             // select which of velocity and position measurements will be fused
-            if (gpsInhibitMode == 0) {
+            if (PV_AidingMode == ABSOLUTE) {
                 // use both if GPS use is enabled
                 fuseVelData = true;
                 fusePosData = true;
@@ -819,7 +805,7 @@ void NavEKF::SelectVelPosFusion()
 
     // If we haven't received height data for a while, then declare the height data as being timed out
     // set timeout period based on whether we have vertical GPS velocity available to constrain drift
-    hgtRetryTime = (_fusionModeGPS == 0 && !velTimeout) ? _hgtRetryTimeMode0 : _hgtRetryTimeMode12;
+    hgtRetryTime = (_fusionModeGPS == 0 && !velTimeout) ? hgtRetryTimeMode0 : hgtRetryTimeMode12;
     if (imuSampleTime_ms - lastHgtMeasTime > hgtRetryTime) {
         hgtTimeout = true;
     }
@@ -868,7 +854,7 @@ void NavEKF::SelectMagFusion()
     if (magHealth) {
         magTimeout = false;
         lastHealthyMagTime_ms = imuSampleTime_ms;
-    } else if ((imuSampleTime_ms - lastHealthyMagTime_ms) > _magFailTimeLimit_ms && use_compass()) {
+    } else if ((imuSampleTime_ms - lastHealthyMagTime_ms) > magFailTimeLimit_ms && use_compass()) {
         magTimeout = true;
     }
 
@@ -906,8 +892,13 @@ void NavEKF::SelectFlowFusion()
     // Check if the optical flow data is still valid
     flowDataValid = (imuSampleTime_ms - flowValidMeaTime_ms < 200);
     // if we don't have valid flow measurements and are not using GPS, dead reckon using current velocity vector unless we are in positon hold mode
-    if (!flowDataValid && !constPosMode && gpsInhibitMode == 2) {
+    if (!flowDataValid && !constPosMode && PV_AidingMode == RELATIVE) {
         constVelMode = true;
+        constPosMode = false; // always clear constant position mode if constant velocity mode is active
+    } else if (flowDataValid) {
+        // clear the constant velocity mode now we have good data
+        constVelMode = false;
+        lastConstVelMode = false;
     }
     // Apply tilt check
     bool tiltOK = (Tnb_flow.c.z > DCM33FlowMin);
@@ -978,7 +969,7 @@ void NavEKF::SelectTasFusion()
     readAirSpdData();
 
     // If we haven't received airspeed data for a while, then declare the airspeed data as being timed out
-    if (imuSampleTime_ms - lastAirspeedUpdate > _tasRetryTime) {
+    if (imuSampleTime_ms - lastAirspeedUpdate > tasRetryTime) {
         tasTimeout = true;
     }
 
@@ -1005,7 +996,7 @@ void NavEKF::SelectBetaFusion()
     // set to true if fusion is locked out due to magnetometer fusion on the same time step (done for load levelling)
     bool f_lockedOut = (magFusePerformed && !inhibitLoadLeveling);
     // set true when the fusion time interval has triggered
-    bool f_timeTrigger = ((imuSampleTime_ms - BETAmsecPrev) >= _msecBetaAvg);
+    bool f_timeTrigger = ((imuSampleTime_ms - BETAmsecPrev) >= msecBetaAvg);
     // set true when use of synthetic sideslip fusion is necessary because we have limited sensor data or are dead reckoning position
     bool f_required = !(use_compass() && useAirspeed() && posHealth);
     // set true when sideslip fusion is feasible (requires zero sideslip assumption to be valid and use of wind states)
@@ -1180,7 +1171,7 @@ void NavEKF::CovariancePrediction()
     for (uint8_t i=10; i<=12; i++) {
         processNoise[i] = dAngBiasSigma;
         if (!vehicleArmed) {
-            processNoise[i] *= _gyroBiasNoiseScaler;
+            processNoise[i] *= gyroBiasNoiseScaler;
         }
     }
 	processNoise[13] = dVelBiasSigma;
@@ -1826,8 +1817,8 @@ void NavEKF::FuseVelPosNED()
 
         // set the GPS data timeout depending on whether airspeed data is present
         uint32_t gpsRetryTime;
-        if (useAirspeed()) gpsRetryTime = _gpsRetryTimeUseTAS;
-        else gpsRetryTime = _gpsRetryTimeNoTAS;
+        if (useAirspeed()) gpsRetryTime = gpsRetryTimeUseTAS;
+        else gpsRetryTime = gpsRetryTimeNoTAS;
 
         // form the observation vector and zero velocity and horizontal position observations if in constant position mode
         // If in constant velocity mode, hold the last known horizontal velocity vector
@@ -1847,11 +1838,11 @@ void NavEKF::FuseVelPosNED()
         observation[5] = -hgtMea;
 
         // calculate additional error in GPS velocity caused by manoeuvring
-        NEvelErr = _gpsNEVelVarAccScale * accNavMag;
-        DvelErr  = _gpsDVelVarAccScale * accNavMag;
+        NEvelErr = gpsNEVelVarAccScale * accNavMag;
+        DvelErr  = gpsDVelVarAccScale * accNavMag;
 
         // calculate additional error in GPS position caused by manoeuvring
-        posErr = _gpsPosVarAccScale * accNavMag;
+        posErr = gpsPosVarAccScale * accNavMag;
 
         // estimate the GPS Velocity, GPS horiz position and height measurement variances.
         R_OBS[0] = sq(constrain_float(_gpsHorizVelNoise, 0.05f, 5.0f)) + sq(NEvelErr);
@@ -1864,7 +1855,7 @@ void NavEKF::FuseVelPosNED()
         // if vertical GPS velocity data is being used, check to see if the GPS vertical velocity and barometer
         // innovations have the same sign and are outside limits. If so, then it is likely aliasing is affecting
         // the accelerometers and we should disable the GPS and barometer innovation consistency checks.
-        if (_fusionModeGPS == 0 && fuseVelData && (imuSampleTime_ms - lastHgtTime_ms) <  (2 * _msecHgtAvg)) {
+        if (_fusionModeGPS == 0 && fuseVelData && (imuSampleTime_ms - lastHgtTime_ms) <  (2 * msecHgtAvg)) {
             // calculate innovations for height and vertical GPS vel measurements
             float hgtErr  = statesAtHgtTime.position.z - observation[5];
             float velDErr = statesAtVelTime.velocity.z - observation[2];
@@ -1998,16 +1989,16 @@ void NavEKF::FuseVelPosNED()
         }
 
         // set range for sequential fusion of velocity and position measurements depending on which data is available and its health
-        if (fuseVelData && _fusionModeGPS == 0 && velHealth && !constPosMode && gpsInhibitMode == 0) {
+        if (fuseVelData && _fusionModeGPS == 0 && velHealth && !constPosMode && PV_AidingMode == ABSOLUTE) {
             fuseData[0] = true;
             fuseData[1] = true;
             fuseData[2] = true;
         }
-        if (fuseVelData && _fusionModeGPS == 1 && velHealth && !constPosMode && gpsInhibitMode == 0) {
+        if (fuseVelData && _fusionModeGPS == 1 && velHealth && !constPosMode && PV_AidingMode == ABSOLUTE) {
             fuseData[0] = true;
             fuseData[1] = true;
         }
-        if ((fusePosData && posHealth && gpsInhibitMode == 0) || constPosMode) {
+        if ((fusePosData && posHealth && PV_AidingMode == ABSOLUTE) || constPosMode) {
             fuseData[3] = true;
             fuseData[4] = true;
         }
@@ -2213,7 +2204,7 @@ void NavEKF::FuseMagnetometer()
             MagPred[2] = DCM[2][0]*magN + DCM[2][1]*magE  + DCM[2][2]*magD + magZbias;
 
             // scale magnetometer observation error with total angular rate
-            R_MAG = sq(constrain_float(_magNoise, 0.01f, 0.5f)) + sq(_magVarRateScale*dAngIMU.length() / dtIMU);
+            R_MAG = sq(constrain_float(_magNoise, 0.01f, 0.5f)) + sq(magVarRateScale*dAngIMU.length() / dtIMU);
 
             // calculate observation jacobians
 			SH_MAG[0] = 2*magD*q3 + 2*magE*q2 + 2*magN*q1;
@@ -2551,13 +2542,13 @@ void NavEKF::RunAuxiliaryEKF()
     // calculate a predicted LOS rate squared
     float losRateSq = (sq(state.velocity.x) + sq(state.velocity.y)) / sq(flowStates[1] - state.position[2]);
     // don't update terrain offset state if there is no range finder and not generating enough LOS rate, or without GPS, as it is poorly observable
-    if ((losRateSq < 0.01f || gpsInhibitMode == 2) && !fuseRngData) {
+    if ((losRateSq < 0.01f || PV_AidingMode == RELATIVE) && !fuseRngData) {
         inhibitGndState = true;
     } else {
         inhibitGndState = false;
     }
     // Don't update focal length offset if there is no range finder or not using GPS, or we are not flying fast enough to generate a useful LOS rate
-    if (!fuseRngData || gpsInhibitMode == 2 || losRateSq < 0.01f || (flowStates[1] - state.position[2]) < 3.0f) {
+    if (!fuseRngData || PV_AidingMode == RELATIVE || losRateSq < 0.01f || (flowStates[1] - state.position[2]) < 3.0f) {
         fScaleInhibit = true;
     } else {
         fScaleInhibit = false;
@@ -2984,9 +2975,8 @@ void NavEKF::FuseOptFlow()
         Kfusion[20] = SK_LOS[0]*(P[20][0]*tempVar[1] + P[20][1]*tempVar[2] - P[20][2]*tempVar[3] + P[20][3]*tempVar[4] + P[20][5]*tempVar[5] - P[20][6]*tempVar[6] - P[20][9]*tempVar[7] + P[20][4]*tempVar[8]);
         Kfusion[21] = SK_LOS[0]*(P[21][0]*tempVar[1] + P[21][1]*tempVar[2] - P[21][2]*tempVar[3] + P[21][3]*tempVar[4] + P[21][5]*tempVar[5] - P[21][6]*tempVar[6] - P[21][9]*tempVar[7] + P[21][4]*tempVar[8]);
         } else {
-            for (uint8_t i = 16; i <= 21; i++) {
-                Kfusion[i] = 0.0f;
-            }
+            memset(&H_LOS[0], 0, sizeof(H_LOS));
+            memset(&Kfusion[0], 0, sizeof(Kfusion));
         }
 
         // calculate variance and innovation for Y observation
@@ -3169,7 +3159,7 @@ void NavEKF::FuseAirspeed()
 
         // fail if the ratio is > 1, but don't fail if bad IMU data
         tasHealth = ((tasTestRatio < 1.0f) || badIMUdata);
-        tasTimeout = (imuSampleTime_ms - tasFailTime) > _tasRetryTime;
+        tasTimeout = (imuSampleTime_ms - tasFailTime) > tasRetryTime;
 
         // test the ratio before fusing data, forcing fusion if airspeed and position are timed out as we have no choice but to try and use airspeed to constrain error growth
         if (tasHealth || (tasTimeout && posTimeout))
@@ -3565,7 +3555,7 @@ bool NavEKF::getPosNED(Vector3f &pos) const
 // return body axis gyro bias estimates in rad/sec
 void NavEKF::getGyroBias(Vector3f &gyroBias) const
 {
-    if (dtIMU == 0) {
+    if (dtIMU < 1e-6f) {
         gyroBias.zero();
         return;
     }
@@ -3596,10 +3586,10 @@ uint8_t NavEKF::setInhibitGPS(void)
         return 0;
     }
     if (optFlowDataPresent()) {
-        gpsInhibitMode = 2;
+        PV_AidingMode = RELATIVE;
         return 2;
     } else {
-        gpsInhibitMode = 1;
+        PV_AidingMode = NONE;
         return 1;
     }
 }
@@ -3608,7 +3598,7 @@ uint8_t NavEKF::setInhibitGPS(void)
 // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
 void NavEKF::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
 {
-    if (flowDataValid || gpsInhibitMode == 2) {
+    if (flowDataValid || PV_AidingMode == RELATIVE) {
         // allow 1.0 rad/sec margin for angular motion
         ekfGndSpdLimit = max((_maxFlowRate - 1.0f), 0.0f) * max((flowStates[1] - state.position[2]), 0.1f);
         // use standard gains up to 5.0 metres height and reduce above that
@@ -3627,7 +3617,7 @@ void NavEKF::getIMU1Weighting(float &ret) const
 
 // return the individual Z-accel bias estimates in m/s^2
 void NavEKF::getAccelZBias(float &zbias1, float &zbias2) const {
-    if (dtIMU == 0) {
+    if (dtIMU < 1e-6f) {
         zbias1 = 0;
         zbias2 = 0;
     } else {
@@ -4011,7 +4001,7 @@ void NavEKF::readHgtData()
         newDataHgt = true;
 
         // get states that wer stored at the time closest to the measurement time, taking measurement delay into account
-        RecallStates(statesAtHgtTime, (imuSampleTime_ms - _msecHgtDelay));
+        RecallStates(statesAtHgtTime, (imuSampleTime_ms - msecHgtDelay));
     } else {
         newDataHgt = false;
     }
@@ -4028,7 +4018,7 @@ void NavEKF::readMagData()
         magData = _ahrs->get_compass()->get_field() * 0.001f;
 
         // get states stored at time closest to measurement time after allowance for measurement delay
-        RecallStates(statesAtMagMeasTime, (imuSampleTime_ms - _msecMagDelay));
+        RecallStates(statesAtMagMeasTime, (imuSampleTime_ms - msecMagDelay));
 
         // let other processes know that new compass data has arrived
         newDataMag = true;
@@ -4050,7 +4040,7 @@ void NavEKF::readAirSpdData()
         VtasMeas = aspeed->get_airspeed() * aspeed->get_EAS2TAS();
         lastAirspeedUpdate = aspeed->last_update_ms();
         newDataTas = true;
-        RecallStates(statesAtVtasMeasTime, (imuSampleTime_ms - _msecTasDelay));
+        RecallStates(statesAtVtasMeasTime, (imuSampleTime_ms - msecTasDelay));
     } else {
         newDataTas = false;
     }
@@ -4093,9 +4083,6 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
         flowRadXYcomp[1] = flowStates[0]*flowRadXY[1] + omegaAcrossFlowTime.y;
         // set flag that will trigger observations
         newDataFlow = true;
-        // clear the constant velocity mode now we have good data
-        constVelMode = false;
-        lastConstVelMode = false;
         flowValidMeaTime_ms = imuSampleTime_ms;
     } else {
         newDataFlow = false;
@@ -4293,8 +4280,8 @@ void  NavEKF::getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f
     offset   = gpsPosGlitchOffsetNE;
 }
 
-// zero stored variables - this needs to be called before a full filter initialisation
-void NavEKF::ZeroVariables()
+// Use a function call rather than a constructor to initialise variables because it enables the filter to be re-started in flight if necessary.
+void NavEKF::InitialiseVariables()
 {
     // initialise time stamps
     imuSampleTime_ms = hal.scheduler->millis();
@@ -4320,6 +4307,7 @@ void NavEKF::ZeroVariables()
     rngMeaTime_ms = imuSampleTime_ms;
     ekfStartTime_ms = imuSampleTime_ms;
 
+    // initialise other variables
     gpsNoiseScaler = 1.0f;
     velTimeout = true;
     posTimeout = true;
@@ -4357,7 +4345,6 @@ void NavEKF::ZeroVariables()
     memset(&hgtIncrStateDelta[0], 0, sizeof(hgtIncrStateDelta));
     memset(&magIncrStateDelta[0], 0, sizeof(magIncrStateDelta));
     memset(&flowIncrStateDelta[0], 0, sizeof(flowIncrStateDelta));
-    // optical flow variables
     newDataFlow = false;
     flowDataValid = false;
     newDataRng  = false;
@@ -4375,11 +4362,21 @@ void NavEKF::ZeroVariables()
     constVelMode = false;
     lastConstVelMode = false;
     heldVelNE.zero();
-    gpsInhibitMode = 1;
+    PV_AidingMode = NONE;
     gpsVelGlitchOffset.zero();
     vehicleArmed = false;
     prevVehicleArmed = false;
     constPosMode = true;
+    memset(&faultStatus, 0, sizeof(faultStatus));
+    hgtRate = 0.0f;
+    mag_state.q0 = 1;
+    mag_state.DCM.identity();
+    IMU1_weighting = 0.5f;
+    onGround = true;
+    manoeuvring = false;
+    yawAligned = false;
+    inhibitWindStates = true;
+    inhibitMagStates = true;
 }
 
 // return true if we should use the airspeed sensor
@@ -4515,14 +4512,20 @@ return filter function status as a bitmasked integer
 void  NavEKF::getFilterStatus(uint8_t &status) const
 {
     // add code to set bits using private filter data here
-    status = (!state.quat.is_nan()<<0 | // we can implement a better way to detect invalid attitude, but it is tricky to do reliably
-              (!(velTimeout && posTimeout && tasTimeout) && !constVelMode && !constPosMode)<<1 |
-              !((velTimeout && hgtTimeout) || (hgtTimeout && _fusionModeGPS > 0))<<2 |
-              ((gpsInhibitMode == 2 && flowDataValid) || (!tasTimeout && assume_zero_sideslip()) || (!posTimeout && gpsInhibitMode == 0) && !constVelMode && !constPosMode)<<3 |
-              ((!posTimeout && gpsInhibitMode == 0) && !constVelMode && !constPosMode)<<4 |
-              !hgtTimeout<<5 |
-              !inhibitGndState<<6 |
-              constPosMode<<7);
+    bool doingFlowNav = (PV_AidingMode == RELATIVE) && flowDataValid;
+    bool doingWindRelNav = !tasTimeout && assume_zero_sideslip();
+    bool doingNormalGpsNav = !posTimeout && (PV_AidingMode == ABSOLUTE);
+    bool notDeadReckoning = !constVelMode && !constPosMode;
+    bool someVertRefData = (!velTimeout && (_fusionModeGPS == 0)) || !hgtTimeout;
+    bool someHorizRefData = !(velTimeout && posTimeout && tasTimeout);
+    status = (!state.quat.is_nan()<<0 | // attitude valid (we need a better check)
+              (someHorizRefData && notDeadReckoning)<<1 | // horizontal velocity estimate valid
+              someVertRefData<<2 | // vertical velocity estimate valid
+              ((doingFlowNav || doingWindRelNav || doingNormalGpsNav) && notDeadReckoning)<<3 | // relative horizontal position estimate valid
+              (doingNormalGpsNav && notDeadReckoning)<<4 | // absolute horizontal position estimate valid
+              !hgtTimeout<<5 | // vertical position estimate valid
+              !inhibitGndState<<6 | // terrain height estimate valid
+              constPosMode<<7); // constant position mode
 }
 
 // Check arm status and perform required checks and mode changes
@@ -4544,27 +4547,27 @@ void NavEKF::performArmingChecks()
         heldVelNE.zero();
         // set various  useage modes based on the condition at arming. These are then held until the vehicle is disarmed.
         if (!vehicleArmed) {
-            gpsInhibitMode = 1; // When dis-armed, we only estimate orientation & height using the constant position mode
+            PV_AidingMode = NONE; // When dis-armed, we only estimate orientation & height using the constant position mode
             constPosMode = true;
             constVelMode = false; // always clear constant velocity mode if constant position mode is active
             lastConstVelMode = false;
         } else if (_fusionModeGPS == 3) { // arming when GPS useage has been prohibited
             if (optFlowDataPresent()) {
-                gpsInhibitMode = 2; // we have optical flow data and can estimate all vehicle states
+                PV_AidingMode = RELATIVE; // we have optical flow data and can estimate all vehicle states
                 posTimeout = true;
                 velTimeout = true;
             } else {
-                gpsInhibitMode = 1; // we don't have optical flow data and will only be able to estimate orientation and height
+                PV_AidingMode = NONE; // we don't have optical flow data and will only be able to estimate orientation and height
                 posTimeout = true;
                 velTimeout = true;
             }
         } else { // arming when GPS useage is allowed
             if (gpsNotAvailable) {
-                gpsInhibitMode = 1; // we don't have have GPS data and will only be able to estimate orientation and height
+                PV_AidingMode = NONE; // we don't have have GPS data and will only be able to estimate orientation and height
                 posTimeout = true;
                 velTimeout = true;
             } else {
-                gpsInhibitMode = 0; // we have GPS data and can estimate all vehicle states
+                PV_AidingMode = ABSOLUTE; // we have GPS data and can estimate all vehicle states
             }
         }
         // Reset filter positon, height and velocity states on arming or disarming
@@ -4580,7 +4583,7 @@ void NavEKF::performArmingChecks()
     }
 
     // set constant position mode if gps is inhibited and we are not trying to use optical flow data
-    if (gpsInhibitMode == 1) {
+    if (PV_AidingMode == NONE) {
         constPosMode = true;
         constVelMode = false; // always clear constant velocity mode if constant position mode is active
         lastConstVelMode = false;
