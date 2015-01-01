@@ -42,8 +42,7 @@ void AP_OpticalFlow_PX4::init(void)
     _fd = open(PX4FLOW_DEVICE_PATH, O_RDONLY);
 
     // check for failure to open device
-    if (_fd < 0) {
-        hal.console->printf("Unable to open " PX4FLOW_DEVICE_PATH "\n");
+    if (_fd == -1) {
         return;
     }
 
