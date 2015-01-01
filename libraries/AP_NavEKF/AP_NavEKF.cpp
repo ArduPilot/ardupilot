@@ -4513,14 +4513,20 @@ return filter function status as a bitmasked integer
 void  NavEKF::getFilterStatus(uint8_t &status) const
 {
     // add code to set bits using private filter data here
-    status = (!state.quat.is_nan()<<0 | // we can implement a better way to detect invalid attitude, but it is tricky to do reliably
-              (!(velTimeout && posTimeout && tasTimeout) && !constVelMode && !constPosMode)<<1 |
-              !((velTimeout && hgtTimeout) || (hgtTimeout && _fusionModeGPS > 0))<<2 |
-              ((PV_AidingMode == RELATIVE && flowDataValid) || (!tasTimeout && assume_zero_sideslip()) || (!posTimeout && PV_AidingMode == ABSOLUTE) && !constVelMode && !constPosMode)<<3 |
-              ((!posTimeout && PV_AidingMode == ABSOLUTE) && !constVelMode && !constPosMode)<<4 |
-              !hgtTimeout<<5 |
-              !inhibitGndState<<6 |
-              constPosMode<<7);
+    bool doingFlowNav = (PV_AidingMode == RELATIVE) && flowDataValid;
+    bool doingWindRelNav = !tasTimeout && assume_zero_sideslip();
+    bool doingNormalGpsNav = !posTimeout && (PV_AidingMode == ABSOLUTE);
+    bool notDeadReckoning = !constVelMode && !constPosMode;
+    bool someVertRefData = (!velTimeout && (_fusionModeGPS == 0)) || !hgtTimeout;
+    bool someHorizRefData = !(velTimeout && posTimeout && tasTimeout);
+    status = (!state.quat.is_nan()<<0 | // attitude valid (we need a better check)
+              (someHorizRefData && notDeadReckoning)<<1 | // horizontal velocity estimate valid
+              someVertRefData<<2 | // vertical velocity estimate valid
+              ((doingFlowNav || doingWindRelNav || doingNormalGpsNav) && notDeadReckoning)<<3 | // relative horizontal position estimate valid
+              (doingNormalGpsNav && notDeadReckoning)<<4 | // absolute horizontal position estimate valid
+              !hgtTimeout<<5 | // vertical position estimate valid
+              !inhibitGndState<<6 | // terrain height estimate valid
+              constPosMode<<7); // constant position mode
 }
 
 // Check arm status and perform required checks and mode changes
