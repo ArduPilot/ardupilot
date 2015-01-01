@@ -2975,9 +2975,8 @@ void NavEKF::FuseOptFlow()
         Kfusion[20] = SK_LOS[0]*(P[20][0]*tempVar[1] + P[20][1]*tempVar[2] - P[20][2]*tempVar[3] + P[20][3]*tempVar[4] + P[20][5]*tempVar[5] - P[20][6]*tempVar[6] - P[20][9]*tempVar[7] + P[20][4]*tempVar[8]);
         Kfusion[21] = SK_LOS[0]*(P[21][0]*tempVar[1] + P[21][1]*tempVar[2] - P[21][2]*tempVar[3] + P[21][3]*tempVar[4] + P[21][5]*tempVar[5] - P[21][6]*tempVar[6] - P[21][9]*tempVar[7] + P[21][4]*tempVar[8]);
         } else {
-            for (uint8_t i = 16; i <= 21; i++) {
-                Kfusion[i] = 0.0f;
-            }
+            memset(&H_LOS[0], 0, sizeof(H_LOS));
+            memset(&Kfusion[0], 0, sizeof(Kfusion));
         }
 
         // calculate variance and innovation for Y observation
@@ -3556,7 +3555,7 @@ bool NavEKF::getPosNED(Vector3f &pos) const
 // return body axis gyro bias estimates in rad/sec
 void NavEKF::getGyroBias(Vector3f &gyroBias) const
 {
-    if (dtIMU == 0) {
+    if (dtIMU < 1e-6f) {
         gyroBias.zero();
         return;
     }
@@ -3618,7 +3617,7 @@ void NavEKF::getIMU1Weighting(float &ret) const
 
 // return the individual Z-accel bias estimates in m/s^2
 void NavEKF::getAccelZBias(float &zbias1, float &zbias2) const {
-    if (dtIMU == 0) {
+    if (dtIMU < 1e-6f) {
         zbias1 = 0;
         zbias2 = 0;
     } else {
