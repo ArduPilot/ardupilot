@@ -114,6 +114,36 @@ bool location_passed_point(const struct Location &location,
     return false;
 }
 
+
+/*
+  return the proportion we are along the path from point1 to
+  point2, along a line parallel to point1<->point2.
+
+  This will be less than >1 if we have passed point2
+ */
+float location_path_proportion(const struct Location &location,
+                               const struct Location &point1,
+                               const struct Location &point2)
+{
+    Vector2f loc1(location.lat, location.lng);
+    Vector2f pt1(point1.lat, point1.lng);
+    Vector2f pt2(point2.lat, point2.lng);
+    float angle = (loc1 - pt2).angle(pt1 - pt2);
+    float dist_p1_p2 = get_distance(point1, point2);
+    float dist_l_p2 = get_distance(location, point2);
+    if (dist_p1_p2 <= 0) {
+        return 1.0f;
+    }
+    if (isinf(angle)) {
+        if (get_distance(location, point2) == 0) {
+            return 1.0f;
+        }
+        return 0.0f;
+    }
+    float x1 = cosf(angle) * dist_l_p2;
+    return (dist_p1_p2 - x1) / dist_p1_p2;
+}
+
 /*
  *  extrapolate latitude/longitude given bearing and distance
  * Note that this function is accurate to about 1mm at a distance of 
