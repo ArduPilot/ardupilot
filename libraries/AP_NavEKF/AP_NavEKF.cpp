@@ -4483,23 +4483,26 @@ return filter function status as a bitmasked integer
  6 = terrain height estimate valid
  7 = constant position mode
 */
-void  NavEKF::getFilterStatus(uint8_t &status) const
+void  NavEKF::getFilterStatus(nav_filter_status &status) const
 {
-    // add code to set bits using private filter data here
     bool doingFlowNav = (PV_AidingMode == AID_RELATIVE) && flowDataValid;
     bool doingWindRelNav = !tasTimeout && assume_zero_sideslip();
     bool doingNormalGpsNav = !posTimeout && (PV_AidingMode == AID_ABSOLUTE);
     bool notDeadReckoning = !constVelMode && !constPosMode;
     bool someVertRefData = (!velTimeout && (_fusionModeGPS == 0)) || !hgtTimeout;
     bool someHorizRefData = !(velTimeout && posTimeout && tasTimeout) || doingFlowNav;
-    status = (!state.quat.is_nan()<<0 | // attitude valid (we need a better check)
-              (someHorizRefData && notDeadReckoning)<<1 | // horizontal velocity estimate valid
-              someVertRefData<<2 | // vertical velocity estimate valid
-              ((doingFlowNav || doingWindRelNav || doingNormalGpsNav) && notDeadReckoning)<<3 | // relative horizontal position estimate valid
-              (doingNormalGpsNav && notDeadReckoning)<<4 | // absolute horizontal position estimate valid
-              !hgtTimeout<<5 | // vertical position estimate valid
-              gndOffsetValid<<6 | // terrain height estimate valid
-              constPosMode<<7); // constant position mode
+    bool optFlowNavPossible = flowDataValid && (_fusionModeGPS == 3);
+    bool gpsNavPossible = !gpsNotAvailable && (_fusionModeGPS <= 2);
+
+    // add code to set bits using private filter data here
+    status.flags.attitude = !state.quat.is_nan();   // attitude valid (we need a better check)
+    status.flags.horiz_vel = someHorizRefData && notDeadReckoning;      // horizontal velocity estimate valid
+    status.flags.vert_vel = someVertRefData;        // vertical velocity estimate valid
+    status.flags.horiz_pos_rel = (doingFlowNav || doingWindRelNav || doingNormalGpsNav) && notDeadReckoning;   // relative horizontal position estimate valid
+    status.flags.horiz_pos_abs = doingNormalGpsNav && notDeadReckoning; // absolute horizontal position estimate valid
+    status.flags.vert_pos = !hgtTimeout;            // vertical position estimate valid
+    status.flags.terrain_alt = gndOffsetValid;		// terrain height estimate valid
+    status.flags.const_pos_mode = constPosMode;     // constant position mode
 }
 
 // Check arm status and perform required checks and mode changes

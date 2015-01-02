@@ -27,6 +27,7 @@
 #include <AP_Airspeed.h>
 #include <AP_Compass.h>
 #include <AP_Param.h>
+#include <AP_Nav_Common.h>
 
 // #define MATH_CHECK_INDEXES 1
 
@@ -200,17 +201,9 @@ public:
     void  getFilterTimeouts(uint8_t &timeouts) const;
 
     /*
-    return filter function status as a bitmasked integer
-     0 = attitude estimate valid
-     1 = horizontal velocity estimate valid
-     2 = vertical velocity estimate valid
-     3 = relative horizontal position estimate valid
-     4 = absolute horizontal position estimate valid
-     5 = vertical position estimate valid
-     6 = terrain height estimate valid
-     7 = unassigned
+    return filter status flags
     */
-    void  getFilterStatus(uint8_t &status) const;
+    void  getFilterStatus(nav_filter_status &status) const;
 
     static const struct AP_Param::GroupInfo var_info[];
 
