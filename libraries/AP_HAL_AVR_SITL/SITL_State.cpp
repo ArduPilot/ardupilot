@@ -68,6 +68,8 @@ AP_Baro_HIL *SITL_State::_barometer;
 AP_InertialSensor *SITL_State::_ins;
 SITLScheduler *SITL_State::_scheduler;
 AP_Compass_HIL *SITL_State::_compass;
+OpticalFlow *SITL_State::_optical_flow;
+AP_Terrain *SITL_State::_terrain;
 
 int SITL_State::_sitl_fd;
 SITL *SITL_State::_sitl;
@@ -214,6 +216,8 @@ void SITL_State::_sitl_setup(void)
 	_barometer = (AP_Baro_HIL *)AP_Param::find_object("GND_");
 	_ins = (AP_InertialSensor *)AP_Param::find_object("INS_");
 	_compass = (AP_Compass_HIL *)AP_Param::find_object("COMPASS_");
+	_terrain = (AP_Terrain *)AP_Param::find_object("TERRAIN_");
+	_optical_flow = (OpticalFlow *)AP_Param::find_object("FLOW");
 
     if (_sitl != NULL) {
         // setup some initial values
@@ -346,6 +350,7 @@ void SITL_State::_timer_handler(int signum)
                     _sitl->state.airspeed, _sitl->state.altitude);
         _update_barometer(_sitl->state.altitude);
         _update_compass(_sitl->state.rollDeg, _sitl->state.pitchDeg, _sitl->state.yawDeg);
+		_update_flow();
 #endif
     }
 

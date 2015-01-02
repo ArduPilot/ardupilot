@@ -19,6 +19,8 @@
 #include "../AP_Baro/AP_Baro.h"
 #include "../AP_InertialSensor/AP_InertialSensor.h"
 #include "../AP_Compass/AP_Compass.h"
+#include "../AP_OpticalFlow/AP_OpticalFlow.h"
+#include "../AP_Terrain/AP_Terrain.h"
 #include "../SITL/SITL.h"
 
 class HAL_AVR_SITL;
@@ -63,6 +65,7 @@ private:
     // from the timer
     static void _update_barometer(float height);
     static void _update_compass(float rollDeg, float pitchDeg, float yawDeg);
+    static void _update_flow(void);
 
     struct gps_data {
 	    double latitude;
@@ -125,6 +128,8 @@ private:
     static AP_InertialSensor *_ins;
     static SITLScheduler *_scheduler;
     static AP_Compass_HIL *_compass;
+    static OpticalFlow *_optical_flow;
+    static AP_Terrain *_terrain;
 
     static int _sitl_fd;
     static SITL *_sitl;
