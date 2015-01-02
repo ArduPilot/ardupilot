@@ -438,7 +438,7 @@ bool NavEKF::healthy(void) const
 // resets position states to last GPS measurement or to zero if in constant position mode
 void NavEKF::ResetPosition(void)
 {
-    if (constPosMode || (PV_AidingMode != ABSOLUTE)) {
+    if (constPosMode || (PV_AidingMode != AID_ABSOLUTE)) {
         state.position.x = 0;
         state.position.y = 0;
     } else if (!gpsNotAvailable) {
@@ -457,7 +457,7 @@ void NavEKF::ResetPosition(void)
 // Do not reset vertical velocity using GPS as there is baro alt available to constrain drift
 void NavEKF::ResetVelocity(void)
 {
-    if (constPosMode || PV_AidingMode != ABSOLUTE) {
+    if (constPosMode || PV_AidingMode != AID_ABSOLUTE) {
          state.velocity.zero();
          state.vel1.zero();
          state.vel2.zero();
@@ -736,7 +736,7 @@ void NavEKF::SelectVelPosFusion()
             if (vehicleArmed && !useAirspeed() && !assume_zero_sideslip()) {
                 constVelMode = true;
                 constPosMode = false; // always clear constant position mode if constant velocity mode is active
-                PV_AidingMode = NONE;
+                PV_AidingMode = AID_NONE;
             }
         }
 
@@ -748,7 +748,7 @@ void NavEKF::SelectVelPosFusion()
             memset(&gpsIncrStateDelta[0], 0, sizeof(gpsIncrStateDelta));
             gpsUpdateCount = 0;
             // select which of velocity and position measurements will be fused
-            if (PV_AidingMode == ABSOLUTE) {
+            if (PV_AidingMode == AID_ABSOLUTE) {
                 // use both if GPS use is enabled
                 fuseVelData = true;
                 fusePosData = true;
@@ -892,7 +892,7 @@ void NavEKF::SelectFlowFusion()
     // Check if the optical flow data is still valid
     flowDataValid = (imuSampleTime_ms - flowValidMeaTime_ms < 200);
     // if we don't have valid flow measurements and are not using GPS, dead reckon using current velocity vector unless we are in positon hold mode
-    if (!flowDataValid && !constPosMode && PV_AidingMode == RELATIVE) {
+    if (!flowDataValid && !constPosMode && PV_AidingMode == AID_RELATIVE) {
         constVelMode = true;
         constPosMode = false; // always clear constant position mode if constant velocity mode is active
     } else if (flowDataValid) {
@@ -1989,16 +1989,16 @@ void NavEKF::FuseVelPosNED()
         }
 
         // set range for sequential fusion of velocity and position measurements depending on which data is available and its health
-        if (fuseVelData && _fusionModeGPS == 0 && velHealth && !constPosMode && PV_AidingMode == ABSOLUTE) {
+        if (fuseVelData && _fusionModeGPS == 0 && velHealth && !constPosMode && PV_AidingMode == AID_ABSOLUTE) {
             fuseData[0] = true;
             fuseData[1] = true;
             fuseData[2] = true;
         }
-        if (fuseVelData && _fusionModeGPS == 1 && velHealth && !constPosMode && PV_AidingMode == ABSOLUTE) {
+        if (fuseVelData && _fusionModeGPS == 1 && velHealth && !constPosMode && PV_AidingMode == AID_ABSOLUTE) {
             fuseData[0] = true;
             fuseData[1] = true;
         }
-        if ((fusePosData && posHealth && PV_AidingMode == ABSOLUTE) || constPosMode) {
+        if ((fusePosData && posHealth && PV_AidingMode == AID_ABSOLUTE) || constPosMode) {
             fuseData[3] = true;
             fuseData[4] = true;
         }
@@ -2542,13 +2542,13 @@ void NavEKF::RunAuxiliaryEKF()
     // calculate a predicted LOS rate squared
     float losRateSq = (sq(state.velocity.x) + sq(state.velocity.y)) / sq(flowStates[1] - state.position[2]);
     // don't update terrain offset state if there is no range finder and not generating enough LOS rate, or without GPS, as it is poorly observable
-    if ((losRateSq < 0.01f || PV_AidingMode == RELATIVE) && !fuseRngData) {
+    if ((losRateSq < 0.01f || PV_AidingMode == AID_RELATIVE) && !fuseRngData) {
         inhibitGndState = true;
     } else {
         inhibitGndState = false;
     }
     // Don't update focal length offset if there is no range finder or not using GPS, or we are not flying fast enough to generate a useful LOS rate
-    if (!fuseRngData || PV_AidingMode == RELATIVE || losRateSq < 0.01f || (flowStates[1] - state.position[2]) < 3.0f) {
+    if (!fuseRngData || PV_AidingMode == AID_RELATIVE || losRateSq < 0.01f || (flowStates[1] - state.position[2]) < 3.0f) {
         fScaleInhibit = true;
     } else {
         fScaleInhibit = false;
@@ -3586,10 +3586,10 @@ uint8_t NavEKF::setInhibitGPS(void)
         return 0;
     }
     if (optFlowDataPresent()) {
-        PV_AidingMode = RELATIVE;
+        PV_AidingMode = AID_RELATIVE;
         return 2;
     } else {
-        PV_AidingMode = NONE;
+        PV_AidingMode = AID_NONE;
         return 1;
     }
 }
@@ -3598,7 +3598,7 @@ uint8_t NavEKF::setInhibitGPS(void)
 // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
 void NavEKF::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
 {
-    if (flowDataValid || PV_AidingMode == RELATIVE) {
+    if (flowDataValid || PV_AidingMode == AID_RELATIVE) {
         // allow 1.0 rad/sec margin for angular motion
         ekfGndSpdLimit = max((_maxFlowRate - 1.0f), 0.0f) * max((flowStates[1] - state.position[2]), 0.1f);
         // use standard gains up to 5.0 metres height and reduce above that
@@ -4362,7 +4362,7 @@ void NavEKF::InitialiseVariables()
     constVelMode = false;
     lastConstVelMode = false;
     heldVelNE.zero();
-    PV_AidingMode = NONE;
+    PV_AidingMode = AID_NONE;
     gpsVelGlitchOffset.zero();
     vehicleArmed = false;
     prevVehicleArmed = false;
@@ -4512,9 +4512,9 @@ return filter function status as a bitmasked integer
 void  NavEKF::getFilterStatus(uint8_t &status) const
 {
     // add code to set bits using private filter data here
-    bool doingFlowNav = (PV_AidingMode == RELATIVE) && flowDataValid;
+    bool doingFlowNav = (PV_AidingMode == AID_RELATIVE) && flowDataValid;
     bool doingWindRelNav = !tasTimeout && assume_zero_sideslip();
-    bool doingNormalGpsNav = !posTimeout && (PV_AidingMode == ABSOLUTE);
+    bool doingNormalGpsNav = !posTimeout && (PV_AidingMode == AID_ABSOLUTE);
     bool notDeadReckoning = !constVelMode && !constPosMode;
     bool someVertRefData = (!velTimeout && (_fusionModeGPS == 0)) || !hgtTimeout;
     bool someHorizRefData = !(velTimeout && posTimeout && tasTimeout);
@@ -4547,27 +4547,27 @@ void NavEKF::performArmingChecks()
         heldVelNE.zero();
         // set various  useage modes based on the condition at arming. These are then held until the vehicle is disarmed.
         if (!vehicleArmed) {
-            PV_AidingMode = NONE; // When dis-armed, we only estimate orientation & height using the constant position mode
+            PV_AidingMode = AID_NONE; // When dis-armed, we only estimate orientation & height using the constant position mode
             constPosMode = true;
             constVelMode = false; // always clear constant velocity mode if constant position mode is active
             lastConstVelMode = false;
         } else if (_fusionModeGPS == 3) { // arming when GPS useage has been prohibited
             if (optFlowDataPresent()) {
-                PV_AidingMode = RELATIVE; // we have optical flow data and can estimate all vehicle states
+                PV_AidingMode = AID_RELATIVE; // we have optical flow data and can estimate all vehicle states
                 posTimeout = true;
                 velTimeout = true;
             } else {
-                PV_AidingMode = NONE; // we don't have optical flow data and will only be able to estimate orientation and height
+                PV_AidingMode = AID_NONE; // we don't have optical flow data and will only be able to estimate orientation and height
                 posTimeout = true;
                 velTimeout = true;
             }
         } else { // arming when GPS useage is allowed
             if (gpsNotAvailable) {
-                PV_AidingMode = NONE; // we don't have have GPS data and will only be able to estimate orientation and height
+                PV_AidingMode = AID_NONE; // we don't have have GPS data and will only be able to estimate orientation and height
                 posTimeout = true;
                 velTimeout = true;
             } else {
-                PV_AidingMode = ABSOLUTE; // we have GPS data and can estimate all vehicle states
+                PV_AidingMode = AID_ABSOLUTE; // we have GPS data and can estimate all vehicle states
             }
         }
         // Reset filter positon, height and velocity states on arming or disarming
@@ -4583,7 +4583,7 @@ void NavEKF::performArmingChecks()
     }
 
     // set constant position mode if gps is inhibited and we are not trying to use optical flow data
-    if (PV_AidingMode == NONE) {
+    if (PV_AidingMode == AID_NONE) {
         constPosMode = true;
         constVelMode = false; // always clear constant velocity mode if constant position mode is active
         lastConstVelMode = false;
