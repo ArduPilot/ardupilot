@@ -17,7 +17,7 @@ static void run_nav_updates(void)
 
 // calc_position - get lat and lon positions from inertial nav library
 static void calc_position(){
-    if( inertial_nav.position_ok() ) {
+    if (inertial_nav.get_filter_status().flags.horiz_pos_abs) {
         // pull position from interial nav library
         current_loc.lng = inertial_nav.get_longitude();
         current_loc.lat = inertial_nav.get_latitude();

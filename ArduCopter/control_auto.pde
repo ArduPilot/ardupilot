@@ -20,7 +20,7 @@
 // auto_init - initialise auto controller
 static bool auto_init(bool ignore_checks)
 {
-    if ((GPS_ok() && inertial_nav.position_ok() && mission.num_commands() > 1) || ignore_checks) {
+    if ((GPS_ok() && inertial_nav.get_filter_status().flags.horiz_pos_abs && mission.num_commands() > 1) || ignore_checks) {
         auto_mode = Auto_Loiter;
 
         // stop ROI from carrying over from previous runs of the mission
