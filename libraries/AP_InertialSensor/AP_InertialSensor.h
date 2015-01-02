@@ -215,6 +215,9 @@ private:
     void _calculate_trim(Vector3f accel_sample, float& trim_roll, float& trim_pitch);
 #endif
 
+    // check if we have 3D accel calibration
+    void check_3D_calibration(void);
+
     // save parameters to eeprom
     void  _save_parameters();
 
@@ -263,6 +266,9 @@ private:
 
     // are we in HIL mode?
     bool _hil_mode:1;
+
+    // do we have offsets/scaling from a 3D calibration?
+    bool _have_3D_calibration:1;
 
     // the delta time in seconds for the last sample
     float _delta_time;

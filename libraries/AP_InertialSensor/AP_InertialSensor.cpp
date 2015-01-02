@@ -223,7 +223,8 @@ AP_InertialSensor::AP_InertialSensor() :
     _accel(),
     _gyro(),
     _board_orientation(ROTATION_NONE),
-    _hil_mode(false)
+    _hil_mode(false),
+    _have_3D_calibration(false)
 {
     AP_Param::setup_object_defaults(this, var_info);        
     for (uint8_t i=0; i<INS_MAX_BACKENDS; i++) {
@@ -279,6 +280,10 @@ AP_InertialSensor::init( Start_style style,
             _accel_scale[i].set(Vector3f(1,1,1));
         }
     }
+
+    // remember whether we have 3D calibration so this can be used for
+    // AHRS health
+    check_3D_calibration();
 
     if (WARM_START != style) {
         // do cold-start calibration for gyro only
@@ -369,6 +374,8 @@ AP_InertialSensor::init_accel()
 
     // save calibration
     _save_parameters();
+
+    check_3D_calibration();
 }
 
 #if !defined( __AVR_ATmega1280__ )
@@ -482,6 +489,8 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
         }
         _save_parameters();
 
+        check_3D_calibration();
+
         // calculate the trims as well from primary accels and pass back to caller
         _calculate_trim(samples[0][0], trim_roll, trim_pitch);
 
@@ -499,18 +508,37 @@ failed:
 }
 #endif
 
-/// calibrated - returns true if the accelerometers have been calibrated
-/// @note this should not be called while flying because it reads from the eeprom which can be slow
-bool AP_InertialSensor::calibrated()
+/*
+  check if the accelerometers are calibrated in 3D. Called on startup
+  and any accel cal
+ */
+void AP_InertialSensor::check_3D_calibration()
 {
+    _have_3D_calibration = false;
     // check each accelerometer has offsets saved
     for (uint8_t i=0; i<get_accel_count(); i++) {
-        if (!_accel_offset[i].load()) {
-            return false;
+        // exactly 0.0 offset is extremely unlikely
+        if (_accel_offset[i].get().is_zero()) {
+            return;
+        }
+        // exactly 1.0 scaling is extremely unlikely
+        const Vector3f &scaling = _accel_scale[i].get();
+        if (fabsf(scaling.x - 1.0f) < 0.00001f &&
+            fabsf(scaling.y - 1.0f) < 0.00001f &&
+            fabsf(scaling.z - 1.0f) < 0.00001f) {
+            return;
         }
     }
     // if we got this far the accelerometers must have been calibrated
-    return true;
+    _have_3D_calibration = true;
+}
+
+/*
+  return true if we have 3D calibration values
+ */
+bool AP_InertialSensor::calibrated()
+{
+    return _have_3D_calibration;
 }
 
 void
