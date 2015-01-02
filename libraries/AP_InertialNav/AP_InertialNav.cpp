@@ -120,15 +120,29 @@ void AP_InertialNav::update(float dt)
     }
 }
 
+/**
+ * get_filter_status : returns filter status as a series of flags
+ */
+nav_filter_status AP_InertialNav::get_filter_status() const
+{
+    nav_filter_status ret;
+    ret.value = 0;  // initialise to zero
+    ret.flags.attitude = true;
+    ret.flags.horiz_pos_abs = _xy_enabled;
+    ret.flags.horiz_pos_rel = false;
+    ret.flags.horiz_vel = _xy_enabled;
+    ret.flags.terrain_alt = false;
+    ret.flags.vert_pos = true;
+    ret.flags.vert_vel = true;
+    ret.flags.const_pos_mode = false;
+    ret.flags.pred_horiz_pos_rel = false;
+    ret.flags.pred_horiz_pos_abs = _xy_enabled;
+    return ret;
+}
+
 //
 // XY Axis specific methods
 //
-
-// position_ok - return true if position has been initialised and have received gps data within 3 seconds
-bool AP_InertialNav::position_ok() const
-{
-    return _xy_enabled;
-}
 
 // check_home - checks if the home position has moved and offsets everything so it still lines up
 void AP_InertialNav::check_home() {

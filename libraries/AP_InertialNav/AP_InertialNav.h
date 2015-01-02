@@ -9,6 +9,7 @@
 #include <AP_Buffer.h>                  // FIFO buffer library
 #include <AP_GPS_Glitch.h>              // GPS Glitch detection library
 #include <AP_Baro_Glitch.h>             // Baro Glitch detection library
+#include <AP_Nav_Common.h>              // definitions shared by inertial and ekf nav filters
 
 #define AP_INTERTIALNAV_TC_XY   2.5f // default time constant for complementary filter's X & Y axis
 #define AP_INTERTIALNAV_TC_Z    5.0f // default time constant for complementary filter's Z axis
@@ -73,15 +74,14 @@ public:
      */
     virtual void update(float dt);
 
+    /**
+     * get_filter_status : returns filter status as a series of flags
+     */
+    virtual nav_filter_status get_filter_status() const;
+
     //
     // XY Axis specific methods
     //
-
-    /**
-     * position_ok - true if inertial based altitude and position can be trusted
-     * @return
-     */
-    virtual bool position_ok() const;
 
     /**
      * get_position - returns the current position relative to the home location in cm.
@@ -149,12 +149,6 @@ public:
     //
     // Z Axis methods
     //
-
-    /**
-     * altitude_ok - returns true if inertial based altitude and position can be trusted
-     * @return
-     */
-    virtual bool        altitude_ok() const { return true; }
 
     /**
      * get_altitude - get latest altitude estimate in cm above the
