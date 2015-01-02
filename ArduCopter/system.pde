@@ -349,6 +349,22 @@ static bool position_ok()
     }
 }
 
+// optflow_position_ok - returns true if optical flow based position estimate is ok
+static bool optflow_position_ok()
+{
+#if OPTFLOW != ENABLED
+    return false;
+#else
+    // return immediately if optflow is not enabled
+    if (!optflow.enabled()) {
+        return false;
+    }
+
+    // get filter status from inertial nav or EKF
+    return inertial_nav.get_filter_status().flags.horiz_pos_rel;
+#endif
+}
+
 // update_auto_armed - update status of auto_armed flag
 static void update_auto_armed()
 {
