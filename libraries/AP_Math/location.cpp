@@ -84,34 +84,7 @@ bool location_passed_point(const struct Location &location,
                            const struct Location &point1,
                            const struct Location &point2)
 {
-    // the 3 points form a triangle. If the angle between lines
-    // point1->point2 and location->point2 is greater than 90
-    // degrees then we have passed the waypoint
-    Vector2f loc1(location.lat, location.lng);
-    Vector2f pt1(point1.lat, point1.lng);
-    Vector2f pt2(point2.lat, point2.lng);
-    float angle = (loc1 - pt2).angle(pt1 - pt2);
-    if (isinf(angle)) {
-        // two of the points are co-located.
-        // If location is equal to point2 then say we have passed the
-        // waypoint, otherwise say we haven't
-        if (get_distance(location, point2) == 0) {
-            return true;
-        }
-        return false;
-    } else if (angle == 0) {
-        // if we are exactly on the line between point1 and
-        // point2 then we are past the waypoint if the
-        // distance from location to point1 is greater then
-        // the distance from point2 to point1
-        return get_distance(location, point1) >
-               get_distance(point2, point1);
-
-    }
-    if (degrees(angle) > 90) {
-        return true;
-    }
-    return false;
+    return location_path_proportion(location, point1, point2) >= 1.0f;
 }
 
 
@@ -125,23 +98,14 @@ float location_path_proportion(const struct Location &location,
                                const struct Location &point1,
                                const struct Location &point2)
 {
-    Vector2f loc1(location.lat, location.lng);
-    Vector2f pt1(point1.lat, point1.lng);
-    Vector2f pt2(point2.lat, point2.lng);
-    float angle = (loc1 - pt2).angle(pt1 - pt2);
-    float dist_p1_p2 = get_distance(point1, point2);
-    float dist_l_p2 = get_distance(location, point2);
-    if (dist_p1_p2 <= 0) {
+    Vector2f vec1 = location_diff(point1, point2);
+    Vector2f vec2 = location_diff(point1, location);
+    float dsquared = sq(vec1.x) + sq(vec1.y);
+    if (dsquared < 0.001f) {
+        // the two points are very close together
         return 1.0f;
     }
-    if (isinf(angle)) {
-        if (get_distance(location, point2) == 0) {
-            return 1.0f;
-        }
-        return 0.0f;
-    }
-    float x1 = cosf(angle) * dist_l_p2;
-    return (dist_p1_p2 - x1) / dist_p1_p2;
+    return (vec1 * vec2) / dsquared;
 }
 
 /*
