@@ -232,15 +232,16 @@ static void failsafe_gcs_check()
 
     // return immediately if gcs failsafe is disabled, gcs has never been connected or we are not overriding rc controls from the gcs and we are not in guided mode
     // this also checks to see if we have a GCS failsafe active, if we do, then must continue to process the logic for recovery from this state.
-    if((!failsafe.gcs)&&(g.failsafe_gcs == FS_GCS_DISABLED || failsafe.last_heartbeat_ms == 0 || (!failsafe.rc_override_active && control_mode != GUIDED))) {
+    if ((!failsafe.gcs)&&(g.failsafe_gcs == FS_GCS_DISABLED || failsafe.last_heartbeat_ms == 0 || (!failsafe.rc_override_active && control_mode != GUIDED))) {
         return;
     }
 
     // calc time since last gcs update
+    // note: this only looks at the heartbeat from the device id set by g.sysid_my_gcs
     last_gcs_update_ms = millis() - failsafe.last_heartbeat_ms;
 
     // check if all is well
-    if( last_gcs_update_ms < FS_GCS_TIMEOUT_MS) {
+    if (last_gcs_update_ms < FS_GCS_TIMEOUT_MS) {
         // check for recovery from gcs failsafe
         if (failsafe.gcs) {
             failsafe_gcs_off_event();
@@ -250,7 +251,7 @@ static void failsafe_gcs_check()
     }
 
     // do nothing if gcs failsafe already triggered or motors disarmed
-    if( failsafe.gcs || !motors.armed()) {
+    if (failsafe.gcs || !motors.armed()) {
         return;
     }
 
