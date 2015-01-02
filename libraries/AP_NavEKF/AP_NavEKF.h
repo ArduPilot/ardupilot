@@ -607,7 +607,7 @@ private:
     uint32_t flowValidMeaTime_ms;   // time stamp from latest valid flow measurement (msec)
     uint32_t flowMeaTime_ms;        // time stamp from latest flow measurement (msec)
     uint8_t flowQuality;            // unsigned integer representing quality of optical flow data. 255 is maximum quality.
-    uint32_t rngMeaTime_ms;         // time stamp from latest range measurement (msec)
+    uint32_t gndHgtValidTime_ms;    // time stamp from last terrain offset state update (msec)
     Vector3f omegaAcrossFlowTime;   // body angular rates averaged across the optical flow sample period
     Matrix3f Tnb_flow;              // transformation matrix from nav to body axes at the middle of the optical flow sample period
     Matrix3f Tbn_flow;              // transformation matrix from body to nav axes at the middle of the optical flow sample period
