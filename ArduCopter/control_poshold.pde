@@ -97,7 +97,7 @@ static struct {
 static bool poshold_init(bool ignore_checks)
 {
     // fail to initialise PosHold mode if no GPS lock
-    if (!GPS_ok() && !ignore_checks) {
+    if (!position_ok() && !ignore_checks) {
         return false;
     }
     

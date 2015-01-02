@@ -26,7 +26,7 @@ struct Guided_Limit {
 // guided_init - initialise guided controller
 static bool guided_init(bool ignore_checks)
 {
-    if (GPS_ok() || ignore_checks) {
+    if (position_ok() || ignore_checks) {
         // initialise yaw
         set_auto_yaw_mode(get_default_auto_yaw_mode(false));
         // start in position control mode

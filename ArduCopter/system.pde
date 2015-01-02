@@ -335,15 +335,17 @@ static void startup_ground(bool force_gyro_cal)
     set_land_complete_maybe(true);
 }
 
-// returns true if the GPS is ok and home position is set
-static bool GPS_ok()
+// position_ok - returns true if the horizontal absolute position is ok and home position is set
+static bool position_ok()
 {
-    if (ap.home_is_set && gps.status() >= AP_GPS::GPS_OK_FIX_3D && 
-        !gps_glitch.glitching() && !failsafe.gps &&
-        !ekf_check_state.bad_compass && !failsafe.ekf) {
-        return true;
-    }else{
-        return false;
+    if (ahrs.have_inertial_nav()) {
+        // with EKF use filter status and ekf check
+        return (inertial_nav.get_filter_status().flags.horiz_pos_abs && !failsafe.ekf);
+    } else {
+        // with interial nav use GPS based checks
+        return (ap.home_is_set && gps.status() >= AP_GPS::GPS_OK_FIX_3D &&
+                !gps_glitch.glitching() && !failsafe.gps &&
+                !ekf_check_state.bad_compass && !failsafe.ekf);
     }
 }
 

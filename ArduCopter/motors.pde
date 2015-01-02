@@ -508,7 +508,7 @@ static bool pre_arm_gps_checks(bool display_failure)
     }
 
     // ensure GPS is ok
-    if (!GPS_ok()) {
+    if (!position_ok()) {
         if (display_failure) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Need 3D Fix"));
         }

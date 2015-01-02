@@ -7,7 +7,7 @@
 // circle_init - initialise circle controller flight mode
 static bool circle_init(bool ignore_checks)
 {
-    if ((GPS_ok() && inertial_nav.get_filter_status().flags.horiz_pos_abs) || ignore_checks) {
+    if ((position_ok() && inertial_nav.get_filter_status().flags.horiz_pos_abs) || ignore_checks) {
         circle_pilot_yaw_override = false;
 
         // initialize speeds and accelerations

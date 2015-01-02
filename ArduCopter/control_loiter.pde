@@ -7,7 +7,7 @@
 // loiter_init - initialise loiter controller
 static bool loiter_init(bool ignore_checks)
 {
-    if (GPS_ok() || ignore_checks) {
+    if (position_ok() || ignore_checks) {
 
         // set target to current position
         wp_nav.init_loiter_target();

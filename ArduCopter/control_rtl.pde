@@ -10,7 +10,7 @@
 // rtl_init - initialise rtl controller
 static bool rtl_init(bool ignore_checks)
 {
-    if (GPS_ok() || ignore_checks) {
+    if (position_ok() || ignore_checks) {
         rtl_climb_start();
         return true;
     }else{

@@ -9,7 +9,7 @@ static bool land_pause;
 static bool land_init(bool ignore_checks)
 {
     // check if we have GPS and decide which LAND we're going to do
-    land_with_gps = GPS_ok();
+    land_with_gps = position_ok();
     if (land_with_gps) {
         // set target to stopping point
         Vector3f stopping_point;
