@@ -4517,7 +4517,7 @@ void  NavEKF::getFilterStatus(uint8_t &status) const
     bool doingNormalGpsNav = !posTimeout && (PV_AidingMode == AID_ABSOLUTE);
     bool notDeadReckoning = !constVelMode && !constPosMode;
     bool someVertRefData = (!velTimeout && (_fusionModeGPS == 0)) || !hgtTimeout;
-    bool someHorizRefData = !(velTimeout && posTimeout && tasTimeout);
+    bool someHorizRefData = !(velTimeout && posTimeout && tasTimeout) || doingFlowNav;
     status = (!state.quat.is_nan()<<0 | // attitude valid (we need a better check)
               (someHorizRefData && notDeadReckoning)<<1 | // horizontal velocity estimate valid
               someVertRefData<<2 | // vertical velocity estimate valid
