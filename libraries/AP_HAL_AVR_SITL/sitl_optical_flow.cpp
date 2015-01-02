@@ -62,11 +62,23 @@ void SITL_State::_update_flow(void)
 
     float height_agl = _sitl->state.altitude - terrain_height_amsl;
 
+    // NED velocity vector in m/s
+    Vector3f velocity(_sitl->state.speedN, 
+                      _sitl->state.speedE, 
+                      _sitl->state.speedD);
+
+    // a rotation matrix following DCM conventions
+    Matrix3f rotmat;
+    rotmat.from_euler(radians(_sitl->state.rollDeg),
+                      radians(_sitl->state.pitchDeg),
+                      radians(_sitl->state.yawDeg));
+                      
+
     state.device_id = 1;
     state.surface_quality = 0;
 
     // rubbish calculation for Paul to fill in
-    state.flowRate = Vector2f(gyro.x, gyro.y) * height_agl;
+    state.flowRate = Vector2f(gyro.x, gyro.y) * height_agl * velocity.length();
     state.bodyRate = Vector2f(gyro.x, gyro.y) * height_agl;
 
     _optical_flow->setHIL(state);
