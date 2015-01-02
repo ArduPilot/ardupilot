@@ -2542,10 +2542,12 @@ void NavEKF::RunAuxiliaryEKF()
     // calculate a predicted LOS rate squared
     float losRateSq = (sq(state.velocity.x) + sq(state.velocity.y)) / sq(flowStates[1] - state.position[2]);
     // don't update terrain offset state if there is no range finder and not generating enough LOS rate, or without GPS, as it is poorly observable
+    // record the time we last updated the terrain offset state
     if ((losRateSq < 0.01f || PV_AidingMode == AID_RELATIVE) && !fuseRngData) {
         inhibitGndState = true;
     } else {
         inhibitGndState = false;
+        gndHgtValidTime_ms = imuSampleTime_ms;
     }
     // Don't update focal length offset if there is no range finder or not using GPS, or we are not flying fast enough to generate a useful LOS rate
     if (!fuseRngData || PV_AidingMode == AID_RELATIVE || losRateSq < 0.01f || (flowStates[1] - state.position[2]) < 3.0f) {
@@ -4092,7 +4094,6 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
         statesAtRngTime = statesAtFlowTime;
         rngMea = rawSonarRange;
         newDataRng = true;
-        rngMeaTime_ms = imuSampleTime_ms;
     } else {
         newDataRng = false;
     }
@@ -4304,7 +4305,7 @@ void NavEKF::InitialiseVariables()
     flowValidMeaTime_ms = imuSampleTime_ms;
     flowMeaTime_ms = 0;
     prevFlowFusionTime_ms = imuSampleTime_ms;
-    rngMeaTime_ms = imuSampleTime_ms;
+    gndHgtValidTime_ms = 0;
     ekfStartTime_ms = imuSampleTime_ms;
 
     // initialise other variables
@@ -4518,13 +4519,14 @@ void  NavEKF::getFilterStatus(uint8_t &status) const
     bool notDeadReckoning = !constVelMode && !constPosMode;
     bool someVertRefData = (!velTimeout && (_fusionModeGPS == 0)) || !hgtTimeout;
     bool someHorizRefData = !(velTimeout && posTimeout && tasTimeout) || doingFlowNav;
+    bool gndOffsetValid = (imuSampleTime_ms - gndHgtValidTime_ms < 5000);
     status = (!state.quat.is_nan()<<0 | // attitude valid (we need a better check)
               (someHorizRefData && notDeadReckoning)<<1 | // horizontal velocity estimate valid
               someVertRefData<<2 | // vertical velocity estimate valid
               ((doingFlowNav || doingWindRelNav || doingNormalGpsNav) && notDeadReckoning)<<3 | // relative horizontal position estimate valid
               (doingNormalGpsNav && notDeadReckoning)<<4 | // absolute horizontal position estimate valid
               !hgtTimeout<<5 | // vertical position estimate valid
-              !inhibitGndState<<6 | // terrain height estimate valid
+              gndOffsetValid<<6 | // terrain height estimate valid
               constPosMode<<7); // constant position mode
 }
 
