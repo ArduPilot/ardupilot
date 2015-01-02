@@ -304,6 +304,7 @@ static void do_RTL(void)
 
 static void do_takeoff(const AP_Mission::Mission_Command& cmd)
 {
+    prev_WP_loc = current_loc;
     set_next_WP(cmd.content.location);
     // pitch in deg, airspeed  m/s, throttle %, track WP 1 or 0
     auto_state.takeoff_pitch_cd        = (int16_t)cmd.p1 * 100;
