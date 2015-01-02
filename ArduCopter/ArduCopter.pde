@@ -314,8 +314,8 @@ AP_Mission mission(ahrs, &start_command, &verify_command, &exit_mission);
 ////////////////////////////////////////////////////////////////////////////////
 // Optical flow sensor
 ////////////////////////////////////////////////////////////////////////////////
-#if OPTFLOW == ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_PX4
-static AP_OpticalFlow_PX4 optflow(ahrs);
+#if OPTFLOW == ENABLED
+static OpticalFlow optflow;
 #endif
 
 // gnd speed limit required to observe optical flow sensor limits

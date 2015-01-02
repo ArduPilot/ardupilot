@@ -388,7 +388,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //  OPTICAL_FLOW
 #ifndef OPTFLOW
- #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+ #if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
   # define OPTFLOW       ENABLED
  #else
   # define OPTFLOW       DISABLED
