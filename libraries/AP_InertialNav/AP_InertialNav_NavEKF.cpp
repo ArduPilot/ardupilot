@@ -39,15 +39,16 @@ void AP_InertialNav_NavEKF::update(float dt)
 }
 
 /**
- * position_ok - true if inertial based altitude and position can be trusted
- * @return
+ * get_filter_status : returns filter status as a series of flags
  */
-bool AP_InertialNav_NavEKF::position_ok() const
+nav_filter_status AP_InertialNav_NavEKF::get_filter_status() const
 {
-    if (_ahrs.have_inertial_nav() && _haveabspos) {
-        return true;
+    if (_ahrs.have_inertial_nav()) {
+        nav_filter_status ret;
+        _ahrs_ekf.get_NavEKF().getFilterStatus(ret);
+        return ret;
     }
-    return AP_InertialNav::position_ok();
+    return AP_InertialNav::get_filter_status();
 }
 
 /**
@@ -141,18 +142,6 @@ float AP_InertialNav_NavEKF::get_velocity_xy() const
         return pythagorous2(_velocity_cm.x, _velocity_cm.y);
     }
     return AP_InertialNav::get_velocity_xy();
-}
-
-/**
- * altitude_ok - returns true if inertial based altitude and position can be trusted
- * @return
- */
-bool AP_InertialNav_NavEKF::altitude_ok() const
-{
-    if (_ahrs.have_inertial_nav() && _haveabspos) {
-        return true;
-    }
-    return AP_InertialNav::altitude_ok();
 }
 
 /**

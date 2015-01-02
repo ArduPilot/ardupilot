@@ -10,6 +10,8 @@
 #ifndef __AP_INERTIALNAV_NAVEKF_H__
 #define __AP_INERTIALNAV_NAVEKF_H__
 
+#include <AP_Nav_Common.h>              // definitions shared by inertial and ekf nav filters
+
 class AP_InertialNav_NavEKF : public AP_InertialNav
 {
 public:
@@ -32,10 +34,9 @@ public:
     void        update(float dt);
 
     /**
-     * position_ok - true if inertial based altitude and position can be trusted
-     * @return
+     * get_filter_status - returns filter status as a series of flags
      */
-    bool        position_ok() const;
+    nav_filter_status get_filter_status() const;
 
     /**
      * get_position - returns the current position relative to the home location in cm.
@@ -87,12 +88,6 @@ public:
      * @returns the current horizontal velocity in cm/s
      */
     float        get_velocity_xy() const;
-
-    /**
-     * altitude_ok - returns true if inertial based altitude and position can be trusted
-     * @return
-     */
-    bool        altitude_ok() const;
 
     /**
      * get_altitude - get latest altitude estimate in cm
