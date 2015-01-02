@@ -112,6 +112,7 @@
 
 #include <AP_Notify.h>      // Notify library
 #include <AP_BattMonitor.h> // Battery monitor library
+#include <AP_OpticalFlow.h>     // Optical Flow library
 
 // Configuration
 #include "config.h"
@@ -257,6 +258,8 @@ static bool start_command(const AP_Mission::Mission_Command& cmd);
 static bool verify_command(const AP_Mission::Mission_Command& cmd);
 static void exit_mission();
 AP_Mission mission(ahrs, &start_command, &verify_command, &exit_mission);
+
+static OpticalFlow optflow;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 SITL sitl;
