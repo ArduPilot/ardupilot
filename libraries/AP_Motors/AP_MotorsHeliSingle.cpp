@@ -365,7 +365,25 @@ void AP_MotorsHeliSingle::move_swash(int16_t roll_out, int16_t pitch_out, int16_
         _servo_2.servo_out += 500;
     }
     _servo_3.servo_out = (_roll_factors[CH_3] * roll_out + _pitch_factors[CH_3] * pitch_out)/10 + _collective_factors[CH_3] * collective_out_scaled + (_servo_3.radio_trim-1500);
-    _servo_4.servo_out = yaw_out + yaw_offset;
+
+    // use servo_out to calculate pwm_out and radio_out
+    _servo_1.calc_pwm();
+    _servo_2.calc_pwm();
+    _servo_3.calc_pwm();
+
+    // actually move the servos
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _servo_1.radio_out);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _servo_2.radio_out);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]), _servo_3.radio_out);
+
+    // update the yaw rate
+    yaw_control(yaw_out + yaw_offset);
+}
+
+// yaw_control - update the yaw rate
+void AP_MotorsHeliSingle::yaw_control(int16_t yaw_out)
+{
+    _servo_4.servo_out = yaw_out
 
     // constrain yaw and update limits
     if (_servo_4.servo_out < -4500) {
@@ -376,17 +394,9 @@ void AP_MotorsHeliSingle::move_swash(int16_t roll_out, int16_t pitch_out, int16_
         _servo_4.servo_out = 4500;
         limit.yaw = true;
     }
-
-    // use servo_out to calculate pwm_out and radio_out
-    _servo_1.calc_pwm();
-    _servo_2.calc_pwm();
-    _servo_3.calc_pwm();
+ 
     _servo_4.calc_pwm();
 
-    // actually move the servos
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _servo_1.radio_out);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _servo_2.radio_out);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]), _servo_3.radio_out);
     hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _servo_4.radio_out);
 
     // output gain to exernal gyro

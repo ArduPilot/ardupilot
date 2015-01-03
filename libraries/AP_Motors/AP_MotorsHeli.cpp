@@ -159,7 +159,7 @@ void AP_MotorsHeli::enable()
 void AP_MotorsHeli::output_min()
 {
     // move swash to mid
-    move_swash(0,0,500,0);
+    move_swash(0, 0, 500, 0);
 
     // override limits flags
     limit.roll_pitch = true;
@@ -167,7 +167,6 @@ void AP_MotorsHeli::output_min()
     limit.throttle_lower = true;
     limit.throttle_upper = false;
 }
-
 
 // allow_arming - returns true if main rotor is spinning and it is ok to arm
 bool AP_MotorsHeli::allow_arming() const

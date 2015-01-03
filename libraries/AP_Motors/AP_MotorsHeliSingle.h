@@ -113,8 +113,6 @@ public:
 
 protected:
 
-protected:
-
     // init_servos
     void init_servos ();
 
@@ -127,9 +125,10 @@ protected:
     // heli_move_swash - moves swash plate to attitude of parameters passed in
     void move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll_in, int16_t yaw_out);
 
+    virtual void yaw_control(int16_t yaw_out);
 private:
 
-    void rsc_control ();
+    virtual void rsc_control ();
     
     // tail_ramp - ramps tail motor towards target.  Only used for direct drive variable pitch tails
     // results put into _tail_direct_drive_out and sent to ESC
