@@ -32,7 +32,6 @@ void SITL_State::_update_flow(void)
     Vector3f gyro;
 
     if (!_optical_flow ||
-        !_terrain ||
         !_sitl->flow_enable) {
         return;
     }
@@ -47,20 +46,6 @@ void SITL_State::_update_flow(void)
     gyro(p, q, r);
 
     OpticalFlow::OpticalFlow_state state;
-
-    // get height above terrain from AP_Terrain. This assumes
-    // AP_Terrain is working
-    float terrain_height_amsl;
-    struct Location location;
-    location.lat = _sitl->state.latitude*1.0e7;
-    location.lng = _sitl->state.longitude*1.0e7;
-
-    if (!_terrain->height_amsl(location, terrain_height_amsl)) {
-        // no terrain height available
-        return;
-    }
-
-    float height_agl = _sitl->state.altitude - terrain_height_amsl;
 
     // NED velocity vector in m/s
     Vector3f velocity(_sitl->state.speedN, 
@@ -80,7 +65,7 @@ void SITL_State::_update_flow(void)
     // estimate range to centre of image
     float range;
     if (rotmat.c.z > 0.05f) {
-        range = height_agl / rotmat.c.z;
+        range = height_agl() / rotmat.c.z;
     } else {
         range = 1e38f;
     }

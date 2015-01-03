@@ -63,6 +63,7 @@ private:
 
     // these methods are static as they are called
     // from the timer
+    static float height_agl(void);
     static void _update_barometer(float height);
     static void _update_compass(float rollDeg, float pitchDeg, float yawDeg);
     static void _update_flow(void);
@@ -105,7 +106,7 @@ private:
     static void _simulator_output(void);
     static void _apply_servo_filter(float deltat);
     static uint16_t _airspeed_sensor(float airspeed);
-    static uint16_t _ground_sonar(float altitude);
+    static uint16_t _ground_sonar();
     static float _gyro_drift(void);
     static float _rand_float(void);
     static Vector3f _rand_vec3f(void);

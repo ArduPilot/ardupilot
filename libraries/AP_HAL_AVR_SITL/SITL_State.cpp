@@ -669,4 +669,34 @@ void SITL_State::loop_hook(void)
 }
 
 
+/*
+  return height above the ground in meters
+ */
+float SITL_State::height_agl(void)
+{
+	static float home_alt = -1;
+
+	if (home_alt == -1 && _sitl->state.altitude > 0) {
+        // remember home altitude as first non-zero altitude
+		home_alt = _sitl->state.altitude;
+    }
+
+    if (_terrain &&
+        _sitl->terrain_enable) {
+        // get height above terrain from AP_Terrain. This assumes
+        // AP_Terrain is working
+        float terrain_height_amsl;
+        struct Location location;
+        location.lat = _sitl->state.latitude*1.0e7;
+        location.lng = _sitl->state.longitude*1.0e7;
+
+        if (_terrain->height_amsl(location, terrain_height_amsl)) {
+            return _sitl->state.altitude - terrain_height_amsl;
+        }
+    }
+
+    // fall back to flat earth model
+    return _sitl->state.altitude - home_alt;
+}
+
 #endif
