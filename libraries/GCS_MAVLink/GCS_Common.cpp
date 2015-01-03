@@ -1154,3 +1154,37 @@ void GCS_MAVLINK::handle_set_mode(mavlink_message_t* msg, bool (*set_mode)(uint8
     // send ACK or NAK
     mavlink_msg_command_ack_send_buf(msg, chan, MAVLINK_MSG_ID_SET_MODE, result);
 }
+
+#if AP_AHRS_NAVEKF_AVAILABLE
+/*
+  send OPTICAL_FLOW message
+ */
+void GCS_MAVLINK::send_opticalflow(AP_AHRS_NavEKF &ahrs, const OpticalFlow &optflow)
+{
+    // exit immediately if no optical flow sensor or not healthy
+    if (!optflow.healthy()) {
+        return;
+    }
+
+    // get rates from sensor
+    const Vector2f &flowRate = optflow.flowRate();
+    const Vector2f &bodyRate = optflow.bodyRate();
+    float hagl = 0;
+
+    if (ahrs.have_inertial_nav()) {
+        ahrs.get_NavEKF().getHAGL(hagl);
+    }
+
+    // populate and send message
+    mavlink_msg_optical_flow_send(
+        chan,
+        hal.scheduler->millis(),
+        0, // sensor id is zero
+        flowRate.x,
+        flowRate.y,
+        bodyRate.x,
+        bodyRate.y,
+        optflow.quality(),
+        hagl); // ground distance (in meters) set to zero
+}
+#endif

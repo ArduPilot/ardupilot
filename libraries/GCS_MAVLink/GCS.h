@@ -124,6 +124,9 @@ public:
     void send_sensor_offsets(const AP_InertialSensor &ins, const Compass &compass, AP_Baro &barometer);
     void send_ahrs(AP_AHRS &ahrs);
     void send_battery2(const AP_BattMonitor &battery);
+#if AP_AHRS_NAVEKF_AVAILABLE
+    void send_opticalflow(AP_AHRS_NavEKF &ahrs, const OpticalFlow &optflow);
+#endif
 
     // return a bitmap of active channels. Used by libraries to loop
     // over active channels to send to all active channels    
