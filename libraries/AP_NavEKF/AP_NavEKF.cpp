@@ -3668,16 +3668,17 @@ bool NavEKF::getHAGL(float &HAGL) const
 }
 
 // return data for debugging optical flow fusion
-void NavEKF::getFlowDebug(float &scaleFactor, float &gndPos, float &flowInnovX, float &flowInnovY, float &augFlowInnovX, float &augFlowInnovY, float &rngInnov, float &range) const
+void NavEKF::getFlowDebug(float &scaleFactor, float &estHAGL, float &flowInnovX, float &flowInnovY, float &flowVarX, float &flowVarY, float &rngInnov, float &range, float &gndOffsetErr) const
 {
     scaleFactor = flowStates[0];
-    gndPos = flowStates[1];
+    estHAGL = flowStates[1] - state.position.z;
     flowInnovX = innovOptFlow[0];
     flowInnovY = innovOptFlow[1];
-    augFlowInnovX = auxFlowObsInnov[0];
-    augFlowInnovY = auxFlowObsInnov[1];
+    flowVarX = flowTestRatio[0];
+    flowVarY = flowTestRatio[1];
     rngInnov = innovRng;
     range = rngMea;
+    gndOffsetErr = sqrtf(Popt[1][1]); // note Popt[1][1] is constrained to be non-negative in RunAuxiliaryEKF()
 }
 
 // calculate whether the flight vehicle is on the ground or flying from height, airspeed and GPS speed
