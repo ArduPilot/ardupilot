@@ -441,32 +441,6 @@ static void NOINLINE send_rangefinder(mavlink_channel_t chan)
 }
 #endif
 
-#if OPTFLOW == ENABLED
-static void NOINLINE send_opticalflow(mavlink_channel_t chan)
-{
-    // exit immediately if no optical flow sensor or not healthy
-    if (!optflow.healthy()) {
-        return;
-    }
-
-    // get rates from sensor
-    const Vector2f &flowRate = optflow.flowRate();
-    const Vector2f &bodyRate = optflow.bodyRate();
-
-    // populate and send message
-    mavlink_msg_optical_flow_send(
-        chan,
-        millis(),
-        0, // sensor id is zero
-        flowRate.x,
-        flowRate.y,
-        bodyRate.x,
-        bodyRate.y,
-        optflow.quality(),
-        0); // ground distance (in meters) set to zero
-}
-#endif // OPTFLOW == ENABLED
-
 static void NOINLINE send_statustext(mavlink_channel_t chan)
 {
     mavlink_statustext_t *s = &gcs[chan-MAVLINK_COMM_0].pending_status;
@@ -674,7 +648,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     case MSG_OPTICAL_FLOW:
 #if OPTFLOW == ENABLED
         CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
-        send_opticalflow(chan);
+        gcs[chan-MAVLINK_COMM_0].send_opticalflow(ahrs, optflow);
 #endif
         break;
 

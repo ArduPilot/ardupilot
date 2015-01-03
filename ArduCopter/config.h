@@ -388,7 +388,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //  OPTICAL_FLOW
 #ifndef OPTFLOW
- #if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+ #if AP_AHRS_NAVEKF_AVAILABLE
   # define OPTFLOW       ENABLED
  #else
   # define OPTFLOW       DISABLED
