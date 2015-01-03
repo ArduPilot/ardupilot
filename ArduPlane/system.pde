@@ -167,6 +167,9 @@ static void init_ardupilot()
             ahrs.set_compass(&compass);
         }
     }
+    
+    // make optflow available to libraries
+    ahrs.set_optflow(&optflow);
 
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
