@@ -3612,14 +3612,14 @@ bool NavEKF::getHAGL(float &HAGL) const
 }
 
 // return data for debugging optical flow fusion
-void NavEKF::getFlowDebug(float &dummy, float &estHAGL, float &flowInnovX, float &flowInnovY, float &flowVarX, float &flowVarY, float &rngInnov, float &range, float &gndOffsetErr) const
+void NavEKF::getFlowDebug(float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov, float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const
 {
-    dummy = 0.0f;
-    estHAGL = terrainState - state.position.z;
+    varFlow = max(flowTestRatio[0],flowTestRatio[1]);
+    gndOffset = terrainState;
     flowInnovX = innovOptFlow[0];
     flowInnovY = innovOptFlow[1];
-    auxInnovX = auxFlowObsInnov;
-    auxInnovY = auxFlowObsInnov;
+    auxInnov = auxFlowObsInnov;
+    HAGL = terrainState - state.position.z;
     rngInnov = innovRng;
     range = rngMea;
     gndOffsetErr = sqrtf(Popt); // note Popt is constrained to be non-negative in EstimateTerrainOffset()
