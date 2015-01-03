@@ -38,11 +38,11 @@ void SITL_State::_update_flow(void)
     }
 
     // convert roll rates to body frame
-    SITL::convert_body_frame(radians(_sitl->state.rollDeg),
-                             radians(_sitl->state.pitchDeg),
-                             radians(_sitl->state.rollRate), 
-                             radians(_sitl->state.pitchRate), 
-                             radians(_sitl->state.yawRate),
+    SITL::convert_body_frame(_sitl->state.rollDeg,
+                             _sitl->state.pitchDeg,
+                             _sitl->state.rollRate, 
+                             _sitl->state.pitchRate, 
+                             _sitl->state.yawRate,
                              &p, &q, &r);
     gyro(p, q, r);
 
@@ -75,7 +75,7 @@ void SITL_State::_update_flow(void)
                       
 
     state.device_id = 1;
-    state.surface_quality = 0;
+    state.surface_quality = 51;
 
     // estimate range to centre of image
     float range;
@@ -86,7 +86,7 @@ void SITL_State::_update_flow(void)
     }
 
     // Calculate relative velocity in sensor frame assuming no misalignment between sensor and vehicle body axes
-    Vector3f relVelSensor = rotmat*velocity;
+    Vector3f relVelSensor = rotmat.mul_transpose(velocity);
 
     // Divide velocity by range and add body rates to get predicted sensed angular
     // optical rates relative to X and Y sensor axes assuming no misalignment or scale
