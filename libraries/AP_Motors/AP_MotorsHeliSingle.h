@@ -54,14 +54,14 @@ public:
                         RC_Channel&      servo_1,
                         RC_Channel&      servo_2,
                         RC_Channel&      servo_3,
-                        RC_Channel&      yaw_servo,
+                        RC_Channel&      servo_yaw,
                         uint16_t         speed_hz = AP_MOTORS_HELI_SPEED_DEFAULT) :
         AP_MotorsHeli(rc_roll, rc_pitch, rc_throttle, rc_yaw, servo_rsc, speed_hz),
         _servo_aux(servo_aux),
         _servo_1(servo_1),
         _servo_2(servo_2),
         _servo_3(servo_3),
-        _servo_4(yaw_servo),
+        _servo_yaw(servo_yaw),
         _tail_direct_drive_out(0),
         _delta_phase_angle(0)
     {
@@ -126,10 +126,19 @@ protected:
     void move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll_in, int16_t yaw_out);
 
     virtual void yaw_control(int16_t yaw_out);
-private:
 
     virtual void rsc_control ();
-    
+
+    // external objects we depend upon
+    RC_Channel&     _servo_aux;                 // output to ext gyro gain and tail direct drive esc (ch7)
+    RC_Channel&     _servo_1;                   // swash plate servo #1
+    RC_Channel&     _servo_2;                   // swash plate servo #2
+    RC_Channel&     _servo_3;                   // swash plate servo #3
+    RC_Channel&     _servo_yaw;                   // tail servo
+
+    // parameters
+    AP_Int16        _tail_type;                 // Tail type used: Servo, Servo with external gyro, direct drive variable pitch or direct drive fixed pitch
+private:
     // tail_ramp - ramps tail motor towards target.  Only used for direct drive variable pitch tails
     // results put into _tail_direct_drive_out and sent to ESC
     void tail_ramp(int16_t tail_target);
@@ -140,18 +149,10 @@ private:
     // write_aux - outputs pwm onto output aux channel (ch7). servo_out parameter is of the range 0 ~ 1000
     void write_aux(int16_t servo_out);
 
-    // external objects we depend upon
-    RC_Channel&     _servo_aux;                 // output to ext gyro gain and tail direct drive esc (ch7)
-    RC_Channel&     _servo_1;                   // swash plate servo #1
-    RC_Channel&     _servo_2;                   // swash plate servo #2
-    RC_Channel&     _servo_3;                   // swash plate servo #3
-    RC_Channel&     _servo_4;                   // tail servo
-
     // parameters
     AP_Int16        _servo1_pos;                // Angular location of swash servo #1
     AP_Int16        _servo2_pos;                // Angular location of swash servo #2
     AP_Int16        _servo3_pos;                // Angular location of swash servo #3
-    AP_Int16        _tail_type;                 // Tail type used: Servo, Servo with external gyro, direct drive variable pitch or direct drive fixed pitch
     AP_Int8         _swash_type;                // Swash Type Setting - either 3-servo CCPM or H1 Mechanical Mixing
     AP_Int16        _ext_gyro_gain;             // PWM sent to external gyro on ch7 when tail type is Servo w/ ExtGyro
     AP_Int16        _phase_angle;               // Phase angle correction for rotor head.  If pitching the swash forward induces a roll, this can be correct the problem

@@ -219,7 +219,7 @@ void AP_MotorsHeliSingle::init_servos ()
     init_swash_servo (_servo_2);
     init_swash_servo (_servo_3);
 
-    _servo_4.set_angle(4500);
+    _servo_yaw.set_angle(4500);
 }
 
 // reset_servos
@@ -383,21 +383,21 @@ void AP_MotorsHeliSingle::move_swash(int16_t roll_out, int16_t pitch_out, int16_
 // yaw_control - update the yaw rate
 void AP_MotorsHeliSingle::yaw_control(int16_t yaw_out)
 {
-    _servo_4.servo_out = yaw_out
+    _servo_yaw.servo_out = yaw_out;
 
     // constrain yaw and update limits
-    if (_servo_4.servo_out < -4500) {
-        _servo_4.servo_out = -4500;
+    if (_servo_yaw.servo_out < -4500) {
+        _servo_yaw.servo_out = -4500;
         limit.yaw = true;
     }
-    if (_servo_4.servo_out > 4500) {
-        _servo_4.servo_out = 4500;
+    if (_servo_yaw.servo_out > 4500) {
+        _servo_yaw.servo_out = 4500;
         limit.yaw = true;
     }
  
-    _servo_4.calc_pwm();
+    _servo_yaw.calc_pwm();
 
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _servo_4.radio_out);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _servo_yaw.radio_out);
 
     // output gain to exernal gyro
     if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
@@ -447,7 +447,7 @@ void AP_MotorsHeliSingle::rsc_control()
         // output fixed-pitch speed control if Ch8 is high
         if (_rotor_desired > 0 || _rotor_speed_estimate > 0) {
             // copy yaw output to tail esc
-            write_aux(_servo_4.servo_out);
+            write_aux(_servo_yaw.servo_out);
         }else{
             write_aux(0);
         }
