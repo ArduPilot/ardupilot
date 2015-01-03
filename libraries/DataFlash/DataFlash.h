@@ -352,12 +352,12 @@ struct PACKED log_EKF4 {
 struct PACKED log_EKF5 {
     LOG_PACKET_HEADER;
     uint32_t time_ms;
+    uint8_t normInnov;
     int16_t FIX;
     int16_t FIY;
-    uint8_t normInnovFX;
-    uint8_t normInnovFY;
-    uint16_t estHAGL;
-    uint8_t scaler;
+    int16_t AFI;
+    uint16_t HAGL;
+    int16_t offset;
     int16_t RI;
     uint16_t meaRng;
     uint16_t errHAGL;
@@ -532,7 +532,7 @@ struct PACKED log_Esc {
     { LOG_ESC8_MSG, sizeof(log_Esc), \
       "ESC8",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
     { LOG_EKF5_MSG, sizeof(log_EKF5), \
-      "EKF5","IhhBBCBcCC","TimeMS,FIX,FIY,SFX,SFY,estHAGL,fScaler,RI,meaRng,errHAGL" }
+      "EKF5","IBhhhCccCC","TimeMS,normInnov,FIX,FIY,AFI,HAGL,offset,RI,meaRng,errHAGL" }
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 #define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_EXTRA_STRUCTURES
