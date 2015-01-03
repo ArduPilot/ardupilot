@@ -4071,10 +4071,10 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
         // recall vehicle states at mid sample time for flow observations allowing for delays
         RecallStates(statesAtFlowTime, imuSampleTime_ms - _msecFLowDelay - flowTimeDeltaAvg_ms/2);
         // calculate rotation matrices at mid sample time for flow observations
-        Quaternion q(statesAtFlowTime.quat[0],statesAtFlowTime.quat[1],statesAtFlowTime.quat[2],statesAtFlowTime.quat[3]);
-        q.rotation_matrix(Tbn_flow);
+        statesAtFlowTime.quat.rotation_matrix(Tbn_flow);
         Tnb_flow = Tbn_flow.transposed();
         // correct flow sensor rates for bias
+        
         omegaAcrossFlowTime.x = rawGyroRates.x - flowGyroBias.x;
         omegaAcrossFlowTime.y = rawGyroRates.y - flowGyroBias.y;
         // write uncorrected flow rate measurements that will be used by the focal length scale factor estimator
