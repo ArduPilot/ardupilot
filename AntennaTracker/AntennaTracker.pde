@@ -62,6 +62,7 @@
 #include <AP_Airspeed.h>
 #include <RC_Channel.h>
 #include <AP_BoardConfig.h>
+#include <AP_OpticalFlow.h>
 
 // Configuration
 #include "config.h"
