@@ -377,8 +377,8 @@ private:
     // this is useful for motion compensation of optical flow measurements
     void RecallOmega(Vector3f &omegaAvg, uint32_t msecStart, uint32_t msecEnd);
 
-    // Estimate optical flow focal length scale factor and terrain offset using a 2-state EKF
-    void RunAuxiliaryEKF();
+    // Estimate terrain offset using a single state EKF
+    void EstimateTerrainOffset();
 
     // fuse optical flow measurements into the main filter
     void FuseOptFlow();
@@ -600,8 +600,8 @@ private:
     bool flowDataValid;             // true while optical flow data is still fresh
     state_elements statesAtFlowTime;// States at the middle of the optical flow sample period
     bool fuseOptFlowData;           // this boolean causes the last optical flow measurement to be fused
-    float auxFlowObsInnov[2];       // optical flow observation innovations from 2-state focal length scale factor and terrain offset estimator
-    float auxFlowObsInnovVar[2];    // innovation variance for optical flow observations from 2-state focal length scale factor and terrain offset estimator
+    float auxFlowObsInnov;          // optical flow rate innovation from 1-state terrain offset estimator
+    float auxFlowObsInnovVar;       // innovation variance for optical flow observations from 1-state terrain offset estimator
     float flowRadXYcomp[2];         // motion compensated optical flow angular rates(rad/sec)
     float flowRadXY[2];             // raw (non motion compensated) optical flow angular rates (rad/sec)
     uint32_t flowValidMeaTime_ms;   // time stamp from latest valid flow measurement (msec)
@@ -613,8 +613,8 @@ private:
     Matrix3f Tbn_flow;              // transformation matrix from body to nav axes at the middle of the optical flow sample period
     float varInnovOptFlow[2];       // optical flow innovations variances (rad/sec)^2
     float innovOptFlow[2];          // optical flow LOS innovations (rad/sec)
-    float Popt[2][2];               // state covariance matrix
-    float flowStates[2];            // flow states [scale factor, terrain position]
+    float Popt;                     // Optical flow terrain height state covariance (m^2)
+    float terrainState;             // terrain position state (m)
     float prevPosN;                 // north position at last measurement
     float prevPosE;                 // east position at last measurement
     state_elements statesAtRngTime; // States at the range finder measurement time
@@ -624,9 +624,8 @@ private:
     float rngMea;                   // range finder measurement (m)
     bool inhibitGndState;           // true when the terrain position state is to remain constant
     uint32_t prevFlowFusionTime_ms; // time the last flow measurement was fused
-    bool fScaleInhibit;             // true when the focal length scale factor is to remain constant
     float flowTestRatio[2];         // square of optical flow innovations divided by fail threshold used by main filter where >1.0 is a fail
-    float auxFlowTestRatio[2];      // sum of squares of optical flow innovations divided by fail threshold used by aux filter
+    float auxFlowTestRatio;         // sum of squares of optical flow innovation divided by fail threshold used by 1-state terrain offset estimator
     float R_LOS;                    // variance of optical flow rate measurements (rad/sec)^2
     float auxRngTestRatio;          // square of range finder innovations divided by fail threshold used by main filter where >1.0 is a fail
     Vector2f flowGyroBias;          // bias error of optical flow sensor gyro output
@@ -643,6 +642,7 @@ private:
                       AID_RELATIVE=2    // only optical flow aiding is being used so position estimates will be relative
                      };
     AidingMode PV_AidingMode;           // Defines the preferred mode for aiding of velocity and position estimates from the INS
+    bool gndOffsetValid;            // true when the ground offset state can still be considered valid
 
     // states held by optical flow fusion across time steps
     // optical flow X,Y motion compensated rate measurements are fused across two time steps
