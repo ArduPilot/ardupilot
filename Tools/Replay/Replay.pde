@@ -48,6 +48,7 @@
 #include <AP_Rally.h>
 #include <AP_BattMonitor.h>
 #include <AP_Terrain.h>
+#include <AP_OpticalFlow.h>
 #include <Parameters.h>
 #include <stdio.h>
 #include <getopt.h>
