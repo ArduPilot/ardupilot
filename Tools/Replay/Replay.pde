@@ -551,19 +551,19 @@ void loop()
             int16_t offsetEast = (int8_t)(constrain_float(offset.y,INT16_MIN,INT16_MAX));
 
             // print EKF4 data packet
-            fprintf(ekf4f, "%.3f %d %d %d %d %d %d %d %d %d %d %d %d\n",
+            fprintf(ekf4f, "%.3f %u %d %d %d %d %d %d %d %d %d %d\n",
                     hal.scheduler->millis() * 0.001f,
-                    hal.scheduler->millis(),
-                    sqrtvarV,
-                    sqrtvarP,
-                    sqrtvarH,
-                    sqrtvarMX, 
-                    sqrtvarMY, 
-                    sqrtvarMZ,
-                    sqrtvarVT,
-                    offsetNorth,
-                    offsetEast,
-                    faultStatus);
+                    (unsigned)hal.scheduler->millis(),
+                    (int)sqrtvarV,
+                    (int)sqrtvarP,
+                    (int)sqrtvarH,
+                    (int)sqrtvarMX, 
+                    (int)sqrtvarMY, 
+                    (int)sqrtvarMZ,
+                    (int)sqrtvarVT,
+                    (int)offsetNorth,
+                    (int)offsetEast,
+                    (int)faultStatus);
         }
     }
 }
