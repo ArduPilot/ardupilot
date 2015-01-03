@@ -77,9 +77,28 @@ void SITL_State::_update_flow(void)
     state.device_id = 1;
     state.surface_quality = 0;
 
-    // rubbish calculation for Paul to fill in
-    state.flowRate = Vector2f(gyro.x, gyro.y) * height_agl * velocity.length();
-    state.bodyRate = Vector2f(gyro.x, gyro.y) * height_agl;
+    // estimate range to centre of image
+    float range;
+    if (rotmat.c.z > 0.05f) {
+        range = height_agl / rotmat.c.z;
+    } else {
+        range = 1e38f;
+    }
+
+    // Calculate relative velocity in sensor frame assuming no misalignment between sensor and vehicle body axes
+    Vector3f relVelSensor = rotmat*velocity;
+
+    // Divide velocity by range and add body rates to get predicted sensed angular
+    // optical rates relative to X and Y sensor axes assuming no misalignment or scale
+    // factor error. Note - these are instantaneous values. The sensor sums these values across the interval from the last
+    // poll to provide a delta angle across the interface
+    state.flowRate.x =  -relVelSensor.y/range + gyro.x;
+    state.flowRate.y =   relVelSensor.x/range + gyro.y;
+
+    // The flow sensors body rates are assumed to be the same as the vehicle body rates (ie no misalignment)
+    // Note - these are instantaneous values. The sensor sums these values across the interval from the last
+    // poll to provide a delta angle across the interface.
+    state.bodyRate = Vector2f(gyro.x, gyro.y);
 
     _optical_flow->setHIL(state);
 }
