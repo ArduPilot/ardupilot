@@ -720,7 +720,7 @@ void NavEKF::UpdateFilter()
 void NavEKF::SelectVelPosFusion()
 {
     // check for new data, specify which measurements should be used and check data for freshness
-    if (!constPosMode && !constVelMode) {
+    if (PV_AidingMode == AID_ABSOLUTE) {
 
         // check for and read new GPS data
         readGpsData();
