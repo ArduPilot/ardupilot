@@ -216,6 +216,9 @@ static void init_ardupilot()
     if(g.compass_enabled)
         init_compass();
 
+    // make optflow available to AHRS
+    ahrs.set_optflow(&optflow);
+
     // initialise attitude and position controllers
     attitude_control.set_dt(MAIN_LOOP_SECONDS);
     pos_control.set_dt(MAIN_LOOP_SECONDS);

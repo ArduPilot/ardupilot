@@ -96,6 +96,7 @@ test_compass(uint8_t argc, const Menu::arg *argv)
     ahrs.init();
     ahrs.set_fly_forward(true);
     ahrs.set_compass(&compass);
+    ahrs.set_optflow(&optflow);
     report_compass();
 
     // we need the AHRS initialised for this test
