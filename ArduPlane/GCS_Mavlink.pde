@@ -494,6 +494,12 @@ static void NOINLINE send_opticalflow(mavlink_channel_t chan)
     // get rates from sensor
     const Vector2f &flowRate = optflow.flowRate();
     const Vector2f &bodyRate = optflow.bodyRate();
+    float hagl = 0;
+#if AP_AHRS_NAVEKF_AVAILABLE
+    if (ahrs.have_inertial_nav()) {
+        ahrs.get_NavEKF().getHAGL(hagl);
+    }
+#endif
 
     // populate and send message
     mavlink_msg_optical_flow_send(
@@ -505,7 +511,7 @@ static void NOINLINE send_opticalflow(mavlink_channel_t chan)
         bodyRate.x,
         bodyRate.y,
         optflow.quality(),
-        0); // ground distance (in meters) set to zero
+        hagl); // ground distance (in meters) set to zero
 }
 #endif // OPTFLOW == ENABLED
 
