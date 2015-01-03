@@ -127,7 +127,10 @@ void SITL::Log_Write_SIMSTATE(DataFlash_Class &DataFlash)
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-// convert a set of roll rates from earth frame to body frame
+/*
+ convert a set of roll rates from earth frame to body frame
+ output values are in radians/second
+*/
 void SITL::convert_body_frame(double rollDeg, double pitchDeg,
                               double rollRate, double pitchRate, double yawRate,
                               double *p, double *q, double *r)
