@@ -1008,23 +1008,24 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
 
     // Write fifth EKF packet
     if (optFlowEnabled) {
-        float fscale;
-        float estHAGL;
-        float flowInnovX, flowInnovY;
-        float flowVarX, flowVarY;
-        float rngInnov;
-        float range;
-        float gndOffsetErr;
-        ahrs.get_NavEKF().getFlowDebug(fscale, estHAGL, flowInnovX, flowInnovY, flowVarX, flowVarY, rngInnov, range, gndOffsetErr);
+        float normInnov; // normalised innovation variance ratio for optical flow observations fused by the main nav filter
+        float gndOffset; // estimated vertical position of the terrain relative to the nav filter zero datum
+        float flowInnovX, flowInnovY; // optical flow LOS rate vector innovations from the main nav filter
+        float auxFlowInnov; // optical flow LOS rate innovation from terrain offset estimator
+        float HAGL; // height above ground level
+        float rngInnov; // range finder innovations
+        float range; // measured range
+        float gndOffsetErr; // filter ground offset state error
+        ahrs.get_NavEKF().getFlowDebug(normInnov, gndOffset, flowInnovX, flowInnovY, auxFlowInnov, HAGL, rngInnov, range, gndOffsetErr);
         struct log_EKF5 pkt5 = {
             LOG_PACKET_HEADER_INIT(LOG_EKF5_MSG),
             time_ms : hal.scheduler->millis(),
+            normInnov : min((uint8_t)(100*normInnov),255),
             FIX : (int16_t)(1000*flowInnovX),
             FIY : (int16_t)(1000*flowInnovY),
-            normInnovFX : min((uint8_t)(100*flowVarX),255),
-            normInnovFY : min((uint8_t)(100*flowVarY),255),
-            estHAGL : (uint16_t)(100*estHAGL),
-            scaler: (uint8_t)(100*fscale),
+            AFI : (int16_t)(1000*auxFlowInnov),
+            HAGL : (int16_t)(100*HAGL),
+            offset : (int16_t)(100*gndOffset),
             RI : (int16_t)(100*rngInnov),
             meaRng : (uint16_t)(100*range),
             errHAGL : (uint16_t)(100*gndOffsetErr)
