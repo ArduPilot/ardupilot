@@ -171,7 +171,7 @@ public:
     void  writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, uint8_t &rangeHealth, float &rawSonarRange);
 
     // return data for debugging optical flow fusion
-    void getFlowDebug(float &scaleFactor, float &gndPos, float &flowInnovX, float &flowInnovY, float &flowVarX, float &flowVarY, float &rngInnov, float &range, float &gndOffsetErr) const;
+    void getFlowDebug(float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov, float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const;
 
     /*
     return the filter fault status as a bitmasked integer
