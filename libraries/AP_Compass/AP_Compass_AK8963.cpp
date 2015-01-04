@@ -508,7 +508,7 @@ bool AP_Compass_AK8963::read()
         _field[0].rotate(_board_orientation);
     }
 
-    _field[0] += _offset[0].get();
+    apply_corrections(_field[0],0);
 
 #if 0
     float x = _field[0].x;
