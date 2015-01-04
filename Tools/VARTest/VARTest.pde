@@ -40,6 +40,7 @@
 #include <AP_SpdHgtControl.h>
 #include <memcheck.h>
 #include <AP_RCMapper.h>
+#include <AP_OpticalFlow.h>
 
 #include <APM_OBC.h>
 #include <APM_Control.h>
