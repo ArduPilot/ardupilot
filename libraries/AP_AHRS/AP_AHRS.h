@@ -26,11 +26,12 @@
 #include <inttypes.h>
 #include <AP_Compass.h>
 #include <AP_Airspeed.h>
-#include <AP_OpticalFlow.h>
 #include <AP_GPS.h>
 #include <AP_InertialSensor.h>
 #include <AP_Baro.h>
 #include <AP_Param.h>
+
+#include "../AP_OpticalFlow/AP_OpticalFlow.h"
 
 // Copter defaults to EKF on by default, all others off
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
