@@ -503,7 +503,7 @@ bool AP_Compass_AK8963::read()
     // add user selectable orientation
     _field[0].rotate((enum Rotation)_orientation[0].get());
 
-    if (!_external) {
+    if (!_external[0]) {
         // and add in AHRS_ORIENTATION setting if not an external compass
         _field[0].rotate(_board_orientation);
     }
