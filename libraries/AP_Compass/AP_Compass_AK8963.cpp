@@ -483,6 +483,11 @@ bool AP_Compass_AK8963::read()
         return false;
     }
 
+    if (_accum_count == 0) {
+        /* We're not ready to publish*/
+        return true;
+    }
+
     /* Update */
     _field[0].x = _mag_x_accum * magnetometer_ASA[0] / _accum_count;
     _field[0].y = _mag_y_accum * magnetometer_ASA[1] / _accum_count;
