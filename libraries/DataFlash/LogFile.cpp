@@ -765,15 +765,29 @@ void DataFlash_Class::Log_Write_RCOUT(void)
 // Write a BARO packet
 void DataFlash_Class::Log_Write_Baro(AP_Baro &baro)
 {
+    uint32_t now = hal.scheduler->millis();
     struct log_BARO pkt = {
         LOG_PACKET_HEADER_INIT(LOG_BARO_MSG),
-        timestamp     : hal.scheduler->millis(),
-        altitude      : baro.get_altitude(),
-        pressure	  : baro.get_pressure(),
-        temperature   : (int16_t)(baro.get_temperature() * 100),
+        timestamp     : now,
+        altitude      : baro.get_altitude(0),
+        pressure	  : baro.get_pressure(0),
+        temperature   : (int16_t)(baro.get_temperature(0) * 100),
         climbrate     : baro.get_climb_rate()
     };
     WriteBlock(&pkt, sizeof(pkt));
+#if BARO_MAX_INSTANCES > 1
+    if (baro.num_instances() > 1 && baro.healthy(1)) {
+        struct log_BARO pkt2 = {
+            LOG_PACKET_HEADER_INIT(LOG_BAR2_MSG),
+            timestamp     : now,
+            altitude      : baro.get_altitude(1),
+            pressure	  : baro.get_pressure(1),
+            temperature   : (int16_t)(baro.get_temperature(1) * 100),
+            climbrate     : baro.get_climb_rate()
+        };
+        WriteBlock(&pkt2, sizeof(pkt2));        
+    }
+#endif
 }
 
 // Write an raw accel/gyro data packet

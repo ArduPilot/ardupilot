@@ -478,6 +478,8 @@ struct PACKED log_Esc {
       "RCOU",  "Ihhhhhhhhhhhh",     "TimeMS,Ch1,Ch2,Ch3,Ch4,Ch5,Ch6,Ch7,Ch8,Ch9,Ch10,Ch11,Ch12" }, \
     { LOG_BARO_MSG, sizeof(log_BARO), \
       "BARO",  "Iffcf", "TimeMS,Alt,Press,Temp,CRt" }, \
+    { LOG_BAR2_MSG, sizeof(log_BARO), \
+      "BAR2",  "Iffcf", "TimeMS,Alt,Press,Temp,CRt" }, \
     { LOG_POWR_MSG, sizeof(log_POWR), \
       "POWR","ICCH","TimeMS,Vcc,VServo,Flags" },  \
     { LOG_CMD_MSG, sizeof(log_Cmd), \
@@ -578,6 +580,7 @@ struct PACKED log_Esc {
 #define LOG_ESC7_MSG      160
 #define LOG_ESC8_MSG      161
 #define LOG_EKF5_MSG      162
+#define LOG_BAR2_MSG	  163
 
 // message types 200 to 210 reversed for GPS driver use
 // message types 211 to 220 reversed for autotune use
