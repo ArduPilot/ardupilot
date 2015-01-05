@@ -21,16 +21,18 @@
 
 union nav_filter_status {
     struct {
-        uint8_t attitude        : 1; // 0 - true if attitude estimate is valid
-        uint8_t horiz_vel       : 1; // 1 - true if horizontal velocity estimate is valid
-        uint8_t vert_vel        : 1; // 2 - true if the vertical velocity estimate is valid
-        uint8_t horiz_pos_rel   : 1; // 3 - true if the relative horizontal position estimate is valid
-        uint8_t horiz_pos_abs   : 1; // 4 - true if the absolute horizontal position estimate is valid
-        uint8_t vert_pos        : 1; // 5 - true if the vertical position estimate is valid
-        uint8_t terrain_alt     : 1; // 6 - true if the terrain height estimate is valid
-        uint8_t const_pos_mode  : 1; // 7 - true if we are in const position mode
+        uint16_t attitude           : 1; // 0 - true if attitude estimate is valid
+        uint16_t horiz_vel          : 1; // 1 - true if horizontal velocity estimate is valid
+        uint16_t vert_vel           : 1; // 2 - true if the vertical velocity estimate is valid
+        uint16_t horiz_pos_rel      : 1; // 3 - true if the relative horizontal position estimate is valid
+        uint16_t horiz_pos_abs      : 1; // 4 - true if the absolute horizontal position estimate is valid
+        uint16_t vert_pos           : 1; // 5 - true if the vertical position estimate is valid
+        uint16_t terrain_alt        : 1; // 6 - true if the terrain height estimate is valid
+        uint16_t const_pos_mode     : 1; // 7 - true if we are in const position mode
+        uint16_t pred_horiz_pos_rel : 1; // 8 - true if filter expects it can produce a good relative horizontal position estimate - used before takeoff
+        uint16_t pred_horiz_pos_abs : 1; // 9 - true if filter expects it can produce a good absolute horizontal position estimate - used before takeoff
     } flags;
-    uint8_t value;
+    uint16_t value;
 };
 
 #endif // AP_Nav_Common
