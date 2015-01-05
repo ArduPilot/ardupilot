@@ -44,19 +44,7 @@ static VRBRAINUtil utilInstance;
 static VRBRAINGPIO gpioDriver;
 
 //We only support 3 serials for VRBRAIN at the moment
-#if  defined(CONFIG_ARCH_BOARD_VRBRAIN_V40)
-#define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"
-#define UARTB_DEFAULT_DEVICE "/dev/ttyS1"
-#define UARTC_DEFAULT_DEVICE "/dev/ttyS2"
-#define UARTD_DEFAULT_DEVICE "/dev/null"
-#define UARTE_DEFAULT_DEVICE "/dev/null"
-#elif  defined(CONFIG_ARCH_BOARD_VRBRAIN_V45)
-#define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"
-#define UARTB_DEFAULT_DEVICE "/dev/ttyS1"
-#define UARTC_DEFAULT_DEVICE "/dev/ttyS2"
-#define UARTD_DEFAULT_DEVICE "/dev/null"
-#define UARTE_DEFAULT_DEVICE "/dev/null"
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V50)
+#if  defined(CONFIG_ARCH_BOARD_VRBRAIN_V45)
 #define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"
 #define UARTB_DEFAULT_DEVICE "/dev/ttyS1"
 #define UARTC_DEFAULT_DEVICE "/dev/ttyS2"
