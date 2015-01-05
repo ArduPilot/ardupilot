@@ -47,11 +47,7 @@ DataFlash_File::DataFlash_File(const char *log_directory) :
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
     // V1 gets IO errors with larger than 512 byte writes
     _writebuf_chunk(512),
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V40)
-    _writebuf_chunk(512),
 #elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V45)
-    _writebuf_chunk(512),
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V50)
     _writebuf_chunk(512),
 #elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V51)
     _writebuf_chunk(512),
