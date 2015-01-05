@@ -4503,6 +4503,8 @@ void  NavEKF::getFilterStatus(nav_filter_status &status) const
     status.flags.vert_pos = !hgtTimeout;            // vertical position estimate valid
     status.flags.terrain_alt = gndOffsetValid;		// terrain height estimate valid
     status.flags.const_pos_mode = constPosMode;     // constant position mode
+    status.flags.pred_horiz_pos_rel = status.flags.horiz_pos_rel;
+    status.flags.pred_horiz_pos_abs = status.flags.horiz_pos_abs;
 }
 
 // Check arm status and perform required checks and mode changes
