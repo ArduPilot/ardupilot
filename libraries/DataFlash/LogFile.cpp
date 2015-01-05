@@ -1002,7 +1002,7 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         offsetEast : (int8_t)(offset.y),
         faults : (uint8_t)(faultStatus),
         timeouts : (uint8_t)(timeoutStatus),
-        solution : (uint8_t)(solutionStatus.value)
+        solution : (uint16_t)(solutionStatus.value)
     };
     WriteBlock(&pkt4, sizeof(pkt4));
 
