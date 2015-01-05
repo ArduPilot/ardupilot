@@ -1211,6 +1211,11 @@ static void update_GPS(void)
                     // start again if we lose 3d lock
                     ground_start_count = 10;
                 }
+            } else {
+                // update home position when not armed
+                if (!motors.armed()) {
+                    update_home();
+                }
             }
 
             //If we are not currently armed, and we're ready to 
