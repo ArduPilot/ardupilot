@@ -154,7 +154,7 @@ static void poshold_run()
     const Vector3f& vel = inertial_nav.get_velocity();
 
     // if not auto armed set throttle to zero and exit immediately
-    if(!ap.auto_armed || !inertial_nav.get_filter_status().flags.horiz_pos_abs) {
+    if(!ap.auto_armed || !ap.home_is_set) {
         wp_nav.init_loiter_target();
         attitude_control.relax_bf_rate_controller();
         attitude_control.set_yaw_target_to_current_heading();
