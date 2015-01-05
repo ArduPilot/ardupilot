@@ -2511,6 +2511,13 @@
             <field type="uint16_t" name="pending">Number of 4x4 terrain blocks waiting to be received or read from disk</field>
             <field type="uint16_t" name="loaded">Number of 4x4 terrain blocks in memory</field>
          </message>
+         <message id="137" name="SCALED_PRESSURE2">
+           <description>Barometer readings for 2nd barometer</description>
+           <field type="uint32_t" name="time_boot_ms">Timestamp (milliseconds since system boot)</field>
+           <field type="float" name="press_abs">Absolute pressure (hectopascal)</field>
+           <field type="float" name="press_diff">Differential pressure 1 (hectopascal)</field>
+           <field type="int16_t" name="temperature">Temperature measurement (0.01 degrees celsius)</field>
+         </message>
         <message id="147" name="BATTERY_STATUS">
             <description>Battery information</description>
             <field type="uint8_t" name="id">Battery ID</field>
