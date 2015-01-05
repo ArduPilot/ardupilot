@@ -500,7 +500,7 @@ bool LogReader::update(uint8_t &type)
             exit(1);
         }
         wait_timestamp(msg.timestamp);
-        baro.setHIL(msg.pressure, msg.temperature*0.01f);
+        baro.setHIL(0, msg.pressure, msg.temperature*0.01f);
         dataflash.Log_Write_Baro(baro);
         break;
     }
