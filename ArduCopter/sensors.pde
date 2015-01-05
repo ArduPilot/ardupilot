@@ -16,7 +16,7 @@ static void init_barometer(bool full_calibration)
 // return barometric altitude in centimeters
 static void read_barometer(void)
 {
-    barometer.read();
+    barometer.update();
     if (should_log(MASK_LOG_IMU)) {
         Log_Write_Baro();
     }
