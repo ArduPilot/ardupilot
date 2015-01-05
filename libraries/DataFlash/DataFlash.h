@@ -346,7 +346,7 @@ struct PACKED log_EKF4 {
     int8_t  offsetEast;
     uint8_t faults;
     uint8_t timeouts;
-    uint8_t solution;
+    uint16_t solution;
 };
 
 struct PACKED log_EKF5 {
