@@ -501,6 +501,11 @@ void NavEKF::InitialiseFilterDynamic(void)
     // attitude we get the DCM attitude regardless of the state of AHRS_EKF_USE
     statesInitialised = false;
 
+    // If we are a plane and don't have GPS lock then don't initialise
+    if (assume_zero_sideslip() && _ahrs->get_gps().status() < AP_GPS::GPS_OK_FIX_3D) {
+        return;
+    }
+
     // Set re-used variables to zero
     InitialiseVariables();
 
@@ -562,6 +567,12 @@ void NavEKF::InitialiseFilterDynamic(void)
 // This method can only be used when the vehicle is static
 void NavEKF::InitialiseFilterBootstrap(void)
 {
+    // If we are a plane and don't have GPS lock then don't initialise
+    if (assume_zero_sideslip() && _ahrs->get_gps().status() < AP_GPS::GPS_OK_FIX_3D) {
+        statesInitialised = false;
+        return;
+    }
+
     // set re-used variables to zero
     InitialiseVariables();
 
