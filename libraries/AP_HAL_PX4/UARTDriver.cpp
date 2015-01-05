@@ -155,7 +155,7 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 
 }
 
-void PX4UARTDriver::set_flow_control(enum flow_control flow_control)
+void PX4UARTDriver::set_flow_control(enum flow_control fcontrol)
 {
 	if (_fd == -1) {
         return;
@@ -163,13 +163,13 @@ void PX4UARTDriver::set_flow_control(enum flow_control flow_control)
     struct termios t;
     tcgetattr(_fd, &t);
     // we already enabled CRTS_IFLOW above, just enable output flow control
-    if (flow_control != FLOW_CONTROL_DISABLE) {
+    if (fcontrol != FLOW_CONTROL_DISABLE) {
         t.c_cflag |= CRTSCTS;
     } else {
         t.c_cflag &= ~CRTSCTS;
     }
     tcsetattr(_fd, TCSANOW, &t);
-    _flow_control = flow_control;
+    _flow_control = fcontrol;
 }
 
 void PX4UARTDriver::begin(uint32_t b) 
