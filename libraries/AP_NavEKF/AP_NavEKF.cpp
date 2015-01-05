@@ -4485,6 +4485,9 @@ return filter function status as a bitmasked integer
 */
 void  NavEKF::getFilterStatus(nav_filter_status &status) const
 {
+    // init return value
+    status.value = 0;
+
     bool doingFlowNav = (PV_AidingMode == AID_RELATIVE) && flowDataValid;
     bool doingWindRelNav = !tasTimeout && assume_zero_sideslip();
     bool doingNormalGpsNav = !posTimeout && (PV_AidingMode == AID_ABSOLUTE);
@@ -4494,7 +4497,7 @@ void  NavEKF::getFilterStatus(nav_filter_status &status) const
     bool optFlowNavPossible = flowDataValid && (_fusionModeGPS == 3);
     bool gpsNavPossible = !gpsNotAvailable && (_fusionModeGPS <= 2);
 
-    // add code to set bits using private filter data here
+    // set individual flags
     status.flags.attitude = !state.quat.is_nan();   // attitude valid (we need a better check)
     status.flags.horiz_vel = someHorizRefData && notDeadReckoning;      // horizontal velocity estimate valid
     status.flags.vert_vel = someVertRefData;        // vertical velocity estimate valid
