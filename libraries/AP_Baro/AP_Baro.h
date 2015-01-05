@@ -115,6 +115,9 @@ public:
     // slots it will panic
     uint8_t register_sensor(void);
 
+    // return number of registered sensors
+    uint8_t num_instances(void) const { return _num_sensors; }
+
 private:
     // how many drivers do we have?
     uint8_t _num_drivers;
