@@ -4972,6 +4972,52 @@ static void mavlink_test_terrain_report(uint8_t system_id, uint8_t component_id,
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 }
 
+static void mavlink_test_scaled_pressure2(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
+{
+	mavlink_message_t msg;
+        uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
+        uint16_t i;
+	mavlink_scaled_pressure2_t packet_in = {
+		963497464,45.0,73.0,17859
+    };
+	mavlink_scaled_pressure2_t packet1, packet2;
+        memset(&packet1, 0, sizeof(packet1));
+        	packet1.time_boot_ms = packet_in.time_boot_ms;
+        	packet1.press_abs = packet_in.press_abs;
+        	packet1.press_diff = packet_in.press_diff;
+        	packet1.temperature = packet_in.temperature;
+        
+        
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_scaled_pressure2_encode(system_id, component_id, &msg, &packet1);
+	mavlink_msg_scaled_pressure2_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_scaled_pressure2_pack(system_id, component_id, &msg , packet1.time_boot_ms , packet1.press_abs , packet1.press_diff , packet1.temperature );
+	mavlink_msg_scaled_pressure2_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_scaled_pressure2_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.time_boot_ms , packet1.press_abs , packet1.press_diff , packet1.temperature );
+	mavlink_msg_scaled_pressure2_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+        mavlink_msg_to_send_buffer(buffer, &msg);
+        for (i=0; i<mavlink_msg_get_send_buffer_length(&msg); i++) {
+        	comm_send_ch(MAVLINK_COMM_0, buffer[i]);
+        }
+	mavlink_msg_scaled_pressure2_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+        
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_scaled_pressure2_send(MAVLINK_COMM_1 , packet1.time_boot_ms , packet1.press_abs , packet1.press_diff , packet1.temperature );
+	mavlink_msg_scaled_pressure2_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+}
+
 static void mavlink_test_battery_status(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
 {
 	mavlink_message_t msg;
@@ -5489,6 +5535,7 @@ static void mavlink_test_common(uint8_t system_id, uint8_t component_id, mavlink
 	mavlink_test_terrain_data(system_id, component_id, last_msg);
 	mavlink_test_terrain_check(system_id, component_id, last_msg);
 	mavlink_test_terrain_report(system_id, component_id, last_msg);
+	mavlink_test_scaled_pressure2(system_id, component_id, last_msg);
 	mavlink_test_battery_status(system_id, component_id, last_msg);
 	mavlink_test_autopilot_version(system_id, component_id, last_msg);
 	mavlink_test_v2_extension(system_id, component_id, last_msg);
