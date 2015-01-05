@@ -340,7 +340,8 @@ static bool position_ok()
 {
     if (ahrs.have_inertial_nav()) {
         // with EKF use filter status and ekf check
-        return (inertial_nav.get_filter_status().flags.horiz_pos_abs && !failsafe.ekf);
+        nav_filter_status filt_status = inertial_nav.get_filter_status();
+        return ((filt_status.flags.horiz_pos_abs || filt_status.flags.pred_horiz_pos_abs) && !failsafe.ekf);
     } else {
         // with interial nav use GPS based checks
         return (ap.home_is_set && gps.status() >= AP_GPS::GPS_OK_FIX_3D &&
@@ -361,7 +362,8 @@ static bool optflow_position_ok()
     }
 
     // get filter status from inertial nav or EKF
-    return inertial_nav.get_filter_status().flags.horiz_pos_rel;
+    nav_filter_status filt_status = inertial_nav.get_filter_status();
+    return (filt_status.flags.horiz_pos_rel || filt_status.flags.pred_horiz_pos_rel);
 #endif
 }
 
