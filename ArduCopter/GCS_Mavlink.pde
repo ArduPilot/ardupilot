@@ -276,17 +276,17 @@ static void NOINLINE send_location(mavlink_channel_t chan)
     } else {
         fix_time = millis();
     }
-    const Vector3f &vel = gps.velocity();
+    const Vector3f &vel = inertial_nav.get_velocity();
     mavlink_msg_global_position_int_send(
         chan,
         fix_time,
         current_loc.lat,                // in 1E7 degrees
         current_loc.lng,                // in 1E7 degrees
-        gps.location().alt * 10UL,      // millimeters above sea level
+        (ahrs.get_home().alt + current_loc.alt) * 10UL,      // millimeters above sea level
         current_loc.alt * 10,           // millimeters above ground
-        vel.x * 100,  // X speed cm/s (+ve North)
-        vel.y * 100,  // Y speed cm/s (+ve East)
-        vel.x * -100, // Z speed cm/s (+ve up)
+        vel.x,                          // X speed cm/s (+ve North)
+        vel.y,                          // Y speed cm/s (+ve East)
+        vel.z,                          // Z speed cm/s (+ve up)
         ahrs.yaw_sensor);               // compass heading in 1/100 degree
 }
 
