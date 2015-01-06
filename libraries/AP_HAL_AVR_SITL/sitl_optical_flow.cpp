@@ -23,6 +23,11 @@ extern const AP_HAL::HAL& hal;
 #include <stdint.h>
 #include <math.h>
 
+#define MAX_OPTFLOW_DELAY 20
+static uint8_t next_optflow_index;
+static uint8_t optflow_delay;
+static OpticalFlow::OpticalFlow_state optflow_data[MAX_OPTFLOW_DELAY];
+
 /*
   update the optical flow with new data
  */
@@ -92,6 +97,24 @@ void SITL_State::_update_flow(void)
     // Note - these are instantaneous values. The sensor sums these values across the interval from the last
     // poll to provide a delta angle across the interface.
     state.bodyRate = Vector2f(gyro.x, gyro.y);
+
+    optflow_data[next_optflow_index++] = state;
+    if (next_optflow_index >= optflow_delay+1) {
+        next_optflow_index = 0;
+    }
+
+    state = optflow_data[next_optflow_index];
+
+    if (_sitl->flow_delay != optflow_delay) {
+        // cope with updates to the delay control
+        if (_sitl->flow_delay > MAX_OPTFLOW_DELAY) {
+            _sitl->flow_delay = MAX_OPTFLOW_DELAY;
+        }
+        optflow_delay = _sitl->flow_delay;
+        for (uint8_t i=0; i<optflow_delay; i++) {
+            optflow_data[i] = state;
+        }
+    }
 
     _optical_flow->setHIL(state);
 }
