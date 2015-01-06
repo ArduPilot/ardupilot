@@ -77,7 +77,7 @@ static struct {
 
     // loiter related variables
     int16_t controller_to_pilot_timer_roll;     // cycles to mix controller and pilot controls in POSHOLD_CONTROLLER_TO_PILOT
-    int16_t controller_to_pilot_timer_pitch;        // cycles to mix controller and pilot controls in POSHOLD_CONTROLLER_TO_PILOT
+    int16_t controller_to_pilot_timer_pitch;    // cycles to mix controller and pilot controls in POSHOLD_CONTROLLER_TO_PILOT
     int16_t controller_final_roll;              // final roll angle from controller as we exit brake or loiter mode (used for mixing with pilot input)
     int16_t controller_final_pitch;             // final pitch angle from controller as we exit brake or loiter mode (used for mixing with pilot input)
 
@@ -85,8 +85,8 @@ static struct {
     Vector2f wind_comp_ef;                      // wind compensation in earth frame, filtered lean angles from position controller
     int16_t wind_comp_roll;                     // roll angle to compensate for wind
     int16_t wind_comp_pitch;                    // pitch angle to compensate for wind
-    int8_t  wind_comp_start_timer;              // counter to delay start of wind compensation for a short time after loiter is engaged
-    int8_t  wind_comp_timer;         // counter to reduce wind comp roll/pitch lean angle calcs to 10hz
+    uint16_t wind_comp_start_timer;             // counter to delay start of wind compensation for a short time after loiter is engaged
+    int8_t  wind_comp_timer;                    // counter to reduce wind comp roll/pitch lean angle calcs to 10hz
 
     // final output
     int16_t roll;   // final roll angle sent to attitude controller
