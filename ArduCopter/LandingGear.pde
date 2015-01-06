@@ -9,6 +9,12 @@ static void landinggear_update(){
         // last status (deployed or retracted) used to check for changes
         static bool last_deploy_status;
         
+        // if we are doing an automatic landing procedure, force the landing gear to deploy.
+        // To-Do: should we pause the auto-land procedure to give time for gear to come down?
+        if (control_mode == LAND || (control_mode==RTL && rtl_state == Land) || (control_mode == AUTO && auto_mode == Auto_Land)){
+            landinggear.force_deploy(true);
+        }            
+        
         landinggear.update();
         
         // send event message to datalog if status has changed
