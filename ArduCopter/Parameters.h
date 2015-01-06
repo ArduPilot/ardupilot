@@ -78,6 +78,9 @@ public:
 
         // Parachute object
         k_param_parachute,	// 17
+        
+        // Parachute object
+        k_param_landinggear,	// 18
 
         // Misc
         //
