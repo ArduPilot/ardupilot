@@ -339,9 +339,21 @@ static void startup_ground(bool force_gyro_cal)
 static bool position_ok()
 {
     if (ahrs.have_inertial_nav()) {
+        // return false if ekf failsafe has triggered
+        if (failsafe.ekf) {
+            return false;
+        }
+
         // with EKF use filter status and ekf check
         nav_filter_status filt_status = inertial_nav.get_filter_status();
-        return ((filt_status.flags.horiz_pos_abs || filt_status.flags.pred_horiz_pos_abs) && !failsafe.ekf);
+
+        // if disarmed we accept a predicted horizontal position
+        if (!motors.armed()) {
+            return ((filt_status.flags.horiz_pos_abs || filt_status.flags.pred_horiz_pos_abs));
+        } else {
+            // once armed we require a good absolute position and EKF must not be in const_pos_mode
+            return (filt_status.flags.horiz_pos_abs && !filt_status.flags.const_pos_mode);
+        }
     } else {
         // with interial nav use GPS based checks
         return (ap.home_is_set && gps.status() >= AP_GPS::GPS_OK_FIX_3D &&
