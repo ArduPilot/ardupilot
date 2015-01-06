@@ -8,13 +8,6 @@
 
 #include <AP_Param.h>
 #include <AP_Common.h>
-#include <AP_Relay.h>
-
-#define AP_LANDINGGEAR_TRIGGER_TYPE_RELAY_0         0
-#define AP_LANDINGGEAR_TRIGGER_TYPE_RELAY_1         1
-#define AP_LANDINGGEAR_TRIGGER_TYPE_RELAY_2         2
-#define AP_LANDINGGEAR_TRIGGER_TYPE_RELAY_3         3
-#define AP_LANDINGGEAR_TRIGGER_TYPE_SERVO           10
 
 #define AP_LANDINGGEAR_SERVO_RETRACT_PWM_DEFAULT    1250    // default PWM value to move servo to when landing gear is up
 #define AP_LANDINGGEAR_SERVO_DEPLOY_PWM_DEFAULT     1750    // default PWM value to move servo to when landing gear is down
@@ -30,8 +23,7 @@ class AP_LandingGear {
 public:
 
     /// Constructor
-    AP_LandingGear(AP_Relay& relay) :
-        _relay(relay),
+    AP_LandingGear() :
         _deployed(false),
         _retract_enabled(false)
     {
@@ -57,12 +49,10 @@ private:
     bool     _retract_enabled;          // true if landing gear retraction is enabled
 
     // Parameters
-    AP_Int8     _control_type;          // 0,1,2,3:Relay 10:Servo
     AP_Int16    _servo_retract_pwm;     // PWM value to move servo to when gear is retracted
     AP_Int16    _servo_deploy_pwm;      // PWM value to move servo to when gear is deployed
 
     // internal variables
-    AP_Relay    &_relay;                // pointer to relay object from the base class Relay.
     bool        _deployed;              // true if the landing gear has been deployed, initialized false
     int8_t      _command_mode;          // pilots commanded control mode: Manual Deploy, Auto, or Manual Retract
     
