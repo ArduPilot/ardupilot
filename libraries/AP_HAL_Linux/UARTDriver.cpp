@@ -22,6 +22,7 @@
 #include <netinet/tcp.h>
 #include <string.h>
 #include <arpa/inet.h>
+#include "../AP_HAL/utility/RingBuffer.h"
 
 extern const AP_HAL::HAL& hal;
 
