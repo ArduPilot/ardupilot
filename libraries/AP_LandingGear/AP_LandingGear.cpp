@@ -59,7 +59,15 @@ void AP_LandingGear::retract()
 
 /// update - should be called at 10hz
 void AP_LandingGear::update()
-{   
+{
+    // if there is a force deploy active, disable retraction, then reset force deploy to consume it
+    // gear will be deployed automatically because _retract_enabled is false.
+    // this will disable retract switch until it is cycled through deploy position
+    if ( _force_deploy){
+            enable(false);
+            force_deploy(false);
+        }
+
     if (!_retract_enabled) {
         // force deployment if retract is not enabled
         deploy();
@@ -68,7 +76,7 @@ void AP_LandingGear::update()
         return;
     }
 
-    if (_command_mode == COMMAND_MODE_DEPLOY){
+    if (_command_mode == COMMAND_MODE_DEPLOY){  
         deploy();
     }
     
