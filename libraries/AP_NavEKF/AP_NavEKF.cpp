@@ -743,11 +743,18 @@ void NavEKF::SelectVelPosFusion()
         if (imuSampleTime_ms - lastFixTime_ms > gpsRetryTimeout) {
             posTimeout = true;
             velTimeout = true;
-            //If this happens in flight and we don't have airspeed or sideslip assumption to constrain drift, then go into constant velocity mode and stay there until disarmed
+            //If this happens in flight and we don't have airspeed or sideslip assumption to constrain drift, then go into constant position mode and stay there until disarmed
             if (vehicleArmed && !useAirspeed() && !assume_zero_sideslip()) {
-                constVelMode = true;
-                constPosMode = false; // always clear constant position mode if constant velocity mode is active
+                constVelMode = false; // always clear constant velocity mode if constant velocity mode is active
+                constPosMode = true;
                 PV_AidingMode = AID_NONE;
+                // reset the velocity
+                ResetVelocity();
+                // store the current position to be used to keep reporting the last known position
+                lastKnownPositionNE.x = state.position.x;
+                lastKnownPositionNE.y = state.position.y;
+                // reset the position
+                ResetPosition();
             }
         }
 
@@ -3509,9 +3516,14 @@ void NavEKF::getAccelNED(Vector3f &accelNED) const {
 }
 
 // return NED velocity in m/s
+//
 void NavEKF::getVelNED(Vector3f &vel) const
 {
     vel = state.velocity;
+    if (constPosMode) {
+        vel.x = lastKnownPositionNE.x;
+        vel.y = lastKnownPositionNE.y;
+    }
 }
 
 // return the last calculated NED position relative to the reference point (m).
@@ -4310,6 +4322,7 @@ void NavEKF::InitialiseVariables()
     summedDelVel.zero();
     velNED.zero();
     gpsPosGlitchOffsetNE.zero();
+    lastKnownPositionNE.zero();
     gpsPosNE.zero();
     prevTnb.zero();
     memset(&P[0][0], 0, sizeof(P));
@@ -4530,6 +4543,8 @@ void NavEKF::performArmingChecks()
         }
         // zero stored velocities used to do dead-reckoning
         heldVelNE.zero();
+        // zero last known position used to deadreckon if GPS is lost
+        lastKnownPositionNE.zero();
         // set various  useage modes based on the condition at arming. These are then held until the vehicle is disarmed.
         if (!vehicleArmed) {
             PV_AidingMode = AID_NONE; // When dis-armed, we only estimate orientation & height using the constant position mode
