@@ -24,10 +24,6 @@
 
 #include <AP_Math.h>
 #include <AP_HAL.h>
-#include <cstdio>
-#include <unistd.h>
-#include <cassert>
-
 #include "AP_Compass_AK8963.h"
 
 
@@ -99,9 +95,11 @@
 #if AK8963_DEBUG
 #define error(...) fprintf(stderr, __VA_ARGS__)
 #define debug(...) hal.console->printf(__VA_ARGS__)
+#define ASSERT(x) assert(x)
 #else
 #define error(...) 
 #define debug(...) 
+#define ASSERT(x)
 #endif
 
 extern const AP_HAL::HAL& hal;
@@ -111,7 +109,7 @@ AK8963_MPU9250_SPI_Backend::AK8963_MPU9250_SPI_Backend()
     _spi = hal.spi->device(AP_HAL::SPIDevice_MPU9250);
 
     if (_spi == NULL) {
-        hal.scheduler->panic("Cannot get SPIDevice_MPU9250");
+        hal.scheduler->panic(PSTR("Cannot get SPIDevice_MPU9250"));
     }
 
     _spi_sem = _spi->get_semaphore();
@@ -153,7 +151,7 @@ bool AK8963_MPU9250_SPI_Backend::sem_take_nonblocking()
 
 void AK8963_MPU9250_SPI_Backend::read(uint8_t address, uint8_t *buf, uint32_t count)
 {
-    assert(count < 10);
+    ASSERT(count < 10);
     uint8_t tx[11];
     uint8_t rx[11];
 
@@ -166,7 +164,7 @@ void AK8963_MPU9250_SPI_Backend::read(uint8_t address, uint8_t *buf, uint32_t co
 
 void AK8963_MPU9250_SPI_Backend::write(uint8_t address, const uint8_t *buf, uint32_t count)
 {
-    assert(count < 2);
+    ASSERT(count < 2);
     uint8_t tx[2];
 
     tx[0] = address;
@@ -211,7 +209,7 @@ bool AP_Compass_AK8963_MPU9250::init()
 #if MPU9250_SPI_BACKEND
     _backend = new AK8963_MPU9250_SPI_Backend();
     if (_backend == NULL) {
-        hal.scheduler->panic("_backend coudln't be allocated");
+        hal.scheduler->panic(PSTR("_backend coudln't be allocated"));
     }
     return AP_Compass_AK8963::init();
 #else
@@ -397,7 +395,7 @@ bool AP_Compass_AK8963::init()
     if (id_mismatch_count == 5) {
         _initialised = false;
         hal.console->printf("WRONG AK8963 DEVICE ID: 0x%x\n", (unsigned)deviceid);
-        hal.scheduler->panic("AK8963: bad DEVICE ID");
+        hal.scheduler->panic(PSTR("AK8963: bad DEVICE ID"));
     }
 
     _calibrate();
