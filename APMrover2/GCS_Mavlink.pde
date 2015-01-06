@@ -533,6 +533,11 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     case MSG_RETRY_DEFERRED:
     case MSG_TERRAIN:
         break; // just here to prevent a warning
+
+    case MSG_BATTERY2:
+        CHECK_PAYLOAD_SIZE(BATTERY2);
+        gcs[chan-MAVLINK_COMM_0].send_battery2(battery);
+        break;
 	}
 
     
@@ -753,6 +758,7 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_HWSTATUS);
         send_message(MSG_RANGEFINDER);
         send_message(MSG_SYSTEM_TIME);
+        send_message(MSG_BATTERY2);
         send_message(MSG_MOUNT_STATUS);
     }
 }
