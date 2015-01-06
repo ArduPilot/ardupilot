@@ -368,12 +368,12 @@ static bool optflow_position_ok()
 #if OPTFLOW != ENABLED
     return false;
 #else
-    // return immediately if optflow is not enabled
-    if (!optflow.enabled()) {
+    // return immediately if optflow is not enabled or EKF not used
+    if (!optflow.enabled() || !ahrs.have_inertial_nav()) {
         return false;
     }
 
-    // get filter status from inertial nav or EKF
+    // get filter status from EKF
     nav_filter_status filt_status = inertial_nav.get_filter_status();
     return (filt_status.flags.horiz_pos_rel || filt_status.flags.pred_horiz_pos_rel);
 #endif
