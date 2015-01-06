@@ -555,6 +555,7 @@ private:
     float IMU1_weighting;           // Weighting applied to use of IMU1. Varies between 0 and 1.
     bool yawAligned;                // true when the yaw angle has been aligned
     Vector2f gpsPosGlitchOffsetNE;  // offset applied to GPS data in the NE direction to compensate for rapid changes in GPS solution
+    Vector2f lastKnownPositionNE;   // last known position
     uint32_t lastDecayTime_ms;      // time of last decay of GPS position offset
     float velTestRatio;             // sum of squares of GPS velocity innovation divided by fail threshold
     float posTestRatio;             // sum of squares of GPS position innovation divided by fail threshold
