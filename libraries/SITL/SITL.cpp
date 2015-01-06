@@ -64,6 +64,7 @@ const AP_Param::GroupInfo SITL::var_info[] PROGMEM = {
     AP_GROUPINFO("FLOW_ENABLE",   33, SITL,  flow_enable, 0),
     AP_GROUPINFO("TERRAIN",       34, SITL,  terrain_enable, 1),
     AP_GROUPINFO("FLOW_RATE",     35, SITL,  flow_rate, 10),
+    AP_GROUPINFO("FLOW_DELAY",    36, SITL,  flow_delay, 0),
     AP_GROUPEND
 };
 
