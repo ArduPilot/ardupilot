@@ -902,25 +902,44 @@ void NavEKF::SelectFlowFusion()
 {
     // Perform Data Checks
     // Check if the optical flow data is still valid
-    flowDataValid = (imuSampleTime_ms - flowValidMeaTime_ms < 200);
+    flowDataValid = ((imuSampleTime_ms - flowValidMeaTime_ms) < 200);
+    // Check if the fusion has timed out (flow measurements have been rejected for too long)
+    bool flowFusionTimeout = ((imuSampleTime_ms - prevFlowUseTime_ms) > 5000);
     // check is the terrain offset estimate is still valid
-    gndOffsetValid = (imuSampleTime_ms - gndHgtValidTime_ms < 5000);
+    gndOffsetValid = ((imuSampleTime_ms - gndHgtValidTime_ms) < 5000);
     // Perform tilt check
     bool tiltOK = (Tnb_flow.c.z > DCM33FlowMin);
     // if we have waited too long, set a timeout flag which will force fusion to occur regardless of load spreading
-    bool timeout = ((imuSampleTime_ms - prevFlowFusionTime_ms) >= flowIntervalMax_ms);
+    bool flowUseTimeout = ((imuSampleTime_ms - prevFlowUseTime_ms) >= flowIntervalMax_ms);
     // check if fusion should be delayed to spread load. Setting fuseMeNow to true disables this load spreading feature.
-    bool delayFusion = ((covPredStep || magFusePerformed) && !(timeout || inhibitLoadLeveling));
+    bool delayFusion = ((covPredStep || magFusePerformed) && !(flowUseTimeout || inhibitLoadLeveling));
 
     // if we don't have valid flow measurements and are not using GPS, dead reckon using current velocity vector unless we are in position hold mode
     if (!flowDataValid && !constPosMode && PV_AidingMode == AID_RELATIVE) {
         constVelMode = true;
         constPosMode = false; // always clear constant position mode if constant velocity mode is active
+    } else if (flowDataValid && flowFusionTimeout) {
+        // we need to reset the velocities to a value estimated from the flow data
+        // estimate the range
+        float initPredRng = max((terrainState - state.position[2]),0.1f) / Tnb_flow.c.z;
+        // multiply the range by the LOS rates to get an estimated XY velocity in body frame
+        Vector3f initVel;
+        initVel.x = -flowRadXYcomp[1]*initPredRng;
+        initVel.y =  flowRadXYcomp[0]*initPredRng;
+        // rotate into earth frame
+        initVel = Tbn_flow*initVel;
+        // set horizontal velocity states
+        state.velocity.x = initVel.x;
+        state.velocity.y = initVel.y;
+        // clear any hold modes
+        constVelMode = false;
+        lastConstVelMode = false;
     } else if (flowDataValid) {
         // clear the constant velocity mode now we have good data
         constVelMode = false;
         lastConstVelMode = false;
     }
+    // if we do have valid flow measurements
 
     // Fuse data into a 1-state EKF to estimate terrain height
     if ((newDataFlow || newDataRng) && tiltOK) {
@@ -962,7 +981,7 @@ void NavEKF::SelectFlowFusion()
         // indicate that flow fusion has been performed. This is used for load spreading.
         flowFusePerformed = true;
         // update the time stamp
-        prevFlowFusionTime_ms = imuSampleTime_ms;
+        prevFlowUseTime_ms = imuSampleTime_ms;
     } else if (flowDataValid && flow_state.obsIndex == 1 && !delayFusion && !constPosMode && tiltOK) {
         // Fuse the optical flow Y axis data into the main filter
         FuseOptFlow();
@@ -2936,8 +2955,12 @@ void NavEKF::FuseOptFlow()
 
     // Check the innovation for consistency and don't fuse if out of bounds or flow is too fast to be reliable
     if ((flowTestRatio[obsIndex]) < 1.0f && (flowRadXY[obsIndex] < _maxFlowRate)) {
-        // Reset the timer for velocity fusion timeout. This prevents a velocity timeout from being declared if we have to momentarily go into constant velocity mode.
-        velFailTime = imuSampleTime_ms;
+        // record the last time both X and Y observations were accepted for fusion
+        if (obsIndex == 0) {
+            flowXfailed = false;
+        } else if (!flowXfailed) {
+            prevFlowFuseTime_ms = imuSampleTime_ms;
+        }
         // correct the state vector
         for (uint8_t j = 0; j <= 21; j++)
         {
@@ -2996,6 +3019,9 @@ void NavEKF::FuseOptFlow()
                 P[i][j] = P[i][j] - KHP[i][j];
             }
         }
+    } else if (obsIndex == 0) {
+        // store the fact we have failed the X conponent so that a combined X and Y axis pass/fail can be calculated next time round
+        flowXfailed = true;
     }
 
     ForceSymmetry();
@@ -4247,7 +4273,8 @@ void NavEKF::InitialiseVariables()
     timeAtLastAuxEKF_ms = imuSampleTime_ms;
     flowValidMeaTime_ms = imuSampleTime_ms;
     flowMeaTime_ms = 0;
-    prevFlowFusionTime_ms = imuSampleTime_ms;
+    prevFlowUseTime_ms = imuSampleTime_ms;
+    prevFlowFuseTime_ms = imuSampleTime_ms;
     gndHgtValidTime_ms = 0;
     ekfStartTime_ms = imuSampleTime_ms;
 
@@ -4321,6 +4348,7 @@ void NavEKF::InitialiseVariables()
     inhibitWindStates = true;
     inhibitMagStates = true;
     gndOffsetValid =  false;
+    flowXfailed = false;
 }
 
 // return true if we should use the airspeed sensor

@@ -623,7 +623,8 @@ private:
     float innovRng;                 // range finder observation innovation (m)
     float rngMea;                   // range finder measurement (m)
     bool inhibitGndState;           // true when the terrain position state is to remain constant
-    uint32_t prevFlowFusionTime_ms; // time the last flow measurement was fused
+    uint32_t prevFlowUseTime_ms;    // time the last flow measurement scheduled for fusion (doesn't mean it passed the innovatio consistency checks)
+    uint32_t prevFlowFuseTime_ms;   // time both flow measurement components passed their innovation consistency checks
     float flowTestRatio[2];         // square of optical flow innovations divided by fail threshold used by main filter where >1.0 is a fail
     float auxFlowTestRatio;         // sum of squares of optical flow innovation divided by fail threshold used by 1-state terrain offset estimator
     float R_LOS;                    // variance of optical flow rate measurements (rad/sec)^2
@@ -643,6 +644,7 @@ private:
                      };
     AidingMode PV_AidingMode;           // Defines the preferred mode for aiding of velocity and position estimates from the INS
     bool gndOffsetValid;            // true when the ground offset state can still be considered valid
+    bool flowXfailed;               // true when the X optical flow measurement has failed the innovation consistency check
 
     // states held by optical flow fusion across time steps
     // optical flow X,Y motion compensated rate measurements are fused across two time steps
