@@ -63,6 +63,7 @@ const AP_Param::GroupInfo SITL::var_info[] PROGMEM = {
     AP_GROUPINFO("SONAR_SCALE",   32, SITL,  sonar_scale, 12.1212f),
     AP_GROUPINFO("FLOW_ENABLE",   33, SITL,  flow_enable, 0),
     AP_GROUPINFO("TERRAIN",       34, SITL,  terrain_enable, 1),
+    AP_GROUPINFO("FLOW_RATE",     35, SITL,  flow_rate, 10),
     AP_GROUPEND
 };
 
