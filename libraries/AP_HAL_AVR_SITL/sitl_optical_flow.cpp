@@ -30,11 +30,19 @@ void SITL_State::_update_flow(void)
 {
     double p, q, r;
     Vector3f gyro;
+    static uint32_t last_flow_ms;
 
     if (!_optical_flow ||
         !_sitl->flow_enable) {
         return;
     }
+
+    // update at the requested rate
+    uint32_t now = hal.scheduler->millis();
+    if (now - last_flow_ms < 1000*(1.0f/_sitl->flow_rate)) {
+        return;
+    }
+    last_flow_ms = now;
 
     // convert roll rates to body frame
     SITL::convert_body_frame(_sitl->state.rollDeg,
