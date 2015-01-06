@@ -16,13 +16,21 @@ using namespace Linux;
 
 // 3 serial ports on Linux for now
 static LinuxUARTDriver uartADriver(true);
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
+static LinuxSPIUARTDriver uartBDriver;
+#else
 static LinuxUARTDriver uartBDriver(false);
+#endif
 static LinuxUARTDriver uartCDriver(false);
 
 static LinuxSemaphore  i2cSemaphore;
 static LinuxI2CDriver  i2cDriver(&i2cSemaphore, "/dev/i2c-1");
 static LinuxSPIDeviceManager spiDeviceManager;
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
+static NavioAnalogIn analogIn;
+#else
 static LinuxAnalogIn analogIn;
+#endif
 
 /*
   select between FRAM and FS
@@ -141,6 +149,7 @@ void HAL_Linux::init(int argc,char* const argv[]) const
     rcin->init(NULL);
     uartA->begin(115200);    
     spi->init(NULL);
+    analogin->init(NULL);
     utilInstance.init(argc, argv);
 }
 

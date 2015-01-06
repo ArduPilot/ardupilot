@@ -385,6 +385,9 @@ static void report_compass()
     case AP_COMPASS_TYPE_VRBRAIN:
         cliSerial->println_P(PSTR("VRBRAIN"));
         break;
+    case AP_COMPASS_TYPE_AK8963_MPU9250:
+        cliSerial->println_P(PSTR("AK8963_MPU9250"));
+        break;
     default:
         cliSerial->println_P(PSTR("(unknown)"));
         break;

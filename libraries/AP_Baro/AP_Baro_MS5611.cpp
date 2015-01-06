@@ -287,6 +287,7 @@ bool AP_Baro_MS5611::check_crc(void)
 // SPI should be initialized externally
 bool AP_Baro_MS5611::init()
 {
+    hal.scheduler->suspend_timer_procs();
     if (_serial == NULL) {
         hal.scheduler->panic(PSTR("PANIC: AP_Baro_MS5611: NULL serial driver"));
         return false; /* never reached */
@@ -330,6 +331,7 @@ bool AP_Baro_MS5611::init()
     _d1_count = 0;
     _d2_count = 0;
 
+    hal.scheduler->resume_timer_procs();
     hal.scheduler->register_timer_process( AP_HAL_MEMBERPROC(&AP_Baro_MS5611::_update));
     _serial->sem_give();
 
