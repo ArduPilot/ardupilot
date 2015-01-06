@@ -154,12 +154,13 @@ void AP_SerialBus_I2C::sem_give()
 /*
   constructor
  */
-AP_Baro_MS5611::AP_Baro_MS5611(AP_Baro &baro, AP_SerialBus *serial) :
+AP_Baro_MS5611::AP_Baro_MS5611(AP_Baro &baro, AP_SerialBus *serial, bool use_timer) :
     AP_Baro_Backend(baro),
     _serial(serial),
     _updated(false),
     _state(0),
-    _last_timer(0)
+    _last_timer(0),
+    _use_timer(use_timer)
 {
     _instance = _frontend.register_sensor();
     _serial->init();
@@ -195,7 +196,9 @@ AP_Baro_MS5611::AP_Baro_MS5611(AP_Baro &baro, AP_SerialBus *serial) :
 
     _serial->sem_give();
 
-    hal.scheduler->register_timer_process( AP_HAL_MEMBERPROC(&AP_Baro_MS5611::_timer));
+    if (_use_timer) {
+        hal.scheduler->register_timer_process( AP_HAL_MEMBERPROC(&AP_Baro_MS5611::_timer));
+    }
 }
 
 /**
@@ -310,6 +313,12 @@ void AP_Baro_MS5611::_timer(void)
 
 void AP_Baro_MS5611::update()
 {
+    if (!_use_timer) {
+        // if we're not using the timer then accumulate one more time
+        // to cope with the calibration loop and minimise lag
+        accumulate();
+    }
+
     if (!_updated) {
         return;
     }
@@ -369,4 +378,18 @@ void AP_Baro_MS5611::_calculate()
     float pressure = (D1*SENS/2097152 - OFF)/32768;
     float temperature = (TEMP + 2000) * 0.01f;
     _copy_to_frontend(_instance, pressure, temperature);
+}
+
+/*
+  Read the sensor from main code. This is only used for I2C MS5611 to
+  avoid conflicts on the semaphore from calling it in a timer, which
+  conflicts with the compass driver use of I2C
+*/
+void AP_Baro_MS5611::accumulate(void)
+{
+    if (!_use_timer) {
+        // the timer isn't being called as a timer, so we need to call
+        // it in accumulate()
+        _timer();
+    }
 }

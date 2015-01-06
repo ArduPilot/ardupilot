@@ -76,8 +76,9 @@ private:
 class AP_Baro_MS5611 : public AP_Baro_Backend
 {
 public:
-    AP_Baro_MS5611(AP_Baro &baro, AP_SerialBus *serial);
+    AP_Baro_MS5611(AP_Baro &baro, AP_SerialBus *serial, bool use_timer);
     void update();
+    void accumulate();
 
 private:
     AP_SerialBus *_serial;
@@ -95,6 +96,8 @@ private:
     volatile uint32_t        _s_D1, _s_D2;
     uint8_t                  _state;
     uint32_t                 _last_timer;
+
+    bool _use_timer;
 
     // Internal calibration registers
     uint16_t                 C1,C2,C3,C4,C5,C6;
