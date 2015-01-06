@@ -29,11 +29,12 @@ extern const AP_HAL::HAL& hal;
 void AP_Frsky_Telem::init(AP_HAL::UARTDriver *port, uint8_t frsky_type)
 {
     if (port == NULL) {
-	return;
+        return;
     }
     _port = port;    
-    _port->begin(9600);
-    _initialised = true;    
+     _do_init = 1;
+    _initialised = true;
+	_sport_crc = 0;
 }
 
 void AP_Frsky_Telem::frsky_send_byte(uint8_t value)
@@ -154,7 +155,7 @@ void  AP_Frsky_Telem::frsky_send_frame2()
 	uint16_t latdddmm = lat;
 	uint16_t latmmmm = (lat - latdddmm) * 10000;
 	lat_ns = (loc.lat < 0) ? 'S' : 'N';
-	
+
 	lon = frsky_format_gps(fabsf(loc.lng/10000000.0));
 	uint16_t londddmm = lon;
 	uint16_t lonmmmm = (lon - londddmm) * 10000;
@@ -196,6 +197,66 @@ void AP_Frsky_Telem::check_sport_input(void)
 }
 
 
+
+void AP_Frsky_Telem::sport_sendByte(uint8_t byte)
+{
+  if(_port != NULL) {
+    if(byte == 0x7E) {
+      _port->write(SPORT_STUFFING);
+      _port->write(0x5E); // 0x7E xor 0x20
+    } else if(byte == 0x7D) {
+      _port->write(SPORT_STUFFING);
+      _port->write(0x5D); // 0x7D xor 0x20
+    } else {
+      _port->write(byte);
+    }
+    _sport_crc += byte;
+    _sport_crc += _sport_crc >> 8;
+    _sport_crc &= 0x00ff;
+    _sport_crc += _sport_crc >> 8;
+    _sport_crc &= 0x00ff;
+  }
+}
+
+void AP_Frsky_Telem::sport_sendCrc()
+{
+    _port->write(0xFF - _sport_crc);
+    _sport_crc = 0;
+}
+
+void AP_Frsky_Telem::sport_sendData(uint16_t dataTypeId, uint32_t data)
+{
+  if(_port != NULL) {
+    sport_sendByte(SPORT_SENSOR_DATA_FRAME);
+    uint8_t *bytes = (uint8_t*)&dataTypeId;
+    sport_sendByte(bytes[0]);
+    sport_sendByte(bytes[1]);
+    bytes = (uint8_t*)&data;
+    sport_sendByte(bytes[0]);
+    sport_sendByte(bytes[1]);
+    sport_sendByte(bytes[2]);
+    sport_sendByte(bytes[3]);
+    sport_sendCrc();
+  }
+}
+
+void AP_Frsky_Telem::sport_sendData(uint16_t dataTypeId, int32_t data)
+{
+  if(_port != NULL) {
+    sport_sendByte(SPORT_SENSOR_DATA_FRAME);
+    uint8_t *bytes = (uint8_t*)&dataTypeId;
+    sport_sendByte(bytes[0]);
+    sport_sendByte(bytes[1]);
+    bytes = (uint8_t*)&data;
+    sport_sendByte(bytes[0]);
+    sport_sendByte(bytes[1]);
+    sport_sendByte(bytes[2]);
+    sport_sendByte(bytes[3]);
+    sport_sendCrc();
+  }
+}
+
+
 /*
   send telemetry frames. Should be called at 50Hz. The high rate is to
   allow this code to poll for serial bytes coming from the receiver
@@ -206,23 +267,87 @@ void AP_Frsky_Telem::send_frames(uint8_t control_mode, enum FrSkyProtocol protoc
     if (!_initialised) {
         return;
     }
-    
+    if (_do_init == 1) {
+        if (protocol == FrSkySPORT) {
+            _port->begin(57600);
+        } else {
+            _port->begin(9600);
+        }
+        _do_init = 0;
+    }
+
     if (protocol == FrSkySPORT) {
-        // check for sport bytes
         check_sport_input();
-    }
     
-    uint32_t now = hal.scheduler->millis();
+		float battery_amps = _battery.current_amps();
+		const AP_GPS &gps = _ahrs.get_gps();
+		uint16_t course_in_degrees = (_ahrs.yaw_sensor / 100) % 360;
+		Location loc = gps.location();
 
-    // send frame1 every 200ms
-    if (now - _last_frame1_ms > 200) {
-        _last_frame1_ms = now;
-        frsky_send_frame1(control_mode);        
+		static uint8_t snum = 0;
+		if (snum == 0) {
+            sport_sendData(RPM_ROT_DATA_ID, (uint32_t)(gps.num_sats() * 2));
+            snum++;
+        } else if (snum == 1) {
+            sport_sendData(FCS_CURR_DATA_ID, (uint32_t)((battery_amps < 0) ? 0 : roundf(battery_amps * 100.0f)));
+            snum++;
+        } else if (snum == 2) {
+            sport_sendData(FCS_VOLT_DATA_ID, (uint32_t)(roundf(_battery.voltage() * 100.0f)));
+            snum++;
+        } else if (snum == 3) {
+            sport_sendData(GPS_ALT_DATA_ID, (int32_t)(loc.alt));
+            snum++;
+        } else if (snum == 4) {
+            sport_sendData(GPS_SPEED_DATA_ID, (uint32_t)(gps.ground_speed()));
+            snum++;
+        } else if (snum == 5) {
+            uint32_t latlong;
+            if(loc.lat < 0 ) {
+              latlong=((abs(loc.lat)/100)*6) | 0x40000000;
+            } else {
+              latlong=((abs(loc.lat)/100)*6);
+            }
+            sport_sendData(GPS_LAT_LON_DATA_ID, latlong);
+            snum++;
+        } else if (snum == 6) {
+            uint32_t latlong;
+            if(loc.lng < 0) {
+              latlong=((abs(loc.lng)/100)*6)  | 0xC0000000;
+            } else {
+              latlong=((abs(loc.lng)/100)*6)  | 0x80000000;
+            }
+            sport_sendData(GPS_LAT_LON_DATA_ID, latlong);
+            snum++;
+        } else if (snum == 7) {
+            sport_sendData(HEADING_DATA_ID, (uint32_t)(course_in_degrees * 100.0));
+            snum++;
+        } else if (snum == 8) {
+            sport_sendData(ACCX_DATA_ID, (int32_t)(_ahrs.roll * 10000.0));
+            snum++;
+        } else if (snum == 9) {
+            sport_sendData(ACCY_DATA_ID, (int32_t)(_ahrs.pitch * 10000.0));
+            snum++;
+        } else if (snum == 10) {
+            sport_sendData(ACCZ_DATA_ID, (uint32_t)(course_in_degrees * 100.0));
+            snum++;
+        } else {
+            sport_sendData(VARIO_ALT_DATA_ID, (int32_t)(loc.alt));
+            snum = 0;
+        }
+
+    } else {
+        uint32_t now = hal.scheduler->millis();
+        // send frame1 every 200ms
+        if (now - _last_frame1_ms > 200) {
+            _last_frame1_ms = now;
+            frsky_send_frame1(control_mode);        
+        }
+
+        // send frame2 every second
+        if (now - _last_frame2_ms > 1000) {
+            _last_frame2_ms = now;
+            frsky_send_frame2();
+        }
     }
 
-    // send frame2 every second
-    if (now - _last_frame2_ms > 1000) {
-        _last_frame2_ms = now;
-        frsky_send_frame2();
-    }
 }

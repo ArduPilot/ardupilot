@@ -60,6 +60,28 @@
 #define HUB_PORT true
 #define S_PORT false
 
+#define SPORT_SENSOR_DATA_FRAME 0x10
+#define SPORT_STUFFING          0x7D
+
+#define FCS_CURR_DATA_ID      0x0200
+#define FCS_VOLT_DATA_ID      0x0210
+#define FLVSS_CELL_DATA_ID    0x0300
+#define GPS_LAT_LON_DATA_ID   0x0800
+#define GPS_ALT_DATA_ID       0x0820
+#define GPS_SPEED_DATA_ID     0x0830
+#define GPS_COG_DATA_ID       0x0840
+#define GPS_DATE_TIME_DATA_ID 0x0850
+#define RPM_T1_DATA_ID        0x0400
+#define RPM_T2_DATA_ID        0x0410
+#define RPM_ROT_DATA_ID       0x0500
+#define VARIO_ALT_DATA_ID     0x0100
+#define VARIO_VSI_DATA_ID     0x0110
+#define HEADING_DATA_ID       0x0840
+#define ACCX_DATA_ID          0x0700
+#define ACCY_DATA_ID          0x0710
+#define ACCZ_DATA_ID          0x0720
+
+
 class AP_Frsky_Telem
 {
  public:
@@ -90,11 +112,20 @@ class AP_Frsky_Telem
     void frsky_send_byte(uint8_t value);
     void frsky_send_hub_startstop();
 
+	void sport_sendByte(uint8_t byte);
+	void sport_sendCrc();
+	void sport_sendData(uint16_t dataTypeId, uint32_t data);
+	void sport_sendData(uint16_t dataTypeId, int32_t data);
+
     AP_HAL::UARTDriver *_port;
     bool _initialised;
     AP_AHRS &_ahrs;
     AP_BattMonitor &_battery;
     uint32_t _last_frame1_ms;
     uint32_t _last_frame2_ms;
+
+    uint16_t _do_init;
+    uint16_t _sport_crc;
+
 };
 #endif
