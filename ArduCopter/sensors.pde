@@ -132,7 +132,7 @@ static void update_optical_flow(void)
         // Use range from a separate range finder if available, not the PX4Flows built in sensor which is ineffective
         float ground_distance_m = 0.01f*float(sonar_alt);
         ahrs.writeOptFlowMeas(flowQuality, flowRate, bodyRate, last_of_update, sonar_alt_health, ground_distance_m);
-         if (g.log_bitmask & MASK_LOG_OPTFLOW) {
+        if (g.log_bitmask & MASK_LOG_OPTFLOW) {
             Log_Write_Optflow();
         }
     }
