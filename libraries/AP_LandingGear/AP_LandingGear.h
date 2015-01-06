@@ -41,6 +41,8 @@ public:
     void update();
     
     void set_cmd_mode(int8_t cmd) { _command_mode = cmd; }
+    
+    void force_deploy(bool force) { _force_deploy = force;}
 
     static const struct AP_Param::GroupInfo        var_info[];
 
@@ -54,6 +56,7 @@ private:
 
     // internal variables
     bool        _deployed;              // true if the landing gear has been deployed, initialized false
+    bool        _force_deploy;          // used by main code to force landing gear to deploy, such as in Land mode
     int8_t      _command_mode;          // pilots commanded control mode: Manual Deploy, Auto, or Manual Retract
     
     /// enable - enable landing gear retraction
