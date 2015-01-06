@@ -155,6 +155,7 @@
 #if PARACHUTE == ENABLED
 #include <AP_Parachute.h>		// Parachute release library
 #endif
+#include <AP_LandingGear.h>     // Landing Gear library
 #include <AP_Terrain.h>
 
 // AP_HAL to Arduino compatibility layer
@@ -724,6 +725,11 @@ static AP_Parachute parachute(relay);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
+// Landing Gear Controller
+////////////////////////////////////////////////////////////////////////////////
+static AP_LandingGear landinggear(relay);
+
+////////////////////////////////////////////////////////////////////////////////
 // terrain handling
 #if AP_TERRAIN_AVAILABLE
 AP_Terrain terrain(ahrs, mission, rally);
@@ -782,6 +788,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { one_hz_loop,         400,     42 },
     { ekf_dcm_check,        40,      2 },
     { crash_check,          40,      2 },
+    { landinggear_update,   40,      1 },
     { gcs_check_input,	     8,    550 },
     { gcs_send_heartbeat,  400,    150 },
     { gcs_send_deferred,     8,    720 },
@@ -856,6 +863,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { one_hz_loop,         100,     420 },
     { ekf_dcm_check,        10,      20 },
     { crash_check,          10,      20 },
+    { landinggear_update,   10,      10 },
     { gcs_check_input,	     2,     550 },
     { gcs_send_heartbeat,  100,     150 },
     { gcs_send_deferred,     2,     720 },
@@ -1534,6 +1542,30 @@ static void tuning(){
     case CH6_RATE_ROLL_KD:
         g.pid_rate_roll.kD(tuning_value);
         break;
+    }
+}
+
+// Run landing gear controller at 10Hz
+static void landinggear_update(){
+    
+    // If landing gear control is active, run update function.
+    if (g.ch7_option == AUX_SWITCH_LANDING_GEAR || g.ch8_option == AUX_SWITCH_LANDING_GEAR){
+    
+        // last status (deployed or retracted) used to check for changes
+        static bool last_deploy_status;
+        
+        landinggear.update();
+        
+        // send event message to datalog if status has changed
+        if (landinggear.deployed() != last_deploy_status){
+            if (landinggear.deployed()){
+                Log_Write_Event(DATA_LANDING_GEAR_DEPLOYED);
+            } else {
+                Log_Write_Event(DATA_LANDING_GEAR_RETRACTED);
+            }
+        }
+        
+        last_deploy_status = landinggear.deployed();        
     }
 }
 
