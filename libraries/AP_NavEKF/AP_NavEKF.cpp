@@ -3644,7 +3644,11 @@ bool NavEKF::getLLH(struct Location &loc) const
     loc.alt = _ahrs->get_home().alt - state.position.z*100;
     loc.flags.relative_alt = 0;
     loc.flags.terrain_alt = 0;
-    location_offset(loc, state.position.x, state.position.y);
+    if (constPosMode) {
+        location_offset(loc, lastKnownPositionNE.x, lastKnownPositionNE.y);
+    } else {
+        location_offset(loc, state.position.x, state.position.y);
+    }
     return true;
 }
 
