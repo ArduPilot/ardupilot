@@ -54,7 +54,6 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     AP_Param::setup_object_defaults(this, var_info);
 
     // initialise flags
-    _flags.force_recalc_xy = false;
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
     _flags.slow_cpu = false;
 #else
