@@ -3946,8 +3946,8 @@ void NavEKF::readGpsData()
         // calculate a position offset which is applied to NE position and velocity wherever it is used throughout code to allow GPS position jumps to be accommodated gradually
         decayGpsOffset();
     }
-    // If too long since last fix time, we declare no GPS present
-    if (imuSampleTime_ms - lastFixTime_ms < 1000) {
+    // If too long since last fix time or we are not allowed to use GPS, we declare no GPS available for use
+    if ((imuSampleTime_ms - lastFixTime_ms < 1000) || _fusionModeGPS == 3) {
         gpsNotAvailable = false;
     } else {
         gpsNotAvailable = true;
