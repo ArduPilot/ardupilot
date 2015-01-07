@@ -418,7 +418,7 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
     // Chip reset
     uint8_t tries;
     for (tries = 0; tries<5; tries++) {
-#if CONFIG_COMPASS != HAL_COMPASS_AK8963 
+#if HAL_COMPASS_DEFAULT != HAL_COMPASS_AK8963 
         /* Prevent reseting if internal AK8963 is selected, because it may corrupt
          * AK8963's initialisation.  */
         _register_write(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_DEVICE_RESET);
@@ -448,7 +448,7 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
     _register_write(MPUREG_PWR_MGMT_2, 0x00);            // only used for wake-up in accelerometer only low power mode
 
     // Disable I2C bus (recommended on datasheet)
-#if CONFIG_COMPASS != HAL_COMPASS_AK8963 
+#if HAL_COMPASS_DEFAULT != HAL_COMPASS_AK8963 
      /* Prevent disabling if internal AK8963 is selected. If internal AK8963 is not used
       * it's ok to disable I2C slaves*/
     _register_write(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
