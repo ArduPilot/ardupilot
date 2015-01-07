@@ -885,7 +885,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Group: LGR_
     // @Path: ../libraries/AP_LandingGear/AP_LandingGear.cpp
-    GOBJECT(landinggear,		"LGR_", AP_LandingGear),
+    GOBJECT(landinggear,    "LGR_", AP_LandingGear),
 
     // @Group: COMPASS_
     // @Path: ../libraries/AP_Compass/Compass.cpp
