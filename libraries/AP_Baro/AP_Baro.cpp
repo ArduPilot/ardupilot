@@ -101,20 +101,20 @@ void AP_Baro::calibrate()
 
     for (uint8_t c = 0; c < num_samples; c++) {
         uint32_t tstart = hal.scheduler->millis();
-        bool all_healthy = false;
+        bool all_sensors_healthy = false;
         do {
             update();
             if (hal.scheduler->millis() - tstart > 500) {
                 hal.scheduler->panic(PSTR("PANIC: AP_Baro::read unsuccessful "
                         "for more than 500ms in AP_Baro::calibrate [3]\r\n"));
             }
-            all_healthy = true;
+            all_sensors_healthy = true;
             for (uint8_t i=0; i<_num_sensors; i++) {
                 if (!healthy(i)) {
-                    all_healthy = false;
+                    all_sensors_healthy = false;
                 }
             }
-        } while (!all_healthy);
+        } while (!all_sensors_healthy);
         for (uint8_t i=0; i<_num_sensors; i++) {
             sum_pressure[i] += sensors[i].pressure;
             sum_temperature[i] += sensors[i].temperature;
