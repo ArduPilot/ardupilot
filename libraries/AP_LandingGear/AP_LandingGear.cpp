@@ -72,15 +72,15 @@ void AP_LandingGear::update()
         // force deployment if retract is not enabled
         deploy();
         // retract is disabled until switch is placed into deploy position to prevent accidental retraction on bootup if switch was left in retract position
-        enable(_command_mode == COMMAND_MODE_DEPLOY);
+        enable(_command_mode == LandingGear_Deploy);
         return;
     }
 
-    if (_command_mode == COMMAND_MODE_DEPLOY){  
+    if (_command_mode == LandingGear_Deploy){
         deploy();
     }
-    
-    if (_command_mode == COMMAND_MODE_RETRACT){
+
+    if (_command_mode == LandingGear_Retract){
         retract();
     }    
 }

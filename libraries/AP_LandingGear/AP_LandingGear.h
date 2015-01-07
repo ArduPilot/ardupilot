@@ -12,9 +12,12 @@
 #define AP_LANDINGGEAR_SERVO_RETRACT_PWM_DEFAULT    1250    // default PWM value to move servo to when landing gear is up
 #define AP_LANDINGGEAR_SERVO_DEPLOY_PWM_DEFAULT     1750    // default PWM value to move servo to when landing gear is down
 
-#define COMMAND_MODE_DEPLOY                         0       // command gear to deploy
-#define COMMAND_MODE_AUTO                           1       // command gear to actuate automatically
-#define COMMAND_MODE_RETRACT                        2       // command gear to retract
+// Gear command modes
+enum LandingGearCommandMode {
+    LandingGear_Deploy,
+    LandingGear_Auto,
+    LandingGear_Retract
+};
 
 /// @class	AP_LandingGear
 /// @brief	Class managing the control of landing gear
@@ -24,8 +27,10 @@ public:
 
     /// Constructor
     AP_LandingGear() :
+        _retract_enabled(false),
         _deployed(false),
-        _retract_enabled(false)
+        _force_deploy(false),
+        _command_mode(LandingGear_Deploy)
     {
         // setup parameter defaults
         AP_Param::setup_object_defaults(this, var_info);
@@ -33,15 +38,17 @@ public:
 
     /// enabled - returns true if landing gear retract is enabled
     bool enabled() const { return _retract_enabled; }
-    
+
     /// deployed - returns true if the landing gear is deployed
     bool deployed() const { return _deployed; }
 
     /// update - should be called at 10hz
     void update();
-    
-    void set_cmd_mode(int8_t cmd) { _command_mode = cmd; }
-    
+
+    /// set_cmd_mode - set command mode to deploy, auto or retract
+    void set_cmd_mode(LandingGearCommandMode cmd) { _command_mode = cmd; }
+
+    /// force_deploy - set to true to force gear to deploy
     void force_deploy(bool force) { _force_deploy = force;}
 
     static const struct AP_Param::GroupInfo        var_info[];
@@ -57,7 +64,7 @@ private:
     // internal variables
     bool        _deployed;              // true if the landing gear has been deployed, initialized false
     bool        _force_deploy;          // used by main code to force landing gear to deploy, such as in Land mode
-    int8_t      _command_mode;          // pilots commanded control mode: Manual Deploy, Auto, or Manual Retract
+    LandingGearCommandMode  _command_mode;  // pilots commanded control mode: Manual Deploy, Auto, or Manual Retract
     
     /// enable - enable landing gear retraction
     void enable(bool on_off);
