@@ -450,11 +450,21 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
     case AUX_SWITCH_RELAY:
         ServoRelayEvents.do_set_relay(0, ch_flag == AUX_SWITCH_HIGH);
         break;
-        
+
     case AUX_SWITCH_LANDING_GEAR:
-        landinggear.set_cmd_mode(ch_flag);
+        switch (ch_flag) {
+            case AUX_SWITCH_LOW:
+                landinggear.set_cmd_mode(LandingGear_Deploy);
+                break;
+            case AUX_SWITCH_MIDDLE:
+                landinggear.set_cmd_mode(LandingGear_Auto);
+                break;
+            case AUX_SWITCH_HIGH:
+                landinggear.set_cmd_mode(LandingGear_Retract);
+                break;
+        }
         break;    
-    
+
     }
 }
 
