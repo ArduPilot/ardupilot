@@ -25,6 +25,7 @@ MODULES		+= drivers/hmc5883
 MODULES		+= drivers/ms5611
 MODULES		+= drivers/mb12xx
 MODULES		+= drivers/ll40ls
+MODULES		+= drivers/trone
 #MODULES	+= drivers/gps
 #MODULES	+= drivers/hil
 #MODULES	+= drivers/hott_telemetry
