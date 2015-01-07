@@ -951,8 +951,9 @@ void NavEKF::SelectFlowFusion()
         EstimateTerrainOffset();
         // Indicate we have used the range data
         newDataRng = false;
-        // we don't do subsequent fusion of optical flow data into the main filter if GPS is good or terrain offset data is invalid
-        if (!gpsNotAvailable || !gndOffsetValid) {
+        // we don't do subsequent fusion of optical flow data into the main filter if GPS is good and terrain offset data is invalid
+        // because an invalid height above ground estimate will casue the optical flow measurements to fight the GPS
+        if (!gpsNotAvailable && !gndOffsetValid) {
             // turn of fusion permissions
             // reset the measurement axis index
             flow_state.obsIndex = 0;
