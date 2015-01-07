@@ -127,6 +127,7 @@ static void init_aux_switches()
         case AUX_SWITCH_ATTCON_FEEDFWD:
         case AUX_SWITCH_ATTCON_ACCEL_LIM:
         case AUX_SWITCH_RELAY:
+        case AUX_SWITCH_LANDING_GEAR:
             do_aux_switch_function(g.ch7_option, ap.CH7_flag);
             break;
     }
@@ -149,6 +150,7 @@ static void init_aux_switches()
         case AUX_SWITCH_ATTCON_FEEDFWD:
         case AUX_SWITCH_ATTCON_ACCEL_LIM:
         case AUX_SWITCH_RELAY:
+        case AUX_SWITCH_LANDING_GEAR:
             do_aux_switch_function(g.ch8_option, ap.CH8_flag);
             break;
     }
@@ -448,6 +450,11 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
     case AUX_SWITCH_RELAY:
         ServoRelayEvents.do_set_relay(0, ch_flag == AUX_SWITCH_HIGH);
         break;
+        
+    case AUX_SWITCH_LANDING_GEAR:
+        landinggear.set_cmd_mode(ch_flag);
+        break;    
+    
     }
 }
 
