@@ -329,3 +329,16 @@ uint8_t AP_Baro::register_sensor(void)
     return _num_sensors++;
 }
 
+
+/*
+  check if all barometers are healthy
+ */
+bool AP_Baro::all_healthy(void) const
+{
+     for (uint8_t i=0; i<_num_sensors; i++) {
+         if (!healthy(i)) {
+             return false;
+         }
+     }
+     return _num_sensors > 0;
+}

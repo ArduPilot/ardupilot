@@ -44,6 +44,9 @@ public:
     bool healthy(void) const { return healthy(_primary); }
     bool healthy(uint8_t instance) const { return sensors[instance].healthy && sensors[instance].alt_ok; }
 
+    // check if all baros are healthy - used for SYS_STATUS report
+    bool all_healthy(void) const;
+
     // pressure in Pascal. Divide by 100 for millibars or hectopascals
     float get_pressure(void) const { return get_pressure(_primary); }
     float get_pressure(uint8_t instance) const { return sensors[instance].pressure; }
