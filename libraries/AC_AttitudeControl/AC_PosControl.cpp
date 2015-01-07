@@ -692,27 +692,17 @@ void AC_PosControl::pos_to_rate_xy(bool use_desired_rate, float dt, float ekfNav
             _vel_target.y = _p_pos_xy.kP() * _pos_error.y;
         }
 
-        // decide velocity limit due to position error
-        float vel_max_from_pos_error;
-        if (use_desired_rate) {
-            // if desired velocity (i.e. velocity feed forward) is being used we limit the maximum velocity correction due to position error to 2m/s
-            vel_max_from_pos_error = POSCONTROL_VEL_XY_MAX_FROM_POS_ERR;
-        }else{
-            // if desired velocity is not used, we allow position error to increase speed up to maximum speed
-            vel_max_from_pos_error = _speed_cms;
-        }
-
-        // scale velocity to stays within limits
-        float vel_total = pythagorous2(_vel_target.x, _vel_target.y);
-        if (vel_total > vel_max_from_pos_error) {
-            _vel_target.x = vel_max_from_pos_error * _vel_target.x/vel_total;
-            _vel_target.y = vel_max_from_pos_error * _vel_target.y/vel_total;
-        }
-
         // add desired velocity (i.e. feed forward).
         if (use_desired_rate) {
             _vel_target.x += _vel_desired.x;
             _vel_target.y += _vel_desired.y;
+        }
+
+        // scale velocity within limits
+        float vel_total = pythagorous2(_vel_target.x, _vel_target.y);
+        if (vel_total > _speed_cms) {
+            _vel_target.x = _speed_cms * _vel_target.x/vel_total;
+            _vel_target.y = _speed_cms * _vel_target.y/vel_total;
         }
     }
 }

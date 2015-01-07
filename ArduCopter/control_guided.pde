@@ -8,6 +8,10 @@
  # define GUIDED_LOOK_AT_TARGET_MIN_DISTANCE_CM     500     // point nose at target if it is more than 5m away
 #endif
 
+static Vector3f posvel_pos_target_cm;
+static Vector3f posvel_vel_target_cms;
+static uint32_t posvel_update_time_ms;
+
 struct Guided_Limit {
     uint32_t timeout_ms;  // timeout (in seconds) from the time that guided is invoked
     float alt_min_cm;   // lower altitude limit in cm above home (0 = no limit)
@@ -84,6 +88,30 @@ static void guided_vel_control_start()
     pos_control.init_vel_controller_xyz();
 }
 
+// initialise guided mode's posvel controller
+static void guided_posvel_control_start()
+{
+    // set guided_mode to velocity controller
+    guided_mode = Guided_PosVel;
+
+    pos_control.init_xy_controller();
+
+    pos_control.set_speed_xy(wp_nav.get_speed_param());
+    pos_control.set_accel_xy(wp_nav.get_wp_acceleration());
+
+    const Vector3f& curr_pos = inertial_nav.get_position();
+    const Vector3f& curr_vel = inertial_nav.get_velocity();
+
+    pos_control.set_xy_target(curr_pos.x, curr_pos.y);
+    pos_control.set_desired_velocity_xy(curr_vel.x, curr_vel.y);
+
+    pos_control.set_speed_z(wp_nav.get_speed_down(), wp_nav.get_speed_up());
+    pos_control.set_accel_z(wp_nav.get_accel_z());
+
+    // initialise yaw
+    set_auto_yaw_mode(get_default_auto_yaw_mode(false));
+}
+
 // initialise guided mode's spline controller
 static void guided_spline_control_start()
 {
@@ -126,6 +154,20 @@ static void guided_set_velocity(const Vector3f& velocity)
 
     // set position controller velocity target
     pos_control.set_desired_velocity(velocity);
+}
+
+// set guided mode posvel target
+static void guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity) {
+    // check we are in velocity control mode
+    if (guided_mode != Guided_PosVel) {
+        guided_posvel_control_start();
+    }
+
+    posvel_update_time_ms = millis();
+    posvel_pos_target_cm = destination;
+    posvel_vel_target_cms = velocity;
+
+    pos_control.set_pos_target(posvel_pos_target_cm);
 }
 
 // set guided mode spline target
@@ -173,6 +215,10 @@ static void guided_run()
     case Guided_Spline:
         // run spline controller
         guided_spline_control_run();
+        break;
+
+    case Guided_PosVel:
+        guided_posvel_control_run();
         break;
     }
  }
@@ -268,6 +314,48 @@ static void guided_vel_control_run()
     }
 }
 
+// guided_posvel_control_run - runs the guided spline controller
+// called from guided_run
+static void guided_posvel_control_run()
+{
+    // process pilot's yaw input
+    float target_yaw_rate = 0;
+
+    // pilot control over yaw only for now
+    set_auto_yaw_mode(AUTO_YAW_HOLD);
+
+    if (!failsafe.radio) {
+        // get pilot's desired yaw rate
+        target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
+        if (target_yaw_rate != 0) {
+            set_auto_yaw_mode(AUTO_YAW_HOLD);
+        }
+    }
+
+
+    //after 3 seconds, zero velocity
+    uint32_t tnow = millis();
+    if(tnow-posvel_update_time_ms > 3000 && !posvel_vel_target_cms.is_zero()) {
+        posvel_vel_target_cms.zero();
+    }
+
+    posvel_pos_target_cm += posvel_vel_target_cms * G_Dt;
+
+    pos_control.set_pos_target(posvel_pos_target_cm);
+    pos_control.set_desired_velocity_xy(posvel_vel_target_cms.x, posvel_vel_target_cms.y);
+    pos_control.update_xy_controller(true);
+    pos_control.update_z_controller();
+    pos_control.trigger_xy();
+
+    // call attitude controller
+    if (auto_yaw_mode == AUTO_YAW_HOLD) {
+        // roll & pitch from waypoint controller, yaw rate from pilot
+        attitude_control.angle_ef_roll_pitch_rate_ef_yaw(pos_control.get_roll(), pos_control.get_pitch(), target_yaw_rate);
+    }else{
+        // roll, pitch from waypoint controller, yaw heading from auto_heading()
+        attitude_control.angle_ef_roll_pitch_yaw(pos_control.get_roll(), pos_control.get_pitch(), get_auto_heading(), true);
+    }
+}
 
 // guided_spline_control_run - runs the guided spline controller
 // called from guided_run

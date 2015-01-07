@@ -112,6 +112,8 @@ public:
     /// get_speed_xy - allows main code to retrieve target horizontal velocity for wp navigation
     float get_speed_xy() const { return _wp_speed_cms; }
 
+    float get_speed_param() const { return _wp_speed_cms.get(); }
+
     /// get_speed_up - returns target climb speed in cm/s during missions
     float get_speed_up() const { return _wp_speed_up_cms; }
 
