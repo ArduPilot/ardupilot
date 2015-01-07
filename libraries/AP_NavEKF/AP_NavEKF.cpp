@@ -988,6 +988,8 @@ void NavEKF::SelectFlowFusion()
         FuseOptFlow();
         // Reset the measurement axis index to prevent further fusion of this data
         flow_state.obsIndex = 0;
+        // reset flag to indicate that no new flow data is available for fusion
+        newDataFlow = false;
         // indicate that flow fusion has been performed. This is used for load spreading.
         flowFusePerformed = true;
     }
