@@ -394,7 +394,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     DCM33FlowMin(0.71f),            // If Tbn(3,3) is less than this number, optical flow measurements will not be fused as tilt is too high.
     fScaleFactorPnoise(1e-10f),     // Process noise added to focal length scale factor state variance at each time step
     flowTimeDeltaAvg_ms(100),       // average interval between optical flow measurements (msec)
-    flowIntervalMax_ms(200)         // maximum allowable time between flow fusion events
+    flowIntervalMax_ms(100)         // maximum allowable time between flow fusion events
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     ,_perf_UpdateFilter(perf_alloc(PC_ELAPSED, "EKF_UpdateFilter")),
@@ -910,9 +910,9 @@ void NavEKF::SelectFlowFusion()
     // Perform tilt check
     bool tiltOK = (Tnb_flow.c.z > DCM33FlowMin);
     // if we have waited too long, set a timeout flag which will force fusion to occur regardless of load spreading
-    bool flowUseTimeout = ((imuSampleTime_ms - prevFlowUseTime_ms) >= flowIntervalMax_ms);
+    bool flowFuseNow = ((imuSampleTime_ms - flowValidMeaTime_ms) >= flowIntervalMax_ms/2);
     // check if fusion should be delayed to spread load. Setting fuseMeNow to true disables this load spreading feature.
-    bool delayFusion = ((covPredStep || magFusePerformed) && !(flowUseTimeout || inhibitLoadLeveling));
+    bool delayFusion = ((covPredStep || magFusePerformed) && !(flowFuseNow || inhibitLoadLeveling));
 
     // if we don't have valid flow measurements and are not using GPS, dead reckon using current velocity vector unless we are in position hold mode
     if (!flowDataValid && !constPosMode && PV_AidingMode == AID_RELATIVE) {
