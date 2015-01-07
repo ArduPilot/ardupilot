@@ -335,6 +335,11 @@ then
     echo "Found internal ll40ls sensor"
 fi
 
+if trone start
+then
+    echo "Found trone sensor"
+fi
+
 if mb12xx start
 then
     echo "Found mb12xx sensor"
