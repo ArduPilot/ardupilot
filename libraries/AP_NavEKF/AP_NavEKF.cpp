@@ -2835,7 +2835,7 @@ void NavEKF::FuseOptFlow()
         tempVar[8] = (SK_LOS[4] + q0*tempVar[2]);
 
         // calculate observation jacobians for X LOS rate
-        for (uint8_t i = 0; i < 23; i++) H_LOS[i] = 0;
+        for (uint8_t i = 0; i < 22; i++) H_LOS[i] = 0;
         H_LOS[0] = - SH_LOS[0]*SH_LOS[3]*(2*q1*vd + 2*q0*ve - 2*q3*vn) - 2*q0*SH_LOS[2]*SH_LOS[3];
         H_LOS[1] = 2*q1*SH_LOS[2]*SH_LOS[3] - SH_LOS[0]*SH_LOS[3]*(2*q0*vd - 2*q1*ve + 2*q2*vn);
         H_LOS[2] = 2*q2*SH_LOS[2]*SH_LOS[3] - SH_LOS[0]*SH_LOS[3]*(2*q3*vd + 2*q2*ve + 2*q1*vn);
@@ -2899,7 +2899,7 @@ void NavEKF::FuseOptFlow()
         tempVar[8] = SH_LOS[0]*SK_LOS[7]*SK_LOS[8];
 
         // Calculate observation jacobians for Y LOS rate
-        for (uint8_t i = 0; i < 23; i++) H_LOS[i] = 0;
+        for (uint8_t i = 0; i < 22; i++) H_LOS[i] = 0;
         H_LOS[0] = SH_LOS[0]*SH_LOS[3]*(2*q3*ve - 2*q2*vd + 2*q0*vn) + 2*q0*SH_LOS[1]*SH_LOS[3];
         H_LOS[1] = SH_LOS[0]*SH_LOS[3]*(2*q3*vd + 2*q2*ve + 2*q1*vn) - 2*q1*SH_LOS[1]*SH_LOS[3];
         H_LOS[2] = - SH_LOS[0]*SH_LOS[3]*(2*q0*vd - 2*q1*ve + 2*q2*vn) - 2*q2*SH_LOS[1]*SH_LOS[3];
