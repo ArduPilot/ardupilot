@@ -1,10 +1,10 @@
 language: cpp
 
 before_install:
-  - cd .. && ./ardupilot/Tools/scripts/install-prereqs-ubuntu.sh -y && . ~/.profile
+  -  APMDIR=$(pwd) && pushd .. && $APMDIR/Tools/scripts/install-prereqs-ubuntu.sh -y && . ~/.profile && popd
 
 script: 
-  - cd ./ardupilot && Tools/scripts/build_all_travis.sh
+  - Tools/scripts/build_all_travis.sh
 
 notifications:
   webhooks:
