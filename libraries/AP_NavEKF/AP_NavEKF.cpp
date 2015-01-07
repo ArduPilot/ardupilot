@@ -2961,11 +2961,6 @@ void NavEKF::FuseOptFlow()
         } else if (!flowXfailed) {
             prevFlowFuseTime_ms = imuSampleTime_ms;
         }
-        // correct the state vector
-        for (uint8_t j = 0; j <= 21; j++)
-        {
-            states[j] = states[j] - Kfusion[j] * innovOptFlow[obsIndex];
-        }
         // Attitude, velocity and position corrections are averaged across multiple prediction cycles between now and the anticipated time for the next measurement.
         // Don't do averaging of quaternion state corrections if total angle change across predicted interval is going to exceed 0.1 rad
         bool highRates = ((flowUpdateCountMax * correctedDelAng.length()) > 0.1f);
