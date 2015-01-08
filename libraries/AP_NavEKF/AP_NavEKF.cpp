@@ -3639,17 +3639,21 @@ void NavEKF::getMagXYZ(Vector3f &magXYZ) const
 // return the last calculated latitude, longitude and height
 bool NavEKF::getLLH(struct Location &loc) const
 {
-    loc.lat = _ahrs->get_home().lat;
-    loc.lng = _ahrs->get_home().lng;
-    loc.alt = _ahrs->get_home().alt - state.position.z*100;
-    loc.flags.relative_alt = 0;
-    loc.flags.terrain_alt = 0;
-    if (constPosMode) {
-        location_offset(loc, lastKnownPositionNE.x, lastKnownPositionNE.y);
+    if(validOrigin) {
+        loc.lat = EKF_origin.lat;
+        loc.lng = EKF_origin.lng;
+        loc.alt = EKF_origin.alt - state.position.z*100;
+        loc.flags.relative_alt = 0;
+        loc.flags.terrain_alt = 0;
+        if (constPosMode) {
+            location_offset(loc, lastKnownPositionNE.x, lastKnownPositionNE.y);
+        } else {
+            location_offset(loc, state.position.x, state.position.y);
+        }
+        return true;
     } else {
-        location_offset(loc, state.position.x, state.position.y);
+        return false;
     }
-    return true;
 }
 
 // return the estimated height above ground level
@@ -3964,9 +3968,15 @@ void NavEKF::readGpsData()
             }
         }
 
-        // read latitutde and longitude from GPS and convert to NE position
-        const struct Location &gpsloc = _ahrs->get_gps().location();
-        gpsPosNE = location_diff(_ahrs->get_home(), gpsloc);
+        // read latitutde and longitude from GPS and convert to local NE position relative to the stored origin
+        // If we don't have an origin, then set it to the current GPS coordinates
+        if (validOrigin) {
+            const struct Location &gpsloc = _ahrs->get_gps().location();
+            gpsPosNE = location_diff(EKF_origin, gpsloc);
+        } else {
+            setOrigin();
+            gpsPosNE.zero();
+        }
         // calculate a position offset which is applied to NE position and velocity wherever it is used throughout code to allow GPS position jumps to be accommodated gradually
         decayGpsOffset();
     }
@@ -4372,6 +4382,7 @@ void NavEKF::InitialiseVariables()
     inhibitMagStates = true;
     gndOffsetValid =  false;
     flowXfailed = false;
+    validOrigin = false;
 }
 
 // return true if we should use the airspeed sensor
@@ -4548,8 +4559,11 @@ void NavEKF::performArmingChecks()
         }
         // zero stored velocities used to do dead-reckoning
         heldVelNE.zero();
-        // zero last known position used to deadreckon if GPS is lost
-        lastKnownPositionNE.zero();
+        // zero last known position used to deadreckon if GPS is lost when arming
+        // keep position during disarm to provide continuing indication of last known position
+        if (vehicleArmed) {
+            lastKnownPositionNE.zero();
+        }
         // set various  useage modes based on the condition at arming. These are then held until the vehicle is disarmed.
         if (!vehicleArmed) {
             PV_AidingMode = AID_NONE; // When dis-armed, we only estimate orientation & height using the constant position mode
@@ -4596,6 +4610,33 @@ void NavEKF::performArmingChecks()
         constPosMode = false;
     }
 
+}
+
+// Set the NED origin to be used until the next filter reset
+void NavEKF::setOrigin()
+{
+    EKF_origin = _ahrs->get_gps().location();
+    validOrigin = true;
+}
+
+// return the LLH location of the filters NED origin
+bool NavEKF::getOriginLLH(struct Location &loc) const
+{
+    if (validOrigin) {
+        loc = EKF_origin;
+    }
+    return validOrigin;
+}
+
+// set the LLH location of the filters NED origin
+bool NavEKF::setOriginLLH(struct Location &loc)
+{
+    if (vehicleArmed) {
+        return false;
+    }
+    EKF_origin = loc;
+    validOrigin = true;
+    return true;
 }
 
 #endif // HAL_CPU_CLASS
