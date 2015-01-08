@@ -1,8 +1,26 @@
 language: cpp
 sudo: required
 
+env:
+  - secure: "y81XpWA0pgw18ZszT93q/1RRhsOdYfgVNAfntrNNQHxb4bFmUgxNdumxDWJrW3M4JvZLLlSQtaiszB1Q5gIHYd9dBXMmn9fs7r0X924ivLUt9gtRcPuYISBphYMda1mkZtum3BRSMPZthy7h9QCaIIZEoLzwBezg3XlKb+LaUfs="
+
 before_install:
   -  APMDIR=$(pwd) && pushd .. && $APMDIR/Tools/scripts/install-travis-env.sh -y && . ~/.profile && popd
 
-script: 
-  - Tools/scripts/build_all_travis.sh
+script:
+  - Tools/scripts/build_px4_v2_quad_travis.sh
+
+deploy:
+  provider: releases
+  api-key: ${GITHUB_API_KEY}
+  file:
+  - "ArduCopter/ArduCopter-v2.px4"
+  - "Tools/Frame_params/Solo.param"
+  - "Tools/Frame_params/Solo-minus.param"
+  skip_cleanup: true
+  on:
+    tags: true
+    all_branches: true
+
+notifications:
+  slack: 3dr:DnBFaUDTVtQa5k18ODuAZRKL
