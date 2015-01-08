@@ -139,6 +139,17 @@ public:
     // return the last calculated latitude, longitude and height
     bool getLLH(struct Location &loc) const;
 
+    // return the latitude and longitude and height used to set the NED origin
+    // All NED positions calculated by the filter are relative to this location
+    // Returns false if the origin has not been set
+    bool getOriginLLH(struct Location &loc) const;
+
+    // set the latitude and longitude and height used to set the NED origin
+    // All NED positions calcualted by the filter will be relative to this location
+    // The origin cannot be set if the filter is in a flight mode (eg vehicle armed)
+    // Returns false if the filter has rejected the attempt to set the origin
+    bool setOriginLLH(struct Location &loc);
+
     // return estimated height above ground level
     // return false if ground height is not being estimated.
     bool getHAGL(float &HAGL) const;
@@ -379,6 +390,9 @@ private:
     // Check arm status and perform required checks and mode changes
     void performArmingChecks();
 
+    // Set the NED origin to be used until the next filter reset
+    void setOrigin();
+
     // EKF Mavlink Tuneable Parameters
     AP_Float _gpsHorizVelNoise;     // GPS horizontal velocity measurement noise : m/s
     AP_Float _gpsVertVelNoise;      // GPS vertical velocity measurement noise : m/s
@@ -572,6 +586,8 @@ private:
     bool gpsNotAvailable;           // bool true when valid GPS data is not available
     bool vehicleArmed;              // true when the vehicle is disarmed
     bool prevVehicleArmed;          // vehicleArmed from previous frame
+    struct Location EKF_origin;     // LLH origin of the NED axis system - do not change unless filter is reset
+    bool validOrigin;               // true when the EKF origin is valid
 
     // Used by smoothing of state corrections
     float gpsIncrStateDelta[10];    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next GPS measurement
