@@ -286,7 +286,7 @@ static struct 	Location current_loc;
 // --------------------------------------
 #if MOUNT == ENABLED
 // current_loc uses the baro/gps soloution for altitude rather than gps only.
-AP_Mount camera_mount(&current_loc, ahrs, 0);
+AP_Mount camera_mount(ahrs, current_loc);
 #endif
 
 
@@ -616,7 +616,7 @@ static void ahrs_update()
 static void mount_update(void)
 {
 #if MOUNT == ENABLED
-	camera_mount.update_mount_position();
+	camera_mount.update();
 #endif
 #if CAMERA == ENABLED
     camera.trigger_pic_cleanup();
@@ -705,10 +705,6 @@ static void update_logging2(void)
 static void update_aux(void)
 {
     RC_Channel_aux::enable_aux_servos();
-        
-#if MOUNT == ENABLED
-    camera_mount.update_mount_type();
-#endif
 }
 
 /*
@@ -728,10 +724,6 @@ static void one_second_loop(void)
 
     // cope with changes to aux functions
     update_aux();
-
-#if MOUNT == ENABLED
-    camera_mount.update_mount_type();
-#endif
 
     // cope with changes to mavlink system ID
     mavlink_system.sysid = g.sysid_this_mav;

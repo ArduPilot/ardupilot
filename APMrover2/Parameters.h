@@ -162,7 +162,7 @@ public:
         //
         k_param_camera,
         k_param_camera_mount,
-        k_param_camera_mount2,
+        k_param_camera_mount2,          // unused
 
         //
         // 240: PID Controllers

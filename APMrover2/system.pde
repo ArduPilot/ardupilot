@@ -196,6 +196,9 @@ static void init_ardupilot()
 
     relay.init();
 
+    // initialise camera mount
+    camera_mount.init();
+
     /*
       setup the 'main loop is dead' check. Note that this relies on
       the RC library being initialised.

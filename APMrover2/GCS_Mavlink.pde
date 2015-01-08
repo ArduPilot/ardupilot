@@ -830,7 +830,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     }
                 } else {
                     // send the command to the camera mount
-                    camera_mount.set_roi_cmd(&roi_loc);
+                    camera_mount.set_roi_target(roi_loc);
                 }
                 result = MAV_RESULT_ACCEPTED;
                 break;
