@@ -11,7 +11,7 @@ set -x
 echo "Testing ArduPlane build"
 pushd ArduCopter
 make configure
-for b in all apm2 sitl linux; do
+for b in all apm2 sitl; do
     pwd
     make clean
     make $b -j4
@@ -22,8 +22,6 @@ for d in ArduCopter; do
     pushd $d
     make clean
     make sitl -j4
-    make clean
-    make linux -j4
     make clean
     make px4-cleandep
     make px4-v2
