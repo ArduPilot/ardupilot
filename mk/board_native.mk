@@ -58,6 +58,7 @@ LIBOBJS			:=	$(SKETCHLIBOBJS)
 
 # The ELF file
 SKETCHELF		=	$(BUILDROOT)/$(SKETCH).elf
+BUILDELF                =       $(notdir $(SKETCHELF))
 
 # HEX file
 SKETCHHEX		=	$(BUILDROOT)/$(SKETCH).hex
@@ -95,6 +96,8 @@ $(SKETCHELF):	$(SKETCHOBJS) $(LIBOBJS)
 	@echo "Building $(SKETCHELF)"
 	$(RULEHDR)
 	$(v)$(LD) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(v)cp $(SKETCHELF) .
+	@echo "Firmware is in $(BUILDELF)"
 
 #
 # Build sketch objects
