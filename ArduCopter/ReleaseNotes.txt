@@ -5,6 +5,7 @@ Changes from 3.2
 1) Enhancements:
     a) reduced twitch when passing Spline waypoints
     b) Faster disarm after landing in Auto, Land, RTL
+    c) Pixhawk LED turns green before arming only after GPS HDOP falls below 2.3 (only in flight modes requiring GPS)
 2) Safety Features:
     a) Add desired descent rate check to reduce chance of false-positive on landing check
     b) improved MPU6k health monitoring and re-configuration in case of in-flight failure
