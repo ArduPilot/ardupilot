@@ -9,7 +9,7 @@ set -e
 set -x
 
 echo "Testing ArduPlane build"
-pushd ArduPlane
+pushd ArduCopter
 make configure
 for b in all apm2 sitl linux; do
     pwd
@@ -18,7 +18,7 @@ for b in all apm2 sitl linux; do
 done
 popd
 
-for d in ArduCopter APMrover2 ArduPlane AntennaTracker; do
+for d in ArduCopter; do
     pushd $d
     make clean
     make sitl -j4
@@ -29,10 +29,5 @@ for d in ArduCopter APMrover2 ArduPlane AntennaTracker; do
     make px4-v2
     popd
 done
-
-pushd Tools/Replay
-make clean
-make linux -j4
-popd
 
 exit 0
