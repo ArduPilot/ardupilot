@@ -739,13 +739,7 @@ static uint16_t mainLoop_count;
 #if MOUNT == ENABLED
 // current_loc uses the baro/gps soloution for altitude rather than gps only.
 // mabe one could use current_loc for lat/lon too and eliminate g_gps alltogether?
-static AP_Mount camera_mount(&current_loc, ahrs, 0);
-#endif
-
-#if MOUNT2 == ENABLED
-// current_loc uses the baro/gps soloution for altitude rather than gps only.
-// mabe one could use current_loc for lat/lon too and eliminate g_gps alltogether?
-static AP_Mount camera_mount2(&current_loc, ahrs, 1);
+static AP_Mount camera_mount(ahrs, current_loc);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -915,11 +909,7 @@ static void update_speed_height(void)
 static void update_mount(void)
 {
 #if MOUNT == ENABLED
-    camera_mount.update_mount_position();
-#endif
-
-#if MOUNT2 == ENABLED
-    camera_mount2.update_mount_position();
+    camera_mount.update();
 #endif
 
 #if CAMERA == ENABLED
@@ -1010,13 +1000,6 @@ static void update_aux(void)
     if (!px4io_override_enabled) {
         RC_Channel_aux::enable_aux_servos();
     }
-
-#if MOUNT == ENABLED
-        camera_mount.update_mount_type();
-#endif
-#if MOUNT2 == ENABLED
-        camera_mount2.update_mount_type();
-#endif
 }
 
 static void one_second_loop()

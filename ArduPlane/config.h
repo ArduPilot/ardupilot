@@ -282,11 +282,6 @@
  # define MOUNT          ENABLED
 #endif
 
-// second mount, can for example be used to keep an antenna pointed at the home position
-#ifndef MOUNT2
- # define MOUNT2         DISABLED
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 // FLIGHT AND NAVIGATION CONTROL
