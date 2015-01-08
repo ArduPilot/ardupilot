@@ -33,7 +33,7 @@ static void loiter_run()
     float target_climb_rate = 0;
 
     // if not auto armed set throttle to zero and exit immediately
-    if(!ap.auto_armed || !ap.home_is_set) {
+    if(!ap.auto_armed) {
         wp_nav.init_loiter_target();
         attitude_control.relax_bf_rate_controller();
         attitude_control.set_yaw_target_to_current_heading();
