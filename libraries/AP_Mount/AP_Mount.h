@@ -7,6 +7,7 @@
 *		   Ritchie Wilson;									*
 *		   Amilcar Lucas;									*
 *		   Gregory Fletcher;								*
+*          heavily modified by Randy Mackay                 *
 *															*
 * Purpose:  Move a 2 or 3 axis mount attached to vehicle,	*
 *			Used for mount to track targets or stabilise	*
@@ -28,112 +29,125 @@
 #include <GCS_MAVLink.h>
 #include <RC_Channel.h>
 
+// maximum number of mounts
+#define AP_MOUNT_MAX_INSTANCES          1
+
+// declare backend classes
+class AP_Mount_Backend;
+class AP_Mount_Servo;
+class AP_Mount_MAVLink;
+
 class AP_Mount
 {
-public:
-    //Constructor
-    AP_Mount(const struct Location *current_loc, const AP_AHRS &ahrs, uint8_t id);
+    // declare backends as friends
+    friend class AP_Mount_Backend;
+    friend class AP_Mount_Servo;
+    friend class AP_Mount_MAVLink;
 
-    //enums
+public:
+
+    // Enums
     enum MountType {
-        k_unknown = 0,                  ///< unknown type
-        k_pan_tilt = 1,                 ///< yaw-pitch
-        k_tilt_roll = 2,                ///< pitch-roll
-        k_pan_tilt_roll = 3,            ///< yaw-pitch-roll
+        Mount_Type_None = 0,            /// no mount
+        Mount_Type_Servo = 1,           /// servo controlled mount
+        Mount_Type_MAVLink = 2,         /// MAVLink controlled mount
     };
 
-    // get_mode - return current mount mode
-    enum MAV_MOUNT_MODE     get_mode() const { return (enum MAV_MOUNT_MODE)_mount_mode.get(); }
+    // Constructor
+    AP_Mount(const AP_AHRS &ahrs, const struct Location &current_loc);
 
-    // set_mode_to_default - restores the mode to it's default held in the MNT_MODE parameter
+    // init - detect and initialise all mounts
+    void init();
+
+    // update - give mount opportunity to update servos.  should be called at 10hz or higher
+    void update();
+
+    // _num_instances - returns number of mounts
+    uint8_t num_instances() { return _num_instances; }
+
+    // get_mount_type - returns the type of mount
+    AP_Mount::MountType get_mount_type() const { return get_mount_type(_primary); }
+    AP_Mount::MountType get_mount_type(uint8_t instance) const;
+
+    // has_pan_control - returns true if the mount has yaw control (required for copters)
+    bool has_pan_control() const { return has_pan_control(_primary); }
+    bool has_pan_control(uint8_t instance) const;
+
+    // get_mode - returns current mode of mount (i.e. Retracted, Neutral, RC_Targeting, GPS Point)
+    enum MAV_MOUNT_MODE get_mode() const { return get_mode(_primary); }
+    enum MAV_MOUNT_MODE get_mode(uint8_t instance) const;
+
+    // set_mode - sets mount's mode
+    void set_mode(enum MAV_MOUNT_MODE mode) { set_mode(_primary, mode); }
+    void set_mode(uint8_t instance, enum MAV_MOUNT_MODE mode);
+
+    // set_mode_to_default - restores the mode to it's default mode held in the MNT_MODE parameter
     //      this operation requires 230us on an APM2, 60us on a Pixhawk/PX4
-    void                    set_mode_to_default() { _mount_mode.load(); }
+    void set_mode_to_default() { set_mode_to_default(_primary); }
+    void set_mode_to_default(uint8_t instance);
 
-    // MAVLink methods
-    void                    configure_msg(mavlink_message_t* msg);
-    void                    control_msg(mavlink_message_t* msg);
-    void                    status_msg(mavlink_channel_t chan);
-    void                    set_roi_cmd(const struct Location *target_loc);
-    void                    configure_cmd();
-    void                    control_cmd();
+    // set_roi_target - sets target location that mount should attempt to point towards
+    void set_roi_target(const struct Location &target_loc) { set_roi_target(_primary,target_loc); }
+    void set_roi_target(uint8_t instance, const struct Location &target_loc);
 
-    // should be called periodically
-    void                    update_mount_position();
-    void                    update_mount_type(); ///< Auto-detect the mount gimbal type depending on the functions assigned to the servos
-    void                    debug_output();      ///< For testing and development. Called in the medium loop.
-    // Accessors
-    enum MountType          get_mount_type() {
-        return _mount_type;
-    }
-    // hook for eeprom variables
+    // configure_msg - process MOUNT_CONFIGURE messages received from GCS
+    void configure_msg(mavlink_message_t* msg) { configure_msg(_primary, msg); }
+    void configure_msg(uint8_t instance, mavlink_message_t* msg);
+
+    // control_msg - process MOUNT_CONTROL messages received from GCS
+    void control_msg(mavlink_message_t* msg) { control_msg(_primary, msg); }
+    void control_msg(uint8_t instance, mavlink_message_t* msg);
+
+    // status_msg - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
+    void status_msg(mavlink_channel_t chan);
+
+    // parameter var table
     static const struct AP_Param::GroupInfo        var_info[];
-
-    void                            set_mode(enum MAV_MOUNT_MODE mode);
 
 private:
 
-    //methods
+    // private members
+    const AP_AHRS           &_ahrs;
+    const struct Location   &_current_loc;  // reference to the vehicle's current location
 
-    void                            set_retract_angles(float roll, float tilt, float pan); ///< set mount retracted position
-    void                            set_neutral_angles(float roll, float tilt, float pan);
-    void                            set_control_angles(float roll, float tilt, float pan);
-    void                            set_GPS_target_location(Location targetGPSLocation); ///< used to tell the mount to track GPS location
+    // frontend parameters
+    AP_Int8             _joystick_speed;    // joystick gain
 
-    // internal methods
-    void                            calc_GPS_target_angle(const struct Location *target);
-    void                            stabilize();
-    int16_t                         closest_limit(int16_t angle, int16_t* angle_min, int16_t* angle_max);
-    void                            move_servo(uint8_t rc, int16_t angle, int16_t angle_min, int16_t angle_max);
-    int32_t                         angle_input(RC_Channel* rc, int16_t angle_min, int16_t angle_max);
-    float                           angle_input_rad(RC_Channel* rc, int16_t angle_min, int16_t angle_max);
+    // front end members
+    uint8_t             _num_instances;     // number of mounts instantiated
+    uint8_t             _primary;           // primary mount
+    AP_Mount_Backend    *_backends[AP_MOUNT_MAX_INSTANCES];         // pointers to instantiated mounts
 
-    //members
-    const AP_AHRS                   &_ahrs; ///< Rotation matrix from earth to plane.
-    const struct Location *         _current_loc;
-    struct Location                 _target_GPS_location;
-    MountType                       _mount_type;
+    // backend state including parameters
+    struct mount_state {
+        // Parameters
+        AP_Int8         _type;              // mount type (None, Servo or MAVLink, see MountType enum)
+        AP_Int8         _mode;              // Retracted, Neutral, RC_Targeting, GPS Point
+        AP_Int8         _stab_roll;         // 1 = mount should stabilize earth-frame roll axis, 0 = no stabilization
+        AP_Int8         _stab_tilt;         // 1 = mount should stabilize earth-frame pitch axis
+        AP_Int8         _stab_pan;          // 1 = mount should stabilize earth-frame yaw axis
 
-    uint8_t                         _roll_idx; ///< RC_Channel_aux mount roll function index
-    uint8_t                         _tilt_idx; ///< RC_Channel_aux mount tilt function index
-    uint8_t                         _pan_idx;  ///< RC_Channel_aux mount pan  function index
-    uint8_t                         _open_idx; ///< RC_Channel_aux mount open function index
+        // RC input channels from receiver used for direct angular input from pilot
+        AP_Int8         _roll_rc_in;        // pilot provides roll input on this channel
+        AP_Int8         _tilt_rc_in;        // pilot provides tilt input on this channel
+        AP_Int8         _pan_rc_in;         // pilot provides pan input on this channel
 
-    uint8_t                         mount_axis_mask; //  used to track user input on each axis
-    
-    float                           _roll_control_angle; ///< radians
-    float                           _tilt_control_angle; ///< radians
-    float                           _pan_control_angle;  ///< radians
+        // Mount's physical limits
+        AP_Int16        _roll_angle_min;    // min roll in 0.01 degree units
+        AP_Int16        _roll_angle_max;    // max roll in 0.01 degree units
+        AP_Int16        _tilt_angle_min;    // min tilt in 0.01 degree units
+        AP_Int16        _tilt_angle_max;    // max tilt in 0.01 degree units
+        AP_Int16        _pan_angle_min;     // min pan in 0.01 degree units
+        AP_Int16        _pan_angle_max;     // max pan in 0.01 degree units
 
-    float                           _roll_angle; ///< degrees
-    float                           _tilt_angle; ///< degrees
-    float                           _pan_angle;  ///< degrees
+        AP_Vector3f     _retract_angles;    // retracted position for mount, vector.x = roll vector.y = tilt, vector.z=pan
+        AP_Vector3f     _neutral_angles;    // neutral position for mount, vector.x = roll vector.y = tilt, vector.z=pan
 
-    // EEPROM parameters
-    AP_Int8                         _stab_roll; ///< (1 = yes, 0 = no)
-    AP_Int8                         _stab_tilt; ///< (1 = yes, 0 = no)
-    AP_Int8                         _stab_pan;  ///< (1 = yes, 0 = no)
+        AP_Float        _roll_stb_lead;     // roll lead control gain
+        AP_Float        _pitch_stb_lead;    // pitch lead control gain
 
-    AP_Int8                         _mount_mode;
-    // RC_Channel for providing direct angular input from pilot
-    AP_Int8                         _roll_rc_in;
-    AP_Int8                         _tilt_rc_in;
-    AP_Int8                         _pan_rc_in;
-
-    AP_Int16                        _roll_angle_min; ///< min angle limit of actuated surface in 0.01 degree units
-    AP_Int16                        _roll_angle_max; ///< max angle limit of actuated surface in 0.01 degree units
-    AP_Int16                        _tilt_angle_min; ///< min angle limit of actuated surface in 0.01 degree units
-    AP_Int16                        _tilt_angle_max; ///< max angle limit of actuated surface in 0.01 degree units
-    AP_Int16                        _pan_angle_min;  ///< min angle limit of actuated surface in 0.01 degree units
-    AP_Int16                        _pan_angle_max;  ///< max angle limit of actuated surface in 0.01 degree units
-
-    AP_Int8                         _joystick_speed;
-
-    AP_Vector3f                     _retract_angles; ///< retracted position for mount, vector.x = roll vector.y = tilt, vector.z=pan
-    AP_Vector3f                     _neutral_angles; ///< neutral position for mount, vector.x = roll vector.y = tilt, vector.z=pan
-    AP_Vector3f                     _control_angles; ///< GCS controlled position for mount, vector.x = roll vector.y = tilt, vector.z=pan
-
-    AP_Float _roll_stb_lead;
-    AP_Float _pitch_stb_lead;
+        struct Location _roi_target;        // roi target location
+    } state[AP_MOUNT_MAX_INSTANCES];
 };
 
 #endif // __AP_MOUNT_H__
