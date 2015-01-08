@@ -2709,8 +2709,8 @@ void NavEKF::EstimateTerrainOffset()
             float t25 = t24*vel.y;
             float t26 = t10-t11;
             float t27 = t26*vel.x;
-            float t28 = q0*q1*2.0;
-            float t29 = q2*q3*2.0;
+            float t28 = q0*q1*2.0f;
+            float t29 = q2*q3*2.0f;
             float t30 = t28+t29;
             float t31 = t30*vel.z;
             float t12 = t25-t27+t31;
@@ -2718,7 +2718,7 @@ void NavEKF::EstimateTerrainOffset()
             float t22 = sq(t2);
             float t23 = 1.0f/(t8*t8*t8);
             float t32 = sq(t12);
-            H_OPT = 0.5f*(t13*t22*t23*2.0+t13*t23*t32*2.0)/sqrt(t9*t13*t22+t9*t13*t32);
+            H_OPT = 0.5f*(t13*t22*t23*2.0f+t13*t23*t32*2.0f)/sqrtf(t9*t13*t22+t9*t13*t32);
 
             // calculate innovation variances
             auxFlowObsInnovVar = H_OPT*Popt*H_OPT + R_LOS;
