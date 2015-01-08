@@ -3,6 +3,7 @@
 #define __AP_HAL_SCHEDULER_H__
 
 #include "AP_HAL_Namespace.h"
+#include "AP_HAL_Boards.h"
 
 #include <stdint.h>
 #include <AP_Progmem.h>
@@ -14,6 +15,11 @@ public:
     virtual void     delay(uint16_t ms) = 0;
     virtual uint32_t millis() = 0;
     virtual uint32_t micros() = 0;
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
+    // offer non-wrapping 64 bit versions on faster CPUs
+    virtual uint64_t millis64() = 0;
+    virtual uint64_t micros64() = 0;
+#endif
     virtual void     delay_microseconds(uint16_t us) = 0;
     virtual void     register_delay_callback(AP_HAL::Proc,
                                              uint16_t min_time_ms) = 0;

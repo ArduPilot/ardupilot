@@ -52,7 +52,7 @@ float SITL_State::_gyro_drift(void)
 		return 0;
 	}
 	double period  = _sitl->drift_time * 2;
-	double minutes = fmod(_scheduler->_micros() / 60.0e6, period);
+	double minutes = fmod(_scheduler->micros64() / 60.0e6, period);
 	if (minutes < period/2) {
 		return minutes * ToRad(_sitl->drift_speed);
 	}
