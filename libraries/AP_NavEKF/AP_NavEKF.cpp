@@ -748,6 +748,8 @@ void NavEKF::SelectVelPosFusion()
                 constVelMode = false; // always clear constant velocity mode if constant velocity mode is active
                 constPosMode = true;
                 PV_AidingMode = AID_NONE;
+                posTimeout = true;
+                velTimeout = true;
                 // reset the velocity
                 ResetVelocity();
                 // store the current position to be used to keep reporting the last known position
@@ -4309,8 +4311,6 @@ void NavEKF::InitialiseVariables()
 
     // initialise other variables
     gpsNoiseScaler = 1.0f;
-    velTimeout = true;
-    posTimeout = true;
     hgtTimeout = true;
     magTimeout = true;
     tasTimeout = true;
@@ -4363,6 +4363,8 @@ void NavEKF::InitialiseVariables()
     lastConstVelMode = false;
     heldVelNE.zero();
     PV_AidingMode = AID_NONE;
+    posTimeout = true;
+    velTimeout = true;
     gpsVelGlitchOffset.zero();
     vehicleArmed = false;
     prevVehicleArmed = false;
@@ -4561,6 +4563,8 @@ void NavEKF::performArmingChecks()
         // set various  useage modes based on the condition at arming. These are then held until the vehicle is disarmed.
         if (!vehicleArmed) {
             PV_AidingMode = AID_NONE; // When dis-armed, we only estimate orientation & height using the constant position mode
+            posTimeout = true;
+            velTimeout = true;
             constPosMode = true;
             constVelMode = false; // always clear constant velocity mode if constant position mode is active
             lastConstVelMode = false;
@@ -4599,6 +4603,8 @@ void NavEKF::performArmingChecks()
     // Always turn aiding off when the vehicle is disarmed
     if (!vehicleArmed) {
         PV_AidingMode = AID_NONE;
+        posTimeout = true;
+        velTimeout = true;
         // set constant position mode if aiding is inhibited
         constPosMode = true;
         constVelMode = false; // always clear constant velocity mode if constant position mode is active
