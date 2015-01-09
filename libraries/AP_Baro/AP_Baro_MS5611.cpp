@@ -109,7 +109,7 @@ void AP_SerialBus_I2C::init()
 {
     _i2c_sem = hal.i2c->get_semaphore();
     if (_i2c_sem == NULL) {
-        hal.scheduler->panic(PSTR("AP_SerialBus_I2C did not get valid I2C semaphroe!"));
+        hal.scheduler->panic(PSTR("AP_SerialBus_I2C did not get valid I2C semaphore!"));
     }
 }
 
