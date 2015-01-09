@@ -47,8 +47,11 @@ public:
 #if MATH_CHECK_INDEXES
     typedef VectorN<ftype,2> Vector2;
     typedef VectorN<ftype,3> Vector3;
+    typedef VectorN<ftype,5> Vector5;
     typedef VectorN<ftype,6> Vector6;
     typedef VectorN<ftype,8> Vector8;
+    typedef VectorN<ftype,9> Vector9;
+    typedef VectorN<ftype,10> Vector10;
     typedef VectorN<ftype,11> Vector11;
     typedef VectorN<ftype,13> Vector13;
     typedef VectorN<ftype,14> Vector14;
@@ -59,11 +62,15 @@ public:
     typedef VectorN<VectorN<ftype,3>,3> Matrix3;
     typedef VectorN<VectorN<ftype,22>,22> Matrix22;
     typedef VectorN<VectorN<ftype,34>,22> Matrix34_50;
+    typedef VectorN<uint32_t,50> Vector_u32_50;
 #else
     typedef ftype Vector2[2];
     typedef ftype Vector3[3];
+    typedef ftype Vector5[5];
     typedef ftype Vector6[6];
     typedef ftype Vector8[8];
+    typedef ftype Vector9[9];
+    typedef ftype Vector10[10];
     typedef ftype Vector11[11];
     typedef ftype Vector13[13];
     typedef ftype Vector14[14];
@@ -74,6 +81,7 @@ public:
     typedef ftype Matrix3[3][3];
     typedef ftype Matrix22[22][22];
     typedef ftype Matrix34_50[34][50];
+    typedef uint32_t Vector_u32_50[50];
 #endif
 
     // Constructor
@@ -478,7 +486,7 @@ private:
     Matrix22 KHP;                   // intermediate result used for covariance updates
     Matrix22 P;                     // covariance matrix
     VectorN<state_elements,50> storedStates;       // state vectors stored for the last 50 time steps
-    uint32_t statetimeStamp[50];    // time stamp for each state vector stored
+    Vector_u32_50 statetimeStamp;    // time stamp for each state vector stored
     Vector3f correctedDelAng;       // delta angles about the xyz body axes corrected for errors (rad)
     Vector3f correctedDelVel12;     // delta velocities along the XYZ body axes for weighted average of IMU1 and IMU2 corrected for errors (m/s)
     Vector3f correctedDelVel1;      // delta velocities along the XYZ body axes for IMU1 corrected for errors (m/s)
@@ -590,9 +598,9 @@ private:
     bool validOrigin;               // true when the EKF origin is valid
 
     // Used by smoothing of state corrections
-    float gpsIncrStateDelta[10];    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next GPS measurement
-    float hgtIncrStateDelta[10];    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next height measurement
-    float magIncrStateDelta[10];    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next magnetometer measurement
+    Vector10 gpsIncrStateDelta;    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next GPS measurement
+    Vector10 hgtIncrStateDelta;    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next height measurement
+    Vector10 magIncrStateDelta;    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next magnetometer measurement
     uint8_t gpsUpdateCount;         // count of the number of minor state corrections using GPS data
     uint8_t gpsUpdateCountMax;      // limit on the number of minor state corrections using GPS data
     float gpsUpdateCountMaxInv;     // floating point inverse of gpsFilterCountMax
@@ -612,8 +620,8 @@ private:
     bool fuseOptFlowData;           // this boolean causes the last optical flow measurement to be fused
     float auxFlowObsInnov;          // optical flow rate innovation from 1-state terrain offset estimator
     float auxFlowObsInnovVar;       // innovation variance for optical flow observations from 1-state terrain offset estimator
-    float flowRadXYcomp[2];         // motion compensated optical flow angular rates(rad/sec)
-    float flowRadXY[2];             // raw (non motion compensated) optical flow angular rates (rad/sec)
+    Vector2 flowRadXYcomp;         // motion compensated optical flow angular rates(rad/sec)
+    Vector2 flowRadXY;             // raw (non motion compensated) optical flow angular rates (rad/sec)
     uint32_t flowValidMeaTime_ms;   // time stamp from latest valid flow measurement (msec)
     uint32_t flowMeaTime_ms;        // time stamp from latest flow measurement (msec)
     uint8_t flowQuality;            // unsigned integer representing quality of optical flow data. 255 is maximum quality.
@@ -621,8 +629,8 @@ private:
     Vector3f omegaAcrossFlowTime;   // body angular rates averaged across the optical flow sample period
     Matrix3f Tnb_flow;              // transformation matrix from nav to body axes at the middle of the optical flow sample period
     Matrix3f Tbn_flow;              // transformation matrix from body to nav axes at the middle of the optical flow sample period
-    float varInnovOptFlow[2];       // optical flow innovations variances (rad/sec)^2
-    float innovOptFlow[2];          // optical flow LOS innovations (rad/sec)
+    Vector2 varInnovOptFlow;       // optical flow innovations variances (rad/sec)^2
+    Vector2 innovOptFlow;          // optical flow LOS innovations (rad/sec)
     float Popt;                     // Optical flow terrain height state covariance (m^2)
     float terrainState;             // terrain position state (m)
     float prevPosN;                 // north position at last measurement
@@ -635,7 +643,7 @@ private:
     bool inhibitGndState;           // true when the terrain position state is to remain constant
     uint32_t prevFlowUseTime_ms;    // time the last flow measurement scheduled for fusion (doesn't mean it passed the innovatio consistency checks)
     uint32_t prevFlowFuseTime_ms;   // time both flow measurement components passed their innovation consistency checks
-    float flowTestRatio[2];         // square of optical flow innovations divided by fail threshold used by main filter where >1.0 is a fail
+    Vector2 flowTestRatio;         // square of optical flow innovations divided by fail threshold used by main filter where >1.0 is a fail
     float auxFlowTestRatio;         // sum of squares of optical flow innovation divided by fail threshold used by 1-state terrain offset estimator
     float R_LOS;                    // variance of optical flow rate measurements (rad/sec)^2
     float auxRngTestRatio;          // square of range finder innovations divided by fail threshold used by main filter where >1.0 is a fail
@@ -643,7 +651,7 @@ private:
     uint8_t flowUpdateCount;        // count of the number of minor state corrections using optical flow data
     uint8_t flowUpdateCountMax;     // limit on the number of minor state corrections using optical flow data
     float flowUpdateCountMaxInv;    // floating point inverse of flowUpdateCountMax
-    float flowIncrStateDelta[10];   // vector of corrections to attitude, velocity and position to be applied over the period between the current and next magnetometer measurement
+    Vector10 flowIncrStateDelta;   // vector of corrections to attitude, velocity and position to be applied over the period between the current and next magnetometer measurement
     bool newDataRng;                // true when new valid range finder data has arrived.
     bool constVelMode;              // true when fusing a constant velocity to maintain attitude reference when either optical flow or GPS measurements are lost after arming
     bool lastConstVelMode;          // last value of holdVelocity
@@ -661,8 +669,8 @@ private:
     // to level computational load as this can be an expensive operation
     struct {
         uint8_t obsIndex;
-        ftype SH_LOS[5];
-        ftype SK_LOS[9];
+        Vector5 SH_LOS;
+        Vector9 SK_LOS;
         ftype q0;
         ftype q1;
         ftype q2;
@@ -671,7 +679,7 @@ private:
         ftype ve;
         ftype vd;
         ftype pd;
-        ftype losPred[2];
+        Vector2 losPred;
     } flow_state;
 
     struct {
@@ -700,7 +708,7 @@ private:
         Matrix3f DCM;
         Vector3f MagPred;
         ftype R_MAG;
-        ftype SH_MAG[9];
+        Vector9 SH_MAG;
 	} mag_state;
 
 

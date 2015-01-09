@@ -2766,8 +2766,8 @@ void NavEKF::FuseOptFlow()
     // start performance timer
     perf_begin(_perf_FuseOptFlow);
 
-    float H_LOS[22];
-    float tempVar[9];
+    Vector22 H_LOS;
+    Vector9 tempVar;
     Vector3f velNED_local;
     Vector3f relVelSensor;
 
@@ -3226,8 +3226,8 @@ void NavEKF::FuseSideslip()
     float vwn;
     float vwe;
     const float R_BETA = 0.03f; // assume a sideslip angle RMS of ~10 deg
-    float SH_BETA[13];
-    float SK_BETA[8];
+    Vector13 SH_BETA;
+    Vector8 SK_BETA;
     Vector3f vel_rel_wind;
     Vector22 H_BETA;
     float innovBeta;
