@@ -759,30 +759,24 @@ void NavEKF::SelectVelPosFusion()
         }
 
         // command fusion of GPS data and reset states as required
-        if (newDataGps) {
+        if (newDataGps && (PV_AidingMode == AID_ABSOLUTE)) {
             // reset data arrived flag
             newDataGps = false;
             // reset state updates and counter used to spread fusion updates across several frames to reduce 10Hz pulsing
             memset(&gpsIncrStateDelta[0], 0, sizeof(gpsIncrStateDelta));
             gpsUpdateCount = 0;
-            // select which of velocity and position measurements will be fused
-            if (PV_AidingMode == AID_ABSOLUTE) {
-                // use both if GPS use is enabled
-                fuseVelData = true;
-                fusePosData = true;
-                // If a long time since last GPS update, then reset position and velocity and reset stored state history
-                if (imuSampleTime_ms - secondLastFixTime_ms > gpsRetryTimeout) {
-                    // Apply an offset to the GPS position so that the position can be corrected gradually
-                    gpsPosGlitchOffsetNE.x = statesAtPosTime.position.x - gpsPosNE.x;
-                    gpsPosGlitchOffsetNE.y = statesAtPosTime.position.y - gpsPosNE.y;
-                    // limit the radius of the offset to 100m and decay the offset to zero radially
-                    decayGpsOffset();
-                    ResetPosition();
-                    ResetVelocity();
-                }
-            } else {
-                fuseVelData = false;
-                fusePosData = false;
+            // use both if GPS use is enabled
+            fuseVelData = true;
+            fusePosData = true;
+            // If a long time since last GPS update, then reset position and velocity and reset stored state history
+            if (imuSampleTime_ms - secondLastFixTime_ms > gpsRetryTimeout) {
+                // Apply an offset to the GPS position so that the position can be corrected gradually
+                gpsPosGlitchOffsetNE.x = statesAtPosTime.position.x - gpsPosNE.x;
+                gpsPosGlitchOffsetNE.y = statesAtPosTime.position.y - gpsPosNE.y;
+                // limit the radius of the offset to 100m and decay the offset to zero radially
+                decayGpsOffset();
+                ResetPosition();
+                ResetVelocity();
             }
         } else {
             fuseVelData = false;
