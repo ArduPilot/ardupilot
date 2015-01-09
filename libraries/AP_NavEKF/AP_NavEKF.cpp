@@ -4601,7 +4601,12 @@ void NavEKF::performArmingChecks()
         finalMagYawInit = true;
     }
 
-    // set constant position mode if gps is inhibited and we are not trying to use optical flow data
+    // Always turn aiding off when the vehicle is disarmed
+    if (!vehicleArmed) {
+        PV_AidingMode = AID_NONE;
+    }
+
+    // set constant position mode if aiding is inhibited
     if (PV_AidingMode == AID_NONE) {
         constPosMode = true;
         constVelMode = false; // always clear constant velocity mode if constant position mode is active
