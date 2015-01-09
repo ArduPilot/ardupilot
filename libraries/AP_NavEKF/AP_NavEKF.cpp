@@ -1936,8 +1936,8 @@ void NavEKF::FuseVelPosNED()
             // use position data if healthy, timed out, or in constant position mode
             if (posHealth || posTimeout || constPosMode) {
                 posHealth = true;
-                // We don't reset the failed time if we are in constant position mode
-                if (!constPosMode) {
+                // only reset the failed time and do glitch timeout checks if we are doing full aiding
+                if (PV_AidingMode == AID_ABSOLUTE) {
                     posFailTime = imuSampleTime_ms;
                 }
                 // if timed out or outside the specified glitch radius, increment the offset applied to GPS data to compensate for large GPS position jumps
