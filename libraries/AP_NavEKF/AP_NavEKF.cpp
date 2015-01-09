@@ -3528,8 +3528,8 @@ void NavEKF::getVelNED(Vector3f &vel) const
 bool NavEKF::getPosNED(Vector3f &pos) const
 {
     if (constPosMode) {
-        pos.x = lastKnownPositionNE.x;
-        pos.y = lastKnownPositionNE.y;
+        pos.x = state.position.x + lastKnownPositionNE.x;
+        pos.y = state.position.y + lastKnownPositionNE.y;
     } else {
         pos.x = state.position.x;
         pos.y = state.position.y;
