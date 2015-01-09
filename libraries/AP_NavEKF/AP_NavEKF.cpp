@@ -1999,8 +1999,8 @@ void NavEKF::FuseVelPosNED()
             velTestRatio = innovVelSumSq / (varVelSum * sq(_gpsVelInnovGate));
             // fail if the ratio is greater than 1
             velHealth = ((velTestRatio < 1.0f)  || badIMUdata);
-            // declare a timeout if we have not fused velocity data for too long or in constant velocity mode
-            velTimeout = ((imuSampleTime_ms - velFailTime) > gpsRetryTime) || constVelMode;
+            // declare a timeout if we have not fused velocity data for too long or not aiding
+            velTimeout = (((imuSampleTime_ms - velFailTime) > gpsRetryTime) || PV_AidingMode == AID_NONE);
             // if data is healthy  or in constant velocity mode we fuse it
             if (velHealth || constVelMode) {
                 velHealth = true;
