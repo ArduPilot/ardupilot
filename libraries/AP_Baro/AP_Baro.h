@@ -42,7 +42,7 @@ public:
 
     // healthy - returns true if sensor and derived altitude are good
     bool healthy(void) const { return healthy(_primary); }
-    bool healthy(uint8_t instance) const { return sensors[instance].healthy && sensors[instance].alt_ok; }
+    bool healthy(uint8_t instance) const { return sensors[instance].healthy && sensors[instance].alt_ok && sensors[instance].calibrated; }
 
     // check if all baros are healthy - used for SYS_STATUS report
     bool all_healthy(void) const;
@@ -136,6 +136,7 @@ private:
         uint32_t last_update_ms;        // last update time in ms
         bool healthy:1;                 // true if sensor is healthy
         bool alt_ok:1;                  // true if calculated altitude is ok
+        bool calibrated:1;              // true if calculated calibrated successfully
         float pressure;                 // pressure in Pascal
         float temperature;              // temperature in degrees C
         float altitude;                 // calculated altitude

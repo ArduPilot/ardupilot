@@ -78,6 +78,12 @@ void AP_Baro::calibrate()
     // offset is supposed to be for within a flight
     _alt_offset.set_and_save(0);
 
+    // start by assuming all sensors are calibrated (for healthy() test)
+    for (uint8_t i=0; i<_num_sensors; i++) {
+        sensors[i].calibrated = true;
+        sensors[i].alt_ok = true;
+    }
+
     // let the barometer settle for a full second after startup
     // the MS5611 reads quite a long way off for the first second,
     // leading to about 1m of error if we don't wait
@@ -97,34 +103,43 @@ void AP_Baro::calibrate()
     // temperature settings
     float sum_pressure[BARO_MAX_INSTANCES] = {0};
     float sum_temperature[BARO_MAX_INSTANCES] = {0};
+    uint8_t count[BARO_MAX_INSTANCES] = {0};
     const uint8_t num_samples = 5;
 
     for (uint8_t c = 0; c < num_samples; c++) {
         uint32_t tstart = hal.scheduler->millis();
-        bool all_sensors_healthy = false;
         do {
             update();
             if (hal.scheduler->millis() - tstart > 500) {
                 hal.scheduler->panic(PSTR("PANIC: AP_Baro::read unsuccessful "
                         "for more than 500ms in AP_Baro::calibrate [3]\r\n"));
             }
-            all_sensors_healthy = true;
-            for (uint8_t i=0; i<_num_sensors; i++) {
-                if (!healthy(i)) {
-                    all_sensors_healthy = false;
-                }
-            }
-        } while (!all_sensors_healthy);
+        } while (!healthy());
         for (uint8_t i=0; i<_num_sensors; i++) {
-            sum_pressure[i] += sensors[i].pressure;
-            sum_temperature[i] += sensors[i].temperature;
+            if (healthy(i)) {
+                sum_pressure[i] += sensors[i].pressure;
+                sum_temperature[i] += sensors[i].temperature;
+                count[i] += 1;
+            }
         }
         hal.scheduler->delay(100);
     }
     for (uint8_t i=0; i<_num_sensors; i++) {
-            sensors[i].ground_pressure.set_and_save(sum_pressure[i] / num_samples);
-            sensors[i].ground_temperature.set_and_save(sum_temperature[i] / num_samples);
+        if (count[i] == 0) {
+            sensors[i].calibrated = false;
+        } else {
+            sensors[i].ground_pressure.set_and_save(sum_pressure[i] / count[i]);
+            sensors[i].ground_temperature.set_and_save(sum_temperature[i] / count[i]);
+        }
     }
+
+    // panic if all sensors are not calibrated
+    for (uint8_t i=0; i<_num_sensors; i++) {
+        if (sensors[i].calibrated) {
+            return;
+        }
+    }
+    hal.scheduler->panic(PSTR("AP_Baro: all sensors uncalibrated"));
 }
 
 /*
