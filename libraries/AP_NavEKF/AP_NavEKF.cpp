@@ -921,11 +921,12 @@ void NavEKF::SelectFlowFusion()
     // check if fusion should be delayed to spread load. Setting fuseMeNow to true disables this load spreading feature.
     bool delayFusion = ((covPredStep || magFusePerformed) && !(flowFuseNow || inhibitLoadLeveling));
 
-    // if we don't have valid flow measurements and are not using GPS, dead reckon using current velocity vector unless we are in position hold mode
-    if (!flowDataValid && !constPosMode && PV_AidingMode == AID_RELATIVE) {
+    // if we don't have valid flow measurements and are relying on them, dead reckon using current velocity vector
+    // If the flow measurements have been rejected for too long and we are relying on them, then reset the velocities to an estimate based on the flow and range data
+    if (!flowDataValid && PV_AidingMode == AID_RELATIVE) {
         constVelMode = true;
         constPosMode = false; // always clear constant position mode if constant velocity mode is active
-    } else if (flowDataValid && flowFusionTimeout) {
+    } else if (flowDataValid && flowFusionTimeout && PV_AidingMode == AID_RELATIVE) {
         // we need to reset the velocities to a value estimated from the flow data
         // estimate the range
         float initPredRng = max((terrainState - state.position[2]),0.1f) / Tnb_flow.c.z;
