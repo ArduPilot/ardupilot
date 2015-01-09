@@ -1939,17 +1939,17 @@ void NavEKF::FuseVelPosNED()
                 // only reset the failed time and do glitch timeout checks if we are doing full aiding
                 if (PV_AidingMode == AID_ABSOLUTE) {
                     posFailTime = imuSampleTime_ms;
-                }
-                // if timed out or outside the specified glitch radius, increment the offset applied to GPS data to compensate for large GPS position jumps
-                if (posTimeout || (maxPosInnov2 > sq(float(_gpsGlitchRadiusMax)))) {
-                    gpsPosGlitchOffsetNE.x += posInnov[0];
-                    gpsPosGlitchOffsetNE.y += posInnov[1];
-                    // limit the radius of the offset to 100m and decay the offset to zero radially
-                    decayGpsOffset();
-                    // reset the position to the current GPS position which will include the glitch correction offset
-                    ResetPosition();
-                    // don't fuse data on this time step
-                    fusePosData = false;
+                    // if timed out or outside the specified glitch radius, increment the offset applied to GPS data to compensate for large GPS position jumps
+                    if (posTimeout || (maxPosInnov2 > sq(float(_gpsGlitchRadiusMax)))) {
+                        gpsPosGlitchOffsetNE.x += posInnov[0];
+                        gpsPosGlitchOffsetNE.y += posInnov[1];
+                        // limit the radius of the offset to 100m and decay the offset to zero radially
+                        decayGpsOffset();
+                        // reset the position to the current GPS position which will include the glitch correction offset
+                        ResetPosition();
+                        // don't fuse data on this time step
+                        fusePosData = false;
+                    }
                 }
             } else {
                 posHealth = false;
