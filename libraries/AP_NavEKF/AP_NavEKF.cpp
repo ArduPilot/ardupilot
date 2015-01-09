@@ -1931,8 +1931,8 @@ void NavEKF::FuseVelPosNED()
             float maxPosInnov2 = sq(_gpsPosInnovGate * _gpsHorizPosNoise + 0.005f * accelScale * float(_gpsGlitchAccelMax) * sq(0.001f * float(imuSampleTime_ms - posFailTime)));
             posTestRatio = (sq(posInnov[0]) + sq(posInnov[1])) / maxPosInnov2;
             posHealth = ((posTestRatio < 1.0f) || badIMUdata);
-            // declare a timeout condition if we have been too long without data
-            posTimeout = ((imuSampleTime_ms - posFailTime) > gpsRetryTime);
+            // declare a timeout condition if we have been too long without data or not aiding
+            posTimeout = (((imuSampleTime_ms - posFailTime) > gpsRetryTime) || PV_AidingMode == AID_NONE);
             // use position data if healthy, timed out, or in constant position mode
             if (posHealth || posTimeout || constPosMode) {
                 posHealth = true;
