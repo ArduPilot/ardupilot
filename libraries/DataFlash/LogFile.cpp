@@ -1035,7 +1035,7 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         struct log_EKF5 pkt5 = {
             LOG_PACKET_HEADER_INIT(LOG_EKF5_MSG),
             time_ms : hal.scheduler->millis(),
-            normInnov : min((uint8_t)(100*normInnov),255),
+            normInnov : (uint8_t)(min(100*normInnov,255)),
             FIX : (int16_t)(1000*flowInnovX),
             FIY : (int16_t)(1000*flowInnovY),
             AFI : (int16_t)(1000*auxFlowInnov),
