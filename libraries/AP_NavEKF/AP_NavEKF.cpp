@@ -3561,23 +3561,22 @@ void NavEKF::resetGyroBias(void)
 }
 
 // Commands the EKF to not use GPS.
-// This command must be sent prior to arming as it will only be actioned when the filter is in constant position mode
-// This command is forgotten by the EKF each time it goes back into constant position mode (eg the vehicle disarms)
+// This command must be sent prior to arming
+// This command is forgotten by the EKF each time the vehicle disarms
 // Returns 0 if command rejected
 // Returns 1 if attitude, vertical velocity and vertical position will be provided
 // Returns 2 if attitude, 3D-velocity, vertical position and relative horizontal position will be provided
 uint8_t NavEKF::setInhibitGPS(void)
 {
-    if(!constPosMode) {
+    if(!vehicleArmed) {
         return 0;
     }
     if (optFlowDataPresent()) {
-        PV_AidingMode = AID_RELATIVE;
         return 2;
     } else {
-        PV_AidingMode = AID_NONE;
         return 1;
     }
+    _fusionModeGPS = 3;
 }
 
 // return the horizontal speed limit in m/s set by optical flow sensor limits
