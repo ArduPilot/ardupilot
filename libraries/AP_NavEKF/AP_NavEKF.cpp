@@ -1996,8 +1996,9 @@ void NavEKF::FuseVelPosNED()
             // declare a timeout if we have not fused velocity data for too long or not aiding
             velTimeout = (((imuSampleTime_ms - velFailTime) > gpsRetryTime) || PV_AidingMode == AID_NONE);
             // if data is healthy  or in constant velocity mode we fuse it
-            if (velHealth || constVelMode) {
+            if (velHealth || velTimeout || constVelMode) {
                 velHealth = true;
+                // restart the timeout count
                 velFailTime = imuSampleTime_ms;
             } else if (velTimeout && !posHealth && PV_AidingMode == AID_ABSOLUTE) {
                 // if data is not healthy and timed out and position is unhealthy and we are using aiding, we reset the velocity, but do not fuse data on this time step
