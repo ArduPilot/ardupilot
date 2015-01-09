@@ -4587,6 +4587,7 @@ void NavEKF::performArmingChecks()
                 velTimeout = true;
             } else {
                 PV_AidingMode = AID_ABSOLUTE; // we have GPS data and can estimate all vehicle states
+                constPosMode = false;
             }
         }
         // Reset filter positon, height and velocity states on arming or disarming
@@ -4604,15 +4605,10 @@ void NavEKF::performArmingChecks()
     // Always turn aiding off when the vehicle is disarmed
     if (!vehicleArmed) {
         PV_AidingMode = AID_NONE;
-    }
-
-    // set constant position mode if aiding is inhibited
-    if (PV_AidingMode == AID_NONE) {
+        // set constant position mode if aiding is inhibited
         constPosMode = true;
         constVelMode = false; // always clear constant velocity mode if constant position mode is active
         lastConstVelMode = false;
-    } else {
-        constPosMode = false;
     }
 
 }
