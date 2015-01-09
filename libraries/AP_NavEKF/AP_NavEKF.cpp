@@ -3584,7 +3584,7 @@ uint8_t NavEKF::setInhibitGPS(void)
 // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
 void NavEKF::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
 {
-    if (flowDataValid || PV_AidingMode == AID_RELATIVE) {
+    if (PV_AidingMode == AID_RELATIVE) {
         // allow 1.0 rad/sec margin for angular motion
         ekfGndSpdLimit = max((_maxFlowRate - 1.0f), 0.0f) * max((terrainState - state.position[2]), 0.1f);
         // use standard gains up to 5.0 metres height and reduce above that
