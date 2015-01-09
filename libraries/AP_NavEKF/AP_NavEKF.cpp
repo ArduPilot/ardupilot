@@ -2005,8 +2005,8 @@ void NavEKF::FuseVelPosNED()
             if (velHealth || constVelMode) {
                 velHealth = true;
                 velFailTime = imuSampleTime_ms;
-            } else if (velTimeout && !posHealth) {
-                // if data is not healthy and timed out and position is unhealthy we reset the velocity, but do not fuse data on this time step
+            } else if (velTimeout && !posHealth && PV_AidingMode == AID_ABSOLUTE) {
+                // if data is not healthy and timed out and position is unhealthy and we are using aiding, we reset the velocity, but do not fuse data on this time step
                 ResetVelocity();
                 fuseVelData =  false;
             } else {
