@@ -2,6 +2,8 @@
 #include <AP_Progmem.h>
 #include "Compass.h"
 
+extern const AP_HAL::HAL& hal;
+
 const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // index 0 was used for the old orientation matrix
 

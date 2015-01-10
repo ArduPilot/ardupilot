@@ -10,8 +10,6 @@
 #include <AP_HAL.h>
 #include "AP_Compass_Backend.h"
 
-extern const AP_HAL::HAL& hal;
-
 // compass product id
 #define AP_COMPASS_TYPE_UNKNOWN         0x00
 #define AP_COMPASS_TYPE_HIL             0x01
