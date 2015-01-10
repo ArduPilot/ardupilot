@@ -1,6 +1,6 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
-ArduCopter 3.2.1-rc1 08-Jan-2014
+ArduCopter 3.2.1-rc1 08-Jan-2015
 Changes from 3.2
 1) Enhancements:
     a) reduced twitch when passing Spline waypoints
