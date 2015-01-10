@@ -26,7 +26,6 @@
 #include <AP_HAL.h>
 #include "AP_Compass_AK8963.h"
 
-
 #define READ_FLAG                   0x80
 #define MPUREG_I2C_SLV0_ADDR        0x25
 #define MPUREG_I2C_SLV0_REG         0x26
@@ -322,7 +321,7 @@ bool AP_Compass_AK8963::_self_test()
 
     _start_conversion();
     hal.scheduler->delay(20);
-    _read_raw();
+    read_raw();
 
     float hx = _mag_x;
     float hy = _mag_y;
@@ -525,7 +524,7 @@ bool AP_Compass_AK8963::read()
         _compass._field[_compass_instance].rotate(_compass._board_orientation);
     }
 
-    apply_corrections(_field[_compass_instance],_compass_instance);
+    _compass.apply_corrections(_compass._field[_compass_instance],_compass_instance);
 
 #if 0
 

@@ -117,7 +117,7 @@ class AP_Compass_AK8963_MPU9250: public AP_Compass_AK8963
         void       _register_read(uint8_t address, uint8_t count, uint8_t *value);
         void       _register_write(uint8_t address, uint8_t value);
         void       _dump_registers();
-        bool       _read_raw();
+        bool       read_raw();
         uint8_t    _read_id();
 };
 
