@@ -352,6 +352,13 @@ Compass::_detect_backends(void)
     #error Unrecognised HAL_COMPASS_TYPE setting
 #endif
 
+#if 0 // disabled until the driver is complete
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
+    // the PXF also has a compass in the LSM9D
+    _add_backend(AP_Compass_LSM9D::detect);
+#endif
+#endif
+
     if (_backend_count == 0 ||
         _compass_count == 0) {
         hal.scheduler->panic(PSTR("No Compass backends available"));
