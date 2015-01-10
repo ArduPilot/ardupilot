@@ -259,6 +259,11 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     case MSG_FENCE_STATUS:
     case MSG_WIND:
     case MSG_RANGEFINDER:
+    case MSG_TERRAIN:
+    case MSG_BATTERY2:
+    case MSG_CAMERA_FEEDBACK:
+    case MSG_MOUNT_STATUS:
+    case MSG_OPTICAL_FLOW:
         break; // just here to prevent a warning
     }
     return true;

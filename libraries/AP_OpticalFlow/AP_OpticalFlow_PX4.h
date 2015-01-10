@@ -5,18 +5,17 @@
 
 #include "OpticalFlow.h"
 
-class AP_OpticalFlow_PX4 : public OpticalFlow
+class AP_OpticalFlow_PX4 : public OpticalFlow_backend
 {
 public:
-
     /// constructor
-    AP_OpticalFlow_PX4(const AP_AHRS &ahrs) : OpticalFlow(ahrs) {};
+    AP_OpticalFlow_PX4(OpticalFlow &_frontend);
 
     // init - initialise the sensor
-    virtual void init();
+    void init();
 
     // update - read latest values from sensor and fill in x,y and totals.
-    virtual void update(void);
+    void update(void);
 
 private:
     int         _fd;                // file descriptor for sensor

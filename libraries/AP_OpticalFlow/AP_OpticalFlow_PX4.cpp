@@ -20,10 +20,9 @@
  */
 
 #include <AP_HAL.h>
+#include "OpticalFlow.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-
-#include "AP_OpticalFlow_PX4.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -35,15 +34,17 @@
 
 extern const AP_HAL::HAL& hal;
 
-// Public Methods //////////////////////////////////////////////////////////////
+AP_OpticalFlow_PX4::AP_OpticalFlow_PX4(OpticalFlow &_frontend) : 
+OpticalFlow_backend(_frontend) 
+{}
+
 
 void AP_OpticalFlow_PX4::init(void)
 {
     _fd = open(PX4FLOW_DEVICE_PATH, O_RDONLY);
 
     // check for failure to open device
-    if (_fd < 0) {
-        hal.console->printf("Unable to open " PX4FLOW_DEVICE_PATH "\n");
+    if (_fd == -1) {
         return;
     }
 
@@ -51,39 +52,38 @@ void AP_OpticalFlow_PX4::init(void)
     if (ioctl(_fd, SENSORIOCSPOLLRATE, 10) != 0) {
         hal.console->printf("Unable to set flow rate to 10Hz\n");        
     }
-
-    // if we got this far, the sensor must be healthy
-    _flags.healthy = true;
 }
 
 // update - read latest values from sensor and fill in x,y and totals.
 void AP_OpticalFlow_PX4::update(void)
 {
-    // return immediately if not healthy
-    if (!_flags.healthy) {
+    // return immediately if not initialised
+    if (_fd == -1) {
         return;
     }
 
     struct optical_flow_s report;
-    while (::read(_fd, &report, sizeof(optical_flow_s)) == sizeof(optical_flow_s) && report.timestamp != _last_timestamp) {
-        _device_id = report.sensor_id;
-        _surface_quality = report.quality;
+    while (::read(_fd, &report, sizeof(optical_flow_s)) == sizeof(optical_flow_s) && 
+           report.timestamp != _last_timestamp) {
+        struct OpticalFlow::OpticalFlow_state state;
+        state.device_id = report.sensor_id;
+        state.surface_quality = report.quality;
         if (report.integration_timespan > 0) {
-            float flowScaleFactorX = 1.0f + 0.001f * float(_flowScalerX);
-            float flowScaleFactorY = 1.0f + 0.001f * float(_flowScalerY);
+            const Vector2f flowScaler = _flowScaler();
+            float flowScaleFactorX = 1.0f + 0.001f * flowScaler.x;
+            float flowScaleFactorY = 1.0f + 0.001f * flowScaler.y;
             float integralToRate = 1e6f / float(report.integration_timespan);
-            _flowRate.x = flowScaleFactorX * integralToRate * float(report.pixel_flow_x_integral); // rad/sec measured optically about the X sensor axis
-            _flowRate.y = flowScaleFactorY * integralToRate * float(report.pixel_flow_y_integral); // rad/sec measured optically about the Y sensor axis
-            _bodyRate.x = integralToRate * float(report.gyro_x_rate_integral); // rad/sec measured inertially about the X sensor axis
-            _bodyRate.y = integralToRate * float(report.gyro_y_rate_integral); // rad/sec measured inertially about the Y sensor axis
+            state.flowRate.x = flowScaleFactorX * integralToRate * float(report.pixel_flow_x_integral); // rad/sec measured optically about the X sensor axis
+            state.flowRate.y = flowScaleFactorY * integralToRate * float(report.pixel_flow_y_integral); // rad/sec measured optically about the Y sensor axis
+            state.bodyRate.x = integralToRate * float(report.gyro_x_rate_integral); // rad/sec measured inertially about the X sensor axis
+            state.bodyRate.y = integralToRate * float(report.gyro_y_rate_integral); // rad/sec measured inertially about the Y sensor axis
         } else {
-            _flowRate.x = 0.0f;
-            _flowRate.y = 0.0f;
-            _bodyRate.x = 0.0f;
-            _bodyRate.y = 0.0f;
+            state.flowRate.zero();
+            state.bodyRate.zero();
         }
         _last_timestamp = report.timestamp;
-        _last_update = hal.scheduler->millis();
+
+        _update_frontend(state);
     }
 }
 

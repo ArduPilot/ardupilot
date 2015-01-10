@@ -44,12 +44,12 @@ const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 // INS and Baro declaration
 AP_InertialSensor ins;
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-AP_Baro_MS5611 baro(&AP_Baro_MS5611::spi);
-#else
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 AP_ADC_ADS7844 adc;
-AP_Baro_BMP085 baro;
 #endif
+
+AP_Baro baro;
 
 // GPS declaration
 AP_GPS gps;

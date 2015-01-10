@@ -48,6 +48,7 @@
 #include <AP_Rally.h>
 #include <AP_BattMonitor.h>
 #include <AP_Terrain.h>
+#include <AP_OpticalFlow.h>
 #include <Parameters.h>
 #include <stdio.h>
 #include <getopt.h>
@@ -66,7 +67,7 @@ const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 static Parameters g;
 
 static AP_InertialSensor ins;
-static AP_Baro_HIL barometer;
+static AP_Baro barometer;
 static AP_GPS gps;
 static AP_Compass_HIL compass;
 static AP_AHRS_NavEKF ahrs(ins, barometer, gps);
@@ -212,7 +213,7 @@ void setup()
 
     barometer.init();
     barometer.setHIL(0);
-    barometer.read();
+    barometer.update();
     compass.init();
     inertial_nav.init();
     ins.set_hil_mode();
@@ -312,7 +313,7 @@ static void read_sensors(uint8_t type)
                 inertial_nav.update(ins.get_delta_time());
             }
             hal.scheduler->stop_clock(hal.scheduler->micros() + (i+1)*update_delta_usec);
-            dataflash.Log_Write_EKF(ahrs);
+            dataflash.Log_Write_EKF(ahrs,false);
             dataflash.Log_Write_AHRS2(ahrs);
             ins.set_gyro(0, ins.get_gyro());
             ins.set_accel(0, ins.get_accel());
@@ -324,7 +325,7 @@ static void read_sensors(uint8_t type)
     } else if (type == LOG_PLANE_AIRSPEED_MSG && LogReader.vehicle == LogReader::VEHICLE_PLANE) {
         ahrs.set_airspeed(&airspeed);
     } else if (type == LOG_BARO_MSG) {
-        barometer.read();
+        barometer.update();
         if (!done_baro_init) {
             done_baro_init = true;
             ::printf("Barometer initialised\n");
@@ -551,19 +552,19 @@ void loop()
             int16_t offsetEast = (int8_t)(constrain_float(offset.y,INT16_MIN,INT16_MAX));
 
             // print EKF4 data packet
-            fprintf(ekf4f, "%.3f %d %d %d %d %d %d %d %d %d %d %d %d\n",
+            fprintf(ekf4f, "%.3f %u %d %d %d %d %d %d %d %d %d %d\n",
                     hal.scheduler->millis() * 0.001f,
-                    hal.scheduler->millis(),
-                    sqrtvarV,
-                    sqrtvarP,
-                    sqrtvarH,
-                    sqrtvarMX, 
-                    sqrtvarMY, 
-                    sqrtvarMZ,
-                    sqrtvarVT,
-                    offsetNorth,
-                    offsetEast,
-                    faultStatus);
+                    (unsigned)hal.scheduler->millis(),
+                    (int)sqrtvarV,
+                    (int)sqrtvarP,
+                    (int)sqrtvarH,
+                    (int)sqrtvarMX, 
+                    (int)sqrtvarMY, 
+                    (int)sqrtvarMZ,
+                    (int)sqrtvarVT,
+                    (int)offsetNorth,
+                    (int)offsetEast,
+                    (int)faultStatus);
         }
     }
 }

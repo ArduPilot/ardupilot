@@ -304,6 +304,7 @@ static void do_RTL(void)
 
 static void do_takeoff(const AP_Mission::Mission_Command& cmd)
 {
+    prev_WP_loc = current_loc;
     set_next_WP(cmd.content.location);
     // pitch in deg, airspeed  m/s, throttle %, track WP 1 or 0
     auto_state.takeoff_pitch_cd        = (int16_t)cmd.p1 * 100;
@@ -444,7 +445,8 @@ static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     }
 
     // see if the user has specified a maximum distance to waypoint
-    if (g.waypoint_max_radius > 0 && wp_distance > (uint16_t)g.waypoint_max_radius) {
+    if (g.waypoint_max_radius > 0 && 
+        auto_state.wp_distance > (uint16_t)g.waypoint_max_radius) {
         if (location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
             // this is needed to ensure completion of the waypoint
             prev_WP_loc = current_loc;
@@ -458,7 +460,7 @@ static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd)
         acceptance_distance = cmd.p1;
     }
     
-    if (wp_distance <= acceptance_distance) {
+    if (auto_state.wp_distance <= acceptance_distance) {
         gcs_send_text_fmt(PSTR("Reached Waypoint #%i dist %um"),
                           (unsigned)mission.get_current_nav_cmd().index,
                           (unsigned)get_distance(current_loc, next_WP_loc));
@@ -512,7 +514,7 @@ static bool verify_loiter_turns()
 static bool verify_RTL()
 {
     update_loiter();
-	if (wp_distance <= (uint32_t)max(g.waypoint_radius,0) || 
+	if (auto_state.wp_distance <= (uint32_t)max(g.waypoint_radius,0) || 
         nav_controller->reached_loiter_target()) {
 			gcs_send_text_P(SEVERITY_LOW,PSTR("Reached home"));
 			return true;
@@ -600,7 +602,7 @@ static bool verify_change_alt()
 
 static bool verify_within_distance()
 {
-    if (wp_distance < max(condition_value,0)) {
+    if (auto_state.wp_distance < max(condition_value,0)) {
         condition_value = 0;
         return true;
     }

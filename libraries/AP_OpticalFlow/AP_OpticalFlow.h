@@ -3,4 +3,4 @@
 /// @file	AP_OpticalFlow.h
 /// @brief	Catch-all header that defines all supported optical flow classes.
 
-#include "AP_OpticalFlow_PX4.h"
+#include "OpticalFlow.h"

@@ -62,6 +62,7 @@
 #include <AP_Airspeed.h>
 #include <RC_Channel.h>
 #include <AP_BoardConfig.h>
+#include <AP_OpticalFlow.h>
 
 // Configuration
 #include "config.h"
@@ -116,21 +117,7 @@ void gcs_send_text_fmt(const prog_char_t *fmt, ...);
 ////////////////////////////////////////////////////////////////////////////////
 static AP_GPS gps;
 
-#if CONFIG_BARO == HAL_BARO_BMP085
-static AP_Baro_BMP085 barometer;
-#elif CONFIG_BARO == HAL_BARO_PX4
-static AP_Baro_PX4 barometer;
-#elif CONFIG_BARO == HAL_BARO_VRBRAIN
-static AP_Baro_VRBRAIN barometer;
-#elif CONFIG_BARO == HAL_BARO_HIL
-static AP_Baro_HIL barometer;
-#elif CONFIG_BARO == HAL_BARO_MS5611
-static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::i2c);
-#elif CONFIG_BARO == HAL_BARO_MS5611_SPI
-static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::spi);
-#else
- #error Unrecognized CONFIG_BARO setting
-#endif
+static AP_Baro barometer;
 
 #if CONFIG_COMPASS == HAL_COMPASS_PX4
 static AP_Compass_PX4 compass;
@@ -140,6 +127,8 @@ static AP_Compass_VRBRAIN compass;
 static AP_Compass_HMC5843 compass;
 #elif CONFIG_COMPASS == HAL_COMPASS_HIL
 static AP_Compass_HIL compass;
+#elif CONFIG_COMPASS == HAL_COMPASS_AK8963
+static AP_Compass_AK8963_MPU9250 compass;
 #else
  #error Unrecognized CONFIG_COMPASS setting
 #endif
@@ -263,6 +252,7 @@ void setup()
 
     // antenna tracker does not use pre-arm checks or battery failsafe
     AP_Notify::flags.pre_arm_check = true;
+    AP_Notify::flags.pre_arm_gps_check = true;
     AP_Notify::flags.failsafe_battery = false;
 
     notify.init(false);

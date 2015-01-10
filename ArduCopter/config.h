@@ -390,33 +390,11 @@
 //////////////////////////////////////////////////////////////////////////////
 //  OPTICAL_FLOW
 #ifndef OPTFLOW
- #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+ #if AP_AHRS_NAVEKF_AVAILABLE
   # define OPTFLOW       ENABLED
  #else
   # define OPTFLOW       DISABLED
  #endif
-#endif
-// optical flow based loiter PI values
-#ifndef OPTFLOW_ROLL_P
- #define OPTFLOW_ROLL_P 2.5f
-#endif
-#ifndef OPTFLOW_ROLL_I
- #define OPTFLOW_ROLL_I 0.5f
-#endif
-#ifndef OPTFLOW_ROLL_D
- #define OPTFLOW_ROLL_D 0.12f
-#endif
-#ifndef OPTFLOW_PITCH_P
- #define OPTFLOW_PITCH_P 2.5f
-#endif
-#ifndef OPTFLOW_PITCH_I
- #define OPTFLOW_PITCH_I 0.5f
-#endif
-#ifndef OPTFLOW_PITCH_D
- #define OPTFLOW_PITCH_D 0.12f
-#endif
-#ifndef OPTFLOW_IMAX
- #define OPTFLOW_IMAX 100
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -507,8 +485,8 @@
 #ifndef LAND_DETECTOR_ROTATION_MAX
  # define LAND_DETECTOR_ROTATION_MAX    0.50f   // vehicle rotation must be below 0.5 rad/sec (=30deg/sec for) vehicle to consider itself landed
 #endif
-#ifndef LAND_REQUIRE_MIN_THROTTLE_TO_DISARM // require pilot to reduce throttle to minimum before vehicle will disarm
- # define LAND_REQUIRE_MIN_THROTTLE_TO_DISARM ENABLED
+#ifndef LAND_REQUIRE_MIN_THROTTLE_TO_DISARM
+ # define LAND_REQUIRE_MIN_THROTTLE_TO_DISARM DISABLED  // we do not require pilot to reduce throttle to minimum before vehicle will disarm in AUTO, LAND or RTL
 #endif
 #ifndef LAND_REPOSITION_DEFAULT
  # define LAND_REPOSITION_DEFAULT   1   // by default the pilot can override roll/pitch during landing

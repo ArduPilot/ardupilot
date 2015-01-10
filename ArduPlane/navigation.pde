@@ -60,7 +60,9 @@ static void navigate()
 
     // waypoint distance from plane
     // ----------------------------
-    wp_distance = get_distance(current_loc, next_WP_loc);
+    auto_state.wp_distance = get_distance(current_loc, next_WP_loc);
+    auto_state.wp_proportion = location_path_proportion(current_loc, 
+                                                        prev_WP_loc, next_WP_loc);
 
     // update total loiter angle
     loiter_angle_update();

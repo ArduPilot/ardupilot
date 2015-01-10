@@ -81,6 +81,10 @@ public:
 	AP_Int8  rc_fail;     // fail RC input
 	AP_Int8  baro_disable; // disable simulated barometer
     AP_Int8  float_exception; // enable floating point exception checks
+	AP_Int8  flow_enable; // enable simulated optflow
+	AP_Int16 flow_rate; // optflow data rate (Hz)
+	AP_Int8  flow_delay; // optflow data delay
+	AP_Int8  terrain_enable; // enable using terrain for height
 
     // wind control
     AP_Float wind_speed;

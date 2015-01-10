@@ -34,6 +34,7 @@ MODULES		+= drivers/airspeed
 MODULES		+= drivers/ets_airspeed
 MODULES		+= drivers/meas_airspeed
 MODULES		+= drivers/mkblctrl
+MODULES		+= drivers/batt_smbus
 
 #
 # System commands

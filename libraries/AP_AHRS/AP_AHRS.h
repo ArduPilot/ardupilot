@@ -31,6 +31,8 @@
 #include <AP_Baro.h>
 #include <AP_Param.h>
 
+#include "../AP_OpticalFlow/AP_OpticalFlow.h"
+
 // Copter defaults to EKF on by default, all others off
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
 #define AHRS_EKF_USE_DEFAULT    1
@@ -63,6 +65,7 @@ public:
         yaw_sensor(0),
         _vehicle_class(AHRS_VEHICLE_UNKNOWN),
         _compass(NULL),
+        _optflow(NULL),
         _airspeed(NULL),
         _compass_last_update(0),
         _ins(ins),
@@ -135,6 +138,14 @@ public:
 
     const Compass* get_compass() const {
         return _compass;
+    }
+
+    void set_optflow(const OpticalFlow *optflow) {
+        _optflow = optflow;
+    }
+
+    const OpticalFlow* get_optflow() const {
+        return _optflow;
     }
         
     // allow for runtime change of orientation
@@ -392,6 +403,9 @@ protected:
 
     // pointer to compass object, if available
     Compass         * _compass;
+
+    // pointer to OpticalFlow object, if available
+    const OpticalFlow *_optflow;
 
     // pointer to airspeed object, if available
     AP_Airspeed     * _airspeed;

@@ -1,8 +1,4 @@
-/*
- *  AP_Notify Library. 
- * based upon a prototype library by David "Buzz" Bussenschutt.
- */
-
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,20 +14,13 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __LED_H__
-#define __LED_H__
+#include "OpticalFlow.h"
 
-#include <AP_HAL.h>
-#include "NotifyDevice.h"
+extern const AP_HAL::HAL& hal;
 
-class Led: public NotifyDevice {
-public:
-    virtual ~Led() {}
-    // init - initialised the LED
-    virtual bool init(void) = 0;
-    // update - updates led according to timed_updated.  Should be
-    // called at 50Hz
-    virtual void update() = 0;
-};
-
-#endif //__LED_H__
+// update the frontend
+void OpticalFlow_backend::_update_frontend(const struct OpticalFlow::OpticalFlow_state &state)
+{
+    frontend._state = state;
+    frontend._last_update_ms = hal.scheduler->millis();
+}

@@ -1044,13 +1044,25 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
 
 void GCS_MAVLINK::send_scaled_pressure(AP_Baro &barometer)
 {
-    float pressure = barometer.get_pressure();
+    uint32_t now = hal.scheduler->millis();
+    float pressure = barometer.get_pressure(0);
     mavlink_msg_scaled_pressure_send(
         chan,
-        hal.scheduler->millis(),
+        now,
         pressure*0.01f, // hectopascal
-        (pressure - barometer.get_ground_pressure())*0.01f, // hectopascal
-        barometer.get_temperature()*100); // 0.01 degrees C
+        (pressure - barometer.get_ground_pressure(0))*0.01f, // hectopascal
+        barometer.get_temperature(0)*100); // 0.01 degrees C
+#if BARO_MAX_INSTANCES > 1
+    if (barometer.num_instances() > 1) {
+        pressure = barometer.get_pressure(1);
+        mavlink_msg_scaled_pressure2_send(
+            chan,
+            now,
+            pressure*0.01f, // hectopascal
+            (pressure - barometer.get_ground_pressure(1))*0.01f, // hectopascal
+            barometer.get_temperature(1)*100); // 0.01 degrees C        
+    }
+#endif
 }
 
 void GCS_MAVLINK::send_sensor_offsets(const AP_InertialSensor &ins, const Compass &compass, AP_Baro &barometer)
@@ -1118,9 +1130,8 @@ void GCS_MAVLINK::send_statustext_all(const prog_char_t *msg)
 // report battery2 state
 void GCS_MAVLINK::send_battery2(const AP_BattMonitor &battery)
 {
-    float voltage;
-    if (battery.voltage2(voltage)) {
-        mavlink_msg_battery2_send(chan, voltage*1000, -1);
+    if (battery.num_instances() > 1) {
+        mavlink_msg_battery2_send(chan, battery.voltage2()*1000, -1);
     }
 }
 
@@ -1155,3 +1166,37 @@ void GCS_MAVLINK::handle_set_mode(mavlink_message_t* msg, bool (*set_mode)(uint8
     // send ACK or NAK
     mavlink_msg_command_ack_send_buf(msg, chan, MAVLINK_MSG_ID_SET_MODE, result);
 }
+
+#if AP_AHRS_NAVEKF_AVAILABLE
+/*
+  send OPTICAL_FLOW message
+ */
+void GCS_MAVLINK::send_opticalflow(AP_AHRS_NavEKF &ahrs, const OpticalFlow &optflow)
+{
+    // exit immediately if no optical flow sensor or not healthy
+    if (!optflow.healthy()) {
+        return;
+    }
+
+    // get rates from sensor
+    const Vector2f &flowRate = optflow.flowRate();
+    const Vector2f &bodyRate = optflow.bodyRate();
+    float hagl = 0;
+
+    if (ahrs.have_inertial_nav()) {
+        ahrs.get_NavEKF().getHAGL(hagl);
+    }
+
+    // populate and send message
+    mavlink_msg_optical_flow_send(
+        chan,
+        hal.scheduler->millis(),
+        0, // sensor id is zero
+        flowRate.x,
+        flowRate.y,
+        bodyRate.x,
+        bodyRate.y,
+        optflow.quality(),
+        hagl); // ground distance (in meters) set to zero
+}
+#endif

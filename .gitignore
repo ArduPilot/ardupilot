@@ -57,6 +57,7 @@ ArduCopter/test/*
 ArduPlane/terrain/*.DAT
 ArduPlane/test.ArduPlane/
 APMrover2/test.APMrover2/
+autotest.lck
 build
 Build.ArduCopter/*
 Build.ArduPlane/*
@@ -68,6 +69,7 @@ CMakeFiles
 config.mk
 dataflash.bin
 eeprom.bin
+index.html
 LASTLOG.TXT
 Make.dep
 mav.log

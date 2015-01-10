@@ -1,6 +1,9 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
 #include <AP_Progmem.h>
 #include "OpticalFlow.h"
+
+extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo OpticalFlow::var_info[] PROGMEM = {
     // @Param: ENABLE
@@ -30,14 +33,44 @@ const AP_Param::GroupInfo OpticalFlow::var_info[] PROGMEM = {
 };
 
 // default constructor
-OpticalFlow::OpticalFlow(const AP_AHRS &ahrs) :
-    _ahrs(ahrs),
-    _device_id(0),
-    _surface_quality(0),
-    _last_update(0)
+OpticalFlow::OpticalFlow(void) :
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    backend(new AP_OpticalFlow_PX4(*this))
+#elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+    backend(new AP_OpticalFlow_HIL(*this))
+#else
+    backend(NULL)
+#endif
 {
     AP_Param::setup_object_defaults(this, var_info);
 
-    // healthy flag will be overwritten when init is called
+    memset(&_state, 0, sizeof(_state));
+
+    // healthy flag will be overwritten on update
     _flags.healthy = false;
 };
+
+void OpticalFlow::init(void)
+{
+    if (backend != NULL) {
+        backend->init();
+    } else {
+        _enabled = 0;
+    }
+}
+
+void OpticalFlow::update(void)
+{
+    if (backend != NULL) {
+        backend->update();
+    }
+    // only healthy if the data is less than 0.5s old
+    _flags.healthy = (hal.scheduler->millis() - _last_update_ms < 500);
+}
+
+void OpticalFlow::setHIL(const struct OpticalFlow::OpticalFlow_state &state)
+{ 
+    if (backend) {
+        backend->_update_frontend(state); 
+    }
+}

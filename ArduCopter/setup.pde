@@ -322,9 +322,13 @@ static void report_batt_monitor()
 {
     cliSerial->printf_P(PSTR("\nBatt Mon:\n"));
     print_divider();
-    if (battery.monitoring() == AP_BATT_MONITOR_DISABLED) print_enabled(false);
-    if (battery.monitoring() == AP_BATT_MONITOR_VOLTAGE_ONLY) cliSerial->printf_P(PSTR("volts"));
-    if (battery.monitoring() == AP_BATT_MONITOR_VOLTAGE_AND_CURRENT) cliSerial->printf_P(PSTR("volts and cur"));
+    if (battery.num_instances() == 0) {
+        print_enabled(false);
+    } else if (!battery.has_current()) {
+        cliSerial->printf_P(PSTR("volts"));
+    } else {
+        cliSerial->printf_P(PSTR("volts and cur"));
+    }
     print_blanks(2);
 }
 

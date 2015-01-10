@@ -1089,6 +1089,8 @@ void AP_Param::show_all(AP_HAL::BetterStream *port)
     }
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat"
 // convert one old vehicle parameter to new object parameter
 void AP_Param::convert_old_parameter(const struct ConversionInfo *info)
 {
@@ -1149,6 +1151,7 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info)
         hal.console->printf_P(PSTR("Bad conversion type '%S'\n"), info->new_name);
     }
 }
+#pragma GCC diagnostic pop
 
 
 // convert old vehicle parameters to new object parametersv

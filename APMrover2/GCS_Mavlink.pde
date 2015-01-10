@@ -177,7 +177,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
     int16_t battery_current = -1;
     int8_t battery_remaining = -1;
 
-    if (battery.monitoring() == AP_BATT_MONITOR_VOLTAGE_AND_CURRENT) {
+    if (battery.has_current()) {
         battery_remaining = battery.capacity_remaining_pct();
         battery_current = battery.current_amps() * 100;
     }
@@ -530,8 +530,21 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         // unused
         break;
 
+    case MSG_BATTERY2:
+        CHECK_PAYLOAD_SIZE(BATTERY2);
+        gcs[chan-MAVLINK_COMM_0].send_battery2(battery);
+        break;
+
+    case MSG_CAMERA_FEEDBACK:
+#if CAMERA == ENABLED
+        CHECK_PAYLOAD_SIZE(CAMERA_FEEDBACK);
+        camera.send_feedback(chan, gps, ahrs, current_loc);
+#endif
+        break;
+
     case MSG_RETRY_DEFERRED:
     case MSG_TERRAIN:
+    case MSG_OPTICAL_FLOW:
         break; // just here to prevent a warning
 	}
 
@@ -753,6 +766,7 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_HWSTATUS);
         send_message(MSG_RANGEFINDER);
         send_message(MSG_SYSTEM_TIME);
+        send_message(MSG_BATTERY2);
         send_message(MSG_MOUNT_STATUS);
     }
 }

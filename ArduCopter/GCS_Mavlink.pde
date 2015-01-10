@@ -194,7 +194,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
                                                          MAV_SYS_STATUS_SENSOR_3D_MAG |
                                                          MAV_SYS_STATUS_SENSOR_GPS |
                                                          MAV_SYS_STATUS_SENSOR_RC_RECEIVER);
-    if (barometer.healthy()) {
+    if (barometer.all_healthy()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
     }
     if (g.compass_enabled && compass.healthy(0) && ahrs.use_compass()) {
@@ -226,7 +226,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
     int16_t battery_current = -1;
     int8_t battery_remaining = -1;
 
-    if (battery.monitoring() == AP_BATT_MONITOR_VOLTAGE_AND_CURRENT) {
+    if (battery.has_current()) {
         battery_remaining = battery.capacity_remaining_pct();
         battery_current = battery.current_amps() * 100;
     }
@@ -441,32 +441,6 @@ static void NOINLINE send_rangefinder(mavlink_channel_t chan)
 }
 #endif
 
-#if OPTFLOW == ENABLED
-static void NOINLINE send_opticalflow(mavlink_channel_t chan)
-{
-    // exit immediately if no optical flow sensor or not healthy
-    if (!optflow.healthy()) {
-        return;
-    }
-
-    // get rates from sensor
-    const Vector2f &flowRate = optflow.flowRate();
-    const Vector2f &bodyRate = optflow.bodyRate();
-
-    // populate and send message
-    mavlink_msg_optical_flow_send(
-        chan,
-        millis(),
-        0, // sensor id is zero
-        flowRate.x,
-        flowRate.y,
-        bodyRate.x,
-        bodyRate.y,
-        optflow.quality(),
-        0); // ground distance (in meters) set to zero
-}
-#endif // OPTFLOW == ENABLED
-
 static void NOINLINE send_statustext(mavlink_channel_t chan)
 {
     mavlink_statustext_t *s = &gcs[chan-MAVLINK_COMM_0].pending_status;
@@ -674,7 +648,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     case MSG_OPTICAL_FLOW:
 #if OPTFLOW == ENABLED
         CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
-        send_opticalflow(chan);
+        gcs[chan-MAVLINK_COMM_0].send_opticalflow(ahrs, optflow);
 #endif
         break;
 
@@ -922,8 +896,6 @@ void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
     }
 
     // To-Do: update target altitude for loiter or waypoint controller depending upon nav mode
-    // similar to how do_change_alt works
-    wp_nav.set_desired_alt(cmd.content.location.alt);
 }
 
 void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
@@ -1356,7 +1328,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
          */
 
         if (!pos_ignore && !vel_ignore && acc_ignore) {
-            guided_set_destination_spline(Vector3f(packet.x * 100.0f, packet.y * 100.0f, -packet.z * 100.0f), Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
+            guided_set_destination_posvel(Vector3f(packet.x * 100.0f, packet.y * 100.0f, -packet.z * 100.0f), Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
         } else if (pos_ignore && !vel_ignore && acc_ignore) {
             guided_set_velocity(Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
         } else if (!pos_ignore && vel_ignore && acc_ignore) {
@@ -1419,7 +1391,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         }
 
         if (!pos_ignore && !vel_ignore && acc_ignore) {
-            guided_set_destination_spline(pos_ned, Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
+            guided_set_destination_posvel(pos_ned, Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
         } else if (pos_ignore && !vel_ignore && acc_ignore) {
             guided_set_velocity(Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
         } else if (!pos_ignore && vel_ignore && acc_ignore) {

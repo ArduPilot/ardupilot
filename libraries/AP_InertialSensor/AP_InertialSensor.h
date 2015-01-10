@@ -124,6 +124,9 @@ public:
     const Vector3f     &get_accel(void) const { return get_accel(_primary_accel); }
     void               set_accel(uint8_t instance, const Vector3f &accel);
 
+    uint32_t get_gyro_error_count(uint8_t i) const { return _gyro_error_count[i]; }
+    uint32_t get_accel_error_count(uint8_t i) const { return _accel_error_count[i]; }
+
     // multi-device interface
     bool get_gyro_health(uint8_t instance) const { return _gyro_healthy[instance]; }
     bool get_gyro_health(void) const { return get_gyro_health(_primary_gyro); }
@@ -212,6 +215,9 @@ private:
     void _calculate_trim(Vector3f accel_sample, float& trim_roll, float& trim_pitch);
 #endif
 
+    // check if we have 3D accel calibration
+    void check_3D_calibration(void);
+
     // save parameters to eeprom
     void  _save_parameters();
 
@@ -261,6 +267,9 @@ private:
     // are we in HIL mode?
     bool _hil_mode:1;
 
+    // do we have offsets/scaling from a 3D calibration?
+    bool _have_3D_calibration:1;
+
     // the delta time in seconds for the last sample
     float _delta_time;
 
@@ -276,6 +285,9 @@ private:
     // health of gyros and accels
     bool _gyro_healthy[INS_MAX_INSTANCES];
     bool _accel_healthy[INS_MAX_INSTANCES];
+
+    uint32_t _accel_error_count[INS_MAX_INSTANCES];
+    uint32_t _gyro_error_count[INS_MAX_INSTANCES];
 };
 
 #include "AP_InertialSensor_Backend.h"

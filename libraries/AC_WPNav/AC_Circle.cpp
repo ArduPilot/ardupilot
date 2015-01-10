@@ -34,7 +34,6 @@ AC_Circle::AC_Circle(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosCont
     _inav(inav),
     _ahrs(ahrs),
     _pos_control(pos_control),
-    _last_update(0),
     _yaw(0.0f),
     _angle(0.0f),
     _angle_total(0.0f),
@@ -95,18 +94,15 @@ void AC_Circle::init()
 void AC_Circle::update()
 {
     // calculate dt
-    uint32_t now = hal.scheduler->millis();
-    float dt = (now - _last_update) / 1000.0f;
+    float dt = _pos_control.time_since_last_xy_update();
 
-    // update circle position at 10hz
-    if (dt > 0.095f) {
+    // update circle position at poscontrol update rate
+    if (dt >= _pos_control.get_dt_xy()) {
 
         // double check dt is reasonable
-        if (dt >= 1.0f) {
+        if (dt >= 0.2f) {
             dt = 0.0;
         }
-        // capture time since last iteration
-        _last_update = now;
 
         // ramp up angular velocity to maximum
         if (_rate >= 0) {
@@ -154,12 +150,9 @@ void AC_Circle::update()
             _yaw = _angle * AC_CIRCLE_DEGX100;
         }
 
-        // trigger position controller on next update
-        _pos_control.trigger_xy();
+        // update position controller
+        _pos_control.update_xy_controller(false, 1.0f);
     }
-
-    // run loiter's position to velocity step
-    _pos_control.update_xy_controller(false, 1.0f);
 }
 
 // get_closest_point_on_circle - returns closest point on the circle

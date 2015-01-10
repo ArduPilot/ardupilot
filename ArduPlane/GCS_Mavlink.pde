@@ -224,7 +224,12 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
         // AHRS subsystem is unhealthy
         control_sensors_health &= ~MAV_SYS_STATUS_AHRS;
     }
-    if (barometer.healthy()) {
+    if (ahrs.have_inertial_nav() && !ins.calibrated()) {
+        // trying to use EKF without properly calibrated accelerometers
+        control_sensors_health &= ~MAV_SYS_STATUS_AHRS;
+    }
+
+    if (barometer.all_healthy()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
     }
     if (g.compass_enabled && compass.healthy(0) && ahrs.use_compass()) {
@@ -254,7 +259,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
     int16_t battery_current = -1;
     int8_t battery_remaining = -1;
 
-    if (battery.monitoring() == AP_BATT_MONITOR_VOLTAGE_AND_CURRENT) {
+    if (battery.has_current()) {
         battery_remaining = battery.capacity_remaining_pct();
         battery_current = battery.current_amps() * 100;
     }
@@ -334,7 +339,7 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
         nav_pitch_cd * 0.01,
         nav_controller->nav_bearing_cd() * 0.01f,
         nav_controller->target_bearing_cd() * 0.01f,
-        wp_distance,
+        auto_state.wp_distance,
         altitude_error_cm * 0.01,
         airspeed_error_cm,
         nav_controller->crosstrack_error());
@@ -477,32 +482,6 @@ static void NOINLINE send_current_waypoint(mavlink_channel_t chan)
 {
     mavlink_msg_mission_current_send(chan, mission.get_current_nav_index());
 }
-
-#if OPTFLOW == ENABLED
-static void NOINLINE send_opticalflow(mavlink_channel_t chan)
-{
-    // exit immediately if no optical flow sensor or not healthy
-    if (!optflow.healthy()) {
-        return;
-    }
-
-    // get rates from sensor
-    const Vector2f &flowRate = optflow.flowRate();
-    const Vector2f &bodyRate = optflow.bodyRate();
-
-    // populate and send message
-    mavlink_msg_optical_flow_send(
-        chan,
-        millis(),
-        0, // sensor id is zero
-        flowRate.x,
-        flowRate.y,
-        bodyRate.x,
-        bodyRate.y,
-        optflow.quality(),
-        0); // ground distance (in meters) set to zero
-}
-#endif // OPTFLOW == ENABLED
 
 static void NOINLINE send_statustext(mavlink_channel_t chan)
 {
@@ -716,7 +695,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     case MSG_OPTICAL_FLOW:
 #if OPTFLOW == ENABLED
         CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
-        send_opticalflow(chan);
+        gcs[chan-MAVLINK_COMM_0].send_opticalflow(ahrs, optflow);
 #endif
         break;
 

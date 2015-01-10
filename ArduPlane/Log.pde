@@ -189,7 +189,11 @@ static void Log_Write_Attitude(void)
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 
 #if AP_AHRS_NAVEKF_AVAILABLE
-    DataFlash.Log_Write_EKF(ahrs);
+ #if OPTFLOW == ENABLED
+    DataFlash.Log_Write_EKF(ahrs,optflow.enabled());
+ #else
+    DataFlash.Log_Write_EKF(ahrs,false);
+ #endif
     DataFlash.Log_Write_AHRS2(ahrs);
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
@@ -299,7 +303,7 @@ struct PACKED log_Nav_Tuning {
     LOG_PACKET_HEADER;
     uint32_t time_ms;
     uint16_t yaw;
-    uint32_t wp_distance;
+    float wp_distance;
     int16_t target_bearing_cd;
     int16_t nav_bearing_cd;
     int16_t altitude_error_cm;
@@ -315,7 +319,7 @@ static void Log_Write_Nav_Tuning()
         LOG_PACKET_HEADER_INIT(LOG_NTUN_MSG),
         time_ms             : hal.scheduler->millis(),
         yaw                 : (uint16_t)ahrs.yaw_sensor,
-        wp_distance         : wp_distance,
+        wp_distance         : auto_state.wp_distance,
         target_bearing_cd   : (int16_t)nav_controller->target_bearing_cd(),
         nav_bearing_cd      : (int16_t)nav_controller->nav_bearing_cd(),
         altitude_error_cm   : (int16_t)altitude_error_cm,
@@ -427,8 +431,7 @@ struct PACKED log_Arm_Disarm {
 
 static void Log_Write_Current()
 {
-    float voltage2 = 0.0;
-    battery.voltage2(voltage2);
+    float voltage2 = battery.voltage2();
     struct log_Current pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CURRENT_MSG),
         time_ms                 : hal.scheduler->millis(),
@@ -579,7 +582,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     
       "CTUN", "Icccchhf",    "TimeMS,NavRoll,Roll,NavPitch,Pitch,ThrOut,RdrOut,AccY" },
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),         
-      "NTUN", "ICIccccfI",   "TimeMS,Yaw,WpDist,TargBrg,NavBrg,AltErr,Arspd,Alt,GSpdCM" },
+      "NTUN", "ICfccccfI",   "TimeMS,Yaw,WpDist,TargBrg,NavBrg,AltErr,Arspd,Alt,GSpdCM" },
     { LOG_SONAR_MSG, sizeof(log_Sonar),             
       "SONR", "IffffBBf",   "TimeMS,DistCM,Volt,BaroAlt,GSpd,Thr,Cnt,Corr" },
     { LOG_MODE_MSG, sizeof(log_Mode),             

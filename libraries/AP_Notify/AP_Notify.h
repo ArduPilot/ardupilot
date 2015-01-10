@@ -56,6 +56,7 @@ public:
         uint16_t baro_glitching     : 1;    // 1 if baro altitude is not good
         uint16_t armed              : 1;    // 0 = disarmed, 1 = armed
         uint16_t pre_arm_check      : 1;    // 0 = failing checks, 1 = passed
+        uint16_t pre_arm_gps_check  : 1;    // 0 = failing pre-arm GPS checks, 1 = passed
         uint16_t arming_failed      : 1;    // 1 if copter failed to arm after user input
         uint16_t save_trim          : 1;    // 1 if gathering trim data
         uint16_t esc_calibration    : 1;    // 1 if calibrating escs

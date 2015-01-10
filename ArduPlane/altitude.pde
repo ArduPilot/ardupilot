@@ -34,14 +34,14 @@ static void adjust_altitude_target()
         set_target_altitude_location(next_WP_loc);
     } else if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
         setup_landing_glide_slope();
-    } else if (nav_controller->reached_loiter_target() || (wp_distance <= 30) || (wp_totalDistance<=30)) {
+    } else if (nav_controller->reached_loiter_target()) {
         // once we reach a loiter target then lock to the final
         // altitude target
         set_target_altitude_location(next_WP_loc);
     } else if (target_altitude.offset_cm != 0 && 
                !location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
         // control climb/descent rate
-        set_target_altitude_proportion(next_WP_loc, (float)(wp_distance-30) / (float)(wp_totalDistance-30));
+        set_target_altitude_proportion(next_WP_loc, 1.0f-auto_state.wp_proportion);
 
         // stay within the range of the start and end locations in altitude
         constrain_target_altitude_location(next_WP_loc, prev_WP_loc);
@@ -59,8 +59,9 @@ static void setup_glide_slope(void)
 {
     // establish the distance we are travelling to the next waypoint,
     // for calculating out rate of change of altitude
-    wp_totalDistance        = get_distance(current_loc, next_WP_loc);
-    wp_distance             = wp_totalDistance;
+    auto_state.wp_distance = get_distance(current_loc, next_WP_loc);
+    auto_state.wp_proportion = location_path_proportion(current_loc, 
+                                                        prev_WP_loc, next_WP_loc);
 
     /*
       work out if we will gradually change altitude, or try to get to
@@ -450,7 +451,7 @@ static float lookahead_adjustment(void)
         distance = g.terrain_lookahead;
     } else if (!nav_controller->reached_loiter_target()) {
         bearing_cd = nav_controller->target_bearing_cd();
-        distance = constrain_float(wp_distance, 0, g.terrain_lookahead);
+        distance = constrain_float(auto_state.wp_distance, 0, g.terrain_lookahead);
     } else {
         // no lookahead when loitering
         bearing_cd = 0;

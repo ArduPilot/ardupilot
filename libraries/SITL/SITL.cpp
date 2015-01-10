@@ -61,6 +61,10 @@ const AP_Param::GroupInfo SITL::var_info[] PROGMEM = {
     AP_GROUPINFO("ACC_BIAS",      30, SITL,  accel_bias, 0),
     AP_GROUPINFO("BARO_GLITCH",   31, SITL,  baro_glitch, 0),
     AP_GROUPINFO("SONAR_SCALE",   32, SITL,  sonar_scale, 12.1212f),
+    AP_GROUPINFO("FLOW_ENABLE",   33, SITL,  flow_enable, 0),
+    AP_GROUPINFO("TERRAIN",       34, SITL,  terrain_enable, 1),
+    AP_GROUPINFO("FLOW_RATE",     35, SITL,  flow_rate, 10),
+    AP_GROUPINFO("FLOW_DELAY",    36, SITL,  flow_delay, 0),
     AP_GROUPEND
 };
 
@@ -126,7 +130,10 @@ void SITL::Log_Write_SIMSTATE(DataFlash_Class &DataFlash)
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-// convert a set of roll rates from earth frame to body frame
+/*
+ convert a set of roll rates from earth frame to body frame
+ output values are in radians/second
+*/
 void SITL::convert_body_frame(double rollDeg, double pitchDeg,
                               double rollRate, double pitchRate, double yawRate,
                               double *p, double *q, double *r)

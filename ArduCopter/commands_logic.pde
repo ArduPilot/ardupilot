@@ -111,7 +111,7 @@ static bool start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_DO_SET_HOME:             // 179
-        do_set_home(cmd);
+        // unsupported as mission command
         break;
 
     case MAV_CMD_DO_SET_SERVO:
@@ -763,29 +763,6 @@ static void do_wait_delay(const AP_Mission::Mission_Command& cmd)
 
 static void do_change_alt(const AP_Mission::Mission_Command& cmd)
 {
-    // adjust target appropriately for each nav mode
-    if (control_mode == AUTO) {
-        switch (auto_mode) {
-        case Auto_TakeOff:
-            // To-Do: adjust waypoint target altitude to new provided altitude
-            break;
-        case Auto_WP:
-        case Auto_Spline:
-            // To-Do; reset origin to current location + stopping distance at new altitude
-            break;
-        case Auto_Land:
-        case Auto_RTL:
-            // ignore altitude
-            break;
-        case Auto_CircleMoveToEdge:
-        case Auto_Circle:
-            // move circle altitude up to target (we will need to store this target in circle class)
-            break;
-        case Auto_NavGuided:
-            // ignore altitude
-            break;
-        }
-    }
     // To-Do: store desired altitude in a variable so that it can be verified later
 }
 

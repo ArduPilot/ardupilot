@@ -765,15 +765,29 @@ void DataFlash_Class::Log_Write_RCOUT(void)
 // Write a BARO packet
 void DataFlash_Class::Log_Write_Baro(AP_Baro &baro)
 {
+    uint32_t now = hal.scheduler->millis();
     struct log_BARO pkt = {
         LOG_PACKET_HEADER_INIT(LOG_BARO_MSG),
-        timestamp     : hal.scheduler->millis(),
-        altitude      : baro.get_altitude(),
-        pressure	  : baro.get_pressure(),
-        temperature   : (int16_t)(baro.get_temperature() * 100),
+        timestamp     : now,
+        altitude      : baro.get_altitude(0),
+        pressure	  : baro.get_pressure(0),
+        temperature   : (int16_t)(baro.get_temperature(0) * 100),
         climbrate     : baro.get_climb_rate()
     };
     WriteBlock(&pkt, sizeof(pkt));
+#if BARO_MAX_INSTANCES > 1
+    if (baro.num_instances() > 1 && baro.healthy(1)) {
+        struct log_BARO pkt2 = {
+            LOG_PACKET_HEADER_INIT(LOG_BAR2_MSG),
+            timestamp     : now,
+            altitude      : baro.get_altitude(1),
+            pressure	  : baro.get_pressure(1),
+            temperature   : (int16_t)(baro.get_temperature(1) * 100),
+            climbrate     : baro.get_climb_rate()
+        };
+        WriteBlock(&pkt2, sizeof(pkt2));        
+    }
+#endif
 }
 
 // Write an raw accel/gyro data packet
@@ -790,7 +804,9 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
         gyro_z  : gyro.z,
         accel_x : accel.x,
         accel_y : accel.y,
-        accel_z : accel.z
+        accel_z : accel.z,
+        gyro_error  : ins.get_gyro_error_count(0),
+        accel_error : ins.get_accel_error_count(0)
     };
     WriteBlock(&pkt, sizeof(pkt));
     if (ins.get_gyro_count() < 2 && ins.get_accel_count() < 2) {
@@ -807,7 +823,9 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
         gyro_z  : gyro2.z,
         accel_x : accel2.x,
         accel_y : accel2.y,
-        accel_z : accel2.z
+        accel_z : accel2.z,
+        gyro_error  : ins.get_gyro_error_count(1),
+        accel_error : ins.get_accel_error_count(1)
     };
     WriteBlock(&pkt2, sizeof(pkt2));
     if (ins.get_gyro_count() < 3 && ins.get_accel_count() < 3) {
@@ -823,7 +841,9 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
         gyro_z  : gyro3.z,
         accel_x : accel3.x,
         accel_y : accel3.y,
-        accel_z : accel3.z
+        accel_z : accel3.z,
+        gyro_error  : ins.get_gyro_error_count(2),
+        accel_error : ins.get_accel_error_count(3)
     };
     WriteBlock(&pkt3, sizeof(pkt3));
 #endif
@@ -888,7 +908,7 @@ void DataFlash_Class::Log_Write_AHRS2(AP_AHRS &ahrs)
 }
 
 #if AP_AHRS_NAVEKF_AVAILABLE
-void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
+void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
 {
 	// Write first EKF packet
     Vector3f euler;
@@ -976,11 +996,12 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
 	Vector3f magVar;
 	float tasVar;
     Vector2f offset;
-    uint8_t faultStatus;
-    uint8_t timeoutStatus;
+    uint8_t faultStatus, timeoutStatus;
+    nav_filter_status solutionStatus;
     ahrs.get_NavEKF().getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
     ahrs.get_NavEKF().getFilterFaults(faultStatus);
     ahrs.get_NavEKF().getFilterTimeouts(timeoutStatus);
+    ahrs.get_NavEKF().getFilterStatus(solutionStatus);
     struct log_EKF4 pkt4 = {
         LOG_PACKET_HEADER_INIT(LOG_EKF4_MSG),
         time_ms : hal.scheduler->millis(),
@@ -994,32 +1015,38 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
         offsetNorth : (int8_t)(offset.x),
         offsetEast : (int8_t)(offset.y),
         faults : (uint8_t)(faultStatus),
-        staticmode : (uint8_t)(ahrs.get_NavEKF().getStaticMode()),
-        timeouts : (uint8_t)(timeoutStatus)
+        timeouts : (uint8_t)(timeoutStatus),
+        solution : (uint16_t)(solutionStatus.value)
     };
     WriteBlock(&pkt4, sizeof(pkt4));
 
+
     // Write fifth EKF packet
-    float fscale;
-    float gndPos;
-    float flowInnovX, flowInnovY;
-    float augFlowInnovX, augFlowInnovY;
-    float rngInnov;
-    float range;
-    ahrs.get_NavEKF().getFlowDebug(fscale, gndPos, flowInnovX, flowInnovY, augFlowInnovX, augFlowInnovY, rngInnov, range);
-    struct log_EKF5 pkt5 = {
-        LOG_PACKET_HEADER_INIT(LOG_EKF5_MSG),
-        time_ms : hal.scheduler->millis(),
-        FIX : (int16_t)(1000*flowInnovX),
-        FIY : (int16_t)(1000*flowInnovY),
-        AFIX : (int16_t)(1000*augFlowInnovX),
-        AFIY : (int16_t)(1000*augFlowInnovY),
-        gndPos : (int16_t)(100*gndPos),
-        scaler: (uint8_t)(100*fscale),
-        RI : (int16_t)(100*rngInnov),
-        range : (uint16_t)(100*range)
-     };
-    WriteBlock(&pkt5, sizeof(pkt5));
+    if (optFlowEnabled) {
+        float normInnov; // normalised innovation variance ratio for optical flow observations fused by the main nav filter
+        float gndOffset; // estimated vertical position of the terrain relative to the nav filter zero datum
+        float flowInnovX, flowInnovY; // optical flow LOS rate vector innovations from the main nav filter
+        float auxFlowInnov; // optical flow LOS rate innovation from terrain offset estimator
+        float HAGL; // height above ground level
+        float rngInnov; // range finder innovations
+        float range; // measured range
+        float gndOffsetErr; // filter ground offset state error
+        ahrs.get_NavEKF().getFlowDebug(normInnov, gndOffset, flowInnovX, flowInnovY, auxFlowInnov, HAGL, rngInnov, range, gndOffsetErr);
+        struct log_EKF5 pkt5 = {
+            LOG_PACKET_HEADER_INIT(LOG_EKF5_MSG),
+            time_ms : hal.scheduler->millis(),
+            normInnov : (uint8_t)(min(100*normInnov,255)),
+            FIX : (int16_t)(1000*flowInnovX),
+            FIY : (int16_t)(1000*flowInnovY),
+            AFI : (int16_t)(1000*auxFlowInnov),
+            HAGL : (int16_t)(100*HAGL),
+            offset : (int16_t)(100*gndOffset),
+            RI : (int16_t)(100*rngInnov),
+            meaRng : (uint16_t)(100*range),
+            errHAGL : (uint16_t)(100*gndOffsetErr)
+         };
+        WriteBlock(&pkt5, sizeof(pkt5));
+    }
 }
 #endif
 
