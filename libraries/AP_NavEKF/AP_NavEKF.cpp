@@ -911,7 +911,7 @@ void NavEKF::SelectFlowFusion()
 {
     // Perform Data Checks
     // Check if the optical flow data is still valid
-    flowDataValid = ((imuSampleTime_ms - flowValidMeaTime_ms) < 200);
+    flowDataValid = ((imuSampleTime_ms - flowValidMeaTime_ms) < 1000);
     // Check if the fusion has timed out (flow measurements have been rejected for too long)
     bool flowFusionTimeout = ((imuSampleTime_ms - prevFlowUseTime_ms) > 5000);
     // check is the terrain offset estimate is still valid
