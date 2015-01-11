@@ -659,7 +659,7 @@ static AP_HAL::AnalogSource* rssi_analog_source;
 // --------------------------------------
 #if MOUNT == ENABLED
 // current_loc uses the baro/gps soloution for altitude rather than gps only.
-static AP_Mount camera_mount(&current_loc, ahrs, 0);
+static AP_Mount camera_mount(ahrs, current_loc);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1018,7 +1018,7 @@ static void update_mount()
 {
 #if MOUNT == ENABLED
     // update camera mount's position
-    camera_mount.update_mount_position();
+    camera_mount.update();
 #endif
 
 #if CAMERA == ENABLED
@@ -1133,10 +1133,6 @@ static void one_hz_loop()
 
     // update assigned functions and enable auxiliar servos
     RC_Channel_aux::enable_aux_servos();
-
-#if MOUNT == ENABLED
-    camera_mount.update_mount_type();
-#endif
 
     check_usb_mux();
 

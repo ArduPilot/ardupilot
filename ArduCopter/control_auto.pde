@@ -590,7 +590,7 @@ static void set_auto_yaw_roi(const Location &roi_location)
     }else{
 #if MOUNT == ENABLED
         // check if mount type requires us to rotate the quad
-        if(camera_mount.get_mount_type() != AP_Mount::k_pan_tilt && camera_mount.get_mount_type() != AP_Mount::k_pan_tilt_roll) {
+        if(!camera_mount.has_pan_control()) {
             roi_WP = pv_location_to_vector(roi_location);
             set_auto_yaw_mode(AUTO_YAW_ROI);
         }

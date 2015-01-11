@@ -231,6 +231,9 @@ static void init_ardupilot()
     // initialise inertial nav
     inertial_nav.init();
 
+    // initialise camera mount
+    camera_mount.init();
+
 #ifdef USERHOOK_INIT
     USERHOOK_INIT
 #endif
