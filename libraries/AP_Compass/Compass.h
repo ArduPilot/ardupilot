@@ -295,6 +295,11 @@ public:
     AP_Int8     _orientation[COMPASS_MAX_INSTANCES];
     AP_Vector3f _offset[COMPASS_MAX_INSTANCES];
 
+#if COMPASS_MAX_INSTANCES > 1
+    AP_Int8     _primary;                           ///primary instance
+    AP_Int32    _dev_id[COMPASS_MAX_INSTANCES];    // device id detected at init.  saved to eeprom when offsets are saved allowing ram & eeprom values to be compared as consistency check
+#endif
+
 protected:
     // backend objects
     AP_Compass_Backend *_backends[COMPASS_MAX_INSTANCES];
@@ -305,10 +310,6 @@ protected:
     AP_Float    _declination;
     AP_Int8     _use_for_yaw[COMPASS_MAX_INSTANCES];///<enable use for yaw calculation
     AP_Int8     _auto_declination;                  ///<enable automatic declination code
-#if COMPASS_MAX_INSTANCES > 1
-    AP_Int8     _primary;                           ///primary instance
-    AP_Int32    _dev_id[COMPASS_MAX_INSTANCES];    // device id detected at init.  saved to eeprom when offsets are saved allowing ram & eeprom values to be compared as consistency check
-#endif
 
     bool        _null_init_done;                           ///< first-time-around flag used by offset nulling
 
