@@ -4579,19 +4579,26 @@ void NavEKF::performArmingChecks()
                 PV_AidingMode = AID_RELATIVE; // we have optical flow data and can estimate all vehicle states
                 posTimeout = true;
                 velTimeout = true;
+                constPosMode = false;
+                constVelMode = false;
             } else {
                 PV_AidingMode = AID_NONE; // we don't have optical flow data and will only be able to estimate orientation and height
                 posTimeout = true;
                 velTimeout = true;
+                constPosMode = true;
+                constVelMode = false; // always clear constant velocity mode if constant position mode is active
             }
         } else { // arming when GPS useage is allowed
             if (gpsNotAvailable) {
                 PV_AidingMode = AID_NONE; // we don't have have GPS data and will only be able to estimate orientation and height
                 posTimeout = true;
                 velTimeout = true;
+                constPosMode = true;
+                constVelMode = false; // always clear constant velocity mode if constant position mode is active
             } else {
                 PV_AidingMode = AID_ABSOLUTE; // we have GPS data and can estimate all vehicle states
                 constPosMode = false;
+                constVelMode = false;
             }
         }
         // Reset filter positon, height and velocity states on arming or disarming
