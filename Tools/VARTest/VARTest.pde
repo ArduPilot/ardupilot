@@ -76,7 +76,7 @@ AP_InertialSensor ins;
 AP_Baro      barometer;
 AP_AHRS_DCM  ahrs(ins, barometer, gps);
 
-static AP_Compass_HIL compass;
+static Compass compass;
 SITL					sitl;
 
 #define SERIAL0_BAUD 115200
