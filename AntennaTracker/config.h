@@ -17,9 +17,6 @@
 #define ENABLE ENABLED
 #define DISABLE DISABLED
 
-#define CONFIG_BARO     HAL_BARO_DEFAULT
-#define CONFIG_COMPASS  HAL_COMPASS_DEFAULT
-
 #ifndef MAV_SYSTEM_ID
  // use 2 for antenna tracker by default
  # define MAV_SYSTEM_ID          2
