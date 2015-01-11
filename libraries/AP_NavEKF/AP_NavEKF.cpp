@@ -46,6 +46,8 @@
 #define GLITCH_ACCEL_DEFAULT    150
 #define GLITCH_RADIUS_DEFAULT   15
 #define FLOW_MEAS_DELAY         10
+#define FLOW_NOISE_DEFAULT      0.15f
+#define FLOW_GATE_DEFAULT       5
 
 #elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
 // rover defaults
@@ -68,6 +70,8 @@
 #define GLITCH_ACCEL_DEFAULT    150
 #define GLITCH_RADIUS_DEFAULT   15
 #define FLOW_MEAS_DELAY         25
+#define FLOW_NOISE_DEFAULT      0.15f
+#define FLOW_GATE_DEFAULT       5
 
 #else
 // generic defaults (and for plane)
@@ -90,6 +94,8 @@
 #define GLITCH_ACCEL_DEFAULT    150
 #define GLITCH_RADIUS_DEFAULT   15
 #define FLOW_MEAS_DELAY         25
+#define FLOW_NOISE_DEFAULT      0.3f
+#define FLOW_GATE_DEFAULT       3
 
 #endif // APM_BUILD_DIRECTORY
 
@@ -318,7 +324,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Range: 0.05 - 1.0
     // @Increment: 0.05
     // @User: advanced
-    AP_GROUPINFO("FLOW_NOISE",    26, NavEKF, _flowNoise, 0.3f),
+    AP_GROUPINFO("FLOW_NOISE",    26, NavEKF, _flowNoise, FLOW_NOISE_DEFAULT),
 
     // @Param: FLOW_GATE
     // @DisplayName: Optical Flow measurement gate size
@@ -326,7 +332,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Range: 1 - 100
     // @Increment: 1
     // @User: advanced
-    AP_GROUPINFO("FLOW_GATE",    27, NavEKF, _flowInnovGate, 3),
+    AP_GROUPINFO("FLOW_GATE",    27, NavEKF, _flowInnovGate, FLOW_GATE_DEFAULT),
 
     // @Param: FLOW_DELAY
     // @DisplayName: Optical Flow measurement delay (msec)
