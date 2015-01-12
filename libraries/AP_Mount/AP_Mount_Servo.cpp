@@ -2,6 +2,8 @@
 
 #include <AP_Mount_Servo.h>
 
+extern const AP_HAL::HAL& hal;
+
 // init - performs any required initialisation for this instance
 void AP_Mount_Servo::init()
 {
@@ -26,6 +28,13 @@ void AP_Mount_Servo::init()
 void AP_Mount_Servo::update()
 {
     static bool mount_open = 0;     // 0 is closed
+
+    // check servo map every three seconds to allow users to modify parameters
+    uint32_t now = hal.scheduler->millis();
+    if (now - _last_check_servo_map_ms > 3000) {
+        check_servo_map();
+        _last_check_servo_map_ms = now;
+    }
 
     switch(_frontend.get_mode(_instance)) {
         // move mount to a "retracted position" or to a position where a fourth servo can retract the entire mount into the fuselage
@@ -139,11 +148,10 @@ void AP_Mount_Servo::set_roi_target(const struct Location &target_loc)
 //  should be called periodically (i.e. 1hz or less)
 void AP_Mount_Servo::check_servo_map()
 {
-	_flags.roll_control = RC_Channel_aux::function_assigned(_roll_idx);
-	_flags.tilt_control = RC_Channel_aux::function_assigned(_tilt_idx);
-	_flags.pan_control = RC_Channel_aux::function_assigned(_pan_idx);
+    _flags.roll_control = RC_Channel_aux::function_assigned(_roll_idx);
+    _flags.tilt_control = RC_Channel_aux::function_assigned(_tilt_idx);
+    _flags.pan_control = RC_Channel_aux::function_assigned(_pan_idx);
 }
-
 
 // calc_angle_to_location - calculates the earth-frame roll, tilt and pan angles (and radians) to point at the given target
 void AP_Mount_Servo::calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_rad)

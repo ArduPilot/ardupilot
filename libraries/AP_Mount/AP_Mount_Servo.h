@@ -24,7 +24,8 @@ public:
         _roll_idx(RC_Channel_aux::k_none),
         _tilt_idx(RC_Channel_aux::k_none),
         _pan_idx(RC_Channel_aux::k_none),
-        _open_idx(RC_Channel_aux::k_none)
+        _open_idx(RC_Channel_aux::k_none),
+        _last_check_servo_map_ms(0)
     {
         // init to no axis being controlled
         _flags.roll_control = false;
@@ -93,6 +94,8 @@ private:
 
     Vector3f _angle_ef_target_rad;  // desired earth-frame roll, tilt and pan angles in radians
     Vector3f _angle_bf_output_deg;  // final body frame output angle in degres
+
+    uint32_t _last_check_servo_map_ms;  // system time of latest call to check_servo_map function
 };
 
 #endif // __AP_MOUNT_SERVO_H__
