@@ -9,14 +9,14 @@
 #include <AP_Mount_MAVLink.h>
 
 const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
-    // @Param: DEFLT_MODE
+    // @Param: _DEFLT_MODE
     // @DisplayName: Mount default operating mode
     // @Description: Mount default operating mode on startup and after control is returned from autopilot
     // @Values: 0:Retracted,1:Neutral,2:MavLink Targeting,3:RC Targeting,4:GPS Point
     // @User: Standard
-    AP_GROUPINFO("DEFLT_MODE", 0, AP_Mount, state[0]._default_mode, MAV_MOUNT_MODE_RC_TARGETING),
+    AP_GROUPINFO("_DEFLT_MODE", 0, AP_Mount, state[0]._default_mode, MAV_MOUNT_MODE_RC_TARGETING),
 
-    // @Param: RETRACT_X
+    // @Param: _RETRACT_X
     // @DisplayName: Mount roll angle when in retracted position
     // @Description: Mount roll angle when in retracted position
     // @Units: Degrees
@@ -24,7 +24,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // @Increment: 1
     // @User: Standard
 
-    // @Param: RETRACT_Y
+    // @Param: _RETRACT_Y
     // @DisplayName: Mount tilt/pitch angle when in retracted position
     // @Description: Mount tilt/pitch angle when in retracted position
     // @Units: Degrees
@@ -32,16 +32,16 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // @Increment: 1
     // @User: Standard
 
-    // @Param: RETRACT_Z
+    // @Param: _RETRACT_Z
     // @DisplayName: Mount yaw/pan angle when in retracted position
     // @Description: Mount yaw/pan angle when in retracted position
     // @Units: Degrees
     // @Range: -180.00 179.99
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("RETRACT",    1, AP_Mount, state[0]._retract_angles, 0),
+    AP_GROUPINFO("_RETRACT",    1, AP_Mount, state[0]._retract_angles, 0),
 
-    // @Param: NEUTRAL_X
+    // @Param: _NEUTRAL_X
     // @DisplayName: Mount roll angle when in neutral position
     // @Description: Mount roll angle when in neutral position
     // @Units: Degrees
@@ -49,7 +49,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // @Increment: 1
     // @User: Standard
 
-    // @Param: NEUTRAL_Y
+    // @Param: _NEUTRAL_Y
     // @DisplayName: Mount tilt/pitch angle when in neutral position
     // @Description: Mount tilt/pitch angle when in neutral position
     // @Units: Degrees
@@ -57,145 +57,145 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // @Increment: 1
     // @User: Standard
 
-    // @Param: NEUTRAL_Z
+    // @Param: _NEUTRAL_Z
     // @DisplayName: Mount pan/yaw angle when in neutral position
     // @Description: Mount pan/yaw angle when in neutral position
     // @Units: Degrees
     // @Range: -180.00 179.99
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("NEUTRAL",    2, AP_Mount, state[0]._neutral_angles, 0),
+    AP_GROUPINFO("_NEUTRAL",    2, AP_Mount, state[0]._neutral_angles, 0),
 
     // 3 was used for control_angles
 
-    // @Param: STAB_ROLL
+    // @Param: _STAB_ROLL
     // @DisplayName: Stabilize mount's roll angle
     // @Description: enable roll stabilisation relative to Earth
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
-    AP_GROUPINFO("STAB_ROLL",  4, AP_Mount, state[0]._stab_roll, 0),
+    AP_GROUPINFO("_STAB_ROLL",  4, AP_Mount, state[0]._stab_roll, 0),
 
-    // @Param: STAB_TILT
+    // @Param: _STAB_TILT
     // @DisplayName: Stabilize mount's pitch/tilt angle
     // @Description: enable tilt/pitch stabilisation relative to Earth
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
-    AP_GROUPINFO("STAB_TILT", 5, AP_Mount, state[0]._stab_tilt,  0),
+    AP_GROUPINFO("_STAB_TILT", 5, AP_Mount, state[0]._stab_tilt,  0),
 
-    // @Param: STAB_PAN
+    // @Param: _STAB_PAN
     // @DisplayName: Stabilize mount pan/yaw angle
     // @Description: enable pan/yaw stabilisation relative to Earth
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
-    AP_GROUPINFO("STAB_PAN",   6, AP_Mount, state[0]._stab_pan,  0),
+    AP_GROUPINFO("_STAB_PAN",   6, AP_Mount, state[0]._stab_pan,  0),
 
-    // @Param: RC_IN_ROLL
+    // @Param: _RC_IN_ROLL
     // @DisplayName: roll RC input channel
     // @Description: 0 for none, any other for the RC channel to be used to control roll movements
     // @Values: 0:Disabled,5:RC5,6:RC6,7:RC7,8:RC8
     // @User: Standard
-    AP_GROUPINFO("RC_IN_ROLL",  7, AP_Mount, state[0]._roll_rc_in, 0),
+    AP_GROUPINFO("_RC_IN_ROLL",  7, AP_Mount, state[0]._roll_rc_in, 0),
 
-    // @Param: ANGMIN_ROL
+    // @Param: _ANGMIN_ROL
     // @DisplayName: Minimum roll angle
     // @Description: Minimum physical roll angular position of mount.
     // @Units: Centi-Degrees
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("ANGMIN_ROL", 8, AP_Mount, state[0]._roll_angle_min, -4500),
+    AP_GROUPINFO("_ANGMIN_ROL", 8, AP_Mount, state[0]._roll_angle_min, -4500),
 
-    // @Param: ANGMAX_ROL
+    // @Param: _ANGMAX_ROL
     // @DisplayName: Maximum roll angle
     // @Description: Maximum physical roll angular position of the mount
     // @Units: Centi-Degrees
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("ANGMAX_ROL", 9, AP_Mount, state[0]._roll_angle_max, 4500),
+    AP_GROUPINFO("_ANGMAX_ROL", 9, AP_Mount, state[0]._roll_angle_max, 4500),
 
-    // @Param: RC_IN_TILT
+    // @Param: _RC_IN_TILT
     // @DisplayName: tilt (pitch) RC input channel
     // @Description: 0 for none, any other for the RC channel to be used to control tilt (pitch) movements
     // @Values: 0:Disabled,5:RC5,6:RC6,7:RC7,8:RC8
     // @User: Standard
-    AP_GROUPINFO("RC_IN_TILT",  10, AP_Mount, state[0]._tilt_rc_in,    0),
+    AP_GROUPINFO("_RC_IN_TILT",  10, AP_Mount, state[0]._tilt_rc_in,    0),
 
-    // @Param: ANGMIN_TIL
+    // @Param: _ANGMIN_TIL
     // @DisplayName: Minimum tilt angle
     // @Description: Minimum physical tilt (pitch) angular position of mount.
     // @Units: Centi-Degrees
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("ANGMIN_TIL", 11, AP_Mount, state[0]._tilt_angle_min, -4500),
+    AP_GROUPINFO("_ANGMIN_TIL", 11, AP_Mount, state[0]._tilt_angle_min, -4500),
 
-    // @Param: ANGMAX_TIL
+    // @Param: _ANGMAX_TIL
     // @DisplayName: Maximum tilt angle
     // @Description: Maximum physical tilt (pitch) angular position of the mount
     // @Units: Centi-Degrees
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("ANGMAX_TIL", 12, AP_Mount, state[0]._tilt_angle_max, 4500),
+    AP_GROUPINFO("_ANGMAX_TIL", 12, AP_Mount, state[0]._tilt_angle_max, 4500),
 
-    // @Param: RC_IN_PAN
+    // @Param: _RC_IN_PAN
     // @DisplayName: pan (yaw) RC input channel
     // @Description: 0 for none, any other for the RC channel to be used to control pan (yaw) movements
     // @Values: 0:Disabled,5:RC5,6:RC6,7:RC7,8:RC8
     // @User: Standard
-    AP_GROUPINFO("RC_IN_PAN",  13, AP_Mount, state[0]._pan_rc_in,       0),
+    AP_GROUPINFO("_RC_IN_PAN",  13, AP_Mount, state[0]._pan_rc_in,       0),
 
-    // @Param: ANGMIN_PAN
+    // @Param: _ANGMIN_PAN
     // @DisplayName: Minimum pan angle
     // @Description: Minimum physical pan (yaw) angular position of mount.
     // @Units: Centi-Degrees
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("ANGMIN_PAN",  14, AP_Mount, state[0]._pan_angle_min,  -4500),
+    AP_GROUPINFO("_ANGMIN_PAN",  14, AP_Mount, state[0]._pan_angle_min,  -4500),
 
-    // @Param: ANGMAX_PAN
+    // @Param: _ANGMAX_PAN
     // @DisplayName: Maximum pan angle
     // @Description: Maximum physical pan (yaw) angular position of the mount
     // @Units: Centi-Degrees
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("ANGMAX_PAN",  15, AP_Mount, state[0]._pan_angle_max,  4500),
+    AP_GROUPINFO("_ANGMAX_PAN",  15, AP_Mount, state[0]._pan_angle_max,  4500),
 
-    // @Param: JSTICK_SPD
+    // @Param: _JSTICK_SPD
     // @DisplayName: mount joystick speed
     // @Description: 0 for position control, small for low speeds, 100 for max speed. A good general value is 10 which gives a movement speed of 3 degrees per second.
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("JSTICK_SPD",  16, AP_Mount, _joystick_speed, 0),
+    AP_GROUPINFO("_JSTICK_SPD",  16, AP_Mount, _joystick_speed, 0),
 
-    // @Param: LEAD_RLL
+    // @Param: _LEAD_RLL
     // @DisplayName: Roll stabilization lead time
     // @Description: Causes the servo angle output to lead the current angle of the vehicle by some amount of time based on current angular rate, compensating for servo delay. Increase until the servo is responsive but doesn't overshoot. Does nothing with pan stabilization enabled.
     // @Units: Seconds
     // @Range: 0.0 0.2
     // @Increment: .005
     // @User: Standard
-    AP_GROUPINFO("LEAD_RLL", 17, AP_Mount, state[0]._roll_stb_lead, 0.0f),
+    AP_GROUPINFO("_LEAD_RLL", 17, AP_Mount, state[0]._roll_stb_lead, 0.0f),
 
-    // @Param: LEAD_PTCH
+    // @Param: _LEAD_PTCH
     // @DisplayName: Pitch stabilization lead time
     // @Description: Causes the servo angle output to lead the current angle of the vehicle by some amount of time based on current angular rate. Increase until the servo is responsive but doesn't overshoot. Does nothing with pan stabilization enabled.
     // @Units: Seconds
     // @Range: 0.0 0.2
     // @Increment: .005
     // @User: Standard
-    AP_GROUPINFO("LEAD_PTCH", 18, AP_Mount, state[0]._pitch_stb_lead, 0.0f),
+    AP_GROUPINFO("_LEAD_PTCH", 18, AP_Mount, state[0]._pitch_stb_lead, 0.0f),
 
-    // @Param: TYPE
+    // @Param: _TYPE
     // @DisplayName: Mount Type
     // @Description: Mount Type (None, Servo or MAVLink)
     // @Values: 0:None, 1:Servo, 2:MAVLink
     // @User: Standard
-    AP_GROUPINFO("TYPE", 19, AP_Mount, state[0]._type, 0),
+    AP_GROUPINFO("_TYPE", 19, AP_Mount, state[0]._type, 0),
 
     AP_GROUPEND
 };
