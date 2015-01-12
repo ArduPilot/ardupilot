@@ -9,12 +9,12 @@
 #include <AP_Mount_MAVLink.h>
 
 const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
-    // @Param: MODE
-    // @DisplayName: Mount operation mode
-    // @Description: Camera or antenna mount operation mode
-    // @Values: 0:retract,1:neutral,2:MavLink_targeting,3:RC_targeting,4:GPS_point
+    // @Param: DEFLT_MODE
+    // @DisplayName: Mount default operating mode
+    // @Description: Mount default operating mode on startup and after control is returned from autopilot
+    // @Values: 0:Retracted,1:Neutral,2:MavLink Targeting,3:RC Targeting,4:GPS Point
     // @User: Standard
-    AP_GROUPINFO("MODE",       0, AP_Mount, state[0]._mode, MAV_MOUNT_MODE_RETRACT), // see MAV_MOUNT_MODE at ardupilotmega.h
+    AP_GROUPINFO("DEFLT_MODE", 0, AP_Mount, state[0]._default_mode, MAV_MOUNT_MODE_RC_TARGETING),
 
     // @Param: RETRACT_X
     // @DisplayName: Mount roll angle when in retracted position
@@ -284,29 +284,26 @@ MAV_MOUNT_MODE AP_Mount::get_mode(uint8_t instance) const
         return  MAV_MOUNT_MODE_RETRACT;
     }
 
-    return (enum MAV_MOUNT_MODE)state[instance]._mode.get();
+    return state[instance]._mode;
 }
 
 // set_mode_to_default - restores the mode to it's default mode held in the MNT_MODE parameter
 //      this operation requires 230us on an APM2, 60us on a Pixhawk/PX4
 void AP_Mount::set_mode_to_default(uint8_t instance)
 {
-    // sanity check instance
-    if (instance >= AP_MOUNT_MAX_INSTANCES) {
-        return;
-    }
-
-    // load instance's state from eeprom
-    state[instance]._mode.load();
+    set_mode(instance, (enum MAV_MOUNT_MODE)state[instance]._default_mode.get());
 }
 
 // set_mode - sets mount's mode
 void AP_Mount::set_mode(uint8_t instance, enum MAV_MOUNT_MODE mode)
 {
     // sanity check instance
-    if (instance < AP_MOUNT_MAX_INSTANCES) {
-        state[instance]._mode = (int8_t)mode;
+    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == NULL) {
+        return;
     }
+
+    // call backend's set_mode
+    _backends[instance]->set_mode(mode);
 }
 
 /// Change the configuration of the mount

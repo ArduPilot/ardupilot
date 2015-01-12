@@ -78,10 +78,11 @@ public:
     enum MAV_MOUNT_MODE get_mode(uint8_t instance) const;
 
     // set_mode - sets mount's mode
-    void set_mode(enum MAV_MOUNT_MODE mode) { set_mode(_primary, mode); }
+    //  returns true if mode is successfully set
+    void set_mode(enum MAV_MOUNT_MODE mode) { return set_mode(_primary, mode); }
     void set_mode(uint8_t instance, enum MAV_MOUNT_MODE mode);
 
-    // set_mode_to_default - restores the mode to it's default mode held in the MNT_MODE parameter
+    // set_mode_to_default - restores the mode to it's default mode held in the MNT_DEFLT_MODE parameter
     //      this operation requires 230us on an APM2, 60us on a Pixhawk/PX4
     void set_mode_to_default() { set_mode_to_default(_primary); }
     void set_mode_to_default(uint8_t instance);
@@ -122,7 +123,7 @@ private:
     struct mount_state {
         // Parameters
         AP_Int8         _type;              // mount type (None, Servo or MAVLink, see MountType enum)
-        AP_Int8         _mode;              // Retracted, Neutral, RC_Targeting, GPS Point
+        AP_Int8         _default_mode;      // default mode on startup and when control is returned from autopilot
         AP_Int8         _stab_roll;         // 1 = mount should stabilize earth-frame roll axis, 0 = no stabilization
         AP_Int8         _stab_tilt;         // 1 = mount should stabilize earth-frame pitch axis
         AP_Int8         _stab_pan;          // 1 = mount should stabilize earth-frame yaw axis
@@ -146,6 +147,7 @@ private:
         AP_Float        _roll_stb_lead;     // roll lead control gain
         AP_Float        _pitch_stb_lead;    // pitch lead control gain
 
+        MAV_MOUNT_MODE  _mode;              // current mode (see MAV_MOUNT_MODE enum)
         struct Location _roi_target;        // roi target location
     } state[AP_MOUNT_MAX_INSTANCES];
 };
