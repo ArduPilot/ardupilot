@@ -303,7 +303,6 @@ void AC_PosControl::rate_to_accel_z()
     // reset last velocity target to current target
     if (_flags.reset_rate_to_accel_z) {
         _vel_last.z = _vel_target.z;
-        _flags.reset_rate_to_accel_z = false;
     }
 
     // feed forward desired acceleration calculation
