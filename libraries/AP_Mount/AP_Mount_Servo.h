@@ -41,6 +41,9 @@ public:
     // has_pan_control - returns true if this mount can control it's pan (required for multicopters)
     virtual bool has_pan_control() const { return _flags.pan_control; }
 
+    // set_mode - sets mount's mode
+    virtual void set_mode(enum MAV_MOUNT_MODE mode);
+
     // set_roi_target - sets target location that mount should attempt to point towards
     virtual void set_roi_target(const struct Location &target_loc);
 

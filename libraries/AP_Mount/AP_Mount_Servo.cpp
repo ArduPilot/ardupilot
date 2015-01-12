@@ -116,6 +116,13 @@ void AP_Mount_Servo::update()
     move_servo(_pan_idx,  _angle_bf_output_deg.z*10, _frontend.state[_instance]._pan_angle_min*0.1f, _frontend.state[_instance]._pan_angle_max*0.1f);
 }
 
+// set_mode - sets mount's mode
+void AP_Mount_Servo::set_mode(enum MAV_MOUNT_MODE mode)
+{
+    // record the mode change and return success
+    _frontend.state[_instance]._mode = mode;
+}
+
 // set_roi_target - sets target location that mount should attempt to point towards
 void AP_Mount_Servo::set_roi_target(const struct Location &target_loc)
 {
