@@ -78,6 +78,24 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("LOIT_JERK",   7, AC_WPNav, _loiter_jerk_max_cmsss, WPNAV_LOITER_JERK_MAX_DEFAULT),
+    
+    // @Param: LOIT_MAXA
+    // @DisplayName: Loiter maximum acceleration
+    // @Description: Loiter maximum acceleration in cm/s/s
+    // @Units: cm/s/s
+    // @Range: 100 981
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("LOIT_MAXA",   8, AC_WPNav, _loiter_accel_cmss, WPNAV_LOITER_ACCEL),
+    
+    // @Param: LOIT_MINA
+    // @DisplayName: Loiter minimum acceleration
+    // @Description: Loiter minimum acceleration in cm/s/s
+    // @Units: cm/s/s
+    // @Range: 100 981
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("LOIT_MINA",   9, AC_WPNav, _loiter_accel_min_cmss, WPNAV_LOITER_ACCEL_MIN),
 
     AP_GROUPEND
 };
@@ -94,7 +112,6 @@ AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosContro
     _loiter_step(0),
     _pilot_accel_fwd_cms(0),
     _pilot_accel_rgt_cms(0),
-    _loiter_accel_cms(WPNAV_LOITER_ACCEL),
     _wp_last_update(0),
     _wp_step(0),
     _track_length(0.0f),
@@ -124,8 +141,7 @@ void AC_WPNav::init_loiter_target(const Vector3f& position, bool reset_I)
 
     // initialise pos controller speed and acceleration
     _pos_control.set_speed_xy(_loiter_speed_cms);
-    _loiter_accel_cms = _loiter_speed_cms/2.0f;
-    _pos_control.set_accel_xy(_loiter_accel_cms);
+    _pos_control.set_accel_xy(_loiter_accel_cmss);
 
     // set target position
     _pos_control.set_xy_target(position.x, position.y);
@@ -153,8 +169,7 @@ void AC_WPNav::init_loiter_target()
 
     // initialise pos controller speed and acceleration
     _pos_control.set_speed_xy(_loiter_speed_cms);
-    _loiter_accel_cms = _loiter_speed_cms/2.0f;
-    _pos_control.set_accel_xy(_loiter_accel_cms);
+    _pos_control.set_accel_xy(_loiter_accel_cmss);
 
     // set target position
     _pos_control.set_xy_target(curr_pos.x, curr_pos.y);
@@ -163,8 +178,8 @@ void AC_WPNav::init_loiter_target()
     _pos_control.set_desired_velocity_xy(curr_vel.x, curr_vel.y);
 
     // initialise desired accel and add fake wind
-    _loiter_desired_accel.x = (_loiter_accel_cms)*curr_vel.x/_loiter_speed_cms;
-    _loiter_desired_accel.y = (_loiter_accel_cms)*curr_vel.y/_loiter_speed_cms;
+    _loiter_desired_accel.x = (_loiter_accel_cmss)*curr_vel.x/_loiter_speed_cms;
+    _loiter_desired_accel.y = (_loiter_accel_cmss)*curr_vel.y/_loiter_speed_cms;
 
     // initialise pilot input
     _pilot_accel_fwd_cms = 0;
@@ -193,8 +208,7 @@ void AC_WPNav::set_loiter_velocity(float velocity_cms)
         _pos_control.set_speed_xy(_loiter_speed_cms);
 
         // initialise pos controller acceleration
-        _loiter_accel_cms = _loiter_speed_cms/2.0f;
-        _pos_control.set_accel_xy(_loiter_accel_cms);
+        _pos_control.set_accel_xy(_loiter_accel_cmss);
     }
 }
 
@@ -202,8 +216,8 @@ void AC_WPNav::set_loiter_velocity(float velocity_cms)
 void AC_WPNav::set_pilot_desired_acceleration(float control_roll, float control_pitch)
 {
     // convert pilot input to desired acceleration in cm/s/s
-    _pilot_accel_fwd_cms = -control_pitch * _loiter_accel_cms / 4500.0f;
-    _pilot_accel_rgt_cms = control_roll * _loiter_accel_cms / 4500.0f;
+    _pilot_accel_fwd_cms = -control_pitch * _loiter_accel_cmss / 4500.0f;
+    _pilot_accel_rgt_cms = control_roll * _loiter_accel_cmss / 4500.0f;
 }
 
 /// get_loiter_stopping_point_xy - returns vector to stopping point based on a horizontal position and velocity
@@ -224,8 +238,10 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit)
     // check loiter speed and avoid divide by zero
     if( _loiter_speed_cms < WPNAV_LOITER_SPEED_MIN) {
         _loiter_speed_cms = WPNAV_LOITER_SPEED_MIN;
-        _loiter_accel_cms = _loiter_speed_cms/2.0f;
     }
+    
+    _pos_control.set_speed_xy(_loiter_speed_cms);
+    _pos_control.set_accel_xy(_loiter_accel_cmss);
 
     // rotate pilot input to lat/lon frame
     Vector2f desired_accel;
@@ -238,10 +254,12 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit)
     // constrain and scale the desired acceleration
     float des_accel_change_total = pythagorous2(des_accel_diff.x, des_accel_diff.y);
     float accel_change_max = _loiter_jerk_max_cmsss * nav_dt;
-    if (des_accel_change_total > accel_change_max && des_accel_change_total > 0.0f) {
+    
+    if (_loiter_jerk_max_cmsss > 0.0f && des_accel_change_total > accel_change_max && des_accel_change_total > 0.0f) {
         des_accel_diff.x = accel_change_max * des_accel_diff.x/des_accel_change_total;
         des_accel_diff.y = accel_change_max * des_accel_diff.y/des_accel_change_total;
     }
+    
     // adjust the desired acceleration
     _loiter_desired_accel += des_accel_diff;
 
@@ -252,22 +270,21 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit)
     desired_vel.x += _loiter_desired_accel.x * nav_dt;
     desired_vel.y += _loiter_desired_accel.y * nav_dt;
 
-    // reduce velocity with fake wind resistance
     if (_pilot_accel_fwd_cms != 0.0f || _pilot_accel_rgt_cms != 0.0f) {
-        desired_vel.x -= (_loiter_accel_cms)*nav_dt*desired_vel.x/_loiter_speed_cms;
-        desired_vel.y -= (_loiter_accel_cms)*nav_dt*desired_vel.y/_loiter_speed_cms;
+        desired_vel.x -= (_loiter_accel_cmss)*nav_dt*desired_vel.x/_loiter_speed_cms;
+        desired_vel.y -= (_loiter_accel_cmss)*nav_dt*desired_vel.y/_loiter_speed_cms;
     } else {
-        desired_vel.x -= (_loiter_accel_cms-WPNAV_LOITER_ACCEL_MIN)*nav_dt*desired_vel.x/_loiter_speed_cms;
+        desired_vel.x -= (_loiter_accel_cmss-_loiter_accel_min_cmss)*nav_dt*desired_vel.x/_loiter_speed_cms;
         if(desired_vel.x > 0 ) {
-            desired_vel.x = max(desired_vel.x - WPNAV_LOITER_ACCEL_MIN*nav_dt, 0);
+            desired_vel.x = max(desired_vel.x - _loiter_accel_min_cmss*nav_dt, 0);
         }else if(desired_vel.x < 0) {
-            desired_vel.x = min(desired_vel.x + WPNAV_LOITER_ACCEL_MIN*nav_dt, 0);
+            desired_vel.x = min(desired_vel.x + _loiter_accel_min_cmss*nav_dt, 0);
         }
-        desired_vel.y -= (_loiter_accel_cms-WPNAV_LOITER_ACCEL_MIN)*nav_dt*desired_vel.y/_loiter_speed_cms;
+        desired_vel.y -= (_loiter_accel_cmss-_loiter_accel_min_cmss)*nav_dt*desired_vel.y/_loiter_speed_cms;
         if(desired_vel.y > 0 ) {
-            desired_vel.y = max(desired_vel.y - WPNAV_LOITER_ACCEL_MIN*nav_dt, 0);
+            desired_vel.y = max(desired_vel.y - _loiter_accel_min_cmss*nav_dt, 0);
         }else if(desired_vel.y < 0) {
-            desired_vel.y = min(desired_vel.y + WPNAV_LOITER_ACCEL_MIN*nav_dt, 0);
+            desired_vel.y = min(desired_vel.y + _loiter_accel_min_cmss*nav_dt, 0);
         }
     }
 

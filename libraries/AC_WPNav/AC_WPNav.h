@@ -277,6 +277,8 @@ protected:
     // parameters
     AP_Float    _loiter_speed_cms;      // maximum horizontal speed in cm/s while in loiter
     AP_Float    _loiter_jerk_max_cmsss; // maximum jerk in cm/s/s/s while in loiter
+    AP_Float    _loiter_accel_cmss;      // loiter's acceleration in cm/s/s
+    AP_Float    _loiter_accel_min_cmss;      // loiter's acceleration in cm/s/s
     AP_Float    _wp_speed_cms;          // maximum horizontal speed in cm/s during missions
     AP_Float    _wp_speed_up_cms;       // climb speed target in cm/s
     AP_Float    _wp_speed_down_cms;     // descent speed target in cm/s
@@ -289,7 +291,6 @@ protected:
     int16_t     _pilot_accel_fwd_cms; 	// pilot's desired acceleration forward (body-frame)
     int16_t     _pilot_accel_rgt_cms;   // pilot's desired acceleration right (body-frame)
     Vector2f    _loiter_desired_accel;  // slewed pilot's desired acceleration in lat/lon frame
-    float       _loiter_accel_cms;      // loiter's acceleration in cm/s/s
 
     // waypoint controller internal variables
     uint32_t    _wp_last_update;        // time of last update_wpnav call
