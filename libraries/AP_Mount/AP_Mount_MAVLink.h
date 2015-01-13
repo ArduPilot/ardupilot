@@ -15,6 +15,8 @@
 #include <RC_Channel.h>
 #include <AP_Mount_Backend.h>
 
+#define AP_MOUNT_MAVLINK_COMPID     10      // Use hard-coded component id to communicate with gimbal, sysid is taken from globally defined mavlink_system.sysid
+
 class AP_Mount_MAVLink : public AP_Mount_Backend
 {
 
@@ -23,9 +25,7 @@ public:
     AP_Mount_MAVLink(AP_Mount &frontend, uint8_t instance) :
         AP_Mount_Backend(frontend, instance),
         _enabled(false),
-        _chan(MAVLINK_COMM_0),
-        _sysid(0),
-        _compid(0)
+        _chan(MAVLINK_COMM_0)
     {}
 
     // init - performs any required initialisation for this instance
@@ -63,8 +63,6 @@ private:
     // internal variables
     bool    _enabled;           // gimbal becomes enabled once the mount has been discovered
     mavlink_channel_t _chan;    // telemetry channel used to communicate with mount
-    uint8_t _sysid;             // system id of MAVLink enabled mount
-    uint8_t _compid;            // component id of MAVLink enabled mount
 };
 
 #endif // __AP_MOUNT_MAVLINK_H__

@@ -38,7 +38,7 @@ void AP_Mount_MAVLink::set_mode(enum MAV_MOUNT_MODE mode)
 
     // prepare and send command_long message with DO_SET_MODE command
     mavlink_msg_command_long_send(
-            _chan, _sysid, _compid, // channel, system id, component id
+            _chan, mavlink_system.sysid, AP_MOUNT_MAVLINK_COMPID, // channel, system id, component id
             MAV_CMD_DO_SET_MODE,    // command number
             0,  // confirmation: 0=first confirmation of this command
             mode,   // param1: mode
@@ -59,7 +59,7 @@ void AP_Mount_MAVLink::set_roi_target(const struct Location &target_loc)
 
     // prepare and send command_long message
     mavlink_msg_command_long_send(
-            _chan, _sysid, _compid, // channel, system id, component id
+            _chan, mavlink_system.sysid, AP_MOUNT_MAVLINK_COMPID, // channel, system id, component id
             MAV_CMD_DO_MOUNT_CONTROL,   // command number
             0, // confirmation: 0=first confirmation of this command
             target_loc.lat,  // param1: pitch (in degrees) or lat (as int32_t)
@@ -79,7 +79,7 @@ void AP_Mount_MAVLink::configure_msg(mavlink_message_t* msg)
 
     // forward on message with updated channel, sysid, compid
     mavlink_msg_mount_configure_send(
-            _chan, _sysid, _compid,
+            _chan, mavlink_system.sysid, AP_MOUNT_MAVLINK_COMPID,
             mavlink_msg_mount_configure_get_mount_mode(msg),
             mavlink_msg_mount_configure_get_stab_roll(msg),
             mavlink_msg_mount_configure_get_stab_pitch(msg),
@@ -96,7 +96,7 @@ void AP_Mount_MAVLink::control_msg(mavlink_message_t* msg)
 
     // forward on message with updated channel, sysid, compid
     mavlink_msg_mount_control_send(
-            _chan, _sysid, _compid,
+            _chan, mavlink_system.sysid, AP_MOUNT_MAVLINK_COMPID,
             mavlink_msg_mount_control_get_input_a(msg),
             mavlink_msg_mount_control_get_input_b(msg),
             mavlink_msg_mount_control_get_input_c(msg),
@@ -133,7 +133,7 @@ void AP_Mount_MAVLink::send_angle_target(const Vector3f& target_deg)
 
     // prepare and send command_long message with DO_MOUNT_CONTROL command
     mavlink_msg_command_long_send(
-            _chan, _sysid, _compid, // channel, system id, component id
+            _chan, mavlink_system.sysid, AP_MOUNT_MAVLINK_COMPID, // channel, system id, component id
             MAV_CMD_DO_MOUNT_CONTROL,   // command number
             0,  // confirmation: 0=first confirmation of this command
             target_deg.y,   // param1: pitch (in degrees) or lat (as int32_t)
