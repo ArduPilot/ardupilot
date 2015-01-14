@@ -33,6 +33,7 @@ static const struct Menu::command setup_menu_commands[] PROGMEM = {
     {"erase",                       setup_erase},
 };
 
+#if CLI_SETUP_ENABLED == ENABLED
 // Create the setup menu object.
 MENU(setup_menu, "setup", setup_menu_commands);
 
@@ -52,6 +53,7 @@ setup_mode(uint8_t argc, const Menu::arg *argv)
     setup_menu.run();
     return 0;
 }
+#endif // CLI_SETUP_ENABLED
 
 // Print the current configuration.
 // Called by the setup menu 'show' command.
