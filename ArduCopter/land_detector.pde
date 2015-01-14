@@ -13,13 +13,13 @@ static bool land_complete_maybe()
 // called at 50hz
 static void update_land_detector()
 {
-    bool climb_rate_small = abs(climb_rate) < LAND_DETECTOR_CLIMBRATE_MAX;
-    bool target_climb_rate_low = !pos_control.is_active_z() || pos_control.get_desired_velocity().z < LAND_SPEED;
+    bool climb_rate_low = (abs(climb_rate) < LAND_DETECTOR_CLIMBRATE_MAX) && (abs(baro_climbrate) < LAND_DETECTOR_BARO_CLIMBRATE_MAX);
+    bool target_climb_rate_low = !pos_control.is_active_z() || (pos_control.get_desired_velocity().z < LAND_SPEED);
     bool motor_at_lower_limit = motors.limit.throttle_lower;
-    bool throttle_low = FRAME_CONFIG == HELI_FRAME || motors.get_throttle_out() < get_non_takeoff_throttle();
-    bool not_rotating_fast = ahrs.get_gyro().length() < LAND_DETECTOR_ROTATION_MAX;
+    bool throttle_low = (FRAME_CONFIG == HELI_FRAME) || (motors.get_throttle_out() < get_non_takeoff_throttle());
+    bool not_rotating_fast = (ahrs.get_gyro().length() < LAND_DETECTOR_ROTATION_MAX);
 
-    if (climb_rate_small && target_climb_rate_low && motor_at_lower_limit && throttle_low && not_rotating_fast) {
+    if (climb_rate_low && target_climb_rate_low && motor_at_lower_limit && throttle_low && not_rotating_fast) {
         if (!ap.land_complete) {
             // increase counter until we hit the trigger then set land complete flag
             if( land_detector < LAND_DETECTOR_TRIGGER) {
