@@ -325,7 +325,6 @@ void AC_PosControl::rate_to_accel_z()
         // Reset Filter
         _vel_error.z = 0;
         _vel_error_filter.reset(0);
-        desired_accel = 0;
         _flags.reset_rate_to_accel_z = false;
     } else {
         // calculate rate error and filter with cut off frequency of 2 Hz
