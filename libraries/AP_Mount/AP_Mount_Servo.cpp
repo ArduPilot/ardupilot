@@ -101,7 +101,7 @@ void AP_Mount_Servo::update()
         case MAV_MOUNT_MODE_GPS_POINT:
         {
             if(_frontend._ahrs.get_gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
-                calc_angle_to_location(_frontend.state[_instance]._roi_target, _angle_ef_target_rad);
+                calc_angle_to_location(_frontend.state[_instance]._roi_target, _angle_ef_target_rad, _flags.pan_control, _flags.tilt_control);
                 stabilize();
             }
             break;
@@ -151,28 +151,6 @@ void AP_Mount_Servo::check_servo_map()
     _flags.roll_control = RC_Channel_aux::function_assigned(_roll_idx);
     _flags.tilt_control = RC_Channel_aux::function_assigned(_tilt_idx);
     _flags.pan_control = RC_Channel_aux::function_assigned(_pan_idx);
-}
-
-// calc_angle_to_location - calculates the earth-frame roll, tilt and pan angles (and radians) to point at the given target
-void AP_Mount_Servo::calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_rad)
-{
-    float GPS_vector_x = (target.lng-_frontend._current_loc.lng)*cosf(ToRad((_frontend._current_loc.lat+target.lat)*0.00000005f))*0.01113195f;
-    float GPS_vector_y = (target.lat-_frontend._current_loc.lat)*0.01113195f;
-    float GPS_vector_z = (target.alt-_frontend._current_loc.alt);                 // baro altitude(IN CM) should be adjusted to known home elevation before take off (Set altimeter).
-    float target_distance = 100.0f*pythagorous2(GPS_vector_x, GPS_vector_y);      // Careful , centimeters here locally. Baro/alt is in cm, lat/lon is in meters.
-
-    // initialise all angles to zero
-    angles_to_target_rad.zero();
-
-    // tilt calcs
-    if (_flags.tilt_control) {
-        angles_to_target_rad.y = atan2f(GPS_vector_z, target_distance);
-    }
-
-    // pan calcs
-    if (_flags.pan_control) {
-        angles_to_target_rad.z = atan2f(GPS_vector_x, GPS_vector_y);
-    }
 }
 
 // configure_msg - process MOUNT_CONFIGURE messages received from GCS

@@ -62,6 +62,10 @@ public:
     virtual void status_msg(mavlink_channel_t chan) {};
 
 protected:
+
+    // calc_angle_to_location - calculates the earth-frame roll, tilt and pan angles (and radians) to point at the given target
+    void calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan);
+
     AP_Mount    &_frontend; // reference to the front end which holds parameters
     uint8_t     _instance;  // this instance's number
 };

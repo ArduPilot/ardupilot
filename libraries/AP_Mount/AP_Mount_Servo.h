@@ -70,9 +70,6 @@ private:
     //  should be called periodically (i.e. 1hz or less)
     void    check_servo_map();
 
-    // calc_angle_to_location - calculates the earth-frame roll, tilt and pan angles (and radians) to point at the given target
-    void calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_rad);
-
     // stabilize - stabilizes the mount relative to the Earth's frame
     void stabilize();
 
