@@ -87,7 +87,7 @@ public:
 
     bool logging_started(void) const { return log_write_started; }
 
-	/*
+    /*
       every logged packet starts with 3 bytes
     */
     struct log_Header {
@@ -124,7 +124,7 @@ protected:
   unfortunately these need to be macros because of a limitation of
   named member structure initialisation in g++
  */
-#define LOG_PACKET_HEADER	       uint8_t head1, head2, msgid;
+#define LOG_PACKET_HEADER          uint8_t head1, head2, msgid;
 #define LOG_PACKET_HEADER_INIT(id) head1 : HEAD_BYTE1, head2 : HEAD_BYTE2, msgid : id
 
 // once the logging code is all converted we will remove these from
@@ -515,9 +515,9 @@ Format characters in the format string for binary log messages
 // messages for all boards
 #define LOG_BASE_STRUCTURES \
     { LOG_FORMAT_MSG, sizeof(log_Format), \
-      "FMT", "BBnNZ",      "Type,Length,Name,Format,Columns" },    \
+      "FMT", "BBnNZ",      "Type,Length,Name,Format,Columns" }, \
     { LOG_PARAMETER_MSG, sizeof(log_Parameter), \
-      "PARM", "Nf",        "Name,Value" },    \
+      "PARM", "Nf",        "Name,Value" }, \
     { LOG_GPS_MSG, sizeof(log_GPS), \
       "GPS",  "BIHBcLLeeEefI", "Status,TimeMS,Week,NSats,HDop,Lat,Lng,RelAlt,Alt,Spd,GCrs,VZ,T" }, \
     { LOG_IMU_MSG, sizeof(log_IMU), \
@@ -533,24 +533,24 @@ Format characters in the format string for binary log messages
     { LOG_BAR2_MSG, sizeof(log_BARO), \
       "BAR2",  "Iffcf", "TimeMS,Alt,Press,Temp,CRt" }, \
     { LOG_POWR_MSG, sizeof(log_POWR), \
-      "POWR","ICCH","TimeMS,Vcc,VServo,Flags" },  \
+      "POWR","ICCH","TimeMS,Vcc,VServo,Flags" }, \
     { LOG_CMD_MSG, sizeof(log_Cmd), \
       "CMD", "IHHHfffffff","TimeMS,CTot,CNum,CId,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt" }, \
     { LOG_RADIO_MSG, sizeof(log_Radio), \
       "RAD", "IBBBBBHH", "TimeMS,RSSI,RemRSSI,TxBuf,Noise,RemNoise,RxErrors,Fixed" }, \
     { LOG_CAMERA_MSG, sizeof(log_Camera), \
       "CAM", "IHLLeeccC","GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,Roll,Pitch,Yaw" }, \
-    { LOG_CURRENT_MSG, sizeof(log_Current), \           
+    { LOG_CURRENT_MSG, sizeof(log_Current), \
       "CURR", "Ihhhhfh","TimeMS,Throttle,Volt,Curr,Vcc,CurrTot,Volt2" },\
     { LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
-      "ATT", "IccccCCCC", "TimeMS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw" },\
-    { LOG_COMPASS_MSG, sizeof(log_Compass), \             
-      "MAG", "Ihhhhhhhhh",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" },\
-    { LOG_COMPASS2_MSG, sizeof(log_Compass), \    
-      "MAG2","Ihhhhhhhhh",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" },\
-    { LOG_COMPASS3_MSG, sizeof(log_Compass), \            
-      "MAG3","Ihhhhhhhhh",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" },\
-    { LOG_MODE_MSG, sizeof(log_Mode), \            
+      "ATT", "IccccCCCC", "TimeMS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw" }, \
+    { LOG_COMPASS_MSG, sizeof(log_Compass), \
+      "MAG", "Ihhhhhhhhh",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" }, \
+    { LOG_COMPASS2_MSG, sizeof(log_Compass), \
+      "MAG2","Ihhhhhhhhh",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" }, \
+    { LOG_COMPASS3_MSG, sizeof(log_Compass), \
+      "MAG3","Ihhhhhhhhh",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" }, \
+    { LOG_MODE_MSG, sizeof(log_Mode), \
       "MODE", "IMB",         "TimeMS,Mode,ModeNum" }
 
 // messages for more advanced boards
@@ -609,28 +609,28 @@ Format characters in the format string for binary log messages
 // message types 0 to 100 reversed for vehicle specific use
 
 // message types for common messages
-#define LOG_FORMAT_MSG	  128
+#define LOG_FORMAT_MSG    128
 #define LOG_PARAMETER_MSG 129
-#define LOG_GPS_MSG		  130
-#define LOG_IMU_MSG		  131
-#define LOG_MESSAGE_MSG	  132
+#define LOG_GPS_MSG       130
+#define LOG_IMU_MSG       131
+#define LOG_MESSAGE_MSG   132
 #define LOG_RCIN_MSG      133
 #define LOG_RCOUT_MSG     134
-#define LOG_IMU2_MSG	  135
-#define LOG_BARO_MSG	  136
-#define LOG_POWR_MSG	  137
-#define LOG_AHR2_MSG	  138
+#define LOG_IMU2_MSG      135
+#define LOG_BARO_MSG      136
+#define LOG_POWR_MSG      137
+#define LOG_AHR2_MSG      138
 #define LOG_SIMSTATE_MSG  139
 #define LOG_EKF1_MSG      140
 #define LOG_EKF2_MSG      141
 #define LOG_EKF3_MSG      142
 #define LOG_EKF4_MSG      143
-#define LOG_GPS2_MSG	  144
+#define LOG_GPS2_MSG      144
 #define LOG_CMD_MSG       145
-#define LOG_RADIO_MSG	  146
+#define LOG_RADIO_MSG     146
 #define LOG_ATRP_MSG      147
 #define LOG_CAMERA_MSG    148
-#define LOG_IMU3_MSG	  149
+#define LOG_IMU3_MSG      149
 #define LOG_TERRAIN_MSG   150
 #define LOG_UBX1_MSG      151
 #define LOG_UBX2_MSG      152
