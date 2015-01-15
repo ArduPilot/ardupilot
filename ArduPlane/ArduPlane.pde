@@ -154,7 +154,6 @@ static void print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode);
 ////////////////////////////////////////////////////////////////////////////////
 // DataFlash
 ////////////////////////////////////////////////////////////////////////////////
-#if LOGGING_ENABLED == ENABLED
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 static DataFlash_APM1 DataFlash;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
@@ -164,7 +163,6 @@ static DataFlash_File DataFlash(HAL_BOARD_LOG_DIRECTORY);
 #else
 // no dataflash driver
 DataFlash_Empty DataFlash;
-#endif
 #endif
 
 // has a log download started?
