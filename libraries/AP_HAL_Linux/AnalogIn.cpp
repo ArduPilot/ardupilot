@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 using namespace Linux;
 
@@ -66,25 +67,57 @@ float LinuxAnalogSource::read_average() {
     return _value;
 }
 
+float LinuxAnalogSource::read_latest() {
+  	char buffer;
+  	char sbuf[10];
+  	int bytes, count = 0;
+ 	char buf[100];    
+
+  	if (pin_fd == 0){
+  		return 0;
+	}
+
+	// Open the file every time (that's the way these files should be handled)
+	// Construct the path by appending strings
+	sprintf(buf,ANALOG_IN_DIR);
+	sprintf(buf + strlen(buf), LinuxAnalogSource::analog_sources[_pin]);
+
+	pin_fd = open(buf, O_RDONLY | O_NONBLOCK);
+    if (pin_fd == -1) {
+        hal.scheduler->panic("Unable to open ADC pin");
+    }	
+
+  	do {
+    	bytes = read(pin_fd, &buffer, sizeof(char));
+    	// printf("buffer:%c\n", buffer);
+    	// printf("bytes: %d\n", bytes);
+    	sbuf[count++] = buffer;
+  	} while( bytes > 0); 
+
+  	// printf("string recorded: %s\n", sbuf);
+  	// printf("int obtained: %d\n", atoi(sbuf));
+
+	_latest = atoi(sbuf);  	
+	_sum_value += (float) atoi(sbuf);
+	_sum_count++;
+
+	// close the file
+  	if(pin_fd > 3 && close(pin_fd) < 0) {
+    	hal.scheduler->panic("Error closing fd");
+  	}
+  	//_pin = -1;
+    return _latest;
+}
+
 // output is a number ranging from 0 to 4096.
 float LinuxAnalogSource::voltage_average() {
-    return (5.0 * read_average()) / 4096.0;
+    //return (5.0 * read_average()) / 4096.0;
+    // Hack because voltage_latest is never called
+    return (5.0 * read_latest()) / 4096.0;
 }
 
 float LinuxAnalogSource::voltage_latest() {
     return (5.0 * read_latest()) / 4096.0;
-}
-
-float LinuxAnalogSource::read_latest() {
-	uint16_t buffer;
-	int rvalue = read(pin_fd, &buffer, sizeof(buffer));
-	if (rvalue <= 0)
-		hal.scheduler->panic("Error while reading analog\n");
-	_latest = buffer;
-	_sum_value += (float) buffer;
-	_sum_count++;
-
-    return _latest;
 }
 
 void LinuxAnalogSource::set_pin(uint8_t pin)
@@ -92,6 +125,11 @@ void LinuxAnalogSource::set_pin(uint8_t pin)
     if (_pin == pin) {
         return;
     }
+
+    // if (pin > ANALOG_IN_COUNT - 1){
+    // 	return;
+    // }
+
     hal.scheduler->suspend_timer_procs();
     _pin = pin;
     _sum_value = 0;
@@ -101,8 +139,6 @@ void LinuxAnalogSource::set_pin(uint8_t pin)
     _value = 0;    
     // _value_ratiometric = 0;
     hal.scheduler->resume_timer_procs();
-
-    // TODO open the new pin
 }
 
 void LinuxAnalogSource::set_stop_pin(uint8_t p)
