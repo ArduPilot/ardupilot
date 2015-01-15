@@ -94,60 +94,6 @@ void AP_Mount_MAVLink::set_mode(enum MAV_MOUNT_MODE mode)
     _last_mode = mode_to_send;
 }
 
-// set_roi_target - sets target location that mount should attempt to point towards
-void AP_Mount_MAVLink::set_roi_target(const struct Location &target_loc)
-{
-    // exit immediately if mount has not been found
-    if (!_enabled) {
-        return;
-    }
-
-    // prepare and send command_long message
-    mavlink_msg_command_long_send(
-            _chan, mavlink_system.sysid, AP_MOUNT_MAVLINK_COMPID, // channel, system id, component id
-            MAV_CMD_DO_MOUNT_CONTROL,   // command number
-            0, // confirmation: 0=first confirmation of this command
-            target_loc.lat,  // param1: pitch (in degrees) or lat (as int32_t)
-            target_loc.lng,  // param2: roll (in degrees) or lon (as int32_t)
-            target_loc.alt,  // param3: yaw (in degrees) or alt (in meters).  To-Do: clarify if this is absolute alt or relative to home
-            0.0f,0.0f,0.0f,             // param4 ~ param6 : not used
-            MAV_MOUNT_MODE_GPS_POINT);  // param7: MAV_MOUNT_MODE enum value
-}
-
-// configure_msg - process MOUNT_CONFIGURE messages received from GCS
-void AP_Mount_MAVLink::configure_msg(mavlink_message_t* msg)
-{
-    // exit immediately if mount has not been found
-    if (!_enabled) {
-        return;
-    }
-
-    // forward on message with updated channel, sysid, compid
-    mavlink_msg_mount_configure_send(
-            _chan, mavlink_system.sysid, AP_MOUNT_MAVLINK_COMPID,
-            mavlink_msg_mount_configure_get_mount_mode(msg),
-            mavlink_msg_mount_configure_get_stab_roll(msg),
-            mavlink_msg_mount_configure_get_stab_pitch(msg),
-            mavlink_msg_mount_configure_get_stab_yaw(msg));
-}
-
-// control_msg - process MOUNT_CONTROL messages received from GCS
-void AP_Mount_MAVLink::control_msg(mavlink_message_t* msg)
-{
-    // exit immediately if mount has not been found
-    if (!_enabled) {
-        return;
-    }
-
-    // forward on message with updated channel, sysid, compid
-    mavlink_msg_mount_control_send(
-            _chan, mavlink_system.sysid, AP_MOUNT_MAVLINK_COMPID,
-            mavlink_msg_mount_control_get_input_a(msg),
-            mavlink_msg_mount_control_get_input_b(msg),
-            mavlink_msg_mount_control_get_input_c(msg),
-            mavlink_msg_mount_control_get_save_position(msg));
-}
-
 // status_msg - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
 void AP_Mount_MAVLink::status_msg(mavlink_channel_t chan)
 {
