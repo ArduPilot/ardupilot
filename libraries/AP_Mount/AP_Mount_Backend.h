@@ -50,13 +50,13 @@ public:
     virtual void set_mode(enum MAV_MOUNT_MODE mode) = 0;
 
     // set_roi_target - sets target location that mount should attempt to point towards
-    virtual void set_roi_target(const struct Location &target_loc) = 0;
+    virtual void set_roi_target(const struct Location &target_loc);
 
     // configure_msg - process MOUNT_CONFIGURE messages received from GCS
-    virtual void configure_msg(mavlink_message_t* msg) {};
+    virtual void configure_msg(mavlink_message_t* msg);
 
     // control_msg - process MOUNT_CONTROL messages received from GCS
-    virtual void control_msg(mavlink_message_t* msg) {};
+    virtual void control_msg(mavlink_message_t* msg);
 
     // status_msg - called to allow mounts to send their status to GCS via MAVLink
     virtual void status_msg(mavlink_channel_t chan) {};
