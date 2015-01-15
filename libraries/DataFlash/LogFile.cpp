@@ -12,14 +12,12 @@
 
 extern const AP_HAL::HAL& hal;
 
-
 void DataFlash_Class::Init(const struct LogStructure *structure, uint8_t num_types)
 {
     _num_types = num_types;
     _structures = structure;
     _writes_enabled = true;
 }
-
 
 // This function determines the number of whole or partial log files in the DataFlash
 // Wholly overwritten files are (of course) lost.
@@ -55,7 +53,6 @@ uint16_t DataFlash_Block::get_num_logs(void)
 
     return (last - first + 1);
 }
-
 
 // This function starts a new log file in the DataFlash
 uint16_t DataFlash_Block::start_new_log(void)
@@ -170,7 +167,6 @@ bool DataFlash_Block::check_wrapped(void)
     else
         return 1;
 }
-
 
 // This funciton finds the last log number
 uint16_t DataFlash_Block::find_last_log(void)
@@ -421,7 +417,6 @@ void DataFlash_Class::_print_log_entry(uint8_t msg_type,
     port->println();
 }
 
-
 /*
   print FMT specifiers for log dumps where we have wrapped in the
   dataflash and so have no formats. This assumes the log being dumped
@@ -458,35 +453,35 @@ void DataFlash_Block::LogReadProcess(uint16_t log_num,
 
     StartRead(start_page);
 
-	while (true) {
-		uint8_t data;
+    while (true) {
+        uint8_t data;
         ReadBlock(&data, 1);
 
-		// This is a state machine to read the packets
-		switch(log_step) {
-			case 0:
-				if (data == HEAD_BYTE1) {
-					log_step++;
+        // This is a state machine to read the packets
+        switch(log_step) {
+            case 0:
+                if (data == HEAD_BYTE1) {
+                    log_step++;
                 }
-				break;
+                break;
 
-			case 1:
-				if (data == HEAD_BYTE2) {
-					log_step++;
+            case 1:
+                if (data == HEAD_BYTE2) {
+                    log_step++;
                 } else {
-					log_step = 0;
-				}
-				break;
+                    log_step = 0;
+                }
+                break;
 
-			case 2:
-				log_step = 0;
+            case 2:
+                log_step = 0;
                 if (first_entry && data != LOG_FORMAT_MSG) {
                     _print_log_formats(port);
                 }
                 first_entry = false;
                 _print_log_entry(data, print_mode, port);
                 break;
-		}
+        }
         uint16_t new_page = GetPage();
         if (new_page != page) {
             if (new_page == end_page+1 || new_page == start_page) {
@@ -494,7 +489,7 @@ void DataFlash_Block::LogReadProcess(uint16_t log_num,
             }
             page = new_page;
         }
-	}
+    }
 }
 
 /*
@@ -619,7 +614,6 @@ void DataFlash_Class::Log_Write_Format(const struct LogStructure *s)
     WriteBlock(&pkt, sizeof(pkt));
 }
 
-
 /*
   write a parameter to the log
  */
@@ -665,8 +659,6 @@ void DataFlash_Class::Log_Write_Parameters(void)
         hal.scheduler->delay(1);
     }
 }
-
-
 
 // Write an GPS packet
 void DataFlash_Class::Log_Write_GPS(const AP_GPS &gps, uint8_t i, int32_t relative_alt)
@@ -772,7 +764,7 @@ void DataFlash_Class::Log_Write_Baro(AP_Baro &baro)
         LOG_PACKET_HEADER_INIT(LOG_BARO_MSG),
         timestamp     : now,
         altitude      : baro.get_altitude(0),
-        pressure	  : baro.get_pressure(0),
+        pressure      : baro.get_pressure(0),
         temperature   : (int16_t)(baro.get_temperature(0) * 100),
         climbrate     : baro.get_climb_rate()
     };
@@ -941,7 +933,7 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     };
     WriteBlock(&pkt, sizeof(pkt));
 
-	// Write second EKF packet
+    // Write second EKF packet
     float ratio;
     float az1bias, az2bias;
     Vector3f wind;
@@ -969,11 +961,11 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     };
     WriteBlock(&pkt2, sizeof(pkt2));
 
-	// Write third EKF packet
-	Vector3f velInnov;
-	Vector3f posInnov;
-	Vector3f magInnov;
-	float tasInnov;
+    // Write third EKF packet
+    Vector3f velInnov;
+    Vector3f posInnov;
+    Vector3f magInnov;
+    float tasInnov;
     ahrs.get_NavEKF().getInnovations(velInnov, posInnov, magInnov, tasInnov);
     struct log_EKF3 pkt3 = {
         LOG_PACKET_HEADER_INIT(LOG_EKF3_MSG),
@@ -990,13 +982,13 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         innovVT : (int16_t)(100*tasInnov)
     };
     WriteBlock(&pkt3, sizeof(pkt3));
-	
-	// Write fourth EKF packet
+
+    // Write fourth EKF packet
     float velVar;
     float posVar;
     float hgtVar;
-	Vector3f magVar;
-	float tasVar;
+    Vector3f magVar;
+    float tasVar;
     Vector2f offset;
     uint8_t faultStatus, timeoutStatus;
     nav_filter_status solutionStatus;

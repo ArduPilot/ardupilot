@@ -554,17 +554,17 @@ Format characters in the format string for binary log messages
       "CAM", "IHLLeeccC","GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,Roll,Pitch,Yaw" }, \
     { LOG_ARSP_MSG, sizeof(log_AIRSPEED), \
       "ARSP",  "Iffcff",   "TimeMS,Airspeed,DiffPress,Temp,RawPress,Offset" }
-	{ LOG_CURRENT_MSG, sizeof(log_Current), \           
+    { LOG_CURRENT_MSG, sizeof(log_Current), \
       "CURR", "Ihhhhfh","TimeMS,Throttle,Volt,Curr,Vcc,CurrTot,Volt2" },\
 	{ LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
-	  "ATT", "IccccCCCC", "TimeMS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw" },\
-    { LOG_COMPASS_MSG, sizeof(log_Compass), \             
-      "MAG", "Ihhhhhhhhh",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" },\
-    { LOG_COMPASS2_MSG, sizeof(log_Compass), \    
-      "MAG2","Ihhhhhhhhh",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" },\
-    { LOG_COMPASS3_MSG, sizeof(log_Compass), \            
-      "MAG3","Ihhhhhhhhh",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" },\
-    { LOG_MODE_MSG, sizeof(log_Mode), \            
+      "ATT", "IccccCCCC", "TimeMS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw" }, \
+    { LOG_COMPASS_MSG, sizeof(log_Compass), \
+      "MAG", "Ihhhhhhhhh",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" }, \
+    { LOG_COMPASS2_MSG, sizeof(log_Compass), \
+      "MAG2","Ihhhhhhhhh",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" }, \
+    { LOG_COMPASS3_MSG, sizeof(log_Compass), \
+      "MAG3","Ihhhhhhhhh",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" }, \
+    { LOG_MODE_MSG, sizeof(log_Mode), \
       "MODE", "IMB",         "TimeMS,Mode,ModeNum" }
 
 // messages for more advanced boards
