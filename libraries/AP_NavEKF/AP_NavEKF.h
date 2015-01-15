@@ -444,6 +444,7 @@ private:
     const uint16_t msecTasDelay;        // Airspeed measurement delay (msec)
     const uint16_t gpsRetryTimeUseTAS;  // GPS retry time with airspeed measurements (msec)
     const uint16_t gpsRetryTimeNoTAS;   // GPS retry time without airspeed measurements (msec)
+    const uint16_t gpsFailTimeWithFlow; // If we have no GPs for longer than this and we have optical flow, then we will switch across to using optical flow (msec)
     const uint16_t hgtRetryTimeMode0;   // Height retry time with vertical velocity measurement (msec)
     const uint16_t hgtRetryTimeMode12;  // Height retry time without vertical velocity measurement (msec)
     const uint16_t tasRetryTime;        // True airspeed timeout and retry interval (msec)
