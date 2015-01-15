@@ -19,9 +19,11 @@ static void init_rangefinder(void)
 static void read_rangefinder(void)
 {
     rangefinder.update();
-
+    
+    #if LOGGING_ENABLED == ENABLED
     if (should_log(MASK_LOG_SONAR))
         Log_Write_Sonar();
+    #endif
 
     rangefinder_height_update();
 }
