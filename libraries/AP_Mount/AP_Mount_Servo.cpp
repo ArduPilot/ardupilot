@@ -103,16 +103,6 @@ void AP_Mount_Servo::set_mode(enum MAV_MOUNT_MODE mode)
     _frontend.state[_instance]._mode = mode;
 }
 
-// set_roi_target - sets target location that mount should attempt to point towards
-void AP_Mount_Servo::set_roi_target(const struct Location &target_loc)
-{
-    // set the target gps location
-    _frontend.state[_instance]._roi_target = target_loc;
-
-    // set the mode to GPS tracking mode
-    _frontend.set_mode(_instance, MAV_MOUNT_MODE_GPS_POINT);
-}
-
 // private methods
 
 // check_servo_map - detects which axis we control using the functions assigned to the servos in the RC_Channel_aux
@@ -123,62 +113,6 @@ void AP_Mount_Servo::check_servo_map()
     _flags.tilt_control = RC_Channel_aux::function_assigned(_tilt_idx);
     _flags.pan_control = RC_Channel_aux::function_assigned(_pan_idx);
 }
-
-// configure_msg - process MOUNT_CONFIGURE messages received from GCS
-void AP_Mount_Servo::configure_msg(mavlink_message_t* msg)
-{
-    __mavlink_mount_configure_t packet;
-    mavlink_msg_mount_configure_decode(msg, &packet);
-
-    // set mode
-    _frontend.set_mode(_instance,(enum MAV_MOUNT_MODE)packet.mount_mode);
-
-    // set which axis are stabilized
-    _frontend.state[_instance]._stab_roll = packet.stab_roll;
-    _frontend.state[_instance]._stab_tilt = packet.stab_pitch;
-    _frontend.state[_instance]._stab_pan = packet.stab_yaw;
-}
-
-// control_msg - process MOUNT_CONTROL messages received from GCS
-void AP_Mount_Servo::control_msg(mavlink_message_t *msg)
-{
-    __mavlink_mount_control_t packet;
-    mavlink_msg_mount_control_decode(msg, &packet);
-
-    // interpret message fields based on mode
-    switch (_frontend.get_mode(_instance)) {
-        case MAV_MOUNT_MODE_RETRACT:
-        case MAV_MOUNT_MODE_NEUTRAL:
-            // do nothing with request if mount is retracted or in neutral position
-            break;
-
-        // set earth frame target angles from mavlink message
-        case MAV_MOUNT_MODE_MAVLINK_TARGETING:
-            _angle_ef_target_rad.x = packet.input_b*0.01f;  // convert roll in centi-degrees to degrees
-            _angle_ef_target_rad.y = packet.input_a*0.01f;  // convert tilt in centi-degrees to degrees
-            _angle_ef_target_rad.z = packet.input_c*0.01f;  // convert pan in centi-degrees to degrees
-            break;
-
-        // Load neutral position and start RC Roll,Pitch,Yaw control with stabilization
-        case MAV_MOUNT_MODE_RC_TARGETING:
-            // do nothing if pilot is controlling the roll, pitch and yaw
-            break;
-
-        // set lat, lon, alt position targets from mavlink message
-        case MAV_MOUNT_MODE_GPS_POINT:
-            Location target_location;
-            target_location.lat = packet.input_a;
-            target_location.lng = packet.input_b;
-            target_location.alt = packet.input_c;
-            set_roi_target(target_location);
-            break;
-
-        default:
-            // do nothing
-            break;
-    }
-}
-
 
 // status_msg - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
 void AP_Mount_Servo::status_msg(mavlink_channel_t chan)
