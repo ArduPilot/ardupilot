@@ -475,9 +475,7 @@
 #endif
 
 // use this for CLI options
-#ifndef CLI_LOGS_ENABLED
- # define CLI_LOGS_ENABLED ENABLED
-#endif
+// Logs option is defined by LOGGING_ENABLED
 
 #ifndef CLI_SETUP_ENABLED
 #if HAL_CPU_CLASS > HAL_CPU_CLASS_16
