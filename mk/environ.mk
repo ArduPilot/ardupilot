@@ -57,6 +57,8 @@ endif
 # Work out the sketch name from the name of the source directory.
 #
 SKETCH			:=	$(lastword $(subst /, ,$(SRCROOT)))
+SKETCH = ArduCopter
+
 # Workaround a $(lastword ) bug on cygwin
 ifeq ($(SKETCH),)
   WORDLIST		:=	$(subst /, ,$(SRCROOT))
