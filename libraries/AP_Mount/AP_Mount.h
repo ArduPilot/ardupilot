@@ -36,6 +36,7 @@
 class AP_Mount_Backend;
 class AP_Mount_Servo;
 class AP_Mount_MAVLink;
+class AP_Mount_Alexmos;
 
 class AP_Mount
 {
@@ -43,6 +44,7 @@ class AP_Mount
     friend class AP_Mount_Backend;
     friend class AP_Mount_Servo;
     friend class AP_Mount_MAVLink;
+    friend class AP_Mount_Alexmos;
 
 public:
 
@@ -51,6 +53,7 @@ public:
         Mount_Type_None = 0,            /// no mount
         Mount_Type_Servo = 1,           /// servo controlled mount
         Mount_Type_MAVLink = 2,         /// MAVLink controlled mount
+        Mount_Type_Alexmos = 2,         /// MAVLink controlled mount
     };
 
     // Constructor

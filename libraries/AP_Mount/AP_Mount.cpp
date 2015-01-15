@@ -7,6 +7,7 @@
 #include <AP_Mount_Backend.h>
 #include <AP_Mount_Servo.h>
 #include <AP_Mount_MAVLink.h>
+#include <AP_Mount_Alexmos.h>
 
 const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // @Param: _DEFLT_MODE
@@ -193,7 +194,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // @Param: _TYPE
     // @DisplayName: Mount Type
     // @Description: Mount Type (None, Servo or MAVLink)
-    // @Values: 0:None, 1:Servo, 2:MAVLink
+    // @Values: 0:None, 1:Servo, 2:MAVLink 3:Alexmos Serial
     // @User: Standard
     AP_GROUPINFO("_TYPE", 19, AP_Mount, state[0]._type, 0),
 
@@ -419,6 +420,11 @@ void AP_Mount::init()
         // check for MAVLink mounts
         } else if (mount_type == Mount_Type_MAVLink) {
             _backends[instance] = new AP_Mount_MAVLink(*this, instance);
+            _num_instances++;
+
+        // check for MAVLink mounts
+        } else if (mount_type == Mount_Type_Alexmos) {
+            _backends[instance] = new AP_Mount_Alexmos(*this, instance);
             _num_instances++;
         }
 
