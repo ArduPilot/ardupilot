@@ -392,9 +392,10 @@ AP_Mount::AP_Mount(const AP_AHRS &ahrs, const struct Location &current_loc) :
 {
 	AP_Param::setup_object_defaults(this, var_info);
 
-    // initialise backend status
+    // initialise backend pointers and mode
     for (uint8_t i=0; i<AP_MOUNT_MAX_INSTANCES; i++) {
         _backends[i] = NULL;
+        state[i]._mode = (enum MAV_MOUNT_MODE)state[i]._default_mode.get();
     }
 }
 
