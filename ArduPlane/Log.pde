@@ -654,9 +654,11 @@ static void Log_Write_IMU() {}
 static void Log_Write_RC() {}
 static void Log_Write_Airspeed(void) {}
 static void Log_Write_Baro(void) {}
+static void Log_Write_Sonar() {}
 #if OPTFLOW == ENABLED
 static void Log_Write_Optflow() {}
 #endif
+static void Log_Arm_Disarm() {}
 
 static int8_t process_logs(uint8_t argc, const Menu::arg *argv) {
     return 0;
