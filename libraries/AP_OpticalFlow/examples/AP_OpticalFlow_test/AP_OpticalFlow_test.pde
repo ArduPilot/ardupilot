@@ -33,7 +33,7 @@
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 AP_InertialSensor ins;
-AP_Baro_HIL baro;
+AP_Baro baro;
 
 // GPS declaration
 static AP_GPS  gps;

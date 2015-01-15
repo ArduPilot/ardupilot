@@ -73,7 +73,7 @@ static Parameters g;
 
 static AP_GPS gps;
 AP_InertialSensor ins;
-AP_Baro_HIL      barometer;
+AP_Baro      barometer;
 AP_AHRS_DCM  ahrs(ins, barometer, gps);
 
 static AP_Compass_HIL compass;

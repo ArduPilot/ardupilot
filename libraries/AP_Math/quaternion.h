@@ -91,7 +91,7 @@ public:
     float & operator[](uint8_t i) {
         float *_v = &q1;
 #if MATH_CHECK_INDEXES
-        assert(i >= 0 && i < 4);
+        assert(i < 4);
 #endif
         return _v[i];
     }
@@ -99,7 +99,7 @@ public:
     const float & operator[](uint8_t i) const {
         const float *_v = &q1;
 #if MATH_CHECK_INDEXES
-        assert(i >= 0 && i < 4);
+        assert(i < 4);
 #endif
         return _v[i];
     }

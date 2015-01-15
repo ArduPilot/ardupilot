@@ -341,9 +341,7 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 				mode != AUTO &&
 				mode != RTL) 
 			{
-				if (mode < MANUAL)
-					mode = RTL;
-				else if (mode > RTL)
+				if (mode > RTL)
 					mode = MANUAL;
 				else
 					mode += radioInputSwitch;

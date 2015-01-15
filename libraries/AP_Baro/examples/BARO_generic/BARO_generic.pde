@@ -38,21 +38,7 @@ const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 #define CONFIG_BARO HAL_BARO_DEFAULT
 
-#if CONFIG_BARO == HAL_BARO_BMP085
-static AP_Baro_BMP085 barometer;
-#elif CONFIG_BARO == HAL_BARO_PX4
-static AP_Baro_PX4 barometer;
-#elif CONFIG_BARO == HAL_BARO_VRBRAIN
-static AP_Baro_VRBRAIN barometer;
-#elif CONFIG_BARO == HAL_BARO_HIL
-static AP_Baro_HIL barometer;
-#elif CONFIG_BARO == HAL_BARO_MS5611
-static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::i2c);
-#elif CONFIG_BARO == HAL_BARO_MS5611_SPI
-static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::spi);
-#else
- #error Unrecognized CONFIG_BARO setting
-#endif
+static AP_Baro barometer;
 
 static uint32_t timer;
 
@@ -78,7 +64,7 @@ void loop()
 {
     if((hal.scheduler->micros() - timer) > 100000UL) {
         timer = hal.scheduler->micros();
-        barometer.read();
+        barometer.update();
         uint32_t read_time = hal.scheduler->micros() - timer;
         float alt = barometer.get_altitude();
         if (!barometer.healthy()) {
@@ -91,10 +77,9 @@ void loop()
         hal.console->print(barometer.get_temperature());
         hal.console->print(" Altitude:");
         hal.console->print(alt);
-        hal.console->printf(" climb=%.2f t=%u samples=%u",
-                      barometer.get_climb_rate(),
-                      (unsigned)read_time,
-                      (unsigned)barometer.get_pressure_samples());
+        hal.console->printf(" climb=%.2f t=%u",
+                            barometer.get_climb_rate(),
+                            (unsigned)read_time);
         hal.console->println();
     }
 }

@@ -189,6 +189,12 @@ fi
 
 
 echo "Starting APM sensors"
+
+if ms5611 -X start
+then
+   echo "ms5611 external started OK"
+fi
+
 if ms5611 start
 then
     echo "ms5611 started OK"
@@ -285,10 +291,6 @@ else
                echo "No MPU6000"
                echo "No MPU6000" >> $logfile
                sh /etc/init.d/rc.error
-        fi
-        if ms5611 -X start
-        then
-            echo "ms5611 external started OK"
         fi
     else
         if mpu6000 start

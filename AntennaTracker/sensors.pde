@@ -10,7 +10,7 @@ static void init_barometer(void)
 // read the barometer and return the updated altitude in meters
 static void update_barometer(void)
 {
-    barometer.read();
+    barometer.update();
 }
 
 

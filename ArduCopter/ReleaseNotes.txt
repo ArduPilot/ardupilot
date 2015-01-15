@@ -1,5 +1,22 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.2.1-rc1 08-Jan-2015
+Changes from 3.2
+1) Enhancements:
+    a) reduced twitch when passing Spline waypoints
+    b) Faster disarm after landing in Auto, Land, RTL
+    c) Pixhawk LED turns green before arming only after GPS HDOP falls below 2.3 (only in flight modes requiring GPS)
+2) Safety Features:
+    a) Add desired descent rate check to reduce chance of false-positive on landing check
+    b) improved MPU6k health monitoring and re-configuration in case of in-flight failure
+    c) Rally point distance check reduced to 300m (reduces chance of RTL to far away forgotten Rally point)
+    d) auto-disarm if vehicle is landed for 15seconds even in Auto, Guided, RTL, Circle
+    e) fence breach while vehicle is landed causes vehicle to disarm (previously did RTL)
+3) Bug Fixes:
+    a) Check flight mode even when arming from GCS (previously it was possible to arm in RTL mode if arming was initiated from GCS)
+    b) Send vehicle target destination in RTL, Guided (allows GCS to show where vehicle is flying to in these modes)
+    c) PosHold wind compensation fix
+------------------------------------------------------------------
 ArduCopter 3.2 07-Nov2014 / 3.2-rc14 31-Oct-2014
 Changes from 3.2-rc13
 1) Safety Features:
