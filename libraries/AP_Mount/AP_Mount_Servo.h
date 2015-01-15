@@ -73,10 +73,6 @@ private:
     // stabilize - stabilizes the mount relative to the Earth's frame
     void stabilize();
 
-    // angle_input, angle_input_rad - convert RC input into an earth-frame target angle
-    int32_t angle_input(RC_Channel* rc, int16_t angle_min, int16_t angle_max);
-    float angle_input_rad(RC_Channel* rc, int16_t angle_min, int16_t angle_max);
-
     // closest_limit - returns closest angle to 'angle' taking into account limits.  all angles are in degrees * 10
     int16_t closest_limit(int16_t angle, int16_t angle_min, int16_t angle_max);
 
@@ -89,8 +85,7 @@ private:
     RC_Channel_aux::Aux_servo_function_t    _pan_idx;   // RC_Channel_aux mount pan  function index
     RC_Channel_aux::Aux_servo_function_t    _open_idx;  // RC_Channel_aux mount open function index
 
-    Vector3f _angle_ef_target_rad;  // desired earth-frame roll, tilt and pan angles in radians
-    Vector3f _angle_bf_output_deg;  // final body frame output angle in degres
+    Vector3f _angle_bf_output_deg;  // final body frame output angle in degrees
 
     uint32_t _last_check_servo_map_ms;  // system time of latest call to check_servo_map function
 };

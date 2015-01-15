@@ -63,11 +63,19 @@ public:
 
 protected:
 
+    // update_targets_from_rc - updates angle targets (i.e. _angle_ef_target_rad) using input from receiver
+    void update_targets_from_rc();
+
+    // angle_input, angle_input_rad - convert RC input into an earth-frame target angle
+    int32_t angle_input(RC_Channel* rc, int16_t angle_min, int16_t angle_max);
+    float angle_input_rad(RC_Channel* rc, int16_t angle_min, int16_t angle_max);
+
     // calc_angle_to_location - calculates the earth-frame roll, tilt and pan angles (and radians) to point at the given target
     void calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan);
 
     AP_Mount    &_frontend; // reference to the front end which holds parameters
     uint8_t     _instance;  // this instance's number
+    Vector3f    _angle_ef_target_rad;   // desired earth-frame roll, tilt and pan angles in radians
 };
 
 #endif // __AP_MOUNT_BACKEND_H__

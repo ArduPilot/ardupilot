@@ -62,37 +62,8 @@ void AP_Mount_Servo::update()
         // RC radio manual angle control, but with stabilization from the AHRS
         case MAV_MOUNT_MODE_RC_TARGETING:
         {
-#define rc_ch(i) RC_Channel::rc_channel(i-1)
-            uint8_t roll_rc_in = _frontend.state[_instance]._roll_rc_in;
-            uint8_t tilt_rc_in = _frontend.state[_instance]._tilt_rc_in;
-            uint8_t pan_rc_in = _frontend.state[_instance]._pan_rc_in;
-
-            if (_frontend._joystick_speed) {                  // for spring loaded joysticks
-                // allow pilot speed position input to come directly from an RC_Channel
-                if (roll_rc_in && rc_ch(roll_rc_in)) {
-                    _angle_ef_target_rad.x += rc_ch(roll_rc_in)->norm_input_dz() * 0.0001f * _frontend._joystick_speed;
-                    constrain_float(_angle_ef_target_rad.x, radians(_frontend.state[_instance]._roll_angle_min*0.01f), radians(_frontend.state[_instance]._roll_angle_max*0.01f));
-                }
-                if (tilt_rc_in && (rc_ch(tilt_rc_in))) {
-                    _angle_ef_target_rad.y += rc_ch(tilt_rc_in)->norm_input_dz() * 0.0001f * _frontend._joystick_speed;
-                    constrain_float(_angle_ef_target_rad.y, radians(_frontend.state[_instance]._tilt_angle_min*0.01f), radians(_frontend.state[_instance]._tilt_angle_max*0.01f));
-                }
-                if (pan_rc_in && (rc_ch(pan_rc_in))) {
-                    _angle_ef_target_rad.z += rc_ch(pan_rc_in)->norm_input_dz() * 0.0001f * _frontend._joystick_speed;
-                    constrain_float(_angle_ef_target_rad.z, radians(_frontend.state[_instance]._pan_angle_min*0.01f), radians(_frontend.state[_instance]._pan_angle_max*0.01f));
-                }
-            } else {
-                // allow pilot position input to come directly from an RC_Channel
-                if (roll_rc_in && (rc_ch(roll_rc_in))) {
-                    _angle_ef_target_rad.x = angle_input_rad(rc_ch(roll_rc_in), _frontend.state[_instance]._roll_angle_min, _frontend.state[_instance]._roll_angle_max);
-                }
-                if (tilt_rc_in && (rc_ch(tilt_rc_in))) {
-                    _angle_ef_target_rad.y = angle_input_rad(rc_ch(tilt_rc_in), _frontend.state[_instance]._tilt_angle_min, _frontend.state[_instance]._tilt_angle_max);
-                }
-                if (pan_rc_in && (rc_ch(pan_rc_in))) {
-                    _angle_ef_target_rad.z = angle_input_rad(rc_ch(pan_rc_in), _frontend.state[_instance]._pan_angle_min, _frontend.state[_instance]._pan_angle_max);
-                }
-            }
+            // update targets using pilot's rc inputs
+            update_targets_from_rc();
             stabilize();
             break;
         }
@@ -261,20 +232,6 @@ void AP_Mount_Servo::stabilize()
             _angle_bf_output_deg.y -= degrees(pitch_rate) * _frontend.state[_instance]._pitch_stb_lead;
         }
     }
-}
-
-// returns the angle (degrees*100) that the RC_Channel input is receiving
-int32_t
-AP_Mount_Servo::angle_input(RC_Channel* rc, int16_t angle_min, int16_t angle_max)
-{
-    return (rc->get_reverse() ? -1 : 1) * (rc->radio_in - rc->radio_min) * (int32_t)(angle_max - angle_min) / (rc->radio_max - rc->radio_min) + (rc->get_reverse() ? angle_max : angle_min);
-}
-
-// returns the angle (radians) that the RC_Channel input is receiving
-float
-AP_Mount_Servo::angle_input_rad(RC_Channel* rc, int16_t angle_min, int16_t angle_max)
-{
-    return radians(angle_input(rc, angle_min, angle_max)*0.01f);
 }
 
 // closest_limit - returns closest angle to 'angle' taking into account limits.  all angles are in degrees * 10
