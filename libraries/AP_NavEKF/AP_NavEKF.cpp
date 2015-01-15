@@ -381,6 +381,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     msecTasDelay(240),              // Airspeed measurement delay (msec)
     gpsRetryTimeUseTAS(10000),      // GPS retry time with airspeed measurements (msec)
     gpsRetryTimeNoTAS(10000),       // GPS retry time without airspeed measurements (msec)
+    gpsFailTimeWithFlow(5000),      // If we have no GPS for longer than this and we have optical flow, then we will switch across to using optical flow (msec)
     hgtRetryTimeMode0(10000),       // Height retry time with vertical velocity measurement (msec)
     hgtRetryTimeMode12(5000),       // Height retry time without vertical velocity measurement (msec)
     tasRetryTime(5000),             // True airspeed timeout and retry interval (msec)
@@ -742,27 +743,47 @@ void NavEKF::SelectVelPosFusion()
         // check for and read new GPS data
         readGpsData();
 
+        // check if we can use opticalflow as a backup
+        bool optFlowBackup = (flowDataValid && !hgtTimeout);
+
         // Set GPS time-out threshold depending on whether we have an airspeed sensor to constrain drift
         uint16_t gpsRetryTimeout = useAirspeed() ? gpsRetryTimeUseTAS : gpsRetryTimeNoTAS;
 
+        // Set the time that copters will fly without a GPS lock before failing the GPS and switching to a non GPS mode
+        uint16_t gpsFailTimeout = optFlowBackup ? gpsFailTimeWithFlow : gpsRetryTimeout;
+
         // If we haven't received GPS data for a while, then declare the position and velocity data as being timed out
-        if (imuSampleTime_ms - lastFixTime_ms > gpsRetryTimeout) {
+        if (imuSampleTime_ms - lastFixTime_ms > gpsFailTimeout) {
             posTimeout = true;
             velTimeout = true;
-            //If this happens in flight and we don't have airspeed or sideslip assumption to constrain drift, then go into constant position mode and stay there until disarmed
+            // If this happens in flight and we don't have airspeed or sideslip assumption or optical flow to constrain drift, then go into constant position mode.
+            // Stay in that mode until the vehicle is re-armed.
+            // If we can do optical flow nav (valid flow data and hieght above ground estimate, then go into flow nav mode.
+            // Stay in that mode until the vehicle is dis-armed.
             if (vehicleArmed && !useAirspeed() && !assume_zero_sideslip()) {
-                constVelMode = false; // always clear constant velocity mode if constant velocity mode is active
-                constPosMode = true;
-                PV_AidingMode = AID_NONE;
+                if (optFlowBackup) {
+                    // we can do optical flow only nav
+                    _fusionModeGPS = 3;
+                    PV_AidingMode = AID_RELATIVE;
+                    constVelMode = false;
+                    constPosMode = false;
+                } else {
+                    constVelMode = false; // always clear constant velocity mode if constant velocity mode is active
+                    constPosMode = true;
+                    PV_AidingMode = AID_NONE;
+                    posTimeout = true;
+                    velTimeout = true;
+                    // reset the velocity
+                    ResetVelocity();
+                    // store the current position to be used to keep reporting the last known position
+                    lastKnownPositionNE.x = state.position.x;
+                    lastKnownPositionNE.y = state.position.y;
+                    // reset the position
+                    ResetPosition();
+                }
+                // set the position and velocity timeouts to indicate we are not using GPS data
                 posTimeout = true;
                 velTimeout = true;
-                // reset the velocity
-                ResetVelocity();
-                // store the current position to be used to keep reporting the last known position
-                lastKnownPositionNE.x = state.position.x;
-                lastKnownPositionNE.y = state.position.y;
-                // reset the position
-                ResetPosition();
             }
         }
 
