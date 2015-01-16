@@ -157,6 +157,17 @@ private:
         int16_t rc_speed_yaw;
     };
 
+    // CMD_CONTROL
+    struct PACKED alexmos_angles_speed {
+        int8_t mode;
+        int16_t speed_roll;
+        int16_t angle_roll;
+        int16_t speed_pitch;
+        int16_t angle_pitch;
+        int16_t speed_yaw;
+        int16_t angle_yaw;
+    };
+
     // CMD_READ_PARAMS
     struct PACKED alexmos_params {
         uint8_t profile_id;
@@ -272,10 +283,11 @@ private:
         uint8_t cur_profile_id;
 
     };
-    union PACKED {
+    union PACKED alexmos_parameters {
         alexmos_version version;
         alexmos_angles angles;
         alexmos_params params;
+        alexmos_angles_speed angle_speed;
         uint8_t bytes[];
     } _buffer,_current_parameters;
 

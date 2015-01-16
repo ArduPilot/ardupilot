@@ -123,24 +123,15 @@ void AP_Mount_Alexmos::control_axis(const Vector3f& angle, bool target_in_degree
     if (!target_in_degrees) {
         target_deg *= RAD_TO_DEG;
     }
-
-    uint8_t mode = AP_MOUNT_ALEXMOS_MODE_ANGLE;
-    int16_t speed_roll = DEGREE_PER_SEC_TO_VALUE(AP_MOUNT_ALEXMOS_SPEED);
-    int16_t angle_roll = DEGREE_TO_VALUE(target_deg.x);
-    int16_t speed_pitch = DEGREE_PER_SEC_TO_VALUE(AP_MOUNT_ALEXMOS_SPEED);
-    int16_t angle_pitch = DEGREE_TO_VALUE(target_deg.y);
-    int16_t speed_yaw = DEGREE_PER_SEC_TO_VALUE(AP_MOUNT_ALEXMOS_SPEED);
-    int16_t angle_yaw = DEGREE_TO_VALUE(target_deg.z);
-    uint8_t data[13] = {
-            (uint8_t)mode,
-            (uint8_t)speed_roll, (uint8_t)(speed_roll >> 8),
-            (uint8_t)angle_roll, (uint8_t)(angle_roll >> 8 ),
-            (uint8_t)speed_pitch, (uint8_t)(speed_pitch >> 8),
-            (uint8_t)angle_pitch, (uint8_t)(angle_pitch >> 8),
-            (uint8_t)speed_yaw, (uint8_t)(speed_yaw >> 8),
-            (uint8_t)angle_yaw, (uint8_t)(angle_yaw >> 8)
-    };
-    send_command (CMD_CONTROL,  data , 13);
+    alexmos_parameters outgoing_buffer;
+    outgoing_buffer.angle_speed.mode = AP_MOUNT_ALEXMOS_MODE_ANGLE;
+    outgoing_buffer.angle_speed.speed_roll = DEGREE_PER_SEC_TO_VALUE(AP_MOUNT_ALEXMOS_SPEED);
+    outgoing_buffer.angle_speed.angle_roll = DEGREE_TO_VALUE(target_deg.x);
+    outgoing_buffer.angle_speed.speed_pitch = DEGREE_PER_SEC_TO_VALUE(AP_MOUNT_ALEXMOS_SPEED);
+    outgoing_buffer.angle_speed.angle_pitch = DEGREE_TO_VALUE(target_deg.y);
+    outgoing_buffer.angle_speed.speed_yaw = DEGREE_PER_SEC_TO_VALUE(AP_MOUNT_ALEXMOS_SPEED);
+    outgoing_buffer.angle_speed.angle_yaw = DEGREE_TO_VALUE(target_deg.z);
+    send_command (CMD_CONTROL,  outgoing_buffer.bytes , sizeof (alexmos_angles_speed));
 }
 
 /*
