@@ -301,7 +301,7 @@ static void Log_Write_Nav_Tuning()
 // Write an attitude packet
 static void Log_Write_Attitude()
 {
-    Vector3f targets=0;       // Rover does not have attitude targets, use place-holder for commonality with Dataflash Log_Write_Attitude message
+    Vector3f targets(0,0,0);       // Rover does not have attitude targets, use place-holder for commonality with Dataflash Log_Write_Attitude message
 
     DataFlash.Log_Write_Attitude(ahrs, targets);
 
