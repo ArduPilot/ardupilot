@@ -53,7 +53,7 @@ public:
         Mount_Type_None = 0,            /// no mount
         Mount_Type_Servo = 1,           /// servo controlled mount
         Mount_Type_MAVLink = 2,         /// MAVLink controlled mount
-        Mount_Type_Alexmos = 2,         /// MAVLink controlled mount
+        Mount_Type_Alexmos = 3         /// MAVLink controlled mount
     };
 
     // Constructor

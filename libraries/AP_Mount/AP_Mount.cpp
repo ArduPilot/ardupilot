@@ -422,7 +422,7 @@ void AP_Mount::init()
             _backends[instance] = new AP_Mount_MAVLink(*this, instance);
             _num_instances++;
 
-        // check for MAVLink mounts
+        // check for Alexmos mounts
         } else if (mount_type == Mount_Type_Alexmos) {
             _backends[instance] = new AP_Mount_Alexmos(*this, instance);
             _num_instances++;
