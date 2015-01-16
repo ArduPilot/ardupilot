@@ -164,29 +164,15 @@ process_logs(uint8_t argc, const Menu::arg *argv)
     return 0;
 }
 
-struct PACKED log_Attitude {
-    LOG_PACKET_HEADER;
-    uint32_t time_ms;
-    int16_t roll;
-    int16_t pitch;
-    uint16_t yaw;
-    uint16_t error_rp;
-    uint16_t error_yaw;
-};
-
 // Write an attitude packet
 static void Log_Write_Attitude(void)
 {
-    struct log_Attitude pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_ATTITUDE_MSG),
-        time_ms : hal.scheduler->millis(),
-        roll  : (int16_t)ahrs.roll_sensor,
-        pitch : (int16_t)ahrs.pitch_sensor,
-        yaw   : (uint16_t)ahrs.yaw_sensor,
-        error_rp  : (uint16_t)(ahrs.get_error_rp() * 100),
-        error_yaw : (uint16_t)(ahrs.get_error_yaw() * 100)
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    Vector3f targets;       // Package up the targets into a vector for commonality with Copter usage of Log_Wrote_Attitude
+    targets.x = nav_roll_cd;
+    targets.y = nav_pitch_cd;
+    targets.z = 0;          //Plane does not have the concept of navyaw. This is a placeholder.
+
+    DataFlash.Log_Write_Attitude(ahrs, targets);
 
 #if AP_AHRS_NAVEKF_AVAILABLE
  #if OPTFLOW == ENABLED
@@ -528,8 +514,6 @@ static void Log_Write_Airspeed(void)
 
 static const struct LogStructure log_structure[] PROGMEM = {
     LOG_COMMON_STRUCTURES,
-    { LOG_ATTITUDE_MSG, sizeof(log_Attitude),       
-      "ATT", "IccCCC",        "TimeMS,Roll,Pitch,Yaw,ErrorRP,ErrorYaw" },
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
       "PM",  "IHIhhhBH", "LTime,MLC,gDt,GDx,GDy,GDz,I2CErr,INSErr" },
     { LOG_STARTUP_MSG, sizeof(log_Startup),         
