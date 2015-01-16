@@ -325,23 +325,6 @@ static void Log_Write_Control_Tuning()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-// Write a Compass packet
-static void Log_Write_Compass()
-{
-    DataFlash.Log_Write_Compass(compass, 0);
-    
-#if COMPASS_MAX_INSTANCES > 1
-    if (compass.get_count() > 1) {
-        DataFlash.Log_Write_Compass(compass, 1);
-    }
-#endif
-#if COMPASS_MAX_INSTANCES > 2
-    if (compass.get_count() > 2) {
-        DataFlash.Log_Write_Compass(compass, 2);
-    }
-#endif
-}
-
 struct PACKED log_Performance {
     LOG_PACKET_HEADER;
     uint16_t num_long_running;
@@ -634,7 +617,6 @@ static void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float rate_min, 
 static void Log_Write_AutoTuneDetails(int16_t angle_cd, float rate_cds) {}
 #endif
 static void Log_Write_Current() {}
-static void Log_Write_Compass() {}
 static void Log_Write_Attitude() {}
 static void Log_Write_Data(uint8_t id, int16_t value){}
 static void Log_Write_Data(uint8_t id, uint16_t value){}
