@@ -67,10 +67,7 @@ enum mode {
 #define LOG_PERFORMANCE_MSG		0x03
 #define LOG_STARTUP_MSG 		0x06
 #define LOG_SONAR_MSG 		    0x07
-#define LOG_COMPASS_MSG         0x0A
-#define LOG_COMPASS2_MSG        0x0C
 #define LOG_STEERING_MSG        0x0D
-#define LOG_COMPASS3_MSG        0x0E
 
 #define TYPE_AIRSTART_MSG		0x00
 #define TYPE_GROUNDSTART_MSG	0x01
