@@ -403,23 +403,6 @@ static void Log_Arm_Disarm() {
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-// Write a Compass packet
-static void Log_Write_Compass()
-{
-    DataFlash.Log_Write_Compass(compass, 0);
-    
-#if COMPASS_MAX_INSTANCES > 1
-    if (compass.get_count() > 1) {
-        DataFlash.Log_Write_Compass(compass, 1);
-    }
-#endif
-#if COMPASS_MAX_INSTANCES > 2
-    if (compass.get_count() > 2) {
-        DataFlash.Log_Write_Compass(compass, 2);
-    }
-#endif
-}
-
 static void Log_Write_GPS(uint8_t instance)
 {
     DataFlash.Log_Write_GPS(gps, instance, current_loc.alt - ahrs.get_home().alt);
@@ -512,7 +495,6 @@ static void Log_Write_Cmd(const AP_Mission::Mission_Command &cmd) {}
 static void Log_Write_Attitude() {}
 static void Log_Write_Control_Tuning() {}
 static void Log_Write_Mode(uint8_t mode) {}
-static void Log_Write_Compass() {}
 static void Log_Write_GPS(uint8_t instance) {}
 static void Log_Write_IMU() {}
 static void Log_Write_RC() {}
