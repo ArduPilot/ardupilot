@@ -1156,6 +1156,9 @@ void DataFlash_Class::Log_Write_Compass(const Compass &compass, uint8_t instance
         case 2:
             log_compass_num = LOG_COMPASS3_MSG;
             break;
+        default:
+            log_compass_num = LOG_COMPASS_MSG;
+            break;
     }
     const Vector3f &mag_field = compass.get_field(instance);
     const Vector3f &mag_offsets = compass.get_offsets(instance);
