@@ -81,6 +81,7 @@ void AP_Mount_Alexmos::set_mode(enum MAV_MOUNT_MODE mode)
 // status_msg - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
 void AP_Mount_Alexmos::status_msg(mavlink_channel_t chan)
 {
+    get_angles();
     mavlink_msg_mount_status_send(chan, 0, 0, _current_angle.x*100, _current_angle.y*100, _current_angle.z*100);
 }
 
@@ -121,6 +122,9 @@ void AP_Mount_Alexmos::get_boardinfo(){
     send_command (CMD_BOARD_INFO,  data , 1);
 }
 
+/*
+  control_axis : send new angles to the gimbal at a fixed speed of 30 deg/s2
+*/
 
 void AP_Mount_Alexmos::control_axis(const Vector3f& angle, bool target_in_degrees ){
 
