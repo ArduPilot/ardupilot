@@ -130,12 +130,12 @@ void AP_Mount_Alexmos::control_axis(const Vector3f& angle, bool target_in_degree
         target_deg *= RAD_TO_DEG;
     }
 
-    uint8_t mode = MODE_ANGLE;
-    int16_t speed_roll = DEGREE_PER_SEC_TO_VALUE(SPEED);
+    uint8_t mode = AP_MOUNT_ALEXMOS_MODE_ANGLE;
+    int16_t speed_roll = DEGREE_PER_SEC_TO_VALUE(AP_MOUNT_ALEXMOS_SPEED);
     int16_t angle_roll = DEGREE_TO_VALUE(target_deg.x);
-    int16_t speed_pitch = DEGREE_PER_SEC_TO_VALUE(SPEED);
+    int16_t speed_pitch = DEGREE_PER_SEC_TO_VALUE(AP_MOUNT_ALEXMOS_SPEED);
     int16_t angle_pitch = DEGREE_TO_VALUE(target_deg.y);
-    int16_t speed_yaw = DEGREE_PER_SEC_TO_VALUE(SPEED);
+    int16_t speed_yaw = DEGREE_PER_SEC_TO_VALUE(AP_MOUNT_ALEXMOS_SPEED);
     int16_t angle_yaw = DEGREE_TO_VALUE(target_deg.z);
     uint8_t data[13] = {
 	(uint8_t)mode, 
