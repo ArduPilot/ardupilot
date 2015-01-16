@@ -298,26 +298,13 @@ static void Log_Write_Nav_Tuning()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-struct PACKED log_Attitude {
-    LOG_PACKET_HEADER;
-    uint32_t time_ms;
-    int16_t roll;
-    int16_t pitch;
-    uint16_t yaw;
-};
-
-
 // Write an attitude packet
 static void Log_Write_Attitude()
 {
-    struct log_Attitude pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_ATTITUDE_MSG),
-        time_ms : millis(),
-        roll    : (int16_t)ahrs.roll_sensor,
-        pitch   : (int16_t)ahrs.pitch_sensor,
-        yaw     : (uint16_t)ahrs.yaw_sensor
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    Vector3f targets(0,0,0);       // Rover does not have attitude targets, use place-holder for commonality with Dataflash Log_Write_Attitude message
+
+    DataFlash.Log_Write_Attitude(ahrs, targets);
+
 #if AP_AHRS_NAVEKF_AVAILABLE
  #if OPTFLOW == ENABLED
     DataFlash.Log_Write_EKF(ahrs,optflow.enabled());
@@ -483,8 +470,6 @@ static void Log_Write_Baro(void)
 
 static const struct LogStructure log_structure[] PROGMEM = {
     LOG_COMMON_STRUCTURES,
-    { LOG_ATTITUDE_MSG, sizeof(log_Attitude),       
-      "ATT", "IccC",        "TimeMS,Roll,Pitch,Yaw" },
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
       "PM",  "IIHIhhhBH", "TimeMS,LTime,MLC,gDt,GDx,GDy,GDz,I2CErr,INSErr" },
     { LOG_STARTUP_MSG, sizeof(log_Startup),         
