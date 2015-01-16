@@ -5,14 +5,9 @@ extern const AP_HAL::HAL& hal;
 
 void AP_Mount_Alexmos::init ()
 {
-    _board_version = 0;
-    _current_firmware_version = 0.0f;
-    _firmware_beta_version = 0;
     _port = hal.uartE;    
     _port->begin(115200);
     _initialised = true; 
-    _step = 0;
-    _param_read_once=false;
     get_boardinfo();
     read_params(0); //we request parameters for profile 0 and therfore get global and profile parameters
 }

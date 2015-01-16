@@ -72,7 +72,19 @@ public:
     //constructor
     AP_Mount_Alexmos(AP_Mount &frontend, uint8_t instance):
         AP_Mount_Backend(frontend, instance),
-        _initialised(false)
+        _initialised(false),
+        _board_version(0),
+        _current_firmware_version(0.0f),
+        _firmware_beta_version(0),
+        _gimbal_3axis(false),
+        _gimbal_bat_monitoring(false),
+        _current_angle(0,0,0),
+        _param_read_once(false),
+        _checksum(0),
+        _step(0),
+        _command_id(0),
+        _payload_length(0),
+        _payload_counter(0)
     {}
 
     // init - performs any required initialisation for this instance
@@ -287,8 +299,8 @@ private:
     uint8_t _checksum ;
     uint8_t _step ;
     uint8_t _command_id;
-    uint8_t _payload_length ;
-    uint8_t _payload_counter ;
+    uint8_t _payload_length;
+    uint8_t _payload_counter;
 
     // confirmed that last command was ok
     bool _last_command_confirmed;
