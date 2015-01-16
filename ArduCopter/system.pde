@@ -275,7 +275,7 @@ static void init_ardupilot()
     reset_control_switch();
     init_aux_switches();
 
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_TANDEM_FRAME
     // trad heli specific initialisation
     heli_init();
 #endif
@@ -364,7 +364,7 @@ static void update_auto_armed()
     }else{
         // arm checks
         
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_TANDEM_FRAME
         // for tradheli if motors are armed and throttle is above zero and the motor is started, auto_armed should be true
         if(motors.armed() && !ap.throttle_zero && motors.motor_runup_complete()) {
             set_auto_armed(true);
@@ -374,7 +374,7 @@ static void update_auto_armed()
         if(motors.armed() && !ap.throttle_zero) {
             set_auto_armed(true);
         }
-#endif // HELI_FRAME
+#endif // HELI_FRAME || HELI_TANDEM_FRAME
     }
 }
 
