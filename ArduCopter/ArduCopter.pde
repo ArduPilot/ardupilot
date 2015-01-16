@@ -1046,7 +1046,7 @@ static void update_batt_compass(void)
         compass.read();
         // log compass information
         if (should_log(MASK_LOG_COMPASS)) {
-            Log_Write_Compass();
+            DataFlash.Log_Write_Compass(compass);
         }
     }
 
