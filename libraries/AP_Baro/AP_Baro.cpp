@@ -60,10 +60,13 @@ const AP_Param::GroupInfo AP_Baro::var_info[] PROGMEM = {
   AP_Baro constructor
  */
 AP_Baro::AP_Baro() :
+        _num_drivers(0),
+        _num_sensors(0),
+        _primary(0),
         _last_altitude_EAS2TAS(0.0f),
         _EAS2TAS(0.0f),
-        _num_sensors(0),
-        _num_drivers(0)
+        _external_temperature(0.0f),
+        _last_external_temperature_ms(0)
 {
     memset(sensors, 0, sizeof(sensors));
 

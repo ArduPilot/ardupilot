@@ -117,6 +117,8 @@ void AC_PosControl::set_accel_z(float accel_cmss)
 void AC_PosControl::set_alt_target_with_slew(float alt_cm, float dt)
 {
     float alt_change = alt_cm-_pos_target.z;
+    
+    _vel_desired.z = constrain_float(alt_change * dt, _speed_down_cms, _speed_up_cms);
 
     // adjust desired alt if motors have not hit their limits
     if ((alt_change<0 && !_motors.limit.throttle_lower) || (alt_change>0 && !_motors.limit.throttle_upper)) {
@@ -139,6 +141,8 @@ void AC_PosControl::set_alt_target_from_climb_rate(float climb_rate_cms, float d
     if ((climb_rate_cms<0 && (!_motors.limit.throttle_lower || force_descend)) || (climb_rate_cms>0 && !_motors.limit.throttle_upper)) {
         _pos_target.z += climb_rate_cms * dt;
     }
+    
+    _vel_desired.z = climb_rate_cms;
 }
 
 // get_alt_error - returns altitude error in cm
@@ -299,7 +303,6 @@ void AC_PosControl::rate_to_accel_z()
     // reset last velocity target to current target
     if (_flags.reset_rate_to_accel_z) {
         _vel_last.z = _vel_target.z;
-        _flags.reset_rate_to_accel_z = false;
     }
 
     // feed forward desired acceleration calculation
@@ -322,7 +325,6 @@ void AC_PosControl::rate_to_accel_z()
         // Reset Filter
         _vel_error.z = 0;
         _vel_error_filter.reset(0);
-        desired_accel = 0;
         _flags.reset_rate_to_accel_z = false;
     } else {
         // calculate rate error and filter with cut off frequency of 2 Hz

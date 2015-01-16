@@ -36,7 +36,7 @@ extern const AP_HAL::HAL& hal;
 bool ToneAlarm_Linux::init()
 {
     // open the tone alarm device
-    err = hal.util->toneAlarm_init();
+    err = !hal.util->toneAlarm_init();
     if (err) {
         hal.console->printf("AP_Notify: Failed to initialise ToneAlarm");
         return false;

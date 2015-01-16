@@ -20,7 +20,7 @@
 		/* the pin header uses */
        	//	"P9.27",	/* pru0: pr1_pru0_pru_r30_5 */
 
-		"P8.15",	/* pru0: pr1_pru0_pru_r30_15 */
+		"P8.15",	/* pru0: pr1_pru0_pru_r30_15, PPM-sum, SBUS, DSM */
 	//	"P8.12",	/* pru0: pr1_pru0_pru_r30_14 */
 	//	"P9.25",	/* pru0: pr1_pru0_pru_r30_7 */
 	//	"P9.41",	/* pru0: pr1_pru0_pru_r30_6 */
@@ -39,18 +39,18 @@
 		//"P8.20",	/* pru1: pr1_pru1_pru_r30_13 */
 
 		//"P8.21",	/* pru1: pr1_pru1_pru_r30_12 */
-		"P8.27",	/* pru1: pr1_pru1_pru_r30_8 */
-		"P8.28",	/* pru1: pr1_pru1_pru_r30_10 */
-		"P8.29",	/* pru1: pr1_pru1_pru_r30_9 */
-		"P8.30",	/* pru1: pr1_pru1_pru_r30_11 */
-		"P8.39",	/* pru1: pr1_pru1_pru_r30_6 */
-		"P8.40",	/* pru1: pr1_pru1_pru_r30_7 */
-		"P8.41",	/* pru1: pr1_pru1_pru_r30_4 */
-		"P8.42",	/* pru1: pr1_pru1_pru_r30_5 */
-		"P8.43",	/* pru1: pr1_pru1_pru_r30_2 */
-		"P8.44",	/* pru1: pr1_pru1_pru_r30_3 */
-		"P8.45",	/* pru1: pr1_pru1_pru_r30_0 */
-		"P8.46",	/* pru1: pr1_pru1_pru_r30_1 */
+		"P8.27",	/* pru1: pr1_pru1_pru_r30_8, CH_2 */
+		"P8.28",	/* pru1: pr1_pru1_pru_r30_10, CH_1 */
+		"P8.29",	/* pru1: pr1_pru1_pru_r30_9, CH_4 */
+		"P8.30",	/* pru1: pr1_pru1_pru_r30_11, CH_3 */
+		"P8.39",	/* pru1: pr1_pru1_pru_r30_6, CH_6 */
+		"P8.40",	/* pru1: pr1_pru1_pru_r30_7, CH_5 */
+		"P8.41",	/* pru1: pr1_pru1_pru_r30_4, CH_8 */
+		"P8.42",	/* pru1: pr1_pru1_pru_r30_5, CH_7 */
+		"P8.43",	/* pru1: pr1_pru1_pru_r30_2, CH_10 */
+		"P8.44",	/* pru1: pr1_pru1_pru_r30_3, CH_9 */
+		"P8.45",	/* pru1: pr1_pru1_pru_r30_0, CH_12 */
+		"P8.46",	/* pru1: pr1_pru1_pru_r30_1, CH_11 */
 				/* pru1: pr1_pru1_pru_r30_14 is on UART0_RXD */
 				/* pru1: pr1_pru1_pru_r30_15 is on UART0_TXD */
 		/* the hardware IP uses */
@@ -70,7 +70,7 @@
 			pru_pru_pins: pinmux_pru_pru_pins {
 				pinctrl-single,pins = <
 				//	0x1a4 0x25	/* mcasp0_fsr.pr1_pru0_pru_r30_5, MODE5 | OUTPUT | PRU */
-					0x03c 0x2E	/* gpmc_ad13.pr1_pru0_pru_r30_15, MODE6 | INPUT | PRU */
+					0x03c 0x2E	/* gpmc_ad13.pr1_pru0_pru_r30_15, MODE6 | INPUT | PRU, PPM-sum, SBUS, DSM */
 				//	0x030 0x26	/* gpmc_ad12.pr1_pru0_pru_r30_14, MODE6 | OUTPUT | PRU */
 				//	0x1ac 0x25	/* mcasp0_ahclkx.pr1_pru0_pru_r30_7, MODE5 | OUTPUT | PRU */
 				//	0x1a8 0x25	/* mcasp0_axr1.pr1_pru0_pru_r30_6, MODE5 | OUTPUT | PRU */
@@ -82,18 +82,18 @@
 
 					//0x084 0x25	/* gpmc_csn2.pr1_pru1_pru_r30_13, MODE5 | OUTPUT | PRU */
 					//0x080 0x25	/* gpmc_csn1.pr1_pru1_pru_r30_12, MODE5 | OUTPUT | PRU */
-					0x0e0 0x25	/* lcd_vsync.pr1_pru1_pru_r30_8, MODE5 | OUTPUT | PRU */
-					0x0e8 0x25	/* lcd_pclk.pr1_pru1_pru_r30_10, MODE5 | OUTPUT | PRU */
-					0x0e4 0x25	/* lcd_hsync.pr1_pru1_pru_r30_9, MODE5 | OUTPUT | PRU */
-					0x0ec 0x25	/* lcd_ac_bias_en.pr1_pru1_pru_r30_11, MODE5 | OUTPUT | PRU */
-					0x0b8 0x25	/* pr1_pru1_pru_r30_6, MODE5 | OUTPUT | PRU */
-					0x0bc 0x25	/* lcd_data7.pr1_pru1_pru_r30_7, MODE5 | OUTPUT | PRU */
-					0x0b0 0x25	/* lcd_data4.pr1_pru1_pru_r30_4, MODE5 | OUTPUT | PRU */
-					0x0b4 0x25	/* lcd_data5.pr1_pru1_pru_r30_5, MODE5 | OUTPUT | PRU */
-					0x0a8 0x25	/* pr1_pru1_pru_r31_2, MODE5 | OUTPUT | PRU */
-					0x0ac 0x25	/* lcd_data3.pr1_pru1_pru_r30_3, MODE5 | OUTPUT | PRU */
-					0x0a0 0x25	/* lcd_data0.pr1_pru1_pru_r30_0, MODE5 | OUTPUT | PRU */
-					0x0a4 0x25	/* lcd_data1.pr1_pru1_pru_r30_1, MODE5 | OUTPUT | PRU */
+					0x0e0 0x25	/* lcd_vsync.pr1_pru1_pru_r30_8, MODE5 | OUTPUT | PRU, CH_2 */
+					0x0e8 0x25	/* lcd_pclk.pr1_pru1_pru_r30_10, MODE5 | OUTPUT | PRU, CH_1 */
+					0x0e4 0x25	/* lcd_hsync.pr1_pru1_pru_r30_9, MODE5 | OUTPUT | PRU, CH_4 */
+					0x0ec 0x25	/* lcd_ac_bias_en.pr1_pru1_pru_r30_11, MODE5 | OUTPUT | PRU, CH_3 */
+					0x0b8 0x25	/* lcd_data6.pr1_pru1_pru_r30_6, MODE5 | OUTPUT | PRU, CH_6 */
+					0x0bc 0x25	/* lcd_data7.pr1_pru1_pru_r30_7, MODE5 | OUTPUT | PRU, CH_5 */
+					0x0b0 0x25	/* lcd_data4.pr1_pru1_pru_r30_4, MODE5 | OUTPUT | PRU, CH_8 */
+					0x0b4 0x25	/* lcd_data5.pr1_pru1_pru_r30_5, MODE5 | OUTPUT | PRU, CH_7 */
+					0x0a8 0x25	/* lcd_data2.pr1_pru1_pru_r30_2, MODE5 | OUTPUT | PRU, CH_10 */
+					0x0ac 0x25	/* lcd_data3.pr1_pru1_pru_r30_3, MODE5 | OUTPUT | PRU, CH_9 */
+					0x0a0 0x25	/* lcd_data0.pr1_pru1_pru_r30_0, MODE5 | OUTPUT | PRU, CH_12 */
+					0x0a4 0x25	/* lcd_data1.pr1_pru1_pru_r30_1, MODE5 | OUTPUT | PRU, CH_11 */
 				>;
 			};
 		};
