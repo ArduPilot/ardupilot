@@ -1084,8 +1084,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 // run pre_arm_checks and arm_checks and display failures
                 if (arming.arm(AP_Arming::MAVLINK)) {
                     //only log if arming was successful
-                    channel_throttle->enable_out();                        
+                    channel_throttle->enable_out();
+                    #if LOGGING_ENABLED == ENABLED                    
                     Log_Arm_Disarm();
+                    #endif
                     result = MAV_RESULT_ACCEPTED;
                 } else {
                     result = MAV_RESULT_FAILED;
@@ -1098,7 +1100,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     // reset the mission on disarm
                     mission.stop();
                     //only log if disarming was successful
+                    #if LOGGING_ENABLED == ENABLED                    
                     Log_Arm_Disarm();
+                    #endif
                     result = MAV_RESULT_ACCEPTED;
                 } else {
                     result = MAV_RESULT_FAILED;

@@ -672,7 +672,9 @@ static bool should_log(uint32_t mask)
         // we have to set in_mavlink_delay to prevent logging while
         // writing headers
         in_mavlink_delay = true;
+        #if LOGGING_ENABLED == ENABLED
         start_logging();
+        #endif
         in_mavlink_delay = false;
     }
     return ret;
