@@ -84,7 +84,7 @@ public:
     void Log_Write_Airspeed(AP_Airspeed &airspeed);
     void Log_Write_Attitude(AP_AHRS &ahrs, Vector3f targets);
 	void Log_Write_Current(AP_BattMonitor battery, int16_t  throttle);
-    void Log_Write_Compass(const Compass &compass, uint8_t instance);
+    void Log_Write_Compass(const Compass &compass);
     void Log_Write_Mode(uint8_t mode);
 
     bool logging_started(void) const { return log_write_started; }

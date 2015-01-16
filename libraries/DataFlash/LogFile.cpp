@@ -1143,28 +1143,13 @@ void DataFlash_Class::Log_Write_Current(AP_BattMonitor battery, int16_t  throttl
 }
 
 // Write a Compass packet
-void DataFlash_Class::Log_Write_Compass(const Compass &compass, uint8_t instance)
+void DataFlash_Class::Log_Write_Compass(const Compass &compass)
 {
-    uint8_t log_compass_num ;
-    switch (instance) {
-        case 0:
-            log_compass_num = LOG_COMPASS_MSG;
-            break;
-        case 1:
-            log_compass_num = LOG_COMPASS2_MSG;
-            break;
-        case 2:
-            log_compass_num = LOG_COMPASS3_MSG;
-            break;
-        default:
-            log_compass_num = LOG_COMPASS_MSG;
-            break;
-    }
-    const Vector3f &mag_field = compass.get_field(instance);
-    const Vector3f &mag_offsets = compass.get_offsets(instance);
-    const Vector3f &mag_motor_offsets = compass.get_motor_offsets(instance);   
+    const Vector3f &mag_field = compass.get_field(0);
+    const Vector3f &mag_offsets = compass.get_offsets(0);
+    const Vector3f &mag_motor_offsets = compass.get_motor_offsets(0);   
     struct log_Compass pkt = {
-        LOG_PACKET_HEADER_INIT(log_compass_num),
+        LOG_PACKET_HEADER_INIT(LOG_COMPASS_MSG),
         time_ms         : hal.scheduler->millis(),
         mag_x           : (int16_t)mag_field.x,
         mag_y           : (int16_t)mag_field.y,
@@ -1177,6 +1162,49 @@ void DataFlash_Class::Log_Write_Compass(const Compass &compass, uint8_t instance
         motor_offset_z  : (int16_t)mag_motor_offsets.z
     };
     WriteBlock(&pkt, sizeof(pkt));
+    
+#if COMPASS_MAX_INSTANCES > 1
+    if (compass.get_count() > 1) {
+        const Vector3f &mag_field2 = compass.get_field(1);
+        const Vector3f &mag_offsets2 = compass.get_offsets(1);
+        const Vector3f &mag_motor_offsets2 = compass.get_motor_offsets(1);   
+        struct log_Compass pkt2 = {
+            LOG_PACKET_HEADER_INIT(LOG_COMPASS2_MSG),
+            time_ms         : hal.scheduler->millis(),
+            mag_x           : (int16_t)mag_field2.x,
+            mag_y           : (int16_t)mag_field2.y,
+            mag_z           : (int16_t)mag_field2.z,
+            offset_x        : (int16_t)mag_offsets2.x,
+            offset_y        : (int16_t)mag_offsets2.y,
+            offset_z        : (int16_t)mag_offsets2.z,
+            motor_offset_x  : (int16_t)mag_motor_offsets2.x,
+            motor_offset_y  : (int16_t)mag_motor_offsets2.y,
+            motor_offset_z  : (int16_t)mag_motor_offsets2.z
+        };
+        WriteBlock(&pkt2, sizeof(pkt2));
+    }
+#endif
+#if COMPASS_MAX_INSTANCES > 2
+    if (compass.get_count() > 2) {
+        const Vector3f &mag_field3 = compass.get_field(2);
+        const Vector3f &mag_offsets3 = compass.get_offsets(2);
+        const Vector3f &mag_motor_offsets3 = compass.get_motor_offsets(2);   
+        struct log_Compass pkt3 = {
+            LOG_PACKET_HEADER_INIT(LOG_COMPASS3_MSG),
+            time_ms         : hal.scheduler->millis(),
+            mag_x           : (int16_t)mag_field3.x,
+            mag_y           : (int16_t)mag_field3.y,
+            mag_z           : (int16_t)mag_field3.z,
+            offset_x        : (int16_t)mag_offsets3.x,
+            offset_y        : (int16_t)mag_offsets3.y,
+            offset_z        : (int16_t)mag_offsets3.z,
+            motor_offset_x  : (int16_t)mag_motor_offsets3.x,
+            motor_offset_y  : (int16_t)mag_motor_offsets3.y,
+            motor_offset_z  : (int16_t)mag_motor_offsets3.z
+        };
+        WriteBlock(&pkt3, sizeof(pkt3));
+    }
+#endif
 }
 
 // Write a mode packet.
