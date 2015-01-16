@@ -411,17 +411,6 @@ static void Log_Write_Optflow()
 }
 #endif
 
-struct PACKED log_Current {
-    LOG_PACKET_HEADER;
-    uint32_t time_ms;
-    int16_t throttle_in;
-    int16_t battery_voltage;
-    int16_t current_amps;
-    uint16_t board_voltage;
-    float   current_total;
-    int16_t battery2_voltage;
-};
-
 struct PACKED log_Arm_Disarm {
     LOG_PACKET_HEADER;
     uint32_t time_ms;
@@ -431,18 +420,7 @@ struct PACKED log_Arm_Disarm {
 
 static void Log_Write_Current()
 {
-    float voltage2 = battery.voltage2();
-    struct log_Current pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_CURRENT_MSG),
-        time_ms                 : hal.scheduler->millis(),
-        throttle_in             : channel_throttle->control_in,
-        battery_voltage         : (int16_t)(battery.voltage() * 100.0f),
-        current_amps            : (int16_t)(battery.current_amps() * 100.0f),
-        board_voltage           : (uint16_t)(hal.analogin->board_voltage()*1000),
-        current_total           : battery.current_total_mah(),
-        battery2_voltage        : (int16_t)(voltage2 * 100.0f)
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    DataFlash.Log_Write_Current(battery, channel_throttle->control_in);
 
     // also write power status
     DataFlash.Log_Write_Power();
@@ -564,8 +542,6 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "SONR", "IffffBBf",   "TimeMS,DistCM,Volt,BaroAlt,GSpd,Thr,Cnt,Corr" },
     { LOG_MODE_MSG, sizeof(log_Mode),             
       "MODE", "IMB",         "TimeMS,Mode,ModeNum" },
-    { LOG_CURRENT_MSG, sizeof(log_Current),             
-      "CURR", "IhhhHfh",      "TimeMS,Thr,Volt,Curr,Vcc,CurrTot,Volt2" },
     { LOG_COMPASS_MSG, sizeof(log_Compass),             
       "MAG", "Ihhhhhh",   "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ" },
     { LOG_COMPASS2_MSG, sizeof(log_Compass),             
