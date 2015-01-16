@@ -3,8 +3,8 @@
 
 extern const AP_HAL::HAL& hal;
 
-
-void AP_Mount_Alexmos::init (){
+void AP_Mount_Alexmos::init ()
+{
     _board_version = 0;
     _current_firmware_version = 0.0f;
     _firmware_beta_version = 0;
@@ -20,11 +20,11 @@ void AP_Mount_Alexmos::init (){
 // update mount position - should be called periodically
 void AP_Mount_Alexmos::update()
 {
-    if (!_initialised){
-	return;
+    if (!_initialised) {
+        return;
     }
 
-    read_incoming(); // read the incoming messages from the gimbal 
+    read_incoming(); // read the incoming messages from the gimbal
 
     // update based on mount mode
     switch(_frontend.get_mode(_instance)) {
@@ -64,7 +64,6 @@ void AP_Mount_Alexmos::update()
     }
 }
 
-
 // has_pan_control - returns true if this mount can control it's pan (required for multicopters)
 bool AP_Mount_Alexmos::has_pan_control() const
 {
@@ -85,39 +84,36 @@ void AP_Mount_Alexmos::status_msg(mavlink_channel_t chan)
     mavlink_msg_mount_status_send(chan, 0, 0, _current_angle.x*100, _current_angle.y*100, _current_angle.z*100);
 }
 
-
-
 /*
- * get_angles ()
+ * get_angles
  */
- 
-void AP_Mount_Alexmos::get_angles( ){
+void AP_Mount_Alexmos::get_angles()
+{
     uint8_t data[1] = {(uint8_t)1};
     send_command (CMD_GET_ANGLES,  data , 1);
 }
 	
-	
 /*
  * set_motor will activate motors if true , and disable them if false.
  */
-	
 void AP_Mount_Alexmos::set_motor(bool on){
-    if ( on ){
-	uint8_t data[1] = {(uint8_t)1};
-	send_command (CMD_MOTORS_ON,  data , 1);
+    if (on) {
+        uint8_t data[1] = {(uint8_t)1};
+        send_command (CMD_MOTORS_ON,  data, 1);
     } else {
-	uint8_t data[1] = {(uint8_t)1};
-	send_command (CMD_MOTORS_OFF,  data , 1);
+        uint8_t data[1] = {(uint8_t)1};
+        send_command (CMD_MOTORS_OFF, data, 1);
     }
 }
 
 /*
  * get board version and firmware version
  */
-
-void AP_Mount_Alexmos::get_boardinfo(){
-    if (_board_version != 0)
-	return ;
+void AP_Mount_Alexmos::get_boardinfo()
+{
+    if (_board_version != 0) {
+        return;
+    }
     uint8_t data[1] = {(uint8_t)1};
     send_command (CMD_BOARD_INFO,  data , 1);
 }
@@ -125,9 +121,8 @@ void AP_Mount_Alexmos::get_boardinfo(){
 /*
   control_axis : send new angles to the gimbal at a fixed speed of 30 deg/s2
 */
-
-void AP_Mount_Alexmos::control_axis(const Vector3f& angle, bool target_in_degrees ){
-
+void AP_Mount_Alexmos::control_axis(const Vector3f& angle, bool target_in_degrees )
+{
     // convert to degrees if necessary
     Vector3f target_deg = angle;
     if (!target_in_degrees) {
@@ -142,13 +137,13 @@ void AP_Mount_Alexmos::control_axis(const Vector3f& angle, bool target_in_degree
     int16_t speed_yaw = DEGREE_PER_SEC_TO_VALUE(AP_MOUNT_ALEXMOS_SPEED);
     int16_t angle_yaw = DEGREE_TO_VALUE(target_deg.z);
     uint8_t data[13] = {
-	(uint8_t)mode, 
-	(uint8_t)speed_roll , (uint8_t)(speed_roll >> 8) ,
-	(uint8_t)angle_roll , (uint8_t)(angle_roll >> 8 ),
-	(uint8_t)speed_pitch , (uint8_t)(speed_pitch >> 8) ,
-	(uint8_t)angle_pitch , (uint8_t)(angle_pitch >> 8) ,
-	(uint8_t)speed_yaw , (uint8_t)(speed_yaw >> 8 ),
-	(uint8_t)angle_yaw , (uint8_t)(angle_yaw >> 8) 
+            (uint8_t)mode,
+            (uint8_t)speed_roll, (uint8_t)(speed_roll >> 8),
+            (uint8_t)angle_roll, (uint8_t)(angle_roll >> 8 ),
+            (uint8_t)speed_pitch, (uint8_t)(speed_pitch >> 8),
+            (uint8_t)angle_pitch, (uint8_t)(angle_pitch >> 8),
+            (uint8_t)speed_yaw, (uint8_t)(speed_yaw >> 8),
+            (uint8_t)angle_yaw, (uint8_t)(angle_yaw >> 8)
     };
     send_command (CMD_CONTROL,  data , 13);
 }
@@ -156,28 +151,29 @@ void AP_Mount_Alexmos::control_axis(const Vector3f& angle, bool target_in_degree
 /*
   read current profile profile_id and global parameters from the gimbal settings
 */
-void AP_Mount_Alexmos::read_params (uint8_t profile_id){
+void AP_Mount_Alexmos::read_params(uint8_t profile_id){
     uint8_t data[1] = {(uint8_t) profile_id}; 
     send_command (CMD_READ_PARAMS,  data , 1);
 }
 
-
 /*
   write new parameters to the gimbal settings
 */
-void AP_Mount_Alexmos::write_params (){
-    if (!_param_read_once) 
-	return;
+void AP_Mount_Alexmos::write_params()
+{
+    if (!_param_read_once) {
+        return;
+    }
     send_command (CMD_WRITE_PARAMS,  _current_parameters.bytes , sizeof (alexmos_params));
 }
 
-
 /*
- send a command to the Alemox Serial API 
+ send a command to the Alemox Serial API
 */
-void AP_Mount_Alexmos::send_command(uint8_t cmd, uint8_t* data, uint8_t size){
-    if (_port->txspace() < (size + 5)){
-	return;
+void AP_Mount_Alexmos::send_command(uint8_t cmd, uint8_t* data, uint8_t size)
+{
+    if (_port->txspace() < (size + 5)) {
+        return;
     }
     uint8_t checksum = 0;
     _port->write( '>' );
@@ -185,94 +181,103 @@ void AP_Mount_Alexmos::send_command(uint8_t cmd, uint8_t* data, uint8_t size){
     _port->write( size );  // write body size
     _port->write( cmd+size ); // write header checkum
 
-    for (uint8_t i = 0;  i != size ; i++){
-	checksum += data[i];
-	_port->write ( data[i] );
+    for (uint8_t i = 0;  i != size ; i++) {
+        checksum += data[i];
+        _port->write ( data[i] );
     }
     _port->write (checksum);
 }
 
-
 /*
  * Parse the body of the message received from the Alexmos gimbal
- */ 
-void AP_Mount_Alexmos::parse_body (){
-    switch (_command_id ){
-    case CMD_BOARD_INFO:
-	_board_version = _buffer.version._board_version/ 10;
-	_current_firmware_version = _buffer.version._firmware_version / 1000.0f ;
-	_firmware_beta_version = _buffer.version._firmware_version % 10 ;
-	_gimbal_3axis = ( _buffer.version._board_features & 0x1 );
-	_gimbal_bat_monitoring = (_buffer.version._board_features & 0x2 );
+ */
+void AP_Mount_Alexmos::parse_body()
+{
+    switch (_command_id ) {
+        case CMD_BOARD_INFO:
+            _board_version = _buffer.version._board_version/ 10;
+            _current_firmware_version = _buffer.version._firmware_version / 1000.0f ;
+            _firmware_beta_version = _buffer.version._firmware_version % 10 ;
+            _gimbal_3axis = ( _buffer.version._board_features & 0x1 );
+            _gimbal_bat_monitoring = (_buffer.version._board_features & 0x2 );
+            break;
 
-	break;
-    case CMD_GET_ANGLES:
-	_current_angle.x = VALUE_TO_DEGREE(_buffer.angles.angle_roll);
-	_current_angle.y = VALUE_TO_DEGREE(_buffer.angles.angle_pitch);
-	_current_angle.z = VALUE_TO_DEGREE(_buffer.angles.angle_yaw);
-	break;
-    case CMD_READ_PARAMS:
-	_param_read_once = true;
-	_current_parameters.params = _buffer.params;
-	break;
-    case CMD_WRITE_PARAMS:
-	break;
-    default :
-	_last_command_confirmed = true;
-	break;
+        case CMD_GET_ANGLES:
+            _current_angle.x = VALUE_TO_DEGREE(_buffer.angles.angle_roll);
+            _current_angle.y = VALUE_TO_DEGREE(_buffer.angles.angle_pitch);
+            _current_angle.z = VALUE_TO_DEGREE(_buffer.angles.angle_yaw);
+            break;
+
+        case CMD_READ_PARAMS:
+            _param_read_once = true;
+            _current_parameters.params = _buffer.params;
+            break;
+
+        case CMD_WRITE_PARAMS:
+            break;
+
+        default :
+            _last_command_confirmed = true;
+            break;
     }
 }
 
 /*
  * detect and read the header of the incoming message from the gimbal
  */
-void AP_Mount_Alexmos::read_incoming (){
-    uint8_t data ;
-    while (_port->available()){
-	data = _port->read();
-	switch (_step){
-	case 0:
-	    if ( '>' == data){
-		_step = 1;
-		_checksum = 0; //reset checksum accumulator
-		_last_command_confirmed = false;
-	    }
-	    break;
-	case 1:// command ID
-	    _checksum = data;
-	    _command_id = data;
-	    _step++;
-	    break;
-	case 2: // Size of the body of the message
-	    _checksum += data;
-	    _payload_length = data;
-	    _step++;
-	    break; 
-	case 3:	// checksum of the header
-	    if (_checksum != data ) {
-		_step = 0;
-		_checksum = 0;
-		//checksum erro
-		break;
-	    } 
-	    _step++;
-	    _checksum = 0;
-	    _payload_counter = 0;                               // prepare to receive payload
-	    break;
-	case 4://parsing body
-	    _checksum += data;
-	    if (_payload_counter < sizeof(_buffer)) {
-		_buffer.bytes[_payload_counter] = data;
-	    }
-	    if (++_payload_counter == _payload_length)
-		_step++;
-	    break;	
-	case 5://body checksum
-	    _step = 0;
-	    if (_checksum  != data){
-		break;
-	    }
-	    parse_body ();
-	}
+void AP_Mount_Alexmos::read_incoming()
+{
+    uint8_t data;
+    while (_port->available()) {
+        data = _port->read();
+        switch (_step) {
+            case 0:
+                if ( '>' == data) {
+                    _step = 1;
+                    _checksum = 0; //reset checksum accumulator
+                    _last_command_confirmed = false;
+                }
+                break;
+
+            case 1: // command ID
+                _checksum = data;
+                _command_id = data;
+                _step++;
+                break;
+
+            case 2: // Size of the body of the message
+                _checksum += data;
+                _payload_length = data;
+                _step++;
+                break;
+
+            case 3:	// checksum of the header
+                if (_checksum != data ) {
+                    _step = 0;
+                    _checksum = 0;
+                    // checksum error
+                    break;
+                }
+                _step++;
+                _checksum = 0;
+                _payload_counter = 0;                               // prepare to receive payload
+                break;
+
+            case 4: // parsing body
+                _checksum += data;
+                if (_payload_counter < sizeof(_buffer)) {
+                    _buffer.bytes[_payload_counter] = data;
+                }
+                if (++_payload_counter == _payload_length)
+                    _step++;
+                break;
+
+            case 5:// body checksum
+                _step = 0;
+                if (_checksum  != data) {
+                    break;
+                }
+                parse_body ();
+        }
     }
 }

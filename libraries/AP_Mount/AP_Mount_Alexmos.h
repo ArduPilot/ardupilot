@@ -74,7 +74,6 @@ public:
         AP_Mount_Backend(frontend, instance),
         _initialised(false)
     {}
-	
 
     // init - performs any required initialisation for this instance
     virtual void init ();
@@ -93,22 +92,37 @@ public:
 
 private:
 
-    void get_angles( );
+    // get_angles -
+    void get_angles();
+
+    // set_motor will activate motors if true, and disable them if false
     void set_motor(bool on);
+
+    // get_boardinfo - get board version and firmware version
     void get_boardinfo();
+
+    // control_axis - send new angles to the gimbal at a fixed speed of 30 deg/s
     void control_axis(const Vector3f& angle , bool targets_in_degrees);
+
+    // read_params - read current profile profile_id and global parameters from the gimbal settings
     void read_params(uint8_t profile_id);
+
+    // write_params - write new parameters to the gimbal settings
     void write_params();
 
     bool get_realtimedata( Vector3f& angle);
 
-    //Alexmos Serial Protocol reading part implementation
+    // Alexmos Serial Protocol reading part implementation
+    // send_command - send a command to the Alemox Serial API
     void send_command(uint8_t cmd, uint8_t* data, uint8_t size);
-    void parse_body ();
-    void read_incoming ();
 
+    // Parse the body of the message received from the Alexmos gimbal
+    void parse_body();
 
-    //structure for the Serial Protocol
+    // read_incoming - detect and read the header of the incoming message from the gimbal
+    void read_incoming();
+
+    // structure for the Serial Protocol
 
     // CMD_BOARD_INFO
     struct PACKED alexmos_version {
@@ -266,7 +280,7 @@ private:
     // keep the last _current_angle values
     Vector3f _current_angle;
 
-    //CMD_READ_PARAMS has been called once
+    // CMD_READ_PARAMS has been called once
     bool _param_read_once;
 
     // Serial Protocol Variables
@@ -279,6 +293,5 @@ private:
     // confirmed that last command was ok
     bool _last_command_confirmed;
 };
-
 
 #endif
