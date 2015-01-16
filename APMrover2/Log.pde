@@ -315,26 +315,6 @@ static void Log_Write_Attitude()
 #endif
 }
 
-struct PACKED log_Mode {
-    LOG_PACKET_HEADER;
-    uint32_t time_ms;
-    uint8_t mode;
-    uint8_t mode_num;
-};
-
-// Write a mode packet
-static void Log_Write_Mode()
-{
-    struct log_Mode pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_MODE_MSG),
-        time_ms         : millis(),
-        mode            : (uint8_t)control_mode,
-        mode_num        : (uint8_t)control_mode
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
-}
-
-
 struct PACKED log_Sonar {
     LOG_PACKET_HEADER;
     uint32_t time_ms;
@@ -480,8 +460,6 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "NTUN", "IHfHHb",     "TimeMS,Yaw,WpDist,TargBrg,NavBrg,Thr" },
     { LOG_SONAR_MSG, sizeof(log_Sonar),             
       "SONR", "IfHHHbHCb",  "TimeMS,LatAcc,S1Dist,S2Dist,DCnt,TAng,TTim,Spd,Thr" },
-    { LOG_MODE_MSG, sizeof(log_Mode),             
-      "MODE", "IMB",        "TimeMS,Mode,ModeNum" },
     { LOG_COMPASS_MSG, sizeof(log_Compass),             
       "MAG", "Ihhhhhhhhh",  "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" },
     { LOG_COMPASS2_MSG, sizeof(log_Compass),             
@@ -535,7 +513,6 @@ static void Log_Write_Cmd(const AP_Mission::Mission_Command &cmd) {}
 static int8_t process_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
 static void Log_Write_Control_Tuning() {}
 static void Log_Write_Sonar() {}
-static void Log_Write_Mode() {}
 static void Log_Write_Attitude() {}
 static void Log_Write_Compass() {}
 static void start_logging() {}
