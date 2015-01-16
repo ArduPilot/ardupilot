@@ -403,65 +403,19 @@ static void Log_Arm_Disarm() {
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-struct PACKED log_Compass {
-    LOG_PACKET_HEADER;
-    uint32_t time_ms;
-    int16_t mag_x;
-    int16_t mag_y;
-    int16_t mag_z;
-    int16_t offset_x;
-    int16_t offset_y;
-    int16_t offset_z;
-};
-
-// Write a Compass packet. Total length : 15 bytes
+// Write a Compass packet
 static void Log_Write_Compass()
 {
-    const Vector3f &mag_offsets = compass.get_offsets(0);
-    const Vector3f &mag = compass.get_field(0);
-    struct log_Compass pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_COMPASS_MSG),
-        time_ms         : hal.scheduler->millis(),
-        mag_x           : (int16_t)mag.x,
-        mag_y           : (int16_t)mag.y,
-        mag_z           : (int16_t)mag.z,
-        offset_x        : (int16_t)mag_offsets.x,
-        offset_y        : (int16_t)mag_offsets.y,
-        offset_z        : (int16_t)mag_offsets.z
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    DataFlash.Log_Write_Compass(compass, 0);
+    
 #if COMPASS_MAX_INSTANCES > 1
     if (compass.get_count() > 1) {
-        const Vector3f &mag2_offsets = compass.get_offsets(1);
-        const Vector3f &mag2 = compass.get_field(1);
-        struct log_Compass pkt2 = {
-            LOG_PACKET_HEADER_INIT(LOG_COMPASS2_MSG),
-            time_ms         : hal.scheduler->millis(),
-            mag_x           : (int16_t)mag2.x,
-            mag_y           : (int16_t)mag2.y,
-            mag_z           : (int16_t)mag2.z,
-            offset_x        : (int16_t)mag2_offsets.x,
-            offset_y        : (int16_t)mag2_offsets.y,
-            offset_z        : (int16_t)mag2_offsets.z
-        };
-        DataFlash.WriteBlock(&pkt2, sizeof(pkt2));
+        DataFlash.Log_Write_Compass(compass, 1);
     }
 #endif
 #if COMPASS_MAX_INSTANCES > 2
     if (compass.get_count() > 2) {
-        const Vector3f &mag3_offsets = compass.get_offsets(2);
-        const Vector3f &mag3 = compass.get_field(2);
-        struct log_Compass pkt3 = {
-            LOG_PACKET_HEADER_INIT(LOG_COMPASS3_MSG),
-            time_ms         : hal.scheduler->millis(),
-            mag_x           : (int16_t)mag3.x,
-            mag_y           : (int16_t)mag3.y,
-            mag_z           : (int16_t)mag3.z,
-            offset_x        : (int16_t)mag3_offsets.x,
-            offset_y        : (int16_t)mag3_offsets.y,
-            offset_z        : (int16_t)mag3_offsets.z
-        };
-        DataFlash.WriteBlock(&pkt3, sizeof(pkt3));
+        DataFlash.Log_Write_Compass(compass, 2);
     }
 #endif
 }
@@ -505,10 +459,6 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "NTUN", "ICfccccfI",   "TimeMS,Yaw,WpDist,TargBrg,NavBrg,AltErr,Arspd,Alt,GSpdCM" },
     { LOG_SONAR_MSG, sizeof(log_Sonar),             
       "SONR", "IffffBBf",   "TimeMS,DistCM,Volt,BaroAlt,GSpd,Thr,Cnt,Corr" },
-    { LOG_COMPASS_MSG, sizeof(log_Compass),             
-      "MAG", "Ihhhhhh",   "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ" },
-    { LOG_COMPASS2_MSG, sizeof(log_Compass),             
-      "MAG2", "Ihhhhhh",   "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ" },
     { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm),
       "ARM", "IHB", "TimeMS,ArmState,ArmChecks" },
     { LOG_ATRP_MSG, sizeof(AP_AutoTune::log_ATRP),
