@@ -317,7 +317,7 @@ static void set_mode(enum mode mode)
 	}
 
 	if (should_log(MASK_LOG_MODE)) {
-		Log_Write_Mode();
+        DataFlash.Log_Write_Mode(control_mode);
     }
 }
 
