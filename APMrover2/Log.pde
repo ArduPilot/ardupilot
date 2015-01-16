@@ -358,24 +358,6 @@ static void Log_Write_Current()
     DataFlash.Log_Write_Power();
 }
 
-// Write a Compass packet
-static void Log_Write_Compass()
-{
-    DataFlash.Log_Write_Compass(compass, 0);
-    
-#if COMPASS_MAX_INSTANCES > 1
-    if (compass.get_count() > 1) {
-        DataFlash.Log_Write_Compass(compass, 1);
-    }
-#endif
-#if COMPASS_MAX_INSTANCES > 2
-    if (compass.get_count() > 2) {
-        DataFlash.Log_Write_Compass(compass, 2);
-    }
-#endif
-}
-
-
 static void Log_Write_RC(void)
 {
     DataFlash.Log_Write_RCIN();
@@ -449,7 +431,6 @@ static int8_t process_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
 static void Log_Write_Control_Tuning() {}
 static void Log_Write_Sonar() {}
 static void Log_Write_Attitude() {}
-static void Log_Write_Compass() {}
 static void start_logging() {}
 static void Log_Write_RC(void) {}
 
