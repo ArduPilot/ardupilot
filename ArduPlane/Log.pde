@@ -316,25 +316,6 @@ static void Log_Write_Nav_Tuning()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-struct PACKED log_Mode {
-    LOG_PACKET_HEADER;
-    uint32_t time_ms;
-    uint8_t mode;
-    uint8_t mode_num;
-};
-
-// Write a mode packet. Total length : 5 bytes
-static void Log_Write_Mode(uint8_t mode)
-{
-    struct log_Mode pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_MODE_MSG),
-        time_ms  : hal.scheduler->millis(),
-        mode     : mode,
-        mode_num : mode
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
-}
-
 struct PACKED log_Sonar {
     LOG_PACKET_HEADER;
     uint32_t timestamp;
@@ -524,8 +505,6 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "NTUN", "ICfccccfI",   "TimeMS,Yaw,WpDist,TargBrg,NavBrg,AltErr,Arspd,Alt,GSpdCM" },
     { LOG_SONAR_MSG, sizeof(log_Sonar),             
       "SONR", "IffffBBf",   "TimeMS,DistCM,Volt,BaroAlt,GSpd,Thr,Cnt,Corr" },
-    { LOG_MODE_MSG, sizeof(log_Mode),             
-      "MODE", "IMB",         "TimeMS,Mode,ModeNum" },
     { LOG_COMPASS_MSG, sizeof(log_Compass),             
       "MAG", "Ihhhhhh",   "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ" },
     { LOG_COMPASS2_MSG, sizeof(log_Compass),             

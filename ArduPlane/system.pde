@@ -404,7 +404,7 @@ static void set_mode(enum FlightMode mode)
     throttle_suppressed = auto_throttle_mode;
 
     if (should_log(MASK_LOG_MODE))
-        Log_Write_Mode(control_mode);
+        DataFlash.Log_Write_Mode(control_mode);
 
     // reset attitude integrators on mode change
     rollController.reset_I();
