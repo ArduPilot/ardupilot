@@ -214,7 +214,10 @@ void AP_Mount_Alexmos::parse_body()
 void AP_Mount_Alexmos::read_incoming()
 {
     uint8_t data;
-    while (_port->available()) {
+    int16_t numc;
+
+    numc = _port->available();
+    for (int16_t i = 0; i < numc; i++) {        // Process bytes received
         data = _port->read();
         switch (_step) {
             case 0:
