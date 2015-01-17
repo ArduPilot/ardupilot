@@ -936,7 +936,7 @@ static void update_compass(void)
         ahrs.set_compass(&compass);
         compass.learn_offsets();
         if (should_log(MASK_LOG_COMPASS)) {
-            Log_Write_Compass();
+            DataFlash.Log_Write_Compass(compass);
         }
     } else {
         ahrs.set_compass(NULL);
