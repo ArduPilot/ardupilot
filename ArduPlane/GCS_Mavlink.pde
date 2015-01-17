@@ -1045,7 +1045,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             } else if (packet.param4 == 1) {
                 trim_radio();
             } 
-#if !defined( __AVR_ATmega1280__ )
             else if (packet.param5 == 1) {
                 float trim_roll, trim_pitch;
                 AP_InertialSensor_UserInteract_MAVLink interact(chan);
@@ -1059,7 +1058,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
                 }
             }
-#endif
             else {
                     send_text_P(SEVERITY_LOW, PSTR("Unsupported preflight calibration"));
             }
