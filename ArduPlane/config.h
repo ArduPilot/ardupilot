@@ -55,34 +55,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// APM HARDWARE
-//
-
-#if defined( __AVR_ATmega1280__ )
- // default choices for a 1280. We can't fit everything in, so we 
- // make some popular choices by default
- #define LOGGING_ENABLED DISABLED
- #ifndef GEOFENCE_ENABLED
- # define GEOFENCE_ENABLED DISABLED
- #endif
- #ifndef CLI_ENABLED
- # define CLI_ENABLED DISABLED
- #endif
- #ifndef MOUNT2
- # define MOUNT2 DISABLED
- #endif
- #ifndef MOUNT
- # define MOUNT DISABLED
- #endif
- #ifndef CAMERA
- # define CAMERA DISABLED
- #endif
- #ifndef FRSKY_TELEM_ENABLED
- # define FRSKY_TELEM_ENABLED DISABLED
- #endif
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // sensor types
 
 #define CONFIG_BARO     HAL_BARO_DEFAULT
@@ -305,7 +277,6 @@
 //////////////////////////////////////////////////////////////////////////////
 // MOUNT (ANTENNA OR CAMERA)
 //
-// uses 4174 bytes of memory on 1280 chips (MNT_JSTICK_SPD_OPTION, MNT_RETRACT_OPTION, MNT_STABILIZE_OPTION and MNT_MOUNT2_OPTION disabled)
 // uses 7726 bytes of memory on 2560 chips (all options are enabled)
 #ifndef MOUNT
  # define MOUNT          ENABLED
