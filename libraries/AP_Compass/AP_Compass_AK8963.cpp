@@ -508,19 +508,7 @@ bool AP_Compass_AK8963::read()
     _mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
     _accum_count = 0;
 
-    // apply default board orientation for this compass type. This is
-    // a noop on most boards
-    _compass._field[_compass_instance].rotate(MAG_BOARD_ORIENTATION);
-
-    // add user selectable orientation
-    _compass._field[_compass_instance].rotate((enum Rotation)_compass._orientation[_compass_instance].get());
-
-    if (!_compass._external[_compass_instance]) {
-        // and add in AHRS_ORIENTATION setting if not an external compass
-        _compass._field[_compass_instance].rotate(_compass._board_orientation);
-    }
-
-    _compass.apply_corrections(_compass._field[_compass_instance],_compass_instance);
+    _copy_to_frontend(_compass_instance);
 
 #if 0
 

@@ -66,6 +66,12 @@ extern const AP_HAL::HAL& hal;
 
 class Compass
 {
+friend class AP_Compass_Backend;
+friend class AP_Compass_HIL;
+friend class AP_Compass_VRBRAIN;
+friend class AP_Compass_PX4;
+friend class AP_Compass_AK8963;
+friend class AP_Compass_HMC5843;
 public:
     uint32_t last_update;               ///< micros() time of last update
     int16_t product_id;                         /// product id
@@ -291,7 +297,6 @@ public:
     // int16_t product_id(void) const { return product_id; }
     AP_Int8     _external[COMPASS_MAX_INSTANCES];   ///<compass is external
     bool        _healthy[COMPASS_MAX_INSTANCES];
-    Vector3f    _field[COMPASS_MAX_INSTANCES];     ///< magnetic field strength
     // board orientation from AHRS
     enum Rotation _board_orientation;
     AP_Int8     _orientation[COMPASS_MAX_INSTANCES];
@@ -331,6 +336,8 @@ protected:
     Vector3f    _Bearth;
     float       _last_declination;
 
+private:
+    Vector3f    _field[COMPASS_MAX_INSTANCES];     ///< magnetic field strength    
     
 };
 

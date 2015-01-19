@@ -49,6 +49,7 @@ protected:
     virtual bool        re_initialise(void) = 0;
     
     Compass             &_compass; ///< access to frontend
+    void                _copy_to_frontend(uint8_t instance);
 };
 
 #endif // __AP_COMPASS_BACKEND_H__
