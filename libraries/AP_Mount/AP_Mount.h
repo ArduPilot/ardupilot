@@ -66,9 +66,6 @@ public:
     // update - give mount opportunity to update servos.  should be called at 10hz or higher
     void update();
 
-    // _num_instances - returns number of mounts
-    uint8_t num_instances() { return _num_instances; }
-
     // get_mount_type - returns the type of mount
     AP_Mount::MountType get_mount_type() const { return get_mount_type(_primary); }
     AP_Mount::MountType get_mount_type(uint8_t instance) const;
