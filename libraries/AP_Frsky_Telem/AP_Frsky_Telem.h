@@ -24,6 +24,7 @@
 #include <AP_AHRS.h>
 #include <AP_Baro.h>
 #include <AP_BattMonitor.h>
+#include <AP_SerialManager.h>
 
 /* FrSky sensor hub data IDs */
 #define FRSKY_ID_GPS_ALT_BP     0x01
@@ -77,18 +78,21 @@ class AP_Frsky_Telem
 public:
     //constructor
     AP_Frsky_Telem(AP_AHRS &ahrs, AP_BattMonitor &battery) :
+    _port(NULL),
+    _protocol(FrSkyUnknown),
 	_initialised(false),
-	_ahrs(ahrs),
-	_battery(battery)
+    _ahrs(ahrs),
+    _battery(battery)
     {}
 
     // these enums must match up with TELEM2_PROTOCOL in vehicle code
     enum FrSkyProtocol {
+        FrSkyUnknown = 0,
         FrSkyDPORT = 2,
         FrSkySPORT = 3
     };
 
-    void init(AP_HAL::UARTDriver *port, enum FrSkyProtocol protocol);
+    void init(const AP_SerialManager& serial_manager);
     void send_frames(uint8_t control_mode);
 
 
