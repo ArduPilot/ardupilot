@@ -26,6 +26,7 @@
 #include <GCS_MAVLink.h>
 #include <AP_Vehicle.h>
 #include "GPS_detect_state.h"
+#include <AP_SerialManager.h>
 
 /**
    maximum number of GPS instances available on this platform. If more
@@ -66,7 +67,7 @@ public:
     }
 
     /// Startup initialisation.
-    void init(DataFlash_Class *dataflash);
+    void init(DataFlash_Class *dataflash, const AP_SerialManager& serial_manager);
 
     /// Update GPS state based on possible bytes received from the module.
     /// This routine must be called periodically (typically at 10Hz or
@@ -370,6 +371,7 @@ private:
     GPS_timing timing[GPS_MAX_INSTANCES];
     GPS_State state[GPS_MAX_INSTANCES];
     AP_GPS_Backend *drivers[GPS_MAX_INSTANCES];
+    AP_HAL::UARTDriver *_port[GPS_MAX_INSTANCES];
 
     /// primary GPS instance
     uint8_t primary_instance:2;
