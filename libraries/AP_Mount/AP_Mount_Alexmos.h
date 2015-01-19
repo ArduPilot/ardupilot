@@ -72,6 +72,7 @@ public:
     //constructor
     AP_Mount_Alexmos(AP_Mount &frontend, AP_Mount::mount_state state, uint8_t instance):
         AP_Mount_Backend(frontend, state, instance),
+        _port(NULL),
         _initialised(false),
         _board_version(0),
         _current_firmware_version(0.0f),
@@ -84,11 +85,12 @@ public:
         _step(0),
         _command_id(0),
         _payload_length(0),
-        _payload_counter(0)
+        _payload_counter(0),
+        _last_command_confirmed(false)
     {}
 
     // init - performs any required initialisation for this instance
-    virtual void init ();
+    virtual void init(const AP_SerialManager& serial_manager);
 
     // update mount position - should be called periodically
     virtual void update();
