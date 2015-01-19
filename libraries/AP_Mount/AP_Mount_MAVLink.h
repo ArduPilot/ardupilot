@@ -22,8 +22,8 @@ class AP_Mount_MAVLink : public AP_Mount_Backend
 
 public:
     // Constructor
-    AP_Mount_MAVLink(AP_Mount &frontend, uint8_t instance) :
-        AP_Mount_Backend(frontend, instance),
+    AP_Mount_MAVLink(AP_Mount &frontend, AP_Mount::mount_state state, uint8_t instance) :
+        AP_Mount_Backend(frontend, state, instance),
         _chan(MAVLINK_COMM_0),
         _last_mode(MAV_MOUNT_MODE_RETRACT)
     {}

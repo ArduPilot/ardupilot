@@ -16,12 +16,12 @@ void AP_Mount_MAVLink::update()
     switch(_frontend.get_mode(_instance)) {
         // move mount to a "retracted" position.  we do not implement a separate servo based retract mechanism
         case MAV_MOUNT_MODE_RETRACT:
-            send_angle_target(_frontend.state[_instance]._retract_angles.get(), true);
+            send_angle_target(_state._retract_angles.get(), true);
             break;
 
         // move mount to a neutral position, typically pointing forward
         case MAV_MOUNT_MODE_NEUTRAL:
-            send_angle_target(_frontend.state[_instance]._neutral_angles.get(), true);
+            send_angle_target(_state._neutral_angles.get(), true);
             break;
 
         // point to the angles given by a mavlink message
@@ -39,7 +39,7 @@ void AP_Mount_MAVLink::update()
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
             if(_frontend._ahrs.get_gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
-                calc_angle_to_location(_frontend.state[_instance]._roi_target, _angle_ef_target_rad, true, false);
+                calc_angle_to_location(_state._roi_target, _angle_ef_target_rad, true, false);
                 send_angle_target(_angle_ef_target_rad, false);
             }
             break;
@@ -85,7 +85,7 @@ void AP_Mount_MAVLink::set_mode(enum MAV_MOUNT_MODE mode)
             0.0f, 0.0f, 0.0f,0.0f, 0.0f);    // param3 ~ param 7: not used
 
     // record the mode change
-    _frontend.state[_instance]._mode = mode;
+    _state._mode = mode;
     _last_mode = mode_to_send;
 }
 
@@ -105,7 +105,7 @@ void AP_Mount_MAVLink::send_angle_target(const Vector3f& target, bool target_in_
     }
 
     // exit immediately if mode and targets have not changed since last time they were sent
-    if (_frontend.state[_instance]._mode == MAV_MOUNT_MODE_MAVLINK_TARGETING && target_deg == _last_angle_target) {
+    if (_state._mode == MAV_MOUNT_MODE_MAVLINK_TARGETING && target_deg == _last_angle_target) {
         return;
     }
 
