@@ -19,8 +19,8 @@ class AP_Mount_Servo : public AP_Mount_Backend
 {
 public:
     // Constructor
-    AP_Mount_Servo(AP_Mount &frontend, uint8_t instance):
-        AP_Mount_Backend(frontend, instance),
+    AP_Mount_Servo(AP_Mount &frontend, AP_Mount::mount_state state, uint8_t instance):
+        AP_Mount_Backend(frontend, state, instance),
         _roll_idx(RC_Channel_aux::k_none),
         _tilt_idx(RC_Channel_aux::k_none),
         _pan_idx(RC_Channel_aux::k_none),
