@@ -77,14 +77,6 @@ struct PACKED log_Plane_Attitude {
     uint16_t error_yaw;
 };
 
-struct PACKED log_AIRSPEED {
-    LOG_PACKET_HEADER;
-    uint32_t timestamp;
-    float   airspeed;
-    float   diffpressure;
-    int16_t temperature;
-};
-
 struct PACKED log_Copter_Attitude {
     LOG_PACKET_HEADER;
     uint32_t time_ms;
@@ -163,7 +155,8 @@ void LogReader::process_plane(uint8_t type, uint8_t *data, uint16_t length)
         break;
     }
 
-    case LOG_PLANE_AIRSPEED_MSG: {
+    case LOG_PLANE_AIRSPEED_MSG:
+    case LOG_ARSP_MSG: {
         struct log_AIRSPEED msg;
         if (sizeof(msg) != length && length != sizeof(msg)+8) {
             printf("Bad AIRSPEED length\n");
@@ -172,6 +165,7 @@ void LogReader::process_plane(uint8_t type, uint8_t *data, uint16_t length)
         memcpy(&msg, data, sizeof(msg));
         wait_timestamp(msg.timestamp);
         airspeed.setHIL(msg.airspeed, msg.diffpressure, msg.temperature);
+        dataflash.Log_Write_Airspeed(airspeed);
         break;
     }
     }
@@ -359,11 +353,12 @@ bool LogReader::update(uint8_t &type)
 
     case LOG_IMU_MSG: {
         struct log_IMU msg;
-        if(sizeof(msg) != f.length) {
-            printf("Bad IMU length\n");
+        if (sizeof(msg) != f.length && sizeof(msg) != f.length+8) {
+            printf("Bad IMU length %u expected %u\n",
+                   (unsigned)sizeof(msg), (unsigned)f.length);
             exit(1);
         }
-        memcpy(&msg, data, sizeof(msg));
+        memcpy(&msg, data, f.length);
         wait_timestamp(msg.timestamp);
         if (gyro_mask & 1) {
             ins.set_gyro(0, Vector3f(msg.gyro_x, msg.gyro_y, msg.gyro_z));
@@ -377,11 +372,12 @@ bool LogReader::update(uint8_t &type)
 
     case LOG_IMU2_MSG: {
         struct log_IMU msg;
-        if(sizeof(msg) != f.length) {
-            printf("Bad IMU2 length\n");
+        if (sizeof(msg) != f.length && sizeof(msg) != f.length+8) {
+            printf("Bad IMU2 length %u expected %u\n",
+                   (unsigned)sizeof(msg), (unsigned)f.length);
             exit(1);
         }
-        memcpy(&msg, data, sizeof(msg));
+        memcpy(&msg, data, f.length);
         wait_timestamp(msg.timestamp);
         if (gyro_mask & 2) {
             ins.set_gyro(1, Vector3f(msg.gyro_x, msg.gyro_y, msg.gyro_z));
@@ -527,7 +523,6 @@ bool LogReader::update(uint8_t &type)
         ahr2_attitude = Vector3f(msg.roll*0.01f, msg.pitch*0.01f, msg.yaw*0.01f);
         break;
     }
-
 
     default:
         if (vehicle == VEHICLE_PLANE) {
