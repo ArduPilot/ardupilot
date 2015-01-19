@@ -387,19 +387,7 @@ bool AP_Compass_HMC5843::read()
         _compass._field[_compass_instance].rotate(ROTATION_YAW_90);
     }
 
-    // apply default board orientation for this compass type. This is
-    // a noop on most boards
-    _compass._field[_compass_instance].rotate(MAG_BOARD_ORIENTATION);
-
-    // add user selectable orientation
-    _compass._field[_compass_instance].rotate((enum Rotation)_compass.get_orientation(_compass_instance).get());
-
-    if (!_compass._external[_compass_instance]) {
-        // and add in AHRS_ORIENTATION setting if not an external compass
-        _compass._field[_compass_instance].rotate(_compass.get_board_orientation());
-    }
-
-    _compass.apply_corrections(_compass._field[_compass_instance], _compass_instance);
+    _copy_to_frontend(_compass_instance);
     _compass._healthy[_compass_instance] = true;
 
     return true;
