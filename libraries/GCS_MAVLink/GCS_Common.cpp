@@ -59,9 +59,12 @@ GCS_MAVLINK::init(AP_HAL::UARTDriver *port)
   setup a UART, handling begin() and init()
  */
 void
-GCS_MAVLINK::setup_uart(AP_HAL::UARTDriver *port, uint32_t baudrate, uint16_t rxS, uint16_t txS)
+GCS_MAVLINK::setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager::SerialProtocol protocol)
 {
-    if (port == NULL) {
+    // serach find serial port
+    AP_SerialManager::serial_state gcs_serial;
+    if (!serial_manager.find_serial(protocol, gcs_serial)) {
+        // return immediately if not found
         return;
     }
 
@@ -73,21 +76,21 @@ GCS_MAVLINK::setup_uart(AP_HAL::UARTDriver *port, uint32_t baudrate, uint16_t rx
       0x20 at 115200 on startup, which tells the bootloader to reset
       and boot normally
      */
-    port->begin(115200, rxS, txS);
-    AP_HAL::UARTDriver::flow_control old_flow_control = port->get_flow_control();
-    port->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+    gcs_serial.uart->begin(115200);
+    AP_HAL::UARTDriver::flow_control old_flow_control = gcs_serial.uart->get_flow_control();
+    gcs_serial.uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
     for (uint8_t i=0; i<3; i++) {
         hal.scheduler->delay(1);
-        port->write(0x30);
-        port->write(0x20);
+        gcs_serial.uart->write(0x30);
+        gcs_serial.uart->write(0x20);
     }
-    port->set_flow_control(old_flow_control);
+    gcs_serial.uart->set_flow_control(old_flow_control);
 
-    // now change to desired baudrate
-    port->begin(baudrate);
+    // now change back to desired baudrate
+    gcs_serial.uart->begin(map_baudrate(gcs_serial.baud));
 
     // and init the gcs instance
-    init(port);
+    init(gcs_serial.uart);
 }
 
 uint16_t
