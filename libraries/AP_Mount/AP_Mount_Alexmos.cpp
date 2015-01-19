@@ -220,6 +220,11 @@ void AP_Mount_Alexmos::read_incoming()
     int16_t numc;
 
     numc = _port->available();
+
+    if (numc < 0 ){
+        return;
+    }
+        
     for (int16_t i = 0; i < numc; i++) {        // Process bytes received
         data = _port->read();
         switch (_step) {
