@@ -108,7 +108,7 @@ public:
     // parameter var table
     static const struct AP_Param::GroupInfo        var_info[];
 
-private:
+protected:
 
     // private members
     const AP_AHRS           &_ahrs;

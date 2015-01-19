@@ -417,17 +417,17 @@ void AP_Mount::init()
 
         // check for servo mounts
         if (mount_type == Mount_Type_Servo) {
-            _backends[instance] = new AP_Mount_Servo(*this, instance);
+            _backends[instance] = new AP_Mount_Servo(*this, state[instance], instance);
             _num_instances++;
 
         // check for MAVLink mounts
         } else if (mount_type == Mount_Type_MAVLink) {
-            _backends[instance] = new AP_Mount_MAVLink(*this, instance);
+            _backends[instance] = new AP_Mount_MAVLink(*this, state[instance], instance);
             _num_instances++;
 
         // check for Alexmos mounts
         } else if (mount_type == Mount_Type_Alexmos) {
-            _backends[instance] = new AP_Mount_Alexmos(*this, instance);
+            _backends[instance] = new AP_Mount_Alexmos(*this, state[instance], instance);
             _num_instances++;
         }
 

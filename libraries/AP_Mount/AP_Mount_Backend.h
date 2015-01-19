@@ -29,8 +29,9 @@ class AP_Mount_Backend
 {
 public:
     // Constructor
-    AP_Mount_Backend(AP_Mount &frontend, uint8_t instance) :
+    AP_Mount_Backend(AP_Mount &frontend, AP_Mount::mount_state& state, uint8_t instance) :
         _frontend(frontend),
+        _state(state),
         _instance(instance)
     {}
 
@@ -74,6 +75,7 @@ protected:
     void calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan);
 
     AP_Mount    &_frontend; // reference to the front end which holds parameters
+    AP_Mount::mount_state &_state;    // refernce to the parameters and state for this backend
     uint8_t     _instance;  // this instance's number
     Vector3f    _angle_ef_target_rad;   // desired earth-frame roll, tilt and pan angles in radians
 };
