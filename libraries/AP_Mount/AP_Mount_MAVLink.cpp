@@ -1,16 +1,24 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include <AP_Mount_MAVLink.h>
+#include <GCS_MAVLink.h>
 
 // init - performs any required initialisation for this instance
-void AP_Mount_MAVLink::init()
+void AP_Mount_MAVLink::init(const AP_SerialManager& serial_manager)
 {
-    // do nothing
+    // use mavlink channel associated with MAVLink2 protocol
+    if (serial_manager.get_mavlink_channel(AP_SerialManager::SerialProtocol_MAVLink2, _chan)) {
+        _initialised = true;
+    }
 }
 
 // update mount position - should be called periodically
 void AP_Mount_MAVLink::update()
 {
+    // exit immediately if not initialised
+    if (!_initialised) {
+        return;
+    }
 
     // update based on mount mode
     switch(_frontend.get_mode(_instance)) {
@@ -60,6 +68,11 @@ bool AP_Mount_MAVLink::has_pan_control() const
 // set_mode - sets mount's mode
 void AP_Mount_MAVLink::set_mode(enum MAV_MOUNT_MODE mode)
 {
+    // exit immediately if not initialised
+    if (!_initialised) {
+        return;
+    }
+
     // map requested mode to mode that mount can actually support
     enum MAV_MOUNT_MODE mode_to_send = mode;
     switch (mode) {
@@ -98,6 +111,11 @@ void AP_Mount_MAVLink::status_msg(mavlink_channel_t chan)
 // send_angle_target - send earth-frame angle targets to mount
 void AP_Mount_MAVLink::send_angle_target(const Vector3f& target, bool target_in_degrees)
 {
+    // exit immediately if not initialised
+    if (!_initialised) {
+        return;
+    }
+
     // convert to degrees if necessary
     Vector3f target_deg = target;
     if (!target_in_degrees) {

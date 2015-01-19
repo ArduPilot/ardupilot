@@ -24,12 +24,13 @@ public:
     // Constructor
     AP_Mount_MAVLink(AP_Mount &frontend, AP_Mount::mount_state state, uint8_t instance) :
         AP_Mount_Backend(frontend, state, instance),
+        _initialised(false),
         _chan(MAVLINK_COMM_0),
         _last_mode(MAV_MOUNT_MODE_RETRACT)
     {}
 
     // init - performs any required initialisation for this instance
-    virtual void init();
+    virtual void init(const AP_SerialManager& serial_manager);
 
     // update mount position - should be called periodically
     virtual void update();
@@ -49,7 +50,8 @@ private:
     void send_angle_target(const Vector3f& target, bool target_in_degrees);
 
     // internal variables
-    mavlink_channel_t _chan;    // telemetry channel used to communicate with mount
+    bool _initialised;              // true once the driver has been initialised
+    mavlink_channel_t _chan;        // telemetry channel used to communicate with mount
     enum MAV_MOUNT_MODE _last_mode; // last mode sent to mount
     Vector3f _last_angle_target;    // last angle target sent to mount
 };
