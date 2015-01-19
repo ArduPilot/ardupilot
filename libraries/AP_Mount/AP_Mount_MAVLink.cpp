@@ -60,11 +60,6 @@ bool AP_Mount_MAVLink::has_pan_control() const
 // set_mode - sets mount's mode
 void AP_Mount_MAVLink::set_mode(enum MAV_MOUNT_MODE mode)
 {
-    // exit immediately if mount has not been found
-    if (!_enabled) {
-        return;
-    }
-
     // map requested mode to mode that mount can actually support
     enum MAV_MOUNT_MODE mode_to_send = mode;
     switch (mode) {
@@ -97,31 +92,12 @@ void AP_Mount_MAVLink::set_mode(enum MAV_MOUNT_MODE mode)
 // status_msg - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
 void AP_Mount_MAVLink::status_msg(mavlink_channel_t chan)
 {
-    // exit immediately if mount has not been found
-    if (!_enabled) {
-        return;
-    }
-}
-
-// find_mount - search for MAVLink enabled mount
-void AP_Mount_MAVLink::find_mount()
-{
-    // return immediately if target has already been found
-    if (_enabled) {
-        return;
-    }
-
-    // To-Do: search for MAVLink enabled mount using MAVLink_routing table
+    // do nothing - we rely on the mount sending the messages directly
 }
 
 // send_angle_target - send earth-frame angle targets to mount
 void AP_Mount_MAVLink::send_angle_target(const Vector3f& target, bool target_in_degrees)
 {
-    // exit immediately if mount has not been found
-    if (!_enabled) {
-        return;
-    }
-
     // convert to degrees if necessary
     Vector3f target_deg = target;
     if (!target_in_degrees) {

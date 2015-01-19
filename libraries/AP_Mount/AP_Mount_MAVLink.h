@@ -24,7 +24,6 @@ public:
     // Constructor
     AP_Mount_MAVLink(AP_Mount &frontend, uint8_t instance) :
         AP_Mount_Backend(frontend, instance),
-        _enabled(false),
         _chan(MAVLINK_COMM_0),
         _last_mode(MAV_MOUNT_MODE_RETRACT)
     {}
@@ -45,16 +44,11 @@ public:
     virtual void status_msg(mavlink_channel_t chan);
 
 private:
-
-    // find_mount - search for MAVLink enabled mount
-    void find_mount();
-
     // send_angle_target - send earth-frame angle targets to mount
     //  set target_in_degrees to true to send degree targets, false if target in radians
     void send_angle_target(const Vector3f& target, bool target_in_degrees);
 
     // internal variables
-    bool    _enabled;           // gimbal becomes enabled once the mount has been discovered
     mavlink_channel_t _chan;    // telemetry channel used to communicate with mount
     enum MAV_MOUNT_MODE _last_mode; // last mode sent to mount
     Vector3f _last_angle_target;    // last angle target sent to mount
