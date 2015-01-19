@@ -69,6 +69,7 @@
 #define HAL_COMPASS_PX4       2
 #define HAL_COMPASS_HIL       3
 #define HAL_COMPASS_VRBRAIN   4
+#define HAL_COMPASS_AK8963    5
 
 /**
    CPU classes, used to select if CPU intensive algorithms should be used
