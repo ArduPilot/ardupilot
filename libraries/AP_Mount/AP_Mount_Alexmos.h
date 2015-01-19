@@ -70,8 +70,8 @@ class AP_Mount_Alexmos : public AP_Mount_Backend
 {
 public:
     //constructor
-    AP_Mount_Alexmos(AP_Mount &frontend, uint8_t instance):
-        AP_Mount_Backend(frontend, instance),
+    AP_Mount_Alexmos(AP_Mount &frontend, AP_Mount::mount_state state, uint8_t instance):
+        AP_Mount_Backend(frontend, state, instance),
         _initialised(false),
         _board_version(0),
         _current_firmware_version(0.0f),

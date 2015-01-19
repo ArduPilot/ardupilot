@@ -25,12 +25,12 @@ void AP_Mount_Alexmos::update()
     switch(_frontend.get_mode(_instance)) {
         // move mount to a "retracted" position.  we do not implement a separate servo based retract mechanism
         case MAV_MOUNT_MODE_RETRACT:
-            control_axis(_frontend.state[_instance]._retract_angles.get(), true);
+            control_axis(_state._retract_angles.get(), true);
             break;
 
         // move mount to a neutral position, typically pointing forward
         case MAV_MOUNT_MODE_NEUTRAL:
-            control_axis(_frontend.state[_instance]._neutral_angles.get(), true);
+            control_axis(_state._neutral_angles.get(), true);
             break;
 
         // point to the angles given by a mavlink message
@@ -48,7 +48,7 @@ void AP_Mount_Alexmos::update()
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
             if(_frontend._ahrs.get_gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
-                calc_angle_to_location(_frontend.state[_instance]._roi_target, _angle_ef_target_rad, true, false);
+                calc_angle_to_location(_state._roi_target, _angle_ef_target_rad, true, false);
                 control_axis(_angle_ef_target_rad, false);
             }
             break;
@@ -69,7 +69,7 @@ bool AP_Mount_Alexmos::has_pan_control() const
 void AP_Mount_Alexmos::set_mode(enum MAV_MOUNT_MODE mode)
 {
     // record the mode change and return success
-    _frontend.state[_instance]._mode = mode;
+    _state._mode = mode;
 }
 
 // status_msg - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
