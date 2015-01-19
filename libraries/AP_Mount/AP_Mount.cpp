@@ -408,6 +408,9 @@ void AP_Mount::init()
         return;
     }
 
+    // primary is reset to the first instantiated mount
+    bool primary_set = false;
+
     // create each instance
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         MountType mount_type = get_mount_type(instance);
@@ -431,6 +434,10 @@ void AP_Mount::init()
         // init new instance
         if (_backends[instance] != NULL) {
             _backends[instance]->init();
+            if (!primary_set) {
+                _primary = instance;
+                primary_set = true;
+            }
         }
     }
 }
