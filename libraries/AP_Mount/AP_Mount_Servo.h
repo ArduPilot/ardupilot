@@ -34,7 +34,7 @@ public:
     }
 
     // init - performs any required initialisation for this instance
-    virtual void init();
+    virtual void init(const AP_SerialManager& serial_manager);
 
     // update mount position - should be called periodically
     virtual void update();

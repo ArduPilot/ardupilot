@@ -5,7 +5,7 @@
 extern const AP_HAL::HAL& hal;
 
 // init - performs any required initialisation for this instance
-void AP_Mount_Servo::init()
+void AP_Mount_Servo::init(const AP_SerialManager& serial_manager)
 {
     if (_instance == 0) {
         _roll_idx = RC_Channel_aux::k_mount_roll;
