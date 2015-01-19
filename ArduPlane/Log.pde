@@ -542,33 +542,10 @@ static void Log_Write_Baro(void)
     DataFlash.Log_Write_Baro(barometer);
 }
 
-struct PACKED log_AIRSPEED {
-    LOG_PACKET_HEADER;
-    uint32_t timestamp;
-    float   airspeed;
-    float   diffpressure;
-    int16_t temperature;
-    float   rawpressure;
-    float   offset;
-};
-
 // Write a AIRSPEED packet
 static void Log_Write_Airspeed(void)
 {
-    float temperature;
-    if (!airspeed.get_temperature(temperature)) {
-        temperature = 0;
-    }
-    struct log_AIRSPEED pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_AIRSPEED_MSG),
-        timestamp     : hal.scheduler->millis(),
-        airspeed      : airspeed.get_raw_airspeed(),
-        diffpressure  : airspeed.get_differential_pressure(),
-        temperature   : (int16_t)(temperature * 100.0f),
-        rawpressure   : airspeed.get_raw_pressure(),
-        offset        : airspeed.get_offset()
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    DataFlash.Log_Write_Airspeed(airspeed);
 }
 
 static const struct LogStructure log_structure[] PROGMEM = {
@@ -595,8 +572,6 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "MAG2", "Ihhhhhh",   "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ" },
     { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm),
       "ARM", "IHB", "TimeMS,ArmState,ArmChecks" },
-    { LOG_AIRSPEED_MSG, sizeof(log_AIRSPEED),
-      "ARSP",  "Iffcff",   "TimeMS,Airspeed,DiffPress,Temp,RawPress,Offset" },
     { LOG_ATRP_MSG, sizeof(AP_AutoTune::log_ATRP),
       "ATRP", "IBBcfff",  "TimeMS,Type,State,Servo,Demanded,Achieved,P" },
 #if OPTFLOW == ENABLED
