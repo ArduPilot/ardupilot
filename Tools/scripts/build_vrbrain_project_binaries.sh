@@ -10,8 +10,8 @@ rm -rf $TMPDIR
 echo "Building in $TMPDIR"
 
 date
-git checkout master
-githash=$(git rev-parse HEAD)
+#git checkout master
+#githash=$(git rev-parse HEAD)
 
 hdate=$(date +"%Y-%m/%Y-%m-%d-%H:%m")
 mkdir -p binaries/$hdate
@@ -118,8 +118,6 @@ build_arduplane() {
 	    make vrbrain || {
                 echo "Failed build of ArduPlane VRBRAIN $tag"
                 error_count=$((error_count+1))
-                checkout Plane "latest"
-                popd
                 return
             }
 	    copyit ArduPlane-vrbrain-v45.vrx $ddir $tag && 
