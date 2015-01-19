@@ -28,6 +28,7 @@
 #include <AP_AHRS.h>
 #include <GCS_MAVLink.h>
 #include <RC_Channel.h>
+#include <AP_SerialManager.h>
 
 // maximum number of mounts
 #define AP_MOUNT_MAX_INSTANCES          1
@@ -60,7 +61,7 @@ public:
     AP_Mount(const AP_AHRS &ahrs, const struct Location &current_loc);
 
     // init - detect and initialise all mounts
-    void init();
+    void init(const AP_SerialManager& serial_manager);
 
     // update - give mount opportunity to update servos.  should be called at 10hz or higher
     void update();

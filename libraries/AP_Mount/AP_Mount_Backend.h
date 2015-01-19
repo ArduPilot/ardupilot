@@ -39,7 +39,7 @@ public:
     virtual ~AP_Mount_Backend(void) {}
 
     // init - performs any required initialisation for this instance
-    virtual void init() = 0;
+    virtual void init(const AP_SerialManager& serial_manager) = 0;
 
     // update mount position - should be called periodically
     virtual void update() = 0;
