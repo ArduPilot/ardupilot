@@ -392,10 +392,4 @@ enum FlipState {
 #define MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE      (1<<11)
 #define MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE (1<<12)
 
-enum Serial2Protocol {
-    SERIAL2_MAVLINK     = 1,
-    SERIAL2_FRSKY_DPORT = 2,
-    SERIAL2_FRSKY_SPORT = 3 // not supported yet
-};
-
 #endif // _DEFINES_H
