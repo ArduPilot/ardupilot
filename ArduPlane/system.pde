@@ -513,6 +513,7 @@ static void startup_INS_ground(bool do_accel_init)
     AP_InertialSensor::Start_style style;
     if (g.skip_gyro_cal && !do_accel_init) {
         style = AP_InertialSensor::WARM_START;
+        arming.set_skip_gyro_cal(true);
     } else {
         style = AP_InertialSensor::COLD_START;
     }
@@ -672,7 +673,9 @@ static bool should_log(uint32_t mask)
         // we have to set in_mavlink_delay to prevent logging while
         // writing headers
         in_mavlink_delay = true;
+        #if LOGGING_ENABLED == ENABLED
         start_logging();
+        #endif
         in_mavlink_delay = false;
     }
     return ret;

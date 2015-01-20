@@ -558,7 +558,7 @@ static bool is_flying(void)
     bool gpsMovement = (gps.status() < AP_GPS::GPS_OK_FIX_2D ||
                         gps.ground_speed() >= 5);
     
-    bool airspeedMovement = !airspeed.use() || airspeed.get_airspeed() >= 5;
+    bool airspeedMovement = (!ahrs.airspeed_sensor_enabled()) || airspeed.get_airspeed() >= 5;
     
     // we're more than 5m from the home altitude
     bool inAir = relative_altitude_abs_cm() > 500;
@@ -614,7 +614,7 @@ static bool suppress_throttle(void)
         // if we have an airspeed sensor, then check it too, and
         // require 5m/s. This prevents throttle up due to spiky GPS
         // groundspeed with bad GPS reception
-        if (!airspeed.use() || airspeed.get_airspeed() >= 5) {
+        if ((!ahrs.airspeed_sensor_enabled()) || airspeed.get_airspeed() >= 5) {
             // we're moving at more than 5 m/s
             throttle_suppressed = false;
             return false;        
@@ -869,7 +869,7 @@ static void set_servos(void)
 
     if (auto_throttle_mode) {
         int16_t flapSpeedSource = 0;
-        if (airspeed.use()) {
+        if (ahrs.airspeed_sensor_enabled()) {
             flapSpeedSource = target_airspeed_cm * 0.01f;
         } else {
             flapSpeedSource = aparm.throttle_cruise;

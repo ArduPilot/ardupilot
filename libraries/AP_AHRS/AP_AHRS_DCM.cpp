@@ -559,7 +559,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
             return;
         }
         float airspeed;
-        if (_airspeed && _airspeed->use()) {
+        if (airspeed_sensor_enabled()) {
             airspeed = _airspeed->get_airspeed();
         } else {
             airspeed = _last_airspeed;
@@ -850,7 +850,7 @@ void AP_AHRS_DCM::estimate_wind(void)
         }
 
         _last_wind_time = now;
-    } else if (now - _last_wind_time > 2000 && _airspeed && _airspeed->use()) {
+    } else if (now - _last_wind_time > 2000 && airspeed_sensor_enabled()) {
         // when flying straight use airspeed to get wind estimate if available
         Vector3f airspeed = _dcm_matrix.colx() * _airspeed->get_airspeed();
         Vector3f wind = velocity - (airspeed * get_EAS2TAS());
@@ -923,7 +923,7 @@ bool AP_AHRS_DCM::get_position(struct Location &loc) const
 bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret) const
 {
 	bool ret = false;
-	if (_airspeed && _airspeed->use()) {
+	if (airspeed_sensor_enabled()) {
 		*airspeed_ret = _airspeed->get_airspeed();
 		return true;
 	}

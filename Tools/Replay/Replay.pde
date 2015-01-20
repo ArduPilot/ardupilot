@@ -209,6 +209,8 @@ void setup()
 
     if (arm_time_ms != 0) {
         ahrs.set_armed(false);
+    } else {
+        ahrs.set_armed(true);
     }
 
     barometer.init();

@@ -72,7 +72,7 @@ void loop()
                             (int)gps.ground_course_cd() / 100,
                             gps.num_sats(),
                             gps.time_week(),
-                            gps.time_week_ms(),
+                            (unsigned long)gps.time_week_ms(),
                             gps.status());
     }
     hal.scheduler->delay(10);

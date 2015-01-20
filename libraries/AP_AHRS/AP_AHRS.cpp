@@ -126,7 +126,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
 // return airspeed estimate if available
 bool AP_AHRS::airspeed_estimate(float *airspeed_ret) const
 {
-	if (_airspeed && _airspeed->use()) {
+	if (airspeed_sensor_enabled()) {
 		*airspeed_ret = _airspeed->get_airspeed();
 		if (_wind_max > 0 && _gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
                     // constrain the airspeed by the ground speed

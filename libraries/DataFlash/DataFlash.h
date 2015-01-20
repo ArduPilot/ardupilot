@@ -12,6 +12,7 @@
 #include <AP_InertialSensor.h>
 #include <AP_Baro.h>
 #include <AP_AHRS.h>
+#include "../AP_Airspeed/AP_Airspeed.h"
 #include <stdint.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -77,6 +78,7 @@ public:
     void Log_Write_Message_P(const prog_char_t *message);
     void Log_Write_Camera(const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);
     void Log_Write_ESC(void);
+    void Log_Write_Airspeed(AP_Airspeed &airspeed);
 
     bool logging_started(void) const { return log_write_started; }
 
@@ -460,6 +462,16 @@ struct PACKED log_Esc {
     int16_t temperature;
 };
 
+struct PACKED log_AIRSPEED {
+    LOG_PACKET_HEADER;
+    uint32_t timestamp;
+    float   airspeed;
+    float   diffpressure;
+    int16_t temperature;
+    float   rawpressure;
+    float   offset;
+};
+
 // messages for all boards
 #define LOG_BASE_STRUCTURES \
     { LOG_FORMAT_MSG, sizeof(log_Format), \
@@ -487,7 +499,9 @@ struct PACKED log_Esc {
     { LOG_RADIO_MSG, sizeof(log_Radio), \
       "RAD", "IBBBBBHH", "TimeMS,RSSI,RemRSSI,TxBuf,Noise,RemNoise,RxErrors,Fixed" }, \
     { LOG_CAMERA_MSG, sizeof(log_Camera), \
-      "CAM", "IHLLeeccC","GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,Roll,Pitch,Yaw" }
+      "CAM", "IHLLeeccC","GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,Roll,Pitch,Yaw" }, \
+    { LOG_ARSP_MSG, sizeof(log_AIRSPEED), \
+      "ARSP",  "Iffcff",   "TimeMS,Airspeed,DiffPress,Temp,RawPress,Offset" }
 
 // messages for more advanced boards
 #define LOG_EXTRA_STRUCTURES \
@@ -581,6 +595,7 @@ struct PACKED log_Esc {
 #define LOG_ESC8_MSG      161
 #define LOG_EKF5_MSG      162
 #define LOG_BAR2_MSG	  163
+#define LOG_ARSP_MSG      164
 
 // message types 200 to 210 reversed for GPS driver use
 // message types 211 to 220 reversed for autotune use

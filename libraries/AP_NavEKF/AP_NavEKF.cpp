@@ -3690,14 +3690,16 @@ void NavEKF::SetFlightAndFusionModes()
     // if we are a fly forward type vehicle, then in-air mode can be determined through a combination of speed and height criteria
     if (assume_zero_sideslip()) {
         // Evaluate a numerical score that defines the likelihood we are in the air
-        const AP_Airspeed *airspeed = _ahrs->get_airspeed();
         float gndSpdSq = sq(velNED[0]) + sq(velNED[1]);
         uint8_t inAirSum = 0;
         bool highGndSpdStage2 = false;
 
         // trigger at 8 m/s airspeed
-        if (airspeed && airspeed->use() && airspeed->get_airspeed() * airspeed->get_EAS2TAS() > 8.0f) {
-            inAirSum++;
+        if (_ahrs->airspeed_sensor_enabled()) {
+            const AP_Airspeed *airspeed = _ahrs->get_airspeed();
+            if (airspeed->get_airspeed() * airspeed->get_EAS2TAS() > 8.0f) {
+                inAirSum++;
+            }
         }
 
         // this will trigger during change in baro height
@@ -4389,10 +4391,7 @@ void NavEKF::InitialiseVariables()
 // return true if we should use the airspeed sensor
 bool NavEKF::useAirspeed(void) const
 {
-    if (_ahrs->get_airspeed() == NULL) {
-        return false;
-    }
-    return _ahrs->get_airspeed()->use();
+    return _ahrs->airspeed_sensor_enabled();
 }
 
 // return true if we should use the range finder sensor

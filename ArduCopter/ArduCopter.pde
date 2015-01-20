@@ -450,13 +450,6 @@ static MOTOR_CLASS motors(g.rc_1, g.rc_2, g.rc_3, g.rc_4);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
-// PIDs
-////////////////////////////////////////////////////////////////////////////////
-// This is used to hold radio tuning values for in-flight CH6 tuning
-float tuning_value;
-
-
-////////////////////////////////////////////////////////////////////////////////
 // GPS variables
 ////////////////////////////////////////////////////////////////////////////////
 // We use atan2 and other trig techniques to calaculate angles
@@ -1116,8 +1109,8 @@ static void three_hz_loop()
 
     update_events();
 
-    if(g.radio_tuning > 0)
-        tuning();
+    // update ch6 in flight tuning
+    tuning();
 }
 
 // one_hz_loop - runs at 1Hz
@@ -1337,198 +1330,6 @@ static void update_altitude()
     // write altitude info to dataflash logs
     if (should_log(MASK_LOG_CTUN)) {
         Log_Write_Control_Tuning();
-    }
-}
-
-static void tuning(){
-
-    // exit immediately when radio failsafe is invoked so tuning values are not set to zero
-    if (failsafe.radio || failsafe.radio_counter != 0) {
-        return;
-    }
-
-    tuning_value = (float)g.rc_6.control_in / 1000.0f;
-    g.rc_6.set_range(g.radio_tuning_low,g.radio_tuning_high);                   // 0 to 1
-
-    switch(g.radio_tuning) {
-
-    // Roll, Pitch tuning
-    case CH6_STABILIZE_ROLL_PITCH_KP:
-        g.p_stabilize_roll.kP(tuning_value);
-        g.p_stabilize_pitch.kP(tuning_value);
-        break;
-
-    case CH6_RATE_ROLL_PITCH_KP:
-        g.pid_rate_roll.kP(tuning_value);
-        g.pid_rate_pitch.kP(tuning_value);
-        break;
-
-    case CH6_RATE_ROLL_PITCH_KI:
-        g.pid_rate_roll.kI(tuning_value);
-        g.pid_rate_pitch.kI(tuning_value);
-        break;
-
-    case CH6_RATE_ROLL_PITCH_KD:
-        g.pid_rate_roll.kD(tuning_value);
-        g.pid_rate_pitch.kD(tuning_value);
-        break;
-
-    // Yaw tuning
-    case CH6_STABILIZE_YAW_KP:
-        g.p_stabilize_yaw.kP(tuning_value);
-        break;
-
-    case CH6_YAW_RATE_KP:
-        g.pid_rate_yaw.kP(tuning_value);
-        break;
-
-    case CH6_YAW_RATE_KD:
-        g.pid_rate_yaw.kD(tuning_value);
-        break;
-
-    // Altitude and throttle tuning
-    case CH6_ALTITUDE_HOLD_KP:
-        g.p_alt_hold.kP(tuning_value);
-        break;
-
-    case CH6_THROTTLE_RATE_KP:
-        g.p_throttle_rate.kP(tuning_value);
-        break;
-
-    case CH6_THROTTLE_ACCEL_KP:
-        g.pid_throttle_accel.kP(tuning_value);
-        break;
-
-    case CH6_THROTTLE_ACCEL_KI:
-        g.pid_throttle_accel.kI(tuning_value);
-        break;
-
-    case CH6_THROTTLE_ACCEL_KD:
-        g.pid_throttle_accel.kD(tuning_value);
-        break;
-
-    // Loiter and navigation tuning
-    case CH6_LOITER_POSITION_KP:
-        g.p_loiter_pos.kP(tuning_value);
-        break;
-
-    case CH6_LOITER_RATE_KP:
-        g.pid_loiter_rate_lon.kP(tuning_value);
-        g.pid_loiter_rate_lat.kP(tuning_value);
-        break;
-
-    case CH6_LOITER_RATE_KI:
-        g.pid_loiter_rate_lon.kI(tuning_value);
-        g.pid_loiter_rate_lat.kI(tuning_value);
-        break;
-
-    case CH6_LOITER_RATE_KD:
-        g.pid_loiter_rate_lon.kD(tuning_value);
-        g.pid_loiter_rate_lat.kD(tuning_value);
-        break;
-
-    case CH6_WP_SPEED:
-        // set waypoint navigation horizontal speed to 0 ~ 1000 cm/s
-        wp_nav.set_speed_xy(g.rc_6.control_in);
-        break;
-
-    // Acro roll pitch gain
-    case CH6_ACRO_RP_KP:
-        g.acro_rp_p = tuning_value;
-        break;
-
-    // Acro yaw gain
-    case CH6_ACRO_YAW_KP:
-        g.acro_yaw_p = tuning_value;
-        break;
-
-#if FRAME_CONFIG == HELI_FRAME
-    case CH6_HELI_EXTERNAL_GYRO:
-        motors.ext_gyro_gain(g.rc_6.control_in);
-        break;
-
-    case CH6_RATE_PITCH_FF:
-        g.pid_rate_pitch.ff(tuning_value);
-        break;
-        
-    case CH6_RATE_ROLL_FF:
-        g.pid_rate_roll.ff(tuning_value);
-        break;
-        
-    case CH6_RATE_YAW_FF:
-        g.pid_rate_yaw.ff(tuning_value);
-        break;        
-#endif
-
-    case CH6_AHRS_YAW_KP:
-        ahrs._kp_yaw.set(tuning_value);
-        break;
-
-    case CH6_AHRS_KP:
-        ahrs._kp.set(tuning_value);
-        break;
-
-    case CH6_DECLINATION:
-        // set declination to +-20degrees
-        compass.set_declination(ToRad((2.0f * g.rc_6.control_in - g.radio_tuning_high)/100.0f), false);     // 2nd parameter is false because we do not want to save to eeprom because this would have a performance impact
-        break;
-
-    case CH6_CIRCLE_RATE:
-        // set circle rate
-        circle_nav.set_rate(g.rc_6.control_in/25-20);   // allow approximately 45 degree turn rate in either direction
-        break;
-
-    case CH6_SONAR_GAIN:
-        // set sonar gain
-        g.sonar_gain.set(tuning_value);
-        break;
-
-#if 0
-        // disabled for now - we need accessor functions
-    case CH6_EKF_VERTICAL_POS:
-        // EKF's baro vs accel (higher rely on accels more, baro impact is reduced)
-        ahrs.get_NavEKF()._gpsVertPosNoise = tuning_value;
-        break;
-
-    case CH6_EKF_HORIZONTAL_POS:
-        // EKF's gps vs accel (higher rely on accels more, gps impact is reduced)
-        ahrs.get_NavEKF()._gpsHorizPosNoise = tuning_value;
-        break;
-
-    case CH6_EKF_ACCEL_NOISE:
-        // EKF's accel noise (lower means trust accels more, gps & baro less)
-        ahrs.get_NavEKF()._accNoise = tuning_value;
-        break;
-#endif
-
-    case CH6_RC_FEEL_RP:
-        // roll-pitch input smoothing
-        g.rc_feel_rp = g.rc_6.control_in / 10;
-        break;
-    
-    case CH6_RATE_PITCH_KP:
-        g.pid_rate_pitch.kP(tuning_value);
-        break;
-        
-    case CH6_RATE_PITCH_KI:
-        g.pid_rate_pitch.kI(tuning_value);
-        break;
-        
-    case CH6_RATE_PITCH_KD:
-        g.pid_rate_pitch.kD(tuning_value);
-        break;
-        
-    case CH6_RATE_ROLL_KP:
-        g.pid_rate_roll.kP(tuning_value);
-        break;
-        
-    case CH6_RATE_ROLL_KI:
-        g.pid_rate_roll.kI(tuning_value);
-        break;
-        
-    case CH6_RATE_ROLL_KD:
-        g.pid_rate_roll.kD(tuning_value);
-        break;
     }
 }
 

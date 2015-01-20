@@ -154,7 +154,6 @@ static void print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode);
 ////////////////////////////////////////////////////////////////////////////////
 // DataFlash
 ////////////////////////////////////////////////////////////////////////////////
-#if LOGGING_ENABLED == ENABLED
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 static DataFlash_APM1 DataFlash;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
@@ -164,7 +163,6 @@ static DataFlash_File DataFlash(HAL_BOARD_LOG_DIRECTORY);
 #else
 // no dataflash driver
 DataFlash_Empty DataFlash;
-#endif
 #endif
 
 // has a log download started?
@@ -1217,7 +1215,7 @@ static void handle_auto_mode(void)
             // allowed for level flight
             nav_roll_cd = constrain_int32(nav_roll_cd, -g.level_roll_limit*100UL, g.level_roll_limit*100UL);
         } else {
-            if (!airspeed.use()) {
+            if (!ahrs.airspeed_sensor_enabled()) {
                 // when not under airspeed control, don't allow
                 // down pitch in landing
                 nav_pitch_cd = constrain_int32(nav_pitch_cd, 0, nav_pitch_cd);
