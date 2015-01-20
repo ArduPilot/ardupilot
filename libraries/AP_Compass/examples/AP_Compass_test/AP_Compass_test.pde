@@ -82,6 +82,9 @@ void setup() {
     case AP_COMPASS_TYPE_PX4:
         hal.console->println("PX4");
         break;
+    case AP_COMPASS_TYPE_AK8963_MPU9250:
+        hal.console->println("AK8963");
+        break;
     default:
         hal.console->println("unknown");
         break;
