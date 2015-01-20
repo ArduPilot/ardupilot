@@ -260,7 +260,7 @@ public:
     // return true if airspeed comes from an airspeed sensor, as
     // opposed to an IMU estimate
     bool airspeed_sensor_enabled(void) const {
-        return _airspeed != NULL && _airspeed->use();
+        return _airspeed != NULL && _airspeed->use() && _airspeed->healthy();
     }
 
     // return a ground vector estimate in meters/second, in North/East order
