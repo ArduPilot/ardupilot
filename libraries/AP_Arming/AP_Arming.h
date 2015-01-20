@@ -21,6 +21,7 @@ public:
         ARMING_CHECK_RC         = 0x0040,
         ARMING_CHECK_VOLTAGE    = 0x0080,
         ARMING_CHECK_BATTERY    = 0x0100,
+        ARMING_CHECK_AIRSPEED   = 0x0200,
     };
 
     enum ArmingMethod {
@@ -74,6 +75,10 @@ private:
     void set_enabled_checks(uint16_t);
 
     bool barometer_checks(bool report);
+
+    bool airspeed_checks(bool report);
+
+    bool ins_checks(bool report);
 
     bool compass_checks(bool report);
 
