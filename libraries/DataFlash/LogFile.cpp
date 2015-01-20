@@ -1108,7 +1108,7 @@ void DataFlash_Class::Log_Write_Camera(const AP_AHRS &ahrs, const AP_GPS &gps, c
 }
 
 // Write an attitude packet
-void DataFlash_Class::Log_Write_Attitude(AP_AHRS &ahrs, Vector3f targets)
+void DataFlash_Class::Log_Write_Attitude(AP_AHRS &ahrs, const Vector3f &targets)
 {
     struct log_Attitude pkt = {
         LOG_PACKET_HEADER_INIT(LOG_ATTITUDE_MSG),
@@ -1126,7 +1126,7 @@ void DataFlash_Class::Log_Write_Attitude(AP_AHRS &ahrs, Vector3f targets)
 }
 
 // Write an Current data packet
-void DataFlash_Class::Log_Write_Current(AP_BattMonitor battery, int16_t  throttle)
+void DataFlash_Class::Log_Write_Current(const AP_BattMonitor &battery, int16_t throttle)
 {
     float voltage2 = battery.voltage2();
     struct log_Current pkt = {
