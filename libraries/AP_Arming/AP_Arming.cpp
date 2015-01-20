@@ -166,6 +166,11 @@ bool AP_Arming::compass_checks(bool report)
     if ((checks_to_perform) & ARMING_CHECK_ALL ||
         (checks_to_perform) & ARMING_CHECK_COMPASS) {
 
+        if (!_compass.use_for_yaw()) {
+            // compass use is disabled
+            return true;
+        }
+
         if (!_compass.healthy()) {
             if (report) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not healthy!"));
