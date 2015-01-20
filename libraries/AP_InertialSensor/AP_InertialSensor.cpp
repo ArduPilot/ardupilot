@@ -1133,6 +1133,10 @@ check_sample:
  */
 void AP_InertialSensor::set_accel(uint8_t instance, const Vector3f &accel)
 {
+    if (_accel_count == 0) {
+        // we haven't initialised yet
+        return;
+    }
     if (instance < INS_MAX_INSTANCES) {
         _accel[instance] = accel;
         _accel_healthy[instance] = true;
@@ -1144,11 +1148,16 @@ void AP_InertialSensor::set_accel(uint8_t instance, const Vector3f &accel)
 
 void AP_InertialSensor::set_gyro(uint8_t instance, const Vector3f &gyro)
 {
+    if (_gyro_count == 0) {
+        // we haven't initialised yet
+        return;
+    }
     if (instance < INS_MAX_INSTANCES) {
         _gyro[instance] = gyro;
         _gyro_healthy[instance] = true;
         if (_gyro_count <= instance) {
             _gyro_count = instance+1;
+            _gyro_cal_ok[instance] = true;
         }
     }
 }
