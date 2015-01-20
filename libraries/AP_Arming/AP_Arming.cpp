@@ -48,7 +48,8 @@ const AP_Param::GroupInfo AP_Arming::var_info[] PROGMEM = {
 //but I don't want to reimplement messaging to GCS at the moment:
 AP_Arming::AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
                      const bool &home_set, gcs_send_t_p gcs_print_func)
-   : armed(false)
+    : armed(false)
+   , skip_gyro_cal(false)
    , arming_method(NONE)
    , ahrs(ahrs_ref)
    , barometer(baro)
@@ -113,11 +114,21 @@ bool AP_Arming::ins_checks(bool report)
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_INS)) {
         const AP_InertialSensor &ins = ahrs.get_ins();
-        if (! ins.get_gyro_health_all() ||
-            ! ins.gyro_calibrated_ok_all() ||
-            ! ins.get_accel_health_all()) {
+        if (! ins.get_gyro_health_all()) {
             if (report) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: INS not healthy!"));
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: gyros not healthy!"));
+            }
+            return false;
+        }
+        if (!skip_gyro_cal && ! ins.gyro_calibrated_ok_all()) {
+            if (report) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: gyros not calibrated!"));
+            }
+            return false;
+        }
+        if (! ins.get_accel_health_all()) {
+            if (report) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: accels not healthy!"));
             }
             return false;
         }

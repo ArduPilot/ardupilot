@@ -50,12 +50,14 @@ public:
     uint16_t get_enabled_checks();
 
     bool pre_arm_checks(bool report);
+    void set_skip_gyro_cal(bool set) { skip_gyro_cal = set; }
 
     //for params
     static const struct AP_Param::GroupInfo        var_info[];
 
 private:
-    bool                                                armed;
+    bool                                                armed:1;
+    bool                                                skip_gyro_cal:1;
 
     //Parameters
     AP_Int8                                           require;
