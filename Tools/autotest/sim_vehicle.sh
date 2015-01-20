@@ -210,6 +210,10 @@ pushd $autotest/../../$VEHICLE || {
     usage
     exit 1
 }
+if [ ! -f $autotest/../../config.mk ]; then
+    echo Generating a default configuration
+    make configure
+fi
 if [ $CLEAN_BUILD == 1 ]; then
     make clean
 fi
@@ -321,6 +325,11 @@ fi
 options=""
 if [ $START_HIL == 0 ]; then
 options="--master $MAVLINK_PORT --sitl $SIMOUT_PORT"
+fi
+
+# If running inside of a vagrant guest, then we probably want to forward our mavlink out to the containing host OS
+if [ $USER == "vagrant" ]; then
+options="$options --out 10.0.2.2:14550"
 fi
 options="$options --out 127.0.0.1:14550 --out 127.0.0.1:14551"
 extra_cmd1=""
