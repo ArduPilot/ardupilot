@@ -513,6 +513,7 @@ static void startup_INS_ground(bool do_accel_init)
     AP_InertialSensor::Start_style style;
     if (g.skip_gyro_cal && !do_accel_init) {
         style = AP_InertialSensor::WARM_START;
+        arming.set_skip_gyro_cal(true);
     } else {
         style = AP_InertialSensor::COLD_START;
     }
