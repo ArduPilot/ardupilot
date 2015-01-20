@@ -80,7 +80,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: SERIAL2_PROTOCOL
     // @DisplayName: Serial2 protocol selection
     // @Description: Control what protocol telemetry 2 port should be used for
-    // @Values: 1:GCS Mavlink,2:Frsky D-PORT
+    // @Values: 1:GCS Mavlink,2:Frsky D-PORT,3:Frsky S-PORT
     // @User: Standard
     GSCALAR(serial2_protocol,        "SERIAL2_PROTOCOL", SERIAL2_MAVLINK),
 #endif // FRSKY_TELEM_ENABLED
