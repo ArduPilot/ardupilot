@@ -55,7 +55,7 @@ static void arm_motors_check()
 
     // full left
     }else if (tmp < -4000) {
-        if (!manual_flight_mode(control_mode) && !ap.land_complete) {
+        if (!mode_has_manual_throttle(control_mode) && !ap.land_complete) {
             arming_counter = 0;
             return;
         }
@@ -88,7 +88,7 @@ static void auto_disarm_check()
     }
 
     // allow auto disarm in manual flight modes or Loiter/AltHold if we're landed
-    if (manual_flight_mode(control_mode) || ap.land_complete) {
+    if (mode_has_manual_throttle(control_mode) || ap.land_complete) {
         auto_disarming_counter++;
 
         if(auto_disarming_counter >= AUTO_DISARMING_DELAY) {
