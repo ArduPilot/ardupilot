@@ -684,11 +684,8 @@ static void init_disarm_motors()
     ahrs.set_armed(false);
 }
 
-/*****************************************
-* Set the flight control servos based on the current calculated values
-*****************************************/
-static void
-set_servos_4()
+// motors_output - send output to motors library which will adjust and send to ESCs and servos
+static void motors_output()
 {
     // check if we are performing the motor test
     if (ap.motor_test) {

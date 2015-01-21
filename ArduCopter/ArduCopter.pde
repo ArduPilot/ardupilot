@@ -970,9 +970,8 @@ static void fast_loop()
     update_heli_control_dynamics();
 #endif //HELI_FRAME
 
-    // write out the servo PWM values
-    // ------------------------------
-    set_servos_4();
+    // send outputs to the motors library
+    motors_output();
 
     // Inertial Nav
     // --------------------
