@@ -1627,6 +1627,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     }
 #endif // AC_RALLY == ENABLED
 
+    case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
+        send_autopilot_version(chan);
+        break;
+
 
     }     // end switch
 } // end handle mavlink
