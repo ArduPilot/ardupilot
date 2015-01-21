@@ -6,7 +6,7 @@ typedef struct __mavlink_gps_global_origin_t
 {
  int32_t latitude; ///< Latitude (WGS84), in degrees * 1E7
  int32_t longitude; ///< Longitude (WGS84), in degrees * 1E7
- int32_t altitude; ///< Altitude (WGS84), in meters * 1000 (positive for up)
+ int32_t altitude; ///< Altitude (AMSL), in meters * 1000 (positive for up)
 } mavlink_gps_global_origin_t;
 
 #define MAVLINK_MSG_ID_GPS_GLOBAL_ORIGIN_LEN 12
@@ -35,7 +35,7 @@ typedef struct __mavlink_gps_global_origin_t
  *
  * @param latitude Latitude (WGS84), in degrees * 1E7
  * @param longitude Longitude (WGS84), in degrees * 1E7
- * @param altitude Altitude (WGS84), in meters * 1000 (positive for up)
+ * @param altitude Altitude (AMSL), in meters * 1000 (positive for up)
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_gps_global_origin_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg,
@@ -73,7 +73,7 @@ static inline uint16_t mavlink_msg_gps_global_origin_pack(uint8_t system_id, uin
  * @param msg The MAVLink message to compress the data into
  * @param latitude Latitude (WGS84), in degrees * 1E7
  * @param longitude Longitude (WGS84), in degrees * 1E7
- * @param altitude Altitude (WGS84), in meters * 1000 (positive for up)
+ * @param altitude Altitude (AMSL), in meters * 1000 (positive for up)
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_gps_global_origin_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan,
@@ -137,7 +137,7 @@ static inline uint16_t mavlink_msg_gps_global_origin_encode_chan(uint8_t system_
  *
  * @param latitude Latitude (WGS84), in degrees * 1E7
  * @param longitude Longitude (WGS84), in degrees * 1E7
- * @param altitude Altitude (WGS84), in meters * 1000 (positive for up)
+ * @param altitude Altitude (AMSL), in meters * 1000 (positive for up)
  */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
@@ -232,7 +232,7 @@ static inline int32_t mavlink_msg_gps_global_origin_get_longitude(const mavlink_
 /**
  * @brief Get field altitude from gps_global_origin message
  *
- * @return Altitude (WGS84), in meters * 1000 (positive for up)
+ * @return Altitude (AMSL), in meters * 1000 (positive for up)
  */
 static inline int32_t mavlink_msg_gps_global_origin_get_altitude(const mavlink_message_t* msg)
 {

@@ -7,7 +7,7 @@ typedef struct __mavlink_gps2_raw_t
  uint64_t time_usec; ///< Timestamp (microseconds since UNIX epoch or microseconds since system boot)
  int32_t lat; ///< Latitude (WGS84), in degrees * 1E7
  int32_t lon; ///< Longitude (WGS84), in degrees * 1E7
- int32_t alt; ///< Altitude (WGS84), in meters * 1000 (positive for up)
+ int32_t alt; ///< Altitude (AMSL, not WGS84), in meters * 1000 (positive for up)
  uint32_t dgps_age; ///< Age of DGPS info
  uint16_t eph; ///< GPS HDOP horizontal dilution of position in cm (m*100). If unknown, set to: UINT16_MAX
  uint16_t epv; ///< GPS VDOP vertical dilution of position in cm (m*100). If unknown, set to: UINT16_MAX
@@ -55,7 +55,7 @@ typedef struct __mavlink_gps2_raw_t
  * @param fix_type 0-1: no fix, 2: 2D fix, 3: 3D fix, 4: DGPS fix, 5: RTK Fix. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.
  * @param lat Latitude (WGS84), in degrees * 1E7
  * @param lon Longitude (WGS84), in degrees * 1E7
- * @param alt Altitude (WGS84), in meters * 1000 (positive for up)
+ * @param alt Altitude (AMSL, not WGS84), in meters * 1000 (positive for up)
  * @param eph GPS HDOP horizontal dilution of position in cm (m*100). If unknown, set to: UINT16_MAX
  * @param epv GPS VDOP vertical dilution of position in cm (m*100). If unknown, set to: UINT16_MAX
  * @param vel GPS ground speed (m/s * 100). If unknown, set to: UINT16_MAX
@@ -120,7 +120,7 @@ static inline uint16_t mavlink_msg_gps2_raw_pack(uint8_t system_id, uint8_t comp
  * @param fix_type 0-1: no fix, 2: 2D fix, 3: 3D fix, 4: DGPS fix, 5: RTK Fix. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.
  * @param lat Latitude (WGS84), in degrees * 1E7
  * @param lon Longitude (WGS84), in degrees * 1E7
- * @param alt Altitude (WGS84), in meters * 1000 (positive for up)
+ * @param alt Altitude (AMSL, not WGS84), in meters * 1000 (positive for up)
  * @param eph GPS HDOP horizontal dilution of position in cm (m*100). If unknown, set to: UINT16_MAX
  * @param epv GPS VDOP vertical dilution of position in cm (m*100). If unknown, set to: UINT16_MAX
  * @param vel GPS ground speed (m/s * 100). If unknown, set to: UINT16_MAX
@@ -211,7 +211,7 @@ static inline uint16_t mavlink_msg_gps2_raw_encode_chan(uint8_t system_id, uint8
  * @param fix_type 0-1: no fix, 2: 2D fix, 3: 3D fix, 4: DGPS fix, 5: RTK Fix. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.
  * @param lat Latitude (WGS84), in degrees * 1E7
  * @param lon Longitude (WGS84), in degrees * 1E7
- * @param alt Altitude (WGS84), in meters * 1000 (positive for up)
+ * @param alt Altitude (AMSL, not WGS84), in meters * 1000 (positive for up)
  * @param eph GPS HDOP horizontal dilution of position in cm (m*100). If unknown, set to: UINT16_MAX
  * @param epv GPS VDOP vertical dilution of position in cm (m*100). If unknown, set to: UINT16_MAX
  * @param vel GPS ground speed (m/s * 100). If unknown, set to: UINT16_MAX
@@ -369,7 +369,7 @@ static inline int32_t mavlink_msg_gps2_raw_get_lon(const mavlink_message_t* msg)
 /**
  * @brief Get field alt from gps2_raw message
  *
- * @return Altitude (WGS84), in meters * 1000 (positive for up)
+ * @return Altitude (AMSL, not WGS84), in meters * 1000 (positive for up)
  */
 static inline int32_t mavlink_msg_gps2_raw_get_alt(const mavlink_message_t* msg)
 {
