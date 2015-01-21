@@ -101,8 +101,8 @@ public:
     // Check basic filter health metrics and return a consolidated health status
     bool healthy(void) const;
 
-    // return the last calculated NED position relative to the reference point (m).
-    // return false if no position is available
+    // Return the last calculated NED position where horizontal position is relative to the current home position
+    // and vertical position is relative to height at arming (m). Return false if no position is available
     bool getPosNED(Vector3f &pos) const;
 
     // return NED velocity in m/s

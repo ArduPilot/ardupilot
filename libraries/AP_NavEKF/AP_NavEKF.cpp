@@ -3547,16 +3547,19 @@ void NavEKF::getVelNED(Vector3f &vel) const
     vel = state.velocity;
 }
 
-// return the last calculated NED position relative to the reference point (m).
-// return false if no position is available
+// Return the last calculated NED position where horizontal position is relative to the current home position
+// and vertical position is relative to height at arming (m). Return false if no position is available
 bool NavEKF::getPosNED(Vector3f &pos) const
 {
+    const struct Location &home = _ahrs->get_home();
+    Vector2f originToHomeOffset = location_diff(home, EKF_origin);
+
     if (constPosMode) {
-        pos.x = state.position.x + lastKnownPositionNE.x;
-        pos.y = state.position.y + lastKnownPositionNE.y;
+        pos.x = state.position.x + lastKnownPositionNE.x + originToHomeOffset.x;
+        pos.y = state.position.y + lastKnownPositionNE.y + originToHomeOffset.y;
     } else {
-        pos.x = state.position.x;
-        pos.y = state.position.y;
+        pos.x = state.position.x + originToHomeOffset.x;
+        pos.y = state.position.y + originToHomeOffset.y;
     }
     // If relying on optical flow, then output ground relative position so that the vehicle does terain following
     if (_fusionModeGPS == 3) {
