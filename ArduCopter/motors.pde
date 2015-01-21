@@ -694,10 +694,6 @@ set_servos_4()
     if (ap.motor_test) {
         motor_test_output();
     } else {
-#if FRAME_CONFIG == TRI_FRAME
-        // To-Do: implement improved stability patch for tri so that we do not need to limit throttle input to motors
-        g.rc_3.servo_out = min(g.rc_3.servo_out, 800);
-#endif
         motors.output();
     }
 }
