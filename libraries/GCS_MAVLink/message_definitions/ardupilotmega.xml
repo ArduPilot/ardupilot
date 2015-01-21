@@ -478,6 +478,12 @@
       <field type="float" name="v3">test variable3</field>
       <field type="float" name="v4">test variable4</field>
     </message>
+    
+    <message name="AUTOPILOT_VERSION_REQUEST" id="183">
+        <description>Request the autopilot version from the system/component.</description>
+        <field type="uint8_t" name="target_system">System ID</field>
+        <field type="uint8_t" name="target_component">Component ID</field>
+    </message>
 
     <message name="GIMBAL_REPORT" id="184">
       <description>Report from MAVLink enabled gimbal to vehicle</description>
