@@ -355,7 +355,8 @@ void loop()
         }
         read_sensors(type);
 
-        if ((type == LOG_PLANE_ATTITUDE_MSG && LogReader.vehicle == LogReader::VEHICLE_PLANE) ||
+        if ((type == LOG_ATTITUDE_MSG) ||
+            (type == LOG_PLANE_ATTITUDE_MSG && LogReader.vehicle == LogReader::VEHICLE_PLANE) ||
             (type == LOG_COPTER_ATTITUDE_MSG && LogReader.vehicle == LogReader::VEHICLE_COPTER) ||
             (type == LOG_ROVER_ATTITUDE_MSG && LogReader.vehicle == LogReader::VEHICLE_ROVER)) {
 

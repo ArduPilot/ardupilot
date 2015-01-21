@@ -42,7 +42,7 @@ bool LogReader::open_log(const char *logfile)
 }
 
 
-struct PACKED log_Plane_Compass {
+struct PACKED log_Plane_Compass_old {
     LOG_PACKET_HEADER;
     uint32_t time_ms;
     int16_t mag_x;
@@ -53,7 +53,7 @@ struct PACKED log_Plane_Compass {
     int16_t offset_z;
 };
 
-struct PACKED log_Copter_Compass {
+struct PACKED log_Copter_Compass_old {
     LOG_PACKET_HEADER;
     uint32_t time_ms;
     int16_t mag_x;
@@ -67,7 +67,7 @@ struct PACKED log_Copter_Compass {
     int16_t motor_offset_z;
 };
 
-struct PACKED log_Plane_Attitude {
+struct PACKED log_Plane_Attitude_old {
     LOG_PACKET_HEADER;
     uint32_t time_ms;
     int16_t roll;
@@ -77,7 +77,7 @@ struct PACKED log_Plane_Attitude {
     uint16_t error_yaw;
 };
 
-struct PACKED log_Copter_Attitude {
+struct PACKED log_Copter_Attitude_old {
     LOG_PACKET_HEADER;
     uint32_t time_ms;
     int16_t control_roll;
@@ -105,7 +105,7 @@ struct PACKED log_Copter_Nav_Tuning {
     float    desired_accel_y;
 };
 
-struct PACKED log_Rover_Attitude {
+struct PACKED log_Rover_Attitude_old {
     LOG_PACKET_HEADER;
     uint32_t time_ms;
     int16_t roll;
@@ -113,7 +113,7 @@ struct PACKED log_Rover_Attitude {
     uint16_t yaw;
 };
 
-struct PACKED log_Rover_Compass {
+struct PACKED log_Rover_Compass_old {
     LOG_PACKET_HEADER;
     uint32_t time_ms;
     int16_t mag_x;
@@ -131,9 +131,9 @@ void LogReader::process_plane(uint8_t type, uint8_t *data, uint16_t length)
 {
     switch (type) {
     case LOG_PLANE_COMPASS_MSG: {
-        struct log_Plane_Compass msg;
+        struct log_Plane_Compass_old msg;
         if(sizeof(msg) != length) {
-            printf("Bad plane COMPASS length\n");
+            printf("Bad plane COMPASS_OLD length\n");
             exit(1);
         }
         memcpy(&msg, data, sizeof(msg));
@@ -144,7 +144,7 @@ void LogReader::process_plane(uint8_t type, uint8_t *data, uint16_t length)
     }
 
     case LOG_PLANE_ATTITUDE_MSG: {
-        struct log_Plane_Attitude msg;
+        struct log_Plane_Attitude_old msg;
         if(sizeof(msg) != length) {
             printf("Bad ATTITUDE length %u should be %u\n", (unsigned)length, (unsigned)sizeof(msg));
             exit(1);
@@ -175,7 +175,7 @@ void LogReader::process_rover(uint8_t type, uint8_t *data, uint16_t length)
 {
     switch (type) {
     case LOG_ROVER_COMPASS_MSG: {
-        struct log_Rover_Compass msg;
+        struct log_Rover_Compass_old msg;
         if(sizeof(msg) != length) {
             printf("Bad rover COMPASS length\n");
             exit(1);
@@ -188,7 +188,7 @@ void LogReader::process_rover(uint8_t type, uint8_t *data, uint16_t length)
     }
 
     case LOG_ROVER_ATTITUDE_MSG: {
-        struct log_Rover_Attitude msg;
+        struct log_Rover_Attitude_old msg;
         if(sizeof(msg) != length) {
             printf("Bad ATTITUDE length\n");
             exit(1);
@@ -205,7 +205,7 @@ void LogReader::process_copter(uint8_t type, uint8_t *data, uint16_t length)
 {
     switch (type) {
     case LOG_COPTER_COMPASS_MSG: {
-        struct log_Copter_Compass msg;
+        struct log_Copter_Compass_old msg;
         if(sizeof(msg) != length) {
             printf("Bad copter COMPASS length %u expected %u\n", (unsigned)length, (unsigned)sizeof(msg));
             exit(1);
@@ -218,7 +218,7 @@ void LogReader::process_copter(uint8_t type, uint8_t *data, uint16_t length)
     }
 
     case LOG_COPTER_ATTITUDE_MSG: {
-        struct log_Copter_Attitude msg;
+        struct log_Copter_Attitude_old msg;
         if (sizeof(msg) == length+sizeof(uint16_t)*2) {
             // old style, without errors
             memset(&msg, 0, sizeof(msg));
@@ -521,6 +521,31 @@ bool LogReader::update(uint8_t &type)
         memcpy(&msg, data, sizeof(msg));
         wait_timestamp(msg.time_ms);
         ahr2_attitude = Vector3f(msg.roll*0.01f, msg.pitch*0.01f, msg.yaw*0.01f);
+        break;
+    }
+
+    case LOG_ATTITUDE_MSG: {
+        struct log_Attitude msg;
+        if(sizeof(msg) != f.length) {
+            printf("Bad ATTITUDE length %u should be %u\n", (unsigned)f.length, (unsigned)sizeof(msg));
+            exit(1);
+        }
+        memcpy(&msg, data, sizeof(msg));
+        wait_timestamp(msg.time_ms);
+        attitude = Vector3f(msg.roll*0.01f, msg.pitch*0.01f, msg.yaw*0.01f);
+        break;
+    }
+
+    case LOG_COMPASS_MSG: {
+        struct log_Compass msg;
+        if(sizeof(msg) != f.length) {
+            printf("Bad COMPASS length\n");
+            exit(1);
+        }
+        memcpy(&msg, data, sizeof(msg));
+        wait_timestamp(msg.time_ms);
+        compass.setHIL(Vector3f(msg.mag_x - msg.offset_x, msg.mag_y - msg.offset_y, msg.mag_z - msg.offset_z));
+        compass.set_offsets(0, Vector3f(msg.offset_x, msg.offset_y, msg.offset_z));
         break;
     }
 
