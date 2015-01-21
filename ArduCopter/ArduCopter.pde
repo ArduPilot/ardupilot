@@ -561,13 +561,6 @@ static float baro_climbrate;        // barometer climbrate in cm/s
 // Current location of the copter
 static struct   Location current_loc;
 
-////////////////////////////////////////////////////////////////////////////////
-// Throttle integrator
-////////////////////////////////////////////////////////////////////////////////
-// This is a simple counter to track the amount of throttle used during flight
-// This could be useful later in determining and debuging current usage and predicting battery life
-static uint32_t throttle_integrator;
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // Navigation Yaw control
@@ -1049,9 +1042,6 @@ static void update_batt_compass(void)
             DataFlash.Log_Write_Compass(compass);
         }
     }
-
-    // record throttle output
-    throttle_integrator += g.rc_3.servo_out;
 }
 
 // ten_hz_logging_loop
