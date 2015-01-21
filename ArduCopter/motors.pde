@@ -574,16 +574,6 @@ static bool arm_checks(bool display_failure, bool arming_from_gcs)
         return true;
     }
 
-    // check throttle is down
-    if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_RC)) {
-        if (g.rc_3.control_in > 0) {
-            if (display_failure) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Throttle too high"));
-            }
-            return false;
-        }
-    }
-
     // check Baro & inav alt are within 1m
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_BARO)) {
         if(fabs(inertial_nav.get_altitude() - baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
@@ -599,17 +589,6 @@ static bool arm_checks(bool display_failure, bool arming_from_gcs)
         return false;
     }
 
-    // check parameters
-    if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_PARAMETERS)) {
-        // check throttle is above failsafe throttle
-        if (g.failsafe_throttle != FS_THR_DISABLED && g.rc_3.radio_in < g.failsafe_throttle_value) {
-            if (display_failure) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Throttle below Failsafe"));
-            }
-            return false;
-        }
-    }
-
     // check lean angle
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) {
         if (labs(ahrs.roll_sensor) > aparm.angle_max || labs(ahrs.pitch_sensor) > aparm.angle_max) {
@@ -617,6 +596,35 @@ static bool arm_checks(bool display_failure, bool arming_from_gcs)
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Leaning"));
             }
             return false;
+        }
+    }
+
+    // check throttle
+    if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_RC)) {
+        // check throttle is not too low - must be above failsafe throttle
+        if (g.failsafe_throttle != FS_THR_DISABLED && g.rc_3.radio_in < g.failsafe_throttle_value) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Throttle below Failsafe"));
+            }
+            return false;
+        }
+
+        // check throttle is not too high - skips checks if arming from GCS in Guided
+        if (!(arming_from_gcs && control_mode == GUIDED)) {
+            // above top of deadband is too always high
+            if (g.rc_3.control_in > (g.rc_3.get_control_mid() + g.throttle_deadzone)) {
+                if (display_failure) {
+                    gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Throttle too high"));
+                }
+                return false;
+            }
+            // in manual modes throttle must be at zero
+            if ((mode_has_manual_throttle(control_mode) || control_mode == DRIFT) && g.rc_3.control_in > 0) {
+                if (display_failure) {
+                    gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Throttle too high"));
+                }
+                return false;
+            }
         }
     }
 
