@@ -429,8 +429,8 @@
                <entry value="5" name="MAV_FRAME_GLOBAL_INT">
                    <description>Global coordinate frame, WGS84 coordinate system. First value / x: latitude in degrees*1.0e-7, second value / y: longitude in degrees*1.0e-7, third value / z: positive altitude over mean sea level (MSL)</description>
                </entry>
-                <entry value="6" name="MAV_FRAME_GLOBAL_RELATIVE_ALT_INT">
-                    <description>Global coordinate frame, WGS84 coordinate system, relative altitude over ground with respect to the home position. First value / x: latitude in degrees*10e-7, second value / y: longitude in degrees*10e-7, third value / z: positive altitude with 0 being at the altitude of the home location.</description>
+               <entry value="6" name="MAV_FRAME_GLOBAL_RELATIVE_ALT_INT">
+                   <description>Global coordinate frame, WGS84 coordinate system, relative altitude over ground with respect to the home position. First value / x: latitude in degrees*10e-7, second value / y: longitude in degrees*10e-7, third value / z: positive altitude with 0 being at the altitude of the home location.</description>
                </entry>
                <entry value="7" name="MAV_FRAME_LOCAL_OFFSET_NED">
                    <description>Offset to the current local frame. Anything expressed in this frame should be added to the current local frame position.</description>
@@ -444,7 +444,7 @@
                <entry value="10" name="MAV_FRAME_GLOBAL_TERRAIN_ALT">
                    <description>Global coordinate frame with above terrain level altitude. WGS84 coordinate system, relative altitude over terrain with respect to the waypoint coordinate. First value / x: latitude in degrees, second value / y: longitude in degrees, third value / z: positive altitude in meters with 0 being at ground level in terrain model.</description>
                </entry>
-                <entry value="11" name="MAV_FRAME_GLOBAL_TERRAIN_ALT_INT">
+               <entry value="11" name="MAV_FRAME_GLOBAL_TERRAIN_ALT_INT">
                    <description>Global coordinate frame with above terrain level altitude. WGS84 coordinate system, relative altitude over terrain with respect to the waypoint coordinate. First value / x: latitude in degrees*10e-7, second value / y: longitude in degrees*10e-7, third value / z: positive altitude in meters with 0 being at ground level in terrain model.</description>
                </entry>
           </enum>
@@ -578,7 +578,7 @@
                     <param index="5">Latitude</param>
                     <param index="6">Longitude</param>
                     <param index="7">Altitude</param>
-                </entry>
+               </entry>
                <entry value="30" name="MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT">
                    <description>Continue on the current course and climb/descend to specified altitude.  When the altitude is reached continue to the next command (i.e., don't proceed to the next command until the desired altitude is reached.</description>
                     <param index="1">Empty</param>
@@ -804,7 +804,7 @@
                     <param index="5">Latitude</param>
                     <param index="6">Longitude</param>
                     <param index="7">Empty</param>
-                </entry>                
+                </entry>
                 <entry value="190" name="MAV_CMD_DO_RALLY_LAND">
                     <description>Mission command to perform a landing from a rally point.</description>
                     <param index="1">Break altitude (meters)</param>
@@ -961,9 +961,9 @@
                <entry value="222" name="MAV_CMD_DO_GUIDED_LIMITS">
                  <description>set limits for external control</description>
                  <param index="1">timeout - maximum time (in seconds) that external controller will be allowed to control vehicle. 0 means no timeout</param>
-                 <param index="2">absolute altitude min (in meters, WGS84) - if vehicle moves below this alt, the command will be aborted and the mission will continue.  0 means no lower altitude limit</param>
+                 <param index="2">absolute altitude min (in meters, AMSL) - if vehicle moves below this alt, the command will be aborted and the mission will continue.  0 means no lower altitude limit</param>
                  <param index="3">absolute altitude max (in meters)- if vehicle moves above this alt, the command will be aborted and the mission will continue.  0 means no upper altitude limit</param>
-                 <param index="4">horizontal move limit (in meters, WGS84) - if vehicle moves more than this distance from it's location at the moment the command was executed, the command will be aborted and the mission will continue. 0 means no horizontal altitude limit</param>
+                 <param index="4">horizontal move limit (in meters, AMSL) - if vehicle moves more than this distance from it's location at the moment the command was executed, the command will be aborted and the mission will continue. 0 means no horizontal altitude limit</param>
                  <param index="5">Empty</param>
                  <param index="6">Empty</param>
                  <param index="7">Empty</param>
@@ -1088,7 +1088,7 @@
                   <param index="4">Minimum altitude clearance to the release position in meters. A negative value indicates the system can define the clearance at will.</param>
                   <param index="5">Latitude unscaled for MISSION_ITEM or in 1e7 degrees for MISSION_ITEM_INT</param>
                   <param index="6">Longitude unscaled for MISSION_ITEM or in 1e7 degrees for MISSION_ITEM_INT</param>
-                  <param index="7">Altitude, in meters WGS84</param>
+                  <param index="7">Altitude, in meters AMSL</param>
               </entry>
               <entry value="30002" name="MAV_CMD_PAYLOAD_CONTROL_DEPLOY">
                   <description>Control the payload deployment.</description>
@@ -1554,12 +1554,12 @@
           </message>
           <message id="24" name="GPS_RAW_INT">
                <description>The global position, as returned by the Global Positioning System (GPS). This is
-                NOT the global position estimate of the sytem, but rather a RAW sensor value. See message GLOBAL_POSITION for the global position estimate. Coordinate frame is right-handed, Z-axis up (GPS frame).</description>
+                NOT the global position estimate of the system, but rather a RAW sensor value. See message GLOBAL_POSITION for the global position estimate. Coordinate frame is right-handed, Z-axis up (GPS frame).</description>
                <field type="uint64_t" name="time_usec">Timestamp (microseconds since UNIX epoch or microseconds since system boot)</field>
                <field type="uint8_t" name="fix_type">0-1: no fix, 2: 2D fix, 3: 3D fix, 4: DGPS, 5: RTK. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.</field>
                <field type="int32_t" name="lat">Latitude (WGS84), in degrees * 1E7</field>
                <field type="int32_t" name="lon">Longitude (WGS84), in degrees * 1E7</field>
-               <field type="int32_t" name="alt">Altitude (WGS84), in meters * 1000 (positive for up)</field>
+               <field type="int32_t" name="alt">Altitude (AMSL, NOT WGS84), in meters * 1000 (positive for up). Note that virtually all GPS modules provide the AMSL altitude in addition to the WGS84 altitude.</field>
                <field type="uint16_t" name="eph">GPS HDOP horizontal dilution of position in cm (m*100). If unknown, set to: UINT16_MAX</field>
                <field type="uint16_t" name="epv">GPS VDOP vertical dilution of position in cm (m*100). If unknown, set to: UINT16_MAX</field>
                <field type="uint16_t" name="vel">GPS ground speed (m/s * 100). If unknown, set to: UINT16_MAX</field>
@@ -1653,7 +1653,7 @@
                <field type="uint32_t" name="time_boot_ms">Timestamp (milliseconds since system boot)</field>
                <field type="int32_t" name="lat">Latitude, expressed as * 1E7</field>
                <field type="int32_t" name="lon">Longitude, expressed as * 1E7</field>
-               <field type="int32_t" name="alt">Altitude in meters, expressed as * 1000 (millimeters), WGS84 (not AMSL)</field>
+               <field type="int32_t" name="alt">Altitude in meters, expressed as * 1000 (millimeters), AMSL (not WGS84 - note that virtually all GPS modules provide the AMSL as well)</field>
                <field type="int32_t" name="relative_alt">Altitude above ground in meters, expressed as * 1000 (millimeters)</field>
                <field type="int16_t" name="vx">Ground X Speed (Latitude), expressed as m/s * 100</field>
                <field type="int16_t" name="vy">Ground Y Speed (Longitude), expressed as m/s * 100</field>
@@ -1780,13 +1780,25 @@
                <field type="uint8_t" name="target_system">System ID</field>
                <field type="int32_t" name="latitude">Latitude (WGS84), in degrees * 1E7</field>
                <field type="int32_t" name="longitude">Longitude (WGS84, in degrees * 1E7</field>
-               <field type="int32_t" name="altitude">Altitude (WGS84), in meters * 1000 (positive for up)</field>
+               <field type="int32_t" name="altitude">Altitude (AMSL), in meters * 1000 (positive for up)</field>
           </message>
           <message id="49" name="GPS_GLOBAL_ORIGIN">
                <description>Once the MAV sets a new GPS-Local correspondence, this message announces the origin (0,0,0) position</description>
                <field type="int32_t" name="latitude">Latitude (WGS84), in degrees * 1E7</field>
                <field type="int32_t" name="longitude">Longitude (WGS84), in degrees * 1E7</field>
-               <field type="int32_t" name="altitude">Altitude (WGS84), in meters * 1000 (positive for up)</field>
+               <field type="int32_t" name="altitude">Altitude (AMSL), in meters * 1000 (positive for up)</field>
+          </message>
+          <message id="50" name="PARAM_MAP_RC">
+               <description>Bind a RC channel to a parameter. The parameter should change accoding to the RC channel value.</description>
+               <field type="uint8_t" name="target_system">System ID</field>
+               <field type="uint8_t" name="target_component">Component ID</field>
+               <field type="char[16]" name="param_id">Onboard parameter id, terminated by NULL if the length is less than 16 human-readable chars and WITHOUT null termination (NULL) byte if the length is exactly 16 chars - applications have to provide 16+1 bytes storage if the ID is stored as string</field>
+               <field type="int16_t" name="param_index">Parameter index. Send -1 to use the param ID field as identifier (else the param id will be ignored), send -2 to disable any existing map for this rc_channel_index.</field>
+               <field type="uint8_t" name="parameter_rc_channel_index">Index of parameter RC channel. Not equal to the RC channel id. Typically correpsonds to a potentiometer-knob on the RC.</field>
+               <field type="float" name="param_value0">Initial parameter value</field>
+               <field type="float" name="scale">Scale, maps the RC range [-1, 1] to a parameter value</field>
+               <field type="float" name="param_value_min">Minimum param value. The protocol does not define if this overwrites an onboard minimum value. (Depends on implementation)</field>
+               <field type="float" name="param_value_max">Maximum param value. The protocol does not define if this overwrites an onboard maximum value. (Depends on implementation)</field>
           </message>
           <message id="54" name="SAFETY_SET_ALLOWED_AREA">
                <description>Set a safety zone (volume), which is defined by two corners of a cube. This message can be used to tell the MAV which setpoints/MISSIONs to accept and which to reject. Safety areas are often enforced by national or competition regulations.</description>
@@ -2054,7 +2066,7 @@
                <field type="uint16_t" name="type_mask">Bitmask to indicate which dimensions should be ignored by the vehicle: a value of 0b0000000000000000 or 0b0000001000000000 indicates that none of the setpoint dimensions should be ignored. If bit 10 is set the floats afx afy afz should be interpreted as force instead of acceleration. Mapping: bit 1: x, bit 2: y, bit 3: z, bit 4: vx, bit 5: vy, bit 6: vz, bit 7: ax, bit 8: ay, bit 9: az, bit 10: is force setpoint, bit 11: yaw, bit 12: yaw rate</field>
                <field type="int32_t" name="lat_int">X Position in WGS84 frame in 1e7 * meters</field>
                <field type="int32_t" name="lon_int">Y Position in WGS84 frame in 1e7 * meters</field>
-               <field type="float" name="alt">Altitude in meters in WGS84 altitude, not AMSL if absolute or relative, above terrain if GLOBAL_TERRAIN_ALT_INT</field>
+               <field type="float" name="alt">Altitude in meters in AMSL altitude, not WGS84 if absolute or relative, above terrain if GLOBAL_TERRAIN_ALT_INT</field>
                <field type="float" name="vx">X velocity in NED frame in meter / s</field>
                <field type="float" name="vy">Y velocity in NED frame in meter / s</field>
                <field type="float" name="vz">Z velocity in NED frame in meter / s</field>
@@ -2071,7 +2083,7 @@
                <field type="uint16_t" name="type_mask">Bitmask to indicate which dimensions should be ignored by the vehicle: a value of 0b0000000000000000 or 0b0000001000000000 indicates that none of the setpoint dimensions should be ignored. If bit 10 is set the floats afx afy afz should be interpreted as force instead of acceleration. Mapping: bit 1: x, bit 2: y, bit 3: z, bit 4: vx, bit 5: vy, bit 6: vz, bit 7: ax, bit 8: ay, bit 9: az, bit 10: is force setpoint, bit 11: yaw, bit 12: yaw rate</field>
                <field type="int32_t" name="lat_int">X Position in WGS84 frame in 1e7 * meters</field>
                <field type="int32_t" name="lon_int">Y Position in WGS84 frame in 1e7 * meters</field>
-               <field type="float" name="alt">Altitude in meters in WGS84 altitude, not AMSL if absolute or relative, above terrain if GLOBAL_TERRAIN_ALT_INT</field>
+               <field type="float" name="alt">Altitude in meters in AMSL altitude, not WGS84 if absolute or relative, above terrain if GLOBAL_TERRAIN_ALT_INT</field>
                <field type="float" name="vx">X velocity in NED frame in meter / s</field>
                <field type="float" name="vy">Y velocity in NED frame in meter / s</field>
                <field type="float" name="vz">Z velocity in NED frame in meter / s</field>
@@ -2292,7 +2304,7 @@
              <field type="uint8_t" name="fix_type">0-1: no fix, 2: 2D fix, 3: 3D fix. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.</field>
              <field type="int32_t" name="lat">Latitude (WGS84), in degrees * 1E7</field>
              <field type="int32_t" name="lon">Longitude (WGS84), in degrees * 1E7</field>
-             <field type="int32_t" name="alt">Altitude (WGS84), in meters * 1000 (positive for up)</field>
+             <field type="int32_t" name="alt">Altitude (AMSL, not WGS84), in meters * 1000 (positive for up)</field>
              <field type="uint16_t" name="eph">GPS HDOP horizontal dilution of position in cm (m*100). If unknown, set to: 65535</field>
              <field type="uint16_t" name="epv">GPS VDOP vertical dilution of position in cm (m*100). If unknown, set to: 65535</field>
              <field type="uint16_t" name="vel">GPS ground speed (m/s * 100). If unknown, set to: 65535</field>
@@ -2402,7 +2414,7 @@
            <field type="uint8_t" name="fix_type">0-1: no fix, 2: 2D fix, 3: 3D fix, 4: DGPS fix, 5: RTK Fix. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.</field>
            <field type="int32_t" name="lat">Latitude (WGS84), in degrees * 1E7</field>
            <field type="int32_t" name="lon">Longitude (WGS84), in degrees * 1E7</field>
-           <field type="int32_t" name="alt">Altitude (WGS84), in meters * 1000 (positive for up)</field>
+           <field type="int32_t" name="alt">Altitude (AMSL, not WGS84), in meters * 1000 (positive for up)</field>
            <field type="uint16_t" name="eph">GPS HDOP horizontal dilution of position in cm (m*100). If unknown, set to: UINT16_MAX</field>
            <field type="uint16_t" name="epv">GPS VDOP vertical dilution of position in cm (m*100). If unknown, set to: UINT16_MAX</field>
            <field type="uint16_t" name="vel">GPS ground speed (m/s * 100). If unknown, set to: UINT16_MAX</field>
@@ -2533,8 +2545,16 @@
         <message id="148" name="AUTOPILOT_VERSION">
             <description>Version and capability of autopilot software</description>
             <field type="uint64_t" name="capabilities">bitmask of capabilities (see MAV_PROTOCOL_CAPABILITY enum)</field>
-            <field type="uint32_t" name="version">Firmware version number</field>
-            <field type="uint8_t[8]" name="custom_version">Custom version field, commonly the first 8 bytes (16 characters) of the git hash. This is not an unique identifier, but should allow to identify the commit using the main version number even for very large code bases.</field>
+            <field type="uint32_t" name="flight_sw_version">Firmware version number</field>
+            <field type="uint32_t" name="middleware_sw_version">Middleware version number</field>
+            <field type="uint32_t" name="os_sw_version">Operating system version number</field>
+            <field type="uint32_t" name="board_version">HW / board version (last 8 bytes should be silicon ID, if any)</field>
+            <field type="uint8_t[8]" name="flight_custom_version">Custom version field, commonly the first 8 bytes of the git hash. This is not an unique identifier, but should allow to identify the commit using the main version number even for very large code bases.</field>
+            <field type="uint8_t[8]" name="middleware_custom_version">Custom version field, commonly the first 8 bytes of the git hash. This is not an unique identifier, but should allow to identify the commit using the main version number even for very large code bases.</field>
+            <field type="uint8_t[8]" name="os_custom_version">Custom version field, commonly the first 8 bytes of the git hash. This is not an unique identifier, but should allow to identify the commit using the main version number even for very large code bases.</field>
+            <field type="uint16_t" name="vendor_id">ID of the board vendor</field>
+            <field type="uint16_t" name="product_id">ID of the product</field>
+            <field type="uint64_t" name="uid">UID if provided by hardware</field>
         </message>
         <!-- MESSAGE IDs 180 - 240: Space for custom messages in individual projectname_messages.xml files -->
         <message id="248" name="V2_EXTENSION">
