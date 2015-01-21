@@ -32,8 +32,7 @@ static void arm_motors_check()
         // arm the motors and configure for flight
         if (arming_counter == ARM_DELAY && !motors.armed()) {
             // run pre-arm-checks and display failures
-            pre_arm_checks(true);
-            if(ap.pre_arm_check && arm_checks(true,false)) {
+            if(pre_arm_checks(true) && arm_checks(true,false)) {
                 if (!init_arm_motors()) {
                     // reset arming counter if arming fail
                     arming_counter = 0;
@@ -199,25 +198,27 @@ static bool init_arm_motors()
 }
 
 // perform pre-arm checks and set ap.pre_arm_check flag
-static void pre_arm_checks(bool display_failure)
+//  return true if the checks pass successfully
+static bool pre_arm_checks(bool display_failure)
 {
     // exit immediately if already armed
     if (motors.armed()) {
-        return;
+        return true;
     }
 
     // exit immediately if we've already successfully performed the pre-arm check
-    // run gps checks because results may change and affect LED colour
     if (ap.pre_arm_check) {
-        pre_arm_gps_checks(display_failure);
-        return;
+        // run gps checks because results may change and affect LED colour
+        // no need to display failures because arm_checks will do that if the pilot tries to arm
+        pre_arm_gps_checks(false);
+        return true;
     }
 
     // succeed if pre arm checks are disabled
     if(g.arming_check == ARMING_CHECK_NONE) {
         set_pre_arm_check(true);
         set_pre_arm_rc_check(true);
-        return;
+        return true;
     }
 
     // pre-arm rc checks a prerequisite
@@ -226,7 +227,7 @@ static void pre_arm_checks(bool display_failure)
         if (display_failure) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: RC not calibrated"));
         }
-        return;
+        return false;
     }
 
     // check Baro
@@ -236,14 +237,14 @@ static void pre_arm_checks(bool display_failure)
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Barometer not healthy"));
             }
-            return;
+            return false;
         }
         // check Baro & inav alt are within 1m
         if(fabs(inertial_nav.get_altitude() - baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Altitude disparity"));
             }
-            return;
+            return false;
         }
     }
 
@@ -254,7 +255,7 @@ static void pre_arm_checks(bool display_failure)
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not healthy"));
             }
-            return;
+            return false;
         }
 
         // check compass learning is on or offsets have been set
@@ -262,7 +263,7 @@ static void pre_arm_checks(bool display_failure)
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not calibrated"));
             }
-            return;
+            return false;
         }
 
         // check for unreasonable compass offsets
@@ -271,7 +272,7 @@ static void pre_arm_checks(bool display_failure)
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass offsets too high"));
             }
-            return;
+            return false;
         }
 
         // check for unreasonable mag field length
@@ -280,7 +281,7 @@ static void pre_arm_checks(bool display_failure)
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check mag field"));
             }
-            return;
+            return false;
         }
 
 #if COMPASS_MAX_INSTANCES > 1
@@ -297,7 +298,7 @@ static void pre_arm_checks(bool display_failure)
                     if (display_failure) {
                         gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: inconsistent compasses"));
                     }
-                    return;
+                    return false;
                 }
             }
         }
@@ -307,7 +308,7 @@ static void pre_arm_checks(bool display_failure)
 
     // check GPS
     if (!pre_arm_gps_checks(display_failure)) {
-        return;
+        return false;
     }
 
     // check fence is initialised
@@ -315,7 +316,7 @@ static void pre_arm_checks(bool display_failure)
         if (display_failure) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: check fence"));
         }
-        return;
+        return false;
     }
 
     // check INS
@@ -325,7 +326,7 @@ static void pre_arm_checks(bool display_failure)
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: INS not calibrated"));
             }
-            return;
+            return false;
         }
 
         // check accels are healthy
@@ -333,7 +334,7 @@ static void pre_arm_checks(bool display_failure)
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Accelerometers not healthy"));
             }
-            return;
+            return false;
         }
 
 #if INS_MAX_INSTANCES > 1
@@ -348,7 +349,7 @@ static void pre_arm_checks(bool display_failure)
                     if (display_failure) {
                         gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: inconsistent Accelerometers"));
                     }
-                    return;
+                    return false;
                 }
             }
         }
@@ -359,7 +360,7 @@ static void pre_arm_checks(bool display_failure)
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Gyros not healthy"));
             }
-            return;
+            return false;
         }
 
 #if INS_MAX_INSTANCES > 1
@@ -372,7 +373,7 @@ static void pre_arm_checks(bool display_failure)
                     if (display_failure) {
                         gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: inconsistent Gyros"));
                     }
-                    return;
+                    return false;
                 }
             }
         }
@@ -386,7 +387,7 @@ static void pre_arm_checks(bool display_failure)
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check Board Voltage"));
             }
-            return;
+            return false;
         }
     }
 #endif
@@ -400,7 +401,7 @@ static void pre_arm_checks(bool display_failure)
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Ch7&Ch8 Option cannot be same"));
             }
-            return;
+            return false;
         }
 
         // failsafe parameter checks
@@ -410,7 +411,7 @@ static void pre_arm_checks(bool display_failure)
                 if (display_failure) {
                     gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check FS_THR_VALUE"));
                 }
-                return;
+                return false;
             }
         }
 
@@ -419,7 +420,7 @@ static void pre_arm_checks(bool display_failure)
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check ANGLE_MAX"));
             }
-            return;
+            return false;
         }
 
         // acro balance parameter check
@@ -427,12 +428,13 @@ static void pre_arm_checks(bool display_failure)
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: ACRO_BAL_ROLL/PITCH"));
             }
-            return;
+            return false;
         }
     }
 
     // if we've gotten this far then pre arm checks have completed
     set_pre_arm_check(true);
+    return true;
 }
 
 // perform pre_arm_rc_checks checks and set ap.pre_arm_rc_check flag
