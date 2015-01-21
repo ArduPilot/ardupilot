@@ -14,7 +14,7 @@ static void arm_motors_check()
     static int16_t arming_counter;
 
     // ensure throttle is down
-    if (g.rc_3.control_in > 0) {
+    if (g.rc_3.control_in > 0 && !ap.throttle_disengaged) {
         arming_counter = 0;
         return;
     }
@@ -569,6 +569,11 @@ static bool arm_checks(bool display_failure, bool arming_from_gcs)
     }
     #endif  // HELI_FRAME
 
+    // check throttle is down, if not disengage it for safety
+    if (manual_flight_mode(control_mode)){
+        set_throttle_disengaged(g.rc_3.control_in > 0);
+    }
+
     // succeed if arming checks are disabled
     if (g.arming_check == ARMING_CHECK_NONE) {
         return true;
@@ -576,15 +581,17 @@ static bool arm_checks(bool display_failure, bool arming_from_gcs)
 
     // check throttle is down
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_RC)) {
-        if (g.rc_3.control_in > 0) {
+        if (g.rc_3.control_in > 0 && !manual_flight_mode(control_mode)) {
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Throttle too high"));
             }
             return false;
         }
     }
-
+ 
     // check Baro & inav alt are within 1m
+
+        // check Baro & inav alt are within 1m
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_BARO)) {
         if(fabs(inertial_nav.get_altitude() - baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
             if (display_failure) {
@@ -698,6 +705,10 @@ set_servos_4()
         // To-Do: implement improved stability patch for tri so that we do not need to limit throttle input to motors
         g.rc_3.servo_out = min(g.rc_3.servo_out, 800);
 #endif
+        // if we cannot safely output throttle, set it to throttle min
+        if(ap.throttle_disengaged){
+            g.rc_3.servo_out = 0;
+        }
         motors.output();
     }
 }
