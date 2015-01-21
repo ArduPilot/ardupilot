@@ -555,7 +555,7 @@ Format characters in the format string for binary log messages
     { LOG_ARSP_MSG, sizeof(log_AIRSPEED), \
       "ARSP",  "Iffcff",   "TimeMS,Airspeed,DiffPress,Temp,RawPress,Offset" }, \
     { LOG_CURRENT_MSG, sizeof(log_Current), \
-      "CURR", "Ihhhhfh","TimeMS,Throttle,Volt,Curr,Vcc,CurrTot,Volt2" },\
+      "CURR", "IhhhHfh","TimeMS,Throttle,Volt,Curr,Vcc,CurrTot,Volt2" },\
 	{ LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
       "ATT", "IccccCCCC", "TimeMS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw" }, \
     { LOG_COMPASS_MSG, sizeof(log_Compass), \
@@ -661,11 +661,11 @@ Format characters in the format string for binary log messages
 #define LOG_BAR2_MSG	  163
 #define LOG_ARSP_MSG      164
 #define LOG_ATTITUDE_MSG  165
-#define LOG_CURRENT_MSG   165
-#define LOG_COMPASS_MSG   166
-#define LOG_COMPASS2_MSG  167
-#define LOG_COMPASS3_MSG  168
-#define LOG_MODE_MSG      169
+#define LOG_CURRENT_MSG   166
+#define LOG_COMPASS_MSG   167
+#define LOG_COMPASS2_MSG  168
+#define LOG_COMPASS3_MSG  169
+#define LOG_MODE_MSG      170
 
 // message types 200 to 210 reversed for GPS driver use
 // message types 211 to 220 reversed for autotune use
