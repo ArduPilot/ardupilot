@@ -128,6 +128,54 @@ static NOINLINE void send_attitude(mavlink_channel_t chan)
         gyro.z);
 }
 
+static NOINLINE void send_autopilot_version(mavlink_channel_t chan)
+{
+    uint16_t capabilities = 0;
+    uint32_t flight_sw_version = 0;
+    uint32_t middleware_sw_version = 0;
+    uint32_t os_sw_version = 0;
+    uint32_t board_version = 0;
+    uint8_t flight_custom_version[8];
+    uint8_t middleware_custom_version[8];
+    uint8_t os_custom_version[8];
+    uint16_t vendor_id = 0;
+    uint16_t product_id = 0;
+    uint64_t uid = 0;
+    
+#if defined(GIT_VERSION)
+    memcpy(flight_custom_version, GIT_VERSION, 8);
+#else
+    memset(middleware_custom_version,0,8);
+#endif
+
+#if defined(PX4_GIT_VERSION)
+    memcpy(middleware_custom_version, PX4_GIT_VERSION, 8);
+#else
+    memset(middleware_custom_version,0,8);
+#endif
+    
+#if defined(NUTTX_GIT_VERSION)
+    memcpy(os_custom_version, NUTTX_GIT_VERSION, 8);
+#else
+    memset(os_custom_version,0,8);
+#endif
+    
+    mavlink_msg_autopilot_version_send(
+        chan,
+        capabilities,
+        flight_sw_version,
+        middleware_sw_version,
+        os_sw_version,
+        board_version,
+        flight_custom_version,
+        middleware_custom_version,
+        os_custom_version,
+        vendor_id,
+        product_id,
+        uid
+    );
+}
+
 #if AC_FENCE == ENABLED
 static NOINLINE void send_limits_status(mavlink_channel_t chan)
 {
