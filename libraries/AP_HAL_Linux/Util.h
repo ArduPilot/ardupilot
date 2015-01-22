@@ -26,6 +26,11 @@ public:
     
     void _toneAlarm_timer_tick();
 
+    /*
+      set system clock in UTC microseconds
+     */
+    void set_system_clock(uint64_t time_utc_usec);
+
 private:
 	static Linux::ToneAlarm _toneAlarm;
     int saved_argc;
