@@ -28,10 +28,10 @@ extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
 const AP_Param::GroupInfo SITL::var_info[] PROGMEM = {
-    AP_GROUPINFO("BARO_RND",   0, SITL,  baro_noise,  3),
-    AP_GROUPINFO("GYR_RND",    1, SITL,  gyro_noise, 30),
-    AP_GROUPINFO("ACC_RND",    2, SITL,  accel_noise, 3),
-    AP_GROUPINFO("MAG_RND",    3, SITL,  mag_noise,  10),
+    AP_GROUPINFO("BARO_RND",   0, SITL,  baro_noise,  1),
+    AP_GROUPINFO("GYR_RND",    1, SITL,  gyro_noise,  5),
+    AP_GROUPINFO("ACC_RND",    2, SITL,  accel_noise, 2),
+    AP_GROUPINFO("MAG_RND",    3, SITL,  mag_noise,   5),
     AP_GROUPINFO("GPS_DISABLE",4, SITL,  gps_disable, 0),
     AP_GROUPINFO("DRIFT_SPEED",5, SITL,  drift_speed, 0.2),
     AP_GROUPINFO("DRIFT_TIME", 6, SITL,  drift_time,  5),
