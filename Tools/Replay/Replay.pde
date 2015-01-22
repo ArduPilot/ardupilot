@@ -69,7 +69,7 @@ static Parameters g;
 static AP_InertialSensor ins;
 static AP_Baro barometer;
 static AP_GPS gps;
-static AP_Compass_HIL compass;
+static Compass compass;
 static AP_AHRS_NavEKF ahrs(ins, barometer, gps);
 static GPS_Glitch gps_glitch(gps);
 static Baro_Glitch baro_glitch(barometer);
