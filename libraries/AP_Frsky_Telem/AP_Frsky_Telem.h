@@ -77,13 +77,7 @@ class AP_Frsky_Telem
 {
 public:
     //constructor
-    AP_Frsky_Telem(AP_AHRS &ahrs, AP_BattMonitor &battery) :
-    _port(NULL),
-    _protocol(FrSkyUnknown),
-	_initialised(false),
-    _ahrs(ahrs),
-    _battery(battery)
-    {}
+    AP_Frsky_Telem(AP_AHRS &ahrs, AP_BattMonitor &battery);
 
     // these enums must match up with TELEM2_PROTOCOL in vehicle code
     enum FrSkyProtocol {
@@ -136,10 +130,10 @@ private:
     void send_hub_frame();
     void sport_tick ();
 
-    AP_HAL::UARTDriver *_port;
-    bool _initialised;
     AP_AHRS &_ahrs;
     AP_BattMonitor &_battery;
+    AP_HAL::UARTDriver *_port;
+    bool _initialised;
     enum FrSkyProtocol _protocol;
 
     uint16_t _crc;

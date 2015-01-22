@@ -23,6 +23,47 @@
 #include <AP_Frsky_Telem.h>
 extern const AP_HAL::HAL& hal;
 
+//constructor
+AP_Frsky_Telem::AP_Frsky_Telem(AP_AHRS &ahrs, AP_BattMonitor &battery) :
+    _ahrs(ahrs),
+    _battery(battery),
+    _port(NULL),
+    _initialised(false),
+    _protocol(FrSkyUnknown),
+    _crc(0),
+    _last_frame1_ms(0),
+    _last_frame2_ms(0),
+    _battery_data_ready(false),
+    _batt_remaining(0),
+    _batt_volts(0),
+    _batt_amps(0),
+    _sats_data_ready(false),
+    gps_sats(0),
+    _gps_data_ready(false),
+    _pos_gps_ok(false),
+    _course_in_degrees(0),
+    _lat_ns(0),
+    _lon_ew(0),
+    _latdddmm(0),
+    _latmmmm(0),
+    _londddmm(0),
+    _lonmmmm(0),
+    _alt_gps_meters(0),
+    _alt_gps_cm(0),
+    _speed_in_meter(0),
+    _speed_in_centimeter(0),
+    _baro_data_ready(false),
+    _baro_alt_meters(0),
+    _baro_alt_cm(0),
+    _mode_data_ready(false),
+    _mode(0),
+    _fas_call(0),
+    _gps_call(0),
+    _vario_call(0),
+    _various_call(0),
+    _sport_status(0)
+    {}
+
 void AP_Frsky_Telem::init(const AP_SerialManager& serial_manager)
 {
     // initialise port to null
