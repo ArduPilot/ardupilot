@@ -170,7 +170,7 @@ static void init_ardupilot()
 #if MAVLINK_COMM_NUM_BUFFERS > 2
     if (g.serial2_protocol == SERIAL2_FRSKY_DPORT || 
         g.serial2_protocol == SERIAL2_FRSKY_SPORT) {
-        frsky_telemetry.init(hal.uartD, g.serial2_protocol);
+        frsky_telemetry.init(hal.uartD,  (AP_Frsky_Telem::FrSkyProtocol)g.serial2_protocol.get());
     } else {
         gcs[2].setup_uart(hal.uartD, map_baudrate(g.serial2_baud), 128, 128);
     }
@@ -439,8 +439,7 @@ static void check_usb_mux(void)
 static void telemetry_send(void)
 {
 #if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry.send_frames((uint8_t)control_mode, 
-                                (AP_Frsky_Telem::FrSkyProtocol)g.serial2_protocol.get());
+    frsky_telemetry.send_frames((uint8_t)control_mode);
 #endif
 }
 
