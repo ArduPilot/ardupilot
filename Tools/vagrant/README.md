@@ -7,6 +7,8 @@ This README is mean't to be the instructions on how to run this.
 
 Windows, OS-X and Linux are supported.  [Download](https://www.vagrantup.com/downloads.html) and install per their instructions.
 
+If you are on Windows you will want to [install](https://www.virtualbox.org/wiki/Downloads) VirtualBox prior to installing Vagrant.
+
 ## Start a vagrant instance
 
 * Change the current directory to be any directory inside this source tree and run "vagrant up".  It will start running the instance
