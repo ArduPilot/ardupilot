@@ -9,10 +9,19 @@ sudo apt-get -y install dos2unix python-wxgtk2.8 python-scipy python-matplotlib 
 sudo pip install pymavlink MAVProxy
 
 echo "source /vagrant/Tools/vagrant/shellinit.sh" >>/home/vagrant/.profile
+rm /home/vagrant/.screenrc
 ln -s /vagrant/Tools/vagrant/screenrc /home/vagrant/.screenrc
 
-echo "NOTE: Currently this vagrant file only support simulating copters and rovers, adding support for plane would be straightforward,"
-echo "just add JSB sim per Tridge's instructions (and send in a pull-request)"
+# build JSB sim
+pushd /tmp
+rm -rf jsbsim
+git clone git://github.com/tridge/jsbsim.git
+sudo apt-get install libtool automake autoconf libexpat1-dev
+cd jsbsim
+./autogen.sh
+make -j2
+sudo make install
+popd
 
-# 
+# Now you can run
 # vagrant ssh -c "screen -d -R"
