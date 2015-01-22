@@ -46,6 +46,8 @@
 #define GLITCH_ACCEL_DEFAULT    150
 #define GLITCH_RADIUS_DEFAULT   15
 #define FLOW_MEAS_DELAY         10
+#define FLOW_NOISE_DEFAULT      0.15f
+#define FLOW_GATE_DEFAULT       5
 
 #elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
 // rover defaults
@@ -68,6 +70,8 @@
 #define GLITCH_ACCEL_DEFAULT    150
 #define GLITCH_RADIUS_DEFAULT   15
 #define FLOW_MEAS_DELAY         25
+#define FLOW_NOISE_DEFAULT      0.15f
+#define FLOW_GATE_DEFAULT       5
 
 #else
 // generic defaults (and for plane)
@@ -90,6 +94,8 @@
 #define GLITCH_ACCEL_DEFAULT    150
 #define GLITCH_RADIUS_DEFAULT   15
 #define FLOW_MEAS_DELAY         25
+#define FLOW_NOISE_DEFAULT      0.3f
+#define FLOW_GATE_DEFAULT       3
 
 #endif // APM_BUILD_DIRECTORY
 
@@ -318,7 +324,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Range: 0.05 - 1.0
     // @Increment: 0.05
     // @User: advanced
-    AP_GROUPINFO("FLOW_NOISE",    26, NavEKF, _flowNoise, 0.3f),
+    AP_GROUPINFO("FLOW_NOISE",    26, NavEKF, _flowNoise, FLOW_NOISE_DEFAULT),
 
     // @Param: FLOW_GATE
     // @DisplayName: Optical Flow measurement gate size
@@ -326,7 +332,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Range: 1 - 100
     // @Increment: 1
     // @User: advanced
-    AP_GROUPINFO("FLOW_GATE",    27, NavEKF, _flowInnovGate, 3),
+    AP_GROUPINFO("FLOW_GATE",    27, NavEKF, _flowInnovGate, FLOW_GATE_DEFAULT),
 
     // @Param: FLOW_DELAY
     // @DisplayName: Optical Flow measurement delay (msec)
@@ -375,6 +381,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     msecTasDelay(240),              // Airspeed measurement delay (msec)
     gpsRetryTimeUseTAS(10000),      // GPS retry time with airspeed measurements (msec)
     gpsRetryTimeNoTAS(10000),       // GPS retry time without airspeed measurements (msec)
+    gpsFailTimeWithFlow(5000),      // If we have no GPS for longer than this and we have optical flow, then we will switch across to using optical flow (msec)
     hgtRetryTimeMode0(10000),       // Height retry time with vertical velocity measurement (msec)
     hgtRetryTimeMode12(5000),       // Height retry time without vertical velocity measurement (msec)
     tasRetryTime(5000),             // True airspeed timeout and retry interval (msec)
@@ -736,59 +743,75 @@ void NavEKF::SelectVelPosFusion()
         // check for and read new GPS data
         readGpsData();
 
+        // check if we can use opticalflow as a backup
+        bool optFlowBackup = (flowDataValid && !hgtTimeout);
+
         // Set GPS time-out threshold depending on whether we have an airspeed sensor to constrain drift
         uint16_t gpsRetryTimeout = useAirspeed() ? gpsRetryTimeUseTAS : gpsRetryTimeNoTAS;
 
+        // Set the time that copters will fly without a GPS lock before failing the GPS and switching to a non GPS mode
+        uint16_t gpsFailTimeout = optFlowBackup ? gpsFailTimeWithFlow : gpsRetryTimeout;
+
         // If we haven't received GPS data for a while, then declare the position and velocity data as being timed out
-        if (imuSampleTime_ms - lastFixTime_ms > gpsRetryTimeout) {
+        if (imuSampleTime_ms - lastFixTime_ms > gpsFailTimeout) {
             posTimeout = true;
             velTimeout = true;
-            //If this happens in flight and we don't have airspeed or sideslip assumption to constrain drift, then go into constant position mode and stay there until disarmed
+            // If this happens in flight and we don't have airspeed or sideslip assumption or optical flow to constrain drift, then go into constant position mode.
+            // Stay in that mode until the vehicle is re-armed.
+            // If we can do optical flow nav (valid flow data and hieght above ground estimate, then go into flow nav mode.
+            // Stay in that mode until the vehicle is dis-armed.
             if (vehicleArmed && !useAirspeed() && !assume_zero_sideslip()) {
-                constVelMode = false; // always clear constant velocity mode if constant velocity mode is active
-                constPosMode = true;
-                PV_AidingMode = AID_NONE;
-                // reset the velocity
-                ResetVelocity();
-                // store the current position to be used to keep reporting the last known position
-                lastKnownPositionNE.x = state.position.x;
-                lastKnownPositionNE.y = state.position.y;
-                // reset the position
-                ResetPosition();
+                if (optFlowBackup) {
+                    // we can do optical flow only nav
+                    _fusionModeGPS = 3;
+                    PV_AidingMode = AID_RELATIVE;
+                    constVelMode = false;
+                    constPosMode = false;
+                } else {
+                    constVelMode = false; // always clear constant velocity mode if constant velocity mode is active
+                    constPosMode = true;
+                    PV_AidingMode = AID_NONE;
+                    posTimeout = true;
+                    velTimeout = true;
+                    // reset the velocity
+                    ResetVelocity();
+                    // store the current position to be used to keep reporting the last known position
+                    lastKnownPositionNE.x = state.position.x;
+                    lastKnownPositionNE.y = state.position.y;
+                    // reset the position
+                    ResetPosition();
+                }
+                // set the position and velocity timeouts to indicate we are not using GPS data
+                posTimeout = true;
+                velTimeout = true;
             }
         }
 
         // command fusion of GPS data and reset states as required
-        if (newDataGps) {
+        if (newDataGps && (PV_AidingMode == AID_ABSOLUTE)) {
             // reset data arrived flag
             newDataGps = false;
             // reset state updates and counter used to spread fusion updates across several frames to reduce 10Hz pulsing
             memset(&gpsIncrStateDelta[0], 0, sizeof(gpsIncrStateDelta));
             gpsUpdateCount = 0;
-            // select which of velocity and position measurements will be fused
-            if (PV_AidingMode == AID_ABSOLUTE) {
-                // use both if GPS use is enabled
-                fuseVelData = true;
-                fusePosData = true;
-                // If a long time since last GPS update, then reset position and velocity and reset stored state history
-                if (imuSampleTime_ms - secondLastFixTime_ms > gpsRetryTimeout) {
-                    // Apply an offset to the GPS position so that the position can be corrected gradually
-                    gpsPosGlitchOffsetNE.x = statesAtPosTime.position.x - gpsPosNE.x;
-                    gpsPosGlitchOffsetNE.y = statesAtPosTime.position.y - gpsPosNE.y;
-                    // limit the radius of the offset to 100m and decay the offset to zero radially
-                    decayGpsOffset();
-                    ResetPosition();
-                    ResetVelocity();
-                }
-            } else {
-                fuseVelData = false;
-                fusePosData = false;
+            // use both if GPS use is enabled
+            fuseVelData = true;
+            fusePosData = true;
+            // If a long time since last GPS update, then reset position and velocity and reset stored state history
+            if (imuSampleTime_ms - secondLastFixTime_ms > gpsRetryTimeout) {
+                // Apply an offset to the GPS position so that the position can be corrected gradually
+                gpsPosGlitchOffsetNE.x = statesAtPosTime.position.x - gpsPosNE.x;
+                gpsPosGlitchOffsetNE.y = statesAtPosTime.position.y - gpsPosNE.y;
+                // limit the radius of the offset to 100m and decay the offset to zero radially
+                decayGpsOffset();
+                ResetPosition();
+                ResetVelocity();
             }
         } else {
             fuseVelData = false;
             fusePosData = false;
         }
-    } else if (constPosMode ) {
+    } else if (constPosMode && covPredStep) {
         // in constant position mode use synthetic position measurements set to zero
         // only fuse synthetic measurements when rate of change of velocity is less than 0.5g to reduce attitude errors due to launch acceleration
         // do not use velocity fusion to reduce the effect of movement on attitude
@@ -798,7 +821,7 @@ void NavEKF::SelectVelPosFusion()
             fusePosData = false;
         }
         fuseVelData = false;
-    } else if (constVelMode) {
+    } else if (constVelMode && covPredStep) {
         // In constant velocity mode we fuse the last valid velocity vector
         // Reset the stored velocity vector when we enter the mode
         if (constVelMode && !lastConstVelMode) {
@@ -909,7 +932,7 @@ void NavEKF::SelectFlowFusion()
 {
     // Perform Data Checks
     // Check if the optical flow data is still valid
-    flowDataValid = ((imuSampleTime_ms - flowValidMeaTime_ms) < 200);
+    flowDataValid = ((imuSampleTime_ms - flowValidMeaTime_ms) < 1000);
     // Check if the fusion has timed out (flow measurements have been rejected for too long)
     bool flowFusionTimeout = ((imuSampleTime_ms - prevFlowUseTime_ms) > 5000);
     // check is the terrain offset estimate is still valid
@@ -1931,25 +1954,25 @@ void NavEKF::FuseVelPosNED()
             float maxPosInnov2 = sq(_gpsPosInnovGate * _gpsHorizPosNoise + 0.005f * accelScale * float(_gpsGlitchAccelMax) * sq(0.001f * float(imuSampleTime_ms - posFailTime)));
             posTestRatio = (sq(posInnov[0]) + sq(posInnov[1])) / maxPosInnov2;
             posHealth = ((posTestRatio < 1.0f) || badIMUdata);
-            // declare a timeout condition if we have been too long without data
-            posTimeout = ((imuSampleTime_ms - posFailTime) > gpsRetryTime);
+            // declare a timeout condition if we have been too long without data or not aiding
+            posTimeout = (((imuSampleTime_ms - posFailTime) > gpsRetryTime) || PV_AidingMode == AID_NONE);
             // use position data if healthy, timed out, or in constant position mode
             if (posHealth || posTimeout || constPosMode) {
                 posHealth = true;
-                // We don't reset the failed time if we are in constant position mode
-                if (!constPosMode) {
+                // only reset the failed time and do glitch timeout checks if we are doing full aiding
+                if (PV_AidingMode == AID_ABSOLUTE) {
                     posFailTime = imuSampleTime_ms;
-                }
-                // if timed out or outside the specified glitch radius, increment the offset applied to GPS data to compensate for large GPS position jumps
-                if (posTimeout || (maxPosInnov2 > sq(float(_gpsGlitchRadiusMax)))) {
-                    gpsPosGlitchOffsetNE.x += posInnov[0];
-                    gpsPosGlitchOffsetNE.y += posInnov[1];
-                    // limit the radius of the offset to 100m and decay the offset to zero radially
-                    decayGpsOffset();
-                    // reset the position to the current GPS position which will include the glitch correction offset
-                    ResetPosition();
-                    // don't fuse data on this time step
-                    fusePosData = false;
+                    // if timed out or outside the specified glitch radius, increment the offset applied to GPS data to compensate for large GPS position jumps
+                    if (posTimeout || (maxPosInnov2 > sq(float(_gpsGlitchRadiusMax)))) {
+                        gpsPosGlitchOffsetNE.x += posInnov[0];
+                        gpsPosGlitchOffsetNE.y += posInnov[1];
+                        // limit the radius of the offset to 100m and decay the offset to zero radially
+                        decayGpsOffset();
+                        // reset the position to the current GPS position which will include the glitch correction offset
+                        ResetPosition();
+                        // don't fuse data on this time step
+                        fusePosData = false;
+                    }
                 }
             } else {
                 posHealth = false;
@@ -1999,14 +2022,15 @@ void NavEKF::FuseVelPosNED()
             velTestRatio = innovVelSumSq / (varVelSum * sq(_gpsVelInnovGate));
             // fail if the ratio is greater than 1
             velHealth = ((velTestRatio < 1.0f)  || badIMUdata);
-            // declare a timeout if we have not fused velocity data for too long or in constant velocity mode
-            velTimeout = ((imuSampleTime_ms - velFailTime) > gpsRetryTime) || constVelMode;
+            // declare a timeout if we have not fused velocity data for too long or not aiding
+            velTimeout = (((imuSampleTime_ms - velFailTime) > gpsRetryTime) || PV_AidingMode == AID_NONE);
             // if data is healthy  or in constant velocity mode we fuse it
-            if (velHealth || constVelMode) {
+            if (velHealth || velTimeout || constVelMode) {
                 velHealth = true;
+                // restart the timeout count
                 velFailTime = imuSampleTime_ms;
-            } else if (velTimeout && !posHealth) {
-                // if data is not healthy and timed out and position is unhealthy we reset the velocity, but do not fuse data on this time step
+            } else if (velTimeout && !posHealth && PV_AidingMode == AID_ABSOLUTE) {
+                // if data is not healthy and timed out and position is unhealthy and we are using aiding, we reset the velocity, but do not fuse data on this time step
                 ResetVelocity();
                 fuseVelData =  false;
             } else {
@@ -3523,16 +3547,19 @@ void NavEKF::getVelNED(Vector3f &vel) const
     vel = state.velocity;
 }
 
-// return the last calculated NED position relative to the reference point (m).
-// return false if no position is available
+// Return the last calculated NED position where horizontal position is relative to the current home position
+// and vertical position is relative to height at arming (m). Return false if no position is available
 bool NavEKF::getPosNED(Vector3f &pos) const
 {
+    const struct Location &home = _ahrs->get_home();
+    Vector2f originToHomeOffset = location_diff(home, EKF_origin);
+
     if (constPosMode) {
-        pos.x = lastKnownPositionNE.x;
-        pos.y = lastKnownPositionNE.y;
+        pos.x = state.position.x + lastKnownPositionNE.x + originToHomeOffset.x;
+        pos.y = state.position.y + lastKnownPositionNE.y + originToHomeOffset.y;
     } else {
-        pos.x = state.position.x;
-        pos.y = state.position.y;
+        pos.x = state.position.x + originToHomeOffset.x;
+        pos.y = state.position.y + originToHomeOffset.y;
     }
     // If relying on optical flow, then output ground relative position so that the vehicle does terain following
     if (_fusionModeGPS == 3) {
@@ -3566,30 +3593,29 @@ void NavEKF::resetGyroBias(void)
 }
 
 // Commands the EKF to not use GPS.
-// This command must be sent prior to arming as it will only be actioned when the filter is in constant position mode
-// This command is forgotten by the EKF each time it goes back into constant position mode (eg the vehicle disarms)
+// This command must be sent prior to arming
+// This command is forgotten by the EKF each time the vehicle disarms
 // Returns 0 if command rejected
 // Returns 1 if attitude, vertical velocity and vertical position will be provided
 // Returns 2 if attitude, 3D-velocity, vertical position and relative horizontal position will be provided
 uint8_t NavEKF::setInhibitGPS(void)
 {
-    if(!constPosMode) {
+    if(!vehicleArmed) {
         return 0;
     }
     if (optFlowDataPresent()) {
-        PV_AidingMode = AID_RELATIVE;
         return 2;
     } else {
-        PV_AidingMode = AID_NONE;
         return 1;
     }
+    _fusionModeGPS = 3;
 }
 
 // return the horizontal speed limit in m/s set by optical flow sensor limits
 // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
 void NavEKF::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
 {
-    if (flowDataValid || PV_AidingMode == AID_RELATIVE) {
+    if (PV_AidingMode == AID_RELATIVE) {
         // allow 1.0 rad/sec margin for angular motion
         ekfGndSpdLimit = max((_maxFlowRate - 1.0f), 0.0f) * max((terrainState - state.position[2]), 0.1f);
         // use standard gains up to 5.0 metres height and reduce above that
@@ -4315,8 +4341,6 @@ void NavEKF::InitialiseVariables()
 
     // initialise other variables
     gpsNoiseScaler = 1.0f;
-    velTimeout = true;
-    posTimeout = true;
     hgtTimeout = true;
     magTimeout = true;
     tasTimeout = true;
@@ -4369,6 +4393,8 @@ void NavEKF::InitialiseVariables()
     lastConstVelMode = false;
     heldVelNE.zero();
     PV_AidingMode = AID_NONE;
+    posTimeout = true;
+    velTimeout = true;
     gpsVelGlitchOffset.zero();
     vehicleArmed = false;
     prevVehicleArmed = false;
@@ -4567,6 +4593,8 @@ void NavEKF::performArmingChecks()
         // set various  useage modes based on the condition at arming. These are then held until the vehicle is disarmed.
         if (!vehicleArmed) {
             PV_AidingMode = AID_NONE; // When dis-armed, we only estimate orientation & height using the constant position mode
+            posTimeout = true;
+            velTimeout = true;
             constPosMode = true;
             constVelMode = false; // always clear constant velocity mode if constant position mode is active
             lastConstVelMode = false;
@@ -4575,18 +4603,26 @@ void NavEKF::performArmingChecks()
                 PV_AidingMode = AID_RELATIVE; // we have optical flow data and can estimate all vehicle states
                 posTimeout = true;
                 velTimeout = true;
+                constPosMode = false;
+                constVelMode = false;
             } else {
                 PV_AidingMode = AID_NONE; // we don't have optical flow data and will only be able to estimate orientation and height
                 posTimeout = true;
                 velTimeout = true;
+                constPosMode = true;
+                constVelMode = false; // always clear constant velocity mode if constant position mode is active
             }
         } else { // arming when GPS useage is allowed
             if (gpsNotAvailable) {
                 PV_AidingMode = AID_NONE; // we don't have have GPS data and will only be able to estimate orientation and height
                 posTimeout = true;
                 velTimeout = true;
+                constPosMode = true;
+                constVelMode = false; // always clear constant velocity mode if constant position mode is active
             } else {
                 PV_AidingMode = AID_ABSOLUTE; // we have GPS data and can estimate all vehicle states
+                constPosMode = false;
+                constVelMode = false;
             }
         }
         // Reset filter positon, height and velocity states on arming or disarming
@@ -4601,13 +4637,15 @@ void NavEKF::performArmingChecks()
         finalMagYawInit = true;
     }
 
-    // set constant position mode if gps is inhibited and we are not trying to use optical flow data
-    if (PV_AidingMode == AID_NONE) {
+    // Always turn aiding off when the vehicle is disarmed
+    if (!vehicleArmed) {
+        PV_AidingMode = AID_NONE;
+        posTimeout = true;
+        velTimeout = true;
+        // set constant position mode if aiding is inhibited
         constPosMode = true;
         constVelMode = false; // always clear constant velocity mode if constant position mode is active
         lastConstVelMode = false;
-    } else {
-        constPosMode = false;
     }
 
 }
