@@ -91,6 +91,8 @@ void AP_Frsky_Telem::frsky_send_frame1(uint8_t mode)
     float battery_amps = _battery.current_amps();
     float baro_alt = 0; // in meters
     bool posok = _ahrs.get_position(loc);
+    int16_t gps_hdop = 0;  // Variable for GPS HDOP
+
     if  (posok) {
 	baro_alt = loc.alt * 0.01f; // convert to meters
         if (!loc.flags.relative_alt) {
@@ -102,13 +104,19 @@ void AP_Frsky_Telem::frsky_send_frame1(uint8_t mode)
     // GPS status is sent as num_sats*10 + status, to fit into a
     // uint8_t
     uint8_t T2 = gps.num_sats() * 10 + gps.status();
+	
+	// GPS HDOP is scaled by a factor of 10 to display the value correctly
+    gps_hdop = (int16_t) (gps.get_hdop() * 10);
+
+    // GPS HDOP is sent in the X Accelerometer value
+	frsky_send_data(FRSKY_ID_ACCEL_X, gps_hdop);
   
     frsky_send_data(FRSKY_ID_TEMP1, mode);
     frsky_send_data(FRSKY_ID_TEMP2, T2);
 
     /*
-      Note that this isn't actually barometric altitdue, it is the
-      AHRS estimate of altitdue above home.
+      Note that this isn't actually barometric altitude, it is the
+      AHRS estimate of altitude above home.
      */
     uint16_t baro_alt_meters = (uint16_t)baro_alt;
     uint16_t baro_alt_cm = (baro_alt - baro_alt_meters) * 100;
