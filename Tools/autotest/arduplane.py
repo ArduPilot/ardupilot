@@ -338,6 +338,12 @@ def test_FBWB(mavproxy, mav, count=1, mode='FBWB'):
     mavproxy.send('rc 3 1700\n')
     mavproxy.send('rc 2 1500\n')
 
+    # lock in the altitude by asking for an altitude change then releasing
+    mavproxy.send('rc 2 1000\n')
+    wait_distance(mav, 50, accuracy=20)
+    mavproxy.send('rc 2 1500\n')
+    wait_distance(mav, 50, accuracy=20)
+
     m = mav.recv_match(type='VFR_HUD', blocking=True)
     initial_alt = m.alt
     print("Initial altitude %u\n" % initial_alt)
