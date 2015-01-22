@@ -65,6 +65,7 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
 
 };
 
+#if CLI_TEST_ENABLED == ENABLED
 // A Macro to create the Menu
 MENU(test_menu, "test", test_menu_commands);
 
@@ -80,6 +81,7 @@ static void print_hit_enter()
 {
     cliSerial->printf_P(PSTR("Hit Enter to exit.\n\n"));
 }
+#endif // CLI_TEST_ENABLED
 
 static int8_t
 test_radio_pwm(uint8_t argc, const Menu::arg *argv)

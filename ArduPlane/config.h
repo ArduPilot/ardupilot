@@ -469,13 +469,27 @@
  # define SCALING_SPEED          15.0
 #endif
 
-// use this to completely disable the CLI. We now default the CLI to
-// off on smaller boards.
+// use this to completely disable the CLI.
 #ifndef CLI_ENABLED
-#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
  # define CLI_ENABLED ENABLED
-#else
- # define CLI_ENABLED DISABLE
+#endif
+
+// use this for CLI options
+// Logs option is defined by LOGGING_ENABLED
+
+#ifndef CLI_SETUP_ENABLED
+#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
+ # define CLI_SETUP_ENABLED ENABLED
+#else 
+ # define CLI_SETUP_ENABLED DISABLED
+#endif
+#endif
+
+#ifndef CLI_TEST_ENABLED
+#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
+ # define CLI_TEST_ENABLED ENABLED
+#else 
+ # define CLI_TEST_ENABLED DISABLED
 #endif
 #endif
 
