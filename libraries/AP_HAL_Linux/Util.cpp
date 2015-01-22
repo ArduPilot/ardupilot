@@ -54,7 +54,7 @@ void LinuxUtil::_toneAlarm_timer_tick(){
 
 void LinuxUtil::set_system_clock(uint64_t time_utc_usec)
 {
-#if CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_NONE
+#if CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
     timespec ts;
     ts.tv_sec = time_utc_usec/1.0e6;
     ts.tv_nsec = (time_utc_usec % 1000000) * 1000;
