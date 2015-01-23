@@ -162,9 +162,13 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
     rate_roll_error = rate_roll_target_cds - gyro.x * AC_ATTITUDE_CONTROL_DEGX100;
     rate_pitch_error = rate_pitch_target_cds - gyro.y * AC_ATTITUDE_CONTROL_DEGX100;
 
+    // input to PID controller
+    _pid_rate_roll.set_input_filter_all(rate_roll_error);
+    _pid_rate_pitch.set_input_filter_all(rate_pitch_error);
+
     // call p and d controllers
-    roll_pd = _pid_rate_roll.get_p(rate_roll_error) + _pid_rate_roll.get_d(rate_roll_error, _dt);
-    pitch_pd = _pid_rate_pitch.get_p(rate_pitch_error) + _pid_rate_pitch.get_d(rate_pitch_error, _dt);
+    roll_pd = _pid_rate_roll.get_p() + _pid_rate_roll.get_d();
+    pitch_pd = _pid_rate_pitch.get_p() + _pid_rate_pitch.get_d();
 
     // get roll i term
     roll_i = _pid_rate_roll.get_integrator();
@@ -173,13 +177,13 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
     if (!_flags_heli.limit_roll || ((roll_i>0&&rate_roll_error<0)||(roll_i<0&&rate_roll_error>0))){
         if (((AP_MotorsHeli&)_motors).has_flybar()) {                              // Mechanical Flybars get regular integral for rate auto trim
             if (rate_roll_target_cds > -50 && rate_roll_target_cds < 50){       // Frozen at high rates
-                roll_i = _pid_rate_roll.get_i(rate_roll_error, _dt);
+                roll_i = _pid_rate_roll.get_i();
             }
         }else{
             if (_flags_heli.leaky_i){
-                roll_i = ((AC_HELI_PID&)_pid_rate_roll).get_leaky_i(rate_roll_error, _dt, AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
+                roll_i = ((AC_HELI_PID&)_pid_rate_roll).get_leaky_i(AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
             }else{
-                roll_i = _pid_rate_roll.get_i(rate_roll_error, _dt);
+                roll_i = _pid_rate_roll.get_i();
             }
         }
     }
@@ -191,13 +195,13 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
     if (!_flags_heli.limit_pitch || ((pitch_i>0&&rate_pitch_error<0)||(pitch_i<0&&rate_pitch_error>0))){
         if (((AP_MotorsHeli&)_motors).has_flybar()) {                              // Mechanical Flybars get regular integral for rate auto trim
             if (rate_pitch_target_cds > -50 && rate_pitch_target_cds < 50){     // Frozen at high rates
-                pitch_i = _pid_rate_pitch.get_i(rate_pitch_error, _dt);
+                pitch_i = _pid_rate_pitch.get_i();
             }
         }else{
             if (_flags_heli.leaky_i) {
-                pitch_i = ((AC_HELI_PID&)_pid_rate_pitch).get_leaky_i(rate_pitch_error, _dt, AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
+                pitch_i = ((AC_HELI_PID&)_pid_rate_pitch).get_leaky_i(AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
             }else{
-                pitch_i = _pid_rate_pitch.get_i(rate_pitch_error, _dt);
+                pitch_i = _pid_rate_pitch.get_i();
             }
         }
     }
@@ -321,7 +325,12 @@ float AC_AttitudeControl_Heli::rate_bf_to_motor_yaw(float rate_target_cds)
 
     // calculate error and call pid controller
     rate_error  = rate_target_cds - current_rate;
-    pd = _pid_rate_yaw.get_p(rate_error) + _pid_rate_yaw.get_d(rate_error, _dt);
+
+    // send input to PID controller
+    _pid_rate_yaw.set_input_filter_all(rate_error);
+
+    // get p and d
+    pd = _pid_rate_yaw.get_p() + _pid_rate_yaw.get_d();
 
     // get i term
     i = _pid_rate_yaw.get_integrator();
@@ -329,9 +338,9 @@ float AC_AttitudeControl_Heli::rate_bf_to_motor_yaw(float rate_target_cds)
     // update i term as long as we haven't breached the limits or the I term will certainly reduce
     if (!_flags_heli.limit_yaw || ((i>0&&rate_error<0)||(i<0&&rate_error>0))) {
         if (((AP_MotorsHeli&)_motors).motor_runup_complete()) {
-            i = _pid_rate_yaw.get_i(rate_error, _dt);
+            i = _pid_rate_yaw.get_i();
         } else {
-            i = ((AC_HELI_PID&)_pid_rate_yaw).get_leaky_i(rate_error, _dt, AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);    // If motor is not running use leaky I-term to avoid excessive build-up
+            i = ((AC_HELI_PID&)_pid_rate_yaw).get_leaky_i(AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);    // If motor is not running use leaky I-term to avoid excessive build-up
         }
     }
     
