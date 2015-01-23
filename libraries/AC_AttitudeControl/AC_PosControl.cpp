@@ -77,12 +77,20 @@ void AC_PosControl::set_dt(float delta_sec)
 {
     _dt = delta_sec;
 
-    // update rate controller's d filter
-    _pid_alt_accel.set_d_lpf_alpha(POSCONTROL_ACCEL_Z_DTERM_FILTER, _dt);
+    // update rate controller's dt
+    _pid_alt_accel.set_dt(_dt);
 
     // update rate z-axis velocity error and accel error filters
     _vel_error_filter.set_cutoff_frequency(_dt,POSCONTROL_VEL_ERROR_CUTOFF_FREQ);
     _accel_error_filter.set_cutoff_frequency(_dt,POSCONTROL_ACCEL_ERROR_CUTOFF_FREQ);
+}
+
+/// set_dt_xy - sets time delta in seconds for horizontal controller (i.e. 50hz = 0.02)
+void AC_PosControl::set_dt_xy(float dt_xy)
+{
+    _dt_xy = dt_xy;
+    _pid_rate_lat.set_dt(dt_xy);
+    _pid_rate_lon.set_dt(dt_xy);
 }
 
 /// set_speed_z - sets maximum climb and descent rates
@@ -363,8 +371,11 @@ void AC_PosControl::accel_to_throttle(float accel_target_z)
         _accel_error.z = _accel_error_filter.apply(constrain_float(accel_target_z - z_accel_meas, -32000, 32000));
     }
 
+    // set input to PID
+    _pid_alt_accel.set_input_filter_d(_accel_error.z);
+
     // separately calculate p, i, d values for logging
-    p = _pid_alt_accel.get_p(_accel_error.z);
+    p = _pid_alt_accel.get_p();
 
     // get i term
     i = _pid_alt_accel.get_integrator();
@@ -372,11 +383,11 @@ void AC_PosControl::accel_to_throttle(float accel_target_z)
     // update i term as long as we haven't breached the limits or the I term will certainly reduce
     // To-Do: should this be replaced with limits check from attitude_controller?
     if ((!_motors.limit.throttle_lower && !_motors.limit.throttle_upper) || (i>0&&_accel_error.z<0) || (i<0&&_accel_error.z>0)) {
-        i = _pid_alt_accel.get_i(_accel_error.z, _dt);
+        i = _pid_alt_accel.get_i();
     }
 
     // get d term
-    d = _pid_alt_accel.get_d(_accel_error.z, _dt);
+    d = _pid_alt_accel.get_d();
 
     // send throttle to attitude controller with angle boost
     _attitude_control.set_throttle_out((int16_t)p+i+d+_throttle_hover, true);
@@ -762,21 +773,25 @@ void AC_PosControl::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
     _vel_error.x = _vel_target.x - vel_curr.x;
     _vel_error.y = _vel_target.y - vel_curr.y;
 
+    // call pid controller
+    _pid_rate_lat.set_input_filter_d(_vel_error.x);
+    _pid_rate_lon.set_input_filter_d(_vel_error.y);
+
     // get current i term
     lat_i = _pid_rate_lat.get_integrator();
     lon_i = _pid_rate_lon.get_integrator();
 
     // update i term if we have not hit the accel or throttle limits OR the i term will reduce
     if ((!_limit.accel_xy && !_motors.limit.throttle_upper) || ((lat_i>0&&_vel_error.x<0)||(lat_i<0&&_vel_error.x>0))) {
-        lat_i = _pid_rate_lat.get_i(_vel_error.x, dt);
+        lat_i = _pid_rate_lat.get_i();
     }
     if ((!_limit.accel_xy && !_motors.limit.throttle_upper) || ((lon_i>0&&_vel_error.y<0)||(lon_i<0&&_vel_error.y>0))) {
-        lon_i = _pid_rate_lon.get_i(_vel_error.y, dt);
+        lon_i = _pid_rate_lon.get_i();
     }
 
     // combine feed forward accel with PID output from velocity error and scale PID output to compensate for optical flow measurement induced EKF noise
-    _accel_target.x = _accel_feedforward.x + (_pid_rate_lat.get_p(_vel_error.x) + lat_i + _pid_rate_lat.get_d(_vel_error.x, dt)) * ekfNavVelGainScaler;
-    _accel_target.y = _accel_feedforward.y + (_pid_rate_lon.get_p(_vel_error.y) + lon_i + _pid_rate_lon.get_d(_vel_error.y, dt)) * ekfNavVelGainScaler;
+    _accel_target.x = _accel_feedforward.x + (_pid_rate_lat.get_p() + lat_i + _pid_rate_lat.get_d()) * ekfNavVelGainScaler;
+    _accel_target.y = _accel_feedforward.y + (_pid_rate_lon.get_p() + lon_i + _pid_rate_lon.get_d()) * ekfNavVelGainScaler;
 
     // scale desired acceleration if it's beyond acceptable limit
     // To-Do: move this check down to the accel_to_lean_angle method?

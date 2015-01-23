@@ -37,8 +37,6 @@
 
 #define POSCONTROL_ACTIVE_TIMEOUT_MS            200     // position controller is considered active if it has been called within the past 200ms (0.2 seconds)
 
-#define POSCONTROL_ACCEL_Z_DTERM_FILTER         20      // Z axis accel controller's D term filter (in hz)
-
 #define POSCONTROL_VEL_ERROR_CUTOFF_FREQ        4.0     // 4hz low-pass filter on velocity error
 #define POSCONTROL_ACCEL_ERROR_CUTOFF_FREQ      2.0     // 2hz low-pass filter on accel error
 
@@ -69,7 +67,7 @@ public:
     float get_dt() const { return _dt; }
 
     /// set_dt_xy - sets time delta in seconds for horizontal controller (i.e. 50hz = 0.02)
-    void set_dt_xy(float dt_xy) { _dt_xy = dt_xy; }
+    void set_dt_xy(float dt_xy);
     float get_dt_xy() const { return _dt_xy; }
 
     ///
