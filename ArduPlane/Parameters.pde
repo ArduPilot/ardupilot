@@ -38,38 +38,9 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(sysid_my_gcs,           "SYSID_MYGCS",    255),
 
-    // @Param: SERIAL0_BAUD
-    // @DisplayName: USB Console Baud Rate
-    // @Description: The baud rate used on the USB console. The APM2 can support all baudrates up to 115, and also can support 500. The PX4 can support rates of up to 1500. If you setup a rate you cannot support on APM2 and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
-    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,500:500000,921:921600,1500:1500000
-    // @User: Standard
-    GSCALAR(serial0_baud,           "SERIAL0_BAUD",   SERIAL0_BAUD/1000),
-
-    // @Param: SERIAL1_BAUD
-    // @DisplayName: Telemetry Baud Rate
-    // @Description: The baud rate used on the first telemetry port. The APM2 can support all baudrates up to 115, and also can support 500. The PX4 can support rates of up to 1500. If you setup a rate you cannot support on APM2 and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
-    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,500:500000,921:921600,1500:1500000
-    // @User: Standard
-    GSCALAR(serial1_baud,           "SERIAL1_BAUD",   SERIAL1_BAUD/1000),
-
-#if MAVLINK_COMM_NUM_BUFFERS > 2
-    // @Param: SERIAL2_BAUD
-    // @DisplayName: Telemetry Baud Rate
-    // @Description: The baud rate used on the second telemetry port. The APM2 can support all baudrates up to 115, and also can support 500. The PX4 can support rates of up to 1500. If you setup a rate you cannot support on APM2 and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
-    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,500:500000,921:921600,1500:1500000
-    // @User: Standard
-    GSCALAR(serial2_baud,           "SERIAL2_BAUD",   SERIAL2_BAUD/1000),
-
-#if FRSKY_TELEM_ENABLED == ENABLED
-    // @Param: SERIAL2_PROTOCOL
-    // @DisplayName: SERIAL2 protocol selection
-    // @Description: Control what protocol telemetry 2 port should be used for
-    // @Values: 1:GCS Mavlink,2:Frsky D-PORT,3:Frsky S-PORT
-    // @User: Standard
-    GSCALAR(serial2_protocol,        "SERIAL2_PROTOCOL", SERIAL2_MAVLINK),
-#endif // FRSKY_TELEM_ENABLED
-
-#endif // MAVLINK_COMM_NUM_BUFFERS
+    // @Group: SERIAL
+    // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
+    GOBJECT(serial_manager, "SERIAL",   AP_SerialManager),
 
     // @Param: AUTOTUNE_LEVEL
     // @DisplayName: Autotune level
@@ -1189,6 +1160,9 @@ const AP_Param::ConversionInfo conversion_table[] PROGMEM = {
     { Parameters::k_param_log_bitmask_old,    0,      AP_PARAM_INT16, "LOG_BITMASK" },
     { Parameters::k_param_rally_limit_km_old, 0,      AP_PARAM_FLOAT, "RALLY_LIMIT_KM" },
     { Parameters::k_param_rally_total_old,    0,      AP_PARAM_INT8, "RALLY_TOTAL" },
+    { Parameters::k_param_serial0_baud,       0,      AP_PARAM_INT16, "SERIAL0_BAUD" },
+    { Parameters::k_param_serial1_baud,       0,      AP_PARAM_INT16, "SERIAL1_BAUD" },
+    { Parameters::k_param_serial2_baud,       0,      AP_PARAM_INT16, "SERIAL2_BAUD" },
 };
 
 static void load_parameters(void)

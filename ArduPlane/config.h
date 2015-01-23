@@ -60,10 +60,6 @@
 #define CONFIG_BARO     HAL_BARO_DEFAULT
 #define CONFIG_COMPASS  HAL_COMPASS_DEFAULT
 
-#ifdef HAL_SERIAL0_BAUD_DEFAULT
-# define SERIAL0_BAUD HAL_SERIAL0_BAUD_DEFAULT
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // HIL_MODE                                 OPTIONAL
 
@@ -80,19 +76,6 @@
 
 #ifndef MAV_SYSTEM_ID
  # define MAV_SYSTEM_ID          1
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Serial port speeds.
-//
-#ifndef SERIAL0_BAUD
- # define SERIAL0_BAUD                   115200
-#endif
-#ifndef SERIAL1_BAUD
- # define SERIAL1_BAUD                    57600
-#endif
-#ifndef SERIAL2_BAUD
- # define SERIAL2_BAUD                    57600
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -480,20 +463,6 @@
 
 #if OBC_FAILSAFE == ENABLED && HAL_CPU_CLASS < HAL_CPU_CLASS_75
 #define CLI_ENABLED DISABLED
-#endif
-
-
-
-#ifndef SERIAL_BUFSIZE
- # define SERIAL_BUFSIZE 512
-#endif
-
-#ifndef SERIAL1_BUFSIZE
- # define SERIAL1_BUFSIZE 256
-#endif
-
-#ifndef SERIAL2_BUFSIZE
- # define SERIAL2_BUFSIZE 256
 #endif
 
 /*

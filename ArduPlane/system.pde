@@ -70,12 +70,8 @@ static void run_cli(AP_HAL::UARTDriver *port)
 
 static void init_ardupilot()
 {
-    // Console serial port
-    //
-    // The console port buffers are defined to be sufficiently large to support
-    // the MAVLink protocol efficiently
-    //
-    hal.uartA->begin(SERIAL0_BAUD, 128, SERIAL_BUFSIZE);
+    // initialise serial port
+    serial_manager.init_console();
 
     cliSerial->printf_P(PSTR("\n\nInit " FIRMWARE_STRING
                          "\n\nFree RAM: %u\n"),
@@ -95,13 +91,13 @@ static void init_ardupilot()
 
     BoardConfig.init();
 
+    // initialise serial ports
+    serial_manager.init();
+
     // allow servo set on all channels except first 4
     ServoRelayEvents.set_channel_mask(0xFFF0);
 
     set_control_channels();
-
-    // reset the uartA baud rate after parameter load
-    hal.uartA->begin(map_baudrate(g.serial0_baud));
 
     // keep a record of how many resets have happened. This can be
     // used to detect in-flight resets
@@ -117,23 +113,24 @@ static void init_ardupilot()
     battery.init();
 
     // init the GCS
-    gcs[0].init(hal.uartA);
+    gcs[0].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_Console);
 
     // we start by assuming USB connected, as we initialed the serial
     // port with SERIAL0_BAUD. check_usb_mux() fixes this if need be.    
     usb_connected = true;
     check_usb_mux();
 
-    // we have a 2nd serial port for telemetry
-    gcs[1].setup_uart(hal.uartC, map_baudrate(g.serial1_baud), 128, SERIAL1_BUFSIZE);
+    // setup serial port for telem1
+    gcs[1].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink1);
 
 #if MAVLINK_COMM_NUM_BUFFERS > 2
-    if (g.serial2_protocol == SERIAL2_FRSKY_DPORT || 
-        g.serial2_protocol == SERIAL2_FRSKY_SPORT) {
-        frsky_telemetry.init(hal.uartD, (AP_Frsky_Telem::FrSkyProtocol)g.serial2_protocol.get());
-    } else {
-        gcs[2].setup_uart(hal.uartD, map_baudrate(g.serial2_baud), 128, SERIAL2_BUFSIZE);
-    }
+    // setup serial port for telem2
+    gcs[2].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink2);
+#endif
+
+    // setup frsky
+#if FRSKY_TELEM_ENABLED == ENABLED
+    frsky_telemetry.init(serial_manager);
 #endif
 
     mavlink_system.sysid = g.sysid_this_mav;
@@ -179,7 +176,7 @@ static void init_ardupilot()
     ahrs.set_airspeed(&airspeed);
 
     // GPS Initialization
-    gps.init(&DataFlash);
+    gps.init(&DataFlash, serial_manager);
 
     init_rc_in();               // sets up rc channels from radio
     init_rc_out();              // sets up the timer libs
@@ -187,7 +184,7 @@ static void init_ardupilot()
     relay.init();
 
     // initialise camera mount
-    camera_mount.init();
+    camera_mount.init(serial_manager);
 
 #if FENCE_TRIGGERED_PIN > 0
     hal.gpio->pinMode(FENCE_TRIGGERED_PIN, HAL_GPIO_OUTPUT);
@@ -200,14 +197,16 @@ static void init_ardupilot()
      */
     hal.scheduler->register_timer_failsafe(failsafe_check, 1000);
 
+#if CLI_ENABLED == ENABLED
     const prog_char_t *msg = PSTR("\nPress ENTER 3 times to start interactive setup\n");
     cliSerial->println_P(msg);
-    if (gcs[1].initialised) {
-        hal.uartC->println_P(msg);
+    if (gcs[1].initialised && (gcs[1].get_uart() != NULL)) {
+        gcs[1].get_uart()->println_P(msg);
     }
-    if (num_gcs > 2 && gcs[2].initialised) {
-        hal.uartD->println_P(msg);
+    if (num_gcs > 2 && gcs[2].initialised && (gcs[2].get_uart() != NULL)) {
+        gcs[2].get_uart()->println_P(msg);
     }
+#endif // CLI_ENABLED
 
     startup_ground();
     if (should_log(MASK_LOG_CMD))
@@ -279,12 +278,7 @@ static void startup_ground(void)
     // we don't want writes to the serial port to cause us to pause
     // mid-flight, so set the serial ports non-blocking once we are
     // ready to fly
-    hal.uartA->set_blocking_writes(false);
-    hal.uartB->set_blocking_writes(false);
-    hal.uartC->set_blocking_writes(false);
-    if (hal.uartD != NULL) {
-        hal.uartD->set_blocking_writes(false);
-    }
+    serial_manager.set_blocking_writes_all(false);
 
     gcs_send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to FLY."));
 }
@@ -583,9 +577,9 @@ static void check_usb_mux(void)
     // SERIAL0_BAUD, but when connected as a TTL serial port we run it
     // at SERIAL1_BAUD.
     if (usb_connected) {
-        hal.uartA->begin(SERIAL0_BAUD);
+        serial_manager.set_console_baud(AP_SerialManager::SerialProtocol_Console);
     } else {
-        hal.uartA->begin(map_baudrate(g.serial1_baud));
+        serial_manager.set_console_baud(AP_SerialManager::SerialProtocol_MAVLink1);
     }
 #endif
 }
