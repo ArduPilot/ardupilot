@@ -32,23 +32,29 @@ GCS_MAVLINK::GCS_MAVLINK() :
 }
 
 void
-GCS_MAVLINK::init(AP_HAL::UARTDriver *port)
+GCS_MAVLINK::init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan)
 {
     _port = port;
-    if (port == (AP_HAL::BetterStream*)hal.uartA) {
-        mavlink_comm_0_port = port;
-        chan = MAVLINK_COMM_0;
-        initialised = true;
-    } else if (port == (AP_HAL::BetterStream*)hal.uartC) {
-        mavlink_comm_1_port = port;
-        chan = MAVLINK_COMM_1;
-        initialised = true;
+    chan = mav_chan;
+
+    switch (chan) {
+        case MAVLINK_COMM_0:
+            mavlink_comm_0_port = _port;
+            initialised = true;
+            break;
+        case MAVLINK_COMM_1:
+            mavlink_comm_1_port = _port;
+            initialised = true;
+            break;
 #if MAVLINK_COMM_NUM_BUFFERS > 2
-    } else if (port == (AP_HAL::BetterStream*)hal.uartD) {
-        mavlink_comm_2_port = port;
-        chan = MAVLINK_COMM_2;
-        initialised = true;
+        case MAVLINK_COMM_2:
+            mavlink_comm_2_port = _port;
+            initialised = true;
+            break;
 #endif
+        default:
+            // do nothing for unsupport mavlink channels
+            break;
     }
     _queued_parameter = NULL;
     reset_cli_timeout();
@@ -61,10 +67,17 @@ GCS_MAVLINK::init(AP_HAL::UARTDriver *port)
 void
 GCS_MAVLINK::setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager::SerialProtocol protocol)
 {
-    // serach find serial port
+    // search for serial port
     AP_SerialManager::serial_state gcs_serial;
     if (!serial_manager.find_serial(protocol, gcs_serial)) {
         // return immediately if not found
+        return;
+    }
+
+    // get associated mavlink channel
+    mavlink_channel_t mav_chan;
+    if (!serial_manager.get_mavlink_channel(protocol, mav_chan)) {
+        // return immediately in unlikely case mavlink channel cannot be found
         return;
     }
 
@@ -90,7 +103,7 @@ GCS_MAVLINK::setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager
     gcs_serial.uart->begin(map_baudrate(gcs_serial.baud));
 
     // and init the gcs instance
-    init(gcs_serial.uart);
+    init(gcs_serial.uart, mav_chan);
 }
 
 uint16_t
