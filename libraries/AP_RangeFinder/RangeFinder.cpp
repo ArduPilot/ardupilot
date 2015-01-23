@@ -23,57 +23,57 @@
 // table of user settable parameters
 const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
     // @Param: _TYPE
-    // @DisplayName: Rangefinder type
-    // @Description: What type of rangefinder device that is connected
+    // @DisplayName: 测距仪类型
+    // @Description: 所连接的测距仪的类型
     // @Values: 0:None,1:Analog,2:APM2-MaxbotixI2C,3:APM2-PulsedLightI2C,4:PX4-I2C
     AP_GROUPINFO("_TYPE",    0, RangeFinder, _type[0], 0),
 
     // @Param: _PIN
-    // @DisplayName: Rangefinder pin
-    // @Description: Analog pin that rangefinder is connected to. Set this to 0..9 for the APM2 analog pins. Set to 64 on an APM1 for the dedicated 'airspeed' port on the end of the board. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
+    // @DisplayName: 测距仪针脚
+    // @Description: 测距仪连接到的模拟针脚。对APM2设为0~9。对APM1设为64作为独立空速接口在板子的末端。（Set to 64 on an APM1 for the dedicated 'airspeed' port on the end of the board.）在PX4上设为11作为模拟空速接口。在Pixhawk上设为15作为模拟空速接口。
     AP_GROUPINFO("_PIN",     1, RangeFinder, _pin[0], -1),
 
     // @Param: _SCALING
-    // @DisplayName: Rangefinder scaling
-    // @Description: Scaling factor between rangefinder reading and distance. For the linear and inverted functions this is in meters per volt. For the hyperbolic function the units are meterVolts.
+    // @DisplayName: 测距仪比例
+    // @Description: 测距仪读数和距离之间的比例。对于线性和反向函数这是米/伏特。对于双曲线函数他的单位是米伏特。
     // @Units: meters/Volt
     // @Increment: 0.001
     AP_GROUPINFO("_SCALING", 2, RangeFinder, _scaling[0], 3.0),
 
     // @Param: _OFFSET
-    // @DisplayName: rangefinder offset
-    // @Description: Offset in volts for zero distance
+    // @DisplayName: 测距仪偏移
+    // @Description: 距离为0时的电压
     // @Units: Volts
     // @Increment: 0.001
     AP_GROUPINFO("_OFFSET",  3, RangeFinder, _offset[0], 0.0),
 
     // @Param: _FUNCTION
-    // @DisplayName: Rangefinder function
-    // @Description: Control over what function is used to calculate distance. For a linear function, the distance is (voltage-offset)*scaling. For a inverted function the distance is (offset-voltage)*scaling. For a hyperbolic function the distance is scaling/(voltage-offset). The functions return the distance in meters.
-    // @Values: 0:Linear,1:Inverted,2:Hyperbolic
+    // @DisplayName: 测距仪函数
+    // @Description: 控制用于计算距离的函数。罪域线性函数，距离=（电压-偏移）*比例。对于反向函数距离=（偏移-电压）*比例。对于双曲函数距离=比例/（电压-偏移）。函数返回以米为单位的距离。
+    // @Values: 0:线性,1:反向,2:双曲
     AP_GROUPINFO("_FUNCTION", 4, RangeFinder, _function[0], 0),
 
     // @Param: _MIN_CM
-    // @DisplayName: Rangefinder minimum distance
-    // @Description: Minimum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
+    // @DisplayName: 测距仪最小距离
+    // @Description: 测距仪所能可靠测到的最小厘米数。
+	// @Units: 厘米
     // @Increment: 1
     AP_GROUPINFO("_MIN_CM",  5, RangeFinder, _min_distance_cm[0], 20),
 
     // @Param: _MAX_CM
-    // @DisplayName: Rangefinder maximum distance
-    // @Description: Maximum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
+    // @DisplayName: 测距仪最大距离
+    // @Description: 测距仪能测到的最大厘米数。
+	// @Units: 厘米
     // @Increment: 1
     AP_GROUPINFO("_MAX_CM",  6, RangeFinder, _max_distance_cm[0], 700),
 
     // @Param: _STOP_PIN
-    // @DisplayName: Rangefinder stop pin
-    // @Description: Digital pin that enables/disables rangefinder measurement for an analog rangefinder. A value of -1 means no pin. If this is set, then the pin is set to 1 to enable the rangefinder and set to 0 to disable it. This can be used to ensure that multiple sonar rangefinders don't interfere with each other.
+    // @DisplayName: 测距仪停止针脚
+    // @Description: 用于启用/禁用测距仪测量的数字针脚。-1代表没有这个针脚。如果设置了，那么这个针设为1代表启用测距仪，0代表禁用。这可以确保多个声呐测距仪不会互相干扰。
     AP_GROUPINFO("_STOP_PIN", 7, RangeFinder, _stop_pin[0], -1),
 
     // @Param: _SETTLE
-    // @DisplayName: Rangefinder settle time
+    // @DisplayName: 测距仪驻留时间Rangefinder settle time
     // @Description: The time in milliseconds that the rangefinder reading takes to settle. This is only used when a STOP_PIN is specified. It determines how long we have to wait for the rangefinder to give a reading after we set the STOP_PIN high. For a sonar rangefinder with a range of around 7m this would need to be around 50 milliseconds to allow for the sonar pulse to travel to the target and back again.
     // @Units: milliseconds
     // @Increment: 1
