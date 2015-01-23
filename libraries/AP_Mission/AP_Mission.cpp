@@ -1002,8 +1002,7 @@ bool AP_Mission::advance_current_nav_cmd()
     }
 
     // search until we find next nav command or reach end of command list
-    uint8_t max_loops = 64;
-    while (!_flags.nav_cmd_loaded && --max_loops) {
+    while (!_flags.nav_cmd_loaded) {
         // get next command
         if (!get_next_cmd(cmd_index, cmd, true)) {
             return false;
@@ -1027,11 +1026,6 @@ bool AP_Mission::advance_current_nav_cmd()
         }
         // move onto next command
         cmd_index = cmd.index+1;
-    }
-
-    if (max_loops == 0) {
-        // the mission is looping
-        return false;
     }
 
     // if we got this far we must have successfully advanced the nav command
