@@ -123,6 +123,12 @@ public:
     void                set_yaw(int16_t yaw_in) { _rc_yaw.servo_out = yaw_in; };                        // range -4500 ~ 4500
     void                set_throttle(int16_t throttle_in) { _rc_throttle.servo_out = throttle_in; };    // range 0 ~ 1000
 
+    // accessors for roll, pitch, yaw and throttle inputs to motors
+    int16_t             get_roll() { return _rc_roll.servo_out; }
+    int16_t             get_pitch() { return _rc_pitch.servo_out; }
+    int16_t             get_yaw() { return _rc_yaw.servo_out; }
+    int16_t             get_throttle() { return _rc_throttle.servo_out; }
+
     // get_throttle_out - returns throttle sent to motors in the range 0 ~ 1000
     int16_t             get_throttle_out() const { return _rc_throttle.servo_out; }
 
@@ -149,6 +155,18 @@ public:
 
     // set_current - set current to be used for output scaling
     virtual void        set_current(float current){ _batt_current = current; }
+
+    // get_lift_max - get maximum lift ratio
+    float               get_lift_max() { return _lift_max; }
+
+    // get_batt_voltage_filt - get battery voltage ratio
+    float               get_batt_voltage_filt() { return _batt_voltage_filt.get(); }
+
+    // get_batt_resistance - get battery resistance approximation
+    float               get_batt_resistance() { return _batt_resistance; }
+
+    // get_throttle_limit - throttle limit ratio
+    float               get_throttle_limit() { return _throttle_limit; }
 
     // 1 if motor is enabled, 0 otherwise
     bool                motor_enabled[AP_MOTORS_MAX_NUM_MOTORS];
