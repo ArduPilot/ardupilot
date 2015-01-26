@@ -42,7 +42,7 @@ AP_InertialSensor ins;
 static AP_SerialManager serial_manager;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-AP_ADC_ADS7844 adc;
+AP_ADC_ADS7844 apm1_adc;
 #endif
 
 AP_Baro baro;
