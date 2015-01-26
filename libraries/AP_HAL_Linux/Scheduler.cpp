@@ -198,7 +198,7 @@ void LinuxScheduler::register_io_process(AP_HAL::MemberProc proc)
         }
     }
 
-    if (_num_io_procs < LINUX_SCHEDULER_MAX_TIMER_PROCS) {
+    if (_num_io_procs < LINUX_SCHEDULER_MAX_IO_PROCS) {
         _io_proc[_num_io_procs] = proc;
         _num_io_procs++;
     } else {
