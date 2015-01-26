@@ -6,12 +6,12 @@ extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AC_PosControl::var_info[] PROGMEM = {
     // @Param: THR_HOVER
-    // @DisplayName: Throttle Hover
-    // @Description: The autopilot's estimate of the throttle required to maintain a level hover.  Calculated automatically from the pilot's throttle input while in stabilize mode
+    // @DisplayName: 油门悬停
+    // @Description: 自动驾驶仪估计的油门以保持水平悬停.自稳模式自动计算飞行器的油门输入
     // @Range: 0 1000
     // @Units: Percent*10
     // @User: Advanced
-    AP_GROUPINFO("THR_HOVER",       0, AC_PosControl, _throttle_hover, POSCONTROL_THROTTLE_HOVER),
+    AP_GROUPINFO("THR_HOVER", 0, AC_PosControl, _throttle_hover, POSCONTROL_THROTTLE_HOVER),
 
     AP_GROUPEND
 };
