@@ -6,47 +6,47 @@ extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AC_Fence::var_info[] PROGMEM = {
     // @Param: ENABLE
-    // @DisplayName: Fence enable/disable
-    // @Description: Allows you to enable (1) or disable (0) the fence functionality
-    // @Values: 0:Disabled,1:Enabled
+    // @DisplayName: 地理围栏 开启/禁止
+    // @Description: 允许你开启(1)或者禁止(0)地理围栏功能
+    // @Values: 0:禁止,1:开启
     // @User: Standard
     AP_GROUPINFO("ENABLE",      0,  AC_Fence,   _enabled,   0),
 
     // @Param: TYPE
-    // @DisplayName: Fence Type
-    // @Description: Enabled fence types held as bitmask
-    // @Values: 0:None,1:Altitude,2:Circle,3:Altitude and Circle
+    // @DisplayName: 地理围栏类型
+    // @Description: 开启地理围栏类型，保留为位掩码
+    // @Values: 0:无,1:Altitude,2:Circle,3:Altitude and Circle
     // @User: Standard
     AP_GROUPINFO("TYPE",        1,  AC_Fence,   _enabled_fences,  AC_FENCE_TYPE_ALT_MAX | AC_FENCE_TYPE_CIRCLE),
 
     // @Param: ACTION
     // @DisplayName: Fence Action
-    // @Description: What action should be taken when fence is breached
-    // @Values: 0:Report Only,1:RTL or Land
+    // @Description: 当突破地理围栏后，采取什么动作。
+    // @Values: 0:仅通知,1:RTL或降落
     // @User: Standard
     AP_GROUPINFO("ACTION",      2,  AC_Fence,   _action,        AC_FENCE_ACTION_RTL_AND_LAND),
 
     // @Param: ALT_MAX
-    // @DisplayName: Fence Maximum Altitude
-    // @Description: Maximum altitude allowed before geofence triggers
-    // @Units: Meters
+    // @DisplayName: 地理围栏最大高度
+    // @Description: 在突破地理围栏前，允许的最大飞行高度
+    // @Units: 米
     // @Range: 10 1000
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("ALT_MAX",     3,  AC_Fence,   _alt_max,       AC_FENCE_ALT_MAX_DEFAULT),
 
     // @Param: RADIUS
-    // @DisplayName: Circular Fence Radius
-    // @Description: Circle fence radius which when breached will cause an RTL
-    // @Units: Meters
+    // @DisplayName: 圆形围栏半径
+    // @Description: 当超出圆形围栏半径时，会触发RTL模式
+    // @Units: 米
     // @Range: 30 10000
     // @User: Standard
     AP_GROUPINFO("RADIUS",      4,  AC_Fence,   _circle_radius, AC_FENCE_CIRCLE_RADIUS_DEFAULT),
 
     // @Param: MARGIN
-    // @DisplayName: Fence Margin
-    // @Description: Distance that autopilot's should maintain from the fence to avoid a breach
-    // @Units: Meters
+    // @DisplayName: 地理围栏余量
+    // @Description: 避免突破地理围栏，自动驾驶仪应该保持与围栏的距离
+    // @Units: 米
     // @Range: 1 10
     // @User: Standard
     AP_GROUPINFO("MARGIN",      5,  AC_Fence,   _margin, AC_FENCE_MARGIN_DEFAULT),
