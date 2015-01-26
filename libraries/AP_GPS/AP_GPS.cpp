@@ -186,7 +186,7 @@ AP_GPS::detect_instance(uint8_t instance)
 			dstate->last_baud = 0;
 		}
 		uint32_t baudrate = pgm_read_dword(&_baudrates[dstate->last_baud]);
-		_port[instance]->begin(baudrate, 256, 16);
+		_port[instance]->begin(baudrate);
 		dstate->last_baud_change_ms = now;
         send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
     }
