@@ -31,11 +31,10 @@ This provides some support code and variables for MAVLink enabled sketches
 #include "include/mavlink/v1.0/mavlink_helpers.h"
 #endif
 
-
-AP_HAL::BetterStream	*mavlink_comm_0_port;
-AP_HAL::BetterStream	*mavlink_comm_1_port;
+AP_HAL::UARTDriver	*mavlink_comm_0_port;
+AP_HAL::UARTDriver	*mavlink_comm_1_port;
 #if MAVLINK_COMM_NUM_BUFFERS > 2
-AP_HAL::BetterStream	*mavlink_comm_2_port;
+AP_HAL::UARTDriver	*mavlink_comm_2_port;
 #endif
 
 mavlink_system_t mavlink_system = {7,1};
