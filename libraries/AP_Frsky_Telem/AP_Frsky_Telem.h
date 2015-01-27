@@ -70,71 +70,77 @@
 
 #define SPORT_START_FRAME 0x7E
 
-#define HUB_PORT true
-#define S_PORT false
-
 class AP_Frsky_Telem
 {
 public:
     //constructor
     AP_Frsky_Telem(AP_AHRS &ahrs, AP_BattMonitor &battery);
 
-    // these enums must match up with TELEM2_PROTOCOL in vehicle code
+    // supported protocols
     enum FrSkyProtocol {
         FrSkyUnknown = 0,
         FrSkyDPORT = 2,
         FrSkySPORT = 3
     };
 
+    // init - perform require initialisation including detecting which protocol to use
     void init(const AP_SerialManager& serial_manager);
-    void send_frames(uint8_t control_mode);
 
+    // send_frames - sends updates down telemetry link for both DPORT and SPORT protocols
+    //  should be called by main program at 50hz to allow poll for serial bytes
+    //  coming from the receiver for the SPort protocol
+    void send_frames(uint8_t control_mode);
 
 private:
 
-    void calc_crc (uint8_t byte);
-    void send_crc();
+    // send_hub_frame - main transmission function when protocol is FrSkyDPORT
+    void send_hub_frame();
 
+    // sport_tick - main call to send updates to transmitter when protocol is FrSkySPORT
+    //  called by scheduler at a high rate
+    void sport_tick();
+
+    // methods related to the nuts-and-bolts of sending data
+    void calc_crc(uint8_t byte);
+    void send_crc();
     void frsky_send_byte(uint8_t value);
     void frsky_send_hub_startstop();
     void frsky_send_sport_prim();
-
     void frsky_send_data(uint8_t id, int16_t data);
 
+    // methods to convert flight controller data to frsky telemetry format
     void calc_baro_alt();
     float frsky_format_gps(float dec);
     void calc_gps_position();
     void calc_battery();
     void calc_gps_sats();
 
-    void send_gps_sats (void);
-    void send_mode (void);
-    void send_baro_alt_m (void);
-    void send_baro_alt_cm (void);
-    void send_batt_remain (void);
-    void send_batt_volts (void);
-    void send_current (void);
-    void send_prearm_error (void);
-    void send_heading (void);
-    void send_gps_lat_dd (void);
-    void send_gps_lat_mm (void);
-    void send_gps_lat_ns (void);
-    void send_gps_lon_dd (void);
-    void send_gps_lon_mm (void);
-    void send_gps_lon_ew (void);
-    void send_gps_speed_meter (void);
-    void send_gps_speed_cm (void);
-    void send_gps_alt_meter (void);
-    void send_gps_alt_cm (void);
+    // methods to send individual pieces of data down telemetry link
+    void send_gps_sats(void);
+    void send_mode(void);
+    void send_baro_alt_m(void);
+    void send_baro_alt_cm(void);
+    void send_batt_remain(void);
+    void send_batt_volts(void);
+    void send_current(void);
+    void send_prearm_error(void);
+    void send_heading(void);
+    void send_gps_lat_dd(void);
+    void send_gps_lat_mm(void);
+    void send_gps_lat_ns(void);
+    void send_gps_lon_dd(void);
+    void send_gps_lon_mm(void);
+    void send_gps_lon_ew(void);
+    void send_gps_speed_meter(void);
+    void send_gps_speed_cm(void);
+    void send_gps_alt_meter(void);
+    void send_gps_alt_cm(void);
 
-    void send_hub_frame();
-    void sport_tick ();
-
-    AP_AHRS &_ahrs;
-    AP_BattMonitor &_battery;
-    AP_HAL::UARTDriver *_port;
-    bool _initialised;
-    enum FrSkyProtocol _protocol;
+    AP_AHRS &_ahrs;                         // reference to attitude estimate
+    AP_BattMonitor &_battery;               // reference to battery monitor object
+    AP_HAL::UARTDriver *_port;              // UART used to send data to receiver
+    bool _initialised;                      // true when we have detected the protocol to use
+    enum FrSkyProtocol _protocol;           // protocol used - detected using SerialManager's SERIALX_PROTOCOL parameter
 
     uint16_t _crc;
     uint32_t _last_frame1_ms;
@@ -157,18 +163,18 @@ private:
     uint16_t _londddmm;
     uint16_t _lonmmmm;	
     uint16_t _alt_gps_meters;
-    uint16_t _alt_gps_cm ;
+    uint16_t _alt_gps_cm;
     int16_t _speed_in_meter;
     uint16_t _speed_in_centimeter;
 
     bool _baro_data_ready;
-    int16_t _baro_alt_meters ;
-    uint16_t _baro_alt_cm ;
+    int16_t _baro_alt_meters;
+    uint16_t _baro_alt_cm;
 
     bool _mode_data_ready;
     uint8_t _mode; 
 
-    uint8_t _fas_call ;
+    uint8_t _fas_call;
     uint8_t _gps_call;
     uint8_t _vario_call;
     uint8_t _various_call;
