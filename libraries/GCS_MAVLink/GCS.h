@@ -79,6 +79,9 @@ public:
         msg_snoop = _msg_snoop;
     }
 
+    // accessor for uart
+    AP_HAL::UARTDriver *get_uart() { return _port; }
+
     static const struct AP_Param::GroupInfo        var_info[];
 
     // set to true if this GCS link is active
