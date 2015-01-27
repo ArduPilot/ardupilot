@@ -72,7 +72,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
 
     // @Param: LOIT_JERK
     // @DisplayName: 留待最大加加速度
-    // @Description: 留待最大加加速度（加速度的时间变化率），以cm/s/s/s为单位
+    // @Description: 留待最大加加速度(jerk)，以cm/s/s/s为单位
     // @Units: cm/s/s/s
     // @Range: 500 2000
     // @Increment: 1
