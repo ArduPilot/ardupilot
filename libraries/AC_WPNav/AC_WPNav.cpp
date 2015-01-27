@@ -378,7 +378,7 @@ void AC_WPNav::wp_and_spline_init()
     _pos_control.init_xy_controller();
 
     // initialise position controller speed and acceleration
-    _pos_control.set_speed_xy(_wp_speed_cms);
+    _pos_control.set_speed_xy(max(_wp_speed_cms,200.0f));
     _pos_control.set_accel_xy(_wp_accel_cms);
     _pos_control.set_speed_z(-_wp_speed_down_cms, _wp_speed_up_cms);
     _pos_control.set_accel_z(_wp_accel_z_cms);
@@ -390,12 +390,12 @@ void AC_WPNav::wp_and_spline_init()
 void AC_WPNav::set_speed_xy(float speed_cms)
 {
     // range check new target speed and update position controller
-    if (speed_cms >= WPNAV_WP_SPEED_MIN) {
+    //if (speed_cms >= WPNAV_WP_SPEED_MIN) {
         _wp_speed_cms = speed_cms;
-        _pos_control.set_speed_xy(_wp_speed_cms);
+        _pos_control.set_speed_xy(max(_wp_speed_cms,200.0f));
         // flag that wp leash must be recalculated
         _flags.recalc_wp_leash = true;
-    }
+    //}
 }
 
 /// set_destination - set destination using cm from home
