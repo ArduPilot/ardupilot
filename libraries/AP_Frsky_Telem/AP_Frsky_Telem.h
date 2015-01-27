@@ -93,6 +93,9 @@ public:
 
 private:
 
+    // init_uart_for_sport - initialise uart for use by sport
+    void init_uart_for_sport();
+
     // send_hub_frame - main transmission function when protocol is FrSkyDPORT
     void send_hub_frame();
 
@@ -139,7 +142,7 @@ private:
     AP_AHRS &_ahrs;                         // reference to attitude estimate
     AP_BattMonitor &_battery;               // reference to battery monitor object
     AP_HAL::UARTDriver *_port;              // UART used to send data to receiver
-    bool _initialised;                      // true when we have detected the protocol to use
+    bool _initialised_uart;                 // true when we have detected the protocol and UART has been initialised
     enum FrSkyProtocol _protocol;           // protocol used - detected using SerialManager's SERIALX_PROTOCOL parameter
 
     uint16_t _crc;

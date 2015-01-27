@@ -28,7 +28,7 @@ AP_Frsky_Telem::AP_Frsky_Telem(AP_AHRS &ahrs, AP_BattMonitor &battery) :
     _ahrs(ahrs),
     _battery(battery),
     _port(NULL),
-    _initialised(false),
+    _initialised_uart(false),
     _protocol(FrSkyUnknown),
     _crc(0),
     _last_frame1_ms(0),
@@ -75,6 +75,7 @@ void AP_Frsky_Telem::init(const AP_SerialManager& serial_manager)
     if (serial_manager.find_serial(AP_SerialManager::SerialProtocol_FRSky_DPort, frsky_serial)) {
         _port = frsky_serial.uart;
         _protocol = FrSkyDPORT;
+        _initialised_uart = true;   // SerialManager initialises uart for us
     }
     // check for FRSky_SPort
     if (serial_manager.find_serial(AP_SerialManager::SerialProtocol_FRSky_SPort, frsky_serial)) {
@@ -92,10 +93,6 @@ void AP_Frsky_Telem::init(const AP_SerialManager& serial_manager)
         _sport_status = 0;
         hal.scheduler->register_io_process(AP_HAL_MEMBERPROC(&AP_Frsky_Telem::sport_tick));
     }
-    // initialise port ignoring serial ports baud rate parameter
-    if (_port != NULL) {
-        _initialised = true;
-    }
 }
 
 /*
@@ -106,7 +103,7 @@ void AP_Frsky_Telem::init(const AP_SerialManager& serial_manager)
 void AP_Frsky_Telem::send_frames(uint8_t control_mode)
 {
     // return immediately if not initialised
-    if (!_initialised) {
+    if (!_initialised_uart) {
         return;
     }
 
@@ -135,6 +132,23 @@ void AP_Frsky_Telem::send_frames(uint8_t control_mode)
         _mode=control_mode;
         send_hub_frame();
     }
+}
+
+/*
+  init_uart_for_sport - initialise uart for use by sport
+  this must be called from sport_tick which is called from the 1khz scheduler
+  because the UART begin must be called from the same thread as it is used from
+ */
+void AP_Frsky_Telem::init_uart_for_sport()
+{
+    // sanity check protocol
+    if (_protocol != FrSkySPORT) {
+        return;
+    }
+
+    // initialise uart
+    _port->begin(AP_SERIALMANAGER_FRSKY_SPORT_BAUD, AP_SERIALMANAGER_FRSKY_BUFSIZE_RX, AP_SERIALMANAGER_FRSKY_BUFSIZE_TX);
+    _initialised_uart = true;
 }
 
 /*
@@ -188,9 +202,9 @@ void AP_Frsky_Telem::send_hub_frame()
 */
 void AP_Frsky_Telem::sport_tick(void)
 {
-    if (!_initialised) {
-        _port->begin(57600);
-        _initialised = true;
+    // check UART has been initialised
+    if (!_initialised_uart) {
+        init_uart_for_sport();
     }
 
     int16_t numc;
