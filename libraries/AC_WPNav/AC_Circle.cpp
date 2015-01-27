@@ -8,7 +8,7 @@ const AP_Param::GroupInfo AC_Circle::var_info[] PROGMEM = {
     // @Param: RADIUS
     // @DisplayName: 绕圈半径
     // @Description: 定义载具在绕圈模式时将要飞行的圆的半径
-    // @Units: 厘米
+    // @Units: cm
     // @Range: 0 10000
     // @Increment: 100
     // @User: Standard
@@ -16,8 +16,8 @@ const AP_Param::GroupInfo AC_Circle::var_info[] PROGMEM = {
 
     // @Param: RATE
     // @DisplayName: 绕圈速率
-    // @Description: 绕圈模式时转向的速率，以度/秒为单位。正值为顺时针旋转，负值为逆时针旋转
-    // @Units: 度/秒
+    // @Description: 绕圈模式时转向的速率，以deg/s为单位。正值为顺时针旋转，负值为逆时针旋转
+    // @Units: deg/s
     // @Range: -90 90
     // @Increment: 1
     // @User: Standard
