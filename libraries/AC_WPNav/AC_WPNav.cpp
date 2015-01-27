@@ -8,8 +8,8 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
     // index 0 was used for the old orientation matrix
 
     // @Param: SPEED
-    // @DisplayName: Waypoint Horizontal Speed Target
-    // @Description: Defines the speed in cm/s which the aircraft will attempt to maintain horizontally during a WP mission
+    // @DisplayName: 航点水平速度目标
+    // @Description: 定义航空器在航点任务中将试图维持的水平速度，以cm/s为单位
     // @Units: cm/s
     // @Range: 0 2000
     // @Increment: 50
@@ -17,8 +17,8 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
     AP_GROUPINFO("SPEED",       0, AC_WPNav, _wp_speed_cms, WPNAV_WP_SPEED),
 
     // @Param: RADIUS
-    // @DisplayName: Waypoint Radius
-    // @Description: Defines the distance from a waypoint, that when crossed indicates the wp has been hit.
+    // @DisplayName: 航点半径
+    // @Description: 定义航点的距离范围。一旦穿越该范围，就表明航点已命中。
     // @Units: cm
     // @Range: 100 1000
     // @Increment: 1
@@ -26,8 +26,8 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
     AP_GROUPINFO("RADIUS",      1, AC_WPNav, _wp_radius_cm, WPNAV_WP_RADIUS),
 
     // @Param: SPEED_UP
-    // @DisplayName: Waypoint Climb Speed Target
-    // @Description: Defines the speed in cm/s which the aircraft will attempt to maintain while climbing during a WP mission
+    // @DisplayName: 航点爬升速度目标
+    // @Description: 定义航空器在航点任务中将试图维持的爬升速度，以cm/s为单位
     // @Units: cm/s
     // @Range: 0 1000
     // @Increment: 50
@@ -35,8 +35,8 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
     AP_GROUPINFO("SPEED_UP",    2, AC_WPNav, _wp_speed_up_cms, WPNAV_WP_SPEED_UP),
 
     // @Param: SPEED_DN
-    // @DisplayName: Waypoint Descent Speed Target
-    // @Description: Defines the speed in cm/s which the aircraft will attempt to maintain while descending during a WP mission
+    // @DisplayName: 航点下降速度目标
+    // @Description: 定义航空器在航点任务中将试图维持的下降速度，以cm/s为单位
     // @Units: cm/s
     // @Range: 0 500
     // @Increment: 10
@@ -44,8 +44,8 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
     AP_GROUPINFO("SPEED_DN",    3, AC_WPNav, _wp_speed_down_cms, WPNAV_WP_SPEED_DOWN),
 
     // @Param: LOIT_SPEED
-    // @DisplayName: Loiter Horizontal Maximum Speed
-    // @Description: Defines the maximum speed in cm/s which the aircraft will travel horizontally while in loiter mode
+    // @DisplayName: 留待水平最大速度
+    // @Description: 定义航空器在留待模式中将水平移动的最大速度，以cm/s为单位
     // @Units: cm/s
     // @Range: 0 2000
     // @Increment: 50
@@ -53,8 +53,8 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
     AP_GROUPINFO("LOIT_SPEED",  4, AC_WPNav, _loiter_speed_cms, WPNAV_LOITER_SPEED),
 
     // @Param: ACCEL
-    // @DisplayName: Waypoint Acceleration 
-    // @Description: Defines the horizontal acceleration in cm/s/s used during missions
+    // @DisplayName: 航点水平加速度
+    // @Description: 定义在任务中的水平加速度，以cm/s/s为单位
     // @Units: cm/s/s
     // @Range: 50 500
     // @Increment: 10
@@ -62,8 +62,8 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
     AP_GROUPINFO("ACCEL",       5, AC_WPNav, _wp_accel_cms, WPNAV_ACCELERATION),
 
     // @Param: ACCEL_Z
-    // @DisplayName: Waypoint Vertical Acceleration
-    // @Description: Defines the vertical acceleration in cm/s/s used during missions
+    // @DisplayName: 航点垂直加速度
+    // @Description: 定义在任务中的垂直加速度，以cm/s/s为单位
     // @Units: cm/s/s
     // @Range: 50 500
     // @Increment: 10
@@ -71,8 +71,8 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
     AP_GROUPINFO("ACCEL_Z",     6, AC_WPNav, _wp_accel_z_cms, WPNAV_WP_ACCEL_Z_DEFAULT),
 
     // @Param: LOIT_JERK
-    // @DisplayName: Loiter maximum jerk
-    // @Description: Loiter maximum jerk in cm/s/s/s
+    // @DisplayName: 留待最大加加速度
+    // @Description: 留待最大加加速度（加速度的时间变化率），以cm/s/s/s为单位
     // @Units: cm/s/s/s
     // @Range: 500 2000
     // @Increment: 1
