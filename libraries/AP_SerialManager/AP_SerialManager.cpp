@@ -147,7 +147,7 @@ void AP_SerialManager::init()
                     state[i].rx_size = AP_SERIALMANAGER_FRSKY_BUFSIZE_RX;
                     state[i].tx_size = AP_SERIALMANAGER_FRSKY_BUFSIZE_TX;
                     state[i].baud = AP_SERIALMANAGER_FRSKY_SPORT_BAUD/1000; // update baud param in case user looks at it
-                    state[i].uart->begin(AP_SERIALMANAGER_FRSKY_SPORT_BAUD, state[i].rx_size, state[i].tx_size);
+                    // begin is handled by AP_Frsky_telem library
                     break;
                 case SerialProtocol_GPS:
                 case SerialProtocol_GPS2:
