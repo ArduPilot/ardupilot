@@ -16,7 +16,7 @@ ln -s /vagrant/Tools/vagrant/screenrc /home/vagrant/.screenrc
 pushd /tmp
 rm -rf jsbsim
 git clone git://github.com/tridge/jsbsim.git
-sudo apt-get install libtool automake autoconf libexpat1-dev
+sudo apt-get install -y libtool automake autoconf libexpat1-dev
 cd jsbsim
 ./autogen.sh
 make -j2
