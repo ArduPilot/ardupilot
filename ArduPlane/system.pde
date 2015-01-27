@@ -183,8 +183,10 @@ static void init_ardupilot()
 
     relay.init();
 
+#if MOUNT == ENABLED
     // initialise camera mount
     camera_mount.init(serial_manager);
+#endif
 
 #if FENCE_TRIGGERED_PIN > 0
     hal.gpio->pinMode(FENCE_TRIGGERED_PIN, HAL_GPIO_OUTPUT);
