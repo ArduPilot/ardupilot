@@ -27,8 +27,8 @@
  */
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
 // copter defaults
-#define VELNE_NOISE_DEFAULT     0.5f
-#define VELD_NOISE_DEFAULT      0.7f
+#define VELNE_NOISE_DEFAULT     1.0f
+#define VELD_NOISE_DEFAULT      1.4f
 #define POSNE_NOISE_DEFAULT     0.5f
 #define ALT_NOISE_DEFAULT       1.0f
 #define MAG_NOISE_DEFAULT       0.05f
@@ -38,7 +38,7 @@
 #define ABIAS_PNOISE_DEFAULT    0.0001f
 #define MAGE_PNOISE_DEFAULT     0.0003f
 #define MAGB_PNOISE_DEFAULT     0.0003f
-#define VEL_GATE_DEFAULT        6
+#define VEL_GATE_DEFAULT        5
 #define POS_GATE_DEFAULT        10
 #define HGT_GATE_DEFAULT        10
 #define MAG_GATE_DEFAULT        3
@@ -51,8 +51,8 @@
 
 #elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
 // rover defaults
-#define VELNE_NOISE_DEFAULT     0.5f
-#define VELD_NOISE_DEFAULT      0.7f
+#define VELNE_NOISE_DEFAULT     1.0f
+#define VELD_NOISE_DEFAULT      1.4f
 #define POSNE_NOISE_DEFAULT     0.5f
 #define ALT_NOISE_DEFAULT       1.0f
 #define MAG_NOISE_DEFAULT       0.05f
@@ -62,7 +62,7 @@
 #define ABIAS_PNOISE_DEFAULT    0.0002f
 #define MAGE_PNOISE_DEFAULT     0.0003f
 #define MAGB_PNOISE_DEFAULT     0.0003f
-#define VEL_GATE_DEFAULT        6
+#define VEL_GATE_DEFAULT        5
 #define POS_GATE_DEFAULT        10
 #define HGT_GATE_DEFAULT        10
 #define MAG_GATE_DEFAULT        3
@@ -75,8 +75,8 @@
 
 #else
 // generic defaults (and for plane)
-#define VELNE_NOISE_DEFAULT     0.3f
-#define VELD_NOISE_DEFAULT      0.5f
+#define VELNE_NOISE_DEFAULT     1.0f
+#define VELD_NOISE_DEFAULT      1.4f
 #define POSNE_NOISE_DEFAULT     0.5f
 #define ALT_NOISE_DEFAULT       0.5f
 #define MAG_NOISE_DEFAULT       0.05f
@@ -115,16 +115,16 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
 
     // @Param: VELNE_NOISE
-    // @DisplayName: GPS horizontal velocity measurement noise (m/s)
-    // @Description: This is the RMS value of noise in the North and East GPS velocity measurements. Increasing it reduces the weighting on these measurements.
+    // @DisplayName: GPS horizontal velocity measurement noise scaler
+    // @Description: This is the scaler that is applied to the speed accuracy reported by the receiver to estimate the horizontal velocity observation noise. If the model of receiver used does not provide a speed accurcy estimate, then a speed acuracy of 1 is assumed. Increasing it reduces the weighting on these measurements.
     // @Range: 0.05 5.0
     // @Increment: 0.05
     // @User: Advanced
     AP_GROUPINFO("VELNE_NOISE",    0, NavEKF, _gpsHorizVelNoise, VELNE_NOISE_DEFAULT),
 
     // @Param: VELD_NOISE
-    // @DisplayName: GPS vertical velocity measurement noise (m/s)
-    // @Description: This is the RMS value of noise in the vertical GPS velocity measurement. Increasing it reduces the weighting on this measurement.
+    // @DisplayName: GPS vertical velocity measurement noise scaler
+    // @Description: This is the scaler that is applied to the speed accuracy reported by the receiver to estimate the vertical velocity observation noise. If the model of receiver used does not provide a speed accurcy estimate, then a speed acuracy of 1 is assumed. Increasing it reduces the weighting on this measurement.
     // @Range: 0.05 5.0
     // @Increment: 0.05
     // @User: Advanced
@@ -373,8 +373,8 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     _ahrs(ahrs),
     _baro(baro),
     state(*reinterpret_cast<struct state_elements *>(&states)),
-    gpsNEVelVarAccScale(0.05f),     // Scale factor applied to horizontal velocity measurement variance due to manoeuvre acceleration
-    gpsDVelVarAccScale(0.07f),      // Scale factor applied to vertical velocity measurement variance due to manoeuvre acceleration
+    gpsNEVelVarAccScale(0.05f),     // Scale factor applied to horizontal velocity measurement variance due to manoeuvre acceleration - used when GPS doesn't report speed error
+    gpsDVelVarAccScale(0.07f),      // Scale factor applied to vertical velocity measurement variance due to manoeuvre acceleration - used when GPS doesn't report speed error
     gpsPosVarAccScale(0.05f),       // Scale factor applied to horizontal position measurement variance due to manoeuvre acceleration
     msecHgtDelay(60),               // Height measurement delay (msec)
     msecMagDelay(40),               // Magnetometer measurement delay (msec)
@@ -1870,8 +1870,6 @@ void NavEKF::FuseVelPosNED()
     uint8_t obsIndex;
 
     // declare variables used by state and covariance update calculations
-    float NEvelErr;
-    float DvelErr;
     float posErr;
     Vector6 R_OBS;
     Vector6 observation;
@@ -1916,17 +1914,22 @@ void NavEKF::FuseVelPosNED()
         }
         observation[5] = -hgtMea;
 
-        // calculate additional error in GPS velocity caused by manoeuvring
-        NEvelErr = gpsNEVelVarAccScale * accNavMag;
-        DvelErr  = gpsDVelVarAccScale * accNavMag;
-
         // calculate additional error in GPS position caused by manoeuvring
         posErr = gpsPosVarAccScale * accNavMag;
 
         // estimate the GPS Velocity, GPS horiz position and height measurement variances.
-        R_OBS[0] = sq(constrain_float(_gpsHorizVelNoise, 0.05f, 5.0f)) + sq(NEvelErr);
+        // if the GPS is able to report a speed error, we use it to adjust the observation noise for GPS velocity
+        // otherwise we scale it using manoeuvre acceleration
+        if (gpsSpdAccuracy > 0.0f) {
+            // use GPS receivers reported speed accuracy
+            R_OBS[0] = sq(constrain_float(gpsSpdAccuracy * _gpsHorizVelNoise, 0.05f, 50.0f));
+            R_OBS[2] = sq(constrain_float(gpsSpdAccuracy * _gpsVertVelNoise, 0.05f, 50.0f));
+        } else {
+            // calculate additional error in GPS velocity caused by manoeuvring
+            R_OBS[0] = sq(constrain_float(_gpsHorizVelNoise, 0.05f, 5.0f)) + sq(gpsNEVelVarAccScale * accNavMag);
+            R_OBS[2] = sq(constrain_float(_gpsVertVelNoise,  0.05f, 5.0f)) + sq(gpsDVelVarAccScale  * accNavMag);
+        }
         R_OBS[1] = R_OBS[0];
-        R_OBS[2] = sq(constrain_float(_gpsVertVelNoise, 0.05f, 5.0f)) + sq(DvelErr);
         R_OBS[3] = sq(constrain_float(_gpsHorizPosNoise, 0.1f, 10.0f)) + sq(posErr);
         R_OBS[4] = R_OBS[3];
         R_OBS[5] = sq(constrain_float(_baroAltNoise, 0.1f, 10.0f));
@@ -3983,6 +3986,11 @@ void NavEKF::readGpsData()
 
         // read the NED velocity from the GPS
         velNED = _ahrs->get_gps().velocity();
+
+        // use the speed accuracy from the GPS if available, otherwise set it to zero.
+        if (!_ahrs->get_gps().speed_accuracy(gpsSpdAccuracy)) {
+            gpsSpdAccuracy = 0.0f;
+        }
 
         // check if we have enough GPS satellites and increase the gps noise scaler if we don't
         if (_ahrs->get_gps().num_sats() >= 6) {
