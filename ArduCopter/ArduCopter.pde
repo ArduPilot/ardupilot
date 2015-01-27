@@ -777,7 +777,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { perf_update,        4000,     20 },
     { read_receiver_rssi,   40,      5 },
 #if FRSKY_TELEM_ENABLED == ENABLED
-    { telemetry_send,       80,     10 },	
+    { frsky_telemetry_send, 80,     10 },
 #endif
 #if EPM_ENABLED == ENABLED
     { epm_update,           40,     10 },
@@ -849,7 +849,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { perf_update,        1000,     200 },
     { read_receiver_rssi,   10,      50 },
 #if FRSKY_TELEM_ENABLED == ENABLED
-    { telemetry_send,       20,     100 },	
+    { frsky_telemetry_send, 20,     100 },
 #endif
 #if EPM_ENABLED == ENABLED
     { epm_update,           10,      20 },

@@ -411,10 +411,9 @@ static void check_usb_mux(void)
 #endif
 }
 
-/*
-  send FrSky telemetry. Should be called at 5Hz by scheduler
- */
-static void telemetry_send(void)
+// frsky_telemetry_send - sends telemetry data using frsky telemetry
+//  should be called at 5Hz by scheduler
+static void frsky_telemetry_send(void)
 {
 #if FRSKY_TELEM_ENABLED == ENABLED
     frsky_telemetry.send_frames((uint8_t)control_mode);
