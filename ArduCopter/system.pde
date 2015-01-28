@@ -126,9 +126,6 @@ static void init_ardupilot()
 
     barometer.init();
 
-    // init the GCS connected to the console
-    gcs[0].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_Console);
-
     // Register the mavlink service callback. This will run
     // anytime there are more than 5ms remaining in a call to
     // hal.scheduler->delay.
@@ -138,6 +135,9 @@ static void init_ardupilot()
     // port with SERIAL0_BAUD. check_usb_mux() fixes this if need be.
     ap.usb_connected = true;
     check_usb_mux();
+
+    // init the GCS connected to the console
+    gcs[0].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_Console);
 
 #if CONFIG_HAL_BOARD != HAL_BOARD_APM2
     // we have a 2nd serial port for telemetry on all boards except
@@ -403,7 +403,7 @@ static void check_usb_mux(void)
     // between USB and a TTL serial connection. When on USB we use
     // SERIAL0_BAUD, but when connected as a TTL serial port we run it
     // at SERIAL1_BAUD.
-    if (usb_connected) {
+    if (ap.usb_connected) {
         serial_manager.set_console_baud(AP_SerialManager::SerialProtocol_Console);
     } else {
         serial_manager.set_console_baud(AP_SerialManager::SerialProtocol_MAVLink1);
