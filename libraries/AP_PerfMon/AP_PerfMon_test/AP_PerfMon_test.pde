@@ -9,6 +9,7 @@
 #include <AP_Math.h>
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
+#include <StorageManager.h>
 #include <AP_PerfMon.h>        // PerfMonitor library
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
