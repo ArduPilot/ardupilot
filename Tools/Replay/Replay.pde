@@ -210,9 +210,9 @@ void setup()
     ahrs.set_correct_centrifugal(true);
 
     if (arm_time_ms != 0) {
-        ahrs.set_armed(false);
+        hal.util->set_soft_armed(false);
     } else {
-        ahrs.set_armed(true);
+        hal.util->set_soft_armed(true);
     }
 
     barometer.init();
@@ -344,8 +344,8 @@ void loop()
         uint8_t type;
 
         if (arm_time_ms != 0 && hal.scheduler->millis() > arm_time_ms) {
-            if (!ahrs.get_armed()) {
-                ahrs.set_armed(true);
+            if (!hal.util->get_soft_armed()) {
+                hal.util->set_soft_armed(true);
                 ::printf("Arming at %u ms\n", (unsigned)hal.scheduler->millis());
             }
         }
