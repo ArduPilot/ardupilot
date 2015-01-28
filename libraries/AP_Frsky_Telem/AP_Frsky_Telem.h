@@ -91,7 +91,6 @@ public:
     void init(AP_HAL::UARTDriver *port, enum FrSkyProtocol protocol);
     void send_frames(uint8_t control_mode);
 
-
 private:
 
     void calc_crc (uint8_t byte);
@@ -108,8 +107,10 @@ private:
     void calc_gps_position();
     void calc_battery();
     void calc_gps_sats();
+    void calc_gps_hdop();
 
     void send_gps_sats (void);
+    void send_gps_hdop (void);
     void send_mode (void);
     void send_baro_alt_m (void);
     void send_baro_alt_cm (void);
@@ -148,7 +149,10 @@ private:
     uint16_t _batt_amps;
 
     bool _sats_data_ready;
-    uint16_t gps_sats;
+    uint16_t _gps_sats;
+
+    bool _gps_hdop_ready;
+    int16_t _gps_hdop;
 
     bool _gps_data_ready;
     bool _pos_gps_ok;

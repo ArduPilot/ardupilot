@@ -42,6 +42,7 @@ void AP_Frsky_Telem::init(AP_HAL::UARTDriver *port, enum FrSkyProtocol protocol)
         _mode_data_ready = false;
         _sats_data_ready = false;
         _sport_status = 0;
+        _gps_hdop_ready = false;
         hal.scheduler->register_io_process(AP_HAL_MEMBERPROC(&AP_Frsky_Telem::sport_tick));
     } else {
         // if this is D-port then spec says 9600 baud
@@ -253,6 +254,7 @@ void AP_Frsky_Telem::calc_battery ()
     _batt_amps = roundf(_battery.current_amps() * 10.0f);
 }
 
+
 /*
  * prepare sats information stored in member variables
  */
@@ -260,7 +262,16 @@ void AP_Frsky_Telem::calc_gps_sats ()
 {
     // GPS status is sent as num_sats*10 + status, to fit into a uint8_t
     const AP_GPS &gps = _ahrs.get_gps();
-    gps_sats = gps.num_sats() * 10 + gps.status();
+    _gps_sats = gps.num_sats() * 10 + gps.status();
+}
+
+/*
+ * prepare satellites hdop stored in member variables
+ */
+void AP_Frsky_Telem::calc_gps_hdop ()
+{
+    const AP_GPS &gps = _ahrs.get_gps();
+    _gps_hdop = gps.get_hdop() * 10;
 }
 
 /*
@@ -268,7 +279,15 @@ void AP_Frsky_Telem::calc_gps_sats ()
  */
 void AP_Frsky_Telem::send_gps_sats ()
 {
-    frsky_send_data(FRSKY_ID_TEMP2, gps_sats);
+    frsky_send_data(FRSKY_ID_TEMP2, _gps_sats);
+}
+
+/*
+ * send number of gps satellite and gps status eg: 73 means 7 satellite and 3d lock
+ */
+void AP_Frsky_Telem::send_gps_hdop ()
+{
+    frsky_send_data(FRSKY_ID_ACCEL_X, _gps_hdop);
 }
 
 /*
@@ -418,8 +437,6 @@ void AP_Frsky_Telem::send_hub_frame()
     // send frame1 every 200ms
     if (now - _last_frame1_ms > 200) {
         _last_frame1_ms = now;
-        calc_gps_sats();
-        send_gps_sats();
         send_mode();
         
         calc_battery();
@@ -434,6 +451,13 @@ void AP_Frsky_Telem::send_hub_frame()
     // send frame2 every second
     if (now - _last_frame2_ms > 1000) {
         _last_frame2_ms = now;
+
+        calc_gps_sats();
+        send_gps_sats();
+
+        calc_gps_hdop();
+        send_gps_hdop();
+
         send_heading();
         calc_gps_position();
         if (_pos_gps_ok) {
@@ -479,6 +503,10 @@ void AP_Frsky_Telem::send_frames(uint8_t control_mode)
         if (!_sats_data_ready) {
             calc_gps_sats();
             _sats_data_ready = true;
+        }
+        if (!_gps_hdop_ready) {
+            calc_gps_hdop();
+            _gps_hdop_ready = true;
         }
         if (!_battery_data_ready) {
             calc_battery();
@@ -612,9 +640,15 @@ void AP_Frsky_Telem::sport_tick(void)
                         _mode_data_ready = false;
                     }
                     break;
+                case 2:
+                    if ( _gps_hdop_ready ) {
+                        send_gps_hdop();
+                        _gps_hdop_ready = false;
+                    }
+                    break;
                 }
                 _various_call++;
-                if (_various_call > 1) {
+                if (_various_call > 2) {
                     _various_call = 0;
                 }
                 break;
