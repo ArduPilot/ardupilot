@@ -34,6 +34,8 @@
 #include <AP_Notify.h>
 #include <AP_Vehicle.h>
 #include <DataFlash.h>
+#include <AP_Nav_Common.h>
+#include <AP_BattMonitor.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
