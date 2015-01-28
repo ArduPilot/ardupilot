@@ -863,7 +863,7 @@ void loop()
 // update AHRS system
 static void ahrs_update()
 {
-    ahrs.set_armed(arming.is_armed() && 
+    hal.util->set_soft_armed(arming.is_armed() &&
                    hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
 
 #if HIL_MODE != HIL_MODE_DISABLED
@@ -1157,7 +1157,7 @@ static void update_GPS_10Hz(void)
         }
 #endif        
 
-        if (!ahrs.get_armed()) {
+        if (!hal.util->get_soft_armed()) {
             update_home();
         }
 
