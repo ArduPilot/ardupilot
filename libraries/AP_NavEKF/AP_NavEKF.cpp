@@ -4006,11 +4006,12 @@ void NavEKF::readGpsData()
         // calculate a position offset which is applied to NE position and velocity wherever it is used throughout code to allow GPS position jumps to be accommodated gradually
         decayGpsOffset();
     }
-    // If too long since last fix time or we are not allowed to use GPS, we declare no GPS available for use
-    if ((imuSampleTime_ms - lastFixTime_ms < 1000) || _fusionModeGPS == 3) {
-        gpsNotAvailable = false;
-    } else {
+
+    // If no previous GPS lock or told not to use it, we declare the  GPS unavailable available for use
+    if ((_ahrs->get_gps().status() < AP_GPS::GPS_OK_FIX_3D) || _fusionModeGPS == 3) {
         gpsNotAvailable = true;
+    } else {
+        gpsNotAvailable = false;
     }
 }
 
