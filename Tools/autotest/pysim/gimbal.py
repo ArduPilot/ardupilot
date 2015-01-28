@@ -2,7 +2,7 @@
 
 from aircraft import Aircraft
 import util, time, math
-from math import degrees, radians
+from math import degrees, radians, cos, sin, tan
 from rotmat import Vector3, Matrix3
 
 def constrain(value, minv, maxv):
@@ -41,13 +41,10 @@ class Gimbal3Axis(object):
         # 0, 0, -Pi/2, means pointing down
         self.joint_angles = Vector3()
 
-        # physical constraints on joint angles
-        self.min_yaw = radians(-7.5)
-        self.max_yaw = radians(7.5)
-        self.min_roll = radians(-40)
-        self.max_roll = radians(40)
-        self.min_pitch = radians(-135)
-        self.max_pitch = radians(45)
+        # physical constraints on joint angles in (roll, pitch, azimuth) order
+        self.lower_joint_limits = Vector3(radians(-40), radians(-135), radians(-7.5))
+        self.upper_joint_limits = Vector3(radians(40),  radians(45),   radians(7.5))
+        self.travelLimitGain = 20
 
         # true gyro bias
         self.true_gyro_bias = Vector3()
@@ -69,7 +66,7 @@ class Gimbal3Axis(object):
         # control variables from the vehicle
 
         # angular rate in rad/s. In body frame of gimbal
-        self.demanded_angular_rate = Vector3()
+        self.demanded_angular_rate = Vector3(radians(0), radians(0), radians(0))
 
         # gyro bias provided by EKF on vehicle. In rad/s.
         # Should be subtracted from the gyro readings to get true body rotatation rates
@@ -83,6 +80,7 @@ class Gimbal3Axis(object):
         self.last_heartbeat_t = time.time()
         self.seen_heartbeat = False
         self.seen_gimbal_control = False
+        self.last_print_t = time.time()
 
     def update(self):
         '''update the gimbal state'''
@@ -92,12 +90,97 @@ class Gimbal3Axis(object):
         delta_t = now - self.last_update_t
         self.last_update_t = now
 
-        # for the moment we will set gyros equal to demanded_angular_rate
-        self.gimbal_angular_rate = self.demanded_angular_rate + self.true_gyro_bias - self.supplied_gyro_bias
-
         if self.dcm is None:
             # start with copter rotation matrix
             self.dcm = self.vehicle.dcm.copy()
+
+        # 1)  Rotate the copters rotation rates into the gimbals frame of reference
+        # copterAngRate_G = transpose(DCMgimbal)*DCMcopter*copterAngRate
+        copterAngRate_G = self.dcm.transposed()*self.vehicle.dcm*self.vehicle.gyro
+        #print("copterAngRate_G ", copterAngRate_G)
+
+        # 2) Subtract the copters body rates to obtain a copter relative rotational
+        # rate vector (X,Y,Z) in gimbal sensor frame
+        # relativeGimbalRate(X,Y,Z) = gimbalRateDemand - copterAngRate_G
+        relativeGimbalRate = self.demanded_angular_rate - copterAngRate_G
+        #print("relativeGimbalRate ", relativeGimbalRate)
+
+        # calculate joint angles (euler312 order)
+        # calculate copter -> gimbal rotation matrix
+        rotmat_copter_gimbal = self.dcm.transposed() * self.vehicle.dcm
+        self.joint_angles = Vector3(*rotmat_copter_gimbal.transposed().to_euler312())
+        #print("joint_angles ", self.joint_angles)
+        
+        # 4)  For each of the three joints, calculate upper and lower rate limits
+        # from the corresponding angle limits and current joint angles
+        #
+        # upperRatelimit = (jointAngle - lowerAngleLimit) * travelLimitGain
+        # lowerRatelimit = (jointAngle - upperAngleLimit) * travelLimitGain
+        #
+        # travelLimitGain is equal to the inverse of the bump stop time constant and
+        # should be set to something like 20 initially. If set too high it can cause
+        # the rates to 'ring' when they the limiter is in force, particularly given
+        # we are using a first order numerical integration.
+        upperRatelimit = -(self.joint_angles - self.upper_joint_limits) * self.travelLimitGain
+        lowerRatelimit = -(self.joint_angles - self.lower_joint_limits) * self.travelLimitGain
+
+        # 5) Calculate the gimbal joint rates (roll, elevation, azimuth)
+        # 
+        # gimbalJointRates(roll, elev, azimuth) = Matrix*relativeGimbalRate(X,Y,Z)
+        #
+        # where matrix =
+        #
+        # +-                                                                  -+
+        # |          cos(elevAngle),        0,         sin(elevAngle)          |
+        # |                                                                    |
+        # |  sin(elevAngle) tan(rollAngle), 1, -cos(elevAngle) tan(rollAngle)  |
+        # |                                                                    |
+        # |           sin(elevAngle)                   cos(elevAngle)          |
+        # |         - --------------,       0,         --------------          |
+        # |           cos(rollAngle)                   cos(rollAngle)          |
+        # +-                                                                  -+
+        rollAngle = self.joint_angles.x
+        elevAngle = self.joint_angles.y
+        matrix = Matrix3(Vector3(cos(elevAngle), 0, sin(elevAngle)),
+                         Vector3(sin(elevAngle)*tan(rollAngle), 1, -cos(elevAngle)*tan(rollAngle)),
+                         Vector3(-sin(elevAngle)/cos(rollAngle), 0, cos(elevAngle)/cos(rollAngle)))
+        gimbalJointRates = matrix * relativeGimbalRate
+        #print("lowerRatelimit ", lowerRatelimit)
+        #print("upperRatelimit ", upperRatelimit)
+        #print("gimbalJointRates ", gimbalJointRates)
+
+        # 6) Apply the rate limits from 4)
+        gimbalJointRates.x = constrain(gimbalJointRates.x, lowerRatelimit.x, upperRatelimit.x)
+        gimbalJointRates.y = constrain(gimbalJointRates.y, lowerRatelimit.y, upperRatelimit.y)
+        gimbalJointRates.z = constrain(gimbalJointRates.z, lowerRatelimit.z, upperRatelimit.z)
+
+        # 7) Convert the modified gimbal joint rates to body rates (still copter
+        # relative)
+        # relativeGimbalRate(X,Y,Z) = Matrix * gimbalJointRates(roll, elev, azimuth)
+        #
+        # where Matrix =
+        #
+        #   +-                                                   -+
+        #   |  cos(elevAngle), 0, -cos(rollAngle) sin(elevAngle)  |
+        #   |                                                     |
+        #   |         0,       1,         sin(rollAngle)          |
+        #   |                                                     |
+        #   |  sin(elevAngle), 0,  cos(elevAngle) cos(rollAngle)  |
+        #   +-                                                   -+
+        matrix = Matrix3(Vector3(cos(elevAngle), 0, -cos(rollAngle)*sin(elevAngle)),
+                         Vector3(0,       1,         sin(rollAngle)),
+                         Vector3(sin(elevAngle), 0,  cos(elevAngle)*cos(rollAngle)))
+        relativeGimbalRate = matrix * gimbalJointRates
+
+        # 8) Add to the result from step 1) to obtain the demanded gimbal body rates
+        # in an inertial frame of reference
+        # demandedGimbalRatesInertial(X,Y,Z)  = relativeGimbalRate(X,Y,Z) + copterAngRate_G
+        demandedGimbalRatesInertial = relativeGimbalRate + copterAngRate_G
+        #if now - self.last_print_t >= 1.0:
+        #    print("demandedGimbalRatesInertial ", demandedGimbalRatesInertial)
+            
+        # for the moment we will set gyros equal to demanded_angular_rate
+        self.gimbal_angular_rate = demandedGimbalRatesInertial + self.true_gyro_bias - self.supplied_gyro_bias
 
         # update rotation of the gimbal
         self.dcm.rotate(self.gimbal_angular_rate*delta_t)
@@ -107,49 +190,7 @@ class Gimbal3Axis(object):
         rotmat_copter_gimbal = self.dcm.transposed() * self.vehicle.dcm
 
         # calculate joint angles (euler312 order)
-        self.joint_angles = Vector3(*rotmat_copter_gimbal.to_euler312())
-
-        # constrain joint angles
-        need_new_dcm = False
-
-        # constrain observed gyro (prevent observed rotation past gimbal limits)
-        # NOTE: this needs to be replaced later with code that first converts rates
-        # from 312 rates to body rates and back again
-        if self.joint_angles.x >= self.max_roll:
-            need_new_dcm = True
-            self.joint_angles.x = self.max_roll
-            if self.gimbal_angular_rate.x > 0:
-                self.gimbal_angular_rate.x = 0
-        if self.joint_angles.x <= self.min_roll:
-            need_new_dcm = True
-            self.joint_angles.x = self.min_roll
-            if self.gimbal_angular_rate.x < 0:
-                self.gimbal_angular_rate.x = 0
-        if self.joint_angles.y >= self.max_pitch:
-            need_new_dcm = True
-            self.joint_angles.y = self.max_pitch
-            if self.gimbal_angular_rate.y > 0:
-                self.gimbal_angular_rate.y = 0
-        if self.joint_angles.y <= self.min_pitch:
-            need_new_dcm = True
-            self.joint_angles.y = self.min_pitch
-            if self.gimbal_angular_rate.y < 0:
-                self.gimbal_angular_rate.y = 0
-        if self.joint_angles.z >= self.max_yaw:
-            need_new_dcm = True
-            self.joint_angles.z = self.max_yaw
-            if self.gimbal_angular_rate.z > 0:
-                self.gimbal_angular_rate.z = 0
-        if self.joint_angles.z <= self.min_yaw:
-            need_new_dcm = True
-            self.joint_angles.z = self.min_yaw
-            if self.gimbal_angular_rate.z < 0:
-                self.gimbal_angular_rate.z = 0
-
-        if need_new_dcm:
-            # when we hit the gimbal limits we need to recalc the matrix
-            rotmat_copter_gimbal.from_euler312(self.joint_angles.x, self.joint_angles.y, self.joint_angles.z)
-            self.dcm = self.vehicle.dcm * rotmat_copter_gimbal.transposed()
+        self.joint_angles = Vector3(*rotmat_copter_gimbal.transposed().to_euler312())
 
         # update observed gyro
         self.gyro = self.gimbal_angular_rate + self.true_gyro_bias
@@ -168,6 +209,10 @@ class Gimbal3Axis(object):
         if now - self.last_report_t >= 1.0 / self.reporting_rate:
             self.send_report()
             self.last_report_t = now
+
+        if now - self.last_print_t >= 1.0:
+            self.last_print_t = now
+            print('joint_angles ', self.joint_angles)
 
     def send_report(self):
         '''send a report to the vehicle control code over MAVLink'''
@@ -192,7 +237,6 @@ class Gimbal3Axis(object):
                                                   m.gyro_bias_y,
                                                   m.gyro_bias_z)
                 self.seen_gimbal_control = True
-                print("rate=%s" % self.demanded_angular_rate)
             if m.get_type() == 'HEARTBEAT' and not self.seen_heartbeat:
                 self.seen_heartbeat = True
                 self.connection.mav.srcSystem = m.get_srcSystem()
