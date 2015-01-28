@@ -33,6 +33,7 @@
 #include <AP_Rally.h>
 #include <AP_Scheduler.h>
 #include <UARTDriver.h>
+#include <AP_BattMonitor.h>
 
 #if HAL_OS_POSIX_IO
 #include <stdio.h>
