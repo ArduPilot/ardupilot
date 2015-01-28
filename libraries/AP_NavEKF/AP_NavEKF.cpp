@@ -401,7 +401,10 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     DCM33FlowMin(0.71f),            // If Tbn(3,3) is less than this number, optical flow measurements will not be fused as tilt is too high.
     fScaleFactorPnoise(1e-10f),     // Process noise added to focal length scale factor state variance at each time step
     flowTimeDeltaAvg_ms(100),       // average interval between optical flow measurements (msec)
-    flowIntervalMax_ms(100)         // maximum allowable time between flow fusion events
+    flowIntervalMax_ms(100),        // maximum allowable time between flow fusion events
+    gndEffectTO_ms(30000),          // time in msec that baro ground effect compensation will timeout after initiation
+    gndEffectBaroScaler(4.0f),      // scaler applied to the barometer observation variance when operating in ground effect
+    gndEffectBaroTO_ms(5000)        // time in msec that the baro measurement will be rejected if the gndEffectBaroVarLim has failed it
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     ,_perf_UpdateFilter(perf_alloc(PC_ELAPSED, "EKF_UpdateFilter")),
@@ -1933,6 +1936,10 @@ void NavEKF::FuseVelPosNED()
         R_OBS[3] = sq(constrain_float(_gpsHorizPosNoise, 0.1f, 10.0f)) + sq(posErr);
         R_OBS[4] = R_OBS[3];
         R_OBS[5] = sq(constrain_float(_baroAltNoise, 0.1f, 10.0f));
+        // reduce weighting (increase observation noise) on baro if we are likely to be in ground effect
+        if (getGndEffectMode()) {
+            R_OBS[5] *= gndEffectBaroScaler;
+        }
 
         // if vertical GPS velocity data is being used, check to see if the GPS vertical velocity and barometer
         // innovations have the same sign and are outside limits. If so, then it is likely aliasing is affecting
@@ -4726,5 +4733,34 @@ bool NavEKF::setOriginLLH(struct Location &loc)
     validOrigin = true;
     return true;
 }
+
+// determine if the baro ground effect compensation is active
+bool NavEKF::getGndEffectMode(void)
+{
+    if (gndEffectMode && (imuSampleTime_ms - startTimeTO_ms < gndEffectTO_ms) && gndEffectTO_ms != 0)  {
+        gndEffectMode = true;
+    } else {
+        gndEffectMode = false;
+        startTimeTO_ms = 0;
+    }
+    return gndEffectMode;
+}
+
+
+// Tell the EKF to de-weight the baro sensor to take account of ground effect on baro during takeoff of landing when set to true
+// Should be set to off by sending a false when the ground effect height region is cleared or the landing completed
+// If not reactivated, this condition times out after the number of msec set by the _gndEffectTO_ms parameter
+// The amount of de-weighting is controlled by the gndEffectBaroScaler parameter
+void NavEKF::setGndEffectMode(bool setMode)
+{
+    if  (setMode) {
+        startTimeTO_ms = imuSampleTime_ms;
+        gndEffectMode = true;
+    } else {
+        gndEffectMode = true;
+        startTimeTO_ms = 0;
+    }
+}
+
 
 #endif // HAL_CPU_CLASS

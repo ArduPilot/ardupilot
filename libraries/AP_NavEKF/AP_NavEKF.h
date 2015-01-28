@@ -194,6 +194,12 @@ public:
     // return data for debugging optical flow fusion
     void getFlowDebug(float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov, float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const;
 
+    // Tells the EKF to de-weight the baro sensor to take account of ground effect on baro during takeoff of landing when set to true
+    // Should be set to off by sending a false when the ground effect height region is cleared or the landing completed
+    // If not reactivated, this condition times out after the number of msec set by the _gndEffectTO_ms parameter
+    // The amount of de-weighting is controlled by the gndEffectBaroScaler parameter
+    void setGndEffectMode(bool modeOn);
+
     /*
     return the filter fault status as a bitmasked integer
      0 = quaternions are NaN
@@ -405,6 +411,10 @@ private:
     // Set the NED origin to be used until the next filter reset
     void setOrigin();
 
+    // get status of baro ground effect compensation mode
+    // returns true when baro ground effect compensation is required
+    bool getGndEffectMode(void);
+
     // EKF Mavlink Tuneable Parameters
     AP_Float _gpsHorizVelNoise;     // GPS horizontal velocity measurement noise : m/s
     AP_Float _gpsVertVelNoise;      // GPS vertical velocity measurement noise : m/s
@@ -442,6 +452,9 @@ private:
     // Tuning parameters
     const float gpsNEVelVarAccScale;    // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
     const float gpsDVelVarAccScale;     // Scale factor applied to vertical velocity measurement variance due to manoeuvre acceleration
+    const uint16_t gndEffectTO_ms;      // time in msec that ground effect mode is active after being activated
+    const float gndEffectBaroScaler;    // scaler applied to the barometer observation variance when ground effect mode is active
+    const float gndEffectBaroTO_ms;     // time in msec that the baro measurement will be rejected if the gndEffectBaroVarLim has failed it
     const float gpsPosVarAccScale;      // Scale factor applied to horizontal position measurement variance due to manoeuvre acceleration
     const float msecHgtDelay;           // Height measurement delay (msec)
     const uint16_t msecMagDelay;        // Magnetometer measurement delay (msec)
@@ -601,6 +614,9 @@ private:
     bool prevVehicleArmed;          // vehicleArmed from previous frame
     struct Location EKF_origin;     // LLH origin of the NED axis system - do not change unless filter is reset
     bool validOrigin;               // true when the EKF origin is valid
+    bool gndEffectMode;             // modifiy baro processing to compensate for ground effect
+    uint32_t startTimeTO_ms;        // time in msec that the takeoff condition started - used to compensate for ground effect on baro height
+    uint32_t startTimeLAND_ms;      // time in msec that the landing condition started - used to compensate for ground effect on baro height
     float gpsSpdAccuracy;           // estimated speed accuracy in m/s returned by the UBlox GPS receiver
 
     // Used by smoothing of state corrections
