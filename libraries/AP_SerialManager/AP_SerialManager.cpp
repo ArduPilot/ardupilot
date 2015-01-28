@@ -230,6 +230,7 @@ void AP_SerialManager::set_console_baud(enum SerialProtocol protocol) const
         if (state[i].protocol == protocol) {
             // set console's baud rate
             state[0].uart->begin(map_baudrate(state[i].baud));
+            return;
         }
     }
 }
