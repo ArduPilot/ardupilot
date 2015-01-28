@@ -87,7 +87,8 @@ typedef enum MAV_TYPE
 	MAV_TYPE_ONBOARD_CONTROLLER=18, /* Onboard companion controller | */
 	MAV_TYPE_VTOL_DUOROTOR=19, /* Two-rotor VTOL using control surfaces in vertical operation in addition. Tailsitter. | */
 	MAV_TYPE_VTOL_QUADROTOR=20, /* Quad-rotor VTOL using a V-shaped quad config in vertical operation. Tailsitter. | */
-	MAV_TYPE_ENUM_END=21, /*  | */
+	MAV_TYPE_GIMBAL=26, /* Onboard gimbal | */
+	MAV_TYPE_ENUM_END=27, /*  | */
 } MAV_TYPE;
 #endif
 
@@ -197,6 +198,7 @@ typedef enum MAV_COMPONENT
 	MAV_COMP_ID_SERVO12=151, /*  | */
 	MAV_COMP_ID_SERVO13=152, /*  | */
 	MAV_COMP_ID_SERVO14=153, /*  | */
+	MAV_COMP_ID_GIMBAL=154, /*  | */
 	MAV_COMP_ID_MAPPER=180, /*  | */
 	MAV_COMP_ID_MISSIONPLANNER=190, /*  | */
 	MAV_COMP_ID_PATHPLANNER=195, /*  | */
