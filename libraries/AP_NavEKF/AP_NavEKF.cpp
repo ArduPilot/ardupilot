@@ -737,11 +737,11 @@ void NavEKF::UpdateFilter()
 // select fusion of velocity, position and height measurements
 void NavEKF::SelectVelPosFusion()
 {
-    // check for new data, specify which measurements should be used and check data for freshness
-    if (PV_AidingMode == AID_ABSOLUTE) {
+    // check for and read new GPS data
+    readGpsData();
 
-        // check for and read new GPS data
-        readGpsData();
+    // Specify which measurements should be used and check data for freshness
+    if (PV_AidingMode == AID_ABSOLUTE) {
 
         // check if we can use opticalflow as a backup
         bool optFlowBackup = (flowDataValid && !hgtTimeout);
