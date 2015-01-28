@@ -38,6 +38,8 @@
 #include <AP_Motors.h>
 #include <AC_AttitudeControl.h>
 #include <AC_PosControl.h>
+#include <AP_Nav_Common.h>
+#include <AP_BattMonitor.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
