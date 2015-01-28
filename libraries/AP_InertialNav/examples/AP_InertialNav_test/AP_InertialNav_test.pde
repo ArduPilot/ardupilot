@@ -31,6 +31,8 @@
 #include <AP_Terrain.h>
 #include <AP_Notify.h>
 #include <AP_InertialNav.h>
+#include <AP_Nav_Common.h>
+#include <AP_BattMonitor.h>     // battery monitor library
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
