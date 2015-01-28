@@ -10,6 +10,11 @@ EXTRAFLAGS += -DGIT_VERSION="\"$(GIT_VERSION)\""
 # Add missing parts from libc and libstdc++ for all boards
 EXTRAFLAGS += -I$(SKETCHBOOK)/libraries/AP_Common/missing
 
+GIT_TAG := $(shell git describe --exact-match --tags 2>/dev/null)
+ifneq ($(GIT_TAG),)
+  EXTRAFLAGS += -DGIT_TAG="\"$(GIT_TAG)\""
+endif
+
 # force LANG to C so awk works sanely on MacOS
 export LANG=C
 
