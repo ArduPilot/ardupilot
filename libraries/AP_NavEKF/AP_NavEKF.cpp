@@ -4438,7 +4438,7 @@ bool NavEKF::optFlowDataPresent(void) const
 // return true if the vehicle is requesting the filter to be ready for flight
 bool NavEKF::getVehicleArmStatus(void) const
 {
-    return _ahrs->get_armed() || _ahrs->get_correct_centrifugal();
+    return hal.util->get_soft_armed() || _ahrs->get_correct_centrifugal();
 }
 
 // return true if we should use the compass
