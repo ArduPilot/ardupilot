@@ -41,6 +41,11 @@ static void init_tracker()
     // setup serial port for telem1
     gcs[1].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink1);
 
+#if MAVLINK_COMM_NUM_BUFFERS > 2
+    // setup serial port for telem2
+    gcs[2].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink2);
+#endif
+
     mavlink_system.sysid = g.sysid_this_mav;
 
     if (g.compass_enabled==true) {
