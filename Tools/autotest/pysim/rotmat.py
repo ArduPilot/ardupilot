@@ -185,9 +185,9 @@ class Matrix3:
         yaw = atan2(-T21, T22)
         roll = asin(T23)
         pitch = atan2(-T13, T33)
-        return (yaw, roll, pitch)
+        return (roll, pitch, yaw)
 
-    def from_euler312(self, yaw, roll, pitch):
+    def from_euler312(self, roll, pitch, yaw):
         '''fill the matrix from Euler angles in radians in 312 convention'''
         c3 = cos(pitch)
 	s3 = sin(pitch)
@@ -296,26 +296,26 @@ def test_euler():
                 if diff.length() > 1.0e-12:
                     print('EULER ERROR:', v1, v2, diff.length())
 
-def test_euler312_single(y,r,p):
+def test_euler312_single(r,p,y):
     '''check that from_euler312() and to_euler312() are consistent for one set of values'''
     from math import degrees, radians
     m = Matrix3()
-    m.from_euler312(radians(y), radians(r), radians(p))
-    (y2, r2, p2) = m.to_euler312()
-    v1 = Vector3(y,r,p)
-    v2 = Vector3(degrees(y2),degrees(r2),degrees(p2))
+    m.from_euler312(radians(r), radians(p), radians(y))
+    (r2, p2, y2) = m.to_euler312()
+    v1 = Vector3(r,p,y)
+    v2 = Vector3(degrees(r2),degrees(p2),degrees(y2))
     diff = v1 - v2
     if diff.length() > 1.0e-12:
         print('EULER ERROR:', v1, v2, diff.length())
 
-def test_one_axis(y,r,p):
+def test_one_axis(r,p,y):
     '''check that from_euler312() and from_euler() are consistent for one set of values on one axis'''
     from math import degrees, radians
     m = Matrix3()
-    m.from_euler312(radians(y), radians(r), radians(p))
+    m.from_euler312(radians(r), radians(p), radians(y))
     (r2, p2, y2) = m.to_euler()
-    v1 = Vector3(y,r,p)
-    v2 = Vector3(degrees(y2),degrees(r2),degrees(p2))
+    v1 = Vector3(r,p,y)
+    v2 = Vector3(degrees(r2),degrees(p2),degrees(y2))
     diff = v1 - v2
     if diff.length() > 1.0e-12:
         print('EULER ERROR:', v1, v2, diff.length())
@@ -331,7 +331,7 @@ def test_euler312():
     for r in range(-89, 89, 3):
         for p in range(-179, 179, 3):
             for y in range(-179, 179, 3):
-                test_euler312_single(y,r,p)
+                test_euler312_single(r,p,y)
 
 if __name__ == "__main__":
     import doctest

@@ -115,36 +115,36 @@ class Gimbal3Axis(object):
         # constrain observed gyro (prevent observed rotation past gimbal limits)
         # NOTE: this needs to be replaced later with code that first converts rates
         # from 312 rates to body rates and back again
-        if self.joint_angles.x >= self.max_yaw:
+        if self.joint_angles.x >= self.max_roll:
             need_new_dcm = True
-            self.joint_angles.x = self.max_yaw
-            if self.gimbal_angular_rate.z > 0:
-                self.gimbal_angular_rate.z = 0
-        if self.joint_angles.x <= self.min_yaw:
-            need_new_dcm = True
-            self.joint_angles.x = self.min_yaw
-            if self.gimbal_angular_rate.z < 0:
-                self.gimbal_angular_rate.z = 0
-        if self.joint_angles.y >= self.max_roll:
-            need_new_dcm = True
-            self.joint_angles.y = self.max_roll
+            self.joint_angles.x = self.max_roll
             if self.gimbal_angular_rate.x > 0:
                 self.gimbal_angular_rate.x = 0
-        if self.joint_angles.y <= self.min_roll:
+        if self.joint_angles.x <= self.min_roll:
             need_new_dcm = True
-            self.joint_angles.y = self.min_roll
+            self.joint_angles.x = self.min_roll
             if self.gimbal_angular_rate.x < 0:
                 self.gimbal_angular_rate.x = 0
-        if self.joint_angles.z >= self.max_pitch:
+        if self.joint_angles.y >= self.max_pitch:
             need_new_dcm = True
-            self.joint_angles.z = self.max_pitch
+            self.joint_angles.y = self.max_pitch
             if self.gimbal_angular_rate.y > 0:
                 self.gimbal_angular_rate.y = 0
-        if self.joint_angles.z <= self.min_pitch:
+        if self.joint_angles.y <= self.min_pitch:
             need_new_dcm = True
-            self.joint_angles.z = self.min_pitch
+            self.joint_angles.y = self.min_pitch
             if self.gimbal_angular_rate.y < 0:
                 self.gimbal_angular_rate.y = 0
+        if self.joint_angles.z >= self.max_yaw:
+            need_new_dcm = True
+            self.joint_angles.z = self.max_yaw
+            if self.gimbal_angular_rate.z > 0:
+                self.gimbal_angular_rate.z = 0
+        if self.joint_angles.z <= self.min_yaw:
+            need_new_dcm = True
+            self.joint_angles.z = self.min_yaw
+            if self.gimbal_angular_rate.z < 0:
+                self.gimbal_angular_rate.z = 0
 
         if need_new_dcm:
             # when we hit the gimbal limits we need to recalc the matrix
