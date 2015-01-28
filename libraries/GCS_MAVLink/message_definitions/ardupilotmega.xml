@@ -479,5 +479,31 @@
       <field type="float" name="v4">test variable4</field>
     </message>
 
+    <message name="GIMBAL_REPORT" id="184">
+      <description>Report from MAVLink enabled gimbal to vehicle</description>
+      <field type="uint32_t" name="counter">Report counter</field>
+      <field type="float" name="delta_angle_x">Delta angle X, radians</field>
+      <field type="float" name="delta_angle_y">Delta angle Y, radians</field>
+      <field type="float" name="delta_angle_z">Delta angle Z, radians</field>
+      <field type="float" name="delta_velocity_x">Delta velocity X, m/s</field>
+      <field type="float" name="delta_velocity_y">Delta velocity Y, m/s</field>
+      <field type="float" name="delta_velocity_z">Delta velocity Z, m/s</field>
+      <field type="float" name="joint_yaw">Joint yaw, radians</field>
+      <field type="float" name="joint_roll">Joint roll, radians</field>
+      <field type="float" name="joint_pitch">Joint pitch, radians</field>
+    </message>
+
+    <message name="GIMBAL_CONTROL" id="185">
+      <description>Control packet from vehicle to MAVLink enabled gimbal</description>
+      <field type="uint8_t" name="target_system">System ID</field>
+      <field type="uint8_t" name="target_component">Component ID</field>
+      <field type="float" name="demanded_rate_x">Demanded angular rate X, radians/s</field>
+      <field type="float" name="demanded_rate_y">Demanded angular rate Y, radians/s</field>
+      <field type="float" name="demanded_rate_z">Demanded angular rate Z, radians/s</field>
+      <field type="float" name="gyro_bias_x">Gyro bias X, radians/s</field>
+      <field type="float" name="gyro_bias_y">Gyro bias Y, radians/s</field>
+      <field type="float" name="gyro_bias_z">Gyro bias Z, radians/s</field>
+    </message>
+
      </messages>
 </mavlink>

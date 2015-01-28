@@ -124,6 +124,9 @@
                     <description>Quad-rotor VTOL using a V-shaped quad config in vertical operation. Tailsitter.</description>
                </entry>
                <!-- Entries up to 25 reserved for other VTOL airframes -->
+               <entry value="26" name="MAV_TYPE_GIMBAL">
+                    <description>Onboard gimbal</description>
+               </entry>
           </enum>
           <!-- WARNING: MAV_ACTION Enum is no longer supported - has been removed. Please use MAV_CMD -->
           <enum name="MAV_MODE_FLAG">
@@ -335,6 +338,9 @@
                     <description/>
                </entry>
                <entry value="153" name="MAV_COMP_ID_SERVO14">
+                    <description/>
+               </entry>
+               <entry value="154" name="MAV_COMP_ID_GIMBAL">
                     <description/>
                </entry>
           </enum>
