@@ -50,6 +50,7 @@
 #include <AP_Terrain.h>
 #include <AP_OpticalFlow.h>
 #include <Parameters.h>
+#include <AP_SerialManager.h>
 #include <stdio.h>
 #include <getopt.h>
 #include <errno.h>
