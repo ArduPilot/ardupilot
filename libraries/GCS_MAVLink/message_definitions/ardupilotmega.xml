@@ -488,9 +488,9 @@
       <field type="float" name="delta_velocity_x">Delta velocity X, m/s</field>
       <field type="float" name="delta_velocity_y">Delta velocity Y, m/s</field>
       <field type="float" name="delta_velocity_z">Delta velocity Z, m/s</field>
-      <field type="float" name="joint_yaw">Joint yaw, radians</field>
       <field type="float" name="joint_roll">Joint roll, radians</field>
       <field type="float" name="joint_pitch">Joint pitch, radians</field>
+      <field type="float" name="joint_yaw">Joint yaw, radians</field>
     </message>
 
     <message name="GIMBAL_CONTROL" id="185">
