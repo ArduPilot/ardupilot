@@ -193,7 +193,7 @@ void PX4UARTDriver::try_initialise(void)
         return;
     }
     _last_initialise_attempt_ms = hal.scheduler->millis();
-    if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_ARMED) {
+    if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_ARMED || !hal.util->get_soft_armed()) {
         begin(0);
     }
 }
