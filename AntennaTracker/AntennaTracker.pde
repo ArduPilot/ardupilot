@@ -46,6 +46,7 @@
 #include <memcheck.h>
 
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
+#include <AP_SerialManager.h>   // Serial manager library
 #include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
 #include <DataFlash.h>
 #include <SITL.h>
@@ -159,6 +160,7 @@ static RC_Channel channel_pitch(CH_PITCH);
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection
 ////////////////////////////////////////////////////////////////////////////////
+static AP_SerialManager serial_manager;
 static const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
 static GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
 

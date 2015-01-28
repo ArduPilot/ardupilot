@@ -5,10 +5,8 @@ static const StorageAccess wp_storage(StorageManager::StorageMission);
 
 static void init_tracker()
 {
-    hal.uartA->begin(SERIAL0_BAUD, 128, SERIAL_BUFSIZE);
-
-    // gps port
-    hal.uartB->begin(38400, 256, 16);
+    // initialise console serial port
+    serial_manager.init_console();
 
     cliSerial->printf_P(PSTR("\n\nInit " THISFIRMWARE
                          "\n\nFree RAM: %u\n"),
@@ -19,14 +17,14 @@ static void init_tracker()
 
     BoardConfig.init();
 
-    // reset the uartA baud rate after parameter load
-    hal.uartA->begin(map_baudrate(g.serial0_baud));
+    // initialise serial ports
+    serial_manager.init();
 
     // init baro before we start the GCS, so that the CLI baro test works
     barometer.init();
 
     // init the GCS
-    gcs[0].init(hal.uartA);
+    gcs[0].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_Console);
 
     // set up snooping on other mavlink destinations
     gcs[0].set_snoop(mavlink_snoop);
@@ -40,9 +38,8 @@ static void init_tracker()
     usb_connected = true;
     check_usb_mux();
 
-    // we have a 2nd serial port for telemetry
-    hal.uartC->begin(map_baudrate(g.serial1_baud), 128, SERIAL1_BUFSIZE);
-    gcs[1].setup_uart(hal.uartC, map_baudrate(g.serial1_baud), 128, SERIAL1_BUFSIZE);
+    // setup serial port for telem1
+    gcs[1].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink1);
 
     mavlink_system.sysid = g.sysid_this_mav;
 
@@ -56,7 +53,7 @@ static void init_tracker()
     }
 
     // GPS Initialization
-    gps.init(NULL);
+    gps.init(NULL, serial_manager);
 
     ahrs.init();
     ahrs.set_fly_forward(false);
@@ -66,9 +63,8 @@ static void init_tracker()
 
     init_barometer();
 
-    hal.uartA->set_blocking_writes(false);
-    hal.uartB->set_blocking_writes(false);
-    hal.uartC->set_blocking_writes(false);
+    // set serial ports non-blocking
+    serial_manager.set_blocking_writes_all(false);
 
     // initialise servos
     init_servos();
@@ -233,9 +229,9 @@ static void check_usb_mux(void)
     // SERIAL0_BAUD, but when connected as a TTL serial port we run it
     // at SERIAL1_BAUD.
     if (usb_connected) {
-        hal.uartA->begin(SERIAL0_BAUD);
+        serial_manager.set_console_baud(AP_SerialManager::SerialProtocol_Console);
     } else {
-        hal.uartA->begin(map_baudrate(g.serial1_baud));
+        serial_manager.set_console_baud(AP_SerialManager::SerialProtocol_MAVLink1);
     }
 #endif
 }
