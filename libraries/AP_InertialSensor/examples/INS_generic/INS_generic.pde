@@ -38,6 +38,7 @@
 #include <AP_HAL_Linux.h>
 #include <AP_Rally.h>
 #include <AP_Scheduler.h>
+#include <AP_BattMonitor.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
