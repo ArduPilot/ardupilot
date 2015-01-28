@@ -35,6 +35,8 @@
 #include <RC_Channel.h>
 #include <AC_Sprayer.h>         // Crop Sprayer library
 #include <AP_Notify.h>
+#include <AP_Nav_Common.h>
+#include <AP_BattMonitor.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
