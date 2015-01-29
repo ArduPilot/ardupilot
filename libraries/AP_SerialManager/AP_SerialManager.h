@@ -81,9 +81,7 @@ public:
     // array of uart info
     typedef struct {
         AP_Int8 protocol;
-        AP_Int16 baud;
-        uint16_t rx_size;
-        uint16_t tx_size;
+        AP_Int32 baud;
         AP_HAL::UARTDriver* uart;
     } serial_state;
 
@@ -97,9 +95,12 @@ public:
     void init();
 
     // find_serial - searches available serial ports for the first instance that allows the given protocol
-    //  returns true on success, false if a serial port cannot be found
-    //  result is updated with reference to the serial port
-    bool find_serial(enum SerialProtocol protocol, serial_state& ret_state) const;
+    //  returns uart on success, NULL if a serial port cannot be found
+    AP_HAL::UARTDriver *find_serial(enum SerialProtocol protocol) const;
+
+    // find_baudrate - searches available serial ports for the first instance that allows the given protocol
+    //  returns the baudrate of that protocol on success, 0 if a serial port cannot be found
+    uint32_t find_baudrate(enum SerialProtocol protocol) const;
 
     // get_mavlink_channel - provides the mavlink channel associated with a given protocol
     //  returns true if a channel is found, false if not

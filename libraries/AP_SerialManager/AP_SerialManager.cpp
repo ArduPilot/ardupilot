@@ -106,9 +106,9 @@ void AP_SerialManager::init_console()
     // initialise console immediately at default size and baud
     state[0].protocol = SerialProtocol_Console; // protocol is unused for console
     state[0].uart = hal.uartA;  // serial0, uartA, always console
-    state[0].rx_size = AP_SERIALMANAGER_CONSOLE_BUFSIZE_RX;
-    state[0].tx_size = AP_SERIALMANAGER_CONSOLE_BUFSIZE_TX;
-    state[0].uart->begin(AP_SERIALMANAGER_CONSOLE_BAUD, state[0].rx_size, state[0].tx_size);
+    state[0].uart->begin(AP_SERIALMANAGER_CONSOLE_BAUD,
+                         AP_SERIALMANAGER_CONSOLE_BUFSIZE_RX,
+                         AP_SERIALMANAGER_CONSOLE_BUFSIZE_TX);
 }
 
 // init - // init - initialise serial ports
@@ -125,42 +125,40 @@ void AP_SerialManager::init()
         if (state[i].uart != NULL) {
             switch (state[i].protocol) {
                 case SerialProtocol_Console:
-                    state[i].rx_size = AP_SERIALMANAGER_CONSOLE_BUFSIZE_RX;
-                    state[i].tx_size = AP_SERIALMANAGER_CONSOLE_BUFSIZE_TX;
-                    state[i].uart->begin(map_baudrate(state[i].baud), state[i].rx_size, state[i].tx_size);
+                    state[i].uart->begin(map_baudrate(state[i].baud), 
+                                         AP_SERIALMANAGER_CONSOLE_BUFSIZE_RX, 
+                                         AP_SERIALMANAGER_CONSOLE_BUFSIZE_TX);
                     break;
                 case SerialProtocol_MAVLink1:
                 case SerialProtocol_MAVLink2:
-                    state[i].rx_size = AP_SERIALMANAGER_MAVLINK_BUFSIZE_RX;
-                    state[i].tx_size = AP_SERIALMANAGER_MAVLINK_BUFSIZE_TX;
-                    state[i].uart->begin(map_baudrate(state[i].baud), state[i].rx_size, state[i].tx_size);
+                    state[i].uart->begin(map_baudrate(state[i].baud), 
+                                         AP_SERIALMANAGER_MAVLINK_BUFSIZE_RX,
+                                         AP_SERIALMANAGER_MAVLINK_BUFSIZE_TX);
                     break;
                 case SerialProtocol_FRSky_DPort:
                     // Note baudrate is hardcoded to 57600
-                    state[i].rx_size = AP_SERIALMANAGER_FRSKY_BUFSIZE_RX;
-                    state[i].tx_size = AP_SERIALMANAGER_FRSKY_BUFSIZE_TX;
                     state[i].baud = AP_SERIALMANAGER_FRSKY_DPORT_BAUD/1000; // update baud param in case user looks at it
-                    state[i].uart->begin(AP_SERIALMANAGER_FRSKY_DPORT_BAUD, state[i].rx_size, state[i].tx_size);
+                    state[i].uart->begin(AP_SERIALMANAGER_FRSKY_DPORT_BAUD, 
+                                         AP_SERIALMANAGER_FRSKY_BUFSIZE_RX, 
+                                         AP_SERIALMANAGER_FRSKY_BUFSIZE_TX);
                     break;
                 case SerialProtocol_FRSky_SPort:
                     // Note baudrate is hardcoded to 9600
-                    state[i].rx_size = AP_SERIALMANAGER_FRSKY_BUFSIZE_RX;
-                    state[i].tx_size = AP_SERIALMANAGER_FRSKY_BUFSIZE_TX;
                     state[i].baud = AP_SERIALMANAGER_FRSKY_SPORT_BAUD/1000; // update baud param in case user looks at it
                     // begin is handled by AP_Frsky_telem library
                     break;
                 case SerialProtocol_GPS:
                 case SerialProtocol_GPS2:
-                    state[i].rx_size = AP_SERIALMANAGER_GPS_BUFSIZE_RX;
-                    state[i].tx_size = AP_SERIALMANAGER_GPS_BUFSIZE_TX;
-                    state[i].uart->begin(map_baudrate(state[i].baud), state[i].rx_size, state[i].tx_size);
+                    state[i].uart->begin(map_baudrate(state[i].baud), 
+                                         AP_SERIALMANAGER_GPS_BUFSIZE_RX,
+                                         AP_SERIALMANAGER_GPS_BUFSIZE_TX);
                     break;
                 case SerialProtocol_AlexMos:
                     // Note baudrate is hardcoded to 115200
-                    state[i].rx_size = AP_SERIALMANAGER_ALEXMOS_BUFSIZE_RX;
-                    state[i].tx_size = AP_SERIALMANAGER_ALEXMOS_BUFSIZE_TX;
                     state[i].baud = AP_SERIALMANAGER_ALEXMOS_BAUD / 1000;   // update baud param in case user looks at it
-                    state[i].uart->begin(AP_SERIALMANAGER_ALEXMOS_BAUD, state[i].rx_size, state[i].tx_size);
+                    state[i].uart->begin(AP_SERIALMANAGER_ALEXMOS_BAUD, 
+                                         AP_SERIALMANAGER_ALEXMOS_BUFSIZE_RX,
+                                         AP_SERIALMANAGER_ALEXMOS_BUFSIZE_TX);
                     break;
             }
         }
@@ -168,20 +166,33 @@ void AP_SerialManager::init()
 }
 
 // find_serial - searches available serial ports for the first instance that allows the given protocol
-//  returns true on success, false if a serial port cannot be found
-//  result is updated with reference to the serial port
-bool AP_SerialManager::find_serial(enum SerialProtocol protocol, serial_state& ret_state) const
+//  returns uart on success, NULL if a serial port cannot be found
+AP_HAL::UARTDriver *AP_SerialManager::find_serial(enum SerialProtocol protocol) const
 {
     // search for matching protocol
     for(uint8_t i=0; i<SERIALMANAGER_NUM_PORTS; i++) {
         if (state[i].protocol == protocol) {
-            ret_state = state[i];
-            return true;
+            return state[i].uart;
         }
     }
 
     // if we got this far we did not find the uart
-    return false;
+    return NULL;
+}
+
+// find_baudrate - searches available serial ports for the first instance that allows the given protocol
+//  returns baudrate on success, 0 if a serial port cannot be found
+uint32_t AP_SerialManager::find_baudrate(enum SerialProtocol protocol) const
+{
+    // search for matching protocol
+    for(uint8_t i=0; i<SERIALMANAGER_NUM_PORTS; i++) {
+        if (state[i].protocol == protocol) {
+            return map_baudrate(state[i].baud);
+        }
+    }
+
+    // if we got this far we did not find the uart
+    return 0;
 }
 
 // get_mavlink_channel - provides the mavlink channel associated with a given protocol
