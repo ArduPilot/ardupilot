@@ -6,6 +6,7 @@
 #include <AP_Param.h>
 #include <AP_Math.h>
 #include <AC_PID.h>             // PID library
+#include <AC_PI_2D.h>           // PID library (2-axis)
 #include <AC_P.h>               // P library
 #include <AP_InertialNav.h>     // Inertial Navigation library
 #include <AC_AttitudeControl.h> // Attitude control library
@@ -48,7 +49,7 @@ public:
     AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
                   const AP_Motors& motors, AC_AttitudeControl& attitude_control,
                   AC_P& p_alt_pos, AC_P& p_alt_rate, AC_PID& pid_alt_accel,
-                  AC_P& p_pos_xy, AC_PID& pid_rate_lat, AC_PID& pid_rate_lon);
+                  AC_P& p_pos_xy, AC_PI_2D& pi_vel_xy);
 
     // xy_mode - specifies behavior of xy position controller
     enum xy_mode {
@@ -336,8 +337,7 @@ private:
     AC_P&       _p_alt_rate;
     AC_PID&     _pid_alt_accel;
     AC_P&	    _p_pos_xy;
-    AC_PID&	    _pid_rate_lat;
-    AC_PID&	    _pid_rate_lon;
+    AC_PI_2D&   _pi_vel_xy;
 
     // parameters
     AP_Float    _throttle_hover;        // estimated throttle required to maintain a level hover

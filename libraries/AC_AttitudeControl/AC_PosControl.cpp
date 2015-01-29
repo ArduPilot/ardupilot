@@ -23,7 +23,7 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] PROGMEM = {
 AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
                              const AP_Motors& motors, AC_AttitudeControl& attitude_control,
                              AC_P& p_alt_pos, AC_P& p_alt_rate, AC_PID& pid_alt_accel,
-                             AC_P& p_pos_xy, AC_PID& pid_rate_lat, AC_PID& pid_rate_lon) :
+                             AC_P& p_pos_xy, AC_PI_2D& pi_vel_xy) :
     _ahrs(ahrs),
     _inav(inav),
     _motors(motors),
@@ -32,8 +32,7 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     _p_alt_rate(p_alt_rate),
     _pid_alt_accel(pid_alt_accel),
     _p_pos_xy(p_pos_xy),
-    _pid_rate_lat(pid_rate_lat),
-    _pid_rate_lon(pid_rate_lon),
+    _pi_vel_xy(pi_vel_xy),
     _dt(POSCONTROL_DT_10HZ),
     _dt_xy(POSCONTROL_DT_50HZ),
     _last_update_xy_ms(0),
@@ -89,8 +88,7 @@ void AC_PosControl::set_dt(float delta_sec)
 void AC_PosControl::set_dt_xy(float dt_xy)
 {
     _dt_xy = dt_xy;
-    _pid_rate_lat.set_dt(dt_xy);
-    _pid_rate_lon.set_dt(dt_xy);
+    _pi_vel_xy.set_dt(dt_xy);
 }
 
 /// set_speed_z - sets maximum climb and descent rates
@@ -519,8 +517,7 @@ void AC_PosControl::init_xy_controller(bool reset_I)
     if (reset_I) {
         // reset last velocity if this controller has just been engaged or dt is zero
         lean_angles_to_accel(_accel_target.x, _accel_target.y);
-        _pid_rate_lat.set_integrator(_accel_target.x);
-        _pid_rate_lon.set_integrator(_accel_target.y);
+        _pi_vel_xy.set_integrator(_accel_target);
     }
 
     // flag reset required in rate to accel step
@@ -572,8 +569,7 @@ void AC_PosControl::init_vel_controller_xyz()
 
     // reset last velocity if this controller has just been engaged or dt is zero
     lean_angles_to_accel(_accel_target.x, _accel_target.y);
-    _pid_rate_lat.set_integrator(_accel_target.x);
-    _pid_rate_lon.set_integrator(_accel_target.y);
+    _pi_vel_xy.set_integrator(_accel_target);
 
     // flag reset required in rate to accel step
     _flags.reset_desired_vel_to_pos = true;
@@ -742,7 +738,7 @@ void AC_PosControl::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
 {
     const Vector3f &vel_curr = _inav.get_velocity();  // current velocity in cm/s
     float accel_total;                          // total acceleration in cm/s/s
-    float lat_i, lon_i;
+    Vector2f vel_xy_p, vel_xy_i;
 
     // reset last velocity target to current target
     if (_flags.reset_rate_to_accel_xy) {
@@ -773,25 +769,22 @@ void AC_PosControl::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
     _vel_error.x = _vel_target.x - vel_curr.x;
     _vel_error.y = _vel_target.y - vel_curr.y;
 
-    // call pid controller
-    _pid_rate_lat.set_input_filter_d(_vel_error.x);
-    _pid_rate_lon.set_input_filter_d(_vel_error.y);
+    // call pi controller
+    _pi_vel_xy.set_input(_vel_error);
 
-    // get current i term
-    lat_i = _pid_rate_lat.get_integrator();
-    lon_i = _pid_rate_lon.get_integrator();
+    // get p
+    vel_xy_p = _pi_vel_xy.get_p();
 
     // update i term if we have not hit the accel or throttle limits OR the i term will reduce
-    if ((!_limit.accel_xy && !_motors.limit.throttle_upper) || ((lat_i>0&&_vel_error.x<0)||(lat_i<0&&_vel_error.x>0))) {
-        lat_i = _pid_rate_lat.get_i();
-    }
-    if ((!_limit.accel_xy && !_motors.limit.throttle_upper) || ((lon_i>0&&_vel_error.y<0)||(lon_i<0&&_vel_error.y>0))) {
-        lon_i = _pid_rate_lon.get_i();
+    if ((!_limit.accel_xy && !_motors.limit.throttle_upper)) {
+        vel_xy_i = _pi_vel_xy.get_i();
+    } else {
+        vel_xy_i = _pi_vel_xy.get_i_shrink();
     }
 
     // combine feed forward accel with PID output from velocity error and scale PID output to compensate for optical flow measurement induced EKF noise
-    _accel_target.x = _accel_feedforward.x + (_pid_rate_lat.get_p() + lat_i + _pid_rate_lat.get_d()) * ekfNavVelGainScaler;
-    _accel_target.y = _accel_feedforward.y + (_pid_rate_lon.get_p() + lon_i + _pid_rate_lon.get_d()) * ekfNavVelGainScaler;
+    _accel_target.x = _accel_feedforward.x + (vel_xy_p.x + vel_xy_i.x) * ekfNavVelGainScaler;
+    _accel_target.y = _accel_feedforward.y + (vel_xy_p.y + vel_xy_i.y) * ekfNavVelGainScaler;
 
     // scale desired acceleration if it's beyond acceptable limit
     // To-Do: move this check down to the accel_to_lean_angle method?
