@@ -148,6 +148,16 @@ then
         echo "PX4IO CRC failure"
         echo "PX4IO CRC failure" >> $logfile    
         tone_alarm MBABGP
+
+        if px4io safety_on
+        then
+            echo "PX4IO disarm OK"
+        else
+            echo "PX4IO disarm failed"
+        fi
+
+        sleep 1
+
         if px4io forceupdate 14662 /etc/px4io/px4io.bin
         then
                sleep 1
