@@ -120,6 +120,8 @@ private:
 
     // array of uart info
     serial_state state[SERIALMANAGER_NUM_PORTS];
+
+    uint32_t map_baudrate(int32_t rate) const;
 };
 
 #endif // _AP_SERIALMANAGER_
