@@ -21,7 +21,7 @@ void AP_Mount_MAVLink::update()
     }
 
     // update based on mount mode
-    switch(_frontend.get_mode(_instance)) {
+    switch(get_mode()) {
         // move mount to a "retracted" position.  we do not implement a separate servo based retract mechanism
         case MAV_MOUNT_MODE_RETRACT:
             send_angle_target(_state._retract_angles.get(), true);

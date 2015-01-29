@@ -23,7 +23,7 @@ void AP_Mount_Alexmos::update()
     read_incoming(); // read the incoming messages from the gimbal
 
     // update based on mount mode
-    switch(_frontend.get_mode(_instance)) {
+    switch(get_mode()) {
         // move mount to a "retracted" position.  we do not implement a separate servo based retract mechanism
         case MAV_MOUNT_MODE_RETRACT:
             control_axis(_state._retract_angles.get(), true);

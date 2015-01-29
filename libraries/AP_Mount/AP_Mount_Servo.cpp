@@ -36,7 +36,7 @@ void AP_Mount_Servo::update()
         _last_check_servo_map_ms = now;
     }
 
-    switch(_frontend.get_mode(_instance)) {
+    switch(get_mode()) {
         // move mount to a "retracted position" or to a position where a fourth servo can retract the entire mount into the fuselage
         case MAV_MOUNT_MODE_RETRACT:
         {
@@ -84,7 +84,7 @@ void AP_Mount_Servo::update()
     }
 
     // move mount to a "retracted position" into the fuselage with a fourth servo
-    bool mount_open_new = (_frontend.get_mode(_instance) == MAV_MOUNT_MODE_RETRACT) ? 0 : 1;
+    bool mount_open_new = (get_mode() == MAV_MOUNT_MODE_RETRACT) ? 0 : 1;
     if (mount_open != mount_open_new) {
         mount_open = mount_open_new;
         move_servo(_open_idx, mount_open_new, 0, 1);

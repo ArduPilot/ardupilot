@@ -74,6 +74,9 @@ protected:
     // calc_angle_to_location - calculates the earth-frame roll, tilt and pan angles (and radians) to point at the given target
     void calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan);
 
+    // get the mount mode from frontend
+    MAV_MOUNT_MODE get_mode(void) const { return _frontend.get_mode(_instance); }
+
     AP_Mount    &_frontend; // reference to the front end which holds parameters
     AP_Mount::mount_state &_state;    // refernce to the parameters and state for this backend
     uint8_t     _instance;  // this instance's number

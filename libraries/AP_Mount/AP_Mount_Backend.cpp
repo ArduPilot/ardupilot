@@ -8,7 +8,7 @@ extern const AP_HAL::HAL& hal;
 void AP_Mount_Backend::set_roi_target(const struct Location &target_loc)
 {
     // set the target gps location
-    _frontend.state[_instance]._roi_target = target_loc;
+    _state._roi_target = target_loc;
 
     // set the mode to GPS tracking mode
     _frontend.set_mode(_instance, MAV_MOUNT_MODE_GPS_POINT);
@@ -24,9 +24,9 @@ void AP_Mount_Backend::configure_msg(mavlink_message_t* msg)
     _frontend.set_mode(_instance,(enum MAV_MOUNT_MODE)packet.mount_mode);
 
     // set which axis are stabilized
-    _frontend.state[_instance]._stab_roll = packet.stab_roll;
-    _frontend.state[_instance]._stab_tilt = packet.stab_pitch;
-    _frontend.state[_instance]._stab_pan = packet.stab_yaw;
+    _state._stab_roll = packet.stab_roll;
+    _state._stab_tilt = packet.stab_pitch;
+    _state._stab_pan = packet.stab_yaw;
 }
 
 // control_msg - process MOUNT_CONTROL messages received from GCS
@@ -74,35 +74,35 @@ void AP_Mount_Backend::update_targets_from_rc()
 {
 #define rc_ch(i) RC_Channel::rc_channel(i-1)
 
-    uint8_t roll_rc_in = _frontend.state[_instance]._roll_rc_in;
-    uint8_t tilt_rc_in = _frontend.state[_instance]._tilt_rc_in;
-    uint8_t pan_rc_in = _frontend.state[_instance]._pan_rc_in;
+    uint8_t roll_rc_in = _state._roll_rc_in;
+    uint8_t tilt_rc_in = _state._tilt_rc_in;
+    uint8_t pan_rc_in = _state._pan_rc_in;
 
     // if joystick_speed is defined then pilot input defines a rate of change of the angle
     if (_frontend._joystick_speed) {
         // allow pilot speed position input to come directly from an RC_Channel
         if (roll_rc_in && rc_ch(roll_rc_in)) {
             _angle_ef_target_rad.x += rc_ch(roll_rc_in)->norm_input_dz() * 0.0001f * _frontend._joystick_speed;
-            constrain_float(_angle_ef_target_rad.x, radians(_frontend.state[_instance]._roll_angle_min*0.01f), radians(_frontend.state[_instance]._roll_angle_max*0.01f));
+            constrain_float(_angle_ef_target_rad.x, radians(_state._roll_angle_min*0.01f), radians(_state._roll_angle_max*0.01f));
         }
         if (tilt_rc_in && (rc_ch(tilt_rc_in))) {
             _angle_ef_target_rad.y += rc_ch(tilt_rc_in)->norm_input_dz() * 0.0001f * _frontend._joystick_speed;
-            constrain_float(_angle_ef_target_rad.y, radians(_frontend.state[_instance]._tilt_angle_min*0.01f), radians(_frontend.state[_instance]._tilt_angle_max*0.01f));
+            constrain_float(_angle_ef_target_rad.y, radians(_state._tilt_angle_min*0.01f), radians(_state._tilt_angle_max*0.01f));
         }
         if (pan_rc_in && (rc_ch(pan_rc_in))) {
             _angle_ef_target_rad.z += rc_ch(pan_rc_in)->norm_input_dz() * 0.0001f * _frontend._joystick_speed;
-            constrain_float(_angle_ef_target_rad.z, radians(_frontend.state[_instance]._pan_angle_min*0.01f), radians(_frontend.state[_instance]._pan_angle_max*0.01f));
+            constrain_float(_angle_ef_target_rad.z, radians(_state._pan_angle_min*0.01f), radians(_state._pan_angle_max*0.01f));
         }
     } else {
         // allow pilot position input to come directly from an RC_Channel
         if (roll_rc_in && (rc_ch(roll_rc_in))) {
-            _angle_ef_target_rad.x = angle_input_rad(rc_ch(roll_rc_in), _frontend.state[_instance]._roll_angle_min, _frontend.state[_instance]._roll_angle_max);
+            _angle_ef_target_rad.x = angle_input_rad(rc_ch(roll_rc_in), _state._roll_angle_min, _state._roll_angle_max);
         }
         if (tilt_rc_in && (rc_ch(tilt_rc_in))) {
-            _angle_ef_target_rad.y = angle_input_rad(rc_ch(tilt_rc_in), _frontend.state[_instance]._tilt_angle_min, _frontend.state[_instance]._tilt_angle_max);
+            _angle_ef_target_rad.y = angle_input_rad(rc_ch(tilt_rc_in), _state._tilt_angle_min, _state._tilt_angle_max);
         }
         if (pan_rc_in && (rc_ch(pan_rc_in))) {
-            _angle_ef_target_rad.z = angle_input_rad(rc_ch(pan_rc_in), _frontend.state[_instance]._pan_angle_min, _frontend.state[_instance]._pan_angle_max);
+            _angle_ef_target_rad.z = angle_input_rad(rc_ch(pan_rc_in), _state._pan_angle_min, _state._pan_angle_max);
         }
     }
 }
