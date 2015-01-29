@@ -67,19 +67,12 @@ AP_Frsky_Telem::AP_Frsky_Telem(AP_AHRS &ahrs, AP_BattMonitor &battery) :
 // init - perform require initialisation including detecting which protocol to use
 void AP_Frsky_Telem::init(const AP_SerialManager& serial_manager)
 {
-    // initialise port to null
-    _port = NULL;
-
     // check for FRSky_DPort
-    AP_SerialManager::serial_state frsky_serial;
-    if (serial_manager.find_serial(AP_SerialManager::SerialProtocol_FRSky_DPort, frsky_serial)) {
-        _port = frsky_serial.uart;
+    if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FRSky_DPort))) {
         _protocol = FrSkyDPORT;
         _initialised_uart = true;   // SerialManager initialises uart for us
-    }
-    // check for FRSky_SPort
-    if (serial_manager.find_serial(AP_SerialManager::SerialProtocol_FRSky_SPort, frsky_serial)) {
-        _port = frsky_serial.uart;
+    } else if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FRSky_SPort))) {
+        // check for FRSky_SPort
         _protocol = FrSkySPORT;
         _gps_call = 0;
         _fas_call = 0;
