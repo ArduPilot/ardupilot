@@ -86,6 +86,11 @@ void AP_Frsky_Telem::init(const AP_SerialManager& serial_manager)
         _sport_status = 0;
         hal.scheduler->register_io_process(AP_HAL_MEMBERPROC(&AP_Frsky_Telem::sport_tick));
     }
+
+    if (_port != NULL) {
+        // we don't want flow control for either protocol
+        _port->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+    }
 }
 
 /*
