@@ -100,6 +100,12 @@ public:
     void control_msg(mavlink_message_t* msg) { control_msg(_primary, msg); }
     void control_msg(uint8_t instance, mavlink_message_t* msg);
 
+    // handle a GIMBAL_REPORT message
+    void handle_gimbal_report(mavlink_channel_t chan, mavlink_message_t *msg);
+
+    // send a GIMBAL_REPORT message to GCS
+    void send_gimbal_report(mavlink_channel_t chan);
+
     // status_msg - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
     void status_msg(mavlink_channel_t chan);
 

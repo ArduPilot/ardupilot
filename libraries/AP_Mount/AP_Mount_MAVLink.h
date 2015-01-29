@@ -44,6 +44,12 @@ public:
     // status_msg - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
     virtual void status_msg(mavlink_channel_t chan);
 
+    // handle a GIMBAL_REPORT message
+    virtual void handle_gimbal_report(mavlink_channel_t chan, mavlink_message_t *msg);
+
+    // send a GIMBAL_REPORT message to the GCS
+    virtual void send_gimbal_report(mavlink_channel_t chan);
+
 private:
     // send_angle_target - send earth-frame angle targets to mount
     //  set target_in_degrees to true to send degree targets, false if target in radians
@@ -54,6 +60,9 @@ private:
     mavlink_channel_t _chan;        // telemetry channel used to communicate with mount
     enum MAV_MOUNT_MODE _last_mode; // last mode sent to mount
     Vector3f _last_angle_target;    // last angle target sent to mount
+
+    // keep last gimbal report
+    mavlink_gimbal_report_t _gimbal_report;
 };
 
 #endif // __AP_MOUNT_MAVLINK_H__

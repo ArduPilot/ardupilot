@@ -142,3 +142,31 @@ void AP_Mount_MAVLink::send_angle_target(const Vector3f& target, bool target_in_
     _last_angle_target = target_deg;
     _last_mode = MAV_MOUNT_MODE_MAVLINK_TARGETING;
 }
+
+/*
+  handle a GIMBAL_REPORT message
+ */
+void AP_Mount_MAVLink::handle_gimbal_report(mavlink_channel_t chan, mavlink_message_t *msg)
+{
+    // just save it for future processing and reporting to GCS for now
+    mavlink_msg_gimbal_report_decode(msg, &_gimbal_report);
+}
+
+/*
+  send a GIMBAL_REPORT message to the GCS
+ */
+void AP_Mount_MAVLink::send_gimbal_report(mavlink_channel_t chan)
+{
+    mavlink_msg_gimbal_report_send(chan, 
+                                   0, 0, // send as broadcast
+                                   _gimbal_report.counter, 
+                                   _gimbal_report.delta_angle_x, 
+                                   _gimbal_report.delta_angle_y, 
+                                   _gimbal_report.delta_angle_z, 
+                                   _gimbal_report.delta_velocity_x, 
+                                   _gimbal_report.delta_velocity_y, 
+                                   _gimbal_report.delta_velocity_z, 
+                                   _gimbal_report.joint_roll, 
+                                   _gimbal_report.joint_pitch, 
+                                   _gimbal_report.joint_yaw);
+}

@@ -62,6 +62,12 @@ public:
     // status_msg - called to allow mounts to send their status to GCS via MAVLink
     virtual void status_msg(mavlink_channel_t chan) {};
 
+    // handle a GIMBAL_REPORT message
+    virtual void handle_gimbal_report(mavlink_channel_t chan, mavlink_message_t *msg) {}
+
+    // send a GIMBAL_REPORT message to the GCS
+    virtual void send_gimbal_report(mavlink_channel_t chan) {}
+
 protected:
 
     // update_targets_from_rc - updates angle targets (i.e. _angle_ef_target_rad) using input from receiver
