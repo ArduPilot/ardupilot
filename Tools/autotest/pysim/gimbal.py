@@ -81,6 +81,7 @@ class Gimbal3Axis(object):
         self.seen_heartbeat = False
         self.seen_gimbal_control = False
         self.last_print_t = time.time()
+        self.vehicle_component_id = None
 
     def update(self):
         '''update the gimbal state'''
@@ -239,6 +240,7 @@ class Gimbal3Axis(object):
                 self.seen_gimbal_control = True
             if m.get_type() == 'HEARTBEAT' and not self.seen_heartbeat:
                 self.seen_heartbeat = True
+                self.vehicle_component_id = m.get_srcComponent()
                 self.connection.mav.srcSystem = m.get_srcSystem()
                 self.connection.mav.srcComponent = mavutil.mavlink.MAV_COMP_ID_GIMBAL
                 print("Gimbal using srcSystem %u" % self.connection.mav.srcSystem)
@@ -252,7 +254,9 @@ class Gimbal3Axis(object):
                 self.last_heartbeat_t = now
 
         if self.seen_heartbeat:
-            self.connection.mav.gimbal_report_send(self.counter,
+            self.connection.mav.gimbal_report_send(self.connection.mav.srcSystem,
+                                                   self.vehicle_component_id,
+                                                   self.counter,
                                                    self.delta_angle.x,
                                                    self.delta_angle.y,
                                                    self.delta_angle.z,
