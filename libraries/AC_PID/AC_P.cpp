@@ -8,8 +8,8 @@
 
 const AP_Param::GroupInfo AC_P::var_info[] PROGMEM = {
     // @Param: P
-    // @DisplayName: PI Proportional Gain
-    // @Description: P Gain which produces an output value that is proportional to the current error value
+    // @DisplayName: PI 比例增益
+    // @Description: P 增益会输出一个值，该值正比于当前误差值。
     AP_GROUPINFO("P",    0, AC_P, _kp, 0),
     AP_GROUPEND
 };
