@@ -89,14 +89,10 @@ void AP_GPS::init(DataFlash_Class *dataflash, const AP_SerialManager& serial_man
     primary_instance = 0;
 
     // search for serial ports with gps protocol
-    AP_SerialManager::serial_state gps_serial;
-    if (serial_manager.find_serial(AP_SerialManager::SerialProtocol_GPS, gps_serial)) {
-        _port[0] = gps_serial.uart;
-    }
+    _port[0] = serial_manager.find_serial(AP_SerialManager::SerialProtocol_GPS);
+
 #if GPS_MAX_INSTANCES > 1
-    if (serial_manager.find_serial(AP_SerialManager::SerialProtocol_GPS2, gps_serial)) {
-        _port[1] = gps_serial.uart;
-    }
+    _port[1] = serial_manager.find_serial(AP_SerialManager::SerialProtocol_GPS2);
 #endif
 }
 
