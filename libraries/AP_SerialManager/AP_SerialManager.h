@@ -78,13 +78,6 @@ public:
         SerialProtocol_AlexMos = 7
     };
 
-    // array of uart info
-    typedef struct {
-        AP_Int8 protocol;
-        AP_Int32 baud;
-        AP_HAL::UARTDriver* uart;
-    } serial_state;
-
     // Constructor
     AP_SerialManager();
 
@@ -119,7 +112,11 @@ public:
 private:
 
     // array of uart info
-    serial_state state[SERIALMANAGER_NUM_PORTS];
+    struct {
+        AP_Int8 protocol;
+        AP_Int32 baud;
+        AP_HAL::UARTDriver* uart;
+    } state[SERIALMANAGER_NUM_PORTS];
 
     uint32_t map_baudrate(int32_t rate) const;
 };
