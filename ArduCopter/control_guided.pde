@@ -32,6 +32,14 @@ static bool guided_init(bool ignore_checks)
         // start in position control mode
         guided_pos_control_start();
         return true;
+
+#if AC_FENCE == ENABLED
+        // set fence altitude limit in position controller
+        if ((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
+            pos_control.set_alt_max(fence.get_safe_alt()*100.0f);
+        }
+#endif
+
     }else{
         return false;
     }

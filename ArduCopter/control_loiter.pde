@@ -19,6 +19,13 @@ static bool loiter_init(bool ignore_checks)
         // initialise altitude target to stopping point
         pos_control.set_target_to_stopping_point_z();
 
+#if AC_FENCE == ENABLED
+        // set fence altitude limit in position controller
+        if ((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
+            pos_control.set_alt_max(fence.get_safe_alt()*100.0f);
+        }
+#endif
+
         return true;
     }else{
         return false;
