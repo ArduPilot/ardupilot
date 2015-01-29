@@ -79,19 +79,12 @@ static void tuning() {
         g.p_loiter_pos.kP(tuning_value);
         break;
 
-    case CH6_LOITER_RATE_KP:
-        g.pid_loiter_rate_lon.kP(tuning_value);
-        g.pid_loiter_rate_lat.kP(tuning_value);
+    case CH6_VEL_XY_KP:
+        g.pi_vel_xy.kP(tuning_value);
         break;
 
-    case CH6_LOITER_RATE_KI:
-        g.pid_loiter_rate_lon.kI(tuning_value);
-        g.pid_loiter_rate_lat.kI(tuning_value);
-        break;
-
-    case CH6_LOITER_RATE_KD:
-        g.pid_loiter_rate_lon.kD(tuning_value);
-        g.pid_loiter_rate_lat.kD(tuning_value);
+    case CH6_VEL_XY_KI:
+        g.pi_vel_xy.kI(tuning_value);
         break;
 
     case CH6_WP_SPEED:

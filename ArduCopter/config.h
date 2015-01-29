@@ -641,22 +641,19 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Loiter rate control gains
+// Velocity (horizontal) gains
 //
-#ifndef LOITER_RATE_P
- # define LOITER_RATE_P          	1.0f
+#ifndef VEL_XY_P
+ # define VEL_XY_P              1.0f
 #endif
-#ifndef LOITER_RATE_I
- # define LOITER_RATE_I          	0.5f
+#ifndef VEL_XY_I
+ # define VEL_XY_I              0.5f
 #endif
-#ifndef LOITER_RATE_D
- # define LOITER_RATE_D          	0.0f
+#ifndef VEL_XY_IMAX
+ # define VEL_XY_IMAX           1000
 #endif
-#ifndef LOITER_RATE_IMAX
- # define LOITER_RATE_IMAX          1000        // maximum acceleration from I term build-up in cm/s/s
-#endif
-#ifndef LOITER_RATE_FILT_HZ
- # define LOITER_RATE_FILT_HZ       5.0f
+#ifndef VEL_XY_FILT_HZ
+ # define VEL_XY_FILT_HZ        5.0f
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

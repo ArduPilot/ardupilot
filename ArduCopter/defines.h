@@ -122,9 +122,8 @@
 #define CH6_THROTTLE_ACCEL_KI           35  // accel based throttle controller's I term
 #define CH6_THROTTLE_ACCEL_KD           36  // accel based throttle controller's D term
 #define CH6_LOITER_POSITION_KP          12  // loiter distance controller's P term (position error to speed)
-#define CH6_LOITER_RATE_KP              22  // loiter rate controller's P term (speed error to tilt angle)
-#define CH6_LOITER_RATE_KI              28  // loiter rate controller's I term (speed error to tilt angle)
-#define CH6_LOITER_RATE_KD              23  // loiter rate controller's D term (speed error to tilt angle)
+#define CH6_VEL_XY_KP                   22  // loiter rate controller's P term (speed error to tilt angle)
+#define CH6_VEL_XY_KI                   28  // loiter rate controller's I term (speed error to tilt angle)
 #define CH6_WP_SPEED                    10  // maximum speed to next way point (0 to 10m/s)
 #define CH6_ACRO_RP_KP                  25  // acro controller's P term.  converts pilot input to a desired roll, pitch or yaw rate
 #define CH6_ACRO_YAW_KP                 40  // acro controller's P term.  converts pilot input to a desired roll, pitch or yaw rate

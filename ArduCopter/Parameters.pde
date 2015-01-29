@@ -334,7 +334,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Channel 6 Tuning
     // @Description: Controls which parameters (normally PID gains) are being tuned with transmitter's channel 6 knob
     // @User: Standard
-    // @Values: 0:None,1:Stab Roll/Pitch kP,4:Rate Roll/Pitch kP,5:Rate Roll/Pitch kI,21:Rate Roll/Pitch kD,3:Stab Yaw kP,6:Rate Yaw kP,26:Rate Yaw kD,14:Altitude Hold kP,7:Throttle Rate kP,34:Throttle Accel kP,35:Throttle Accel kI,36:Throttle Accel kD,42:Loiter Speed,12:Loiter Pos kP,22:Loiter Rate kP,28:Loiter Rate kI,23:Loiter Rate kD,10:WP Speed,25:Acro RollPitch kP,40:Acro Yaw kP,13:Heli Ext Gyro,17:OF Loiter kP,18:OF Loiter kI,19:OF Loiter kD,30:AHRS Yaw kP,31:AHRS kP,38:Declination,39:Circle Rate,41:RangeFinder Gain,46:Rate Pitch kP,47:Rate Pitch kI,48:Rate Pitch kD,49:Rate Roll kP,50:Rate Roll kI,51:Rate Roll kD,52:Rate Pitch FF,53:Rate Roll FF,54:Rate Yaw FF
+    // @Values: 0:None,1:Stab Roll/Pitch kP,4:Rate Roll/Pitch kP,5:Rate Roll/Pitch kI,21:Rate Roll/Pitch kD,3:Stab Yaw kP,6:Rate Yaw kP,26:Rate Yaw kD,14:Altitude Hold kP,7:Throttle Rate kP,34:Throttle Accel kP,35:Throttle Accel kI,36:Throttle Accel kD,42:Loiter Speed,12:Loiter Pos kP,22:Velocity XY kP,28:Velocity XY kI,10:WP Speed,25:Acro RollPitch kP,40:Acro Yaw kP,13:Heli Ext Gyro,17:OF Loiter kP,18:OF Loiter kI,19:OF Loiter kD,30:AHRS Yaw kP,31:AHRS kP,38:Declination,39:Circle Rate,41:RangeFinder Gain,46:Rate Pitch kP,47:Rate Pitch kI,48:Rate Pitch kD,49:Rate Roll kP,50:Rate Roll kI,51:Rate Roll kD,52:Rate Pitch FF,53:Rate Roll FF,54:Rate Yaw FF
     GSCALAR(radio_tuning, "TUNE",                   0),
 
     // @Param: TUNE_LOW
@@ -680,65 +680,28 @@ const AP_Param::Info var_info[] PROGMEM = {
     GGROUP(pid_rate_yaw,      "RATE_YAW_", AC_PID),
 #endif
 
-    // @Param: LOITER_LAT_P
-    // @DisplayName: Loiter latitude rate controller P gain
-    // @Description: Loiter latitude rate controller P gain.  Converts the difference between desired speed and actual speed into a lean angle in the latitude direction
+    // @Param: VEL_XY_P
+    // @DisplayName: Velocity (horizontal) P gain
+    // @Description: Velocity (horizontal) P gain.  Converts the difference between desired velocity to a target acceleration
     // @Range: 0.1 6.0
     // @Increment: 0.1
     // @User: Advanced
 
-    // @Param: LOITER_LAT_I
-    // @DisplayName: Loiter latitude rate controller I gain
-    // @Description: Loiter latitude rate controller I gain.  Corrects long-term difference in desired speed and actual speed in the latitude direction
+    // @Param: VEL_XY_I
+    // @DisplayName: Velocity (horizontal) I gain
+    // @Description: Velocity (horizontal) I gain.  Corrects long-term difference in desired velocity to a target acceleration
     // @Range: 0.02 1.00
     // @Increment: 0.01
     // @User: Advanced
 
-    // @Param: LOITER_LAT_IMAX
-    // @DisplayName: Loiter rate controller I gain maximum
-    // @Description: Loiter rate controller I gain maximum.  Constrains the lean angle that the I gain will output
+    // @Param: VEL_XY_IMAX
+    // @DisplayName: Velocity (horizontal) integrator maximum
+    // @Description: Velocity (horizontal) integrator maximum.  Constrains the target acceleration that the I gain will output
     // @Range: 0 4500
     // @Increment: 10
-    // @Units: Centi-Degrees
+    // @Units: cm/s/s
     // @User: Advanced
-
-    // @Param: LOITER_LAT_D
-    // @DisplayName: Loiter latitude rate controller D gain
-    // @Description: Loiter latitude rate controller D gain.  Compensates for short-term change in desired speed vs actual speed
-    // @Range: 0.0 0.6
-    // @Increment: 0.01
-    // @User: Advanced
-    GGROUP(pid_loiter_rate_lat,      "LOITER_LAT_",  AC_PID),
-
-    // @Param: LOITER_LON_P
-    // @DisplayName: Loiter longitude rate controller P gain
-    // @Description: Loiter longitude rate controller P gain.  Converts the difference between desired speed and actual speed into a lean angle in the longitude direction
-    // @Range: 0.1 6.0
-    // @Increment: 0.1
-    // @User: Advanced
-
-    // @Param: LOITER_LON_I
-    // @DisplayName: Loiter longitude rate controller I gain
-    // @Description: Loiter longitude rate controller I gain.  Corrects long-term difference in desired speed and actual speed in the longitude direction
-    // @Range: 0.02 1.00
-    // @Increment: 0.01
-    // @User: Advanced
-
-    // @Param: LOITER_LON_IMAX
-    // @DisplayName: Loiter longitude rate controller I gain maximum
-    // @Description: Loiter longitude rate controller I gain maximum.  Constrains the lean angle that the I gain will output
-    // @Range: 0 4500
-    // @Increment: 10
-    // @Units: Centi-Degrees
-    // @User: Advanced
-
-    // @Param: LOITER_LON_D
-    // @DisplayName: Loiter longituderate controller D gain
-    // @Description: Loiter longitude rate controller D gain.  Compensates for short-term change in desired speed vs actual speed
-    // @Range: 0.0 0.6
-    // @Increment: 0.01
-    // @User: Advanced
-    GGROUP(pid_loiter_rate_lon,      "LOITER_LON_",  AC_PID),
+    GGROUP(pi_vel_xy,   "VEL_XY_",  AC_PI_2D),
 
     // @Param: THR_RATE_P
     // @DisplayName: Throttle rate controller P gain
