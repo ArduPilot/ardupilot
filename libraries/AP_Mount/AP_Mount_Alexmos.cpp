@@ -6,9 +6,7 @@ extern const AP_HAL::HAL& hal;
 void AP_Mount_Alexmos::init(const AP_SerialManager& serial_manager)
 {
     // check for alexmos protcol
-    AP_SerialManager::serial_state alexmos_serial;
-    if (serial_manager.find_serial(AP_SerialManager::SerialProtocol_AlexMos, alexmos_serial)) {
-        _port = alexmos_serial.uart;
+    if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_AlexMos))) {
         _initialised = true;
         get_boardinfo();
         read_params(0); //we request parameters for profile 0 and therfore get global and profile parameters
