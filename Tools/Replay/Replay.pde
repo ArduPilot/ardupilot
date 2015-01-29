@@ -51,6 +51,7 @@
 #include <AP_OpticalFlow.h>
 #include <Parameters.h>
 #include <AP_SerialManager.h>
+#include <RC_Channel.h>
 #include <stdio.h>
 #include <getopt.h>
 #include <errno.h>
