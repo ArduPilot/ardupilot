@@ -703,6 +703,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         break; // just here to prevent a warning
 
     case MSG_LIMITS_STATUS:
+    case MSG_GIMBAL_REPORT:
         // unused
         break;
     }
