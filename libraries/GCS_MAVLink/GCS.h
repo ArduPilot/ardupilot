@@ -16,6 +16,7 @@
 #include <stdint.h>
 #include <MAVLink_routing.h>
 #include <AP_SerialManager.h>
+#include "../AP_Mount/AP_Mount.h"
 
 //  GCS Message ID's
 /// NOTE: to ensure we never block on sending MAVLink messages
@@ -54,6 +55,7 @@ enum ap_message {
     MSG_CAMERA_FEEDBACK,
     MSG_MOUNT_STATUS,
     MSG_OPTICAL_FLOW,
+    MSG_GIMBAL_REPORT,
     MSG_RETRY_DEFERRED // this must be last
 };
 
@@ -285,6 +287,7 @@ private:
     void handle_serial_control(mavlink_message_t *msg, AP_GPS &gps);
     void lock_channel(mavlink_channel_t chan, bool lock);
     void handle_set_mode(mavlink_message_t* msg, bool (*set_mode)(uint8_t mode));
+    void handle_gimbal_report(AP_Mount &mount, mavlink_message_t *msg) const;
 
     // return true if this channel has hardware flow control
     bool have_flow_control(void);
