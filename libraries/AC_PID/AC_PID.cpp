@@ -8,20 +8,20 @@
 
 const AP_Param::GroupInfo AC_PID::var_info[] PROGMEM = {
     // @Param: P
-    // @DisplayName: PID Proportional Gain
-    // @Description: P Gain which produces an output value that is proportional to the current error value
+    // @DisplayName: PID 比例增益
+    // @Description: P增益会输出一个值，该值正比于当前误差值。
     AP_GROUPINFO("P",    0, AC_PID, _kp, 0),
     // @Param: I
-    // @DisplayName: PID Integral Gain
+    // @DisplayName: PID 积分增益
     // @Description: I Gain which produces an output that is proportional to both the magnitude and the duration of the error
     AP_GROUPINFO("I",    1, AC_PID, _ki, 0),
     // @Param: D
-    // @DisplayName: PID Derivative Gain
-    // @Description: D Gain which produces an output that is proportional to the rate of change of the error
+    // @DisplayName: PID 微分增益
+    // @Description: D增益产生的输出是正比于误差的变化率。
     AP_GROUPINFO("D",    2, AC_PID, _kd, 0),
     // @Param: IMAX
-    // @DisplayName: PID Integral Maximum
-    // @Description: The maximum/minimum value that the I term can output
+    // @DisplayName: PID 最大积分
+    // @Description: I项可以输出的最大/最小值。
     AP_GROUPINFO("IMAX", 3, AC_PID, _imax, 0),
     AP_GROUPEND
 };
