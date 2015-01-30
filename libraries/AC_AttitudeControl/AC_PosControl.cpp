@@ -141,7 +141,13 @@ void AC_PosControl::set_alt_target_from_climb_rate(float climb_rate_cms, float d
     if ((climb_rate_cms<0 && (!_motors.limit.throttle_lower || force_descend)) || (climb_rate_cms>0 && !_motors.limit.throttle_upper && !_limit.pos_up)) {
         _pos_target.z += climb_rate_cms * dt;
     }
-    
+
+    // do not let target alt get above limit
+    if (_alt_max > 0 && _pos_target.z > _alt_max) {
+        _pos_target.z = _alt_max;
+        _limit.pos_up = true;
+    }
+
     _vel_desired.z = climb_rate_cms;
 }
 
@@ -250,12 +256,6 @@ void AC_PosControl::pos_to_rate_z()
     // clear position limit flags
     _limit.pos_up = false;
     _limit.pos_down = false;
-
-    // do not let target alt get above limit
-    if (_alt_max > 0 && _pos_target.z > _alt_max) {
-        _pos_target.z = _alt_max;
-        _limit.pos_up = true;
-    }
 
     // calculate altitude error
     _pos_error.z = _pos_target.z - curr_alt;
