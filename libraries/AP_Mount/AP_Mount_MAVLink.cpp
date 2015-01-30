@@ -176,6 +176,16 @@ void AP_Mount_MAVLink::handle_gimbal_report(mavlink_channel_t chan, mavlink_mess
                           _gimbal_report.joint_pitch,
                           _gimbal_report.joint_yaw);
     _ekf.RunEKF(_gimbal_report.delta_time, delta_angles, delta_velocity, joint_angles);
+
+#if 0
+    Vector3f bias;
+    _ekf.getBias(bias);
+    mavlink_msg_gimbal_control_send(chan, 
+                                    msg->sysid,
+                                    msg->compid,
+                                    0, 0, 0, // demanded rates
+                                    bias.x, bias.y, bias.z);
+#endif
 }
 
 /*
