@@ -37,7 +37,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] PROGMEM = {
     // @Param: 1_PROTOCOL
     // @DisplayName: Telem1 protocol selection
     // @Description: Control what protocol to use on the Telem1 port
-    // @Values: 1:GCS Mavlink, 2:Frsky D-PORT, 3:GPS
+    // @Values: 1:GCS Mavlink, 1:2nd Mavlink (OSD, telemetry,..), 3:Frsky D-PORT, 4:Frsky S-PORT, 5:GPS, 6:2nd GPS, 7:Alexmos Gimbal Serial
     // @User: Standard
     AP_GROUPINFO("1_PROTOCOL",  1, AP_SerialManager, state[1].protocol, SerialProtocol_MAVLink1),
 
@@ -51,7 +51,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] PROGMEM = {
     // @Param: 2_PROTOCOL
     // @DisplayName: Telemetry 2 protocol selection
     // @Description: Control what protocol to use on the Telem2 port
-    // @Values: 1:GCS Mavlink, 2:Frsky D-PORT, 3:GPS
+    // @Values: 1:GCS Mavlink, 1:2nd Mavlink (OSD, telemetry,..), 3:Frsky D-PORT, 4:Frsky S-PORT, 5:GPS, 6:2nd GPS, 7:Alexmos Gimbal Serial
     // @User: Standard
     AP_GROUPINFO("2_PROTOCOL",  3, AP_SerialManager, state[2].protocol, SerialProtocol_MAVLink2),
 
@@ -65,7 +65,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] PROGMEM = {
     // @Param: 3_PROTOCOL
     // @DisplayName: Serial 3 (GPS) protocol selection
     // @Description: Control what protocol Serial 3 (GPS) should be used for
-    // @Values: 1:GCS Mavlink, 2:Frsky D-PORT, 3:GPS
+    // @Values: 1:GCS Mavlink, 1:2nd Mavlink (OSD, telemetry,..), 3:Frsky D-PORT, 4:Frsky S-PORT, 5:GPS, 6:2nd GPS, 7:Alexmos Gimbal Serial
     // @User: Standard
     AP_GROUPINFO("3_PROTOCOL",  5, AP_SerialManager, state[3].protocol, SerialProtocol_GPS),
 
@@ -79,7 +79,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] PROGMEM = {
     // @Param: 4_PROTOCOL
     // @DisplayName: Serial4 protocol selection
     // @Description: Control what protocol Serial4 port should be used for
-    // @Values: 1:GCS Mavlink, 2:Frsky D-PORT, 3:GPS
+    // @Values: 1:GCS Mavlink, 1:2nd Mavlink (OSD, telemetry,..), 3:Frsky D-PORT, 4:Frsky S-PORT, 5:GPS, 6:2nd GPS, 7:Alexmos Gimbal Serial
     // @User: Standard
     AP_GROUPINFO("4_PROTOCOL",  7, AP_SerialManager, state[4].protocol, SerialProtocol_GPS2),
 
