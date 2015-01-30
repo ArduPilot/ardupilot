@@ -31,17 +31,9 @@ static void arm_motors_check()
 
         // arm the motors and configure for flight
         if (arming_counter == ARM_DELAY && !motors.armed()) {
-            // run pre-arm-checks and display failures
-            if(pre_arm_checks(true) && arm_checks(true,false)) {
-                if (!init_arm_motors()) {
-                    // reset arming counter if arming fail
-                    arming_counter = 0;
-                    AP_Notify::flags.arming_failed = true;
-                }
-            }else{
-                // reset arming counter if pre-arm checks fail
+            // reset arming counter if arming fail
+            if (!init_arm_motors(false)) {
                 arming_counter = 0;
-                AP_Notify::flags.arming_failed = true;
             }
         }
 
@@ -100,14 +92,20 @@ static void auto_disarm_check()
 }
 
 // init_arm_motors - performs arming process including initialisation of barometer and gyros
-//  returns false in the unlikely case that arming fails (because of a gyro calibration failure)
-static bool init_arm_motors()
+//  returns false if arming failed because of pre-arm checks, arming checks or a gyro calibration failure
+static bool init_arm_motors(bool arming_from_gcs)
 {
 	// arming marker
     // Flag used to track if we have armed the motors the first time.
     // This is used to decide if we should run the ground_start routine
     // which calibrates the IMU
     static bool did_ground_start = false;
+
+    // run pre-arm-checks and display failures
+    if(!pre_arm_checks(true) || !arm_checks(true, arming_from_gcs)) {
+        AP_Notify::flags.arming_failed = true;
+        return false;
+    }
 
     // disable cpu failsafe because initialising everything takes a while
     failsafe_disable();
