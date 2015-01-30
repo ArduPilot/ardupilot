@@ -4621,6 +4621,8 @@ void NavEKF::performArmingChecks()
                 PV_AidingMode = AID_ABSOLUTE; // we have GPS data and can estimate all vehicle states
                 constPosMode = false;
                 constVelMode = false;
+                // we reset the position in case the initial GPS setting the origin was off or the vehicle has been moved a significant distance
+                ResetPosition();
             }
         }
         // Reset filter positon, height and velocity states on arming or disarming
