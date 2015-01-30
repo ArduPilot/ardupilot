@@ -67,8 +67,8 @@ public:
     ///
 
     /// set_alt_max - sets maximum altitude above home in cm
-    /// set to zero to disable limit
-    /// To-Do: update this intermittantly from main code after checking if fence is enabled/disabled
+    ///   only enforced when set_alt_target_from_climb_rate is used
+    ///   set to zero to disable limit
     void set_alt_max(float alt) { _alt_max = alt; }
 
     /// set_speed_z - sets maximum climb and descent rates
