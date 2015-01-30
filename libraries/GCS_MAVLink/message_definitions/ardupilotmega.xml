@@ -483,7 +483,7 @@
       <description>Report from MAVLink enabled gimbal to vehicle</description>
       <field type="uint8_t" name="target_system">System ID</field>
       <field type="uint8_t" name="target_component">Component ID</field>
-      <field type="uint32_t" name="counter">Report counter</field>
+      <field type="float" name="delta_time">Time since last update (seconds)</field>
       <field type="float" name="delta_angle_x">Delta angle X, radians</field>
       <field type="float" name="delta_angle_y">Delta angle Y, radians</field>
       <field type="float" name="delta_angle_z">Delta angle Z, radians</field>
