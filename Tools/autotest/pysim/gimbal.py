@@ -75,13 +75,13 @@ class Gimbal3Axis(object):
         ###################################
         # communication variables
         self.connection = None
-        self.counter = 0
         self.last_report_t = time.time()
         self.last_heartbeat_t = time.time()
         self.seen_heartbeat = False
         self.seen_gimbal_control = False
         self.last_print_t = time.time()
         self.vehicle_component_id = None
+        self.last_report_t = time.time()
 
     def update(self):
         '''update the gimbal state'''
@@ -254,9 +254,11 @@ class Gimbal3Axis(object):
                 self.last_heartbeat_t = now
 
         if self.seen_heartbeat:
+            delta_time = now - self.last_report_t
+            self.last_report_t = now
             self.connection.mav.gimbal_report_send(self.connection.mav.srcSystem,
                                                    self.vehicle_component_id,
-                                                   self.counter,
+                                                   delta_time,
                                                    self.delta_angle.x,
                                                    self.delta_angle.y,
                                                    self.delta_angle.z,
@@ -268,4 +270,3 @@ class Gimbal3Axis(object):
                                                    self.joint_angles.z)
             self.delta_velocity.zero()
             self.delta_angle.zero()
-            self.counter += 1
