@@ -77,6 +77,7 @@ public:
     bool use_compass(void);
 
     NavEKF &get_NavEKF(void) { return EKF; }
+    const NavEKF &get_NavEKF_const(void) const { return EKF; }
 
     // return secondary attitude solution if available, as eulers in radians
     bool get_secondary_attitude(Vector3f &eulers);
