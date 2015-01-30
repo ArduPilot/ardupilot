@@ -7,13 +7,17 @@
 #ifndef __AP_MOUNT_MAVLINK_H__
 #define __AP_MOUNT_MAVLINK_H__
 
+#include <AP_HAL.h>
+#include <AP_AHRS.h>
+
+#if AP_AHRS_NAVEKF_AVAILABLE
 #include <AP_Math.h>
 #include <AP_Common.h>
 #include <AP_GPS.h>
-#include <AP_AHRS.h>
 #include <GCS_MAVLink.h>
 #include <RC_Channel.h>
 #include <AP_Mount_Backend.h>
+#include <AP_SmallEKF.h>
 
 #define AP_MOUNT_MAVLINK_COMPID     10      // Use hard-coded component id to communicate with gimbal, sysid is taken from globally defined mavlink_system.sysid
 
@@ -22,12 +26,7 @@ class AP_Mount_MAVLink : public AP_Mount_Backend
 
 public:
     // Constructor
-    AP_Mount_MAVLink(AP_Mount &frontend, AP_Mount::mount_state state, uint8_t instance) :
-        AP_Mount_Backend(frontend, state, instance),
-        _initialised(false),
-        _chan(MAVLINK_COMM_0),
-        _last_mode(MAV_MOUNT_MODE_RETRACT)
-    {}
+    AP_Mount_MAVLink(AP_Mount &frontend, AP_Mount::mount_state state, uint8_t instance);
 
     // init - performs any required initialisation for this instance
     virtual void init(const AP_SerialManager& serial_manager);
@@ -61,8 +60,12 @@ private:
     enum MAV_MOUNT_MODE _last_mode; // last mode sent to mount
     Vector3f _last_angle_target;    // last angle target sent to mount
 
+    // state of small EKF for gimbal
+    SmallEKF _ekf;
+
     // keep last gimbal report
     mavlink_gimbal_report_t _gimbal_report;
 };
+#endif // AP_AHRS_NAVEKF_AVAILABLE
 
 #endif // __AP_MOUNT_MAVLINK_H__

@@ -1,7 +1,22 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include <AP_Mount_MAVLink.h>
+#if AP_AHRS_NAVEKF_AVAILABLE
 #include <GCS_MAVLink.h>
+
+#define MOUNT_DEBUG 0
+
+#if MOUNT_DEBUG
+#include <stdio.h>
+#endif
+
+AP_Mount_MAVLink::AP_Mount_MAVLink(AP_Mount &frontend, AP_Mount::mount_state state, uint8_t instance) :
+    AP_Mount_Backend(frontend, state, instance),
+    _initialised(false),
+    _chan(MAVLINK_COMM_0),
+    _last_mode(MAV_MOUNT_MODE_RETRACT),
+    _ekf(frontend._ahrs)
+{}
 
 // init - performs any required initialisation for this instance
 void AP_Mount_MAVLink::init(const AP_SerialManager& serial_manager)
@@ -150,6 +165,17 @@ void AP_Mount_MAVLink::handle_gimbal_report(mavlink_channel_t chan, mavlink_mess
 {
     // just save it for future processing and reporting to GCS for now
     mavlink_msg_gimbal_report_decode(msg, &_gimbal_report);
+
+    Vector3f delta_angles(_gimbal_report.delta_angle_x,
+                          _gimbal_report.delta_angle_y,
+                          _gimbal_report.delta_angle_z);
+    Vector3f delta_velocity(_gimbal_report.delta_velocity_x,
+                            _gimbal_report.delta_velocity_y,
+                            _gimbal_report.delta_velocity_z);
+    Vector3f joint_angles(_gimbal_report.joint_roll,
+                          _gimbal_report.joint_pitch,
+                          _gimbal_report.joint_yaw);
+    _ekf.RunEKF(_gimbal_report.delta_time, delta_angles, delta_velocity, joint_angles);
 }
 
 /*
@@ -159,7 +185,7 @@ void AP_Mount_MAVLink::send_gimbal_report(mavlink_channel_t chan)
 {
     mavlink_msg_gimbal_report_send(chan, 
                                    0, 0, // send as broadcast
-                                   _gimbal_report.counter, 
+                                   _gimbal_report.delta_time, 
                                    _gimbal_report.delta_angle_x, 
                                    _gimbal_report.delta_angle_y, 
                                    _gimbal_report.delta_angle_z, 
@@ -169,4 +195,15 @@ void AP_Mount_MAVLink::send_gimbal_report(mavlink_channel_t chan)
                                    _gimbal_report.joint_roll, 
                                    _gimbal_report.joint_pitch, 
                                    _gimbal_report.joint_yaw);
+    float tilt;
+    Vector3f velocity, euler, gyroBias;
+    _ekf.getDebug(tilt, velocity, euler, gyroBias);
+#if MOUNT_DEBUG
+    ::printf("tilt=%.2f euler(%.2f, %.2f, %.2f) bias=(%.2f, %.2f %.2f)\n",
+             tilt,
+             degrees(euler.x), degrees(euler.y), degrees(euler.z),
+             degrees(gyroBias.x), degrees(gyroBias.y), degrees(gyroBias.z));
+#endif
 }
+
+#endif // AP_AHRS_NAVEKF_AVAILABLE

@@ -39,6 +39,16 @@ class AP_Mount_Servo;
 class AP_Mount_MAVLink;
 class AP_Mount_Alexmos;
 
+/*
+  This is a workaround to allow the MAVLink backend access to the
+  SmallEKF. It would be nice to find a neater solution to this
+ */
+#if AP_AHRS_NAVEKF_AVAILABLE
+#define AP_AHRS_MOUNT AP_AHRS_NavEKF
+#else
+#define AP_AHRS_MOUNT AP_AHRS
+#endif
+
 class AP_Mount
 {
     // declare backends as friends
@@ -58,7 +68,7 @@ public:
     };
 
     // Constructor
-    AP_Mount(const AP_AHRS &ahrs, const struct Location &current_loc);
+    AP_Mount(const AP_AHRS_MOUNT &ahrs, const struct Location &current_loc);
 
     // init - detect and initialise all mounts
     void init(const AP_SerialManager& serial_manager);
@@ -115,7 +125,7 @@ public:
 protected:
 
     // private members
-    const AP_AHRS           &_ahrs;
+    const AP_AHRS_MOUNT     &_ahrs;
     const struct Location   &_current_loc;  // reference to the vehicle's current location
 
     // frontend parameters
