@@ -837,7 +837,7 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
         accel_y : accel3.y,
         accel_z : accel3.z,
         gyro_error  : ins.get_gyro_error_count(2),
-        accel_error : ins.get_accel_error_count(3)
+        accel_error : ins.get_accel_error_count(2)
     };
     WriteBlock(&pkt3, sizeof(pkt3));
 #endif
