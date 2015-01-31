@@ -22,15 +22,15 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] PROGMEM = {
 //
 AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
                              const AP_Motors& motors, AC_AttitudeControl& attitude_control,
-                             AC_P& p_alt_pos, AC_P& p_alt_rate, AC_PID& pid_alt_accel,
+                             AC_P& p_pos_z, AC_P& p_vel_z, AC_PID& pid_accel_z,
                              AC_P& p_pos_xy, AC_PI_2D& pi_vel_xy) :
     _ahrs(ahrs),
     _inav(inav),
     _motors(motors),
     _attitude_control(attitude_control),
-    _p_alt_pos(p_alt_pos),
-    _p_alt_rate(p_alt_rate),
-    _pid_alt_accel(pid_alt_accel),
+    _p_pos_z(p_pos_z),
+    _p_vel_z(p_vel_z),
+    _pid_accel_z(pid_accel_z),
     _p_pos_xy(p_pos_xy),
     _pi_vel_xy(pi_vel_xy),
     _dt(POSCONTROL_DT_10HZ),
@@ -77,7 +77,7 @@ void AC_PosControl::set_dt(float delta_sec)
     _dt = delta_sec;
 
     // update rate controller's dt
-    _pid_alt_accel.set_dt(_dt);
+    _pid_accel_z.set_dt(_dt);
 
     // update rate z-axis velocity error and accel error filters
     _vel_error_filter.set_cutoff_frequency(_dt,POSCONTROL_VEL_ERROR_CUTOFF_FREQ);
@@ -187,13 +187,13 @@ void AC_PosControl::get_stopping_point_z(Vector3f& stopping_point) const
     }
 
     // calculate the velocity at which we switch from calculating the stopping point using a linear function to a sqrt function
-    linear_velocity = _accel_z_cms/_p_alt_pos.kP();
+    linear_velocity = _accel_z_cms/_p_pos_z.kP();
 
     if ((float)fabs(curr_vel_z) < linear_velocity) {
         // if our current velocity is below the cross-over point we use a linear function
-        stopping_point.z = curr_pos_z + curr_vel_z/_p_alt_pos.kP();
+        stopping_point.z = curr_pos_z + curr_vel_z/_p_pos_z.kP();
     } else {
-        linear_distance = _accel_z_cms/(2.0f*_p_alt_pos.kP()*_p_alt_pos.kP());
+        linear_distance = _accel_z_cms/(2.0f*_p_pos_z.kP()*_p_pos_z.kP());
         if (curr_vel_z > 0){
             stopping_point.z = curr_pos_z + (linear_distance + curr_vel_z*curr_vel_z/(2.0f*_accel_z_cms));
         } else {
@@ -214,7 +214,7 @@ void AC_PosControl::init_takeoff()
     freeze_ff_z();
 
     // shift difference between last motor out and hover throttle into accelerometer I
-    _pid_alt_accel.set_integrator(_motors.get_throttle_out()-_throttle_hover);
+    _pid_accel_z.set_integrator(_motors.get_throttle_out()-_throttle_hover);
 }
 
 // is_active_z - returns true if the z-axis position controller has been run very recently
@@ -246,8 +246,8 @@ void AC_PosControl::update_z_controller()
 void AC_PosControl::calc_leash_length_z()
 {
     if (_flags.recalc_leash_z) {
-        _leash_up_z = calc_leash_length(_speed_up_cms, _accel_z_cms, _p_alt_pos.kP());
-        _leash_down_z = calc_leash_length(-_speed_down_cms, _accel_z_cms, _p_alt_pos.kP());
+        _leash_up_z = calc_leash_length(_speed_up_cms, _accel_z_cms, _p_pos_z.kP());
+        _leash_down_z = calc_leash_length(-_speed_down_cms, _accel_z_cms, _p_pos_z.kP());
         _flags.recalc_leash_z = false;
     }
 }
@@ -279,7 +279,7 @@ void AC_PosControl::pos_to_rate_z()
     }
 
     // calculate _vel_target.z using from _pos_error.z using sqrt controller
-    _vel_target.z = AC_AttitudeControl::sqrt_controller(_pos_error.z, _p_alt_pos.kP(), _accel_z_cms);
+    _vel_target.z = AC_AttitudeControl::sqrt_controller(_pos_error.z, _p_pos_z.kP(), _accel_z_cms);
 
     // call rate based throttle controller which will update accel based throttle controller targets
     rate_to_accel_z();
@@ -338,7 +338,7 @@ void AC_PosControl::rate_to_accel_z()
     }
 
     // calculate p
-    p = _p_alt_rate.kP() * _vel_error.z;
+    p = _p_vel_z.kP() * _vel_error.z;
 
     // consolidate and constrain target acceleration
     desired_accel = _accel_feedforward.z + p;
@@ -370,22 +370,22 @@ void AC_PosControl::accel_to_throttle(float accel_target_z)
     }
 
     // set input to PID
-    _pid_alt_accel.set_input_filter_d(_accel_error.z);
+    _pid_accel_z.set_input_filter_d(_accel_error.z);
 
     // separately calculate p, i, d values for logging
-    p = _pid_alt_accel.get_p();
+    p = _pid_accel_z.get_p();
 
     // get i term
-    i = _pid_alt_accel.get_integrator();
+    i = _pid_accel_z.get_integrator();
 
     // update i term as long as we haven't breached the limits or the I term will certainly reduce
     // To-Do: should this be replaced with limits check from attitude_controller?
     if ((!_motors.limit.throttle_lower && !_motors.limit.throttle_upper) || (i>0&&_accel_error.z<0) || (i<0&&_accel_error.z>0)) {
-        i = _pid_alt_accel.get_i();
+        i = _pid_accel_z.get_i();
     }
 
     // get d term
-    d = _pid_alt_accel.get_d();
+    d = _pid_accel_z.get_d();
 
     // send throttle to attitude controller with angle boost
     _attitude_control.set_throttle_out((int16_t)p+i+d+_throttle_hover, true);

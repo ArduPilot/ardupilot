@@ -48,7 +48,7 @@ public:
     /// Constructor
     AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
                   const AP_Motors& motors, AC_AttitudeControl& attitude_control,
-                  AC_P& p_alt_pos, AC_P& p_alt_rate, AC_PID& pid_alt_accel,
+                  AC_P& p_pos_z, AC_P& p_vel_z, AC_PID& pid_accel_z,
                   AC_P& p_pos_xy, AC_PI_2D& pi_vel_xy);
 
     // xy_mode - specifies behavior of xy position controller
@@ -149,9 +149,6 @@ public:
     // get_leash_down_z, get_leash_up_z - returns vertical leash lengths in cm
     float get_leash_down_z() const { return _leash_down_z; }
     float get_leash_up_z() const { return _leash_up_z; }
-
-    /// althold_kP - returns altitude hold position control PID's kP gain
-    float althold_kP() const { return _p_alt_pos.kP(); }
 
     ///
     /// xy position controller
@@ -332,10 +329,10 @@ private:
     const AP_Motors&            _motors;
     AC_AttitudeControl&         _attitude_control;
 
-    // references to pid controllers and motors
-    AC_P&       _p_alt_pos;
-    AC_P&       _p_alt_rate;
-    AC_PID&     _pid_alt_accel;
+    // references to pid controllers
+    AC_P&       _p_pos_z;
+    AC_P&       _p_vel_z;
+    AC_PID&     _pid_accel_z;
     AC_P&	    _p_pos_xy;
     AC_PI_2D&   _pi_vel_xy;
 
