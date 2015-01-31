@@ -4,7 +4,7 @@
 #if AP_AHRS_NAVEKF_AVAILABLE
 #include <GCS_MAVLink.h>
 
-#define MOUNT_DEBUG 0
+#define MOUNT_DEBUG 1
 
 #if MOUNT_DEBUG
 #include <stdio.h>
@@ -177,15 +177,38 @@ void AP_Mount_MAVLink::handle_gimbal_report(mavlink_channel_t chan, mavlink_mess
                           _gimbal_report.joint_yaw);
     _ekf.RunEKF(_gimbal_report.delta_time, delta_angles, delta_velocity, joint_angles);
 
-#if 0
-    Vector3f bias;
-    _ekf.getBias(bias);
+    // get the gyro bias data
+    Vector3f gyroBias;
+    _ekf.getGyroBias(gyroBias);
+
+    // get the gimbal estimated quaternion
+    Quaternion quatEst;
+    _ekf.getQuat(quatEst);
+
+    // set the demanded quaternion
+    Quaternion quatDem;
+    quatDem[0] = 1.0f;
+
+    //divide the demanded quaternion by the estimated to get the error
+    Quaternion quatError = quatDem / quatEst;
+
+    // convert the quaternion to an angle error vector
+    Vector3f deltaAngErr;
+    float scaler = 2.0f*acosf(quatError[0]);
+    scaler = scaler/sin(0.5f*scaler);
+    deltaAngErr.x = quatError[1] * scaler;
+    deltaAngErr.y = quatError[2] * scaler;
+    deltaAngErr.z = quatError[3] * scaler;
+
+    // multiply the angle error vector by a gain to calculate a demanded gimbal rate
+    Vector3f rateDemand = deltaAngErr * 1.0f;
+
+    // send the gimbal control message
     mavlink_msg_gimbal_control_send(chan, 
                                     msg->sysid,
                                     msg->compid,
-                                    0, 0, 0, // demanded rates
-                                    bias.x, bias.y, bias.z);
-#endif
+                                    rateDemand.x, rateDemand.y, rateDemand.z, // demanded rates
+                                    gyroBias.x, gyroBias.y, gyroBias.z);
 }
 
 /*
