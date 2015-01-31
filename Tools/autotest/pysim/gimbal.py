@@ -95,6 +95,9 @@ class Gimbal3Axis(object):
             # start with copter rotation matrix
             self.dcm = self.vehicle.dcm.copy()
 
+        # take a copy of the demanded rates to bypass the limiter function for testing
+        demRateRaw = self.demanded_angular_rate
+
         # 1)  Rotate the copters rotation rates into the gimbals frame of reference
         # copterAngRate_G = transpose(DCMgimbal)*DCMcopter*copterAngRate
         copterAngRate_G = self.dcm.transposed()*self.vehicle.dcm*self.vehicle.gyro
@@ -181,7 +184,7 @@ class Gimbal3Axis(object):
         #    print("demandedGimbalRatesInertial ", demandedGimbalRatesInertial)
             
         # for the moment we will set gyros equal to demanded_angular_rate
-        self.gimbal_angular_rate = demandedGimbalRatesInertial + self.true_gyro_bias - self.supplied_gyro_bias
+        self.gimbal_angular_rate = demRateRaw #demandedGimbalRatesInertial + self.true_gyro_bias - self.supplied_gyro_bias
 
         # update rotation of the gimbal
         self.dcm.rotate(self.gimbal_angular_rate*delta_t)
@@ -213,7 +216,9 @@ class Gimbal3Axis(object):
 
         if now - self.last_print_t >= 1.0:
             self.last_print_t = now
-            print('joint_angles ', self.joint_angles)
+            # calculate joint angles (euler312 order)
+            Euler312 = Vector3(*self.dcm.to_euler312())
+            print('312 Euler Angles ', Euler312)
 
     def send_report(self):
         '''send a report to the vehicle control code over MAVLink'''
