@@ -503,6 +503,9 @@
 #ifndef LAND_DETECTOR_BARO_CLIMBRATE_MAX
 # define LAND_DETECTOR_BARO_CLIMBRATE_MAX   150  // barometer climb rate must be between -150cm/s ~ +150cm/s
 #endif
+#ifndef LAND_DETECTOR_DESIRED_CLIMBRATE_MAX
+# define LAND_DETECTOR_DESIRED_CLIMBRATE_MAX    -20    // vehicle desired climb rate must be below -20cm/s
+#endif
 #ifndef LAND_DETECTOR_ROTATION_MAX
  # define LAND_DETECTOR_ROTATION_MAX    0.50f   // vehicle rotation must be below 0.5 rad/sec (=30deg/sec for) vehicle to consider itself landed
 #endif
