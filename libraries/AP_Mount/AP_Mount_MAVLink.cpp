@@ -4,7 +4,7 @@
 #if AP_AHRS_NAVEKF_AVAILABLE
 #include <GCS_MAVLink.h>
 
-#define MOUNT_DEBUG 1
+#define MOUNT_DEBUG 0
 
 #if MOUNT_DEBUG
 #include <stdio.h>
@@ -185,23 +185,34 @@ void AP_Mount_MAVLink::handle_gimbal_report(mavlink_channel_t chan, mavlink_mess
     Quaternion quatEst;
     _ekf.getQuat(quatEst);
 
-    // set the demanded quaternion
+    // set the demanded quaternion - tilt down with a roll and yaw of zero
     Quaternion quatDem;
-    quatDem[0] = 1.0f;
+    quatDem[0] =  sqrtf(0.75f);
+    quatDem[2] = -sqrtf(0.25f);
 
     //divide the demanded quaternion by the estimated to get the error
-    Quaternion quatError = quatDem / quatEst;
+    Quaternion quatErr = quatDem / quatEst;
 
     // convert the quaternion to an angle error vector
     Vector3f deltaAngErr;
-    float scaler = 2.0f*acosf(quatError[0]);
-    scaler = scaler/sin(0.5f*scaler);
-    deltaAngErr.x = quatError[1] * scaler;
-    deltaAngErr.y = quatError[2] * scaler;
-    deltaAngErr.z = quatError[3] * scaler;
+    float scaler = 1.0f-quatErr[0]*quatErr[0];
+    if (scaler > 1e-12) {
+        scaler = 1.0f/sqrtf(scaler);
+        deltaAngErr.x = quatErr[1] * scaler;
+        deltaAngErr.y = quatErr[2] * scaler;
+        deltaAngErr.z = quatErr[3] * scaler;
+    } else {
+        deltaAngErr.zero();
+    }
 
     // multiply the angle error vector by a gain to calculate a demanded gimbal rate
     Vector3f rateDemand = deltaAngErr * 1.0f;
+
+    // Constrain the demanded rate to a length of 0.5 rad /sec
+    float length = rateDemand.length();
+    if (length > 0.5f) {
+        rateDemand = rateDemand * (0.5f / length);
+    }
 
     // send the gimbal control message
     mavlink_msg_gimbal_control_send(chan, 
@@ -232,10 +243,10 @@ void AP_Mount_MAVLink::send_gimbal_report(mavlink_channel_t chan)
     Vector3f velocity, euler, gyroBias;
     _ekf.getDebug(tilt, velocity, euler, gyroBias);
 #if MOUNT_DEBUG
-    ::printf("tilt=%.2f euler(%.2f, %.2f, %.2f) bias=(%.2f, %.2f %.2f)\n",
+    ::printf("tilt=%.2f euler=(%.2f, %.2f, %.2f) vel=(%.2f, %.2f %.2f)\n",
              tilt,
              degrees(euler.x), degrees(euler.y), degrees(euler.z),
-             degrees(gyroBias.x), degrees(gyroBias.y), degrees(gyroBias.z));
+             (velocity.x), (velocity.y), (velocity.z));
 #endif
 }
 
