@@ -703,57 +703,38 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GGROUP(pi_vel_xy,   "VEL_XY_",  AC_PI_2D),
 
-    // @Param: THR_RATE_P
-    // @DisplayName: Throttle rate controller P gain
-    // @Description: Throttle rate controller P gain.  Converts the difference between desired vertical speed and actual speed into a desired acceleration that is passed to the throttle acceleration controller
+    // @Param: VEL_Z_P
+    // @DisplayName: Velocity (vertical) P gain
+    // @Description: Velocity (vertical) P gain.  Converts the difference between desired vertical speed and actual speed into a desired acceleration that is passed to the throttle acceleration controller
     // @Range: 1.000 8.000
     // @User: Standard
+    GGROUP(p_vel_z,     "VEL_Z_", AC_P),
 
-    // @Param: THR_RATE_I
-    // @DisplayName: Throttle rate controller I gain
-    // @Description: Throttle rate controller I gain.  Corrects long-term difference in desired vertical speed and actual speed
-    // @Range: 0.000 0.100
-    // @User: Standard
-
-    // @Param: THR_RATE_IMAX
-    // @DisplayName: Throttle rate controller I gain maximum
-    // @Description: Throttle rate controller I gain maximum.  Constrains the desired acceleration that the I gain will generate
-    // @Range: 0 500
-    // @Units: cm/s/s
-    // @User: Standard
-
-    // @Param: THR_RATE_D
-    // @DisplayName: Throttle rate controller D gain
-    // @Description: Throttle rate controller D gain.  Compensates for short-term change in desired vertical speed vs actual speed
-    // @Range: 0.000 0.400
-    // @User: Standard
-    GGROUP(p_throttle_rate, "THR_RATE_", AC_P),
-
-    // @Param: THR_ACCEL_P
+    // @Param: ACCEL_Z_P
     // @DisplayName: Throttle acceleration controller P gain
     // @Description: Throttle acceleration controller P gain.  Converts the difference between desired vertical acceleration and actual acceleration into a motor output
     // @Range: 0.500 1.500
     // @User: Standard
 
-    // @Param: THR_ACCEL_I
+    // @Param: ACCEL_Z_I
     // @DisplayName: Throttle acceleration controller I gain
     // @Description: Throttle acceleration controller I gain.  Corrects long-term difference in desired vertical acceleration and actual acceleration
     // @Range: 0.000 3.000
     // @User: Standard
 
-    // @Param: THR_ACCEL_IMAX
+    // @Param: ACCEL_Z_IMAX
     // @DisplayName: Throttle acceleration controller I gain maximum
     // @Description: Throttle acceleration controller I gain maximum.  Constrains the maximum pwm that the I term will generate
     // @Range: 0 1000
     // @Units: Percent*10
     // @User: Standard
 
-    // @Param: THR_ACCEL_D
+    // @Param: ACCEL_Z_D
     // @DisplayName: Throttle acceleration controller D gain
     // @Description: Throttle acceleration controller D gain.  Compensates for short-term change in desired vertical acceleration vs actual acceleration
     // @Range: 0.000 0.400
     // @User: Standard
-    GGROUP(pid_throttle_accel,"THR_ACCEL_", AC_PID),
+    GGROUP(pid_accel_z, "ACCEL_Z_", AC_PID),
 
     // P controllers
     //--------------
@@ -778,19 +759,19 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GGROUP(p_stabilize_yaw,        "STB_YAW_", AC_P),
 
-    // @Param: THR_ALT_P
-    // @DisplayName: Altitude controller P gain
-    // @Description: Altitude controller P gain.  Converts the difference between the desired altitude and actual altitude into a climb or descent rate which is passed to the throttle rate controller
+    // @Param: POS_Z_P
+    // @DisplayName: Position (vertical) controller P gain
+    // @Description: Position (vertical) controller P gain.  Converts the difference between the desired altitude and actual altitude into a climb or descent rate which is passed to the throttle rate controller
     // @Range: 1.000 3.000
     // @User: Standard
-    GGROUP(p_alt_hold,     "THR_ALT_", AC_P),
+    GGROUP(p_alt_hold,              "POS_Z_", AC_P),
 
-    // @Param: HLD_LAT_P
-    // @DisplayName: Loiter position controller P gain
+    // @Param: POS_XY_P
+    // @DisplayName: Position (horizonal) controller P gain
     // @Description: Loiter position controller P gain.  Converts the distance (in the latitude direction) to the target location into a desired speed which is then passed to the loiter latitude rate controller
     // @Range: 0.500 2.000
     // @User: Standard
-    GGROUP(p_loiter_pos, "HLD_LAT_", AC_P),
+    GGROUP(p_pos_xy,                "POS_XY_", AC_P),
 
     // variables not in the g class which contain EEPROM saved variables
 

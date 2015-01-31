@@ -118,9 +118,9 @@
 #define CH6_YAW_RATE_KD                 26  // body frame yaw rate controller's D term
 #define CH6_ALTITUDE_HOLD_KP            14  // altitude hold controller's P term (alt error to desired rate)
 #define CH6_THROTTLE_RATE_KP            7   // throttle rate controller's P term (desired rate to acceleration or motor output)
-#define CH6_THROTTLE_ACCEL_KP           34  // accel based throttle controller's P term
-#define CH6_THROTTLE_ACCEL_KI           35  // accel based throttle controller's I term
-#define CH6_THROTTLE_ACCEL_KD           36  // accel based throttle controller's D term
+#define CH6_ACCEL_Z_KP                  34  // accel based throttle controller's P term
+#define CH6_ACCEL_Z_KI                  35  // accel based throttle controller's I term
+#define CH6_ACCEL_Z_KD                  36  // accel based throttle controller's D term
 #define CH6_LOITER_POSITION_KP          12  // loiter distance controller's P term (position error to speed)
 #define CH6_VEL_XY_KP                   22  // loiter rate controller's P term (speed error to tilt angle)
 #define CH6_VEL_XY_KI                   28  // loiter rate controller's I term (speed error to tilt angle)

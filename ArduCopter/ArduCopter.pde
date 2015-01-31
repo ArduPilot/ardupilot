@@ -623,8 +623,8 @@ AC_AttitudeControl attitude_control(ahrs, aparm, motors, g.p_stabilize_roll, g.p
                         g.pid_rate_roll, g.pid_rate_pitch, g.pid_rate_yaw);
 #endif
 AC_PosControl pos_control(ahrs, inertial_nav, motors, attitude_control,
-                        g.p_alt_hold, g.p_throttle_rate, g.pid_throttle_accel,
-                        g.p_loiter_pos, g.pi_vel_xy);
+                        g.p_alt_hold, g.p_vel_z, g.pid_accel_z,
+                        g.p_pos_xy, g.pi_vel_xy);
 static AC_WPNav wp_nav(inertial_nav, ahrs, pos_control, attitude_control);
 static AC_Circle circle_nav(inertial_nav, ahrs, pos_control);
 

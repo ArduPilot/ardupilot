@@ -299,19 +299,19 @@ public:
         k_param_p_stabilize_roll,
         k_param_p_stabilize_pitch,
         k_param_p_stabilize_yaw,
-        k_param_p_loiter_pos,
+        k_param_p_pos_xy,
         k_param_p_loiter_lon,       // remove
         k_param_pid_loiter_rate_lat,    // remove
         k_param_pid_loiter_rate_lon,    // remove
         k_param_pid_nav_lat,        // 233 - remove
         k_param_pid_nav_lon,        // 234 - remove
         k_param_p_alt_hold,
-        k_param_p_throttle_rate,
+        k_param_p_vel_z,
         k_param_pid_optflow_roll,       // 237 - remove
         k_param_pid_optflow_pitch,      // 238 - remove
         k_param_acro_balance_roll_old,  // 239 - remove
         k_param_acro_balance_pitch_old, // 240 - remove
-        k_param_pid_throttle_accel,
+        k_param_pid_accel_z,
         k_param_acro_balance_roll,
         k_param_acro_balance_pitch,
         k_param_acro_yaw_p, // 244
@@ -455,10 +455,10 @@ public:
 #endif
     AC_PI_2D                pi_vel_xy;
 
-    AC_P                    p_throttle_rate;
-    AC_PID                  pid_throttle_accel;
+    AC_P                    p_vel_z;
+    AC_PID                  pid_accel_z;
 
-    AC_P                    p_loiter_pos;
+    AC_P                    p_pos_xy;
     AC_P                    p_stabilize_roll;
     AC_P                    p_stabilize_pitch;
     AC_P                    p_stabilize_yaw;
@@ -517,12 +517,12 @@ public:
 
         pi_vel_xy               (VEL_XY_P,        VEL_XY_I,                         VEL_XY_IMAX,        VEL_XY_FILT_HZ,     WPNAV_LOITER_UPDATE_TIME),
 
-        p_throttle_rate         (THROTTLE_RATE_P),
-        pid_throttle_accel      (THROTTLE_ACCEL_P,THROTTLE_ACCEL_I, THROTTLE_ACCEL_D,THROTTLE_ACCEL_IMAX, THROTTLE_ACCEL_FILT_HZ, MAIN_LOOP_SECONDS),
+        p_vel_z                 (VEL_Z_P),
+        pid_accel_z             (ACCEL_Z_P,       ACCEL_Z_I,        ACCEL_Z_D,      ACCEL_Z_IMAX,       ACCEL_Z_FILT_HZ,    MAIN_LOOP_SECONDS),
 
         // P controller	        initial P
         //----------------------------------------------------------------------
-        p_loiter_pos            (LOITER_POS_P),
+        p_pos_xy                (POS_XY_P),
 
         p_stabilize_roll        (STABILIZE_ROLL_P),
         p_stabilize_pitch       (STABILIZE_PITCH_P),

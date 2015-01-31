@@ -59,24 +59,24 @@ static void tuning() {
         break;
 
     case CH6_THROTTLE_RATE_KP:
-        g.p_throttle_rate.kP(tuning_value);
+        g.p_vel_z.kP(tuning_value);
         break;
 
-    case CH6_THROTTLE_ACCEL_KP:
-        g.pid_throttle_accel.kP(tuning_value);
+    case CH6_ACCEL_Z_KP:
+        g.pid_accel_z.kP(tuning_value);
         break;
 
-    case CH6_THROTTLE_ACCEL_KI:
-        g.pid_throttle_accel.kI(tuning_value);
+    case CH6_ACCEL_Z_KI:
+        g.pid_accel_z.kI(tuning_value);
         break;
 
-    case CH6_THROTTLE_ACCEL_KD:
-        g.pid_throttle_accel.kD(tuning_value);
+    case CH6_ACCEL_Z_KD:
+        g.pid_accel_z.kD(tuning_value);
         break;
 
     // Loiter and navigation tuning
     case CH6_LOITER_POSITION_KP:
-        g.p_loiter_pos.kP(tuning_value);
+        g.p_pos_xy.kP(tuning_value);
         break;
 
     case CH6_VEL_XY_KP:

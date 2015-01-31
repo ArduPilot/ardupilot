@@ -272,5 +272,5 @@ static float get_throttle_surface_tracking(int16_t target_rate, float current_al
 static void set_accel_throttle_I_from_pilot_throttle(int16_t pilot_throttle)
 {
     // shift difference between pilot's throttle and hover throttle into accelerometer I
-    g.pid_throttle_accel.set_integrator(pilot_throttle-g.throttle_cruise);
+    g.pid_accel_z.set_integrator(pilot_throttle-g.throttle_cruise);
 }

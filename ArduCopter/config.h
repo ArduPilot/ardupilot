@@ -636,8 +636,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // Loiter position control gains
 //
-#ifndef LOITER_POS_P
- # define LOITER_POS_P             	1.0f
+#ifndef POS_XY_P
+ # define POS_XY_P             	1.0f
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -695,26 +695,26 @@
  # define ALT_HOLD_P            1.0f
 #endif
 
-// RATE control
-#ifndef THROTTLE_RATE_P
- # define THROTTLE_RATE_P       5.0f
+// Velocity (vertical) control gains
+#ifndef VEL_Z_P
+ # define VEL_Z_P       5.0f
 #endif
 
-// Throttle Accel control
-#ifndef THROTTLE_ACCEL_P
- # define THROTTLE_ACCEL_P      0.50f
+// Accel (vertical) control gains
+#ifndef ACCEL_Z_P
+ # define ACCEL_Z_P     0.50f
 #endif
-#ifndef THROTTLE_ACCEL_I
- # define THROTTLE_ACCEL_I      1.00f
+#ifndef ACCEL_Z_I
+ # define ACCEL_Z_I     1.00f
 #endif
-#ifndef THROTTLE_ACCEL_D
- # define THROTTLE_ACCEL_D      0.0f
+#ifndef ACCEL_Z_D
+ # define ACCEL_Z_D     0.0f
 #endif
-#ifndef THROTTLE_ACCEL_IMAX
- # define THROTTLE_ACCEL_IMAX   800
+#ifndef ACCEL_Z_IMAX
+ # define ACCEL_Z_IMAX  800
 #endif
-#ifndef THROTTLE_ACCEL_FILT_HZ
- # define THROTTLE_ACCEL_FILT_HZ    20.0f
+#ifndef ACCEL_Z_FILT_HZ
+ # define ACCEL_Z_FILT_HZ   20.0f
 #endif
 
 // default maximum vertical velocity and acceleration the pilot may request
