@@ -894,5 +894,16 @@ void SmallEKF::getDebug(float &tilt, Vector3f &velocity, Vector3f &euler, Vector
     gyroBias = state.delAngBias / dtIMU;
 }
 
+// get gyro bias data
+void SmallEKF::getGyroBias(Vector3f &gyroBias) const
+{
+    gyroBias = state.delAngBias / dtIMU;
+}
+
+// get quaternion data
+void SmallEKF::getQuat(Quaternion &quat) const
+{
+    quat = state.quat;
+}
 
 #endif // HAL_CPU_CLASS

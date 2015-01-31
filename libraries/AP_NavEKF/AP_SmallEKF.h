@@ -86,6 +86,12 @@ public:
     // get some debug information
     void getDebug(float &tilt, Vector3f &velocity, Vector3f &euler, Vector3f &gyroBias) const;
 
+    // get gyro bias data
+    void getGyroBias(Vector3f &gyroBias) const;
+
+    // get quaternion data
+    void getQuat(Quaternion &quat) const;
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
