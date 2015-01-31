@@ -566,7 +566,9 @@ void SmallEKF::fuseVelocity(bool yawInit)
         // Calculate the velocity measurement innovation using the SmallEKF estimate as the observation
         // if heading isn't aligned, use zero velocity (static assumption)
         if (yawInit) {
-            innovation[obsIndex] = state.velocity[obsIndex] - state.velocity[obsIndex];
+            Vector3f measVelNED;
+            _main_ekf.getVelNED(measVelNED);
+            innovation[obsIndex] = state.velocity[obsIndex] - measVelNED[obsIndex];
         } else {
             innovation[obsIndex] = state.velocity[obsIndex];
         }
