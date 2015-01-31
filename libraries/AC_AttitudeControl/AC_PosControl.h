@@ -15,7 +15,7 @@
 
 
 // position controller default definitions
-#define POSCONTROL_THROTTLE_HOVER               450.0f  // default throttle required to maintain hover
+#define POSCONTROL_THROTTLE_HOVER               500.0f  // default throttle required to maintain hover
 #define POSCONTROL_ACCELERATION_MIN             50.0f   // minimum horizontal acceleration in cm/s/s - used for sanity checking acceleration in leash length calculation
 #define POSCONTROL_ACCEL_XY                     100.0f  // default horizontal acceleration in cm/s/s.  This is overwritten by waypoint and loiter controllers
 #define POSCONTROL_ACCEL_XY_MAX                 980.0f  // max horizontal acceleration in cm/s/s that the position velocity controller will ask from the lower accel controller
@@ -336,14 +336,12 @@ private:
     AC_P&	    _p_pos_xy;
     AC_PI_2D&   _pi_vel_xy;
 
-    // parameters
-    AP_Float    _throttle_hover;        // estimated throttle required to maintain a level hover
-
     // internal variables
     float       _dt;                    // time difference (in seconds) between calls from the main program
     float       _dt_xy;                 // time difference (in seconds) between update_xy_controller and update_vel_controller_xyz calls
     uint32_t    _last_update_xy_ms;     // system time of last update_xy_controller call
     uint32_t    _last_update_z_ms;      // system time of last update_z_controller call
+    float       _throttle_hover;        // estimated throttle required to maintain a level hover
     float       _speed_down_cms;        // max descent rate in cm/s
     float       _speed_up_cms;          // max climb rate in cm/s
     float       _speed_cms;             // max horizontal speed in cm/s
