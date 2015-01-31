@@ -519,7 +519,7 @@ static int32_t initial_armed_bearing;
 ////////////////////////////////////////////////////////////////////////////////
 // Throttle variables
 ////////////////////////////////////////////////////////////////////////////////
-static float throttle_avg;                  // g.throttle_cruise as a float
+static float throttle_average;              // estimated throttle required to hover
 static int16_t desired_climb_rate;          // pilot desired climb rate - for logging purposes only
 
 
@@ -758,7 +758,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { auto_trim,            40,     14 },
     { update_altitude,      40,    100 },
     { run_nav_updates,       8,     80 },
-    { update_thr_cruise,    40,     10 },
+    { update_thr_average,   40,     10 },
     { three_hz_loop,       133,      9 },
     { compass_accumulate,    8,     42 },
     { barometer_accumulate,  8,     25 },
@@ -833,7 +833,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { auto_trim,            10,     140 },
     { update_altitude,      10,    1000 },
     { run_nav_updates,       4,     800 },
-    { update_thr_cruise,     1,      50 },
+    { update_thr_average,    1,      50 },
     { three_hz_loop,        33,      90 },
     { compass_accumulate,    2,     420 },
     { barometer_accumulate,  2,     250 },

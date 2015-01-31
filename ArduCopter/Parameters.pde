@@ -242,14 +242,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(failsafe_throttle_value, "FS_THR_VALUE",      FS_THR_VALUE_DEFAULT),
 
-    // @Param: TRIM_THROTTLE
-    // @DisplayName: Throttle Trim
-    // @Description: The autopilot's estimate of the throttle required to maintain a level hover.  Calculated automatically from the pilot's throttle input while in stabilize mode
-    // @Range: 0 1000
-    // @Units: Percent*10
-    // @User: Advanced
-    GSCALAR(throttle_cruise,        "TRIM_THROTTLE",    THROTTLE_CRUISE),
-
     // @Param: THR_MID
     // @DisplayName: Throttle Mid Position
     // @Description: The throttle output (0 ~ 1000) when throttle stick is in mid position.  Used to scale the manual throttle so that the mid throttle stick position is close to the throttle required to hover
