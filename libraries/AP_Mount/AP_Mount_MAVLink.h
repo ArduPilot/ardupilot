@@ -19,8 +19,6 @@
 #include <AP_Mount_Backend.h>
 #include <AP_SmallEKF.h>
 
-#define AP_MOUNT_MAVLINK_COMPID     10      // Use hard-coded component id to communicate with gimbal, sysid is taken from globally defined mavlink_system.sysid
-
 class AP_Mount_MAVLink : public AP_Mount_Backend
 {
 
@@ -50,15 +48,8 @@ public:
     virtual void send_gimbal_report(mavlink_channel_t chan);
 
 private:
-    // send_angle_target - send earth-frame angle targets to mount
-    //  set target_in_degrees to true to send degree targets, false if target in radians
-    void send_angle_target(const Vector3f& target, bool target_in_degrees);
-
     // internal variables
     bool _initialised;              // true once the driver has been initialised
-    mavlink_channel_t _chan;        // telemetry channel used to communicate with mount
-    enum MAV_MOUNT_MODE _last_mode; // last mode sent to mount
-    Vector3f _last_angle_target;    // last angle target sent to mount
 
     // state of small EKF for gimbal
     SmallEKF _ekf;
