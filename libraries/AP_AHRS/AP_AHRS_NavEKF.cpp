@@ -300,7 +300,7 @@ bool AP_AHRS_NavEKF::using_EKF(void) const
 /*
   check if the AHRS subsystem is healthy
 */
-bool AP_AHRS_NavEKF::healthy(void)
+bool AP_AHRS_NavEKF::healthy(void) const
 {
     if (_ekf_use) {
         return ekf_started && EKF.healthy();

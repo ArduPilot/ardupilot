@@ -960,7 +960,7 @@ void AP_AHRS_DCM::set_home(const Location &loc)
 /*
   check if the AHRS subsystem is healthy
 */
-bool AP_AHRS_DCM::healthy(void)
+bool AP_AHRS_DCM::healthy(void) const
 {
     // consider ourselves healthy if there have been no failures for 5 seconds
     return (_last_failure_ms == 0 || hal.scheduler->millis() - _last_failure_ms > 5000);
