@@ -73,82 +73,82 @@ const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
     AP_GROUPINFO("_STOP_PIN", 7, RangeFinder, _stop_pin[0], -1),
 
     // @Param: _SETTLE
-    // @DisplayName: 测距仪驻留时间Rangefinder settle time
-    // @Description: The time in milliseconds that the rangefinder reading takes to settle. This is only used when a STOP_PIN is specified. It determines how long we have to wait for the rangefinder to give a reading after we set the STOP_PIN high. For a sonar rangefinder with a range of around 7m this would need to be around 50 milliseconds to allow for the sonar pulse to travel to the target and back again.
-    // @Units: milliseconds
+    // @DisplayName: 测距仪稳定读数时间
+    // @Description: 测距仪稳定读数需要的毫秒单位时间。仅当STOP_PIN制定的时候需要这个数值。它决定了当我们设置STOP_PIN为高电平时测距仪给出读数需要多久。对于一个7m范围的声呐传感器，这需要大约50ms以允许声呐脉冲到达目标并返回。
+    // @Units: 毫秒
     // @Increment: 1
     AP_GROUPINFO("_SETTLE", 8, RangeFinder, _settle_time_ms[0], 0),
 
     // @Param: _RMETRIC
-    // @DisplayName: Ratiometric
-    // @Description: This parameter sets whether an analog rangefinder is ratiometric. Most analog rangefinders are ratiometric, meaning that their output voltage is influenced by the supply voltage. Some analog rangefinders (such as the SF/02) have their own internal voltage regulators so they are not ratiometric.
-    // @Values: 0:No,1:Yes
+    // @DisplayName: 比率计（Ratiometric）
+    // @Description: 这个参数设定一个模拟测距仪是否符合比率计。大多数模拟测距仪都符合比率计，意味着他们的输出电压会受供电电压的影响。有些模拟测距仪（例如SF/02）有自己的内部稳压器，所以他们就不符合比率计。
+    // @Values: 0:否,1:是
     AP_GROUPINFO("_RMETRIC", 9, RangeFinder, _ratiometric[0], 1),
 
     // 10..12 left for future expansion
 
 #if RANGEFINDER_MAX_INSTANCES > 1
     // @Param: 2_TYPE
-    // @DisplayName: Second Rangefinder type
-    // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:APM2-MaxbotixI2C,3:APM2-PulsedLightI2C,4:PX4-I2C
+    // @DisplayName: 第二测距仪类型
+    // @Description: 第二测距仪所连接的设备类型
+    // @Values: 0:无,1:模拟,2:APM2-MaxbotixI2C,3:APM2-PulsedLightI2C,4:PX4-I2C
     AP_GROUPINFO("2_TYPE",    12, RangeFinder, _type[1], 0),
 
     // @Param: 2_PIN
-    // @DisplayName: Rangefinder pin
-    // @Description: Analog pin that rangefinder is connected to. Set this to 0..9 for the APM2 analog pins. Set to 64 on an APM1 for the dedicated 'airspeed' port on the end of the board. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
+    // @DisplayName: 测距仪针脚
+    // @Description: 测距仪连接到的模拟针脚。对APM2设为0~9。对APM1设为64作为独立空速接口在板子的末端。（Set to 64 on an APM1 for the dedicated 'airspeed' port on the end of the board.）在PX4上设为11作为模拟空速接口。在Pixhawk上设为15作为模拟空速接口。
     AP_GROUPINFO("2_PIN",     13, RangeFinder, _pin[1], -1),
 
     // @Param: 2_SCALING
-    // @DisplayName: Rangefinder scaling
-    // @Description: Scaling factor between rangefinder reading and distance. For the linear and inverted functions this is in meters per volt. For the hyperbolic function the units are meterVolts.
+    // @DisplayName: 测距仪比例
+    // @Description: 测距仪读数和距离之间的比例。对于线性和反向函数这是米/伏特。对于双曲线函数他的单位是米伏特。
     // @Units: meters/Volt
     // @Increment: 0.001
     AP_GROUPINFO("2_SCALING", 14, RangeFinder, _scaling[1], 3.0),
 
     // @Param: 2_OFFSET
-    // @DisplayName: rangefinder offset
-    // @Description: Offset in volts for zero distance
+    // @DisplayName: 测距仪偏移
+    // @Description: 距离为0时的电压
     // @Units: Volts
     // @Increment: 0.001
     AP_GROUPINFO("2_OFFSET",  15, RangeFinder, _offset[1], 0.0),
 
     // @Param: 2_FUNCTION
-    // @DisplayName: Rangefinder function
-    // @Description: Control over what function is used to calculate distance. For a linear function, the distance is (voltage-offset)*scaling. For a inverted function the distance is (offset-voltage)*scaling. For a hyperbolic function the distance is scaling/(voltage-offset). The functions return the distance in meters.
-    // @Values: 0:Linear,1:Inverted,2:Hyperbolic
+    // @DisplayName: 测距仪函数
+    // @Description: 控制用于计算距离的函数。罪域线性函数，距离=（电压-偏移）*比例。对于反向函数距离=（偏移-电压）*比例。对于双曲函数距离=比例/（电压-偏移）。函数返回以米为单位的距离。
+    // @Values: 0:线性,1:反向,2:双曲
     AP_GROUPINFO("2_FUNCTION",  16, RangeFinder, _function[1], 0),
 
     // @Param: 2_MIN_CM
-    // @DisplayName: Rangefinder minimum distance
-    // @Description: Minimum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
+    // @DisplayName: 测距仪最小距离
+    // @Description: 测距仪所能可靠测到的最小厘米数。
+	// @Units: 厘米
     // @Increment: 1
     AP_GROUPINFO("2_MIN_CM",  17, RangeFinder, _min_distance_cm[1], 20),
 
     // @Param: 2_MAX_CM
-    // @DisplayName: Rangefinder maximum distance
-    // @Description: Maximum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
+    // @DisplayName: 测距仪最大距离
+    // @Description: 测距仪所能可靠测到的最大厘米数。
+	// @Units: 厘米
     // @Increment: 1
     AP_GROUPINFO("2_MAX_CM",  18, RangeFinder, _max_distance_cm[1], 700),
 
     // @Param: 2_STOP_PIN
-    // @DisplayName: Rangefinder stop pin
-    // @Description: Digital pin that enables/disables rangefinder measurement for an analog rangefinder. A value of -1 means no pin. If this is set, then the pin is set to 1 to enable the rangefinder and set to 0 to disable it. This can be used to ensure that multiple sonar rangefinders don't interfere with each other.
+    // @DisplayName: 测距仪停止针脚
+    // @Description: 用于启用/禁用测距仪测量的数字针脚。-1代表没有这个针脚。如果设置了，那么这个针设为1代表启用测距仪，0代表禁用。这可以确保多个声呐测距仪不会互相干扰。
     AP_GROUPINFO("2_STOP_PIN", 19, RangeFinder, _stop_pin[1], -1),
 
     // @Param: 2_SETTLE
-    // @DisplayName: Sonar settle time
-    // @Description: The time in milliseconds that the rangefinder reading takes to settle. This is only used when a STOP_PIN is specified. It determines how long we have to wait for the rangefinder to give a reading after we set the STOP_PIN high. For a sonar rangefinder with a range of around 7m this would need to be around 50 milliseconds to allow for the sonar pulse to travel to the target and back again.
-    // @Units: milliseconds
+    // @DisplayName: 测距仪稳定读数时间
+    // @Description: 测距仪稳定读数需要的毫秒单位时间。仅当STOP_PIN制定的时候需要这个数值。它决定了当我们设置STOP_PIN为高电平时测距仪给出读数需要多久。对于一个7m范围的声呐传感器，这需要大约50ms以允许声呐脉冲到达目标并返回。
+    // @Units: 毫秒
     // @Increment: 1
     AP_GROUPINFO("2_SETTLE", 20, RangeFinder, _settle_time_ms[1], 0),
 
     // @Param: 2_RMETRIC
-    // @DisplayName: Ratiometric
-    // @Description: This parameter sets whether an analog rangefinder is ratiometric. Most analog rangefinders are ratiometric, meaning that their output voltage is influenced by the supply voltage. Some analog rangefinders (such as the SF/02) have their own internal voltage regulators so they are not ratiometric.
-    // @Values: 0:No,1:Yes
+    // @DisplayName: 比率计（Ratiometric）
+    // @Description: 这个参数设定一个模拟测距仪是否符合比率计。大多数模拟测距仪都符合比率计，意味着他们的输出电压会受供电电压的影响。有些模拟测距仪（例如SF/02）有自己的内部稳压器，所以他们就不符合比率计。
+    // @Values: 0:否,1:是
     AP_GROUPINFO("2_RMETRIC", 21, RangeFinder, _ratiometric[1], 1),
 #endif
 
