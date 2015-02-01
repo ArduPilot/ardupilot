@@ -559,7 +559,7 @@ static bool arm_checks(bool display_failure, bool arming_from_gcs)
     }
 
     // always check if rotor is spinning on heli
-    #if FRAME_CONFIG == HELI_FRAME
+    #if FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_DUAL_FRAME
     // heli specific arming check
     if (!motors.allow_arming()){
         if (display_failure) {
@@ -567,7 +567,7 @@ static bool arm_checks(bool display_failure, bool arming_from_gcs)
         }
         return false;
     }
-    #endif  // HELI_FRAME
+    #endif  // HELI_FRAME || HELI_DUAL_FRAME
 
     // succeed if arming checks are disabled
     if (g.arming_check == ARMING_CHECK_NONE) {
