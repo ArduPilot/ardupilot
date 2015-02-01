@@ -99,7 +99,7 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
         MAV_TYPE_HEXAROTOR,
 #elif (FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME)
         MAV_TYPE_OCTOROTOR,
-#elif (FRAME_CONFIG == HELI_FRAME)
+#elif (FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_DUAL_FRAME)
         MAV_TYPE_HELICOPTER,
 #elif (FRAME_CONFIG == SINGLE_FRAME)  //because mavlink did not define a singlecopter, we use a rocket
         MAV_TYPE_ROCKET,
@@ -327,7 +327,7 @@ static void NOINLINE send_servo_out(mavlink_channel_t chan)
     // normalized values scaled to -10000 to 10000
     // This is used for HIL.  Do not change without discussing with HIL maintainers
 
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_DUAL_FRAME
 
     mavlink_msg_rc_channels_scaled_send(
         chan,

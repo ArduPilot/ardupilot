@@ -111,9 +111,11 @@ static void tuning() {
 
 #if FRAME_CONFIG == HELI_FRAME
     case CH6_HELI_EXTERNAL_GYRO:
-        motors.ext_gyro_gain(g.rc_6.control_in);
+        motors.set_ext_gyro_gain(g.rc_6.control_in);
         break;
+#endif
 
+#if FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_DUAL_FRAME
     case CH6_RATE_PITCH_FF:
         g.pid_rate_pitch.ff(tuning_value);
         break;

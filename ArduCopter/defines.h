@@ -75,6 +75,7 @@
 #define OCTA_QUAD_FRAME 7
 #define SINGLE_FRAME 8
 #define COAX_FRAME 9
+#define HELI_DUAL_FRAME 10
 
 // Internal defines, don't edit and expect things to work
 // -------------------------------------------------------

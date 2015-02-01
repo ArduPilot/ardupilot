@@ -435,7 +435,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(dcmcheck_thresh, "DCM_CHECK_THRESH",    DCMCHECK_THRESHOLD_DEFAULT),
 
-#if FRAME_CONFIG ==     HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_DUAL_FRAME
     // @Group: HS1_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp
     GGROUP(heli_servo_1,    "HS1_", RC_Channel),
@@ -448,6 +448,15 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Group: HS4_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp
     GGROUP(heli_servo_4,    "HS4_", RC_Channel),
+
+#if FRAME_CONFIG == HELI_DUAL_FRAME
+    // @Group: HS5_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
+    GGROUP(heli_servo_5,    "HS5_", RC_Channel),
+    // @Group: HS6_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
+    GGROUP(heli_servo_6,    "HS6_", RC_Channel),
+#endif
 
     // @Param: H_STAB_COL_MIN
     // @DisplayName: Heli Stabilize Throttle Collective Minimum
@@ -606,7 +615,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0.001 0.02
     // @Increment: 0.001
     // @User: Standard
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_DUAL_FRAME
     GGROUP(pid_rate_roll,     "RATE_RLL_", AC_HELI_PID),
 #else
     GGROUP(pid_rate_roll,     "RATE_RLL_", AC_PID),
@@ -640,7 +649,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0.001 0.02
     // @Increment: 0.001
     // @User: Standard
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_DUAL_FRAME
     GGROUP(pid_rate_pitch,    "RATE_PIT_", AC_HELI_PID),
 #else
     GGROUP(pid_rate_pitch,    "RATE_PIT_", AC_PID),
@@ -674,7 +683,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0.000 0.02
     // @Increment: 0.001
     // @User: Standard
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_DUAL_FRAME
     GGROUP(pid_rate_yaw,      "RATE_YAW_", AC_HELI_PID),
 #else
     GGROUP(pid_rate_yaw,      "RATE_YAW_", AC_PID),
@@ -877,7 +886,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/AC_WPNav/AC_Circle.cpp
     GOBJECT(circle_nav, "CIRCLE_",  AC_Circle),
 
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_DUAL_FRAME
     // @Group: ATC_
     // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl_Heli.cpp
     GOBJECT(attitude_control, "ATC_", AC_AttitudeControl_Heli),
@@ -966,10 +975,15 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/AP_Baro/AP_Baro_Glitch.cpp
     GOBJECT(baro_glitch,    "BAROGLTCH_",   Baro_Glitch),
 
-#if FRAME_CONFIG ==     HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME
     // @Group: H_
     // @Path: ../libraries/AP_Motors/AP_MotorsHeli.cpp
-    GOBJECT(motors, "H_",           AP_MotorsHeli),
+    GOBJECT(motors, "H_",           AP_MotorsHeli_Single),
+
+#elif FRAME_CONFIG == HELI_DUAL_FRAME
+    // @Group: HD_
+    // @Path: ../libraries/AP_Motors/AP_MotorsHeli_Dual.cpp
+    GOBJECT(motors, "HD_",           AP_MotorsHeli_Dual),
 
 #elif FRAME_CONFIG == SINGLE_FRAME
     // @Group: SS1_
