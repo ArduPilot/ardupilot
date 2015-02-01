@@ -114,7 +114,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
     // @Range: 0 60
     // @Units: Seconds
     // @User: Standard
-    AP_GROUPINFO("RSC_RAMPTIME", 22, AP_MotorsHeli, _rsc_ramp_time, AP_MOTORS_HELI_RSC_RAMP_TIME),
+    //AP_GROUPINFO("RSC_RAMP_TIME", 22, AP_MotorsHeli, _rsc_ramp_time, AP_MOTORS_HELI_RSC_RAMP_TIME),
 
     // @Param: RSC_RUNUP_TIME
     // @DisplayName: RSC Runup Time
@@ -122,7 +122,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
     // @Range: 0 60
     // @Units: Seconds
     // @User: Standard
-    AP_GROUPINFO("RSC_RUNUPTIME", 23, AP_MotorsHeli, _rsc_runup_time, AP_MOTORS_HELI_RSC_RUNUP_TIME),
+    //AP_GROUPINFO("RSC_RUNUP_TIME", 23, AP_MotorsHeli, _rsc_runup_time, AP_MOTORS_HELI_RSC_RUNUP_TIME),
 
     AP_GROUPEND
 };
