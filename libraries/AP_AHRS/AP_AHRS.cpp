@@ -256,12 +256,15 @@ void AP_AHRS::update_trig(void)
 
 /*
   update the centi-degree values
+  功能:将计算出来的欧拉角(roll横滚角pitch仰俯角,yaw航向角）弧度转化到角速并放大100倍。这样做的目的是方面后面的控制使用。
+  degrees(）函数功能就是将角度转弧度.
  */
 void AP_AHRS::update_cd_values(void)
 {
     roll_sensor  = degrees(roll) * 100;
     pitch_sensor = degrees(pitch) * 100;
     yaw_sensor   = degrees(yaw) * 100;
+    //因为航向角yaw是定义在0-360度弧度转角度之后范围会变成-180至180，所以这里是将们全部转到0-360度的范围内。
     if (yaw_sensor < 0)
         yaw_sensor += 36000;
 }
