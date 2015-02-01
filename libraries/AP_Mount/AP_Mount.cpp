@@ -420,10 +420,12 @@ void AP_Mount::init(const AP_SerialManager& serial_manager)
             _backends[instance] = new AP_Mount_Servo(*this, state[instance], instance);
             _num_instances++;
 
+#if AP_AHRS_NAVEKF_AVAILABLE
         // check for MAVLink mounts
         } else if (mount_type == Mount_Type_MAVLink) {
             _backends[instance] = new AP_Mount_MAVLink(*this, state[instance], instance);
             _num_instances++;
+#endif
 
         // check for Alexmos mounts
         } else if (mount_type == Mount_Type_Alexmos) {
