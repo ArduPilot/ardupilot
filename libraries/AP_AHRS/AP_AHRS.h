@@ -367,7 +367,7 @@ public:
     uint8_t get_active_accel_instance(void) const { return _active_accel_instance; }
 
     // is the AHRS subsystem healthy?
-    virtual bool healthy(void) = 0;
+    virtual bool healthy(void) const = 0;
 
     // true if the AHRS has completed initialisation
     virtual bool initialised(void) const { return true; };
