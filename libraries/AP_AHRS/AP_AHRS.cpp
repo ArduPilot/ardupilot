@@ -14,6 +14,7 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+
 #include <AP_AHRS.h>
 #include <AP_HAL.h>
 extern const AP_HAL::HAL& hal;
@@ -225,6 +226,10 @@ Vector2f AP_AHRS::groundspeed_vector(void)
 
 // update_trig - recalculates _cos_roll, _cos_pitch, etc based on latest attitude
 //      should be called after _dcm_matrix is updated
+/*
+功能:用get_dcm_matrix();得到当前飞行器的姿态以方向余矩阵DCM表示(3x3）。用方向余矩阵DCM计算姿态欧拉角（roll横滚角pitch仰俯角,yaw航向角）
+
+*/
 void AP_AHRS::update_trig(void)
 {
     Vector2f yaw_vector;
@@ -233,8 +238,8 @@ void AP_AHRS::update_trig(void)
     // sin_yaw, cos_yaw
     yaw_vector.x = temp.a.x;
     yaw_vector.y = temp.b.x;
-    yaw_vector.normalize();
-    _sin_yaw = constrain_float(yaw_vector.y, -1.0, 1.0);
+    yaw_vector.normalize();//对x,y矢量进行单位归一化
+    _sin_yaw = constrain_float(yaw_vector.y, -1.0, 1.0);//限制范围因为sin,cos的范围只能在-1至1之间
     _cos_yaw = constrain_float(yaw_vector.x, -1.0, 1.0);
 
     // cos_roll, cos_pitch
