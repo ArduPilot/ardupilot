@@ -95,7 +95,7 @@ public:
     ///
     /// @note this should not be called while flying because it reads from the eeprom which can be slow
     ///
-    bool calibrated();
+    bool calibrated() const;
 
     /// Perform cold-start initialisation for just the gyros.
     ///

@@ -536,7 +536,7 @@ void AP_InertialSensor::check_3D_calibration()
 /*
   return true if we have 3D calibration values
  */
-bool AP_InertialSensor::calibrated()
+bool AP_InertialSensor::calibrated() const
 {
     return _have_3D_calibration;
 }
