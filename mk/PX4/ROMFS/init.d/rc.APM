@@ -190,23 +190,21 @@ fi
 
 echo "Starting APM sensors"
 
-if ms5611 -X start
-then
-   echo "ms5611 external started OK"
-fi
-
 if ms5611 start
 then
-    echo "ms5611 started OK"
+   echo "ms5611 started OK"
 else
-    sh /etc/init.d/rc.error
+   echo "no ms5611 found"
+   echo "No ms5611 found" >> $logfile
+   sh /etc/init.d/rc.error
 fi
 
 if adc start
 then
-    echo "adc started OK"
+   echo "adc started OK"
 else
-    sh /etc/init.d/rc.error
+   echo "No adc" >> $logfile
+   sh /etc/init.d/rc.error
 fi
 
 if [ $BOARD == FMUv1 ]
