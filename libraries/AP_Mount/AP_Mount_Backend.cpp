@@ -44,9 +44,9 @@ void AP_Mount_Backend::control_msg(mavlink_message_t *msg)
 
         // set earth frame target angles from mavlink message
         case MAV_MOUNT_MODE_MAVLINK_TARGETING:
-            _angle_ef_target_rad.x = packet.input_b*0.01f;  // convert roll in centi-degrees to degrees
-            _angle_ef_target_rad.y = packet.input_a*0.01f;  // convert tilt in centi-degrees to degrees
-            _angle_ef_target_rad.z = packet.input_c*0.01f;  // convert pan in centi-degrees to degrees
+            _angle_ef_target_rad.x = radians(packet.input_b*0.01f);
+            _angle_ef_target_rad.y = radians(packet.input_a*0.01f);
+            _angle_ef_target_rad.z = radians(packet.input_c*0.01f);
             break;
 
         // Load neutral position and start RC Roll,Pitch,Yaw control with stabilization
