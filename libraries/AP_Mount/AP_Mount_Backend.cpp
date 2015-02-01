@@ -57,9 +57,11 @@ void AP_Mount_Backend::control_msg(mavlink_message_t *msg)
         // set lat, lon, alt position targets from mavlink message
         case MAV_MOUNT_MODE_GPS_POINT:
             Location target_location;
+            memset(&target_location, 0, sizeof(target_location));
             target_location.lat = packet.input_a;
             target_location.lng = packet.input_b;
             target_location.alt = packet.input_c;
+            target_location.flags.relative_alt = true;
             set_roi_target(target_location);
             break;
 
