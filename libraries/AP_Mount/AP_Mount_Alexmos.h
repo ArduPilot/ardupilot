@@ -70,7 +70,7 @@ class AP_Mount_Alexmos : public AP_Mount_Backend
 {
 public:
     //constructor
-    AP_Mount_Alexmos(AP_Mount &frontend, AP_Mount::mount_state state, uint8_t instance):
+    AP_Mount_Alexmos(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance):
         AP_Mount_Backend(frontend, state, instance),
         _port(NULL),
         _initialised(false),

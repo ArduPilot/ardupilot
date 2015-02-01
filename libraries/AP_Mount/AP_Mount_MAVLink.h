@@ -26,7 +26,7 @@ class AP_Mount_MAVLink : public AP_Mount_Backend
 
 public:
     // Constructor
-    AP_Mount_MAVLink(AP_Mount &frontend, AP_Mount::mount_state state, uint8_t instance);
+    AP_Mount_MAVLink(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance);
 
     // init - performs any required initialisation for this instance
     virtual void init(const AP_SerialManager& serial_manager);
