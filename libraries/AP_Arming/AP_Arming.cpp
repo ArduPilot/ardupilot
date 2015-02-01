@@ -132,6 +132,18 @@ bool AP_Arming::ins_checks(bool report)
             }
             return false;
         }
+        if (!ahrs.healthy()) {
+            if (report) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: AHRS not healthy!"));
+            }
+            return false;
+        }
+        if (ahrs.have_inertial_nav() && !ins.calibrated()) {
+            if (report) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: EKF requires 3D accel cal"));
+            }
+            return false;
+        }
 #if INS_MAX_INSTANCES > 1
         // check all accelerometers point in roughly same direction
         if (ins.get_accel_count() > 1) {
