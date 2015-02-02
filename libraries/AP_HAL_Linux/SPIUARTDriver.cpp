@@ -165,7 +165,7 @@ int LinuxSPIUARTDriver::_write_fd(const uint8_t *buf, uint16_t size)
     
 }
 
-static const uint8_t ff_stub[3000] = {0xff};
+static const uint8_t ff_stub[300] = {0xff};
 int LinuxSPIUARTDriver::_read_fd(uint8_t *buf, uint16_t n)
 {
     if (_external) {
@@ -176,11 +176,22 @@ int LinuxSPIUARTDriver::_read_fd(uint8_t *buf, uint16_t n)
         return 0;
     }
 
+    /* Make SPI transactions shorter. It can save SPI bus from keeping too
+     * long. It's essential for NavIO as MPU9250 is on the same bus and 
+     * doesn't like to be waiting. Making transactions more frequent but shorter
+     * is a win.
+     */  
+
+    if (n > 100) {
+        n = 100;
+    }
+
     _spi->transaction(ff_stub, buf, n);
+
+    sem_give();
 
     BUF_ADVANCETAIL(_readbuf, n);
 
-    sem_give();
     return n;
 }
 
@@ -191,7 +202,7 @@ void LinuxSPIUARTDriver::_timer_tick(void)
         return;
     }
     /* lower the update rate */
-    if (hal.scheduler->micros() - _last_update_timestamp < 50000) {
+    if (hal.scheduler->micros() - _last_update_timestamp < 10000) {
         return;
     }
 
