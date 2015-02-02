@@ -100,10 +100,18 @@ static bool init_arm_motors(bool arming_from_gcs)
     // This is used to decide if we should run the ground_start routine
     // which calibrates the IMU
     static bool did_ground_start = false;
+    static bool in_arm_motors = false;
+
+    // exit immediately if already in this function
+    if (in_arm_motors) {
+        return false;
+    }
+    in_arm_motors = true;
 
     // run pre-arm-checks and display failures
     if(!pre_arm_checks(true) || !arm_checks(true, arming_from_gcs)) {
         AP_Notify::flags.arming_failed = true;
+        in_arm_motors = false;
         return false;
     }
 
@@ -147,6 +155,7 @@ static bool init_arm_motors(bool arming_from_gcs)
             gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Gyro calibration failed"));
             AP_Notify::flags.armed = false;
             failsafe_enable();
+            in_arm_motors = false;
             return false;
         }
         did_ground_start = true;
@@ -190,6 +199,9 @@ static bool init_arm_motors(bool arming_from_gcs)
 
     // reenable failsafe
     failsafe_enable();
+
+    // flag exiting this function
+    in_arm_motors = false;
 
     // return success
     return true;
