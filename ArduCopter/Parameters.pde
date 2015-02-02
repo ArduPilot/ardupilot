@@ -981,9 +981,9 @@ const AP_Param::Info var_info[] PROGMEM = {
     GOBJECT(motors, "H_",           AP_MotorsHeli_Single),
 
 #elif FRAME_CONFIG == HELI_DUAL_FRAME
-    // @Group: HD_
+    // @Group: H_
     // @Path: ../libraries/AP_Motors/AP_MotorsHeli_Dual.cpp
-    GOBJECT(motors, "HD_",           AP_MotorsHeli_Dual),
+    GOBJECT(motors, "H_",           AP_MotorsHeli_Dual),
 
 #elif FRAME_CONFIG == SINGLE_FRAME
     // @Group: SS1_
