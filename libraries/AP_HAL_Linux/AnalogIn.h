@@ -24,7 +24,9 @@ private:
     // float       _value_ratiometric;
     uint8_t     _sum_count;
     int16_t     _pin;
-    int32_t     pin_fd;    
+    int         _pin_fd;    
+
+    void reopen_pin(void);
 
     static const char *analog_sources[ANALOG_IN_COUNT];
 };
