@@ -66,11 +66,8 @@ void ToneAlarm_Linux::update()
     }
 
     // check for arming failure
-    if(flags.arming_failed != AP_Notify::flags.arming_failed) {
-        flags.arming_failed = AP_Notify::flags.arming_failed;
-        if(flags.arming_failed) {
-            play_tune(TONE_ARMING_FAILURE_TUNE);
-        }
+    if (AP_Notify::events.arming_failed) {
+        play_tune(TONE_ARMING_FAILURE_TUNE);
     }
 
     // check if arming status has changed
