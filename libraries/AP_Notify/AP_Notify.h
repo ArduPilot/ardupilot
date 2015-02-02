@@ -58,7 +58,6 @@ public:
         uint32_t armed              : 1;    // 0 = disarmed, 1 = armed
         uint32_t pre_arm_check      : 1;    // 0 = failing checks, 1 = passed
         uint32_t pre_arm_gps_check  : 1;    // 0 = failing pre-arm GPS checks, 1 = passed
-        uint32_t arming_failed      : 1;    // 1 if copter failed to arm after user input
         uint32_t save_trim          : 1;    // 1 if gathering trim data
         uint32_t esc_calibration    : 1;    // 1 if calibrating escs
         uint32_t failsafe_radio     : 1;    // 1 if radio failsafe
@@ -74,14 +73,15 @@ public:
     /// notify_events_type - bitmask of active events.
     //      Notify library is responsible for setting back to zero after notification has been completed
     struct notify_events_type {
-        uint8_t user_mode_change        : 1;    // 1 if user has initiated a flight mode change
-        uint8_t user_mode_change_failed : 1;    // 1 when user initiated flight mode change fails
-        uint8_t failsafe_mode_change    : 1;    // 1 when failsafe has triggered a flight mode change
-        uint8_t autotune_complete       : 1;    // 1 when autotune has successfully completed
-        uint8_t autotune_failed         : 1;    // 1 when autotune has failed
-        uint8_t autotune_next_axis      : 1;    // 1 when autotune has completed one axis and is moving onto the next
-        uint8_t mission_complete        : 1;    // 1 when the mission has completed successfully
-        uint8_t waypoint_complete       : 1;    // 1 as vehicle completes a waypoint
+        uint16_t arming_failed          : 1;    // 1 if copter failed to arm after user input
+        uint16_t user_mode_change       : 1;    // 1 if user has initiated a flight mode change
+        uint16_t user_mode_change_failed: 1;    // 1 when user initiated flight mode change fails
+        uint16_t failsafe_mode_change   : 1;    // 1 when failsafe has triggered a flight mode change
+        uint16_t autotune_complete      : 1;    // 1 when autotune has successfully completed
+        uint16_t autotune_failed        : 1;    // 1 when autotune has failed
+        uint16_t autotune_next_axis     : 1;    // 1 when autotune has completed one axis and is moving onto the next
+        uint16_t mission_complete       : 1;    // 1 when the mission has completed successfully
+        uint16_t waypoint_complete      : 1;    // 1 as vehicle completes a waypoint
     };
 
     // the notify flags are static to allow direct class access
