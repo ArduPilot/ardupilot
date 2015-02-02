@@ -171,11 +171,8 @@ void ToneAlarm_PX4::update()
     }
 
     // notify the user when arming fails
-    if (flags.arming_failed != AP_Notify::flags.arming_failed) {
-        flags.arming_failed = AP_Notify::flags.arming_failed;
-        if (flags.arming_failed) {
-            play_tone(AP_NOTIFY_PX4_TONE_QUIET_NEG_FEEDBACK);
-        }
+    if (AP_Notify::events.arming_failed) {
+        play_tone(AP_NOTIFY_PX4_TONE_QUIET_NEG_FEEDBACK);
     }
 
     // notify the user when RC contact is lost

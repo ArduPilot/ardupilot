@@ -52,7 +52,6 @@ private:
         uint8_t armed                 : 1;    // 0 = disarmed, 1 = armed
         uint8_t failsafe_battery      : 1;    // 1 if battery failsafe
         uint8_t failsafe_gps          : 1;    // 1 if gps failsafe
-        uint8_t arming_failed         : 1;    // 0 = failing checks, 1 = passed
         uint8_t parachute_release     : 1;    // 1 if parachute is being released
         uint8_t pre_arm_check         : 1;    // 0 = failing checks, 1 = passed
         uint8_t failsafe_radio        : 1;    // 1 if radio failsafe
