@@ -945,7 +945,7 @@ bool GCS_MAVLINK::send_gps_raw(AP_GPS &gps)
     }
 
 #if GPS_RTK_AVAILABLE
-    if (gps.highest_supported_status(0) > AP_GPS::GPS_OK_FIX_3D) {
+    if (gps.highest_supported_status(gps.primary_sensor()) > AP_GPS::GPS_OK_FIX_3D) {
         if (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_GPS_RTK_LEN) {
             gps.send_mavlink_gps_rtk(chan);
         }
@@ -955,14 +955,14 @@ bool GCS_MAVLINK::send_gps_raw(AP_GPS &gps)
 
 #if GPS_MAX_INSTANCES > 1
 
-    if (gps.num_sensors() > 1 && gps.status(1) > AP_GPS::NO_GPS) {
+    if (gps.num_sensors() > 1 && gps.status(gps.secondary_sensor()) > AP_GPS::NO_GPS) {
 
         if (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_GPS2_RAW_LEN) {
             gps.send_mavlink_gps2_raw(chan);
         }
 
 #if GPS_RTK_AVAILABLE
-        if (gps.highest_supported_status(1) > AP_GPS::GPS_OK_FIX_3D) {
+        if (gps.highest_supported_status(gps.secondary_sensor()) > AP_GPS::GPS_OK_FIX_3D) {
             if (comm_get_txspace(chan) >= 
                 MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_GPS2_RTK_LEN) {
                 gps.send_mavlink_gps2_rtk(chan);
