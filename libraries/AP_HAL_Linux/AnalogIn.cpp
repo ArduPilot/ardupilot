@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include <AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
@@ -18,14 +19,14 @@ extern const AP_HAL::HAL& hal;
 #define ANALOG_IN_COUNT 8
 
 const char* LinuxAnalogSource::analog_sources[ANALOG_IN_COUNT] = {
-			"in_voltage0_raw",
-			"in_voltage1_raw",
-			"in_voltage2_raw",
-			"in_voltage3_raw",
-			"in_voltage4_raw",
-			"in_voltage5_raw",
-			"in_voltage6_raw",			
-			"in_voltage7_raw",						
+    "in_voltage0_raw",
+    "in_voltage1_raw",
+    "in_voltage2_raw",
+    "in_voltage3_raw",
+    "in_voltage4_raw",
+    "in_voltage5_raw",
+    "in_voltage6_raw",            
+    "in_voltage7_raw",                        
 };
 
 LinuxAnalogSource::LinuxAnalogSource(int16_t pin, float initial_value) :
@@ -34,26 +35,27 @@ LinuxAnalogSource::LinuxAnalogSource(int16_t pin, float initial_value) :
     _sum_value(0),
     _sum_count(0)
 {
- 	char buf[100];
+    char buf[100];
 
     if (_pin < 0){
         return;
     }
-
-	if (_pin > ANALOG_IN_COUNT){
-		hal.scheduler->panic("Analog pin out of bounds\n");
-	}
-	// Construct the path by appending strings
-	sprintf(buf,ANALOG_IN_DIR);
-	sprintf(buf + strlen(buf), LinuxAnalogSource::analog_sources[_pin]);
-	
-	pin_fd = open(buf, O_RDONLY | O_NONBLOCK);
+    
+    if (_pin > ANALOG_IN_COUNT){
+        hal.scheduler->panic("Analog pin out of bounds\n");
+    }
+    // Construct the path by appending strings
+    sprintf(buf,ANALOG_IN_DIR);
+    sprintf(buf + strlen(buf), LinuxAnalogSource::analog_sources[_pin]);
+    
+    pin_fd = open(buf, O_RDONLY | O_NONBLOCK);
     if (pin_fd == -1) {
         hal.scheduler->panic("Unable to open ADC pin");
-    }	
+    }    
 }
 
-float LinuxAnalogSource::read_average() {    
+float LinuxAnalogSource::read_average() 
+{
     if (_sum_count == 0) {
         return _value;
     }
@@ -67,56 +69,59 @@ float LinuxAnalogSource::read_average() {
     return _value;
 }
 
-float LinuxAnalogSource::read_latest() {
-  	char buffer;
-  	char sbuf[10];
-  	int bytes, count = 0;
- 	char buf[100];    
+float LinuxAnalogSource::read_latest() 
+{
+    char buffer;
+    char sbuf[10];
+    int bytes, count = 0;
+    char buf[100];    
 
-  	if (pin_fd == 0){
-  		return 0;
-	}
+    if (pin_fd == 0){
+        return 0;
+    }
 
-	// Open the file every time (that's the way these files should be handled)
-	// Construct the path by appending strings
-	sprintf(buf,ANALOG_IN_DIR);
-	sprintf(buf + strlen(buf), LinuxAnalogSource::analog_sources[_pin]);
+    // Open the file every time (that's the way these files should be handled)
+    // Construct the path by appending strings
+    sprintf(buf,ANALOG_IN_DIR);
+    sprintf(buf + strlen(buf), LinuxAnalogSource::analog_sources[_pin]);
 
-	pin_fd = open(buf, O_RDONLY | O_NONBLOCK);
+    pin_fd = open(buf, O_RDONLY | O_NONBLOCK);
     if (pin_fd == -1) {
         hal.scheduler->panic("Unable to open ADC pin");
-    }	
+    }    
 
-  	do {
-    	bytes = read(pin_fd, &buffer, sizeof(char));
-    	// printf("buffer:%c\n", buffer);
-    	// printf("bytes: %d\n", bytes);
-    	sbuf[count++] = buffer;
-  	} while( bytes > 0); 
+    do {
+        bytes = read(pin_fd, &buffer, sizeof(char));
+        // printf("buffer:%c\n", buffer);
+        // printf("bytes: %d\n", bytes);
+        sbuf[count++] = buffer;
+    } while( bytes > 0); 
 
-  	// printf("string recorded: %s\n", sbuf);
-  	// printf("int obtained: %d\n", atoi(sbuf));
+    // printf("string recorded: %s\n", sbuf);
+    // printf("int obtained: %d\n", atoi(sbuf));
 
-	_latest = atoi(sbuf);  	
-	_sum_value += (float) atoi(sbuf);
-	_sum_count++;
+    _latest = atoi(sbuf);      
+    _sum_value += (float) atoi(sbuf);
+    _sum_count++;
 
-	// close the file
-  	if(pin_fd > 3 && close(pin_fd) < 0) {
-    	hal.scheduler->panic("Error closing fd");
-  	}
-  	//_pin = -1;
+    // close the file
+    if(pin_fd > 3 && close(pin_fd) < 0) {
+        hal.scheduler->panic("Error closing fd");
+    }
+    //_pin = -1;
     return _latest;
 }
 
 // output is a number ranging from 0 to 4096.
-float LinuxAnalogSource::voltage_average() {
+float LinuxAnalogSource::voltage_average() 
+{
     //return (5.0 * read_average()) / 4096.0;
     // Hack because voltage_latest is never called
     return (5.0 * read_latest()) / 4096.0;
 }
 
-float LinuxAnalogSource::voltage_latest() {
+float LinuxAnalogSource::voltage_latest() 
+{
     return (5.0 * read_latest()) / 4096.0;
 }
 
@@ -127,7 +132,7 @@ void LinuxAnalogSource::set_pin(uint8_t pin)
     }
 
     // if (pin > ANALOG_IN_COUNT - 1){
-    // 	return;
+    //     return;
     // }
 
     hal.scheduler->suspend_timer_procs();
