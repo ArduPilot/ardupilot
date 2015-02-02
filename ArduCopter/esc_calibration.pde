@@ -126,7 +126,7 @@ static void esc_calibration_auto()
     }
 
     // delay for 3 seconds
-    delay(3000);
+    delay(5000);
 
     // reduce throttle to minimum
     motors.throttle_pass_through(g.rc_3.radio_min);
