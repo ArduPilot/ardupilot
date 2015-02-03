@@ -112,6 +112,8 @@ int LinuxSPIUARTDriver::_write_fd(const uint8_t *buf, uint16_t size)
 
     _spi->transaction(buf, _buffer, size);
 
+    sem_give();
+
     BUF_ADVANCEHEAD(_writebuf, size);
 
     uint16_t ret = size;
@@ -128,7 +130,6 @@ int LinuxSPIUARTDriver::_write_fd(const uint8_t *buf, uint16_t size)
     space = BUF_SPACE(_readbuf);
 
     if (space == 0) {
-        sem_give();
         return ret;
     }
 
@@ -141,7 +142,6 @@ int LinuxSPIUARTDriver::_write_fd(const uint8_t *buf, uint16_t size)
         assert(_readbuf_tail+size <= _readbuf_size);
         memcpy(&_readbuf[_readbuf_tail], buffer, size);
         BUF_ADVANCETAIL(_readbuf, size);
-        sem_give();
         return ret;
     }
 
@@ -159,7 +159,6 @@ int LinuxSPIUARTDriver::_write_fd(const uint8_t *buf, uint16_t size)
         BUF_ADVANCETAIL(_readbuf, n);
     }
 
-    sem_give();
 
     return ret;
     
