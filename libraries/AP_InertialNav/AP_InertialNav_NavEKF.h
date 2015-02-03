@@ -39,6 +39,13 @@ public:
     nav_filter_status get_filter_status() const;
 
     /**
+     * get_origin - returns the inertial navigation origin in lat/lon/alt
+     *
+     * @return origin Location
+     */
+    struct Location get_origin() const;
+
+    /**
      * get_position - returns the current position relative to the home location in cm.
      *
      * the home location was set with AP_InertialNav::set_home_position(int32_t, int32_t)

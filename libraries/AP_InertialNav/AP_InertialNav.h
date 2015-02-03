@@ -79,6 +79,13 @@ public:
      */
     virtual nav_filter_status get_filter_status() const;
 
+    /**
+     * get_origin - returns the inertial navigation origin in lat/lon/alt
+     *
+     * @return origin Location
+     */
+    virtual struct Location get_origin() const { return _ahrs.get_home(); }
+
     //
     // XY Axis specific methods
     //
