@@ -71,3 +71,4 @@ static void stabilize_run()
     //将油门值转化为用于电机的控制信号pwm同时还要求进行角度补偿（这个在上面说过，这里就不重复）
     attitude_control.set_throttle_out(pilot_throttle_scaled, true);
 }
+ 
