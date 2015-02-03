@@ -51,6 +51,9 @@ nav_filter_status AP_InertialNav_NavEKF::get_filter_status() const
     return AP_InertialNav::get_filter_status();
 }
 
+/**
+ * get_origin - returns the inertial navigation origin in lat/lon/alt
+ */
 struct Location AP_InertialNav_NavEKF::get_origin() const {
     if (_ahrs.have_inertial_nav()) {
         struct Location ret;
