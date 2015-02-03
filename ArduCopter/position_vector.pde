@@ -38,7 +38,7 @@ Vector3f pv_location_to_vector_with_default(const Location& loc, const Vector3f&
 // pv_get_bearing_cd - return bearing in centi-degrees between two positions
 float pv_get_bearing_cd(const Vector3f &origin, const Vector3f &destination)
 {
-    float bearing = 9000 + fast_atan2(-(destination.x-origin.x), destination.y-origin.y) * DEGX100;
+    float bearing = fast_atan2(destination.y-origin.y, destination.x-origin.x) * DEGX100;
     if (bearing < 0) {
         bearing += 36000;
     }
