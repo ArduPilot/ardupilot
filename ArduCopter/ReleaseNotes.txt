@@ -1,10 +1,12 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
 ArduCopter 3.2.1-rc2 30-Jan-2015
-Changes from 3.2
+Changes from 3.2.1-rc1
 1) Bug Fixes:
     a) prevent infinite loop with linked jump commands
     b) Pixhawk memory corruption fix when connecting via USB
+    c) vehicle stops at fence altitude limit in Loier, AltHold, PosHold
+    d) protect against multiple arming messages from GCS causing silent gyro calibration failure    
 ------------------------------------------------------------------
 ArduCopter 3.2.1-rc1 08-Jan-2015
 Changes from 3.2
