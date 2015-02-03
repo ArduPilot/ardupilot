@@ -117,7 +117,8 @@ static void rtl_return_start()
     rally_point.alt = max(rally_point.alt, current_loc.alt);    // ensure we do not descend before reaching home
     Vector3f destination = pv_location_to_vector(rally_point);
 #else
-    Vector3f destination = Vector3f(0,0,get_RTL_alt());
+    Vector3f destination = pv_location_to_vector(ahrs.get_home());
+    destination.z = get_RTL_alt();
 #endif
 
     wp_nav.set_wp_destination(destination);
