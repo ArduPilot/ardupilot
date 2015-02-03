@@ -58,10 +58,10 @@ static float get_pilot_desired_yaw_rate(int16_t stick_angle)
 // should be called at 100hz
 static float get_roi_yaw()
 {
-    static uint8_t roi_yaw_counter = 0;     // used to reduce update rate to 10hz
+    static uint8_t roi_yaw_counter = 0;     // used to reduce update rate to 100hz
 
     roi_yaw_counter++;
-    if (roi_yaw_counter >= 10) {
+    if (roi_yaw_counter >= 4) {
         roi_yaw_counter = 0;
         yaw_look_at_WP_bearing = pv_get_bearing_cd(inertial_nav.get_position(), roi_WP);
     }
