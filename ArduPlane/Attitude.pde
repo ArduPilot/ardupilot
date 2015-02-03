@@ -825,7 +825,10 @@ static void set_servos(void)
                                                       min_throttle,
                                                       max_throttle);
 
-        if (suppress_throttle()) {
+        if (!ahrs.get_armed()) {
+            channel_throttle->servo_out = 0;
+            channel_throttle->calc_pwm();                
+        } else if (suppress_throttle()) {
             // throttle is suppressed in auto mode
             channel_throttle->servo_out = 0;
             if (g.throttle_suppress_manual) {
