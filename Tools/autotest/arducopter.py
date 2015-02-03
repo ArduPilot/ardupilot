@@ -27,13 +27,6 @@ def hover(mavproxy, mav, hover_throttle=1450):
     mavproxy.send('rc 3 %u\n' % hover_throttle)
     return True
 
-def calibrate_level(mavproxy, mav):
-    '''init the accelerometers'''
-    print("Initialising accelerometers")
-    mav.calibrate_level()
-    mavproxy.expect(['APM: action received', 'COMMAND_ACK'])
-    return True
-
 def arm_motors(mavproxy, mav):
     '''arm motors'''
     print("Arming motors")
@@ -953,12 +946,6 @@ def fly_ArduCopter(viewerip=None, map=False):
         setup_rc(mavproxy)
         homeloc = mav.location()
 
-        print("# Calibrate level")
-        if not calibrate_level(mavproxy, mav):
-            failed_test_msg = "calibrate_level failed"
-            print(failed_test_msg)
-            failed = True
-
         # Arm
         print("# Arm motors")
         if not arm_motors(mavproxy, mav):
@@ -1323,12 +1310,6 @@ def fly_CopterAVC(viewerip=None, map=False):
         mav.wait_heartbeat()
         setup_rc(mavproxy)
         homeloc = mav.location()
-
-        print("# Calibrate level")
-        if not calibrate_level(mavproxy, mav):
-            failed_test_msg = "calibrate_level failed"
-            print(failed_test_msg)
-            failed = True
 
         # Arm
         print("# Arm motors")
