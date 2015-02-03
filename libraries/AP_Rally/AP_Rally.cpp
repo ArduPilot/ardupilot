@@ -27,16 +27,16 @@ StorageAccess AP_Rally::_storage(StorageManager::StorageRally);
 
 const AP_Param::GroupInfo AP_Rally::var_info[] PROGMEM = {
     // @Param: TOTAL
-    // @DisplayName: Rally Total
-    // @Description: Number of rally points currently loaded
-    // @User: Advanced
+    // @DisplayName: 集结点总数
+    // @Description: 当前加载的所有集结点的数目
+    // @User: 高级
     AP_GROUPINFO("TOTAL", 0, AP_Rally, _rally_point_total_count, 0),
 
     // @Param: LIMIT_KM
-    // @DisplayName: Rally Limit
-    // @Description: Maximum distance to rally point. If the closest rally point is more than this number of kilometers from the current position and the home location is closer than any of the rally points from the current position then do RTL to home rather than to the closest rally point. This prevents a leftover rally point from a different airfield being used accidentally. If this is set to 0 then the closest rally point is always used.
-    // @User: Advanced
-    // @Units: kilometers
+    // @DisplayName: 集结点限制
+    // @Description: 到集结点的最大距离。如果最近的集结点比这个公里数远并且家比从当前位置到任何集结点的距离都近，那么就返回家而不是最近的集结点。这可以防止另一个飞行场地的残余集结点被意外使用。如果设为0，那么最近的集结点将一直被使用。
+    // @User: 高级
+    // @Units: 公里
     // @Increment: 0.1
     AP_GROUPINFO("LIMIT_KM", 1, AP_Rally, _rally_limit_km, RALLY_LIMIT_KM_DEFAULT),
 
