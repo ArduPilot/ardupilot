@@ -577,7 +577,7 @@ test_pressure(uint8_t argc, const Menu::arg *argv)
 
     while(1) {
         hal.scheduler->delay(100);
-        barometer.read();
+        barometer.update();
 
         if (!barometer.healthy()) {
             cliSerial->println_P(PSTR("not healthy"));

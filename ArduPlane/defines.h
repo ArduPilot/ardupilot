@@ -104,26 +104,25 @@ typedef enum GeofenceEnableReason {
 #define RELAY_TOGGLE 5
 #define STOP_REPEAT 10
 
-// Ch5, Ch6 and Ch7 aux switch control
-#define AUX_SWITCH_PWM_TRIGGER_HIGH 1800   // pwm value above which the ch5, ch6 or ch7 option will be invoked
-#define AUX_SWITCH_PWM_TRIGGER_LOW  1200   // pwm value below which the ch5, ch6 or ch7 option will be disabled
-
-#define AUX_SWITCH_DO_NOTHING       0       // aux switch disabled
-#define AUX_SWITCH_CAMERA_TRIGGER   9       // trigger camera servo or relay
-#define AUX_SWITCH_PARACHUTE_ENABLE 21      // Parachute enable/disable
-#define AUX_SWITCH_PARACHUTE_RELEASE 22     // Parachute release
-#define AUX_SWITCH_PARACHUTE_3POS   23      // Parachute disable, enable, release with 3 position switch
-#define AUX_SWITCH_RETRACT_MOUNT    27      // Retract Mount
-#define AUX_SWITCH_RELAY_1          28      // Relay_1 pin on/off
-#define AUX_SWITCH_RELAY_2          29      // Relay_2 pin on/off
-#define AUX_SWITCH_RELAY_3          30      // Relay_3 pin on/off
-#define AUX_SWITCH_RELAY_4          31      // Relay_4 pin on/off
-
-// values used by the ap.ch5_opt, ap.ch6_opt and ap.ch7_opt flags
-#define AUX_SWITCH_LOW              0       // indicates auxiliar switch is in the low position (pwm <1200)
-#define AUX_SWITCH_MIDDLE           1       // indicates auxiliar switch is in the middle position (pwm >1200, <1800)
-#define AUX_SWITCH_HIGH             2       // indicates auxiliar switch is in the high position (pwm >1800)
-
+// Ch5, Ch6 and Ch7 aux switch control 
+#define AUX_SWITCH_PWM_TRIGGER_HIGH 1800   // pwm value above which the ch5, ch6 or ch7 option will be invoked 
+#define AUX_SWITCH_PWM_TRIGGER_LOW  1200   // pwm value below which the ch5, ch6 or ch7 option will be disabled 
+ 
+#define AUX_SWITCH_DO_NOTHING       0       // aux switch disabled 
+#define AUX_SWITCH_CAMERA_TRIGGER   9       // trigger camera servo or relay 
+#define AUX_SWITCH_PARACHUTE_ENABLE 21      // Parachute enable/disable 
+#define AUX_SWITCH_PARACHUTE_RELEASE 22     // Parachute release 
+#define AUX_SWITCH_PARACHUTE_3POS   23      // Parachute disable, enable, release with 3 position switch 
+#define AUX_SWITCH_RETRACT_MOUNT    27      // Retract Mount 
+#define AUX_SWITCH_RELAY_1          28      // Relay_1 pin on/off 
+#define AUX_SWITCH_RELAY_2          29      // Relay_2 pin on/off 
+#define AUX_SWITCH_RELAY_3          30      // Relay_3 pin on/off 
+#define AUX_SWITCH_RELAY_4          31      // Relay_4 pin on/off 
+ 
+// values used by the ap.ch5_opt, ap.ch6_opt and ap.ch7_opt flags 
+#define AUX_SWITCH_LOW              0       // indicates auxiliar switch is in the low position (pwm <1200) 
+#define AUX_SWITCH_MIDDLE           1       // indicates auxiliar switch is in the middle position (pwm >1200, <1800) 
+#define AUX_SWITCH_HIGH             2       // indicates auxiliar switch is in the high position (pwm >1800) 
 
 // Logging message types. NOTE: If you change the value of one
 // of these then existing logs will break! Only add at the end, and 
@@ -133,21 +132,24 @@ enum log_messages {
     LOG_NTUN_MSG,
     LOG_PERFORMANCE_MSG,
     LOG_CMD_MSG_DEPRECATED,     // deprecated
-    LOG_CURRENT_MSG,
+    LOG_CURRENT_MSG_DEPRECATED,
     LOG_STARTUP_MSG,
     TYPE_AIRSTART_MSG,
     TYPE_GROUNDSTART_MSG,
     LOG_CAMERA_MSG_DEPRECATED,
-    LOG_ATTITUDE_MSG,
-    LOG_MODE_MSG,
-    LOG_COMPASS_MSG,
+    LOG_ATTITUDE_MSG_DEPRECATED,
+    LOG_MODE_MSG_DEPRECATED,
+    LOG_COMPASS_MSG_DEPRECATED,
     LOG_TECS_MSG,
     LOG_RC_MSG,
     LOG_SONAR_MSG,
-    LOG_COMPASS2_MSG,
+    LOG_COMPASS2_MSG_DEPRECATED,
     LOG_ARM_DISARM_MSG,
-    LOG_AIRSPEED_MSG,
-    LOG_COMPASS3_MSG
+    LOG_AIRSPEED_MSG_DEPRECATED, // deprecated
+    LOG_COMPASS3_MSG_DEPRECATED
+#if OPTFLOW == ENABLED
+    ,LOG_OPTFLOW_MSG
+#endif
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
@@ -216,12 +218,6 @@ enum {
 enum {
     ATT_CONTROL_PID = 0,
     ATT_CONTROL_APMCONTROL = 1
-};
-
-enum Serial2Protocol {
-    SERIAL2_MAVLINK     = 1,
-    SERIAL2_FRSKY_DPORT = 2,
-    SERIAL2_FRSKY_SPORT = 3 // not supported yet
 };
 
 #endif // _DEFINES_H

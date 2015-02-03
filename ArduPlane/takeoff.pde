@@ -115,7 +115,7 @@ static void takeoff_calc_pitch(void)
         return;
     }
 
-    if (airspeed.use()) {
+    if (ahrs.airspeed_sensor_enabled()) {
         calc_nav_pitch();
         if (nav_pitch_cd < auto_state.takeoff_pitch_cd) {
             nav_pitch_cd = auto_state.takeoff_pitch_cd;

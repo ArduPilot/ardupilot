@@ -193,6 +193,8 @@ static bool setup_failsafe_mixing(void)
     const char *mixer_filename = "/fs/microsd/APM/MIXER.MIX";
     const char *custom_mixer_filename = "/fs/microsd/APM/CUSTOM.MIX";
     bool ret = false;
+    char *buf = NULL;
+    const uint16_t buf_size = 2048;
 
     if (!create_mixer_file(mixer_filename)) {
         return false;
@@ -215,8 +217,11 @@ static bool setup_failsafe_mixing(void)
         return false;
     }
 
-    char buf[2048];
-    if (load_mixer_file(filename, &buf[0], sizeof(buf)) != 0) {
+    buf = (char *)malloc(buf_size);
+    if (buf == NULL) {
+        goto failed;
+    }
+    if (load_mixer_file(filename, &buf[0], buf_size) != 0) {
         hal.console->printf("Unable to load %s\n", filename);
         goto failed;
     }
@@ -303,6 +308,9 @@ static bool setup_failsafe_mixing(void)
     ret = true;
 
 failed:
+    if (buf != NULL) {
+        free(buf);
+    }
     if (px4io_fd != -1) {
         close(px4io_fd);
     }
