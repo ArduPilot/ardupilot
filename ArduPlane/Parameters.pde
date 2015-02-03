@@ -231,14 +231,14 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: LAND_PITCH_CD
     // @DisplayName: Landing Pitch
-    // @Description: Used in autoland for planes without airspeed sensors in hundredths of a degree
+    // @Description: Used in autoland to give the minimum pitch in the final stage of landing (after the flare). This parameter can be used to ensure that the final landing attitude is appropriate for the type of undercarriage on the aircraft. Note that it is a minimum pitch only - the landing code will control pitch above this value to try to achieve the configured landing sink rate.
     // @Units: centi-Degrees
     // @User: Advanced
     ASCALAR(land_pitch_cd,          "LAND_PITCH_CD",  0),
 
     // @Param: LAND_FLARE_ALT
     // @DisplayName: Landing flare altitude
-    // @Description: Altitude in autoland at which to lock heading and flare to the LAND_PITCH_CD pitch
+    // @Description: Altitude in autoland at which to lock heading and flare to the LAND_PITCH_CD pitch. Note that this option is secondary to LAND_FLARE_SEC. For a good landing it preferable that the flare is triggered by LAND_FLARE_SEC. 
     // @Units: meters
     // @Increment: 0.1
     // @User: Advanced
@@ -246,7 +246,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: LAND_FLARE_SEC
     // @DisplayName: Landing flare time
-    // @Description: Time before landing point at which to lock heading and flare to the LAND_PITCH_CD pitch
+    // @Description: Vertical time before landing point at which to lock heading and flare with the motor stopped. This is vertical time, and is calculated based solely on the current height above the ground and the current descent rate.
     // @Units: seconds
     // @Increment: 0.1
     // @User: Advanced
