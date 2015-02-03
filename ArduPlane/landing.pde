@@ -131,12 +131,22 @@ static void setup_landing_glide_slope(void)
         // the height we aim for is the one to give us the right flare point
         float aim_height = g.land_flare_sec * sink_rate;
 
+        // don't allow the aim height to be too far above LAND_FLARE_ALT
+        if (g.land_flare_alt > 0 && aim_height > g.land_flare_alt*2) {
+            aim_height = g.land_flare_alt*2;
+        }
+
         // time before landing that we will flare
         float flare_time = aim_height / SpdHgt_Controller->get_land_sinkrate();
 
         // distance to flare is based on ground speed, adjusted as we
         // get closer. This takes into account the wind
         float flare_distance = groundspeed * flare_time;
+        
+        // don't allow the flare before half way along the final leg
+        if (flare_distance > total_distance/2) {
+            flare_distance = total_distance/2;
+        }
 
         // now calculate our aim point, which is before the landing
         // point and above it
