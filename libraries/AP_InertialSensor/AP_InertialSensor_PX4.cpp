@@ -72,12 +72,15 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
     _default_filter_hz = _default_filter();
     _set_filter_frequency(_imu.get_filter());
 
+#if  CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+    _product_id = AP_PRODUCT_ID_VRBRAIN;
+#else
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
     _product_id = AP_PRODUCT_ID_PX4_V2;
 #else
     _product_id = AP_PRODUCT_ID_PX4;
 #endif
-
+#endif
     return true;
 }
 
@@ -139,6 +142,7 @@ void AP_InertialSensor_PX4::_get_sample(void)
                accel_report.timestamp != _last_accel_timestamp[i]) {        
             _accel_in[i] = Vector3f(accel_report.x, accel_report.y, accel_report.z);
             _last_accel_timestamp[i] = accel_report.timestamp;
+            _set_accel_error_count(_accel_instance[i], accel_report.error_count);
         }
     }
     for (uint8_t i=0; i<_num_gyro_instances; i++) {
@@ -148,6 +152,7 @@ void AP_InertialSensor_PX4::_get_sample(void)
                gyro_report.timestamp != _last_gyro_timestamp[i]) {        
             _gyro_in[i] = Vector3f(gyro_report.x, gyro_report.y, gyro_report.z);
             _last_gyro_timestamp[i] = gyro_report.timestamp;
+            _set_gyro_error_count(_gyro_instance[i], gyro_report.error_count);
         }
     }
     _last_get_sample_timestamp = hal.scheduler->micros64();

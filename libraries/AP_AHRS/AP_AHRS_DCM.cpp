@@ -526,6 +526,20 @@ AP_AHRS_DCM::drift_correction(float deltat)
         }
     }
 
+    //update _accel_ef_blended
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+    if (_ins.get_accel_count() == 2 && _ins.get_accel_health(0) && _ins.get_accel_health(1)) {
+        float imu1_weight_target = _active_accel_instance == 0 ? 1.0f : 0.0f;
+        // slew _imu1_weight over one second
+        _imu1_weight += constrain_float(imu1_weight_target-_imu1_weight, -deltat, deltat);
+        _accel_ef_blended = _accel_ef[0] * _imu1_weight + _accel_ef[1] * (1.0f - _imu1_weight);
+    } else {
+        _accel_ef_blended = _accel_ef[_ins.get_primary_accel()];
+    }
+#else
+    _accel_ef_blended = _accel_ef[_ins.get_primary_accel()];
+#endif // HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+
     // keep a sum of the deltat values, so we know how much time
     // we have integrated over
     _ra_deltat += deltat;
@@ -545,7 +559,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
             return;
         }
         float airspeed;
-        if (_airspeed && _airspeed->use()) {
+        if (airspeed_sensor_enabled()) {
             airspeed = _airspeed->get_airspeed();
         } else {
             airspeed = _last_airspeed;
@@ -836,7 +850,7 @@ void AP_AHRS_DCM::estimate_wind(void)
         }
 
         _last_wind_time = now;
-    } else if (now - _last_wind_time > 2000 && _airspeed && _airspeed->use()) {
+    } else if (now - _last_wind_time > 2000 && airspeed_sensor_enabled()) {
         // when flying straight use airspeed to get wind estimate if available
         Vector3f airspeed = _dcm_matrix.colx() * _airspeed->get_airspeed();
         Vector3f wind = velocity - (airspeed * get_EAS2TAS());
@@ -909,7 +923,7 @@ bool AP_AHRS_DCM::get_position(struct Location &loc) const
 bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret) const
 {
 	bool ret = false;
-	if (_airspeed && _airspeed->use()) {
+	if (airspeed_sensor_enabled()) {
 		*airspeed_ret = _airspeed->get_airspeed();
 		return true;
 	}
@@ -946,7 +960,7 @@ void AP_AHRS_DCM::set_home(const Location &loc)
 /*
   check if the AHRS subsystem is healthy
 */
-bool AP_AHRS_DCM::healthy(void)
+bool AP_AHRS_DCM::healthy(void) const
 {
     // consider ourselves healthy if there have been no failures for 5 seconds
     return (_last_failure_ms == 0 || hal.scheduler->millis() - _last_failure_ms > 5000);

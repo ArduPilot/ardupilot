@@ -40,6 +40,8 @@
 #include <StorageManager.h>
 #include <AP_Terrain.h>
 #include <memcheck.h>
+#include <AP_Nav_Common.h>
+#include <AP_BattMonitor.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
 const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;

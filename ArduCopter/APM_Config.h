@@ -33,14 +33,15 @@
 //#define EPM_ENABLED           ENABLED             // enable epm cargo gripper costs 500bytes of flash
 //#define CLI_ENABLED           ENABLED             // enable the CLI (command-line-interface) at a cost of 21K of flash space
 //#define NAV_GUIDED            ENABLED             // enable external navigation computer to control vehicle through MAV_CMD_NAV_GUIDED mission commands
-//#define OPTFLOW               ENABLED             // enable optical flow sensor and OF_LOITER flight mode at a cost of 5K of flash space
+//#define OPTFLOW               ENABLED             // enable optical flow sensor at a cost of 5K of flash space
+//#define FRSKY_TELEM_ENABLED   ENABLED             // enable FRSky telemetry
 
 // features below are disabled by default on all boards
 //#define SPRAYER               ENABLED             // enable the crop sprayer feature (two ESC controlled pumps the speed of which depends upon the vehicle's horizontal velocity)
 
 // other settings
 //#define THROTTLE_IN_DEADBAND   100                // redefine size of throttle deadband in pwm (0 ~ 1000)
-//#define LAND_REQUIRE_MIN_THROTTLE_TO_DISARM   DISABLED    // when set to DISABLED vehicle will disarm after landing (in LAND mode or RTL) even if pilot has not put throttle to zero
+//#define LAND_REQUIRE_MIN_THROTTLE_TO_DISARM   ENABLED    // when set to ENABLED vehicle will only disarm after landing (in AUTO, LAND or RTL) if pilot has put throttle to zero
 
 //#define HIL_MODE              HIL_MODE_SENSORS    // build for hardware-in-the-loop simulation
 

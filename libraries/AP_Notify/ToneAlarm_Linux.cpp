@@ -36,7 +36,7 @@ extern const AP_HAL::HAL& hal;
 bool ToneAlarm_Linux::init()
 {
     // open the tone alarm device
-    err = hal.util->toneAlarm_init();
+    err = !hal.util->toneAlarm_init();
     if (err) {
         hal.console->printf("AP_Notify: Failed to initialise ToneAlarm");
         return false;
@@ -66,11 +66,8 @@ void ToneAlarm_Linux::update()
     }
 
     // check for arming failure
-    if(flags.arming_failed != AP_Notify::flags.arming_failed) {
-        flags.arming_failed = AP_Notify::flags.arming_failed;
-        if(flags.arming_failed) {
-            play_tune(TONE_ARMING_FAILURE_TUNE);
-        }
+    if (AP_Notify::events.arming_failed) {
+        play_tune(TONE_ARMING_FAILURE_TUNE);
     }
 
     // check if arming status has changed

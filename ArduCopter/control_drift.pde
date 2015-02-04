@@ -5,7 +5,10 @@
  */
 
 #ifndef DRIFT_SPEEDGAIN
- # define DRIFT_SPEEDGAIN 14.0f
+ # define DRIFT_SPEEDGAIN 8.0f
+#endif
+#ifndef DRIFT_SPEEDLIMIT
+ # define DRIFT_SPEEDLIMIT 560.0f
 #endif
 
 #ifndef DRIFT_THR_ASSIST_GAIN
@@ -26,7 +29,7 @@
 // drift_init - initialise drift controller
 static bool drift_init(bool ignore_checks)
 {
-    if (GPS_ok() || ignore_checks) {
+    if (position_ok() || ignore_checks) {
         return true;
     }else{
         return false;
@@ -38,12 +41,13 @@ static bool drift_init(bool ignore_checks)
 static void drift_run()
 {
     static float breaker = 0.0;
+    static float roll_input = 0.0;
     int16_t target_roll, target_pitch;
     float target_yaw_rate;
     int16_t pilot_throttle_scaled;
 
     // if not armed or landed and throttle at zero, set throttle to zero and exit immediately
-    if(!motors.armed() || (ap.land_complete && g.rc_3.control_in <= 0)) {
+    if(!motors.armed() || (ap.land_complete && ap.throttle_zero)) {
         attitude_control.relax_bf_rate_controller();
         attitude_control.set_yaw_target_to_current_heading();
         attitude_control.set_throttle_out(0, false);
@@ -63,16 +67,21 @@ static void drift_run()
     float roll_vel =  vel.y * ahrs.cos_yaw() - vel.x * ahrs.sin_yaw(); // body roll vel
     float pitch_vel = vel.y * ahrs.sin_yaw() + vel.x * ahrs.cos_yaw(); // body pitch vel
 
-    float pitch_vel2 = min(fabs(pitch_vel), 800);
+    // gain sceduling for Yaw
+    float pitch_vel2 = min(fabs(pitch_vel), 2000);
+    target_yaw_rate = ((float)target_roll/1.0f) * (1.0f - (pitch_vel2 / 5000.0f)) * g.acro_yaw_p;
 
-    // simple gain scheduling for yaw input
-    target_yaw_rate = (float)(target_roll/2.0f) * (1.0f - (pitch_vel2 / 2400.0f)) * g.acro_yaw_p;
+    roll_vel = constrain_float(roll_vel, -DRIFT_SPEEDLIMIT, DRIFT_SPEEDLIMIT);
+    pitch_vel = constrain_float(pitch_vel, -DRIFT_SPEEDLIMIT, DRIFT_SPEEDLIMIT);
+    
+    roll_input = roll_input * .96 + (float)g.rc_4.control_in * .04;
 
-    roll_vel = constrain_float(roll_vel, -322, 322);
-    pitch_vel = constrain_float(pitch_vel, -322, 322);
+    //convert user input into desired roll velocity
+    float roll_vel_error = roll_vel - (roll_input / DRIFT_SPEEDGAIN);
 
-    // always limit roll
-    target_roll = roll_vel * -DRIFT_SPEEDGAIN;
+    // Roll velocity is feed into roll acceleration to minimize slip
+    target_roll = roll_vel_error * -DRIFT_SPEEDGAIN;
+    target_roll = constrain_int16(target_roll, -4500, 4500);
 
     // If we let go of sticks, bring us to a stop
     if(target_pitch == 0){

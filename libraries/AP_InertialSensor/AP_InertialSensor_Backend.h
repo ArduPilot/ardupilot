@@ -67,6 +67,12 @@ protected:
     // rotate accel vector, scale and offset
     void _rotate_and_offset_accel(uint8_t instance, const Vector3f &accel);
 
+    // set accelerometer error_count
+    void _set_accel_error_count(uint8_t instance, uint32_t error_count);
+
+    // set gyro error_count
+    void _set_gyro_error_count(uint8_t instance, uint32_t error_count);
+
     // backend should fill in its product ID from AP_PRODUCT_ID_*
     int16_t _product_id;
 

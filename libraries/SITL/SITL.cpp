@@ -28,10 +28,10 @@ extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
 const AP_Param::GroupInfo SITL::var_info[] PROGMEM = {
-    AP_GROUPINFO("BARO_RND",   0, SITL,  baro_noise,  3),
-    AP_GROUPINFO("GYR_RND",    1, SITL,  gyro_noise, 30),
-    AP_GROUPINFO("ACC_RND",    2, SITL,  accel_noise, 3),
-    AP_GROUPINFO("MAG_RND",    3, SITL,  mag_noise,  10),
+    AP_GROUPINFO("BARO_RND",   0, SITL,  baro_noise,  1),
+    AP_GROUPINFO("GYR_RND",    1, SITL,  gyro_noise,  5),
+    AP_GROUPINFO("ACC_RND",    2, SITL,  accel_noise, 2),
+    AP_GROUPINFO("MAG_RND",    3, SITL,  mag_noise,   5),
     AP_GROUPINFO("GPS_DISABLE",4, SITL,  gps_disable, 0),
     AP_GROUPINFO("DRIFT_SPEED",5, SITL,  drift_speed, 0.2),
     AP_GROUPINFO("DRIFT_TIME", 6, SITL,  drift_time,  5),
@@ -61,6 +61,10 @@ const AP_Param::GroupInfo SITL::var_info[] PROGMEM = {
     AP_GROUPINFO("ACC_BIAS",      30, SITL,  accel_bias, 0),
     AP_GROUPINFO("BARO_GLITCH",   31, SITL,  baro_glitch, 0),
     AP_GROUPINFO("SONAR_SCALE",   32, SITL,  sonar_scale, 12.1212f),
+    AP_GROUPINFO("FLOW_ENABLE",   33, SITL,  flow_enable, 0),
+    AP_GROUPINFO("TERRAIN",       34, SITL,  terrain_enable, 1),
+    AP_GROUPINFO("FLOW_RATE",     35, SITL,  flow_rate, 10),
+    AP_GROUPINFO("FLOW_DELAY",    36, SITL,  flow_delay, 0),
     AP_GROUPEND
 };
 
@@ -126,7 +130,10 @@ void SITL::Log_Write_SIMSTATE(DataFlash_Class &DataFlash)
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-// convert a set of roll rates from earth frame to body frame
+/*
+ convert a set of roll rates from earth frame to body frame
+ output values are in radians/second
+*/
 void SITL::convert_body_frame(double rollDeg, double pitchDeg,
                               double rollRate, double pitchRate, double yawRate,
                               double *p, double *q, double *r)

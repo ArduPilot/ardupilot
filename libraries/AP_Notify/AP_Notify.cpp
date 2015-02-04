@@ -17,7 +17,8 @@
 #include <AP_Notify.h>
 
 // static flags, to allow for direct class update from device drivers
-struct AP_Notify::notify_type AP_Notify::flags;
+struct AP_Notify::notify_flags_type AP_Notify::flags;
+struct AP_Notify::notify_events_type AP_Notify::events;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     AP_BoardLED boardled;
@@ -31,7 +32,11 @@ struct AP_Notify::notify_type AP_Notify::flags;
     NotifyDevice *AP_Notify::_devices[CONFIG_NOTIFY_DEVICES_COUNT] = {&boardled, &externalled, &buzzer};
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     Buzzer buzzer;
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_VRBRAIN_V45
     AP_BoardLED boardled;
+#else
+    VRBoard_LED boardled;
+#endif
     ToshibaLED_I2C toshibaled;
     ExternalLED externalled;
     NotifyDevice *AP_Notify::_devices[CONFIG_NOTIFY_DEVICES_COUNT] = {&boardled, &toshibaled, &externalled, &buzzer};
@@ -55,6 +60,10 @@ struct AP_Notify::notify_type AP_Notify::flags;
 // initialisation
 void AP_Notify::init(bool enable_external_leds)
 {
+    // clear all flags and events
+    memset(&AP_Notify::flags, 0, sizeof(AP_Notify::flags));
+    memset(&AP_Notify::events, 0, sizeof(AP_Notify::events));
+
     AP_Notify::flags.external_leds = enable_external_leds;
 
     for (int i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
@@ -68,4 +77,7 @@ void AP_Notify::update(void)
     for (int i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
         _devices[i]->update();
     }
+
+    //reset the events
+    memset(&AP_Notify::events, 0, sizeof(AP_Notify::events));
 }

@@ -209,7 +209,7 @@ void SITLScheduler::system_initialized() {
         panic(
             PSTR("PANIC: scheduler system initialized called more than once"));
     }
-    if (_sitlState->_sitl->float_exception) {
+    if (_sitlState->_sitl == NULL || _sitlState->_sitl->float_exception) {
         feenableexcept(FE_INVALID | FE_OVERFLOW | FE_DIVBYZERO);
     } else {
         feclearexcept(FE_INVALID | FE_OVERFLOW | FE_DIVBYZERO);

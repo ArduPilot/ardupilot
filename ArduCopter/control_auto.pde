@@ -20,7 +20,7 @@
 // auto_init - initialise auto controller
 static bool auto_init(bool ignore_checks)
 {
-    if ((GPS_ok() && inertial_nav.position_ok() && mission.num_commands() > 1) || ignore_checks) {
+    if ((position_ok() && mission.num_commands() > 1) || ignore_checks) {
         auto_mode = Auto_Loiter;
 
         // stop ROI from carrying over from previous runs of the mission
@@ -321,11 +321,15 @@ static void auto_land_run()
     wp_nav.set_pilot_desired_acceleration(roll_control, pitch_control);
 
     // run loiter controller
-    wp_nav.update_loiter();
+    wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
     // call z-axis position controller
-    pos_control.set_alt_target_from_climb_rate(get_throttle_land(), G_Dt, true);
+    float cmb_rate = get_land_descent_speed();
+    pos_control.set_alt_target_from_climb_rate(cmb_rate, G_Dt, true);
     pos_control.update_z_controller();
+
+    // record desired climb rate for logging
+    desired_climb_rate = cmb_rate;
 
     // roll & pitch from waypoint controller, yaw rate from pilot
     attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
@@ -426,7 +430,7 @@ void auto_nav_guided_run()
 bool auto_loiter_start()
 {
     // return failure if GPS is bad
-    if (!GPS_ok()) {
+    if (!position_ok()) {
         return false;
     }
     auto_mode = Auto_Loiter;
@@ -586,12 +590,12 @@ static void set_auto_yaw_roi(const Location &roi_location)
     }else{
 #if MOUNT == ENABLED
         // check if mount type requires us to rotate the quad
-        if(camera_mount.get_mount_type() != AP_Mount::k_pan_tilt && camera_mount.get_mount_type() != AP_Mount::k_pan_tilt_roll) {
+        if(!camera_mount.has_pan_control()) {
             roi_WP = pv_location_to_vector(roi_location);
             set_auto_yaw_mode(AUTO_YAW_ROI);
         }
         // send the command to the camera mount
-        camera_mount.set_roi_cmd(&roi_location);
+        camera_mount.set_roi_target(roi_location);
 
         // TO-DO: expand handling of the do_nav_roi to support all modes of the MAVLink.  Currently we only handle mode 4 (see below)
         //      0: do nothing

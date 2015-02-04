@@ -161,7 +161,7 @@ class Matrix3:
 
 
     def to_euler(self):
-        '''find Euler angles for the matrix'''
+        '''find Euler angles (321 convention) for the matrix'''
         if self.c.x >= 1.0:
             pitch = pi
         elif self.c.x <= -1.0:
@@ -171,6 +171,40 @@ class Matrix3:
         roll = atan2(self.c.y, self.c.z)
         yaw  = atan2(self.b.x, self.a.x)
         return (roll, pitch, yaw)
+
+
+    def to_euler312(self):
+        '''find Euler angles (312 convention) for the matrix.
+        See http://www.atacolorado.com/eulersequences.doc
+        '''
+        T21 = self.a.y
+        T22 = self.b.y
+        T23 = self.c.y
+        T13 = self.c.x
+        T33 = self.c.z
+        yaw = atan2(-T21, T22)
+        roll = asin(T23)
+        pitch = atan2(-T13, T33)
+        return (roll, pitch, yaw)
+
+    def from_euler312(self, roll, pitch, yaw):
+        '''fill the matrix from Euler angles in radians in 312 convention'''
+        c3 = cos(pitch)
+	s3 = sin(pitch)
+	s2 = sin(roll)
+	c2 = cos(roll)
+	s1 = sin(yaw)
+	c1 = cos(yaw)
+
+        self.a.x = c1 * c3 - s1 * s2 * s3
+        self.b.y = c1 * c2
+        self.c.z = c3 * c2
+        self.a.y = -c2*s1
+        self.a.z = s3*c1 + c3*s2*s1
+        self.b.x = c3*s1 + s3*s2*c1
+        self.b.z = s1*s3 - s2*c1*c3
+        self.c.x = -s3*c2
+        self.c.y = s2
 
     def __add__(self, m):
         return Matrix3(self.a + m.a, self.b + m.b, self.c + m.c)
@@ -262,7 +296,45 @@ def test_euler():
                 if diff.length() > 1.0e-12:
                     print('EULER ERROR:', v1, v2, diff.length())
 
+def test_euler312_single(r,p,y):
+    '''check that from_euler312() and to_euler312() are consistent for one set of values'''
+    from math import degrees, radians
+    m = Matrix3()
+    m.from_euler312(radians(r), radians(p), radians(y))
+    (r2, p2, y2) = m.to_euler312()
+    v1 = Vector3(r,p,y)
+    v2 = Vector3(degrees(r2),degrees(p2),degrees(y2))
+    diff = v1 - v2
+    if diff.length() > 1.0e-12:
+        print('EULER ERROR:', v1, v2, diff.length())
+
+def test_one_axis(r,p,y):
+    '''check that from_euler312() and from_euler() are consistent for one set of values on one axis'''
+    from math import degrees, radians
+    m = Matrix3()
+    m.from_euler312(radians(r), radians(p), radians(y))
+    (r2, p2, y2) = m.to_euler()
+    v1 = Vector3(r,p,y)
+    v2 = Vector3(degrees(r2),degrees(p2),degrees(y2))
+    diff = v1 - v2
+    if diff.length() > 1.0e-12:
+        print('EULER ERROR:', v1, v2, diff.length())
+
+def test_euler312():
+    '''check that from_euler312() and to_euler312() are consistent'''
+    m = Matrix3()
+
+    for x in range(-89, 89, 3):
+        test_one_axis(x, 0, 0)
+        test_one_axis(0, x, 0)
+        test_one_axis(0, 0, x)
+    for r in range(-89, 89, 3):
+        for p in range(-179, 179, 3):
+            for y in range(-179, 179, 3):
+                test_euler312_single(r,p,y)
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
     test_euler()
+    test_euler312()

@@ -7,10 +7,8 @@ static int8_t   setup_radio                             (uint8_t argc, const Men
 static int8_t   setup_show                              (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_factory                   (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_level                             (uint8_t argc, const Menu::arg *argv);
-#if !defined( __AVR_ATmega1280__ )
 static int8_t   setup_accel_scale                       (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_set                               (uint8_t argc, const Menu::arg *argv);
-#endif
 static int8_t   setup_erase                             (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_compass                   (uint8_t argc, const Menu::arg *argv);
 
@@ -22,14 +20,10 @@ static const struct Menu::command setup_menu_commands[] PROGMEM = {
     {"reset",                       setup_factory},
     {"radio",                       setup_radio},
     {"level",                       setup_level},
-#if !defined( __AVR_ATmega1280__ )
     {"accel",                       setup_accel_scale},
-#endif
     {"compass",                     setup_compass},
     {"show",                        setup_show},
-#if !defined( __AVR_ATmega1280__ )
     {"set",                         setup_set},
-#endif
     {"erase",                       setup_erase},
 };
 
@@ -58,8 +52,6 @@ setup_mode(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_show(uint8_t argc, const Menu::arg *argv)
 {
-
-#if !defined( __AVR_ATmega1280__ )
     AP_Param *param;
     ap_var_type type;
 
@@ -77,15 +69,11 @@ setup_show(uint8_t argc, const Menu::arg *argv)
         AP_Param::show(param, argv[1].str, type, cliSerial);
         return 0;
     }
-#endif
 
     AP_Param::show_all(cliSerial);
 
     return(0);
 }
-
-
-#if !defined( __AVR_ATmega1280__ )
 
 //Set a parameter to a specified value. It will cast the value to the current type of the
 //parameter and make sure it fits in case of INT8 and INT16
@@ -145,7 +133,6 @@ static int8_t setup_set(uint8_t argc, const Menu::arg *argv)
 
     return 0;
 }
-#endif
 
 // Initialise the EEPROM to 'factory' settings (mostly defined in APM_Config.h or via defaults).
 // Called by the setup menu 'factoryreset' command.
@@ -285,7 +272,6 @@ setup_level(uint8_t argc, const Menu::arg *argv)
     return 0;
 }
 
-#if !defined( __AVR_ATmega1280__ )
 /*
   handle full accelerometer calibration via user dialog
  */
@@ -310,7 +296,6 @@ setup_accel_scale(uint8_t argc, const Menu::arg *argv)
     report_ins();
     return(0);
 }
-#endif
 
 static int8_t
 setup_compass(uint8_t argc, const Menu::arg *argv)
@@ -384,6 +369,9 @@ static void report_compass()
         break;
     case AP_COMPASS_TYPE_VRBRAIN:
         cliSerial->println_P(PSTR("VRBRAIN"));
+        break;
+    case AP_COMPASS_TYPE_AK8963_MPU9250:
+        cliSerial->println_P(PSTR("AK8963_MPU9250"));
         break;
     default:
         cliSerial->println_P(PSTR("(unknown)"));

@@ -60,33 +60,31 @@ float SITL_State::_gyro_drift(void)
 
 }
 
-uint16_t SITL_State::_ground_sonar(float altitude)
+/*
+  emulate an analog rangefinder
+ */
+uint16_t SITL_State::_ground_sonar(void)
 {
-	static float home_alt = -1;
+    float altitude = height_agl();
 
-	if (home_alt == -1 && altitude > 0)
-		home_alt = altitude;
+    float voltage = 5.0f;
+    if (fabsf(_sitl->state.rollDeg) < 90 &&
+        fabsf(_sitl->state.pitchDeg) < 90) {
+        // adjust for apparent altitude with roll
+        altitude /= cos(radians(_sitl->state.rollDeg)) * cos(radians(_sitl->state.pitchDeg));
+        
+        altitude += _sitl->sonar_noise * _rand_float();
 
-	altitude = altitude - home_alt;
-
-        float voltage = 5.0f;
-        if (fabsf(_sitl->state.rollDeg) < 90 &&
-            fabsf(_sitl->state.pitchDeg) < 90) {
-            // adjust for apparent altitude with roll
-            altitude /= cos(radians(_sitl->state.rollDeg)) * cos(radians(_sitl->state.pitchDeg));
-
-            altitude += _sitl->sonar_noise * _rand_float();
-
-            // Altitude in in m, scaler in meters/volt
-            voltage = altitude / _sitl->sonar_scale;
-            voltage = constrain_float(voltage, 0, 5.0f);
-
-            if (_sitl->sonar_glitch >= (_rand_float() + 1.0f)/2.0f) {
-                voltage = 5.0f;
-            }
+        // Altitude in in m, scaler in meters/volt
+        voltage = altitude / _sitl->sonar_scale;
+        voltage = constrain_float(voltage, 0, 5.0f);
+        
+        if (_sitl->sonar_glitch >= (_rand_float() + 1.0f)/2.0f) {
+            voltage = 5.0f;
         }
-
-        return 1023*(voltage / 5.0f);
+    }
+    
+    return 1023*(voltage / 5.0f);
 }
 
 /*
@@ -177,7 +175,7 @@ void SITL_State::_update_ins(float roll, 	float pitch, 	float yaw,		// Relative 
 	_ins->set_gyro(1, Vector3f(p2, q2, r2) + _ins->get_gyro_offsets(1));
 
 
-        sonar_pin_value    = _ground_sonar(altitude);
+        sonar_pin_value    = _ground_sonar();
         airspeed_pin_value = _airspeed_sensor(airspeed + (_sitl->aspd_noise * _rand_float()));
 }
 

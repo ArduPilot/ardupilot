@@ -26,5 +26,19 @@ static void init_home()
     scaleLongUp   = 1.0f/scaleLongDown;
 }
 
+// update_home - reset home to current location
+//  should be called only when vehicle is disarmed
+static void update_home()
+{
+    // copter uses 0 home altitude
+    Location loc = gps.location();
+
+    // set ahrs object's home position
+    ahrs.set_home(loc);
+
+    // update navigation scalers.  used to offset the shrinking longitude as we go towards the poles
+    scaleLongDown = longitude_scale(loc);
+    scaleLongUp   = 1.0f/scaleLongDown;
+}
 
 

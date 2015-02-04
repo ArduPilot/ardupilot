@@ -30,6 +30,7 @@ class RangeFinder
 {
 public:
     RangeFinder(void) :
+    primary_instance(0),
     num_instances(0)
     {
         AP_Param::setup_object_defaults(this, var_info);

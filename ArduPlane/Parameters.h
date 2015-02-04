@@ -107,9 +107,9 @@ public:
         k_param_gps,
         k_param_autotune_level,
         k_param_rally,
-        k_param_serial0_baud,
-        k_param_serial1_baud,
-        k_param_serial2_baud,
+        k_param_serial0_baud,           // deprecated
+        k_param_serial1_baud,           // deprecated
+        k_param_serial2_baud,           // deprecated
         k_param_takeoff_tdrag_elevator,
         k_param_takeoff_tdrag_speed1,
         k_param_takeoff_rotate_speed,
@@ -130,6 +130,9 @@ public:
         k_param_rtl_autoland,
         k_param_override_channel,
         k_param_stall_prevention,
+#if OPTFLOW == ENABLED
+        k_param_optflow,
+#endif
 
         // 100: Arming parameters
         k_param_arming = 100,
@@ -150,7 +153,7 @@ public:
         k_param_serial0_baud_old,   // deprecated
         k_param_gcs2,               // stream rates for uartD
         k_param_serial2_baud_old,   // deprecated
-        k_param_serial2_protocol,
+        k_param_serial2_protocol,   // deprecated
 
         // 120: Fly-by-wire control
         //
@@ -184,6 +187,7 @@ public:
         k_param_curr_amp_offset,
         k_param_NavEKF,  // Extended Kalman Filter Inertial Navigation Group
         k_param_mission, // mission library
+        k_param_serial_manager, // serial manager library
 
         //
         // 150: Navigation parameters
@@ -205,7 +209,7 @@ public:
         //
         k_param_camera = 160,
         k_param_camera_mount,
-        k_param_camera_mount2,
+        k_param_camera_mount2,      // unused
 
         //
         // Battery monitoring parameters
@@ -317,12 +321,6 @@ public:
     //
     AP_Int16 sysid_this_mav;
     AP_Int16 sysid_my_gcs;
-    AP_Int16 serial0_baud;
-    AP_Int16 serial1_baud;
-#if MAVLINK_COMM_NUM_BUFFERS > 2
-    AP_Int16 serial2_baud;
-    AP_Int8  serial2_protocol;
-#endif
     AP_Int8 telem_delay;
 
 #if HIL_MODE != HIL_MODE_DISABLED

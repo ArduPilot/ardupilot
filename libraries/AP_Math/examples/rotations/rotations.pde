@@ -33,6 +33,7 @@
 #include <AP_Vehicle.h>
 #include <AP_ADC_AnalogSource.h>
 #include <AP_Rally.h>
+#include <AP_BattMonitor.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
@@ -148,7 +149,7 @@ static void test_eulers(void)
     test_euler(ROTATION_ROLL_270_PITCH_270,270,270,   0);    
     test_euler(ROTATION_ROLL_90_PITCH_180_YAW_90, 90, 180,  90);    
     test_euler(ROTATION_ROLL_90_YAW_270,   90,   0, 270);
-    test_euler(ROTATION_YAW_293_PITCH_68_ROLL_180,180,68.8,293.3);
+    test_euler(ROTATION_YAW_293_PITCH_68_ROLL_90,90,68.8,293.3);
 }
 
 static bool have_rotation(const Matrix3f &m)

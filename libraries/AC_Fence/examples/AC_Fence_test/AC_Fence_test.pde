@@ -34,18 +34,18 @@
 #include <AP_Notify.h>
 #include <AP_Vehicle.h>
 #include <DataFlash.h>
+#include <AP_Nav_Common.h>
+#include <AP_BattMonitor.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 AP_InertialSensor ins;
 
-// INS and Baro declaration
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-AP_Baro_MS5611 baro(&AP_Baro_MS5611::spi);
-#else
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 AP_ADC_ADS7844 adc;
-AP_Baro_BMP085 baro;
 #endif
+
+AP_Baro baro;
 
 // GPS declaration
 AP_GPS gps;

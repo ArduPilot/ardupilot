@@ -68,15 +68,15 @@ fi
 echo "[APMNS] Starting HMC5883 Internal"
 if hmc5883 -I start
 then
-    echo "[APMNS] HMC5883 onboard started OK"
+    echo "[APMNS] HMC5883 Internal started OK"
     if hmc5883 -I calibrate
     then
-      echo "[APMNS] HMC5883 onboard calibrate OK"
+      echo "[APMNS] HMC5883 Internal calibrate OK"
     else 
-      echo "[APMNS] HMC5883 onboard calibrate failed"
+      echo "[APMNS] HMC5883 Internal calibrate failed"
     fi
 else
-    echo "[APMNS] HMC5883 onboard start failed"
+    echo "[APMNS] HMC5883 Internal start failed"
 #    sh /etc/init.d/rc.error
 fi
 echo "[APMNS] Starting MPU6000 Internal"
@@ -95,6 +95,18 @@ then
 else
     echo "[APMNS] MPU6000 external start failed"
 #    sh /etc/init.d/rc.error
+fi
+
+echo "[APMNS] Starting MEAS I2C Airspeed"
+if meas_airspeed start
+then
+    echo "Found MEAS airspeed sensor"
+fi
+
+echo "[APMNS] Starting MB12XX Range Finder Sensor"
+if mb12xx start
+then
+    echo "Found mb12xx sensor"
 fi
 
 echo "[APMNS] Starting MTD driver"

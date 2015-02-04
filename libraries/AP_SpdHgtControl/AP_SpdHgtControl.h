@@ -65,6 +65,9 @@ public:
 	// return maximum climb rate
 	virtual float get_max_climbrate(void) const = 0;
 
+	// return landing sink rate
+	virtual float get_land_sinkrate(void) const = 0;
+
 	// add new controllers to this enum. Users can then
 	// select which controller to use by setting the
 	// SPDHGT_CONTROLLER parameter

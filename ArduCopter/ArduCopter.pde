@@ -101,6 +101,7 @@
 // Application dependencies
 #include <GCS.h>
 #include <GCS_MAVLink.h>        // MAVLink GCS definitions
+#include <AP_SerialManager.h>   // Serial manager library
 #include <AP_GPS.h>             // ArduPilot GPS library
 #include <AP_GPS_Glitch.h>      // GPS glitch protection library
 #include <DataFlash.h>          // ArduPilot Mega Flash Memory Library
@@ -155,6 +156,7 @@
 #if PARACHUTE == ENABLED
 #include <AP_Parachute.h>		// Parachute release library
 #endif
+#include <AP_LandingGear.h>     // Landing Gear library
 #include <AP_Terrain.h>
 
 // AP_HAL to Arduino compatibility layer
@@ -258,21 +260,8 @@ static GPS_Glitch gps_glitch(gps);
 // flight modes convenience array
 static AP_Int8 *flight_modes = &g.flight_mode1;
 
-#if CONFIG_BARO == HAL_BARO_BMP085
-static AP_Baro_BMP085 barometer;
-#elif CONFIG_BARO == HAL_BARO_PX4
-static AP_Baro_PX4 barometer;
-#elif CONFIG_BARO == HAL_BARO_VRBRAIN
-static AP_Baro_VRBRAIN barometer;
-#elif CONFIG_BARO == HAL_BARO_HIL
-static AP_Baro_HIL barometer;
-#elif CONFIG_BARO == HAL_BARO_MS5611
-static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::i2c);
-#elif CONFIG_BARO == HAL_BARO_MS5611_SPI
-static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::spi);
-#else
- #error Unrecognized CONFIG_BARO setting
-#endif
+static AP_Baro barometer;
+
 static Baro_Glitch baro_glitch(barometer);
 
 #if CONFIG_COMPASS == HAL_COMPASS_PX4
@@ -283,6 +272,8 @@ static AP_Compass_VRBRAIN compass;
 static AP_Compass_HMC5843 compass;
 #elif CONFIG_COMPASS == HAL_COMPASS_HIL
 static AP_Compass_HIL compass;
+#elif CONFIG_COMPASS == HAL_COMPASS_AK8963
+static AP_Compass_AK8963_MPU9250 compass;
 #else
  #error Unrecognized CONFIG_COMPASS setting
 #endif
@@ -314,17 +305,19 @@ AP_Mission mission(ahrs, &start_command, &verify_command, &exit_mission);
 ////////////////////////////////////////////////////////////////////////////////
 // Optical flow sensor
 ////////////////////////////////////////////////////////////////////////////////
- #if OPTFLOW == ENABLED
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
-static AP_OpticalFlow_ADNS3080 optflow(ahrs);
-#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
-static AP_OpticalFlow_PX4 optflow(ahrs);
+#if OPTFLOW == ENABLED
+static OpticalFlow optflow;
 #endif
- #endif
+
+// gnd speed limit required to observe optical flow sensor limits
+static float ekfGndSpdLimit;
+// scale factor applied to velocity controller gain to prevent optical flow noise causing excessive angle demand noise
+static float ekfNavVelGainScaler;
 
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection
 ////////////////////////////////////////////////////////////////////////////////
+static AP_SerialManager serial_manager;
 static const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
 static GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
 
@@ -459,13 +452,6 @@ static MOTOR_CLASS motors(g.rc_1, g.rc_2, g.rc_3, g.rc_4);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
-// PIDs
-////////////////////////////////////////////////////////////////////////////////
-// This is used to hold radio tuning values for in-flight CH6 tuning
-float tuning_value;
-
-
-////////////////////////////////////////////////////////////////////////////////
 // GPS variables
 ////////////////////////////////////////////////////////////////////////////////
 // We use atan2 and other trig techniques to calaculate angles
@@ -579,25 +565,6 @@ static struct   Location current_loc;
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Navigation Roll/Pitch functions
-////////////////////////////////////////////////////////////////////////////////
-#if OPTFLOW == ENABLED
-// The Commanded ROll from the autopilot based on optical flow sensor.
-static int32_t of_roll;
-// The Commanded pitch from the autopilot based on optical flow sensor. negative Pitch means go forward.
-static int32_t of_pitch;
-#endif // OPTFLOW == ENABLED
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Throttle integrator
-////////////////////////////////////////////////////////////////////////////////
-// This is a simple counter to track the amount of throttle used during flight
-// This could be useful later in determining and debuging current usage and predicting battery life
-static uint32_t throttle_integrator;
-
-
-////////////////////////////////////////////////////////////////////////////////
 // Navigation Yaw control
 ////////////////////////////////////////////////////////////////////////////////
 // auto flight mode's yaw mode
@@ -694,12 +661,7 @@ static AP_HAL::AnalogSource* rssi_analog_source;
 // --------------------------------------
 #if MOUNT == ENABLED
 // current_loc uses the baro/gps soloution for altitude rather than gps only.
-static AP_Mount camera_mount(&current_loc, ahrs, 0);
-#endif
-
-#if MOUNT2 == ENABLED
-// current_loc uses the baro/gps soloution for altitude rather than gps only.
-static AP_Mount camera_mount2(&current_loc, ahrs, 1);
+static AP_Mount camera_mount(ahrs, current_loc);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -738,6 +700,11 @@ static AP_Parachute parachute(relay);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
+// Landing Gear Controller
+////////////////////////////////////////////////////////////////////////////////
+static AP_LandingGear landinggear;
+
+////////////////////////////////////////////////////////////////////////////////
 // terrain handling
 #if AP_TERRAIN_AVAILABLE
 AP_Terrain terrain(ahrs, mission, rally);
@@ -746,7 +713,7 @@ AP_Terrain terrain(ahrs, mission, rally);
 ////////////////////////////////////////////////////////////////////////////////
 // function definitions to keep compiler from complaining about undeclared functions
 ////////////////////////////////////////////////////////////////////////////////
-static void pre_arm_checks(bool display_failure);
+static bool pre_arm_checks(bool display_failure);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Top-level logic
@@ -777,14 +744,14 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { throttle_loop,         8,     45 },
     { update_GPS,            8,     90 },
 #if OPTFLOW == ENABLED
-    { update_optflow,        8,     20 },
+    { update_optical_flow,   2,     20 },
 #endif
     { update_batt_compass,  40,     72 },
     { read_aux_switches,    40,      5 },
     { arm_motors_check,     40,      1 },
     { auto_trim,            40,     14 },
     { update_altitude,      40,    100 },
-    { run_nav_updates,      40,     80 },
+    { run_nav_updates,       8,     80 },
     { update_thr_cruise,    40,     10 },
     { three_hz_loop,       133,      9 },
     { compass_accumulate,    8,     42 },
@@ -796,6 +763,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { one_hz_loop,         400,     42 },
     { ekf_dcm_check,        40,      2 },
     { crash_check,          40,      2 },
+    { landinggear_update,   40,      1 },
     { gcs_check_input,	     8,    550 },
     { gcs_send_heartbeat,  400,    150 },
     { gcs_send_deferred,     8,    720 },
@@ -809,7 +777,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { perf_update,        4000,     20 },
     { read_receiver_rssi,   40,      5 },
 #if FRSKY_TELEM_ENABLED == ENABLED
-    { telemetry_send,       80,     10 },	
+    { frsky_telemetry_send, 80,     10 },
 #endif
 #if EPM_ENABLED == ENABLED
     { epm_update,           40,     10 },
@@ -851,14 +819,14 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { throttle_loop,         2,     450 },
     { update_GPS,            2,     900 },
 #if OPTFLOW == ENABLED
-    { update_optflow,        2,     100 },
+    { update_optical_flow,   1,     100 },
 #endif
     { update_batt_compass,  10,     720 },
     { read_aux_switches,    10,      50 },
     { arm_motors_check,     10,      10 },
     { auto_trim,            10,     140 },
     { update_altitude,      10,    1000 },
-    { run_nav_updates,      10,     800 },
+    { run_nav_updates,       4,     800 },
     { update_thr_cruise,     1,      50 },
     { three_hz_loop,        33,      90 },
     { compass_accumulate,    2,     420 },
@@ -870,6 +838,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { one_hz_loop,         100,     420 },
     { ekf_dcm_check,        10,      20 },
     { crash_check,          10,      20 },
+    { landinggear_update,   10,      10 },
     { gcs_check_input,	     2,     550 },
     { gcs_send_heartbeat,  100,     150 },
     { gcs_send_deferred,     2,     720 },
@@ -880,7 +849,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { perf_update,        1000,     200 },
     { read_receiver_rssi,   10,      50 },
 #if FRSKY_TELEM_ENABLED == ENABLED
-    { telemetry_send,       20,     100 },	
+    { frsky_telemetry_send, 20,     100 },
 #endif
 #if EPM_ENABLED == ENABLED
     { epm_update,           10,      20 },
@@ -1001,9 +970,8 @@ static void fast_loop()
     update_heli_control_dynamics();
 #endif //HELI_FRAME
 
-    // write out the servo PWM values
-    // ------------------------------
-    set_servos_4();
+    // send outputs to the motors library
+    motors_output();
 
     // Inertial Nav
     // --------------------
@@ -1051,12 +1019,7 @@ static void update_mount()
 {
 #if MOUNT == ENABLED
     // update camera mount's position
-    camera_mount.update_mount_position();
-#endif
-
-#if MOUNT2 == ENABLED
-    // update camera mount's position
-    camera_mount2.update_mount_position();
+    camera_mount.update();
 #endif
 
 #if CAMERA == ENABLED
@@ -1077,12 +1040,9 @@ static void update_batt_compass(void)
         compass.read();
         // log compass information
         if (should_log(MASK_LOG_COMPASS)) {
-            Log_Write_Compass();
+            DataFlash.Log_Write_Compass(compass);
         }
     }
-
-    // record throttle output
-    throttle_integrator += g.rc_3.servo_out;
 }
 
 // ten_hz_logging_loop
@@ -1140,8 +1100,8 @@ static void three_hz_loop()
 
     update_events();
 
-    if(g.radio_tuning > 0)
-        tuning();
+    // update ch6 in flight tuning
+    tuning();
 }
 
 // one_hz_loop - runs at 1Hz
@@ -1175,18 +1135,17 @@ static void one_hz_loop()
     // update assigned functions and enable auxiliar servos
     RC_Channel_aux::enable_aux_servos();
 
-#if MOUNT == ENABLED
-    camera_mount.update_mount_type();
-#endif
-
-#if MOUNT2 == ENABLED
-    camera_mount2.update_mount_type();
-#endif
-
     check_usb_mux();
 
 #if AP_TERRAIN_AVAILABLE
     terrain.update();
+#endif
+
+#if AC_FENCE == ENABLED
+    // set fence altitude limit in position controller
+    if ((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
+        pos_control.set_alt_max(fence.get_safe_alt()*100.0f);
+    }
 #endif
 }
 
@@ -1255,6 +1214,11 @@ static void update_GPS(void)
                 } else {
                     // start again if we lose 3d lock
                     ground_start_count = 10;
+                }
+            } else {
+                // update home position when not armed
+                if (!motors.armed()) {
+                    update_home();
                 }
             }
 
@@ -1365,213 +1329,6 @@ static void update_altitude()
     // write altitude info to dataflash logs
     if (should_log(MASK_LOG_CTUN)) {
         Log_Write_Control_Tuning();
-    }
-}
-
-static void tuning(){
-
-    // exit immediately when radio failsafe is invoked so tuning values are not set to zero
-    if (failsafe.radio || failsafe.radio_counter != 0) {
-        return;
-    }
-
-    tuning_value = (float)g.rc_6.control_in / 1000.0f;
-    g.rc_6.set_range(g.radio_tuning_low,g.radio_tuning_high);                   // 0 to 1
-
-    switch(g.radio_tuning) {
-
-    // Roll, Pitch tuning
-    case CH6_STABILIZE_ROLL_PITCH_KP:
-        g.p_stabilize_roll.kP(tuning_value);
-        g.p_stabilize_pitch.kP(tuning_value);
-        break;
-
-    case CH6_RATE_ROLL_PITCH_KP:
-        g.pid_rate_roll.kP(tuning_value);
-        g.pid_rate_pitch.kP(tuning_value);
-        break;
-
-    case CH6_RATE_ROLL_PITCH_KI:
-        g.pid_rate_roll.kI(tuning_value);
-        g.pid_rate_pitch.kI(tuning_value);
-        break;
-
-    case CH6_RATE_ROLL_PITCH_KD:
-        g.pid_rate_roll.kD(tuning_value);
-        g.pid_rate_pitch.kD(tuning_value);
-        break;
-
-    // Yaw tuning
-    case CH6_STABILIZE_YAW_KP:
-        g.p_stabilize_yaw.kP(tuning_value);
-        break;
-
-    case CH6_YAW_RATE_KP:
-        g.pid_rate_yaw.kP(tuning_value);
-        break;
-
-    case CH6_YAW_RATE_KD:
-        g.pid_rate_yaw.kD(tuning_value);
-        break;
-
-    // Altitude and throttle tuning
-    case CH6_ALTITUDE_HOLD_KP:
-        g.p_alt_hold.kP(tuning_value);
-        break;
-
-    case CH6_THROTTLE_RATE_KP:
-        g.p_throttle_rate.kP(tuning_value);
-        break;
-
-    case CH6_THROTTLE_ACCEL_KP:
-        g.pid_throttle_accel.kP(tuning_value);
-        break;
-
-    case CH6_THROTTLE_ACCEL_KI:
-        g.pid_throttle_accel.kI(tuning_value);
-        break;
-
-    case CH6_THROTTLE_ACCEL_KD:
-        g.pid_throttle_accel.kD(tuning_value);
-        break;
-
-    // Loiter and navigation tuning
-    case CH6_LOITER_POSITION_KP:
-        g.p_loiter_pos.kP(tuning_value);
-        break;
-
-    case CH6_LOITER_RATE_KP:
-        g.pid_loiter_rate_lon.kP(tuning_value);
-        g.pid_loiter_rate_lat.kP(tuning_value);
-        break;
-
-    case CH6_LOITER_RATE_KI:
-        g.pid_loiter_rate_lon.kI(tuning_value);
-        g.pid_loiter_rate_lat.kI(tuning_value);
-        break;
-
-    case CH6_LOITER_RATE_KD:
-        g.pid_loiter_rate_lon.kD(tuning_value);
-        g.pid_loiter_rate_lat.kD(tuning_value);
-        break;
-
-    case CH6_WP_SPEED:
-        // set waypoint navigation horizontal speed to 0 ~ 1000 cm/s
-        wp_nav.set_speed_xy(g.rc_6.control_in);
-        break;
-
-    // Acro roll pitch gain
-    case CH6_ACRO_RP_KP:
-        g.acro_rp_p = tuning_value;
-        break;
-
-    // Acro yaw gain
-    case CH6_ACRO_YAW_KP:
-        g.acro_yaw_p = tuning_value;
-        break;
-
-#if FRAME_CONFIG == HELI_FRAME
-    case CH6_HELI_EXTERNAL_GYRO:
-        motors.ext_gyro_gain(g.rc_6.control_in);
-        break;
-
-    case CH6_RATE_PITCH_FF:
-        g.pid_rate_pitch.ff(tuning_value);
-        break;
-        
-    case CH6_RATE_ROLL_FF:
-        g.pid_rate_roll.ff(tuning_value);
-        break;
-        
-    case CH6_RATE_YAW_FF:
-        g.pid_rate_yaw.ff(tuning_value);
-        break;        
-#endif
-
-    case CH6_OPTFLOW_KP:
-        g.pid_optflow_roll.kP(tuning_value);
-        g.pid_optflow_pitch.kP(tuning_value);
-        break;
-
-    case CH6_OPTFLOW_KI:
-        g.pid_optflow_roll.kI(tuning_value);
-        g.pid_optflow_pitch.kI(tuning_value);
-        break;
-
-    case CH6_OPTFLOW_KD:
-        g.pid_optflow_roll.kD(tuning_value);
-        g.pid_optflow_pitch.kD(tuning_value);
-        break;
-
-    case CH6_AHRS_YAW_KP:
-        ahrs._kp_yaw.set(tuning_value);
-        break;
-
-    case CH6_AHRS_KP:
-        ahrs._kp.set(tuning_value);
-        break;
-
-    case CH6_DECLINATION:
-        // set declination to +-20degrees
-        compass.set_declination(ToRad((2.0f * g.rc_6.control_in - g.radio_tuning_high)/100.0f), false);     // 2nd parameter is false because we do not want to save to eeprom because this would have a performance impact
-        break;
-
-    case CH6_CIRCLE_RATE:
-        // set circle rate
-        circle_nav.set_rate(g.rc_6.control_in/25-20);   // allow approximately 45 degree turn rate in either direction
-        break;
-
-    case CH6_SONAR_GAIN:
-        // set sonar gain
-        g.sonar_gain.set(tuning_value);
-        break;
-
-#if 0
-        // disabled for now - we need accessor functions
-    case CH6_EKF_VERTICAL_POS:
-        // EKF's baro vs accel (higher rely on accels more, baro impact is reduced)
-        ahrs.get_NavEKF()._gpsVertPosNoise = tuning_value;
-        break;
-
-    case CH6_EKF_HORIZONTAL_POS:
-        // EKF's gps vs accel (higher rely on accels more, gps impact is reduced)
-        ahrs.get_NavEKF()._gpsHorizPosNoise = tuning_value;
-        break;
-
-    case CH6_EKF_ACCEL_NOISE:
-        // EKF's accel noise (lower means trust accels more, gps & baro less)
-        ahrs.get_NavEKF()._accNoise = tuning_value;
-        break;
-#endif
-
-    case CH6_RC_FEEL_RP:
-        // roll-pitch input smoothing
-        g.rc_feel_rp = g.rc_6.control_in / 10;
-        break;
-    
-    case CH6_RATE_PITCH_KP:
-        g.pid_rate_pitch.kP(tuning_value);
-        break;
-        
-    case CH6_RATE_PITCH_KI:
-        g.pid_rate_pitch.kI(tuning_value);
-        break;
-        
-    case CH6_RATE_PITCH_KD:
-        g.pid_rate_pitch.kD(tuning_value);
-        break;
-        
-    case CH6_RATE_ROLL_KP:
-        g.pid_rate_roll.kP(tuning_value);
-        break;
-        
-    case CH6_RATE_ROLL_KI:
-        g.pid_rate_roll.kI(tuning_value);
-        break;
-        
-    case CH6_RATE_ROLL_KD:
-        g.pid_rate_roll.kD(tuning_value);
-        break;
     }
 }
 

@@ -18,78 +18,82 @@
 /*
  *       OpticalFlow.h - OpticalFlow Base Class for Ardupilot
  *       Code by Randy Mackay. DIYDrones.com
- *
- *       Methods:
- *               init() : initializate sensor and library.
- *               read   : reads latest value from OpticalFlow and
- *                        stores values in x,y, surface_quality parameter
- *               read_register()  : reads a value from the sensor (will be
- *                                  sensor specific)
- *               write_register() : writes a value to one of the sensor's
- *                                  register (will be sensor specific)
  */
 
+#include <AP_HAL.h>
 #include <AP_Math.h>
-#include <AP_AHRS.h>
+
+class OpticalFlow_backend;
 
 class OpticalFlow
 {
+    friend class OpticalFlow_backend;
+
 public:
     // constructor
-    OpticalFlow(const AP_AHRS &ahrs);
+    OpticalFlow(void);
 
     // init - initialise sensor
-    virtual void init() {}
+    void init(void);
 
     // enabled - returns true if optical flow is enabled
     bool enabled() const { return _enabled; }
 
     // healthy - return true if the sensor is healthy
-    bool healthy() const { return _flags.healthy; }
+    bool healthy() const { return backend != NULL && _flags.healthy; }
 
     // read latest values from sensor and fill in x,y and totals.
-    virtual void update() {}
+    void update(void);
 
     // quality - returns the surface quality as a measure from 0 ~ 255
-    uint8_t quality() const { return _surface_quality; }
+    uint8_t quality() const { return _state.surface_quality; }
 
     // raw - returns the raw movement from the sensor
-    const Vector2i& raw() const { return _raw; }
+    const Vector2f& flowRate() const { return _state.flowRate; }
 
     // velocity - returns the velocity in m/s
-    const Vector2f& velocity() const { return _velocity; }
+    const Vector2f& bodyRate() const { return _state.bodyRate; }
 
     // device_id - returns device id
-    uint8_t device_id() const { return _device_id; }
-
-    // return ground distance in meters (if available)
-    float ground_distance_m() const { return _ground_distance_m; }
+    uint8_t device_id() const { return _state.device_id; }
 
     // last_update() - returns system time of last sensor update
-    uint32_t last_update() const { return _last_update; }
+    uint32_t last_update() const { return _last_update_ms; }
 
     // parameter var info table
     static const struct AP_Param::GroupInfo var_info[];
 
-protected:
+    struct OpticalFlow_state {
+        uint8_t device_id;          // device id
+        uint8_t  surface_quality;   // image quality (below TBD you can't trust the dx,dy values returned)
+        Vector2f flowRate;          // optical flow angular rate in rad/sec measured about the X and Y body axis. A RH rotation about a sensor axis produces a positive rate.
+        Vector2f bodyRate;          // body inertial angular rate in rad/sec measured about the X and Y body axis. A RH rotation about a sensor axis produces a positive rate.
+    };
+
+    // support for HIL/SITL
+    void setHIL(const struct OpticalFlow_state &state);
+
+private:
+    OpticalFlow_backend *backend;
 
     struct AP_OpticalFlow_Flags {
         uint8_t healthy     : 1;    // true if sensor is healthy
     } _flags;
 
-    // external references
-    const AP_AHRS &_ahrs;           // ahrs object
-
     // parameters
     AP_Int8  _enabled;              // enabled/disabled flag
+    AP_Int16 _flowScalerX;          // X axis flow scale factor correction - parts per thousand
+    AP_Int16 _flowScalerY;          // Y axis flow scale factor correction - parts per thousand
 
-    // internal variables
-    uint8_t _device_id;             // device id
-    uint8_t  _surface_quality;      // image quality (below 15 you can't trust the dx,dy values returned)
-    Vector2i _raw;                  // raw x,y values from sensor
-    Vector2f _velocity;             // x, y velocity in m/s
-    float    _ground_distance_m;    // ground distance in m
-    uint32_t _last_update;          // millis() time of last update
+
+    // state filled in by backend
+    struct OpticalFlow_state _state;
+
+    uint32_t _last_update_ms;        // millis() time of last update
 };
+
+#include "OpticalFlow_backend.h"
+#include "AP_OpticalFlow_HIL.h"
+#include "AP_OpticalFlow_PX4.h"
 
 #endif

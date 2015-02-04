@@ -13,6 +13,7 @@ INSTANCE=0
 USE_VALGRIND=0
 USE_GDB=0
 USE_GDB_STOPPED=0
+USE_MAVLINK_GIMBAL=0
 CLEAN_BUILD=0
 START_ANTENNA_TRACKER=0
 WIPE_EEPROM=0
@@ -63,7 +64,7 @@ EOF
 
 
 # parse options. Thanks to http://wiki.bash-hackers.org/howto/getopts_tutorial
-while getopts ":I:VgGcj:TA:t:L:v:hwf:RNHe" opt; do
+while getopts ":I:VgGcj:TA:t:L:v:hwf:RNHeM" opt; do
   case $opt in
     v)
       VEHICLE=$OPTARG
@@ -92,6 +93,9 @@ while getopts ":I:VgGcj:TA:t:L:v:hwf:RNHe" opt; do
       ;;
     G)
       USE_GDB=1
+      ;;
+    M)
+      USE_MAVLINK_GIMBAL=1
       ;;
     g)
       USE_GDB=1
@@ -203,6 +207,11 @@ case $FRAME in
         ;;
 esac
 
+if [ $USE_MAVLINK_GIMBAL == 1 ]; then
+    echo "Using MAVLink gimbal"
+    EXTRA_SIM="--gimbal"
+fi
+
 autotest=$(dirname $(readlink -e $0))
 if [ $NO_REBUILD == 0 ]; then
 pushd $autotest/../../$VEHICLE || {
@@ -210,6 +219,10 @@ pushd $autotest/../../$VEHICLE || {
     usage
     exit 1
 }
+if [ ! -f $autotest/../../config.mk ]; then
+    echo Generating a default configuration
+    make configure
+fi
 if [ $CLEAN_BUILD == 1 ]; then
     make clean
 fi
@@ -322,6 +335,11 @@ options=""
 if [ $START_HIL == 0 ]; then
 options="--master $MAVLINK_PORT --sitl $SIMOUT_PORT"
 fi
+
+# If running inside of a vagrant guest, then we probably want to forward our mavlink out to the containing host OS
+if [ $USER == "vagrant" ]; then
+options="$options --out 10.0.2.2:14550"
+fi
 options="$options --out 127.0.0.1:14550 --out 127.0.0.1:14551"
 extra_cmd1=""
 if [ $WIPE_EEPROM == 1 ]; then
@@ -333,6 +351,9 @@ if [ $START_ANTENNA_TRACKER == 1 ]; then
 fi
 if [ $START_HIL == 1 ]; then
     options="$options --load-module=HIL"
+fi
+if [ $USE_MAVLINK_GIMBAL == 1 ]; then
+    options="$options --load-module=gimbal"
 fi
 mavproxy.py $options --cmd="$extra_cmd" $*
 kill_tasks

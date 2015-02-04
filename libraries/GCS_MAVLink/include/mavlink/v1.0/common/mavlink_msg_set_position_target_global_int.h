@@ -7,7 +7,7 @@ typedef struct __mavlink_set_position_target_global_int_t
  uint32_t time_boot_ms; ///< Timestamp in milliseconds since system boot. The rationale for the timestamp in the setpoint is to allow the system to compensate for the transport delay of the setpoint. This allows the system to compensate processing latency.
  int32_t lat_int; ///< X Position in WGS84 frame in 1e7 * meters
  int32_t lon_int; ///< Y Position in WGS84 frame in 1e7 * meters
- float alt; ///< Altitude in meters in WGS84 altitude, not AMSL if absolute or relative, above terrain if GLOBAL_TERRAIN_ALT_INT
+ float alt; ///< Altitude in meters in AMSL altitude, not WGS84 if absolute or relative, above terrain if GLOBAL_TERRAIN_ALT_INT
  float vx; ///< X velocity in NED frame in meter / s
  float vy; ///< Y velocity in NED frame in meter / s
  float vz; ///< Z velocity in NED frame in meter / s
@@ -66,7 +66,7 @@ typedef struct __mavlink_set_position_target_global_int_t
  * @param type_mask Bitmask to indicate which dimensions should be ignored by the vehicle: a value of 0b0000000000000000 or 0b0000001000000000 indicates that none of the setpoint dimensions should be ignored. If bit 10 is set the floats afx afy afz should be interpreted as force instead of acceleration. Mapping: bit 1: x, bit 2: y, bit 3: z, bit 4: vx, bit 5: vy, bit 6: vz, bit 7: ax, bit 8: ay, bit 9: az, bit 10: is force setpoint, bit 11: yaw, bit 12: yaw rate
  * @param lat_int X Position in WGS84 frame in 1e7 * meters
  * @param lon_int Y Position in WGS84 frame in 1e7 * meters
- * @param alt Altitude in meters in WGS84 altitude, not AMSL if absolute or relative, above terrain if GLOBAL_TERRAIN_ALT_INT
+ * @param alt Altitude in meters in AMSL altitude, not WGS84 if absolute or relative, above terrain if GLOBAL_TERRAIN_ALT_INT
  * @param vx X velocity in NED frame in meter / s
  * @param vy Y velocity in NED frame in meter / s
  * @param vz Z velocity in NED frame in meter / s
@@ -143,7 +143,7 @@ static inline uint16_t mavlink_msg_set_position_target_global_int_pack(uint8_t s
  * @param type_mask Bitmask to indicate which dimensions should be ignored by the vehicle: a value of 0b0000000000000000 or 0b0000001000000000 indicates that none of the setpoint dimensions should be ignored. If bit 10 is set the floats afx afy afz should be interpreted as force instead of acceleration. Mapping: bit 1: x, bit 2: y, bit 3: z, bit 4: vx, bit 5: vy, bit 6: vz, bit 7: ax, bit 8: ay, bit 9: az, bit 10: is force setpoint, bit 11: yaw, bit 12: yaw rate
  * @param lat_int X Position in WGS84 frame in 1e7 * meters
  * @param lon_int Y Position in WGS84 frame in 1e7 * meters
- * @param alt Altitude in meters in WGS84 altitude, not AMSL if absolute or relative, above terrain if GLOBAL_TERRAIN_ALT_INT
+ * @param alt Altitude in meters in AMSL altitude, not WGS84 if absolute or relative, above terrain if GLOBAL_TERRAIN_ALT_INT
  * @param vx X velocity in NED frame in meter / s
  * @param vy Y velocity in NED frame in meter / s
  * @param vz Z velocity in NED frame in meter / s
@@ -246,7 +246,7 @@ static inline uint16_t mavlink_msg_set_position_target_global_int_encode_chan(ui
  * @param type_mask Bitmask to indicate which dimensions should be ignored by the vehicle: a value of 0b0000000000000000 or 0b0000001000000000 indicates that none of the setpoint dimensions should be ignored. If bit 10 is set the floats afx afy afz should be interpreted as force instead of acceleration. Mapping: bit 1: x, bit 2: y, bit 3: z, bit 4: vx, bit 5: vy, bit 6: vz, bit 7: ax, bit 8: ay, bit 9: az, bit 10: is force setpoint, bit 11: yaw, bit 12: yaw rate
  * @param lat_int X Position in WGS84 frame in 1e7 * meters
  * @param lon_int Y Position in WGS84 frame in 1e7 * meters
- * @param alt Altitude in meters in WGS84 altitude, not AMSL if absolute or relative, above terrain if GLOBAL_TERRAIN_ALT_INT
+ * @param alt Altitude in meters in AMSL altitude, not WGS84 if absolute or relative, above terrain if GLOBAL_TERRAIN_ALT_INT
  * @param vx X velocity in NED frame in meter / s
  * @param vy Y velocity in NED frame in meter / s
  * @param vz Z velocity in NED frame in meter / s
@@ -451,7 +451,7 @@ static inline int32_t mavlink_msg_set_position_target_global_int_get_lon_int(con
 /**
  * @brief Get field alt from set_position_target_global_int message
  *
- * @return Altitude in meters in WGS84 altitude, not AMSL if absolute or relative, above terrain if GLOBAL_TERRAIN_ALT_INT
+ * @return Altitude in meters in AMSL altitude, not WGS84 if absolute or relative, above terrain if GLOBAL_TERRAIN_ALT_INT
  */
 static inline float mavlink_msg_set_position_target_global_int_get_alt(const mavlink_message_t* msg)
 {

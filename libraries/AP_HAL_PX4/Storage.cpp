@@ -261,13 +261,6 @@ void PX4Storage::_timer_tick(void)
 			_fd = -1;
 			perf_count(_perf_errors);
 		}
-		if (_dirty_mask == 0) {
-			if (fsync(_fd) != 0) {
-				close(_fd);
-				_fd = -1;
-				perf_count(_perf_errors);
-			}
-		}
 	}
 	perf_end(_perf_storage);
 }

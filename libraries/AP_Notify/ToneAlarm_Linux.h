@@ -18,8 +18,6 @@
 #ifndef __TONE_ALARM_Linux_H__
 #define __TONE_ALARM_Linux_H__
 
-#include "ToneAlarm_Linux.h"
-
 #include "NotifyDevice.h"
 
 class ToneAlarm_Linux: public NotifyDevice
@@ -46,7 +44,6 @@ private:
         bool failsafe_battery   : 1;    // true if battery failsafe
         bool gps_glitching      : 1;    // true if gps position is not good
         bool failsafe_gps       : 1;    // true if gps failsafe
-        bool arming_failed      : 1;    // false = failing checks, true = passed
         bool parachute_release  : 1;    // true if parachute is being released
     } flags;
 };

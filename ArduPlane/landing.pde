@@ -51,7 +51,7 @@ static bool verify_land()
           after landing if we've had positive baro drift)
     */
     if (height <= g.land_flare_alt ||
-        height <= -auto_state.land_sink_rate * g.land_flare_sec ||
+        height <= auto_state.land_sink_rate * g.land_flare_sec ||
         (!rangefinder_state.in_range && location_passed_point(current_loc, prev_WP_loc, next_WP_loc))) {
 
         if (!auto_state.land_complete) {
@@ -104,23 +104,70 @@ static void setup_landing_glide_slope(void)
 {
         Location loc = next_WP_loc;
 
-        // project a poiunt 500 meters past the landing point, passing
+        // project a point 500 meters past the landing point, passing
         // through the landing point
         const float land_projection = 500;        
         int32_t land_bearing_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
-        float land_slope = ((next_WP_loc.alt - prev_WP_loc.alt)*0.01f) / (float)wp_totalDistance;
+        float total_distance = get_distance(prev_WP_loc, next_WP_loc);
+
+        // height we need to sink for this WP
+        float sink_height = (prev_WP_loc.alt - next_WP_loc.alt)*0.01f;
+
+        // current ground speed
+        float groundspeed = ahrs.groundspeed();
+        if (groundspeed < 0.5f) {
+            groundspeed = 0.5f;
+        }
+
+        // calculate time to lose the needed altitude
+        float sink_time = total_distance / groundspeed;
+        if (sink_time < 0.5f) {
+            sink_time = 0.5f;
+        }
+
+        // find the sink rate needed for the target location
+        float sink_rate = sink_height / sink_time;
+
+        // the height we aim for is the one to give us the right flare point
+        float aim_height = g.land_flare_sec * sink_rate;
+
+        // don't allow the aim height to be too far above LAND_FLARE_ALT
+        if (g.land_flare_alt > 0 && aim_height > g.land_flare_alt*2) {
+            aim_height = g.land_flare_alt*2;
+        }
+
+        // time before landing that we will flare
+        float flare_time = aim_height / SpdHgt_Controller->get_land_sinkrate();
+
+        // distance to flare is based on ground speed, adjusted as we
+        // get closer. This takes into account the wind
+        float flare_distance = groundspeed * flare_time;
+        
+        // don't allow the flare before half way along the final leg
+        if (flare_distance > total_distance/2) {
+            flare_distance = total_distance/2;
+        }
+
+        // now calculate our aim point, which is before the landing
+        // point and above it
+        location_update(loc, land_bearing_cd*0.01f, -flare_distance);
+        loc.alt += aim_height*100;
+
+        // calculate slope to landing point
+        float land_slope = (sink_height - aim_height) / total_distance;
+
+        // calculate point along that slope 500m ahead
         location_update(loc, land_bearing_cd*0.01f, land_projection);
-        loc.alt += land_slope * land_projection * 100;
+        loc.alt -= land_slope * land_projection * 100;
 
         // setup the offset_cm for set_target_altitude_proportion()
         target_altitude.offset_cm = loc.alt - prev_WP_loc.alt;
 
         // calculate the proportion we are to the target
-        float land_distance = get_distance(current_loc, loc);
-        float land_total_distance = get_distance(prev_WP_loc, loc);
+        float land_proportion = location_path_proportion(current_loc, prev_WP_loc, loc);
 
         // now setup the glide slope for landing
-        set_target_altitude_proportion(loc, land_distance / land_total_distance);
+        set_target_altitude_proportion(loc, 1.0f - land_proportion);
 
         // stay within the range of the start and end locations in altitude
         constrain_target_altitude_location(loc, prev_WP_loc);

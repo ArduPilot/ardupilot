@@ -33,6 +33,7 @@
 #include <AP_Terrain.h>
 #include <AP_Mount.h>           // Camera/Antenna mount
 #include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
+#include <AP_BattMonitor.h>
 
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>

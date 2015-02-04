@@ -31,6 +31,15 @@
 #include <AP_Baro.h>
 #include <AP_Param.h>
 
+#include "../AP_OpticalFlow/AP_OpticalFlow.h"
+
+// Copter defaults to EKF on by default, all others off
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+#define AHRS_EKF_USE_DEFAULT    1
+#else
+#define AHRS_EKF_USE_DEFAULT    0
+#endif
+
 #define AP_AHRS_TRIM_LIMIT 10.0f        // maximum trim angle in degrees
 #define AP_AHRS_RP_P_MIN   0.05f        // minimum value for AHRS_RP_P parameter
 #define AP_AHRS_YAW_P_MIN  0.05f        // minimum value for AHRS_YAW_P parameter
@@ -56,6 +65,7 @@ public:
         yaw_sensor(0),
         _vehicle_class(AHRS_VEHICLE_UNKNOWN),
         _compass(NULL),
+        _optflow(NULL),
         _airspeed(NULL),
         _compass_last_update(0),
         _ins(ins),
@@ -129,6 +139,14 @@ public:
     const Compass* get_compass() const {
         return _compass;
     }
+
+    void set_optflow(const OpticalFlow *optflow) {
+        _optflow = optflow;
+    }
+
+    const OpticalFlow* get_optflow() const {
+        return _optflow;
+    }
         
     // allow for runtime change of orientation
     // this makes initial config easier
@@ -160,7 +178,11 @@ public:
     }
 
     // accelerometer values in the earth frame in m/s/s
-    const Vector3f &get_accel_ef(void) const { return _accel_ef[_ins.get_primary_accel()]; }
+    virtual const Vector3f &get_accel_ef(uint8_t i) const { return _accel_ef[i]; }
+    virtual const Vector3f &get_accel_ef(void) const { return get_accel_ef(_ins.get_primary_accel()); }
+
+    // blended accelerometer values in the earth frame in m/s/s
+    virtual const Vector3f &get_accel_ef_blended(void) const { return _accel_ef_blended; }
 
     // get yaw rate in earth frame in radians/sec
     float get_yaw_rate_earth(void) const { return get_gyro() * get_dcm_matrix().c; }
@@ -238,7 +260,7 @@ public:
     // return true if airspeed comes from an airspeed sensor, as
     // opposed to an IMU estimate
     bool airspeed_sensor_enabled(void) const {
-        return _airspeed != NULL && _airspeed->use();
+        return _airspeed != NULL && _airspeed->use() && _airspeed->healthy();
     }
 
     // return a ground vector estimate in meters/second, in North/East order
@@ -345,7 +367,7 @@ public:
     uint8_t get_active_accel_instance(void) const { return _active_accel_instance; }
 
     // is the AHRS subsystem healthy?
-    virtual bool healthy(void) = 0;
+    virtual bool healthy(void) const = 0;
 
     // true if the AHRS has completed initialisation
     virtual bool initialised(void) const { return true; };
@@ -382,6 +404,9 @@ protected:
     // pointer to compass object, if available
     Compass         * _compass;
 
+    // pointer to OpticalFlow object, if available
+    const OpticalFlow *_optflow;
+
     // pointer to airspeed object, if available
     AP_Airspeed     * _airspeed;
 
@@ -403,6 +428,7 @@ protected:
 
     // accelerometer values in the earth frame in m/s/s
     Vector3f        _accel_ef[INS_MAX_INSTANCES];
+    Vector3f        _accel_ef_blended;
 
 	// Declare filter states for HPF and LPF used by complementary
 	// filter in AP_AHRS::groundspeed_vector

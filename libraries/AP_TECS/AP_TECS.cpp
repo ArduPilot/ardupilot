@@ -160,13 +160,21 @@ const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
 	// @User: Advanced
     AP_GROUPINFO("LAND_SINK", 17, AP_TECS, _land_sink, 0.25f),
 
-    // @Param: TECS_LAND_TCONST
+    // @Param: LAND_TCONST
     // @DisplayName: Land controller time constant (sec)
     // @Description: This is the time constant of the TECS control algorithm when in final landing stage of flight. It should be smaller than TECS_TIME_CONST to allow for faster flare
 	// @Range: 1.0 5.0
 	// @Increment: 0.2
 	// @User: Advanced
     AP_GROUPINFO("LAND_TCONST", 18, AP_TECS, _landTimeConst, 2.0f),
+
+    // @Param: LAND_DAMP
+    // @DisplayName: Controller sink rate to pitch gain during flare
+    // @Description: This is the sink rate gain for the pitch demand loop when in final landing stage of flight. It should be larger than TECS_PTCH_DAMP to allow for better sink rate control during flare.
+    // @Range: 0.1 1.0
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("LAND_DAMP", 19, AP_TECS, _landDamp, 0.5f),
 
     AP_GROUPEND
 };
@@ -380,13 +388,14 @@ void AP_TECS::_update_height_demand(void)
 
 	// Apply first order lag to height demand
 	_hgt_dem_adj = 0.05f * _hgt_dem + 0.95f * _hgt_dem_adj_last;
-	_hgt_dem_adj_last = _hgt_dem_adj;
 
     // in final landing stage force height rate demand to the
-    // configured sink rate
+    // configured sink rate and adjust the demanded height to
+    // be kinematically consistent with the height rate.
 	if (_flight_stage == FLIGHT_LAND_FINAL) {
         if (_flare_counter == 0) {
             _hgt_rate_dem = _climb_rate;
+            _land_hgt_dem = _hgt_dem_adj;
         }
         // bring it in over 1s to prevent overshoot
         if (_flare_counter < 10) {
@@ -395,10 +404,24 @@ void AP_TECS::_update_height_demand(void)
         } else {
             _hgt_rate_dem = - _land_sink;
         }
-	} else {
+        _land_hgt_dem += 0.1f * _hgt_rate_dem;
+        _hgt_dem_adj = _land_hgt_dem;
+    } else {
         _hgt_rate_dem = (_hgt_dem_adj - _hgt_dem_adj_last) / 0.1f;
         _flare_counter = 0;
     }
+
+    // for landing approach we will predict ahead by the time constant
+    // plus the lag produced by the first order filter. This avoids a
+    // lagged height demand while constantly descending which causes
+    // us to consistently be above the desired glide slope. This will
+    // be replaced with a better zero-lag filter in the future.
+    float new_hgt_dem = _hgt_dem_adj;
+	if (_flight_stage == FLIGHT_LAND_APPROACH || _flight_stage == FLIGHT_LAND_FINAL) {
+        new_hgt_dem += (_hgt_dem_adj - _hgt_dem_adj_last)*10.0f*(timeConstant()+1);
+    }
+    _hgt_dem_adj_last = _hgt_dem_adj;
+    _hgt_dem_adj = new_hgt_dem;
 }
 
 void AP_TECS::_detect_underspeed(void) 
@@ -643,11 +666,16 @@ void AP_TECS::_update_pitch(void)
     // During climbout/takeoff, bias the demanded pitch angle so that zero speed error produces a pitch angle 
     // demand equal to the minimum value (which is )set by the mission plan during this mode). Otherwise the
     // integrator has to catch up before the nose can be raised to reduce speed during climbout.
+    // During flare a different damping gain is used
 	float gainInv = (_integ5_state * timeConstant() * GRAVITY_MSS);
-    float temp = SEB_error + SEBdot_error * _ptchDamp + SEBdot_dem * timeConstant();
-    if (_flight_stage == AP_TECS::FLIGHT_TAKEOFF)
-    {
-    	temp += _PITCHminf * gainInv;
+    float temp = SEB_error + SEBdot_dem * timeConstant();
+    if (_flight_stage == AP_TECS::FLIGHT_LAND_FINAL) {
+        temp += SEBdot_error * _landDamp;
+    } else {
+        temp += SEBdot_error * _ptchDamp;
+    }
+    if (_flight_stage == AP_TECS::FLIGHT_TAKEOFF) {
+        temp += _PITCHminf * gainInv;
     }
     _integ7_state = constrain_float(_integ7_state, (gainInv * (_PITCHminf - 0.0783f)) - temp, (gainInv * (_PITCHmaxf + 0.0783f)) - temp);
 
@@ -655,8 +683,6 @@ void AP_TECS::_update_pitch(void)
     _pitch_dem_unc = (temp + _integ7_state) / gainInv;
 
     // Constrain pitch demand
-    _pitch_dem = constrain_float(_pitch_dem_unc, _PITCHminf, _PITCHmaxf);
-
     _pitch_dem = constrain_float(_pitch_dem_unc, _PITCHminf, _PITCHmaxf);
 
     // Rate limit the pitch demand to comply with specified vertical

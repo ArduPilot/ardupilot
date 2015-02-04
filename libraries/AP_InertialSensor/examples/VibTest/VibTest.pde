@@ -34,6 +34,7 @@
 #include <AP_Declination.h>
 #include <AP_Notify.h>
 #include <AP_NavEKF.h>
+#include <AP_BattMonitor.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 
 #include <drivers/drv_accel.h>

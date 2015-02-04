@@ -37,6 +37,9 @@
 #include <AP_HAL_AVR_SITL.h>
 #include <AP_HAL_Empty.h>
 #include <AP_HAL_PX4.h>
+#include <AP_BattMonitor.h>
+#include <AP_SerialManager.h>
+#include <RC_Channel.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
@@ -50,7 +53,8 @@ AP_ADC_ADS7844 adc;
 AP_Compass_HMC5843 compass;
 
 AP_GPS gps;
-AP_Baro_HIL baro;
+AP_Baro baro;
+AP_SerialManager serial_manager;
 
 // choose which AHRS system to use
 AP_AHRS_DCM  ahrs(ins, baro, gps);
@@ -74,6 +78,7 @@ void setup(void)
     ins.init_accel();
 
     ahrs.init();
+    serial_manager.init();
 
     if( compass.init() ) {
         hal.console->printf("Enabling compass\n");
@@ -81,7 +86,7 @@ void setup(void)
     } else {
         hal.console->printf("No compass detected\n");
     }
-    gps.init(NULL);
+    gps.init(NULL, serial_manager);
 }
 
 void loop(void)

@@ -1,7 +1,8 @@
 
 #include <AP_HAL.h>
+#include "GPIO.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
 
 #include "RCOutput_Navio.h"
 #include <sys/types.h>
@@ -17,6 +18,7 @@
 using namespace Linux;
 
 #define PWM_CHAN_COUNT 13
+#define PCA9685_OUTPUT_ENABLE RPI_GPIO_27
 
 static const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
@@ -28,9 +30,14 @@ void LinuxRCOutput_Navio::init(void* machtnicht)
                                   "valid I2C semaphore!"));
         return; // never reached
     }
-    
+
     // Set the initial frequency
     set_freq(0, 50);
+    
+    /* Enable PCA9685 PWM */
+    enable_pin = hal.gpio->channel(PCA9685_OUTPUT_ENABLE);
+    enable_pin->mode(HAL_GPIO_OUTPUT);
+    enable_pin->write(0);
 }
 
 void LinuxRCOutput_Navio::set_freq(uint32_t chmask, uint16_t freq_hz)

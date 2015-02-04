@@ -31,6 +31,7 @@
 #include <DataFlash.h>
 #include <AP_NavEKF.h>
 #include <AP_Rally.h>
+#include <AP_BattMonitor.h>
 #include <AP_Scheduler.h>
 
 #include <AP_HAL_AVR.h>

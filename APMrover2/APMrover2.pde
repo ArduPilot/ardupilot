@@ -88,6 +88,7 @@
 #include <AP_Mount.h>		// Camera/Antenna mount
 #include <AP_Camera.h>		// Camera triggering
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
+#include <AP_SerialManager.h>   // Serial manager library
 #include <AP_Airspeed.h>    // needed for AHRS build
 #include <AP_Vehicle.h>     // needed for AHRS build
 #include <DataFlash.h>
@@ -112,6 +113,7 @@
 
 #include <AP_Notify.h>      // Notify library
 #include <AP_BattMonitor.h> // Battery monitor library
+#include <AP_OpticalFlow.h>     // Optical Flow library
 
 // Configuration
 #include "config.h"
@@ -200,21 +202,7 @@ static AP_GPS gps;
 // flight modes convenience array
 static AP_Int8		*modes = &g.mode1;
 
-#if CONFIG_BARO == HAL_BARO_BMP085
-static AP_Baro_BMP085 barometer;
-#elif CONFIG_BARO == HAL_BARO_PX4
-static AP_Baro_PX4 barometer;
-#elif CONFIG_BARO == HAL_BARO_VRBRAIN
-static AP_Baro_VRBRAIN barometer;
-#elif CONFIG_BARO == HAL_BARO_HIL
-static AP_Baro_HIL barometer;
-#elif CONFIG_BARO == HAL_BARO_MS5611
-static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::i2c);
-#elif CONFIG_BARO == HAL_BARO_MS5611_SPI
-static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::spi);
-#else
- #error Unrecognized CONFIG_BARO setting
-#endif
+static AP_Baro barometer;
 
 #if CONFIG_COMPASS == HAL_COMPASS_PX4
 static AP_Compass_PX4 compass;
@@ -224,6 +212,8 @@ static AP_Compass_VRBRAIN compass;
 static AP_Compass_HMC5843 compass;
 #elif CONFIG_COMPASS == HAL_COMPASS_HIL
 static AP_Compass_HIL compass;
+#elif CONFIG_COMPASS == HAL_COMPASS_AK8963
+static AP_Compass_AK8963_MPU9250 compass;
 #else
  #error Unrecognized CONFIG_COMPASS setting
 #endif
@@ -258,6 +248,8 @@ static bool verify_command(const AP_Mission::Mission_Command& cmd);
 static void exit_mission();
 AP_Mission mission(ahrs, &start_command, &verify_command, &exit_mission);
 
+static OpticalFlow optflow;
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 SITL sitl;
 #endif
@@ -265,7 +257,7 @@ SITL sitl;
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection
 ////////////////////////////////////////////////////////////////////////////////
-//
+static AP_SerialManager serial_manager;
 static const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
 static GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
 
@@ -295,7 +287,7 @@ static struct 	Location current_loc;
 // --------------------------------------
 #if MOUNT == ENABLED
 // current_loc uses the baro/gps soloution for altitude rather than gps only.
-AP_Mount camera_mount(&current_loc, ahrs, 0);
+AP_Mount camera_mount(ahrs, current_loc);
 #endif
 
 
@@ -548,6 +540,7 @@ void setup() {
     // rover does not use arming nor pre-arm checks
     AP_Notify::flags.armed = true;
     AP_Notify::flags.pre_arm_check = true;
+    AP_Notify::flags.pre_arm_gps_check = true;
     AP_Notify::flags.failsafe_battery = false;
 
     notify.init(false);
@@ -624,7 +617,7 @@ static void ahrs_update()
 static void mount_update(void)
 {
 #if MOUNT == ENABLED
-	camera_mount.update_mount_position();
+	camera_mount.update();
 #endif
 #if CAMERA == ENABLED
     camera.trigger_pic_cleanup();
@@ -633,7 +626,7 @@ static void mount_update(void)
 
 static void update_alt()
 {
-    barometer.read();
+    barometer.update();
     if (should_log(MASK_LOG_IMU)) {
         Log_Write_Baro();
     }
@@ -669,7 +662,7 @@ static void update_compass(void)
         // update offsets
         compass.learn_offsets();
         if (should_log(MASK_LOG_COMPASS)) {
-            Log_Write_Compass();
+            DataFlash.Log_Write_Compass(compass);
         }
     } else {
         ahrs.set_compass(NULL);
@@ -713,10 +706,6 @@ static void update_logging2(void)
 static void update_aux(void)
 {
     RC_Channel_aux::enable_aux_servos();
-        
-#if MOUNT == ENABLED
-    camera_mount.update_mount_type();
-#endif
 }
 
 /*
@@ -736,10 +725,6 @@ static void one_second_loop(void)
 
     // cope with changes to aux functions
     update_aux();
-
-#if MOUNT == ENABLED
-    camera_mount.update_mount_type();
-#endif
 
     // cope with changes to mavlink system ID
     mavlink_system.sysid = g.sysid_this_mav;

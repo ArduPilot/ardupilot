@@ -108,6 +108,13 @@ void AP_MotorsTri::output_armed()
         limit.throttle_upper = true;
     }
 
+    // tricopters limit throttle to 80%
+    // To-Do: implement improved stability patch and remove this limit
+    if (_rc_throttle.servo_out > 800) {
+        _rc_throttle.servo_out = 800;
+        limit.throttle_upper = true;
+    }
+
     // capture desired roll, pitch, yaw and throttle from receiver
     _rc_roll.calc_pwm();
     _rc_pitch.calc_pwm();

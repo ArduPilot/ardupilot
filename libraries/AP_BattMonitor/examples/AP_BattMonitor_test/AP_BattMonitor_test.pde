@@ -39,9 +39,11 @@ uint32_t timer;
 void setup() {
     hal.console->println("Battery monitor library test");
 
+    // set battery monitor to smbus
+    battery_mon.set_monitoring(0, AP_BattMonitor::BattMonitor_TYPE_SMBUS);
+
     // initialise the battery monitor
     battery_mon.init();
-    battery_mon.set_monitoring(AP_BATT_MONITOR_VOLTAGE_AND_CURRENT);
 
     hal.scheduler->delay(1000);
     timer = hal.scheduler->millis();

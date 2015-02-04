@@ -38,38 +38,9 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(sysid_my_gcs,           "SYSID_MYGCS",    255),
 
-    // @Param: SERIAL0_BAUD
-    // @DisplayName: USB Console Baud Rate
-    // @Description: The baud rate used on the USB console. The APM2 can support all baudrates up to 115, and also can support 500. The PX4 can support rates of up to 1500. If you setup a rate you cannot support on APM2 and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
-    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,500:500000,921:921600,1500:1500000
-    // @User: Standard
-    GSCALAR(serial0_baud,           "SERIAL0_BAUD",   SERIAL0_BAUD/1000),
-
-    // @Param: SERIAL1_BAUD
-    // @DisplayName: Telemetry Baud Rate
-    // @Description: The baud rate used on the first telemetry port. The APM2 can support all baudrates up to 115, and also can support 500. The PX4 can support rates of up to 1500. If you setup a rate you cannot support on APM2 and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
-    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,500:500000,921:921600,1500:1500000
-    // @User: Standard
-    GSCALAR(serial1_baud,           "SERIAL1_BAUD",   SERIAL1_BAUD/1000),
-
-#if MAVLINK_COMM_NUM_BUFFERS > 2
-    // @Param: SERIAL2_BAUD
-    // @DisplayName: Telemetry Baud Rate
-    // @Description: The baud rate used on the second telemetry port. The APM2 can support all baudrates up to 115, and also can support 500. The PX4 can support rates of up to 1500. If you setup a rate you cannot support on APM2 and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
-    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,500:500000,921:921600,1500:1500000
-    // @User: Standard
-    GSCALAR(serial2_baud,           "SERIAL2_BAUD",   SERIAL2_BAUD/1000),
-
-#if FRSKY_TELEM_ENABLED == ENABLED
-    // @Param: SERIAL2_PROTOCOL
-    // @DisplayName: SERIAL2 protocol selection
-    // @Description: Control what protocol telemetry 2 port should be used for
-    // @Values: 1:GCS Mavlink,2:Frsky D-PORT
-    // @User: Standard
-    GSCALAR(serial2_protocol,        "SERIAL2_PROTOCOL", SERIAL2_MAVLINK),
-#endif // FRSKY_TELEM_ENABLED
-
-#endif // MAVLINK_COMM_NUM_BUFFERS
+    // @Group: SERIAL
+    // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
+    GOBJECT(serial_manager, "SERIAL",   AP_SerialManager),
 
     // @Param: AUTOTUNE_LEVEL
     // @DisplayName: Autotune level
@@ -231,14 +202,14 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: LAND_PITCH_CD
     // @DisplayName: Landing Pitch
-    // @Description: Used in autoland for planes without airspeed sensors in hundredths of a degree
+    // @Description: Used in autoland to give the minimum pitch in the final stage of landing (after the flare). This parameter can be used to ensure that the final landing attitude is appropriate for the type of undercarriage on the aircraft. Note that it is a minimum pitch only - the landing code will control pitch above this value to try to achieve the configured landing sink rate.
     // @Units: centi-Degrees
     // @User: Advanced
     ASCALAR(land_pitch_cd,          "LAND_PITCH_CD",  0),
 
     // @Param: LAND_FLARE_ALT
     // @DisplayName: Landing flare altitude
-    // @Description: Altitude in autoland at which to lock heading and flare to the LAND_PITCH_CD pitch
+    // @Description: Altitude in autoland at which to lock heading and flare to the LAND_PITCH_CD pitch. Note that this option is secondary to LAND_FLARE_SEC. For a good landing it preferable that the flare is triggered by LAND_FLARE_SEC. 
     // @Units: meters
     // @Increment: 0.1
     // @User: Advanced
@@ -246,7 +217,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: LAND_FLARE_SEC
     // @DisplayName: Landing flare time
-    // @Description: Time before landing point at which to lock heading and flare to the LAND_PITCH_CD pitch
+    // @Description: Vertical time before landing point at which to lock heading and flare with the motor stopped. This is vertical time, and is calculated based solely on the current height above the ground and the current descent rate.
     // @Units: seconds
     // @Increment: 0.1
     // @User: Advanced
@@ -1109,18 +1080,12 @@ const AP_Param::Info var_info[] PROGMEM = {
 #if MOUNT == ENABLED
     // @Group: MNT_
     // @Path: ../libraries/AP_Mount/AP_Mount.cpp
-    GOBJECT(camera_mount,           "MNT_", AP_Mount),
-#endif
-
-#if MOUNT2 == ENABLED
-    // @Group: MNT2_
-    // @Path: ../libraries/AP_Mount/AP_Mount.cpp
-    GOBJECT(camera_mount2,           "MNT2_",       AP_Mount),
+    GOBJECT(camera_mount,           "MNT",  AP_Mount),
 #endif
 
     // @Group: BATT_
     // @Path: ../libraries/AP_BattMonitor/AP_BattMonitor.cpp
-    GOBJECT(battery,                "BATT_",       AP_BattMonitor),
+    GOBJECT(battery,                "BATT", AP_BattMonitor),
 
     // @Group: BRD_
     // @Path: ../libraries/AP_BoardConfig/AP_BoardConfig.cpp
@@ -1142,6 +1107,12 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Group: EKF_
     // @Path: ../libraries/AP_NavEKF/AP_NavEKF.cpp
     GOBJECTN(ahrs.get_NavEKF(), NavEKF, "EKF_", NavEKF),
+#endif
+
+#if OPTFLOW == ENABLED
+    // @Group: FLOW
+    // @Path: ../libraries/AP_OpticalFlow/OpticalFlow.cpp
+    GOBJECT(optflow,   "FLOW", OpticalFlow),
 #endif
 
     // @Group: MIS_
@@ -1189,6 +1160,9 @@ const AP_Param::ConversionInfo conversion_table[] PROGMEM = {
     { Parameters::k_param_log_bitmask_old,    0,      AP_PARAM_INT16, "LOG_BITMASK" },
     { Parameters::k_param_rally_limit_km_old, 0,      AP_PARAM_FLOAT, "RALLY_LIMIT_KM" },
     { Parameters::k_param_rally_total_old,    0,      AP_PARAM_INT8, "RALLY_TOTAL" },
+    { Parameters::k_param_serial0_baud,       0,      AP_PARAM_INT16, "SERIAL0_BAUD" },
+    { Parameters::k_param_serial1_baud,       0,      AP_PARAM_INT16, "SERIAL1_BAUD" },
+    { Parameters::k_param_serial2_baud,       0,      AP_PARAM_INT16, "SERIAL2_BAUD" },
 };
 
 static void load_parameters(void)

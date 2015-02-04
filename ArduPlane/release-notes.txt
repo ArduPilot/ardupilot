@@ -1,3 +1,40 @@
+Release 3.2.1, February XX 2014
+-------------------------------
+
+The ardupilot development team is proud to announce the release of
+version 3.2.1 of APM:Plane. This is primarily a bugfix release, but
+does have some new features.
+
+The major changes in this release are:
+
+  - fixed a mission handling bug that could cause a crash if jump
+    commands form an infinite loop (thanks to Dellarb for reporting
+    this bug)
+  - improved support for in-kernel SPI handling on Linux (thanks to John Williams)
+  - support UAVCAN based ESCs and GPS modules on Pixhawk (thanks to
+    Pavel, Holger and and PX4 dev team)
+  - Multiple updates for the NavIO+ cape on RaspberryPi (thanks to
+    Emlid)
+  - multiple automatic landing fixes, including improvements in flare
+    detection, glide slope calculation and lag handling
+  - fixed a bug that could cause a change altitude MAVLink command
+    from causing a sudden descent
+  - re-enable CLI on non-APM1/APM2 boards
+  - Lots of EKF changes, including reducing impact of ground magnetic
+    interference, reducing the impact of a GPS outage and integrating
+    optical flow support
+  - added initial support for the PX4 optical flow sensor. Just
+    logging for this release.
+  - added support for MAVLink packet routing
+  - added detection and recovery from faulty gyro and accel sensors
+  - improved arming checks code to detect a lot more error conditions,
+    and change the ARMING_CHECK default value to check all error
+    conditions.
+  - added support for BBBMini Linux port
+  - increased number of AVR input channels from 8 to 11
+  - auto-set system clock based on GPS in Linux ports
+  - added SBUS FrSky telemetry support (thanks to Mathias)
+
 Release 3.2.0, November 25th 2014
 ---------------------------------
 

@@ -48,7 +48,10 @@
 #include <AP_Rally.h>
 #include <AP_BattMonitor.h>
 #include <AP_Terrain.h>
+#include <AP_OpticalFlow.h>
 #include <Parameters.h>
+#include <AP_SerialManager.h>
+#include <RC_Channel.h>
 #include <stdio.h>
 #include <getopt.h>
 #include <errno.h>
@@ -66,7 +69,7 @@ const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 static Parameters g;
 
 static AP_InertialSensor ins;
-static AP_Baro_HIL barometer;
+static AP_Baro barometer;
 static AP_GPS gps;
 static AP_Compass_HIL compass;
 static AP_AHRS_NavEKF ahrs(ins, barometer, gps);
@@ -75,6 +78,7 @@ static Baro_Glitch baro_glitch(barometer);
 static AP_InertialNav inertial_nav(ahrs, barometer, gps_glitch, baro_glitch);
 static AP_Vehicle::FixedWing aparm;
 static AP_Airspeed airspeed(aparm);
+static DataFlash_File dataflash("logs");
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 SITL sitl;
@@ -82,7 +86,7 @@ SITL sitl;
 
 static const NavEKF &NavEKF = ahrs.get_NavEKF();
 
-static LogReader LogReader(ahrs, ins, barometer, compass, gps, airspeed);
+static LogReader LogReader(ahrs, ins, barometer, compass, gps, airspeed, dataflash);
 
 static FILE *plotf;
 static FILE *plotf2;
@@ -102,6 +106,10 @@ static struct {
     char name[17];
     float value;
 } user_parameters[100];
+
+static const struct LogStructure log_structure[] PROGMEM = {
+    LOG_COMMON_STRUCTURES
+};
 
 // setup the var_info table
 AP_Param param_loader(var_info);
@@ -186,6 +194,9 @@ void setup()
         exit(1);
     }
 
+    dataflash.Init(log_structure, sizeof(log_structure)/sizeof(log_structure[0]));
+    dataflash.StartNewLog();
+
     LogReader.wait_type(LOG_GPS_MSG);
     LogReader.wait_type(LOG_IMU_MSG);
     LogReader.wait_type(LOG_GPS_MSG);
@@ -200,11 +211,13 @@ void setup()
 
     if (arm_time_ms != 0) {
         ahrs.set_armed(false);
+    } else {
+        ahrs.set_armed(true);
     }
 
     barometer.init();
     barometer.setHIL(0);
-    barometer.read();
+    barometer.update();
     compass.init();
     inertial_nav.init();
     ins.set_hil_mode();
@@ -304,6 +317,8 @@ static void read_sensors(uint8_t type)
                 inertial_nav.update(ins.get_delta_time());
             }
             hal.scheduler->stop_clock(hal.scheduler->micros() + (i+1)*update_delta_usec);
+            dataflash.Log_Write_EKF(ahrs,false);
+            dataflash.Log_Write_AHRS2(ahrs);
             ins.set_gyro(0, ins.get_gyro());
             ins.set_accel(0, ins.get_accel());
         }
@@ -314,7 +329,7 @@ static void read_sensors(uint8_t type)
     } else if (type == LOG_PLANE_AIRSPEED_MSG && LogReader.vehicle == LogReader::VEHICLE_PLANE) {
         ahrs.set_airspeed(&airspeed);
     } else if (type == LOG_BARO_MSG) {
-        barometer.read();
+        barometer.update();
         if (!done_baro_init) {
             done_baro_init = true;
             ::printf("Barometer initialised\n");
@@ -342,7 +357,8 @@ void loop()
         }
         read_sensors(type);
 
-        if ((type == LOG_PLANE_ATTITUDE_MSG && LogReader.vehicle == LogReader::VEHICLE_PLANE) ||
+        if ((type == LOG_ATTITUDE_MSG) ||
+            (type == LOG_PLANE_ATTITUDE_MSG && LogReader.vehicle == LogReader::VEHICLE_PLANE) ||
             (type == LOG_COPTER_ATTITUDE_MSG && LogReader.vehicle == LogReader::VEHICLE_COPTER) ||
             (type == LOG_ROVER_ATTITUDE_MSG && LogReader.vehicle == LogReader::VEHICLE_ROVER)) {
 
@@ -452,12 +468,12 @@ void loop()
             float       posN  = (float)(posNED.x); // metres North
             float       posE  = (float)(posNED.y); // metres East
             float       posD  = (float)(posNED.z); // metres Down
-            int16_t     gyrX  = (int16_t)(6000*degrees(gyroBias.x)); // centi-deg/min
-            int16_t     gyrY  = (int16_t)(6000*degrees(gyroBias.y)); // centi-deg/min
-            int16_t     gyrZ  = (int16_t)(6000*degrees(gyroBias.z)); // centi-deg/min
+            float       gyrX  = (float)(6000*degrees(gyroBias.x)); // centi-deg/min
+            float       gyrY  = (float)(6000*degrees(gyroBias.y)); // centi-deg/min
+            float       gyrZ  = (float)(6000*degrees(gyroBias.z)); // centi-deg/min
 
             // print EKF1 data packet
-            fprintf(ekf1f, "%.3f %u %d %d %u %.2f %.2f %.2f %.2f %.2f %.2f %d %d %d\n",
+            fprintf(ekf1f, "%.3f %u %d %d %u %.2f %.2f %.2f %.2f %.2f %.2f %.0f %.0f %.0f\n",
                     hal.scheduler->millis() * 0.001f,
                     hal.scheduler->millis(),
                     roll, 
@@ -541,19 +557,19 @@ void loop()
             int16_t offsetEast = (int8_t)(constrain_float(offset.y,INT16_MIN,INT16_MAX));
 
             // print EKF4 data packet
-            fprintf(ekf4f, "%.3f %d %d %d %d %d %d %d %d %d %d %d %d\n",
+            fprintf(ekf4f, "%.3f %u %d %d %d %d %d %d %d %d %d %d\n",
                     hal.scheduler->millis() * 0.001f,
-                    hal.scheduler->millis(),
-                    sqrtvarV,
-                    sqrtvarP,
-                    sqrtvarH,
-                    sqrtvarMX, 
-                    sqrtvarMY, 
-                    sqrtvarMZ,
-                    sqrtvarVT,
-                    offsetNorth,
-                    offsetEast,
-                    faultStatus);
+                    (unsigned)hal.scheduler->millis(),
+                    (int)sqrtvarV,
+                    (int)sqrtvarP,
+                    (int)sqrtvarH,
+                    (int)sqrtvarMX, 
+                    (int)sqrtvarMY, 
+                    (int)sqrtvarMZ,
+                    (int)sqrtvarVT,
+                    (int)offsetNorth,
+                    (int)offsetEast,
+                    (int)faultStatus);
         }
     }
 }

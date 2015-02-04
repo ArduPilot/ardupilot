@@ -115,6 +115,14 @@ bool        location_passed_point(const struct Location & location,
                                   const struct Location & point1,
                                   const struct Location & point2);
 
+/*
+  return the proportion we are along the path from point1 to
+  point2. This will be less than >1 if we have passed point2
+ */
+float location_path_proportion(const struct Location &location,
+                               const struct Location &point1,
+                               const struct Location &point2);
+
 //  extrapolate latitude/longitude given bearing and distance
 void        location_update(struct Location &loc, float bearing, float distance);
 

@@ -22,9 +22,9 @@
 #define __RGBLED_H__
 
 #include <AP_HAL.h>
-#include "Led.h"
+#include "NotifyDevice.h"
 
-class RGBLed: public Led {
+class RGBLed: public NotifyDevice {
 public:
     RGBLed(uint8_t led_off, uint8_t led_bright, uint8_t led_medium, uint8_t led_dim);
 

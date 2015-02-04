@@ -13,7 +13,7 @@ StorageAccess AP_Rally::_storage(StorageManager::StorageRally);
 // ArduCopter/defines.h sets this, and this definition will be moved into ArduPlane/defines.h when that is patched to use the lib
 #ifdef APM_BUILD_DIRECTORY
   #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-    #define RALLY_LIMIT_KM_DEFAULT 2.0
+    #define RALLY_LIMIT_KM_DEFAULT 0.3
   #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     #define RALLY_LIMIT_KM_DEFAULT 5.0
   #elif APM_BUILD_TYPE(APM_BUILD_APMrover2)

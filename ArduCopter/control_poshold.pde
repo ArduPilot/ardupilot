@@ -77,7 +77,7 @@ static struct {
 
     // loiter related variables
     int16_t controller_to_pilot_timer_roll;     // cycles to mix controller and pilot controls in POSHOLD_CONTROLLER_TO_PILOT
-    int16_t controller_to_pilot_timer_pitch;        // cycles to mix controller and pilot controls in POSHOLD_CONTROLLER_TO_PILOT
+    int16_t controller_to_pilot_timer_pitch;    // cycles to mix controller and pilot controls in POSHOLD_CONTROLLER_TO_PILOT
     int16_t controller_final_roll;              // final roll angle from controller as we exit brake or loiter mode (used for mixing with pilot input)
     int16_t controller_final_pitch;             // final pitch angle from controller as we exit brake or loiter mode (used for mixing with pilot input)
 
@@ -85,8 +85,8 @@ static struct {
     Vector2f wind_comp_ef;                      // wind compensation in earth frame, filtered lean angles from position controller
     int16_t wind_comp_roll;                     // roll angle to compensate for wind
     int16_t wind_comp_pitch;                    // pitch angle to compensate for wind
-    int8_t  wind_comp_start_timer;              // counter to delay start of wind compensation for a short time after loiter is engaged
-    int8_t  wind_comp_timer;         // counter to reduce wind comp roll/pitch lean angle calcs to 10hz
+    uint16_t wind_comp_start_timer;             // counter to delay start of wind compensation for a short time after loiter is engaged
+    int8_t  wind_comp_timer;                    // counter to reduce wind comp roll/pitch lean angle calcs to 10hz
 
     // final output
     int16_t roll;   // final roll angle sent to attitude controller
@@ -97,7 +97,7 @@ static struct {
 static bool poshold_init(bool ignore_checks)
 {
     // fail to initialise PosHold mode if no GPS lock
-    if (!GPS_ok() && !ignore_checks) {
+    if (!position_ok() && !ignore_checks) {
         return false;
     }
     
@@ -154,7 +154,7 @@ static void poshold_run()
     const Vector3f& vel = inertial_nav.get_velocity();
 
     // if not auto armed set throttle to zero and exit immediately
-    if(!ap.auto_armed || !inertial_nav.position_ok()) {
+    if(!ap.auto_armed) {
         wp_nav.init_loiter_target();
         attitude_control.relax_bf_rate_controller();
         attitude_control.set_yaw_target_to_current_heading();
@@ -441,7 +441,7 @@ static void poshold_run()
                     poshold_update_brake_angle_from_velocity(poshold.brake_pitch, -vel_fw);
 
                     // run loiter controller
-                    wp_nav.update_loiter();
+                    wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
                     // calculate final roll and pitch output by mixing loiter and brake controls
                     poshold.roll = poshold_mix_controls(brake_to_loiter_mix, poshold.brake_roll + poshold.wind_comp_roll, wp_nav.get_roll());
@@ -472,7 +472,7 @@ static void poshold_run()
 
                 case POSHOLD_LOITER:
                     // run loiter controller
-                    wp_nav.update_loiter();
+                    wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
                     // set roll angle based on loiter controller outputs
                     poshold.roll = wp_nav.get_roll();

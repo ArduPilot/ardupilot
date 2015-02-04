@@ -13,8 +13,14 @@ elif [ -x /usr/bin/konsole ]; then
   /usr/bin/konsole --hold -e $*
 elif [ -x /usr/bin/gnome-terminal ]; then
   /usr/bin/gnome-terminal -e "$*"
+elif [ -n "$STY" ]; then
+  # We are running inside of screen, try to start it there
+  /usr/bin/screen -X screen -t $name $*
 else
-  echo "ERROR: Please install xterm"
-  exit 1
+  filename="/tmp/$name.log"
+  echo "Window access not found, logging to $filename"
+  cmd="$1"
+  shift
+  ( run_cmd.sh $cmd $* &>$filename < /dev/null ) &
 fi
 exit 0

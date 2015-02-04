@@ -460,6 +460,7 @@ bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP
     // command's position in mission list and mavlink id
     cmd.index = packet.seq;
     cmd.id = packet.command;
+    cmd.content.location.options = 0;
 
     // command specific conversions from mavlink packet to mission command
     switch (cmd.id) {
@@ -1082,6 +1083,7 @@ bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool i
     uint16_t jump_index = AP_MISSION_CMD_INDEX_NONE;
 
     // search until the end of the mission command list
+    uint8_t max_loops = 64;
     while(cmd_index < (unsigned)_cmd_total) {
         // load the next command
         if (!read_cmd_from_storage(cmd_index, temp_cmd)) {
@@ -1091,6 +1093,10 @@ bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool i
 
         // check for do-jump command
         if (temp_cmd.id == MAV_CMD_DO_JUMP) {
+
+            if (max_loops-- == 0) {
+                return false;
+            }
 
             // check for invalid target
             if (temp_cmd.content.jump.target >= (unsigned)_cmd_total) {

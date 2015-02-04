@@ -194,7 +194,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
                                                          MAV_SYS_STATUS_SENSOR_3D_MAG |
                                                          MAV_SYS_STATUS_SENSOR_GPS |
                                                          MAV_SYS_STATUS_SENSOR_RC_RECEIVER);
-    if (barometer.healthy()) {
+    if (barometer.all_healthy()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
     }
     if (g.compass_enabled && compass.healthy(0) && ahrs.use_compass()) {
@@ -203,6 +203,11 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
     if (gps.status() > AP_GPS::NO_GPS && (!gps_glitch.glitching()||ap.usb_connected)) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_GPS;
     }
+#if OPTFLOW == ENABLED
+    if (optflow.healthy()) {
+        control_sensors_health |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
+    }
+#endif
     if (ap.rc_receiver_present && !failsafe.radio) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
     }
@@ -221,7 +226,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
     int16_t battery_current = -1;
     int8_t battery_remaining = -1;
 
-    if (battery.monitoring() == AP_BATT_MONITOR_VOLTAGE_AND_CURRENT) {
+    if (battery.has_current()) {
         battery_remaining = battery.capacity_remaining_pct();
         battery_current = battery.current_amps() * 100;
     }
@@ -271,17 +276,17 @@ static void NOINLINE send_location(mavlink_channel_t chan)
     } else {
         fix_time = millis();
     }
-    const Vector3f &vel = gps.velocity();
+    const Vector3f &vel = inertial_nav.get_velocity();
     mavlink_msg_global_position_int_send(
         chan,
         fix_time,
         current_loc.lat,                // in 1E7 degrees
         current_loc.lng,                // in 1E7 degrees
-        gps.location().alt * 10UL,      // millimeters above sea level
+        (ahrs.get_home().alt + current_loc.alt) * 10UL,      // millimeters above sea level
         current_loc.alt * 10,           // millimeters above ground
-        vel.x * 100,  // X speed cm/s (+ve North)
-        vel.y * 100,  // Y speed cm/s (+ve East)
-        vel.x * -100, // Z speed cm/s (+ve up)
+        vel.x,                          // X speed cm/s (+ve North)
+        vel.y,                          // Y speed cm/s (+ve East)
+        vel.z,                          // Z speed cm/s (+ve up)
         ahrs.yaw_sensor);               // compass heading in 1/100 degree
 }
 
@@ -640,6 +645,21 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 #endif // MOUNT == ENABLED
         break;
 
+    case MSG_OPTICAL_FLOW:
+#if OPTFLOW == ENABLED
+        CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
+        gcs[chan-MAVLINK_COMM_0].send_opticalflow(ahrs, optflow);
+#endif
+        break;
+
+    case MSG_GIMBAL_REPORT:
+#if MOUNT == ENABLED
+        CHECK_PAYLOAD_SIZE(GIMBAL_REPORT);
+        camera_mount.send_gimbal_report(chan);
+#endif
+        break;
+
+
     case MSG_FENCE_STATUS:
     case MSG_WIND:
         // unused
@@ -866,6 +886,8 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_TERRAIN);
 #endif
         send_message(MSG_MOUNT_STATUS);
+        send_message(MSG_OPTICAL_FLOW);
+        send_message(MSG_GIMBAL_REPORT);
     }
 }
 
@@ -883,8 +905,6 @@ void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
     }
 
     // To-Do: update target altitude for loiter or waypoint controller depending upon nav mode
-    // similar to how do_change_alt works
-    wp_nav.set_desired_alt(cmd.content.location.alt);
 }
 
 void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
@@ -986,6 +1006,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
     }
 
+    case MAVLINK_MSG_ID_GIMBAL_REPORT:
+    {
+        handle_gimbal_report(camera_mount, msg);
+        break;
+    }
+
     case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE:       // MAV ID: 70
     {
         // allow override of RC channel values for HIL
@@ -995,11 +1021,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         mavlink_rc_channels_override_t packet;
         int16_t v[8];
         mavlink_msg_rc_channels_override_decode(msg, &packet);
-
-        // exit immediately if this command is not meant for this vehicle
-        if (mavlink_check_target(packet.target_system,packet.target_component)) {
-            break;
-        }
 
         v[0] = packet.chan1_raw;
         v[1] = packet.chan2_raw;
@@ -1024,11 +1045,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         // decode packet
         mavlink_command_long_t packet;
         mavlink_msg_command_long_decode(msg, &packet);
-
-        // exit immediately if this command is not meant for this vehicle
-        if (mavlink_check_target(packet.target_system, packet.target_component)) {
-            break;
-        }
 
         switch(packet.command) {
 
@@ -1161,20 +1177,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         case MAV_CMD_COMPONENT_ARM_DISARM:
             if (packet.param1 == 1.0f) {
-                // run pre_arm_checks and arm_checks and display failures
-                pre_arm_checks(true);
-                if(ap.pre_arm_check && arm_checks(true, true)) {
-                    if (init_arm_motors()) {
-                        result = MAV_RESULT_ACCEPTED;
-                    } else {
-                        AP_Notify::flags.arming_failed = true;  // init_arm_motors function will reset flag back to false
-                        result = MAV_RESULT_UNSUPPORTED;
-                    }
-                }else{
-                    AP_Notify::flags.arming_failed = true;  // init_arm_motors function will reset flag back to false
+                // attempt to arm and return success or failure
+                if (init_arm_motors(false)) {
+                    result = MAV_RESULT_ACCEPTED;
+                } else {
                     result = MAV_RESULT_UNSUPPORTED;
                 }
-            } else if (packet.param1 == 0.0f && (manual_flight_mode(control_mode) || ap.land_complete))  {
+            } else if (packet.param1 == 0.0f && (mode_has_manual_throttle(control_mode) || ap.land_complete))  {
                 init_disarm_motors();
                 result = MAV_RESULT_ACCEPTED;
             } else {
@@ -1310,11 +1319,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         mavlink_set_position_target_local_ned_t packet;
         mavlink_msg_set_position_target_local_ned_decode(msg, &packet);
 
-        // exit immediately if this command is not meant for this vehicle
-        if (mavlink_check_target(packet.target_system, packet.target_component)) {
-            break;
-        }
-
         // exit if vehicle is not in Guided mode or Auto-Guided mode
         if ((control_mode != GUIDED) && !(control_mode == AUTO && auto_mode == Auto_NavGuided)) {
             break;
@@ -1332,7 +1336,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
          */
 
         if (!pos_ignore && !vel_ignore && acc_ignore) {
-            guided_set_destination_spline(Vector3f(packet.x * 100.0f, packet.y * 100.0f, -packet.z * 100.0f), Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
+            guided_set_destination_posvel(Vector3f(packet.x * 100.0f, packet.y * 100.0f, -packet.z * 100.0f), Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
         } else if (pos_ignore && !vel_ignore && acc_ignore) {
             guided_set_velocity(Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
         } else if (!pos_ignore && vel_ignore && acc_ignore) {
@@ -1349,11 +1353,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         // decode packet
         mavlink_set_position_target_global_int_t packet;
         mavlink_msg_set_position_target_global_int_decode(msg, &packet);
-
-        // exit immediately if this command is not meant for this vehicle
-        if (mavlink_check_target(packet.target_system, packet.target_component)) {
-            break;
-        }
 
         // exit if vehicle is not in Guided mode or Auto-Guided mode
         if ((control_mode != GUIDED) && !(control_mode == AUTO && auto_mode == Auto_NavGuided)) {
@@ -1400,7 +1399,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         }
 
         if (!pos_ignore && !vel_ignore && acc_ignore) {
-            guided_set_destination_spline(pos_ned, Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
+            guided_set_destination_posvel(pos_ned, Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
         } else if (pos_ignore && !vel_ignore && acc_ignore) {
             guided_set_velocity(Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
         } else if (!pos_ignore && vel_ignore && acc_ignore) {
@@ -1518,8 +1517,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_RALLY_POINT: {
         mavlink_rally_point_t packet;
         mavlink_msg_rally_point_decode(msg, &packet);
-        if (mavlink_check_target(packet.target_system, packet.target_component))
-            break;
 
         if (packet.idx >= rally.get_rally_total() ||
             packet.idx >= rally.get_rally_max()) {
@@ -1553,8 +1550,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         mavlink_rally_fetch_point_t packet;
         mavlink_msg_rally_fetch_point_decode(msg, &packet);
-        if (mavlink_check_target(packet.target_system, packet.target_component))
-            break;
 
         //send_text_P(SEVERITY_HIGH, PSTR("## getting rally point in GCS_Mavlink.pde 2")); // #### TEMP
 

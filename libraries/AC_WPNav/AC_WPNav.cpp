@@ -91,7 +91,6 @@ AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosContro
     _ahrs(ahrs),
     _pos_control(pos_control),
     _attitude_control(attitude_control),
-    _loiter_last_update(0),
     _loiter_step(0),
     _pilot_accel_fwd_cms(0),
     _pilot_accel_rgt_cms(0),
@@ -120,13 +119,8 @@ AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosContro
 /// init_loiter_target in cm from home
 void AC_WPNav::init_loiter_target(const Vector3f& position, bool reset_I)
 {
-    // if reset_I is false we warn position controller not to reset I terms
-    if (!reset_I) {
-        _pos_control.keep_xy_I_terms();
-    }
-    
     // initialise position controller
-    _pos_control.init_xy_controller();
+    _pos_control.init_xy_controller(reset_I);
 
     // initialise pos controller speed and acceleration
     _pos_control.set_speed_xy(_loiter_speed_cms);
@@ -191,6 +185,7 @@ void AC_WPNav::loiter_soften_for_landing()
 void AC_WPNav::set_loiter_velocity(float velocity_cms)
 {
     // range check velocity and update position controller
+    //float maxSpd_cms = _ahrs.getSpeedlimit();
     if (velocity_cms >= WPNAV_LOITER_SPEED_MIN) {
         _loiter_speed_cms = velocity_cms;
 
@@ -219,7 +214,7 @@ void AC_WPNav::get_loiter_stopping_point_xy(Vector3f& stopping_point) const
 
 /// calc_loiter_desired_velocity - updates desired velocity (i.e. feed forward) with pilot requested acceleration and fake wind resistance
 ///		updated velocity sent directly to position controller
-void AC_WPNav::calc_loiter_desired_velocity(float nav_dt)
+void AC_WPNav::calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit)
 {
     // range check nav_dt
     if( nav_dt < 0 ) {
@@ -276,6 +271,15 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt)
         }
     }
 
+    // limit EKF speed limit and convert to cm/s
+    ekfGndSpdLimit = 100.0f * max(ekfGndSpdLimit,0.1f);
+    // Apply EKF limit to desired velocity -  this limit is calculated by the EKF and adjusted as required to ensure certain sensor limits are respected (eg optical flow sensing)
+    float horizSpdDem = sqrtf(sq(desired_vel.x) + sq(desired_vel.y));
+    if (horizSpdDem > ekfGndSpdLimit) {
+        desired_vel.x = desired_vel.x * ekfGndSpdLimit / horizSpdDem;
+        desired_vel.y = desired_vel.y * ekfGndSpdLimit / horizSpdDem;
+    }
+
     // send adjusted feed forward velocity back to position controller
     _pos_control.set_desired_velocity_xy(desired_vel.x,desired_vel.y);
 }
@@ -286,28 +290,21 @@ int32_t AC_WPNav::get_loiter_bearing_to_target() const
     return get_bearing_cd(_inav.get_position(), _pos_control.get_pos_target());
 }
 
-/// update_loiter - run the loiter controller - should be called at 100hz
-void AC_WPNav::update_loiter()
+// update_loiter - run the loiter controller - gets called at 100hz (APM) or 400hz (PX4)
+void AC_WPNav::update_loiter(float ekfGndSpdLimit, float ekfNavVelGainScaler)
 {
     // calculate dt
-    uint32_t now = hal.scheduler->millis();
-    float dt = (now - _loiter_last_update) / 1000.0f;
+    float dt = _pos_control.time_since_last_xy_update();
 
-    // reset step back to 0 if 0.1 seconds has passed and we completed the last full cycle
-    if (dt >= WPNAV_LOITER_UPDATE_TIME) {
-        // double check dt is reasonable
-        if (dt >= 1.0f) {
-            dt = 0.0;
+    // run at poscontrol update rate.
+    // TODO: run on user input to reduce latency, maybe if (user_input || dt >= _pos_control.get_dt_xy())
+    if (dt >= _pos_control.get_dt_xy()) {
+        // sanity check dt
+        if (dt >= 0.2f) {
+            dt = 0.0f;
         }
-        // capture time since last iteration
-        _loiter_last_update = now;
-        // translate any adjustments from pilot to loiter target
-        calc_loiter_desired_velocity(dt);
-        // trigger position controller on next update
-        _pos_control.trigger_xy();
-    }else{
-        // run horizontal position controller
-        _pos_control.update_xy_controller(true);
+        calc_loiter_desired_velocity(dt,ekfGndSpdLimit);
+        _pos_control.update_xy_controller(true, ekfNavVelGainScaler);
     }
 }
 
@@ -595,32 +592,30 @@ int32_t AC_WPNav::get_wp_bearing_to_destination() const
 void AC_WPNav::update_wpnav()
 {
     // calculate dt
-    uint32_t now = hal.scheduler->millis();
-    float dt = (now - _wp_last_update) / 1000.0f;
+    float dt = _pos_control.time_since_last_xy_update();
 
-    // reset step back to 0 if 0.1 seconds has passed and we completed the last full cycle
-    if (dt >= WPNAV_WP_UPDATE_TIME) {
-        // double check dt is reasonable
-        if (dt >= 1.0f) {
-            dt = 0.0;
+    // update at poscontrol update rate
+    if (dt >= _pos_control.get_dt_xy()) {
+        // sanity check dt
+        if (dt >= 0.2f) {
+            dt = 0.0f;
         }
-        // capture time since last iteration
-        _wp_last_update = now;
 
         // advance the target if necessary
         advance_wp_target_along_track(dt);
-        _pos_control.trigger_xy();
+
+        // freeze feedforwards during known discontinuities
+        // TODO: why always consider Z axis discontinuous?
         if (_flags.new_wp_destination) {
             _flags.new_wp_destination = false;
             _pos_control.freeze_ff_xy();
         }
         _pos_control.freeze_ff_z();
-    }else{
-        // run horizontal position controller
-        _pos_control.update_xy_controller(false);
 
-        // check if leash lengths need updating
+        _pos_control.update_xy_controller(false, 1.0f);
         check_wp_leash_length();
+
+        _wp_last_update = hal.scheduler->millis();
     }
 }
 
@@ -643,7 +638,7 @@ void AC_WPNav::calculate_wp_leash_length()
 
     float speed_z;
     float leash_z;
-    if (_pos_delta_unit.z >= 0) {
+    if (_pos_delta_unit.z >= 0.0f) {
         speed_z = _wp_speed_up_cms;
         leash_z = _pos_control.get_leash_up_z();
     }else{
@@ -652,15 +647,15 @@ void AC_WPNav::calculate_wp_leash_length()
     }
 
     // calculate the maximum acceleration, maximum velocity, and leash length in the direction of travel
-    if(pos_delta_unit_z == 0 && pos_delta_unit_xy == 0){
+    if(pos_delta_unit_z == 0.0f && pos_delta_unit_xy == 0.0f){
         _track_accel = 0;
         _track_speed = 0;
         _track_leash_length = WPNAV_LEASH_LENGTH_MIN;
-    }else if(_pos_delta_unit.z == 0){
+    }else if(_pos_delta_unit.z == 0.0f){
         _track_accel = _wp_accel_cms/pos_delta_unit_xy;
         _track_speed = _wp_speed_cms/pos_delta_unit_xy;
         _track_leash_length = _pos_control.get_leash_xy()/pos_delta_unit_xy;
-    }else if(pos_delta_unit_xy == 0){
+    }else if(pos_delta_unit_xy == 0.0f){
         _track_accel = _wp_accel_z_cms/pos_delta_unit_z;
         _track_speed = speed_z/pos_delta_unit_z;
         _track_leash_length = leash_z/pos_delta_unit_z;
@@ -859,30 +854,30 @@ void AC_WPNav::update_spline()
         return;
     }
 
-    // calculate dt
-    uint32_t now = hal.scheduler->millis();
-    float dt = (now - _wp_last_update) / 1000.0f;
+    float dt = _pos_control.time_since_last_xy_update();
 
-    // reset step back to 0 if 0.1 seconds has passed and we completed the last full cycle
-    if (dt >= WPNAV_WP_UPDATE_TIME) {
-        // double check dt is reasonable
-        if (dt >= 1.0f) {
-            dt = 0.0;
+    // run at poscontrol update rate
+    if (dt >= _pos_control.get_dt_xy()) {
+        // sanity check dt
+        if (dt >= 0.2f) {
+            dt = 0.0f;
         }
-        // capture time since last iteration
-        _wp_last_update = now;
 
         // advance the target if necessary
         advance_spline_target_along_track(dt);
-        _pos_control.trigger_xy();
+
+        // freeze feedforwards during known discontinuities
+        // TODO: why always consider Z axis discontinuous?
         if (_flags.new_wp_destination) {
             _flags.new_wp_destination = false;
             _pos_control.freeze_ff_xy();
         }
         _pos_control.freeze_ff_z();
-    }else{
+
         // run horizontal position controller
-        _pos_control.update_xy_controller(false);
+        _pos_control.update_xy_controller(false, 1.0f);
+
+        _wp_last_update = hal.scheduler->millis();
     }
 }
 

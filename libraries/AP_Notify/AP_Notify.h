@@ -28,6 +28,7 @@
 #include <NavioLED_I2C.h>
 #include <ExternalLED.h>
 #include <Buzzer.h>
+#include <VRBoard_LED.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     #define CONFIG_NOTIFY_DEVICES_COUNT 3
@@ -48,30 +49,45 @@
 class AP_Notify
 {
 public:
-    /// notify_type - bitmask of notification types
-    struct notify_type {
-        uint16_t initialising       : 1;    // 1 if initialising and copter should not be moved
-        uint16_t gps_status         : 3;    // 0 = no gps, 1 = no lock, 2 = 2d lock, 3 = 3d lock, 4 = dgps lock, 5 = rtk lock
-        uint16_t gps_glitching      : 1;    // 1 if gps position is not good
-        uint16_t baro_glitching     : 1;    // 1 if baro altitude is not good
-        uint16_t armed              : 1;    // 0 = disarmed, 1 = armed
-        uint16_t pre_arm_check      : 1;    // 0 = failing checks, 1 = passed
-        uint16_t save_trim          : 1;    // 1 if gathering trim data
-        uint16_t esc_calibration    : 1;    // 1 if calibrating escs
-        uint16_t failsafe_radio     : 1;    // 1 if radio failsafe
-        uint16_t failsafe_battery   : 1;    // 1 if battery failsafe
-        uint16_t failsafe_gps       : 1;    // 1 if gps failsafe
-        uint16_t arming_failed      : 1;    // 1 if copter failed to arm after user input
-        uint16_t parachute_release  : 1;    // 1 if parachute is being released
-        uint16_t ekf_bad            : 1;    // 1 if ekf is reporting problems
+    /// notify_flags_type - bitmask of notification flags
+    struct notify_flags_type {
+        uint32_t initialising       : 1;    // 1 if initialising and copter should not be moved
+        uint32_t gps_status         : 3;    // 0 = no gps, 1 = no lock, 2 = 2d lock, 3 = 3d lock, 4 = dgps lock, 5 = rtk lock
+        uint32_t gps_glitching      : 1;    // 1 if gps position is not good
+        uint32_t baro_glitching     : 1;    // 1 if baro altitude is not good
+        uint32_t armed              : 1;    // 0 = disarmed, 1 = armed
+        uint32_t pre_arm_check      : 1;    // 0 = failing checks, 1 = passed
+        uint32_t pre_arm_gps_check  : 1;    // 0 = failing pre-arm GPS checks, 1 = passed
+        uint32_t save_trim          : 1;    // 1 if gathering trim data
+        uint32_t esc_calibration    : 1;    // 1 if calibrating escs
+        uint32_t failsafe_radio     : 1;    // 1 if radio failsafe
+        uint32_t failsafe_battery   : 1;    // 1 if battery failsafe
+        uint32_t failsafe_gps       : 1;    // 1 if gps failsafe
+        uint32_t parachute_release  : 1;    // 1 if parachute is being released
+        uint32_t ekf_bad            : 1;    // 1 if ekf is reporting problems
 
         // additional flags
-        uint16_t external_leds      : 1;    // 1 if external LEDs are enabled (normally only used for copter)
+        uint32_t external_leds      : 1;    // 1 if external LEDs are enabled (normally only used for copter)
+    };
+
+    /// notify_events_type - bitmask of active events.
+    //      Notify library is responsible for setting back to zero after notification has been completed
+    struct notify_events_type {
+        uint16_t arming_failed          : 1;    // 1 if copter failed to arm after user input
+        uint16_t user_mode_change       : 1;    // 1 if user has initiated a flight mode change
+        uint16_t user_mode_change_failed: 1;    // 1 when user initiated flight mode change fails
+        uint16_t failsafe_mode_change   : 1;    // 1 when failsafe has triggered a flight mode change
+        uint16_t autotune_complete      : 1;    // 1 when autotune has successfully completed
+        uint16_t autotune_failed        : 1;    // 1 when autotune has failed
+        uint16_t autotune_next_axis     : 1;    // 1 when autotune has completed one axis and is moving onto the next
+        uint16_t mission_complete       : 1;    // 1 when the mission has completed successfully
+        uint16_t waypoint_complete      : 1;    // 1 as vehicle completes a waypoint
     };
 
     // the notify flags are static to allow direct class access
     // without declaring the object
-    static struct notify_type flags;
+    static struct notify_flags_type flags;
+    static struct notify_events_type events;
 
     // initialisation
     void init(bool enable_external_leds);

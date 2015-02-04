@@ -341,9 +341,7 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 				mode != AUTO &&
 				mode != RTL) 
 			{
-				if (mode < MANUAL)
-					mode = RTL;
-				else if (mode > RTL)
+				if (mode > RTL)
 					mode = MANUAL;
 				else
 					mode += radioInputSwitch;
@@ -467,9 +465,13 @@ static void report_batt_monitor()
     //print_blanks(2);
     cliSerial->printf_P(PSTR("Batt Mointor\n"));
     print_divider();
-    if(battery.monitoring() == AP_BATT_MONITOR_DISABLED) cliSerial->printf_P(PSTR("Batt monitoring disabled"));
-    if(battery.monitoring() == AP_BATT_MONITOR_VOLTAGE_ONLY) cliSerial->printf_P(PSTR("Monitoring batt volts"));
-    if(battery.monitoring() == AP_BATT_MONITOR_VOLTAGE_AND_CURRENT) cliSerial->printf_P(PSTR("Monitoring volts and current"));
+    if (battery.num_instances() == 0) {
+        cliSerial->printf_P(PSTR("Batt monitoring disabled"));
+    } else if (!battery.has_current()) {
+        cliSerial->printf_P(PSTR("Monitoring batt volts"));
+    } else {
+        cliSerial->printf_P(PSTR("Monitoring volts and current"));
+    }
     print_blanks(2);
 }
 static void report_radio()

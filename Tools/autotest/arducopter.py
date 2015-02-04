@@ -27,13 +27,6 @@ def hover(mavproxy, mav, hover_throttle=1450):
     mavproxy.send('rc 3 %u\n' % hover_throttle)
     return True
 
-def calibrate_level(mavproxy, mav):
-    '''init the accelerometers'''
-    print("Initialising accelerometers")
-    mav.calibrate_level()
-    mavproxy.expect(['APM: action received', 'COMMAND_ACK'])
-    return True
-
 def arm_motors(mavproxy, mav):
     '''arm motors'''
     print("Arming motors")
@@ -160,7 +153,7 @@ def fly_square(mavproxy, mav, side=50, timeout=120):
     save_wp(mavproxy, mav)
 
     # switch back to stabilize mode
-    mavproxy.send('rc 3 1380\n')
+    mavproxy.send('rc 3 1430\n')
     mavproxy.send('switch 6\n')
     wait_mode(mav, 'STABILIZE')
 
@@ -615,7 +608,7 @@ def fly_simple(mavproxy, mav, side=50, timeout=120):
     # switch to stabilize mode
     mavproxy.send('switch 6\n')
     wait_mode(mav, 'STABILIZE')
-    mavproxy.send('rc 3 1400\n')
+    mavproxy.send('rc 3 1430\n')
 
     # fly south 50m
     print("# Flying south %u meters" % side)
@@ -680,7 +673,7 @@ def fly_super_simple(mavproxy, mav, timeout=45):
     # switch to stabilize mode
     mavproxy.send('switch 6\n')
     wait_mode(mav, 'STABILIZE')
-    mavproxy.send('rc 3 1400\n')
+    mavproxy.send('rc 3 1430\n')
 
     # start copter yawing slowly
     mavproxy.send('rc 4 1550\n')
@@ -952,12 +945,6 @@ def fly_ArduCopter(viewerip=None, map=False):
         mav.wait_heartbeat()
         setup_rc(mavproxy)
         homeloc = mav.location()
-
-        print("# Calibrate level")
-        if not calibrate_level(mavproxy, mav):
-            failed_test_msg = "calibrate_level failed"
-            print(failed_test_msg)
-            failed = True
 
         # Arm
         print("# Arm motors")
@@ -1323,12 +1310,6 @@ def fly_CopterAVC(viewerip=None, map=False):
         mav.wait_heartbeat()
         setup_rc(mavproxy)
         homeloc = mav.location()
-
-        print("# Calibrate level")
-        if not calibrate_level(mavproxy, mav):
-            failed_test_msg = "calibrate_level failed"
-            print(failed_test_msg)
-            failed = True
 
         # Arm
         print("# Arm motors")

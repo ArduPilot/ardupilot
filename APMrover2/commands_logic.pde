@@ -104,17 +104,9 @@ start_command(const AP_Mission::Mission_Command& cmd)
                 }
             } else {
                 // send the command to the camera mount
-                camera_mount.set_roi_cmd(&cmd.content.location);
+                camera_mount.set_roi_target(cmd.content.location);
             }
             break;
-
-		case MAV_CMD_DO_MOUNT_CONFIGURE:	// Mission command to configure a camera mount |Mount operation mode (see MAV_CONFIGURE_MOUNT_MODE enum)| stabilize roll? (1 = yes, 0 = no)| stabilize pitch? (1 = yes, 0 = no)| stabilize yaw? (1 = yes, 0 = no)| Empty| Empty| Empty|
-			camera_mount.configure_cmd();
-			break;
-
-		case MAV_CMD_DO_MOUNT_CONTROL:		// Mission command to control a camera mount |pitch(deg*100) or lat, depending on mount mode.| roll(deg*100) or lon depending on mount mode| yaw(deg*100) or alt (in cm) depending on mount mode| Empty| Empty| Empty| Empty|
-			camera_mount.control_cmd();
-			break;
 #endif
 
 		default:
@@ -131,7 +123,7 @@ start_command(const AP_Mission::Mission_Command& cmd)
 static void exit_mission()
 {
     if (control_mode == AUTO) {
-        gcs_send_text_fmt(PSTR("No commands - setting HOLD"));
+        gcs_send_text_fmt(PSTR("No commands. Can't set AUTO - setting HOLD"));
         set_mode(HOLD);
     }
 }
@@ -308,6 +300,7 @@ static void do_take_picture()
 {
 #if CAMERA == ENABLED
     camera.trigger_pic();
+    gcs_send_message(MSG_CAMERA_FEEDBACK);
     if (should_log(MASK_LOG_CAMERA)) {
         DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
     }

@@ -36,11 +36,12 @@
 #include <AP_Airspeed.h>
 #include <AP_Buffer.h>          // ArduPilot general purpose FIFO buffer
 #include <GCS_MAVLink.h>
+#include <AP_BattMonitor.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 AP_InertialSensor ins;
-AP_Baro_HIL baro;
+AP_Baro baro;
 
 // GPS declaration
 static AP_GPS  gps;

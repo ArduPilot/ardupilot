@@ -65,7 +65,10 @@ static void read_control_switch()
         // if the user has configured an override channel then check it
         bool override = (hal.rcin->read(g.override_channel-1) >= PX4IO_OVERRIDE_PWM);
         if (override && !px4io_override_enabled) {
-            if (setup_failsafe_mixing()) {
+            // we only update the mixer if we are not armed. This is
+            // important as otherwise we will need to temporarily
+            // disarm to change the mixer
+            if (ahrs.get_armed() || setup_failsafe_mixing()) {
                 px4io_override_enabled = true;
                 // disable output channels to force PX4IO override
                 for (uint8_t i=0; i<16; i++) {

@@ -177,7 +177,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
     int16_t battery_current = -1;
     int8_t battery_remaining = -1;
 
-    if (battery.monitoring() == AP_BATT_MONITOR_VOLTAGE_AND_CURRENT) {
+    if (battery.has_current()) {
         battery_remaining = battery.capacity_remaining_pct();
         battery_current = battery.current_amps() * 100;
     }
@@ -530,8 +530,22 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         // unused
         break;
 
+    case MSG_BATTERY2:
+        CHECK_PAYLOAD_SIZE(BATTERY2);
+        gcs[chan-MAVLINK_COMM_0].send_battery2(battery);
+        break;
+
+    case MSG_CAMERA_FEEDBACK:
+#if CAMERA == ENABLED
+        CHECK_PAYLOAD_SIZE(CAMERA_FEEDBACK);
+        camera.send_feedback(chan, gps, ahrs, current_loc);
+#endif
+        break;
+
     case MSG_RETRY_DEFERRED:
     case MSG_TERRAIN:
+    case MSG_OPTICAL_FLOW:
+    case MSG_GIMBAL_REPORT:
         break; // just here to prevent a warning
 	}
 
@@ -753,6 +767,7 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_HWSTATUS);
         send_message(MSG_RANGEFINDER);
         send_message(MSG_SYSTEM_TIME);
+        send_message(MSG_BATTERY2);
         send_message(MSG_MOUNT_STATUS);
     }
 }
@@ -789,7 +804,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // decode
             mavlink_command_long_t packet;
             mavlink_msg_command_long_decode(msg, &packet);
-            if (mavlink_check_target(packet.target_system, packet.target_component)) break;
 
             uint8_t result = MAV_RESULT_UNSUPPORTED;
 
@@ -817,7 +831,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     }
                 } else {
                     // send the command to the camera mount
-                    camera_mount.set_roi_cmd(&roi_loc);
+                    camera_mount.set_roi_target(roi_loc);
                 }
                 result = MAV_RESULT_ACCEPTED;
                 break;
@@ -1019,10 +1033,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         int16_t v[8];
         mavlink_msg_rc_channels_override_decode(msg, &packet);
 
-        // exit immediately if this command is not meant for this vehicle
-        if (mavlink_check_target(packet.target_system,packet.target_component))
-            break;
-
         v[0] = packet.chan1_raw;
         v[1] = packet.chan2_raw;
         v[2] = packet.chan3_raw;
@@ -1142,19 +1152,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         handle_serial_control(msg, gps);
         break;
 #endif
-
-    default:
-        // forward unknown messages to the other link if there is one
-        for (uint8_t i=0; i<num_gcs; i++) {
-            if (gcs[i].initialised && i != (uint8_t)chan) {
-                mavlink_channel_t out_chan = (mavlink_channel_t)i;
-                // only forward if it would fit in the transmit buffer
-            if (comm_get_txspace(out_chan) > ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
-                _mavlink_resend_uart(out_chan, msg);
-            }
-        }
-        }
-        break;
 
     } // end switch
 } // end handle mavlink

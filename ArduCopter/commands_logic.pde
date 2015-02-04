@@ -111,7 +111,7 @@ static bool start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_DO_SET_HOME:             // 179
-        do_set_home(cmd);
+        // unsupported as mission command
         break;
 
     case MAV_CMD_DO_SET_SERVO:
@@ -150,16 +150,6 @@ static bool start_command(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
         camera.set_trigger_distance(cmd.content.cam_trigg_dist.meters);
-        break;
-#endif
-
-#if MOUNT == ENABLED
-    case MAV_CMD_DO_MOUNT_CONFIGURE:                    // Mission command to configure a camera mount |Mount operation mode (see MAV_CONFIGURE_MOUNT_MODE enum)| stabilize roll? (1 = yes, 0 = no)| stabilize pitch? (1 = yes, 0 = no)| stabilize yaw? (1 = yes, 0 = no)| Empty| Empty| Empty|
-        camera_mount.configure_cmd();
-        break;
-
-    case MAV_CMD_DO_MOUNT_CONTROL:                      // Mission command to control a camera mount |pitch(deg*100) or lat, depending on mount mode.| roll(deg*100) or lon depending on mount mode| yaw(deg*100) or alt (in cm) depending on mount mode| Empty| Empty| Empty| Empty|
-        camera_mount.control_cmd();
         break;
 #endif
 
@@ -278,6 +268,8 @@ static bool verify_command(const AP_Mission::Mission_Command& cmd)
 // exit_mission - function that is called once the mission completes
 static void exit_mission()
 {
+    // play a tone
+    AP_Notify::events.mission_complete = 1;
     // if we are not on the ground switch to loiter or land
     if(!ap.land_complete) {
         // try to enter loiter but if that fails land
@@ -632,6 +624,9 @@ static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd)
         return false;
     }
 
+    // play a tone
+    AP_Notify::events.waypoint_complete = 1;
+
     // start timer if necessary
     if(loiter_time == 0) {
         loiter_time = millis();
@@ -758,29 +753,6 @@ static void do_wait_delay(const AP_Mission::Mission_Command& cmd)
 
 static void do_change_alt(const AP_Mission::Mission_Command& cmd)
 {
-    // adjust target appropriately for each nav mode
-    if (control_mode == AUTO) {
-        switch (auto_mode) {
-        case Auto_TakeOff:
-            // To-Do: adjust waypoint target altitude to new provided altitude
-            break;
-        case Auto_WP:
-        case Auto_Spline:
-            // To-Do; reset origin to current location + stopping distance at new altitude
-            break;
-        case Auto_Land:
-        case Auto_RTL:
-            // ignore altitude
-            break;
-        case Auto_CircleMoveToEdge:
-        case Auto_Circle:
-            // move circle altitude up to target (we will need to store this target in circle class)
-            break;
-        case Auto_NavGuided:
-            // ignore altitude
-            break;
-        }
-    }
     // To-Do: store desired altitude in a variable so that it can be verified later
 }
 

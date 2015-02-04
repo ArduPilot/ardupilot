@@ -40,6 +40,7 @@
 #include <AP_SpdHgtControl.h>
 #include <memcheck.h>
 #include <AP_RCMapper.h>
+#include <AP_OpticalFlow.h>
 
 #include <APM_OBC.h>
 #include <APM_Control.h>
@@ -72,7 +73,7 @@ static Parameters g;
 
 static AP_GPS gps;
 AP_InertialSensor ins;
-AP_Baro_HIL      barometer;
+AP_Baro      barometer;
 AP_AHRS_DCM  ahrs(ins, barometer, gps);
 
 static AP_Compass_HIL compass;

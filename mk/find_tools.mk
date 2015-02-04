@@ -22,7 +22,8 @@ ifeq ($(findstring CYGWIN, $(SYSTYPE)),CYGWIN)
   FIND_TOOL    =  $(firstword $(wildcard $(addsuffix /$(1).exe,$(TOOLPATH))))
 endif
 ifeq ($(findstring MINGW, $(SYSTYPE)),MINGW)
-  TOOLPATH :=  $(ARDUINO)/hardware/tools/avr/bin
+  # expect that tools are on the path
+  TOOLPATH :=  $(subst :, ,$(PATH))
   FIND_TOOL    =  $(firstword $(wildcard $(addsuffix /$(1).exe,$(TOOLPATH))))
 endif
 
@@ -84,6 +85,7 @@ ZYNQ_OBJCOPY :=  arm-xilinx-linux-gnueabi-objcopy
 
 # enable ccache if installed
 CCACHE :=  $(call FIND_TOOL,ccache)
+export CCACHE
 
 CXX = $(CCACHE) $($(TOOLCHAIN)_CXX)
 CC = $(CCACHE) $($(TOOLCHAIN)_CC)

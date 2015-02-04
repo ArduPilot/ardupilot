@@ -49,6 +49,12 @@ void Buzzer::update()
         return;
     }
 
+    // check for arming failed event
+    if (AP_Notify::events.arming_failed) {
+        // arming failed buzz
+        play_pattern(SINGLE_BUZZ);
+    }
+
     // reduce 50hz call down to 10hz
     _counter++;
     if (_counter < 5) {
@@ -187,16 +193,6 @@ void Buzzer::update()
             play_pattern(ARMING_BUZZ);
         }else{
             // single buzz when disarmed
-            play_pattern(SINGLE_BUZZ);
-        }
-        return;
-    }
-
-    // check arming failed
-    if (_flags.arming_failed != AP_Notify::flags.arming_failed) {
-        _flags.arming_failed = AP_Notify::flags.arming_failed;
-        if (_flags.arming_failed) {
-            // arming failed buzz
             play_pattern(SINGLE_BUZZ);
         }
         return;

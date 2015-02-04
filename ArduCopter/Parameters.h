@@ -79,6 +79,9 @@ public:
         // Parachute object
         k_param_parachute,	// 17
 
+        // Landing gear object
+        k_param_landinggear,    // 18
+
         // Misc
         //
         k_param_log_bitmask_old = 20,           // Deprecated
@@ -112,9 +115,9 @@ public:
         k_param_poshold_brake_rate,
         k_param_poshold_brake_angle_max,
         k_param_pilot_accel_z,
-        k_param_serial0_baud,
-        k_param_serial1_baud,
-        k_param_serial2_baud,
+        k_param_serial0_baud,           // deprecated - remove
+        k_param_serial1_baud,           // deprecated - remove
+        k_param_serial2_baud,           // deprecated - remove
         k_param_land_repositioning,
         k_param_sonar, // sonar object
         k_param_ekfcheck_thresh,
@@ -179,7 +182,8 @@ public:
         k_param_telem_delay,
         k_param_gcs2,
         k_param_serial2_baud_old, // deprecated
-        k_param_serial2_protocol,
+        k_param_serial2_protocol, // deprecated
+        k_param_serial_manager,  // 119
 
         //
         // 140: Sensor parameters
@@ -219,7 +223,7 @@ public:
         //
         k_param_camera = 165,
         k_param_camera_mount,
-        k_param_camera_mount2,
+        k_param_camera_mount2,      // deprecated
 
         //
         // Batery monitoring parameters
@@ -303,8 +307,8 @@ public:
         k_param_pid_nav_lon,        // 234 - remove
         k_param_p_alt_hold,
         k_param_p_throttle_rate,
-        k_param_pid_optflow_roll,
-        k_param_pid_optflow_pitch,
+        k_param_pid_optflow_roll,       // 237 - remove
+        k_param_pid_optflow_pitch,      // 238 - remove
         k_param_acro_balance_roll_old,  // 239 - remove
         k_param_acro_balance_pitch_old, // 240 - remove
         k_param_pid_throttle_accel,
@@ -322,12 +326,6 @@ public:
     //
     AP_Int16        sysid_this_mav;
     AP_Int16        sysid_my_gcs;
-    AP_Int16        serial0_baud;
-    AP_Int16        serial1_baud;
-#if MAVLINK_COMM_NUM_BUFFERS > 2
-    AP_Int16        serial2_baud;
-    AP_Int8         serial2_protocol;
-#endif
     AP_Int8         telem_delay;
 
     AP_Int16        rtl_altitude;
@@ -457,8 +455,6 @@ public:
 
     AC_P                    p_throttle_rate;
     AC_PID                  pid_throttle_accel;
-    AC_PID                  pid_optflow_roll;
-    AC_PID                  pid_optflow_pitch;
 
     AC_P                    p_loiter_pos;
     AC_P                    p_stabilize_roll;
@@ -518,8 +514,6 @@ public:
 
         p_throttle_rate         (THROTTLE_RATE_P),
         pid_throttle_accel      (THROTTLE_ACCEL_P,      THROTTLE_ACCEL_I,       THROTTLE_ACCEL_D,       THROTTLE_ACCEL_IMAX),
-        pid_optflow_roll        (OPTFLOW_ROLL_P,        OPTFLOW_ROLL_I,         OPTFLOW_ROLL_D,         OPTFLOW_IMAX),
-        pid_optflow_pitch       (OPTFLOW_PITCH_P,       OPTFLOW_PITCH_I,        OPTFLOW_PITCH_D,        OPTFLOW_IMAX),
 
         // P controller	        initial P
         //----------------------------------------------------------------------

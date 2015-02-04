@@ -16,6 +16,7 @@
 #include <termios.h>
 #include <drivers/drv_hrt.h>
 #include <assert.h>
+#include "../AP_HAL/utility/RingBuffer.h"
 
 using namespace VRBRAIN;
 
@@ -233,15 +234,6 @@ void VRBRAINUARTDriver::set_blocking_writes(bool blocking)
 }
 
 bool VRBRAINUARTDriver::tx_pending() { return false; }
-
-/*
-  buffer handling macros
- */
-#define BUF_AVAILABLE(buf) ((buf##_head > (_tail=buf##_tail))? (buf##_size - buf##_head) + _tail: _tail - buf##_head)
-#define BUF_SPACE(buf) (((_head=buf##_head) > buf##_tail)?(_head - buf##_tail) - 1:((buf##_size - buf##_tail) + _head) - 1)
-#define BUF_EMPTY(buf) (buf##_head == buf##_tail)
-#define BUF_ADVANCETAIL(buf, n) buf##_tail = (buf##_tail + n) % buf##_size
-#define BUF_ADVANCEHEAD(buf, n) buf##_head = (buf##_head + n) % buf##_size
 
 /*
   return number of bytes available to be read from the buffer

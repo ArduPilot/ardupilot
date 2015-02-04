@@ -89,7 +89,7 @@ static void rudder_arm_check()
     }
 
     //if throttle is not down, then pilot cannot rudder arm
-    if (g.rc_3.control_in > 0) {
+    if (channel_throttle->control_in > 0) {
         rudder_arm_timer = 0;
         return;
     }
@@ -101,7 +101,7 @@ static void rudder_arm_check()
     }
 
     // full right rudder starts arming counter
-    if (g.rc_4.control_in > 4000) {
+    if (channel_rudder->control_in > 4000) {
         uint32_t now = millis();
 
         if (rudder_arm_timer == 0 || 
@@ -163,7 +163,7 @@ static void read_radio()
 
     if (g.throttle_nudge && channel_throttle->servo_out > 50) {
         float nudge = (channel_throttle->servo_out - 50) * 0.02f;
-        if (airspeed.use()) {
+        if (ahrs.airspeed_sensor_enabled()) {
             airspeed_nudge_cm = (aparm.airspeed_max * 100 - g.airspeed_cruise_cm) * nudge;
         } else {
             throttle_nudge = (aparm.throttle_max - aparm.throttle_cruise) * nudge;

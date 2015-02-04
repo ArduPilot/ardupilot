@@ -38,6 +38,8 @@
 #include <AP_Motors.h>
 #include <AC_AttitudeControl.h>
 #include <AC_PosControl.h>
+#include <AP_Nav_Common.h>
+#include <AP_BattMonitor.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
@@ -46,11 +48,9 @@ static AP_Vehicle::MultiCopter aparm;
 
 // INS and Baro declaration
 AP_InertialSensor ins;
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-AP_Baro_MS5611 baro(&AP_Baro_MS5611::spi);
-#else
+AP_Baro baro;
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 AP_ADC_ADS7844 apm1_adc;
-AP_Baro_BMP085 baro;
 #endif
 
 // GPS declaration

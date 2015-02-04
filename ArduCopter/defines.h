@@ -57,6 +57,7 @@
 #define AUX_SWITCH_ATTCON_ACCEL_LIM 26      // enable/disable the roll, pitch and yaw accel limiting
 #define AUX_SWITCH_RETRACT_MOUNT    27      // Retract Mount
 #define AUX_SWITCH_RELAY            28      // Relay pin on/off (only supports first relay)
+#define AUX_SWITCH_LANDING_GEAR     29      // Landing gear controller
 
 // values used by the ap.ch7_opt and ap.ch8_opt flags
 #define AUX_SWITCH_LOW              0       // indicates auxiliar switch is in the low position (pwm <1200)
@@ -129,9 +130,9 @@
 #define CH6_ACRO_YAW_KP                 40  // acro controller's P term.  converts pilot input to a desired roll, pitch or yaw rate
 #define CH6_RELAY                       9   // deprecated -- remove
 #define CH6_HELI_EXTERNAL_GYRO          13  // TradHeli specific external tail gyro gain
-#define CH6_OPTFLOW_KP                  17  // optical flow loiter controller's P term (position error to tilt angle)
-#define CH6_OPTFLOW_KI                  18  // optical flow loiter controller's I term (position error to tilt angle)
-#define CH6_OPTFLOW_KD                  19  // optical flow loiter controller's D term (position error to tilt angle)
+#define CH6_OPTFLOW_KP                  17  // deprecated -- remove
+#define CH6_OPTFLOW_KI                  18  // deprecated -- remove
+#define CH6_OPTFLOW_KD                  19  // deprecated -- remove
 #define CH6_AHRS_YAW_KP                 30  // ahrs's compass effect on yaw angle (0 = very low, 1 = very high)
 #define CH6_AHRS_KP                     31  // accelerometer effect on roll/pitch angle (0=low)
 #define CH6_INAV_TC                     32  // deprecated -- remove
@@ -188,7 +189,7 @@ enum GuidedMode {
     Guided_TakeOff,
     Guided_WP,
     Guided_Velocity,
-    Guided_Spline
+    Guided_PosVel
 };
 
 // RTL states
@@ -217,17 +218,13 @@ enum FlipState {
 //  Logging parameters
 #define TYPE_AIRSTART_MSG               0x00
 #define TYPE_GROUNDSTART_MSG            0x01
-#define LOG_ATTITUDE_MSG                0x01
-#define LOG_MODE_MSG                    0x03
 #define LOG_CONTROL_TUNING_MSG          0x04
 #define LOG_NAV_TUNING_MSG              0x05
 #define LOG_PERFORMANCE_MSG             0x06
-#define LOG_CURRENT_MSG                 0x09
 #define LOG_STARTUP_MSG                 0x0A
 #define LOG_OPTFLOW_MSG                 0x0C
 #define LOG_EVENT_MSG                   0x0D
 #define LOG_PID_MSG                     0x0E    // deprecated
-#define LOG_COMPASS_MSG                 0x0F
 #define LOG_INAV_MSG                    0x11    // deprecated
 #define LOG_CAMERA_MSG_DEPRECATED       0x12    // deprecated
 #define LOG_ERROR_MSG                   0x13
@@ -238,8 +235,6 @@ enum FlipState {
 #define LOG_DATA_FLOAT_MSG              0x18
 #define LOG_AUTOTUNE_MSG                0x19
 #define LOG_AUTOTUNEDETAILS_MSG         0x1A
-#define LOG_COMPASS2_MSG                0x1B
-#define LOG_COMPASS3_MSG                0x1C
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
 #define MASK_LOG_ATTITUDE_MED           (1<<1)
@@ -303,6 +298,8 @@ enum FlipState {
 #define DATA_PARACHUTE_DISABLED         49
 #define DATA_PARACHUTE_ENABLED          50
 #define DATA_PARACHUTE_RELEASED         51
+#define DATA_LANDING_GEAR_DEPLOYED      52
+#define DATA_LANDING_GEAR_RETRACTED     53
 
 // Centi-degrees to radians
 #define DEGX100 5729.57795f
@@ -394,11 +391,5 @@ enum FlipState {
 #define MAVLINK_SET_POS_TYPE_MASK_FORCE           (1<<10)
 #define MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE      (1<<11)
 #define MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE (1<<12)
-
-enum Serial2Protocol {
-    SERIAL2_MAVLINK     = 1,
-    SERIAL2_FRSKY_DPORT = 2,
-    SERIAL2_FRSKY_SPORT = 3 // not supported yet
-};
 
 #endif // _DEFINES_H

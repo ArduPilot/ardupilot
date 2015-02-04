@@ -20,39 +20,11 @@
 #define CONFIG_BARO     HAL_BARO_DEFAULT
 #define CONFIG_COMPASS  HAL_COMPASS_DEFAULT
 
-#ifdef HAL_SERIAL0_BAUD_DEFAULT
-# define SERIAL0_BAUD HAL_SERIAL0_BAUD_DEFAULT
-#endif
-
 #ifndef MAV_SYSTEM_ID
  // use 2 for antenna tracker by default
  # define MAV_SYSTEM_ID          2
 #endif
 
-//////////////////////////////////////////////////////////////////////////////
-// Serial port speeds.
-//
-#ifndef SERIAL0_BAUD
- # define SERIAL0_BAUD                   115200
-#endif
-#ifndef SERIAL1_BAUD
- # define SERIAL1_BAUD                    57600
-#endif
-#ifndef SERIAL2_BAUD
- # define SERIAL2_BAUD                    57600
-#endif
-
-#ifndef SERIAL_BUFSIZE
- # define SERIAL_BUFSIZE 512
-#endif
-
-#ifndef SERIAL1_BUFSIZE
- # define SERIAL1_BUFSIZE 256
-#endif
-
-#ifndef SERIAL2_BUFSIZE
- # define SERIAL2_BUFSIZE 256
-#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // RC Channel definitions

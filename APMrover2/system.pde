@@ -71,34 +71,8 @@ static void run_cli(AP_HAL::UARTDriver *port)
 
 static void init_ardupilot()
 {
-	// Console serial port
-	//
-	// The console port buffers are defined to be sufficiently large to support
-	// the console's use as a logging device, optionally as the GPS port when
-	// GPS_PROTOCOL_IMU is selected, and as the telemetry port.
-	//
-	// XXX This could be optimised to reduce the buffer sizes in the cases
-	// where they are not otherwise required.
-	//
-    hal.uartA->begin(SERIAL0_BAUD, 128, 128);
-
-	// GPS serial port.
-	//
-	// XXX currently the EM406 (SiRF receiver) is nominally configured
-	// at 57600, however it's not been supported to date.  We should
-	// probably standardise on 38400.
-	//
-	// XXX the 128 byte receive buffer may be too small for NMEA, depending
-	// on the message set configured.
-	//
-    // standard gps running
-    hal.uartB->begin(38400, 256, 16);
-
-#if GPS2_ENABLE
-    if (hal.uartE != NULL) {
-        hal.uartE->begin(38400, 256, 16);
-    }
-#endif
+    // initialise console serial port
+    serial_manager.init_console();
 
 	cliSerial->printf_P(PSTR("\n\nInit " FIRMWARE_STRING
 						 "\n\nFree RAM: %u\n"),
@@ -112,12 +86,12 @@ static void init_ardupilot()
 
     BoardConfig.init();
 
+    // initialise serial ports
+    serial_manager.init();
+
     ServoRelayEvents.set_channel_mask(0xFFF0);
 
     set_control_channels();
-
-    // after parameter load setup correct baud rate on uartA
-    hal.uartA->begin(map_baudrate(g.serial0_baud));
 
     // keep a record of how many resets have happened. This can be
     // used to detect in-flight resets
@@ -127,23 +101,24 @@ static void init_ardupilot()
     barometer.init();
 
 	// init the GCS
-	gcs[0].init(hal.uartA);
+    gcs[0].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_Console);
 
     // we start by assuming USB connected, as we initialed the serial
     // port with SERIAL0_BAUD. check_usb_mux() fixes this if need be.    
     usb_connected = true;
     check_usb_mux();
 
-    // we have a 2nd serial port for telemetry
-    gcs[1].setup_uart(hal.uartC, map_baudrate(g.serial1_baud), 128, 128);
+    // setup serial port for telem1
+    gcs[1].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink1);
 
 #if MAVLINK_COMM_NUM_BUFFERS > 2
-    if (g.serial2_protocol == SERIAL2_FRSKY_DPORT || 
-        g.serial2_protocol == SERIAL2_FRSKY_SPORT) {
-        frsky_telemetry.init(hal.uartD, g.serial2_protocol);
-    } else {
-        gcs[2].setup_uart(hal.uartD, map_baudrate(g.serial2_baud), 128, 128);
-    }
+    // setup serial port for telem2
+    gcs[2].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink2);
+#endif
+
+    // setup frsky telemetry
+#if FRSKY_TELEM_ENABLED == ENABLED
+    frsky_telemetry.init(serial_manager);
 #endif
 
 	mavlink_system.sysid = g.sysid_this_mav;
@@ -187,10 +162,7 @@ static void init_ardupilot()
     init_barometer();
 
 	// Do GPS init
-	gps.init(&DataFlash);
-
-	//mavlink_system.sysid = MAV_SYSTEM_ID;				// Using g.sysid_this_mav
-	mavlink_system.compid = 1;	//MAV_COMP_ID_IMU;   // We do not check for comp id
+    gps.init(&DataFlash, serial_manager);
 
     rc_override_active = hal.rcin->set_overrides(rc_override, 8);
 
@@ -199,12 +171,19 @@ static void init_ardupilot()
 
     relay.init();
 
+#if MOUNT == ENABLED
+    // initialise camera mount
+    camera_mount.init(serial_manager);
+#endif
+
     /*
       setup the 'main loop is dead' check. Note that this relies on
       the RC library being initialised.
      */
     hal.scheduler->register_timer_failsafe(failsafe_check, 1000);
 
+
+#if CLI_ENABLED == ENABLED
 	// If the switch is in 'menu' mode, run the main menu.
 	//
 	// Since we can't be sure that the setup or test mode won't leave
@@ -213,12 +192,13 @@ static void init_ardupilot()
 	//
     const prog_char_t *msg = PSTR("\nPress ENTER 3 times to start interactive setup\n");
     cliSerial->println_P(msg);
-    if (gcs[1].initialised) {
-        hal.uartC->println_P(msg);
+    if (gcs[1].initialised && (gcs[1].get_uart() != NULL)) {
+        gcs[1].get_uart()->println_P(msg);
     }
-    if (num_gcs > 2 && gcs[2].initialised) {
-        hal.uartD->println_P(msg);
+    if (num_gcs > 2 && gcs[2].initialised && (gcs[2].get_uart() != NULL)) {
+        gcs[2].get_uart()->println_P(msg);
     }
+#endif
 
 	startup_ground();
 
@@ -260,9 +240,9 @@ static void startup_ground(void)
     // initialise mission library
     mission.init();
 
-    hal.uartA->set_blocking_writes(false);
-    hal.uartB->set_blocking_writes(false);
-    hal.uartC->set_blocking_writes(false);
+    // we don't want writes to the serial port to cause us to pause
+    // so set serial ports non-blocking once we are ready to drive
+    serial_manager.set_blocking_writes_all(false);
 
 	gcs_send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to drive."));
 }
@@ -320,7 +300,7 @@ static void set_mode(enum mode mode)
 	}
 
 	if (should_log(MASK_LOG_MODE)) {
-		Log_Write_Mode();
+        DataFlash.Log_Write_Mode(control_mode);
     }
 }
 
@@ -447,9 +427,9 @@ static void check_usb_mux(void)
     // SERIAL0_BAUD, but when connected as a TTL serial port we run it
     // at SERIAL1_BAUD.
     if (usb_connected) {
-        hal.uartA->begin(SERIAL0_BAUD);
+        serial_manager.set_console_baud(AP_SerialManager::SerialProtocol_Console);
     } else {
-        hal.uartA->begin(map_baudrate(g.serial1_baud));
+        serial_manager.set_console_baud(AP_SerialManager::SerialProtocol_MAVLink1);
     }
 #endif
 }
@@ -541,7 +521,6 @@ static bool should_log(uint32_t mask)
 static void telemetry_send(void)
 {
 #if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry.send_frames((uint8_t)control_mode, 
-                                (AP_Frsky_Telem::FrSkyProtocol)g.serial2_protocol.get());
+    frsky_telemetry.send_frames((uint8_t)control_mode);
 #endif
 }

@@ -35,6 +35,7 @@
 #include <AP_Mission.h>
 #include <AP_Terrain.h>
 #include <AP_Rally.h>
+#include <AP_BattMonitor.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
@@ -48,6 +49,8 @@ static AP_Compass_VRBRAIN compass;
 static AP_Compass_HMC5843 compass;
 #elif CONFIG_COMPASS == HAL_COMPASS_HIL
 static AP_Compass_HIL compass;
+#elif CONFIG_COMPASS == HAL_COMPASS_AK8963
+static AP_Compass_AK8963_MPU9250 compass;
 #else
  #error Unrecognized CONFIG_COMPASS setting
 #endif
@@ -79,6 +82,9 @@ void setup() {
         break;
     case AP_COMPASS_TYPE_PX4:
         hal.console->println("PX4");
+        break;
+    case AP_COMPASS_TYPE_AK8963_MPU9250:
+        hal.console->println("AK8963");
         break;
     default:
         hal.console->println("unknown");

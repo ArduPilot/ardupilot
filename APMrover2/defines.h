@@ -65,15 +65,9 @@ enum mode {
 #define LOG_CTUN_MSG	        0x01
 #define LOG_NTUN_MSG    		0x02
 #define LOG_PERFORMANCE_MSG		0x03
-#define LOG_CURRENT_MSG 		0x05
 #define LOG_STARTUP_MSG 		0x06
 #define LOG_SONAR_MSG 		    0x07
-#define LOG_ATTITUDE_MSG        0x08
-#define LOG_MODE_MSG            0x09
-#define LOG_COMPASS_MSG         0x0A
-#define LOG_COMPASS2_MSG        0x0C
 #define LOG_STEERING_MSG        0x0D
-#define LOG_COMPASS3_MSG        0x0E
 
 #define TYPE_AIRSTART_MSG		0x00
 #define TYPE_GROUNDSTART_MSG	0x01
@@ -131,11 +125,5 @@ enum mode {
 
 // mark a function as not to be inlined
 #define NOINLINE __attribute__((noinline))
-
-enum Serial2Protocol {
-    SERIAL2_MAVLINK     = 1,
-    SERIAL2_FRSKY_DPORT = 2,
-    SERIAL2_FRSKY_SPORT = 3 // not supported yet
-};
 
 #endif // _DEFINES_H

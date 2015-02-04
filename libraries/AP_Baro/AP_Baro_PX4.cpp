@@ -2,7 +2,7 @@
 
 #include <AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include <AP_Baro.h>
 #include "AP_Baro_PX4.h"
 
@@ -16,71 +16,62 @@
 
 extern const AP_HAL::HAL& hal;
 
-// Public Methods //////////////////////////////////////////////////////////////
-bool AP_Baro_PX4::init(void)
+/*
+  constructor - opens the PX4 drivers
+ */
+AP_Baro_PX4::AP_Baro_PX4(AP_Baro &baro) :
+    AP_Baro_Backend(baro),
+    _num_instances(0)
 {
-    if (_baro_fd <= 0) {
-        _baro_fd = open(BARO_DEVICE_PATH, O_RDONLY);
-        if (_baro_fd < 0) {
-            hal.scheduler->panic("Unable to open " BARO_DEVICE_PATH);
+    memset(instances, 0, sizeof(instances));
+    instances[0].fd = open(BARO_DEVICE_PATH, O_RDONLY);
+    instances[1].fd = open(BARO_DEVICE_PATH"1", O_RDONLY);
+
+    for (uint8_t i=0; i<2; i++) {
+        if (instances[i].fd != -1) {
+            _num_instances = i+1;
+        } else {
+            break;
         }
-
-        /* set the driver to poll at 150Hz */
-        ioctl(_baro_fd, SENSORIOCSPOLLRATE, SENSOR_POLLRATE_MAX);
-
-        // average over up to 20 samples
-        ioctl(_baro_fd, SENSORIOCSQUEUEDEPTH, 20);
-
-        // give the timer a chance to run and gather one sample
-        hal.scheduler->delay(40);
-        _accumulate();
     }
 
-    return true;
+    for (uint8_t i=0; i<_num_instances; i++) {
+        instances[i].instance = _frontend.register_sensor();
+
+        /* set the driver to poll at 150Hz */
+        ioctl(instances[i].fd, SENSORIOCSPOLLRATE, SENSOR_POLLRATE_MAX);
+
+        // average over up to 20 samples
+        ioctl(instances[i].fd, SENSORIOCSQUEUEDEPTH, 20);
+    }
 }
 
 // Read the sensor
-uint8_t AP_Baro_PX4::read(void)
+void AP_Baro_PX4::update(void)
 {
-    // try to accumulate one more sample, so we have the latest data
-    _accumulate();
-
-    // consider the baro healthy if we got a reading in the last 0.2s
-    _flags.healthy = (hal.scheduler->micros64() - _last_timestamp < 200000);
-    if (!_flags.healthy || _sum_count == 0) {
-        return _flags.healthy;
+    for (uint8_t i=0; i<_num_instances; i++) {
+        struct baro_report baro_report;
+        struct px4_instance &instance = instances[i];
+        while (::read(instance.fd, &baro_report, sizeof(baro_report)) == sizeof(baro_report) &&
+               baro_report.timestamp != instance.last_timestamp) {
+            instance.pressure_sum += baro_report.pressure; // Pressure in mbar
+            instance.temperature_sum += baro_report.temperature; // degrees celcius
+            instance.sum_count++;
+            instance.last_timestamp = baro_report.timestamp;
+        }
     }
 
-    _pressure    = (_pressure_sum / _sum_count) * 100.0f;
-    _temperature = _temperature_sum / _sum_count;
-    _pressure_samples = _sum_count;
-    _last_update = (uint32_t)_last_timestamp/1000;
-    _pressure_sum = 0;
-    _temperature_sum = 0;
-    _sum_count = 0;
-
-    return 1;
-}
-
-// accumulate sensor values
-void AP_Baro_PX4::_accumulate(void)
-{
-    struct baro_report baro_report;
-    while (::read(_baro_fd, &baro_report, sizeof(baro_report)) == sizeof(baro_report) &&
-           baro_report.timestamp != _last_timestamp) {
-		_pressure_sum += baro_report.pressure; // Pressure in mbar
-		_temperature_sum += baro_report.temperature; // degrees celcius
-        _sum_count++;
-        _last_timestamp = baro_report.timestamp;
+    for (uint8_t i=0; i<_num_instances; i++) {
+        struct px4_instance &instance = instances[i];
+        if (instance.sum_count > 0) {
+            float pressure = (instance.pressure_sum / instance.sum_count) * 100;
+            float temperature = instance.temperature_sum / instance.sum_count;
+            instance.pressure_sum = 0;
+            instance.temperature_sum = 0;
+            instance.sum_count = 0;
+            _copy_to_frontend(instance.instance, pressure, temperature);
+        }
     }
-}
-
-float AP_Baro_PX4::get_pressure() {
-    return _pressure;
-}
-
-float AP_Baro_PX4::get_temperature() const {
-    return _temperature;
 }
 
 #endif // CONFIG_HAL_BOARD

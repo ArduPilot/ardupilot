@@ -7,7 +7,7 @@
 // loiter_init - initialise loiter controller
 static bool loiter_init(bool ignore_checks)
 {
-    if (GPS_ok() || ignore_checks) {
+    if (position_ok() || optflow_position_ok() || ignore_checks) {
 
         // set target to current position
         wp_nav.init_loiter_target();
@@ -33,7 +33,7 @@ static void loiter_run()
     float target_climb_rate = 0;
 
     // if not auto armed set throttle to zero and exit immediately
-    if(!ap.auto_armed || !inertial_nav.position_ok()) {
+    if(!ap.auto_armed) {
         wp_nav.init_loiter_target();
         attitude_control.relax_bf_rate_controller();
         attitude_control.set_yaw_target_to_current_heading();
@@ -83,7 +83,7 @@ static void loiter_run()
         pos_control.set_alt_target_to_current_alt();
     }else{
         // run loiter controller
-        wp_nav.update_loiter();
+        wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
         // call attitude controller
         attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);

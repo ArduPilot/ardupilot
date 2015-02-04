@@ -96,6 +96,7 @@ parser.add_option("--home", dest="home",  type='string', default=None, help="hom
 parser.add_option("--rate", dest="rate", type='int', help="SIM update rate", default=400)
 parser.add_option("--wind", dest="wind", help="Simulate wind (speed,direction,turbulance)", default='0,0,0')
 parser.add_option("--frame", dest="frame", help="frame type (+,X,octo)", default='+')
+parser.add_option("--gimbal", dest="gimbal", action='store_true', default=False, help="enable gimbal")
 
 (opts, args) = parser.parse_args()
 
@@ -165,6 +166,13 @@ print("Starting at lat=%f lon=%f alt=%.1f heading=%.1f" % (
 frame_time = 1.0/opts.rate
 sleep_overhead = 0
 
+if opts.gimbal:
+    from gimbal import Gimbal3Axis
+    gimbal = Gimbal3Axis(a)
+    print("Adding gimbal support")
+else:
+    gimbal = None
+
 while True:
     frame_start = time.time()
     sim_recv(m)
@@ -172,6 +180,8 @@ while True:
     m2 = m[:]
 
     a.update(m2)
+    if gimbal is not None:
+        gimbal.update()
     sim_send(m, a)
     frame_count += 1
     t = time.time()

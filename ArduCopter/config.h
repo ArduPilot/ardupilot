@@ -58,10 +58,6 @@
 #define CONFIG_BARO     HAL_BARO_DEFAULT
 #define CONFIG_COMPASS  HAL_COMPASS_DEFAULT
 
-#ifdef HAL_SERIAL0_BAUD_DEFAULT
-# define SERIAL0_BAUD HAL_SERIAL0_BAUD_DEFAULT
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // HIL_MODE                                 OPTIONAL
 
@@ -223,6 +219,10 @@
  # define SONAR_TIMEOUT_MS  1000            // desired sonar alt will reset to current sonar alt after this many milliseconds without a good sonar alt
 #endif
 
+#ifndef SONAR_TILT_CORRECTION               // by disable tilt correction for use of range finder data by EKF
+ # define SONAR_TILT_CORRECTION DISABLED
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // Channel 7 and 8 default options
 //
@@ -256,20 +256,6 @@
 
 
 //////////////////////////////////////////////////////////////////////////////
-// Serial port speeds.
-//
-#ifndef SERIAL0_BAUD
- # define SERIAL0_BAUD                   115200
-#endif
-#ifndef SERIAL1_BAUD
- # define SERIAL1_BAUD                    57600
-#endif
-#ifndef SERIAL2_BAUD
- # define SERIAL2_BAUD                    57600
-#endif
-
-
-//////////////////////////////////////////////////////////////////////////////
 // Battery monitoring
 //
 #ifndef FS_BATT_VOLTAGE_DEFAULT
@@ -293,7 +279,7 @@
  # define FAILSAFE_GPS_TIMEOUT_MS       5000    // gps failsafe triggers after 5 seconds with no GPS
 #endif
 #ifndef GPS_HDOP_GOOD_DEFAULT
- # define GPS_HDOP_GOOD_DEFAULT         200     // minimum hdop that represents a good position.  used during pre-arm checks if fence is enabled
+ # define GPS_HDOP_GOOD_DEFAULT         230     // minimum hdop that represents a good position.  used during pre-arm checks if fence is enabled
 #endif
 
 // GCS failsafe
@@ -331,12 +317,12 @@
 
 // arming check's maximum acceptable accelerometer vector difference (in m/s/s) between primary and backup accelerometers
 #ifndef PREARM_MAX_ACCEL_VECTOR_DIFF
-  #define PREARM_MAX_ACCEL_VECTOR_DIFF  1.0f    // pre arm accel check will fail if primary and backup accelerometer vectors differ by 1m/s/s
+  #define PREARM_MAX_ACCEL_VECTOR_DIFF      0.70f    // pre arm accel check will fail if primary and backup accelerometer vectors differ by 0.7m/s/s
 #endif
 
 // arming check's maximum acceptable rotation rate difference (in rad/sec) between primary and backup gyros
 #ifndef PREARM_MAX_GYRO_VECTOR_DIFF
-  #define PREARM_MAX_GYRO_VECTOR_DIFF   0.35f   // pre arm gyro check will fail if primary and backup gyro vectors differ by 0.35 rad/sec (=20deg/sec)
+  #define PREARM_MAX_GYRO_VECTOR_DIFF       0.0873f  // pre arm gyro check will fail if primary and backup gyro vectors differ by 0.0873 rad/sec (=5deg/sec)
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -384,33 +370,11 @@
 //////////////////////////////////////////////////////////////////////////////
 //  OPTICAL_FLOW
 #ifndef OPTFLOW
- #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+ #if AP_AHRS_NAVEKF_AVAILABLE
   # define OPTFLOW       ENABLED
  #else
   # define OPTFLOW       DISABLED
  #endif
-#endif
-// optical flow based loiter PI values
-#ifndef OPTFLOW_ROLL_P
- #define OPTFLOW_ROLL_P 2.5f
-#endif
-#ifndef OPTFLOW_ROLL_I
- #define OPTFLOW_ROLL_I 0.5f
-#endif
-#ifndef OPTFLOW_ROLL_D
- #define OPTFLOW_ROLL_D 0.12f
-#endif
-#ifndef OPTFLOW_PITCH_P
- #define OPTFLOW_PITCH_P 2.5f
-#endif
-#ifndef OPTFLOW_PITCH_I
- #define OPTFLOW_PITCH_I 0.5f
-#endif
-#ifndef OPTFLOW_PITCH_D
- #define OPTFLOW_PITCH_D 0.12f
-#endif
-#ifndef OPTFLOW_IMAX
- #define OPTFLOW_IMAX 100
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -495,14 +459,14 @@
 #ifndef LAND_DETECTOR_CLIMBRATE_MAX
 # define LAND_DETECTOR_CLIMBRATE_MAX    30  // vehicle climb rate must be between -30 and +30 cm/s
 #endif
-#ifndef LAND_DETECTOR_BARO_CLIMBRATE_MAX
-# define LAND_DETECTOR_BARO_CLIMBRATE_MAX   150  // barometer climb rate must be between -150cm/s ~ +150cm/s
+#ifndef LAND_DETECTOR_DESIRED_CLIMBRATE_MAX
+# define LAND_DETECTOR_DESIRED_CLIMBRATE_MAX    -20    // vehicle desired climb rate must be below -20cm/s
 #endif
 #ifndef LAND_DETECTOR_ROTATION_MAX
  # define LAND_DETECTOR_ROTATION_MAX    0.50f   // vehicle rotation must be below 0.5 rad/sec (=30deg/sec for) vehicle to consider itself landed
 #endif
-#ifndef LAND_REQUIRE_MIN_THROTTLE_TO_DISARM // require pilot to reduce throttle to minimum before vehicle will disarm
- # define LAND_REQUIRE_MIN_THROTTLE_TO_DISARM ENABLED
+#ifndef LAND_REQUIRE_MIN_THROTTLE_TO_DISARM
+ # define LAND_REQUIRE_MIN_THROTTLE_TO_DISARM DISABLED  // we do not require pilot to reduce throttle to minimum before vehicle will disarm in AUTO, LAND or RTL
 #endif
 #ifndef LAND_REPOSITION_DEFAULT
  # define LAND_REPOSITION_DEFAULT   1   // by default the pilot can override roll/pitch during landing
@@ -523,10 +487,6 @@
 //
 #ifndef MOUNT
  # define MOUNT         ENABLED
-#endif
-
-#ifndef MOUNT2
- # define MOUNT2         DISABLED
 #endif
 
 
@@ -788,6 +748,7 @@
     MASK_LOG_CMD | \
     MASK_LOG_CURRENT | \
     MASK_LOG_RCOUT | \
+    MASK_LOG_OPTFLOW | \
     MASK_LOG_COMPASS | \
     MASK_LOG_CAMERA
 #endif

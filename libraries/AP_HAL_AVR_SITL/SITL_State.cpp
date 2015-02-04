@@ -64,10 +64,12 @@ uint16_t SITL_State::voltage_pin_value;
 uint16_t SITL_State::current_pin_value;
 float SITL_State::_current;
 
-AP_Baro_HIL *SITL_State::_barometer;
+AP_Baro *SITL_State::_barometer;
 AP_InertialSensor *SITL_State::_ins;
 SITLScheduler *SITL_State::_scheduler;
 AP_Compass_HIL *SITL_State::_compass;
+OpticalFlow *SITL_State::_optical_flow;
+AP_Terrain *SITL_State::_terrain;
 
 int SITL_State::_sitl_fd;
 SITL *SITL_State::_sitl;
@@ -211,9 +213,11 @@ void SITL_State::_sitl_setup(void)
 
 	// find the barometer object if it exists
 	_sitl = (SITL *)AP_Param::find_object("SIM_");
-	_barometer = (AP_Baro_HIL *)AP_Param::find_object("GND_");
+	_barometer = (AP_Baro *)AP_Param::find_object("GND_");
 	_ins = (AP_InertialSensor *)AP_Param::find_object("INS_");
 	_compass = (AP_Compass_HIL *)AP_Param::find_object("COMPASS_");
+	_terrain = (AP_Terrain *)AP_Param::find_object("TERRAIN_");
+	_optical_flow = (OpticalFlow *)AP_Param::find_object("FLOW");
 
     if (_sitl != NULL) {
         // setup some initial values
@@ -346,6 +350,7 @@ void SITL_State::_timer_handler(int signum)
                     _sitl->state.airspeed, _sitl->state.altitude);
         _update_barometer(_sitl->state.altitude);
         _update_compass(_sitl->state.rollDeg, _sitl->state.pitchDeg, _sitl->state.yawDeg);
+		_update_flow();
 #endif
     }
 
@@ -663,5 +668,35 @@ void SITL_State::loop_hook(void)
     select(max_fd+1, &fds, NULL, NULL, &tv);
 }
 
+
+/*
+  return height above the ground in meters
+ */
+float SITL_State::height_agl(void)
+{
+	static float home_alt = -1;
+
+	if (home_alt == -1 && _sitl->state.altitude > 0) {
+        // remember home altitude as first non-zero altitude
+		home_alt = _sitl->state.altitude;
+    }
+
+    if (_terrain &&
+        _sitl->terrain_enable) {
+        // get height above terrain from AP_Terrain. This assumes
+        // AP_Terrain is working
+        float terrain_height_amsl;
+        struct Location location;
+        location.lat = _sitl->state.latitude*1.0e7;
+        location.lng = _sitl->state.longitude*1.0e7;
+
+        if (_terrain->height_amsl(location, terrain_height_amsl)) {
+            return _sitl->state.altitude - terrain_height_amsl;
+        }
+    }
+
+    // fall back to flat earth model
+    return _sitl->state.altitude - home_alt;
+}
 
 #endif
