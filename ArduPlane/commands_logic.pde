@@ -176,9 +176,17 @@ start_command(const AP_Mission::Mission_Command& cmd)
                 camera_mount.set_mode_to_default();
             }
         } else {
-            // set mount's target location
-            camera_mount.set_roi_target(cmd.content.location);
+            // send the command to the camera mount
+            camera_mount.set_roi_cmd(&cmd.content.location);
         }
+        break;
+
+    case MAV_CMD_DO_MOUNT_CONFIGURE:                    // Mission command to configure a camera mount |Mount operation mode (see MAV_CONFIGURE_MOUNT_MODE enum)| stabilize roll? (1 = yes, 0 = no)| stabilize pitch? (1 = yes, 0 = no)| stabilize yaw? (1 = yes, 0 = no)| Empty| Empty| Empty|
+        camera_mount.configure_cmd();
+        break;
+
+    case MAV_CMD_DO_MOUNT_CONTROL:                      // Mission command to control a camera mount |pitch(deg*100) or lat, depending on mount mode.| roll(deg*100) or lon depending on mount mode| yaw(deg*100) or alt (in cm) depending on mount mode| Empty| Empty| Empty| Empty|
+        camera_mount.control_cmd();
         break;
 #endif
     }
@@ -291,12 +299,11 @@ static void do_RTL(void)
     setup_turn_angle();
 
     if (should_log(MASK_LOG_MODE))
-        DataFlash.Log_Write_Mode(control_mode);
+        Log_Write_Mode(control_mode);
 }
 
 static void do_takeoff(const AP_Mission::Mission_Command& cmd)
 {
-    prev_WP_loc = current_loc;
     set_next_WP(cmd.content.location);
     // pitch in deg, airspeed  m/s, throttle %, track WP 1 or 0
     auto_state.takeoff_pitch_cd        = (int16_t)cmd.p1 * 100;
@@ -437,8 +444,7 @@ static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     }
 
     // see if the user has specified a maximum distance to waypoint
-    if (g.waypoint_max_radius > 0 && 
-        auto_state.wp_distance > (uint16_t)g.waypoint_max_radius) {
+    if (g.waypoint_max_radius > 0 && wp_distance > (uint16_t)g.waypoint_max_radius) {
         if (location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
             // this is needed to ensure completion of the waypoint
             prev_WP_loc = current_loc;
@@ -452,7 +458,7 @@ static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd)
         acceptance_distance = cmd.p1;
     }
     
-    if (auto_state.wp_distance <= acceptance_distance) {
+    if (wp_distance <= acceptance_distance) {
         gcs_send_text_fmt(PSTR("Reached Waypoint #%i dist %um"),
                           (unsigned)mission.get_current_nav_cmd().index,
                           (unsigned)get_distance(current_loc, next_WP_loc));
@@ -506,7 +512,7 @@ static bool verify_loiter_turns()
 static bool verify_RTL()
 {
     update_loiter();
-	if (auto_state.wp_distance <= (uint32_t)max(g.waypoint_radius,0) || 
+	if (wp_distance <= (uint32_t)max(g.waypoint_radius,0) || 
         nav_controller->reached_loiter_target()) {
 			gcs_send_text_P(SEVERITY_LOW,PSTR("Reached home"));
 			return true;
@@ -594,7 +600,7 @@ static bool verify_change_alt()
 
 static bool verify_within_distance()
 {
-    if (auto_state.wp_distance < max(condition_value,0)) {
+    if (wp_distance < max(condition_value,0)) {
         condition_value = 0;
         return true;
     }
