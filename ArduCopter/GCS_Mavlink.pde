@@ -1144,8 +1144,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 init_barometer(false);
                 result = MAV_RESULT_ACCEPTED;
             } else if (packet.param4 == 1) {
-                trim_radio();
-                result = MAV_RESULT_ACCEPTED;
+                result = MAV_RESULT_UNSUPPORTED;
             } else if (packet.param5 == 1) {
                 // 3d accel calibration
                 float trim_roll, trim_pitch;
