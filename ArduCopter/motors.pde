@@ -475,6 +475,16 @@ static void pre_arm_rc_checks()
         return;
     }
 
+    // check channels 1 & 2 have trim >= 1300 and <= 1700
+    if (g.rc_1.radio_trim < 1300 || g.rc_1.radio_trim > 1700 || g.rc_2.radio_trim < 1300 || g.rc_2.radio_trim > 1700) {
+        return;
+    }
+
+    // check channels 3 & 4 have trim >= 1300 and <= 1700
+    if (g.rc_3.radio_trim < 1300 || g.rc_3.radio_trim > 1700 || g.rc_4.radio_trim < 1300 || g.rc_4.radio_trim > 1700) {
+        return;
+    }
+
     // if we've gotten this far rc is ok
     set_pre_arm_rc_check(true);
 }
