@@ -62,7 +62,7 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
         break;
     }
 
-#if ENABLE_STICK_MIXING==ENABLED
+#if defined(ENABLE_STICK_MIXING) && (ENABLE_STICK_MIXING==ENABLED)
     if (control_mode != INITIALISING) {
         // all modes except INITIALISING have some form of manual
         // override if stick mixing is enabled
@@ -238,9 +238,9 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
         nav_controller->crosstrack_error());
 }
 
-#if HIL_MODE != HIL_MODE_DISABLED
 static void NOINLINE send_servo_out(mavlink_channel_t chan)
 {
+#if HIL_MODE != HIL_MODE_DISABLED
     // normalized values scaled to -10000 to 10000
     // This is used for HIL.  Do not change without discussing with
     // HIL maintainers
@@ -257,8 +257,8 @@ static void NOINLINE send_servo_out(mavlink_channel_t chan)
         0,
         0,
         receiver_rssi);
-}
 #endif
+}
 
 static void NOINLINE send_radio_out(mavlink_channel_t chan)
 {
@@ -445,10 +445,8 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         break;
 
     case MSG_SERVO_OUT:
-#if HIL_MODE != HIL_MODE_DISABLED
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_SCALED);
         send_servo_out(chan);
-#endif
         break;
 
     case MSG_RADIO_IN:
