@@ -44,7 +44,7 @@ class NavEKF
 {
 public:
     typedef float ftype;
-#if MATH_CHECK_INDEXES
+#if defined(MATH_CHECK_INDEXES) && (MATH_CHECK_INDEXES == 1)
     typedef VectorN<ftype,2> Vector2;
     typedef VectorN<ftype,3> Vector3;
     typedef VectorN<ftype,5> Vector5;
