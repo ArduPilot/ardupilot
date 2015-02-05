@@ -36,7 +36,7 @@
  ****************************************************************************/
 
 #include <AP_HAL.h>
-#if NOT_YET
+#if defined(NOT_YET)
 
 #include "AP_InertialSensor_L3GD20.h"
 
