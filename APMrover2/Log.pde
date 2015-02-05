@@ -306,7 +306,7 @@ static void Log_Write_Attitude()
     DataFlash.Log_Write_Attitude(ahrs, targets);
 
 #if AP_AHRS_NAVEKF_AVAILABLE
- #if OPTFLOW == ENABLED
+ #if defined(OPTFLOW) and (OPTFLOW == ENABLED)
     DataFlash.Log_Write_EKF(ahrs,optflow.enabled());
  #else
     DataFlash.Log_Write_EKF(ahrs,false);
