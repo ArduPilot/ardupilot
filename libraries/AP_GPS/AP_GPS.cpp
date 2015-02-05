@@ -241,7 +241,9 @@ AP_GPS::detect_instance(uint8_t instance)
 #endif
 	}
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 found_gps:
+#endif
 	if (new_gps != NULL) {
         state[instance].status = NO_FIX;
         drivers[instance] = new_gps;
