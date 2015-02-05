@@ -185,10 +185,8 @@ private:
     mavlink_channel_t           chan;
     uint16_t                    packet_drops;
 
-#if CLI_ENABLED == ENABLED
     // this allows us to detect the user wanting the CLI to start
     uint8_t        crlf_count;
-#endif
 
     // waypoints
     uint16_t        waypoint_request_i; // request index
