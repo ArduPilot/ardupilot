@@ -1,5 +1,5 @@
-Release 3.2.1, February XX 2014
--------------------------------
+Release 3.2.1, February 5th 2015
+--------------------------------
 
 The ardupilot development team is proud to announce the release of
 version 3.2.1 of APM:Plane. This is primarily a bugfix release, but
