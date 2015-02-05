@@ -53,7 +53,7 @@
 // in conjunction with a suitably modified Arduino IDE; never define for
 // production as it generates bad code.
 //
-#if PRINTF_FORMAT_WARNING_DEBUG
+#if defined(PRINTF_FORMAT_WARNING_DEBUG)
  # undef PSTR
  # define PSTR(_x)               _x             // help the compiler with printf_P
  # define float double                  // silence spurious format warnings for %f
