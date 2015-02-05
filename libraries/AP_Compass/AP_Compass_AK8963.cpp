@@ -180,6 +180,7 @@ AP_Compass_AK8963_MPU9250::AP_Compass_AK8963_MPU9250()
 
 void AP_Compass_AK8963_MPU9250::_dump_registers()
 {
+#if AK8963_DEBUG
     error(PSTR("MPU9250 registers\n"));
     for (uint8_t reg=0x00; reg<=0x7E; reg++) {
         uint8_t v = _backend->read(reg);
@@ -189,6 +190,7 @@ void AP_Compass_AK8963_MPU9250::_dump_registers()
         }
     }
     error("\n");
+#endif
 }
 
 void AP_Compass_AK8963_MPU9250::_backend_reset()
@@ -249,7 +251,6 @@ bool AP_Compass_AK8963_MPU9250::_read_raw()
     const uint8_t count = 9;
     _backend->read(MPUREG_EXT_SENS_DATA_00, rx, count);
 
-    uint8_t st1 = rx[1]; /* Read ST1 register */
     uint8_t st2 = rx[8]; /* End data read by reading ST2 register */
 
 #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx + 1] << 8) | v[2*idx]))
@@ -259,9 +260,6 @@ bool AP_Compass_AK8963_MPU9250::_read_raw()
         _mag_y = (float) int16_val(rx, 2);
         _mag_z = (float) int16_val(rx, 3);
 
-#if 1
-        error("%f %f %f st1: 0x%x st2: 0x%x\n", _mag_x, _mag_y, _mag_z, st1, st2);
-#endif
         if (_mag_x == 0 && _mag_y == 0 && _mag_z == 0) {
             return false;
         }
@@ -433,7 +431,6 @@ void AP_Compass_AK8963::_update()
     if (!_backend->sem_take_nonblocking()) {
         return;
     }
-    uint32_t timestamp = hal.scheduler->micros(); 
 
     switch (_state)
        {
@@ -450,7 +447,6 @@ void AP_Compass_AK8963::_update()
         default:
             break;
     }
-    //error("state: %u %ld\n", (uint8_t) _state, hal.scheduler->micros() - timestamp);
 
     _last_update_timestamp = hal.scheduler->micros();
     _backend->sem_give();
