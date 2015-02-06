@@ -55,6 +55,9 @@ endif
 ifneq ($(wildcard $(PX4_ROOT)/src/systemcmds/motor_test),)  
 MODULES         += systemcmds/motor_test
 endif
+ifneq ($(wildcard $(PX4_ROOT)/src/systemcmds/usb_connected),)  
+MODULES         += systemcmds/usb_connected
+endif
 
 #
 # Library modules
