@@ -147,6 +147,7 @@ static void init_ardupilot()
             gcs[i].reset_cli_timeout();
         }
     }
+    arming.set_logging_available(DataFlash.CardInserted());
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
