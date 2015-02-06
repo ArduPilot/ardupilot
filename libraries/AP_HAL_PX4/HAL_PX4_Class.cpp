@@ -232,11 +232,11 @@ void HAL_PX4::init(int argc, char * const argv[]) const
 
             _px4_thread_should_exit = false;
             daemon_task = task_spawn_cmd(SKETCHNAME,
-                                     SCHED_FIFO,
-                                     APM_MAIN_PRIORITY,
-                                     8192,
-                                     main_loop,
-                                     NULL);
+                                         SCHED_FIFO,
+                                         APM_MAIN_PRIORITY,
+                                         APM_MAIN_THREAD_STACK_SIZE,
+                                         main_loop,
+                                         NULL);
             exit(0);
         }
 

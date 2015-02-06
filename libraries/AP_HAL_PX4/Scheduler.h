@@ -19,6 +19,8 @@
 #define APM_OVERTIME_PRIORITY 10
 #define APM_STARTUP_PRIORITY  10
 
+#define APM_MAIN_THREAD_STACK_SIZE 8192
+
 /* Scheduler implementation: */
 class PX4::PX4Scheduler : public AP_HAL::Scheduler {
 public:
