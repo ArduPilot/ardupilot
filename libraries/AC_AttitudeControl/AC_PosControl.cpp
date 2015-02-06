@@ -518,7 +518,7 @@ void AC_PosControl::init_xy_controller(bool reset_I)
 }
 
 /// update_xy_controller - run the horizontal position controller - should be called at 100hz or higher
-void AC_PosControl::update_xy_controller(bool use_desired_velocity, float ekfNavVelGainScaler)
+void AC_PosControl::update_xy_controller(xy_mode mode, float ekfNavVelGainScaler)
 {
     // compute dt
     uint32_t now = hal.scheduler->millis();
@@ -537,7 +537,7 @@ void AC_PosControl::update_xy_controller(bool use_desired_velocity, float ekfNav
     desired_vel_to_pos(dt);
 
     // run position controller's position error to desired velocity step
-    pos_to_rate_xy(use_desired_velocity, dt, ekfNavVelGainScaler);
+    pos_to_rate_xy(mode, dt, ekfNavVelGainScaler);
 
     // run position controller's velocity to acceleration step
     rate_to_accel_xy(dt, ekfNavVelGainScaler);
@@ -599,7 +599,7 @@ void AC_PosControl::update_vel_controller_xyz(float ekfNavVelGainScaler)
     desired_vel_to_pos(dt);
 
     // run position controller's position error to desired velocity step
-    pos_to_rate_xy(true, dt, ekfNavVelGainScaler);
+    pos_to_rate_xy(XY_MODE_SLOW_POS_AND_VEL, dt, ekfNavVelGainScaler);
 
     // run velocity to acceleration step
     rate_to_accel_xy(dt, ekfNavVelGainScaler);
@@ -653,7 +653,7 @@ void AC_PosControl::desired_vel_to_pos(float nav_dt)
 ///     when use_desired_rate is set to true:
 ///         desired velocity (_vel_desired) is combined into final target velocity and
 ///         velocity due to position error is reduce to a maximum of 1m/s
-void AC_PosControl::pos_to_rate_xy(bool use_desired_rate, float dt, float ekfNavVelGainScaler)
+void AC_PosControl::pos_to_rate_xy(xy_mode mode, float dt, float ekfNavVelGainScaler)
 {
     Vector3f curr_pos = _inav.get_position();
     float linear_distance;      // the distance we swap between linear and sqrt velocity response
@@ -692,28 +692,34 @@ void AC_PosControl::pos_to_rate_xy(bool use_desired_rate, float dt, float ekfNav
             _vel_target.x = _p_pos_xy.kP() * _pos_error.x;
             _vel_target.y = _p_pos_xy.kP() * _pos_error.y;
         }
-
-        // decide velocity limit due to position error
-        float vel_max_from_pos_error;
-        if (use_desired_rate) {
-            // if desired velocity (i.e. velocity feed forward) is being used we limit the maximum velocity correction due to position error to 2m/s
-            vel_max_from_pos_error = POSCONTROL_VEL_XY_MAX_FROM_POS_ERR;
-        }else{
-            // if desired velocity is not used, we allow position error to increase speed up to maximum speed
-            vel_max_from_pos_error = _speed_cms;
-        }
-
-        // scale velocity to stays within limits
-        float vel_total = pythagorous2(_vel_target.x, _vel_target.y);
-        if (vel_total > vel_max_from_pos_error) {
-            _vel_target.x = vel_max_from_pos_error * _vel_target.x/vel_total;
-            _vel_target.y = vel_max_from_pos_error * _vel_target.y/vel_total;
-        }
-
-        // add desired velocity (i.e. feed forward).
-        if (use_desired_rate) {
+        
+        if (mode == XY_MODE_SLOW_POS_AND_VEL) {
+            // this mode is for loiter - rate-limiting the position correction
+            // allows the pilot to always override the position correction in
+            // the event of a disturbance
+            
+            // scale velocity within limit
+            float vel_total = pythagorous2(_vel_target.x, _vel_target.y);
+            if (vel_total > POSCONTROL_VEL_XY_MAX_FROM_POS_ERR) {
+                _vel_target.x = POSCONTROL_VEL_XY_MAX_FROM_POS_ERR * _vel_target.x/vel_total;
+                _vel_target.y = POSCONTROL_VEL_XY_MAX_FROM_POS_ERR * _vel_target.y/vel_total;
+            }
+            
+            //add feedforward
             _vel_target.x += _vel_desired.x;
             _vel_target.y += _vel_desired.y;
+        } else {
+            if (mode == XY_MODE_POS_AND_VEL) {
+                // add feedforward
+                _vel_target.x += _vel_desired.x;
+                _vel_target.y += _vel_desired.y;
+            }
+            
+            float vel_total = pythagorous2(_vel_target.x, _vel_target.y);
+            if (vel_total > _speed_cms) {
+                _vel_target.x = _speed_cms * _vel_target.x/vel_total;
+                _vel_target.y = _speed_cms * _vel_target.y/vel_total;
+            }
         }
     }
 }
