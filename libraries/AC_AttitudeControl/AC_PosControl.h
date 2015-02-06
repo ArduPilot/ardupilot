@@ -51,11 +51,12 @@ public:
                   const AP_Motors& motors, AC_AttitudeControl& attitude_control,
                   AC_P& p_alt_pos, AC_P& p_alt_rate, AC_PID& pid_alt_accel,
                   AC_P& p_pos_xy, AC_PID& pid_rate_lat, AC_PID& pid_rate_lon);
-    
+
+    // xy_mode - specifies behavior of xy position controller
     enum xy_mode {
-        XY_MODE_POS_ONLY = 0,
-        XY_MODE_SLOW_POS_AND_VEL,
-        XY_MODE_POS_AND_VEL
+        XY_MODE_POS_ONLY = 0,           // position correction only (i.e. no velocity feed-forward)
+        XY_MODE_POS_LIMITED_AND_VEL_FF, // for loiter - rate-limiting the position correction, velocity feed-forward
+        XY_MODE_POS_AND_VEL_FF          // for velocity controller - unlimied position correction, velocity feed-forward
     };
 
     ///

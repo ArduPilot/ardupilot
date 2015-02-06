@@ -599,7 +599,7 @@ void AC_PosControl::update_vel_controller_xyz(float ekfNavVelGainScaler)
     desired_vel_to_pos(dt);
 
     // run position controller's position error to desired velocity step
-    pos_to_rate_xy(XY_MODE_SLOW_POS_AND_VEL, dt, ekfNavVelGainScaler);
+    pos_to_rate_xy(XY_MODE_POS_LIMITED_AND_VEL_FF, dt, ekfNavVelGainScaler);
 
     // run velocity to acceleration step
     rate_to_accel_xy(dt, ekfNavVelGainScaler);
@@ -692,29 +692,30 @@ void AC_PosControl::pos_to_rate_xy(xy_mode mode, float dt, float ekfNavVelGainSc
             _vel_target.x = _p_pos_xy.kP() * _pos_error.x;
             _vel_target.y = _p_pos_xy.kP() * _pos_error.y;
         }
-        
-        if (mode == XY_MODE_SLOW_POS_AND_VEL) {
+
+        if (mode == XY_MODE_POS_LIMITED_AND_VEL_FF) {
             // this mode is for loiter - rate-limiting the position correction
             // allows the pilot to always override the position correction in
             // the event of a disturbance
-            
+
             // scale velocity within limit
             float vel_total = pythagorous2(_vel_target.x, _vel_target.y);
             if (vel_total > POSCONTROL_VEL_XY_MAX_FROM_POS_ERR) {
                 _vel_target.x = POSCONTROL_VEL_XY_MAX_FROM_POS_ERR * _vel_target.x/vel_total;
                 _vel_target.y = POSCONTROL_VEL_XY_MAX_FROM_POS_ERR * _vel_target.y/vel_total;
             }
-            
-            //add feedforward
+
+            // add velocity feed-forward
             _vel_target.x += _vel_desired.x;
             _vel_target.y += _vel_desired.y;
         } else {
-            if (mode == XY_MODE_POS_AND_VEL) {
-                // add feedforward
+            if (mode == XY_MODE_POS_AND_VEL_FF) {
+                // add velocity feed-forward
                 _vel_target.x += _vel_desired.x;
                 _vel_target.y += _vel_desired.y;
             }
-            
+
+            // scale velocity within speed limit
             float vel_total = pythagorous2(_vel_target.x, _vel_target.y);
             if (vel_total > _speed_cms) {
                 _vel_target.x = _speed_cms * _vel_target.x/vel_total;
