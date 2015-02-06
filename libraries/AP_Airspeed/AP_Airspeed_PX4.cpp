@@ -76,6 +76,11 @@ bool AP_Airspeed_PX4::get_differential_pressure(float &pressure)
 // read the temperature
 bool AP_Airspeed_PX4::get_temperature(float &temperature)
 {
+    if (_temperature < -80) {
+        // almost certainly a bad reading. The ETS driver on PX4
+        // returns -1000
+        return false;
+    }
     temperature = _temperature;
     return true;
 }
