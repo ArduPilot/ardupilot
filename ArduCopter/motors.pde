@@ -480,8 +480,8 @@ static void pre_arm_rc_checks()
         return;
     }
 
-    // check channels 3 & 4 have trim >= 1300 and <= 1700
-    if (g.rc_3.radio_trim < 1300 || g.rc_3.radio_trim > 1700 || g.rc_4.radio_trim < 1300 || g.rc_4.radio_trim > 1700) {
+    // check channel 4 has trim >= 1300 and <= 1700
+    if (g.rc_4.radio_trim < 1300 || g.rc_4.radio_trim > 1700) {
         return;
     }
 
