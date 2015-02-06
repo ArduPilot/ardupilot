@@ -33,7 +33,7 @@ static void stabilize_run()
     //如果处于锁定状态或是遥控器的油门通道输出值小于等于0
     if(!motors.armed() || g.rc_3.control_in <= 0) {
         attitude_control.relax_bf_rate_controller();//用当前陀螺静止时的角速度作为载体目标角速度(载体坐标系)
-        attitude_control.set_yaw_target_to_current_heading();/用当前的航向角作为航向的目标角度(载体坐标系)
+        attitude_control.set_yaw_target_to_current_heading();//用当前的航向角作为航向的目标角度(载体坐标系)
         attitude_control.set_throttle_out(0, false);//将输出的比例转化为PWM信号。该函数第一个参数是输入油门量.
         //第二个是是否使用角度增益（更准确的说应该是升力补偿。因为飞行器倾斜垂直向上的升力就会减少，造成飞行高度下降倾斜角度越大这个现象越明显）
         //
