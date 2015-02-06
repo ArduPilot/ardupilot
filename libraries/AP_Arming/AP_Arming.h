@@ -22,6 +22,7 @@ public:
         ARMING_CHECK_VOLTAGE    = 0x0080,
         ARMING_CHECK_BATTERY    = 0x0100,
         ARMING_CHECK_AIRSPEED   = 0x0200,
+        ARMING_CHECK_LOGGING    = 0x0400,
     };
 
     enum ArmingMethod {
@@ -52,11 +53,14 @@ public:
     bool pre_arm_checks(bool report);
     void set_skip_gyro_cal(bool set) { skip_gyro_cal = set; }
 
+    void set_logging_available(bool set) { logging_available = set; }
+
     //for params
     static const struct AP_Param::GroupInfo        var_info[];
 
 private:
     bool                                                armed:1;
+    bool                                                logging_available:1;
     bool                                                skip_gyro_cal:1;
 
     //Parameters
@@ -79,6 +83,8 @@ private:
     bool barometer_checks(bool report);
 
     bool airspeed_checks(bool report);
+
+    bool logging_checks(bool report);
 
     bool ins_checks(bool report);
 

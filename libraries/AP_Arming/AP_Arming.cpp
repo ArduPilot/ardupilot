@@ -37,7 +37,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] PROGMEM = {
     // @Param: CHECK
     // @DisplayName: Arm Checks to Peform (bitmask)
     // @Description: Checks prior to arming motor. This is a bitmask of checks that will be performed befor allowing arming. The default is no checks, allowing arming at any time. You can select whatever checks you prefer by adding together the values of each check type to set this parameter. For example, to only allow arming when you have GPS lock and no RC failsafe you would set ARMING_CHECK to 72. For most users it is recommended that you set this to 1 to enable all checks.
-    // @Values: 0:None,1:All,2:Barometer,4:Compass,8:GPS,16:INS,32:Parameters,64:RC Failsafe,128:Board voltage,256:Battery Level,512:Airspeed
+    // @Values: 0:None,1:All,2:Barometer,4:Compass,8:GPS,16:INS,32:Parameters,64:RC Failsafe,128:Board voltage,256:Battery Level,512:Airspeed,1024:LoggingAvailable
     // @User: Advanced
     AP_GROUPINFO("CHECK",        2,     AP_Arming,  checks_to_perform,       ARMING_CHECK_ALL),
 
@@ -49,6 +49,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] PROGMEM = {
 AP_Arming::AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
                      const bool &home_set, gcs_send_t_p gcs_print_func)
     : armed(false)
+   , logging_available(false)
    , skip_gyro_cal(false)
    , arming_method(NONE)
    , ahrs(ahrs_ref)
@@ -106,6 +107,20 @@ bool AP_Arming::airspeed_checks(bool report)
         }
     }
 
+    return true;
+}
+
+bool AP_Arming::logging_checks(bool report) 
+{
+    if ((checks_to_perform & ARMING_CHECK_ALL) ||
+        (checks_to_perform & ARMING_CHECK_LOGGING)) {
+        if (!logging_available) {
+            if (report) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: logging not available"));
+            }
+            return false;
+        }
+    }
     return true;
 }
 
@@ -323,6 +338,7 @@ bool AP_Arming::pre_arm_checks(bool report)
     ret &= gps_checks(report);
     ret &= battery_checks(report);
     ret &= airspeed_checks(report);
+    ret &= logging_checks(report);
     ret &= manual_transmitter_checks(report);
 
     return ret;
