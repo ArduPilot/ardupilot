@@ -148,6 +148,7 @@ public:
         //
         // 80: Heli
         //
+        k_param_heli_servo_5, // 79
         k_param_heli_servo_1 = 80,
         k_param_heli_servo_2,
         k_param_heli_servo_3,
@@ -157,6 +158,7 @@ public:
         k_param_heli_yaw_ff,        // remove
         k_param_heli_stab_col_min,
         k_param_heli_stab_col_max,  // 88
+        k_param_heli_servo_6, // 89
 
         //
         // 90: Motors
@@ -400,6 +402,15 @@ public:
     AP_Int16        heli_stab_col_min;                                          // min collective while pilot directly controls collective in stabilize mode
     AP_Int16        heli_stab_col_max;                                          // min collective while pilot directly controls collective in stabilize mode
 #endif
+
+#if FRAME_CONFIG ==     HELI_DUAL_FRAME
+    // Heli
+    RC_Channel      heli_servo_1, heli_servo_2, heli_servo_3;                   // servos for first swash plate
+    RC_Channel      heli_servo_4, heli_servo_5, heli_servo_6;                   // servos for second swash plate
+    AP_Int16        heli_stab_col_min;                                          // min collective while pilot directly controls collective in stabilize mode
+    AP_Int16        heli_stab_col_max;                                          // min collective while pilot directly controls collective in stabilize mode
+#endif
+
 #if FRAME_CONFIG ==     SINGLE_FRAME
     // Single
     RC_Channel      single_servo_1, single_servo_2, single_servo_3, single_servo_4;     // servos for four flaps
@@ -441,7 +452,7 @@ public:
     AP_Float                acro_expo;
 
     // PI/D controllers
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_DUAL_FRAME
     AC_HELI_PID             pid_rate_roll;
     AC_HELI_PID             pid_rate_pitch;
     AC_HELI_PID             pid_rate_yaw;
@@ -472,6 +483,16 @@ public:
         heli_servo_3        (CH_3),
         heli_servo_4        (CH_4),
 #endif
+
+#if FRAME_CONFIG ==     HELI_DUAL_FRAME
+        heli_servo_1        (CH_1),
+        heli_servo_2        (CH_2),
+        heli_servo_3        (CH_3),
+        heli_servo_4        (CH_4),
+        heli_servo_5        (CH_5),
+        heli_servo_6        (CH_6),
+#endif
+
 #if FRAME_CONFIG ==     SINGLE_FRAME
         single_servo_1        (CH_1),
         single_servo_2        (CH_2),
