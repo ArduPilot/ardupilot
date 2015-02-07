@@ -29,9 +29,10 @@
 #include <ExternalLED.h>
 #include <Buzzer.h>
 #include <VRBoard_LED.h>
+#include <OreoLED_PX4.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    #define CONFIG_NOTIFY_DEVICES_COUNT 3
+    #define CONFIG_NOTIFY_DEVICES_COUNT 4
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2 
     #define CONFIG_NOTIFY_DEVICES_COUNT 3
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
