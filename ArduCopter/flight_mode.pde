@@ -22,7 +22,7 @@ static bool set_mode(uint8_t mode)
 
     switch(mode) {
         case ACRO:
-            #if FRAME_CONFIG == HELI_FRAME
+            #if FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_DUAL_FRAME
                 success = heli_acro_init(ignore_checks);
             #else
                 success = acro_init(ignore_checks);
@@ -30,7 +30,7 @@ static bool set_mode(uint8_t mode)
             break;
 
         case STABILIZE:
-            #if FRAME_CONFIG == HELI_FRAME
+            #if FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_DUAL_FRAME
                 success = heli_stabilize_init(ignore_checks);
             #else
                 success = stabilize_init(ignore_checks);
@@ -126,7 +126,7 @@ static void update_flight_mode()
 #endif
     switch (control_mode) {
         case ACRO:
-            #if FRAME_CONFIG == HELI_FRAME
+            #if FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_DUAL_FRAME
                 heli_acro_run();
             #else
                 acro_run();
@@ -134,7 +134,7 @@ static void update_flight_mode()
             break;
 
         case STABILIZE:
-            #if FRAME_CONFIG == HELI_FRAME
+            #if FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_DUAL_FRAME
                 heli_stabilize_run();
             #else
                 stabilize_run();
@@ -220,7 +220,7 @@ static void exit_mode(uint8_t old_control_mode, uint8_t new_control_mode)
         set_accel_throttle_I_from_pilot_throttle(get_pilot_desired_throttle(g.rc_3.control_in));
     }
     
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_DUAL_FRAME
     // firmly reset the flybar passthrough to false when exiting acro mode.
     if (old_control_mode == ACRO) {
         attitude_control.use_flybar_passthrough(false);
