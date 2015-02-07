@@ -779,3 +779,20 @@ float AC_AttitudeControl::max_rate_step_bf_yaw()
     float alpha_remaining = 1-alpha;
     return AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX/((alpha_remaining*alpha_remaining*alpha_remaining*alpha*_pid_rate_yaw.kD())/_dt + _pid_rate_yaw.kP());
 }
+
+float AC_AttitudeControl::inverse_sqrt_controller(float output, float p, float second_ord_lim)
+{
+    if (second_ord_lim == 0.0f || p == 0.0f) {
+        return output/p;
+    }
+
+    float linear_dist = second_ord_lim/(p);
+
+    if (output > linear_dist) {
+        return (sq(second_ord_lim) + sq(output) * sq(p)) / (2*second_ord_lim*sq(p));
+    } else if (output < -linear_dist) {
+        return -(sq(second_ord_lim) + sq(output) * sq(p)) / (2*second_ord_lim*sq(p));
+    } else {
+        return output/p;
+    }
+}

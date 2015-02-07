@@ -197,6 +197,9 @@ public:
     // sqrt_controller - response based on the sqrt of the error instead of the more common linear response
     static float sqrt_controller(float error, float p, float second_ord_lim);
 
+    // inverse_sqrt_controller - error as a function of sqrt_controller output
+    static float inverse_sqrt_controller(float output, float p, float second_ord_lim);
+
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
