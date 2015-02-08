@@ -32,7 +32,7 @@ void APM1RCInput::_timer4_capt_cb(void) {
         pulse_width = icr4_current - icr4_prev;
     }
 
-    if (pulse_width > 8000) {
+    if (pulse_width > AVR_RC_INPUT_MIN_SYNC_PULSE_WIDTH*2) {
         // sync pulse detected.  Pass through values if at least a minimum number of channels received
         if( channel_ctr >= AVR_RC_INPUT_MIN_CHANNELS ) {
             _num_channels = channel_ctr;

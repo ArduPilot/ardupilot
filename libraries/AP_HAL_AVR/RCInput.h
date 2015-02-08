@@ -8,6 +8,14 @@
 #define AVR_RC_INPUT_NUM_CHANNELS 11
 #define AVR_RC_INPUT_MIN_CHANNELS 5     // for ppm sum we allow less than 8 channels to make up a valid packet
 
+/*
+  mininum pulse width in microseconds to signal end of a PPM-SUM
+  frame. This value is chosen to be smaller than the default 3000 sync
+  pulse width for OpenLRSng. Note that this is the total pulse with
+  (typically 300us low followed by a long high pulse)
+ */
+#define AVR_RC_INPUT_MIN_SYNC_PULSE_WIDTH 2700
+
 class AP_HAL_AVR::APM1RCInput : public AP_HAL::RCInput {
 public:
     /**
