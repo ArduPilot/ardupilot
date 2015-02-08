@@ -24,6 +24,8 @@ bool VRBRAINRCInput::new_input()
 {
     pthread_mutex_lock(&rcin_mutex);
     bool valid = _rcin.timestamp_last_signal != _last_read || _override_valid;
+    _last_read = _rcin.timestamp_last_signal;
+    _override_valid = false;
     pthread_mutex_unlock(&rcin_mutex);
     return valid;
 }
@@ -42,8 +44,6 @@ uint16_t VRBRAINRCInput::read(uint8_t ch)
 		return 0;
 	}
         pthread_mutex_lock(&rcin_mutex);
-	_last_read = _rcin.timestamp_last_signal;
-	_override_valid = false;
 	if (_override[ch]) {
             uint16_t v = _override[ch];
             pthread_mutex_unlock(&rcin_mutex);
