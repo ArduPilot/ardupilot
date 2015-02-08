@@ -25,7 +25,10 @@ public:
     void     init(void* isrregistry);
 
     /**
-     * Return true if new input since the last read()
+     * Return true if there has been new input since the last read()
+     * call. This call also clears the new_input flag, so once it
+     * returns true it won't return true again until another frame is
+     * received.
      */
     bool  new_input();
 

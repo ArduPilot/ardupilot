@@ -91,7 +91,15 @@ void APM2RCInput::init(void* _isrregistry) {
     SREG = oldSREG;
 }
 
-bool APM2RCInput::new_input() { return _new_input; }
+bool APM2RCInput::new_input() 
+{ 
+    if (_new_input) {
+        _new_input = false;
+        return true;
+    }
+    return false;
+}
+
 uint8_t APM2RCInput::num_channels() { return _num_channels; }
 
 /* constrain captured pulse to be between min and max pulsewidth. */
@@ -110,7 +118,6 @@ uint16_t APM2RCInput::read(uint8_t ch) {
     cli();
     uint16_t capt = _pulse_capt[ch];
     SREG = oldSREG;
-    _new_input = false;
     /* scale _pulse_capt from 0.5us units to 1us units. */
     uint16_t pulse = constrain_pulse(capt >> 1);
     /* Check for override */
