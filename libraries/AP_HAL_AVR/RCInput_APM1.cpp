@@ -91,7 +91,14 @@ void APM1RCInput::init(void* _isrregistry) {
     SREG = oldSREG;    
 }
 
-bool APM1RCInput::new_input() { return _new_input; }
+bool APM1RCInput::new_input() 
+{ 
+    if (_new_input) {
+        _new_input = false;
+        return true;
+    }
+    return false;
+}
 
 uint8_t APM1RCInput::num_channels() { return _num_channels; }
 
@@ -111,7 +118,6 @@ uint16_t APM1RCInput::read(uint8_t ch) {
     cli();
     uint16_t capt = _pulse_capt[ch];
     SREG = oldSREG;
-    _new_input = false;
     /* scale _pulse_capt from 0.5us units to 1us units. */
     uint16_t pulse = constrain_pulse(capt >> 1);
     /* Check for override */
@@ -139,7 +145,6 @@ uint8_t APM1RCInput::read(uint16_t* periods, uint8_t len) {
             periods[i] = _override[i];
         }
     }
-    _new_input = false;
     return _num_channels;
 }
 
