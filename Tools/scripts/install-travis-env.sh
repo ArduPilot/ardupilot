@@ -29,7 +29,11 @@ APT_GET="sudo apt-get -qq --assume-yes"
 
 $APT_GET update
 $APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS $UBUNTU64_PKGS $AVR_PKGS
-pip -q install $PYTHON_PKGS
+pip install --upgrade setuptools
+for pkg in $PYTHON_PKGS; do
+    echo "Installing $pkg"
+    pip -q install $pkg || echo "FAILED INSTALL OF $pkg"
+done
 
 
 if [ ! -d PX4Firmware ]; then
