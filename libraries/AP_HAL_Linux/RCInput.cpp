@@ -106,7 +106,7 @@ void LinuxRCInput::clear_overrides()
  */
 void LinuxRCInput::_process_ppmsum_pulse(uint16_t width_usec)
 {
-    if (width_usec >= 4000) {
+    if (width_usec >= 2700) {
         // a long pulse indicates the end of a frame. Reset the
         // channel counter so next pulse is channel 0
         if (ppm_state._channel_counter >= 5) {
