@@ -334,6 +334,10 @@
  # define DCMCHECK_THRESHOLD_DEFAULT    0.8f    // DCM checker's default yaw error threshold above which we will abandon horizontal position hold.  The units are sin(angle) so 0.8 = about 60degrees of error
 #endif
 
+#ifndef EKF_ORIGIN_MAX_DIST_M
+ # define EKF_ORIGIN_MAX_DIST_M         50000   // EKF origin and waypoints (including home) must be within 50km
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 //  MAGNETOMETER
 #ifndef MAGNETOMETER

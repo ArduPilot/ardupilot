@@ -356,7 +356,7 @@ static bool sonar_enabled = true; // enable user switch for sonar
 //Documentation of GLobals:
 static union {
     struct {
-        uint8_t home_is_set         : 1; // 0
+        uint8_t unused1             : 1; // 0
         uint8_t simple_mode         : 2; // 1,2 // This is the state of simple mode : 0 = disabled ; 1 = SIMPLE ; 2 = SUPERSIMPLE
         uint8_t pre_arm_rc_check    : 1; // 3   // true if rc input pre-arm checks have been completed successfully
         uint8_t pre_arm_check       : 1; // 4   // true if all pre-arm checks (rc, accel calibration, gps lock) have been performed
@@ -373,6 +373,9 @@ static union {
         uint8_t initialised         : 1; // 17  // true once the init_ardupilot function has completed.  Extended status to GCS is not sent until this completes
         uint8_t land_complete_maybe : 1; // 18  // true if we may have landed (less strict version of land_complete)
         uint8_t throttle_zero       : 1; // 19  // true if the throttle stick is at zero, debounced
+        uint8_t system_time_set     : 1; // 20  // true if the system time has been set from the GPS
+        uint8_t gps_base_pos_set    : 1; // 21  // true when the gps base position has been set (used for RTK gps only)
+        enum HomeState home_state   : 2; // 22,23 - home status (unset, set, locked)
     };
     uint32_t value;
 } ap;
@@ -1153,7 +1156,6 @@ static void one_hz_loop()
 static void update_GPS(void)
 {
     static uint32_t last_gps_reading[GPS_MAX_INSTANCES];   // time of last gps message
-    static uint8_t ground_start_count = 10;     // counter used to grab at least 10 reads before commiting the Home location
     bool report_gps_glitch;
     bool gps_updated = false;
 
@@ -1175,7 +1177,7 @@ static void update_GPS(void)
 
     if (gps_updated) {
         // run glitch protection and update AP_Notify if home has been initialised
-        if (ap.home_is_set) {
+        if (home_is_set()) {
             gps_glitch.check_position();
             report_gps_glitch = (gps_glitch.glitching() && !ap.usb_connected && hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
             if (AP_Notify::flags.gps_glitching != report_gps_glitch) {
@@ -1188,48 +1190,17 @@ static void update_GPS(void)
             }
         }
 
+        // set system time if necessary
+        set_system_time_from_GPS();
+
+        // update home from GPS location if necessary
+        update_home_from_GPS();
+
+        // check gps base position (used for RTK only)
+        check_gps_base_pos();
+
         // checks to initialise home and take location based pictures
         if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
-
-            // check if we can initialise home yet
-            if (!ap.home_is_set) {
-                // if we have a 3d lock and valid location
-                if(gps.status() >= AP_GPS::GPS_OK_FIX_3D && gps.location().lat != 0) {
-                    if (ground_start_count > 0 ) {
-                        ground_start_count--;
-                    } else {
-                        // after 10 successful reads store home location
-                        // ap.home_is_set will be true so this will only happen once
-                        ground_start_count = 0;
-                        init_home();
-
-                        // set system clock for log timestamps
-                        hal.util->set_system_clock(gps.time_epoch_usec());
-                        
-                        if (g.compass_enabled) {
-                            // Set compass declination automatically
-                            compass.set_initial_location(gps.location().lat, gps.location().lng);
-                        }
-                    }
-                } else {
-                    // start again if we lose 3d lock
-                    ground_start_count = 10;
-                }
-            } else {
-                // update home position when not armed
-                if (!motors.armed()) {
-                    update_home();
-                }
-            }
-
-            //If we are not currently armed, and we're ready to 
-            //enter RTK mode, then capture current state as home,
-            //and enter RTK fixes!
-            if (!motors.armed() && gps.can_calculate_base_pos()) {
-
-                gps.calculate_base_pos();
-
-            }
 
 #if CAMERA == ENABLED
             if (camera.update_location(current_loc) == true) {

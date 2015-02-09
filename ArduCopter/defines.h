@@ -171,6 +171,13 @@
 #define WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL    2   // auto pilot will face next waypoint except when doing RTL at which time it will stay in it's last
 #define WP_YAW_BEHAVIOR_LOOK_AHEAD                    3   // auto pilot will look ahead during missions and rtl (primarily meant for traditional helicotpers)
 
+// home states (held in ap.home_state flags)
+enum HomeState {
+    HOME_UNSET,                 // home is unset, no GPS positions yet received
+    HOME_SET_NOT_LOCKED,        // home is set to EKF origin or armed location (can be moved)
+    HOME_SET_AND_LOCKED         // home has been set by user, cannot be moved except by user initiated do-set-home command
+};
+
 // Auto modes
 enum AutoMode {
     Auto_TakeOff,
@@ -261,6 +268,7 @@ enum FlipState {
 #define DATA_MAVLINK_INT16              3
 #define DATA_MAVLINK_INT8               4
 #define DATA_AP_STATE                   7
+#define DATA_SYSTEM_TIME_SET            8
 #define DATA_INIT_SIMPLE_BEARING        9
 #define DATA_ARMED                      10
 #define DATA_DISARMED                   11
