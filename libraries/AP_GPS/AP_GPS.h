@@ -26,7 +26,7 @@
 #include <GCS_MAVLink.h>
 #include <AP_Vehicle.h>
 #include "GPS_detect_state.h"
-#include <AP_SerialManager.h>
+#include "../AP_SerialManager/AP_SerialManager.h"
 
 /**
    maximum number of GPS instances available on this platform. If more
