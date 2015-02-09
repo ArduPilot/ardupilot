@@ -16,12 +16,11 @@ static void run_nav_updates(void)
 }
 
 // calc_position - get lat and lon positions from inertial nav library
-static void calc_position(){
-    if (ap.home_is_set) {
-        // pull position from interial nav library
-        current_loc.lng = inertial_nav.get_longitude();
-        current_loc.lat = inertial_nav.get_latitude();
-    }
+static void calc_position()
+{
+    // pull position from interial nav library
+    current_loc.lng = inertial_nav.get_longitude();
+    current_loc.lat = inertial_nav.get_latitude();
 }
 
 // calc_distance_and_bearing - calculate distance and bearing to next waypoint and home
