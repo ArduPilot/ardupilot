@@ -551,6 +551,15 @@ static bool pre_arm_gps_checks(bool display_failure)
         return false;
     }
 
+    // check home and EKF origin are not too far
+    if (far_from_EKF_origin(ahrs.get_home())) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: EKF-home variance"));
+        }
+        AP_Notify::flags.pre_arm_gps_check = false;
+        return false;
+    }
+
     // warn about hdop separately - to prevent user confusion with no gps lock
     if (gps.get_hdop() > g.gps_hdop_good) {
         if (display_failure) {
