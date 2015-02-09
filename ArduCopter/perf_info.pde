@@ -14,6 +14,7 @@
 uint16_t perf_info_loop_count;
 uint32_t perf_info_max_time;
 uint16_t perf_info_long_running;
+bool perf_ignore_loop = false;
 
 // perf_info_reset - reset all records of loop time to zero
 void perf_info_reset()
@@ -23,10 +24,23 @@ void perf_info_reset()
     perf_info_long_running = 0;
 }
 
+// perf_ignore_loop - ignore this loop from performance measurements (used to reduce false positive when arming)
+void perf_ignore_this_loop()
+{
+    perf_ignore_loop = true;
+}
+
 // perf_info_check_loop_time - check latest loop time vs min, max and overtime threshold
 void perf_info_check_loop_time(uint32_t time_in_micros)
 {
     perf_info_loop_count++;
+
+    // exit if this loop should be ignored
+    if (perf_ignore_loop) {
+        perf_ignore_loop = false;
+        return;
+    }
+
     if( time_in_micros > perf_info_max_time) {
         perf_info_max_time = time_in_micros;
     }

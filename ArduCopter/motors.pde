@@ -199,6 +199,9 @@ static bool init_arm_motors(bool arming_from_gcs)
     // reenable failsafe
     failsafe_enable();
 
+    // perf monitor ignores delay due to arming
+    perf_ignore_this_loop();
+
     // flag exiting this function
     in_arm_motors = false;
 
