@@ -66,7 +66,8 @@ AP_Baro::AP_Baro() :
         _last_altitude_EAS2TAS(0.0f),
         _EAS2TAS(0.0f),
         _external_temperature(0.0f),
-        _last_external_temperature_ms(0)
+        _last_external_temperature_ms(0),
+        _hil_mode(false)
 {
     memset(sensors, 0, sizeof(sensors));
 
@@ -289,8 +290,10 @@ void AP_Baro::init(void)
  */
 void AP_Baro::update(void)
 {
-    for (uint8_t i=0; i<_num_drivers; i++) {
-        drivers[i]->update();
+    if (!_hil_mode) {
+        for (uint8_t i=0; i<_num_drivers; i++) {
+            drivers[i]->update();
+        }
     }
 
     // consider a sensor as healthy if it has had an update in the
