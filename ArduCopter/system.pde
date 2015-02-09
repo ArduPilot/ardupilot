@@ -334,7 +334,7 @@ static bool position_ok()
         }
     } else {
         // with interial nav use GPS based checks
-        return (ap.home_is_set && gps.status() >= AP_GPS::GPS_OK_FIX_3D &&
+        return (home_is_set() && gps.status() >= AP_GPS::GPS_OK_FIX_3D &&
                 !gps_glitch.glitching() && !failsafe.gps &&
                 !ekf_check_state.bad_compass && !failsafe.ekf);
     }

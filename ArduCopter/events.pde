@@ -168,7 +168,7 @@ static void failsafe_gps_check()
     uint32_t last_gps_update_ms;
 
     // return immediately if gps failsafe is disabled or we have never had GPS lock
-    if (g.failsafe_gps_enabled == FS_GPS_DISABLED || !ap.home_is_set) {
+    if (g.failsafe_gps_enabled == FS_GPS_DISABLED || !home_is_set()) {
         // if we have just disabled the gps failsafe, ensure the gps failsafe event is cleared
         if (failsafe.gps) {
             failsafe_gps_off_event();
