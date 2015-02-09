@@ -333,10 +333,8 @@ static bool position_ok()
             return (filt_status.flags.horiz_pos_abs && !filt_status.flags.const_pos_mode);
         }
     } else {
-        // with interial nav use GPS based checks
-        return (home_is_set() && gps.status() >= AP_GPS::GPS_OK_FIX_3D &&
-                !gps_glitch.glitching() && !failsafe.gps &&
-                !ekf_check_state.bad_compass && !failsafe.ekf);
+        // do not allow navigation with older inertial nav
+        return false;
     }
 }
 
