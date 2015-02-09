@@ -13,7 +13,7 @@
 #include <AP_Baro.h>
 #include <AP_AHRS.h>
 #include "../AP_Airspeed/AP_Airspeed.h"
-#include <AP_BattMonitor.h>
+#include "../AP_BattMonitor/AP_BattMonitor.h"
 #include <stdint.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
