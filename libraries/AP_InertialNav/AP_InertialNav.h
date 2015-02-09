@@ -9,7 +9,7 @@
 #include <AP_Buffer.h>                  // FIFO buffer library
 #include <AP_GPS_Glitch.h>              // GPS Glitch detection library
 #include <AP_Baro_Glitch.h>             // Baro Glitch detection library
-#include <AP_Nav_Common.h>              // definitions shared by inertial and ekf nav filters
+#include "../AP_NavEKF/AP_Nav_Common.h" // definitions shared by inertial and ekf nav filters
 
 #define AP_INTERTIALNAV_TC_XY   2.5f // default time constant for complementary filter's X & Y axis
 #define AP_INTERTIALNAV_TC_Z    5.0f // default time constant for complementary filter's Z axis
