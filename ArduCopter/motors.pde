@@ -140,12 +140,11 @@ static bool init_arm_motors(bool arming_from_gcs)
 
     initial_armed_bearing = ahrs.yaw_sensor;
 
-    // Reset home position
-    // -------------------
-    if (ap.home_is_set) {
-        init_home();
-        calc_distance_and_bearing();
+    // Reset home position if it has already been set before (but not locked)
+    if (ap.home_state == HOME_SET_NOT_LOCKED) {
+        set_home_to_current_location();
     }
+    calc_distance_and_bearing();
 
     if(did_ground_start == false) {
         startup_ground(true);
