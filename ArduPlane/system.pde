@@ -508,6 +508,7 @@ static void startup_INS_ground(bool do_accel_init)
     
     // set INS to HIL mode
     ins.set_hil_mode();
+    barometer.set_hil_mode();
 #endif
 
     AP_InertialSensor::Start_style style;
