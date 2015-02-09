@@ -1,3 +1,63 @@
+Release 3.2.2, February 10th 2015
+---------------------------------
+
+The ardupilot development team has released version 3.2.2 of
+APM:Plane. This is a bugfix release for some important bugs found by
+users of the 3.2.1 release.
+
+The changes in this release are:
+
+  - fixed a bug that could cause short term loss of RC control with
+    some receiver systems and configurations
+
+  - allowed for shorter sync pulse widths for PPM-SUM receivers on
+    APM1 and APM2
+
+  - fixed HIL mode altitude
+
+The most important bug fix is the one for short term loss of RC
+control. This is a very long standing bug which didn't have a
+noticible impact for most people, but could cause loss of RC control
+for around 1 or 2 seconds for some people in certain circumstances.
+
+The bug was in the the AP_HAL RCInput API. Each HAL backend has a flag
+that says whether there is a new RC input frame available. That flag
+was cleared by the read() method (typically hal.rcin->read()). Callers
+would check for new input by checking the boolean
+hal.rcin->new_input() function.
+
+The problem was that read() was called from multiple places. Normally
+this is fine as reads from other than the main radio input loop happen
+before the other reads, but if the timing of the new radio frame
+exactly matched the loop frequency then a read from another place
+could clear the new_input flag and we would not see the new RC input
+frame. If that happened enough times we would go into a short term RC
+failsafe and ignore RC inputs, even in manual mode.
+
+The fix was very simple - it is the new_input() function itself that
+should clear the flag, not read(). 
+
+Many thanks to MarkM for helping us track down this bug by providing
+us with sufficient detail on how to reproduce it. In Marks case his
+OpenLRSng configuration happened to produce exactly the worst case
+timing needed to reproduce the issue. Once I copied his OpenLRS
+settings to my TX/RX I was able to reproduce the problem and it was
+easy to find and fix.
+
+A number of users have reported occasional glitches in manual control
+where servos pause for short periods in past releases. It is likely
+that some of those issues were caused by this bug. The dev team would
+like to apologise for taking so long to track down this bug!
+
+The other main change was also related to RC input. Some receivers use
+a PPM-SUM sync pulse width shorter than what the APM1/APM2 code was
+setup to handle. The OpenLRSng default sync pulse width is 3000
+microseconds, but the APM1/APM2 code was written for a mininum sync
+pulse width of 4000 microseconds. For this release I have changed the
+APM1/APM2 driver to accept a sync pulse width down to 2700
+microseconds.
+
+
 Release 3.2.1, February 5th 2015
 --------------------------------
 
