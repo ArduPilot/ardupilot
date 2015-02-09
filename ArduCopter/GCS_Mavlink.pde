@@ -1111,6 +1111,29 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
             break;
 
+        case MAV_CMD_DO_SET_HOME:
+            // param1 : use current (1=use current location, 0=use specified location)
+            // param5 : latitude
+            // param6 : longitude
+            // param7 : altitude (absolute)
+            result = MAV_RESULT_FAILED; // assume failure
+            if(packet.param1 == 1 || (packet.param5 == 0 && packet.param6 == 0 && packet.param7 == 0)) {
+                if (set_home_to_current_location_and_lock()) {
+                    result = MAV_RESULT_ACCEPTED;
+                }
+            } else {
+                Location new_home_loc;
+                new_home_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
+                new_home_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
+                new_home_loc.alt = (int32_t)(packet.param7 * 100.0f);
+                if (!far_from_EKF_origin(new_home_loc)) {
+                    if (set_home_and_lock(new_home_loc)) {
+                        result = MAV_RESULT_ACCEPTED;
+                    }
+                }
+            }
+            break;
+
         case MAV_CMD_DO_SET_ROI:
             // param1 : regional of interest mode (not supported)
             // param2 : mission index/ target id (not supported)
@@ -1436,11 +1459,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         gps.setHIL(0, AP_GPS::GPS_OK_FIX_3D,
                    packet.time_usec/1000,
                    loc, vel, 10, 0, true);
-
-        if (!ap.home_is_set) {
-            init_home();
-        }
-
 
         // rad/sec
         Vector3f gyros;
