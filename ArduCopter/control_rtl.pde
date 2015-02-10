@@ -90,9 +90,9 @@ static void rtl_climb_start()
     Location rally_point = rally.calc_best_rally_or_home_location(current_loc, get_RTL_alt()+ahrs.get_home().alt);
     rally_point.alt -= ahrs.get_home().alt; // convert to altitude above home
     rally_point.alt = max(rally_point.alt, current_loc.alt);    // ensure we do not descend before reaching home
-    destination.z = rally_point.alt;
+    destination.z = pv_alt_above_origin(rally_point.alt);
 #else
-    destination.z = get_RTL_alt();
+    destination.z = pv_alt_above_origin(get_RTL_alt());
 #endif
 
     // set the destination
@@ -293,7 +293,7 @@ static void rtl_descent_run()
     wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
     // call z-axis position controller
-    pos_control.set_alt_target_with_slew(g.rtl_alt_final, G_Dt);
+    pos_control.set_alt_target_with_slew(pv_alt_above_origin(g.rtl_alt_final), G_Dt);
     pos_control.update_z_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot

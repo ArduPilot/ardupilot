@@ -563,7 +563,7 @@ static float baro_climbrate;        // barometer climbrate in cm/s
 ////////////////////////////////////////////////////////////////////////////////
 // 3D Location vectors
 ////////////////////////////////////////////////////////////////////////////////
-// Current location of the copter
+// Current location of the copter (altitude is relative to home)
 static struct   Location current_loc;
 
 
@@ -1147,7 +1147,7 @@ static void one_hz_loop()
 #if AC_FENCE == ENABLED
     // set fence altitude limit in position controller
     if ((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
-        pos_control.set_alt_max(fence.get_safe_alt()*100.0f);
+        pos_control.set_alt_max(pv_alt_above_origin(fence.get_safe_alt()*100.0f));
     }
 #endif
 }
