@@ -377,7 +377,7 @@ then
 fi
 
 # optional smbus battery monitor
-if batt_smbus start
+if batt_smbus -b 2 start
 then
     echo "Found batt_smbus"
 fi
