@@ -315,7 +315,7 @@ static void Log_Write_Control_Tuning()
         angle_boost         : attitude_control.angle_boost(),
         throttle_out        : g.rc_3.servo_out,
         desired_alt         : pos_control.get_alt_target() / 100.0f,
-        inav_alt            : current_loc.alt / 100.0f,
+        inav_alt            : inertial_nav.get_altitude() / 100.0f,
         baro_alt            : baro_alt,
         desired_sonar_alt   : (int16_t)target_sonar_alt,
         sonar_alt           : sonar_alt,
