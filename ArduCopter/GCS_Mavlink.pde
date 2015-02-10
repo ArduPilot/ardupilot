@@ -1177,7 +1177,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         case MAV_CMD_COMPONENT_ARM_DISARM:
             if (packet.param1 == 1.0f) {
                 // attempt to arm and return success or failure
-                if (init_arm_motors(false)) {
+                if (init_arm_motors(true)) {
                     result = MAV_RESULT_ACCEPTED;
                 } else {
                     result = MAV_RESULT_UNSUPPORTED;
