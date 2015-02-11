@@ -77,5 +77,31 @@
               <field type="float" name="Motor_rpm"> Motor RPM </field>
               <!-- to be extended-->
           </message>
+          <message id="206" name="EKF_EXT">
+              <description>Extended EKF state estimates for ASLUAVs</description>
+              <field type="uint64_t" name="timestamp"> Time since system start [us]</field>
+              <field type="float" name="Windspeed"> Magnitude of wind velocity (in lateral inertial plane) [m/s]</field>
+              <field type="float" name="WindDir"> Wind heading angle from North [rad]</field>
+              <field type="float" name="WindZ"> Z (Down) component of inertial wind velocity [m/s]</field>
+              <field type="float" name="Airspeed"> Magnitude of air velocity [m/s]</field>
+              <field type="float" name="beta"> Sideslip angle [rad]</field>
+              <field type="float" name="alpha"> Angle of attack [rad]</field>
+          </message>
+          <message id="207" name="ASL_OBCTRL">
+              <description>Off-board controls/commands for ASLUAVs</description>
+              <field type="uint64_t" name="timestamp"> Time since system start [us]</field>
+              <field type="float" name="uElev"> Elevator command [~]</field>
+              <field type="float" name="uThrot"> Throttle command [~]</field>
+              <field type="float" name="uThrot2"> Throttle 2 command [~]</field>
+              <field type="float" name="uAilL"> Left aileron command [~]</field>
+              <field type="float" name="uAilR"> Right aileron command [~]</field>
+              <field type="float" name="uRud"> Rudder command [~]</field>
+              <field type="uint8_t" name="obctrl_status"> Off-board computer status</field>
+          </message>
+          <message id="208" name="SENS_ATMOS">
+              <description>Atmospheric sensors (temperature, humidity, ...) </description>
+              <field type="float" name="TempAmbient"> Ambient temperature [degrees Celsius]</field>
+              <field type="float" name="Humidity"> Relative humidity [%]</field>
+          </message>
      </messages>
 </mavlink>
