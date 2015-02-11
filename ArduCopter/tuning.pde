@@ -196,5 +196,9 @@ static void tuning() {
     case CH6_RATE_ROLL_KD:
         g.pid_rate_roll.kD(tuning_value);
         break;
+
+    case CH6_RATE_MOT_YAW_HEADROOM:
+        motors.set_yaw_headroom(tuning_value*1000);
+        break;
     }
 }

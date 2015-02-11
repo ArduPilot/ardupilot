@@ -152,6 +152,7 @@
 #define CH6_RATE_PITCH_FF               52  // body frame pitch rate controller FF term
 #define CH6_RATE_ROLL_FF                53  // body frame roll rate controller FF term
 #define CH6_RATE_YAW_FF                 54  // body frame yaw rate controller FF term
+#define CH6_RATE_MOT_YAW_HEADROOM       55  // motors yaw headroom minimum
 
 // Acro Trainer types
 #define ACRO_TRAINER_DISABLED   0
