@@ -37,9 +37,6 @@
 #define AC_ATTITUDE_100HZ_DT                            0.0100f // delta time in seconds for 100hz update rate
 #define AC_ATTITUDE_400HZ_DT                            0.0025f // delta time in seconds for 400hz update rate
 
-#define AC_ATTITUDE_RATE_RP_PID_DTERM_FILTER            20      // D-term filter rate cutoff frequency for Roll and Pitch rate controllers
-#define AC_ATTITUDE_RATE_Y_PID_DTERM_FILTER             5       // D-term filter rate cutoff frequency for Yaw rate controller
-
 #define AC_ATTITUDE_CONTROL_RATE_BF_FF_DEFAULT          0       // body-frame rate feedforward enabled by default
 
 class AC_AttitudeControl {
@@ -78,6 +75,15 @@ public:
 
     // set_dt - sets time delta in seconds for all controllers (i.e. 100hz = 0.01, 400hz = 0.0025)
     void set_dt(float delta_sec);
+
+    // save_accel_roll_max - sets and saves the roll acceleration limit
+    void save_accel_roll_max(float accel_roll_max) { _accel_roll_max = accel_roll_max; _accel_roll_max.save(); }
+
+    // save_accel_pitch_max - sets and saves the pitch acceleration limit
+    void save_accel_pitch_max(float accel_pitch_max) { _accel_pitch_max = accel_pitch_max; _accel_pitch_max.save(); }
+
+    // save_accel_yaw_max - sets and saves the yaw acceleration limit
+    void save_accel_yaw_max(float accel_yaw_max) { _accel_yaw_max = accel_yaw_max; _accel_yaw_max.save(); }
 
     // relax_bf_rate_controller - ensure body-frame rate controller has zero errors to relax rate controller output
     void relax_bf_rate_controller();
@@ -243,8 +249,9 @@ protected:
     AP_Float            _angle_rate_rp_max;     // maximum rate request output from the earth-frame angle controller for roll and pitch axis
     AP_Float            _angle_rate_y_max;      // maximum rate request output from the earth-frame angle controller for yaw axis
     AP_Float            _slew_yaw;              // maximum rate the yaw target can be updated in Loiter, RTL, Auto flight modes
-    AP_Float            _accel_rp_max;          // maximum rotation acceleration for earth-frame roll and pitch axis
-    AP_Float            _accel_y_max;           // maximum rotation acceleration for earth-frame yaw axis
+    AP_Float            _accel_roll_max;          // maximum rotation acceleration for earth-frame roll axis
+    AP_Float            _accel_pitch_max;          // maximum rotation acceleration for earth-frame pitch axis
+    AP_Float            _accel_yaw_max;           // maximum rotation acceleration for earth-frame yaw axis
     AP_Int8             _rate_bf_ff_enabled;    // Enable/Disable body frame rate feed forward
 
     // internal variables
