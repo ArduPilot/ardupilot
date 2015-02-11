@@ -93,6 +93,8 @@ static void init_ardupilot()
 
     set_control_channels();
 
+    battery.init();
+
     // keep a record of how many resets have happened. This can be
     // used to detect in-flight resets
     g.num_resets.set_and_save(g.num_resets+1);
