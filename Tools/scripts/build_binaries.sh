@@ -35,6 +35,9 @@ checkout() {
 	vtag2="$vehicle-$tag"
     fi
 
+    echo "FORCING NON-BOARD SPECIFIC BUILD"
+    vtag=$vtag2
+
     echo "Checkout for $vehicle for $board with tag $tag"
 
     git checkout "$vtag" || git checkout "$vtag2" || return 1
