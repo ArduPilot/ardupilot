@@ -32,7 +32,7 @@
 #define AC_ATTITUDE_RATE_STAB_ROLL_OVERSHOOT_ANGLE_MAX  3000.0f // earth-frame rate stabilize controller's maximum overshoot angle
 #define AC_ATTITUDE_RATE_STAB_PITCH_OVERSHOOT_ANGLE_MAX 3000.0f // earth-frame rate stabilize controller's maximum overshoot angle
 #define AC_ATTITUDE_RATE_STAB_YAW_OVERSHOOT_ANGLE_MAX   1000.0f // earth-frame rate stabilize controller's maximum overshoot angle
-#define AC_ATTITUDE_RATE_STAB_ACRO_OVERSHOOT_ANGLE_MAX  1000.0f // earth-frame rate stabilize controller's maximum overshoot angle
+#define AC_ATTITUDE_RATE_STAB_ACRO_OVERSHOOT_ANGLE_MAX  3000.0f // earth-frame rate stabilize controller's maximum overshoot angle
 
 #define AC_ATTITUDE_100HZ_DT                            0.0100f // delta time in seconds for 100hz update rate
 #define AC_ATTITUDE_400HZ_DT                            0.0025f // delta time in seconds for 400hz update rate
