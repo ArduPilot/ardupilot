@@ -1037,6 +1037,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     GOBJECT(optflow,   "FLOW", OpticalFlow),
 #endif
 
+    // @Param: AUTOTUNE_AXIS_BITMASK
+    // @DisplayName: Autotune axis bitmask
+    // @Description: 1-byte bitmap of axes to autotune
+    // @Values: 7:All,1:Roll,2:Pitch,4:Yaw,0:None
+    // @User: Standard
+    GSCALAR(autotune_axis_bitmask, "AUTOTUNE_AXES", 7),  // AUTOTUNE_AXIS_BITMASK_DEFAULT
+
     AP_VAREND
 };
 
