@@ -1049,6 +1049,11 @@
                     <param index="1">0:Spektrum</param>
                     <param index="2">0:Spektrum DSM2, 1:Spektrum DSMX</param>
                </entry>
+               <entry value="520" name="MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES">
+                 <description>Request autopilot capabilities</description>
+                 <param index="1">1: Request autopilot version</param>
+                 <param index="2">Reserved (all remaining params)</param>
+               </entry>
               <entry value="2000" name="MAV_CMD_IMAGE_START_CAPTURE">
                   <description>Start image capture sequence</description>
                   <param index="1">Duration between two consecutive pictures (in seconds)</param>
