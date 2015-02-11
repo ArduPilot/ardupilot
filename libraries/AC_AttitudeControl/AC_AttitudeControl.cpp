@@ -83,7 +83,7 @@ void AC_AttitudeControl::set_dt(float delta_sec)
     // set attitude controller's D term filters
     _pid_rate_roll.set_d_lpf_alpha(ins_filter, _dt);
     _pid_rate_pitch.set_d_lpf_alpha(ins_filter, _dt);
-    _pid_rate_yaw.set_d_lpf_alpha(ins_filter/2.0f, _dt);  // half
+    _pid_rate_yaw.set_d_lpf_alpha(ins_filter/4.0f, _dt);  // half
 }
 
 // relax_bf_rate_controller - ensure body-frame rate controller has zero errors to relax rate controller output
@@ -620,21 +620,20 @@ float AC_AttitudeControl::rate_bf_to_motor_yaw(float rate_target_cds)
 
     // calculate error and call pid controller
     rate_error  = rate_target_cds - current_rate;
-    p = _pid_rate_yaw.get_p(rate_error);
 
-    // separately calculate p, i, d values for logging
-    p = _pid_rate_yaw.get_p(rate_error);
+    // get d value and filter
+    d = _pid_rate_yaw.get_d_filt(rate_error, _dt);
+
+    // get p value
+    p = _pid_rate_yaw.get_p_filt();
 
     // get i term
     i = _pid_rate_yaw.get_integrator();
 
     // update i term as long as we haven't breached the limits or the I term will certainly reduce
     if (!_motors.limit.yaw || ((i>0&&rate_error<0)||(i<0&&rate_error>0))) {
-        i = _pid_rate_yaw.get_i(rate_error, _dt);
+        i = _pid_rate_yaw.get_i_filt(_dt);
     }
-
-    // get d value
-    d = _pid_rate_yaw.get_d(rate_error, _dt);
 
     // constrain output and return
     return constrain_float((p+i+d), -AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX, AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX);
