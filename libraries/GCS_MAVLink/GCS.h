@@ -133,6 +133,7 @@ public:
 #if AP_AHRS_NAVEKF_AVAILABLE
     void send_opticalflow(AP_AHRS_NavEKF &ahrs, const OpticalFlow &optflow);
 #endif
+    void send_autopilot_version(void) const;
 
     // return a bitmap of active channels. Used by libraries to loop
     // over active channels to send to all active channels    
