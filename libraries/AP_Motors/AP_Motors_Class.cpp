@@ -69,6 +69,14 @@ const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("SPIN_ARMED", 5, AP_Motors, _spin_when_armed, AP_MOTORS_SPIN_WHEN_ARMED),
 
+    // @Param: YAW_HEADROOM
+    // @DisplayName: Matrix Yaw Min
+    // @Description: Yaw control is given at least this pwm range
+    // @Range: 0 500
+    // @Units: pwm
+    // @User: Advanced
+    AP_GROUPINFO("YAW_HEADROOM", 6, AP_Motors, _yaw_headroom, AP_MOTORS_YAW_HEADROOM_DEFAULT),
+
     AP_GROUPEND
 };
 

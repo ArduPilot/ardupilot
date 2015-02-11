@@ -220,7 +220,7 @@ void AP_MotorsMatrix::output_armed()
         // calculate amount of yaw we can fit into the throttle range
         // this is always equal to or less than the requested yaw from the pilot or rate controller
         yaw_allowed = min(out_max_pwm - out_best_thr_pwm, out_best_thr_pwm - out_min_pwm) - (rpy_high-rpy_low)/2;
-        yaw_allowed = max(yaw_allowed, AP_MOTORS_MATRIX_YAW_LOWER_LIMIT_PWM);
+        yaw_allowed = max(yaw_allowed, _yaw_headroom);
 
         if (_rc_yaw.pwm_out >= 0) {
             // if yawing right
