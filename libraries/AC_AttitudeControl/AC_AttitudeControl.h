@@ -140,8 +140,11 @@ public:
     // rate_ef_targets - returns rate controller body-frame targets (for reporting)
     const Vector3f& rate_bf_targets() const { return _rate_bf_target; }
 
-    // enable_bf_feedforward - enable or disable body-frame feed forward
+    // bf_feedforward - enable or disable body-frame feed forward
     void bf_feedforward(bool enable_or_disable) { _rate_bf_ff_enabled = enable_or_disable; }
+
+    // get_bf_feedforward - return body-frame feed forward setting
+    bool get_bf_feedforward() { return _rate_bf_ff_enabled; }
 
     // enable_bf_feedforward - enable or disable body-frame feed forward
     void accel_limiting(bool enable_or_disable);
