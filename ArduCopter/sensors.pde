@@ -150,6 +150,14 @@ static void read_battery(void)
         compass.set_current(battery.current_amps());
     }
 
+    // update motors with voltage and current
+    if (battery.get_type() != AP_BattMonitor::BattMonitor_TYPE_NONE) {
+        motors.set_voltage(battery.voltage());
+    }
+    if (battery.has_current()) {
+        motors.set_current(battery.current_amps());
+    }
+
     // check for low voltage or current if the low voltage check hasn't already been triggered
     // we only check when we're not powered by USB to avoid false alarms during bench tests
     if (!ap.usb_connected && !failsafe.battery && battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah)) {
