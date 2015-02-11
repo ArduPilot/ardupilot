@@ -4583,11 +4583,6 @@ void NavEKF::performArmingChecks()
         }
         // zero stored velocities used to do dead-reckoning
         heldVelNE.zero();
-        // zero last known position used to deadreckon if GPS is lost when arming
-        // keep position during disarm to provide continuing indication of last known position
-        if (vehicleArmed) {
-            lastKnownPositionNE.zero();
-        }
         // set various  useage modes based on the condition at arming. These are then held until the vehicle is disarmed.
         if (!vehicleArmed) {
             PV_AidingMode = AID_NONE; // When dis-armed, we only estimate orientation & height using the constant position mode
@@ -4596,6 +4591,9 @@ void NavEKF::performArmingChecks()
             constPosMode = true;
             constVelMode = false; // always clear constant velocity mode if constant position mode is active
             lastConstVelMode = false;
+            // store the current position to be used to keep reporting the last known position when disarmed
+            lastKnownPositionNE.x = state.position.x;
+            lastKnownPositionNE.y = state.position.y;
         } else if (_fusionModeGPS == 3) { // arming when GPS useage has been prohibited
             if (optFlowDataPresent()) {
                 PV_AidingMode = AID_RELATIVE; // we have optical flow data and can estimate all vehicle states
