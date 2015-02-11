@@ -715,3 +715,27 @@ float AC_AttitudeControl::sqrt_controller(float error, float p, float second_ord
         return error*p;
     }
 }
+
+// Maximum roll rate step size that results in maximum output after 4 time steps
+float AC_AttitudeControl::max_rate_step_bf_roll()
+{
+    float alpha = _pid_rate_roll.get_filt_alpha();
+    float alpha_remaining = 1-alpha;
+    return AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX/((alpha_remaining*alpha_remaining*alpha_remaining*alpha*_pid_rate_roll.kD())/_dt + _pid_rate_roll.kP());
+}
+
+// Maximum pitch rate step size that results in maximum output after 4 time steps
+float AC_AttitudeControl::max_rate_step_bf_pitch()
+{
+    float alpha = _pid_rate_pitch.get_filt_alpha();
+    float alpha_remaining = 1-alpha;
+    return AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX/((alpha_remaining*alpha_remaining*alpha_remaining*alpha*_pid_rate_pitch.kD())/_dt + _pid_rate_pitch.kP());
+}
+
+// Maximum yaw rate step size that results in maximum output after 4 time steps
+float AC_AttitudeControl::max_rate_step_bf_yaw()
+{
+    float alpha = _pid_rate_yaw.get_filt_alpha();
+    float alpha_remaining = 1-alpha;
+    return AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX/((alpha_remaining*alpha_remaining*alpha_remaining*alpha*_pid_rate_yaw.kD())/_dt + _pid_rate_yaw.kP());
+}

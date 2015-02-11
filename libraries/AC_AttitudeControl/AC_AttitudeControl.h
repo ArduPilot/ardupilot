@@ -137,6 +137,20 @@ public:
     void rate_bf_pitch_target(float rate_cds) { _rate_bf_target.y = rate_cds; }
     void rate_bf_yaw_target(float rate_cds) { _rate_bf_target.z = rate_cds; }
 
+    // Maximum roll rate step size that results in maximum output after 4 time steps
+    float max_rate_step_bf_roll();
+    // Maximum pitch rate step size that results in maximum output after 4 time steps
+    float max_rate_step_bf_pitch();
+    // Maximum yaw rate step size that results in maximum output after 4 time steps
+    float max_rate_step_bf_yaw();
+
+    // Maximum roll step size that results in maximum output after 4 time steps
+    float max_angle_step_bf_roll() { return max_rate_step_bf_roll()/_p_angle_roll.kP(); }
+    // Maximum pitch step size that results in maximum output after 4 time steps
+    float max_angle_step_bf_pitch() { return max_rate_step_bf_pitch()/_p_angle_pitch.kP(); }
+    // Maximum yaw step size that results in maximum output after 4 time steps
+    float max_angle_step_bf_yaw() { return max_rate_step_bf_yaw()/_p_angle_yaw.kP(); }
+
     // rate_ef_targets - returns rate controller body-frame targets (for reporting)
     const Vector3f& rate_bf_targets() const { return _rate_bf_target; }
 
