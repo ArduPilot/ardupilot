@@ -452,11 +452,14 @@ void NavEKF::ResetPosition(void)
         // write to state vector and compensate for GPS latency
         state.position.x = gpsPosNE.x + gpsPosGlitchOffsetNE.x + 0.001f*velNED.x*float(_msecPosDelay);
         state.position.y = gpsPosNE.y + gpsPosGlitchOffsetNE.y + 0.001f*velNED.y*float(_msecPosDelay);
+        // the estimated states at the last GPS measurement are set equal to the GPS measurement to prevent transients on the first fusion
+        statesAtPosTime.position.x = gpsPosNE.x;
+        statesAtPosTime.position.y = gpsPosNE.y;
     }
     // stored horizontal position states to prevent subsequent GPS measurements from being rejected
     for (uint8_t i=0; i<=49; i++){
-        storedStates[i].position[0] = state.position[0];
-        storedStates[i].position[1] = state.position[1];
+        storedStates[i].position.x = state.position.x;
+        storedStates[i].position.y = state.position.y;
     }
 }
 
@@ -4617,10 +4620,16 @@ void NavEKF::performArmingChecks()
                 constVelMode = false; // always clear constant velocity mode if constant position mode is active
             } else {
                 PV_AidingMode = AID_ABSOLUTE; // we have GPS data and can estimate all vehicle states
+                posTimeout = false;
+                velTimeout = false;
                 constPosMode = false;
                 constVelMode = false;
-                // we reset the position in case the initial GPS setting the origin was off or the vehicle has been moved a significant distance
-                ResetPosition();
+                // we need to reset the GPS timers to prevent GPS timeout logic being invoked on entry into GPS aiding
+                // this is becasue the EKF can be interrupted for an arbitrary amount of time during vehicle arming checks
+                lastFixTime_ms = imuSampleTime_ms;
+                secondLastFixTime_ms = imuSampleTime_ms;
+                // reset the last valid position fix time to prevent unwanted activation of GPS glitch logic
+                posFailTime = imuSampleTime_ms;
             }
         }
         // Reset filter positon, height and velocity states on arming or disarming
