@@ -323,6 +323,7 @@ static bool pre_arm_checks(bool display_failure)
         return false;
     }
 
+#if AC_FENCE == ENABLED
     // check fence is initialised
     if(!fence.pre_arm_check()) {
         if (display_failure) {
@@ -330,6 +331,7 @@ static bool pre_arm_checks(bool display_failure)
         }
         return false;
     }
+#endif
 
     // check INS
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) {
