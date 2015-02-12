@@ -12,22 +12,22 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo AP_Parachute::var_info[] PROGMEM = {
 
     // @Param: ENABLED
-    // @DisplayName: Parachute release enabled or disabled
-    // @Description: Parachute release enabled or disabled
-    // @Values: 0:Disabled,1:Enabled
+    // @DisplayName: 降落伞释放启用或禁用
+    // @Description: 降落伞释放启用或禁用
+    // @Values: 0:禁用,1:启用
     // @User: Standard
     AP_GROUPINFO("ENABLED", 0, AP_Parachute, _enabled, 0),
 
     // @Param: TYPE
-    // @DisplayName: Parachute release mechanism type (relay or servo)
-    // @Description: Parachute release mechanism type (relay or servo)
-    // @Values: 0:First Relay,1:Second Relay,2:Third Relay,3:Fourth Relay,10:Servo
+    // @DisplayName: 降落伞释放机制（中继或舵机）
+    // @Description: 降落伞释放机制（中继或舵机）
+    // @Values: 0:d第一中继,2:第二中继,3:第四中继,10:舵机
     // @User: Standard
     AP_GROUPINFO("TYPE", 1, AP_Parachute, _release_type, AP_PARACHUTE_TRIGGER_TYPE_RELAY_0),
 
     // @Param: SERVO_ON
-    // @DisplayName: Parachute Servo ON PWM value
-    // @Description: Parachute Servo PWM value when parachute is released
+    // @DisplayName: 降落伞舵机启动PWM值
+    // @Description: 当降落伞释放时的舵机PWM值
     // @Range: 1000 2000
     // @Units: pwm
     // @Increment: 1
@@ -35,8 +35,8 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] PROGMEM = {
     AP_GROUPINFO("SERVO_ON", 2, AP_Parachute, _servo_on_pwm, AP_PARACHUTE_SERVO_ON_PWM_DEFAULT),
 
     // @Param: SERVO_OFF
-    // @DisplayName: Servo OFF PWM value
-    // @Description: Parachute Servo PWM value when parachute is not released
+    // @DisplayName: 舵机关闭的PWM值
+    // @Description: 降落伞没有释放时舵机的PWM值
     // @Range: 1000 2000
     // @Units: pwm
     // @Increment: 1
@@ -44,10 +44,10 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] PROGMEM = {
     AP_GROUPINFO("SERVO_OFF", 3, AP_Parachute, _servo_off_pwm, AP_PARACHUTE_SERVO_OFF_PWM_DEFAULT),
 
     // @Param: ALT_MIN
-    // @DisplayName: Parachute min altitude in cm above home
-    // @Description: Parachute min altitude above home.  Parachute will not be released below this altitude.  0 to disable alt check.
+    // @DisplayName: 降落伞在家的高度之上的最小高度（Parachute min altitude in cm above home为何这里是cm我也不知道）
+    // @Description: 降落伞在家之上的最小高度。在这个高度之下降落伞不会被释放。0会禁用这个检查。
     // @Range: 0 32000
-    // @Units: Meters
+    // @Units: 米
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("ALT_MIN", 4, AP_Parachute, _alt_min, AP_PARACHUTE_ALT_MIN_DEFAULT),
