@@ -1,3 +1,79 @@
+Release 2.48beta1, February 12th 2015
+-------------------------------------
+
+The ardupilot development team has released version 2.48beta1 of
+APM:Rover.  This release is a bug fix release with some important bugs
+found by the users of ardupilot.
+
+The changes in this release are:
+
+  - fixed a bug that could cause short term loss of RC control with
+    some receiver systems and configurations
+  - allowed for shorter sync pulse widths for PPM-SUM receivers on
+    APM1 and APM2
+  - fix an issue where battery reporting could be intermittent (thanks
+    Georgii Staroselskii!)
+  - fixed a mission handling bug that could cause a crash if jump
+    commands form an infinite loop (thanks to Dellarb for reporting
+    this bug)
+  - improved support for in-kernel SPI handling on Linux (thanks to John Williams)
+  - support UAVCAN based ESCs and GPS modules on Pixhawk (thanks to
+    Pavel, Holger and and PX4 dev team)
+  - Multiple updates for the NavIO+ cape on RaspberryPi (thanks to
+    Emlid)
+  - Lots of EKF changes
+  - added support for MAVLink packet routing
+  - added detection and recovery from faulty gyro and accel sensors
+  - added support for BBBMini Linux port
+  - increased number of AVR input channels from 8 to 11
+  - auto-set system clock based on GPS in Linux ports
+  - added SBUS FrSky telemetry support (thanks to Mathias)
+  - Added AK8963 MAG support (thanks Staroselskii Georgii)
+  - Added support for second battery
+
+The most important bug fix is the one for short term loss of RC
+control. This is a very long standing bug which didn't have a
+noticible impact for most people, but could cause loss of RC control
+for around 1 or 2 seconds for some people in certain circumstances.
+
+The bug was in the the AP_HAL RCInput API. Each HAL backend has a flag
+that says whether there is a new RC input frame available. That flag
+was cleared by the read() method (typically hal.rcin->read()). Callers
+would check for new input by checking the boolean
+hal.rcin->new_input() function.
+
+The problem was that read() was called from multiple places. Normally
+this is fine as reads from other than the main radio input loop happen
+before the other reads, but if the timing of the new radio frame
+exactly matched the loop frequency then a read from another place
+could clear the new_input flag and we would not see the new RC input
+frame. If that happened enough times we would go into a short term RC
+failsafe and ignore RC inputs, even in manual mode.
+
+The fix was very simple - it is the new_input() function itself that
+should clear the flag, not read(). 
+
+Many thanks to MarkM for helping us track down this bug by providing
+us with sufficient detail on how to reproduce it. In Marks case his
+OpenLRSng configuration happened to produce exactly the worst case
+timing needed to reproduce the issue. Once Tridge copied his OpenLRS
+settings to his TX/RX he was able to reproduce the problem and it was
+easy to find and fix.
+
+A number of users have reported occasional glitches in manual control
+where servos pause for short periods in past releases. It is likely
+that some of those issues were caused by this bug. The dev team would
+like to apologise for taking so long to track down this bug!
+
+The other main change was also related to RC input. Some receivers use
+a PPM-SUM sync pulse width shorter than what the APM1/APM2 code was
+setup to handle. The OpenLRSng default sync pulse width is 3000
+microseconds, but the APM1/APM2 code was written for a mininum sync
+pulse width of 4000 microseconds. For this release we have changed the
+APM1/APM2 driver to accept a sync pulse width down to 2700
+microseconds.
+
+
 Release 2.47, November 15th 2014
 --------------------------------
 
