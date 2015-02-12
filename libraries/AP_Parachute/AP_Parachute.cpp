@@ -44,7 +44,7 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] PROGMEM = {
     AP_GROUPINFO("SERVO_OFF", 3, AP_Parachute, _servo_off_pwm, AP_PARACHUTE_SERVO_OFF_PWM_DEFAULT),
 
     // @Param: ALT_MIN
-    // @DisplayName: 降落伞在家的高度之上的最小高度（Parachute min altitude in cm above home为何这里是cm我也不知道）
+    // @DisplayName: 降落伞在家的高度之上的最小高度
     // @Description: 降落伞在家之上的最小高度。在这个高度之下降落伞不会被释放。0会禁用这个检查。
     // @Range: 0 32000
     // @Units: 米
