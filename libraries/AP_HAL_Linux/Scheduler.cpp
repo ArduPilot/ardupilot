@@ -338,6 +338,7 @@ void *LinuxScheduler::_uart_thread(void* arg)
         ((LinuxUARTDriver *)hal.uartA)->_timer_tick();
         ((LinuxUARTDriver *)hal.uartB)->_timer_tick();
         ((LinuxUARTDriver *)hal.uartC)->_timer_tick();
+        ((LinuxUARTDriver *)hal.uartE)->_timer_tick();
     }
     return NULL;
 }

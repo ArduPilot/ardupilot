@@ -22,6 +22,7 @@ static LinuxSPIUARTDriver uartBDriver;
 static LinuxUARTDriver uartBDriver(false);
 #endif
 static LinuxUARTDriver uartCDriver(false);
+static LinuxUARTDriver uartEDriver(false);
 
 static LinuxSemaphore  i2cSemaphore;
 static LinuxI2CDriver  i2cDriver(&i2cSemaphore, "/dev/i2c-1");
@@ -97,7 +98,7 @@ HAL_Linux::HAL_Linux() :
         &uartBDriver,
         &uartCDriver,
         NULL,            /* no uartD */
-        NULL,            /* no uartE */
+        &uartEDriver,
         &i2cDriver,
         &spiDeviceManager,
         &analogIn,
@@ -126,7 +127,7 @@ void HAL_Linux::init(int argc,char* const argv[]) const
     /*
       parse command line options
      */
-    while ((opt = getopt(argc, argv, "A:B:C:h")) != -1) {
+    while ((opt = getopt(argc, argv, "A:B:C:E:h")) != -1) {
         switch (opt) {
         case 'A':
             uartADriver.set_device_path(optarg);
@@ -136,6 +137,9 @@ void HAL_Linux::init(int argc,char* const argv[]) const
             break;
         case 'C':
             uartCDriver.set_device_path(optarg);
+            break;
+        case 'E':
+            uartEDriver.set_device_path(optarg);
             break;
         case 'h':
             _usage();
@@ -152,6 +156,7 @@ void HAL_Linux::init(int argc,char* const argv[]) const
     rcout->init(NULL);
     rcin->init(NULL);
     uartA->begin(115200);    
+    uartE->begin(115200);    
     spi->init(NULL);
     analogin->init(NULL);
     utilInstance.init(argc, argv);
