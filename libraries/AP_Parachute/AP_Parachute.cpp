@@ -44,7 +44,7 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] PROGMEM = {
     AP_GROUPINFO("SERVO_OFF", 3, AP_Parachute, _servo_off_pwm, AP_PARACHUTE_SERVO_OFF_PWM_DEFAULT),
 
     // @Param: ALT_MIN
-    // @DisplayName: Parachute min altitude in cm above home
+    // @DisplayName: Parachute min altitude in meters above home
     // @Description: Parachute min altitude above home.  Parachute will not be released below this altitude.  0 to disable alt check.
     // @Range: 0 32000
     // @Units: Meters
