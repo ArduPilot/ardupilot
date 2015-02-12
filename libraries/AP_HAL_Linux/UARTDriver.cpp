@@ -85,7 +85,7 @@ void LinuxUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
             }
             
             if (!_connected) {
-                ::printf("LinuxUARTDriver TCP connection not stablished\n");
+                ::printf("LinuxUARTDriver TCP connection not established\n");
                 exit(1);
             }
             _flow_control = FLOW_CONTROL_ENABLE;
@@ -282,47 +282,66 @@ void LinuxUARTDriver::_tcp_start_connection(bool wait_for_connection)
         /* we want to be able to re-use ports quickly */
         setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
 
-        ::printf("bind port %u for %u\n", 
-                 (unsigned)ntohs(sockaddr.sin_port),
-                 (unsigned)portNumber);
+        if (!wait_for_connection) {
 
-        ret = bind(listen_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
-        if (ret == -1) {
-            ::printf("bind failed on port %u - %s\n",
-                     (unsigned)ntohs(sockaddr.sin_port),
-                     strerror(errno));
-            exit(1);
+            ret = connect(listen_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+
+            if (ret < 0) {
+                ::printf("connect failed on port %u - %s\n",
+                         (unsigned)ntohs(sockaddr.sin_port),
+                         strerror(errno));
+                exit(1);
+            }
+
+            fcntl(listen_fd, F_SETFL, fcntl(listen_fd, F_GETFL, 0) | O_NONBLOCK);
+
+            _rd_fd = listen_fd;
+
+            _connected = true;
+
+            ::printf("Serial port %u on TCP port %u\n", portNumber, 
+                     _base_port + portNumber);
+            fflush(stdout);
+
+        } else {
+
+            ret = bind(listen_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+            if (ret == -1) {
+                ::printf("bind failed on port %u - %s\n",
+                         (unsigned)ntohs(sockaddr.sin_port),
+                         strerror(errno));
+                exit(1);
+            }
+
+            ret = listen(listen_fd, 5);
+            if (ret == -1) {
+                ::printf("listen failed - %s\n", strerror(errno));
+                exit(1);
+            }
+
+            ::printf("Serial port %u on TCP port %u\n", portNumber, 
+                     _base_port + portNumber);
+            ::fflush(stdout);
+
+            ::printf("Waiting for connection ....\n");
+            ::fflush(stdout);
+            net_fd = accept(listen_fd, NULL, NULL);
+            if (net_fd == -1) {
+                ::printf("accept() error - %s", strerror(errno));
+                exit(1);
+            }
+            setsockopt(net_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+            setsockopt(net_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+
+            // always run the file descriptor non-blocking, and deal with                                         |
+            // blocking IO in the higher level calls
+            fcntl(net_fd, F_SETFL, fcntl(net_fd, F_GETFL, 0) | O_NONBLOCK);
+
+            _connected = true;
+            _rd_fd = net_fd;
+            _wr_fd = net_fd;
         }
 
-        ret = listen(listen_fd, 5);
-        if (ret == -1) {
-            ::printf("listen failed - %s\n", strerror(errno));
-            exit(1);
-        }
-
-        ::printf("Serial port %u on TCP port %u\n", portNumber, 
-                 _base_port + portNumber);
-        fflush(stdout);
-    }
-
-    if (wait_for_connection) {
-        ::printf("Waiting for connection ....\n");
-        ::fflush(stdout);
-        net_fd = accept(listen_fd, NULL, NULL);
-        if (net_fd == -1) {
-            ::printf("accept() error - %s", strerror(errno));
-            exit(1);
-        }
-        setsockopt(net_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
-        setsockopt(net_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
-
-        // always run the file descriptor non-blocking, and deal with                                         |
-        // blocking IO in the higher level calls
-        fcntl(net_fd, F_SETFL, fcntl(net_fd, F_GETFL, 0) | O_NONBLOCK);
-
-        _connected = true;
-        _rd_fd = net_fd;
-        _wr_fd = net_fd;
     }
 }
 
@@ -570,7 +589,20 @@ int LinuxUARTDriver::_read_fd(uint8_t *buf, uint16_t n)
     ret = ::read(_rd_fd, buf, n);
     if (ret > 0) {
         BUF_ADVANCETAIL(_readbuf, ret);
+    } else {
+        switch (errno) {
+            case EAGAIN: 
+                /* Ignore EAGAIN that resulted from non-blocking read */
+                break;
+            case EPIPE:
+                /* Ignore EPIPE that resulted from peer shutdown */
+                break;
+            default:
+               ::fprintf(stdout, "read failed - %s\n", strerror(errno));
+               break;
+        }
     }
+
     return ret;
 }
 
