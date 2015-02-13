@@ -178,11 +178,11 @@ static int main_loop(int argc, char **argv)
         perf_end(perf_loop);
 
         /*
-          give up 500 microseconds of time, to ensure drivers get a
+          give up 250 microseconds of time, to ensure drivers get a
           chance to run. This relies on the accurate semaphore wait
           using hrt in semaphore.cpp
          */
-        hal.scheduler->delay_microseconds(500);
+        hal.scheduler->delay_microseconds(250);
     }
     thread_running = false;
     return 0;
