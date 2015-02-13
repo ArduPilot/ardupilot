@@ -21,9 +21,9 @@ using namespace PX4;
 void PX4RCOutput::init(void* unused) 
 {
     _perf_rcout = perf_alloc(PC_ELAPSED, "APM_rcout");
-    _pwm_fd = open(PWM_OUTPUT_DEVICE_PATH, O_RDWR);
+    _pwm_fd = open(PWM_OUTPUT0_DEVICE_PATH, O_RDWR);
     if (_pwm_fd == -1) {
-        hal.scheduler->panic("Unable to open " PWM_OUTPUT_DEVICE_PATH);
+        hal.scheduler->panic("Unable to open " PWM_OUTPUT0_DEVICE_PATH);
     }
     if (ioctl(_pwm_fd, PWM_SERVO_ARM, 0) != 0) {
         hal.console->printf("RCOutput: Unable to setup IO arming\n");
@@ -41,7 +41,7 @@ void PX4RCOutput::init(void* unused)
         return;
     }
 
-	_pwm_sub = orb_subscribe(ORB_ID_VEHICLE_CONTROLS);
+	_pwm_sub = orb_subscribe(ORB_ID(actuator_outputs));
 
     // mark number of outputs given by px4io as zero
     _outputs.noutputs = 0;
@@ -364,7 +364,7 @@ void PX4RCOutput::_timer_tick(void)
 update_pwm:
 	bool rc_updated = false;
 	if (_pwm_sub >= 0 && orb_check(_pwm_sub, &rc_updated) == 0 && rc_updated) {
-        orb_copy(ORB_ID_VEHICLE_CONTROLS, _pwm_sub, &_outputs);
+        orb_copy(ORB_ID(actuator_outputs), _pwm_sub, &_outputs);
 	}
 
 }

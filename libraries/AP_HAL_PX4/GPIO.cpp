@@ -32,9 +32,9 @@ PX4GPIO::PX4GPIO()
 void PX4GPIO::init()
 {
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
-    _led_fd = open(LED_DEVICE_PATH, O_RDWR);
+    _led_fd = open(LED0_DEVICE_PATH, O_RDWR);
     if (_led_fd == -1) {
-        hal.scheduler->panic("Unable to open " LED_DEVICE_PATH);
+        hal.scheduler->panic("Unable to open " LED0_DEVICE_PATH);
     }
     if (ioctl(_led_fd, LED_OFF, LED_BLUE) != 0) {
         hal.console->printf("GPIO: Unable to setup GPIO LED BLUE\n");
@@ -43,9 +43,9 @@ void PX4GPIO::init()
          hal.console->printf("GPIO: Unable to setup GPIO LED RED\n");
     }
 #endif
-    _tone_alarm_fd = open("/dev/tone_alarm", O_WRONLY);
+    _tone_alarm_fd = open(TONEALARM0_DEVICE_PATH, O_WRONLY);
     if (_tone_alarm_fd == -1) {
-        hal.scheduler->panic("Unable to open /dev/tone_alarm");
+        hal.scheduler->panic("Unable to open " TONEALARM0_DEVICE_PATH);
     }
 
     _gpio_fmu_fd = open(PX4FMU_DEVICE_PATH, 0);
