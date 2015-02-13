@@ -80,12 +80,8 @@ AP_RangeFinder_PX4::~AP_RangeFinder_PX4()
 int AP_RangeFinder_PX4::open_driver(void)
 {
     // work out the device path based on how many PX4 drivers we have loaded
-    char path[] = RANGE_FINDER_DEVICE_PATH "n";
-    if (num_px4_instances == 0) {
-        path[strlen(path)-1] = 0;
-    } else {
-        path[strlen(path)-1] = '1' + (num_px4_instances-1);
-    }
+    char path[] = RANGE_FINDER_BASE_DEVICE_PATH "n";
+    path[strlen(path)-1] = '0' + num_px4_instances;
     return open(path, O_RDONLY);
 }
 
