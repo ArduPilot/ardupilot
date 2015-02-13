@@ -1072,9 +1072,7 @@ void AP_InertialSensor::wait_for_sample(void)
     if (_next_sample_usec - now <=_sample_period_usec) {
         // we're ahead on time, schedule next sample at expected period
         uint32_t wait_usec = _next_sample_usec - now;
-        if (wait_usec > 200) {
-            hal.scheduler->delay_microseconds(wait_usec);
-        }
+        hal.scheduler->delay_microseconds(wait_usec);
         _next_sample_usec += _sample_period_usec;
     } else if (now - _next_sample_usec < _sample_period_usec/8) {
         // we've overshot, but only by a small amount, keep on
