@@ -34,7 +34,7 @@ extern const AP_HAL::HAL& hal;
 
 bool AP_Airspeed_PX4::init()
 {
-    _fd = open(AIRSPEED_DEVICE_PATH, O_RDONLY);
+    _fd = open(AIRSPEED0_DEVICE_PATH, O_RDONLY);
     if (_fd == -1) {
         return false;
     }
