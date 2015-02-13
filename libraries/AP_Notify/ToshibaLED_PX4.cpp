@@ -35,9 +35,9 @@ extern const AP_HAL::HAL& hal;
 bool ToshibaLED_PX4::hw_init()
 {
     // open the rgb led device
-    _rgbled_fd = open(RGBLED_DEVICE_PATH, 0);
+    _rgbled_fd = open(RGBLED0_DEVICE_PATH, 0);
     if (_rgbled_fd == -1) {
-        hal.console->printf("Unable to open " RGBLED_DEVICE_PATH);
+        hal.console->printf("Unable to open " RGBLED0_DEVICE_PATH);
         return false;
     }
     ioctl(_rgbled_fd, RGBLED_SET_MODE, (unsigned long)RGBLED_MODE_ON);
