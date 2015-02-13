@@ -27,8 +27,8 @@
  */
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
 // copter defaults
-#define VELNE_NOISE_DEFAULT     1.0f
-#define VELD_NOISE_DEFAULT      1.4f
+#define VELNE_NOISE_DEFAULT     0.5f
+#define VELD_NOISE_DEFAULT      0.7f
 #define POSNE_NOISE_DEFAULT     0.5f
 #define ALT_NOISE_DEFAULT       1.0f
 #define MAG_NOISE_DEFAULT       0.05f
@@ -51,8 +51,8 @@
 
 #elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
 // rover defaults
-#define VELNE_NOISE_DEFAULT     1.0f
-#define VELD_NOISE_DEFAULT      1.4f
+#define VELNE_NOISE_DEFAULT     0.5f
+#define VELD_NOISE_DEFAULT      0.7f
 #define POSNE_NOISE_DEFAULT     0.5f
 #define ALT_NOISE_DEFAULT       1.0f
 #define MAG_NOISE_DEFAULT       0.05f
@@ -75,8 +75,8 @@
 
 #else
 // generic defaults (and for plane)
-#define VELNE_NOISE_DEFAULT     1.0f
-#define VELD_NOISE_DEFAULT      1.4f
+#define VELNE_NOISE_DEFAULT     0.5f
+#define VELD_NOISE_DEFAULT      0.7f
 #define POSNE_NOISE_DEFAULT     0.5f
 #define ALT_NOISE_DEFAULT       0.5f
 #define MAG_NOISE_DEFAULT       0.05f
@@ -1921,9 +1921,9 @@ void NavEKF::FuseVelPosNED()
         // if the GPS is able to report a speed error, we use it to adjust the observation noise for GPS velocity
         // otherwise we scale it using manoeuvre acceleration
         if (gpsSpdAccuracy > 0.0f) {
-            // use GPS receivers reported speed accuracy
-            R_OBS[0] = sq(constrain_float(gpsSpdAccuracy * _gpsHorizVelNoise, 0.05f, 50.0f));
-            R_OBS[2] = sq(constrain_float(gpsSpdAccuracy * _gpsVertVelNoise, 0.05f, 50.0f));
+            // use GPS receivers reported speed accuracy - floor at 0.5m/s reported speed accuracy
+            R_OBS[0] = sq(constrain_float(gpsSpdAccuracy/0.5f * _gpsHorizVelNoise, _gpsHorizVelNoise, 50.0f));
+            R_OBS[2] = sq(constrain_float(gpsSpdAccuracy/0.5f * _gpsVertVelNoise, _gpsVertVelNoise, 50.0f));
         } else {
             // calculate additional error in GPS velocity caused by manoeuvring
             R_OBS[0] = sq(constrain_float(_gpsHorizVelNoise, 0.05f, 5.0f)) + sq(gpsNEVelVarAccScale * accNavMag);
