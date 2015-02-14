@@ -814,7 +814,7 @@ void setup() {
 
     AP_Notify::flags.failsafe_battery = false;
 
-    notify.init(false);
+    notify.init(true); // enable external LEDs
 
     rssi_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE);
 
