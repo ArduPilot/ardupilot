@@ -8,9 +8,9 @@ CWD=$(pwd)
 OPT="$HOME/opt"
 
 BASE_PKGS="gawk make git arduino-core curl"
-SITL_PKGS="g++ python-pip python-matplotlib python-serial python-wxgtk2.8 python-scipy python-opencv python-numpy python-pyparsing ccache"
+SITL_PKGS="g++ python-pip python-matplotlib python-serial python-wxgtk2.8 python-scipy python-opencv python-numpy python-pyparsing ccache python-empy"
 AVR_PKGS="gcc-avr binutils-avr avr-libc"
-PYTHON_PKGS="pymavlink MAVProxy droneapi"
+PYTHON_PKGS="pymavlink MAVProxy droneapi catkin_pkg"
 PX4_PKGS="python-serial python-argparse openocd flex bison libncurses5-dev \
           autoconf texinfo build-essential libftdi-dev libtool zlib1g-dev \
           zip genromfs"
