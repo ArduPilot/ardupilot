@@ -38,6 +38,7 @@ class AP_Mount_Backend;
 class AP_Mount_Servo;
 class AP_Mount_MAVLink;
 class AP_Mount_Alexmos;
+class AP_Mount_SToRM32;
 
 /*
   This is a workaround to allow the MAVLink backend access to the
@@ -56,6 +57,7 @@ class AP_Mount
     friend class AP_Mount_Servo;
     friend class AP_Mount_MAVLink;
     friend class AP_Mount_Alexmos;
+    friend class AP_Mount_SToRM32;
 
 public:
 
@@ -64,7 +66,8 @@ public:
         Mount_Type_None = 0,            /// no mount
         Mount_Type_Servo = 1,           /// servo controlled mount
         Mount_Type_MAVLink = 2,         /// MAVLink controlled mount
-        Mount_Type_Alexmos = 3         /// MAVLink controlled mount
+        Mount_Type_Alexmos = 3,         /// Alexmos mount
+        Mount_Type_SToRM32 = 4          /// SToRM32 mount
     };
 
     // Constructor
