@@ -1160,8 +1160,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 // gyro offset calibration
                 ins.init_gyro();
                 // reset ahrs gyro bias
-                ahrs.reset_gyro_drift();
-                result = MAV_RESULT_ACCEPTED;
+                if (ins.gyro_calibrated_ok_all()) {
+                    ahrs.reset_gyro_drift();
+                    result = MAV_RESULT_ACCEPTED;
+                }
             } else if (packet.param3 == 1) {
                 // fast barometer calibration
                 init_barometer(false);
@@ -1202,14 +1204,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 // attempt to arm and return success or failure
                 if (init_arm_motors(true)) {
                     result = MAV_RESULT_ACCEPTED;
-                } else {
-                    result = MAV_RESULT_UNSUPPORTED;
                 }
             } else if (packet.param1 == 0.0f && (mode_has_manual_throttle(control_mode) || ap.land_complete))  {
                 init_disarm_motors();
                 result = MAV_RESULT_ACCEPTED;
-            } else {
-                result = MAV_RESULT_UNSUPPORTED;
             }
             break;
 
