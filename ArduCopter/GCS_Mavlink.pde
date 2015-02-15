@@ -16,9 +16,6 @@ static bool	gcs_out_of_time;
 // check if a message will fit in the payload space available
 #define CHECK_PAYLOAD_SIZE(id) if (txspace < MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_ ## id ## _LEN) return false
 
-// prototype this for use inside the GCS class
-static void gcs_send_text_fmt(const prog_char_t *fmt, ...);
-
 static void gcs_send_heartbeat(void)
 {
     gcs_send_message(MSG_HEARTBEAT);
@@ -1704,7 +1701,7 @@ static void gcs_send_text_P(gcs_severity severity, const prog_char_t *str)
  *  only one fits in the queue, so if you send more than one before the
  *  last one gets into the serial buffer then the old one will be lost
  */
-void gcs_send_text_fmt(const prog_char_t *fmt, ...)
+static void gcs_send_text_fmt(const prog_char_t *fmt, ...)
 {
     va_list arg_list;
     gcs[0].pending_status.severity = (uint8_t)SEVERITY_LOW;

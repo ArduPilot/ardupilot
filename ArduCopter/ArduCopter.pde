@@ -216,6 +216,8 @@ static bool in_log_download;
 ////////////////////////////////////////////////////////////////////////////////
 static void update_events(void);
 static void print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode);
+static void gcs_send_text_fmt(const prog_char_t *fmt, ...);
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Dataflash
@@ -890,6 +892,10 @@ void setup()
 
     // initialise the main loop scheduler
     scheduler.init(&scheduler_tasks[0], sizeof(scheduler_tasks)/sizeof(scheduler_tasks[0]));
+
+    // setup initial performance counters
+    perf_info_reset();
+    fast_loopTimer = hal.scheduler->micros();
 }
 
 /*
@@ -915,10 +921,11 @@ static void perf_update(void)
     if (should_log(MASK_LOG_PM))
         Log_Write_Performance();
     if (scheduler.debug()) {
-        cliSerial->printf_P(PSTR("PERF: %u/%u %lu\n"),
-                            (unsigned)perf_info_get_num_long_running(),
-                            (unsigned)perf_info_get_num_loops(),
-                            (unsigned long)perf_info_get_max_time());
+        gcs_send_text_fmt(PSTR("PERF: %u/%u %lu %lu\n"),
+                          (unsigned)perf_info_get_num_long_running(),
+                          (unsigned)perf_info_get_num_loops(),
+                          (unsigned long)perf_info_get_max_time(),
+                          (unsigned long)perf_info_get_min_time());
     }
     perf_info_reset();
     pmTest1 = 0;
