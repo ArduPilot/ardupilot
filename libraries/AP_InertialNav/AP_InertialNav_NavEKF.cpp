@@ -57,7 +57,10 @@ nav_filter_status AP_InertialNav_NavEKF::get_filter_status() const
 struct Location AP_InertialNav_NavEKF::get_origin() const {
     if (_ahrs.have_inertial_nav()) {
         struct Location ret;
-        _ahrs_ekf.get_NavEKF().getOriginLLH(ret);
+        if (!_ahrs_ekf.get_NavEKF().getOriginLLH(ret)) {
+            // initialise location to all zeros if origin not yet set
+            memset(&ret, 0, sizeof(ret));
+        }
         return ret;
     }
     return AP_InertialNav::get_origin();
