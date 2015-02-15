@@ -518,12 +518,12 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: FS_LONG_TIMEOUT
     // @DisplayName: Long failsafe timeout
-    // @Description: The time in seconds that a failsafe condition has to persist before a long failsafe event will occor. This defaults to 20 seconds
+    // @Description: The time in seconds that a failsafe condition has to persist before a long failsafe event will occor. This defaults to 5 seconds
     // @Units: seconds
     // @Range: 1 300
     // @Increment: 0.5
     // @User: Standard
-    GSCALAR(long_fs_timeout,        "FS_LONG_TIMEOUT", 20),
+    GSCALAR(long_fs_timeout,        "FS_LONG_TIMEOUT", 5),
 
     // @Param: FS_BATT_VOLTAGE
     // @DisplayName: Failsafe battery voltage
