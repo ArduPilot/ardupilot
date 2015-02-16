@@ -20,7 +20,22 @@ public:
     virtual uint64_t millis64() = 0;
     virtual uint64_t micros64() = 0;
 #endif
+
+    /*
+      delay for the given number of microseconds. This needs to be as
+      accurate as possible - preferably within 100 microseconds.
+     */
     virtual void     delay_microseconds(uint16_t us) = 0;
+
+    /*
+      delay for the given number of microseconds. On supported
+      platforms this boosts the priority of the main thread for a
+      short time when the time completes. The aim is to ensure the
+      main thread runs at a higher priority than drivers for the start
+      of each loop
+     */
+    virtual void     delay_microseconds_boost(uint16_t us) { delay_microseconds(us); }
+
     virtual void     register_delay_callback(AP_HAL::Proc,
                                              uint16_t min_time_ms) = 0;
 
