@@ -1500,18 +1500,26 @@ static void update_flight_stage(void)
         if (control_mode==AUTO) {
             if (auto_state.takeoff_complete == false) {
                 set_flight_stage(AP_SpdHgtControl::FLIGHT_TAKEOFF);
-            } else if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND && 
+            } else if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND &&
                        auto_state.land_complete == true) {
                 set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_FINAL);
             } else if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
-                set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_APPROACH); 
+                set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_APPROACH);
+                if (auto_state.land_complete == true) {
+                    set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_FINAL);
+                }
+                else if (!is_flying()) {
+                    // crash detected. Disable throttle for safety and to protect ESC over-current
+                    auto_state.land_complete = true;
+                    set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_FINAL);
+                }
+                else {
+                    set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_APPROACH);
+                }
             } else {
                 set_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);
             }
-        } else {
-            set_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);
         }
-
         SpdHgt_Controller->update_pitch_throttle(relative_target_altitude_cm(),
                                                  target_airspeed_cm,
                                                  flight_stage,
