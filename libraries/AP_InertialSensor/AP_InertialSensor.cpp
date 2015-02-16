@@ -1085,7 +1085,7 @@ void AP_InertialSensor::wait_for_sample(void)
     if (_next_sample_usec - now <=_sample_period_usec) {
         // we're ahead on time, schedule next sample at expected period
         uint32_t wait_usec = _next_sample_usec - now;
-        hal.scheduler->delay_microseconds(wait_usec);
+        hal.scheduler->delay_microseconds_boost(wait_usec);
         uint32_t now2 = hal.scheduler->micros();
         if (now2+100 < _next_sample_usec) {
             timing_printf("shortsleep %u\n", (unsigned)(_next_sample_usec-now2));
