@@ -1058,6 +1058,12 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     GOBJECT(optflow,   "FLOW", OpticalFlow),
 #endif
 
+#if PRECISION_LANDING == ENABLED
+    // @Group: PRECLAND_
+    // @Path: ../libraries/AC_PrecLand/AC_PrecLand.cpp
+    GOBJECT(precland, "PLAND_", AC_PrecLand),
+#endif
+
     // @Group: RPM
     // @Path: ../libraries/AP_RPM/AP_RPM.cpp
     GOBJECT(rpm_sensor, "RPM", AP_RPM),

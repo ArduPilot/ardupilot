@@ -108,6 +108,10 @@
 #include <AP_LandingGear/AP_LandingGear.h>     // Landing Gear library
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_RPM/AP_RPM.h>
+#if PRECISION_LANDING == ENABLED
+#include <AC_PrecLand/AC_PrecLand.h>
+#include <AP_IRLock/AP_IRLock.h>
+#endif
 
 // AP_HAL to Arduino compatibility layer
 // Configuration
@@ -494,6 +498,11 @@ private:
     AP_Terrain terrain;
 #endif
 
+    // Precision Landing
+#if PRECISION_LANDING == ENABLED
+    AC_PrecLand precland;
+#endif
+
     // use this to prevent recursion during sensor init
     bool in_mavlink_delay;
 
@@ -867,6 +876,8 @@ private:
     void init_compass();
     void init_optflow();
     void update_optical_flow(void);
+    void init_precland();
+    void update_precland();
     void read_battery(void);
     void read_receiver_rssi(void);
     void epm_update();

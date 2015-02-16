@@ -82,6 +82,9 @@ public:
         // Landing gear object
         k_param_landinggear,    // 18
 
+        // precision landing object
+        k_param_precland,   // 19
+
         // Misc
         //
         k_param_log_bitmask_old = 20,           // Deprecated
