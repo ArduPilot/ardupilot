@@ -93,7 +93,7 @@ extern const AP_HAL::HAL& hal;
 /*
   set the priority of the main APM task
  */
-static void set_priority(uint8_t priority)
+void hal_px4_set_priority(uint8_t priority)
 {
     struct sched_param param;
     param.sched_priority = priority;
@@ -108,7 +108,7 @@ static void set_priority(uint8_t priority)
  */
 static void loop_overtime(void *)
 {
-    set_priority(APM_OVERTIME_PRIORITY);
+    hal_px4_set_priority(APM_OVERTIME_PRIORITY);
     px4_ran_overtime = true;
 }
 
@@ -134,7 +134,7 @@ static int main_loop(int argc, char **argv)
       run setup() at low priority to ensure CLI doesn't hang the
       system, and to allow initial sensor read loops to run
      */
-    set_priority(APM_STARTUP_PRIORITY);
+    hal_px4_set_priority(APM_STARTUP_PRIORITY);
 
     schedulerInstance.hal_initialized();
 
@@ -150,7 +150,7 @@ static int main_loop(int argc, char **argv)
     /*
       switch to high priority for main loop
      */
-    set_priority(APM_MAIN_PRIORITY);
+    hal_px4_set_priority(APM_MAIN_PRIORITY);
 
     while (!_px4_thread_should_exit) {
         perf_begin(perf_loop);
@@ -170,7 +170,7 @@ static int main_loop(int argc, char **argv)
               we ran over 1s in loop(), and our priority was lowered
               to let a driver run. Set it back to high priority now.
              */
-            set_priority(APM_MAIN_PRIORITY);
+            hal_px4_set_priority(APM_MAIN_PRIORITY);
             perf_count(perf_overrun);
             px4_ran_overtime = false;
         }

@@ -12,12 +12,28 @@
 
 #define PX4_SCHEDULER_MAX_TIMER_PROCS 8
 
-#define APM_MAIN_PRIORITY    180
-#define APM_TIMER_PRIORITY   181
-#define APM_UART_PRIORITY     60
-#define APM_IO_PRIORITY       59
-#define APM_OVERTIME_PRIORITY 10
-#define APM_STARTUP_PRIORITY  10
+#define APM_MAIN_PRIORITY_BOOST 241
+#define APM_MAIN_PRIORITY       180
+#define APM_TIMER_PRIORITY      181
+#define APM_UART_PRIORITY        60
+#define APM_IO_PRIORITY          59
+#define APM_OVERTIME_PRIORITY    10
+#define APM_STARTUP_PRIORITY     10
+
+/* how long to boost priority of the main thread for each main
+   loop. This needs to be long enough for all interrupt-level drivers
+   (mostly SPI drivers) to run, and for the main loop of the vehicle
+   code to start the AHRS update.
+
+   Priority boosting of the main thread in delay_microseconds_boost()
+   avoids the problem that drivers in hpwork all happen to run right
+   at the start of the period where the main vehicle loop is calling
+   wait_for_sample(). That causes main loop timing jitter, which
+   reduces performance. Using the priority boost the main loop
+   temporarily runs at a priority higher than hpwork and the timer
+   thread, which results in much more consistent loop timing. 
+*/
+#define APM_MAIN_PRIORITY_BOOST_USEC 150
 
 #define APM_MAIN_THREAD_STACK_SIZE 8192
 
@@ -34,6 +50,7 @@ public:
     uint64_t millis64();
     uint64_t micros64();
     void     delay_microseconds(uint16_t us);
+    void     delay_microseconds_boost(uint16_t us);
     void     register_delay_callback(AP_HAL::Proc, uint16_t min_time_ms);
     void     register_timer_process(AP_HAL::MemberProc);
     void     register_io_process(AP_HAL::MemberProc);
