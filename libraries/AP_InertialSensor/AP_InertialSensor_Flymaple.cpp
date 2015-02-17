@@ -182,11 +182,11 @@ bool AP_InertialSensor_Flymaple::update(void)
 
     // Adjust for chip scaling to get m/s/s
     accel *= FLYMAPLE_ACCELEROMETER_SCALE_M_S;
-    _rotate_and_offset_accel(_accel_instance, accel);
+    _publish_accel(_accel_instance, accel);
 
     // Adjust for chip scaling to get radians/sec
     gyro *= FLYMAPLE_GYRO_SCALE_R_S;
-    _rotate_and_offset_gyro(_gyro_instance, gyro);
+    _publish_gyro(_gyro_instance, gyro);
 
     if (_last_filter_hz != _imu.get_filter()) {
         _set_filter_frequency(_imu.get_filter());

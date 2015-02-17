@@ -36,7 +36,7 @@ public:
     /* 
      * Update the sensor data. Called by the frontend to transfer
      * accumulated sensor readings to the frontend structure via the
-     * _rotate_and_offset_gyro() and _rotate_and_offset_accel() functions
+     * _publish_gyro() and _publish_accel() functions
      */
     virtual bool update() = 0;
 
@@ -64,8 +64,11 @@ protected:
     // rotate gyro vector and offset
     void _rotate_and_offset_gyro(uint8_t instance, const Vector3f &gyro);
 
-    // rotate accel vector, scale and offset
-    void _rotate_and_offset_accel(uint8_t instance, const Vector3f &accel);
+    // rotate gyro vector, offset and publish
+    void _publish_gyro(uint8_t instance, const Vector3f &gyro);
+
+    // rotate accel vector, scale, offset and publish
+    void _publish_accel(uint8_t instance, const Vector3f &accel);
 
     // set accelerometer error_count
     void _set_accel_error_count(uint8_t instance, uint32_t error_count);
