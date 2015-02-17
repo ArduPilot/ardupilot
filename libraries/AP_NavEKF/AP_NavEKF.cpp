@@ -1114,7 +1114,11 @@ void NavEKF::UpdateStrapdownEquationsNED()
 
     // apply corrections for earths rotation rate and coning errors
     // % * - and + operators have been overloaded
-    correctedDelAng   = correctedDelAng - prevTnb * earthRateNED*dtIMU + (prevDelAng % correctedDelAng) * 8.333333e-2f;
+    if (haveDeltaAngles) {
+        correctedDelAng   = correctedDelAng - prevTnb * earthRateNED*dtIMU;
+    } else {
+        correctedDelAng   = correctedDelAng - prevTnb * earthRateNED*dtIMU + (prevDelAng % correctedDelAng) * 8.333333e-2f;
+    }
 
     // save current measurements
     prevDelAng = correctedDelAng;
@@ -3929,45 +3933,50 @@ void NavEKF::ConstrainStates()
 // update IMU delta angle and delta velocity measurements
 void NavEKF::readIMUData()
 {
-    Vector3f angRate;   // angular rate vector in XYZ body axes measured by the IMU (rad/s)
-    Vector3f accel1;    // acceleration vector in XYZ body axes measured by IMU1 (m/s^2)
-    Vector3f accel2;    // acceleration vector in XYZ body axes measured by IMU2 (m/s^2)
+    const AP_InertialSensor &ins = _ahrs->get_ins();
+
+    // limit IMU delta time to prevent numerical problems elsewhere
+    dtIMU = constrain_float(ins.get_delta_time(), 0.001f, 1.0f);
 
     // the imu sample time is sued as a common time reference throughout the filter
     imuSampleTime_ms = hal.scheduler->millis();
 
-    // limit IMU delta time to prevent numerical problems elsewhere
-    dtIMU = constrain_float(_ahrs->get_ins().get_delta_time(), 0.001f, 1.0f);
+    bool dual_ins = ins.get_accel_health(0) && ins.get_accel_health(1);
+    haveDeltaAngles = true;
 
-    // get accel and gyro data from dual sensors if healthy
-    if (_ahrs->get_ins().get_accel_health(0) && _ahrs->get_ins().get_accel_health(1)) {
-        accel1 = _ahrs->get_ins().get_accel(0);
-        accel2 = _ahrs->get_ins().get_accel(1);
+    if (dual_ins) {
+        Vector3f dAngIMU1;
+        Vector3f dAngIMU2;
+
+        if(!ins.get_delta_velocity(0,dVelIMU1)) {
+            dVelIMU1 = ins.get_accel(0) * dtIMU;
+        }
+
+        if(!ins.get_delta_velocity(1,dVelIMU2)) {
+            dVelIMU2 = ins.get_accel(1) * dtIMU;
+        }
+
+        if(!ins.get_delta_angle(0, dAngIMU1)) {
+            haveDeltaAngles = false;
+            dAngIMU1 = ins.get_gyro(0) * dtIMU;
+        }
+
+        if(!ins.get_delta_angle(1, dAngIMU2)) {
+            haveDeltaAngles = false;
+            dAngIMU2 = ins.get_gyro(1) * dtIMU;
+        }
+        dAngIMU = (dAngIMU1+dAngIMU2) * 0.5f;
     } else {
-        accel1 = _ahrs->get_ins().get_accel();
-        accel2 = accel1;
-    }
+        if(!ins.get_delta_velocity(dVelIMU1)) {
+            dVelIMU1 = ins.get_accel() * dtIMU;
+        }
+        dVelIMU2 = dVelIMU1;
 
-    // average the available gyro sensors
-    angRate.zero();
-    uint8_t gyro_count = 0;
-    for (uint8_t i = 0; i<_ahrs->get_ins().get_gyro_count(); i++) {
-        if (_ahrs->get_ins().get_gyro_health(i)) {
-            angRate += _ahrs->get_ins().get_gyro(i);
-            gyro_count++;
+        if(!ins.get_delta_angle(dAngIMU)) {
+            haveDeltaAngles = false;
+            dAngIMU = ins.get_gyro() * dtIMU;
         }
     }
-    if (gyro_count != 0) {
-        angRate /= gyro_count;
-    }
-
-    // trapezoidal integration
-    dAngIMU     = (angRate + lastAngRate) * dtIMU * 0.5f;
-    lastAngRate = angRate;
-    dVelIMU1    = (accel1 + lastAccel1) * dtIMU * 0.5f;
-    lastAccel1  = accel1;
-    dVelIMU2    = (accel2 + lastAccel2) * dtIMU * 0.5f;
-    lastAccel2  = accel2;
 }
 
 // check for new valid GPS data and update stored measurement if available
@@ -4431,6 +4440,7 @@ void NavEKF::InitialiseVariables()
     inhibitMagStates = true;
     gndOffsetValid =  false;
     flowXfailed = false;
+    haveDeltaAngles = false;
     validOrigin = false;
 }
 

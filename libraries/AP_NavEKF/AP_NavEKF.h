@@ -686,6 +686,8 @@ private:
     bool gndOffsetValid;            // true when the ground offset state can still be considered valid
     bool flowXfailed;               // true when the X optical flow measurement has failed the innovation consistency check
 
+    bool haveDeltaAngles;
+
     // states held by optical flow fusion across time steps
     // optical flow X,Y motion compensated rate measurements are fused across two time steps
     // to level computational load as this can be an expensive operation
