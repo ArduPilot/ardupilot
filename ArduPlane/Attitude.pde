@@ -545,29 +545,7 @@ static void flap_slew_limit(int8_t &last_value, int8_t &new_value)
     last_value = new_value;
 }
 
-
-
-/**
-  Do we think we are flying?
-  This is a heuristic so it could be wrong in some cases.  In particular, if we don't have GPS lock we'll fall
-  back to only using altitude.  (This is probably more optimistic than what suppress_throttle wants...)
-*/
-static bool is_flying(void)
-{
-    // If we don't have a GPS lock then don't use GPS for this test
-    bool gpsMovement = (gps.status() < AP_GPS::GPS_OK_FIX_2D ||
-                        gps.ground_speed() >= 5);
-    
-    bool airspeedMovement = (!ahrs.airspeed_sensor_enabled()) || airspeed.get_airspeed() >= 5;
-    
-    // we're more than 5m from the home altitude
-    bool inAir = relative_altitude_abs_cm() > 500;
-
-    return inAir && gpsMovement && airspeedMovement;
-}
-
-
-/* We want to supress the throttle if we think we are on the ground and in an autopilot controlled throttle mode.
+/* We want to suppress the throttle if we think we are on the ground and in an autopilot controlled throttle mode.
 
    Disable throttle if following conditions are met:
    *       1 - We are in Circle mode (which we use for short term failsafe), or in FBW-B or higher
