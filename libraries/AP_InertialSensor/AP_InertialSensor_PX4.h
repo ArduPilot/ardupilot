@@ -13,6 +13,9 @@
 #include <uORB/uORB.h>
 #include <uORB/topics/sensor_combined.h>
 
+#include <Filter.h>
+#include <LowPassFilter2p.h>
+
 class AP_InertialSensor_PX4 : public AP_InertialSensor_Backend
 {
 public:
@@ -41,9 +44,11 @@ private:
     uint64_t _last_get_sample_timestamp;
     uint64_t _last_sample_timestamp;
 
+    void _new_accel_sample(uint8_t i, accel_report &accel_report);
+    void _new_gyro_sample(uint8_t i, gyro_report &gyro_report);
+
     // support for updating filter at runtime
     uint8_t _last_filter_hz;
-    uint8_t _default_filter_hz;
 
     void _set_filter_frequency(uint8_t filter_hz);
 
@@ -58,6 +63,15 @@ private:
     // from the backend indexes
     uint8_t _accel_instance[INS_MAX_INSTANCES];
     uint8_t _gyro_instance[INS_MAX_INSTANCES];
+
+    // Low Pass filters for gyro and accel
+    LowPassFilter2pVector3f _accel_filter[INS_MAX_INSTANCES];
+    LowPassFilter2pVector3f _gyro_filter[INS_MAX_INSTANCES];
+
+    Vector3f _delta_angle_accumulator[INS_MAX_INSTANCES];
+    Vector3f _delta_velocity_accumulator[INS_MAX_INSTANCES];
+    Vector3f _last_delAng[INS_MAX_INSTANCES];
+    Vector3f _last_gyro[INS_MAX_INSTANCES];
 };
 #endif // CONFIG_HAL_BOARD
 #endif // __AP_INERTIAL_SENSOR_PX4_H__
