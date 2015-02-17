@@ -22,6 +22,10 @@ AP_InertialSensor_PX4::AP_InertialSensor_PX4(AP_InertialSensor &imu) :
     AP_InertialSensor_Backend(imu),
     _last_get_sample_timestamp(0)
 {
+    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+        _delta_angle_accumulator[i].zero();
+        _delta_velocity_accumulator[i].zero();
+    }
 }
 
 /*
@@ -61,15 +65,77 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
             _num_gyro_instances = i+1;
             _gyro_instance[i] = _imu.register_gyro();
         }
-    }    
-	if (_num_accel_instances == 0) {
+    }
+    if (_num_accel_instances == 0) {
         return false;
     }
-	if (_num_gyro_instances == 0) {
+    if (_num_gyro_instances == 0) {
         return false;
     }
 
-    _default_filter_hz = _default_filter();
+    for (uint8_t i=0; i<_num_gyro_instances; i++) {
+        int fd = _gyro_fd[i];
+        int devid = (ioctl(fd, DEVIOCGDEVICEID, 0) & 0x00FF0000)>>16;
+
+        // software LPF off
+        ioctl(fd, GYROIOCSLOWPASS, 0);
+        // 2000dps range
+        ioctl(fd, GYROIOCSRANGE, 2000);
+
+        switch(devid) {
+            case DRV_GYR_DEVTYPE_MPU6000:
+                // hardware LPF off
+                ioctl(fd, GYROIOCSHWLOWPASS, 256);
+                // khz sampling
+                ioctl(fd, GYROIOCSSAMPLERATE, 1000);
+                // 10ms queue depth
+                ioctl(fd, SENSORIOCSQUEUEDEPTH, 10);
+                break;
+            case DRV_GYR_DEVTYPE_L3GD20:
+                // hardware LPF as high as possible
+                ioctl(fd, GYROIOCSHWLOWPASS, 100);
+                // ~khz sampling
+                ioctl(fd, GYROIOCSSAMPLERATE, 800);
+                // 10ms queue depth
+                ioctl(fd, SENSORIOCSQUEUEDEPTH, 8);
+                break;
+            default:
+                break;
+        }
+    }
+
+    for (uint8_t i=0; i<_num_accel_instances; i++) {
+        int fd = _accel_fd[i];
+        int devid = (ioctl(fd, DEVIOCGDEVICEID, 0) & 0x00FF0000)>>16;
+
+        // software LPF off
+        ioctl(fd, ACCELIOCSLOWPASS, 0);
+        // 16g range
+        ioctl(fd, ACCELIOCSRANGE, 16);
+
+        switch(devid) {
+            case DRV_ACC_DEVTYPE_MPU6000:
+                // hardware LPF off
+                ioctl(fd, ACCELIOCSHWLOWPASS, 256);
+                // khz sampling
+                ioctl(fd, ACCELIOCSSAMPLERATE, 1000);
+                // 10ms queue depth
+                ioctl(fd, SENSORIOCSQUEUEDEPTH, 10);
+                break;
+            case DRV_ACC_DEVTYPE_LSM303D:
+                // hardware LPF to ~1/10th sample rate for antialiasing
+                ioctl(fd, ACCELIOCSHWLOWPASS, 194);
+                // ~khz sampling
+                ioctl(fd, ACCELIOCSSAMPLERATE, 1600);
+                ioctl(fd,SENSORIOCSPOLLRATE, 1600);
+                // 10ms queue depth
+                ioctl(fd, SENSORIOCSQUEUEDEPTH, 16);
+                break;
+            default:
+                break;
+        }
+    }
+
     _set_filter_frequency(_imu.get_filter());
 
 #if  CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
@@ -90,13 +156,25 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
 void AP_InertialSensor_PX4::_set_filter_frequency(uint8_t filter_hz)
 {
     if (filter_hz == 0) {
-        filter_hz = _default_filter_hz;
+        filter_hz = _default_filter();
     }
     for (uint8_t i=0; i<_num_gyro_instances; i++) {
-        ioctl(_gyro_fd[i],  GYROIOCSLOWPASS,  filter_hz);
+        int samplerate = ioctl(_gyro_fd[i],  GYROIOCGSAMPLERATE, 0);
+        if(samplerate < 100 || samplerate > 2000) {
+            // sample rate doesn't seem sane, turn off filter
+            _gyro_filter[i].set_cutoff_frequency(0, 0);
+        } else {
+            _gyro_filter[i].set_cutoff_frequency(samplerate, filter_hz);
+        }
     }
     for (uint8_t i=0; i<_num_accel_instances; i++) {
-        ioctl(_accel_fd[i], ACCELIOCSLOWPASS, filter_hz);
+        int samplerate = ioctl(_accel_fd[i],  ACCELIOCGSAMPLERATE, 0);
+        if(samplerate < 100 || samplerate > 2000) {
+            // sample rate doesn't seem sane, turn off filter
+            _accel_filter[i].set_cutoff_frequency(0, 0);
+        } else {
+            _accel_filter[i].set_cutoff_frequency(samplerate, filter_hz);
+        }
     }
 }
 
@@ -110,7 +188,8 @@ bool AP_InertialSensor_PX4::update(void)
         // calling _publish_accel sets the sensor healthy,
         // so we only want to do this if we have new data from it
         if (_last_accel_timestamp[k] != _last_accel_update_timestamp[k]) {
-            _publish_accel(_accel_instance[k], accel);
+            _publish_accel(_accel_instance[k], accel, false);
+            _publish_delta_velocity(_accel_instance[k], _delta_velocity_accumulator[k]);
             _last_accel_update_timestamp[k] = _last_accel_timestamp[k];
         }
     }
@@ -120,39 +199,110 @@ bool AP_InertialSensor_PX4::update(void)
         // calling _publish_accel sets the sensor healthy,
         // so we only want to do this if we have new data from it
         if (_last_gyro_timestamp[k] != _last_gyro_update_timestamp[k]) {
-            _publish_gyro(_gyro_instance[k], gyro);
+            _publish_gyro(_gyro_instance[k], gyro, false);
+            _publish_delta_angle(_gyro_instance[k], _delta_angle_accumulator[k]);
             _last_gyro_update_timestamp[k] = _last_gyro_timestamp[k];
         }
+    }
+
+    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+        _delta_angle_accumulator[i].zero();
+        _delta_velocity_accumulator[i].zero();
     }
 
     if (_last_filter_hz != _imu.get_filter()) {
         _set_filter_frequency(_imu.get_filter());
         _last_filter_hz = _imu.get_filter();
     }
-
+    
     return true;
 }
 
-void AP_InertialSensor_PX4::_get_sample(void)
+void AP_InertialSensor_PX4::_new_accel_sample(uint8_t i, accel_report &accel_report)
+{
+    Vector3f accel = Vector3f(accel_report.x, accel_report.y, accel_report.z);
+    uint8_t frontend_instance = _accel_instance[i];
+
+    // apply corrections
+    _rotate_and_correct_accel(frontend_instance, accel);
+
+    // apply filter for control path
+    _accel_in[i] = _accel_filter[i].apply(accel);
+
+    // compute time since last sample
+    float dt = (accel_report.timestamp - _last_accel_timestamp[i]) * 1.0e-6f;
+
+    // compute delta velocity
+    Vector3f delVel = Vector3f(accel.x, accel.y, accel.z) * dt;
+
+    // integrate delta velocity accumulator
+    _delta_velocity_accumulator[i] += delVel;
+
+    // save last timestamp
+    _last_accel_timestamp[i] = accel_report.timestamp;
+
+    // report error count
+    _set_accel_error_count(frontend_instance, accel_report.error_count);
+}
+
+void AP_InertialSensor_PX4::_new_gyro_sample(uint8_t i, gyro_report &gyro_report)
+{
+    Vector3f gyro = Vector3f(gyro_report.x, gyro_report.y, gyro_report.z);
+    uint8_t frontend_instance = _gyro_instance[i];
+
+    // apply corrections
+    _rotate_and_correct_gyro(frontend_instance, gyro);
+
+    // apply filter for control path
+    _gyro_in[i] = _gyro_filter[i].apply(gyro);
+
+    // compute time since last sample - not more than 50ms
+    float dt = min((gyro_report.timestamp - _last_gyro_timestamp[i]) * 1.0e-6f, 0.05f);
+
+    // compute delta angle
+    Vector3f delAng = (gyro+_last_gyro[i]) * 0.5f * dt;
+
+    /* compute coning correction
+     * see page 26 of:
+     * Tian et al (2010) Three-loop Integration of GPS and Strapdown INS with Coning and Sculling Compensation
+     * Available: http://www.sage.unsw.edu.au/snap/publications/tian_etal2010b.pdf
+     * see also examples/coning.py
+     */
+    Vector3f delConing = ((_delta_angle_accumulator[i]+_last_delAng[i]*(1.0f/6.0f)) % delAng) * 0.5f;
+
+    // integrate delta angle accumulator
+    // the angles and coning corrections are accumulated separately in the
+    // referenced paper, but in simulation little difference was found between
+    // integrating together and integrating separately (see examples/coning.py)
+    _delta_angle_accumulator[i] += delAng + delConing;
+
+    // save previous delta angle for coning correction
+    _last_delAng[i] = delAng;
+    _last_gyro[i] = gyro;
+
+    // save last timestamp
+    _last_gyro_timestamp[i] = gyro_report.timestamp;
+
+    // report error count
+    _set_gyro_error_count(_gyro_instance[i], gyro_report.error_count);
+}
+
+void AP_InertialSensor_PX4::_get_sample()
 {
     for (uint8_t i=0; i<_num_accel_instances; i++) {
-        struct accel_report	accel_report;
+        struct accel_report accel_report;
         while (_accel_fd[i] != -1 && 
                ::read(_accel_fd[i], &accel_report, sizeof(accel_report)) == sizeof(accel_report) &&
-               accel_report.timestamp != _last_accel_timestamp[i]) {        
-            _accel_in[i] = Vector3f(accel_report.x, accel_report.y, accel_report.z);
-            _last_accel_timestamp[i] = accel_report.timestamp;
-            _set_accel_error_count(_accel_instance[i], accel_report.error_count);
+               accel_report.timestamp != _last_accel_timestamp[i]) {
+            _new_accel_sample(i, accel_report);
         }
     }
     for (uint8_t i=0; i<_num_gyro_instances; i++) {
-        struct gyro_report	gyro_report;
+        struct gyro_report gyro_report;
         while (_gyro_fd[i] != -1 && 
                ::read(_gyro_fd[i], &gyro_report, sizeof(gyro_report)) == sizeof(gyro_report) &&
-               gyro_report.timestamp != _last_gyro_timestamp[i]) {        
-            _gyro_in[i] = Vector3f(gyro_report.x, gyro_report.y, gyro_report.z);
-            _last_gyro_timestamp[i] = gyro_report.timestamp;
-            _set_gyro_error_count(_gyro_instance[i], gyro_report.error_count);
+               gyro_report.timestamp != _last_gyro_timestamp[i]) {
+            _new_gyro_sample(i, gyro_report);
         }
     }
     _last_get_sample_timestamp = hal.scheduler->micros64();
