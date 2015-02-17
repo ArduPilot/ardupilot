@@ -345,6 +345,21 @@ static void Log_Write_Sonar()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
+struct PACKED log_Land {
+    LOG_PACKET_HEADER;
+    uint32_t timestamp;
+};
+
+// Write a land packet
+static void Log_Write_Land()
+{
+    struct log_Land pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_LAND_MSG),
+        timestamp   : hal.scheduler->millis()
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
+
 struct PACKED log_Optflow {
     LOG_PACKET_HEADER;
     uint32_t time_ms;
@@ -446,6 +461,8 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "ARM", "IHB", "TimeMS,ArmState,ArmChecks" },
     { LOG_ATRP_MSG, sizeof(AP_AutoTune::log_ATRP),
       "ATRP", "IBBcfff",  "TimeMS,Type,State,Servo,Demanded,Achieved,P" },
+    { LOG_LAND_MSG, sizeof(log_Land),
+      "LAND", "I",  "TimeMS" },
 #if OPTFLOW == ENABLED
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),
       "OF",   "IBffff",   "TimeMS,Qual,flowX,flowY,bodyX,bodyY" },
@@ -501,6 +518,7 @@ static void Log_Write_RC() {}
 static void Log_Write_Airspeed(void) {}
 static void Log_Write_Baro(void) {}
 static void Log_Write_Sonar() {}
+static void Log_Write_Land() {}
 #if OPTFLOW == ENABLED
 static void Log_Write_Optflow() {}
 #endif
