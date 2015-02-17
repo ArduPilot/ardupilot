@@ -248,6 +248,8 @@ AP_InertialSensor::AP_InertialSensor() :
         _accel_error_count[i] = 0;
         _gyro_error_count[i] = 0;
     }
+    memset(_delta_velocity_valid,0,sizeof(_delta_velocity_valid));
+    memset(_delta_angle_valid,0,sizeof(_delta_angle_valid));
 }
 
 
@@ -1036,6 +1038,8 @@ void AP_InertialSensor::update(void)
             // _publish_accel()
             _gyro_healthy[i] = false;
             _accel_healthy[i] = false;
+            _delta_velocity_valid[i] = false;
+            _delta_angle_valid[i] = false;
         }
         for (uint8_t i=0; i<_backend_count; i++) {
             _backends[i]->update();
