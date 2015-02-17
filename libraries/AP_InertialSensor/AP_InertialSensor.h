@@ -119,6 +119,23 @@ public:
     const Vector3f &get_gyro_offsets(uint8_t i) const { return _gyro_offset[i]; }
     const Vector3f &get_gyro_offsets(void) const { return get_gyro_offsets(_primary_gyro); }
 
+    //get delta angle if available
+    bool get_delta_angle(uint8_t i, Vector3f &delta_angle) const {
+        if(_delta_angle_valid[i]) delta_angle = _delta_angle[i];
+        return _delta_angle_valid[i];
+    }
+
+    bool get_delta_angle(Vector3f &delta_angle) const { return get_delta_angle(_primary_gyro, delta_angle); }
+
+
+    //get delta velocity if available
+    bool get_delta_velocity(uint8_t i, Vector3f &delta_velocity) const {
+        if(_delta_velocity_valid[i]) delta_velocity = _delta_velocity[i];
+        return _delta_velocity_valid[i];
+    }
+
+    bool get_delta_velocity(Vector3f &delta_velocity) const { return get_delta_velocity(_primary_accel, delta_velocity); }
+
     /// Fetch the current accelerometer values
     ///
     /// @returns	vector of current accelerations in m/s/s
@@ -239,9 +256,13 @@ private:
     
     // Most recent accelerometer reading
     Vector3f _accel[INS_MAX_INSTANCES];
+    Vector3f _delta_velocity[INS_MAX_INSTANCES];
+    bool _delta_velocity_valid[INS_MAX_INSTANCES];
 
     // Most recent gyro reading
     Vector3f _gyro[INS_MAX_INSTANCES];
+    Vector3f _delta_angle[INS_MAX_INSTANCES];
+    bool _delta_angle_valid[INS_MAX_INSTANCES];
 
     // product id
     AP_Int16 _product_id;
