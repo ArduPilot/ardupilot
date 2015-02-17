@@ -327,12 +327,8 @@ static struct gyro_state_s st = {
 AP_InertialSensor_MPU9150::AP_InertialSensor_MPU9150(AP_InertialSensor &imu) :
     AP_InertialSensor_Backend(imu),
     _have_sample_available(false),
-    _accel_filter_x(800, 10),
-    _accel_filter_y(800, 10),
-    _accel_filter_z(800, 10),
-    _gyro_filter_x(800, 10),
-    _gyro_filter_y(800, 10),
-    _gyro_filter_z(800, 10)
+    _accel_filter(800, 10),
+    _gyro_filter(800, 10),
 {
 }
 
@@ -361,12 +357,8 @@ void AP_InertialSensor_MPU9150::_set_filter_frequency(uint8_t filter_hz)
     if (filter_hz == 0)
         filter_hz = _default_filter_hz;
 
-    _accel_filter_x.set_cutoff_frequency(800, filter_hz);
-    _accel_filter_y.set_cutoff_frequency(800, filter_hz);
-    _accel_filter_z.set_cutoff_frequency(800, filter_hz);
-    _gyro_filter_x.set_cutoff_frequency(800, filter_hz);
-    _gyro_filter_y.set_cutoff_frequency(800, filter_hz);
-    _gyro_filter_z.set_cutoff_frequency(800, filter_hz);
+    _accel_filter.set_cutoff_frequency(800, filter_hz);
+    _gyro_filter.set_cutoff_frequency(800, filter_hz);
 }
 
 /**
@@ -1087,15 +1079,9 @@ void AP_InertialSensor_MPU9150::_accumulate(void)
 
         // TODO Revisit why AP_InertialSensor_L3G4200D uses a minus sign in the y and z component. Maybe this
         //  is because the sensor is placed in the bottom side of the board?
-        _accel_filtered = Vector3f(
-            _accel_filter_x.apply(accel_x), 
-            _accel_filter_y.apply(accel_y), 
-            _accel_filter_z.apply(accel_z));
-        
-        _gyro_filtered = Vector3f(
-            _gyro_filter_x.apply(gyro_x), 
-            _gyro_filter_y.apply(gyro_y), 
-            _gyro_filter_z.apply(gyro_z));
+        _accel_filtered = _accel_filter.apply(Vector3f(accel_x, accel_y, accel_z));
+
+        _gyro_filtered = _gyro_filter.apply(Vector3f(gyro_x, gyro_y, gyro_z));
 
         _have_sample_available = true;
     }
