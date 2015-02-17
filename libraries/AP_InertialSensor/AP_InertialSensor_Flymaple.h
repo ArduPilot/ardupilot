@@ -38,12 +38,8 @@ private:
 
     void _set_filter_frequency(uint8_t filter_hz);
     // Low Pass filters for gyro and accel 
-    LowPassFilter2p _accel_filter_x;
-    LowPassFilter2p _accel_filter_y;
-    LowPassFilter2p _accel_filter_z;
-    LowPassFilter2p _gyro_filter_x;
-    LowPassFilter2p _gyro_filter_y;
-    LowPassFilter2p _gyro_filter_z;
+    LowPassFilter2pVector3f _accel_filter;
+    LowPassFilter2pVector3f _gyro_filter;
 
     uint8_t _gyro_instance;
     uint8_t _accel_instance;

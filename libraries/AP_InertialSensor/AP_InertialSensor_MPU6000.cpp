@@ -181,12 +181,8 @@ AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu) :
     _last_filter_hz(0),
     _error_count(0),
 #if MPU6000_FAST_SAMPLING
-    _accel_filter_x(1000, 15),
-    _accel_filter_y(1000, 15),
-    _accel_filter_z(1000, 15),
-    _gyro_filter_x(1000, 15),
-    _gyro_filter_y(1000, 15),
-    _gyro_filter_z(1000, 15),    
+    _accel_filter(1000, 15),
+    _gyro_filter(1000, 15),
 #else
     _sample_count(0),
     _accel_sum(),
@@ -376,13 +372,13 @@ void AP_InertialSensor_MPU6000::_read_data_transaction() {
 
 #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx] << 8) | v[2*idx+1]))
 #if MPU6000_FAST_SAMPLING
-    _accel_filtered = Vector3f(_accel_filter_x.apply(int16_val(rx.v, 1)), 
-                               _accel_filter_y.apply(int16_val(rx.v, 0)), 
-                               _accel_filter_z.apply(-int16_val(rx.v, 2)));
+    _accel_filtered = _accel_filter.apply(Vector3f(int16_val(rx.v, 1),
+                                                   int16_val(rx.v, 0),
+                                                   -int16_val(rx.v, 2)));
 
-    _gyro_filtered = Vector3f(_gyro_filter_x.apply(int16_val(rx.v, 5)), 
-                              _gyro_filter_y.apply(int16_val(rx.v, 4)), 
-                              _gyro_filter_z.apply(-int16_val(rx.v, 6)));
+    _gyro_filtered = _gyro_filter.apply(Vector3f(int16_val(rx.v, 5),
+                                                 int16_val(rx.v, 4),
+                                                 -int16_val(rx.v, 6)));
 #else
     _accel_sum.x += int16_val(rx.v, 1);
     _accel_sum.y += int16_val(rx.v, 0);
