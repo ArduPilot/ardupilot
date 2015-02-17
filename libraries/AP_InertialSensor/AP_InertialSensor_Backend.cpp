@@ -9,31 +9,58 @@ AP_InertialSensor_Backend::AP_InertialSensor_Backend(AP_InertialSensor &imu) :
     _product_id(AP_PRODUCT_ID_NONE)
 {}
 
+void AP_InertialSensor_Backend::_rotate_and_correct_accel(uint8_t instance, Vector3f &accel) {
+    const Vector3f &accel_scale = _imu._accel_scale[instance].get();
+    accel.rotate(_imu._board_orientation);
+    accel.x *= accel_scale.x;
+    accel.y *= accel_scale.y;
+    accel.z *= accel_scale.z;
+    accel -= _imu._accel_offset[instance];
+}
+
+void AP_InertialSensor_Backend::_rotate_and_correct_gyro(uint8_t instance, Vector3f &gyro) {
+    gyro.rotate(_imu._board_orientation);
+    gyro -= _imu._gyro_offset[instance];
+}
+
+void AP_InertialSensor_Backend::_publish_delta_angle(uint8_t instance, const Vector3f &delta_angle)
+{
+    // publish delta angle
+    _imu._delta_angle[instance] = delta_angle;
+    _imu._delta_angle_valid[instance] = true;
+}
+
 /*
   rotate gyro vector and add the gyro offset
  */
-void AP_InertialSensor_Backend::_publish_gyro(uint8_t instance, const Vector3f &gyro)
+void AP_InertialSensor_Backend::_publish_gyro(uint8_t instance, const Vector3f &gyro, bool rotate_and_correct)
 {
     _imu._gyro[instance] = gyro;
-    _imu._gyro[instance].rotate(_imu._board_orientation);
-    _imu._gyro[instance] -= _imu._gyro_offset[instance];
     _imu._gyro_healthy[instance] = true;
+
+    if (rotate_and_correct) {
+        _rotate_and_correct_gyro(instance, _imu._gyro[instance]);
+    }
+}
+
+void AP_InertialSensor_Backend::_publish_delta_velocity(uint8_t instance, const Vector3f &delta_velocity)
+{
+    // publish delta velocity
+    _imu._delta_velocity[instance] = delta_velocity;
+    _imu._delta_velocity_valid[instance] = true;
 }
 
 /*
   rotate accel vector, scale and add the accel offset
  */
-void AP_InertialSensor_Backend::_publish_accel(uint8_t instance, const Vector3f &accel)
+void AP_InertialSensor_Backend::_publish_accel(uint8_t instance, const Vector3f &accel, bool rotate_and_correct)
 {
     _imu._accel[instance] = accel;
-    _imu._accel[instance].rotate(_imu._board_orientation);
-
-    const Vector3f &accel_scale = _imu._accel_scale[instance].get();
-    _imu._accel[instance].x *= accel_scale.x;
-    _imu._accel[instance].y *= accel_scale.y;
-    _imu._accel[instance].z *= accel_scale.z;
-    _imu._accel[instance] -= _imu._accel_offset[instance];
     _imu._accel_healthy[instance] = true;
+
+    if (rotate_and_correct) {
+        _rotate_and_correct_accel(instance, _imu._accel[instance]);
+    }
 }
 
 // set accelerometer error_count
