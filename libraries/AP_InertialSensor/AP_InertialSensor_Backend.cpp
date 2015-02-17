@@ -12,7 +12,7 @@ AP_InertialSensor_Backend::AP_InertialSensor_Backend(AP_InertialSensor &imu) :
 /*
   rotate gyro vector and add the gyro offset
  */
-void AP_InertialSensor_Backend::_rotate_and_offset_gyro(uint8_t instance, const Vector3f &gyro)
+void AP_InertialSensor_Backend::_publish_gyro(uint8_t instance, const Vector3f &gyro)
 {
     _imu._gyro[instance] = gyro;
     _imu._gyro[instance].rotate(_imu._board_orientation);
@@ -23,7 +23,7 @@ void AP_InertialSensor_Backend::_rotate_and_offset_gyro(uint8_t instance, const 
 /*
   rotate accel vector, scale and add the accel offset
  */
-void AP_InertialSensor_Backend::_rotate_and_offset_accel(uint8_t instance, const Vector3f &accel)
+void AP_InertialSensor_Backend::_publish_accel(uint8_t instance, const Vector3f &accel)
 {
     _imu._accel[instance] = accel;
     _imu._accel[instance].rotate(_imu._board_orientation);

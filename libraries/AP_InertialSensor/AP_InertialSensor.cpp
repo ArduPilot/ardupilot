@@ -1032,8 +1032,8 @@ void AP_InertialSensor::update(void)
     if (!_hil_mode) {
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
             // mark sensors unhealthy and let update() in each backend
-            // mark them healthy via _rotate_and_offset_gyro() and
-            // _rotate_and_offset_accel() 
+            // mark them healthy via _publish_gyro() and
+            // _publish_accel()
             _gyro_healthy[i] = false;
             _accel_healthy[i] = false;
         }
