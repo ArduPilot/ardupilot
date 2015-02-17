@@ -502,6 +502,11 @@ struct PACKED log_AIRSPEED {
     float   offset;
 };
 
+struct PACKED log_LAND {
+    LOG_PACKET_HEADER;
+    uint32_t timestamp;
+};
+
 /*
 Format characters in the format string for binary log messages
   b   : int8_t
@@ -559,7 +564,7 @@ Format characters in the format string for binary log messages
     { LOG_COMPASS_MSG, sizeof(log_Compass), \
       "MAG", "Ihhhhhhhhh",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" }, \
     { LOG_MODE_MSG, sizeof(log_Mode), \
-      "MODE", "IMB",         "TimeMS,Mode,ModeNum" }
+      "MODE", "IMB",         "TimeMS,Mode,ModeNum" } \
 
 // messages for more advanced boards
 #define LOG_EXTRA_STRUCTURES \
