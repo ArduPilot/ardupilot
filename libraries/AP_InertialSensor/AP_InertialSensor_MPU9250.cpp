@@ -289,8 +289,8 @@ bool AP_InertialSensor_MPU9250::update( void )
     gyro.rotate(ROTATION_ROLL_180);
 #endif
 
-    _rotate_and_offset_gyro(_gyro_instance, gyro);
-    _rotate_and_offset_accel(_accel_instance, accel);
+    _publish_gyro(_gyro_instance, gyro);
+    _publish_accel(_accel_instance, accel);
 
     if (_last_filter_hz != _imu.get_filter()) {
         _set_filter(_imu.get_filter());

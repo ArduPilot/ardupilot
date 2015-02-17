@@ -107,20 +107,20 @@ bool AP_InertialSensor_PX4::update(void)
 
     for (uint8_t k=0; k<_num_accel_instances; k++) {
         Vector3f accel = _accel_in[k];
-        // calling _rotate_and_offset_accel sets the sensor healthy,
+        // calling _publish_accel sets the sensor healthy,
         // so we only want to do this if we have new data from it
         if (_last_accel_timestamp[k] != _last_accel_update_timestamp[k]) {
-            _rotate_and_offset_accel(_accel_instance[k], accel);
+            _publish_accel(_accel_instance[k], accel);
             _last_accel_update_timestamp[k] = _last_accel_timestamp[k];
         }
     }
 
     for (uint8_t k=0; k<_num_gyro_instances; k++) {
         Vector3f gyro = _gyro_in[k];
-        // calling _rotate_and_offset_accel sets the sensor healthy,
+        // calling _publish_accel sets the sensor healthy,
         // so we only want to do this if we have new data from it
         if (_last_gyro_timestamp[k] != _last_gyro_update_timestamp[k]) {
-            _rotate_and_offset_gyro(_gyro_instance[k], gyro);
+            _publish_gyro(_gyro_instance[k], gyro);
             _last_gyro_update_timestamp[k] = _last_gyro_timestamp[k];
         }
     }

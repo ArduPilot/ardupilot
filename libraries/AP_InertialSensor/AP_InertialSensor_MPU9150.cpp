@@ -1101,10 +1101,10 @@ bool AP_InertialSensor_MPU9150::update(void)
     hal.scheduler->resume_timer_procs();
 
     accel *= MPU9150_ACCEL_SCALE_2G;
-    _rotate_and_offset_accel(_accel_instance, accel);
+    _publish_accel(_accel_instance, accel);
 
     gyro *= MPU9150_GYRO_SCALE_2000;
-    _rotate_and_offset_gyro(_gyro_instance, gyro);
+    _publish_gyro(_gyro_instance, gyro);
 
     if (_last_filter_hz != _imu.get_filter()) {
         _set_filter_frequency(_imu.get_filter());
