@@ -175,12 +175,8 @@ AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250(AP_InertialSensor &imu) :
 	AP_InertialSensor_Backend(imu),
     _last_filter_hz(-1),
     _shared_data_idx(0),
-    _accel_filter_x(1000, 15),
-    _accel_filter_y(1000, 15),
-    _accel_filter_z(1000, 15),
-    _gyro_filter_x(1000, 15),
-    _gyro_filter_y(1000, 15),
-    _gyro_filter_z(1000, 15),
+    _accel_filter(1000, 15),
+    _gyro_filter(1000, 15),
     _have_sample_available(false)
 {
 }
@@ -341,13 +337,13 @@ void AP_InertialSensor_MPU9250::_read_data_transaction()
 
 #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx] << 8) | v[2*idx+1]))
 
-    Vector3f _accel_filtered = Vector3f(_accel_filter_x.apply(int16_val(rx.v, 1)), 
-                                        _accel_filter_y.apply(int16_val(rx.v, 0)), 
-                                        _accel_filter_z.apply(-int16_val(rx.v, 2)));
+    Vector3f _accel_filtered = _accel_filter.apply(Vector3f(int16_val(rx.v, 1),
+                                                   int16_val(rx.v, 0),
+                                                   -int16_val(rx.v, 2)));
 
-    Vector3f _gyro_filtered = Vector3f(_gyro_filter_x.apply(int16_val(rx.v, 5)), 
-                                       _gyro_filter_y.apply(int16_val(rx.v, 4)), 
-                                       _gyro_filter_z.apply(-int16_val(rx.v, 6)));
+    Vector3f _gyro_filtered = _gyro_filter.apply(Vector3f(int16_val(rx.v, 5),
+                                                 int16_val(rx.v, 4),
+                                                 -int16_val(rx.v, 6)));
     // update the shared buffer
     uint8_t idx = _shared_data_idx ^ 1;
     _shared_data[idx]._accel_filtered = _accel_filtered;
@@ -395,13 +391,9 @@ void AP_InertialSensor_MPU9250::_set_filter(uint8_t filter_hz)
         filter_hz = _default_filter_hz;
     }
 
-    _accel_filter_x.set_cutoff_frequency(1000, filter_hz);
-    _accel_filter_y.set_cutoff_frequency(1000, filter_hz);
-    _accel_filter_z.set_cutoff_frequency(1000, filter_hz);
+    _accel_filter.set_cutoff_frequency(1000, filter_hz);
 
-    _gyro_filter_x.set_cutoff_frequency(1000, filter_hz);
-    _gyro_filter_y.set_cutoff_frequency(1000, filter_hz);
-    _gyro_filter_z.set_cutoff_frequency(1000, filter_hz);    
+    _gyro_filter.set_cutoff_frequency(1000, filter_hz);
 }
 
 

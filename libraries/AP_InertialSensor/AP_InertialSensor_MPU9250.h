@@ -60,12 +60,8 @@ private:
     volatile uint8_t _shared_data_idx;
 
     // Low Pass filters for gyro and accel 
-    LowPassFilter2p _accel_filter_x;
-    LowPassFilter2p _accel_filter_y;
-    LowPassFilter2p _accel_filter_z;
-    LowPassFilter2p _gyro_filter_x;
-    LowPassFilter2p _gyro_filter_y;
-    LowPassFilter2p _gyro_filter_z;
+    LowPassFilter2pVector3f _accel_filter;
+    LowPassFilter2pVector3f _gyro_filter;
 
     // do we currently have a sample pending?
     bool _have_sample_available;
