@@ -25,30 +25,31 @@
 
 #include "AP_AHRS.h"
 
-#define IRLOCK_MAX_BLOCKS_PER_FRAME 135
+#define IRLOCK_MAX_BLOCKS_PER_FRAME 5      // max number of blobs that can be detected by IR-LOCK sensor (should match PX4Firmware's irlock driver's IRLOCK_OBJECTS_MAX)
+#define IRLOCK_CENTER_X  159               // the center x pixel value
+#define IRLOCK_CENTER_Y  99                // the center y pixel value
+#define IRLOCK_NOBLOB_FRAME 10             // the number of consecutive similar frames that will cause the sensor validity variable to turn false
+#define IRLOCK_X_PIXEL_PER_DEGREE 5.374f   // the x pixel to angle calibration variable
+#define IRLOCK_Y_PIXEL_PER_DEGREE 5.698f   // the y pixel to angle calibration variable
+#define IRLOCK_TIMEOUT_MS   100             // remove all blocks if no data received within 0.1 seconds
 
-struct _irlock_block {
+typedef struct {
 	uint16_t signature;
 	uint16_t center_x;
 	uint16_t center_y;
 	uint16_t width;
 	uint16_t height;
-};
-
-typedef struct _irlock_block irlock_block;
+} irlock_block;
 
 class IRLock
 {
 public:
-	IRLock(const AP_AHRS &ahrs);
+	IRLock();
 	virtual ~IRLock();
 
 	// init - initialize sensor library
 	// library won't be useable unless this is first called
 	virtual void init() = 0;
-
-	// true if irlock is enabled
-	bool enabled() const { return _enabled; }
 
 	// true if irlock sensor is online and healthy
 	bool healthy() const { return _flags.healthy; }
@@ -59,29 +60,21 @@ public:
 	// returns the number of blocks in the current frame
 	size_t num_blocks() const { return _num_blocks; }
 
-	// retrieve latest sensor data
-	virtual void update() = 0;
+	// retrieve latest sensor data - returns true if new data is available
+	virtual bool update() = 0;
 
-	// copies the current data frame
-	void get_current_frame(irlock_block data[IRLOCK_MAX_BLOCKS_PER_FRAME]) const;
-
-	// parameter var info table
-	static const struct AP_Param::GroupInfo var_info[];
+	// get_angle_to_target - retrieve body frame x and y angles (in radians) to target
+	//  returns true if angles are available, false if not (i.e. no target)
+	bool get_angle_to_target(float &x_angle_rad, float &y_angle_rad) const;
 
 protected:
 	struct AP_IRLock_Flags {
 		uint8_t healthy : 1; // true if sensor is healthy
 	} _flags;
 
-	// external references
-	const AP_AHRS &_ahrs;
-
-	// parameters
-	AP_Int8 _enabled;
-
 	// internals
 	uint32_t _last_update;
-	size_t _num_blocks;
+	uint16_t _num_blocks;
 	irlock_block _current_frame[IRLOCK_MAX_BLOCKS_PER_FRAME];
 };
 

@@ -29,55 +29,57 @@
 
 #include "AP_HAL.h"
 #include "drivers/drv_irlock.h"
-#include "uORB/topics/irlock.h"
 
 extern const AP_HAL::HAL& hal;
 
-AP_IRLock_PX4::AP_IRLock_PX4(const AP_AHRS &ahrs) :
-		IRLock(ahrs),
+AP_IRLock_PX4::AP_IRLock_PX4() :
 		_fd(0),
 		_last_timestamp(0)
 {}
 
 void AP_IRLock_PX4::init()
 {
-	_fd = open(IRLOCK_DEVICE_PATH, O_RDONLY);
+	_fd = open(IRLOCK0_DEVICE_PATH, O_RDONLY);
 	if (_fd < 0) {
-		hal.console->printf("Unable to open " IRLOCK_DEVICE_PATH "\n");
+		hal.console->printf("Unable to open " IRLOCK0_DEVICE_PATH "\n");
 		return;
 	}
 
 	_flags.healthy = true;
 }
 
-void AP_IRLock_PX4::update()
+// retrieve latest sensor data - returns true if new data is available
+bool AP_IRLock_PX4::update()
 {
-	if (!_flags.healthy)
-		return;
+    // return immediately if not healthy
+	if (!_flags.healthy) {
+		return false;
+	}
 
-//	struct irlock_s {
-//		uint64_t timestamp; // microseconds since system start
-//
-//		uint16_t signature;
-//		uint16_t center_x;
-//		uint16_t center_y;
-//		uint16_t width;
-//		uint16_t height;
-//		uint16_t angle;
-//	};
+	// read position of all objects
 	struct irlock_s report;
-	_num_blocks = 0;
+	uint16_t count = 0;
 	while(::read(_fd, &report, sizeof(struct irlock_s)) == sizeof(struct irlock_s) && report.timestamp >_last_timestamp) {
-		_current_frame[_num_blocks].signature = report.signature;
-		_current_frame[_num_blocks].center_x = report.center_x;
-		_current_frame[_num_blocks].center_y = report.center_y;
-		_current_frame[_num_blocks].width = report.width;
-		_current_frame[_num_blocks].height = report.height;
+		_current_frame[count].signature = report.signature;
+		_current_frame[count].center_x = report.center_x;
+		_current_frame[count].center_y = report.center_y;
+		_current_frame[count].width = report.width;
+		_current_frame[count].height = report.height;
 
-		++_num_blocks;
+		count++;
 		_last_timestamp = report.timestamp;
 		_last_update = hal.scheduler->millis();
 	}
+
+	// update num_blocks and implement timeout
+	if (count > 0) {
+	    _num_blocks = count;
+	} else if ((hal.scheduler->millis() - _last_update) > IRLOCK_TIMEOUT_MS) {
+	    _num_blocks = 0;
+	}
+
+	// return true if new data found
+	return (_num_blocks > 0);
 }
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4

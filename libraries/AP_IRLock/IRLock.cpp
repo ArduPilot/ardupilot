@@ -7,32 +7,13 @@
 
 #include "IRLock.h"
 
-// not sure what is going on here...
-//const AP_Param::GroupInfo IRLock::var_info[] PROGMEM = {
-//		// @Param: ENABLE
-//		// @DisplayName: Optical flow enable/disable
-//		// @Description: Setting thisto Enabled(1) will enable irlock. Setting this to Disabled(0) will disable irlock.
-//		// @Values: 0:Disabled, 1:Enabled
-//		// @user: Standard
-//		AP_GROUPINFO("_ENABLE", 0, IRLock, _enabled, 0),
-//
-//		AP_GROUPEND
-//};
-
 // default constructor
-IRLock::IRLock(const AP_AHRS &ahrs) :
-		_ahrs(ahrs),
+IRLock::IRLock() :
 		_last_update(0),
 		_num_blocks(0)
 {
-	// can't figure out how to get this to set to enabled, so doing it manually
-//	AP_Param::setup_object_defaults(this, var_info);
-	_enabled = true;
-
 	// clear the frame buffer
-	for(int i = 0; i < IRLOCK_MAX_BLOCKS_PER_FRAME; ++i) {
-		memset(&(_current_frame[i]), 0, sizeof(irlock_block));
-	}
+    memset(_current_frame, 0, sizeof(_current_frame));
 
 	// will be adjusted when init is called
 	_flags.healthy = false;
@@ -40,22 +21,17 @@ IRLock::IRLock(const AP_AHRS &ahrs) :
 
 IRLock::~IRLock() {}
 
-void IRLock::get_current_frame(irlock_block data[IRLOCK_MAX_BLOCKS_PER_FRAME]) const
+// get_angle_to_target - retrieve body frame x and y angles (in radians) to target
+//  returns true if angles are available, false if not (i.e. no target)
+bool IRLock::get_angle_to_target(float &x_angle_rad, float &y_angle_rad) const
 {
-	int index = 0;
-	for (; index < _num_blocks; ++index) {
-		data[index].signature = _current_frame[index].signature;
-		data[index].center_x = _current_frame[index].center_x;
-		data[index].center_y = _current_frame[index].center_y;
-		data[index].width = _current_frame[index].width;
-		data[index].height = _current_frame[index].height;
-	}
+    // return false if we have no target
+    if (_num_blocks == 0) {
+        return false;
+    }
 
-	for (; index < IRLOCK_MAX_BLOCKS_PER_FRAME; ++index) {
-		data[index].signature = 0;
-		data[index].center_x = 0;
-		data[index].center_y = 0;
-		data[index].width = 0;
-		data[index].height = 0;
-	}
+    // use data from first object
+    x_angle_rad = (((float)(_current_frame[0].center_x-IRLOCK_CENTER_X))/IRLOCK_X_PIXEL_PER_DEGREE) * DEG_TO_RAD;
+    y_angle_rad = (((float)(_current_frame[0].center_y-IRLOCK_CENTER_Y))/IRLOCK_Y_PIXEL_PER_DEGREE) * DEG_TO_RAD;
+    return true;
 }
