@@ -677,23 +677,6 @@ static void autotune_attitude_control()
     }
 }
 
-// autotune has failed, return to standard gains and log event
-//  called when the autotune is unable to find good gains
-static void autotune_failed()
-{
-    // set autotune mode to failed so that it cannot restart
-    autotune_state.mode = AUTOTUNE_MODE_FAILED;
-    // set gains to their original values
-    autotune_load_orig_gains();
-    // re-enable angle-to-rate request limits
-    attitude_control.limit_angle_to_rate_request(true);
-    // log failure
-    Log_Write_Event(DATA_AUTOTUNE_FAILED);
-
-    // play a tone
-    AP_Notify::events.autotune_failed = 1;
-}
-
 // autotune_backup_gains_and_initialise - store current gains as originals
 //  called before tuning starts to backup original gains
 static void autotune_backup_gains_and_initialise()

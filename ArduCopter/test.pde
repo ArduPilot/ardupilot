@@ -52,7 +52,6 @@ test_mode(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_baro(uint8_t argc, const Menu::arg *argv)
 {
-    int32_t alt;
     print_hit_enter();
     init_barometer(true);
 

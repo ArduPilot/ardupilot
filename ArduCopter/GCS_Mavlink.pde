@@ -318,14 +318,13 @@ static void NOINLINE send_hwstatus(mavlink_channel_t chan)
         hal.i2c->lockup_count());
 }
 
-#if HIL_MODE != HIL_MODE_DISABLED
 static void NOINLINE send_servo_out(mavlink_channel_t chan)
 {
+#if HIL_MODE != HIL_MODE_DISABLED
     // normalized values scaled to -10000 to 10000
     // This is used for HIL.  Do not change without discussing with HIL maintainers
 
 #if FRAME_CONFIG == HELI_FRAME
-
     mavlink_msg_rc_channels_scaled_send(
         chan,
         millis(),
@@ -340,39 +339,6 @@ static void NOINLINE send_servo_out(mavlink_channel_t chan)
         0,
         receiver_rssi);
 #else
- #if X_PLANE == ENABLED
-    /* update by JLN for X-Plane HIL */
-    if(motors.armed() && ap.auto_armed) {
-        mavlink_msg_rc_channels_scaled_send(
-            chan,
-            millis(),
-            0,         // port 0
-            g.rc_1.servo_out,
-            g.rc_2.servo_out,
-            10000 * g.rc_3.norm_output(),
-            g.rc_4.servo_out,
-            10000 * g.rc_1.norm_output(),
-            10000 * g.rc_2.norm_output(),
-            10000 * g.rc_3.norm_output(),
-            10000 * g.rc_4.norm_output(),
-            receiver_rssi);
-    }else{
-        mavlink_msg_rc_channels_scaled_send(
-            chan,
-            millis(),
-            0,         // port 0
-            0,
-            0,
-            -10000,
-            0,
-            10000 * g.rc_1.norm_output(),
-            10000 * g.rc_2.norm_output(),
-            10000 * g.rc_3.norm_output(),
-            10000 * g.rc_4.norm_output(),
-            receiver_rssi);
-    }
-
- #else
     mavlink_msg_rc_channels_scaled_send(
         chan,
         millis(),
@@ -386,10 +352,9 @@ static void NOINLINE send_servo_out(mavlink_channel_t chan)
         10000 * g.rc_3.norm_output(),
         10000 * g.rc_4.norm_output(),
         receiver_rssi);
- #endif
 #endif
-}
 #endif // HIL_MODE
+}
 
 static void NOINLINE send_radio_out(mavlink_channel_t chan)
 {
@@ -530,10 +495,8 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         break;
 
     case MSG_SERVO_OUT:
-#if HIL_MODE != HIL_MODE_DISABLED
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_SCALED);
         send_servo_out(chan);
-#endif
         break;
 
     case MSG_RADIO_IN:
