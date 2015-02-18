@@ -1553,7 +1553,7 @@ static void determine_is_flying(void)
                         gps.ground_speed() >= 5);
 
 
-    if(ahrs.get_armed()) {
+    if(arming.is_armed()) {
         // when armed, we need overwhelming evidence that we ARE NOT flying
         isFlyingBool = airspeedMovement || gpsMovement;
 
@@ -1568,7 +1568,7 @@ static void determine_is_flying(void)
 
 static bool is_flying(void)
 {
-    if(ahrs.get_armed()) {
+    if(arming.is_armed()) {
         // when armed, assume we're flying unless we probably aren't
         return (isFlyingProbability >= 0.1);
     }
