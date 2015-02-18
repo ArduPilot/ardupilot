@@ -38,6 +38,9 @@
 #define PACKED __attribute__((__packed__))
 #endif
 
+// used to mark a function that may be unused in some builds
+#define UNUSED_FUNCTION __attribute__((unused))
+
 // this can be used to optimize individual functions
 #define OPTIMIZE(level) __attribute__((optimize(level)))
 
