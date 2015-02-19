@@ -401,7 +401,7 @@ static void Log_Write_Land(
         groundspeed
     };
 
-    struct log_Land1 pkt2 = {
+    struct log_Land2 pkt2 = {
         LOG_PACKET_HEADER_INIT(LOG_LAND2_MSG),
         timestamp   : hal.scheduler->millis(),
         aim_height,
@@ -519,9 +519,9 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_ATRP_MSG, sizeof(AP_AutoTune::log_ATRP),
       "ATRP", "IBBcfff",  "TimeMS,Type,State,Servo,Demanded,Achieved,P" },
     { LOG_LAND1_MSG, sizeof(log_Land1),
-      "LND1", "IIIfffff",  "TimeMS,Alt,land_bearing_cd,sink_rate,sink_time,sink_height,total_dist,gndspeed" }
+      "LND1", "IIIfffff",  "TimeMS,Alt,Bearing,SinkRt,SinkTm,SinkHt,TotalDist,Gndspeed" },
     { LOG_LAND2_MSG, sizeof(log_Land2),
-      "LND2", "IffffIIf",  "TimeMS,aim_height,flare_time,flare_dist,land_slope,Alt_wp,target_alt_offset,land_proportion" },
+      "LND2", "ffffIIf",  "AimHt,FlareTm,FlareDis,Slope,AltWp,TargetAltOff,Proportion" },
 #if OPTFLOW == ENABLED
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),
       "OF",   "IBffff",   "TimeMS,Qual,flowX,flowY,bodyX,bodyY" },
