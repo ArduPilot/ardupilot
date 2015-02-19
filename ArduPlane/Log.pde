@@ -53,6 +53,8 @@ print_log_menu(void)
         PLOG(CAMERA);
         PLOG(RC);
         PLOG(SONAR);
+        PLOG(LAND1);
+        PLOG(LAND2);
  #undef PLOG
     }
 
@@ -146,6 +148,8 @@ select_logs(uint8_t argc, const Menu::arg *argv)
         TARG(CAMERA);
         TARG(RC);
         TARG(SONAR);
+        TARG(LAND1);
+        TARG(LAND2);
  #undef TARG
     }
 
@@ -345,7 +349,7 @@ static void Log_Write_Sonar()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-struct PACKED log_Land {
+struct PACKED log_Land1 {
     LOG_PACKET_HEADER;
     uint32_t timestamp;
     int32_t alt;
@@ -355,6 +359,11 @@ struct PACKED log_Land {
     float sink_height;
     float total_distance;
     float groundspeed;
+};
+
+struct PACKED log_Land2 {
+    LOG_PACKET_HEADER;
+    uint32_t timestamp;
     float aim_height;
     float flare_time;
     float flare_distance;
@@ -378,11 +387,10 @@ static void Log_Write_Land(
         float land_slope,
         int32_t wp_alt,
         int32_t target_altitude_offset_cm,
-        float land_proportion
-                )
+        float land_proportion)
 {
-    struct log_Land pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_LAND_MSG),
+    struct log_Land1 pkt1 = {
+        LOG_PACKET_HEADER_INIT(LOG_LAND1_MSG),
         timestamp   : hal.scheduler->millis(),
         alt : current_loc.alt,
         land_bearing_cd,
@@ -390,7 +398,12 @@ static void Log_Write_Land(
         sink_time,
         sink_height,
         total_distance,
-        groundspeed,
+        groundspeed
+    };
+
+    struct log_Land1 pkt2 = {
+        LOG_PACKET_HEADER_INIT(LOG_LAND2_MSG),
+        timestamp   : hal.scheduler->millis(),
         aim_height,
         flare_time,
         flare_distance,
@@ -399,7 +412,9 @@ static void Log_Write_Land(
         target_altitude_offset_cm,
         land_proportion
     };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+
+    DataFlash.WriteBlock(&pkt1, sizeof(pkt1));
+    DataFlash.WriteBlock(&pkt2, sizeof(pkt2));
 }
 
 struct PACKED log_Optflow {
@@ -503,8 +518,10 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "ARM", "IHB", "TimeMS,ArmState,ArmChecks" },
     { LOG_ATRP_MSG, sizeof(AP_AutoTune::log_ATRP),
       "ATRP", "IBBcfff",  "TimeMS,Type,State,Servo,Demanded,Achieved,P" },
-    { LOG_LAND_MSG, sizeof(log_Land),
-      "LAND", "I",  "TimeMS" },
+    { LOG_LAND1_MSG, sizeof(log_Land1),
+      "LND1", "IIIfffff",  "TimeMS,Alt,land_bearing_cd,sink_rate,sink_time,sink_height,total_dist,gndspeed" }
+    { LOG_LAND2_MSG, sizeof(log_Land2),
+      "LND2", "IffffIIf",  "TimeMS,aim_height,flare_time,flare_dist,land_slope,Alt_wp,target_alt_offset,land_proportion" },
 #if OPTFLOW == ENABLED
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),
       "OF",   "IBffff",   "TimeMS,Qual,flowX,flowY,bodyX,bodyY" },
