@@ -1,12 +1,17 @@
 #!/bin/bash
-# useful script to test all the different build types that we support.
-# This helps when doing large merges
-# Andrew Tridgell, November 2011
 
 . config.mk
 
 set -e
 set -x
+
+pushd ../PX4Firmware
+set +x
+git remote add solo https://$1@github.com/3drobotics/PX4Firmware-solo.git
+set -x
+git fetch solo
+git checkout solo/master
+popd
 
 pushd ArduCopter
 make configure

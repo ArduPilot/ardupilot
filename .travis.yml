@@ -8,7 +8,7 @@ before_install:
   -  APMDIR=$(pwd) && pushd .. && $APMDIR/Tools/scripts/install-travis-env.sh -y && . ~/.profile && popd
 
 script:
-  - Tools/scripts/build_px4_v2_quad_travis.sh
+  - Tools/scripts/build_px4_v2_quad_travis.sh ${GITHUB_API_KEY}
 
 deploy:
   provider: releases
