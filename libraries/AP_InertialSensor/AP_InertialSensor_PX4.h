@@ -47,6 +47,9 @@ private:
     void _new_accel_sample(uint8_t i, accel_report &accel_report);
     void _new_gyro_sample(uint8_t i, gyro_report &gyro_report);
 
+    bool _get_gyro_sample(uint8_t i, struct gyro_report &gyro_report);
+    bool _get_accel_sample(uint8_t i, struct accel_report &accel_report);
+
     // support for updating filter at runtime
     uint8_t _last_filter_hz;
 
