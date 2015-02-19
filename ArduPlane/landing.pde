@@ -172,7 +172,21 @@ static void setup_landing_glide_slope(void)
         // stay within the range of the start and end locations in altitude
         constrain_target_altitude_location(loc, prev_WP_loc);
 
-        Log_Write_Land();
+        Log_Write_Land(
+            land_bearing_cd,
+            sink_rate,
+            sink_time,
+            sink_height,
+            total_distance,
+            groundspeed,
+            aim_height,
+            flare_time,
+            flare_distance,
+            land_slope,
+            loc.alt,
+            target_altitude.offset_cm,
+            land_proportion);
+
 }
 
 /* 
