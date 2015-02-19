@@ -151,7 +151,8 @@ enum log_messages {
 #define MASK_LOG_SONAR                  (1<<14)
 #define MASK_LOG_ARM_DISARM             (1<<15)
 #define MASK_LOG_WHEN_DISARMED          (1UL<<16)
-#define MASK_LOG_LAND                   (1UL<<17)
+#define MASK_LOG_LAND1                  (1UL<<17)
+#define MASK_LOG_LAND2                  (1UL<<18)
 
 // Waypoint Modes
 // ----------------
