@@ -289,23 +289,43 @@ void AP_InertialSensor_PX4::_new_gyro_sample(uint8_t i, gyro_report &gyro_report
 
 void AP_InertialSensor_PX4::_get_sample()
 {
-    for (uint8_t i=0; i<_num_accel_instances; i++) {
+    for (uint8_t i=0; i<max(_num_accel_instances,_num_gyro_instances);i++) {
         struct accel_report accel_report;
-        while (_accel_fd[i] != -1 && 
-               ::read(_accel_fd[i], &accel_report, sizeof(accel_report)) == sizeof(accel_report) &&
-               accel_report.timestamp != _last_accel_timestamp[i]) {
-            _new_accel_sample(i, accel_report);
-        }
-    }
-    for (uint8_t i=0; i<_num_gyro_instances; i++) {
         struct gyro_report gyro_report;
-        while (_gyro_fd[i] != -1 && 
-               ::read(_gyro_fd[i], &gyro_report, sizeof(gyro_report)) == sizeof(gyro_report) &&
-               gyro_report.timestamp != _last_gyro_timestamp[i]) {
-            _new_gyro_sample(i, gyro_report);
+
+        bool gyro_valid = _get_gyro_sample(i,gyro_report);
+        bool accel_valid = _get_accel_sample(i,accel_report);
+
+        while(gyro_valid || accel_valid) {
+            // interleave accel and gyro samples by time - this will allow sculling corrections later
+            // check the next gyro measurement to see if it needs to be integrated first
+            if(gyro_valid && accel_valid && gyro_report.timestamp <= accel_report.timestamp) {
+                _new_gyro_sample(i,gyro_report);
+                gyro_valid = _get_gyro_sample(i,gyro_report);
+                continue;
+            }
+            // if not, try to integrate an accelerometer sample
+            if(accel_valid) {
+                _new_accel_sample(i,accel_report);
+                accel_valid = _get_accel_sample(i,accel_report);
+                continue;
+            }
+            // if not, we've only got gyro samples left in the buffer
+            if(gyro_valid) {
+                _new_gyro_sample(i,gyro_report);
+                gyro_valid = _get_gyro_sample(i,gyro_report);
+            }
         }
     }
     _last_get_sample_timestamp = hal.scheduler->micros64();
+}
+
+bool AP_InertialSensor_PX4::_get_accel_sample(uint8_t i, struct accel_report &accel_report) {
+    return i<_num_accel_instances && _accel_fd[i] != -1 && ::read(_accel_fd[i], &accel_report, sizeof(accel_report)) == sizeof(accel_report) && accel_report.timestamp != _last_accel_timestamp[i];
+}
+
+bool AP_InertialSensor_PX4::_get_gyro_sample(uint8_t i, struct gyro_report &gyro_report) {
+    return i<_num_gyro_instances && _gyro_fd[i] != -1 && ::read(_gyro_fd[i], &gyro_report, sizeof(gyro_report)) == sizeof(gyro_report) && gyro_report.timestamp != _last_gyro_timestamp[i];
 }
 
 bool AP_InertialSensor_PX4::gyro_sample_available(void)
