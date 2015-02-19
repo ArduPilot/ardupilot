@@ -564,7 +564,7 @@ Format characters in the format string for binary log messages
     { LOG_COMPASS_MSG, sizeof(log_Compass), \
       "MAG", "Ihhhhhhhhh",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" }, \
     { LOG_MODE_MSG, sizeof(log_Mode), \
-      "MODE", "IMB",         "TimeMS,Mode,ModeNum" } \
+      "MODE", "IMB",         "TimeMS,Mode,ModeNum" }
 
 // messages for more advanced boards
 #define LOG_EXTRA_STRUCTURES \

@@ -348,14 +348,56 @@ static void Log_Write_Sonar()
 struct PACKED log_Land {
     LOG_PACKET_HEADER;
     uint32_t timestamp;
+    int32_t alt;
+    int32_t land_bearing_cd;
+    float sink_rate;
+    float sink_time;
+    float sink_height;
+    float total_distance;
+    float groundspeed;
+    float aim_height;
+    float flare_time;
+    float flare_distance;
+    float land_slope;
+    int32_t wp_alt;
+    int32_t target_altitude_offset_cm;
+    float land_proportion;
 };
 
 // Write a land packet
-static void Log_Write_Land()
+static void Log_Write_Land(
+        int32_t land_bearing_cd,
+        float sink_rate,
+        float sink_time,
+        float sink_height,
+        float total_distance,
+        float groundspeed,
+        float aim_height,
+        float flare_time,
+        float flare_distance,
+        float land_slope,
+        int32_t wp_alt,
+        int32_t target_altitude_offset_cm,
+        float land_proportion
+                )
 {
     struct log_Land pkt = {
         LOG_PACKET_HEADER_INIT(LOG_LAND_MSG),
-        timestamp   : hal.scheduler->millis()
+        timestamp   : hal.scheduler->millis(),
+        alt : current_loc.alt,
+        land_bearing_cd,
+        sink_rate,
+        sink_time,
+        sink_height,
+        total_distance,
+        groundspeed,
+        aim_height,
+        flare_time,
+        flare_distance,
+        land_slope,
+        wp_alt,
+        target_altitude_offset_cm,
+        land_proportion
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
