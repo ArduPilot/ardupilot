@@ -362,7 +362,6 @@ struct PACKED log_Land1 {
 
 struct PACKED log_Land2 {
     LOG_PACKET_HEADER;
-    uint32_t timestamp;
     float aim_height;
     float flare_time;
     float flare_distance;
@@ -407,7 +406,6 @@ static void Log_Write_Land(
 
     struct log_Land2 pkt2 = {
         LOG_PACKET_HEADER_INIT(LOG_LAND2_MSG),
-        timestamp   : hal.scheduler->millis(),
         aim_height,
         flare_time,
         flare_distance,
