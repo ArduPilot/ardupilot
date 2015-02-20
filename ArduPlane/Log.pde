@@ -53,8 +53,7 @@ print_log_menu(void)
         PLOG(CAMERA);
         PLOG(RC);
         PLOG(SONAR);
-        PLOG(LAND1);
-        PLOG(LAND2);
+        PLOG(LAND);
  #undef PLOG
     }
 
@@ -148,8 +147,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
         TARG(CAMERA);
         TARG(RC);
         TARG(SONAR);
-        TARG(LAND1);
-        TARG(LAND2);
+        TARG(LAND);
  #undef TARG
     }
 
