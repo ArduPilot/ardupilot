@@ -347,76 +347,32 @@ static void Log_Write_Sonar()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-struct PACKED log_Land1 {
-    LOG_PACKET_HEADER;
-    uint32_t timestamp;
-    int32_t alt;
-    int32_t land_bearing_cd;
-    float sink_rate;
-    float sink_time;
-    float sink_height;
-    float total_distance;
-    float gndspd;
-    float airspd;
-};
 
-struct PACKED log_Land2 {
-    LOG_PACKET_HEADER;
-    float aim_height;
-    float flare_time;
-    float flare_distance;
-    float land_slope;
-    int32_t wp_alt;
-    int32_t target_altitude_offset_cm;
-    float land_proportion;
-};
 
-// Write a land packet
 static void Log_Write_Land(
-        int32_t land_bearing_cd,
         float sink_rate,
         float sink_time,
         float sink_height,
         float total_distance,
-        float gndspd,
         float aim_height,
         float flare_time,
         float flare_distance,
         float land_slope,
         int32_t wp_alt,
-        int32_t target_altitude_offset_cm,
-        float land_proportion)
+        int32_t target_altitude_offset_cm)
 {
-
-    float airspd;
-    ahrs.airspeed_estimate(&airspd);
-
-    struct log_Land1 pkt1 = {
-        LOG_PACKET_HEADER_INIT(LOG_LAND1_MSG),
-        timestamp   : hal.scheduler->millis(),
-        alt : current_loc.alt,
-        land_bearing_cd,
+    DataFlash::Log_Write_Land(
         sink_rate,
         sink_time,
         sink_height,
         total_distance,
-        gndspd,
-        airspd
-    };
-
-    struct log_Land2 pkt2 = {
-        LOG_PACKET_HEADER_INIT(LOG_LAND2_MSG),
         aim_height,
         flare_time,
         flare_distance,
         land_slope,
         wp_alt,
-        target_altitude_offset_cm,
-        land_proportion
-    };
+        target_altitude_offset_cm);
 
-    DataFlash.WriteBlock(&pkt1, sizeof(pkt1));
-    DataFlash.WriteBlock(&pkt2, sizeof(pkt2));
 }
 
 struct PACKED log_Optflow {
@@ -521,7 +477,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_ATRP_MSG, sizeof(AP_AutoTune::log_ATRP),
       "ATRP", "IBBcfff",  "TimeMS,Type,State,Servo,Demanded,Achieved,P" },
     { LOG_LAND1_MSG, sizeof(log_Land1),
-      "LND1", "Iiiffffff",  "TimeMS,Alt,Bearing,SinkRt,SinkTm,SinkHt,TotalDist,GndSpd,AirSpd" },
+      "LND1", "Iiiffff",  "TimeMS,Alt,Bearing,SinkRt,SinkTm,SinkHt,TotalDist" },
     { LOG_LAND2_MSG, sizeof(log_Land2),
       "LND2", "ffffiif",  "AimHt,FlareTm,FlareDis,Slope,AltWp,TargetAltOff,Proportion" },
 #if OPTFLOW == ENABLED
@@ -579,7 +535,7 @@ static void Log_Write_RC() {}
 static void Log_Write_Airspeed(void) {}
 static void Log_Write_Baro(void) {}
 static void Log_Write_Sonar() {}
-static void Log_Write_Land() {}
+static void Log_Write_Land(int32_t a,float b,float c,float d,float e,float f,float g,float h,float i,float j,int32_t k,int32_t l,float m) {}
 #if OPTFLOW == ENABLED
 static void Log_Write_Optflow() {}
 #endif

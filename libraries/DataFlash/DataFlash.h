@@ -84,6 +84,7 @@ public:
 	void Log_Write_Current(const AP_BattMonitor &battery, int16_t throttle);
     void Log_Write_Compass(const Compass &compass);
     void Log_Write_Mode(uint8_t mode);
+    void Log_Write_Land(float sink_rate, float sink_time, float sink_height,float total_distance, float aim_height, float flare_time, float flare_distance, float land_slope, int32_t wp_alt, int32_t target_altitude_offset_cm);
 
     bool logging_started(void) const { return log_write_started; }
 

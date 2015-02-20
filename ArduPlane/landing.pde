@@ -173,20 +173,20 @@ static void setup_landing_glide_slope(void)
         constrain_target_altitude_location(loc, prev_WP_loc);
 
         if (should_log(MASK_LOG_LAND)) {
+            DataFlash_Class Log_struct {
+            } // TODO, use a struct instead of all these variables. Then pass the struct through LogFile
+            }
             Log_Write_Land(
-                land_bearing_cd,
                 sink_rate,
                 sink_time,
                 sink_height,
                 total_distance,
-                groundspeed,
                 aim_height,
                 flare_time,
                 flare_distance,
                 land_slope,
                 loc.alt,
-                target_altitude.offset_cm,
-                land_proportion);
+                target_altitude.offset_cm);
         }
 
 }
