@@ -303,7 +303,7 @@ void AP_MotorsMatrix::output_armed()
         // check everything fits
         thr_adj = throttle_radio_out - out_best_thr_pwm;
 
-        // calc upper and lower limits of thr_adj
+        // calculate upper and lower limits of thr_adj
         int16_t thr_adj_max = max(out_max_pwm-(out_best_thr_pwm+rpy_high),0);
 
         // if we are increasing the throttle (situation #2 above)..
@@ -331,7 +331,7 @@ void AP_MotorsMatrix::output_armed()
         }
 
         // do we need to reduce roll, pitch, yaw command
-        // earlier code does not allow both limit's to be passed simultainiously with abs(_yaw_factor)<1
+        // earlier code does not allow both limit's to be passed simultaneously with abs(_yaw_factor)<1
         if ((rpy_low+out_best_thr_pwm)+thr_adj < out_min_pwm){
             rpy_scale = (float)(out_min_pwm-thr_adj-out_best_thr_pwm)/rpy_low;
             // we haven't even been able to apply full roll, pitch and minimal yaw without scaling

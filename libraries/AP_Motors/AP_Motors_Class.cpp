@@ -209,7 +209,7 @@ void AP_Motors::output()
     }
 };
 
-// setup_throttle_curve - used to linearlise thrust output by motors
+// setup_throttle_curve - used to linearise thrust output by motors
 // returns true if set up successfully
 bool AP_Motors::setup_throttle_curve()
 {
@@ -237,7 +237,7 @@ bool AP_Motors::setup_throttle_curve()
         retval = false;
     }
 
-    // disable throttle curve if not set-up corrrectly
+    // disable throttle curve if not set-up correctly
     if( !retval ) {
         _throttle_curve_enabled = false;
         hal.console->println_P(PSTR("AP_Motors: failed to create throttle curve"));
