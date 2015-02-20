@@ -3,7 +3,6 @@
 #include <AP_Mount_SToRM32.h>
 #include <AP_HAL.h>
 #include <GCS_MAVLink.h>
-#include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
 
