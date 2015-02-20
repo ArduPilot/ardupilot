@@ -358,7 +358,8 @@ struct PACKED log_Land1 {
     float sink_time;
     float sink_height;
     float total_distance;
-    float groundspeed;
+    float gndspd;
+    float airspd;
 };
 
 struct PACKED log_Land2 {
@@ -380,7 +381,7 @@ static void Log_Write_Land(
         float sink_time,
         float sink_height,
         float total_distance,
-        float groundspeed,
+        float gndspd,
         float aim_height,
         float flare_time,
         float flare_distance,
@@ -389,6 +390,10 @@ static void Log_Write_Land(
         int32_t target_altitude_offset_cm,
         float land_proportion)
 {
+
+    float airspd;
+    ahrs.airspeed_estimate(&airspd);
+
     struct log_Land1 pkt1 = {
         LOG_PACKET_HEADER_INIT(LOG_LAND1_MSG),
         timestamp   : hal.scheduler->millis(),
@@ -398,7 +403,8 @@ static void Log_Write_Land(
         sink_time,
         sink_height,
         total_distance,
-        groundspeed
+        gndspd,
+        airspd
     };
 
     struct log_Land2 pkt2 = {
@@ -519,9 +525,9 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_ATRP_MSG, sizeof(AP_AutoTune::log_ATRP),
       "ATRP", "IBBcfff",  "TimeMS,Type,State,Servo,Demanded,Achieved,P" },
     { LOG_LAND1_MSG, sizeof(log_Land1),
-      "LND1", "IIIfffff",  "TimeMS,Alt,Bearing,SinkRt,SinkTm,SinkHt,TotalDist,Gndspeed" },
+      "LND1", "Iiiffffff",  "TimeMS,Alt,Bearing,SinkRt,SinkTm,SinkHt,TotalDist,GndSpd,AirSpd" },
     { LOG_LAND2_MSG, sizeof(log_Land2),
-      "LND2", "ffffIIf",  "AimHt,FlareTm,FlareDis,Slope,AltWp,TargetAltOff,Proportion" },
+      "LND2", "ffffiif",  "AimHt,FlareTm,FlareDis,Slope,AltWp,TargetAltOff,Proportion" },
 #if OPTFLOW == ENABLED
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),
       "OF",   "IBffff",   "TimeMS,Qual,flowX,flowY,bodyX,bodyY" },
