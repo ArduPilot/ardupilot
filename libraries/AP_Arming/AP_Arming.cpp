@@ -47,7 +47,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] PROGMEM = {
 //The function point is particularly hacky, hacky, tacky
 //but I don't want to reimplement messaging to GCS at the moment:
 AP_Arming::AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
-                     const bool &home_set, gcs_send_t_p gcs_print_func)
+                     const enum HomeState &home_set, gcs_send_t_p gcs_print_func)
     : armed(false)
    , logging_available(false)
    , skip_gyro_cal(false)
@@ -259,7 +259,7 @@ bool AP_Arming::gps_checks(bool report)
         const AP_GPS &gps = ahrs.get_gps();
 
         //GPS OK?
-        if (!home_is_set || 
+        if (home_is_set == HOME_UNSET || 
             gps.status() < AP_GPS::GPS_OK_FIX_3D ||              
             AP_Notify::flags.gps_glitching ||
             AP_Notify::flags.failsafe_gps) {
