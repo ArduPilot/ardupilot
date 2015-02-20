@@ -1278,3 +1278,64 @@ void DataFlash_Class::Log_Write_Airspeed(AP_Airspeed &airspeed)
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
+
+// Write a LND1 & LND2 packets
+void DataFlash_Class::Log_Write_Land(
+        float sink_rate,
+        float sink_time,
+        float sink_height,
+        float total_distance,
+        float aim_height,
+        float flare_time,
+        float flare_distance,
+        float land_slope,
+        int32_t wp_alt,
+        int32_t target_altitude_offset_cm)
+{
+    struct PACKED log_Land1 {
+        LOG_PACKET_HEADER;
+        uint32_t timestamp;
+        int32_t alt;
+        int32_t land_bearing_cd;
+        float sink_rate;
+        float sink_time;
+        float sink_height;
+        float total_distance;
+    };
+
+    struct PACKED log_Land2 {
+        LOG_PACKET_HEADER;
+        float aim_height;
+        float flare_time;
+        float flare_distance;
+        float land_slope;
+        int32_t wp_alt;
+        int32_t target_altitude_offset_cm;
+        float land_proportion;
+    };
+
+    struct log_Land1 pkt1 = {
+        LOG_PACKET_HEADER_INIT(LOG_LAND1_MSG)
+        ,timestamp   : hal.scheduler->millis()
+        ,alt : current_loc.alt
+        ,land_bearing_cd : get_bearing_cd(prev_WP_loc, next_WP_loc)
+        ,sink_rate
+        ,sink_time
+        ,sink_height
+        ,total_distance
+    };
+
+    struct log_Land2 pkt2 = {
+        LOG_PACKET_HEADER_INIT(LOG_LAND2_MSG)
+        ,aim_height
+        ,flare_time
+        ,flare_distance
+        ,land_slope
+        ,wp_alt
+        ,target_altitude_offset_cm
+        ,land_proportion : location_path_proportion(current_loc, prev_WP_loc, loc)
+    };
+
+    WriteBlock(&pkt1, sizeof(pkt1));
+    WriteBlock(&pkt2, sizeof(pkt2));
+}
