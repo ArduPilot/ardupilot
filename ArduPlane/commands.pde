@@ -101,7 +101,7 @@ static void init_home()
     gcs_send_text_P(SEVERITY_LOW, PSTR("init home"));
 
     ahrs.set_home(gps.location());
-    home_is_set = true;
+    home_is_set = HOME_SET_NOT_LOCKED;
 
     gcs_send_text_fmt(PSTR("gps alt: %lu"), (unsigned long)home.alt);
 
@@ -125,6 +125,8 @@ static void init_home()
 */
 static void update_home()
 {
-    ahrs.set_home(gps.location());
+    if (home_is_set == HOME_SET_NOT_LOCKED) {
+        ahrs.set_home(gps.location());
+    }
     barometer.update_calibration();
 }

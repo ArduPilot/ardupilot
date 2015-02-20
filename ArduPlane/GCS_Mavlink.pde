@@ -1225,6 +1225,29 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
+
+        case MAV_CMD_DO_SET_HOME:
+            // param1 : use current (1=use current location, 0=use specified location)
+            // param5 : latitude
+            // param6 : longitude
+            // param7 : altitude (absolute)
+            result = MAV_RESULT_FAILED; // assume failure
+            if (packet.param1 == 1) {
+                init_home();
+            } else {
+                if (packet.param5 == 0 && packet.param6 == 0 && packet.param7 == 0) {
+                    // don't allow the 0,0 position
+                    break;
+                }
+                Location new_home_loc;
+                new_home_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
+                new_home_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
+                new_home_loc.alt = (int32_t)(packet.param7 * 100.0f);
+                ahrs.set_home(new_home_loc);
+                home_is_set = HOME_SET_NOT_LOCKED;
+                result = MAV_RESULT_ACCEPTED;
+            }
+            break;
         }
 
         default:
