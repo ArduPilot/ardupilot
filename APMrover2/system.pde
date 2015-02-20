@@ -93,6 +93,8 @@ static void init_ardupilot()
 
     set_control_channels();
 
+    battery.init();
+
     // keep a record of how many resets have happened. This can be
     // used to detect in-flight resets
     g.num_resets.set_and_save(g.num_resets+1);
@@ -482,21 +484,6 @@ static uint8_t check_digital_pin(uint8_t pin)
 }
 
 /*
-  write to a servo
- */
-static void servo_write(uint8_t ch, uint16_t pwm)
-{
-#if HIL_MODE != HIL_MODE_DISABLED
-    if (ch < 8) {
-        RC_Channel::rc_channel(ch)->radio_out = pwm;
-    }
-#else
-    hal.rcout->enable_ch(ch);
-    hal.rcout->write(ch, pwm);
-#endif
-}
-
-/*
   should we log a message type now?
  */
 static bool should_log(uint32_t mask)
@@ -504,7 +491,7 @@ static bool should_log(uint32_t mask)
     if (!(mask & g.log_bitmask) || in_mavlink_delay) {
         return false;
     }
-    bool ret = ahrs.get_armed() || (g.log_bitmask & MASK_LOG_WHEN_DISARMED) != 0;
+    bool ret = hal.util->get_soft_armed() || (g.log_bitmask & MASK_LOG_WHEN_DISARMED) != 0;
     if (ret && !DataFlash.logging_started() && !in_log_download) {
         // we have to set in_mavlink_delay to prevent logging while
         // writing headers

@@ -825,7 +825,7 @@ static void set_servos(void)
                                                       min_throttle,
                                                       max_throttle);
 
-        if (!ahrs.get_armed()) {
+        if (!hal.util->get_soft_armed()) {
             channel_throttle->servo_out = 0;
             channel_throttle->calc_pwm();                
         } else if (suppress_throttle()) {

@@ -7,6 +7,19 @@
 #include <AP_HAL.h>
 #include <AP_Notify.h>
 
+/*
+  enable TIMING_DEBUG to track down scheduling issues with the main
+  loop. Output is on the debug console
+ */
+#define TIMING_DEBUG 0
+
+#if TIMING_DEBUG
+#include <stdio.h>
+#define timing_printf(fmt, args...)      do { printf("[timing] " fmt, ##args); } while(0)
+#else
+#define timing_printf(fmt, args...)
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 
@@ -1072,17 +1085,26 @@ void AP_InertialSensor::wait_for_sample(void)
     if (_next_sample_usec - now <=_sample_period_usec) {
         // we're ahead on time, schedule next sample at expected period
         uint32_t wait_usec = _next_sample_usec - now;
-        if (wait_usec > 200) {
-            hal.scheduler->delay_microseconds(wait_usec);
+        hal.scheduler->delay_microseconds_boost(wait_usec);
+        uint32_t now2 = hal.scheduler->micros();
+        if (now2+100 < _next_sample_usec) {
+            timing_printf("shortsleep %u\n", (unsigned)(_next_sample_usec-now2));
+        }
+        if (now2 > _next_sample_usec+400) {
+            timing_printf("longsleep %u wait_usec=%u\n", 
+                          (unsigned)(now2-_next_sample_usec),
+                          (unsigned)wait_usec);
         }
         _next_sample_usec += _sample_period_usec;
     } else if (now - _next_sample_usec < _sample_period_usec/8) {
         // we've overshot, but only by a small amount, keep on
         // schedule with no delay
+        timing_printf("overshoot1 %u\n", (unsigned)(now-_next_sample_usec));
         _next_sample_usec += _sample_period_usec;
     } else {
         // we've overshot by a larger amount, re-zero scheduling with
         // no delay
+        timing_printf("overshoot2 %u\n", (unsigned)(now-_next_sample_usec));
         _next_sample_usec = now + _sample_period_usec;
     }
 

@@ -102,6 +102,7 @@ void PX4Scheduler::delay_microseconds_semaphore(uint16_t usec)
     sem_t wait_semaphore;
     struct hrt_call wait_call;
     sem_init(&wait_semaphore, 0, 0);
+    memset(&wait_call, 0, sizeof(wait_call));
     hrt_call_after(&wait_call, usec, (hrt_callout)sem_post, &wait_semaphore);
     sem_wait(&wait_semaphore);
 }
@@ -109,17 +110,41 @@ void PX4Scheduler::delay_microseconds_semaphore(uint16_t usec)
 void PX4Scheduler::delay_microseconds(uint16_t usec) 
 {
     perf_begin(_perf_delay);
-    if (usec >= 500) {
-        delay_microseconds_semaphore(usec);
-        perf_end(_perf_delay);
-        return;
-    }
-	uint64_t start = micros64();
-    uint64_t dt;
-	while ((dt=(micros64() - start)) < usec) {
-		up_udelay(usec - dt);
-	}
+    delay_microseconds_semaphore(usec);
     perf_end(_perf_delay);
+}
+
+/*
+  wrapper around sem_post that boosts main thread priority
+ */
+static void sem_post_boost(sem_t *sem)
+{
+    hal_px4_set_priority(APM_MAIN_PRIORITY_BOOST);
+    sem_post(sem);
+}
+
+/*
+  return the main thread to normal priority
+ */
+static void set_normal_priority(void *sem)
+{
+    hal_px4_set_priority(APM_MAIN_PRIORITY);
+}
+
+/*
+  a varient of delay_microseconds that boosts priority to
+  APM_MAIN_PRIORITY_BOOST for APM_MAIN_PRIORITY_BOOST_USEC
+  microseconds when the time completes. This significantly improves
+  the regularity of timing of the main loop as it takes 
+ */
+void PX4Scheduler::delay_microseconds_boost(uint16_t usec) 
+{
+    sem_t wait_semaphore;
+    static struct hrt_call wait_call;
+    sem_init(&wait_semaphore, 0, 0);
+    hrt_call_after(&wait_call, usec, (hrt_callout)sem_post_boost, &wait_semaphore);
+    sem_wait(&wait_semaphore);
+    hrt_call_after(&wait_call, APM_MAIN_PRIORITY_BOOST_USEC, (hrt_callout)set_normal_priority, NULL);
 }
 
 void PX4Scheduler::delay(uint16_t ms)

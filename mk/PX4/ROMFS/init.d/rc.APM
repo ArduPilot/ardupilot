@@ -148,6 +148,16 @@ then
         echo "PX4IO CRC failure"
         echo "PX4IO CRC failure" >> $logfile    
         tone_alarm MBABGP
+
+        if px4io safety_on
+        then
+            echo "PX4IO disarm OK"
+        else
+            echo "PX4IO disarm failed"
+        fi
+
+        sleep 1
+
         if px4io forceupdate 14662 /etc/px4io/px4io.bin
         then
                sleep 1
@@ -335,6 +345,11 @@ then
     echo "Found internal ll40ls sensor"
 fi
 
+if trone start
+then
+    echo "Found trone sensor"
+fi
+
 if mb12xx start
 then
     echo "Found mb12xx sensor"
@@ -377,7 +392,7 @@ then
 fi
 
 # optional smbus battery monitor
-if batt_smbus start
+if batt_smbus -b 2 start
 then
     echo "Found batt_smbus"
 fi

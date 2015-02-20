@@ -186,19 +186,3 @@ static void set_throttle_zero_flag(int16_t throttle_control)
         ap.throttle_zero = true;
     }
 }
-
-static void trim_radio()
-{
-    for (uint8_t i = 0; i < 30; i++) {
-        read_radio();
-    }
-
-    g.rc_1.trim();      // roll
-    g.rc_2.trim();      // pitch
-    g.rc_4.trim();      // yaw
-
-    g.rc_1.save_eeprom();
-    g.rc_2.save_eeprom();
-    g.rc_4.save_eeprom();
-}
-

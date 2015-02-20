@@ -893,13 +893,21 @@ void SmallEKF::getDebug(float &tilt, Vector3f &velocity, Vector3f &euler, Vector
     tilt = TiltCorrection;
     velocity = state.velocity;
     state.quat.to_euler(euler.x, euler.y, euler.z);
-    gyroBias = state.delAngBias / dtIMU;
+    if (dtIMU < 1.0e-6) {
+        gyroBias.zero();
+    } else {
+        gyroBias = state.delAngBias / dtIMU;
+    }
 }
 
 // get gyro bias data
 void SmallEKF::getGyroBias(Vector3f &gyroBias) const
 {
-    gyroBias = state.delAngBias / dtIMU;
+    if (dtIMU < 1.0e-6) {
+        gyroBias.zero();
+    } else {
+        gyroBias = state.delAngBias / dtIMU;
+    }
 }
 
 // get quaternion data

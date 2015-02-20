@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduRover v2.47"
+#define THISFIRMWARE "ArduRover v2.48"
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -545,8 +545,6 @@ void setup() {
 
     notify.init(false);
 
-    battery.init();
-
     rssi_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE);
 
 	init_ardupilot();
@@ -583,7 +581,7 @@ void loop()
 // update AHRS system
 static void ahrs_update()
 {
-    ahrs.set_armed(hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
+    hal.util->set_soft_armed(hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
 
 #if HIL_MODE != HIL_MODE_DISABLED
     // update hil before AHRS update

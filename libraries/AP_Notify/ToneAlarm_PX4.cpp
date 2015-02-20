@@ -68,9 +68,9 @@ const ToneAlarm_PX4::Tone ToneAlarm_PX4::_tones[] {
 bool ToneAlarm_PX4::init()
 {
     // open the tone alarm device
-    _tonealarm_fd = open(TONEALARM_DEVICE_PATH, O_WRONLY);
+    _tonealarm_fd = open(TONEALARM0_DEVICE_PATH, O_WRONLY);
     if (_tonealarm_fd == -1) {
-        hal.console->printf("Unable to open " TONEALARM_DEVICE_PATH);
+        hal.console->printf("ToneAlarm_PX4: Unable to open " TONEALARM0_DEVICE_PATH);
         return false;
     }
     

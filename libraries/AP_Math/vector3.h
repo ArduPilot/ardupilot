@@ -53,7 +53,7 @@
 #include <math.h>
 #include <string.h>
 
-#if MATH_CHECK_INDEXES
+#if defined(MATH_CHECK_INDEXES) && (MATH_CHECK_INDEXES == 1)
 #include <assert.h>
 #endif
 
@@ -118,7 +118,7 @@ public:
     // allow a vector3 to be used as an array, 0 indexed
     T & operator[](uint8_t i) {
         T *_v = &x;
-#if MATH_CHECK_INDEXES
+#if defined(MATH_CHECK_INDEXES) && (MATH_CHECK_INDEXES == 1)
         assert(i >= 0 && i < 3);
 #endif
         return _v[i];
@@ -126,7 +126,7 @@ public:
 
     const T & operator[](uint8_t i) const {
         const T *_v = &x;
-#if MATH_CHECK_INDEXES
+#if defined(MATH_CHECK_INDEXES) && (MATH_CHECK_INDEXES == 1)
         assert(i >= 0 && i < 3);
 #endif
         return _v[i];

@@ -261,6 +261,7 @@ enum FlipState {
 #define DATA_MAVLINK_INT16              3
 #define DATA_MAVLINK_INT8               4
 #define DATA_AP_STATE                   7
+#define DATA_SYSTEM_TIME_SET            8
 #define DATA_INIT_SIMPLE_BEARING        9
 #define DATA_ARMED                      10
 #define DATA_DISARMED                   11

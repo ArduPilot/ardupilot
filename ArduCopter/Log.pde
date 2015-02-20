@@ -315,7 +315,7 @@ static void Log_Write_Control_Tuning()
         angle_boost         : attitude_control.angle_boost(),
         throttle_out        : g.rc_3.servo_out,
         desired_alt         : pos_control.get_alt_target() / 100.0f,
-        inav_alt            : current_loc.alt / 100.0f,
+        inav_alt            : inertial_nav.get_altitude() / 100.0f,
         baro_alt            : baro_alt,
         desired_sonar_alt   : (int16_t)target_sonar_alt,
         sonar_alt           : sonar_alt,
@@ -417,6 +417,7 @@ struct PACKED log_Data_Int16t {
 };
 
 // Write an int16_t data packet
+UNUSED_FUNCTION
 static void Log_Write_Data(uint8_t id, int16_t value)
 {
     if (should_log(MASK_LOG_ANY)) {
@@ -436,6 +437,7 @@ struct PACKED log_Data_UInt16t {
 };
 
 // Write an uint16_t data packet
+UNUSED_FUNCTION 
 static void Log_Write_Data(uint8_t id, uint16_t value)
 {
     if (should_log(MASK_LOG_ANY)) {
@@ -493,6 +495,7 @@ struct PACKED log_Data_Float {
 };
 
 // Write a float data packet
+UNUSED_FUNCTION
 static void Log_Write_Data(uint8_t id, float value)
 {
     if (should_log(MASK_LOG_ANY)) {
@@ -611,7 +614,6 @@ static void start_logging()
 #else // LOGGING_ENABLED
 
 static void Log_Write_Startup() {}
-static void Log_Write_Mode(uint8_t mode) {}
 #if AUTOTUNE_ENABLED == ENABLED
 static void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float rate_min, float rate_max, float new_gain_rp, float new_gain_rd, float new_gain_sp) {}
 static void Log_Write_AutoTuneDetails(int16_t angle_cd, float rate_cds) {}

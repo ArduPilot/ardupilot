@@ -15,7 +15,7 @@
 #include "../AP_BattMonitor/AP_BattMonitor.h"
 #include <stdint.h>
 #include <MAVLink_routing.h>
-#include <AP_SerialManager.h>
+#include "../AP_SerialManager/AP_SerialManager.h"
 #include "../AP_Mount/AP_Mount.h"
 
 //  GCS Message ID's
@@ -133,6 +133,7 @@ public:
 #if AP_AHRS_NAVEKF_AVAILABLE
     void send_opticalflow(AP_AHRS_NavEKF &ahrs, const OpticalFlow &optflow);
 #endif
+    void send_autopilot_version(void) const;
 
     // return a bitmap of active channels. Used by libraries to loop
     // over active channels to send to all active channels    
@@ -185,10 +186,8 @@ private:
     mavlink_channel_t           chan;
     uint16_t                    packet_drops;
 
-#if CLI_ENABLED == ENABLED
     // this allows us to detect the user wanting the CLI to start
     uint8_t        crlf_count;
-#endif
 
     // waypoints
     uint16_t        waypoint_request_i; // request index

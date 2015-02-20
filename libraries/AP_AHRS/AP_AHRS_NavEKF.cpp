@@ -168,7 +168,11 @@ void AP_AHRS_NavEKF::reset_attitude(const float &_roll, const float &_pitch, con
 // dead-reckoning support
 bool AP_AHRS_NavEKF::get_position(struct Location &loc) const
 {
-    if (using_EKF() && EKF.getLLH(loc)) {
+    Vector3f ned_pos;
+    if (using_EKF() && EKF.getLLH(loc) && EKF.getPosNED(ned_pos)) {
+        // fixup altitude using relative position from AHRS home, not
+        // EKF origin
+        loc.alt = get_home().alt - ned_pos.z*100;
         return true;
     }
     return AP_AHRS_DCM::get_position(loc);

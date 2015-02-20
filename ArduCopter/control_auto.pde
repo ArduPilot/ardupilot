@@ -89,13 +89,13 @@ static void auto_run()
 }
 
 // auto_takeoff_start - initialises waypoint controller to implement take-off
-static void auto_takeoff_start(float final_alt)
+static void auto_takeoff_start(float final_alt_above_home)
 {
     auto_mode = Auto_TakeOff;
 
     // initialise wpnav destination
     Vector3f target_pos = inertial_nav.get_position();
-    target_pos.z = final_alt;
+    target_pos.z = pv_alt_above_origin(final_alt_above_home);
     wp_nav.set_wp_destination(target_pos);
 
     // initialise yaw

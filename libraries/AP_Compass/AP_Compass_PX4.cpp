@@ -43,9 +43,9 @@ extern const AP_HAL::HAL& hal;
 
 bool AP_Compass_PX4::init(void)
 {
-	_mag_fd[0] = open(MAG_DEVICE_PATH, O_RDONLY);
-	_mag_fd[1] = open(MAG_DEVICE_PATH "1", O_RDONLY);
-	_mag_fd[2] = open(MAG_DEVICE_PATH "2", O_RDONLY);
+	_mag_fd[0] = open(MAG_BASE_DEVICE_PATH"0", O_RDONLY);
+	_mag_fd[1] = open(MAG_BASE_DEVICE_PATH"1", O_RDONLY);
+	_mag_fd[2] = open(MAG_BASE_DEVICE_PATH"2", O_RDONLY);
 
     _num_instances = 0;
     for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
@@ -54,7 +54,7 @@ bool AP_Compass_PX4::init(void)
         }
     }    
 	if (_num_instances == 0) {
-        hal.console->printf("Unable to open " MAG_DEVICE_PATH "\n");
+        hal.console->printf("Unable to open " MAG_BASE_DEVICE_PATH"0" "\n");
         return false;
 	}
 

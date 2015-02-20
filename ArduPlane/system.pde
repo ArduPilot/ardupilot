@@ -147,6 +147,7 @@ static void init_ardupilot()
             gcs[i].reset_cli_timeout();
         }
     }
+    arming.set_logging_available(DataFlash.CardInserted());
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
@@ -507,6 +508,7 @@ static void startup_INS_ground(bool do_accel_init)
     
     // set INS to HIL mode
     ins.set_hil_mode();
+    barometer.set_hil_mode();
 #endif
 
     AP_InertialSensor::Start_style style;
@@ -667,7 +669,7 @@ static bool should_log(uint32_t mask)
     if (!(mask & g.log_bitmask) || in_mavlink_delay) {
         return false;
     }
-    bool ret = ahrs.get_armed() || (g.log_bitmask & MASK_LOG_WHEN_DISARMED) != 0;
+    bool ret = hal.util->get_soft_armed() || (g.log_bitmask & MASK_LOG_WHEN_DISARMED) != 0;
     if (ret && !DataFlash.logging_started() && !in_log_download) {
         // we have to set in_mavlink_delay to prevent logging while
         // writing headers

@@ -23,7 +23,7 @@ extern bool _vrbrain_thread_should_exit;
 /*
   constructor
  */
-VRBRAINUtil::VRBRAINUtil(void)
+VRBRAINUtil::VRBRAINUtil(void) : Util()
 {
     _safety_handle = orb_subscribe(ORB_ID(safety));
 }

@@ -121,6 +121,9 @@ public:
     // return number of registered sensors
     uint8_t num_instances(void) const { return _num_sensors; }
 
+    // enable HIL mode
+    void set_hil_mode(void) { _hil_mode = true; }
+
 private:
     // how many drivers do we have?
     uint8_t _num_drivers;
@@ -150,6 +153,7 @@ private:
     float                               _external_temperature;
     uint32_t                            _last_external_temperature_ms;
     DerivativeFilterFloat_Size7         _climb_rate_filter;
+    bool                                _hil_mode:1;
 
     void SimpleAtmosphere(const float alt, float &sigma, float &delta, float &theta);
 };

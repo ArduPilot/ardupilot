@@ -44,6 +44,10 @@ const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 AP_InertialSensor ins;
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+AP_ADC_ADS7844 apm1_adc;
+#endif
+
 void setup(void)
 {
     hal.console->println("AP_InertialSensor startup...");

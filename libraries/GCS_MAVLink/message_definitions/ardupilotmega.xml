@@ -479,8 +479,14 @@
       <field type="float" name="v4">test variable4</field>
     </message>
 
+    <message name="AUTOPILOT_VERSION_REQUEST" id="183">
+        <description>Request the autopilot version from the system/component.</description>
+        <field type="uint8_t" name="target_system">System ID</field>
+        <field type="uint8_t" name="target_component">Component ID</field>
+    </message>
+
     <message name="GIMBAL_REPORT" id="184">
-      <description>Report from MAVLink enabled gimbal to vehicle</description>
+      <description>Report from MAVLink enabled gimbal to vehicle. The deltas are in gimbal sensor frame. Joint measurements assume a 312 ordering (azimuth, roll, pitch).</description>
       <field type="uint8_t" name="target_system">System ID</field>
       <field type="uint8_t" name="target_component">Component ID</field>
       <field type="float" name="delta_time">Time since last update (seconds)</field>
@@ -496,7 +502,7 @@
     </message>
 
     <message name="GIMBAL_CONTROL" id="185">
-      <description>Control packet from vehicle to MAVLink enabled gimbal</description>
+      <description>Control packet from vehicle to MAVLink enabled gimbal. All values in gimbal sensor frame</description>
       <field type="uint8_t" name="target_system">System ID</field>
       <field type="uint8_t" name="target_component">Component ID</field>
       <field type="float" name="demanded_rate_x">Demanded angular rate X, radians/s</field>

@@ -111,7 +111,7 @@ static bool start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_DO_SET_HOME:             // 179
-        // unsupported as mission command
+        do_set_home(cmd);
         break;
 
     case MAV_CMD_DO_SET_SERVO:
@@ -345,7 +345,7 @@ static void do_land(const AP_Mission::Mission_Command& cmd)
 
         // calculate and set desired location above landing target
         Vector3f pos = pv_location_to_vector(cmd.content.location);
-        pos.z = current_loc.alt;
+        pos.z = inertial_nav.get_altitude();
         auto_wp_start(pos);
     }else{
         // set landing state
@@ -864,12 +864,12 @@ static void do_change_speed(const AP_Mission::Mission_Command& cmd)
 
 static void do_set_home(const AP_Mission::Mission_Command& cmd)
 {
-    if(cmd.p1 == 1) {
-        init_home();
+    if(cmd.p1 == 1 || (cmd.content.location.lat == 0 && cmd.content.location.lng == 0 && cmd.content.location.alt == 0)) {
+        set_home_to_current_location();
     } else {
-        Location loc = cmd.content.location;
-        ahrs.set_home(loc);
-        set_home_is_set(true);
+        if (!far_from_EKF_origin(cmd.content.location)) {
+            set_home(cmd.content.location);
+        }
     }
 }
 

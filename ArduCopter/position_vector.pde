@@ -11,7 +11,8 @@
 Vector3f pv_location_to_vector(const Location& loc)
 {
     const struct Location &origin = inertial_nav.get_origin();
-    Vector3f tmp((loc.lat-origin.lat) * LATLON_TO_CM, (loc.lng-origin.lng) * LATLON_TO_CM * scaleLongDown, loc.alt);
+    float alt_above_origin = loc.alt + (ahrs.get_home().alt - origin.alt);  // convert alt-relative-to-home to alt-relative-to-origin
+    Vector3f tmp((loc.lat-origin.lat) * LATLON_TO_CM, (loc.lng-origin.lng) * LATLON_TO_CM * scaleLongDown, alt_above_origin);
     return tmp;
 }
 
@@ -33,6 +34,20 @@ Vector3f pv_location_to_vector_with_default(const Location& loc, const Vector3f&
     }
 
     return pos;
+}
+
+// pv_alt_above_origin - convert altitude above home to altitude above EKF origin
+float pv_alt_above_origin(float alt_above_home_cm)
+{
+    const struct Location &origin = inertial_nav.get_origin();
+    return alt_above_home_cm + (ahrs.get_home().alt - origin.alt);
+}
+
+// pv_alt_above_home - convert altitude above EKF origin to altitude above home
+float pv_alt_above_home(float alt_above_origin_cm)
+{
+    const struct Location &origin = inertial_nav.get_origin();
+    return alt_above_origin_cm + (origin.alt - ahrs.get_home().alt);
 }
 
 // pv_get_bearing_cd - return bearing in centi-degrees between two positions

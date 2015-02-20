@@ -112,6 +112,8 @@ int LinuxSPIUARTDriver::_write_fd(const uint8_t *buf, uint16_t size)
 
     _spi->transaction(buf, _buffer, size);
 
+    sem_give();
+
     BUF_ADVANCEHEAD(_writebuf, size);
 
     uint16_t ret = size;
@@ -128,7 +130,6 @@ int LinuxSPIUARTDriver::_write_fd(const uint8_t *buf, uint16_t size)
     space = BUF_SPACE(_readbuf);
 
     if (space == 0) {
-        sem_give();
         return ret;
     }
 
@@ -141,7 +142,6 @@ int LinuxSPIUARTDriver::_write_fd(const uint8_t *buf, uint16_t size)
         assert(_readbuf_tail+size <= _readbuf_size);
         memcpy(&_readbuf[_readbuf_tail], buffer, size);
         BUF_ADVANCETAIL(_readbuf, size);
-        sem_give();
         return ret;
     }
 
@@ -159,13 +159,12 @@ int LinuxSPIUARTDriver::_write_fd(const uint8_t *buf, uint16_t size)
         BUF_ADVANCETAIL(_readbuf, n);
     }
 
-    sem_give();
 
     return ret;
     
 }
 
-static const uint8_t ff_stub[3000] = {0xff};
+static const uint8_t ff_stub[300] = {0xff};
 int LinuxSPIUARTDriver::_read_fd(uint8_t *buf, uint16_t n)
 {
     if (_external) {
@@ -176,11 +175,22 @@ int LinuxSPIUARTDriver::_read_fd(uint8_t *buf, uint16_t n)
         return 0;
     }
 
+    /* Make SPI transactions shorter. It can save SPI bus from keeping too
+     * long. It's essential for NavIO as MPU9250 is on the same bus and 
+     * doesn't like to be waiting. Making transactions more frequent but shorter
+     * is a win.
+     */  
+
+    if (n > 100) {
+        n = 100;
+    }
+
     _spi->transaction(ff_stub, buf, n);
+
+    sem_give();
 
     BUF_ADVANCETAIL(_readbuf, n);
 
-    sem_give();
     return n;
 }
 
@@ -191,7 +201,7 @@ void LinuxSPIUARTDriver::_timer_tick(void)
         return;
     }
     /* lower the update rate */
-    if (hal.scheduler->micros() - _last_update_timestamp < 50000) {
+    if (hal.scheduler->micros() - _last_update_timestamp < 10000) {
         return;
     }
 

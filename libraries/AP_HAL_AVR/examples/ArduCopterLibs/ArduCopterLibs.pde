@@ -40,6 +40,7 @@
 #include <StorageManager.h>
 #include <AP_Terrain.h>
 #include <memcheck.h>
+#include <AP_NavEKF.h>
 #include <AP_Nav_Common.h>
 #include <AP_BattMonitor.h>
 

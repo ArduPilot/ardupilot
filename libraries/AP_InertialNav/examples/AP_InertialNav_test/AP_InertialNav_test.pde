@@ -31,15 +31,18 @@
 #include <AP_Terrain.h>
 #include <AP_Notify.h>
 #include <AP_InertialNav.h>
+#include <AP_NavEKF.h>
 #include <AP_Nav_Common.h>
 #include <AP_BattMonitor.h>     // battery monitor library
+#include <AP_SerialManager.h>   // Serial manager library
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 AP_InertialSensor ins;
+static AP_SerialManager serial_manager;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-AP_ADC_ADS7844 adc;
+AP_ADC_ADS7844 apm1_adc;
 #endif
 
 AP_Baro baro;
@@ -59,7 +62,8 @@ void setup(void)
 {
     hal.console->println_P(PSTR("AP_InertialNav test startup..."));
 
-    gps.init(NULL);
+    serial_manager.init();
+    gps.init(NULL, serial_manager);
 
     ins.init(AP_InertialSensor::COLD_START, 
 			 AP_InertialSensor::RATE_100HZ);

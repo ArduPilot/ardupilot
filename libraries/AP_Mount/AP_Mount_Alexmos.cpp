@@ -77,7 +77,7 @@ void AP_Mount_Alexmos::set_mode(enum MAV_MOUNT_MODE mode)
 void AP_Mount_Alexmos::status_msg(mavlink_channel_t chan)
 {
     get_angles();
-    mavlink_msg_mount_status_send(chan, 0, 0, _current_angle.x*100, _current_angle.y*100, _current_angle.z*100);
+    mavlink_msg_mount_status_send(chan, 0, 0, _current_angle.y*100, _current_angle.x*100, _current_angle.z*100);
 }
 
 /*

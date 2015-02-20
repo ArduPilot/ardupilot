@@ -52,6 +52,13 @@ public:
                   AC_P& p_alt_pos, AC_P& p_alt_rate, AC_PID& pid_alt_accel,
                   AC_P& p_pos_xy, AC_PID& pid_rate_lat, AC_PID& pid_rate_lon);
 
+    // xy_mode - specifies behavior of xy position controller
+    enum xy_mode {
+        XY_MODE_POS_ONLY = 0,           // position correction only (i.e. no velocity feed-forward)
+        XY_MODE_POS_LIMITED_AND_VEL_FF, // for loiter - rate-limiting the position correction, velocity feed-forward
+        XY_MODE_POS_AND_VEL_FF          // for velocity controller - unlimied position correction, velocity feed-forward
+    };
+
     ///
     /// initialisation functions
     ///
@@ -203,7 +210,7 @@ public:
 
     /// update_xy_controller - run the horizontal position controller - should be called at 100hz or higher
     ///     when use_desired_velocity is true the desired velocity (i.e. feed forward) is incorporated at the pos_to_rate step
-    void update_xy_controller(bool use_desired_velocity, float ekfNavVelGainScaler);
+    void update_xy_controller(xy_mode mode, float ekfNavVelGainScaler);
 
     /// set_target_to_stopping_point_xy - sets horizontal target to reasonable stopping position in cm from home
     void set_target_to_stopping_point_xy();
@@ -307,7 +314,7 @@ private:
     ///     when use_desired_rate is set to true:
     ///         desired velocity (_vel_desired) is combined into final target velocity and
     ///         velocity due to position error is reduce to a maximum of 1m/s
-    void pos_to_rate_xy(bool use_desired_rate, float dt, float ekfNavVelGainScaler);
+    void pos_to_rate_xy(xy_mode mode, float dt, float ekfNavVelGainScaler);
 
     /// rate_to_accel_xy - horizontal desired rate to desired acceleration
     ///    converts desired velocities in lat/lon directions to accelerations in lat/lon frame

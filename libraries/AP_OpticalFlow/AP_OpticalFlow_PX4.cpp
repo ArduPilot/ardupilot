@@ -41,7 +41,7 @@ OpticalFlow_backend(_frontend)
 
 void AP_OpticalFlow_PX4::init(void)
 {
-    _fd = open(PX4FLOW_DEVICE_PATH, O_RDONLY);
+    _fd = open(PX4FLOW0_DEVICE_PATH, O_RDONLY);
 
     // check for failure to open device
     if (_fd == -1) {

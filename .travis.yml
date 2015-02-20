@@ -1,7 +1,7 @@
 language: cpp
 
 before_install:
-  -  APMDIR=$(pwd) && pushd .. && $APMDIR/Tools/scripts/install-prereqs-ubuntu.sh -y && . ~/.profile && popd
+  -  APMDIR=$(pwd) && pushd .. && $APMDIR/Tools/scripts/install-travis-env.sh -y && . ~/.profile && popd
 
 script: 
   - Tools/scripts/build_all_travis.sh

@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduPlane V3.2.2alpha1"
+#define THISFIRMWARE "ArduPlane V3.3.0alpha1"
 /*
    Lead developer: Andrew Tridgell
  
@@ -672,7 +672,7 @@ static int16_t condition_rate;
 static const struct Location &home = ahrs.get_home();
 
 // Flag for if we have g_gps lock and have set the home location in AHRS
-static bool home_is_set;
+static enum HomeState home_is_set;
 // The location of the previous waypoint.  Used for track following and altitude ramp calculations
 static Location prev_WP_loc;
 // The plane's current location
@@ -863,7 +863,7 @@ void loop()
 // update AHRS system
 static void ahrs_update()
 {
-    ahrs.set_armed(arming.is_armed() && 
+    hal.util->set_soft_armed(arming.is_armed() &&
                    hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
 
 #if HIL_MODE != HIL_MODE_DISABLED
@@ -1157,7 +1157,7 @@ static void update_GPS_10Hz(void)
         }
 #endif        
 
-        if (!ahrs.get_armed()) {
+        if (!hal.util->get_soft_armed()) {
             update_home();
         }
 

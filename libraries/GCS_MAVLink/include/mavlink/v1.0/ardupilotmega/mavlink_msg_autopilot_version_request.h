@@ -1,6 +1,6 @@
 // MESSAGE AUTOPILOT_VERSION_REQUEST PACKING
 
-#define MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST 182
+#define MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST 183
 
 typedef struct __mavlink_autopilot_version_request_t
 {
@@ -9,10 +9,10 @@ typedef struct __mavlink_autopilot_version_request_t
 } mavlink_autopilot_version_request_t;
 
 #define MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST_LEN 2
-#define MAVLINK_MSG_ID_182_LEN 2
+#define MAVLINK_MSG_ID_183_LEN 2
 
 #define MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST_CRC 85
-#define MAVLINK_MSG_ID_182_CRC 85
+#define MAVLINK_MSG_ID_183_CRC 85
 
 
 
