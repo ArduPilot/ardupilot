@@ -75,6 +75,17 @@ private:
     Vector3f _delta_velocity_accumulator[INS_MAX_INSTANCES];
     Vector3f _last_delAng[INS_MAX_INSTANCES];
     Vector3f _last_gyro[INS_MAX_INSTANCES];
+
+#ifdef AP_INERTIALSENSOR_PX4_DEBUG
+    uint32_t _gyro_meas_count[INS_MAX_INSTANCES];
+    uint32_t _accel_meas_count[INS_MAX_INSTANCES];
+
+    uint32_t _gyro_meas_count_start_us[INS_MAX_INSTANCES];
+    uint32_t _accel_meas_count_start_us[INS_MAX_INSTANCES];
+
+    float _gyro_dt_max[INS_MAX_INSTANCES];
+    float _accel_dt_max[INS_MAX_INSTANCES];
+#endif // AP_INERTIALSENSOR_PX4_DEBUG
 };
 #endif // CONFIG_HAL_BOARD
 #endif // __AP_INERTIAL_SENSOR_PX4_H__

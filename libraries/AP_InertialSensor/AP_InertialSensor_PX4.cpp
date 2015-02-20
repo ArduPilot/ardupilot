@@ -243,6 +243,22 @@ void AP_InertialSensor_PX4::_new_accel_sample(uint8_t i, accel_report &accel_rep
 
     // report error count
     _set_accel_error_count(frontend_instance, accel_report.error_count);
+
+#ifdef AP_INERTIALSENSOR_PX4_DEBUG
+    _accel_dt_max[i] = max(_accel_dt_max[i],dt);
+
+    _accel_meas_count[i] ++;
+
+    if(_accel_meas_count[i] >= 10000) {
+        uint32_t tnow = hal.scheduler->micros();
+
+        ::printf("a%d %.2f Hz max %.8f s\n", frontend_instance, 10000.0/((tnow-_accel_meas_count_start_us[i])*1.0e-6f),_accel_dt_max[i]);
+
+        _accel_meas_count_start_us[i] = tnow;
+        _accel_meas_count[i] = 0;
+        _accel_dt_max[i] = 0;
+    }
+#endif // AP_INERTIALSENSOR_PX4_DEBUG
 }
 
 void AP_InertialSensor_PX4::_new_gyro_sample(uint8_t i, gyro_report &gyro_report)
@@ -285,6 +301,21 @@ void AP_InertialSensor_PX4::_new_gyro_sample(uint8_t i, gyro_report &gyro_report
 
     // report error count
     _set_gyro_error_count(_gyro_instance[i], gyro_report.error_count);
+#ifdef AP_INERTIALSENSOR_PX4_DEBUG
+    _gyro_dt_max[i] = max(_gyro_dt_max[i],dt);
+
+    _gyro_meas_count[i] ++;
+
+    if(_gyro_meas_count[i] >= 10000) {
+        uint32_t tnow = hal.scheduler->micros();
+
+        ::printf("g%d %.2f Hz max %.8f s\n", frontend_instance, 10000.0f/((tnow-_gyro_meas_count_start_us[i])*1.0e-6f), _gyro_dt_max[i]);
+
+        _gyro_meas_count_start_us[i] = tnow;
+        _gyro_meas_count[i] = 0;
+        _gyro_dt_max[i] = 0;
+    }
+#endif // AP_INERTIALSENSOR_PX4_DEBUG
 }
 
 void AP_InertialSensor_PX4::_get_sample()
