@@ -90,6 +90,7 @@ public:
     AP_Float wind_speed;
     AP_Float wind_direction;
     AP_Float wind_turbulance;
+    AP_Float gps_drift_alt;
     
 	void simstate_send(mavlink_channel_t chan);
 
