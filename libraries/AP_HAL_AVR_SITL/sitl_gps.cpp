@@ -759,6 +759,12 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
 	d.latitude = latitude + glitch_offsets.x;
 	d.longitude = longitude + glitch_offsets.y;
 	d.altitude = altitude + glitch_offsets.z;
+
+    if (_sitl->gps_drift_alt > 0) {
+        // slow altitude drift
+        d.altitude += _sitl->gps_drift_alt*sinf(hal.scheduler->millis()*0.001*0.02);
+    }
+    
 	d.speedN = speedN;
 	d.speedE = speedE;
 	d.speedD = speedD;
