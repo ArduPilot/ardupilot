@@ -117,7 +117,7 @@ void AP_Mount_Servo::check_servo_map()
 // status_msg - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
 void AP_Mount_Servo::status_msg(mavlink_channel_t chan)
 {
-    mavlink_msg_mount_status_send(chan, 0, 0, _angle_bf_output_deg.x*100, _angle_bf_output_deg.y*100, _angle_bf_output_deg.z*100);
+    mavlink_msg_mount_status_send(chan, 0, 0, _angle_bf_output_deg.y*100, _angle_bf_output_deg.x*100, _angle_bf_output_deg.z*100);
 }
 
 // stabilize - stabilizes the mount relative to the Earth's frame

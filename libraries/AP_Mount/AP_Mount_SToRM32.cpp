@@ -110,7 +110,7 @@ void AP_Mount_SToRM32::set_mode(enum MAV_MOUNT_MODE mode)
 void AP_Mount_SToRM32::status_msg(mavlink_channel_t chan)
 {
     // return target angles as gimbal's actual attitude.  To-Do: retrieve actual gimbal attitude and send these instead
-    mavlink_msg_mount_status_send(chan, 0, 0, ToDeg(_angle_ef_target_rad.x)*100, ToDeg(_angle_ef_target_rad.y)*100, ToDeg(_angle_ef_target_rad.z)*100);
+    mavlink_msg_mount_status_send(chan, 0, 0, ToDeg(_angle_ef_target_rad.y)*100, ToDeg(_angle_ef_target_rad.x)*100, ToDeg(_angle_ef_target_rad.z)*100);
 }
 
 // send_do_mount_control - send a COMMAND_LONG containing a do_mount_control message
