@@ -160,18 +160,6 @@ void AP_MotorsMatrix::output_armed()
     _rc_throttle.calc_pwm();
     _rc_yaw.calc_pwm();
 
-    if(_batt_voltage_max > 0 && _batt_voltage_min < _batt_voltage_max) {
-        float batt_voltage = _batt_voltage + _batt_current * _batt_resistance;
-        batt_voltage = constrain_float(batt_voltage, _batt_voltage_min, _batt_voltage_max);
-        // filter at 0.5 Hz
-        // todo: replace with filter object
-        _batt_voltage_filt = _batt_voltage_filt  + 0.007792f*(batt_voltage/_batt_voltage_max-_batt_voltage_filt);         // ratio of current battery voltage to maximum battery voltage
-        _lift_max = _batt_voltage_filt*(1-_thrust_curve_expo) + _thrust_curve_expo*_batt_voltage_filt*_batt_voltage_filt;
-    } else {
-        _batt_voltage_filt = 1;
-        _lift_max = 1;
-    }
-
     // if we are not sending a throttle output, we cut the motors
     if (_rc_throttle.servo_out == 0) {
         // range check spin_when_armed

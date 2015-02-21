@@ -178,6 +178,9 @@ protected:
     // apply_thrust_curve_and_volt_scaling - thrust curve and voltage adjusted pwm value (i.e. 1000 ~ 2000)
     int16_t             apply_thrust_curve_and_volt_scaling(int16_t pwm_out, int16_t pwm_min, int16_t pwm_max) const;
 
+    // update_lift_max_from_batt_voltage - used for voltage compensation
+    void                update_lift_max_from_batt_voltage();
+
     // flag bitmask
     struct AP_Motors_flags {
         uint8_t armed               : 1;    // 1 if the motors are armed, 0 if disarmed

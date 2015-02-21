@@ -171,6 +171,9 @@ void AP_Motors::output()
     // update max throttle
     update_max_throttle();
 
+    // calc filtered battery voltage and lift_max
+    update_lift_max_from_batt_voltage();
+
     // output to motors
     if (_flags.armed ) {
         output_armed();
@@ -225,4 +228,27 @@ int16_t AP_Motors::apply_thrust_curve_and_volt_scaling(int16_t pwm_out, int16_t 
         temp_out = ((_thrust_curve_expo-1.0f) + safe_sqrt((1.0f-_thrust_curve_expo)*(1.0f-_thrust_curve_expo) + 4.0f*_thrust_curve_expo*_lift_max*temp_out))/(2.0f*_thrust_curve_expo*_batt_voltage_filt);
     }
     return (temp_out*(_thrust_curve_max*pwm_max-pwm_min)+pwm_min);
+}
+
+// update_lift_max from battery voltage - used for voltage compensation
+void AP_Motors::update_lift_max_from_batt_voltage()
+{
+    // sanity check battery_voltage_min is not too small
+    _batt_voltage_min = max(_batt_voltage_min, _batt_voltage_max * 0.6f);
+
+    // if disabled or misconfigured exit immediately
+    if(_batt_voltage_max <= 0 && _batt_voltage_min >= _batt_voltage_max) {
+        _batt_voltage_filt = 1.0f;
+        _lift_max = 1.0f;
+        return;
+    }
+
+    // add current based voltage sag to battery voltage
+    float batt_voltage = _batt_voltage + _batt_current * _batt_resistance;
+    batt_voltage = constrain_float(batt_voltage, _batt_voltage_min, _batt_voltage_max);
+
+    // filter at 0.5 Hz
+    // todo: replace with filter object
+    _batt_voltage_filt = _batt_voltage_filt  + 0.007792f*(batt_voltage/_batt_voltage_max-_batt_voltage_filt);         // ratio of current battery voltage to maximum battery voltage
+    _lift_max = _batt_voltage_filt*(1-_thrust_curve_expo) + _thrust_curve_expo*_batt_voltage_filt*_batt_voltage_filt;
 }
