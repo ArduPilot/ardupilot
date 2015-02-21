@@ -29,9 +29,11 @@ class AP_RangeFinder_Backend;
 class RangeFinder
 {
 public:
+    friend class AP_RangeFinder_Backend;
     RangeFinder(void) :
     primary_instance(0),
-    num_instances(0)
+    num_instances(0),
+    estimated_terrain_height(0)
     {
         AP_Param::setup_object_defaults(this, var_info);
     }
@@ -42,7 +44,8 @@ public:
         RangeFinder_TYPE_ANALOG = 1,
         RangeFinder_TYPE_MBI2C  = 2,
         RangeFinder_TYPE_PLI2C  = 3,
-        RangeFinder_TYPE_PX4    = 4
+        RangeFinder_TYPE_PX4    = 4,
+        RangeFinder_TYPE_PX4_PWM= 5
     };
 
     enum RangeFinder_Function {
@@ -72,6 +75,7 @@ public:
     AP_Int8  _function[RANGEFINDER_MAX_INSTANCES];
     AP_Int16 _min_distance_cm[RANGEFINDER_MAX_INSTANCES];
     AP_Int16 _max_distance_cm[RANGEFINDER_MAX_INSTANCES];
+    AP_Int16 _powersave_range;
 
     static const struct AP_Param::GroupInfo var_info[];
     
@@ -123,12 +127,21 @@ public:
     bool healthy() const {
         return healthy(primary_instance);
     }
+
+    /*
+      set an externally estimated terrain height. Used to enable power
+      saving (where available) at high altitudes.
+     */
+    void set_estimated_terrain_height(float height) {
+        estimated_terrain_height = height;
+    }
     
 private:
     RangeFinder_State state[RANGEFINDER_MAX_INSTANCES];
     AP_RangeFinder_Backend *drivers[RANGEFINDER_MAX_INSTANCES];
     uint8_t primary_instance:2;
     uint8_t num_instances:2;
+    float estimated_terrain_height;
 
     void detect_instance(uint8_t instance);
     void update_instance(uint8_t instance);  

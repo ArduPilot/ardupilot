@@ -33,6 +33,11 @@ public:
 
     // update the state structure
     virtual void update() = 0;
+
+    // return true if we are beyond the power saving range
+    bool out_of_range(void) const {
+        return ranger._powersave_range > 0 && ranger.estimated_terrain_height > ranger._powersave_range;
+    }
     
 protected:
     RangeFinder &ranger;
