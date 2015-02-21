@@ -160,7 +160,7 @@ void AP_MotorsMatrix::output_armed()
     _rc_throttle.calc_pwm();
     _rc_yaw.calc_pwm();
 
-    if(_throttle_curve_enabled && _batt_voltage_max > 0 && _batt_voltage_min < _batt_voltage_max) {
+    if(_batt_voltage_max > 0 && _batt_voltage_min < _batt_voltage_max) {
         float batt_voltage = _batt_voltage + _batt_current * _batt_resistance;
         batt_voltage = constrain_float(batt_voltage, _batt_voltage_min, _batt_voltage_max);
         // filter at 0.5 Hz
