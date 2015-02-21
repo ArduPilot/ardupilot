@@ -540,7 +540,6 @@ private:
     state_elements statesAtHgtTime; // States at the effective time of hgtMea measurement
     Vector3f innovMag;              // innovation output from fusion of X,Y,Z compass measurements
     Vector3f varInnovMag;           // innovation variance output from fusion of X,Y,Z compass measurements
-    bool fuseMagData;               // boolean true when magnetometer data is to be fused
     Vector3f magData;               // magnetometer flux readings in X,Y,Z body axes
     state_elements statesAtMagMeasTime;   // filter states at the effective time of compass measurements
     ftype innovVtas;                // innovation output from fusion of airspeed measurements
