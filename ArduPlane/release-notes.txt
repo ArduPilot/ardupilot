@@ -1,3 +1,30 @@
+Release 3.2.3, February 21st 2015
+---------------------------------
+
+The ardupilot development team has released version 3.2.3 of
+APM:Plane. This is a bugfix release for an altitude drift bug found in
+the 3.2.2 release.
+
+The bug showed up as a significant drift in the reported relative
+altitude on the ground station when the aircraft was disarmed with the
+EKF enabled. The root cause of the bug was a disconnect between the
+EKF origin and the planes origin for relative altitudes. It only
+happened when the GPS altitude varied significantly while disarmed.
+
+While the bug only happened when disarmed, it could leave the relative
+altitude badly off after the aircraft was armed, so could affect
+flight (offsetting the flight altitude by the amount of GPS altitude
+drift at the time the aircraft was armed). That makes it an important
+enough bug to do a new release.
+
+Other changes include:
+
+  - fixed TKOFF_THR_DELAY to be able to be up to 127 (for 12.7
+    seconds)
+  - fixed INS_PRODUCT_ID (it was being reported as zero)
+
+
+
 Release 3.2.2, February 10th 2015
 ---------------------------------
 
