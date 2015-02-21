@@ -556,7 +556,6 @@ private:
     uint32_t BETAmsecPrev;          // time stamp of last synthetic sideslip fusion step
     uint32_t MAGmsecPrev;           // time stamp of last compass fusion step
     uint32_t HGTmsecPrev;           // time stamp of last height measurement fusion step
-    bool inhibitLoadLeveling;       // boolean that turns off delay of fusion to level processor loading
     bool constPosMode;              // true when fusing a constant position to maintain attitude reference for planned operation without GPS or optical flow data
     uint32_t lastMagUpdate;         // last time compass was updated
     Vector3f velDotNED;             // rate of change of velocity in NED frame

@@ -526,12 +526,6 @@ bool NavEKF::InitialiseFilterDynamic(void)
     dtIMU = constrain_float(_ahrs->get_ins().get_delta_time(),0.001f,1.0f);
     dtIMUinv = 1.0f / dtIMU;
 
-    // If we have a high rate update step of >100 Hz, then there may not be enough time to do all the fusion steps at once, so load levelling is used
-    if (dtIMU < 0.009f) {
-        inhibitLoadLeveling = false;
-    } else {
-        inhibitLoadLeveling = true;
-    }
     // set number of updates over which gps and baro measurements are applied to the velocity and position states
     gpsUpdateCountMaxInv = (dtIMU * 1000.0f)/float(msecGpsAvg);
     gpsUpdateCountMax = uint8_t(1.0f/gpsUpdateCountMaxInv);
@@ -594,13 +588,6 @@ bool NavEKF::InitialiseFilterBootstrap(void)
     // get initial time deltat between IMU measurements (sec)
     dtIMU = constrain_float(_ahrs->get_ins().get_delta_time(),0.001f,1.0f);
     dtIMUinv = 1.0f / dtIMU;
-
-    // If we have a high rate update step of >100 Hz, then there may not enough time to all the fusion steps at once, so load levelling is used
-    if (dtIMU < 0.009f) {
-        inhibitLoadLeveling = false;
-    } else {
-        inhibitLoadLeveling = true;
-    }
 
     // set number of updates over which gps and baro measurements are applied to the velocity and position states
     gpsUpdateCountMaxInv = (dtIMU * 1000.0f)/float(msecGpsAvg);
@@ -948,10 +935,6 @@ void NavEKF::SelectFlowFusion()
     gndOffsetValid = ((imuSampleTime_ms - gndHgtValidTime_ms) < 5000);
     // Perform tilt check
     bool tiltOK = (Tnb_flow.c.z > DCM33FlowMin);
-    // if we have waited too long, set a timeout flag which will force fusion to occur regardless of load spreading
-    bool flowFuseNow = ((imuSampleTime_ms - flowValidMeaTime_ms) >= flowIntervalMax_ms/2);
-    // check if fusion should be delayed to spread load. Setting fuseMeNow to true disables this load spreading feature.
-    bool delayFusion = ((covPredStep || magFusePerformed) && !(flowFuseNow || inhibitLoadLeveling));
 
     // if we don't have valid flow measurements and are relying on them, dead reckon using current velocity vector
     // If the flow measurements have been rejected for too long and we are relying on them, then reset the velocities to an estimate based on the flow and range data
@@ -1000,7 +983,7 @@ void NavEKF::SelectFlowFusion()
 
     // Fuse optical flow data into the main filter
     // if the filter is initialised, we have data to fuse and the vehicle is not excessively tilted, then perform optical flow fusion
-    if (flowDataValid && newDataFlow && tiltOK && !delayFusion && !constPosMode)
+    if (flowDataValid && newDataFlow && tiltOK && !constPosMode)
     {
         // reset state updates and counter used to spread fusion updates across several frames to reduce 10Hz pulsing
         memset(&flowIncrStateDelta[0], 0, sizeof(flowIncrStateDelta));
@@ -1041,20 +1024,16 @@ void NavEKF::SelectTasFusion()
         tasTimeout = true;
     }
 
-    // if the filter is initialised, wind states are not inhibited and we have data to fuse, then queue TAS fusion
-    tasDataWaiting = (statesInitialised && !inhibitWindStates && (tasDataWaiting || newDataTas));
-    // if we have waited too long, set a timeout flag which will force fusion to occur
-    bool timeout = ((imuSampleTime_ms - TASmsecPrev) >= TASmsecMax);
-    // we don't fuse airspeed measurements if magnetometer fusion has been performed in the same frame, unless timed out or the fuseMeNow option is selected
-    // this helps to spreasthe load associated with fusion of different measurements across multiple frames
-    // setting fuseMeNow to true disables this load spreading feature
-    if (tasDataWaiting && (!(covPredStep || magFusePerformed || flowFusePerformed) || timeout || inhibitLoadLeveling))
+    // if the filter is initialised, wind states are not inhibited and we have data to fuse, then perform TAS fusion
+    tasDataWaiting = (statesInitialised && !inhibitWindStates && newDataTas);
+    if (tasDataWaiting)
     {
         // ensure that the covariance prediction is up to date before fusing data
         if (!covPredStep) CovariancePrediction();
         FuseAirspeed();
         TASmsecPrev = imuSampleTime_ms;
         tasDataWaiting = false;
+        newDataTas = false;
     }
 }
 
@@ -1063,16 +1042,14 @@ void NavEKF::SelectTasFusion()
 // it requires a stable wind for best results and should not be used for aerobatic flight with manoeuvres that induce large sidslip angles (eg knife-edge, spins, etc)
 void NavEKF::SelectBetaFusion()
 {
-    // set to true if fusion is locked out due to magnetometer fusion on the same time step (done for load levelling)
-    bool f_lockedOut = (magFusePerformed && !inhibitLoadLeveling);
     // set true when the fusion time interval has triggered
     bool f_timeTrigger = ((imuSampleTime_ms - BETAmsecPrev) >= msecBetaAvg);
     // set true when use of synthetic sideslip fusion is necessary because we have limited sensor data or are dead reckoning position
     bool f_required = !(use_compass() && useAirspeed() && posHealth);
     // set true when sideslip fusion is feasible (requires zero sideslip assumption to be valid and use of wind states)
     bool f_feasible = (assume_zero_sideslip() && !inhibitWindStates);
-    // use synthetic sideslip fusion if feasible, required, enough time has lapsed since the last fusion and it is not locked out
-    if (f_feasible && f_required && f_timeTrigger && !f_lockedOut) {
+    // use synthetic sideslip fusion if feasible, required and enough time has lapsed since the last fusion
+    if (f_feasible && f_required && f_timeTrigger) {
         // ensure that the covariance prediction is up to date before fusing data
         if (!covPredStep) CovariancePrediction();
         FuseSideslip();
