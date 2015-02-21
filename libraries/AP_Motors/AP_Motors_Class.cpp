@@ -77,6 +77,13 @@ const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("YAW_HEADROOM", 6, AP_Motors, _yaw_headroom, AP_MOTORS_YAW_HEADROOM_DEFAULT),
 
+    // @Param: THR_LOW_CMP
+    // @DisplayName: Motor low throttle compensation
+    // @Description: Ratio controlling the max throttle output during competing requests of low throttle from the pilot (or autopilot) and higher throttle for attitude control
+    // @Values: 0.2:Favour Throttle Control, 0.5:Equal Weighting, 1:Favour Attitude Control
+    // @User: Advanced
+    AP_GROUPINFO("THR_LOW_CMP", 7, AP_Motors, _throttle_low_comp, AP_MOTORS_THR_LOW_CMP_DEFAULT),
+
     // @Param: THST_EXPO
     // @DisplayName: Thrust Curve Expo
     // @Description: Motor thrust curve exponent (from 0 for linear to 1.0 for second order curve)
