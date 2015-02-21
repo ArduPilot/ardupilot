@@ -361,6 +361,12 @@ then
     echo "Found px4flow sensor"
 fi
 
+# optional PWM input driver
+if pwm_input start
+then
+    echo "started pwm_input driver"
+fi
+
 echo "Trying PX4IO board"
 
 if mtd start /fs/mtd
