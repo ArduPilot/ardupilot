@@ -284,3 +284,13 @@ void AP_Motors::update_max_throttle()
         _flags.slow_start = false;
     }
 }
+
+// apply_thrust_curve_and_volt_scaling - returns throttle curve adjusted pwm value (i.e. 1000 ~ 2000)
+int16_t AP_Motors::apply_thrust_curve_and_volt_scaling(int16_t pwm_out, int16_t pwm_min, int16_t pwm_max) const
+{
+    float temp_out = ((float)(pwm_out-pwm_min))/((float)(pwm_max-pwm_min));
+    if (_thrust_curve_expo > 0.0f){
+        temp_out = ((_thrust_curve_expo-1.0f) + safe_sqrt((1.0f-_thrust_curve_expo)*(1.0f-_thrust_curve_expo) + 4.0f*_thrust_curve_expo*_lift_max*temp_out))/(2.0f*_thrust_curve_expo*_batt_voltage_filt);
+    }
+    return (temp_out*(_thrust_curve_max*pwm_max-pwm_min)+pwm_min);
+}

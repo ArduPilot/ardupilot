@@ -352,18 +352,13 @@ void AP_MotorsMatrix::output_armed()
             }
         }
 
-        // adjust for throttle curve
-        if (_throttle_curve_enabled) {
-            for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
-                if (motor_enabled[i]) {
-                    float temp_out = ((float)(motor_out[i]-out_min_pwm))/((float)(out_max_pwm-out_min_pwm));
-                    if (_thrust_curve_expo > 0.0f){
-                        temp_out = ((_thrust_curve_expo-1.0f) + safe_sqrt((1.0f-_thrust_curve_expo)*(1.0f-_thrust_curve_expo) + 4.0f*_thrust_curve_expo*_lift_max*temp_out))/(2.0f*_thrust_curve_expo*_batt_voltage_filt);
-                    }
-                    motor_out[i] = temp_out*(_thrust_curve_max*out_max_pwm-out_min_pwm)+out_min_pwm;
-                }
+        // apply thrust curve and voltage scaling
+        for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+            if (motor_enabled[i]) {
+                motor_out[i] = apply_thrust_curve_and_volt_scaling(motor_out[i], out_min_pwm, out_max_pwm);
             }
         }
+
         // clip motor output if required (shouldn't be)
         for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {
