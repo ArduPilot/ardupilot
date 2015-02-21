@@ -29,29 +29,7 @@ extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_MotorsCoax::var_info[] PROGMEM = {
     // 0 was used by TB_RATIO
-
-    // @Param: TCRV_ENABLE
-    // @DisplayName: Thrust Curve Enable
-    // @Description: Controls whether a curve is used to linearize the thrust produced by the motors
-    // @User: Advanced
-    // @Values: 0:Disabled,1:Enable
-    AP_GROUPINFO("TCRV_ENABLE", 1, AP_MotorsCoax, _throttle_curve_enabled, THROTTLE_CURVE_ENABLED),
-
-    // @Param: TCRV_MIDPCT
-    // @DisplayName: Thrust Curve mid-point percentage
-    // @Description: Set the pwm position that produces half the maximum thrust of the motors
-    // @User: Advanced
-    // @Range: 20 80
-    // @Increment: 1
-    AP_GROUPINFO("TCRV_MIDPCT", 2, AP_MotorsCoax, _throttle_curve_mid, THROTTLE_CURVE_MID_THRUST),
-
-    // @Param: TCRV_MAXPCT
-    // @DisplayName: Thrust Curve max thrust percentage
-    // @Description: Set to the lowest pwm position that produces the maximum thrust of the motors.  Most motors produce maximum thrust below the maximum pwm value that they accept.
-    // @User: Advanced
-    // @Range: 20 80
-    // @Increment: 1
-    AP_GROUPINFO("TCRV_MAXPCT", 3, AP_MotorsCoax, _throttle_curve_max, THROTTLE_CURVE_MAX_THRUST),
+    // 1,2,3 were used by throttle curve
 
     // @Param: SPIN_ARMED
     // @DisplayName: Motors always spin when armed
@@ -193,11 +171,9 @@ void AP_MotorsCoax::output_armed()
 		_servo1.calc_pwm();
 		_servo2.calc_pwm();
 
-        // adjust for throttle curve
-        if( _throttle_curve_enabled ) {
-            motor_out[AP_MOTORS_MOT_3] = _throttle_curve.get_y(motor_out[AP_MOTORS_MOT_3]);
-            motor_out[AP_MOTORS_MOT_4] = _throttle_curve.get_y(motor_out[AP_MOTORS_MOT_4]);
-        }
+		// adjust for thrust curve and voltage scaling
+        motor_out[AP_MOTORS_MOT_3] = apply_thrust_curve_and_volt_scaling(motor_out[AP_MOTORS_MOT_3], out_min, _rc_throttle.radio_max);
+        motor_out[AP_MOTORS_MOT_4] = apply_thrust_curve_and_volt_scaling(motor_out[AP_MOTORS_MOT_4], out_min, _rc_throttle.radio_max);
 
         // ensure motors don't drop below a minimum value and stop
         motor_out[AP_MOTORS_MOT_3] = max(motor_out[AP_MOTORS_MOT_3],    out_min);
