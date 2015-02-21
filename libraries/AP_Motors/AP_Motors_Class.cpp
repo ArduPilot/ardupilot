@@ -36,32 +36,8 @@ extern const AP_HAL::HAL& hal;
 // parameters for the motor class
 const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
     // 0 was used by TB_RATIO
+    // 1,2,3 were used by throttle curve
 
-    // @Param: TCRV_ENABLE
-    // @DisplayName: Thrust Curve Enable
-    // @Description: Controls whether a curve is used to linearize the thrust produced by the motors
-    // @User: Advanced
-    // @Values: 0:Disabled,1:Enable
-    AP_GROUPINFO("TCRV_ENABLE", 1, AP_Motors, _throttle_curve_enabled, THROTTLE_CURVE_ENABLED),
-
-    // @Param: TCRV_MIDPCT
-    // @DisplayName: Thrust Curve mid-point percentage
-    // @Description: Set the pwm position that produces half the maximum thrust of the motors
-    // @User: Advanced
-    // @Units: percent
-    // @Range: 20 80
-    // @Increment: 1
-    AP_GROUPINFO("TCRV_MIDPCT", 2, AP_Motors, _throttle_curve_mid, THROTTLE_CURVE_MID_THRUST),
-
-    // @Param: TCRV_MAXPCT
-    // @DisplayName: Thrust Curve max thrust percentage
-    // @Description: Set to the lowest pwm position that produces the maximum thrust of the motors.  Most motors produce maximum thrust below the maximum pwm value that they accept.
-    // @User: Advanced
-    // @Units: percent
-    // @Range: 50 100
-    // @Increment: 1
-    AP_GROUPINFO("TCRV_MAXPCT", 3, AP_Motors, _throttle_curve_max, THROTTLE_CURVE_MAX_THRUST),
-    
     // @Param: SPIN_ARMED
     // @DisplayName: Motors always spin when armed
     // @Description: Controls whether motors always spin when armed (must be below THR_MIN)
@@ -153,13 +129,6 @@ AP_Motors::AP_Motors(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_t
     _flags.slow_start_low_end = true;
 };
 
-// init
-void AP_Motors::Init()
-{
-    // set-up throttle curve - motors classes will decide whether to use it based on _throttle_curve_enabled parameter
-    setup_throttle_curve();
-};
-
 void AP_Motors::armed(bool arm)
 {
     _flags.armed = arm;
@@ -209,43 +178,6 @@ void AP_Motors::output()
         output_disarmed();
     }
 };
-
-// setup_throttle_curve - used to linearise thrust output by motors
-// returns true if set up successfully
-bool AP_Motors::setup_throttle_curve()
-{
-    int16_t min_pwm = _rc_throttle.radio_min;
-    int16_t max_pwm = _rc_throttle.radio_max;
-	int16_t mid_throttle_pwm = (max_pwm + min_pwm) / 2;
-    int16_t mid_thrust_pwm = min_pwm + (float)(max_pwm - min_pwm) * ((float)_throttle_curve_mid/100.0f);
-    int16_t max_thrust_pwm = min_pwm + (float)(max_pwm - min_pwm) * ((float)_throttle_curve_max/100.0f);
-    bool retval = true;
-
-    // some basic checks that the curve is valid
-    if( mid_thrust_pwm >= (min_pwm+_min_throttle) && mid_thrust_pwm <= max_pwm && max_thrust_pwm >= mid_thrust_pwm && max_thrust_pwm <= max_pwm ) {
-        // clear curve
-        _throttle_curve.clear();
-
-        // curve initialisation
-        retval &= _throttle_curve.add_point(min_pwm, min_pwm);
-        retval &= _throttle_curve.add_point(min_pwm+_min_throttle, min_pwm+_min_throttle);
-        retval &= _throttle_curve.add_point(mid_throttle_pwm, mid_thrust_pwm);
-        retval &= _throttle_curve.add_point(max_pwm, max_thrust_pwm);
-
-        // return success
-        return retval;
-    }else{
-        retval = false;
-    }
-
-    // disable throttle curve if not set-up correctly
-    if( !retval ) {
-        _throttle_curve_enabled = false;
-        hal.console->println_P(PSTR("AP_Motors: failed to create throttle curve"));
-    }
-
-    return retval;
-}
 
 // slow_start - set to true to slew motors from current speed to maximum
 // Note: this must be set immediately before a step up in throttle

@@ -7,7 +7,6 @@
 #include <AP_Progmem.h>
 #include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <AP_Notify.h>      // Notify library
-#include <AP_Curve.h>       // Curve used to linearlise throttle pwm to thrust
 #include <RC_Channel.h>     // RC Channel Library
 
 // offsets for motors in motor_out, _motor_filtered and _motor_to_channel_map arrays
@@ -88,7 +87,7 @@ public:
     AP_Motors(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_throttle, RC_Channel& rc_yaw, uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT);
 
     // init
-    virtual void        Init();
+    virtual void        Init() {}
 
     // set update rate to motors - a value in hertz
     virtual void        set_update_rate( uint16_t speed_hz ) { _speed_hz = speed_hz; };
@@ -145,10 +144,6 @@ public:
     // set_current - set current to be used for output scaling
     virtual void        set_current(float current){ _batt_current = current; }
 
-	// setup_throttle_curve - used to linearlise thrust output by motors
-    //      returns true if curve is created successfully
-	bool                setup_throttle_curve();
-
     // 1 if motor is enabled, 0 otherwise
     bool                motor_enabled[AP_MOTORS_MAX_NUM_MOTORS];
 
@@ -195,10 +190,6 @@ protected:
     static const uint8_t _motor_to_channel_map[AP_MOTORS_MAX_NUM_MOTORS] PROGMEM;
 
     // parameters
-    AP_CurveInt16_Size4 _throttle_curve;        // curve used to linearize the pwm->thrust
-    AP_Int8             _throttle_curve_enabled;        // enable throttle curve
-    AP_Int8             _throttle_curve_mid;    // throttle which produces 1/2 the maximum thrust.  expressed as a percentage (i.e. 0 ~ 100 ) of the full throttle range
-    AP_Int8             _throttle_curve_max;    // throttle which produces the maximum thrust.  expressed as a percentage (i.e. 0 ~ 100 ) of the full throttle range
     AP_Int16            _spin_when_armed;       // used to control whether the motors always spin when armed.  pwm value above radio_min
 
     AP_Int16            _yaw_headroom;          // yaw control is given at least this pwm range
