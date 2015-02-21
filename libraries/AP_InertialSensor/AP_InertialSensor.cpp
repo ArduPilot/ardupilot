@@ -284,8 +284,6 @@ AP_InertialSensor::init( Start_style style,
         _detect_backends();
     }
 
-    _product_id = 0; // FIX
-
     // initialise accel scale if need be. This is needed as we can't
     // give non-zero default values for vectors in AP_Param
     for (uint8_t i=0; i<get_accel_count(); i++) {
