@@ -85,7 +85,7 @@ class AP_Motors {
 public:
 
     // Constructor
-    AP_Motors( RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_throttle, RC_Channel& rc_yaw, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT);
+    AP_Motors(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_throttle, RC_Channel& rc_yaw, uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT);
 
     // init
     virtual void        Init();
@@ -211,6 +211,7 @@ protected:
     RC_Channel&         _rc_pitch;              // pitch input in from users is held in servo_out
     RC_Channel&         _rc_throttle;           // throttle input in from users is held in servo_out
     RC_Channel&         _rc_yaw;                // yaw input in from users is held in servo_out
+    uint16_t            _loop_rate;             // rate at which output() function is called (normally 400hz)
     uint16_t            _speed_hz;              // speed in hz to send updates to motors
     int16_t             _min_throttle;          // the minimum throttle to be sent to the motors when they're on (prevents motors stalling while flying)
     int16_t             _max_throttle;          // the maximum throttle to be sent to the motors (sometimes limited by slow start)

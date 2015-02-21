@@ -126,11 +126,12 @@ const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
 };
 
 // Constructor
-AP_Motors::AP_Motors( RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_throttle, RC_Channel& rc_yaw, uint16_t speed_hz ) :
+AP_Motors::AP_Motors(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_throttle, RC_Channel& rc_yaw, uint16_t loop_rate, uint16_t speed_hz) :
     _rc_roll(rc_roll),
     _rc_pitch(rc_pitch),
     _rc_throttle(rc_throttle),
     _rc_yaw(rc_yaw),
+    _loop_rate(loop_rate),
     _speed_hz(speed_hz),
     _min_throttle(AP_MOTORS_DEFAULT_MIN_THROTTLE),
     _max_throttle(AP_MOTORS_DEFAULT_MAX_THROTTLE),
