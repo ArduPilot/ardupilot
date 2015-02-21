@@ -16,6 +16,7 @@ static bool auto_takeoff_check(void)
     static bool launchTimerStarted;
     static uint32_t last_tkoff_arm_time;
     static uint32_t last_check_ms;
+    uint16_t wait_time_ms = min(uint16_t(g.takeoff_throttle_delay)*100,12700);
 
     // Reset states if process has been interrupted
     if (last_check_ms && (now - last_check_ms) > 200) {
@@ -46,11 +47,11 @@ static bool auto_takeoff_check(void)
         launchTimerStarted = true;
         last_tkoff_arm_time = now;
         gcs_send_text_fmt(PSTR("Armed AUTO, xaccel = %.1f m/s/s, waiting %.1f sec"), 
-                          SpdHgt_Controller->get_VXdot(), 0.1f*float(min(g.takeoff_throttle_delay,25)));
+                          SpdHgt_Controller->get_VXdot(), wait_time_ms*0.001f);
     }
 
     // Only perform velocity check if not timed out
-    if ((now - last_tkoff_arm_time) > 2500) {
+    if ((now - last_tkoff_arm_time) > wait_time_ms+100U) {
         gcs_send_text_fmt(PSTR("Timeout AUTO"));
         goto no_launch;
     }
@@ -65,7 +66,7 @@ static bool auto_takeoff_check(void)
 
     // Check ground speed and time delay
     if (((gps.ground_speed() > g.takeoff_throttle_min_speed || g.takeoff_throttle_min_speed == 0.0)) && 
-        ((now - last_tkoff_arm_time) >= min(uint16_t(g.takeoff_throttle_delay)*100,2500))) {
+        ((now - last_tkoff_arm_time) >= wait_time_ms)) {
         gcs_send_text_fmt(PSTR("Triggered AUTO, GPSspd = %.1f"), gps.ground_speed());
         launchTimerStarted = false;
         last_tkoff_arm_time = 0;
