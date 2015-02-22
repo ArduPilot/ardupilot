@@ -1084,7 +1084,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 if (arming.arm(AP_Arming::MAVLINK)) {
                     //only log if arming was successful
                     channel_throttle->enable_out();
-                    Log_Arm_Disarm();
+                    change_arm_state();
                     result = MAV_RESULT_ACCEPTED;
                 } else {
                     result = MAV_RESULT_FAILED;
@@ -1103,7 +1103,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     throttle_suppressed = auto_throttle_mode;
 
                     //only log if disarming was successful
-                    Log_Arm_Disarm();
+                    change_arm_state();
                     result = MAV_RESULT_ACCEPTED;
                 } else {
                     result = MAV_RESULT_FAILED;

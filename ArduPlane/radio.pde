@@ -113,7 +113,7 @@ static void rudder_arm_check()
             if (arming.arm(AP_Arming::RUDDER)) {
                 channel_throttle->enable_out();                        
                 //only log if arming was successful
-                Log_Arm_Disarm();
+                change_arm_state();
             }                
         }
     } else { 
