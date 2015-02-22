@@ -604,7 +604,8 @@ private:
     bool inhibitMagStates;          // true when magnetic field states and covariances are to remain constant
     float firstArmPosD;             // vertical position at the first arming (transition from sttatic mode) after start up
     bool firstArmComplete;          // true when first transition out of static mode has been performed after start up
-    bool finalMagYawInit;           // true when the final post takeoff initialisation of earth field and yaw angle has been performed
+    bool firstMagYawInit;           // true when the first post takeoff initialisation of earth field and yaw angle has been performed
+    bool secondMagYawInit;          // true when the second post takeoff initialisation of earth field and yaw angle has been performed
     bool flowTimeout;               // true when optical flow measurements have time out
     Vector2f gpsVelGlitchOffset;    // Offset applied to the GPS velocity when the gltch radius is being  decayed back to zero
     bool gpsNotAvailable;           // bool true when valid GPS data is not available
