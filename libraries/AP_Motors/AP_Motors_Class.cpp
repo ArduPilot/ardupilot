@@ -115,7 +115,6 @@ AP_Motors::AP_Motors(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_t
     _spin_when_armed_ramped(0),
     _batt_voltage(0.0f),
     _batt_voltage_resting(0.0f),
-    _batt_voltage_filt(1.0f),
     _batt_current(0.0f),
     _batt_current_resting(0.0f),
     _batt_resistance(0.0f),
@@ -127,6 +126,10 @@ AP_Motors::AP_Motors(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_t
 
     // slow start motors from zero to min throttle
     _flags.slow_start_low_end = true;
+
+    // setup battery voltage filtering
+    _batt_voltage_filt.set_cutoff_frequency(_loop_rate,AP_MOTORS_BATT_VOLT_FILT_HZ);
+    _batt_voltage_filt.reset(1.0f);
 };
 
 void AP_Motors::armed(bool arm)
@@ -260,7 +263,7 @@ int16_t AP_Motors::apply_thrust_curve_and_volt_scaling(int16_t pwm_out, int16_t 
 {
     float temp_out = ((float)(pwm_out-pwm_min))/((float)(pwm_max-pwm_min));
     if (_thrust_curve_expo > 0.0f){
-        temp_out = ((_thrust_curve_expo-1.0f) + safe_sqrt((1.0f-_thrust_curve_expo)*(1.0f-_thrust_curve_expo) + 4.0f*_thrust_curve_expo*_lift_max*temp_out))/(2.0f*_thrust_curve_expo*_batt_voltage_filt);
+        temp_out = ((_thrust_curve_expo-1.0f) + safe_sqrt((1.0f-_thrust_curve_expo)*(1.0f-_thrust_curve_expo) + 4.0f*_thrust_curve_expo*_lift_max*temp_out))/(2.0f*_thrust_curve_expo*_batt_voltage_filt.get());
     }
     return (temp_out*(_thrust_curve_max*pwm_max-pwm_min)+pwm_min);
 }
@@ -273,7 +276,7 @@ void AP_Motors::update_lift_max_from_batt_voltage()
 
     // if disabled or misconfigured exit immediately
     if(_batt_voltage_max <= 0 && _batt_voltage_min >= _batt_voltage_max) {
-        _batt_voltage_filt = 1.0f;
+        _batt_voltage_filt.reset(1.0f);
         _lift_max = 1.0f;
         return;
     }
@@ -283,7 +286,8 @@ void AP_Motors::update_lift_max_from_batt_voltage()
     batt_voltage = constrain_float(batt_voltage, _batt_voltage_min, _batt_voltage_max);
 
     // filter at 0.5 Hz
-    // todo: replace with filter object
-    _batt_voltage_filt = _batt_voltage_filt  + 0.007792f*(batt_voltage/_batt_voltage_max-_batt_voltage_filt);         // ratio of current battery voltage to maximum battery voltage
-    _lift_max = _batt_voltage_filt*(1-_thrust_curve_expo) + _thrust_curve_expo*_batt_voltage_filt*_batt_voltage_filt;
+    float bvf = _batt_voltage_filt.apply(batt_voltage/_batt_voltage_max);
+
+    // calculate lift max
+    _lift_max = bvf*(1-_thrust_curve_expo) + _thrust_curve_expo*bvf*bvf;
 }

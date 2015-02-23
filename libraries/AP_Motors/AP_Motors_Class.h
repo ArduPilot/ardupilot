@@ -8,6 +8,7 @@
 #include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <AP_Notify.h>      // Notify library
 #include <RC_Channel.h>     // RC Channel Library
+#include <Filter.h>         // filter library
 
 // offsets for motors in motor_out, _motor_filtered and _motor_to_channel_map arrays
 #define AP_MOTORS_MOT_1 0
@@ -61,6 +62,7 @@
 #define AP_MOTORS_THST_BAT_MAX_DEFAULT  0.0f
 #define AP_MOTORS_THST_BAT_MIN_DEFAULT  0.0f
 #define AP_MOTORS_CURR_MAX_DEFAULT      0.0f    // current limiting max default
+#define AP_MOTORS_BATT_VOLT_FILT_HZ     0.5f    // battery voltage filtered at 0.5hz
 
 // bit mask for recording which limits we have reached when outputting to motors
 #define AP_MOTOR_NO_LIMITS_REACHED  0x00
@@ -225,7 +227,7 @@ protected:
     // battery voltage compensation variables
     float               _batt_voltage;          // latest battery voltage reading
     float               _batt_voltage_resting;  // battery voltage reading at minimum throttle
-    float               _batt_voltage_filt;     // filtered battery voltage
+    LowPassFilterFloat  _batt_voltage_filt;     // filtered battery voltage expressed as a percentage (0 ~ 1.0) of batt_voltage_max
     float               _batt_current;          // latest battery current reading
     float               _batt_current_resting;  // battery's current when motors at minimum
     float               _batt_resistance;       // battery's resistance calculated by comparing resting voltage vs in flight voltage
