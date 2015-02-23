@@ -114,6 +114,14 @@ const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("THST_BAT_MIN", 11, AP_Motors, _batt_voltage_min, AP_MOTORS_THST_BAT_MIN_DEFAULT),
 
+    // @Param: CURR_MAX
+    // @DisplayName: Motor Current Max
+    // @Description: Maximum current over which maximum throttle is limited (0 = Disabled)
+    // @Range: 0 200
+    // @Units: Amps
+    // @User: Advanced
+    AP_GROUPINFO("CURR_MAX", 12, AP_Motors, _batt_current_max, AP_MOTORS_CURR_MAX_DEFAULT),
+
     AP_GROUPEND
 };
 
@@ -135,7 +143,8 @@ AP_Motors::AP_Motors( RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_
     _batt_current_resting(0.0f),
     _batt_resistance(0.0f),
     _batt_timer(0),
-    _lift_max(1.0f)
+    _lift_max(1.0f),
+    _throttle_limit(1.0f)
 {
     AP_Param::setup_object_defaults(this, var_info);
 

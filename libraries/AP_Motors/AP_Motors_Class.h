@@ -61,6 +61,7 @@
 #define AP_MOTORS_THST_MAX_DEFAULT      0.95f   // throttle which produces the maximum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
 #define AP_MOTORS_THST_BAT_MAX_DEFAULT  0.0f
 #define AP_MOTORS_THST_BAT_MIN_DEFAULT  0.0f
+#define AP_MOTORS_CURR_MAX_DEFAULT      0.0f    // current limiting max default
 
 // bit mask for recording which limits we have reached when outputting to motors
 #define AP_MOTOR_NO_LIMITS_REACHED  0x00
@@ -203,6 +204,7 @@ protected:
     AP_Float            _thrust_curve_max;      // throttle which produces the maximum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
     AP_Float            _batt_voltage_max;      // maximum voltage used to scale lift
     AP_Float            _batt_voltage_min;      // minimum voltage used to scale lift
+    AP_Float            _batt_current_max;      // current over which maximum throttle is limited
 
     // internal variables
     RC_Channel&         _rc_roll;               // roll input in from users is held in servo_out
@@ -224,5 +226,6 @@ protected:
     float               _batt_resistance;       // battery's resistance calculated by comparing resting voltage vs in flight voltage
     int16_t             _batt_timer;            // timer used in battery resistance calcs
     float               _lift_max;              // maximum lift ratio from battery voltage
+    float               _throttle_limit;        // ratio of throttle limit between hover and maximum
 };
 #endif  // __AP_MOTORS_CLASS_H__
