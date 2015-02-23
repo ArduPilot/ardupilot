@@ -129,6 +129,23 @@ AP_InertialSensor_L3G4200D::~AP_InertialSensor_L3G4200D()
     pthread_spin_destroy(&_data_lock);
 }
 
+/*
+  detect the sensor
+ */
+AP_InertialSensor_Backend *AP_InertialSensor_L3G4200D::detect(AP_InertialSensor &_imu)
+{
+    AP_InertialSensor_L3G4200D *sensor = new AP_InertialSensor_L3G4200D(_imu);
+    if (sensor == NULL) {
+        return NULL;
+    }
+    if (!sensor->_init_sensor()) {
+        delete sensor;
+        return NULL;
+    }
+
+    return sensor;
+}
+
 bool AP_InertialSensor_L3G4200D::_init_sensor(void) 
 {
     // get pointer to i2c bus semaphore
