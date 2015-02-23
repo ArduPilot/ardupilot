@@ -144,11 +144,10 @@ void AP_Motors::set_min_throttle(uint16_t min_throttle)
     _min_throttle = (float)min_throttle * (_rc_throttle.radio_max - _rc_throttle.radio_min) / 1000.0f;
 }
 
-// set_mid_throttle - sets the mid throttle which is close to the hover throttle of the copter
-// this is used to limit the amount that the stability patch will increase the throttle to give more room for roll, pitch and yaw control
-void AP_Motors::set_mid_throttle(uint16_t mid_throttle)
+// get_hover_throttle_as_pwm - converts hover throttle to pwm (i.e. range 1000 ~ 2000)
+int16_t AP_Motors::get_hover_throttle_as_pwm() const
 {
-    _hover_out = _rc_throttle.radio_min + (float)(_rc_throttle.radio_max - _rc_throttle.radio_min) * mid_throttle / 1000.0f;
+    return (_rc_throttle.radio_min + (float)(_rc_throttle.radio_max - _rc_throttle.radio_min) * _hover_out / 1000.0f);
 }
 
 // throttle_pass_through - passes provided pwm directly to all motors - dangerous but used for initialising ESCs

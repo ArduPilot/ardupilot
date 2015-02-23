@@ -104,9 +104,13 @@ public:
 
     // set_min_throttle - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)
     void                set_min_throttle(uint16_t min_throttle);
-    // set_mid_throttle - sets the mid throttle which is close to the hover throttle of the copter
+
+    // set_hover_throttle - sets the mid throttle which is close to the hover throttle of the copter
     // this is used to limit the amount that the stability patch will increase the throttle to give more room for roll, pitch and yaw control
-    void                set_mid_throttle(uint16_t mid_throttle);
+    void                set_hover_throttle(uint16_t hov_thr) { _hover_out = hov_thr; }
+
+    // get_hover_throttle_as_pwm - converts hover throttle to pwm (i.e. range 1000 ~ 2000)
+    int16_t             get_hover_throttle_as_pwm() const;
 
     int16_t             throttle_min() const { return _min_throttle;}
     int16_t             throttle_max() const { return _max_throttle;}
@@ -212,7 +216,7 @@ protected:
     uint16_t            _speed_hz;              // speed in hz to send updates to motors
     int16_t             _min_throttle;          // the minimum throttle to be sent to the motors when they're on (prevents motors stalling while flying)
     int16_t             _max_throttle;          // the maximum throttle to be sent to the motors (sometimes limited by slow start)
-    int16_t             _hover_out;             // the estimated hover throttle in pwm (i.e. 1000 ~ 2000).  calculated from the THR_MID parameter
+    int16_t             _hover_out;             // the estimated hover throttle as pct * 10 (i.e. 0 ~ 1000)
     int16_t             _spin_when_armed_ramped;// equal to _spin_when_armed parameter but slowly ramped up from zero
 
     // battery voltage compensation variables
