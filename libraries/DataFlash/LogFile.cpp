@@ -1278,3 +1278,33 @@ void DataFlash_Class::Log_Write_Airspeed(AP_Airspeed &airspeed)
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
+
+
+// Write landing LND1 & LND2 packets
+void DataFlash_Class::Log_Write_Land(const LandInfo landInfo)
+{
+
+    struct log_Land1 pkt1 = {
+        LOG_PACKET_HEADER_INIT(LOG_LAND1_MSG)
+        ,timestamp   : hal.scheduler->millis()
+        ,land_bearing_cd : landInfo.land_bearing_cd
+        ,sink_rate : landInfo.sink_rate
+        ,sink_time : landInfo.sink_time
+        ,sink_height : landInfo.sink_height
+        ,total_distance : landInfo.total_distance
+    };
+
+    struct log_Land2 pkt2 = {
+        LOG_PACKET_HEADER_INIT(LOG_LAND2_MSG)
+        ,aim_height : landInfo.aim_height
+        ,flare_time : landInfo.flare_time
+        ,flare_distance : landInfo.flare_distance
+        ,land_slope : landInfo.land_slope
+        ,land_wp_alt : landInfo.land_wp_alt
+        ,target_altitude_offset_cm : landInfo.target_altitude_offset_cm
+        ,land_proportion : landInfo.land_proportion
+    };
+
+    WriteBlock(&pkt1, sizeof(pkt1));
+    WriteBlock(&pkt2, sizeof(pkt2));
+}
