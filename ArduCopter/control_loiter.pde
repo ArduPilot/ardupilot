@@ -1,24 +1,29 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
+/*
+留待模式(定点悬停)功能：保持飞行器的位置、方向、高度不变。水平位置可以用Roll和Pitch控制杆调节，水平最大速度默认为5m/s.
+油门杆控制高度.YAW控制杆控制方向.
+*/
 /*
  * control_loiter.pde - init and run calls for loiter flight mode
+ 定点悬停初始化
  */
 
 // loiter_init - initialise loiter controller
 static bool loiter_init(bool ignore_checks)
 {
-    if (GPS_ok() || ignore_checks) {
+    if (GPS_ok() || ignore_checks) //当ignore_checks为真值，或是GPS己经3D定位，并设置了HOME（家）的位置.
+    {
 
-        // set target to current position
-        wp_nav.init_loiter_target();
+        // set target to current position 用当前位置作为目标位置 当前的速度做为控制的期望速度
+        wp_nav.init_loiter_target();//init_loiter_target()在AC_WPNAV.C中具体说明
 
-        // initialize vertical speed and accelerationj
-        pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
-        pos_control.set_accel_z(g.pilot_accel_z);
+        // initialize vertical speed and accelerationj 
+        pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);//设置最高爬速度和下速度为250cm/s 同时允许Z轴方向的限制长度重新计算
+        pos_control.set_accel_z(g.pilot_accel_z);//设置最大加速度250cm/s/s 同时允许Z轴方向的限制长度重新计算
 
-        // initialise altitude target to stopping point
-        pos_control.set_target_to_stopping_point_z();
-
+        // initialise altitude target to stopping point 初始化目标高度作为停止点
+        pos_control.set_target_to_stopping_point_z();//设置了Pos_target._leash_up_z Pos_target._leash_down_z即制上升下降的最大长度限制
+                                                     //AC_PosControl._pos_target赋值用当前位置和速度来计算停止点
         return true;
     }else{
         return false;
