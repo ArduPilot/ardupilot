@@ -12,7 +12,7 @@
 #include "AP_Limits.h"
 #include "AP_Limit_Module.h"
 
-#include <GPS.h>
+#include <AP_GPS.h>
 
 class AP_Limit_GPSLock : public AP_Limit_Module {
 
