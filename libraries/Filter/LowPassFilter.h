@@ -40,6 +40,9 @@ public:
     // apply - Add a new raw value to the filter, retrieve the filtered result
     virtual T        apply(T sample);
 
+    // get - returns latest filtered value from filter (equal to the value returned by latest call to apply method)
+    virtual T        get() const { return (T)_base_value; }
+
     // reset - clear the filter - next sample added will become the new base value
     virtual void        reset() {
         _base_value_set = false;
