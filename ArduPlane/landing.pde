@@ -171,6 +171,26 @@ static void setup_landing_glide_slope(void)
 
         // stay within the range of the start and end locations in altitude
         constrain_target_altitude_location(loc, prev_WP_loc);
+
+        if (should_log(MASK_LOG_LAND)) {
+            LandInfo landInfo = {
+                land_bearing_cd : land_bearing_cd,
+                sink_rate : sink_rate,
+                sink_time : sink_time,
+                sink_height : sink_height,
+                total_distance : total_distance,
+                aim_height : aim_height,
+                flare_time : flare_time,
+                flare_distance : flare_distance,
+                land_slope : land_slope,
+                land_wp_alt : loc.alt,
+                target_altitude_offset_cm : target_altitude.offset_cm,
+                land_proportion : land_proportion
+            };
+
+            Log_Write_Land(landInfo);
+        }
+
 }
 
 /* 
