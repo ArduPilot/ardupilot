@@ -175,7 +175,6 @@ void AK8963_MPU9250_SPI_Backend::write(uint8_t address, const uint8_t *buf, uint
 AP_Compass_AK8963_MPU9250::AP_Compass_AK8963_MPU9250(Compass &compass):
     AP_Compass_AK8963(compass)
 {
-    product_id = AP_COMPASS_TYPE_AK8963_MPU9250;
 }
 
 // detect the sensor
@@ -367,13 +366,7 @@ bool AP_Compass_AK8963::_self_test()
 bool AP_Compass_AK8963::init()
 {
     // register the compass instance in the frontend
-    _compass_instance = _compass.register_compass();    
-
-    _compass._healthy[_compass_instance] = true;
-
-    _compass._field[_compass_instance].x = 0.0f;
-    _compass._field[_compass_instance].y = 0.0f;
-    _compass._field[_compass_instance].z = 0.0f;
+    _compass_instance = register_compass();    
 
     hal.scheduler->suspend_timer_procs();
     if (!_backend->sem_take_blocking()) {
@@ -489,39 +482,27 @@ bool AP_Compass_AK8963::_calibrate()
     return true;
 }
 
-bool AP_Compass_AK8963::read()
+void AP_Compass_AK8963::read()
 {
     if (!_initialised) {
-        return false;
+        return;
     }
 
     if (_accum_count == 0) {
         /* We're not ready to publish*/
-        return true;
+        return;
     }
 
     /* Update */
-    _compass._field[_compass_instance].x = _mag_x_accum * magnetometer_ASA[0] / _accum_count;
-    _compass._field[_compass_instance].y = _mag_y_accum * magnetometer_ASA[1] / _accum_count;
-    _compass._field[_compass_instance].z = _mag_z_accum * magnetometer_ASA[2] / _accum_count;
+    Vector3f field(_mag_x_accum * magnetometer_ASA[0],
+                   _mag_y_accum * magnetometer_ASA[1],
+                   _mag_z_accum * magnetometer_ASA[2]);
 
+    field /= _accum_count;
     _mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
     _accum_count = 0;
 
-    _copy_to_frontend(_compass_instance);
-
-#if 0
-
-    float x = _compass._field[_compass_instance].x;
-    float y = _compass._field[_compass_instance].y;
-    float z = _compass._field[_compass_instance].z;
-
-    error("%f %f %f\n", x, y, z);
-#endif
-
-    _compass.last_update = hal.scheduler->micros(); // record time of update
-
-    return true;
+    publish_field(field, _compass_instance);
 }
 
 void AP_Compass_AK8963::_start_conversion()

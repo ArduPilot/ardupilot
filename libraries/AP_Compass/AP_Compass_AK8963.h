@@ -33,6 +33,23 @@ class AK8963_Backend
 
 class AP_Compass_AK8963 : public AP_Compass_Backend
 {
+public:
+    AP_Compass_AK8963(Compass &compass);
+
+    bool        init(void);
+    void        read(void);
+    void        accumulate(void);
+
+protected:
+    AK8963_Backend      *_backend;  // Not to be confused with Compass (frontend) "_backends" attribute.
+    float               magnetometer_ASA[3];
+    float               _mag_x;
+    float               _mag_y;
+    float               _mag_z;
+    uint8_t             _compass_instance;
+
+    virtual bool read_raw() = 0;
+
 private:
     typedef enum 
     {
@@ -65,24 +82,6 @@ private:
     uint8_t             _magnetometer_adc_resolution;
     uint32_t            _last_update_timestamp;
     uint32_t            _last_accum_time;
-
-protected:
-    float               magnetometer_ASA[3];
-    float               _mag_x;
-    float               _mag_y;
-    float               _mag_z;
-    uint8_t             _compass_instance;
-
-    AK8963_Backend      *_backend;  // Not to be confused with Compass (frontend) "_backends" attribute.
-    virtual bool        re_initialise(void) {return false;}
-
-public:
-    AP_Compass_AK8963(Compass &compass);
-
-    virtual bool        init(void);
-    virtual bool        read(void);
-    virtual void        accumulate(void);
-
 };
 
 class AK8963_MPU9250_SPI_Backend: public AK8963_Backend

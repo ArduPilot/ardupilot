@@ -32,11 +32,12 @@ private:
     uint32_t            _last_accum_time;
 
     uint8_t             _compass_instance;
+    uint8_t             _product_id;
 
 public:
     AP_Compass_HMC5843(Compass &compass);
     bool        init(void);
-    bool        read(void);
+    void        read(void);
     void        accumulate(void);
 
     // detect the sensor

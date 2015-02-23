@@ -37,19 +37,30 @@ public:
     virtual bool init(void) = 0;
 
     // read sensor data
-    virtual bool read(void) = 0;
+    virtual void read(void) = 0;
 
-    // accumulate a reading from the magnetometer
-    virtual void accumulate(void) = 0;
-
-    int16_t product_id;                         /// product id
+    // accumulate a reading from the magnetometer. Optional in
+    // backends
+    virtual void accumulate(void) {};
 
 protected:
-    virtual bool        read_raw(void) = 0;
-    virtual bool        re_initialise(void) = 0;
-    
-    Compass             &_compass; ///< access to frontend
-    void                _copy_to_frontend(uint8_t instance);
+    // publish a magnetic field vector to the frontend
+    void publish_field(const Vector3f &mag, uint8_t instance);
+
+    // register a new compass instance with the frontend
+    uint8_t register_compass(void) const;
+
+    // set dev_id for an instance
+    void set_dev_id(uint8_t instance, uint32_t dev_id);
+
+    // set external state for an instance
+    void set_external(uint8_t instance, bool external);
+
+    // access to frontend
+    Compass &_compass;
+
+private:
+    void apply_corrections(Vector3f &mag, uint8_t i);
 };
 
 #endif // __AP_COMPASS_BACKEND_H__

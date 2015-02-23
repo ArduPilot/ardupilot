@@ -1,6 +1,16 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+#include <AP_HAL.h>
 #include <AP_Progmem.h>
 #include "Compass.h"
+#include <AP_Vehicle.h>
+
+extern AP_HAL::HAL& hal;
+
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+#define COMPASS_LEARN_DEFAULT 0
+#else
+#define COMPASS_LEARN_DEFAULT 1
+#endif
 
 const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // index 0 was used for the old orientation matrix
@@ -22,7 +32,7 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @Description: Offset to be added to the compass z-axis values to compensate for metal in the frame
     // @Range: -400 400
     // @Increment: 1
-    AP_GROUPINFO("OFS",    1, Compass, _offset[0], 0),
+    AP_GROUPINFO("OFS",    1, Compass, _state[0].offset, 0),
 
     // @Param: DEC
     // @DisplayName: Compass declination
@@ -38,14 +48,14 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @Description: Enable or disable the automatic learning of compass offsets
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO("LEARN",  3, Compass, _learn, 1), // true if learning calibration
+    AP_GROUPINFO("LEARN",  3, Compass, _learn, COMPASS_LEARN_DEFAULT),
 
     // @Param: USE
     // @DisplayName: Use compass for yaw
     // @Description: Enable or disable the use of the compass (instead of the GPS) for determining heading
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO("USE",    4, Compass, _use_for_yaw[0], 1), // true if used for DCM yaw
+    AP_GROUPINFO("USE",    4, Compass, _state[0].use_for_yaw, 1), // true if used for DCM yaw
 
 #if !defined( __AVR_ATmega1280__ )
     // @Param: AUTODEC
@@ -83,20 +93,20 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @Range: -1000 1000
     // @Units: Offset per Amp or at Full Throttle
     // @Increment: 1
-    AP_GROUPINFO("MOT",    7, Compass, _motor_compensation[0], 0),
+    AP_GROUPINFO("MOT",    7, Compass, _state[0].motor_compensation, 0),
 
     // @Param: ORIENT
     // @DisplayName: Compass orientation
     // @Description: The orientation of the compass relative to the autopilot board. This will default to the right value for each board type, but can be changed if you have an external compass. See the documentation for your external compass for the right value. The correct orientation should give the X axis forward, the Y axis to the right and the Z axis down. So if your aircraft is pointing west it should show a positive value for the Y axis, and a value close to zero for the X axis. On a PX4 or Pixhawk with an external compass the correct value is zero if the compass is correctly oriented. NOTE: This orientation is combined with any AHRS_ORIENTATION setting.
     // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Roll180Yaw45,10:Roll180Yaw90,11:Roll180Yaw135,12:Pitch180,13:Roll180Yaw225,14:Roll180Yaw270,15:Roll180Yaw315,16:Roll90,17:Roll90Yaw45,18:Roll90Yaw90,19:Roll90Yaw135,20:Roll270,21:Roll270Yaw45,22:Roll270Yaw90,23:Roll270Yaw136,24:Pitch90,25:Pitch270,26:Pitch180Yaw90,27:Pitch180Yaw270,28:Roll90Pitch90,29:Roll180Pitch90,30:Roll270Pitch90,31:Roll90Pitch180,32:Roll270Pitch180,33:Roll90Pitch270,34:Roll180Pitch270,35:Roll270Pitch270,36:Roll90Pitch180Yaw90,37:Roll90Yaw270,38:Yaw293Pitch68Roll90
-    AP_GROUPINFO("ORIENT", 8, Compass, _orientation[0], ROTATION_NONE),
+    AP_GROUPINFO("ORIENT", 8, Compass, _state[0].orientation, ROTATION_NONE),
 
     // @Param: EXTERNAL
     // @DisplayName: Compass is attached via an external cable
     // @Description: Configure compass so it is attached externally. This is auto-detected on PX4 and Pixhawk, but must be set correctly on an APM2. Set to 1 if the compass is externally connected. When externally connected the COMPASS_ORIENT option operates independently of the AHRS_ORIENTATION board orientation option
     // @Values: 0:Internal,1:External
     // @User: Advanced
-    AP_GROUPINFO("EXTERNAL", 9, Compass, _external[0], 0),
+    AP_GROUPINFO("EXTERNAL", 9, Compass, _state[0].external, 0),
 
 #if COMPASS_MAX_INSTANCES > 1
     // @Param: OFS2_X
@@ -116,7 +126,7 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @Description: Offset to be added to compass2's z-axis values to compensate for metal in the frame
     // @Range: -400 400
     // @Increment: 1
-    AP_GROUPINFO("OFS2",    10, Compass, _offset[1], 0),
+    AP_GROUPINFO("OFS2",    10, Compass, _state[1].offset, 0),
 
     // @Param: MOT2_X
     // @DisplayName: Motor interference compensation to compass2 for body frame X axis
@@ -138,7 +148,7 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @Range: -1000 1000
     // @Units: Offset per Amp or at Full Throttle
     // @Increment: 1
-    AP_GROUPINFO("MOT2",    11, Compass, _motor_compensation[1], 0),
+    AP_GROUPINFO("MOT2",    11, Compass, _state[1].motor_compensation, 0),
 
     // @Param: PRIMARY
     // @DisplayName: Choose primary compass
@@ -166,7 +176,7 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @Description: Offset to be added to compass3's z-axis values to compensate for metal in the frame
     // @Range: -400 400
     // @Increment: 1
-    AP_GROUPINFO("OFS3",    13, Compass, _offset[2], 0),
+    AP_GROUPINFO("OFS3",    13, Compass, _state[2].offset, 0),
 
     // @Param: MOT3_X
     // @DisplayName: Motor interference compensation to compass3 for body frame X axis
@@ -188,7 +198,7 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @Range: -1000 1000
     // @Units: Offset per Amp or at Full Throttle
     // @Increment: 1
-    AP_GROUPINFO("MOT3",    14, Compass, _motor_compensation[2], 0),
+    AP_GROUPINFO("MOT3",    14, Compass, _state[2].motor_compensation, 0),
 #endif
 
 #if COMPASS_MAX_INSTANCES > 1
@@ -196,13 +206,13 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @DisplayName: Compass device id
     // @Description: Compass device id.  Automatically detected, do not set manually
     // @User: Advanced
-    AP_GROUPINFO("DEV_ID",  15, Compass, _dev_id[0], 0),
+    AP_GROUPINFO("DEV_ID",  15, Compass, _state[0].dev_id, 0),
 
     // @Param: DEV_ID2
     // @DisplayName: Compass2 device id
     // @Description: Second compass's device id.  Automatically detected, do not set manually
     // @User: Advanced
-    AP_GROUPINFO("DEV_ID2", 16, Compass, _dev_id[1], 0),
+    AP_GROUPINFO("DEV_ID2", 16, Compass, _state[1].dev_id, 0),
 #endif
 
 #if COMPASS_MAX_INSTANCES > 2
@@ -210,7 +220,7 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @DisplayName: Compass3 device id
     // @Description: Third compass's device id.  Automatically detected, do not set manually
     // @User: Advanced
-    AP_GROUPINFO("DEV_ID3", 17, Compass, _dev_id[2], 0),
+    AP_GROUPINFO("DEV_ID3", 17, Compass, _state[2].dev_id, 0),
 #endif
 
 #if COMPASS_MAX_INSTANCES > 1
@@ -219,20 +229,20 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @Description: Enable or disable the second compass for determining heading.
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO("USE2",    18, Compass, _use_for_yaw[1], 1),
+    AP_GROUPINFO("USE2",    18, Compass, _state[1].use_for_yaw, 1),
 
     // @Param: ORIENT2
     // @DisplayName: Compass2 orientation
     // @Description: The orientation of the second compass relative to the frame (if external) or autopilot board (if internal).
     // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Roll180Yaw45,10:Roll180Yaw90,11:Roll180Yaw135,12:Pitch180,13:Roll180Yaw225,14:Roll180Yaw270,15:Roll180Yaw315,16:Roll90,17:Roll90Yaw45,18:Roll90Yaw90,19:Roll90Yaw135,20:Roll270,21:Roll270Yaw45,22:Roll270Yaw90,23:Roll270Yaw136,24:Pitch90,25:Pitch270,26:Pitch180Yaw90,27:Pitch180Yaw270,28:Roll90Pitch90,29:Roll180Pitch90,30:Roll270Pitch90,31:Roll90Pitch180,32:Roll270Pitch180,33:Roll90Pitch270,34:Roll180Pitch270,35:Roll270Pitch270,36:Roll90Pitch180Yaw90,37:Roll90Yaw270,38:Yaw293Pitch68Roll90
-    AP_GROUPINFO("ORIENT2", 19, Compass, _orientation[1], ROTATION_NONE),
+    AP_GROUPINFO("ORIENT2", 19, Compass, _state[1].orientation, ROTATION_NONE),
 
     // @Param: EXTERN2
     // @DisplayName: Compass2 is attached via an external cable
     // @Description: Configure second compass so it is attached externally. This is auto-detected on PX4 and Pixhawk.
     // @Values: 0:Internal,1:External
     // @User: Advanced
-    AP_GROUPINFO("EXTERN2",20, Compass, _external[1], 0),
+    AP_GROUPINFO("EXTERN2",20, Compass, _state[1].external, 0),
 #endif
 
 #if COMPASS_MAX_INSTANCES > 2
@@ -241,20 +251,20 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @Description: Enable or disable the third compass for determining heading.
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO("USE3",    21, Compass, _use_for_yaw[2], 1),
+    AP_GROUPINFO("USE3",    21, Compass, _state[2].use_for_yaw, 1),
 
     // @Param: ORIENT3
     // @DisplayName: Compass3 orientation
     // @Description: The orientation of the third compass relative to the frame (if external) or autopilot board (if internal).
     // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Roll180Yaw45,10:Roll180Yaw90,11:Roll180Yaw135,12:Pitch180,13:Roll180Yaw225,14:Roll180Yaw270,15:Roll180Yaw315,16:Roll90,17:Roll90Yaw45,18:Roll90Yaw90,19:Roll90Yaw135,20:Roll270,21:Roll270Yaw45,22:Roll270Yaw90,23:Roll270Yaw136,24:Pitch90,25:Pitch270,26:Pitch180Yaw90,27:Pitch180Yaw270,28:Roll90Pitch90,29:Roll180Pitch90,30:Roll270Pitch90,31:Roll90Pitch180,32:Roll270Pitch180,33:Roll90Pitch270,34:Roll180Pitch270,35:Roll270Pitch270,36:Roll90Pitch180Yaw90,37:Roll90Yaw270,38:Yaw293Pitch68Roll90
-    AP_GROUPINFO("ORIENT3", 22, Compass, _orientation[2], ROTATION_NONE),
+    AP_GROUPINFO("ORIENT3", 22, Compass, _state[2].orientation, ROTATION_NONE),
 
     // @Param: EXTERN3
     // @DisplayName: Compass3 is attached via an external cable
     // @Description: Configure third compass so it is attached externally. This is auto-detected on PX4 and Pixhawk.
     // @Values: 0:Internal,1:External
     // @User: Advanced
-    AP_GROUPINFO("EXTERN3",23, Compass, _external[2], 0),
+    AP_GROUPINFO("EXTERN3",23, Compass, _state[2].external, 0),
 #endif
 
     AP_GROUPEND
@@ -265,7 +275,6 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
 // their values.
 //
 Compass::Compass(void) :
-    product_id(AP_COMPASS_TYPE_UNKNOWN),
     last_update(0),
     _null_init_done(false),
     _thr_or_curr(0.0f),
@@ -281,7 +290,7 @@ Compass::Compass(void) :
 #if COMPASS_MAX_INSTANCES > 1
     // default device ids to zero.  init() method will overwrite with the actual device ids
     for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
-        _dev_id[i] = 0;
+        _state[i].dev_id = 0;
     }
 #endif
 }
@@ -295,11 +304,6 @@ Compass::init()
         // detect available backends. Only called once
         _detect_backends();
     }
-
-    product_id = 0; // FIX
-
-    //TODO other initializations needed
-
     return true;
 }
 
@@ -340,10 +344,8 @@ Compass::_detect_backends(void)
     _add_backend(AP_Compass_HIL::detect);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_HMC5843
     _add_backend(AP_Compass_HMC5843::detect);
-#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_PX4
+#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_PX4 || HAL_COMPASS_DEFAULT == HAL_COMPASS_VRBRAIN
     _add_backend(AP_Compass_PX4::detect);
-#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_VRBRAIN
-    _add_backend(AP_Compass_VRBRAIN::detect);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_AK8963_MPU9250
     _add_backend(AP_Compass_AK8963_MPU9250::detect);
 #else
@@ -354,9 +356,6 @@ Compass::_detect_backends(void)
         _compass_count == 0) {
         hal.scheduler->panic(PSTR("No Compass backends available"));
     }
-
-    // set the product ID to the ID of the first backend
-    product_id = _backends[0]->product_id;
 }
 
 void 
@@ -371,11 +370,12 @@ Compass::accumulate(void)
 bool 
 Compass::read(void)
 {
-   for (uint8_t i=0; i< _backend_count; i++) {
+    for (uint8_t i=0; i< _backend_count; i++) {
         // call read on each of the backend. This call updates field[i]
         _backends[i]->read();
+        _state[i].healthy = (hal.scheduler->millis() - _state[i].last_update_ms < 500);
     }    
-    return _healthy[get_primary()];
+    return healthy();
 }
 
 void
@@ -383,7 +383,7 @@ Compass::set_offsets(uint8_t i, const Vector3f &offsets)
 {
     // sanity check compass instance provided
     if (i < COMPASS_MAX_INSTANCES) {
-        _offset[i].set(offsets);
+        _state[i].offset.set(offsets);
     }
 }
 
@@ -392,7 +392,7 @@ Compass::set_and_save_offsets(uint8_t i, const Vector3f &offsets)
 {
     // sanity check compass instance provided
     if (i < COMPASS_MAX_INSTANCES) {
-        _offset[i].set(offsets);
+        _state[i].offset.set(offsets);
         save_offsets(i);
     }
 }
@@ -400,9 +400,9 @@ Compass::set_and_save_offsets(uint8_t i, const Vector3f &offsets)
 void
 Compass::save_offsets(uint8_t i)
 {
-    _offset[i].save();  // save offsets
+    _state[i].offset.save();  // save offsets
 #if COMPASS_MAX_INSTANCES > 1
-    _dev_id[i].save();  // save device id corresponding to these offsets
+    _state[i].dev_id.save();  // save device id corresponding to these offsets
 #endif
 }
 
@@ -417,7 +417,7 @@ Compass::save_offsets(void)
 void
 Compass::set_motor_compensation(uint8_t i, const Vector3f &motor_comp_factor)
 {
-    _motor_compensation[i].set(motor_comp_factor);
+    _state[i].motor_compensation.set(motor_comp_factor);
 }
 
 void
@@ -425,7 +425,7 @@ Compass::save_motor_compensation()
 {
     _motor_comp_type.save();
     for (uint8_t k=0; k<COMPASS_MAX_INSTANCES; k++) {
-        _motor_compensation[k].save();
+        _state[k].motor_compensation.save();
     }
 }
 
@@ -434,7 +434,6 @@ Compass::set_initial_location(int32_t latitude, int32_t longitude)
 {
     // if automatic declination is configured, then compute
     // the declination based on the initial GPS fix
-#if !defined( __AVR_ATmega1280__ )
     if (_auto_declination) {
         // Set the declination based on the lat/lng from GPS
         _declination.set(radians(
@@ -442,7 +441,6 @@ Compass::set_initial_location(int32_t latitude, int32_t longitude)
                     (float)latitude / 10000000,
                     (float)longitude / 10000000)));
     }
-#endif
 }
 
 /// return true if the compass should be used for yaw calculations
@@ -457,7 +455,7 @@ Compass::use_for_yaw(void) const
 bool
 Compass::use_for_yaw(uint8_t i) const
 {
-    return _use_for_yaw[i];
+    return _state[i].use_for_yaw;
 }
 
 void
@@ -485,10 +483,12 @@ Compass::calculate_heading(const Matrix3f &dcm_matrix) const
     float cos_pitch_sq = 1.0f-(dcm_matrix.c.x*dcm_matrix.c.x);
 
     // Tilt compensated magnetic field Y component:
-    float headY = _field[0].y * dcm_matrix.c.z - _field[0].z * dcm_matrix.c.y;
+    const Vector3f &field = get_field();
+
+    float headY = field.y * dcm_matrix.c.z - field.z * dcm_matrix.c.y;
 
     // Tilt compensated magnetic field X component:
-    float headX = _field[0].x * cos_pitch_sq - dcm_matrix.c.x * (_field[0].y * dcm_matrix.c.y + _field[0].z * dcm_matrix.c.z);
+    float headX = field.x * cos_pitch_sq - dcm_matrix.c.x * (field.y * dcm_matrix.c.y + field.z * dcm_matrix.c.z);
 
     // magnetic heading
     // 6/4/11 - added constrain to keep bad values from ruining DCM Yaw - Jason S.
@@ -525,15 +525,15 @@ bool Compass::configured(uint8_t i)
 
 #if COMPASS_MAX_INSTANCES > 1
     // backup detected dev_id
-    int32_t dev_id_orig = _dev_id[i];
+    int32_t dev_id_orig = _state[i].dev_id;
 
     // load dev_id from eeprom
-    _dev_id[i].load();
+    _state[i].dev_id.load();
 
     // if different then the device has not been configured
-    if (_dev_id[i] != dev_id_orig) {
+    if (_state[i].dev_id != dev_id_orig) {
         // restore device id
-        _dev_id[i] = dev_id_orig;
+        _state[i].dev_id = dev_id_orig;
         // return failure
         return false;
     }
@@ -552,27 +552,6 @@ bool Compass::configured(void)
     return all_configured;
 }
 
-/*
-  apply offset and motor compensation corrections
- */
-void Compass::apply_corrections(Vector3f &mag, uint8_t i)
-{
-    const Vector3f &offsets = _offset[i].get();
-    const Vector3f &mot = _motor_compensation[i].get();
-
-    /*
-      note that _motor_offset[] is kept even if compensation is not
-      being applied so it can be logged correctly
-     */
-    mag += offsets;
-    if(_motor_comp_type != AP_COMPASS_MOT_COMP_DISABLED && _thr_or_curr != 0.0f) {
-        _motor_offset[i] = mot * _thr_or_curr;
-        mag += _motor_offset[i];
-    } else {
-        _motor_offset[i].zero();
-    }
-}
-
 #define MAG_OFS_X 5.0
 #define MAG_OFS_Y 13.0
 #define MAG_OFS_Z -18.0
@@ -586,54 +565,63 @@ void Compass::setHIL(float roll, float pitch, float yaw)
     // create a rotation matrix for the given attitude
     R.from_euler(roll, pitch, yaw);
 
-    if (_last_declination != get_declination()) {
+    if (_hil.last_declination != get_declination()) {
         _setup_earth_field();
-        _last_declination = get_declination();
+        _hil.last_declination = get_declination();
     }
 
     // convert the earth frame magnetic vector to body frame, and
     // apply the offsets
-    _hil_mag = R.mul_transpose(_Bearth);
-    _hil_mag -= Vector3f(MAG_OFS_X, MAG_OFS_Y, MAG_OFS_Z);
+    _hil.field = R.mul_transpose(_hil.Bearth);
+    _hil.field -= Vector3f(MAG_OFS_X, MAG_OFS_Y, MAG_OFS_Z);
 
     // apply default board orientation for this compass type. This is
     // a noop on most boards
-    _hil_mag.rotate(MAG_BOARD_ORIENTATION);
+    _hil.field.rotate(MAG_BOARD_ORIENTATION);
 
     // add user selectable orientation
-    _hil_mag.rotate((enum Rotation)get_orientation().get());
+    _hil.field.rotate((enum Rotation)_state[0].orientation.get());
 
-    if (!_external[0]) {
+    if (!_state[0].external) {
         // and add in AHRS_ORIENTATION setting if not an external compass
-        _hil_mag.rotate(get_board_orientation());
+        _hil.field.rotate(_board_orientation);
     }
-
-    _healthy[0] = true;
 }
 
 // Update raw magnetometer values from HIL mag vector
 //
 void Compass::setHIL(const Vector3f &mag)
 {
-    _hil_mag.x = mag.x;
-    _hil_mag.y = mag.y;
-    _hil_mag.z = mag.z;
-    _healthy[0] = true;
+    _hil.field = mag;
 }
 
 const Vector3f& Compass::getHIL() const {
-    return _hil_mag;
+    return _hil.field;
 }
 
 // setup _Bearth
 void Compass::_setup_earth_field(void)
 {
     // assume a earth field strength of 400
-    _Bearth(400, 0, 0);
+    _hil.Bearth(400, 0, 0);
     
     // rotate _Bearth for inclination and declination. -66 degrees
     // is the inclination in Canberra, Australia
     Matrix3f R;
     R.from_euler(0, ToRad(66), get_declination());
-    _Bearth = R * _Bearth;
+    _hil.Bearth = R * _hil.Bearth;
+}
+
+/*
+  set the type of motor compensation to use
+ */
+void Compass::motor_compensation_type(const uint8_t comp_type)
+{
+    if (_motor_comp_type <= AP_COMPASS_MOT_COMP_CURRENT && _motor_comp_type != (int8_t)comp_type) {
+        _motor_comp_type = (int8_t)comp_type;
+        _thr_or_curr = 0;                               // set current current or throttle to zero
+        for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+            set_motor_compensation(i, Vector3f(0,0,0)); // clear out invalid compensation vectors
+        }
+    }
 }

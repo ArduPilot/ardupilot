@@ -15,8 +15,7 @@
  */
 
 /*
- *       AP_Compass_HIL.cpp - Arduino Library for HIL model of HMC5843 I2C Magnetometer
- *       Code by James Goppert. DIYDrones.com
+ *       AP_Compass_HIL.cpp - HIL backend for AP_Compass
  *
  */
 
@@ -30,9 +29,7 @@ extern const AP_HAL::HAL& hal;
 AP_Compass_HIL::AP_Compass_HIL(Compass &compass):
     AP_Compass_Backend(compass)    
 {
-    product_id = AP_COMPASS_TYPE_HIL;
     _compass._setup_earth_field();
-
 }
 
 // detect the sensor
@@ -53,25 +50,11 @@ bool
 AP_Compass_HIL::init(void)
 {
     // register the compass instance in the frontend
-    _compass_instance = _compass.register_compass();
+    _compass_instance = register_compass();
     return true;
 }
 
-// Public Methods //////////////////////////////////////////////////////////////
-
-bool AP_Compass_HIL::read()
+void AP_Compass_HIL::read()
 {
-    _compass._field[_compass_instance] = _compass._hil_mag;    
-    _compass.apply_corrections(_compass._field[_compass_instance],_compass_instance);
-
-    // values set by setHIL function
-    _compass.last_update = hal.scheduler->micros();      // record time of update
-    
-    //_update_compass(_compass_instance, _compass._field[_compass_instance], _compass._healthy[_compass_instance])
-    return true;
-}
-
-void AP_Compass_HIL::accumulate(void)
-{
-    // nothing to do
+    publish_field(_compass._hil.field, _compass_instance);
 }

@@ -10,8 +10,6 @@
 #include <AP_HAL.h>
 #include "AP_Compass_Backend.h"
 
-extern const AP_HAL::HAL& hal;
-
 // compass product id
 #define AP_COMPASS_TYPE_UNKNOWN         0x00
 #define AP_COMPASS_TYPE_HIL             0x01
@@ -67,14 +65,8 @@ extern const AP_HAL::HAL& hal;
 class Compass
 {
 friend class AP_Compass_Backend;
-friend class AP_Compass_HIL;
-friend class AP_Compass_VRBRAIN;
-friend class AP_Compass_PX4;
-friend class AP_Compass_AK8963;
-friend class AP_Compass_HMC5843;
 public:
-    uint32_t last_update;               ///< micros() time of last update
-    int16_t product_id;                         /// product id
+    uint32_t last_update;               //< micros() time of last update
 
     /// Constructor
     ///
@@ -94,16 +86,6 @@ public:
     /// use spare CPU cycles to accumulate values from the compass if
     /// possible (this method should also be implemented in the backends)
     void accumulate();
-
-    /// Register a new compas driver, allocating an instance number
-    ///
-    /// @return number of compass instances
-    uint8_t register_compass(void);
-
-    // load backend drivers
-    void _add_backend(AP_Compass_Backend *(detect)(Compass &));
-    void _detect_backends(void);
-
 
     /// Calculate the tilt-compensated heading_ variables.
     ///
@@ -141,21 +123,18 @@ public:
     uint8_t get_count(void) const { return _compass_count; }
 
     /// Return the current field as a Vector3f
-    const Vector3f &get_field(uint8_t i) const { return _field[i]; }
+    const Vector3f &get_field(uint8_t i) const { return _state[i].field; }
     const Vector3f &get_field(void) const { return get_field(get_primary()); }
 
     /// Return the health of a compass
-    bool healthy(uint8_t i) const { return _healthy[i]; }
+    bool healthy(uint8_t i) const { return _state[i].healthy; }
     bool healthy(void) const { return healthy(get_primary()); }
-
-    /// set the current field as a Vector3f
-    void set_field(const Vector3f &field) { _field[0] = field; }
 
     /// Returns the current offset values
     ///
     /// @returns                    The current compass offsets.
     ///
-    const Vector3f &get_offsets(uint8_t i) const { return _offset[i]; }
+    const Vector3f &get_offsets(uint8_t i) const { return _state[i].offset; }
     const Vector3f &get_offsets(void) const { return get_offsets(get_primary()); }
 
     /// Sets the initial location used to get declination
@@ -199,27 +178,15 @@ public:
     void set_board_orientation(enum Rotation orientation) {
         _board_orientation = orientation;
     }
-    enum Rotation get_board_orientation() { return _board_orientation;}    
-
-    AP_Int8 get_orientation() { return _orientation[0];}
-    AP_Int8 get_orientation(uint8_t instance) { return _orientation[instance];}
 
     /// Set the motor compensation type
     ///
     /// @param  comp_type           0 = disabled, 1 = enabled use throttle, 2 = enabled use current
     ///
-    void motor_compensation_type(const uint8_t comp_type) {
-        if (_motor_comp_type <= AP_COMPASS_MOT_COMP_CURRENT && _motor_comp_type != (int8_t)comp_type) {
-            _motor_comp_type = (int8_t)comp_type;
-            _thr_or_curr = 0;                               // set current current or throttle to zero
-            for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
-                set_motor_compensation(i, Vector3f(0,0,0)); // clear out invalid compensation vectors
-            }
-        }
-    }
+    void motor_compensation_type(const uint8_t comp_type);
 
     /// get the motor compensation value.
-    uint8_t motor_compensation_type() const {
+    uint8_t get_motor_compensation_type() const {
         return _motor_comp_type;
     }
 
@@ -231,7 +198,7 @@ public:
     void set_motor_compensation(uint8_t i, const Vector3f &motor_comp_factor);
 
     /// get motor compensation factors as a vector
-    const Vector3f& get_motor_compensation(uint8_t i) const { return _motor_compensation[i]; }
+    const Vector3f& get_motor_compensation(uint8_t i) const { return _state[i].motor_compensation; }
     const Vector3f& get_motor_compensation(void) const { return get_motor_compensation(get_primary()); }
 
     /// Saves the current motor compensation x/y/z values.
@@ -244,13 +211,13 @@ public:
     ///
     /// @returns                    The current compass offsets.
     ///
-    const Vector3f &get_motor_offsets(uint8_t i) const { return _motor_offset[i]; }
+    const Vector3f &get_motor_offsets(uint8_t i) const { return _state[i].motor_offset; }
     const Vector3f &get_motor_offsets(void) const { return get_motor_offsets(get_primary()); }
 
     /// Set the throttle as a percentage from 0.0 to 1.0
     /// @param thr_pct              throttle expressed as a percentage from 0 to 1.0
     void set_throttle(float thr_pct) {
-        if(_motor_comp_type == AP_COMPASS_MOT_COMP_THROTTLE) {
+        if (_motor_comp_type == AP_COMPASS_MOT_COMP_THROTTLE) {
             _thr_or_curr = thr_pct;
         }
     }
@@ -258,7 +225,7 @@ public:
     /// Set the current used by system in amps
     /// @param amps                 current flowing to the motors expressed in amps
     void set_current(float amps) {
-        if(_motor_comp_type == AP_COMPASS_MOT_COMP_CURRENT) {
+        if (_motor_comp_type == AP_COMPASS_MOT_COMP_CURRENT) {
             _thr_or_curr = amps;
         }
     }
@@ -274,71 +241,102 @@ public:
     ///
     /// @returns                    the instance number of the primary compass
     ///
-    uint8_t get_primary(void) const { return 0; }
-    void apply_corrections(Vector3f &mag, uint8_t i);
+    uint8_t get_primary(void) const { return _primary; }
 
     // HIL methods
     void        setHIL(float roll, float pitch, float yaw);
     void        setHIL(const Vector3f &mag);
     const Vector3f&   getHIL() const;
     void        _setup_earth_field();
-    Vector3f    _hil_mag;
 
 
     static const struct AP_Param::GroupInfo var_info[];
 
-    // settable parameters
-    AP_Int8 _learn;                             ///<enable calibration learning
-
-    ///  Return the product ID
-    ///
-    ///  @return the product ID
-    ///    
-    // int16_t product_id(void) const { return product_id; }
-    AP_Int8     _external[COMPASS_MAX_INSTANCES];   ///<compass is external
-    bool        _healthy[COMPASS_MAX_INSTANCES];
-    // board orientation from AHRS
-    enum Rotation _board_orientation;
-    AP_Int8     _orientation[COMPASS_MAX_INSTANCES];
-    AP_Vector3f _offset[COMPASS_MAX_INSTANCES];
-
-#if COMPASS_MAX_INSTANCES > 1
-    AP_Int8     _primary;                           ///primary instance
-    AP_Int32    _dev_id[COMPASS_MAX_INSTANCES];    // device id detected at init.  saved to eeprom when offsets are saved allowing ram & eeprom values to be compared as consistency check
-#endif
-
-protected:
-    // backend objects
-    AP_Compass_Backend *_backends[COMPASS_MAX_INSTANCES];
-    // number of compasses
-    uint8_t     _compass_count;
-    uint8_t     _backend_count;
-
-    AP_Float    _declination;
-    AP_Int8     _use_for_yaw[COMPASS_MAX_INSTANCES];///<enable use for yaw calculation
-    AP_Int8     _auto_declination;                  ///<enable automatic declination code
-
-    bool        _null_init_done;                           ///< first-time-around flag used by offset nulling
-
-    ///< used by offset correction
-    static const uint8_t _mag_history_size = 20;
-    uint8_t     _mag_history_index[COMPASS_MAX_INSTANCES];
-    Vector3i    _mag_history[COMPASS_MAX_INSTANCES][_mag_history_size];
-
-    // motor compensation
-    AP_Int8     _motor_comp_type;               // 0 = disabled, 1 = enabled for throttle, 2 = enabled for current
-    AP_Vector3f _motor_compensation[COMPASS_MAX_INSTANCES]; // factors multiplied by throttle and added to compass outputs
-    Vector3f    _motor_offset[COMPASS_MAX_INSTANCES]; // latest compensation added to compass
-    float       _thr_or_curr;                   // throttle expressed as a percentage from 0 ~ 1.0 or current expressed in amps
-
-
     // HIL variables
-    Vector3f    _Bearth;
-    float       _last_declination;
+    struct {
+        Vector3f Bearth;
+        float last_declination;
+        Vector3f field;
+    } _hil;
 
 private:
-    Vector3f    _field[COMPASS_MAX_INSTANCES];     ///< magnetic field strength    
-    
+    /// Register a new compas driver, allocating an instance number
+    ///
+    /// @return number of compass instances
+    uint8_t register_compass(void);
+
+    // load backend drivers
+    void _add_backend(AP_Compass_Backend *(detect)(Compass &));
+    void _detect_backends(void);
+
+
+    // backend objects
+    AP_Compass_Backend *_backends[COMPASS_MAX_BACKEND];
+    uint8_t     _backend_count;
+
+    // primary product id
+    int16_t _product_id;
+
+    // number of registered compasses.
+    uint8_t     _compass_count;
+
+    // settable parameters
+    AP_Int8 _learn;
+
+    // board orientation from AHRS
+    enum Rotation _board_orientation;
+
+    // primary instance
+    AP_Int8     _primary;                           
+
+    // declination in radians
+    AP_Float    _declination;
+
+    // enable automatic declination code
+    AP_Int8     _auto_declination;                  
+
+    // first-time-around flag used by offset nulling
+    bool        _null_init_done;                           
+
+    // used by offset correction
+    static const uint8_t _mag_history_size = 20;
+
+    // motor compensation type
+    // 0 = disabled, 1 = enabled for throttle, 2 = enabled for current
+    AP_Int8     _motor_comp_type;
+
+    // throttle expressed as a percentage from 0 ~ 1.0 or current expressed in amps
+    float       _thr_or_curr;
+
+    struct mag_state {
+        AP_Int8     external;
+        bool        healthy;
+        AP_Int8     orientation;
+        AP_Vector3f offset;
+
+#if COMPASS_MAX_INSTANCES > 1
+        // device id detected at init.  
+        // saved to eeprom when offsets are saved allowing ram &
+        // eeprom values to be compared as consistency check
+        AP_Int32    dev_id;
+#endif
+        AP_Int8     use_for_yaw;
+
+        uint8_t     mag_history_index;
+        Vector3i    mag_history[_mag_history_size];
+
+        // factors multiplied by throttle and added to compass outputs
+        AP_Vector3f motor_compensation;
+
+        // latest compensation added to compass
+        Vector3f    motor_offset;
+
+        // corrected magnetic field strength
+        Vector3f    field;
+
+        // when we last got data
+        uint32_t    last_update_ms;
+    } _state[COMPASS_MAX_INSTANCES];
 };
 
 #include "AP_Compass_Backend.h"
