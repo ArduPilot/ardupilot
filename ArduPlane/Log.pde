@@ -348,31 +348,9 @@ static void Log_Write_Sonar()
 }
 
 
-
-static void Log_Write_Land(
-        float sink_rate,
-        float sink_time,
-        float sink_height,
-        float total_distance,
-        float aim_height,
-        float flare_time,
-        float flare_distance,
-        float land_slope,
-        int32_t wp_alt,
-        int32_t target_altitude_offset_cm)
+static void Log_Write_Land(const LandInfo landInfo)
 {
-    DataFlash::Log_Write_Land(
-        sink_rate,
-        sink_time,
-        sink_height,
-        total_distance,
-        aim_height,
-        flare_time,
-        flare_distance,
-        land_slope,
-        wp_alt,
-        target_altitude_offset_cm);
-
+    DataFlash.Log_Write_Land(landInfo);
 }
 
 struct PACKED log_Optflow {
@@ -476,10 +454,6 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "ARM", "IHB", "TimeMS,ArmState,ArmChecks" },
     { LOG_ATRP_MSG, sizeof(AP_AutoTune::log_ATRP),
       "ATRP", "IBBcfff",  "TimeMS,Type,State,Servo,Demanded,Achieved,P" },
-    { LOG_LAND1_MSG, sizeof(log_Land1),
-      "LND1", "Iiiffff",  "TimeMS,Alt,Bearing,SinkRt,SinkTm,SinkHt,TotalDist" },
-    { LOG_LAND2_MSG, sizeof(log_Land2),
-      "LND2", "ffffiif",  "AimHt,FlareTm,FlareDis,Slope,AltWp,TargetAltOff,Proportion" },
 #if OPTFLOW == ENABLED
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),
       "OF",   "IBffff",   "TimeMS,Qual,flowX,flowY,bodyX,bodyY" },
@@ -535,7 +509,7 @@ static void Log_Write_RC() {}
 static void Log_Write_Airspeed(void) {}
 static void Log_Write_Baro(void) {}
 static void Log_Write_Sonar() {}
-static void Log_Write_Land(int32_t a,float b,float c,float d,float e,float f,float g,float h,float i,float j,int32_t k,int32_t l,float m) {}
+static void Log_Write_Land(const LandInfo landInfo) {}
 #if OPTFLOW == ENABLED
 static void Log_Write_Optflow() {}
 #endif

@@ -131,8 +131,6 @@ enum log_messages {
 #if OPTFLOW == ENABLED
     ,LOG_OPTFLOW_MSG
 #endif
-    ,LOG_LAND1_MSG
-    ,LOG_LAND2_MSG
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
