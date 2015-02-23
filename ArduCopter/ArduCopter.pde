@@ -1149,6 +1149,15 @@ static void one_hz_loop()
 
 #if AP_TERRAIN_AVAILABLE
     terrain.update();
+
+    // tell the rangefinder our height, so it can go into power saving
+    // mode if available
+#if CONFIG_SONAR == ENABLED
+    float height;
+    if (terrain.height_above_terrain(height, true)) {
+        sonar.set_estimated_terrain_height(height);
+    }
+#endif
 #endif
 
 #if AC_FENCE == ENABLED
