@@ -190,6 +190,9 @@ protected:
     // update_lift_max_from_batt_voltage - used for voltage compensation
     void                update_lift_max_from_batt_voltage();
 
+    // update_battery_resistance - calculate battery resistance when throttle is above hover_out
+    void                update_battery_resistance();
+
     // flag bitmask
     struct AP_Motors_flags {
         uint8_t armed               : 1;    // 1 if the motors are armed, 0 if disarmed

@@ -173,6 +173,9 @@ void AP_Motors::output()
     // update max throttle
     update_max_throttle();
 
+    // update battery resistance
+    update_battery_resistance();
+
     // calc filtered battery voltage and lift_max
     update_lift_max_from_batt_voltage();
 
@@ -290,4 +293,27 @@ void AP_Motors::update_lift_max_from_batt_voltage()
 
     // calculate lift max
     _lift_max = bvf*(1-_thrust_curve_expo) + _thrust_curve_expo*bvf*bvf;
+}
+
+// update_battery_resistance - calculate battery resistance when throttle is above hover_out
+void AP_Motors::update_battery_resistance()
+{
+    // if motors are stopped, reset resting voltage and current
+    if (_rc_throttle.servo_out <= 0 || !_flags.armed) {
+        _batt_voltage_resting = _batt_voltage;
+        _batt_current_resting = _batt_current;
+        _batt_timer = 0;
+    } else {
+        // update battery resistance when throttle is over hover throttle
+        if ((_batt_timer < 400) && ((_batt_current_resting*2.0f) < _batt_current)) {
+            if (_rc_throttle.servo_out >= _hover_out) {
+                // filter reaches 90% in 1/4 the test time
+                _batt_resistance += 0.05f*(( (_batt_voltage_resting-_batt_voltage)/(_batt_current-_batt_current_resting) ) - _batt_resistance);
+                _batt_timer += 1;
+            } else {
+                // initialize battery resistance to prevent change in resting voltage estimate
+                _batt_resistance = ((_batt_voltage_resting-_batt_voltage)/(_batt_current-_batt_current_resting));
+            }
+        }
+    }
 }
