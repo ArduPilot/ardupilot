@@ -1060,6 +1060,13 @@ static void terrain_update(void)
 {
 #if AP_TERRAIN_AVAILABLE
     terrain.update();
+
+    // tell the rangefinder our height, so it can go into power saving
+    // mode if available
+    float height;
+    if (terrain.height_above_terrain(height, true)) {
+        rangefinder.set_estimated_terrain_height(height);
+    }
 #endif
 }
 
