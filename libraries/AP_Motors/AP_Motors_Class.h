@@ -176,8 +176,11 @@ protected:
     virtual void        output_armed() {};
     virtual void        output_disarmed() {};
 
-    // update_max_throttle - updates the limits on _max_throttle if necessary taking into account slow_start_throttle flag
+    // update_max_throttle - updates the limits on _max_throttle for slow_start and current limiting flag
     void                update_max_throttle();
+
+    // current_limit_max_throttle - current limit maximum throttle (called from update_max_throttle)
+    void                current_limit_max_throttle();
 
     // apply_thrust_curve_and_volt_scaling - thrust curve and voltage adjusted pwm value (i.e. 1000 ~ 2000)
     int16_t             apply_thrust_curve_and_volt_scaling(int16_t pwm_out, int16_t pwm_min, int16_t pwm_max) const;

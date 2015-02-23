@@ -204,11 +204,8 @@ void AP_Motors::update_max_throttle()
         }
     }
 
-    // return max throttle if we're not slow_starting
-    if (!_flags.slow_start) {
-        return;
-    }
-
+    // implement slow start
+    if (_flags.slow_start) {
     // increase slow start throttle
     _max_throttle += AP_MOTOR_SLOW_START_INCREMENT;
 
@@ -217,6 +214,45 @@ void AP_Motors::update_max_throttle()
         _max_throttle = AP_MOTORS_DEFAULT_MAX_THROTTLE;
         _flags.slow_start = false;
     }
+        return;
+    }
+
+    // current limit throttle
+    current_limit_max_throttle();
+}
+
+// current_limit_max_throttle - limits maximum throttle based on current
+void AP_Motors::current_limit_max_throttle()
+{
+    // return maximum if current limiting is disabled
+    if (_batt_current_max <= 0) {
+        _throttle_limit = 1.0f;
+        _max_throttle = AP_MOTORS_DEFAULT_MAX_THROTTLE;
+        return;
+    }
+
+    // remove throttle limit if throttle is at zero or disarmed
+    if(_rc_throttle.servo_out <= 0 || !_flags.armed) {
+        _throttle_limit = 1.0f;
+    }
+
+    // limit throttle if over current
+    if (_batt_current > _batt_current_max*1.25f) {
+        // Fast drop for extreme over current (1 second)
+        _throttle_limit -= 1.0f/_loop_rate;
+    } else if(_batt_current > _batt_current_max) {
+        // Slow drop for extreme over current (2 second)
+        _throttle_limit -= 0.5f/_loop_rate;
+    } else {
+        // Increase throttle limit (2 second)
+        _throttle_limit += 0.5f/_loop_rate;
+    }
+
+    // throttle limit drops to 20% between hover and full throttle
+    _throttle_limit = constrain_float(_throttle_limit, 0.2f, 1.0f);
+
+    // limit max throttle
+    _max_throttle = _hover_out + ((1000-_hover_out)*_throttle_limit);
 }
 
 // apply_thrust_curve_and_volt_scaling - returns throttle curve adjusted pwm value (i.e. 1000 ~ 2000)
