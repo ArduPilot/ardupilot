@@ -56,6 +56,11 @@
 
 #define AP_MOTORS_YAW_HEADROOM_DEFAULT  200
 
+#define AP_MOTORS_THST_EXPO_DEFAULT     0.5f // set to 0 for linear and 1 for second order approximation
+#define AP_MOTORS_THST_MAX_DEFAULT      0.95f   // throttle which produces the maximum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
+#define AP_MOTORS_THST_BAT_MAX_DEFAULT  0.0f
+#define AP_MOTORS_THST_BAT_MIN_DEFAULT  0.0f
+
 // bit mask for recording which limits we have reached when outputting to motors
 #define AP_MOTOR_NO_LIMITS_REACHED  0x00
 #define AP_MOTOR_ROLLPITCH_LIMIT    0x01
@@ -132,6 +137,12 @@ public:
     // set_yaw_headroom - set yaw headroom (yaw is given at least this amount of pwm)
     virtual void        set_yaw_headroom(int16_t pwm) { _yaw_headroom = pwm; }
 
+    // set_voltage - set voltage to be used for output scaling
+    virtual void        set_voltage(float volts){ _batt_voltage = volts; }
+
+    // set_current - set current to be used for output scaling
+    virtual void        set_current(float current){ _batt_current = current; }
+
 	// setup_throttle_curve - used to linearlise thrust output by motors
     //      returns true if curve is created successfully
 	bool                setup_throttle_curve();
@@ -186,6 +197,10 @@ protected:
     AP_Int16            _spin_when_armed;       // used to control whether the motors always spin when armed.  pwm value above radio_min
 
     AP_Int16            _yaw_headroom;          // yaw control is given at least this pwm range
+    AP_Float            _thrust_curve_expo;     // curve used to linearize pwm to thrust conversion.  set to 0 for linear and 1 for second order approximation
+    AP_Float            _thrust_curve_max;      // throttle which produces the maximum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
+    AP_Float            _batt_voltage_max;      // maximum voltage used to scale lift
+    AP_Float            _batt_voltage_min;      // minimum voltage used to scale lift
 
     // internal variables
     RC_Channel&         _rc_roll;               // roll input in from users is held in servo_out
@@ -197,5 +212,15 @@ protected:
     int16_t             _max_throttle;          // the maximum throttle to be sent to the motors (sometimes limited by slow start)
     int16_t             _hover_out;             // the estimated hover throttle in pwm (i.e. 1000 ~ 2000).  calculated from the THR_MID parameter
     int16_t             _spin_when_armed_ramped;// equal to _spin_when_armed parameter but slowly ramped up from zero
+
+    // battery voltage compensation variables
+    float               _batt_voltage;          // latest battery voltage reading
+    float               _batt_voltage_resting;  // battery voltage reading at minimum throttle
+    float               _batt_voltage_filt;     // filtered battery voltage
+    float               _batt_current;          // latest battery current reading
+    float               _batt_current_resting;  // battery's current when motors at minimum
+    float               _batt_resistance;       // battery's resistance calculated by comparing resting voltage vs in flight voltage
+    int16_t             _batt_timer;            // timer used in battery resistance calcs
+    float               _lift_max;              // maximum lift ratio from battery voltage
 };
 #endif  // __AP_MOTORS_CLASS_H__

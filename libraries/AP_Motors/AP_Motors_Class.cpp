@@ -77,6 +77,36 @@ const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("YAW_HEADROOM", 6, AP_Motors, _yaw_headroom, AP_MOTORS_YAW_HEADROOM_DEFAULT),
 
+    // @Param: THST_EXPO
+    // @DisplayName: Thrust Curve Expo
+    // @Description: Motor thrust curve exponent (from 0 for linear to 1.0 for second order curve)
+    // @Range: 0.25 0.8
+    // @User: Advanced
+    AP_GROUPINFO("THST_EXPO", 8, AP_Motors, _thrust_curve_expo, AP_MOTORS_THST_EXPO_DEFAULT),
+
+    // @Param: THST_MAX
+    // @DisplayName: Thrust Curve Max
+    // @Description: Point at which the thrust saturates
+    // @Values: 0.9:Low, 1.0:High
+    // @User: Advanced
+    AP_GROUPINFO("THST_MAX", 9, AP_Motors, _thrust_curve_max, AP_MOTORS_THST_MAX_DEFAULT),
+
+    // @Param: THST_BAT_MAX
+    // @DisplayName: Battery voltage compensation maximum voltage
+    // @Description: Battery voltage compensation maximum voltage (voltage above this will have no additional scaling effect on thrust).  Recommend 4.4 * cell count, 0 = Disabled
+    // @Range: 6 35
+    // @Units: Volts
+    // @User: Advanced
+    AP_GROUPINFO("THST_BAT_MAX", 10, AP_Motors, _batt_voltage_max, AP_MOTORS_THST_BAT_MAX_DEFAULT),
+
+    // @Param: THST_BAT_MIN
+    // @DisplayName: Battery voltage compensation minimum voltage
+    // @Description: Battery voltage compensation minimum voltage (voltage below this will have no additional scaling effect on thrust).  Recommend 3.5 * cell count, 0 = Disabled
+    // @Range: 6 35
+    // @Units: Volts
+    // @User: Advanced
+    AP_GROUPINFO("THST_BAT_MIN", 11, AP_Motors, _batt_voltage_min, AP_MOTORS_THST_BAT_MIN_DEFAULT),
+
     AP_GROUPEND
 };
 
@@ -90,7 +120,15 @@ AP_Motors::AP_Motors( RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_
     _min_throttle(AP_MOTORS_DEFAULT_MIN_THROTTLE),
     _max_throttle(AP_MOTORS_DEFAULT_MAX_THROTTLE),
     _hover_out(AP_MOTORS_DEFAULT_MID_THROTTLE),
-    _spin_when_armed_ramped(0)
+    _spin_when_armed_ramped(0),
+    _batt_voltage(0.0f),
+    _batt_voltage_resting(0.0f),
+    _batt_voltage_filt(1.0f),
+    _batt_current(0.0f),
+    _batt_current_resting(0.0f),
+    _batt_resistance(0.0f),
+    _batt_timer(0),
+    _lift_max(1.0f)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
