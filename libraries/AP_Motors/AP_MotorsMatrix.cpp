@@ -211,7 +211,8 @@ void AP_MotorsMatrix::output_armed()
         int16_t throttle_radio_out = min(_rc_throttle.radio_out, (_hover_out + (out_max_pwm-_hover_out)*_throttle_limit));
 
         // calculate battery resistance
-        if (_batt_timer < 400 && _rc_throttle.radio_out >= _hover_out && ((_batt_current_resting*2.0f) < _batt_current)) {
+        int16_t hov_out_pwm = get_hover_throttle_as_pwm();
+        if (_batt_timer < 400 && _rc_throttle.radio_out >= hov_out_pwm && ((_batt_current_resting*2.0f) < _batt_current)) {
             // filter reaches 90% in 1/4 the test time
             _batt_resistance += 0.05*(( (_batt_voltage_resting-_batt_voltage)/(_batt_current-_batt_current_resting) ) - _batt_resistance);
             _batt_timer += 1;
@@ -245,7 +246,7 @@ void AP_MotorsMatrix::output_armed()
         //      We will choose #1 (the best throttle for yaw control) if that means reducing throttle to the motors (i.e. we favour reducing throttle *because* it provides better yaw control)
         //      We will choose #2 (a mix of pilot and hover throttle) only when the throttle is quite low.  We favour reducing throttle instead of better yaw control because the pilot has commanded it
         int16_t motor_mid = (rpy_low+rpy_high)/2;
-        out_best_thr_pwm = min(out_mid_pwm - motor_mid, max(throttle_radio_out, throttle_radio_out*max(0,1.0f-_throttle_low_comp)+_hover_out*_throttle_low_comp));
+        out_best_thr_pwm = min(out_mid_pwm - motor_mid, max(throttle_radio_out, throttle_radio_out*max(0,1.0f-_throttle_low_comp)+hov_out_pwm*_throttle_low_comp));
 
         // calculate amount of yaw we can fit into the throttle range
         // this is always equal to or less than the requested yaw from the pilot or rate controller
