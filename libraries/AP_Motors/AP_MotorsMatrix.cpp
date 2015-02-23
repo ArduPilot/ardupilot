@@ -191,8 +191,8 @@ void AP_MotorsMatrix::output_armed()
         // set rpy_low and rpy_high to the lowest and highest values of the motors
         for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {
-                rpy_out[i] = _rc_roll.pwm_out * _roll_factor[i]/_lift_max +
-                             _rc_pitch.pwm_out * _pitch_factor[i]/_lift_max;
+                rpy_out[i] = _rc_roll.pwm_out * _roll_factor[i] * get_voltage_comp_gain() +
+                             _rc_pitch.pwm_out * _pitch_factor[i] * get_voltage_comp_gain();
 
                 // record lowest roll pitch command
                 if (rpy_out[i] < rpy_low) {
@@ -224,16 +224,16 @@ void AP_MotorsMatrix::output_armed()
 
         if (_rc_yaw.pwm_out >= 0) {
             // if yawing right
-            if (yaw_allowed > _rc_yaw.pwm_out/_lift_max) {
-                yaw_allowed = _rc_yaw.pwm_out/_lift_max; // to-do: this is bad form for yaw_allows to change meaning to become the amount that we are going to output
+            if (yaw_allowed > _rc_yaw.pwm_out * get_voltage_comp_gain()) {
+                yaw_allowed = _rc_yaw.pwm_out * get_voltage_comp_gain(); // to-do: this is bad form for yaw_allows to change meaning to become the amount that we are going to output
             }else{
                 limit.yaw = true;
             }
         }else{
             // if yawing left
             yaw_allowed = -yaw_allowed;
-            if( yaw_allowed < _rc_yaw.pwm_out/_lift_max ) {
-                yaw_allowed = _rc_yaw.pwm_out/_lift_max; // to-do: this is bad form for yaw_allows to change meaning to become the amount that we are going to output
+            if (yaw_allowed < _rc_yaw.pwm_out * get_voltage_comp_gain()) {
+                yaw_allowed = _rc_yaw.pwm_out * get_voltage_comp_gain(); // to-do: this is bad form for yaw_allows to change meaning to become the amount that we are going to output
             }else{
                 limit.yaw = true;
             }

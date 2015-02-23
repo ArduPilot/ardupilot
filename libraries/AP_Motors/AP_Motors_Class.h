@@ -193,6 +193,9 @@ protected:
     // update_battery_resistance - calculate battery resistance when throttle is above hover_out
     void                update_battery_resistance();
 
+    // get_voltage_comp_gain - return battery voltage compensation gain
+    float               get_voltage_comp_gain() const { return 1.0f/_lift_max; }
+
     // flag bitmask
     struct AP_Motors_flags {
         uint8_t armed               : 1;    // 1 if the motors are armed, 0 if disarmed
