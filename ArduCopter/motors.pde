@@ -173,7 +173,7 @@ static bool init_arm_motors(bool arming_from_gcs)
     hal.util->set_soft_armed(true);
 
     // set hover throttle
-    motors.set_mid_throttle(g.throttle_mid);
+    motors.set_hover_throttle(g.throttle_mid);
 
 #if SPRAYER == ENABLED
     // turn off sprayer's test if on
