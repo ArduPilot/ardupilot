@@ -193,8 +193,10 @@ then
         echo "Setting FMU mode_serial"
         fmu mode_serial
 else
-        echo "Setting FMU mode_pwm"
-        fmu mode_pwm
+        if fmu mode_pwm4
+        then
+                echo "Set FMU mode_pwm4"
+        fi
 fi
 
 
