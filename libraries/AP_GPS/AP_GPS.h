@@ -159,6 +159,12 @@ public:
         return primary_instance;
     }
 
+#if GPS_MAX_INSTANCES > 1
+    uint8_t secondary_sensor(void) const {
+        return secondary_instance;
+    }
+#endif
+
     // using these macros saves some code space on APM2
 #if GPS_MAX_INSTANCES == 1
 #	define _GPS_STATE(instance) state[0]
@@ -375,6 +381,11 @@ private:
 
     /// primary GPS instance
     uint8_t primary_instance:2;
+
+#if GPS_MAX_INSTANCES > 1
+    /// secondary GPS instance
+    uint8_t secondary_instance:2;
+#endif
 
     /// number of GPS instances present
     uint8_t num_instances:2;
