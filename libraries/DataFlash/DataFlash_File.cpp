@@ -98,7 +98,12 @@ void DataFlash_File::Init(const struct LogStructure *structure, uint8_t num_type
 
     ret = stat(_log_directory, &st);
     if (ret == -1) {
+		// POSIX madness
+		#if !defined(__unix__) || !defined(__unix)
+		ret = mkdir(_log_directory);
+		#else
         ret = mkdir(_log_directory, 0777);
+		#endif
     }
     if (ret == -1) {
         hal.console->printf("Failed to create log directory %s", _log_directory);
@@ -141,12 +146,12 @@ bool DataFlash_File::NeedErase(void)
     return false;
 }
 
+#if defined(__unix__) || defined(__unix)
 /*
   construct a log file name given a log number. 
   Note: Caller must free.
  */
-char *DataFlash_File::_log_file_name(uint16_t log_num)
-{
+char *DataFlash_File::_log_file_name(uint16_t log_num) {
     char *buf = NULL;
     asprintf(&buf, "%s/%u.BIN", _log_directory, (unsigned)log_num);
     return buf;
@@ -156,13 +161,28 @@ char *DataFlash_File::_log_file_name(uint16_t log_num)
   return path name of the lastlog.txt marker file
   Note: Caller must free.
  */
-char *DataFlash_File::_lastlog_file_name(void)
-{
+char *DataFlash_File::_lastlog_file_name(void) {
     char *buf = NULL;
     asprintf(&buf, "%s/LASTLOG.TXT", _log_directory);
     return buf;
 }
+#else
+/*
+ * Note that asprintf is not really portable,
+ * for systems which do not have asprintf() use sprintf()
+ */	
+char *DataFlash_File::_log_file_name(uint16_t log_num) {
+    char* buf = (char*)malloc(strlen(_log_directory) + 1);
+    sprintf(buf, "%s/%u.BIN", _log_directory, (unsigned)log_num);
+    return &buf[0];
+}
 
+char *DataFlash_File::_lastlog_file_name(void) {
+    char* buf = (char*)malloc(strlen(_log_directory) + 1);
+    sprintf(buf, "%s/LASTLOG.TXT", _log_directory);
+    return &buf[0];
+}
+#endif
 
 // remove all log files
 void DataFlash_File::EraseAll()
@@ -648,7 +668,7 @@ void DataFlash_File::_io_timer(void)
           chunk, ensuring the directory entry is updated after each
           write.
          */
-#if CONFIG_HAL_BOARD != HAL_BOARD_AVR_SITL
+#if CONFIG_HAL_BOARD != HAL_BOARD_AVR_SITL && defined(__unix__) || defined(__unix)
         ::fsync(_write_fd);
 #endif
         BUF_ADVANCEHEAD(_writebuf, nwritten);

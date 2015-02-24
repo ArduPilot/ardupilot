@@ -13,7 +13,7 @@
 #include "AP_Limit_Module.h"
 #include <AP_Math.h>
 #include <AP_Param.h>
-#include <GPS.h>
+#include <AP_GPS.h>
 #include <../StorageManager/StorageManager.h>
 
 #define MAX_FENCEPOINTS 6
