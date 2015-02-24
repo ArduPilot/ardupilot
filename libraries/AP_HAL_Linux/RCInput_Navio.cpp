@@ -28,6 +28,7 @@ void LinuxRCInput_Navio::init(void*)
     
     // Kills pigpio daemon in case it was run with wrong parameters   
     
+    unlink("/var/run/pigpio.pid");
     system("killall pigpiod -q");
     hal.scheduler->delay(1000);
     
