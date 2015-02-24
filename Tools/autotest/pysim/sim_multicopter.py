@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from multicopter import MultiCopter
+from helicopter import HeliCopter
 import util, time, os, sys, math
 import socket, struct
 import select, errno
@@ -130,9 +131,12 @@ sim_out.setblocking(0)
 fdm = fgFDM.fgFDM()
 
 # create the quadcopter model
-a = MultiCopter(frame=opts.frame)
+if opts.frame == 'heli':
+    a = HeliCopter(frame=opts.frame)
+else:    
+    a = MultiCopter(frame=opts.frame)
 
-print("Simulating %u motors for frame %s" % (len(a.motors), opts.frame))
+print("Simulating for frame %s" % opts.frame)
 
 # motors initially off
 m = [0.0] * 11
