@@ -11,7 +11,7 @@ float get_smoothing_gain()
 // returns desired angle in centi-degrees
 static void get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out)
 {
-    float angle_max = constrain_float(aparm.angle_max,0,8000);
+    float angle_max = constrain_float(aparm.angle_max,1000,8000);
     float scaler = (float)angle_max/(float)ROLL_PITCH_INPUT_MAX;
 
     // scale roll_in, pitch_in to correct units
