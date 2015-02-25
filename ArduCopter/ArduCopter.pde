@@ -1177,7 +1177,7 @@ static void update_GPS(void)
         set_system_time_from_GPS();
 
         // update home from GPS location if necessary
-        update_home_from_GPS();
+        update_home_from_EKF();
 
         // check gps base position (used for RTK only)
         check_gps_base_pos();
