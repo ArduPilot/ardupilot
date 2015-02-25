@@ -3979,13 +3979,19 @@ void NavEKF::readGpsData()
 
         // read latitutde and longitude from GPS and convert to local NE position relative to the stored origin
         // If we don't have an origin, then set it to the current GPS coordinates
+        const struct Location &gpsloc = _ahrs->get_gps().location();
         if (validOrigin) {
-            const struct Location &gpsloc = _ahrs->get_gps().location();
             gpsPosNE = location_diff(EKF_origin, gpsloc);
         } else {
             setOrigin();
             gpsPosNE.zero();
         }
+
+        // Set the height of the NED origin to ‘height of baro height datum relative to GPS height datum'
+        // This is only updated before arming as we need a stable reference after arming.
+        // TODO - extend this update origin height during flight after defining acceptable level of noise and implementing filtering
+        if (!vehicleArmed) EKF_origin.alt = gpsloc.alt - hgtMea;
+
         // calculate a position offset which is applied to NE position and velocity wherever it is used throughout code to allow GPS position jumps to be accommodated gradually
         decayGpsOffset();
     }
