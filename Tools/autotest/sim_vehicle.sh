@@ -183,6 +183,10 @@ case $FRAME in
     octa)
 	BUILD_TARGET="sitl-octa"
         EXTRA_SIM="--frame=octa"
+  ;;
+    octa-quad)
+  BUILD_TARGET="sitl-octa-quad"
+        EXTRA_SIM="--frame=octa-quad"
 	;;
     elevon*)
         EXTRA_PARM="param set ELEVON_OUTPUT 4;"
