@@ -415,6 +415,16 @@ static int32_t adjusted_altitude_cm(void)
 }
 
 /*
+  return home-relative altitude adjusted for ALT_OFFSET This is useful
+  during long flights to account for barometer changes from the GCS,
+  or to adjust the flying height of a long mission
+ */
+static int32_t adjusted_relative_altitude_cm(void)
+{
+    return adjusted_altitude_cm() - home.alt;
+}
+
+/*
   return the height in meters above the next_WP_loc altitude
  */
 static float height_above_target(void)

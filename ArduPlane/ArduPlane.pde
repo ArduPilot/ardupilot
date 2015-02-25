@@ -530,8 +530,9 @@ static struct {
     // denotes if a go-around has been commanded for landing
     bool commanded_go_around:1;
 
-    // Altitude threshold to complete a takeoff command in autonomous modes.  Centimeters
-    int32_t takeoff_altitude_cm;
+    // Altitude threshold to complete a takeoff command in autonomous
+    // modes.  Centimeters above home
+    int32_t takeoff_altitude_rel_cm;
 
     // Minimum pitch to hold during takeoff command execution.  Hundredths of a degree
     int16_t takeoff_pitch_cd;
@@ -566,7 +567,7 @@ static struct {
     fbwa_tdrag_takeoff_mode : false,
     checked_for_autoland : false,
     commanded_go_around : false,
-    takeoff_altitude_cm : 0,
+    takeoff_altitude_rel_cm : 0,
     takeoff_pitch_cd : 0,
     highest_airspeed : 0,
     initial_pitch_cd : 0,

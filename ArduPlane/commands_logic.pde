@@ -300,7 +300,7 @@ static void do_takeoff(const AP_Mission::Mission_Command& cmd)
     set_next_WP(cmd.content.location);
     // pitch in deg, airspeed  m/s, throttle %, track WP 1 or 0
     auto_state.takeoff_pitch_cd        = (int16_t)cmd.p1 * 100;
-    auto_state.takeoff_altitude_cm     = next_WP_loc.alt;
+    auto_state.takeoff_altitude_rel_cm = next_WP_loc.alt - home.alt;
     next_WP_loc.lat = home.lat + 10;
     next_WP_loc.lng = home.lng + 10;
     auto_state.takeoff_speed_time_ms = 0;
@@ -398,7 +398,10 @@ static bool verify_takeoff()
     }
 
     // see if we have reached takeoff altitude
-    if (adjusted_altitude_cm() > auto_state.takeoff_altitude_cm) {
+    int32_t relative_alt_cm = adjusted_relative_altitude_cm();
+    if (relative_alt_cm > auto_state.takeoff_altitude_rel_cm) {
+        gcs_send_text_fmt(PSTR("Takeoff complete at %.2fm"), 
+                          relative_alt_cm*0.01f);
         steer_state.hold_course_cd = -1;
         auto_state.takeoff_complete = true;
         next_WP_loc = prev_WP_loc = current_loc;
