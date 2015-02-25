@@ -596,16 +596,21 @@ static bool suppress_throttle(void)
     }
 
     if (control_mode==AUTO && 
-        auto_state.takeoff_complete == false && 
-        auto_takeoff_check()) {
-        // we're in auto takeoff 
-        throttle_suppressed = false;
-        return false;
+        auto_state.takeoff_complete == false) {
+        if (auto_takeoff_check()) {
+            // we're in auto takeoff 
+            throttle_suppressed = false;
+            return false;
+        }
+        // keep throttle suppressed
+        return true;
     }
     
     if (relative_altitude_abs_cm() >= 1000) {
         // we're more than 10m from the home altitude
         throttle_suppressed = false;
+        gcs_send_text_fmt(PSTR("Throttle unsuppressed - altitude %.2f"), 
+                          relative_altitude_abs_cm()*0.01f);
         return false;
     }
 
@@ -616,6 +621,9 @@ static bool suppress_throttle(void)
         // groundspeed with bad GPS reception
         if ((!ahrs.airspeed_sensor_enabled()) || airspeed.get_airspeed() >= 5) {
             // we're moving at more than 5 m/s
+            gcs_send_text_fmt(PSTR("Throttle unsuppressed - speed %.2f airspeed %.2f"), 
+                              gps.ground_speed(),
+                              airspeed.get_airspeed());
             throttle_suppressed = false;
             return false;        
         }
