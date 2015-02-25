@@ -156,9 +156,6 @@ static bool init_arm_motors(bool arming_from_gcs)
         did_ground_start = true;
     }
 
-    // fast baro calibration to reset ground pressure
-    init_barometer(false);
-
     // go back to normal AHRS gains
     ahrs.set_fast_gains(false);
 
