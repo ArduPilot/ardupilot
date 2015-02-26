@@ -30,6 +30,8 @@ void LinuxRCOutput_Navio::init(void* machtnicht)
                                   "valid I2C semaphore!"));
         return; // never reached
     }
+    
+    reset_all_channels();
 
     // Set the initial frequency
     set_freq(0, 50);
@@ -40,11 +42,31 @@ void LinuxRCOutput_Navio::init(void* machtnicht)
     enable_pin->write(0);
 }
 
+void LinuxRCOutput_Navio::reset_all_channels()
+{
+    if (!_i2c_sem->take(10)) {
+        return;
+    }
+
+    uint8_t data[4] = {0x00, 0x00, 0x00, 0x00};
+    hal.i2c->writeRegisters(PCA9685_ADDRESS, PCA9685_RA_ALL_LED_ON_L, 4, data);
+
+    /* Wait for the last pulse to end */
+    hal.scheduler->delay(2);
+
+    _i2c_sem->give();
+}
+
 void LinuxRCOutput_Navio::set_freq(uint32_t chmask, uint16_t freq_hz)
 {    
     if (!_i2c_sem->take(10)) {
         return;
     }
+    
+    /* Shutdown before sleeping.
+     * see p.14 of PCA9685 product datasheet 
+     */
+    hal.i2c->writeRegister(PCA9685_ADDRESS, PCA9685_RA_ALL_LED_OFF_H, PCA9685_ALL_LED_OFF_H_SHUT);
     
     // Put PCA9685 to sleep (required to write prescaler)
     hal.i2c->writeRegister(PCA9685_ADDRESS, PCA9685_RA_MODE1, PCA9685_MODE1_SLEEP_BIT);
@@ -52,10 +74,7 @@ void LinuxRCOutput_Navio::set_freq(uint32_t chmask, uint16_t freq_hz)
     // Calculate and write prescale value to match frequency
     uint8_t prescale = round(24576000.f / 4096.f / freq_hz)  - 1;
     hal.i2c->writeRegister(PCA9685_ADDRESS, PCA9685_RA_PRE_SCALE, prescale);
-    
-    // Reset all channels
-    uint8_t data[4] = {0x00, 0x00, 0x00, 0x00};
-    hal.i2c->writeRegisters(PCA9685_ADDRESS, PCA9685_RA_ALL_LED_ON_L, 4, data);
+
     
     // Enable external clocking
     hal.i2c->writeRegister(PCA9685_ADDRESS, PCA9685_RA_MODE1, 
