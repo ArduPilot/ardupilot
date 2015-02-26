@@ -1571,19 +1571,19 @@ static void determine_is_flying(void)
     }
 
     // low-pass the result.
-    isFlyingProbability = (0.8 * isFlyingProbability) + (0.2*(float)isFlyingBool);
+    isFlyingProbability = (0.6f * isFlyingProbability) + (0.4f * (float)isFlyingBool);
 }
 
 static bool is_flying(void)
 {
     if(arming.is_armed()) {
         // when armed, assume we're flying unless we probably aren't
-        return (isFlyingProbability >= 0.1);
+        return (isFlyingProbability >= 0.1f);
     }
     else
     {
         // when disarmed, assume we're not flying unless we probably are
-        return (isFlyingProbability >= 0.9);
+        return (isFlyingProbability >= 0.9f);
     }
 
 }
