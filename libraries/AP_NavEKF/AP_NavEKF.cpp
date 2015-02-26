@@ -381,7 +381,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     msecMagDelay(40),               // Magnetometer measurement delay (msec)
     msecTasDelay(240),              // Airspeed measurement delay (msec)
     gpsRetryTimeUseTAS(10000),      // GPS retry time with airspeed measurements (msec)
-    gpsRetryTimeNoTAS(10000),       // GPS retry time without airspeed measurements (msec)
+    gpsRetryTimeNoTAS(7000),        // GPS retry time without airspeed measurements (msec)
     gpsFailTimeWithFlow(5000),      // If we have no GPS for longer than this and we have optical flow, then we will switch across to using optical flow (msec)
     hgtRetryTimeMode0(10000),       // Height retry time with vertical velocity measurement (msec)
     hgtRetryTimeMode12(5000),       // Height retry time without vertical velocity measurement (msec)
