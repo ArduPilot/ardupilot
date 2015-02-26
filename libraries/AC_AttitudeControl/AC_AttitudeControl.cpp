@@ -95,6 +95,10 @@ void AC_AttitudeControl::relax_bf_rate_controller()
     // ensure zero error in body frame rate controllers
     const Vector3f& gyro = _ahrs.get_gyro();
     _rate_bf_target = gyro * AC_ATTITUDE_CONTROL_DEGX100;
+
+    _pid_rate_roll.reset_I();
+    _pid_rate_pitch.reset_I();
+    _pid_rate_yaw.reset_I();
 }
 
 //
