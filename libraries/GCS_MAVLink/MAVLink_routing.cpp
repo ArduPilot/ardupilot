@@ -92,6 +92,13 @@ routing table.
 */
 bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavlink_message_t* msg)
 {
+    // handle the case of loopback of our own messages, due to
+    // incorrect serial configuration.
+    if (msg->sysid == mavlink_system.sysid && 
+        msg->compid == mavlink_system.compid) {
+        return true;
+    }
+
     // learn new routes
     learn_route(in_channel, msg);
 
