@@ -26,7 +26,7 @@
 #define PCA9685_MODE1_SUB2_BIT      1<<2
 #define PCA9685_MODE1_SUB3_BIT      1<<1
 #define PCA9685_MODE1_ALLCALL_BIT   1<<0
-
+#define PCA9685_ALL_LED_OFF_H_SHUT  1<<4
 #define PCA9685_MODE2_INVRT_BIT     1<<4
 #define PCA9685_MODE2_OCH_BIT       1<<3
 #define PCA9685_MODE2_OUTDRV_BIT    1<<2
@@ -35,6 +35,7 @@
 
 class Linux::LinuxRCOutput_Navio : public AP_HAL::RCOutput {
     void     init(void* machtnichts);
+    void     reset_all_channels();
     void     set_freq(uint32_t chmask, uint16_t freq_hz);
     uint16_t get_freq(uint8_t ch);
     void     enable_ch(uint8_t ch);
