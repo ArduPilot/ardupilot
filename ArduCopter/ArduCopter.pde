@@ -733,7 +733,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { run_nav_updates,       8,     80 },
     { update_thr_average,   40,     10 },
     { three_hz_loop,       133,      9 },
-    { compass_accumulate,    8,     42 },
+    { compass_accumulate,    4,     42 },
     { barometer_accumulate,  8,     25 },
 #if FRAME_CONFIG == HELI_FRAME
     { check_dynamic_flight,  8,     10 },
