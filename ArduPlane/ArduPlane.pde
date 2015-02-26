@@ -1034,6 +1034,8 @@ static void one_second_loop()
         terrain.log_terrain_data(DataFlash);
     }
 #endif
+
+    disarm_if_autoland_complete();
 }
 
 static void log_perf_info()
@@ -1534,6 +1536,25 @@ static void update_flight_stage(void)
 
     // tell AHRS the airspeed to true airspeed ratio
     airspeed.set_EAS2TAS(barometer.get_EAS2TAS());
+}
+
+static void disarm_if_autoland_complete()
+{
+    uint32_t now = hal.scheduler->millis();
+    static uint32_t last_time_in_air = now;
+
+    if (g.land_disarm_delay > 0)
+    {
+        if (auto_state.land_complete == false) {
+            // still flying/landing
+            last_time_in_air = now;
+        }
+        else if (arming.is_armed() &&
+                (now >= (last_time_in_air + (uint32_t)g.land_disarm_delay*1000)) ) {
+            // has at some point landed and we're still armed and the delay has passed
+            arming.disarm();
+        }
+    }
 }
 
 #if OPTFLOW == ENABLED
