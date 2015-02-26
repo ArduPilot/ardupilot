@@ -1856,7 +1856,8 @@ void NavEKF::FuseVelPosNED()
 
     // declare variables used by state and covariance update calculations
     float posErr;
-    Vector6 R_OBS;
+    Vector6 R_OBS; // Measurement variances used for fusion
+    Vector6 R_OBS_DATA_CHECKS; // Measurement variances used for data checks only
     Vector6 observation;
     float SK;
 
@@ -1906,9 +1907,9 @@ void NavEKF::FuseVelPosNED()
         // if the GPS is able to report a speed error, we use it to adjust the observation noise for GPS velocity
         // otherwise we scale it using manoeuvre acceleration
         if (gpsSpdAccuracy > 0.0f) {
-            // use GPS receivers reported speed accuracy - floor at 0.5m/s reported speed accuracy
-            R_OBS[0] = sq(constrain_float(gpsSpdAccuracy/0.5f * _gpsHorizVelNoise, _gpsHorizVelNoise, 50.0f));
-            R_OBS[2] = sq(constrain_float(gpsSpdAccuracy/0.5f * _gpsVertVelNoise, _gpsVertVelNoise, 50.0f));
+            // use GPS receivers reported speed accuracy - floor at value set by gps noise parameter
+            R_OBS[0] = sq(constrain_float(gpsSpdAccuracy, _gpsHorizVelNoise, 50.0f));
+            R_OBS[2] = sq(constrain_float(gpsSpdAccuracy, _gpsVertVelNoise, 50.0f));
         } else {
             // calculate additional error in GPS velocity caused by manoeuvring
             R_OBS[0] = sq(constrain_float(_gpsHorizVelNoise, 0.05f, 5.0f)) + sq(gpsNEVelVarAccScale * accNavMag);
@@ -1923,6 +1924,13 @@ void NavEKF::FuseVelPosNED()
             R_OBS[5] *= gndEffectBaroScaler;
         }
 
+        // For data integrity checks we use the same measurement variances as used to calculate the Kalman gains for all measurements except GPS horizontal velocity
+        // For horizontal GPs velocity we don't want the acceptance radius to increase with reported GPS accuracy so we use a value based on best GPs perfomrance
+        // plus a margin for manoeuvres. It is better to reject GPS horizontal velocity errors early
+        for (uint8_t i=0; i<=1; i++) R_OBS_DATA_CHECKS[i] = sq(constrain_float(_gpsHorizVelNoise, 0.05f, 5.0f)) + sq(gpsNEVelVarAccScale * accNavMag);
+        for (uint8_t i=2; i<=5; i++) R_OBS_DATA_CHECKS[i] = R_OBS[i];
+
+
         // if vertical GPS velocity data is being used, check to see if the GPS vertical velocity and barometer
         // innovations have the same sign and are outside limits. If so, then it is likely aliasing is affecting
         // the accelerometers and we should disable the GPS and barometer innovation consistency checks.
@@ -1931,7 +1939,7 @@ void NavEKF::FuseVelPosNED()
             float hgtErr  = statesAtHgtTime.position.z - observation[5];
             float velDErr = statesAtVelTime.velocity.z - observation[2];
             // check if they are the same sign and both more than 3-sigma out of bounds
-            if ((hgtErr*velDErr > 0.0f) && (sq(hgtErr) > 9.0f * (P[9][9] + R_OBS[5])) && (sq(velDErr) > 9.0f * (P[6][6] + R_OBS[2]))) {
+            if ((hgtErr*velDErr > 0.0f) && (sq(hgtErr) > 9.0f * (P[9][9] + R_OBS_DATA_CHECKS[5])) && (sq(velDErr) > 9.0f * (P[6][6] + R_OBS_DATA_CHECKS[2]))) {
                 badIMUdata = true;
             } else {
                 badIMUdata = false;
@@ -1944,8 +1952,8 @@ void NavEKF::FuseVelPosNED()
             // test horizontal position measurements
             posInnov[0] = statesAtPosTime.position.x - observation[3];
             posInnov[1] = statesAtPosTime.position.y - observation[4];
-            varInnovVelPos[3] = P[7][7] + R_OBS[3];
-            varInnovVelPos[4] = P[8][8] + R_OBS[4];
+            varInnovVelPos[3] = P[7][7] + R_OBS_DATA_CHECKS[3];
+            varInnovVelPos[4] = P[8][8] + R_OBS_DATA_CHECKS[4];
             // apply an innovation consistency threshold test, but don't fail if bad IMU data
             // calculate max valid position innovation squared based on a maximum horizontal inertial nav accel error and GPS noise parameter
             // max inertial nav error is scaled with horizontal g to allow for increased errors when manoeuvring
@@ -1997,7 +2005,7 @@ void NavEKF::FuseVelPosNED()
                 velInnov1[i] = statesAtVelTime.vel1[i] - observation[i]; // IMU1
                 velInnov2[i] = statesAtVelTime.vel2[i] - observation[i]; // IMU2
                 // calculate innovation variance
-                varInnovVelPos[i] = P[stateIndex][stateIndex] + R_OBS[i];
+                varInnovVelPos[i] = P[stateIndex][stateIndex] + R_OBS_DATA_CHECKS[i];
                 // calculate error weightings for single IMU velocity states using
                 // observation error to normalise
                 float R_hgt;
@@ -2042,7 +2050,7 @@ void NavEKF::FuseVelPosNED()
         if (fuseHgtData) {
             // calculate height innovations
             hgtInnov = statesAtHgtTime.position.z - observation[5];
-            varInnovVelPos[5] = P[9][9] + R_OBS[5];
+            varInnovVelPos[5] = P[9][9] + R_OBS_DATA_CHECKS[5];
             // calculate the innovation consistency test ratio
             hgtTestRatio = sq(hgtInnov) / (sq(_hgtInnovGate) * varInnovVelPos[5]);
             // fail if the ratio is > 1, but don't fail if bad IMU data
