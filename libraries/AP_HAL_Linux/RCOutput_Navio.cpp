@@ -15,6 +15,35 @@
 #include <stdint.h>
 #include <math.h>
 
+#define PCA9685_ADDRESS            0x40 // All address pins low, Navio default
+
+#define PCA9685_RA_MODE1           0x00
+#define PCA9685_RA_MODE2           0x01
+#define PCA9685_RA_LED0_ON_L       0x06
+#define PCA9685_RA_LED0_ON_H       0x07
+#define PCA9685_RA_LED0_OFF_L      0x08
+#define PCA9685_RA_LED0_OFF_H      0x09
+#define PCA9685_RA_ALL_LED_ON_L    0xFA
+#define PCA9685_RA_ALL_LED_ON_H    0xFB
+#define PCA9685_RA_ALL_LED_OFF_L   0xFC
+#define PCA9685_RA_ALL_LED_OFF_H   0xFD
+#define PCA9685_RA_PRE_SCALE       0xFE
+
+#define PCA9685_MODE1_RESTART_BIT  (1 << 7)
+#define PCA9685_MODE1_EXTCLK_BIT   (1 << 6)
+#define PCA9685_MODE1_AI_BIT       (1 << 5)
+#define PCA9685_MODE1_SLEEP_BIT    (1 << 4)
+#define PCA9685_MODE1_SUB1_BIT     (1 << 3)
+#define PCA9685_MODE1_SUB2_BIT     (1 << 2)
+#define PCA9685_MODE1_SUB3_BIT     (1 << 1)
+#define PCA9685_MODE1_ALLCALL_BIT  (1 << 0)
+#define PCA9685_ALL_LED_OFF_H_SHUT (1 << 4)
+#define PCA9685_MODE2_INVRT_BIT    (1 << 4)
+#define PCA9685_MODE2_OCH_BIT      (1 << 3)
+#define PCA9685_MODE2_OUTDRV_BIT   (1 << 2)
+#define PCA9685_MODE2_OUTNE1_BIT   (1 << 1)
+#define PCA9685_MODE2_OUTNE0_BIT   (1 << 0)
+
 using namespace Linux;
 
 #define PWM_CHAN_COUNT 13
@@ -28,14 +57,14 @@ void LinuxRCOutput_Navio::init(void* machtnicht)
     if (_i2c_sem == NULL) {
         hal.scheduler->panic(PSTR("PANIC: RCOutput_Navio did not get "
                                   "valid I2C semaphore!"));
-        return; // never reached
+        return; /* never reached */
     }
     
     reset_all_channels();
 
-    // Set the initial frequency
+    /* Set the initial frequency */
     set_freq(0, 50);
-    
+
     /* Enable PCA9685 PWM */
     enable_pin = hal.gpio->channel(PCA9685_OUTPUT_ENABLE);
     enable_pin->mode(HAL_GPIO_OUTPUT);
@@ -58,33 +87,32 @@ void LinuxRCOutput_Navio::reset_all_channels()
 }
 
 void LinuxRCOutput_Navio::set_freq(uint32_t chmask, uint16_t freq_hz)
-{    
+{
     if (!_i2c_sem->take(10)) {
         return;
     }
-    
+
     /* Shutdown before sleeping.
      * see p.14 of PCA9685 product datasheet 
      */
     hal.i2c->writeRegister(PCA9685_ADDRESS, PCA9685_RA_ALL_LED_OFF_H, PCA9685_ALL_LED_OFF_H_SHUT);
-    
-    // Put PCA9685 to sleep (required to write prescaler)
+
+    /* Put PCA9685 to sleep (required to write prescaler) */
     hal.i2c->writeRegister(PCA9685_ADDRESS, PCA9685_RA_MODE1, PCA9685_MODE1_SLEEP_BIT);
-    
-    // Calculate and write prescale value to match frequency
+
+    /* Calculate and write prescale value to match frequency */
     uint8_t prescale = round(24576000.f / 4096.f / freq_hz)  - 1;
     hal.i2c->writeRegister(PCA9685_ADDRESS, PCA9685_RA_PRE_SCALE, prescale);
 
-    
-    // Enable external clocking
+    /* Enable external clocking */
     hal.i2c->writeRegister(PCA9685_ADDRESS, PCA9685_RA_MODE1, 
                             PCA9685_MODE1_SLEEP_BIT | PCA9685_MODE1_EXTCLK_BIT); 
-                            
-    // Restart the device to apply new settings and enable auto-incremented write
+
+    /* Restart the device to apply new settings and enable auto-incremented write */
     hal.i2c->writeRegister(PCA9685_ADDRESS, PCA9685_RA_MODE1, 
-                            PCA9685_MODE1_RESTART_BIT | PCA9685_MODE1_AI_BIT);    
+                            PCA9685_MODE1_RESTART_BIT | PCA9685_MODE1_AI_BIT);
     _frequency = freq_hz;
-    
+
     _i2c_sem->give();
 }
 
@@ -95,7 +123,7 @@ uint16_t LinuxRCOutput_Navio::get_freq(uint8_t ch)
 
 void LinuxRCOutput_Navio::enable_ch(uint8_t ch)
 {
-    
+
 }
 
 void LinuxRCOutput_Navio::disable_ch(uint8_t ch)
@@ -104,29 +132,29 @@ void LinuxRCOutput_Navio::disable_ch(uint8_t ch)
 }
 
 void LinuxRCOutput_Navio::write(uint8_t ch, uint16_t period_us)
-{   
+{
     if(ch >= PWM_CHAN_COUNT){
         return;
     }
-    
+
     if (!_i2c_sem->take_nonblocking()) {
         return;
     }
-    
+
     uint16_t length;
-    
+
     if (period_us == 0)
         length = 0;
     else
         length = round((period_us * 4096) / (1000000.f / _frequency)) - 1;
-        
+
     uint8_t data[2] = {length & 0xFF, length >> 8};
-    uint8_t status = hal.i2c->writeRegisters(PCA9685_ADDRESS, 
-                                             PCA9685_RA_LED0_OFF_L + 4 * (ch + 3), 
-                                             2, 
+    uint8_t status = hal.i2c->writeRegisters(PCA9685_ADDRESS,
+                                             PCA9685_RA_LED0_OFF_L + 4 * (ch + 3),
+                                             2,
                                              data);
-                                             
-    _i2c_sem->give();                                         
+
+    _i2c_sem->give();
 }
 
 void LinuxRCOutput_Navio::write(uint8_t ch, uint16_t* period_us, uint8_t len)
@@ -140,19 +168,19 @@ uint16_t LinuxRCOutput_Navio::read(uint8_t ch)
     if (!_i2c_sem->take_nonblocking()) {
         return 0;
     }
-    
+
     uint8_t data[4] = {0x00, 0x00, 0x00, 0x00};
     hal.i2c->readRegisters(PCA9685_ADDRESS, 
-                           PCA9685_RA_LED0_ON_L + 4 * (ch + 3), 
+                           PCA9685_RA_LED0_ON_L + 4 * (ch + 3),
                            4, 
                            data);
-                           
-    uint16_t length = data[2] + ((data[3] & 0x0F) << 8);    
+
+    uint16_t length = data[2] + ((data[3] & 0x0F) << 8);
     uint16_t period_us = (length + 1) * (1000000.f / _frequency) / 4096.f;
-    
+
     _i2c_sem->give(); 
-    
-    return length == 0 ? 0 : period_us;   
+
+    return length == 0 ? 0 : period_us;
 }
 
 void LinuxRCOutput_Navio::read(uint16_t* period_us, uint8_t len)
