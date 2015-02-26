@@ -1965,7 +1965,7 @@ void NavEKF::FuseVelPosNED()
                     if (posTimeout || (maxPosInnov2 > sq(float(_gpsGlitchRadiusMax)))) {
                         gpsPosGlitchOffsetNE.x += posInnov[0];
                         gpsPosGlitchOffsetNE.y += posInnov[1];
-                        // limit the radius of the offset to 100m and decay the offset to zero radially
+                        // limit the radius of the offset and decay the offset to zero radially
                         decayGpsOffset();
                         // reset the position to the current GPS position which will include the glitch correction offset
                         ResetPosition();
@@ -4448,7 +4448,7 @@ bool NavEKF::use_compass(void) const
 }
 
 // decay GPS horizontal position offset to close to zero at a rate of 1 m/s for copters and 5 m/s for planes
-// limit radius to a maximum of 100m
+// limit radius to a maximum of 50m
 void NavEKF::decayGpsOffset()
 {
     float offsetDecaySpd;
@@ -4465,7 +4465,7 @@ void NavEKF::decayGpsOffset()
         // Calculate the GPS velocity offset required. This is necessary to prevent the position measurement being rejected for inconsistency when the radius is being pulled back in.
         gpsVelGlitchOffset = -gpsPosGlitchOffsetNE*offsetDecaySpd/offsetRadius;
         // calculate scale factor to be applied to both offset components
-        float scaleFactor = constrain_float((offsetRadius - offsetDecaySpd * lapsedTime), 0.0f, 100.0f) / offsetRadius;
+        float scaleFactor = constrain_float((offsetRadius - offsetDecaySpd * lapsedTime), 0.0f, 50.0f) / offsetRadius;
         gpsPosGlitchOffsetNE.x *= scaleFactor;
         gpsPosGlitchOffsetNE.y *= scaleFactor;
     } else {
