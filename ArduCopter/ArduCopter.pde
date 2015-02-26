@@ -963,6 +963,9 @@ static void fast_loop()
 
     // run the attitude controllers
     update_flight_mode();
+
+    // update home from EKF if necessary
+    update_home_from_EKF();
 }
 
 // rc_loops - reads user input from transmitter/receiver
@@ -1175,9 +1178,6 @@ static void update_GPS(void)
     if (gps_updated) {
         // set system time if necessary
         set_system_time_from_GPS();
-
-        // update home from GPS location if necessary
-        update_home_from_EKF();
 
         // check gps base position (used for RTK only)
         check_gps_base_pos();
