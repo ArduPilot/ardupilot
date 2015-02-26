@@ -44,7 +44,8 @@ OreoLED_PX4::OreoLED_PX4() : NotifyDevice(),
     _overall_health(false),
     _oreoled_fd(-1),
     _send_required(false),
-    _state_desired_semaphore(false)
+    _state_desired_semaphore(false),
+    _pattern_override(0)
 {
     // initialise desired and sent state
     memset(_state_desired,0,sizeof(_state_desired));
@@ -81,6 +82,13 @@ void OreoLED_PX4::update()
 
     // return immediately if not healthy
     if (!_overall_health) {
+        return;
+    }
+
+    // return immediately if custom pattern has been sent
+    if (OreoLED_PX4::_pattern_override != 0) {
+        // reset stage so patterns will be resent once override clears
+        last_stage = 0;
         return;
     }
 
@@ -297,6 +305,28 @@ void OreoLED_PX4::set_macro(uint8_t instance, oreoled_macro macro)
     _state_desired_semaphore = false;
 }
 
+// send_bytes - send bytes to one or all LEDs
+void OreoLED_PX4::send_bytes(uint8_t instance, uint8_t num_bytes, uint8_t bytes[OREOLED_CMD_LENGTH_MAX])
+{
+    // return immediately if no healthy leds
+    if (!_overall_health) {
+        return;
+    }
+
+    // set semaphore
+    _state_desired_semaphore = true;
+
+    // send bytes to some or all leds
+    oreoled_cmd_t new_cmd;
+    new_cmd.led_num = instance;
+    new_cmd.num_bytes = num_bytes;
+    memcpy(new_cmd.buff, bytes, OREOLED_CMD_LENGTH_MAX);
+    ioctl(_oreoled_fd, OREOLED_SEND_BYTES, (unsigned long)&new_cmd);
+
+    // release semaphore
+    _state_desired_semaphore = false;
+}
+
 // update_timer - called by scheduler and updates PX4 driver with commands
 void OreoLED_PX4::update_timer(void)
 {
@@ -339,6 +369,45 @@ void OreoLED_PX4::update_timer(void)
 
     // flag updates sent
     _send_required = false;
+}
+
+// handle a LED_CONTROL message
+void OreoLED_PX4::handle_led_control(mavlink_message_t *msg)
+{
+    // exit immediately if unhealthy
+    if (!_overall_health) {
+        return;
+    }
+
+    // decode mavlink message
+    mavlink_led_control_t packet;
+    mavlink_msg_led_control_decode(msg, &packet);
+
+    // exit immediately if instance is invalid
+    if (packet.instance >= OREOLED_NUM_LEDS && packet.instance != OREOLED_INSTANCE_ALL) {
+        return;
+    }
+
+    // if pattern is OFF, we clear pattern override so normal lighting should resume
+    if (packet.pattern == LED_CONTROL_PATTERN_OFF) {
+        _pattern_override = 0;
+        return;
+    }
+
+    // custom pattern
+    if (packet.pattern == LED_CONTROL_PATTERN_CUSTOM) {
+        // sanity check length
+        if (packet.custom_len <= OREOLED_CMD_LENGTH_MAX) {
+            // send bytes
+            send_bytes(packet.instance, packet.custom_len, packet.custom_bytes);
+            _pattern_override = packet.pattern;
+        }
+        return;
+    }
+
+    // other patterns sent as macro
+    set_macro(packet.instance, (oreoled_macro)packet.pattern);
+    _pattern_override = packet.pattern;
 }
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4
