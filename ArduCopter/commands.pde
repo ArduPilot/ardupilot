@@ -74,15 +74,13 @@ static bool set_home(const Location& loc)
         scaleLongUp   = 1.0f/scaleLongDown;
         // record home is set
         set_home_state(HOME_SET_NOT_LOCKED);
-    }
 
-    // To-Do: doing the stuff below constantly while armed could lead to lots of logging or performance hit?
-
-    // log new home position which mission library will pull from ahrs
-    if (should_log(MASK_LOG_CMD)) {
-        AP_Mission::Mission_Command temp_cmd;
-        if (mission.read_cmd_from_storage(0, temp_cmd)) {
-            Log_Write_Cmd(temp_cmd);
+        // log new home position which mission library will pull from ahrs
+        if (should_log(MASK_LOG_CMD)) {
+            AP_Mission::Mission_Command temp_cmd;
+            if (mission.read_cmd_from_storage(0, temp_cmd)) {
+                Log_Write_Cmd(temp_cmd);
+            }
         }
     }
 
