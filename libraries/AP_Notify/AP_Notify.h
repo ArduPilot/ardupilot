@@ -19,6 +19,7 @@
 #define __AP_NOTIFY_H__
 
 #include <AP_Common.h>
+#include <GCS_MAVLink.h>
 #include <AP_BoardLED.h>
 #include <ToshibaLED.h>
 #include <ToshibaLED_I2C.h>
@@ -95,6 +96,9 @@ public:
 
     /// update - allow updates of leds that cannot be updated during a timed interrupt
     void update(void);
+
+    // handle a LED_CONTROL message
+    static void handle_led_control(mavlink_message_t* msg);
 
 private:
     static NotifyDevice* _devices[CONFIG_NOTIFY_DEVICES_COUNT];
