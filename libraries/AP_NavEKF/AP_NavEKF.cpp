@@ -35,7 +35,7 @@
 #define GYRO_PNOISE_DEFAULT     0.015f
 #define ACC_PNOISE_DEFAULT      0.25f
 #define GBIAS_PNOISE_DEFAULT    1E-06f
-#define ABIAS_PNOISE_DEFAULT    0.0001f
+#define ABIAS_PNOISE_DEFAULT    0.00005f
 #define MAGE_PNOISE_DEFAULT     0.0003f
 #define MAGB_PNOISE_DEFAULT     0.0003f
 #define VEL_GATE_DEFAULT        5
@@ -59,7 +59,7 @@
 #define GYRO_PNOISE_DEFAULT     0.015f
 #define ACC_PNOISE_DEFAULT      0.25f
 #define GBIAS_PNOISE_DEFAULT    1E-06f
-#define ABIAS_PNOISE_DEFAULT    0.0002f
+#define ABIAS_PNOISE_DEFAULT    0.00005f
 #define MAGE_PNOISE_DEFAULT     0.0003f
 #define MAGB_PNOISE_DEFAULT     0.0003f
 #define VEL_GATE_DEFAULT        5
@@ -83,7 +83,7 @@
 #define GYRO_PNOISE_DEFAULT     0.015f
 #define ACC_PNOISE_DEFAULT      0.5f
 #define GBIAS_PNOISE_DEFAULT    1E-06f
-#define ABIAS_PNOISE_DEFAULT    0.0002f
+#define ABIAS_PNOISE_DEFAULT    0.00005f
 #define MAGE_PNOISE_DEFAULT     0.0003f
 #define MAGB_PNOISE_DEFAULT     0.0003f
 #define VEL_GATE_DEFAULT        6
@@ -108,8 +108,9 @@ extern const AP_HAL::HAL& hal;
 // assume 3m/s to start
 #define STARTUP_WIND_SPEED 3.0f
 
-// initial gyro bias uncertainty (deg/sec)
-#define INIT_GYRO_BIAS_UNCERTAINTY 0.1f
+// initial imu bias uncertainty (deg/sec)
+#define INIT_GYRO_BIAS_UNCERTAINTY  0.1f
+#define INIT_ACCEL_BIAS_UNCERTAINTY 0.5f
 
 // Define tuning parameters
 const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
@@ -387,7 +388,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     tasRetryTime(5000),             // True airspeed timeout and retry interval (msec)
     magFailTimeLimit_ms(10000),     // number of msec before a magnetometer failing innovation consistency checks is declared failed (msec)
     magVarRateScale(0.05f),         // scale factor applied to magnetometer variance due to angular rate
-    gyroBiasNoiseScaler(2.0f),      // scale factor applied to gyro bias state process noise when on ground
+    imuBiasNoiseScaler(2.0f),      // scale factor applied to imu bias learning before the vehicle is armed
     msecGpsAvg(200),                // average number of msec between GPS measurements
     msecHgtAvg(100),                // average number of msec between height measurements
     msecMagAvg(100),                // average number of msec between magnetometer measurements
@@ -1224,10 +1225,14 @@ void NavEKF::CovariancePrediction()
     for (uint8_t i=10; i<=12; i++) {
         processNoise[i] = dAngBiasSigma;
         if (!vehicleArmed) {
-            processNoise[i] *= gyroBiasNoiseScaler;
+            processNoise[i] *= imuBiasNoiseScaler;
         }
     }
-	processNoise[13] = dVelBiasSigma;
+    // scale accel bias noise when disarmed to allow for faster bias estimation
+    processNoise[13] = dVelBiasSigma;
+    if (!vehicleArmed) {
+        processNoise[13] *= imuBiasNoiseScaler;
+    }
     for (uint8_t i=14; i<=15; i++) processNoise[i] = windVelSigma;
     for (uint8_t i=16; i<=18; i++) processNoise[i] = magEarthSigma;
     for (uint8_t i=19; i<=21; i++) processNoise[i] = magBodySigma;
@@ -2144,8 +2149,12 @@ void NavEKF::FuseVelPosNED()
                     // Calculate height measurement innovations using single IMU states
                     float hgtInnov1 = statesAtHgtTime.posD1 - observation[obsIndex];
                     float hgtInnov2 = statesAtHgtTime.posD2 - observation[obsIndex];
-                    // Correct single IMU prediction states using height measurement, limiting rate of change of bias to 0.002 m/s3
-                    float correctionLimit = 0.002f * dtIMU * dtVelPos;
+                    // Correct single IMU prediction states using height measurement, limiting rate of change of bias to 0.005 m/s3
+                    // Increase allowed rate of change when disarmed as estimates will be less noisy
+                    float correctionLimit = 0.005f * dtIMU * dtVelPos;
+                    if (!vehicleArmed) {
+                        correctionLimit *= imuBiasNoiseScaler;
+                    }
                     state.accel_zbias1 -= constrain_float(Kfusion[13] * hgtInnov1, -correctionLimit, correctionLimit); // IMU1 Z accel bias
                     state.accel_zbias2 -= constrain_float(Kfusion[22] * hgtInnov2, -correctionLimit, correctionLimit); // IMU2 Z accel bias
                     for (uint8_t i = 23; i<=26; i++) {
@@ -3797,7 +3806,7 @@ void NavEKF::CovarianceInit()
     P[11][11] = P[10][10];
     P[12][12] = P[10][10];
     // Z delta velocity bias
-    P[13][13] = 0.0f;
+    P[13][13] = sq(radians(INIT_ACCEL_BIAS_UNCERTAINTY * dtIMU));;
     // wind velocities
     P[14][14] = 0.0f;
     P[15][15]  = P[14][14];
