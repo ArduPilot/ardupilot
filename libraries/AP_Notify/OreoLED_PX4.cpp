@@ -215,8 +215,8 @@ void OreoLED_PX4::update()
     } else if (last_stage >= 10) {
         // check arming status
         if (AP_Notify::flags.armed) {
-            // reset macro will return LEDs to solid
-            set_macro(OREOLED_INSTANCE_ALL, OREOLED_PARAM_MACRO_RESET);
+            // set macro to fade-in
+            set_macro(OREOLED_INSTANCE_ALL, OREOLED_PARAM_MACRO_FADEIN);
         } else {
             // start breathing macro
             set_macro(OREOLED_INSTANCE_ALL, OREOLED_PARAM_MACRO_BREATH);
