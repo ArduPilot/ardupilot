@@ -115,6 +115,13 @@
         <entry name="OPENLOOP"    value="4"> <description>Open loop camera, an image trigger has been requested but we can't know for sure it has successfully taken a picture</description></entry>
     </enum>
 
+    <!-- led control pattern enums (enumeration of specific patterns) -->
+    <enum name="LED_CONTROL_PATTERN">
+        <entry name="LED_CONTROL_PATTERN_OFF" value="0"> <description>LED patterns off (return control to regular vehicle control)</description></entry>
+        <entry name="LED_CONTROL_PATTERN_FIRMWAREUPDATE" value="1"> <description>LEDs show pattern during firmware update</description></entry>
+        <entry name="LED_CONTROL_PATTERN_CUSTOM" value="255"> <description>Custom Pattern using custom bytes fields</description></entry>
+    </enum>
+
       </enums>
 
      <messages>
@@ -513,5 +520,15 @@
       <field type="float" name="gyro_bias_z">Gyro bias Z, radians/s</field>
     </message>
 
+    <message name="LED_CONTROL" id="186">
+        <description>Control vehicle LEDs</description>
+        <field type="uint8_t" name="target_system">System ID</field>
+        <field type="uint8_t" name="target_component">Component ID</field>
+        <field type="uint8_t" name="instance">Instance (LED instance to control or 255 for all LEDs)</field>
+        <field type="uint8_t" name="pattern">Pattern (see LED_PATTERN_ENUM)</field>
+        <field type="uint8_t" name="custom_len">Custom Byte Length</field>
+        <field type="uint8_t[24]" name="custom_bytes">Custom Bytes</field>
+    </message>
+    
      </messages>
 </mavlink>
