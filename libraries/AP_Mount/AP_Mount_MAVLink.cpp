@@ -194,17 +194,17 @@ Vector3f AP_Mount_MAVLink::gimbal_update_control1(const Vector3f &ef_target_eule
     //divide the demanded quaternion by the estimated to get the error
     Quaternion quatErr = quatDem / quatEst;
 
-    // convert the quaternion to an angle error vector
+    // convert the quaternion to an angle error vector using a first order approximation
     Vector3f deltaAngErr;
-    float scaler = 1.0f-quatErr[0]*quatErr[0];
-    if (scaler > 1e-12) {
-        scaler = 1.0f/sqrtf(scaler);
-        deltaAngErr.x = quatErr[1] * scaler;
-        deltaAngErr.y = quatErr[2] * scaler;
-        deltaAngErr.z = quatErr[3] * scaler;
+    float scaler;
+    if (quatErr[0] >= 0.0f) {
+        scaler = 2.0f;
     } else {
-        deltaAngErr.zero();
+        scaler = -2.0f;
     }
+    deltaAngErr.x = quatErr[1] * scaler;
+    deltaAngErr.y = quatErr[2] * scaler;
+    deltaAngErr.z = quatErr[3] * scaler;
  
     // multiply the angle error vector by a gain to calculate a demanded gimbal rate
     Vector3f rateDemand = deltaAngErr * 1.0f;
