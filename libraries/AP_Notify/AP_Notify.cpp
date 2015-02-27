@@ -24,8 +24,12 @@ struct AP_Notify::notify_events_type AP_Notify::events;
     AP_BoardLED boardled;
     ToshibaLED_PX4 toshibaled;
     ToneAlarm_PX4 tonealarm;
+#if OREOLED_ENABLED
     OreoLED_PX4 oreoled;
     NotifyDevice *AP_Notify::_devices[CONFIG_NOTIFY_DEVICES_COUNT] = {&boardled, &toshibaled, &tonealarm, &oreoled};
+#else
+    NotifyDevice *AP_Notify::_devices[CONFIG_NOTIFY_DEVICES_COUNT] = {&boardled, &toshibaled, &tonealarm};
+#endif
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2 
     AP_BoardLED boardled;
     ExternalLED externalled;
