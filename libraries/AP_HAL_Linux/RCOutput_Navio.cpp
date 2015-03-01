@@ -51,6 +51,19 @@ using namespace Linux;
 
 static const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
+LinuxRCOutput_Navio::LinuxRCOutput_Navio():
+    _i2c_sem(NULL),
+    enable_pin(NULL),
+    _frequency(50),
+    _pulses_buffer(new uint16_t[PWM_CHAN_COUNT])
+{
+}
+
+LinuxRCOutput_Navio::~LinuxRCOutput_Navio()
+{
+    delete [] _pulses_buffer;
+}
+
 void LinuxRCOutput_Navio::init(void* machtnicht)
 {
     _i2c_sem = hal.i2c->get_semaphore();
@@ -88,6 +101,12 @@ void LinuxRCOutput_Navio::reset_all_channels()
 
 void LinuxRCOutput_Navio::set_freq(uint32_t chmask, uint16_t freq_hz)
 {
+
+    /* Correctly finish last pulses */
+    for (int i = 0; i < PWM_CHAN_COUNT; i++) {
+        write(i, _pulses_buffer[i]);
+    }
+
     if (!_i2c_sem->take(10)) {
         return;
     }
@@ -154,6 +173,8 @@ void LinuxRCOutput_Navio::write(uint8_t ch, uint16_t period_us)
                                              2,
                                              data);
 
+    _pulses_buffer[ch] = period_us;
+
     _i2c_sem->give();
 }
 
@@ -165,22 +186,7 @@ void LinuxRCOutput_Navio::write(uint8_t ch, uint16_t* period_us, uint8_t len)
 
 uint16_t LinuxRCOutput_Navio::read(uint8_t ch)
 {
-    if (!_i2c_sem->take_nonblocking()) {
-        return 0;
-    }
-
-    uint8_t data[4] = {0x00, 0x00, 0x00, 0x00};
-    hal.i2c->readRegisters(PCA9685_ADDRESS, 
-                           PCA9685_RA_LED0_ON_L + 4 * (ch + 3),
-                           4, 
-                           data);
-
-    uint16_t length = data[2] + ((data[3] & 0x0F) << 8);
-    uint16_t period_us = (length + 1) * (1000000.f / _frequency) / 4096.f;
-
-    _i2c_sem->give(); 
-
-    return length == 0 ? 0 : period_us;
+    return _pulses_buffer[ch];
 }
 
 void LinuxRCOutput_Navio::read(uint16_t* period_us, uint8_t len)
