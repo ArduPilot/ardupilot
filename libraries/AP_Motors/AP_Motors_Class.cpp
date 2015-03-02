@@ -268,7 +268,8 @@ int16_t AP_Motors::apply_thrust_curve_and_volt_scaling(int16_t pwm_out, int16_t 
     if (_thrust_curve_expo > 0.0f){
         temp_out = ((_thrust_curve_expo-1.0f) + safe_sqrt((1.0f-_thrust_curve_expo)*(1.0f-_thrust_curve_expo) + 4.0f*_thrust_curve_expo*_lift_max*temp_out))/(2.0f*_thrust_curve_expo*_batt_voltage_filt.get());
     }
-    return (temp_out*(_thrust_curve_max*pwm_max-pwm_min)+pwm_min);
+    temp_out = constrain_float(temp_out*_thrust_curve_max*(pwm_max-pwm_min)+pwm_min, pwm_min, pwm_max);
+    return (int16_t)temp_out;
 }
 
 // update_lift_max from battery voltage - used for voltage compensation
