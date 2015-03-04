@@ -200,5 +200,9 @@ static void tuning() {
     case CH6_RATE_MOT_YAW_HEADROOM:
         motors.set_yaw_headroom(tuning_value*1000);
         break;
+
+     case CH6_RATE_YAW_FILT:
+         g.pid_rate_yaw.filt_hz(tuning_value);
+         break;
     }
 }
