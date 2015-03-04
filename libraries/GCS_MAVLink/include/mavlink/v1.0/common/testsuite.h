@@ -4694,6 +4694,58 @@ static void mavlink_test_gps2_rtk(uint8_t system_id, uint8_t component_id, mavli
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 }
 
+static void mavlink_test_scaled_imu3(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
+{
+	mavlink_message_t msg;
+        uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
+        uint16_t i;
+	mavlink_scaled_imu3_t packet_in = {
+		963497464,17443,17547,17651,17755,17859,17963,18067,18171,18275
+    };
+	mavlink_scaled_imu3_t packet1, packet2;
+        memset(&packet1, 0, sizeof(packet1));
+        	packet1.time_boot_ms = packet_in.time_boot_ms;
+        	packet1.xacc = packet_in.xacc;
+        	packet1.yacc = packet_in.yacc;
+        	packet1.zacc = packet_in.zacc;
+        	packet1.xgyro = packet_in.xgyro;
+        	packet1.ygyro = packet_in.ygyro;
+        	packet1.zgyro = packet_in.zgyro;
+        	packet1.xmag = packet_in.xmag;
+        	packet1.ymag = packet_in.ymag;
+        	packet1.zmag = packet_in.zmag;
+        
+        
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_scaled_imu3_encode(system_id, component_id, &msg, &packet1);
+	mavlink_msg_scaled_imu3_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_scaled_imu3_pack(system_id, component_id, &msg , packet1.time_boot_ms , packet1.xacc , packet1.yacc , packet1.zacc , packet1.xgyro , packet1.ygyro , packet1.zgyro , packet1.xmag , packet1.ymag , packet1.zmag );
+	mavlink_msg_scaled_imu3_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_scaled_imu3_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.time_boot_ms , packet1.xacc , packet1.yacc , packet1.zacc , packet1.xgyro , packet1.ygyro , packet1.zgyro , packet1.xmag , packet1.ymag , packet1.zmag );
+	mavlink_msg_scaled_imu3_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+        mavlink_msg_to_send_buffer(buffer, &msg);
+        for (i=0; i<mavlink_msg_get_send_buffer_length(&msg); i++) {
+        	comm_send_ch(MAVLINK_COMM_0, buffer[i]);
+        }
+	mavlink_msg_scaled_imu3_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+        
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_scaled_imu3_send(MAVLINK_COMM_1 , packet1.time_boot_ms , packet1.xacc , packet1.yacc , packet1.zacc , packet1.xgyro , packet1.ygyro , packet1.zgyro , packet1.xmag , packet1.ymag , packet1.zmag );
+	mavlink_msg_scaled_imu3_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+}
+
 static void mavlink_test_data_transmission_handshake(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
 {
 	mavlink_message_t msg;
@@ -5727,6 +5779,7 @@ static void mavlink_test_common(uint8_t system_id, uint8_t component_id, mavlink
 	mavlink_test_serial_control(system_id, component_id, last_msg);
 	mavlink_test_gps_rtk(system_id, component_id, last_msg);
 	mavlink_test_gps2_rtk(system_id, component_id, last_msg);
+	mavlink_test_scaled_imu3(system_id, component_id, last_msg);
 	mavlink_test_data_transmission_handshake(system_id, component_id, last_msg);
 	mavlink_test_encapsulated_data(system_id, component_id, last_msg);
 	mavlink_test_distance_sensor(system_id, component_id, last_msg);

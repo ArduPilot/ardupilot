@@ -25,6 +25,7 @@
  * protocol as widely as possible.
  *
  * @author James Goppert
+ * @author Thomas Gubler <thomasgubler@gmail.com>
  */
 
 
@@ -135,16 +136,45 @@ MAVLINK_HELPER void mavlink_euler_to_quaternion(float roll, float pitch, float y
 
 /**
  * Converts a rotation matrix to a quaternion
+ * Reference:
+ *  - Shoemake, Quaternions,
+ *  http://www.cs.ucr.edu/~vbz/resources/quatut.pdf
  *
  * @param dcm a 3x3 rotation matrix
  * @param quaternion a [w, x, y, z] ordered quaternion (null-rotation being 1 0 0 0)
  */
 MAVLINK_HELPER void mavlink_dcm_to_quaternion(const float dcm[3][3], float quaternion[4])
 {
-    quaternion[0] = 0.5f * sqrtf(1 + dcm[0][0] + dcm[1][1] + dcm[2][2]);
-    quaternion[1] = 0.5f * sqrtf(1 + dcm[0][0] - dcm[1][1] - dcm[2][2]);
-    quaternion[2] = 0.5f * sqrtf(1 - dcm[0][0] + dcm[1][1] - dcm[2][2]);
-    quaternion[3] = 0.5f * sqrtf(1 - dcm[0][0] - dcm[1][1] + dcm[2][2]);
+    float tr = dcm[0][0] + dcm[1][1] + dcm[2][2];
+    if (tr > 0.0f) {
+        float s = sqrtf(tr + 1.0f);
+        quaternion[0] = s * 0.5f;
+        s = 0.5f / s;
+        quaternion[1] = (dcm[2][1] - dcm[1][2]) * s;
+        quaternion[2] = (dcm[0][2] - dcm[2][0]) * s;
+        quaternion[3] = (dcm[1][0] - dcm[0][1]) * s;
+    } else {
+        /* Find maximum diagonal element in dcm
+         * store index in dcm_i */
+        int dcm_i = 0;
+        int i;
+        for (i = 1; i < 3; i++) {
+            if (dcm[i][i] > dcm[dcm_i][dcm_i]) {
+                dcm_i = i;
+            }
+        }
+
+        int dcm_j = (dcm_i + 1) % 3;
+        int dcm_k = (dcm_i + 2) % 3;
+
+        float s = sqrtf((dcm[dcm_i][dcm_i] - dcm[dcm_j][dcm_j] -
+                    dcm[dcm_k][dcm_k]) + 1.0f);
+        quaternion[dcm_i + 1] = s * 0.5f;
+        s = 0.5f / s;
+        quaternion[dcm_j + 1] = (dcm[dcm_i][dcm_j] + dcm[dcm_j][dcm_i]) * s;
+        quaternion[dcm_k + 1] = (dcm[dcm_k][dcm_i] + dcm[dcm_i][dcm_k]) * s;
+        quaternion[0] = (dcm[dcm_k][dcm_j] - dcm[dcm_j][dcm_k]) * s;
+    }
 }
 
 
