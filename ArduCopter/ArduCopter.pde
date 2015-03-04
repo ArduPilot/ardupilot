@@ -1062,6 +1062,12 @@ static void ten_hz_logging_loop()
     if (should_log(MASK_LOG_ATTITUDE_MED)) {
         Log_Write_Attitude();
     }
+    if (should_log(MASK_LOG_RATE)) {
+        Log_Write_Rate();
+    }
+    if (should_log(MASK_LOG_MOT)) {
+        Log_Write_Mot();
+    }
     if (should_log(MASK_LOG_RCIN)) {
         DataFlash.Log_Write_RCIN();
     }

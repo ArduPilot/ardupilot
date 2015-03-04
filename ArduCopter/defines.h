@@ -236,6 +236,8 @@ enum FlipState {
 #define LOG_DATA_FLOAT_MSG              0x18
 #define LOG_AUTOTUNE_MSG                0x19
 #define LOG_AUTOTUNEDETAILS_MSG         0x1A
+#define LOG_RATE_MSG                    0x1D
+#define LOG_MOT_MSG                     0x1E
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
 #define MASK_LOG_ATTITUDE_MED           (1<<1)
@@ -254,6 +256,8 @@ enum FlipState {
 #define MASK_LOG_INAV                   (1<<14) // deprecated
 #define MASK_LOG_CAMERA                 (1<<15)
 #define MASK_LOG_WHEN_DISARMED          (1UL<<16)
+#define MASK_LOG_RATE                   (1UL<<17)
+#define MASK_LOG_MOT                    (1UL<<18)
 #define MASK_LOG_ANY                    0xFFFF
 
 // DATA - event logging
