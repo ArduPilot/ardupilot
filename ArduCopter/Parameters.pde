@@ -1044,6 +1044,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(autotune_axis_bitmask, "AUTOTUNE_AXES", 7),  // AUTOTUNE_AXIS_BITMASK_DEFAULT
 
+    // @Param: AUTOTUNE_AGGRESSIVENESS
+    // @DisplayName: autotune_aggressiveness
+    // @Description: autotune_aggressiveness. Defines the bounce back used to detect size of the D term.
+    // @Range: 0.05 0.10
+    // @User: Standard
+    GSCALAR(autotune_aggressiveness, "AUTOTUNE_AGGR", 0.05f),
+
     AP_VAREND
 };
 

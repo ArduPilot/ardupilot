@@ -316,6 +316,7 @@ public:
         k_param_acro_balance_pitch,
         k_param_acro_yaw_p, // 244
         k_param_autotune_axis_bitmask,  // 245
+        k_param_autotune_aggressiveness,  // 246
 
         // 254,255: reserved
     };
@@ -465,6 +466,7 @@ public:
 
     // Autotune
     AP_Int8                 autotune_axis_bitmask;
+    AP_Float                autotune_aggressiveness;
 
     // Note: keep initializers here in the same order as they are declared
     // above.
