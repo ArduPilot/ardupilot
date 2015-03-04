@@ -33,6 +33,7 @@ extern bool _px4_thread_should_exit;
 PX4Scheduler::PX4Scheduler() :
     _perf_timers(perf_alloc(PC_ELAPSED, "APM_timers")),
     _perf_io_timers(perf_alloc(PC_ELAPSED, "APM_IO_timers")),
+    _perf_storage_timer(perf_alloc(PC_ELAPSED, "APM_storage_timers")),
 	_perf_delay(perf_alloc(PC_ELAPSED, "APM_delay"))
 {}
 
@@ -72,6 +73,16 @@ void PX4Scheduler::init(void *unused)
     pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
 
 	pthread_create(&_io_thread_ctx, &thread_attr, (pthread_startroutine_t)&PX4::PX4Scheduler::_io_thread, this);
+
+    // the storage thread runs at just above IO priority
+    pthread_attr_init(&thread_attr);
+    pthread_attr_setstacksize(&thread_attr, 1024);
+
+    param.sched_priority = APM_STORAGE_PRIORITY;
+    (void)pthread_attr_setschedparam(&thread_attr, &param);
+    pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
+
+    pthread_create(&_storage_thread_ctx, &thread_attr, (pthread_startroutine_t)&PX4::PX4Scheduler::_storage_thread, this);
 }
 
 uint64_t PX4Scheduler::micros64() 
@@ -339,13 +350,26 @@ void *PX4Scheduler::_io_thread(void)
     while (!_px4_thread_should_exit) {
         poll(NULL, 0, 1);
 
-        // process any pending storage writes
-        ((PX4Storage *)hal.storage)->_timer_tick();
-
         // run registered IO processes
         perf_begin(_perf_io_timers);
         _run_io();
         perf_end(_perf_io_timers);
+    }
+    return NULL;
+}
+
+void *PX4Scheduler::_storage_thread(void)
+{
+    while (!_hal_initialized) {
+        poll(NULL, 0, 1);        
+    }
+    while (!_px4_thread_should_exit) {
+        poll(NULL, 0, 10);
+
+        // process any pending storage writes
+        perf_begin(_perf_storage_timer);
+        ((PX4Storage *)hal.storage)->_timer_tick();
+        perf_end(_perf_storage_timer);
     }
     return NULL;
 }
