@@ -107,10 +107,6 @@ void AP_BoardConfig::init()
         hal.uartD->set_flow_control((AP_HAL::UARTDriver::flow_control)_ser2_rtscts.get());
     }
 
-    if (_safety_enable.get() == 0) {
-        hal.rcout->force_safety_off();
-    }
-
     if (_sbus_out_enable.get() == 1) {
         fd = open("/dev/px4io", 0);
         if (fd == -1 || ioctl(fd, SBUS_SET_PROTO_VERSION, 1) != 0) {
@@ -119,6 +115,15 @@ void AP_BoardConfig::init()
         if (fd != -1) {
             close(fd);
         }   
+    }
+
+    if (_safety_enable.get() == 0) {
+        for(uint8_t i=0; i<10;i++) {
+            if(hal.rcout->force_safety_off()) {
+                break;
+            }
+            hal.scheduler->delay(100);
+        }
     }
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     /* configure the VRBRAIN driver for the right number of PWMs */
