@@ -112,7 +112,8 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw_smooth(float roll_angle
     // sanity check smoothing gain
     smoothing_gain = constrain_float(smoothing_gain,1.0f,50.0f);
 
-    if (_accel_roll_max > 0.0f) {
+    // if accel limiting and feed forward enabled
+    if ((_accel_roll_max > 0.0f) && _rate_bf_ff_enabled) {
         rate_change_limit = _accel_roll_max * _dt;
 
         // calculate earth-frame feed forward roll rate using linear response when close to the target, sqrt response when we're further away
@@ -134,7 +135,8 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw_smooth(float roll_angle
     // constrain earth-frame angle targets
     _angle_ef_target.x = constrain_float(_angle_ef_target.x, -_aparm.angle_max, _aparm.angle_max);
 
-    if (_accel_pitch_max > 0.0f) {
+    // if accel limiting and feed forward enabled
+    if ((_accel_pitch_max > 0.0f) && _rate_bf_ff_enabled) {
         rate_change_limit = _accel_pitch_max * _dt;
 
         // calculate earth-frame feed forward pitch rate using linear response when close to the target, sqrt response when we're further away
