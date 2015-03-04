@@ -124,6 +124,21 @@
                     <description>Quad-rotor VTOL using a V-shaped quad config in vertical operation. Tailsitter.</description>
                </entry>
                <!-- Entries up to 25 reserved for other VTOL airframes -->
+               <entry value="21" name="MAV_TYPE_VTOL_RESERVED1">
+                    <description>VTOL reserved 1</description>
+               </entry>
+               <entry value="22" name="MAV_TYPE_VTOL_RESERVED2">
+                    <description>VTOL reserved 2</description>
+               </entry>
+               <entry value="23" name="MAV_TYPE_VTOL_RESERVED3">
+                    <description>VTOL reserved 3</description>
+               </entry>
+               <entry value="24" name="MAV_TYPE_VTOL_RESERVED4">
+                    <description>VTOL reserved 4</description>
+               </entry>
+               <entry value="25" name="MAV_TYPE_VTOL_RESERVED5">
+                    <description>VTOL reserved 5</description>
+               </entry>
                <entry value="26" name="MAV_TYPE_GIMBAL">
                     <description>Onboard gimbal</description>
                </entry>
@@ -2482,6 +2497,19 @@
             <field type="int32_t" name="baseline_c_mm">Current baseline in ECEF z or NED down component in mm.</field>
             <field type="uint32_t" name="accuracy">Current estimate of baseline accuracy.</field>
             <field type="int32_t" name="iar_num_hypotheses">Current number of integer ambiguity hypotheses.</field>
+        </message>
+        <message id="129" name="SCALED_IMU3">
+          <description>The RAW IMU readings for 3rd 9DOF sensor setup. This message should contain the scaled values to the described units</description>
+          <field type="uint32_t" name="time_boot_ms">Timestamp (milliseconds since system boot)</field>
+          <field type="int16_t" name="xacc">X acceleration (mg)</field>
+          <field type="int16_t" name="yacc">Y acceleration (mg)</field>
+          <field type="int16_t" name="zacc">Z acceleration (mg)</field>
+          <field type="int16_t" name="xgyro">Angular speed around X axis (millirad /sec)</field>
+          <field type="int16_t" name="ygyro">Angular speed around Y axis (millirad /sec)</field>
+          <field type="int16_t" name="zgyro">Angular speed around Z axis (millirad /sec)</field>
+          <field type="int16_t" name="xmag">X Magnetic field (milli tesla)</field>
+          <field type="int16_t" name="ymag">Y Magnetic field (milli tesla)</field>
+          <field type="int16_t" name="zmag">Z Magnetic field (milli tesla)</field>
         </message>
         <message id="130" name="DATA_TRANSMISSION_HANDSHAKE">
             <field type="uint8_t" name="type">type of requested/acknowledged data (as defined in ENUM DATA_TYPES in mavlink/include/mavlink_types.h)</field>
