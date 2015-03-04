@@ -164,42 +164,48 @@ static void do_erase_logs(void)
 #if AUTOTUNE_ENABLED == ENABLED
 struct PACKED log_AutoTune {
     LOG_PACKET_HEADER;
+    uint32_t time_ms;
     uint8_t axis;           // roll or pitch
     uint8_t tune_step;      // tuning PI or D up or down
+    float   rate_target;    // target achieved rotation rate
     float   rate_min;       // maximum achieved rotation rate
     float   rate_max;       // maximum achieved rotation rate
-    float   new_gain_rp;       // newly calculated gain
-    float   new_gain_rd;       // newly calculated gain
-    float   new_gain_sp;       // newly calculated gain
+    float   new_gain_rp;    // newly calculated gain
+    float   new_gain_rd;    // newly calculated gain
+    float   new_gain_sp;    // newly calculated gain
 };
 
 // Write an Autotune data packet
-static void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float rate_min, float rate_max, float new_gain_rp, float new_gain_rd, float new_gain_sp)
+static void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float rate_target, float rate_min, float rate_max, float new_gain_rp, float new_gain_rd, float new_gain_sp)
 {
     struct log_AutoTune pkt = {
         LOG_PACKET_HEADER_INIT(LOG_AUTOTUNE_MSG),
+        time_ms     : hal.scheduler->millis(),
         axis        : axis,
         tune_step   : tune_step,
+        rate_target : rate_target,
         rate_min    : rate_min,
         rate_max    : rate_max,
-        new_gain_rp  : new_gain_rp,
-        new_gain_rd  : new_gain_rd,
-        new_gain_sp  : new_gain_sp
+        new_gain_rp : new_gain_rp,
+        new_gain_rd : new_gain_rd,
+        new_gain_sp : new_gain_sp
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
 struct PACKED log_AutoTuneDetails {
     LOG_PACKET_HEADER;
-    int16_t angle_cd;       // lean angle in centi-degrees
-    float   rate_cds;       // current rotation rate in centi-degrees / second
+    uint32_t time_ms;
+    float    angle_cd;      // lean angle in centi-degrees
+    float    rate_cds;      // current rotation rate in centi-degrees / second
 };
 
 // Write an Autotune data packet
-static void Log_Write_AutoTuneDetails(int16_t angle_cd, float rate_cds)
+static void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds)
 {
     struct log_AutoTuneDetails pkt = {
         LOG_PACKET_HEADER_INIT(LOG_AUTOTUNEDETAILS_MSG),
+        time_ms     : hal.scheduler->millis(),
         angle_cd    : angle_cd,
         rate_cds    : rate_cds
     };
@@ -590,9 +596,9 @@ static const struct LogStructure log_structure[] PROGMEM = {
     LOG_COMMON_STRUCTURES,
 #if AUTOTUNE_ENABLED == ENABLED
     { LOG_AUTOTUNE_MSG, sizeof(log_AutoTune),
-      "ATUN", "BBfffff",       "Axis,TuneStep,RateMin,RateMax,RPGain,RDGain,SPGain" },
+      "ATUN", "IBBffffff",       "TimeMS,Axis,TuneStep,RateTarg,RateMin,RateMax,RP,RD,SP" },
     { LOG_AUTOTUNEDETAILS_MSG, sizeof(log_AutoTuneDetails),
-      "ATDE", "cf",          "Angle,Rate" },
+      "ATDE", "Iff",          "TimeMS,Angle,Rate" },
 #endif
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),       
       "OF",   "IBffff",   "TimeMS,Qual,flowX,flowY,bodyX,bodyY" },
@@ -675,8 +681,8 @@ static void start_logging()
 
 static void Log_Write_Startup() {}
 #if AUTOTUNE_ENABLED == ENABLED
-static void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float rate_min, float rate_max, float new_gain_rp, float new_gain_rd, float new_gain_sp) {}
-static void Log_Write_AutoTuneDetails(int16_t angle_cd, float rate_cds) {}
+static void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float rate_target, float rate_min, float rate_max, float new_gain_rp, float new_gain_rd, float new_gain_sp) {}
+static void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds) {}
 #endif
 static void Log_Write_Current() {}
 static void Log_Write_Attitude() {}
