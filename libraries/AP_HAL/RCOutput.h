@@ -70,7 +70,7 @@ public:
     /*
       force the safety switch off, enabling PWM output from the IO board
      */
-    virtual void     force_safety_off(void) {}
+    virtual bool     force_safety_off(void) { return false; }
 
     /*
       setup scaling of ESC output for ESCs that can output a

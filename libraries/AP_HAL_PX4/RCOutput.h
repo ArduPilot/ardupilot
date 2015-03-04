@@ -24,7 +24,7 @@ public:
     void     set_safety_pwm(uint32_t chmask, uint16_t period_us);
     void     set_failsafe_pwm(uint32_t chmask, uint16_t period_us);
     bool     force_safety_on(void);
-    void     force_safety_off(void);
+    bool     force_safety_off(void);
     void     set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm) {
         _esc_pwm_min = min_pwm;
         _esc_pwm_max = max_pwm;

@@ -210,12 +210,13 @@ bool PX4RCOutput::force_safety_on(void)
     return (ret == OK);
 }
 
-void PX4RCOutput::force_safety_off(void)
+bool PX4RCOutput::force_safety_off(void)
 {
     int ret = ioctl(_pwm_fd, PWM_SERVO_SET_FORCE_SAFETY_OFF, 0);
     if (ret != OK) {
         hal.console->printf("Failed to force safety off\n");
     }
+    return (ret == OK);
 }
 
 void PX4RCOutput::write(uint8_t ch, uint16_t period_us)
