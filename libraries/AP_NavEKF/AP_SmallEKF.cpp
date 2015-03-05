@@ -57,10 +57,10 @@ void SmallEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const Vect
         for (uint8_t i=3; i <= 5; i++) Cov[i][i] = sq(Sigma_velNED);
         for (uint8_t i=6; i <= 8; i++) Cov[i][i] = sq(Sigma_dAngBias);
         FiltInit = true;
-        hal.console->printf("SmallEKF Alignment Started\n");
+        hal.console->printf("\nSmallEKF Alignment Started\n");
     }
 
-    // We are using the IMU data from the flight vehicle and setting joint angles to zero for the time being
+    // We are using IMU data and joint angles from the gimbal
     gSense.gPsi = joint_angles.z; // yaw
     gSense.gPhi = joint_angles.x; // roll
     gSense.gTheta = joint_angles.y; // pitch
@@ -83,11 +83,12 @@ void SmallEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const Vect
     fuseVelocity(YawAligned);
 
     // Align the heading once there has been enough time for the filter to settle and the tilt corrections have dropped below a threshold
-    if ((((imuSampleTime_ms - StartTime_ms) > 5000 && TiltCorrection < 1e-4f) || ((imuSampleTime_ms - StartTime_ms) > 30000)) && !YawAligned) {
+    // Force it to align if too much time has lapsed
+    if (((((imuSampleTime_ms - StartTime_ms) > 5000 && TiltCorrection < 1e-4f) || (imuSampleTime_ms - StartTime_ms) > 30000)) && !YawAligned) {
         //calculate the initial heading using magnetometer, estimated tilt and declination
         alignHeading();
         YawAligned = true;
-        hal.console->printf("SmallEKF Alignment Completed\n");
+        hal.console->printf("\nSmallEKF Alignment Completed\n");
     }
 
     // Fuse magnetometer data if  we have new measurements and an aligned heading
@@ -631,10 +632,11 @@ void SmallEKF::readMagData()
         lastMagUpdate = _ahrs.get_compass()->last_update_usec();
 
         // read compass data and scale to improve numerical conditioning
-        magData = _ahrs.get_compass()->get_field() * 0.001f;
+        magData = _ahrs.get_compass()->get_field();
 
         // let other processes know that new compass data has arrived
         newDataMag = true;
+
     } else {
         newDataMag = false;
     }
@@ -843,22 +845,29 @@ float SmallEKF::calcMagHeadingInnov()
     Tms[1][2] = sinPhi;
     Tms[2][2] = cosTheta*cosPhi;
 
-    // get earth and body magnetic fields
-    Vector3f earth_magfield, body_magfield;
-    _main_ekf.getMagNED(earth_magfield);
-    _main_ekf.getMagXYZ(body_magfield);
-
-    earth_magfield *= 0.001f;
-    body_magfield *= 0.001f;
+    // get earth magnetic field estimate from main ekf if available to take advantage of main ekf magnetic field learning
+    Vector3f body_magfield, earth_magfield;
+    float declination;
+    if (_main_ekf.healthy()) {
+        _main_ekf.getMagNED(earth_magfield);
+        _main_ekf.getMagXYZ(body_magfield);
+        declination = atan2(earth_magfield.y,earth_magfield.x);
+    } else {
+        body_magfield.zero();
+        earth_magfield.zero();
+        declination = _ahrs.get_compass()->get_declination();
+    }
 
     // Define rotation from magnetometer to NED axes
     Matrix3f Tmn = Tsn*Tms;
-    // rotate magentic field measured at top plate into NED axes afer applying bias values learnt by SmallEKF
-    Vector3f magMeasNED = Tmn*(magData - body_magfield);
-    // the predicted measurement is the angle wrt magnetic north of the horizontal component of the measured field
-    float innovation = atan2(magMeasNED.y,magMeasNED.x) - atan2(earth_magfield.y,earth_magfield.x);
 
-    // Unwrap the innovation so it sits on the range from +-pi
+    // rotate magentic field measured at top plate into NED axes afer applying bias values learnt by main EKF
+    Vector3f magMeasNED = Tmn*(magData - body_magfield);
+
+    // calculate the innovation where the predicted measurement is the angle wrt magnetic north of the horizontal component of the measured field
+    float innovation = atan2(magMeasNED.y,magMeasNED.x) - declination;
+
+    // wrap the innovation so it sits on the range from +-pi
     if (innovation > 3.1415927f) {
         innovation = innovation - 6.2831853f;
     } else if (innovation < -3.1415927f) {
