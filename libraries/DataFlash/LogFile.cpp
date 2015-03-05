@@ -846,6 +846,50 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
 #endif
 }
 
+// Write a gimbal measurament and estimation data packet
+void DataFlash_Class::Log_Write_Gimbal(const AP_Gimbal &gimbal)
+{
+    uint32_t tstamp = hal.scheduler->millis();
+    Quaternion quatEst;
+    gimbal._ekf.getQuat(quatEst);
+    Vector3f eulerEst;
+    quatEst.to_euler(eulerEst.x, eulerEst.y, eulerEst.z);
+
+    struct log_Gimbal1 pkt1 = {
+        LOG_PACKET_HEADER_INIT(LOG_GIMBAL1_MSG),
+        time_ms : tstamp,
+        delta_time      : gimbal._measurament.delta_time,
+        delta_angles_x  : gimbal._measurament.delta_angles.x,
+        delta_angles_y  : gimbal._measurament.delta_angles.y,
+        delta_angles_z  : gimbal._measurament.delta_angles.z,
+        delta_velocity_x : gimbal._measurament.delta_velocity.x,
+        delta_velocity_y : gimbal._measurament.delta_velocity.y,
+        delta_velocity_z : gimbal._measurament.delta_velocity.z,
+        joint_angles_x  : gimbal._measurament.joint_angles.x,
+        joint_angles_y  : gimbal._measurament.joint_angles.y,
+        joint_angles_z  : gimbal._measurament.joint_angles.z
+    };
+    WriteBlock(&pkt1, sizeof(pkt1));
+
+    struct log_Gimbal2 pkt2 = {
+        LOG_PACKET_HEADER_INIT(LOG_GIMBAL2_MSG),
+        time_ms : tstamp,
+        est_sta : (uint8_t) gimbal._ekf.getStatus(),
+        est_x   : eulerEst.x,
+        est_y   : eulerEst.y,
+        est_z   : eulerEst.z,
+        rate_x  : gimbal.gimbalRateDemVec.x,
+        rate_y  : gimbal.gimbalRateDemVec.y,
+        rate_z  : gimbal.gimbalRateDemVec.z,
+        target_x: gimbal._angle_ef_target_rad.x,
+        target_y: gimbal._angle_ef_target_rad.y,
+        target_z: gimbal._angle_ef_target_rad.z
+       };
+    WriteBlock(&pkt2, sizeof(pkt2));
+}
+
+
+
 // Write a text message to the log
 void DataFlash_Class::Log_Write_Message(const char *message)
 {
