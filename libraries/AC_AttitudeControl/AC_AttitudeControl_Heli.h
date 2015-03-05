@@ -47,6 +47,9 @@ public:
     
     void update_feedforward_filter_rates(float time_step);
 
+	// set whether piro comp is enabled based on whether the correct flight mode is active
+    void set_piro_comp_enabled(bool enable);
+
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -75,8 +78,11 @@ private:
 
     // get_angle_boost - calculate total body frame throttle required to produce the given earth frame throttle
     virtual int16_t get_angle_boost(int16_t throttle_pwm);
-    
-    
+
+    // pirocomp params
+    AP_Int8		_user_piro_comp_enabled;    // Enable/Disable pirouette compensation
+    bool		_system_piro_comp_enabled;
+
     // LPF filters to act on Rate Feedforward terms to linearize output.
     // Due to complicated aerodynamic effects, feedforwards acting too fast can lead
     // to jerks on rate change requests.

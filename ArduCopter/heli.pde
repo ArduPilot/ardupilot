@@ -158,4 +158,12 @@ static void heli_update_rotor_speed_targets()
     }
 }
 
+static void update_heli_piro_comp(void)
+{
+    if (control_mode == ACRO) {
+        attitude_control.set_piro_comp_enabled(true);
+    } else {
+        attitude_control.set_piro_comp_enabled(false);
+    }
+}
 #endif  // FRAME_CONFIG == HELI_FRAME

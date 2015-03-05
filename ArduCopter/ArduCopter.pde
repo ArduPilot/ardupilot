@@ -763,6 +763,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { barometer_accumulate,  8,     25 },
 #if FRAME_CONFIG == HELI_FRAME
     { check_dynamic_flight,  8,     10 },
+    { update_heli_piro_comp, 40,    10 },
 #endif
     { update_notify,         8,     10 },
     { one_hz_loop,         400,     42 },
@@ -838,6 +839,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { barometer_accumulate,  2,     250 },
 #if FRAME_CONFIG == HELI_FRAME
     { check_dynamic_flight,  2,     100 },
+    { update_heli_piro_comp, 10,     10 },
 #endif
     { update_notify,         2,     100 },
     { one_hz_loop,         100,     420 },
