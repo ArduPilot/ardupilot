@@ -89,7 +89,7 @@ void OreoLED_PX4::update()
     }
 
     // handle firmware update event
-    if (AP_Notify::events.firmware_update) {
+    if (AP_Notify::flags.firmware_update) {
         set_macro(OREOLED_INSTANCE_ALL, OREOLED_PARAM_MACRO_COLOUR_CYCLE);
         return;
     }
