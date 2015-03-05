@@ -137,6 +137,7 @@
 #include <AP_ServoRelayEvents.h>
 #include <AP_Camera.h>          // Photo or video camera
 #include <AP_Mount.h>           // Camera/Antenna mount
+#include <AP_Gimbal.h>          // Camera rate controlled gimbal
 #include <AP_Airspeed.h>        // needed for AHRS build
 #include <AP_Vehicle.h>         // needed for AHRS build
 #include <AP_InertialNav.h>     // ArduPilot Mega inertial navigation library
@@ -654,6 +655,11 @@ static AP_HAL::AnalogSource* rssi_analog_source;
 // current_loc uses the baro/gps soloution for altitude rather than gps only.
 static AP_Mount camera_mount(ahrs, current_loc);
 #endif
+
+////////////////////////////////////////////////////////////////////////////////
+// AP_Gimbal
+////////////////////////////////////////////////////////////////////////////////
+static AP_Gimbal gimbal(ahrs, g.sysid_this_mav, 230);
 
 ////////////////////////////////////////////////////////////////////////////////
 // AC_Fence library to reduce fly-aways

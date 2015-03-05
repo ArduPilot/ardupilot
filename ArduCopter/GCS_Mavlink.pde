@@ -1013,8 +1013,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_GIMBAL_REPORT:
     {
 #if MOUNT == ENABLED
-        handle_gimbal_report(camera_mount, msg);
+        //handle_gimbal_report(camera_mount, msg);
 #endif
+        gimbal.receive_feedback(chan, msg);
+        Log_Write_Gimbal();
         break;
     }
 
