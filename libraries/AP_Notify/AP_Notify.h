@@ -89,6 +89,7 @@ public:
         uint16_t autotune_next_axis     : 1;    // 1 when autotune has completed one axis and is moving onto the next
         uint16_t mission_complete       : 1;    // 1 when the mission has completed successfully
         uint16_t waypoint_complete      : 1;    // 1 as vehicle completes a waypoint
+        uint16_t firmware_update        : 1;    // 1 just before vehicle firmware is updated
     };
 
     // the notify flags are static to allow direct class access
