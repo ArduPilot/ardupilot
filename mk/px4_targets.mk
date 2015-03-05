@@ -106,6 +106,11 @@ px4-clean: clean px4-archives-clean
 px4-cleandep: clean
 	$(v) find $(PX4_ROOT)/Build -type f -name '*.d' | xargs rm -f
 
+px4-v2-upload-wifi: px4-v2
+	scp ArduCopter-v2.px4 root@10.1.1.10:/tmp/
+	ssh root@10.1.1.10 loadPixhawk.py /tmp/ArduCopter-v2.px4
+	ssh root@10.1.1.10 rm /tmp/ArduCopter-v2.px4;
+
 px4-v1-upload: px4-v1
 	$(RULEHDR)
 	$(v) $(PX4_MAKE) px4fmu-v1_APM upload
