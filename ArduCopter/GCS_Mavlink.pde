@@ -1257,7 +1257,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             if (packet.param1 == 1 || packet.param1 == 3) {
                 AP_Notify::flags.firmware_update = 1;
                 update_notify();
-                hal.scheduler->delay(50);
+                hal.scheduler->delay(200);
                 // when packet.param1 == 3 we reboot to hold in bootloader
                 hal.scheduler->reboot(packet.param1 == 3);
                 result = MAV_RESULT_ACCEPTED;
