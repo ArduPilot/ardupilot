@@ -92,6 +92,9 @@ public:
     // get quaternion data
     void getQuat(Quaternion &quat) const;
 
+    // get filter alignment status - true is aligned
+    bool getStatus(void) const;
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
