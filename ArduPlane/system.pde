@@ -261,7 +261,9 @@ static void startup_ground(void)
 
     // read the radio to set trims
     // ---------------------------
-    trim_radio();               // This was commented out as a HACK.  Why?  I don't find a problem.
+    if (g.trim_rc_at_start != 0) {
+        trim_radio();
+    }
 
     // Save the settings for in-air restart
     // ------------------------------------
