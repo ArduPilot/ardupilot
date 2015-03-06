@@ -132,6 +132,7 @@ public:
         k_param_stall_prevention,
         k_param_optflow,
         k_param_cli_enabled,
+        k_param_trim_rc_at_start,
 
         // 100: Arming parameters
         k_param_arming = 100,
@@ -331,6 +332,8 @@ public:
 #endif
 
     AP_Int8  rtl_autoland;
+
+    AP_Int8  trim_rc_at_start;
 
     // Feed-forward gains
     //
