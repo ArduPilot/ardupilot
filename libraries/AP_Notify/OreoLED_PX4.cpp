@@ -218,7 +218,7 @@ void OreoLED_PX4::update()
                 set_macro(OREOLED_INSTANCE_ALL, OREOLED_PARAM_MACRO_BREATH);
             } else {
                 // manual flight modes stop breathing -- solid color
-                set_macro(OREOLED_INSTANCE_ALL, OREOLED_PARAM_MACRO_FADEIN);
+                set_macro(OREOLED_INSTANCE_ALL, OREOLED_PARAM_MACRO_RESET);
                 uint8_t oreoled_pattern_solid = OREOLED_PATTERN_SOLID;
                 send_bytes(0, (uint8_t) 1, &oreoled_pattern_solid);
                 send_bytes(1, (uint8_t) 1, &oreoled_pattern_solid);
