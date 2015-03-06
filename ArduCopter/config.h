@@ -630,7 +630,7 @@
  # define RATE_YAW_IMAX            	1000
 #endif
 #ifndef RATE_YAW_FILT_HZ
- # define RATE_YAW_FILT_HZ          AC_PID_FILT_HZ_DEFAULT
+ # define RATE_YAW_FILT_HZ          5.0f
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
