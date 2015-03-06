@@ -112,6 +112,11 @@ static bool set_mode(uint8_t mode)
         Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
     }
 
+    // update notify object
+    if (success) {
+        notify_flight_mode(control_mode);
+    }
+
     // return success or failure
     return success;
 }
@@ -266,6 +271,24 @@ static bool mode_allows_arming(uint8_t mode, bool arming_from_gcs) {
         return true;
     }
     return false;
+}
+
+// notify_flight_mode - sets notify object based on flight mode.  Only used for OreoLED notify device
+static void notify_flight_mode(uint8_t mode) {
+    switch(mode) {
+        case AUTO:
+        case GUIDED:
+        case RTL:
+        case CIRCLE:
+        case LAND:
+            // autopilot modes
+            AP_Notify::flags.autopilot_mode = true;
+            break;
+        default:
+            // all other are manual flight modes
+            AP_Notify::flags.autopilot_mode = false;
+            break;
+    }
 }
 
 //
