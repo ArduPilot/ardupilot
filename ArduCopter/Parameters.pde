@@ -416,14 +416,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: EKF_CHECK_THRESH
     // @DisplayName: EKF check compass and velocity variance threshold
     // @Description: Allows setting the maximum acceptable compass and velocity variance (0 to disable check)
-    // @Values: 0:Disabled, 0.8:Default, 1.0:Relaxed
+    // @Values: 0:Disabled, 0.6:Strict, 0.8:Default, 1.0:Relaxed
     // @User: Advanced
     GSCALAR(ekfcheck_thresh, "EKF_CHECK_THRESH",    EKFCHECK_THRESHOLD_DEFAULT),
 
     // @Param: DCM_CHECK_THRESH
     // @DisplayName: DCM yaw error threshold
     // @Description: Allows setting the maximum acceptable yaw error as a sin of the yaw error (0 to disable check)
-    // @Values: 0:Disabled, 0.8:Default, 0.98:Relaxed
+    // @Values: 0:Disabled, 0.6:Strict, 0.8:Default, 0.98:Relaxed
     // @User: Advanced
     GSCALAR(dcmcheck_thresh, "DCM_CHECK_THRESH",    DCMCHECK_THRESHOLD_DEFAULT),
 
