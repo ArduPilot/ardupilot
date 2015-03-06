@@ -33,7 +33,7 @@
 #include <OreoLED_PX4.h>
 
 #ifndef OREOLED_ENABLED
- # define OREOLED_ENABLED   0   // set to 1 to enable OreoLEDs
+ # define OREOLED_ENABLED   1   // set to 1 to enable OreoLEDs
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
