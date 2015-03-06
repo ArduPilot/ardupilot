@@ -43,45 +43,45 @@
 #define AUTOTUNE_AXIS_BITMASK_PITCH           2
 #define AUTOTUNE_AXIS_BITMASK_YAW             4
 
-#define AUTOTUNE_PILOT_OVERRIDE_TIMEOUT_MS  500    // restart tuning if pilot has left sticks in middle for 2 seconds
-#define AUTOTUNE_TESTING_STEP_TIMEOUT_MS    500    // timeout for tuning mode's testing step
-#define AUTOTUNE_LEVEL_ANGLE_CD             300    // angle which qualifies as level
-#define AUTOTUNE_REQUIRED_LEVEL_TIME_MS     250    // time we require the copter to be level
-#define AUTOTUNE_RD_STEP                  0.05f    // minimum increment when increasing/decreasing Rate D term
-#define AUTOTUNE_RP_STEP                  0.05f    // minimum increment when increasing/decreasing Rate P term
-#define AUTOTUNE_SP_STEP                  0.05f    // minimum increment when increasing/decreasing Stab P term
+#define AUTOTUNE_PILOT_OVERRIDE_TIMEOUT_MS  500     // restart tuning if pilot has left sticks in middle for 2 seconds
+#define AUTOTUNE_TESTING_STEP_TIMEOUT_MS    500     // timeout for tuning mode's testing step
+#define AUTOTUNE_LEVEL_ANGLE_CD             300     // angle which qualifies as level
+#define AUTOTUNE_REQUIRED_LEVEL_TIME_MS     250     // time we require the copter to be level
+#define AUTOTUNE_RD_STEP                  0.05f     // minimum increment when increasing/decreasing Rate D term
+#define AUTOTUNE_RP_STEP                  0.05f     // minimum increment when increasing/decreasing Rate P term
+#define AUTOTUNE_SP_STEP                  0.05f     // minimum increment when increasing/decreasing Stab P term
 #define AUTOTUNE_RD_TEST_NOISE            0.05f     // Rate D gains are reduced to 50% of their maximum value discovered during tuning
 #define AUTOTUNE_RD_BACKOFF                4.0f     // Rate D gains are reduced to 50% of their maximum value discovered during tuning
 #define AUTOTUNE_RP_BACKOFF                1.0f     // Rate P gains are reduced to 97.5% of their maximum value discovered during tuning
-#define AUTOTUNE_SP_BACKOFF               1.0f     // Stab P gains are reduced to 60% of their maximum value discovered during tuning
-#define AUTOTUNE_PI_RATIO_FOR_TESTING      0.1f    // I is set 10x smaller than P during testing
-#define AUTOTUNE_PI_RATIO_FINAL            2.5f   // I is set 1x P after testing
-#define AUTOTUNE_YAW_PI_RATIO_FINAL        0.1f   // I is set 1x P after testing
-#define AUTOTUNE_RD_MIN                  0.002f    // minimum Rate D value
-#define AUTOTUNE_RD_MAX                  0.050f    // maximum Rate D value
-#define AUTOTUNE_RLPF_MIN                  0.1f    // minimum Rate D value
-#define AUTOTUNE_RLPF_MAX                 10.0f    // maximum Rate D value
-#define AUTOTUNE_RP_MIN                   0.01f    // minimum Rate P value
-#define AUTOTUNE_RP_MAX                    5.0f    // maximum Rate P value
-#define AUTOTUNE_SP_MAX                   20.0f    // maximum Stab P value
+#define AUTOTUNE_SP_BACKOFF               1.0f      // Stab P gains are reduced to 60% of their maximum value discovered during tuning
+#define AUTOTUNE_PI_RATIO_FOR_TESTING      0.1f     // I is set 10x smaller than P during testing
+#define AUTOTUNE_PI_RATIO_FINAL            2.5f     // I is set 1x P after testing
+#define AUTOTUNE_YAW_PI_RATIO_FINAL        0.1f     // I is set 1x P after testing
+#define AUTOTUNE_RD_MIN                  0.002f     // minimum Rate D value
+#define AUTOTUNE_RD_MAX                  0.050f     // maximum Rate D value
+#define AUTOTUNE_RLPF_MIN                  0.1f     // minimum Rate Yaw filter value
+#define AUTOTUNE_RLPF_MAX                 10.0f     // maximum Rate Yaw filter value
+#define AUTOTUNE_RP_MIN                   0.01f     // minimum Rate P value
+#define AUTOTUNE_RP_MAX                    5.0f     // maximum Rate P value
+#define AUTOTUNE_SP_MAX                   20.0f     // maximum Stab P value
 #define AUTOTUNE_SP_MIN                    1.0f     // maximum Stab P value
 #define AUTOTUNE_ACCEL_RP_BACKOFF          1.5f     // back off from maximum acceleration
 #define AUTOTUNE_ACCEL_Y_BACKOFF           0.75f    // back off from maximum acceleration
 #define AUTOTUNE_RP_ACCEL_MIN          75000.0f     // Minimum acceleration for Roll and Pitch
 #define AUTOTUNE_Y_ACCEL_MIN           18000.0f     // Minimum acceleration for Roll and Pitch
-#define AUTOTUNE_SUCCESS_COUNT                4    // how many successful iterations we need to freeze at current gains
+#define AUTOTUNE_SUCCESS_COUNT                4     // how many successful iterations we need to freeze at current gains
 #define AUTOTUNE_D_UP_DOWN_MARGIN          0.2f     // The margin below the target that we tune D in
 
 // roll and pitch axes
-#define AUTOTUNE_TARGET_ANGLE_RLLPIT_CD    2000    // target angle during TESTING_RATE step that will cause us to move to next step
-#define AUTOTUNE_TARGET_RATE_RLLPIT_CDS    9000    // target roll/pitch rate during AUTOTUNE_STEP_TWITCHING step
-#define AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_CD    1000    // target angle during TESTING_RATE step that will cause us to move to next step
+#define AUTOTUNE_TARGET_ANGLE_RLLPIT_CD     2000    // target angle during TESTING_RATE step that will cause us to move to next step
+#define AUTOTUNE_TARGET_RATE_RLLPIT_CDS     9000    // target roll/pitch rate during AUTOTUNE_STEP_TWITCHING step
+#define AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_CD 1000    // target angle during TESTING_RATE step that will cause us to move to next step
 #define AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS 4500    // target roll/pitch rate during AUTOTUNE_STEP_TWITCHING step
 
 // yaw axis
-#define AUTOTUNE_TARGET_ANGLE_YAW_CD       1000    // target angle during TESTING_RATE step that will cause us to move to next step
-#define AUTOTUNE_TARGET_RATE_YAW_CDS       3000    // target yaw rate during AUTOTUNE_STEP_TWITCHING step
-#define AUTOTUNE_TARGET_MIN_ANGLE_YAW_CD       500    // target angle during TESTING_RATE step that will cause us to move to next step
+#define AUTOTUNE_TARGET_ANGLE_YAW_CD        1000    // target angle during TESTING_RATE step that will cause us to move to next step
+#define AUTOTUNE_TARGET_RATE_YAW_CDS        3000    // target yaw rate during AUTOTUNE_STEP_TWITCHING step
+#define AUTOTUNE_TARGET_MIN_ANGLE_YAW_CD     500    // target angle during TESTING_RATE step that will cause us to move to next step
 #define AUTOTUNE_TARGET_MIN_RATE_YAW_CDS    1500    // target yaw rate during AUTOTUNE_STEP_TWITCHING step
 
 // Auto Tune message ids for ground station
@@ -93,7 +93,7 @@
 
 // autotune modes (high level states)
 enum AutoTuneTuneMode {
-    AUTOTUNE_MODE_UNINITIALISED = 0,          // autotune has never been run
+    AUTOTUNE_MODE_UNINITIALISED = 0,        // autotune has never been run
     AUTOTUNE_MODE_TUNING = 1,               // autotune is testing gains
     AUTOTUNE_MODE_SUCCESS = 2,              // tuning has completed, user is flight testing the new gains
     AUTOTUNE_MODE_FAILED = 3,               // tuning has failed, user is flying on original gains
@@ -118,7 +118,7 @@ enum AutoTuneTuneType {
     AUTOTUNE_TYPE_RD_UP = 0,                // rate D is being tuned up
     AUTOTUNE_TYPE_RD_DOWN = 1,              // rate D is being tuned down
     AUTOTUNE_TYPE_RP_UP = 2,                // rate P is being tuned up
-    AUTOTUNE_TYPE_SP_DOWN = 3,                 // angle P is being tuned up
+    AUTOTUNE_TYPE_SP_DOWN = 3,              // angle P is being tuned up
     AUTOTUNE_TYPE_SP_UP = 4                 // angle P is being tuned up
 };
 
@@ -133,15 +133,15 @@ struct autotune_state_struct {
 } autotune_state;
 
 // variables
-static uint32_t autotune_override_time;                                     // the last time the pilot overrode the controls
-static float    autotune_test_min;                                          // the minimum angular rate achieved during TESTING_RATE step
-static float    autotune_test_max;                                          // the maximum angular rate achieved during TESTING_RATE step
-static uint32_t autotune_step_start_time;                                   // start time of current tuning step (used for timeout checks)
-static uint32_t autotune_step_stop_time;                                // start time of current tuning step (used for timeout checks)
-static int8_t   autotune_counter;                                           // counter for tuning gains
-static float    autotune_target_rate, autotune_start_rate;                                // target and start rate
-static float    autotune_target_angle, autotune_start_angle;            // target and start angles
-static float    rate_max, autotune_test_accel_max;                     // maximum acceleration variables
+static uint32_t autotune_override_time;                         // the last time the pilot overrode the controls
+static float    autotune_test_min;                              // the minimum angular rate achieved during TESTING_RATE step
+static float    autotune_test_max;                              // the maximum angular rate achieved during TESTING_RATE step
+static uint32_t autotune_step_start_time;                       // start time of current tuning step (used for timeout checks)
+static uint32_t autotune_step_stop_time;                        // start time of current tuning step (used for timeout checks)
+static int8_t   autotune_counter;                               // counter for tuning gains
+static float    autotune_target_rate, autotune_start_rate;      // target and start rate
+static float    autotune_target_angle, autotune_start_angle;    // target and start angles
+static float    rate_max, autotune_test_accel_max;              // maximum acceleration variables
 
 // backup of currently being tuned parameter values
 static float    orig_roll_rp = 0, orig_roll_ri, orig_roll_rd, orig_roll_sp;
