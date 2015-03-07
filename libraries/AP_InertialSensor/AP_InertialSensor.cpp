@@ -769,16 +769,19 @@ AP_InertialSensor::_init_gyro()
         }
 
         for (uint8_t k=0; k<num_gyros; k++) {
-            if (converged[k]) continue;
             if (j == 0) {
                 best_diff[k] = diff_norm[k];
                 best_avg[k] = gyro_avg[k];
             } else if (gyro_diff[k].length() < ToRad(0.1f)) {
                 // we want the average to be within 0.1 bit, which is 0.04 degrees/s
                 last_average[k] = (gyro_avg[k] * 0.5f) + (last_average[k] * 0.5f);
-                _gyro_offset[k] = last_average[k];
-                converged[k] = true;
-                num_converged++;
+                if (!converged[k] || last_average[k].length() < _gyro_offset[k].get().length()) {
+                    _gyro_offset[k] = last_average[k];
+                }
+                if (!converged[k]) {
+                    converged[k] = true;
+                    num_converged++;
+                }
             } else if (diff_norm[k] < best_diff[k]) {
                 best_diff[k] = diff_norm[k];
                 best_avg[k] = (gyro_avg[k] * 0.5f) + (last_average[k] * 0.5f);
