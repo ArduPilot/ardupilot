@@ -973,7 +973,6 @@ void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
     reset_offset_altitude();
 }
 
-
 void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 {
     switch (msg->msgid) {
@@ -1040,15 +1039,18 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     zero_airspeed(false);
                 }
                 in_calibration = false;
+                result = MAV_RESULT_ACCEPTED;
             } else if (packet.param1 == 1 ||
                        packet.param2 == 1) {
                 startup_INS_ground(true);
+                result = MAV_RESULT_ACCEPTED;
             } else if (packet.param4 == 1) {
                 trim_radio();
+                result = MAV_RESULT_ACCEPTED;
             } 
             else if (packet.param5 == 1) {
                 float trim_roll, trim_pitch;
-                AP_InertialSensor_UserInteract_MAVLink interact(chan);
+                AP_InertialSensor_UserInteract_MAVLink interact(this);
                 if (g.skip_gyro_cal) {
                     // start with gyro calibration, otherwise if the user
                     // has SKIP_GYRO_CAL=1 they don't get to do it
@@ -1057,12 +1059,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 if(ins.calibrate_accel(&interact, trim_roll, trim_pitch)) {
                     // reset ahrs's trim to suggested values from calibration routine
                     ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
+                    result = MAV_RESULT_ACCEPTED;
+                } else {
+                    result = MAV_RESULT_FAILED;
                 }
             }
             else {
                     send_text_P(SEVERITY_LOW, PSTR("Unsupported preflight calibration"));
             }
-            result = MAV_RESULT_ACCEPTED;
             break;
 
         case MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS:
