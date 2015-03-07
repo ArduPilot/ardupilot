@@ -734,6 +734,7 @@ AP_InertialSensor::_init_gyro()
     // if the gyros are stable, we should get it in 1 second
     for (int16_t j = 0; j <= 30*4 && num_converged < num_gyros; j++) {
         Vector3f gyro_sum[INS_MAX_INSTANCES], gyro_avg[INS_MAX_INSTANCES], gyro_diff[INS_MAX_INSTANCES];
+        Vector3f accel_start;
         float diff_norm[INS_MAX_INSTANCES];
         uint8_t i;
 
@@ -744,6 +745,7 @@ AP_InertialSensor::_init_gyro()
         for (uint8_t k=0; k<num_gyros; k++) {
             gyro_sum[k].zero();
         }
+        accel_start = get_accel(0);
         for (i=0; i<50; i++) {
             update();
             for (uint8_t k=0; k<num_gyros; k++) {
@@ -751,6 +753,15 @@ AP_InertialSensor::_init_gyro()
             }
             hal.scheduler->delay(5);
         }
+
+        Vector3f accel_diff = get_accel(0) - accel_start;
+        if (accel_diff.length() > 0.2f) {
+            // the accelerometers changed during the gyro sum. Skip
+            // this sample. This copes with doing gyro cal on a
+            // steadily moving platform
+            continue;
+        }
+
         for (uint8_t k=0; k<num_gyros; k++) {
             gyro_avg[k] = gyro_sum[k] / i;
             gyro_diff[k] = last_average[k] - gyro_avg[k];
