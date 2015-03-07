@@ -56,6 +56,8 @@ enum ap_message {
     MSG_MOUNT_STATUS,
     MSG_OPTICAL_FLOW,
     MSG_GIMBAL_REPORT,
+    MSG_MAG_CAL_PROGRESS,
+    MSG_MAG_CAL_REPORT,
     MSG_EKF_STATUS_REPORT,
     MSG_RETRY_DEFERRED // this must be last
 };
