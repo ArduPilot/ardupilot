@@ -23,32 +23,36 @@
 #include <AP_Math.h>
 #include "LowPassFilter2p.h"
 
-void LowPassFilter2p::set_cutoff_frequency(float sample_freq, float cutoff_freq)
+float DigitalBiquadFilter::apply(float sample, const struct biquad_params params)
 {
-    _cutoff_freq = cutoff_freq;
-    float fr = sample_freq/_cutoff_freq;
-    float ohm = tanf(PI/fr);
-    float c = 1.0f+2.0f*cosf(PI/4.0f)*ohm + ohm*ohm;
-    _b0 = ohm*ohm/c;
-    _b1 = 2.0f*_b0;
-    _b2 = _b0;
-    _a1 = 2.0f*(ohm*ohm-1.0f)/c;
-    _a2 = (1.0f-2.0f*cosf(PI/4.0f)*ohm+ohm*ohm)/c;
-}
+    if(params.cutoff_freq == 0 || params.sample_freq == 0) {
+        return sample;
+    }
 
-float LowPassFilter2p::apply(float sample)
-{
-    // do the filtering
-    float delay_element_0 = sample - _delay_element_1 * _a1 - _delay_element_2 * _a2;
+    float delay_element_0 = sample - _delay_element_1 * params.a1 - _delay_element_2 * params.a2;
     if (isnan(delay_element_0) || isinf(delay_element_0)) {
-        // don't allow bad values to propogate via the filter
         delay_element_0 = sample;
     }
-    float output = delay_element_0 * _b0 + _delay_element_1 * _b1 + _delay_element_2 * _b2;
-    
+    float output = delay_element_0 * params.b0 + _delay_element_1 * params.b1 + _delay_element_2 * params.b2;
+
     _delay_element_2 = _delay_element_1;
     _delay_element_1 = delay_element_0;
 
-    // return the value.  Should be no need to check limits
     return output;
+}
+
+void DigitalBiquadFilter::compute_params(float sample_freq, float cutoff_freq, biquad_params &ret)
+{
+    ret.cutoff_freq = cutoff_freq;
+    ret.sample_freq = sample_freq;
+
+    float fr = sample_freq/cutoff_freq;
+    float ohm = tanf(PI/fr);
+    float c = 1.0f+2.0f*cosf(PI/4.0f)*ohm + ohm*ohm;
+
+    ret.b0 = ohm*ohm/c;
+    ret.b1 = 2.0f*ret.b0;
+    ret.b2 = ret.b0;
+    ret.a1 = 2.0f*(ohm*ohm-1.0f)/c;
+    ret.a2 = (1.0f-2.0f*cosf(PI/4.0f)*ohm+ohm*ohm)/c;
 }

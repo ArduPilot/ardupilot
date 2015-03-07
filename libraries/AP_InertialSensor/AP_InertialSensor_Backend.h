@@ -36,7 +36,7 @@ public:
     /* 
      * Update the sensor data. Called by the frontend to transfer
      * accumulated sensor readings to the frontend structure via the
-     * _rotate_and_offset_gyro() and _rotate_and_offset_accel() functions
+     * _publish_gyro() and _publish_accel() functions
      */
     virtual bool update() = 0;
 
@@ -61,11 +61,17 @@ protected:
     // access to frontend
     AP_InertialSensor &_imu;
 
-    // rotate gyro vector and offset
-    void _rotate_and_offset_gyro(uint8_t instance, const Vector3f &gyro);
+    void _rotate_and_correct_accel(uint8_t instance, Vector3f &accel);
+    void _rotate_and_correct_gyro(uint8_t instance, Vector3f &gyro);
 
-    // rotate accel vector, scale and offset
-    void _rotate_and_offset_accel(uint8_t instance, const Vector3f &accel);
+    void _publish_delta_velocity(uint8_t instance, const Vector3f &delta_velocity);
+    void _publish_delta_angle(uint8_t instance, const Vector3f &delta_angle);
+
+    // rotate gyro vector, offset and publish
+    void _publish_gyro(uint8_t instance, const Vector3f &gyro, bool rotate_and_correct = true);
+
+    // rotate accel vector, scale, offset and publish
+    void _publish_accel(uint8_t instance, const Vector3f &accel, bool rotate_and_correct = true);
 
     // set accelerometer error_count
     void _set_accel_error_count(uint8_t instance, uint32_t error_count);

@@ -247,6 +247,8 @@ AP_InertialSensor::AP_InertialSensor() :
         _accel_error_count[i] = 0;
         _gyro_error_count[i] = 0;
     }
+    memset(_delta_velocity_valid,0,sizeof(_delta_velocity_valid));
+    memset(_delta_angle_valid,0,sizeof(_delta_angle_valid));
 }
 
 
@@ -998,10 +1000,12 @@ void AP_InertialSensor::update(void)
     if (!_hil_mode) {
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
             // mark sensors unhealthy and let update() in each backend
-            // mark them healthy via _rotate_and_offset_gyro() and
-            // _rotate_and_offset_accel() 
+            // mark them healthy via _publish_gyro() and
+            // _publish_accel()
             _gyro_healthy[i] = false;
             _accel_healthy[i] = false;
+            _delta_velocity_valid[i] = false;
+            _delta_angle_valid[i] = false;
         }
         for (uint8_t i=0; i<_backend_count; i++) {
             _backends[i]->update();
