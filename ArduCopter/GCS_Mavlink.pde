@@ -1134,7 +1134,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 // 3d accel calibration
                 float trim_roll, trim_pitch;
                 // this blocks
-                AP_InertialSensor_UserInteract_MAVLink interact(chan);
+                AP_InertialSensor_UserInteract_MAVLink interact(this);
                 if(ins.calibrate_accel(&interact, trim_roll, trim_pitch)) {
                     // reset ahrs's trim to suggested values from calibration routine
                     ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
