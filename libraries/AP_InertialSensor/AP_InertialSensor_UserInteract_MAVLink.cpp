@@ -50,7 +50,14 @@ void AP_InertialSensor_UserInteract_MAVLink::_printf_P(const prog_char* fmt, ...
         // STATUSTEXT messages should not add linefeed
         msg[strlen(msg)-1] = 0;
     }
+    AP_HAL::UARTDriver *uart = _gcs->get_uart();
+    /*
+      to ensure these messages get to the user we need to wait for the
+      port send buffer to have enough room
+     */
+    while (uart->txspace() < MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_STATUSTEXT_LEN) {
+        hal.scheduler->delay(1);
+    }
     _gcs->send_text(SEVERITY_HIGH, msg);
-    hal.scheduler->delay(10);
 }
 
