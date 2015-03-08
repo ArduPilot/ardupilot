@@ -179,6 +179,9 @@ void AP_Motors::output()
     // calc filtered battery voltage and lift_max
     update_lift_max_from_batt_voltage();
 
+    // move throttle_low_comp towards desired throttle low comp
+    update_throttle_low_comp();
+
     // output to motors
     if (_flags.armed ) {
         output_armed();
@@ -317,4 +320,18 @@ void AP_Motors::update_battery_resistance()
             }
         }
     }
+}
+
+// update_throttle_low_comp - slew set_throttle_low_comp to requested value
+void AP_Motors::update_throttle_low_comp()
+{
+    // slew _throttle_low_comp to _throttle_low_comp_desired
+    if (_throttle_low_comp < _throttle_low_comp_desired) {
+        // increase quickly (i.e. from 0.1 to 0.9 in 0.8 seconds)
+        _throttle_low_comp += min(1.0f/_loop_rate, _throttle_low_comp_desired-_throttle_low_comp);
+    } else if (_throttle_low_comp > _throttle_low_comp_desired) {
+        // reduce more slowly (from 0.9 to 0.1 in 1.8 seconds)
+        _throttle_low_comp -= min(0.5f/_loop_rate, _throttle_low_comp-_throttle_low_comp_desired);
+    }
+    _throttle_low_comp = constrain_float(_throttle_low_comp, 0.1f, 1.0f);
 }

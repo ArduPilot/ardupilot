@@ -156,6 +156,11 @@ public:
     // set_current - set current to be used for output scaling
     virtual void        set_current(float current){ _batt_current = current; }
 
+    // set_throttle_low_comp - set desired throttle_low_comp (actual throttle_low_comp is slewed towards this value over 1~2 seconds)
+    //  low values favour pilot/autopilot throttle over attitude control, high values favour attitude control over throttle
+    //  has no effect when throttle is above hover throttle
+    void                set_throttle_low_comp(float throttle_low_comp) { _throttle_low_comp_desired = throttle_low_comp; }
+
     // get_lift_max - get maximum lift ratio
     float               get_lift_max() { return _lift_max; }
 
@@ -211,6 +216,9 @@ protected:
     // update_battery_resistance - calculate battery resistance when throttle is above hover_out
     void                update_battery_resistance();
 
+    // update_throttle_low_comp - updates thr_low_comp value towards the target
+    void                update_throttle_low_comp();
+
     // get_voltage_comp_gain - return battery voltage compensation gain
     float               get_voltage_comp_gain() const { return 1.0f/_lift_max; }
 
@@ -247,6 +255,7 @@ protected:
     int16_t             _max_throttle;          // the maximum throttle to be sent to the motors (sometimes limited by slow start)
     int16_t             _hover_out;             // the estimated hover throttle as pct * 10 (i.e. 0 ~ 1000)
     int16_t             _spin_when_armed_ramped;// equal to _spin_when_armed parameter but slowly ramped up from zero
+    float               _throttle_low_comp_desired; // desired throttle_low_comp value, actual throttle_low_comp is slewed towards this value over 1~2 seconds
 
     // battery voltage compensation variables
     float               _batt_voltage;          // latest battery voltage reading
