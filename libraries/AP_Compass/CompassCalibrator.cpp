@@ -278,7 +278,7 @@ bool CompassCalibrator::accept_sample(const Vector3f& sample)
         return false;
     }
 
-    float max_distance = fabsf(5.38709f * _sphere_param.named.radius / sqrtf((float)COMPASS_CAL_NUM_SAMPLES)) / 2.0f;
+    float max_distance = fabsf(5.38709f * _sphere_param.named.radius / sqrtf((float)COMPASS_CAL_NUM_SAMPLES)) / 3.0f;
 
     for (uint16_t i = 0; i<_samples_collected; i++){
         float distance = (sample - _sample_buffer[i].get()).length();
