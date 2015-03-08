@@ -110,8 +110,11 @@ private:
 
     // mean squared residuals
     float _fitness;
+    float _initial_fitness;
 
     float _tolerance;
+
+    float _lambda;
 
     sphere_param_t _sphere_param;
     ellipsoid_param_t _ellipsoid_param;
