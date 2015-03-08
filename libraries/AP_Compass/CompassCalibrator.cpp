@@ -234,8 +234,18 @@ bool CompassCalibrator::set_status(compass_cal_status_t status) {
 }
 
 bool CompassCalibrator::fit_acceptable() {
-    //TODO check all params
-    return _fitness <= sq(_tolerance);
+    if( _sphere_param.named.radius   > 200  &&                  //Earth's magnetic field strength range: 250-650mG
+        _sphere_param.named.radius   < 700  &&
+        fabsf(_sphere_param.named.offset.x) < 1000 &&
+        fabsf(_sphere_param.named.offset.y) < 1000 &&
+        fabsf(_sphere_param.named.offset.z) < 1000 &&
+        fabsf(_ellipsoid_param.named.offdiag.x) <  1.0f &&      //absolute of sine/cosine output cannot be greater than 1
+        fabsf(_ellipsoid_param.named.offdiag.x) <  1.0f &&
+        fabsf(_ellipsoid_param.named.offdiag.x) <  1.0f ){
+
+            return _fitness <= sq(_tolerance);
+        }
+    return false;
 }
 
 void CompassCalibrator::thin_samples() {
