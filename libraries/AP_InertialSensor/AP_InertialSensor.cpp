@@ -758,7 +758,8 @@ AP_InertialSensor::_init_gyro()
         if (accel_diff.length() > 0.2f) {
             // the accelerometers changed during the gyro sum. Skip
             // this sample. This copes with doing gyro cal on a
-            // steadily moving platform
+            // steadily moving platform. The value 0.2 corresponds
+            // with around 5 degrees/second of rotation.
             continue;
         }
 
