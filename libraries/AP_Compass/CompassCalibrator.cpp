@@ -323,17 +323,25 @@ float CompassCalibrator::calc_mean_squared_residuals(const sphere_param_t& sp, c
     return sum;
 }
 
-void CompassCalibrator::calc_sphere_jacob(const Vector3f& sample, const sphere_param_t& sp, sphere_param_t &ret) const
-{
+void CompassCalibrator::calc_sphere_jacob(const Vector3f& sample, const sphere_param_t& sp, sphere_param_t &ret) const{
     const Vector3f &offset = sp.named.offset;
     const Vector3f &diag = _ellipsoid_param.named.diag;
     const Vector3f &offdiag = _ellipsoid_param.named.offdiag;
+    Matrix3f softiron(
+        diag.x    , offdiag.x , offdiag.y,
+        offdiag.x , diag.y    , offdiag.z,
+        offdiag.y , offdiag.z , diag.z
+    );
 
-    ret.named.radius = sp.named.radius/fabsf(sp.named.radius);
+    float A =  (diag.x    * (sample.x + offset.x)) + (offdiag.x * (sample.y + offset.y)) + (offdiag.y * (sample.z + offset.z));
+    float B =  (offdiag.x * (sample.x + offset.x)) + (diag.y    * (sample.y + offset.y)) + (offdiag.z * (sample.z + offset.z));
+    float C =  (offdiag.y * (sample.x + offset.x)) + (offdiag.z * (sample.y + offset.y)) + (diag.z    * (sample.z + offset.z));
+    float length = (softiron*(sample+offset)).length();
 
-    ret.named.offset.x = -((2.0f*offdiag.y*(offdiag.y*(sample.x+offset.x)+offdiag.z*(sample.y+offset.y)+diag.z*(sample.z+offset.z))+2.0f*diag.x*(diag.x*(sample.x+offset.x)+offdiag.x*(sample.y+offset.y)+offdiag.y*(sample.z+offset.z))+2.0f*offdiag.x*(offdiag.x*(sample.x+offset.x)+diag.y*(sample.y+offset.y)+offdiag.z*(sample.z+offset.z)))/(2.0f*sqrtf(sq(offdiag.y*(sample.x+offset.x)+offdiag.z*(sample.y+offset.y)+diag.z*(sample.z+offset.z))+sq(diag.x*(sample.x+offset.x)+offdiag.x*(sample.y+offset.y)+offdiag.y*(sample.z+offset.z))+sq(offdiag.x*(sample.x+offset.x)+diag.y*(sample.y+offset.y)+offdiag.z*(sample.z+offset.z)))));
-    ret.named.offset.y = -((2.0f*offdiag.z*(offdiag.y*(sample.x+offset.x)+offdiag.z*(sample.y+offset.y)+diag.z*(sample.z+offset.z))+2.0f*offdiag.x*(diag.x*(sample.x+offset.x)+offdiag.x*(sample.y+offset.y)+offdiag.y*(sample.z+offset.z))+2.0f*diag.y*(offdiag.x*(sample.x+offset.x)+diag.y*(sample.y+offset.y)+offdiag.z*(sample.z+offset.z)))/(2.0f*sqrtf(sq(offdiag.y*(sample.x+offset.x)+offdiag.z*(sample.y+offset.y)+diag.z*(sample.z+offset.z))+sq(diag.x*(sample.x+offset.x)+offdiag.x*(sample.y+offset.y)+offdiag.y*(sample.z+offset.z))+sq(offdiag.x*(sample.x+offset.x)+diag.y*(sample.y+offset.y)+offdiag.z*(sample.z+offset.z)))));
-    ret.named.offset.z = -((2.0f*diag.z*(offdiag.y*(sample.x+offset.x)+offdiag.z*(sample.y+offset.y)+diag.z*(sample.z+offset.z))+2.0f*offdiag.y*(diag.x*(sample.x+offset.x)+offdiag.x*(sample.y+offset.y)+offdiag.y*(sample.z+offset.z))+2.0f*offdiag.z*(offdiag.x*(sample.x+offset.x)+diag.y*(sample.y+offset.y)+offdiag.z*(sample.z+offset.z)))/(2.0f*sqrtf(sq(offdiag.y*(sample.x+offset.x)+offdiag.z*(sample.y+offset.y)+diag.z*(sample.z+offset.z))+sq(diag.x*(sample.x+offset.x)+offdiag.x*(sample.y+offset.y)+offdiag.y*(sample.z+offset.z))+sq(offdiag.x*(sample.x+offset.x)+diag.y*(sample.y+offset.y)+offdiag.z*(sample.z+offset.z)))));
+    ret.named.radius = 1;
+    ret.named.offset.x = -1.0f * (((diag.x    * A) + (offdiag.x * B) + (offdiag.y * C))/length);
+    ret.named.offset.y = -1.0f * (((offdiag.x * A) + (diag.y    * B) + (offdiag.z * C))/length);
+    ret.named.offset.z = -1.0f * (((offdiag.y * A) + (offdiag.z * B) + (diag.z    * C))/length);
 }
 
 void CompassCalibrator::run_sphere_fit(uint8_t max_iterations)
@@ -425,18 +433,28 @@ void CompassCalibrator::run_sphere_fit(uint8_t max_iterations)
 }
 
 
-void CompassCalibrator::calc_ellipsoid_jacob(const Vector3f& sample, const ellipsoid_param_t& ep, ellipsoid_param_t &ret) const
-{
+
+void CompassCalibrator::calc_ellipsoid_jacob(const Vector3f& sample, const ellipsoid_param_t& ep, ellipsoid_param_t &ret) const{
     const Vector3f &offset = _sphere_param.named.offset;
     const Vector3f &diag = ep.named.diag;
     const Vector3f &offdiag = ep.named.offdiag;
+    Matrix3f softiron(
+        diag.x    , offdiag.x , offdiag.y,
+        offdiag.x , diag.y    , offdiag.z,
+        offdiag.y , offdiag.z , diag.z
+    );
 
-    ret.named.diag.x = -(((sample.x+offset.x)*(diag.x*(sample.x+offset.x)+offdiag.x*(sample.y+offset.y)+offdiag.y*(sample.z+offset.z)))/sqrtf(sq(offdiag.y*(sample.x+offset.x)+offdiag.z*(sample.y+offset.y)+diag.z*(sample.z+offset.z))+sq(diag.x*(sample.x+offset.x)+offdiag.x*(sample.y+offset.y)+offdiag.y*(sample.z+offset.z))+sq(offdiag.x*(sample.x+offset.x)+diag.y*(sample.y+offset.y)+offdiag.z*(sample.z+offset.z))));
-    ret.named.diag.y = -(((sample.y+offset.y)*(offdiag.x*(sample.x+offset.x)+diag.y*(sample.y+offset.y)+offdiag.z*(sample.z+offset.z)))/sqrtf(sq(offdiag.y*(sample.x+offset.x)+offdiag.z*(sample.y+offset.y)+diag.z*(sample.z+offset.z))+sq(diag.x*(sample.x+offset.x)+offdiag.x*(sample.y+offset.y)+offdiag.y*(sample.z+offset.z))+sq(offdiag.x*(sample.x+offset.x)+diag.y*(sample.y+offset.y)+offdiag.z*(sample.z+offset.z))));
-    ret.named.diag.z = -(((sample.z+offset.z)*(offdiag.y*(sample.x+offset.x)+offdiag.z*(sample.y+offset.y)+diag.z*(sample.z+offset.z)))/sqrtf(sq(offdiag.y*(sample.x+offset.x)+offdiag.z*(sample.y+offset.y)+diag.z*(sample.z+offset.z))+sq(diag.x*(sample.x+offset.x)+offdiag.x*(sample.y+offset.y)+offdiag.y*(sample.z+offset.z))+sq(offdiag.x*(sample.x+offset.x)+diag.y*(sample.y+offset.y)+offdiag.z*(sample.z+offset.z))));
-    ret.named.offdiag.x = -((2.0f*(sample.y+offset.y)*(diag.x*(sample.x+offset.x)+offdiag.x*(sample.y+offset.y)+offdiag.y*(sample.z+offset.z))+2.0f*(sample.x+offset.x)*(offdiag.x*(sample.x+offset.x)+diag.y*(sample.y+offset.y)+offdiag.z*(sample.z+offset.z)))/(2.0f*sqrtf(sq(offdiag.y*(sample.x+offset.x)+offdiag.z*(sample.y+offset.y)+diag.z*(sample.z+offset.z))+sq(diag.x*(sample.x+offset.x)+offdiag.x*(sample.y+offset.y)+offdiag.y*(sample.z+offset.z))+sq(offdiag.x*(sample.x+offset.x)+diag.y*(sample.y+offset.y)+offdiag.z*(sample.z+offset.z)))));
-    ret.named.offdiag.y = -((2.0f*(sample.x+offset.x)*(offdiag.y*(sample.x+offset.x)+offdiag.z*(sample.y+offset.y)+diag.z*(sample.z+offset.z))+2.0f*(sample.z+offset.z)*(diag.x*(sample.x+offset.x)+offdiag.x*(sample.y+offset.y)+offdiag.y*(sample.z+offset.z)))/(2.0f*sqrtf(sq(offdiag.y*(sample.x+offset.x)+offdiag.z*(sample.y+offset.y)+diag.z*(sample.z+offset.z))+sq(diag.x*(sample.x+offset.x)+offdiag.x*(sample.y+offset.y)+offdiag.y*(sample.z+offset.z))+sq(offdiag.x*(sample.x+offset.x)+diag.y*(sample.y+offset.y)+offdiag.z*(sample.z+offset.z)))));
-    ret.named.offdiag.z = -((2.0f*(sample.y+offset.y)*(offdiag.y*(sample.x+offset.x)+offdiag.z*(sample.y+offset.y)+diag.z*(sample.z+offset.z))+2.0f*(sample.z+offset.z)*(offdiag.x*(sample.x+offset.x)+diag.y*(sample.y+offset.y)+offdiag.z*(sample.z+offset.z)))/(2.0f*sqrtf(sq(offdiag.y*(sample.x+offset.x)+offdiag.z*(sample.y+offset.y)+diag.z*(sample.z+offset.z))+sq(diag.x*(sample.x+offset.x)+offdiag.x*(sample.y+offset.y)+offdiag.y*(sample.z+offset.z))+sq(offdiag.x*(sample.x+offset.x)+diag.y*(sample.y+offset.y)+offdiag.z*(sample.z+offset.z)))));
+    float A =  (diag.x    * (sample.x + offset.x)) + (offdiag.x * (sample.y + offset.y)) + (offdiag.y * (sample.z + offset.z));
+    float B =  (offdiag.x * (sample.x + offset.x)) + (diag.y    * (sample.y + offset.y)) + (offdiag.z * (sample.z + offset.z));
+    float C =  (offdiag.y * (sample.x + offset.x)) + (offdiag.z * (sample.y + offset.y)) + (diag.z    * (sample.z + offset.z));
+    float length = (softiron*(sample+offset)).length();
+
+    ret.named.diag.x = -1.0f * ((sample.x + offset.x) * A)/length;
+    ret.named.diag.y = -1.0f * ((sample.y + offset.y) * B)/length;
+    ret.named.diag.z = -1.0f * ((sample.z + offset.z) * C)/length;
+    ret.named.offdiag.x = -1.0f * (((sample.y + offset.y) * A) + ((sample.z + offset.z) * B))/length;
+    ret.named.offdiag.y = -1.0f * (((sample.z + offset.z) * A) + ((sample.x + offset.x) * C))/length;
+    ret.named.offdiag.z = -1.0f * (((sample.z + offset.z) * B) + ((sample.y + offset.y) * C))/length;
 }
 
 void CompassCalibrator::run_ellipsoid_fit(uint8_t max_iterations)
