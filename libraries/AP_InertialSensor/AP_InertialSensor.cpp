@@ -716,7 +716,6 @@ AP_InertialSensor::_init_gyro()
         best_diff[k] = 0;
         last_average[k].zero();
         converged[k] = false;
-        _gyro_cal_ok[k] = true; // default calibration ok flag to true
     }
 
     for(int8_t c = 0; c < 5; c++) {
@@ -794,11 +793,6 @@ AP_InertialSensor::_init_gyro()
     // stop flashing leds
     AP_Notify::flags.initialising = false;
 
-    if (num_converged == num_gyros) {
-        // all OK
-        return;
-    }
-
     // we've kept the user waiting long enough - use the best pair we
     // found so far
     hal.console->println();
@@ -809,6 +803,8 @@ AP_InertialSensor::_init_gyro()
             _gyro_offset[k] = best_avg[k];
             // flag calibration as failed for this gyro
             _gyro_cal_ok[k] = false;
+        } else {
+            _gyro_cal_ok[k] = true;
         }
     }
 }
