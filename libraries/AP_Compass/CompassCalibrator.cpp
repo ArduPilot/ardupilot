@@ -97,6 +97,7 @@ void CompassCalibrator::run_fit_chunk() {
 
     if(_status == COMPASS_CAL_SAMPLING_STEP_ONE) {
         if(_fit_step < 21) {
+            _running_ellipsoid_fit = false;
             run_sphere_fit(1);
             _fit_step++;
         } else {
@@ -105,16 +106,19 @@ void CompassCalibrator::run_fit_chunk() {
             }
 
             set_status(COMPASS_CAL_SAMPLING_STEP_TWO);
+            _lambda = 1.0f;                 //reset lambda for ellipsoid fitness
+            _ellipsoid_param.named.offset = _sphere_param.named.offset;
         }
     } else if(_status == COMPASS_CAL_SAMPLING_STEP_TWO) {
-        if(_fit_step < 3) {
-            run_sphere_fit(3);
-        } else if(_fit_step < 6) {
-            run_ellipsoid_fit(3);
-        } else if(_fit_step%2 == 0 && _fit_step < 35) {
-            run_sphere_fit(3);
-        } else if(_fit_step%2 == 1 && _fit_step < 35) {
-            run_ellipsoid_fit(3);
+        if(_fit_step < 21) {
+            _running_ellipsoid_fit = true;
+            run_ellipsoid_fit(1);
+        } else if(_fit_step == 21){
+            _lambda = 1.0f;                 //reset lambda for sphere fitness
+            _sphere_param.named.offset = _ellipsoid_param.named.offset;
+        } else if(_fit_step < 42){
+            _running_ellipsoid_fit = false;
+            run_sphere_fit(1);
         } else {
             if(fit_acceptable()) {
                 set_status(COMPASS_CAL_SUCCESS);
@@ -299,8 +303,11 @@ float CompassCalibrator::calc_residual(const Vector3f& sample, const sphere_para
         ep.named.offdiag.x , ep.named.diag.y    , ep.named.offdiag.z,
         ep.named.offdiag.y , ep.named.offdiag.z , ep.named.diag.z
     );
-
-    return sp.named.radius - (softiron*(sample+sp.named.offset)).length();
+    if(_running_ellipsoid_fit){
+        return sp.named.radius - (softiron*(sample+ep.named.offset)).length();
+    } else{
+        return sp.named.radius - (softiron*(sample+sp.named.offset)).length();
+    }
 }
 
 float CompassCalibrator::calc_mean_squared_residuals() const
@@ -435,7 +442,7 @@ void CompassCalibrator::run_sphere_fit(uint8_t max_iterations)
 
 
 void CompassCalibrator::calc_ellipsoid_jacob(const Vector3f& sample, const ellipsoid_param_t& ep, ellipsoid_param_t &ret) const{
-    const Vector3f &offset = _sphere_param.named.offset;
+    const Vector3f &offset = ep.named.offset;
     const Vector3f &diag = ep.named.diag;
     const Vector3f &offdiag = ep.named.offdiag;
     Matrix3f softiron(
@@ -449,6 +456,9 @@ void CompassCalibrator::calc_ellipsoid_jacob(const Vector3f& sample, const ellip
     float C =  (offdiag.y * (sample.x + offset.x)) + (offdiag.z * (sample.y + offset.y)) + (diag.z    * (sample.z + offset.z));
     float length = (softiron*(sample+offset)).length();
 
+    ret.named.offset.x = -1.0f * (((diag.x    * A) + (offdiag.x * B) + (offdiag.y * C))/length);
+    ret.named.offset.y = -1.0f * (((offdiag.x * A) + (diag.y    * B) + (offdiag.z * C))/length);
+    ret.named.offset.z = -1.0f * (((offdiag.y * A) + (offdiag.z * B) + (diag.z    * C))/length);
     ret.named.diag.x = -1.0f * ((sample.x + offset.x) * A)/length;
     ret.named.diag.y = -1.0f * ((sample.y + offset.y) * B)/length;
     ret.named.diag.z = -1.0f * ((sample.z + offset.z) * C)/length;
