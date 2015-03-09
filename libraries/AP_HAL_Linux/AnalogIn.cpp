@@ -18,7 +18,7 @@ extern const AP_HAL::HAL& hal;
 #define ANALOG_IN_DIR "/sys/bus/iio/devices/iio:device0/"
 #define ANALOG_IN_COUNT 8
 
-#define BBB_VOLTAGE_SCALING 0.0007232f
+#define BBB_VOLTAGE_SCALING 0.00142602816
 
 const char* LinuxAnalogSource::analog_sources[ANALOG_IN_COUNT] = {
     "in_voltage0_raw",
