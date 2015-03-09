@@ -245,7 +245,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
     }
 #endif
 
-    if (!ap.initialised) {
+    if (!ap.initialised || ins.calibrating()) {
         // while initialising the gyros and accels are not enabled
         control_sensors_enabled &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
         control_sensors_health &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
