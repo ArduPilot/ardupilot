@@ -1,7 +1,7 @@
 #include <AP_Math.h>
 
 #define COMPASS_CAL_NUM_SPHERE_PARAMS 4
-#define COMPASS_CAL_NUM_ELLIPSOID_PARAMS 6
+#define COMPASS_CAL_NUM_ELLIPSOID_PARAMS 9
 #define COMPASS_CAL_NUM_SAMPLES 300
 
 //RMS tolerance
@@ -53,6 +53,7 @@ private:
     union ellipsoid_param_t {
         ellipsoid_param_t(){};
         struct {
+            Vector3f offset;
             Vector3f diag;
             Vector3f offdiag;
         } named;
