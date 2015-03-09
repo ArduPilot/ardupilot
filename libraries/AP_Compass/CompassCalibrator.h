@@ -118,8 +118,11 @@ private:
 
     sphere_param_t _sphere_param;
     ellipsoid_param_t _ellipsoid_param;
-
+    bool _running_ellipsoid_fit:1;
     // math helpers
+    
+    bool inverse9x9(const float m[],float invOut[]);
+    float det9x9(const float m[]);
     bool inverse6x6(const float m[],float invOut[]);
     float det6x6(const float m[]);
     bool inverse4x4(float m[],float invOut[]);
