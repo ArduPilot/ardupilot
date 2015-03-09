@@ -472,14 +472,16 @@ void CompassCalibrator::run_ellipsoid_fit(uint8_t max_iterations)
     if(_sample_buffer == NULL) {
         return;
     }
-    float fitness = _fitness;
-    ellipsoid_param_t fit_param = _ellipsoid_param;
+    float fitness = _fitness, prevfitness = _fitness, fit1, fit2;
+    ellipsoid_param_t fit_param = _ellipsoid_param, temp_param;
 
     for(uint8_t iterations=0; iterations<max_iterations; iterations++)  {
         float JTJ[COMPASS_CAL_NUM_ELLIPSOID_PARAMS*COMPASS_CAL_NUM_ELLIPSOID_PARAMS];
+        float JTJ2[COMPASS_CAL_NUM_ELLIPSOID_PARAMS*COMPASS_CAL_NUM_ELLIPSOID_PARAMS];
         float JTFI[COMPASS_CAL_NUM_ELLIPSOID_PARAMS];
 
         memset(&JTJ,0,sizeof(JTJ));
+        memset(&JTJ2,0,sizeof(JTJ2));
         memset(&JTFI,0,sizeof(JTFI));
 
         for(uint16_t k = 0; k<_samples_collected; k++) {
@@ -493,23 +495,59 @@ void CompassCalibrator::run_ellipsoid_fit(uint8_t max_iterations)
                 // compute JTJ
                 for(uint8_t j = 0; j < COMPASS_CAL_NUM_ELLIPSOID_PARAMS; j++) {
                     JTJ[i*COMPASS_CAL_NUM_ELLIPSOID_PARAMS+j] += ellipsoid_jacob.array[i] * ellipsoid_jacob.array[j];
+                    JTJ2[i*COMPASS_CAL_NUM_ELLIPSOID_PARAMS+j] += ellipsoid_jacob.array[i] * ellipsoid_jacob.array[j];
                 }
                 // compute JTFI
                 JTFI[i] += ellipsoid_jacob.array[i] * calc_residual(sample, _sphere_param, fit_param);
             }
         }
+        
+        
+        //------------------------Levenberg-part-starts-here---------------------------------//
+        for(uint8_t i = 0; i < COMPASS_CAL_NUM_ELLIPSOID_PARAMS; i++) {
+            JTJ[i*COMPASS_CAL_NUM_ELLIPSOID_PARAMS+i] += _lambda;
+        }
 
-        if(!inverse6x6(JTJ, JTJ)) {
+        if(!inverse9x9(JTJ, JTJ)) {
+            return;
+        }
+
+        temp_param = fit_param;
+        for(uint8_t row=0; row < COMPASS_CAL_NUM_ELLIPSOID_PARAMS; row++) {
+            for(uint8_t col=0; col < COMPASS_CAL_NUM_ELLIPSOID_PARAMS; col++) {
+                fit_param.array[row] -= JTFI[col] * JTJ[row*COMPASS_CAL_NUM_SPHERE_PARAMS+col];
+            }
+        }
+
+        fit1 = calc_mean_squared_residuals(_sphere_param,fit_param);
+
+        for(uint8_t i = 0; i < COMPASS_CAL_NUM_ELLIPSOID_PARAMS; i++) {
+            JTJ2[i*COMPASS_CAL_NUM_ELLIPSOID_PARAMS+i] += _lambda/10.0f;
+        }
+
+        if(!inverse9x9(JTJ2, JTJ2)) {
             return;
         }
 
         for(uint8_t row=0; row < COMPASS_CAL_NUM_ELLIPSOID_PARAMS; row++) {
             for(uint8_t col=0; col < COMPASS_CAL_NUM_ELLIPSOID_PARAMS; col++) {
-                fit_param.array[row] -= JTFI[col] * JTJ[row*COMPASS_CAL_NUM_ELLIPSOID_PARAMS+col];
+                temp_param.array[row] -= JTFI[col] * JTJ2[row*COMPASS_CAL_NUM_ELLIPSOID_PARAMS+col];
             }
         }
 
-        fitness = calc_mean_squared_residuals(_sphere_param, fit_param);
+        fit2 = calc_mean_squared_residuals(_sphere_param, temp_param);
+
+        if(fit1 > prevfitness && fit2 > prevfitness){
+            _lambda *= 10.0f;
+        } else if(fit2 < prevfitness && fit2 < fit1) {
+            _lambda /= 10.0f;
+            fit_param = temp_param;
+            fitness = fit2;
+        } else if(fit1 < prevfitness){
+            fitness = fit1;
+        }
+        prevfitness = fitness;
+        //--------------------Levenberg-part-ends-here--------------------------------//
 
         if(fitness < _fitness) {
             _fitness = fitness;
