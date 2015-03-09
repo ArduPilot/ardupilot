@@ -1134,6 +1134,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 if (ins.gyro_calibrated_ok_all()) {
                     ahrs.reset_gyro_drift();
                     result = MAV_RESULT_ACCEPTED;
+                } else {
+                    result = MAV_RESULT_FAILED;
                 }
             } else if (packet.param3 == 1) {
                 // fast barometer calibration
@@ -1150,6 +1152,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     // reset ahrs's trim to suggested values from calibration routine
                     ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
                     result = MAV_RESULT_ACCEPTED;
+                } else {
+                    result = MAV_RESULT_FAILED;
                 }
             } else if (packet.param6 == 1) {
                 // compassmot calibration
