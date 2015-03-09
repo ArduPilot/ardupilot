@@ -41,3 +41,27 @@ static void update_land_detector()
     // set land maybe flag
     set_land_complete_maybe(land_detector >= LAND_DETECTOR_MAYBE_TRIGGER);
 }
+
+// update_throttle_low_comp - sets motors throttle_low_comp value depending upon vehicle state
+//  low values favour pilot/autopilot throttle over attitude control, high values favour attitude control over throttle
+//  has no effect when throttle is above hover throttle
+static void update_throttle_low_comp()
+{
+    // manual throttle
+    if (mode_has_manual_throttle(control_mode)) {
+        if(!motors.armed() || g.rc_3.control_in <= 0) {
+            motors.set_throttle_low_comp(0.1f);
+        } else {
+            motors.set_throttle_low_comp(0.5f);
+        }
+    } else {
+        // autopilot controlled throttle
+        const Vector3f angle_target = attitude_control.angle_ef_targets();
+        if (pythagorous2(angle_target.x, angle_target.y) > 1500.0f) {
+            // if target lean angle is over 15 degrees set high
+            motors.set_throttle_low_comp(0.9f);
+        } else {
+            motors.set_throttle_low_comp(0.1f);
+        }
+    }
+}
