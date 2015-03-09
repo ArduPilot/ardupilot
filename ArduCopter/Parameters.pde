@@ -53,6 +53,15 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(sysid_my_gcs,   "SYSID_MYGCS",     255),
 
+#if CLI_ENABLED == ENABLED
+    // @Param: CLI_ENABLED
+    // @DisplayName: CLI Enable
+    // @Description: This enables/disables the checking for three carriage returns on telemetry links on startup to enter the diagnostics command line interface
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    GSCALAR(cli_enabled,    "CLI_ENABLED",    0),
+#endif
+
     // @Group: SERIAL
     // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
     GOBJECT(serial_manager, "SERIAL",   AP_SerialManager),

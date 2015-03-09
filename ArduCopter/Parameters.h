@@ -127,6 +127,7 @@ public:
         k_param_optflow,
         k_param_dcmcheck_thresh,        // 59
         k_param_log_bitmask,
+        k_param_cli_enabled,
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -330,6 +331,9 @@ public:
     AP_Int16        sysid_this_mav;
     AP_Int16        sysid_my_gcs;
     AP_Int8         telem_delay;
+#if CLI_ENABLED == ENABLED
+    AP_Int8         cli_enabled;
+#endif
 
     AP_Int16        rtl_altitude;
     AP_Float        sonar_gain;
