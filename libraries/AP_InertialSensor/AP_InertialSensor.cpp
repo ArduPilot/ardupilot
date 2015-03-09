@@ -610,16 +610,21 @@ AP_InertialSensor::_init_accel()
     memset(max_offset, 0, sizeof(max_offset));
     memset(total_change, 0, sizeof(total_change));
 
-    // cold start
-    hal.scheduler->delay(100);
-
-    hal.console->print_P(PSTR("Init Accel"));
+    // exit immediately if calibration is already in progress
+    if (_calibrating) {
+        return;
+    }
 
     // record we are calibrating
     _calibrating = true;
 
     // flash leds to tell user to keep the IMU still
     AP_Notify::flags.initialising = true;
+
+    // cold start
+    hal.scheduler->delay(100);
+
+    hal.console->print_P(PSTR("Init Accel"));
 
     // clear accelerometer offsets and scaling
     for (uint8_t k=0; k<num_accels; k++) {
@@ -711,14 +716,19 @@ AP_InertialSensor::_init_gyro()
     float best_diff[INS_MAX_INSTANCES];
     bool converged[INS_MAX_INSTANCES];
 
-    // cold start
-    hal.console->print_P(PSTR("Init Gyro"));
+    // exit immediately if calibration is already in progress
+    if (_calibrating) {
+        return;
+    }
 
     // record we are calibrating
     _calibrating = true;
 
     // flash leds to tell user to keep the IMU still
     AP_Notify::flags.initialising = true;
+
+    // cold start
+    hal.console->print_P(PSTR("Init Gyro"));
 
     // remove existing gyro offsets
     for (uint8_t k=0; k<num_gyros; k++) {
