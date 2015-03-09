@@ -1122,6 +1122,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_PREFLIGHT_CALIBRATION:
+            // exit immediately if armed
+            if (motors.armed()) {
+                result = MAV_RESULT_FAILED;
+                break;
+            }
             if (packet.param1 == 1) {
                 // gyro offset calibration
                 ins.init_gyro();
