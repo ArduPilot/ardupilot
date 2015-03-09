@@ -192,13 +192,15 @@ static void init_ardupilot()
 	// the system in an odd state, we don't let the user exit the top
 	// menu; they must reset in order to fly.
 	//
-    const prog_char_t *msg = PSTR("\nPress ENTER 3 times to start interactive setup\n");
-    cliSerial->println_P(msg);
-    if (gcs[1].initialised && (gcs[1].get_uart() != NULL)) {
-        gcs[1].get_uart()->println_P(msg);
-    }
-    if (num_gcs > 2 && gcs[2].initialised && (gcs[2].get_uart() != NULL)) {
-        gcs[2].get_uart()->println_P(msg);
+    if (g.cli_enabled == 1) {
+        const prog_char_t *msg = PSTR("\nPress ENTER 3 times to start interactive setup\n");
+        cliSerial->println_P(msg);
+        if (gcs[1].initialised && (gcs[1].get_uart() != NULL)) {
+            gcs[1].get_uart()->println_P(msg);
+        }
+        if (num_gcs > 2 && gcs[2].initialised && (gcs[2].get_uart() != NULL)) {
+            gcs[2].get_uart()->println_P(msg);
+        }
     }
 #endif
 
