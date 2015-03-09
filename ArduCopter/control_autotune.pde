@@ -60,9 +60,9 @@
 #define AUTOTUNE_RD_MIN                  0.002f    // minimum Rate D value
 #define AUTOTUNE_RD_MAX                  0.050f    // maximum Rate D value
 #define AUTOTUNE_RLPF_MIN                  0.1f    // minimum Rate D value
-#define AUTOTUNE_RLPF_MAX                 20.0f    // maximum Rate D value
+#define AUTOTUNE_RLPF_MAX                 10.0f    // maximum Rate D value
 #define AUTOTUNE_RP_MIN                   0.01f    // minimum Rate P value
-#define AUTOTUNE_RP_MAX                    100.0f    // maximum Rate P value
+#define AUTOTUNE_RP_MAX                    5.0f    // maximum Rate P value
 #define AUTOTUNE_SP_MAX                   20.0f    // maximum Stab P value
 #define AUTOTUNE_SP_MIN                    1.0f     // maximum Stab P value
 #define AUTOTUNE_ACCEL_RP_BACKOFF          1.5f     // back off from maximum acceleration
