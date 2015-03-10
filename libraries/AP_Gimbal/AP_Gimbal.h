@@ -37,14 +37,15 @@ public:
         tilt_rc_in(6),
         _tilt_angle_min(-45.0f),
         _tilt_angle_max(0.0f),
-        _max_tilt_rate(0.5f)
+        _max_tilt_rate(0.5f),
+        _rc_failsafe(true)
     {
         AP_Param::setup_object_defaults(this, var_info);
         _sysid = sysid;
         _compid = compid;
     }
         
-    // MAVLink methods
+    void    update_failsafe(uint8_t rc_failsafe);
     void    receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg);
 
     // hook for eeprom variables
@@ -88,6 +89,8 @@ private:
     uint8_t _sysid;                     
     uint8_t _compid;
 
+
+    uint8_t _rc_failsafe;   // status of the RC signal
 
     void send_control(mavlink_channel_t chan);
     void update_state();
