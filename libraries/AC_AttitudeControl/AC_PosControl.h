@@ -369,5 +369,8 @@ private:
     float       _distance_to_target;    // distance to position target - for reporting only
     LowPassFilterFloat _vel_error_filter;   // low-pass-filter on z-axis velocity error
     LowPassFilterFloat _accel_error_filter; // low-pass-filter on z-axis accelerometer error
+
+    Vector2f    _accel_target_jerk_limited;
+    Vector2f    _accel_target_filtered;
 };
 #endif	// AC_POSCONTROL_H
