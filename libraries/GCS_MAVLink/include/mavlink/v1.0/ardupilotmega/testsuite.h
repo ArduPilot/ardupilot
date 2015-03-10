@@ -1764,6 +1764,54 @@ static void mavlink_test_led_control(uint8_t system_id, uint8_t component_id, ma
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 }
 
+static void mavlink_test_ekf_status_report(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
+{
+	mavlink_message_t msg;
+        uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
+        uint16_t i;
+	mavlink_ekf_status_report_t packet_in = {
+		17.0,45.0,73.0,101.0,129.0,18275
+    };
+	mavlink_ekf_status_report_t packet1, packet2;
+        memset(&packet1, 0, sizeof(packet1));
+        	packet1.velocity_variance = packet_in.velocity_variance;
+        	packet1.pos_horiz_variance = packet_in.pos_horiz_variance;
+        	packet1.pos_vert_variance = packet_in.pos_vert_variance;
+        	packet1.compass_variance = packet_in.compass_variance;
+        	packet1.terrain_alt_variance = packet_in.terrain_alt_variance;
+        	packet1.flags = packet_in.flags;
+        
+        
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_ekf_status_report_encode(system_id, component_id, &msg, &packet1);
+	mavlink_msg_ekf_status_report_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_ekf_status_report_pack(system_id, component_id, &msg , packet1.flags , packet1.velocity_variance , packet1.pos_horiz_variance , packet1.pos_vert_variance , packet1.compass_variance , packet1.terrain_alt_variance );
+	mavlink_msg_ekf_status_report_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_ekf_status_report_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.flags , packet1.velocity_variance , packet1.pos_horiz_variance , packet1.pos_vert_variance , packet1.compass_variance , packet1.terrain_alt_variance );
+	mavlink_msg_ekf_status_report_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+        mavlink_msg_to_send_buffer(buffer, &msg);
+        for (i=0; i<mavlink_msg_get_send_buffer_length(&msg); i++) {
+        	comm_send_ch(MAVLINK_COMM_0, buffer[i]);
+        }
+	mavlink_msg_ekf_status_report_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+        
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_ekf_status_report_send(MAVLINK_COMM_1 , packet1.flags , packet1.velocity_variance , packet1.pos_horiz_variance , packet1.pos_vert_variance , packet1.compass_variance , packet1.terrain_alt_variance );
+	mavlink_msg_ekf_status_report_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+}
+
 static void mavlink_test_ardupilotmega(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
 {
 	mavlink_test_sensor_offsets(system_id, component_id, last_msg);
@@ -1802,6 +1850,7 @@ static void mavlink_test_ardupilotmega(uint8_t system_id, uint8_t component_id, 
 	mavlink_test_gimbal_report(system_id, component_id, last_msg);
 	mavlink_test_gimbal_control(system_id, component_id, last_msg);
 	mavlink_test_led_control(system_id, component_id, last_msg);
+	mavlink_test_ekf_status_report(system_id, component_id, last_msg);
 }
 
 #ifdef __cplusplus
