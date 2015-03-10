@@ -11,7 +11,6 @@ static int8_t	setup_flightmodes	(uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_accel_scale   (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_set           (uint8_t argc, const Menu::arg *argv);
 #endif
-static int8_t   setup_level         (uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_erase			(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_compass		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_declination	(uint8_t argc, const Menu::arg *argv);
@@ -23,7 +22,6 @@ static const struct Menu::command setup_menu_commands[] PROGMEM = {
 	{"reset", 			setup_factory},
 	{"radio",			setup_radio},
 	{"modes",			setup_flightmodes},
-	{"level",			setup_level},
 #if !defined( __AVR_ATmega1280__ )
     {"accel",           setup_accel_scale},
 #endif
@@ -416,18 +414,6 @@ setup_accel_scale(uint8_t argc, const Menu::arg *argv)
     return(0);
 }
 #endif
-
-static int8_t
-setup_level(uint8_t argc, const Menu::arg *argv)
-{
-    cliSerial->println_P(PSTR("Initialising gyros"));
-    ahrs.init();
-    ins.init(AP_InertialSensor::COLD_START, 
-             ins_sample_rate);
-    ins.init_accel();
-    ahrs.set_trim(Vector3f(0, 0, 0));
-    return(0);
-}
 
 static int8_t
 setup_compass(uint8_t argc, const Menu::arg *argv)
