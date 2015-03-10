@@ -22,7 +22,7 @@ void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
     update_targets_from_rc();
     decode_feedback(msg);
     update_state();
-    if (_ekf.getStatus()){
+    if (_ekf.getStatus() && !isCopterFliped()){
         send_control(chan);
     }
 
@@ -176,4 +176,8 @@ void AP_Gimbal::update_targets_from_rc()
     float tilt_change = constrain_float(new_tilt - _angle_ef_target_rad.y,-max_change_rads,+max_change_rads);
     // Update tilt
     _angle_ef_target_rad.y = constrain_float(_angle_ef_target_rad.y + tilt_change,_tilt_angle_min,_tilt_angle_max);
+}
+
+uint8_t AP_Gimbal::isCopterFliped(){
+    return fabs(_ahrs.roll)>1.0f || fabs(_ahrs.pitch)>1.0f;
 }
