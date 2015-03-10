@@ -1617,6 +1617,9 @@ static void mavlink_delay_cb()
         gcs_send_message(MSG_EXTENDED_STATUS1);
     }
     if (tnow - last_50hz > 20) {
+        gcs_send_message(MSG_RAW_IMU1);
+        gcs_send_message(MSG_RAW_IMU2);
+        gcs_send_message(MSG_RAW_IMU3);
         last_50hz = tnow;
         gcs_check_input();
         gcs_data_stream_send();
