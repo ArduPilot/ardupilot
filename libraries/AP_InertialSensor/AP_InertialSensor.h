@@ -228,7 +228,9 @@ private:
     // original sketch available at http://rolfeschmidt.com/mathtools/skimetrics/adxl_gn_calibration.pde
 
     // _calibrate_accel - perform low level accel calibration
-    bool _calibrate_accel(Vector3f accel_sample[6], Vector3f& accel_offsets, Vector3f& accel_scale);
+    bool _calibrate_accel(const Vector3f accel_sample[6], Vector3f& accel_offsets, Vector3f& accel_scale, enum Rotation r);
+    bool _check_sample_range(const Vector3f accel_sample[6], enum Rotation rotation, 
+                             AP_InertialSensor_UserInteract* interact);
     void _calibrate_update_matrices(float dS[6], float JS[6][6], float beta[6], float data[3]);
     void _calibrate_reset_matrices(float dS[6], float JS[6][6]);
     void _calibrate_find_delta(float dS[6], float JS[6][6], float delta[6]);

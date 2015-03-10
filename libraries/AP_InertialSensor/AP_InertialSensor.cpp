@@ -496,7 +496,12 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
 
     // run the calibration routine
     for (uint8_t k=0; k<num_accels; k++) {
-        bool success = _calibrate_accel(samples[k], new_offsets[k], new_scaling[k]);
+        if (!_check_sample_range(samples[k], saved_orientation, interact)) {
+            interact->printf_P(PSTR("Insufficient accel range"));
+            continue;
+        }
+
+        bool success = _calibrate_accel(samples[k], new_offsets[k], new_scaling[k], saved_orientation);
 
         interact->printf_P(PSTR("Offsets[%u]: %.2f %.2f %.2f\n"),
                            (unsigned)k,
@@ -872,13 +877,62 @@ AP_InertialSensor::_init_gyro()
 }
 
 #if !defined( __AVR_ATmega1280__ )
+
+/*
+  check that the samples used for accel calibration have a sufficient
+  range on each axis. The sphere fit in _calibrate_accel() can produce
+  bad offsets and scaling factors if the range of input data is
+  insufficient.
+
+  We rotate each sample in the check to body frame to cope with 45
+  board orientations which could result in smaller ranges. The sample
+  inputs are in sensor frame
+ */
+bool AP_InertialSensor::_check_sample_range(const Vector3f accel_sample[6], enum Rotation rotation, 
+                                            AP_InertialSensor_UserInteract* interact)
+{
+    // we want at least 12 m/s/s range on all axes. This should be
+    // very easy to achieve, and guarantees the accels have been
+    // exposed to a good range of data
+    const float min_range = 12.0f;
+
+    Vector3f min_sample, max_sample;
+
+    // start with first sample
+    min_sample = accel_sample[0];
+    min_sample.rotate(rotation);
+    max_sample = min_sample;
+
+    for (uint8_t s=1; s<6; s++) {
+        Vector3f sample = accel_sample[s];
+        sample.rotate(rotation);
+        for (uint8_t i=0; i<3; i++) {
+            if (sample[i] < min_sample[i]) {
+                min_sample[i] = sample[i];
+            }
+            if (sample[i] > max_sample[i]) {
+                max_sample[i] = sample[i];
+            }
+        }
+    }
+    Vector3f range = max_sample - min_sample;
+    interact->printf_P(PSTR("AccelRange: %.1f %.1f %.1f"),
+                       range.x, range.y, range.z);
+    bool ok = (range.x >= min_range && 
+               range.y >= min_range && 
+               range.z >= min_range);
+    return ok;
+}
+
+
 // _calibrate_model - perform low level accel calibration
 // accel_sample are accelerometer samples collected in 6 different positions
 // accel_offsets are output from the calibration routine
 // accel_scale are output from the calibration routine
 // returns true if successful
-bool AP_InertialSensor::_calibrate_accel( Vector3f accel_sample[6],
-                                          Vector3f& accel_offsets, Vector3f& accel_scale )
+bool AP_InertialSensor::_calibrate_accel(const Vector3f accel_sample[6],
+                                         Vector3f& accel_offsets, Vector3f& accel_scale,
+                                         enum Rotation rotation)
 {
     int16_t i;
     int16_t num_iterations = 0;
