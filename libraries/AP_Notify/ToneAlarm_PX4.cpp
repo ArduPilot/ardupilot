@@ -63,6 +63,8 @@ const ToneAlarm_PX4::Tone ToneAlarm_PX4::_tones[] {
     { "MBT200>B#1", true },
     #define AP_NOTIFY_PX4_TONE_LOUD_BATTERY_ALERT_CTS 13
     { "MBNT255>B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8", true },
+    #define AP_NOTIFY_PX4_TONE_QUIET_COMPASS_CALIBRATING_CTS 14
+    { "MBNT255<C16P2", true },
 };
 
 bool ToneAlarm_PX4::init()
@@ -131,6 +133,38 @@ void ToneAlarm_PX4::update()
     }
 
     check_cont_tone();
+
+    if (AP_Notify::flags.compass_cal_running != flags.compass_cal_running) {
+        if(AP_Notify::flags.compass_cal_running) {
+            play_tone(AP_NOTIFY_PX4_TONE_QUIET_COMPASS_CALIBRATING_CTS);
+            play_tone(AP_NOTIFY_PX4_TONE_QUIET_POS_FEEDBACK);
+        } else {
+            if(_cont_tone_playing == AP_NOTIFY_PX4_TONE_QUIET_COMPASS_CALIBRATING_CTS) {
+                stop_cont_tone();
+            }
+        }
+    }
+    flags.compass_cal_running = AP_Notify::flags.compass_cal_running;
+
+    if (AP_Notify::events.initiated_compass_cal) {
+        play_tone(AP_NOTIFY_PX4_TONE_QUIET_NEU_FEEDBACK);
+        return;
+    }
+
+    if (AP_Notify::events.compass_cal_saved) {
+        play_tone(AP_NOTIFY_PX4_TONE_QUIET_READY_OR_FINISHED);
+        return;
+    }
+
+    if (AP_Notify::events.compass_cal_failed) {
+        play_tone(AP_NOTIFY_PX4_TONE_QUIET_NEG_FEEDBACK);
+        return;
+    }
+
+    // don't play other tones if compass cal is running
+    if (AP_Notify::flags.compass_cal_running) {
+        return;
+    }
 
     // notify the user when autotune or mission completes
     if (AP_Notify::flags.armed && (AP_Notify::events.autotune_complete || AP_Notify::events.mission_complete)) {
