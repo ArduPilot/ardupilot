@@ -108,7 +108,7 @@ px4-cleandep: clean
 
 px4-v2-upload-wifi: px4-v2
 	scp ArduCopter-v2.px4 root@10.1.1.10:/tmp/
-	ssh root@10.1.1.10 loadPixhawk.py /tmp/ArduCopter-v2.px4
+	ssh root@10.1.1.10 PYTHONUNBUFFERED=1 loadPixhawk.py /tmp/ArduCopter-v2.px4
 	ssh root@10.1.1.10 rm /tmp/ArduCopter-v2.px4;
 
 px4-v1-upload: px4-v1
