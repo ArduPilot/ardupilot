@@ -70,14 +70,6 @@ public:
     void init( Start_style style,
                Sample_rate sample_rate);
 
-    /// Perform cold startup initialisation for just the accelerometers.
-    ///
-    /// @note This should not be called unless ::init has previously
-    ///       been called, as ::init may perform other work.
-    ///
-    void init_accel();
-
-
     /// Register a new gyro/accel driver, allocating an instance
     /// number
     uint8_t register_gyro(void);
@@ -218,8 +210,7 @@ private:
     void _add_backend(AP_InertialSensor_Backend *(detect)(AP_InertialSensor &));
     void _detect_backends(void);
 
-    // accel and gyro initialisation
-    void _init_accel();
+    // gyro initialisation
     void _init_gyro();
 
 #if !defined( __AVR_ATmega1280__ )
