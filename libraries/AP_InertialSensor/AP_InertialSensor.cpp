@@ -388,17 +388,6 @@ AP_InertialSensor::_detect_backends(void)
     _product_id.set(_backends[0]->product_id());
 }
 
-void
-AP_InertialSensor::init_accel()
-{
-    _init_accel();
-
-    // save calibration
-    _save_parameters();
-
-    check_3D_calibration();
-}
-
 #if !defined( __AVR_ATmega1280__ )
 // calibrate_accel - perform accelerometer calibration including providing user
 // instructions and feedback Gauss-Newton accel calibration routines borrowed
@@ -629,117 +618,6 @@ bool AP_InertialSensor::get_accel_health_all(void) const
     }
     // return true if we have at least one accel
     return (get_accel_count() > 0);
-}
-
-void
-AP_InertialSensor::_init_accel()
-{
-    uint8_t num_accels = min(get_accel_count(), INS_MAX_INSTANCES);
-    uint8_t flashcount = 0;
-    Vector3f prev[INS_MAX_INSTANCES];
-    Vector3f accel_offset[INS_MAX_INSTANCES];
-    float total_change[INS_MAX_INSTANCES];
-    float max_offset[INS_MAX_INSTANCES];
-
-    memset(max_offset, 0, sizeof(max_offset));
-    memset(total_change, 0, sizeof(total_change));
-
-    // exit immediately if calibration is already in progress
-    if (_calibrating) {
-        return;
-    }
-
-    // record we are calibrating
-    _calibrating = true;
-
-    // flash leds to tell user to keep the IMU still
-    AP_Notify::flags.initialising = true;
-
-    // cold start
-    hal.scheduler->delay(100);
-
-    hal.console->print_P(PSTR("Init Accel"));
-
-    // clear accelerometer offsets and scaling
-    for (uint8_t k=0; k<num_accels; k++) {
-        _accel_offset[k] = Vector3f(0,0,0);
-        _accel_scale[k] = Vector3f(1,1,1);
-
-        // initialise accel offsets to a large value the first time
-        // this will force us to calibrate accels at least twice
-        accel_offset[k] = Vector3f(500, 500, 500);
-    }
-
-    // loop until we calculate acceptable offsets
-    while (true) {
-        // get latest accelerometer values
-        update();
-
-        for (uint8_t k=0; k<num_accels; k++) {
-            // store old offsets
-            prev[k] = accel_offset[k];
-
-            // get new offsets
-            accel_offset[k] = get_accel(k);
-        }
-
-        // We take some readings...
-        for(int8_t i = 0; i < 50; i++) {
-
-            hal.scheduler->delay(20);
-            update();
-
-            // low pass filter the offsets
-            for (uint8_t k=0; k<num_accels; k++) {
-                accel_offset[k] = accel_offset[k] * 0.9f + get_accel(k) * 0.1f;
-            }
-
-            // display some output to the user
-            if(flashcount >= 10) {
-                hal.console->print_P(PSTR("*"));
-                flashcount = 0;
-            }
-            flashcount++;
-        }
-
-        for (uint8_t k=0; k<num_accels; k++) {
-            // null gravity from the Z accel
-            accel_offset[k].z += GRAVITY_MSS;
-
-            total_change[k] = 
-                fabsf(prev[k].x - accel_offset[k].x) + 
-                fabsf(prev[k].y - accel_offset[k].y) + 
-                fabsf(prev[k].z - accel_offset[k].z);
-            max_offset[k] = (accel_offset[k].x > accel_offset[k].y) ? accel_offset[k].x : accel_offset[k].y;
-            max_offset[k] = (max_offset[k] > accel_offset[k].z) ? max_offset[k] : accel_offset[k].z;
-        }
-
-        uint8_t num_converged = 0;
-        for (uint8_t k=0; k<num_accels; k++) {
-            if (total_change[k] <= AP_INERTIAL_SENSOR_ACCEL_TOT_MAX_OFFSET_CHANGE && 
-                max_offset[k] <= AP_INERTIAL_SENSOR_ACCEL_MAX_OFFSET) {
-                num_converged++;
-            }
-        }
-
-        if (num_converged == num_accels) break;
-
-        hal.scheduler->delay(500);
-    }
-
-    // set the global accel offsets
-    for (uint8_t k=0; k<num_accels; k++) {
-        _accel_offset[k] = accel_offset[k];
-    }
-
-    // record calibration complete
-    _calibrating = false;
-
-    // stop flashing the leds
-    AP_Notify::flags.initialising = false;
-
-    hal.console->print_P(PSTR(" "));
-
 }
 
 void
