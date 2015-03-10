@@ -424,6 +424,8 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
         _accel_scale[k] = Vector3f(1,1,1);
     }
 
+    memset(samples, 0, sizeof(samples));
+
     // capture data from 6 positions
     for (uint8_t i=0; i<6; i++) {
         const prog_char_t *msg;
@@ -462,10 +464,6 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
         // clear out any existing samples from ins
         update();
 
-        // average 32 samples
-        for (uint8_t k=0; k<num_accels; k++) {
-            samples[k][i] = Vector3f();
-        }
         uint8_t num_samples = 0;
         while (num_samples < 32) {
             wait_for_sample();
@@ -651,7 +649,7 @@ AP_InertialSensor::_init_gyro()
 
     // remove existing gyro offsets
     for (uint8_t k=0; k<num_gyros; k++) {
-        _gyro_offset[k] = Vector3f(0,0,0);
+        _gyro_offset[k].set(Vector3f());
         best_diff[k] = 0;
         last_average[k].zero();
         converged[k] = false;
