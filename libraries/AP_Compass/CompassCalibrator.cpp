@@ -1,5 +1,6 @@
 #include "CompassCalibrator.h"
 #include <AP_HAL.h>
+#include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -26,7 +27,6 @@ void CompassCalibrator::start(bool retry, bool autosave, float delay) {
     _retry = retry;
     _delay_start_sec = delay;
     _start_time_ms = hal.scheduler->millis();
-    _lambda = 1;
     set_status(COMPASS_CAL_WAITING_TO_START);
 }
 
@@ -35,9 +35,9 @@ void CompassCalibrator::get_calibration(Vector3f &offsets, Vector3f &diagonals, 
         return;
     }
 
-    offsets = _sphere_param.named.offset;
-    diagonals = _ellipsoid_param.named.diag;
-    offdiagonals = _ellipsoid_param.named.offdiag;
+    offsets = _params.offset;
+    diagonals = _params.diag;
+    offdiagonals = _params.offdiag;
 }
 
 float CompassCalibrator::get_completion_percent() const {
@@ -47,9 +47,9 @@ float CompassCalibrator::get_completion_percent() const {
         case COMPASS_CAL_NOT_STARTED:
         case COMPASS_CAL_WAITING_TO_START:
             return 0.0f;
-        case COMPASS_CAL_SAMPLING_STEP_ONE:
+        case COMPASS_CAL_RUNNING_STEP_ONE:
             return 33.3f * _samples_collected/COMPASS_CAL_NUM_SAMPLES;
-        case COMPASS_CAL_SAMPLING_STEP_TWO:
+        case COMPASS_CAL_RUNNING_STEP_TWO:
             return 33.3f + 65.7f*((float)(_samples_collected-_samples_thinned)/(COMPASS_CAL_NUM_SAMPLES-_samples_thinned));
         case COMPASS_CAL_SUCCESS:
             return 100.0f;
@@ -57,10 +57,6 @@ float CompassCalibrator::get_completion_percent() const {
         default:
             return 0.0f;
     };
-}
-
-bool CompassCalibrator::running() const {
-    return _status == COMPASS_CAL_SAMPLING_STEP_ONE || _status == COMPASS_CAL_SAMPLING_STEP_TWO;
 }
 
 void CompassCalibrator::check_for_timeout() {
@@ -74,7 +70,7 @@ void CompassCalibrator::new_sample(const Vector3f& sample) {
     _last_sample_ms = hal.scheduler->millis();
 
     if(_status == COMPASS_CAL_WAITING_TO_START) {
-        set_status(COMPASS_CAL_SAMPLING_STEP_ONE);
+        set_status(COMPASS_CAL_RUNNING_STEP_ONE);
     }
 
     if(running() && _samples_collected < COMPASS_CAL_NUM_SAMPLES && accept_sample(sample)) {
@@ -84,41 +80,26 @@ void CompassCalibrator::new_sample(const Vector3f& sample) {
 }
 
 void CompassCalibrator::run_fit_chunk() {
-    if(!running() || _samples_collected != COMPASS_CAL_NUM_SAMPLES) {
+    if(!fitting()) {
         return;
     }
 
-    if(_fit_step == 0) {
-        //initialize _fitness before starting a fit
-        _fitness = calc_mean_squared_residuals(_sphere_param,_ellipsoid_param);
-        _lambda = 1.0f;
-        _initial_fitness = _fitness;
-    }
-
-    if(_status == COMPASS_CAL_SAMPLING_STEP_ONE) {
-        if(_fit_step < 21) {
-            _running_ellipsoid_fit = false;
-            run_sphere_fit(1);
+    if(_status == COMPASS_CAL_RUNNING_STEP_ONE) {
+        if(_fit_step < 10) {
+            run_sphere_fit();
             _fit_step++;
         } else {
-            if(_fitness == _initial_fitness) {           //if true, means that fitness is diverging instead of converging
+            if(_fitness == _initial_fitness || isnan(_fitness)) {           //if true, means that fitness is diverging instead of converging
                 set_status(COMPASS_CAL_FAILED);
             }
 
-            set_status(COMPASS_CAL_SAMPLING_STEP_TWO);
-            _lambda = 1.0f;                 //reset lambda for ellipsoid fitness
-            _ellipsoid_param.named.offset = _sphere_param.named.offset;
+            set_status(COMPASS_CAL_RUNNING_STEP_TWO);
         }
-    } else if(_status == COMPASS_CAL_SAMPLING_STEP_TWO) {
-        if(_fit_step < 21) {
-            _running_ellipsoid_fit = true;
-            run_ellipsoid_fit(1);
-        } else if(_fit_step == 21){
-            _lambda = 1.0f;                 //reset lambda for sphere fitness
-            _sphere_param.named.offset = _ellipsoid_param.named.offset;
-        } else if(_fit_step < 42){
-            _running_ellipsoid_fit = false;
-            run_sphere_fit(1);
+    } else if(_status == COMPASS_CAL_RUNNING_STEP_TWO) {
+        if(_fit_step < 15) {
+            run_sphere_fit();
+        } else if(_fit_step < 35) {
+            run_ellipsoid_fit();
         } else {
             if(fit_acceptable()) {
                 set_status(COMPASS_CAL_SUCCESS);
@@ -133,16 +114,36 @@ void CompassCalibrator::run_fit_chunk() {
 /////////////////////////////////////////////////////////////
 ////////////////////// PRIVATE METHODS //////////////////////
 /////////////////////////////////////////////////////////////
+bool CompassCalibrator::running() const {
+    return _status == COMPASS_CAL_RUNNING_STEP_ONE || _status == COMPASS_CAL_RUNNING_STEP_TWO;
+}
+
+bool CompassCalibrator::fitting() const {
+    return running() && _samples_collected == COMPASS_CAL_NUM_SAMPLES;
+}
+
+void CompassCalibrator::initialize_fit() {
+    //initialize _fitness before starting a fit
+    if (_samples_collected != 0) {
+        _fitness = calc_mean_squared_residuals(_params);
+    } else {
+        _fitness = 1.0e30f;
+    }
+    _ellipsoid_lambda = 1.0f;
+    _sphere_lambda = 1.0f;
+    _initial_fitness = _fitness;
+    _fit_step = 0;
+}
+
 void CompassCalibrator::reset_state() {
     _samples_collected = 0;
     _samples_thinned = 0;
-    _fitness = -1.0f;
-    _lambda = 1.0f;
-    _sphere_param.named.radius = 200;
-    _sphere_param.named.offset.zero();
-    _ellipsoid_param.named.diag = Vector3f(1.0f,1.0f,1.0f);
-    _ellipsoid_param.named.offdiag.zero();
-    _fit_step = 0;
+    _params.radius = 200;
+    _params.offset.zero();
+    _params.diag = Vector3f(1.0f,1.0f,1.0f);
+    _params.offdiag.zero();
+
+    initialize_fit();
 }
 
 bool CompassCalibrator::set_status(compass_cal_status_t status) {
@@ -165,10 +166,10 @@ bool CompassCalibrator::set_status(compass_cal_status_t status) {
             reset_state();
             _status = COMPASS_CAL_WAITING_TO_START;
 
-            set_status(COMPASS_CAL_SAMPLING_STEP_ONE);
+            set_status(COMPASS_CAL_RUNNING_STEP_ONE);
             return true;
 
-        case COMPASS_CAL_SAMPLING_STEP_ONE:
+        case COMPASS_CAL_RUNNING_STEP_ONE:
             if(_status != COMPASS_CAL_WAITING_TO_START) {
                 return false;
             }
@@ -177,32 +178,33 @@ bool CompassCalibrator::set_status(compass_cal_status_t status) {
                 return false;
             }
 
-
             if(_sample_buffer != NULL) {
-                _status = COMPASS_CAL_SAMPLING_STEP_ONE;
+                initialize_fit();
+                _status = COMPASS_CAL_RUNNING_STEP_ONE;
                 return true;
             }
 
             _sample_buffer = (CompassSample*)malloc(sizeof(CompassSample)*COMPASS_CAL_NUM_SAMPLES);
 
             if(_sample_buffer != NULL) {
-                _status = COMPASS_CAL_SAMPLING_STEP_ONE;
+                initialize_fit();
+                _status = COMPASS_CAL_RUNNING_STEP_ONE;
                 return true;
             }
 
             return false;
 
-        case COMPASS_CAL_SAMPLING_STEP_TWO:
-            if(_status != COMPASS_CAL_SAMPLING_STEP_ONE) {
+        case COMPASS_CAL_RUNNING_STEP_TWO:
+            if(_status != COMPASS_CAL_RUNNING_STEP_ONE) {
                 return false;
             }
-            _fit_step = 0;
             thin_samples();
-            _status = COMPASS_CAL_SAMPLING_STEP_TWO;
+            initialize_fit();
+            _status = COMPASS_CAL_RUNNING_STEP_TWO;
             return true;
 
         case COMPASS_CAL_SUCCESS:
-            if(_status != COMPASS_CAL_SAMPLING_STEP_TWO) {
+            if(_status != COMPASS_CAL_RUNNING_STEP_TWO) {
                 return false;
             }
 
@@ -238,14 +240,15 @@ bool CompassCalibrator::set_status(compass_cal_status_t status) {
 }
 
 bool CompassCalibrator::fit_acceptable() {
-    if( _sphere_param.named.radius   > 200  &&                  //Earth's magnetic field strength range: 250-650mG
-        _sphere_param.named.radius   < 700  &&
-        fabsf(_sphere_param.named.offset.x) < 1000 &&
-        fabsf(_sphere_param.named.offset.y) < 1000 &&
-        fabsf(_sphere_param.named.offset.z) < 1000 &&
-        fabsf(_ellipsoid_param.named.offdiag.x) <  1.0f &&      //absolute of sine/cosine output cannot be greater than 1
-        fabsf(_ellipsoid_param.named.offdiag.x) <  1.0f &&
-        fabsf(_ellipsoid_param.named.offdiag.x) <  1.0f ){
+    if( !isnan(_fitness) &&
+        _params.radius   > 200  &&                  //Earth's magnetic field strength range: 250-650mG
+        _params.radius   < 700  &&
+        fabsf(_params.offset.x) < 1000 &&
+        fabsf(_params.offset.y) < 1000 &&
+        fabsf(_params.offset.z) < 1000 &&
+        fabsf(_params.offdiag.x) <  1.0f &&      //absolute of sine/cosine output cannot be greater than 1
+        fabsf(_params.offdiag.x) <  1.0f &&
+        fabsf(_params.offdiag.x) <  1.0f ){
 
             return _fitness <= sq(_tolerance);
         }
@@ -282,7 +285,7 @@ bool CompassCalibrator::accept_sample(const Vector3f& sample)
         return false;
     }
 
-    float max_distance = fabsf(5.38709f * _sphere_param.named.radius / sqrtf((float)COMPASS_CAL_NUM_SAMPLES)) / 3.0f;
+    float max_distance = fabsf(5.38709f * _params.radius / sqrtf((float)COMPASS_CAL_NUM_SAMPLES)) / 3.0f;
 
     for (uint16_t i = 0; i<_samples_collected; i++){
         float distance = (sample - _sample_buffer[i].get()).length();
@@ -297,43 +300,39 @@ bool CompassCalibrator::accept_sample(const CompassSample& sample) {
     return accept_sample(sample.get());
 }
 
-float CompassCalibrator::calc_residual(const Vector3f& sample, const sphere_param_t& sp, const ellipsoid_param_t& ep) const {
+float CompassCalibrator::calc_residual(const Vector3f& sample, const param_t& params) const {
     Matrix3f softiron(
-        ep.named.diag.x    , ep.named.offdiag.x , ep.named.offdiag.y,
-        ep.named.offdiag.x , ep.named.diag.y    , ep.named.offdiag.z,
-        ep.named.offdiag.y , ep.named.offdiag.z , ep.named.diag.z
+        params.diag.x    , params.offdiag.x , params.offdiag.y,
+        params.offdiag.x , params.diag.y    , params.offdiag.z,
+        params.offdiag.y , params.offdiag.z , params.diag.z
     );
-    if(_running_ellipsoid_fit){
-        return sp.named.radius - (softiron*(sample+ep.named.offset)).length();
-    } else{
-        return sp.named.radius - (softiron*(sample+sp.named.offset)).length();
-    }
+    return params.radius - (softiron*(sample+params.offset)).length();
 }
 
 float CompassCalibrator::calc_mean_squared_residuals() const
 {
-    return calc_mean_squared_residuals(_sphere_param,_ellipsoid_param);
+    return calc_mean_squared_residuals(_params);
 }
 
-float CompassCalibrator::calc_mean_squared_residuals(const sphere_param_t& sp, const ellipsoid_param_t& ep) const
+float CompassCalibrator::calc_mean_squared_residuals(const param_t& params) const
 {
-    if(_sample_buffer == NULL) {
-        return -1.0f;
+    if(_sample_buffer == NULL || _samples_collected == 0) {
+        return 1.0e30f;
     }
     float sum = 0.0f;
     for(uint16_t i=0; i < _samples_collected; i++){
         Vector3f sample = _sample_buffer[i].get();
-        float resid = calc_residual(sample, sp, ep);
+        float resid = calc_residual(sample, params);
         sum += sq(resid);
     }
     sum /= _samples_collected;
     return sum;
 }
 
-void CompassCalibrator::calc_sphere_jacob(const Vector3f& sample, const sphere_param_t& sp, sphere_param_t &ret) const{
-    const Vector3f &offset = sp.named.offset;
-    const Vector3f &diag = _ellipsoid_param.named.diag;
-    const Vector3f &offdiag = _ellipsoid_param.named.offdiag;
+void CompassCalibrator::calc_sphere_jacob(const Vector3f& sample, const param_t& params, float* ret) const{
+    const Vector3f &offset = params.offset;
+    const Vector3f &diag = params.diag;
+    const Vector3f &offdiag = params.offdiag;
     Matrix3f softiron(
         diag.x    , offdiag.x , offdiag.y,
         offdiag.x , diag.y    , offdiag.z,
@@ -345,106 +344,101 @@ void CompassCalibrator::calc_sphere_jacob(const Vector3f& sample, const sphere_p
     float C =  (offdiag.y * (sample.x + offset.x)) + (offdiag.z * (sample.y + offset.y)) + (diag.z    * (sample.z + offset.z));
     float length = (softiron*(sample+offset)).length();
 
-    ret.named.radius = 1;
-    ret.named.offset.x = -1.0f * (((diag.x    * A) + (offdiag.x * B) + (offdiag.y * C))/length);
-    ret.named.offset.y = -1.0f * (((offdiag.x * A) + (diag.y    * B) + (offdiag.z * C))/length);
-    ret.named.offset.z = -1.0f * (((offdiag.y * A) + (offdiag.z * B) + (diag.z    * C))/length);
+    // 0: radius
+    ret[0] = 1;
+    // 1-3: offsets
+    ret[1] = -1.0f * (((diag.x    * A) + (offdiag.x * B) + (offdiag.y * C))/length);
+    ret[2] = -1.0f * (((offdiag.x * A) + (diag.y    * B) + (offdiag.z * C))/length);
+    ret[3] = -1.0f * (((offdiag.y * A) + (offdiag.z * B) + (diag.z    * C))/length);
 }
 
-void CompassCalibrator::run_sphere_fit(uint8_t max_iterations)
+void CompassCalibrator::run_sphere_fit()
 {
     if(_sample_buffer == NULL) {
         return;
     }
-    float fitness = _fitness, prevfitness = _fitness, fit1, fit2;
-    sphere_param_t fit_param = _sphere_param, temp_param;
 
-    for(uint8_t iterations=0; iterations<max_iterations; iterations++) {
-        float JTJ[COMPASS_CAL_NUM_SPHERE_PARAMS*COMPASS_CAL_NUM_SPHERE_PARAMS];
-        float JTJ2[COMPASS_CAL_NUM_SPHERE_PARAMS*COMPASS_CAL_NUM_SPHERE_PARAMS];
-        float JTFI[COMPASS_CAL_NUM_SPHERE_PARAMS];
+    const float lma_damping = 10.0f;
 
-        memset(&JTJ,0,sizeof(JTJ));
-        memset(&JTJ2,0,sizeof(JTJ2));
-        memset(&JTFI,0,sizeof(JTFI));
+    float fitness = _fitness;
+    float fit1, fit2;
+    param_t fit1_params, fit2_params;
+    fit1_params = fit2_params = _params;
 
-        for(uint16_t k = 0; k<_samples_collected; k++) {
-            Vector3f sample = _sample_buffer[k].get();
+    float JTJ[COMPASS_CAL_NUM_SPHERE_PARAMS*COMPASS_CAL_NUM_SPHERE_PARAMS];
+    float JTJ2[COMPASS_CAL_NUM_SPHERE_PARAMS*COMPASS_CAL_NUM_SPHERE_PARAMS];
+    float JTFI[COMPASS_CAL_NUM_SPHERE_PARAMS];
 
-            sphere_param_t sphere_jacob;
+    memset(&JTJ,0,sizeof(JTJ));
+    memset(&JTJ2,0,sizeof(JTJ2));
+    memset(&JTFI,0,sizeof(JTFI));
 
-            calc_sphere_jacob(sample, fit_param, sphere_jacob);
+    for(uint16_t k = 0; k<_samples_collected; k++) {
+        Vector3f sample = _sample_buffer[k].get();
 
-            for(uint8_t i = 0;i < COMPASS_CAL_NUM_SPHERE_PARAMS; i++) {
-                // compute JTJ
-                for(uint8_t j = 0; j < COMPASS_CAL_NUM_SPHERE_PARAMS; j++) {
-                    JTJ[i*COMPASS_CAL_NUM_SPHERE_PARAMS+j] += sphere_jacob.array[i] * sphere_jacob.array[j];
-                    JTJ2[i*COMPASS_CAL_NUM_SPHERE_PARAMS+j] += sphere_jacob.array[i] * sphere_jacob.array[j];   //a backup JTJ for LM
-                }
-                // compute JTFI
-                JTFI[i] += sphere_jacob.array[i] * calc_residual(sample, fit_param, _ellipsoid_param);
+        float sphere_jacob[COMPASS_CAL_NUM_SPHERE_PARAMS];
+
+        calc_sphere_jacob(sample, fit1_params, sphere_jacob);
+
+        for(uint8_t i = 0;i < COMPASS_CAL_NUM_SPHERE_PARAMS; i++) {
+            // compute JTJ
+            for(uint8_t j = 0; j < COMPASS_CAL_NUM_SPHERE_PARAMS; j++) {
+                JTJ[i*COMPASS_CAL_NUM_SPHERE_PARAMS+j] += sphere_jacob[i] * sphere_jacob[j];
+                JTJ2[i*COMPASS_CAL_NUM_SPHERE_PARAMS+j] += sphere_jacob[i] * sphere_jacob[j];   //a backup JTJ for LM
             }
+            // compute JTFI
+            JTFI[i] += sphere_jacob[i] * calc_residual(sample, fit1_params);
         }
+    }
 
 
-        //------------------------Levenberg-part-starts-here---------------------------------//
-        for(uint8_t i = 0; i < COMPASS_CAL_NUM_SPHERE_PARAMS; i++) {
-            JTJ[i*COMPASS_CAL_NUM_SPHERE_PARAMS+i] += _lambda;
+    //------------------------Levenberg-part-starts-here---------------------------------//
+    for(uint8_t i = 0; i < COMPASS_CAL_NUM_SPHERE_PARAMS; i++) {
+        JTJ[i*COMPASS_CAL_NUM_SPHERE_PARAMS+i] += _sphere_lambda;
+        JTJ2[i*COMPASS_CAL_NUM_SPHERE_PARAMS+i] += _sphere_lambda/lma_damping;
+    }
+
+    if(!inverse4x4(JTJ, JTJ)) {
+        return;
+    }
+
+    if(!inverse4x4(JTJ2, JTJ2)) {
+        return;
+    }
+
+    for(uint8_t row=0; row < COMPASS_CAL_NUM_SPHERE_PARAMS; row++) {
+        for(uint8_t col=0; col < COMPASS_CAL_NUM_SPHERE_PARAMS; col++) {
+            fit1_params.get_sphere_params()[row] -= JTFI[col] * JTJ[row*COMPASS_CAL_NUM_SPHERE_PARAMS+col];
+            fit2_params.get_sphere_params()[row] -= JTFI[col] * JTJ2[row*COMPASS_CAL_NUM_SPHERE_PARAMS+col];
         }
+    }
 
-        if(!inverse4x4(JTJ, JTJ)) {
-            return;
-        }
+    fit1 = calc_mean_squared_residuals(fit1_params);
+    fit2 = calc_mean_squared_residuals(fit2_params);
 
-        temp_param = fit_param;
-        for(uint8_t row=0; row < COMPASS_CAL_NUM_SPHERE_PARAMS; row++) {
-            for(uint8_t col=0; col < COMPASS_CAL_NUM_SPHERE_PARAMS; col++) {
-                fit_param.array[row] -= JTFI[col] * JTJ[row*COMPASS_CAL_NUM_SPHERE_PARAMS+col];
-            }
-        }
+    if(fit1 > _fitness && fit2 > _fitness){
+        _sphere_lambda *= lma_damping;
+    } else if(fit2 < _fitness && fit2 < fit1) {
+        _sphere_lambda /= lma_damping;
+        fit1_params = fit2_params;
+        fitness = fit2;
+    } else if(fit1 < _fitness){
+        fitness = fit1;
+    }
+    //--------------------Levenberg-part-ends-here--------------------------------//
 
-        fit1 = calc_mean_squared_residuals(fit_param,_ellipsoid_param);
-
-        for(uint8_t i = 0; i < COMPASS_CAL_NUM_SPHERE_PARAMS; i++) {
-            JTJ2[i*COMPASS_CAL_NUM_SPHERE_PARAMS+i] += _lambda/10.0f;
-        }
-
-        if(!inverse4x4(JTJ2, JTJ2)) {
-            return;
-        }
-
-        for(uint8_t row=0; row < COMPASS_CAL_NUM_SPHERE_PARAMS; row++) {
-            for(uint8_t col=0; col < COMPASS_CAL_NUM_SPHERE_PARAMS; col++) {
-                temp_param.array[row] -= JTFI[col] * JTJ2[row*COMPASS_CAL_NUM_SPHERE_PARAMS+col];
-            }
-        }
-
-        fit2 = calc_mean_squared_residuals(temp_param,_ellipsoid_param);
-
-        if(fit1 > prevfitness && fit2 > prevfitness){
-            _lambda *= 10.0f;
-        } else if(fit2 < prevfitness && fit2 < fit1) {
-            _lambda /= 10.0f;
-            fit_param = temp_param;
-            fitness = fit2;
-        } else if(fit1 < prevfitness){
-            fitness = fit1;
-        }
-        prevfitness = fitness;
-        //--------------------Levenberg-part-ends-here--------------------------------//
-        if(fitness < _fitness) {
-            _fitness = fitness;
-            _sphere_param = fit_param;
-        }
+    if(!isnan(fitness) && fitness < _fitness) {
+        _fitness = fitness;
+        _params = fit1_params;
     }
 }
 
 
 
-void CompassCalibrator::calc_ellipsoid_jacob(const Vector3f& sample, const ellipsoid_param_t& ep, ellipsoid_param_t &ret) const{
-    const Vector3f &offset = ep.named.offset;
-    const Vector3f &diag = ep.named.diag;
-    const Vector3f &offdiag = ep.named.offdiag;
+void CompassCalibrator::calc_ellipsoid_jacob(const Vector3f& sample, const param_t& params, float* ret) const{
+    const Vector3f &offset = params.offset;
+    const Vector3f &diag = params.diag;
+    const Vector3f &offdiag = params.offdiag;
     Matrix3f softiron(
         diag.x    , offdiag.x , offdiag.y,
         offdiag.x , diag.y    , offdiag.z,
@@ -456,103 +450,101 @@ void CompassCalibrator::calc_ellipsoid_jacob(const Vector3f& sample, const ellip
     float C =  (offdiag.y * (sample.x + offset.x)) + (offdiag.z * (sample.y + offset.y)) + (diag.z    * (sample.z + offset.z));
     float length = (softiron*(sample+offset)).length();
 
-    ret.named.offset.x = -1.0f * (((diag.x    * A) + (offdiag.x * B) + (offdiag.y * C))/length);
-    ret.named.offset.y = -1.0f * (((offdiag.x * A) + (diag.y    * B) + (offdiag.z * C))/length);
-    ret.named.offset.z = -1.0f * (((offdiag.y * A) + (offdiag.z * B) + (diag.z    * C))/length);
-    ret.named.diag.x = -1.0f * ((sample.x + offset.x) * A)/length;
-    ret.named.diag.y = -1.0f * ((sample.y + offset.y) * B)/length;
-    ret.named.diag.z = -1.0f * ((sample.z + offset.z) * C)/length;
-    ret.named.offdiag.x = -1.0f * (((sample.y + offset.y) * A) + ((sample.z + offset.z) * B))/length;
-    ret.named.offdiag.y = -1.0f * (((sample.z + offset.z) * A) + ((sample.x + offset.x) * C))/length;
-    ret.named.offdiag.z = -1.0f * (((sample.z + offset.z) * B) + ((sample.y + offset.y) * C))/length;
+    // 0-2: offsets
+    ret[0] = -1.0f * (((diag.x    * A) + (offdiag.x * B) + (offdiag.y * C))/length);
+    ret[1] = -1.0f * (((offdiag.x * A) + (diag.y    * B) + (offdiag.z * C))/length);
+    ret[2] = -1.0f * (((offdiag.y * A) + (offdiag.z * B) + (diag.z    * C))/length);
+    // 3-5: diagonals
+    ret[3] = -1.0f * ((sample.x + offset.x) * A)/length;
+    ret[4] = -1.0f * ((sample.y + offset.y) * B)/length;
+    ret[5] = -1.0f * ((sample.z + offset.z) * C)/length;
+    // 6-8: off-diagonals
+    ret[6] = -1.0f * (((sample.y + offset.y) * A) + ((sample.z + offset.z) * B))/length;
+    ret[7] = -1.0f * (((sample.z + offset.z) * A) + ((sample.x + offset.x) * C))/length;
+    ret[8] = -1.0f * (((sample.z + offset.z) * B) + ((sample.y + offset.y) * C))/length;
 }
 
-void CompassCalibrator::run_ellipsoid_fit(uint8_t max_iterations)
+void CompassCalibrator::run_ellipsoid_fit()
 {
     if(_sample_buffer == NULL) {
         return;
     }
-    float fitness = _fitness, prevfitness = _fitness, fit1, fit2;
-    ellipsoid_param_t fit_param = _ellipsoid_param, temp_param;
 
-    for(uint8_t iterations=0; iterations<max_iterations; iterations++)  {
-        float JTJ[COMPASS_CAL_NUM_ELLIPSOID_PARAMS*COMPASS_CAL_NUM_ELLIPSOID_PARAMS];
-        float JTJ2[COMPASS_CAL_NUM_ELLIPSOID_PARAMS*COMPASS_CAL_NUM_ELLIPSOID_PARAMS];
-        float JTFI[COMPASS_CAL_NUM_ELLIPSOID_PARAMS];
+    const float lma_damping = 10.0f;
 
-        memset(&JTJ,0,sizeof(JTJ));
-        memset(&JTJ2,0,sizeof(JTJ2));
-        memset(&JTFI,0,sizeof(JTFI));
 
-        for(uint16_t k = 0; k<_samples_collected; k++) {
-            Vector3f sample = _sample_buffer[k].get();
+    float fitness = _fitness;
+    float fit1, fit2;
+    param_t fit1_params, fit2_params;
+    fit1_params = fit2_params = _params;
 
-            ellipsoid_param_t ellipsoid_jacob;
 
-            calc_ellipsoid_jacob(sample, fit_param, ellipsoid_jacob);
+    float JTJ[COMPASS_CAL_NUM_ELLIPSOID_PARAMS*COMPASS_CAL_NUM_ELLIPSOID_PARAMS];
+    float JTJ2[COMPASS_CAL_NUM_ELLIPSOID_PARAMS*COMPASS_CAL_NUM_ELLIPSOID_PARAMS];
+    float JTFI[COMPASS_CAL_NUM_ELLIPSOID_PARAMS];
 
-            for(uint8_t i = 0;i < COMPASS_CAL_NUM_ELLIPSOID_PARAMS; i++) {
-                // compute JTJ
-                for(uint8_t j = 0; j < COMPASS_CAL_NUM_ELLIPSOID_PARAMS; j++) {
-                    JTJ[i*COMPASS_CAL_NUM_ELLIPSOID_PARAMS+j] += ellipsoid_jacob.array[i] * ellipsoid_jacob.array[j];
-                    JTJ2[i*COMPASS_CAL_NUM_ELLIPSOID_PARAMS+j] += ellipsoid_jacob.array[i] * ellipsoid_jacob.array[j];
-                }
-                // compute JTFI
-                JTFI[i] += ellipsoid_jacob.array[i] * calc_residual(sample, _sphere_param, fit_param);
+    memset(&JTJ,0,sizeof(JTJ));
+    memset(&JTJ2,0,sizeof(JTJ2));
+    memset(&JTFI,0,sizeof(JTFI));
+
+    for(uint16_t k = 0; k<_samples_collected; k++) {
+        Vector3f sample = _sample_buffer[k].get();
+
+        float ellipsoid_jacob[COMPASS_CAL_NUM_ELLIPSOID_PARAMS];
+
+        calc_ellipsoid_jacob(sample, fit1_params, ellipsoid_jacob);
+
+        for(uint8_t i = 0;i < COMPASS_CAL_NUM_ELLIPSOID_PARAMS; i++) {
+            // compute JTJ
+            for(uint8_t j = 0; j < COMPASS_CAL_NUM_ELLIPSOID_PARAMS; j++) {
+                JTJ [i*COMPASS_CAL_NUM_ELLIPSOID_PARAMS+j] += ellipsoid_jacob[i] * ellipsoid_jacob[j];
+                JTJ2[i*COMPASS_CAL_NUM_ELLIPSOID_PARAMS+j] += ellipsoid_jacob[i] * ellipsoid_jacob[j];
             }
+            // compute JTFI
+            JTFI[i] += ellipsoid_jacob[i] * calc_residual(sample, fit1_params);
         }
-        
-        
-        //------------------------Levenberg-part-starts-here---------------------------------//
-        for(uint8_t i = 0; i < COMPASS_CAL_NUM_ELLIPSOID_PARAMS; i++) {
-            JTJ[i*COMPASS_CAL_NUM_ELLIPSOID_PARAMS+i] += _lambda;
+    }
+
+
+
+    //------------------------Levenberg-part-starts-here---------------------------------//
+    for(uint8_t i = 0; i < COMPASS_CAL_NUM_ELLIPSOID_PARAMS; i++) {
+        JTJ[i*COMPASS_CAL_NUM_ELLIPSOID_PARAMS+i] += _ellipsoid_lambda;
+        JTJ2[i*COMPASS_CAL_NUM_ELLIPSOID_PARAMS+i] += _ellipsoid_lambda/lma_damping;
+    }
+
+    if(!inverse9x9(JTJ, JTJ)) {
+        return;
+    }
+
+    if(!inverse9x9(JTJ2, JTJ2)) {
+        return;
+    }
+
+    for(uint8_t row=0; row < COMPASS_CAL_NUM_ELLIPSOID_PARAMS; row++) {
+        for(uint8_t col=0; col < COMPASS_CAL_NUM_ELLIPSOID_PARAMS; col++) {
+            fit1_params.get_ellipsoid_params()[row] -= JTFI[col] * JTJ[row*COMPASS_CAL_NUM_ELLIPSOID_PARAMS+col];
+            fit2_params.get_ellipsoid_params()[row] -= JTFI[col] * JTJ2[row*COMPASS_CAL_NUM_ELLIPSOID_PARAMS+col];
         }
+    }
 
-        if(!inverse9x9(JTJ, JTJ)) {
-            return;
-        }
+    fit1 = calc_mean_squared_residuals(fit1_params);
+    fit2 = calc_mean_squared_residuals(fit2_params);
 
-        temp_param = fit_param;
-        for(uint8_t row=0; row < COMPASS_CAL_NUM_ELLIPSOID_PARAMS; row++) {
-            for(uint8_t col=0; col < COMPASS_CAL_NUM_ELLIPSOID_PARAMS; col++) {
-                fit_param.array[row] -= JTFI[col] * JTJ[row*COMPASS_CAL_NUM_SPHERE_PARAMS+col];
-            }
-        }
+    if(fit1 > _fitness && fit2 > _fitness){
+        _ellipsoid_lambda *= lma_damping;
+    } else if(fit2 < _fitness && fit2 < fit1) {
+        _ellipsoid_lambda /= lma_damping;
+        fit1_params = fit2_params;
+        fitness = fit2;
+    } else if(fit1 < _fitness){
+        fitness = fit1;
+    }
+    //--------------------Levenberg-part-ends-here--------------------------------//
 
-        fit1 = calc_mean_squared_residuals(_sphere_param,fit_param);
-
-        for(uint8_t i = 0; i < COMPASS_CAL_NUM_ELLIPSOID_PARAMS; i++) {
-            JTJ2[i*COMPASS_CAL_NUM_ELLIPSOID_PARAMS+i] += _lambda/10.0f;
-        }
-
-        if(!inverse9x9(JTJ2, JTJ2)) {
-            return;
-        }
-
-        for(uint8_t row=0; row < COMPASS_CAL_NUM_ELLIPSOID_PARAMS; row++) {
-            for(uint8_t col=0; col < COMPASS_CAL_NUM_ELLIPSOID_PARAMS; col++) {
-                temp_param.array[row] -= JTFI[col] * JTJ2[row*COMPASS_CAL_NUM_ELLIPSOID_PARAMS+col];
-            }
-        }
-
-        fit2 = calc_mean_squared_residuals(_sphere_param, temp_param);
-
-        if(fit1 > prevfitness && fit2 > prevfitness){
-            _lambda *= 10.0f;
-        } else if(fit2 < prevfitness && fit2 < fit1) {
-            _lambda /= 10.0f;
-            fit_param = temp_param;
-            fitness = fit2;
-        } else if(fit1 < prevfitness){
-            fitness = fit1;
-        }
-        prevfitness = fitness;
-        //--------------------Levenberg-part-ends-here--------------------------------//
-
-        if(fitness < _fitness) {
-            _fitness = fitness;
-            _ellipsoid_param = fit_param;
-        }
+    if(fitness < _fitness) {
+        _fitness = fitness;
+        _params = fit1_params;
     }
 }
 
