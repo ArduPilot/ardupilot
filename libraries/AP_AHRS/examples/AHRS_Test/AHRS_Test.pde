@@ -75,8 +75,6 @@ void setup(void)
 
     ins.init(AP_InertialSensor::COLD_START, 
 			 AP_InertialSensor::RATE_100HZ);
-    ins.init_accel();
-
     ahrs.init();
     serial_manager.init();
 
