@@ -1,6 +1,6 @@
 #include "CompassCalibrator.h"
 #include <AP_HAL.h>
-#include <stdio.h>
+#include <AP_Notify.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -59,11 +59,14 @@ float CompassCalibrator::get_completion_percent() const {
     };
 }
 
-void CompassCalibrator::check_for_timeout() {
+bool CompassCalibrator::check_for_timeout() {
     uint32_t tnow = hal.scheduler->millis();
     if(running() && tnow - _last_sample_ms > 1000) {
+        _retry = false;
         set_status(COMPASS_CAL_FAILED);
+        return true;
     }
+    return false;
 }
 
 void CompassCalibrator::new_sample(const Vector3f& sample) {
@@ -220,6 +223,8 @@ bool CompassCalibrator::set_status(compass_cal_status_t status) {
             if(_status == COMPASS_CAL_NOT_STARTED) {
                 return false;
             }
+
+            AP_Notify::events.compass_cal_failed = 1;
 
             if(_retry && set_status(COMPASS_CAL_WAITING_TO_START)) {
                 _attempt++;

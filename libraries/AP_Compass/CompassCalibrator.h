@@ -26,7 +26,7 @@ public:
     void new_sample(const Vector3f &sample);
     void run_fit_chunk();
 
-    void check_for_timeout();
+    bool check_for_timeout();
 
     bool running() const;
 
