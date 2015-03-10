@@ -226,6 +226,13 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     AP_GROUPINFO("GYR3OFFS",   10, AP_InertialSensor, _gyro_offset[2],   0),
 #endif
 
+    // @Param: INS_CALSENSFRAME
+    // @DisplayName: Calibration is in sensor frame
+    // @Description: This is an internal parameter that records whether accelerometer calibration was done in sensor frame. It is used to detect an old accel calibration which was done in body frame. This parameter is automatically set during accelerometer calibration and should not be changed by the user.
+    // @Values: 0:BoardFrame,1:SensorFrame
+    // @User: Advanced
+    AP_GROUPINFO("CALSENSFRAME", 11, AP_InertialSensor, _cal_sensor_frame, 0),
+
     AP_GROUPEND
 };
 
@@ -411,6 +418,13 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
     Vector3f orig_scale[INS_MAX_INSTANCES];
     uint8_t num_ok = 0;
 
+    /*
+      we do the accel calibration with no board rotation. This avoids
+      having to rotate readings during the calibration
+    */
+    enum Rotation saved_orientation = _board_orientation;
+    _board_orientation = ROTATION_NONE;
+
     for (uint8_t k=0; k<num_accels; k++) {
         // backup original offsets and scaling
         orig_offset[k] = _accel_offset[k].get();
@@ -505,8 +519,20 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
 
         check_3D_calibration();
 
-        // calculate the trims as well from primary accels and pass back to caller
-        _calculate_trim(samples[0][0], trim_roll, trim_pitch);
+        /*
+          calculate the trims as well from primary accels 
+          We use the original board rotation for this sample
+        */
+        Vector3f level_sample = samples[0][0];
+        level_sample.rotate(saved_orientation);
+
+        _calculate_trim(level_sample, trim_roll, trim_pitch);
+
+        _board_orientation = saved_orientation;
+
+        // now set and save the INS_CALSENSFRAME parameter so we know
+        // the calibration was done in sensor frame
+        _cal_sensor_frame.set_and_save(1);
 
         return true;
     }
@@ -518,6 +544,7 @@ failed:
         _accel_offset[k].set(orig_offset[k]);
         _accel_scale[k].set(orig_scale[k]);
     }
+    _board_orientation = saved_orientation;
     return false;
 }
 #endif
@@ -732,6 +759,13 @@ AP_InertialSensor::_init_gyro()
     // cold start
     hal.console->print_P(PSTR("Init Gyro"));
 
+    /*
+      we do the gyro calibration with no board rotation. This avoids
+      having to rotate readings during the calibration
+    */
+    enum Rotation saved_orientation = _board_orientation;
+    _board_orientation = ROTATION_NONE;
+
     // remove existing gyro offsets
     for (uint8_t k=0; k<num_gyros; k++) {
         _gyro_offset[k] = Vector3f(0,0,0);
@@ -826,6 +860,9 @@ AP_InertialSensor::_init_gyro()
             _gyro_cal_ok[k] = true;
         }
     }
+
+    // restore orientation
+    _board_orientation = saved_orientation;
 
     // record calibration complete
     _calibrating = false;
@@ -982,11 +1019,11 @@ void AP_InertialSensor::_calibrate_find_delta(float dS[6], float JS[6][6], float
 }
 
 // _calculate_trim  - calculates the x and y trim angles (in radians) given a raw accel sample (i.e. no scaling or offsets applied) taken when the vehicle was level
-void AP_InertialSensor::_calculate_trim(Vector3f accel_sample, float& trim_roll, float& trim_pitch)
+void AP_InertialSensor::_calculate_trim(const Vector3f &accel_sample, float& trim_roll, float& trim_pitch)
 {
     // scale sample and apply offsets
-    Vector3f accel_scale = _accel_scale[0].get();
-    Vector3f accel_offsets = _accel_offset[0].get();
+    const Vector3f &accel_scale = _accel_scale[0].get();
+    const Vector3f &accel_offsets = _accel_offset[0].get();
     Vector3f scaled_accels_x( accel_sample.x * accel_scale.x - accel_offsets.x,
                               0,
                               accel_sample.z * accel_scale.z - accel_offsets.z );
