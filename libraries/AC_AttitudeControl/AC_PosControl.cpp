@@ -802,7 +802,8 @@ void AC_PosControl::accel_to_lean_angles(float dt, float ekfNavVelGainScaler)
     float accel_right, accel_forward;
     float lean_angle_max = _attitude_control.lean_angle_max();
 
-    float max_delta_accel = dt * 1700.0f;
+    // apply jerk limit of 17 m/s^3 - equates to a worst case of about 100 deg/sec/sec
+    float max_delta_accel = dt * POSCONTROL_JERK_LIMIT_CMSSS;
 
     Vector2f accel_in(_accel_target.x, _accel_target.y);
     Vector2f accel_change = accel_in-_accel_target_jerk_limited;
@@ -814,7 +815,7 @@ void AC_PosControl::accel_to_lean_angles(float dt, float ekfNavVelGainScaler)
     }
 
     // 5Hz lowpass filter on NE accel
-    float freq_cut = 5.0f * ekfNavVelGainScaler;
+    float freq_cut = POSCONTROL_ACCEL_FILTER_HZ * ekfNavVelGainScaler;
     float alpha = constrain_float(dt/(dt + 1.0f/(2.0f*(float)M_PI*freq_cut)),0.0f,1.0f);
     _accel_target_filtered.x += alpha * (_accel_target_jerk_limited.x - _accel_target_filtered.x);
     _accel_target_filtered.y  += alpha * (_accel_target_jerk_limited.y - _accel_target_filtered.y);

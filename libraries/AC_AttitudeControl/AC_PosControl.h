@@ -40,6 +40,8 @@
 
 #define POSCONTROL_VEL_ERROR_CUTOFF_FREQ        4.0     // 4hz low-pass filter on velocity error
 #define POSCONTROL_ACCEL_ERROR_CUTOFF_FREQ      2.0     // 2hz low-pass filter on accel error
+#define POSCONTROL_JERK_LIMIT_CMSSS             1700.0f // 17m/s/s/s jerk limit on horizontal acceleration
+#define POSCONTROL_ACCEL_FILTER_HZ              5.0f    // 5hz low-pass filter on acceleration
 
 class AC_PosControl
 {
@@ -370,7 +372,7 @@ private:
     LowPassFilterFloat _vel_error_filter;   // low-pass-filter on z-axis velocity error
     LowPassFilterFloat _accel_error_filter; // low-pass-filter on z-axis accelerometer error
 
-    Vector2f    _accel_target_jerk_limited;
-    Vector2f    _accel_target_filtered;
+    Vector2f    _accel_target_jerk_limited; // acceleration target jerk limited to 100deg/s/s
+    Vector2f    _accel_target_filtered;     // acceleration target filtered with 5hz low pass filter
 };
 #endif	// AC_POSCONTROL_H
