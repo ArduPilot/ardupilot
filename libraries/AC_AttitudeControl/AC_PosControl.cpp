@@ -42,7 +42,9 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     _roll_target(0.0f),
     _pitch_target(0.0f),
     _alt_max(0.0f),
-    _distance_to_target(0.0f)
+    _distance_to_target(0.0f),
+    _accel_target_jerk_limited(0.0f,0.0f),
+    _accel_target_filtered(0.0f,0.0f)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -797,40 +799,29 @@ void AC_PosControl::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
 ///    converts desired accelerations provided in lat/lon frame to roll/pitch angles
 void AC_PosControl::accel_to_lean_angles(float dt, float ekfNavVelGainScaler)
 {
-    float accel_north = _accel_target.x;
-    float accel_east = _accel_target.y;
     float accel_right, accel_forward;
     float lean_angle_max = _attitude_control.lean_angle_max();
 
-    // apply jerk limit of 17 m/s^3 - equates to a worst case of about 100 deg/sec/sec
-    static float last_accel_north = 0.0f;
-    static float last_accel_east = 0.0f;
     float max_delta_accel = dt * 1700.0f;
-    if (accel_north - last_accel_north > max_delta_accel) {
-        accel_north = last_accel_north + max_delta_accel;
-    } else if (accel_north - last_accel_north < -max_delta_accel) {
-        accel_north = last_accel_north - max_delta_accel;
-    }
-    last_accel_north = accel_north;
 
-    if (accel_east - last_accel_east > max_delta_accel) {
-        accel_east = last_accel_east + max_delta_accel;
-    } else if (accel_east - last_accel_east < -max_delta_accel) {
-        accel_east = last_accel_east - max_delta_accel;
+    Vector2f accel_in(_accel_target.x, _accel_target.y);
+    Vector2f accel_change = accel_in-_accel_target_jerk_limited;
+    float accel_change_length = accel_change.length();
+
+    if(accel_change_length > max_delta_accel) {
+        accel_change *= max_delta_accel/accel_change_length;
+        _accel_target_jerk_limited += accel_change;
     }
-    last_accel_east = accel_east;
 
     // 5Hz lowpass filter on NE accel
     float freq_cut = 5.0f * ekfNavVelGainScaler;
     float alpha = constrain_float(dt/(dt + 1.0f/(2.0f*(float)M_PI*freq_cut)),0.0f,1.0f);
-    static float accel_north_filtered = 0.0f;
-    static float accel_east_filtered = 0.0f;
-    accel_north_filtered += alpha * (accel_north - accel_north_filtered);
-    accel_east_filtered  += alpha * (accel_east - accel_east_filtered);
+    _accel_target_filtered.x += alpha * (_accel_target_jerk_limited.x - _accel_target_filtered.x);
+    _accel_target_filtered.y  += alpha * (_accel_target_jerk_limited.y - _accel_target_filtered.y);
 
     // rotate accelerations into body forward-right frame
-    accel_forward = accel_north_filtered*_ahrs.cos_yaw() + accel_east_filtered*_ahrs.sin_yaw();
-    accel_right = -accel_north_filtered*_ahrs.sin_yaw() + accel_east_filtered*_ahrs.cos_yaw();
+    accel_forward = _accel_target_filtered.x*_ahrs.cos_yaw() + _accel_target_filtered.y*_ahrs.sin_yaw();
+    accel_right = -_accel_target_filtered.x*_ahrs.sin_yaw() + _accel_target_filtered.y*_ahrs.cos_yaw();
 
     // update angle targets that will be passed to stabilize controller
     _pitch_target = constrain_float(fast_atan(-accel_forward/(GRAVITY_MSS * 100))*(18000/M_PI),-lean_angle_max, lean_angle_max);
