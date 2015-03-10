@@ -10,8 +10,8 @@
 enum compass_cal_status_t {
     COMPASS_CAL_NOT_STARTED=0,
     COMPASS_CAL_WAITING_TO_START=1,
-    COMPASS_CAL_SAMPLING_STEP_ONE=2,
-    COMPASS_CAL_SAMPLING_STEP_TWO=3,
+    COMPASS_CAL_RUNNING_STEP_ONE=2,
+    COMPASS_CAL_RUNNING_STEP_TWO=3,
     COMPASS_CAL_SUCCESS=4,
     COMPASS_CAL_FAILED=5
 };
@@ -32,7 +32,6 @@ public:
 
     void get_calibration(Vector3f &offsets, Vector3f &diagonals, Vector3f &offdiagonals);
 
-    bool running() const;
     float get_completion_percent() const;
     enum compass_cal_status_t get_status() const { return _status; }
     float get_fitness() const { return sqrtf(_fitness); }
@@ -40,25 +39,20 @@ public:
     uint8_t get_attempt() const { return _attempt; }
 
 private:
-    union sphere_param_t {
-        sphere_param_t(){};
-        struct {
-            float radius;
-            Vector3f offset;
-        } named;
+    class param_t {
+    public:
+        float* get_sphere_params() {
+            return &radius;
+        }
 
-        float array[COMPASS_CAL_NUM_SPHERE_PARAMS];
-    };
+        float* get_ellipsoid_params() {
+            return &offset.x;
+        }
 
-    union ellipsoid_param_t {
-        ellipsoid_param_t(){};
-        struct {
-            Vector3f offset;
-            Vector3f diag;
-            Vector3f offdiag;
-        } named;
-
-        float array[COMPASS_CAL_NUM_ELLIPSOID_PARAMS];
+        float radius;
+        Vector3f offset;
+        Vector3f diag;
+        Vector3f offdiag;
     };
 
     class CompassSample {
@@ -71,57 +65,61 @@ private:
         int16_t z;
     };
 
-    bool fit_acceptable();
 
-    bool _autosave;
 
-    bool _retry;
-    uint8_t _attempt;
-    uint32_t _start_time_ms;
+    enum compass_cal_status_t _status;
+
+    // timeout watchdog state
+    uint32_t _last_sample_ms;
+
+    // behavioral state
     float _delay_start_sec;
+    uint32_t _start_time_ms;
+    bool _autosave;
+    bool _retry;
+    float _tolerance;
+    uint8_t _attempt;
 
-    float calc_residual(const Vector3f& sample, const sphere_param_t& sp, const ellipsoid_param_t& ep) const;
-    float calc_mean_squared_residuals(const sphere_param_t& sp, const ellipsoid_param_t& ep) const;
-    float calc_mean_squared_residuals() const;
+    //fit state
+    struct param_t _params;
+    uint16_t _fit_step;
+    CompassSample *_sample_buffer;
+    float _fitness; // mean squared residuals
+    float _initial_fitness;
+    float _sphere_lambda;
+    float _ellipsoid_lambda;
+    uint16_t _samples_collected;
+    uint16_t _samples_thinned;
 
-    void calc_sphere_jacob(const Vector3f& sample, const sphere_param_t& sp, sphere_param_t& ret) const;
-    void run_sphere_fit(uint8_t max_iterations=20);
+    bool set_status(compass_cal_status_t status);
 
-    void calc_ellipsoid_jacob(const Vector3f& sample, const ellipsoid_param_t& sp, ellipsoid_param_t& ret) const;
-    void run_ellipsoid_fit(uint8_t max_iterations=20);
+    bool running() const;
+    bool fitting() const;
 
     // returns true if sample should be added to buffer
     bool accept_sample(const Vector3f &sample);
     bool accept_sample(const CompassSample &sample);
 
+    // returns true if fit is acceptable
+    bool fit_acceptable();
+
+    void reset_state();
+    void initialize_fit();
+
+    // thins out samples between step one and step two
     void thin_samples();
 
-    bool set_status(compass_cal_status_t status);
-    void reset_state();
+    float calc_residual(const Vector3f& sample, const param_t& params) const;
+    float calc_mean_squared_residuals(const param_t& params) const;
+    float calc_mean_squared_residuals() const;
 
-    uint32_t _last_sample_ms;
+    void calc_sphere_jacob(const Vector3f& sample, const param_t& params, float* ret) const;
+    void run_sphere_fit();
 
-    uint16_t _fit_step;
+    void calc_ellipsoid_jacob(const Vector3f& sample, const param_t& params, float* ret) const;
+    void run_ellipsoid_fit();
 
-    enum compass_cal_status_t _status;
-
-    CompassSample *_sample_buffer;
-    uint16_t _samples_collected;
-    uint16_t _samples_thinned;
-
-    // mean squared residuals
-    float _fitness;
-    float _initial_fitness;
-
-    float _tolerance;
-
-    float _lambda;
-
-    sphere_param_t _sphere_param;
-    ellipsoid_param_t _ellipsoid_param;
-    bool _running_ellipsoid_fit:1;
     // math helpers
-    
     bool inverse9x9(const float m[],float invOut[]);
     float det9x9(const float m[]);
     bool inverse6x6(const float m[],float invOut[]);
