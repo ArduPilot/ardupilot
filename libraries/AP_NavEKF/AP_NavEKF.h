@@ -28,6 +28,7 @@
 #include <AP_Compass.h>
 #include <AP_Param.h>
 #include <AP_Nav_Common.h>
+#include <GCS_MAVLink.h>
 
 // #define MATH_CHECK_INDEXES 1
 
@@ -223,6 +224,9 @@ public:
     return filter status flags
     */
     void  getFilterStatus(nav_filter_status &status) const;
+
+    // send an EKF_STATUS_REPORT message to GCS
+    void send_status_report(mavlink_channel_t chan);
 
     static const struct AP_Param::GroupInfo var_info[];
 
