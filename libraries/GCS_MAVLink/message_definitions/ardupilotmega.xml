@@ -122,6 +122,21 @@
         <entry name="LED_CONTROL_PATTERN_CUSTOM" value="255"> <description>Custom Pattern using custom bytes fields</description></entry>
     </enum>
 
+	<!-- EKF_STATUS_FLAGS - these values should be bit-and with the messages flags field to know if flag has been set -->
+    <enum name="EKF_STATUS_FLAGS">
+        <description>Flags in EKF_STATUS message</description>
+        <entry name="EKF_ATTITUDE" value="1"> <description>set if EKF's attitude estimate is good</description></entry>
+        <entry name="EKF_VELOCITY_HORIZ" value="2"> <description>set if EKF's horizontal velocity estimate is good</description></entry>
+        <entry name="EKF_VELOCITY_VERT" value="4"> <description>set if EKF's vertical velocity estimate is good</description></entry>
+        <entry name="EKF_POS_HORIZ_REL" value="8"> <description>set if EKF's horizontal position (relative) estimate is good</description></entry>
+        <entry name="EKF_POS_HORIZ_ABS" value="16"> <description>set if EKF's horizontal position (absolute) estimate is good</description></entry>
+        <entry name="EKF_POS_VERT_ABS" value="32"> <description>set if EKF's vertical position (absolute) estimate is good</description></entry>
+        <entry name="EKF_POS_VERT_AGL" value="64"> <description>set if EKF's vertical position (above ground) estimate is good</description></entry>
+        <entry name="EKF_CONST_POS_MODE" value="128"> <description>EKF is in constant position mode and does not know it's absolute or relative position</description></entry>
+        <entry name="EKF_PRED_POS_HORIZ_REL" value="256"> <description>set if EKF's predicted horizontal position (relative) estimate is good</description></entry>
+        <entry name="EKF_PRED_POS_HORIZ_ABS" value="512"> <description>set if EKF's predicted horizontal position (absolute) estimate is good</description></entry>
+	</enum>
+
       </enums>
 
      <messages>
@@ -534,5 +549,17 @@
 
     <!-- 191 to 192 RESERVED for mag calibration -->
     
+
+    <!-- EKF status message from autopilot to GCS.   -->
+    <message name="EKF_STATUS_REPORT" id="193">
+        <description>EKF Status message including flags and variances</description>
+        <field name="flags" type="uint16_t">Flags</field>   <!-- supported flags see EKF_STATUS_FLAGS enum -->
+        <field name="velocity_variance" type="float">Velocity variance</field>   <!-- below 0.5 is good, 0.5~0.79 is warning, 0.8 or higher is bad  -->
+        <field name="pos_horiz_variance" type="float">Horizontal Position variance</field>
+        <field name="pos_vert_variance" type="float">Vertical Position variance</field>
+        <field name="compass_variance" type="float">Compass variance</field>
+        <field name="terrain_alt_variance" type="float">Terrain Altitude variance</field>
+    </message>
+
      </messages>
 </mavlink>
