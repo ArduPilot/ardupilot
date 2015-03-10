@@ -625,6 +625,12 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 #endif
         break;
 
+    case MSG_EKF_STATUS_REPORT:
+#if AP_AHRS_NAVEKF_AVAILABLE
+        CHECK_PAYLOAD_SIZE(EKF_STATUS_REPORT);
+        ahrs.get_NavEKF().send_status_report(chan);
+#endif
+        break;
 
     case MSG_FENCE_STATUS:
     case MSG_WIND:
@@ -854,6 +860,7 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_MOUNT_STATUS);
         send_message(MSG_OPTICAL_FLOW);
         send_message(MSG_GIMBAL_REPORT);
+        send_message(MSG_EKF_STATUS_REPORT);
     }
 }
 
