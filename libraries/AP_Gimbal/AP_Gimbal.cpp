@@ -167,8 +167,13 @@ float angle_input_rad(RC_Channel* rc, float angle_min, float angle_max)
 // update_targets_from_rc - updates angle targets using input from receiver
 void AP_Gimbal::update_targets_from_rc()
 {
+    // Get new tilt angle
     float new_tilt = (_rc_failsafe)?0.0f:angle_input_rad(RC_Channel::rc_channel(tilt_rc_in-1), _tilt_angle_min, _tilt_angle_max);
+    // Low-pass filter
+    new_tilt = _angle_ef_target_rad.y + 0.09f*(new_tilt - _angle_ef_target_rad.y);
+    // Slew-rate constrain
     float max_change_rads =_max_tilt_rate * _measurament.delta_time;
     float tilt_change = constrain_float(new_tilt - _angle_ef_target_rad.y,-max_change_rads,+max_change_rads);
-    _angle_ef_target_rad.y += tilt_change;
+    // Update tilt
+    _angle_ef_target_rad.y = constrain_float(_angle_ef_target_rad.y + tilt_change,_tilt_angle_min,_tilt_angle_max);
 }
