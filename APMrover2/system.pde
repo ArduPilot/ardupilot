@@ -235,7 +235,7 @@ static void startup_ground(void)
 	//------------------------
     //
 
-	startup_INS_ground(false);
+	startup_INS_ground();
 
 	// read the radio to set trims
 	// ---------------------------
@@ -368,7 +368,7 @@ static void failsafe_trigger(uint8_t failsafe_type, bool on)
     }
 }
 
-static void startup_INS_ground(bool force_accel_level)
+static void startup_INS_ground(void)
 {
     gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Warming up ADC..."));
  	mavlink_delay(500);
@@ -383,7 +383,7 @@ static void startup_INS_ground(bool force_accel_level)
     ahrs.set_vehicle_class(AHRS_VEHICLE_GROUND);
 
     AP_InertialSensor::Start_style style;
-    if (g.skip_gyro_cal && !force_accel_level) {
+    if (g.skip_gyro_cal) {
         style = AP_InertialSensor::WARM_START;
     } else {
         style = AP_InertialSensor::COLD_START;
@@ -391,13 +391,6 @@ static void startup_INS_ground(bool force_accel_level)
 
 	ins.init(style, ins_sample_rate);
 
-    if (force_accel_level) {
-        // when MANUAL_LEVEL is set to 1 we don't do accelerometer
-        // levelling on each boot, and instead rely on the user to do
-        // it once via the ground station	
-        ins.init_accel();
-        ahrs.set_trim(Vector3f(0, 0, 0));
-	}
     ahrs.reset();
 }
 
