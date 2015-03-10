@@ -528,7 +528,7 @@ void AC_PosControl::update_xy_controller(xy_mode mode, float ekfNavVelGainScaler
     _last_update_xy_ms = now;
 
     // sanity check dt - expect to be called faster than ~5hz
-    if (dt > POSCONTROL_ACTIVE_TIMEOUT_MS) {
+    if (dt > POSCONTROL_ACTIVE_TIMEOUT_SEC) {
         dt = 0.0f;
     }
 
@@ -589,7 +589,7 @@ void AC_PosControl::update_vel_controller_xyz(float ekfNavVelGainScaler)
     float dt = (now - _last_update_xy_ms) / 1000.0f;
 
     // sanity check dt - expect to be called faster than ~5hz
-    if (dt >= POSCONTROL_ACTIVE_TIMEOUT_MS) {
+    if (dt >= POSCONTROL_ACTIVE_TIMEOUT_SEC) {
         dt = 0.0f;
     }
 

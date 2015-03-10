@@ -36,7 +36,7 @@
 #define POSCONTROL_DT_10HZ                      0.10f   // time difference in seconds for 10hz update rate
 #define POSCONTROL_DT_50HZ                      0.02f   // time difference in seconds for 50hz update rate
 
-#define POSCONTROL_ACTIVE_TIMEOUT_MS            200     // position controller is considered active if it has been called within the past 200ms (0.2 seconds)
+#define POSCONTROL_ACTIVE_TIMEOUT_SEC           0.2f    // position controller is considered active if it has been called within the past 0.2 seconds
 
 #define POSCONTROL_VEL_ERROR_CUTOFF_FREQ        4.0     // 4hz low-pass filter on velocity error
 #define POSCONTROL_ACCEL_ERROR_CUTOFF_FREQ      2.0     // 2hz low-pass filter on accel error
