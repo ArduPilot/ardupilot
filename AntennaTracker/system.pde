@@ -99,19 +99,6 @@ static void init_tracker()
     nav_status.need_altitude_calibration = true;
 }
 
-// Level the tracker by calibrating the INS
-// Requires that the tracker be physically 'level' and horizontal
-static void calibrate_ins()
-{
-    gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Beginning INS calibration; do not move tracker"));
-    ahrs.init();
-    ins.init(AP_InertialSensor::COLD_START, ins_sample_rate);
-    ins.init_accel();
-    ahrs.set_trim(Vector3f(0, 0, 0));
-    ahrs.reset();
-    init_barometer();
-}
-
 // updates the status of the notify objects
 // should be called at 50hz
 static void update_notify()
