@@ -28,6 +28,8 @@ public:
 
     void check_for_timeout();
 
+    bool running() const;
+
     void set_tolerance(float tolerance) { _tolerance = tolerance; }
 
     void get_calibration(Vector3f &offsets, Vector3f &diagonals, Vector3f &offdiagonals);
@@ -93,9 +95,6 @@ private:
 
     bool set_status(compass_cal_status_t status);
 
-    bool running() const;
-    bool fitting() const;
-
     // returns true if sample should be added to buffer
     bool accept_sample(const Vector3f &sample);
     bool accept_sample(const CompassSample &sample);
@@ -105,6 +104,8 @@ private:
 
     void reset_state();
     void initialize_fit();
+
+    bool fitting() const;
 
     // thins out samples between step one and step two
     void thin_samples();
