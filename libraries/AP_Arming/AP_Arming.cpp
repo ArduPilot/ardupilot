@@ -153,9 +153,9 @@ bool AP_Arming::ins_checks(bool report)
             }
             return false;
         }
-        if (ahrs.have_inertial_nav() && !ins.calibrated()) {
+        if (!ins.calibrated()) {
             if (report) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: EKF requires 3D accel cal"));
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: 3D accel cal needed"));
             }
             return false;
         }
