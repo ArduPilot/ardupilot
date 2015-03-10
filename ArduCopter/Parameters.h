@@ -185,6 +185,10 @@ public:
         k_param_serial2_baud_old, // deprecated
         k_param_serial2_protocol, // deprecated
         k_param_serial_manager,  // 119
+        k_param_ch9_option,
+        k_param_ch10_option,
+        k_param_ch11_option,
+        k_param_ch12_option,     // 123
 
         //
         // 140: Sensor parameters
@@ -392,6 +396,10 @@ public:
     AP_Int8         frame_orientation;
     AP_Int8         ch7_option;
     AP_Int8         ch8_option;
+    AP_Int8         ch9_option;
+    AP_Int8         ch10_option;
+    AP_Int8         ch11_option;
+    AP_Int8         ch12_option;
     AP_Int8         arming_check;
 
     AP_Int8         land_repositioning;

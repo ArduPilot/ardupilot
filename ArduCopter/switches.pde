@@ -100,6 +100,46 @@ static void read_aux_switches()
         // invoke the appropriate function
         do_aux_switch_function(g.ch8_option, ap.CH8_flag);
     }
+
+    // check if Ch9 switch has changed position
+    switch_position = read_3pos_switch(g.rc_9.radio_in);
+    if (ap.CH9_flag != switch_position) {
+        // set the CH9 flag
+        ap.CH9_flag = switch_position;
+
+        // invoke the appropriate function
+        do_aux_switch_function(g.ch9_option, ap.CH9_flag);
+    }
+
+    // check if Ch10 switch has changed position
+    switch_position = read_3pos_switch(g.rc_10.radio_in);
+    if (ap.CH10_flag != switch_position) {
+        // set the CH10 flag
+        ap.CH10_flag = switch_position;
+
+        // invoke the appropriate function
+        do_aux_switch_function(g.ch10_option, ap.CH10_flag);
+    }
+
+    // check if Ch11 switch has changed position
+    switch_position = read_3pos_switch(g.rc_11.radio_in);
+    if (ap.CH11_flag != switch_position) {
+        // set the CH11 flag
+        ap.CH11_flag = switch_position;
+
+        // invoke the appropriate function
+        do_aux_switch_function(g.ch11_option, ap.CH11_flag);
+    }
+
+    // check if Ch12 switch has changed position
+    switch_position = read_3pos_switch(g.rc_12.radio_in);
+    if (ap.CH12_flag != switch_position) {
+        // set the CH12 flag
+        ap.CH12_flag = switch_position;
+
+        // invoke the appropriate function
+        do_aux_switch_function(g.ch12_option, ap.CH12_flag);
+    }
 }
 
 // init_aux_switches - invoke configured actions at start-up for aux function where it is safe to do so
@@ -108,9 +148,24 @@ static void init_aux_switches()
     // set the CH7 flag
     ap.CH7_flag = read_3pos_switch(g.rc_7.radio_in);
     ap.CH8_flag = read_3pos_switch(g.rc_8.radio_in);
+    ap.CH9_flag = read_3pos_switch(g.rc_9.radio_in);
+    ap.CH10_flag = read_3pos_switch(g.rc_10.radio_in);
+    ap.CH11_flag = read_3pos_switch(g.rc_11.radio_in);
+    ap.CH12_flag = read_3pos_switch(g.rc_12.radio_in);
 
-    // init channel 7 options
-    switch(g.ch7_option) {
+    init_aux_switch_function(g.ch7_option, ap.CH7_flag);
+    init_aux_switch_function(g.ch8_option, ap.CH8_flag);
+    init_aux_switch_function(g.ch9_option, ap.CH9_flag);
+    init_aux_switch_function(g.ch10_option, ap.CH10_flag);
+    init_aux_switch_function(g.ch11_option, ap.CH11_flag);
+    init_aux_switch_function(g.ch12_option, ap.CH12_flag);
+}
+
+// init_aux_switch_function - initialize aux functions
+static void init_aux_switch_function(int8_t ch_option, uint8_t ch_flag)
+{    
+    // init channel options
+    switch(ch_option) {
         case AUX_SWITCH_SIMPLE_MODE:
         case AUX_SWITCH_SONAR:
         case AUX_SWITCH_FENCE:
@@ -127,29 +182,7 @@ static void init_aux_switches()
         case AUX_SWITCH_ATTCON_ACCEL_LIM:
         case AUX_SWITCH_RELAY:
         case AUX_SWITCH_LANDING_GEAR:
-            do_aux_switch_function(g.ch7_option, ap.CH7_flag);
-            break;
-    }
-
-    // init channel 8 option
-    switch(g.ch8_option) {
-        case AUX_SWITCH_SIMPLE_MODE:
-        case AUX_SWITCH_SONAR:
-        case AUX_SWITCH_FENCE:
-        case AUX_SWITCH_RESETTOARMEDYAW:
-        case AUX_SWITCH_SUPERSIMPLE_MODE:
-        case AUX_SWITCH_ACRO_TRAINER:
-        case AUX_SWITCH_EPM:
-        case AUX_SWITCH_SPRAYER:
-        case AUX_SWITCH_PARACHUTE_ENABLE:
-        case AUX_SWITCH_PARACHUTE_3POS:     // we trust the vehicle will be disarmed so even if switch is in release position the chute will not release
-        case AUX_SWITCH_RETRACT_MOUNT:
-        case AUX_SWITCH_MISSIONRESET:
-        case AUX_SWITCH_ATTCON_FEEDFWD:
-        case AUX_SWITCH_ATTCON_ACCEL_LIM:
-        case AUX_SWITCH_RELAY:
-        case AUX_SWITCH_LANDING_GEAR:
-            do_aux_switch_function(g.ch8_option, ap.CH8_flag);
+            do_aux_switch_function(ch_option, ch_flag);
             break;
     }
 }
