@@ -28,37 +28,6 @@
 #define CH6_PWM_TRIGGER_HIGH    1800
 #define CH6_PWM_TRIGGER_LOW     1200
 
-#define AUX_SWITCH_DO_NOTHING       0       // aux switch disabled
-#define AUX_SWITCH_SET_HOVER        1       // deprecated
-#define AUX_SWITCH_FLIP             2       // flip
-#define AUX_SWITCH_SIMPLE_MODE      3       // change to simple mode
-#define AUX_SWITCH_RTL              4       // change to RTL flight mode
-#define AUX_SWITCH_SAVE_TRIM        5       // save current position as level
-#define AUX_SWITCH_ADC_FILTER       6       // deprecated
-#define AUX_SWITCH_SAVE_WP          7       // save mission waypoint or RTL if in auto mode
-#define AUX_SWITCH_MULTI_MODE       8       // depending upon CH6 position Flip (if ch6 is low), RTL (if ch6 in middle) or Save WP (if ch6 is high)
-#define AUX_SWITCH_CAMERA_TRIGGER   9       // trigger camera servo or relay
-#define AUX_SWITCH_SONAR            10      // allow enabling or disabling sonar in flight which helps avoid surface tracking when you are far above the ground
-#define AUX_SWITCH_FENCE            11      // allow enabling or disabling fence in flight
-#define AUX_SWITCH_RESETTOARMEDYAW  12      // changes yaw to be same as when quad was armed
-#define AUX_SWITCH_SUPERSIMPLE_MODE 13      // change to simple mode in middle, super simple at top
-#define AUX_SWITCH_ACRO_TRAINER     14      // low = disabled, middle = leveled, high = leveled and limited
-#define AUX_SWITCH_SPRAYER          15      // enable/disable the crop sprayer
-#define AUX_SWITCH_AUTO             16      // change to auto flight mode
-#define AUX_SWITCH_AUTOTUNE         17      // auto tune
-#define AUX_SWITCH_LAND             18      // change to LAND flight mode
-#define AUX_SWITCH_EPM              19      // Operate the EPM cargo gripper low=off, middle=neutral, high=on
-#define AUX_SWITCH_EKF              20      // deprecated
-#define AUX_SWITCH_PARACHUTE_ENABLE 21      // Parachute enable/disable
-#define AUX_SWITCH_PARACHUTE_RELEASE 22     // Parachute release
-#define AUX_SWITCH_PARACHUTE_3POS   23      // Parachute disable, enable, release with 3 position switch
-#define AUX_SWITCH_MISSIONRESET     24      // Reset auto mission to start from first command
-#define AUX_SWITCH_ATTCON_FEEDFWD   25      // enable/disable the roll and pitch rate feed forward
-#define AUX_SWITCH_ATTCON_ACCEL_LIM 26      // enable/disable the roll, pitch and yaw accel limiting
-#define AUX_SWITCH_RETRACT_MOUNT    27      // Retract Mount
-#define AUX_SWITCH_RELAY            28      // Relay pin on/off (only supports first relay)
-#define AUX_SWITCH_LANDING_GEAR     29      // Landing gear controller
-
 // values used by the ap.ch7_opt and ap.ch8_opt flags
 #define AUX_SWITCH_LOW              0       // indicates auxiliar switch is in the low position (pwm <1200)
 #define AUX_SWITCH_MIDDLE           1       // indicates auxiliar switch is in the middle position (pwm >1200, <1800)
