@@ -82,6 +82,9 @@ static bool verify_land()
                     get_distance(prev_WP_loc, current_loc) + 200);
     nav_controller->update_waypoint(prev_WP_loc, land_WP_loc);
 
+    // check if we should auto-disarm after a confirmed landing
+    disarm_if_autoland_complete();
+
     /*
       we return false as a landing mission item never completes
 
@@ -90,6 +93,34 @@ static bool verify_land()
      */
     return false;
 }
+
+/*
+    If land_DisarmDelay is enabled (non-zero), check for a landing then auto-disarm after time expires
+ */
+static void disarm_if_autoland_complete()
+{
+    static uint32_t last_time_in_air = 0;
+    static bool hasAutoDisarmed = false;
+
+    if (g.land_disarm_delay > 0)
+    {
+        // if still in flight on approach or still flaring
+        if ((flight_stage != AP_SpdHgtControl::FLIGHT_LAND_FINAL) ||
+            (auto_state.land_complete == false) ||
+            is_flying()) {
+            last_time_in_air = hal.scheduler->millis();
+            hasAutoDisarmed = false;
+        }
+        else if ((hasAutoDisarmed == false) &&
+                hal.scheduler->millis() >= (last_time_in_air + (uint32_t)g.land_disarm_delay*1000)) {
+            // has at some point landed and we're still armed and the delay has passed
+            arming.disarm();
+            gcs_send_text_P(SEVERITY_LOW,PSTR("Auto-Disarmed"));
+            hasAutoDisarmed = true;
+        }
+    }
+}
+
 
 
 /*
