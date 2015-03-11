@@ -232,6 +232,15 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     ASCALAR(land_flare_sec,          "LAND_FLARE_SEC",  2.0),
 
+    // @Param: LAND_DISARMDELAY
+    // @DisplayName: Landing disarm delay
+    // @Description: After a landing has completed using a LAND waypoint, automatically disarm after this many seconds have passed. Use 0 to not disarm.
+    // @Units: seconds
+    // @Increment: 1
+    // @Range: 0 127
+    // @User: Advanced
+    GSCALAR(land_disarm_delay,       "LAND_DISARMDELAY",  0),
+
 	// @Param: NAV_CONTROLLER
 	// @DisplayName: Navigation controller selection
 	// @Description: Which navigation controller to enable. Currently the only navigation controller available is L1. From time to time other experimental conrtrollers will be added which are selected using this parameter.
