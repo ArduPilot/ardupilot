@@ -70,14 +70,6 @@ public:
     void init( Start_style style,
                Sample_rate sample_rate);
 
-    /// Perform cold startup initialisation for just the accelerometers.
-    ///
-    /// @note This should not be called unless ::init has previously
-    ///       been called, as ::init may perform other work.
-    ///
-    void init_accel();
-
-
     /// Register a new gyro/accel driver, allocating an instance
     /// number
     uint8_t register_gyro(void);
@@ -118,6 +110,23 @@ public:
     // set gyro offsets in radians/sec
     const Vector3f &get_gyro_offsets(uint8_t i) const { return _gyro_offset[i]; }
     const Vector3f &get_gyro_offsets(void) const { return get_gyro_offsets(_primary_gyro); }
+
+    //get delta angle if available
+    bool get_delta_angle(uint8_t i, Vector3f &delta_angle) const {
+        if(_delta_angle_valid[i]) delta_angle = _delta_angle[i];
+        return _delta_angle_valid[i];
+    }
+
+    bool get_delta_angle(Vector3f &delta_angle) const { return get_delta_angle(_primary_gyro, delta_angle); }
+
+
+    //get delta velocity if available
+    bool get_delta_velocity(uint8_t i, Vector3f &delta_velocity) const {
+        if(_delta_velocity_valid[i]) delta_velocity = _delta_velocity[i];
+        return _delta_velocity_valid[i];
+    }
+
+    bool get_delta_velocity(Vector3f &delta_velocity) const { return get_delta_velocity(_primary_accel, delta_velocity); }
 
     /// Fetch the current accelerometer values
     ///
@@ -201,8 +210,7 @@ private:
     void _add_backend(AP_InertialSensor_Backend *(detect)(AP_InertialSensor &));
     void _detect_backends(void);
 
-    // accel and gyro initialisation
-    void _init_accel();
+    // gyro initialisation
     void _init_gyro();
 
 #if !defined( __AVR_ATmega1280__ )
@@ -211,11 +219,13 @@ private:
     // original sketch available at http://rolfeschmidt.com/mathtools/skimetrics/adxl_gn_calibration.pde
 
     // _calibrate_accel - perform low level accel calibration
-    bool _calibrate_accel(Vector3f accel_sample[6], Vector3f& accel_offsets, Vector3f& accel_scale);
+    bool _calibrate_accel(const Vector3f accel_sample[6], Vector3f& accel_offsets, Vector3f& accel_scale, enum Rotation r);
+    bool _check_sample_range(const Vector3f accel_sample[6], enum Rotation rotation, 
+                             AP_InertialSensor_UserInteract* interact);
     void _calibrate_update_matrices(float dS[6], float JS[6][6], float beta[6], float data[3]);
     void _calibrate_reset_matrices(float dS[6], float JS[6][6]);
     void _calibrate_find_delta(float dS[6], float JS[6][6], float delta[6]);
-    void _calculate_trim(Vector3f accel_sample, float& trim_roll, float& trim_pitch);
+    void _calculate_trim(const Vector3f &accel_sample, float& trim_roll, float& trim_pitch);
 #endif
 
     // check if we have 3D accel calibration
@@ -239,9 +249,13 @@ private:
     
     // Most recent accelerometer reading
     Vector3f _accel[INS_MAX_INSTANCES];
+    Vector3f _delta_velocity[INS_MAX_INSTANCES];
+    bool _delta_velocity_valid[INS_MAX_INSTANCES];
 
     // Most recent gyro reading
     Vector3f _gyro[INS_MAX_INSTANCES];
+    Vector3f _delta_angle[INS_MAX_INSTANCES];
+    bool _delta_angle_valid[INS_MAX_INSTANCES];
 
     // product id
     AP_Int16 _product_id;
@@ -253,6 +267,9 @@ private:
 
     // filtering frequency (0 means default)
     AP_Int8     _mpu6000_filter;
+
+    // was the accel cal done in sensor frame?
+    AP_Int8    _cal_sensor_frame;
 
     // board orientation from AHRS
     enum Rotation _board_orientation;

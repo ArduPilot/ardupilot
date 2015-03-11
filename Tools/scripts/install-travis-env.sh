@@ -37,6 +37,10 @@ for pkg in $PYTHON_PKGS; do
     pip -q install $pkg || echo "FAILED INSTALL OF $pkg"
 done
 
+# install some extra packages (for later AVR compiler)
+rsync -av firmware.diydrones.com::Tools/Travis/*.deb ExtraPackages
+sudo dpkg -i ExtraPackages/*.deb
+
 
 if [ ! -d PX4Firmware ]; then
     git clone https://github.com/diydrones/PX4Firmware.git

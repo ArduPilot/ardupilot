@@ -18,7 +18,7 @@
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 // craete an instance with 800Hz sample rate and 30Hz cutoff
-static LowPassFilter2p low_pass_filter(800, 30);
+static LowPassFilter2pfloat low_pass_filter(800, 30);
 
 // setup routine
 static void setup()

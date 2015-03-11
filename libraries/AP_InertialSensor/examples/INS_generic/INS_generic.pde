@@ -97,11 +97,6 @@ void loop(void)
             display_offsets_and_scaling();
         }
 
-        if( user_input == 'l' || user_input == 'L' ) {
-            run_level();
-            display_offsets_and_scaling();
-        }
-
         if( user_input == 't' || user_input == 'T' ) {
             run_test();
         }
@@ -151,31 +146,6 @@ void display_offsets_and_scaling()
                     gyro_offsets.x,
                     gyro_offsets.y,
                     gyro_offsets.z);
-}
-
-void run_level()
-{
-    // clear off any input in the buffer
-    while( hal.console->available() ) {
-        hal.console->read();
-    }
-
-    // display message to user
-    hal.console->print("Place APM on a level surface and press any key..\n");
-
-    // wait for user input
-    while( !hal.console->available() ) {
-        hal.scheduler->delay(20);
-    }
-    while( hal.console->available() ) {
-        hal.console->read();
-    }
-
-    // run accel level
-    ins.init_accel();
-
-    // display results
-    display_offsets_and_scaling();
 }
 
 void run_test()

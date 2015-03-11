@@ -6,7 +6,6 @@
 static int8_t   setup_radio                             (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_show                              (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_factory                   (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_level                             (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_accel_scale                       (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_set                               (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_erase                             (uint8_t argc, const Menu::arg *argv);
@@ -19,7 +18,6 @@ static const struct Menu::command setup_menu_commands[] PROGMEM = {
     // =======          ===============
     {"reset",                       setup_factory},
     {"radio",                       setup_radio},
-    {"level",                       setup_level},
     {"accel",                       setup_accel_scale},
     {"compass",                     setup_compass},
     {"show",                        setup_show},
@@ -262,13 +260,6 @@ setup_erase(uint8_t argc, const Menu::arg *argv)
     if (('y' != c) && ('Y' != c))
         return(-1);
     zero_eeprom();
-    return 0;
-}
-
-static int8_t
-setup_level(uint8_t argc, const Menu::arg *argv)
-{
-    startup_INS_ground(true);
     return 0;
 }
 
