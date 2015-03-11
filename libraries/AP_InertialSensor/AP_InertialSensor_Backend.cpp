@@ -116,3 +116,10 @@ uint8_t AP_InertialSensor_Backend::_default_filter(void) const
     }
     return 30;
 }
+
+// return the requested sample rate in Hz
+uint16_t AP_InertialSensor_Backend::get_sample_rate_hz(void) const
+{
+    // enum can be directly cast to Hz
+    return (uint16_t)_imu._sample_rate;
+}

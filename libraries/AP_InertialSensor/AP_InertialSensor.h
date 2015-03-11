@@ -48,10 +48,10 @@ public:
 
     // the rate that updates will be available to the application
     enum Sample_rate {
-        RATE_50HZ,
-        RATE_100HZ,
-        RATE_200HZ,
-        RATE_400HZ
+        RATE_50HZ  = 50,
+        RATE_100HZ = 100,
+        RATE_200HZ = 200,
+        RATE_400HZ = 400
     };
 
     /// Perform startup initialisation.

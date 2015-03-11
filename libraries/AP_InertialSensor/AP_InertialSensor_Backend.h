@@ -85,6 +85,9 @@ protected:
     // return the default filter frequency in Hz for the sample rate
     uint8_t _default_filter(void) const;
 
+    // return the requested sample rate in Hz
+    uint16_t get_sample_rate_hz(void) const;
+
     // note that each backend is also expected to have a static detect()
     // function which instantiates an instance of the backend sensor
     // driver if the sensor is available

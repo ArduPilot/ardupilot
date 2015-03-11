@@ -50,6 +50,9 @@ private:
     bool _get_gyro_sample(uint8_t i, struct gyro_report &gyro_report);
     bool _get_accel_sample(uint8_t i, struct accel_report &accel_report);
 
+    // calculate right queue depth for a sensor
+    uint8_t _queue_depth(uint16_t sensor_sample_rate) const;
+
     // support for updating filter at runtime
     uint8_t _last_filter_hz;
 
