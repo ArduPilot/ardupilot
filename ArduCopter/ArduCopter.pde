@@ -118,6 +118,7 @@
 #include <AP_Mission.h>         // Mission command library
 #include <AP_Rally.h>           // Rally point library
 #include <AC_PID.h>             // PID library
+#include <AC_PI_2D.h>           // PID library (2-axis)
 #include <AC_HELI_PID.h>        // Heli specific Rate PID library
 #include <AC_P.h>               // P library
 #include <AC_AttitudeControl.h> // Attitude control library
@@ -518,7 +519,7 @@ static int32_t initial_armed_bearing;
 ////////////////////////////////////////////////////////////////////////////////
 // Throttle variables
 ////////////////////////////////////////////////////////////////////////////////
-static float throttle_avg;                  // g.throttle_cruise as a float
+static float throttle_average;              // estimated throttle required to hover
 static int16_t desired_climb_rate;          // pilot desired climb rate - for logging purposes only
 
 
@@ -622,8 +623,8 @@ AC_AttitudeControl attitude_control(ahrs, aparm, motors, g.p_stabilize_roll, g.p
                         g.pid_rate_roll, g.pid_rate_pitch, g.pid_rate_yaw);
 #endif
 AC_PosControl pos_control(ahrs, inertial_nav, motors, attitude_control,
-                        g.p_alt_hold, g.p_throttle_rate, g.pid_throttle_accel,
-                        g.p_loiter_pos, g.pid_loiter_rate_lat, g.pid_loiter_rate_lon);
+                        g.p_alt_hold, g.p_vel_z, g.pid_accel_z,
+                        g.p_pos_xy, g.pi_vel_xy);
 static AC_WPNav wp_nav(inertial_nav, ahrs, pos_control, attitude_control);
 static AC_Circle circle_nav(inertial_nav, ahrs, pos_control);
 
@@ -757,7 +758,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { auto_trim,            40,     14 },
     { update_altitude,      40,    100 },
     { run_nav_updates,       8,     80 },
-    { update_thr_cruise,    40,     10 },
+    { update_thr_average,   40,     10 },
     { three_hz_loop,       133,      9 },
     { compass_accumulate,    8,     42 },
     { barometer_accumulate,  8,     25 },
@@ -832,7 +833,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { auto_trim,            10,     140 },
     { update_altitude,      10,    1000 },
     { run_nav_updates,       4,     800 },
-    { update_thr_cruise,     1,      50 },
+    { update_thr_average,    1,      50 },
     { three_hz_loop,        33,      90 },
     { compass_accumulate,    2,     420 },
     { barometer_accumulate,  2,     250 },
@@ -1011,6 +1012,9 @@ static void throttle_loop()
     // check if we've landed
     update_land_detector();
 
+    // update throttle_low_comp value (controls priority of throttle vs attitude control)
+    update_throttle_low_comp();
+
     // check auto_armed status
     update_auto_armed();
 
@@ -1061,6 +1065,12 @@ static void ten_hz_logging_loop()
 {
     if (should_log(MASK_LOG_ATTITUDE_MED)) {
         Log_Write_Attitude();
+    }
+    if (should_log(MASK_LOG_RATE)) {
+        Log_Write_Rate();
+    }
+    if (should_log(MASK_LOG_MOT)) {
+        Log_Write_Mot();
     }
     if (should_log(MASK_LOG_RCIN)) {
         DataFlash.Log_Write_RCIN();

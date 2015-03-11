@@ -118,13 +118,12 @@
 #define CH6_YAW_RATE_KD                 26  // body frame yaw rate controller's D term
 #define CH6_ALTITUDE_HOLD_KP            14  // altitude hold controller's P term (alt error to desired rate)
 #define CH6_THROTTLE_RATE_KP            7   // throttle rate controller's P term (desired rate to acceleration or motor output)
-#define CH6_THROTTLE_ACCEL_KP           34  // accel based throttle controller's P term
-#define CH6_THROTTLE_ACCEL_KI           35  // accel based throttle controller's I term
-#define CH6_THROTTLE_ACCEL_KD           36  // accel based throttle controller's D term
+#define CH6_ACCEL_Z_KP                  34  // accel based throttle controller's P term
+#define CH6_ACCEL_Z_KI                  35  // accel based throttle controller's I term
+#define CH6_ACCEL_Z_KD                  36  // accel based throttle controller's D term
 #define CH6_LOITER_POSITION_KP          12  // loiter distance controller's P term (position error to speed)
-#define CH6_LOITER_RATE_KP              22  // loiter rate controller's P term (speed error to tilt angle)
-#define CH6_LOITER_RATE_KI              28  // loiter rate controller's I term (speed error to tilt angle)
-#define CH6_LOITER_RATE_KD              23  // loiter rate controller's D term (speed error to tilt angle)
+#define CH6_VEL_XY_KP                   22  // loiter rate controller's P term (speed error to tilt angle)
+#define CH6_VEL_XY_KI                   28  // loiter rate controller's I term (speed error to tilt angle)
 #define CH6_WP_SPEED                    10  // maximum speed to next way point (0 to 10m/s)
 #define CH6_ACRO_RP_KP                  25  // acro controller's P term.  converts pilot input to a desired roll, pitch or yaw rate
 #define CH6_ACRO_YAW_KP                 40  // acro controller's P term.  converts pilot input to a desired roll, pitch or yaw rate
@@ -153,6 +152,7 @@
 #define CH6_RATE_ROLL_FF                53  // body frame roll rate controller FF term
 #define CH6_RATE_YAW_FF                 54  // body frame yaw rate controller FF term
 #define CH6_RATE_MOT_YAW_HEADROOM       55  // motors yaw headroom minimum
+#define CH6_RATE_YAW_FILT               56  // yaw rate input filter
 
 // Acro Trainer types
 #define ACRO_TRAINER_DISABLED   0
@@ -236,6 +236,8 @@ enum FlipState {
 #define LOG_DATA_FLOAT_MSG              0x18
 #define LOG_AUTOTUNE_MSG                0x19
 #define LOG_AUTOTUNEDETAILS_MSG         0x1A
+#define LOG_RATE_MSG                    0x1D
+#define LOG_MOT_MSG                     0x1E
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
 #define MASK_LOG_ATTITUDE_MED           (1<<1)
@@ -254,6 +256,8 @@ enum FlipState {
 #define MASK_LOG_INAV                   (1<<14) // deprecated
 #define MASK_LOG_CAMERA                 (1<<15)
 #define MASK_LOG_WHEN_DISARMED          (1UL<<16)
+#define MASK_LOG_RATE                   (1UL<<17)
+#define MASK_LOG_MOT                    (1UL<<18)
 #define MASK_LOG_ANY                    0xFFFF
 
 // DATA - event logging

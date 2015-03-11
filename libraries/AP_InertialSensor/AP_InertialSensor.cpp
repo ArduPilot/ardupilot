@@ -237,7 +237,8 @@ AP_InertialSensor::AP_InertialSensor() :
     _gyro(),
     _board_orientation(ROTATION_NONE),
     _hil_mode(false),
-    _have_3D_calibration(false)
+    _have_3D_calibration(false),
+    _calibrating(false)
 {
     AP_Param::setup_object_defaults(this, var_info);        
     for (uint8_t i=0; i<INS_MAX_BACKENDS; i++) {
@@ -609,13 +610,21 @@ AP_InertialSensor::_init_accel()
     memset(max_offset, 0, sizeof(max_offset));
     memset(total_change, 0, sizeof(total_change));
 
+    // exit immediately if calibration is already in progress
+    if (_calibrating) {
+        return;
+    }
+
+    // record we are calibrating
+    _calibrating = true;
+
+    // flash leds to tell user to keep the IMU still
+    AP_Notify::flags.initialising = true;
+
     // cold start
     hal.scheduler->delay(100);
 
     hal.console->print_P(PSTR("Init Accel"));
-
-    // flash leds to tell user to keep the IMU still
-    AP_Notify::flags.initialising = true;
 
     // clear accelerometer offsets and scaling
     for (uint8_t k=0; k<num_accels; k++) {
@@ -689,6 +698,9 @@ AP_InertialSensor::_init_accel()
         _accel_offset[k] = accel_offset[k];
     }
 
+    // record calibration complete
+    _calibrating = false;
+
     // stop flashing the leds
     AP_Notify::flags.initialising = false;
 
@@ -704,11 +716,19 @@ AP_InertialSensor::_init_gyro()
     float best_diff[INS_MAX_INSTANCES];
     bool converged[INS_MAX_INSTANCES];
 
-    // cold start
-    hal.console->print_P(PSTR("Init Gyro"));
+    // exit immediately if calibration is already in progress
+    if (_calibrating) {
+        return;
+    }
+
+    // record we are calibrating
+    _calibrating = true;
 
     // flash leds to tell user to keep the IMU still
     AP_Notify::flags.initialising = true;
+
+    // cold start
+    hal.console->print_P(PSTR("Init Gyro"));
 
     // remove existing gyro offsets
     for (uint8_t k=0; k<num_gyros; k++) {
@@ -716,7 +736,6 @@ AP_InertialSensor::_init_gyro()
         best_diff[k] = 0;
         last_average[k].zero();
         converged[k] = false;
-        _gyro_cal_ok[k] = true; // default calibration ok flag to true
     }
 
     for(int8_t c = 0; c < 5; c++) {
@@ -734,6 +753,7 @@ AP_InertialSensor::_init_gyro()
     // if the gyros are stable, we should get it in 1 second
     for (int16_t j = 0; j <= 30*4 && num_converged < num_gyros; j++) {
         Vector3f gyro_sum[INS_MAX_INSTANCES], gyro_avg[INS_MAX_INSTANCES], gyro_diff[INS_MAX_INSTANCES];
+        Vector3f accel_start;
         float diff_norm[INS_MAX_INSTANCES];
         uint8_t i;
 
@@ -744,6 +764,7 @@ AP_InertialSensor::_init_gyro()
         for (uint8_t k=0; k<num_gyros; k++) {
             gyro_sum[k].zero();
         }
+        accel_start = get_accel(0);
         for (i=0; i<50; i++) {
             update();
             for (uint8_t k=0; k<num_gyros; k++) {
@@ -751,6 +772,16 @@ AP_InertialSensor::_init_gyro()
             }
             hal.scheduler->delay(5);
         }
+
+        Vector3f accel_diff = get_accel(0) - accel_start;
+        if (accel_diff.length() > 0.2f) {
+            // the accelerometers changed during the gyro sum. Skip
+            // this sample. This copes with doing gyro cal on a
+            // steadily moving platform. The value 0.2 corresponds
+            // with around 5 degrees/second of rotation.
+            continue;
+        }
+
         for (uint8_t k=0; k<num_gyros; k++) {
             gyro_avg[k] = gyro_sum[k] / i;
             gyro_diff[k] = last_average[k] - gyro_avg[k];
@@ -758,30 +789,25 @@ AP_InertialSensor::_init_gyro()
         }
 
         for (uint8_t k=0; k<num_gyros; k++) {
-            if (converged[k]) continue;
             if (j == 0) {
                 best_diff[k] = diff_norm[k];
                 best_avg[k] = gyro_avg[k];
             } else if (gyro_diff[k].length() < ToRad(0.1f)) {
                 // we want the average to be within 0.1 bit, which is 0.04 degrees/s
                 last_average[k] = (gyro_avg[k] * 0.5f) + (last_average[k] * 0.5f);
-                _gyro_offset[k] = last_average[k];
-                converged[k] = true;
-                num_converged++;
+                if (!converged[k] || last_average[k].length() < _gyro_offset[k].get().length()) {
+                    _gyro_offset[k] = last_average[k];
+                }
+                if (!converged[k]) {
+                    converged[k] = true;
+                    num_converged++;
+                }
             } else if (diff_norm[k] < best_diff[k]) {
                 best_diff[k] = diff_norm[k];
                 best_avg[k] = (gyro_avg[k] * 0.5f) + (last_average[k] * 0.5f);
             }
             last_average[k] = gyro_avg[k];
         }
-    }
-
-    // stop flashing leds
-    AP_Notify::flags.initialising = false;
-
-    if (num_converged == num_gyros) {
-        // all OK
-        return;
     }
 
     // we've kept the user waiting long enough - use the best pair we
@@ -794,8 +820,16 @@ AP_InertialSensor::_init_gyro()
             _gyro_offset[k] = best_avg[k];
             // flag calibration as failed for this gyro
             _gyro_cal_ok[k] = false;
+        } else {
+            _gyro_cal_ok[k] = true;
         }
     }
+
+    // record calibration complete
+    _calibrating = false;
+
+    // stop flashing leds
+    AP_Notify::flags.initialising = false;
 }
 
 #if !defined( __AVR_ATmega1280__ )

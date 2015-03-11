@@ -529,6 +529,10 @@
         <field type="uint8_t" name="custom_len">Custom Byte Length</field>
         <field type="uint8_t[24]" name="custom_bytes">Custom Bytes</field>
     </message>
+
+    <!-- 187 to 190 RESERVED for camera control -->
+
+    <!-- 191 to 192 RESERVED for mag calibration -->
     
      </messages>
 </mavlink>

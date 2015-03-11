@@ -6,6 +6,7 @@
 #include <AP_Param.h>
 #include <AP_Math.h>
 #include <AC_PID.h>             // PID library
+#include <AC_PI_2D.h>           // PID library (2-axis)
 #include <AC_P.h>               // P library
 #include <AP_InertialNav.h>     // Inertial Navigation library
 #include <AC_AttitudeControl.h> // Attitude control library
@@ -14,7 +15,7 @@
 
 
 // position controller default definitions
-#define POSCONTROL_THROTTLE_HOVER               450.0f  // default throttle required to maintain hover
+#define POSCONTROL_THROTTLE_HOVER               500.0f  // default throttle required to maintain hover
 #define POSCONTROL_ACCELERATION_MIN             50.0f   // minimum horizontal acceleration in cm/s/s - used for sanity checking acceleration in leash length calculation
 #define POSCONTROL_ACCEL_XY                     100.0f  // default horizontal acceleration in cm/s/s.  This is overwritten by waypoint and loiter controllers
 #define POSCONTROL_ACCEL_XY_MAX                 980.0f  // max horizontal acceleration in cm/s/s that the position velocity controller will ask from the lower accel controller
@@ -35,12 +36,12 @@
 #define POSCONTROL_DT_10HZ                      0.10f   // time difference in seconds for 10hz update rate
 #define POSCONTROL_DT_50HZ                      0.02f   // time difference in seconds for 50hz update rate
 
-#define POSCONTROL_ACTIVE_TIMEOUT_MS            200     // position controller is considered active if it has been called within the past 200ms (0.2 seconds)
-
-#define POSCONTROL_ACCEL_Z_DTERM_FILTER         20      // Z axis accel controller's D term filter (in hz)
+#define POSCONTROL_ACTIVE_TIMEOUT_MS            200    // position controller is considered active if it has been called within the past 0.2 seconds
 
 #define POSCONTROL_VEL_ERROR_CUTOFF_FREQ        4.0     // 4hz low-pass filter on velocity error
 #define POSCONTROL_ACCEL_ERROR_CUTOFF_FREQ      2.0     // 2hz low-pass filter on accel error
+#define POSCONTROL_JERK_LIMIT_CMSSS             1700.0f // 17m/s/s/s jerk limit on horizontal acceleration
+#define POSCONTROL_ACCEL_FILTER_HZ              5.0f    // 5hz low-pass filter on acceleration
 
 class AC_PosControl
 {
@@ -49,8 +50,8 @@ public:
     /// Constructor
     AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
                   const AP_Motors& motors, AC_AttitudeControl& attitude_control,
-                  AC_P& p_alt_pos, AC_P& p_alt_rate, AC_PID& pid_alt_accel,
-                  AC_P& p_pos_xy, AC_PID& pid_rate_lat, AC_PID& pid_rate_lon);
+                  AC_P& p_pos_z, AC_P& p_vel_z, AC_PID& pid_accel_z,
+                  AC_P& p_pos_xy, AC_PI_2D& pi_vel_xy);
 
     // xy_mode - specifies behavior of xy position controller
     enum xy_mode {
@@ -69,7 +70,7 @@ public:
     float get_dt() const { return _dt; }
 
     /// set_dt_xy - sets time delta in seconds for horizontal controller (i.e. 50hz = 0.02)
-    void set_dt_xy(float dt_xy) { _dt_xy = dt_xy; }
+    void set_dt_xy(float dt_xy);
     float get_dt_xy() const { return _dt_xy; }
 
     ///
@@ -150,9 +151,6 @@ public:
     // get_leash_down_z, get_leash_up_z - returns vertical leash lengths in cm
     float get_leash_down_z() const { return _leash_down_z; }
     float get_leash_up_z() const { return _leash_up_z; }
-
-    /// althold_kP - returns altitude hold position control PID's kP gain
-    float althold_kP() const { return _p_alt_pos.kP(); }
 
     ///
     /// xy position controller
@@ -333,22 +331,19 @@ private:
     const AP_Motors&            _motors;
     AC_AttitudeControl&         _attitude_control;
 
-    // references to pid controllers and motors
-    AC_P&       _p_alt_pos;
-    AC_P&       _p_alt_rate;
-    AC_PID&     _pid_alt_accel;
+    // references to pid controllers
+    AC_P&       _p_pos_z;
+    AC_P&       _p_vel_z;
+    AC_PID&     _pid_accel_z;
     AC_P&	    _p_pos_xy;
-    AC_PID&	    _pid_rate_lat;
-    AC_PID&	    _pid_rate_lon;
-
-    // parameters
-    AP_Float    _throttle_hover;        // estimated throttle required to maintain a level hover
+    AC_PI_2D&   _pi_vel_xy;
 
     // internal variables
     float       _dt;                    // time difference (in seconds) between calls from the main program
     float       _dt_xy;                 // time difference (in seconds) between update_xy_controller and update_vel_controller_xyz calls
     uint32_t    _last_update_xy_ms;     // system time of last update_xy_controller call
     uint32_t    _last_update_z_ms;      // system time of last update_z_controller call
+    float       _throttle_hover;        // estimated throttle required to maintain a level hover
     float       _speed_down_cms;        // max descent rate in cm/s
     float       _speed_up_cms;          // max climb rate in cm/s
     float       _speed_cms;             // max horizontal speed in cm/s
@@ -376,5 +371,8 @@ private:
     float       _distance_to_target;    // distance to position target - for reporting only
     LowPassFilterFloat _vel_error_filter;   // low-pass-filter on z-axis velocity error
     LowPassFilterFloat _accel_error_filter; // low-pass-filter on z-axis accelerometer error
+
+    Vector2f    _accel_target_jerk_limited; // acceleration target jerk limited to 100deg/s/s
+    Vector2f    _accel_target_filtered;     // acceleration target filtered with 5hz low pass filter
 };
 #endif	// AC_POSCONTROL_H

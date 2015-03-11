@@ -123,6 +123,12 @@ public:
     void                set_yaw(int16_t yaw_in) { _rc_yaw.servo_out = yaw_in; };                        // range -4500 ~ 4500
     void                set_throttle(int16_t throttle_in) { _rc_throttle.servo_out = throttle_in; };    // range 0 ~ 1000
 
+    // accessors for roll, pitch, yaw and throttle inputs to motors
+    int16_t             get_roll() { return _rc_roll.servo_out; }
+    int16_t             get_pitch() { return _rc_pitch.servo_out; }
+    int16_t             get_yaw() { return _rc_yaw.servo_out; }
+    int16_t             get_throttle() { return _rc_throttle.servo_out; }
+
     // get_throttle_out - returns throttle sent to motors in the range 0 ~ 1000
     int16_t             get_throttle_out() const { return _rc_throttle.servo_out; }
 
@@ -149,6 +155,23 @@ public:
 
     // set_current - set current to be used for output scaling
     virtual void        set_current(float current){ _batt_current = current; }
+
+    // set_throttle_low_comp - set desired throttle_low_comp (actual throttle_low_comp is slewed towards this value over 1~2 seconds)
+    //  low values favour pilot/autopilot throttle over attitude control, high values favour attitude control over throttle
+    //  has no effect when throttle is above hover throttle
+    void                set_throttle_low_comp(float throttle_low_comp) { _throttle_low_comp_desired = throttle_low_comp; }
+
+    // get_lift_max - get maximum lift ratio
+    float               get_lift_max() { return _lift_max; }
+
+    // get_batt_voltage_filt - get battery voltage ratio
+    float               get_batt_voltage_filt() { return _batt_voltage_filt.get(); }
+
+    // get_batt_resistance - get battery resistance approximation
+    float               get_batt_resistance() { return _batt_resistance; }
+
+    // get_throttle_limit - throttle limit ratio
+    float               get_throttle_limit() { return _throttle_limit; }
 
     // 1 if motor is enabled, 0 otherwise
     bool                motor_enabled[AP_MOTORS_MAX_NUM_MOTORS];
@@ -193,6 +216,9 @@ protected:
     // update_battery_resistance - calculate battery resistance when throttle is above hover_out
     void                update_battery_resistance();
 
+    // update_throttle_low_comp - updates thr_low_comp value towards the target
+    void                update_throttle_low_comp();
+
     // get_voltage_comp_gain - return battery voltage compensation gain
     float               get_voltage_comp_gain() const { return 1.0f/_lift_max; }
 
@@ -211,7 +237,6 @@ protected:
     AP_Int16            _spin_when_armed;       // used to control whether the motors always spin when armed.  pwm value above radio_min
 
     AP_Int16            _yaw_headroom;          // yaw control is given at least this pwm range
-    AP_Float            _throttle_low_comp;     // mix between throttle and hover throttle for 0 to 1 and ratio above hover throttle for >1
     AP_Float            _thrust_curve_expo;     // curve used to linearize pwm to thrust conversion.  set to 0 for linear and 1 for second order approximation
     AP_Float            _thrust_curve_max;      // throttle which produces the maximum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
     AP_Float            _batt_voltage_max;      // maximum voltage used to scale lift
@@ -229,6 +254,8 @@ protected:
     int16_t             _max_throttle;          // the maximum throttle to be sent to the motors (sometimes limited by slow start)
     int16_t             _hover_out;             // the estimated hover throttle as pct * 10 (i.e. 0 ~ 1000)
     int16_t             _spin_when_armed_ramped;// equal to _spin_when_armed parameter but slowly ramped up from zero
+    float               _throttle_low_comp;     // mix between throttle and hover throttle for 0 to 1 and ratio above hover throttle for >1
+    float               _throttle_low_comp_desired; // desired throttle_low_comp value, actual throttle_low_comp is slewed towards this value over 1~2 seconds
 
     // battery voltage compensation variables
     float               _batt_voltage;          // latest battery voltage reading

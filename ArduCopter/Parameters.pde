@@ -53,6 +53,15 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(sysid_my_gcs,   "SYSID_MYGCS",     255),
 
+#if CLI_ENABLED == ENABLED
+    // @Param: CLI_ENABLED
+    // @DisplayName: CLI Enable
+    // @Description: This enables/disables the checking for three carriage returns on telemetry links on startup to enter the diagnostics command line interface
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    GSCALAR(cli_enabled,    "CLI_ENABLED",    0),
+#endif
+
     // @Group: SERIAL
     // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
     GOBJECT(serial_manager, "SERIAL",   AP_SerialManager),
@@ -242,14 +251,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(failsafe_throttle_value, "FS_THR_VALUE",      FS_THR_VALUE_DEFAULT),
 
-    // @Param: TRIM_THROTTLE
-    // @DisplayName: Throttle Trim
-    // @Description: The autopilot's estimate of the throttle required to maintain a level hover.  Calculated automatically from the pilot's throttle input while in stabilize mode
-    // @Range: 0 1000
-    // @Units: Percent*10
-    // @User: Advanced
-    GSCALAR(throttle_cruise,        "TRIM_THROTTLE",    THROTTLE_CRUISE),
-
     // @Param: THR_MID
     // @DisplayName: Throttle Mid Position
     // @Description: The throttle output (0 ~ 1000) when throttle stick is in mid position.  Used to scale the manual throttle so that the mid throttle stick position is close to the throttle required to hover
@@ -334,7 +335,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Channel 6 Tuning
     // @Description: Controls which parameters (normally PID gains) are being tuned with transmitter's channel 6 knob
     // @User: Standard
-    // @Values: 0:None,1:Stab Roll/Pitch kP,4:Rate Roll/Pitch kP,5:Rate Roll/Pitch kI,21:Rate Roll/Pitch kD,3:Stab Yaw kP,6:Rate Yaw kP,26:Rate Yaw kD,14:Altitude Hold kP,7:Throttle Rate kP,34:Throttle Accel kP,35:Throttle Accel kI,36:Throttle Accel kD,42:Loiter Speed,12:Loiter Pos kP,22:Loiter Rate kP,28:Loiter Rate kI,23:Loiter Rate kD,10:WP Speed,25:Acro RollPitch kP,40:Acro Yaw kP,13:Heli Ext Gyro,17:OF Loiter kP,18:OF Loiter kI,19:OF Loiter kD,30:AHRS Yaw kP,31:AHRS kP,38:Declination,39:Circle Rate,41:RangeFinder Gain,46:Rate Pitch kP,47:Rate Pitch kI,48:Rate Pitch kD,49:Rate Roll kP,50:Rate Roll kI,51:Rate Roll kD,52:Rate Pitch FF,53:Rate Roll FF,54:Rate Yaw FF
+    // @Values: 0:None,1:Stab Roll/Pitch kP,4:Rate Roll/Pitch kP,5:Rate Roll/Pitch kI,21:Rate Roll/Pitch kD,3:Stab Yaw kP,6:Rate Yaw kP,26:Rate Yaw kD,14:Altitude Hold kP,7:Throttle Rate kP,34:Throttle Accel kP,35:Throttle Accel kI,36:Throttle Accel kD,42:Loiter Speed,12:Loiter Pos kP,22:Velocity XY kP,28:Velocity XY kI,10:WP Speed,25:Acro RollPitch kP,40:Acro Yaw kP,13:Heli Ext Gyro,17:OF Loiter kP,18:OF Loiter kI,19:OF Loiter kD,30:AHRS Yaw kP,31:AHRS kP,38:Declination,39:Circle Rate,41:RangeFinder Gain,46:Rate Pitch kP,47:Rate Pitch kI,48:Rate Pitch kD,49:Rate Roll kP,50:Rate Roll kI,51:Rate Roll kD,52:Rate Pitch FF,53:Rate Roll FF,54:Rate Yaw FF
     GSCALAR(radio_tuning, "TUNE",                   0),
 
     // @Param: TUNE_LOW
@@ -424,14 +425,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: EKF_CHECK_THRESH
     // @DisplayName: EKF check compass and velocity variance threshold
     // @Description: Allows setting the maximum acceptable compass and velocity variance (0 to disable check)
-    // @Values: 0:Disabled, 0.8:Default, 1.0:Relaxed
+    // @Values: 0:Disabled, 0.6:Strict, 0.8:Default, 1.0:Relaxed
     // @User: Advanced
     GSCALAR(ekfcheck_thresh, "EKF_CHECK_THRESH",    EKFCHECK_THRESHOLD_DEFAULT),
 
     // @Param: DCM_CHECK_THRESH
     // @DisplayName: DCM yaw error threshold
     // @Description: Allows setting the maximum acceptable yaw error as a sin of the yaw error (0 to disable check)
-    // @Values: 0:Disabled, 0.8:Default, 0.98:Relaxed
+    // @Values: 0:Disabled, 0.6:Strict, 0.8:Default, 0.98:Relaxed
     // @User: Advanced
     GSCALAR(dcmcheck_thresh, "DCM_CHECK_THRESH",    DCMCHECK_THRESHOLD_DEFAULT),
 
@@ -680,117 +681,61 @@ const AP_Param::Info var_info[] PROGMEM = {
     GGROUP(pid_rate_yaw,      "RATE_YAW_", AC_PID),
 #endif
 
-    // @Param: LOITER_LAT_P
-    // @DisplayName: Loiter latitude rate controller P gain
-    // @Description: Loiter latitude rate controller P gain.  Converts the difference between desired speed and actual speed into a lean angle in the latitude direction
+    // @Param: VEL_XY_P
+    // @DisplayName: Velocity (horizontal) P gain
+    // @Description: Velocity (horizontal) P gain.  Converts the difference between desired velocity to a target acceleration
     // @Range: 0.1 6.0
     // @Increment: 0.1
     // @User: Advanced
 
-    // @Param: LOITER_LAT_I
-    // @DisplayName: Loiter latitude rate controller I gain
-    // @Description: Loiter latitude rate controller I gain.  Corrects long-term difference in desired speed and actual speed in the latitude direction
+    // @Param: VEL_XY_I
+    // @DisplayName: Velocity (horizontal) I gain
+    // @Description: Velocity (horizontal) I gain.  Corrects long-term difference in desired velocity to a target acceleration
     // @Range: 0.02 1.00
     // @Increment: 0.01
     // @User: Advanced
 
-    // @Param: LOITER_LAT_IMAX
-    // @DisplayName: Loiter rate controller I gain maximum
-    // @Description: Loiter rate controller I gain maximum.  Constrains the lean angle that the I gain will output
+    // @Param: VEL_XY_IMAX
+    // @DisplayName: Velocity (horizontal) integrator maximum
+    // @Description: Velocity (horizontal) integrator maximum.  Constrains the target acceleration that the I gain will output
     // @Range: 0 4500
     // @Increment: 10
-    // @Units: Centi-Degrees
+    // @Units: cm/s/s
     // @User: Advanced
+    GGROUP(pi_vel_xy,   "VEL_XY_",  AC_PI_2D),
 
-    // @Param: LOITER_LAT_D
-    // @DisplayName: Loiter latitude rate controller D gain
-    // @Description: Loiter latitude rate controller D gain.  Compensates for short-term change in desired speed vs actual speed
-    // @Range: 0.0 0.6
-    // @Increment: 0.01
-    // @User: Advanced
-    GGROUP(pid_loiter_rate_lat,      "LOITER_LAT_",  AC_PID),
-
-    // @Param: LOITER_LON_P
-    // @DisplayName: Loiter longitude rate controller P gain
-    // @Description: Loiter longitude rate controller P gain.  Converts the difference between desired speed and actual speed into a lean angle in the longitude direction
-    // @Range: 0.1 6.0
-    // @Increment: 0.1
-    // @User: Advanced
-
-    // @Param: LOITER_LON_I
-    // @DisplayName: Loiter longitude rate controller I gain
-    // @Description: Loiter longitude rate controller I gain.  Corrects long-term difference in desired speed and actual speed in the longitude direction
-    // @Range: 0.02 1.00
-    // @Increment: 0.01
-    // @User: Advanced
-
-    // @Param: LOITER_LON_IMAX
-    // @DisplayName: Loiter longitude rate controller I gain maximum
-    // @Description: Loiter longitude rate controller I gain maximum.  Constrains the lean angle that the I gain will output
-    // @Range: 0 4500
-    // @Increment: 10
-    // @Units: Centi-Degrees
-    // @User: Advanced
-
-    // @Param: LOITER_LON_D
-    // @DisplayName: Loiter longituderate controller D gain
-    // @Description: Loiter longitude rate controller D gain.  Compensates for short-term change in desired speed vs actual speed
-    // @Range: 0.0 0.6
-    // @Increment: 0.01
-    // @User: Advanced
-    GGROUP(pid_loiter_rate_lon,      "LOITER_LON_",  AC_PID),
-
-    // @Param: THR_RATE_P
-    // @DisplayName: Throttle rate controller P gain
-    // @Description: Throttle rate controller P gain.  Converts the difference between desired vertical speed and actual speed into a desired acceleration that is passed to the throttle acceleration controller
+    // @Param: VEL_Z_P
+    // @DisplayName: Velocity (vertical) P gain
+    // @Description: Velocity (vertical) P gain.  Converts the difference between desired vertical speed and actual speed into a desired acceleration that is passed to the throttle acceleration controller
     // @Range: 1.000 8.000
     // @User: Standard
+    GGROUP(p_vel_z,     "VEL_Z_", AC_P),
 
-    // @Param: THR_RATE_I
-    // @DisplayName: Throttle rate controller I gain
-    // @Description: Throttle rate controller I gain.  Corrects long-term difference in desired vertical speed and actual speed
-    // @Range: 0.000 0.100
-    // @User: Standard
-
-    // @Param: THR_RATE_IMAX
-    // @DisplayName: Throttle rate controller I gain maximum
-    // @Description: Throttle rate controller I gain maximum.  Constrains the desired acceleration that the I gain will generate
-    // @Range: 0 500
-    // @Units: cm/s/s
-    // @User: Standard
-
-    // @Param: THR_RATE_D
-    // @DisplayName: Throttle rate controller D gain
-    // @Description: Throttle rate controller D gain.  Compensates for short-term change in desired vertical speed vs actual speed
-    // @Range: 0.000 0.400
-    // @User: Standard
-    GGROUP(p_throttle_rate, "THR_RATE_", AC_P),
-
-    // @Param: THR_ACCEL_P
+    // @Param: ACCEL_Z_P
     // @DisplayName: Throttle acceleration controller P gain
     // @Description: Throttle acceleration controller P gain.  Converts the difference between desired vertical acceleration and actual acceleration into a motor output
     // @Range: 0.500 1.500
     // @User: Standard
 
-    // @Param: THR_ACCEL_I
+    // @Param: ACCEL_Z_I
     // @DisplayName: Throttle acceleration controller I gain
     // @Description: Throttle acceleration controller I gain.  Corrects long-term difference in desired vertical acceleration and actual acceleration
     // @Range: 0.000 3.000
     // @User: Standard
 
-    // @Param: THR_ACCEL_IMAX
+    // @Param: ACCEL_Z_IMAX
     // @DisplayName: Throttle acceleration controller I gain maximum
     // @Description: Throttle acceleration controller I gain maximum.  Constrains the maximum pwm that the I term will generate
     // @Range: 0 1000
     // @Units: Percent*10
     // @User: Standard
 
-    // @Param: THR_ACCEL_D
+    // @Param: ACCEL_Z_D
     // @DisplayName: Throttle acceleration controller D gain
     // @Description: Throttle acceleration controller D gain.  Compensates for short-term change in desired vertical acceleration vs actual acceleration
     // @Range: 0.000 0.400
     // @User: Standard
-    GGROUP(pid_throttle_accel,"THR_ACCEL_", AC_PID),
+    GGROUP(pid_accel_z, "ACCEL_Z_", AC_PID),
 
     // P controllers
     //--------------
@@ -815,19 +760,19 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GGROUP(p_stabilize_yaw,        "STB_YAW_", AC_P),
 
-    // @Param: THR_ALT_P
-    // @DisplayName: Altitude controller P gain
-    // @Description: Altitude controller P gain.  Converts the difference between the desired altitude and actual altitude into a climb or descent rate which is passed to the throttle rate controller
+    // @Param: POS_Z_P
+    // @DisplayName: Position (vertical) controller P gain
+    // @Description: Position (vertical) controller P gain.  Converts the difference between the desired altitude and actual altitude into a climb or descent rate which is passed to the throttle rate controller
     // @Range: 1.000 3.000
     // @User: Standard
-    GGROUP(p_alt_hold,     "THR_ALT_", AC_P),
+    GGROUP(p_alt_hold,              "POS_Z_", AC_P),
 
-    // @Param: HLD_LAT_P
-    // @DisplayName: Loiter position controller P gain
+    // @Param: POS_XY_P
+    // @DisplayName: Position (horizonal) controller P gain
     // @Description: Loiter position controller P gain.  Converts the distance (in the latitude direction) to the target location into a desired speed which is then passed to the loiter latitude rate controller
     // @Range: 0.500 2.000
     // @User: Standard
-    GGROUP(p_loiter_pos, "HLD_LAT_", AC_P),
+    GGROUP(p_pos_xy,                "POS_XY_", AC_P),
 
     // variables not in the g class which contain EEPROM saved variables
 
@@ -1036,6 +981,20 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/AP_OpticalFlow/OpticalFlow.cpp
     GOBJECT(optflow,   "FLOW", OpticalFlow),
 #endif
+
+    // @Param: AUTOTUNE_AXIS_BITMASK
+    // @DisplayName: Autotune axis bitmask
+    // @Description: 1-byte bitmap of axes to autotune
+    // @Values: 7:All,1:Roll Only,2:Pitch Only,4:Yaw Only,3:Roll and Pitch,5:Roll and Yaw,6:Pitch and Yaw
+    // @User: Standard
+    GSCALAR(autotune_axis_bitmask, "AUTOTUNE_AXES", 7),  // AUTOTUNE_AXIS_BITMASK_DEFAULT
+
+    // @Param: AUTOTUNE_AGGRESSIVENESS
+    // @DisplayName: autotune_aggressiveness
+    // @Description: autotune_aggressiveness. Defines the bounce back used to detect size of the D term.
+    // @Range: 0.05 0.10
+    // @User: Standard
+    GSCALAR(autotune_aggressiveness, "AUTOTUNE_AGGR", 0.05f),
 
     AP_VAREND
 };

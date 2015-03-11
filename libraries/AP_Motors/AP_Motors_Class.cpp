@@ -53,12 +53,7 @@ const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("YAW_HEADROOM", 6, AP_Motors, _yaw_headroom, AP_MOTORS_YAW_HEADROOM_DEFAULT),
 
-    // @Param: THR_LOW_CMP
-    // @DisplayName: Motor low throttle compensation
-    // @Description: Ratio controlling the max throttle output during competing requests of low throttle from the pilot (or autopilot) and higher throttle for attitude control
-    // @Values: 0.2:Favour Throttle Control, 0.5:Equal Weighting, 1:Favour Attitude Control
-    // @User: Advanced
-    AP_GROUPINFO("THR_LOW_CMP", 7, AP_Motors, _throttle_low_comp, AP_MOTORS_THR_LOW_CMP_DEFAULT),
+    // 7 was THR_LOW_CMP
 
     // @Param: THST_EXPO
     // @DisplayName: Thrust Curve Expo
@@ -113,6 +108,8 @@ AP_Motors::AP_Motors(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_t
     _max_throttle(AP_MOTORS_DEFAULT_MAX_THROTTLE),
     _hover_out(AP_MOTORS_DEFAULT_MID_THROTTLE),
     _spin_when_armed_ramped(0),
+    _throttle_low_comp(AP_MOTORS_THR_LOW_CMP_DEFAULT),
+    _throttle_low_comp_desired(AP_MOTORS_THR_LOW_CMP_DEFAULT),
     _batt_voltage(0.0f),
     _batt_voltage_resting(0.0f),
     _batt_current(0.0f),
@@ -178,6 +175,9 @@ void AP_Motors::output()
 
     // calc filtered battery voltage and lift_max
     update_lift_max_from_batt_voltage();
+
+    // move throttle_low_comp towards desired throttle low comp
+    update_throttle_low_comp();
 
     // output to motors
     if (_flags.armed ) {
@@ -276,14 +276,14 @@ int16_t AP_Motors::apply_thrust_curve_and_volt_scaling(int16_t pwm_out, int16_t 
 void AP_Motors::update_lift_max_from_batt_voltage()
 {
     // sanity check battery_voltage_min is not too small
-    _batt_voltage_min = max(_batt_voltage_min, _batt_voltage_max * 0.6f);
-
     // if disabled or misconfigured exit immediately
-    if(_batt_voltage_max <= 0 && _batt_voltage_min >= _batt_voltage_max) {
+    if((_batt_voltage_max <= 0) || (_batt_voltage_min >= _batt_voltage_max) || (_batt_voltage < 0.25*_batt_voltage_min)) {
         _batt_voltage_filt.reset(1.0f);
         _lift_max = 1.0f;
         return;
     }
+
+    _batt_voltage_min = max(_batt_voltage_min, _batt_voltage_max * 0.6f);
 
     // add current based voltage sag to battery voltage
     float batt_voltage = _batt_voltage + _batt_current * _batt_resistance;
@@ -317,4 +317,18 @@ void AP_Motors::update_battery_resistance()
             }
         }
     }
+}
+
+// update_throttle_low_comp - slew set_throttle_low_comp to requested value
+void AP_Motors::update_throttle_low_comp()
+{
+    // slew _throttle_low_comp to _throttle_low_comp_desired
+    if (_throttle_low_comp < _throttle_low_comp_desired) {
+        // increase quickly (i.e. from 0.1 to 0.9 in 0.8 seconds)
+        _throttle_low_comp += min(1.0f/_loop_rate, _throttle_low_comp_desired-_throttle_low_comp);
+    } else if (_throttle_low_comp > _throttle_low_comp_desired) {
+        // reduce more slowly (from 0.9 to 0.1 in 1.8 seconds)
+        _throttle_low_comp -= min(0.5f/_loop_rate, _throttle_low_comp-_throttle_low_comp_desired);
+    }
+    _throttle_low_comp = constrain_float(_throttle_low_comp, 0.1f, 1.0f);
 }

@@ -284,7 +284,6 @@ void AP_MotorsMatrix::output_armed()
             }
             if (thr_adj < thr_adj_min) {
                 thr_adj = thr_adj_min;
-                limit.throttle_lower = true;
             }
         }
 

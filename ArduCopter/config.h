@@ -596,6 +596,9 @@
 #ifndef RATE_ROLL_IMAX
  # define RATE_ROLL_IMAX         	1000
 #endif
+#ifndef RATE_ROLL_FILT_HZ
+ # define RATE_ROLL_FILT_HZ         20.0f
+#endif
 
 #ifndef RATE_PITCH_P
  # define RATE_PITCH_P       		0.150f
@@ -609,6 +612,10 @@
 #ifndef RATE_PITCH_IMAX
  # define RATE_PITCH_IMAX        	1000
 #endif
+#ifndef RATE_PITCH_FILT_HZ
+ # define RATE_PITCH_FILT_HZ        20.0f
+#endif
+
 
 #ifndef RATE_YAW_P
  # define RATE_YAW_P              	0.200f
@@ -622,28 +629,31 @@
 #ifndef RATE_YAW_IMAX
  # define RATE_YAW_IMAX            	1000
 #endif
+#ifndef RATE_YAW_FILT_HZ
+ # define RATE_YAW_FILT_HZ          5.0f
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Loiter position control gains
 //
-#ifndef LOITER_POS_P
- # define LOITER_POS_P             	1.0f
+#ifndef POS_XY_P
+ # define POS_XY_P             	1.0f
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Loiter rate control gains
+// Velocity (horizontal) gains
 //
-#ifndef LOITER_RATE_P
- # define LOITER_RATE_P          	1.0f
+#ifndef VEL_XY_P
+ # define VEL_XY_P              1.0f
 #endif
-#ifndef LOITER_RATE_I
- # define LOITER_RATE_I          	0.5f
+#ifndef VEL_XY_I
+ # define VEL_XY_I              0.5f
 #endif
-#ifndef LOITER_RATE_D
- # define LOITER_RATE_D          	0.0f
+#ifndef VEL_XY_IMAX
+ # define VEL_XY_IMAX           1000
 #endif
-#ifndef LOITER_RATE_IMAX
- # define LOITER_RATE_IMAX          1000        // maximum acceleration from I term build-up in cm/s/s
+#ifndef VEL_XY_FILT_HZ
+ # define VEL_XY_FILT_HZ        5.0f
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -662,10 +672,6 @@
 //////////////////////////////////////////////////////////////////////////////
 // Throttle control gains
 //
-#ifndef THROTTLE_CRUISE
- # define THROTTLE_CRUISE       450             // default estimate of throttle required for vehicle to maintain a hover
-#endif
-
 #ifndef THR_MID_DEFAULT
  # define THR_MID_DEFAULT       500             // Throttle output (0 ~ 1000) when throttle stick is in mid position
 #endif
@@ -685,23 +691,26 @@
  # define ALT_HOLD_P            1.0f
 #endif
 
-// RATE control
-#ifndef THROTTLE_RATE_P
- # define THROTTLE_RATE_P       5.0f
+// Velocity (vertical) control gains
+#ifndef VEL_Z_P
+ # define VEL_Z_P       5.0f
 #endif
 
-// Throttle Accel control
-#ifndef THROTTLE_ACCEL_P
- # define THROTTLE_ACCEL_P      0.50f
+// Accel (vertical) control gains
+#ifndef ACCEL_Z_P
+ # define ACCEL_Z_P     0.50f
 #endif
-#ifndef THROTTLE_ACCEL_I
- # define THROTTLE_ACCEL_I      1.00f
+#ifndef ACCEL_Z_I
+ # define ACCEL_Z_I     1.00f
 #endif
-#ifndef THROTTLE_ACCEL_D
- # define THROTTLE_ACCEL_D      0.0f
+#ifndef ACCEL_Z_D
+ # define ACCEL_Z_D     0.0f
 #endif
-#ifndef THROTTLE_ACCEL_IMAX
- # define THROTTLE_ACCEL_IMAX   800
+#ifndef ACCEL_Z_IMAX
+ # define ACCEL_Z_IMAX  800
+#endif
+#ifndef ACCEL_Z_FILT_HZ
+ # define ACCEL_Z_FILT_HZ   20.0f
 #endif
 
 // default maximum vertical velocity and acceleration the pilot may request
@@ -754,7 +763,9 @@
     MASK_LOG_RCOUT | \
     MASK_LOG_OPTFLOW | \
     MASK_LOG_COMPASS | \
-    MASK_LOG_CAMERA
+    MASK_LOG_CAMERA | \
+    MASK_LOG_RATE | \
+    MASK_LOG_MOT
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

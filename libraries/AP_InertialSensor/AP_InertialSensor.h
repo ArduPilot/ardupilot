@@ -97,6 +97,9 @@ public:
     ///
     bool calibrated() const;
 
+    /// calibrating - returns true if the gyros or accels are currently being calibrated
+    bool calibrating() const { return _calibrating; }
+
     /// Perform cold-start initialisation for just the gyros.
     ///
     /// @note This should not be called unless ::init has previously
@@ -269,6 +272,9 @@ private:
 
     // do we have offsets/scaling from a 3D calibration?
     bool _have_3D_calibration:1;
+
+    // are gyros or accels currently being calibrated
+    bool _calibrating:1;
 
     // the delta time in seconds for the last sample
     float _delta_time;

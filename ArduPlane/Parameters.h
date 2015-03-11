@@ -131,6 +131,7 @@ public:
         k_param_override_channel,
         k_param_stall_prevention,
         k_param_optflow,
+        k_param_cli_enabled,
 
         // 100: Arming parameters
         k_param_arming = 100,
@@ -320,6 +321,9 @@ public:
     AP_Int16 sysid_this_mav;
     AP_Int16 sysid_my_gcs;
     AP_Int8 telem_delay;
+#if CLI_ENABLED == ENABLED
+    AP_Int8 cli_enabled;
+#endif
 
 #if HIL_MODE != HIL_MODE_DISABLED
     AP_Float hil_err_limit;
