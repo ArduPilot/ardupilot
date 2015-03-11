@@ -545,6 +545,13 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 break;
         }
         break;
+
+    case AUXSW_MOTOR_INTERLOCK:
+        // Turn on when above LOW, because channel will also be used for speed
+        // control signal in tradheli
+        set_motor_interlock(ch_flag == AUX_SWITCH_HIGH || ch_flag == AUX_SWITCH_MIDDLE);
+        break;
+                
     }
 }
 
