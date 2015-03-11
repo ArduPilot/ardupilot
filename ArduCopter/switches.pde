@@ -66,6 +66,28 @@ static bool check_if_auxsw_mode_used(uint8_t auxsw_mode_check){
     return ret;
 }
 
+// check_duplicate_auxsw - Check to see if any Aux Switch Functions are duplicated
+static bool check_duplicate_auxsw(void){
+
+    bool ret = ((g.ch7_option != AUXSW_DO_NOTHING) && (g.ch7_option == g.ch8_option ||
+                g.ch7_option == g.ch9_option || g.ch7_option == g.ch10_option ||
+                g.ch7_option == g.ch11_option || g.ch7_option == g.ch12_option));
+
+    ret = ret || ((g.ch8_option != AUXSW_DO_NOTHING) && (g.ch8_option == g.ch9_option ||
+                    g.ch8_option == g.ch10_option || g.ch8_option == g.ch11_option ||
+                    g.ch8_option == g.ch12_option));
+
+    ret = ret || ((g.ch9_option != AUXSW_DO_NOTHING) && (g.ch9_option == g.ch10_option ||
+                    g.ch9_option == g.ch11_option || g.ch9_option == g.ch12_option));
+
+    ret = ret || ((g.ch10_option != AUXSW_DO_NOTHING) && (g.ch10_option == g.ch11_option ||
+                    g.ch10_option == g.ch12_option));
+
+    ret = ret || ((g.ch11_option != AUXSW_DO_NOTHING) && (g.ch11_option == g.ch12_option));
+
+    return ret;
+}
+
 static void reset_control_switch()
 {
     control_switch_state.last_switch_position = control_switch_state.debounced_switch_position = -1;

@@ -404,7 +404,7 @@ static bool pre_arm_checks(bool display_failure)
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_PARAMETERS)) {
 
         // ensure ch7 and ch8 have different functions
-        if ((g.ch7_option != 0 || g.ch8_option != 0) && g.ch7_option == g.ch8_option) {
+        if (check_duplicate_auxsw()) {
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Duplicate Aux Switch Options"));
             }
