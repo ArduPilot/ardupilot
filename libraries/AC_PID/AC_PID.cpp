@@ -5,7 +5,6 @@
 
 #include <AP_Math.h>
 #include "AC_PID.h"
-#include <stdio.h>
 
 const AP_Param::GroupInfo AC_PID::var_info[] PROGMEM = {
     // @Param: P
