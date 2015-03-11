@@ -23,7 +23,7 @@
 #include <AP_Math.h>
 #include "LowPassFilter2p.h"
 
-float DigitalBiquadFilter::apply(float sample, const struct biquad_params params)
+float DigitalBiquadFilter::apply(float sample, const struct biquad_params &params)
 {
     if(params.cutoff_freq == 0 || params.sample_freq == 0) {
         return sample;

@@ -39,7 +39,7 @@ public:
         float b2;
     };
 
-    float apply(float sample, const struct biquad_params params);
+    float apply(float sample, const struct biquad_params &params);
 
     void reset() { _delay_element_1 = _delay_element_2 = 0.0f; }
 
