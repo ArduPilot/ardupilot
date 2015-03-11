@@ -985,7 +985,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: AUTOTUNE_AXIS_BITMASK
     // @DisplayName: Autotune axis bitmask
     // @Description: 1-byte bitmap of axes to autotune
-    // @Values: 7:All,1:Roll,2:Pitch,4:Yaw,0:None
+    // @Values: 7:All,1:Roll Only,2:Pitch Only,4:Yaw Only,3:Roll and Pitch,5:Roll and Yaw,6:Pitch and Yaw
     // @User: Standard
     GSCALAR(autotune_axis_bitmask, "AUTOTUNE_AXES", 7),  // AUTOTUNE_AXIS_BITMASK_DEFAULT
 
