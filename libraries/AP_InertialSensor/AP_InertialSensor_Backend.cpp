@@ -74,7 +74,6 @@ void AP_InertialSensor_Backend::_publish_delta_velocity(uint8_t instance, const 
  */
 void AP_InertialSensor_Backend::_publish_accel(uint8_t instance, const Vector3f &accel, bool rotate_and_correct)
 {
-    const Vector3f &accel_scale = _imu._accel_scale[instance].get();
     _imu._accel[instance] = accel;
     _imu._accel_healthy[instance] = true;
 
