@@ -5,6 +5,7 @@
 
 #include <AP_Math.h>
 #include "AC_PID.h"
+#include <stdio.h>
 
 const AP_Param::GroupInfo AC_PID::var_info[] PROGMEM = {
     // @Param: P
@@ -53,13 +54,10 @@ AC_PID::AC_PID(float initial_p, float initial_i, float initial_d, float initial_
     _ki = initial_i;
     _kd = initial_d;
     _imax = fabs(initial_imax);
-    _filt_hz = initial_filt_hz;
+    filt_hz(initial_filt_hz);
 
     // reset input filter to first value received
     _flags._reset_filter = true;
-
-    // calculate the input filter alpha
-    calc_filt_alpha();
 }
 
 // set_dt - set time step in seconds
@@ -70,10 +68,14 @@ void AC_PID::set_dt(float dt)
     calc_filt_alpha();
 }
 
-// set_filt_hz - set input filter hz
-void AC_PID::set_filt_hz(float hz)
+// filt_hz - set input filter hz
+void AC_PID::filt_hz(float hz)
 {
-    _filt_hz.set(hz);
+    _filt_hz.set(fabs(hz));
+
+    // sanity check _filt_hz
+    _filt_hz = max(_filt_hz, AC_PID_FILT_HZ_MIN);
+
     // calculate the input filter alpha
     calc_filt_alpha();
 }
@@ -198,7 +200,7 @@ void AC_PID::operator() (float p, float i, float d, float imaxval, float input_f
 
 // calc_filt_alpha - recalculate the input filter alpha
 void AC_PID::calc_filt_alpha()
-{    
+{
     // calculate alpha
     float rc = 1/(2*PI*_filt_hz);
     _filt_alpha = _dt / (_dt + rc);
