@@ -12,6 +12,7 @@
 #include <math.h>
 
 #define AC_PI_2D_FILT_HZ_DEFAULT  20.0f   // default input filter frequency
+#define AC_PI_2D_FILT_HZ_MIN      0.01f   // minimum input filter frequency
 
 /// @class	AC_PI_2D
 /// @brief	Copter PID control class
@@ -23,9 +24,6 @@ public:
 
     // set_dt - set time step in seconds
     void        set_dt(float dt);
-
-    // set_filt_hz - set input filter hz
-    void        set_filt_hz(float hz);
 
     // set_input - set input to PID controller
     //  input is filtered before the PID controllers are run
@@ -65,7 +63,7 @@ public:
     void        kP(const float v) { _kp.set(v); }
     void        kI(const float v) { _ki.set(v); }
     void        imax(const float v) { _imax.set(fabs(v)); }
-    void        filt_hz(const float v) { _filt_hz.set(fabs(v)); }
+    void        filt_hz(const float v);
 
     Vector2f    get_integrator() const { return _integrator; }
     void        set_integrator(const Vector2f &i) { _integrator = i; }

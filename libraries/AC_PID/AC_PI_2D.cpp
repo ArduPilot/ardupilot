@@ -41,13 +41,10 @@ AC_PI_2D::AC_PI_2D(float initial_p, float initial_i, float initial_imax, float i
     _kp = initial_p;
     _ki = initial_i;
     _imax = fabs(initial_imax);
-    _filt_hz = initial_filt_hz;
+    filt_hz(initial_filt_hz);
 
     // reset input filter to first value received
     _flags._reset_filter = true;
-
-    // calculate the input filter alpha
-    calc_filt_alpha();
 }
 
 // set_dt - set time step in seconds
@@ -58,10 +55,14 @@ void AC_PI_2D::set_dt(float dt)
     calc_filt_alpha();
 }
 
-// set_filt_hz - set input filter hz
-void AC_PI_2D::set_filt_hz(float hz)
+// filt_hz - set input filter hz
+void AC_PI_2D::filt_hz(float hz)
 {
-    _filt_hz.set(hz);
+    _filt_hz.set(fabs(hz));
+
+    // sanity check _filt_hz
+    _filt_hz = max(_filt_hz, AC_PI_2D_FILT_HZ_MIN);
+
     // calculate the input filter alpha
     calc_filt_alpha();
 }
@@ -160,7 +161,7 @@ void AC_PI_2D::operator() (float p, float i, float imaxval, float input_filt_hz,
 
 // calc_filt_alpha - recalculate the input filter alpha
 void AC_PI_2D::calc_filt_alpha()
-{    
+{
     // calculate alpha
     float rc = 1/(2*PI*_filt_hz);
     _filt_alpha = _dt / (_dt + rc);
