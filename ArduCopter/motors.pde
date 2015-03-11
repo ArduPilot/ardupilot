@@ -686,6 +686,10 @@ static void init_disarm_motors()
     gcs_send_text_P(SEVERITY_HIGH, PSTR("DISARMING MOTORS"));
 #endif
 
+    // always force Motor Interlock to false
+    set_motor_interlock(false);
+
+    // send disarm command to motors
     motors.armed(false);
 
     // save compass offsets learned by the EKF

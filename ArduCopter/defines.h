@@ -66,6 +66,7 @@ enum aux_sw_func {
     AUXSW_RELAY,                   // Relay pin on/off (only supports first relay)
     AUXSW_LANDING_GEAR,            // Landing gear controller
     AUXSW_LOST_COPTER_SOUND,       // Play lost copter sound
+    AUXSW_MOTOR_INTERLOCK,         // Motor On/Off switch
 };
 
 // Frame types
