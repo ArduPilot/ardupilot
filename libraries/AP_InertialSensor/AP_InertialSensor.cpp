@@ -472,6 +472,10 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
             // capture sample
             for (uint8_t k=0; k<num_accels; k++) {
                 samples[k][i] += get_accel(k);
+                if (!get_accel_health(k)) {
+                    interact->printf_P(PSTR("accel[%u] not healthy"), (unsigned)k);
+                    goto failed;
+                }
             }
             hal.scheduler->delay(10);
             num_samples++;
