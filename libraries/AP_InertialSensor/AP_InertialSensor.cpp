@@ -45,6 +45,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
       ACC2OFFS : 6
       ACC3SCAL : 8
       ACC3OFFS : 9
+      CALSENSFRAME : 11
      */
 
     // @Param: GYROFFS_X
@@ -115,13 +116,6 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("GYR3OFFS",   10, AP_InertialSensor, _gyro_offset[2],   0),
 #endif
-
-    // @Param: INS_CALSENSFRAME
-    // @DisplayName: Calibration is in sensor frame
-    // @Description: This is an internal parameter that records whether accelerometer calibration was done in sensor frame. It is used to detect an old accel calibration which was done in body frame. This parameter is automatically set during accelerometer calibration and should not be changed by the user.
-    // @Values: 0:BoardFrame,1:SensorFrame
-    // @User: Advanced
-    AP_GROUPINFO("CALSENSFRAME", 11, AP_InertialSensor, _cal_sensor_frame, 0),
 
     // @Param: ACCSCAL_X
     // @DisplayName: Accelerometer scaling of X axis
@@ -547,10 +541,6 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
         _calculate_trim(level_sample, trim_roll, trim_pitch);
 
         _board_orientation = saved_orientation;
-
-        // now set and save the INS_CALSENSFRAME parameter so we know
-        // the calibration was done in sensor frame
-        _cal_sensor_frame.set_and_save(1);
 
         return true;
     }

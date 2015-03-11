@@ -268,9 +268,6 @@ private:
     // filtering frequency (0 means default)
     AP_Int8     _mpu6000_filter;
 
-    // was the accel cal done in sensor frame?
-    AP_Int8    _cal_sensor_frame;
-
     // board orientation from AHRS
     enum Rotation _board_orientation;
 

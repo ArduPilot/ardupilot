@@ -12,14 +12,10 @@ AP_InertialSensor_Backend::AP_InertialSensor_Backend(AP_InertialSensor &imu) :
 void AP_InertialSensor_Backend::_rotate_and_correct_accel(uint8_t instance, Vector3f &accel) 
 {
     /*
-      we rotate before or after offset and scaling based on the
-      INS_CALSENSFRAME parameter. This allows us to use older
-      calibrations, while making all new calibrations operate in
-      sensor frame, and thus be independent of AHRS_ORIENTATION
+      accel calibration is always done in sensor frame with this
+      version of the code. That means we apply the rotation after the
+      offsets and scaling.
      */
-    if (_imu._cal_sensor_frame == 0) {
-        accel.rotate(_imu._board_orientation);
-    }
 
     // apply scaling
     const Vector3f &accel_scale = _imu._accel_scale[instance].get();
@@ -30,9 +26,8 @@ void AP_InertialSensor_Backend::_rotate_and_correct_accel(uint8_t instance, Vect
     // apply offsets
     accel -= _imu._accel_offset[instance];
 
-    if (_imu._cal_sensor_frame != 0) {
-        accel.rotate(_imu._board_orientation);
-    }
+    // rotate to body frame
+    accel.rotate(_imu._board_orientation);
 }
 
 void AP_InertialSensor_Backend::_rotate_and_correct_gyro(uint8_t instance, Vector3f &gyro) 
