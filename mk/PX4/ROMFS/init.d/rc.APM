@@ -134,7 +134,7 @@ else
     then
         set HAVE_PX4IO true
         # play happy tune again
-	tone_alarm start
+	tone_alarm MFMST200L64O4ceceP32ceceP8df#df#P32df#df#P8L16gf#g>c
     fi
 fi
 
