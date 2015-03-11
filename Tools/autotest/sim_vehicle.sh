@@ -183,6 +183,10 @@ case $FRAME in
     octa)
 	BUILD_TARGET="sitl-octa"
         EXTRA_SIM="--frame=octa"
+  ;;
+    octa-quad)
+  BUILD_TARGET="sitl-octa-quad"
+        EXTRA_SIM="--frame=octa-quad"
 	;;
     heli)
 	BUILD_TARGET="sitl-heli"
