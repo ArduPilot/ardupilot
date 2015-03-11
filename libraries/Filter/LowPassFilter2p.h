@@ -17,7 +17,6 @@
 
 #ifndef LOWPASSFILTER2P_H
 #define LOWPASSFILTER2P_H
-#include <stdio.h>
 
 /// @file   LowPassFilter2p.h
 /// @brief  A class to implement a second order low pass filter
