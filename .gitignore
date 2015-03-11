@@ -54,6 +54,7 @@ ArduCopter/Debug/
 ArduCopter/terrain/*.DAT
 ArduCopter/test.ArduCopter/
 ArduCopter/test/*
+ArduPlane/test/*
 ArduPlane/terrain/*.DAT
 ArduPlane/test.ArduPlane/
 APMrover2/test.APMrover2/
