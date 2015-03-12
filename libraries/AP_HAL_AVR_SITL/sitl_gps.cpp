@@ -388,10 +388,10 @@ void SITL_State::_update_gps_mtk16(const struct gps_data *d)
 
 	gettimeofday(&tv, NULL);
 	tm = *gmtime(&tv.tv_sec);
-    uint32_t hsec = (tv.tv_usec / (10000*20)) * 20; // always multiple of 20
+    uint32_t millisec = (tv.tv_usec / (1000*200)) * 200; // always multiple of 200
 
     p.utc_date = (tm.tm_year-100) + ((tm.tm_mon+1)*100) + (tm.tm_mday*100*100);
-    p.utc_time = hsec + tm.tm_sec*100 + tm.tm_min*100*100 + tm.tm_hour*100*100*100;
+    p.utc_time = millisec + tm.tm_sec*1000 + tm.tm_min*1000*100 + tm.tm_hour*1000*100*100;
 
 	p.hdop          = 115;
 
