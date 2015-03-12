@@ -290,6 +290,16 @@
   #define COMPASS_ACCEPTABLE_VECTOR_DIFF    0.75    // pre arm compass check will fail if internal vs external compass direction differ by more than 45 degrees
  #endif
 
+// maximum heading discrepancy in radians allowed between compass 1 and 2 for pre-arm checks
+#ifndef MAX_COMPASS_XY_ANG_DIFF
+ #define MAX_COMPASS_XY_ANG_DIFF radians(30.0f)
+#endif
+
+// maximum length of XY discrepancy allowed between compass 1 and 2 for pre-arm checks
+#ifndef MAX_COMPASS_XY_LENGTH_DIFF
+ #define MAX_COMPASS_XY_LENGTH_DIFF 100.0f
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 //  OPTICAL_FLOW
 #ifndef OPTFLOW
