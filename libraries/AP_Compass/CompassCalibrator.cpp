@@ -88,29 +88,29 @@ void CompassCalibrator::run_fit_chunk() {
     }
 
     if(_status == COMPASS_CAL_RUNNING_STEP_ONE) {
-        if(_fit_step < 10) {
-            run_sphere_fit();
-            _fit_step++;
-        } else {
+        if (_fit_step >= 10) {
             if(_fitness == _initial_fitness || isnan(_fitness)) {           //if true, means that fitness is diverging instead of converging
                 set_status(COMPASS_CAL_FAILED);
             }
-
             set_status(COMPASS_CAL_RUNNING_STEP_TWO);
+        } else {
+            run_sphere_fit();
+            _fit_step++;
         }
     } else if(_status == COMPASS_CAL_RUNNING_STEP_TWO) {
-        if(_fit_step < 15) {
-            run_sphere_fit();
-        } else if(_fit_step < 35) {
-            run_ellipsoid_fit();
-        } else {
+        if (_fit_step >= 35) {
             if(fit_acceptable()) {
                 set_status(COMPASS_CAL_SUCCESS);
             } else {
                 set_status(COMPASS_CAL_FAILED);
             }
+        } else if (_fit_step < 15) {
+            run_sphere_fit();
+            _fit_step++;
+        } else {
+            run_ellipsoid_fit();
+            _fit_step++;
         }
-        _fit_step++;
     }
 }
 
