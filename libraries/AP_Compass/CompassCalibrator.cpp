@@ -246,11 +246,13 @@ bool CompassCalibrator::set_status(compass_cal_status_t status) {
 
 bool CompassCalibrator::fit_acceptable() {
     if( !isnan(_fitness) &&
-        _params.radius   > 200  &&                  //Earth's magnetic field strength range: 250-650mG
-        _params.radius   < 700  &&
+        _params.radius > 150 && _params.radius < 950 && //Earth's magnetic field strength range: 250-850mG
         fabsf(_params.offset.x) < 1000 &&
         fabsf(_params.offset.y) < 1000 &&
         fabsf(_params.offset.z) < 1000 &&
+        _params.diag.x > 0.2f && _params.diag.x < 5.0f &&
+        _params.diag.y > 0.2f && _params.diag.y < 5.0f &&
+        _params.diag.z > 0.2f && _params.diag.z < 5.0f &&
         fabsf(_params.offdiag.x) <  1.0f &&      //absolute of sine/cosine output cannot be greater than 1
         fabsf(_params.offdiag.x) <  1.0f &&
         fabsf(_params.offdiag.x) <  1.0f ){
