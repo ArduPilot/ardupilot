@@ -254,8 +254,8 @@ bool CompassCalibrator::fit_acceptable() {
         _params.diag.y > 0.2f && _params.diag.y < 5.0f &&
         _params.diag.z > 0.2f && _params.diag.z < 5.0f &&
         fabsf(_params.offdiag.x) <  1.0f &&      //absolute of sine/cosine output cannot be greater than 1
-        fabsf(_params.offdiag.x) <  1.0f &&
-        fabsf(_params.offdiag.x) <  1.0f ){
+        fabsf(_params.offdiag.y) <  1.0f &&
+        fabsf(_params.offdiag.z) <  1.0f ){
 
             return _fitness <= sq(_tolerance);
         }
