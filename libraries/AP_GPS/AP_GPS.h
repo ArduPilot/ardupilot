@@ -45,10 +45,10 @@
 #endif
 
 /**
- * save flash by skipping NMEA and SIRF support on ArduCopter on APM1/2 or any frame type on AVR1280 CPUs
+ * save flash by skipping NMEA and SIRF support on ArduCopter and ArduPlane on APM1/2 or any frame type on AVR1280 CPUs
  */
 #if HAL_CPU_CLASS < HAL_CPU_CLASS_75 && defined(APM_BUILD_DIRECTORY)
-  #if (APM_BUILD_TYPE(APM_BUILD_ArduCopter) || defined(__AVR_ATmega1280__))
+  #if (APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || defined(__AVR_ATmega1280__))
     #define GPS_SKIP_SIRF_NMEA
   #endif
 #endif
