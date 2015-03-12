@@ -8,8 +8,6 @@ static void init_barometer(bool full_calibration)
     }else{
         barometer.update_calibration();
     }
-    // reset glitch protection to use new baro alt
-    baro_glitch.reset();
     gcs_send_text_P(SEVERITY_LOW, PSTR("barometer calibration complete"));
 }
 
@@ -22,18 +20,6 @@ static void read_barometer(void)
     }
     baro_alt = barometer.get_altitude() * 100.0f;
     baro_climbrate = barometer.get_climb_rate() * 100.0f;
-
-    // run glitch protection and update AP_Notify if home has been initialised
-    baro_glitch.check_alt();
-    bool report_baro_glitch = (baro_glitch.glitching() && !ap.usb_connected && hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
-    if (AP_Notify::flags.baro_glitching != report_baro_glitch) {
-        if (baro_glitch.glitching()) {
-            Log_Write_Error(ERROR_SUBSYSTEM_BARO, ERROR_CODE_BARO_GLITCH);
-        } else {
-            Log_Write_Error(ERROR_SUBSYSTEM_BARO, ERROR_CODE_ERROR_RESOLVED);
-        }
-        AP_Notify::flags.baro_glitching = report_baro_glitch;
-    }
 }
 
 #if CONFIG_SONAR == ENABLED

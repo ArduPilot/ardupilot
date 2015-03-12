@@ -136,7 +136,7 @@ public:
         k_param_altitude_limit,         // deprecated - remove
         k_param_fence,
         k_param_gps_glitch,
-        k_param_baro_glitch,            // 71
+        k_param_baro_glitch,            // 71 - deprecated
 
         //
         // 75: Singlecopter, CoaxCopter
