@@ -146,6 +146,11 @@ void ToneAlarm_PX4::update()
     }
     flags.compass_cal_running = AP_Notify::flags.compass_cal_running;
 
+    if (AP_Notify::events.compass_cal_canceled) {
+        play_tone(AP_NOTIFY_PX4_TONE_QUIET_NEU_FEEDBACK);
+        return;
+    }
+
     if (AP_Notify::events.initiated_compass_cal) {
         play_tone(AP_NOTIFY_PX4_TONE_QUIET_NEU_FEEDBACK);
         return;
