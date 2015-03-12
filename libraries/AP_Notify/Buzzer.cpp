@@ -228,16 +228,6 @@ void Buzzer::update()
         return;
     }
 
-    // check baro glitch
-    if (_flags.baro_glitching != AP_Notify::flags.baro_glitching) {
-        _flags.baro_glitching = AP_Notify::flags.baro_glitching;
-        if (_flags.baro_glitching) {
-            // baro glitch warning buzz
-            play_pattern(BARO_GLITCH);
-        }
-        return;
-    }
-
     // if battery failsafe constantly single buzz
     if (AP_Notify::flags.failsafe_battery) {
         play_pattern(SINGLE_BUZZ);

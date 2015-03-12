@@ -75,7 +75,6 @@ private:
         uint8_t armed               : 1;    // 0 = disarmed, 1 = armed
         uint8_t failsafe_battery    : 1;    // 1 if battery failsafe has triggered
         uint8_t failsafe_gps        : 1;    // 1 if gps failsafe
-        uint8_t baro_glitching     : 1;    // 1 if baro alt is glitching
         uint8_t ekf_bad            : 1;    // 1 if ekf position has gone bad
     } _flags;
 
