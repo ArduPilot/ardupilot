@@ -35,15 +35,15 @@ sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 90
 
 $APT_GET update
 $APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS $UBUNTU64_PKGS $AVR_PKGS
-pip install --upgrade pip || {
+sudo pip install --upgrade pip || {
     echo "pip upgrade failed"
 }
-pip install --upgrade setuptools || {
+sudo pip install --upgrade setuptools || {
     echo "setuptools upgrade failed"
 }
 for pkg in $PYTHON_PKGS; do
     echo "Installing $pkg"
-    pip -q install $pkg || echo "FAILED INSTALL OF $pkg"
+    sudo pip -q install $pkg || echo "FAILED INSTALL OF $pkg"
 done
 
 # install some extra packages (for later AVR compiler)
