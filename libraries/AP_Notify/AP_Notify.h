@@ -92,6 +92,7 @@ public:
         uint16_t initiated_compass_cal  : 1;    // 1 when user input to begin compass cal was accepted
         uint16_t compass_cal_saved      : 1;    // 1 when compass calibration was just saved
         uint16_t compass_cal_failed     : 1;    // 1 when compass calibration has just failed
+        uint16_t compass_cal_canceled   : 1;    // 1 when compass calibration was just canceled
     };
 
     // the notify flags are static to allow direct class access
