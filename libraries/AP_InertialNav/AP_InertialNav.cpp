@@ -390,33 +390,17 @@ void AP_InertialNav::correct_with_baro(float baro_alt, float dt)
         first_reads++;
     }
 
-    // sanity check the baro position.  Relies on the main code calling Baro_Glitch::check_alt() immediatley after a baro update
-    if (_baro_glitch.glitching()) {
-        // failed sanity check so degrate position_error to 10% over 2 seconds (assumes 10hz update rate)
-        _position_error.z *= 0.89715f;
-    }else{
-        // if our internal baro glitching flag (from previous iteration) is true we have just recovered from a glitch
-        // reset the inertial nav alt to baro alt
-        if (_flags.baro_glitching) {
-            set_altitude(baro_alt);
-            _position_error.z = 0.0f;
-        }else{
-            // 3rd order samples (i.e. position from baro) are delayed by 150ms (15 iterations at 100hz)
-            // so we should calculate error using historical estimates
-            float hist_position_base_z;
-            if (_hist_position_estimate_z.is_full()) {
-                hist_position_base_z = _hist_position_estimate_z.front();
-            } else {
-                hist_position_base_z = _position_base.z;
-            }
-
-            // calculate error in position from baro with our estimate
-            _position_error.z = baro_alt - (hist_position_base_z + _position_correction.z);
-        }
+    // 3rd order samples (i.e. position from baro) are delayed by 150ms (15 iterations at 100hz)
+    // so we should calculate error using historical estimates
+    float hist_position_base_z;
+    if (_hist_position_estimate_z.is_full()) {
+        hist_position_base_z = _hist_position_estimate_z.front();
+    } else {
+        hist_position_base_z = _position_base.z;
     }
 
-    // update our internal record of glitching flag so that we can notice a change
-    _flags.baro_glitching = _baro_glitch.glitching();
+    // calculate error in position from baro with our estimate
+    _position_error.z = baro_alt - (hist_position_base_z + _position_correction.z);
 }
 
 // set_altitude - set base altitude estimate in cm

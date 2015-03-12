@@ -8,7 +8,6 @@
 #include <AP_Baro.h>                    // ArduPilot Mega Barometer Library
 #include <AP_Buffer.h>                  // FIFO buffer library
 #include <AP_GPS_Glitch.h>              // GPS Glitch detection library
-#include <AP_Baro_Glitch.h>             // Baro Glitch detection library
 #include "../AP_NavEKF/AP_Nav_Common.h" // definitions shared by inertial and ekf nav filters
 
 #define AP_INTERTIALNAV_TC_XY   2.5f // default time constant for complementary filter's X & Y axis
@@ -39,7 +38,7 @@ class AP_InertialNav
 public:
 
     // Constructor
-    AP_InertialNav(AP_AHRS &ahrs, AP_Baro &baro, GPS_Glitch& gps_glitch, Baro_Glitch &baro_glitch) :
+    AP_InertialNav(AP_AHRS &ahrs, AP_Baro &baro, GPS_Glitch& gps_glitch) :
         _ahrs(ahrs),
         _baro(baro),
         _xy_enabled(false),
@@ -55,7 +54,6 @@ public:
         _k3_z(0.0f),
         _baro_last_update(0),
         _glitch_detector(gps_glitch),
-        _baro_glitch(baro_glitch),
         _error_count(0)
         {
             AP_Param::setup_object_defaults(this, var_info);
@@ -261,7 +259,6 @@ protected:
     // structure for holding flags
     struct InertialNav_flags {
         uint8_t gps_glitching       : 1;                // 1 if glitch detector was previously indicating a gps glitch
-        uint8_t baro_glitching      : 1;                // 1 if baro glitch detector was previously indicating a baro glitch
         uint8_t ignore_error        : 3;                // the number of iterations for which we should ignore errors
     } _flags;
 
@@ -300,7 +297,6 @@ protected:
 
     // error handling
     GPS_Glitch&             _glitch_detector;           // GPS Glitch detector
-    Baro_Glitch&            _baro_glitch;               // Baro glitch detector
     uint8_t                 _error_count;               // number of missed GPS updates
 
     int32_t                 _last_home_lat;
