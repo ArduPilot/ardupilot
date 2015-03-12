@@ -752,6 +752,14 @@ static void motors_output()
     if (ap.motor_test) {
         motor_test_output();
     } else {
+        if (ap.using_interlock){
+            // pass in motor interlock status to motors class
+            // true means motors run, false motors don't run
+            motors.set_interlock(ap.motor_interlock);
+        } else {
+            // if not using interlock switch, force interlock true
+            motors.set_interlock(true);
+        }
         motors.output();
     }
 }
