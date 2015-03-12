@@ -39,7 +39,7 @@ done
 
 # install some extra packages (for later AVR compiler)
 rsync -av firmware.diydrones.com::Tools/Travis/*.deb ExtraPackages
-sudo dpkg -i ExtraPackages/*.deb
+sudo dpkg -i ExtraPackages/*.deb || echo "FAILED INSTALL OF EXTRA DEBS"
 
 
 if [ ! -d PX4Firmware ]; then
