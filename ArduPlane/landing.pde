@@ -119,6 +119,9 @@ static void disarm_if_autoland_complete()
             hasAutoDisarmed = true;
         }
     }
+    else {
+        hasAutoDisarmed = false;
+    }
 }
 
 
