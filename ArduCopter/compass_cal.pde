@@ -7,6 +7,9 @@ static void compass_cal_update() {
     compass.compass_cal_update();
 
     if (compass.is_calibrating()) {
+        if(!motors.armed() && g.rc_4.control_in < -4000 && g.rc_3.control_in > 900) {
+            compass.cancel_calibration_all();
+        }
         return;
     }
 
