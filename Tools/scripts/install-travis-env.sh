@@ -27,6 +27,12 @@ ARDUPILOT_TOOLS="ardupilot/Tools/autotest"
 
 APT_GET="sudo apt-get -qq --assume-yes"
 
+# try to upgrade to g++ 4.8. See https://github.com/travis-ci/travis-ci/issues/1379
+sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+sudo apt-get -qq update
+sudo apt-get -qq install g++-4.8
+sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 90
+
 $APT_GET update
 $APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS $UBUNTU64_PKGS $AVR_PKGS
 pip install --upgrade pip || {
