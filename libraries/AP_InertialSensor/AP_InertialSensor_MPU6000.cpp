@@ -178,7 +178,8 @@ AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu) :
     _drdy_pin(NULL),
     _spi(NULL),
     _spi_sem(NULL),
-    _last_filter_hz(0),
+    _last_accel_filter_hz(-1),
+    _last_gyro_filter_hz(-1),
     _error_count(0),
 #if MPU6000_FAST_SAMPLING
     _accel_filter(1000, 15),
@@ -300,14 +301,27 @@ bool AP_InertialSensor_MPU6000::update( void )
     accel *= MPU6000_ACCEL_SCALE_1G / num_samples;
     _publish_accel(_accel_instance, accel);
 
-    if (_last_filter_hz != _imu.get_filter()) {
+#if MPU6000_FAST_SAMPLING
+    if (_last_accel_filter_hz != _accel_filter_cutoff()) {
+        _accel_filter.set_cutoff_frequency(1000, _accel_filter_cutoff());
+        _last_accel_filter_hz = _accel_filter_cutoff();
+    }
+
+    if (_last_gyro_filter_hz != _gyro_filter_cutoff()) {
+        _gyro_filter.set_cutoff_frequency(1000, _gyro_filter_cutoff());
+        _last_gyro_filter_hz = _gyro_filter_cutoff();
+    }
+#else
+    if (_last_accel_filter_hz != _accel_filter_cutoff()) {
         if (_spi_sem->take(10)) {
             _spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_LOW);
-            _set_filter_register(_imu.get_filter());
+            _set_filter_register(_accel_filter_cutoff());
             _spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_HIGH);
             _spi_sem->give();
+            _last_accel_filter_hz = _accel_filter_cutoff();
         }
     }
+#endif
 
     return true;
 }
@@ -441,14 +455,13 @@ void AP_InertialSensor_MPU6000::_register_write_check(uint8_t reg, uint8_t val)
 /*
   set the DLPF filter frequency. Assumes caller has taken semaphore
  */
-void AP_InertialSensor_MPU6000::_set_filter_register(uint8_t filter_hz)
+void AP_InertialSensor_MPU6000::_set_filter_register(uint16_t filter_hz)
 {
-    if (filter_hz == 0) {
-        filter_hz = _default_filter();
-    }
     uint8_t filter;
     // choose filtering frequency
-    if (filter_hz <= 5) {
+    if (filter_hz == 0) {
+        filter = BITS_DLPF_CFG_256HZ_NOLPF2;
+    } else if (filter_hz <= 5) {
         filter = BITS_DLPF_CFG_5HZ;
     } else if (filter_hz <= 10) {
         filter = BITS_DLPF_CFG_10HZ;
@@ -456,10 +469,11 @@ void AP_InertialSensor_MPU6000::_set_filter_register(uint8_t filter_hz)
         filter = BITS_DLPF_CFG_20HZ;
     } else if (filter_hz <= 42) {
         filter = BITS_DLPF_CFG_42HZ;
-    } else {
+    } else if (filter_hz <= 98) {
         filter = BITS_DLPF_CFG_98HZ;
+    } else {
+        filter = BITS_DLPF_CFG_256HZ_NOLPF2;
     }
-    _last_filter_hz = filter_hz;
     _register_write(MPUREG_CONFIG, filter);
 }
 
@@ -530,12 +544,15 @@ bool AP_InertialSensor_MPU6000::_hardware_init(void)
     }
 #endif
 
-    _set_filter_register(_imu.get_filter());
-
 #if MPU6000_FAST_SAMPLING
+    // disable sensor filtering 
+    _set_filter_register(256);
+
     // set sample rate to 1000Hz and apply a software filter
     _register_write(MPUREG_SMPLRT_DIV, MPUREG_SMPLRT_1000HZ);
 #else
+    _set_filter_register(_accel_filter_cutoff());
+
     // set sample rate to 200Hz, and use _sample_divider to give
     // the requested rate to the application
     _register_write(MPUREG_SMPLRT_DIV, MPUREG_SMPLRT_200HZ);

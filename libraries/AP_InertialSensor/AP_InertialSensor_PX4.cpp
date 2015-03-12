@@ -20,7 +20,10 @@ const extern AP_HAL::HAL& hal;
 
 AP_InertialSensor_PX4::AP_InertialSensor_PX4(AP_InertialSensor &imu) :
     AP_InertialSensor_Backend(imu),
-    _last_get_sample_timestamp(0)
+    _last_get_sample_timestamp(0),
+    _last_sample_timestamp(0),
+    _last_gyro_filter_hz(-1),
+    _last_accel_filter_hz(-1)
 {
     for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
         _delta_angle_accumulator[i].zero();
@@ -149,7 +152,8 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
         }
     }
 
-    _set_filter_frequency(_imu.get_filter());
+    _set_accel_filter_frequency(_accel_filter_cutoff());
+    _set_gyro_filter_frequency(_gyro_filter_cutoff());
 
 #if  CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     _product_id = AP_PRODUCT_ID_VRBRAIN;
@@ -164,22 +168,10 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
 }
 
 /*
-  set the filter frequency
+  set the accel filter frequency
  */
-void AP_InertialSensor_PX4::_set_filter_frequency(uint8_t filter_hz)
+void AP_InertialSensor_PX4::_set_accel_filter_frequency(uint8_t filter_hz)
 {
-    if (filter_hz == 0) {
-        filter_hz = _default_filter();
-    }
-    for (uint8_t i=0; i<_num_gyro_instances; i++) {
-        int samplerate = ioctl(_gyro_fd[i],  GYROIOCGSAMPLERATE, 0);
-        if(samplerate < 100 || samplerate > 2000) {
-            // sample rate doesn't seem sane, turn off filter
-            _gyro_filter[i].set_cutoff_frequency(0, 0);
-        } else {
-            _gyro_filter[i].set_cutoff_frequency(samplerate, filter_hz);
-        }
-    }
     for (uint8_t i=0; i<_num_accel_instances; i++) {
         int samplerate = ioctl(_accel_fd[i],  ACCELIOCGSAMPLERATE, 0);
         if(samplerate < 100 || samplerate > 2000) {
@@ -187,6 +179,22 @@ void AP_InertialSensor_PX4::_set_filter_frequency(uint8_t filter_hz)
             _accel_filter[i].set_cutoff_frequency(0, 0);
         } else {
             _accel_filter[i].set_cutoff_frequency(samplerate, filter_hz);
+        }
+    }
+}
+
+/*
+  set the gyro filter frequency
+ */
+void AP_InertialSensor_PX4::_set_gyro_filter_frequency(uint8_t filter_hz)
+{
+    for (uint8_t i=0; i<_num_gyro_instances; i++) {
+        int samplerate = ioctl(_gyro_fd[i],  GYROIOCGSAMPLERATE, 0);
+        if(samplerate < 100 || samplerate > 2000) {
+            // sample rate doesn't seem sane, turn off filter
+            _gyro_filter[i].set_cutoff_frequency(0, 0);
+        } else {
+            _gyro_filter[i].set_cutoff_frequency(samplerate, filter_hz);
         }
     }
 }
@@ -223,9 +231,14 @@ bool AP_InertialSensor_PX4::update(void)
         _delta_velocity_accumulator[i].zero();
     }
 
-    if (_last_filter_hz != _imu.get_filter()) {
-        _set_filter_frequency(_imu.get_filter());
-        _last_filter_hz = _imu.get_filter();
+    if (_last_accel_filter_hz != _accel_filter_cutoff()) {
+        _set_accel_filter_frequency(_accel_filter_cutoff());
+        _last_accel_filter_hz = _accel_filter_cutoff();
+    }
+
+    if (_last_gyro_filter_hz != _gyro_filter_cutoff()) {
+        _set_gyro_filter_frequency(_gyro_filter_cutoff());
+        _last_gyro_filter_hz = _gyro_filter_cutoff();
     }
     
     return true;

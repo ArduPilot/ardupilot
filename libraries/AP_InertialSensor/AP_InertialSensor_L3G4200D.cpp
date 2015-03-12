@@ -116,13 +116,11 @@ AP_InertialSensor_L3G4200D::AP_InertialSensor_L3G4200D(AP_InertialSensor &imu) :
     _have_gyro_sample(false),
     _have_accel_sample(false),
     _accel_filter(800, 10),
-    _gyro_filter(800, 10),
+    _gyro_filter(800, 10)
 {}
 
 bool AP_InertialSensor_L3G4200D::_init_sensor(void) 
 {
-    _default_filter_hz = _default_filter();
-
     // get pointer to i2c bus semaphore
     AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
 
@@ -207,7 +205,7 @@ bool AP_InertialSensor_L3G4200D::_init_sensor(void)
                            
 
     // Set up the filter desired
-    _set_filter_frequency(_imu.get_filter());
+    _set_filter_frequency(_accel_filter_cutoff());
 
     // give back i2c semaphore
     i2c_sem->give();
@@ -228,9 +226,6 @@ bool AP_InertialSensor_L3G4200D::_init_sensor(void)
  */
 void AP_InertialSensor_L3G4200D::_set_filter_frequency(uint8_t filter_hz)
 {
-    if (filter_hz == 0)
-        filter_hz = _default_filter_hz;
-
     _accel_filter.set_cutoff_frequency(800, filter_hz);
     _gyro_filter.set_cutoff_frequency(800, filter_hz);
 }
@@ -257,9 +252,9 @@ bool AP_InertialSensor_L3G4200D::update(void)
     gyro *= L3G4200D_GYRO_SCALE_R_S;
     _publish_gyro(_gyro_instance, gyro);
 
-    if (_last_filter_hz != _imu.get_filter()) {
-        _set_filter_frequency(_imu.get_filter());
-        _last_filter_hz = _imu.get_filter();
+    if (_last_filter_hz != _accel_filter_cutoff()) {
+        _set_filter_frequency(_accel_filter_cutoff());
+        _last_filter_hz = _accel_filter_cutoff();
     }
 
     return true;

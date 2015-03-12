@@ -173,7 +173,8 @@ extern const AP_HAL::HAL& hal;
 
 AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250(AP_InertialSensor &imu) :
 	AP_InertialSensor_Backend(imu),
-    _last_filter_hz(-1),
+    _last_accel_filter_hz(-1),
+    _last_gyro_filter_hz(-1),
     _shared_data_idx(0),
     _accel_filter(1000, 15),
     _gyro_filter(1000, 15),
@@ -292,9 +293,14 @@ bool AP_InertialSensor_MPU9250::update( void )
     _publish_gyro(_gyro_instance, gyro);
     _publish_accel(_accel_instance, accel);
 
-    if (_last_filter_hz != _imu.get_filter()) {
-        _set_filter(_imu.get_filter());
-        _last_filter_hz = _imu.get_filter();
+    if (_last_accel_filter_hz != _accel_filter_cutoff()) {
+        _set_accel_filter(_accel_filter_cutoff());
+        _last_accel_filter_hz = _accel_filter_cutoff();
+    }
+
+    if (_last_gyro_filter_hz != _gyro_filter_cutoff()) {
+        _set_gyro_filter(_gyro_filter_cutoff());
+        _last_gyro_filter_hz = _gyro_filter_cutoff();
     }
 
     return true;
@@ -383,16 +389,18 @@ void AP_InertialSensor_MPU9250::_register_write(uint8_t reg, uint8_t val)
 }
 
 /*
-  set the accel/gyro filter frequency
+  set the accel filter frequency
  */
-void AP_InertialSensor_MPU9250::_set_filter(uint8_t filter_hz)
+void AP_InertialSensor_MPU9250::_set_accel_filter(uint8_t filter_hz)
 {
-    if (filter_hz == 0) {
-        filter_hz = _default_filter_hz;
-    }
-
     _accel_filter.set_cutoff_frequency(1000, filter_hz);
+}
 
+/*
+  set the gyro filter frequency
+ */
+void AP_InertialSensor_MPU9250::_set_gyro_filter(uint8_t filter_hz)
+{
     _gyro_filter.set_cutoff_frequency(1000, filter_hz);
 }
 
@@ -449,11 +457,9 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
     _register_write(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
 #endif
 
-    _default_filter_hz = _default_filter();
-
-    // used a fixed filter of 42Hz on the sensor, then filter using
+    // used no filter of 256Hz on the sensor, then filter using
     // the 2-pole software filter
-    _register_write(MPUREG_CONFIG, BITS_DLPF_CFG_42HZ);
+    _register_write(MPUREG_CONFIG, BITS_DLPF_CFG_256HZ_NOLPF2);
 
     // set sample rate to 1kHz, and use the 2 pole filter to give the
     // desired rate

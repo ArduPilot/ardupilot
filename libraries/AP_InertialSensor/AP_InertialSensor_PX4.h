@@ -53,10 +53,12 @@ private:
     // calculate right queue depth for a sensor
     uint8_t _queue_depth(uint16_t sensor_sample_rate) const;
 
-    // support for updating filter at runtime
-    uint8_t _last_filter_hz;
+    // support for updating filter at runtime (-1 means unset)
+    int8_t _last_gyro_filter_hz;
+    int8_t _last_accel_filter_hz;
 
-    void _set_filter_frequency(uint8_t filter_hz);
+    void _set_gyro_filter_frequency(uint8_t filter_hz);
+    void _set_accel_filter_frequency(uint8_t filter_hz);
 
     // accelerometer and gyro driver handles
     uint8_t _num_accel_instances;

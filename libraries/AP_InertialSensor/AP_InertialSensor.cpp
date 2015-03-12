@@ -6,6 +6,7 @@
 #include <AP_Common.h>
 #include <AP_HAL.h>
 #include <AP_Notify.h>
+#include <AP_Vehicle.h>
 
 /*
   enable TIMING_DEBUG to track down scheduling issues with the main
@@ -22,6 +23,16 @@
 
 extern const AP_HAL::HAL& hal;
 
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+#define DEFAULT_GYRO_FILTER  30
+#define DEFAULT_ACCEL_FILTER 30
+#elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
+#define DEFAULT_GYRO_FILTER  10
+#define DEFAULT_ACCEL_FILTER 10
+#else
+#define DEFAULT_GYRO_FILTER  20
+#define DEFAULT_ACCEL_FILTER 20
+#endif
 
 #define SAMPLE_UNIT 1
 
@@ -41,6 +52,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
 
       ACCSCAL : 1
       ACCOFFS : 2
+      MPU6K_FILTER: 4
       ACC2SCAL : 5
       ACC2OFFS : 6
       ACC3SCAL : 8
@@ -66,14 +78,6 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     // @Units: rad/s
     // @User: Advanced
     AP_GROUPINFO("GYROFFS",     3, AP_InertialSensor, _gyro_offset[0],  0),
-
-    // @Param: MPU6K_FILTER
-    // @DisplayName: MPU6000 filter frequency
-    // @Description: Filter frequency to ask the MPU6000 to apply to samples. This can be set to a lower value to try to cope with very high vibration levels in aircraft. The default value on ArduPlane, APMrover2 and ArduCopter is 20Hz. This option takes effect on the next reboot or gyro initialisation
-    // @Units: Hz
-    // @Values: 0:Default,5:5Hz,10:10Hz,20:20Hz,42:42Hz,98:98Hz
-    // @User: Advanced
-    AP_GROUPINFO("MPU6K_FILTER", 4, AP_InertialSensor, _mpu6000_filter,  0),
 
 #if INS_MAX_INSTANCES > 1
     // @Param: GYR2OFFS_X
@@ -243,6 +247,22 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("ACC3OFFS",    17, AP_InertialSensor, _accel_offset[2],  0),
 #endif
+
+    // @Param: GYRO_FILTER
+    // @DisplayName: Gyro filter cutoff frequency
+    // @Description: Filter cutoff frequency for gyroscopes. This can be set to a lower value to try to cope with very high vibration levels in aircraft. This option takes effect on the next reboot. A value of zero means no filtering (not recommended!)
+    // @Units: Hz
+    // @Range: 0 127
+    // @User: Advanced
+    AP_GROUPINFO("GYRO_FILTER", 18, AP_InertialSensor, _gyro_filter_cutoff,  DEFAULT_GYRO_FILTER),
+
+    // @Param: ACCEL_FILTER
+    // @DisplayName: Accel filter cutoff frequency
+    // @Description: Filter cutoff frequency for accelerometers. This can be set to a lower value to try to cope with very high vibration levels in aircraft. This option takes effect on the next reboot. A value of zero means no filtering (not recommended!)
+    // @Units: Hz
+    // @Range: 0 127
+    // @User: Advanced
+    AP_GROUPINFO("ACCEL_FILTER", 19, AP_InertialSensor, _accel_filter_cutoff,  DEFAULT_ACCEL_FILTER),
 
     /*
       NOTE: parameter indexes have gaps above. When adding new

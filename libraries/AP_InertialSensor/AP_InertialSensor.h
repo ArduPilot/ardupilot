@@ -183,16 +183,6 @@ public:
         _board_orientation = orientation;
     }
 
-    // override default filter frequency
-    void set_default_filter(float filter_hz) {
-        if (!_mpu6000_filter.load()) {
-            _mpu6000_filter.set(filter_hz);
-        }
-    }
-
-    // get_filter - return filter in hz
-    uint8_t get_filter() const { return _mpu6000_filter.get(); }
-
     // return the selected sample rate
     Sample_rate get_sample_rate(void) const { return _sample_rate; }
 
@@ -266,7 +256,8 @@ private:
     AP_Vector3f _gyro_offset[INS_MAX_INSTANCES];
 
     // filtering frequency (0 means default)
-    AP_Int8     _mpu6000_filter;
+    AP_Int8     _accel_filter_cutoff;
+    AP_Int8     _gyro_filter_cutoff;
 
     // board orientation from AHRS
     enum Rotation _board_orientation;

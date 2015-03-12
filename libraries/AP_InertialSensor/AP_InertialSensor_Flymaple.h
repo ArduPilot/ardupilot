@@ -34,7 +34,6 @@ private:
 
     // support for updating filter at runtime
     uint8_t _last_filter_hz;
-    uint8_t _default_filter_hz;
 
     void _set_filter_frequency(uint8_t filter_hz);
     // Low Pass filters for gyro and accel 

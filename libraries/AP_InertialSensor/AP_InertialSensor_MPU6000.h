@@ -65,9 +65,10 @@ private:
     static const float          _gyro_scale;
 
     // support for updating filter at runtime
-    uint8_t _last_filter_hz;
+    int8_t _last_accel_filter_hz;
+    int8_t _last_gyro_filter_hz;
 
-    void _set_filter_register(uint8_t filter_hz);
+    void _set_filter_register(uint16_t filter_hz);
 
     // count of bus errors
     uint16_t _error_count;

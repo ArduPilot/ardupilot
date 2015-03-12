@@ -89,29 +89,6 @@ void AP_InertialSensor_Backend::_set_gyro_error_count(uint8_t instance, uint32_t
     _imu._gyro_error_count[instance] = error_count;
 }
 
-/*
-  return the default filter frequency in Hz for the sample rate
-  
-  This uses the sample_rate as a proxy for what type of vehicle it is
-  (ie. plane and rover run at 50Hz). Copters need a bit more filter
-  bandwidth
- */
-uint8_t AP_InertialSensor_Backend::_default_filter(void) const
-{
-    switch (_imu.get_sample_rate()) {
-    case AP_InertialSensor::RATE_50HZ:
-        // on Rover and plane use a lower filter rate
-        return 15;
-    case AP_InertialSensor::RATE_100HZ:
-        return 30;
-    case AP_InertialSensor::RATE_200HZ:
-        return 30;
-    case AP_InertialSensor::RATE_400HZ:
-        return 30;
-    }
-    return 30;
-}
-
 // return the requested sample rate in Hz
 uint16_t AP_InertialSensor_Backend::get_sample_rate_hz(void) const
 {

@@ -91,8 +91,6 @@ AP_InertialSensor_Backend *AP_InertialSensor_Flymaple::detect(AP_InertialSensor 
 
 bool AP_InertialSensor_Flymaple::_init_sensor(void) 
 {
-    _default_filter_hz = _default_filter();
-
     // get pointer to i2c bus semaphore
     AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
 
@@ -142,7 +140,7 @@ bool AP_InertialSensor_Flymaple::_init_sensor(void)
     hal.scheduler->delay(1);
 
     // Set up the filter desired
-    _set_filter_frequency(_imu.get_filter());
+    _set_filter_frequency(_accel_filter_cutoff());
 
     // give back i2c semaphore
     i2c_sem->give();
@@ -160,9 +158,6 @@ bool AP_InertialSensor_Flymaple::_init_sensor(void)
  */
 void AP_InertialSensor_Flymaple::_set_filter_frequency(uint8_t filter_hz)
 {
-    if (filter_hz == 0)
-        filter_hz = _default_filter_hz;
-
     _accel_filter.set_cutoff_frequency(raw_sample_rate_hz, filter_hz);
     _gyro_filter.set_cutoff_frequency(raw_sample_rate_hz, filter_hz);
 }
@@ -188,9 +183,9 @@ bool AP_InertialSensor_Flymaple::update(void)
     gyro *= FLYMAPLE_GYRO_SCALE_R_S;
     _publish_gyro(_gyro_instance, gyro);
 
-    if (_last_filter_hz != _imu.get_filter()) {
-        _set_filter_frequency(_imu.get_filter());
-        _last_filter_hz = _imu.get_filter();
+    if (_last_filter_hz != _accel_filter_cutoff()) {
+        _set_filter_frequency(_accel_filter_cutoff());
+        _last_filter_hz = _accel_filter_cutoff();
     }
 
     return true;

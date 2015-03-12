@@ -34,8 +34,8 @@ private:
     bool            _have_sample_available;
 
     // // support for updating filter at runtime
-    uint8_t         _last_filter_hz;
-    uint8_t         _default_filter_hz;
+    uint8_t         _last_accel_filter_hz;
+    uint8_t         _last_gyro_filter_hz;
 
     int16_t mpu_set_gyro_fsr(uint16_t fsr);
     int16_t mpu_set_accel_fsr(uint8_t fsr);
@@ -49,7 +49,8 @@ private:
     int16_t mpu_set_int_latched(uint8_t enable);
     int16_t mpu_read_fifo(int16_t *gyro, int16_t *accel, uint32_t timestamp, uint8_t *sensors, uint8_t *more);
 
-    void _set_filter_frequency(uint8_t filter_hz);
+    void _set_accel_filter_frequency(uint8_t filter_hz);
+    void _set_gyro_filter_frequency(uint8_t filter_hz);
 
     // Low Pass filters for gyro and accel 
     LowPassFilter2pVector3f _accel_filter;
