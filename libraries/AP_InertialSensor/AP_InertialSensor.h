@@ -194,6 +194,12 @@ public:
     // enable HIL mode
     void set_hil_mode(void) { _hil_mode = true; }
 
+    // get the gyro filter rate in Hz
+    uint8_t get_gyro_filter_hz(void) const { return _gyro_filter_cutoff; }
+
+    // get the accel filter rate in Hz
+    uint8_t get_accel_filter_hz(void) const { return _accel_filter_cutoff; }
+
 private:
 
     // load backend drivers
