@@ -847,15 +847,37 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 break;
 
             case MAV_CMD_PREFLIGHT_CALIBRATION:
-                if ((packet.param1 == 1 ||
-                     packet.param2 == 1) &&
-                    packet.param3 == 0) {
-                    startup_INS_ground(true);
+                if (packet.param1 == 1) {
+                    ins.init_gyro();
+                    if (ins.gyro_calibrated_ok_all()) {
+                        ahrs.reset_gyro_drift();
+                        result = MAV_RESULT_ACCEPTED;
+                    } else {
+                        result = MAV_RESULT_FAILED;
+                    }
+                } else if (packet.param3 == 1) {
+                    init_barometer();
                     result = MAV_RESULT_ACCEPTED;
                 } else if (packet.param4 == 1) {
                     trim_radio();
                     result = MAV_RESULT_ACCEPTED;
-                } else {
+                } else if (packet.param5 == 1) {
+                    float trim_roll, trim_pitch;
+                    AP_InertialSensor_UserInteract_MAVLink interact(this);
+                    if (g.skip_gyro_cal) {
+                        // start with gyro calibration, otherwise if the user
+                        // has SKIP_GYRO_CAL=1 they don't get to do it
+                        ins.init_gyro();
+                    }
+                    if(ins.calibrate_accel(&interact, trim_roll, trim_pitch)) {
+                        // reset ahrs's trim to suggested values from calibration routine
+                        ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
+                        result = MAV_RESULT_ACCEPTED;
+                    } else {
+                        result = MAV_RESULT_FAILED;
+                    }
+                }
+                else {
                     send_text_P(SEVERITY_LOW, PSTR("Unsupported preflight calibration"));
                 }
                 break;

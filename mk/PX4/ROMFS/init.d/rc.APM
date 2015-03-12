@@ -302,6 +302,10 @@ else
                echo "No MPU6000" >> $logfile
                sh /etc/init.d/rc.error
         fi
+        if hmc5883 -C -S -R 8 start
+        then
+               echo "Found SPI hmc5883"
+        fi
     else
         if mpu6000 start
         then
