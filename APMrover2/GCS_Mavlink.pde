@@ -546,6 +546,13 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 #endif
         break;
 
+    case MSG_EKF_STATUS_REPORT:
+#if AP_AHRS_NAVEKF_AVAILABLE
+        CHECK_PAYLOAD_SIZE(EKF_STATUS_REPORT);
+        ahrs.get_NavEKF().send_status_report(chan);
+#endif
+        break;
+
     case MSG_RETRY_DEFERRED:
     case MSG_TERRAIN:
     case MSG_OPTICAL_FLOW:
@@ -773,6 +780,7 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_SYSTEM_TIME);
         send_message(MSG_BATTERY2);
         send_message(MSG_MOUNT_STATUS);
+        send_message(MSG_EKF_STATUS_REPORT);
     }
 }
 
