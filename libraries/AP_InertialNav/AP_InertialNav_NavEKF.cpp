@@ -12,19 +12,10 @@
  */
 
 /**
- * initializes the object.
- */
-void AP_InertialNav_NavEKF::init()
-{
-    AP_InertialNav::init();
-}
-
-/**
    update internal state
 */
 void AP_InertialNav_NavEKF::update(float dt)
 {
-    AP_InertialNav::update(dt);
     _ahrs_ekf.get_NavEKF().getPosNED(_relpos_cm);
     _relpos_cm *= 100; // convert to cm
 
@@ -43,42 +34,32 @@ void AP_InertialNav_NavEKF::update(float dt)
  */
 nav_filter_status AP_InertialNav_NavEKF::get_filter_status() const
 {
-    if (_ahrs.have_inertial_nav()) {
-        nav_filter_status ret;
-        _ahrs_ekf.get_NavEKF().getFilterStatus(ret);
-        return ret;
-    }
-    return AP_InertialNav::get_filter_status();
+    nav_filter_status ret;
+    _ahrs_ekf.get_NavEKF().getFilterStatus(ret);
+    return ret;
 }
 
 /**
  * get_origin - returns the inertial navigation origin in lat/lon/alt
  */
-struct Location AP_InertialNav_NavEKF::get_origin() const {
-    if (_ahrs.have_inertial_nav()) {
-        struct Location ret;
-        if (!_ahrs_ekf.get_NavEKF().getOriginLLH(ret)) {
-            // initialise location to all zeros if origin not yet set
-            memset(&ret, 0, sizeof(ret));
-        }
-        return ret;
+struct Location AP_InertialNav_NavEKF::get_origin() const
+{
+    struct Location ret;
+    if (!_ahrs_ekf.get_NavEKF().getOriginLLH(ret)) {
+        // initialise location to all zeros if origin not yet set
+        memset(&ret, 0, sizeof(ret));
     }
-    return AP_InertialNav::get_origin();
+    return ret;
 }
 
 /**
  * get_position - returns the current position relative to the home location in cm.
  *
- * the home location was set with AP_InertialNav::set_home_position(int32_t, int32_t)
- *
  * @return
  */
 const Vector3f &AP_InertialNav_NavEKF::get_position(void) const 
 {
-    if (_ahrs.have_inertial_nav()) {
-        return _relpos_cm;
-    }
-    return AP_InertialNav::get_position();
+    return _relpos_cm;
 }
 
 /**
@@ -86,10 +67,7 @@ const Vector3f &AP_InertialNav_NavEKF::get_position(void) const
  */
 int32_t AP_InertialNav_NavEKF::get_latitude() const
 {
-    if (_ahrs.have_inertial_nav() && _haveabspos) {
-        return _abspos.lat;
-    }
-    return AP_InertialNav::get_latitude();
+    return _abspos.lat;
 }
 
 /**
@@ -98,36 +76,7 @@ int32_t AP_InertialNav_NavEKF::get_latitude() const
  */
 int32_t AP_InertialNav_NavEKF::get_longitude() const
 {
-    if (_ahrs.have_inertial_nav() && _haveabspos) {
-        return _abspos.lng;
-    }
-    return AP_InertialNav::get_longitude();
-}
-
-/**
- * get_latitude_diff - returns the current latitude difference from the home location.
- *
- * @return difference in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
- */
-float AP_InertialNav_NavEKF::get_latitude_diff() const
-{
-    if (_ahrs.have_inertial_nav()) {
-        return _relpos_cm.x / LATLON_TO_CM;
-    }
-    return AP_InertialNav::get_latitude_diff();
-}
-
-/**
- * get_longitude_diff - returns the current longitude difference from the home location.
- *
- * @return difference in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
- */
-float AP_InertialNav_NavEKF::get_longitude_diff() const
-{
-    if (_ahrs.have_inertial_nav()) {
-        return _relpos_cm.y / _lon_to_cm_scaling;
-    }
-    return AP_InertialNav::get_longitude_diff();
+    return _abspos.lng;
 }
 
 /**
@@ -140,10 +89,7 @@ float AP_InertialNav_NavEKF::get_longitude_diff() const
  */
 const Vector3f &AP_InertialNav_NavEKF::get_velocity() const
 {
-    if (_ahrs.have_inertial_nav()) {
-        return _velocity_cm;
-    }
-    return AP_InertialNav::get_velocity();
+    return _velocity_cm;
 }
 
 /**
@@ -153,10 +99,7 @@ const Vector3f &AP_InertialNav_NavEKF::get_velocity() const
  */
 float AP_InertialNav_NavEKF::get_velocity_xy() const
 {
-    if (_ahrs.have_inertial_nav()) {
-        return pythagorous2(_velocity_cm.x, _velocity_cm.y);
-    }
-    return AP_InertialNav::get_velocity_xy();
+    return pythagorous2(_velocity_cm.x, _velocity_cm.y);
 }
 
 /**
@@ -165,10 +108,7 @@ float AP_InertialNav_NavEKF::get_velocity_xy() const
  */
 float AP_InertialNav_NavEKF::get_altitude() const
 {
-    if (_ahrs.have_inertial_nav()) {
-        return _relpos_cm.z;
-    }
-    return AP_InertialNav::get_altitude();
+    return _relpos_cm.z;
 }
 
 /**
@@ -180,10 +120,7 @@ float AP_InertialNav_NavEKF::get_altitude() const
  */
 float AP_InertialNav_NavEKF::get_velocity_z() const
 {
-    if (_ahrs.have_inertial_nav()) {
-        return _velocity_cm.z;
-    }
-    return AP_InertialNav::get_velocity_z();
+    return _velocity_cm.z;
 }
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE

@@ -17,16 +17,10 @@ class AP_InertialNav_NavEKF : public AP_InertialNav
 public:
     // Constructor
     AP_InertialNav_NavEKF(AP_AHRS_NavEKF &ahrs, AP_Baro &baro, GPS_Glitch& gps_glitch) :
-        AP_InertialNav(ahrs, baro, gps_glitch),
+        AP_InertialNav(ahrs),
         _haveabspos(false),
         _ahrs_ekf(ahrs)
-        {
-        }
-
-    /**
-     * initializes the object.
-     */
-    void        init();
+        {}
 
     /**
        update internal state
@@ -64,20 +58,6 @@ public:
      * @return
      */
     int32_t     get_longitude() const;
-
-    /**
-     * get_latitude_diff - returns the current latitude difference from the home location.
-     *
-     * @return difference in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
-     */
-    float       get_latitude_diff() const;
-
-    /**
-     * get_longitude_diff - returns the current longitude difference from the home location.
-     *
-     * @return difference in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
-     */
-    float       get_longitude_diff() const;
 
     /**
      * get_velocity - returns the current velocity in cm/s
