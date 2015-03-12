@@ -350,7 +350,7 @@ void CompassCalibrator::calc_sphere_jacob(const Vector3f& sample, const param_t&
     float length = (softiron*(sample+offset)).length();
 
     // 0: radius
-    ret[0] = 1;
+    ret[0] = 1.0f;
     // 1-3: offsets
     ret[1] = -1.0f * (((diag.x    * A) + (offdiag.x * B) + (offdiag.y * C))/length);
     ret[2] = -1.0f * (((offdiag.x * A) + (diag.y    * B) + (offdiag.z * C))/length);
@@ -464,7 +464,7 @@ void CompassCalibrator::calc_ellipsoid_jacob(const Vector3f& sample, const param
     ret[4] = -1.0f * ((sample.y + offset.y) * B)/length;
     ret[5] = -1.0f * ((sample.z + offset.z) * C)/length;
     // 6-8: off-diagonals
-    ret[6] = -1.0f * (((sample.y + offset.y) * A) + ((sample.z + offset.z) * B))/length;
+    ret[6] = -1.0f * (((sample.y + offset.y) * A) + ((sample.x + offset.x) * B))/length;
     ret[7] = -1.0f * (((sample.z + offset.z) * A) + ((sample.x + offset.x) * C))/length;
     ret[8] = -1.0f * (((sample.z + offset.z) * B) + ((sample.y + offset.y) * C))/length;
 }
