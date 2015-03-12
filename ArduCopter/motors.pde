@@ -117,9 +117,6 @@ static bool init_arm_motors(bool arming_from_gcs)
     // disable cpu failsafe because initialising everything takes a while
     failsafe_disable();
 
-    // disable inertial nav errors temporarily
-    inertial_nav.ignore_next_error();
-
     // reset battery failsafe
     set_failsafe_battery(false);
 
@@ -161,9 +158,6 @@ static bool init_arm_motors(bool arming_from_gcs)
 
     // fast baro calibration to reset ground pressure
     init_barometer(false);
-
-    // reset inertial nav alt to zero
-    inertial_nav.set_altitude(0.0f);
 
     // go back to normal AHRS gains
     ahrs.set_fast_gains(false);
@@ -687,9 +681,6 @@ static void init_disarm_motors()
 #endif
 
     motors.armed(false);
-
-    // disable inertial nav errors temporarily
-    inertial_nav.ignore_next_error();
 
     // save offsets if automatic offset learning is on
     if (compass.learn_offsets_enabled()) {

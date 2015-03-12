@@ -87,8 +87,6 @@ static bool set_home(const Location& loc)
         if (g.compass_enabled) {
             compass.set_initial_location(gps.location().lat, gps.location().lng);
         }
-        // set inertial nav home
-        inertial_nav.setup_home_position();
         // update navigation scalers.  used to offset the shrinking longitude as we go towards the poles
         scaleLongDown = longitude_scale(loc);
         scaleLongUp   = 1.0f/scaleLongDown;

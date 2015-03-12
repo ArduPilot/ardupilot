@@ -208,9 +208,6 @@ static void init_ardupilot()
     // init the optical flow sensor
     init_optflow();
 
-    // initialise inertial nav
-    inertial_nav.init();
-
     // initialise camera mount
     camera_mount.init(serial_manager);
 
