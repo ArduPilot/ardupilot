@@ -119,10 +119,6 @@ void AP_Compass_PX4::read(void)
         _sum[i] /= _count[i];
         _sum[i] *= 1000;
 
-        // apply default board orientation for this compass type. This is
-        // a noop on most boards
-        _sum[i].rotate(MAG_BOARD_ORIENTATION);
-
         publish_field(_sum[i], _instance[i]);
     
         _sum[i].zero();
