@@ -114,7 +114,7 @@ static void disarm_if_autoland_complete()
         else if ((hasAutoDisarmed == false) &&
                 hal.scheduler->millis() >= (last_time_in_air + (uint32_t)g.land_disarm_delay*1000)) {
             // has at some point landed and we're still armed and the delay has passed
-            arming.disarm();
+            hal.util->set_soft_armed(false);
             gcs_send_text_P(SEVERITY_LOW,PSTR("Auto-Disarmed"));
             hasAutoDisarmed = true;
         }
