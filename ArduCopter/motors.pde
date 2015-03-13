@@ -1,9 +1,10 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define ARM_DELAY               20  // called at 10hz so 2 seconds
-#define DISARM_DELAY            20  // called at 10hz so 2 seconds
-#define AUTO_TRIM_DELAY         100 // called at 10hz so 10 seconds
-#define AUTO_DISARMING_DELAY    15  // called at 1hz so 15 seconds
+#define ARM_DELAY                   20  // called at 10hz so 2 seconds
+#define DISARM_DELAY                20  // called at 10hz so 2 seconds
+#define AUTO_TRIM_DELAY             100 // called at 10hz so 10 seconds
+#define AUTO_DISARMING_DELAY_LONG   15  // called at 1hz so 15 seconds
+#define AUTO_DISARMING_DELAY_SHORT   5  // called at 1hz so 5 seconds
 
 static uint8_t auto_disarming_counter;
 
@@ -71,17 +72,29 @@ static void arm_motors_check()
 // called at 1hz
 static void auto_disarm_check()
 {
-    // exit immediately if we are already disarmed or throttle is not zero
+
+    uint8_t delay;
+
+    // exit immediately if we are already disarmed or throttle output is not zero,
     if (!motors.armed() || !ap.throttle_zero) {
         auto_disarming_counter = 0;
         return;
     }
 
     // allow auto disarm in manual flight modes or Loiter/AltHold if we're landed
-    if (mode_has_manual_throttle(control_mode) || ap.land_complete) {
+    // always allow auto disarm if using interlock switch or motors are E-stopped
+    if (mode_has_manual_throttle(control_mode) || ap.land_complete || (ap.using_interlock && !ap.motor_interlock) || ap.motor_estop) {
         auto_disarming_counter++;
 
-        if(auto_disarming_counter >= AUTO_DISARMING_DELAY) {
+        // use a shorter delay if using throttle interlock switch or E-stop, because it is less
+        // obvious the copter is armed as the motors will not be spinning
+        if (ap.using_interlock || ap.motor_estop){
+            delay = AUTO_DISARMING_DELAY_SHORT;
+        } else {
+            delay = AUTO_DISARMING_DELAY_LONG;
+        }
+
+        if(auto_disarming_counter >= delay) {
             init_disarm_motors();
             auto_disarming_counter = 0;
         }
