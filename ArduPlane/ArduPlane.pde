@@ -1508,6 +1508,8 @@ static void update_flight_stage(void)
             } else {
                 set_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);
             }
+        } else {
+            set_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);
         }
         SpdHgt_Controller->update_pitch_throttle(relative_target_altitude_cm(),
                                                  target_airspeed_cm,
