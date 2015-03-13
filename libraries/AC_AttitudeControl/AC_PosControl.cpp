@@ -50,15 +50,11 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     AP_Param::setup_object_defaults(this, var_info);
 
     // initialise flags
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
-    _flags.slow_cpu = false;
-#else
-    _flags.slow_cpu = true;
-#endif
     _flags.recalc_leash_xy = true;
     _flags.recalc_leash_z = true;
     _flags.reset_desired_vel_to_pos = true;
     _flags.reset_rate_to_accel_xy = true;
+    _flags.reset_accel_to_lean_xy = true;
     _flags.reset_rate_to_accel_z = true;
     _flags.reset_accel_to_throttle = true;
 }
@@ -520,6 +516,7 @@ void AC_PosControl::init_xy_controller(bool reset_I)
     // flag reset required in rate to accel step
     _flags.reset_desired_vel_to_pos = true;
     _flags.reset_rate_to_accel_xy = true;
+    _flags.reset_accel_to_lean_xy = true;
 }
 
 /// update_xy_controller - run the horizontal position controller - should be called at 100hz or higher
@@ -571,6 +568,7 @@ void AC_PosControl::init_vel_controller_xyz()
     // flag reset required in rate to accel step
     _flags.reset_desired_vel_to_pos = true;
     _flags.reset_rate_to_accel_xy = true;
+    _flags.reset_accel_to_lean_xy = true;
 
     // set target position in xy axis
     const Vector3f& curr_pos = _inav.get_position();
@@ -803,6 +801,15 @@ void AC_PosControl::accel_to_lean_angles(float dt, float ekfNavVelGainScaler)
     float accel_right, accel_forward;
     float lean_angle_max = _attitude_control.lean_angle_max();
 
+    // reset accel to current desired acceleration
+    if (_flags.reset_accel_to_lean_xy) {
+        _accel_target_jerk_limited.x = _accel_target.x;
+        _accel_target_jerk_limited.y = _accel_target.y;
+        _accel_target_filtered.x = _accel_target.x;
+        _accel_target_filtered.y = _accel_target.y;
+        _flags.reset_accel_to_lean_xy = false;
+    }
+
     // apply jerk limit of 17 m/s^3 - equates to a worst case of about 100 deg/sec/sec
     float max_delta_accel = dt * POSCONTROL_JERK_LIMIT_CMSSS;
 
@@ -812,8 +819,8 @@ void AC_PosControl::accel_to_lean_angles(float dt, float ekfNavVelGainScaler)
 
     if(accel_change_length > max_delta_accel) {
         accel_change *= max_delta_accel/accel_change_length;
-        _accel_target_jerk_limited += accel_change;
     }
+    _accel_target_jerk_limited += accel_change;
 
     // 5Hz lowpass filter on NE accel
     float freq_cut = POSCONTROL_ACCEL_FILTER_HZ * ekfNavVelGainScaler;

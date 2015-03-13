@@ -263,15 +263,15 @@ private:
 
     // general purpose flags
     struct poscontrol_flags {
-            uint8_t recalc_leash_z  : 1;    // 1 if we should recalculate the z axis leash length
-            uint8_t recalc_leash_xy : 1;    // 1 if we should recalculate the xy axis leash length
-            uint8_t slow_cpu        : 1;    // 1 if we are running on a slow_cpu machine.  xy position control is broken up into multiple steps
-            uint8_t reset_desired_vel_to_pos: 1;    // 1 if we should reset the rate_to_accel_xy step
-            uint8_t reset_rate_to_accel_xy  : 1;    // 1 if we should reset the rate_to_accel_xy step
-            uint8_t reset_rate_to_accel_z   : 1;    // 1 if we should reset the rate_to_accel_z step
-            uint8_t reset_accel_to_throttle : 1;    // 1 if we should reset the accel_to_throttle step of the z-axis controller
-            uint8_t freeze_ff_xy    : 1;    // 1 use to freeze feed forward during step updates
-            uint8_t freeze_ff_z     : 1;    // 1 use to freeze feed forward during step updates
+            uint16_t recalc_leash_z     : 1;    // 1 if we should recalculate the z axis leash length
+            uint16_t recalc_leash_xy    : 1;    // 1 if we should recalculate the xy axis leash length
+            uint16_t reset_desired_vel_to_pos   : 1;    // 1 if we should reset the rate_to_accel_xy step
+            uint16_t reset_rate_to_accel_xy     : 1;    // 1 if we should reset the rate_to_accel_xy step
+            uint16_t reset_accel_to_lean_xy     : 1;    // 1 if we should reset the accel to lean angle step
+            uint16_t reset_rate_to_accel_z      : 1;    // 1 if we should reset the rate_to_accel_z step
+            uint16_t reset_accel_to_throttle    : 1;    // 1 if we should reset the accel_to_throttle step of the z-axis controller
+            uint16_t freeze_ff_xy       : 1;    // 1 use to freeze feed forward during step updates
+            uint16_t freeze_ff_z        : 1;    // 1 use to freeze feed forward during step updates
     } _flags;
 
     // limit flags structure
