@@ -144,6 +144,8 @@ extern const AP_HAL::HAL& hal;
 #define MPUREG_FIFO_COUNTL                              0x73
 #define MPUREG_FIFO_R_W                                 0x74
 #define MPUREG_WHOAMI                                   0x75
+#define MPUREG_WHOAMI_MPU9250                           0x71
+#define MPUREG_WHOAMI_MPU9255                           0x73
 
 
 // Configuration bits MPU 3000, MPU 6000 and MPU9250
@@ -213,9 +215,7 @@ bool AP_InertialSensor_MPU9250::_init_sensor(void)
     hal.scheduler->suspend_timer_procs();
 
     uint8_t whoami = _register_read(MPUREG_WHOAMI);
-    if (whoami != 0x71) {
-        // TODO: we should probably accept multiple chip
-        // revisions. This is the one on the PXF
+    if (whoami != MPUREG_WHOAMI_MPU9250 && whoami != MPUREG_WHOAMI_MPU9255) {
         hal.console->printf("MPU9250: unexpected WHOAMI 0x%x\n", (unsigned)whoami);
         return false;
     }
