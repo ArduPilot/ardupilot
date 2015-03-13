@@ -19,7 +19,7 @@ void AP_InertialNav_NavEKF::update(float dt)
     _ahrs_ekf.get_NavEKF().getPosNED(_relpos_cm);
     _relpos_cm *= 100; // convert to cm
 
-    _haveabspos = _ahrs.get_position(_abspos);
+    _haveabspos = _ahrs_ekf.get_position(_abspos);
 
     _ahrs_ekf.get_NavEKF().getVelNED(_velocity_cm);
     _velocity_cm *= 100; // convert to cm/s

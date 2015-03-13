@@ -7,7 +7,6 @@
 #include <AP_InertialSensor.h>          // ArduPilot Mega IMU Library
 #include <AP_Baro.h>                    // ArduPilot Mega Barometer Library
 #include <AP_Buffer.h>                  // FIFO buffer library
-#include <AP_GPS_Glitch.h>              // GPS Glitch detection library
 #include "../AP_NavEKF/AP_Nav_Common.h" // definitions shared by inertial and ekf nav filters
 
 /*
@@ -29,9 +28,7 @@ class AP_InertialNav
 public:
 
     // Constructor
-    AP_InertialNav(AP_AHRS &ahrs) :
-        _ahrs(ahrs)
-        {}
+    AP_InertialNav() {}
 
     /**
      * update - updates velocity and position estimates using latest info from accelerometers
@@ -112,10 +109,6 @@ public:
      * @return climbrate in cm/s (positive up)
      */
     virtual float       get_velocity_z() const = 0;
-
-protected:
-
-    AP_AHRS                &_ahrs;                      // reference to ahrs object
 };
 
 #if AP_AHRS_NAVEKF_AVAILABLE
