@@ -587,7 +587,6 @@ AP_SpdHgtControl::FlightStage flight_stage = AP_SpdHgtControl::FLIGHT_NORMAL;
 
 // probability of aircraft is currently in flight. range from 0 to 1 where 1 is 100% sure we're in flight
 static float isFlyingProbability = 0;
-static void determine_is_flying(void);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Loiter management
