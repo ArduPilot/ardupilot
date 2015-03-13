@@ -80,10 +80,10 @@ bool AP_Compass_PX4::init(void)
 	}
 
     for (uint8_t i=0; i<_num_sensors; i++) {
+        _instance[i] = register_compass();
+
         // get device id
         set_dev_id(_instance[i], ioctl(_mag_fd[i], DEVIOCGDEVICEID, 0));
-
-        _instance[i] = register_compass();
 
         // average over up to 20 samples
         if (ioctl(_mag_fd[i], SENSORIOCSQUEUEDEPTH, 20) != 0) {
