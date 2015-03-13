@@ -221,11 +221,7 @@ static void gcs_send_text_fmt(const prog_char_t *fmt, ...);
 ////////////////////////////////////////////////////////////////////////////////
 // Dataflash
 ////////////////////////////////////////////////////////////////////////////////
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-static DataFlash_APM2 DataFlash;
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
-static DataFlash_APM1 DataFlash;
-#elif defined(HAL_BOARD_LOG_DIRECTORY)
+#if defined(HAL_BOARD_LOG_DIRECTORY)
 static DataFlash_File DataFlash(HAL_BOARD_LOG_DIRECTORY);
 #else
 static DataFlash_Empty DataFlash;
@@ -273,10 +269,6 @@ static AP_Compass_HIL compass;
 static AP_Compass_AK8963_MPU9250 compass;
 #else
  #error Unrecognized CONFIG_COMPASS setting
-#endif
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-AP_ADC_ADS7844 apm1_adc;
 #endif
 
 AP_InertialSensor ins;
@@ -634,7 +626,7 @@ static uint32_t rtl_loiter_start_time;
 // Used to exit the roll and pitch auto trim function
 static uint8_t auto_trim_counter;
 
-// Reference to the relay object (APM1 -> PORTL 2) (APM2 -> PORTB 7)
+// Reference to the relay object
 static AP_Relay relay;
 
 // handle repeated servo and relay events
