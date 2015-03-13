@@ -26,7 +26,7 @@ static void sport_run()
     float takeoff_climb_rate = 0.0f;
 
     // if not armed or throttle at zero, set throttle to zero and exit immediately
-    if(!motors.armed() || g.rc_3.control_in <= 0) {
+    if(!motors.armed() || ap.throttle_zero) {
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(g.rc_3.control_in)-throttle_average);
         return;

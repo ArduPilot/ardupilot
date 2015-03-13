@@ -172,14 +172,19 @@ static void set_throttle_and_failsafe(uint16_t throttle_pwm)
 }
 
 #define THROTTLE_ZERO_DEBOUNCE_TIME_MS 400
-// set_throttle_zero_flag - set throttle_zero flag from debounced throttle control_in
+// set_throttle_zero_flag - set throttle_zero flag from debounced throttle control
+// throttle_zero is used to determine if the pilot intends to shut down the motors
+// Basically, this signals when we are not flying.  We are either on the ground
+// or the pilot has shut down the copter in the air and it is free-falling
 static void set_throttle_zero_flag(int16_t throttle_control)
 {
     static uint32_t last_nonzero_throttle_ms = 0;
     uint32_t tnow_ms = millis();
 
-    // if non-zero throttle immediately set as non-zero
-    if (throttle_control > 0) {
+    // if not using throttle interlock and non-zero throttle and not E-stopped,
+    // or using motor interlock and it's enabled, then motors are running, 
+    // and we are flying. Immediately set as non-zero
+    if ((!ap.using_interlock && (throttle_control > 0) && !ap.motor_estop) || (ap.using_interlock && ap.motor_interlock)) {
         last_nonzero_throttle_ms = tnow_ms;
         ap.throttle_zero = false;
     } else if (tnow_ms - last_nonzero_throttle_ms > THROTTLE_ZERO_DEBOUNCE_TIME_MS) {

@@ -353,7 +353,7 @@ static union {
         uint8_t motor_test          : 1; // 24      // true if we are currently performing the motors test
         uint8_t initialised         : 1; // 25      // true once the init_ardupilot function has completed.  Extended status to GCS is not sent until this completes
         uint8_t land_complete_maybe : 1; // 26      // true if we may have landed (less strict version of land_complete)
-        uint8_t throttle_zero       : 1; // 27      // true if the throttle stick is at zero, debounced
+        uint8_t throttle_zero       : 1; // 27      // true if the throttle stick is at zero, debounced, determines if pilot intends shut-down when not using motor interlock
         uint8_t system_time_set     : 1; // 28      // true if the system time has been set from the GPS
         uint8_t gps_base_pos_set    : 1; // 29      // true when the gps base position has been set (used for RTK gps only)
         enum HomeState home_state   : 2; // 30,31   // home status (unset, set, locked)
