@@ -324,7 +324,11 @@
 
 // use this to completely disable the CLI
 #ifndef CLI_ENABLED
+#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
 # define CLI_ENABLED ENABLED
+#else
+# define CLI_ENABLED DISABLED
+#endif
 #endif
 
 // if RESET_SWITCH_CH is not zero, then this is the PWM value on
