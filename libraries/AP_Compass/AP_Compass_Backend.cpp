@@ -23,12 +23,12 @@ void AP_Compass_Backend::publish_field(const Vector3f &mag, uint8_t instance)
     // a noop on most boards
     state.field.rotate(MAG_BOARD_ORIENTATION);
 
-    // add user selectable orientation
-    state.field.rotate((enum Rotation)state.orientation.get());
-
     if (!state.external) {
         // and add in AHRS_ORIENTATION setting if not an external compass
         state.field.rotate(_compass._board_orientation);
+    } else {
+        // add user selectable orientation
+        state.field.rotate((enum Rotation)state.orientation.get());
     }
 
     apply_corrections(state.field, instance);

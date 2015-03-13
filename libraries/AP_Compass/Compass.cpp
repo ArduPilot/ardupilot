@@ -304,6 +304,11 @@ Compass::init()
         // detect available backends. Only called once
         _detect_backends();
     }
+    if (_compass_count != 0) {
+        // get initial health status
+        hal.scheduler->delay(100);
+        read();
+    }
     return true;
 }
 
@@ -339,8 +344,10 @@ void
 Compass::_detect_backends(void)
 {
 
-// Values defined in AP_HAL/AP_HAL_Boards.h
-#if HAL_COMPASS_DEFAULT == HAL_COMPASS_HIL
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
+    _add_backend(AP_Compass_HMC5843::detect);
+    _add_backend(AP_Compass_AK8963_MPU9250::detect);
+#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_HIL
     _add_backend(AP_Compass_HIL::detect);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_HMC5843
     _add_backend(AP_Compass_HMC5843::detect);
@@ -373,8 +380,10 @@ Compass::read(void)
     for (uint8_t i=0; i< _backend_count; i++) {
         // call read on each of the backend. This call updates field[i]
         _backends[i]->read();
-        _state[i].healthy = (hal.scheduler->millis() - _state[i].last_update_ms < 500);
     }    
+    for (uint8_t i=0; i < COMPASS_MAX_INSTANCES; i++) {
+        _state[i].healthy = (hal.scheduler->millis() - _state[i].last_update_ms < 500);
+    }
     return healthy();
 }
 

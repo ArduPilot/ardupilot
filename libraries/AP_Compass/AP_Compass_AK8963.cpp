@@ -365,9 +365,6 @@ bool AP_Compass_AK8963::_self_test()
 
 bool AP_Compass_AK8963::init()
 {
-    // register the compass instance in the frontend
-    _compass_instance = register_compass();    
-
     hal.scheduler->suspend_timer_procs();
     if (!_backend->sem_take_blocking()) {
         error("_spi_sem->take failed\n");
@@ -421,6 +418,9 @@ bool AP_Compass_AK8963::init()
     _register_write(AK8963_CNTL1, AK8963_CONTINUOUS_MODE2 | _magnetometer_adc_resolution);
 
     _backend->sem_give();
+
+    // register the compass instance in the frontend
+    _compass_instance = register_compass();    
 
     hal.scheduler->resume_timer_procs();
     hal.scheduler->register_timer_process( AP_HAL_MEMBERPROC(&AP_Compass_AK8963::_update));

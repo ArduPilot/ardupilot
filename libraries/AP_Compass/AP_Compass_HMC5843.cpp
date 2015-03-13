@@ -336,8 +336,10 @@ AP_Compass_HMC5843::init()
                           calibration[0], calibration[1], calibration[2]);
 #endif
 
-    // register the compass instance in the frontend
-    _compass_instance = register_compass();
+    if (success) {
+        // register the compass instance in the frontend
+        _compass_instance = register_compass();
+    }
 
     return success;
 }

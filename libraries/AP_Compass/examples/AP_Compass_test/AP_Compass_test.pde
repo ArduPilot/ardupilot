@@ -39,8 +39,6 @@
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
-#define CONFIG_COMPASS HAL_COMPASS_DEFAULT
-
 static Compass compass;
 
 uint32_t timer;
