@@ -246,6 +246,9 @@ public:
     const Vector3f&   getHIL() const;
     void        _setup_earth_field();
 
+    // enable HIL mode
+    void        set_hil_mode(void) { _hil_mode = true; }
+
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -331,6 +334,9 @@ private:
         // when we last got data
         uint32_t    last_update_ms;
     } _state[COMPASS_MAX_INSTANCES];
+
+    // if we want HIL only
+    bool _hil_mode:1;
 };
 
 #include "AP_Compass_Backend.h"

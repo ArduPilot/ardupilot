@@ -280,7 +280,8 @@ Compass::Compass(void) :
     _thr_or_curr(0.0f),
     _backend_count(0),
     _compass_count(0),
-    _board_orientation(ROTATION_NONE)
+    _board_orientation(ROTATION_NONE),
+    _hil_mode(false)
 {
     AP_Param::setup_object_defaults(this, var_info);
     for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
@@ -343,6 +344,10 @@ Compass::_add_backend(AP_Compass_Backend *(detect)(Compass &))
 void 
 Compass::_detect_backends(void)
 {
+    if (_hil_mode) {
+        _add_backend(AP_Compass_HIL::detect);
+        return;
+    }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
     _add_backend(AP_Compass_HMC5843::detect);
