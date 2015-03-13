@@ -99,6 +99,7 @@ void AP_Baro::calibrate()
                 hal.scheduler->panic(PSTR("PANIC: AP_Baro::read unsuccessful "
                         "for more than 500ms in AP_Baro::calibrate [2]\r\n"));
             }
+            hal.scheduler->delay(10);
         } while (!healthy());
         hal.scheduler->delay(100);
     }
