@@ -45,7 +45,7 @@ AP_Baro baro;
 // GPS declaration
 static AP_GPS  gps;
 
-AP_Compass_HMC5843 compass;
+AP_Compass compass;
 AP_AHRS_DCM ahrs(ins, baro, gps);
 
 // global constants that control how many verify calls must be made for a command before it completes
