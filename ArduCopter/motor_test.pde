@@ -118,7 +118,6 @@ static uint8_t mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_se
             // disable throttle, battery and gps failsafe
             g.failsafe_throttle = FS_THR_DISABLED;
             g.failsafe_battery_enabled = FS_BATT_DISABLED;
-            g.failsafe_gps_enabled = FS_GPS_DISABLED;
             g.failsafe_gcs = FS_GCS_DISABLED;
 
             // turn on notify leds
@@ -160,7 +159,6 @@ static void motor_test_stop()
     // re-enable failsafes
     g.failsafe_throttle.load();
     g.failsafe_battery_enabled.load();
-    g.failsafe_gps_enabled.load();
     g.failsafe_gcs.load();
 
     // turn off notify leds

@@ -86,16 +86,6 @@ void set_failsafe_battery(bool b)
     AP_Notify::flags.failsafe_battery = b;
 }
 
-
-// ---------------------------------------------
-static void set_failsafe_gps(bool b)
-{
-    failsafe.gps = b;
-
-    // update AP_Notify
-    AP_Notify::flags.failsafe_gps = b;
-}
-
 // ---------------------------------------------
 static void set_failsafe_gcs(bool b)
 {

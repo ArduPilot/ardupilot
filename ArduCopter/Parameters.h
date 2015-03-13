@@ -135,7 +135,7 @@ public:
         k_param_geofence_limit,         // deprecated - remove
         k_param_altitude_limit,         // deprecated - remove
         k_param_fence,
-        k_param_gps_glitch,
+        k_param_gps_glitch,             // deprecated
         k_param_baro_glitch,            // 71 - deprecated
 
         //
@@ -258,7 +258,7 @@ public:
         k_param_rc_speed = 192,
         k_param_failsafe_battery_enabled,
         k_param_throttle_mid,
-        k_param_failsafe_gps_enabled,
+        k_param_failsafe_gps_enabled,   // remove
         k_param_rc_9,
         k_param_rc_12,
         k_param_failsafe_gcs,           // 198
@@ -342,7 +342,6 @@ public:
     AP_Float        fs_batt_voltage;            // battery voltage below which failsafe will be triggered
     AP_Float        fs_batt_mah;                // battery capacity (in mah) below which failsafe will be triggered
 
-    AP_Int8         failsafe_gps_enabled;       // gps failsafe enabled
     AP_Int8         failsafe_gcs;               // ground station failsafe behavior
     AP_Int16        gps_hdop_good;              // GPS Hdop value at or below this value represent a good position
 

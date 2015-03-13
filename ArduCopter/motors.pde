@@ -499,11 +499,6 @@ static bool pre_arm_gps_checks(bool display_failure)
     // check if flight mode requires GPS
     bool gps_required = mode_requires_GPS(control_mode);
 
-    // if GPS failsafe will triggers even in stabilize mode we need GPS before arming
-    if (g.failsafe_gps_enabled == FS_GPS_LAND_EVEN_STABILIZE) {
-        gps_required = true;
-    }
-
 #if AC_FENCE == ENABLED
     // if circular fence is enabled we need GPS
     if ((fence.get_enabled_fences() & AC_FENCE_TYPE_CIRCLE) != 0) {
@@ -515,15 +510,6 @@ static bool pre_arm_gps_checks(bool display_failure)
     if (!gps_required) {
         AP_Notify::flags.pre_arm_gps_check = true;
         return true;
-    }
-
-    // check GPS is not glitching
-    if (gps_glitch.glitching()) {
-        if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: GPS Glitch"));
-        }
-        AP_Notify::flags.pre_arm_gps_check = false;
-        return false;
     }
 
     // ensure GPS is ok

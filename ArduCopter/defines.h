@@ -320,11 +320,11 @@ enum FlipState {
 #define ERROR_SUBSYSTEM_OPTFLOW             4
 #define ERROR_SUBSYSTEM_FAILSAFE_RADIO      5
 #define ERROR_SUBSYSTEM_FAILSAFE_BATT       6
-#define ERROR_SUBSYSTEM_FAILSAFE_GPS        7
+#define ERROR_SUBSYSTEM_FAILSAFE_GPS        7   // not used
 #define ERROR_SUBSYSTEM_FAILSAFE_GCS        8
 #define ERROR_SUBSYSTEM_FAILSAFE_FENCE      9
 #define ERROR_SUBSYSTEM_FLIGHT_MODE         10
-#define ERROR_SUBSYSTEM_GPS                 11
+#define ERROR_SUBSYSTEM_GPS                 11  // not used
 #define ERROR_SUBSYSTEM_CRASH_CHECK         12
 #define ERROR_SUBSYSTEM_FLIP                13
 #define ERROR_SUBSYSTEM_AUTOTUNE            14
@@ -343,8 +343,6 @@ enum FlipState {
 #define ERROR_CODE_FAILSAFE_OCCURRED        1
 // subsystem specific error codes -- compass
 #define ERROR_CODE_COMPASS_FAILED_TO_READ   2
-// subsystem specific error codes -- gps
-#define ERROR_CODE_GPS_GLITCH               2
 // subsystem specific error codes -- main
 #define ERROR_CODE_MAIN_INS_DELAY           1
 // subsystem specific error codes -- crash checker

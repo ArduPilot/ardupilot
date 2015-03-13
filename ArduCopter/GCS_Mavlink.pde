@@ -43,7 +43,7 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     uint32_t custom_mode = control_mode;
 
     // set system as critical if any failsafe have triggered
-    if (failsafe.radio || failsafe.battery || failsafe.gps || failsafe.gcs || failsafe.ekf)  {
+    if (failsafe.radio || failsafe.battery || failsafe.gcs || failsafe.ekf)  {
         system_status = MAV_STATE_CRITICAL;
     }
 
@@ -197,7 +197,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
     if (g.compass_enabled && compass.healthy(0) && ahrs.use_compass()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_MAG;
     }
-    if (gps.status() > AP_GPS::NO_GPS && (!gps_glitch.glitching()||ap.usb_connected)) {
+    if (gps.status() > AP_GPS::NO_GPS) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_GPS;
     }
 #if OPTFLOW == ENABLED

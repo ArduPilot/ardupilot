@@ -115,13 +115,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(fs_batt_mah,            "FS_BATT_MAH", FS_BATT_MAH_DEFAULT),
 
-    // @Param: FS_GPS_ENABLE
-    // @DisplayName: GPS Failsafe Enable
-    // @Description: Controls what action will be taken if GPS signal is lost for at least 5 seconds
-    // @Values: 0:Disabled,1:Land,2:AltHold,3:Land even from Stabilize
-    // @User: Standard
-    GSCALAR(failsafe_gps_enabled, "FS_GPS_ENABLE", FS_GPS_LAND),
-
     // @Param: FS_GCS_ENABLE
     // @DisplayName: Ground Station Failsafe Enable
     // @Description: Controls whether failsafe will be invoked (and what action to take) when connection with Ground station is lost for at least 5 seconds. NB. The GCS Failsafe is only active when RC_OVERRIDE is being used to control the vehicle.
@@ -898,10 +891,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/AP_Rally/AP_Rally.cpp
     GOBJECT(rally,      "RALLY_",   AP_Rally),
 #endif
-
-    // @Group: GPSGLITCH_
-    // @Path: ../libraries/AP_GPS/AP_GPS_Glitch.cpp
-    GOBJECT(gps_glitch,      "GPSGLITCH_",   GPS_Glitch),
 
 #if FRAME_CONFIG ==     HELI_FRAME
     // @Group: H_
