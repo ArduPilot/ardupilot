@@ -260,9 +260,7 @@ bool AP_Arming::gps_checks(bool report)
 
         //GPS OK?
         if (home_is_set == HOME_UNSET || 
-            gps.status() < AP_GPS::GPS_OK_FIX_3D ||              
-            AP_Notify::flags.gps_glitching ||
-            AP_Notify::flags.failsafe_gps) {
+            gps.status() < AP_GPS::GPS_OK_FIX_3D) {
             if (report) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Bad GPS Position"));
             }
