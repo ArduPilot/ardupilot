@@ -46,13 +46,13 @@ static void read_control_switch()
                 }
             }
 
-            // set the debounced switch position
-            control_switch_state.debounced_switch_position = switch_position;
-
         } else if (control_switch_state.last_switch_position != -1) {
             // alert user to mode change failure
             AP_Notify::events.user_mode_change_failed = 1;
         }
+
+        // set the debounced switch position
+        control_switch_state.debounced_switch_position = switch_position;
     }
 
     control_switch_state.last_switch_position = switch_position;
