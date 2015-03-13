@@ -585,6 +585,10 @@ static bool throttle_suppressed;
 
 AP_SpdHgtControl::FlightStage flight_stage = AP_SpdHgtControl::FLIGHT_NORMAL;
 
+// probability of aircraft is currently in flight. range from 0 to 1 where 1 is 100% sure we're in flight
+static float isFlyingProbability = 0;
+static void determine_is_flying(void);
+
 ////////////////////////////////////////////////////////////////////////////////
 // Loiter management
 ////////////////////////////////////////////////////////////////////////////////
@@ -1023,6 +1027,9 @@ static void one_second_loop()
     mavlink_system.sysid = g.sysid_this_mav;
 
     update_aux();
+
+    // determine if we are flying or not
+    determine_is_flying();
 
     // update notify flags
     AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
@@ -1535,6 +1542,52 @@ static void update_flight_stage(void)
     // tell AHRS the airspeed to true airspeed ratio
     airspeed.set_EAS2TAS(barometer.get_EAS2TAS());
 }
+
+
+
+/*
+  Do we think we are flying?
+  Probabilistic method where a bool is low-passed and considered a probability.
+*/
+static void determine_is_flying(void)
+{
+    float aspeed;
+    bool isFlyingBool;
+
+    bool airspeedMovement = ahrs.airspeed_estimate(&aspeed) && (aspeed >= 5);
+
+    // If we don't have a GPS lock then don't use GPS for this test
+    bool gpsMovement = (gps.status() < AP_GPS::GPS_OK_FIX_2D ||
+                        gps.ground_speed() >= 5);
+
+
+    if(arming.is_armed()) {
+        // when armed, we need overwhelming evidence that we ARE NOT flying
+        isFlyingBool = airspeedMovement || gpsMovement;
+
+    } else {
+        // when disarmed, we need overwhelming evidence that we ARE flying
+        isFlyingBool = airspeedMovement && gpsMovement;
+    }
+
+    // low-pass the result.
+    isFlyingProbability = (0.6f * isFlyingProbability) + (0.4f * (float)isFlyingBool);
+}
+
+static bool is_flying(void)
+{
+    if(arming.is_armed()) {
+        // when armed, assume we're flying unless we probably aren't
+        return (isFlyingProbability >= 0.1f);
+    }
+    else
+    {
+        // when disarmed, assume we're not flying unless we probably are
+        return (isFlyingProbability >= 0.9f);
+    }
+
+}
+
 
 #if OPTFLOW == ENABLED
 // called at 50hz
