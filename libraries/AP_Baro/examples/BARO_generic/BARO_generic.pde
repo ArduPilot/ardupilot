@@ -37,8 +37,6 @@
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
-#define CONFIG_BARO HAL_BARO_DEFAULT
-
 static AP_Baro barometer;
 
 static uint32_t timer;
