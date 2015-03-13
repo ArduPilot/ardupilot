@@ -13,6 +13,7 @@ static void do_change_alt(const AP_Mission::Mission_Command& cmd);
 static void do_change_speed(const AP_Mission::Mission_Command& cmd);
 static void do_set_home(const AP_Mission::Mission_Command& cmd);
 static void do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd);
+static void do_loiter_to_alt(const AP_Mission::Mission_Command& cmd);
 static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
 #if CAMERA == ENABLED
 static void do_digicam_configure(const AP_Mission::Mission_Command& cmd);
@@ -77,6 +78,10 @@ start_command(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_NAV_LOITER_TIME:
         do_loiter_time(cmd);
+        break;
+
+    case MAV_CMD_NAV_LOITER_TO_ALT:
+        do_loiter_to_alt(cmd);
         break;
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
@@ -222,6 +227,9 @@ static bool verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_NAV_LOITER_TIME:
         return verify_loiter_time();
 
+    case MAV_CMD_NAV_LOITER_TO_ALT:
+        return verify_loiter_to_alt();
+
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
         return verify_RTL();
 
@@ -364,6 +372,32 @@ static void do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd)
 {
     next_WP_loc.alt = cmd.content.location.alt + home.alt;
     reset_offset_altitude();
+}
+
+static void do_loiter_to_alt(const AP_Mission::Mission_Command& cmd) 
+{
+    //set target alt  
+    next_WP_loc.alt = cmd.content.location.alt;
+
+    // convert relative alt to absolute alt
+    if (cmd.content.location.flags.relative_alt) {
+        next_WP_loc.flags.relative_alt = false;
+        next_WP_loc.alt += home.alt;
+    }
+
+    //I know I'm storing this twice -- I'm doing that on purpose -- 
+    //see verify_loiter_alt() function
+    condition_value = next_WP_loc.alt;
+    
+    //are lat and lon 0?  if so, don't change the current wp lat/lon
+    if (cmd.content.location.lat != 0 && cmd.content.location.lng != 0) {
+        set_next_WP(cmd.content.location);
+    }
+    //set loiter direction
+    loiter_set_direction_wp(cmd);
+
+    //must the plane be heading towards the next waypoint before breaking?
+    condition_value2 = LOWBYTE(cmd.p1);
 }
 
 /********************************************************************************/
@@ -510,6 +544,67 @@ static bool verify_loiter_turns()
         return true;
     }
     return false;
+}
+
+static bool verify_loiter_to_alt() {
+    update_loiter();
+
+    //has target altitude been reached?
+    if (condition_value != 0) {
+        if (fabs(condition_value - current_loc.alt) < 500) {
+            //Only have to reach the altitude once -- that's why I need
+            //this global condition variable.
+            //
+            //This is in case of altitude oscillation when still trying
+            //to reach the target heading.
+            condition_value = 0;
+        } else {
+            return false;
+        }
+    }
+    
+    //has target heading been reached?
+    if (condition_value2 != 0) {
+        //Get the lat/lon of next Nav waypoint after this one:
+        AP_Mission::Mission_Command next_nav_cmd;
+        if (! mission.get_next_nav_cmd(mission.get_current_nav_index() + 1,
+                                       next_nav_cmd)) {
+            //no next waypoint to shoot for -- go ahead and break out of loiter
+            return true;        
+        } 
+
+        // Bearing in radians
+        float bearing = (radians( (float)(get_bearing_cd(current_loc,next_nav_cmd.content.location)/100.0) ));
+
+        // Calculate heading
+        float heading = 5000;
+        if (((Compass &) compass).read()) {
+            const Matrix3f &m = ahrs.get_dcm_matrix();
+            heading = compass.calculate_heading(m);
+
+            //map heading to bearing's coordinate space:
+            if (heading < 0.0f) {
+                heading += 2.0f*PI;
+            }
+        }
+ 
+        // Check to see if the the plane is heading toward the land waypoint
+        //3 degrees = 0.0523598776 radians
+        if (fabs(bearing - heading) <= 0.0523598776f) {
+            //Want to head in a straight line from _here_ to the next waypoint.
+            //DON'T want to head in a line from the center of the loiter to 
+            //the next waypoint.
+            //Therefore: mark the "last" (next_wp_loc is about to be updated)
+            //wp lat/lon as the current location.
+            next_WP_loc = current_loc;
+
+            return true;
+        } else {
+            return false;
+        }
+    } 
+
+    return true;
 }
 
 static bool verify_RTL()
