@@ -94,29 +94,6 @@ void Buzzer::update()
                         break;
                 }
                 return;
-            case GPS_GLITCH:
-                // play bethoven's 5th type buzz (three fast, one long)
-                switch (_pattern_counter) {
-                    case 1:
-                    case 3:
-                    case 5:
-                    case 7:
-                        on(true);
-                        break;
-                    case 2:
-                    case 4:
-                    case 6:
-                        on(false);
-                        break;
-                    case 17:
-                        on(false);
-                        _pattern = NONE;
-                        break;
-                    default:
-                        // do nothing
-                        break;
-                }
-                return;
             case ARMING_BUZZ:
                 // record start time
                 if (_pattern_counter == 1) {
@@ -194,26 +171,6 @@ void Buzzer::update()
         }else{
             // single buzz when disarmed
             play_pattern(SINGLE_BUZZ);
-        }
-        return;
-    }
-
-    // check gps glitch
-    if (_flags.gps_glitching != AP_Notify::flags.gps_glitching) {
-        _flags.gps_glitching = AP_Notify::flags.gps_glitching;
-        if (_flags.gps_glitching) {
-            // gps glitch warning buzz
-            play_pattern(GPS_GLITCH);
-        }
-        return;
-    }
-
-    // check gps failsafe
-    if (_flags.failsafe_gps != AP_Notify::flags.failsafe_gps) {
-        _flags.failsafe_gps = AP_Notify::flags.failsafe_gps;
-        if (_flags.failsafe_gps) {
-            // gps glitch warning buzz
-            play_pattern(GPS_GLITCH);
         }
         return;
     }

@@ -195,10 +195,7 @@ void ExternalLED::update(void)
         if (AP_Notify::flags.failsafe_battery || AP_Notify::flags.failsafe_radio) {
             // radio or battery failsafe indicated by fast flashing
             set_pattern(FAST_FLASH);
-        }else if(AP_Notify::flags.failsafe_gps || AP_Notify::flags.gps_glitching)
-            // gps failsafe indicated by oscillating
-            set_pattern(OSCILLATE);
-        else{
+        } else {
             // otherwise do whatever the armed led is doing
             motor_led1(_flags.armedled_on);
             motor_led2(_flags.armedled_on);

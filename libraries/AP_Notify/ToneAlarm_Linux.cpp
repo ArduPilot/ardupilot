@@ -91,24 +91,6 @@ void ToneAlarm_Linux::update()
         }
     }
 
-    // check gps glitch
-    if (flags.gps_glitching != AP_Notify::flags.gps_glitching) {
-        flags.gps_glitching = AP_Notify::flags.gps_glitching;
-        if (flags.gps_glitching) {
-            // gps glitch warning tune
-            play_tune(TONE_GPS_WARNING_TUNE);
-        }
-    }
-
-    // check gps failsafe
-    if (flags.failsafe_gps != AP_Notify::flags.failsafe_gps) {
-        flags.failsafe_gps = AP_Notify::flags.failsafe_gps;
-        if (flags.failsafe_gps) {
-            // gps glitch warning tune
-            play_tune(TONE_GPS_WARNING_TUNE);
-        }
-    }
-
     // check parachute release
     if (flags.parachute_release != AP_Notify::flags.parachute_release) {
         flags.parachute_release = AP_Notify::flags.parachute_release;

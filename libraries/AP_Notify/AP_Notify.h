@@ -59,7 +59,6 @@ public:
     struct notify_flags_type {
         uint32_t initialising       : 1;    // 1 if initialising and copter should not be moved
         uint32_t gps_status         : 3;    // 0 = no gps, 1 = no lock, 2 = 2d lock, 3 = 3d lock, 4 = dgps lock, 5 = rtk lock
-        uint32_t gps_glitching      : 1;    // 1 if gps position is not good
         uint32_t armed              : 1;    // 0 = disarmed, 1 = armed
         uint32_t pre_arm_check      : 1;    // 0 = failing checks, 1 = passed
         uint32_t pre_arm_gps_check  : 1;    // 0 = failing pre-arm GPS checks, 1 = passed
@@ -67,7 +66,6 @@ public:
         uint32_t esc_calibration    : 1;    // 1 if calibrating escs
         uint32_t failsafe_radio     : 1;    // 1 if radio failsafe
         uint32_t failsafe_battery   : 1;    // 1 if battery failsafe
-        uint32_t failsafe_gps       : 1;    // 1 if gps failsafe
         uint32_t parachute_release  : 1;    // 1 if parachute is being released
         uint32_t ekf_bad            : 1;    // 1 if ekf is reporting problems
         uint32_t autopilot_mode     : 1;    // 1 if vehicle is in an autopilot flight mode (only used by OreoLEDs)
