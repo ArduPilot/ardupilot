@@ -255,6 +255,12 @@ float AP_Baro::get_calibration_temperature(uint8_t instance) const
  */
 void AP_Baro::init(void)
 {
+    if (_hil_mode) {
+        drivers[0] = new AP_Baro_HIL(*this);
+        _num_drivers = 1;
+        return;
+    }
+
 #if HAL_BARO_DEFAULT == HAL_BARO_PX4 || HAL_BARO_DEFAULT == HAL_BARO_VRBRAIN
     drivers[0] = new AP_Baro_PX4(*this);
     _num_drivers = 1;
