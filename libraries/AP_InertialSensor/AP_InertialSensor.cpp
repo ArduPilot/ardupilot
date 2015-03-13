@@ -391,6 +391,10 @@ void AP_InertialSensor::_add_backend(AP_InertialSensor_Backend *(detect)(AP_Iner
 void 
 AP_InertialSensor::_detect_backends(void)
 {
+    if (_hil_mode) {
+        _add_backend(AP_InertialSensor_HIL::detect);
+        return;
+    }
 #if HAL_INS_DEFAULT == HAL_INS_HIL
     _add_backend(AP_InertialSensor_HIL::detect);
 #elif HAL_INS_DEFAULT == HAL_INS_MPU6000
