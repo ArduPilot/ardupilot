@@ -358,6 +358,7 @@ static union {
         uint8_t gps_base_pos_set    : 1; // 29      // true when the gps base position has been set (used for RTK gps only)
         enum HomeState home_state   : 2; // 30,31   // home status (unset, set, locked)
         uint8_t motor_interlock     : 1; // 32      // motor interlock status, final control for motors on/off
+        uint8_t using_interlock     : 1; // 33      // aux switch motor interlock function is in use
     };
     uint32_t value;
 } ap;

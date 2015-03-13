@@ -146,3 +146,10 @@ void set_motor_interlock(bool b)
     }
 }
 
+void set_using_interlock(bool b)
+{
+    if(ap.using_interlock != b) {
+        ap.using_interlock = b;
+    }
+}
+
