@@ -220,7 +220,7 @@ static void init_ardupilot()
     // choose the nav controller
     set_nav_controller();
 
-    set_mode(MANUAL);
+    set_mode((FlightMode)g.initial_mode.get());
 
     // set the correct flight mode
     // ---------------------------

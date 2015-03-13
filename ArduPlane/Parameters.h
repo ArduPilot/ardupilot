@@ -272,6 +272,7 @@ public:
         k_param_flight_mode4,
         k_param_flight_mode5,
         k_param_flight_mode6,
+        k_param_initial_mode,
 
         //
         // 220: Waypoint data
@@ -407,6 +408,7 @@ public:
     AP_Int8 flight_mode4;
     AP_Int8 flight_mode5;
     AP_Int8 flight_mode6;
+    AP_Int8 initial_mode;
 
     // Navigational maneuvering limits
     //
