@@ -20,7 +20,6 @@
 #include <AP_Notify.h>
 #include <DataFlash.h>
 #include <AP_GPS.h>
-#include <AP_GPS_Glitch.h>      // GPS glitch protection library
 #include <AP_InertialSensor.h>
 #include <AP_ADC.h>
 #include <AP_ADC_AnalogSource.h>
