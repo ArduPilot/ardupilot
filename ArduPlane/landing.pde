@@ -52,11 +52,18 @@ static bool verify_land()
     */
     if (height <= g.land_flare_alt ||
         height <= auto_state.land_sink_rate * g.land_flare_sec ||
+        (!is_flying()) ||
         (!rangefinder_state.in_range && location_passed_point(current_loc, prev_WP_loc, next_WP_loc))) {
 
         if (!auto_state.land_complete) {
-            gcs_send_text_fmt(PSTR("Flare %.1fm sink=%.2f speed=%.1f"), 
+            if (!is_flying()) {
+                // if not flying while on approach then we have crashed instead of flared
+                gcs_send_text_P(SEVERITY_HIGH, PSTR("CRASH DETECTED!!!"));
+            }
+            else {
+                gcs_send_text_fmt(PSTR("Flare %.1fm sink=%.2f speed=%.1f"),
                               height, auto_state.land_sink_rate, gps.ground_speed());
+            }
         }
         auto_state.land_complete = true;
 
