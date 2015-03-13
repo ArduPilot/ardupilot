@@ -455,7 +455,8 @@ bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP
 {
     bool copy_location = false;
     bool copy_alt = false;
-    uint8_t num_turns, radius_m;    // used by MAV_CMD_NAV_LOITER_TURNS
+    uint8_t num_turns, radius_m; // used by MAV_CMD_NAV_LOITER_TURNS & _TO_ALT
+    uint8_t heading_req;         // used by MAV_CMD_NAV_LOITER_TO_ALT
 
     // command's position in mission list and mavlink id
     cmd.index = packet.seq;
@@ -515,6 +516,22 @@ bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP
 
     case MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT:           // MAV ID: 30
         copy_location = true;                           // only using alt
+        break;
+
+    case MAV_CMD_NAV_LOITER_TO_ALT:                     // MAV ID: 31
+        copy_location = true;
+
+        heading_req = packet.param1;                    //heading towards next waypoint required (0 = False)
+                      
+        cmd.content.location.flags.loiter_ccw = (packet.param2 < 0);
+        //Don't give users the impression I can set the radius size.
+        //I can only set the direction at this time and so can every 
+        //other command, despite what is implied (I'm looking at YOU
+        //NAV_LOITER_TURNS):
+        radius_m = 1; 
+        
+        cmd.p1 = (((uint16_t)radius_m)<<8) | (uint16_t)heading_req; // store "radius" in high byte of p1, heading_req in low byte of p1
+        
         break;
 
     case MAV_CMD_NAV_SPLINE_WAYPOINT:                   // MAV ID: 82
@@ -808,6 +825,16 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
 
     case MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT:           // MAV ID: 30
         copy_location = true;                           //only using alt.
+        break;
+
+    case MAV_CMD_NAV_LOITER_TO_ALT:                     // MAV ID: 31
+        copy_location = true;
+        packet.param1 = LOWBYTE(cmd.p1);                //heading towards next waypoint required (0 = False) 
+        packet.param2 = HIGHBYTE(cmd.p1);               //loiter radius(m)
+        if (cmd.content.location.flags.loiter_ccw) {
+            packet.param2 = -packet.param2;
+        }
+
         break;
 
     case MAV_CMD_NAV_SPLINE_WAYPOINT:                   // MAV ID: 82
