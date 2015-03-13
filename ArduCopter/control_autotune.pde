@@ -233,7 +233,7 @@ static bool autotune_start(bool ignore_checks)
     }
 
     // ensure throttle is above zero
-    if (g.rc_3.control_in <= 0) {
+    if (ap.throttle_zero) {
         return false;
     }
 
