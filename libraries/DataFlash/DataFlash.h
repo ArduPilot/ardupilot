@@ -21,10 +21,8 @@
 #endif
 
 
-#if HAL_CPU_CLASS < HAL_CPU_CLASS_75 && defined(APM_BUILD_DIRECTORY)
-  #if (APM_BUILD_TYPE(APM_BUILD_ArduCopter) || defined(__AVR_ATmega1280__))
-    #define DATAFLASH_NO_CLI
-  #endif
+#if HAL_CPU_CLASS < HAL_CPU_CLASS_75
+#define DATAFLASH_NO_CLI
 #endif
 
 class DataFlash_Class
