@@ -192,7 +192,7 @@ build_arducopter() {
             return
         }
 	make vrbrain-clean || return
-	for f in $frames quad-hil heli-hil; do
+	for f in $frames; do
 	    echo "Building ArduCopter VRBRAIN-$f binaries"
 	    ddir="$binaries/Copter/$hdate/VRX-$f"
 	    skip_build $tag $ddir && continue
