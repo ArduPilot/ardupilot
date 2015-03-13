@@ -54,20 +54,6 @@
 #error CONFIG_APM_HARDWARE option is depreated! use CONFIG_HAL_BOARD instead.
 #endif
 
-//////////////////////////////////////////////////////////////////////////////
-// HIL_MODE                                 OPTIONAL
-
-#ifndef HIL_MODE
- #define HIL_MODE        HIL_MODE_DISABLED
-#endif
-
-#if HIL_MODE != HIL_MODE_DISABLED       // we are in HIL mode
- #undef CONFIG_BARO
- #define CONFIG_BARO HAL_BARO_HIL
- #undef  CONFIG_COMPASS
- #define CONFIG_COMPASS HAL_COMPASS_HIL
-#endif
-
 #ifndef MAV_SYSTEM_ID
  # define MAV_SYSTEM_ID          1
 #endif

@@ -81,9 +81,9 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
         base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
     }
 
-#if HIL_MODE != HIL_MODE_DISABLED
-    base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
-#endif
+    if (g.hil_mode == 1) {
+        base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
+    }
 
     // we are armed if we are not initialising
     if (control_mode != INITIALISING && hal.util->get_soft_armed()) {
@@ -352,7 +352,6 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
 }
 
 
-#if HIL_MODE != HIL_MODE_DISABLED
 void NOINLINE send_servo_out(mavlink_channel_t chan)
 {
     // normalized values scaled to -10000 to 10000
@@ -372,12 +371,10 @@ void NOINLINE send_servo_out(mavlink_channel_t chan)
         0,
         receiver_rssi);
 }
-#endif
 
 static void NOINLINE send_radio_out(mavlink_channel_t chan)
 {
-#if HIL_MODE != HIL_MODE_DISABLED
-    if (!g.hil_servos) {
+    if (g.hil_mode==1 && !g.hil_servos) {
         mavlink_msg_servo_output_raw_send(
             chan,
             micros(),
@@ -392,7 +389,6 @@ static void NOINLINE send_radio_out(mavlink_channel_t chan)
             RC_Channel::rc_channel(7)->radio_out);
         return;
     }
-#endif
     mavlink_msg_servo_output_raw_send(
         chan,
         micros(),
@@ -425,31 +421,31 @@ static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
         barometer.get_climb_rate());
 }
 
-#if HIL_MODE != HIL_MODE_DISABLED
 /*
   keep last HIL_STATE message to allow sending SIM_STATE
  */
 static mavlink_hil_state_t last_hil_state;
-#endif
 
 // report simulator state
 static void NOINLINE send_simstate(mavlink_channel_t chan)
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
     sitl.simstate_send(chan);
-#elif HIL_MODE != HIL_MODE_DISABLED
-    mavlink_msg_simstate_send(chan,
-                              last_hil_state.roll,
-                              last_hil_state.pitch,
-                              last_hil_state.yaw,
-                              last_hil_state.xacc*0.001*GRAVITY_MSS,
-                              last_hil_state.yacc*0.001*GRAVITY_MSS,
-                              last_hil_state.zacc*0.001*GRAVITY_MSS,
-                              last_hil_state.rollspeed,
-                              last_hil_state.pitchspeed,
-                              last_hil_state.yawspeed,
-                              last_hil_state.lat,
-                              last_hil_state.lon);
+#else
+    if (g.hil_mode == 1) {
+        mavlink_msg_simstate_send(chan,
+                                  last_hil_state.roll,
+                                  last_hil_state.pitch,
+                                  last_hil_state.yaw,
+                                  last_hil_state.xacc*0.001f*GRAVITY_MSS,
+                                  last_hil_state.yacc*0.001f*GRAVITY_MSS,
+                                  last_hil_state.zacc*0.001f*GRAVITY_MSS,
+                                  last_hil_state.rollspeed,
+                                  last_hil_state.pitchspeed,
+                                  last_hil_state.yawspeed,
+                                  last_hil_state.lat,
+                                  last_hil_state.lon);
+    }
 #endif
 }
 
@@ -582,10 +578,10 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         break;
 
     case MSG_SERVO_OUT:
-#if HIL_MODE != HIL_MODE_DISABLED
-        CHECK_PAYLOAD_SIZE(RC_CHANNELS_SCALED);
-        send_servo_out(chan);
-#endif
+        if (g.hil_mode == 1) {
+            CHECK_PAYLOAD_SIZE(RC_CHANNELS_SCALED);
+            send_servo_out(chan);
+        }
         break;
 
     case MSG_RADIO_IN:
@@ -866,17 +862,17 @@ GCS_MAVLINK::data_stream_send(void)
     if (gcs_out_of_time) return;
 
     if (in_mavlink_delay) {
-#if HIL_MODE != HIL_MODE_DISABLED
-        // in HIL we need to keep sending servo values to ensure
-        // the simulator doesn't pause, otherwise our sensor
-        // calibration could stall
-        if (stream_trigger(STREAM_RAW_CONTROLLER)) {
-            send_message(MSG_SERVO_OUT);
+        if (g.hil_mode == 1) {
+            // in HIL we need to keep sending servo values to ensure
+            // the simulator doesn't pause, otherwise our sensor
+            // calibration could stall
+            if (stream_trigger(STREAM_RAW_CONTROLLER)) {
+                send_message(MSG_SERVO_OUT);
+            }
+            if (stream_trigger(STREAM_RC_CHANNELS)) {
+                send_message(MSG_RADIO_OUT);
+            }
         }
-        if (stream_trigger(STREAM_RC_CHANNELS)) {
-            send_message(MSG_RADIO_OUT);
-        }
-#endif
         // don't send any other stream types while in the delay callback
         return;
     }
@@ -1496,9 +1492,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-#if HIL_MODE != HIL_MODE_DISABLED
     case MAVLINK_MSG_ID_HIL_STATE:
     {
+        if (g.hil_mode != 1) {
+            break;
+        }
         mavlink_hil_state_t packet;
         mavlink_msg_hil_state_decode(msg, &packet);
 
@@ -1528,9 +1526,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         // m/s/s
         Vector3f accels;
-        accels.x = packet.xacc * (GRAVITY_MSS/1000.0);
-        accels.y = packet.yacc * (GRAVITY_MSS/1000.0);
-        accels.z = packet.zacc * (GRAVITY_MSS/1000.0);
+        accels.x = packet.xacc * GRAVITY_MSS*0.001f;
+        accels.y = packet.yacc * GRAVITY_MSS*0.001f;
+        accels.z = packet.zacc * GRAVITY_MSS*0.001f;
 
         ins.set_gyro(0, gyros);
         ins.set_accel(0, accels);
@@ -1547,7 +1545,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         }
         break;
     }
-#endif // HIL_MODE
 
 #if CAMERA == ENABLED
     case MAVLINK_MSG_ID_DIGICAM_CONFIGURE:

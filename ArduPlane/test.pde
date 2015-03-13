@@ -44,20 +44,14 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
 
     // Tests below here are for hardware sensors only present
     // when real sensors are attached or they are emulated
-#if HIL_MODE == HIL_MODE_DISABLED
- #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
     {"adc",                 test_adc},
- #endif
+#endif
     {"gps",                 test_gps},
     {"ins",                 test_ins},
     {"airspeed",    test_airspeed},
     {"airpressure", test_pressure},
     {"compass",             test_mag},
-#else
-    {"gps",                 test_gps},
-    {"ins",                 test_ins},
-    {"compass",             test_mag},
-#endif
     {"logging",             test_logging},
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     {"shell", 				test_shell},
@@ -539,8 +533,6 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 //-------------------------------------------------------------------------------------------
 // real sensors that have not been simulated yet go here
 
-#if HIL_MODE == HIL_MODE_DISABLED
-
 static int8_t
 test_airspeed(uint8_t argc, const Menu::arg *argv)
 {
@@ -593,7 +585,5 @@ test_pressure(uint8_t argc, const Menu::arg *argv)
         }
     }
 }
-
-#endif // HIL_MODE == HIL_MODE_DISABLED
 
 #endif // CLI_ENABLED

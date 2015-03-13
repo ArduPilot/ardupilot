@@ -898,7 +898,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(inverted_flight_ch,     "INVERTEDFLT_CH", 0),
 
-#if HIL_MODE != HIL_MODE_DISABLED
+    // @Param: HIL_MODE
+    // @DisplayName: HIL mode enable
+    // @Description: This enables and disables hardware in the loop mode. If HIL_MODE is 1 then on the next reboot all sensors are replaced with HIL sensors which come from the GCS.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    GSCALAR(hil_mode,               "HIL_MODE",      0),
+
     // @Param: HIL_SERVOS
     // @DisplayName: HIL Servos enable
     // @Description: This controls whether real servo controls are used in HIL mode. If you enable this then the APM will control the real servos in HIL mode. If disabled it will report servo values, but will not output to the real servos. Be careful that your motor and propeller are not connected if you enable this option.
@@ -914,7 +920,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Increment: 0.1
     // @User: Advanced
     GSCALAR(hil_err_limit,         "HIL_ERR_LIMIT",   5),
-#endif
 
     // @Param: RTL_AUTOLAND
     // @DisplayName: RTL auto land

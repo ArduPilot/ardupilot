@@ -858,10 +858,10 @@ static void ahrs_update()
     hal.util->set_soft_armed(arming.is_armed() &&
                    hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
 
-#if HIL_MODE != HIL_MODE_DISABLED
-    // update hil before AHRS update
-    gcs_update();
-#endif
+    if (g.hil_mode == 1) {
+        // update hil before AHRS update
+        gcs_update();
+    }
 
     ahrs.update();
 

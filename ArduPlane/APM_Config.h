@@ -8,15 +8,3 @@
 // longer valid! You should switch to using CONFIG_HAL_BOARD via the HAL_BOARD
 // flag in your local config.mk instead.
 
-// The following are the recommended settings for Xplane
-// simulation. Remove the leading "/* and trailing "*/" to enable:
-
-//#define HIL_MODE            HIL_MODE_DISABLED
-
-/*
- *  // HIL_MODE SELECTION
- *  //
- *  // Mavlink supports
- *  // 2. HIL_MODE_SENSORS: full sensor simulation
- *
- */

@@ -2,6 +2,7 @@
 
 #if LOGGING_ENABLED == ENABLED
 
+#if CLI_ENABLED == ENABLED
 // Code to Write and Read packets from DataFlash.log memory
 // Code to interact with the user to dump or erase logs
 
@@ -93,13 +94,6 @@ dump_log(uint8_t argc, const Menu::arg *argv)
     return 0;
 }
 
-static void do_erase_logs(void)
-{
-    gcs_send_text_P(SEVERITY_LOW, PSTR("Erasing logs"));
-    DataFlash.EraseAll();
-    gcs_send_text_P(SEVERITY_LOW, PSTR("Log erase complete"));
-}
-
 static int8_t
 erase_logs(uint8_t argc, const Menu::arg *argv)
 {
@@ -163,6 +157,16 @@ process_logs(uint8_t argc, const Menu::arg *argv)
     log_menu.run();
     return 0;
 }
+
+#endif // CLI_ENABLED == ENABLED
+
+static void do_erase_logs(void)
+{
+    gcs_send_text_P(SEVERITY_LOW, PSTR("Erasing logs"));
+    DataFlash.EraseAll();
+    gcs_send_text_P(SEVERITY_LOW, PSTR("Log erase complete"));
+}
+
 
 // Write an attitude packet
 static void Log_Write_Attitude(void)
@@ -453,6 +457,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     TECS_LOG_FORMAT(LOG_TECS_MSG)
 };
 
+#if CLI_ENABLED == ENABLED
 // Read the DataFlash.log memory : Packet Parser
 static void Log_Read(uint16_t log_num, int16_t start_page, int16_t end_page)
 {
@@ -466,6 +471,7 @@ static void Log_Read(uint16_t log_num, int16_t start_page, int16_t end_page)
                              print_flight_mode,
                              cliSerial);
 }
+#endif // CLI_ENABLED
 
 // start a new log
 static void start_logging() 

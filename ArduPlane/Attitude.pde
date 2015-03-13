@@ -951,16 +951,16 @@ static void set_servos(void)
     obc.check_crash_plane();
 #endif
 
-#if HIL_MODE != HIL_MODE_DISABLED
-    // get the servos to the GCS immediately for HIL
-    if (comm_get_txspace(MAVLINK_COMM_0) >= 
-        MAVLINK_MSG_ID_RC_CHANNELS_SCALED_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
-        send_servo_out(MAVLINK_COMM_0);
+    if (g.hil_mode == 1) {
+        // get the servos to the GCS immediately for HIL
+        if (comm_get_txspace(MAVLINK_COMM_0) >= 
+            MAVLINK_MSG_ID_RC_CHANNELS_SCALED_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
+            send_servo_out(MAVLINK_COMM_0);
+        }
+        if (!g.hil_servos) {
+            return;
+        }
     }
-    if (!g.hil_servos) {
-        return;
-    }
-#endif
 
     // send values to the PWM timers for output
     // ----------------------------------------

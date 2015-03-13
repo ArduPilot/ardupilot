@@ -83,6 +83,13 @@ static void init_ardupilot()
     //
     load_parameters();
 
+    if (g.hil_mode == 1) {
+        // set sensors to HIL mode
+        ins.set_hil_mode();
+        compass.set_hil_mode();
+        barometer.set_hil_mode();
+    }
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // this must be before BoardConfig.init() so if
     // BRD_SAFETYENABLE==0 then we don't have safety off yet
@@ -502,18 +509,14 @@ static void check_short_failsafe()
 
 static void startup_INS_ground(void)
 {
-#if HIL_MODE != HIL_MODE_DISABLED
-    while (barometer.get_last_update() == 0) {
-        // the barometer begins updating when we get the first
-        // HIL_STATE message
-        gcs_send_text_P(SEVERITY_LOW, PSTR("Waiting for first HIL_STATE message"));
-        hal.scheduler->delay(1000);
+    if (g.hil_mode == 1) {
+        while (barometer.get_last_update() == 0) {
+            // the barometer begins updating when we get the first
+            // HIL_STATE message
+            gcs_send_text_P(SEVERITY_LOW, PSTR("Waiting for first HIL_STATE message"));
+            hal.scheduler->delay(1000);
+        }
     }
-    
-    // set INS to HIL mode
-    ins.set_hil_mode();
-    barometer.set_hil_mode();
-#endif
 
     AP_InertialSensor::Start_style style;
     if (g.skip_gyro_cal) {
@@ -649,14 +652,12 @@ static void print_comma(void)
  */
 static void servo_write(uint8_t ch, uint16_t pwm)
 {
-#if HIL_MODE != HIL_MODE_DISABLED
-    if (!g.hil_servos) {
+    if (g.hil_mode==1 && !g.hil_servos) {
         if (ch < 8) {
             RC_Channel::rc_channel(ch)->radio_out = pwm;
         }
         return;
     }
-#endif
     hal.rcout->enable_ch(ch);
     hal.rcout->write(ch, pwm);
 }

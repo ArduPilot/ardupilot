@@ -47,12 +47,6 @@ enum gcs_failsafe {
 #define T6 1000000
 #define T7 10000000
 
-// HIL enumerations. Note that HIL_MODE_ATTITUDE and HIL_MODE_SENSORS
-// are now the same thing, and are sensors based. The old define is
-// kept to allow old APM_Config.h headers to keep working
-#define HIL_MODE_DISABLED                       0
-#define HIL_MODE_SENSORS                        1
-
 enum FlightMode {
     MANUAL        = 0,
     CIRCLE        = 1,
