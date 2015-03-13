@@ -14,9 +14,9 @@ class AP_Compass_HMC5843 : public AP_Compass_Backend
 private:
     float               calibration[3];
     bool                _initialised;
-    virtual bool        read_raw(void);
+    bool                read_raw(void);
     uint8_t             _base_config;
-    virtual bool        re_initialise(void);
+    bool                re_initialise(void);
     bool                read_register(uint8_t address, uint8_t *value);
     bool                write_register(uint8_t address, uint8_t value);
     uint32_t            _retry_time; // when unhealthy the millis() value to retry at

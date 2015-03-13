@@ -25,10 +25,6 @@ private:
     Vector3f _sum[COMPASS_MAX_INSTANCES];
     uint32_t _count[COMPASS_MAX_INSTANCES];
     uint64_t _last_timestamp[COMPASS_MAX_INSTANCES];
-
-    virtual bool        read_raw(void) { return false;}
-    virtual bool        re_initialise(void) {return false;}
-
 };
 
 #endif // AP_Compass_PX4_H
