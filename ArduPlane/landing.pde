@@ -42,13 +42,14 @@ static bool verify_land()
     // low pass the sink rate to take some of the noise out
     auto_state.land_sink_rate = 0.8f * auto_state.land_sink_rate + 0.2f*sink_rate;
     
-    /* Set land_complete (which starts the flare) under 3 conditions:
+    /* Set land_complete (which starts the flare) under 4 conditions:
        1) we are within LAND_FLARE_ALT meters of the landing altitude
        2) we are within LAND_FLARE_SEC of the landing point vertically
           by the calculated sink rate
        3) we have gone past the landing point and don't have
           rangefinder data (to prevent us keeping throttle on 
           after landing if we've had positive baro drift)
+       4) we have detected a crash before reaching the land waypoint
     */
     if (get_distance(current_loc, next_WP_loc) > 15)
     {
