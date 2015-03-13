@@ -27,7 +27,8 @@ extern const AP_HAL::HAL& hal;
 
 // constructor
 AP_Compass_HIL::AP_Compass_HIL(Compass &compass):
-    AP_Compass_Backend(compass)    
+    AP_Compass_Backend(compass),
+    _compass_instance(0)
 {
     _compass._setup_earth_field();
 }

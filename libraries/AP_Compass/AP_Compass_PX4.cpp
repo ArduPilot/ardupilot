@@ -43,8 +43,10 @@ extern const AP_HAL::HAL& hal;
 
 // constructor
 AP_Compass_PX4::AP_Compass_PX4(Compass &compass):
-    AP_Compass_Backend(compass)
-{}
+    AP_Compass_Backend(compass),
+    _num_sensors(0)
+{
+}
 
 // detect the sensor
 AP_Compass_Backend *AP_Compass_PX4::detect(Compass &compass)
@@ -91,7 +93,7 @@ bool AP_Compass_PX4::init(void)
 
         // remember if the compass is external
         set_external(_instance[i], ioctl(_mag_fd[i], MAGIOCGEXTERNAL, 0) > 0);
-        _count[0] = 0;
+        _count[i] = 0;
         _sum[i].zero();
     }
 

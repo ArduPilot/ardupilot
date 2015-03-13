@@ -286,7 +286,11 @@ bool AP_Compass_AK8963_MPU9250::read_raw()
 
 AP_Compass_AK8963::AP_Compass_AK8963(Compass &compass) : 
     AP_Compass_Backend(compass),    
-    _backend(NULL)
+    _backend(NULL),
+    _initialised(false),
+    _state(CONVERSION),
+    _last_update_timestamp(0),
+    _last_accum_time(0)
 {
     _initialised = false;
     _mag_x_accum =_mag_y_accum = _mag_z_accum = 0;
