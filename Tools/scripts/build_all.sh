@@ -19,7 +19,7 @@ popd
 
 echo "Testing ArduCopter build"
 pushd ArduCopter
-for b in all sitl linux; do
+for b in sitl linux; do
     pwd
     make clean
     make $b -j4
