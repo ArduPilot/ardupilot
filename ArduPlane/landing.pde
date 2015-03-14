@@ -51,10 +51,8 @@ static bool verify_land()
           after landing if we've had positive baro drift)
        4) we have detected a crash before reaching the land waypoint
     */
-    if (get_distance(current_loc, next_WP_loc) > 15)
-    {
-        if (!is_flying())
-        {
+    if (get_distance(current_loc, next_WP_loc) > 15) {
+        if (!is_flying()) {
             if (!auto_state.land_complete) {
                 // if not flying while on approach then we have crashed instead of flared
                 gcs_send_text_P(SEVERITY_HIGH, PSTR("CRASH DETECTED!!!"));
