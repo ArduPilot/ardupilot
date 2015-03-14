@@ -864,6 +864,10 @@ def setup_rc(mavproxy):
     # zero throttle
     mavproxy.send('rc 3 1000\n')
 
+def wait_seconds(mav, wait_time_sec):
+    tstart = time.time()
+    while time.time() < tstart + wait_time_sec:
+        m = mav.recv_match(type='VFR_HUD', blocking=True)
 
 def fly_ArduCopter(viewerip=None, map=False):
     '''fly ArduCopter in SIL
@@ -945,6 +949,9 @@ def fly_ArduCopter(viewerip=None, map=False):
         mav.wait_heartbeat()
         setup_rc(mavproxy)
         homeloc = mav.location()
+
+        # wait 10sec to allow EKF to settle
+        wait_seconds(mav, 10)
 
         # Arm
         print("# Arm motors")
