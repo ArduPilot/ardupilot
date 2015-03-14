@@ -48,6 +48,7 @@
 #include <AP_GPS.h>
 #include <AP_InertialSensor.h>
 #include <AP_BattMonitor.h>
+#include <AP_Rally.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 AP_ADC_ADS7844 apm1_adc;
