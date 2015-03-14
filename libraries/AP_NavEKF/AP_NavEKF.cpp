@@ -4043,9 +4043,9 @@ void NavEKF::readHgtData()
 // check for new magnetometer data and update store measurements if available
 void NavEKF::readMagData()
 {
-    if (use_compass() && _ahrs->get_compass()->last_update != lastMagUpdate) {
+    if (use_compass() && _ahrs->get_compass()->last_update_usec() != lastMagUpdate) {
         // store time of last measurement update
-        lastMagUpdate = _ahrs->get_compass()->last_update;
+        lastMagUpdate = _ahrs->get_compass()->last_update_usec();
 
         // read compass data and scale to improve numerical conditioning
         magData = _ahrs->get_compass()->get_field() * 0.001f;

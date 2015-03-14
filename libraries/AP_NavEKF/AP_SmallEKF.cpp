@@ -626,9 +626,9 @@ void SmallEKF::readMagData()
 {
     if (_ahrs.get_compass() && 
         _ahrs.get_compass()->use_for_yaw() && 
-        _ahrs.get_compass()->last_update != lastMagUpdate) {
+        _ahrs.get_compass()->last_update_usec() != lastMagUpdate) {
         // store time of last measurement update
-        lastMagUpdate = _ahrs.get_compass()->last_update;
+        lastMagUpdate = _ahrs.get_compass()->last_update_usec();
 
         // read compass data and scale to improve numerical conditioning
         magData = _ahrs.get_compass()->get_field() * 0.001f;
