@@ -415,6 +415,9 @@ private:
     // returns true when baro ground effect compensation is required
     bool getGndEffectMode(void);
 
+    // Assess GPS data quality and return true if good enough to align the EKF
+    bool calcGpsGoodToAlign(void);
+
     // EKF Mavlink Tuneable Parameters
     AP_Float _gpsHorizVelNoise;     // GPS horizontal velocity measurement noise : m/s
     AP_Float _gpsVertVelNoise;      // GPS vertical velocity measurement noise : m/s
@@ -617,6 +620,7 @@ private:
     uint32_t startTimeTO_ms;        // time in msec that the takeoff condition started - used to compensate for ground effect on baro height
     uint32_t startTimeLAND_ms;      // time in msec that the landing condition started - used to compensate for ground effect on baro height
     float gpsSpdAccuracy;           // estimated speed accuracy in m/s returned by the UBlox GPS receiver
+    uint32_t lastGpsVelFail_ms;     // time of last GPS vertical velocity consistency check fail
 
     // Used by smoothing of state corrections
     Vector10 gpsIncrStateDelta;    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next GPS measurement

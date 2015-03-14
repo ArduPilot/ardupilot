@@ -3951,6 +3951,7 @@ void NavEKF::readIMUData()
 // check for new valid GPS data and update stored measurement if available
 void NavEKF::readGpsData()
 {
+    bool goodToAlign = false;
     // check for new GPS data
     if ((_ahrs->get_gps().last_message_time_ms() != lastFixTime_ms) &&
             (_ahrs->get_gps().status() >= AP_GPS::GPS_OK_FIX_3D))
@@ -3994,27 +3995,37 @@ void NavEKF::readGpsData()
             }
         }
 
+        // Monitor quality of the GPS velocity data for alignment
+        goodToAlign = calcGpsGoodToAlign();
+
         // read latitutde and longitude from GPS and convert to local NE position relative to the stored origin
         // If we don't have an origin, then set it to the current GPS coordinates
         const struct Location &gpsloc = _ahrs->get_gps().location();
         if (validOrigin) {
             gpsPosNE = location_diff(EKF_origin, gpsloc);
-        } else {
+        } else if (goodToAlign){
+            // Set the NE origin to the current GPS position
             setOrigin();
+            // Set the height of the NED origin to ‘height of baro height datum relative to GPS height datum'
+            EKF_origin.alt = gpsloc.alt - hgtMea;
+            // We are by definition at the origin at the instant of alignment so set NE position to zero
             gpsPosNE.zero();
+            // If the vehicle is in flight (use arm status to determine) and GPS useage isn't explicitly prohibited, we switch to absolute position mode
+            if (vehicleArmed && _fusionModeGPS != 3) {
+                constPosMode = false;
+                PV_AidingMode = AID_ABSOLUTE;
+                // Initialise EKF position and velocity states
+                ResetPosition();
+                ResetVelocity();
+            }
         }
-
-        // Set the height of the NED origin to ‘height of baro height datum relative to GPS height datum'
-        // This is only updated before arming as we need a stable reference after arming.
-        // TODO - extend this update origin height during flight after defining acceptable level of noise and implementing filtering
-        if (!vehicleArmed) EKF_origin.alt = gpsloc.alt - hgtMea;
 
         // calculate a position offset which is applied to NE position and velocity wherever it is used throughout code to allow GPS position jumps to be accommodated gradually
         decayGpsOffset();
     }
 
-    // If no previous GPS lock or told not to use it, we declare the  GPS unavailable available for use
-    if ((_ahrs->get_gps().status() < AP_GPS::GPS_OK_FIX_3D) || _fusionModeGPS == 3) {
+    // If no previous GPS lock or told not to use it, or EKF origin not set, we declare the  GPS unavailable for use
+    if ((_ahrs->get_gps().status() < AP_GPS::GPS_OK_FIX_3D) || _fusionModeGPS == 3 || !validOrigin) {
         gpsNotAvailable = true;
     } else {
         gpsNotAvailable = false;
@@ -4342,6 +4353,7 @@ void NavEKF::InitialiseVariables()
     prevFlowFuseTime_ms = imuSampleTime_ms;
     gndHgtValidTime_ms = 0;
     ekfStartTime_ms = imuSampleTime_ms;
+    lastGpsVelFail_ms = 0;
 
     // initialise other variables
     gpsNoiseScaler = 1.0f;
@@ -4754,5 +4766,42 @@ void NavEKF::setGndEffectMode(bool setMode)
     }
 }
 
+// Monitor GPS data to see if quality is good enough to initialise the EKF
+// Return true if all criteria pass for 10 seconds
+bool NavEKF::calcGpsGoodToAlign(void)
+{
+    // calculate absolute difference between GPS vert vel and inertial vert vel
+    float velDiffAbs;
+    if (_ahrs->get_gps().have_vertical_velocity()) {
+        velDiffAbs = fabsf(velNED.z - state.velocity.z);
+    } else {
+        velDiffAbs = 0.0f;
+    }
+    // fail if velocity difference or reported speed accuracy greater than threshold
+    bool gpsVelFail = (velDiffAbs > 1.0f) || (gpsSpdAccuracy > 1.0f);
+    // fail if not enough sats
+    bool numSatsFail = _ahrs->get_gps().num_sats() < 6;
+    // fail if horiziontal position accuracy not sufficient
+    float hAcc = 0.0f;
+    bool hAccFail;
+    if (_ahrs->get_gps().horizontal_accuracy(hAcc)) {
+        hAccFail = hAcc > 5.0f;
+    } else {
+        hAccFail =  false;
+    }
+    // record time of fail
+    // assume  fail first time called
+    if (gpsVelFail || numSatsFail || hAccFail || lastGpsVelFail_ms == 0) {
+        lastGpsVelFail_ms = imuSampleTime_ms;
+    }
+    // DEBUG PRINT
+    //hal.console->printf("velDiff = %5.2f, nSats = %i, hAcc = %5.2f, sAcc = %5.2f, delTime = %i\n", velDiffAbs, _ahrs->get_gps().num_sats(), hAcc, gpsSpdAccuracy, imuSampleTime_ms - lastGpsVelFail_ms);
+    // continuous period without fail required to return healthy
+    if (imuSampleTime_ms - lastGpsVelFail_ms > 10000) {
+        return true;
+    } else {
+        return false;
+    }
+}
 
 #endif // HAL_CPU_CLASS
