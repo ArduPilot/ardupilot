@@ -275,7 +275,7 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
 // their values.
 //
 Compass::Compass(void) :
-    last_update(0),
+    _last_update_usec(0),
     _null_init_done(false),
     _thr_or_curr(0.0f),
     _backend_count(0),

@@ -47,8 +47,6 @@ class Compass
 {
 friend class AP_Compass_Backend;
 public:
-    uint32_t last_update;               //< micros() time of last update
-
     /// Constructor
     ///
     Compass();
@@ -233,6 +231,8 @@ public:
     // enable HIL mode
     void        set_hil_mode(void) { _hil_mode = true; }
 
+    // return last update time in microseconds
+    uint32_t last_update_usec(void) const { return _last_update_usec; }
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -253,6 +253,8 @@ private:
     void _add_backend(AP_Compass_Backend *(detect)(Compass &));
     void _detect_backends(void);
 
+    //< micros() time of last update
+    uint32_t _last_update_usec;
 
     // backend objects
     AP_Compass_Backend *_backends[COMPASS_MAX_BACKEND];

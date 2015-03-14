@@ -389,8 +389,6 @@ void AP_Compass_HMC5843::read()
 	_accum_count = 0;
 	_mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
 
-    _compass.last_update = hal.scheduler->micros(); // record time of update
-
     // rotate to the desired orientation
     if (_product_id == AP_COMPASS_TYPE_HMC5883L) {
         field.rotate(ROTATION_YAW_90);
