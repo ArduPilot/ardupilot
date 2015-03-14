@@ -50,7 +50,7 @@ void setup() {
         hal.console->println("compass initialisation failed!");
         while (1) ;
     }
-    hal.console->println("init done");
+    hal.console->printf("init done - %u compasses detected\n", compass.get_count());
 
     compass.set_and_save_offsets(0,0,0,0); // set offsets to account for surrounding interference
     compass.set_declination(ToRad(0.0)); // set local difference between magnetic north and true north
