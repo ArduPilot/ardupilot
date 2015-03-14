@@ -929,7 +929,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(rtl_autoland,         "RTL_AUTOLAND",   0),
 
     // @Param: RC_TRIM_AT_START
-    // @DisplayNmae: RC Trims auto set at start.
+    // @DisplayName: RC Trims auto set at start.
     // @Description: Automatically set roll/pitch trim from Tx at ground start. This makes the assumption that the RC transmitter has not been altered since trims were last captured.
     // @Values: 0:Disable,1:Enable
     // @User: Standard
