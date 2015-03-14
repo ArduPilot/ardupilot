@@ -42,33 +42,35 @@ static bool verify_land()
     // low pass the sink rate to take some of the noise out
     auto_state.land_sink_rate = 0.8f * auto_state.land_sink_rate + 0.2f*sink_rate;
     
-    /* Set land_complete (which starts the flare) under 3 conditions:
+    /* Set land_complete (which starts the flare) under 4 conditions:
        1) we are within LAND_FLARE_ALT meters of the landing altitude
        2) we are within LAND_FLARE_SEC of the landing point vertically
           by the calculated sink rate
        3) we have gone past the landing point and don't have
           rangefinder data (to prevent us keeping throttle on 
           after landing if we've had positive baro drift)
+       4) we have detected a crash before reaching the land waypoint
     */
-    if (height <= g.land_flare_alt ||
+    if (get_distance(current_loc, next_WP_loc) > 15) {
+        if (!is_flying()) {
+            if (!auto_state.land_complete) {
+                // if not flying while on approach then we have crashed instead of flared
+                gcs_send_text_P(SEVERITY_HIGH, PSTR("CRASH DETECTED!!!"));
+            }
+            auto_state.land_complete = true;
+            reload_airspeed_params();
+        }
+    }
+    else if (height <= g.land_flare_alt ||
         height <= auto_state.land_sink_rate * g.land_flare_sec ||
         (!rangefinder_state.in_range && location_passed_point(current_loc, prev_WP_loc, next_WP_loc))) {
 
         if (!auto_state.land_complete) {
-            gcs_send_text_fmt(PSTR("Flare %.1fm sink=%.2f speed=%.1f"), 
+            gcs_send_text_fmt(PSTR("Flare %.1fm sink=%.2f speed=%.1f"),
                               height, auto_state.land_sink_rate, gps.ground_speed());
         }
         auto_state.land_complete = true;
-
-        if (gps.ground_speed() < 3) {
-            // reload any airspeed or groundspeed parameters that may have
-            // been set for landing. We don't do this till ground
-            // speed drops below 3.0 m/s as otherwise we will change
-            // target speeds too early.
-            g.airspeed_cruise_cm.load();
-            g.min_gndspeed_cm.load();
-            aparm.throttle_cruise.load();
-        }
+        reload_airspeed_params();
     }
 
     /*
@@ -91,6 +93,19 @@ static bool verify_land()
     return false;
 }
 
+void reload_airspeed_params()
+{
+    if (gps.ground_speed() < 3) {
+        // reload any airspeed or groundspeed parameters that may have
+        // been set for landing. We don't do this till ground
+        // speed drops below 3.0 m/s as otherwise we will change
+        // target speeds too early.
+        g.airspeed_cruise_cm.load();
+        g.min_gndspeed_cm.load();
+        aparm.throttle_cruise.load();
+    }
+
+}
 
 /*
   a special glide slope calculation for the landing approach
