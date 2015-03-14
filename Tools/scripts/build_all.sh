@@ -58,7 +58,7 @@ done
 
 test -d ../libmaple && {
 echo "Testing flymaple build"
-for d in ArduPlane ArduCopter APMrover2; do
+for d in ArduPlane APMrover2; do
     pushd $d
     make clean
     make flymaple -j4
