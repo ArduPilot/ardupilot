@@ -230,7 +230,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Units: seconds
     // @Increment: 0.1
     // @User: Advanced
-    GSCALAR(land_flare_sec,          "LAND_FLARE_SEC",  2.0),
+    ASCALAR(land_flare_sec,          "LAND_FLARE_SEC",  2.0),
 
 	// @Param: NAV_CONTROLLER
 	// @DisplayName: Navigation controller selection

@@ -892,7 +892,7 @@ static void update_speed_height(void)
 	    // Call TECS 50Hz update. Note that we call this regardless of
 	    // throttle suppressed, as this needs to be running for
 	    // takeoff detection
-        SpdHgt_Controller->update_50hz(relative_altitude());
+        SpdHgt_Controller->update_50hz(tecs_hgt_afe());
     }
 }
 
@@ -1519,7 +1519,7 @@ static void update_flight_stage(void)
                                                  flight_stage,
                                                  auto_state.takeoff_pitch_cd,
                                                  throttle_nudge,
-                                                 relative_altitude(),
+                                                 tecs_hgt_afe(),
                                                  aerodynamic_load_factor);
         if (should_log(MASK_LOG_TECS)) {
             Log_Write_TECS_Tuning();

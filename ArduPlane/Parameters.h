@@ -437,7 +437,6 @@ public:
     AP_Int32 airspeed_cruise_cm;
     AP_Int32 RTL_altitude_cm;
     AP_Float land_flare_alt;
-    AP_Float land_flare_sec;
     AP_Int32 min_gndspeed_cm;
     AP_Int16 pitch_trim_cd;
     AP_Int16 FBWB_min_altitude_cm;
