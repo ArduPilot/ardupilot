@@ -447,6 +447,13 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
     Vector3f orig_scale[INS_MAX_INSTANCES];
     uint8_t num_ok = 0;
 
+    // exit immediately if calibration is already in progress
+    if (_calibrating) {
+        return false;
+    }
+
+    _calibrating = true;
+
     /*
       we do the accel calibration with no board rotation. This avoids
       having to rotate readings during the calibration
@@ -566,6 +573,7 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
 
         _board_orientation = saved_orientation;
 
+        _calibrating = false;
         return true;
     }
 
@@ -577,6 +585,7 @@ failed:
         _accel_scale[k].set(orig_scale[k]);
     }
     _board_orientation = saved_orientation;
+    _calibrating = false;
     return false;
 }
 #endif
