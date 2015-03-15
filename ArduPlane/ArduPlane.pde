@@ -1552,6 +1552,13 @@ static void determine_is_flying(void)
         // when armed, we need overwhelming evidence that we ARE NOT flying
         isFlyingBool = airspeedMovement || gpsMovement;
 
+        /*
+          make is_flying() more accurate for landing approach
+         */
+        if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH &&
+            fabsf(auto_state.land_sink_rate) > 0.2f) {
+            isFlyingBool = true;
+        }
     } else {
         // when disarmed, we need overwhelming evidence that we ARE flying
         isFlyingBool = airspeedMovement && gpsMovement;
@@ -1561,6 +1568,11 @@ static void determine_is_flying(void)
     isFlyingProbability = (0.6f * isFlyingProbability) + (0.4f * (float)isFlyingBool);
 }
 
+/*
+  return true if we think we are flying. This is a probabilistic
+  estimate, and needs to be used very carefully. Each use case needs
+  to be thought about individually.
+ */
 static bool is_flying(void)
 {
     if (hal.util->get_soft_armed()) {
