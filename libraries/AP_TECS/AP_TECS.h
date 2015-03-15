@@ -283,7 +283,7 @@ private:
 	AverageFilterFloat_Size5 _vdot_filter;
 
 	// current time constant
-	float timeConstant(void);
+	float timeConstant(void) const;
 };
 
 #define TECS_LOG_FORMAT(msg) { msg, sizeof(AP_TECS::log_TECS_Tuning),	\
