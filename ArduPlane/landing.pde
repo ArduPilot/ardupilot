@@ -52,11 +52,16 @@ static bool verify_land()
     */
     if (height <= g.land_flare_alt ||
         height <= auto_state.land_sink_rate * aparm.land_flare_sec ||
-        (!rangefinder_state.in_range && location_passed_point(current_loc, prev_WP_loc, next_WP_loc))) {
+        (!rangefinder_state.in_range && location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) ||
+        (fabsf(auto_state.land_sink_rate) < 0.2f && !is_flying())) {
 
         if (!auto_state.land_complete) {
-            gcs_send_text_fmt(PSTR("Flare %.1fm sink=%.2f speed=%.1f"), 
-                              height, auto_state.land_sink_rate, gps.ground_speed());
+            if (!is_flying()) {
+                gcs_send_text_fmt(PSTR("Flare crash detected: speed=%.1f"), gps.ground_speed());
+            } else {
+                gcs_send_text_fmt(PSTR("Flare %.1fm sink=%.2f speed=%.1f"), 
+                                  height, auto_state.land_sink_rate, gps.ground_speed());
+            }
         }
         auto_state.land_complete = true;
 
