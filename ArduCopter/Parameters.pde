@@ -219,15 +219,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(throttle_min,   "THR_MIN",          THR_MIN_DEFAULT),
 
-    // @Param: THR_MAX
-    // @DisplayName: Throttle Maximum
-    // @Description: The maximum throttle that will be sent to the motors.  This should normally be left as 1000.
-    // @Units: Percent*10
-    // @Range: 800 1000
-    // @Increment: 1
-    // @User: Advanced
-    GSCALAR(throttle_max,   "THR_MAX",          THR_MAX_DEFAULT),
-
     // @Param: FS_THR_ENABLE
     // @DisplayName: Throttle Failsafe Enable
     // @Description: The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel
