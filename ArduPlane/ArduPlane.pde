@@ -547,6 +547,9 @@ static struct {
 
     // proportion to next waypoint
     float wp_proportion;
+
+    // last time is_flying() returned true in milliseconds
+    uint32_t last_flying_ms;
 } auto_state = {
     takeoff_complete : true,
     land_complete : false,
@@ -562,7 +565,10 @@ static struct {
     initial_pitch_cd : 0,
     next_turn_angle  : 90.0f,
     land_sink_rate   : 0,
-    takeoff_speed_time_ms : 0
+    takeoff_speed_time_ms : 0,
+    wp_distance : 0,
+    wp_proportion : 0,
+    last_flying_ms : 0
 };
 
 // true if we are in an auto-throttle mode, which means
@@ -1567,6 +1573,14 @@ static void determine_is_flying(void)
 
     // low-pass the result.
     isFlyingProbability = (0.6f * isFlyingProbability) + (0.4f * (float)isFlyingBool);
+
+    /*
+      update last_flying_ms so we always know how long we have not
+      been flying for. This helps for crash detection and auto-disarm
+     */
+    if (is_flying()) {
+        auto_state.last_flying_ms = hal.scheduler->millis();
+    }
 }
 
 /*
