@@ -110,11 +110,7 @@ static void rudder_arm_check()
             if (rudder_arm_timer == 0) rudder_arm_timer = now;
         } else {
             //time to arm!
-            if (arming.arm(AP_Arming::RUDDER)) {
-                channel_throttle->enable_out();                        
-                //only log if arming was successful
-                change_arm_state();
-            }                
+            arm_motors(AP_Arming::RUDDER);
         }
     } else { 
         // not at full right rudder

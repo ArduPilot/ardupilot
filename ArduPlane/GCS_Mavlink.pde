@@ -1098,29 +1098,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         case MAV_CMD_COMPONENT_ARM_DISARM:
             if (packet.param1 == 1.0f) {
                 // run pre_arm_checks and arm_checks and display failures
-                if (arming.arm(AP_Arming::MAVLINK)) {
-                    //only log if arming was successful
-                    channel_throttle->enable_out();
-                    change_arm_state();
+                if (arm_motors(AP_Arming::MAVLINK)) {
                     result = MAV_RESULT_ACCEPTED;
                 } else {
                     result = MAV_RESULT_FAILED;
                 }
             } else if (packet.param1 == 0.0f)  {
-                if (arming.disarm()) {
-                    if (arming.arming_required() == AP_Arming::YES_ZERO_PWM) {
-                        channel_throttle->disable_out();  
-                    }
-                    if (control_mode != AUTO) {
-                        // reset the mission on disarm if we are not in auto
-                        mission.reset();
-                    }
-
-                    // suppress the throttle in auto-throttle modes
-                    throttle_suppressed = auto_throttle_mode;
-
-                    //only log if disarming was successful
-                    change_arm_state();
+                if (disarm_motors()) {
                     result = MAV_RESULT_ACCEPTED;
                 } else {
                     result = MAV_RESULT_FAILED;
