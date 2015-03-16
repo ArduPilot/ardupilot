@@ -159,6 +159,8 @@ void AP_MotorsCoax::output_armed()
         // check if throttle is below limit
         if (_rc_throttle.servo_out <= _min_throttle) {  // perhaps being at min throttle itself is not a problem, only being under is
             limit.throttle_lower = true;
+            _rc_throttle.servo_out = _min_throttle;
+            _rc_throttle.calc_pwm();    // recalculate radio.out
         }
 
         // motors
