@@ -172,6 +172,8 @@ void AP_MotorsSingle::output_armed()
         // check if throttle is at or below limit
         if (_rc_throttle.servo_out <= _min_throttle) {
             limit.throttle_lower = true;
+            _rc_throttle.servo_out = _min_throttle;
+            _rc_throttle.calc_pwm();    // recalculate radio.out
         }
 
 		//motor
