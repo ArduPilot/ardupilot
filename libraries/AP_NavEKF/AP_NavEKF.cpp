@@ -4014,6 +4014,7 @@ void NavEKF::readGpsData()
             if (vehicleArmed && _fusionModeGPS != 3) {
                 constPosMode = false;
                 PV_AidingMode = AID_ABSOLUTE;
+                gpsNotAvailable = false;
                 // Initialise EKF position and velocity states
                 ResetPosition();
                 ResetVelocity();
