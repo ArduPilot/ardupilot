@@ -120,6 +120,10 @@ public:
     // true if the AHRS has completed initialisation
     bool initialised(void) const;
 
+    // get compass offset estimates
+    // true if offsets are valid
+    bool getMagOffsets(Vector3f &magOffsets);
+
 private:
     bool using_EKF(void) const;
 

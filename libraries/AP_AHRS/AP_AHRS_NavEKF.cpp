@@ -344,5 +344,13 @@ void AP_AHRS_NavEKF::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVel
     EKF.getEkfControlLimits(ekfGndSpdLimit,ekfNavVelGainScaler);
 }
 
+// get compass offset estimates
+// true if offsets are valid
+bool AP_AHRS_NavEKF::getMagOffsets(Vector3f &magOffsets)
+{
+    bool status = EKF.getMagOffsets(magOffsets);
+    return status;
+}
+
 #endif // AP_AHRS_NAVEKF_AVAILABLE
 
