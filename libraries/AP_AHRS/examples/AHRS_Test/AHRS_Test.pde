@@ -50,7 +50,7 @@ AP_InertialSensor ins;
 AP_ADC_ADS7844 apm1_adc;
 #endif
 
-AP_Compass compass;
+Compass compass;
 
 AP_GPS gps;
 AP_Baro baro;
