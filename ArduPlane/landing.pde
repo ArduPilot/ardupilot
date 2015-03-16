@@ -56,7 +56,7 @@ static bool verify_land()
         (fabsf(auto_state.land_sink_rate) < 0.2f && !is_flying())) {
 
         if (!auto_state.land_complete) {
-            if (!is_flying()) {
+            if (!is_flying() && (hal.scheduler->millis()-auto_state.last_flying_ms) > 3000) {
                 gcs_send_text_fmt(PSTR("Flare crash detected: speed=%.1f"), gps.ground_speed());
             } else {
                 gcs_send_text_fmt(PSTR("Flare %.1fm sink=%.2f speed=%.1f"), 
