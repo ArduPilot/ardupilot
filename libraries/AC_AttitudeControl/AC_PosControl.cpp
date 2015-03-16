@@ -380,8 +380,11 @@ void AC_PosControl::accel_to_throttle(float accel_target_z)
     // get d term
     d = _pid_accel_z.get_d();
 
+    // ensure throttle is above zero (or motors lib will stop stabilizing)
+    int16_t thr_out = max((int16_t)p+i+d+_throttle_hover,1);
+
     // send throttle to attitude controller with angle boost
-    _attitude_control.set_throttle_out((int16_t)p+i+d+_throttle_hover, true);
+    _attitude_control.set_throttle_out(thr_out, true);
 }
 
 ///
