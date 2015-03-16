@@ -3650,6 +3650,20 @@ void NavEKF::getMagXYZ(Vector3f &magXYZ) const
     magXYZ = state.body_magfield*1000.0f;
 }
 
+// return magnetometer offsets
+// return true if offsets are valid
+bool NavEKF::getMagOffsets(Vector3f &magOffsets) const
+{
+    // compass offsets are valid if we have finalised magnetic field initialisation and magnetic field learning is not prohibited
+    if (secondMagYawInit && (_magCal != 2)) {
+        magOffsets = _ahrs->get_compass()->get_offsets() - state.body_magfield*1000.0f;
+        return true;
+    } else {
+        magOffsets = _ahrs->get_compass()->get_offsets();
+        return false;
+    }
+}
+
 // return the last calculated latitude, longitude and height
 bool NavEKF::getLLH(struct Location &loc) const
 {

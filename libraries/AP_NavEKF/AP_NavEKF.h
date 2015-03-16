@@ -145,6 +145,10 @@ public:
     // return body magnetic field estimates in measurement units / 1000
     void getMagXYZ(Vector3f &magXYZ) const;
 
+    // Return estimated magnetometer offsets
+    // Return true if magnetometer offsets are valid
+    bool getMagOffsets(Vector3f &magOffsets) const;
+
     // return the last calculated latitude, longitude and height
     bool getLLH(struct Location &loc) const;
 
