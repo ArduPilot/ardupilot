@@ -800,7 +800,8 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
         accel_y : accel.y,
         accel_z : accel.z,
         gyro_error  : ins.get_gyro_error_count(0),
-        accel_error : ins.get_accel_error_count(0)
+        accel_error : ins.get_accel_error_count(0),
+        temperature : ins.get_temperature(0)
     };
     WriteBlock(&pkt, sizeof(pkt));
     if (ins.get_gyro_count() < 2 && ins.get_accel_count() < 2) {
@@ -819,7 +820,8 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
         accel_y : accel2.y,
         accel_z : accel2.z,
         gyro_error  : ins.get_gyro_error_count(1),
-        accel_error : ins.get_accel_error_count(1)
+        accel_error : ins.get_accel_error_count(1),
+        temperature : ins.get_temperature(1)
     };
     WriteBlock(&pkt2, sizeof(pkt2));
     if (ins.get_gyro_count() < 3 && ins.get_accel_count() < 3) {
@@ -837,7 +839,8 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
         accel_y : accel3.y,
         accel_z : accel3.z,
         gyro_error  : ins.get_gyro_error_count(2),
-        accel_error : ins.get_accel_error_count(2)
+        accel_error : ins.get_accel_error_count(2),
+        temperature : ins.get_temperature(2)
     };
     WriteBlock(&pkt3, sizeof(pkt3));
 #endif
