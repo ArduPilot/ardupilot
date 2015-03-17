@@ -227,6 +227,8 @@ static void init_aux_switch_function(int8_t ch_option, uint8_t ch_flag)
         case AUXSW_ATTCON_ACCEL_LIM:
         case AUXSW_RELAY:
         case AUXSW_LANDING_GEAR:
+        case AUXSW_MOTOR_ESTOP:
+        case AUXSW_MOTOR_INTERLOCK:
             do_aux_switch_function(ch_option, ch_flag);
             break;
     }
@@ -533,7 +535,12 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 landinggear.set_cmd_mode(LandingGear_Retract);
                 break;
         }
-        break;    
+        break;
+
+      case AUXSW_MOTOR_ESTOP:
+        // Turn on E-Stop logic when channel is high
+        set_motor_estop(ch_flag == AUX_SWITCH_HIGH);
+        break;
 
     case AUXSW_LOST_COPTER_SOUND:
         switch (ch_flag) {
