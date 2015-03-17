@@ -33,6 +33,40 @@
 #define AUX_SWITCH_MIDDLE           1       // indicates auxiliar switch is in the middle position (pwm >1200, <1800)
 #define AUX_SWITCH_HIGH             2       // indicates auxiliar switch is in the high position (pwm >1800)
 
+// Aux Switch enumeration
+enum aux_sw_func {
+    AUXSW_DO_NOTHING =     0,      // aux switch disabled
+    AUXSW_SET_HOVER,               // deprecated
+    AUXSW_FLIP,                    // flip
+    AUXSW_SIMPLE_MODE,             // change to simple mode
+    AUXSW_RTL,                     // change to RTL flight mode
+    AUXSW_SAVE_TRIM,               // save current position as level
+    AUXSW_ADC_FILTER,              // deprecated
+    AUXSW_SAVE_WP,                 // save mission waypoint or RTL if in auto mode
+    AUXSW_MULTI_MODE,              // depending upon CH6 position Flip (if ch6 is low), RTL (if ch6 in middle) or Save WP (if ch6 is high)
+    AUXSW_CAMERA_TRIGGER,          // trigger camera servo or relay
+    AUXSW_SONAR,                   // allow enabling or disabling sonar in flight which helps avoid surface tracking when you are far above the ground
+    AUXSW_FENCE,                   // allow enabling or disabling fence in flight
+    AUXSW_RESETTOARMEDYAW,         // changes yaw to be same as when quad was armed
+    AUXSW_SUPERSIMPLE_MODE,        // change to simple mode in middle, super simple at top
+    AUXSW_ACRO_TRAINER,            // low = disabled, middle = leveled, high = leveled and limited
+    AUXSW_SPRAYER,                 // enable/disable the crop sprayer
+    AUXSW_AUTO,                    // change to auto flight mode
+    AUXSW_AUTOTUNE,                // auto tune
+    AUXSW_LAND,                    // change to LAND flight mode
+    AUXSW_EPM,                     // Operate the EPM cargo gripper low=off, middle=neutral, high=on
+    AUXSW_EKF,                     // Deprecated
+    AUXSW_PARACHUTE_ENABLE,        // Parachute enable/disable
+    AUXSW_PARACHUTE_RELEASE,       // Parachute release
+    AUXSW_PARACHUTE_3POS,          // Parachute disable, enable, release with 3 position switch
+    AUXSW_MISSION_RESET,           // Reset auto mission to start from first command
+    AUXSW_ATTCON_FEEDFWD,          // enable/disable the roll and pitch rate feed forward
+    AUXSW_ATTCON_ACCEL_LIM,        // enable/disable the roll, pitch and yaw accel limiting
+    AUXSW_RETRACT_MOUNT,           // Retract Mount
+    AUXSW_RELAY,                   // Relay pin on/off (only supports first relay)
+    AUXSW_LANDING_GEAR,            // Landing gear controller
+};
+
 // Frame types
 #define UNDEFINED_FRAME 0
 #define QUAD_FRAME 1
