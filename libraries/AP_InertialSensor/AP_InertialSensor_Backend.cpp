@@ -95,3 +95,11 @@ uint16_t AP_InertialSensor_Backend::get_sample_rate_hz(void) const
     // enum can be directly cast to Hz
     return (uint16_t)_imu._sample_rate;
 }
+
+/*
+  publish a temperature value for an instance
+ */
+void AP_InertialSensor_Backend::_publish_temperature(uint8_t instance, float temperature)
+{
+    _imu._temperature[instance] = temperature;
+}

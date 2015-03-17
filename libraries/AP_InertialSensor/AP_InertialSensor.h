@@ -160,6 +160,10 @@ public:
     const Vector3f &get_accel_scale(uint8_t i) const { return _accel_scale[i]; }
     const Vector3f &get_accel_scale(void) const { return get_accel_scale(_primary_accel); }
 
+    // return the temperature if supported. Zero is returned if no
+    // temperature is available
+    float get_temperature(uint8_t instance) const { return _temperature[instance]; }
+
     /* get_delta_time returns the time period in seconds
      * overwhich the sensor data was collected
      */
@@ -260,6 +264,9 @@ private:
     AP_Vector3f _accel_scale[INS_MAX_INSTANCES];
     AP_Vector3f _accel_offset[INS_MAX_INSTANCES];
     AP_Vector3f _gyro_offset[INS_MAX_INSTANCES];
+
+    // temperatures for an instance if available
+    float _temperature[INS_MAX_INSTANCES];
 
     // filtering frequency (0 means default)
     AP_Int8     _accel_filter_cutoff;

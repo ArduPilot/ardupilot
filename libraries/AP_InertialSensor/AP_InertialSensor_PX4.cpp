@@ -270,6 +270,9 @@ void AP_InertialSensor_PX4::_new_accel_sample(uint8_t i, accel_report &accel_rep
     // report error count
     _set_accel_error_count(frontend_instance, accel_report.error_count);
 
+    // publish a temperature (for logging purposed only)
+    _publish_temperature(frontend_instance, accel_report.temperature);
+
 #ifdef AP_INERTIALSENSOR_PX4_DEBUG
     _accel_dt_max[i] = max(_accel_dt_max[i],dt);
 
@@ -377,12 +380,26 @@ void AP_InertialSensor_PX4::_get_sample()
     _last_get_sample_timestamp = hal.scheduler->micros64();
 }
 
-bool AP_InertialSensor_PX4::_get_accel_sample(uint8_t i, struct accel_report &accel_report) {
-    return i<_num_accel_instances && _accel_fd[i] != -1 && ::read(_accel_fd[i], &accel_report, sizeof(accel_report)) == sizeof(accel_report) && accel_report.timestamp != _last_accel_timestamp[i];
+bool AP_InertialSensor_PX4::_get_accel_sample(uint8_t i, struct accel_report &accel_report) 
+{
+    if (i<_num_accel_instances && 
+        _accel_fd[i] != -1 && 
+        ::read(_accel_fd[i], &accel_report, sizeof(accel_report)) == sizeof(accel_report) && 
+        accel_report.timestamp != _last_accel_timestamp[i]) {
+        return true;
+    }
+    return false;
 }
 
-bool AP_InertialSensor_PX4::_get_gyro_sample(uint8_t i, struct gyro_report &gyro_report) {
-    return i<_num_gyro_instances && _gyro_fd[i] != -1 && ::read(_gyro_fd[i], &gyro_report, sizeof(gyro_report)) == sizeof(gyro_report) && gyro_report.timestamp != _last_gyro_timestamp[i];
+bool AP_InertialSensor_PX4::_get_gyro_sample(uint8_t i, struct gyro_report &gyro_report) 
+{
+    if (i<_num_gyro_instances && 
+        _gyro_fd[i] != -1 && 
+        ::read(_gyro_fd[i], &gyro_report, sizeof(gyro_report)) == sizeof(gyro_report) && 
+        gyro_report.timestamp != _last_gyro_timestamp[i]) {
+        return true;
+    }
+    return false;
 }
 
 bool AP_InertialSensor_PX4::gyro_sample_available(void)
