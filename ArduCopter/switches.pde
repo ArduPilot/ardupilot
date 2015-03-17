@@ -133,6 +133,7 @@ static void read_aux_switches()
         do_aux_switch_function(g.ch8_option, ap.CH8_flag);
     }
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // check if Ch9 switch has changed position
     switch_position = read_3pos_switch(g.rc_9.radio_in);
     if (ap.CH9_flag != switch_position) {
@@ -142,6 +143,7 @@ static void read_aux_switches()
         // invoke the appropriate function
         do_aux_switch_function(g.ch9_option, ap.CH9_flag);
     }
+#endif
 
     // check if Ch10 switch has changed position
     switch_position = read_3pos_switch(g.rc_10.radio_in);
@@ -163,6 +165,7 @@ static void read_aux_switches()
         do_aux_switch_function(g.ch11_option, ap.CH11_flag);
     }
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // check if Ch12 switch has changed position
     switch_position = read_3pos_switch(g.rc_12.radio_in);
     if (ap.CH12_flag != switch_position) {
@@ -172,25 +175,35 @@ static void read_aux_switches()
         // invoke the appropriate function
         do_aux_switch_function(g.ch12_option, ap.CH12_flag);
     }
+#endif
 }
 
 // init_aux_switches - invoke configured actions at start-up for aux function where it is safe to do so
 static void init_aux_switches()
 {
-    // set the CH7 flag
+    // set the CH7 ~ CH12 flags
     ap.CH7_flag = read_3pos_switch(g.rc_7.radio_in);
     ap.CH8_flag = read_3pos_switch(g.rc_8.radio_in);
-    ap.CH9_flag = read_3pos_switch(g.rc_9.radio_in);
     ap.CH10_flag = read_3pos_switch(g.rc_10.radio_in);
     ap.CH11_flag = read_3pos_switch(g.rc_11.radio_in);
-    ap.CH12_flag = read_3pos_switch(g.rc_12.radio_in);
 
+    // ch9, ch12 only supported on some boards
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+    ap.CH9_flag = read_3pos_switch(g.rc_9.radio_in);
+    ap.CH12_flag = read_3pos_switch(g.rc_12.radio_in);
+#endif
+
+    // initialise functions assigned to switches
     init_aux_switch_function(g.ch7_option, ap.CH7_flag);
     init_aux_switch_function(g.ch8_option, ap.CH8_flag);
-    init_aux_switch_function(g.ch9_option, ap.CH9_flag);
     init_aux_switch_function(g.ch10_option, ap.CH10_flag);
     init_aux_switch_function(g.ch11_option, ap.CH11_flag);
+
+    // ch9, ch12 only supported on some boards
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+    init_aux_switch_function(g.ch9_option, ap.CH9_flag);
     init_aux_switch_function(g.ch12_option, ap.CH12_flag);
+#endif
 }
 
 // init_aux_switch_function - initialize aux functions
