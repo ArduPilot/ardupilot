@@ -59,7 +59,8 @@ static void read_control_switch()
 }
 
 // check_if_auxsw_mode_used - Check to see if any of the Aux Switches are set to a given mode.
-static bool check_if_auxsw_mode_used(uint8_t auxsw_mode_check){
+static bool check_if_auxsw_mode_used(uint8_t auxsw_mode_check)
+{
     bool ret = g.ch7_option == auxsw_mode_check || g.ch8_option == auxsw_mode_check || g.ch9_option == auxsw_mode_check 
                 || g.ch10_option == auxsw_mode_check || g.ch11_option == auxsw_mode_check || g.ch12_option == auxsw_mode_check;
 
@@ -67,8 +68,8 @@ static bool check_if_auxsw_mode_used(uint8_t auxsw_mode_check){
 }
 
 // check_duplicate_auxsw - Check to see if any Aux Switch Functions are duplicated
-static bool check_duplicate_auxsw(void){
-
+static bool check_duplicate_auxsw(void)
+{
     bool ret = ((g.ch7_option != AUXSW_DO_NOTHING) && (g.ch7_option == g.ch8_option ||
                 g.ch7_option == g.ch9_option || g.ch7_option == g.ch10_option ||
                 g.ch7_option == g.ch11_option || g.ch7_option == g.ch12_option));
@@ -95,7 +96,8 @@ static void reset_control_switch()
 }
 
 // read_3pos_switch
-static uint8_t read_3pos_switch(int16_t radio_in){
+static uint8_t read_3pos_switch(int16_t radio_in)
+{
     if (radio_in < AUX_SWITCH_PWM_TRIGGER_LOW) return AUX_SWITCH_LOW;      // switch is in low position
     if (radio_in > AUX_SWITCH_PWM_TRIGGER_HIGH) return AUX_SWITCH_HIGH;    // switch is in high position
     return AUX_SWITCH_MIDDLE;                                       // switch is in middle position
