@@ -180,34 +180,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Channel 7 and 8 default options
-//
-
-#ifndef CH7_OPTION
- # define CH7_OPTION            AUXSW_DO_NOTHING
-#endif
-
-#ifndef CH8_OPTION
- # define CH8_OPTION            AUXSW_DO_NOTHING
-#endif
-
-#ifndef CH9_OPTION
- # define CH9_OPTION            AUXSW_DO_NOTHING
-#endif
-
-#ifndef CH10_OPTION
- # define CH10_OPTION           AUXSW_DO_NOTHING
-#endif
-
-#ifndef CH11_OPTION
- # define CH11_OPTION           AUXSW_DO_NOTHING
-#endif
-
-#ifndef CH12_OPTION
- # define CH12_OPTION           AUXSW_DO_NOTHING
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // HIL_MODE                                 OPTIONAL
 
 #ifndef HIL_MODE
