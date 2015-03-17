@@ -153,3 +153,9 @@ void set_using_interlock(bool b)
     }
 }
 
+void set_motor_estop(bool b)
+{
+    if(ap.motor_estop != b) {
+        ap.motor_estop = b;
+    }
+}

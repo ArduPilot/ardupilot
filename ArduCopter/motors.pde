@@ -166,6 +166,17 @@ static bool init_arm_motors(bool arming_from_gcs)
         return false;
     }
 
+    // if we are not E-Stop switch option, force Estop false to ensure motors
+    // can run normally
+    if (!check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP)){
+        set_motor_estop(false);
+    // if we are using motor Estop switch, it must not be in Estop position
+    } else if (check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP) && ap.motor_estop){
+        gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Motor Emergency Stopped"));
+        AP_Notify::flags.armed = false;
+        return false;
+    }
+
     // fast baro calibration to reset ground pressure
     init_barometer(false);
 
@@ -229,6 +240,15 @@ static bool pre_arm_checks(bool display_failure)
     if (ap.using_interlock && ap.motor_interlock){
         if (display_failure) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Motor Interlock Enabled"));
+        }
+        return false;
+    }
+
+    // if we are using Motor E-Stop aux switch, check it is not enabled 
+    // and warn if it is
+    if (check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP) && ap.motor_estop){
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Motor Emergency Stopped"));
         }
         return false;
     }
@@ -755,8 +775,11 @@ static void motors_output()
             // true means motors run, false motors don't run
             motors.set_interlock(ap.motor_interlock);
         } else {
-            // if not using interlock switch, force interlock true
-            motors.set_interlock(true);
+            // if not using interlock switch, set according to E-Stop status
+            // where E-Stop is forced false during arming if E-Stop switch
+            // is not used. Interlock enabled means motors run, so we must
+            // invert motor_estop status for motors to run.
+            motors.set_interlock(!ap.motor_estop);
         }
         motors.output();
     }

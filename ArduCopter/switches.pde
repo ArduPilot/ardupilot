@@ -533,7 +533,12 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 landinggear.set_cmd_mode(LandingGear_Retract);
                 break;
         }
-        break;    
+        break;
+
+      case AUXSW_MOTOR_ESTOP:
+        // Turn on E-Stop logic when channel is high
+        set_motor_estop(ch_flag == AUX_SWITCH_HIGH);
+        break;
 
     case AUXSW_LOST_COPTER_SOUND:
         switch (ch_flag) {
