@@ -31,6 +31,7 @@ LinuxScheduler::LinuxScheduler()
 {}
 
 void LinuxScheduler::_create_realtime_thread(pthread_t *ctx, int rtprio,
+                                             const char *name,
                                              pthread_startroutine_t start_routine)
 {
     struct sched_param param = { .sched_priority = rtprio };
@@ -43,7 +44,8 @@ void LinuxScheduler::_create_realtime_thread(pthread_t *ctx, int rtprio,
     pthread_attr_setschedparam(&attr, &param);
     r = pthread_create(ctx, &attr, start_routine, this);
     if (r != 0) {
-        hal.console->printf("Error creating thread: %s\n", strerror(r));
+        hal.console->printf("Error creating thread '%s': %s\n",
+                            name, strerror(r));
         panic(PSTR("Failed to create thread"));
     }
     pthread_attr_destroy(&attr);
@@ -58,24 +60,43 @@ void LinuxScheduler::init(void* machtnichts)
     struct sched_param param = { .sched_priority = APM_LINUX_MAIN_PRIORITY };
     sched_setscheduler(0, SCHED_FIFO, &param);
 
-    _create_realtime_thread(&_timer_thread_ctx, APM_LINUX_TIMER_PRIORITY,
-                            &Linux::LinuxScheduler::_timer_thread);
+    struct {
+        pthread_t *ctx;
+        int rtprio;
+        const char *name;
+        pthread_startroutine_t start_routine;
+    } *iter, table[] = {
+        { .ctx = &_timer_thread_ctx,
+          .rtprio = APM_LINUX_TIMER_PRIORITY,
+          .name = "sched-timer",
+          .start_routine = &Linux::LinuxScheduler::_timer_thread,
+        },
+        { .ctx = &_uart_thread_ctx,
+          .rtprio = APM_LINUX_UART_PRIORITY,
+          .name = "sched-uart",
+          .start_routine = &Linux::LinuxScheduler::_uart_thread,
+        },
+        { .ctx = &_rcin_thread_ctx,
+          .rtprio = APM_LINUX_RCIN_PRIORITY,
+          .name = "sched-rcin",
+          .start_routine = &Linux::LinuxScheduler::_rcin_thread,
+        },
+        { .ctx = &_tonealarm_thread_ctx,
+          .rtprio = APM_LINUX_TONEALARM_PRIORITY,
+          .name = "sched-tonealarm",
+          .start_routine = &Linux::LinuxScheduler::_tonealarm_thread,
+        },
+        { .ctx = &_io_thread_ctx,
+          .rtprio = APM_LINUX_IO_PRIORITY,
+          .name = "sched-io",
+          .start_routine = &Linux::LinuxScheduler::_io_thread,
+        },
+        { }
+    };
 
-    // the UART thread runs at a medium priority
-    _create_realtime_thread(&_uart_thread_ctx, APM_LINUX_UART_PRIORITY,
-                            &Linux::LinuxScheduler::_uart_thread);
-
-    // the RCIN thread runs at a lower medium priority
-    _create_realtime_thread(&_rcin_thread_ctx, APM_LINUX_RCIN_PRIORITY,
-                            &Linux::LinuxScheduler::_rcin_thread);
-
-    // the Tone Alarm thread runs at highest priority
-    _create_realtime_thread(&_tonealarm_thread_ctx, APM_LINUX_TONEALARM_PRIORITY,
-                            &Linux::LinuxScheduler::_tonealarm_thread);
-
-    // the IO thread runs at lower priority
-    _create_realtime_thread(&_io_thread_ctx, APM_LINUX_IO_PRIORITY,
-                            &Linux::LinuxScheduler::_io_thread);
+    for (iter = table; iter->ctx; iter++)
+        _create_realtime_thread(iter->ctx, iter->rtprio, iter->name,
+                                iter->start_routine);
 }
 
 void LinuxScheduler::_microsleep(uint32_t usec)
