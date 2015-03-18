@@ -1038,8 +1038,6 @@ static void ten_hz_logging_loop()
 {
     if (should_log(MASK_LOG_ATTITUDE_MED)) {
         Log_Write_Attitude();
-    }
-    if (should_log(MASK_LOG_RATE)) {
         Log_Write_Rate();
     }
     if (should_log(MASK_LOG_MOT)) {
@@ -1068,6 +1066,7 @@ static void fifty_hz_logging_loop()
 #if HIL_MODE == HIL_MODE_DISABLED
     if (should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
+        Log_Write_Rate();
     }
 
     if (should_log(MASK_LOG_IMU)) {

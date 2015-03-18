@@ -364,20 +364,6 @@ static void Log_Write_Cmd(const AP_Mission::Mission_Command &cmd)
     DataFlash.Log_Write_MavCmd(mission.num_commands(),mav_cmd);
 }
 
-struct PACKED log_Rate {
-    LOG_PACKET_HEADER;
-    uint32_t time_ms;
-    float   control_roll;
-    float   roll;
-    float   roll_out;
-    float   control_pitch;
-    float   pitch;
-    float   pitch_out;
-    float   control_yaw;
-    float   yaw;
-    float   yaw_out;
-};
-
 struct PACKED log_Mot {
     LOG_PACKET_HEADER;
     uint32_t time_ms;
@@ -405,6 +391,20 @@ static void Log_Write_Attitude()
     sitl.Log_Write_SIMSTATE(DataFlash);
 #endif
 }
+
+struct PACKED log_Rate {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    float   control_roll;
+    float   roll;
+    float   roll_out;
+    float   control_pitch;
+    float   pitch;
+    float   pitch_out;
+    float   control_yaw;
+    float   yaw;
+    float   yaw_out;
+};
 
 // Write an rate packet
 static void Log_Write_Rate()
