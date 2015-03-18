@@ -34,7 +34,6 @@ public:
 
 private:
     int         _batt_sub;          // orb subscription description
-    uint64_t    _last_timestamp;    // time of last update (used to avoid processing old reports)
 };
 
 #endif // AP_BATTMONITOR_SMBUS_PX4_H

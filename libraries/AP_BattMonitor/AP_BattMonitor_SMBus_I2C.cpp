@@ -43,12 +43,18 @@ void AP_BattMonitor_SMBus_I2C::read()
     if (read_word(BATTMONITOR_SMBUS_VOLTAGE, data)) {
         _state.voltage = (float)data / 1000.0f;
         _state.last_time_micros = tnow;
+        _state.healthy = true;
     }
 
     // read current
     if (read_block(BATTMONITOR_SMBUS_CURRENT, buff, 4, false) == 4) {
         _state.current_amps = (float)((int32_t)((uint32_t)buff[3]<<24 | (uint32_t)buff[2]<<16 | (uint32_t)buff[1]<<8 | (uint32_t)buff[0])) / 1000.0f;
         _state.last_time_micros = tnow;
+    }
+
+    // timeout after 5 seconds
+    if ((tnow - _state.last_time_micros) > AP_BATTMONITOR_SMBUS_TIMEOUT_MICROS) {
+        _state.healthy = false;
     }
 }
 
