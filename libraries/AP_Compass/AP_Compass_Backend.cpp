@@ -47,6 +47,8 @@ void AP_Compass_Backend::publish_raw_field(const Vector3f &mag, uint32_t time_us
     state.raw_meas_time_us = time_us;
     state.updated_raw_field = true;
     state.has_raw_field = true;
+
+    _compass._calibrator[instance].new_sample(mag);
 }
 
 void AP_Compass_Backend::correct_field(Vector3f &mag, uint8_t i)
