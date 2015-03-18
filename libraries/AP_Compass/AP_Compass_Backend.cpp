@@ -53,7 +53,13 @@ void AP_Compass_Backend::correct_field(Vector3f &mag, uint8_t i)
 {
     Compass::mag_state &state = _compass._state[i];
 
+    if (state.diagonals.get().is_zero()) {
+        state.diagonals.set(Vector3f(1.0f,1.0f,1.0f));
+    }
+
     const Vector3f &offsets = state.offset.get();
+    const Vector3f &diagonals = state.diagonals.get();
+    const Vector3f &offdiagonals = state.offdiagonals.get();
     const Vector3f &mot = state.motor_compensation.get();
 
     /*
@@ -67,6 +73,14 @@ void AP_Compass_Backend::correct_field(Vector3f &mag, uint8_t i)
     } else {
         state.motor_offset.zero();
     }
+
+    Matrix3f mat(
+        diagonals.x, offdiagonals.x, offdiagonals.y,
+        offdiagonals.x,    diagonals.y, offdiagonals.z,
+        offdiagonals.y, offdiagonals.z,    diagonals.z
+    );
+
+    mag = mat * mag;
 }
 
 void AP_Compass_Backend::publish_unfiltered_field(const Vector3f &mag, uint32_t time_us, uint8_t instance)
