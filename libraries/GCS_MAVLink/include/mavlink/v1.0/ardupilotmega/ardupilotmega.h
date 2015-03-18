@@ -351,6 +351,20 @@ typedef enum EKF_STATUS_FLAGS
 #endif
 
 /** @brief  */
+#ifndef HAVE_ENUM_PID_TUNING_AXIS
+#define HAVE_ENUM_PID_TUNING_AXIS
+typedef enum PID_TUNING_AXIS
+{
+	PID_TUNING_ROLL=1, /*  | */
+	PID_TUNING_PITCH=2, /*  | */
+	PID_TUNING_YAW=3, /*  | */
+	PID_TUNING_ACCZ=4, /*  | */
+	PID_TUNING_STEER=5, /*  | */
+	PID_TUNING_AXIS_ENUM_END=6, /*  | */
+} PID_TUNING_AXIS;
+#endif
+
+/** @brief  */
 #ifndef HAVE_ENUM_MAG_CAL_STATUS
 #define HAVE_ENUM_MAG_CAL_STATUS
 typedef enum MAG_CAL_STATUS
@@ -363,20 +377,6 @@ typedef enum MAG_CAL_STATUS
 	MAG_CAL_FAILED=5, /*  | */
 	MAG_CAL_STATUS_ENUM_END=6, /*  | */
 } MAG_CAL_STATUS;
-#endif
-
-/** @brief  */
-#ifndef HAVE_ENUM_PID_TUNING_AXIS
-#define HAVE_ENUM_PID_TUNING_AXIS
-typedef enum PID_TUNING_AXIS
-{
-	PID_TUNING_ROLL=1, /*  | */
-	PID_TUNING_PITCH=2, /*  | */
-	PID_TUNING_YAW=3, /*  | */
-	PID_TUNING_ACCZ=4, /*  | */
-	PID_TUNING_STEER=5, /*  | */
-	PID_TUNING_AXIS_ENUM_END=6, /*  | */
-} PID_TUNING_AXIS;
 #endif
 
 #include "../common/common.h"
