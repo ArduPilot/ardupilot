@@ -267,6 +267,106 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     AP_GROUPINFO("EXTERN3",23, Compass, _state[2].external, 0),
 #endif
 
+    // @Param: DIA_X
+    // @DisplayName: Compass soft-iron diagonal X component
+    // @Description: DIA_X in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
+
+    // @Param: DIA_Y
+    // @DisplayName: Compass soft-iron diagonal Y component
+    // @Description: DIA_Y in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
+
+    // @Param: DIA_Z
+    // @DisplayName: Compass soft-iron diagonal Z component
+    // @Description: DIA_Z in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
+    AP_GROUPINFO("DIA",    24, Compass, _state[0].diagonals, 0),
+
+    // @Param: ODI_X
+    // @DisplayName: Compass soft-iron off-diagonal X component
+    // @Description: ODI_X in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
+
+    // @Param: ODI_Y
+    // @DisplayName: Compass soft-iron off-diagonal Y component
+    // @Description: ODI_Y in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
+
+    // @Param: ODI_Z
+    // @DisplayName: Compass soft-iron off-diagonal Z component
+    // @Description: ODI_Z in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
+    AP_GROUPINFO("ODI",    25, Compass, _state[0].offdiagonals, 0),
+
+#if COMPASS_MAX_INSTANCES > 1
+    // @Param: DIA2_X
+    // @DisplayName: Compass2 soft-iron diagonal X component
+    // @Description: DIA_X in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
+
+    // @Param: DIA2_Y
+    // @DisplayName: Compass2 soft-iron diagonal Y component
+    // @Description: DIA_Y in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
+
+    // @Param: DIA2_Z
+    // @DisplayName: Compass2 soft-iron diagonal Z component
+    // @Description: DIA_Z in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
+    AP_GROUPINFO("DIA2",    26, Compass, _state[1].diagonals, 0),
+
+    // @Param: ODI2_X
+    // @DisplayName: Compass2 soft-iron off-diagonal X component
+    // @Description: ODI_X in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
+
+    // @Param: ODI2_Y
+    // @DisplayName: Compass2 soft-iron off-diagonal Y component
+    // @Description: ODI_Y in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
+
+    // @Param: ODI2_Z
+    // @DisplayName: Compass2 soft-iron off-diagonal Z component
+    // @Description: ODI_Z in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
+    AP_GROUPINFO("ODI2",    27, Compass, _state[1].offdiagonals, 0),
+#endif
+
+#if COMPASS_MAX_INSTANCES > 2
+    // @Param: DIA3_X
+    // @DisplayName: Compass3 soft-iron diagonal X component
+    // @Description: DIA_X in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
+
+    // @Param: DIA3_Y
+    // @DisplayName: Compass3 soft-iron diagonal Y component
+    // @Description: DIA_Y in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
+
+    // @Param: DIA3_Z
+    // @DisplayName: Compass3 soft-iron diagonal Z component
+    // @Description: DIA_Z in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
+    AP_GROUPINFO("DIA3",    28, Compass, _state[2].diagonals, 0),
+
+    // @Param: ODI3_X
+    // @DisplayName: Compass3 soft-iron off-diagonal X component
+    // @Description: ODI_X in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
+
+    // @Param: ODI3_Y
+    // @DisplayName: Compass3 soft-iron off-diagonal Y component
+    // @Description: ODI_Y in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
+
+    // @Param: ODI3_Z
+    // @DisplayName: Compass3 soft-iron off-diagonal Z component
+    // @Description: ODI_Z in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
+    AP_GROUPINFO("ODI3",    29, Compass, _state[2].offdiagonals, 0),
+#endif
+
     AP_GROUPEND
 };
 
@@ -408,6 +508,24 @@ Compass::set_and_save_offsets(uint8_t i, const Vector3f &offsets)
     if (i < COMPASS_MAX_INSTANCES) {
         _state[i].offset.set(offsets);
         save_offsets(i);
+    }
+}
+
+void
+Compass::set_and_save_diagonals(uint8_t i, const Vector3f &diagonals)
+{
+    // sanity check compass instance provided
+    if (i < COMPASS_MAX_INSTANCES) {
+        _state[i].diagonals.set_and_save(diagonals);
+    }
+}
+
+void
+Compass::set_and_save_offdiagonals(uint8_t i, const Vector3f &offdiagonals)
+{
+    // sanity check compass instance provided
+    if (i < COMPASS_MAX_INSTANCES) {
+        _state[i].offdiagonals.set_and_save(offdiagonals);
     }
 }
 
