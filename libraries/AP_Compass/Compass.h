@@ -8,6 +8,8 @@
 #include <AP_Math.h>
 #include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
 #include <AP_HAL.h>
+#include <GCS_MAVLink.h>
+#include "CompassCalibrator.h"
 #include "AP_Compass_Backend.h"
 
 // compass product id
@@ -108,8 +110,6 @@ public:
     const Vector3f &get_field(void) const { return get_field(get_primary()); }
 
     // raw/unfiltered measurement interface
-
-
     uint32_t raw_meas_time_us(uint8_t i) const { return _state[i].raw_meas_time_us; }
     uint32_t raw_meas_time_us() const { return _state[get_primary()].raw_meas_time_us; }
     uint32_t unfiltered_meas_time_us(uint8_t i) const { return _state[i].raw_meas_time_us; }
@@ -127,9 +127,31 @@ public:
     const Vector3f &get_unfiltered_field(uint8_t i) const { return _state[i].unfiltered_field; }
     const Vector3f &get_unfiltered_field(void) const { return get_unfiltered_field(get_primary()); }
 
+    // compass calibrator interface
+    void compass_cal_update();
+
+    bool start_calibration(uint8_t i, bool retry=false, bool autosave=false, float delay_sec=0.0f);
+    bool start_calibration_all(bool retry=false, bool autosave=false, float delay_sec=0.0f);
+    bool start_calibration_mask(uint8_t mask, bool retry=false, bool autosave=false, float delay_sec=0.0f);
+
+    void cancel_calibration(uint8_t i);
+    void cancel_calibration_all();
+    void cancel_calibration_mask(uint8_t mask);
+
+    bool accept_calibration(uint8_t i);
+    bool accept_calibration_all();
+    bool accept_calibration_mask(uint8_t mask);
+
+    uint8_t get_cal_mask() const;
+    bool is_calibrating() const;
+
+    void send_mag_cal_progress(mavlink_channel_t chan);
+    void send_mag_cal_report(mavlink_channel_t chan);
+
     /// Return the health of a compass
     bool healthy(uint8_t i) const { return _state[i].healthy; }
     bool healthy(void) const { return healthy(get_primary()); }
+    uint8_t get_healthy_mask() const;
 
     /// Returns the current offset values
     ///
@@ -352,6 +374,8 @@ private:
         Vector3f    raw_field;
         Vector3f    unfiltered_field;
     } _state[COMPASS_MAX_INSTANCES];
+
+    CompassCalibrator _calibrator[COMPASS_MAX_INSTANCES];
 
     // if we want HIL only
     bool _hil_mode:1;
