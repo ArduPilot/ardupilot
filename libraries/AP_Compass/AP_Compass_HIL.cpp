@@ -57,5 +57,8 @@ AP_Compass_HIL::init(void)
 
 void AP_Compass_HIL::read()
 {
-    publish_field(_compass._hil.field, _compass_instance);
+    Vector3f field = _compass._hil.field;
+    rotate_field(field, _compass_instance);
+    correct_field(field, _compass_instance);
+    publish_filtered_field(field, _compass_instance);
 }
