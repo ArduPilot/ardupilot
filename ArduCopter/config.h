@@ -686,7 +686,7 @@
     MASK_LOG_OPTFLOW | \
     MASK_LOG_COMPASS | \
     MASK_LOG_CAMERA | \
-    MASK_LOG_MOT
+    MASK_LOG_MOTBATT
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

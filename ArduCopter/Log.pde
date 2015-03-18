@@ -364,15 +364,6 @@ static void Log_Write_Cmd(const AP_Mission::Mission_Command &cmd)
     DataFlash.Log_Write_MavCmd(mission.num_commands(),mav_cmd);
 }
 
-struct PACKED log_Mot {
-    LOG_PACKET_HEADER;
-    uint32_t time_ms;
-    float   lift_max;
-    float   bat_volt;
-    float   bat_res;
-    float   th_limit;
-};
-
 // Write an attitude packet
 static void Log_Write_Attitude()
 {
@@ -426,11 +417,20 @@ static void Log_Write_Rate()
     DataFlash.WriteBlock(&pkt_rate, sizeof(pkt_rate));
 }
 
+struct PACKED log_MotBatt {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    float   lift_max;
+    float   bat_volt;
+    float   bat_res;
+    float   th_limit;
+};
+
 // Write an rate packet
-static void Log_Write_Mot()
+static void Log_Write_MotBatt()
 {
-    struct log_Mot pkt_mot = {
-        LOG_PACKET_HEADER_INIT(LOG_MOT_MSG),
+    struct log_MotBatt pkt_mot = {
+        LOG_PACKET_HEADER_INIT(LOG_MOTBATT_MSG),
         time_ms         : hal.scheduler->millis(),
         lift_max        : (float)(motors.get_lift_max()),
         bat_volt        : (float)(motors.get_batt_voltage_filt()),
@@ -608,8 +608,8 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "PM",  "HHIhBH",    "NLon,NLoop,MaxT,PMT,I2CErr,INSErr" },
     { LOG_RATE_MSG, sizeof(log_Rate),
       "RATE", "Ifffffffff",  "TimeMS,RllDes,Rll,RllOut,PitDes,Pit,PitOut,YawDes,Yaw,YawOut" },
-    { LOG_MOT_MSG, sizeof(log_Mot),
-      "MOT", "Iffff",  "TimeMS,LiftMax,BatVolt,BatRes,ThLimit" },
+    { LOG_MOTBATT_MSG, sizeof(log_MotBatt),
+      "MOTB", "Iffff",  "TimeMS,LiftMax,BatVolt,BatRes,ThLimit" },
     { LOG_STARTUP_MSG, sizeof(log_Startup),         
       "STRT", "",            "" },
     { LOG_EVENT_MSG, sizeof(log_Event),         
@@ -685,7 +685,7 @@ static void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds) {}
 static void Log_Write_Current() {}
 static void Log_Write_Attitude() {}
 static void Log_Write_Rate() {}
-static void Log_Write_Mot() {}
+static void Log_Write_MotBatt() {}
 static void Log_Write_Data(uint8_t id, int16_t value){}
 static void Log_Write_Data(uint8_t id, uint16_t value){}
 static void Log_Write_Data(uint8_t id, int32_t value){}
