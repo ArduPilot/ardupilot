@@ -49,6 +49,10 @@ void LinuxScheduler::_create_realtime_thread(pthread_t *ctx, int rtprio,
         panic(PSTR("Failed to create thread"));
     }
     pthread_attr_destroy(&attr);
+
+    if (name) {
+        pthread_setname_np(*ctx, name);
+    }
 }
 
 void LinuxScheduler::init(void* machtnichts)
