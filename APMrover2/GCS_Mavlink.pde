@@ -177,7 +177,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
     int16_t battery_current = -1;
     int8_t battery_remaining = -1;
 
-    if (battery.has_current()) {
+    if (battery.has_current() && battery.healthy()) {
         battery_remaining = battery.capacity_remaining_pct();
         battery_current = battery.current_amps() * 100;
     }
