@@ -18,6 +18,7 @@ class AK8963_Backend
         virtual bool sem_take_nonblocking() = 0;
         virtual bool sem_take_blocking() = 0;
         virtual bool sem_give() = 0;
+        virtual bool init() = 0;
         virtual uint8_t read(uint8_t address) 
         {
             uint8_t value;
@@ -93,6 +94,7 @@ class AK8963_MPU9250_SPI_Backend: public AK8963_Backend
         bool sem_take_nonblocking();
         bool sem_take_blocking();
         bool sem_give();
+        bool init() ;
         ~AK8963_MPU9250_SPI_Backend() {}
 
     private:
