@@ -77,11 +77,11 @@ private:
     pthread_t _uart_thread_ctx;
     pthread_t _tonealarm_thread_ctx;
 
-    void *_timer_thread(void);
-    void *_io_thread(void);
-    void *_rcin_thread(void);
-    void *_uart_thread(void);
-    void *_tonealarm_thread(void);
+    static void *_timer_thread(void* arg);
+    static void *_io_thread(void* arg);
+    static void *_rcin_thread(void* arg);
+    static void *_uart_thread(void* arg);
+    static void *_tonealarm_thread(void* arg);
 
     void _run_timers(bool called_from_timer_thread);
     void _run_io(void);
