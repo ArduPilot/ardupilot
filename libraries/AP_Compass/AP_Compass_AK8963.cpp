@@ -517,7 +517,9 @@ void AP_Compass_AK8963::read()
     _mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
     _accum_count = 0;
 
-    publish_field(field, _compass_instance);
+    rotate_field(field, _compass_instance);
+    correct_field(field, _compass_instance);
+    publish_filtered_field(field, _compass_instance);
 }
 
 void AP_Compass_AK8963::_start_conversion()
