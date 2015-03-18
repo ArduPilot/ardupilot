@@ -35,39 +35,39 @@
 
 // Aux Switch enumeration
 enum aux_sw_func {
-    AUXSW_DO_NOTHING =     0,      // aux switch disabled
-    AUXSW_SET_HOVER,               // deprecated
-    AUXSW_FLIP,                    // flip
-    AUXSW_SIMPLE_MODE,             // change to simple mode
-    AUXSW_RTL,                     // change to RTL flight mode
-    AUXSW_SAVE_TRIM,               // save current position as level
-    AUXSW_ADC_FILTER,              // deprecated
-    AUXSW_SAVE_WP,                 // save mission waypoint or RTL if in auto mode
-    AUXSW_MULTI_MODE,              // depending upon CH6 position Flip (if ch6 is low), RTL (if ch6 in middle) or Save WP (if ch6 is high)
-    AUXSW_CAMERA_TRIGGER,          // trigger camera servo or relay
-    AUXSW_SONAR,                   // allow enabling or disabling sonar in flight which helps avoid surface tracking when you are far above the ground
-    AUXSW_FENCE,                   // allow enabling or disabling fence in flight
-    AUXSW_RESETTOARMEDYAW,         // changes yaw to be same as when quad was armed
-    AUXSW_SUPERSIMPLE_MODE,        // change to simple mode in middle, super simple at top
-    AUXSW_ACRO_TRAINER,            // low = disabled, middle = leveled, high = leveled and limited
-    AUXSW_SPRAYER,                 // enable/disable the crop sprayer
-    AUXSW_AUTO,                    // change to auto flight mode
-    AUXSW_AUTOTUNE,                // auto tune
-    AUXSW_LAND,                    // change to LAND flight mode
-    AUXSW_EPM,                     // Operate the EPM cargo gripper low=off, middle=neutral, high=on
-    AUXSW_EKF,                     // Deprecated
-    AUXSW_PARACHUTE_ENABLE,        // Parachute enable/disable
-    AUXSW_PARACHUTE_RELEASE,       // Parachute release
-    AUXSW_PARACHUTE_3POS,          // Parachute disable, enable, release with 3 position switch
-    AUXSW_MISSION_RESET,           // Reset auto mission to start from first command
-    AUXSW_ATTCON_FEEDFWD,          // enable/disable the roll and pitch rate feed forward
-    AUXSW_ATTCON_ACCEL_LIM,        // enable/disable the roll, pitch and yaw accel limiting
-    AUXSW_RETRACT_MOUNT,           // Retract Mount
-    AUXSW_RELAY,                   // Relay pin on/off (only supports first relay)
-    AUXSW_LANDING_GEAR,            // Landing gear controller
-    AUXSW_LOST_COPTER_SOUND,       // Play lost copter sound
-    AUXSW_MOTOR_ESTOP,             // Emergency Stop Switch
-    AUXSW_MOTOR_INTERLOCK,         // Motor On/Off switch
+    AUXSW_DO_NOTHING =     0,      // 0, aux switch disabled
+    AUXSW_SET_HOVER,               // 1, deprecated
+    AUXSW_FLIP,                    // 2, flip
+    AUXSW_SIMPLE_MODE,             // 3, change to simple mode
+    AUXSW_RTL,                     // 4, change to RTL flight mode
+    AUXSW_SAVE_TRIM,               // 5, save current position as level
+    AUXSW_ADC_FILTER,              // 6, deprecated
+    AUXSW_SAVE_WP,                 // 7,save mission waypoint or RTL if in auto mode
+    AUXSW_MULTI_MODE,              // 8, depending upon CH6 position Flip (if ch6 is low), RTL (if ch6 in middle) or Save WP (if ch6 is high)
+    AUXSW_CAMERA_TRIGGER,          // 9, trigger camera servo or relay
+    AUXSW_SONAR,                   // 10,allow enabling or disabling sonar in flight which helps avoid surface tracking when you are far above the ground
+    AUXSW_FENCE,                   // 11, allow enabling or disabling fence in flight
+    AUXSW_RESETTOARMEDYAW,         // 12, changes yaw to be same as when quad was armed
+    AUXSW_SUPERSIMPLE_MODE,        // 13, change to simple mode in middle, super simple at top
+    AUXSW_ACRO_TRAINER,            // 14, low = disabled, middle = leveled, high = leveled and limited
+    AUXSW_SPRAYER,                 // 15, enable/disable the crop sprayer
+    AUXSW_AUTO,                    // 16, change to auto flight mode
+    AUXSW_AUTOTUNE,                // 17, auto tune
+    AUXSW_LAND,                    // 18, change to LAND flight mode
+    AUXSW_EPM,                     // 19, Operate the EPM cargo gripper low=off, middle=neutral, high=on
+    AUXSW_EKF,                     // 20, Deprecated
+    AUXSW_PARACHUTE_ENABLE,        // 21, Parachute enable/disable
+    AUXSW_PARACHUTE_RELEASE,       // 22, Parachute release
+    AUXSW_PARACHUTE_3POS,          // 23, Parachute disable, enable, release with 3 position switch
+    AUXSW_MISSION_RESET,           // 24, Reset auto mission to start from first command
+    AUXSW_ATTCON_FEEDFWD,          // 25, enable/disable the roll and pitch rate feed forward
+    AUXSW_ATTCON_ACCEL_LIM,        // 26, enable/disable the roll, pitch and yaw accel limiting
+    AUXSW_RETRACT_MOUNT,           // 27, Retract Mount
+    AUXSW_RELAY,                   // 28, Relay pin on/off (only supports first relay)
+    AUXSW_LANDING_GEAR,            // 29, Landing gear controller
+    AUXSW_LOST_COPTER_SOUND,       // 30, Play lost copter sound
+    AUXSW_MOTOR_ESTOP,             // 31, Emergency Stop Switch
+    AUXSW_MOTOR_INTERLOCK,         // 32, Motor On/Off switch
 };
 
 // Frame types
