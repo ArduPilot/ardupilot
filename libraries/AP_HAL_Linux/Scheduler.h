@@ -13,6 +13,9 @@
 #define LINUX_SCHEDULER_MAX_IO_PROCS 10
 
 class Linux::LinuxScheduler : public AP_HAL::Scheduler {
+
+typedef void *(*pthread_startroutine_t)(void *);
+
 public:
     LinuxScheduler();
     void     init(void* machtnichts);
@@ -82,7 +85,8 @@ private:
 
     void _run_timers(bool called_from_timer_thread);
     void _run_io(void);
-    void _setup_realtime(uint32_t size);
+    void _create_realtime_thread(pthread_t *ctx, int rtprio,
+                                 pthread_startroutine_t start_routine);
 
     uint64_t stopped_clock_usec;
 
