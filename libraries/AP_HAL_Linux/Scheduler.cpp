@@ -59,23 +59,23 @@ void LinuxScheduler::init(void* machtnichts)
     sched_setscheduler(0, SCHED_FIFO, &param);
 
     _create_realtime_thread(&_timer_thread_ctx, APM_LINUX_TIMER_PRIORITY,
-                           (pthread_startroutine_t)&Linux::LinuxScheduler::_timer_thread);
+                            &Linux::LinuxScheduler::_timer_thread);
 
     // the UART thread runs at a medium priority
     _create_realtime_thread(&_uart_thread_ctx, APM_LINUX_UART_PRIORITY,
-                           (pthread_startroutine_t)&Linux::LinuxScheduler::_uart_thread);
+                            &Linux::LinuxScheduler::_uart_thread);
 
     // the RCIN thread runs at a lower medium priority
     _create_realtime_thread(&_rcin_thread_ctx, APM_LINUX_RCIN_PRIORITY,
-                           (pthread_startroutine_t)&Linux::LinuxScheduler::_rcin_thread);
+                            &Linux::LinuxScheduler::_rcin_thread);
 
     // the Tone Alarm thread runs at highest priority
     _create_realtime_thread(&_tonealarm_thread_ctx, APM_LINUX_TONEALARM_PRIORITY,
-                           (pthread_startroutine_t)&Linux::LinuxScheduler::_tonealarm_thread);
+                            &Linux::LinuxScheduler::_tonealarm_thread);
 
     // the IO thread runs at lower priority
     _create_realtime_thread(&_io_thread_ctx, APM_LINUX_IO_PRIORITY,
-                           (pthread_startroutine_t)&Linux::LinuxScheduler::_io_thread);
+                            &Linux::LinuxScheduler::_io_thread);
 }
 
 void LinuxScheduler::_microsleep(uint32_t usec)
@@ -230,28 +230,31 @@ void LinuxScheduler::_run_timers(bool called_from_timer_thread)
     _in_timer_proc = false;
 }
 
-void *LinuxScheduler::_timer_thread(void)
+void *LinuxScheduler::_timer_thread(void* arg)
 {
+    LinuxScheduler* sched = (LinuxScheduler *)arg;
+
     mlockall(MCL_CURRENT|MCL_FUTURE);
-    while (system_initializing()) {
-        poll(NULL, 0, 1);        
+
+    while (sched->system_initializing()) {
+        poll(NULL, 0, 1);
     }
     /*
       this aims to run at an average of 1kHz, so that it can be used
       to drive 1kHz processes without drift
      */
-    uint64_t next_run_usec = micros64() + 1000;
+    uint64_t next_run_usec = sched->micros64() + 1000;
     while (true) {
-        uint64_t dt = next_run_usec - micros64();
+        uint64_t dt = next_run_usec - sched->micros64();
         if (dt > 2000) {
             // we've lost sync - restart
-            next_run_usec = micros64();
+            next_run_usec = sched->micros64();
         } else {
-            _microsleep(dt);
+            sched->_microsleep(dt);
         }
         next_run_usec += 1000;
         // run registered timers
-        _run_timers(true);
+        sched->_run_timers(true);
     }
     return NULL;
 }
@@ -272,28 +275,34 @@ void LinuxScheduler::_run_io(void)
     _io_semaphore.give();
 }
 
-void *LinuxScheduler::_rcin_thread(void)
+void *LinuxScheduler::_rcin_thread(void *arg)
 {
+    LinuxScheduler* sched = (LinuxScheduler *)arg;
+
     mlockall(MCL_CURRENT|MCL_FUTURE);
-    while (system_initializing()) {
-        poll(NULL, 0, 1);        
+
+    while (sched->system_initializing()) {
+        poll(NULL, 0, 1);
     }
     while (true) {
-        _microsleep(10000);
+        sched->_microsleep(10000);
 
         ((LinuxRCInput *)hal.rcin)->_timer_tick();
     }
     return NULL;
 }
 
-void *LinuxScheduler::_uart_thread(void)
+void *LinuxScheduler::_uart_thread(void* arg)
 {
+    LinuxScheduler* sched = (LinuxScheduler *)arg;
+
     mlockall(MCL_CURRENT|MCL_FUTURE);
-    while (system_initializing()) {
-        poll(NULL, 0, 1);        
+
+    while (sched->system_initializing()) {
+        poll(NULL, 0, 1);
     }
     while (true) {
-        _microsleep(10000);
+        sched->_microsleep(10000);
 
         // process any pending serial bytes
         ((LinuxUARTDriver *)hal.uartA)->_timer_tick();
@@ -303,14 +312,17 @@ void *LinuxScheduler::_uart_thread(void)
     return NULL;
 }
 
-void *LinuxScheduler::_tonealarm_thread(void)
+void *LinuxScheduler::_tonealarm_thread(void* arg)
 {
+    LinuxScheduler* sched = (LinuxScheduler *)arg;
+
     mlockall(MCL_CURRENT|MCL_FUTURE);
-    while (system_initializing()) {
-        poll(NULL, 0, 1);        
+
+    while (sched->system_initializing()) {
+        poll(NULL, 0, 1);
     }
     while (true) {
-        _microsleep(10000);
+        sched->_microsleep(10000);
 
         // process tone command
         ((LinuxUtil *)hal.util)->_toneAlarm_timer_tick();
@@ -318,20 +330,23 @@ void *LinuxScheduler::_tonealarm_thread(void)
     return NULL;
 }
 
-void *LinuxScheduler::_io_thread(void)
+void *LinuxScheduler::_io_thread(void* arg)
 {
+    LinuxScheduler* sched = (LinuxScheduler *)arg;
+
     mlockall(MCL_CURRENT|MCL_FUTURE);
-    while (system_initializing()) {
-        poll(NULL, 0, 1);        
+
+    while (sched->system_initializing()) {
+        poll(NULL, 0, 1);
     }
     while (true) {
-        _microsleep(20000);
+        sched->_microsleep(20000);
 
         // process any pending storage writes
         ((LinuxStorage *)hal.storage)->_timer_tick();
 
         // run registered IO processes
-        _run_io();
+        sched->_run_io();
     }
     return NULL;
 }
