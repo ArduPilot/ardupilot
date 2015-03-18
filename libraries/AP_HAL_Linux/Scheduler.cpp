@@ -32,22 +32,11 @@ LinuxScheduler::LinuxScheduler()
 
 typedef void *(*pthread_startroutine_t)(void *);
 
-/*
-  setup for realtime. Lock all of memory in the thread and pre-fault
-  the given stack size, so stack faults don't cause timing jitter
- */
-void LinuxScheduler::_setup_realtime(uint32_t size) 
-{
-        uint8_t dummy[size];
-        mlockall(MCL_CURRENT|MCL_FUTURE);
-        memset(dummy, 0, sizeof(dummy));
-}
-
 void LinuxScheduler::init(void* machtnichts)
 {
-    clock_gettime(CLOCK_MONOTONIC, &_sketch_start_time);
+    mlockall(MCL_CURRENT|MCL_FUTURE);
 
-    _setup_realtime(32768);
+    clock_gettime(CLOCK_MONOTONIC, &_sketch_start_time);
 
     pthread_attr_t thread_attr;
     struct sched_param param;
@@ -251,7 +240,7 @@ void LinuxScheduler::_run_timers(bool called_from_timer_thread)
 
 void *LinuxScheduler::_timer_thread(void)
 {
-    _setup_realtime(32768);
+    mlockall(MCL_CURRENT|MCL_FUTURE);
     while (system_initializing()) {
         poll(NULL, 0, 1);        
     }
@@ -293,7 +282,7 @@ void LinuxScheduler::_run_io(void)
 
 void *LinuxScheduler::_rcin_thread(void)
 {
-    _setup_realtime(32768);
+    mlockall(MCL_CURRENT|MCL_FUTURE);
     while (system_initializing()) {
         poll(NULL, 0, 1);        
     }
@@ -307,7 +296,7 @@ void *LinuxScheduler::_rcin_thread(void)
 
 void *LinuxScheduler::_uart_thread(void)
 {
-    _setup_realtime(32768);
+    mlockall(MCL_CURRENT|MCL_FUTURE);
     while (system_initializing()) {
         poll(NULL, 0, 1);        
     }
@@ -324,7 +313,7 @@ void *LinuxScheduler::_uart_thread(void)
 
 void *LinuxScheduler::_tonealarm_thread(void)
 {
-    _setup_realtime(32768);
+    mlockall(MCL_CURRENT|MCL_FUTURE);
     while (system_initializing()) {
         poll(NULL, 0, 1);        
     }
@@ -339,7 +328,7 @@ void *LinuxScheduler::_tonealarm_thread(void)
 
 void *LinuxScheduler::_io_thread(void)
 {
-    _setup_realtime(32768);
+    mlockall(MCL_CURRENT|MCL_FUTURE);
     while (system_initializing()) {
         poll(NULL, 0, 1);        
     }
