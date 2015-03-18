@@ -691,7 +691,7 @@ bool Compass::configured(void)
 {
     bool all_configured = true;
     for(uint8_t i=0; i<get_count(); i++) {
-        all_configured = all_configured && configured(i);
+        all_configured = all_configured && (!use_for_yaw(i) || configured(i));
     }
     return all_configured;
 }
