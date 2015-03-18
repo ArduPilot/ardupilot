@@ -102,7 +102,7 @@ bool AC_Fence::pre_arm_check() const
     }
 
     // if we have horizontal limits enabled, check inertial nav position is ok
-    if ((_enabled_fences & AC_FENCE_TYPE_CIRCLE)!=0 && !_inav->get_filter_status().flags.horiz_pos_abs) {
+    if ((_enabled_fences & AC_FENCE_TYPE_CIRCLE)!=0 && !_inav->get_filter_status().flags.horiz_pos_abs && !_inav->get_filter_status().flags.pred_horiz_pos_abs) {
         return false;
     }
 
