@@ -9,8 +9,7 @@ sudo apt-get -y install dos2unix python-wxgtk2.8 python-scipy python-matplotlib 
 sudo pip install pymavlink MAVProxy
 
 echo "source /vagrant/Tools/vagrant/shellinit.sh" >>/home/vagrant/.profile
-rm /home/vagrant/.screenrc
-ln -s /vagrant/Tools/vagrant/screenrc /home/vagrant/.screenrc
+ln -fs /vagrant/Tools/vagrant/screenrc /home/vagrant/.screenrc
 
 # build JSB sim
 pushd /tmp
