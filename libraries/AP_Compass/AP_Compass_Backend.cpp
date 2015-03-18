@@ -11,30 +11,89 @@ AP_Compass_Backend::AP_Compass_Backend(Compass &compass) :
 {}
 
 /*
+ * A compass measurement is expected to pass through the following functions:
+ * 1. rotate_field - this rotates the measurement in-place from sensor frame
+ *      to body frame
+ * 2. publish_raw_field - this provides an uncorrected point-sample for
+ *      calibration libraries
+ * 3. correct_field - this corrects the measurement in-place for hard iron,
+ *      soft iron, motor interference, and non-orthagonality errors
+ * 4. publish_unfiltered_field - this (optionally) provides a corrected
+ *      point sample for fusion into the EKF
+ * 5. publish_filtered_field - legacy filtered magnetic field
+ */
+
+void AP_Compass_Backend::rotate_field(Vector3f &mag, uint8_t instance)
+{
+    Compass::mag_state &state = _compass._state[instance];
+    mag.rotate(MAG_BOARD_ORIENTATION);
+
+    if (!state.external) {
+        // and add in AHRS_ORIENTATION setting if not an external compass
+        mag.rotate(_compass._board_orientation);
+    } else {
+        // add user selectable orientation
+        mag.rotate((enum Rotation)state.orientation.get());
+    }
+}
+
+void AP_Compass_Backend::publish_raw_field(const Vector3f &mag, uint32_t time_us, uint8_t instance)
+{
+    Compass::mag_state &state = _compass._state[instance];
+
+    state.raw_field = mag;
+    state.raw_meas_time_us = time_us;
+    state.updated_raw_field = true;
+    state.has_raw_field = true;
+}
+
+void AP_Compass_Backend::correct_field(Vector3f &mag, uint8_t i)
+{
+    Compass::mag_state &state = _compass._state[i];
+
+    const Vector3f &offsets = state.offset.get();
+    const Vector3f &mot = state.motor_compensation.get();
+
+    /*
+     * note that _motor_offset[] is kept even if compensation is not
+     * being applied so it can be logged correctly
+     */
+    mag += offsets;
+    if(_compass._motor_comp_type != AP_COMPASS_MOT_COMP_DISABLED && _compass._thr_or_curr != 0.0f) {
+        state.motor_offset = mot * _compass._thr_or_curr;
+        mag += state.motor_offset;
+    } else {
+        state.motor_offset.zero();
+    }
+}
+
+void AP_Compass_Backend::publish_unfiltered_field(const Vector3f &mag, uint32_t time_us, uint8_t instance)
+{
+    Compass::mag_state &state = _compass._state[instance];
+
+    state.unfiltered_field = mag;
+    state.raw_meas_time_us = time_us;
+    state.updated_unfiltered_field = true;
+    state.has_unfiltered_field = true;
+}
+
+/*
   copy latest data to the frontend from a backend
  */
-void AP_Compass_Backend::publish_field(const Vector3f &mag, uint8_t instance) 
+void AP_Compass_Backend::publish_filtered_field(const Vector3f &mag, uint8_t instance)
 {
     Compass::mag_state &state = _compass._state[instance];
 
     state.field = mag;
 
-    // apply default board orientation for this compass type. This is
-    // a noop on most boards
-    state.field.rotate(MAG_BOARD_ORIENTATION);
-
-    if (!state.external) {
-        // and add in AHRS_ORIENTATION setting if not an external compass
-        state.field.rotate(_compass._board_orientation);
-    } else {
-        // add user selectable orientation
-        state.field.rotate((enum Rotation)state.orientation.get());
-    }
-
-    apply_corrections(state.field, instance);
-
     state.last_update_ms = hal.scheduler->millis();
     _compass._last_update_usec = hal.scheduler->micros();
+
+    state.has_raw_field = state.updated_raw_field;
+    state.updated_raw_field = false;
+
+    state.has_unfiltered_field = state.updated_unfiltered_field;
+    state.updated_unfiltered_field = false;
 }
 
 /*
@@ -44,28 +103,6 @@ void AP_Compass_Backend::publish_field(const Vector3f &mag, uint8_t instance)
 uint8_t AP_Compass_Backend::register_compass(void) const
 { 
     return _compass.register_compass(); 
-}    
-
-/*
-  apply offset and motor compensation corrections
- */
-void AP_Compass_Backend::apply_corrections(Vector3f &mag, uint8_t i)
-{
-    Compass::mag_state &state = _compass._state[i];
-    const Vector3f &offsets = state.offset.get();
-    const Vector3f &mot = state.motor_compensation.get();
-
-    /*
-      note that _motor_offset[] is kept even if compensation is not
-      being applied so it can be logged correctly
-     */
-    mag += offsets;
-    if(_compass._motor_comp_type != AP_COMPASS_MOT_COMP_DISABLED && _compass._thr_or_curr != 0.0f) {
-        state.motor_offset = mot * _compass._thr_or_curr;
-        mag += state.motor_offset;
-    } else {
-        state.motor_offset.zero();
-    }
 }
 
 
