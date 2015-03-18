@@ -484,6 +484,9 @@ AP_AK8963_SerialBus_I2C::AP_AK8963_SerialBus_I2C(AP_HAL::I2CDriver *i2c, uint8_t
 void AP_AK8963_SerialBus_I2C::register_write(uint8_t address, uint8_t value)
 {
     _i2c->writeRegister(_addr, address, value);
+    rotate_field(field, _compass_instance);
+    correct_field(field, _compass_instance);
+    publish_filtered_field(field, _compass_instance);
 }
 
 void AP_AK8963_SerialBus_I2C::register_read(uint8_t address, uint8_t *value, uint8_t count)
