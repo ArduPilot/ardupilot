@@ -492,6 +492,18 @@ Compass::read(void)
     return healthy();
 }
 
+uint8_t
+Compass::get_healthy_mask() const
+{
+    uint8_t healthy_mask = 0;
+    for(uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+        if(healthy(i)) {
+            healthy_mask |= 1 << i;
+        }
+    }
+    return healthy_mask;
+}
+
 void
 Compass::set_offsets(uint8_t i, const Vector3f &offsets)
 {
