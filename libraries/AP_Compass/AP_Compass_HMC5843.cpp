@@ -394,6 +394,9 @@ void AP_Compass_HMC5843::read()
         field.rotate(ROTATION_YAW_90);
     }
 
-    publish_field(field, _compass_instance);
+
+    rotate_field(field, _compass_instance);
+    correct_field(field, _compass_instance);
+    publish_filtered_field(field, _compass_instance);
     _retry_time = 0;
 }
