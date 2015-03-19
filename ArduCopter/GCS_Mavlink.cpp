@@ -1380,7 +1380,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
             if (is_equal(packet.param1,1.0f) || is_equal(packet.param1,3.0f)) {
-                AP_Notify::events.firmware_update = 1;
+                AP_Notify::flags.firmware_update = 1;
                 copter.update_notify();
                 hal.scheduler->delay(50);
                 // when packet.param1 == 3 we reboot to hold in bootloader
