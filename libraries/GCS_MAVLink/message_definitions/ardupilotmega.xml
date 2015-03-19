@@ -114,6 +114,101 @@
         <entry name="CLOSEDLOOP"  value="3"> <description>Closed loop feedback from camera, we know for sure it has successfully taken a picture</description></entry>
         <entry name="OPENLOOP"    value="4"> <description>Open loop camera, an image trigger has been requested but we can't know for sure it has successfully taken a picture</description></entry>
     </enum>
+    
+    <!-- Gimbal payload enumerations -->
+	<enum name="MAV_MODE_GIMBAL">
+		<entry name="MAV_MODE_GIMBAL_UNINITIALIZED" value="0">
+			<description>Gimbal is powered on but has not started initializing yet</description>
+		</entry>
+		<entry name="MAV_MODE_GIMBAL_CALIBRATING_PITCH" value="1">
+			<description>Gimbal is currently running calibration on the pitch axis</description>
+		</entry>
+		<entry name="MAV_MODE_GIMBAL_CALIBRATING_ROLL" value="2">
+			<description>Gimbal is currently running calibration on the roll axis</description>
+		</entry>
+		<entry name="MAV_MODE_GIMBAL_CALIBRATING_YAW" value="3">
+			<description>Gimbal is currently running calibration on the yaw axis</description>
+		</entry>
+		<entry name="MAV_MODE_GIMBAL_INITIALIZED" value="4">
+			<description>Gimbal has finished calibrating and initializing, but is relaxed pending reception of first rate command from copter</description>
+		</entry>
+		<entry name="MAV_MODE_GIMBAL_ACTIVE" value="5">
+			<description>Gimbal is actively stabilizing</description>
+		</entry>
+		<entry name="MAV_MODE_GIMBAL_RATE_CMD_TIMEOUT" value="6">
+			<description>Gimbal is relaxed because it missed more than 10 expected rate command messages in a row.  Gimbal will move back to active mode when it receives a new rate command</description>
+		</entry>
+	</enum>
+	
+	<enum name="GIMBAL_AXIS">
+		<entry name="GIMBAL_AXIS_YAW" value="0">
+			<description>Gimbal yaw axis</description>
+		</entry>
+		<entry name="GIMBAL_AXIS_PITCH" value="1">
+			<description>Gimbal pitch axis</description>
+		</entry>
+		<entry name="GIMBAL_AXIS_ROLL" value="2">
+			<description>Gimbal roll axis</description>
+		</entry> 
+	</enum>
+	
+	<enum name="GIMBAL_AXIS_CALIBRATION_STATUS">
+		<entry name="GIMBAL_AXIS_CALIBRATION_STATUS_IN_PROGRESS" value="0">
+			<description>Axis calibration is in progress</description>
+		</entry>
+		<entry name="GIMBAL_AXIS_CALIBRATION_STATUS_SUCCEEDED" value="1">
+			<description>Axis calibration succeeded</description>
+		</entry>
+		<entry name="GIMBAL_AXIS_CALIBRATION_STATUS_FAILED" value="2">
+			<description>Axis calibration failed</description>
+		</entry>
+	</enum>
+	
+	<enum name="FACTORY_TEST">
+		<entry name="FACTORY_TEST_AXIS_RANGE_LIMITS" value="0">
+			<description>Tests to make sure each axis can move to its mechanical limits</description>
+		</entry>
+	</enum>
+	
+    <!-- GoPro command result enumeration -->
+    <enum name="GOPRO_CMD_RESULT">
+        <entry name="GOPRO_CMD_RESULT_UNKNOWN" value="0">
+            <description>The result of the command is unknown</description>
+        </entry>
+        <entry name="GOPRO_CMD_RESULT_SUCCESSFUL" value="1">
+            <description>The command was successfully sent, and a response was successfully received</description>
+        </entry>
+        <entry name="GOPRO_CMD_RESULT_SEND_CMD_START_TIMEOUT" value="2">
+            <description>Timed out waiting for the GoPro to acknowledge our request to send a command</description>
+        </entry>
+        <entry name="GOPRO_CMD_RESULT_SEND_CMD_COMPLETE_TIMEOUT" value="3">
+            <description>Timed out waiting for the GoPro to read the command</description>
+        </entry>
+        <entry name="GOPRO_CMD_RESULT_GET_RESPONSE_START_TIMEOUT" value="4">
+            <description>Timed out waiting for the GoPro to begin transmitting a response to the command</description>
+        </entry>
+        <entry name="GOPRO_CMD_RESULT_GET_RESPONSE_COMPLETE_TIMEOUT" value="5">
+            <description>Timed out waiting for the GoPro to finish transmitting a response to the command</description>
+        </entry>
+        <entry name="GOPRO_CMD_RESULT_GET_CMD_COMPLETE_TIMEOUT" value="6">
+            <description>Timed out waiting for the GoPro to finish transmitting its own command</description>
+        </entry>
+        <entry name="GOPRO_CMD_RESULT_SEND_RESPONSE_START_TIMEOUT" value="7">
+            <description>Timed out waiting for the GoPro to start reading a response to its own command</description>
+        </entry>
+        <entry name="GOPRO_CMD_RESULT_SEND_RESPONSE_COMPLETE_TIMEOUT" value="8">
+            <description>Timed out waiting for the GoPro to finish reading a response to its own command</description>
+        </entry>
+        <entry name="GOPRO_CMD_RESULT_PREEMPTED" value="9">
+            <description>Command to the GoPro was preempted by the GoPro sending its own command</description>
+        </entry>
+        <entry name="GOPRO_CMD_RECEIVED_DATA_OVERFLOW" value="10">
+            <description>More data than expected received in response to the command</description>
+        </entry>
+        <entry name="GOPRO_CMD_RECEIVED_DATA_UNDERFLOW" value="11">
+            <description>Less data than expected received in response to the command</description>
+        </entry>
+    </enum>
 
     <!-- led control pattern enums (enumeration of specific patterns) -->
     <enum name="LED_CONTROL_PATTERN">
@@ -555,8 +650,134 @@
         <field type="float" name="demanded_rate_z">Demanded angular rate Z (rad/s)</field>
     </message>
 
-    <!-- 202 to 214 RESERVED for gimbal control -->
-    <!-- 215 to 218 RESERVED for camera control -->
+    <message name="GIMBAL_RESET" id="202">
+        <description>
+            Causes the gimbal to reset and boot as if it was just powered on
+        </description>
+        <field name="target_system" type="uint8_t">System ID</field>
+        <field name="target_component" type="uint8_t">Component ID</field>
+    </message>
+
+    <message name="GIMBAL_AXIS_CALIBRATION_PROGRESS" id="203">
+        <description>
+            Reports progress and success or failure of gimbal axis calibration procedure
+        </description>
+        <field name="calibration_axis" type="uint8_t" enum="GIMBAL_AXIS">Which gimbal axis we're reporting calibration progress for</field>
+        <field name="calibration_progress" type="uint8_t">The current calibration progress for this axis, 0x64=100%</field>
+        <field name="calibration_status" type="uint8_t" enum="GIMBAL_AXIS_CALIBRATION_STATUS">The status of the running calibration</field>
+    </message>
+
+    <message name="GIMBAL_SET_HOME_OFFSETS" id="204">
+        <description>
+            Instructs the gimbal to set its current position as its new home position.  Will primarily be used for factory calibration
+        </description>
+        <field name="target_system" type="uint8_t">System ID</field>
+        <field name="target_component" type="uint8_t">Component ID</field>
+    </message>
+
+    <message name="GIMBAL_HOME_OFFSET_CALIBRATION_RESULT" id="205">
+        <description>
+            Sent by the gimbal after it receives a SET_HOME_OFFSETS message to indicate the result of the home offset calibration
+        </description>
+        <field name="calibration_result" type="uint8_t" enum="GIMBAL_AXIS_CALIBRATION_STATUS">The result of the home offset calibration</field>
+    </message>
+
+    <message name="GIMBAL_SET_FACTORY_PARAMETERS" id="206">
+        <description>
+            Set factory configuration parameters (such as assembly date and time, and serial number).  This is only intended to be used
+            during manufacture, not by end users, so it is protected by a simple checksum of sorts (this won't stop anybody determined,
+            it's mostly just to keep the average user from trying to modify these values.  This will need to be revisited if that isn't
+            adequate.
+        </description>
+        <field name="target_system" type="uint8_t">System ID</field>
+        <field name="target_component" type="uint8_t">Component ID</field>
+        <field name="magic_1" type="uint32_t">Magic number 1 for validation</field>
+        <field name="magic_2" type="uint32_t">Magic number 2 for validation</field>
+        <field name="magic_3" type="uint32_t">Magic number 3 for validation</field>
+        <field name="assembly_year" type="uint16_t">Assembly Date Year</field>
+        <field name="assembly_month" type="uint8_t">Assembly Date Month</field>
+        <field name="assembly_day" type="uint8_t">Assembly Date Day</field>
+        <field name="assembly_hour" type="uint8_t">Assembly Time Hour</field>
+        <field name="assembly_minute" type="uint8_t">Assembly Time Minute</field>
+        <field name="assembly_second" type="uint8_t">Assembly Time Second</field>
+        <field name="serial_number_pt_1" type="uint32_t">Unit Serial Number Part 1 (part code, design, language/country)</field>
+        <field name="serial_number_pt_2" type="uint32_t">Unit Serial Number Part 2 (option, year, month)</field>
+        <field name="serial_number_pt_3" type="uint32_t">Unit Serial Number Part 3 (incrementing serial number per month)</field>
+    </message>
+
+    <message name="GIMBAL_FACTORY_PARAMETERS_LOADED" id="207">
+        <description>
+            Sent by the gimbal after the factory parameters are successfully loaded, to inform the factory software that the load is complete
+        </description>
+        <field name="dummy" type="uint8_t">Dummy field because mavgen doesn't allow messages with no fields</field>
+    </message>
+
+    <message name="GIMBAL_ERASE_FIRMWARE_AND_CONFIG" id="208">
+        <description>
+            Commands the gimbal to erase its firmware image and flash configuration, leaving only the bootloader.  The gimbal will then reboot into the bootloader,
+            ready for the load of a new application firmware image.  Erasing the flash configuration will cause the gimbal to re-perform axis calibration when a
+            new firmware image is loaded, and will cause all tuning parameters to return to their factory defaults.  WARNING: sending this command will render a
+            gimbal inoperable until a new firmware image is loaded onto it.  For this reason, a particular "knock" value must be sent for the command to take effect.
+            Use this command at your own risk
+        </description>
+        <field name="target_system" type="uint8_t">System ID</field>
+        <field name="target_component" type="uint8_t">Component ID</field>
+        <field name="knock" type="uint32_t">Knock value to confirm this is a valid request</field>
+    </message>
+
+    <message name="GIMBAL_PERFORM_FACTORY_TESTS" id="209">
+        <description>
+            Command the gimbal to perform a series of factory tests.  Should not be needed by end users
+        </description>
+        <field name="target_system" type="uint8_t">System ID</field>
+        <field name="target_component" type="uint8_t">Component ID</field>
+    </message>
+
+    <message name="GIMBAL_REPORT_FACTORY_TESTS_PROGRESS" id="210">
+        <description>
+            Reports the current status of a section of a running factory test
+        </description>
+        <field name="test" type="uint8_t" enum="FACTORY_TEST">Which factory test is currently running</field>
+        <field name="test_section" type="uint8_t">Which section of the test is currently running.  The meaning of this is test-dependent</field>
+        <field name="test_section_progress" type="uint8_t">The progress of the current test section, 0x64=100%</field>
+        <field name="test_status" type="uint8_t">The status of the currently executing test section.  The meaning of this is test and section-dependent</field>
+    </message>
+
+    <!-- 211 to 214 RESERVED for more GIMBAL -->
+
+    <message name="GOPRO_POWER_ON" id="215">
+        <description>Instruct a HeroBus attached GoPro to power on</description>
+        <field name="target_system" type="uint8_t">System ID</field>
+        <field name="target_component" type="uint8_t">Component ID</field>
+    </message>
+
+    <message name="GOPRO_POWER_OFF" id="216">
+        <description>Instruct a HeroBus attached GoPro to power off</description>
+        <field name="target_system" type="uint8_t">System ID</field>
+        <field name="target_component" type="uint8_t">Component ID</field>
+    </message>
+
+    <message name="GOPRO_COMMAND" id="217">
+        <description>Send a command to a HeroBus attached GoPro.  Will generate a GOPRO_RESPONSE message with results of the command</description>
+        <field name="target_system" type="uint8_t">System ID</field>
+        <field name="target_component" type="uint8_t">Component ID</field>
+        <field name="gp_cmd_name_1" type="uint8_t">First character of the 2 character GoPro command</field>
+        <field name="gp_cmd_name_2" type="uint8_t">Second character of the 2 character GoPro command</field>
+        <field name="gp_cmd_parm" type="uint8_t">Parameter for the command</field>
+    </message>
+
+    <message name="GOPRO_RESPONSE" id="218">
+        <description>
+            Response to a command sent to a HeroBus attached GoPro with a GOPRO_COMMAND message.  Contains response from the camera as well as information about any errors encountered while attempting to communicate with the camera
+        </description>
+        <field name="gp_cmd_name_1" type="uint8_t">First character of the 2 character GoPro command that generated this response</field>
+        <field name="gp_cmd_name_2" type="uint8_t">Second character of the 2 character GoPro command that generated this response</field>
+        <field name="gp_cmd_response_status" type="uint8_t">Response byte from the GoPro's response to the command.  0 = Success, 1 = Failure</field>
+        <field name="gp_cmd_response_argument" type="uint8_t">Response argument from the GoPro's response to the command</field>
+        <field name="gp_cmd_result" type="uint16_t" enum="GOPRO_CMD_RESULT">Result of the command attempt to the GoPro, as defined by GOPRO_CMD_RESULT enum.</field>
+    </message>
+
+    <!-- 219 to 225 RESERVED for more GOPRO-->
 
      </messages>
 </mavlink>
