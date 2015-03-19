@@ -298,25 +298,25 @@ static void startup_ground(bool force_gyro_cal)
 // position_ok - returns true if the horizontal absolute position is ok and home position is set
 static bool position_ok()
 {
-    if (ahrs.have_inertial_nav()) {
-        // return false if ekf failsafe has triggered
-        if (failsafe.ekf) {
-            return false;
-        }
-
-        // with EKF use filter status and ekf check
-        nav_filter_status filt_status = inertial_nav.get_filter_status();
-
-        // if disarmed we accept a predicted horizontal position
-        if (!motors.armed()) {
-            return ((filt_status.flags.horiz_pos_abs || filt_status.flags.pred_horiz_pos_abs));
-        } else {
-            // once armed we require a good absolute position and EKF must not be in const_pos_mode
-            return (filt_status.flags.horiz_pos_abs && !filt_status.flags.const_pos_mode);
-        }
-    } else {
-        // do not allow navigation with older inertial nav
+    if (!ahrs.have_inertial_nav()) {
+        // do not allow navigation with dcm position
         return false;
+    }
+
+    // return false if ekf failsafe has triggered
+    if (failsafe.ekf) {
+        return false;
+    }
+
+    // with EKF use filter status and ekf check
+    nav_filter_status filt_status = inertial_nav.get_filter_status();
+
+    // if disarmed we accept a predicted horizontal position
+    if (!motors.armed()) {
+        return ((filt_status.flags.horiz_pos_abs || filt_status.flags.pred_horiz_pos_abs));
+    } else {
+        // once armed we require a good absolute position and EKF must not be in const_pos_mode
+        return (filt_status.flags.horiz_pos_abs && !filt_status.flags.const_pos_mode);
     }
 }
 
