@@ -23,8 +23,8 @@ public:
     void start(bool retry=false, bool autosave=false, float delay=0.0f);
     void clear();
 
+    void update(bool &failure);
     void new_sample(const Vector3f &sample);
-    void run_fit_chunk();
 
     bool check_for_timeout();
 
