@@ -573,56 +573,47 @@ void SITL_State::_sbp_send_message(uint16_t msg_type, uint16_t sender_id, uint8_
 }
 
 
-void SITL_State::_update_gps_sbp(const struct gps_data *d, bool sim_rtk)
+void SITL_State::_update_gps_sbp(const struct gps_data *d)
 {
     struct PACKED sbp_gps_time_t {
-        uint16_t wn;     //< GPS week number
-        uint32_t tow;    //< GPS Time of Week rounded to the nearest ms
-        int32_t ns;      //< Nanosecond remainder of rounded tow
-        uint8_t flags;   //< Status flags (reserved)
+        uint16_t wn;   //< GPS week number
+        uint32_t tow;  //< GPS Time of Week rounded to the nearest ms
+        int32_t ns;    //< Nanosecond remainder of rounded tow
+        uint8_t flags; //< Status flags (reserved)
     } t;
     struct PACKED sbp_pos_llh_t {
-        uint32_t tow;         //< GPS Time of Week
-        double lat;           //< Latitude
-        double lon;           //< Longitude
-        double height;        //< Height
-        uint16_t h_accuracy;  //< Horizontal position accuracy estimate
-        uint16_t v_accuracy;  //< Vertical position accuracy estimate
-        uint8_t n_sats;       //< Number of satellites used in solution
-        uint8_t flags;        //< Status flags
+        uint32_t tow;        //< GPS Time of Week
+        double lat;          //< Latitude
+        double lon;          //< Longitude
+        double height;       //< Height
+        uint16_t h_accuracy; //< Horizontal position accuracy estimate
+        uint16_t v_accuracy; //< Vertical position accuracy estimate
+        uint8_t n_sats;      //< Number of satellites used in solution
+        uint8_t flags;       //< Status flags
     } pos;
     struct PACKED sbp_vel_ned_t {
-        uint32_t tow;          //< GPS Time of Week
-        int32_t n;             //< Velocity North coordinate
-        int32_t e;             //< Velocity East coordinate
-        int32_t d;             //< Velocity Down coordinate
-        uint16_t h_accuracy;   //< Horizontal velocity accuracy estimate
-        uint16_t v_accuracy;   //< Vertical velocity accuracy estimate
-        uint8_t n_sats;        //< Number of satellites used in solution
-        uint8_t flags;         //< Status flags (reserved)
-    } velned;
-    struct PACKED sbp_dops_t {
-        uint32_t tow;    //< GPS Time of Week
-        uint16_t gdop;   //< Geometric Dilution of Precision
-        uint16_t pdop;   //< Position Dilution of Precision
-        uint16_t tdop;   //< Time Dilution of Precision
-        uint16_t hdop;   //< Horizontal Dilution of Precision
-        uint16_t vdop;   //< Vertical Dilution of Precision
-    } dops;
-    struct PACKED sbp_baseline_ecef_t {
         uint32_t tow;        //< GPS Time of Week
-        int32_t x;           //< Baseline ECEF X coordinate
-        int32_t y;           //< Baseline ECEF Y coordinate
-        int32_t z;           //< Baseline ECEF Z coordinate
-        uint16_t accuracy;   //< Position accuracy estimate
+        int32_t n;           //< Velocity North coordinate
+        int32_t e;           //< Velocity East coordinate
+        int32_t d;           //< Velocity Down coordinate
+        uint16_t h_accuracy; //< Horizontal velocity accuracy estimate
+        uint16_t v_accuracy; //< Vertical velocity accuracy estimate
         uint8_t n_sats;      //< Number of satellites used in solution
         uint8_t flags;       //< Status flags (reserved)
-    } baseline;
+    } velned;
+    struct PACKED sbp_dops_t {
+        uint32_t tow;  //< GPS Time of Week
+        uint16_t gdop; //< Geometric Dilution of Precision
+        uint16_t pdop; //< Position Dilution of Precision
+        uint16_t tdop; //< Time Dilution of Precision
+        uint16_t hdop; //< Horizontal Dilution of Precision
+        uint16_t vdop; //< Vertical Dilution of Precision
+    } dops;
+
     static const uint16_t SBP_HEARTBEAT_MSGTYPE = 0xFFFF;
     static const uint16_t SBP_GPS_TIME_MSGTYPE = 0x0100;
     static const uint16_t SBP_DOPS_MSGTYPE = 0x0206;
     static const uint16_t SBP_POS_LLH_MSGTYPE = 0x0201;
-    static const uint16_t SBP_BASELINE_ECEF_MSGTYPE = 0x0202;
     static const uint16_t SBP_VEL_NED_MSGTYPE = 0x0205;
 
     uint16_t time_week;
@@ -647,13 +638,18 @@ void SITL_State::_update_gps_sbp(const struct gps_data *d, bool sim_rtk)
     pos.h_accuracy = 5e3;
     pos.v_accuracy = 10e3;
     pos.n_sats = _sitl->gps_numsats;
+
+    // Send single point position solution
     pos.flags = 0;
+    _sbp_send_message(SBP_POS_LLH_MSGTYPE, 0x2222, sizeof(pos), (uint8_t*)&pos);
+    // Send "pseudo-absolute" RTK position solution
+    pos.flags = 1;
     _sbp_send_message(SBP_POS_LLH_MSGTYPE, 0x2222, sizeof(pos), (uint8_t*)&pos);
 
     velned.tow = time_week_ms;
     velned.n = 1e3 * d->speedN;
-    velned.e  = 1e3 * d->speedE;
-    velned.d  = 1e3 * d->speedD;
+    velned.e = 1e3 * d->speedE;
+    velned.d = 1e3 * d->speedD;
     velned.h_accuracy = 5e3;
     velned.v_accuracy = 5e3;
     velned.n_sats = _sitl->gps_numsats;
@@ -669,48 +665,16 @@ void SITL_State::_update_gps_sbp(const struct gps_data *d, bool sim_rtk)
 	    dops.tdop = 1;
 	    dops.hdop = 100;
 	    dops.vdop = 1;    
-	    _sbp_send_message(SBP_DOPS_MSGTYPE, 0x2222, sizeof(dops), (uint8_t*)&dops);
+	    _sbp_send_message(SBP_DOPS_MSGTYPE, 0x2222, sizeof(dops),
+                              (uint8_t*)&dops);
 
 	    uint32_t system_flags = 0;
-	    _sbp_send_message(SBP_HEARTBEAT_MSGTYPE, 0x2222, sizeof(system_flags), (uint8_t*)&system_flags);
+	    _sbp_send_message(SBP_HEARTBEAT_MSGTYPE, 0x2222,
+                              sizeof(system_flags),
+                              (uint8_t*)&system_flags);
     	
     }
     do_every_count++;
-
-
-    //Also send baseline messages
-    if (sim_rtk && _gps_has_basestation_position) {
-
-        Vector3d homeLLH;
-        Vector3d currentLLH;
-        Vector3d homeECEF;
-        Vector3d currentECEF;
-        Vector3d baselineVector;
-
-        homeLLH[0] = _gps_basestation_data.latitude * DEG_TO_RAD_DOUBLE;
-        homeLLH[1] = _gps_basestation_data.longitude * DEG_TO_RAD_DOUBLE;
-        homeLLH[2] = _gps_basestation_data.altitude;
-
-        currentLLH[0] = d->latitude * DEG_TO_RAD_DOUBLE;
-        currentLLH[1] = d->longitude * DEG_TO_RAD_DOUBLE;
-        currentLLH[2] = d->altitude;
-
-        wgsllh2ecef(homeLLH, homeECEF);
-        wgsllh2ecef(currentLLH, currentECEF);
-
-        baselineVector = currentECEF - homeECEF;
-
-        baseline.tow = time_week_ms;
-        baseline.x = (int32_t) (baselineVector[0]*1e3); //Convert to MM
-        baseline.y = (int32_t) (baselineVector[1]*1e3); //Convert to MM
-        baseline.z = (int32_t) (baselineVector[2]*1e3); //Convert to MM
-        baseline.accuracy = 0;
-        baseline.n_sats = _sitl->gps_numsats;
-        baseline.flags = 1;
-        //printf("Sending baseline with length %f\n",baselineVector.length());
-        _sbp_send_message(SBP_BASELINE_ECEF_MSGTYPE, 0x2222, sizeof(baseline), (uint8_t*)&baseline);
-    }
-
 }
 
 /*
@@ -813,11 +777,7 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
 		break;
 
 	case SITL::GPS_TYPE_SBP:
-		_update_gps_sbp(&d, false);
-		break;
-
-	case SITL::GPS_TYPE_SBP_RTK:
-		_update_gps_sbp(&d, true);
+		_update_gps_sbp(&d);
 		break;
 
 	}
