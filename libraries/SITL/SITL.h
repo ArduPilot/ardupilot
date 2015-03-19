@@ -28,12 +28,12 @@ struct PACKED sitl_fdm {
 class SITL
 {
 public:
-    
+
     SITL() {
-        AP_Param::setup_object_defaults(this, var_info);        
+        AP_Param::setup_object_defaults(this, var_info);
     }
 
-    enum GPSType { 
+    enum GPSType {
         GPS_TYPE_NONE  = 0,
         GPS_TYPE_UBLOX = 1,
         GPS_TYPE_MTK   = 2,
@@ -91,7 +91,11 @@ public:
     AP_Float wind_direction;
     AP_Float wind_turbulance;
     AP_Float gps_drift_alt;
-    
+
+    AP_Int16  baro_delay; // barometer data delay in ms
+    AP_Int16  mag_delay; // magnetometer data delay in ms
+    AP_Int16  wind_delay; // windspeed data delay in ms
+
 	void simstate_send(mavlink_channel_t chan);
 
     void Log_Write_SIMSTATE(DataFlash_Class &dataflash);
