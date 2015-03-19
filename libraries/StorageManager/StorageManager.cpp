@@ -150,15 +150,15 @@ bool StorageAccess::read_block(void *data, uint16_t addr, size_t n) const
         }
         hal.storage->read_block(b, addr+offset, count);
         n -= count;
-        addr += count;
-        b += count;
-
-        // adjust addr for next area
-        addr -= length;
 
         if (n == 0) {
             break;
         }
+
+        // move pointer after written bytes
+        b += count;
+        // continue writing at the beginning of next valid area
+        addr = 0;
     }
     return (n == 0);
 }
@@ -190,15 +190,15 @@ bool StorageAccess::write_block(uint16_t addr, const void *data, size_t n) const
         }
         hal.storage->write_block(addr+offset, b, count);
         n -= count;
-        addr += count;
-        b += count;
-
-        // adjust addr for next area
-        addr -= length;
 
         if (n == 0) {
             break;
         }
+
+        // move pointer after written bytes
+        b += count;
+        // continue writing at the beginning of next valid area
+        addr = 0;
     }
     return (n == 0);
 }
