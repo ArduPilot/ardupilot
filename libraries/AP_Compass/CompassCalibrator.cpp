@@ -1,6 +1,5 @@
 #include "CompassCalibrator.h"
 #include <AP_HAL.h>
-#include <AP_Notify.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -82,7 +81,9 @@ void CompassCalibrator::new_sample(const Vector3f& sample) {
     }
 }
 
-void CompassCalibrator::run_fit_chunk() {
+void CompassCalibrator::update(bool &failure) {
+    failure = false;
+
     if(!fitting()) {
         return;
     }
@@ -91,6 +92,7 @@ void CompassCalibrator::run_fit_chunk() {
         if (_fit_step >= 10) {
             if(_fitness == _initial_fitness || isnan(_fitness)) {           //if true, means that fitness is diverging instead of converging
                 set_status(COMPASS_CAL_FAILED);
+                failure = true;
             }
             set_status(COMPASS_CAL_RUNNING_STEP_TWO);
         } else {
@@ -103,6 +105,7 @@ void CompassCalibrator::run_fit_chunk() {
                 set_status(COMPASS_CAL_SUCCESS);
             } else {
                 set_status(COMPASS_CAL_FAILED);
+                failure = true;
             }
         } else if (_fit_step < 15) {
             run_sphere_fit();
@@ -223,8 +226,6 @@ bool CompassCalibrator::set_status(compass_cal_status_t status) {
             if(_status == COMPASS_CAL_NOT_STARTED) {
                 return false;
             }
-
-            AP_Notify::events.compass_cal_failed = 1;
 
             if(_retry && set_status(COMPASS_CAL_WAITING_TO_START)) {
                 _attempt++;
