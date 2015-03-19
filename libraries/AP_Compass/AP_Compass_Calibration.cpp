@@ -8,14 +8,19 @@ Compass::compass_cal_update()
 {
     AP_Notify::flags.compass_cal_running = 0;
 
-    for(uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
-        _calibrator[i].run_fit_chunk();
+    for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+        bool failure;
+        _calibrator[i].update(failure);
+        if (failure) {
+            AP_Notify::events.compass_cal_failed = 1;
+        }
 
-        if(_calibrator[i].check_for_timeout()) {
+        if (_calibrator[i].check_for_timeout()) {
+            AP_Notify::events.compass_cal_failed = 1;
             cancel_calibration_all();
         }
 
-        if(_calibrator[i].running()) {
+        if (_calibrator[i].running()) {
             AP_Notify::flags.compass_cal_running = 1;
         }
     }
