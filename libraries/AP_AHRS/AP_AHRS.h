@@ -35,10 +35,12 @@
 
 // Copter defaults to EKF on by default, all others off
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-#define AHRS_EKF_USE_DEFAULT    1
+ # define AHRS_EKF_USE_ALWAYS     1
 #else
-#define AHRS_EKF_USE_DEFAULT    0
+ # define AHRS_EKF_USE_ALWAYS     0
 #endif
+
+#define AHRS_EKF_USE_DEFAULT    0
 
 #define AP_AHRS_TRIM_LIMIT 10.0f        // maximum trim angle in degrees
 #define AP_AHRS_RP_P_MIN   0.05f        // minimum value for AHRS_RP_P parameter
@@ -368,7 +370,12 @@ protected:
     AP_Int8 _board_orientation;
     AP_Int8 _gps_minsats;
     AP_Int8 _gps_delay;
+
+#if AHRS_EKF_USE_ALWAYS
+    static const int8_t _ekf_use = 1;
+#else
     AP_Int8 _ekf_use;
+#endif
 
     // flags structure
     struct ahrs_flags {

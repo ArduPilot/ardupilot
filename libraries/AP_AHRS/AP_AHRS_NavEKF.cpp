@@ -312,6 +312,13 @@ bool AP_AHRS_NavEKF::healthy(void) const
     return AP_AHRS_DCM::healthy();    
 }
 
+void AP_AHRS_NavEKF::set_ekf_use(bool setting)
+{
+#if !AHRS_EKF_USE_ALWAYS
+    _ekf_use.set(setting);
+#endif
+}
+
 // true if the AHRS has completed initialisation
 bool AP_AHRS_NavEKF::initialised(void) const
 {

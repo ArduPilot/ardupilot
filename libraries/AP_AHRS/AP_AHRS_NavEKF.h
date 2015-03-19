@@ -111,7 +111,7 @@ public:
     // get speed limit
     void getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler);
 
-    void set_ekf_use(bool setting) { _ekf_use.set(setting); }
+    void set_ekf_use(bool setting);
 
     // is the AHRS subsystem healthy?
     bool healthy(void) const;
