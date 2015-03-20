@@ -241,6 +241,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(land_disarm_delay,       "LAND_DISARMDELAY",  0),
 
+    // @Param: LAND_BEEP
+    // @DisplayName: Beep after landing
+    // @Description: When landing in tall grass it is sometimes hard to find the aircraft. When enabled (non-zero) it will make a chirp sound once per second.
+    // @Values: 0:Off,1:On,2:On_After_Land,3:On_After_Land_MuteViaModeChange
+    // @User: Advanced
+    GSCALAR(land_beep,       "LAND_BEEP",  0),
+
 	// @Param: NAV_CONTROLLER
 	// @DisplayName: Navigation controller selection
 	// @Description: Which navigation controller to enable. Currently the only navigation controller available is L1. From time to time other experimental conrtrollers will be added which are selected using this parameter.

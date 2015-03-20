@@ -195,4 +195,12 @@ enum {
     ATT_CONTROL_APMCONTROL = 1
 };
 
+enum LandingBeepMode {
+    OFF,
+    ON, // always on, useful for testing or just to know what it sounds like
+    ON_AFTER_LAND,
+    ON_AFTER_LAND_MUTE_VIA_MODE_CHANGE,
+};
+
+
 #endif // _DEFINES_H
