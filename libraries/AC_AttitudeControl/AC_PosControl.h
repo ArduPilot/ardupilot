@@ -38,8 +38,8 @@
 
 #define POSCONTROL_ACTIVE_TIMEOUT_MS            200    // position controller is considered active if it has been called within the past 0.2 seconds
 
-#define POSCONTROL_VEL_ERROR_CUTOFF_FREQ        4.0     // 4hz low-pass filter on velocity error
-#define POSCONTROL_ACCEL_ERROR_CUTOFF_FREQ      2.0     // 2hz low-pass filter on accel error
+#define POSCONTROL_VEL_ERROR_CUTOFF_FREQ        4.0f    // 4hz low-pass filter on velocity error
+#define POSCONTROL_ACCEL_ERROR_CUTOFF_FREQ      2.0f    // 2hz low-pass filter on accel error
 #define POSCONTROL_JERK_LIMIT_CMSSS             1700.0f // 17m/s/s/s jerk limit on horizontal acceleration
 #define POSCONTROL_ACCEL_FILTER_HZ              5.0f    // 5hz low-pass filter on acceleration
 
