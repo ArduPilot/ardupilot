@@ -657,11 +657,6 @@ static AP_Mount camera_mount(ahrs, current_loc);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
-// AP_Gimbal
-////////////////////////////////////////////////////////////////////////////////
-static AP_Gimbal gimbal(ahrs, g.sysid_this_mav, MAV_COMP_ID_GIMBAL);
-
-////////////////////////////////////////////////////////////////////////////////
 // AC_Fence library to reduce fly-aways
 ////////////////////////////////////////////////////////////////////////////////
 #if AC_FENCE == ENABLED
@@ -955,9 +950,6 @@ static void throttle_loop()
 // should be run at 50hz
 static void update_mount()
 {
-    // update gimbal library
-    gimbal.update_failsafe(failsafe.radio);
-
 #if MOUNT == ENABLED
     // update camera mount's position
     camera_mount.update();
