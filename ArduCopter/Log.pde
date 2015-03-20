@@ -590,11 +590,6 @@ static void Log_Write_Baro(void)
     DataFlash.Log_Write_Baro(barometer);
 }
 
-static void Log_Write_Gimbal(void)
-{
-    DataFlash.Log_Write_Gimbal(gimbal);
-}
-
 static const struct LogStructure log_structure[] PROGMEM = {
     LOG_COMMON_STRUCTURES,
 #if AUTOTUNE_ENABLED == ENABLED
