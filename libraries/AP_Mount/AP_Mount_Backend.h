@@ -86,7 +86,7 @@ protected:
     AP_Mount    &_frontend; // reference to the front end which holds parameters
     AP_Mount::mount_state &_state;    // refernce to the parameters and state for this backend
     uint8_t     _instance;  // this instance's number
-    Vector3f    _angle_ef_target_rad;   // desired earth-frame roll, tilt and pan angles in radians
+    Vector3f    _angle_ef_target_rad;   // desired earth-frame roll, tilt and vehicle-relative pan angles in radians
 };
 
 #endif // __AP_MOUNT_BACKEND_H__
