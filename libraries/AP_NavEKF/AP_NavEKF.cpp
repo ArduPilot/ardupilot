@@ -3831,7 +3831,7 @@ void NavEKF::CovarianceInit()
     // positions
     P[7][7]   = sq(15.0f);
     P[8][8]   = P[7][7];
-    P[9][9]   = sq(5.0f);
+    P[9][9]   = sq(_baroAltNoise);
     // delta angle biases
     P[10][10] = sq(radians(INIT_GYRO_BIAS_UNCERTAINTY * dtIMU));
     P[11][11] = P[10][10];
