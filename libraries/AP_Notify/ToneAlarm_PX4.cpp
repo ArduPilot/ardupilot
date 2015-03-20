@@ -63,6 +63,8 @@ const ToneAlarm_PX4::Tone ToneAlarm_PX4::_tones[] {
     { "MBT200>B#1", true },
     #define AP_NOTIFY_PX4_TONE_LOUD_BATTERY_ALERT_CTS 13
     { "MBNT255>B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8", true },
+    #define AP_NOTIFY_PX4_TONE_LOUD_LANDED 14
+    { "MFT255A64B64G16", false },
 };
 
 bool ToneAlarm_PX4::init()
@@ -229,6 +231,13 @@ void ToneAlarm_PX4::update()
             // parachute release warning tune
             play_tone(AP_NOTIFY_PX4_TONE_LOUD_ATTENTION_NEEDED);
         }
+    }
+
+    // check if landed
+    if (AP_Notify::flags.landed) {
+        // landed chirp, this will get called periodically while landed
+        AP_Notify::flags.landed = 0;
+        play_tone(AP_NOTIFY_PX4_TONE_LOUD_LANDED);
     }
 }
 
