@@ -3,6 +3,8 @@
 #include <AP_Mount_MAVLink.h>
 #if AP_AHRS_NAVEKF_AVAILABLE
 #include <GCS_MAVLink.h>
+#include <stdio.h>
+#include <AP_Gimbal.h>
 
 #if MOUNT_DEBUG
 #include <stdio.h>
@@ -10,7 +12,8 @@
 
 AP_Mount_MAVLink::AP_Mount_MAVLink(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance) :
     AP_Mount_Backend(frontend, state, instance),
-    _initialised(false)
+    _initialised(false),
+    _gimbal(frontend._ahrs, 1, MAV_COMP_ID_GIMBAL)
 {}
 
 // init - performs any required initialisation for this instance
@@ -92,6 +95,8 @@ void AP_Mount_MAVLink::status_msg(mavlink_channel_t chan)
  */
 void AP_Mount_MAVLink::handle_gimbal_report(mavlink_channel_t chan, mavlink_message_t *msg)
 {
+    _gimbal._angle_ef_target_rad = _angle_ef_target_rad;
+    _gimbal.receive_feedback(chan,msg);
 }
 
 /*
