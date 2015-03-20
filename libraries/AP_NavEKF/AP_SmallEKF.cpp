@@ -31,11 +31,17 @@ const AP_Param::GroupInfo SmallEKF::var_info[] PROGMEM = {
 SmallEKF::SmallEKF(const AP_AHRS_NavEKF &ahrs) :
     _ahrs(ahrs),
     _main_ekf(ahrs.get_NavEKF_const()),
+    states(),
     state(*reinterpret_cast<struct state_elements *>(&states)),
+    TiltCorrection(0),
+    StartTime_ms(0),
     FiltInit(false),
-    lastMagUpdate(0)
+    lastMagUpdate(0),
+    dtIMU(0)
 {
     AP_Param::setup_object_defaults(this, var_info);
+    memset(&gSense,0,sizeof(gSense));
+    memset(&Cov,0,sizeof(Cov));
 }
 
 // run a 9-state EKF used to calculate orientation
@@ -82,6 +88,7 @@ void SmallEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const Vect
     // fuse SmallEKF velocity data
     fuseVelocity(YawAligned);
 
+    
     // Align the heading once there has been enough time for the filter to settle and the tilt corrections have dropped below a threshold
     // Force it to align if too much time has lapsed
     if (((((imuSampleTime_ms - StartTime_ms) > 5000 && TiltCorrection < 1e-4f) || (imuSampleTime_ms - StartTime_ms) > 30000)) && !YawAligned) {
@@ -92,12 +99,13 @@ void SmallEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const Vect
     }
 
     // Fuse magnetometer data if  we have new measurements and an aligned heading
+    
     readMagData();
     if (newDataMag && YawAligned) {
         fuseCompass();
         newDataMag = false;
     }
-
+    
 }
 
 // state prediction
