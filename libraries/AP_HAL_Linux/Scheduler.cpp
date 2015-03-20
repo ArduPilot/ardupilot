@@ -259,8 +259,6 @@ void *LinuxScheduler::_timer_thread(void* arg)
 {
     LinuxScheduler* sched = (LinuxScheduler *)arg;
 
-    mlockall(MCL_CURRENT|MCL_FUTURE);
-
     while (sched->system_initializing()) {
         poll(NULL, 0, 1);
     }
@@ -304,8 +302,6 @@ void *LinuxScheduler::_rcin_thread(void *arg)
 {
     LinuxScheduler* sched = (LinuxScheduler *)arg;
 
-    mlockall(MCL_CURRENT|MCL_FUTURE);
-
     while (sched->system_initializing()) {
         poll(NULL, 0, 1);
     }
@@ -320,8 +316,6 @@ void *LinuxScheduler::_rcin_thread(void *arg)
 void *LinuxScheduler::_uart_thread(void* arg)
 {
     LinuxScheduler* sched = (LinuxScheduler *)arg;
-
-    mlockall(MCL_CURRENT|MCL_FUTURE);
 
     while (sched->system_initializing()) {
         poll(NULL, 0, 1);
@@ -341,8 +335,6 @@ void *LinuxScheduler::_tonealarm_thread(void* arg)
 {
     LinuxScheduler* sched = (LinuxScheduler *)arg;
 
-    mlockall(MCL_CURRENT|MCL_FUTURE);
-
     while (sched->system_initializing()) {
         poll(NULL, 0, 1);
     }
@@ -358,8 +350,6 @@ void *LinuxScheduler::_tonealarm_thread(void* arg)
 void *LinuxScheduler::_io_thread(void* arg)
 {
     LinuxScheduler* sched = (LinuxScheduler *)arg;
-
-    mlockall(MCL_CURRENT|MCL_FUTURE);
 
     while (sched->system_initializing()) {
         poll(NULL, 0, 1);
