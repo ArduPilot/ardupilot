@@ -28,28 +28,20 @@ class AP_Gimbal
 public:
     //Constructor
     AP_Gimbal(const AP_AHRS_NavEKF &ahrs, uint8_t sysid, uint8_t compid) :
-        _ahrs(ahrs),
         _ekf(ahrs),
+        _ahrs(ahrs),
         _joint_offsets(0.0f,0.0f,0.0f),
         vehicleYawRateFilt(0.0f),
         yawRateFiltPole(10.0f),
         yawErrorLimit(0.1f),
-        tilt_rc_in(6),
-        _tilt_angle_min(-45.0f),
-        _tilt_angle_max(0.0f),
-        _max_tilt_rate(0.5f),
-        _rc_failsafe(true)
+        _failsafe(true)
     {
-        AP_Param::setup_object_defaults(this, var_info);
         _sysid = sysid;
         _compid = compid;
     }
         
-    void    update_failsafe(uint8_t rc_failsafe);
+    void    update_failsafe(uint8_t failsafe);
     void    receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg);
-
-    // hook for eeprom variables
-    static const struct AP_Param::GroupInfo        var_info[];
 
     struct Measurament {
         float delta_time;
@@ -59,10 +51,15 @@ public:
     } _measurament;
 
     SmallEKF    _ekf;                   // state of small EKF for gimbal
+    const AP_AHRS_NavEKF    &_ahrs;     //  Main EKF    
     Vector3f    gimbalRateDemVec;       // degrees/s   
     Vector3f    _angle_ef_target_rad;   // desired earth-frame roll, tilt and pan angles in radians
 
 private:  
+
+    // These are corrections (in radians) applied to the to the gimbal joint (x,y,z = roll,pitch,yaw) measurements
+    Vector3f const _joint_offsets;
+
     // filtered yaw rate from the vehicle
     float vehicleYawRateFilt;
 
@@ -74,28 +71,17 @@ private:
 
     // amount of yaw angle that we permit the gimbal to lag the vehicle when operating in slave mode
     // reducing this makes the gimbal respond more to vehicle yaw disturbances
-    float const yawErrorLimit;
+    float const yawErrorLimit;   
+   
+    // status of the RC signal
+    uint8_t _failsafe;   
 
-    // These are corrections (in radians) applied to the to the gimbal joint (x,y,z = roll,pitch,yaw) measurements
-    Vector3f const _joint_offsets;
-
-
-    uint8_t const tilt_rc_in; 
-    float const _tilt_angle_min;   // min tilt in 0.01 degree units
-    float const _tilt_angle_max;     // max tilt in 0.01 degree units
-    float const _max_tilt_rate;          // max tilt rate in rad/s
-    
-    const AP_AHRS_NavEKF    &_ahrs;     //  Main EKF    
     uint8_t _sysid;                     
-    uint8_t _compid;
-
-
-    uint8_t _rc_failsafe;   // status of the RC signal
+    uint8_t _compid;    
 
     void send_control(mavlink_channel_t chan);
     void update_state();
     void decode_feedback(mavlink_message_t *msg);
-    void update_targets_from_rc();
 
     uint8_t isCopterFliped();
 
