@@ -461,6 +461,7 @@ private:
     const float gpsDVelVarAccScale;     // Scale factor applied to vertical velocity measurement variance due to manoeuvre acceleration
     const uint16_t gndEffectTO_ms;      // time in msec that ground effect mode is active after being activated
     const float gndEffectBaroScaler;    // scaler applied to the barometer observation variance when ground effect mode is active
+    const float onGndBaroNoise;         // measurement noise used by barometer fusion when on ground
     const float gndEffectBaroTO_ms;     // time in msec that the baro measurement will be rejected if the gndEffectBaroVarLim has failed it
     const float gpsPosVarAccScale;      // Scale factor applied to horizontal position measurement variance due to manoeuvre acceleration
     const float msecHgtDelay;           // Height measurement delay (msec)
@@ -474,7 +475,8 @@ private:
     const uint16_t tasRetryTime;        // True airspeed timeout and retry interval (msec)
     const uint32_t magFailTimeLimit_ms; // number of msec before a magnetometer failing innovation consistency checks is declared failed (msec)
     const float magVarRateScale;        // scale factor applied to magnetometer variance due to angular rate
-    const float imuBiasNoiseScaler;    // scale factor applied to gyro bias state process noise when on ground
+    const float gyroBiasNoiseScaler;    // scale factor applied to gyro bias state process noise when on ground
+    const float accelBiasNoiseScaler;   // scale factor applied to accel bias state process noise when on ground
     const uint16_t msecGpsAvg;          // average number of msec between GPS measurements
     const uint16_t msecHgtAvg;          // average number of msec between height measurements
     const uint16_t msecMagAvg;          // average number of msec between magnetometer measurements

@@ -388,7 +388,8 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     tasRetryTime(5000),             // True airspeed timeout and retry interval (msec)
     magFailTimeLimit_ms(10000),     // number of msec before a magnetometer failing innovation consistency checks is declared failed (msec)
     magVarRateScale(0.05f),         // scale factor applied to magnetometer variance due to angular rate
-    imuBiasNoiseScaler(2.0f),      // scale factor applied to imu bias learning before the vehicle is armed
+    gyroBiasNoiseScaler(2.0f),      // scale factor applied to imu gyro bias learning before the vehicle is armed
+    accelBiasNoiseScaler(1.4f),     // scale factor applied to imu accel bias learning before the vehicle is armed
     msecGpsAvg(200),                // average number of msec between GPS measurements
     msecHgtAvg(100),                // average number of msec between height measurements
     msecMagAvg(100),                // average number of msec between magnetometer measurements
@@ -405,6 +406,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     flowIntervalMax_ms(100),        // maximum allowable time between flow fusion events
     gndEffectTO_ms(30000),          // time in msec that baro ground effect compensation will timeout after initiation
     gndEffectBaroScaler(4.0f),      // scaler applied to the barometer observation variance when operating in ground effect
+    onGndBaroNoise(0.5f),           // measurement noise used by barometer fusion when on ground
     gndEffectBaroTO_ms(5000)        // time in msec that the baro measurement will be rejected if the gndEffectBaroVarLim has failed it
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
@@ -1225,13 +1227,13 @@ void NavEKF::CovariancePrediction()
     for (uint8_t i=10; i<=12; i++) {
         processNoise[i] = dAngBiasSigma;
         if (!vehicleArmed) {
-            processNoise[i] *= imuBiasNoiseScaler;
+            processNoise[i] *= gyroBiasNoiseScaler;
         }
     }
     // scale accel bias noise when disarmed to allow for faster bias estimation
     processNoise[13] = dVelBiasSigma;
     if (!vehicleArmed) {
-        processNoise[13] *= imuBiasNoiseScaler;
+        processNoise[13] *= accelBiasNoiseScaler;
     }
     for (uint8_t i=14; i<=15; i++) processNoise[i] = windVelSigma;
     for (uint8_t i=16; i<=18; i++) processNoise[i] = magEarthSigma;
@@ -1920,8 +1922,11 @@ void NavEKF::FuseVelPosNED()
         R_OBS[4] = R_OBS[3];
         R_OBS[5] = sq(constrain_float(_baroAltNoise, 0.1f, 10.0f));
         // reduce weighting (increase observation noise) on baro if we are likely to be in ground effect
-        if (getGndEffectMode()) {
+        // when on the ground we use a smaller observation noise because there are less baro disturbances and we can do faster learning of Z accelerometer bias offsets
+        if (getGndEffectMode() && vehicleArmed) {
             R_OBS[5] *= gndEffectBaroScaler;
+        } else if (!vehicleArmed) {
+            R_OBS[5] = sq(onGndBaroNoise);
         }
 
         // For data integrity checks we use the same measurement variances as used to calculate the Kalman gains for all measurements except GPS horizontal velocity
@@ -2161,7 +2166,7 @@ void NavEKF::FuseVelPosNED()
                     // Increase allowed rate of change when disarmed as estimates will be less noisy
                     float correctionLimit = 0.005f * dtIMU * dtVelPos;
                     if (!vehicleArmed) {
-                        correctionLimit *= imuBiasNoiseScaler;
+                        correctionLimit *= accelBiasNoiseScaler;
                     }
                     state.accel_zbias1 -= constrain_float(Kfusion[13] * hgtInnov1, -correctionLimit, correctionLimit); // IMU1 Z accel bias
                     state.accel_zbias2 -= constrain_float(Kfusion[22] * hgtInnov2, -correctionLimit, correctionLimit); // IMU2 Z accel bias
@@ -3996,11 +4001,11 @@ void NavEKF::readGpsData()
         }
 
         // check if we have enough GPS satellites and increase the gps noise scaler if we don't
-        if (_ahrs->get_gps().num_sats() >= 6) {
+        if (_ahrs->get_gps().num_sats() >= 6 && !constPosMode) {
             gpsNoiseScaler = 1.0f;
-        } else if (_ahrs->get_gps().num_sats() == 5) {
+        } else if (_ahrs->get_gps().num_sats() == 5 && !constPosMode) {
             gpsNoiseScaler = 1.4f;
-        } else { // <= 4 satellites
+        } else { // <= 4 satellites or in constant position mode
             gpsNoiseScaler = 2.0f;
         }
 
