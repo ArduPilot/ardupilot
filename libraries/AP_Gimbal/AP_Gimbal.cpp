@@ -2,24 +2,15 @@
 
 #include <stdio.h>
 #include <AP_Common.h>
-#include <AP_Progmem.h>
-#include <AP_Param.h>
 #include <AP_Gimbal.h>
 #include <GCS.h>
-#include <GCS_MAVLink.h>
 #include <AP_SmallEKF.h>
-
-const AP_Param::GroupInfo AP_Gimbal::var_info[] PROGMEM = {
-    AP_GROUPEND
-};
 
 uint16_t feedback_error_count;
 static float K_gimbalRate = 5.0f;
-static float angRateLimit = 0.5f;
 
 void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
 {
-    update_targets_from_rc();
     decode_feedback(msg);
     update_state();
     if (_ekf.getStatus() && !isCopterFliped()){
@@ -168,32 +159,11 @@ void AP_Gimbal::send_control(mavlink_channel_t chan)
 }
 
 
-void AP_Gimbal::update_failsafe(uint8_t rc_failsafe)
+void AP_Gimbal::update_failsafe(uint8_t failsafe)
 {
-    _rc_failsafe = rc_failsafe;
+    _failsafe = failsafe;
 }
 
-// returns the angle (radians) that the RC_Channel input is receiving
-float angle_input_rad(RC_Channel* rc, float angle_min, float angle_max)
-{
-    float input =rc->norm_input();
-    float angle = input*(angle_max - angle_min) + angle_min;
-    return radians(angle);
-}
-
-// update_targets_from_rc - updates angle targets using input from receiver
-void AP_Gimbal::update_targets_from_rc()
-{
-    // Get new tilt angle
-    float new_tilt = (_rc_failsafe)?0.0f:angle_input_rad(RC_Channel::rc_channel(tilt_rc_in-1), _tilt_angle_min, _tilt_angle_max);
-    // Low-pass filter
-    new_tilt = _angle_ef_target_rad.y + 0.09f*(new_tilt - _angle_ef_target_rad.y);
-    // Slew-rate constrain
-    float max_change_rads =_max_tilt_rate * _measurament.delta_time;
-    float tilt_change = constrain_float(new_tilt - _angle_ef_target_rad.y,-max_change_rads,+max_change_rads);
-    // Update tilt
-    _angle_ef_target_rad.y = constrain_float(_angle_ef_target_rad.y + tilt_change,_tilt_angle_min,_tilt_angle_max);
-}
 
 uint8_t AP_Gimbal::isCopterFliped(){
     return fabs(_ahrs.roll)>1.0f || fabs(_ahrs.pitch)>1.0f;
