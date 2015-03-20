@@ -1025,6 +1025,14 @@ static void one_second_loop()
     // determine if we are flying or not
     determine_is_flying();
 
+    if (!is_flying() && (auto_state.last_flying_ms > 0) && g.land_beep) {
+        // check if we've flown but have since landed/crashed - start beeping
+        // update AP_Notify to sound a single chirp/beep to make it easier to find the aircraft
+        AP_Notify::flags.landed = 1;
+
+        // TODO: add a movement check to inhibit the beep once the aircraft is found and picked up
+    }
+
     // update notify flags
     AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
     AP_Notify::flags.pre_arm_gps_check = true;
