@@ -17,7 +17,7 @@
 #include <GCS_MAVLink.h>
 #include <RC_Channel.h>
 #include <AP_Mount_Backend.h>
-#include <AP_SmallEKF.h>
+#include <AP_Gimbal.h>
 
 class AP_Mount_MAVLink : public AP_Mount_Backend
 {
@@ -50,6 +50,8 @@ public:
 private:
     // internal variables
     bool _initialised;              // true once the driver has been initialised
+
+    AP_Gimbal _gimbal;
 };
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE
