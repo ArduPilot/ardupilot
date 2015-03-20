@@ -6,7 +6,6 @@
 #include <GCS.h>
 #include <AP_SmallEKF.h>
 
-uint16_t feedback_error_count;
 static float K_gimbalRate = 5.0f;
 
 void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
@@ -162,6 +161,15 @@ void AP_Gimbal::send_control(mavlink_channel_t chan)
 void AP_Gimbal::update_failsafe(uint8_t failsafe)
 {
     _failsafe = failsafe;
+}
+
+void AP_Gimbal::update_target(Vector3f newTarget)
+{
+    // Low-pass filter
+    _angle_ef_target_rad.y = _angle_ef_target_rad.y + 0.02f*(newTarget.y - _angle_ef_target_rad.y);
+    // Update tilt
+    _angle_ef_target_rad.y = constrain_float(_angle_ef_target_rad.y,radians(-45),radians(0));
+
 }
 
 
