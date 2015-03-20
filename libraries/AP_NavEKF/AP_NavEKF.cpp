@@ -2191,15 +2191,18 @@ void NavEKF::FuseVelPosNED()
                 // attitude, velocity and position corrections are spread across multiple prediction cycles between now
                 // and the anticipated time for the next measurement.
                 // Don't spread quaternion corrections if total angle change across predicted interval is going to exceed 0.1 rad
+                // Don't apply corrections to Z bias state as this has been done already as part of the single IMU calculations
                 bool highRates = ((gpsUpdateCountMax * correctedDelAng.length()) > 0.1f);
                 for (uint8_t i = 0; i<=21; i++) {
-                    if ((i <= 3 && highRates) || i >= 10 || constPosMode || constVelMode) {
-                        states[i] = states[i] - Kfusion[i] * innovVelPos[obsIndex];
-                    } else {
-                        if (obsIndex == 5) {
-                            hgtIncrStateDelta[i] -= Kfusion[i] * innovVelPos[obsIndex] * hgtUpdateCountMaxInv;
+                    if (i != 13) {
+                        if ((i <= 3 && highRates) || i >= 10 || constPosMode || constVelMode) {
+                            states[i] = states[i] - Kfusion[i] * innovVelPos[obsIndex];
                         } else {
-                            gpsIncrStateDelta[i] -= Kfusion[i] * innovVelPos[obsIndex] * gpsUpdateCountMaxInv;
+                            if (obsIndex == 5) {
+                                hgtIncrStateDelta[i] -= Kfusion[i] * innovVelPos[obsIndex] * hgtUpdateCountMaxInv;
+                            } else {
+                                gpsIncrStateDelta[i] -= Kfusion[i] * innovVelPos[obsIndex] * gpsUpdateCountMaxInv;
+                            }
                         }
                     }
                 }
