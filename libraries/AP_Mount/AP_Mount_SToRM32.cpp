@@ -31,6 +31,14 @@ void AP_Mount_SToRM32::update()
         return;
     }
 
+    // throttle updates to 10hz (this assumes update is called at 50hz)
+    static uint8_t counter = 0;
+    counter++;
+    if (counter < 5) {
+        return;
+    }
+    counter = 0;
+
     // flag to trigger sending target angles to gimbal
     bool resend_now = false;
 
@@ -120,6 +128,10 @@ void AP_Mount_SToRM32::send_do_mount_control(float pitch_deg, float roll_deg, fl
     if (!_initialised) {
         return;
     }
+
+    // reverse pitch and yaw control
+    pitch_deg = -pitch_deg;
+    yaw_deg = -yaw_deg;
 
     // send command_long command containing a do_mount_control command
     mavlink_msg_command_long_send(_chan,
