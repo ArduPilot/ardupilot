@@ -3837,7 +3837,7 @@ void NavEKF::CovarianceInit()
     P[11][11] = P[10][10];
     P[12][12] = P[10][10];
     // Z delta velocity bias
-    P[13][13] = sq(radians(INIT_ACCEL_BIAS_UNCERTAINTY * dtIMU));;
+    P[13][13] = sq(INIT_ACCEL_BIAS_UNCERTAINTY * dtIMU);
     // wind velocities
     P[14][14] = 0.0f;
     P[15][15]  = P[14][14];
