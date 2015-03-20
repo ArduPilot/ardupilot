@@ -524,8 +524,8 @@ bool NavEKF::InitialiseFilterDynamic(void)
     InitialiseVariables();
 
     // get initial time deltat between IMU measurements (sec)
-    dtIMU = constrain_float(_ahrs->get_ins().get_delta_time(),0.001f,1.0f);
-    dtIMUinv = 1.0f / dtIMU;
+    dtIMUinv = _ahrs->get_ins().get_sample_rate();
+    dtIMU = 1.0f/dtIMUinv;
 
     // set number of updates over which gps and baro measurements are applied to the velocity and position states
     gpsUpdateCountMaxInv = (dtIMU * 1000.0f)/float(msecGpsAvg);
@@ -587,8 +587,8 @@ bool NavEKF::InitialiseFilterBootstrap(void)
     InitialiseVariables();
 
     // get initial time deltat between IMU measurements (sec)
-    dtIMU = constrain_float(_ahrs->get_ins().get_delta_time(),0.001f,1.0f);
-    dtIMUinv = 1.0f / dtIMU;
+    dtIMUinv = _ahrs->get_ins().get_sample_rate();
+    dtIMU = 1.0f/dtIMUinv;
 
     // set number of updates over which gps and baro measurements are applied to the velocity and position states
     gpsUpdateCountMaxInv = (dtIMU * 1000.0f)/float(msecGpsAvg);
@@ -3919,7 +3919,10 @@ void NavEKF::readIMUData()
     const AP_InertialSensor &ins = _ahrs->get_ins();
 
     // limit IMU delta time to prevent numerical problems elsewhere
-    dtIMU = constrain_float(ins.get_delta_time(), 0.001f, 1.0f);
+    dtIMUinv = ins.get_sample_rate();
+    dtIMU = 1.0f/dtIMUinv;
+
+    float dtIMUactual = constrain_float(ins.get_delta_time(),0.001f,0.2f);
 
     // the imu sample time is sued as a common time reference throughout the filter
     imuSampleTime_ms = hal.scheduler->millis();
@@ -3932,32 +3935,32 @@ void NavEKF::readIMUData()
         Vector3f dAngIMU2;
 
         if(!ins.get_delta_velocity(0,dVelIMU1)) {
-            dVelIMU1 = ins.get_accel(0) * dtIMU;
+            dVelIMU1 = ins.get_accel(0) * dtIMUactual;
         }
 
         if(!ins.get_delta_velocity(1,dVelIMU2)) {
-            dVelIMU2 = ins.get_accel(1) * dtIMU;
+            dVelIMU2 = ins.get_accel(1) * dtIMUactual;
         }
 
         if(!ins.get_delta_angle(0, dAngIMU1)) {
             haveDeltaAngles = false;
-            dAngIMU1 = ins.get_gyro(0) * dtIMU;
+            dAngIMU1 = ins.get_gyro(0) * dtIMUactual;
         }
 
         if(!ins.get_delta_angle(1, dAngIMU2)) {
             haveDeltaAngles = false;
-            dAngIMU2 = ins.get_gyro(1) * dtIMU;
+            dAngIMU2 = ins.get_gyro(1) * dtIMUactual;
         }
         dAngIMU = (dAngIMU1+dAngIMU2) * 0.5f;
     } else {
         if(!ins.get_delta_velocity(dVelIMU1)) {
-            dVelIMU1 = ins.get_accel() * dtIMU;
+            dVelIMU1 = ins.get_accel() * dtIMUactual;
         }
         dVelIMU2 = dVelIMU1;
 
         if(!ins.get_delta_angle(dAngIMU)) {
             haveDeltaAngles = false;
-            dAngIMU = ins.get_gyro() * dtIMU;
+            dAngIMU = ins.get_gyro() * dtIMUactual;
         }
     }
 }
