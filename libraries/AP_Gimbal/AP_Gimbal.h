@@ -30,6 +30,7 @@ public:
     AP_Gimbal(const AP_AHRS_NavEKF &ahrs, uint8_t sysid, uint8_t compid) :
         _ekf(ahrs),
         _ahrs(ahrs),
+        K_gimbalRate(5.0f),
         _joint_offsets(0.0f,0.0f,0.0f),
         vehicleYawRateFilt(0.0f),
         yawRateFiltPole(10.0f),
@@ -39,7 +40,8 @@ public:
         _sysid = sysid;
         _compid = compid;
     }
-        
+
+    void    update_target(Vector3f newTarget);
     void    update_failsafe(uint8_t failsafe);
     void    receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg);
 
@@ -53,9 +55,11 @@ public:
     SmallEKF    _ekf;                   // state of small EKF for gimbal
     const AP_AHRS_NavEKF    &_ahrs;     //  Main EKF    
     Vector3f    gimbalRateDemVec;       // degrees/s   
-    Vector3f    _angle_ef_target_rad;   // desired earth-frame roll, tilt and pan angles in radians
+    Vector3f    _angle_ef_target_rad;   // desired earth-frame roll, tilt and pan angles in radians    
 
 private:  
+    // K gain for the pointing loop
+    float const K_gimbalRate;
 
     // These are corrections (in radians) applied to the to the gimbal joint (x,y,z = roll,pitch,yaw) measurements
     Vector3f const _joint_offsets;

@@ -95,7 +95,7 @@ void AP_Mount_MAVLink::status_msg(mavlink_channel_t chan)
  */
 void AP_Mount_MAVLink::handle_gimbal_report(mavlink_channel_t chan, mavlink_message_t *msg)
 {
-    _gimbal._angle_ef_target_rad = _angle_ef_target_rad;
+    _gimbal.update_target(_angle_ef_target_rad);
     _gimbal.receive_feedback(chan,msg);
 }
 
