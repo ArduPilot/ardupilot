@@ -264,28 +264,25 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit)
     _loiter_desired_accel += des_accel_diff;
 
     // get pos_control's feed forward velocity
-    Vector3f desired_vel = _pos_control.get_desired_velocity();
+    const Vector3f &desired_vel_3d = _pos_control.get_desired_velocity();
+    Vector2f desired_vel(desired_vel_3d.x,desired_vel_3d.y);
 
     // add pilot commanded acceleration
     desired_vel.x += _loiter_desired_accel.x * nav_dt;
     desired_vel.y += _loiter_desired_accel.y * nav_dt;
 
-    if (_pilot_accel_fwd_cms != 0.0f || _pilot_accel_rgt_cms != 0.0f) {
-        desired_vel.x -= (_loiter_accel_cmss)*nav_dt*desired_vel.x/_loiter_speed_cms;
-        desired_vel.y -= (_loiter_accel_cmss)*nav_dt*desired_vel.y/_loiter_speed_cms;
-    } else {
-        desired_vel.x -= (_loiter_accel_cmss-_loiter_accel_min_cmss)*nav_dt*desired_vel.x/_loiter_speed_cms;
-        if(desired_vel.x > 0 ) {
-            desired_vel.x = max(desired_vel.x - _loiter_accel_min_cmss*nav_dt, 0);
-        }else if(desired_vel.x < 0) {
-            desired_vel.x = min(desired_vel.x + _loiter_accel_min_cmss*nav_dt, 0);
+    float desired_speed = desired_vel.length();
+
+    if (desired_speed != 0.0f) {
+        Vector2f desired_vel_norm = desired_vel/desired_speed;
+        float drag_speed_delta = -_loiter_accel_cmss*nav_dt*desired_speed/_loiter_speed_cms;
+
+        if (_pilot_accel_fwd_cms == 0.0f && _pilot_accel_rgt_cms == 0.0f) {
+            drag_speed_delta = min(drag_speed_delta,-_loiter_accel_min_cmss*nav_dt);
         }
-        desired_vel.y -= (_loiter_accel_cmss-_loiter_accel_min_cmss)*nav_dt*desired_vel.y/_loiter_speed_cms;
-        if(desired_vel.y > 0 ) {
-            desired_vel.y = max(desired_vel.y - _loiter_accel_min_cmss*nav_dt, 0);
-        }else if(desired_vel.y < 0) {
-            desired_vel.y = min(desired_vel.y + _loiter_accel_min_cmss*nav_dt, 0);
-        }
+
+        desired_speed = max(desired_speed+drag_speed_delta,0.0f);
+        desired_vel = desired_vel_norm*desired_speed;
     }
 
     // limit EKF speed limit and convert to cm/s
