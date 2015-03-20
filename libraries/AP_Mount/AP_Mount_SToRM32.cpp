@@ -31,14 +31,6 @@ void AP_Mount_SToRM32::update()
         return;
     }
 
-    // throttle updates to 10hz (this assumes update is called at 50hz)
-    static uint8_t counter = 0;
-    counter++;
-    if (counter < 5) {
-        return;
-    }
-    counter = 0;
-
     // flag to trigger sending target angles to gimbal
     bool resend_now = false;
 
