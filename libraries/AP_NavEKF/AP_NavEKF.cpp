@@ -2163,14 +2163,18 @@ void NavEKF::FuseVelPosNED()
                     // Calculate height measurement innovations using single IMU states
                     float hgtInnov1 = statesAtHgtTime.posD1 - observation[obsIndex];
                     float hgtInnov2 = statesAtHgtTime.posD2 - observation[obsIndex];
-                    // Correct single IMU prediction states using height measurement, limiting rate of change of bias to 0.005 m/s3
-                    // Increase allowed rate of change when disarmed as estimates will be less noisy
-                    float correctionLimit = 0.005f * dtIMU * dtVelPos;
-                    if (!vehicleArmed) {
-                        correctionLimit *= accelBiasNoiseScaler;
+
+                    if (vehicleArmed) {
+                        // Correct single IMU prediction states using height measurement, limiting rate of change of bias to 0.005 m/s3
+                        float correctionLimit = 0.005f * dtIMU * dtVelPos;
+                        state.accel_zbias1 -= constrain_float(Kfusion[13] * hgtInnov1, -correctionLimit, correctionLimit); // IMU1 Z accel bias
+                        state.accel_zbias2 -= constrain_float(Kfusion[22] * hgtInnov2, -correctionLimit, correctionLimit); // IMU2 Z accel bias
+                    } else {
+                        // When disarmed, do not rate limit accel bias learning
+                        state.accel_zbias1 -= Kfusion[13] * hgtInnov1; // IMU1 Z accel bias
+                        state.accel_zbias2 -= Kfusion[22] * hgtInnov2; // IMU2 Z accel bias
                     }
-                    state.accel_zbias1 -= constrain_float(Kfusion[13] * hgtInnov1, -correctionLimit, correctionLimit); // IMU1 Z accel bias
-                    state.accel_zbias2 -= constrain_float(Kfusion[22] * hgtInnov2, -correctionLimit, correctionLimit); // IMU2 Z accel bias
+
                     for (uint8_t i = 23; i<=26; i++) {
                         states[i] = states[i] - Kfusion[i] * hgtInnov1; // IMU1 velNED,posD
                     }
