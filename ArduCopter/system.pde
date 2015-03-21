@@ -191,8 +191,10 @@ static void init_ardupilot()
     // init the optical flow sensor
     init_optflow();
 
+#if MOUNT == ENABLED
     // initialise camera mount
     camera_mount.init(serial_manager);
+#endif
 
 #ifdef USERHOOK_INIT
     USERHOOK_INIT
