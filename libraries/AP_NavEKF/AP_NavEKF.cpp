@@ -110,7 +110,7 @@ extern const AP_HAL::HAL& hal;
 
 // initial imu bias uncertainty (deg/sec)
 #define INIT_GYRO_BIAS_UNCERTAINTY  0.1f
-#define INIT_ACCEL_BIAS_UNCERTAINTY 0.5f
+#define INIT_ACCEL_BIAS_UNCERTAINTY 0.3f
 
 // Define tuning parameters
 const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
@@ -389,7 +389,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     magFailTimeLimit_ms(10000),     // number of msec before a magnetometer failing innovation consistency checks is declared failed (msec)
     magVarRateScale(0.05f),         // scale factor applied to magnetometer variance due to angular rate
     gyroBiasNoiseScaler(2.0f),      // scale factor applied to imu gyro bias learning before the vehicle is armed
-    accelBiasNoiseScaler(1.4f),     // scale factor applied to imu accel bias learning before the vehicle is armed
+    accelBiasNoiseScaler(1.0f),     // scale factor applied to imu accel bias learning before the vehicle is armed
     msecGpsAvg(200),                // average number of msec between GPS measurements
     msecHgtAvg(100),                // average number of msec between height measurements
     msecMagAvg(100),                // average number of msec between magnetometer measurements
