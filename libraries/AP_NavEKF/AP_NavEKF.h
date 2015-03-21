@@ -528,7 +528,8 @@ private:
     Vector3f dVelIMU1;              // delta velocity vector in XYZ body axes measured by IMU1 (m/s)
     Vector3f dVelIMU2;              // delta velocity vector in XYZ body axes measured by IMU2 (m/s)
     Vector3f dAngIMU;               // delta angle vector in XYZ body axes measured by the IMU (rad)
-    ftype dtIMU;                    // time lapsed since the last IMU measurement (sec)
+    ftype dtIMUavg;                 // expected time between IMU measurements (sec)
+    ftype dtIMUactual;              // time lapsed since the last IMU measurement (sec)
     ftype dt;                       // time lapsed since the last covariance prediction (sec)
     ftype hgtRate;                  // state for rate of change of height filter
     bool onGround;                  // boolean true when the flight vehicle is on the ground (not flying)
@@ -643,7 +644,6 @@ private:
     float magUpdateCountMaxInv;     // floating point inverse of magFilterCountMax
 
     // variables added for optical flow fusion
-    float dtIMUinv;                 // inverse of IMU time step
     bool newDataFlow;               // true when new optical flow data has arrived
     bool flowFusePerformed;         // true when optical flow fusion has been performed in that time step
     bool flowDataValid;             // true while optical flow data is still fresh

@@ -529,17 +529,16 @@ bool NavEKF::InitialiseFilterDynamic(void)
     InitialiseVariables();
 
     // get initial time deltat between IMU measurements (sec)
-    dtIMUinv = _ahrs->get_ins().get_sample_rate();
-    dtIMU = 1.0f/dtIMUinv;
+    dtIMUactual = dtIMUavg = 1.0f/_ahrs->get_ins().get_sample_rate();
 
     // set number of updates over which gps and baro measurements are applied to the velocity and position states
-    gpsUpdateCountMaxInv = (dtIMU * 1000.0f)/float(msecGpsAvg);
+    gpsUpdateCountMaxInv = (dtIMUavg * 1000.0f)/float(msecGpsAvg);
     gpsUpdateCountMax = uint8_t(1.0f/gpsUpdateCountMaxInv);
-    hgtUpdateCountMaxInv = (dtIMU * 1000.0f)/float(msecHgtAvg);
+    hgtUpdateCountMaxInv = (dtIMUavg * 1000.0f)/float(msecHgtAvg);
     hgtUpdateCountMax = uint8_t(1.0f/hgtUpdateCountMaxInv);
-    magUpdateCountMaxInv = (dtIMU * 1000.0f)/float(msecMagAvg);
+    magUpdateCountMaxInv = (dtIMUavg * 1000.0f)/float(msecMagAvg);
     magUpdateCountMax = uint8_t(1.0f/magUpdateCountMaxInv);
-    flowUpdateCountMaxInv = (dtIMU * 1000.0f)/float(msecFlowAvg);
+    flowUpdateCountMaxInv = (dtIMUavg * 1000.0f)/float(msecFlowAvg);
     flowUpdateCountMax = uint8_t(1.0f/flowUpdateCountMaxInv);
 
     // calculate initial orientation and earth magnetic field states
@@ -592,15 +591,14 @@ bool NavEKF::InitialiseFilterBootstrap(void)
     InitialiseVariables();
 
     // get initial time deltat between IMU measurements (sec)
-    dtIMUinv = _ahrs->get_ins().get_sample_rate();
-    dtIMU = 1.0f/dtIMUinv;
+    dtIMUactual = dtIMUavg = 1.0f/_ahrs->get_ins().get_sample_rate();
 
     // set number of updates over which gps and baro measurements are applied to the velocity and position states
-    gpsUpdateCountMaxInv = (dtIMU * 1000.0f)/float(msecGpsAvg);
+    gpsUpdateCountMaxInv = (dtIMUavg * 1000.0f)/float(msecGpsAvg);
     gpsUpdateCountMax = uint8_t(1.0f/gpsUpdateCountMaxInv);
-    hgtUpdateCountMaxInv = (dtIMU * 1000.0f)/float(msecHgtAvg);
+    hgtUpdateCountMaxInv = (dtIMUavg * 1000.0f)/float(msecHgtAvg);
     hgtUpdateCountMax = uint8_t(1.0f/hgtUpdateCountMaxInv);
-    magUpdateCountMaxInv = (dtIMU * 1000.0f)/float(msecMagAvg);
+    magUpdateCountMaxInv = (dtIMUavg * 1000.0f)/float(msecMagAvg);
     magUpdateCountMax = uint8_t(1.0f/magUpdateCountMaxInv);
 
     // acceleration vector in XYZ body axes measured by the IMU (m/s^2)
@@ -684,7 +682,7 @@ void NavEKF::UpdateFilter()
     readIMUData();
 
     // detect if the filter update has been delayed for too long
-    if (dtIMU > 0.2f) {
+    if (dtIMUactual > 0.2f) {
         // we have stalled for too long - reset states
         ResetVelocity();
         ResetPosition();
@@ -712,11 +710,11 @@ void NavEKF::UpdateFilter()
     // sum delta angles and time used by covariance prediction
     summedDelAng = summedDelAng + correctedDelAng;
     summedDelVel = summedDelVel + correctedDelVel1;
-    dt += dtIMU;
+    dt += dtIMUactual;
 
     // perform a covariance prediction if the total delta angle has exceeded the limit
     // or the time limit will be exceeded at the next IMU update
-    if (((dt >= (covTimeStepMax - dtIMU)) || (summedDelAng.length() > covDelAngMax))) {
+    if (((dt >= (covTimeStepMax - dtIMUactual)) || (summedDelAng.length() > covDelAngMax))) {
         CovariancePrediction();
     } else {
         covPredStep = false;
@@ -1088,9 +1086,9 @@ void NavEKF::UpdateStrapdownEquationsNED()
     // apply corrections for earths rotation rate and coning errors
     // % * - and + operators have been overloaded
     if (haveDeltaAngles) {
-        correctedDelAng   = correctedDelAng - prevTnb * earthRateNED*dtIMU;
+        correctedDelAng   = correctedDelAng - prevTnb * earthRateNED*dtIMUactual;
     } else {
-        correctedDelAng   = correctedDelAng - prevTnb * earthRateNED*dtIMU + (prevDelAng % correctedDelAng) * 8.333333e-2f;
+        correctedDelAng   = correctedDelAng - prevTnb * earthRateNED*dtIMUactual + (prevDelAng % correctedDelAng) * 8.333333e-2f;
     }
 
     // save current measurements
@@ -1133,13 +1131,13 @@ void NavEKF::UpdateStrapdownEquationsNED()
     // transform body delta velocities to delta velocities in the nav frame
     // * and + operators have been overloaded
     // blended IMU calc
-    delVelNav  = Tbn_temp*correctedDelVel12 + gravityNED*dtIMU;
+    delVelNav  = Tbn_temp*correctedDelVel12 + gravityNED*dtIMUactual;
     // single IMU calcs
-    delVelNav1 = Tbn_temp*correctedDelVel1 + gravityNED*dtIMU;
-    delVelNav2 = Tbn_temp*correctedDelVel2 + gravityNED*dtIMU;
+    delVelNav1 = Tbn_temp*correctedDelVel1 + gravityNED*dtIMUactual;
+    delVelNav2 = Tbn_temp*correctedDelVel2 + gravityNED*dtIMUactual;
 
     // calculate the rate of change of velocity (used for launch detect and other functions)
-    velDotNED = delVelNav / dtIMU ;
+    velDotNED = delVelNav / dtIMUactual ;
 
     // apply a first order lowpass filter
     velDotNEDfilt = velDotNED * 0.05f + velDotNEDfilt * 0.95f;
@@ -1160,12 +1158,12 @@ void NavEKF::UpdateStrapdownEquationsNED()
     state.vel2     += delVelNav2;
 
     // apply a trapezoidal integration to velocities to calculate position
-    state.position += (state.velocity + lastVelocity) * (dtIMU*0.5f);
-    state.posD1    += (state.vel1.z + lastVel1.z) * (dtIMU*0.5f);
-    state.posD2    += (state.vel2.z + lastVel2.z) * (dtIMU*0.5f);
+    state.position += (state.velocity + lastVelocity) * (dtIMUactual*0.5f);
+    state.posD1    += (state.vel1.z + lastVel1.z) * (dtIMUactual*0.5f);
+    state.posD2    += (state.vel2.z + lastVel2.z) * (dtIMUactual*0.5f);
 
     // capture current angular rate to augmented state vector for use by optical flow fusion
-    state.omega = correctedDelAng * dtIMUinv;
+    state.omega = correctedDelAng / dtIMUactual;
 
     // limit states to protect against divergence
     ConstrainStates();
@@ -2166,7 +2164,7 @@ void NavEKF::FuseVelPosNED()
 
                     if (vehicleArmed) {
                         // Correct single IMU prediction states using height measurement, limiting rate of change of bias to 0.005 m/s3
-                        float correctionLimit = 0.005f * dtIMU * dtVelPos;
+                        float correctionLimit = 0.005f * dtIMUavg * dtVelPos;
                         state.accel_zbias1 -= constrain_float(Kfusion[13] * hgtInnov1, -correctionLimit, correctionLimit); // IMU1 Z accel bias
                         state.accel_zbias2 -= constrain_float(Kfusion[22] * hgtInnov2, -correctionLimit, correctionLimit); // IMU2 Z accel bias
                     } else {
@@ -2299,7 +2297,7 @@ void NavEKF::FuseMagnetometer()
         MagPred[2] = DCM[2][0]*magN + DCM[2][1]*magE  + DCM[2][2]*magD + magZbias;
 
         // scale magnetometer observation error with total angular rate
-        R_MAG = sq(constrain_float(_magNoise, 0.01f, 0.5f)) + sq(magVarRateScale*dAngIMU.length() / dtIMU);
+        R_MAG = sq(constrain_float(_magNoise, 0.01f, 0.5f)) + sq(magVarRateScale*dAngIMU.length() / dtIMUavg);
 
         // calculate observation jacobians
         SH_MAG[0] = 2*magD*q3 + 2*magE*q2 + 2*magN*q1;
@@ -3519,7 +3517,7 @@ void NavEKF::RecallOmega(Vector3f &omegaAvg, uint32_t msecStart, uint32_t msecEn
     {
         omegaAvg = omegaAvg / float(numAvg);
     } else {
-        omegaAvg = correctedDelAng * (1.0f * dtIMUinv);
+        omegaAvg = correctedDelAng / dtIMUactual;
     }
 }
 
@@ -3573,11 +3571,11 @@ bool NavEKF::getPosNED(Vector3f &pos) const
 // return body axis gyro bias estimates in rad/sec
 void NavEKF::getGyroBias(Vector3f &gyroBias) const
 {
-    if (dtIMU < 1e-6f) {
+    if (dtIMUavg < 1e-6f) {
         gyroBias.zero();
         return;
     }
-    gyroBias = state.gyro_bias / dtIMU;
+    gyroBias = state.gyro_bias / dtIMUavg;
 }
 
 // reset the body axis gyro bias states to zero and re-initialise the corresponding covariances
@@ -3586,7 +3584,7 @@ void NavEKF::resetGyroBias(void)
     state.gyro_bias.zero();
     zeroRows(P,10,12);
     zeroCols(P,10,12);
-    P[10][10] = sq(radians(INIT_GYRO_BIAS_UNCERTAINTY * dtIMU));
+    P[10][10] = sq(radians(INIT_GYRO_BIAS_UNCERTAINTY * dtIMUavg));
     P[11][11] = P[10][10];
     P[12][12] = P[10][10];
 
@@ -3634,13 +3632,8 @@ void NavEKF::getIMU1Weighting(float &ret) const
 
 // return the individual Z-accel bias estimates in m/s^2
 void NavEKF::getAccelZBias(float &zbias1, float &zbias2) const {
-    if (dtIMU < 1e-6f) {
-        zbias1 = 0;
-        zbias2 = 0;
-    } else {
-        zbias1 = state.accel_zbias1 * dtIMUinv;
-        zbias2 = state.accel_zbias2 * dtIMUinv;
-    }
+    zbias1 = state.accel_zbias1 / dtIMUavg;
+    zbias2 = state.accel_zbias2 / dtIMUavg;
 }
 
 // return the NED wind speed estimates in m/s (positive is air moving in the direction of the axis)
@@ -3837,11 +3830,11 @@ void NavEKF::CovarianceInit()
     P[8][8]   = P[7][7];
     P[9][9]   = sq(_baroAltNoise);
     // delta angle biases
-    P[10][10] = sq(radians(INIT_GYRO_BIAS_UNCERTAINTY * dtIMU));
+    P[10][10] = sq(radians(INIT_GYRO_BIAS_UNCERTAINTY * dtIMUavg));
     P[11][11] = P[10][10];
     P[12][12] = P[10][10];
     // Z delta velocity bias
-    P[13][13] = sq(INIT_ACCEL_BIAS_UNCERTAINTY * dtIMU);
+    P[13][13] = sq(INIT_ACCEL_BIAS_UNCERTAINTY * dtIMUavg);
     // wind velocities
     P[14][14] = 0.0f;
     P[15][15]  = P[14][14];
@@ -3896,8 +3889,8 @@ void NavEKF::ConstrainVariances()
     for (uint8_t i=0; i<=3; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0f); // quaternions
     for (uint8_t i=4; i<=6; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0e3f); // velocities
     for (uint8_t i=7; i<=9; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0e6f); // positions
-    for (uint8_t i=10; i<=12; i++) P[i][i] = constrain_float(P[i][i],0.0f,sq(0.175f * dtIMU)); // delta angle biases
-    P[13][13] = constrain_float(P[13][13],0.0f,sq(10.0f * dtIMU)); // delta velocity bias
+    for (uint8_t i=10; i<=12; i++) P[i][i] = constrain_float(P[i][i],0.0f,sq(0.175f * dtIMUavg)); // delta angle biases
+    P[13][13] = constrain_float(P[13][13],0.0f,sq(10.0f * dtIMUavg)); // delta velocity bias
     for (uint8_t i=14; i<=15; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0e3f); // earth magnetic field
     for (uint8_t i=16; i<=21; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0f); // body magnetic field
 }
@@ -3914,10 +3907,10 @@ void NavEKF::ConstrainStates()
     // height limit covers home alt on everest through to home alt at SL and ballon drop
     states[9] = constrain_float(states[9],-4.0e4f,1.0e4f);
     // gyro bias limit ~6 deg/sec (this needs to be set based on manufacturers specs)
-    for (uint8_t i=10; i<=12; i++) states[i] = constrain_float(states[i],-0.1f*dtIMU,0.1f*dtIMU);
+    for (uint8_t i=10; i<=12; i++) states[i] = constrain_float(states[i],-0.1f*dtIMUavg,0.1f*dtIMUavg);
     // Z accel bias limit 1.0 m/s^2	(this needs to be finalised from test data)
-    states[13] = constrain_float(states[13],-1.0f*dtIMU,1.0f*dtIMU);
-    states[22] = constrain_float(states[22],-1.0f*dtIMU,1.0f*dtIMU);
+    states[13] = constrain_float(states[13],-1.0f*dtIMUavg,1.0f*dtIMUavg);
+    states[22] = constrain_float(states[22],-1.0f*dtIMUavg,1.0f*dtIMUavg);
     // wind velocity limit 100 m/s (could be based on some multiple of max airspeed * EAS2TAS) - TODO apply circular limit
     for (uint8_t i=14; i<=15; i++) states[i] = constrain_float(states[i],-100.0f,100.0f);
     // earth magnetic field limit
@@ -3931,11 +3924,10 @@ void NavEKF::readIMUData()
 {
     const AP_InertialSensor &ins = _ahrs->get_ins();
 
-    // limit IMU delta time to prevent numerical problems elsewhere
-    dtIMUinv = ins.get_sample_rate();
-    dtIMU = 1.0f/dtIMUinv;
+    dtIMUavg = 1.0f/ins.get_sample_rate();
 
-    float dtIMUactual = constrain_float(ins.get_delta_time(),0.001f,0.2f);
+    // limit IMU delta time to prevent numerical problems elsewhere
+    dtIMUactual = constrain_float(ins.get_delta_time(),0.001f,0.2f);
 
     // the imu sample time is sued as a common time reference throughout the filter
     imuSampleTime_ms = hal.scheduler->millis();
@@ -4410,7 +4402,8 @@ void NavEKF::InitialiseVariables()
     firstMagYawInit = false;
     secondMagYawInit = false;
     storeIndex = 0;
-    dtIMU = 0;
+    dtIMUavg = 0.0025f;
+    dtIMUactual = 0.0025f;
     dt = 0;
     hgtMea = 0;
     firstArmPosD = 0.0f;
