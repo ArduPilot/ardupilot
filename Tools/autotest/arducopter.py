@@ -1318,6 +1318,9 @@ def fly_CopterAVC(viewerip=None, map=False):
         setup_rc(mavproxy)
         homeloc = mav.location()
 
+        # wait 10sec to allow EKF to settle
+        wait_seconds(mav, 10)
+
         # Arm
         print("# Arm motors")
         if not arm_motors(mavproxy, mav):
