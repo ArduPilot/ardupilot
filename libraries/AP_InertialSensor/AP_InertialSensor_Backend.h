@@ -64,7 +64,7 @@ protected:
     void _rotate_and_correct_accel(uint8_t instance, Vector3f &accel);
     void _rotate_and_correct_gyro(uint8_t instance, Vector3f &gyro);
 
-    void _publish_delta_velocity(uint8_t instance, const Vector3f &delta_velocity);
+    void _publish_delta_velocity(uint8_t instance, const Vector3f &delta_velocity, float dt);
     void _publish_delta_angle(uint8_t instance, const Vector3f &delta_angle);
 
     // rotate gyro vector, offset and publish

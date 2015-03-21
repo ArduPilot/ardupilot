@@ -78,6 +78,7 @@ private:
 
     Vector3f _delta_angle_accumulator[INS_MAX_INSTANCES];
     Vector3f _delta_velocity_accumulator[INS_MAX_INSTANCES];
+    float _delta_velocity_dt[INS_MAX_INSTANCES];
     Vector3f _last_delAng[INS_MAX_INSTANCES];
     Vector3f _last_gyro[INS_MAX_INSTANCES];
 

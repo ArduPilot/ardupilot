@@ -57,10 +57,11 @@ void AP_InertialSensor_Backend::_publish_gyro(uint8_t instance, const Vector3f &
     }
 }
 
-void AP_InertialSensor_Backend::_publish_delta_velocity(uint8_t instance, const Vector3f &delta_velocity)
+void AP_InertialSensor_Backend::_publish_delta_velocity(uint8_t instance, const Vector3f &delta_velocity, float dt)
 {
     // publish delta velocity
     _imu._delta_velocity[instance] = delta_velocity;
+    _imu._delta_velocity_dt[instance] = dt;
     _imu._delta_velocity_valid[instance] = true;
 }
 

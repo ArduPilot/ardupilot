@@ -28,6 +28,7 @@ AP_InertialSensor_PX4::AP_InertialSensor_PX4(AP_InertialSensor &imu) :
     for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
         _delta_angle_accumulator[i].zero();
         _delta_velocity_accumulator[i].zero();
+        _delta_velocity_dt[i] = 0.0f;
     }
 }
 
@@ -210,7 +211,7 @@ bool AP_InertialSensor_PX4::update(void)
         // so we only want to do this if we have new data from it
         if (_last_accel_timestamp[k] != _last_accel_update_timestamp[k]) {
             _publish_accel(_accel_instance[k], accel, false);
-            _publish_delta_velocity(_accel_instance[k], _delta_velocity_accumulator[k]);
+            _publish_delta_velocity(_accel_instance[k], _delta_velocity_accumulator[k], _delta_velocity_dt[k]);
             _last_accel_update_timestamp[k] = _last_accel_timestamp[k];
         }
     }
@@ -229,6 +230,7 @@ bool AP_InertialSensor_PX4::update(void)
     for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
         _delta_angle_accumulator[i].zero();
         _delta_velocity_accumulator[i].zero();
+        _delta_velocity_dt[i] = 0.0f;
     }
 
     if (_last_accel_filter_hz != _accel_filter_cutoff()) {
@@ -263,6 +265,7 @@ void AP_InertialSensor_PX4::_new_accel_sample(uint8_t i, accel_report &accel_rep
 
     // integrate delta velocity accumulator
     _delta_velocity_accumulator[i] += delVel;
+    _delta_velocity_dt[i] += dt;
 
     // save last timestamp
     _last_accel_timestamp[i] = accel_report.timestamp;

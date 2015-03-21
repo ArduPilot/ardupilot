@@ -125,8 +125,12 @@ public:
         if(_delta_velocity_valid[i]) delta_velocity = _delta_velocity[i];
         return _delta_velocity_valid[i];
     }
-
     bool get_delta_velocity(Vector3f &delta_velocity) const { return get_delta_velocity(_primary_accel, delta_velocity); }
+
+    float get_delta_velocity_dt(uint8_t i) const {
+        return _delta_velocity_dt[i];
+    }
+    float get_delta_velocity() const { return get_delta_velocity_dt(_primary_accel); }
 
     /// Fetch the current accelerometer values
     ///
@@ -250,6 +254,7 @@ private:
     // Most recent accelerometer reading
     Vector3f _accel[INS_MAX_INSTANCES];
     Vector3f _delta_velocity[INS_MAX_INSTANCES];
+    float _delta_velocity_dt[INS_MAX_INSTANCES];
     bool _delta_velocity_valid[INS_MAX_INSTANCES];
 
     // Most recent gyro reading
