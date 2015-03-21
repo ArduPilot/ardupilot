@@ -508,8 +508,12 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
             goto failed;
         }
 
-        // clear out any existing samples from ins
-        update();
+        // wait 100ms for ins filter to rise
+        for (uint8_t k=0; k<10; k++) {
+            wait_for_sample();
+            update();
+            hal.scheduler->delay(10);
+        }
 
         uint8_t num_samples = 0;
         while (num_samples < 32) {
