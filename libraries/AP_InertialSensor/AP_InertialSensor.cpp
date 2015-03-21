@@ -508,15 +508,17 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
             goto failed;
         }
 
+        const uint8_t update_dt_milliseconds = (uint8_t)(1000.0f/get_sample_rate()+0.5f);
+
         // wait 100ms for ins filter to rise
-        for (uint8_t k=0; k<10; k++) {
+        for (uint8_t k=0; k<100/update_dt_milliseconds; k++) {
             wait_for_sample();
             update();
-            hal.scheduler->delay(10);
+            hal.scheduler->delay(update_dt_milliseconds);
         }
 
-        uint8_t num_samples = 0;
-        while (num_samples < 32) {
+        uint32_t num_samples = 0;
+        while (num_samples < 1000/update_dt_milliseconds) {
             wait_for_sample();
             // read samples from ins
             update();
@@ -534,7 +536,7 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
                     goto failed;
                 }
             }
-            hal.scheduler->delay(10);
+            hal.scheduler->delay(update_dt_milliseconds);
             num_samples++;
         }
         for (uint8_t k=0; k<num_accels; k++) {
