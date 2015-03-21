@@ -20,6 +20,9 @@
 #include <sys/select.h>
 
 #include <AP_Param.h>
+#include <pthread.h>
+
+typedef void *(*pthread_startroutine_t)(void *);
 
 #ifdef __CYGWIN__
 #include <stdio.h>
@@ -49,37 +52,11 @@ extern const AP_HAL::HAL& hal;
 
 using namespace AVR_SITL;
 
-enum SITL_State::vehicle_type SITL_State::_vehicle;
-uint16_t SITL_State::_framerate;
-uint16_t SITL_State::_base_port = 5760;
-uint16_t SITL_State::_rcout_port = 5502;
-uint16_t SITL_State::_simin_port = 5501;
-struct sockaddr_in SITL_State::_rcout_addr;
-pid_t SITL_State::_parent_pid;
-uint32_t SITL_State::_update_count;
-bool SITL_State::_motors_on;
-uint16_t SITL_State::sonar_pin_value;
-uint16_t SITL_State::airspeed_pin_value;
-uint16_t SITL_State::voltage_pin_value;
-uint16_t SITL_State::current_pin_value;
-float SITL_State::_current;
-
-AP_Baro *SITL_State::_barometer;
-AP_InertialSensor *SITL_State::_ins;
-SITLScheduler *SITL_State::_scheduler;
-Compass *SITL_State::_compass;
-OpticalFlow *SITL_State::_optical_flow;
-AP_Terrain *SITL_State::_terrain;
-
-int SITL_State::_sitl_fd;
-SITL *SITL_State::_sitl;
-uint16_t SITL_State::pwm_output[11];
-uint16_t SITL_State::last_pwm_output[11];
-uint16_t SITL_State::pwm_input[8];
-bool SITL_State::new_rc_input;
+// this allows loop_hook to be called
+SITL_State *g_state;
 
 // catch floating point exceptions
-void SITL_State::_sig_fpe(int signum)
+static void _sig_fpe(int signum)
 {
 	fprintf(stderr, "ERROR: Floating point exception - aborting\n");
     abort();
@@ -106,7 +83,12 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     setvbuf(stdout, (char *)0, _IONBF, 0);
     setvbuf(stderr, (char *)0, _IONBF, 0);
 
-	while ((opt = getopt(argc, argv, "swhr:H:CI:P:")) != -1) {
+    _synthetic_clock_mode = false;
+    _base_port = 5760;
+    _rcout_port = 5502;
+    _simin_port = 5501;
+
+	while ((opt = getopt(argc, argv, "swhr:H:CI:P:S")) != -1) {
 		switch (opt) {
 		case 'w':
 			AP_Param::erase_all();
@@ -130,6 +112,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 			break;
 		case 'P':
             _set_param_default(optarg);
+			break;
+		case 'S':
+            _synthetic_clock_mode = true;
 			break;
 		default:
 			_usage();
@@ -205,7 +190,6 @@ void SITL_State::_sitl_setup(void)
 	_rcout_addr.sin_port = htons(_rcout_port);
 	inet_pton(AF_INET, "127.0.0.1", &_rcout_addr.sin_addr);
 
-	_setup_timer();
 #ifndef HIL_MODE
 	_setup_fdm();
 #endif
@@ -228,6 +212,28 @@ void SITL_State::_sitl_setup(void)
         _update_gps(0, 0, 0, 0, 0, 0, false);
 #endif
     }
+
+    if (_synthetic_clock_mode) {
+        // start with non-zero clock
+        hal.scheduler->stop_clock(100);
+    }
+
+    // setup a pipe used to trigger loop to stop sleeping
+    pipe(_fdm_pipe);
+    AVR_SITL::SITLUARTDriver::_set_nonblocking(_fdm_pipe[0]);
+    AVR_SITL::SITLUARTDriver::_set_nonblocking(_fdm_pipe[1]);
+
+    g_state = this;
+
+    /*
+      setup thread that receives input from the FDM
+     */
+    pthread_attr_t thread_attr;
+    pthread_attr_init(&thread_attr);
+
+    pthread_create(&_fdm_thread_ctx, &thread_attr, 
+                   (pthread_startroutine_t)&AVR_SITL::SITL_State::_fdm_thread, this);
+
 }
 
 
@@ -270,96 +276,89 @@ void SITL_State::_setup_fdm(void)
 
 
 /*
-  timer called at 1kHz
+  thread for FDM input
  */
-void SITL_State::_timer_handler(int signum)
+void SITL_State::_fdm_thread(void)
 {
-	static uint32_t last_update_count;
-    static uint32_t last_pwm_input;
+	uint32_t last_update_count = 0;
+    uint32_t last_pwm_input = 0;
 
-	static bool in_timer;
+    while (true) {
+        fd_set fds;
+        struct timeval tv;
 
-	if (in_timer || _scheduler->interrupts_are_blocked() || _sitl == NULL){
-		return;
-    }
+        if (next_stop_clock != 0) {
+            hal.scheduler->stop_clock(next_stop_clock);
+            next_stop_clock = 0;
+        }
 
-    _scheduler->sitl_begin_atomic();
-	in_timer = true;
+        tv.tv_sec = 1;
+        tv.tv_usec = 0;
 
-#ifndef __CYGWIN__
-	/* make sure we die if our parent dies */
-	if (kill(_parent_pid, 0) != 0) {
-		exit(1);
-	}
-#else
-    
-	static uint16_t count = 0;
-	static uint32_t last_report;
-        
-    count++;
-	if (hal.scheduler->millis() - last_report > 1000) {
-		fprintf(stdout, "TH %u cps\n", count);
-	//	print_trace();
-		count = 0;
-		last_report = hal.scheduler->millis();
-	}
-#endif
+        FD_ZERO(&fds);
+        FD_SET(_sitl_fd, &fds);
+        if (select(_sitl_fd+1, &fds, NULL, NULL, &tv) != 1) {
+            // internal error
+            _simulator_output(true);
+            continue;
+        }
 
-    // simulate RC input at 50Hz
-    if (hal.scheduler->millis() - last_pwm_input >= 20 && _sitl->rc_fail == 0) {
-        last_pwm_input = hal.scheduler->millis();
-        new_rc_input = true;
-    }
+        /* check for packet from flight sim */
+        _fdm_input();
 
-#ifndef HIL_MODE
-	/* check for packet from flight sim */
-	_fdm_input();
+        /* make sure we die if our parent dies */
+        if (kill(_parent_pid, 0) != 0) {
+            exit(1);
+        }
 
-	// send RC output to flight sim
-	_simulator_output();
-#endif
+        if (_scheduler->interrupts_are_blocked() || _sitl == NULL) {
+            continue;
+        }
 
-	if (_update_count == 0 && _sitl != NULL) {
-#ifndef HIL_MODE
-		_update_gps(0, 0, 0, 0, 0, 0, false);
-		_update_barometer(0);
-#endif
-		_scheduler->timer_event();
+        // simulate RC input at 50Hz
+        if (hal.scheduler->millis() - last_pwm_input >= 20 && _sitl->rc_fail == 0) {
+            last_pwm_input = hal.scheduler->millis();
+            new_rc_input = true;
+        }
+
+        _scheduler->sitl_begin_atomic();
+
+        if (_update_count == 0 && _sitl != NULL) {
+            _update_gps(0, 0, 0, 0, 0, 0, false);
+            _update_barometer(0);
+            _scheduler->timer_event();
+            _scheduler->sitl_end_atomic();
+            continue;
+        }
+
+        if (_update_count == last_update_count) {
+            _scheduler->timer_event();
+            _scheduler->sitl_end_atomic();
+            continue;
+        }
+        last_update_count = _update_count;
+
+        if (_sitl != NULL) {
+            _update_gps(_sitl->state.latitude, _sitl->state.longitude,
+                        _sitl->state.altitude,
+                        _sitl->state.speedN, _sitl->state.speedE, _sitl->state.speedD,
+                        !_sitl->gps_disable);
+            _update_ins(_sitl->state.rollDeg, _sitl->state.pitchDeg, _sitl->state.yawDeg,
+                        _sitl->state.rollRate, _sitl->state.pitchRate, _sitl->state.yawRate,
+                        _sitl->state.xAccel, _sitl->state.yAccel, _sitl->state.zAccel,
+                        _sitl->state.airspeed, _sitl->state.altitude);
+            _update_barometer(_sitl->state.altitude);
+            _update_compass(_sitl->state.rollDeg, _sitl->state.pitchDeg, _sitl->state.yawDeg);
+            _update_flow();
+        }
+
+        // trigger all APM timers. 
+        _scheduler->timer_event();
         _scheduler->sitl_end_atomic();
-		in_timer = false;
-		return;
-	}
 
-	if (_update_count == last_update_count) {
-		_scheduler->timer_event();
-        _scheduler->sitl_end_atomic();
-		in_timer = false;
-		return;
-	}
-	last_update_count = _update_count;
-
-    if (_sitl != NULL) {
-#ifndef HIL_MODE
-        _update_gps(_sitl->state.latitude, _sitl->state.longitude,
-                    _sitl->state.altitude,
-                    _sitl->state.speedN, _sitl->state.speedE, _sitl->state.speedD,
-                    !_sitl->gps_disable);
-        _update_ins(_sitl->state.rollDeg, _sitl->state.pitchDeg, _sitl->state.yawDeg,
-                    _sitl->state.rollRate, _sitl->state.pitchRate, _sitl->state.yawRate,
-                    _sitl->state.xAccel, _sitl->state.yAccel, _sitl->state.zAccel,
-                    _sitl->state.airspeed, _sitl->state.altitude);
-        _update_barometer(_sitl->state.altitude);
-        _update_compass(_sitl->state.rollDeg, _sitl->state.pitchDeg, _sitl->state.yawDeg);
-		_update_flow();
-#endif
+        char b = 0;
+        write(_fdm_pipe[1], &b, 1);
     }
-
-	// trigger all APM timers. We do this last as it can re-enable
-	// interrupts, which can lead to recursion
-	_scheduler->timer_event();
-
-    _scheduler->sitl_end_atomic();
-	in_timer = false;
 }
 
 #ifndef HIL_MODE
@@ -373,12 +372,25 @@ void SITL_State::_fdm_input(void)
 		uint16_t pwm[8];
 	};
 	union {
+        struct {
+            uint64_t timestamp;
+            struct sitl_fdm fg_pkt;
+        } fg_pkt_timestamped;
 		struct sitl_fdm fg_pkt;
 		struct pwm_packet pwm_pkt;
 	} d;
+    bool got_fg_input = false;
+    next_stop_clock = 0;
 
 	size = recv(_sitl_fd, &d, sizeof(d), MSG_DONTWAIT);
 	switch (size) {
+    case 148:
+        /* a fg packate with a timestamp */
+        next_stop_clock = d.fg_pkt_timestamped.timestamp;
+        memmove(&d.fg_pkt, &d.fg_pkt_timestamped.fg_pkt, sizeof(d.fg_pkt));
+        _synthetic_clock_mode = true;
+        // fall through
+
 	case 140:
 		static uint32_t last_report;
 		static uint32_t count;
@@ -387,6 +399,8 @@ void SITL_State::_fdm_input(void)
 			fprintf(stdout, "Bad FDM packet - magic=0x%08x\n", d.fg_pkt.magic);
 			return;
 		}
+
+        got_fg_input = true;
 
 		if (d.fg_pkt.latitude == 0 ||
 		    d.fg_pkt.longitude == 0 ||
@@ -428,6 +442,10 @@ void SITL_State::_fdm_input(void)
 	}
 	}
 
+    if (got_fg_input) {
+        // send RC output to flight sim
+        _simulator_output(_synthetic_clock_mode);
+    }
 }
 #endif
 
@@ -460,7 +478,7 @@ void SITL_State::_apply_servo_filter(float deltat)
 /*
   send RC outputs to simulator
  */
-void SITL_State::_simulator_output(void)
+void SITL_State::_simulator_output(bool synthetic_clock_mode)
 {
 	static uint32_t last_update_usec;
 	struct {
@@ -495,7 +513,7 @@ void SITL_State::_simulator_output(void)
 
 	// output at chosen framerate
     uint32_t now = hal.scheduler->micros();
-	if (last_update_usec != 0 && now - last_update_usec < 1000000/_framerate) {
+	if (!synthetic_clock_mode && last_update_usec != 0 && now - last_update_usec < 1000000/_framerate) {
 		return;
 	}
     float deltat = (now - last_update_usec) * 1.0e-6f;
@@ -577,28 +595,6 @@ void SITL_State::_simulator_output(void)
 	sendto(_sitl_fd, (void*)&control, sizeof(control), MSG_DONTWAIT, (const sockaddr *)&_rcout_addr, sizeof(_rcout_addr));
 }
 
-
-/*
-  setup a timer used to prod the ISRs
- */
-void SITL_State::_setup_timer(void)
-{
-	struct itimerval it;
-	struct sigaction act;
-
-	act.sa_handler = _timer_handler;
-        act.sa_flags = SA_RESTART|SA_NODEFER;
-        sigemptyset(&act.sa_mask);
-        sigaddset(&act.sa_mask, SIGALRM);
-        sigaction(SIGALRM, &act, NULL);
-
-	it.it_interval.tv_sec = 0;
-	it.it_interval.tv_usec = 1000; // 1KHz
-	it.it_value = it.it_interval;
-
-	setitimer(ITIMER_REAL, &it, NULL);
-}
-
 // generate a random float between -1 and 1
 float SITL_State::_rand_float(void)
 {
@@ -661,11 +657,20 @@ void SITL_State::loop_hook(void)
         FD_SET(fd, &fds);
         max_fd = max(fd, max_fd);
     }
+
+    FD_SET(_fdm_pipe[0], &fds);
+    max_fd = max(_fdm_pipe[0], max_fd);
+
     tv.tv_sec = 0;
     tv.tv_usec = 100;
     fflush(stdout);
     fflush(stderr);
     select(max_fd+1, &fds, NULL, NULL, &tv);
+    
+    if (FD_ISSET(_fdm_pipe[0], &fds)) {
+        char b;
+        read(_fdm_pipe[0], &b, 1);
+    }
 }
 
 

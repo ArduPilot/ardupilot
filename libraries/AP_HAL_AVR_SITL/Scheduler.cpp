@@ -8,6 +8,8 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <fenv.h>
+#include <signal.h>
+#include <pthread.h>
 
 #ifdef __CYGWIN__
 #include <stdio.h> 
@@ -44,9 +46,16 @@ double SITLScheduler::_cyg_freq = 0;
 long SITLScheduler::_cyg_start = 0;
 #endif
 
+static void sigcont_handler(int)
+{
+}
+
 SITLScheduler::SITLScheduler(SITL_State *sitlState) :
-    _sitlState(sitlState)
-{}
+    _sitlState(sitlState),
+    stopped_clock_usec(0)
+{
+    signal(SIGCONT, sigcont_handler);
+}
 
 void SITLScheduler::init(void *unused) 
 {
@@ -88,6 +97,9 @@ uint64_t SITLScheduler::_micros64()
 
 uint64_t SITLScheduler::micros64() 
 {
+    if (stopped_clock_usec) {
+        return stopped_clock_usec;
+    }
     return _micros64();
 }
 
@@ -98,6 +110,9 @@ uint32_t SITLScheduler::micros()
 
 uint64_t SITLScheduler::millis64() 
 {
+    if (stopped_clock_usec) {
+        return stopped_clock_usec/1000;
+    }
 #ifdef __CYGWIN__
 	// 1000 ms in a second
 	return (uint64_t)(_cyg_sec() * 1000);
@@ -116,24 +131,29 @@ uint32_t SITLScheduler::millis()
     return millis64() & 0xFFFFFFFF;
 }
 
+extern AVR_SITL::SITL_State *g_state;
+
+
 void SITLScheduler::delay_microseconds(uint16_t usec) 
 {
 	uint64_t start = micros64();
-	while (micros64() - start < usec) {
-		usleep(usec - (micros64() - start));
+    uint64_t dtime;
+	while ((dtime=(micros64() - start) < usec)) {
+        if (stopped_clock_usec) {
+            wait_time_usec = start + usec;
+            pause();
+            wait_time_usec = 0;
+        } else {
+            usleep(usec - dtime);
+        }
 	}
 }
 
 void SITLScheduler::delay(uint16_t ms)
 {
-	uint64_t start = micros64();
-    
     while (ms > 0) {
-        while ((micros64() - start) >= 1000) {
-            ms--;
-            if (ms == 0) break;
-            start += 1000;
-        }
+        delay_microseconds(1000);
+        ms--;
         if (_min_delay_cb_ms <= ms) {
             if (_delay_cb) {
                 _delay_cb();
@@ -292,6 +312,26 @@ void SITLScheduler::_run_io_procs(bool called_from_isr)
 void SITLScheduler::panic(const prog_char_t *errormsg) {
     hal.console->println_P(errormsg);
     for(;;);
+}
+
+/*
+  set simulation timestamp
+ */
+void SITLScheduler::stop_clock(uint64_t time_usec)
+{
+    stopped_clock_usec = time_usec;
+    /*
+      we want to ensure the main thread 
+     */
+    while (wait_time_usec == 0) {
+        pthread_yield();
+    }
+    kill(0, SIGCONT);
+    while (wait_time_usec != 0 && wait_time_usec <= time_usec) {
+        kill(0, SIGCONT);
+        pthread_yield();
+    }
+    _run_io_procs(false);
 }
 
 #endif

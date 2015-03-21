@@ -32,9 +32,6 @@ extern const AP_HAL::HAL& hal;
 
 static uint8_t next_gps_index;
 static uint8_t gps_delay;
-SITL_State::gps_data SITL_State::_gps_data[MAX_GPS_DELAY];
-bool SITL_State::_gps_has_basestation_position = false;
-SITL_State::gps_data SITL_State::_gps_basestation_data;
 
 // state of GPS emulation
 static struct gps_state {
