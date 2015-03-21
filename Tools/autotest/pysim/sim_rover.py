@@ -15,7 +15,10 @@ def sim_send(a):
     earth_rates = util.BodyRatesToEarthRates(a.dcm, a.gyro)
     (roll, pitch, yaw) = a.dcm.to_euler()
 
-    buf = struct.pack('<17dI',
+    timestamp = int((a.time_now - a.time_base) * 1e6)
+
+    buf = struct.pack('<Q17dI',
+                      timestamp,
                       a.latitude, a.longitude, a.altitude, degrees(yaw),
                       a.velocity.x, a.velocity.y, a.velocity.z,
                       a.accelerometer.x, a.accelerometer.y, a.accelerometer.z,
@@ -35,6 +38,7 @@ def sim_recv(state):
     try:
         buf = sim_in.recv(28)
     except socket.error as e:
+        print(e, e.error)
         if not e.errno in [ errno.EAGAIN, errno.EWOULDBLOCK ]:
             raise
         return
@@ -49,7 +53,7 @@ def sim_recv(state):
     state.steering = (pwm[0]-1500)/500.0
     state.throttle = (pwm[2]-1500)/500.0
 
-#    print("steering=%f throttle=%f pwm=%s" % (state.steering, state.throttle, str(pwm)))
+    #print("steering=%f throttle=%f pwm=%s" % (state.steering, state.throttle, str(pwm)))
     
 
 
@@ -73,8 +77,9 @@ parser = OptionParser("sim_rover.py [options]")
 parser.add_option("--simin",  dest="simin",   help="SIM input (IP:port)",       default="127.0.0.1:5502")
 parser.add_option("--simout", dest="simout",  help="SIM output (IP:port)",      default="127.0.0.1:5501")
 parser.add_option("--home", dest="home",  type='string', default=None, help="home lat,lng,alt,hdg (required)")
-parser.add_option("--rate", dest="rate", type='int', help="SIM update rate", default=100)
+parser.add_option("--rate", dest="rate", type='int', help="SIM update rate", default=1000)
 parser.add_option("--skid-steering", action='store_true', default=False, help="Use skid steering")
+parser.add_option("--nowait", action='store_true', help="don't pause between updates")
 
 (opts, args) = parser.parse_args()
 
@@ -91,7 +96,7 @@ sim_in_address  = interpret_address(opts.simin)
 # setup input from SITL
 sim_in = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sim_in.bind(sim_in_address)
-sim_in.setblocking(0)
+sim_in.setblocking(1)
 
 # setup output to SITL
 sim_out = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -127,18 +132,30 @@ print("Starting at lat=%f lon=%f alt=%f heading=%.1f" % (
     a.yaw))
 
 frame_time = 1.0/opts.rate
-sleep_overhead = 0
+last_wall_time = time.time()
+
+counter = 0
 
 while True:
-    frame_start = time.time()
+    frame_start = a.time_now
+
+    # receive control input from SITL
     sim_recv(state)
+
+    # update the model
     a.update(state)
+
+    # send model state to SITL
     sim_send(a)
-    t = time.time()
-    frame_end = time.time()
-    if frame_end - frame_start < frame_time:
-        dt = frame_time - (frame_end - frame_start)
-        dt -= sleep_overhead
-        if dt > 0:
-            time.sleep(dt)
-        sleep_overhead = 0.99*sleep_overhead + 0.01*(time.time() - frame_end)
+
+    now = time.time()
+    if not opts.nowait and now < last_wall_time + frame_time:
+        time.sleep(last_wall_time+frame_time - now)
+    last_wall_time = time.time()
+
+    a.time_advance(frame_time)
+
+    counter += 1
+    if counter == 1000:
+        #print("t=%f %s %f" % ((a.time_now - a.time_base), time.ctime(), frame_time))
+        counter = 0

@@ -26,7 +26,7 @@ class Rover(Aircraft):
         self.wheelbase = wheelbase
         self.wheeltrack = wheeltrack
         self.max_wheel_turn = max_wheel_turn
-        self.last_time = time.time()
+        self.last_time = self.time_now
         self.skid_steering = skid_steering
         self.skid_turn_rate = skid_turn_rate
         if self.skid_steering:
@@ -85,7 +85,7 @@ class Rover(Aircraft):
             throttle = state.throttle
 
         # how much time has passed?
-        t = time.time()
+        t = self.time_now
         delta_time = t - self.last_time
         self.last_time = t
 

@@ -83,8 +83,17 @@ def drive_APMrover2(viewerip=None, map=False):
     if map:
         options += ' --map'
 
+    sim_cmd = util.reltopdir('Tools/autotest/pysim/sim_rover.py') + ' --rate=200 --nowait --home=%f,%f,%u,%u' % (
+        HOME.lat, HOME.lng, HOME.alt, HOME.heading)
+
     sil = util.start_SIL('APMrover2', wipe=True)
-    mavproxy = util.start_MAVProxy_SIL('APMrover2', options=options)
+    mavproxy = util.start_MAVProxy_SIL('APMrover2', options=options, synthetic_clock=True)
+
+    runsim = pexpect.spawn(sim_cmd, logfile=sys.stdout, timeout=10)
+    runsim.delaybeforesend = 0
+    runsim.expect('Starting at lat')
+
+    print("WAITING FOR PARAMETERS")
     mavproxy.expect('Received [0-9]+ parameters')
 
     # setup test parameters
@@ -94,20 +103,21 @@ def drive_APMrover2(viewerip=None, map=False):
     # restart with new parms
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
+    util.pexpect_close(runsim)
 
-    sim_cmd = util.reltopdir('Tools/autotest/pysim/sim_rover.py') + ' --rate=50 --home=%f,%f,%u,%u' % (
+    sil = util.start_SIL('APMrover2')
+    mavproxy = util.start_MAVProxy_SIL('APMrover2', options=options, synthetic_clock=True)
+    mavproxy.expect('Logging to (\S+)')
+    logfile = mavproxy.match.group(1)
+    print("LOGFILE %s" % logfile)
+
+    sim_cmd = util.reltopdir('Tools/autotest/pysim/sim_rover.py') + ' --rate=200 --nowait --home=%f,%f,%u,%u' % (
         HOME.lat, HOME.lng, HOME.alt, HOME.heading)
 
     runsim = pexpect.spawn(sim_cmd, logfile=sys.stdout, timeout=10)
     runsim.delaybeforesend = 0
     util.pexpect_autoclose(runsim)
     runsim.expect('Starting at lat')
-
-    sil = util.start_SIL('APMrover2')
-    mavproxy = util.start_MAVProxy_SIL('APMrover2', options=options)
-    mavproxy.expect('Logging to (\S+)')
-    logfile = mavproxy.match.group(1)
-    print("LOGFILE %s" % logfile)
 
     buildlog = util.reltopdir("../buildlogs/APMrover2-test.tlog")
     print("buildlog=%s" % buildlog)

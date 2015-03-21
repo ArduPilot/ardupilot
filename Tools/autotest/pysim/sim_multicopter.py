@@ -38,7 +38,10 @@ def sim_send(m, a):
         if not e.errno in [ errno.ECONNREFUSED ]:
             raise
 
-    buf = struct.pack('<17dI',
+    timestamp = int((a.time_now - a.time_base) * 1e6)
+
+    buf = struct.pack('<Q17dI',
+                      timestamp,
                       a.latitude, a.longitude, a.altitude, degrees(yaw),
                       a.velocity.x, a.velocity.y, a.velocity.z,
                       a.accelerometer.x, a.accelerometer.y, a.accelerometer.z,
@@ -61,7 +64,7 @@ def sim_recv(m):
         if not e.errno in [ errno.EAGAIN, errno.EWOULDBLOCK ]:
             raise
         return
-        
+
     if len(buf) != 28:
         return
     control = list(struct.unpack('<14H', buf))
@@ -98,6 +101,7 @@ parser.add_option("--rate", dest="rate", type='int', help="SIM update rate", def
 parser.add_option("--wind", dest="wind", help="Simulate wind (speed,direction,turbulance)", default='0,0,0')
 parser.add_option("--frame", dest="frame", help="frame type (+,X,octo)", default='+')
 parser.add_option("--gimbal", dest="gimbal", action='store_true', default=False, help="enable gimbal")
+parser.add_option("--nowait", action='store_true', help="don't pause between updates")
 
 (opts, args) = parser.parse_args()
 
@@ -120,7 +124,7 @@ fg_out.setblocking(0)
 # setup input from SITL
 sim_in = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sim_in.bind(sim_in_address)
-sim_in.setblocking(0)
+sim_in.setblocking(1)
 
 # setup output to SITL
 sim_out = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -140,9 +144,6 @@ print("Simulating for frame %s" % opts.frame)
 
 # motors initially off
 m = [0.0] * 11
-
-lastt = time.time()
-frame_count = 0
 
 # parse home
 v = opts.home.split(',')
@@ -168,7 +169,6 @@ print("Starting at lat=%f lon=%f alt=%.1f heading=%.1f" % (
     a.yaw))
 
 frame_time = 1.0/opts.rate
-sleep_overhead = 0
 
 if opts.gimbal:
     from gimbal import Gimbal3Axis
@@ -177,30 +177,23 @@ if opts.gimbal:
 else:
     gimbal = None
 
+last_wall_time = time.time()
+
 while True:
-    frame_start = time.time()
+    frame_start = a.time_now
     sim_recv(m)
 
     m2 = m[:]
 
     a.update(m2)
+
     if gimbal is not None:
         gimbal.update()
     sim_send(m, a)
-    frame_count += 1
-    t = time.time()
-    if t - lastt > 1.0:
-#        print("%.2f fps sleepOverhead=%f zspeed=%.2f zaccel=%.2f h=%.1f a=%.1f yaw=%.1f" % (
-#            frame_count/(t-lastt),
-#            sleep_overhead,
-#            a.velocity.z, a.accelerometer.z, a.position.z, a.altitude,
-#            a.yaw))
-        lastt = t
-        frame_count = 0
-    frame_end = time.time()
-    if frame_end - frame_start < frame_time:
-        dt = frame_time - (frame_end - frame_start)
-        dt -= sleep_overhead
-        if dt > 0:
-            time.sleep(dt)
-        sleep_overhead = 0.99*sleep_overhead + 0.01*(time.time() - frame_end - dt)
+
+    now = time.time()
+    if not opts.nowait and now < last_wall_time + frame_time:
+        time.sleep(last_wall_time+frame_time - now)
+    last_wall_time = time.time()
+
+    a.time_advance(frame_time)
