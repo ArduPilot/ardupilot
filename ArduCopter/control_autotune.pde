@@ -983,7 +983,9 @@ static void autotune_save_tuning_gains()
         }
         // update GCS and log save gains event
         autotune_update_gcs(AUTOTUNE_MESSAGE_SAVED_GAINS);
-            Log_Write_Event(DATA_AUTOTUNE_SAVEDGAINS);
+        Log_Write_Event(DATA_AUTOTUNE_SAVEDGAINS);
+        // reset Autotune so that gains are not saved again and autotune can be run again.
+        autotune_state.mode = AUTOTUNE_MODE_UNINITIALISED;
     }
 }
 
