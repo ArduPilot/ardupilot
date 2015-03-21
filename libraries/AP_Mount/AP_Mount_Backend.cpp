@@ -4,6 +4,18 @@
 
 extern const AP_HAL::HAL& hal;
 
+// set_angle_targets - sets angle targets in degrees
+void AP_Mount_Backend::set_angle_targets(float roll, float tilt, float pan)
+{
+    // set angle targets
+    _angle_ef_target_rad.x = radians(roll);
+    _angle_ef_target_rad.y = radians(tilt);
+    _angle_ef_target_rad.z = radians(pan);
+
+    // set the mode to mavlink targeting
+    _frontend.set_mode(_instance, MAV_MOUNT_MODE_MAVLINK_TARGETING);
+}
+
 // set_roi_target - sets target location that mount should attempt to point towards
 void AP_Mount_Backend::set_roi_target(const struct Location &target_loc)
 {
@@ -44,9 +56,7 @@ void AP_Mount_Backend::control_msg(mavlink_message_t *msg)
 
         // set earth frame target angles from mavlink message
         case MAV_MOUNT_MODE_MAVLINK_TARGETING:
-            _angle_ef_target_rad.x = radians(packet.input_b*0.01f);
-            _angle_ef_target_rad.y = radians(packet.input_a*0.01f);
-            _angle_ef_target_rad.z = radians(packet.input_c*0.01f);
+            set_angle_targets(packet.input_b*0.01f, packet.input_a*0.01f, packet.input_c*0.01f);
             break;
 
         // Load neutral position and start RC Roll,Pitch,Yaw control with stabilization

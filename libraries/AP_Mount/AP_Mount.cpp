@@ -512,6 +512,17 @@ void AP_Mount::set_mode(uint8_t instance, enum MAV_MOUNT_MODE mode)
     _backends[instance]->set_mode(mode);
 }
 
+// set_angle_targets - sets angle targets in degrees
+void AP_Mount::set_angle_targets(uint8_t instance, float roll, float tilt, float pan)
+{
+    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == NULL) {
+        return;
+    }
+
+    // send command to backend
+    _backends[instance]->set_angle_targets(roll, tilt, pan);
+}
+
 /// Change the configuration of the mount
 /// triggered by a MavLink packet.
 void AP_Mount::configure_msg(uint8_t instance, mavlink_message_t* msg)

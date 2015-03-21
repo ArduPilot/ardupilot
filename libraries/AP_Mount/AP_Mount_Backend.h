@@ -50,6 +50,9 @@ public:
     // set_mode - sets mount's mode
     virtual void set_mode(enum MAV_MOUNT_MODE mode) = 0;
 
+    // set_angle_targets - sets angle targets in degrees
+    virtual void set_angle_targets(float roll, float tilt, float pan);
+
     // set_roi_target - sets target location that mount should attempt to point towards
     virtual void set_roi_target(const struct Location &target_loc);
 
