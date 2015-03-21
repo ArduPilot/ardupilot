@@ -406,7 +406,6 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     flowIntervalMax_ms(100),        // maximum allowable time between flow fusion events
     gndEffectTO_ms(30000),          // time in msec that baro ground effect compensation will timeout after initiation
     gndEffectBaroScaler(4.0f),      // scaler applied to the barometer observation variance when operating in ground effect
-    onGndBaroNoise(0.5f),           // measurement noise used by barometer fusion when on ground
     gndEffectBaroTO_ms(5000)        // time in msec that the baro measurement will be rejected if the gndEffectBaroVarLim has failed it
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
@@ -1925,12 +1924,10 @@ void NavEKF::FuseVelPosNED()
         R_OBS[3] = sq(constrain_float(_gpsHorizPosNoise, 0.1f, 10.0f)) + sq(posErr);
         R_OBS[4] = R_OBS[3];
         R_OBS[5] = sq(constrain_float(_baroAltNoise, 0.1f, 10.0f));
+
         // reduce weighting (increase observation noise) on baro if we are likely to be in ground effect
-        // when on the ground we use a smaller observation noise because there are less baro disturbances and we can do faster learning of Z accelerometer bias offsets
         if (getGndEffectMode() && vehicleArmed) {
             R_OBS[5] *= gndEffectBaroScaler;
-        } else if (!vehicleArmed) {
-            R_OBS[5] = sq(onGndBaroNoise);
         }
 
         // For data integrity checks we use the same measurement variances as used to calculate the Kalman gains for all measurements except GPS horizontal velocity

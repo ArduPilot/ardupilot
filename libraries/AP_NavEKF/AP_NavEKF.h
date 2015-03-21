@@ -461,7 +461,6 @@ private:
     const float gpsDVelVarAccScale;     // Scale factor applied to vertical velocity measurement variance due to manoeuvre acceleration
     const uint16_t gndEffectTO_ms;      // time in msec that ground effect mode is active after being activated
     const float gndEffectBaroScaler;    // scaler applied to the barometer observation variance when ground effect mode is active
-    const float onGndBaroNoise;         // measurement noise used by barometer fusion when on ground
     const float gndEffectBaroTO_ms;     // time in msec that the baro measurement will be rejected if the gndEffectBaroVarLim has failed it
     const float gpsPosVarAccScale;      // Scale factor applied to horizontal position measurement variance due to manoeuvre acceleration
     const float msecHgtDelay;           // Height measurement delay (msec)
