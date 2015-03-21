@@ -604,8 +604,13 @@ bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP
         break;
 
     case MAV_CMD_DO_DIGICAM_CONTROL:                    // MAV ID: 203
+        // command takes no parameters
+        break;
+
     case MAV_CMD_DO_MOUNT_CONTROL:                      // MAV ID: 205
-        // these commands takes no parameters
+        cmd.content.mount_control.pitch = packet.param1;
+        cmd.content.mount_control.roll = packet.param2;
+        cmd.content.mount_control.yaw = packet.param3;
         break;
 
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:                 // MAV ID: 206
@@ -877,8 +882,13 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
         break;
 
     case MAV_CMD_DO_DIGICAM_CONTROL:                    // MAV ID: 203
-    case MAV_CMD_DO_MOUNT_CONTROL:                      // MAV ID: 205
         // these commands takes no parameters
+        break;
+
+    case MAV_CMD_DO_MOUNT_CONTROL:                      // MAV ID: 205
+        packet.param1 = cmd.content.mount_control.pitch;
+        packet.param2 = cmd.content.mount_control.roll;
+        packet.param3 = cmd.content.mount_control.yaw;
         break;
 
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:                 // MAV ID: 206
