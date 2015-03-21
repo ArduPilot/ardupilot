@@ -19,6 +19,7 @@ static void do_yaw(const AP_Mission::Mission_Command& cmd);
 static void do_change_speed(const AP_Mission::Mission_Command& cmd);
 static void do_set_home(const AP_Mission::Mission_Command& cmd);
 static void do_roi(const AP_Mission::Mission_Command& cmd);
+static void do_mount_control(const AP_Mission::Mission_Command& cmd);
 #if PARACHUTE == ENABLED
 static void do_parachute(const AP_Mission::Mission_Command& cmd);
 #endif
@@ -135,6 +136,11 @@ static bool start_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_SET_ROI:                // 201
         // point the copter and camera at a region of interest (ROI)
         do_roi(cmd);
+        break;
+
+    case MAV_CMD_DO_MOUNT_CONTROL:          // 205
+        // point the camera to a specified angle
+        do_mount_control(cmd);
         break;
 
 #if CAMERA == ENABLED
@@ -891,5 +897,13 @@ static void do_take_picture()
     if (should_log(MASK_LOG_CAMERA)) {
         DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
     }
+#endif
+}
+
+// point the camera to a specified angle
+static void do_mount_control(const AP_Mission::Mission_Command& cmd)
+{
+#if MOUNT == ENABLED
+    camera_mount.set_angle_targets(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw);
 #endif
 }
