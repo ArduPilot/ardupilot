@@ -518,7 +518,13 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
             update();
             // capture sample
             for (uint8_t k=0; k<num_accels; k++) {
-                samples[k][i] += get_accel(k);
+                Vector3f samp;
+                if(get_delta_velocity(k,samp)) {
+                    samp /= _delta_velocity_dt[k];
+                } else {
+                    samp = get_accel(k);
+                }
+                samples[k][i] += samp;
                 if (!get_accel_health(k)) {
                     interact->printf_P(PSTR("accel[%u] not healthy"), (unsigned)k);
                     goto failed;
