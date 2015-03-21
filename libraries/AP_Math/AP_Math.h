@@ -166,22 +166,52 @@ void wgsecef2llh(const Vector3d &ecef, Vector3d &llh);
 #endif
 
 // constrain a value
-float   constrain_float(float amt, float low, float high);
-int16_t constrain_int16(int16_t amt, int16_t low, int16_t high);
-int32_t constrain_int32(int32_t amt, int32_t low, int32_t high);
+// constrain a value
+inline float constrain_float(float amt, float low, float high)
+{
+	// the check for NaN as a float prevents propogation of
+	// floating point errors through any function that uses
+	// constrain_float(). The normal float semantics already handle -Inf
+	// and +Inf
+	if (isnan(amt)) {
+		return (low+high)*0.5f;
+	}
+	return ((amt)<(low)?(low):((amt)>(high)?(high):(amt)));
+}
+// constrain a int16_t value
+inline int16_t constrain_int16(int16_t amt, int16_t low, int16_t high) {
+	return ((amt)<(low)?(low):((amt)>(high)?(high):(amt)));
+}
+
+// constrain a int32_t value
+inline int32_t constrain_int32(int32_t amt, int32_t low, int32_t high) {
+	return ((amt)<(low)?(low):((amt)>(high)?(high):(amt)));
+}
 
 // degrees -> radians
-float radians(float deg);
+inline float radians(float deg) {
+	return deg * DEG_TO_RAD;
+}
 
 // radians -> degrees
-float degrees(float rad);
+inline float degrees(float rad) {
+	return rad * RAD_TO_DEG;
+}
 
 // square
-float sq(float v);
+inline float sq(float v) {
+	return v*v;
+}
 
-// sqrt of sum of squares
-float pythagorous2(float a, float b);
-float pythagorous3(float a, float b, float c);
+// 2D vector length
+inline float pythagorous2(float a, float b) {
+	return sqrtf(sq(a)+sq(b));
+}
+
+// 3D vector length
+inline float pythagorous3(float a, float b, float c) {
+	return sqrtf(sq(a)+sq(b)+sq(c));
+}
 
 #ifdef radians
 #error "Build is including Arduino base headers"
