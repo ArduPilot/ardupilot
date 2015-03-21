@@ -443,6 +443,10 @@ bool NavEKF::healthy(void) const
     if ((imuSampleTime_ms - ekfStartTime_ms) < 10000) {
         return false;
     }
+    // barometer innovations must be within limits when on-ground
+    if (!vehicleArmed && (fabsf(innovVelPos[5]) > 1.0f)) {
+        return false;
+    }
 
     // all OK
     return true;
@@ -4608,18 +4612,19 @@ void  NavEKF::getFilterStatus(nav_filter_status &status) const
     bool someHorizRefData = !(velTimeout && posTimeout && tasTimeout) || doingFlowNav;
     bool optFlowNavPossible = flowDataValid && (_fusionModeGPS == 3);
     bool gpsNavPossible = !gpsNotAvailable && (_fusionModeGPS <= 2);
+    bool filterHealthy = healthy();
 
     // set individual flags
-    status.flags.attitude = !state.quat.is_nan();   // attitude valid (we need a better check)
-    status.flags.horiz_vel = someHorizRefData && notDeadReckoning;      // horizontal velocity estimate valid
-    status.flags.vert_vel = someVertRefData;        // vertical velocity estimate valid
-    status.flags.horiz_pos_rel = (doingFlowNav || doingWindRelNav || doingNormalGpsNav) && notDeadReckoning;   // relative horizontal position estimate valid
-    status.flags.horiz_pos_abs = doingNormalGpsNav && notDeadReckoning; // absolute horizontal position estimate valid
-    status.flags.vert_pos = !hgtTimeout;            // vertical position estimate valid
-    status.flags.terrain_alt = gndOffsetValid;		// terrain height estimate valid
-    status.flags.const_pos_mode = constPosMode;     // constant position mode
-    status.flags.pred_horiz_pos_rel = optFlowNavPossible || gpsNavPossible; // we should be able to estimate a relative position when we enter flight mode
-    status.flags.pred_horiz_pos_abs = gpsNavPossible; // we should be able to estimate an absolute position when we enter flight mode
+    status.flags.attitude = !state.quat.is_nan() && filterHealthy;   // attitude valid (we need a better check)
+    status.flags.horiz_vel = someHorizRefData && notDeadReckoning && filterHealthy;      // horizontal velocity estimate valid
+    status.flags.vert_vel = someVertRefData && filterHealthy;        // vertical velocity estimate valid
+    status.flags.horiz_pos_rel = (doingFlowNav || doingWindRelNav || doingNormalGpsNav) && notDeadReckoning && filterHealthy;   // relative horizontal position estimate valid
+    status.flags.horiz_pos_abs = doingNormalGpsNav && notDeadReckoning && filterHealthy; // absolute horizontal position estimate valid
+    status.flags.vert_pos = !hgtTimeout && filterHealthy;            // vertical position estimate valid
+    status.flags.terrain_alt = gndOffsetValid && filterHealthy;		// terrain height estimate valid
+    status.flags.const_pos_mode = constPosMode && filterHealthy;     // constant position mode
+    status.flags.pred_horiz_pos_rel = (optFlowNavPossible || gpsNavPossible) && filterHealthy; // we should be able to estimate a relative position when we enter flight mode
+    status.flags.pred_horiz_pos_abs = gpsNavPossible && filterHealthy; // we should be able to estimate an absolute position when we enter flight mode
 }
 
 // send an EKF_STATUS message to GCS
