@@ -518,7 +518,7 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
         }
 
         uint32_t num_samples = 0;
-        while (num_samples < 1000/update_dt_milliseconds) {
+        while (num_samples < 400/update_dt_milliseconds) {
             wait_for_sample();
             // read samples from ins
             update();
