@@ -138,7 +138,7 @@ public:
     // angle_ef_targets - returns angle controller earth-frame targets (for reporting)
     const Vector3f& angle_ef_targets() const { return _angle_ef_target; }
 
-    // rate_bf_targets - gets rate controller body-frame targets
+    // rate_bf_targets - sets rate controller body-frame targets
     void rate_bf_roll_target(float rate_cds) { _rate_bf_target.x = rate_cds; }
     void rate_bf_pitch_target(float rate_cds) { _rate_bf_target.y = rate_cds; }
     void rate_bf_yaw_target(float rate_cds) { _rate_bf_target.z = rate_cds; }
