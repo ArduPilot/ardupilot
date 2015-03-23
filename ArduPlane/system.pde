@@ -422,6 +422,12 @@ static void set_mode(enum FlightMode mode)
     pitchController.reset_I();
     yawController.reset_I();    
     steerController.reset_I();    
+
+    // mute landed chirp
+//    if (g.land_beep == LandingBeepMode::ENABLED_MUTE_VIA_MODE_CHANGE) {
+//        AP_Notify::flags.landed = 0;
+//    }
+
 }
 
 /*

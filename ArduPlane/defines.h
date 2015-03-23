@@ -195,4 +195,11 @@ enum {
     ATT_CONTROL_APMCONTROL = 1
 };
 
+enum LandingBeepMode {
+    DISABLED,
+    ENABLED,
+    ENABLED_MUTE_VIA_MODE_CHANGE,
+};
+
+
 #endif // _DEFINES_H
