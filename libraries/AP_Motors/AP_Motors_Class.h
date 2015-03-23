@@ -107,6 +107,9 @@ public:
     // set motor interlock status
     void                set_interlock(bool set) { _flags.interlock = set;}
 
+    // get motor interlock status
+    bool                get_interlock() const { return _flags.interlock; };
+
     // set_min_throttle - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)
     void                set_min_throttle(uint16_t min_throttle);
 
