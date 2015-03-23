@@ -218,7 +218,7 @@ void AP_Frsky_Telem::check_sport_input(uint8_t control_mode, uint8_t simple_mode
                             frsky_send_value (FRSKY_ID2_CURRENT, _battery.current_amps()*10);
                             break;
                         case 2:     // Fuel (Flightmode as defined in defines.h + Simple mode + Armed/Disarmed)
-                            frsky_send_value (FRSKY_ID2_FUEL, (control_mode<<3) | (simple_mode<<1) | _ahrs.get_armed());
+                            frsky_send_value (FRSKY_ID2_FUEL, (control_mode<<3) | (simple_mode<<1) | _util.get_soft_armed());
                             break;
                         case 3:     // Hdg (Heading, [°])
                             frsky_send_value (FRSKY_ID2_HEADING, _ahrs.yaw_sensor);
@@ -243,21 +243,21 @@ void AP_Frsky_Telem::check_sport_input(uint8_t control_mode, uint8_t simple_mode
                             frsky_send_value (FRSKY_ID2_VARIO, (int32_t) climbrate);
                             break;
                         case 9:     // Alt (Baro height above ground [m])
-                            if (_ahrs.get_armed()==true) {
+                            if (_util.get_soft_armed()==true) {
                                 frsky_send_value (FRSKY_ID2_ALTITUDE, altitude);
                             } else {
                                 frsky_send_value (FRSKY_ID2_ALTITUDE, 0);
                             }
                             break;
                         case 10:    // GAlt (GPS height above ground [m])
-                            if (_ahrs.get_armed()==true && _ahrs.get_gps().status()>=3) {
+                            if (_util.get_soft_armed()==true && _ahrs.get_gps().status()>=3) {
                                 frsky_send_value (FRSKY_ID2_GPS_ALT, _ahrs.get_gps().location().alt);
                             } else {
                                 frsky_send_value (FRSKY_ID2_GPS_ALT, 0);
                             }
                             break;
                         case 11:    // GPS Latitude
-                            if (_ahrs.get_armed()==true && _ahrs.get_gps().status()>=3) {
+                            if (_util.get_soft_armed()==true && _ahrs.get_gps().status()>=3) {
                                 uint32_t pos;
                                 if (_ahrs.get_gps().location().lat > 0) {
                                     pos = 0;                // north latitude: id 00
@@ -270,7 +270,7 @@ void AP_Frsky_Telem::check_sport_input(uint8_t control_mode, uint8_t simple_mode
                             }
                             break;
                         case 12:    // GPS Longitude
-                            if (_ahrs.get_armed()==true && _ahrs.get_gps().status()>=3) {
+                            if (_util.get_soft_armed()==true && _ahrs.get_gps().status()>=3) {
                                 uint32_t pos;
                                 if (_ahrs.get_gps().location().lng > 0) {
                                     pos = 2 << 30;          // east longitude: id 10
@@ -283,7 +283,7 @@ void AP_Frsky_Telem::check_sport_input(uint8_t control_mode, uint8_t simple_mode
                             }
                             break;
                         case 13:    // Spd (Ground speed [km/h])
-                            if (_ahrs.get_armed()==true && _ahrs.get_gps().status()>=3) {
+                            if (_util.get_soft_armed()==true && _ahrs.get_gps().status()>=3) {
                                 frsky_send_value (FRSKY_ID2_SPEED, _ahrs.get_gps().ground_speed()*543*3.6);
                             } else {
                                 frsky_send_value (FRSKY_ID2_SPEED, 0);
