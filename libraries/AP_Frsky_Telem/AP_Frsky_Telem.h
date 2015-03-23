@@ -23,7 +23,6 @@
 #include <AP_AHRS.h>
 #include <AP_Baro.h>
 #include <AP_BattMonitor.h>
-#include <Util.h>
 
 #define FRSKY_POLL_REQUEST      0x7E
 #define FRSKY_SENSOR_ID         0xA1        // Sensor ID, must be something that is polled by FrSky RX
@@ -123,7 +122,6 @@ class AP_Frsky_Telem
     uint32_t _last_frame2_ms;
     uint16_t crc;
     uint8_t ignore_rx_chars;
-    AP_HAL::Util _util;
 
     enum states_serial {
         FRSKY_STATE_WAIT_POLL_REQUEST,
