@@ -137,7 +137,7 @@ static void init_ardupilot()
 
     // setup frsky
 #if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry.init(serial_manager);
+    frsky_telemetry.init(serial_manager, g.serial2_protocol);
 #endif
 
     mavlink_system.sysid = g.sysid_this_mav;

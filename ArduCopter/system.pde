@@ -141,7 +141,7 @@ static void init_ardupilot()
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // setup frsky
-    frsky_telemetry.init(serial_manager);
+    frsky_telemetry.init(serial_manager, g.serial2_protocol);
 #endif
 
     // identify ourselves correctly with the ground station
