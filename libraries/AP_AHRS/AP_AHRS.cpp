@@ -256,6 +256,22 @@ void AP_AHRS::update_trig(void)
     // sin_roll, sin_pitch
     _sin_pitch = -temp.c.x;
     _sin_roll = temp.c.y / _cos_pitch;
+
+    // sanity checks
+    if (yaw_vector.is_inf() || yaw_vector.is_nan()) {
+        yaw_vector.x = 0.0f;
+        yaw_vector.y = 0.0f;
+        _sin_yaw = 1.0f;
+        _cos_yaw = 0.0f;
+    }
+
+    if (isinf(_cos_roll) || isnan(_cos_roll)) {
+        _cos_roll = cosf(roll);
+    }
+
+    if (isinf(_sin_roll) || isnan(_sin_roll)) {
+        _sin_roll = sinf(roll);
+    }
 }
 
 /*
