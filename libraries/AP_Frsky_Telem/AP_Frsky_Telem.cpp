@@ -1,6 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
-
    Inspired by work done here https://github.com/PX4/Firmware/tree/master/src/drivers/frsky_telemetry from Stefan Rado <px4@sradonia.net>
 
    This program is free software: you can redistribute it and/or modify
@@ -17,673 +15,340 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* 
-   FRSKY Telemetry library
-*/
 #include <AP_Frsky_Telem.h>
+
 extern const AP_HAL::HAL& hal;
+extern uint8_t textId, g_severity;
 
-//constructor
-AP_Frsky_Telem::AP_Frsky_Telem(AP_AHRS &ahrs, AP_BattMonitor &battery) :
-    _ahrs(ahrs),
-    _battery(battery),
-    _port(NULL),
-    _initialised_uart(false),
-    _protocol(FrSkyUnknown),
-    _crc(0),
-    _last_frame1_ms(0),
-    _last_frame2_ms(0),
-    _battery_data_ready(false),
-    _batt_remaining(0),
-    _batt_volts(0),
-    _batt_amps(0),
-    _sats_data_ready(false),
-    gps_sats(0),
-    _gps_data_ready(false),
-    _pos_gps_ok(false),
-    _course_in_degrees(0),
-    _lat_ns(0),
-    _lon_ew(0),
-    _latdddmm(0),
-    _latmmmm(0),
-    _londddmm(0),
-    _lonmmmm(0),
-    _alt_gps_meters(0),
-    _alt_gps_cm(0),
-    _speed_in_meter(0),
-    _speed_in_centimeter(0),
-    _baro_data_ready(false),
-    _baro_alt_meters(0),
-    _baro_alt_cm(0),
-    _mode_data_ready(false),
-    _mode(0),
-    _fas_call(0),
-    _gps_call(0),
-    _vario_call(0),
-    _various_call(0),
-    _sport_status(0)
-    {}
-
-// init - perform require initialisation including detecting which protocol to use
-void AP_Frsky_Telem::init(const AP_SerialManager& serial_manager)
+void AP_Frsky_Telem::init (AP_HAL::UARTDriver *port, uint8_t frsky_type)
 {
-    // check for FRSky_DPort
-    if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FRSky_DPort))) {
-        _protocol = FrSkyDPORT;
-        _initialised_uart = true;   // SerialManager initialises uart for us
-    } else if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FRSky_SPort))) {
-        // check for FRSky_SPort
-        _protocol = FrSkySPORT;
-        _gps_call = 0;
-        _fas_call = 0;
-        _vario_call = 0 ;
-        _various_call = 0 ;
-        _gps_data_ready = false;
-        _battery_data_ready = false;
-        _baro_data_ready = false;
-        _mode_data_ready = false;
-        _sats_data_ready = false;
-        _sport_status = 0;
-        hal.scheduler->register_io_process(AP_HAL_MEMBERPROC(&AP_Frsky_Telem::sport_tick));
-    }
-
-    if (_port != NULL) {
-        // we don't want flow control for either protocol
-        _port->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-    }
-}
-
-/*
-  send_frames - sends updates down telemetry link for both DPORT and SPORT protocols
-  should be called by main program at 50hz to allow poll for serial bytes
-  coming from the receiver for the SPort protocol
-*/
-void AP_Frsky_Telem::send_frames(uint8_t control_mode)
-{
-    // return immediately if not initialised
-    if (!_initialised_uart) {
+    if (port == NULL) {
         return;
     }
 
-    if (_protocol == FrSkySPORT) {
-        if (!_mode_data_ready) {
-            _mode=control_mode;
-            _mode_data_ready = true;
-        }
-        if (!_baro_data_ready) {
-            calc_baro_alt();
-            _baro_data_ready = true;
-        }
-        if (!_gps_data_ready) {
-            calc_gps_position();
-            _gps_data_ready = true;
-        }
-        if (!_sats_data_ready) {
-            calc_gps_sats();
-            _sats_data_ready = true;
-        }
-        if (!_battery_data_ready) {
-            calc_battery();
-            _battery_data_ready = true;
-        }
+    _port = port;
+
+    if (frsky_type == FrSkyDPORT) {
+        _port->begin (9600);
     } else {
-        _mode=control_mode;
-        send_hub_frame();
+        _port->begin (57600);
+        ignore_rx_chars = 0;
     }
+    _initialised = true;
 }
 
-/*
-  init_uart_for_sport - initialise uart for use by sport
-  this must be called from sport_tick which is called from the 1khz scheduler
-  because the UART begin must be called from the same thread as it is used from
- */
-void AP_Frsky_Telem::init_uart_for_sport()
+// Send one byte and do byte stuffing (D-Port receivers only)
+void AP_Frsky_Telem::frsky_send_byte (uint8_t b)
 {
-    // sanity check protocol
-    if (_protocol != FrSkySPORT) {
-        return;
-    }
-
-    // initialise uart
-    _port->begin(AP_SERIALMANAGER_FRSKY_SPORT_BAUD, AP_SERIALMANAGER_FRSKY_BUFSIZE_RX, AP_SERIALMANAGER_FRSKY_BUFSIZE_TX);
-    _initialised_uart = true;
-}
-
-/*
-  send_hub_frame - send frame1 and frame2 when protocol is FrSkyDPORT
-  frame 1 is sent every 200ms with baro alt, nb sats, batt volts and amp, control_mode
-  frame 2 is sent every second with gps position data
-*/
-void AP_Frsky_Telem::send_hub_frame()
-{
-    uint32_t now = hal.scheduler->millis();
-
-    // send frame1 every 200ms
-    if (now - _last_frame1_ms > 200) {
-        _last_frame1_ms = now;
-        calc_gps_sats();
-        send_gps_sats();
-        send_mode();
-
-        calc_battery();
-        send_batt_remain();
-        send_batt_volts();
-        send_current();
-
-        calc_baro_alt();
-        send_baro_alt_m();
-        send_baro_alt_cm();
-    }
-    // send frame2 every second
-    if (now - _last_frame2_ms > 1000) {
-        _last_frame2_ms = now;
-        send_heading();
-        calc_gps_position();
-        if (_pos_gps_ok) {
-            send_gps_lat_dd();
-            send_gps_lat_mm();
-            send_gps_lat_ns();
-            send_gps_lon_dd();
-            send_gps_lon_mm();
-            send_gps_lon_ew();
-            send_gps_speed_meter();
-            send_gps_speed_cm();
-            send_gps_alt_meter();
-            send_gps_alt_cm();
-        }
-    }
-}
-
-/*
-  sport_tick - main call to send updates to transmitter when protocol is FrSkySPORT
-  called by scheduler at a high rate
-*/
-void AP_Frsky_Telem::sport_tick(void)
-{
-    // check UART has been initialised
-    if (!_initialised_uart) {
-        init_uart_for_sport();
-    }
-
-    int16_t numc;
-    numc = _port->available();
-
-    // check if available is negative
-    if (numc < 0) {
-        return;
-    }
-
-    // this is the constant for hub data frame
-    if (_port->txspace() < 19) {
-        return;
-    }
-
-    for (int16_t i = 0; i < numc; i++) {
-        int16_t readbyte = _port->read();
-        if (_sport_status == 0) {
-            if  (readbyte == SPORT_START_FRAME) {
-                _sport_status = 1;
-            }
-        } else {
-            switch (readbyte) {
-            case DATA_ID_FAS:
-                if (_battery_data_ready) {
-                    switch (_fas_call) {
-                    case 0:
-                        send_batt_volts();
-                        break;
-                    case 1:
-                        send_current();
-                        break;
-                    }
-                    _fas_call++;
-                    if (_fas_call > 1) {
-                        _fas_call = 0;
-                    }
-                    _battery_data_ready = false;
-                }
-                break;
-            case DATA_ID_GPS:
-                if (_gps_data_ready) {
-                    switch (_gps_call) {
-                    case 0:
-                        send_gps_lat_dd();
-                        break;
-                    case 1:
-                        send_gps_lat_mm();
-                        break;
-                    case 2:
-                        send_gps_lat_ns();
-                        break;
-                    case 3:
-                        send_gps_lon_dd();
-                        break;
-                    case 4:
-                        send_gps_lon_mm();
-                        break;
-                    case 5:
-                        send_gps_lon_ew();
-                        break;
-                    case 6:
-                        send_gps_speed_meter();
-                        break;
-                    case 7:
-                        send_gps_speed_cm();
-                        break;
-                    case 8:
-                        send_gps_alt_meter();
-                        break;
-                    case 9:
-                        send_gps_alt_cm();
-                        break;
-                    case 10:
-                        send_heading();
-                        break;
-                    }
-
-                    _gps_call++;
-                    if (_gps_call > 10) {
-                        _gps_call = 0;
-                        _gps_data_ready = false;
-                    }
-                }
-                break;
-            case DATA_ID_VARIO:
-                if (_baro_data_ready) {
-                    switch (_vario_call) {
-                    case 0 :
-                        send_baro_alt_m();
-                        break;
-                    case 1:
-                        send_baro_alt_cm();
-                        break;
-                    }
-                    _vario_call ++;
-                    if (_vario_call > 1) {
-                        _vario_call = 0;
-                        _baro_data_ready = false;
-                    }
-                }
-                break;
-            case DATA_ID_SP2UR:
-                switch (_various_call) {
-                case 0 :
-                    if ( _sats_data_ready ) {
-                        send_gps_sats();
-                        _sats_data_ready = false;
-                    }
-                    break;
-                case 1:
-                    if ( _mode_data_ready ) {
-                        send_mode();
-                        _mode_data_ready = false;
-                    }
-                    break;
-                }
-                _various_call++;
-                if (_various_call > 1) {
-                    _various_call = 0;
-                }
-                break;
-            }
-            _sport_status = 0;
-        }
-    }
-}
-
-
-/* 
-   simple crc implementation for FRSKY telem S-PORT
-*/
-void AP_Frsky_Telem::calc_crc(uint8_t byte)
-{
-    _crc += byte; //0-1FF
-    _crc += _crc >> 8; //0-100
-    _crc &= 0x00ff;
-    _crc += _crc >> 8; //0-0FF
-    _crc &= 0x00ff;
-}
-
-/*
- * send the crc at the end of the S-PORT frame
- */
-void AP_Frsky_Telem::send_crc() 
-{
-    frsky_send_byte(0x00ff-_crc);
-    _crc = 0;
-}
-
-
-/*
-  send 1 byte and do the byte stuffing Frsky stuff 
-  This can send more than 1 byte eventually
-*/
-void AP_Frsky_Telem::frsky_send_byte(uint8_t value)
-{
-    if (_protocol == FrSkyDPORT) {
-        const uint8_t x5E[] = { 0x5D, 0x3E };
-        const uint8_t x5D[] = { 0x5D, 0x3D };
-        switch (value) {
-        case 0x5E:
-            _port->write( x5E, sizeof(x5E));
-            break;
-            
+    switch (b) {
         case 0x5D:
-            _port->write( x5D, sizeof(x5D));
+        case 0x5E:
+            _port->write (    0x5D);
+            _port->write (b ^ 0x60);
             break;
-            
         default:
-            _port->write(&value, sizeof(value));
+            _port->write (b);
             break;
-        }
-    } else { 
-        //SPORT
-        calc_crc(value);
-        const uint8_t x7E[] = { 0x7D, 0x5E };
-        const uint8_t x7D[] = { 0x7D, 0x5D };
-        switch (value) {
-        case 0x7E:
-            _port->write( x7E, sizeof(x7E));
-            break;
-            
-        case 0x7D:
-            _port->write( x7D, sizeof(x7D));
-            break;
-            
-        default:
-            _port->write(&value, sizeof(value));
-            break;
-        }
     }
 }
 
-/**
- * Sends a 0x5E start/stop byte.
- */
-void AP_Frsky_Telem::frsky_send_hub_startstop()
+// Send one data id/value pair (D-Port receivers only)
+void AP_Frsky_Telem::frsky_send_data(uint8_t id, int16_t data)
 {
-    static const uint8_t c = 0x5E;
-    _port->write(&c, sizeof(c));
-}
-
-/*
-  add sport protocol for frsky tx module 
-*/
-void AP_Frsky_Telem::frsky_send_sport_prim()
-{
-    static const uint8_t c = 0x10;
-    frsky_send_byte(c);
-}
-
-
-/**
- * Sends one data id/value pair.
- */
-void  AP_Frsky_Telem::frsky_send_data(uint8_t id, int16_t data)
-{
-    static const uint8_t zero = 0x0;
-
-    /* Cast data to unsigned, because signed shift might behave incorrectly */
+    // Cast data to unsigned, because signed shift might behave incorrectly
     uint16_t udata = data;
 
-    if (_protocol == FrSkySPORT) {
-        frsky_send_sport_prim();
-        frsky_send_byte(id);
-        frsky_send_byte(zero);
-    } else {
-        frsky_send_hub_startstop();
-        frsky_send_byte(id);
-    }
-
-    frsky_send_byte(udata); /* LSB */
-    frsky_send_byte(udata >> 8); /* MSB */
-
-    if (_protocol == FrSkySPORT) {
-        //Sport expect 32 bits data but we use only 16 bits data, so we send 0 for MSB
-        frsky_send_byte(zero);
-        frsky_send_byte(zero);
-        send_crc();
-    }
+    _port->write (0x5E);            // Send a 0x5E start/stop byte
+    frsky_send_byte (id);
+    frsky_send_byte (udata);        // LSB
+    frsky_send_byte (udata >> 8);   // MSB
 }
 
-/*
- * calc_baro_alt : send altitude in Meters based on ahrs estimate
- */
-void AP_Frsky_Telem::calc_baro_alt()
+// Send one byte, do byte stuffing and crc calculation (S-Port receivers only)
+void AP_Frsky_Telem::frsky_send_char (uint8_t b)
+{
+    switch (b) {
+        case 0x7D:
+        case 0x7E:
+            _port->write (    0x7D);
+            _port->write (b ^ 0x20);
+            ignore_rx_chars++;
+            break;
+        default:
+            _port->write (b);
+            break;
+    }
+
+    ignore_rx_chars++;
+
+    crc += b;                    // checksum calculation is based on data before byte-stuffing
+    crc += (crc >> 8);
+    crc &= 0xFF;
+}
+
+// Send one data id/value pair (S-Port receivers only)
+void AP_Frsky_Telem::frsky_send_value (uint16_t valueid, uint32_t value)
+{
+    crc = 0;
+    frsky_send_char (FRSKY_DATA_FRAME);
+    frsky_send_char ((valueid >>  0) & 0xFF);
+    frsky_send_char ((valueid >>  8) & 0xFF);
+    frsky_send_char ((value   >>  0) & 0xFF);
+    frsky_send_char ((value   >>  8) & 0xFF);
+    frsky_send_char ((value   >> 16) & 0xFF);
+    frsky_send_char ((value   >> 24) & 0xFF);
+    frsky_send_char (0xFF - crc);
+}
+
+// Send frame 1 (every 200ms): barometer altitude, battery voltage + current (D-Port receivers only)
+void AP_Frsky_Telem::frsky_send_frame1 (uint8_t mode)
 {
     struct Location loc;
+    float battery_amps = _battery.current_amps();
     float baro_alt = 0; // in meters
     bool posok = _ahrs.get_position(loc);
-    if  (posok) {
+    if (posok) {
         baro_alt = loc.alt * 0.01f; // convert to meters
         if (!loc.flags.relative_alt) {
             baro_alt -= _ahrs.get_home().alt * 0.01f; // subtract home if set
         }
     }
-    /*
-      Note that this isn't actually barometric altitude, it is the
-      inertial nav estimate of altitude above home.
-    */
-    _baro_alt_meters = (int16_t)baro_alt;
-    _baro_alt_cm = (baro_alt - abs(_baro_alt_meters)) * 100;
+    const AP_GPS &gps = _ahrs.get_gps ();
+
+    // GPS status is sent as num_sats*10 + status, to fit into a uint8_t
+    uint8_t T2 = gps.num_sats() * 10 + gps.status();
+
+    frsky_send_data (FRSKY_ID_TEMP1, mode);
+    frsky_send_data (FRSKY_ID_TEMP2, T2);
+
+    // Note that this isn't actually barometric altitdue, it is the AHRS estimate of altitdue above home
+    uint16_t baro_alt_meters = (uint16_t)baro_alt;
+    uint16_t baro_alt_cm = (baro_alt - baro_alt_meters) * 100;
+    frsky_send_data (FRSKY_ID_BARO_ALT_BP, baro_alt_meters);
+    frsky_send_data (FRSKY_ID_BARO_ALT_AP, baro_alt_cm);
+
+    frsky_send_data (FRSKY_ID_FUEL, roundf(_battery.capacity_remaining_pct()));
+
+    frsky_send_data (FRSKY_ID_VFAS, roundf(_battery.voltage() * 10.0f));
+    frsky_send_data (FRSKY_ID_CURRENT, (battery_amps < 0) ? 0 : roundf(battery_amps * 10.0f));
 }
 
-/**
- * Formats the decimal latitude/longitude to the required degrees/minutes.
- */
-float  AP_Frsky_Telem::frsky_format_gps(float dec)
+// Format decimal latitude/longitude to the required degrees/minutes (D-Port receivers only)
+float AP_Frsky_Telem::frsky_format_gps (float dec)
 {
     uint8_t dm_deg = (uint8_t) dec;
     return (dm_deg * 100.0f) + (dec - dm_deg) * 60;
 }
 
-/*
- * prepare latitude and longitude information stored in member variables
- */
-
-void AP_Frsky_Telem::calc_gps_position()
+// Send frame 2 (every 1000ms): course(heading), latitude, longitude, ground speed, GPS altitude (D-Port receivers only)
+void AP_Frsky_Telem::frsky_send_frame2 (void)
 {
-    _course_in_degrees = (_ahrs.yaw_sensor / 100) % 360;
+    // we send the heading based on the ahrs instead of GPS course which is not very usefull
+    uint16_t course_in_degrees = (_ahrs.yaw_sensor / 100) % 360;
+    frsky_send_data (FRSKY_ID_GPS_COURS_BP, course_in_degrees);
 
-    const AP_GPS &gps = _ahrs.get_gps();
-    float lat;
-    float lon ;
-    float alt ;
-    float speed;
-    _pos_gps_ok = (gps.status() >= 3);
-    if (_pos_gps_ok) {
+    const AP_GPS &gps = _ahrs.get_gps ();
+    bool posok = (gps.status() >= 3);
+    if  (posok) {
+        // send formatted frame
+        float lat = 0, lon = 0,  alt = 0, speed= 0;
+        char lat_ns = 0, lon_ew = 0;
         Location loc = gps.location();//get gps instance 0
-    
-        lat = frsky_format_gps(fabsf(loc.lat/10000000.0));
-        _latdddmm = lat;
-        _latmmmm = (lat - _latdddmm) * 10000;
-        _lat_ns = (loc.lat < 0) ? 'S' : 'N';
-        
-        lon = frsky_format_gps(fabsf(loc.lng/10000000.0));
-        _londddmm = lon;
-        _lonmmmm = (lon - _londddmm) * 10000;
-        _lon_ew = (loc.lng < 0) ? 'W' : 'E';
-        
-        alt = loc.alt * 0.01f;
-        _alt_gps_meters = (int16_t)alt;
-        _alt_gps_cm = (alt - abs(_alt_gps_meters)) * 100;
-        
-        speed = gps.ground_speed();
-        _speed_in_meter = speed;
-        _speed_in_centimeter = (speed - _speed_in_meter) * 100;
-    } else {
-        _latdddmm = 0;
-        _latmmmm = 0;
-        _lat_ns = 0;
-        _londddmm = 0;
-        _lonmmmm = 0;
-        _alt_gps_meters = 0;
-        _alt_gps_cm = 0;
-        _speed_in_meter = 0;
-        _speed_in_centimeter = 0;
+
+        lat = frsky_format_gps (fabsf(loc.lat/10000000.0));
+        uint16_t latdddmm = lat;
+        uint16_t latmmmm = (lat - latdddmm) * 10000;
+        lat_ns = (loc.lat < 0) ? 'S' : 'N';
+
+        lon = frsky_format_gps (fabsf(loc.lng/10000000.0));
+        uint16_t londddmm = lon;
+        uint16_t lonmmmm = (lon - londddmm) * 10000;
+        lon_ew = (loc.lng < 0) ? 'W' : 'E';
+
+        alt = loc.alt / 100;
+        uint16_t alt_gps_meters = alt;
+        uint16_t alt_gps_cm = (alt - alt_gps_meters) * 100;
+
+        speed = gps.ground_speed ();
+        uint16_t speed_in_meter = speed;
+        uint16_t speed_in_centimeter = (speed - speed_in_meter) * 100;
+
+        frsky_send_data (FRSKY_ID_GPS_LAT_BP, latdddmm);
+        frsky_send_data (FRSKY_ID_GPS_LAT_AP, latmmmm);
+        frsky_send_data (FRSKY_ID_GPS_LAT_NS, lat_ns);
+
+        frsky_send_data (FRSKY_ID_GPS_LONG_BP, londddmm);
+        frsky_send_data (FRSKY_ID_GPS_LONG_AP, lonmmmm);
+        frsky_send_data (FRSKY_ID_GPS_LONG_EW, lon_ew);
+
+        frsky_send_data (FRSKY_ID_GPS_SPEED_BP, speed_in_meter);
+        frsky_send_data (FRSKY_ID_GPS_SPEED_AP, speed_in_centimeter);
+
+        frsky_send_data (FRSKY_ID_GPS_ALT_BP, alt_gps_meters);
+        frsky_send_data (FRSKY_ID_GPS_ALT_AP, alt_gps_cm);
     }
 }
 
-/*
- * prepare battery information stored in member variables
- */
-void AP_Frsky_Telem::calc_battery()
+// Check for input bytes from S.Port and answer accordingly
+void AP_Frsky_Telem::check_sport_input(uint8_t control_mode, uint8_t simple_mode, int32_t altitude, int8_t alt_mode, float climbrate, int16_t throttle)
 {
-    _batt_remaining = roundf(_battery.capacity_remaining_pct());
-    _batt_volts = roundf(_battery.voltage() * 10.0f);
-    _batt_amps = roundf(_battery.current_amps() * 10.0f);
+    static uint8_t state_serial = FRSKY_STATE_WAIT_POLL_REQUEST;
+    static uint8_t state_sensor = 0;
+    uint16_t hdop;
+
+    while (_port->available()) {
+        uint8_t b = _port->read ();
+        switch (state_serial) {
+            case FRSKY_STATE_WAIT_TX_DONE:             // because RX and TX are connected, we need to ignore bytes transmitted by us
+                if (--ignore_rx_chars == 0)
+                    state_serial = FRSKY_STATE_WAIT_POLL_REQUEST;
+                break;
+            case FRSKY_STATE_WAIT_POLL_REQUEST:        // we get polled ~ every 12 ms (83 Hz)
+                if (b == FRSKY_POLL_REQUEST)
+                    state_serial = FRSKY_STATE_WAIT_SENSOR_ID;
+                break;
+            case FRSKY_STATE_WAIT_SENSOR_ID:
+                if (b == FRSKY_SENSOR_ID) {
+                    state_serial = FRSKY_STATE_WAIT_TX_DONE;
+                    switch (state_sensor++) {          // send one value every second poll (24 ms)
+                        case 0:     // Vfas (Battery voltage [V])
+                            frsky_send_value (FRSKY_ID2_VOLTAGE, _battery.voltage()*100);
+                            break;
+                        case 1:     // Curr (Battery current [A])
+                            frsky_send_value (FRSKY_ID2_CURRENT, _battery.current_amps()*10);
+                            break;
+                        case 2:     // Fuel (Flightmode as defined in defines.h + Simple mode + Armed/Disarmed)
+                            frsky_send_value (FRSKY_ID2_FUEL, (control_mode<<3) | (simple_mode<<1) | _ahrs.get_armed());
+                            break;
+                        case 3:     // Hdg (Heading, [°])
+                            frsky_send_value (FRSKY_ID2_HEADING, _ahrs.yaw_sensor);
+                            break;
+                        case 4:     // AccX (HDOP)
+                            hdop = _ahrs.get_gps().get_hdop() / 4;
+							if (hdop > 255) {
+								hdop = 255;
+							}
+                            frsky_send_value (FRSKY_ID2_ACCX, hdop*100);
+                            break;
+                        case 5:     // AccY (Roll angle [°])
+							frsky_send_value (FRSKY_ID2_ACCY, _ahrs.roll_sensor);
+                            break;
+                        case 6:     // AccZ (Pitch angle [°])
+							frsky_send_value (FRSKY_ID2_ACCZ, _ahrs.pitch_sensor);
+                            break;
+                        case 7:     // RPM (Throttle [%] + Altitude mode, = ^v)
+                            frsky_send_value (FRSKY_ID2_RPM, (throttle<<2) | alt_mode);
+                            break;
+                        case 8:     // VSpd (Vertical speed [m/s])
+                            frsky_send_value (FRSKY_ID2_VARIO, (int32_t) climbrate);
+                            break;
+                        case 9:     // Alt (Baro height above ground [m])
+                            if (_ahrs.get_armed()==true) {
+                                frsky_send_value (FRSKY_ID2_ALTITUDE, altitude);
+                            } else {
+                                frsky_send_value (FRSKY_ID2_ALTITUDE, 0);
+                            }
+                            break;
+                        case 10:    // GAlt (GPS height above ground [m])
+                            if (_ahrs.get_armed()==true && _ahrs.get_gps().status()>=3) {
+                                frsky_send_value (FRSKY_ID2_GPS_ALT, _ahrs.get_gps().location().alt);
+                            } else {
+                                frsky_send_value (FRSKY_ID2_GPS_ALT, 0);
+                            }
+                            break;
+                        case 11:    // GPS Latitude
+                            if (_ahrs.get_armed()==true && _ahrs.get_gps().status()>=3) {
+                                uint32_t pos;
+                                if (_ahrs.get_gps().location().lat > 0) {
+                                    pos = 0;                // north latitude: id 00
+                                } else {
+                                    pos = 1 << 30;          // south latitude: id 01
+                                }
+                                frsky_send_value (FRSKY_ID2_GPS_LON_LAT, pos | abs(_ahrs.get_gps().location().lat)/100*6);
+                            } else {
+                                frsky_send_value (FRSKY_ID2_GPS_LON_LAT, 0);
+                            }
+                            break;
+                        case 12:    // GPS Longitude
+                            if (_ahrs.get_armed()==true && _ahrs.get_gps().status()>=3) {
+                                uint32_t pos;
+                                if (_ahrs.get_gps().location().lng > 0) {
+                                    pos = 2 << 30;          // east longitude: id 10
+                                } else {
+                                    pos = 3 << 30;          // west longitude: id 11
+                                }
+                                frsky_send_value (FRSKY_ID2_GPS_LON_LAT, pos | abs(_ahrs.get_gps().location().lng)/100*6);
+                            } else {
+                                frsky_send_value (FRSKY_ID2_GPS_LON_LAT, 0);
+                            }
+                            break;
+                        case 13:    // Spd (Ground speed [km/h])
+                            if (_ahrs.get_armed()==true && _ahrs.get_gps().status()>=3) {
+                                frsky_send_value (FRSKY_ID2_SPEED, _ahrs.get_gps().ground_speed()*543*3.6);
+                            } else {
+                                frsky_send_value (FRSKY_ID2_SPEED, 0);
+                            }
+                            break;
+                        case 14:    // T1 (Number of satellites used for navigation + Lock Mode as defined in AP_GPS.h)
+                            frsky_send_value (FRSKY_ID2_T1, ((_ahrs.get_gps().num_sats()&0x1F)<<3) | (_ahrs.get_gps().status()&0x07));
+                            break;
+                        case 15:    // T2 (Message ID + severity as defined in GCS_MAVLink.h)
+							// text messages are sent multiple times to make sure they really arrive (even on radio glitches)
+							#define TX_REPEATS 4
+                            static uint8_t  tx_cnt=TX_REPEATS;
+                            static uint32_t val=0;
+                            if (tx_cnt > 0 && textId > 0) {
+								if (tx_cnt == TX_REPEATS) {
+                                	val = (textId<<3) | (g_severity&0x07);
+                                }
+                                tx_cnt--;
+                            }
+                            frsky_send_value (FRSKY_ID2_T2, val);
+                            if (tx_cnt == 0) {
+                               	textId     = 0;
+                               	g_severity = 0;
+                               	val        = 0;
+                               	tx_cnt     = TX_REPEATS;
+                            }
+                            state_sensor = 0;			// Reset state counter on last state
+                            break;
+                    }
+                } else {
+                    state_serial = FRSKY_STATE_WAIT_POLL_REQUEST;
+                }
+                break;
+            }
+        }
 }
 
 /*
- * prepare sats information stored in member variables
+  Send telemetry frames. Should be called at 100Hz. The high rate is to
+  allow this code to poll for serial bytes coming from the receiver
+  for the SPort protocol which is polling us every ~ 12ms
+  climbrate in cm/s based on filtered data - positive = up
  */
-void AP_Frsky_Telem::calc_gps_sats()
+void AP_Frsky_Telem::send_frames (uint8_t control_mode, uint8_t simple_mode, int32_t altitude, int8_t alt_mode, float climbrate, int16_t throttle, enum FrSkyProtocol protocol)
 {
-    // GPS status is sent as num_sats*10 + status, to fit into a uint8_t
-    const AP_GPS &gps = _ahrs.get_gps();
-    gps_sats = gps.num_sats() * 10 + gps.status();
-}
+    if (!_initialised) {
+        return;
+    }
 
-/*
- * send number of gps satellite and gps status eg: 73 means 7 satellite and 3d lock
- */
-void AP_Frsky_Telem::send_gps_sats()
-{
-    frsky_send_data(FRSKY_ID_TEMP2, gps_sats);
-}
+    if (protocol == FrSkySPORT) {
+        // check for sport bytes
+        check_sport_input (control_mode, simple_mode, altitude, alt_mode, climbrate, throttle);
+    } else {
+        uint32_t now = hal.scheduler->millis();
 
-/*
- * send control_mode as Temperature 1 (TEMP1)
- */
-void AP_Frsky_Telem::send_mode(void)
-{
-    frsky_send_data(FRSKY_ID_TEMP1, _mode);
-}
+        // send frame1 every 200ms
+        if (now - _last_frame1_ms > 200) {
+            _last_frame1_ms = now;
+            frsky_send_frame1(control_mode);
+        }
 
-/*
- * send barometer altitude integer part . Initialize baro altitude
- */
-void AP_Frsky_Telem::send_baro_alt_m(void)
-{
-    frsky_send_data(FRSKY_ID_BARO_ALT_BP, _baro_alt_meters);
-}
-
-/*
- * send barometer altitude decimal part
- */
-void AP_Frsky_Telem::send_baro_alt_cm(void)
-{
-    frsky_send_data(FRSKY_ID_BARO_ALT_AP, _baro_alt_cm);
-}
-
-/*
- * send battery remaining
- */
-void AP_Frsky_Telem::send_batt_remain(void)
-{
-    frsky_send_data(FRSKY_ID_FUEL, _batt_remaining);
-}
-
-/*
- * send battery voltage 
- */
-void AP_Frsky_Telem::send_batt_volts(void)
-{
-    frsky_send_data(FRSKY_ID_VFAS, _batt_volts);
-}
-
-/*
- * send current consumptiom 
- */
-void AP_Frsky_Telem::send_current(void)
-{
-    frsky_send_data(FRSKY_ID_CURRENT, _batt_amps);
-}
-
-/*
- * send heading in degree based on AHRS and not GPS 
- */
-void AP_Frsky_Telem::send_heading(void)
-{
-    frsky_send_data(FRSKY_ID_GPS_COURS_BP, _course_in_degrees);
-}
-
-/*
- * send gps lattitude degree and minute integer part; Initialize gps info
- */
-void AP_Frsky_Telem::send_gps_lat_dd(void)
-{
-    frsky_send_data(FRSKY_ID_GPS_LAT_BP, _latdddmm);
-}
-
-/*
- * send gps lattitude minutes decimal part 
- */
-void AP_Frsky_Telem::send_gps_lat_mm(void)
-{
-    frsky_send_data(FRSKY_ID_GPS_LAT_AP, _latmmmm);
-}
-
-/*
- * send gps North / South information 
- */
-void AP_Frsky_Telem::send_gps_lat_ns(void)
-{
-    frsky_send_data(FRSKY_ID_GPS_LAT_NS, _lat_ns);
-}
-
-/*
- * send gps longitude degree and minute integer part 
- */
-void AP_Frsky_Telem::send_gps_lon_dd(void)
-{
-    frsky_send_data(FRSKY_ID_GPS_LONG_BP, _londddmm);
-}
-
-/*
- * send gps longitude minutes decimal part 
- */
-void AP_Frsky_Telem::send_gps_lon_mm(void)
-{
-    frsky_send_data(FRSKY_ID_GPS_LONG_AP, _lonmmmm);
-}
-
-/*
- * send gps East / West information 
- */
-void AP_Frsky_Telem::send_gps_lon_ew(void)
-{
-    frsky_send_data(FRSKY_ID_GPS_LONG_EW, _lon_ew);
-}
-
-/*
- * send gps speed integer part
- */
-void AP_Frsky_Telem::send_gps_speed_meter(void)
-{
-    frsky_send_data(FRSKY_ID_GPS_SPEED_BP, _speed_in_meter);
-}
-
-/*
- * send gps speed decimal part
- */
-void AP_Frsky_Telem::send_gps_speed_cm(void)
-{
-    frsky_send_data(FRSKY_ID_GPS_SPEED_AP, _speed_in_centimeter);
-}
-
-/*
- * send gps altitude integer part
- */
-void AP_Frsky_Telem::send_gps_alt_meter(void)
-{
-    frsky_send_data(FRSKY_ID_GPS_ALT_BP, _alt_gps_meters);
-}
-
-/*
- * send gps altitude decimals
- */
-void AP_Frsky_Telem::send_gps_alt_cm(void)
-{
-    frsky_send_data(FRSKY_ID_GPS_ALT_AP, _alt_gps_cm);
+        // send frame2 every second
+        if (now - _last_frame2_ms > 1000) {
+            _last_frame2_ms = now;
+            frsky_send_frame2();
+        }
+    }
 }

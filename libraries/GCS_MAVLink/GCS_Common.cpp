@@ -21,6 +21,7 @@
 #include <AP_AHRS.h>
 
 extern const AP_HAL::HAL& hal;
+extern uint8_t textId, g_severity;
 
 uint32_t GCS_MAVLINK::last_radio_status_remrssi_ms;
 uint8_t GCS_MAVLINK::mavlink_active = 0;
@@ -651,6 +652,170 @@ GCS_MAVLINK::send_text(gcs_severity severity, const char *str)
         strncpy((char *)s->text, str, sizeof(s->text));
         send_message(MSG_STATUSTEXT);
     }
+
+    if (!strcmp(str, "compass disabled"))                       // Messages defined in compassmot.pde (10x)
+        textId = 1;
+    else if (!strcmp(str, "check compass"))
+        textId = 2;
+    else if (!strcmp(str, "RC not calibrated"))
+        textId = 3;
+    else if (!strcmp(str, "thr not zero"))
+        textId = 4;
+    else if (!strcmp(str, "Not landed"))
+        textId = 5;
+    else if (!strcmp(str, "STARTING CALIBRATION"))
+        textId = 6;
+    else if (!strcmp(str, "CURRENT"))
+        textId = 7;
+    else if (!strcmp(str, "THROTTLE"))
+        textId = 8;
+    else if (!strcmp(str, "Calibration Successful"))
+        textId = 9;
+    else if (!strcmp(str, "Failed"))
+        textId = 10;
+    else if (!strcmp(str, "AutoTune: Started"))                 // Messages defined in control_autotune.pde (4x)
+        textId = 21;
+    else if (!strcmp(str, "AutoTune: Stopped"))
+        textId = 22;
+    else if (!strcmp(str, "AutoTune: Success"))
+        textId = 23;
+    else if (!strcmp(str, "AutoTune: Failed"))
+        textId = 24;
+    else if (!strcmp(str, "Crash: Disarming"))                  // Messages defined in crash_check.pde (3x)
+        textId = 35;
+    else if (!strcmp(str, "Parachute: Released"))
+        textId = 36;
+    else if (!strcmp(str, "Parachute: Too Low"))
+        textId = 37;
+    else if (!strcmp(str, "EKF variance"))                      // Messages defined in ekf_check.pde (2x)
+        textId = 48;
+    else if (!strcmp(str, "DCM bad heading"))
+        textId = 49;
+    else if (!strcmp(str, "Low Battery"))                       // Messages defined in events.pde (2x)
+        textId = 60;
+    else if (!strcmp(str, "Lost GPS"))
+        textId = 61;
+    else if (!strcmp(str, "bad rally point message ID"))        // Messages defined in GCS_Mavlink.pde (6x)
+        textId = 72;
+    else if (!strcmp(str, "bad rally point message count"))
+        textId = 73;
+    else if (!strcmp(str, "error setting rally point"))
+        textId = 74;
+    else if (!strcmp(str, "bad rally point index"))
+        textId = 75;
+    else if (!strcmp(str, "failed to set rally point"))
+        textId = 76;
+    else if (!strcmp(str, "Initialising APM..."))
+        textId = 77;
+    else if (!strcmp(str, "Erasing logs"))                      // Messages defined in Log.pde (2x)
+        textId = 88;
+    else if (!strcmp(str, "Log erase complete"))
+        textId = 89;
+    else if (!strcmp(str, "ARMING MOTORS"))                     // Messages defined in motors.pde  (30x)
+        textId = 100;
+    else if (!strcmp(str, "Arm: Gyro cal failed"))
+        textId = 101;
+    else if (!strcmp(str, "PreArm: RC not calibrated"))
+        textId = 102;
+    else if (!strcmp(str, "PreArm: Baro not healthy"))
+        textId = 103;
+    else if (!strcmp(str, "PreArm: Alt disparity"))
+        textId = 104;
+    else if (!strcmp(str, "PreArm: Compass not healthy"))
+        textId = 105;
+    else if (!strcmp(str, "PreArm: Compass not calibrated"))
+        textId = 106;
+    else if (!strcmp(str, "PreArm: Compass offsets too high"))
+        textId = 107;
+    else if (!strcmp(str, "PreArm: Check mag field"))
+        textId = 108;
+    else if (!strcmp(str, "PreArm: compasses inconsistent"))
+        textId = 109;
+    else if (!strcmp(str, "PreArm: INS not calibrated"))
+        textId = 110;
+    else if (!strcmp(str, "PreArm: Accels not healthy"))
+        textId = 111;
+    else if (!strcmp(str, "PreArm: Accels inconsistent"))
+        textId = 112;
+    else if (!strcmp(str, "PreArm: Gyros not healthy"))
+        textId = 113;
+    else if (!strcmp(str, "PreArm: Gyro cal failed"))
+        textId = 114;
+    else if (!strcmp(str, "PreArm: Gyros inconsistent"))
+        textId = 115;
+    else if (!strcmp(str, "PreArm: Check Board Voltage"))
+        textId = 116;
+    else if (!strcmp(str, "PreArm: Ch7&Ch8 Opt cannot be same"))
+        textId = 117;
+    else if (!strcmp(str, "PreArm: Check FS_THR_VALUE"))
+        textId = 118;
+    else if (!strcmp(str, "PreArm: Check ANGLE_MAX"))
+        textId = 119;
+    else if (!strcmp(str, "PreArm: ACRO_BAL_ROLL/PITCH"))
+        textId = 120;
+    else if (!strcmp(str, "PreArm: GPS Glitch"))
+        textId = 121;
+    else if (!strcmp(str, "PreArm: Need 3D Fix"))
+        textId = 122;
+    else if (!strcmp(str, "PreArm: Bad Velocity"))
+        textId = 123;
+    else if (!strcmp(str, "PreArm: High GPS HDOP"))
+        textId = 124;
+    else if (!strcmp(str, "Arm: Alt disparity"))
+        textId = 125;
+    else if (!strcmp(str, "Arm: Thr below FS"))
+        textId = 126;
+    else if (!strcmp(str, "Arm: Leaning"))
+        textId = 127;
+    else if (!strcmp(str, "Arm: Safety Switch"))
+        textId = 128;
+    else if (!strcmp(str, "DISARMING MOTORS"))
+        textId = 129;
+    else if (!strcmp(str, "Motor Test: RC not calibrated"))     // Messages defined in motor_test.pde (3x)
+        textId = 140;
+    else if (!strcmp(str, "Motor Test: vehicle not landed"))
+        textId = 141;
+    else if (!strcmp(str, "Motor Test: Safety Switch"))
+        textId = 142;
+    else if (!strcmp(str, "Calibrating barometer"))             // Messages defined in sensors.pde (2x)
+        textId = 153;
+    else if (!strcmp(str, "barometer calibration complete"))
+        textId = 154;
+    else if (!strcmp(str, "Trim saved"))                        // Messages defined in switches.pde (1x)
+        textId = 165;
+    else if (!strcmp(str, "No dataflash inserted"))             // Messages defined in system.pde (4x)
+        textId = 176;
+    else if (!strcmp(str, "ERASING LOGS"))
+        textId = 177;
+    else if (!strcmp(str, "Waiting for first HIL_STATE message"))
+        textId = 178;
+    else if (!strcmp(str, "GROUND START"))
+        textId = 179;
+    else if (!strcmp(str, "PreArm: Baro not healthy"))          // Messages defined in AP_Arming.cpp (9x)
+        textId = 190;
+    else if (!strcmp(str, "PreArm: Compass not healthy"))
+        textId = 191;
+    else if (!strcmp(str, "PreArm: Compass not calibrated"))
+        textId = 192;
+    else if (!strcmp(str, "PreArm: Bad GPS Pos"))
+        textId = 193;
+    else if (!strcmp(str, "PreArm: Battery failsafe on"))
+        textId = 194;
+    else if (!strcmp(str, "PreArm: Hardware Safety Switch"))
+        textId = 195;
+    else if (!strcmp(str, "PreArm: Radio failsafe on"))
+        textId = 196;
+    else if (!strcmp(str, "Throttle armed"))
+        textId = 197;
+    else if (!strcmp(str, "Throttle disarmed"))
+        textId = 198;
+    else if (!strcmp(str, "flight plan update rejected"))       // Messages defined in GCS_Common.cpp (2x)
+        textId = 209;
+    else if (!strcmp(str, "flight plan received"))
+        textId = 210;
+    else
+        textId = 0;
+    g_severity = severity;
 }
 
 void
