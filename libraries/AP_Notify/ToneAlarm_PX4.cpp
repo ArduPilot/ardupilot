@@ -34,6 +34,11 @@
 
 extern const AP_HAL::HAL& hal;
 
+/*
+ * PX4 play tone descriptions can be found at the top of:
+ * PX4Firmware/src/drivers/stm32/tone_alarm/tone_alarm.cpp
+ */
+
 const ToneAlarm_PX4::Tone ToneAlarm_PX4::_tones[] {
     #define AP_NOTIFY_PX4_TONE_QUIET_NEG_FEEDBACK 0
     { "MFT200L4<<<B#A#2", false },
@@ -64,7 +69,7 @@ const ToneAlarm_PX4::Tone ToneAlarm_PX4::_tones[] {
     #define AP_NOTIFY_PX4_TONE_LOUD_BATTERY_ALERT_CTS 13
     { "MBNT255>B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8", true },
     #define AP_NOTIFY_PX4_TONE_LOUD_LANDED 14
-    { "MFT255A64B64G16", false },
+    { "MFT255 A64 B64 G16 T32", true },
 };
 
 bool ToneAlarm_PX4::init()
@@ -234,10 +239,15 @@ void ToneAlarm_PX4::update()
     }
 
     // check if landed
-    if (AP_Notify::flags.landed) {
-        // landed chirp, this will get called periodically while landed
-        AP_Notify::flags.landed = 0;
-        play_tone(AP_NOTIFY_PX4_TONE_LOUD_LANDED);
+    if (flags.landed != AP_Notify::flags.landed) {
+        flags.landed = AP_Notify::flags.landed;
+        if (flags.landed) {
+            // landed chirp, play forever until user stops/reboot it
+            play_tone(AP_NOTIFY_PX4_TONE_LOUD_LANDED);
+        }
+        else {
+            stop_cont_tone();
+        }
     }
 }
 
