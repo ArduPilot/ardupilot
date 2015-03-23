@@ -527,7 +527,7 @@ static AP_BattMonitor battery;
 static AP_Frsky_Telem frsky_telemetry(ahrs, battery);
 #endif
 
-uint8_t textId=0, g_severity;
+extern uint8_t textId, g_severity;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Altitude

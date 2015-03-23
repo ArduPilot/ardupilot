@@ -21,7 +21,7 @@
 #include <AP_AHRS.h>
 
 extern const AP_HAL::HAL& hal;
-extern uint8_t textId, g_severity;
+uint8_t textId=0, g_severity;
 
 uint32_t GCS_MAVLINK::last_radio_status_remrssi_ms;
 uint8_t GCS_MAVLINK::mavlink_active = 0;
