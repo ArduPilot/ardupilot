@@ -296,6 +296,9 @@ static bool pre_arm_checks(bool display_failure)
             Vector3f prime_mag_vec_norm = prime_mag_vec;
             prime_mag_vec_norm.normalize();
             for(uint8_t i=0; i<compass.get_count(); i++) {
+                if (!compass.use_for_yaw(i)) {
+                    continue;
+                }
                 // get next compass
                 Vector3f mag_vec = compass.get_field(i);
                 Vector3f mag_vec_norm = mag_vec;
