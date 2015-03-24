@@ -100,8 +100,11 @@ void AP_AHRS_NavEKF::update(void)
             update_trig();
 
             // keep _gyro_bias for get_gyro_drift()
-            EKF.getGyroBias(_gyro_bias);
-            _gyro_bias = -_gyro_bias;
+            // filter with 5s time constant
+            Vector3f ekf_gyro_bias;
+            EKF.getGyroBias(ekf_gyro_bias);
+            ekf_gyro_bias = -ekf_gyro_bias;
+            _gyro_bias += (ekf_gyro_bias-_gyro_bias)*(0.0025f / (0.0025f + 5.0f));
 
             // calculate corrected gryo estimate for get_gyro()
             _gyro_estimate.zero();
