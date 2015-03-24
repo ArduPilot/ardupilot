@@ -139,13 +139,6 @@ void set_pre_arm_rc_check(bool b)
     }
 }
 
-void set_motor_interlock(bool b)
-{
-    if(ap.motor_interlock != b) {
-        ap.motor_interlock = b;
-    }
-}
-
 void set_using_interlock(bool b)
 {
     if(ap.using_interlock != b) {

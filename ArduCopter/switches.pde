@@ -227,6 +227,8 @@ static void init_aux_switch_function(int8_t ch_option, uint8_t ch_flag)
         case AUXSW_ATTCON_ACCEL_LIM:
         case AUXSW_RELAY:
         case AUXSW_LANDING_GEAR:
+        case AUXSW_MOTOR_ESTOP:
+        case AUXSW_MOTOR_INTERLOCK:
             do_aux_switch_function(ch_option, ch_flag);
             break;
     }
@@ -554,7 +556,7 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
     case AUXSW_MOTOR_INTERLOCK:
         // Turn on when above LOW, because channel will also be used for speed
         // control signal in tradheli
-        set_motor_interlock(ch_flag == AUX_SWITCH_HIGH || ch_flag == AUX_SWITCH_MIDDLE);
+        motors.set_interlock(ch_flag == AUX_SWITCH_HIGH || ch_flag == AUX_SWITCH_MIDDLE);
         break;
                 
     }
