@@ -109,32 +109,32 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
 
     // @Param: VELNE_NOISE
-    // @DisplayName: GPS horizontal velocity measurement noise (m/s)
-    // @Description: This is the RMS value of noise in the North and East GPS velocity measurements. Increasing it reduces the weighting on these measurements.
+    // @DisplayName: GPS水平速度测量噪声（m/s）
+    // @Description: 这是北和东方向的GPS速度测量RMS值。增大它会减小这些测量值所占的比重。
     // @Range: 0.05 5.0
     // @Increment: 0.05
     // @User: Advanced
     AP_GROUPINFO("VELNE_NOISE",    0, NavEKF, _gpsHorizVelNoise, VELNE_NOISE_DEFAULT),
 
     // @Param: VELD_NOISE
-    // @DisplayName: GPS vertical velocity measurement noise (m/s)
-    // @Description: This is the RMS value of noise in the vertical GPS velocity measurement. Increasing it reduces the weighting on this measurement.
+    // @DisplayName: GPS垂直速度测量噪声（m/s）
+    // @Description: 这是垂直方向的GPS速度测量RMS值。增大它会减小这些测量值所占的比重。
     // @Range: 0.05 5.0
     // @Increment: 0.05
     // @User: Advanced
     AP_GROUPINFO("VELD_NOISE",    1, NavEKF, _gpsVertVelNoise, VELD_NOISE_DEFAULT),
 
     // @Param: POSNE_NOISE
-    // @DisplayName: GPS horizontal position measurement noise (m)
-    // @Description: This is the RMS value of noise in the GPS horizontal position measurements. Increasing it reduces the weighting on these measurements.
+    // @DisplayName: GPS水平速度测量噪声（m/s）
+    // @Description: 这是水平位置的GPS测量RMS值。增大它会减小这些测量值所占的比重。
     // @Range: 0.1 10.0
     // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("POSNE_NOISE",    2, NavEKF, _gpsHorizPosNoise, POSNE_NOISE_DEFAULT),
 
     // @Param: ALT_NOISE
-    // @DisplayName: Altitude measurement noise (m)
-    // @Description: This is the RMS value of noise in the altitude measurement. Increasing it reduces the weighting on this measurement.
+    // @DisplayName: 高度测量噪声（m）
+    // @Description: 这是高度测量的RMS值。增大它会减小这个测量值所占的比重。
     // @Range: 0.1 10.0
     // @Increment: 0.1
     // @User: Advanced
