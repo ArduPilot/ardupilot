@@ -314,10 +314,10 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                     return;
                 }
 
-				// do not allow saving the first waypoint with zero throttle
-				if((mission.num_commands() == 0) && (g.rc_3.control_in == 0)){
-					return;
-				}
+                // do not allow saving the first waypoint with zero throttle
+                if((mission.num_commands() == 0) && (g.rc_3.control_in == 0)){
+                    return;
+                }
 
                 // create new mission command
                 AP_Mission::Mission_Command cmd  = {};
@@ -347,7 +347,7 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 if(g.rc_3.control_in > 0) {
                     cmd.id = MAV_CMD_NAV_WAYPOINT;
                 }else{
-					// with zero throttle, create LAND command
+                    // with zero throttle, create LAND command
                     cmd.id = MAV_CMD_NAV_LAND;
                 }
 
@@ -479,104 +479,104 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             break;
 
 #if PARACHUTE == ENABLED
-    case AUXSW_PARACHUTE_ENABLE:
-        // Parachute enable/disable
-        parachute.enabled(ch_flag == AUX_SWITCH_HIGH);
-        break;
+        case AUXSW_PARACHUTE_ENABLE:
+            // Parachute enable/disable
+            parachute.enabled(ch_flag == AUX_SWITCH_HIGH);
+            break;
 
-    case AUXSW_PARACHUTE_RELEASE:
-        if (ch_flag == AUX_SWITCH_HIGH) {
-            parachute_manual_release();
-        }
-        break;
-
-    case AUXSW_PARACHUTE_3POS:
-        // Parachute disable, enable, release with 3 position switch
-        switch (ch_flag) {
-            case AUX_SWITCH_LOW:
-                parachute.enabled(false);
-                Log_Write_Event(DATA_PARACHUTE_DISABLED);
-                break;
-            case AUX_SWITCH_MIDDLE:
-                parachute.enabled(true);
-                Log_Write_Event(DATA_PARACHUTE_ENABLED);
-                break;
-            case AUX_SWITCH_HIGH:
-                parachute.enabled(true);
+        case AUXSW_PARACHUTE_RELEASE:
+            if (ch_flag == AUX_SWITCH_HIGH) {
                 parachute_manual_release();
-                break;
-        }
-        break;
+            }
+            break;
+
+        case AUXSW_PARACHUTE_3POS:
+            // Parachute disable, enable, release with 3 position switch
+            switch (ch_flag) {
+                case AUX_SWITCH_LOW:
+                    parachute.enabled(false);
+                    Log_Write_Event(DATA_PARACHUTE_DISABLED);
+                    break;
+                case AUX_SWITCH_MIDDLE:
+                    parachute.enabled(true);
+                    Log_Write_Event(DATA_PARACHUTE_ENABLED);
+                    break;
+                case AUX_SWITCH_HIGH:
+                    parachute.enabled(true);
+                    parachute_manual_release();
+                    break;
+            }
+            break;
 #endif
 
-    case AUXSW_MISSION_RESET:
-        if (ch_flag == AUX_SWITCH_HIGH) {
-            mission.reset();
-        }
-        break;
+        case AUXSW_MISSION_RESET:
+            if (ch_flag == AUX_SWITCH_HIGH) {
+                mission.reset();
+            }
+            break;
 
-    case AUXSW_ATTCON_FEEDFWD:
-        // enable or disable feed forward
-        attitude_control.bf_feedforward(ch_flag == AUX_SWITCH_HIGH);
-        break;
+        case AUXSW_ATTCON_FEEDFWD:
+            // enable or disable feed forward
+            attitude_control.bf_feedforward(ch_flag == AUX_SWITCH_HIGH);
+            break;
 
-    case AUXSW_ATTCON_ACCEL_LIM:
-        // enable or disable accel limiting by restoring defaults
-        attitude_control.accel_limiting(ch_flag == AUX_SWITCH_HIGH);
-        break;
+        case AUXSW_ATTCON_ACCEL_LIM:
+            // enable or disable accel limiting by restoring defaults
+            attitude_control.accel_limiting(ch_flag == AUX_SWITCH_HIGH);
+            break;
         
 #if MOUNT == ENABLE
-    case AUXSW_RETRACT_MOUNT:
-        switch (ch_flag) {
-            case AUX_SWITCH_HIGH:
-                camera_mount.set_mode(MAV_MOUNT_MODE_RETRACT);
-                break;
-            case AUX_SWITCH_LOW:
-                camera_mount.set_mode_to_default();
-                break;
-        }
-        break;
+        case AUXSW_RETRACT_MOUNT:
+            switch (ch_flag) {
+                case AUX_SWITCH_HIGH:
+                    camera_mount.set_mode(MAV_MOUNT_MODE_RETRACT);
+                    break;
+                case AUX_SWITCH_LOW:
+                    camera_mount.set_mode_to_default();
+                    break;
+            }
+            break;
 #endif
 
-    case AUXSW_RELAY:
-        ServoRelayEvents.do_set_relay(0, ch_flag == AUX_SWITCH_HIGH);
-        break;
+        case AUXSW_RELAY:
+            ServoRelayEvents.do_set_relay(0, ch_flag == AUX_SWITCH_HIGH);
+            break;
 
-    case AUXSW_LANDING_GEAR:
-        switch (ch_flag) {
-            case AUX_SWITCH_LOW:
-                landinggear.set_cmd_mode(LandingGear_Deploy);
-                break;
-            case AUX_SWITCH_MIDDLE:
-                landinggear.set_cmd_mode(LandingGear_Auto);
-                break;
-            case AUX_SWITCH_HIGH:
-                landinggear.set_cmd_mode(LandingGear_Retract);
-                break;
-        }
-        break;
+        case AUXSW_LANDING_GEAR:
+            switch (ch_flag) {
+                case AUX_SWITCH_LOW:
+                    landinggear.set_cmd_mode(LandingGear_Deploy);
+                    break;
+                case AUX_SWITCH_MIDDLE:
+                    landinggear.set_cmd_mode(LandingGear_Auto);
+                    break;
+                case AUX_SWITCH_HIGH:
+                    landinggear.set_cmd_mode(LandingGear_Retract);
+                    break;
+            }
+            break;
 
-      case AUXSW_MOTOR_ESTOP:
-        // Turn on E-Stop logic when channel is high
-        set_motor_estop(ch_flag == AUX_SWITCH_HIGH);
-        break;
+        case AUXSW_LOST_COPTER_SOUND:
+            switch (ch_flag) {
+                case AUX_SWITCH_HIGH:
+                    AP_Notify::flags.vehicle_lost = true;
+                    break;
+                case AUX_SWITCH_LOW:
+                    AP_Notify::flags.vehicle_lost = false;
+                    break;
+            }
+            break;
 
-    case AUXSW_LOST_COPTER_SOUND:
-        switch (ch_flag) {
-            case AUX_SWITCH_HIGH:
-                AP_Notify::flags.vehicle_lost = true;
-                break;
-            case AUX_SWITCH_LOW:
-                AP_Notify::flags.vehicle_lost = false;
-                break;
-        }
-        break;
+        case AUXSW_MOTOR_ESTOP:
+            // Turn on E-Stop logic when channel is high
+            set_motor_estop(ch_flag == AUX_SWITCH_HIGH);
+            break;
 
-    case AUXSW_MOTOR_INTERLOCK:
-        // Turn on when above LOW, because channel will also be used for speed
-        // control signal in tradheli
-        motors.set_interlock(ch_flag == AUX_SWITCH_HIGH || ch_flag == AUX_SWITCH_MIDDLE);
-        break;
+        case AUXSW_MOTOR_INTERLOCK:
+            // Turn on when above LOW, because channel will also be used for speed
+            // control signal in tradheli
+            motors.set_interlock(ch_flag == AUX_SWITCH_HIGH || ch_flag == AUX_SWITCH_MIDDLE);
+            break;
                 
     }
 }
