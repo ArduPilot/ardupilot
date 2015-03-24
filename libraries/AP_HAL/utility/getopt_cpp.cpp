@@ -35,6 +35,9 @@
  * SUCH DAMAGE.
  */
 
+#include <AP_HAL/AP_HAL.h>
+#if HAL_OS_POSIX_IO && CONFIG_HAL_BOARD != HAL_BOARD_QURT
+
 #include "getopt_cpp.h"
 #include <stdio.h>
 #include <string.h>
@@ -200,4 +203,6 @@ int GetOptLong::getoption(void)
     }
     return optopt;
 }
+
+#endif // HAL_OS_POSIX_IO
 

@@ -15,6 +15,7 @@
 #define HAL_BOARD_FLYMAPLE 6
 #define HAL_BOARD_LINUX    7
 #define HAL_BOARD_VRBRAIN  8
+#define HAL_BOARD_QURT     9
 #define HAL_BOARD_EMPTY    99
 
 // default board subtype is -1
@@ -66,6 +67,7 @@
 #define HAL_INS_MPU9250_I2C 13
 #define HAL_INS_BH          14
 #define HAL_INS_QFLIGHT  15
+#define HAL_INS_QURT     16
 
 // barometer driver types
 #define HAL_BARO_BMP085     1
@@ -77,6 +79,7 @@
 #define HAL_BARO_VRBRAIN    7
 #define HAL_BARO_MS5637_I2C 8
 #define HAL_BARO_QFLIGHT    9
+#define HAL_BARO_QURT      10
 
 // compass driver types
 #define HAL_COMPASS_HMC5843   1
@@ -90,6 +93,7 @@
 #define HAL_COMPASS_AK8963_MPU9250_I2C  9
 #define HAL_COMPASS_BH                  10
 #define HAL_COMPASS_QFLIGHT   11
+#define HAL_COMPASS_QURT      12
 
 // Heat Types
 #define HAL_LINUX_HEAT_PWM 1
@@ -336,6 +340,20 @@
 #define HAL_COMPASS_DEFAULT HAL_COMPASS_HIL
 #define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_NONE
 
+#elif CONFIG_HAL_BOARD == HAL_BOARD_QURT
+#define AP_HAL_BOARD_DRIVER AP_HAL_QURT
+#define HAL_BOARD_NAME "QURT"
+#define HAL_CPU_CLASS HAL_CPU_CLASS_1000
+#define HAL_STORAGE_SIZE            16384
+#define HAL_STORAGE_SIZE_AVAILABLE  HAL_STORAGE_SIZE
+#define HAL_INS_DEFAULT HAL_INS_QURT
+#define HAL_BARO_DEFAULT HAL_BARO_QURT
+#define HAL_COMPASS_DEFAULT HAL_COMPASS_QURT
+#define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_NONE
+#define HAL_BOARD_LOG_DIRECTORY "/dev/fs/logs"
+#define HAL_OS_POSIX_IO 1
+#define HAL_SERIAL0_BAUD_DEFAULT 115200
+
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #define HAL_BOARD_NAME "VRBRAIN"
 #define HAL_CPU_CLASS HAL_CPU_CLASS_150
@@ -383,5 +401,8 @@
 #error "No CONFIG_HAL_BOARD_SUBTYPE set"
 #endif
 
+#ifndef HAL_OS_POSIX_IO
+#define HAL_OS_POSIX_IO 0
+#endif
 
 #endif // __AP_HAL_BOARDS_H__

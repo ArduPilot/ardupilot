@@ -3,7 +3,7 @@
 
 #include "HAL.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
+#if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE || CONFIG_HAL_BOARD == HAL_BOARD_QURT
 #define CONFIG_MAIN_WITHOUT_ARGC_ARGV 1
 #endif
 
@@ -20,7 +20,7 @@
 #define AP_HAL_MAIN() extern "C" { \
     int AP_MAIN(void); \
     int AP_MAIN(void) { \
-        AP_HAL::HAL::FunCallbacks callbacks(setup, loop); \
+        AP_HAL::HAL::FunCallbacks callbacks(setup, loop);       \
         hal.run(0, NULL, &callbacks); \
         return 0; \
     } \
