@@ -433,9 +433,23 @@ def fly_ArduPlane(viewerip=None, map=False):
     if map:
         options += ' --map'
 
+    cmd = util.reltopdir("Tools/autotest/jsbsim/runsim.py")
+    cmd += " --home=%s --wind=%s" % (HOME_LOCATION, WIND)
+    if viewerip:
+        cmd += " --fgout=%s:5503" % viewerip
+
+    runsim = pexpect.spawn(cmd, timeout=10)
+    runsim.delaybeforesend = 0
+    util.pexpect_autoclose(runsim)
+    runsim.expect('Simulator ready to fly')
+
     sil = util.start_SIL('ArduPlane', wipe=True)
+    print("Starting MAVProxy")
     mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options)
-    mavproxy.expect('Received [0-9]+ parameters')
+    util.expect_setup_callback(mavproxy, expect_callback)
+
+    mavproxy.expect('Logging to (\S+)')
+    mavproxy.expect('Received [0-9]+ parameters',timeout=3000)
 
     # setup test parameters
     mavproxy.send("param load %s/ArduPlane.parm\n" % testdir)
@@ -446,11 +460,7 @@ def fly_ArduPlane(viewerip=None, map=False):
     # restart with new parms
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
-
-    cmd = util.reltopdir("Tools/autotest/jsbsim/runsim.py")
-    cmd += " --home=%s --wind=%s" % (HOME_LOCATION, WIND)
-    if viewerip:
-        cmd += " --fgout=%s:5503" % viewerip
+    util.pexpect_close(runsim)
 
     runsim = pexpect.spawn(cmd, logfile=sys.stdout, timeout=10)
     runsim.delaybeforesend = 0
@@ -472,9 +482,9 @@ def fly_ArduPlane(viewerip=None, map=False):
     except Exception:
         pass
 
-    mavproxy.expect('Received [0-9]+ parameters')
-
     util.expect_setup_callback(mavproxy, expect_callback)
+
+    mavproxy.expect('Received [0-9]+ parameters')
 
     expect_list_clear()
     expect_list_extend([runsim, sil, mavproxy])
