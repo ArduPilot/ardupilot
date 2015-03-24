@@ -141,16 +141,16 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     AP_GROUPINFO("ALT_NOISE",    3, NavEKF, _baroAltNoise, ALT_NOISE_DEFAULT),
 
     // @Param: MAG_NOISE
-    // @DisplayName: Magnetometer measurement noise (Gauss)
-    // @Description: This is the RMS value of noise in magnetometer measurements. Increasing it reduces the weighting on these measurements.
+    // @DisplayName: 罗盘测量噪声（高斯）
+    // @Description: 这是罗盘测量的RMS值。增大它会减小这些测量值所占的比重。
     // @Range: 0.01 0.5
     // @Increment: 0.01
     // @User: Advanced
     AP_GROUPINFO("MAG_NOISE",    4, NavEKF, _magNoise, MAG_NOISE_DEFAULT),
 
     // @Param: EAS_NOISE
-    // @DisplayName: Equivalent airspeed measurement noise (m/s)
-    // @Description: This is the RMS value of noise in magnetometer measurements. Increasing it reduces the weighting on these measurements.
+    // @DisplayName: 等效空速测量噪声（m/s）
+    // @Description: 这是等效空速（原文错误的写成磁力计）测量的RMS值。增大它会减小这个测量值所占的比重。
     // @Range: 0.5 5.0
     // @Increment: 0.1
     // @User: Advanced
