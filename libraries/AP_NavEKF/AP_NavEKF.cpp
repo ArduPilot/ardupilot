@@ -157,7 +157,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
 
     // @Param: EAS_NOISE
     // @DisplayName: Equivalent airspeed measurement noise (m/s)
-    // @Description: This is the RMS value of noise in magnetometer measurements. Increasing it reduces the weighting on these measurements.
+    // @Description: This is the RMS value of noise in equivalent airspeed measurements. Increasing it reduces the weighting on these measurements.
     // @Range: 0.5 5.0
     // @Increment: 0.1
     // @User: Advanced
