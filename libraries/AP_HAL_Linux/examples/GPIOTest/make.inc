@@ -1,0 +1,5 @@
+LIBRARIES += AP_HAL
+LIBRARIES += StorageManager
+LIBRARIES += AP_HAL_Linux
+LIBRARIES += AP_HAL_Empty
+LIBRARIES += AP_Menu
