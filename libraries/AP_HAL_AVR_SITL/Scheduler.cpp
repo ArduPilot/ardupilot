@@ -282,7 +282,7 @@ void SITLScheduler::_run_timer_procs(bool called_from_isr)
 
     // and the failsafe, if one is setup
     if (_failsafe != NULL) {
-        //_failsafe(NULL);
+        _failsafe();
     }
 
     _in_timer_proc = false;
@@ -320,16 +320,19 @@ void SITLScheduler::panic(const prog_char_t *errormsg) {
 void SITLScheduler::stop_clock(uint64_t time_usec)
 {
     stopped_clock_usec = time_usec;
-    /*
-      we want to ensure the main thread 
-     */
-    while (wait_time_usec == 0) {
-        pthread_yield();
-    }
-    kill(0, SIGCONT);
-    while (wait_time_usec != 0 && wait_time_usec <= time_usec) {
+    if (!system_initializing()) {
+        /*
+          we want to ensure the main thread gets a chance to run on
+          each tick from the FDM
+        */
+        while (wait_time_usec == 0) {
+            pthread_yield();
+        }
         kill(0, SIGCONT);
-        pthread_yield();
+        while (wait_time_usec != 0 && wait_time_usec <= time_usec) {
+            kill(0, SIGCONT);
+            pthread_yield();
+        }
     }
     _run_io_procs(false);
 }
