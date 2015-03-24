@@ -73,6 +73,10 @@ empty: HAL_BOARD = HAL_BOARD_EMPTY
 empty: TOOLCHAIN = AVR
 empty: all
 
+qurt: HAL_BOARD = HAL_BOARD_QURT
+qurt: TOOLCHAIN = QURT
+qurt: all
+
 # cope with HIL targets
 %-hil: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_SENSORS "
 %-hilsensors: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_SENSORS "
