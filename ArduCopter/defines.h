@@ -13,14 +13,15 @@
 #define ENABLE ENABLED
 #define DISABLE DISABLED
 
-// Flight modes
-// ------------
-#define AUTO_YAW_HOLD                   0       // pilot controls the heading
-#define AUTO_YAW_LOOK_AT_NEXT_WP        1       // point towards next waypoint (no pilot input accepted)
-#define AUTO_YAW_ROI                    2       // point towards a location held in roi_WP (no pilot input accepted)
-#define AUTO_YAW_LOOK_AT_HEADING        3       // point towards a particular angle (not pilot input accepted)
-#define AUTO_YAW_LOOK_AHEAD             4       // point in the direction the copter is moving
-#define AUTO_YAW_RESETTOARMEDYAW        5       // point towards heading at time motors were armed
+// Autopilot Yaw Mode enumeration
+enum autopilot_yaw_mode {
+    AUTO_YAW_HOLD =             0,  // pilot controls the heading
+    AUTO_YAW_LOOK_AT_NEXT_WP =  1,  // point towards next waypoint (no pilot input accepted)
+    AUTO_YAW_ROI =              2,  // point towards a location held in roi_WP (no pilot input accepted)
+    AUTO_YAW_LOOK_AT_HEADING =  3,  // point towards a particular angle (not pilot input accepted)
+    AUTO_YAW_LOOK_AHEAD =       4,  // point in the direction the copter is moving
+    AUTO_YAW_RESETTOARMEDYAW =  5,  // point towards heading at time motors were armed
+};
 
 // Ch6... Ch12 aux switch control
 #define AUX_SWITCH_PWM_TRIGGER_HIGH 1800   // pwm value above which the ch7 or ch8 option will be invoked
