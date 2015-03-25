@@ -709,12 +709,18 @@ void AC_AttitudeControl::accel_limiting(bool enable_limits)
 void AC_AttitudeControl::set_throttle_out(float throttle_out, bool apply_angle_boost)
 {
     if (apply_angle_boost) {
+        _motors.set_stabilize(true);
         _motors.set_throttle(get_angle_boost(throttle_out));
     }else{
+        _motors.set_stabilize(true);
         _motors.set_throttle(throttle_out);
         // clear angle_boost for logging purposes
         _angle_boost = 0;
     }
+}
+
+void AC_AttitudeControl::set_throttle_zero() {
+    _motors.set_stabilize(false);
 }
 
 // get_angle_boost - returns a throttle including compensation for roll/pitch angle
