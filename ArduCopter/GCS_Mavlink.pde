@@ -1510,6 +1510,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_SERIAL_CONTROL:
         handle_serial_control(msg, gps);
         break;
+
+    case MAVLINK_MSG_ID_GPS_INJECT_DATA:
+        handle_gps_inject(msg, gps);
+        result = MAV_RESULT_ACCEPTED;
+        break;
+
 #endif
 
 #if CAMERA == ENABLED
