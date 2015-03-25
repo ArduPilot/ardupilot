@@ -320,7 +320,9 @@ void SITLScheduler::panic(const prog_char_t *errormsg) {
 void SITLScheduler::stop_clock(uint64_t time_usec)
 {
     stopped_clock_usec = time_usec;
-    if (!system_initializing()) {
+    if (system_initializing()) {
+        kill(0, SIGCONT);
+    } else {
         /*
           we want to ensure the main thread gets a chance to run on
           each tick from the FDM
