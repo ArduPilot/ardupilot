@@ -26,9 +26,7 @@ static void sport_run()
 
     // if not armed or throttle at zero, set throttle to zero and exit immediately
     if(!motors.armed() || g.rc_3.control_in <= 0) {
-        attitude_control.relax_bf_rate_controller();
-        attitude_control.set_yaw_target_to_current_heading();
-        attitude_control.set_throttle_out(0, false);
+        attitude_control.set_throttle_out_unstabilized(0,true);
         pos_control.set_alt_target_to_current_alt();
         return;
     }
@@ -77,10 +75,8 @@ static void sport_run()
 
     // reset target lean angles and heading while landed
     if (ap.land_complete) {
-        attitude_control.relax_bf_rate_controller();
-        attitude_control.set_yaw_target_to_current_heading();
         // move throttle to between minimum and non-takeoff-throttle to keep us on the ground
-        attitude_control.set_throttle_out(get_throttle_pre_takeoff(g.rc_3.control_in), false);
+        attitude_control.set_throttle_out_unstabilized(get_throttle_pre_takeoff(g.rc_3.control_in),true);
         pos_control.set_alt_target_to_current_alt();
     }else{
 

@@ -48,9 +48,7 @@ static void drift_run()
 
     // if not armed or landed and throttle at zero, set throttle to zero and exit immediately
     if(!motors.armed() || (ap.land_complete && ap.throttle_zero)) {
-        attitude_control.relax_bf_rate_controller();
-        attitude_control.set_yaw_target_to_current_heading();
-        attitude_control.set_throttle_out(0, false);
+        attitude_control.set_throttle_out_unstabilized(0,true);
         return;
     }
 
