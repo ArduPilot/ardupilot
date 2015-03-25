@@ -256,20 +256,8 @@ static void init_aux_switch_function(int8_t ch_option, uint8_t ch_flag)
 // do_aux_switch_function - implement the function invoked by the ch7 or ch8 switch
 static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 {
-    int8_t tmp_function = ch_function;
 
-    // multi mode check
-    if(ch_function == AUXSW_MULTI_MODE) {
-        if (g.rc_6.radio_in < CH6_PWM_TRIGGER_LOW) {
-            tmp_function = AUXSW_FLIP;
-        }else if (g.rc_6.radio_in > CH6_PWM_TRIGGER_HIGH) {
-            tmp_function = AUXSW_SAVE_WP;
-        }else{
-            tmp_function = AUXSW_RTL;
-        }
-    }
-
-    switch(tmp_function) {
+    switch(ch_function) {
         case AUXSW_FLIP:
             // flip if switch is on, positive throttle and we're actually flying
             if(ch_flag == AUX_SWITCH_HIGH) {
