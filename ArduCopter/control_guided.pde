@@ -163,7 +163,7 @@ static void guided_run()
         // To-Do: reset waypoint controller?
         attitude_control.relax_bf_rate_controller();
         attitude_control.set_yaw_target_to_current_heading();
-        attitude_control.set_throttle_out(0, false);
+        attitude_control.set_throttle_zero();
         // To-Do: handle take-offs - these may not only be immediately after auto_armed becomes true
         return;
     }
@@ -204,7 +204,7 @@ static void guided_takeoff_run()
         // reset attitude control targets
         attitude_control.relax_bf_rate_controller();
         attitude_control.set_yaw_target_to_current_heading();
-        attitude_control.set_throttle_out(0, false);
+        attitude_control.set_throttle_zero();
         // tell motors to do a slow start
         motors.slow_start(true);
         return;

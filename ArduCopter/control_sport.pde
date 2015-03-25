@@ -28,7 +28,7 @@ static void sport_run()
     if(!motors.armed() || g.rc_3.control_in <= 0) {
         attitude_control.relax_bf_rate_controller();
         attitude_control.set_yaw_target_to_current_heading();
-        attitude_control.set_throttle_out(0, false);
+        attitude_control.set_throttle_zero();
         pos_control.set_alt_target_to_current_alt();
         return;
     }

@@ -54,7 +54,7 @@ static void land_gps_run()
     if(!ap.auto_armed || ap.land_complete) {
         attitude_control.relax_bf_rate_controller();
         attitude_control.set_yaw_target_to_current_heading();
-        attitude_control.set_throttle_out(0, false);
+        attitude_control.set_throttle_zero();
         wp_nav.init_loiter_target();
 
 #if LAND_REQUIRE_MIN_THROTTLE_TO_DISARM == ENABLED
@@ -129,7 +129,7 @@ static void land_nogps_run()
     if(!ap.auto_armed || ap.land_complete) {
         attitude_control.relax_bf_rate_controller();
         attitude_control.set_yaw_target_to_current_heading();
-        attitude_control.set_throttle_out(0, false);
+        attitude_control.set_throttle_zero();
 #if LAND_REQUIRE_MIN_THROTTLE_TO_DISARM == ENABLED
         // disarm when the landing detector says we've landed and throttle is at minimum
         if (ap.land_complete && (ap.throttle_zero || failsafe.radio)) {

@@ -116,7 +116,7 @@ static void auto_takeoff_run()
         // reset attitude control targets
         attitude_control.relax_bf_rate_controller();
         attitude_control.set_yaw_target_to_current_heading();
-        attitude_control.set_throttle_out(0, false);
+        attitude_control.set_throttle_zero();
         // tell motors to do a slow start
         motors.slow_start(true);
         return;
@@ -164,7 +164,7 @@ static void auto_wp_run()
         //    (of course it would be better if people just used take-off)
         attitude_control.relax_bf_rate_controller();
         attitude_control.set_yaw_target_to_current_heading();
-        attitude_control.set_throttle_out(0, false);
+        attitude_control.set_throttle_zero();
         // tell motors to do a slow start
         motors.slow_start(true);
         return;
@@ -222,7 +222,7 @@ static void auto_spline_run()
         //    (of course it would be better if people just used take-off)
         attitude_control.relax_bf_rate_controller();
         attitude_control.set_yaw_target_to_current_heading();
-        attitude_control.set_throttle_out(0, false);
+        attitude_control.set_throttle_zero();
         // tell motors to do a slow start
         motors.slow_start(true);
         return;
@@ -291,7 +291,7 @@ static void auto_land_run()
     if(!ap.auto_armed || ap.land_complete) {
         attitude_control.relax_bf_rate_controller();
         attitude_control.set_yaw_target_to_current_heading();
-        attitude_control.set_throttle_out(0, false);
+        attitude_control.set_throttle_zero();
         // set target to current position
         wp_nav.init_loiter_target();
         return;
@@ -459,7 +459,7 @@ void auto_loiter_run()
     if(!ap.auto_armed || ap.land_complete) {
         attitude_control.relax_bf_rate_controller();
         attitude_control.set_yaw_target_to_current_heading();
-        attitude_control.set_throttle_out(0, false);
+        attitude_control.set_throttle_zero();
         return;
     }
 
