@@ -43,7 +43,7 @@ enum aux_sw_func {
     AUXSW_SAVE_TRIM,               // 5, save current position as level
     AUXSW_ADC_FILTER,              // 6, deprecated
     AUXSW_SAVE_WP,                 // 7,save mission waypoint or RTL if in auto mode
-    AUXSW_MULTI_MODE,              // 8, depending upon CH6 position Flip (if ch6 is low), RTL (if ch6 in middle) or Save WP (if ch6 is high)
+    AUXSW_MULTI_MODE,              // 8, deprecated
     AUXSW_CAMERA_TRIGGER,          // 9, trigger camera servo or relay
     AUXSW_SONAR,                   // 10,allow enabling or disabling sonar in flight which helps avoid surface tracking when you are far above the ground
     AUXSW_FENCE,                   // 11, allow enabling or disabling fence in flight
