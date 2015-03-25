@@ -172,6 +172,7 @@ void stability_test()
 
     // arm motors
     motors.armed(true);
+    motors.set_stabilize(true);
 
     // run stability test
     for (int16_t i=0; i < testing_array_rows; i++) {
@@ -206,6 +207,7 @@ void stability_test()
     motors.set_roll(0);
     motors.set_yaw(0);
     motors.set_throttle(0);
+    motors.set_stabilize(false);
     motors.armed(false);
 
     hal.console->println("finished test.");
