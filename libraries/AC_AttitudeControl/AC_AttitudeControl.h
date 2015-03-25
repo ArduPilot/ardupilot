@@ -174,8 +174,10 @@ public:
     //
 
      // set_throttle_out - to be called by upper throttle controllers when they wish to provide throttle output directly to motors
-     // provide 0 to cut motors
      void set_throttle_out(float throttle_pwm, bool apply_angle_boost);
+
+     // outputs a throttle to all motors evenly with no stabilization
+     void set_throttle_out_unstabilized(float throttle_in, bool reset_attitude_control);
 
      // angle_boost - accessor for angle boost so it can be logged
      int16_t angle_boost() const { return _angle_boost; }

@@ -708,6 +708,7 @@ void AC_AttitudeControl::accel_limiting(bool enable_limits)
  // provide 0 to cut motors
 void AC_AttitudeControl::set_throttle_out(float throttle_out, bool apply_angle_boost)
 {
+    _motors.set_stabilizing(true);
     if (apply_angle_boost) {
         _motors.set_throttle(get_angle_boost(throttle_out));
     }else{
@@ -715,6 +716,18 @@ void AC_AttitudeControl::set_throttle_out(float throttle_out, bool apply_angle_b
         // clear angle_boost for logging purposes
         _angle_boost = 0;
     }
+}
+
+// outputs a throttle to all motors evenly with no attitude stabilization
+void AC_AttitudeControl::set_throttle_out_unstabilized(float throttle_in, bool reset_attitude_control)
+{
+    if (reset_attitude_control) {
+        relax_bf_rate_controller();
+        set_yaw_target_to_current_heading();
+    }
+    _motors.set_stabilizing(false);
+    _motors.set_throttle(throttle_in);
+    _angle_boost = 0;
 }
 
 // get_angle_boost - returns a throttle including compensation for roll/pitch angle
