@@ -148,7 +148,6 @@ build_arduplane() {
             return
         }
 	skip_build $tag $ddir || {
-	    make px4-clean &&
 	    make px4 || {
                 echo "Failed build of ArduPlane PX4 $tag"
                 error_count=$((error_count+1))
@@ -184,7 +183,6 @@ build_arducopter() {
             popd
             return
         }
-	make px4-clean || return
         rm -rf ../Build.ArduCopter
 	for f in $frames; do
 	    echo "Building ArduCopter PX4-$f binaries"
@@ -231,7 +229,6 @@ build_rover() {
             return
         }
 	skip_build $tag $ddir || {
-	    make px4-clean &&
 	    make px4 || {
                 echo "Failed build of APMrover2 PX4 $tag"
                 error_count=$((error_count+1))
@@ -275,7 +272,6 @@ build_antennatracker() {
             return
         }
 	skip_build $tag $ddir || {
-	    make px4-clean &&
 	    make px4 || {
                 echo "Failed build of AntennaTracker PX4 $tag"
                 error_count=$((error_count+1))
@@ -290,6 +286,11 @@ build_antennatracker() {
     checkout AntennaTracker "latest" ""
     popd
 }
+
+# make sure PX4 is rebuilt from scratch
+pushd ArduPlane
+make px4-clean || exit 1
+popd
 
 for build in stable beta latest; do
     build_arduplane $build
