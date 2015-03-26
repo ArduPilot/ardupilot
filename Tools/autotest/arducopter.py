@@ -880,7 +880,7 @@ def fly_ArduCopter(viewerip=None, map=False):
     if TARGET != 'sitl':
         util.build_SIL('ArduCopter', target=TARGET)
 
-    sim_cmd = util.reltopdir('Tools/autotest/pysim/sim_multicopter.py') + ' --frame=%s --nowait --nowait --rate=800 --home=%f,%f,%u,%u' % (
+    sim_cmd = util.reltopdir('Tools/autotest/pysim/sim_multicopter.py') + ' --frame=%s --nowait --nowait --rate=400 --home=%f,%f,%u,%u' % (
         FRAME, HOME.lat, HOME.lng, HOME.alt, HOME.heading)
     sim_cmd += ' --wind=6,45,.3'
     if viewerip:
