@@ -185,11 +185,11 @@ build_arducopter() {
             return
         }
 	make px4-clean || return
+        rm -rf ../Build.ArduCopter
 	for f in $frames; do
 	    echo "Building ArduCopter PX4-$f binaries"
 	    ddir="$binaries/Copter/$hdate/PX4-$f"
 	    skip_build $tag $ddir && continue
-            rm -rf ../Build.ArduCopter
 	    make px4-$f || {
                 echo "Failed build of ArduCopter PX4 $tag"
                 error_count=$((error_count+1))
