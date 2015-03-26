@@ -65,7 +65,7 @@
 #define AUTOTUNE_RP_MAX                    5.0f     // maximum Rate P value
 #define AUTOTUNE_SP_MAX                   20.0f     // maximum Stab P value
 #define AUTOTUNE_SP_MIN                    1.0f     // maximum Stab P value
-#define AUTOTUNE_ACCEL_RP_BACKOFF          1.5f     // back off from maximum acceleration
+#define AUTOTUNE_ACCEL_RP_BACKOFF          1.0f     // back off from maximum acceleration
 #define AUTOTUNE_ACCEL_Y_BACKOFF           0.75f    // back off from maximum acceleration
 #define AUTOTUNE_RP_ACCEL_MIN          75000.0f     // Minimum acceleration for Roll and Pitch
 #define AUTOTUNE_Y_ACCEL_MIN           18000.0f     // Minimum acceleration for Roll and Pitch
