@@ -15,6 +15,17 @@ os.putenv('TMPDIR', util.reltopdir('tmp'))
 
 def get_default_params(atype):
     '''get default parameters'''
+
+    # use rover simulator so SITL is not starved of input
+    from pymavlink import mavutil
+    HOME=mavutil.location(40.071374969556928,-105.22978898137808,1583.702759,246)
+    sim_cmd = util.reltopdir('Tools/autotest/pysim/sim_rover.py') + ' --rate=200 --nowait --home=%f,%f,%u,%u' % (
+        HOME.lat, HOME.lng, HOME.alt, HOME.heading)
+
+    runsim = pexpect.spawn(sim_cmd, logfile=sys.stdout, timeout=10)
+    runsim.delaybeforesend = 0
+    runsim.expect('Starting at lat')
+
     sil = util.start_SIL(atype, wipe=True)
     mavproxy = util.start_MAVProxy_SIL(atype)
     print("Dumping defaults")
@@ -31,6 +42,7 @@ def get_default_params(atype):
     shutil.copy(parmfile, dest)
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
+    util.pexpect_close(runsim)
     print("Saved defaults for %s to %s" % (atype, dest))
     return True
 
