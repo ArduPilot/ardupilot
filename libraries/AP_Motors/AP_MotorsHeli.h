@@ -146,8 +146,6 @@ protected:
     void                output_armed_not_stabilizing();
     virtual void        output_disarmed();
 
-private:
-
     // heli_move_swash - moves swash plate to attitude of parameters passed in
     virtual void        move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll_in, int16_t yaw_out) = 0;
 
