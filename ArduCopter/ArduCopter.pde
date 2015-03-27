@@ -740,7 +740,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
 #endif
     { update_notify,         8,     10 },
     { one_hz_loop,         400,     42 },
-    { ekf_dcm_check,        40,      2 },
+    { ekf_check,            40,      2 },
     { crash_check,          40,      2 },
     { landinggear_update,   40,      1 },
     { gcs_check_input,	     8,    550 },
@@ -815,7 +815,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
 #endif
     { update_notify,         2,     100 },
     { one_hz_loop,         100,     420 },
-    { ekf_dcm_check,        10,      20 },
+    { ekf_check,            10,      20 },
     { crash_check,          10,      20 },
     { landinggear_update,   10,      10 },
     { gcs_check_input,	     2,     550 },

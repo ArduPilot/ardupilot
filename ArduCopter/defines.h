@@ -331,7 +331,7 @@ enum FlipState {
 #define ERROR_SUBSYSTEM_FLIP                13
 #define ERROR_SUBSYSTEM_AUTOTUNE            14
 #define ERROR_SUBSYSTEM_PARACHUTE           15
-#define ERROR_SUBSYSTEM_EKFINAV_CHECK       16
+#define ERROR_SUBSYSTEM_EKFCHECK            16
 #define ERROR_SUBSYSTEM_FAILSAFE_EKFINAV    17
 #define ERROR_SUBSYSTEM_BARO                18
 #define ERROR_SUBSYSTEM_CPU                 19
@@ -357,8 +357,8 @@ enum FlipState {
 // parachute failed to deploy because of low altitude
 #define ERROR_CODE_PARACHUTE_TOO_LOW        2
 // EKF check definitions
-#define ERROR_CODE_EKFINAV_CHECK_BAD_VARIANCE       2
-#define ERROR_CODE_EKFINAV_CHECK_VARIANCE_CLEARED   0
+#define ERROR_CODE_EKFCHECK_BAD_VARIANCE       2
+#define ERROR_CODE_EKFCHECK_VARIANCE_CLEARED   0
 // Baro specific error codes
 #define ERROR_CODE_BARO_GLITCH              2
 
