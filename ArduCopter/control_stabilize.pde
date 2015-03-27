@@ -25,9 +25,7 @@ static void stabilize_run()
 
     // if not armed or throttle at zero, set throttle to zero and exit immediately
     if(!motors.armed() || g.rc_3.control_in <= 0) {
-        attitude_control.relax_bf_rate_controller();
-        attitude_control.set_yaw_target_to_current_heading();
-        attitude_control.set_throttle_zero();
+        attitude_control.set_throttle_out_pre_takeoff(0);
         return;
     }
 

@@ -27,9 +27,7 @@ static void althold_run()
 
     // if not auto armed set throttle to zero and exit immediately
     if(!ap.auto_armed) {
-        attitude_control.relax_bf_rate_controller();
-        attitude_control.set_yaw_target_to_current_heading();
-        attitude_control.set_throttle_zero();
+        attitude_control.set_throttle_out_pre_takeoff(0);
         pos_control.set_alt_target_to_current_alt();
         return;
     }
@@ -57,10 +55,7 @@ static void althold_run()
 
     // reset target lean angles and heading while landed
     if (ap.land_complete) {
-        attitude_control.relax_bf_rate_controller();
-        attitude_control.set_yaw_target_to_current_heading();
-        // move throttle to between minimum and non-takeoff-throttle to keep us on the ground
-        attitude_control.set_throttle_out(get_throttle_pre_takeoff(g.rc_3.control_in), false);
+        attitude_control.set_throttle_out_pre_takeoff(get_throttle_pre_takeoff(g.rc_3.control_in));
         pos_control.set_alt_target_to_current_alt();
     }else{
         // call attitude controller
