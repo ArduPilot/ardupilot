@@ -309,10 +309,10 @@ void AP_MotorsHeli_Single::set_speed_target(int16_t speed_target)
     }
 }
 
-// output_armed
+// output_armed_stabilizing
 void AP_MotorsHeli_Single::output_armed_stabilizing()
 {
-    AP_MotorsHeli::output_armed();
+    AP_MotorsHeli::output_armed_stabilizing();
 
     if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH) {
         _tail_rotor.output_armed();

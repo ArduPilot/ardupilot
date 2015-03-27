@@ -1,5 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_DUAL_FRAME
 /*
  * heli_control_acro.pde - init and run calls for acro flight mode for trad heli
  */
@@ -63,4 +63,4 @@ static void get_pilot_desired_yaw_rate(int16_t yaw_in, float &yaw_out)
     yaw_out = rate_bf_yaw_request;
 }
 
-#endif  //HELI_FRAME
+#endif  //HELI_FRAME || HELI_DUAL_FRAME

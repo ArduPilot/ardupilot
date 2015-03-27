@@ -129,8 +129,8 @@ protected:
     // move_swash - moves swash plate to attitude of parameters passed in
     void            move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll_in, int16_t yaw_out);
 
-    // output_armed
-    virtual void    output_armed();
+    // output_armed_stabilizing
+    virtual void    output_armed_stabilizing();
 
     // output_disarmed
     virtual void    output_disarmed();

@@ -366,9 +366,9 @@ void AP_MotorsHeli_Dual::set_speed_target(int16_t speed_target)
     _rotor.set_speed_target(speed_target);
 }
 
-void AP_MotorsHeli_Dual::output_armed()
+void AP_MotorsHeli_Dual::output_armed_stabilizing()
 {
-    AP_MotorsHeli::output_armed();
+    AP_MotorsHeli::output_armed_stabilizing();
 
     _rotor.output_armed();
 

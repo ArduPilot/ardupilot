@@ -4,7 +4,7 @@
 
 #include "heli.h"
 
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_DUAL_FRAME
 
 #ifndef HELI_DYNAMIC_FLIGHT_SPEED_MIN
  #define HELI_DYNAMIC_FLIGHT_SPEED_MIN      500     // we are in "dynamic flight" when the speed is over 1m/s for 2 seconds
@@ -144,17 +144,17 @@ static void heli_update_rotor_speed_targets()
             // rotor is spinning in case we are using direct drive tailrotor which must be spun up at same time
         case AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH:
             // pass through pilot desired rotor speed
-            motors.set_desired_rotor_speed(rsc_control_deglitched);
+            motors.set_speed_target(rsc_control_deglitched);
             break;
         case AP_MOTORS_HELI_RSC_MODE_SETPOINT:
             // pass setpoint through as desired rotor speed
             if (rsc_control_deglitched > 0) {
-                motors.set_desired_rotor_speed(motors.get_rsc_setpoint());
+                motors.set_speed_target(motors.get_rsc_setpoint());
             }else{
-                motors.set_desired_rotor_speed(0);
+                motors.set_speed_target(0);
             }
             break;
     }
 }
 
-#endif  // FRAME_CONFIG == HELI_FRAME
+#endif  // FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_DUAL_FRAME

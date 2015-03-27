@@ -118,8 +118,8 @@ protected:
     // calculate_swash_factors - calculate factors based on swash type and servo position
     void        calculate_swash_factors ();
 
-    // output_armed
-    void        output_armed();
+    // output_armed_stabilizing
+    void        output_armed_stabilizing();
 
     // output_disarmed
     void        output_disarmed();

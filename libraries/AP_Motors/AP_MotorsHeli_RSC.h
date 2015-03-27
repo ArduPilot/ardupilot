@@ -50,9 +50,6 @@ public:
     // output_disarmed
     void        output_disarmed ();
 
-    // var_info
-    static const struct AP_Param::GroupInfo        var_info[];
-
 private:
 
     // external
