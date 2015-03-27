@@ -50,7 +50,7 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     uint16_t min_tx_buffer = 1024;
     uint16_t min_rx_buffer = 512;
     if (strcmp(_devpath, "/dev/ttyACM0") == 0) {
-        min_tx_buffer = 16384;
+        min_tx_buffer = 4096;
         min_rx_buffer = 1024;
     }
     // on PX4 we have enough memory to have a larger transmit and
