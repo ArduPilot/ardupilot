@@ -89,6 +89,11 @@ static bool ekf_over_threshold()
         return false;
     }
 
+    // return true immediately if position is bad
+    if (!position_ok()) {
+        return true;
+    }
+
     // use EKF to get variance
     float posVar, hgtVar, tasVar;
     Vector3f magVar;
