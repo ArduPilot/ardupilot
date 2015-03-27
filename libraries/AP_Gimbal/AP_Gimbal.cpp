@@ -168,10 +168,9 @@ void AP_Gimbal::update_target(Vector3f newTarget)
     // Low-pass filter
     _angle_ef_target_rad.y = _angle_ef_target_rad.y + 0.02f*(newTarget.y - _angle_ef_target_rad.y);
     // Update tilt
-    _angle_ef_target_rad.y = constrain_float(_angle_ef_target_rad.y,radians(-45),radians(0));
+    _angle_ef_target_rad.y = constrain_float(_angle_ef_target_rad.y,radians(-90),radians(0));
 
 }
-
 
 uint8_t AP_Gimbal::isCopterFliped(){
     return fabs(_ahrs.roll)>1.0f || fabs(_ahrs.pitch)>1.0f;
