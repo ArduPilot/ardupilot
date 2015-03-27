@@ -7,6 +7,7 @@ VEHICLE=""
 BUILD_TARGET="sitl"
 FRAME=""
 NUM_PROCS=1
+SPEEDUP="1"
 
 # check the instance number to allow for multiple copies of the sim running at once
 INSTANCE=0
@@ -48,6 +49,7 @@ Options:
     -j NUM_PROC      number of processors to use during build (default 1)
     -H               start HIL
     -e               use external simulator
+    -S SPEEDUP       set simulation speedup (1 for wall clock time)
 
 mavproxy_options:
     --map            start with a map
@@ -64,7 +66,7 @@ EOF
 
 
 # parse options. Thanks to http://wiki.bash-hackers.org/howto/getopts_tutorial
-while getopts ":I:VgGcj:TA:t:L:v:hwf:RNHeM" opt; do
+while getopts ":I:VgGcj:TA:t:L:v:hwf:RNHeMS:" opt; do
   case $opt in
     v)
       VEHICLE=$OPTARG
@@ -106,6 +108,9 @@ while getopts ":I:VgGcj:TA:t:L:v:hwf:RNHeM" opt; do
       ;;
     f)
       FRAME="$OPTARG"
+      ;;
+    S)
+      SPEEDUP="$OPTARG"
       ;;
     t)
       TRACKER_LOCATION="$OPTARG"
@@ -171,39 +176,43 @@ set -x
 EXTRA_PARM=""
 EXTRA_SIM=""
 
+[ "$SPEEDUP" != "1" ] && {
+    EXTRA_SIM="$EXTRA_SIM --speedup=$SPEEDUP"
+}
+
 # modify build target based on copter frame type
 case $FRAME in
     +|quad)
 	BUILD_TARGET="sitl"
-        EXTRA_SIM="--frame=quad"
+        EXTRA_SIM="$EXTRA_SIM --frame=quad"
 	;;
     X)
 	BUILD_TARGET="sitl"
         EXTRA_PARM="param set FRAME 1;"
-        EXTRA_SIM="--frame=X"
+        EXTRA_SIM="$EXTRA_SIM --frame=X"
 	;;
     octa)
 	BUILD_TARGET="sitl-octa"
-        EXTRA_SIM="--frame=octa"
+        EXTRA_SIM="$EXTRA_SIM --frame=octa"
 	;;
     octa-quad)
 	BUILD_TARGET="sitl-octa-quad"
-        EXTRA_SIM="--frame=octa-quad"
+        EXTRA_SIM="$EXTRA_SIM --frame=octa-quad"
 	;;
     heli)
 	BUILD_TARGET="sitl-heli"
-        EXTRA_SIM="--frame=heli"
+        EXTRA_SIM="$EXTRA_SIM --frame=heli"
 	;;
     elevon*)
         EXTRA_PARM="param set ELEVON_OUTPUT 4;"
-        EXTRA_SIM="--elevon"
+        EXTRA_SIM="$EXTRA_SIM --elevon"
 	;;
     vtail)
         EXTRA_PARM="param set VTAIL_OUTPUT 4;"
-        EXTRA_SIM="--vtail"
+        EXTRA_SIM="$EXTRA_SIM --vtail"
 	;;
     skid)
-        EXTRA_SIM="--skid-steering"
+        EXTRA_SIM="$EXTRA_SIM --skid-steering"
 	;;
     obc)
         BUILD_TARGET="sitl-obc"
@@ -219,7 +228,7 @@ esac
 
 if [ $USE_MAVLINK_GIMBAL == 1 ]; then
     echo "Using MAVLink gimbal"
-    EXTRA_SIM="--gimbal"
+    EXTRA_SIM="$EXTRA_SIM --gimbal"
 fi
 
 autotest=$(dirname $(readlink -e $0))

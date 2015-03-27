@@ -79,7 +79,8 @@ parser.add_option("--simout", dest="simout",  help="SIM output (IP:port)",      
 parser.add_option("--home", dest="home",  type='string', default=None, help="home lat,lng,alt,hdg (required)")
 parser.add_option("--rate", dest="rate", type='int', help="SIM update rate", default=1000)
 parser.add_option("--skid-steering", action='store_true', default=False, help="Use skid steering")
-parser.add_option("--nowait", action='store_true', help="don't pause between updates")
+parser.add_option("--speedup", type='float', default=1.0, help="speedup from realtime")
+
 
 (opts, args) = parser.parse_args()
 
@@ -132,6 +133,8 @@ print("Starting at lat=%f lon=%f alt=%f heading=%.1f" % (
     a.yaw))
 
 frame_time = 1.0/opts.rate
+scaled_frame_time = frame_time/opts.speedup
+
 last_wall_time = time.time()
 
 counter = 0
@@ -149,8 +152,8 @@ while True:
     sim_send(a)
 
     now = time.time()
-    if not opts.nowait and now < last_wall_time + frame_time:
-        time.sleep(last_wall_time+frame_time - now)
+    if not opts.nowait and now < last_wall_time + scaled_frame_time:
+        time.sleep(last_wall_time+scaled_frame_time - now)
     last_wall_time = time.time()
 
     a.time_advance(frame_time)

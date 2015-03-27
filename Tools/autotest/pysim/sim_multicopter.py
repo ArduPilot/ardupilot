@@ -101,7 +101,7 @@ parser.add_option("--rate", dest="rate", type='int', help="SIM update rate", def
 parser.add_option("--wind", dest="wind", help="Simulate wind (speed,direction,turbulance)", default='0,0,0')
 parser.add_option("--frame", dest="frame", help="frame type (+,X,octo)", default='+')
 parser.add_option("--gimbal", dest="gimbal", action='store_true', default=False, help="enable gimbal")
-parser.add_option("--nowait", action='store_true', help="don't pause between updates")
+parser.add_option("--speedup", type='float', default=1.0, help="speedup from realtime")
 
 (opts, args) = parser.parse_args()
 
@@ -169,6 +169,7 @@ print("Starting at lat=%f lon=%f alt=%.1f heading=%.1f" % (
     a.yaw))
 
 frame_time = 1.0/opts.rate
+scaled_frame_time = frame_time/opts.speedup
 
 if opts.gimbal:
     from gimbal import Gimbal3Axis
@@ -192,8 +193,8 @@ while True:
     sim_send(m, a)
 
     now = time.time()
-    if not opts.nowait and now < last_wall_time + frame_time:
-        time.sleep(last_wall_time+frame_time - now)
+    if now < last_wall_time + scaled_frame_time:
+        time.sleep(last_wall_time+scaled_frame_time - now)
     last_wall_time = time.time()
 
     a.time_advance(frame_time)
