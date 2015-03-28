@@ -152,7 +152,7 @@ while True:
     sim_send(a)
 
     now = time.time()
-    if not opts.nowait and now < last_wall_time + scaled_frame_time:
+    if now < last_wall_time + scaled_frame_time:
         time.sleep(last_wall_time+scaled_frame_time - now)
     last_wall_time = time.time()
 

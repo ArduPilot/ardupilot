@@ -83,7 +83,7 @@ def drive_APMrover2(viewerip=None, map=False):
     if map:
         options += ' --map'
 
-    sim_cmd = util.reltopdir('Tools/autotest/pysim/sim_rover.py') + ' --rate=200 --nowait --home=%f,%f,%u,%u' % (
+    sim_cmd = util.reltopdir('Tools/autotest/pysim/sim_rover.py') + ' --rate=200 --speedup=100 --home=%f,%f,%u,%u' % (
         HOME.lat, HOME.lng, HOME.alt, HOME.heading)
 
     sil = util.start_SIL('APMrover2', wipe=True)
@@ -111,7 +111,7 @@ def drive_APMrover2(viewerip=None, map=False):
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
 
-    sim_cmd = util.reltopdir('Tools/autotest/pysim/sim_rover.py') + ' --rate=200 --nowait --home=%f,%f,%u,%u' % (
+    sim_cmd = util.reltopdir('Tools/autotest/pysim/sim_rover.py') + ' --rate=200 --speedup=100 --home=%f,%f,%u,%u' % (
         HOME.lat, HOME.lng, HOME.alt, HOME.heading)
 
     runsim = pexpect.spawn(sim_cmd, logfile=sys.stdout, timeout=10)
