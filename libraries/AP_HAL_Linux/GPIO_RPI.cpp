@@ -13,14 +13,50 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 
+#define MAX_SIZE_LINE 50
+
 using namespace Linux;
 
 static const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 LinuxGPIO_RPI::LinuxGPIO_RPI()
 {}
 
+int LinuxGPIO_RPI::getRaspberryPiVersion() const
+{
+    char buffer[MAX_SIZE_LINE];
+    const char* hardware_description_entry = "Hardware";
+    const char* v1 = "BCM2708";
+    const char* v2 = "BCM2709";
+    char* flag;
+    FILE* fd;
+
+    fd = fopen("/proc/cpuinfo", "r");
+
+    while (fgets(buffer, MAX_SIZE_LINE, fd) != NULL) {
+        flag = strstr(buffer, hardware_description_entry);
+
+        if (flag != NULL) {
+            if (strstr(buffer, v2) != NULL) {
+                printf("Raspberry Pi 2 with BCM2709!\n");
+                fclose(fd);
+                return 2;
+            } else if (strstr(buffer, v1) != NULL) {
+                printf("Raspberry Pi 1 with BCM2708!\n");
+                fclose(fd);
+                return 1;
+            }
+        }
+    }
+
+    /* defaults to 1 */
+    fprintf(stderr, "Could not detect RPi version, defaulting to 1\n");
+    fclose(fd);
+    return 1;
+}
+
 void LinuxGPIO_RPI::init()
 {
+    uint32_t address = getRaspberryPiVersion() == 1? GPIO_BASE(BCM2708_PERI_BASE): GPIO_BASE(BCM2709_PERI_BASE);
     // open /dev/mem
     if ((mem_fd = open("/dev/mem", O_RDWR|O_SYNC) ) < 0) {
         hal.scheduler->panic("Can't open /dev/mem");
@@ -33,7 +69,7 @@ void LinuxGPIO_RPI::init()
         PROT_READ|PROT_WRITE, // Enable reading & writting to mapped memory
         MAP_SHARED,           // Shared with other processes
         mem_fd,               // File to map
-        GPIO_BASE             // Offset to GPIO peripheral
+        address    // Offset to GPIO peripheral
     );
 
     close(mem_fd); // No need to keep mem_fd open after mmap
