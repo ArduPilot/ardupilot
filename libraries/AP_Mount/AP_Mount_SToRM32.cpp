@@ -17,7 +17,7 @@ AP_Mount_SToRM32::AP_Mount_SToRM32(AP_Mount &frontend, AP_Mount::mount_state &st
 void AP_Mount_SToRM32::init(const AP_SerialManager& serial_manager)
 {
     // get_mavlink_channel for MAVLink2
-    if (serial_manager.get_mavlink_channel(AP_SerialManager::SerialProtocol_MAVLink2, _chan)) {
+    if (serial_manager.get_mavlink_channel(AP_SerialManager::SerialProtocol_MAVLink, 1, _chan)) {
         _initialised = true;
         set_mode((enum MAV_MOUNT_MODE)_state._default_mode.get());
     }
