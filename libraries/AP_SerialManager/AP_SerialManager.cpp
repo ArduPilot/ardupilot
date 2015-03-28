@@ -37,9 +37,9 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] PROGMEM = {
     // @Param: 1_PROTOCOL
     // @DisplayName: Telem1 protocol selection
     // @Description: Control what protocol to use on the Telem1 port. Note that the Frsky options require external converter hardware. See the wiki for details.
-    // @Values: 1:GCS Mavlink, 2:GCS Mavlink (2nd), 3:Frsky D-PORT, 4:Frsky S-PORT, 5:GPS, 6:2nd GPS, 7:Alexmos Gimbal Serial
+    // @Values: 1:GCS Mavlink, 3:Frsky D-PORT, 4:Frsky S-PORT, 5:GPS, 7:Alexmos Gimbal Serial
     // @User: Standard
-    AP_GROUPINFO("1_PROTOCOL",  1, AP_SerialManager, state[1].protocol, SerialProtocol_MAVLink1),
+    AP_GROUPINFO("1_PROTOCOL",  1, AP_SerialManager, state[1].protocol, SerialProtocol_MAVLink),
 
     // @Param: 1_BAUD
     // @DisplayName: Telem1 Baud Rate
@@ -51,9 +51,9 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] PROGMEM = {
     // @Param: 2_PROTOCOL
     // @DisplayName: Telemetry 2 protocol selection
     // @Description: Control what protocol to use on the Telem2 port. Note that the Frsky options require external converter hardware. See the wiki for details.
-    // @Values: 1:GCS Mavlink, 2:GCS Mavlink (2nd), 3:Frsky D-PORT, 4:Frsky S-PORT, 5:GPS, 6:GPS (2nd), 7:Alexmos Gimbal Serial
+    // @Values: 1:GCS Mavlink, 3:Frsky D-PORT, 4:Frsky S-PORT, 5:GPS, 7:Alexmos Gimbal Serial
     // @User: Standard
-    AP_GROUPINFO("2_PROTOCOL",  3, AP_SerialManager, state[2].protocol, SerialProtocol_MAVLink2),
+    AP_GROUPINFO("2_PROTOCOL",  3, AP_SerialManager, state[2].protocol, SerialProtocol_MAVLink),
 
     // @Param: 2_BAUD
     // @DisplayName: Telemetry 2 Baud Rate
@@ -65,7 +65,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] PROGMEM = {
     // @Param: 3_PROTOCOL
     // @DisplayName: Serial 3 (GPS) protocol selection
     // @Description: Control what protocol Serial 3 (GPS) should be used for. Note that the Frsky options require external converter hardware. See the wiki for details.
-    // @Values: 1:GCS Mavlink, 2:GCS Mavlink (2nd), 3:Frsky D-PORT, 4:Frsky S-PORT, 5:GPS, 6:GPS (2nd), 7:Alexmos Gimbal Serial
+    // @Values: 1:GCS Mavlink, 3:Frsky D-PORT, 4:Frsky S-PORT, 5:GPS, 7:Alexmos Gimbal Serial
     // @User: Standard
     AP_GROUPINFO("3_PROTOCOL",  5, AP_SerialManager, state[3].protocol, SerialProtocol_GPS),
 
@@ -79,9 +79,9 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] PROGMEM = {
     // @Param: 4_PROTOCOL
     // @DisplayName: Serial4 protocol selection
     // @Description: Control what protocol Serial4 port should be used for. Note that the Frsky options require external converter hardware. See the wiki for details.
-    // @Values: 1:GCS Mavlink, 2:GCS Mavlink (2nd), 3:Frsky D-PORT, 4:Frsky S-PORT, 5:GPS, 6:GPS (2nd), 7:Alexmos Gimbal Serial
+    // @Values: 1:GCS Mavlink, 3:Frsky D-PORT, 4:Frsky S-PORT, 5:GPS, 7:Alexmos Gimbal Serial
     // @User: Standard
-    AP_GROUPINFO("4_PROTOCOL",  7, AP_SerialManager, state[4].protocol, SerialProtocol_GPS2),
+    AP_GROUPINFO("4_PROTOCOL",  7, AP_SerialManager, state[4].protocol, SerialProtocol_GPS),
 
     // @Param: 4_BAUD
     // @DisplayName: Serial 4 Baud Rate
@@ -129,7 +129,7 @@ void AP_SerialManager::init()
                                          AP_SERIALMANAGER_CONSOLE_BUFSIZE_RX, 
                                          AP_SERIALMANAGER_CONSOLE_BUFSIZE_TX);
                     break;
-                case SerialProtocol_MAVLink1:
+                case SerialProtocol_MAVLink:
                 case SerialProtocol_MAVLink2:
                     state[i].uart->begin(map_baudrate(state[i].baud), 
                                          AP_SERIALMANAGER_MAVLINK_BUFSIZE_RX,
@@ -166,13 +166,19 @@ void AP_SerialManager::init()
 }
 
 // find_serial - searches available serial ports for the first instance that allows the given protocol
+//  instance should be zero if searching for the first instance, 1 for the second, etc
 //  returns uart on success, NULL if a serial port cannot be found
-AP_HAL::UARTDriver *AP_SerialManager::find_serial(enum SerialProtocol protocol) const
+AP_HAL::UARTDriver *AP_SerialManager::find_serial(enum SerialProtocol protocol, uint8_t instance) const
 {
+    uint8_t found_instance = 0;
+
     // search for matching protocol
     for(uint8_t i=0; i<SERIALMANAGER_NUM_PORTS; i++) {
-        if (state[i].protocol == protocol) {
-            return state[i].uart;
+        if (protocol_match(protocol, (enum SerialProtocol)state[i].protocol.get())) {
+            if (found_instance == instance) {
+                return state[i].uart;
+            }
+            found_instance++;
         }
     }
 
@@ -186,7 +192,7 @@ uint32_t AP_SerialManager::find_baudrate(enum SerialProtocol protocol) const
 {
     // search for matching protocol
     for(uint8_t i=0; i<SERIALMANAGER_NUM_PORTS; i++) {
-        if (state[i].protocol == protocol) {
+        if ((enum SerialProtocol)state[i].protocol.get() == protocol) {
             return map_baudrate(state[i].baud);
         }
     }
@@ -196,28 +202,29 @@ uint32_t AP_SerialManager::find_baudrate(enum SerialProtocol protocol) const
 }
 
 // get_mavlink_channel - provides the mavlink channel associated with a given protocol
+//  instance should be zero if searching for the first instance, 1 for the second, etc
 //  returns true if a channel is found, false if not
-bool AP_SerialManager::get_mavlink_channel(enum SerialProtocol protocol, mavlink_channel_t &mav_chan) const
+bool AP_SerialManager::get_mavlink_channel(enum SerialProtocol protocol, uint8_t instance, mavlink_channel_t &mav_chan) const
 {
-    switch (protocol) {
-        case SerialProtocol_Console:
-            mav_chan = MAVLINK_COMM_0;
-            return true;
-            break;
-        case SerialProtocol_MAVLink1:
-            mav_chan = MAVLINK_COMM_1;
-            return true;
-            break;
-        case SerialProtocol_MAVLink2:
-            mav_chan = MAVLINK_COMM_2;
-            return true;
-            break;
-        default:
-            return false;
-            break;
+    // check for console
+    if (protocol == SerialProtocol_Console) {
+        mav_chan = MAVLINK_COMM_0;
+        return true;
     }
 
-    // we should never reach here
+    // check for MAVLink
+    if (protocol_match(protocol, SerialProtocol_MAVLink)) {
+        if (instance == 0) {
+            mav_chan = MAVLINK_COMM_1;
+            return true;
+        }
+        if (instance == 1) {
+            mav_chan = MAVLINK_COMM_2;
+            return true;
+        }
+    }
+
+    // report failure
     return false;
 }
 
@@ -234,14 +241,19 @@ void AP_SerialManager::set_blocking_writes_all(bool blocking)
 
 // set_console_baud - sets the console's baud rate to the rate specified by the protocol
 //  used on APM2 to switch the console between the console baud rate (115200) and the SERIAL1 baud rate (user configurable)
-void AP_SerialManager::set_console_baud(enum SerialProtocol protocol) const
+void AP_SerialManager::set_console_baud(enum SerialProtocol protocol, uint8_t instance) const
 {
+    uint8_t found_instance = 0;
+
     // find baud rate of this protocol
     for (uint8_t i=0; i<SERIALMANAGER_NUM_PORTS; i++) {
-        if (state[i].protocol == protocol) {
-            // set console's baud rate
-            state[0].uart->begin(map_baudrate(state[i].baud));
-            return;
+        if (protocol_match(protocol, (enum SerialProtocol)state[i].protocol.get())) {
+            if (instance == found_instance) {
+                // set console's baud rate
+                state[0].uart->begin(map_baudrate(state[i].baud));
+                return;
+            }
+            found_instance++;
         }
     }
 }
@@ -285,3 +297,25 @@ uint32_t AP_SerialManager::map_baudrate(int32_t rate) const
     return rate*1000;
 }
 
+// protocol_match - returns true if the protocols match
+bool AP_SerialManager::protocol_match(enum SerialProtocol protocol1, enum SerialProtocol protocol2) const
+{
+    // check for obvious match
+    if (protocol1 == protocol2) {
+        return true;
+    }
+
+    // mavlink match
+    if (((protocol1 == SerialProtocol_MAVLink) || (protocol1 == SerialProtocol_MAVLink2)) &&
+        ((protocol2 == SerialProtocol_MAVLink) || (protocol1 == SerialProtocol_MAVLink2))) {
+        return true;
+    }
+
+    // gps match
+    if (((protocol1 == SerialProtocol_GPS) || (protocol1 == SerialProtocol_GPS2)) &&
+        ((protocol2 == SerialProtocol_GPS) || (protocol1 == SerialProtocol_GPS2))) {
+        return true;
+    }
+
+    return false;
+}
