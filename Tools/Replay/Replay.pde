@@ -96,6 +96,7 @@ static bool done_baro_init;
 static bool done_home_init;
 static uint16_t update_rate = 50;
 static uint32_t arm_time_ms;
+static bool ahrs_healthy;
 
 static uint8_t num_user_parameters;
 static struct {
@@ -315,6 +316,10 @@ static void read_sensors(uint8_t type)
             dataflash.Log_Write_AHRS2(ahrs);
             ins.set_gyro(0, ins.get_gyro());
             ins.set_accel(0, ins.get_accel());
+            if (ahrs.healthy() != ahrs_healthy) {
+                ahrs_healthy = ahrs.healthy();
+                printf("AHRS health: %u\n", (unsigned)ahrs_healthy);
+            }
         }
     } else if ((type == LOG_PLANE_COMPASS_MSG && LogReader.vehicle == LogReader::VEHICLE_PLANE) ||
                (type == LOG_COPTER_COMPASS_MSG && LogReader.vehicle == LogReader::VEHICLE_COPTER) ||
