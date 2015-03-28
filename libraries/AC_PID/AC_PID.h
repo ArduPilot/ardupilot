@@ -63,7 +63,7 @@ public:
     float       kD() const { return _kd.get(); }
     float       imax() const { return _imax.get(); }
     float       filt_hz() const { return _filt_hz.get(); }
-    float       get_filt_alpha() const { return _filt_alpha; }
+    float       get_filt_alpha() const;
 
     // set accessors
     void        kP(const float v) { _kp.set(v); }
@@ -79,9 +79,6 @@ public:
     static const struct AP_Param::GroupInfo        var_info[];
 
 protected:
-
-    // calc_filt_alpha - recalculate the input filter alpha
-    void        calc_filt_alpha();
 
     // parameters
     AP_Float        _kp;
@@ -100,7 +97,6 @@ protected:
     float           _integrator;                // integrator value
     float           _input;                // last input for derivative
     float           _derivative;           // last derivative for low-pass filter
-    float           _filt_alpha;          // input filter alpha
 };
 
 #endif // __AC_PID_H__
