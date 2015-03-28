@@ -90,11 +90,11 @@ public:
 
     // This function is used to initialise the filter whilst moving, using the AHRS DCM solution
     // It should NOT be used to re-initialise after a timeout as DCM will also be corrupted
-    void InitialiseFilterDynamic(void);
+    bool InitialiseFilterDynamic(void);
 
     // Initialise the states from accelerometer and magnetometer data (if present)
     // This method can only be used when the vehicle is static
-    void InitialiseFilterBootstrap(void);
+    bool InitialiseFilterBootstrap(void);
 
     // Update Filter States - this should be called whenever new IMU data is available
     void UpdateFilter(void);

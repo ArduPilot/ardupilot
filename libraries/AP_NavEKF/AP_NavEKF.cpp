@@ -505,7 +505,7 @@ void NavEKF::ResetHeight(void)
 
 // this function is used to initialise the filter whilst moving, using the AHRS DCM solution
 // it should NOT be used to re-initialise after a timeout as DCM will also be corrupted
-void NavEKF::InitialiseFilterDynamic(void)
+bool NavEKF::InitialiseFilterDynamic(void)
 {
     // this forces healthy() to be false so that when we ask for ahrs
     // attitude we get the DCM attitude regardless of the state of AHRS_EKF_USE
@@ -513,7 +513,7 @@ void NavEKF::InitialiseFilterDynamic(void)
 
     // If we are a plane and don't have GPS lock then don't initialise
     if (assume_zero_sideslip() && _ahrs->get_gps().status() < AP_GPS::GPS_OK_FIX_3D) {
-        return;
+        return false;
     }
 
     // Set re-used variables to zero
@@ -571,16 +571,18 @@ void NavEKF::InitialiseFilterDynamic(void)
 
     // initialise IMU pre-processing states
     readIMUData();
+
+    return true;
 }
 
 // Initialise the states from accelerometer and magnetometer data (if present)
 // This method can only be used when the vehicle is static
-void NavEKF::InitialiseFilterBootstrap(void)
+bool NavEKF::InitialiseFilterBootstrap(void)
 {
     // If we are a plane and don't have GPS lock then don't initialise
     if (assume_zero_sideslip() && _ahrs->get_gps().status() < AP_GPS::GPS_OK_FIX_3D) {
         statesInitialised = false;
-        return;
+        return false;
     }
 
     // set re-used variables to zero
@@ -664,6 +666,8 @@ void NavEKF::InitialiseFilterBootstrap(void)
 
     // initialise IMU pre-processing states
     readIMUData();
+
+    return true;
 }
 
 // Update Filter States - this should be called whenever new IMU data is available
