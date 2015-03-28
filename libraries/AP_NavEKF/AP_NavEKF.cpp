@@ -4474,6 +4474,7 @@ void NavEKF::InitialiseVariables()
     flowXfailed = false;
     haveDeltaAngles = false;
     validOrigin = false;
+    gpsSpdAccuracy = 0.0f;
 }
 
 // return true if we should use the airspeed sensor
