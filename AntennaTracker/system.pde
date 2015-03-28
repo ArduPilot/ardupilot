@@ -24,7 +24,7 @@ static void init_tracker()
     barometer.init();
 
     // init the GCS
-    gcs[0].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_Console);
+    gcs[0].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_Console, 0);
 
     // set up snooping on other mavlink destinations
     gcs[0].set_snoop(mavlink_snoop);
@@ -39,11 +39,11 @@ static void init_tracker()
     check_usb_mux();
 
     // setup serial port for telem1
-    gcs[1].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink1);
+    gcs[1].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
 
 #if MAVLINK_COMM_NUM_BUFFERS > 2
     // setup serial port for telem2
-    gcs[2].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink2);
+    gcs[2].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 1);
 #endif
 
     mavlink_system.sysid = g.sysid_this_mav;
@@ -223,7 +223,7 @@ static void check_usb_mux(void)
     if (usb_connected) {
         serial_manager.set_console_baud(AP_SerialManager::SerialProtocol_Console);
     } else {
-        serial_manager.set_console_baud(AP_SerialManager::SerialProtocol_MAVLink1);
+        serial_manager.set_console_baud(AP_SerialManager::SerialProtocol_MAVLink, 0);
     }
 #endif
 }
