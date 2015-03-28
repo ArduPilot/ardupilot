@@ -68,10 +68,10 @@ AP_Frsky_Telem::AP_Frsky_Telem(AP_AHRS &ahrs, AP_BattMonitor &battery) :
 void AP_Frsky_Telem::init(const AP_SerialManager& serial_manager)
 {
     // check for FRSky_DPort
-    if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FRSky_DPort))) {
+    if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FRSky_DPort, 0))) {
         _protocol = FrSkyDPORT;
         _initialised_uart = true;   // SerialManager initialises uart for us
-    } else if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FRSky_SPort))) {
+    } else if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FRSky_SPort, 0))) {
         // check for FRSky_SPort
         _protocol = FrSkySPORT;
         _gps_call = 0;
