@@ -81,9 +81,9 @@ void AP_AHRS_NavEKF::update(void)
         if (start_time_ms == 0) {
             start_time_ms = hal.scheduler->millis();
         }
-        if (hal.scheduler->millis() - start_time_ms > startup_delay_ms) {
+        if (hal.scheduler->millis() - start_time_ms > startup_delay_ms &&
+            EKF.InitialiseFilterDynamic()) {
             ekf_started = true;
-            EKF.InitialiseFilterDynamic();
         }
     }
     if (ekf_started) {
@@ -152,7 +152,7 @@ void AP_AHRS_NavEKF::reset(bool recover_eulers)
 {
     AP_AHRS_DCM::reset(recover_eulers);
     if (ekf_started) {
-        EKF.InitialiseFilterBootstrap();        
+        ekf_started = EKF.InitialiseFilterBootstrap();        
     }
 }
 
@@ -161,7 +161,7 @@ void AP_AHRS_NavEKF::reset_attitude(const float &_roll, const float &_pitch, con
 {
     AP_AHRS_DCM::reset_attitude(_roll, _pitch, _yaw);
     if (ekf_started) {
-        EKF.InitialiseFilterBootstrap();        
+        ekf_started = EKF.InitialiseFilterBootstrap();        
     }
 }
 
