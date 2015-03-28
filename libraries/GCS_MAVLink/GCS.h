@@ -71,7 +71,7 @@ public:
     GCS_MAVLINK();
     void        update(void (*run_cli)(AP_HAL::UARTDriver *));
     void        init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan);
-    void        setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager::SerialProtocol protocol);
+    void        setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager::SerialProtocol protocol, uint8_t instance);
     void        send_message(enum ap_message id);
     void        send_text(gcs_severity severity, const char *str);
     void        send_text_P(gcs_severity severity, const prog_char_t *str);

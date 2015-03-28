@@ -65,12 +65,12 @@ GCS_MAVLINK::init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan)
   setup a UART, handling begin() and init()
  */
 void
-GCS_MAVLINK::setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager::SerialProtocol protocol)
+GCS_MAVLINK::setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager::SerialProtocol protocol, uint8_t instance)
 {
     // search for serial port
 
     AP_HAL::UARTDriver *uart;
-    uart = serial_manager.find_serial(protocol);
+    uart = serial_manager.find_serial(protocol, instance);
     if (uart == NULL) {
         // return immediately if not found
         return;
@@ -78,7 +78,7 @@ GCS_MAVLINK::setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager
 
     // get associated mavlink channel
     mavlink_channel_t mav_chan;
-    if (!serial_manager.get_mavlink_channel(protocol, mav_chan)) {
+    if (!serial_manager.get_mavlink_channel(protocol, instance, mav_chan)) {
         // return immediately in unlikely case mavlink channel cannot be found
         return;
     }
