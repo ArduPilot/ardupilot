@@ -521,16 +521,6 @@ static bool pre_arm_gps_checks(bool display_failure)
         return false;
     }
 
-    // check speed is below 50cm/s
-    float speed_cms = inertial_nav.get_velocity().length();     // speed according to inertial nav in cm/s
-    if (speed_cms == 0 || speed_cms > PREARM_MAX_VELOCITY_CMS) {
-        if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Bad Velocity"));
-        }
-        AP_Notify::flags.pre_arm_gps_check = false;
-        return false;
-    }
-
     // check home and EKF origin are not too far
     if (far_from_EKF_origin(ahrs.get_home())) {
         if (display_failure) {
