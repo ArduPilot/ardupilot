@@ -20,6 +20,10 @@ static void do_change_speed(const AP_Mission::Mission_Command& cmd);
 static void do_set_home(const AP_Mission::Mission_Command& cmd);
 static void do_roi(const AP_Mission::Mission_Command& cmd);
 static void do_mount_control(const AP_Mission::Mission_Command& cmd);
+#if CAMERA == ENABLED
+static void do_digicam_configure(const AP_Mission::Mission_Command& cmd);
+static void do_digicam_control(const AP_Mission::Mission_Command& cmd);
+#endif
 #if PARACHUTE == ENABLED
 static void do_parachute(const AP_Mission::Mission_Command& cmd);
 #endif
@@ -148,10 +152,11 @@ static bool start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_DO_DIGICAM_CONFIGURE:                  // Mission command to configure an on-board camera controller system. |Modes: P, TV, AV, M, Etc| Shutter speed: Divisor number for one second| Aperture: F stop number| ISO number e.g. 80, 100, 200, Etc| Exposure type enumerator| Command Identity| Main engine cut-off time before camera trigger in seconds/10 (0 means no cut-off)|
+        do_digicam_configure(cmd);
         break;
 
     case MAV_CMD_DO_DIGICAM_CONTROL:                    // Mission command to control an on-board camera controller system. |Session control e.g. show/hide lens| Zoom's absolute position| Zooming step value to offset zoom from the current position| Focus Locking, Unlocking or Re-locking| Shooting Command| Command Identity| Empty|
-        do_take_picture();
+        do_digicam_control(cmd);
         break;
 
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
@@ -888,16 +893,39 @@ static void do_roi(const AP_Mission::Mission_Command& cmd)
     set_auto_yaw_roi(cmd.content.location);
 }
 
+// do_digicam_configure Send Digicam Configure message with the camera library
+static void do_digicam_configure(const AP_Mission::Mission_Command& cmd)
+{
+#if CAMERA == ENABLED
+    camera.configure_cmd(cmd);
+#endif
+}
+
+// do_digicam_control Send Digicam Control message with the camera library
+static void do_digicam_control(const AP_Mission::Mission_Command& cmd)
+{
+#if CAMERA == ENABLED
+    camera.control_cmd(cmd);
+    log_picture();
+#endif
+}
+
 // do_take_picture - take a picture with the camera library
 static void do_take_picture()
 {
 #if CAMERA == ENABLED
-    camera.trigger_pic();
+    camera.trigger_pic(true);
+    log_picture();
+#endif
+}
+
+// log_picture - log picture taken and send feedback to GCS
+static void log_picture()
+{
     gcs_send_message(MSG_CAMERA_FEEDBACK);
     if (should_log(MASK_LOG_CAMERA)) {
         DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
     }
-#endif
 }
 
 // point the camera to a specified angle
