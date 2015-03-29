@@ -603,8 +603,23 @@ bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP
         cmd.p1 = packet.param1;                         // 0 = no roi, 1 = next waypoint, 2 = waypoint number, 3 = fixed location, 4 = given target (not supported)
         break;
 
+    case MAV_CMD_DO_DIGICAM_CONFIGURE:                  // MAV ID: 202
+        cmd.content.digicam_configure.shooting_mode = packet.param1;
+        cmd.content.digicam_configure.shutter_speed = packet.param2;
+        cmd.content.digicam_configure.aperture = packet.param3;
+        cmd.content.digicam_configure.ISO = packet.param4;
+        cmd.content.digicam_configure.exposure_type = packet.x;
+        cmd.content.digicam_configure.cmd_id = packet.y;
+        cmd.content.digicam_configure.engine_cutoff_time = packet.z;
+        break;
+
     case MAV_CMD_DO_DIGICAM_CONTROL:                    // MAV ID: 203
-        // command takes no parameters
+        cmd.content.digicam_control.session = packet.param1;
+        cmd.content.digicam_control.zoom_pos = packet.param2;
+        cmd.content.digicam_control.zoom_step = packet.param3;
+        cmd.content.digicam_control.focus_lock = packet.param4;
+        cmd.content.digicam_control.shooting_cmd = packet.x;
+        cmd.content.digicam_control.cmd_id = packet.y;
         break;
 
     case MAV_CMD_DO_MOUNT_CONTROL:                      // MAV ID: 205
@@ -881,8 +896,23 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
         packet.param1 = cmd.p1;                         // 0 = no roi, 1 = next waypoint, 2 = waypoint number, 3 = fixed location, 4 = given target (not supported)
         break;
 
+    case MAV_CMD_DO_DIGICAM_CONFIGURE:                  // MAV ID: 202
+        packet.param1 = cmd.content.digicam_configure.shooting_mode;
+        packet.param2 = cmd.content.digicam_configure.shutter_speed;
+        packet.param3 = cmd.content.digicam_configure.aperture;
+        packet.param4 = cmd.content.digicam_configure.ISO;
+        packet.x = cmd.content.digicam_configure.exposure_type;
+        packet.y = cmd.content.digicam_configure.cmd_id;
+        packet.z = cmd.content.digicam_configure.engine_cutoff_time;
+        break;
+
     case MAV_CMD_DO_DIGICAM_CONTROL:                    // MAV ID: 203
-        // these commands takes no parameters
+        packet.param1 = cmd.content.digicam_control.session;
+        packet.param2 = cmd.content.digicam_control.zoom_pos;
+        packet.param3 = cmd.content.digicam_control.zoom_step;
+        packet.param4 = cmd.content.digicam_control.focus_lock;
+        packet.x = cmd.content.digicam_control.shooting_cmd;
+        packet.y = cmd.content.digicam_control.cmd_id;
         break;
 
     case MAV_CMD_DO_MOUNT_CONTROL:                      // MAV ID: 205
