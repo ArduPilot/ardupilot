@@ -84,18 +84,21 @@ void AC_PID::filt_hz(float hz)
 //  this should be called before any other calls to get_p, get_i or get_d
 void AC_PID::set_input_filter_all(float input)
 {
-    // reset input filter to value received
-    if (_flags._reset_filter) {
-        _flags._reset_filter = false;
-        _input = input;
-        _derivative = 0.0f;
-    }
+    // don't pass in inf or NaN
+    if (isfinite(input)){
+        // reset input filter to value received
+        if (_flags._reset_filter) {
+            _flags._reset_filter = false;
+            _input = input;
+            _derivative = 0.0f;
+        }
 
-    // update filter and calculate derivative
-    float input_filt_change = _filt_alpha * (input - _input);
-    _input = _input + input_filt_change;
-    if (_dt > 0.0f) {
-        _derivative = input_filt_change / _dt;
+        // update filter and calculate derivative
+        float input_filt_change = _filt_alpha * (input - _input);
+        _input = _input + input_filt_change;
+        if (_dt > 0.0f) {
+            _derivative = input_filt_change / _dt;
+        }
     }
 }
 
