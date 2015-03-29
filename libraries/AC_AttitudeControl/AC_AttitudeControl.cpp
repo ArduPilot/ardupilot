@@ -6,23 +6,7 @@
 // table of user settable parameters
 const AP_Param::GroupInfo AC_AttitudeControl::var_info[] PROGMEM = {
 
-    // @Param: RATE_RP_MAX
-    // @DisplayName: Angle Rate Roll-Pitch max
-    // @Description: maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
-    // @Units: Centi-Degrees/Sec
-    // @Range: 9000 36000
-    // @Increment: 500
-    // @User: Advanced
-    AP_GROUPINFO("RATE_RP_MAX", 0, AC_AttitudeControl, _angle_rate_rp_max, AC_ATTITUDE_CONTROL_RATE_RP_MAX_DEFAULT),
-
-    // @Param: RATE_Y_MAX
-    // @DisplayName: Angle Rate Yaw max
-    // @Description: maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
-    // @Units: Centi-Degrees/Sec
-    // @Range: 4500 18000
-    // @Increment: 500
-    // @User: Advanced
-    AP_GROUPINFO("RATE_Y_MAX",  1, AC_AttitudeControl, _angle_rate_y_max, AC_ATTITUDE_CONTROL_RATE_Y_MAX_DEFAULT),
+    // 0, 1 were RATE_RP_MAX, RATE_Y_MAX
 
     // @Param: SLEW_YAW
     // @DisplayName: Yaw target slew rate
@@ -543,25 +527,29 @@ void AC_AttitudeControl::integrate_bf_rate_error_to_angle_errors()
 //   results in centi-degrees/sec put into _rate_bf_target
 void AC_AttitudeControl::update_rate_bf_targets()
 {
+
     // stab roll calculation
-    _rate_bf_target.x = _p_angle_roll.kP() * _angle_bf_error.x;
     // constrain roll rate request
     if (_flags.limit_angle_to_rate_request) {
-        _rate_bf_target.x = constrain_float(_rate_bf_target.x,-_angle_rate_rp_max,_angle_rate_rp_max);
+        _rate_bf_target.x = sqrt_controller(_angle_bf_error.x, _p_angle_roll.kP(), constrain_float(_accel_roll_max/2.0f,  AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX));
+    }else{
+        _rate_bf_target.x = _p_angle_roll.kP() * _angle_bf_error.x;
     }
 
     // stab pitch calculation
-    _rate_bf_target.y = _p_angle_pitch.kP() * _angle_bf_error.y;
     // constrain pitch rate request
     if (_flags.limit_angle_to_rate_request) {
-        _rate_bf_target.y = constrain_float(_rate_bf_target.y,-_angle_rate_rp_max,_angle_rate_rp_max);
+        _rate_bf_target.y = sqrt_controller(_angle_bf_error.y, _p_angle_pitch.kP(), constrain_float(_accel_pitch_max/2.0f,  AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX));
+    }else{
+        _rate_bf_target.y = _p_angle_pitch.kP() * _angle_bf_error.y;
     }
 
     // stab yaw calculation
-    _rate_bf_target.z = _p_angle_yaw.kP() * _angle_bf_error.z;
     // constrain yaw rate request
     if (_flags.limit_angle_to_rate_request) {
-        _rate_bf_target.z = constrain_float(_rate_bf_target.z,-_angle_rate_y_max,_angle_rate_y_max);
+        _rate_bf_target.z = sqrt_controller(_angle_bf_error.z, _p_angle_yaw.kP(), constrain_float(_accel_yaw_max/2.0f,  AC_ATTITUDE_ACCEL_Y_CONTROLLER_MIN, AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX));
+    }else{
+        _rate_bf_target.z = _p_angle_yaw.kP() * _angle_bf_error.z;
     }
 
 	_rate_bf_target.x += _angle_bf_error.y * _ahrs.get_gyro().z;
