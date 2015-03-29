@@ -113,6 +113,27 @@ public:
         float yaw;              // yaw angle (relative to vehicle heading) in degrees
     };
 
+    // digicam control command structure
+    struct PACKED Digicam_Configure {
+        uint8_t shooting_mode;  // ProgramAuto = 1, AV = 2, TV = 3, Man=4, IntelligentAuto=5, SuperiorAuto=6
+        uint16_t shutter_speed;
+        uint8_t aperture;       // F stop number * 10
+        uint16_t ISO;           // 80, 100, 200, etc
+        uint8_t exposure_type;
+        uint8_t cmd_id;
+        float engine_cutoff_time;   // seconds
+    };
+
+    // digicam control command structure
+    struct PACKED Digicam_Control {
+        uint8_t session;        // 1 = on, 0 = off
+        uint8_t zoom_pos;
+        uint8_t zoom_step;
+        uint8_t focus_lock;
+        uint8_t shooting_cmd;
+        uint8_t cmd_id;
+    };
+
     // set cam trigger distance command structure
     struct PACKED Cam_Trigg_Distance {
         float meters;           // distance
@@ -162,6 +183,12 @@ public:
 
         // mount control
         Mount_Control mount_control;
+
+        // camera configure
+        Digicam_Configure digicam_configure;
+
+        // camera control
+        Digicam_Control digicam_control;
 
         // cam trigg distance
         Cam_Trigg_Distance cam_trigg_dist;
