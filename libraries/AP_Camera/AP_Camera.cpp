@@ -74,8 +74,9 @@ AP_Camera::relay_pic()
 }
 
 /// single entry point to take pictures
+///  set send_mavlink_msg to true to send DO_DIGICAM_CONTROL message to all components
 void
-AP_Camera::trigger_pic()
+AP_Camera::trigger_pic(bool send_mavlink_msg)
 {
     _image_index++;
     switch (_trigger_type)
@@ -86,6 +87,20 @@ AP_Camera::trigger_pic()
     case AP_CAMERA_TRIGGER_TYPE_RELAY:
         relay_pic();                    // basic relay activation
         break;
+    }
+
+    if (send_mavlink_msg) {
+        // create command long mavlink message
+        mavlink_command_long_t cmd_msg;
+        memset(&cmd_msg, 0, sizeof(cmd_msg));
+        cmd_msg.command = MAV_CMD_DO_DIGICAM_CONTROL;
+
+        // create message
+        mavlink_message_t msg;
+        mavlink_msg_command_long_encode(0, 0, &msg, &cmd_msg);
+
+        // forward to all components
+        GCS_MAVLINK::send_to_components(&msg);
     }
 }
 
@@ -150,7 +165,7 @@ AP_Camera::control_msg(mavlink_message_t* msg)
      */
     if (packet.shot)
     {
-        trigger_pic();
+        trigger_pic(false);
     }
 }
 
