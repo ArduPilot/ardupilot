@@ -127,21 +127,8 @@ AP_Camera::trigger_pic_cleanup()
 void
 AP_Camera::configure_msg(mavlink_message_t* msg)
 {
-    __mavlink_digicam_configure_t packet;
-    mavlink_msg_digicam_configure_decode(msg, &packet);
-    // This values may or not be used by APM
-    // They are bypassed as "echo" to a external specialized board
-    /*
-     *  packet.aperture
-     *  packet.command_id
-     *  packet.engine_cut_off
-     *  packet.exposure_type
-     *  packet.extra_param
-     *  packet.extra_value
-     *  packet.iso
-     *  packet.mode
-     *  packet.shutter_speed
-     */
+    // this message is not used directly but instead forwarded to components
+    GCS_MAVLINK::send_to_components(msg);
 }
 
 /// decode MavLink that controls camera
@@ -167,8 +154,40 @@ AP_Camera::control_msg(mavlink_message_t* msg)
     {
         trigger_pic(false);
     }
+
+    // forward to all components
+    GCS_MAVLINK::send_to_components(msg);
 }
 
+// Mission command processing
+void AP_Camera::configure_cmd(AP_Mission::Mission_Command& cmd)
+{
+    mavlink_mission_item_t mav_cmd = {};
+
+    // convert command to mavlink message
+    if (AP_Mission::mission_cmd_to_mavlink(cmd, mav_cmd)) {
+        // convert mission item to mavlink message
+        // convert mission item to mavlink message
+        mavlink_message_t msg;
+        mavlink_msg_mission_item_encode(0, 0, &msg, &mav_cmd);
+        // send to all components
+        GCS_MAVLINK::send_to_components(&msg);
+    }
+}
+
+void AP_Camera::control_cmd(AP_Mission::Mission_Command& cmd)
+{
+    mavlink_mission_item_t mav_cmd = {};
+
+    // convert command to mavlink mission item
+    if (AP_Mission::mission_cmd_to_mavlink(cmd, mav_cmd)) {
+        // convert mission item to mavlink message
+        mavlink_message_t msg;
+        mavlink_msg_mission_item_encode(0, 0, &msg, &mav_cmd);
+        // send to all components
+        GCS_MAVLINK::send_to_components(&msg);
+    }
+}
 
 /*
   Send camera feedback to the GCS
