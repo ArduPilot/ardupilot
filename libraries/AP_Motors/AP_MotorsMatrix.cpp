@@ -118,10 +118,26 @@ uint16_t AP_MotorsMatrix::get_motor_mask()
     return mask;
 }
 
+void AP_MotorsMatrix::set_throttle(float throttle_in) {
+    static uint32_t last_call=0;
+    uint32_t tnow = hal.scheduler->micros();
+
+    if (_throttle_filter == 0.0f) {
+        _throttle_out = throttle_in;
+    } else {
+        float dt = (tnow-last_call)*1.0e-6f;
+        float alpha = constrain_float(dt/(dt+(1.0f/(2.0f*M_PI_F*_throttle_filter))),0.0f,1.0f);
+        _throttle_out += (throttle_in-_throttle_out)*alpha;
+    }
+
+    last_call = tnow;
+}
+
 void AP_MotorsMatrix::output_warning_spin()
 {
     // reset throttle output to 0
     _rc_throttle.servo_out = 0;
+    _throttle_out = 0.0f;
 
     // Every thing is limited
     limit.roll_pitch = true;
@@ -172,16 +188,15 @@ void AP_MotorsMatrix::output_armed()
     limit.throttle_lower = false;
     limit.throttle_upper = false;
 
-    // Throttle is 0 to 1000 only
-    // To-Do: we should not really be limiting this here because we don't "own" this _rc_throttle object
-    if (_rc_throttle.servo_out <= 0) {
-        _rc_throttle.servo_out = 0;
+    if (_throttle_out <= _min_throttle) {  // perhaps being at min throttle itself is not a problem, only being under is
         limit.throttle_lower = true;
     }
-    if (_rc_throttle.servo_out >= _max_throttle) {
-        _rc_throttle.servo_out = _max_throttle;
+
+    if (_throttle_out >= _max_throttle) {
         limit.throttle_upper = true;
     }
+
+    _rc_throttle.servo_out = constrain_float(_throttle_out,_min_throttle,_max_throttle);
 
     // capture desired roll, pitch, yaw and throttle from receiver
     _rc_roll.calc_pwm();
@@ -193,13 +208,6 @@ void AP_MotorsMatrix::output_armed()
     if (!_stabilize) {
         output_warning_spin();
         return;
-    }
-
-    // check if throttle is below limit
-    if (_rc_throttle.servo_out <= _min_throttle) {  // perhaps being at min throttle itself is not a problem, only being under is
-        limit.throttle_lower = true;
-        _rc_throttle.servo_out = _min_throttle;
-        _rc_throttle.calc_pwm();    // recalculate radio.out
     }
 
     // calculate roll and pitch for each motor

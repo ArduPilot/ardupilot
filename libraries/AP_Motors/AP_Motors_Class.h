@@ -121,7 +121,7 @@ public:
     void                set_roll(int16_t roll_in) { _rc_roll.servo_out = roll_in; };                    // range -4500 ~ 4500
     void                set_pitch(int16_t pitch_in) { _rc_pitch.servo_out = pitch_in; };                // range -4500 ~ 4500
     void                set_yaw(int16_t yaw_in) { _rc_yaw.servo_out = yaw_in; };                        // range -4500 ~ 4500
-    void                set_throttle(int16_t throttle_in) { _rc_throttle.servo_out = throttle_in; };    // range 0 ~ 1000
+    virtual void        set_throttle(float throttle_in) { _rc_throttle.servo_out = constrain_float(throttle_in,-32000,32000); };    // range 0 ~ 1000
     void                set_stabilize(bool stabilize) { _stabilize = stabilize; }
 
     // accessors for roll, pitch, yaw and throttle inputs to motors
@@ -243,6 +243,7 @@ protected:
     AP_Float            _batt_voltage_max;      // maximum voltage used to scale lift
     AP_Float            _batt_voltage_min;      // minimum voltage used to scale lift
     AP_Float            _batt_current_max;      // current over which maximum throttle is limited
+    AP_Float            _throttle_filter;       // throttle output filter time constant in hz
 
     // internal variables
     RC_Channel&         _rc_roll;               // roll input in from users is held in servo_out
