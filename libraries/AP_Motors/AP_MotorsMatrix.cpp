@@ -190,7 +190,7 @@ void AP_MotorsMatrix::output_armed()
     _rc_yaw.calc_pwm();
 
     // if we are not sending a throttle output, we cut the motors
-    if (_rc_throttle.servo_out == 0) {
+    if (!_stabilize) {
         output_warning_spin();
         return;
     }

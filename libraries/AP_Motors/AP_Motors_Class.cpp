@@ -117,7 +117,8 @@ AP_Motors::AP_Motors(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_t
     _batt_resistance(0.0f),
     _batt_timer(0),
     _lift_max(1.0f),
-    _throttle_limit(1.0f)
+    _throttle_limit(1.0f),
+    _stabilize(false)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
