@@ -726,6 +726,7 @@ void AC_AttitudeControl::set_throttle_out(float throttle_in, bool apply_angle_bo
     _motors.set_throttle(throttle_out);
 }
 
+// set_throttle_zero - outputs a warning spin at MOT_SPIN_ARMED
 void AC_AttitudeControl::set_throttle_zero()
 {
     _angle_boost = 0.0f;
@@ -733,7 +734,9 @@ void AC_AttitudeControl::set_throttle_zero()
     _motors.set_throttle(0.0f);
 }
 
-// outputs a throttle to all motors evenly with no stabilization
+// set_throttle_out_pre_takeoff - resets integrators, yaw and rate targets
+// outputs a warning spin at the specified throttle
+// calling with zero throttle means MOT_SPIN_ARMED
 void AC_AttitudeControl::set_throttle_out_pre_takeoff(float throttle_in)
 {
     relax_bf_rate_controller();
