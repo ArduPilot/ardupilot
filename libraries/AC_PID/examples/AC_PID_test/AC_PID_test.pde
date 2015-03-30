@@ -5,13 +5,20 @@
 
 #include <AP_Common.h>
 #include <AP_Progmem.h>
+#include <GCS_MAVLink.h>
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
+#include <AP_HAL_AVR_SITL.h>
+#include <AP_HAL_Linux.h>
+#include <AP_HAL_FLYMAPLE.h>
+#include <AP_HAL_PX4.h>
+#include <AP_HAL_Empty.h>
 #include <AP_Math.h>
 #include <AP_Param.h>
 #include <StorageManager.h>
 #include <AC_PID.h>
 #include <AC_HELI_PID.h>
+#include <AP_Scheduler.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
@@ -20,6 +27,8 @@ const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 #define TEST_I 0.01
 #define TEST_D 0.2
 #define TEST_IMAX 10
+#define TEST_FILTER 5.0
+#define TEST_DT 0.01
 
 // setup function
 void setup()
@@ -33,8 +42,8 @@ void setup()
 void loop()
 {
     // setup (unfortunately must be done here as we cannot create a global AC_PID object)
-    AC_PID pid(TEST_P, TEST_I, TEST_D, TEST_IMAX * 100);
-    AC_HELI_PID heli_pid(TEST_P, TEST_I, TEST_D, TEST_IMAX * 100);
+    AC_PID pid(TEST_P, TEST_I, TEST_D, TEST_IMAX * 100, TEST_FILTER, TEST_DT);
+    AC_HELI_PID heli_pid(TEST_P, TEST_I, TEST_D, TEST_IMAX * 100, TEST_FILTER, TEST_DT);
     uint16_t radio_in;
     uint16_t radio_trim;
     int16_t error;
@@ -50,9 +59,10 @@ void loop()
     while( true ) {
         radio_in = hal.rcin->read(0);
         error = radio_in - radio_trim;
-        control_P = pid.get_p(error);
-        control_I = pid.get_i(error, dt);
-        control_D = pid.get_d(error, dt);
+        pid.set_input_filter_all(error);
+        control_P = pid.get_p();
+        control_I = pid.get_i();
+        control_D = pid.get_d();
 
         // display pid results
         hal.console->printf("radio: %d\t err: %d\t pid:%4.2f (p:%4.2f i:%4.2f d:%4.2f)\n",
