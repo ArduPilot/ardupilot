@@ -178,6 +178,9 @@ public:
 
      void set_throttle_zero();
 
+     // outputs a throttle to all motors evenly with no stabilization
+     void set_throttle_out_pre_takeoff(float throttle_in);
+
      // angle_boost - accessor for angle boost so it can be logged
      int16_t angle_boost() const { return _angle_boost; }
 

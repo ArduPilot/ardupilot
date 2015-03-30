@@ -723,6 +723,18 @@ void AC_AttitudeControl::set_throttle_zero() {
     _motors.set_stabilize(false);
 }
 
+// outputs a throttle to all motors evenly with no stabilization
+void AC_AttitudeControl::set_throttle_out_pre_takeoff(float throttle_in)
+{
+    relax_bf_rate_controller();
+    set_yaw_target_to_current_heading();
+    if (throttle_in == 0.0f) {
+        set_throttle_zero();
+    } else {
+        set_throttle_out(throttle_in, false);
+    }
+}
+
 // get_angle_boost - returns a throttle including compensation for roll/pitch angle
 // throttle value should be 0 ~ 1000
 float AC_AttitudeControl::get_angle_boost(float throttle_pwm)
