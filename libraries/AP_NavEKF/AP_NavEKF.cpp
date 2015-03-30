@@ -934,7 +934,7 @@ void NavEKF::SelectFlowFusion()
     // Check if the optical flow data is still valid
     flowDataValid = ((imuSampleTime_ms - flowValidMeaTime_ms) < 1000);
     // Check if the fusion has timed out (flow measurements have been rejected for too long)
-    bool flowFusionTimeout = ((imuSampleTime_ms - prevFlowUseTime_ms) > 5000);
+    bool flowFusionTimeout = ((imuSampleTime_ms - prevFlowFuseTime_ms) > 5000);
     // check is the terrain offset estimate is still valid
     gndOffsetValid = ((imuSampleTime_ms - gndHgtValidTime_ms) < 5000);
     // Perform tilt check
@@ -1002,8 +1002,6 @@ void NavEKF::SelectFlowFusion()
         newDataFlow = false;
         // indicate that flow fusion has been performed. This is used for load spreading.
         flowFusePerformed = true;
-        // update the time stamp
-        prevFlowUseTime_ms = imuSampleTime_ms;
     }
 
     // Apply corrections to quaternion, position and velocity states across several time steps to reduce 10Hz pulsing in the output
@@ -4385,7 +4383,6 @@ void NavEKF::InitialiseVariables()
     timeAtLastAuxEKF_ms = imuSampleTime_ms;
     flowValidMeaTime_ms = imuSampleTime_ms;
     flowMeaTime_ms = 0;
-    prevFlowUseTime_ms = imuSampleTime_ms;
     prevFlowFuseTime_ms = imuSampleTime_ms;
     gndHgtValidTime_ms = 0;
     ekfStartTime_ms = imuSampleTime_ms;

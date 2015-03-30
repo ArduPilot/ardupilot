@@ -672,7 +672,6 @@ private:
     float innovRng;                 // range finder observation innovation (m)
     float rngMea;                   // range finder measurement (m)
     bool inhibitGndState;           // true when the terrain position state is to remain constant
-    uint32_t prevFlowUseTime_ms;    // time the last flow measurement scheduled for fusion (doesn't mean it passed the innovatio consistency checks)
     uint32_t prevFlowFuseTime_ms;   // time both flow measurement components passed their innovation consistency checks
     Vector2 flowTestRatio;         // square of optical flow innovations divided by fail threshold used by main filter where >1.0 is a fail
     float auxFlowTestRatio;         // sum of squares of optical flow innovation divided by fail threshold used by 1-state terrain offset estimator
