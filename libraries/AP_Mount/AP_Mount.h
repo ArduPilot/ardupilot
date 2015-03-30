@@ -65,6 +65,13 @@ public:
         Mount_Type_SToRM32 = 4          /// SToRM32 mount
     };
 
+    struct gimbal_params {
+        AP_Vector3f     delta_angles_offsets;
+        AP_Vector3f     delta_velocity_offsets;
+        AP_Vector3f     joint_angles_offsets;
+        AP_Float        K_gimbalRate;
+    };
+
     // Constructor
     AP_Mount(const AP_AHRS_TYPE &ahrs, const struct Location &current_loc);
 
@@ -168,6 +175,9 @@ protected:
 
         MAV_MOUNT_MODE  _mode;              // current mode (see MAV_MOUNT_MODE enum)
         struct Location _roi_target;        // roi target location
+
+        struct gimbal_params _gimbalParams;
+        
     } state[AP_MOUNT_MAX_INSTANCES];
 };
 
