@@ -6,13 +6,11 @@
 #include <GCS.h>
 #include <AP_SmallEKF.h>
 
-static float K_gimbalRate = 5.0f;
-
 void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
 {
     decode_feedback(msg);
     update_state();
-    if (_ekf.getStatus() && !isCopterFliped()){
+    if (_ekf.getStatus() && !isCopterFliped() && _gimbalParams.K_gimbalRate!=0.0f){
         send_control(chan);
     }
 
@@ -44,7 +42,9 @@ void AP_Gimbal::decode_feedback(mavlink_message_t *msg)
     _measurament.joint_angles.z = report_msg.joint_az;
 
     //apply joint angle compensation
-    _measurament.joint_angles -= _joint_offsets;
+    _measurament.joint_angles -= _gimbalParams.joint_angles_offsets;
+    _measurament.delta_velocity -= _gimbalParams.delta_velocity_offsets;
+    _measurament.delta_angles -= _gimbalParams.delta_angles_offsets;
 }
 
 void AP_Gimbal::update_state()
@@ -74,14 +74,14 @@ Vector3f AP_Gimbal::getGimbalRateDemVecYaw(Quaternion quatEst)
 
         // multiply the yaw joint angle by a gain to calculate a demanded vehicle frame relative rate vector required to keep the yaw joint centred
         Vector3f gimbalRateDemVecYaw;
-        gimbalRateDemVecYaw.z = - K_gimbalRate * _measurament.joint_angles.z;
+        gimbalRateDemVecYaw.z = - _gimbalParams.K_gimbalRate * _measurament.joint_angles.z;
 
         // Get filtered vehicle turn rate in earth frame
         vehicleYawRateFilt = (1.0f - yawRateFiltPole * _measurament.delta_time) * vehicleYawRateFilt + yawRateFiltPole * _measurament.delta_time * _ahrs.get_yaw_rate_earth();
         Vector3f vehicle_rate_ef(0,0,vehicleYawRateFilt);
 
          // calculate the maximum steady state rate error corresponding to the maximum permitted yaw angle error
-        float maxRate = K_gimbalRate * yawErrorLimit;
+        float maxRate = _gimbalParams.K_gimbalRate * yawErrorLimit;
         float vehicle_rate_mag_ef = vehicle_rate_ef.length();
         float excess_rate_correction = fabs(vehicle_rate_mag_ef) - maxRate; 
         if (vehicle_rate_mag_ef > maxRate) {
@@ -126,7 +126,7 @@ Vector3f AP_Gimbal::getGimbalRateDemVecTilt(Quaternion quatEst)
         deltaAngErr.z = scaler * quatErr[3];
 
         // multiply the angle error vector by a gain to calculate a demanded gimbal rate required to control tilt
-        Vector3f gimbalRateDemVecTilt = deltaAngErr * K_gimbalRate;
+        Vector3f gimbalRateDemVecTilt = deltaAngErr * _gimbalParams.K_gimbalRate;
         return gimbalRateDemVecTilt;
 }
 
@@ -155,12 +155,6 @@ void AP_Gimbal::send_control(mavlink_channel_t chan)
 {
     mavlink_msg_gimbal_control_send(chan,_sysid, _compid, 
         gimbalRateDemVec.x, gimbalRateDemVec.y, gimbalRateDemVec.z);
-}
-
-
-void AP_Gimbal::update_failsafe(uint8_t failsafe)
-{
-    _failsafe = failsafe;
 }
 
 void AP_Gimbal::update_target(Vector3f newTarget)

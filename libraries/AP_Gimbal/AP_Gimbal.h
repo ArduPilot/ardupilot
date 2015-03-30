@@ -21,28 +21,26 @@
 #include <GCS_MAVLink.h>
 #include <AP_SmallEKF.h>
 #include <AP_NavEKF.h>
+#include <AP_Mount.h>
 
 
 class AP_Gimbal
 {
 public:
     //Constructor
-    AP_Gimbal(const AP_AHRS_NavEKF &ahrs, uint8_t sysid, uint8_t compid) :
+    AP_Gimbal(const AP_AHRS_NavEKF &ahrs, uint8_t sysid, uint8_t compid, const AP_Mount::gimbal_params &gimbalParams) :
         _ekf(ahrs),
         _ahrs(ahrs),
-        K_gimbalRate(5.0f),
-        _joint_offsets(0.0f,0.0f,0.0f),
         vehicleYawRateFilt(0.0f),
         yawRateFiltPole(10.0f),
         yawErrorLimit(0.1f),
-        _failsafe(true)
+        _gimbalParams(gimbalParams)
     {
         _sysid = sysid;
         _compid = compid;
     }
 
     void    update_target(Vector3f newTarget);
-    void    update_failsafe(uint8_t failsafe);
     void    receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg);
 
     struct Measurament {
@@ -58,11 +56,7 @@ public:
     Vector3f    _angle_ef_target_rad;   // desired earth-frame roll, tilt and pan angles in radians    
 
 private:  
-    // K gain for the pointing loop
-    float const K_gimbalRate;
-
-    // These are corrections (in radians) applied to the to the gimbal joint (x,y,z = roll,pitch,yaw) measurements
-    Vector3f const _joint_offsets;
+    const AP_Mount::gimbal_params &_gimbalParams;
 
     // filtered yaw rate from the vehicle
     float vehicleYawRateFilt;
@@ -76,9 +70,6 @@ private:
     // amount of yaw angle that we permit the gimbal to lag the vehicle when operating in slave mode
     // reducing this makes the gimbal respond more to vehicle yaw disturbances
     float const yawErrorLimit;   
-   
-    // status of the RC signal
-    uint8_t _failsafe;   
 
     uint8_t _sysid;                     
     uint8_t _compid;    
