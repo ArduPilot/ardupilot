@@ -118,6 +118,35 @@ uint16_t AP_MotorsMatrix::get_motor_mask()
     return mask;
 }
 
+void AP_MotorsMatrix::output_warning_spin()
+{
+    // reset throttle output to 0
+    _rc_throttle.servo_out = 0;
+
+    // Every thing is limited
+    limit.roll_pitch = true;
+    limit.yaw = true;
+    limit.throttle_lower = true;
+    limit.throttle_upper = false;
+
+    // range check spin_when_armed
+    if (_spin_when_armed_ramped < 0) {
+        _spin_when_armed_ramped = 0;
+    }
+
+    if (_spin_when_armed_ramped > _min_throttle) {
+        _spin_when_armed_ramped = _min_throttle;
+    }
+
+    int16_t warn_thr = _rc_throttle.radio_min + _spin_when_armed_ramped;
+    for (uint8_t i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+        // spin motors at minimum
+        if (motor_enabled[i]) {
+            hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[i]), warn_thr);
+        }
+    }
+}
+
 // output_armed - sends commands to the motors
 // includes new scaling stability patch
 void AP_MotorsMatrix::output_armed()
@@ -162,24 +191,7 @@ void AP_MotorsMatrix::output_armed()
 
     // if we are not sending a throttle output, we cut the motors
     if (_rc_throttle.servo_out == 0) {
-        // range check spin_when_armed
-        if (_spin_when_armed_ramped < 0) {
-             _spin_when_armed_ramped = 0;
-        }
-        if (_spin_when_armed_ramped > _min_throttle) {
-            _spin_when_armed_ramped = _min_throttle;
-        }
-        for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
-            // spin motors at minimum
-            if (motor_enabled[i]) {
-                motor_out[i] = _rc_throttle.radio_min + _spin_when_armed_ramped;
-            }
-        }
-
-        // Every thing is limited
-        limit.roll_pitch = true;
-        limit.yaw = true;
-
+        output_warning_spin();
     } else {
 
         // check if throttle is below limit
