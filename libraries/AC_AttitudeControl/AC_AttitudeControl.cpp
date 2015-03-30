@@ -704,23 +704,33 @@ void AC_AttitudeControl::accel_limiting(bool enable_limits)
 // throttle functions
 //
 
- // set_throttle_out - to be called by upper throttle controllers when they wish to provide throttle output directly to motors
- // provide 0 to cut motors
-void AC_AttitudeControl::set_throttle_out(float throttle_out, bool apply_angle_boost)
+// set_throttle_out - to be called by upper throttle controllers when they wish to provide throttle output directly to motors
+// provide 0 to cut motors
+void AC_AttitudeControl::set_throttle_out(float throttle_in, bool apply_angle_boost)
 {
+    float throttle_out = throttle_in;
     if (apply_angle_boost) {
-        _motors.set_stabilize(true);
-        _motors.set_throttle(get_angle_boost(throttle_out));
-    }else{
-        _motors.set_stabilize(true);
-        _motors.set_throttle(throttle_out);
-        // clear angle_boost for logging purposes
-        _angle_boost = 0;
+        // inverted_factor is 1 for tilt angles below 60 degrees
+        // reduces as a function of angle beyond 60 degrees
+        // becomes zero at 90 degrees
+        float min_throttle = _motors.throttle_min();
+        float cos_tilt = _ahrs.cos_pitch() * _ahrs.cos_roll();
+        float inverted_factor = constrain_float(2.0f*cos_tilt, 0.0f, 1.0f);
+        float boost_factor = 1.0f/constrain_float(cos_tilt, 0.5f, 1.0f);
+
+        throttle_out = (throttle_in-min_throttle)*inverted_factor*boost_factor + min_throttle;
     }
+    _angle_boost = throttle_out - throttle_in;
+
+    _motors.set_stabilize(true);
+    _motors.set_throttle(throttle_out);
 }
 
-void AC_AttitudeControl::set_throttle_zero() {
+void AC_AttitudeControl::set_throttle_zero()
+{
+    _angle_boost = 0.0f;
     _motors.set_stabilize(false);
+    _motors.set_throttle(0.0f);
 }
 
 // outputs a throttle to all motors evenly with no stabilization
@@ -733,28 +743,6 @@ void AC_AttitudeControl::set_throttle_out_pre_takeoff(float throttle_in)
     } else {
         set_throttle_out(throttle_in, false);
     }
-}
-
-// get_angle_boost - returns a throttle including compensation for roll/pitch angle
-// throttle value should be 0 ~ 1000
-float AC_AttitudeControl::get_angle_boost(float throttle_pwm)
-{
-    float temp = _ahrs.cos_pitch() * _ahrs.cos_roll();
-    float throttle_out;
-
-    temp = constrain_float(temp, 0.5f, 1.0f);
-
-    // reduce throttle if we go inverted
-    temp = constrain_float(9000-max(labs(_ahrs.roll_sensor),labs(_ahrs.pitch_sensor)), 0, 3000) / (3000 * temp);
-
-    // apply scale and constrain throttle
-    // To-Do: move throttle_min and throttle_max into the AP_Vehicles class?
-    throttle_out = constrain_float((float)(throttle_pwm-_motors.throttle_min()) * temp + _motors.throttle_min(), _motors.throttle_min(), 1000);
-
-    // record angle boost for logging
-    _angle_boost = throttle_out - throttle_pwm;
-
-    return throttle_out;
 }
 
 // sqrt_controller - response based on the sqrt of the error instead of the more common linear response

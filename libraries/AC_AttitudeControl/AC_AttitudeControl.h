@@ -181,8 +181,8 @@ public:
      // outputs a throttle to all motors evenly with no stabilization
      void set_throttle_out_pre_takeoff(float throttle_in);
 
-     // angle_boost - accessor for angle boost so it can be logged
-     int16_t angle_boost() const { return _angle_boost; }
+    // angle_boost - accessor for angle boost so it can be logged
+    int16_t angle_boost() const { return _angle_boost; }
 
     //
     // helper functions
@@ -230,13 +230,6 @@ protected:
     float rate_bf_to_motor_roll(float rate_target_cds);
     float rate_bf_to_motor_pitch(float rate_target_cds);
     virtual float rate_bf_to_motor_yaw(float rate_target_cds);
-
-    //
-    // throttle methods
-    //
-
-    // get_angle_boost - calculate total body frame throttle required to produce the given earth frame throttle
-    virtual float get_angle_boost(float throttle_pwm);
 
     // references to external libraries
     const AP_AHRS&      _ahrs;
