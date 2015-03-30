@@ -9,6 +9,7 @@
 #include <AP_Param.h>
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
+#include <AP_HAL_AVR_SITL.h>
 #include <AP_HAL_PX4.h>
 #include <AP_HAL_Linux.h>
 #include <AP_HAL_Empty.h>
@@ -35,6 +36,9 @@
 #include <AP_Terrain.h>
 #include <AP_NavEKF.h>
 #include <AP_BattMonitor.h>
+#include <AP_Rally.h>
+#include <AP_OpticalFlow.h>
+#include <SITL.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
