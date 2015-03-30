@@ -99,7 +99,7 @@ const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
     // @Range: 0 5
     // @Units: Hz
     // @User: Advanced
-    AP_GROUPINFO("THR_FILT", 13, AP_Motors, _throttle_filter, 2.0f),
+    AP_GROUPINFO("THR_FILT", 13, AP_Motors, _throttle_filter, 0.0f),
 
     AP_GROUPEND
 };
