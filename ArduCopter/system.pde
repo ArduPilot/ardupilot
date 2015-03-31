@@ -141,7 +141,7 @@ static void init_ardupilot()
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // setup frsky
-    frsky_telemetry.init(serial_manager);
+    frsky_telemetry.init(serial_manager, g.serial2_protocol);
 #endif
 
     // identify ourselves correctly with the ground station
@@ -386,7 +386,20 @@ static void check_usb_mux(void)
 static void frsky_telemetry_send(void)
 {
 #if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry.send_frames((uint8_t)control_mode);
+    int8_t  alt_mode;
+    int16_t dcr = get_pilot_desired_climb_rate (g.rc_3.control_in);
+
+    if (dcr == 0) {
+        alt_mode = 0;   // Altitude hold
+    } else {
+    if (dcr > 0) {
+        alt_mode = 1;   // Climb
+        } else {
+        alt_mode = 2;   // Sink
+        }
+    }
+    frsky_telemetry.send_frames((uint8_t)control_mode, ap.simple_mode, current_loc.alt, alt_mode, climb_rate, g.rc_3.servo_out/10,
+                                (AP_Frsky_Telem::FrSkyProtocol)g.serial2_protocol.get());
 #endif
 }
 
