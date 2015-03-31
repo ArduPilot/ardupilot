@@ -57,6 +57,8 @@ AP_Arming::AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &comp
    , _compass(compass)
    , home_is_set(home_set)
    , gcs_send_text_P(gcs_print_func)
+   , last_accel_pass_ms(0)
+   , last_gyro_pass_ms(0)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -167,8 +169,12 @@ bool AP_Arming::ins_checks(bool report)
                 // get next accel vector
                 const Vector3f &accel_vec = ins.get_accel(i);
                 Vector3f vec_diff = accel_vec - prime_accel_vec;
-                // allow for up to 0.3 m/s/s difference
-                if (vec_diff.length() > 0.3f) {
+                // allow for up to 0.3 m/s/s difference. Has to pass
+                // in last 10 seconds
+                if (vec_diff.length() <= 0.3f) {
+                    last_accel_pass_ms = hal.scheduler->millis();
+                }
+                if (hal.scheduler->millis() - last_accel_pass_ms > 10000) {
                     if (report) {
                         gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: inconsistent Accelerometers"));
                     }
@@ -184,8 +190,12 @@ bool AP_Arming::ins_checks(bool report)
                 // get next gyro vector
                 const Vector3f &gyro_vec = ins.get_gyro(i);
                 Vector3f vec_diff = gyro_vec - prime_gyro_vec;
-                // allow for up to 5 degrees/s difference
-                if (vec_diff.length() > radians(5)) {
+                // allow for up to 5 degrees/s difference. Pass if its
+                // been OK in last 10 seconds
+                if (vec_diff.length() <= radians(5)) {
+                    last_gyro_pass_ms = hal.scheduler->millis();
+                }
+                if (hal.scheduler->millis() - last_gyro_pass_ms > 10000) {
                     if (report) {
                         gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: inconsistent gyros"));
                     }
