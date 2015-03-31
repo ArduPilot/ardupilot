@@ -243,11 +243,6 @@
  # define PREARM_MAX_ALT_DISPARITY_CM       100     // barometer and inertial nav altitude must be within this many centimeters
 #endif
 
-// pre-arm check max velocity
-#ifndef PREARM_MAX_VELOCITY_CMS
- # define PREARM_MAX_VELOCITY_CMS           50.0f   // vehicle must be travelling under 50cm/s before arming
-#endif
-
 // arming check's maximum acceptable accelerometer vector difference (in m/s/s) between primary and backup accelerometers
 #ifndef PREARM_MAX_ACCEL_VECTOR_DIFF
   #define PREARM_MAX_ACCEL_VECTOR_DIFF      0.70f    // pre arm accel check will fail if primary and backup accelerometer vectors differ by 0.7m/s/s
