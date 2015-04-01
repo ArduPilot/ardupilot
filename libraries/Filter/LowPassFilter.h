@@ -107,7 +107,7 @@ template <class T>
 void LowPassFilter<T>::set_time_constant(float time_step, float time_constant)
 {
     // avoid divide by zero
-    if (time_constant + time_step <= 0.0f) {
+    if ((time_constant <= 0.0f) || (time_step <= 0.0f)) {
         _cutoff_hz = 0.0f;
         _alpha = 1.0f;
         return;
