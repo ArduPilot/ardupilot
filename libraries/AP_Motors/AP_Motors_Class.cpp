@@ -125,7 +125,7 @@ AP_Motors::AP_Motors(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_t
     _flags.slow_start_low_end = true;
 
     // setup battery voltage filtering
-    _batt_voltage_filt.set_cutoff_frequency(_loop_rate,AP_MOTORS_BATT_VOLT_FILT_HZ);
+    _batt_voltage_filt.set_cutoff_frequency(1.0f/_loop_rate,AP_MOTORS_BATT_VOLT_FILT_HZ);
     _batt_voltage_filt.reset(1.0f);
 };
 
