@@ -93,6 +93,14 @@ const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("CURR_MAX", 12, AP_Motors, _batt_current_max, AP_MOTORS_CURR_MAX_DEFAULT),
 
+    // @Param: THR_FILT
+    // @DisplayName: Throttle output filter
+    // @Description: Frequency cutoff (in hz) of throttle output filter
+    // @Range: 2 5
+    // @Units: Hz
+    // @User: Advanced
+    AP_GROUPINFO("THR_FILT", 13, AP_Motors, _throttle_filt_hz, 0.0f),
+
     AP_GROUPEND
 };
 
@@ -117,7 +125,9 @@ AP_Motors::AP_Motors(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_t
     _batt_resistance(0.0f),
     _batt_timer(0),
     _lift_max(1.0f),
-    _throttle_limit(1.0f)
+    _throttle_limit(1.0f),
+    _throttle_in(0.0f),
+    _throttle_filter()
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -127,6 +137,9 @@ AP_Motors::AP_Motors(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_t
     // setup battery voltage filtering
     _batt_voltage_filt.set_cutoff_frequency(1.0f/_loop_rate,AP_MOTORS_BATT_VOLT_FILT_HZ);
     _batt_voltage_filt.reset(1.0f);
+
+    _throttle_filter.set_cutoff_frequency(1.0f/_loop_rate,_throttle_filt_hz);
+    _throttle_filter.reset(0.0f);
 };
 
 void AP_Motors::armed(bool arm)
@@ -167,6 +180,9 @@ void AP_Motors::throttle_pass_through(int16_t pwm)
 // output - sends commands to the motors
 void AP_Motors::output()
 {
+    // update throttle filter
+    update_throttle_filter();
+
     // update max throttle
     update_max_throttle();
 
@@ -196,6 +212,23 @@ void AP_Motors::slow_start(bool true_false)
 
     // initialise maximum throttle to current throttle
     _max_throttle = constrain_int16(_rc_throttle.servo_out, 0, AP_MOTORS_DEFAULT_MAX_THROTTLE);
+}
+
+// update the throttle input filter
+void AP_Motors::update_throttle_filter()
+{
+    if (_throttle_filter.get_cutoff_frequency() != _throttle_filt_hz) {
+        _throttle_filter.set_cutoff_frequency(1.0f/_loop_rate,_throttle_filt_hz);
+    }
+
+    if (_flags.armed) {
+        _throttle_filter.apply(_throttle_in);
+    } else {
+        _throttle_filter.reset(0.0f);
+    }
+
+    // prevent _rc_throttle.servo_out from wrapping at int16 max or min
+    _rc_throttle.servo_out = constrain_float(_throttle_filter.get(),-32000,32000);
 }
 
 // update_max_throttle - updates the limits on _max_throttle if necessary taking into account slow_start_throttle flag

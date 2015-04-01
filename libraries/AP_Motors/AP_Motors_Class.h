@@ -121,7 +121,7 @@ public:
     void                set_roll(int16_t roll_in) { _rc_roll.servo_out = roll_in; };                    // range -4500 ~ 4500
     void                set_pitch(int16_t pitch_in) { _rc_pitch.servo_out = pitch_in; };                // range -4500 ~ 4500
     void                set_yaw(int16_t yaw_in) { _rc_yaw.servo_out = yaw_in; };                        // range -4500 ~ 4500
-    void                set_throttle(int16_t throttle_in) { _rc_throttle.servo_out = throttle_in; };    // range 0 ~ 1000
+    void                set_throttle(int16_t throttle_in) { _throttle_in = throttle_in; };    // range 0 ~ 1000
 
     // accessors for roll, pitch, yaw and throttle inputs to motors
     int16_t             get_roll() const { return _rc_roll.servo_out; }
@@ -198,6 +198,9 @@ protected:
     virtual void        output_armed()=0;
     virtual void        output_disarmed()=0;
 
+    // update the throttle input filter
+    void                update_throttle_filter();
+
     // update_max_throttle - updates the limits on _max_throttle for slow_start and current limiting flag
     void                update_max_throttle();
 
@@ -239,6 +242,7 @@ protected:
     AP_Float            _batt_voltage_max;      // maximum voltage used to scale lift
     AP_Float            _batt_voltage_min;      // minimum voltage used to scale lift
     AP_Float            _batt_current_max;      // current over which maximum throttle is limited
+    AP_Float            _throttle_filt_hz;       // throttle output filter time constant in hz
 
     // internal variables
     RC_Channel&         _rc_roll;               // roll input in from users is held in servo_out
@@ -264,5 +268,7 @@ protected:
     int16_t             _batt_timer;            // timer used in battery resistance calcs
     float               _lift_max;              // maximum lift ratio from battery voltage
     float               _throttle_limit;        // ratio of throttle limit between hover and maximum
+    float               _throttle_in;           // last throttle input from set_throttle caller
+    LowPassFilterFloat  _throttle_filter;       // throttle input filter
 };
 #endif  // __AP_MOTORS_CLASS_H__
