@@ -197,4 +197,6 @@ while True:
         time.sleep(last_wall_time+scaled_frame_time - now)
     last_wall_time = time.time()
 
-    a.time_advance(frame_time)
+    if frame_start == a.time_now:
+        # time has not been advanced by a.update()
+        a.time_advance(frame_time)
