@@ -198,8 +198,8 @@ public:
 protected:
 
     // output functions that should be overloaded by child classes
-    virtual void        output_armed() {};
-    virtual void        output_disarmed() {};
+    virtual void        output_armed()=0;
+    virtual void        output_disarmed()=0;
 
     // update_max_throttle - updates the limits on _max_throttle for slow_start and current limiting flag
     void                update_max_throttle();
