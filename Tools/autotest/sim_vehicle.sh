@@ -203,6 +203,10 @@ case $FRAME in
 	BUILD_TARGET="sitl-heli"
         EXTRA_SIM="$EXTRA_SIM --frame=heli"
 	;;
+    IrisRos)
+	BUILD_TARGET="sitl"
+        EXTRA_SIM="$EXTRA_SIM --frame=IrisRos"
+	;;
     elevon*)
         EXTRA_PARM="param set ELEVON_OUTPUT 4;"
         EXTRA_SIM="$EXTRA_SIM --elevon"

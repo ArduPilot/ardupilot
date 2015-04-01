@@ -2,6 +2,7 @@
 
 from multicopter import MultiCopter
 from helicopter import HeliCopter
+from iris_ros import IrisRos
 import util, time, os, sys, math
 import socket, struct
 import select, errno
@@ -137,6 +138,8 @@ fdm = fgFDM.fgFDM()
 # create the quadcopter model
 if opts.frame == 'heli':
     a = HeliCopter(frame=opts.frame)
+elif opts.frame == 'IrisRos':
+    a = IrisRos()
 else:    
     a = MultiCopter(frame=opts.frame)
 
