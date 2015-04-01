@@ -9,10 +9,12 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define SPIUART_DEBUG 1
-#if SPIUART_DEBUG
+#define SPIUART_DEBUG 0
+
 #include <cassert>
-#define debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
+
+#if SPIUART_DEBUG
+#define debug(fmt, args ...)  do {hal.console->printf("[SPIUARTDriver]: %s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #define error(fmt, args ...)  do {fprintf(stderr,"%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #else
 #define debug(fmt, args ...)  
@@ -86,7 +88,14 @@ void LinuxSPIUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
        _writebuf_tail = 0;
    }
 
-   _buffer = new uint8_t[rxS];
+   if (_buffer == NULL) {
+       /* Do not allocate new buffer, if we're just changing speed */
+       _buffer = new uint8_t[rxS];
+       if (_buffer == NULL) {
+           hal.console->printf("Not enough memory\n");
+           hal.scheduler->panic("Not enough memory\n");
+       }
+   }
 
    _spi = hal.spi->device(AP_HAL::SPIDevice_Ublox);
 
@@ -96,7 +105,27 @@ void LinuxSPIUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 
    _spi_sem = _spi->get_semaphore();
 
-   _spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_HIGH);
+   switch (b) {
+       case 4000000U:
+           if (is_initialized()) {
+               /* Do not allow speed changes before device is initialized, because
+                * it can lead to misconfiguraration. Once the device is initialized,
+                * it's sage to update speed
+                */
+               _spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_HIGH);
+               debug("Set higher SPI-frequency");
+           } else {
+               _spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_LOW);
+               debug("Set lower SPI-frequency");
+           }
+           break;
+       default:
+           _spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_LOW);
+           debug("Set lower SPI-frequency");
+           debug("%s: wrong baudrate (%u) for SPI-driven device. setting default speed", __func__, b);
+           break;
+   }
+   
    _initialised = true;
 }
 
