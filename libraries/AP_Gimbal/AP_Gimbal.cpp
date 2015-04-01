@@ -68,9 +68,21 @@ Vector3f AP_Gimbal::getGimbalRateDemVecYaw(Quaternion quatEst)
 {
         // Define rotation from vehicle to gimbal using a 312 rotation sequence
         Matrix3f Tvg;
-        Tvg.from_euler( _measurament.joint_angles.x,
-                        _measurament.joint_angles.y,  
-                        _measurament.joint_angles.z);
+        float cosPhi = cosf(_measurament.joint_angles.x);
+        float cosTheta = cosf(_measurament.joint_angles.y);
+        float sinPhi = sinf(_measurament.joint_angles.x);
+        float sinTheta = sinf(_measurament.joint_angles.y);
+        float sinPsi = sinf(_measurament.joint_angles.z);
+        float cosPsi = cosf(_measurament.joint_angles.z);
+        Tvg[0][0] = cosTheta*cosPsi-sinPsi*sinPhi*sinTheta;
+        Tvg[1][0] = -sinPsi*cosPhi;
+        Tvg[2][0] = cosPsi*sinTheta+cosTheta*sinPsi*sinPhi;
+        Tvg[0][1] = cosTheta*sinPsi+cosPsi*sinPhi*sinTheta;
+        Tvg[1][1] = cosPsi*cosPhi;
+        Tvg[2][1] = sinPsi*sinTheta-cosTheta*cosPsi*sinPhi;
+        Tvg[0][2] = -sinTheta*cosPhi;
+        Tvg[1][2] = sinPhi;
+        Tvg[2][2] = cosTheta*cosPhi;
 
         // multiply the yaw joint angle by a gain to calculate a demanded vehicle frame relative rate vector required to keep the yaw joint centred
         Vector3f gimbalRateDemVecYaw;
