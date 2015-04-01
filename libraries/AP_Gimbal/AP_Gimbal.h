@@ -43,6 +43,8 @@ public:
     void    update_target(Vector3f newTarget);
     void    receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg);
 
+    Vector3f getGimbalEstimateEF();
+
     struct Measurament {
         float delta_time;
         Vector3f delta_angles;
