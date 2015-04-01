@@ -221,7 +221,7 @@ static void check_usb_mux(void)
     // SERIAL0_BAUD, but when connected as a TTL serial port we run it
     // at SERIAL1_BAUD.
     if (usb_connected) {
-        serial_manager.set_console_baud(AP_SerialManager::SerialProtocol_Console);
+        serial_manager.set_console_baud(AP_SerialManager::SerialProtocol_Console, 0);
     } else {
         serial_manager.set_console_baud(AP_SerialManager::SerialProtocol_MAVLink, 0);
     }
