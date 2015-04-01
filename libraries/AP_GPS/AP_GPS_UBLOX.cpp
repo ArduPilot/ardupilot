@@ -23,6 +23,8 @@
 #include "AP_GPS_UBLOX.h"
 #include <DataFlash.h>
 
+#define UBLOX_VERSION_AUTODETECTION 1
+
 #define UBLOX_DEBUGGING 0
 #define UBLOX_FAKE_3DLOCK 0
 
@@ -108,6 +110,11 @@ AP_GPS_UBLOX::send_next_rate_update(void)
     case 6:
         // gather MON_HW2 at 0.5Hz
         _configure_message_rate(CLASS_MON, MSG_MON_HW2, 2); // 24+8 bytes
+        break;
+#endif
+#if UBLOX_VERSION_AUTODETECTION 
+    case 7:
+        _request_version();
         break;
 #endif
     default:
@@ -485,6 +492,31 @@ AP_GPS_UBLOX::_parse_gps(void)
         state.speed_accuracy = _buffer.velned.speed_accuracy*0.01f;
         _new_speed = true;
         break;
+#if UBLOX_VERSION_AUTODETECTION
+    case MSG_NAV_SVINFO:
+        {
+        Debug("MSG_NAV_SVINFO\n");
+        static const uint8_t HardwareGenerationMask = 0x07;
+        uint8_t hardware_generation = _buffer.svinfo_header.globalFlags & HardwareGenerationMask;
+        switch (hardware_generation) {
+            case UBLOX_5:
+            case UBLOX_6:
+                /*speed already configured */;
+                break;
+            case UBLOX_7:
+            case UBLOX_M8:
+                port->begin(4000000U);
+                Debug("Changed speed to 5Mhzfor SPI-driven UBlox\n");
+                break;
+            default:
+                hal.console->printf("Wrong Ublox' Hardware Version%u\n", hardware_generation);
+                break;
+        };
+        /* We don't need that anymore */
+        _configure_message_rate(CLASS_NAV, MSG_NAV_SVINFO, 0);
+        break;
+        }
+#endif
     default:
         Debug("Unexpected NAV message 0x%02x", (unsigned)_msg_id);
         if (++_disable_counter == 0) {
@@ -675,4 +707,10 @@ reset:
 			}
     }
     return false;
+}
+
+void
+AP_GPS_UBLOX::_request_version(void)
+{
+    _configure_message_rate(CLASS_NAV, MSG_NAV_SVINFO, 2);
 }
