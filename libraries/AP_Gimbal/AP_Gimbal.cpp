@@ -178,6 +178,12 @@ void AP_Gimbal::update_target(Vector3f newTarget)
 
 }
 
+Vector3f AP_Gimbal::getGimbalEstimateEF()
+{
+    Quaternion quatEst;_ekf.getQuat(quatEst);Vector3f eulerEst;quatEst.to_euler(eulerEst.x, eulerEst.y, eulerEst.z);
+    return eulerEst;
+}
+
 uint8_t AP_Gimbal::isCopterFliped(){
     return fabs(_ahrs.roll)>1.0f || fabs(_ahrs.pitch)>1.0f;
 }
