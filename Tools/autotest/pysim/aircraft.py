@@ -36,7 +36,7 @@ class Aircraft(object):
             position = self.position
         return (-position.z) + self.home_altitude <= self.ground_level + self.frame_height
 
-    def update_position(self, delta_time):
+    def update_position(self):
         '''update lat/lon/alt from position'''
 
         bearing = math.degrees(math.atan2(self.position.y, self.position.x))

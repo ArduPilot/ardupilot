@@ -143,4 +143,4 @@ class Tracker(Aircraft):
 
         # new velocity vector
         self.velocity = Vector3()
-        self.update_position(delta_time)
+        self.update_position()

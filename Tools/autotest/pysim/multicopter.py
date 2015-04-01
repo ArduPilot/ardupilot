@@ -188,4 +188,4 @@ class MultiCopter(Aircraft):
                                     -(self.ground_level + self.frame_height - self.home_altitude))
 
         # update lat/lon/altitude
-        self.update_position(delta_time)
+        self.update_position()

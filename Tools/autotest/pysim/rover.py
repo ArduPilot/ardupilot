@@ -138,7 +138,7 @@ class Rover(Aircraft):
         self.position += self.velocity * delta_time
 
         # update lat/lon/altitude
-        self.update_position(delta_time)
+        self.update_position()
 
 if __name__ == "__main__":
     r = Rover()
