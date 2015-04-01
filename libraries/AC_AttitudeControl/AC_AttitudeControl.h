@@ -173,12 +173,19 @@ public:
     // throttle functions
     //
 
-     // set_throttle_out - to be called by upper throttle controllers when they wish to provide throttle output directly to motors
-     // provide 0 to cut motors
-     void set_throttle_out(int16_t throttle_pwm, bool apply_angle_boost);
+    // set_throttle_out - to be called by upper throttle controllers when they wish to provide throttle output directly to motors
+    void set_throttle_out(float throttle_out, bool apply_angle_boost);
 
-     // angle_boost - accessor for angle boost so it can be logged
-     int16_t angle_boost() const { return _angle_boost; }
+    // set_throttle_zero - outputs a warning spin at MOT_SPIN_ARMED
+    void set_throttle_zero();
+
+    // resets integrators, yaw and rate targets
+    // outputs a warning spin at the specified throttle
+    // calling with zero throttle means MOT_SPIN_ARMED
+    void set_throttle_out_pre_takeoff(float throttle_out);
+
+    // angle_boost - accessor for angle boost so it can be logged
+    int16_t angle_boost() const { return _angle_boost; }
 
     //
     // helper functions
@@ -232,7 +239,7 @@ protected:
     //
 
     // get_angle_boost - calculate total body frame throttle required to produce the given earth frame throttle
-    virtual int16_t get_angle_boost(int16_t throttle_pwm);
+    virtual float get_boosted_throttle(float throttle_in);
 
     // references to external libraries
     const AP_AHRS&      _ahrs;

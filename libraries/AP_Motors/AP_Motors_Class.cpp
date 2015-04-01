@@ -93,6 +93,14 @@ const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("CURR_MAX", 12, AP_Motors, _batt_current_max, AP_MOTORS_CURR_MAX_DEFAULT),
 
+    // @Param: THR_FILT
+    // @DisplayName: Throttle output filter
+    // @Description: Frequency cutoff (in hz) of throttle output filter
+    // @Range: 0 5
+    // @Units: Hz
+    // @User: Advanced
+    AP_GROUPINFO("THR_FILT", 13, AP_Motors, _throttle_filter, 0.0f),
+
     AP_GROUPEND
 };
 
@@ -117,7 +125,8 @@ AP_Motors::AP_Motors(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_t
     _batt_resistance(0.0f),
     _batt_timer(0),
     _lift_max(1.0f),
-    _throttle_limit(1.0f)
+    _throttle_limit(1.0f),
+    _stabilize(false)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
