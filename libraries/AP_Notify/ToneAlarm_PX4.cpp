@@ -69,7 +69,7 @@ const ToneAlarm_PX4::Tone ToneAlarm_PX4::_tones[] {
     #define AP_NOTIFY_PX4_TONE_LOUD_BATTERY_ALERT_CTS 13
     { "MBNT255>B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8", true },
     #define AP_NOTIFY_PX4_TONE_LOUD_LANDED 14
-    { "MFT255 A64 B64 G16 T32", true },
+    { "MBT255 A64 B64 G16 T32 P2", true },
 };
 
 bool ToneAlarm_PX4::init()
