@@ -353,9 +353,35 @@ private:
                                     ParamToken *token,
                                     enum ap_var_type *ptype);
 
+    // find a default value given a pointer to a default value in flash
+    static float get_default_value(const float *def_value_ptr);
+
+    /*
+      find the def_value for a variable by name
+    */
+    static const float *find_def_value_ptr(const char *name);
+
+#if HAL_OS_POSIX_IO == 1
+    /*
+      load a parameter defaults file. This happens as part of load_all()
+     */
+    static bool parse_param_line(char *line, char **vname, float &value);
+    static bool load_defaults_file(const char *filename);
+#endif
+
     static StorageAccess        _storage;
     static uint8_t              _num_vars;
     static const struct Info *  _var_info;
+
+    /*
+      list of overridden values from load_defaults_file()
+    */
+    struct param_override {
+        const float *def_value_ptr;
+        float value;
+    };
+    static struct param_override *param_overrides;
+    static uint16_t num_param_overrides;
 
     // values filled into the EEPROM header
     static const uint8_t        k_EEPROM_magic0      = 0x50;
