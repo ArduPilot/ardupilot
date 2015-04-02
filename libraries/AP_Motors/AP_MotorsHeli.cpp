@@ -280,7 +280,7 @@ void AP_MotorsHeli::output_min()
 void AP_MotorsHeli::output_test(uint8_t motor_seq, int16_t pwm)
 {
     // exit immediately if not armed
-    if (!_flags.armed) {
+    if (!armed()) {
         return;
     }
 
@@ -375,8 +375,14 @@ uint16_t AP_MotorsHeli::get_motor_mask()
 // protected methods
 //
 
-// output_armed - sends commands to the motors
-void AP_MotorsHeli::output_armed()
+void AP_MotorsHeli::output_armed_not_stabilizing()
+{
+    // call output_armed_stabilizing
+    output_armed_stabilizing();
+}
+
+// sends commands to the motors
+void AP_MotorsHeli::output_armed_stabilizing()
 {
     // if manual override (i.e. when setting up swash), pass pilot commands straight through to swash
     if (_servo_manual == 1) {
@@ -401,7 +407,7 @@ void AP_MotorsHeli::output_armed()
 void AP_MotorsHeli::output_disarmed()
 {
     // for helis - armed or disarmed we allow servos to move
-    output_armed();
+    output_armed_stabilizing();
 }
 
 //

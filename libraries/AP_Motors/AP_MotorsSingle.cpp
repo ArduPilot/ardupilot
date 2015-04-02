@@ -137,15 +137,73 @@ uint16_t AP_MotorsSingle::get_motor_mask()
     return (1U << 0 | 1U << 1 | 1U << 2 | 1U << 3 | 1U << 6);
 }
 
-// output_armed - sends commands to the motors
-void AP_MotorsSingle::output_armed()
+void AP_MotorsSingle::output_armed_not_stabilizing()
+{
+    int16_t out_min = _rc_throttle.radio_min + _min_throttle;
+    int16_t motor_out;
+
+    int16_t min_thr = rel_pwm_to_thr_range(_spin_when_armed_ramped);
+
+    // initialize limits flags
+    limit.roll_pitch = true;
+    limit.yaw = true;
+    limit.throttle_lower = false;
+    limit.throttle_upper = false;
+
+    if (_rc_throttle.servo_out <= min_thr) {
+        _rc_throttle.servo_out = min_thr;
+        limit.throttle_lower = true;
+    }
+    if (_rc_throttle.servo_out >= _max_throttle) {
+        _rc_throttle.servo_out = _max_throttle;
+        limit.throttle_upper = true;
+    }
+
+    _rc_throttle.calc_pwm();
+
+    motor_out = _rc_throttle.radio_out;
+
+    // front servo
+    _servo1.servo_out = 0;
+    // right servo
+    _servo2.servo_out = 0;
+    // rear servo
+    _servo3.servo_out = 0;
+    // left servo
+    _servo4.servo_out = 0;
+
+    _servo1.calc_pwm();
+    _servo2.calc_pwm();
+    _servo3.calc_pwm();
+    _servo4.calc_pwm();
+
+    if (motor_out >= out_min) {
+        motor_out = apply_thrust_curve_and_volt_scaling(motor_out, out_min, _rc_throttle.radio_max);
+    }
+
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _servo1.radio_out);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _servo2.radio_out);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]), _servo3.radio_out);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _servo4.radio_out);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_7]), motor_out);
+}
+
+// sends commands to the motors
+// TODO pull code that is common to output_armed_not_stabilizing into helper functions
+void AP_MotorsSingle::output_armed_stabilizing()
 {
     int16_t out_min = _rc_throttle.radio_min + _min_throttle;
     int16_t motor_out;  // main motor output
 
+    // initialize limits flags
+    limit.roll_pitch = false;
+    limit.yaw = false;
+    limit.throttle_lower = false;
+    limit.throttle_upper = false;
+
     // Throttle is 0 to 1000 only
-    if (_rc_throttle.servo_out <= 0) {
-            _rc_throttle.servo_out = 0;
+    if (_rc_throttle.servo_out <= _min_throttle) {
+        _rc_throttle.servo_out = _min_throttle;
             limit.throttle_lower = true;
         }
     if (_rc_throttle.servo_out >= _max_throttle) {
@@ -156,35 +214,16 @@ void AP_MotorsSingle::output_armed()
     // capture desired throttle from receiver
     _rc_throttle.calc_pwm();
 
-    // if we are not sending a throttle output, we cut the motors
-    if(_rc_throttle.servo_out == 0) {
-        // range check spin_when_armed
-        if (_spin_when_armed < 0) {
-            _spin_when_armed = 0;
-        }
-        if (_spin_when_armed > _min_throttle) {
-            _spin_when_armed = _min_throttle;
-        }
+    //motor
+    motor_out = _rc_throttle.radio_out;
 
-        // throttle is limited
-        motor_out = _rc_throttle.radio_min + _spin_when_armed;
-    }else{
-        // check if throttle is at or below limit
-        if (_rc_throttle.servo_out <= _min_throttle) {
-            limit.throttle_lower = true;
-            _rc_throttle.servo_out = _min_throttle;
-            _rc_throttle.calc_pwm();    // recalculate radio.out
-        }
+    // adjust for thrust curve and voltage scaling
+    motor_out = apply_thrust_curve_and_volt_scaling(motor_out, out_min, _rc_throttle.radio_max);
 
-		//motor
-        motor_out = _rc_throttle.radio_out;
+    // ensure motor doesn't drop below a minimum value and stop
+    motor_out = max(motor_out, out_min);
 
-        // adjust for thrust curve and voltage scaling
-        motor_out = apply_thrust_curve_and_volt_scaling(motor_out, out_min, _rc_throttle.radio_max);
-
-        // ensure motor doesn't drop below a minimum value and stop
-        motor_out = max(motor_out, out_min);
-    }
+    // TODO: set limits.roll_pitch and limits.yaw
 
     // front servo
     _servo1.servo_out = _rev_roll*_rc_roll.servo_out + _rev_yaw*_rc_yaw.servo_out;
@@ -221,7 +260,7 @@ void AP_MotorsSingle::output_disarmed()
 void AP_MotorsSingle::output_test(uint8_t motor_seq, int16_t pwm)
 {
     // exit immediately if not armed
-    if (!_flags.armed) {
+    if (!armed()) {
         return;
     }
 
