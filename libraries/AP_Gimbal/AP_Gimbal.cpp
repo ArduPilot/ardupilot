@@ -113,13 +113,13 @@ Vector3f AP_Gimbal::getGimbalRateDemVecTilt(Quaternion quatEst)
 {
         // Calculate the gimbal 321 Euler angle estimates relative to earth frame
         Vector3f eulerEst;
-        quatEst.to_euler(eulerEst.x, eulerEst.y, eulerEst.z);
+        quatEst.to_vector312(eulerEst.x, eulerEst.y, eulerEst.z);
 
         // Calculate a demanded quaternion using the demanded roll and pitch and estimated yaw (yaw is slaved to the vehicle)
         Quaternion quatDem;
-        quatDem.from_euler(_angle_ef_target_rad.x,
-                           _angle_ef_target_rad.y,
-                           eulerEst.z);
+        quatDem.from_vector312( _angle_ef_target_rad.x,
+                                _angle_ef_target_rad.y,
+                                eulerEst.z);
 
         //divide the demanded quaternion by the estimated to get the error
         Quaternion quatErr = quatDem / quatEst;
