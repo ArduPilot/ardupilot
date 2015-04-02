@@ -196,9 +196,10 @@ enum {
 };
 
 enum LandingBeepMode {
-    DISABLED,
-    ENABLED,
-    ENABLED_MUTE_VIA_MODE_CHANGE,
+    OFF,
+    ON, // always on, useful for testing or just to know what it sounds like
+    ON_AFTER_LAND,
+    ON_AFTER_LAND_MUTE_VIA_MODE_CHANGE,
 };
 
 

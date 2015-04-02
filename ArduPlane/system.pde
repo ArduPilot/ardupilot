@@ -424,10 +424,9 @@ static void set_mode(enum FlightMode mode)
     steerController.reset_I();    
 
     // mute landed chirp
-//    if (g.land_beep == LandingBeepMode::ENABLED_MUTE_VIA_MODE_CHANGE) {
-//        AP_Notify::flags.landed = 0;
-//    }
-
+    if (g.land_beep == LandingBeepMode::ON_AFTER_LAND_MUTE_VIA_MODE_CHANGE) {
+        AP_Notify::flags.landed = 0;
+    }
 }
 
 /*

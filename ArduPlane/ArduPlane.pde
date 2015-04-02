@@ -1025,13 +1025,9 @@ static void one_second_loop()
     // determine if we are flying or not
     determine_is_flying();
 
-    //if (!is_flying() && (auto_state.last_flying_ms > 0) && g.land_beep) {
-        // check if we've flown but have since landed/crashed - start beeping
-        // update AP_Notify to sound a single chirp/beep to make it easier to find the aircraft
-        AP_Notify::flags.landed = 1;
-
-        // TODO: add a movement check to inhibit the beep once the aircraft is found and picked up
-    //}
+    // check if we've flown but have since landed/crashed - start beeping
+    // update AP_Notify to sound a single chirp/beep to make it easier to find the aircraft
+    update_landing_chirp();
 
     // update notify flags
     AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
@@ -1044,6 +1040,28 @@ static void one_second_loop()
     }
 #endif
 }
+
+// check if we've flown but have since landed/crashed - start beeping
+// update AP_Notify to repeat a single chirp to make it easier to find the aircraft
+static void update_landing_chirp()
+{
+    switch (g.land_beep) {
+    case LandingBeepMode::OFF:
+    default:
+        AP_Notify::flags.landed = 0;
+        break;
+    case ON:
+        AP_Notify::flags.landed = 1;
+        break;
+    case LandingBeepMode::ON_AFTER_LAND:
+    case LandingBeepMode::ON_AFTER_LAND_MUTE_VIA_MODE_CHANGE:
+        // TODO: add an INS movement check to stop the beep once the aircraft is found and picked up
+        if ((control_mode == AUTO) && (flight_stage != AP_SpdHgtControl::FLIGHT_TAKEOFF) && !is_flying()) {
+            AP_Notify::flags.landed = 1;
+        }
+    }
+}
+
 
 static void log_perf_info()
 {

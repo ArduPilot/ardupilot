@@ -244,10 +244,9 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: LAND_BEEP
     // @DisplayName: Beep after landing
     // @Description: When landing in tall grass it is sometimes hard to find the aircraft. When enabled (non-zero) it will make a chirp sound once per second.
-    // @Values: 0:Disabled,1:Enabled,2:Enabled_MuteViaModeChange
+    // @Values: 0:Off,1:On,2:On_After_Land,3:On_After_Land_MuteViaModeChange
     // @User: Advanced
     GSCALAR(land_beep,       "LAND_BEEP",  0),
-
 
 	// @Param: NAV_CONTROLLER
 	// @DisplayName: Navigation controller selection
