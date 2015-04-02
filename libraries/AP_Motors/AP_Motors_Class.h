@@ -122,6 +122,7 @@ public:
     void                set_pitch(int16_t pitch_in) { _rc_pitch.servo_out = pitch_in; };                // range -4500 ~ 4500
     void                set_yaw(int16_t yaw_in) { _rc_yaw.servo_out = yaw_in; };                        // range -4500 ~ 4500
     void                set_throttle(int16_t throttle_in) { _throttle_in = throttle_in; };    // range 0 ~ 1000
+    void                set_stabilizing(bool stabilizing) { _flags.stabilizing = stabilizing; }
 
     // accessors for roll, pitch, yaw and throttle inputs to motors
     int16_t             get_roll() const { return _rc_roll.servo_out; }
@@ -193,9 +194,9 @@ public:
     static const struct AP_Param::GroupInfo        var_info[];
 
 protected:
-
     // output functions that should be overloaded by child classes
-    virtual void        output_armed()=0;
+    virtual void        output_armed_stabilizing()=0;
+    virtual void        output_armed_not_stabilizing()=0;
     virtual void        output_disarmed()=0;
 
     // update the throttle input filter
@@ -222,12 +223,16 @@ protected:
     // get_voltage_comp_gain - return battery voltage compensation gain
     float               get_voltage_comp_gain() const { return 1.0f/_lift_max; }
 
+    float               rel_pwm_to_thr_range(float pwm) const;
+    float               thr_range_to_rel_pwm(float thr) const;
+
     // flag bitmask
     struct AP_Motors_flags {
-        uint8_t armed               : 1;    // 1 if the motors are armed, 0 if disarmed
-        uint8_t frame_orientation   : 4;    // PLUS_FRAME 0, X_FRAME 1, V_FRAME 2, H_FRAME 3, NEW_PLUS_FRAME 10, NEW_X_FRAME, NEW_V_FRAME, NEW_H_FRAME
-        uint8_t slow_start          : 1;    // 1 if slow start is active
-        uint8_t slow_start_low_end  : 1;    // 1 just after arming so we can ramp up the spin_when_armed value
+        uint8_t armed              : 1;    // 0 if disarmed, 1 if armed
+        uint8_t stabilizing        : 1;    // 0 if not controlling attitude, 1 if controlling attitude
+        uint8_t frame_orientation  : 4;    // PLUS_FRAME 0, X_FRAME 1, V_FRAME 2, H_FRAME 3, NEW_PLUS_FRAME 10, NEW_X_FRAME, NEW_V_FRAME, NEW_H_FRAME
+        uint8_t slow_start         : 1;    // 1 if slow start is active
+        uint8_t slow_start_low_end : 1;    // 1 just after arming so we can ramp up the spin_when_armed value
     } _flags;
 
     // mapping of motor number (as received from upper APM code) to RC channel output - used to account for differences between APM1 and APM2

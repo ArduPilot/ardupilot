@@ -67,7 +67,8 @@ public:
 
 protected:
     // output - sends commands to the motors
-    void                output_armed();
+    void                output_armed_stabilizing();
+    void                output_armed_not_stabilizing();
     void                output_disarmed();
 
     // add_motor using raw roll, pitch, throttle and yaw factors

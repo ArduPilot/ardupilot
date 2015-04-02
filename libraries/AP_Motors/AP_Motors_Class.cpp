@@ -195,10 +195,13 @@ void AP_Motors::output()
     // move throttle_low_comp towards desired throttle low comp
     update_throttle_low_comp();
 
-    // output to motors
-    if (_flags.armed ) {
-        output_armed();
-    }else{
+    if (_flags.armed) {
+        if (_flags.stabilizing) {
+            output_armed_stabilizing();
+        } else {
+            output_armed_not_stabilizing();
+        }
+    } else {
         output_disarmed();
     }
 };
@@ -221,7 +224,7 @@ void AP_Motors::update_throttle_filter()
         _throttle_filter.set_cutoff_frequency(1.0f/_loop_rate,_throttle_filt_hz);
     }
 
-    if (_flags.armed) {
+    if (armed()) {
         _throttle_filter.apply(_throttle_in);
     } else {
         _throttle_filter.reset(0.0f);
@@ -364,4 +367,14 @@ void AP_Motors::update_throttle_low_comp()
         _throttle_low_comp -= min(0.5f/_loop_rate, _throttle_low_comp-_throttle_low_comp_desired);
     }
     _throttle_low_comp = constrain_float(_throttle_low_comp, 0.1f, 1.0f);
+}
+
+float AP_Motors::rel_pwm_to_thr_range(float pwm) const
+{
+    return 1000.0f*pwm/(_rc_throttle.radio_max-_rc_throttle.radio_min);
+}
+
+float AP_Motors::thr_range_to_rel_pwm(float thr) const
+{
+    return (_rc_throttle.radio_max-_rc_throttle.radio_min)*thr/1000.0f;
 }
