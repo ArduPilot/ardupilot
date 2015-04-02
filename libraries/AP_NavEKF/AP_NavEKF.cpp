@@ -157,16 +157,16 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     AP_GROUPINFO("EAS_NOISE",    5, NavEKF, _easNoise, 1.4f),
 
     // @Param: WIND_PNOISE
-    // @DisplayName: Wind velocity process noise (m/s^2)
-    // @Description: This noise controls the growth of wind state error estimates. Increasing it makes wind estimation faster and noisier.
+    // @DisplayName: 风速处理噪声（m/s^2）
+    // @Description: 这个噪声控制风的状态误差估算。增大这个值会使风力估算更快但是有更大噪声。
     // @Range: 0.01 1.0
     // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("WIND_PNOISE",    6, NavEKF, _windVelProcessNoise, 0.1f),
 
     // @Param: WIND_PSCALE
-    // @DisplayName: Height rate to wind procss noise scaler
-    // @Description: Increasing this parameter increases how rapidly the wind states adapt when changing altitude, but does make wind speed estimation noiser.
+    // @DisplayName: 高度速率到风速处理噪声的比例
+    // @Description: 增大这个值会增大改变高度时的风力适应，但是会使风力估算有更大噪声。
     // @Range: 0.0 1.0
     // @Increment: 0.1
     // @User: Advanced
