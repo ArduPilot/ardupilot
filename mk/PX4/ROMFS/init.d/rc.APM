@@ -222,17 +222,9 @@ fi
 if [ $BOARD == FMUv1 ]
 then
     echo "Starting FMUv1 sensors"
-    if hmc5883 start
+    if hmc5883 -C -T start
     then
         echo "hmc5883 started OK"
-        if hmc5883 calibrate
-        then
-          echo "hmc5883 calibrate OK"
-        else 
-          echo "hmc5883 calibrate failed"
-          echo "hmc5883 calibrate failed" >> $logfile
-          tone_alarm MSBBB
-        fi
     else
         echo "hmc5883 start failed"
         echo "hmc5883 start failed" >> $logfile
@@ -253,13 +245,13 @@ then
     fi
 else
     echo "Starting FMUv2 sensors"
-    if hmc5883 -C -X start
+    if hmc5883 -C -T -X start
     then
         echo "Have external hmc5883"
     else
         echo "No external hmc5883"
     fi
-    if hmc5883 -C -I -R 4 start
+    if hmc5883 -C -T -I -R 4 start
     then
         echo "Have internal hmc5883"
     else
@@ -302,7 +294,7 @@ else
                echo "No MPU6000" >> $logfile
                sh /etc/init.d/rc.error
         fi
-        if hmc5883 -C -S -R 8 start
+        if hmc5883 -C -T -S -R 8 start
         then
                echo "Found SPI hmc5883"
         fi
