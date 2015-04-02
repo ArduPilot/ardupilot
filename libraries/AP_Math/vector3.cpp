@@ -333,7 +333,7 @@ bool Vector3<T>::operator ==(const Vector3<T> &v) const
 template <typename T>
 bool Vector3<T>::operator !=(const Vector3<T> &v) const
 {
-    return (x!=v.x && y!=v.y && z!=v.z);
+    return (x!=v.x || y!=v.y || z!=v.z);
 }
 
 template <typename T>
