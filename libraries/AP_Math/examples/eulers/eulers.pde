@@ -35,6 +35,10 @@
 #include <AP_ADC_AnalogSource.h>
 #include <AP_Rally.h>
 #include <AP_BattMonitor.h>
+#include <AP_Gimbal.h>
+#include <AP_Mount.h>
+#include <RC_Channel.h>
+#include <AP_OpticalFlow.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
