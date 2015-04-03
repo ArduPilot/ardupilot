@@ -525,7 +525,7 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
             // capture sample
             for (uint8_t k=0; k<num_accels; k++) {
                 Vector3f samp;
-                if(get_delta_velocity(k,samp)) {
+                if(get_delta_velocity(k,samp) && _delta_velocity_dt[k] > 0) {
                     samp /= _delta_velocity_dt[k];
                 } else {
                     samp = get_accel(k);
