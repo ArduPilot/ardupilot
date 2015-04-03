@@ -4474,6 +4474,7 @@ void NavEKF::InitialiseVariables()
     flowXfailed = false;
     haveDeltaAngles = false;
     validOrigin = false;
+    gndEffectMode = false;
     gpsSpdAccuracy = 0.0f;
 }
 
