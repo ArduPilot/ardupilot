@@ -486,9 +486,9 @@ static void pre_arm_rc_checks()
     }
 
     // check if radio has been calibrated
-    if(!g.rc_3.radio_min.load() && !g.rc_3.radio_max.load()) {
+    /*if(!g.rc_3.radio_min.load() && !g.rc_3.radio_max.load()) {
         return;
-    }
+    }*/
 
     // check channels 1 & 2 have min <= 1300 and max >= 1700
     if (g.rc_1.radio_min > 1300 || g.rc_1.radio_max < 1700 || g.rc_2.radio_min > 1300 || g.rc_2.radio_max < 1700) {
