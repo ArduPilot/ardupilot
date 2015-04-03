@@ -672,6 +672,7 @@ AP_InertialSensor::_init_gyro()
 {
     uint8_t num_gyros = min(get_gyro_count(), INS_MAX_INSTANCES);
     Vector3f last_average[INS_MAX_INSTANCES], best_avg[INS_MAX_INSTANCES];
+    Vector3f new_gyro_offset[INS_MAX_INSTANCES];
     float best_diff[INS_MAX_INSTANCES];
     bool converged[INS_MAX_INSTANCES];
 
@@ -699,6 +700,7 @@ AP_InertialSensor::_init_gyro()
     // remove existing gyro offsets
     for (uint8_t k=0; k<num_gyros; k++) {
         _gyro_offset[k].set(Vector3f());
+        new_gyro_offset[k].zero();
         best_diff[k] = 0;
         last_average[k].zero();
         converged[k] = false;
@@ -761,8 +763,8 @@ AP_InertialSensor::_init_gyro()
             } else if (gyro_diff[k].length() < ToRad(0.1f)) {
                 // we want the average to be within 0.1 bit, which is 0.04 degrees/s
                 last_average[k] = (gyro_avg[k] * 0.5f) + (last_average[k] * 0.5f);
-                if (!converged[k] || last_average[k].length() < _gyro_offset[k].get().length()) {
-                    _gyro_offset[k] = last_average[k];
+                if (!converged[k] || last_average[k].length() < new_gyro_offset[k].length()) {
+                    new_gyro_offset[k] = last_average[k];
                 }
                 if (!converged[k]) {
                     converged[k] = true;
@@ -788,6 +790,7 @@ AP_InertialSensor::_init_gyro()
             _gyro_cal_ok[k] = false;
         } else {
             _gyro_cal_ok[k] = true;
+            _gyro_offset[k] = new_gyro_offset[k];
         }
     }
 
