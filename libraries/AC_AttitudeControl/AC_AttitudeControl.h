@@ -238,8 +238,8 @@ protected:
     // throttle methods
     //
 
-    // get_angle_boost - calculate total body frame throttle required to produce the given earth frame throttle
-    virtual float get_angle_boost(float throttle_pwm);
+    // calculate total body frame throttle required to produce the given earth frame throttle
+    virtual float get_boosted_throttle(float throttle_in);
 
     // references to external libraries
     const AP_AHRS&      _ahrs;
