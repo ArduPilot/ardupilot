@@ -62,11 +62,24 @@ else
 v =
 endif
 
+# Newer Arduino versions use a different boards.txt format, generate a board
+# name for the new format based on old-format $(BOARD) value
+ifneq ($(BOARD),mega)
+  BOARD_NEW		:= mega
+  BOARD_CPU		:= atmega1280
+endif
+ifneq ($(BOARD),mega2560)
+  BOARD_NEW		:= mega
+  BOARD_CPU		:= atmega2560
+endif
+
 # Library object files
 LIBOBJS			:=	$(SKETCHLIBOBJS)
 
 # Find the hardware directory to use
-HARDWARE_DIR		:=	$(firstword $(wildcard $(SKETCHBOOK)/hardware/$(HARDWARE) \
+HARDWARE_DIR		:=	$(firstword $(wildcard $(SKETCHBOOK)/hardware/$(HARDWARE)/avr \
+							$(ARDUINO)/hardware/$(HARDWARE)/avr \
+							$(SKETCHBOOK)/hardware/$(HARDWARE) \
 							$(ARDUINO)/hardware/$(HARDWARE)))
 ifeq ($(HARDWARE_DIR),)
 $(error ERROR: hardware directory for $(HARDWARE) not found)
@@ -79,10 +92,25 @@ $(error ERROR: could not locate boards.txt for hardware $(HARDWARE))
 endif
 
 # Extract needed build parameters from the boardfile
-MCU			:=	$(shell grep $(BOARD).build.mcu $(BOARDFILE) | cut -d = -f 2)
-F_CPU		:=	$(shell grep $(BOARD).build.f_cpu $(BOARDFILE) | cut -d = -f 2)
-HARDWARE_CORE :=	$(shell grep $(BOARD).build.core $(BOARDFILE) | cut -d = -f 2)
-UPLOAD_SPEED :=	$(shell grep $(BOARD).upload.speed $(BOARDFILE) | cut -d = -f 2)
+MCU			:= $(shell grep $(BOARD).build.mcu $(BOARDFILE) | cut -d = -f 2)
+ifeq ($(MCU),)
+  MCU			:= $(shell grep $(BOARD_NEW).menu.cpu.$(BOARD_CPU).build.mcu $(BOARDFILE) | cut -d = -f 2)
+endif
+
+F_CPU			:= $(shell grep $(BOARD).build.f_cpu $(BOARDFILE) | cut -d = -f 2)
+ifeq ($(F_CPU),)
+  F_CPU			:= $(shell grep $(BOARD_NEW).build.f_cpu $(BOARDFILE) | cut -d = -f 2)
+endif
+
+HARDWARE_CORE		:= $(shell grep $(BOARD).build.core $(BOARDFILE) | cut -d = -f 2)
+ifeq ($(HARDWARE_CORE),)
+  HARDWARE_CORE		:= $(shell grep $(BOARD_NEW).build.core $(BOARDFILE) | cut -d = -f 2)
+endif
+
+UPLOAD_SPEED		:= $(shell grep $(BOARD).upload.speed $(BOARDFILE) | cut -d = -f 2)
+ifeq ($(UPLOAD_SPEED),)
+  UPLOAD_SPEED		:= $(shell grep $(BOARD_NEW).menu.cpu.$(BOARD_CPU).upload.speed $(BOARDFILE) | cut -d = -f 2)
+endif
 
 # User can define USERAVRDUDEFLAGS = -V in their config.mk to skip verification
 USERAVRDUDEFLAGS ?= 
@@ -100,7 +128,10 @@ ifneq ($(findstring Darwin, $(SYSTYPE)),)
 endif
 
 ifeq ($(UPLOAD_PROTOCOL),)
-  UPLOAD_PROTOCOL	:=	$(shell grep $(BOARD).upload.protocol $(BOARDFILE) | cut -d = -f 2)
+  UPLOAD_PROTOCOL	:= $(shell grep $(BOARD).upload.protocol $(BOARDFILE) | cut -d = -f 2)
+  ifeq ($(UPLOAD_PROTOCOL),)
+    UPLOAD_PROTOCOL	:= $(shell grep $(BOARD_NEW).menu.cpu.$(BOARD_CPU).upload.protocol $(BOARDFILE) | cut -d = -f 2)
+  endif
 endif
 
 # Adding override for mega since boards.txt uses stk500 instead of
