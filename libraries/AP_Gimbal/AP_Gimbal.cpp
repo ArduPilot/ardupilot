@@ -64,7 +64,7 @@ void AP_Gimbal::update_state()
     gimbalRateDemVec += getGimbalRateDemVecGyroBias();
 }
 
-Vector3f AP_Gimbal::getGimbalRateDemVecYaw(Quaternion quatEst)
+Vector3f AP_Gimbal::getGimbalRateDemVecYaw(const Quaternion &quatEst)
 {
         // Define rotation from vehicle to gimbal using a 312 rotation sequence
         Matrix3f Tvg;
@@ -109,7 +109,7 @@ Vector3f AP_Gimbal::getGimbalRateDemVecYaw(Quaternion quatEst)
         return gimbalRateDemVecYaw;
 }
 
-Vector3f AP_Gimbal::getGimbalRateDemVecTilt(Quaternion quatEst)
+Vector3f AP_Gimbal::getGimbalRateDemVecTilt(const Quaternion &quatEst)
 {
         // Calculate the gimbal 321 Euler angle estimates relative to earth frame
         Vector3f eulerEst;
@@ -142,7 +142,7 @@ Vector3f AP_Gimbal::getGimbalRateDemVecTilt(Quaternion quatEst)
         return gimbalRateDemVecTilt;
 }
 
-Vector3f AP_Gimbal::getGimbalRateDemVecForward(Quaternion quatEst)
+Vector3f AP_Gimbal::getGimbalRateDemVecForward(const Quaternion &quatEst)
 {
         // quaternion demanded at the previous time step
         static float lastDem;

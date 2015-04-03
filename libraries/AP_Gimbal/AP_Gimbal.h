@@ -83,9 +83,9 @@ private:
     uint8_t isCopterFliped();
 
     // Control loop functions
-    Vector3f getGimbalRateDemVecYaw(Quaternion quatEst);
-    Vector3f getGimbalRateDemVecTilt(Quaternion quatEst);
-    Vector3f getGimbalRateDemVecForward(Quaternion quatEst);
+    Vector3f getGimbalRateDemVecYaw(const Quaternion &quatEst);
+    Vector3f getGimbalRateDemVecTilt(const Quaternion &quatEst);
+    Vector3f getGimbalRateDemVecForward(const Quaternion &quatEst);
     Vector3f getGimbalRateDemVecGyroBias();
 
 };
