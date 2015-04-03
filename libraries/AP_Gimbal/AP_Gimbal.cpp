@@ -16,9 +16,9 @@ void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
 
     Quaternion quatEst;_ekf.getQuat(quatEst);Vector3f eulerEst;quatEst.to_euler(eulerEst.x, eulerEst.y, eulerEst.z);
     //::printf("est=%1.1f %1.1f %1.1f %d\t", eulerEst.x,eulerEst.y,eulerEst.z,_ekf.getStatus());    
-    //::printf("joint_angles=(%+1.2f %+1.2f %+1.2f)\t", _measurament.joint_angles.x,_measurament.joint_angles.y,_measurament.joint_angles.z);
-    //::printf("delta_ang=(%+1.3f %+1.3f %+1.3f)\t",_measurament.delta_angles.x,_measurament.delta_angles.y,_measurament.delta_angles.z);     
-    //::printf("delta_vel=(%+1.3f %+1.3f %+1.3f)\t",_measurament.delta_velocity.x,_measurament.delta_velocity.y,_measurament.delta_velocity.z);     
+    //::printf("joint_angles=(%+1.2f %+1.2f %+1.2f)\t", _measurement.joint_angles.x,_measurement.joint_angles.y,_measurement.joint_angles.z);
+    //::printf("delta_ang=(%+1.3f %+1.3f %+1.3f)\t",_measurement.delta_angles.x,_measurement.delta_angles.y,_measurement.delta_angles.z);     
+    //::printf("delta_vel=(%+1.3f %+1.3f %+1.3f)\t",_measurement.delta_velocity.x,_measurement.delta_velocity.y,_measurement.delta_velocity.z);     
     //::printf("rate=(%+1.3f %+1.3f %+1.3f)\t",gimbalRateDemVec.x,gimbalRateDemVec.y,gimbalRateDemVec.z);
     //::printf("target=(%+1.3f %+1.3f %+1.3f)\t",_angle_ef_target_rad.x,_angle_ef_target_rad.y,_angle_ef_target_rad.z);
     //::printf("\n");
@@ -30,27 +30,27 @@ void AP_Gimbal::decode_feedback(mavlink_message_t *msg)
     mavlink_gimbal_report_t report_msg;
     mavlink_msg_gimbal_report_decode(msg, &report_msg);
 
-    _measurament.delta_time = report_msg.delta_time;
-    _measurament.delta_angles.x = report_msg.delta_angle_x;
-    _measurament.delta_angles.y = report_msg.delta_angle_y,
-    _measurament.delta_angles.z = report_msg.delta_angle_z;
-    _measurament.delta_velocity.x = report_msg.delta_velocity_x,
-    _measurament.delta_velocity.y = report_msg.delta_velocity_y,
-    _measurament.delta_velocity.z = report_msg.delta_velocity_z;   
-    _measurament.joint_angles.x = report_msg.joint_roll;
-    _measurament.joint_angles.y = report_msg.joint_el,
-    _measurament.joint_angles.z = report_msg.joint_az;
+    _measurement.delta_time = report_msg.delta_time;
+    _measurement.delta_angles.x = report_msg.delta_angle_x;
+    _measurement.delta_angles.y = report_msg.delta_angle_y,
+    _measurement.delta_angles.z = report_msg.delta_angle_z;
+    _measurement.delta_velocity.x = report_msg.delta_velocity_x,
+    _measurement.delta_velocity.y = report_msg.delta_velocity_y,
+    _measurement.delta_velocity.z = report_msg.delta_velocity_z;   
+    _measurement.joint_angles.x = report_msg.joint_roll;
+    _measurement.joint_angles.y = report_msg.joint_el,
+    _measurement.joint_angles.z = report_msg.joint_az;
 
     //apply joint angle compensation
-    _measurament.joint_angles -= _gimbalParams.joint_angles_offsets;
-    _measurament.delta_velocity -= _gimbalParams.delta_velocity_offsets;
-    _measurament.delta_angles -= _gimbalParams.delta_angles_offsets;
+    _measurement.joint_angles -= _gimbalParams.joint_angles_offsets;
+    _measurement.delta_velocity -= _gimbalParams.delta_velocity_offsets;
+    _measurement.delta_angles -= _gimbalParams.delta_angles_offsets;
 }
 
 void AP_Gimbal::update_state()
 {
     // Run the gimbal attitude and gyro bias estimator
-    _ekf.RunEKF(_measurament.delta_time, _measurament.delta_angles, _measurament.delta_velocity, _measurament.joint_angles);
+    _ekf.RunEKF(_measurement.delta_time, _measurement.delta_angles, _measurement.delta_velocity, _measurement.joint_angles);
 
     // get the gimbal quaternion estimate
     Quaternion quatEst;
@@ -68,12 +68,12 @@ Vector3f AP_Gimbal::getGimbalRateDemVecYaw(Quaternion quatEst)
 {
         // Define rotation from vehicle to gimbal using a 312 rotation sequence
         Matrix3f Tvg;
-        float cosPhi = cosf(_measurament.joint_angles.x);
-        float cosTheta = cosf(_measurament.joint_angles.y);
-        float sinPhi = sinf(_measurament.joint_angles.x);
-        float sinTheta = sinf(_measurament.joint_angles.y);
-        float sinPsi = sinf(_measurament.joint_angles.z);
-        float cosPsi = cosf(_measurament.joint_angles.z);
+        float cosPhi = cosf(_measurement.joint_angles.x);
+        float cosTheta = cosf(_measurement.joint_angles.y);
+        float sinPhi = sinf(_measurement.joint_angles.x);
+        float sinTheta = sinf(_measurement.joint_angles.y);
+        float sinPsi = sinf(_measurement.joint_angles.z);
+        float cosPsi = cosf(_measurement.joint_angles.z);
         Tvg[0][0] = cosTheta*cosPsi-sinPsi*sinPhi*sinTheta;
         Tvg[1][0] = -sinPsi*cosPhi;
         Tvg[2][0] = cosPsi*sinTheta+cosTheta*sinPsi*sinPhi;
@@ -86,16 +86,16 @@ Vector3f AP_Gimbal::getGimbalRateDemVecYaw(Quaternion quatEst)
 
         // multiply the yaw joint angle by a gain to calculate a demanded vehicle frame relative rate vector required to keep the yaw joint centred
         Vector3f gimbalRateDemVecYaw;
-        gimbalRateDemVecYaw.z = - _gimbalParams.K_gimbalRate * _measurament.joint_angles.z;
+        gimbalRateDemVecYaw.z = - _gimbalParams.K_gimbalRate * _measurement.joint_angles.z;
 
         // Get filtered vehicle turn rate in earth frame
-        vehicleYawRateFilt = (1.0f - yawRateFiltPole * _measurament.delta_time) * vehicleYawRateFilt + yawRateFiltPole * _measurament.delta_time * _ahrs.get_yaw_rate_earth();
+        vehicleYawRateFilt = (1.0f - yawRateFiltPole * _measurement.delta_time) * vehicleYawRateFilt + yawRateFiltPole * _measurement.delta_time * _ahrs.get_yaw_rate_earth();
         Vector3f vehicle_rate_ef(0,0,vehicleYawRateFilt);
 
          // calculate the maximum steady state rate error corresponding to the maximum permitted yaw angle error
         float maxRate = _gimbalParams.K_gimbalRate * yawErrorLimit;
         float vehicle_rate_mag_ef = vehicle_rate_ef.length();
-        float excess_rate_correction = fabs(vehicle_rate_mag_ef) - maxRate; 
+        float excess_rate_correction = fabsf(vehicle_rate_mag_ef) - maxRate; 
         if (vehicle_rate_mag_ef > maxRate) {
             if (vehicle_rate_ef.z>0.0f){
                 gimbalRateDemVecYaw += _ahrs.get_dcm_matrix().transposed()*Vector3f(0,0,excess_rate_correction);    
@@ -152,7 +152,7 @@ Vector3f AP_Gimbal::getGimbalRateDemVecForward(Quaternion quatEst)
         lastDem = _angle_ef_target_rad.y;
 
         Vector3f gimbalRateDemVecForward;
-        gimbalRateDemVecForward.y = delta / _measurament.delta_time;
+        gimbalRateDemVecForward.y = delta / _measurement.delta_time;
         return gimbalRateDemVecForward;
 }
 
