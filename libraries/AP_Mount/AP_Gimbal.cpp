@@ -10,7 +10,7 @@ void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
 {
     decode_feedback(msg);
     update_state();
-    if (_ekf.getStatus() && !isCopterFliped() && _gimbalParams.K_gimbalRate!=0.0f){
+    if (_ekf.getStatus() && !isCopterFlipped() && _gimbalParams.K_gimbalRate!=0.0f){
         send_control(chan);
     }
 
@@ -184,6 +184,6 @@ Vector3f AP_Gimbal::getGimbalEstimateEF()
     return eulerEst;
 }
 
-uint8_t AP_Gimbal::isCopterFliped(){
-    return fabs(_ahrs.roll)>1.0f || fabs(_ahrs.pitch)>1.0f;
+uint8_t AP_Gimbal::isCopterFlipped(){
+    return _ahrs.cos_roll()*_ahrs.cos_pitch() < 0.5f;
 }

@@ -80,7 +80,7 @@ private:
     void update_state();
     void decode_feedback(mavlink_message_t *msg);
 
-    uint8_t isCopterFliped();
+    uint8_t isCopterFlipped();
 
     // Control loop functions
     Vector3f getGimbalRateDemVecYaw(const Quaternion &quatEst);
