@@ -377,13 +377,13 @@ float AC_AttitudeControl_Heli::rate_bf_to_motor_yaw(float rate_target_cds)
 // throttle functions
 //
 
-// get_angle_boost - returns a throttle including compensation for roll/pitch angle
+// returns a throttle including compensation for roll/pitch angle
 // throttle value should be 0 ~ 1000
-int16_t AC_AttitudeControl_Heli::get_angle_boost(int16_t throttle_pwm)
+float AC_AttitudeControl_Heli::get_boosted_throttle(float throttle_in)
 {
     // no angle boost for trad helis
     _angle_boost = 0;
-    return throttle_pwm;
+    return throttle_in;
 }
 
 // update_feedforward_filter_rate - Sets LPF cutoff frequency
