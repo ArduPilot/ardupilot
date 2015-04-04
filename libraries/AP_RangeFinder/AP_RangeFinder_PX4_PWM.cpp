@@ -105,7 +105,7 @@ void AP_RangeFinder_PX4_PWM::update(void)
         _last_pulse_time_ms = now;
 
         // setup for scaling in meters per millisecond
-        float distance_cm = pwm.pulse_width * 0.1f * scaling;
+        float distance_cm = pwm.pulse_width * 0.1f * scaling + ranger._offset[state.instance];
 
         if (distance_cm > ranger._max_distance_cm[state.instance] ||
             distance_cm < ranger._min_distance_cm[state.instance]) {

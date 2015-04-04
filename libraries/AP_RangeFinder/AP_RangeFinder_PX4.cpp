@@ -136,6 +136,7 @@ void AP_RangeFinder_PX4::update(void)
 
     if (count != 0) {
         state.distance_cm = sum / count * 100.0f;
+        state.distance_cm += ranger._offset[state.instance];
     }
 }
 
