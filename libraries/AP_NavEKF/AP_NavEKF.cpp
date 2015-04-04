@@ -3630,8 +3630,13 @@ void NavEKF::getIMU1Weighting(float &ret) const
 
 // return the individual Z-accel bias estimates in m/s^2
 void NavEKF::getAccelZBias(float &zbias1, float &zbias2) const {
-    zbias1 = state.accel_zbias1 / dtIMUavg;
-    zbias2 = state.accel_zbias2 / dtIMUavg;
+    if (dtIMUavg > 0) {
+        zbias1 = state.accel_zbias1 / dtIMUavg;
+        zbias2 = state.accel_zbias2 / dtIMUavg;
+    } else {
+        zbias1 = 0;
+        zbias2 = 0;
+    }
 }
 
 // return the NED wind speed estimates in m/s (positive is air moving in the direction of the axis)
