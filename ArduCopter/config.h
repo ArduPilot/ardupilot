@@ -202,6 +202,10 @@
  # define FS_BATT_MAH_DEFAULT             0         // default battery capacity (in mah) below which failsafe will be triggered
 #endif
 
+#ifndef BATT_ARM_VOLTAGE_DEFAULT
+ # define BATT_ARM_VOLTAGE_DEFAULT        0         // default battery voltage below which the vehicle will not allow arming
+#endif
+
 #ifndef BOARD_VOLTAGE_MIN
  # define BOARD_VOLTAGE_MIN             4.3f        // min board voltage in volts for pre-arm checks
 #endif
