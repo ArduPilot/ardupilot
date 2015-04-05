@@ -14,5 +14,6 @@
 #include "AP_MotorsHeli.h"
 #include "AP_MotorsSingle.h"
 #include "AP_MotorsCoax.h"
+#include "AP_Actuator_PWM.h"
 
 #endif // __AP_MOTORS_H__

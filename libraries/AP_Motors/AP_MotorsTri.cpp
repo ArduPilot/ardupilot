@@ -50,21 +50,19 @@ void AP_MotorsTri::set_update_rate( uint16_t speed_hz )
     _speed_hz = speed_hz;
 
     // set update rate for the 3 motors (but not the servo on channel 7)
-    uint32_t mask = 
-	    1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]) |
-	    1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]) |
-	    1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]);
-    hal.rcout->set_freq(mask, _speed_hz);
+    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1])]->set_freq(_speed_hz);
+    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2])]->set_freq(_speed_hz);
+    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4])]->set_freq(_speed_hz);
 }
 
 // enable - starts allowing signals to be sent to motors
 void AP_MotorsTri::enable()
 {
     // enable output channels
-    hal.rcout->enable_ch(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]));
-    hal.rcout->enable_ch(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]));
-    hal.rcout->enable_ch(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]));
-    hal.rcout->enable_ch(AP_MOTORS_CH_TRI_YAW);
+    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1])]->enable_ch();
+    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2])]->enable_ch();
+    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4])]->enable_ch();
+    _rc_out[AP_MOTORS_CH_TRI_YAW]->enable_ch();
 }
 
 // output_min - sends minimum values out to the motors
@@ -74,10 +72,10 @@ void AP_MotorsTri::output_min()
     limit.throttle_lower = true;
 
     // send minimum value to each motor
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _rc_throttle.radio_min);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _rc_throttle.radio_min);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _rc_throttle.radio_min);
-    hal.rcout->write(AP_MOTORS_CH_TRI_YAW, _rc_yaw.radio_trim);
+    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1])]->write(_rc_throttle.radio_min);
+    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2])]->write(_rc_throttle.radio_min);
+    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4])]->write(_rc_throttle.radio_min);
+    _rc_out[AP_MOTORS_CH_TRI_YAW]->write(_rc_yaw.radio_trim);
 }
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
@@ -185,18 +183,18 @@ void AP_MotorsTri::output_armed()
     }
 
     // send output to each motor
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), motor_out[AP_MOTORS_MOT_1]);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), motor_out[AP_MOTORS_MOT_2]);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), motor_out[AP_MOTORS_MOT_4]);
+    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1])]->write(motor_out[AP_MOTORS_MOT_1]);
+    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2])]->write(motor_out[AP_MOTORS_MOT_2]);
+    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4])]->write(motor_out[AP_MOTORS_MOT_4]);
 
     // also send out to tail command (we rely on any auto pilot to have updated the rc_yaw->radio_out to the correct value)
     // note we do not save the radio_out to the motor_out array so it may not appear in the ch7out in the status screen of the mission planner
     // note: we use _rc_tail's (aka channel 7's) REV parameter to control whether the servo is reversed or not but this is a bit nonsensical.
     //       a separate servo object (including min, max settings etc) would be better or at least a separate parameter to specify the direction of the tail servo
     if( _rc_tail.get_reverse() == true ) {
-        hal.rcout->write(AP_MOTORS_CH_TRI_YAW, _rc_yaw.radio_trim - (_rc_yaw.radio_out - _rc_yaw.radio_trim));
+        _rc_out[AP_MOTORS_CH_TRI_YAW]->write(_rc_yaw.radio_trim - (_rc_yaw.radio_out - _rc_yaw.radio_trim));
     }else{
-        hal.rcout->write(AP_MOTORS_CH_TRI_YAW, _rc_yaw.radio_out);
+        _rc_out[AP_MOTORS_CH_TRI_YAW]->write(_rc_yaw.radio_out);
     }
 }
 
@@ -221,19 +219,19 @@ void AP_MotorsTri::output_test(uint8_t motor_seq, int16_t pwm)
     switch (motor_seq) {
         case 1:
             // front right motor
-            hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), pwm);
+            _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1])]->write(pwm);
             break;
         case 2:
             // back motor
-            hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), pwm);
+            _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4])]->write(pwm);
             break;
         case 3:
             // back servo
-            hal.rcout->write(AP_MOTORS_CH_TRI_YAW, pwm);
+            _rc_out[AP_MOTORS_CH_TRI_YAW]->write(pwm);
             break;
         case 4:
             // front left motor
-            hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), pwm);
+            _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2])]->write(pwm);
             break;
         default:
             // do nothing

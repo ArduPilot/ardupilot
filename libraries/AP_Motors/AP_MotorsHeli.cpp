@@ -229,8 +229,8 @@ void AP_MotorsHeli::Init()
     init_swash();
 
     // disable channels 7 and 8 from being used by RC_Channel_aux
-    RC_Channel_aux::disable_aux_channel(_motor_to_channel_map[AP_MOTORS_HELI_AUX]);
-    RC_Channel_aux::disable_aux_channel(_motor_to_channel_map[AP_MOTORS_HELI_RSC]);
+    RC_Channel_aux::disable_aux_channel(AP_MOTORS_HELI_AUX);
+    RC_Channel_aux::disable_aux_channel(AP_MOTORS_HELI_RSC);
 }
 
 // set update rate to motors - a value in hertz
@@ -240,24 +240,22 @@ void AP_MotorsHeli::set_update_rate( uint16_t speed_hz )
     _speed_hz = speed_hz;
 
     // setup fast channels
-    uint32_t mask = 
-	    1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]) |
-	    1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]) |
-	    1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]) |
-	    1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]);
-    hal.rcout->set_freq(mask, _speed_hz);
+    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1])]->set_freq(_speed_hz);
+    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2])]->set_freq(_speed_hz);
+    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3])]->set_freq(_speed_hz);
+    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4])]->set_freq(_speed_hz);
 }
 
 // enable - starts allowing signals to be sent to motors
 void AP_MotorsHeli::enable()
 {
     // enable output channels
-    hal.rcout->enable_ch(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]));    // swash servo 1
-    hal.rcout->enable_ch(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]));    // swash servo 2
-    hal.rcout->enable_ch(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]));    // swash servo 3
-    hal.rcout->enable_ch(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]));    // yaw
-    hal.rcout->enable_ch(AP_MOTORS_HELI_AUX);                               // output for gyro gain or direct drive variable pitch tail motor
-    hal.rcout->enable_ch(AP_MOTORS_HELI_RSC);                               // output for main rotor esc
+    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1])]->enable_ch();    // swash servo 1
+    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2])]->enable_ch();    // swash servo 2
+    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3])]->enable_ch();    // swash servo 3
+    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4])]->enable_ch();    // yaw
+    _rc_out[AP_MOTORS_HELI_AUX]->enable_ch();                               // output for gyro gain or direct drive variable pitch tail motor
+    _rc_out[AP_MOTORS_HELI_RSC]->enable_ch();                               // output for main rotor esc
 }
 
 // output_min - sends minimum values out to the motors
@@ -288,26 +286,26 @@ void AP_MotorsHeli::output_test(uint8_t motor_seq, int16_t pwm)
     switch (motor_seq) {
         case 1:
             // swash servo 1
-            hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), pwm);
+            _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1])]->write(pwm);
             break;
         case 2:
             // swash servo 2
-            hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), pwm);
+            _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2])]->write(pwm);
             break;
         case 3:
             // swash servo 3
-            hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]), pwm);
+            _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3])]->write(pwm);
             break;
         case 4:
             // external gyro & tail servo
             if (_tail_type == AP_MOTORS_HELI_TAILTYPE_SERVO_EXTGYRO) {
                 write_aux(_ext_gyro_gain);
             }
-            hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), pwm);
+            _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4])]->write(pwm);
             break;
         case 5:
             // main rotor
-            hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_HELI_RSC]), pwm);
+            _rc_out[AP_MOTORS_HELI_RSC]->write(pwm);
             break;
         default:
             // do nothing
@@ -626,10 +624,10 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
     _servo_4.calc_pwm();
 
     // actually move the servos
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _servo_1.radio_out);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _servo_2.radio_out);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]), _servo_3.radio_out);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _servo_4.radio_out);
+    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1])]->write(_servo_1.radio_out);
+    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2])]->write(_servo_2.radio_out);
+    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3])]->write(_servo_3.radio_out);
+    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4])]->write(_servo_4.radio_out);
 
     // output gain to exernal gyro
     if (_tail_type == AP_MOTORS_HELI_TAILTYPE_SERVO_EXTGYRO) {
@@ -786,7 +784,7 @@ void AP_MotorsHeli::write_rsc(int16_t servo_out)
 {
     _servo_rsc.servo_out = servo_out;
     _servo_rsc.calc_pwm();
-    hal.rcout->write(AP_MOTORS_HELI_RSC, _servo_rsc.radio_out);
+    _rc_out[AP_MOTORS_HELI_RSC]->write(_servo_rsc.radio_out);
 }
 
 // write_aux - outputs pwm onto output aux channel (ch7)
@@ -795,7 +793,7 @@ void AP_MotorsHeli::write_aux(int16_t servo_out)
 {
     _servo_aux.servo_out = servo_out;
     _servo_aux.calc_pwm();
-    hal.rcout->write(AP_MOTORS_HELI_AUX, _servo_aux.radio_out);
+    _rc_out[AP_MOTORS_HELI_AUX]->write(_servo_aux.radio_out);
 }
 
 // set_delta_phase_angle for setting variable phase angle compensation and force

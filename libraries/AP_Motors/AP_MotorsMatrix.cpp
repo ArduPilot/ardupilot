@@ -46,13 +46,11 @@ void AP_MotorsMatrix::set_update_rate( uint16_t speed_hz )
     _speed_hz = speed_hz;
 
     // check each enabled motor
-    uint32_t mask = 0;
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         if( motor_enabled[i] ) {
-		mask |= 1U << pgm_read_byte(&_motor_to_channel_map[i]);
+            _rc_out[pgm_read_byte(&_motor_to_channel_map[i])]->set_freq(_speed_hz);
         }
     }
-    hal.rcout->set_freq( mask, _speed_hz );
 }
 
 // set frame orientation (normally + or X)
@@ -81,7 +79,7 @@ void AP_MotorsMatrix::enable()
     // enable output channels
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         if( motor_enabled[i] ) {
-            hal.rcout->enable_ch(pgm_read_byte(&_motor_to_channel_map[i]));
+            _rc_out[pgm_read_byte(&_motor_to_channel_map[i])]->enable_ch();
         }
     }
 }
@@ -100,7 +98,7 @@ void AP_MotorsMatrix::output_min()
     // fill the motor_out[] array for HIL use and send minimum value to each motor
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         if( motor_enabled[i] ) {
-            hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[i]), _rc_throttle.radio_min);
+            _rc_out[pgm_read_byte(&_motor_to_channel_map[i])]->write(_rc_throttle.radio_min);
         }
     }
 }
@@ -329,7 +327,7 @@ void AP_MotorsMatrix::output_armed()
     // send output to each motor
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         if( motor_enabled[i] ) {
-            hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[i]), motor_out[i]);
+            _rc_out[pgm_read_byte(&_motor_to_channel_map[i])]->write(motor_out[i]);
         }
     }
 }
@@ -355,7 +353,7 @@ void AP_MotorsMatrix::output_test(uint8_t motor_seq, int16_t pwm)
     for (uint8_t i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i] && _test_order[i] == motor_seq) {
             // turn on this motor
-            hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[i]), pwm);
+            _rc_out[pgm_read_byte(&_motor_to_channel_map[i])]->write(pwm);
         }
     }
 }
@@ -380,7 +378,7 @@ void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitc
         _test_order[motor_num] = testing_order;
 
         // disable this channel from being used by RC_Channel_aux
-        RC_Channel_aux::disable_aux_channel(_motor_to_channel_map[motor_num]);
+        RC_Channel_aux::disable_aux_channel(pgm_read_byte(&_motor_to_channel_map[motor_num]));
     }
 }
 
