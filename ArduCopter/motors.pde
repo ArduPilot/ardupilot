@@ -639,8 +639,14 @@ static bool arm_checks(bool display_failure, bool arming_from_gcs)
         }
         return false;
     }
+   
+    battery.read();
+    if(g.batt_arm_voltage > 0.0f && battery.voltage()<g.batt_arm_voltage){
+        gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Low Battery"));
+        return false;    
+    } 
 
-    // if we've gotten this far all is ok
+// if we've gotten this far all is ok
     return true;
 }
 
