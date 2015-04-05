@@ -3514,8 +3514,10 @@ void NavEKF::RecallOmega(Vector3f &omegaAvg, uint32_t msecStart, uint32_t msecEn
     if (numAvg >= 1)
     {
         omegaAvg = omegaAvg / float(numAvg);
-    } else {
+    } else if (dtIMUactual > 0) {
         omegaAvg = correctedDelAng / dtIMUactual;
+    } else {
+        omegaAvg.zero();
     }
 }
 
