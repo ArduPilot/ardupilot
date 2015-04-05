@@ -72,7 +72,7 @@ fi
 
 mkdir -p $OPT
 
-cd $OPT;
+cd $OPT
 wget $ARM_TARBALL_URL
 tar xjf ${ARM_TARBALL}
 rm -f ${ARM_TARBALL}
@@ -82,4 +82,8 @@ echo $exportline >> ~/.profile
 
 exportline2="export PATH=$CWD/$ARDUPILOT_TOOLS:\$PATH";
 echo $exportline2 >> ~/.profile
-$exportline2
+
+. ~/.profile
+echo $PATH
+ls -l $OPT/$ARM_ROOT/bin
+

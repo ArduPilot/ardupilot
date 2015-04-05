@@ -8,6 +8,8 @@
 set -e
 set -x
 
+. ~/.profile
+
 echo "Testing ArduPlane build"
 pushd ArduPlane
 make configure
