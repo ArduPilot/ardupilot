@@ -6,6 +6,7 @@ set -v
 
 CWD=$(pwd)
 OPT="$HOME/opt"
+echo "PATH=$PATH"
 
 BASE_PKGS="gawk make git arduino-core curl"
 SITL_PKGS="g++ python-pip python-matplotlib python-serial python-wxgtk2.8 python-scipy python-opencv python-numpy python-pyparsing ccache python-empy"
@@ -71,24 +72,14 @@ fi
 
 mkdir -p $OPT
 
-if [ ! -d $OPT/$ARM_ROOT ]; then
-    (
-        cd $OPT;
-        wget $ARM_TARBALL_URL;
-        tar xjf ${ARM_TARBALL};
-        rm ${ARM_TARBALL};
-    )
-fi
+cd $OPT;
+wget $ARM_TARBALL_URL
+tar xjf ${ARM_TARBALL}
+rm -f ${ARM_TARBALL}
 
 exportline="export PATH=$OPT/$ARM_ROOT/bin:\$PATH";
-if ! grep -Fxq "$exportline" ~/.profile ; then
-    echo $exportline >> ~/.profile
-    $exportline
-fi
+echo $exportline >> ~/.profile
 
 exportline2="export PATH=$CWD/$ARDUPILOT_TOOLS:\$PATH";
-if ! grep -Fxq "$exportline2" ~/.profile ; then
-    echo $exportline2 >> ~/.profile
-    $exportline2
-fi
-
+echo $exportline2 >> ~/.profile
+$exportline2
