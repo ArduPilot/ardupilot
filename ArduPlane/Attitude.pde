@@ -545,29 +545,7 @@ static void flap_slew_limit(int8_t &last_value, int8_t &new_value)
     last_value = new_value;
 }
 
-
-
-/**
-  Do we think we are flying?
-  This is a heuristic so it could be wrong in some cases.  In particular, if we don't have GPS lock we'll fall
-  back to only using altitude.  (This is probably more optimistic than what suppress_throttle wants...)
-*/
-static bool is_flying(void)
-{
-    // If we don't have a GPS lock then don't use GPS for this test
-    bool gpsMovement = (gps.status() < AP_GPS::GPS_OK_FIX_2D ||
-                        gps.ground_speed() >= 5);
-    
-    bool airspeedMovement = !airspeed.use() || airspeed.get_airspeed() >= 5;
-    
-    // we're more than 5m from the home altitude
-    bool inAir = relative_altitude_abs_cm() > 500;
-
-    return inAir && gpsMovement && airspeedMovement;
-}
-
-
-/* We want to supress the throttle if we think we are on the ground and in an autopilot controlled throttle mode.
+/* We want to suppress the throttle if we think we are on the ground and in an autopilot controlled throttle mode.
 
    Disable throttle if following conditions are met:
    *       1 - We are in Circle mode (which we use for short term failsafe), or in FBW-B or higher
@@ -596,16 +574,21 @@ static bool suppress_throttle(void)
     }
 
     if (control_mode==AUTO && 
-        auto_state.takeoff_complete == false && 
-        auto_takeoff_check()) {
-        // we're in auto takeoff 
-        throttle_suppressed = false;
-        return false;
+        auto_state.takeoff_complete == false) {
+        if (auto_takeoff_check()) {
+            // we're in auto takeoff 
+            throttle_suppressed = false;
+            return false;
+        }
+        // keep throttle suppressed
+        return true;
     }
     
     if (relative_altitude_abs_cm() >= 1000) {
         // we're more than 10m from the home altitude
         throttle_suppressed = false;
+        gcs_send_text_fmt(PSTR("Throttle unsuppressed - altitude %.2f"), 
+                          relative_altitude_abs_cm()*0.01f);
         return false;
     }
 
@@ -614,8 +597,11 @@ static bool suppress_throttle(void)
         // if we have an airspeed sensor, then check it too, and
         // require 5m/s. This prevents throttle up due to spiky GPS
         // groundspeed with bad GPS reception
-        if (!airspeed.use() || airspeed.get_airspeed() >= 5) {
+        if ((!ahrs.airspeed_sensor_enabled()) || airspeed.get_airspeed() >= 5) {
             // we're moving at more than 5 m/s
+            gcs_send_text_fmt(PSTR("Throttle unsuppressed - speed %.2f airspeed %.2f"), 
+                              gps.ground_speed(),
+                              airspeed.get_airspeed());
             throttle_suppressed = false;
             return false;        
         }
@@ -825,7 +811,10 @@ static void set_servos(void)
                                                       min_throttle,
                                                       max_throttle);
 
-        if (suppress_throttle()) {
+        if (!hal.util->get_soft_armed()) {
+            channel_throttle->servo_out = 0;
+            channel_throttle->calc_pwm();                
+        } else if (suppress_throttle()) {
             // throttle is suppressed in auto mode
             channel_throttle->servo_out = 0;
             if (g.throttle_suppress_manual) {
@@ -869,7 +858,7 @@ static void set_servos(void)
 
     if (auto_throttle_mode) {
         int16_t flapSpeedSource = 0;
-        if (airspeed.use()) {
+        if (ahrs.airspeed_sensor_enabled()) {
             flapSpeedSource = target_airspeed_cm * 0.01f;
         } else {
             flapSpeedSource = aparm.throttle_cruise;
@@ -962,16 +951,16 @@ static void set_servos(void)
     obc.check_crash_plane();
 #endif
 
-#if HIL_MODE != HIL_MODE_DISABLED
-    // get the servos to the GCS immediately for HIL
-    if (comm_get_txspace(MAVLINK_COMM_0) >= 
-        MAVLINK_MSG_ID_RC_CHANNELS_SCALED_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
-        send_servo_out(MAVLINK_COMM_0);
+    if (g.hil_mode == 1) {
+        // get the servos to the GCS immediately for HIL
+        if (comm_get_txspace(MAVLINK_COMM_0) >= 
+            MAVLINK_MSG_ID_RC_CHANNELS_SCALED_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
+            send_servo_out(MAVLINK_COMM_0);
+        }
+        if (!g.hil_servos) {
+            return;
+        }
     }
-    if (!g.hil_servos) {
-        return;
-    }
-#endif
 
     // send values to the PWM timers for output
     // ----------------------------------------

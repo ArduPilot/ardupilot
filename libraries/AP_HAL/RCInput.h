@@ -18,9 +18,12 @@ public:
     virtual void init(void* implspecific) = 0;
 
     /**
-     * Return true if there has been new input since the last read() call
+     * Return true if there has been new input since the last read()
+     * call. This call also clears the new_input flag, so once it
+     * returns true it won't return true again until another frame is
+     * received.
      */
-    virtual bool  new_input() = 0;
+    virtual bool new_input() = 0;
 
     /**
      * Return the number of valid channels in the last read

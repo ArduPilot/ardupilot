@@ -81,9 +81,9 @@ void AP_AHRS_NavEKF::update(void)
         if (start_time_ms == 0) {
             start_time_ms = hal.scheduler->millis();
         }
-        if (hal.scheduler->millis() - start_time_ms > startup_delay_ms) {
+        if (hal.scheduler->millis() - start_time_ms > startup_delay_ms &&
+            EKF.InitialiseFilterDynamic()) {
             ekf_started = true;
-            EKF.InitialiseFilterDynamic();
         }
     }
     if (ekf_started) {
@@ -152,7 +152,7 @@ void AP_AHRS_NavEKF::reset(bool recover_eulers)
 {
     AP_AHRS_DCM::reset(recover_eulers);
     if (ekf_started) {
-        EKF.InitialiseFilterBootstrap();        
+        ekf_started = EKF.InitialiseFilterBootstrap();        
     }
 }
 
@@ -161,14 +161,18 @@ void AP_AHRS_NavEKF::reset_attitude(const float &_roll, const float &_pitch, con
 {
     AP_AHRS_DCM::reset_attitude(_roll, _pitch, _yaw);
     if (ekf_started) {
-        EKF.InitialiseFilterBootstrap();        
+        ekf_started = EKF.InitialiseFilterBootstrap();        
     }
 }
 
 // dead-reckoning support
 bool AP_AHRS_NavEKF::get_position(struct Location &loc) const
 {
-    if (using_EKF() && EKF.getLLH(loc)) {
+    Vector3f ned_pos;
+    if (using_EKF() && EKF.getLLH(loc) && EKF.getPosNED(ned_pos)) {
+        // fixup altitude using relative position from AHRS home, not
+        // EKF origin
+        loc.alt = get_home().alt - ned_pos.z*100;
         return true;
     }
     return AP_AHRS_DCM::get_position(loc);
@@ -300,12 +304,19 @@ bool AP_AHRS_NavEKF::using_EKF(void) const
 /*
   check if the AHRS subsystem is healthy
 */
-bool AP_AHRS_NavEKF::healthy(void)
+bool AP_AHRS_NavEKF::healthy(void) const
 {
     if (_ekf_use) {
         return ekf_started && EKF.healthy();
     }
     return AP_AHRS_DCM::healthy();    
+}
+
+void AP_AHRS_NavEKF::set_ekf_use(bool setting)
+{
+#if !AHRS_EKF_USE_ALWAYS
+    _ekf_use.set(setting);
+#endif
 }
 
 // true if the AHRS has completed initialisation
@@ -331,6 +342,14 @@ uint8_t AP_AHRS_NavEKF::setInhibitGPS(void)
 void AP_AHRS_NavEKF::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler)
 {
     EKF.getEkfControlLimits(ekfGndSpdLimit,ekfNavVelGainScaler);
+}
+
+// get compass offset estimates
+// true if offsets are valid
+bool AP_AHRS_NavEKF::getMagOffsets(Vector3f &magOffsets)
+{
+    bool status = EKF.getMagOffsets(magOffsets);
+    return status;
 }
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE

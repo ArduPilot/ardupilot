@@ -108,6 +108,13 @@ void AP_MotorsTri::output_armed()
         limit.throttle_upper = true;
     }
 
+    // tricopters limit throttle to 80%
+    // To-Do: implement improved stability patch and remove this limit
+    if (_rc_throttle.servo_out > 800) {
+        _rc_throttle.servo_out = 800;
+        limit.throttle_upper = true;
+    }
+
     // capture desired roll, pitch, yaw and throttle from receiver
     _rc_roll.calc_pwm();
     _rc_pitch.calc_pwm();
@@ -134,6 +141,8 @@ void AP_MotorsTri::output_armed()
         // check if throttle is below limit
         if (_rc_throttle.servo_out <= _min_throttle) {
             limit.throttle_lower = true;
+            _rc_throttle.servo_out = _min_throttle;
+            _rc_throttle.calc_pwm();    // recalculate radio.out
         }
         //left front
         motor_out[AP_MOTORS_MOT_2] = _rc_throttle.radio_out + roll_out + pitch_out;
@@ -161,12 +170,10 @@ void AP_MotorsTri::output_armed()
             motor_out[AP_MOTORS_MOT_4] = out_max;
         }
 
-        // adjust for throttle curve
-        if( _throttle_curve_enabled ) {
-            motor_out[AP_MOTORS_MOT_1] = _throttle_curve.get_y(motor_out[AP_MOTORS_MOT_1]);
-            motor_out[AP_MOTORS_MOT_2] = _throttle_curve.get_y(motor_out[AP_MOTORS_MOT_2]);
-            motor_out[AP_MOTORS_MOT_4] = _throttle_curve.get_y(motor_out[AP_MOTORS_MOT_4]);
-        }
+        // adjust for thrust curve and voltage scaling
+        motor_out[AP_MOTORS_MOT_1] = apply_thrust_curve_and_volt_scaling(motor_out[AP_MOTORS_MOT_1], out_min, out_max);
+        motor_out[AP_MOTORS_MOT_2] = apply_thrust_curve_and_volt_scaling(motor_out[AP_MOTORS_MOT_2], out_min, out_max);
+        motor_out[AP_MOTORS_MOT_4] = apply_thrust_curve_and_volt_scaling(motor_out[AP_MOTORS_MOT_4], out_min, out_max);
 
         // ensure motors don't drop below a minimum value and stop
         motor_out[AP_MOTORS_MOT_1] = max(motor_out[AP_MOTORS_MOT_1],    out_min);

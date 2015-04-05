@@ -375,9 +375,9 @@ AP_AHRS_DCM::drift_correction_yaw(void)
         /*
           we are using compass for yaw
          */
-        if (_compass->last_update != _compass_last_update) {
-            yaw_deltat = (_compass->last_update - _compass_last_update) * 1.0e-6f;
-            _compass_last_update = _compass->last_update;
+        if (_compass->last_update_usec() != _compass_last_update) {
+            yaw_deltat = (_compass->last_update_usec() - _compass_last_update) * 1.0e-6f;
+            _compass_last_update = _compass->last_update_usec();
             // we force an additional compass read()
             // here. This has the effect of throwing away
             // the first compass value, which can be bad
@@ -559,7 +559,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
             return;
         }
         float airspeed;
-        if (_airspeed && _airspeed->use()) {
+        if (airspeed_sensor_enabled()) {
             airspeed = _airspeed->get_airspeed();
         } else {
             airspeed = _last_airspeed;
@@ -850,7 +850,7 @@ void AP_AHRS_DCM::estimate_wind(void)
         }
 
         _last_wind_time = now;
-    } else if (now - _last_wind_time > 2000 && _airspeed && _airspeed->use()) {
+    } else if (now - _last_wind_time > 2000 && airspeed_sensor_enabled()) {
         // when flying straight use airspeed to get wind estimate if available
         Vector3f airspeed = _dcm_matrix.colx() * _airspeed->get_airspeed();
         Vector3f wind = velocity - (airspeed * get_EAS2TAS());
@@ -923,7 +923,7 @@ bool AP_AHRS_DCM::get_position(struct Location &loc) const
 bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret) const
 {
 	bool ret = false;
-	if (_airspeed && _airspeed->use()) {
+	if (airspeed_sensor_enabled()) {
 		*airspeed_ret = _airspeed->get_airspeed();
 		return true;
 	}
@@ -960,7 +960,7 @@ void AP_AHRS_DCM::set_home(const Location &loc)
 /*
   check if the AHRS subsystem is healthy
 */
-bool AP_AHRS_DCM::healthy(void)
+bool AP_AHRS_DCM::healthy(void) const
 {
     // consider ourselves healthy if there have been no failures for 5 seconds
     return (_last_failure_ms == 0 || hal.scheduler->millis() - _last_failure_ms > 5000);

@@ -148,6 +148,16 @@ then
         echo "PX4IO CRC failure"
         echo "PX4IO CRC failure" >> $logfile    
         tone_alarm MBABGP
+
+        if px4io safety_on
+        then
+            echo "PX4IO disarm OK"
+        else
+            echo "PX4IO disarm failed"
+        fi
+
+        sleep 1
+
         if px4io forceupdate 14662 /etc/px4io/px4io.bin
         then
                sleep 1
@@ -183,40 +193,38 @@ then
         echo "Setting FMU mode_serial"
         fmu mode_serial
 else
-        echo "Setting FMU mode_pwm"
-        fmu mode_pwm
+        if fmu mode_pwm4
+        then
+                echo "Set FMU mode_pwm4"
+        fi
 fi
 
 
 echo "Starting APM sensors"
+
 if ms5611 start
 then
-    echo "ms5611 started OK"
+   echo "ms5611 started OK"
 else
-    sh /etc/init.d/rc.error
+   echo "no ms5611 found"
+   echo "No ms5611 found" >> $logfile
+   sh /etc/init.d/rc.error
 fi
 
 if adc start
 then
-    echo "adc started OK"
+   echo "adc started OK"
 else
-    sh /etc/init.d/rc.error
+   echo "No adc" >> $logfile
+   sh /etc/init.d/rc.error
 fi
 
 if [ $BOARD == FMUv1 ]
 then
     echo "Starting FMUv1 sensors"
-    if hmc5883 start
+    if hmc5883 -C -T start
     then
         echo "hmc5883 started OK"
-        if hmc5883 calibrate
-        then
-          echo "hmc5883 calibrate OK"
-        else 
-          echo "hmc5883 calibrate failed"
-          echo "hmc5883 calibrate failed" >> $logfile
-          tone_alarm MSBBB
-        fi
     else
         echo "hmc5883 start failed"
         echo "hmc5883 start failed" >> $logfile
@@ -237,13 +245,13 @@ then
     fi
 else
     echo "Starting FMUv2 sensors"
-    if hmc5883 -C -X start
+    if hmc5883 -C -T -X start
     then
         echo "Have external hmc5883"
     else
         echo "No external hmc5883"
     fi
-    if hmc5883 -C -I -R 4 start
+    if hmc5883 -C -T -I -R 4 start
     then
         echo "Have internal hmc5883"
     else
@@ -286,9 +294,9 @@ else
                echo "No MPU6000" >> $logfile
                sh /etc/init.d/rc.error
         fi
-        if ms5611 -X start
+        if hmc5883 -C -T -S -R 8 start
         then
-            echo "ms5611 external started OK"
+               echo "Found SPI hmc5883"
         fi
     else
         if mpu6000 start
@@ -335,6 +343,11 @@ then
     echo "Found internal ll40ls sensor"
 fi
 
+if trone start
+then
+    echo "Found trone sensor"
+fi
+
 if mb12xx start
 then
     echo "Found mb12xx sensor"
@@ -344,6 +357,12 @@ fi
 if px4flow start
 then
     echo "Found px4flow sensor"
+fi
+
+# optional PWM input driver
+if pwm_input start
+then
+    echo "started pwm_input driver"
 fi
 
 echo "Trying PX4IO board"
@@ -377,9 +396,15 @@ then
 fi
 
 # optional smbus battery monitor
-if batt_smbus start
+if batt_smbus -b 2 start
 then
     echo "Found batt_smbus"
+fi
+
+# optional oreo leds
+if oreoled start
+then
+    echo "oreoled started OK"
 fi
 
 if [ $BOARD == FMUv2 ]

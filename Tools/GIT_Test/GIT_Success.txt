@@ -18,3 +18,4 @@ Linus Penzlien
 Hazy
 Benoit GRUSON
 Dario Lindo Andres
+George Zogopoulos Papaliakos, struggling with Git

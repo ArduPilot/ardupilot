@@ -25,6 +25,7 @@
 #include <AP_Vehicle.h>
 #include <DataFlash.h>
 #include <AP_Notify.h>
+#include <AP_BattMonitor.h>
 
 #include <AP_Mount.h>
 

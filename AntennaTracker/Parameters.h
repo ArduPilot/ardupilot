@@ -55,8 +55,8 @@ public:
         k_param_gcs1,               // stream rates for uartC
         k_param_sysid_this_mav,
         k_param_sysid_my_gcs,
-        k_param_serial0_baud,
-        k_param_serial1_baud,
+        k_param_serial0_baud,       // deprecated
+        k_param_serial1_baud,       // deprecated
         k_param_imu,
         k_param_compass_enabled,
         k_param_compass,
@@ -68,7 +68,7 @@ public:
         k_param_pidPitch2Srv,
         k_param_pidYaw2Srv,
         k_param_gcs2,               // stream rates for uartD
-        k_param_serial2_baud,
+        k_param_serial2_baud,       // deprecated
 
         k_param_yaw_slew_time,
         k_param_pitch_slew_time,
@@ -91,6 +91,14 @@ public:
         k_param_yaw_range,
         k_param_pitch_range,            // 136
 
+        //
+        // 150: Telemetry control
+        //
+        k_param_serial_manager,     // serial manager library
+
+        //
+        // 200 : Radio settings
+        //
         k_param_channel_yaw = 200,
         k_param_channel_pitch,
 
@@ -109,11 +117,6 @@ public:
     //
     AP_Int16 sysid_this_mav;
     AP_Int16 sysid_my_gcs;
-    AP_Int8 serial0_baud;
-    AP_Int8 serial1_baud;
-#if MAVLINK_COMM_NUM_BUFFERS > 2
-    AP_Int8 serial2_baud;
-#endif
 
     AP_Int8 compass_enabled;
 

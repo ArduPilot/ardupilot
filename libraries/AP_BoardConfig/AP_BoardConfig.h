@@ -26,6 +26,7 @@ private:
     AP_Int8 _ser1_rtscts;
     AP_Int8 _ser2_rtscts;
     AP_Int8 _safety_enable;
+    AP_Int8 _sbus_out_enable;
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 

@@ -119,7 +119,7 @@ bool Vector2<T>::operator ==(const Vector2<T> &v) const
 template <typename T>
 bool Vector2<T>::operator !=(const Vector2<T> &v) const
 {
-    return (x!=v.x && y!=v.y);
+    return (x!=v.x || y!=v.y);
 }
 
 template <typename T>

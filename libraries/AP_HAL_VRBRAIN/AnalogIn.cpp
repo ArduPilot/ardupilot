@@ -18,6 +18,7 @@
 #include <uORB/topics/system_power.h>
 #include <GCS_MAVLink.h>
 #include <errno.h>
+#include <AP_Vehicle.h>
 
 #define ANLOGIN_DEBUGGING 0
 
@@ -40,23 +41,16 @@ static const struct {
     uint8_t pin;
     float scaling;
 } pin_scaling[] = {
-#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V40)
-    {  0, 3.3f/4096 },
-    { 10, 3.3f/4096 },
-    { 11, 3.3f/4096 },
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V45)
-    {  0, 3.3f/4096 },
-    { 10, 3.3f/4096 },
-    { 11, 3.3f/4096 },
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V50)
-    {  0, 3.3f/4096 },
-    { 10, 3.3f/4096 },
-    { 11, 3.3f/4096 },
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V51)
+#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V45) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V51) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V52)
     {  0, 3.3f/4096 },
     { 10, 3.3f/4096 },
     { 11, 3.3f/4096 },
 #elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
+    { 10, 3.3f/4096 },
+#elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
+    {  1, 3.3f/4096 },
+    {  2, 3.3f/4096 },
+    {  3, 3.3f/4096 },
     { 10, 3.3f/4096 },
 #elif defined(CONFIG_ARCH_BOARD_VRHERO_V10)
     { 10, 3.3f/4096 },

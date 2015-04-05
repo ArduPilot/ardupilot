@@ -119,7 +119,7 @@ def pexpect_drain(p):
     except pexpect.TIMEOUT:
         pass
 
-def start_SIL(atype, valgrind=False, wipe=False, height=None):
+def start_SIL(atype, valgrind=False, wipe=False, height=None, synthetic_clock=False):
     '''launch a SIL instance'''
     import pexpect
     cmd=""
@@ -133,6 +133,8 @@ def start_SIL(atype, valgrind=False, wipe=False, height=None):
         cmd += ' -w'
     if height is not None:
         cmd += ' -H %u' % height
+    if synthetic_clock:
+        cmd += ' -S'
     ret = pexpect.spawn(cmd, logfile=sys.stdout, timeout=5)
     ret.delaybeforesend = 0
     pexpect_autoclose(ret)
@@ -140,7 +142,7 @@ def start_SIL(atype, valgrind=False, wipe=False, height=None):
     return ret
 
 def start_MAVProxy_SIL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1:5760',
-                       options=None, logfile=sys.stdout):
+                       options=None, logfile=sys.stdout, synthetic_clock=False):
     '''launch mavproxy connected to a SIL instance'''
     import pexpect
     global close_list

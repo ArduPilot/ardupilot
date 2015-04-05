@@ -23,7 +23,7 @@ extern bool _px4_thread_should_exit;
 /*
   constructor
  */
-PX4Util::PX4Util(void) 
+PX4Util::PX4Util(void) : Util()
 {
     _safety_handle = orb_subscribe(ORB_ID(safety));
 }

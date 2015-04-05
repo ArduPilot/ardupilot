@@ -23,7 +23,7 @@ static void init_rc_in()
     // set rc channel ranges
     g.rc_1.set_angle(ROLL_PITCH_INPUT_MAX);
     g.rc_2.set_angle(ROLL_PITCH_INPUT_MAX);
-    g.rc_3.set_range(g.throttle_min, g.throttle_max);
+    g.rc_3.set_range(g.throttle_min, THR_MAX);
     g.rc_4.set_angle(4500);
 
     g.rc_1.set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
@@ -186,19 +186,3 @@ static void set_throttle_zero_flag(int16_t throttle_control)
         ap.throttle_zero = true;
     }
 }
-
-static void trim_radio()
-{
-    for (uint8_t i = 0; i < 30; i++) {
-        read_radio();
-    }
-
-    g.rc_1.trim();      // roll
-    g.rc_2.trim();      // pitch
-    g.rc_4.trim();      // yaw
-
-    g.rc_1.save_eeprom();
-    g.rc_2.save_eeprom();
-    g.rc_4.save_eeprom();
-}
-

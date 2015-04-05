@@ -259,6 +259,13 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     case MSG_FENCE_STATUS:
     case MSG_WIND:
     case MSG_RANGEFINDER:
+    case MSG_TERRAIN:
+    case MSG_BATTERY2:
+    case MSG_CAMERA_FEEDBACK:
+    case MSG_MOUNT_STATUS:
+    case MSG_OPTICAL_FLOW:
+    case MSG_GIMBAL_REPORT:
+    case MSG_EKF_STATUS_REPORT:
         break; // just here to prevent a warning
     }
     return true;
@@ -374,7 +381,7 @@ bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
         if (rate > 50) {
             rate = 50;
         }
-        stream_ticks[stream_num] = (50 / rate) + stream_slowdown;
+        stream_ticks[stream_num] = (50 / rate) -1 + stream_slowdown;
         return true;
     }
 
@@ -513,10 +520,16 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             
             case MAV_CMD_PREFLIGHT_CALIBRATION:
             {
-                if (packet.param1 == 1 ||
-                    packet.param2 == 1) {
-                    calibrate_ins();
-                } else if (packet.param3 == 1) {
+                if (packet.param1 == 1) {
+                    ins.init_gyro();
+                    if (ins.gyro_calibrated_ok_all()) {
+                        ahrs.reset_gyro_drift();
+                        result = MAV_RESULT_ACCEPTED;
+                    } else {
+                        result = MAV_RESULT_FAILED;
+                    }
+                } 
+                if (packet.param3 == 1) {
                     init_barometer();
                     // zero the altitude difference on next baro update
                     nav_status.need_altitude_calibration = true;
@@ -525,9 +538,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     // Cant trim radio
                 }
 #if !defined( __AVR_ATmega1280__ )
-                if (packet.param5 == 1) {
+                else if (packet.param5 == 1) {
                     float trim_roll, trim_pitch;
-                    AP_InertialSensor_UserInteract_MAVLink interact(chan);
+                    AP_InertialSensor_UserInteract_MAVLink interact(this);
                     if(ins.calibrate_accel(&interact, trim_roll, trim_pitch)) {
                         // reset ahrs's trim to suggested values from calibration routine
                         ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
@@ -584,6 +597,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 if (packet.param1 == 1 || packet.param1 == 3) {
                     // when packet.param1 == 3 we reboot to hold in bootloader
                     hal.scheduler->reboot(packet.param1 == 3);
+                    result = MAV_RESULT_ACCEPTED;
+                }
+                break;
+            }
+
+            case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES: {
+                if (packet.param1 == 1) {
+                    gcs[chan-MAVLINK_COMM_0].send_autopilot_version();
                     result = MAV_RESULT_ACCEPTED;
                 }
                 break;
@@ -741,6 +762,10 @@ mission_failed:
         handle_serial_control(msg, gps);
         break;
 #endif
+
+    case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
+        gcs[chan-MAVLINK_COMM_0].send_autopilot_version();
+        break;
 
     } // end switch
 } // end handle mavlink

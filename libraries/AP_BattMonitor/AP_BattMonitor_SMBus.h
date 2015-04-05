@@ -7,7 +7,7 @@
 #include <AP_Math.h>
 #include "AP_BattMonitor_Backend.h"
 
-#define AP_BATTMONITOR_SMBUS_MAX_CELLS 4
+#define AP_BATTMONITOR_SMBUS_TIMEOUT_MICROS 5000000    // sensor becomes unhealthy if no successful readings for 5 seconds
 
 class AP_BattMonitor_SMBus : public AP_BattMonitor_Backend
 {

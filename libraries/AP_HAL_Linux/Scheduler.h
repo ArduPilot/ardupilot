@@ -10,6 +10,7 @@
 #include <pthread.h>
 
 #define LINUX_SCHEDULER_MAX_TIMER_PROCS 10
+#define LINUX_SCHEDULER_MAX_IO_PROCS 10
 
 class Linux::LinuxScheduler : public AP_HAL::Scheduler {
 public:
@@ -61,7 +62,7 @@ private:
     uint8_t _num_timer_procs;
     volatile bool _in_timer_proc;
 
-    AP_HAL::MemberProc _io_proc[LINUX_SCHEDULER_MAX_TIMER_PROCS];
+    AP_HAL::MemberProc _io_proc[LINUX_SCHEDULER_MAX_IO_PROCS];
     uint8_t _num_io_procs;
     volatile bool _in_io_proc;
 

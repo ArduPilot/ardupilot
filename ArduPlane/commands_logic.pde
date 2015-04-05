@@ -176,17 +176,9 @@ start_command(const AP_Mission::Mission_Command& cmd)
                 camera_mount.set_mode_to_default();
             }
         } else {
-            // send the command to the camera mount
-            camera_mount.set_roi_cmd(&cmd.content.location);
+            // set mount's target location
+            camera_mount.set_roi_target(cmd.content.location);
         }
-        break;
-
-    case MAV_CMD_DO_MOUNT_CONFIGURE:                    // Mission command to configure a camera mount |Mount operation mode (see MAV_CONFIGURE_MOUNT_MODE enum)| stabilize roll? (1 = yes, 0 = no)| stabilize pitch? (1 = yes, 0 = no)| stabilize yaw? (1 = yes, 0 = no)| Empty| Empty| Empty|
-        camera_mount.configure_cmd();
-        break;
-
-    case MAV_CMD_DO_MOUNT_CONTROL:                      // Mission command to control a camera mount |pitch(deg*100) or lat, depending on mount mode.| roll(deg*100) or lon depending on mount mode| yaw(deg*100) or alt (in cm) depending on mount mode| Empty| Empty| Empty| Empty|
-        camera_mount.control_cmd();
         break;
 #endif
     }
@@ -299,7 +291,7 @@ static void do_RTL(void)
     setup_turn_angle();
 
     if (should_log(MASK_LOG_MODE))
-        Log_Write_Mode(control_mode);
+        DataFlash.Log_Write_Mode(control_mode);
 }
 
 static void do_takeoff(const AP_Mission::Mission_Command& cmd)
@@ -308,7 +300,7 @@ static void do_takeoff(const AP_Mission::Mission_Command& cmd)
     set_next_WP(cmd.content.location);
     // pitch in deg, airspeed  m/s, throttle %, track WP 1 or 0
     auto_state.takeoff_pitch_cd        = (int16_t)cmd.p1 * 100;
-    auto_state.takeoff_altitude_cm     = next_WP_loc.alt;
+    auto_state.takeoff_altitude_rel_cm = next_WP_loc.alt - home.alt;
     next_WP_loc.lat = home.lat + 10;
     next_WP_loc.lng = home.lng + 10;
     auto_state.takeoff_speed_time_ms = 0;
@@ -406,7 +398,10 @@ static bool verify_takeoff()
     }
 
     // see if we have reached takeoff altitude
-    if (adjusted_altitude_cm() > auto_state.takeoff_altitude_cm) {
+    int32_t relative_alt_cm = adjusted_relative_altitude_cm();
+    if (relative_alt_cm > auto_state.takeoff_altitude_rel_cm) {
+        gcs_send_text_fmt(PSTR("Takeoff complete at %.2fm"), 
+                          relative_alt_cm*0.01f);
         steer_state.hold_course_cd = -1;
         auto_state.takeoff_complete = true;
         next_WP_loc = prev_WP_loc = current_loc;
@@ -651,7 +646,7 @@ static void do_set_home(const AP_Mission::Mission_Command& cmd)
         init_home();
     } else {
         ahrs.set_home(cmd.content.location);
-        home_is_set = true;
+        home_is_set = HOME_SET_NOT_LOCKED;
     }
 }
 

@@ -151,11 +151,13 @@ restart:
             if (state.status >= AP_GPS::GPS_OK_FIX_2D) {
                 if (_fix_counter == 0) {
                     uint32_t bcd_time_ms;
-                    if (_mtk_revision == MTK_GPS_REVISION_V16) {
-                        bcd_time_ms = _buffer.msg.utc_time*10;
-                    } else {
-                        bcd_time_ms = _buffer.msg.utc_time;
-                    }
+                    bcd_time_ms = _buffer.msg.utc_time;
+#if 0
+                    hal.console->printf("utc_date=%lu utc_time=%lu rev=%u\n", 
+                                        (unsigned long)_buffer.msg.utc_date,
+                                        (unsigned long)_buffer.msg.utc_time,
+                                        (unsigned)_mtk_revision);                                        
+#endif
                     make_gps_time(_buffer.msg.utc_date, bcd_time_ms);
                     state.last_gps_time_ms = hal.scheduler->millis();
                 }

@@ -77,7 +77,7 @@ MAVLINK_HELPER uint16_t mavlink_finalize_message_chan(mavlink_message_t* msg, ui
 	msg->len = length;
 	msg->sysid = system_id;
 	msg->compid = component_id;
-	// One sequence number per component
+	// One sequence number per channel
 	msg->seq = mavlink_get_channel_status(chan)->current_tx_seq;
 	mavlink_get_channel_status(chan)->current_tx_seq = mavlink_get_channel_status(chan)->current_tx_seq+1;
 	msg->checksum = crc_calculate(((const uint8_t*)(msg)) + 3, MAVLINK_CORE_HEADER_LEN);
@@ -226,7 +226,7 @@ MAVLINK_HELPER void mavlink_update_checksum(mavlink_message_t* msg, uint8_t c)
  * A typical use scenario of this function call is:
  *
  * @code
- * #include <inttypes.h> // For fixed-width uint8_t type
+ * #include <mavlink.h>
  *
  * mavlink_message_t msg;
  * int chan = 0;
@@ -338,12 +338,7 @@ MAVLINK_HELPER uint8_t mavlink_parse_char(uint8_t chan, uint8_t c, mavlink_messa
 			status->parse_error++;
 			status->parse_state = MAVLINK_PARSE_STATE_IDLE;
 			break;
-			if (c == MAVLINK_STX)
-			{
-				status->parse_state = MAVLINK_PARSE_STATE_GOT_STX;
-				mavlink_start_checksum(rxmsg);
-			}
-	        }
+	    }
 #endif
 		rxmsg->msgid = c;
 		mavlink_update_checksum(rxmsg, c);
@@ -429,6 +424,9 @@ MAVLINK_HELPER uint8_t mavlink_parse_char(uint8_t chan, uint8_t c, mavlink_messa
 		status->packet_rx_success_count++;
 	}
 
+	r_message->len = rxmsg->len; // Provide visibility on how far we are into current msg
+	r_mavlink_status->parse_state = status->parse_state;
+	r_mavlink_status->packet_idx = status->packet_idx;
 	r_mavlink_status->current_rx_seq = status->current_rx_seq+1;
 	r_mavlink_status->packet_rx_success_count = status->packet_rx_success_count;
 	r_mavlink_status->packet_rx_drop_count = status->parse_error;

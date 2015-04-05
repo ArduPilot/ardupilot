@@ -29,29 +29,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(sysid_my_gcs,           "SYSID_MYGCS",    255),
 
-    // @Param: SERIAL0_BAUD
-    // @DisplayName: USB Console Baud Rate
-    // @Description: The baud rate used on the USB console
-    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200
-    // @User: Standard
-    GSCALAR(serial0_baud,           "SERIAL0_BAUD",   SERIAL0_BAUD/1000),
-
-    // @Param: SERIAL1_BAUD
-    // @DisplayName: Telemetry Baud Rate
-    // @Description: The baud rate used on the first telemetry port
-    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200
-    // @User: Standard
-    GSCALAR(serial1_baud,           "SERIAL1_BAUD",   SERIAL1_BAUD/1000),
-
-#if MAVLINK_COMM_NUM_BUFFERS > 2
-    // @Param: SERIAL2_BAUD
-    // @DisplayName: Telemetry Baud Rate
-    // @Description: The baud rate used on the second telemetry port
-    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200
-    // @User: Standard
-    GSCALAR(serial2_baud,           "SERIAL2_BAUD",   SERIAL2_BAUD/1000),
-#endif
-
     // @Param: MAG_ENABLE
     // @DisplayName: Enable Compass
     // @Description: Setting this to Enabled(1) will enable the compass. Setting this to Disabled(0) will disable the compass. Note that this is separate from COMPASS_USE. This will enable the low level senor, and will enable logging of magnetometer data. To use the compass for navigation you must also set COMPASS_USE to 1.
@@ -261,6 +238,10 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Group: RC2_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp
     GOBJECT(channel_pitch,     "RC2_", RC_Channel),
+
+    // @Group: SERIAL
+    // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
+    GOBJECT(serial_manager,    "SERIAL",   AP_SerialManager),
 
 	GGROUP(pidPitch2Srv,       "PITCH2SRV_", PID),
 	GGROUP(pidYaw2Srv,         "YAW2SRV_", PID),

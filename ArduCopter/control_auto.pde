@@ -20,7 +20,7 @@
 // auto_init - initialise auto controller
 static bool auto_init(bool ignore_checks)
 {
-    if ((GPS_ok() && inertial_nav.position_ok() && mission.num_commands() > 1) || ignore_checks) {
+    if ((position_ok() && mission.num_commands() > 1) || ignore_checks) {
         auto_mode = Auto_Loiter;
 
         // stop ROI from carrying over from previous runs of the mission
@@ -89,13 +89,13 @@ static void auto_run()
 }
 
 // auto_takeoff_start - initialises waypoint controller to implement take-off
-static void auto_takeoff_start(float final_alt)
+static void auto_takeoff_start(float final_alt_above_home)
 {
     auto_mode = Auto_TakeOff;
 
     // initialise wpnav destination
     Vector3f target_pos = inertial_nav.get_position();
-    target_pos.z = final_alt;
+    target_pos.z = pv_alt_above_origin(final_alt_above_home);
     wp_nav.set_wp_destination(target_pos);
 
     // initialise yaw
@@ -430,7 +430,7 @@ void auto_nav_guided_run()
 bool auto_loiter_start()
 {
     // return failure if GPS is bad
-    if (!GPS_ok()) {
+    if (!position_ok()) {
         return false;
     }
     auto_mode = Auto_Loiter;
@@ -590,12 +590,12 @@ static void set_auto_yaw_roi(const Location &roi_location)
     }else{
 #if MOUNT == ENABLED
         // check if mount type requires us to rotate the quad
-        if(camera_mount.get_mount_type() != AP_Mount::k_pan_tilt && camera_mount.get_mount_type() != AP_Mount::k_pan_tilt_roll) {
+        if(!camera_mount.has_pan_control()) {
             roi_WP = pv_location_to_vector(roi_location);
             set_auto_yaw_mode(AUTO_YAW_ROI);
         }
         // send the command to the camera mount
-        camera_mount.set_roi_cmd(&roi_location);
+        camera_mount.set_roi_target(roi_location);
 
         // TO-DO: expand handling of the do_nav_roi to support all modes of the MAVLink.  Currently we only handle mode 4 (see below)
         //      0: do nothing

@@ -477,13 +477,13 @@ static void report_compass()
 
     // motor compensation
     cliSerial->print_P(PSTR("Motor Comp: "));
-    if( compass.motor_compensation_type() == AP_COMPASS_MOT_COMP_DISABLED ) {
+    if( compass.get_motor_compensation_type() == AP_COMPASS_MOT_COMP_DISABLED ) {
         cliSerial->print_P(PSTR("Off\n"));
     }else{
-        if( compass.motor_compensation_type() == AP_COMPASS_MOT_COMP_THROTTLE ) {
+        if( compass.get_motor_compensation_type() == AP_COMPASS_MOT_COMP_THROTTLE ) {
             cliSerial->print_P(PSTR("Throttle"));
         }
-        if( compass.motor_compensation_type() == AP_COMPASS_MOT_COMP_CURRENT ) {
+        if( compass.get_motor_compensation_type() == AP_COMPASS_MOT_COMP_CURRENT ) {
             cliSerial->print_P(PSTR("Current"));
         }
         Vector3f motor_compensation;

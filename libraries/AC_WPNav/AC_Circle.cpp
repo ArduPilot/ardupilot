@@ -151,7 +151,7 @@ void AC_Circle::update()
         }
 
         // update position controller
-        _pos_control.update_xy_controller(false, 1.0f);
+        _pos_control.update_xy_controller(AC_PosControl::XY_MODE_POS_ONLY, 1.0f);
     }
 }
 
@@ -246,7 +246,7 @@ void AC_Circle::init_start_angle(bool use_heading)
             _angle = wrap_PI(_ahrs.yaw-PI);
         } else {
             // get bearing from circle center to vehicle in radians
-            float bearing_rad = ToRad(90) + fast_atan2(-(curr_pos.x-_center.x), curr_pos.y-_center.y);
+            float bearing_rad = fast_atan2(curr_pos.y-_center.y,curr_pos.x-_center.x);
             _angle = wrap_PI(bearing_rad);
         }
     }

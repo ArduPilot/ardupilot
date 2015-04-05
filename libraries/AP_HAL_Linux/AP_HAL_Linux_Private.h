@@ -7,14 +7,18 @@
  */
 
 #include "UARTDriver.h"
+#include "SPIUARTDriver.h"
 #include "I2CDriver.h"
 #include "SPIDriver.h"
 #include "AnalogIn.h"
+#include "NavioAnalogIn.h"
 #include "Storage.h"
 #include "GPIO.h"
 #include "RCInput.h"
+#include "RCInput_AioPRU.h"
 #include "RCInput_Navio.h"
 #include "RCOutput_PRU.h"
+#include "RCOutput_AioPRU.h"
 #include "RCOutput_Navio.h"
 #include "RCOutput_ZYNQ.h"
 #include "Semaphores.h"

@@ -16,7 +16,7 @@
 
 #include <AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include "AP_RangeFinder_PX4.h"
 
 #include <sys/types.h>
@@ -80,12 +80,8 @@ AP_RangeFinder_PX4::~AP_RangeFinder_PX4()
 int AP_RangeFinder_PX4::open_driver(void)
 {
     // work out the device path based on how many PX4 drivers we have loaded
-    char path[] = RANGE_FINDER_DEVICE_PATH "n";
-    if (num_px4_instances == 0) {
-        path[strlen(path)-1] = 0;
-    } else {
-        path[strlen(path)-1] = '1' + (num_px4_instances-1);
-    }
+    char path[] = RANGE_FINDER_BASE_DEVICE_PATH "n";
+    path[strlen(path)-1] = '0' + num_px4_instances;
     return open(path, O_RDONLY);
 }
 
@@ -140,6 +136,7 @@ void AP_RangeFinder_PX4::update(void)
 
     if (count != 0) {
         state.distance_cm = sum / count * 100.0f;
+        state.distance_cm += ranger._offset[state.instance];
     }
 }
 

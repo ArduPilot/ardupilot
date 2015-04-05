@@ -107,9 +107,9 @@ public:
         k_param_gps,
         k_param_autotune_level,
         k_param_rally,
-        k_param_serial0_baud,
-        k_param_serial1_baud,
-        k_param_serial2_baud,
+        k_param_serial0_baud,           // deprecated
+        k_param_serial1_baud,           // deprecated
+        k_param_serial2_baud,           // deprecated
         k_param_takeoff_tdrag_elevator,
         k_param_takeoff_tdrag_speed1,
         k_param_takeoff_rotate_speed,
@@ -130,9 +130,11 @@ public:
         k_param_rtl_autoland,
         k_param_override_channel,
         k_param_stall_prevention,
-#if OPTFLOW == ENABLED
         k_param_optflow,
-#endif
+        k_param_cli_enabled,
+        k_param_trim_rc_at_start,
+        k_param_hil_mode,
+        k_param_land_disarm_delay,
 
         // 100: Arming parameters
         k_param_arming = 100,
@@ -153,7 +155,7 @@ public:
         k_param_serial0_baud_old,   // deprecated
         k_param_gcs2,               // stream rates for uartD
         k_param_serial2_baud_old,   // deprecated
-        k_param_serial2_protocol,
+        k_param_serial2_protocol,   // deprecated
 
         // 120: Fly-by-wire control
         //
@@ -187,6 +189,7 @@ public:
         k_param_curr_amp_offset,
         k_param_NavEKF,  // Extended Kalman Filter Inertial Navigation Group
         k_param_mission, // mission library
+        k_param_serial_manager, // serial manager library
 
         //
         // 150: Navigation parameters
@@ -208,7 +211,7 @@ public:
         //
         k_param_camera = 160,
         k_param_camera_mount,
-        k_param_camera_mount2,
+        k_param_camera_mount2,      // unused
 
         //
         // Battery monitoring parameters
@@ -272,6 +275,7 @@ public:
         k_param_flight_mode4,
         k_param_flight_mode5,
         k_param_flight_mode6,
+        k_param_initial_mode,
 
         //
         // 220: Waypoint data
@@ -320,19 +324,16 @@ public:
     //
     AP_Int16 sysid_this_mav;
     AP_Int16 sysid_my_gcs;
-    AP_Int16 serial0_baud;
-    AP_Int16 serial1_baud;
-#if MAVLINK_COMM_NUM_BUFFERS > 2
-    AP_Int16 serial2_baud;
-    AP_Int8  serial2_protocol;
-#endif
     AP_Int8 telem_delay;
-
-#if HIL_MODE != HIL_MODE_DISABLED
-    AP_Float hil_err_limit;
+#if CLI_ENABLED == ENABLED
+    AP_Int8 cli_enabled;
 #endif
+
+    AP_Float hil_err_limit;
 
     AP_Int8  rtl_autoland;
+
+    AP_Int8  trim_rc_at_start;
 
     // Feed-forward gains
     //
@@ -410,6 +411,7 @@ public:
     AP_Int8 flight_mode4;
     AP_Int8 flight_mode5;
     AP_Int8 flight_mode6;
+    AP_Int8 initial_mode;
 
     // Navigational maneuvering limits
     //
@@ -436,13 +438,12 @@ public:
     AP_Int32 airspeed_cruise_cm;
     AP_Int32 RTL_altitude_cm;
     AP_Float land_flare_alt;
-    AP_Float land_flare_sec;
+    AP_Int8 land_disarm_delay;
     AP_Int32 min_gndspeed_cm;
     AP_Int16 pitch_trim_cd;
     AP_Int16 FBWB_min_altitude_cm;
-#if HIL_MODE != HIL_MODE_DISABLED
     AP_Int8  hil_servos;
-#endif
+    AP_Int8  hil_mode;
 
     AP_Int8 compass_enabled;
     AP_Int8 flap_1_percent;

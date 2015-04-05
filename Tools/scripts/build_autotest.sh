@@ -177,6 +177,6 @@ killall -9 JSBSim || /bin/true
 # raise core limit
 ulimit -c 10000000
 
-timelimit 8500 APM/Tools/autotest/autotest.py --timeout=8000 > buildlogs/autotest-output.txt 2>&1
+timelimit 12000 APM/Tools/autotest/autotest.py --timeout=11500 > buildlogs/autotest-output.txt 2>&1
 
 ) >> build.log 2>&1

@@ -185,14 +185,16 @@ void AP_MotorsMatrix::output_armed()
         // check if throttle is below limit
         if (_rc_throttle.servo_out <= _min_throttle) {  // perhaps being at min throttle itself is not a problem, only being under is
             limit.throttle_lower = true;
+            _rc_throttle.servo_out = _min_throttle;
+            _rc_throttle.calc_pwm();    // recalculate radio.out
         }
 
         // calculate roll and pitch for each motor
         // set rpy_low and rpy_high to the lowest and highest values of the motors
         for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {
-                rpy_out[i] = _rc_roll.pwm_out * _roll_factor[i] +
-                             _rc_pitch.pwm_out * _pitch_factor[i];
+                rpy_out[i] = _rc_roll.pwm_out * _roll_factor[i] * get_voltage_comp_gain() +
+                             _rc_pitch.pwm_out * _pitch_factor[i] * get_voltage_comp_gain();
 
                 // record lowest roll pitch command
                 if (rpy_out[i] < rpy_low) {
@@ -215,25 +217,25 @@ void AP_MotorsMatrix::output_armed()
         //      We will choose #1 (the best throttle for yaw control) if that means reducing throttle to the motors (i.e. we favour reducing throttle *because* it provides better yaw control)
         //      We will choose #2 (a mix of pilot and hover throttle) only when the throttle is quite low.  We favour reducing throttle instead of better yaw control because the pilot has commanded it
         int16_t motor_mid = (rpy_low+rpy_high)/2;
-        out_best_thr_pwm = min(out_mid_pwm - motor_mid, max(_rc_throttle.radio_out, (_rc_throttle.radio_out+_hover_out)/2));
+        out_best_thr_pwm = min(out_mid_pwm - motor_mid, max(_rc_throttle.radio_out, _rc_throttle.radio_out*max(0,1.0f-_throttle_low_comp)+get_hover_throttle_as_pwm()*_throttle_low_comp));
 
         // calculate amount of yaw we can fit into the throttle range
         // this is always equal to or less than the requested yaw from the pilot or rate controller
         yaw_allowed = min(out_max_pwm - out_best_thr_pwm, out_best_thr_pwm - out_min_pwm) - (rpy_high-rpy_low)/2;
-        yaw_allowed = max(yaw_allowed, AP_MOTORS_MATRIX_YAW_LOWER_LIMIT_PWM);
+        yaw_allowed = max(yaw_allowed, _yaw_headroom);
 
         if (_rc_yaw.pwm_out >= 0) {
             // if yawing right
-            if (yaw_allowed > _rc_yaw.pwm_out) {
-                yaw_allowed = _rc_yaw.pwm_out; // to-do: this is bad form for yaw_allows to change meaning to become the amount that we are going to output
+            if (yaw_allowed > _rc_yaw.pwm_out * get_voltage_comp_gain()) {
+                yaw_allowed = _rc_yaw.pwm_out * get_voltage_comp_gain(); // to-do: this is bad form for yaw_allows to change meaning to become the amount that we are going to output
             }else{
                 limit.yaw = true;
             }
         }else{
             // if yawing left
             yaw_allowed = -yaw_allowed;
-            if( yaw_allowed < _rc_yaw.pwm_out ) {
-                yaw_allowed = _rc_yaw.pwm_out; // to-do: this is bad form for yaw_allows to change meaning to become the amount that we are going to output
+            if (yaw_allowed < _rc_yaw.pwm_out * get_voltage_comp_gain()) {
+                yaw_allowed = _rc_yaw.pwm_out * get_voltage_comp_gain(); // to-do: this is bad form for yaw_allows to change meaning to become the amount that we are going to output
             }else{
                 limit.yaw = true;
             }
@@ -261,7 +263,7 @@ void AP_MotorsMatrix::output_armed()
         // check everything fits
         thr_adj = _rc_throttle.radio_out - out_best_thr_pwm;
 
-        // calc upper and lower limits of thr_adj
+        // calculate upper and lower limits of thr_adj
         int16_t thr_adj_max = max(out_max_pwm-(out_best_thr_pwm+rpy_high),0);
 
         // if we are increasing the throttle (situation #2 above)..
@@ -284,12 +286,11 @@ void AP_MotorsMatrix::output_armed()
             }
             if (thr_adj < thr_adj_min) {
                 thr_adj = thr_adj_min;
-                limit.throttle_lower = true;
             }
         }
 
         // do we need to reduce roll, pitch, yaw command
-        // earlier code does not allow both limit's to be passed simultainiously with abs(_yaw_factor)<1
+        // earlier code does not allow both limit's to be passed simultaneously with abs(_yaw_factor)<1
         if ((rpy_low+out_best_thr_pwm)+thr_adj < out_min_pwm){
             rpy_scale = (float)(out_min_pwm-thr_adj-out_best_thr_pwm)/rpy_low;
             // we haven't even been able to apply full roll, pitch and minimal yaw without scaling
@@ -310,14 +311,13 @@ void AP_MotorsMatrix::output_armed()
             }
         }
 
-        // adjust for throttle curve
-        if (_throttle_curve_enabled) {
-            for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
-                if (motor_enabled[i]) {
-                    motor_out[i] = _throttle_curve.get_y(motor_out[i]);
-                }
+        // apply thrust curve and voltage scaling
+        for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+            if (motor_enabled[i]) {
+                motor_out[i] = apply_thrust_curve_and_volt_scaling(motor_out[i], out_min_pwm, out_max_pwm);
             }
         }
+
         // clip motor output if required (shouldn't be)
         for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {

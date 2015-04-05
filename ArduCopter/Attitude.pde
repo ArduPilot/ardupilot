@@ -9,36 +9,29 @@ float get_smoothing_gain()
 
 // get_pilot_desired_angle - transform pilot's roll or pitch input into a desired lean angle
 // returns desired angle in centi-degrees
-static void get_pilot_desired_lean_angles(int16_t roll_in, int16_t pitch_in, int16_t &roll_out, int16_t &pitch_out)
+static void get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out)
 {
-    static float _scaler = 1.0;
-    static int16_t _angle_max = 0;
+    float angle_max = constrain_float(aparm.angle_max,1000,8000);
+    float scaler = (float)angle_max/(float)ROLL_PITCH_INPUT_MAX;
 
-    // apply circular limit to pitch and roll inputs
+    // scale roll_in, pitch_in to correct units
+    roll_in *= scaler;
+    pitch_in *= scaler;
+
+    // do circular limit
     float total_in = pythagorous2((float)pitch_in, (float)roll_in);
-
-    if (total_in > ROLL_PITCH_INPUT_MAX) {
-        float ratio = (float)ROLL_PITCH_INPUT_MAX / total_in;
+    if (total_in > angle_max) {
+        float ratio = angle_max / total_in;
         roll_in *= ratio;
         pitch_in *= ratio;
     }
 
-    // return filtered roll if no scaling required
-    if (aparm.angle_max == ROLL_PITCH_INPUT_MAX) {
-        roll_out = roll_in;
-        pitch_out = pitch_in;
-        return;
-    }
+    // do lateral tilt to euler roll conversion
+    roll_in = (18000/M_PI_F) * atanf(cosf(pitch_in*(M_PI_F/18000))*tanf(roll_in*(M_PI_F/18000)));
 
-    // check if angle_max has been updated and redo scaler
-    if (aparm.angle_max != _angle_max) {
-        _angle_max = aparm.angle_max;
-        _scaler = (float)aparm.angle_max/(float)ROLL_PITCH_INPUT_MAX;
-    }
-
-    // convert pilot input to lean angle
-    roll_out = (int16_t)((float)roll_in * _scaler);
-    pitch_out = (int16_t)((float)pitch_in * _scaler);
+    // return
+    roll_out = roll_in;
+    pitch_out = pitch_in;
 }
 
 // get_pilot_desired_heading - transform pilot's yaw input into a desired heading
@@ -58,10 +51,10 @@ static float get_pilot_desired_yaw_rate(int16_t stick_angle)
 // should be called at 100hz
 static float get_roi_yaw()
 {
-    static uint8_t roi_yaw_counter = 0;     // used to reduce update rate to 10hz
+    static uint8_t roi_yaw_counter = 0;     // used to reduce update rate to 100hz
 
     roi_yaw_counter++;
-    if (roi_yaw_counter >= 10) {
+    if (roi_yaw_counter >= 4) {
         roi_yaw_counter = 0;
         yaw_look_at_WP_bearing = pv_get_bearing_cd(inertial_nav.get_position(), roi_WP);
     }
@@ -82,15 +75,15 @@ static float get_look_ahead_yaw()
  *  throttle control
  ****************************************************************/
 
-// update_thr_cruise - update throttle cruise if necessary
+// update_thr_average - update estimated throttle required to hover (if necessary)
 //  should be called at 100hz
-static void update_thr_cruise()
+static void update_thr_average()
 {
-    // ensure throttle_avg has been initialised
-    if( throttle_avg == 0 ) {
-        throttle_avg = g.throttle_cruise;
+    // ensure throttle_average has been initialised
+    if( throttle_average == 0 ) {
+        throttle_average = g.throttle_mid;
         // update position controller
-        pos_control.set_throttle_hover(throttle_avg);
+        pos_control.set_throttle_hover(throttle_average);
     }
 
     // if not armed or landed exit
@@ -103,10 +96,9 @@ static void update_thr_cruise()
 
     // calc average throttle if we are in a level hover
     if (throttle > g.throttle_min && abs(climb_rate) < 60 && labs(ahrs.roll_sensor) < 500 && labs(ahrs.pitch_sensor) < 500) {
-        throttle_avg = throttle_avg * 0.99f + (float)throttle * 0.01f;
-        g.throttle_cruise = throttle_avg;
+        throttle_average = throttle_average * 0.99f + (float)throttle * 0.01f;
         // update position controller
-        pos_control.set_throttle_hover(throttle_avg);
+        pos_control.set_throttle_hover(throttle_average);
     }
 }
 
@@ -240,12 +232,13 @@ static float get_throttle_surface_tracking(int16_t target_rate, float current_al
     static uint32_t last_call_ms = 0;
     float distance_error;
     float velocity_correction;
+    float current_alt = inertial_nav.get_altitude();
 
     uint32_t now = millis();
 
     // reset target altitude if this controller has just been engaged
     if (now - last_call_ms > SONAR_TIMEOUT_MS) {
-        target_sonar_alt = sonar_alt + current_alt_target - current_loc.alt;
+        target_sonar_alt = sonar_alt + current_alt_target - current_alt;
     }
     last_call_ms = now;
 
@@ -259,7 +252,7 @@ static float get_throttle_surface_tracking(int16_t target_rate, float current_al
     target_sonar_alt = constrain_float(target_sonar_alt,sonar_alt-pos_control.get_leash_down_z(),sonar_alt+pos_control.get_leash_up_z());
 
     // calc desired velocity correction from target sonar alt vs actual sonar alt (remove the error already passed to Altitude controller to avoid oscillations)
-    distance_error = (target_sonar_alt - sonar_alt) - (current_alt_target - current_loc.alt);
+    distance_error = (target_sonar_alt - sonar_alt) - (current_alt_target - current_alt);
     velocity_correction = distance_error * g.sonar_gain;
     velocity_correction = constrain_float(velocity_correction, -THR_SURFACE_TRACKING_VELZ_MAX, THR_SURFACE_TRACKING_VELZ_MAX);
 
@@ -271,5 +264,5 @@ static float get_throttle_surface_tracking(int16_t target_rate, float current_al
 static void set_accel_throttle_I_from_pilot_throttle(int16_t pilot_throttle)
 {
     // shift difference between pilot's throttle and hover throttle into accelerometer I
-    g.pid_throttle_accel.set_integrator(pilot_throttle-g.throttle_cruise);
+    g.pid_accel_z.set_integrator(pilot_throttle-throttle_average);
 }

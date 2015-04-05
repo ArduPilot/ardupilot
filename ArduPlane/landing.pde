@@ -51,12 +51,17 @@ static bool verify_land()
           after landing if we've had positive baro drift)
     */
     if (height <= g.land_flare_alt ||
-        height <= auto_state.land_sink_rate * g.land_flare_sec ||
-        (!rangefinder_state.in_range && location_passed_point(current_loc, prev_WP_loc, next_WP_loc))) {
+        height <= auto_state.land_sink_rate * aparm.land_flare_sec ||
+        (!rangefinder_state.in_range && location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) ||
+        (fabsf(auto_state.land_sink_rate) < 0.2f && !is_flying())) {
 
         if (!auto_state.land_complete) {
-            gcs_send_text_fmt(PSTR("Flare %.1fm sink=%.2f speed=%.1f"), 
-                              height, auto_state.land_sink_rate, gps.ground_speed());
+            if (!is_flying() && (hal.scheduler->millis()-auto_state.last_flying_ms) > 3000) {
+                gcs_send_text_fmt(PSTR("Flare crash detected: speed=%.1f"), gps.ground_speed());
+            } else {
+                gcs_send_text_fmt(PSTR("Flare %.1fm sink=%.2f speed=%.1f"), 
+                                  height, auto_state.land_sink_rate, gps.ground_speed());
+            }
         }
         auto_state.land_complete = true;
 
@@ -82,6 +87,9 @@ static bool verify_land()
                     get_distance(prev_WP_loc, current_loc) + 200);
     nav_controller->update_waypoint(prev_WP_loc, land_WP_loc);
 
+    // check if we should auto-disarm after a confirmed landing
+    disarm_if_autoland_complete();
+
     /*
       we return false as a landing mission item never completes
 
@@ -90,6 +98,26 @@ static bool verify_land()
      */
     return false;
 }
+
+/*
+    If land_DisarmDelay is enabled (non-zero), check for a landing then auto-disarm after time expires
+ */
+static void disarm_if_autoland_complete()
+{
+    if (g.land_disarm_delay > 0 && 
+        auto_state.land_complete && 
+        !is_flying() && 
+        arming.arming_required() != AP_Arming::NO &&
+        arming.is_armed()) {
+        /* we have auto disarm enabled. See if enough time has passed */
+        if (hal.scheduler->millis() - auto_state.last_flying_ms >= g.land_disarm_delay*1000UL) {
+            if (disarm_motors()) {
+                gcs_send_text_P(SEVERITY_LOW,PSTR("Auto-Disarmed"));
+            }
+        }
+    }
+}
+
 
 
 /*
@@ -129,7 +157,12 @@ static void setup_landing_glide_slope(void)
         float sink_rate = sink_height / sink_time;
 
         // the height we aim for is the one to give us the right flare point
-        float aim_height = g.land_flare_sec * sink_rate;
+        float aim_height = aparm.land_flare_sec * sink_rate;
+
+        // don't allow the aim height to be too far above LAND_FLARE_ALT
+        if (g.land_flare_alt > 0 && aim_height > g.land_flare_alt*2) {
+            aim_height = g.land_flare_alt*2;
+        }
 
         // time before landing that we will flare
         float flare_time = aim_height / SpdHgt_Controller->get_land_sinkrate();
@@ -137,6 +170,11 @@ static void setup_landing_glide_slope(void)
         // distance to flare is based on ground speed, adjusted as we
         // get closer. This takes into account the wind
         float flare_distance = groundspeed * flare_time;
+        
+        // don't allow the flare before half way along the final leg
+        if (flare_distance > total_distance/2) {
+            flare_distance = total_distance/2;
+        }
 
         // now calculate our aim point, which is before the landing
         // point and above it
@@ -187,4 +225,28 @@ static bool jump_to_landing_sequence(void)
 
     gcs_send_text_P(SEVERITY_HIGH, PSTR("Unable to start landing sequence."));
     return false;
+}
+
+/*
+  the height above field elevation that we pass to TECS
+ */
+static float tecs_hgt_afe(void)
+{
+    /*
+      pass the height above field elevation as the height above
+      the ground when in landing, which means that TECS gets the
+      rangefinder information and thus can know when the flare is
+      coming.
+    */
+    float hgt_afe;
+    if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL ||
+        flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
+        hgt_afe = height_above_target();
+        hgt_afe -= rangefinder_correction();
+    } else {
+        // when in normal flight we pass the hgt_afe as relative
+        // altitude to home
+        hgt_afe = relative_altitude();
+    }
+    return hgt_afe;
 }

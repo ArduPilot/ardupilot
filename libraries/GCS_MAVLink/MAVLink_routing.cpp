@@ -92,6 +92,13 @@ routing table.
 */
 bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavlink_message_t* msg)
 {
+    // handle the case of loopback of our own messages, due to
+    // incorrect serial configuration.
+    if (msg->sysid == mavlink_system.sysid && 
+        msg->compid == mavlink_system.compid) {
+        return true;
+    }
+
     // learn new routes
     learn_route(in_channel, msg);
 
@@ -419,6 +426,14 @@ void MAVLink_routing::get_targets(const mavlink_message_t* msg, int16_t &sysid, 
     case MAVLINK_MSG_ID_V2_EXTENSION:
         sysid  = mavlink_msg_v2_extension_get_target_system(msg);
         compid = mavlink_msg_v2_extension_get_target_component(msg);
+        break;
+    case MAVLINK_MSG_ID_GIMBAL_REPORT:
+        sysid  = mavlink_msg_gimbal_report_get_target_system(msg);
+        compid = mavlink_msg_gimbal_report_get_target_component(msg);
+        break;
+    case MAVLINK_MSG_ID_GIMBAL_CONTROL:
+        sysid  = mavlink_msg_gimbal_control_get_target_system(msg);
+        compid = mavlink_msg_gimbal_control_get_target_component(msg);
         break;
     }
 }

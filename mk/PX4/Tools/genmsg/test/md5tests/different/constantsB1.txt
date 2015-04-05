@@ -1,0 +1,3 @@
+# protect against aliasing
+string s=u
+int32 a

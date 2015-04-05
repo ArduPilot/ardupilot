@@ -15,6 +15,8 @@
 #include "../AP_BattMonitor/AP_BattMonitor.h"
 #include <stdint.h>
 #include <MAVLink_routing.h>
+#include "../AP_SerialManager/AP_SerialManager.h"
+#include "../AP_Mount/AP_Mount.h"
 
 //  GCS Message ID's
 /// NOTE: to ensure we never block on sending MAVLink messages
@@ -53,6 +55,8 @@ enum ap_message {
     MSG_CAMERA_FEEDBACK,
     MSG_MOUNT_STATUS,
     MSG_OPTICAL_FLOW,
+    MSG_GIMBAL_REPORT,
+    MSG_EKF_STATUS_REPORT,
     MSG_RETRY_DEFERRED // this must be last
 };
 
@@ -66,8 +70,8 @@ class GCS_MAVLINK
 public:
     GCS_MAVLINK();
     void        update(void (*run_cli)(AP_HAL::UARTDriver *));
-    void        init(AP_HAL::UARTDriver *port);
-    void        setup_uart(AP_HAL::UARTDriver *port, uint32_t baudrate, uint16_t rxS, uint16_t txS);
+    void        init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan);
+    void        setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager::SerialProtocol protocol, uint8_t instance);
     void        send_message(enum ap_message id);
     void        send_text(gcs_severity severity, const char *str);
     void        send_text_P(gcs_severity severity, const prog_char_t *str);
@@ -77,6 +81,9 @@ public:
     void        set_snoop(void (*_msg_snoop)(const mavlink_message_t* msg)) {
         msg_snoop = _msg_snoop;
     }
+
+    // accessor for uart
+    AP_HAL::UARTDriver *get_uart() { return _port; }
 
     static const struct AP_Param::GroupInfo        var_info[];
 
@@ -127,6 +134,7 @@ public:
 #if AP_AHRS_NAVEKF_AVAILABLE
     void send_opticalflow(AP_AHRS_NavEKF &ahrs, const OpticalFlow &optflow);
 #endif
+    void send_autopilot_version(void) const;
 
     // return a bitmap of active channels. Used by libraries to loop
     // over active channels to send to all active channels    
@@ -179,10 +187,8 @@ private:
     mavlink_channel_t           chan;
     uint16_t                    packet_drops;
 
-#if CLI_ENABLED == ENABLED
     // this allows us to detect the user wanting the CLI to start
     uint8_t        crlf_count;
-#endif
 
     // waypoints
     uint16_t        waypoint_request_i; // request index
@@ -281,6 +287,7 @@ private:
     void handle_serial_control(mavlink_message_t *msg, AP_GPS &gps);
     void lock_channel(mavlink_channel_t chan, bool lock);
     void handle_set_mode(mavlink_message_t* msg, bool (*set_mode)(uint8_t mode));
+    void handle_gimbal_report(AP_Mount &mount, mavlink_message_t *msg) const;
 
     // return true if this channel has hardware flow control
     bool have_flow_control(void);

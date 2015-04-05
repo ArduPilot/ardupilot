@@ -71,34 +71,8 @@ static void run_cli(AP_HAL::UARTDriver *port)
 
 static void init_ardupilot()
 {
-	// Console serial port
-	//
-	// The console port buffers are defined to be sufficiently large to support
-	// the console's use as a logging device, optionally as the GPS port when
-	// GPS_PROTOCOL_IMU is selected, and as the telemetry port.
-	//
-	// XXX This could be optimised to reduce the buffer sizes in the cases
-	// where they are not otherwise required.
-	//
-    hal.uartA->begin(SERIAL0_BAUD, 128, 128);
-
-	// GPS serial port.
-	//
-	// XXX currently the EM406 (SiRF receiver) is nominally configured
-	// at 57600, however it's not been supported to date.  We should
-	// probably standardise on 38400.
-	//
-	// XXX the 128 byte receive buffer may be too small for NMEA, depending
-	// on the message set configured.
-	//
-    // standard gps running
-    hal.uartB->begin(38400, 256, 16);
-
-#if GPS2_ENABLE
-    if (hal.uartE != NULL) {
-        hal.uartE->begin(38400, 256, 16);
-    }
-#endif
+    // initialise console serial port
+    serial_manager.init_console();
 
 	cliSerial->printf_P(PSTR("\n\nInit " FIRMWARE_STRING
 						 "\n\nFree RAM: %u\n"),
@@ -112,12 +86,14 @@ static void init_ardupilot()
 
     BoardConfig.init();
 
+    // initialise serial ports
+    serial_manager.init();
+
     ServoRelayEvents.set_channel_mask(0xFFF0);
 
     set_control_channels();
 
-    // after parameter load setup correct baud rate on uartA
-    hal.uartA->begin(map_baudrate(g.serial0_baud));
+    battery.init();
 
     // keep a record of how many resets have happened. This can be
     // used to detect in-flight resets
@@ -127,23 +103,24 @@ static void init_ardupilot()
     barometer.init();
 
 	// init the GCS
-	gcs[0].init(hal.uartA);
+    gcs[0].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_Console, 0);
 
     // we start by assuming USB connected, as we initialed the serial
     // port with SERIAL0_BAUD. check_usb_mux() fixes this if need be.    
     usb_connected = true;
     check_usb_mux();
 
-    // we have a 2nd serial port for telemetry
-    gcs[1].setup_uart(hal.uartC, map_baudrate(g.serial1_baud), 128, 128);
+    // setup serial port for telem1
+    gcs[1].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
 
 #if MAVLINK_COMM_NUM_BUFFERS > 2
-    if (g.serial2_protocol == SERIAL2_FRSKY_DPORT || 
-        g.serial2_protocol == SERIAL2_FRSKY_SPORT) {
-        frsky_telemetry.init(hal.uartD, g.serial2_protocol);
-    } else {
-        gcs[2].setup_uart(hal.uartD, map_baudrate(g.serial2_baud), 128, 128);
-    }
+    // setup serial port for telem2
+    gcs[2].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 1);
+#endif
+
+    // setup frsky telemetry
+#if FRSKY_TELEM_ENABLED == ENABLED
+    frsky_telemetry.init(serial_manager);
 #endif
 
 	mavlink_system.sysid = g.sysid_this_mav;
@@ -187,7 +164,7 @@ static void init_ardupilot()
     init_barometer();
 
 	// Do GPS init
-	gps.init(&DataFlash);
+    gps.init(&DataFlash, serial_manager);
 
     rc_override_active = hal.rcin->set_overrides(rc_override, 8);
 
@@ -196,26 +173,36 @@ static void init_ardupilot()
 
     relay.init();
 
+#if MOUNT == ENABLED
+    // initialise camera mount
+    camera_mount.init(serial_manager);
+#endif
+
     /*
       setup the 'main loop is dead' check. Note that this relies on
       the RC library being initialised.
      */
     hal.scheduler->register_timer_failsafe(failsafe_check, 1000);
 
+
+#if CLI_ENABLED == ENABLED
 	// If the switch is in 'menu' mode, run the main menu.
 	//
 	// Since we can't be sure that the setup or test mode won't leave
 	// the system in an odd state, we don't let the user exit the top
 	// menu; they must reset in order to fly.
 	//
-    const prog_char_t *msg = PSTR("\nPress ENTER 3 times to start interactive setup\n");
-    cliSerial->println_P(msg);
-    if (gcs[1].initialised) {
-        hal.uartC->println_P(msg);
+    if (g.cli_enabled == 1) {
+        const prog_char_t *msg = PSTR("\nPress ENTER 3 times to start interactive setup\n");
+        cliSerial->println_P(msg);
+        if (gcs[1].initialised && (gcs[1].get_uart() != NULL)) {
+            gcs[1].get_uart()->println_P(msg);
+        }
+        if (num_gcs > 2 && gcs[2].initialised && (gcs[2].get_uart() != NULL)) {
+            gcs[2].get_uart()->println_P(msg);
+        }
     }
-    if (num_gcs > 2 && gcs[2].initialised) {
-        hal.uartD->println_P(msg);
-    }
+#endif
 
 	startup_ground();
 
@@ -248,7 +235,7 @@ static void startup_ground(void)
 	//------------------------
     //
 
-	startup_INS_ground(false);
+	startup_INS_ground();
 
 	// read the radio to set trims
 	// ---------------------------
@@ -257,9 +244,9 @@ static void startup_ground(void)
     // initialise mission library
     mission.init();
 
-    hal.uartA->set_blocking_writes(false);
-    hal.uartB->set_blocking_writes(false);
-    hal.uartC->set_blocking_writes(false);
+    // we don't want writes to the serial port to cause us to pause
+    // so set serial ports non-blocking once we are ready to drive
+    serial_manager.set_blocking_writes_all(false);
 
 	gcs_send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to drive."));
 }
@@ -317,7 +304,7 @@ static void set_mode(enum mode mode)
 	}
 
 	if (should_log(MASK_LOG_MODE)) {
-		Log_Write_Mode();
+        DataFlash.Log_Write_Mode(control_mode);
     }
 }
 
@@ -381,7 +368,7 @@ static void failsafe_trigger(uint8_t failsafe_type, bool on)
     }
 }
 
-static void startup_INS_ground(bool force_accel_level)
+static void startup_INS_ground(void)
 {
     gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Warming up ADC..."));
  	mavlink_delay(500);
@@ -396,7 +383,7 @@ static void startup_INS_ground(bool force_accel_level)
     ahrs.set_vehicle_class(AHRS_VEHICLE_GROUND);
 
     AP_InertialSensor::Start_style style;
-    if (g.skip_gyro_cal && !force_accel_level) {
+    if (g.skip_gyro_cal) {
         style = AP_InertialSensor::WARM_START;
     } else {
         style = AP_InertialSensor::COLD_START;
@@ -404,13 +391,6 @@ static void startup_INS_ground(bool force_accel_level)
 
 	ins.init(style, ins_sample_rate);
 
-    if (force_accel_level) {
-        // when MANUAL_LEVEL is set to 1 we don't do accelerometer
-        // levelling on each boot, and instead rely on the user to do
-        // it once via the ground station	
-        ins.init_accel();
-        ahrs.set_trim(Vector3f(0, 0, 0));
-	}
     ahrs.reset();
 }
 
@@ -444,9 +424,9 @@ static void check_usb_mux(void)
     // SERIAL0_BAUD, but when connected as a TTL serial port we run it
     // at SERIAL1_BAUD.
     if (usb_connected) {
-        hal.uartA->begin(SERIAL0_BAUD);
+        serial_manager.set_console_baud(AP_SerialManager::SerialProtocol_Console, 0);
     } else {
-        hal.uartA->begin(map_baudrate(g.serial1_baud));
+        serial_manager.set_console_baud(AP_SerialManager::SerialProtocol_MAVLink, 0);
     }
 #endif
 }
@@ -499,21 +479,6 @@ static uint8_t check_digital_pin(uint8_t pin)
 }
 
 /*
-  write to a servo
- */
-static void servo_write(uint8_t ch, uint16_t pwm)
-{
-#if HIL_MODE != HIL_MODE_DISABLED
-    if (ch < 8) {
-        RC_Channel::rc_channel(ch)->radio_out = pwm;
-    }
-#else
-    hal.rcout->enable_ch(ch);
-    hal.rcout->write(ch, pwm);
-#endif
-}
-
-/*
   should we log a message type now?
  */
 static bool should_log(uint32_t mask)
@@ -521,7 +486,7 @@ static bool should_log(uint32_t mask)
     if (!(mask & g.log_bitmask) || in_mavlink_delay) {
         return false;
     }
-    bool ret = ahrs.get_armed() || (g.log_bitmask & MASK_LOG_WHEN_DISARMED) != 0;
+    bool ret = hal.util->get_soft_armed() || (g.log_bitmask & MASK_LOG_WHEN_DISARMED) != 0;
     if (ret && !DataFlash.logging_started() && !in_log_download) {
         // we have to set in_mavlink_delay to prevent logging while
         // writing headers
@@ -538,7 +503,6 @@ static bool should_log(uint32_t mask)
 static void telemetry_send(void)
 {
 #if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry.send_frames((uint8_t)control_mode, 
-                                (AP_Frsky_Telem::FrSkyProtocol)g.serial2_protocol.get());
+    frsky_telemetry.send_frames((uint8_t)control_mode);
 #endif
 }

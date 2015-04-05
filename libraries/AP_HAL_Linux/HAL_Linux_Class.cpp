@@ -16,13 +16,21 @@ using namespace Linux;
 
 // 3 serial ports on Linux for now
 static LinuxUARTDriver uartADriver(true);
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
+static LinuxSPIUARTDriver uartBDriver;
+#else
 static LinuxUARTDriver uartBDriver(false);
+#endif
 static LinuxUARTDriver uartCDriver(false);
 
 static LinuxSemaphore  i2cSemaphore;
 static LinuxI2CDriver  i2cDriver(&i2cSemaphore, "/dev/i2c-1");
 static LinuxSPIDeviceManager spiDeviceManager;
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
+static NavioAnalogIn analogIn;
+#else
 static LinuxAnalogIn analogIn;
+#endif
 
 /*
   select between FRAM and FS
@@ -34,9 +42,9 @@ static LinuxStorage storageDriver;
 #endif
 
 /*
-  use the BBB gpio driver on ERLE and PXF
+  use the BBB gpio driver on ERLE, PXF and BBBMINI
  */
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLE
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLE || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
 static LinuxGPIO_BBB gpioDriver;
 /*
   use the RPI gpio driver on Navio
@@ -52,6 +60,8 @@ static Empty::EmptyGPIO gpioDriver;
  */
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLE
 static LinuxRCInput_PRU rcinDriver;
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+static LinuxRCInput_AioPRU rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
 static LinuxRCInput_Navio rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ZYNQ
@@ -65,6 +75,8 @@ static LinuxRCInput rcinDriver;
  */
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLE
 static LinuxRCOutput_PRU rcoutDriver;
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+static LinuxRCOutput_AioPRU rcoutDriver;
 /*
   use the PCA9685 based RCOutput driver on Navio
  */
@@ -141,6 +153,7 @@ void HAL_Linux::init(int argc,char* const argv[]) const
     rcin->init(NULL);
     uartA->begin(115200);    
     spi->init(NULL);
+    analogin->init(NULL);
     utilInstance.init(argc, argv);
 }
 

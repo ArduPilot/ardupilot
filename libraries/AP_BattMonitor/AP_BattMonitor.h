@@ -96,7 +96,11 @@ public:
     bool exhausted(uint8_t instance, float low_voltage, float min_capacity_mah);
     bool exhausted(float low_voltage, float min_capacity_mah) { return exhausted(AP_BATT_PRIMARY_INSTANCE, low_voltage, min_capacity_mah); }
 
-    /// monitoring - sets the monitor type (used for example sketch only)
+    /// get_type - returns battery monitor type
+    enum BattMonitor_Type get_type() { return get_type(AP_BATT_PRIMARY_INSTANCE); }
+    enum BattMonitor_Type get_type(uint8_t instance) { return (enum BattMonitor_Type)_monitoring[instance].get(); }
+
+    /// set_monitoring - sets the monitor type (used for example sketch only)
     void set_monitoring(uint8_t instance, uint8_t mon) { _monitoring[instance].set(mon); }
 
     static const struct AP_Param::GroupInfo var_info[];

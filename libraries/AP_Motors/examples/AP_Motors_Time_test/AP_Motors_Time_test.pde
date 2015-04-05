@@ -34,19 +34,20 @@
 #include <StorageManager.h>
 #include <AP_Terrain.h>
 #include <AP_NavEKF.h>
+#include <AP_BattMonitor.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 RC_Channel rc1(0), rc2(1), rc3(2), rc4(3);
 
 // uncomment the row below depending upon what frame you are using
-//AP_MotorsTri	motors(rc1, rc2, rc3, rc4);
-AP_MotorsQuad   motors(rc1, rc2, rc3, rc4);
-//AP_MotorsHexa	motors(rc1, rc2, rc3, rc4);
-//AP_MotorsY6	motors(rc1, rc2, rc3, rc4);
-//AP_MotorsOcta	motors(rc1, rc2, rc3, rc4);
-//AP_MotorsOctaQuad	motors(rc1, rc2, rc3, rc4);
-//AP_MotorsHeli	motors(rc1, rc2, rc3, rc4);
+//AP_MotorsTri	motors(rc1, rc2, rc3, rc4, 400);
+AP_MotorsQuad   motors(rc1, rc2, rc3, rc4, 400);
+//AP_MotorsHexa	motors(rc1, rc2, rc3, rc4, 400);
+//AP_MotorsY6	motors(rc1, rc2, rc3, rc4, 400);
+//AP_MotorsOcta	motors(rc1, rc2, rc3, rc4, 400);
+//AP_MotorsOctaQuad	motors(rc1, rc2, rc3, rc4, 400);
+//AP_MotorsHeli	motors(rc1, rc2, rc3, rc4, 400);
 
 
 // setup
@@ -59,7 +60,7 @@ void setup()
     // motors.set_frame_orientation(AP_MOTORS_X_FRAME);
     motors.set_frame_orientation(AP_MOTORS_PLUS_FRAME);
     motors.set_min_throttle(130);
-    motors.set_mid_throttle(500);
+    motors.set_hover_throttle(500);
     motors.Init();      // initialise motors
 
     // setup radio

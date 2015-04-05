@@ -1,0 +1,10 @@
+Antenna Tracker Release Notes:
+------------------------------------------------------------------
+AntennaTracker 0.4 31-Jan-2015
+Changes from 0.3
+1) Init Telem2 port so it can be used to communicate with GCS
+------------------------------------------------------------------
+AntennaTracker 0.3 28-Jan-2015
+Changes from 0.2
+1) MAVLink routing replaces Proxy mode
+------------------------------------------------------------------

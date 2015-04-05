@@ -33,7 +33,7 @@ extern const AP_HAL::HAL& hal;
  #define ARSPD_DEFAULT_PIN 0
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
  #define ARSPD_DEFAULT_PIN 1
-#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
  #include <sys/stat.h>
  #include <sys/types.h>
  #include <fcntl.h>
@@ -41,7 +41,19 @@ extern const AP_HAL::HAL& hal;
  #include <systemlib/airspeed.h>
  #include <drivers/drv_airspeed.h>
  #include <uORB/topics/differential_pressure.h>
-#ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
+#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V45)
+ #define ARSPD_DEFAULT_PIN 0
+#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V51)
+ #define ARSPD_DEFAULT_PIN 0
+#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V52)
+ #define ARSPD_DEFAULT_PIN 0
+#elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
+ #define ARSPD_DEFAULT_PIN 0
+#elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
+ #define ARSPD_DEFAULT_PIN 0
+#elif defined(CONFIG_ARCH_BOARD_VRHERO_V10)
+ #define ARSPD_DEFAULT_PIN 0
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
  #define ARSPD_DEFAULT_PIN 11
 #else
  #define ARSPD_DEFAULT_PIN 15
@@ -50,20 +62,6 @@ extern const AP_HAL::HAL& hal;
  #define ARSPD_DEFAULT_PIN 16
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
  #define ARSPD_DEFAULT_PIN AP_AIRSPEED_I2C_PIN
-#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V40)
- #define ARSPD_DEFAULT_PIN 0
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V45)
- #define ARSPD_DEFAULT_PIN 0
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V50)
- #define ARSPD_DEFAULT_PIN 0
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V51)
- #define ARSPD_DEFAULT_PIN 0
-#elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
- #define ARSPD_DEFAULT_PIN 0
-#elif defined(CONFIG_ARCH_BOARD_VRHERO_V10)
- #define ARSPD_DEFAULT_PIN 0
-#endif
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
  #define ARSPD_DEFAULT_PIN AP_AIRSPEED_I2C_PIN
 #else

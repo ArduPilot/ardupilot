@@ -44,10 +44,12 @@ private:
     AP_HAL::Semaphore *_spi_sem;
 
     // support for updating filter at runtime
-    int16_t _last_filter_hz;
+    int16_t _last_gyro_filter_hz;
+    int16_t _last_accel_filter_hz;
 
     // change the filter frequency
-    void _set_filter(uint8_t filter_hz);
+    void _set_accel_filter(uint8_t filter_hz);
+    void _set_gyro_filter(uint8_t filter_hz);
 
     // This structure is used to pass data from the timer which reads
     // the sensor to the main thread. The _shared_data_idx is used to
@@ -60,18 +62,11 @@ private:
     volatile uint8_t _shared_data_idx;
 
     // Low Pass filters for gyro and accel 
-    LowPassFilter2p _accel_filter_x;
-    LowPassFilter2p _accel_filter_y;
-    LowPassFilter2p _accel_filter_z;
-    LowPassFilter2p _gyro_filter_x;
-    LowPassFilter2p _gyro_filter_y;
-    LowPassFilter2p _gyro_filter_z;
+    LowPassFilter2pVector3f _accel_filter;
+    LowPassFilter2pVector3f _gyro_filter;
 
     // do we currently have a sample pending?
     bool _have_sample_available;
-
-    // default filter frequency when set to zero
-    uint8_t _default_filter_hz;
 
     // gyro and accel instances
     uint8_t _gyro_instance;

@@ -96,7 +96,7 @@ public:
 
     // return true if airspeed is enabled, and airspeed use is set
     bool        use(void) const {
-        return _enable && _use && fabsf(_offset) > 0 && _healthy;
+        return _enable && _use;
     }
 
     // return true if airspeed is enabled
@@ -147,7 +147,7 @@ public:
 	void log_mavlink_send(mavlink_channel_t chan, const Vector3f &vground);
 
     // return health status of sensor
-    bool healthy(void) const { return _healthy; }
+    bool healthy(void) const { return _healthy && fabsf(_offset) > 0; }
 
     void setHIL(float pressure) { _healthy=_hil_set=true; _hil_pressure=pressure; };
 
@@ -188,7 +188,7 @@ private:
     float get_pressure(void);
 
     AP_Airspeed_Analog analog;
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     AP_Airspeed_PX4    digital;
 #else
     AP_Airspeed_I2C    digital;

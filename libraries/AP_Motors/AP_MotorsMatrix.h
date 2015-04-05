@@ -14,15 +14,13 @@
 #define AP_MOTORS_MATRIX_YAW_FACTOR_CW   -1
 #define AP_MOTORS_MATRIX_YAW_FACTOR_CCW   1
 
-#define AP_MOTORS_MATRIX_YAW_LOWER_LIMIT_PWM    200
-
 /// @class      AP_MotorsMatrix
 class AP_MotorsMatrix : public AP_Motors {
 public:
 
     /// Constructor
-    AP_MotorsMatrix( RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_throttle, RC_Channel& rc_yaw, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
-        AP_Motors(rc_roll, rc_pitch, rc_throttle, rc_yaw, speed_hz)
+    AP_MotorsMatrix(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_throttle, RC_Channel& rc_yaw, uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
+        AP_Motors(rc_roll, rc_pitch, rc_throttle, rc_yaw, loop_rate, speed_hz)
     {};
 
     // init

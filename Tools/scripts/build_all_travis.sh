@@ -16,6 +16,8 @@ for b in all apm2 sitl linux; do
     make clean
     make $b -j4
 done
+make clean
+make apm1-nologging
 popd
 
 for d in ArduCopter APMrover2 ArduPlane AntennaTracker; do
@@ -25,6 +27,7 @@ for d in ArduCopter APMrover2 ArduPlane AntennaTracker; do
     make clean
     make linux -j4
     make clean
+    make px4-cleandep
     make px4-v2
     popd
 done

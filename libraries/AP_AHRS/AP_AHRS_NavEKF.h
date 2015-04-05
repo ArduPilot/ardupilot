@@ -38,7 +38,8 @@ public:
     AP_AHRS_DCM(ins, baro, gps),
         EKF(this, baro),
         ekf_started(false),
-        startup_delay_ms(10000)
+        startup_delay_ms(10000),
+        start_time_ms(0)
         {
         }
 
@@ -77,6 +78,7 @@ public:
     bool use_compass(void);
 
     NavEKF &get_NavEKF(void) { return EKF; }
+    const NavEKF &get_NavEKF_const(void) const { return EKF; }
 
     // return secondary attitude solution if available, as eulers in radians
     bool get_secondary_attitude(Vector3f &eulers);
@@ -110,13 +112,17 @@ public:
     // get speed limit
     void getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler);
 
-    void set_ekf_use(bool setting) { _ekf_use.set(setting); }
+    void set_ekf_use(bool setting);
 
     // is the AHRS subsystem healthy?
-    bool healthy(void);
+    bool healthy(void) const;
 
     // true if the AHRS has completed initialisation
     bool initialised(void) const;
+
+    // get compass offset estimates
+    // true if offsets are valid
+    bool getMagOffsets(Vector3f &magOffsets);
 
 private:
     bool using_EKF(void) const;

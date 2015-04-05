@@ -1,4 +1,4 @@
-import math, util, rotmat
+import math, util, rotmat, time
 from rotmat import Vector3, Matrix3
 
 class Aircraft(object):
@@ -27,6 +27,8 @@ class Aircraft(object):
         self.accelerometer = Vector3(0, 0, -self.gravity)
 
         self.wind = util.Wind('0,0,0')
+        self.time_base = time.time()
+        self.time_now = self.time_base + 100*1.0e-6
 
     def on_ground(self, position=None):
         '''return true if we are on the ground'''
@@ -34,7 +36,7 @@ class Aircraft(object):
             position = self.position
         return (-position.z) + self.home_altitude <= self.ground_level + self.frame_height
 
-    def update_position(self, delta_time):
+    def update_position(self):
         '''update lat/lon/alt from position'''
 
         bearing = math.degrees(math.atan2(self.position.y, self.position.x))
@@ -54,4 +56,8 @@ class Aircraft(object):
         (roll, pitch, yaw) = self.dcm.to_euler()
         yaw = math.radians(yaw_degrees)
         self.dcm.from_euler(roll, pitch, yaw)
+        
+    def time_advance(self, deltat):
+        '''advance time by deltat in seconds'''
+        self.time_now += deltat
         

@@ -196,6 +196,14 @@ public:
     // set a AP_Param variable to a specified value
     static void         set_value(enum ap_var_type type, void *ptr, float def_value);
 
+
+    /*
+      set a parameter by name
+
+      The parameter pointer is returned on success
+    */
+    static AP_Param *set_param_by_name(const char *pname, float value, enum ap_var_type *ptype);
+
     // load default values for scalars in a group
     static void         setup_object_defaults(const void *object_pointer, const struct GroupInfo *group_info);
 
@@ -345,9 +353,35 @@ private:
                                     ParamToken *token,
                                     enum ap_var_type *ptype);
 
+    // find a default value given a pointer to a default value in flash
+    static float get_default_value(const float *def_value_ptr);
+
+    /*
+      find the def_value for a variable by name
+    */
+    static const float *find_def_value_ptr(const char *name);
+
+#if HAL_OS_POSIX_IO == 1
+    /*
+      load a parameter defaults file. This happens as part of load_all()
+     */
+    static bool parse_param_line(char *line, char **vname, float &value);
+    static bool load_defaults_file(const char *filename);
+#endif
+
     static StorageAccess        _storage;
     static uint8_t              _num_vars;
     static const struct Info *  _var_info;
+
+    /*
+      list of overridden values from load_defaults_file()
+    */
+    struct param_override {
+        const float *def_value_ptr;
+        float value;
+    };
+    static struct param_override *param_overrides;
+    static uint16_t num_param_overrides;
 
     // values filled into the EEPROM header
     static const uint8_t        k_EEPROM_magic0      = 0x50;

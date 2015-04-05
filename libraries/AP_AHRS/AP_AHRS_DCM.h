@@ -111,7 +111,7 @@ public:
     void estimate_wind(void);
 
     // is the AHRS subsystem healthy?
-    bool healthy(void);
+    bool healthy(void) const;
 
 private:
     float _ki;

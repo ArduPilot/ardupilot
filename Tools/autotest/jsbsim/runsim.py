@@ -118,11 +118,12 @@ def update_wind(wind):
     (speed, direction) = wind.current()
     jsb_set('atmosphere/psiw-rad', math.radians(direction))
     jsb_set('atmosphere/wind-mag-fps', speed/0.3048)
-    
+
+first_timestamp = None
 
 def process_jsb_input(buf):
     '''process FG FDM input from JSBSim'''
-    global fdm, fg_out, sim_out
+    global fdm, fg_out, sim_out, first_timestamp
     fdm.parse(buf)
     if fg_out:
         try:
@@ -134,7 +135,13 @@ def process_jsb_input(buf):
             if e.errno not in [ errno.ECONNREFUSED ]:
                 raise
 
-    simbuf = struct.pack('<17dI',
+    cur_time = fdm.get('cur_time', units='seconds')
+    if first_timestamp is None:
+        first_timestamp = cur_time
+    timestamp = int((cur_time - first_timestamp)*1.0e6)
+        
+    simbuf = struct.pack('<Q17dI',
+                         timestamp,
                          fdm.get('latitude', units='degrees'),
                          fdm.get('longitude', units='degrees'),
                          fdm.get('altitude', units='meters'),

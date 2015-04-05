@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "AntennaTracker V0.2"
+#define THISFIRMWARE "AntennaTracker V0.4"
 /*
    Lead developers: Matthew Ridley and Andrew Tridgell
  
@@ -46,6 +46,7 @@
 #include <memcheck.h>
 
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
+#include <AP_SerialManager.h>   // Serial manager library
 #include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
 #include <DataFlash.h>
 #include <SITL.h>
@@ -117,33 +118,9 @@ void gcs_send_text_fmt(const prog_char_t *fmt, ...);
 ////////////////////////////////////////////////////////////////////////////////
 static AP_GPS gps;
 
-#if CONFIG_BARO == HAL_BARO_BMP085
-static AP_Baro_BMP085 barometer;
-#elif CONFIG_BARO == HAL_BARO_PX4
-static AP_Baro_PX4 barometer;
-#elif CONFIG_BARO == HAL_BARO_VRBRAIN
-static AP_Baro_VRBRAIN barometer;
-#elif CONFIG_BARO == HAL_BARO_HIL
-static AP_Baro_HIL barometer;
-#elif CONFIG_BARO == HAL_BARO_MS5611
-static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::i2c);
-#elif CONFIG_BARO == HAL_BARO_MS5611_SPI
-static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::spi);
-#else
- #error Unrecognized CONFIG_BARO setting
-#endif
+static AP_Baro barometer;
 
-#if CONFIG_COMPASS == HAL_COMPASS_PX4
-static AP_Compass_PX4 compass;
-#elif CONFIG_COMPASS == HAL_COMPASS_VRBRAIN
-static AP_Compass_VRBRAIN compass;
-#elif CONFIG_COMPASS == HAL_COMPASS_HMC5843
-static AP_Compass_HMC5843 compass;
-#elif CONFIG_COMPASS == HAL_COMPASS_HIL
-static AP_Compass_HIL compass;
-#else
- #error Unrecognized CONFIG_COMPASS setting
-#endif
+static Compass compass;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 AP_ADC_ADS7844 apm1_adc;
@@ -171,6 +148,7 @@ static RC_Channel channel_pitch(CH_PITCH);
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection
 ////////////////////////////////////////////////////////////////////////////////
+static AP_SerialManager serial_manager;
 static const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
 static GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
 

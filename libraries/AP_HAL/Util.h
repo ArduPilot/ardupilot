@@ -8,6 +8,9 @@
 
 class AP_HAL::Util {
 public:
+    // soft_armed starts out true
+    Util() : soft_armed(true) {}
+
     int snprintf(char* str, size_t size,
                  const char *format, ...);
 
@@ -19,6 +22,9 @@ public:
 
     int vsnprintf_P(char* str, size_t size,
                     const prog_char_t *format, va_list ap);
+
+    void set_soft_armed(const bool b) { soft_armed = b; }
+    bool get_soft_armed() const { return soft_armed; }
 
     // run a debug shall on the given stream if possible. This is used
     // to support dropping into a debug shell to run firmware upgrade
@@ -65,7 +71,9 @@ public:
     virtual bool toneAlarm_init() { return false;}
     virtual void toneAlarm_set_tune(uint8_t tune) {}
     virtual void _toneAlarm_timer_tick() {}
-    
+
+protected:
+    bool soft_armed;
 };
 
 #endif // __AP_HAL_UTIL_H__

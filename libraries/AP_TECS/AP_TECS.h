@@ -132,6 +132,7 @@ private:
     AP_Float _land_sink;
 	AP_Int8  _pitch_max;
 	AP_Int8  _pitch_min;
+	AP_Int8  _land_pitch_max;
 	
 	// throttle demand in the range from 0.0 to 1.0
     float _throttle_dem;
@@ -283,7 +284,7 @@ private:
 	AverageFilterFloat_Size5 _vdot_filter;
 
 	// current time constant
-	float timeConstant(void);
+	float timeConstant(void) const;
 };
 
 #define TECS_LOG_FORMAT(msg) { msg, sizeof(AP_TECS::log_TECS_Tuning),	\

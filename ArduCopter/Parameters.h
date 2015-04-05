@@ -79,6 +79,9 @@ public:
         // Parachute object
         k_param_parachute,	// 17
 
+        // Landing gear object
+        k_param_landinggear,    // 18
+
         // Misc
         //
         k_param_log_bitmask_old = 20,           // Deprecated
@@ -112,9 +115,9 @@ public:
         k_param_poshold_brake_rate,
         k_param_poshold_brake_angle_max,
         k_param_pilot_accel_z,
-        k_param_serial0_baud,
-        k_param_serial1_baud,
-        k_param_serial2_baud,
+        k_param_serial0_baud,           // deprecated - remove
+        k_param_serial1_baud,           // deprecated - remove
+        k_param_serial2_baud,           // deprecated - remove
         k_param_land_repositioning,
         k_param_sonar, // sonar object
         k_param_ekfcheck_thresh,
@@ -122,8 +125,9 @@ public:
         k_param_acro_expo,
         k_param_throttle_deadzone,
         k_param_optflow,
-        k_param_dcmcheck_thresh,        // 59
+        k_param_dcmcheck_thresh,        // deprecated - remove
         k_param_log_bitmask,
+        k_param_cli_enabled,            // 61
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -131,8 +135,8 @@ public:
         k_param_geofence_limit,         // deprecated - remove
         k_param_altitude_limit,         // deprecated - remove
         k_param_fence,
-        k_param_gps_glitch,
-        k_param_baro_glitch,            // 71
+        k_param_gps_glitch,             // deprecated
+        k_param_baro_glitch,            // 71 - deprecated
 
         //
         // 75: Singlecopter, CoaxCopter
@@ -163,7 +167,7 @@ public:
         //
         // 100: Inertial Nav
         //
-        k_param_inertial_nav = 100,
+        k_param_inertial_nav = 100, // deprecated
         k_param_wp_nav,
         k_param_attitude_control,
         k_param_pos_control,
@@ -179,7 +183,12 @@ public:
         k_param_telem_delay,
         k_param_gcs2,
         k_param_serial2_baud_old, // deprecated
-        k_param_serial2_protocol,
+        k_param_serial2_protocol, // deprecated
+        k_param_serial_manager,  // 119
+        k_param_ch9_option,
+        k_param_ch10_option,
+        k_param_ch11_option,
+        k_param_ch12_option,     // 123
 
         //
         // 140: Sensor parameters
@@ -241,11 +250,11 @@ public:
         k_param_rc_10,
         k_param_rc_11,
         k_param_throttle_min,
-        k_param_throttle_max,
+        k_param_throttle_max,           // remove
         k_param_failsafe_throttle,
         k_param_throttle_fs_action,     // remove
         k_param_failsafe_throttle_value,
-        k_param_throttle_cruise,
+        k_param_throttle_trim,          // remove
         k_param_esc_calibrate,
         k_param_radio_tuning,
         k_param_radio_tuning_high,
@@ -253,7 +262,7 @@ public:
         k_param_rc_speed = 192,
         k_param_failsafe_battery_enabled,
         k_param_throttle_mid,
-        k_param_failsafe_gps_enabled,
+        k_param_failsafe_gps_enabled,   // remove
         k_param_rc_9,
         k_param_rc_12,
         k_param_failsafe_gcs,           // 198
@@ -295,22 +304,25 @@ public:
         k_param_p_stabilize_roll,
         k_param_p_stabilize_pitch,
         k_param_p_stabilize_yaw,
-        k_param_p_loiter_pos,
+        k_param_p_pos_xy,
         k_param_p_loiter_lon,       // remove
-        k_param_pid_loiter_rate_lat,
-        k_param_pid_loiter_rate_lon,
+        k_param_pid_loiter_rate_lat,    // remove
+        k_param_pid_loiter_rate_lon,    // remove
         k_param_pid_nav_lat,        // 233 - remove
         k_param_pid_nav_lon,        // 234 - remove
         k_param_p_alt_hold,
-        k_param_p_throttle_rate,
+        k_param_p_vel_z,
         k_param_pid_optflow_roll,       // 237 - remove
         k_param_pid_optflow_pitch,      // 238 - remove
         k_param_acro_balance_roll_old,  // 239 - remove
         k_param_acro_balance_pitch_old, // 240 - remove
-        k_param_pid_throttle_accel,
+        k_param_pid_accel_z,
         k_param_acro_balance_roll,
         k_param_acro_balance_pitch,
         k_param_acro_yaw_p, // 244
+        k_param_autotune_axis_bitmask,  // 245
+        k_param_autotune_aggressiveness,  // 246
+        k_param_pi_vel_xy,  // 247
 
         // 254,255: reserved
     };
@@ -322,13 +334,10 @@ public:
     //
     AP_Int16        sysid_this_mav;
     AP_Int16        sysid_my_gcs;
-    AP_Int16        serial0_baud;
-    AP_Int16        serial1_baud;
-#if MAVLINK_COMM_NUM_BUFFERS > 2
-    AP_Int16        serial2_baud;
-    AP_Int8         serial2_protocol;
-#endif
     AP_Int8         telem_delay;
+#if CLI_ENABLED == ENABLED
+    AP_Int8         cli_enabled;
+#endif
 
     AP_Int16        rtl_altitude;
     AP_Float        sonar_gain;
@@ -337,7 +346,6 @@ public:
     AP_Float        fs_batt_voltage;            // battery voltage below which failsafe will be triggered
     AP_Float        fs_batt_mah;                // battery capacity (in mah) below which failsafe will be triggered
 
-    AP_Int8         failsafe_gps_enabled;       // gps failsafe enabled
     AP_Int8         failsafe_gcs;               // ground station failsafe behavior
     AP_Int16        gps_hdop_good;              // GPS Hdop value at or below this value represent a good position
 
@@ -363,10 +371,8 @@ public:
     // Throttle
     //
     AP_Int16        throttle_min;
-    AP_Int16        throttle_max;
     AP_Int8         failsafe_throttle;
     AP_Int16        failsafe_throttle_value;
-    AP_Int16        throttle_cruise;
     AP_Int16        throttle_mid;
     AP_Int16        throttle_deadzone;
 
@@ -390,11 +396,14 @@ public:
     AP_Int8         frame_orientation;
     AP_Int8         ch7_option;
     AP_Int8         ch8_option;
+    AP_Int8         ch9_option;
+    AP_Int8         ch10_option;
+    AP_Int8         ch11_option;
+    AP_Int8         ch12_option;
     AP_Int8         arming_check;
 
     AP_Int8         land_repositioning;
     AP_Float        ekfcheck_thresh;
-    AP_Float        dcmcheck_thresh;
 
 #if FRAME_CONFIG ==     HELI_FRAME
     // Heli
@@ -452,17 +461,20 @@ public:
     AC_PID                  pid_rate_pitch;
     AC_PID                  pid_rate_yaw;
 #endif
-    AC_PID                  pid_loiter_rate_lat;
-    AC_PID                  pid_loiter_rate_lon;
+    AC_PI_2D                pi_vel_xy;
 
-    AC_P                    p_throttle_rate;
-    AC_PID                  pid_throttle_accel;
+    AC_P                    p_vel_z;
+    AC_PID                  pid_accel_z;
 
-    AC_P                    p_loiter_pos;
+    AC_P                    p_pos_xy;
     AC_P                    p_stabilize_roll;
     AC_P                    p_stabilize_pitch;
     AC_P                    p_stabilize_yaw;
     AC_P                    p_alt_hold;
+
+    // Autotune
+    AP_Int8                 autotune_axis_bitmask;
+    AP_Float                autotune_aggressiveness;
 
     // Note: keep initializers here in the same order as they are declared
     // above.
@@ -505,21 +517,20 @@ public:
         rc_14               (CH_14),
 #endif
 
-        // PID controller	    initial P	            initial I		        initial D               initial imax
-        //----------------------------------------------------------------------------------------------------------
-        pid_rate_roll           (RATE_ROLL_P,           RATE_ROLL_I,            RATE_ROLL_D,            RATE_ROLL_IMAX),
-        pid_rate_pitch          (RATE_PITCH_P,          RATE_PITCH_I,           RATE_PITCH_D,           RATE_PITCH_IMAX),
-        pid_rate_yaw            (RATE_YAW_P,            RATE_YAW_I,             RATE_YAW_D,             RATE_YAW_IMAX),
+        // PID controller	    initial P	      initial I         initial D       initial imax        initial filt hz     pid rate
+        //---------------------------------------------------------------------------------------------------------------------------------
+        pid_rate_roll           (RATE_ROLL_P,     RATE_ROLL_I,      RATE_ROLL_D,    RATE_ROLL_IMAX,     RATE_ROLL_FILT_HZ,  MAIN_LOOP_SECONDS),
+        pid_rate_pitch          (RATE_PITCH_P,    RATE_PITCH_I,     RATE_PITCH_D,   RATE_PITCH_IMAX,    RATE_PITCH_FILT_HZ, MAIN_LOOP_SECONDS),
+        pid_rate_yaw            (RATE_YAW_P,      RATE_YAW_I,       RATE_YAW_D,     RATE_YAW_IMAX,      RATE_YAW_FILT_HZ,   MAIN_LOOP_SECONDS),
 
-        pid_loiter_rate_lat     (LOITER_RATE_P,         LOITER_RATE_I,          LOITER_RATE_D,          LOITER_RATE_IMAX),
-        pid_loiter_rate_lon     (LOITER_RATE_P,         LOITER_RATE_I,          LOITER_RATE_D,          LOITER_RATE_IMAX),
+        pi_vel_xy               (VEL_XY_P,        VEL_XY_I,                         VEL_XY_IMAX,        VEL_XY_FILT_HZ,     WPNAV_LOITER_UPDATE_TIME),
 
-        p_throttle_rate         (THROTTLE_RATE_P),
-        pid_throttle_accel      (THROTTLE_ACCEL_P,      THROTTLE_ACCEL_I,       THROTTLE_ACCEL_D,       THROTTLE_ACCEL_IMAX),
+        p_vel_z                 (VEL_Z_P),
+        pid_accel_z             (ACCEL_Z_P,       ACCEL_Z_I,        ACCEL_Z_D,      ACCEL_Z_IMAX,       ACCEL_Z_FILT_HZ,    MAIN_LOOP_SECONDS),
 
         // P controller	        initial P
         //----------------------------------------------------------------------
-        p_loiter_pos            (LOITER_POS_P),
+        p_pos_xy                (POS_XY_P),
 
         p_stabilize_roll        (STABILIZE_ROLL_P),
         p_stabilize_pitch       (STABILIZE_PITCH_P),

@@ -36,7 +36,7 @@
 #define POSHOLD_WIND_COMP_ESTIMATE_SPEED_MAX     10      // wind compensation estimates will only run when velocity is at or below this speed in cm/s
 
 // declare some function to keep compiler happy
-static void poshold_update_pilot_lean_angle(int16_t &lean_angle_filtered, int16_t &lean_angle_raw);
+static void poshold_update_pilot_lean_angle(float &lean_angle_filtered, float &lean_angle_raw);
 static int16_t poshold_mix_controls(float mix_ratio, int16_t first_control, int16_t second_control);
 static void poshold_update_brake_angle_from_velocity(int16_t &brake_angle, float velocity);
 static void poshold_update_wind_comp_estimate();
@@ -62,8 +62,8 @@ static struct {
     uint8_t loiter_reset_I              : 1;    // true the very first time PosHold enters loiter, thereafter we trust the i terms loiter has
 
     // pilot input related variables
-    int16_t pilot_roll;                         // pilot requested roll angle (filtered to slow returns to zero)
-    int16_t pilot_pitch;                        // pilot requested roll angle (filtered to slow returns to zero)
+    float pilot_roll;                         // pilot requested roll angle (filtered to slow returns to zero)
+    float pilot_pitch;                        // pilot requested roll angle (filtered to slow returns to zero)
 
     // braking related variables
     float brake_gain;                           // gain used during conversion of vehicle's velocity to lean angle during braking (calculated from brake_rate)
@@ -77,7 +77,7 @@ static struct {
 
     // loiter related variables
     int16_t controller_to_pilot_timer_roll;     // cycles to mix controller and pilot controls in POSHOLD_CONTROLLER_TO_PILOT
-    int16_t controller_to_pilot_timer_pitch;        // cycles to mix controller and pilot controls in POSHOLD_CONTROLLER_TO_PILOT
+    int16_t controller_to_pilot_timer_pitch;    // cycles to mix controller and pilot controls in POSHOLD_CONTROLLER_TO_PILOT
     int16_t controller_final_roll;              // final roll angle from controller as we exit brake or loiter mode (used for mixing with pilot input)
     int16_t controller_final_pitch;             // final pitch angle from controller as we exit brake or loiter mode (used for mixing with pilot input)
 
@@ -85,8 +85,8 @@ static struct {
     Vector2f wind_comp_ef;                      // wind compensation in earth frame, filtered lean angles from position controller
     int16_t wind_comp_roll;                     // roll angle to compensate for wind
     int16_t wind_comp_pitch;                    // pitch angle to compensate for wind
-    int8_t  wind_comp_start_timer;              // counter to delay start of wind compensation for a short time after loiter is engaged
-    int8_t  wind_comp_timer;         // counter to reduce wind comp roll/pitch lean angle calcs to 10hz
+    uint16_t wind_comp_start_timer;             // counter to delay start of wind compensation for a short time after loiter is engaged
+    int8_t  wind_comp_timer;                    // counter to reduce wind comp roll/pitch lean angle calcs to 10hz
 
     // final output
     int16_t roll;   // final roll angle sent to attitude controller
@@ -97,7 +97,7 @@ static struct {
 static bool poshold_init(bool ignore_checks)
 {
     // fail to initialise PosHold mode if no GPS lock
-    if (!GPS_ok() && !ignore_checks) {
+    if (!position_ok() && !ignore_checks) {
         return false;
     }
     
@@ -144,7 +144,7 @@ static bool poshold_init(bool ignore_checks)
 // should be called at 100hz or more
 static void poshold_run()
 {
-    int16_t target_roll, target_pitch;  // pilot's roll and pitch angle inputs
+    float target_roll, target_pitch;  // pilot's roll and pitch angle inputs
     float target_yaw_rate = 0;          // pilot desired yaw rate in centi-degrees/sec
     int16_t target_climb_rate = 0;      // pilot desired climb rate in centimeters/sec
     float brake_to_loiter_mix;          // mix of brake and loiter controls.  0 = fully brake controls, 1 = fully loiter controls
@@ -154,7 +154,7 @@ static void poshold_run()
     const Vector3f& vel = inertial_nav.get_velocity();
 
     // if not auto armed set throttle to zero and exit immediately
-    if(!ap.auto_armed || !inertial_nav.position_ok()) {
+    if(!ap.auto_armed) {
         wp_nav.init_loiter_target();
         attitude_control.relax_bf_rate_controller();
         attitude_control.set_yaw_target_to_current_heading();
@@ -530,7 +530,7 @@ static void poshold_run()
 }
 
 // poshold_update_pilot_lean_angle - update the pilot's filtered lean angle with the latest raw input received
-static void poshold_update_pilot_lean_angle(int16_t &lean_angle_filtered, int16_t &lean_angle_raw)
+static void poshold_update_pilot_lean_angle(float &lean_angle_filtered, float &lean_angle_raw)
 {
     // if raw input is large or reversing the vehicle's lean angle immediately set the fitlered angle to the new raw angle
     if ((lean_angle_filtered > 0 && lean_angle_raw < 0) || (lean_angle_filtered < 0 && lean_angle_raw > 0) || (abs(lean_angle_raw) > POSHOLD_STICK_RELEASE_SMOOTH_ANGLE)) {

@@ -33,6 +33,10 @@
 #include <AP_Airspeed.h>
 #include <AP_Vehicle.h>
 #include <AP_ADC_AnalogSource.h>
+#include <AP_Rally.h>
+#include <AP_NavEKF.h>
+#include <AP_BattMonitor.h>
+#include <AP_Scheduler.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 

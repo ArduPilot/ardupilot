@@ -19,18 +19,20 @@
 #include "AP_RangeFinder_PulsedLightLRF.h"
 #include "AP_RangeFinder_MaxsonarI2CXL.h"
 #include "AP_RangeFinder_PX4.h"
+#include "AP_RangeFinder_PX4_PWM.h"
 
 // table of user settable parameters
 const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
     // @Param: _TYPE
     // @DisplayName: Rangefinder type
     // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:APM2-MaxbotixI2C,3:APM2-PulsedLightI2C,4:PX4-I2C
+    // @Values: 0:None,1:Analog,2:APM2-MaxbotixI2C,3:APM2-PulsedLightI2C,4:PX4-I2C,5:PX4-PWM
     AP_GROUPINFO("_TYPE",    0, RangeFinder, _type[0], 0),
 
     // @Param: _PIN
     // @DisplayName: Rangefinder pin
     // @Description: Analog pin that rangefinder is connected to. Set this to 0..9 for the APM2 analog pins. Set to 64 on an APM1 for the dedicated 'airspeed' port on the end of the board. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
+    // @Values: -1:Not Used, 0:APM2-A0, 1:APM2-A1, 2:APM2-A2, 3:APM2-A3, 4:APM2-A4, 5:APM2-A5, 6:APM2-A6, 7:APM2-A7, 8:APM2-A8, 9:APM2-A9, 11:PX4-airspeed port, 15:Pixhawk-airspeed port, 64:APM1-airspeed port
     AP_GROUPINFO("_PIN",     1, RangeFinder, _pin[0], -1),
 
     // @Param: _SCALING
@@ -42,7 +44,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
 
     // @Param: _OFFSET
     // @DisplayName: rangefinder offset
-    // @Description: Offset in volts for zero distance
+    // @Description: Offset in volts for zero distance for analog rangefinders. Offset added to distance in centimeters for PWM and I2C Lidars
     // @Units: Volts
     // @Increment: 0.001
     AP_GROUPINFO("_OFFSET",  3, RangeFinder, _offset[0], 0.0),
@@ -70,6 +72,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
     // @Param: _STOP_PIN
     // @DisplayName: Rangefinder stop pin
     // @Description: Digital pin that enables/disables rangefinder measurement for an analog rangefinder. A value of -1 means no pin. If this is set, then the pin is set to 1 to enable the rangefinder and set to 0 to disable it. This can be used to ensure that multiple sonar rangefinders don't interfere with each other.
+    // @Values: -1:Not Used,50:Pixhawk AUXOUT1,51:Pixhawk AUXOUT2,52:Pixhawk AUXOUT3,53:Pixhawk AUXOUT4,54:Pixhawk AUXOUT5,55:Pixhawk AUXOUT6,111:PX4 FMU Relay1,112:PX4 FMU Relay2,113:PX4IO Relay1,114:PX4IO Relay2,115:PX4IO ACC1,116:PX4IO ACC2
     AP_GROUPINFO("_STOP_PIN", 7, RangeFinder, _stop_pin[0], -1),
 
     // @Param: _SETTLE
@@ -85,18 +88,26 @@ const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
     // @Values: 0:No,1:Yes
     AP_GROUPINFO("_RMETRIC", 9, RangeFinder, _ratiometric[0], 1),
 
+    // @Param: RNGFND_PWRRNG
+    // @DisplayName: Powersave range
+    // @Description: This parameter sets the estimated terrain distance in meters above which the sensor will be put into a power saving mode (if available). A value of zero means power saving is not enabled
+    // @Units: meters
+    // @Range: 0 32767
+    AP_GROUPINFO("_PWRRNG", 10, RangeFinder, _powersave_range, 0),
+
     // 10..12 left for future expansion
 
 #if RANGEFINDER_MAX_INSTANCES > 1
     // @Param: 2_TYPE
     // @DisplayName: Second Rangefinder type
     // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:APM2-MaxbotixI2C,3:APM2-PulsedLightI2C,4:PX4-I2C
+    // @Values: 0:None,1:Analog,2:APM2-MaxbotixI2C,3:APM2-PulsedLightI2C,4:PX4-I2C,5:PX4-PWM
     AP_GROUPINFO("2_TYPE",    12, RangeFinder, _type[1], 0),
 
     // @Param: 2_PIN
     // @DisplayName: Rangefinder pin
     // @Description: Analog pin that rangefinder is connected to. Set this to 0..9 for the APM2 analog pins. Set to 64 on an APM1 for the dedicated 'airspeed' port on the end of the board. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
+    // @Values: -1:Not Used, 0:APM2-A0, 1:APM2-A1, 2:APM2-A2, 3:APM2-A3, 4:APM2-A4, 5:APM2-A5, 6:APM2-A6, 7:APM2-A7, 8:APM2-A8, 9:APM2-A9, 11:PX4-airspeed port, 15:Pixhawk-airspeed port, 64:APM1-airspeed port
     AP_GROUPINFO("2_PIN",     13, RangeFinder, _pin[1], -1),
 
     // @Param: 2_SCALING
@@ -136,6 +147,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
     // @Param: 2_STOP_PIN
     // @DisplayName: Rangefinder stop pin
     // @Description: Digital pin that enables/disables rangefinder measurement for an analog rangefinder. A value of -1 means no pin. If this is set, then the pin is set to 1 to enable the rangefinder and set to 0 to disable it. This can be used to ensure that multiple sonar rangefinders don't interfere with each other.
+    // @Values: -1:Not Used,50:Pixhawk AUXOUT1,51:Pixhawk AUXOUT2,52:Pixhawk AUXOUT3,53:Pixhawk AUXOUT4,54:Pixhawk AUXOUT5,55:Pixhawk AUXOUT6,111:PX4 FMU Relay1,112:PX4 FMU Relay2,113:PX4IO Relay1,114:PX4IO Relay2,115:PX4IO ACC1,116:PX4IO ACC2
     AP_GROUPINFO("2_STOP_PIN", 19, RangeFinder, _stop_pin[1], -1),
 
     // @Param: 2_SETTLE
@@ -207,7 +219,7 @@ void RangeFinder::update(void)
 void RangeFinder::detect_instance(uint8_t instance)
 {
     uint8_t type = _type[instance];
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     if (type == RangeFinder_TYPE_PLI2C || 
         type == RangeFinder_TYPE_MBI2C) {
         // I2C sensor types are handled by the PX4Firmware code
@@ -228,11 +240,18 @@ void RangeFinder::detect_instance(uint8_t instance)
             return;
         }
     }
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     if (type == RangeFinder_TYPE_PX4) {
         if (AP_RangeFinder_PX4::detect(*this, instance)) {
             state[instance].instance = instance;
             drivers[instance] = new AP_RangeFinder_PX4(*this, instance, state[instance]);
+            return;
+        }
+    }
+    if (type == RangeFinder_TYPE_PX4_PWM) {
+        if (AP_RangeFinder_PX4_PWM::detect(*this, instance)) {
+            state[instance].instance = instance;
+            drivers[instance] = new AP_RangeFinder_PX4_PWM(*this, instance, state[instance]);
             return;
         }
     }

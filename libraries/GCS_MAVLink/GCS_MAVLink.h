@@ -51,14 +51,14 @@
 #include "include/mavlink/v1.0/mavlink_types.h"
 
 /// MAVLink stream used for uartA
-extern AP_HAL::BetterStream	*mavlink_comm_0_port;
+extern AP_HAL::UARTDriver	*mavlink_comm_0_port;
 
 /// MAVLink stream used for uartC
-extern AP_HAL::BetterStream	*mavlink_comm_1_port;
+extern AP_HAL::UARTDriver	*mavlink_comm_1_port;
 
 #if MAVLINK_COMM_NUM_BUFFERS > 2
 /// MAVLink stream used for uartD
-extern AP_HAL::BetterStream	*mavlink_comm_2_port;
+extern AP_HAL::UARTDriver	*mavlink_comm_2_port;
 #endif
 
 /// MAVLink system definition

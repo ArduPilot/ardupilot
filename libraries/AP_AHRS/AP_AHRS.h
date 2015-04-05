@@ -35,10 +35,12 @@
 
 // Copter defaults to EKF on by default, all others off
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-#define AHRS_EKF_USE_DEFAULT    1
+ # define AHRS_EKF_USE_ALWAYS     1
 #else
-#define AHRS_EKF_USE_DEFAULT    0
+ # define AHRS_EKF_USE_ALWAYS     0
 #endif
+
+#define AHRS_EKF_USE_DEFAULT    0
 
 #define AP_AHRS_TRIM_LIMIT 10.0f        // maximum trim angle in degrees
 #define AP_AHRS_RP_P_MIN   0.05f        // minimum value for AHRS_RP_P parameter
@@ -91,9 +93,6 @@ public:
 
         // enable centrifugal correction by default
         _flags.correct_centrifugal = true;
-
-        // start off with armed flag true
-        _flags.armed = true;
 
         // initialise _home
         _home.options    = 0;
@@ -260,7 +259,7 @@ public:
     // return true if airspeed comes from an airspeed sensor, as
     // opposed to an IMU estimate
     bool airspeed_sensor_enabled(void) const {
-        return _airspeed != NULL && _airspeed->use();
+        return _airspeed != NULL && _airspeed->use() && _airspeed->healthy();
     }
 
     // return a ground vector estimate in meters/second, in North/East order
@@ -306,17 +305,6 @@ public:
     // get the correct centrifugal flag
     bool get_correct_centrifugal(void) const {
         return _flags.correct_centrifugal;
-    }
-
-    // set the armed flag
-    // allows EKF enter static mode when disarmed
-    void set_armed(bool setting) {
-        _flags.armed = setting;
-    }
-
-    // get the armed flag
-    bool get_armed(void) const {
-        return _flags.armed;
     }
 
     // get trim
@@ -367,7 +355,7 @@ public:
     uint8_t get_active_accel_instance(void) const { return _active_accel_instance; }
 
     // is the AHRS subsystem healthy?
-    virtual bool healthy(void) = 0;
+    virtual bool healthy(void) const = 0;
 
     // true if the AHRS has completed initialisation
     virtual bool initialised(void) const { return true; };
@@ -382,7 +370,12 @@ protected:
     AP_Int8 _board_orientation;
     AP_Int8 _gps_minsats;
     AP_Int8 _gps_delay;
+
+#if AHRS_EKF_USE_ALWAYS
+    static const int8_t _ekf_use = 1;
+#else
     AP_Int8 _ekf_use;
+#endif
 
     // flags structure
     struct ahrs_flags {
@@ -391,7 +384,6 @@ protected:
         uint8_t fly_forward             : 1;    // 1 if we can assume the aircraft will be flying forward on its X axis
         uint8_t correct_centrifugal     : 1;    // 1 if we should correct for centrifugal forces (allows arducopter to turn this off when motors are disarmed)
         uint8_t wind_estimation         : 1;    // 1 if we should do wind estimation
-        uint8_t armed                   : 1;    // 1 if we are armed for flight
     } _flags;
 
     // update_trig - recalculates _cos_roll, _cos_pitch, etc based on latest attitude
@@ -449,5 +441,11 @@ protected:
 
 #include <AP_AHRS_DCM.h>
 #include <AP_AHRS_NavEKF.h>
+
+#if AP_AHRS_NAVEKF_AVAILABLE
+#define AP_AHRS_TYPE AP_AHRS_NavEKF
+#else
+#define AP_AHRS_TYPE AP_AHRS
+#endif
 
 #endif // __AP_AHRS_H__

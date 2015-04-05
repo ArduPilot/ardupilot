@@ -35,22 +35,11 @@
 #include <AP_Mission.h>
 #include <AP_Terrain.h>
 #include <AP_Rally.h>
+#include <AP_BattMonitor.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
-#define CONFIG_COMPASS HAL_COMPASS_DEFAULT
-
-#if CONFIG_COMPASS == HAL_COMPASS_PX4
-static AP_Compass_PX4 compass;
-#elif CONFIG_COMPASS == HAL_COMPASS_VRBRAIN
-static AP_Compass_VRBRAIN compass;
-#elif CONFIG_COMPASS == HAL_COMPASS_HMC5843
-static AP_Compass_HMC5843 compass;
-#elif CONFIG_COMPASS == HAL_COMPASS_HIL
-static AP_Compass_HIL compass;
-#else
- #error Unrecognized CONFIG_COMPASS setting
-#endif
+static Compass compass;
 
 uint32_t timer;
 
@@ -61,29 +50,10 @@ void setup() {
         hal.console->println("compass initialisation failed!");
         while (1) ;
     }
-    hal.console->println("init done");
+    hal.console->printf("init done - %u compasses detected\n", compass.get_count());
 
     compass.set_and_save_offsets(0,0,0,0); // set offsets to account for surrounding interference
     compass.set_declination(ToRad(0.0)); // set local difference between magnetic north and true north
-
-    hal.console->print("Compass auto-detected as: ");
-    switch( compass.product_id ) {
-    case AP_COMPASS_TYPE_HIL:
-        hal.console->println("HIL");
-        break;
-    case AP_COMPASS_TYPE_HMC5843:
-        hal.console->println("HMC5843");
-        break;
-    case AP_COMPASS_TYPE_HMC5883L:
-        hal.console->println("HMC5883L");
-        break;
-    case AP_COMPASS_TYPE_PX4:
-        hal.console->println("PX4");
-        break;
-    default:
-        hal.console->println("unknown");
-        break;
-    }
 
     hal.scheduler->delay(1000);
     timer = hal.scheduler->micros();

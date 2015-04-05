@@ -304,7 +304,7 @@ void AC_WPNav::update_loiter(float ekfGndSpdLimit, float ekfNavVelGainScaler)
             dt = 0.0f;
         }
         calc_loiter_desired_velocity(dt,ekfGndSpdLimit);
-        _pos_control.update_xy_controller(true, ekfNavVelGainScaler);
+        _pos_control.update_xy_controller(AC_PosControl::XY_MODE_POS_LIMITED_AND_VEL_FF, ekfNavVelGainScaler);
     }
 }
 
@@ -612,7 +612,7 @@ void AC_WPNav::update_wpnav()
         }
         _pos_control.freeze_ff_z();
 
-        _pos_control.update_xy_controller(false, 1.0f);
+        _pos_control.update_xy_controller(AC_PosControl::XY_MODE_POS_ONLY, 1.0f);
         check_wp_leash_length();
 
         _wp_last_update = hal.scheduler->millis();
@@ -875,7 +875,7 @@ void AC_WPNav::update_spline()
         _pos_control.freeze_ff_z();
 
         // run horizontal position controller
-        _pos_control.update_xy_controller(false, 1.0f);
+        _pos_control.update_xy_controller(AC_PosControl::XY_MODE_POS_ONLY, 1.0f);
 
         _wp_last_update = hal.scheduler->millis();
     }

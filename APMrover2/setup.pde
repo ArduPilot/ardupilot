@@ -11,7 +11,6 @@ static int8_t	setup_flightmodes	(uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_accel_scale   (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_set           (uint8_t argc, const Menu::arg *argv);
 #endif
-static int8_t   setup_level         (uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_erase			(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_compass		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_declination	(uint8_t argc, const Menu::arg *argv);
@@ -23,7 +22,6 @@ static const struct Menu::command setup_menu_commands[] PROGMEM = {
 	{"reset", 			setup_factory},
 	{"radio",			setup_radio},
 	{"modes",			setup_flightmodes},
-	{"level",			setup_level},
 #if !defined( __AVR_ATmega1280__ )
     {"accel",           setup_accel_scale},
 #endif
@@ -341,9 +339,7 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 				mode != AUTO &&
 				mode != RTL) 
 			{
-				if (mode < MANUAL)
-					mode = RTL;
-				else if (mode > RTL)
+				if (mode > RTL)
 					mode = MANUAL;
 				else
 					mode += radioInputSwitch;
@@ -418,18 +414,6 @@ setup_accel_scale(uint8_t argc, const Menu::arg *argv)
     return(0);
 }
 #endif
-
-static int8_t
-setup_level(uint8_t argc, const Menu::arg *argv)
-{
-    cliSerial->println_P(PSTR("Initialising gyros"));
-    ahrs.init();
-    ins.init(AP_InertialSensor::COLD_START, 
-             ins_sample_rate);
-    ins.init_accel();
-    ahrs.set_trim(Vector3f(0, 0, 0));
-    return(0);
-}
 
 static int8_t
 setup_compass(uint8_t argc, const Menu::arg *argv)
@@ -521,23 +505,6 @@ static void report_compass()
 {
 	//print_blanks(2);
 	cliSerial->printf_P(PSTR("Compass: "));
-
-    switch (compass.product_id) {
-    case AP_COMPASS_TYPE_HMC5883L:
-        cliSerial->println_P(PSTR("HMC5883L"));
-        break;
-    case AP_COMPASS_TYPE_HMC5843:
-        cliSerial->println_P(PSTR("HMC5843"));
-        break;
-    case AP_COMPASS_TYPE_HIL:
-        cliSerial->println_P(PSTR("HIL"));
-        break;
-    default:
-        cliSerial->println_P(PSTR("??"));
-        break;
-    }
-
-	print_divider();
 
 	print_enabled(g.compass_enabled);
 

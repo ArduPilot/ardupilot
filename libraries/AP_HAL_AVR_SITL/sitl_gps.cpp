@@ -32,9 +32,6 @@ extern const AP_HAL::HAL& hal;
 
 static uint8_t next_gps_index;
 static uint8_t gps_delay;
-SITL_State::gps_data SITL_State::_gps_data[MAX_GPS_DELAY];
-bool SITL_State::_gps_has_basestation_position = false;
-SITL_State::gps_data SITL_State::_gps_basestation_data;
 
 // state of GPS emulation
 static struct gps_state {
@@ -388,10 +385,10 @@ void SITL_State::_update_gps_mtk16(const struct gps_data *d)
 
 	gettimeofday(&tv, NULL);
 	tm = *gmtime(&tv.tv_sec);
-    uint32_t hsec = (tv.tv_usec / (10000*20)) * 20; // always multiple of 20
+    uint32_t millisec = (tv.tv_usec / (1000*200)) * 200; // always multiple of 200
 
     p.utc_date = (tm.tm_year-100) + ((tm.tm_mon+1)*100) + (tm.tm_mday*100*100);
-    p.utc_time = hsec + tm.tm_sec*100 + tm.tm_min*100*100 + tm.tm_hour*100*100*100;
+    p.utc_time = millisec + tm.tm_sec*1000 + tm.tm_min*1000*100 + tm.tm_hour*1000*100*100;
 
 	p.hdop          = 115;
 
@@ -759,6 +756,12 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
 	d.latitude = latitude + glitch_offsets.x;
 	d.longitude = longitude + glitch_offsets.y;
 	d.altitude = altitude + glitch_offsets.z;
+
+    if (_sitl->gps_drift_alt > 0) {
+        // slow altitude drift
+        d.altitude += _sitl->gps_drift_alt*sinf(hal.scheduler->millis()*0.001*0.02);
+    }
+    
 	d.speedN = speedN;
 	d.speedE = speedE;
 	d.speedD = speedD;

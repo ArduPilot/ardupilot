@@ -75,9 +75,8 @@ void loop()
         tmp_float = pow(tmp_float, 0.190295);
         float alt = 44330.0 * (1.0 - tmp_float);
         hal.console->print(alt);
-        hal.console->printf(" t=%lu samples=%u", 
-			    read_time, 
-			    (unsigned)bmp085.get_pressure_samples());
+        hal.console->printf(" t=%lu", 
+			    read_time);
         hal.console->println();
     }
 }

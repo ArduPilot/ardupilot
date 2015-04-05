@@ -5,6 +5,12 @@ extern "C" {
 #ifndef _CHECKSUM_H_
 #define _CHECKSUM_H_
 
+// Visual Studio versions before 2010 don't have stdint.h, so we just error out.
+#if (defined _MSC_VER) && (_MSC_VER < 1600)
+#error "The C-MAVLink implementation requires Visual Studio 2010 or greater"
+#endif
+
+#include <stdint.h>
 
 /**
  *

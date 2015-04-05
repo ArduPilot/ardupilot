@@ -56,7 +56,7 @@ public:
         NONE = 0,
         SINGLE_BUZZ = 1,
         DOUBLE_BUZZ = 2,
-        GPS_GLITCH = 3,
+        GPS_GLITCH = 3, // not used
         ARMING_BUZZ = 4,
         BARO_GLITCH = 5,
         EKF_BAD = 6
@@ -70,13 +70,9 @@ private:
     /// buzzer_flag_type - bitmask of current state and ap_notify states we track
     struct buzzer_flag_type {
         uint8_t on                  : 1;    // 1 if the buzzer is currently on
-        uint8_t gps_glitching       : 1;    // 1 if gps position is not good
         uint8_t arming              : 1;    // 1 if we are beginning the arming process
         uint8_t armed               : 1;    // 0 = disarmed, 1 = armed
         uint8_t failsafe_battery    : 1;    // 1 if battery failsafe has triggered
-        uint8_t failsafe_gps        : 1;    // 1 if gps failsafe
-        uint8_t baro_glitching     : 1;    // 1 if baro alt is glitching
-        uint8_t arming_failed      : 1;    // 0 = failing checks, 1 = passed
         uint8_t ekf_bad            : 1;    // 1 if ekf position has gone bad
     } _flags;
 

@@ -51,9 +51,9 @@ public:
         // misc2
         k_param_log_bitmask = 40,
         k_param_gps,
-        k_param_serial0_baud,
-        k_param_serial1_baud,
-        k_param_serial2_baud,
+        k_param_serial0_baud,   // deprecated, can be deleted
+        k_param_serial1_baud,   // deprecated, can be deleted
+        k_param_serial2_baud,   // deprecated, can be deleted
 
 
         // 110: Telemetry control
@@ -68,7 +68,9 @@ public:
         k_param_skip_gyro_cal,
         k_param_gcs2,       // stream rates for uartD
         k_param_serial2_baud_old,
-        k_param_serial2_protocol,
+        k_param_serial2_protocol,   // deprecated, can be deleted
+        k_param_serial_manager,     // serial manager library
+        k_param_cli_enabled,
 
         //
         // 130: Sensor parameters
@@ -162,7 +164,7 @@ public:
         //
         k_param_camera,
         k_param_camera_mount,
-        k_param_camera_mount2,
+        k_param_camera_mount2,          // unused
 
         //
         // 240: PID Controllers
@@ -210,14 +212,11 @@ public:
 	//
 	AP_Int16    sysid_this_mav;
 	AP_Int16    sysid_my_gcs;
-    AP_Int16    serial0_baud;
-    AP_Int16    serial1_baud;
-#if MAVLINK_COMM_NUM_BUFFERS > 2
-    AP_Int16    serial2_baud;
-    AP_Int8     serial2_protocol;
-#endif
     AP_Int8     telem_delay;
     AP_Int8     skip_gyro_cal;
+#if CLI_ENABLED == ENABLED
+    AP_Int8     cli_enabled;
+#endif
 
     // sensor parameters
     AP_Int8	    compass_enabled; 

@@ -8,7 +8,7 @@ static bool verify_command(const AP_Mission::Mission_Command& cmd);
 static void update_commands(void)
 {
     if(control_mode == AUTO) {
-        if (home_is_set) {
+        if (home_is_set != HOME_UNSET) {
             if(mission.state() == AP_Mission::MISSION_RUNNING) {
                 mission.update();
             } else {

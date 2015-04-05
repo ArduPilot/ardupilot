@@ -56,7 +56,9 @@ void failsafe_check(void)
         hal.rcin->clear_overrides();
         channel_roll->radio_out     = channel_roll->read();
         channel_pitch->radio_out    = channel_pitch->read();
-        channel_throttle->radio_out = channel_throttle->read();
+        if (hal.util->get_soft_armed()) {
+            channel_throttle->radio_out = channel_throttle->read();
+        }
         channel_rudder->radio_out   = channel_rudder->read();
 
         int16_t roll = channel_roll->pwm_to_angle_dz(0);

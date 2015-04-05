@@ -19,6 +19,7 @@ static void do_yaw(const AP_Mission::Mission_Command& cmd);
 static void do_change_speed(const AP_Mission::Mission_Command& cmd);
 static void do_set_home(const AP_Mission::Mission_Command& cmd);
 static void do_roi(const AP_Mission::Mission_Command& cmd);
+static void do_mount_control(const AP_Mission::Mission_Command& cmd);
 #if PARACHUTE == ENABLED
 static void do_parachute(const AP_Mission::Mission_Command& cmd);
 #endif
@@ -111,7 +112,7 @@ static bool start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_DO_SET_HOME:             // 179
-        // unsupported as mission command
+        do_set_home(cmd);
         break;
 
     case MAV_CMD_DO_SET_SERVO:
@@ -137,6 +138,11 @@ static bool start_command(const AP_Mission::Mission_Command& cmd)
         do_roi(cmd);
         break;
 
+    case MAV_CMD_DO_MOUNT_CONTROL:          // 205
+        // point the camera to a specified angle
+        do_mount_control(cmd);
+        break;
+
 #if CAMERA == ENABLED
     case MAV_CMD_DO_CONTROL_VIDEO:                      // Control on-board camera capturing. |Camera ID (-1 for all)| Transmission: 0: disabled, 1: enabled compressed, 2: enabled raw| Transmission mode: 0: video stream, >0: single images every n seconds (decimal)| Recording: 0: disabled, 1: enabled compressed, 2: enabled raw| Empty| Empty| Empty|
         break;
@@ -150,16 +156,6 @@ static bool start_command(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
         camera.set_trigger_distance(cmd.content.cam_trigg_dist.meters);
-        break;
-#endif
-
-#if MOUNT == ENABLED
-    case MAV_CMD_DO_MOUNT_CONFIGURE:                    // Mission command to configure a camera mount |Mount operation mode (see MAV_CONFIGURE_MOUNT_MODE enum)| stabilize roll? (1 = yes, 0 = no)| stabilize pitch? (1 = yes, 0 = no)| stabilize yaw? (1 = yes, 0 = no)| Empty| Empty| Empty|
-        camera_mount.configure_cmd();
-        break;
-
-    case MAV_CMD_DO_MOUNT_CONTROL:                      // Mission command to control a camera mount |pitch(deg*100) or lat, depending on mount mode.| roll(deg*100) or lon depending on mount mode| yaw(deg*100) or alt (in cm) depending on mount mode| Empty| Empty| Empty| Empty|
-        camera_mount.control_cmd();
         break;
 #endif
 
@@ -355,7 +351,7 @@ static void do_land(const AP_Mission::Mission_Command& cmd)
 
         // calculate and set desired location above landing target
         Vector3f pos = pv_location_to_vector(cmd.content.location);
-        pos.z = current_loc.alt;
+        pos.z = inertial_nav.get_altitude();
         auto_wp_start(pos);
     }else{
         // set landing state
@@ -874,12 +870,12 @@ static void do_change_speed(const AP_Mission::Mission_Command& cmd)
 
 static void do_set_home(const AP_Mission::Mission_Command& cmd)
 {
-    if(cmd.p1 == 1) {
-        init_home();
+    if(cmd.p1 == 1 || (cmd.content.location.lat == 0 && cmd.content.location.lng == 0 && cmd.content.location.alt == 0)) {
+        set_home_to_current_location();
     } else {
-        Location loc = cmd.content.location;
-        ahrs.set_home(loc);
-        set_home_is_set(true);
+        if (!far_from_EKF_origin(cmd.content.location)) {
+            set_home(cmd.content.location);
+        }
     }
 }
 
@@ -901,5 +897,13 @@ static void do_take_picture()
     if (should_log(MASK_LOG_CAMERA)) {
         DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
     }
+#endif
+}
+
+// point the camera to a specified angle
+static void do_mount_control(const AP_Mission::Mission_Command& cmd)
+{
+#if MOUNT == ENABLED
+    camera_mount.set_angle_targets(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw);
 #endif
 }

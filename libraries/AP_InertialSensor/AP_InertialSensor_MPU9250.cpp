@@ -144,6 +144,8 @@ extern const AP_HAL::HAL& hal;
 #define MPUREG_FIFO_COUNTL                              0x73
 #define MPUREG_FIFO_R_W                                 0x74
 #define MPUREG_WHOAMI                                   0x75
+#define MPUREG_WHOAMI_MPU9250                           0x71
+#define MPUREG_WHOAMI_MPU9255                           0x73
 
 
 // Configuration bits MPU 3000, MPU 6000 and MPU9250
@@ -173,14 +175,11 @@ extern const AP_HAL::HAL& hal;
 
 AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250(AP_InertialSensor &imu) :
 	AP_InertialSensor_Backend(imu),
-    _last_filter_hz(-1),
+    _last_accel_filter_hz(-1),
+    _last_gyro_filter_hz(-1),
     _shared_data_idx(0),
-    _accel_filter_x(1000, 15),
-    _accel_filter_y(1000, 15),
-    _accel_filter_z(1000, 15),
-    _gyro_filter_x(1000, 15),
-    _gyro_filter_y(1000, 15),
-    _gyro_filter_z(1000, 15),
+    _accel_filter(1000, 15),
+    _gyro_filter(1000, 15),
     _have_sample_available(false)
 {
 }
@@ -216,9 +215,7 @@ bool AP_InertialSensor_MPU9250::_init_sensor(void)
     hal.scheduler->suspend_timer_procs();
 
     uint8_t whoami = _register_read(MPUREG_WHOAMI);
-    if (whoami != 0x71) {
-        // TODO: we should probably accept multiple chip
-        // revisions. This is the one on the PXF
+    if (whoami != MPUREG_WHOAMI_MPU9250 && whoami != MPUREG_WHOAMI_MPU9255) {
         hal.console->printf("MPU9250: unexpected WHOAMI 0x%x\n", (unsigned)whoami);
         return false;
     }
@@ -288,14 +285,22 @@ bool AP_InertialSensor_MPU9250::update( void )
     // way up, and PWM pins on NavIO are at the back of the aircraft
     accel.rotate(ROTATION_ROLL_180_YAW_90);
     gyro.rotate(ROTATION_ROLL_180_YAW_90);
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+    accel.rotate(ROTATION_ROLL_180);
+    gyro.rotate(ROTATION_ROLL_180);
 #endif
 
-    _rotate_and_offset_gyro(_gyro_instance, gyro);
-    _rotate_and_offset_accel(_accel_instance, accel);
+    _publish_gyro(_gyro_instance, gyro);
+    _publish_accel(_accel_instance, accel);
 
-    if (_last_filter_hz != _imu.get_filter()) {
-        _set_filter(_imu.get_filter());
-        _last_filter_hz = _imu.get_filter();
+    if (_last_accel_filter_hz != _accel_filter_cutoff()) {
+        _set_accel_filter(_accel_filter_cutoff());
+        _last_accel_filter_hz = _accel_filter_cutoff();
+    }
+
+    if (_last_gyro_filter_hz != _gyro_filter_cutoff()) {
+        _set_gyro_filter(_gyro_filter_cutoff());
+        _last_gyro_filter_hz = _gyro_filter_cutoff();
     }
 
     return true;
@@ -338,13 +343,13 @@ void AP_InertialSensor_MPU9250::_read_data_transaction()
 
 #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx] << 8) | v[2*idx+1]))
 
-    Vector3f _accel_filtered = Vector3f(_accel_filter_x.apply(int16_val(rx.v, 1)), 
-                                        _accel_filter_y.apply(int16_val(rx.v, 0)), 
-                                        _accel_filter_z.apply(-int16_val(rx.v, 2)));
+    Vector3f _accel_filtered = _accel_filter.apply(Vector3f(int16_val(rx.v, 1),
+                                                   int16_val(rx.v, 0),
+                                                   -int16_val(rx.v, 2)));
 
-    Vector3f _gyro_filtered = Vector3f(_gyro_filter_x.apply(int16_val(rx.v, 5)), 
-                                       _gyro_filter_y.apply(int16_val(rx.v, 4)), 
-                                       _gyro_filter_z.apply(-int16_val(rx.v, 6)));
+    Vector3f _gyro_filtered = _gyro_filter.apply(Vector3f(int16_val(rx.v, 5),
+                                                 int16_val(rx.v, 4),
+                                                 -int16_val(rx.v, 6)));
     // update the shared buffer
     uint8_t idx = _shared_data_idx ^ 1;
     _shared_data[idx]._accel_filtered = _accel_filtered;
@@ -384,21 +389,19 @@ void AP_InertialSensor_MPU9250::_register_write(uint8_t reg, uint8_t val)
 }
 
 /*
-  set the accel/gyro filter frequency
+  set the accel filter frequency
  */
-void AP_InertialSensor_MPU9250::_set_filter(uint8_t filter_hz)
+void AP_InertialSensor_MPU9250::_set_accel_filter(uint8_t filter_hz)
 {
-    if (filter_hz == 0) {
-        filter_hz = _default_filter_hz;
-    }
+    _accel_filter.set_cutoff_frequency(1000, filter_hz);
+}
 
-    _accel_filter_x.set_cutoff_frequency(1000, filter_hz);
-    _accel_filter_y.set_cutoff_frequency(1000, filter_hz);
-    _accel_filter_z.set_cutoff_frequency(1000, filter_hz);
-
-    _gyro_filter_x.set_cutoff_frequency(1000, filter_hz);
-    _gyro_filter_y.set_cutoff_frequency(1000, filter_hz);
-    _gyro_filter_z.set_cutoff_frequency(1000, filter_hz);    
+/*
+  set the gyro filter frequency
+ */
+void AP_InertialSensor_MPU9250::_set_gyro_filter(uint8_t filter_hz)
+{
+    _gyro_filter.set_cutoff_frequency(1000, filter_hz);
 }
 
 
@@ -418,7 +421,6 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
     // Chip reset
     uint8_t tries;
     for (tries = 0; tries<5; tries++) {
-        _register_write(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_DEVICE_RESET);
         hal.scheduler->delay(100);
 
         // Wake up device and select GyroZ clock. Note that the
@@ -443,14 +445,9 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
 
     _register_write(MPUREG_PWR_MGMT_2, 0x00);            // only used for wake-up in accelerometer only low power mode
 
-    // Disable I2C bus (recommended on datasheet)
-    _register_write(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
-
-    _default_filter_hz = _default_filter();
-
-    // used a fixed filter of 42Hz on the sensor, then filter using
+    // used no filter of 256Hz on the sensor, then filter using
     // the 2-pole software filter
-    _register_write(MPUREG_CONFIG, BITS_DLPF_CFG_42HZ);
+    _register_write(MPUREG_CONFIG, BITS_DLPF_CFG_256HZ_NOLPF2);
 
     // set sample rate to 1kHz, and use the 2 pole filter to give the
     // desired rate

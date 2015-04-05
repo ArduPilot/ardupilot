@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduRover v2.47"
+#define THISFIRMWARE "ArduRover v2.49"
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -88,6 +88,7 @@
 #include <AP_Mount.h>		// Camera/Antenna mount
 #include <AP_Camera.h>		// Camera triggering
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
+#include <AP_SerialManager.h>   // Serial manager library
 #include <AP_Airspeed.h>    // needed for AHRS build
 #include <AP_Vehicle.h>     // needed for AHRS build
 #include <DataFlash.h>
@@ -201,33 +202,9 @@ static AP_GPS gps;
 // flight modes convenience array
 static AP_Int8		*modes = &g.mode1;
 
-#if CONFIG_BARO == HAL_BARO_BMP085
-static AP_Baro_BMP085 barometer;
-#elif CONFIG_BARO == HAL_BARO_PX4
-static AP_Baro_PX4 barometer;
-#elif CONFIG_BARO == HAL_BARO_VRBRAIN
-static AP_Baro_VRBRAIN barometer;
-#elif CONFIG_BARO == HAL_BARO_HIL
-static AP_Baro_HIL barometer;
-#elif CONFIG_BARO == HAL_BARO_MS5611
-static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::i2c);
-#elif CONFIG_BARO == HAL_BARO_MS5611_SPI
-static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::spi);
-#else
- #error Unrecognized CONFIG_BARO setting
-#endif
+static AP_Baro barometer;
 
-#if CONFIG_COMPASS == HAL_COMPASS_PX4
-static AP_Compass_PX4 compass;
-#elif CONFIG_COMPASS == HAL_COMPASS_VRBRAIN
-static AP_Compass_VRBRAIN compass;
-#elif CONFIG_COMPASS == HAL_COMPASS_HMC5843
-static AP_Compass_HMC5843 compass;
-#elif CONFIG_COMPASS == HAL_COMPASS_HIL
-static AP_Compass_HIL compass;
-#else
- #error Unrecognized CONFIG_COMPASS setting
-#endif
+Compass compass;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 AP_ADC_ADS7844 apm1_adc;
@@ -268,7 +245,7 @@ SITL sitl;
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection
 ////////////////////////////////////////////////////////////////////////////////
-//
+static AP_SerialManager serial_manager;
 static const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
 static GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
 
@@ -298,7 +275,7 @@ static struct 	Location current_loc;
 // --------------------------------------
 #if MOUNT == ENABLED
 // current_loc uses the baro/gps soloution for altitude rather than gps only.
-AP_Mount camera_mount(&current_loc, ahrs, 0);
+AP_Mount camera_mount(ahrs, current_loc);
 #endif
 
 
@@ -548,19 +525,17 @@ void setup() {
     // load the default values of variables listed in var_info[]
     AP_Param::setup_sketch_defaults();
 
+    notify.init(false);
+
     // rover does not use arming nor pre-arm checks
     AP_Notify::flags.armed = true;
     AP_Notify::flags.pre_arm_check = true;
     AP_Notify::flags.pre_arm_gps_check = true;
     AP_Notify::flags.failsafe_battery = false;
 
-    notify.init(false);
-
-    battery.init();
-
     rssi_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE);
 
-	init_ardupilot();
+    init_ardupilot();
 
     // initialise the main loop scheduler
     scheduler.init(&scheduler_tasks[0], sizeof(scheduler_tasks)/sizeof(scheduler_tasks[0]));
@@ -594,7 +569,7 @@ void loop()
 // update AHRS system
 static void ahrs_update()
 {
-    ahrs.set_armed(hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
+    hal.util->set_soft_armed(hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
 
 #if HIL_MODE != HIL_MODE_DISABLED
     // update hil before AHRS update
@@ -628,7 +603,7 @@ static void ahrs_update()
 static void mount_update(void)
 {
 #if MOUNT == ENABLED
-	camera_mount.update_mount_position();
+	camera_mount.update();
 #endif
 #if CAMERA == ENABLED
     camera.trigger_pic_cleanup();
@@ -637,7 +612,7 @@ static void mount_update(void)
 
 static void update_alt()
 {
-    barometer.read();
+    barometer.update();
     if (should_log(MASK_LOG_IMU)) {
         Log_Write_Baro();
     }
@@ -673,7 +648,7 @@ static void update_compass(void)
         // update offsets
         compass.learn_offsets();
         if (should_log(MASK_LOG_COMPASS)) {
-            Log_Write_Compass();
+            DataFlash.Log_Write_Compass(compass);
         }
     } else {
         ahrs.set_compass(NULL);
@@ -717,10 +692,6 @@ static void update_logging2(void)
 static void update_aux(void)
 {
     RC_Channel_aux::enable_aux_servos();
-        
-#if MOUNT == ENABLED
-    camera_mount.update_mount_type();
-#endif
 }
 
 /*
@@ -740,10 +711,6 @@ static void one_second_loop(void)
 
     // cope with changes to aux functions
     update_aux();
-
-#if MOUNT == ENABLED
-    camera_mount.update_mount_type();
-#endif
 
     // cope with changes to mavlink system ID
     mavlink_system.sysid = g.sysid_this_mav;

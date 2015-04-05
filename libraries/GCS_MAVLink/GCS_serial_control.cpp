@@ -126,6 +126,7 @@ more_data:
 
     // read any reply data
     packet.count = 0;
+    memset(packet.data, 0, sizeof(packet.data));
     while (available > 0) {
         packet.data[packet.count++] = (uint8_t)port->read();
         available--;

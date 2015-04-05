@@ -10,21 +10,17 @@
 #ifndef __AP_INERTIALNAV_NAVEKF_H__
 #define __AP_INERTIALNAV_NAVEKF_H__
 
+#include <AP_Nav_Common.h>              // definitions shared by inertial and ekf nav filters
+
 class AP_InertialNav_NavEKF : public AP_InertialNav
 {
 public:
     // Constructor
-    AP_InertialNav_NavEKF(AP_AHRS_NavEKF &ahrs, AP_Baro &baro, GPS_Glitch& gps_glitch, Baro_Glitch& baro_glitch) :
-        AP_InertialNav(ahrs, baro, gps_glitch, baro_glitch),
+    AP_InertialNav_NavEKF(AP_AHRS_NavEKF &ahrs) :
+        AP_InertialNav(),
         _haveabspos(false),
         _ahrs_ekf(ahrs)
-        {
-        }
-
-    /**
-     * initializes the object.
-     */
-    void        init();
+        {}
 
     /**
        update internal state
@@ -32,10 +28,16 @@ public:
     void        update(float dt);
 
     /**
-     * position_ok - true if inertial based altitude and position can be trusted
-     * @return
+     * get_filter_status - returns filter status as a series of flags
      */
-    bool        position_ok() const;
+    nav_filter_status get_filter_status() const;
+
+    /**
+     * get_origin - returns the inertial navigation origin in lat/lon/alt
+     *
+     * @return origin Location
+     */
+    struct Location get_origin() const;
 
     /**
      * get_position - returns the current position relative to the home location in cm.
@@ -58,20 +60,6 @@ public:
     int32_t     get_longitude() const;
 
     /**
-     * get_latitude_diff - returns the current latitude difference from the home location.
-     *
-     * @return difference in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
-     */
-    float       get_latitude_diff() const;
-
-    /**
-     * get_longitude_diff - returns the current longitude difference from the home location.
-     *
-     * @return difference in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
-     */
-    float       get_longitude_diff() const;
-
-    /**
      * get_velocity - returns the current velocity in cm/s
      *
      * @return velocity vector:
@@ -87,12 +75,6 @@ public:
      * @returns the current horizontal velocity in cm/s
      */
     float        get_velocity_xy() const;
-
-    /**
-     * altitude_ok - returns true if inertial based altitude and position can be trusted
-     * @return
-     */
-    bool        altitude_ok() const;
 
     /**
      * get_altitude - get latest altitude estimate in cm

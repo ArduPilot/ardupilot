@@ -38,6 +38,9 @@
 #define PACKED __attribute__((__packed__))
 #endif
 
+// used to mark a function that may be unused in some builds
+#define UNUSED_FUNCTION __attribute__((unused))
+
 // this can be used to optimize individual functions
 #define OPTIMIZE(level) __attribute__((optimize(level)))
 
@@ -53,7 +56,7 @@
 // in conjunction with a suitably modified Arduino IDE; never define for
 // production as it generates bad code.
 //
-#if PRINTF_FORMAT_WARNING_DEBUG
+#if defined(PRINTF_FORMAT_WARNING_DEBUG)
  # undef PSTR
  # define PSTR(_x)               _x             // help the compiler with printf_P
  # define float double                  // silence spurious format warnings for %f
@@ -113,6 +116,15 @@ struct PACKED Location {
     int32_t lng;                                        ///< param 4 - Longitude * 10**7
 };
 
+/*
+  home states. Used to record if user has overridden home position.
+*/
+enum HomeState {
+    HOME_UNSET,                 // home is unset, no GPS positions yet received
+    HOME_SET_NOT_LOCKED,        // home is set to EKF origin or armed location (can be moved)
+    HOME_SET_AND_LOCKED         // home has been set by user, cannot be moved except by user initiated do-set-home command
+};
+
 //@}
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -147,8 +159,5 @@ struct PACKED Location {
 #define AP_PRODUCT_ID_PIXHAWK_FIRE_CAPE 0x102   // Linux with the PixHawk Fire Cape
 #define AP_PRODUCT_ID_MPU9250           0x103   // MPU9250
 #define AP_PRODUCT_ID_VRBRAIN           0x150   // VRBRAIN on NuttX
-
-// map from kbaud rate to baudrate
-uint32_t map_baudrate(int16_t rate);
 
 #endif // _AP_COMMON_H

@@ -39,6 +39,7 @@
 #include <AP_HAL_Linux.h>
 #include <AP_Rally.h>
 #include <AP_Scheduler.h>
+#include <AP_BattMonitor.h>
 #include <SITL.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
@@ -57,7 +58,7 @@ static MAVLink_routing routing;
 void setup(void)
 {
     hal.console->println("routing test startup...");
-    gcs[0].init(hal.uartA);
+    gcs[0].init(hal.uartA, MAVLINK_COMM_0);
 }
 
 void loop(void)

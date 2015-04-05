@@ -8,32 +8,18 @@ static void init_barometer(bool full_calibration)
     }else{
         barometer.update_calibration();
     }
-    // reset glitch protection to use new baro alt
-    baro_glitch.reset();
     gcs_send_text_P(SEVERITY_LOW, PSTR("barometer calibration complete"));
 }
 
 // return barometric altitude in centimeters
 static void read_barometer(void)
 {
-    barometer.read();
+    barometer.update();
     if (should_log(MASK_LOG_IMU)) {
         Log_Write_Baro();
     }
     baro_alt = barometer.get_altitude() * 100.0f;
     baro_climbrate = barometer.get_climb_rate() * 100.0f;
-
-    // run glitch protection and update AP_Notify if home has been initialised
-    baro_glitch.check_alt();
-    bool report_baro_glitch = (baro_glitch.glitching() && !ap.usb_connected && hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
-    if (AP_Notify::flags.baro_glitching != report_baro_glitch) {
-        if (baro_glitch.glitching()) {
-            Log_Write_Error(ERROR_SUBSYSTEM_BARO, ERROR_CODE_BARO_GLITCH);
-        } else {
-            Log_Write_Error(ERROR_SUBSYSTEM_BARO, ERROR_CODE_ERROR_RESOLVED);
-        }
-        AP_Notify::flags.baro_glitching = report_baro_glitch;
-    }
 }
 
 #if CONFIG_SONAR == ENABLED
@@ -132,7 +118,7 @@ static void update_optical_flow(void)
         // Use range from a separate range finder if available, not the PX4Flows built in sensor which is ineffective
         float ground_distance_m = 0.01f*float(sonar_alt);
         ahrs.writeOptFlowMeas(flowQuality, flowRate, bodyRate, last_of_update, sonar_alt_health, ground_distance_m);
-         if (g.log_bitmask & MASK_LOG_OPTFLOW) {
+        if (g.log_bitmask & MASK_LOG_OPTFLOW) {
             Log_Write_Optflow();
         }
     }
@@ -148,6 +134,14 @@ static void read_battery(void)
     // update compass with current value
     if (battery.has_current()) {
         compass.set_current(battery.current_amps());
+    }
+
+    // update motors with voltage and current
+    if (battery.get_type() != AP_BattMonitor::BattMonitor_TYPE_NONE) {
+        motors.set_voltage(battery.voltage());
+    }
+    if (battery.has_current()) {
+        motors.set_current(battery.current_amps());
     }
 
     // check for low voltage or current if the low voltage check hasn't already been triggered

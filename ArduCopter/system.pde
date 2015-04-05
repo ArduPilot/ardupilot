@@ -82,44 +82,12 @@ static void init_ardupilot()
         delay(1000);
     }
 
-    // Console serial port
-    //
-    // The console port buffers are defined to be sufficiently large to support
-    // the MAVLink protocol efficiently
-    //
-#if HIL_MODE != HIL_MODE_DISABLED
-    // we need more memory for HIL, as we get a much higher packet rate
-    hal.uartA->begin(map_baudrate(g.serial0_baud), 256, 256);
-#else
-    // use a bit less for non-HIL operation
-    hal.uartA->begin(map_baudrate(g.serial0_baud), 512, 128);
-#endif
-
-    // GPS serial port.
-    //
-#if GPS_PROTOCOL != GPS_PROTOCOL_IMU
-    // standard gps running. Note that we need a 256 byte buffer for some
-    // GPS types (eg. UBLOX)
-    hal.uartB->begin(38400, 256, 16);
-#endif
-
-#if GPS2_ENABLE
-    if (hal.uartE != NULL) {
-        hal.uartE->begin(38400, 256, 16);
-    }
-#endif
+    // initialise serial port
+    serial_manager.init_console();
 
     cliSerial->printf_P(PSTR("\n\nInit " FIRMWARE_STRING
                          "\n\nFree RAM: %u\n"),
                         hal.util->available_memory());
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-    /*
-      run the timer a bit slower on APM2 to reduce the interrupt load
-      on the CPU
-     */
-    hal.scheduler->set_timer_speed(500);
-#endif
 
     //
     // Report firmware version code expect on console (check of actual EEPROM format version is done in load_parameters function)
@@ -130,6 +98,9 @@ static void init_ardupilot()
     load_parameters();
 
     BoardConfig.init();
+
+    // initialise serial port
+    serial_manager.init();
 
     // init EPM cargo gripper
 #if EPM_ENABLED == ENABLED
@@ -147,9 +118,6 @@ static void init_ardupilot()
 
     barometer.init();
 
-    // init the GCS
-    gcs[0].init(hal.uartA);
-
     // Register the mavlink service callback. This will run
     // anytime there are more than 5ms remaining in a call to
     // hal.scheduler->delay.
@@ -160,20 +128,20 @@ static void init_ardupilot()
     ap.usb_connected = true;
     check_usb_mux();
 
-#if CONFIG_HAL_BOARD != HAL_BOARD_APM2
-    // we have a 2nd serial port for telemetry on all boards except
-    // APM2. We actually do have one on APM2 but it isn't necessary as
-    // a MUX is used
-    gcs[1].setup_uart(hal.uartC, map_baudrate(g.serial1_baud), 128, 128);
-#endif
+    // init the GCS connected to the console
+    gcs[0].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_Console, 0);
+
+    // init telemetry port
+    gcs[1].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
 
 #if MAVLINK_COMM_NUM_BUFFERS > 2
-    if (g.serial2_protocol == SERIAL2_FRSKY_DPORT || 
-        g.serial2_protocol == SERIAL2_FRSKY_SPORT) {
-        frsky_telemetry.init(hal.uartD, g.serial2_protocol);
-    } else {
-        gcs[2].setup_uart(hal.uartD, map_baudrate(g.serial2_baud), 128, 128);
-    }
+    // setup serial port for telem2
+    gcs[2].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 1);
+#endif
+
+#if FRSKY_TELEM_ENABLED == ENABLED
+    // setup frsky
+    frsky_telemetry.init(serial_manager);
 #endif
 
     // identify ourselves correctly with the ground station
@@ -205,13 +173,8 @@ static void init_ardupilot()
      */
     hal.scheduler->register_timer_failsafe(failsafe_check, 1000);
 
- #if CONFIG_ADC == ENABLED
-    // begin filtering the ADC Gyros
-    apm1_adc.Init();           // APM ADC library initialization
- #endif // CONFIG_ADC
-
     // Do GPS init
-    gps.init(&DataFlash);
+    gps.init(&DataFlash, serial_manager);
 
     if(g.compass_enabled)
         init_compass();
@@ -228,21 +191,25 @@ static void init_ardupilot()
     // init the optical flow sensor
     init_optflow();
 
-    // initialise inertial nav
-    inertial_nav.init();
+#if MOUNT == ENABLED
+    // initialise camera mount
+    camera_mount.init(serial_manager);
+#endif
 
 #ifdef USERHOOK_INIT
     USERHOOK_INIT
 #endif
 
 #if CLI_ENABLED == ENABLED
-    const prog_char_t *msg = PSTR("\nPress ENTER 3 times to start interactive setup\n");
-    cliSerial->println_P(msg);
-    if (gcs[1].initialised) {
-        hal.uartC->println_P(msg);
-    }
-    if (num_gcs > 2 && gcs[2].initialised) {
-        hal.uartD->println_P(msg);
+    if (g.cli_enabled) {
+        const prog_char_t *msg = PSTR("\nPress ENTER 3 times to start interactive setup\n");
+        cliSerial->println_P(msg);
+        if (gcs[1].initialised && (gcs[1].get_uart() != NULL)) {
+            gcs[1].get_uart()->println_P(msg);
+        }
+        if (num_gcs > 2 && gcs[2].initialised && (gcs[2].get_uart() != NULL)) {
+            gcs[2].get_uart()->println_P(msg);
+        }
     }
 #endif // CLI_ENABLED
 
@@ -289,12 +256,7 @@ static void init_ardupilot()
     // we don't want writes to the serial port to cause us to pause
     // mid-flight, so set the serial ports non-blocking once we are
     // ready to fly
-    hal.uartA->set_blocking_writes(false);
-    hal.uartB->set_blocking_writes(false);
-    hal.uartC->set_blocking_writes(false);
-    if (hal.uartD != NULL) {
-        hal.uartD->set_blocking_writes(false);
-    }
+    serial_manager.set_blocking_writes_all(false);
 
     cliSerial->print_P(PSTR("\nReady to FLY "));
 
@@ -335,16 +297,46 @@ static void startup_ground(bool force_gyro_cal)
     set_land_complete_maybe(true);
 }
 
-// returns true if the GPS is ok and home position is set
-static bool GPS_ok()
+// position_ok - returns true if the horizontal absolute position is ok and home position is set
+static bool position_ok()
 {
-    if (ap.home_is_set && gps.status() >= AP_GPS::GPS_OK_FIX_3D && 
-        !gps_glitch.glitching() && !failsafe.gps &&
-        !ekf_check_state.bad_compass && !failsafe.ekf) {
-        return true;
-    }else{
+    if (!ahrs.have_inertial_nav()) {
+        // do not allow navigation with dcm position
         return false;
     }
+
+    // return false if ekf failsafe has triggered
+    if (failsafe.ekf) {
+        return false;
+    }
+
+    // with EKF use filter status and ekf check
+    nav_filter_status filt_status = inertial_nav.get_filter_status();
+
+    // if disarmed we accept a predicted horizontal position
+    if (!motors.armed()) {
+        return ((filt_status.flags.horiz_pos_abs || filt_status.flags.pred_horiz_pos_abs));
+    } else {
+        // once armed we require a good absolute position and EKF must not be in const_pos_mode
+        return (filt_status.flags.horiz_pos_abs && !filt_status.flags.const_pos_mode);
+    }
+}
+
+// optflow_position_ok - returns true if optical flow based position estimate is ok
+static bool optflow_position_ok()
+{
+#if OPTFLOW != ENABLED
+    return false;
+#else
+    // return immediately if optflow is not enabled or EKF not used
+    if (!optflow.enabled() || !ahrs.have_inertial_nav()) {
+        return false;
+    }
+
+    // get filter status from EKF
+    nav_filter_status filt_status = inertial_nav.get_filter_status();
+    return (filt_status.flags.horiz_pos_rel || filt_status.flags.pred_horiz_pos_rel);
+#endif
 }
 
 // update_auto_armed - update status of auto_armed flag
@@ -358,7 +350,7 @@ static void update_auto_armed()
             return;
         }
         // if in stabilize or acro flight mode and throttle is zero, auto-armed should become false
-        if(manual_flight_mode(control_mode) && ap.throttle_zero && !failsafe.radio) {
+        if(mode_has_manual_throttle(control_mode) && ap.throttle_zero && !failsafe.radio) {
             set_auto_armed(false);
         }
     }else{
@@ -387,28 +379,14 @@ static void check_usb_mux(void)
 
     // the user has switched to/from the telemetry port
     ap.usb_connected = usb_check;
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-    // the APM2 has a MUX setup where the first serial port switches
-    // between USB and a TTL serial connection. When on USB we use
-    // SERIAL0_BAUD, but when connected as a TTL serial port we run it
-    // at SERIAL1_BAUD.
-    if (ap.usb_connected) {
-        hal.uartA->begin(map_baudrate(g.serial0_baud));
-    } else {
-        hal.uartA->begin(map_baudrate(g.serial1_baud));
-    }
-#endif
 }
 
-/*
-  send FrSky telemetry. Should be called at 5Hz by scheduler
- */
-static void telemetry_send(void)
+// frsky_telemetry_send - sends telemetry data using frsky telemetry
+//  should be called at 5Hz by scheduler
+static void frsky_telemetry_send(void)
 {
 #if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry.send_frames((uint8_t)control_mode, 
-                                (AP_Frsky_Telem::FrSkyProtocol)g.serial2_protocol.get());
+    frsky_telemetry.send_frames((uint8_t)control_mode);
 #endif
 }
 

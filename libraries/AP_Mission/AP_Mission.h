@@ -106,6 +106,13 @@ public:
         float cycle_time;       // cycle time in seconds (the time between peaks or the time the servo is at the specified pwm value for each cycle?)
     };
 
+    // mount control command structure
+    struct PACKED Mount_Control {
+        float pitch;            // pitch angle in degrees
+        float roll;             // roll angle in degrees
+        float yaw;              // yaw angle (relative to vehicle heading) in degrees
+    };
+
     // set cam trigger distance command structure
     struct PACKED Cam_Trigg_Distance {
         float meters;           // distance
@@ -152,6 +159,9 @@ public:
 
         // do-repeate-servo
         Repeat_Servo_Command repeat_servo;
+
+        // mount control
+        Mount_Control mount_control;
 
         // cam trigg distance
         Cam_Trigg_Distance cam_trigg_dist;

@@ -270,3 +270,22 @@ Quaternion &Quaternion::operator*=(const Quaternion &v) {
 
     return *this;
 }
+
+Quaternion Quaternion::operator/(const Quaternion &v) {
+    Quaternion ret;
+    float &quat0 = q1;
+    float &quat1 = q2;
+    float &quat2 = q3;
+    float &quat3 = q4;
+
+    float rquat0 = v.q1;
+    float rquat1 = v.q2;
+    float rquat2 = v.q3;
+    float rquat3 = v.q4;
+
+    ret.q1 = (rquat0*quat0 + rquat1*quat1 + rquat2*quat2 + rquat3*quat3);
+    ret.q2 = (rquat0*quat1 - rquat1*quat0 - rquat2*quat3 + rquat3*quat2);
+    ret.q3 = (rquat0*quat2 + rquat1*quat3 - rquat2*quat0 - rquat3*quat1);
+    ret.q4 = (rquat0*quat3 - rquat1*quat2 + rquat2*quat1 - rquat3*quat0);
+    return ret;
+}

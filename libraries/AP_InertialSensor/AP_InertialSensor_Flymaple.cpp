@@ -67,12 +67,8 @@ AP_InertialSensor_Flymaple::AP_InertialSensor_Flymaple(AP_InertialSensor &imu) :
     AP_InertialSensor_Backend(imu),
     _have_gyro_sample(false),
     _have_accel_sample(false),
-    _accel_filter_x(raw_sample_rate_hz, 10),
-    _accel_filter_y(raw_sample_rate_hz, 10),
-    _accel_filter_z(raw_sample_rate_hz, 10),
-    _gyro_filter_x(raw_sample_rate_hz, 10),
-    _gyro_filter_y(raw_sample_rate_hz, 10),
-    _gyro_filter_z(raw_sample_rate_hz, 10),
+    _accel_filter(raw_sample_rate_hz, 10),
+    _gyro_filter(raw_sample_rate_hz, 10),
     _last_gyro_timestamp(0),
     _last_accel_timestamp(0)
 {}
@@ -95,8 +91,6 @@ AP_InertialSensor_Backend *AP_InertialSensor_Flymaple::detect(AP_InertialSensor 
 
 bool AP_InertialSensor_Flymaple::_init_sensor(void) 
 {
-    _default_filter_hz = _default_filter();
-
     // get pointer to i2c bus semaphore
     AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
 
@@ -146,7 +140,7 @@ bool AP_InertialSensor_Flymaple::_init_sensor(void)
     hal.scheduler->delay(1);
 
     // Set up the filter desired
-    _set_filter_frequency(_imu.get_filter());
+    _set_filter_frequency(_accel_filter_cutoff());
 
     // give back i2c semaphore
     i2c_sem->give();
@@ -164,15 +158,8 @@ bool AP_InertialSensor_Flymaple::_init_sensor(void)
  */
 void AP_InertialSensor_Flymaple::_set_filter_frequency(uint8_t filter_hz)
 {
-    if (filter_hz == 0)
-        filter_hz = _default_filter_hz;
-
-    _accel_filter_x.set_cutoff_frequency(raw_sample_rate_hz, filter_hz);
-    _accel_filter_y.set_cutoff_frequency(raw_sample_rate_hz, filter_hz);
-    _accel_filter_z.set_cutoff_frequency(raw_sample_rate_hz, filter_hz);
-    _gyro_filter_x.set_cutoff_frequency(raw_sample_rate_hz, filter_hz);
-    _gyro_filter_y.set_cutoff_frequency(raw_sample_rate_hz, filter_hz);
-    _gyro_filter_z.set_cutoff_frequency(raw_sample_rate_hz, filter_hz);
+    _accel_filter.set_cutoff_frequency(raw_sample_rate_hz, filter_hz);
+    _gyro_filter.set_cutoff_frequency(raw_sample_rate_hz, filter_hz);
 }
 
 
@@ -190,15 +177,15 @@ bool AP_InertialSensor_Flymaple::update(void)
 
     // Adjust for chip scaling to get m/s/s
     accel *= FLYMAPLE_ACCELEROMETER_SCALE_M_S;
-    _rotate_and_offset_accel(_accel_instance, accel);
+    _publish_accel(_accel_instance, accel);
 
     // Adjust for chip scaling to get radians/sec
     gyro *= FLYMAPLE_GYRO_SCALE_R_S;
-    _rotate_and_offset_gyro(_gyro_instance, gyro);
+    _publish_gyro(_gyro_instance, gyro);
 
-    if (_last_filter_hz != _imu.get_filter()) {
-        _set_filter_frequency(_imu.get_filter());
-        _last_filter_hz = _imu.get_filter();
+    if (_last_filter_hz != _accel_filter_cutoff()) {
+        _set_filter_frequency(_accel_filter_cutoff());
+        _last_filter_hz = _accel_filter_cutoff();
     }
 
     return true;
@@ -239,9 +226,7 @@ void AP_InertialSensor_Flymaple::_accumulate(void)
         int16_t y = -((((int16_t)buffer[1]) << 8) | buffer[0]);    // chip X axis
         int16_t x = -((((int16_t)buffer[3]) << 8) | buffer[2]);    // chip Y axis
         int16_t z = -((((int16_t)buffer[5]) << 8) | buffer[4]);    // chip Z axis
-        _accel_filtered = Vector3f(_accel_filter_x.apply(x),
-                                   _accel_filter_y.apply(y),
-                                   _accel_filter_z.apply(z));
+        _accel_filtered = _accel_filter.apply(Vector3f(x,y,z));
         _have_accel_sample = true;
         _last_accel_timestamp = now;
     }
@@ -256,9 +241,7 @@ void AP_InertialSensor_Flymaple::_accumulate(void)
         int16_t y = -((((int16_t)buffer[0]) << 8) | buffer[1]);    // chip X axis
         int16_t x = -((((int16_t)buffer[2]) << 8) | buffer[3]);    // chip Y axis
         int16_t z = -((((int16_t)buffer[4]) << 8) | buffer[5]);    // chip Z axis
-        _gyro_filtered = Vector3f(_gyro_filter_x.apply(x),
-                                  _gyro_filter_y.apply(y),
-                                  _gyro_filter_z.apply(z));
+        _gyro_filtered = _gyro_filter.apply(Vector3f(x,y,z));
         _have_gyro_sample = true;
         _last_gyro_timestamp = now;
     }

@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <dirent.h>
+#include "../AP_HAL/utility/RingBuffer.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -46,15 +47,15 @@ DataFlash_File::DataFlash_File(const char *log_directory) :
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
     // V1 gets IO errors with larger than 512 byte writes
     _writebuf_chunk(512),
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V40)
-    _writebuf_chunk(512),
 #elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V45)
-    _writebuf_chunk(512),
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V50)
     _writebuf_chunk(512),
 #elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V51)
     _writebuf_chunk(512),
+#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V52)
+    _writebuf_chunk(512),
 #elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
+    _writebuf_chunk(512),
+#elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
     _writebuf_chunk(512),
 #elif defined(CONFIG_ARCH_BOARD_VRHERO_V10)
     _writebuf_chunk(512),
@@ -182,16 +183,6 @@ void DataFlash_File::EraseAll()
         free(fname);
     }
 }
-
-/*
-  buffer handling macros
- */
-#define BUF_AVAILABLE(buf) ((buf##_head > (_tail=buf##_tail))? (buf##_size - buf##_head) + _tail: _tail - buf##_head)
-#define BUF_SPACE(buf) (((_head=buf##_head) > buf##_tail)?(_head - buf##_tail) - 1:((buf##_size - buf##_tail) + _head) - 1)
-#define BUF_EMPTY(buf) (buf##_head == buf##_tail)
-#define BUF_ADVANCETAIL(buf, n) buf##_tail = (buf##_tail + n) % buf##_size
-#define BUF_ADVANCEHEAD(buf, n) buf##_head = (buf##_head + n) % buf##_size
-
 
 /* Write a block of data at current offset */
 void DataFlash_File::WriteBlock(const void *pBuffer, uint16_t size)

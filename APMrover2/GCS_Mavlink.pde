@@ -62,7 +62,7 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
         break;
     }
 
-#if ENABLE_STICK_MIXING==ENABLED
+#if defined(ENABLE_STICK_MIXING) && (ENABLE_STICK_MIXING==ENABLED)
     if (control_mode != INITIALISING) {
         // all modes except INITIALISING have some form of manual
         // override if stick mixing is enabled
@@ -75,7 +75,7 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
 #endif
 
     // we are armed if we are not initialising
-    if (control_mode != INITIALISING && ahrs.get_armed()) {
+    if (control_mode != INITIALISING && hal.util->get_soft_armed()) {
         base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
 
@@ -177,9 +177,15 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
     int16_t battery_current = -1;
     int8_t battery_remaining = -1;
 
-    if (battery.has_current()) {
+    if (battery.has_current() && battery.healthy()) {
         battery_remaining = battery.capacity_remaining_pct();
         battery_current = battery.current_amps() * 100;
+    }
+
+    if (AP_Notify::flags.initialising) {
+        // while initialising the gyros and accels are not enabled
+        control_sensors_enabled &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
+        control_sensors_health &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
     }
 
     mavlink_msg_sys_status_send(
@@ -238,9 +244,9 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
         nav_controller->crosstrack_error());
 }
 
-#if HIL_MODE != HIL_MODE_DISABLED
 static void NOINLINE send_servo_out(mavlink_channel_t chan)
 {
+#if HIL_MODE != HIL_MODE_DISABLED
     // normalized values scaled to -10000 to 10000
     // This is used for HIL.  Do not change without discussing with
     // HIL maintainers
@@ -257,8 +263,8 @@ static void NOINLINE send_servo_out(mavlink_channel_t chan)
         0,
         0,
         receiver_rssi);
-}
 #endif
+}
 
 static void NOINLINE send_radio_out(mavlink_channel_t chan)
 {
@@ -445,10 +451,8 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         break;
 
     case MSG_SERVO_OUT:
-#if HIL_MODE != HIL_MODE_DISABLED
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_SCALED);
         send_servo_out(chan);
-#endif
         break;
 
     case MSG_RADIO_IN:
@@ -530,8 +534,29 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         // unused
         break;
 
+    case MSG_BATTERY2:
+        CHECK_PAYLOAD_SIZE(BATTERY2);
+        gcs[chan-MAVLINK_COMM_0].send_battery2(battery);
+        break;
+
+    case MSG_CAMERA_FEEDBACK:
+#if CAMERA == ENABLED
+        CHECK_PAYLOAD_SIZE(CAMERA_FEEDBACK);
+        camera.send_feedback(chan, gps, ahrs, current_loc);
+#endif
+        break;
+
+    case MSG_EKF_STATUS_REPORT:
+#if AP_AHRS_NAVEKF_AVAILABLE
+        CHECK_PAYLOAD_SIZE(EKF_STATUS_REPORT);
+        ahrs.get_NavEKF().send_status_report(chan);
+#endif
+        break;
+
     case MSG_RETRY_DEFERRED:
     case MSG_TERRAIN:
+    case MSG_OPTICAL_FLOW:
+    case MSG_GIMBAL_REPORT:
         break; // just here to prevent a warning
 	}
 
@@ -651,7 +676,7 @@ bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
         if (rate > 50) {
             rate = 50;
         }
-        stream_ticks[stream_num] = (50 / rate) + stream_slowdown;
+        stream_ticks[stream_num] = (50 / rate) - 1 + stream_slowdown;
         return true;
     }
 
@@ -753,7 +778,9 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_HWSTATUS);
         send_message(MSG_RANGEFINDER);
         send_message(MSG_SYSTEM_TIME);
+        send_message(MSG_BATTERY2);
         send_message(MSG_MOUNT_STATUS);
+        send_message(MSG_EKF_STATUS_REPORT);
     }
 }
 
@@ -816,7 +843,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     }
                 } else {
                     // send the command to the camera mount
-                    camera_mount.set_roi_cmd(&roi_loc);
+                    camera_mount.set_roi_target(roi_loc);
                 }
                 result = MAV_RESULT_ACCEPTED;
                 break;
@@ -828,15 +855,37 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 break;
 
             case MAV_CMD_PREFLIGHT_CALIBRATION:
-                if ((packet.param1 == 1 ||
-                     packet.param2 == 1) &&
-                    packet.param3 == 0) {
-                    startup_INS_ground(true);
+                if (packet.param1 == 1) {
+                    ins.init_gyro();
+                    if (ins.gyro_calibrated_ok_all()) {
+                        ahrs.reset_gyro_drift();
+                        result = MAV_RESULT_ACCEPTED;
+                    } else {
+                        result = MAV_RESULT_FAILED;
+                    }
+                } else if (packet.param3 == 1) {
+                    init_barometer();
                     result = MAV_RESULT_ACCEPTED;
                 } else if (packet.param4 == 1) {
                     trim_radio();
                     result = MAV_RESULT_ACCEPTED;
-                } else {
+                } else if (packet.param5 == 1) {
+                    float trim_roll, trim_pitch;
+                    AP_InertialSensor_UserInteract_MAVLink interact(this);
+                    if (g.skip_gyro_cal) {
+                        // start with gyro calibration, otherwise if the user
+                        // has SKIP_GYRO_CAL=1 they don't get to do it
+                        ins.init_gyro();
+                    }
+                    if(ins.calibrate_accel(&interact, trim_roll, trim_pitch)) {
+                        // reset ahrs's trim to suggested values from calibration routine
+                        ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
+                        result = MAV_RESULT_ACCEPTED;
+                    } else {
+                        result = MAV_RESULT_FAILED;
+                    }
+                }
+                else {
                     send_text_P(SEVERITY_LOW, PSTR("Unsupported preflight calibration"));
                 }
                 break;
@@ -910,6 +959,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
+
+        case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES: {
+            if (packet.param1 == 1) {
+                gcs[chan-MAVLINK_COMM_0].send_autopilot_version();
+                result = MAV_RESULT_ACCEPTED;
+            }
+            break;
+        }
 
         default:
                 break;
@@ -1138,6 +1195,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
 #endif
 
+    case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
+        gcs[chan-MAVLINK_COMM_0].send_autopilot_version();
+        break;
+
     } // end switch
 } // end handle mavlink
 
@@ -1207,7 +1268,7 @@ static void gcs_update(void)
     for (uint8_t i=0; i<num_gcs; i++) {
         if (gcs[i].initialised) {
 #if CLI_ENABLED == ENABLED
-            gcs[i].update(run_cli);
+            gcs[i].update(g.cli_enabled==1?run_cli:NULL);
 #else
             gcs[i].update(NULL);
 #endif

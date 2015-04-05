@@ -65,9 +65,10 @@ private:
     static const float          _gyro_scale;
 
     // support for updating filter at runtime
-    uint8_t _last_filter_hz;
+    int8_t _last_accel_filter_hz;
+    int8_t _last_gyro_filter_hz;
 
-    void _set_filter_register(uint8_t filter_hz);
+    void _set_filter_register(uint16_t filter_hz);
 
     // count of bus errors
     uint16_t _error_count;
@@ -80,12 +81,8 @@ private:
     Vector3f _gyro_filtered;
 
     // Low Pass filters for gyro and accel 
-    LowPassFilter2p _accel_filter_x;
-    LowPassFilter2p _accel_filter_y;
-    LowPassFilter2p _accel_filter_z;
-    LowPassFilter2p _gyro_filter_x;
-    LowPassFilter2p _gyro_filter_y;
-    LowPassFilter2p _gyro_filter_z;
+    LowPassFilter2pVector3f _accel_filter;
+    LowPassFilter2pVector3f _gyro_filter;
 #else
     // accumulation in timer - must be read with timer disabled
     // the sum of the values since last read

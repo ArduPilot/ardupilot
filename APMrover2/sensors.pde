@@ -43,7 +43,7 @@ static void read_sonars(void)
         obstacle.sonar1_distance_cm = sonar.distance_cm(0);
         obstacle.sonar2_distance_cm = sonar.distance_cm(1);
         if (obstacle.sonar1_distance_cm <= (uint16_t)g.sonar_trigger_cm &&
-            obstacle.sonar2_distance_cm <= (uint16_t)obstacle.sonar2_distance_cm)  {
+            obstacle.sonar1_distance_cm <= (uint16_t)obstacle.sonar2_distance_cm)  {
             // we have an object on the left
             if (obstacle.detected_count < 127) {
                 obstacle.detected_count++;
