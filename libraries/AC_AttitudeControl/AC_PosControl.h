@@ -93,6 +93,9 @@ public:
     /// get_speed_down - accessors for current down speed in cm/s.  Will be a negative number
     float get_speed_down() const { return _speed_down_cms; }
 
+    /// get_vel_target_z - returns current vertical speed in cm/s
+    float get_vel_target_z() const { return _vel_target.z; }
+
     /// set_accel_z - set vertical acceleration in cm/s/s
     ///     leash length will be recalculated the next time update_z_controller() is called
     void set_accel_z(float accel_cmss);
