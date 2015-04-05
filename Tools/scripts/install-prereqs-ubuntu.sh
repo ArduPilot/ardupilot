@@ -107,3 +107,4 @@ if ! grep -Fxq "$exportline2" ~/.profile ; then
     fi
 fi
 
+apt-cache search arm-none-eabi
