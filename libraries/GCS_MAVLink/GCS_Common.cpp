@@ -1303,3 +1303,26 @@ void GCS_MAVLINK::send_autopilot_version(void) const
     );
 }
 
+
+/*
+  send LOCAL_POSITION_NED message
+ */
+void GCS_MAVLINK::send_local_position(const AP_AHRS &ahrs) const
+{
+    Vector3f local_position, velocity;
+    if (!ahrs.get_relative_position_NED(local_position) ||
+        !ahrs.get_velocity_NED(velocity)) {
+        // we don't know the position and velocity
+        return;
+    }
+
+    mavlink_msg_local_position_ned_send(
+        chan,
+        hal.scheduler->millis(),
+        local_position.x,
+        local_position.y,
+        local_position.z,
+        velocity.x,
+        velocity.y,
+        velocity.z);
+}

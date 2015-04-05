@@ -57,6 +57,7 @@ enum ap_message {
     MSG_OPTICAL_FLOW,
     MSG_GIMBAL_REPORT,
     MSG_EKF_STATUS_REPORT,
+    MSG_LOCAL_POSITION,
     MSG_RETRY_DEFERRED // this must be last
 };
 
@@ -135,6 +136,7 @@ public:
     void send_opticalflow(AP_AHRS_NavEKF &ahrs, const OpticalFlow &optflow);
 #endif
     void send_autopilot_version(void) const;
+    void send_local_position(const AP_AHRS &ahrs) const;
 
     // return a bitmap of active channels. Used by libraries to loop
     // over active channels to send to all active channels    
