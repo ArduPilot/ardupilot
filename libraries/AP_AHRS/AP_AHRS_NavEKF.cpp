@@ -117,15 +117,29 @@ void AP_AHRS_NavEKF::update(void)
             }
             _gyro_estimate += _gyro_bias;
 
+            float abias1, abias2;
+            EKF.getAccelZBias(abias1, abias2);
+
             // update _accel_ef_ekf
             for (uint8_t i=0; i<_ins.get_accel_count(); i++) {
+                Vector3f accel = _ins.get_accel(i);
+                if (i==0) {
+                    accel.z -= abias1;
+                } else if (i==1) {
+                    accel.z -= abias2;
+                }
                 if (_ins.get_accel_health(i)) {
-                    _accel_ef_ekf[i] = _dcm_matrix * _ins.get_accel(i);
+                    _accel_ef_ekf[i] = _dcm_matrix * accel;
                 }
             }
 
-            // update _accel_ef_ekf_blended
-            EKF.getAccelNED(_accel_ef_ekf_blended);
+            if(_ins.get_accel_health(0) && _ins.get_accel_health(1)) {
+                float IMU1_weighting;
+                EKF.getIMU1Weighting(IMU1_weighting);
+                _accel_ef_ekf_blended = _accel_ef_ekf[0] * IMU1_weighting + _accel_ef_ekf[1] * (1.0f-IMU1_weighting);
+            } else {
+                _accel_ef_ekf_blended = _accel_ef_ekf[0];
+            }
         }
     }
 }
