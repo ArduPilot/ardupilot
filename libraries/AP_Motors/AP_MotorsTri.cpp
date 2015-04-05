@@ -77,7 +77,7 @@ void AP_MotorsTri::output_min()
     hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _rc_throttle.radio_min);
     hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _rc_throttle.radio_min);
     hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _rc_throttle.radio_min);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_CH_TRI_YAW]), _rc_yaw.radio_trim);
+    hal.rcout->write(AP_MOTORS_CH_TRI_YAW, _rc_yaw.radio_trim);
 }
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
@@ -85,7 +85,10 @@ void AP_MotorsTri::output_min()
 uint16_t AP_MotorsTri::get_motor_mask()
 {
     // tri copter uses channels 1,2,4 and 7
-    return (1U << 0 | 1U << 1 | 1U << 3 | 1U << AP_MOTORS_CH_TRI_YAW);
+    return (1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1])) |
+        (1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2])) |
+        (1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4])) |
+        (1U << AP_MOTORS_CH_TRI_YAW);
 }
 
 // output_armed - sends commands to the motors
@@ -226,7 +229,7 @@ void AP_MotorsTri::output_test(uint8_t motor_seq, int16_t pwm)
             break;
         case 3:
             // back servo
-            hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_7]), pwm);
+            hal.rcout->write(AP_MOTORS_CH_TRI_YAW, pwm);
             break;
         case 4:
             // front left motor

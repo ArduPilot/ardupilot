@@ -19,7 +19,7 @@ public:
     AP_MotorsHexa(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_throttle, RC_Channel& rc_yaw, uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) : AP_MotorsMatrix(rc_roll, rc_pitch, rc_throttle, rc_yaw, loop_rate, speed_hz) {
     };
 
-    // setup_motors - configures the motors for a quad
+    // setup_motors - configures the motors for a hexa
     virtual void        setup_motors();
 
 protected:
