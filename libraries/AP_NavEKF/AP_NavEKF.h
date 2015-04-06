@@ -457,6 +457,7 @@ private:
     AP_Int8  _rngInnovGate;         // Number of standard deviations applied to range finder innovation consistency check
     AP_Float _maxFlowRate;          // Maximum flow rate magnitude that will be accepted by the filter
     AP_Int8 _fallback;              // EKF-to-DCM fallback strictness. 0 = trust EKF more, 1 = fallback more conservatively.
+    AP_Int8 _altSource;             // Primary alt source during optical flow navigation. 0 = use Baro, 1 = use range finder.
 
     // Tuning parameters
     const float gpsNEVelVarAccScale;    // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
@@ -579,7 +580,6 @@ private:
     bool tasDataWaiting;            // true when new airspeed data is waiting to be fused
     bool newDataHgt;                // true when new height data has arrived
     uint32_t lastHgtMeasTime;       // time of last height measurement used to determine if new data has arrived
-    uint32_t lastHgtTime_ms;        // time of last height update (msec) used to calculate timeout
     uint16_t hgtRetryTime;          // time allowed without use of height measurements before a height timeout is declared
     uint32_t velFailTime;           // time stamp when GPS velocity measurement last failed covaraiance consistency check (msec)
     uint32_t posFailTime;           // time stamp when GPS position measurement last failed covaraiance consistency check (msec)
@@ -655,6 +655,7 @@ private:
     Vector2 flowRadXYcomp;         // motion compensated optical flow angular rates(rad/sec)
     Vector2 flowRadXY;             // raw (non motion compensated) optical flow angular rates (rad/sec)
     uint32_t flowValidMeaTime_ms;   // time stamp from latest valid flow measurement (msec)
+    uint32_t rngValidMeaTime_ms;    // time stamp from latest valid range measurement (msec)
     uint32_t flowMeaTime_ms;        // time stamp from latest flow measurement (msec)
     uint8_t flowQuality;            // unsigned integer representing quality of optical flow data. 255 is maximum quality.
     uint32_t gndHgtValidTime_ms;    // time stamp from last terrain offset state update (msec)
@@ -694,6 +695,7 @@ private:
     AidingMode PV_AidingMode;           // Defines the preferred mode for aiding of velocity and position estimates from the INS
     bool gndOffsetValid;            // true when the ground offset state can still be considered valid
     bool flowXfailed;               // true when the X optical flow measurement has failed the innovation consistency check
+    float baroHgtOffset;            // offset applied when baro height used as a backup height reference if range-finder fails
 
     bool haveDeltaAngles;
 
