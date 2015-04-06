@@ -44,6 +44,9 @@ protected:
 
     // get the flow scaling parameters
     Vector2f _flowScaler(void) const { return Vector2f(frontend._flowScalerX, frontend._flowScalerY); }
+
+    // get the yaw angle in radians
+    float _yawAngleRad(void) const { return radians(float(frontend._yawAngle_cd) * 0.01f); }
 };
 
 #endif // __OpticalFlow_backend_H__
