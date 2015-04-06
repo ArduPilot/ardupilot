@@ -9,10 +9,6 @@ set -e
 set -x
 
 . ~/.profile
-ls -l $HOME/opt/gcc-arm-none-eabi-4_7-2014q2/bin
-file $HOME/opt/gcc-arm-none-eabi-4_7-2014q2/bin/arm-none-eabi-gcc
-ldd $HOME/opt/gcc-arm-none-eabi-4_7-2014q2/bin/arm-none-eabi-gcc || echo "ldd failed"
-$HOME/opt/gcc-arm-none-eabi-4_7-2014q2/bin/arm-none-eabi-gcc -v
 
 echo "Testing ArduPlane build"
 pushd ArduPlane
