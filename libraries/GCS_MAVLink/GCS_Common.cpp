@@ -102,7 +102,7 @@ GCS_MAVLINK::setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager
     uart->set_flow_control(old_flow_control);
 
     // now change back to desired baudrate
-    uart->begin(serial_manager.find_baudrate(protocol));
+    uart->begin(serial_manager.find_baudrate(protocol, instance));
 
     // and init the gcs instance
     init(uart, mav_chan);
