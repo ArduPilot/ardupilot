@@ -235,7 +235,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: LAND_FLARE_SEC
     // @DisplayName: Landing flare time
-    // @Description: Vertical time before landing point at which to lock heading and flare with the motor stopped. This is vertical time, and is calculated based solely on the current height above the ground and the current descent rate.
+    // @Description: Vertical time before landing point at which to lock heading and flare with the motor stopped. This is vertical time, and is calculated based solely on the current height above the ground and the current descent rate.  Set to 0 if you only wish to flare based on altitude (see LAND_FLARE_ALT).
     // @Units: seconds
     // @Increment: 0.1
     // @User: Advanced
