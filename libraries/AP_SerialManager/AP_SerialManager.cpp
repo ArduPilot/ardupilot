@@ -313,13 +313,13 @@ bool AP_SerialManager::protocol_match(enum SerialProtocol protocol1, enum Serial
 
     // mavlink match
     if (((protocol1 == SerialProtocol_MAVLink) || (protocol1 == SerialProtocol_MAVLink2)) &&
-        ((protocol2 == SerialProtocol_MAVLink) || (protocol1 == SerialProtocol_MAVLink2))) {
+        ((protocol2 == SerialProtocol_MAVLink) || (protocol2 == SerialProtocol_MAVLink2))) {
         return true;
     }
 
     // gps match
     if (((protocol1 == SerialProtocol_GPS) || (protocol1 == SerialProtocol_GPS2)) &&
-        ((protocol2 == SerialProtocol_GPS) || (protocol1 == SerialProtocol_GPS2))) {
+        ((protocol2 == SerialProtocol_GPS) || (protocol2 == SerialProtocol_GPS2))) {
         return true;
     }
 
