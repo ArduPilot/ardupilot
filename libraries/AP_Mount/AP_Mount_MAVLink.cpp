@@ -112,8 +112,8 @@ void AP_Mount_MAVLink::handle_gimbal_report(mavlink_channel_t chan, mavlink_mess
                             _gimbal_report.delta_velocity_y,
                             _gimbal_report.delta_velocity_z);
     Vector3f joint_angles(_gimbal_report.joint_roll,
-                          _gimbal_report.joint_pitch,
-                          _gimbal_report.joint_yaw);
+                          _gimbal_report.joint_el,
+                          _gimbal_report.joint_az);
 
     _ekf.RunEKF(_gimbal_report.delta_time, delta_angles, delta_velocity, joint_angles);
 
@@ -138,8 +138,7 @@ void AP_Mount_MAVLink::handle_gimbal_report(mavlink_channel_t chan, mavlink_mess
     mavlink_msg_gimbal_control_send(chan, 
                                     msg->sysid,
                                     msg->compid,
-                                    rateDemand.x, rateDemand.y, rateDemand.z, // demanded rates
-                                    gyroBias.x, gyroBias.y, gyroBias.z);
+                                    rateDemand.x, rateDemand.y, rateDemand.z);
 }
 
 /*
@@ -157,8 +156,8 @@ void AP_Mount_MAVLink::send_gimbal_report(mavlink_channel_t chan)
                                    _gimbal_report.delta_velocity_y, 
                                    _gimbal_report.delta_velocity_z, 
                                    _gimbal_report.joint_roll, 
-                                   _gimbal_report.joint_pitch, 
-                                   _gimbal_report.joint_yaw);
+                                   _gimbal_report.joint_el, 
+                                   _gimbal_report.joint_az);
     float tilt;
     Vector3f velocity, euler, gyroBias;
     _ekf.getDebug(tilt, velocity, euler, gyroBias);
