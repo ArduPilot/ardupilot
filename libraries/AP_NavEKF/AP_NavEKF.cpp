@@ -2882,7 +2882,7 @@ void NavEKF::FuseOptFlow()
         tempVar[8] = (SK_LOS[4] + q0*tempVar[2]);
 
         // calculate observation jacobians for X LOS rate
-        for (uint8_t i = 0; i < 22; i++) H_LOS[i] = 0;
+        memset(&H_LOS[0], 0, sizeof(H_LOS));
         H_LOS[0] = - SH_LOS[0]*SH_LOS[3]*(2*q1*vd + 2*q0*ve - 2*q3*vn) - 2*q0*SH_LOS[2]*SH_LOS[3];
         H_LOS[1] = 2*q1*SH_LOS[2]*SH_LOS[3] - SH_LOS[0]*SH_LOS[3]*(2*q0*vd - 2*q1*ve + 2*q2*vn);
         H_LOS[2] = 2*q2*SH_LOS[2]*SH_LOS[3] - SH_LOS[0]*SH_LOS[3]*(2*q3*vd + 2*q2*ve + 2*q1*vn);
@@ -2944,7 +2944,7 @@ void NavEKF::FuseOptFlow()
         tempVar[8] = SH_LOS[0]*SK_LOS[7]*SK_LOS[8];
 
         // Calculate observation jacobians for Y LOS rate
-        for (uint8_t i = 0; i < 22; i++) H_LOS[i] = 0;
+        memset(&H_LOS[0], 0, sizeof(H_LOS));
         H_LOS[0] = SH_LOS[0]*SH_LOS[3]*(2*q3*ve - 2*q2*vd + 2*q0*vn) + 2*q0*SH_LOS[1]*SH_LOS[3];
         H_LOS[1] = SH_LOS[0]*SH_LOS[3]*(2*q3*vd + 2*q2*ve + 2*q1*vn) - 2*q1*SH_LOS[1]*SH_LOS[3];
         H_LOS[2] = - SH_LOS[0]*SH_LOS[3]*(2*q0*vd - 2*q1*ve + 2*q2*vn) - 2*q2*SH_LOS[1]*SH_LOS[3];
@@ -2985,8 +2985,9 @@ void NavEKF::FuseOptFlow()
         Kfusion[20] = SK_LOS[0]*(P[20][0]*tempVar[1] + P[20][1]*tempVar[2] - P[20][2]*tempVar[3] + P[20][3]*tempVar[4] + P[20][5]*tempVar[5] - P[20][6]*tempVar[6] - P[20][9]*tempVar[7] + P[20][4]*tempVar[8]);
         Kfusion[21] = SK_LOS[0]*(P[21][0]*tempVar[1] + P[21][1]*tempVar[2] - P[21][2]*tempVar[3] + P[21][3]*tempVar[4] + P[21][5]*tempVar[5] - P[21][6]*tempVar[6] - P[21][9]*tempVar[7] + P[21][4]*tempVar[8]);
         } else {
-            memset(&H_LOS[0], 0, sizeof(H_LOS));
-            memset(&Kfusion[0], 0, sizeof(Kfusion));
+            for (uint8_t i = 16; i <= 21; i++) {
+                Kfusion[i] = 0.0f;
+            }
         }
         // calculate innovation for Y observation
         innovOptFlow[1] = losPred[1] - flowRadXYcomp[1];
