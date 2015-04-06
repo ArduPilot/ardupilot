@@ -647,6 +647,14 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_BATTERY2:
         break; // just here to prevent a warning
+
+    case MSG_MAG_CAL_PROGRESS:
+        compass.send_mag_cal_progress(chan);
+        break;
+
+    case MSG_MAG_CAL_REPORT:
+        compass.send_mag_cal_report(chan);
+        break;
     }
 
     return true;
@@ -866,6 +874,8 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_MOUNT_STATUS);
         send_message(MSG_OPTICAL_FLOW);
         send_message(MSG_GIMBAL_REPORT);
+        send_message(MSG_MAG_CAL_REPORT);
+        send_message(MSG_MAG_CAL_PROGRESS);
         send_message(MSG_EKF_STATUS_REPORT);
     }
 }
@@ -1317,6 +1327,70 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 gcs[chan-MAVLINK_COMM_0].send_autopilot_version();
                 result = MAV_RESULT_ACCEPTED;
             }
+            break;
+        }
+
+        case MAV_CMD_DO_START_MAG_CAL: {
+            result = MAV_RESULT_ACCEPTED;
+            if(motors.armed() || packet.param1 < 0 || packet.param1 > 255) {
+                result = MAV_RESULT_FAILED;
+                break;
+            }
+
+            uint8_t mag_mask = packet.param1;
+            bool retry = packet.param2;
+            bool autosave = packet.param3;
+            float delay = packet.param4;
+
+            if (mag_mask == 0) { // 0 means all
+                compass.start_calibration_all(retry, autosave, delay);
+                break;
+            }
+
+            if(!compass.start_calibration_mask(mag_mask, retry, autosave, delay)) {
+                result = MAV_RESULT_FAILED;
+            }
+
+            break;
+        }
+
+        case MAV_CMD_DO_ACCEPT_MAG_CAL: {
+            result = MAV_RESULT_ACCEPTED;
+            if(packet.param1 < 0 || packet.param1 > 255) {
+                result = MAV_RESULT_FAILED;
+                break;
+            }
+
+            uint8_t mag_mask = packet.param1;
+
+            if (mag_mask == 0) { // 0 means all
+                if(!compass.accept_calibration_all()) {
+                    result = MAV_RESULT_FAILED;
+                }
+                break;
+            }
+
+            if(!compass.accept_calibration_mask(mag_mask)) {
+                result = MAV_RESULT_FAILED;
+            }
+            break;
+        }
+
+        case MAV_CMD_DO_CANCEL_MAG_CAL: {
+            result = MAV_RESULT_ACCEPTED;
+            if(packet.param1 < 0 || packet.param1 > 255) {
+                result = MAV_RESULT_FAILED;
+                break;
+            }
+
+            uint8_t mag_mask = packet.param1;
+
+            if (mag_mask == 0) { // 0 means all
+                compass.cancel_calibration_all();
+                break;
+            }
+
+            compass.cancel_calibration_mask(mag_mask);
             break;
         }
 
