@@ -239,9 +239,8 @@ class Gimbal3Axis(object):
                 self.demanded_angular_rate = Vector3(m.demanded_rate_x,
                                                      m.demanded_rate_y,
                                                      m.demanded_rate_z)
-                self.supplied_gyro_bias = Vector3(m.gyro_bias_x,
-                                                  m.gyro_bias_y,
-                                                  m.gyro_bias_z)
+                # no longer supply a bias
+                self.supplied_gyro_bias = Vector3()
                 self.seen_gimbal_control = True
             if m.get_type() == 'HEARTBEAT' and not self.seen_heartbeat:
                 self.seen_heartbeat = True
