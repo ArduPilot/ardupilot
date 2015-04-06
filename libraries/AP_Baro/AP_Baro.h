@@ -50,10 +50,12 @@ public:
     // pressure in Pascal. Divide by 100 for millibars or hectopascals
     float get_pressure(void) const { return get_pressure(_primary); }
     float get_pressure(uint8_t instance) const { return sensors[instance].pressure; }
+    void  set_pressure(uint8_t instance, const float pressure);
 
     // temperature in degrees C
     float get_temperature(void) const { return get_temperature(_primary); }
     float get_temperature(uint8_t instance) const { return sensors[instance].temperature; }
+    void  set_temperature(uint8_t instance, const float temperature);
 
     // accumulate a reading on sensors. Some backends without their
     // own thread or a timer may need this.
@@ -71,6 +73,7 @@ public:
     // of the last calibrate() call
     float get_altitude(void) const { return get_altitude(_primary); }
     float get_altitude(uint8_t instance) const { return sensors[instance].altitude; }
+    void  set_altitude(uint8_t instance, const float altitude);
 
     // get altitude difference in meters relative given a base
     // pressure in Pascal
