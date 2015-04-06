@@ -991,8 +991,8 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: RNGFND_LANDING
     // @DisplayName: Enable rangefinder for landing
-    // @Description: This enables the use of a rangefinder for automatic landing. The rangefinder will be used both on the landing approach and for final flare
-    // @Values: 0:Disabled,1:Enabled
+    // @Description: This enables the use of a rangefinder for automatic landing. The rangefinder will be used both on the landing approach and for final flare when enabled. Snooze will power-down the rangefinder when not landing to conserve power if you have a STOP_PIN defined.
+    // @Values: 0:Disabled,1:Enabled,2:EnabledWithSnooze
     // @User: Standard
     GSCALAR(rangefinder_landing,    "RNGFND_LANDING",   0),
 
