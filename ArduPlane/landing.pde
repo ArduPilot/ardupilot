@@ -45,15 +45,16 @@ static bool verify_land()
     /* Set land_complete (which starts the flare) under 3 conditions:
        1) we are within LAND_FLARE_ALT meters of the landing altitude
        2) we are within LAND_FLARE_SEC of the landing point vertically
-          by the calculated sink rate
+          by the calculated sink rate (if LAND_FLARE_SEC != 0)
        3) we have gone past the landing point and don't have
           rangefinder data (to prevent us keeping throttle on 
           after landing if we've had positive baro drift)
     */
     if (height <= g.land_flare_alt ||
-        height <= auto_state.land_sink_rate * aparm.land_flare_sec ||
-        (!rangefinder_state.in_range && location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) ||
-        (fabsf(auto_state.land_sink_rate) < 0.2f && !is_flying())) {
+         (aparm.land_flare_sec != 0 && 
+          (height <= auto_state.land_sink_rate * aparm.land_flare_sec ||
+          (!rangefinder_state.in_range && location_passed_point(current_loc, prev_WP_loc, next_WP_loc)))) ||
+         (fabsf(auto_state.land_sink_rate) < 0.2f && !is_flying())  ) {
 
         if (!auto_state.land_complete) {
             if (!is_flying() && (hal.scheduler->millis()-auto_state.last_flying_ms) > 3000) {
