@@ -4,7 +4,7 @@
 
 #include <AP_HAL_Linux.h>
 #define RCOUT_ZYNQ_PWM_BASE	 0x43c00000	//FIXME hardcoding is the devil's work
-#define MAX_PWMS                 8	//FIXME
+#define MAX_ZYNQ_PWMS            8	/* number of pwm channels */
 #define PWM_CMD_CONFIG	         0	/* full configuration in one go */
 #define PWM_CMD_ENABLE	         1	/* enable a pwm */
 #define PWM_CMD_DISABLE	         2	/* disable a pwm */
@@ -35,7 +35,7 @@ private:
         uint32_t hi;
     };
     struct pwm_cmd {
-        struct s_period_hi periodhi[MAX_PWMS];
+        struct s_period_hi periodhi[MAX_ZYNQ_PWMS];
     };
     volatile struct pwm_cmd *sharedMem_cmd;
 };
