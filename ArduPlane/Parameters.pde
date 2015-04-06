@@ -239,7 +239,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Increment: 1
     // @Range: 0 127
     // @User: Advanced
-    GSCALAR(land_disarm_delay,       "LAND_DISARMDELAY",  0),
+    GSCALAR(land_disarm_delay,       "LAND_DISARMDELAY",  20),
 
 	// @Param: NAV_CONTROLLER
 	// @DisplayName: Navigation controller selection
