@@ -1025,6 +1025,10 @@ static void one_second_loop()
     // determine if we are flying or not
     determine_is_flying();
 
+    // check if we've flown but have since landed/crashed - start beeping
+    // update AP_Notify to sound a single chirp/beep to make it easier to find the aircraft
+    update_landing_chirp();
+
     // update notify flags
     AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
     AP_Notify::flags.pre_arm_gps_check = true;
@@ -1036,6 +1040,47 @@ static void one_second_loop()
     }
 #endif
 }
+
+// check if we've flown but have since landed/crashed - start beeping
+// update AP_Notify to repeat a single chirp to make it easier to find the aircraft
+static void update_landing_chirp()
+{
+    switch (g.land_beep) {
+    case LAND_BEEP_OFF:
+    default:
+        AP_Notify::flags.landed = 0;
+        break;
+    case LAND_BEEP_ON:
+        AP_Notify::flags.landed = 1;
+        break;
+    case LAND_BEEP_ON_AFTER_LAND:
+    case LAND_BEEP_ON_AFTER_LAND_MUTE_VIA_MODE_CHANGE:
+        // set in verify_land(), cleared here on movement after a land
+        if (is_flying() || (mission.get_current_nav_cmd().id != MAV_CMD_NAV_LAND)) {
+            break;
+        }
+
+        // INS movement check to stop the beep once the aircraft is found and picked up
+        static Vector3f accel_after_landing = ahrs.get_accel_ef();
+        Vector3f accel_now = ahrs.get_accel_ef();
+
+        if ((hal.scheduler->millis() - auto_state.last_flying_ms) < 5000) {
+            // 5 seconds after a we landed and presumably stopped moving
+            accel_after_landing = accel_now;
+        } else {
+            // if tilted more than 0.2g in any direction the beep will stop
+            if ((fabs(accel_after_landing.x) - fabs(accel_now.x) > 0.2) ||
+                (fabs(accel_after_landing.y) - fabs(accel_now.y) > 0.2) ||
+                (fabs(accel_after_landing.z) - fabs(accel_now.z) > 0.2)) {
+                accel_after_landing = accel_now;
+                AP_Notify::flags.landed = 0;
+            }
+
+        }
+        break;
+    }
+}
+
 
 static void log_perf_info()
 {
