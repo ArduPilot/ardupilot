@@ -188,12 +188,17 @@ AP_HAL::UARTDriver *AP_SerialManager::find_serial(enum SerialProtocol protocol, 
 
 // find_baudrate - searches available serial ports for the first instance that allows the given protocol
 //  returns baudrate on success, 0 if a serial port cannot be found
-uint32_t AP_SerialManager::find_baudrate(enum SerialProtocol protocol) const
+uint32_t AP_SerialManager::find_baudrate(enum SerialProtocol protocol, uint8_t instance) const
 {
+    uint8_t found_instance = 0;
+
     // search for matching protocol
     for(uint8_t i=0; i<SERIALMANAGER_NUM_PORTS; i++) {
-        if ((enum SerialProtocol)state[i].protocol.get() == protocol) {
-            return map_baudrate(state[i].baud);
+        if (protocol_match(protocol, (enum SerialProtocol)state[i].protocol.get())) {
+            if (found_instance == instance) {
+                return map_baudrate(state[i].baud);
+            }
+            found_instance++;
         }
     }
 
