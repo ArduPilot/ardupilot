@@ -195,7 +195,7 @@ uint32_t AP_SerialManager::find_baudrate(enum SerialProtocol protocol, uint8_t i
 
     // search for matching protocol
     for(uint8_t i=0; i<SERIALMANAGER_NUM_PORTS; i++) {
-        if ((enum SerialProtocol)state[i].protocol.get() == protocol) {
+        if (protocol_match(protocol, (enum SerialProtocol)state[i].protocol.get())) {
             if (found_instance == instance) {
                 return map_baudrate(state[i].baud);
             }
