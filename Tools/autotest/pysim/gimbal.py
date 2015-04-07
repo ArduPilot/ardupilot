@@ -231,8 +231,7 @@ class Gimbal3Axis(object):
                 self.demanded_angular_rate = Vector3(m.demanded_rate_x,
                                                      m.demanded_rate_y,
                                                      m.demanded_rate_z)
-                # no longer supply a bias
-                self.supplied_gyro_bias = Vector3()
+
                 self.seen_gimbal_control = True
             if m.get_type() == 'HEARTBEAT' and not self.seen_heartbeat:
                 self.seen_heartbeat = True
@@ -245,7 +244,7 @@ class Gimbal3Axis(object):
             now = time.time()
             if now - self.last_heartbeat_t >= 1:
                 self.connection.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_GIMBAL,
-                                                   mavutil.mavlink.MAV_AUTOPILOT_ARDUPILOTMEGA,
+                                                   mavutil.mavlink.MAV_AUTOPILOT_INVALID,
                                                    0, 0, 0)
                 self.last_heartbeat_t = now
 
@@ -253,7 +252,7 @@ class Gimbal3Axis(object):
             delta_time = now - self.last_report_t
             self.last_report_t = now
             self.connection.mav.gimbal_report_send(self.connection.mav.srcSystem,
-                                                   self.vehicle_component_id,
+                                                   mavutil.mavlink.MAV_COMP_ID_GIMBAL,
                                                    delta_time,
                                                    self.delta_angle.x,
                                                    self.delta_angle.y,
